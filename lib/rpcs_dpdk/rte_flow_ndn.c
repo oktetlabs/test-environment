@@ -49,6 +49,9 @@
 #include "tad_common.h"
 
 #define RTE_FLOW_BOOL_FILEDS_LEN 1
+#define RTE_FLOW_VLAN_VID_FILED_LEN 12
+#define RTE_FLOW_VLAN_PCP_FILED_LEN 3
+#define RTE_FLOW_VLAN_DEI_FILED_LEN 1
 
 static te_errno
 rte_flow_attr_from_ndn(const asn_value *ndn_attr,
@@ -257,6 +260,223 @@ out:
     free(spec);
     free(mask);
     free(last);
+    return rc;
+}
+
+static te_errno
+rte_flow_add_item_to_pattern(struct rte_flow_item **pattern_out,
+                             unsigned int *pattern_len_out)
+{
+    struct rte_flow_item *pattern = *pattern_out;
+    unsigned int pattern_len = *pattern_len_out;
+
+    pattern_len++;
+
+    pattern = realloc(pattern, pattern_len * sizeof(*pattern));
+    if (pattern == NULL)
+        return TE_ENOMEM;
+
+    memset(&pattern[pattern_len - 1], 0, sizeof(*pattern));
+
+    *pattern_len_out = pattern_len;
+    *pattern_out = pattern;
+    return 0;
+}
+
+static te_errno
+rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
+                                   const char *label,
+                                   struct rte_flow_item **pattern_out,
+                                   unsigned int *pattern_len_out,
+                                   unsigned int *item_nb_out)
+{
+    struct rte_flow_item_vlan *spec = NULL;
+    struct rte_flow_item_vlan *mask = NULL;
+    struct rte_flow_item_vlan *last = NULL;
+    struct rte_flow_item *pattern;
+    unsigned int item_nb = *item_nb_out;
+    asn_value *vlan_pdu = tagged_pdu;
+    uint16_t spec_tci = 0;
+    uint16_t mask_tci = 0;
+    uint16_t last_tci = 0;
+    te_bool is_empty_outer = FALSE;
+    te_bool is_double_tagged = FALSE;
+    int rc;
+
+    if (strcmp(label, "outer") == 0 || strcmp(label, "inner") == 0)
+    {
+        is_double_tagged = TRUE;
+
+        rc = asn_get_subvalue(tagged_pdu, &vlan_pdu, label);
+        if (rc == TE_EASNINCOMPLVAL)
+        {
+            /*
+             * If outer or inner are not set, only for
+             * outer will be created VLAN item
+             */
+            if (strcmp(label, "inner") == 0)
+                return 0;
+            else
+                is_empty_outer = TRUE;
+        }
+        else if (rc != 0)
+        {
+            goto out;
+        }
+    }
+
+    rc = rte_flow_add_item_to_pattern(pattern_out, pattern_len_out);
+    if (rc != 0)
+        goto out;
+
+    item_nb++;
+    pattern = *pattern_out;
+
+    pattern[item_nb].type = RTE_FLOW_ITEM_TYPE_VLAN;
+    if (is_empty_outer)
+        return 0;
+
+#define ASN_READ_VLAN_TCI_RANGE_FIELD(_asn_val, _name, _size, _offset)  \
+    do {                                                                \
+        size_t __size = _size;                                          \
+        uint16_t __val;                                                 \
+        uint16_t __offset = _offset;                                    \
+                                                                        \
+        rc = asn_read_value_field(_asn_val, &__val,                     \
+                                  &__size, #_name ".#range.first");     \
+        if (rc == 0)                                                    \
+            spec_tci |= __val << __offset;                              \
+        if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
+            rc = asn_read_value_field(_asn_val, &__val,                 \
+                                      &__size, #_name ".#range.last");  \
+        if (rc == 0)                                                    \
+            last_tci |= __val << __offset;                              \
+        if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
+            rc = asn_read_value_field(_asn_val, &__val,                 \
+                                      &__size, #_name ".#range.mask");  \
+        if (rc == 0)                                                    \
+            mask_tci |= __val << __offset;                              \
+        if (rc != 0 && rc != TE_EASNINCOMPLVAL)                         \
+            goto out;                                                   \
+    } while (0)
+
+    if (is_double_tagged)
+    {
+        ASN_READ_INT_RANGE_FIELD(vlan_pdu, tpid, tpid, sizeof(spec->tpid));
+        ASN_READ_VLAN_TCI_RANGE_FIELD(vlan_pdu, vid,
+                                      RTE_FLOW_VLAN_VID_FILED_LEN, 0);
+        ASN_READ_VLAN_TCI_RANGE_FIELD(vlan_pdu, dei,
+                                      RTE_FLOW_VLAN_DEI_FILED_LEN,
+                                      RTE_FLOW_VLAN_VID_FILED_LEN);
+        ASN_READ_VLAN_TCI_RANGE_FIELD(vlan_pdu, pcp,
+                                      RTE_FLOW_VLAN_PCP_FILED_LEN,
+                                      RTE_FLOW_VLAN_VID_FILED_LEN +
+                                      RTE_FLOW_VLAN_DEI_FILED_LEN);
+    }
+    else
+    {
+        ASN_READ_VLAN_TCI_RANGE_FIELD(vlan_pdu, vlan-id,
+                                      RTE_FLOW_VLAN_VID_FILED_LEN, 0);
+        ASN_READ_VLAN_TCI_RANGE_FIELD(vlan_pdu, cfi,
+                                      RTE_FLOW_VLAN_DEI_FILED_LEN,
+                                      RTE_FLOW_VLAN_VID_FILED_LEN);
+        ASN_READ_VLAN_TCI_RANGE_FIELD(vlan_pdu, priority,
+                                      RTE_FLOW_VLAN_PCP_FILED_LEN,
+                                      RTE_FLOW_VLAN_VID_FILED_LEN +
+                                      RTE_FLOW_VLAN_DEI_FILED_LEN);
+    }
+#undef ASN_READ_VLAN_TCI_RANGE_FIELD
+
+    rc = rte_alloc_mem_for_flow_item((void **)&spec,
+                                     (void **)&mask,
+                                     (void **)&last,
+                                     sizeof(struct rte_flow_item_vlan));
+    if (rc != 0)
+        return rc;
+
+    spec->tci = rte_cpu_to_be_16(spec_tci);
+    mask->tci = rte_cpu_to_be_16(mask_tci);
+    last->tci = rte_cpu_to_be_16(last_tci);
+
+#define FILL_FLOW_ITEM_VLAN(_field) \
+    do {                                            \
+        if (_field->tpid != 0 ||                    \
+            _field->tci != 0)                       \
+            pattern[item_nb]._field = _field;       \
+        else                                        \
+            free(_field);                           \
+    } while(0)
+
+    FILL_FLOW_ITEM_VLAN(spec);
+    FILL_FLOW_ITEM_VLAN(mask);
+    FILL_FLOW_ITEM_VLAN(last);
+#undef FILL_FLOW_ITEM_VLAN
+
+    *item_nb_out = item_nb;
+    *pattern_out = pattern;
+    return 0;
+
+out:
+    free(spec);
+    free(mask);
+    free(last);
+    return rc;
+}
+
+static te_errno
+rte_flow_item_vlan_from_eth_pdu(const asn_value *eth_pdu,
+                                struct rte_flow_item **pattern_out,
+                                unsigned int *pattern_len,
+                                unsigned int *item_nb)
+{
+    asn_value *vlan_pdu;
+    int rc = 0;
+
+    if (pattern_out == NULL || pattern_len == NULL ||
+        item_nb == NULL || *item_nb >= *pattern_len)
+        return TE_EINVAL;
+
+    rc = asn_get_subvalue(eth_pdu, &vlan_pdu, "tagged");
+    if (rc ==  TE_EASNINCOMPLVAL)
+        return 0;
+    else if (rc != 0)
+        goto out;
+
+    rc = asn_get_choice_value(vlan_pdu, &vlan_pdu, NULL, NULL);
+    if (rc != 0)
+        goto out;
+
+    if (strcmp(asn_get_name(vlan_pdu), "tagged") == 0)
+    {
+        rc = rte_flow_item_vlan_from_tagged_pdu(vlan_pdu, "tagged",
+                                                pattern_out, pattern_len, item_nb);
+        if (rc != 0)
+            goto out;
+    }
+    else if (strcmp(asn_get_name(vlan_pdu), "double-tagged") == 0)
+    {
+        /*
+         * In flow API there is no difference between outer and inner VLANs,
+         * to match the flow rule: the first VLAN is outer and the second is
+         * inner.
+         * If only the inner is set, the empty outer will be created anyway.
+         */
+        rc = rte_flow_item_vlan_from_tagged_pdu(vlan_pdu, "outer",
+                                                pattern_out, pattern_len, item_nb);
+        if (rc != 0)
+            goto out;
+
+        rc = rte_flow_item_vlan_from_tagged_pdu(vlan_pdu, "inner",
+                                                pattern_out, pattern_len, item_nb);
+        if (rc != 0)
+            goto out;
+    }
+    else if (strcmp(asn_get_name(vlan_pdu), "untagged") != 0)
+    {
+        rc = TE_EINVAL;
+    }
+
+out:
     return rc;
 }
 
@@ -571,6 +791,14 @@ rte_flow_pattern_from_ndn(const asn_value *ndn_flow,
 
         ASN_VAL_CONVERT(item_pdu, item_tag, rte_flow_item_tags_map,
                         pattern, item_nb);
+
+        if (item_tag == TE_PROTO_ETH)
+        {
+            rc = rte_flow_item_vlan_from_eth_pdu(item_pdu, &pattern,
+                                                 pattern_len, &item_nb);
+            if (rc != 0)
+                goto out;
+        }
     }
     rte_flow_item_end(&pattern[item_nb]);
 
@@ -962,8 +1190,7 @@ TARPC_FUNC(rte_flow_destroy, {},
     }
 
     tarpc_rte_error2tarpc(&out->error, &error);
-})
-TARPC_FUNC(rte_flow_flush, {},
+})TARPC_FUNC(rte_flow_flush, {},
 {
     struct rte_flow_error error;
 
