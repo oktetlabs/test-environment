@@ -1609,6 +1609,9 @@ typedef tarpc_ptr    tarpc_rte_flow_item;
 /** Handle of the 'rte_flow_action' or 0 */
 typedef tarpc_ptr    tarpc_rte_flow_action;
 
+/** RTE flow handle or zero */
+typedef tarpc_ptr    tarpc_rte_flow;
+
 enum tarpc_rte_flow_error_type {
     TARPC_RTE_FLOW_ERROR_TYPE_NONE = 0,
     TARPC_RTE_FLOW_ERROR_TYPE_UNSPECIFIED,
@@ -1667,6 +1670,32 @@ struct tarpc_rte_flow_validate_out {
     tarpc_int                       retval;
     struct tarpc_rte_flow_error     error;
 };
+
+/** rte_flow_create() */
+typedef struct tarpc_rte_flow_validate_in tarpc_rte_flow_create_in;
+
+struct tarpc_rte_flow_create_out {
+    struct tarpc_out_arg            common;
+    tarpc_rte_flow                  flow;
+    struct tarpc_rte_flow_error     error;
+};
+
+/** rte_flow_destroy() */
+struct tarpc_rte_flow_destroy_in {
+    struct tarpc_in_arg             common;
+    uint8_t                         port_id;
+    tarpc_rte_flow                  flow;
+};
+
+typedef struct tarpc_rte_flow_validate_out tarpc_rte_flow_destroy_out;
+
+/** rte_flow_flush() */
+struct tarpc_rte_flow_flush_in {
+    struct tarpc_in_arg             common;
+    uint8_t                         port_id;
+};
+
+typedef struct tarpc_rte_flow_validate_out tarpc_rte_flow_flush_out;
 
 program dpdk
 {
@@ -1783,5 +1812,8 @@ program dpdk
         RPC_DEF(rte_mk_flow_rule_from_str)
         RPC_DEF(rte_free_flow_rule)
         RPC_DEF(rte_flow_validate)
+        RPC_DEF(rte_flow_create)
+        RPC_DEF(rte_flow_destroy)
+        RPC_DEF(rte_flow_flush)
     } = 1;
 } = 2;

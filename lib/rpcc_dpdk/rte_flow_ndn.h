@@ -68,7 +68,6 @@ extern "C" {
  * Make RTE flow structures with attributes, pattern and actions
  * from ASN.1 representation of flow rule.
  *
- * @param[in]  rpcs        RPC server handle
  * @param[in]  flow_rule   ASN.1 flow rule
  * @param[out] attr        RTE flow attr pointer
  * @param[out] pattern     RTE flow item pointer to the array of items
@@ -85,7 +84,6 @@ extern int rpc_rte_mk_flow_rule_from_str(rcf_rpc_server *rpcs,
 /**
  * Free RTE flow structures with attributes, pattern and actions.
  *
- * @param[in]  rpcs        RPC server handle
  * @param[in]  attr        RTE flow attr pointer
  * @param[in]  pattern     RTE flow item pointer to the array of items
  * @param[in]  actions     RTE flow action pointer to the array of actions
@@ -96,25 +94,6 @@ extern void rpc_rte_free_flow_rule(rcf_rpc_server *rpcs,
                                    rpc_rte_flow_attr_p attr,
                                    rpc_rte_flow_item_p pattern,
                                    rpc_rte_flow_action_p actions);
-
-/**
- * rte_flow_validate() RPC.
- *
- * @param[in]  rpcs        RPC server handle
- * @param[in]  port_id     Port number
- * @param[in]  attr        RTE flow attr pointer
- * @param[in]  pattern     RTE flow item pointer to the array of items
- * @param[in]  actions     RTE flow action pointer to the array of actions
- * @param[out] error       Perform verbose error reporting if not NULL
- *
- * @return @c 0 on success; jumps out in case of failure
- */
-extern int rpc_rte_flow_validate(rcf_rpc_server *rpcs,
-                                 uint8_t port_id,
-                                 rpc_rte_flow_attr_p attr,
-                                 rpc_rte_flow_item_p pattern,
-                                 rpc_rte_flow_action_p actions,
-                                 tarpc_rte_flow_error *error);
 
 #ifdef __cplusplus
 } /* extern "C" */

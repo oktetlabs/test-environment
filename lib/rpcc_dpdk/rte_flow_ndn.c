@@ -35,6 +35,7 @@
 
 #include "tarpc.h"
 
+#include "tapi_rpc_rte_flow.h"
 #include "rte_flow_ndn.h"
 #include "rpcc_dpdk.h"
 
@@ -135,6 +136,19 @@ tarpc_rte_flow_error2str(te_log_buf *tlbp, struct tarpc_rte_flow_error *error)
     return te_log_buf_get(tlbp);
 }
 
+static void
+tarpc_rte_flow_error_copy(struct tarpc_rte_flow_error *dst,
+                          struct tarpc_rte_flow_error *src)
+{
+    if (dst != NULL && src != NULL)
+    {
+        dst->type = src->type;
+
+        if (src->message != NULL)
+            dst->message = tapi_strdup(src->message);
+    }
+}
+
 int
 rpc_rte_flow_validate(rcf_rpc_server *rpcs,
                       uint8_t port_id,
@@ -168,13 +182,107 @@ rpc_rte_flow_validate(rcf_rpc_server *rpcs,
                  tarpc_rte_flow_error2str(tlbp, &out.error) : "");
     te_log_buf_free(tlbp);
 
-    if (error != NULL)
-    {
-        error->type = out.error.type;
-
-        if (out.error.message != NULL)
-            error->message = tapi_strdup(out.error.message);
-    }
+    tarpc_rte_flow_error_copy(error, &out.error);
 
     RETVAL_ZERO_INT(rte_flow_validate, out.retval);
+}
+
+rpc_rte_flow_p
+rpc_rte_flow_create(rcf_rpc_server *rpcs,
+                    uint8_t port_id,
+                    rpc_rte_flow_attr_p attr,
+                    rpc_rte_flow_item_p pattern,
+                    rpc_rte_flow_action_p actions,
+                    struct tarpc_rte_flow_error *error)
+{
+    tarpc_rte_flow_create_in        in;
+    tarpc_rte_flow_create_out       out;
+    te_log_buf                     *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.attr = (tarpc_rte_flow_attr)attr;
+    in.pattern = (tarpc_rte_flow_item)pattern;
+    in.actions = (tarpc_rte_flow_action)actions;
+
+    rcf_rpc_call(rpcs, "rte_flow_create", &in, &out);
+
+    CHECK_RETVAL_VAR_RPC_PTR(rte_flow_create, out.flow);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_flow_create,
+                 "%hhu, "RPC_PTR_FMT", "RPC_PTR_FMT", "RPC_PTR_FMT,
+                 RPC_PTR_FMT "%s", in.port_id, RPC_PTR_VAL(in.attr),
+                 RPC_PTR_VAL(in.pattern), RPC_PTR_VAL(in.actions),
+                 RPC_PTR_VAL(out.flow), (out.error.type != 0) ?
+                 tarpc_rte_flow_error2str(tlbp, &out.error) : "");
+    te_log_buf_free(tlbp);
+
+    tarpc_rte_flow_error_copy(error, &out.error);
+
+    RETVAL_RPC_PTR(rte_flow_create, out.flow);
+}
+
+int
+rpc_rte_flow_destroy(rcf_rpc_server *rpcs,
+                     uint8_t port_id,
+                     rpc_rte_flow_p flow,
+                     struct tarpc_rte_flow_error *error)
+{
+    tarpc_rte_flow_destroy_in       in;
+    tarpc_rte_flow_destroy_out      out;
+    te_log_buf                     *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.flow = (tarpc_rte_flow)flow;
+
+    rcf_rpc_call(rpcs, "rte_flow_destroy", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_flow_destroy, out.retval);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_flow_destroy, "%hhu, "RPC_PTR_FMT,
+                 NEG_ERRNO_FMT "%s", in.port_id, RPC_PTR_VAL(in.flow),
+                 NEG_ERRNO_ARGS(out.retval), (out.retval != 0) ?
+                 tarpc_rte_flow_error2str(tlbp, &out.error) : "");
+    te_log_buf_free(tlbp);
+
+    tarpc_rte_flow_error_copy(error, &out.error);
+
+    RETVAL_ZERO_INT(rte_flow_destroy, out.retval);
+}
+
+int
+rpc_rte_flow_flush(rcf_rpc_server *rpcs,
+                   uint8_t port_id,
+                   struct tarpc_rte_flow_error *error)
+{
+    tarpc_rte_flow_flush_in         in;
+    tarpc_rte_flow_flush_out        out;
+    te_log_buf                     *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_flow_flush", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_flow_flush, out.retval);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_flow_flush, "%hhu",
+                 NEG_ERRNO_FMT "%s", in.port_id,
+                 NEG_ERRNO_ARGS(out.retval), (out.retval != 0) ?
+                 tarpc_rte_flow_error2str(tlbp, &out.error) : "");
+    te_log_buf_free(tlbp);
+
+    tarpc_rte_flow_error_copy(error, &out.error);
+
+    RETVAL_ZERO_INT(rte_flow_flush, out.retval);
 }

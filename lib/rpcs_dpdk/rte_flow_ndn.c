@@ -637,7 +637,7 @@ TARPC_FUNC_STATIC(rte_free_flow_rule, {},
     struct rte_flow_item           *pattern = NULL;
     struct rte_flow_action         *actions = NULL;
 
-   RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
         attr = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->attr, ns);
         pattern = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->pattern, ns);
         actions = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->actions, ns);
@@ -702,4 +702,65 @@ TARPC_FUNC(rte_flow_validate, {},
 
     if (tarpc_rte_error2tarpc(&out->error, &error) != 0)
         out->retval = -TE_RC(TE_RPCS, TE_EINVAL);
+})
+
+TARPC_FUNC(rte_flow_create, {},
+{
+    struct rte_flow_attr           *attr = NULL;
+    struct rte_flow_item           *pattern = NULL;
+    struct rte_flow_action         *actions = NULL;
+    struct rte_flow                *flow = NULL;
+    struct rte_flow_error           error;
+
+    memset(&error, 0, sizeof(error));
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        attr = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->attr, ns);
+        pattern = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->pattern, ns);
+        actions = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->actions, ns);
+    });
+
+    MAKE_CALL(flow = func(in->port_id, attr, pattern, actions, &error));
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        out->flow = RCF_PCH_MEM_INDEX_ALLOC(flow, ns);
+    });
+
+    tarpc_rte_error2tarpc(&out->error, &error);
+})
+
+TARPC_FUNC(rte_flow_destroy, {},
+{
+    struct rte_flow                *flow = NULL;
+    struct rte_flow_error           error;
+
+    memset(&error, 0, sizeof(error));
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        flow = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->flow, ns);
+    });
+
+    MAKE_CALL(out->retval = func(in->port_id, flow, &error));
+    neg_errno_h2rpc(&out->retval);
+
+    if (out->retval == 0)
+    {
+        RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+            RCF_PCH_MEM_INDEX_FREE(in->flow, ns);
+        });
+    }
+
+    tarpc_rte_error2tarpc(&out->error, &error);
+})
+
+TARPC_FUNC(rte_flow_flush, {},
+{
+    struct rte_flow_error error;
+
+    memset(&error, 0, sizeof(error));
+
+    MAKE_CALL(out->retval = func(in->port_id, &error));
+    neg_errno_h2rpc(&out->retval);
+
+    tarpc_rte_error2tarpc(&out->error, &error);
 })

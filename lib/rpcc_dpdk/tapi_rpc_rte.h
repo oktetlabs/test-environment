@@ -43,6 +43,7 @@ typedef rpc_ptr rpc_rte_ring_p;
 typedef rpc_ptr rpc_rte_flow_attr_p;
 typedef rpc_ptr rpc_rte_flow_item_p;
 typedef rpc_ptr rpc_rte_flow_action_p;
+typedef rpc_ptr rpc_rte_flow_p;
 
 /**
  * Get TE_ENV_DPDK_REUSE_RPCS feature status
