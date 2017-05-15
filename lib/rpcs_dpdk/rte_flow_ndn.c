@@ -140,23 +140,23 @@ rte_int_hton(uint32_t val, void *data, size_t size)
             goto out;                                                   \
     } while (0)
 
-#define ASN_READ_MAC_ADDR_RANGE_FIELD(_asn_val, _field) \
+#define ASN_READ_ADDR_RANGE_FIELD(_asn_val, _name, _field, _size) \
     do {                                                                \
-        size_t __size = ETHER_ADDR_LEN;                                 \
-        struct ether_addr __addr;                                       \
+        size_t __size = _size;                                          \
+        uint8_t __addr[_size];                                          \
                                                                         \
-        rc = asn_read_value_field(_asn_val, __addr.addr_bytes, &__size, \
-                                  #_field "-addr.#range.first");        \
+        rc = asn_read_value_field(_asn_val, __addr, &__size,            \
+                                  #_name ".#range.first");              \
         if (rc == 0)                                                    \
-            memcpy(spec->_field.addr_bytes, __addr.addr_bytes, __size); \
-        rc = asn_read_value_field(_asn_val, __addr.addr_bytes, &__size, \
-                                  #_field "-addr.#range.last");         \
+            memcpy(spec->_field, __addr, __size);                       \
+        rc = asn_read_value_field(_asn_val, __addr, &__size,            \
+                                  #_name ".#range.last");               \
         if (rc == 0)                                                    \
-            memcpy(last->_field.addr_bytes, __addr.addr_bytes, __size); \
-        rc = asn_read_value_field(_asn_val, __addr.addr_bytes, &__size, \
-                                  #_field "-addr.#range.mask");         \
+            memcpy(last->_field, __addr, __size);                       \
+        rc = asn_read_value_field(_asn_val, __addr, &__size,            \
+                                  #_name ".#range.mask");               \
         if (rc == 0)                                                    \
-            memcpy(mask->_field.addr_bytes, __addr.addr_bytes, __size); \
+            memcpy(mask->_field, __addr, __size);                       \
         if (rc != 0 && rc != TE_EASNINCOMPLVAL)                         \
             goto out;                                                   \
     } while (0)
@@ -242,8 +242,8 @@ rte_flow_item_eth_from_pdu(const asn_value *eth_pdu,
     if (rc != 0)
         return rc;
 
-    ASN_READ_MAC_ADDR_RANGE_FIELD(eth_pdu, dst);
-    ASN_READ_MAC_ADDR_RANGE_FIELD(eth_pdu, src);
+    ASN_READ_ADDR_RANGE_FIELD(eth_pdu, src-addr, src.addr_bytes, ETHER_ADDR_LEN);
+    ASN_READ_ADDR_RANGE_FIELD(eth_pdu, dst-addr, dst.addr_bytes, ETHER_ADDR_LEN);
     ASN_READ_INT_RANGE_FIELD(eth_pdu, length-type, type, sizeof(spec->type));
 
     item->type = RTE_FLOW_ITEM_TYPE_ETH;
@@ -251,6 +251,209 @@ rte_flow_item_eth_from_pdu(const asn_value *eth_pdu,
     FILL_FLOW_ITEM_ETH(mask);
     FILL_FLOW_ITEM_ETH(last);
 #undef FILL_FLOW_ITEM_ETH
+
+    return 0;
+out:
+    free(spec);
+    free(mask);
+    free(last);
+    return rc;
+}
+
+static te_errno
+rte_flow_item_ipv4_from_pdu(const asn_value *ipv4_pdu,
+                            struct rte_flow_item *item)
+{
+    struct rte_flow_item_ipv4 *spec = NULL;
+    struct rte_flow_item_ipv4 *mask = NULL;
+    struct rte_flow_item_ipv4 *last = NULL;
+    int rc;
+
+    if (item == NULL)
+        return TE_EINVAL;
+
+#define FILL_FLOW_ITEM_IPV4(_field) \
+    do {                                    \
+        if (_field->hdr.src_addr != 0 ||    \
+            _field->hdr.dst_addr != 0 ||    \
+            _field->hdr.next_proto_id != 0) \
+            item->_field = _field;          \
+        else                                \
+            free(_field);                   \
+    } while(0)
+
+#define ASN_READ_IPV4_ADDR_RANGE_FIELD(_asn_val, _name, _field) \
+    do {                                                                \
+        size_t __size = sizeof(struct in_addr);                         \
+                                                                        \
+        rc = asn_read_value_field(_asn_val, &spec->_field,              \
+                                  &__size, #_name ".#range.first");     \
+        if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
+            rc = asn_read_value_field(_asn_val, &last->_field,          \
+                                      &__size, #_name ".#range.last");  \
+        if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
+            rc = asn_read_value_field(_asn_val, &mask->_field,          \
+                                      &__size, #_name ".#range.mask");  \
+        if (rc != 0 && rc != TE_EASNINCOMPLVAL)                         \
+            goto out;                                                   \
+    } while (0)
+
+    rc = rte_alloc_mem_for_flow_item((void **)&spec,
+                                     (void **)&mask,
+                                     (void **)&last,
+                                     sizeof(struct rte_flow_item_ipv4));
+    if (rc != 0)
+        return rc;
+
+    ASN_READ_INT_RANGE_FIELD(ipv4_pdu, protocol, hdr.next_proto_id,
+                             sizeof(spec->hdr.next_proto_id));
+    ASN_READ_IPV4_ADDR_RANGE_FIELD(ipv4_pdu, src-addr, hdr.src_addr);
+    ASN_READ_IPV4_ADDR_RANGE_FIELD(ipv4_pdu, dst-addr, hdr.dst_addr);
+#undef ASN_READ_IPV4_ADDR_RANGE_FIELD
+
+    item->type = RTE_FLOW_ITEM_TYPE_IPV4;
+    FILL_FLOW_ITEM_IPV4(spec);
+    FILL_FLOW_ITEM_IPV4(mask);
+    FILL_FLOW_ITEM_IPV4(last);
+#undef FILL_FLOW_ITEM_IPV4
+
+    return 0;
+out:
+    free(spec);
+    free(mask);
+    free(last);
+    return rc;
+}
+
+static te_bool
+rte_flow_is_zero_addr(const uint8_t *addr, unsigned int size)
+{
+    uint8_t sum = 0;
+    unsigned int i;
+
+    for (i = 0; i < size; i++)
+        sum |= addr[i];
+
+    return (sum == 0) ? TRUE : FALSE;
+}
+
+static te_errno
+rte_flow_item_ipv6_from_pdu(const asn_value *ipv6_pdu,
+                            struct rte_flow_item *item)
+{
+    struct rte_flow_item_ipv6 *spec = NULL;
+    struct rte_flow_item_ipv6 *mask = NULL;
+    struct rte_flow_item_ipv6 *last = NULL;
+    int rc;
+
+    if (item == NULL)
+        return TE_EINVAL;
+
+#define FILL_FLOW_ITEM_IPV6(_field) \
+    do {                                                                                \
+        if (!rte_flow_is_zero_addr(_field->hdr.src_addr, sizeof(struct in6_addr)) ||    \
+            !rte_flow_is_zero_addr(_field->hdr.dst_addr, sizeof(struct in6_addr)) ||    \
+            _field->hdr.proto != 0)                                                     \
+            item->_field = _field;                                                      \
+        else                                                                            \
+            free(_field);                                                               \
+    } while(0)
+
+    rc = rte_alloc_mem_for_flow_item((void **)&spec,
+                                     (void **)&mask,
+                                     (void **)&last,
+                                     sizeof(struct rte_flow_item_ipv6));
+    if (rc != 0)
+        return rc;
+
+    ASN_READ_INT_RANGE_FIELD(ipv6_pdu, next-header, hdr.proto, sizeof(spec->hdr.proto));
+    ASN_READ_ADDR_RANGE_FIELD(ipv6_pdu, src-addr, hdr.src_addr, sizeof(struct in6_addr));
+    ASN_READ_ADDR_RANGE_FIELD(ipv6_pdu, dst-addr, hdr.dst_addr, sizeof(struct in6_addr));
+
+    item->type = RTE_FLOW_ITEM_TYPE_IPV6;
+    FILL_FLOW_ITEM_IPV6(spec);
+    FILL_FLOW_ITEM_IPV6(mask);
+    FILL_FLOW_ITEM_IPV6(last);
+#undef FILL_FLOW_ITEM_IPV6
+
+    return 0;
+out:
+    free(spec);
+    free(mask);
+    free(last);
+    return rc;
+}
+
+#define FILL_FLOW_ITEM_TCP_UDP(_field) \
+    do {                                    \
+        if (_field->hdr.src_port != 0 ||    \
+            _field->hdr.dst_port != 0)      \
+            item->_field = _field;          \
+        else                                \
+            free(_field);                   \
+    } while(0)
+
+static te_errno
+rte_flow_item_tcp_from_pdu(const asn_value *tcp_pdu,
+                           struct rte_flow_item *item)
+{
+    struct rte_flow_item_tcp *spec = NULL;
+    struct rte_flow_item_tcp *mask = NULL;
+    struct rte_flow_item_tcp *last = NULL;
+    int rc;
+
+    if (item == NULL)
+        return TE_EINVAL;
+
+    rc = rte_alloc_mem_for_flow_item((void **)&spec,
+                                     (void **)&mask,
+                                     (void **)&last,
+                                     sizeof(struct rte_flow_item_tcp));
+    if (rc != 0)
+        return rc;
+
+    ASN_READ_INT_RANGE_FIELD(tcp_pdu, src-port, hdr.src_port, sizeof(spec->hdr.src_port));
+    ASN_READ_INT_RANGE_FIELD(tcp_pdu, dst-port, hdr.dst_port, sizeof(spec->hdr.dst_port));
+
+    item->type = RTE_FLOW_ITEM_TYPE_TCP;
+    FILL_FLOW_ITEM_TCP_UDP(spec);
+    FILL_FLOW_ITEM_TCP_UDP(mask);
+    FILL_FLOW_ITEM_TCP_UDP(last);
+
+    return 0;
+out:
+    free(spec);
+    free(mask);
+    free(last);
+    return rc;
+}
+
+static te_errno
+rte_flow_item_udp_from_pdu(const asn_value *udp_pdu,
+                           struct rte_flow_item *item)
+{
+    struct rte_flow_item_udp *spec = NULL;
+    struct rte_flow_item_udp *mask = NULL;
+    struct rte_flow_item_udp *last = NULL;
+    int rc;
+
+    if (item == NULL)
+        return TE_EINVAL;
+
+    rc = rte_alloc_mem_for_flow_item((void **)&spec,
+                                     (void **)&mask,
+                                     (void **)&last,
+                                     sizeof(struct rte_flow_item_udp));
+    if (rc != 0)
+        return rc;
+
+    ASN_READ_INT_RANGE_FIELD(udp_pdu, src-port, hdr.src_port, sizeof(spec->hdr.src_port));
+    ASN_READ_INT_RANGE_FIELD(udp_pdu, dst-port, hdr.dst_port, sizeof(spec->hdr.dst_port));
+
+    item->type = RTE_FLOW_ITEM_TYPE_UDP;
+    FILL_FLOW_ITEM_TCP_UDP(spec);
+    FILL_FLOW_ITEM_TCP_UDP(mask);
+    FILL_FLOW_ITEM_TCP_UDP(last);
 
     return 0;
 out:
@@ -321,6 +524,10 @@ static const struct rte_flow_item_tags_mapping {
                              struct rte_flow_item *item);
 } rte_flow_item_tags_map[] = {
     { TE_PROTO_ETH,     rte_flow_item_eth_from_pdu },
+    { TE_PROTO_IP4,     rte_flow_item_ipv4_from_pdu },
+    { TE_PROTO_IP6,     rte_flow_item_ipv6_from_pdu },
+    { TE_PROTO_TCP,     rte_flow_item_tcp_from_pdu },
+    { TE_PROTO_UDP,     rte_flow_item_udp_from_pdu },
     { 0,                rte_flow_item_void },
 };
 
