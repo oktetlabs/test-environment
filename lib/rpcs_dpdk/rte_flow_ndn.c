@@ -495,26 +495,26 @@ rte_flow_free_pattern(struct rte_flow_item *pattern,
  * Convert item/action ASN value to rte_flow structures and add
  * to the appropriate list using the map of conversion functions
  */
-#define ASN_VAL_CONVERT(_asn_val, _tag, _map, _list) \
-    do {                                                        \
-        unsigned int i;                                         \
-                                                                \
-        for (i = 0; i < TE_ARRAY_LEN(_map); i++)                \
-        {                                                       \
-            if (_tag == _map[i].tag)                            \
-            {                                                   \
-                rc = _map[i].convert(_asn_val, &_list[i]);      \
-                if (rc != 0)                                    \
-                    goto out;                                   \
-                                                                \
-                break;                                          \
-            }                                                   \
-        }                                                       \
-        if (i == TE_ARRAY_LEN(_map))                            \
-        {                                                       \
-            rc = TE_EINVAL;                                     \
-            goto out;                                           \
-        }                                                       \
+#define ASN_VAL_CONVERT(_asn_val, _tag, _map, _list, _item_nb) \
+    do {                                                            \
+        unsigned int i;                                             \
+                                                                    \
+        for (i = 0; i < TE_ARRAY_LEN(_map); i++)                    \
+        {                                                           \
+            if (_tag == _map[i].tag)                                \
+            {                                                       \
+                rc = _map[i].convert(_asn_val, &_list[_item_nb]);   \
+                if (rc != 0)                                        \
+                    goto out;                                       \
+                                                                    \
+                break;                                              \
+            }                                                       \
+        }                                                           \
+        if (i == TE_ARRAY_LEN(_map))                                \
+        {                                                           \
+            rc = TE_EINVAL;                                         \
+            goto out;                                               \
+        }                                                           \
     } while(0)
 
 /* The mapping list of protocols tags and conversion functions */
@@ -542,6 +542,7 @@ rte_flow_pattern_from_ndn(const asn_value *ndn_flow,
     asn_value              *item_pdu;
     asn_tag_value           item_tag;
     struct rte_flow_item   *pattern = NULL;
+    unsigned int            item_nb;
     unsigned int            ndn_len;
 
     if (pattern_out == NULL || pattern_len == NULL)
@@ -558,7 +559,7 @@ rte_flow_pattern_from_ndn(const asn_value *ndn_flow,
     if (pattern == NULL)
         return TE_ENOMEM;
 
-    for (i = 0; i < ndn_len; i++)
+    for (i = 0, item_nb = 0; i < ndn_len; i++, item_nb++)
     {
         rc = asn_get_indexed(ndn_flow, &gen_pdu, i, "pattern");
         if (rc != 0)
@@ -568,9 +569,10 @@ rte_flow_pattern_from_ndn(const asn_value *ndn_flow,
         if (rc != 0)
             goto out;
 
-        ASN_VAL_CONVERT(item_pdu, item_tag, rte_flow_item_tags_map, pattern);
+        ASN_VAL_CONVERT(item_pdu, item_tag, rte_flow_item_tags_map,
+                        pattern, item_nb);
     }
-    rte_flow_item_end(&pattern[ndn_len]);
+    rte_flow_item_end(&pattern[item_nb]);
 
     *pattern_out = pattern;
     return 0;
@@ -675,6 +677,7 @@ rte_flow_actions_from_ndn(const asn_value *ndn_flow,
     asn_value                  *conf;
     uint8_t                     type;
     struct rte_flow_action     *actions;
+    unsigned int                action_nb;
     unsigned int                actions_len;
     unsigned int                ndn_len;
 
@@ -692,7 +695,7 @@ rte_flow_actions_from_ndn(const asn_value *ndn_flow,
     if (actions == NULL)
         return TE_ENOMEM;
 
-    for (i = 0; i < ndn_len; i++)
+    for (i = 0, action_nb = 0; i < ndn_len; i++, action_nb++)
     {
         rc = asn_get_indexed(ndn_flow, &action, i, "actions");
         if (rc != 0)
@@ -707,9 +710,10 @@ rte_flow_actions_from_ndn(const asn_value *ndn_flow,
         if (rc != 0)
             goto out;
 
-        ASN_VAL_CONVERT(conf, type, rte_flow_action_types_map, actions);
+        ASN_VAL_CONVERT(conf, type, rte_flow_action_types_map,
+                        actions, action_nb);
     }
-    rte_flow_action_end(&actions[ndn_len]);
+    rte_flow_action_end(&actions[action_nb]);
 
     *actions_out = actions;
     return 0;
@@ -959,7 +963,6 @@ TARPC_FUNC(rte_flow_destroy, {},
 
     tarpc_rte_error2tarpc(&out->error, &error);
 })
-
 TARPC_FUNC(rte_flow_flush, {},
 {
     struct rte_flow_error error;
