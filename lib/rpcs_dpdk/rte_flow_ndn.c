@@ -121,47 +121,68 @@ rte_int_hton(uint32_t val, void *data, size_t size)
 }
 
 #define ASN_READ_INT_RANGE_FIELD(_asn_val, _name, _field, _size) \
-    do {                                                                \
-        size_t __size = _size;                                          \
-        uint32_t __val;                                                 \
-                                                                        \
-        rc = asn_read_value_field(_asn_val, &__val,                     \
-                                  &__size, #_name ".#range.first");     \
-        if (rc == 0)                                                    \
-            rc = rte_int_hton(__val, &spec->_field, _size);             \
-        if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
-            rc = asn_read_value_field(_asn_val, &__val,                 \
-                                      &__size, #_name ".#range.last");  \
-        if (rc == 0)                                                    \
-            rc = rte_int_hton(__val, &last->_field, _size);             \
-        if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
-            rc = asn_read_value_field(_asn_val, &__val,                 \
-                                      &__size, #_name ".#range.mask");  \
-        if (rc == 0)                                                    \
-            rc = rte_int_hton(__val, &mask->_field, _size);             \
-        if (rc != 0 && rc != TE_EASNINCOMPLVAL)                         \
-            goto out;                                                   \
+    do {                                                                    \
+        size_t __size = _size;                                              \
+        uint32_t __val;                                                     \
+                                                                            \
+        rc = asn_read_value_field(_asn_val, &__val,                         \
+                                  &__size, #_name ".#plain");               \
+        if (rc == 0)                                                        \
+        {                                                                   \
+            rc = rte_int_hton(__val, &spec->_field, _size);                 \
+            if (rc == 0)                                                    \
+                rc = rte_int_hton(UINT32_MAX, &mask->_field, _size);        \
+        }                                                                   \
+        else if (rc == TE_EASNOTHERCHOICE)                                  \
+        {                                                                   \
+            rc = asn_read_value_field(_asn_val, &__val,                     \
+                                      &__size, #_name ".#range.first");     \
+            if (rc == 0)                                                    \
+                rc = rte_int_hton(__val, &spec->_field, _size);             \
+            if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
+                rc = asn_read_value_field(_asn_val, &__val,                 \
+                                          &__size, #_name ".#range.last");  \
+            if (rc == 0)                                                    \
+                rc = rte_int_hton(__val, &last->_field, _size);             \
+            if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
+                rc = asn_read_value_field(_asn_val, &__val,                 \
+                                          &__size, #_name ".#range.mask");  \
+            if (rc == 0)                                                    \
+                rc = rte_int_hton(__val, &mask->_field, _size);             \
+        }                                                                   \
+        if (rc != 0 && rc != TE_EASNINCOMPLVAL)                             \
+            goto out;                                                       \
     } while (0)
 
 #define ASN_READ_ADDR_RANGE_FIELD(_asn_val, _name, _field, _size) \
-    do {                                                                \
-        size_t __size = _size;                                          \
-        uint8_t __addr[_size];                                          \
-                                                                        \
-        rc = asn_read_value_field(_asn_val, __addr, &__size,            \
-                                  #_name ".#range.first");              \
-        if (rc == 0)                                                    \
-            memcpy(spec->_field, __addr, __size);                       \
-        rc = asn_read_value_field(_asn_val, __addr, &__size,            \
-                                  #_name ".#range.last");               \
-        if (rc == 0)                                                    \
-            memcpy(last->_field, __addr, __size);                       \
-        rc = asn_read_value_field(_asn_val, __addr, &__size,            \
-                                  #_name ".#range.mask");               \
-        if (rc == 0)                                                    \
-            memcpy(mask->_field, __addr, __size);                       \
-        if (rc != 0 && rc != TE_EASNINCOMPLVAL)                         \
-            goto out;                                                   \
+    do {                                                                    \
+        size_t __size = _size;                                              \
+        uint8_t __addr[_size];                                              \
+                                                                            \
+        rc = asn_read_value_field(_asn_val, __addr, &__size,                \
+                                  #_name ".#plain");                        \
+        if (rc == 0)                                                        \
+        {                                                                   \
+            memcpy(spec->_field, __addr, __size);                           \
+            memset(mask->_field, 0xff, __size);                             \
+        }                                                                   \
+        else if (rc == TE_EASNOTHERCHOICE)                                  \
+        {                                                                   \
+            rc = asn_read_value_field(_asn_val, __addr, &__size,            \
+                                      #_name ".#range.first");              \
+            if (rc == 0)                                                    \
+                memcpy(spec->_field, __addr, __size);                       \
+            rc = asn_read_value_field(_asn_val, __addr, &__size,            \
+                                      #_name ".#range.last");               \
+            if (rc == 0)                                                    \
+                memcpy(last->_field, __addr, __size);                       \
+            rc = asn_read_value_field(_asn_val, __addr, &__size,            \
+                                      #_name ".#range.mask");               \
+            if (rc == 0)                                                    \
+                memcpy(mask->_field, __addr, __size);                       \
+        }                                                                   \
+        if (rc != 0 && rc != TE_EASNINCOMPLVAL)                             \
+            goto out;                                                       \
     } while (0)
 
 static te_errno
@@ -336,28 +357,40 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     if (is_empty_outer)
         return 0;
 
-#define ASN_READ_VLAN_TCI_RANGE_FIELD(_asn_val, _name, _size, _offset)  \
-    do {                                                                \
-        size_t __size = _size;                                          \
-        uint16_t __val;                                                 \
-        uint16_t __offset = _offset;                                    \
-                                                                        \
-        rc = asn_read_value_field(_asn_val, &__val,                     \
-                                  &__size, #_name ".#range.first");     \
-        if (rc == 0)                                                    \
-            spec_tci |= __val << __offset;                              \
-        if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
-            rc = asn_read_value_field(_asn_val, &__val,                 \
-                                      &__size, #_name ".#range.last");  \
-        if (rc == 0)                                                    \
-            last_tci |= __val << __offset;                              \
-        if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
-            rc = asn_read_value_field(_asn_val, &__val,                 \
-                                      &__size, #_name ".#range.mask");  \
-        if (rc == 0)                                                    \
-            mask_tci |= __val << __offset;                              \
-        if (rc != 0 && rc != TE_EASNINCOMPLVAL)                         \
-            goto out;                                                   \
+#define ASN_READ_VLAN_TCI_RANGE_FIELD(_asn_val, _name, _size, _offset) \
+    do {                                                                    \
+        size_t __size = _size;                                              \
+        uint16_t __val;                                                     \
+        uint16_t __offset = _offset;                                        \
+        unsigned int i;                                                     \
+                                                                            \
+        rc = asn_read_value_field(_asn_val, &__val,                         \
+                                  &__size, #_name ".#plain");               \
+        if (rc == 0)                                                        \
+        {                                                                   \
+            spec_tci |= __val << __offset;                                  \
+            for (i = 0; i < _size; i++)                                     \
+                mask_tci |= 1 << (__offset + i);                            \
+        }                                                                   \
+        else if (rc == TE_EASNOTHERCHOICE)                                  \
+        {                                                                   \
+            rc = asn_read_value_field(_asn_val, &__val,                     \
+                                      &__size, #_name ".#range.first");     \
+            if (rc == 0)                                                    \
+                spec_tci |= __val << __offset;                              \
+            if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
+                rc = asn_read_value_field(_asn_val, &__val,                 \
+                                          &__size, #_name ".#range.last");  \
+            if (rc == 0)                                                    \
+                last_tci |= __val << __offset;                              \
+            if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
+                rc = asn_read_value_field(_asn_val, &__val,                 \
+                                          &__size, #_name ".#range.mask");  \
+            if (rc == 0)                                                    \
+                mask_tci |= __val << __offset;                              \
+        }                                                                   \
+        if (rc != 0 && rc != TE_EASNINCOMPLVAL)                             \
+            goto out;                                                       \
     } while (0)
 
     if (is_double_tagged)
@@ -503,19 +536,28 @@ rte_flow_item_ipv4_from_pdu(const asn_value *ipv4_pdu,
     } while(0)
 
 #define ASN_READ_IPV4_ADDR_RANGE_FIELD(_asn_val, _name, _field) \
-    do {                                                                \
-        size_t __size = sizeof(struct in_addr);                         \
-                                                                        \
-        rc = asn_read_value_field(_asn_val, &spec->_field,              \
-                                  &__size, #_name ".#range.first");     \
-        if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
-            rc = asn_read_value_field(_asn_val, &last->_field,          \
-                                      &__size, #_name ".#range.last");  \
-        if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
-            rc = asn_read_value_field(_asn_val, &mask->_field,          \
-                                      &__size, #_name ".#range.mask");  \
-        if (rc != 0 && rc != TE_EASNINCOMPLVAL)                         \
-            goto out;                                                   \
+    do {                                                                    \
+        size_t __size = sizeof(struct in_addr);                             \
+                                                                            \
+        rc = asn_read_value_field(_asn_val, &spec->_field,                  \
+                                  &__size, #_name ".#plain");               \
+        if (rc == 0)                                                        \
+        {                                                                   \
+            mask->_field = UINT32_MAX;                                      \
+        }                                                                   \
+        else if (rc == TE_EASNOTHERCHOICE)                                  \
+        {                                                                   \
+            rc = asn_read_value_field(_asn_val, &spec->_field,              \
+                                      &__size, #_name ".#range.first");     \
+            if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
+                rc = asn_read_value_field(_asn_val, &last->_field,          \
+                                          &__size, #_name ".#range.last");  \
+            if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
+                rc = asn_read_value_field(_asn_val, &mask->_field,          \
+                                          &__size, #_name ".#range.mask");  \
+        }                                                                   \
+        if (rc != 0 && rc != TE_EASNINCOMPLVAL)                             \
+            goto out;                                                       \
     } while (0)
 
     rc = rte_alloc_mem_for_flow_item((void **)&spec,
