@@ -50,10 +50,10 @@ typedef void (*set_opt_t)(te_string *, const tapi_perf_opts *);
 
 /* Map of error messages corresponding to them codes. */
 static tapi_perf_error_map errors[] = {
-    { TAPI_PERF_ERROR_READ ,    "read failed: Connection refused" },
-    { TAPI_PERF_ERROR_CONNECT , "connect failed: Connection refused" },
+    { TAPI_PERF_ERROR_READ,     "read failed: Connection refused" },
+    { TAPI_PERF_ERROR_CONNECT,  "connect failed: Connection refused" },
     { TAPI_PERF_ERROR_NOROUTE,  "connect failed: No route to host" },
-    { TAPI_PERF_ERROR_BIND ,    "bind failed: Address already in use" }
+    { TAPI_PERF_ERROR_BIND,     "bind failed: Address already in use" }
 };
 
 
