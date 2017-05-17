@@ -62,6 +62,9 @@ extern "C" {
 /** Zero timeval */
 #define tad_tv_zero             ((struct timeval){ 0, 0 })
 
+/** The value used to verify checksum correctness */
+#define CKSUM_CMP_CORRECT 0xffff
+
 /** 'string' choice value to denote that correct checksums will match only */
 #define TAD_CKSUM_STR_VAL_CORRECT   "correct"
 

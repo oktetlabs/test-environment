@@ -1396,6 +1396,8 @@ te_proto_from_str(const char *proto_txt)
         case 'g':
             if (strcmp(proto_txt + 1, "eneve") == 0)
                 return TE_PROTO_GENEVE;
+            if (strcmp(proto_txt + 1, "re") == 0)
+                return TE_PROTO_GRE;
             break;
 
         case 'i':
@@ -1532,6 +1534,9 @@ te_proto_to_str(te_tad_protocols_t proto)
 
          case TE_PROTO_GENEVE:
              return "geneve";
+
+         case TE_PROTO_GRE:
+             return "gre";
 
     }
     return NULL;

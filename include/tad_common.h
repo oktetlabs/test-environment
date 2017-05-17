@@ -118,6 +118,7 @@ typedef enum {
     TE_PROTO_RTE_MBUF,
     TE_PROTO_VXLAN,
     TE_PROTO_GENEVE,
+    TE_PROTO_GRE,
 } te_tad_protocols_t;
 
 /**

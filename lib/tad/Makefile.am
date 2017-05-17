@@ -15,7 +15,7 @@ RTE_MBUF_SAP_H =
 RTE_MBUF_SAP_S =
 endif
 
-if WITH_GENEVE
+if WITH_OVERLAY
 OVERLAY_TOOLS_H = tad_overlay_tools.h
 OVERLAY_TOOLS_S = tad_overlay_tools.c
 else

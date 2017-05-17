@@ -39,7 +39,7 @@
 
 /*
  * TAD protocol numbers to ethertype decimal numbers mapping
- * used to fill in 'protocol' field of Geneve header
+ * used to fill in 'protocol' field of Geneve or GRE headers
  *
  * https://www.iana.org/assignments/ieee-802-numbers/ieee-802-numbers.xml
  */

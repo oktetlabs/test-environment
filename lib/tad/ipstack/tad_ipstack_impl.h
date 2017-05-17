@@ -105,9 +105,6 @@ extern "C" {
 /** The index of TCP header DU corresponding to 'checksum' PDU field */
 #define TCP_HDR_CKSUM_DU_INDEX 7
 
-/** The value used to verify checksum correctness */
-#define CKSUM_CMP_CORRECT 0xffff
-
 
 /*
  * TCP CSAP specific data

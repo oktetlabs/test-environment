@@ -188,6 +188,10 @@ tad_ip4_init_cb(csap_p csap, unsigned int layer)
                 protocol = IPPROTO_IGMP;
                 break;
 
+            case TE_PROTO_GRE:
+                protocol = IPPROTO_GRE;
+                break;
+
             default:
                 protocol = 0;
                 break;
@@ -610,6 +614,7 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
     tad_ip4_gen_bin_cb_per_sdu_data     cb_data;
 
     const asn_value    *pld_checksum;
+    asn_value          *gre_opt_cksum = NULL;
 
     te_errno        rc;
     size_t          bitlen;
@@ -716,6 +721,24 @@ tad_ip4_gen_bin_cb(csap_p csap, unsigned int layer,
         case IPPROTO_IGMP:
             cb_data.upper_chksm_offset = 2;
             cb_data.use_phdr = FALSE;
+            break;
+
+        case IPPROTO_GRE:
+            rc = asn_get_descendent(csap->layers[layer - 1].pdu,
+                                    &gre_opt_cksum, "opt-cksum");
+            rc = (rc == TE_EASNINCOMPLVAL) ? 0 : rc;
+            if (rc != 0)
+                goto cleanup;
+
+            if (gre_opt_cksum != NULL)
+            {
+                cb_data.upper_chksm_offset = WORD_4BYTE;
+                cb_data.use_phdr = FALSE;
+            }
+            else
+            {
+                cb_data.upper_chksm_offset = -1;
+            }
             break;
 
         default:

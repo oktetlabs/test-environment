@@ -195,6 +195,10 @@ rcf_ch_tad_init(void)
     extern te_errno csap_support_geneve_register(void);
     CHECK_RC(csap_support_geneve_register());
 #endif
+#ifdef WITH_GRE
+    extern te_errno csap_support_gre_register(void);
+    CHECK_RC(csap_support_gre_register());
+#endif
 
 #ifdef WITH_CS
     CHECK_RC(tad_agent_csap_init());

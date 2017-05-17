@@ -73,6 +73,7 @@ extern asn_type ndn_pppoe_csap_s;
 extern asn_type ndn_rte_mbuf_csap_s;
 extern asn_type ndn_vxlan_csap_s;
 extern asn_type ndn_geneve_csap_s;
+extern asn_type ndn_gre_csap_s;
 
 static asn_named_entry_t _ndn_generic_csap_layer_ne_array[] = {
 /* Add here reference to protocol-specific CSAP init params */
@@ -102,6 +103,7 @@ static asn_named_entry_t _ndn_generic_csap_layer_ne_array[] = {
     { "rtembuf",&ndn_rte_mbuf_csap_s,   {PRIVATE, TE_PROTO_RTE_MBUF} },
     { "vxlan",  &ndn_vxlan_csap_s,      {PRIVATE, TE_PROTO_VXLAN} },
     { "geneve", &ndn_geneve_csap_s,     {PRIVATE, TE_PROTO_GENEVE} },
+    { "gre",    &ndn_gre_csap_s,        {PRIVATE, TE_PROTO_GRE} },
 };
 
 asn_type ndn_generic_csap_layer_s = {
@@ -140,6 +142,7 @@ extern asn_type ndn_pppoe_message_s;
 extern asn_type ndn_rte_mbuf_pdu_s;
 extern asn_type ndn_vxlan_header_s;
 extern asn_type ndn_geneve_header_s;
+extern asn_type ndn_gre_header_s;
 
 static asn_named_entry_t _ndn_generic_pdu_ne_array[] = {
     { "atm",    &ndn_atm_header_s,        {PRIVATE, TE_PROTO_ATM} },
@@ -168,6 +171,7 @@ static asn_named_entry_t _ndn_generic_pdu_ne_array[] = {
     { "rtembuf",&ndn_rte_mbuf_pdu_s,      {PRIVATE, TE_PROTO_RTE_MBUF} },
     { "vxlan",  &ndn_vxlan_header_s,      {PRIVATE, TE_PROTO_VXLAN} },
     { "geneve", &ndn_geneve_header_s,     {PRIVATE, TE_PROTO_GENEVE} },
+    { "gre",    &ndn_gre_header_s,        {PRIVATE, TE_PROTO_GRE} },
     { "void",   &asn_base_null_s,         {PRIVATE, 0} },
 };
 

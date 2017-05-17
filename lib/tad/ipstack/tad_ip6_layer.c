@@ -276,6 +276,7 @@ tad_te_proto2ip_proto(te_tad_protocols_t te_proto)
         TE_PROTO2IP_PROTO(IGMP, IGMP);
         TE_PROTO2IP_PROTO(IP6, IPV6);
         TE_PROTO2IP_PROTO(ICMP6, ICMPV6);
+        TE_PROTO2IP_PROTO(GRE, GRE);
 
 #undef TE_PROTO2IP_PROTO
 
@@ -320,7 +321,8 @@ tad_ip6_init_cb(csap_p csap, unsigned int layer)
                                NULL, &proto_data->opt_ra));
 
     if (asn_read_int32(layer_nds, &val, "next-header") == 0 &&
-        (val == IPPROTO_TCP || val == IPPROTO_UDP || val == IPPROTO_ICMPV6))
+        (val == IPPROTO_TCP || val == IPPROTO_UDP || val == IPPROTO_ICMPV6 ||
+         val == IPPROTO_GRE))
     {
         proto_data->upper_protocol = val;
     }
@@ -896,6 +898,7 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
     int32_t                             pld_checksum_val;
     asn_tag_value                       tv;
     uint8_t                             next_header;
+    asn_value                          *gre_opt_cksum;
 
     assert(csap != NULL);
     F_ENTRY("(%d:%u) tmpl_pdu=%p args=%p arg_num=%u sdus=%p pdus=%p",
@@ -1013,6 +1016,23 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
             break;
         case IPPROTO_UDP:
             cb_data.upper_checksum_offset = 6;
+            break;
+        case IPPROTO_GRE:
+            rc = asn_get_descendent(csap->layers[layer - 1].pdu,
+                                    &gre_opt_cksum, "opt-cksum");
+            rc = (rc == TE_EASNINCOMPLVAL) ? 0 : rc;
+            if (rc != 0)
+                goto cleanup;
+
+            if (gre_opt_cksum != NULL)
+            {
+                cb_data.upper_checksum_offset = WORD_4BYTE;
+                cb_data.use_phdr = FALSE;
+            }
+            else
+            {
+                cb_data.upper_checksum_offset = -1;
+            }
             break;
         default:
             cb_data.init_checksum = 0;

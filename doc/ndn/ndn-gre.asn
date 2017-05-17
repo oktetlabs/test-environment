@@ -1,0 +1,61 @@
+
+TE-NDN-GRE
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS DATA-UNIT FROM TE-NDN-General;
+
+EXPORTS GRE-Header-Optional-Checksum, GRE-Header-Optional-Key-NVGRE,
+        GRE-Header-Optional-Key, GRE-Header-Optional-Sequence-Number,
+        GRE-Header, GRE-CSAP;
+
+-- - If not specified either in a template or as a CSAP parameter,
+--   the 'protocol' value could be provided automatically by CSAP;
+-- - If an optional field (checksum, key or sequence number) is written
+--   to NDS, then the corresponding bit must be specified in the header
+
+GRE-Header-Optional-Checksum ::= SEQUENCE
+{
+    value    [0] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    reserved [1] DATA-UNIT{INTEGER (0..65535)} OPTIONAL
+}
+
+GRE-Header-Optional-Key-NVGRE ::= SEQUENCE
+{
+    vsid   [0] DATA-UNIT{INTEGER (0..16777215)} OPTIONAL,
+    flowid [1] DATA-UNIT{INTEGER (0..255)} OPTIONAL
+}
+
+GRE-Header-Optional-Key ::= CHOICE
+{
+    nvgre [0] DATA-UNIT{GRE-Header-Optional-Key-NVGRE}
+}
+
+GRE-Header-Optional-Sequence-Number ::= SEQUENCE
+{
+    value [0] DATA-UNIT{INTEGER (0..4294967295)} OPTIONAL
+}
+
+GRE-Header ::= SEQUENCE
+{
+    cksum-present    [0] DATA-UNIT{INTEGER (0..1)} OPTIONAL,
+    flags-reserved-1 [1] DATA-UNIT{INTEGER (0..1)} OPTIONAL,
+    key-present      [2] DATA-UNIT{INTEGER (0..1)} OPTIONAL,
+    seqn-present     [3] DATA-UNIT{INTEGER (0..1)} OPTIONAL,
+    flags-reserved-2 [4] DATA-UNIT{INTEGER (0..511)} OPTIONAL,
+    version          [5] DATA-UNIT{INTEGER (0..7)} OPTIONAL,
+    protocol         [6] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+
+    opt-cksum        [7] DATA-UNIT{GRE-Header-Optional-Checksum},
+    opt-key          [8] DATA-UNIT{GRE-Header-Optional-Key},
+    opt-seqn         [9] DATA-UNIT{GRE-Header-Optional-Sequence-Number}
+}
+
+GRE-CSAP ::= SEQUENCE
+{
+    protocol [0] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    vsid     [1] DATA-UNIT{INTEGER (0..16777215)} OPTIONAL,
+    ...
+}
+
+END
