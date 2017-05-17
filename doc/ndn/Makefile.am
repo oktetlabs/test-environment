@@ -36,6 +36,7 @@ EXTRA_DIST = \
 	ndn-forw.asn \
 	ndn-gen.asn \
 	ndn-rte_mbuf.asn \
+	ndn-vxlan.asn \
 	ndn-snmp.asn \
 	ndn-tcp-ip.asn \
 	ndn-rte_flow.asn

@@ -398,6 +398,13 @@ AC_ARG_WITH([rte_mbuf],,
  fi
 ], [w_rte_mbuf=false])
 
+AC_ARG_WITH([vxlan],,
+[if test "${withval}" = yes; then
+   proto_specific vxlan;
+   AC_CONFIG_FILES([vxlan/Makefile])
+ fi
+], [w_vxlan=false])
+
 if test $w_eth = true -o $w_atm = true ; then
    proto_specific llc;
    AC_CONFIG_FILES([llc/Makefile])
@@ -432,6 +439,7 @@ AC_SUBST([TA_TAD_LIBS])
 
 AM_CONDITIONAL(TAD_DUMMY, test -z "$TAD_LIBLIST")
 AM_CONDITIONAL(WITH_RTE_MBUF, test "$with_rte_mbuf" = "yes")
+AM_CONDITIONAL(WITH_VXLAN, test "$with_vxlan" = "yes")
 AM_CONDITIONAL(WITH_PACKET_MMAP_RX_RING, test "$with_packet_mmap_rx_ring" = "yes")
 
 if test x$w_snmp = xtrue; then 

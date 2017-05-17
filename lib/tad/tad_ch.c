@@ -187,6 +187,10 @@ rcf_ch_tad_init(void)
     extern te_errno csap_support_rte_mbuf_register(void);
     CHECK_RC(csap_support_rte_mbuf_register());
 #endif
+#ifdef WITH_VXLAN
+    extern te_errno csap_support_vxlan_register(void);
+    CHECK_RC(csap_support_vxlan_register());
+#endif
 
 #ifdef WITH_CS
     CHECK_RC(tad_agent_csap_init());

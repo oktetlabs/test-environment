@@ -1,0 +1,26 @@
+
+TE-NDN-VxLAN
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS DATA-UNIT FROM TE-NDN-General;
+
+EXPORTS VxLAN-Header, VxLAN-CSAP;
+
+VxLAN-Header ::= SEQUENCE
+{
+    flags-reserved-1 [0] DATA-UNIT{INTEGER (0..15)} OPTIONAL,
+    vni-valid        [1] DATA-UNIT{INTEGER (0..1)} OPTIONAL,
+    flags-reserved-2 [2] DATA-UNIT{INTEGER (0..7)} OPTIONAL,
+    reserved-1       [3] DATA-UNIT{INTEGER (0..16777215)} OPTIONAL,
+    vni              [4] DATA-UNIT{INTEGER (0..16777215)} OPTIONAL,
+    reserved-2       [5] DATA-UNIT{INTEGER (0..255)} OPTIONAL
+}
+
+VxLAN-CSAP ::= SEQUENCE
+{
+    vni [0] DATA-UNIT{INTEGER (0..16777215)} OPTIONAL,
+    ...
+}
+
+END

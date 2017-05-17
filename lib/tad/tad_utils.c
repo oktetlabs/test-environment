@@ -1438,6 +1438,11 @@ te_proto_from_str(const char *proto_txt)
             if (strcmp(proto_txt + 1, "dp") == 0)
                 return TE_PROTO_UDP;
             break;
+
+        case 'v':
+            if (strcmp(proto_txt + 1, "xlan") == 0)
+                return TE_PROTO_VXLAN;
+            break;
     }
 
     return TE_PROTO_INVALID;
@@ -1516,6 +1521,9 @@ te_proto_to_str(te_tad_protocols_t proto)
 
          case TE_PROTO_RTE_MBUF:
              return "rtembuf";
+
+         case TE_PROTO_VXLAN:
+             return "vxlan";
 
     }
     return NULL;
