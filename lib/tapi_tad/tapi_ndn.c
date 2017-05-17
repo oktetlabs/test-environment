@@ -342,7 +342,7 @@ tapi_pdus_free_fields_by_du_tag(asn_value      *pdus,
             asn_value      *pdu_field = pdu_choice_val->data.array[j];
             asn_tag_value   pdu_field_sub_tag_value;
 
-            if (pdu_field == NULL)
+            if ((pdu_field == NULL) || (pdu_field->syntax != CHOICE))
                 continue;
 
             err = asn_get_choice_value(pdu_field, NULL, NULL,
