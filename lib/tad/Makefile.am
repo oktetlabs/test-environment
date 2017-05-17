@@ -15,6 +15,14 @@ RTE_MBUF_SAP_H =
 RTE_MBUF_SAP_S =
 endif
 
+if WITH_GENEVE
+OVERLAY_TOOLS_H = tad_overlay_tools.h
+OVERLAY_TOOLS_S = tad_overlay_tools.c
+else
+OVERLAY_TOOLS_H =
+OVERLAY_TOOLS_S =
+endif
+
 include_HEADERS = \
 	tad_api.h \
 	tad_csap_inst.h \
@@ -27,6 +35,7 @@ include_HEADERS = \
 	tad_recv_pkt.h \
 	tad_reply.h \
 	tad_utils.h \
+	$(OVERLAY_TOOLS_H) \
 	tad_poll.h
 
 noinst_HEADERS = \
@@ -48,6 +57,7 @@ libtad_core_a_SOURCES = \
 	tad_eth_sap.c \
 	tad_eth_sap_dlpi.c \
 	$(RTE_MBUF_SAP_S) \
+	$(OVERLAY_TOOLS_S) \
 	tad_utils.c \
 	tad_ch.c \
 	csap_id.c \

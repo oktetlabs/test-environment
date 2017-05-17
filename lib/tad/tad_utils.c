@@ -1393,6 +1393,11 @@ te_proto_from_str(const char *proto_txt)
                 return TE_PROTO_ETH;
             break;
 
+        case 'g':
+            if (strcmp(proto_txt + 1, "eneve") == 0)
+                return TE_PROTO_GENEVE;
+            break;
+
         case 'i':
             if (strcmp(proto_txt + 1, "p4") == 0)
                 return TE_PROTO_IP4;
@@ -1524,6 +1529,9 @@ te_proto_to_str(te_tad_protocols_t proto)
 
          case TE_PROTO_VXLAN:
              return "vxlan";
+
+         case TE_PROTO_GENEVE:
+             return "geneve";
 
     }
     return NULL;

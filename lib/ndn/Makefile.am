@@ -26,6 +26,7 @@ include_HEADERS = \
 	ndn_eth.h \
 	ndn_rte_mbuf.h \
 	ndn_vxlan.h \
+	ndn_geneve.h \
 	ndn_llc.h \
 	ndn_bridge.h \
 	ndn_arp.h \
@@ -51,6 +52,7 @@ libndn_la_SOURCES = \
 	ndn_eth.c \
 	ndn_rte_mbuf.c \
 	ndn_vxlan.c \
+	ndn_geneve.c \
 	ndn_llc.c \
 	ndn_bridge.c \
 	ndn_arp.c \

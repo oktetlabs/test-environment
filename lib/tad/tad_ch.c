@@ -191,6 +191,10 @@ rcf_ch_tad_init(void)
     extern te_errno csap_support_vxlan_register(void);
     CHECK_RC(csap_support_vxlan_register());
 #endif
+#ifdef WITH_GENEVE
+    extern te_errno csap_support_geneve_register(void);
+    CHECK_RC(csap_support_geneve_register());
+#endif
 
 #ifdef WITH_CS
     CHECK_RC(tad_agent_csap_init());

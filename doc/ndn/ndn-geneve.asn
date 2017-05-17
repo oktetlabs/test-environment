@@ -1,0 +1,49 @@
+
+TE-NDN-Geneve
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS DATA-UNIT FROM TE-NDN-General;
+
+EXPORTS Geneve-Option, Geneve-Options, Geneve-Header, Geneve-CSAP;
+
+-- - If not specified either in a template or as a CSAP parameter,
+--   the 'protocol' value could be provided automatically by CSAP;
+-- - If Geneve options are placed to NDS, it is the duty of
+--   the user to set correct 'options-length' in the header;
+-- - If data is written to an option, the user must specify
+     the value of 'length' field in the option header
+
+Geneve-Option ::= SEQUENCE
+{
+    option-class   [0] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    type           [1] DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+    flags-reserved [2] DATA-UNIT{INTEGER (0..7)} OPTIONAL,
+    length         [3] DATA-UNIT{INTEGER (0..31)} OPTIONAL,
+    data           [4] DATA-UNIT{OCTET STRING}
+}
+
+Geneve-Options ::= SEQUENCE OF Geneve-Option;
+
+Geneve-Header ::= SEQUENCE
+{
+    version        [0] DATA-UNIT{INTEGER (0..3)} OPTIONAL,
+    options-length [1] DATA-UNIT{INTEGER (0..63)} OPTIONAL,
+    oam            [2] DATA-UNIT{INTEGER (0..1)} OPTIONAL,
+    critical       [3] DATA-UNIT{INTEGER (0..1)} OPTIONAL,
+    reserved-1     [4] DATA-UNIT{INTEGER (0..63)} OPTIONAL,
+    protocol       [5] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    vni            [6] DATA-UNIT{INTEGER (0..16777215)} OPTIONAL,
+    reserved-2     [7] DATA-UNIT{INTEGER (0..255)} OPTIONAL,
+
+    options        [8] DATA-UNIT{Geneve-Options}
+}
+
+Geneve-CSAP ::= SEQUENCE
+{
+    protocol [0] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
+    vni      [1] DATA-UNIT{INTEGER (0..16777215)} OPTIONAL,
+    ...
+}
+
+END
