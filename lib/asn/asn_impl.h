@@ -161,6 +161,12 @@ struct asn_value
                         walk_func to obtain this path */
 };
 
+/* See description in 'asn_usr.h' */
+struct asn_child_desc {
+    asn_value    *value;
+    unsigned int  index;
+};
+
 
 /**
  * Find one-depth sub-type for passed ASN type tree by its label.

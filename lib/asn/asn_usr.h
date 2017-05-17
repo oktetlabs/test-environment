@@ -274,6 +274,12 @@ struct asn_value;
  */
 typedef struct asn_value asn_value;
 
+/**
+ * Auxiliary container to represent both ASN.1
+ * child value and its index within the parent
+ */
+struct asn_child_desc;
+typedef struct asn_child_desc asn_child_desc_t;
 
 /**
  * Init empty ASN value of specified type.
@@ -497,17 +503,29 @@ extern asn_value *asn_decode(const void *data);
 
 
 /**
- * Get the CHOICE ASN.1 value identified by the given tag value from a
- * child ASN.1 value situated in the given SEQUENCE_OF ASN.1 container
+ * Find ASN.1 CHOICE values identified by the given tag value from
+ * child ASN.1 values inside the given SEQUENCE_OF ASN.1 container
  *
- * @param container   ASN.1 value of a SEQUENCE_OF type
- * @param tag_value   ASN.1 tag value of ASN.1 child
- *                    choice value to be discovered
+ * @param container     ASN.1 container
+ * @param tag_value     ASN.1 tag value
+ * @param items_out     Location for the array of descriptors
+ *                      containing values which correspond to
+ *                      @p tag_value and their serial numbers
+ * @param nb_items_out  Location for the size of @p items_out
  *
- * @return ASN.1 CHOICE value with the corresponding tag
+ * @return Status code
  */
-extern asn_value *asn_find_child_choice_value(const asn_value    *container,
-                                              asn_tag_value       tag_value);
+extern te_errno asn_find_child_choice_values(const asn_value   *container,
+                                             asn_tag_value      tag_value,
+                                             asn_child_desc_t **items_out,
+                                             unsigned int      *nb_items_out);
+
+/**
+ * Dedicated wrapper for @b asn_find_child_choice_values()
+ * to get the first matching choice value in the container
+ */
+extern asn_value *asn_find_child_choice_value(const asn_value *container,
+                                              asn_tag_value    tag_value);
 
 /**
  * Free one-level subvalue of constraint ASN value instance by tag.

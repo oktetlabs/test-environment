@@ -471,45 +471,93 @@ asn_free_value(asn_value *value)
 
 
 /* See description in 'asn_usr.h' */
-asn_value *
-asn_find_child_choice_value(const asn_value    *container,
-                            asn_tag_value       tag_value)
+te_errno
+asn_find_child_choice_values(const asn_value   *container,
+                             asn_tag_value      tag_value,
+                             asn_child_desc_t **items_out,
+                             unsigned int      *nb_items_out)
 {
-    te_errno            err;
-    int                 num_children;
-    unsigned int        i;
+    te_errno          err;
+    int               num_children;
+    asn_child_desc_t *items = NULL;
+    unsigned int      nb_items = 0;
+    unsigned int      i;
 
-    if (container == NULL)
-        return NULL;
-
-    if (container->asn_type->syntax != SEQUENCE_OF)
-        return NULL;
+    if ((container == NULL) || (container->asn_type == NULL) ||
+        (container->asn_type->syntax != SEQUENCE_OF) ||
+        (nb_items_out == NULL))
+        return TE_EINVAL;
 
     num_children = asn_get_length(container, "");
     if (num_children < 0)
-        return NULL;
+        return TE_EINVAL;
 
     for (i = 0; i < (unsigned int)num_children; ++i)
     {
-        asn_value  *child;
-        asn_value  *child_choice_value;
+        asn_value        *child;
+        asn_value        *child_choice_value;
+        asn_child_desc_t *items_new;
 
         err = asn_get_indexed(container, &child, i, "");
         if (err != 0)
-            return NULL;
+            return err;
 
         if (child->asn_type->syntax != CHOICE)
-            return NULL;
+            return TE_EINVAL;
 
         err = asn_get_choice_value(child, &child_choice_value, NULL, NULL);
         if (err != 0)
-            return NULL;
+            return err;
 
         if (asn_get_tag(child_choice_value) == tag_value)
-            return child_choice_value;
+        {
+            if (items_out == NULL)
+            {
+                ++nb_items;
+                continue;
+            }
+
+            items_new = realloc(items, (nb_items + 1) * sizeof(*items));
+            if (items_new == NULL)
+            {
+                free(items);
+                return TE_ENOMEM;
+            }
+
+            items = items_new;
+            items[nb_items].value = child_choice_value;
+            items[nb_items].index = i;
+
+            ++nb_items;
+        }
     }
 
-    return NULL;
+    if (items_out != NULL)
+        *items_out = items;
+
+    *nb_items_out = nb_items;
+
+    return 0;
+}
+
+/* See description in 'asn_usr.h' */
+asn_value *
+asn_find_child_choice_value(const asn_value *container,
+                            asn_tag_value    tag_value)
+{
+    asn_child_desc_t *items = NULL;
+    unsigned int      nb_items = 0;
+    asn_value        *value;
+
+    if ((asn_find_child_choice_values(container, tag_value,
+                                      &items, &nb_items) != 0) ||
+        (nb_items == 0))
+        return NULL;
+
+    value = items[0].value;
+    free(items);
+
+    return value;
 }
 
 te_errno
