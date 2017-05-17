@@ -96,28 +96,48 @@ tapi_eth_set_csap_layer(asn_value       *csap_spec,
                         const uint8_t   *local_addr,
                         const uint16_t  *len_type)
 {
-    asn_value *layers;
-    asn_value *eth_layer;
+    asn_value        *layers;
+    asn_child_desc_t *layers_eth = NULL;
+    unsigned int      nb_layers_eth;
+    asn_value        *layer_eth_outer;
 
     CHECK_RC(asn_get_subvalue(csap_spec, &layers, "layers"));
-    CHECK_NOT_NULL(eth_layer = asn_find_child_choice_value(layers,
-                                                           TE_PROTO_ETH));
+
+    /*
+     * CSAP specification may have more than one layer of one type,
+     * namely, if one sends or receives Ethernet frames belonging
+     * to a virtual network by means of encapsulation into real network
+     * packets (and thus into "outer" Ethernet frames), then at least two
+     * layers with TE_PROTO_ETH tag will be present in CSAP specification;
+     * the read-write Ethernet layer (which needs to be configured here)
+     * is always the "outer" (and the last) one, therefore, all Ethernet
+     * layers are detected here and only the last one is configured
+     */
+    CHECK_RC(asn_find_child_choice_values(layers, TE_PROTO_ETH,
+                                          &layers_eth, &nb_layers_eth));
+    CHECK_NOT_NULL(layers_eth);
+    layer_eth_outer = layers_eth[nb_layers_eth - 1].value;
 
     if (device != NULL)
-        CHECK_RC(asn_write_string(eth_layer, device, "device-id.#plain"));
+        CHECK_RC(asn_write_string(layer_eth_outer,
+                                  device, "device-id.#plain"));
 
-    CHECK_RC(asn_write_int32(eth_layer, recv_mode, "receive-mode"));
+    CHECK_RC(asn_write_int32(layer_eth_outer, recv_mode, "receive-mode"));
 
     if (remote_addr != NULL)
-        CHECK_RC(asn_write_value_field(eth_layer, remote_addr, ETHER_ADDR_LEN,
+        CHECK_RC(asn_write_value_field(layer_eth_outer,
+                                       remote_addr, ETHER_ADDR_LEN,
                                        "remote-addr.#plain"));
     if (local_addr != NULL)
-        CHECK_RC(asn_write_value_field(eth_layer, local_addr, ETHER_ADDR_LEN,
+        CHECK_RC(asn_write_value_field(layer_eth_outer,
+                                       local_addr, ETHER_ADDR_LEN,
                                        "local-addr.#plain"));
 
     if (len_type != NULL)
-        CHECK_RC(asn_write_int32(eth_layer, (int32_t)*len_type,
+        CHECK_RC(asn_write_int32(layer_eth_outer, (int32_t)*len_type,
                                  "ether-type.#plain"));
+
+    free(layers_eth);
 
     return 0;
 }
