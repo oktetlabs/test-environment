@@ -416,21 +416,21 @@ process_script_opt()
         fi
     done
     script_file="$(resolve_conf_file_path "${script_file}")"
+
+    if ! test -f "${script_file}" ; then
+        echo "File with shell script ${script_file} not found" >&2
+        exit 1
+    fi
 }
 
 run_script()
 {
     script_file=$1
-    if test -f "${script_file}" ; then
+    TE_EXTRA_OPTS=
+    . "${script_file}"
+    if test -n "${TE_EXTRA_OPTS}" ; then
+        process_opts ${TE_EXTRA_OPTS}
         TE_EXTRA_OPTS=
-        . "${script_file}"
-        if test -n "${TE_EXTRA_OPTS}" ; then
-            process_opts ${TE_EXTRA_OPTS}
-            TE_EXTRA_OPTS=
-        fi
-    else
-        echo "File with shell script ${script_file} not found" >&2
-        exit 1
     fi
 }
 
@@ -470,13 +470,7 @@ process_opts()
 
             --tester-script=* )
                 process_script_opt $1 tester-script
-                if test -f "${script_file}" ; then
-                    TE_TESTER_SCRIPTS="${TE_TESTER_SCRIPTS} \
-                                              ${script_file}"
-                else
-                    echo "File with shell script ${script_file} not found" >&2
-                    exit 1
-                fi
+                TE_TESTER_SCRIPTS="${TE_TESTER_SCRIPTS} ${script_file}"
                 ;;
 
 
