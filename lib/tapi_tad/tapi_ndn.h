@@ -66,10 +66,11 @@ extern "C" {
     } while (0)
 
 /** Flags used to designate transformations which take place in hardware */
-#define SEND_COND_HW_OFFL_IP_CKSUM  (1U << 0)
-#define SEND_COND_HW_OFFL_L4_CKSUM  (1U << 1)
-#define SEND_COND_HW_OFFL_TSO       (1U << 2)
-#define SEND_COND_HW_OFFL_VLAN      (1U << 3)
+#define SEND_COND_HW_OFFL_IP_CKSUM       (1U << 0)
+#define SEND_COND_HW_OFFL_OUTER_IP_CKSUM (1U << 1)
+#define SEND_COND_HW_OFFL_L4_CKSUM       (1U << 2)
+#define SEND_COND_HW_OFFL_TSO            (1U << 3)
+#define SEND_COND_HW_OFFL_VLAN           (1U << 4)
 
 typedef struct send_transform {
     unsigned int                    hw_flags;

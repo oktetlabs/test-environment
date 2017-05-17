@@ -370,14 +370,17 @@ fail:
 asn_value *
 tapi_tad_mk_pattern_from_template(asn_value  *template)
 {
-    te_errno    err;
-    asn_value  *pattern = NULL;
-    asn_value  *pattern_unit = NULL;
-    asn_value  *pdus = NULL;
-    asn_value  *pdus_copy = NULL;
-    asn_value  *pdu_ip4;
-    asn_value  *pdu_tcp;
-    asn_value  *pdu_udp;
+    te_errno          err;
+    asn_value        *pattern = NULL;
+    asn_value        *pattern_unit = NULL;
+    asn_value        *pdus = NULL;
+    asn_value        *pdus_copy = NULL;
+    asn_child_desc_t *pdus_ip4 = NULL;
+    unsigned int      nb_pdus_ip4;
+    asn_child_desc_t *pdus_udp = NULL;
+    unsigned int      nb_pdus_udp;
+    asn_value        *pdu_tcp;
+    unsigned int      i;
 
     pattern = asn_init_value(ndn_traffic_pattern);
     if (pattern == NULL)
@@ -409,10 +412,26 @@ tapi_tad_mk_pattern_from_template(asn_value  *template)
         goto fail;
     }
 
-    pdu_ip4 = asn_find_child_choice_value(pdus_copy, TE_PROTO_IP4);
-    if (pdu_ip4 != NULL)
+    err = asn_find_child_choice_values(pdus_copy, TE_PROTO_IP4,
+                                       &pdus_ip4, &nb_pdus_ip4);
+    if (err != 0)
+        goto fail;
+
+
+    for (i = 0; i < nb_pdus_ip4; ++i)
     {
-        err = asn_free_child(pdu_ip4, PRIVATE, NDN_TAG_IP4_H_CHECKSUM);
+        err = asn_free_child(pdus_ip4[i].value, PRIVATE,
+                             NDN_TAG_IP4_H_CHECKSUM);
+        err = (err == TE_EASNWRONGLABEL) ? 0 : err;
+        if (err != 0)
+            goto fail;
+    }
+
+    err = asn_find_child_choice_values(pdus_copy, TE_PROTO_UDP,
+                                       &pdus_udp, &nb_pdus_udp);
+    for (i = 0; i < nb_pdus_udp; ++i)
+    {
+        err = asn_free_child(pdus_udp[i].value, PRIVATE, NDN_TAG_UDP_CHECKSUM);
         err = (err == TE_EASNWRONGLABEL) ? 0 : err;
         if (err != 0)
             goto fail;
@@ -427,23 +446,19 @@ tapi_tad_mk_pattern_from_template(asn_value  *template)
             goto fail;
     }
 
-    pdu_udp = asn_find_child_choice_value(pdus_copy, TE_PROTO_UDP);
-    if (pdu_udp != NULL)
-    {
-        err = asn_free_child(pdu_udp, PRIVATE, NDN_TAG_UDP_CHECKSUM);
-        err = (err == TE_EASNWRONGLABEL) ? 0 : err;
-        if (err != 0)
-            goto fail;
-    }
-
     err = tapi_pdus_free_fields_by_du_tag(pdus_copy, NDN_DU_SCRIPT);
     if (err != 0)
         goto fail;
+
+    free(pdus_ip4);
+    free(pdus_udp);
 
     return pattern;
 
 fail:
     asn_free_value(pattern);
+    free(pdus_ip4);
+    free(pdus_udp);
 
     return NULL;
 }
@@ -618,17 +633,51 @@ out:
 }
 
 static te_errno
-tapi_tad_request_correct_cksums(uint32_t    hw_flags,
-                                asn_value  *ip4_pdu,
-                                asn_value  *tcp_pdu,
-                                asn_value  *udp_pdu)
+tapi_tad_request_correct_cksums(uint32_t           hw_flags,
+                                asn_child_desc_t  *ip4_pdus,
+                                unsigned int       nb_ip4_pdus,
+                                asn_child_desc_t  *ip6_pdus,
+                                unsigned int       nb_ip6_pdus,
+                                asn_child_desc_t  *udp_pdus,
+                                unsigned int       nb_udp_pdus,
+                                asn_value         *tcp_pdu)
 {
-    te_errno    err = 0;
+    te_errno err = 0;
+    te_bool  ip4_inner = FALSE;
+    te_bool  ip4_outer = FALSE;
+
+    if (nb_ip4_pdus + nb_ip6_pdus > TMPL_NB_IP_PDUS_MAX)
+    {
+        err = TE_EINVAL;
+        goto out;
+    }
+
+    if ((nb_ip4_pdus == 1) && (nb_ip6_pdus == 1))
+    {
+        ip4_inner = (ip4_pdus[0].index < ip6_pdus[0].index);
+        ip4_outer = !ip4_inner;
+    }
+    else
+    {
+        ip4_inner = (nb_ip4_pdus > 0);
+        ip4_outer = (nb_ip4_pdus > 1);
+    }
+
 
     if (((hw_flags & SEND_COND_HW_OFFL_IP_CKSUM) ==
-         SEND_COND_HW_OFFL_IP_CKSUM) && (ip4_pdu != NULL))
+         SEND_COND_HW_OFFL_IP_CKSUM) && ip4_inner)
     {
-        err = tapi_tad_set_cksum_script_correct(ip4_pdu, "h-checksum");
+        err = tapi_tad_set_cksum_script_correct(ip4_pdus[0].value,
+                                                "h-checksum");
+        if (err != 0)
+            goto out;
+    }
+
+    if (((hw_flags & SEND_COND_HW_OFFL_OUTER_IP_CKSUM) ==
+         SEND_COND_HW_OFFL_OUTER_IP_CKSUM) && ip4_outer)
+    {
+        err = tapi_tad_set_cksum_script_correct(ip4_pdus[1].value,
+                                                "h-checksum");
         if (err != 0)
             goto out;
     }
@@ -636,6 +685,8 @@ tapi_tad_request_correct_cksums(uint32_t    hw_flags,
     if ((hw_flags & SEND_COND_HW_OFFL_L4_CKSUM) ==
         SEND_COND_HW_OFFL_L4_CKSUM)
     {
+        unsigned int i;
+
         if (tcp_pdu != NULL)
         {
             err = tapi_tad_set_cksum_script_correct(tcp_pdu, "checksum");
@@ -643,9 +694,10 @@ tapi_tad_request_correct_cksums(uint32_t    hw_flags,
                 goto out;
         }
 
-        if (udp_pdu != NULL)
+        for (i = 0; i < nb_udp_pdus; ++i)
         {
-            err = tapi_tad_set_cksum_script_correct(udp_pdu, "checksum");
+            err = tapi_tad_set_cksum_script_correct(udp_pdus[i].value,
+                                                    "checksum");
             if (err != 0)
                 goto out;
         }
@@ -665,15 +717,19 @@ tapi_tad_generate_pattern_unit(asn_value      *pdus,
                                asn_value    ***pattern_units,
                                unsigned int   *n_pattern_units)
 {
-    te_errno        err = 0;
-    asn_value      *pattern_unit = NULL;
-    asn_value      *pdus_copy = NULL;
-    asn_value      *ip4_pdu = NULL;
-    asn_value      *ip6_pdu = NULL;
-    asn_value      *tcp_pdu = NULL;
-    asn_value      *udp_pdu = NULL;
-    size_t          seg_len = 0;
-    asn_value     **pattern_units_new = *pattern_units;
+    te_errno           err = 0;
+    asn_value         *pattern_unit = NULL;
+    asn_value         *pdus_copy = NULL;
+    asn_child_desc_t  *ip4_pdus = NULL;
+    unsigned int       nb_ip4_pdus;
+    asn_child_desc_t  *ip6_pdus = NULL;
+    unsigned int       nb_ip6_pdus;
+    asn_child_desc_t  *udp_pdus = NULL;
+    unsigned int       nb_udp_pdus;
+    asn_value         *tcp_pdu = NULL;
+    size_t             seg_len = 0;
+    asn_value        **pattern_units_new = *pattern_units;
+    unsigned int       i;
 
     if (pdus == NULL || payload_data == NULL || data_offset == NULL ||
         n_pattern_units == NULL || (is_tso && (transform == NULL)))
@@ -703,10 +759,22 @@ tapi_tad_generate_pattern_unit(asn_value      *pdus,
         goto out;
     }
 
-    ip4_pdu = asn_find_child_choice_value(pdus_copy, TE_PROTO_IP4);
-    ip6_pdu = asn_find_child_choice_value(pdus_copy, TE_PROTO_IP6);
+    err = asn_find_child_choice_values(pdus_copy, TE_PROTO_IP4,
+                                       &ip4_pdus, &nb_ip4_pdus);
+    if (err != 0)
+        goto out;
+
+    err = asn_find_child_choice_values(pdus_copy, TE_PROTO_IP6,
+                                       &ip6_pdus, &nb_ip6_pdus);
+    if (err != 0)
+        goto out;
+
+    err = asn_find_child_choice_values(pdus_copy, TE_PROTO_UDP,
+                                       &udp_pdus, &nb_udp_pdus);
+    if (err != 0)
+        goto out;
+
     tcp_pdu = asn_find_child_choice_value(pdus_copy, TE_PROTO_TCP);
-    udp_pdu = asn_find_child_choice_value(pdus_copy, TE_PROTO_UDP);
 
     if (is_tso)
     {
@@ -719,17 +787,18 @@ tapi_tad_generate_pattern_unit(asn_value      *pdus,
         seg_len = MIN(payload_len - (*n_pattern_units * transform->tso_segsz),
                       transform->tso_segsz);
 
-        if (ip4_pdu != NULL)
+        for (i = 0; i < nb_ip4_pdus; ++i)
         {
-            err = tapi_tad_tso_seg_fix_ip4h(ip4_pdu, payload_len, seg_len,
-                                            *n_pattern_units);
+            err = tapi_tad_tso_seg_fix_ip4h(ip4_pdus[i].value, payload_len,
+                                            seg_len, *n_pattern_units);
             if (err != 0)
                 goto out;
         }
 
-        if (ip6_pdu != NULL)
+        for (i = 0; i < nb_ip6_pdus; ++i)
         {
-            err = tapi_tad_tso_seg_fix_ip6h(ip6_pdu, payload_len, seg_len);
+            err = tapi_tad_tso_seg_fix_ip6h(ip6_pdus[i].value,
+                                            payload_len, seg_len);
             if (err != 0)
                 goto out;
         }
@@ -752,27 +821,32 @@ tapi_tad_generate_pattern_unit(asn_value      *pdus,
     if (transform != NULL)
     {
         err = tapi_tad_request_correct_cksums(transform->hw_flags,
-                                              ip4_pdu, tcp_pdu, udp_pdu);
+                                              ip4_pdus, nb_ip4_pdus,
+                                              ip6_pdus, nb_ip6_pdus,
+                                              udp_pdus, nb_udp_pdus,
+                                              tcp_pdu);
         if (err != 0)
             goto out;
     }
 
-    if (ip4_pdu != NULL)
+    for (i = 0; i < nb_ip4_pdus; ++i)
     {
-        err = asn_free_child(ip4_pdu, PRIVATE, NDN_TAG_IP4_OPTIONS);
+        err = asn_free_child(ip4_pdus[i].value, PRIVATE, NDN_TAG_IP4_OPTIONS);
         err = (err == TE_EASNWRONGLABEL) ? 0 : err;
         if (err != 0)
             goto out;
 
-        err = asn_free_child(ip4_pdu, PRIVATE, NDN_TAG_IP4_PLD_CHECKSUM);
+        err = asn_free_child(ip4_pdus[i].value, PRIVATE,
+                             NDN_TAG_IP4_PLD_CHECKSUM);
         err = (err == TE_EASNWRONGLABEL) ? 0 : err;
         if (err != 0)
             goto out;
     }
 
-    if (ip6_pdu != NULL)
+    for (i = 0; i < nb_ip6_pdus; ++i)
     {
-        err = asn_free_child(ip6_pdu, PRIVATE, NDN_TAG_IP6_PLD_CHECKSUM);
+        err = asn_free_child(ip6_pdus[i].value, PRIVATE,
+                             NDN_TAG_IP6_PLD_CHECKSUM);
         err = (err == TE_EASNWRONGLABEL) ? 0 : err;
         if (err != 0)
             goto out;
@@ -793,6 +867,10 @@ tapi_tad_generate_pattern_unit(asn_value      *pdus,
 out:
     if ((err != 0) && (pattern_unit != NULL))
         asn_free_value(pattern_unit);
+
+    free(ip4_pdus);
+    free(ip6_pdus);
+    free(udp_pdus);
 
     return TE_RC(TE_TAPI, err);
 }

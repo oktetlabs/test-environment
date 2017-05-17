@@ -36,6 +36,9 @@
 
 #include "te_stdint.h"
 
+/** Maximum number of IPv4/IPv6 PDUs allowed in template */
+#define TMPL_NB_IP_PDUS_MAX 2
+
 /** The number of bits in a 32-bit word */
 #define WORD_32BIT 32
 

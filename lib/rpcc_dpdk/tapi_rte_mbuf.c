@@ -334,14 +334,18 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
                                  unsigned int      *n_mbufs_out,
                                  asn_value        **ptrn_out)
 {
-    te_errno        err = 0;
-    rpc_rte_mbuf_p *mbufs = NULL;
-    unsigned int    n_mbufs;
-    asn_value      *pattern_by_template;
-    asn_value     **packets_prepared = NULL;
-    unsigned int    n_packets_prepared = 0;
-    asn_value      *pattern;
-    unsigned int    i;
+    te_errno           err = 0;
+    rpc_rte_mbuf_p    *mbufs = NULL;
+    unsigned int       n_mbufs;
+    asn_value         *pattern_by_template;
+    asn_child_desc_t  *pdus_ip4 = NULL;
+    unsigned int       nb_pdus_ip4;
+    asn_child_desc_t  *pdus_ip6 = NULL;
+    unsigned int       nb_pdus_ip6;
+    asn_value        **packets_prepared = NULL;
+    unsigned int       n_packets_prepared = 0;
+    asn_value         *pattern;
+    unsigned int       i;
 
     pattern_by_template = tapi_tad_mk_pattern_from_template(template);
     err = (pattern_by_template == NULL) ? TE_ENOMEM : 0;
@@ -354,18 +358,47 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
 
     if (transform != NULL)
     {
-        asn_value      *pdus;
-        asn_value      *pdu_ip4;
-        asn_value      *pdu_ip6;
-        asn_value      *pdu_tcp;
-        asn_value      *pdu_udp;
+        asn_value        *pdus;
+        te_bool           ip4_inner = FALSE;
+        te_bool           ip4_outer = FALSE;
+        te_bool           ip6_inner = FALSE;
+        te_bool           ip6_outer = FALSE;
+        asn_value        *pdu_tcp;
+        asn_value        *pdu_udp;
 
         err = asn_get_subvalue(template, &pdus, "pdus");
         if (err != 0)
             goto out;
 
-        pdu_ip4 = asn_find_child_choice_value(pdus, TE_PROTO_IP4);
-        pdu_ip6 = asn_find_child_choice_value(pdus, TE_PROTO_IP6);
+        err = asn_find_child_choice_values(pdus, TE_PROTO_IP4,
+                                           &pdus_ip4, &nb_pdus_ip4);
+        if (err != 0)
+            goto out;
+
+        err = asn_find_child_choice_values(pdus, TE_PROTO_IP6,
+                                           &pdus_ip6, &nb_pdus_ip6);
+        if (err != 0)
+            goto out;
+
+        if (nb_pdus_ip4 + nb_pdus_ip6 > TMPL_NB_IP_PDUS_MAX)
+        {
+            err = TE_EINVAL;
+            goto out;
+        }
+
+        if ((nb_pdus_ip4 == 1) && (nb_pdus_ip6 == 1))
+        {
+            ip4_inner = ip6_outer = (pdus_ip4[0].index < pdus_ip6[0].index);
+            ip6_inner = ip4_outer = !ip4_inner;
+        }
+        else
+        {
+            ip4_inner = (nb_pdus_ip4 > 0);
+            ip4_outer = (nb_pdus_ip4 > 1);
+            ip6_inner = (nb_pdus_ip6 > 0);
+            ip6_outer = (nb_pdus_ip6 > 1);
+        }
+
         pdu_tcp = asn_find_child_choice_value(pdus, TE_PROTO_TCP);
         pdu_udp = asn_find_child_choice_value(pdus, TE_PROTO_UDP);
 
@@ -385,7 +418,7 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
                                              transform->vlan_tci);
             }
 
-            if (pdu_ip4 != NULL)
+            if (ip4_inner)
             {
                 ol_flags |= (1UL << TARPC_PKT_TX_IPV4);
                 if ((transform->hw_flags & SEND_COND_HW_OFFL_IP_CKSUM) ==
@@ -393,8 +426,19 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
                     ol_flags |= (1UL << TARPC_PKT_TX_IP_CKSUM);
             }
 
-            if (pdu_ip6 != NULL)
+            if (ip4_outer)
+            {
+                ol_flags |= (1UL << TARPC_PKT_TX_OUTER_IPV4);
+                if ((transform->hw_flags & SEND_COND_HW_OFFL_OUTER_IP_CKSUM) ==
+                    SEND_COND_HW_OFFL_OUTER_IP_CKSUM)
+                    ol_flags |= (1UL << TARPC_PKT_TX_OUTER_IP_CKSUM);
+            }
+
+            if (ip6_inner)
                 ol_flags |= (1UL << TARPC_PKT_TX_IPV6);
+
+            if (ip6_outer)
+                ol_flags |= (1UL << TARPC_PKT_TX_OUTER_IPV6);
 
             if ((transform->hw_flags & SEND_COND_HW_OFFL_L4_CKSUM) ==
                 SEND_COND_HW_OFFL_L4_CKSUM)
@@ -458,6 +502,8 @@ skip_pattern:
 
 out:
     asn_free_value(pattern_by_template);
+    free(pdus_ip4);
+    free(pdus_ip6);
 
     if ((err != 0) && (mbufs != NULL))
     {
