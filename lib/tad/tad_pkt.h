@@ -686,6 +686,10 @@ extern void tad_pkt_read(const tad_pkt *pkt, const tad_pkt_seg *seg,
 extern void tad_pkt_read_bits(const tad_pkt *pkt, size_t bitoff,
                               size_t bitlen, uint8_t *dst);
 
+/** Single-bit wrapper for @c tad_pkt_read_bits() */
+extern te_bool tad_pkt_read_bit(const tad_pkt *pkt,
+                                size_t         bitoff);
+
 /**
  * Match packet content by mask.
  *

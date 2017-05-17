@@ -1197,6 +1197,18 @@ tad_pkt_read_bits(const tad_pkt *pkt, size_t bitoff, size_t bitlen,
     }
 }
 
+/* See description in 'tad_pkt.h' */
+te_bool
+tad_pkt_read_bit(const tad_pkt *pkt,
+                 size_t         bitoff)
+{
+    uint8_t value;
+
+    tad_pkt_read_bits(pkt, bitoff, 1, &value);
+
+    return (value != 0) ? TRUE : FALSE;
+}
+
 
 /* See description in tad_pkt.h */
 /**
