@@ -1703,8 +1703,8 @@ rpc_rte_eth_dev_detach(rcf_rpc_server *rpcs, uint8_t port_id,
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_detach, out.retval);
 
-    if (out.retval == 0 && out.devname.devname_val != NULL)
-        memcpy(devname, out.devname.devname_val, RPC_RTE_ETH_NAME_MAX_LEN);
+    if ((out.retval == 0) && (devname != NULL) && (out.devname != NULL))
+        memcpy(devname, out.devname, RPC_RTE_ETH_NAME_MAX_LEN);
 
     TAPI_RPC_LOG(rpcs, rte_eth_dev_detach, "%hhu, %p", NEG_ERRNO_FMT ", %s",
                  in.port_id, devname, NEG_ERRNO_ARGS(out.retval), out.devname);

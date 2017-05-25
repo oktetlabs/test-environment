@@ -31,6 +31,8 @@
 #include "package.h"
 #endif
 
+#include "te_alloc.h"
+
 #include "rte_config.h"
 #include "rte_ethdev.h"
 #include "rte_eth_ctrl.h"
@@ -1105,9 +1107,12 @@ TARPC_FUNC(rte_eth_dev_count, {},
 
 TARPC_FUNC(rte_eth_dev_detach,{},
 {
-    out->devname.devname_val = malloc(RPC_RTE_ETH_NAME_MAX_LEN);
+    out->devname = TE_ALLOC(RPC_RTE_ETH_NAME_MAX_LEN);
+    if (out->devname == NULL)
+        out->retval = -ENOMEM;
+    else
+        MAKE_CALL(out->retval = func(in->port_id, out->devname));
 
-    MAKE_CALL(out->retval = func(in->port_id, out->devname.devname_val));
     neg_errno_h2rpc(&out->retval);
 })
 
