@@ -65,6 +65,9 @@ rule_list_cb_internal(struct nlmsghdr *h, netconf_list *list)
 
     rule = &(list->tail->data.rule);
 
+    if (rtm->rtm_flags & FIB_RULE_INVERT)
+        te_conf_ip_rule_set_invert(rule, TRUE);
+
 /**
  * Set a value field in @b rule and set a flag in field @b mask
  *
@@ -238,6 +241,11 @@ rule_list_cb(struct nlmsghdr *h, netconf_list *list)
  * @param [in] rule     Rule to modify
  * @param [out]req      Request for send to netconf
  *
+ * @note It is expected that memory pointed by req
+ *       is initialized to zeroes, so that this
+ *       function does not need to clear anything,
+ *       only to fill what is requested.
+ *
  * @return              Status code (@c 0 - success)
  */
 static te_errno
@@ -323,6 +331,9 @@ rule_modify(netconf_handle nh, netconf_cmd cmd, const netconf_rule *rule,
         rtm->rtm_type = RTN_UNICAST;
     else
         rtm->rtm_type = rule->type;
+
+    if (te_conf_ip_rule_get_invert(rule))
+        rtm->rtm_flags |= FIB_RULE_INVERT;
 
 /**
  * Append an attribute to existing @b nlmsg if it is @b mask

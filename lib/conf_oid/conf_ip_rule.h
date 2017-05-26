@@ -48,6 +48,8 @@ extern "C" {
 typedef struct te_conf_ip_rule {
     uint8_t         family;             /**< Address family of rule */
     te_ip_type      type;               /**< Type of rule entry */
+    te_bool         invert;             /**< Inversion flag (works as
+                                             ip rule not ... ). */
     uint8_t         srclen;             /**< Prefix length of source */
     uint8_t         dstlen;             /**< Prefix length of destination */
     struct sockaddr src;                /**< Source prefix */
@@ -83,6 +85,7 @@ typedef struct te_conf_ip_rule {
 #define TE_IP_RULE_FLAG_PRIORITY    (1u << 12)
 #define TE_IP_RULE_FLAG_TABLE       (1u << 13)
 #define TE_IP_RULE_FLAG_FLOW        (1u << 14)
+#define TE_IP_RULE_FLAG_INVERT      (1u << 15)
 /** @} */
 
 /** Macro to make field name shorter */
@@ -133,6 +136,24 @@ extern te_errno te_conf_ip_rule_from_str(
 extern te_conf_obj_compare_result te_conf_ip_rule_compare(
         uint32_t required, const te_conf_ip_rule *object_a,
         const te_conf_ip_rule *object_b);
+
+/**
+ * Set inversion flag for IP rule.
+ *
+ * @param rule    IP rule structure.
+ * @param invert  If TRUE, set the flag; otherwise clear it.
+ */
+extern void te_conf_ip_rule_set_invert(te_conf_ip_rule *rule,
+                                       te_bool invert);
+
+/**
+ * Get state of inversion flag for IP rule.
+ *
+ * @param rule    IP rule structure.
+ *
+ * @return TRUE if flag is set, FALSE otherwise.
+ */
+extern te_bool te_conf_ip_rule_get_invert(const te_conf_ip_rule *rule);
 
 #ifdef __cplusplus
 } /* extern "C" */
