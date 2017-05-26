@@ -39,6 +39,66 @@
 #include <arpa/inet.h>
 
 /**
+ * Convert @b te_bool field to string.
+ *
+ * @param [inout] str    String to append with converted value.
+ * @param [in]    name   Field name.
+ * @param [in]    arg    Pointer to a value.
+ *
+ * @return Status code.
+ */
+static te_errno
+te_bool_to_str(te_string *str, const char *name,
+               const void *arg)
+{
+    te_bool value = *(te_bool *)arg;
+
+    return te_string_append(str, "%s=%s",
+                            name, (value ? "true" : "false"));
+}
+
+/**
+ * Obtain @b te_bool field value from string.
+ *
+ * @param [in]  value    String.
+ * @param [out] arg      Pointer to the field value.
+ * @param [in]  options  User options (not used).
+ *
+ * @return Status code.
+ */
+static te_errno
+te_bool_from_str(const char *value, void *arg,
+                 const void *options)
+{
+    UNUSED(options);
+
+    if (strcmp(value, "true") == 0)
+        *(te_bool *)arg = TRUE;
+    else if (strcmp(value, "false") == 0)
+        *(te_bool *)arg = FALSE;
+    else
+        return TE_EINVAL;
+
+    return 0;
+}
+
+/**
+ * Compare values of two @b te_bool fields.
+ *
+ * @param a     Pointer to the first field.
+ * @param b     Pointer to the second field.
+ *
+ * @return          Result of the comparison
+ * @retval ==0      Values are not equal
+ * @retval !=0      Values are equal
+ */
+static int
+te_bool_compare(const void *a, const void *b)
+{
+    return (!!(*(te_bool *)a) == !!(*(te_bool *)b));
+}
+
+/**
  * Numeric type field processing
  *
  * @param _type         Type of numeric field
@@ -215,6 +275,11 @@ str_compare(const void *a, const void *b)
     return strcmp((const char*)a, (const char*)b) == 0;
 }
 
+te_conf_obj_methods te_conf_obj_methods_te_bool = {
+    .to_str   = te_bool_to_str,
+    .from_str = te_bool_from_str,
+    .compare  = te_bool_compare,
+};
 te_conf_obj_methods te_conf_obj_methods_uint8_t = {
     .to_str   = uint8_t_to_str,
     .from_str = uint8_t_from_str,
