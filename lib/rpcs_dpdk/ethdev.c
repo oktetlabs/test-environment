@@ -958,6 +958,37 @@ TARPC_FUNC_STATIC(rte_eth_rx_queue_count, {},
     neg_errno_h2rpc(&out->retval);
 })
 
+TARPC_FUNC_STATIC(rte_eth_rx_descriptor_status, {},
+{
+    int ret;
+
+    MAKE_CALL(ret = func(in->port_id, in->queue_id, in->offset));
+
+    switch (ret)
+    {
+        case RTE_ETH_RX_DESC_AVAIL:
+            out->retval = TARPC_RTE_ETH_RX_DESC_AVAIL;
+            break;
+        case RTE_ETH_RX_DESC_DONE:
+            out->retval = TARPC_RTE_ETH_RX_DESC_DONE;
+            break;
+        case RTE_ETH_RX_DESC_UNAVAIL:
+            out->retval = TARPC_RTE_ETH_RX_DESC_UNAVAIL;
+            break;
+        default:
+            if (ret < 0)
+            {
+                neg_errno_h2rpc(&ret);
+                out->retval = ret;
+            }
+            else
+            {
+                out->retval = TARPC_RTE_ETH_RX_DESC__UNKNOWN;
+            }
+            break;
+    }
+})
+
 TARPC_FUNC(rte_eth_dev_socket_id, {},
 {
     MAKE_CALL(out->retval = func(in->port_id));

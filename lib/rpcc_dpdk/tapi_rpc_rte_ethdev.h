@@ -309,6 +309,17 @@ extern int rpc_rte_eth_rx_queue_count(rcf_rpc_server *rpcs, uint8_t port_id,
                                       uint16_t queue_id);
 
 /**
+ * @b rte_eth_rx_descriptor_status() RPC
+ *
+ * The function jumps out if the return value is not recognized;
+ * jumps out (by default) if the return value is negative error code
+ */
+extern int rpc_rte_eth_rx_descriptor_status(rcf_rpc_server *rpcs,
+                                            uint8_t         port_id,
+                                            uint16_t        queue_id,
+                                            uint16_t        offset);
+
+/**
  * @b rte_eth_dev_socket_id() RPC
  *
  * If failure is not expected, the function jumps out in the case of

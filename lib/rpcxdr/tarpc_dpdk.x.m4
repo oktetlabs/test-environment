@@ -1153,14 +1153,15 @@ struct tarpc_rte_eth_dev_set_vlan_pvid_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_set_vlan_pvid_out;
 
-/** rte_eth_rx_descriptor_done() */
-struct tarpc_rte_eth_rx_descriptor_done_in {
-    struct tarpc_in_arg     common;
-    uint8_t                 port_id;
-    uint16_t                queue_id;
-    uint16_t                offset;
+struct tarpc_descriptor_status_in {
+    struct tarpc_in_arg common;
+    uint8_t             port_id;
+    uint16_t            queue_id;
+    uint16_t            offset;
 };
 
+/** rte_eth_rx_descriptor_done() */
+typedef struct tarpc_descriptor_status_in tarpc_rte_eth_rx_descriptor_done_in;
 typedef struct tarpc_int_retval_out tarpc_rte_eth_rx_descriptor_done_out;
 
 /** rte_eth_rx_queue_count() */
@@ -1171,6 +1172,18 @@ struct tarpc_rte_eth_rx_queue_count_in {
 };
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_rx_queue_count_out;
+
+enum tarpc_rte_eth_rx_desc_status_value {
+    TARPC_RTE_ETH_RX_DESC_AVAIL = 0,
+    TARPC_RTE_ETH_RX_DESC_DONE,
+    TARPC_RTE_ETH_RX_DESC_UNAVAIL,
+
+    TARPC_RTE_ETH_RX_DESC__UNKNOWN
+};
+
+/** rte_eth_rx_descriptor_status() */
+typedef struct tarpc_descriptor_status_in tarpc_rte_eth_rx_descriptor_status_in;
+typedef struct tarpc_int_retval_out tarpc_rte_eth_rx_descriptor_status_out;
 
 /** rte_eth_dev_socket_id() */
 typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_socket_id_in;
@@ -1795,6 +1808,7 @@ program dpdk
         RPC_DEF(rte_eth_dev_set_vlan_pvid)
         RPC_DEF(rte_eth_rx_descriptor_done)
         RPC_DEF(rte_eth_rx_queue_count)
+        RPC_DEF(rte_eth_rx_descriptor_status)
         RPC_DEF(rte_eth_dev_socket_id)
         RPC_DEF(rte_eth_dev_is_valid_port)
         RPC_DEF(rte_eth_dev_rx_queue_start)
