@@ -1424,6 +1424,62 @@ rpc_rte_eth_rx_descriptor_status(rcf_rpc_server *rpcs,
 }
 
 int
+rpc_rte_eth_tx_descriptor_status(rcf_rpc_server *rpcs,
+                                 uint8_t         port_id,
+                                 uint16_t        queue_id,
+                                 uint16_t        offset)
+{
+    char *status_str = NULL;
+
+    tarpc_rte_eth_tx_descriptor_status_in  in;
+    tarpc_rte_eth_tx_descriptor_status_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.queue_id = queue_id;
+    in.offset = offset;
+
+    rcf_rpc_call(rpcs, "rte_eth_tx_descriptor_status", &in, &out);
+
+    switch (out.retval)
+    {
+        case TARPC_RTE_ETH_TX_DESC_FULL:
+            status_str = "FULL";
+            break;
+        case TARPC_RTE_ETH_TX_DESC_DONE:
+            status_str = "DONE";
+            break;
+        case TARPC_RTE_ETH_TX_DESC_UNAVAIL:
+            status_str = "UNAVAIL";
+            break;
+        default:
+            break;
+    }
+
+    if (out.retval < 0)
+    {
+        TAPI_RPC_LOG(rpcs, rte_eth_tx_descriptor_status,
+                     "%hhu, %hu, %hu", NEG_ERRNO_FMT,
+                     in.port_id, in.queue_id, in.offset,
+                     NEG_ERRNO_ARGS(out.retval));
+    }
+    else if (status_str != NULL)
+    {
+        TAPI_RPC_LOG(rpcs, rte_eth_tx_descriptor_status,
+                     "%hhu, %hu, %hu", "%s",
+                     in.port_id, in.queue_id, in.offset, status_str);
+    }
+    else
+    {
+        TAPI_RPC_OUT(rte_eth_tx_descriptor_status, TRUE);
+    }
+
+    RETVAL_INT(rte_eth_tx_descriptor_status, out.retval);
+}
+
+int
 rpc_rte_eth_dev_socket_id(rcf_rpc_server *rpcs, uint8_t port_id)
 {
     tarpc_rte_eth_dev_socket_id_in   in;
