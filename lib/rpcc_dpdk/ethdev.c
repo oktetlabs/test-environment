@@ -2325,6 +2325,73 @@ rpc_rte_eth_xstats_get_by_id(rcf_rpc_server *rpcs,
 }
 
 static const char *
+tarpc_rte_eth_dump_xstat_names(te_log_buf                      *tlbp,
+                               uint64_t                        *ids,
+                               struct tarpc_rte_eth_xstat_name *xstat_names,
+                               unsigned int                     nb_xstat_names)
+{
+    unsigned int i;
+
+    te_log_buf_append(tlbp, "{");
+    for (i = 0; (xstat_names != NULL) && (i < nb_xstat_names); ++i)
+    {
+        te_log_buf_append(tlbp, " %" PRIu64 ":%s%s",
+                          (ids != NULL) ? ids[i] : i, xstat_names[i].name,
+                          ((i + 1) != nb_xstat_names) ? "," : " ");
+    }
+    te_log_buf_append(tlbp, "}");
+
+    return te_log_buf_get(tlbp);
+}
+
+int
+rpc_rte_eth_xstats_get_names_by_id(rcf_rpc_server                  *rpcs,
+                                   uint8_t                          port_id,
+                                   struct tarpc_rte_eth_xstat_name *xstat_names,
+                                   unsigned int                     size,
+                                   uint64_t                        *ids)
+{
+    tarpc_rte_eth_xstats_get_names_by_id_in   in;
+    tarpc_rte_eth_xstats_get_names_by_id_out  out;
+    te_log_buf                               *tlbp_ids;
+    te_log_buf                               *tlbp_xstat_names;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.ids.ids_val = ((ids != NULL) && (size > 0)) ?
+                     tapi_memdup(ids, sizeof(*ids) * size) : NULL;
+    in.ids.ids_len = (in.ids.ids_val != NULL) ? size : 0;
+    in.size = size;
+
+    rcf_rpc_call(rpcs, "rte_eth_xstats_get_names_by_id", &in, &out);
+    CHECK_RETVAL_VAR_ERR_COND(rte_eth_xstats_get_names_by_id, out.retval, FALSE,
+                              -TE_RC(TE_TAPI, TE_ECORRUPTED), (out.retval < 0));
+
+    tlbp_ids = te_log_buf_alloc();
+    tlbp_xstat_names = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_xstats_get_names_by_id, "%hhu, %p, %u, %s",
+                 NEG_ERRNO_FMT " %s", in.port_id, xstat_names,
+                 in.size, tarpc_log_array_uint64(tlbp_ids, ids, size),
+                 NEG_ERRNO_ARGS(out.retval),
+                 tarpc_rte_eth_dump_xstat_names(tlbp_xstat_names, ids,
+                                                out.xstat_names.xstat_names_val,
+                                                out.xstat_names.xstat_names_len));
+    te_log_buf_free(tlbp_xstat_names);
+    te_log_buf_free(tlbp_ids);
+
+    if ((xstat_names != NULL) && (out.xstat_names.xstat_names_val != NULL) &&
+        (out.xstat_names.xstat_names_len > 0))
+    {
+        memcpy(xstat_names, out.xstat_names.xstat_names_val,
+               sizeof(*xstat_names) * out.xstat_names.xstat_names_len);
+    }
+
+    RETVAL_INT(rte_eth_xstats_get_names_by_id, out.retval);
+}
+
+static const char *
 tarpc_rte_filter_op2str(enum tarpc_rte_filter_op filter_op)
 {
     const char *op;

@@ -626,6 +626,18 @@ extern int rpc_rte_eth_xstats_get_by_id(rcf_rpc_server *rpcs,
                                         unsigned int    n);
 
 /**
+ * @b rte_eth_xstats_get_names_by_id() RPC
+ *
+ * The function jumps out (by default) if the
+ * return value is negative error code
+ */
+extern int rpc_rte_eth_xstats_get_names_by_id(rcf_rpc_server                  *rpcs,
+                                              uint8_t                          port_id,
+                                              struct tarpc_rte_eth_xstat_name *xstat_names,
+                                              unsigned int                     size,
+                                              uint64_t                        *ids);
+
+/**
  * @b rte_eth_dev_get_supported_ptypes() RPC.
  *
  * If failure is not expected, the function jumps out in the case of
