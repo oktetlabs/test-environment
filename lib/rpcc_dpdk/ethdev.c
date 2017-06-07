@@ -2240,6 +2240,91 @@ rpc_rte_eth_xstats_reset(rcf_rpc_server *rpcs, uint8_t port_id)
 }
 
 static const char *
+tarpc_log_array_uint64(te_log_buf   *tlbp,
+                       uint64_t     *items,
+                       unsigned int  nb_items)
+{
+    unsigned int i;
+
+    te_log_buf_append(tlbp, "{");
+    for (i = 0; (items != NULL) && (i < nb_items); ++i)
+    {
+        te_log_buf_append(tlbp, " %" PRIu64 "%s", items[i],
+                          ((i + 1) != nb_items) ? "," : " ");
+    }
+    te_log_buf_append(tlbp, "}");
+
+    return te_log_buf_get(tlbp);
+}
+
+static const char *
+tarpc_log_kv_array_uint64(te_log_buf   *tlbp,
+                          uint64_t     *keys,
+                          uint64_t     *values,
+                          unsigned int  nb_items)
+{
+    unsigned int i;
+
+    te_log_buf_append(tlbp, "{");
+    for (i = 0; (values != NULL) && (i < nb_items); ++i)
+    {
+        te_log_buf_append(tlbp, " %" PRIu64 ":%" PRIu64 "%s",
+                          (keys != NULL) ? keys[i] : i, values[i],
+                          ((i + 1) != nb_items) ? "," : " ");
+    }
+    te_log_buf_append(tlbp, "}");
+
+    return te_log_buf_get(tlbp);
+}
+
+int
+rpc_rte_eth_xstats_get_by_id(rcf_rpc_server *rpcs,
+                             uint8_t         port_id,
+                             uint64_t       *ids,
+                             uint64_t       *values,
+                             unsigned int    n)
+{
+    tarpc_rte_eth_xstats_get_by_id_in   in;
+    tarpc_rte_eth_xstats_get_by_id_out  out;
+    te_log_buf                         *tlbp_ids;
+    te_log_buf                         *tlbp_values;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.ids.ids_val = ((ids != NULL) && (n > 0)) ?
+                     tapi_memdup(ids, sizeof(*ids) * n) : NULL;
+    in.ids.ids_len = (in.ids.ids_val != NULL) ? n : 0;
+    in.n = n;
+
+    rcf_rpc_call(rpcs, "rte_eth_xstats_get_by_id", &in, &out);
+    CHECK_RETVAL_VAR_ERR_COND(rte_eth_xstats_get_by_id, out.retval, FALSE,
+                              -TE_RC(TE_TAPI, TE_ECORRUPTED), (out.retval < 0));
+
+    tlbp_ids = te_log_buf_alloc();
+    tlbp_values = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_xstats_get_by_id, "%hhu, %s, %p, %u",
+                 NEG_ERRNO_FMT " %s", in.port_id,
+                 tarpc_log_array_uint64(tlbp_ids, ids, n), values, in.n,
+                 NEG_ERRNO_ARGS(out.retval),
+                 tarpc_log_kv_array_uint64(tlbp_values, ids,
+                                           out.values.values_val,
+                                           out.values.values_len));
+    te_log_buf_free(tlbp_values);
+    te_log_buf_free(tlbp_ids);
+
+    if ((values != NULL) &&
+        (out.values.values_val != NULL) && (out.values.values_len > 0))
+    {
+        memcpy(values, out.values.values_val,
+               sizeof(*values) * out.values.values_len);
+    }
+
+    RETVAL_INT(rte_eth_xstats_get_by_id, out.retval);
+}
+
+static const char *
 tarpc_rte_filter_op2str(enum tarpc_rte_filter_op filter_op)
 {
     const char *op;

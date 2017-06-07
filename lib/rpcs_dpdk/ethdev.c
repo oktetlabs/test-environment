@@ -1723,6 +1723,39 @@ TARPC_FUNC(rte_eth_xstats_reset,{},
     MAKE_CALL(func(in->port_id));
 })
 
+TARPC_FUNC(rte_eth_xstats_get_by_id, {},
+{
+    uint64_t *values = NULL;
+
+    if (in->n > 0)
+    {
+        values = TE_ALLOC(sizeof(*values) * in->n);
+        if (values == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+        }
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, in->ids.ids_val,
+                                 values, in->n));
+    if ((out->retval > 0) &&
+        ((unsigned int)out->retval <= in->n))
+    {
+        out->values.values_val = values;
+        out->values.values_len = out->retval;
+    }
+    else
+    {
+        neg_errno_h2rpc(&out->retval);
+        free(values);
+    }
+
+done:
+    ;
+})
+
 TARPC_FUNC(rte_eth_dev_rss_hash_update,{},
 {
     struct rte_eth_rss_conf  rss_conf;
