@@ -358,7 +358,8 @@ rule_modify(netconf_handle nh, netconf_cmd cmd, const netconf_rule *rule,
  * @param _flag     Flag for field @b mask
  */
 #define NETCONF_APPEND_RTA_STR(_type, _field, _flag) \
-    NETCONF_APPEND_RTA(_type, &rule->_field, strlen(rule->_field), _flag)
+    NETCONF_APPEND_RTA(_type, &rule->_field, \
+                       strlen(rule->_field) + 1, _flag)
 
 /**
  * Append an attribute to existing @b nlmsg if it is @b mask
