@@ -1598,6 +1598,34 @@ struct tarpc_rte_eth_xstats_reset_in {
 
 typedef struct tarpc_void_out tarpc_rte_eth_xstats_reset_out;
 
+/** rte_eth_xstats_get_by_id() */
+struct tarpc_rte_eth_xstats_get_by_id_in {
+    struct tarpc_in_arg common;
+    uint8_t             port_id;
+    uint64_t            ids<>;
+    unsigned int        n;
+};
+
+struct tarpc_rte_eth_xstats_get_by_id_out {
+    struct tarpc_out_arg common;
+    uint64_t             values<>;
+    tarpc_int            retval;
+};
+
+/** rte_eth_xstats_get_names_by_id() */
+struct tarpc_rte_eth_xstats_get_names_by_id_in {
+    struct tarpc_in_arg common;
+    uint8_t             port_id;
+    uint64_t            ids<>;
+    unsigned int        size;
+};
+
+struct tarpc_rte_eth_xstats_get_names_by_id_out {
+    struct tarpc_out_arg            common;
+    struct tarpc_rte_eth_xstat_name xstat_names<>;
+    tarpc_int                       retval;
+};
+
 enum tarpc_rte_pktmbuf_types_masks {
     TARPC_RTE_PTYPE_L2_MASK = 0x0000000f,
     TARPC_RTE_PTYPE_L3_MASK = 0x000000f0,
@@ -1793,6 +1821,8 @@ program dpdk
         RPC_DEF(rte_eth_xstats_get)
         RPC_DEF(rte_eth_xstats_get_names)
         RPC_DEF(rte_eth_xstats_reset)
+        RPC_DEF(rte_eth_xstats_get_by_id)
+        RPC_DEF(rte_eth_xstats_get_names_by_id)
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)
         RPC_DEF(rte_eth_dev_close)

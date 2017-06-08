@@ -1723,6 +1723,84 @@ TARPC_FUNC(rte_eth_xstats_reset,{},
     MAKE_CALL(func(in->port_id));
 })
 
+TARPC_FUNC(rte_eth_xstats_get_by_id, {},
+{
+    uint64_t *values = NULL;
+
+    if (in->n > 0)
+    {
+        values = TE_ALLOC(sizeof(*values) * in->n);
+        if (values == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+        }
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, in->ids.ids_val,
+                                 values, in->n));
+    if ((out->retval > 0) &&
+        ((unsigned int)out->retval <= in->n))
+    {
+        out->values.values_val = values;
+        out->values.values_len = out->retval;
+    }
+    else
+    {
+        neg_errno_h2rpc(&out->retval);
+        free(values);
+    }
+
+done:
+    ;
+})
+
+TARPC_FUNC(rte_eth_xstats_get_names_by_id, {},
+{
+    struct rte_eth_xstat_name *xstat_names = NULL;
+
+    if (in->size > 0)
+    {
+        xstat_names = TE_ALLOC(sizeof(*xstat_names) * in->size);
+        if (xstat_names == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+        }
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, xstat_names,
+                                 in->size, in->ids.ids_val));
+    if ((out->retval > 0) &&
+        ((unsigned int)out->retval <= in->size))
+    {
+        struct tarpc_rte_eth_xstat_name *xstat_names_out;
+        int i;
+
+        xstat_names_out = TE_ALLOC(sizeof(*xstat_names_out) * out->retval);
+        if (xstat_names_out == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+        }
+        out->xstat_names.xstat_names_val = xstat_names_out;
+
+        for (i = 0; i < out->retval; ++i)
+        {
+            strncpy(out->xstat_names.xstat_names_val[i].name,
+                    xstat_names[i].name, TARPC_RTE_ETH_XSTATS_NAME_SIZE);
+        }
+
+        out->xstat_names.xstat_names_len = out->retval;
+    }
+
+done:
+    free(xstat_names);
+})
+
 TARPC_FUNC(rte_eth_dev_rss_hash_update,{},
 {
     struct rte_eth_rss_conf  rss_conf;
