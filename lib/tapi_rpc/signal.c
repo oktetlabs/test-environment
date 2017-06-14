@@ -51,6 +51,14 @@
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_signal.h"
 
+/**
+ * Check whether value returned by signal() and related calls
+ * indicates error.
+ *
+ * @param retval_   Returned value.
+ */
+#define SIGNAL_RETVAL_IS_ERR(retval_) \
+    (retval_ == NULL || strcmp(retval_, "SIG_ERR") == 0)
 
 char *
 rpc_signal(rcf_rpc_server *rpcs,
@@ -92,10 +100,13 @@ rpc_signal(rcf_rpc_server *rpcs,
     }
     free(copy);
 
+    CHECK_RETVAL_VAR_ERR_COND(signal, res, FALSE,
+                              res, SIGNAL_RETVAL_IS_ERR(res));
+
     TAPI_RPC_LOG(rpcs, signal, "%s, %s", "%s", signum_rpc2str(signum),
                  (handler != NULL) ? handler : "(null)",
                  res != NULL ? res : "(null)");
-    TAPI_RPC_OUT(signal, (res == NULL || strcmp(res, "SIG_ERR") == 0));
+    TAPI_RPC_OUT(signal, SIGNAL_RETVAL_IS_ERR(res));
     return res;
 }
 
@@ -139,10 +150,13 @@ rpc_bsd_signal(rcf_rpc_server *rpcs,
     }
     free(copy);
 
+    CHECK_RETVAL_VAR_ERR_COND(bsd_signal, res, FALSE,
+                              res, SIGNAL_RETVAL_IS_ERR(res));
+
     TAPI_RPC_LOG(rpcs, bsd_signal, "%s, %s", "%s", signum_rpc2str(signum),
                  (handler != NULL) ? handler : "(null)",
                  res != NULL ? res : "(null)");
-    TAPI_RPC_OUT(bsd_signal, (res == NULL || strcmp(res, "SIG_ERR") == 0));
+    TAPI_RPC_OUT(bsd_signal, SIGNAL_RETVAL_IS_ERR(res));
     return res;
 }
 
@@ -210,10 +224,13 @@ rpc_sysv_signal(rcf_rpc_server *rpcs,
     }
     free(copy);
 
+    CHECK_RETVAL_VAR_ERR_COND(sysv_signal, res, FALSE,
+                              res, SIGNAL_RETVAL_IS_ERR(res));
+
     TAPI_RPC_LOG(rpcs, sysv_signal, "%s, %s", "%s", signum_rpc2str(signum),
                  (handler != NULL) ? handler : "(null)",
                  res != NULL ? res : "(null)");
-    TAPI_RPC_OUT(sysv_signal, (res == NULL || strcmp(res, "SIG_ERR") == 0));
+    TAPI_RPC_OUT(sysv_signal, SIGNAL_RETVAL_IS_ERR(res));
     return res;
 }
 
