@@ -275,6 +275,7 @@ extern te_errno ta_unix_conf_netconsole_init();
 extern te_errno ta_unix_conf_sys_init();
 extern te_errno ta_unix_conf_phy_init();
 extern te_errno ta_unix_conf_eth_init(void);
+extern te_errno ta_unix_conf_macvlan_init();
 
 #ifdef USE_LIBNETCONF
 netconf_handle nh = NETCONF_HANDLE_INVALID;
@@ -1242,6 +1243,12 @@ rcf_ch_conf_init()
             goto fail;
         }
 #endif /* WITH_UPNP_CP */
+
+        if (ta_unix_conf_macvlan_init() != 0)
+        {
+            ERROR("Failed to add macvlan interface configuration subtree");
+            goto fail;
+        }
 
         init = TRUE;
 

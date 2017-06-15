@@ -230,6 +230,16 @@
     <object oid="/agent/interface/vlans/ifname" access="read_only"
             type="string"/>
 
+    <!-- Virtual interface based on link layer address (MAC)
+         Name: interface name
+         Value: MAC VLAN mode:
+                private - don't talk to other macvlans
+                vepa - talk to other ports through ext bridge
+                bridge - talk to bridge ports directly
+                passthru - take over the underlying device
+                empty string - don't specify explicitly (default vepa) -->
+    <object oid="/agent/interface/macvlan" access="read_create" type="string"/>
+
     <!-- Network interface PHY parameters
          Name: none
          Value: none -->

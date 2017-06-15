@@ -57,6 +57,18 @@ extern "C" {
  * @{
  */
 
+/** MAC VLAN interface mode: don't talk to other macvlans. */
+#define TAPI_CFG_MACVLAN_MODE_PRIVATE   "private"
+
+/** MAC VLAN interface mode: talk to other ports through ext bridge. */
+#define TAPI_CFG_MACVLAN_MODE_VEPA      "vepa"
+
+/** MAC VLAN interface mode: talk to bridge ports directly. */
+#define TAPI_CFG_MACVLAN_MODE_BRIDGE    "bridge"
+
+/** MAC VLAN interface mode: take over the underlying device. */
+#define TAPI_CFG_MACVLAN_MODE_PASSTHRU  "passthru"
+
 /**
  * Enable/disable IPv4 forwarding on a Test Agent.
  *
@@ -488,6 +500,80 @@ tapi_cfg_base_if_add_get_vlan(const char *ta, const char *if_name,
 
     return 0;
 }
+
+/**
+ * Add interface @p ifname to the agent @p ta resources.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_add_rsrc(const char *ta,
+                                          const char *ifname);
+
+/**
+ * Delete interface @p ifname from the agent @p ta resources.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_del_rsrc(const char *ta,
+                                          const char *ifname);
+
+/**
+ * Add MAC VLAN interface.
+ *
+ * @param ta        Test Agent name
+ * @param link      Parent (link) interface name
+ * @param ifname    MAC VLAN interface name
+ * @param mode      MAC VLAN mode or @c NULL to use default
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_add_macvlan(const char *ta,
+                                             const char *link,
+                                             const char *ifname,
+                                             const char *mode);
+
+/**
+ * Delete MAC VLAN interface.
+ *
+ * @param ta        Test Agent name
+ * @param link      Parent (link) interface name
+ * @param ifname    MAC VLAN interface name
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_del_macvlan(const char *ta,
+                                             const char *link,
+                                             const char *ifname);
+
+/**
+ * Get MAC VLAN interface.
+ *
+ * @param ta        Test Agent name
+ * @param link      Parent (link) interface name
+ * @param ifname    MAC VLAN interface name
+ * @param mode      MAC VLAN mode location
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_get_macvlan_mode(const char *ta,
+                                                  const char *link,
+                                                  const char *ifname,
+                                                  char **mode);
+
+/**
+ * Set MAC VLAN interface.
+ *
+ * @param ta        Test Agent name
+ * @param link      Parent (link) interface name
+ * @param ifname    MAC VLAN interface name
+ * @param mode      MAC VLAN mode
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_set_macvlan_mode(const char *ta,
+                                                  const char *link,
+                                                  const char *ifname,
+                                                  const char *mode);
 
 /**
  * It is the same function as @p tapi_cfg_base_if_get_mtu, but it is more

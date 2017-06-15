@@ -35,6 +35,7 @@ libconf_a_SOURCES = \
 	base/conf_phy.c \
 	base/conf_netconsole.c \
 	base/conf_configfs.c \
+	base/conf_macvlan.c \
 	route/conf_route.c \
 	route/conf_route_libnetconf.c \
 	route/conf_route_socket.c \

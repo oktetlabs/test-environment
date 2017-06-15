@@ -809,3 +809,75 @@ do { \
 
     return rc;
 }
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_add_rsrc(const char *ta, const char *ifname)
+{
+    char if_oid[CFG_OID_MAX];
+
+    snprintf(if_oid, CFG_OID_MAX, "/agent:%s/interface:%s", ta, ifname);
+    return cfg_add_instance_fmt(NULL, CVT_STRING, if_oid,
+                                "/agent:%s/rsrc:%s", ta, ifname);
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_del_rsrc(const char *ta, const char *ifname)
+{
+    return cfg_del_instance_fmt(FALSE, "/agent:%s/rsrc:%s", ta, ifname);
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_add_macvlan(const char *ta, const char *link,
+                             const char *ifname, const char *mode)
+{
+    int rc;
+
+    rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, mode),
+                              "/agent:%s/interface:%s/macvlan:%s",
+                              ta, link, ifname);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_base_if_add_rsrc(ta, ifname);
+    if (rc != 0)
+        return rc;
+
+    return tapi_cfg_base_if_up(ta, ifname);
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_del_macvlan(const char *ta, const char *link,
+                             const char *ifname)
+{
+    int rc;
+    rc = cfg_del_instance_fmt(FALSE, "/agent:%s/interface:%s/macvlan:%s",
+                              ta, link, ifname);
+    if (rc != 0)
+        return rc;
+
+    return tapi_cfg_base_if_del_rsrc(ta, ifname);
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_get_macvlan_mode(const char *ta, const char *link,
+                                  const char *ifname, char **mode)
+{
+    return cfg_get_instance_fmt(NULL, mode,
+                                "/agent:%s/interface:%s/macvlan:%s",
+                                ta, link, ifname);
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_set_macvlan_mode(const char *ta, const char *link,
+                                  const char *ifname, const char *mode)
+{
+    return cfg_set_instance_fmt(CFG_VAL(STRING, mode),
+                                "/agent:%s/interface:%s/macvlan:%s",
+                                ta, link, ifname);
+}
