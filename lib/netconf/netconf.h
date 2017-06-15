@@ -164,6 +164,14 @@ typedef struct netconf_neigh {
                                              the neighbour */
 } netconf_neigh;
 
+/** MAC VLAN network interface */
+typedef struct netconf_macvlan {
+    int         link;      /**< Parent (link) interface index */
+    int         ifindex;   /**< MAC VLAN interface index */
+    uint32_t    mode;      /**< MAC VLAN mode */
+    char       *ifname;    /**< Interface name */
+} netconf_macvlan;
+
 /** Type of nodes in the list */
 typedef enum netconf_node_type {
     NETCONF_NODE_UNSPEC,                /**< Unspecified */
@@ -171,8 +179,9 @@ typedef enum netconf_node_type {
     NETCONF_NODE_NET_ADDR,              /**< Network address */
     NETCONF_NODE_ROUTE,                 /**< Routing table entry */
     NETCONF_NODE_NEIGH,                 /**< Neighbour table entry */
-    NETCONF_NODE_RULE                   /**< Rule entry in the routing
+    NETCONF_NODE_RULE,                  /**< Rule entry in the routing
                                              policy database */
+    NETCONF_NODE_MACVLAN,               /**< MAC VLAN interface */
 } netconf_node_type;
 
 typedef te_conf_ip_rule netconf_rule;
@@ -186,6 +195,7 @@ typedef struct netconf_node {
         netconf_route     route;
         netconf_neigh     neigh;
         netconf_rule      rule;
+        netconf_macvlan   macvlan;
     } data;                             /**< Network data */
     struct netconf_node  *next;         /**< Next node of the list */
     struct netconf_node  *prev;         /**< Previous node of the list */
@@ -428,6 +438,47 @@ netconf_list *netconf_net_addr_dump_iface(netconf_handle nh,
 netconf_list *netconf_net_addr_dump_primary(netconf_handle nh,
                                             unsigned char family,
                                             bool primary);
+
+/**
+ * Add or delete MAC VLAN interface or change mode of existing interface.
+ *
+ * @param nh        Netconf session handle
+ * @param cmd       Action to do
+ * @param link      Link (main) interface name
+ * @param ifname    MAC VLAN interface name
+ * @param mode_str  MAC VLAN mode
+ *
+ * @return Status code
+ */
+extern te_errno netconf_macvlan_modify(netconf_handle nh, netconf_cmd cmd,
+                                       const char *link,
+                                       const char *ifname,
+                                       const char *mode_str);
+
+/**
+ * Get MAC VLAN interfaces list on @p link.
+ *
+ * @param nh        Netconf session handle
+ * @param link      Link (main) interface name
+ * @param list      Space separated list of MAC VLAN interfaces names
+ *
+ * @return Status code
+ */
+extern te_errno netconf_macvlan_list(netconf_handle nh, const char *link,
+                                     char **list);
+
+/**
+ * Get MAC VLAN interface mode.
+ *
+ * @param nh        Netconf session handle
+ * @param ifname    MAC VLAN interface name
+ * @param mode_str  Pointer to the MAC VLAN mode string
+ *
+ * @return Status code
+ */
+extern te_errno netconf_macvlan_get_mode(netconf_handle nh,
+                                         const char *ifname,
+                                         const char **mode_str);
 
 #ifdef __cplusplus
 }

@@ -60,6 +60,10 @@
 extern "C" {
 #endif
 
+/** Get pointer to the tail of netlink message data. */
+#define NETCONF_NLMSG_TAIL(_msg) \
+    ((struct rtattr *) (((void *) (_msg)) + NLMSG_ALIGN((_msg)->nlmsg_len)))
+
 /** Netconf handle */
 struct netconf_handle_s {
     int                 socket;         /**< Session socket */
@@ -116,6 +120,54 @@ void netconf_append_rta(struct nlmsghdr *h, const void *data, int len,
                         unsigned short rta_type);
 
 /**
+ * Append a nested attribute.
+ *
+ * @param h         Header of message
+ * @param rta_type  Type of rtattr
+ * @param rta       Pointer to @b rtattr pointer
+ */
+extern void netconf_append_rta_nested(struct nlmsghdr *h,
+                                      unsigned short rta_type,
+                                      struct rtattr **rta);
+
+/**
+ * Finalise appending of a nested attribute.
+ *
+ * @param h     Header of message
+ * @param rta   Pointer to the nested attribute
+ */
+extern void netconf_append_rta_nested_end(struct nlmsghdr *h,
+                                          struct rtattr *rta);
+
+/**
+ * Parse attributes message.
+ *
+ * @param rta       Pointer to the first attribute in the message
+ * @param len       The message length
+ * @param rta_arr   Sorted attributes pointers array
+ * @param max       Maximum index of the array
+ */
+extern void netconf_parse_rtattr(struct rtattr *rta, int len,
+                                 struct rtattr **rta_arr, int max);
+
+/**
+ * Parse attributes message.
+ *
+ * @param rta       Pointer to the first attribute in the message
+ * @param len       The message length
+ * @param rta_arr   Sorted attributes pointers array
+ * @param max       Maximum index of the array
+ */
+extern void netconf_parse_rtattr_nested(struct rtattr *rta,
+                                        struct rtattr **rta_arr,
+                                        int max);
+
+/**
+ * Get u32 value from data of attribute @p rta.
+ */
+extern uint32_t netconf_get_rta_u32(struct rtattr *rta);
+
+/**
  * Duplicate a data of rtattr. The memory is allocated using malloc().
  *
  * @param rta           Routing atribute
@@ -158,6 +210,13 @@ void netconf_neigh_node_free(netconf_node *node);
  * @param node          Node to free
  */
 void netconf_rule_node_free(netconf_node *node);
+
+/**
+ * Free memory used by node of MAC VLAN type.
+ *
+ * @param node  Node to free
+ */
+extern void netconf_macvlan_node_free(netconf_node *node);
 
 /**
  * Send request to kernel and receive response.

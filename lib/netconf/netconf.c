@@ -224,9 +224,7 @@ netconf_append_rta(struct nlmsghdr *h, const void *data, int len,
 {
     struct rtattr *rta;
 
-    NETCONF_ASSERT(data != NULL);
     NETCONF_ASSERT(h != NULL);
-    NETCONF_ASSERT(len > 0);
 
     rta = (struct rtattr *)((char *)h + NLMSG_ALIGN(h->nlmsg_len));
     rta->rta_type = rta_type;
@@ -311,6 +309,10 @@ netconf_node_free(netconf_node *node)
 
         case NETCONF_NODE_RULE:
             netconf_rule_node_free(node);
+            break;
+
+        case NETCONF_NODE_MACVLAN:
+            netconf_macvlan_node_free(node);
             break;
 
         default:
@@ -463,4 +465,48 @@ netconf_talk(netconf_handle nh, void *req, int len,
 
     /* Never reached */
     return 0;
+}
+
+void
+netconf_append_rta_nested(struct nlmsghdr *h, unsigned short rta_type,
+                          struct rtattr **rta)
+{
+    *rta = NETCONF_NLMSG_TAIL(h);
+    netconf_append_rta(h, NULL, 0, rta_type);
+}
+
+void
+netconf_append_rta_nested_end(struct nlmsghdr *h, struct rtattr *rta)
+{
+    rta->rta_len = (void *)NETCONF_NLMSG_TAIL(h) - (void *)rta;
+}
+
+void
+netconf_parse_rtattr(struct rtattr *rta, int len, struct rtattr **rta_arr,
+                     int max)
+{
+    memset(rta_arr, 0, sizeof(*rta_arr) * (max + 1));
+
+    while (RTA_OK(rta, len))
+    {
+        if (rta->rta_type <= max)
+            rta_arr[rta->rta_type] = rta;
+
+        rta = RTA_NEXT(rta, len);
+    }
+
+    NETCONF_ASSERT(len == 0);
+}
+
+void
+netconf_parse_rtattr_nested(struct rtattr *rta, struct rtattr **rta_arr,
+                            int max)
+{
+    netconf_parse_rtattr(RTA_DATA(rta), RTA_PAYLOAD(rta), rta_arr, max);
+}
+
+uint32_t
+netconf_get_rta_u32(struct rtattr *rta)
+{
+    return *(uint32_t *)RTA_DATA(rta);
 }
