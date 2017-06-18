@@ -105,6 +105,9 @@
  */
 #define TAD_WRITE_RETRIES           (128)
 
+/** Maximum number of failed attempts to write data due to ENOBUFS. */
+#define TAD_WRITE_NOBUFS            (10000)
+
 /**
  * Default timeout for waiting write possibility. This macro should
  * be used only for initialization of 'struct timeval' variables.
@@ -539,6 +542,7 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
     struct iovec        iov[iovlen];
     te_errno            rc;
     unsigned int        retries = TAD_WRITE_RETRIES;
+    unsigned int        nobufs;
     int                 ret_val;
     fd_set              write_set;
     int                 fd;
@@ -608,8 +612,9 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
     }
 #endif
 
-    for (retries = 0, ret_val = 0;
-         ret_val <= 0 && retries < TAD_WRITE_RETRIES;
+    for (retries = 0, ret_val = 0, nobufs = 0;
+         ret_val <= 0 && retries < TAD_WRITE_RETRIES &&
+         nobufs < TAD_WRITE_NOBUFS;
          retries++)
     {
 #ifndef __CYGWIN__
@@ -645,6 +650,9 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
                     struct timeval clr_delay = { 0, rand() & 0x3f };
 
                     select(0, NULL, NULL, NULL, &clr_delay);
+
+                    nobufs++;
+                    retries--;
                     continue;
                 }
 
@@ -654,6 +662,7 @@ tad_eth_sap_send(tad_eth_sap *sap, const tad_pkt *pkt)
                     return rc;
             }
         }
+        nobufs = 0;
 #else /* !__CYGWIN */
         if (0 == pcap_sendpacket(data->out, packet_data, pkt->segs_len))
         {
