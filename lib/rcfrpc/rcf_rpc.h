@@ -186,7 +186,7 @@ typedef struct rcf_rpc_server {
 
 
 /** Default RPC timeout in milliseconds */
-#define RCF_RPC_DEFAULT_TIMEOUT     rcp_rpc_default_timeout()
+#define RCF_RPC_DEFAULT_TIMEOUT     rcf_rpc_default_timeout()
 
 /**
  * Function to get default RPC timeout in milliseconds from Environment.
@@ -194,7 +194,7 @@ typedef struct rcf_rpc_server {
  * @return Timeout in milliseconds.
  */
 static inline unsigned int
-rcp_rpc_default_timeout(void)
+rcf_rpc_default_timeout(void)
 {
     const char         *var_name = "TE_RCFRPC_TIMEO_MS";
     const unsigned int  def_val = 10000;
