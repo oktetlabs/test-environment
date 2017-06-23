@@ -56,11 +56,24 @@
 /** 802.1Q Tag Protocol Type (IEEE Std 802.1Q-2003 9.3.1) */
 #define TAD_802_1Q_TAG_TYPE     0x8100
 
+/** 802.1ad Tag Protocol Type (IEEE Std 802.1ad-2005) */
+#define TAD_802_1ad_TAG_TYPE    0x88A8
+
+/**
+ * Ethernet layer VLAN usage options
+ */
+typedef enum tad_eth_tagged {
+    TAD_ETH_TAGGED_UNKNOWN = 0,
+    TAD_ETH_UNTAGGED,
+    TAD_ETH_TAGGED,
+    TAD_ETH_DOUBLE_TAGGED
+} tad_eth_tagged;
+
 /**
  * Ethernet layer specific data
  */
 typedef struct tad_eth_proto_data {
-    te_bool3                tagged;
+    tad_eth_tagged          tagged;
     te_bool3                is_llc;
     tad_bps_pkt_frag_def    eth;
     tad_bps_pkt_frag_def    len_type;
@@ -68,6 +81,9 @@ typedef struct tad_eth_proto_data {
     tad_bps_pkt_frag_def    tpid;
     tad_bps_pkt_frag_def    tci;
     tad_bps_pkt_frag_def    e_rif;
+    tad_bps_pkt_frag_def    tpid_ad;
+    tad_bps_pkt_frag_def    tci_ad_outer;
+    tad_bps_pkt_frag_def    tci_ad_inner;
     tad_bps_pkt_frag_def    llc;
     tad_bps_pkt_frag_def    snap;
 } tad_eth_proto_data;
@@ -77,7 +93,7 @@ typedef struct tad_eth_proto_data {
  * receive).
  */
 typedef struct tad_eth_proto_pdu_data {
-    te_bool3                tagged;
+    tad_eth_tagged          tagged;
     te_bool3                is_llc;
     tad_bps_pkt_frag_data   eth;
     tad_bps_pkt_frag_data   len_type;
@@ -85,6 +101,9 @@ typedef struct tad_eth_proto_pdu_data {
     tad_bps_pkt_frag_data   tpid;
     tad_bps_pkt_frag_data   tci;
     tad_bps_pkt_frag_data   e_rif;
+    tad_bps_pkt_frag_data   tpid_ad;
+    tad_bps_pkt_frag_data   tci_ad_outer;
+    tad_bps_pkt_frag_data   tci_ad_inner;
     tad_bps_pkt_frag_data   llc;
     tad_bps_pkt_frag_data   snap;
 } tad_eth_proto_pdu_data;
@@ -169,6 +188,29 @@ static const tad_bps_pkt_frag tad_802_1q_e_rif_bps_hdr[] =
 };
 
 /**
+ * Definition of Tag Protocol Identifier (TPID) in the case of
+ * IEEE Std 802.1ad.
+ */
+static const tad_bps_pkt_frag tad_802_1ad_tpid_bps_hdr[] =
+{
+    { "tpid", 16, BPS_FLD_CONST(TAD_802_1ad_TAG_TYPE), TAD_DU_I32, FALSE },
+};
+
+/**
+ * Definition of IEEE Std 802.1Q Tag Control Information
+ * which used in the case of IEEE Std 802.1ad.
+ */
+static const tad_bps_pkt_frag tad_802_1ad_tci_bps_hdr[] =
+{
+    { "pcp", 3, BPS_FLD_CONST_DEF(NDN_TAG_VLAN_HEADER_PCP, 0),
+      TAD_DU_I32, FALSE },
+    { "dei", 1, BPS_FLD_CONST_DEF(NDN_TAG_VLAN_HEADER_DEI, 0),
+      TAD_DU_I32, FALSE },
+    { "vid", 12, BPS_FLD_CONST_DEF(NDN_TAG_VLAN_HEADER_VID, 0),
+      TAD_DU_I32, FALSE },
+};
+
+/**
  * Definition of IEEE Std 802.2 LLC PDU header.
  */
 static const tad_bps_pkt_frag tad_802_2_llc_bps_hdr[] =
@@ -229,7 +271,7 @@ tad_eth_init_cb(csap_p csap, unsigned int layer)
 
     layer_nds = csap->layers[layer].nds;
 
-    proto_data->tagged = TE_BOOL3_ANY;
+    proto_data->tagged = TAD_ETH_TAGGED_UNKNOWN;
     proto_data->is_llc = TE_BOOL3_ANY;
 
     rc = tad_bps_pkt_frag_init(tad_eth_addrs_bps_hdr,
@@ -411,6 +453,21 @@ tad_eth_init_cb(csap_p csap, unsigned int layer)
              NULL, &proto_data->e_rif);
     if (rc != 0)
         return rc;
+    rc = tad_bps_pkt_frag_init(tad_802_1ad_tpid_bps_hdr,
+             TE_ARRAY_LEN(tad_802_1ad_tpid_bps_hdr),
+             NULL, &proto_data->tpid_ad);
+    if (rc != 0)
+        return rc;
+    rc = tad_bps_pkt_frag_init(tad_802_1ad_tci_bps_hdr,
+             TE_ARRAY_LEN(tad_802_1ad_tci_bps_hdr),
+             NULL, &proto_data->tci_ad_outer);
+    if (rc != 0)
+        return rc;
+    rc = tad_bps_pkt_frag_init(tad_802_1ad_tci_bps_hdr,
+             TE_ARRAY_LEN(tad_802_1ad_tci_bps_hdr),
+             NULL, &proto_data->tci_ad_inner);
+    if (rc != 0)
+        return rc;
     rc = tad_bps_pkt_frag_init(tad_802_2_llc_bps_hdr,
              TE_ARRAY_LEN(tad_802_2_llc_bps_hdr),
              NULL, &proto_data->llc);
@@ -441,6 +498,9 @@ tad_eth_destroy_cb(csap_p csap, unsigned int layer)
     tad_bps_pkt_frag_free(&proto_data->tpid);
     tad_bps_pkt_frag_free(&proto_data->tci);
     tad_bps_pkt_frag_free(&proto_data->e_rif);
+    tad_bps_pkt_frag_free(&proto_data->tpid_ad);
+    tad_bps_pkt_frag_free(&proto_data->tci_ad_outer);
+    tad_bps_pkt_frag_free(&proto_data->tci_ad_inner);
     tad_bps_pkt_frag_free(&proto_data->llc);
     tad_bps_pkt_frag_free(&proto_data->snap);
 
@@ -538,13 +598,13 @@ tad_eth_nds_to_pdu_data(csap_p csap, tad_eth_proto_data *proto_data,
         }
         else if (tag == NDN_TAG_ETH_UNTAGGED)
         {
-            pdu_data->tagged = TE_BOOL3_FALSE;
+            pdu_data->tagged = TAD_ETH_UNTAGGED;
             F_VERB(CSAP_LOG_FMT "Untagged frame format",
                    CSAP_LOG_ARGS(csap));
         }
         else if (tag == NDN_TAG_VLAN_TAG_HEADER)
         {
-            pdu_data->tagged = TE_BOOL3_TRUE;
+            pdu_data->tagged = TAD_ETH_TAGGED;
             F_VERB(CSAP_LOG_FMT "Tagged frame format",
                    CSAP_LOG_ARGS(csap));
 
@@ -560,6 +620,42 @@ tad_eth_nds_to_pdu_data(csap_p csap, tad_eth_proto_data *proto_data,
 
             rc = tad_bps_nds_to_data_units(&proto_data->e_rif, tmp,
                                            &pdu_data->e_rif);
+            if (rc != 0)
+                return rc;
+        }
+        else if (tag == NDN_TAG_VLAN_DOUBLE_TAGGED)
+        {
+            const asn_value *vlan_header;
+
+            pdu_data->tagged = TAD_ETH_DOUBLE_TAGGED;
+            F_VERB(CSAP_LOG_FMT "Double tagged frame format",
+                   CSAP_LOG_ARGS(csap));
+
+            rc = asn_get_subvalue(tmp, (asn_value **)&vlan_header, "outer");
+            if (rc != 0)
+                return rc;
+
+            rc = tad_bps_nds_to_data_units(&proto_data->tpid_ad, vlan_header,
+                                           &pdu_data->tpid_ad);
+            if (rc != 0)
+                return rc;
+
+            rc = tad_bps_nds_to_data_units(&proto_data->tci_ad_outer, vlan_header,
+                                           &pdu_data->tci_ad_outer);
+            if (rc != 0)
+                return rc;
+
+            rc = asn_get_subvalue(tmp, (asn_value **)&vlan_header, "inner");
+            if (rc != 0)
+                return rc;
+
+            rc = tad_bps_nds_to_data_units(&proto_data->tpid, vlan_header,
+                                           &pdu_data->tpid);
+            if (rc != 0)
+                return rc;
+
+            rc = tad_bps_nds_to_data_units(&proto_data->tci_ad_inner, vlan_header,
+                                           &pdu_data->tci_ad_inner);
             if (rc != 0)
                 return rc;
         }
@@ -681,6 +777,9 @@ tad_eth_release_pdu_cb(csap_p csap, unsigned int layer, void *opaque)
         tad_bps_free_pkt_frag_data(&proto_data->tpid, &pdu_data->tpid);
         tad_bps_free_pkt_frag_data(&proto_data->tci, &pdu_data->tci);
         tad_bps_free_pkt_frag_data(&proto_data->e_rif, &pdu_data->e_rif);
+        tad_bps_free_pkt_frag_data(&proto_data->tpid_ad, &pdu_data->tpid_ad);
+        tad_bps_free_pkt_frag_data(&proto_data->tci_ad_outer, &pdu_data->tci_ad_outer);
+        tad_bps_free_pkt_frag_data(&proto_data->tci_ad_inner, &pdu_data->tci_ad_inner);
         tad_bps_free_pkt_frag_data(&proto_data->llc, &pdu_data->llc);
         tad_bps_free_pkt_frag_data(&proto_data->snap, &pdu_data->snap);
         free(pdu_data);
@@ -707,8 +806,8 @@ tad_eth_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     tmpl_data = *p_opaque;
 
     /* By default, frames are not tagged */
-    if (tmpl_data->tagged == TE_BOOL3_ANY)
-        tmpl_data->tagged = TE_BOOL3_FALSE;
+    if (tmpl_data->tagged == TAD_ETH_TAGGED_UNKNOWN)
+        tmpl_data->tagged = TAD_ETH_UNTAGGED;
     /* By default, use Ethernet2 encapsulation */
     if (tmpl_data->is_llc == TE_BOOL3_ANY)
         tmpl_data->is_llc = TE_BOOL3_FALSE;
@@ -733,7 +832,7 @@ tad_eth_confirm_tmpl_cb(csap_p csap, unsigned int layer,
             return rc;
     }
 
-    if (tmpl_data->tagged == TE_BOOL3_TRUE)
+    if (tmpl_data->tagged == TAD_ETH_TAGGED)
     {
         tad_data_unit_t *cfi_du =
             (tmpl_data->tci.dus[1].du_type == TAD_DU_UNDEF) ?
@@ -761,6 +860,17 @@ tad_eth_confirm_tmpl_cb(csap_p csap, unsigned int layer,
             if (rc != 0)
                 return rc;
         }
+    }
+    else if (tmpl_data->tagged == TAD_ETH_DOUBLE_TAGGED)
+    {
+        rc = tad_bps_confirm_send(&proto_data->tci_ad_outer,
+                                  &tmpl_data->tci_ad_outer);
+        if (rc != 0)
+            return rc;
+        rc = tad_bps_confirm_send(&proto_data->tci_ad_inner,
+                                  &tmpl_data->tci_ad_inner);
+        if (rc != 0)
+            return rc;
     }
 
     if (tmpl_data->is_llc == TE_BOOL3_TRUE)
@@ -821,7 +931,12 @@ tad_eth_frame_check(tad_pkt *pkt, void *opaque)
         tad_data_unit_t     my_du;
 
          /* FIXME: 4 is length of TPID+TCI. */
-        tag_hdr_len = (data->tmpl_data->tagged == TE_BOOL3_TRUE) ? 4 : 0;
+        if (data->tmpl_data->tagged == TAD_ETH_DOUBLE_TAGGED)
+            tag_hdr_len = 8;
+        else if (data->tmpl_data->tagged == TAD_ETH_TAGGED)
+            tag_hdr_len = 4;
+        else
+            tag_hdr_len = 0;
 
         /*
          * Length/type is located either just after addresses or
@@ -881,7 +996,7 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
                                           &tmpl_data->eth) +
              tad_bps_pkt_frag_data_bitlen(&proto_data->len_type,
                                           &tmpl_data->len_type);
-    if (tmpl_data->tagged == TE_BOOL3_TRUE)
+    if (tmpl_data->tagged == TAD_ETH_TAGGED)
     {
         bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->tpid,
                                                &tmpl_data->tpid) +
@@ -899,6 +1014,18 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
             bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->e_rif,
                                                    &tmpl_data->e_rif);
         }
+    }
+    else if (tmpl_data->tagged == TAD_ETH_DOUBLE_TAGGED)
+    {
+        bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->tpid_ad,
+                                               &tmpl_data->tpid_ad) +
+                  tad_bps_pkt_frag_data_bitlen(&proto_data->tci_ad_outer,
+                                               &tmpl_data->tci_ad_outer);
+
+        bitlen += tad_bps_pkt_frag_data_bitlen(&proto_data->tpid,
+                                               &tmpl_data->tpid) +
+                  tad_bps_pkt_frag_data_bitlen(&proto_data->tci_ad_inner,
+                                               &tmpl_data->tci_ad_inner);
     }
     if (tmpl_data->is_llc == TE_BOOL3_TRUE)
     {
@@ -929,7 +1056,7 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
         return rc;
     }
 
-    if (tmpl_data->tagged == TE_BOOL3_TRUE)
+    if (tmpl_data->tagged == TAD_ETH_TAGGED)
     {
         rc = tad_bps_pkt_frag_gen_bin(&proto_data->tpid, &tmpl_data->tpid,
                                       args, arg_num,
@@ -948,6 +1075,55 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
         if (rc != 0)
         {
             ERROR("%s(): tad_bps_pkt_frag_gen_bin() failed for TCI: %r",
+                  __FUNCTION__, rc);
+            free(data);
+            return rc;
+        }
+    }
+
+    if (tmpl_data->tagged == TAD_ETH_DOUBLE_TAGGED)
+    {
+        rc = tad_bps_pkt_frag_gen_bin(&proto_data->tpid_ad, &tmpl_data->tpid_ad,
+                                      args, arg_num,
+                                      data, &bitoff, bitlen);
+        if (rc != 0)
+        {
+            ERROR("%s(): tad_bps_pkt_frag_gen_bin() failed for TPID outer: %r",
+                  __FUNCTION__, rc);
+            free(data);
+            return rc;
+        }
+
+        rc = tad_bps_pkt_frag_gen_bin(&proto_data->tci_ad_outer,
+                                      &tmpl_data->tci_ad_outer,
+                                      args, arg_num,
+                                      data, &bitoff, bitlen);
+        if (rc != 0)
+        {
+            ERROR("%s(): tad_bps_pkt_frag_gen_bin() failed for TCI outer: %r",
+                  __FUNCTION__, rc);
+            free(data);
+            return rc;
+        }
+
+        rc = tad_bps_pkt_frag_gen_bin(&proto_data->tpid, &tmpl_data->tpid,
+                                      args, arg_num,
+                                      data, &bitoff, bitlen);
+        if (rc != 0)
+        {
+            ERROR("%s(): tad_bps_pkt_frag_gen_bin() failed for TPID inner: %r",
+                  __FUNCTION__, rc);
+            free(data);
+            return rc;
+        }
+
+        rc = tad_bps_pkt_frag_gen_bin(&proto_data->tci_ad_inner,
+                                      &tmpl_data->tci_ad_inner,
+                                      args, arg_num,
+                                      data, &bitoff, bitlen);
+        if (rc != 0)
+        {
+            ERROR("%s(): tad_bps_pkt_frag_gen_bin() failed for TCI inner: %r",
                   __FUNCTION__, rc);
             free(data);
             return rc;
@@ -976,7 +1152,7 @@ tad_eth_gen_bin_cb(csap_p csap, unsigned int layer,
         return rc;
     }
 
-    if (tmpl_data->tagged == TE_BOOL3_TRUE &&
+    if (tmpl_data->tagged == TAD_ETH_TAGGED &&
         tmpl_data->tci.dus[1].val_i32 == 1)
     {
         /* CFI bit is set, confirm E-RIF */
@@ -1080,7 +1256,8 @@ tad_eth_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     if (rc != 0)
         return rc;
 
-    if (ptrn_data->tagged != TE_BOOL3_FALSE)
+    if (ptrn_data->tagged == TAD_ETH_TAGGED ||
+        ptrn_data->tagged == TAD_ETH_TAGGED_UNKNOWN)
     {
         asn_tag_value       layer_pdu_asn_tag = NDN_TAG_ETH_UNTAGGED;
         const asn_value    *layer_pdu_tagged = NULL;
@@ -1106,6 +1283,45 @@ tad_eth_confirm_ptrn_cb(csap_p csap, unsigned int layer,
 
         rc = tad_bps_nds_to_data_units(&proto_data->e_rif, NULL,
                                        &ptrn_data->e_rif);
+        if (rc != 0)
+            return rc;
+    }
+    else if (ptrn_data->tagged == TAD_ETH_DOUBLE_TAGGED)
+    {
+        const asn_value *layer_pdu_tagged = NULL;
+        const asn_value *tmp = NULL;
+
+        rc = asn_get_child_value(layer_pdu, &layer_pdu_tagged,
+                                 PRIVATE, NDN_TAG_VLAN_TAGGED);
+        if (rc == 0)
+        {
+            rc = asn_get_choice_value(layer_pdu_tagged,
+                                      (asn_value **)&layer_pdu_tagged,
+                                      NULL, NULL);
+            if (rc != 0)
+                return rc;
+        }
+
+        rc = tad_bps_nds_to_data_units(&proto_data->tpid_ad, NULL,
+                                       &ptrn_data->tpid_ad);
+        if (rc != 0)
+            return rc;
+
+        rc = asn_get_subvalue(layer_pdu_tagged, (asn_value **)&tmp, "outer");
+        if (rc != 0)
+            return rc;
+
+        rc = tad_bps_nds_to_data_units(&proto_data->tci_ad_outer, tmp,
+                                       &ptrn_data->tci_ad_outer);
+        if (rc != 0)
+            return rc;
+
+        rc = asn_get_subvalue(layer_pdu_tagged, (asn_value **)&tmp, "inner");
+        if (rc != 0)
+            return rc;
+
+        rc = tad_bps_nds_to_data_units(&proto_data->tci_ad_inner, tmp,
+                                       &ptrn_data->tci_ad_inner);
         if (rc != 0)
             return rc;
     }
@@ -1161,6 +1377,15 @@ tad_eth_match_pre_cb(csap_p              csap,
         rc = tad_bps_pkt_frag_match_pre(&proto_data->e_rif,
                                         &pkt_data->e_rif);
     if (rc == 0)
+        rc = tad_bps_pkt_frag_match_pre(&proto_data->tpid_ad,
+                                        &pkt_data->tpid_ad);
+    if (rc == 0)
+        rc = tad_bps_pkt_frag_match_pre(&proto_data->tci_ad_outer,
+                                        &pkt_data->tci_ad_outer);
+    if (rc == 0)
+        rc = tad_bps_pkt_frag_match_pre(&proto_data->tci_ad_inner,
+                                        &pkt_data->tci_ad_inner);
+    if (rc == 0)
         rc = tad_bps_pkt_frag_match_pre(&proto_data->llc,
                                         &pkt_data->llc);
     if (rc == 0)
@@ -1200,7 +1425,7 @@ tad_eth_match_post_cb(csap_p              csap,
     if (rc != 0)
         return rc;
 
-    if (pkt_data->tagged == TE_BOOL3_TRUE)
+    if (pkt_data->tagged == TAD_ETH_TAGGED)
     {
         tmp = asn_retrieve_descendant(meta_pkt_layer->nds, &rc,
                                       "tagged.#tagged");
@@ -1219,6 +1444,46 @@ tad_eth_match_post_cb(csap_p              csap,
         if (rc != 0)
             return rc;
     }
+    else if (pkt_data->tagged == TAD_ETH_DOUBLE_TAGGED)
+    {
+        tmp = asn_retrieve_descendant(meta_pkt_layer->nds, &rc,
+                                      "tagged.#double-tagged.outer");
+        if (tmp == NULL)
+        {
+            ERROR(CSAP_LOG_FMT "Failed to retrieve tagged.#double-tagged.outer: %r",
+                  CSAP_LOG_ARGS(csap), rc);
+            return TE_RC(TE_TAD_CSAP, rc);
+        }
+
+        /* Skip outer TPID */
+        bitoff += tad_bps_pkt_frag_data_bitlen(&proto_data->tpid_ad,
+                                               &pkt_data->tpid_ad);
+
+        rc = tad_bps_pkt_frag_match_post(&proto_data->tci_ad_outer,
+                                         &pkt_data->tci_ad_outer,
+                                         pkt, &bitoff, tmp);
+        if (rc != 0)
+            return rc;
+
+        tmp = asn_retrieve_descendant(meta_pkt_layer->nds, &rc,
+                                      "tagged.#double-tagged.inner");
+        if (tmp == NULL)
+        {
+            ERROR(CSAP_LOG_FMT "Failed to retrieve tagged.#double-tagged.inner: %r",
+                  CSAP_LOG_ARGS(csap), rc);
+            return TE_RC(TE_TAD_CSAP, rc);
+        }
+
+        /* Skip inner TPID */
+        bitoff += tad_bps_pkt_frag_data_bitlen(&proto_data->tpid,
+                                               &pkt_data->tpid);
+
+        rc = tad_bps_pkt_frag_match_post(&proto_data->tci_ad_inner,
+                                         &pkt_data->tci_ad_inner,
+                                         pkt, &bitoff, tmp);
+        if (rc != 0)
+            return rc;
+    }
 
     rc = tad_bps_pkt_frag_match_post(&proto_data->len_type,
                                      &pkt_data->len_type,
@@ -1226,7 +1491,7 @@ tad_eth_match_post_cb(csap_p              csap,
     if (rc != 0)
         return rc;
 
-    if (pkt_data->tagged == TE_BOOL3_TRUE &&
+    if (pkt_data->tagged == TAD_ETH_TAGGED &&
         ((pkt_data->tci.dus[1].du_type == TAD_DU_I32 &&
           pkt_data->tci.dus[1].val_i32 == 1) ||
          (proto_data->tci.tx_def[1].du_type == TAD_DU_I32 &&
@@ -1321,39 +1586,94 @@ tad_eth_match_do_cb(csap_p           csap,
         return rc;
     }
 
-    rc = tad_bps_pkt_frag_match_do(&proto_data->tpid, &ptrn_data->tpid,
-                                   &pkt_data->tpid, pdu, &bitoff);
-    if (rc != 0)
+    if (ptrn_data->tagged == TAD_ETH_DOUBLE_TAGGED)
     {
-        /* Frame is not tagged */
-        F_VERB(CSAP_LOG_FMT "Match PDU vs TPID failed on bit offset "
-               "%u: %r", CSAP_LOG_ARGS(csap), (unsigned)bitoff, rc);
-        if (ptrn_data->tagged == TE_BOOL3_TRUE)
-        {
-            /* Tagged frames are required only */
-            return rc;
-        }
-        pkt_data->tagged = TE_BOOL3_FALSE;
-    }
-    else if (ptrn_data->tagged == TE_BOOL3_FALSE)
-    {
-        /* Untagged frames are required only */
-        return TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
-    }
-    else
-    {
-        pkt_data->tagged = TE_BOOL3_TRUE;
+        pkt_data->tagged = TAD_ETH_DOUBLE_TAGGED;
 
-        rc = tad_bps_pkt_frag_match_do(&proto_data->tci,
-                                       &ptrn_data->tci,
-                                       &pkt_data->tci,
+        rc = tad_bps_pkt_frag_match_do(&proto_data->tpid_ad,
+                                       &ptrn_data->tpid_ad,
+                                       &pkt_data->tpid_ad,
                                        pdu, &bitoff);
         if (rc != 0)
         {
-            F_VERB(CSAP_LOG_FMT "Match PDU vs TCI failed on bit "
+            F_VERB(CSAP_LOG_FMT "Match PDU vs outer TPID failed on bit "
                    "offset %u: %r", CSAP_LOG_ARGS(csap),
                    (unsigned)bitoff, rc);
             return rc;
+        }
+
+        rc = tad_bps_pkt_frag_match_do(&proto_data->tci_ad_outer,
+                                       &ptrn_data->tci_ad_outer,
+                                       &pkt_data->tci_ad_outer,
+                                       pdu, &bitoff);
+        if (rc != 0)
+        {
+            F_VERB(CSAP_LOG_FMT "Match PDU vs outer TCI failed on bit "
+                   "offset %u: %r", CSAP_LOG_ARGS(csap),
+                   (unsigned)bitoff, rc);
+            return rc;
+        }
+
+        rc = tad_bps_pkt_frag_match_do(&proto_data->tpid,
+                                       &ptrn_data->tpid,
+                                       &pkt_data->tpid,
+                                       pdu, &bitoff);
+        if (rc != 0)
+        {
+            F_VERB(CSAP_LOG_FMT "Match PDU vs inner TPID failed on bit "
+                   "offset %u: %r", CSAP_LOG_ARGS(csap),
+                   (unsigned)bitoff, rc);
+            return rc;
+        }
+
+        rc = tad_bps_pkt_frag_match_do(&proto_data->tci_ad_inner,
+                                       &ptrn_data->tci_ad_inner,
+                                       &pkt_data->tci_ad_inner,
+                                       pdu, &bitoff);
+        if (rc != 0)
+        {
+            F_VERB(CSAP_LOG_FMT "Match PDU vs inner TCI failed on bit "
+                   "offset %u: %r", CSAP_LOG_ARGS(csap),
+                   (unsigned)bitoff, rc);
+            return rc;
+        }
+    }
+    else
+    {
+        rc = tad_bps_pkt_frag_match_do(&proto_data->tpid, &ptrn_data->tpid,
+                                       &pkt_data->tpid, pdu, &bitoff);
+        if (rc != 0)
+        {
+            /* Frame is not tagged */
+            F_VERB(CSAP_LOG_FMT "Match PDU vs TPID failed on bit offset "
+                   "%u: %r", CSAP_LOG_ARGS(csap), (unsigned)bitoff, rc);
+            if (ptrn_data->tagged == TAD_ETH_TAGGED)
+            {
+                /* Tagged frames are required only */
+                return rc;
+            }
+            pkt_data->tagged = TAD_ETH_UNTAGGED;
+        }
+        else if (ptrn_data->tagged == TAD_ETH_UNTAGGED)
+        {
+            /* Untagged frames are required only */
+            return TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
+        }
+        else
+        {
+            pkt_data->tagged = TAD_ETH_TAGGED;
+
+            rc = tad_bps_pkt_frag_match_do(&proto_data->tci,
+                                           &ptrn_data->tci,
+                                           &pkt_data->tci,
+                                           pdu, &bitoff);
+            if (rc != 0)
+            {
+                F_VERB(CSAP_LOG_FMT "Match PDU vs TCI failed on bit "
+                       "offset %u: %r", CSAP_LOG_ARGS(csap),
+                       (unsigned)bitoff, rc);
+                return rc;
+            }
         }
     }
 
