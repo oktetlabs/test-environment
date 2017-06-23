@@ -557,6 +557,14 @@ static te_errno rp_filter_set(unsigned int, const char *, const char *,
 static te_errno rp_filter_all_get(unsigned int, const char *, char *);
 static te_errno rp_filter_all_set(unsigned int, const char *, const char *);
 
+static te_errno arp_ignore_get(unsigned int, const char *, char *,
+                               const char *);
+static te_errno arp_ignore_set(unsigned int, const char *, const char *,
+                               const char *);
+
+static te_errno arp_ignore_all_get(unsigned int, const char *, char *);
+static te_errno arp_ignore_all_set(unsigned int, const char *, const char *);
+
 static te_errno promisc_get(unsigned int, const char *, char *,
                             const char *);
 static te_errno promisc_set(unsigned int, const char *, const char *,
@@ -766,6 +774,10 @@ RCF_PCH_CFG_NODE_RW(node_rp_filter_all, "rp_filter_all",
                     NULL, &node_dns,
                     rp_filter_all_get, rp_filter_all_set);
 
+RCF_PCH_CFG_NODE_RW(node_arp_ignore_all, "arp_ignore_all",
+                    NULL, &node_rp_filter_all,
+                    arp_ignore_all_get, arp_ignore_all_set);
+
 RCF_PCH_CFG_NODE_RO(node_neigh_state, "state",
                     NULL, NULL,
                     (rcf_ch_cfg_list)neigh_state_get);
@@ -809,7 +821,10 @@ RCF_PCH_CFG_NODE_COLLECTION(node_vlans, "vlans",
 RCF_PCH_CFG_NODE_RW(node_rp_filter, "rp_filter", NULL, &node_vlans,
                     rp_filter_get, rp_filter_set);
 
-RCF_PCH_CFG_NODE_RW(node_promisc, "promisc", NULL, &node_rp_filter,
+RCF_PCH_CFG_NODE_RW(node_arp_ignore, "arp_ignore", NULL, &node_rp_filter,
+                    arp_ignore_get, arp_ignore_set);
+
+RCF_PCH_CFG_NODE_RW(node_promisc, "promisc", NULL, &node_arp_ignore,
                     promisc_get, promisc_set);
 
 RCF_PCH_CFG_NODE_RW(node_status, "status", NULL, &node_promisc,
@@ -843,7 +858,7 @@ RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_iface_ip6_accept_ra,
                     ifindex_get);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
-                            &node_ifindex, &node_rp_filter_all,
+                            &node_ifindex, &node_arp_ignore_all,
                             NULL, NULL, interface_list, NULL);
 
 RCF_PCH_CFG_NODE_RW(node_ip4_fw, "ip4_fw", NULL, &node_interface,
@@ -5694,6 +5709,101 @@ static te_errno
 rp_filter_all_set(unsigned int gid, const char *oid, const char *value)
 {
     return rp_filter_set(gid, oid, value, "all");
+}
+
+/**
+ * Get arp_ignore value
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         value location
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+arp_ignore_get(unsigned int gid, const char *oid, char *value,
+               const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    return read_sys_value(value, 2,
+                          "/proc/sys/net/ipv4/conf/%s/arp_ignore",
+                          ifname);
+#else
+    UNUSED(value);
+    UNUSED(ifname);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    return 0;
+}
+
+/**
+ * Set arp_ignore value
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         new value pointer
+ * @param ifname        name of the interface (like "eth0")
+ *
+ * @return              Status code
+ */
+static te_errno
+arp_ignore_set(unsigned int gid, const char *oid, const char *value,
+               const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+#if __linux__
+    if (*value < '0' || *value > '8' || *(value + 1) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    return write_sys_value(value,
+                           "/proc/sys/net/ipv4/conf/%s/arp_ignore",
+                           ifname);
+#else
+    UNUSED(value);
+    UNUSED(ifname);
+
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+
+    return 0;
+}
+
+/**
+ * Get arp_ignore value for interface "all"
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         value location
+ *
+ * @return              Status code
+ */
+static te_errno
+arp_ignore_all_get(unsigned int gid, const char *oid, char *value)
+{
+    return arp_ignore_get(gid, oid, value, "all");
+}
+
+/**
+ * Set arp_ignore value for interface "all"
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instance identifier (unused)
+ * @param value         new value pointer
+ *
+ * @return              Status code
+ */
+static te_errno
+arp_ignore_all_set(unsigned int gid, const char *oid, const char *value)
+{
+    return arp_ignore_set(gid, oid, value, "all");
 }
 
 /**

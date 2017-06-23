@@ -87,6 +87,27 @@ tapi_cfg_if_rp_filter_set(rcf_rpc_server *rpcs, const char *ifname,
                                 rpcs->ta, ifname);
 }
 
+/* See description in tapi_proc.h */
+te_errno
+tapi_cfg_if_arp_ignore_get(rcf_rpc_server *rpcs, const char *ifname,
+                          int *arp_ignore)
+{
+    return tapi_cfg_get_int_fmt(arp_ignore,
+                                "/agent:%s/interface:%s/arp_ignore:",
+                                rpcs->ta, ifname);
+}
+
+/* See description in tapi_proc.h */
+te_errno
+tapi_cfg_if_arp_ignore_set(rcf_rpc_server *rpcs, const char *ifname,
+                          int arp_ignore, int *old_value)
+{
+
+    return tapi_cfg_set_int_fmt(arp_ignore, old_value,
+                                "/agent:%s/interface:%s/arp_ignore:",
+                                rpcs->ta, ifname);
+}
+
 /**
  * Macros to define similar functions to get and set system values in /proc
  *
@@ -136,5 +157,7 @@ DEFINE_API_FUNC_TA_ONLY(tcp_timestamps,
                         "/agent:%s/sys:/tcp_timestamps:")
 DEFINE_API_FUNC_TA_ONLY(if_all_rp_filter,
                         "/agent:%s/rp_filter_all")
+DEFINE_API_FUNC_TA_ONLY(if_all_arp_ignore,
+                        "/agent:%s/arp_ignore_all")
 
 #undef DEFINE_API_FUNC_TA_ONLY

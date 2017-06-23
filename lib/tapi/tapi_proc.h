@@ -144,6 +144,56 @@ extern te_errno tapi_cfg_if_all_rp_filter_set(
         rcf_rpc_server *rpcs, int rp_filter, int *old_value);
 
 /**
+ * Get arp_ignore value of TA interface.
+ *
+ * @param rpcs        RPC server
+ * @param ifname      Interface name
+ * @param arp_ignore  Location for arp_ignore value
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_arp_ignore_get(rcf_rpc_server *rpcs,
+                                           const char *ifname,
+                                           int *arp_ignore);
+
+/**
+ * Set arp_ignore value of TA interface.
+ *
+ * @param rpcs          RPC server
+ * @param ifname        Interface name
+ * @param arp_ignore    New arp_ignore value
+ * @param old_value     Location for previous arp_ignore value or @c NULL
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_arp_ignore_set(rcf_rpc_server *rpcs,
+                                           const char *ifname,
+                                           int arp_ignore, int *old_value);
+
+/**
+ * Get arp_ignore value of TA interface @c "all".
+ *
+ * @param rpcs          RPC server
+ * @param arp_ignore    Location for arp_ignore value
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_all_arp_ignore_get(rcf_rpc_server *rpcs,
+                                               int *arp_ignore);
+
+/**
+ * Set arp_ignore value of TA interface @c "all".
+ *
+ * @param rpcs          RPC server
+ * @param arp_ignore    New arp_ignore value
+ * @param old_value     Location for previous arp_ignore value or @c NULL
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_all_arp_ignore_set(
+        rcf_rpc_server *rpcs, int arp_ignore, int *old_value);
+
+/**
  * Set a new tcp_keepalive_time value.
  *
  * @param rpcs      RPC server
