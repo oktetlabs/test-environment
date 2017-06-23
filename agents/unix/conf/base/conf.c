@@ -1309,6 +1309,135 @@ rcf_ch_conf_fini()
         (void)close(cfg6_socket);
 }
 
+/**
+ * Write requested value to system file.
+ *
+ * @param value     Null-terminated string containing the value.
+ * @param format    Format string for path to the system file.
+ * @param ...       Arguments for the format string.
+ *
+ * @return Status code.
+ */
+static te_errno
+write_sys_value(const char *value, const char *format, ...)
+{
+    va_list   valist;
+    char      path[PATH_MAX];
+    int       rc = 0;
+    FILE     *f = NULL;
+    te_errno  result = 0;
+
+    va_start(valist, format);
+    rc = vsnprintf(path, PATH_MAX, format, valist);
+    va_end(valist);
+
+    if (rc >= PATH_MAX || rc < 0)
+    {
+        ERROR("%s(): failed to fill path", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    if ((f = fopen(path, "w")) == NULL)
+    {
+        ERROR("%s: failed to open %s for writing",
+              __FUNCTION__, path);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    rc = fprintf(f, "%s\n", value);
+    if (rc < 0)
+    {
+        ERROR("%s: failed to write '%s' in %s",
+              __FUNCTION__, value, path);
+        result = TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    else if (rc != (int)strlen(value) + 1)
+    {
+        ERROR("%s: wrong length was returned by fprintf()",
+              __FUNCTION__);
+        result = TE_OS_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    if (fclose(f) < 0)
+    {
+        ERROR("%s: failed to close %s after writing",
+              __FUNCTION__, path);
+        result = TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    return result;
+}
+
+/**
+ * Read requested value from system file.
+ *
+ * @param value     Where to save the value.
+ * @param len       Expected length, including null byte.
+ * @param format    Format string for path to the system file.
+ * @param ...       Arguments for the format string.
+ *
+ * @return Status code.
+ */
+static te_errno
+read_sys_value(char *value, size_t len, const char *format, ...)
+{
+    va_list   valist;
+    char      path[PATH_MAX];
+    int       rc = 0;
+    FILE     *f = NULL;
+    te_errno  result = 0;
+
+    if (len < 1)
+    {
+        ERROR("%s(): length must be positive", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    va_start(valist, format);
+    rc = vsnprintf(path, PATH_MAX, format, valist);
+    va_end(valist);
+
+    if (rc >= PATH_MAX || rc < 0)
+    {
+        ERROR("%s(): failed to fill path", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    if ((f = fopen(path, "r")) == NULL)
+    {
+        ERROR("%s: failed to open %s for reading",
+              __FUNCTION__, path);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    rc = fread(value, 1, len - 1, f);
+    if (rc < 0)
+    {
+        ERROR("%s: failed to read data from %s",
+              __FUNCTION__, path);
+        result = TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    else if (rc > (int)len - 1)
+    {
+        ERROR("%s: too much data was read from %s",
+              __FUNCTION__, path);
+        result = TE_OS_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+    else
+    {
+        value[rc] = '\0';
+    }
+
+    if (fclose(f) < 0)
+    {
+        ERROR("%s: failed to close %s after writing",
+              __FUNCTION__, path);
+        result = TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    return result;
+}
+
 #if SOLARIS_IP_FW
 /**
  * Set or obtain the value of IP forwarding variable on Solaris.
@@ -5490,25 +5619,9 @@ rp_filter_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
 
 #if __linux__
-    FILE *fd;
-    int   res;
-    char  path[128];
-
-    if ((res = snprintf(path, sizeof(path),
-                        "/proc/sys/net/ipv4/conf/%s/rp_filter",
-                        ifname)) < 0 || res == sizeof(path))
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    if ((fd = fopen(path, "r")) == NULL)
-        return TE_OS_RC(TE_TA_UNIX, errno);
-
-    if (fread(value, 1, 1, fd) != 2)
-    {
-        fclose(fd);
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-    fclose(fd);
-    value[1] = 0;
+    return read_sys_value(value, 2,
+                          "/proc/sys/net/ipv4/conf/%s/rp_filter",
+                          ifname);
 #else
     UNUSED(value);
     UNUSED(ifname);
@@ -5537,31 +5650,12 @@ rp_filter_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
 
 #if __linux__
-    FILE *fd;
-    int   res;
-    char  path[128];
-
     if (*value < '0' || *value > '2' || *(value + 1) != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    if ((res = snprintf(path, sizeof(path),
-                        "/proc/sys/net/ipv4/conf/%s/rp_filter",
-                        ifname)) < 0 || res == sizeof(path))
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    if ((fd = fopen(path, "w")) == NULL)
-        return TE_OS_RC(TE_TA_UNIX, errno);
-
-    
-    if (fputc(*value, fd) != *value ||
-        fputc('\n', fd) != '\n')
-    {
-        fclose(fd);
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    fclose(fd);
-
+    return write_sys_value(value,
+                           "/proc/sys/net/ipv4/conf/%s/rp_filter",
+                           ifname);
 #else
     UNUSED(value);
     UNUSED(ifname);
