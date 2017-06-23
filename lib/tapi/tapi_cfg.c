@@ -68,6 +68,7 @@
 #include "conf_api.h"
 #include "logger_api.h"
 #include "rcf_api.h"
+#include "te_string.h"
 
 #include "tapi_sockaddr.h"
 #include "tapi_cfg_base.h"
@@ -2104,4 +2105,90 @@ tapi_cfg_set_loglevel_save(const char *ta, int new_val, int *old_val)
     }
 
     return 0;
+}
+
+/* See description in tapi_cfg.h */
+te_errno
+tapi_cfg_get_int_str(int *value, const char *oid)
+{
+    te_errno      rc = 0;
+    cfg_val_type  val_type = CVT_INTEGER;
+
+    rc = cfg_get_instance_str(&val_type, value,
+                              oid);
+    if (rc != 0)
+        ERROR("Failed to get %s", oid);
+
+    return rc;
+}
+
+/* See description in tapi_cfg.h */
+te_errno
+tapi_cfg_get_int_fmt(int *value, const char *format, ...)
+{
+    va_list       valist;
+    te_string     str = TE_STRING_INIT;
+    te_errno      rc = 0;
+
+    va_start(valist, format);
+    rc = te_string_append_va(&str, format, valist);
+    va_end(valist);
+
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to construct oid", __FUNCTION__);
+        goto cleanup;
+    }
+
+    rc = tapi_cfg_get_int_str(value, str.ptr);
+
+cleanup:
+    te_string_free(&str);
+    return rc;
+}
+
+/* See description in tapi_cfg.h */
+te_errno
+tapi_cfg_set_int_str(int value, int *old_value, const char *oid)
+{
+    te_errno      rc = 0;
+
+    if (old_value != NULL)
+    {
+        rc = tapi_cfg_get_int_str(old_value, oid);
+        if (rc != 0)
+            return rc;
+    }
+
+    rc = cfg_set_instance_str(CFG_VAL(INTEGER, value), oid);
+    if (rc != 0)
+        ERROR("Failed to set %s to %d", oid, value);
+
+    return rc;
+}
+
+/* See description in tapi_cfg.h */
+te_errno
+tapi_cfg_set_int_fmt(int value, int *old_value, const char *format, ...)
+{
+    va_list       valist;
+    te_string     str = TE_STRING_INIT;
+    te_errno      rc = 0;
+
+    va_start(valist, format);
+    rc = te_string_append_va(&str, format, valist);
+    va_end(valist);
+
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to construct oid", __FUNCTION__);
+        goto cleanup;
+    }
+
+    rc = tapi_cfg_set_int_str(value, old_value, str.ptr);
+
+cleanup:
+
+    te_string_free(&str);
+    return rc;
 }

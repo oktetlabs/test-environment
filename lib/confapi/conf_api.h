@@ -521,6 +521,21 @@ extern te_errno cfg_set_instance_fmt(cfg_val_type type, const void *val,
                                      __attribute__((format(printf, 3, 4)));
 
 /**
+ * Set instance by the OID string.
+ *
+ * Use macro CFG_VAL() to make the first and the second arguments pair.
+ * E.g. rc = cfg_set_instance_str(CFG_VAL(INTEGER, 1), "/hello:");
+ *
+ * @param type      value type (necessary for fast processing)
+ * @param val       value to set
+ * @param oid       OID string
+ *
+ * @return Status code.
+ */
+extern te_errno cfg_set_instance_str(cfg_val_type type, const void *val,
+                                     const char *oid);
+
+/**
  * Change object instance value locally. Commit should be called to
  * propagate changed as a bulk to the Test Agent later.
  *
@@ -575,6 +590,18 @@ extern te_errno cfg_get_instance(cfg_handle handle,
 extern te_errno cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
                                      const char *oid_fmt, ...)
                                      __attribute__((format(printf, 3, 4)));
+
+/**
+ * Get instance by the OID string.
+ *
+ * @param p_type    location for value type, may be NULL
+ * @param val       location for value
+ * @param oid       OID string
+ *
+ * @return Status code.
+ */
+extern te_errno cfg_get_instance_str(cfg_val_type *p_type, void *val,
+                                     const char *oid);
 
 /**
  * Obtain value of the object instance with synchronization with

@@ -111,6 +111,17 @@
     if (rc != 0)                                \
         return rc;
 
+/*
+ * Common part for specific *_str functions.
+ * It assumes and provides some variables.
+ */
+#define _CFG_HANDLE_BY_STR                      \
+    int        rc;                              \
+    cfg_handle handle;                          \
+                                                \
+    rc = cfg_find_str(oid, &handle);            \
+    if (rc != 0)                                \
+        return rc;
 
 #ifdef HAVE_PTHREAD_H
 static pthread_mutex_t cfgl_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -1574,6 +1585,15 @@ cfg_set_instance_fmt(cfg_val_type type, const void *val,
 
 /* See description in conf_api.h */
 te_errno
+cfg_set_instance_str(cfg_val_type type, const void *val,
+                     const char *oid)
+{
+    _CFG_HANDLE_BY_STR;
+    return cfg_set_instance(handle, type, val);
+}
+
+/* See description in conf_api.h */
+te_errno
 cfg_set_instance_local(cfg_handle handle, cfg_val_type type, ...)
 {
     int     ret_val;
@@ -1786,6 +1806,15 @@ cfg_get_instance_fmt(cfg_val_type *p_type, void *val,
                      const char *oid_fmt, ...)
 {
     _CFG_HANDLE_BY_FMT;
+    return cfg_get_instance(handle, p_type, val);
+}
+
+/* See description in conf_api.h */
+te_errno
+cfg_get_instance_str(cfg_val_type *p_type, void *val,
+                     const char *oid)
+{
+    _CFG_HANDLE_BY_STR;
     return cfg_get_instance(handle, p_type, val);
 }
 

@@ -34,6 +34,7 @@
 #include "conf_api.h"
 #include "tapi_proc.h"
 #include "tapi_rpc_unistd.h"
+#include "tapi_cfg.h"
 
 /* See description in tapi_proc.h */
 int
@@ -67,61 +68,12 @@ tapi_cfg_net_route_flush(rcf_rpc_server *rpcs)
 
 /* See description in tapi_proc.h */
 te_errno
-tapi_cfg_tcp_timestamps_set(rcf_rpc_server *rpcs, int value, int *old_value)
-{
-    cfg_val_type  val_type = CVT_INTEGER;
-    te_errno      rc;
-
-    if (old_value != NULL)
-    {
-        rc = cfg_get_instance_fmt(&val_type, old_value,
-                                  "/agent:%s/sys:/tcp_timestamps:",
-                                  rpcs->ta);
-        if (rc != 0)
-        {
-            ERROR("Failed to get tcp_timestamps value");
-            return rc;
-        }
-    }
-
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, value),
-                              "/agent:%s/sys:/tcp_timestamps:",
-                              rpcs->ta);
-    if (rc != 0)
-        ERROR("Failed to set new tcp_timestamps value");
-
-    return rc;
-}
-
-/* See description in tapi_proc.h */
-te_errno
-tapi_cfg_tcp_timestamps_get(rcf_rpc_server *rpcs, int *value)
-{
-    cfg_val_type  val_type = CVT_INTEGER;
-    te_errno      rc;
-
-    rc = cfg_get_instance_fmt(&val_type, value,
-                              "/agent:%s/sys:/tcp_timestamps:",
-                              rpcs->ta);
-    if (rc != 0)
-        ERROR("Failed to get tcp_timestamps value");
-    return rc;
-}
-
-/* See description in tapi_proc.h */
-te_errno
 tapi_cfg_if_rp_filter_get(rcf_rpc_server *rpcs, const char *ifname,
                           int *rp_filter)
 {
-    cfg_val_type  val_type = CVT_INTEGER;
-    te_errno      rc;
-
-    rc = cfg_get_instance_fmt(&val_type, rp_filter,
-                              "/agent:%s/interface:%s/rp_filter:",
-                              rpcs->ta, ifname);
-    if (rc != 0)
-        ERROR("Failed to get interface rp_filter value");
-    return rc;
+    return tapi_cfg_get_int_fmt(rp_filter,
+                                "/agent:%s/interface:%s/rp_filter:",
+                                rpcs->ta, ifname);
 }
 
 /* See description in tapi_proc.h */
@@ -129,66 +81,10 @@ te_errno
 tapi_cfg_if_rp_filter_set(rcf_rpc_server *rpcs, const char *ifname,
                           int rp_filter, int *old_value)
 {
-    te_errno rc;
 
-    if (old_value != NULL)
-    {
-        rc = tapi_cfg_if_rp_filter_get(rpcs, ifname, old_value);
-        if (rc != 0)
-        {
-            ERROR("Failed to get old rp_filter value");
-            return rc;
-        }
-    }
-
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, rp_filter),
-                              "/agent:%s/interface:%s/rp_filter:",
-                              rpcs->ta, ifname);
-    if (rc != 0)
-        ERROR("Failed to set rp_filter value for interface %s", ifname);
-
-    return rc;
-}
-
-/* See description in tapi_proc.h */
-te_errno
-tapi_cfg_if_all_rp_filter_get(rcf_rpc_server *rpcs, int *rp_filter)
-{
-    cfg_val_type  val_type = CVT_INTEGER;
-    te_errno      rc;
-
-    rc = cfg_get_instance_fmt(&val_type, rp_filter,
-                              "/agent:%s/rp_filter_all:",
-                              rpcs->ta);
-    if (rc != 0)
-        ERROR("Failed to get rp_filter value for interface 'all'");
-    return rc;
-}
-
-/* See description in tapi_proc.h */
-te_errno
-tapi_cfg_if_all_rp_filter_set(rcf_rpc_server *rpcs,
-                           int rp_filter, int *old_value)
-{
-    te_errno rc;
-
-    if (old_value != NULL)
-    {
-        rc = tapi_cfg_if_all_rp_filter_get(rpcs, old_value);
-        if (rc != 0)
-        {
-            ERROR("Failed to get old rp_filter value for interface 'all'");
-            return rc;
-        }
-    }
-
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, rp_filter),
-                              "/agent:%s/rp_filter_all:",
-                              rpcs->ta);
-    if (rc != 0)
-        ERROR("Failed to set rp_filter value for interface 'all'");
-
-    return rc;
+    return tapi_cfg_set_int_fmt(rp_filter, old_value,
+                                "/agent:%s/interface:%s/rp_filter:",
+                                rpcs->ta, ifname);
 }
 
 /**
@@ -202,34 +98,13 @@ tapi_cfg_if_all_rp_filter_set(rcf_rpc_server *rpcs,
 te_errno                                                                \
 tapi_cfg_##_name##_set(rcf_rpc_server *rpcs, int value, int *old_value) \
 {                                                                       \
-    cfg_val_type  val_type = CVT_INTEGER;                               \
-    te_errno      rc;                                                   \
-                                                                        \
-    if (old_value != NULL)                                              \
-    {                                                                   \
-        rc = cfg_get_instance_fmt(&val_type, old_value, _path, rpcs->ta); \
-        if (rc != 0)                                                    \
-        {                                                               \
-            ERROR("Failed to get " #_name " value");                    \
-            return rc;                                                  \
-        }                                                               \
-    }                                                                   \
-    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, value), _path, rpcs->ta); \
-    if (rc != 0)                                                        \
-        ERROR("Failed to set new " #_name " value");                    \
-    return rc;                                                          \
+    return tapi_cfg_set_int_fmt(value, old_value, _path, rpcs->ta);     \
 }                                                                       \
                                                                         \
 te_errno                                                                \
 tapi_cfg_##_name##_get(rcf_rpc_server *rpcs, int *value)                \
 {                                                                       \
-    cfg_val_type  val_type = CVT_INTEGER;                               \
-    te_errno      rc;                                                   \
-                                                                        \
-    rc = cfg_get_instance_fmt(&val_type, value, _path, rpcs->ta);       \
-    if (rc != 0)                                                        \
-        ERROR("Failed to get " #_name " value");                        \
-    return rc;                                                          \
+    return tapi_cfg_get_int_fmt(value, _path, rpcs->ta);                \
 }
 
 DEFINE_API_FUNC_TA_ONLY(tcp_syncookies, "/agent:%s/sys:/tcp_syncookies:")
@@ -257,5 +132,9 @@ DEFINE_API_FUNC_TA_ONLY(igmp_max_memberships,
 DEFINE_API_FUNC_TA_ONLY(core_optmem_max, "/agent:%s/sys:/optmem_max:")
 DEFINE_API_FUNC_TA_ONLY(tcp_max_syn_backlog,
                         "/agent:%s/sys:/tcp_max_syn_backlog:")
+DEFINE_API_FUNC_TA_ONLY(tcp_timestamps,
+                        "/agent:%s/sys:/tcp_timestamps:")
+DEFINE_API_FUNC_TA_ONLY(if_all_rp_filter,
+                        "/agent:%s/rp_filter_all")
 
 #undef DEFINE_API_FUNC_TA_ONLY

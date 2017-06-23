@@ -857,6 +857,52 @@ static inline char * tapi_get_cfg_link(char *link)
 extern te_errno tapi_cfg_set_loglevel_save(const char *ta, int new_val,
                                            int *old_val);
 
+/**
+ * Get integer value from configuration tree.
+ *
+ * @param value     Where to save value.
+ * @param oid       OID string.
+ *
+ * @return 0 on success or error code
+ */
+extern te_errno tapi_cfg_get_int_str(int *value, const char *oid);
+
+/**
+ * Get integer value from configuration tree.
+ *
+ * @param value     Where to save value.
+ * @param format    Format string for configuration path.
+ * @param ...       Configuration path parameters.
+ *
+ * @return 0 on success or error code
+ */
+extern te_errno tapi_cfg_get_int_fmt(int *value, const char *format, ...);
+
+/**
+ * Set integer value in configuration tree.
+ *
+ * @param value       Value to set.
+ * @param old_value   If not NULL, here will be saved previous value.
+ * @param oid         OID string.
+ *
+ * @return 0 on success or error code
+ */
+extern te_errno tapi_cfg_set_int_str(int value, int *old_value,
+                                     const char *oid);
+
+/**
+ * Set integer value in configuration tree.
+ *
+ * @param value       Value to set.
+ * @param old_value   If not NULL, here will be saved previous value.
+ * @param format      Format string for configuration path.
+ * @param ...         Configuration path parameters.
+ *
+ * @return 0 on success or error code
+ */
+extern te_errno tapi_cfg_set_int_fmt(int value, int *old_value,
+                                     const char *format, ...);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
