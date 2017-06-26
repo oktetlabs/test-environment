@@ -28,6 +28,7 @@
 
 #include "te_config.h"
 #include "te_ethernet.h"
+#include "te_alloc.h"
 
 #include "log_bufs.h"
 #include "tapi_env.h"
@@ -109,9 +110,8 @@ tapi_reuse_eal(rcf_rpc_server *rpcs,
                char          **eal_args_out)
 {
     unsigned int                i;
-    size_t                      eal_args_len = 1;
+    size_t                      eal_args_len;
     char                       *eal_args = NULL;
-    char                       *eal_args_new;
     char                       *eal_args_cfg = NULL;
     cfg_val_type                val_type = CVT_STRING;
     uint8_t                     dev_count;
@@ -123,29 +123,27 @@ tapi_reuse_eal(rcf_rpc_server *rpcs,
         goto out;
     }
 
+    for (i = 0, eal_args_len = 1;
+         i < (unsigned int)argc;
+         eal_args_len += strlen(argv[i++]));
+
+    eal_args = TE_ALLOC(eal_args_len);
+    if (eal_args == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
     for (i = 0; i < (unsigned int)argc; ++i)
     {
-        size_t arg_len = strlen(argv[i]);
+        char *retp;
 
-        eal_args_len += arg_len;
-
-        eal_args_new = realloc(eal_args, eal_args_len);
-        if (eal_args_new == NULL)
-        {
-            rc = TE_ENOMEM;
-            goto out;
-        }
-
-        eal_args = eal_args_new;
-
-        eal_args_new = strncat(eal_args, argv[i], arg_len);
-        if (eal_args_new == NULL)
+        retp = strncat(eal_args, argv[i], strlen(argv[i]));
+        if (retp == NULL)
         {
             rc = TE_ENOBUFS;
             goto out;
         }
-
-        eal_args = eal_args_new;
     }
 
     rc = cfg_get_instance_fmt(&val_type, &eal_args_cfg,
