@@ -107,6 +107,19 @@ extern int rpc_rte_flow_flush(rcf_rpc_server *rpcs,
                               uint8_t port_id,
                               tarpc_rte_flow_error *error);
 
+/**
+ * rte_flow_isolate() RPC
+ * @param[in]  port_id Port number
+ * @param[in]  set     Non-zero to enter isolated mode, @c 0 to leave it
+ * @param[out] error   Perform verbose error reporting if not @c NULL
+ *
+ * @return @c 0 on success; jumps out in case of failure
+ */
+extern int rpc_rte_flow_isolate(rcf_rpc_server              *rpcs,
+                                uint8_t                      port_id,
+                                int                          set,
+                                struct tarpc_rte_flow_error *error);
+
 /**@} <!-- END te_lib_rpc_rte_flow --> */
 
 #ifdef __cplusplus

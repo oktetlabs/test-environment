@@ -286,3 +286,35 @@ rpc_rte_flow_flush(rcf_rpc_server *rpcs,
 
     RETVAL_ZERO_INT(rte_flow_flush, out.retval);
 }
+
+int
+rpc_rte_flow_isolate(rcf_rpc_server              *rpcs,
+                     uint8_t                      port_id,
+                     int                          set,
+                     struct tarpc_rte_flow_error *error)
+{
+    tarpc_rte_flow_isolate_in   in;
+    tarpc_rte_flow_isolate_out  out;
+    te_log_buf                 *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.set = set;
+
+    rcf_rpc_call(rpcs, "rte_flow_isolate", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_flow_isolate, out.retval);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_flow_isolate, "%hhu, %d", NEG_ERRNO_FMT "%s",
+                 in.port_id, in.set, NEG_ERRNO_ARGS(out.retval),
+                 (out.retval != 0) ?
+                 tarpc_rte_flow_error2str(tlbp, &out.error) : "");
+    te_log_buf_free(tlbp);
+
+    tarpc_rte_flow_error_copy(error, &out.error);
+
+    RETVAL_ZERO_INT(rte_flow_isolate, out.retval);
+}

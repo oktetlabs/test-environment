@@ -1762,6 +1762,15 @@ struct tarpc_rte_flow_flush_in {
 
 typedef struct tarpc_rte_flow_validate_out tarpc_rte_flow_flush_out;
 
+/** rte_flow_isolate() */
+struct tarpc_rte_flow_isolate_in {
+    struct tarpc_in_arg         common;
+    uint8_t                     port_id;
+    tarpc_int                   set;
+};
+
+typedef struct tarpc_rte_flow_validate_out tarpc_rte_flow_isolate_out;
+
 program dpdk
 {
     version ver0
@@ -1885,5 +1894,6 @@ program dpdk
         RPC_DEF(rte_flow_create)
         RPC_DEF(rte_flow_destroy)
         RPC_DEF(rte_flow_flush)
+        RPC_DEF(rte_flow_isolate)
     } = 1;
 } = 2;

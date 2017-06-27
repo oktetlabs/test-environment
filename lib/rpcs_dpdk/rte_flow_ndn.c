@@ -1243,3 +1243,15 @@ TARPC_FUNC(rte_flow_destroy, {},
 
     tarpc_rte_error2tarpc(&out->error, &error);
 })
+
+TARPC_FUNC(rte_flow_isolate, {},
+{
+    struct rte_flow_error error;
+
+    memset(&error, 0, sizeof(error));
+
+    MAKE_CALL(out->retval = func(in->port_id, in->set, &error));
+    neg_errno_h2rpc(&out->retval);
+
+    tarpc_rte_error2tarpc(&out->error, &error);
+})
