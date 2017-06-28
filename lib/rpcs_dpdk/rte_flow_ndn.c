@@ -29,9 +29,7 @@
 #define TE_LGR_USER     "RPC rte_flow"
 
 #include "te_config.h"
-#ifdef HAVE_PACKAGE_H
 #include "package.h"
-#endif
 
 #include "rte_config.h"
 #include "rte_flow.h"
@@ -1244,14 +1242,18 @@ TARPC_FUNC(rte_flow_destroy, {},
     tarpc_rte_error2tarpc(&out->error, &error);
 })
 
-TARPC_FUNC(rte_flow_isolate, {},
+TARPC_FUNC_STANDALONE(rte_flow_isolate, {},
 {
     struct rte_flow_error error;
 
     memset(&error, 0, sizeof(error));
 
-    MAKE_CALL(out->retval = func(in->port_id, in->set, &error));
-    neg_errno_h2rpc(&out->retval);
+#ifdef HAVE_RTE_FLOW_ISOLATE
+    MAKE_CALL(out->retval = rte_flow_isolate(in->port_id, in->set, &error));
+#else /* !HAVE_RTE_FLOW_ISOLATE */
+    out->retval = -ENOTSUP;
+#endif /* HAVE_RTE_FLOW_ISOLATE */
 
+    neg_errno_h2rpc(&out->retval);
     tarpc_rte_error2tarpc(&out->error, &error);
 })

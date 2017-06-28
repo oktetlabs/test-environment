@@ -48,6 +48,18 @@ AC_LANG_PROGRAM(
 [[(void)rte_ring_dequeue_bulk(NULL, NULL, 0, NULL);]]
 )], [AC_DEFINE([HAVE_RTE_RING_DEQUEUE_BULK_ARG_AVAILABLE], 1, [ ])], [])
 
+AC_COMPILE_IFELSE([
+AC_LANG_PROGRAM(
+[[
+#include "rte_config.h"
+#include "rte_flow.h"
+#include "rte_flow_driver.h"
+
+struct rte_flow_ops ops;
+]],
+[[ops.isolate = NULL;]]
+)], [AC_DEFINE([HAVE_RTE_FLOW_ISOLATE], 1, [ ])], [])
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE
