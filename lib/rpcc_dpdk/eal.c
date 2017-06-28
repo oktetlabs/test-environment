@@ -178,7 +178,7 @@ tapi_reuse_eal(rcf_rpc_server *rpcs,
 
     rpc_rte_mempool_free_all(rpcs);
 
-    if (strcmp(eal_args, eal_args_cfg) != 0)
+    if ((dev_count == 0) || (strcmp(eal_args, eal_args_cfg) != 0))
     {
         rc = rcf_rpc_server_restart(rpcs);
         if (rc == 0)
