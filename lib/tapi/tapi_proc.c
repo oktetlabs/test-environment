@@ -156,8 +156,8 @@ DEFINE_API_FUNC_TA_ONLY(tcp_max_syn_backlog,
 DEFINE_API_FUNC_TA_ONLY(tcp_timestamps,
                         "/agent:%s/sys:/tcp_timestamps:")
 DEFINE_API_FUNC_TA_ONLY(if_all_rp_filter,
-                        "/agent:%s/rp_filter_all")
+                        "/agent:%s/rp_filter_all:")
 DEFINE_API_FUNC_TA_ONLY(if_all_arp_ignore,
-                        "/agent:%s/arp_ignore_all")
+                        "/agent:%s/arp_ignore_all:")
 
 #undef DEFINE_API_FUNC_TA_ONLY
