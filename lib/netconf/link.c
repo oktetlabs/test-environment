@@ -60,6 +60,9 @@ link_list_cb(struct nlmsghdr *h, netconf_list *list)
             case IFLA_MTU:
                 link->mtu = *((uint32_t *)RTA_DATA(rta));
                 break;
+
+            case IFLA_LINK:
+                link->link = *((int32_t *)RTA_DATA(rta));
         }
 
         rta = RTA_NEXT(rta, len);

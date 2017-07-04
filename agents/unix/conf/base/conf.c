@@ -471,6 +471,9 @@ static te_errno iface_ip6_accept_ra_get(unsigned int, const char *, char *,
 static te_errno iface_ip6_accept_ra_set(unsigned int, const char *,
                                 const char *, const char *);
 
+static te_errno iface_parent_get(unsigned int, const char *, char *,
+                                 const char *);
+
 static te_errno interface_list(unsigned int, const char *, char **);
 
 static te_errno vlans_list(unsigned int, const char *, char **,
@@ -854,7 +857,11 @@ RCF_PCH_CFG_NODE_RW(node_iface_ip6_accept_ra, "iface_ip6_accept_ra", NULL,
                     &node_iface_ip6_fw,
                     iface_ip6_accept_ra_get, iface_ip6_accept_ra_set);
 
-RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_iface_ip6_accept_ra,
+RCF_PCH_CFG_NODE_RO(node_iface_parent, "parent", NULL,
+                    &node_iface_ip6_accept_ra,
+                    iface_parent_get);
+
+RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_iface_parent,
                     ifindex_get);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
@@ -2889,6 +2896,112 @@ ifindex_get(unsigned int gid, const char *oid, char *value,
 
     return 0;
 }
+
+#ifdef USE_LIBNETCONF
+/**
+ * Get name of an interface on which the given interface is based
+ * (using libnetconf).
+ *
+ * @param ifname        Name of the interface (like "eth0").
+ * @param value         Where to save an answer.
+ *
+ * @return              Status code.
+ */
+static te_errno
+iface_parent_get_netconf(const char *ifname,
+                         char *value)
+{
+    netconf_list    *list = NULL;
+    netconf_node    *node = NULL;
+    unsigned int     ifindex = 0;
+    te_errno         rc = 0;
+
+    if ((ifindex = if_nametoindex(ifname)) == 0)
+    {
+        rc = te_rc_os2te(errno);
+        ERROR("%s(): cannot obtain interface index for '%s'",
+              __FUNCTION__, ifname);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if ((list = netconf_link_dump(nh)) == NULL)
+    {
+        ERROR("%s(): Cannot get list of interfaces",
+              __FUNCTION__);
+        return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    for (node = list->head; node != NULL; node = node->next)
+    {
+        const netconf_link *link = &(node->data.link);
+
+        if (ifindex == (unsigned int)(link->ifindex))
+        {
+            rc = 0;
+
+            if (link->link != (int)ifindex &&
+                link->link != 0)
+            {
+                if (if_indextoname(link->link, value) == NULL)
+                {
+                    rc = te_rc_os2te(errno);
+                    ERROR("%s(): cannot obtain interface "
+                          "name for index %d",
+                          __FUNCTION__, link->link);
+                }
+            }
+
+            break;
+        }
+    }
+
+    netconf_list_free(list);
+
+    if (node == NULL)
+    {
+        ERROR("%s(): cannot find interface '%s'",
+              __FUNCTION__, ifname);
+        rc = TE_ENOENT;
+    }
+
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    return 0;
+}
+#endif
+
+/**
+ * Get name of an interface on which the given interface is based.
+ * If the given interface is not based on anything else (it is not VLAN,
+ * MAC VLAN, etc), then empty string is returned.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier (unused).
+ * @param value         Value location.
+ * @param ifname        Name of the interface (like "eth0").
+ *
+ * @return              Status code.
+ */
+static te_errno
+iface_parent_get(unsigned int gid, const char *oid, char *value,
+                 const char *ifname)
+{
+    te_errno    rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef USE_LIBNETCONF
+    return iface_parent_get_netconf(ifname, value);
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
 #ifdef HAVE_LIBDLPI
 static te_errno
 mcast_link_addr_change_dlpi(dlpi_handle_t hnd, const char *addr, int op)

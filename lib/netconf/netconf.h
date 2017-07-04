@@ -108,6 +108,8 @@ typedef enum netconf_neigh_state {
 typedef struct netconf_link {
     netconf_link_type   type;           /**< Device type */
     int                 ifindex;        /**< Interface index */
+    int                 link;           /**< Value of IFLA_LINK
+                                             attribute. */
     unsigned int        flags;          /**< Device flags */
     unsigned int        addrlen;        /**< Length of address field */
     uint8_t            *address;        /**< Interface hardware address */
