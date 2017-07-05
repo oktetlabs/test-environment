@@ -824,12 +824,19 @@ tapi_cfg_net_node_reserve(cfg_net_t *net, cfg_net_node_t *node,
                     oid);
     if (rsrc_name != NULL)
     {
-        rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, oid_str),
-                                  "/agent:%s/rsrc:%s",
+        /* Check if resource is already reserved, reserve it if not. */
+        rc = cfg_get_instance_fmt(NULL, NULL, "/agent:%s/rsrc:%s",
                                   CFG_OID_GET_INST_NAME(oid, 1),
                                   rsrc_name);
         if (rc != 0)
-            ERROR("Failed to reserve resource '%s': %r", oid_str, rc);
+        {
+            rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, oid_str),
+                                      "/agent:%s/rsrc:%s",
+                                      CFG_OID_GET_INST_NAME(oid, 1),
+                                      rsrc_name);
+            if (rc != 0)
+                ERROR("Failed to reserve resource '%s': %r", oid_str, rc);
+        }
 
         free(rsrc_name);
     }
