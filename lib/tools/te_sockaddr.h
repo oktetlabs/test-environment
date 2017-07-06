@@ -309,6 +309,24 @@ extern te_errno te_sockaddr_cleanup_to_prefix(struct sockaddr *addr,
 extern int te_sockaddrcmp(const struct sockaddr *a1, socklen_t a1len,
                           const struct sockaddr *a2, socklen_t a2len);
 
+
+/**
+ * Compare 'struct sockaddr', not taking ports into account.
+ *
+ * @param a1        the first address
+ * @param a1len     the first address length
+ * @param a2        the second address
+ * @param a2len     the second address length
+ *
+ * @retval 0        equal
+ * @retval -1       not equal
+ * @retval -2       comparison of addresses of unsupported family
+ */
+extern int te_sockaddrcmp_no_ports(const struct sockaddr *a1,
+                                   socklen_t a1len,
+                                   const struct sockaddr *a2,
+                                   socklen_t a2len);
+
 /**
  * Compare the content of two 'struct sockaddr' structures till
  * minimum of two lengths a1len and a2len.

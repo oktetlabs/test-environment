@@ -493,6 +493,24 @@ te_sockaddrcmp(const struct sockaddr *a1, socklen_t a1len,
     return -1;
 }
 
+/* See description in tapi_sockaddr.h */
+int
+te_sockaddrcmp_no_ports(const struct sockaddr *a1, socklen_t a1len,
+                        const struct sockaddr *a2, socklen_t a2len)
+{
+    struct sockaddr_storage a1_copy;
+    struct sockaddr_storage a2_copy;
+
+    memcpy(&a1_copy, a1, a1len);
+    memcpy(&a2_copy, a2, a2len);
+
+    te_sockaddr_clear_port(SA(&a1_copy));
+    te_sockaddr_clear_port(SA(&a2_copy));
+
+    return te_sockaddrcmp(SA(&a1_copy), a1len,
+                          SA(&a2_copy), a2len);
+}
+
 /* See description in tapi_sockaaddr.h */
 int
 te_sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
