@@ -108,6 +108,27 @@ tapi_cfg_if_arp_ignore_set(rcf_rpc_server *rpcs, const char *ifname,
                                 rpcs->ta, ifname);
 }
 
+/* See description in tapi_proc.h */
+te_errno
+tapi_cfg_if_iface_ip4_fw_get(rcf_rpc_server *rpcs, const char *ifname,
+                             int *iface_ip4_fw)
+{
+    return tapi_cfg_get_int_fmt(iface_ip4_fw,
+                                "/agent:%s/interface:%s/iface_ip4_fw:",
+                                rpcs->ta, ifname);
+}
+
+/* See description in tapi_proc.h */
+te_errno
+tapi_cfg_if_iface_ip4_fw_set(rcf_rpc_server *rpcs, const char *ifname,
+                             int iface_ip4_fw, int *old_value)
+{
+
+    return tapi_cfg_set_int_fmt(iface_ip4_fw, old_value,
+                                "/agent:%s/interface:%s/iface_ip4_fw:",
+                                rpcs->ta, ifname);
+}
+
 /**
  * Macros to define similar functions to get and set system values in /proc
  *

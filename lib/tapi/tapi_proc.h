@@ -143,6 +143,35 @@ extern te_errno tapi_cfg_if_all_rp_filter_get(rcf_rpc_server *rpcs,
 extern te_errno tapi_cfg_if_all_rp_filter_set(
         rcf_rpc_server *rpcs, int rp_filter, int *old_value);
 
+
+/**
+ * Get IP4 forwarding state of TA interface.
+ *
+ * @param rpcs         RPC server
+ * @param ifname       Interface name
+ * @param iface_ip4_fw Location for forwarding state value
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_iface_ip4_fw_get(rcf_rpc_server *rpcs,
+                                             const char *ifname,
+                                             int *iface_ip4_fw);
+
+/**
+ * Change IP4 forwarding state of TA interface.
+ *
+ * @param rpcs         RPC server
+ * @param ifname       Interface name
+ * @param iface_ip4_fw Location for forwarding state value
+ * @param old_value    Location for forwarding state value or @c NULL
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_if_iface_ip4_fw_set(rcf_rpc_server *rpcs,
+                                             const char *ifname,
+                                             int iface_ip4_fw,
+                                             int *old_value);
+
 /**
  * Get arp_ignore value of TA interface.
  *
