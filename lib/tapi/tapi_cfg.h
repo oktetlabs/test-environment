@@ -572,6 +572,23 @@ extern int tapi_cfg_get_bcast_hwaddr(const char *ta,
 extern te_errno tapi_cfg_set_hwaddr(const char *ta, const char *ifname,
                                     const void *hwaddr,
                                     unsigned int hwaddr_len);
+
+/**
+ * Get name of an interface on which the given interface is based.
+ *
+ * @param ta              Test agent name.
+ * @param ifname          Interface name.
+ * @param parent_ifname   Where to save the name of the "parent"
+ *                        interface.
+ * @param len             Available space in @p parent_ifname.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_get_if_parent(const char *ta,
+                                       const char *ifname,
+                                       char *parent_ifname,
+                                       size_t len);
+
 /**@} <!-- END tapi_conf_iface --> */
 
 /**

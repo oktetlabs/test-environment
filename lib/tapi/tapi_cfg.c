@@ -74,7 +74,6 @@
 #include "tapi_cfg_base.h"
 #include "tapi_cfg.h"
 
-
 /** Operations with routing/ARP table */
 enum tapi_cfg_oper {
     OP_ADD,   /**< Add operation */
@@ -1555,6 +1554,41 @@ tapi_cfg_set_bcast_hwaddr(const char *ta, const char *ifname,
     return tapi_cfg_base_if_set_bcast_mac(buf, hwaddr);
 }
 
+/* See the description in tapi_cfg.h */
+te_errno
+tapi_cfg_get_if_parent(const char *ta,
+                       const char *ifname,
+                       char *parent_ifname,
+                       size_t len)
+{
+    char          *parent = NULL;
+    cfg_val_type   type;
+    int            rc = 0;
+    size_t         len_got;
+
+    type = CVT_STRING;
+    rc = cfg_get_instance_fmt(&type, &parent,
+                              "/agent:%s/interface:%s/parent:",
+                              ta, ifname);
+    if (rc != 0)
+        return rc;
+
+    len_got = strlen(parent) + 1; /* 1 is for terminating '\0' */
+    if (len_got > len)
+    {
+        ERROR("%s(): obtained interface name is too long "
+              "to fit in the provided buffer: "
+              "%" TE_PRINTF_SIZE_T "u vs %" TE_PRINTF_SIZE_T "u",
+              __FUNCTION__, len_got, len);
+        free(parent);
+        return TE_RC(TE_TAPI, TE_EOVERFLOW);
+    }
+
+    strncpy(parent_ifname, parent, len);
+    free(parent);
+
+    return 0;
+}
 
 /* See the description in tapi_cfg.h */
 static int
