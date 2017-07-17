@@ -76,7 +76,7 @@ EXTRA_CFLAGS += -O3
 EXTRA_CFLAGS += $(WERROR_FLAGS)
 
 EXTRA_CFLAGS += $(TE_CPPFLAGS)
-EXTRA_LDFLAGS  += -Bstatic -whole-archive -export-dynamic $(TE_LDFLAGS) -no-whole-archive -Bdynamic -lpcap
+EXTRA_LDFLAGS  += -Bstatic -whole-archive -export-dynamic $(TE_LDFLAGS) -no-whole-archive -Bdynamic -lpcap -lm
 ifeq ($(TE_DO_TCE),1)
 EXTRA_CFLAGS  += --coverage
 EXTRA_LDFLAGS += -lgcov
