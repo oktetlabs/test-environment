@@ -115,6 +115,8 @@ typedef struct netconf_link {
     uint8_t            *address;        /**< Interface hardware address */
     uint8_t            *broadcast;      /**< Broadcast address */
     char               *ifname;         /**< Device name as string */
+    char               *info_kind;      /**< Value of IFLA_INFO_KIND
+                                             attribute */
     uint32_t            mtu;            /**< MTU of the device */
 } netconf_link;
 

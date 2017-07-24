@@ -57,6 +57,21 @@ link_list_cb(struct nlmsghdr *h, netconf_list *list)
                 link->ifname = netconf_dup_rta(rta);
                 break;
 
+            case IFLA_LINKINFO:
+            {
+                struct rtattr *linkinfo[IFLA_INFO_MAX + 1];
+
+                netconf_parse_rtattr_nested(rta,
+                                            linkinfo,
+                                            IFLA_INFO_MAX);
+
+                if (linkinfo[IFLA_INFO_KIND] != NULL)
+                    link->info_kind =
+                             netconf_dup_rta(linkinfo[IFLA_INFO_KIND]);
+
+                break;
+            }
+
             case IFLA_MTU:
                 link->mtu = *((uint32_t *)RTA_DATA(rta));
                 break;
@@ -89,6 +104,8 @@ netconf_link_node_free(netconf_node *node)
         free(node->data.link.broadcast);
     if (node->data.link.ifname != NULL)
         free(node->data.link.ifname);
+    if (node->data.link.info_kind != NULL)
+        free(node->data.link.info_kind);
 
     free(node);
 }

@@ -474,6 +474,8 @@ static te_errno iface_ip6_accept_ra_set(unsigned int, const char *,
 
 static te_errno iface_parent_get(unsigned int, const char *, char *,
                                  const char *);
+static te_errno iface_kind_get(unsigned int, const char *, char *,
+                               const char *);
 
 static te_errno interface_list(unsigned int, const char *, char **);
 
@@ -862,7 +864,11 @@ RCF_PCH_CFG_NODE_RO(node_iface_parent, "parent", NULL,
                     &node_iface_ip6_accept_ra,
                     iface_parent_get);
 
-RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_iface_parent,
+RCF_PCH_CFG_NODE_RO(node_iface_kind, "kind", NULL,
+                    &node_iface_parent,
+                    iface_kind_get);
+
+RCF_PCH_CFG_NODE_RO(node_ifindex, "index", NULL, &node_iface_kind,
                     ifindex_get);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_interface, "interface",
@@ -3010,6 +3016,7 @@ link_addr_n2a(unsigned char *addr, int alen,
 typedef enum {
     IF_PROP_PARENT = 0, /**< Parent interface. */
     IF_PROP_BCAST_ADDR, /**< Broadcast address. */
+    IF_PROP_KIND,       /**< Interface kind (vlan, macvlan, etc). */
 } if_property;
 
 /**
@@ -3067,6 +3074,28 @@ iface_get_property_netconf(const char *ifname,
                             ERROR("%s(): cannot obtain interface "
                                   "name for index %d",
                                   __FUNCTION__, link->link);
+                        }
+                    }
+
+                    break;
+
+                case IF_PROP_KIND:
+
+                    if (link->info_kind != NULL)
+                    {
+                        size_t length;
+
+                        /* 1 is for terminating '\0'. */
+                        length = strlen(link->info_kind) + 1;
+                        if (length <= RCF_MAX_VAL)
+                        {
+                            strncpy(value, link->info_kind, length);
+                        }
+                        else
+                        {
+                            ERROR("%s(): too long interface type",
+                                  __FUNCTION__);
+                            rc = TE_ESMALLBUF;
                         }
                     }
 
@@ -3131,6 +3160,35 @@ iface_parent_get(unsigned int gid, const char *oid, char *value,
 
 #ifdef USE_LIBNETCONF
     return iface_get_property_netconf(ifname, value, IF_PROP_PARENT);
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+#endif
+}
+
+/**
+ * Get kind of an interface (whether it is vlan, macvlan, etc).
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier (unused).
+ * @param value         Value location.
+ * @param ifname        Name of the interface (like "eth0").
+ *
+ * @return              Status code.
+ */
+static te_errno
+iface_kind_get(unsigned int gid, const char *oid, char *value,
+               const char *ifname)
+{
+    te_errno    rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((rc = CHECK_INTERFACE(ifname)) != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+#ifdef USE_LIBNETCONF
+    return iface_get_property_netconf(ifname, value, IF_PROP_KIND);
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
