@@ -1166,6 +1166,17 @@
          Password is the same as user name. -->
     <object oid="/agent/user" access="read_create" type="none"/>
 
+    <!-- System module.
+         Name: Name of the system module -->
+    <object oid="/agent/module" access="read_only" type="none">
+      <depends oid="/agent/rsrc"/>
+    </object>
+
+    <!-- Parameter of a system module.
+         Name: Name of the parameter
+         Value: Value of the parameter -->
+    <object oid="/agent/module/parameter" access="read_write" type="string"/>
+
     <!-- Volatile engine data root. 
          Name: empty
          -->

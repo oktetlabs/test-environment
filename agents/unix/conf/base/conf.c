@@ -84,6 +84,10 @@
 #include <net/if_dl.h>
 #endif
 
+#if HAVE_DIRENT_H
+#include <dirent.h>
+#endif
+
 #ifdef HAVE_LIBDLPI
 #include <libdlpi.h>
 #endif
@@ -131,11 +135,6 @@
 /* XEN support */
 #if defined(HAVE_SYS_STAT_H)
 #include <sys/stat.h> /** For 'struct stat' */
-
-/* UNIX branching heritage: PATH_MAX can still be undefined here yet */
-#if !defined(PATH_MAX)
-#define PATH_MAX 108
-#endif
 
 #define XEN_SUPPORT 1
 #else
@@ -196,6 +195,7 @@ typedef struct pam_message const pam_message_t;
 #include "conf_dlpi.h"
 #include "conf_route.h"
 #include "conf_rule.h"
+#include "conf_common.h"
 #include "te_shell_cmd.h"
 
 #ifdef CFG_UNIX_DAEMONS
@@ -276,6 +276,7 @@ extern te_errno ta_unix_conf_sys_init();
 extern te_errno ta_unix_conf_phy_init();
 extern te_errno ta_unix_conf_eth_init(void);
 extern te_errno ta_unix_conf_macvlan_init();
+extern te_errno ta_unix_conf_module_init(void);
 
 #ifdef USE_LIBNETCONF
 netconf_handle nh = NETCONF_HANDLE_INVALID;
@@ -1272,6 +1273,12 @@ rcf_ch_conf_init()
             goto fail;
         }
 
+        if (ta_unix_conf_module_init() != 0)
+        {
+            ERROR("Failed to add system module configuration subtree");
+            goto fail;
+        }
+
         init = TRUE;
 
     }
@@ -1331,16 +1338,8 @@ rcf_ch_conf_fini()
         (void)close(cfg6_socket);
 }
 
-/**
- * Write requested value to system file.
- *
- * @param value     Null-terminated string containing the value.
- * @param format    Format string for path to the system file.
- * @param ...       Arguments for the format string.
- *
- * @return Status code.
- */
-static te_errno
+/* See the description in conf_common.h */
+te_errno
 write_sys_value(const char *value, const char *format, ...)
 {
     va_list   valist;
@@ -1390,24 +1389,19 @@ write_sys_value(const char *value, const char *format, ...)
     return result;
 }
 
-/**
- * Read requested value from system file.
- *
- * @param value     Where to save the value.
- * @param len       Expected length, including null byte.
- * @param format    Format string for path to the system file.
- * @param ...       Arguments for the format string.
- *
- * @return Status code.
- */
-static te_errno
-read_sys_value(char *value, size_t len, const char *format, ...)
+/* See the description in conf_common.h */
+te_errno
+read_sys_value(char *value, size_t len, te_bool ignore_eaccess,
+               const char *format, ...)
 {
     va_list   valist;
     char      path[PATH_MAX];
     int       rc = 0;
     FILE     *f = NULL;
     te_errno  result = 0;
+    int       i = 0;
+
+    value[0] = '\0';
 
     if (len < 1)
     {
@@ -1427,6 +1421,9 @@ read_sys_value(char *value, size_t len, const char *format, ...)
 
     if ((f = fopen(path, "r")) == NULL)
     {
+        if (ignore_eaccess && errno == EACCES)
+            return 0;
+
         ERROR("%s: failed to open %s for reading",
               __FUNCTION__, path);
         return TE_OS_RC(TE_TA_UNIX, errno);
@@ -1448,6 +1445,13 @@ read_sys_value(char *value, size_t len, const char *format, ...)
     else
     {
         value[rc] = '\0';
+        for (i = rc - 1; i >= 0; i--)
+        {
+            if (value[i] == '\n' || value[i] == '\r')
+                value[i] = '\0';
+            else
+                break;
+        }
     }
 
     if (fclose(f) < 0)
@@ -1458,6 +1462,75 @@ read_sys_value(char *value, size_t len, const char *format, ...)
     }
 
     return result;
+}
+
+/* See the description in conf_common.h */
+te_errno
+get_dir_list(const char *path, char *buffer, size_t length,
+             te_bool ignore_absence,
+             include_callback_func include_callback,
+             void *callback_data)
+{
+    struct dirent  **namelist = NULL;
+    struct dirent   *de = NULL;
+    int              n;
+    int              i;
+    size_t           off = 0;
+    int              rc;
+    te_errno         ret = 0;
+
+    buffer[0] = '\0';
+
+    n = scandir(path, &namelist, NULL, NULL);
+    if (n < 0)
+    {
+        if (errno == ENOENT && ignore_absence)
+            return 0;
+
+        ERROR("%s: failed to scan %s directory",
+              __FUNCTION__, path);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    for (i = 0; i < n; i++)
+    {
+        de = namelist[i];
+
+        if (strcmp(de->d_name, ".") == 0 ||
+            strcmp(de->d_name, "..") == 0)
+            continue;
+
+        if (include_callback != NULL &&
+            !include_callback(de->d_name, callback_data))
+            continue;
+
+        rc = snprintf(buffer + off, length - off, "%s ", de->d_name);
+        if (rc < 0)
+        {
+            ret = TE_OS_RC(TE_TA_UNIX, errno);
+            ERROR("%s(): snprintf() failed", __FUNCTION__);
+            goto cleanup;
+        }
+        else if ((size_t)rc >= length - off)
+        {
+            ret = TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+            ERROR("%s(): not enough space for all names from %s",
+                  __FUNCTION__, path);
+            goto cleanup;
+        }
+
+        off += rc;
+    }
+
+cleanup:
+
+    for (i = 0; i < n; i++)
+    {
+        free(namelist[i]);
+    }
+    free(namelist);
+
+    return ret;
 }
 
 #if SOLARIS_IP_FW
@@ -5747,7 +5820,7 @@ rp_filter_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
 
 #if __linux__
-    return read_sys_value(value, 2,
+    return read_sys_value(value, RCF_MAX_VAL, FALSE,
                           "/proc/sys/net/ipv4/conf/%s/rp_filter",
                           ifname);
 #else
@@ -5842,7 +5915,7 @@ arp_ignore_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
 
 #if __linux__
-    return read_sys_value(value, 2,
+    return read_sys_value(value, RCF_MAX_VAL, FALSE,
                           "/proc/sys/net/ipv4/conf/%s/arp_ignore",
                           ifname);
 #else

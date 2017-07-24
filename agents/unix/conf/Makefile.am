@@ -20,6 +20,7 @@ EXTRA_DIST=daemons/ldap/slapd.conf daemons/ldap/slapd_run.sh
 
 noinst_HEADERS = \
 	base/conf_netconf.h \
+	base/conf_common.h \
 	route/conf_route.h \
 	rule/conf_rule.h \
 	util/conf_dlpi.h \
@@ -36,6 +37,7 @@ libconf_a_SOURCES = \
 	base/conf_netconsole.c \
 	base/conf_configfs.c \
 	base/conf_macvlan.c \
+	base/conf_module.c \
 	route/conf_route.c \
 	route/conf_route_libnetconf.c \
 	route/conf_route_socket.c \
