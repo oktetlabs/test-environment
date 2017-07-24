@@ -240,6 +240,16 @@
                 empty string - don't specify explicitly (default vepa) -->
     <object oid="/agent/interface/macvlan" access="read_create" type="string"/>
 
+    <!-- "Parent" interface (filled for VLAN, MAC VLAN, etc.)
+         Name: empty
+         Value: Name of the parent interface -->
+    <object oid="/agent/interface/parent" access="read_only" type="string"/>
+
+    <!-- Kind of an interface ("vlan", "macvlan", etc.; may be empty)
+         Name: empty
+         Value: Kind of an interface -->
+    <object oid="/agent/interface/kind" access="read_only" type="string"/>
+
     <!-- Network interface PHY parameters
          Name: none
          Value: none -->
