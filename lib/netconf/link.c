@@ -98,14 +98,10 @@ netconf_link_node_free(netconf_node *node)
 {
     NETCONF_ASSERT(node != NULL);
 
-    if (node->data.link.address != NULL)
-        free(node->data.link.address);
-    if (node->data.link.broadcast != NULL)
-        free(node->data.link.broadcast);
-    if (node->data.link.ifname != NULL)
-        free(node->data.link.ifname);
-    if (node->data.link.info_kind != NULL)
-        free(node->data.link.info_kind);
+    free(node->data.link.address);
+    free(node->data.link.broadcast);
+    free(node->data.link.ifname);
+    free(node->data.link.info_kind);
 
     free(node);
 }
