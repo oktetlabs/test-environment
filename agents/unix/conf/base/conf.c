@@ -2970,19 +2970,61 @@ ifindex_get(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
+#if ((defined(USE_LIBNETCONF)) || (defined(HAVE_SYS_DLPI_H)))
+/*
+ * Next functions are pulled out from iproute internals
+ * to be accessible here and renamed.
+ */
+static const char *
+link_addr_n2a(unsigned char *addr, int alen,
+              char *buf, int blen)
+{
+    int i;
+    int l;
+
+    l = 0;
+    for (i = 0; i < alen; i++)
+    {
+        if (i==0)
+        {
+            snprintf(buf + l, blen, "%02x", addr[i]);
+            blen -= 2;
+            l += 2;
+        }
+        else
+        {
+            snprintf(buf+l, blen, ":%02x", addr[i]);
+            blen -= 3;
+            l += 3;
+        }
+    }
+    return buf;
+}
+#endif
+
 #ifdef USE_LIBNETCONF
+
 /**
- * Get name of an interface on which the given interface is based
- * (using libnetconf).
+ * Interface properties.
+ */
+typedef enum {
+    IF_PROP_PARENT = 0, /**< Parent interface. */
+    IF_PROP_BCAST_ADDR, /**< Broadcast address. */
+} if_property;
+
+/**
+ * Get a propery of the interface (using libnetconf).
  *
  * @param ifname        Name of the interface (like "eth0").
  * @param value         Where to save an answer.
+ * @param prop          Which property to get.
  *
  * @return              Status code.
  */
 static te_errno
-iface_parent_get_netconf(const char *ifname,
-                         char *value)
+iface_get_property_netconf(const char *ifname,
+                           char *value,
+                           if_property prop)
 {
     netconf_list    *list = NULL;
     netconf_node    *node = NULL;
@@ -3012,16 +3054,35 @@ iface_parent_get_netconf(const char *ifname,
         {
             rc = 0;
 
-            if (link->link != (int)ifindex &&
-                link->link != 0)
+            switch (prop)
             {
-                if (if_indextoname(link->link, value) == NULL)
-                {
-                    rc = te_rc_os2te(errno);
-                    ERROR("%s(): cannot obtain interface "
-                          "name for index %d",
-                          __FUNCTION__, link->link);
-                }
+                case IF_PROP_PARENT:
+
+                    if (link->link != (int)ifindex &&
+                        link->link != 0)
+                    {
+                        if (if_indextoname(link->link, value) == NULL)
+                        {
+                            rc = te_rc_os2te(errno);
+                            ERROR("%s(): cannot obtain interface "
+                                  "name for index %d",
+                                  __FUNCTION__, link->link);
+                        }
+                    }
+
+                    break;
+
+                case IF_PROP_BCAST_ADDR:
+
+                    link_addr_n2a(link->broadcast, link->addrlen,
+                                  value, RCF_MAX_VAL);
+                    break;
+
+                default:
+
+                    ERROR("%s(): unknown interface property requested",
+                          __FUNCTION__);
+                    rc = TE_EINVAL;
             }
 
             break;
@@ -3069,7 +3130,7 @@ iface_parent_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, rc);
 
 #ifdef USE_LIBNETCONF
-    return iface_parent_get_netconf(ifname, value);
+    return iface_get_property_netconf(ifname, value, IF_PROP_PARENT);
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 #endif
@@ -4777,38 +4838,6 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
 }
 
 
-#if ((defined(USE_LIBNETCONF)) || (defined(HAVE_SYS_DLPI_H)))
-/*
- * Next functions are pulled out from iproute internals
- * to be accessible here and renamed.
- */
-static const char *
-link_addr_n2a(unsigned char *addr, int alen,
-              char *buf, int blen)
-{
-    int i;
-    int l;
-
-    l = 0;
-    for (i = 0; i < alen; i++)
-    {
-        if (i==0)
-        {
-            snprintf(buf + l, blen, "%02x", addr[i]);
-            blen -= 2;
-            l += 2;
-        }
-        else
-        {
-            snprintf(buf+l, blen, ":%02x", addr[i]);
-            blen -= 3;
-            l += 3;
-        }
-    }
-    return buf;
-}
-#endif
-
 int
 link_addr_a2n(uint8_t *lladdr, int len, const char *str)
 {
@@ -5131,49 +5160,8 @@ bcast_link_addr_get(unsigned int gid, const char *oid,
     }
 
 #if defined(USE_LIBNETCONF)
-    {
-        unsigned int            ifindex;
-        netconf_list           *list;
-        netconf_node           *t;
-        te_bool                 found;
-
-        if ((ifindex = if_nametoindex(ifname)) == 0)
-        {
-            ERROR("%s(): Device '%s' does not exist",
-                  __FUNCTION__, ifname);
-            return TE_RC(TE_TA_UNIX, TE_ENODEV);
-        }
-
-        if ((list = netconf_link_dump(nh)) == NULL)
-        {
-            ERROR("%s(): Cannot get list of interfaces", __FUNCTION__);
-            return TE_OS_RC(TE_TA_UNIX, errno);
-        }
-
-        found = FALSE;
-        for (t = list->head; t != NULL; t = t->next)
-        {
-            const netconf_link *link = &(t->data.link);
-
-            if (ifindex == (unsigned int)(link->ifindex))
-            {
-                link_addr_n2a(link->broadcast, link->addrlen,
-                              value, RCF_MAX_VAL);
-                found = TRUE;
-                break;
-            }
-        }
-
-        netconf_list_free(list);
-
-        if (!found)
-        {
-            ERROR("Cannot find interface '%s'", ifname);
-            return TE_RC(TE_TA_UNIX, TE_ENOENT);
-        }
-
-        return 0;
-    }
+    return iface_get_property_netconf(ifname, value,
+                                      IF_PROP_BCAST_ADDR);
 #elif HAVE_SYS_DLPI_H
     do {
         size_t  len = sizeof(buf);
