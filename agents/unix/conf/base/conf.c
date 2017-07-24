@@ -2981,25 +2981,40 @@ ifindex_get(unsigned int gid, const char *oid, char *value,
  * Next functions are pulled out from iproute internals
  * to be accessible here and renamed.
  */
+
+/**
+ * Get string representation of MAC address.
+ *
+ * @param addr    MAC address.
+ * @param alen    Address length.
+ * @param buf     Buffer where to save string representation.
+ * @param blen    Buffer length.
+ *
+ * @return Pointer to buffer provided.
+ */
 static const char *
-link_addr_n2a(unsigned char *addr, int alen,
-              char *buf, int blen)
+link_addr_n2a(const uint8_t *addr, size_t alen,
+              char *buf, size_t blen)
 {
-    int i;
-    int l;
+    size_t i;
+    size_t l;
 
     l = 0;
     for (i = 0; i < alen; i++)
     {
-        if (i==0)
+        if (i == 0)
         {
             snprintf(buf + l, blen, "%02x", addr[i]);
+            if (blen < 2)
+                return buf;
             blen -= 2;
             l += 2;
         }
         else
         {
-            snprintf(buf+l, blen, ":%02x", addr[i]);
+            snprintf(buf + l, blen, ":%02x", addr[i]);
+            if (blen < 3)
+                return buf;
             blen -= 3;
             l += 3;
         }
