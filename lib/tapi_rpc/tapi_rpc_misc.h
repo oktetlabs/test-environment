@@ -1020,6 +1020,28 @@ extern void tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
                                   int mtu, int *old_mtu);
 
 /**
+ * Set new MTU value for a given interface (increasing MTU for
+ * the interfaces it is based on if necessary).
+ *
+ * @note This function does not save previous values of MTU for affected
+ *       "ancestor" interfaces; you should rely on Configurator to restore
+ *       them. Still it makes sense to restore MTU for the interface
+ *       passed to this function, as otherwise Configurator may
+ *       be not able to restore MTU values for its "descendant"
+ *       interfaces, which may change as a side effect if we descrease
+ *       MTU.
+ *
+ * @param rpcs       RPC server handle
+ * @param if_name    Interface name
+ * @param mtu        MTU value
+ * @param old_mtu    If not @c NULL, previous value of MTU
+ *                   for the interface will be saved.
+ */
+extern void tapi_set_if_mtu_ancestors(rcf_rpc_server *rpcs,
+                                      const char *if_name,
+                                      int mtu, int *old_mtu);
+
+/**
  * Check if the interface is VLAN interface.
  * 
  * @param rpcs       RPC server handler

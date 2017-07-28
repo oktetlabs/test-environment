@@ -63,6 +63,7 @@
 #include "tapi_rpc_winsock2.h"
 #include "tapi_rpc_signal.h"
 #include "tapi_test.h"
+#include "tapi_cfg.h"
 #include "tapi_cfg_base.h"
 
 /* See description in tapi_rpc_misc.h */
@@ -2262,6 +2263,81 @@ tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
 
     CHECK_RC(tapi_cfg_base_if_set_mtu(rpcs->ta, interface->if_name, mtu,
                                       old_mtu));
+}
+
+/**
+ * Auxiliary function used to implement tapi_set_if_mtu_ancestors().
+ * It increases MTU for the ancestors of a given interface if required,
+ * and then sets it for the interface itself.
+ *
+ * @param rpcs       RPC server handle
+ * @param if_name    Interface name
+ * @param mtu        MTU value
+ * @param ancestor   If TRUE, this is an ancestor interface
+ */
+static void
+tapi_set_if_mtu_ancestors_aux(rcf_rpc_server *rpcs,
+                              const char *if_name,
+                              int mtu, te_bool ancestor)
+{
+    char          if_parent[IFNAMSIZ];
+
+    if (!tapi_interface_is_mine(rpcs, if_name))
+        TEST_FAIL("%s interface is not grabbed by testing", if_name);
+
+    CHECK_RC(tapi_cfg_get_if_parent(rpcs->ta, if_name,
+                                    if_parent, sizeof(if_parent)));
+    if (if_parent[0] != '\0')
+    {
+        tapi_set_if_mtu_ancestors_aux(rpcs, if_parent, mtu, TRUE);
+    }
+    else
+    {
+        tqh_strings   slaves;
+        tqe_string   *slave = NULL;
+
+        rpc_bond_get_slaves(rpcs, if_name,
+                            &slaves, NULL);
+
+        TAILQ_FOREACH(slave, &slaves, links)
+        {
+            tapi_set_if_mtu_ancestors_aux(rpcs, slave->v,
+                                          mtu, TRUE);
+        }
+
+        tq_strings_free(&slaves, &free);
+    }
+
+    if (ancestor)
+    {
+        int old_mtu;
+
+        CHECK_RC(tapi_cfg_base_if_get_mtu_u(rpcs->ta, if_name,
+                                            &old_mtu));
+
+        /**
+         * No need to adjust MTU for ancestor if it is not less
+         * than the value we want to set.
+         */
+        if (old_mtu >= mtu)
+            return;
+    }
+
+    CHECK_RC(tapi_cfg_base_if_set_mtu_ext(rpcs->ta, if_name, mtu,
+                                          NULL, ancestor));
+}
+
+/* See description in tapi_rpc_misc.h */
+void
+tapi_set_if_mtu_ancestors(rcf_rpc_server *rpcs,
+                          const char *if_name,
+                          int mtu, int *old_mtu)
+{
+    if (old_mtu != NULL)
+        CHECK_RC(tapi_cfg_base_if_get_mtu_u(rpcs->ta, if_name,
+                                            old_mtu));
+
+    tapi_set_if_mtu_ancestors_aux(rpcs, if_name, mtu, FALSE);
 }
 
 /* See description in tapi_rpc_misc.h */
