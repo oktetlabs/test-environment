@@ -823,6 +823,19 @@ tapi_cfg_base_if_add_rsrc(const char *ta, const char *ifname)
 
 /* See description in tapi_cfg_base.h */
 te_errno
+tapi_cfg_base_if_check_add_rsrc(const char *ta, const char *ifname)
+{
+    cfg_val_type  val_type = CVT_STRING;
+
+    if (cfg_get_instance_fmt(&val_type, NULL, "/agent:%s/rsrc:%s",
+                             ta, ifname) == 0)
+        return 0;
+
+    return tapi_cfg_base_if_add_rsrc(ta, ifname);
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
 tapi_cfg_base_if_del_rsrc(const char *ta, const char *ifname)
 {
     return cfg_del_instance_fmt(FALSE, "/agent:%s/rsrc:%s", ta, ifname);

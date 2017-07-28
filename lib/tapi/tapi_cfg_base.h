@@ -510,6 +510,18 @@ extern te_errno tapi_cfg_base_if_add_rsrc(const char *ta,
                                           const char *ifname);
 
 /**
+ * Add interface @p ifname to the agent @p ta resources,
+ * if it is not done already.
+ *
+ * @param ta      Test Agent name.
+ * @param ifname  Interface name.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_base_if_check_add_rsrc(const char *ta,
+                                                const char *ifname);
+
+/**
  * Delete interface @p ifname from the agent @p ta resources.
  *
  * @return Status code
