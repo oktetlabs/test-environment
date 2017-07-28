@@ -585,14 +585,13 @@ eth_cmd_set(unsigned int gid, const char *oid, char *value,
     char                   *endp;
     int                     rc;
     uint32_t                cmd, data;
-    char                    slaves[2][IFNAMSIZ];
+    tqh_strings             slaves;
     char                    if_par[IF_NAMESIZE];
-    int                     slaves_num = 2;
-    int                     i;
 
     UNUSED(gid);
     UNUSED(data);
 
+    TAILQ_INIT(&slaves);
     memset(&ifr, 0, sizeof(ifr));
     memset(&eval, 0, sizeof(eval));
 
@@ -636,28 +635,37 @@ eth_cmd_set(unsigned int gid, const char *oid, char *value,
     if ((rc = ta_vlan_get_parent(ifname, if_par)) != 0)
         return rc;
     if ((rc = ta_bond_get_slaves(strlen(if_par) == 0 ? ifname : if_par,
-                                 slaves, &slaves_num)) != 0)
+                                 &slaves, NULL)) != 0)
         return rc;
-    if (slaves_num != 0)
+    if (!TAILQ_EMPTY(&slaves))
     {
-        for (i = 0; i < slaves_num; i++)
+        tqe_string *slave = NULL;
+
+        TAILQ_FOREACH(slave, &slaves, links)
         {
             eval.cmd = cmd;
 #ifdef ETHTOOL_RESET
             if (cmd == ETHTOOL_RESET)
                 eval.data = data;
 #endif
-            strncpy(ifr.ifr_name, slaves[i], sizeof(ifr.ifr_name));
+            strncpy(ifr.ifr_name, slave->v, sizeof(ifr.ifr_name));
+            if (ifr.ifr_name[sizeof(ifr.ifr_name) - 1] != '\0')
+            {
+                ERROR("%s(): ta_bond_get_slaves() returned too long "
+                      "interface name", __FUNCTION__);
+                tq_strings_free(&slaves, &free);
+                return TE_OS_RC(TE_TA_UNIX, TE_ESMALLBUF);
+            }
 
             if (ioctl(cfg_socket, SIOCETHTOOL, &ifr) != 0)
             {
                 ERROR("ioctl failed on %s: %s", ifr.ifr_name,
                       strerror(errno));
+                tq_strings_free(&slaves, &free);
                 return TE_OS_RC(TE_TA_UNIX, errno);
             }
-            if (i != slaves_num - 1)
-                sleep(10);
         }
+        tq_strings_free(&slaves, &free);
         return 0;
     }
     if (strlen(if_par) != 0)

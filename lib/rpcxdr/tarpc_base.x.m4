@@ -3736,7 +3736,6 @@ struct tarpc_ifname {
 struct tarpc_bond_get_slaves_in {
     struct tarpc_in_arg common;
 
-    tarpc_int slaves_num;
     char      ifname<>;
 };
 
@@ -3746,7 +3745,6 @@ struct tarpc_bond_get_slaves_out {
     tarpc_int retval;
 
     tarpc_ifname    slaves<>;
-    tarpc_int       slaves_num;
 };
 
 /* getenv() */

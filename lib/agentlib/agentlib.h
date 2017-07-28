@@ -37,6 +37,8 @@
 #include <net/if.h>
 #endif
 
+#include "tq_string.h"
+
 /**
  * Get parent device name of VLAN interface.
  * If passed interface is not VLAN, method sets 'parent' to empty string
@@ -55,14 +57,15 @@ extern te_errno ta_vlan_get_parent(const char *ifname, char *parent);
  * If passed interface is not bonding, method sets 'slaves_num' to zero
  * and return success.
  *
- * @param ifname        interface name
- * @param slvs          location of slaves interfaces names
- * @param slaves_num    Number of slaves interfaces
+ * @param ifname        Interface name
+ * @param slaves        Where to save slaves interfaces names
+ * @param slaves_num    Where to save number of slaves interfaces
+ *                      (may be NULL)
  *
- * @return status
+ * @return Status code.
  */
 extern te_errno ta_bond_get_slaves(const char *ifname,
-                                   char slvs[][IFNAMSIZ],
+                                   tqh_strings *slaves,
                                    int *slaves_num);
 
 #if defined(ENABLE_FTP)

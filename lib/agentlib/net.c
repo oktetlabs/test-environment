@@ -42,6 +42,7 @@
 #include "te_errno.h"
 #include "te_shell_cmd.h"
 #include "logger_api.h"
+#include "tq_string.h"
 
 /* Pathname of teamnl tool. */
 #define TEAMNL_PATHNAME "/usr/bin/teamnl"
@@ -171,7 +172,7 @@ cleanup:
 
 /* See description in agentlib.h */
 te_errno
-ta_bond_get_slaves(const char *ifname, char slvs[][IFNAMSIZ],
+ta_bond_get_slaves(const char *ifname, tqh_strings *slaves,
                    int *slaves_num)
 {
     int    i = 0;
@@ -184,6 +185,11 @@ ta_bond_get_slaves(const char *ifname, char slvs[][IFNAMSIZ],
     int    rc = 0;
     int    status;
 
+    if (slaves_num != NULL)
+        *slaves_num = 0;
+
+    TAILQ_INIT(slaves);
+
     TE_SPRINTF(path, "/proc/net/bonding/%s", ifname);
 
     FILE *proc_bond = fopen(path, "r");
@@ -191,10 +197,7 @@ ta_bond_get_slaves(const char *ifname, char slvs[][IFNAMSIZ],
     {
         /* Consider an interface is not bond if teamnl does not exist. */
         if (access(TEAMNL_PATHNAME, X_OK) != 0)
-        {
-            *slaves_num = 0;
             return 0;
-        }
 
         /* Set here path for logging purpose */
         TE_SPRINTF(path, "%s %s ports", TEAMNL_PATHNAME, ifname);
@@ -222,7 +225,6 @@ ta_bond_get_slaves(const char *ifname, char slvs[][IFNAMSIZ],
         if (errno == ENOENT)
         {
             VERB("%s: no proc bond file and no team", __FUNCTION__);
-            *slaves_num = 0;
             return 0; /* no bond support module loaded, no slaves */
         }
 
@@ -231,7 +233,7 @@ ta_bond_get_slaves(const char *ifname, char slvs[][IFNAMSIZ],
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    while (i < *slaves_num && getline(&line, &len, proc_bond) != -1)
+    while (getline(&line, &len, proc_bond) != -1)
     {
         char *ifname = strstr(line, "Slave Interface");
         if (ifname == NULL)
@@ -246,7 +248,15 @@ ta_bond_get_slaves(const char *ifname, char slvs[][IFNAMSIZ],
             rc = TE_RC(TE_TA_UNIX, TE_ENAMETOOLONG);
             goto cleanup;
         }
-        strcpy(slvs[i], ifname);
+
+        rc = tq_strings_add_uniq_gen(slaves, ifname, TRUE);
+        if (rc != 0)
+        {
+            ERROR("%s(): failed to add interface name to the list",
+                  __FUNCTION__);
+            rc = TE_RC(TE_TA_UNIX, rc);
+            goto cleanup;
+        }
         i++;
     }
 
@@ -262,11 +272,19 @@ cleanup:
         {
             ERROR("%s(): Non-zero status of teamnl: %d",
                   __FUNCTION__, status);
-            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+            rc = TE_RC(TE_TA_UNIX, TE_ESHCMD);
         }
     }
 
     if (rc == 0)
-        *slaves_num = i;
+    {
+        if (slaves_num != NULL)
+            *slaves_num = i;
+    }
+    else
+    {
+        tq_strings_free(slaves, &free);
+    }
+
     return rc;
 }

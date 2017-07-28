@@ -56,6 +56,7 @@
 #include "te_defs.h"
 #include "te_printf.h"
 #include "te_string.h"
+#include "tq_string.h"
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_misc.h"
@@ -150,20 +151,25 @@ rpc_vlan_get_parent(rcf_rpc_server *rpcs, const char *vlan_ifname,
     RETVAL_INT(vlan_get_parent, rc);
 }
 
+/* See description in tapi_rpc_misc.h */
 int
 rpc_bond_get_slaves(rcf_rpc_server *rpcs, const char *bond_ifname,
-                    char slaves[][IFNAMSIZ], int *slaves_num)
+                    tqh_strings *slaves, int *slaves_num)
 {
-    int rc;
-    int i;
+    int          rc;
+    unsigned int i;
 
     struct tarpc_bond_get_slaves_in  in;
     struct tarpc_bond_get_slaves_out out;
-    char                   str_buf[1024];
 
-    memset(str_buf, 0, sizeof(str_buf));
+    te_string str = TE_STRING_INIT;
+
+    TAILQ_INIT(slaves);
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
+
+    if (slaves_num != NULL)
+        *slaves_num = 0;
 
     if (rpcs == NULL)
     {
@@ -174,35 +180,61 @@ rpc_bond_get_slaves(rcf_rpc_server *rpcs, const char *bond_ifname,
     if (bond_ifname == NULL)
     {
         ERROR("%s(): NULL interface name", __FUNCTION__);
+        rpcs->_errno = TE_RC(TE_RCF_API, TE_EINVAL);
         RETVAL_INT(bond_get_slaves, -1);
     }
 
     if (slaves == NULL)
     {
-        ERROR("%s(): Pointer slaves is NULL", __FUNCTION__);
+        ERROR("%s(): Pointer to slaves list is NULL", __FUNCTION__);
+        rpcs->_errno = TE_RC(TE_RCF_API, TE_EINVAL);
         RETVAL_INT(bond_get_slaves, -1);
     }
 
     in.ifname.ifname_val = strdup(bond_ifname);
     in.ifname.ifname_len = strlen(bond_ifname) + 1;
-    in.slaves_num = *slaves_num;
+
+    if (in.ifname.ifname_val == NULL)
+    {
+        ERROR("%s(): out of memory", __FUNCTION__);
+        rpcs->_errno = TE_RC(TE_RCF_API, TE_ENOMEM);
+        RETVAL_INT(bond_get_slaves, -1);
+    }
 
     rcf_rpc_call(rpcs, "bond_get_slaves", &in, &out);
     free(in.ifname.ifname_val);
-    *slaves_num = out.slaves_num;
-    for (i = 0; i < *slaves_num; i++)
+
+    te_string_append(&str, "");
+    for (i = 0; i < out.slaves.slaves_len; i++)
     {
-        memcpy(slaves[i], out.slaves.slaves_val[i].ifname,
-               IFNAMSIZ);
-        snprintf(str_buf + strlen(str_buf), sizeof(str_buf) -
-                 strlen(str_buf), "%s%s", (i == 0) ? "" : ", ", slaves[i]);
+        rc = tq_strings_add_uniq_gen(slaves,
+                                     out.slaves.slaves_val[i].ifname,
+                                     TRUE);
+        if (rc == 0)
+            rc = te_string_append(&str, "%s%s", (i == 0) ? "" : ", ",
+                                  out.slaves.slaves_val[i].ifname);
+
+        if (rc != 0)
+        {
+            ERROR("%s(): failed to add an interface to the list",
+                  __FUNCTION__);
+            rpcs->_errno = TE_RC(TE_RCF_API, rc);
+            te_string_free(&str);
+            tq_strings_free(slaves, &free);
+            RETVAL_INT(bond_get_slaves, -1);
+        }
+
     }
+
+    if (slaves_num != NULL)
+        *slaves_num = out.slaves.slaves_len;
 
     rc = out.retval;
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(rpc_bond_get_slaves, rc);
     TAPI_RPC_LOG(rpcs, rpc_bond_get_slaves, "%s, %p(%s), %d", "%d",
-                 bond_ifname, slaves, str_buf, *slaves_num, rc);
+                 bond_ifname, slaves, str.ptr, out.slaves.slaves_len, rc);
+    te_string_free(&str);
     RETVAL_INT(bond_get_slaves, rc);
 }
 

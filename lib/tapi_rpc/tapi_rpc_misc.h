@@ -60,6 +60,7 @@
 #include "te_rpc_sys_systeminfo.h"
 #include "tapi_rpc_signal.h"
 #include "te_dbuf.h"
+#include "tq_string.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -100,21 +101,21 @@ extern te_bool rpc_find_func(rcf_rpc_server *rpcs,
 extern int rpc_vlan_get_parent(rcf_rpc_server *rpcs,
                                const char *vlan_ifname,
                                char *parent_ifname);
+
 /**
- * Return slaves network interfaces names of bond interface.
+ * Return slaves network interfaces names of a bond interface.
  *
- * @param handle        RPC server handle
+ * @param rpcs          RPC server handle
  * @param bond_ifname   Bond interface name
- * @param slaves        Pointer to the slaves network interfaces names
- *                      with at least @c IF_NAMESIZE bytes size for each
- * @param slaves_num    Number of interfaces in @p slaves
+ * @param slaves        Where to save list of slaves names
+ * @param slaves_num    Where to save number of interfaces
+ *                      in @p slaves (may be NULL)
  *
- * @return 0 on success or -1 in the case of failure
- *
+ * @return 0 on success or -1 in case of failure
  */
 extern int rpc_bond_get_slaves(rcf_rpc_server *rpcs,
                                const char *bond_ifname,
-                               char slaves[][IFNAMSIZ], int *slaves_num);
+                               tqh_strings *slaves, int *slaves_num);
 
 /**
  * Get host value of sizeof(type_name).

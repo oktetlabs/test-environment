@@ -81,6 +81,7 @@
 #include "te_queue.h"
 #include "te_tools.h"
 #include "te_dbuf.h"
+#include "tq_string.h"
 
 #include "agentlib.h"
 #include "iomux.h"
@@ -5859,28 +5860,60 @@ _bond_get_slaves_1_svc(tarpc_bond_get_slaves_in *in,
                        tarpc_bond_get_slaves_out *out,
                        struct svc_req *rqstp)
 {
-    char slaves[16][IFNAMSIZ];
     int i;
 
+    int          slaves_num = 0;
+    tqh_strings  slaves;
+    tqe_string  *slave;
+
     UNUSED(rqstp);
+    TAILQ_INIT(&slaves);
     memset(out, 0, sizeof(*out));
     VERB("PID=%d TID=%llu: Entry %s",
          (int)getpid(), (unsigned long long int)pthread_self(),
          "bond_get_slaves");
 
-    out->slaves_num = in->slaves_num;
     out->common._errno = ta_bond_get_slaves(in->ifname.ifname_val,
-                                            slaves, &(out->slaves_num));
+                                            &slaves, &slaves_num);
+    if (out->common._errno != 0)
+        goto cleanup;
 
     if ((out->slaves.slaves_val =
-            (tarpc_ifname *)calloc(out->slaves_num,
+            (tarpc_ifname *)calloc(slaves_num,
                                    sizeof(tarpc_ifname))) == NULL)
+    {
         out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    out->slaves.slaves_len = out->slaves_num;
+        goto cleanup;
+    }
 
-    for (i = 0; i < out->slaves_num; i++)
-        memcpy(out->slaves.slaves_val[i].ifname, slaves[i], IFNAMSIZ);
+    out->slaves.slaves_len = slaves_num;
+
+    slave = TAILQ_FIRST(&slaves);
+    for (i = 0; i < slaves_num; i++)
+    {
+        if (slave == NULL)
+        {
+            ERROR("%s(): bond slaves number is wrong", __FUNCTION__);
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_EFAIL);
+            goto cleanup;
+        }
+
+        strncpy(out->slaves.slaves_val[i].ifname, slave->v, IFNAMSIZ);
+        if (out->slaves.slaves_val[i].ifname[IFNAMSIZ - 1] != '\0')
+        {
+            ERROR("%s(): interface name is too long", __FUNCTION__);
+            out->slaves.slaves_val[i].ifname[IFNAMSIZ - 1] = '\0';
+            out->common._errno = TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+            goto cleanup;
+        }
+
+        slave = TAILQ_NEXT(slave, links);
+    }
+
+cleanup:
+
     out->retval = (out->common._errno == 0) ? 0 : -1;
+    tq_strings_free(&slaves, &free);
 
     return TRUE;
 }
