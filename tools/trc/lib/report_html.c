@@ -2546,6 +2546,10 @@ trc_report_exp_got_to_html(FILE             *f,
     char                              tin_id[128];
     char                             *escaped_path = NULL;
 
+    const char *night_logs_history = getenv("TE_NIGHT_LOGS_HISTORY");
+    te_bool     ref_history = (night_logs_history != NULL &&
+                               night_logs_history[0] != '\0');
+
     assert(anchor != NULL);
     assert(test_path != NULL);
 
@@ -2643,9 +2647,12 @@ trc_report_exp_got_to_html(FILE             *f,
                     }
                 }
 
-                iter_history_url = te_sprintf(trc_test_iter_history_href,
-                                              iter_entry->hash,
-                                              test_path, params.ptr); 
+                if (ref_history)
+                    iter_history_url = te_sprintf(
+                                            trc_test_iter_history_href,
+                                            iter_entry->hash,
+                                            test_path, params.ptr); 
+
                 te_string_free(&params);
             }
 #endif
@@ -3397,7 +3404,7 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
 
     night_logs_history = getenv("TE_NIGHT_LOGS_HISTORY");
     if (night_logs_history == NULL)
-        night_logs_history = "https://oktetlabs.ru/prj/sf/sapi-ts/history";
+        night_logs_history = "<NOT_FOUND>";
 
     f = fopen(filename, "w");
     if (f == NULL)
