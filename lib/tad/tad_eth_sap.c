@@ -1016,14 +1016,7 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
         return rc;
     }
 
-#ifdef WITH_PACKET_MMAP_RX_RING
-    UNUSED(use_packet_auxdata);
-    UNUSED(buf_size);
-
-    rc = tad_eth_sap_pkt_rx_ring_setup(sap);
-    if (rc != 0)
-        goto error_exit;
-#else /* !WITH_PACKET_MMAP_RX_RING */
+#ifndef WITH_PACKET_MMAP_RX_RING
     use_packet_auxdata = 1;
     if (setsockopt(data->in, SOL_PACKET, PACKET_AUXDATA, &use_packet_auxdata,
                    sizeof(use_packet_auxdata)) != 0)
@@ -1045,6 +1038,9 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
         ERROR("%s(): setsockopt(SO_RCVBUF) failed: %r", rc);
         goto error_exit;
     }
+#else /* WITH_PACKET_MMAP_RX_RING */
+    UNUSED(use_packet_auxdata);
+    UNUSED(buf_size);
 #endif /* WITH_PACKET_MMAP_RX_RING */
 
     if ((mode & TAD_ETH_RECV_OTHER) && !(mode & TAD_ETH_RECV_NO_PROMISC))
@@ -1082,6 +1078,12 @@ tad_eth_sap_recv_open(tad_eth_sap *sap, unsigned int mode)
         ERROR("Failed to bind PF_PACKET socket: %r", rc);
         goto error_exit;
     }
+
+#ifdef WITH_PACKET_MMAP_RX_RING
+    rc = tad_eth_sap_pkt_rx_ring_setup(sap);
+    if (rc != 0)
+        goto error_exit;
+#endif /* WITH_PACKET_MMAP_RX_RING */
 #else
     /*  Obtain a packet capture descriptor */
     data->in = pcap_open_live(sap->name, TAD_ETH_SAP_SNAP_LEN,
