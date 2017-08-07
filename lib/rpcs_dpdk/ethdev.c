@@ -2055,3 +2055,64 @@ TARPC_FUNC(rte_eth_dev_fw_version_get,
 
     neg_errno_h2rpc(&out->retval);
 })
+
+static int
+tarpc_rte_eth_tunnel_type2rte(const enum tarpc_rte_eth_tunnel_type  rpc,
+                              enum rte_eth_tunnel_type             *rte)
+{
+    switch (rpc)
+    {
+        CASE_TARPC2RTE(RTE_TUNNEL_TYPE_NONE);
+        CASE_TARPC2RTE(RTE_TUNNEL_TYPE_VXLAN);
+        CASE_TARPC2RTE(RTE_TUNNEL_TYPE_GENEVE);
+        CASE_TARPC2RTE(RTE_TUNNEL_TYPE_TEREDO);
+        CASE_TARPC2RTE(RTE_TUNNEL_TYPE_NVGRE);
+        CASE_TARPC2RTE(RTE_TUNNEL_TYPE_IP_IN_GRE);
+        CASE_TARPC2RTE(RTE_L2_TUNNEL_TYPE_E_TAG);
+        CASE_TARPC2RTE(RTE_TUNNEL_TYPE_MAX);
+        default:
+            return 0;
+    }
+    return 1;
+}
+
+TARPC_FUNC(rte_eth_dev_udp_tunnel_port_add, {},
+{
+    struct rte_eth_udp_tunnel tunnel_udp;
+
+    tunnel_udp.udp_port = in->tunnel_udp.udp_port;
+
+    if (!tarpc_rte_eth_tunnel_type2rte(in->tunnel_udp.prot_type,
+                                       &tunnel_udp.prot_type))
+    {
+        out->retval = -TE_RC(TE_RPCS, TE_EINVAL);
+        goto done;
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, &tunnel_udp));
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    ;
+})
+
+TARPC_FUNC(rte_eth_dev_udp_tunnel_port_delete, {},
+{
+    struct rte_eth_udp_tunnel tunnel_udp;
+
+    tunnel_udp.udp_port = in->tunnel_udp.udp_port;
+
+    if (!tarpc_rte_eth_tunnel_type2rte(in->tunnel_udp.prot_type,
+                                       &tunnel_udp.prot_type))
+    {
+        out->retval = -TE_RC(TE_RPCS, TE_EINVAL);
+        goto done;
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, &tunnel_udp));
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    ;
+})
+

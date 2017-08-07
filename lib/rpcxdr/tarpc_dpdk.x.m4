@@ -1661,6 +1661,39 @@ struct tarpc_rte_eth_dev_set_mc_addr_list_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_set_mc_addr_list_out;
 
+/** enum rte_eth_tunnel_type */
+enum tarpc_rte_eth_tunnel_type {
+    TARPC_RTE_TUNNEL_TYPE_NONE,
+    TARPC_RTE_TUNNEL_TYPE_VXLAN,
+    TARPC_RTE_TUNNEL_TYPE_GENEVE,
+    TARPC_RTE_TUNNEL_TYPE_TEREDO,
+    TARPC_RTE_TUNNEL_TYPE_NVGRE,
+    TARPC_RTE_TUNNEL_TYPE_IP_IN_GRE,
+    TARPC_RTE_L2_TUNNEL_TYPE_E_TAG,
+    TARPC_RTE_TUNNEL_TYPE_MAX,
+
+    TARPC_RTE_TUNNEL_TYPE__UNKNOWN
+};
+
+struct tarpc_rte_eth_udp_tunnel {
+    uint16_t udp_port;
+    uint8_t  prot_type;
+};
+
+/** rte_eth_dev_udp_tunnel_port_add() */
+struct tarpc_rte_eth_dev_udp_tunnel_port_add_in {
+    struct tarpc_in_arg             common;
+    uint8_t                         port_id;
+    struct tarpc_rte_eth_udp_tunnel tunnel_udp;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_udp_tunnel_port_add_out;
+
+/** rte_eth_dev_udp_tunnel_port_delete() */
+typedef struct tarpc_rte_eth_dev_udp_tunnel_port_add_in tarpc_rte_eth_dev_udp_tunnel_port_delete_in;
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_udp_tunnel_port_delete_out;
+
 /**
  * rte_flow API
  */
@@ -1887,6 +1920,8 @@ program dpdk
         RPC_DEF(rte_eth_link_get_nowait)
         RPC_DEF(rte_eth_link_get)
         RPC_DEF(rte_eth_dev_fw_version_get)
+        RPC_DEF(rte_eth_dev_udp_tunnel_port_add)
+        RPC_DEF(rte_eth_dev_udp_tunnel_port_delete)
 
         RPC_DEF(rte_mk_flow_rule_from_str)
         RPC_DEF(rte_free_flow_rule)

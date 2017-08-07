@@ -3095,3 +3095,112 @@ rpc_rte_eth_dev_fw_version_get(rcf_rpc_server *rpcs,
 
     RETVAL_INT(rte_eth_dev_fw_version_get, out.retval);
 }
+
+static const char *
+tarpc_rte_eth_tunnel_type2str(enum tarpc_rte_eth_tunnel_type tunnel_type)
+{
+    const char *type;
+
+    switch (tunnel_type)
+    {
+        case TARPC_RTE_TUNNEL_TYPE_NONE:
+            type = "NONE";
+            break;
+        case TARPC_RTE_TUNNEL_TYPE_VXLAN:
+            type = "VXLAN";
+            break;
+        case TARPC_RTE_TUNNEL_TYPE_GENEVE:
+            type = "GENEVE";
+            break;
+        case TARPC_RTE_TUNNEL_TYPE_TEREDO:
+            type = "TEREDO";
+            break;
+        case TARPC_RTE_TUNNEL_TYPE_NVGRE:
+            type = "NVGRE";
+            break;
+        case TARPC_RTE_TUNNEL_TYPE_IP_IN_GRE:
+            type = "IP_IN_GRE";
+            break;
+        case TARPC_RTE_L2_TUNNEL_TYPE_E_TAG:
+            type = "L2_E_TAG";
+            break;
+        case TARPC_RTE_TUNNEL_TYPE_MAX:
+            type = "MAX";
+            break;
+        default:
+            type = "<UNKNOWN>";
+            break;
+    }
+
+    return type;
+}
+
+int
+rpc_rte_eth_dev_udp_tunnel_port_add(rcf_rpc_server                  *rpcs,
+                                    uint8_t                          port_id,
+                                    struct tarpc_rte_eth_udp_tunnel *tunnel_udp)
+{
+    tarpc_rte_eth_dev_udp_tunnel_port_add_in  in;
+    tarpc_rte_eth_dev_udp_tunnel_port_add_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (tunnel_udp == NULL)
+    {
+        ERROR("%s(): no tunnel configuration specified", __FUNCTION__);
+        RETVAL_ZERO_INT(rte_eth_dev_udp_tunnel_port_add, -EINVAL);
+    }
+
+    in.port_id = port_id;
+    memcpy(&in.tunnel_udp, tunnel_udp, sizeof(in.tunnel_udp));
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_udp_tunnel_port_add", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_udp_tunnel_port_add,
+                                          out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_udp_tunnel_port_add,
+                 "%hhu, udp_port = %" PRIu16 ", prot_type = %s",
+                 NEG_ERRNO_FMT, in.port_id, in.tunnel_udp.udp_port,
+                 tarpc_rte_eth_tunnel_type2str(in.tunnel_udp.prot_type),
+                 NEG_ERRNO_ARGS(out.retval));
+
+    RETVAL_ZERO_INT(rte_eth_dev_udp_tunnel_port_add, out.retval);
+}
+
+int
+rpc_rte_eth_dev_udp_tunnel_port_delete(
+                                rcf_rpc_server                  *rpcs,
+                                uint8_t                          port_id,
+                                struct tarpc_rte_eth_udp_tunnel *tunnel_udp)
+{
+    tarpc_rte_eth_dev_udp_tunnel_port_delete_in  in;
+    tarpc_rte_eth_dev_udp_tunnel_port_delete_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (tunnel_udp == NULL)
+    {
+        ERROR("%s(): no tunnel configuration specified", __FUNCTION__);
+        RETVAL_ZERO_INT(rte_eth_dev_udp_tunnel_port_delete, -EINVAL);
+    }
+
+    in.port_id = port_id;
+    memcpy(&in.tunnel_udp, tunnel_udp, sizeof(in.tunnel_udp));
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_udp_tunnel_port_delete", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_udp_tunnel_port_delete,
+                                          out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_udp_tunnel_port_delete,
+                 "%hhu, udp_port = %" PRIu16 ", prot_type = %s",
+                 NEG_ERRNO_FMT, in.port_id, in.tunnel_udp.udp_port,
+                 tarpc_rte_eth_tunnel_type2str(in.tunnel_udp.prot_type),
+                 NEG_ERRNO_ARGS(out.retval));
+
+    RETVAL_ZERO_INT(rte_eth_dev_udp_tunnel_port_delete, out.retval);
+}
+

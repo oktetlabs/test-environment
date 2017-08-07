@@ -672,6 +672,32 @@ extern int rpc_rte_eth_dev_fw_version_get(rcf_rpc_server *rpcs,
                                           char           *fw_version,
                                           size_t          fw_size);
 
+/**
+ * @b rte_eth_dev_udp_tunnel_port_add() RPC
+ *
+ * @param port_id    The port identifier of the device
+ * @param tunnel_udp UDP tunneling configuration
+ *
+ * @return @c 0 on success; jumps out on error (negative value)
+ */
+extern int rpc_rte_eth_dev_udp_tunnel_port_add(
+                                rcf_rpc_server                  *rpcs,
+                                uint8_t                          port_id,
+                                struct tarpc_rte_eth_udp_tunnel *tunnel_udp);
+
+/**
+ * @b rte_eth_dev_udp_tunnel_port_delete() RPC
+ *
+ * @param port_id    The port identifier of the device
+ * @param tunnel_udp UDP tunneling configuration
+ *
+ * @return @c 0 on success; jumps out on error (negative value)
+ */
+extern int rpc_rte_eth_dev_udp_tunnel_port_delete(
+                                rcf_rpc_server                  *rpcs,
+                                uint8_t                          port_id,
+                                struct tarpc_rte_eth_udp_tunnel *tunnel_udp);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus
