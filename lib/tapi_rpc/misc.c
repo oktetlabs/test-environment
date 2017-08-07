@@ -2332,6 +2332,47 @@ tapi_interface_is_vlan(rcf_rpc_server *rpcs,
 }
 
 /* See description in tapi_rpc_misc.h */
+size_t
+tapi_interface_vlan_count(rcf_rpc_server *rpcs,
+                          const char *if_name)
+{
+    char    if_parent[IFNAMSIZ];
+    size_t  rc = 0;
+
+    rpc_vlan_get_parent(rpcs, if_name, if_parent);
+    if (if_parent[0] != '\0')
+        rc = 1;
+
+    if (!tapi_interface_is_mine(rpcs, if_name))
+    {
+        ERROR("%s interface is not grabbed by testing", if_name);
+        return rc;
+    }
+
+    CHECK_RC(tapi_cfg_get_if_parent(rpcs->ta, if_name,
+                                    if_parent, sizeof(if_parent)));
+    if (if_parent[0] != '\0')
+    {
+        rc += tapi_interface_vlan_count(rpcs, if_parent);
+    }
+    else
+    {
+        tqh_strings   slaves = TAILQ_HEAD_INITIALIZER(slaves);
+        tqe_string   *slave = NULL;
+
+        rpc_bond_get_slaves(rpcs, if_name,
+                            &slaves, NULL);
+        slave = TAILQ_FIRST(&slaves);
+        if (slave != NULL)
+            rc += tapi_interface_vlan_count(rpcs, slave->v);
+
+        tq_strings_free(&slaves, &free);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_rpc_misc.h */
 void
 rpc_release_rpc_ptr(rcf_rpc_server *rpcs, rpc_ptr ptr, char *ns_string)
 {
