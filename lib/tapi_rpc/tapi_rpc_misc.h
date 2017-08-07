@@ -1006,20 +1006,6 @@ tapi_interface_is_mine(rcf_rpc_server *rpcs, const char *interface)
 }
 
 /**
- * Set new MTU value taking in mind VLAN and bonding features.
- * 
- * @param agent      RPC Server handler
- * @param interface  Interface handler
- * @param mtu        MTU value
- * @param old_mtu    Location for old MTU value or @c NULL
- * 
- * @return Status code
- */
-extern void tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
-                                  const struct if_nameindex *interface,
-                                  int mtu, int *old_mtu);
-
-/**
  * Set new MTU value for a given interface (increasing MTU for
  * the interfaces it is based on if necessary).
  *
@@ -1032,14 +1018,14 @@ extern void tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
  *       MTU.
  *
  * @param rpcs       RPC server handle
- * @param if_name    Interface name
+ * @param interface  Network interface
  * @param mtu        MTU value
  * @param old_mtu    If not @c NULL, previous value of MTU
  *                   for the interface will be saved.
  */
-extern void tapi_set_if_mtu_ancestors(rcf_rpc_server *rpcs,
-                                      const char *if_name,
-                                      int mtu, int *old_mtu);
+extern void tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
+                                  const struct if_nameindex *interface,
+                                  int mtu, int *old_mtu);
 
 /**
  * Check if the interface is VLAN interface.

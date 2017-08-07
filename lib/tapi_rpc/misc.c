@@ -2239,34 +2239,8 @@ rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec)
     RETVAL_INT(vfork_pipe_exec, out.retval);
 }
 
-/* See description in tapi_rpc_misc.h */
-void
-tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
-                      const struct if_nameindex *interface, int mtu,
-                      int *old_mtu)
-{
-    char      if_par[IFNAMSIZ];
-    te_bool   parent = FALSE;
-
-    if (!tapi_interface_is_mine(rpcs, interface->if_name))
-        TEST_FAIL("Interface %s is not owned", interface->if_name);
-
-    memset(if_par, 0, sizeof(if_par));
-
-    rpc_vlan_get_parent(rpcs, interface->if_name, if_par);
-    if (strlen(if_par) != 0 && tapi_interface_is_mine(rpcs, if_par))
-        parent = TRUE;
-
-    if (parent)
-        CHECK_RC(tapi_cfg_base_if_set_mtu_ext(rpcs->ta, if_par, mtu,
-                                              old_mtu, TRUE));
-
-    CHECK_RC(tapi_cfg_base_if_set_mtu(rpcs->ta, interface->if_name, mtu,
-                                      old_mtu));
-}
-
 /**
- * Auxiliary function used to implement tapi_set_if_mtu_ancestors().
+ * Auxiliary function used to implement tapi_set_if_mtu_smart().
  * It increases MTU for the ancestors of a given interface if required,
  * and then sets it for the interface itself.
  *
@@ -2276,9 +2250,9 @@ tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
  * @param ancestor   If TRUE, this is an ancestor interface
  */
 static void
-tapi_set_if_mtu_ancestors_aux(rcf_rpc_server *rpcs,
-                              const char *if_name,
-                              int mtu, te_bool ancestor)
+tapi_set_if_mtu_smart_aux(rcf_rpc_server *rpcs,
+                          const char *if_name,
+                          int mtu, te_bool ancestor)
 {
     char          if_parent[IFNAMSIZ];
 
@@ -2289,7 +2263,7 @@ tapi_set_if_mtu_ancestors_aux(rcf_rpc_server *rpcs,
                                     if_parent, sizeof(if_parent)));
     if (if_parent[0] != '\0')
     {
-        tapi_set_if_mtu_ancestors_aux(rpcs, if_parent, mtu, TRUE);
+        tapi_set_if_mtu_smart_aux(rpcs, if_parent, mtu, TRUE);
     }
     else
     {
@@ -2301,8 +2275,8 @@ tapi_set_if_mtu_ancestors_aux(rcf_rpc_server *rpcs,
 
         TAILQ_FOREACH(slave, &slaves, links)
         {
-            tapi_set_if_mtu_ancestors_aux(rpcs, slave->v,
-                                          mtu, TRUE);
+            tapi_set_if_mtu_smart_aux(rpcs, slave->v,
+                                      mtu, TRUE);
         }
 
         tq_strings_free(&slaves, &free);
@@ -2327,17 +2301,19 @@ tapi_set_if_mtu_ancestors_aux(rcf_rpc_server *rpcs,
                                           NULL, ancestor));
 }
 
+
 /* See description in tapi_rpc_misc.h */
 void
-tapi_set_if_mtu_ancestors(rcf_rpc_server *rpcs,
-                          const char *if_name,
-                          int mtu, int *old_mtu)
+tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
+                      const struct if_nameindex *interface,
+                      int mtu, int *old_mtu)
 {
     if (old_mtu != NULL)
-        CHECK_RC(tapi_cfg_base_if_get_mtu_u(rpcs->ta, if_name,
+        CHECK_RC(tapi_cfg_base_if_get_mtu_u(rpcs->ta,
+                                            interface->if_name,
                                             old_mtu));
 
-    tapi_set_if_mtu_ancestors_aux(rpcs, if_name, mtu, FALSE);
+    tapi_set_if_mtu_smart_aux(rpcs, interface->if_name, mtu, FALSE);
 }
 
 /* See description in tapi_rpc_misc.h */
