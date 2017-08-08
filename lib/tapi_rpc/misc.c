@@ -2274,7 +2274,7 @@ tapi_set_if_mtu_smart_aux(rcf_rpc_server *rpcs,
 
     if (!tapi_interface_is_mine(rpcs, if_name))
     {
-        TEST_FAIL("%s interface is not grabbed by testing", if_name);
+        ERROR("%s interface is not grabbed by testing", if_name);
         return;
     }
 
