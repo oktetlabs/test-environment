@@ -1022,10 +1022,12 @@ tapi_interface_is_mine(rcf_rpc_server *rpcs, const char *interface)
  * @param mtu        MTU value
  * @param old_mtu    If not @c NULL, previous value of MTU
  *                   for the interface will be saved.
+ *
+ * @return Status code.
  */
-extern void tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
-                                  const struct if_nameindex *interface,
-                                  int mtu, int *old_mtu);
+extern te_errno tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
+                                      const struct if_nameindex *interface,
+                                      int mtu, int *old_mtu);
 
 /**
  * Check if the interface is VLAN interface.
