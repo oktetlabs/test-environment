@@ -9976,6 +9976,7 @@ vfork_pipe_exec(tarpc_vfork_pipe_exec_in *in)
     int pipefd[2];
     int pid;
     int status;
+    int saved_errno;
     te_errno      rc;
     struct pollfd fds;
 
@@ -10034,12 +10035,15 @@ vfork_pipe_exec(tarpc_vfork_pipe_exec_in *in)
     if (pid > 0)
     {
         rc = 0;
+
         write(pipefd[1], "Test message", 12);
+        
+        saved_errno = errno;
 
         /* If vfork() doesn't hang */
         if (waitpid(pid, &status, 0) == -1)
         {
-            errno = 0;
+            errno = saved_errno;
         }
         else if (WIFEXITED(status) == 0)
         {
