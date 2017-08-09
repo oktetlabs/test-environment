@@ -202,7 +202,8 @@ SYSTEM_WIDE_PARAM_COMMON(tcp_orphan_retries, tcp_retries2);
 SYSTEM_WIDE_PARAM_COMMON(tcp_fin_timeout, tcp_orphan_retries);
 SYSTEM_WIDE_PARAM_COMMON(tcp_syncookies, tcp_fin_timeout);
 SYSTEM_WIDE_PARAM_COMMON(tcp_timestamps, tcp_syncookies);
-SYSTEM_WIDE_PARAM(rcvbuf_def, tcp_timestamps);
+SYSTEM_WIDE_PARAM_COMMON(route_mtu_expires, tcp_timestamps);
+SYSTEM_WIDE_PARAM(rcvbuf_def, route_mtu_expires);
 SYSTEM_WIDE_PARAM(rcvbuf_max, rcvbuf_def);
 SYSTEM_WIDE_PARAM(sndbuf_def, rcvbuf_max);
 SYSTEM_WIDE_PARAM(sndbuf_max, sndbuf_def);
@@ -901,6 +902,9 @@ proc_sys_common_set(unsigned int gid, const char *oid,
     else if (strstr(oid, "/neigh_gc_thresh3:") != NULL)
         return proc_sys_set_value("/proc/sys/net/ipv4/neigh/default/"
                                   "gc_thresh3", 0, value);
+    else if (strstr(oid, "/route_mtu_expires:") != NULL)
+        return proc_sys_set_value("/proc/sys/net/ipv4/route/mtu_expires", 0,
+                                  value);
     ELSE_IF_IPV4_FIELD(tcp_syncookies)
     ELSE_IF_IPV4_FIELD(tcp_keepalive_time)
     ELSE_IF_IPV4_FIELD(tcp_keepalive_probes)
@@ -963,6 +967,9 @@ proc_sys_common_get(unsigned int gid, const char *oid,
     else if (strstr(oid, "/neigh_gc_thresh3:") != NULL)
         return proc_sys_get_value("/proc/sys/net/ipv4/neigh/default/"
                                   "gc_thresh3", 0, value);
+    else if (strstr(oid, "/route_mtu_expires:") != NULL)
+        return proc_sys_get_value("/proc/sys/net/ipv4/route/mtu_expires", 0,
+                                  value);
     ELSE_IF_IPV4_FIELD(tcp_syncookies)
     ELSE_IF_IPV4_FIELD(tcp_keepalive_time)
     ELSE_IF_IPV4_FIELD(tcp_keepalive_probes)

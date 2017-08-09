@@ -523,6 +523,28 @@ extern te_errno tapi_cfg_tcp_max_syn_backlog_set(rcf_rpc_server *rpcs,
 extern te_errno tapi_cfg_tcp_max_syn_backlog_get(rcf_rpc_server *rpcs,
                                                   int *value);
 
+/**
+ * Set a new route_mtu_expires value.
+ *
+ * @param rpcs        RPC server
+ * @param value       Value to be set
+ * @param old_value   Location for the previous value or @c NULL
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_route_mtu_expires_set(rcf_rpc_server *rpcs,
+                                               int value, int *old_value);
+
+/**
+ * Get route_mtu_expires value.
+ *
+ * @param rpcs      RPC server
+ * @param value     Location for the value
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_route_mtu_expires_get(rcf_rpc_server *rpcs,
+                                               int *value);
 
 #ifdef __cplusplus
 } /* extern "C" */
