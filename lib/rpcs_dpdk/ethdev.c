@@ -2079,15 +2079,16 @@ tarpc_rte_eth_tunnel_type2rte(const enum tarpc_rte_eth_tunnel_type  rpc,
 TARPC_FUNC(rte_eth_dev_udp_tunnel_port_add, {},
 {
     struct rte_eth_udp_tunnel tunnel_udp;
+    enum rte_eth_tunnel_type  prot_type;
 
-    tunnel_udp.udp_port = in->tunnel_udp.udp_port;
-
-    if (!tarpc_rte_eth_tunnel_type2rte(in->tunnel_udp.prot_type,
-                                       &tunnel_udp.prot_type))
+    if (!tarpc_rte_eth_tunnel_type2rte(in->tunnel_udp.prot_type, &prot_type))
     {
         out->retval = -TE_RC(TE_RPCS, TE_EINVAL);
         goto done;
     }
+
+    tunnel_udp.udp_port = in->tunnel_udp.udp_port;
+    tunnel_udp.prot_type = prot_type;
 
     MAKE_CALL(out->retval = func(in->port_id, &tunnel_udp));
     neg_errno_h2rpc(&out->retval);
@@ -2099,15 +2100,16 @@ done:
 TARPC_FUNC(rte_eth_dev_udp_tunnel_port_delete, {},
 {
     struct rte_eth_udp_tunnel tunnel_udp;
+    enum rte_eth_tunnel_type  prot_type;
 
-    tunnel_udp.udp_port = in->tunnel_udp.udp_port;
-
-    if (!tarpc_rte_eth_tunnel_type2rte(in->tunnel_udp.prot_type,
-                                       &tunnel_udp.prot_type))
+    if (!tarpc_rte_eth_tunnel_type2rte(in->tunnel_udp.prot_type, &prot_type))
     {
         out->retval = -TE_RC(TE_RPCS, TE_EINVAL);
         goto done;
     }
+
+    tunnel_udp.udp_port = in->tunnel_udp.udp_port;
+    tunnel_udp.prot_type = prot_type;
 
     MAKE_CALL(out->retval = func(in->port_id, &tunnel_udp));
     neg_errno_h2rpc(&out->retval);
