@@ -2240,6 +2240,66 @@ rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec)
 }
 
 /**
+ * Return RPC server errno if it is not @c 0;
+ * if it is @c 0, return @c TE_EFAIL.
+ *
+ * @param rpcs_     RPC server.
+ */
+#define GET_RPC_ERR(rpcs_) \
+    (RPC_ERRNO(rpcs_) != 0 ? RPC_ERRNO(rpcs_) : TE_RC(TE_TAPI, TE_EFAIL))
+
+/**
+ * Get MTU with help of ioctl()
+ *
+ * @param rpcs      RPC server handle
+ * @param if_name   Interface name
+ * @param mtu       Where to save MTU value
+ *
+ * @return Status code.
+ */
+static te_errno
+ioctl_get_if_mtu(rcf_rpc_server *rpcs,
+                 const char *if_name,
+                 int *mtu)
+{
+    struct ifreq  ifreq_var;
+    int           s;
+    int           rc;
+    size_t        max_len;
+
+    memset(&ifreq_var, 0, sizeof(ifreq_var));
+    max_len = sizeof(ifreq_var.ifr_name);
+    strncpy(ifreq_var.ifr_name, if_name, max_len);
+    if (ifreq_var.ifr_name[max_len - 1] != '\0')
+    {
+        ifreq_var.ifr_name[max_len - 1] = '\0';
+        ERROR("Interface name %s was truncated",
+              ifreq_var.ifr_name);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    s = rpc_socket(rpcs, RPC_AF_INET, RPC_SOCK_DGRAM,
+                   RPC_PROTO_DEF);
+    if (s < 0)
+        return GET_RPC_ERR(rpcs);
+
+    rc = rpc_ioctl(rpcs, s, RPC_SIOCGIFMTU, &ifreq_var);
+    if (rc < 0)
+    {
+        rc = GET_RPC_ERR(rpcs);
+        rpc_close(rpcs, s);
+        return rc;
+    }
+
+    rc = rpc_close(rpcs, s);
+    if (rc < 0)
+        return GET_RPC_ERR(rpcs);
+
+    *mtu = ifreq_var.ifr_mtu;
+    return 0;
+}
+
+/**
  * Auxiliary function used to implement tapi_set_if_mtu_smart().
  * It increases MTU for the ancestors of a given interface if required,
  * and then sets it for the interface itself.
@@ -2247,6 +2307,8 @@ rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec)
  * @param rpcs       RPC server handle
  * @param if_name    Interface name
  * @param mtu        MTU value
+ * @param old_mtu_p  Where to save old MTU value for target interface
+ *                   (may be @c NULL)
  * @param ancestor   If TRUE, this is an ancestor interface
  *
  * @return Status code.
@@ -2254,68 +2316,103 @@ rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec)
 static te_errno
 tapi_set_if_mtu_smart_aux(rcf_rpc_server *rpcs,
                           const char *if_name,
-                          int mtu, te_bool ancestor)
+                          int mtu, int *old_mtu_p,
+                          te_bool ancestor)
 {
     char          if_parent[IFNAMSIZ];
     int           rc;
+    int           old_mtu;
 
     if (!tapi_interface_is_mine(rpcs, if_name))
     {
-        ERROR("%s interface is not grabbed by testing", if_name);
-        return 0;
+        if (!ancestor)
+        {
+            ERROR("Interface %s is not grabbed by testing, "
+                  "and it was requested to change MTU on it",
+                  if_name);
+            return TE_RC(TE_TAPI, TE_EPERM);
+        }
+
+        /*
+         * We cannot get MTU via Configurator if interface is not grabbed.
+         * However MTU can be obtained with help of ioctl(). MTU should
+         * be changed on "ancestor" interface only if it is lower there
+         * than the value to be set for target interface. If it should not
+         * be changed, then it is OK that "ancestor" is not grabbed.
+         */
+
+        rc = ioctl_get_if_mtu(rpcs, if_name, &old_mtu);
+        if (rc != 0)
+            return rc;
+
+        if (old_mtu < mtu)
+        {
+            ERROR("%s interface is not grabbed by testing, and "
+                  "MTU on it must be increased", if_name);
+            return TE_RC(TE_TAPI, TE_EPERM);
+        }
+        else
+        {
+            return 0;
+        }
     }
 
-    rc = tapi_cfg_get_if_parent(rpcs->ta, if_name,
-                                if_parent,
-                                sizeof(if_parent));
+    rc = tapi_cfg_base_if_get_mtu_u(rpcs->ta, if_name,
+                                    &old_mtu);
     if (rc != 0)
         return rc;
 
-    if (if_parent[0] != '\0')
+    if (old_mtu_p != NULL && !ancestor)
     {
-        rc = tapi_set_if_mtu_smart_aux(rpcs, if_parent, mtu, TRUE);
+        *old_mtu_p = old_mtu;
+    }
+
+    if (mtu > old_mtu)
+    {
+        rc = tapi_cfg_get_if_parent(rpcs->ta, if_name,
+                                    if_parent,
+                                    sizeof(if_parent));
         if (rc != 0)
             return rc;
-    }
-    else
-    {
-        tqh_strings   slaves;
-        tqe_string   *slave = NULL;
 
-        rc = rpc_bond_get_slaves(rpcs, if_name,
-                                 &slaves, NULL);
-        if (rc < 0)
-            return TE_RC(TE_TAPI, TE_ENOENT);
-
-        TAILQ_FOREACH(slave, &slaves, links)
+        if (if_parent[0] != '\0')
         {
-            rc = tapi_set_if_mtu_smart_aux(rpcs, slave->v,
-                                           mtu, TRUE);
+            rc = tapi_set_if_mtu_smart_aux(rpcs, if_parent,
+                                           mtu, NULL, TRUE);
             if (rc != 0)
-            {
-                tq_strings_free(&slaves, &free);
                 return rc;
-            }
         }
+        else
+        {
+            tqh_strings   slaves;
+            tqe_string   *slave = NULL;
 
-        tq_strings_free(&slaves, &free);
+            rc = rpc_bond_get_slaves(rpcs, if_name,
+                                     &slaves, NULL);
+            if (rc < 0)
+                return GET_RPC_ERR(rpcs);
+
+            TAILQ_FOREACH(slave, &slaves, links)
+            {
+                rc = tapi_set_if_mtu_smart_aux(rpcs, slave->v,
+                                               mtu, NULL, TRUE);
+                if (rc != 0)
+                {
+                    tq_strings_free(&slaves, &free);
+                    return rc;
+                }
+            }
+
+            tq_strings_free(&slaves, &free);
+        }
     }
-
-    if (ancestor)
+    else if (ancestor)
     {
-        int old_mtu;
-
-        rc = tapi_cfg_base_if_get_mtu_u(rpcs->ta, if_name,
-                                        &old_mtu);
-        if (rc != 0)
-            return rc;
-
-        /**
-         * No need to adjust MTU for ancestor if it is not less
-         * than the value we want to set.
+        /*
+         * No need to adjust MTU on ancestors if it has higher
+         * value there.
          */
-        if (old_mtu >= mtu)
-            return 0;
+        return 0;
     }
 
     return tapi_cfg_base_if_set_mtu_ext(rpcs->ta, if_name, mtu,
@@ -2329,18 +2426,8 @@ tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
                       const struct if_nameindex *interface,
                       int mtu, int *old_mtu)
 {
-    te_errno rc;
-
-    if (old_mtu != NULL)
-    {
-        rc = tapi_cfg_base_if_get_mtu_u(rpcs->ta,
-                                        interface->if_name,
-                                        old_mtu);
-        if (rc != 0)
-            return rc;
-    }
-
-    return tapi_set_if_mtu_smart_aux(rpcs, interface->if_name, mtu, FALSE);
+    return tapi_set_if_mtu_smart_aux(rpcs, interface->if_name,
+                                     mtu, old_mtu, FALSE);
 }
 
 /* See description in tapi_rpc_misc.h */
