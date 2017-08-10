@@ -882,6 +882,26 @@ typedef enum {
 #define TEST_GET_FILTER_TYPE(var_name_) \
     TEST_GET_ENUM_PARAM(var_name_, FILTER_TYPE_MAPPING_LIST)
 
+/** List of values allowed for parameter of 'tarpc_rte_eth_tunnel_type' type */
+#define TUNNEL_TYPE_MAPPING_LIST \
+            { "NONE",      (int)TARPC_RTE_TUNNEL_TYPE_NONE },      \
+            { "VXLAN",     (int)TARPC_RTE_TUNNEL_TYPE_VXLAN },     \
+            { "GENEVE",    (int)TARPC_RTE_TUNNEL_TYPE_GENEVE },    \
+            { "TEREDO",    (int)TARPC_RTE_TUNNEL_TYPE_TEREDO },    \
+            { "NVGRE",     (int)TARPC_RTE_TUNNEL_TYPE_NVGRE },     \
+            { "IP_IN_GRE", (int)TARPC_RTE_TUNNEL_TYPE_IP_IN_GRE }, \
+            { "L2_E_TAG",  (int)TARPC_RTE_L2_TUNNEL_TYPE_E_TAG },  \
+            { "MAX",       (int)TARPC_RTE_TUNNEL_TYPE_MAX }
+
+/**
+ * Get parameter value of 'tarpc_rte_eth_tunnel_type' type
+ *
+ * @param var_name_ Variable name used to get "var_name_" parameter value
+ *                  of 'tarpc_rte_eth_tunnel_type' type (OUT)
+ */
+#define TEST_GET_TUNNEL_TYPE(var_name_) \
+    TEST_GET_ENUM_PARAM(var_name_, TUNNEL_TYPE_MAPPING_LIST)
+
 /** ID assigned by the Tester to the test instance */
 extern unsigned int te_test_id;
 
