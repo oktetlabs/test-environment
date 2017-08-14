@@ -223,14 +223,15 @@ netconf_append_rta(struct nlmsghdr *h, const void *data, int len,
                    unsigned short rta_type)
 {
     struct rtattr *rta;
+    int rta_len = RTA_LENGTH(len);
 
     NETCONF_ASSERT(h != NULL);
 
-    rta = (struct rtattr *)((char *)h + NLMSG_ALIGN(h->nlmsg_len));
+    rta = NETCONF_NLMSG_TAIL(h);
     rta->rta_type = rta_type;
-    rta->rta_len = RTA_LENGTH(len);
+    rta->rta_len = rta_len;
     memcpy(RTA_DATA(rta), data, len);
-    h->nlmsg_len = NLMSG_ALIGN(h->nlmsg_len) + RTA_LENGTH(len);
+    h->nlmsg_len = NLMSG_ALIGN(h->nlmsg_len) + RTA_ALIGN(rta_len);
 }
 
 void *
