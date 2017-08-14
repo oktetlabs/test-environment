@@ -250,6 +250,20 @@ int netconf_open(netconf_handle *nh);
 netconf_list *netconf_link_dump(netconf_handle nh);
 
 /**
+ * Move interface to a network namespace.
+ *
+ * @param nh        Netconf handle.
+ * @param ifname    Interface name.
+ * @param fd        File descriptor belongs to a network namespace or @c -1 to
+ *                  choose namespace using @p pid.
+ * @param pid       Process identifier in the target namespace.
+ *
+ * @return Status code
+ */
+extern te_errno netconf_link_set_ns(netconf_handle nh, const char *ifname,
+                                    int32_t fd, pid_t pid);
+
+/**
  * Set default values to fields in network address struct.
  *
  * @param net_addr      Network address struct

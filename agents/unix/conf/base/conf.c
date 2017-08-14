@@ -277,6 +277,7 @@ extern te_errno ta_unix_conf_phy_init();
 extern te_errno ta_unix_conf_eth_init(void);
 extern te_errno ta_unix_conf_macvlan_init();
 extern te_errno ta_unix_conf_module_init(void);
+extern te_errno ta_unix_conf_ns_net_init(void);
 
 #ifdef USE_LIBNETCONF
 netconf_handle nh = NETCONF_HANDLE_INVALID;
@@ -894,7 +895,9 @@ RCF_PCH_CFG_NODE_COLLECTION(node_user, "user",
                             user_add, user_del,
                             user_list, NULL);
 
-RCF_PCH_CFG_NODE_NA(node_hardware, "hardware", NULL, &node_user);
+RCF_PCH_CFG_NODE_NA(node_namespace, "namespace", NULL, &node_user);
+
+RCF_PCH_CFG_NODE_NA(node_hardware, "hardware", NULL, &node_namespace);
 
 /* XEN stuff tree */
 RCF_PCH_CFG_NODE_RW(node_dom_u_migrate_kind, "kind",
@@ -1282,6 +1285,12 @@ rcf_ch_conf_init()
         if (ta_unix_conf_module_init() != 0)
         {
             ERROR("Failed to add system module configuration subtree");
+            goto fail;
+        }
+
+        if (ta_unix_conf_ns_net_init() != 0)
+        {
+            ERROR("Failed to add network namespaces configuration subtree");
             goto fail;
         }
 
