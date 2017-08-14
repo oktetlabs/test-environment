@@ -1,0 +1,101 @@
+/** @file
+ * @brief Network namespaces configuration test API
+ *
+ * Implementation of test API for network namespaces configuration.
+ *
+ *
+ * Copyright (C) 2017 Test Environment authors (see file AUTHORS
+ * in the root directory of the distribution).
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+ * MA  02111-1307  USA
+ *
+ *
+ * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
+ */
+
+#define TE_LGR_USER     "NETNS TAPI"
+
+#include "te_config.h"
+#include "te_defs.h"
+#include "te_errno.h"
+#include "logger_api.h"
+#include "conf_api.h"
+#include "tapi_namespaces.h"
+
+/* See description in tapi_namespaces.h */
+te_errno
+tapi_netns_add_rsrc(const char *ta, const char *ns_name)
+{
+    char ns_oid[CFG_OID_MAX];
+
+    snprintf(ns_oid, CFG_OID_MAX, "/agent:%s/namespace:/net:%s", ta, ns_name);
+    return cfg_add_instance_fmt(NULL, CVT_STRING, ns_oid,
+                                "/agent:%s/rsrc:netns_%s", ta, ns_name);
+}
+
+/* See description in tapi_namespaces.h */
+te_errno
+tapi_netns_del_rsrc(const char *ta, const char *ns_name)
+{
+    return cfg_del_instance_fmt(FALSE, "/agent:%s/rsrc:netns_%s",
+                                ta, ns_name);
+}
+
+/* See description in tapi_namespaces.h */
+te_errno
+tapi_netns_add(const char *ta, const char *ns_name)
+{
+    te_errno rc;
+
+    rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL,
+                              "/agent:%s/namespace:/net:%s", ta, ns_name);
+    if (rc != 0)
+        return rc;
+
+    return tapi_netns_add_rsrc(ta, ns_name);
+}
+
+/* See description in tapi_namespaces.h */
+te_errno
+tapi_netns_del(const char *ta, const char *ns_name)
+{
+    te_errno rc;
+
+    rc = cfg_del_instance_fmt(TRUE, "/agent:%s/namespace:/net:%s", ta,
+                              ns_name);
+    if (rc != 0)
+        return rc;
+
+    return tapi_netns_del_rsrc(ta, ns_name);
+}
+
+/* See description in tapi_namespaces.h */
+te_errno
+tapi_netns_if_set(const char *ta, const char *ns_name, const char *if_name)
+{
+    return cfg_add_instance_fmt(NULL, CVT_NONE, NULL,
+                                "/agent:%s/namespace:/net:%s/interface:%s",
+                                ta, ns_name, if_name);
+}
+
+/* See description in tapi_namespaces.h */
+te_errno
+tapi_netns_if_unset(const char *ta, const char *ns_name, const char *if_name)
+{
+    return cfg_del_instance_fmt(TRUE,
+                                "/agent:%s/namespace:/net:%s/interface:%s",
+                                ta, ns_name, if_name);
+}
