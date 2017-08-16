@@ -921,6 +921,59 @@ extern int rpc_memcmp(rcf_rpc_server *rpcs,
                       rpc_ptr_off *s1, rpc_ptr_off *s2, size_t n);
 
 /**
+ * Initialize iomux_state with zero value
+ *
+ * @param rpcs      RPC server handle
+ * @param iomux     Multiplexer function type
+ * @param iomux_st  The multiplexer context pointer
+ *
+ * @note Caller must free memory allocated for iomux_st using rpc_iomux_close()
+ *
+ * @return @c 0 on success or @c -1 in the case of failure.
+ */
+extern int rpc_iomux_create_state(rcf_rpc_server *rpcs, iomux_func iomux,
+                                  tarpc_iomux_state *iomux_st);
+
+/**
+ * Call I/O multiplexing wait function multiple times
+ *
+ * @param rpcs      RPC server handle
+ * @param fd        File descriptor
+ * @param iomux     Iomux to be called
+ * @param iomux_st  The multiplexer context pointer
+ * @param events    @b poll() events to be checked for
+ * @param count     How many times to call a function or @c -1 for unlimited
+ * @param duration  Call iomux during a specified time in milliseconds
+ *                  or @c -1
+ * @param exp_rc    Expected return value
+ * @param number    If not @c NULL, will be set to the number
+ *                  of iomux calls before timeout occured or
+ *                  an error was returned.
+ * @param last_rc   If not @c NULL, will be set to the last
+ *                  return value of an iomux function.
+ * @param zero_rc   If not @c NULL, number of zero code returned by iomux
+ *
+ * @return @c 0 on success or @c -1 in the case of failure.
+ */
+extern int rpc_multiple_iomux_wait(rcf_rpc_server *rpcs, int fd,
+                                   iomux_func iomux,
+                                   tarpc_iomux_state iomux_st,int events,
+                                   int count, int duration, int exp_rc,
+                                   int *number, int *last_rc, int *zero_rc);
+
+/**
+ * Close iomux state when necessary
+ *
+ * @param rpcs      RPC server handle
+ * @param iomux     Multiplexer function type
+ * @param iomux_st  The multiplexer context pointer
+ *
+ * @return @c 0 on success or @c -1 in the case of failure.
+ */
+extern int rpc_iomux_close_state(rcf_rpc_server *rpcs, iomux_func iomux,
+                                 tarpc_iomux_state iomux_st);
+
+/**
  * Call I/O multiplexing function multiple times.
  *
  * @param rpcs      RPC server handle

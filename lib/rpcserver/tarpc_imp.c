@@ -8300,6 +8300,186 @@ TARPC_FUNC(overfill_fd,{},
 }
 )
 
+TARPC_FUNC(iomux_create_state,{},
+{
+    iomux_funcs     iomux_f;
+    iomux_func      iomux = in->iomux;
+    iomux_state    *iomux_st = NULL;
+    te_bool         is_fail = FALSE;
+
+    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
+    {
+        ERROR("%s(): Failed to resolve iomux %s function(s)",
+              __FUNCTION__, iomux2str(iomux));
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOENT);
+        is_fail = TRUE;
+        goto finish;
+    }
+
+    if ((iomux_st = (iomux_state *)malloc(sizeof(*iomux_st))) == NULL)
+    {
+        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        is_fail = TRUE;
+        goto finish;
+    }
+
+    MAKE_CALL(out->retval = func_ptr(iomux, &iomux_f, iomux_st));
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_IOMUX_STATE, {
+        out->iomux_st = RCF_PCH_MEM_INDEX_ALLOC(iomux_st, ns);
+    });
+
+finish:
+    if (is_fail)
+    {
+        out->iomux_st = 0;
+        out->retval = -1;
+    }
+}
+)
+
+int
+iomux_close_state(te_bool use_libc, iomux_func iomux,
+                  tarpc_iomux_state tapi_iomux_st)
+{
+    iomux_funcs     iomux_f;
+    iomux_state    *iomux_st = NULL;
+    int             sock;
+
+    if (iomux_find_func(use_libc, &iomux, &iomux_f) != 0)
+    {
+        ERROR("%s(): Failed to resolve iomux %s function(s)",
+              __FUNCTION__, iomux2str(iomux));
+        return -1;
+    }
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_IOMUX_STATE, {
+        iomux_st = RCF_PCH_MEM_INDEX_MEM_TO_PTR(tapi_iomux_st, ns);
+    });
+
+    sock = iomux_close(iomux, &iomux_f, iomux_st);
+
+    free(iomux_st);
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_IOMUX_STATE, {
+        RCF_PCH_MEM_INDEX_FREE(tapi_iomux_st, ns);
+    });
+
+    return sock;
+}
+
+TARPC_FUNC(iomux_close_state,{},
+{
+    MAKE_CALL(out->retval = func_ptr(in->common.use_libc, in->iomux,
+                                     in->iomux_st));
+}
+)
+
+int
+multiple_iomux_wait_common(iomux_funcs iomux_f, iomux_func iomux,
+                           iomux_state *iomux_st, tarpc_int tapi_events,
+                           tarpc_int fd, tarpc_int count,
+                           tarpc_int duration, tarpc_int exp_rc,
+                           tarpc_int *number, tarpc_int *last_rc,
+                           tarpc_int *zero_rc)
+{
+    int             ret;
+    int             events;
+    int             i;
+    int             saved_errno = 0;
+    int             zero_ret = 0;
+    struct timeval  tv_start;
+    struct timeval  tv_finish;
+
+    events = poll_event_rpc2h(tapi_events);
+
+    if ((ret = iomux_add_fd(iomux, &iomux_f, iomux_st,
+                            fd, events)) != 0)
+    {
+        ERROR("%s(): failed to set up iomux %s state", __FUNCTION__,
+              iomux2str(iomux));
+        return -1;
+    }
+
+    if (duration != -1)
+        gettimeofday(&tv_start, NULL);
+
+    for (i = 0; i < count || count == -1; i++)
+    {
+        ret = iomux_wait(iomux, &iomux_f, iomux_st, NULL, 0);
+        if (ret == 0)
+            zero_ret++;
+        else if (ret < 0)
+        {
+            saved_errno = errno;
+            ERROR("%s(): iomux failed with errno %s",
+                  strerror(saved_errno));
+            break;
+        }
+        else if (ret != exp_rc)
+        {
+            ERROR("%s(): unexpected value %d was returned by iomux call",
+                  __FUNCTION__, ret);
+            break;
+        }
+
+        if (duration != -1)
+        {
+            gettimeofday(&tv_finish, NULL);
+            if (duration < (tv_finish.tv_sec - tv_start.tv_sec) * 1000 +
+                           (tv_finish.tv_usec - tv_start.tv_usec) / 1000)
+            break;
+        }
+    }
+
+    *number = i;
+    *last_rc = ret;
+    *zero_rc = zero_ret;
+
+    if (saved_errno != 0)
+        errno = saved_errno;
+
+    return 0;
+}
+
+/*-------------- multiple_iomux_wait() ----------------------*/
+int
+multiple_iomux_wait(tarpc_multiple_iomux_wait_in *in,
+                    tarpc_multiple_iomux_wait_out *out)
+{
+    iomux_funcs     iomux_f;
+    iomux_func      iomux = in->iomux;
+    iomux_state    *iomux_st = NULL;
+    int             rc;
+
+    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
+    {
+        ERROR("%s(): Failed to resolve iomux %s function(s)",
+              __FUNCTION__, iomux2str(iomux));
+        return -1;
+    }
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_IOMUX_STATE, {
+        iomux_st = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->iomux_st, ns);
+    });
+
+    rc = multiple_iomux_wait_common(iomux_f, iomux, iomux_st, in->events,
+                                    in->fd, in->count, in->duration,
+                                    in->exp_rc, &out->number, &out->last_rc,
+                                    &out->zero_rc);
+
+    if (out->last_rc != in->exp_rc || out->number < in->count || rc != 0)
+        return -1;
+
+    return 0;
+}
+
+TARPC_FUNC(multiple_iomux_wait,{},
+{
+    MAKE_CALL(out->retval = func_ptr(in, out));
+}
+)
+
 /*-------------- multiple_iomux() ----------------------*/
 int
 multiple_iomux(tarpc_multiple_iomux_in *in,
@@ -8309,12 +8489,6 @@ multiple_iomux(tarpc_multiple_iomux_in *in,
     iomux_func      iomux = in->iomux;
     iomux_state     iomux_st;
     int             ret;
-    int             events;
-    int             i;
-    int             saved_errno = 0;
-    int             zero_ret = 0;
-    struct timeval  tv_start;
-    struct timeval  tv_finish;
 
     if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
     {
@@ -8330,59 +8504,14 @@ multiple_iomux(tarpc_multiple_iomux_in *in,
         return -1;
     }
 
-    events = poll_event_rpc2h(in->events);
-
-    if ((ret = iomux_add_fd(iomux, &iomux_f, &iomux_st,
-                            in->fd, events)) != 0)
-    {
-        ERROR("%s(): failed to set up iomux %s state", __FUNCTION__,
-              iomux2str(iomux));
-        goto multiple_iomux_exit;
-    }
-
-    if (in->duration != -1)
-        gettimeofday(&tv_start, NULL);
-
-    for (i = 0; i < in->count || in->count == -1; i++)
-    {
-        ret = iomux_wait(iomux, &iomux_f, &iomux_st, NULL, 0);
-        if (ret == 0)
-            zero_ret++;
-        else if (ret < 0)
-        {
-            saved_errno = errno;
-            ERROR("%s(): iomux failed with errno %s",
-                  strerror(saved_errno));
-            break;
-        }
-        else if (ret != in->exp_rc)
-        {
-            ERROR("%s(): unexpected value %d was returned by iomux call",
-                  __FUNCTION__, ret);
-            break;
-        }
-
-        if (in->duration != -1)
-        {
-            gettimeofday(&tv_finish, NULL);
-            if (in->duration < (tv_finish.tv_sec - tv_start.tv_sec) * 1000 +
-                              (tv_finish.tv_usec - tv_start.tv_usec) / 1000)
-            break;
-        }
-    }
-
-    out->number = i;
-    out->last_rc = ret;
-    out->zero_rc = zero_ret;
-
-multiple_iomux_exit:
+    ret = multiple_iomux_wait_common(iomux_f, iomux, &iomux_st, in->events,
+                                     in->fd, in->count, in->duration,
+                                     in->exp_rc, &out->number, &out->last_rc,
+                                     &out->zero_rc);
 
     iomux_close(iomux, &iomux_f, &iomux_st);
 
-    if (saved_errno != 0)
-        errno = saved_errno;
-
-    if (ret != in->exp_rc || out->number < in->count)
+    if (out->last_rc != in->exp_rc || out->number < in->count || ret != 0)
         return -1;
 
     return 0;

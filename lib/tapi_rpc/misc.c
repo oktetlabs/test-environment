@@ -2075,6 +2075,113 @@ rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd,
 #endif /* HAVE_LINUX_ETHTOOL_H */
 
 int
+rpc_iomux_create_state(rcf_rpc_server *rpcs, iomux_func iomux,
+                       tarpc_iomux_state *iomux_st)
+{
+    tarpc_iomux_create_state_in    in;
+    tarpc_iomux_create_state_out   out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (iomux_st == NULL)
+    {
+        ERROR("%s(): Invalid 'iomux_st' argument", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    in.iomux = iomux;
+
+    rcf_rpc_call(rpcs, "iomux_create_state", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(iomux_create_state, out.retval);
+
+    *iomux_st = (tarpc_iomux_state)out.iomux_st;
+
+    TAPI_RPC_LOG(rpcs, iomux_create_state, "%s", RPC_PTR_FMT ", %d",
+                 iomux2str(iomux), RPC_PTR_VAL(out.iomux_st), out.retval);
+    RETVAL_INT(iomux_create_state, out.retval);
+
+}
+
+int
+rpc_multiple_iomux_wait(rcf_rpc_server *rpcs, int fd, iomux_func iomux,
+                        tarpc_iomux_state iomux_st,int events, int count,
+                        int duration, int exp_rc, int *number, int *last_rc,
+                        int *zero_rc)
+{
+    struct tarpc_multiple_iomux_wait_in    in;
+    struct tarpc_multiple_iomux_wait_out   out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    in.fd = fd;
+    in.iomux = iomux;
+    in.iomux_st = (tarpc_iomux_state)iomux_st;
+    in.events = events;
+    in.count = count;
+    in.exp_rc = exp_rc;
+    in.duration = duration;
+
+    rcf_rpc_call(rpcs, "multiple_iomux_wait", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(multiple_iomux_wait, out.retval);
+
+    if (number != NULL)
+        *number = out.number;
+    if (last_rc != NULL)
+        *last_rc = out.last_rc;
+    if (zero_rc != NULL)
+        *zero_rc = out.zero_rc;
+
+    TAPI_RPC_LOG(rpcs, multiple_iomux_wait, "%d, %s" RPC_PTR_FMT ", %s"
+                 "%d, %d, %p, %p", "%d number=%d last_rc=%d, zero_rc=%d",
+                 fd, iomux2str(iomux), RPC_PTR_VAL(in.iomux_st),
+                 poll_event_rpc2str(events), count, exp_rc, number, last_rc,
+                 out.retval, out.number, out.last_rc, out.zero_rc);
+    RETVAL_INT(multiple_iomux_wait, out.retval);
+}
+
+
+int
+rpc_iomux_close_state(rcf_rpc_server *rpcs, iomux_func iomux,
+                      tarpc_iomux_state iomux_st)
+{
+    tarpc_iomux_close_state_in    in;
+    tarpc_iomux_close_state_out   out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    in.iomux = iomux;
+    in.iomux_st = (tarpc_iomux_state)iomux_st;
+
+    rcf_rpc_call(rpcs, "iomux_close_state", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(iomux_close_state, out.retval);
+
+    TAPI_RPC_LOG(rpcs, iomux_close_state, "%s" RPC_PTR_FMT, "%d",
+                 iomux2str(iomux), RPC_PTR_VAL(in.iomux_st), out.retval);
+    RETVAL_INT(iomux_close_state, out.retval);
+}
+
+int
 rpc_multiple_iomux(rcf_rpc_server *rpcs, int fd, iomux_func iomux,
                    int events, int count, int duration, int exp_rc,
                    int *number, int *last_rc, int *zero_rc)
