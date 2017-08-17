@@ -71,6 +71,8 @@
 #include "te_raw_log.h"
 #include "logger_defs.h"
 #include "logger_int.h"
+#include "te_string.h"
+#include "te_alloc.h"
 
 #include "te_log_fmt.h"
 
@@ -1006,5 +1008,94 @@ te_log_message_raw_va(te_log_msg_raw_data *data,
     }
     assert(data->ptr <= data->end);
 
+    return 0;
+}
+
+/* See description in te_log_fmt.h */
+te_errno
+te_log_message_split(const char *file, unsigned int line,
+                     unsigned int level, const char *entity,
+                     const char *user, const char *fmt, ...)
+{
+    te_string   str = TE_STRING_INIT;
+    char       *inter_str = "[continuation]\n";
+    size_t      inter_len = strlen(inter_str);
+    size_t      add_len = 0;
+    size_t      len;
+    size_t      step_len;
+    va_list     ap;
+    long int    i;
+    int         rc;
+
+    char       *p;
+    char       *p_end;
+    char       *p_begin;
+    char       *str_end;
+    char        buf[TE_LOG_FIELD_MAX + 1];
+    char       *q;
+
+    va_start(ap, fmt);
+    rc = te_string_append_va(&str, fmt, ap);
+    va_end(ap);
+
+    if (rc != 0)
+        return rc;
+
+    str_end = str.ptr + str.len;
+    p = str.ptr;
+    do {
+        while (*p == '\n')
+            p++;
+
+        if (*p == '\0')
+            break;
+
+        p_begin = p;
+        step_len = TE_LOG_FIELD_MAX - 1 - add_len;
+        if ((size_t)(str_end - p) < step_len)
+        {
+            p = str_end;
+            p_end = str_end;
+        }
+        else
+        {
+            p += step_len;
+            p_end = p;
+
+            while (*p_end != '\n' &&
+                   p_end > p_begin)
+            {
+                p_end--;
+            }
+            if (p_end == p_begin)
+                p_end = p;
+        }
+
+        len = p_end - p_begin + 1;
+
+        if (p_end < str_end)
+        {
+            memcpy(buf, p_begin, len);
+            q = buf;
+        }
+        else
+        {
+            q = p_begin;
+            len--;
+        }
+
+        q[len] = '\0';
+        for (i = len - 1; i >= 0 && q[i] == '\n'; i--)
+            q[i] = '\0';
+
+        te_log_message(file, line, level, entity, user,
+                       "%s%s", (add_len > 0 ? inter_str : ""),
+                       q);
+        add_len = inter_len;
+
+        p = p_end + 1;
+    } while (p < str_end);
+
+    te_string_free(&str);
     return 0;
 }
