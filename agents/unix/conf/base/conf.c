@@ -278,6 +278,7 @@ extern te_errno ta_unix_conf_eth_init(void);
 extern te_errno ta_unix_conf_macvlan_init();
 extern te_errno ta_unix_conf_module_init(void);
 extern te_errno ta_unix_conf_ns_net_init(void);
+extern te_errno ta_unix_conf_veth_init(void);
 
 #ifdef USE_LIBNETCONF
 netconf_handle nh = NETCONF_HANDLE_INVALID;
@@ -1291,6 +1292,12 @@ rcf_ch_conf_init()
         if (ta_unix_conf_ns_net_init() != 0)
         {
             ERROR("Failed to add network namespaces configuration subtree");
+            goto fail;
+        }
+
+        if (ta_unix_conf_veth_init() != 0)
+        {
+            ERROR("Failed to add veth interfaces configuration subtree");
             goto fail;
         }
 

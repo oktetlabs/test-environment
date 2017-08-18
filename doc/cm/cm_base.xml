@@ -240,6 +240,11 @@
                 empty string - don't specify explicitly (default vepa) -->
     <object oid="/agent/interface/macvlan" access="read_create" type="string"/>
 
+    <!-- Virtual Ethernet (veth) interface
+         Name: interface name
+         Value: peer interface name -->
+    <object oid="/agent/veth" access="read_create" type="string"/>
+
     <!-- "Parent" interface (filled for VLAN, MAC VLAN, etc.)
          Name: empty
          Value: Name of the parent interface -->
