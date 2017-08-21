@@ -30,9 +30,13 @@ a<?xml version="1.0"?>
          Name: user-friendly name for store entry -->
     <object oid="/crypt/cert" access="read_create" type="none" />
 
-    <!-- Entry status
+    <!-- Entry status.
+         On read "1" means that files
+         corresponding to certificate are valid on TE and TA.
+         On 0->1 transition files are re-generated (or re-imported)
+         and re-propagated to TA
          Value: 0 - entry is in "idle" state,
-                1 - entry should be either propagated or generated -->
+                1 - entry is ready -->
     <object oid="/crypt/cert/status" access="read_write" type="integer" />
 
     <!-- Primary object (usually certificate) TA filename
@@ -70,14 +74,14 @@ a<?xml version="1.0"?>
         type="string" />
 
     <!-- File format.
-         Change of it invalidates object paths, triggering object generation
+         Changes of parameter is prohibited when 'status' is 1
          Value: "pem"       - PEM (base64-encoded) format,
                 "der"       - DER (binary) format,
                 "pkcs12"    - PKCS12 format -->
     <object oid="/crypt/cert/format" access="read_write" type="string" />
 
     <!-- Kind of cryptographic entity.
-         Change of it invalidates object paths, triggering object generation
+         Changes of parameter is prohibited when 'status' is 1
          Value: "dh"        - Diffie-Hellman parameters,
                 "tls"       - TLS Authentication key,
                 "x509"      - generate a new X509 certificate/key,
@@ -85,8 +89,7 @@ a<?xml version="1.0"?>
     <object oid="/crypt/cert/kind" access="read_write" type="string" />
 
     <!-- Subject parts.
-         Change of any of those invalidates object paths, triggering object
-         generation
+         Changes of parameter is prohibited when 'status' is 1
          Value: certificate properties -->
     <object oid="/crypt/cert/x509/subject/commonName"
         access="read_write" type="string" />
@@ -108,37 +111,36 @@ a<?xml version="1.0"?>
         access="read_write" type="string" />
 
     <!-- Validity start date
-         Change of it invalidates object paths, triggering object generation
+         Changes of parameter is prohibited when 'status' is 1
          Value: date in OpenSSL format -->
     <object oid="/crypt/cert/x509/valid_since" access="read_write"
         type="string" />
 
     <!-- Validity end date.
-         Change of it invalidates object paths, triggering object generation
+         Changes of parameter is prohibited when 'status' is 1
          Value: date in OpenSSL format -->
     <object oid="/crypt/cert/x509/valid_until" access="read_write"
         type="string" />
 
     <!-- Generated key size in bits.
-         Change of it invalidates object paths, triggering object generation
+         Changes of parameter is prohibited when 'status' is 1
          Value: the power of 2 -->
     <object oid="/crypt/cert/x509/bitsize" access="read_write" type="integer" />
 
     <!-- Encryption type used in the certificate.
-         Change of it invalidates object paths, triggering object generation
+         Changes of parameter is prohibited when 'status' is 1
          Value: cipher supported by OpenSSL, i.e. "des", "aes-256", ... -->
     <object oid="/crypt/cert/x509/encryption" access="read_write"
         type="string" />
 
     <!-- Cryptographic entity used to sign this object.
-         Change of it invalidates object paths, triggering object generation
+         Changes of parameter is prohibited when 'status' is 1
          Value: friendly name of store entry -->
     <object oid="/crypt/cert/x509/signer" access="read_write"
         type="string" />
 
     <!-- Chained certificates.
-         Addition/deletion of certificates invalidates object paths, triggering
-         object generation
+         Changes of parameter is prohibited when 'status' is 1
          Name: index within a chain
          Value: name of a chained certificate from /crypt/cert -->
     <object oid="/crypt/cert/chained" access="read_create" type="string" />
