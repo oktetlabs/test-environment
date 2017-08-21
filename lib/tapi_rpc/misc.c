@@ -2411,12 +2411,19 @@ ioctl_get_if_mtu(rcf_rpc_server *rpcs,
  * It increases MTU for the ancestors of a given interface if required,
  * and then sets it for the interface itself.
  *
- * @param rpcs       RPC server handle
- * @param if_name    Interface name
- * @param mtu        MTU value
- * @param old_mtu_p  Where to save old MTU value for target interface
- *                   (may be @c NULL)
- * @param ancestor   If TRUE, this is an ancestor interface
+ * @param rpcs          RPC server handle
+ * @param if_name       Interface name
+ * @param mtu           MTU value
+ * @param old_mtu_p     Where to save old MTU value for target interface
+ *                      (may be @c NULL)
+ * @param ancestor      If @c TRUE, this is an ancestor interface
+ * @param skip_target   If @c TRUE, do not try to change MTU of
+ *                      the passed interface, only change MTU of
+ *                      its ancestors if required. This is useful
+ *                      when the target is a slave of an aggregation
+ *                      interface, and MTU for it should change
+ *                      automatically when it is changed for the
+ *                      aggregation as a whole.
  *
  * @return Status code.
  */
@@ -2424,7 +2431,8 @@ static te_errno
 tapi_set_if_mtu_smart_aux(rcf_rpc_server *rpcs,
                           const char *if_name,
                           int mtu, int *old_mtu_p,
-                          te_bool ancestor)
+                          te_bool ancestor,
+                          te_bool skip_target)
 {
     char          if_parent[IFNAMSIZ];
     int           rc;
@@ -2485,7 +2493,7 @@ tapi_set_if_mtu_smart_aux(rcf_rpc_server *rpcs,
         if (if_parent[0] != '\0')
         {
             rc = tapi_set_if_mtu_smart_aux(rpcs, if_parent,
-                                           mtu, NULL, TRUE);
+                                           mtu, NULL, TRUE, FALSE);
             if (rc != 0)
                 return rc;
         }
@@ -2499,10 +2507,20 @@ tapi_set_if_mtu_smart_aux(rcf_rpc_server *rpcs,
             if (rc < 0)
                 return GET_RPC_ERR(rpcs);
 
+            /**
+             * Here it is assumed that it is not allowed to aggregate
+             * two interfaces which are ancestor/descendant (for example,
+             * an interface and a MACVLAN over it). So it is safe to
+             * try to adjust MTU for ancestors of each slave separately
+             * (changing MTU for a slave is not allowed in case of teaming,
+             * so if an ancestor is also a slave, such adjustment will
+             * fail).
+             */
+
             TAILQ_FOREACH(slave, &slaves, links)
             {
                 rc = tapi_set_if_mtu_smart_aux(rpcs, slave->v,
-                                               mtu, NULL, TRUE);
+                                               mtu, NULL, TRUE, TRUE);
                 if (rc != 0)
                 {
                     tq_strings_free(&slaves, &free);
@@ -2522,6 +2540,9 @@ tapi_set_if_mtu_smart_aux(rcf_rpc_server *rpcs,
         return 0;
     }
 
+    if (skip_target)
+        return 0;
+
     return tapi_cfg_base_if_set_mtu_ext(rpcs->ta, if_name, mtu,
                                         NULL, ancestor);
 }
@@ -2534,7 +2555,7 @@ tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
                       int mtu, int *old_mtu)
 {
     return tapi_set_if_mtu_smart_aux(rpcs, interface->if_name,
-                                     mtu, old_mtu, FALSE);
+                                     mtu, old_mtu, FALSE, FALSE);
 }
 
 /* See description in tapi_rpc_misc.h */
