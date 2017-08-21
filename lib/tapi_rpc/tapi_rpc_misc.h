@@ -61,6 +61,7 @@
 #include "tapi_rpc_signal.h"
 #include "te_dbuf.h"
 #include "tq_string.h"
+#include "te_queue.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -1081,6 +1082,49 @@ tapi_interface_is_mine(rcf_rpc_server *rpcs, const char *interface)
 extern te_errno tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
                                       const struct if_nameindex *interface,
                                       int mtu, int *old_mtu);
+
+/** Structure for storing MTU values. */
+typedef struct te_saved_mtu {
+    LIST_ENTRY(te_saved_mtu)    links;              /**< List links. */
+    char                        if_name[IFNAMSIZ];  /**< Interface name. */
+    int                         mtu;                /**< MTU value. */
+} te_saved_mtu;
+
+/** Type of list of MTU values. */
+typedef LIST_HEAD(te_saved_mtus, te_saved_mtu) te_saved_mtus;
+
+/**
+ * Set new MTU value for a given interface (increasing MTU for
+ * the interfaces it is based on if necessary).
+ *
+ * @note The same backup argument may be passed to several
+ *       calls of this function; in that case all changes made
+ *       by them can be reverted with a single call of
+ *       tapi_set_if_mtu_smart2_rollback().
+ *
+ * @param rpcs       RPC server handle
+ * @param if_name    Network interface name
+ * @param mtu        MTU value
+ * @param backup     If not @c NULL, original values of MTU for all
+ *                   affected interfaces will be saved here.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_set_if_mtu_smart2(rcf_rpc_server *rpcs,
+                                       const char *if_name,
+                                       int mtu,
+                                       te_saved_mtus *backup);
+
+/**
+ * Revert changes made by tapi_set_if_mtu_smart2().
+ *
+ * @param rpcs        RPC server handle.
+ * @param backup      Where the original MTU values are saved.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_set_if_mtu_smart2_rollback(rcf_rpc_server *rpcs,
+                                                te_saved_mtus *backup);
 
 /**
  * Check if the interface is VLAN interface.
