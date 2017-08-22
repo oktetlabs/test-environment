@@ -46,6 +46,8 @@ typedef rpc_ptr rpc_fd_set_p;
 typedef rpc_ptr rpc_sigset_p;
 typedef rpc_ptr  rpc_aiocb_p;
 
+typedef rpc_ptr rpc_iomux_state_p;
+
 /** Pointer to the memory area */
 typedef struct rpc_ptr_off {
     rpc_ptr     base;   /**< Handle of the base address */

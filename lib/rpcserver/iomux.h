@@ -31,6 +31,8 @@
 
 #include "rpc_server.h"
 
+#define RPC_TYPE_NS_IOMUX_STATE     "iomux_state"
+
 /**
  * Pointers to a multiplexer functions.
  *

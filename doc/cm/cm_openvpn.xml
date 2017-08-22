@@ -1,0 +1,229 @@
+a<?xml version="1.0"?>
+<backup>
+    <!-- This configuration is intended for describing of OpenVPN client/server
+         configuration -->
+
+    <!--
+        Copyright (C) 2017 Test Environment authors (see file AUTHORS
+        in the root directory of the distribution).
+
+        Test Environment is free software; you can redistribute it
+        and/or modify it under the terms of the GNU General Public
+        License as published by the Free Software Foundation; either
+        version 2 of the License, or (at your option) any later
+        version.
+
+        Test Environment is distributed in the hope that it will be
+        useful, but WITHOUT ANY WARRANTY; without even the implied
+        warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+        PURPOSE. See the GNU General Public License for more details.
+
+        You should have received a copy of the GNU General Public
+        License along with this program; if not, write to the Free
+        Software Foundation, Inc., 59 Temple Place, Suite 330,
+        Boston, MA  02111-1307  USA
+
+        Author: Svetlana Fishchuk <Svetlana.Fishchuk@oktetlabs.ru>
+    -->
+
+    <!-- OpenVPN instance array.
+         Name: user-friendly name for OpenVPN instance. Will be used for lock
+               file name generation, therefore must be unique as per the
+               host. -->
+    <object oid="/agent/openvpn" access="read_create" type="none">
+        <depends oid="/agent/rsrc"/>
+    </object>
+
+    <!-- Generic -->
+    <!-- System interface name which will be used for created tunnel.
+         Name: empty
+         Value: interface name, i.e. tunX, tapX -->
+    <object oid="/agent/openvpn/ifname" access="read_only"
+        type="string"/>
+
+    <!-- Current OpenVPN state. Setting the status triggers the start/stop of
+         a daemon, whilst getting of the status tries to get actual status.
+         Name: empty
+         Value: 0 - disabled
+                1 - client mode: connected. server mode: daemon is up and
+                waiting for incoming connections
+                -->
+    <object oid="/agent/openvpn/status" access="read_write" type="integer"/>
+
+    <!-- Is this instance a server?
+         Name: empty
+         Value: 0 if client, 1 if server -->
+    <object oid="/agent/openvpn/is_server" access="read_write" type="integer"/>
+
+    <!-- Operation mode
+         Name: empty
+         Value: "tun" if TUN mode, "tap" if TAP mode -->
+    <object oid="/agent/openvpn/mode" access="read_write" type="string"/>
+
+    <!-- Key direction
+         Name: empty
+         Value: "normal", "inverse" (must be complementary on client/server
+                sides), or "bidirectional" -->
+    <object oid="/agent/openvpn/key-direction" access="read_write"
+        type="string"/>
+
+    <!-- Used cipher
+         Name: empty
+         Value: "AES-128-CBC", "AES-256-CBC", etc (can be checked with
+                openvpn - -show-ciphers) -->
+    <object oid="/agent/openvpn/cipher" access="read_write" type="string"/>
+
+    <!-- Used digest
+         Name: empty
+         Value: "MD5", "SHA-256", etc (can be checked with
+                openvpn - -show-digests) -->
+    <object oid="/agent/openvpn/digest" access="read_write" type="string"/>
+
+    <!-- Path to TLS key. If not set, will be generated automatically
+         Name: empty
+         Value: Path to PEM-formatted TLS key, empty string -->
+    <object oid="/agent/openvpn/tls-key" access="read_write" type="string"/>
+
+    <!-- Path to Certification Authority certificate
+         Name: empty
+         Value: Path to PEM-formatted certificate -->
+    <object oid="/agent/openvpn/ca" access="read_write" type="string"/>
+
+    <!-- Path to client/server own certificate
+         Name: empty
+         Value: Path to PEM-formatted certificate -->
+    <object oid="/agent/openvpn/cert" access="read_write" type="string"/>
+
+    <!-- Path to client/server own private key associated with 'cert'
+         Name: empty
+         Value: Path to PEM-formatted private key -->
+    <object oid="/agent/openvpn/key" access="read_write" type="string"/>
+
+    <!-- Protocol used for server
+         Name: empty
+         Value: "TCP", "UDP" -->
+    <object oid="/agent/openvpn/proto" access="read_write" type="string"/>
+
+    <!-- The use of LZO compression
+         Name: empty
+         Value: 0 if disabled, 1 if enabled -->
+    <object oid="/agent/openvpn/lzo" access="read_write" type="integer"/>
+
+    <!-- Interface to bind daemon to
+         Name: empty
+         Value: interface name (i.e. "eth1") -->
+    <object oid="/agent/openvpn/lower" access="read_write" type="string"/>
+
+    <!-- Additional options passed to OpenVPN configuration. Duplicates are
+         possible, their handling is determined by daemon itself.
+         Name: any
+         Value: any option permitted by OpenVPN daemon,
+                i.e. "sndbuf 4096" -->
+    <object oid="/agent/openvpn/option" access="read_create" type="string"/>
+
+    <!-- Port to bind to
+         Name: empty
+         Value: any valid port, 1194 by default -->
+    <object oid="/agent/openvpn/port" access="read_write" type="integer"/>
+
+    <!-- 'ifname' IP assigning facility
+         Name: empty
+         Value: "internal"  - client: let the OpenVPN server suggest IP address
+                              server: use internal facility with addresses
+                              determined by 'pool' subtree
+                "external"  - no actions would be done, the IP assigning daemon
+                              must be started by caller -->
+    <object oid="/agent/openvpn/ip_facility" access="read_write"
+        type="string"/>
+
+    <!-- Server -->
+    <!-- Path to Diffie-Hellman parameters (server only). If not set, DH
+         parameters will be generated automatically
+         Name: empty
+         Value: Path to PEM-formatted Diffie-Hellman parameters,
+                empty string -->
+    <object oid="/agent/openvpn/server/dh" access="read_write" type="string"/>
+
+    <!-- Diffie-Hellman parameter size (server only)
+         Name: empty
+         Value: any power of two, preferrably >= 2048 (some SSL backends have
+                such a limitation due to crackability of keys with lower key
+                side) -->
+    <object oid="/agent/openvpn/server/dh/size" access="read_write"
+        type="integer"/>
+
+    <!-- Pool start address (server only)
+         Name: empty
+         Value: any valid and settable IP, lower or equal compared to
+                'pool/end' -->
+    <object oid="/agent/openvpn/server/pool/start" access="read_write"
+        type="address"/>
+
+    <!-- Pool end address (server only)
+         Name: empty
+         Value: any valid and settable IP, bigger or equal compared to
+                'pool/start' -->
+    <object oid="/agent/openvpn/server/pool/end" access="read_write"
+        type="address"/>
+
+    <!-- Requirement of certificates (server only)
+         Name: empty
+         Value: 0 (no: raw username and password can be used),
+                1 (yes: require certificates) -->
+    <object oid="/agent/openvpn/server/require_certs" access="read_write"
+    type="integer"/>
+
+    <!-- User array (server only)
+         Name: any
+         Value: 0 (inactive), 1 (active) -->
+    <object oid="/agent/openvpn/server/user" access="read_create"/>
+
+    <!-- User's login (server only)
+         Name: empty
+         Value: any valid login, can be empty -->
+    <object oid="/agent/openvpn/server/user/username" access="read_write"
+        type="string"/>
+
+    <!-- User's password (server only)
+         Name: empty
+         Value: any valid password, can be empty -->
+    <object oid="/agent/openvpn/server/user/password" access="read_write"
+        type="string"/>
+
+    <!-- Path to user's certificate (server only)
+         Name: empty
+         Value: Path to PEM-formatted certificate signed by server's
+                Certification Authority -->
+    <object oid="/agent/openvpn/server/user/certificate" access="read_write"
+        type="string"/>
+
+    <!-- Number of connected users (server only)
+         Name: any
+         Value: Number of successfully connected users -->
+    <object oid="/agent/openvpn/server/connected_users" access="read_only"/>
+
+    <!-- Client -->
+    <!-- Peer array (client only)
+         Name: IP address of remote peer -->
+    <object oid="/agent/openvpn/client/peer" access="read_create"
+        type="string"/>
+
+    <!-- Peer's port (client only)
+         Name: empty
+         Value: port used for that remote peer (1194 by default) -->
+    <object oid="/agent/openvpn/client/peer/port" access="read_write"
+        type="integer"/>
+
+    <!-- Username (client only) which will be sent to peer for authorization.
+         Name: empty
+         Value: any valid login, can be empty -->
+    <object oid="/agent/openvpn/client/username" access="read_write"
+        type="string"/>
+
+    <!-- Password (client only) which will be sent to peer for authorization.
+         Name: empty
+         Value: any valid password, can be empty -->
+    <object oid="/agent/openvpn/client/password" access="read_write"
+        type="string"/>
+
+</backup>

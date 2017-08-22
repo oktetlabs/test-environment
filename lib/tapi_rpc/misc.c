@@ -2075,6 +2075,113 @@ rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd,
 #endif /* HAVE_LINUX_ETHTOOL_H */
 
 int
+rpc_iomux_create_state(rcf_rpc_server *rpcs, iomux_func iomux,
+                       tarpc_iomux_state *iomux_st)
+{
+    tarpc_iomux_create_state_in    in;
+    tarpc_iomux_create_state_out   out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (iomux_st == NULL)
+    {
+        ERROR("%s(): Invalid 'iomux_st' argument", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    in.iomux = iomux;
+
+    rcf_rpc_call(rpcs, "iomux_create_state", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(iomux_create_state, out.retval);
+
+    *iomux_st = (tarpc_iomux_state)out.iomux_st;
+
+    TAPI_RPC_LOG(rpcs, iomux_create_state, "%s", RPC_PTR_FMT ", %d",
+                 iomux2str(iomux), RPC_PTR_VAL(out.iomux_st), out.retval);
+    RETVAL_INT(iomux_create_state, out.retval);
+
+}
+
+int
+rpc_multiple_iomux_wait(rcf_rpc_server *rpcs, int fd, iomux_func iomux,
+                        tarpc_iomux_state iomux_st,int events, int count,
+                        int duration, int exp_rc, int *number, int *last_rc,
+                        int *zero_rc)
+{
+    struct tarpc_multiple_iomux_wait_in    in;
+    struct tarpc_multiple_iomux_wait_out   out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    in.fd = fd;
+    in.iomux = iomux;
+    in.iomux_st = (tarpc_iomux_state)iomux_st;
+    in.events = events;
+    in.count = count;
+    in.exp_rc = exp_rc;
+    in.duration = duration;
+
+    rcf_rpc_call(rpcs, "multiple_iomux_wait", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(multiple_iomux_wait, out.retval);
+
+    if (number != NULL)
+        *number = out.number;
+    if (last_rc != NULL)
+        *last_rc = out.last_rc;
+    if (zero_rc != NULL)
+        *zero_rc = out.zero_rc;
+
+    TAPI_RPC_LOG(rpcs, multiple_iomux_wait, "%d, %s" RPC_PTR_FMT ", %s"
+                 "%d, %d, %p, %p", "%d number=%d last_rc=%d, zero_rc=%d",
+                 fd, iomux2str(iomux), RPC_PTR_VAL(in.iomux_st),
+                 poll_event_rpc2str(events), count, exp_rc, number, last_rc,
+                 out.retval, out.number, out.last_rc, out.zero_rc);
+    RETVAL_INT(multiple_iomux_wait, out.retval);
+}
+
+
+int
+rpc_iomux_close_state(rcf_rpc_server *rpcs, iomux_func iomux,
+                      tarpc_iomux_state iomux_st)
+{
+    tarpc_iomux_close_state_in    in;
+    tarpc_iomux_close_state_out   out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    in.iomux = iomux;
+    in.iomux_st = (tarpc_iomux_state)iomux_st;
+
+    rcf_rpc_call(rpcs, "iomux_close_state", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(iomux_close_state, out.retval);
+
+    TAPI_RPC_LOG(rpcs, iomux_close_state, "%s" RPC_PTR_FMT, "%d",
+                 iomux2str(iomux), RPC_PTR_VAL(in.iomux_st), out.retval);
+    RETVAL_INT(iomux_close_state, out.retval);
+}
+
+int
 rpc_multiple_iomux(rcf_rpc_server *rpcs, int fd, iomux_func iomux,
                    int events, int count, int duration, int exp_rc,
                    int *number, int *last_rc, int *zero_rc)
@@ -2300,16 +2407,225 @@ ioctl_get_if_mtu(rcf_rpc_server *rpcs,
 }
 
 /**
+ * Free memory allocated for items of a list of MTU values.
+ *
+ * @param mtus    Pointer to the list.
+ */
+static void
+te_saved_mtus_free(te_saved_mtus *mtus)
+{
+    te_saved_mtu *saved_mtu;
+
+    if (mtus == NULL)
+        return;
+
+    while ((saved_mtu = LIST_FIRST(mtus)) != NULL)
+    {
+        LIST_REMOVE(saved_mtu, links);
+        free(saved_mtu);
+    }
+}
+
+/**
+ * Save MTU value for a given interface in a list.
+ *
+ * @note If MTU value for a given interface is already in the list,
+ *       this function will not update it.
+ *
+ * @param mtus      List of MTU values.
+ * @param if_name   Interface name.
+ * @param mtu       MTU value.
+ *
+ * @return Status code.
+ */
+static te_errno
+te_saved_mtus_put(te_saved_mtus *mtus,
+                  const char *if_name,
+                  int mtu)
+{
+    te_saved_mtu *saved_mtu;
+
+    if (strlen(if_name) > IFNAMSIZ - 1)
+    {
+        ERROR("%s(): interface name '%s' is too long",
+              __FUNCTION__, if_name);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    LIST_FOREACH(saved_mtu, mtus, links)
+    {
+        if (strcmp(saved_mtu->if_name, if_name) == 0)
+            return 0;
+    }
+
+    saved_mtu = TE_ALLOC(sizeof(*saved_mtu));
+    if (saved_mtu == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
+    strncpy(saved_mtu->if_name, if_name, IFNAMSIZ);
+
+    saved_mtu->mtu = mtu;
+    LIST_INSERT_HEAD(mtus, saved_mtu, links);
+    return 0;
+}
+
+/* Predeclaration. */
+static te_errno save_descendants_mtus(rcf_rpc_server *rpcs,
+                                      const char *if_name,
+                                      te_saved_mtus *mtus,
+                                      te_bool save_target);
+
+/**
+ * Save current MTU values for all MAC VLAN interfaces based
+ * on the given one, and all interfaces based on them.
+ *
+ * @param rpcs          RPC server handle.
+ * @param if_name       Interface name.
+ * @param mtus          Where to store MTU values.
+ *
+ * @return Status code.
+ */
+static te_errno
+save_descendants_macvlans_mtus(rcf_rpc_server *rpcs,
+                               const char *if_name,
+                               te_saved_mtus *mtus)
+{
+    cfg_handle    *interfaces = NULL;
+    unsigned int   count = 0;
+    unsigned int   i = 0;
+    char          *child_if_name = NULL;
+    te_errno       rc = 0;
+
+    rc = cfg_find_pattern_fmt(&count, &interfaces,
+                              "/agent:%s/interface:%s/macvlan:*",
+                              rpcs->ta, if_name);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; i < count; i++)
+    {
+        rc = cfg_get_inst_name(interfaces[i], &child_if_name);
+        if (rc != 0)
+            break;
+
+        rc = save_descendants_mtus(rpcs, child_if_name, mtus, TRUE);
+        free(child_if_name);
+        if (rc != 0)
+            break;
+    }
+
+    free(interfaces);
+    return rc;
+}
+
+/**
+ * Save current MTU values for all VLAN interfaces based
+ * on the given one, and all interfaces based on them.
+ *
+ * @param rpcs          RPC server handle.
+ * @param if_name       Interface name.
+ * @param mtus          Where to store MTU values.
+ *
+ * @return Status code.
+ */
+static te_errno
+save_descendants_vlans_mtus(rcf_rpc_server *rpcs,
+                            const char *if_name,
+                            te_saved_mtus *mtus)
+{
+    cfg_handle    *interfaces = NULL;
+    unsigned int   count = 0;
+    unsigned int   i = 0;
+    cfg_val_type   val_type;
+    char          *child_if_name = NULL;
+    te_errno       rc = 0;
+
+    rc = cfg_find_pattern_fmt(&count, &interfaces,
+                              "/agent:%s/interface:%s/vlans:*/ifname:",
+                              rpcs->ta, if_name);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; i < count; i++)
+    {
+        val_type = CVT_STRING;
+        rc = cfg_get_instance(interfaces[i], &val_type,
+                              &child_if_name);
+        if (rc != 0)
+            break;
+
+        rc = save_descendants_mtus(rpcs, child_if_name, mtus, TRUE);
+        free(child_if_name);
+        if (rc != 0)
+            break;
+    }
+
+    free(interfaces);
+    return rc;
+}
+
+/**
+ * Save current MTU values for all interfaces based
+ * on the given one (VLANs, MACVLANs).
+ *
+ * @param rpcs          RPC server handle.
+ * @param if_name       Interface name.
+ * @param mtus          Where to store MTU values.
+ * @param save_target   If @c TRUE, save MTU value
+ *                      for the interface itself too.
+ *
+ * @return Status code.
+ */
+static te_errno
+save_descendants_mtus(rcf_rpc_server *rpcs,
+                      const char *if_name,
+                      te_saved_mtus *mtus,
+                      te_bool save_target)
+{
+    int       old_mtu;
+    te_errno  rc = 0;
+
+    if (save_target)
+    {
+        rc = tapi_cfg_base_if_get_mtu_u(rpcs->ta, if_name,
+                                        &old_mtu);
+        if (rc != 0)
+            return rc;
+
+        rc = te_saved_mtus_put(mtus, if_name, old_mtu);
+        if (rc != 0)
+            return rc;
+    }
+
+    rc = save_descendants_vlans_mtus(rpcs, if_name, mtus);
+    if (rc != 0)
+        return rc;
+
+    rc = save_descendants_macvlans_mtus(rpcs, if_name, mtus);
+    if (rc != 0)
+        return rc;
+
+    return 0;
+}
+
+/**
  * Auxiliary function used to implement tapi_set_if_mtu_smart().
  * It increases MTU for the ancestors of a given interface if required,
  * and then sets it for the interface itself.
  *
- * @param rpcs       RPC server handle
- * @param if_name    Interface name
- * @param mtu        MTU value
- * @param old_mtu_p  Where to save old MTU value for target interface
- *                   (may be @c NULL)
- * @param ancestor   If TRUE, this is an ancestor interface
+ * @param rpcs          RPC server handle
+ * @param if_name       Interface name
+ * @param mtu           MTU value
+ * @param old_mtu_p     Where to save old MTU value for target interface
+ *                      (may be @c NULL)
+ * @param ancestor      If @c TRUE, this is an ancestor interface
+ * @param skip_target   If @c TRUE, do not try to change MTU of
+ *                      the passed interface, only change MTU of
+ *                      its ancestors if required. This is useful
+ *                      when the target is a slave of an aggregation
+ *                      interface, and MTU for it should change
+ *                      automatically when it is changed for the
+ *                      aggregation as a whole.
  *
  * @return Status code.
  */
@@ -2317,7 +2633,9 @@ static te_errno
 tapi_set_if_mtu_smart_aux(rcf_rpc_server *rpcs,
                           const char *if_name,
                           int mtu, int *old_mtu_p,
-                          te_bool ancestor)
+                          te_saved_mtus *mtus,
+                          te_bool ancestor,
+                          te_bool skip_target)
 {
     char          if_parent[IFNAMSIZ];
     int           rc;
@@ -2367,6 +2685,9 @@ tapi_set_if_mtu_smart_aux(rcf_rpc_server *rpcs,
         *old_mtu_p = old_mtu;
     }
 
+    if (mtu == old_mtu)
+        return 0;
+
     if (mtu > old_mtu)
     {
         rc = tapi_cfg_get_if_parent(rpcs->ta, if_name,
@@ -2378,7 +2699,7 @@ tapi_set_if_mtu_smart_aux(rcf_rpc_server *rpcs,
         if (if_parent[0] != '\0')
         {
             rc = tapi_set_if_mtu_smart_aux(rpcs, if_parent,
-                                           mtu, NULL, TRUE);
+                                           mtu, NULL, mtus, TRUE, FALSE);
             if (rc != 0)
                 return rc;
         }
@@ -2392,10 +2713,21 @@ tapi_set_if_mtu_smart_aux(rcf_rpc_server *rpcs,
             if (rc < 0)
                 return GET_RPC_ERR(rpcs);
 
+            /**
+             * Here it is assumed that it is not allowed to aggregate
+             * two interfaces which are ancestor/descendant (for example,
+             * an interface and a MACVLAN over it). So it is safe to
+             * try to adjust MTU for ancestors of each slave separately
+             * (changing MTU for a slave is not allowed in case of teaming,
+             * so if an ancestor is also a slave, such adjustment will
+             * fail).
+             */
+
             TAILQ_FOREACH(slave, &slaves, links)
             {
                 rc = tapi_set_if_mtu_smart_aux(rpcs, slave->v,
-                                               mtu, NULL, TRUE);
+                                               mtu, NULL, mtus,
+                                               TRUE, TRUE);
                 if (rc != 0)
                 {
                     tq_strings_free(&slaves, &free);
@@ -2415,10 +2747,15 @@ tapi_set_if_mtu_smart_aux(rcf_rpc_server *rpcs,
         return 0;
     }
 
+    if (skip_target)
+        return 0;
+
+    if (mtus != NULL)
+        te_saved_mtus_put(mtus, if_name, old_mtu);
+
     return tapi_cfg_base_if_set_mtu_ext(rpcs->ta, if_name, mtu,
                                         NULL, ancestor);
 }
-
 
 /* See description in tapi_rpc_misc.h */
 te_errno
@@ -2427,7 +2764,46 @@ tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
                       int mtu, int *old_mtu)
 {
     return tapi_set_if_mtu_smart_aux(rpcs, interface->if_name,
-                                     mtu, old_mtu, FALSE);
+                                     mtu, old_mtu, NULL, FALSE, FALSE);
+}
+
+/* See description in tapi_rpc_misc.h */
+te_errno
+tapi_set_if_mtu_smart2(rcf_rpc_server *rpcs,
+                       const char *if_name,
+                       int mtu, te_saved_mtus *backup)
+{
+    te_errno  rc = 0;
+
+    rc = save_descendants_mtus(rpcs, if_name,
+                               backup, FALSE);
+    if (rc != 0)
+        return rc;
+
+    return tapi_set_if_mtu_smart_aux(rpcs, if_name,
+                                     mtu, NULL,
+                                     backup, FALSE, FALSE);
+}
+
+/* See description in tapi_rpc_misc.h */
+te_errno
+tapi_set_if_mtu_smart2_rollback(rcf_rpc_server *rpcs,
+                                te_saved_mtus *backup)
+{
+    te_saved_mtu  *saved_mtu = NULL;
+    te_errno       rc = 0;
+
+    LIST_FOREACH(saved_mtu, backup, links)
+    {
+        rc = tapi_set_if_mtu_smart_aux(rpcs, saved_mtu->if_name,
+                                       saved_mtu->mtu, NULL,
+                                       NULL, FALSE, FALSE);
+        if (rc != 0)
+            break;
+    }
+
+    te_saved_mtus_free(backup);
+    return rc;
 }
 
 /* See description in tapi_rpc_misc.h */
