@@ -901,9 +901,10 @@ tapi_cfg_base_if_add_veth(const char *ta, const char *ifname,
                           const char *peer)
 {
     int rc;
+    char veth_oid[CFG_OID_MAX];
 
-    rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, peer),
-                              "/agent:%s/veth:%s", ta, ifname);
+    snprintf(veth_oid, CFG_OID_MAX, "/agent:%s/veth:%s", ta, ifname);
+    rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, peer), "%s", veth_oid);
     if (rc != 0)
         return rc;
 
@@ -912,6 +913,11 @@ tapi_cfg_base_if_add_veth(const char *ta, const char *ifname,
         return rc;
 
     rc = tapi_cfg_base_if_add_rsrc(ta, peer);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_add_instance_fmt(NULL, CVT_STRING, veth_oid,
+                              "/agent:%s/rsrc:veth_%s", ta, ifname);
     if (rc != 0)
         return rc;
 
@@ -942,6 +948,10 @@ tapi_cfg_base_if_del_veth(const char *ta, const char *ifname)
 
     /* Try to delete veth and release resources even if a call fails. */
     rc2 = cfg_del_instance_fmt(FALSE, "/agent:%s/veth:%s", ta, ifname);
+    if (rc == 0)
+        rc = rc2;
+
+    rc2 = cfg_del_instance_fmt(TRUE, "/agent:%s/rsrc:veth_%s", ta, ifname);
     if (rc == 0)
         rc = rc2;
 

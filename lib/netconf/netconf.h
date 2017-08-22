@@ -542,14 +542,30 @@ extern te_errno netconf_veth_get_peer(netconf_handle nh, const char *ifname,
                                       char *peer, size_t peer_len);
 
 /**
+ * Type of callback function to pass to netconf_veth_list(). It is used to
+ * decide if the interface should be included to the list.
+ *
+ * @param ifname    The interface name
+ * @param data      Opaque data
+ *
+ * @return @c TRUE to include interface to the list.
+ */
+typedef te_bool (*netconf_veth_list_filter_func)(const char *ifname,
+                                                 void *data);
+
+/**
  * Get veth interfaces list.
  *
- * @param nh        Netconf session handle
- * @param list      Space-separated interfaces list (allocated from the heap)
+ * @param nh            Netconf session handle
+ * @param filter_cb     Filtering callback function or @c NULL
+ * @param filter_opaque Opaque data to pass to the filtering function
+ * @param list          Space-separated interfaces list (allocated from the heap)
  *
  * @return Status code.
  */
-extern te_errno netconf_veth_list(netconf_handle nh, char **list);
+extern te_errno netconf_veth_list(netconf_handle nh,
+                                  netconf_veth_list_filter_func filter_cb,
+                                  void *filter_opaque, char **list);
 
 #ifdef __cplusplus
 }

@@ -243,7 +243,9 @@
     <!-- Virtual Ethernet (veth) interface
          Name: interface name
          Value: peer interface name -->
-    <object oid="/agent/veth" access="read_create" type="string"/>
+    <object oid="/agent/veth" access="read_create" type="string">
+      <depends oid="/agent/rsrc"/>
+    </object>
 
     <!-- "Parent" interface (filled for VLAN, MAC VLAN, etc.)
          Name: empty

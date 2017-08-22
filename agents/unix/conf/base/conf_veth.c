@@ -42,6 +42,7 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_string.h"
+#include "unix_internal.h"
 
 #include "netconf.h"
 
@@ -103,6 +104,23 @@ veth_get(unsigned int gid, const char *oid, char *peer, const char *ifname)
 }
 
 /**
+ * Check whether a given interface is grabbed by TA when creating a list of
+ * veth interfaces.
+ *
+ * @param ifname    The interface name.
+ * @param data      Unused.
+ *
+ * @return @c TRUE if the interface is grabbed, @c FALSE otherwise.
+ */
+static te_bool
+veth_list_include_cb(const char *ifname, void *data)
+{
+    UNUSED(data);
+
+    return rcf_pch_rsrc_accessible("/agent:%s/veth:%s", ta_name, ifname);
+}
+
+/**
  * Get veth interfaces list.
  *
  * @param gid   Group identifier (unused)
@@ -117,7 +135,7 @@ veth_list(unsigned int gid, const char *oid, char **list)
     UNUSED(gid);
     UNUSED(oid);
 
-    return netconf_veth_list(nh, list);
+    return netconf_veth_list(nh, veth_list_include_cb, NULL, list);
 }
 
 static rcf_pch_cfg_object node_veth =
@@ -130,7 +148,15 @@ static rcf_pch_cfg_object node_veth =
 te_errno
 ta_unix_conf_veth_init(void)
 {
-    return rcf_pch_add_node("/agent/", &node_veth);
+    te_errno rc;
+
+    rc = rcf_pch_add_node("/agent/", &node_veth);
+    if (rc != 0)
+        return rc;
+
+    return rcf_pch_rsrc_info("/agent/veth",
+                             rcf_pch_rsrc_grab_dummy,
+                             rcf_pch_rsrc_release_dummy);
 }
 
 #else /* USE_LIBNETCONF */

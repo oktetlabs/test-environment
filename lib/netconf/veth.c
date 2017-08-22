@@ -342,7 +342,8 @@ netconf_veth_get_peer(netconf_handle nh, const char *ifname, char *peer,
 
 /* See netconf.h */
 te_errno
-netconf_veth_list(netconf_handle nh, char **list)
+netconf_veth_list(netconf_handle nh, netconf_veth_list_filter_func filter_cb,
+                  void *filter_opaque, char **list)
 {
     netconf_list *nlist;
     netconf_node *node;
@@ -360,6 +361,10 @@ netconf_veth_list(netconf_handle nh, char **list)
     {
         if (node->data.veth.ifname != NULL)
         {
+            if (filter_cb != NULL &&
+                filter_cb(node->data.veth.ifname, filter_opaque) == FALSE)
+                continue;
+
             rc = te_string_append(&str, "%s ", node->data.veth.ifname);
             if (rc != 0)
             {
