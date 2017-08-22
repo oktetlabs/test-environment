@@ -3101,10 +3101,19 @@ iface_get_property_netconf(const char *ifname,
                     {
                         if (if_indextoname(link->link, value) == NULL)
                         {
-                            rc = te_rc_os2te(errno);
-                            ERROR("%s(): cannot obtain interface "
-                                  "name for index %d",
-                                  __FUNCTION__, link->link);
+                            /* No such device in the current namespace -
+                             * return empty string but don't fail. */
+                            if (errno == ENXIO)
+                            {
+                                *value = '\0';
+                            }
+                            else
+                            {
+                                rc = te_rc_os2te(errno);
+                                ERROR("%s(): cannot obtain interface "
+                                      "name for index %d",
+                                      __FUNCTION__, link->link);
+                            }
                         }
                     }
 
