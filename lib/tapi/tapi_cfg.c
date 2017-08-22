@@ -2226,3 +2226,51 @@ cleanup:
     te_string_free(&str);
     return rc;
 }
+
+/* See description in tapi_cfg.h */
+te_errno
+tapi_cfg_alloc_net_addr_pair(struct sockaddr **addr1, struct sockaddr **addr2,
+                             int *prefix)
+{
+    cfg_handle  cfgh_net;
+    char       *net_pool;
+    te_errno    rc;
+
+    rc = tapi_cfg_alloc_ip4_net(&cfgh_net);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_alloc_net_addr(cfgh_net, NULL, addr1);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_alloc_net_addr(cfgh_net, NULL, addr2);
+    if (rc != 0)
+    {
+        free(addr1);
+        return rc;
+    }
+
+    if (prefix != NULL)
+    {
+        rc = cfg_get_oid_str(cfgh_net, &net_pool);
+        if (rc != 0)
+        {
+            free(addr1);
+            free(addr2);
+            return rc;
+        }
+
+        rc = cfg_get_instance_fmt(CVT_INTEGER, prefix, "%s/prefix:",
+                                  net_pool);
+        free(net_pool);
+        if (rc != 0)
+        {
+            free(addr1);
+            free(addr2);
+            return rc;
+        }
+    }
+
+    return 0;
+}

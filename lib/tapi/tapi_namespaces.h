@@ -90,8 +90,41 @@ extern te_errno tapi_netns_if_set(const char *ta, const char *ns_name,
 extern te_errno tapi_netns_if_unset(const char *ta, const char *ns_name,
                                     const char *if_name);
 
+/**
+ * Create network namespace and configure control network channel.
+ *
+ * @param ta        Test agent name
+ * @param ns_name   The network namespace name
+ * @param veth1     Veth interface name
+ * @param veth2     Veth interface peer name
+ * @param ctl_if    Control interface name on the test agent
+ * @param rcfport   Port number to communicate with RCF
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_netns_create_ns_with_net_channel(const char *ta,
+                                                      const char *ns_name,
+                                                      const char *veth1,
+                                                      const char *veth2,
+                                                      const char *ctl_if,
+                                                      int rcfport);
+
+/**
+ * Add new test agent located in the specified network namespace @p ns_name.
+ *
+ * @param host      The target hostname
+ * @param ns_name   The network namespace name
+ * @param ta_name   The test agent name
+ * @param ta_type   The test agent type
+ * @param rcfport   Port number to communicate with RCF
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_netns_add_ta(const char *host, const char *ns_name,
+                                  const char *ta_name, const char *ta_type,
+                                  int rcfport);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_NAMESPACES_H__ */
-

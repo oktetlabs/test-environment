@@ -920,6 +920,19 @@ extern te_errno tapi_cfg_set_int_str(int value, int *old_value,
 extern te_errno tapi_cfg_set_int_fmt(int value, int *old_value,
                                      const char *format, ...);
 
+/**
+ * Allocate two IP addresses from a free net_pool.
+ *
+ * @param addr1     The first IP address pointer location
+ * @param addr2     The second IP address pointer location
+ * @param prefix    The prefix length
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_alloc_net_addr_pair(struct sockaddr **addr1,
+                                             struct sockaddr **addr2,
+                                             int *prefix);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
