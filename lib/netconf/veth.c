@@ -133,6 +133,14 @@ veth_extract_peer(struct rtattr **linkgen, char **peer_name)
     {
         if (if_indextoname(peer_ifidx, peer) == NULL)
         {
+            /* No such device in the current namespace - return nothing but
+             * don't fail. */
+            if (errno == ENXIO)
+            {
+                *peer_name = NULL;
+                return 0;
+            }
+
             ERROR("Failed to convert interface index to name: %s",
                   strerror(errno));
             return -1;
