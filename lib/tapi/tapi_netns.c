@@ -34,6 +34,7 @@
 #include "logger_api.h"
 #include "conf_api.h"
 #include "tapi_namespaces.h"
+#include "tapi_cfg_base.h"
 
 /* See description in tapi_namespaces.h */
 te_errno
@@ -86,9 +87,19 @@ tapi_netns_del(const char *ta, const char *ns_name)
 te_errno
 tapi_netns_if_set(const char *ta, const char *ns_name, const char *if_name)
 {
-    return cfg_add_instance_fmt(NULL, CVT_NONE, NULL,
-                                "/agent:%s/namespace:/net:%s/interface:%s",
-                                ta, ns_name, if_name);
+    te_errno rc;
+
+    rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL,
+                              "/agent:%s/namespace:/net:%s/interface:%s",
+                              ta, ns_name, if_name);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_base_if_del_rsrc(ta, if_name);
+    if (rc == TE_RC(TE_CS, TE_ENOENT))
+        return 0;
+
+    return rc;
 }
 
 /* See description in tapi_namespaces.h */
