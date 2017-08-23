@@ -105,9 +105,12 @@ a<?xml version="1.0"?>
         access="read_write" type="string" />
     <object oid="/crypt/cert/x509/subject/emailAddress"
         access="read_write" type="string" />
-    <object oid="/crypt/cert/x509/subject/organizationalUnitName"
-        access="read_write" type="string" />
-    <object oid="/crypt/cert/x509/subject/emailAddress"
+
+    <!-- Certificate serial number.
+         Must be unique and consecutive among the certificates issued by
+         Certification Authority
+         Value: any valid hex sequence delimited by ":" -->
+    <object oid="/crypt/cert/x509/serial"
         access="read_write" type="string" />
 
     <!-- Validity start date
