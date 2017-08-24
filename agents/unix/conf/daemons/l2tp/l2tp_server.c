@@ -868,11 +868,10 @@ l2tp_server_set(unsigned int gid, const char *oid, const char *value)
     ENTRY("set l2tp server status to %s", value);
 
     l2tp->started = (strcmp(value, "1") == 0);
-    if (l2tp->started != l2tp_is_running(l2tp));
+    if (l2tp->started != l2tp_is_running(l2tp))
     {
         l2tp->changed = TRUE;
     }
-
 
     return 0;
 }
