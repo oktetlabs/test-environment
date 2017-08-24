@@ -166,6 +166,8 @@ typedef struct te_l2tp_server {
     te_bool chap_changed;   /**< Whether CHAP secrets file was updated, or not */
     te_bool pap_changed;    /**< Whether PAP secrets file was updated, or not */
     int     pid;            /**< PID of xl2tpd */
+    char   *conf_file;      /**< Config file name */
+    char   *pid_file;       /**< pid file name */
 } te_l2tp_server;
 
 static te_bool
@@ -173,6 +175,35 @@ l2tp_is_running(te_l2tp_server *l2tp);
 
 /** Static L2TP server structure */
 static te_l2tp_server l2tp_server;
+
+
+/**
+ * Build filename in format "<basename>.<ta_pid>".
+ *
+ * @note return value should be freed when it is no longer needed.
+ *
+ * @param basename      Base of name.
+ *
+ * @return Filename in certain format, or @c NULL in case of error.
+ */
+static char *
+l2tp_build_filename(const char *basename)
+{
+    te_string filename = TE_STRING_INIT;
+    te_errno  rc;
+
+    if (basename == NULL)
+        return NULL;
+
+    rc = te_string_append(&filename, "%s.%i", basename, getpid());
+    if (rc != 0)
+    {
+        ERROR("Failed to build file name");
+        te_string_free(&filename);
+    }
+
+    return filename.ptr;
+}
 
 /**
  * Initialize L2TP server structure with default values
@@ -192,6 +223,8 @@ l2tp_server_init(te_l2tp_server *l2tp)
     l2tp->chap_changed = FALSE;
     l2tp->pap_changed = FALSE;
     l2tp->pid = -1;
+    l2tp->conf_file = l2tp_build_filename(L2TP_SERVER_CONF_BASIS);
+    l2tp->pid_file = l2tp_build_filename(L2TP_TA_PIDFILE);
     l2tp->initialized = TRUE;
 }
 
@@ -486,8 +519,6 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
                                     + L2TP_MAX_PID_VALUE_LENGTH];
     char                 pap_fname[sizeof(TMP_PAP_SECRETS_FILE)
                                    + L2TP_MAX_PID_VALUE_LENGTH];
-    char                 l2tp_conf_fname[sizeof(L2TP_SERVER_CONF_BASIS)
-                                         + L2TP_MAX_PID_VALUE_LENGTH];
     char                *ppp_fname = NULL;
     te_errno             rc;
 
@@ -526,8 +557,7 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
     }
 
     /* Create xl2tpd conf file */
-    TE_SPRINTF(l2tp_conf_fname, L2TP_SERVER_CONF_BASIS ".%i", getpid());
-    rc = l2tp_create_file(l2tp_conf_fname, &l2tp_conf_file);
+    rc = l2tp_create_file(l2tp->conf_file, &l2tp_conf_file);
     if (rc != 0)
         goto l2tp_server_save_conf_cleanup;
 
@@ -631,11 +661,8 @@ static te_bool
 l2tp_is_running(te_l2tp_server *l2tp)
 {
     te_bool  is_running;
-    char     l2tp_ta_pidfile[L2TP_MAX_OPTNAME_LENGTH];
     FILE    *f;
     int      l2tp_pid = l2tp->pid;
-
-    TE_SPRINTF(l2tp_ta_pidfile, "%s%i" , L2TP_TA_PIDFILE, getpid());
 
     if ((f = fopen(L2TP_SERVER_PIDFILE, "r")) != NULL)
     {
@@ -647,7 +674,7 @@ l2tp_is_running(te_l2tp_server *l2tp)
         kill(l2tp_pid, SIGTERM);
         l2tp_pid = -1;
     }
-    if ((f = fopen(l2tp_ta_pidfile, "r")) != NULL)
+    if ((f = fopen(l2tp->pid_file, "r")) != NULL)
     {
         if (fscanf(f, "%u", &l2tp_pid) != 1)
         {
@@ -713,7 +740,6 @@ l2tp_server_start(te_l2tp_server *l2tp)
 {
     te_string cmd = TE_STRING_INIT;
     te_errno  res;
-    int       ta_pid = getpid();
 
     ENTRY("start l2tp server");
 
@@ -726,10 +752,8 @@ l2tp_server_start(te_l2tp_server *l2tp)
         return res;
     }
 
-    res = te_string_append(&cmd, "%s -D -c %s.%i -p %s%i",
-                           L2TP_SERVER_EXEC,
-                           L2TP_SERVER_CONF_BASIS, ta_pid,
-                           L2TP_TA_PIDFILE, ta_pid);
+    res = te_string_append(&cmd, "%s -D -c %s -p %s",
+                           L2TP_SERVER_EXEC, l2tp->conf_file, l2tp->pid_file);
     if (res != 0)
         return res;
 
@@ -3514,8 +3538,6 @@ l2tp_release(const char *name)
     te_errno        retval;
     te_errno        rc_chap = 0;
     te_errno        rc_pap = 0;
-    char            l2tp_conf[sizeof(L2TP_SERVER_CONF_BASIS)
-                              + L2TP_MAX_PID_VALUE_LENGTH];
 
     UNUSED(name);
 
@@ -3535,12 +3557,11 @@ l2tp_release(const char *name)
         ERROR("Failed to remove ppp options files");
         return retval;
     }
-    TE_SPRINTF(l2tp_conf, L2TP_SERVER_CONF_BASIS ".%i", getpid());
-    
+
     /*FIXME: there is no exist check of the files below*/
-    if (!access(l2tp_conf, X_OK) && remove(l2tp_conf) != 0)
+    if (!access(l2tp->conf_file, X_OK) && remove(l2tp->conf_file) != 0)
     {
-        ERROR("remove %s failed", l2tp_conf);
+        ERROR("Failed to remove %s", l2tp->conf_file);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
 
