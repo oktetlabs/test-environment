@@ -175,7 +175,7 @@ static te_l2tp_server l2tp_server;
 
 
 /**
- * Build filename in format "<basename>.<ta_pid>".
+ * Build a template of filename in format "<basename>.XXXXXX".
  *
  * @note return value should be freed when it is no longer needed.
  *
@@ -192,7 +192,7 @@ l2tp_build_filename(const char *basename)
     if (basename == NULL)
         return NULL;
 
-    rc = te_string_append(&filename, "%s.%i", basename, getpid());
+    rc = te_string_append(&filename, "%s.XXXXXX", basename);
     if (rc != 0)
     {
         ERROR("Failed to build file name");
@@ -386,25 +386,26 @@ l2tp_secret_is_set(te_l2tp_server *l2tp, enum l2tp_secret_prot protocol)
 /**
  * Create a new file, or open an existent one. Note, it truncate the file.
  *
- * @param[in]  file_name    Desired file name.
- * @param[out] file         File stream.
+ * @param[inout] file_name  File name template.
+ * @param[out]   file       File stream.
  *
  * @return Status code.
  */
 static te_errno
-l2tp_create_file(const char *file_name, FILE **file)
+l2tp_create_file(char *file_name, FILE **file)
 {
     FILE *f;
     int   fd;
 
-    ENTRY("create file %s", file_name);
+    ENTRY("create file by template %s", file_name);
 
-    fd = open(file_name, O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR);
+    fd = mkstemp(file_name);
     if (fd == -1)
     {
         ERROR("Failed to create file '%s': %s", file_name, strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
+    INFO("file has been created: %s", file_name);
     f = fdopen(fd, "w");
     if (f == NULL)
     {
@@ -819,6 +820,7 @@ l2tp_server_stop(te_l2tp_server *l2tp)
 static te_errno
 l2tp_server_start(te_l2tp_server *l2tp)
 {
+    FILE *pid_file;
     te_string cmd = TE_STRING_INIT;
     te_errno  res;
 
@@ -832,6 +834,12 @@ l2tp_server_start(te_l2tp_server *l2tp)
         ERROR("Failed to save L2TP server configuration files");
         return res;
     }
+
+    /* Create a pid file just to get a unique name */
+    res = l2tp_create_file(l2tp->pid_file, &pid_file);
+    if (res != 0)
+        return res;
+    fclose(pid_file);
 
     res = te_string_append(&cmd, "%s -D -c %s -p %s",
                            L2TP_SERVER_EXEC, l2tp->conf_file, l2tp->pid_file);
