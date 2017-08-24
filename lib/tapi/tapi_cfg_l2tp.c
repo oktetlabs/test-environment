@@ -60,7 +60,7 @@ tapi_cfg_l2tp_lns_del(const char *ta, const char *lns)
 }
 
 te_errno
-tapi_cfg_l2tp_listen_ip_set(const char *ta, const struct sockaddr_in *local)
+tapi_cfg_l2tp_listen_ip_set(const char *ta, const struct sockaddr *local)
 {
     return cfg_set_instance_fmt(CFG_VAL(ADDRESS, local),
                                 TE_CFG_TA_L2TP_SERVER "/listen:", ta);
@@ -68,7 +68,7 @@ tapi_cfg_l2tp_listen_ip_set(const char *ta, const struct sockaddr_in *local)
 
 
 te_errno
-tapi_cfg_l2tp_listen_ip_get(const char *ta, struct sockaddr_in **local)
+tapi_cfg_l2tp_listen_ip_get(const char *ta, struct sockaddr **local)
 {
     cfg_val_type type = CVT_ADDRESS;
 
@@ -83,7 +83,6 @@ tapi_cfg_l2tp_port_set(const char *ta, int port)
                                 TE_CFG_TA_L2TP_SERVER "/port:", ta);
 }
 
-
 te_errno
 tapi_cfg_l2tp_port_get(const char *ta, int *port)
 {
@@ -92,7 +91,7 @@ tapi_cfg_l2tp_port_get(const char *ta, int *port)
 
 te_errno
 tapi_cfg_l2tp_tunnel_ip_set(const char *ta, const char *lns,
-                            const struct sockaddr_in *local)
+                            const struct sockaddr *local)
 {
 
     return cfg_set_instance_fmt(CFG_VAL(ADDRESS, local),
@@ -102,7 +101,7 @@ tapi_cfg_l2tp_tunnel_ip_set(const char *ta, const char *lns,
 
 te_errno
 tapi_cfg_l2tp_tunnel_ip_get(const char *ta, const char *lns,
-                            struct sockaddr_in **local)
+                            struct sockaddr **local)
 {
     cfg_val_type type = CVT_ADDRESS;
 
@@ -162,13 +161,13 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
 
 te_errno
 tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
-                                struct sockaddr_in ***connected)
+                                struct sockaddr ***connected)
 {
     unsigned int         ins_num;
     unsigned int         i;
     cfg_handle          *handle;
     cfg_val_type         type = CVT_ADDRESS;
-    struct sockaddr_in **connected_mem;
+    struct sockaddr    **connected_mem;
     int                  ret_val;
 
     ret_val = cfg_find_pattern_fmt(&ins_num, &handle,
@@ -181,13 +180,13 @@ tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
 
     for (i = 0; i < ins_num; i++)
     {
-        struct sockaddr_in *ip_client;
+        struct sockaddr *ip_client;
 
         ret_val = cfg_get_instance(handle[i], &type, &ip_client);
         if (ret_val != 0)
             return ret_val;
-        connected_mem = (struct sockaddr_in **) realloc(*connected,
-                         (i+1) * sizeof(struct sockaddr_in *));
+        connected_mem = (struct sockaddr **)realloc(*connected,
+                         (i + 1) * sizeof(struct sockaddr *));
         if (connected_mem != NULL)
         {
             connected_mem[i] = ip_client;

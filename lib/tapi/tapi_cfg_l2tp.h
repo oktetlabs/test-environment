@@ -151,7 +151,7 @@ tapi_cfg_l2tp_lns_add(const char *ta, const char *lns);
 
 extern te_errno
 tapi_cfg_l2tp_tunnel_ip_get(const char *ta, const char *lns,
-                            struct sockaddr_in **local);
+                            struct sockaddr **local);
 
 
 /**
@@ -165,7 +165,7 @@ tapi_cfg_l2tp_tunnel_ip_get(const char *ta, const char *lns,
 
 extern te_errno
 tapi_cfg_l2tp_tunnel_ip_set(const char *ta, const char *lns,
-                            const struct sockaddr_in *local_ip);
+                            const struct sockaddr *local_ip);
 
 /**
  * Get a global listen ip.
@@ -177,7 +177,7 @@ tapi_cfg_l2tp_tunnel_ip_set(const char *ta, const char *lns,
  */
 
 extern te_errno
-tapi_cfg_l2tp_listen_ip_get(const char *ta, struct sockaddr_in **local);
+tapi_cfg_l2tp_listen_ip_get(const char *ta, struct sockaddr **local);
 
 
 /**
@@ -216,7 +216,7 @@ tapi_cfg_l2tp_port_get(const char *ta, int *port);
  */
 
 extern te_errno
-tapi_cfg_l2tp_listen_ip_set(const char *ta, const struct sockaddr_in *local_ip);
+tapi_cfg_l2tp_listen_ip_set(const char *ta, const struct sockaddr *local_ip);
 
 /**
  * Add ip range to the configuration.
@@ -258,7 +258,7 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
  * @param lns        The name of the section
  * @param connected  The connected ip addresses
  *                   As it is neccassary to return
- *                   an array of pointers to sockaddr_in *,
+ *                   an array of pointers to sockaddr *,
  *                   triple pointer is used
  *
  * @return Status code
@@ -266,7 +266,7 @@ tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
 
 extern te_errno
 tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
-                                struct sockaddr_in ***connected);
+                                struct sockaddr ***connected);
 
 /**
  * Add a bit option value for the specified LNS.
