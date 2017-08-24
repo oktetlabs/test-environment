@@ -1298,7 +1298,7 @@ l2tp_global_listen_set(unsigned int gid, const char *oid, const char *value,
 }
 
 /**
- * Get method for /agent/l2tp/listen.
+ * Get method for /agent/l2tp/port.
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
@@ -1327,7 +1327,7 @@ l2tp_global_port_get(unsigned gid, const char *oid, char *value,
 }
 
 /**
- * Set method for /agent/l2tp/listen
+ * Set method for /agent/l2tp/port.
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance

@@ -78,7 +78,7 @@ te_errno
 tapi_cfg_l2tp_port_set(const char *ta, int port)
 {
     return cfg_set_instance_fmt(CFG_VAL(INTEGER, port),
-                                TE_CFG_TA_L2TP_SERVER "/listen:", ta);
+                                TE_CFG_TA_L2TP_SERVER "/port:", ta);
 }
 
 
@@ -86,7 +86,7 @@ te_errno
 tapi_cfg_l2tp_port_get(const char *ta, int *port)
 {
     return cfg_get_instance_fmt((cfg_val_type *) CVT_INTEGER, port,
-                                TE_CFG_TA_L2TP_SERVER "/listen:", ta);
+                                TE_CFG_TA_L2TP_SERVER "/port:", ta);
 }
 
 te_errno
