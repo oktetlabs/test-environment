@@ -45,6 +45,7 @@
 /** Temporary file to save work copy of secrets */
 #define TMP_CHAP_SECRETS_FILE   "/tmp/chap-secrets"
 #define TMP_PAP_SECRETS_FILE    "/tmp/pap-secrets"
+#define TMP_SECRETS_FILE        "/tmp/secrets"
 
 /**
  * Default amount of memory allocated for list methods
@@ -214,96 +215,6 @@ l2tp_server_find()
         l2tp_server_init(l2tp);
     return l2tp;
 }
-
-/**
- * Recover the original CHAP|PAP secrets file
- *
- * @param outname     L2TP_CHAP_SECRETS or L2TP_PAP_SECRETS
- *
- * @return Status code
- */
-static te_errno
-l2tp_secrets_recover(char *secret_fname)
-{
-    char     backup_fname[] = "/etc/ppp/secretsXXXXXX";
-    char     line [L2TP_SECRETS_LENGTH];
-    FILE*    secrets_file;
-
-    FILE*    backup_file;
-    int      backup_fd;
-    te_bool  fence_flag = FALSE;
-    int      rc;
-
-    backup_fd = mkstemp(backup_fname);
-
-    if (backup_fd == -1)
-    {
-        rc = errno;
-        ERROR("mkstemp failed: %s", strerror(rc));
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-
-    secrets_file = fopen(secret_fname, "r");
-    if(secrets_file == NULL)
-    {
-        rc = errno;
-        ERROR("Failed to open file: %s", strerror(rc));
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-
-    backup_file = fdopen(backup_fd, "w");
-    if( backup_file == NULL)
-    {
-        if (fclose(backup_file) != 0)
-        {
-            rc = errno;
-            ERROR("%s(): fclose() failed: %s",
-                  __FUNCTION__, strerror(rc));
-            return TE_OS_RC(TE_TA_UNIX, rc);
-        }
-        rc = errno;
-        ERROR("Failed to open file: %s", strerror(rc));
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-
-    while( fgets(line, sizeof(line), secrets_file) != NULL )
-    {
-        if (strcmp(line, L2TP_FENCE) == 0)
-        {
-            fence_flag = !fence_flag;
-        }
-        else if (!fence_flag)
-        {
-            fputs(line, backup_file);
-        }
-    }
-
-    if (fclose(backup_file) != 0)
-    {
-        rc = errno;
-        ERROR("%s(): fclose() failed: %s",
-              __FUNCTION__, strerror(rc));
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-
-    if (fclose(secrets_file) != 0)
-    {
-        rc = errno;
-        ERROR("%s(): fclose() failed: %s",
-              __FUNCTION__, strerror(rc));
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-
-    if (rename(backup_fname, secret_fname) != 0)
-    {
-        rc = errno;
-        ERROR("Failed to rename %s to %s: %s",
-              backup_fname, secret_fname, strerror(rc));
-        return TE_OS_RC(TE_TA_UNIX, rc);
-    }
-    return 0;
-}
-
 
 /**
  * Save options to configuration file
@@ -520,6 +431,46 @@ l2tp_secrets_copy(FILE *dst, const char *src)
     fclose(src_file);
 
     return 0;
+}
+
+/**
+ * Recover the original CHAP|PAP secrets file.
+ *
+ * @param filename      Name of file to recover: either @c L2TP_CHAP_SECRETS or
+ *                      @c L2TP_PAP_SECRETS.
+ *
+ * @return Status code.
+ */
+static te_errno
+l2tp_secrets_recover(const char *filename)
+{
+    char     tmp_fname[sizeof(TMP_SECRETS_FILE) + L2TP_MAX_PID_VALUE_LENGTH];
+    FILE*    tmp_file;
+    te_errno rc;
+
+    ENTRY("recover file %s", filename);
+
+    /* Create a temporary file. */
+    TE_SPRINTF(tmp_fname, TMP_SECRETS_FILE ".%i", getpid());
+    rc = l2tp_create_file(tmp_fname, &tmp_file);
+    if (rc != 0)
+        return rc;
+
+    /* Copy data to temporary file, ignore test data */
+    rc = l2tp_secrets_copy(tmp_file, filename);
+    fclose(tmp_file);
+    if (rc != 0)
+        return rc;
+
+    /* Rename the temporary file to the destination one */
+    if (rename(tmp_fname, filename) != 0)
+    {
+        ERROR("Failed to rename %s to %s: %s", tmp_fname, filename,
+              strerror(errno));
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    return rc;
 }
 
 /**
@@ -3558,6 +3509,8 @@ l2tp_release(const char *name)
 {
     te_l2tp_server *l2tp = l2tp_server_find();
     te_errno        retval;
+    te_errno        rc_chap = 0;
+    te_errno        rc_pap = 0;
     char            l2tp_conf[sizeof(L2TP_SERVER_CONF_BASIS)
                               + L2TP_MAX_PID_VALUE_LENGTH];
 
@@ -3590,21 +3543,15 @@ l2tp_release(const char *name)
 
     if (l2tp->chap_changed)
     {
-        if (l2tp_secrets_recover(L2TP_CHAP_SECRETS) != 0)
-        {
-            ERROR("recover L2TP_CHAP_SECRETS failed");
-            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-        }
+        if ((rc_chap = l2tp_secrets_recover(L2TP_CHAP_SECRETS)) != 0)
+            ERROR("Failed to recover file " L2TP_CHAP_SECRETS ": %r", rc_chap);
     }
 
     if (l2tp->pap_changed)
     {
-        if (l2tp_secrets_recover(L2TP_PAP_SECRETS)!= 0)
-        {
-            ERROR("recover L2TP_PAP_SECRETS failed");
-            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-        }
+        if ((rc_pap = l2tp_secrets_recover(L2TP_PAP_SECRETS)) != 0)
+            ERROR("Failed to recover file " L2TP_PAP_SECRETS ": %r", rc_pap);
     }
 
-    return 0;
+    return (rc_chap != 0 ? rc_chap : rc_pap);
 }
