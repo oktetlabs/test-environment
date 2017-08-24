@@ -63,9 +63,6 @@
 #define L2TP_MAX_OPTNAME_LENGTH 40
 
 
-/** pid of xl2tpd */
-static int l2tp_pid = -1;
-
 /** The class of the secret */
 enum l2tp_secret_type {
     L2TP_SECRET_TYPE_SEC,    /**< secret type */
@@ -168,6 +165,7 @@ typedef struct te_l2tp_server {
                                                       is required */
     te_bool chap_changed;   /**< Whether CHAP secrets file was updated, or not */
     te_bool pap_changed;    /**< Whether PAP secrets file was updated, or not */
+    int     pid;            /**< PID of xl2tpd */
 } te_l2tp_server;
 
 static te_bool
@@ -193,6 +191,7 @@ l2tp_server_init(te_l2tp_server *l2tp)
     l2tp->changed = l2tp->started;
     l2tp->chap_changed = FALSE;
     l2tp->pap_changed = FALSE;
+    l2tp->pid = -1;
     l2tp->initialized = TRUE;
 }
 
@@ -634,8 +633,7 @@ l2tp_is_running(te_l2tp_server *l2tp)
     te_bool  is_running;
     char     l2tp_ta_pidfile[L2TP_MAX_OPTNAME_LENGTH];
     FILE    *f;
-
-    UNUSED(l2tp);
+    int      l2tp_pid = l2tp->pid;
 
     TE_SPRINTF(l2tp_ta_pidfile, "%s%i" , L2TP_TA_PIDFILE, getpid());
 
@@ -657,9 +655,11 @@ l2tp_is_running(te_l2tp_server *l2tp)
         }
         fclose(f);
     }
-    is_running = l2tp_pid > 0;
 
-    INFO("L2TP server is%s running with pid %d", (is_running) ? "" : " not", l2tp_pid);
+    l2tp->pid = l2tp_pid;
+
+    is_running = l2tp_pid > 0;
+    INFO("L2TP server is%s running with pid %d", (is_running ? "" : " not"), l2tp_pid);
     return is_running;
 }
 
@@ -676,10 +676,10 @@ l2tp_server_stop(te_l2tp_server *l2tp)
 {
     ENTRY("stop l2tp server");
 
-    if (l2tp_pid > 0)
+    if (l2tp->pid > 0)
     {
-        kill(l2tp_pid, SIGTERM);
-        l2tp_pid = 0;
+        kill(l2tp->pid, SIGTERM);
+        l2tp->pid = 0;
     }
     else if (l2tp_is_running(l2tp))
     {
@@ -693,8 +693,8 @@ l2tp_server_stop(te_l2tp_server *l2tp)
         }
         else
         {
-            kill(l2tp_pid, SIGTERM);
-            l2tp_pid = -1;
+            kill(l2tp->pid, SIGTERM);
+            l2tp->pid = -1;
         }
     }
 
@@ -734,8 +734,8 @@ l2tp_server_start(te_l2tp_server *l2tp)
         return res;
 
     RING("Run command: %s", cmd.ptr);
-    l2tp_pid = te_shell_cmd(cmd.ptr, -1, NULL, NULL, NULL);
-    if (l2tp_pid < 0)
+    l2tp->pid = te_shell_cmd(cmd.ptr, -1, NULL, NULL, NULL);
+    if (l2tp->pid < 0)
     {
         ERROR("Failed to run %s", cmd.ptr);
         res = TE_RC(TE_TA_UNIX, TE_ESHCMD);
