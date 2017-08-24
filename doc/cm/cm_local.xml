@@ -44,4 +44,11 @@
          Value: 0 = report all errors, 1 = ignore errors -->
     <object oid="/local/rpcserver_force_restart" access="read_write" type="integer"/>
 
+    <!-- Name of temporary file with saved MTU values
+         (used by tapi_store_saved_mtus(), tapi_retrieve_saved_mtus()).
+
+         Name: unique string identifying list of MTU values.
+         Value: temporary file name. -->
+    <object oid="/local/saved_mtus" access="read_create" type="string"/>
+
 </backup>

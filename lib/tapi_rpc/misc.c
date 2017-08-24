@@ -2406,13 +2406,9 @@ ioctl_get_if_mtu(rcf_rpc_server *rpcs,
     return 0;
 }
 
-/**
- * Free memory allocated for items of a list of MTU values.
- *
- * @param mtus    Pointer to the list.
- */
-static void
-te_saved_mtus_free(te_saved_mtus *mtus)
+/* See description in tapi_rpc_misc.h */
+void
+tapi_saved_mtus_free(te_saved_mtus *mtus)
 {
     te_saved_mtu *saved_mtu;
 
@@ -2424,6 +2420,114 @@ te_saved_mtus_free(te_saved_mtus *mtus)
         LIST_REMOVE(saved_mtu, links);
         free(saved_mtu);
     }
+}
+
+/* See description in tapi_rpc_misc.h */
+te_errno
+tapi_saved_mtus2str(te_saved_mtus *mtus, char **str)
+{
+    te_string     s = TE_STRING_INIT;
+    te_saved_mtu *saved_mtu;
+    te_errno      rc;
+
+    /*
+     * This is done to ensure that on success empty string
+     * is returned if list of MTU values is empty,
+     * not NULL pointer.
+     */
+    rc = te_string_append(&s, "%s", "");
+    if (rc != 0)
+    {
+        te_string_free(&s);
+        return TE_RC(TE_TAPI, rc);
+    }
+
+    LIST_FOREACH(saved_mtu, mtus, links)
+    {
+        rc = te_string_append(&s, "%s=%d;",
+                              saved_mtu->if_name, saved_mtu->mtu);
+        if (rc != 0)
+        {
+            te_string_free(&s);
+            return TE_RC(TE_TAPI, rc);
+        }
+    }
+
+    *str = s.ptr;
+    return 0;
+}
+
+/* See description in tapi_rpc_misc.h */
+te_errno
+tapi_str2saved_mtus(const char *str, te_saved_mtus *mtus)
+{
+    te_saved_mtu    *saved_mtu = NULL;
+    char             if_name[IFNAMSIZ];
+    int              mtu;
+    char             buf[IFNAMSIZ];
+    unsigned int     p;
+    unsigned int     q;
+    te_errno         rc = 0;
+
+    tapi_saved_mtus_free(mtus);
+
+    for (p = 0, q = 0; str[p] != '\0'; p++)
+    {
+        if (str[p] != '=' && str[p] != ';')
+        {
+            if (q >= sizeof(buf) - 1)
+            {
+                ERROR("%s(): too long substring encountered",
+                      __FUNCTION__);
+                rc = TE_RC(TE_TAPI, TE_EINVAL);
+                goto cleanup;
+            }
+
+            buf[q] = str[p];
+            q++;
+        }
+        else
+        {
+            buf[q] = '\0';
+            q = 0;
+
+            if (str[p] == '=')
+            {
+                strncpy(if_name, buf, IFNAMSIZ);
+            }
+            else
+            {
+                mtu = atoi(buf);
+
+                saved_mtu = TE_ALLOC(sizeof(*saved_mtu));
+                if (saved_mtu == NULL)
+                {
+                    ERROR("%s(): out of memory", __FUNCTION__);
+                    rc = TE_RC(TE_TAPI, TE_ENOMEM);
+                    goto cleanup;
+                }
+
+                saved_mtu->mtu = mtu;
+                strncpy(saved_mtu->if_name, if_name,
+                        IFNAMSIZ);
+
+                LIST_INSERT_HEAD(mtus, saved_mtu, links);
+            }
+        }
+    }
+
+    if (q != 0)
+    {
+        ERROR("%s(): MTU values string is malformed",
+              __FUNCTION__);
+        rc = TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+cleanup:
+
+    if (rc != 0)
+        tapi_saved_mtus_free(mtus);
+    return rc;
 }
 
 /**
@@ -2802,8 +2906,210 @@ tapi_set_if_mtu_smart2_rollback(rcf_rpc_server *rpcs,
             break;
     }
 
-    te_saved_mtus_free(backup);
+    tapi_saved_mtus_free(backup);
     return rc;
+}
+
+/* See description in tapi_rpc_misc.h */
+te_errno
+tapi_store_saved_mtus(const char *ta,
+                      const char *name,
+                      te_saved_mtus *mtus)
+{
+    char      *mtus_str = NULL;
+    te_errno   rc = 0;
+    ssize_t    sys_rc = 0;
+    size_t     len;
+    int        fd = -1;
+    te_string  path = TE_STRING_INIT;
+
+    rc = tapi_saved_mtus2str(mtus, &mtus_str);
+    if (rc != 0)
+        return rc;
+
+    rc = te_string_append(&path, "/tmp/sapi_ts_mtus_%s_%s_XXXXXX",
+                          ta, name);
+    if (rc != 0)
+        goto cleanup;
+
+    fd = mkstemp(path.ptr);
+    if (fd < 0)
+    {
+        te_string_reset(&path);
+        rc = te_rc_os2te(errno);
+        ERROR("%s(): mkstemp() failed: %r",
+              __FUNCTION__, rc);
+        goto cleanup;
+    }
+
+    len = strlen(mtus_str) + 1;
+    sys_rc = write(fd, mtus_str, len);
+    if (sys_rc < 0)
+    {
+        rc = te_rc_os2te(errno);
+        ERROR("%s(): write() failed: %r",
+              __FUNCTION__, rc);
+        goto cleanup;
+    }
+    else if (sys_rc != (ssize_t)len)
+    {
+        ERROR("%s(): write() did not write expected number of bytes",
+              __FUNCTION__);
+        rc = TE_RC(TE_TAPI, TE_EFAIL);
+        goto cleanup;
+    }
+
+    sys_rc = close(fd);
+    fd = -1;
+    if (sys_rc != 0)
+    {
+        rc = te_rc_os2te(errno);
+        ERROR("%s(): close() failed: %r",
+              __FUNCTION__, rc);
+    }
+
+    rc = cfg_add_instance_fmt(NULL, CVT_STRING, path.ptr,
+                              "/local:%s/saved_mtus:%s",
+                              ta, name);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to add 'saved_mtus' instance "
+              "in Configurator tree",
+              __FUNCTION__);
+    }
+
+cleanup:
+
+    free(mtus_str);
+
+    if (fd >= 0)
+        close(fd);
+    if (rc != 0 && path.len > 0)
+        unlink(path.ptr);
+
+    te_string_free(&path);
+
+    if (rc == 0)
+        tapi_saved_mtus_free(mtus);
+
+    return rc;
+}
+
+/* See description in tapi_rpc_misc.h */
+te_bool
+tapi_stored_mtus_exist(const char *ta,
+                       const char *name)
+{
+    te_errno      rc;
+    cfg_val_type  val_type = CVT_STRING;
+
+    rc = cfg_get_instance_fmt(&val_type, NULL,
+                              "/local:%s/saved_mtus:%s",
+                              ta, name);
+    if (rc == 0)
+        return TRUE;
+
+    return FALSE;
+}
+
+/* See description in tapi_rpc_misc.h */
+te_errno
+tapi_retrieve_saved_mtus(const char *ta,
+                         const char *name,
+                         te_saved_mtus *mtus)
+{
+#define MTUS_BUF_LEN 1024
+    char         *fname = NULL;
+    te_errno      rc = 0;
+    te_errno      rc2 = 0;
+    cfg_val_type  val_type = CVT_STRING;
+    FILE         *f = NULL;
+    te_string     str = TE_STRING_INIT;
+    char          buf[MTUS_BUF_LEN];
+    ssize_t       sys_rc;
+
+    UNUSED(name);
+    UNUSED(mtus);
+
+    rc = cfg_get_instance_fmt(&val_type, &fname,
+                              "/local:%s/saved_mtus:%s",
+                              ta, name);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to get file name for '%s'",
+              __FUNCTION__, name);
+        return rc;
+    }
+
+    f = fopen(fname, "r");
+    if (f == NULL)
+    {
+        ERROR("%s(): failed to open '%s'",
+              __FUNCTION__, fname);
+        rc = te_rc_os2te(errno);
+        goto cleanup;
+    }
+
+    while (!feof(f))
+    {
+        sys_rc = fread(buf, 1, MTUS_BUF_LEN - 1, f);
+        if (ferror(f) != 0)
+        {
+            ERROR("%s(): failed to read from '%s'",
+                  __FUNCTION__, fname);
+            rc = TE_RC(TE_TAPI, TE_EFAIL);
+            goto cleanup;
+        }
+        buf[sys_rc] = '\0';
+
+        rc = te_string_append(&str, "%s", buf);
+        if (rc != 0)
+            goto cleanup;
+    }
+
+    rc = tapi_str2saved_mtus(str.ptr, mtus);
+
+cleanup:
+
+    if (f != NULL)
+    {
+        sys_rc = fclose(f);
+        if (sys_rc != 0)
+        {
+            ERROR("%s(): fclose() failed", __FUNCTION__);
+            if (rc == 0)
+                rc = te_rc_os2te(errno);
+        }
+    }
+
+    rc2 = cfg_del_instance_fmt(FALSE,
+                               "/local:%s/saved_mtus:%s",
+                               ta, name);
+    if (rc2 != 0)
+    {
+        ERROR("%s(): failed to delete file name from Configurator tree",
+              __FUNCTION__);
+
+        if (rc == 0)
+            rc = rc2;
+    }
+
+    if (fname != NULL)
+    {
+        sys_rc = unlink(fname);
+        if (sys_rc != 0)
+        {
+            ERROR("%s(): unlink() failed", __FUNCTION__);
+            if (rc == 0)
+                rc = te_rc_os2te(errno);
+        }
+    }
+
+    free(fname);
+    te_string_free(&str);
+
+    return rc;
+#undef MTUS_BUF_LEN
 }
 
 /* See description in tapi_rpc_misc.h */
