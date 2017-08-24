@@ -65,9 +65,6 @@
 /** Default buffer size for the option name storage */
 #define L2TP_MAX_OPTNAME_LENGTH 40
 
-/** Max length of the IP address in human dot notation */
-#define L2TP_IP_ADDR_LEN 15
-
 
 /** pid of xl2tpd */
 static int l2tp_pid = -1;
@@ -943,7 +940,7 @@ l2tp_find_range(te_l2tp_server *l2tp, const char *section,
         {
             if (option != NULL && strcmp(option->name, opt_name) == 0)
             {
-                char buf_range[2*L2TP_IP_ADDR_LEN + 1];
+                char buf_range[2 * INET_ADDRSTRLEN]; /* include '-', '\0' */
 
                 for (ip_range = SLIST_FIRST(&option->l2tp_range);
                      ip_range != NULL;
@@ -2014,7 +2011,7 @@ static te_errno
 l2tp_lns_range_add_routine(const char *lns_name, const char *option_name,
                            const char *range)
 {
-    char                 buf_ip[L2TP_IP_ADDR_LEN] = "/0";
+    char                 buf_ip[INET_ADDRSTRLEN] = "/0";
     char                *hyphen;
 
     te_l2tp_option      *l2tp_option;
