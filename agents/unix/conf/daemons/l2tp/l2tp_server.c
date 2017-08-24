@@ -42,10 +42,9 @@
 #define L2TP_FENCE_DESCRIPTION  "#Do not put any records between such lines " \
                                 "since they will be removed by test\n"
 
-#define PPP_SECRETS_PATH      "/etc/ppp"
-
-#define CHAP_SECRETS_FILE      PPP_SECRETS_PATH "/chap-secrets"
-#define PAP_SECRETS_FILE       PPP_SECRETS_PATH "/pap-secrets"
+/** Temporary file to save work copy of secrets */
+#define TMP_CHAP_SECRETS_FILE   "/tmp/chap-secrets"
+#define TMP_PAP_SECRETS_FILE    "/tmp/pap-secrets"
 
 /**
  * Default amount of memory allocated for list methods
@@ -534,9 +533,9 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
     FILE                *ppp_file = NULL;
     te_l2tp_option      *ppp_option;
     te_l2tp_section     *l2tp_section;
-    char                 chap_fname[sizeof(CHAP_SECRETS_FILE)
+    char                 chap_fname[sizeof(TMP_CHAP_SECRETS_FILE)
                                     + L2TP_MAX_PID_VALUE_LENGTH];
-    char                 pap_fname[sizeof(PAP_SECRETS_FILE)
+    char                 pap_fname[sizeof(TMP_PAP_SECRETS_FILE)
                                    + L2TP_MAX_PID_VALUE_LENGTH];
     char                 l2tp_conf_fname[sizeof(L2TP_SERVER_CONF_BASIS)
                                          + L2TP_MAX_PID_VALUE_LENGTH];
@@ -548,7 +547,7 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
     /* Create chap_secret file */
     if (l2tp_secret_is_set(l2tp, L2TP_SECRET_PROT_CHAP))
     {
-        TE_SPRINTF(chap_fname, CHAP_SECRETS_FILE ".%i", getpid());
+        TE_SPRINTF(chap_fname, TMP_CHAP_SECRETS_FILE ".%i", getpid());
         rc = l2tp_create_file(chap_fname, &chap_file);
         if (rc != 0)
             goto l2tp_server_save_conf_cleanup;
@@ -564,7 +563,7 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
     /* Create pap_secret file */
     if (l2tp_secret_is_set(l2tp, L2TP_SECRET_PROT_PAP))
     {
-        TE_SPRINTF(pap_fname, PAP_SECRETS_FILE ".%i", getpid());
+        TE_SPRINTF(pap_fname, TMP_PAP_SECRETS_FILE ".%i", getpid());
         rc = l2tp_create_file(pap_fname, &pap_file);
         if (rc != 0)
             goto l2tp_server_save_conf_cleanup;
