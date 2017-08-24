@@ -16,16 +16,12 @@
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_aggr.h"
 #include "conf_api.h"
+#include "te_sockaddr.h"
+#include "tapi_mem.h"
+
 
 #define TE_CFG_TA_L2TP_SERVER "/agent:%s/l2tp:"
 
-/** Max length of the buffer for ip address */
-#define L2TP_IP_STRING_LENGTH 15
-
-/** Max length of the instance /ip_range:
- *  e.g 192.168.100.101-192.168.100.150
- */
-#define L2TP_IP_RANGE_INST 31
 
 /* All descriptions are in tapi_cfg_l2tp.h */
 
@@ -110,54 +106,64 @@ tapi_cfg_l2tp_tunnel_ip_get(const char *ta, const char *lns,
                                 ta, lns);
 }
 
-/**
- * Converts the l2tp_ipv4_range's fields to
- * the string like X.X.X.X-Y.Y.Y.Y
+
+/*
+ * Get string representation of IP addresses range in format "ip_addr-ip_addr"
  *
- * @param iprange   testing ip
+ * @note Return value should be freed with free(3) when it is no longer needed.
  *
- * @return range
+ * @param iprange       IP addresses range.
+ *
+ * @return String representation of addresses range.
  */
 static char *
-l2tp_get_range(const l2tp_ipv4_range *iprange)
+l2tp_get_range(const l2tp_ipaddr_range *iprange)
 {
-    char     range[L2TP_IP_RANGE_INST];
-    char     end[L2TP_IP_STRING_LENGTH];
+    char range[2 * INET6_ADDRSTRLEN + 1 + 1]; /* string format: "ip-ip" */
 
-    strncpy(end, inet_ntoa(iprange->end->sin_addr), sizeof(end));
-    TE_SPRINTF(range, "%s-%s", inet_ntoa(iprange->start->sin_addr), end);
-    return strdup(range);
+    TE_SPRINTF(range, "%s-%s", te_sockaddr_get_ipstr(iprange->start),
+               te_sockaddr_get_ipstr(iprange->end));
+
+    return tapi_strdup(range);
 }
 
 te_errno
 tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
-                            const l2tp_ipv4_range *iprange,
+                            const l2tp_ipaddr_range *iprange,
                             enum l2tp_iprange_class kind)
 {
-    cfg_handle           handle;
-    char                *range = l2tp_get_range(iprange);
+    cfg_handle  handle;
+    char       *range = l2tp_get_range(iprange);
+    te_errno    rc;
 
-    return cfg_add_instance_fmt(&handle, CFG_VAL(STRING,
-                                iprange->type == L2TP_POLICY_ALLOW ?
-                                "allow" : "deny"),
-                                TE_CFG_TA_L2TP_SERVER "/lns:%s/%s_range:%s",
-                                ta, lns, kind == L2TP_IP_RANGE_CLASS_IP ?
-                                "ip" : "lac", range);
+    rc = cfg_add_instance_fmt(&handle, CFG_VAL(STRING,
+                              iprange->type == L2TP_POLICY_ALLOW ?
+                              "allow" : "deny"),
+                              TE_CFG_TA_L2TP_SERVER "/lns:%s/%s_range:%s",
+                              ta, lns, kind == L2TP_IP_RANGE_CLASS_IP ?
+                              "ip" : "lac", range);
+
+    free(range);
+    return rc;
 }
-
 
 te_errno
 tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
-                            const l2tp_ipv4_range *iprange,
+                            const l2tp_ipaddr_range *iprange,
                             enum l2tp_iprange_class kind)
 {
-    char        *range = l2tp_get_range(iprange);
+    char     *range = l2tp_get_range(iprange);
+    te_errno  rc;
 
-    return cfg_del_instance_fmt(FALSE, TE_CFG_TA_L2TP_SERVER
-                                "/lns:%s/%s_range:%s", ta,
-                                lns, kind == L2TP_IP_RANGE_CLASS_IP ?
-                                "ip" : "lac", range);
+    rc = cfg_del_instance_fmt(FALSE, TE_CFG_TA_L2TP_SERVER
+                              "/lns:%s/%s_range:%s", ta,
+                              lns, kind == L2TP_IP_RANGE_CLASS_IP ?
+                              "ip" : "lac", range);
+
+    free(range);
+    return rc;
 }
+
 
 te_errno
 tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,

@@ -72,11 +72,11 @@ enum l2tp_bit {
 } l2tp_bit;
 
 /** Structure for the IP-address pool */
-typedef struct l2tp_ipv4_range {
-    struct sockaddr_in *start;   /**< The left boundary of the pool */
-    struct sockaddr_in *end;     /**< The right boundary of the pool */
-    enum l2tp_policy    type;    /**< Above pool can be allowed or denied */
-} l2tp_ipv4_range;
+typedef struct l2tp_ipaddr_range {
+    struct sockaddr  *start;    /**< The left boundary of the pool */
+    struct sockaddr  *end;      /**< The right boundary of the pool */
+    enum l2tp_policy  type;     /**< Above pool can be allowed or denied */
+} l2tp_ipaddr_range;
 
 /** CHAP|PAP secret structure */
 typedef struct l2tp_ppp_secret {
@@ -232,7 +232,7 @@ tapi_cfg_l2tp_listen_ip_set(const char *ta, const struct sockaddr *local_ip);
 
 extern te_errno
 tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
-                            const l2tp_ipv4_range *iprange,
+                            const l2tp_ipaddr_range *iprange,
                             enum l2tp_iprange_class kind);
 
 /**
@@ -248,7 +248,7 @@ tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
  */
 extern te_errno
 tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
-                            const l2tp_ipv4_range *iprange,
+                            const l2tp_ipaddr_range *iprange,
                             enum l2tp_iprange_class kind);
 
 /**
