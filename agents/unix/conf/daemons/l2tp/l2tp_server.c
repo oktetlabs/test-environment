@@ -171,6 +171,8 @@ typedef struct te_l2tp_server {
                                                       used to detect if
                                                       L2TP-server restart
                                                       is required */
+    te_bool chap_changed;   /**< Whether CHAP secrets file was updated, or not */
+    te_bool pap_changed;    /**< Whether PAP secrets file was updated, or not */
 } te_l2tp_server;
 
 static te_bool
@@ -189,10 +191,13 @@ static void
 l2tp_server_init(te_l2tp_server *l2tp)
 {
     ENTRY("initialize l2tp server with default configuration");
+
     SLIST_INIT(&l2tp->section);
     SLIST_INIT(&l2tp->client);
     l2tp->started = l2tp_is_running(l2tp);
     l2tp->changed = l2tp->started;
+    l2tp->chap_changed = FALSE;
+    l2tp->pap_changed = FALSE;
     l2tp->initialized = TRUE;
 }
 
@@ -635,7 +640,11 @@ l2tp_server_save_conf_cleanup:
         if (rc == 0)
         {
             INFO("rename %s to %s", chap_fname, L2TP_CHAP_SECRETS);
-            if (rename(chap_fname, L2TP_CHAP_SECRETS) != 0)
+            if (rename(chap_fname, L2TP_CHAP_SECRETS) == 0)
+            {
+                l2tp->chap_changed = TRUE;
+            }
+            else
             {
                 ERROR("Failed to rename %s to %s: %s",
                       chap_fname, L2TP_CHAP_SECRETS, strerror(errno));
@@ -651,7 +660,11 @@ l2tp_server_save_conf_cleanup:
         if (rc == 0)
         {
             INFO("rename %s to %s", pap_fname, L2TP_PAP_SECRETS);
-            if (rename(pap_fname, L2TP_PAP_SECRETS) != 0)
+            if (rename(pap_fname, L2TP_PAP_SECRETS) == 0)
+            {
+                l2tp->pap_changed = TRUE;
+            }
+            else
             {
                 ERROR("Failed to rename %s to %s: %s",
                       pap_fname, L2TP_PAP_SECRETS, strerror(errno));
@@ -3574,16 +3587,24 @@ l2tp_release(const char *name)
         ERROR("remove %s failed", l2tp_conf);
         return TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
-    
-    if (l2tp_secrets_recover(L2TP_CHAP_SECRETS) != 0)
+
+    if (l2tp->chap_changed)
     {
-        ERROR("recover L2TP_CHAP_SECRETS failed");
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        if (l2tp_secrets_recover(L2TP_CHAP_SECRETS) != 0)
+        {
+            ERROR("recover L2TP_CHAP_SECRETS failed");
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
     }
-    if (l2tp_secrets_recover(L2TP_PAP_SECRETS)!= 0)
+
+    if (l2tp->pap_changed)
     {
-        ERROR("recover L2TP_PAP_SECRETS failed");
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        if (l2tp_secrets_recover(L2TP_PAP_SECRETS)!= 0)
+        {
+            ERROR("recover L2TP_PAP_SECRETS failed");
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        }
     }
+
     return 0;
 }
