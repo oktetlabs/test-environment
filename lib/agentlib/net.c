@@ -173,7 +173,7 @@ cleanup:
 /* See description in agentlib.h */
 te_errno
 ta_bond_get_slaves(const char *ifname, tqh_strings *slaves,
-                   int *slaves_num)
+                   int *slaves_num, te_bool *is_team)
 {
     int    i = 0;
     char   path[64];
@@ -184,6 +184,8 @@ ta_bond_get_slaves(const char *ifname, tqh_strings *slaves,
     pid_t  cmd_pid = -1;
     int    rc = 0;
     int    status;
+
+    te_bool teamnl_used = FALSE;
 
     if (slaves_num != NULL)
         *slaves_num = 0;
@@ -198,6 +200,8 @@ ta_bond_get_slaves(const char *ifname, tqh_strings *slaves,
         /* Consider an interface is not bond if teamnl does not exist. */
         if (access(TEAMNL_PATHNAME, X_OK) != 0)
             return 0;
+
+        teamnl_used = TRUE;
 
         /* Set here path for logging purpose */
         TE_SPRINTF(path, "%s %s ports", TEAMNL_PATHNAME, ifname);
@@ -284,6 +288,12 @@ cleanup:
     else
     {
         tq_strings_free(slaves, &free);
+    }
+
+    if (rc == 0)
+    {
+        if (is_team != NULL)
+            *is_team = teamnl_used;
     }
 
     return rc;

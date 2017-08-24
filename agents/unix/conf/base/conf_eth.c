@@ -587,6 +587,7 @@ eth_cmd_set(unsigned int gid, const char *oid, char *value,
     uint32_t                cmd, data;
     tqh_strings             slaves;
     char                    if_par[IF_NAMESIZE];
+    te_bool                 is_team = FALSE;
 
     UNUSED(gid);
     UNUSED(data);
@@ -635,9 +636,9 @@ eth_cmd_set(unsigned int gid, const char *oid, char *value,
     if ((rc = ta_vlan_get_parent(ifname, if_par)) != 0)
         return rc;
     if ((rc = ta_bond_get_slaves(strlen(if_par) == 0 ? ifname : if_par,
-                                 &slaves, NULL)) != 0)
+                                 &slaves, NULL, &is_team)) != 0)
         return rc;
-    if (!TAILQ_EMPTY(&slaves))
+    if (!TAILQ_EMPTY(&slaves) && !is_team)
     {
         tqe_string *slave = NULL;
 
