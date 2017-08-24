@@ -789,7 +789,7 @@ l2tp_server_stop(te_l2tp_server *l2tp)
     }
 
     return 0;
-};
+}
 
 /**
  * Start l2tp server process
@@ -875,7 +875,7 @@ l2tp_server_set(unsigned int gid, const char *oid, const char *value)
 
 
     return 0;
-};
+}
 
 /**
  * Commit changes in L2TP server configuration.
@@ -935,7 +935,7 @@ l2tp_find_section(te_l2tp_server *l2tp, const char *name)
     {
         if (strcmp(l2tp_section->secname, name) == 0)
             break;
-    };
+    }
 
     return l2tp_section;
 }
@@ -963,7 +963,7 @@ l2tp_find_option(te_l2tp_server *l2tp, const char *section, const char *name)
         {
             if (strcmp(opt->name, name) == 0)
                 break;
-        };
+        }
     }
 
     return opt;
@@ -996,7 +996,7 @@ l2tp_find_client(te_l2tp_server *l2tp, const char *section,
             {
                 break;
             }
-        };
+        }
     }
     return secret;
 }
@@ -1410,7 +1410,7 @@ l2tp_lns_opt_get_mtu(unsigned int gid, const char *oid, char *value,
 
     return  l2tp_lns_opt_get_routine(value, "mtu",
                                      lns_name, L2TP_VALUE_TYPE_INT);
-};
+}
 
 /**
  * Set method for /agent/l2tp/lns/pppopt/mtu
@@ -1434,7 +1434,7 @@ l2tp_lns_opt_set_mtu(unsigned int gid, const char *oid, const char *value,
 
     return l2tp_lns_opt_set_routine(lns_name, "mtu", value,
                                     L2TP_OPTION_TYPE_PPP);
-};
+}
 
 /**
  * Get method for /agent/l2tp/lns/pppopt/mru
@@ -1458,7 +1458,7 @@ l2tp_lns_opt_get_mru(unsigned int gid, const char *oid, char *value,
 
     return  l2tp_lns_opt_get_routine(value, "mru",
                                      lns_name, L2TP_VALUE_TYPE_INT);
-};
+}
 
 /**
  * Set method for /agent/l2tp/lns/pppopt/mru
@@ -1482,7 +1482,7 @@ l2tp_lns_opt_set_mru(unsigned int gid, const char *oid, char *value,
 
     return l2tp_lns_opt_set_routine(lns_name, "mru", value,
                                     L2TP_OPTION_TYPE_PPP);
-};
+}
 
 /**
  * Get method for /agent/l2tp/lns/pppopt/lcp-echo-interval
@@ -1506,7 +1506,7 @@ l2tp_lns_opt_get_lei(unsigned int gid, const char *oid, char *value,
 
     return l2tp_lns_opt_get_routine(value, "lcp-echo-interval",
                                     lns_name, L2TP_VALUE_TYPE_INT);
-};
+}
 
 /**
  * Set method for /agent/l2tp/lns/pppopt/lcp-echo-interval
@@ -1530,7 +1530,7 @@ l2tp_lns_opt_set_lei(unsigned int gid, const char *oid, char *value,
 
     return l2tp_lns_opt_set_routine(lns_name, "lcp-echo-interval", value,
                                     L2TP_OPTION_TYPE_PPP);
-};
+}
 
 /**
  * Get method for /agent/l2tp/lns/pppopt/lcp-echo-failure
@@ -1554,7 +1554,7 @@ l2tp_lns_opt_get_lef(unsigned int gid, const char *oid, char *value,
 
     return l2tp_lns_opt_get_routine(value, "lcp-echo-failure",
                                     lns_name, L2TP_VALUE_TYPE_INT);
-};
+}
 
 /**
  * Set method for /agent/l2tp/lns/pppopt/lcp-echo-failure
@@ -1578,7 +1578,7 @@ l2tp_lns_opt_set_lef(unsigned int gid, const char *oid, char *value,
 
     return l2tp_lns_opt_set_routine(lns_name, "lcp-echo-failure", value,
                                     L2TP_OPTION_TYPE_PPP);
-};
+}
 
 /**
  * Get method for /agent/l2tp/lns/use_challenge
@@ -1602,7 +1602,7 @@ l2tp_lns_opt_get_challenge(unsigned int gid, const char *oid, char *value,
 
     return l2tp_lns_opt_get_routine(value, "challenge",
                                     lns_name, L2TP_VALUE_TYPE_INT);
-};
+}
 
 /**
  * Set method for /agent/l2tp/lns/use_challenge
@@ -1626,7 +1626,7 @@ l2tp_lns_opt_set_challenge(unsigned int gid, const char *oid, char *value,
 
     return l2tp_lns_opt_set_routine(lns_name, "challenge", value,
                                     L2TP_OPTION_TYPE_L2TP);
-};
+}
 
 /**
  * Get method for /agent/l2tp/lns/ppp_debug
@@ -1650,7 +1650,7 @@ l2tp_lns_opt_get_debug(unsigned int gid, const char *oid, char *value,
 
     return l2tp_lns_opt_get_routine(value, "ppp debug",
                                     lns_name, L2TP_VALUE_TYPE_INT);
-};
+}
 
 /**
  * Set method for /agent/l2tp/lns/ppp_debug
@@ -1674,7 +1674,7 @@ l2tp_lns_opt_set_debug(unsigned int gid, const char *oid, char *value,
 
     return l2tp_lns_opt_set_routine(lns_name, "ppp debug", value,
                                     L2TP_OPTION_TYPE_L2TP);
-};
+}
 
 /**
  * Get method for /agent/l2tp/lns/unix_auth
@@ -1698,7 +1698,7 @@ l2tp_lns_opt_get_uauth(unsigned int gid, const char *oid, char *value,
 
     return l2tp_lns_opt_get_routine(value, "unix authentication",
                                     lns_name, L2TP_VALUE_TYPE_INT);
-};
+}
 
 /**
  * Set method for /agent/l2tp/lns/unix_auth
@@ -1722,7 +1722,7 @@ l2tp_lns_opt_set_uauth(unsigned int gid, const char *oid, char *value,
 
     return l2tp_lns_opt_set_routine(lns_name, "unix authentication", value,
                                     L2TP_OPTION_TYPE_L2TP);
-};
+}
 
 static te_errno
 l2tp_lns_bit_get(unsigned int gid, const char *oid, char *value,
@@ -1739,7 +1739,7 @@ l2tp_lns_bit_get(unsigned int gid, const char *oid, char *value,
 
     return l2tp_lns_opt_get_routine(value, buf_bit,
                                     lns_name, L2TP_VALUE_TYPE_INT);
-};
+}
 
 /**
  * Add method for /agent/l2tp/lns/bit
@@ -2060,7 +2060,7 @@ l2tp_lns_local_ip_get(unsigned int gid, const char *oid, char *value,
 
     return l2tp_lns_opt_get_routine(value, "local ip",
                                     lns_name, L2TP_VALUE_TYPE_ADDRESS);
-};
+}
 
 /**
  * Set method for /agent/l2tp/lns/local_ip
@@ -2083,7 +2083,7 @@ l2tp_lns_local_ip_set(unsigned int gid, const char *oid, char *value,
 
     return l2tp_lns_opt_set_routine(lns_name, "local ip", value,
                                     L2TP_OPTION_TYPE_L2TP);
-};
+}
 
 /**
  * Add method routine for ranges
@@ -2694,7 +2694,7 @@ l2tp_lns_client_add(unsigned int gid, const char *oid, const char *value,
     SLIST_INSERT_HEAD(&opt_auth->secret, client, list);
     l2tp->changed = TRUE;
     return 0;
-};
+}
 
 /**
  * Method for deleting a client from /agent/l2tp/lns/auth/client
@@ -2821,7 +2821,7 @@ l2tp_lns_auth_add(unsigned int gid, const char *oid, const char *value,
     opt_auth->is_enabled = TRUE;
 
     return 0;
-};
+}
 
 /**
  * Method for deleting an auth instance from /agent/l2tp/lns/auth
@@ -2851,7 +2851,7 @@ l2tp_lns_auth_del(unsigned int gid, const char *oid, const char *l2tp_name,
     opt_auth->policy = L2TP_AUTH_POLICY_NONE;
 
     return 0;
-};
+}
 
 /**
  * Method for obtaining the list of /agent/l2tp/lns/auth.
@@ -3254,7 +3254,7 @@ l2tp_check_lns_ip(char *local_ip, te_l2tp_server *l2tp)
         }
     }
     return FALSE;
-};
+}
 
 /**
  * Add connected clients to the te_l2tp_server.
