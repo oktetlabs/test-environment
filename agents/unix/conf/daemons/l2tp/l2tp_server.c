@@ -3563,11 +3563,10 @@ l2tp_release(const char *name)
         return retval;
     }
 
-    /*FIXME: there is no exist check of the files below*/
-    if (!access(l2tp->conf_file, X_OK) && remove(l2tp->conf_file) != 0)
+    if (access(l2tp->conf_file, F_OK) == 0 && remove(l2tp->conf_file) != 0)
     {
-        ERROR("Failed to remove %s", l2tp->conf_file);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        ERROR("Failed to remove %s: %s", l2tp->conf_file, strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
     if (l2tp->chap_changed)
