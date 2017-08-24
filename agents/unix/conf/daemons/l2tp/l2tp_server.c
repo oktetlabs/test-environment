@@ -53,9 +53,6 @@
  */
 #define L2TP_SERVER_LIST_SIZE 1024
 
-/** Default buffer size for command-line construction */
-#define L2TP_CMDLINE_LENGTH   1024
-
 /** Default buffer size for the full CHAP|PAP secret line */
 #define L2TP_SECRETS_LENGTH   512
 
@@ -714,13 +711,13 @@ l2tp_server_stop(te_l2tp_server *l2tp)
 static te_errno
 l2tp_server_start(te_l2tp_server *l2tp)
 {
-    char     buf[L2TP_CMDLINE_LENGTH];
-    te_errno res;
-    int      ta_pid = getpid();
-
-    l2tp_server_stop(l2tp);
+    te_string cmd = TE_STRING_INIT;
+    te_errno  res;
+    int       ta_pid = getpid();
 
     ENTRY("start l2tp server");
+
+    l2tp_server_stop(l2tp);
 
     res = l2tp_server_save_conf(l2tp);
     if (res != 0)
@@ -729,14 +726,23 @@ l2tp_server_start(te_l2tp_server *l2tp)
         return res;
     }
 
-    TE_SPRINTF(buf, "%s -D -c %s.%i -p %s%i", L2TP_SERVER_EXEC,
-               L2TP_SERVER_CONF_BASIS, ta_pid, L2TP_TA_PIDFILE, ta_pid);
-    if ((l2tp_pid = te_shell_cmd(buf, (uid_t) -1, NULL, NULL, NULL) < 0))
+    res = te_string_append(&cmd, "%s -D -c %s.%i -p %s%i",
+                           L2TP_SERVER_EXEC,
+                           L2TP_SERVER_CONF_BASIS, ta_pid,
+                           L2TP_TA_PIDFILE, ta_pid);
+    if (res != 0)
+        return res;
+
+    RING("Run command: %s", cmd.ptr);
+    l2tp_pid = te_shell_cmd(cmd.ptr, -1, NULL, NULL, NULL);
+    if (l2tp_pid < 0)
     {
-        ERROR("Command %s failed", buf);
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
+        ERROR("Failed to run %s", cmd.ptr);
+        res = TE_RC(TE_TA_UNIX, TE_ESHCMD);
     }
-    return 0;
+
+    te_string_free(&cmd);
+    return res;
 }
 
 /**
