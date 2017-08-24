@@ -3541,45 +3541,47 @@ l2tp_release(const char *name)
 {
     te_l2tp_server *l2tp = l2tp_server_find();
     te_errno        retval;
-    te_errno        rc_chap = 0;
-    te_errno        rc_pap = 0;
+    te_errno        rc;
 
     UNUSED(name);
 
     ENTRY("release l2tp server");
 
-    if ((retval = rcf_pch_del_node(&node_l2tp)) != 0)
-        return retval;
+#define ASSIGN_RETVAL(_rc)  \
+    if (retval == 0)        \
+        retval = (_rc);
 
-    if ((retval = l2tp_server_stop(l2tp)) != 0)
-    {
+    retval = rcf_pch_del_node(&node_l2tp);
+
+    if ((rc = l2tp_server_stop(l2tp)) != 0)
         ERROR("Failed to stop l2tp server");
-        return retval;
-    }
+    ASSIGN_RETVAL(rc);
 
-    if ((retval = l2tp_remove_pppfile() != 0))
-    {
+    if ((rc = l2tp_remove_pppfile() != 0))
         ERROR("Failed to remove ppp options files");
-        return retval;
-    }
+    ASSIGN_RETVAL(rc);
 
     if (access(l2tp->conf_file, F_OK) == 0 && remove(l2tp->conf_file) != 0)
     {
         ERROR("Failed to remove %s: %s", l2tp->conf_file, strerror(errno));
-        return TE_OS_RC(TE_TA_UNIX, errno);
+        ASSIGN_RETVAL(TE_OS_RC(TE_TA_UNIX, errno));
     }
 
     if (l2tp->chap_changed)
     {
-        if ((rc_chap = l2tp_secrets_recover(L2TP_CHAP_SECRETS)) != 0)
-            ERROR("Failed to recover file " L2TP_CHAP_SECRETS ": %r", rc_chap);
+        if ((rc = l2tp_secrets_recover(L2TP_CHAP_SECRETS)) != 0)
+            ERROR("Failed to recover file " L2TP_CHAP_SECRETS ": %r", rc);
+        ASSIGN_RETVAL(rc);
     }
 
     if (l2tp->pap_changed)
     {
-        if ((rc_pap = l2tp_secrets_recover(L2TP_PAP_SECRETS)) != 0)
-            ERROR("Failed to recover file " L2TP_PAP_SECRETS ": %r", rc_pap);
+        if ((rc = l2tp_secrets_recover(L2TP_PAP_SECRETS)) != 0)
+            ERROR("Failed to recover file " L2TP_PAP_SECRETS ": %r", rc);
+        ASSIGN_RETVAL(rc);
     }
 
-    return (rc_chap != 0 ? rc_chap : rc_pap);
+#undef ASSIGN_RETVAL
+
+    return retval;
 }
