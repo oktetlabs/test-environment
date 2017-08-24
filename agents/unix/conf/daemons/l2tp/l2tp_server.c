@@ -56,9 +56,6 @@
 /** Default buffer size for the full CHAP|PAP secret line */
 #define L2TP_SECRETS_LENGTH   512
 
-/** Default size for the pid storage */
-#define L2TP_MAX_PID_VALUE_LENGTH 16
-
 /** Default buffer size for the option name storage */
 #define L2TP_MAX_OPTNAME_LENGTH 40
 
@@ -470,23 +467,29 @@ l2tp_secrets_copy(FILE *dst, const char *src)
 static te_errno
 l2tp_secrets_recover(const char *filename)
 {
-    char     tmp_fname[sizeof(TMP_SECRETS_FILE) + L2TP_MAX_PID_VALUE_LENGTH];
-    FILE*    tmp_file;
-    te_errno rc;
+    char     *tmp_fname = l2tp_build_filename(TMP_SECRETS_FILE);
+    FILE*     tmp_file;
+    te_errno  rc;
 
     ENTRY("recover file %s", filename);
 
+#define RETURN_ON_ERROR(_rc)    \
+    do {                        \
+        if ((_rc) != 0)         \
+        {                       \
+            free(tmp_fname);    \
+            return (_rc);       \
+        }                       \
+    } while (0)
+
     /* Create a temporary file. */
-    TE_SPRINTF(tmp_fname, TMP_SECRETS_FILE ".%i", getpid());
     rc = l2tp_create_file(tmp_fname, &tmp_file);
-    if (rc != 0)
-        return rc;
+    RETURN_ON_ERROR(rc);
 
     /* Copy data to temporary file, ignore test data */
     rc = l2tp_secrets_copy(tmp_file, filename);
     fclose(tmp_file);
-    if (rc != 0)
-        return rc;
+    RETURN_ON_ERROR(rc);
 
     /* Rename the temporary file to the destination one */
     if (rename(tmp_fname, filename) != 0)
@@ -495,7 +498,9 @@ l2tp_secrets_recover(const char *filename)
               strerror(errno));
         rc = TE_OS_RC(TE_TA_UNIX, errno);
     }
+#undef RETURN_ON_ERROR
 
+    free(tmp_fname);
     return rc;
 }
 
@@ -515,10 +520,8 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
     FILE                *ppp_file = NULL;
     te_l2tp_option      *ppp_option;
     te_l2tp_section     *l2tp_section;
-    char                 chap_fname[sizeof(TMP_CHAP_SECRETS_FILE)
-                                    + L2TP_MAX_PID_VALUE_LENGTH];
-    char                 pap_fname[sizeof(TMP_PAP_SECRETS_FILE)
-                                   + L2TP_MAX_PID_VALUE_LENGTH];
+    char                *chap_fname = NULL;
+    char                *pap_fname = NULL;
     char                *ppp_fname = NULL;
     te_errno             rc;
 
@@ -527,7 +530,7 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
     /* Create chap_secret file */
     if (l2tp_secret_is_set(l2tp, L2TP_SECRET_PROT_CHAP))
     {
-        TE_SPRINTF(chap_fname, TMP_CHAP_SECRETS_FILE ".%i", getpid());
+        chap_fname = l2tp_build_filename(TMP_CHAP_SECRETS_FILE);
         rc = l2tp_create_file(chap_fname, &chap_file);
         if (rc != 0)
             goto l2tp_server_save_conf_cleanup;
@@ -543,7 +546,7 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
     /* Create pap_secret file */
     if (l2tp_secret_is_set(l2tp, L2TP_SECRET_PROT_PAP))
     {
-        TE_SPRINTF(pap_fname, TMP_PAP_SECRETS_FILE ".%i", getpid());
+        pap_fname = l2tp_build_filename(TMP_PAP_SECRETS_FILE);
         rc = l2tp_create_file(pap_fname, &pap_file);
         if (rc != 0)
             goto l2tp_server_save_conf_cleanup;
@@ -647,6 +650,8 @@ l2tp_server_save_conf_cleanup:
         }
     }
 
+    free(chap_fname);
+    free(pap_fname);
     return rc;
 }
 
