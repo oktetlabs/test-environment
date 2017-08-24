@@ -182,7 +182,7 @@ static te_l2tp_server l2tp_server;
 static void
 l2tp_server_init(te_l2tp_server *l2tp)
 {
-    ENTRY("%s()", __FUNCTION__);
+    ENTRY("initialize l2tp server with default configuration");
     SLIST_INIT(&l2tp->section);
     SLIST_INIT(&l2tp->client);
     l2tp->started = l2tp_is_running(l2tp);
@@ -445,7 +445,7 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
     int                  l2tp_fd;
     int                  rc;
 
-    ENTRY("%s()", __FUNCTION__);
+    ENTRY("create backup of l2tp server configuration files");
     TE_SPRINTF(l2tp_conf, L2TP_SERVER_CONF_BASIS ".%i", getpid());
     l2tp_fd = open(l2tp_conf, O_WRONLY | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
     if (l2tp_fd == -1)
@@ -764,7 +764,7 @@ l2tp_is_running(te_l2tp_server *l2tp)
 static te_errno
 l2tp_server_stop(te_l2tp_server *l2tp)
 {
-    ENTRY("%s()", __FUNCTION__);
+    ENTRY("stop l2tp server");
 
     if (l2tp_pid > 0)
     {
@@ -807,7 +807,7 @@ l2tp_server_start(te_l2tp_server *l2tp)
 
     l2tp_server_stop(l2tp);
 
-    ENTRY("%s()", __FUNCTION__);
+    ENTRY("start l2tp server");
 
     res = l2tp_server_save_conf(l2tp);
     if (res != 0)
@@ -842,7 +842,7 @@ l2tp_server_get(unsigned int gid, const char *oid, char *value)
     UNUSED(gid);
     UNUSED(oid);
 
-    ENTRY("%s()", __FUNCTION__);
+    ENTRY("get l2tp server status");
 
     strcpy(value, l2tp_is_running(l2tp) ? "1" : "0");
     return 0;
@@ -865,7 +865,7 @@ l2tp_server_set(unsigned int gid, const char *oid, const char *value)
     UNUSED(gid);
     UNUSED(oid);
 
-    ENTRY("%s()", __FUNCTION__);
+    ENTRY("set l2tp server status to %s", value);
 
     l2tp->started = (strcmp(value, "1") == 0);
     if (l2tp->started != l2tp_is_running(l2tp));
@@ -896,7 +896,7 @@ l2tp_server_commit(unsigned int gid, const char *oid)
     UNUSED(gid);
     UNUSED(oid);
 
-    ENTRY("%s()", __FUNCTION__);
+    ENTRY("apply changes in l2tp server configuration");
 
     if ((res = l2tp_server_stop(l2tp)) != 0)
     {
@@ -3519,7 +3519,7 @@ l2tp_grab(const char *name)
 
     UNUSED(name);
 
-    INFO("%s()", __FUNCTION__);
+    ENTRY("grab l2tp server");
 
     if (access(L2TP_SERVER_EXEC, X_OK) != 0)
     {
@@ -3599,7 +3599,7 @@ l2tp_release(const char *name)
 
     UNUSED(name);
 
-    INFO("%s()", __FUNCTION__);
+    ENTRY("release l2tp server");
 
     if ((retval = rcf_pch_del_node(&node_l2tp)) != 0)
         return retval;
