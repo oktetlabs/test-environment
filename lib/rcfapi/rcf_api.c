@@ -1769,11 +1769,7 @@ rcf_ta_get_sniffers(const char *ta_name, const char *snif_id, char **buf,
     }
     else
         *len = 0;
-    /* TE_ENOPROTOOPT error forwared to stop Logger side thread sniffer
-       service for the agent. TE_ENODATA error is correct situation, it is
-       handling appropriately. */
-    if (rep_msg->error == TE_RC(TE_RCF_PCH, TE_ENOPROTOOPT) ||
-        rep_msg->error == TE_RC(TE_RCF, TE_ENODATA))
+    if (rc == 0)
         rc = rep_msg->error;
     free(rep_msg);
     return rc;
