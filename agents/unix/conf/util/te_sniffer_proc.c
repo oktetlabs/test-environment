@@ -404,6 +404,7 @@ dump_packet(unsigned char *user, const struct pcap_pkthdr *h,
     }
 
     pcap_dump((unsigned char *)dumpinfo.dumper, h, sp);
+    pcap_dump_flush(dumpinfo.dumper);
 
     fcntl(dumpinfo.fd, F_SETLK, &lock);
 }
