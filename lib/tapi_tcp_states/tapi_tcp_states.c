@@ -565,9 +565,10 @@ tsa_destroy_session(tsa_session *ss)
 {
     te_errno                rc = 0;
     te_errno                rc_aux = 0;
-    rpc_socket_addr_family  family;
+    rpc_socket_addr_family  family = RPC_AF_UNKNOWN;
 
-    family = addr_family_h2rpc(ss->config.iut_addr->sa_family);
+    if (ss->config.iut_addr != NULL)
+        family = addr_family_h2rpc(ss->config.iut_addr->sa_family);
 
     if (ss->state.iut_alien_arp_added)
     {
@@ -610,26 +611,43 @@ tsa_destroy_session(tsa_session *ss)
         ss->state.tst_wait_connect = FALSE;
     }
 
-    RPC_AWAIT_ERROR(ss->config.pco_iut);
-    if (ss->state.iut_s_aux != -1 &&
-        rpc_close(ss->config.pco_iut, ss->state.iut_s_aux) != 0)
-        rc = RPC_ERRNO(ss->config.pco_iut);
-    RPC_AWAIT_ERROR(ss->config.pco_iut);
-    if (ss->state.iut_s != -1 &&
-        rpc_close(ss->config.pco_iut, ss->state.iut_s) != 0)
-        rc = RPC_ERRNO(ss->config.pco_iut);
+    if (ss->config.pco_iut != NULL)
+    {
+        if (ss->state.iut_s_aux != -1)
+        {
+            RPC_AWAIT_ERROR(ss->config.pco_iut);
+            if (rpc_close(ss->config.pco_iut, ss->state.iut_s_aux) != 0)
+                rc = RPC_ERRNO(ss->config.pco_iut);
+        }
+
+        if (ss->state.iut_s != -1)
+        {
+            RPC_AWAIT_ERROR(ss->config.pco_iut);
+            if (rpc_close(ss->config.pco_iut, ss->state.iut_s) != 0)
+                rc = RPC_ERRNO(ss->config.pco_iut);
+        }
+    }
 
     if (ss->state.tst_type == TSA_TST_SOCKET)
     {
-        RPC_AWAIT_ERROR(ss->config.pco_tst);
-        if (ss->state.sock.tst_s != -1 &&
-            rpc_close(ss->config.pco_tst, ss->state.sock.tst_s) != 0)
-            rc = RPC_ERRNO(ss->config.pco_tst);
+        if (ss->config.pco_tst != NULL)
+        {
+            if (ss->state.sock.tst_s != -1)
+            {
+                RPC_AWAIT_ERROR(ss->config.pco_tst);
+                if (rpc_close(ss->config.pco_tst,
+                              ss->state.sock.tst_s) != 0)
+                    rc = RPC_ERRNO(ss->config.pco_tst);
+            }
 
-        RPC_AWAIT_ERROR(ss->config.pco_tst);
-        if (ss->state.sock.tst_s_aux != -1 &&
-            rpc_close(ss->config.pco_tst, ss->state.sock.tst_s_aux) != 0)
-            rc = RPC_ERRNO(ss->config.pco_tst);
+            if (ss->state.sock.tst_s_aux != -1)
+            {
+                RPC_AWAIT_ERROR(ss->config.pco_tst);
+                if (rpc_close(ss->config.pco_tst,
+                              ss->state.sock.tst_s_aux) != 0)
+                    rc = RPC_ERRNO(ss->config.pco_tst);
+            }
+        }
     }
 
     if (ss->state.tst_type != TSA_TST_SOCKET)

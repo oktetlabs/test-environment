@@ -250,6 +250,11 @@ typedef struct tsa_session {
     tsa_state  state;    /**< State parameters */
 } tsa_session;
 
+/**
+ * Initializer for tsa_session structure.
+ */
+#define TSA_SESSION_INITIALIZER { .config = { .pco_iut = NULL } }
+
 /** Actions must be performed to move from one TCP state to another */
 typedef struct tcp_move_action {
     rpc_tcp_state state_from;        /** Current TCP state */
