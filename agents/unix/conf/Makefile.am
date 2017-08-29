@@ -146,6 +146,10 @@ if CFG_UNIX_DAEMONS_VTUND
 libconf_a_SOURCES += daemons/vtund/conf_vtund.c
 endif
 
+if CFG_UNIX_DAEMONS_L2TP
+libconf_a_SOURCES += daemons/l2tp/l2tp_server.c
+endif
+
 endif
 
 

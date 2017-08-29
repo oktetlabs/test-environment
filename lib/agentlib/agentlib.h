@@ -60,13 +60,17 @@ extern te_errno ta_vlan_get_parent(const char *ifname, char *parent);
  * @param ifname        Interface name
  * @param slaves        Where to save slaves interfaces names
  * @param slaves_num    Where to save number of slaves interfaces
- *                      (may be NULL)
+ *                      (may be @c NULL)
+ * @param is_team       If not @c NULL, will be set to @c TRUE if
+ *                      this is teaming device, and to @c FALSE
+ *                      otherwise.
  *
  * @return Status code.
  */
 extern te_errno ta_bond_get_slaves(const char *ifname,
                                    tqh_strings *slaves,
-                                   int *slaves_num);
+                                   int *slaves_num,
+                                   te_bool *is_team);
 
 #if defined(ENABLE_FTP)
 

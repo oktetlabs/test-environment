@@ -5874,7 +5874,8 @@ _bond_get_slaves_1_svc(tarpc_bond_get_slaves_in *in,
          "bond_get_slaves");
 
     out->common._errno = ta_bond_get_slaves(in->ifname.ifname_val,
-                                            &slaves, &slaves_num);
+                                            &slaves, &slaves_num,
+                                            NULL);
     if (out->common._errno != 0)
         goto cleanup;
 

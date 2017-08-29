@@ -41,6 +41,11 @@
 #include <netinet/in.h>
 #include "te_queue.h"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** Authentication type */
 enum l2tp_auth_prot {
     L2TP_AUTH_PROT_CHAP,         /**< CHAP authentication */
@@ -66,17 +71,18 @@ enum l2tp_iprange_class {
     L2TP_IP_RANGE_CLASS_LAC    /**< lac */
 };
 
+/** Bit options */
 enum l2tp_bit {
     L2TP_BIT_HIDDEN,    /**< hidden bit option */
     L2TP_BIT_LENGTH,    /**< flow bits option */
 } l2tp_bit;
 
 /** Structure for the IP-address pool */
-typedef struct l2tp_ipv4_range {
-    struct sockaddr_in *start;   /**< The left boundary of the pool */
-    struct sockaddr_in *end;     /**< The right boundary of the pool */
-    enum l2tp_policy    type;    /**< Above pool can be allowed or denied */
-} l2tp_ipv4_range;
+typedef struct l2tp_ipaddr_range {
+    struct sockaddr  *start;    /**< The left boundary of the pool */
+    struct sockaddr  *end;      /**< The right boundary of the pool */
+    enum l2tp_policy  type;     /**< Above pool can be allowed or denied */
+} l2tp_ipaddr_range;
 
 /** CHAP|PAP secret structure */
 typedef struct l2tp_ppp_secret {
@@ -97,446 +103,413 @@ typedef struct l2tp_auth {
 /**
  * Set a l2tp server status.
  *
- * @param ta            Test Agent
- * @param status        1/0
+ * @param ta            Test Agent.
+ * @param status        Status: @c 1 to start, @c 0 to stop l2tp server.
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_l2tp_server_set(const char *ta, int status);
+extern te_errno tapi_cfg_l2tp_server_set(const char *ta, int status);
 
 /**
  * Get a l2tp server status.
  *
- * @param ta            Test Agent
- * @param status        Returned value
+ * @param ta            Test Agent.
+ * @param status        Status.
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_l2tp_server_get(const char *ta, int *status);
+extern te_errno tapi_cfg_l2tp_server_get(const char *ta, int *status);
 
 
 /**
- * Add an lns
+ * Add LNS.
  *
- * @param ta        Test Agent
- * @param lns       lns name to add
+ * @param ta            Test Agent.
+ * @param lns           LNS name to add.
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_l2tp_lns_add(const char *ta, const char *lns);
+extern te_errno tapi_cfg_l2tp_lns_add(const char *ta, const char *lns);
 
 /**
- * Delete an lns
+ * Delete LNS.
  *
- * @param ta        Test Agent
- * @param lns       lns name to delete
+ * @param ta            Test Agent.
+ * @param lns           Name of LNS to delete.
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_l2tp_lns_add(const char *ta, const char *lns);
+extern te_errno tapi_cfg_l2tp_lns_add(const char *ta, const char *lns);
 
 /**
- * Get a tunnel ip.
+ * Get tunnel IP address.
  *
- * @param ta            Test Agent
- * @param lns           lns name
- * @param local         Returned pointer to the current tunnel ip
+ * @param[in]  ta       Test Agent.
+ * @param[in]  lns      Name of LNS.
+ * @param[out] addr     Current tunnel IP address.
  *
  * @return Status code
  */
-
-extern te_errno
-tapi_cfg_l2tp_tunnel_ip_get(const char *ta, const char *lns,
-                            struct sockaddr_in *local);
-
+extern te_errno tapi_cfg_l2tp_tunnel_ip_get(const char *ta, const char *lns,
+                                            struct sockaddr **addr);
 
 /**
- * Set a tunnel ip.
+ * Set tunnel IP address.
  *
- * @param ta            Test Agent
- * @param local         tunnel ip to set
+ * @param ta            Test Agent.
+ * @param lns           Name of LNS.
+ * @param addr          Tunnel IP address to set.
  *
  * @return Status code
  */
-
-extern te_errno
-tapi_cfg_l2tp_tunnel_ip_set(const char *ta, const char *lns,
-                            struct sockaddr_in *local_ip);
+extern te_errno tapi_cfg_l2tp_tunnel_ip_set(const char *ta, const char *lns,
+                                            const struct sockaddr *addr);
 
 /**
- * Get a global listen ip.
+ * Get global listen IP address.
  *
- * @param ta            Test Agent
- * @param local         Returned pointer to the listen ip
+ * @param[in]  ta       Test Agent.
+ * @param[out] addr     Listen IP address.
  *
  * @return Status code
  */
-
-extern te_errno
-tapi_cfg_l2tp_listen_ip_get(const char *ta, struct sockaddr_in *local);
-
+extern te_errno tapi_cfg_l2tp_listen_ip_get(const char *ta,
+                                            struct sockaddr **addr);
 
 /**
- * Set a global port.
+ * Set global listen IP address.
  *
- * @param ta            Test Agent
- * @param local         port to set
+ * @param ta            Test Agent.
+ * @param addr          Listen IP address to set.
  *
  * @return Status code
  */
-
-extern te_errno
-tapi_cfg_l2tp_port_set(const char *ta, int port);
+extern te_errno tapi_cfg_l2tp_listen_ip_set(const char *ta,
+                                            const struct sockaddr *addr);
 
 /**
  * Get a global port.
  *
- * @param ta            Test Agent
- * @param local         Returned pointer to the port
+ * @param ta            Test Agent.
+ * @param port          Port.
  *
  * @return Status code
  */
-
-extern te_errno
-tapi_cfg_l2tp_port_get(const char *ta, int *port);
-
+extern te_errno tapi_cfg_l2tp_port_get(const char *ta, int *port);
 
 /**
- * Set a global listen ip.
+ * Set a global port.
  *
- * @param ta            Test Agent
- * @param lns           lns name
- * @param local         listen ip to set
+ * @param ta            Test Agent.
+ * @param port          Port to set.
  *
  * @return Status code
  */
+extern te_errno tapi_cfg_l2tp_port_set(const char *ta, int port);
 
-extern te_errno
-tapi_cfg_l2tp_listen_ip_set(const char *ta, struct sockaddr_in *local_ip);
 
 /**
  * Add ip range to the configuration.
  *
- * @param ta            Test Agent
- * @param lns           The name of the section to modify
- * @param iprange       IP address pool
- * @param kind          The class of the added ip range
-                        IP|LAC
+ * @param ta            Test Agent.
+ * @param lns           The name of the section to modify.
+ * @param iprange       IP address pool.
+ * @param kind          The class of the added ip range IP|LAC.
  *
  * @return Status code
  */
-
-extern te_errno
-tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
-                            const l2tp_ipv4_range *iprange,
-                            enum l2tp_iprange_class kind);
+extern te_errno tapi_cfg_l2tp_lns_range_add(const char *ta, const char *lns,
+                                            const l2tp_ipaddr_range *iprange,
+                                            enum l2tp_iprange_class kind);
 
 /**
  * Delete specified ip range from the configuration.
  *
- * @param ta            Test Agent
- * @param lns           The name of the section to modify
- * @param iprange       IP address pool
- * @param kind          The class of the removed ip range
-                        IP|LAC
+ * @param ta            Test Agent.
+ * @param lns           The name of the section to modify.
+ * @param iprange       IP address pool.
+ * @param kind          The class of the removed ip range IP|LAC.
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
-                            const l2tp_ipv4_range *iprange,
-                            enum l2tp_iprange_class kind);
+extern te_errno tapi_cfg_l2tp_lns_range_del(const char *ta, const char *lns,
+                                            const l2tp_ipaddr_range *iprange,
+                                            enum l2tp_iprange_class kind);
 
 /**
  * Get the list of connected clients.
  *
- * @param ta         Test Agent
- * @param lns        The name of the section
- * @param connected  The connected ip addresses
- *                   As it is neccassary to return
- *                   an array of pointers to sockaddr_in *,
- *                   triple pointer is used
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param connected     The connected ip addresses (array of pointers).
  *
  * @return Status code
  */
-
-extern te_errno
-tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
-                                struct sockaddr_in ***connected);
+extern te_errno tapi_cfg_l2tp_lns_connected_get(const char *ta, const char *lns,
+                                                struct sockaddr ***connected);
 
 /**
  * Add a bit option value for the specified LNS.
  *
- * @param ta        Test Agent
- * @param lns       The name of the section
- * @param bit       Desired bit option to change
- * @param value     TRUE or FALSE
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param bit           Desired bit option to change.
+ * @param value         Bit value.
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_l2tp_lns_bit_add(const char *ta, const char *lns,
-                          enum l2tp_bit bit, te_bool value);
+extern te_errno tapi_cfg_l2tp_lns_bit_add(const char *ta, const char *lns,
+                                          enum l2tp_bit bit, te_bool value);
+
+/**
+ * Delete the bit option value of the specified LNS.
+ *
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param bit           Desired bit option to delete.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_l2tp_lns_bit_del(const char *ta, const char *lns,
+                                          enum l2tp_bit *bit);
 
 /**
  * Get the bit parameter's value for the specified LNS.
  *
- * @param ta        Test Agent
- * @param lns       The name of the section
- * @param bit_name  Name of the parameter(e.g. hidden, length, flow)
- * @param selector  Returned pointer to the current bit parameter value
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param bit           Name of the parameter(e.g. hidden, length, flow).
+ * @param selector      Returned pointer to the current bit parameter value.
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_l2tp_lns_bit_get(const char *ta, const char *lns,
-                          enum l2tp_bit *bit_name, char *selector);
+extern te_errno tapi_cfg_l2tp_lns_bit_get(const char *ta, const char *lns,
+                                          enum l2tp_bit *bit_name, char *selector);
 
 /**
  * Set the instance value to yes or no for "/auth/refuse|require".
  *
- * @param ta          Test Agent
- * @param lns         The name of the section
- * @param param       Desired authentication
- * @param value       TRUE(1) or FALSE(0)
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param param         Desired authentication.
+ * @param value         @c TRUE(1) or @c FALSE(0).
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_l2tp_lns_add_auth(const char *ta, const char *lns,
-                           l2tp_auth param, te_bool value);
+extern te_errno tapi_cfg_l2tp_lns_add_auth(const char *ta, const char *lns,
+                                           l2tp_auth param, te_bool value);
+
 /**
- * Get the instance value "/auth/refuse|require".
+ * Delete the instance value "/auth/refuse|require".
  *
- * @param ta          Test Agent
- * @param lns         The name of the section
- * @param param       Desired authentication
- * @param value       Returned pointer to the authentication parameter,
-                      like "true" or "false"
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param param         Desired authentication.
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_l2tp_lns_del_auth(const char *ta, const char *lns,
-                           l2tp_auth param);
+extern te_errno tapi_cfg_l2tp_lns_del_auth(const char *ta, const char *lns,
+                                           l2tp_auth param);
 
 /**
  * Add chap|pap secret.
  *
- * @param ta            Test Agent
- * @param lns           The name of the section
- * @param new_secret    Secret to add
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param secret        Secret to add.
  *
  * @return Status code
  */
+extern te_errno tapi_cfg_l2tp_lns_secret_add(const char *ta, const char *lns,
+                                             const l2tp_ppp_secret *secret);
 
-extern te_errno
-tapi_cfg_l2tp_lns_secret_add(const char *ta, const char *lns,
-                             const l2tp_ppp_secret *new_secret);
 /**
  * Delete chap|pap secret.
  *
- * @param ta            Test Agent
- * @param lns           The name of the section
- * @param new_secret    Secret to delete
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param secret        Secret to delete.
  *
  * @return Status code
  */
-
-extern te_errno
-tapi_cfg_l2tp_lns_secret_delete(const char *ta, const char *lns,
-                                const l2tp_ppp_secret *prev_secret);
+extern te_errno tapi_cfg_l2tp_lns_secret_delete(const char *ta, const char *lns,
+                                                const l2tp_ppp_secret *secret);
 
 /**
  * Set the instance value to yes or no for "/use_challenge:".
  *
- * @param ta          Test Agent
- * @param lns         The name of the section
- * @param value       TRUE or FALSE
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param value         Value to set.
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_l2tp_lns_set_use_challenge(const char *ta, const char *lns,
-                                    te_bool value);
+extern te_errno tapi_cfg_l2tp_lns_set_use_challenge(const char *ta,
+                                                    const char *lns,
+                                                    te_bool value);
 
 /**
  * Get the instance value "/use_challenge:".
  *
- * @param ta          Test Agent
- * @param lns         The name of the section
- * @param value       Returned pointer to the current value
+ * @param[in]  ta       Test Agent.
+ * @param[in]  lns      The name of the section.
+ * @param[out] value    Value of use challenge.
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_l2tp_lns_get_use_challenge(const char *ta, const char *lns,
-                                    te_bool *value);
+extern te_errno tapi_cfg_l2tp_lns_get_use_challenge(const char *ta,
+                                                    const char *lns,
+                                                    te_bool *value);
 
 /**
  * Set the instance value to yes or no for "/unix_auth:".
  *
- * @param ta          Test Agent
- * @param lns         The name of the section
- * @param value       TRUE(1) or FALSE(0)
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param value         Value to set.
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_l2tp_lns_set_unix_auth(const char *ta, const char *lns,
-                                te_bool value);
+extern te_errno tapi_cfg_l2tp_lns_set_unix_auth(const char *ta, const char *lns,
+                                                te_bool value);
 
 /**
  * Get the instance value "/unix_auth:".
  *
- * @param ta          Test Agent
- * @param lns         The name of the section
- * @param value       Returned pointer to the current value
+ * @param[in]  ta       Test Agent.
+ * @param[in]  lns      The name of the section.
+ * @param[out] value    Value of auth.
  *
  * @return Status code
  */
-extern te_errno
-tapi_cfg_l2tp_lns_get_unix_auth(const char *ta, const char *lns,
-                                te_bool *value);
+extern te_errno tapi_cfg_l2tp_lns_get_unix_auth(const char *ta, const char *lns,
+                                                te_bool *value);
 
 /**
- * Set MTU size
+ * Set MTU size.
  *
- * @param ta       Test Agent
- * @param lns      The name of the section
- * @param value    New value
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param value         Value to set.
  *
  * @return Status code
  */
-
-extern te_errno
-tapi_cfg_l2tp_lns_mtu_set(const char *ta, const char *lns, int value);
+extern te_errno tapi_cfg_l2tp_lns_mtu_set(const char *ta, const char *lns,
+                                          int value);
 
 /**
- * Get MTU size
+ * Get MTU size.
  *
- * @param ta       Test Agent
- * @param lns      The name of the section
- * @param value    Returned pointer to the current value
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param value         Value of MTU.
  *
  * @return Status code
  */
-
-extern te_errno
-tapi_cfg_l2tp_lns_mtu_get(const char *ta, const char *lns, int *value);
+extern te_errno tapi_cfg_l2tp_lns_mtu_get(const char *ta, const char *lns,
+                                          int *value);
 
 /**
- * Set MRU size
+ * Set MRU size.
  *
- * @param ta       Test Agent
- * @param lns      The name of the section
- * @param value    New value
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param value         Value to set.
  *
  * @return Status code
  */
-
-extern te_errno
-tapi_cfg_l2tp_lns_mru_set(const char *ta, const char *lns, int value);
+extern te_errno tapi_cfg_l2tp_lns_mru_set(const char *ta, const char *lns,
+                                          int value);
 
 /**
- * Get MRU size
+ * Get MRU size.
  *
- * @param ta       Test Agent
- * @param lns      The name of the section
- * @param value    Returned pointer to the current value
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param value         Value of MRU.
  *
  * @return Status code
  */
-
-extern te_errno
-tapi_cfg_l2tp_lns_mru_get(const char *ta, const char *lns, int *value);
+extern te_errno tapi_cfg_l2tp_lns_mru_get(const char *ta, const char *lns,
+                                          int *value);
 
 /**
  * Set lcp-echo-failure.
  *
- * @param ta       Test Agent
- * @param lns      The name of the section
- * @param value    New value
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param value         Value to set.
  *
  * @return Status code
  */
-
-extern te_errno
-tapi_cfg_l2tp_lns_lcp_echo_failure_set(const char *ta, const char *lns,
-                                       int value);
+extern te_errno tapi_cfg_l2tp_lns_lcp_echo_failure_set(const char *ta,
+                                                       const char *lns,
+                                                       int value);
 
 /**
  * Get lcp-echo-failure.
  *
- * @param ta       Test Agent
- * @param lns      The name of the section
- * @param value    Returned pointer to the current value
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param value         lcp-echo-failure value.
  *
  * @return Status code
  */
-
-extern te_errno
-tapi_cfg_l2tp_lns_lcp_echo_failure_get(const char *ta, const char *lns,
-                                       int *value);
+extern te_errno tapi_cfg_l2tp_lns_lcp_echo_failure_get(const char *ta,
+                                                       const char *lns,
+                                                       int *value);
 
 /**
  * Set lcp-echo-interval.
  *
- * @param ta       Test Agent
- * @param lns      The name of the section
- * @param value    New value
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param value         Value to set.
  *
  * @return Status code
  */
-
-extern te_errno
-tapi_cfg_l2tp_lns_lcp_echo_interval_set(const char *ta, const char *lns,
-                                        int value);
+extern te_errno tapi_cfg_l2tp_lns_lcp_echo_interval_set(const char *ta,
+                                                        const char *lns,
+                                                        int value);
 
 /**
  * Get lcp-echo-interval.
  *
- * @param ta       Test Agent
- * @param lns      The name of the section
- * @param value    Returned pointer to the current value
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param value         lcp-echo-interval value.
  *
  * @return Status code
  */
-
-extern te_errno
-tapi_cfg_l2tp_lns_lcp_echo_interval_get(const char *ta, const char *lns,
-                                        int *value);
+extern te_errno tapi_cfg_l2tp_lns_lcp_echo_interval_get(const char *ta,
+                                                        const char *lns,
+                                                        int *value);
 
 /**
  * Add an option to pppd.
  *
- * @param ta        Test Agent
- * @param lns       The name of the section
- * @param pparam    New param
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param opt           Option to set.
  *
  * @return Status code
  */
-
-extern te_errno
-tapi_cfg_l2tp_lns_pppopt_add(const char *ta, const char *lns,
-                             const char *pparam);
+extern te_errno tapi_cfg_l2tp_lns_pppopt_add(const char *ta, const char *lns,
+                                             const char *pparam);
 
 /**
  * Delete an option from pppd.
  *
- * @param ta        Test Agent
- * @param lns       The name of the section
- * @param pparam    Param to delete
+ * @param ta            Test Agent.
+ * @param lns           The name of the section.
+ * @param opt           Option to delete.
  *
  * @return Status code
  */
+extern te_errno tapi_cfg_l2tp_lns_pppopt_del(const char *ta, const char *lns,
+                                             const char *pparam);
 
-extern te_errno
-tapi_cfg_l2tp_lns_pppopt_del(const char *ta, const char *lns,
-                             const char *pparam);
-
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 #endif /* !__TE_TAPI_CFG_L2TP_H__ */

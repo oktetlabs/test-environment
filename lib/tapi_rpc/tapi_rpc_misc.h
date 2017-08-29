@@ -1094,6 +1094,79 @@ typedef struct te_saved_mtu {
 typedef LIST_HEAD(te_saved_mtus, te_saved_mtu) te_saved_mtus;
 
 /**
+ * Free memory allocated for items of a list of MTU values.
+ *
+ * @param mtus    Pointer to the list.
+ */
+extern void tapi_saved_mtus_free(te_saved_mtus *mtus);
+
+/**
+ * Convert list of saved MTU values to string.
+ *
+ * @param mtus        List of saved MTU values.
+ * @param str         Where to save pointer to the string
+ *                    (memory is allocated by this function).
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_saved_mtus2str(te_saved_mtus *mtus, char **str);
+
+/**
+ * Convert string to list of saved MTU values.
+ *
+ * @param str       String to convert.
+ * @param mtus      Pointer to list head.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_str2saved_mtus(const char *str, te_saved_mtus *mtus);
+
+/**
+ * Save MTU values to a temporary local file.
+ *
+ * @note List of MTU values will be empty after calling this function.
+ *       Register "saved_mtus" node under "/local" in Configuration tree
+ *       to use this function.
+ *
+ * @param ta        Test Agent name.
+ * @param name      Unique name.
+ * @param mtus      List of MTU values.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_store_saved_mtus(const char *ta,
+                                      const char *name,
+                                      te_saved_mtus *mtus);
+
+/**
+ * Check whether MTU values are already stored under a given name.
+ *
+ * @param ta      Test Agent name.
+ * @param name    Name used to identify MTU values list.
+ *
+ * @return @c TRUE if MTU values are stored under the @p name,
+ *         @c FALSE otherwise.
+ */
+extern te_bool tapi_stored_mtus_exist(const char *ta,
+                                      const char *name);
+
+/**
+ * Retrieve saved MTU values from a temporary local file.
+ *
+ * @note This function may be called only once for a given name,
+ *       as the file fill be removed as a result.
+ *
+ * @param ta        Test Agent name.
+ * @param name      Unique name previously passed to tapi_store_save_mtus().
+ * @param mtus      MTU values.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_retrieve_saved_mtus(const char *ta,
+                                         const char *name,
+                                         te_saved_mtus *mtus);
+
+/**
  * Set new MTU value for a given interface (increasing MTU for
  * the interfaces it is based on if necessary).
  *
