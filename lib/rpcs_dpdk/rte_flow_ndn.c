@@ -30,9 +30,11 @@
 
 #include "te_config.h"
 #include "package.h"
+#include "te_alloc.h"
 
 #include "rte_config.h"
 #include "rte_flow.h"
+#include "rte_ethdev.h"
 
 #include "asn_usr.h"
 #include "asn_impl.h"
@@ -899,6 +901,224 @@ rte_flow_action_queue_from_pdu(const asn_value *conf_pdu,
     return 0;
 }
 
+/* Mapping between ASN.1 representation of RSS HF and RTE flags */
+static const struct asn2rte_rss_hf_map {
+    asn_tag_value asn_tag;
+    uint64_t      rte_flag;
+} asn2rte_rss_hf_map[] = {
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_IPV4,
+      ETH_RSS_IPV4 },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_FRAG_IPV4,
+      ETH_RSS_FRAG_IPV4 },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NONFRAG_IPV4_TCP,
+      ETH_RSS_NONFRAG_IPV4_TCP },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NONFRAG_IPV4_UDP,
+      ETH_RSS_NONFRAG_IPV4_UDP },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NONFRAG_IPV4_SCTP,
+      ETH_RSS_NONFRAG_IPV4_SCTP },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NONFRAG_IPV4_OTHER,
+      ETH_RSS_NONFRAG_IPV4_OTHER },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_IPV6,
+      ETH_RSS_IPV6 },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NONFRAG_IPV6_TCP,
+      ETH_RSS_NONFRAG_IPV6_TCP },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NONFRAG_IPV6_UDP,
+      ETH_RSS_NONFRAG_IPV6_UDP },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NONFRAG_IPV6_SCTP,
+      ETH_RSS_NONFRAG_IPV6_SCTP },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NONFRAG_IPV6_OTHER,
+      ETH_RSS_NONFRAG_IPV6_OTHER },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_L2_PAYLOAD,
+      ETH_RSS_L2_PAYLOAD },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_IPV6_EX,
+      ETH_RSS_IPV6_EX },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_IPV6_TCP_EX,
+      ETH_RSS_IPV6_TCP_EX },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_IPV6_UDP_EX,
+      ETH_RSS_IPV6_UDP_EX },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_PORT,
+      ETH_RSS_PORT },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_VXLAN,
+      ETH_RSS_VXLAN },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_GENEVE,
+      ETH_RSS_GENEVE },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NVGRE,
+      ETH_RSS_NVGRE },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_IP,
+      ETH_RSS_IP },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_TCP,
+      ETH_RSS_TCP },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_UDP,
+      ETH_RSS_UDP },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_SCTP,
+      ETH_RSS_SCTP },
+    { NDN_FLOW_ACTION_CONF_RSS_OPT_HF_TUNNEL,
+      ETH_RSS_TUNNEL },
+};
+
+static te_errno
+rte_flow_action_rss_opt_hf_from_pdu(const asn_value *rss_conf,
+                                   uint64_t        *rss_hf_rte_out)
+{
+    const asn_value *rss_hf;
+    uint64_t         rss_hf_rte = 0;
+    te_errno         rc;
+    unsigned int     i;
+
+    rc = asn_get_subvalue(rss_conf, (asn_value **)&rss_hf, "rss-hf");
+    if (rc == TE_EASNINCOMPLVAL)
+        return 0;
+    else if (rc != 0)
+        return rc;
+
+    for (i = 0; i < TE_ARRAY_LEN(asn2rte_rss_hf_map); ++i)
+    {
+        const asn_value *hf;
+
+        rc = asn_get_child_value(rss_hf, &hf,
+                                 PRIVATE, asn2rte_rss_hf_map[i].asn_tag);
+        if (rc == 0)
+            rss_hf_rte |= asn2rte_rss_hf_map[i].rte_flag;
+        else if (rc != TE_EASNINCOMPLVAL)
+            return rc;
+    }
+
+    *rss_hf_rte_out = rss_hf_rte;
+
+    return 0;
+}
+
+static te_errno
+rte_flow_action_rss_opt_from_pdu(const asn_value            *conf_pdu_choice,
+                                struct rte_flow_action_rss *conf)
+{
+    asn_value               *rss_conf;
+    int                      rss_key_len;
+    struct rte_eth_rss_conf *opt = NULL;
+    size_t                   d_len;
+    te_errno                 rc;
+
+    rc = asn_get_subvalue(conf_pdu_choice, &rss_conf, "rss-conf");
+    if (rc == TE_EASNINCOMPLVAL)
+        return 0;
+    else if (rc != 0)
+        return rc;
+
+    opt = TE_ALLOC(sizeof(*opt));
+    if (opt == NULL)
+        return TE_ENOMEM;
+
+    rss_key_len = asn_get_length(rss_conf, "rss-key");
+    if (rss_key_len > 0)
+    {
+        uint8_t *rss_key = NULL;
+
+        rss_key = TE_ALLOC(rss_key_len);
+        if (rss_key == NULL)
+        {
+            rc = TE_ENOMEM;
+            goto fail;
+        }
+
+        d_len = rss_key_len;
+        rc = asn_read_value_field(rss_conf, rss_key, &d_len, "rss-key");
+        if (rc != 0)
+        {
+            free(rss_key);
+            goto fail;
+        }
+
+        opt->rss_key = rss_key;
+        opt->rss_key_len = rss_key_len;
+    }
+
+    rc = rte_flow_action_rss_opt_hf_from_pdu(rss_conf, &opt->rss_hf);
+    if (rc != 0)
+        goto fail;
+
+    conf->rss_conf = opt;
+
+    return 0;
+
+fail:
+    free(opt);
+
+    return rc;
+}
+
+static te_errno
+rte_flow_action_rss_from_pdu(const asn_value        *conf_pdu,
+                            struct rte_flow_action *action)
+{
+    struct rte_flow_action_rss *conf = NULL;
+    asn_value                  *conf_pdu_choice;
+    asn_tag_value               conf_pdu_choice_tag;
+    asn_value                  *queue_list;
+    int                         nb_entries;
+    te_errno                    rc;
+    int                         i;
+
+    if (action == NULL)
+        return TE_EINVAL;
+
+    rc = asn_get_choice_value(conf_pdu, &conf_pdu_choice,
+                              NULL, &conf_pdu_choice_tag);
+    if (rc != 0)
+        return rc;
+    else if (conf_pdu_choice_tag != NDN_FLOW_ACTION_CONF_RSS)
+        return TE_EINVAL;
+
+    rc = asn_get_subvalue(conf_pdu_choice, &queue_list, "queue");
+    if (rc == TE_EASNINCOMPLVAL)
+    {
+        nb_entries = 0;
+    }
+    else if (rc != 0)
+    {
+        return rc;
+    }
+    else
+    {
+        nb_entries = asn_get_length(queue_list, "");
+        if (nb_entries < 0)
+            return TE_EINVAL;
+    }
+
+    conf = TE_ALLOC(sizeof(*conf) + (nb_entries * sizeof(conf->queue[0])));
+    if (conf == NULL)
+        return TE_ENOMEM;
+
+    conf->num = nb_entries;
+
+    for (i = 0; i < nb_entries; ++i)
+    {
+        asn_value *queue_index;
+        size_t     d_len = sizeof(conf->queue[0]);
+
+        rc = asn_get_indexed(queue_list, &queue_index, i, "");
+        if (rc != 0)
+            goto fail;
+
+        rc = asn_read_value_field(queue_index, &conf->queue[i], &d_len, "");
+        if (rc != 0)
+            goto fail;
+    }
+
+    rc = rte_flow_action_rss_opt_from_pdu(conf_pdu_choice, conf);
+    if (rc != 0)
+        goto fail;
+
+    action->type = RTE_FLOW_ACTION_TYPE_RSS;
+    action->conf = conf;
+
+    return 0;
+
+fail:
+    free(conf);
+
+    return rc;
+}
+
 static te_errno
 rte_flow_action_end(struct rte_flow_action *action)
 {
@@ -930,6 +1150,7 @@ static const struct rte_flow_action_types_mapping {
     te_errno      (*convert)(const asn_value *conf_pdu,
                              struct rte_flow_action *action);
 } rte_flow_action_types_map[] = {
+    { NDN_FLOW_ACTION_TYPE_RSS,     rte_flow_action_rss_from_pdu },
     { NDN_FLOW_ACTION_TYPE_QUEUE,   rte_flow_action_queue_from_pdu },
     { NDN_FLOW_ACTION_TYPE_VOID,    rte_flow_action_void },
 };
