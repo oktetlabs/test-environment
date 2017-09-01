@@ -150,7 +150,7 @@ rte_int_hton(uint32_t val, void *data, size_t size)
             if (rc == 0)                                                    \
                 rc = rte_int_hton(__val, &mask->_field, _size);             \
         }                                                                   \
-        if (rc != 0 && rc != TE_EASNINCOMPLVAL)                             \
+        if (rc != 0 && rc != TE_EASNINCOMPLVAL && rc != TE_EASNOTHERCHOICE) \
             goto out;                                                       \
     } while (0)
 
@@ -181,7 +181,7 @@ rte_int_hton(uint32_t val, void *data, size_t size)
             if (rc == 0)                                                    \
                 memcpy(mask->_field, __addr, __size);                       \
         }                                                                   \
-        if (rc != 0 && rc != TE_EASNINCOMPLVAL)                             \
+        if (rc != 0 && rc != TE_EASNINCOMPLVAL && rc != TE_EASNOTHERCHOICE) \
             goto out;                                                       \
     } while (0)
 
@@ -389,7 +389,7 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
             if (rc == 0)                                                    \
                 mask_tci |= __val << __offset;                              \
         }                                                                   \
-        if (rc != 0 && rc != TE_EASNINCOMPLVAL)                             \
+        if (rc != 0 && rc != TE_EASNINCOMPLVAL && rc != TE_EASNOTHERCHOICE) \
             goto out;                                                       \
     } while (0)
 
@@ -556,7 +556,7 @@ rte_flow_item_ipv4_from_pdu(const asn_value *ipv4_pdu,
                 rc = asn_read_value_field(_asn_val, &mask->_field,          \
                                           &__size, #_name ".#range.mask");  \
         }                                                                   \
-        if (rc != 0 && rc != TE_EASNINCOMPLVAL)                             \
+        if (rc != 0 && rc != TE_EASNINCOMPLVAL && rc != TE_EASNOTHERCHOICE) \
             goto out;                                                       \
     } while (0)
 
