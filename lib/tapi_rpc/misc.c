@@ -2689,6 +2689,14 @@ save_descendants_mtus(rcf_rpc_server *rpcs,
     int       old_mtu;
     te_errno  rc = 0;
 
+    /**
+     * Skip interface if it is not grabbed.
+     * VLAN interfaces may be not grabbed but still
+     * accessible via configuration tree.
+     */
+    if (!tapi_interface_is_mine(rpcs, if_name))
+        return 0;
+
     if (save_target)
     {
         rc = tapi_cfg_base_if_get_mtu_u(rpcs->ta, if_name,
@@ -2747,14 +2755,6 @@ tapi_set_if_mtu_smart_aux(rcf_rpc_server *rpcs,
 
     if (!tapi_interface_is_mine(rpcs, if_name))
     {
-        if (!ancestor)
-        {
-            ERROR("Interface %s is not grabbed by testing, "
-                  "and it was requested to change MTU on it",
-                  if_name);
-            return TE_RC(TE_TAPI, TE_EPERM);
-        }
-
         /*
          * We cannot get MTU via Configurator if interface is not grabbed.
          * However MTU can be obtained with help of ioctl(). MTU should
