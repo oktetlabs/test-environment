@@ -1591,6 +1591,50 @@ tapi_cfg_get_if_parent(const char *ta,
 }
 
 /* See the description in tapi_cfg.h */
+te_errno
+tapi_cfg_get_if_last_ancestor(const char *ta,
+                              const char *ifname,
+                              char *ancestor_ifname,
+                              size_t len)
+{
+    char      parent_ifname[IF_NAMESIZE];
+    te_errno  rc = 0;
+
+    if (len == 0)
+        return TE_RC(TE_TAPI, TE_ESMALLBUF);
+
+    strncpy(ancestor_ifname, ifname, len);
+    if (ancestor_ifname[len - 1] != '\0')
+    {
+        ERROR("%s(): interface name is too long "
+              "to fit into provided buffer", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_ESMALLBUF);
+    }
+
+    do {
+        rc = tapi_cfg_get_if_parent(ta, ancestor_ifname,
+                                    parent_ifname,
+                                    sizeof(parent_ifname));
+        if (rc != 0)
+            return rc;
+
+        if (parent_ifname[0] == '\0')
+            break;
+
+        strncpy(ancestor_ifname, parent_ifname, len);
+        if (ancestor_ifname[len - 1] != '\0')
+        {
+            ERROR("%s(): interface name is too long",
+                  __FUNCTION__);
+            return TE_RC(TE_TAPI, TE_ESMALLBUF);
+        }
+
+    } while (TRUE);
+
+    return 0;
+}
+
+/* See the description in tapi_cfg.h */
 static int
 tapi_cfg_alloc_entry_by_handle(cfg_handle parent, cfg_handle *entry)
 {
