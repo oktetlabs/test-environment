@@ -589,6 +589,27 @@ extern te_errno tapi_cfg_get_if_parent(const char *ta,
                                        char *parent_ifname,
                                        size_t len);
 
+/**
+ * Get name of the last known ancestor of a given interface
+ * (for example, if interface is eth3.macvlan.100, this function
+ * should return "eth3").
+ *
+ * @note If the interface has no ancestors, this function returns
+ *       its name.
+ *
+ * @param ta                Test agent name.
+ * @param ifname            Interface name.
+ * @param ancestor_ifname   Where to save the name of the "ancestor"
+ *                          interface.
+ * @param len               Available space in @p ancestor_ifname.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_get_if_last_ancestor(const char *ta,
+                                              const char *ifname,
+                                              char *ancestor_ifname,
+                                              size_t len);
+
 /**@} <!-- END tapi_conf_iface --> */
 
 /**
