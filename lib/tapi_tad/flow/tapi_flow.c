@@ -950,7 +950,6 @@ tapi_flow_gen_base_ptrn(asn_value *rcv_ptrn, asn_value **base_ptrn_p)
     int        rc                           = 0;
     int        value                        = 0;
     uint8_t    addr[TAPI_FLOW_ADDR_LEN_MAX] = {0, };
-    int        addr_len;
     int        num;
     int        i;
     char       buf[4096];
@@ -1030,6 +1029,9 @@ tapi_flow_gen_base_ptrn(asn_value *rcv_ptrn, asn_value **base_ptrn_p)
         } else if ((strcmp(layer->name, "ip4") == 0) ||
                    (strcmp(layer->name, "eth") == 0))
         {
+            size_t addr_len;
+            int    ret;
+
             if (strcmp(layer->name, "ip4") == 0)
             {
                 rc = tapi_tad_tmpl_ptrn_add_layer(&base_ptrn, TRUE,
@@ -1047,9 +1049,10 @@ tapi_flow_gen_base_ptrn(asn_value *rcv_ptrn, asn_value **base_ptrn_p)
                 return rc;
             }
 
-            if ((addr_len = asn_get_length(layer, "src-addr.#plain")) > 0)
+            if ((ret = asn_get_length(layer, "src-addr.#plain")) > 0)
             {
-                VERB("Length of src-addr: %d bytes", addr_len);
+                addr_len = (size_t)ret;
+                VERB("Length of src-addr: %z bytes", addr_len);
 
                 if ((rc = asn_read_value_field(layer, addr, &addr_len,
                                                "src-addr.#plain")) != 0)
@@ -1066,9 +1069,10 @@ tapi_flow_gen_base_ptrn(asn_value *rcv_ptrn, asn_value **base_ptrn_p)
                 }
             }
 
-            if ((addr_len = asn_get_length(layer, "dst-addr.#plain")) > 0)
+            if ((ret = asn_get_length(layer, "dst-addr.#plain")) > 0)
             {
-                VERB("Length of dst-addr: %d bytes", addr_len);
+                addr_len = (size_t)ret;
+                VERB("Length of dst-addr: %z bytes", addr_len);
 
                 if ((rc = asn_read_value_field(layer, addr, &addr_len,
                                                "dst-addr.#plain")) != 0)
