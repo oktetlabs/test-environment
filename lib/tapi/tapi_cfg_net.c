@@ -478,6 +478,7 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
     char  *val;
     int    ret_array_len = 1; /* The last entry always equals to NULL */
     char **ret_array = NULL;
+    char  *oid_name = NULL;
 
 #define THROW_EXCEPTION(err_msg...) \
     do {                \
@@ -521,24 +522,28 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
             THROW_EXCEPTION("Error while getting OID by handle");
         assert(oid->inst);
 
-        VERB("Net/Node: %s", oid);
+        oid_name = cfg_convert_oid(oid);
+        if (oid_name == NULL)
+            THROW_EXCEPTION("Not enough memory to get name of OID.");
+
+        VERB("Net/Node: %s", oid_name);
 
         val_type = CVT_INTEGER;
         rc = cfg_get_instance_fmt(&val_type, &cfg_node_type,
-                                  "%s/type:", oid);
+                                  "%s/type:", oid_name);
         if (rc != 0)
-            THROW_EXCEPTION("Error while getting type of node %s", oid);
+            THROW_EXCEPTION("Error while getting type of node %s", oid_name);
 
         VERB("Node type: %d (expected %d)", cfg_node_type, node_type);
 
         if (cfg_node_type != node_type)
         {
+            SAFE_FREE(oid_name, free);
             SAFE_FREE(oid, cfg_free_oid);
             continue;
         }
 
-
-        VERB("Node %s has expected type", oid);
+        VERB("Node %s has expected type", oid_name);
 
         /*
          * Processing of the node of specified type:
@@ -548,7 +553,7 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
 
         val_type = CVT_STRING;
         if ((rc = cfg_get_instance(handles[i], &val_type, &val)) != 0)
-            THROW_EXCEPTION("Error while getting value of %s", oid);
+            THROW_EXCEPTION("Error while getting value of %s", oid_name);
 
         VERB("Node value: %s", val);
 
@@ -586,6 +591,7 @@ tapi_cfg_net_get_nodes_values(const char *net_name,
             free(val);
         }
         SAFE_FREE(oid, cfg_free_oid);
+        SAFE_FREE(oid_name, free);
     }
 
 clean_all:
@@ -602,6 +608,7 @@ clean_all:
     {
         *oids = ret_array;
     }
+    free(oid_name);
     free(handles);
     cfg_free_oid(oid);
 
