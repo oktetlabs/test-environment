@@ -529,62 +529,38 @@ l2tp_secrets_recover(const char *filename)
 /**
  * Create a temporary file to save L2TP secrets.
  *
- * @param[in]  l2tp         L2TP server context.
- * @param[in]  protocol     Authentication protocol.
- * @param[out] fname        Name of created file. Should be freed when it is no
- *                          longer needed.
- * @param[out] file         File stream.
+ * @param[in]    secrets_fname  Name of global (system) secrets file.
+ * @param[inout] fname          Template of name of file to create, should not
+ *                              be a string constant because it will be
+ *                              replaced by real name of created file.
+ * @param[out]   file           File stream.
  *
  * @return Status code.
  *
  * @sa l2tp_secrets_tmp_close
  */
 static te_errno
-l2tp_secrets_tmp_open(te_l2tp_server *l2tp, enum l2tp_secret_prot protocol,
-                      char **fname, FILE **file)
+l2tp_secrets_tmp_open(const char *secrets_fname, char *fname, FILE **file)
 {
-    FILE       *tmp_fd;
-    char       *tmp_fname;
-    const char *global_secrets;
-    const char *basename;
-    te_errno    rc;
+    FILE     *tmp_file;
+    te_errno  rc;
 
-    if (!l2tp_secret_is_set(l2tp, protocol))
-        return 0;
+    rc = l2tp_create_file(fname, &tmp_file);
+    if (rc != 0)
+        return rc;
 
-    switch (protocol)
+    rc = l2tp_secrets_copy(tmp_file, secrets_fname);
+    if (rc != 0)
     {
-        case L2TP_SECRET_PROT_CHAP:
-            global_secrets = L2TP_CHAP_SECRETS;
-            basename = TMP_CHAP_SECRETS_FILE;
-            break;
-
-        case L2TP_SECRET_PROT_PAP:
-            global_secrets = L2TP_PAP_SECRETS;
-            basename = TMP_PAP_SECRETS_FILE;
-            break;
-
-        default:
-            ERROR("Unknown authentication protocol");
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        fclose(tmp_file);
+        return rc;
     }
 
-    tmp_fname = l2tp_build_filename(basename);
-
-    rc = l2tp_create_file(tmp_fname, &tmp_fd);
-    if (rc != 0)
-        return rc;
-
-    rc = l2tp_secrets_copy(tmp_fd, global_secrets);
-    if (rc != 0)
-        return rc;
-
     /* Add a line to isolate L2TP test specific secrets */
-    fputs(L2TP_FENCE, tmp_fd);
-    fputs(L2TP_FENCE_DESCRIPTION, tmp_fd);
+    fputs(L2TP_FENCE, tmp_file);
+    fputs(L2TP_FENCE_DESCRIPTION, tmp_file);
 
-    *file = tmp_fd;
-    *fname = tmp_fname;
+    *file = tmp_file;
 
     return 0;
 }
@@ -669,14 +645,22 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
     ENTRY("create l2tp server configuration files");
 
     /* Create chap_secret file */
-    rc = l2tp_secrets_tmp_open(l2tp, L2TP_SECRET_PROT_CHAP, &chap_fname, &chap_file);
-    if (rc != 0)
-        goto l2tp_server_save_conf_cleanup;
+    if (l2tp_secret_is_set(l2tp, L2TP_SECRET_PROT_CHAP))
+    {
+        chap_fname = l2tp_build_filename(TMP_CHAP_SECRETS_FILE);
+        rc = l2tp_secrets_tmp_open(L2TP_CHAP_SECRETS, chap_fname, &chap_file);
+        if (rc != 0)
+            goto l2tp_server_save_conf_cleanup;
+    }
 
     /* Create pap_secret file */
-    rc = l2tp_secrets_tmp_open(l2tp, L2TP_SECRET_PROT_PAP, &pap_fname, &pap_file);
-    if (rc != 0)
-        goto l2tp_server_save_conf_cleanup;
+    if (l2tp_secret_is_set(l2tp, L2TP_SECRET_PROT_PAP))
+    {
+        pap_fname = l2tp_build_filename(TMP_PAP_SECRETS_FILE);
+        rc = l2tp_secrets_tmp_open(L2TP_PAP_SECRETS, pap_fname, &pap_file);
+        if (rc != 0)
+            goto l2tp_server_save_conf_cleanup;
+    }
 
     /* Create xl2tpd conf file */
     rc = l2tp_create_file(l2tp->conf_file, &l2tp_conf_file);
