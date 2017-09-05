@@ -419,6 +419,27 @@ l2tp_create_file(char *file_name, FILE **file)
 }
 
 /**
+ * Remove the file if it exists.
+ *
+ * @param file_name         Name of file to delete.
+ *
+ * @return Status code.
+ */
+static te_errno
+l2tp_remove_file(const char *file_name)
+{
+    ENTRY("remove file %s", file_name);
+
+    if (access(file_name, F_OK) == 0 && remove(file_name) != 0)
+    {
+        ERROR("Failed to remove %s: %s", file_name, strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    return 0;
+}
+
+/**
  * Copy a content of original CHAP/PAP secrets file to the new one. It skips
  * the records are left by previous test run (it is possible in case of agent
  * fault).
@@ -571,61 +592,57 @@ l2tp_secrets_tmp_open(te_l2tp_server *l2tp, enum l2tp_secret_prot protocol,
 /**
  * Close a temporary file and save L2TP secrets to the secrets file.
  *
- * @param l2tp              L2TP server context.
- * @param protocol          Authentication protocol.
- * @param fname             Name of file to close.
- * @param file              File stream to close.
- * @param apply_secrets     Enable to save custom secrets to original.
+ * @param[in]  secrets_fname    Name of global (system) secrets file.
+ * @param[in]  fname            Name of file to close. Don't use it after
+ *                              calling the function - it frees it.
+ * @param[in]  file             File stream to close.
+ * @param[in]  error            External error, @c 0 enables to apply custom
+ *                              secrets. Note, it can be transfered as return value.
+ * @param[out] secrets_changed  Whether secrets were applyed (global secrets
+ *                              file was updated), or not.
  *
- * @return Status code.
+ * @return Status code in case of failure, or @p error.
  *
  * @sa l2tp_secrets_tmp_open
  */
 static te_errno
-l2tp_secrets_tmp_close(te_l2tp_server *l2tp, enum l2tp_secret_prot protocol,
-                       char *fname, FILE *file, te_bool apply_secrets)
+l2tp_secrets_tmp_close(const char *secrets_fname, char *fname, FILE *file,
+                       te_errno error, te_bool *secrets_changed)
 {
-    const char *global_secrets;
-    te_bool    *secrets_changed;
-    te_errno    rc = 0;
-
-    /* Add a line to isolate L2TP test specific secrets */
-    fputs(L2TP_FENCE, file);
-    fclose(file);
-
-    if (apply_secrets)
+    if (file != NULL)
     {
-        switch (protocol)
-        {
-            case L2TP_SECRET_PROT_CHAP:
-                global_secrets = L2TP_CHAP_SECRETS;
-                secrets_changed = &l2tp->chap_changed;
-                break;
+        /* Add a line to isolate L2TP test specific secrets */
+        fputs(L2TP_FENCE, file);
+        fclose(file);
 
-            case L2TP_SECRET_PROT_PAP:
-                global_secrets = L2TP_PAP_SECRETS;
-                secrets_changed = &l2tp->pap_changed;
-                break;
-
-            default:
-                ERROR("Unknown authentication protocol");
-                return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        }
-
-        INFO("rename %s to %s", fname, global_secrets);
-        if (rename(fname, global_secrets) == 0)
+        if (error == 0)
         {
-            *secrets_changed = TRUE;
-        }
-        else
-        {
-            ERROR("Failed to rename %s to %s: %s",
-                  fname, global_secrets, strerror(errno));
-            rc = TE_OS_RC(TE_TA_UNIX, errno);
+            INFO("rename %s to %s", fname, secrets_fname);
+            if (rename(fname, secrets_fname) == 0)
+            {
+                *secrets_changed = TRUE;
+            }
+            else
+            {
+                ERROR("Failed to rename %s to %s: %s",
+                      fname, secrets_fname, strerror(errno));
+                error = TE_OS_RC(TE_TA_UNIX, errno);
+            }
         }
     }
 
-    return rc;
+    if (fname != NULL)
+    {
+        te_errno rc;
+
+        rc = l2tp_remove_file(fname);
+        /* It is not a critical error, since we don't use the file any more */
+        if (rc != 0)
+            WARN("Failed to delete file \"%s\": %r", fname, rc);
+        free(fname);
+    }
+
+    return error;
 }
 
 /**
@@ -648,7 +665,6 @@ l2tp_server_save_conf(te_l2tp_server *l2tp)
     char                *pap_fname = NULL;
     char                *ppp_fname = NULL;
     te_errno             rc;
-    te_errno             err;
 
     ENTRY("create l2tp server configuration files");
 
@@ -712,23 +728,12 @@ l2tp_server_save_conf_cleanup:
         fclose(l2tp_conf_file);
     if (ppp_file != NULL)
         fclose(ppp_file);
-    if (chap_file != NULL)
-    {
-        err = l2tp_secrets_tmp_close(l2tp, L2TP_SECRET_PROT_CHAP, chap_fname,
-                                     chap_file, (rc == 0));
-        if (err != 0)
-            rc = err;
-    }
-    if (pap_file != NULL)
-    {
-        err = l2tp_secrets_tmp_close(l2tp, L2TP_SECRET_PROT_PAP, pap_fname,
-                                     pap_file, (rc == 0));
-        if (err != 0)
-            rc = err;
-    }
 
-    free(chap_fname);
-    free(pap_fname);
+    rc = l2tp_secrets_tmp_close(L2TP_CHAP_SECRETS, chap_fname, chap_file, rc,
+                                &l2tp->chap_changed);
+    rc = l2tp_secrets_tmp_close(L2TP_PAP_SECRETS, pap_fname, pap_file, rc,
+                                &l2tp->pap_changed);
+
     return rc;
 }
 
@@ -3645,11 +3650,8 @@ l2tp_release(const char *name)
         ERROR("Failed to remove ppp options files");
     ASSIGN_RETVAL(rc);
 
-    if (access(l2tp->conf_file, F_OK) == 0 && remove(l2tp->conf_file) != 0)
-    {
-        ERROR("Failed to remove %s: %s", l2tp->conf_file, strerror(errno));
-        ASSIGN_RETVAL(TE_OS_RC(TE_TA_UNIX, errno));
-    }
+    rc = l2tp_remove_file(l2tp->conf_file);
+    ASSIGN_RETVAL(rc);
 
     if (l2tp->chap_changed)
     {
