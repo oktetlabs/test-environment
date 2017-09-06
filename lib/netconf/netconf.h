@@ -176,6 +176,12 @@ typedef struct netconf_macvlan {
     char       *ifname;    /**< Interface name */
 } netconf_macvlan;
 
+/** Virtual Ethernet network interface */
+typedef struct netconf_veth {
+    char   *ifname;     /**< Interface name */
+    char   *peer;       /**< Peer interface name */
+} netconf_veth;
+
 /** Type of nodes in the list */
 typedef enum netconf_node_type {
     NETCONF_NODE_UNSPEC,                /**< Unspecified */
@@ -186,6 +192,7 @@ typedef enum netconf_node_type {
     NETCONF_NODE_RULE,                  /**< Rule entry in the routing
                                              policy database */
     NETCONF_NODE_MACVLAN,               /**< MAC VLAN interface */
+    NETCONF_NODE_VETH,                  /**< Virtual Ethernet interface */
 } netconf_node_type;
 
 typedef te_conf_ip_rule netconf_rule;
@@ -200,6 +207,7 @@ typedef struct netconf_node {
         netconf_neigh     neigh;
         netconf_rule      rule;
         netconf_macvlan   macvlan;
+        netconf_veth      veth;
     } data;                             /**< Network data */
     struct netconf_node  *next;         /**< Next node of the list */
     struct netconf_node  *prev;         /**< Previous node of the list */
@@ -248,6 +256,20 @@ int netconf_open(netconf_handle *nh);
  * @return List, or NULL in case of error (check errno for details).
  */
 netconf_list *netconf_link_dump(netconf_handle nh);
+
+/**
+ * Move interface to a network namespace.
+ *
+ * @param nh        Netconf handle.
+ * @param ifname    Interface name.
+ * @param fd        File descriptor belongs to a network namespace or @c -1 to
+ *                  choose namespace using @p pid.
+ * @param pid       Process identifier in the target namespace.
+ *
+ * @return Status code
+ */
+extern te_errno netconf_link_set_ns(netconf_handle nh, const char *ifname,
+                                    int32_t fd, pid_t pid);
 
 /**
  * Set default values to fields in network address struct.
@@ -483,6 +505,67 @@ extern te_errno netconf_macvlan_list(netconf_handle nh, const char *link,
 extern te_errno netconf_macvlan_get_mode(netconf_handle nh,
                                          const char *ifname,
                                          const char **mode_str);
+
+/**
+ * Add new veth interface.
+ *
+ * @param nh        Netconf session handle
+ * @param ifname    The interface name
+ * @param peer      The peer interface name
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_veth_add(netconf_handle nh, const char *ifname,
+                                 const char *peer);
+
+/**
+ * Delete a veth interface.
+ *
+ * @param nh        Netconf session handle
+ * @param ifname    The interface name
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_veth_del(netconf_handle nh, const char *ifname);
+
+/**
+ * Get a veth peer interface.
+ *
+ * @param nh        Netconf session handle
+ * @param ifname    The veth interface name
+ * @param peer      Buffer to save the peer interface name
+ * @param peer_len  @p peer buffer length
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_veth_get_peer(netconf_handle nh, const char *ifname,
+                                      char *peer, size_t peer_len);
+
+/**
+ * Type of callback function to pass to netconf_veth_list(). It is used to
+ * decide if the interface should be included to the list.
+ *
+ * @param ifname    The interface name
+ * @param data      Opaque data
+ *
+ * @return @c TRUE to include interface to the list.
+ */
+typedef te_bool (*netconf_veth_list_filter_func)(const char *ifname,
+                                                 void *data);
+
+/**
+ * Get veth interfaces list.
+ *
+ * @param nh            Netconf session handle
+ * @param filter_cb     Filtering callback function or @c NULL
+ * @param filter_opaque Opaque data to pass to the filtering function
+ * @param list          Space-separated interfaces list (allocated from the heap)
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_veth_list(netconf_handle nh,
+                                  netconf_veth_list_filter_func filter_cb,
+                                  void *filter_opaque, char **list);
 
 #ifdef __cplusplus
 }

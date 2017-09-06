@@ -655,11 +655,11 @@ tce_save_data_gcc34(rcf_rpc_server *rpcs, int progno, unsigned version)
             {
                 if (t_ix >= GCOV_COUNTERS_SUMMABLE)
                 {
-                    tce_read_counters(rpcs, progno, objno, c_ix, 
+                    tce_read_counters(rpcs, progno, objno, c_ix,
                                    &obj_ctrs[ctr_base + t_ix]);
                 }
-                
-                values[c_ix] = obj_ctrs[ctr_base + t_ix].values;
+
+                values[c_ix] = (gcov_type *)obj_ctrs[ctr_base + t_ix].values;
                 c_ix++;
             }
         }
@@ -830,7 +830,7 @@ tce_save_data_gcc34(rcf_rpc_server *rpcs, int progno, unsigned version)
         {
             if ((1 << t_ix) & ctr_mask)
             {
-                values[c_ix] = obj_ctrs[ctr_base + t_ix].values;
+                values[c_ix] = (gcov_type *)obj_ctrs[ctr_base + t_ix].values;
                 c_ix++;
             }
         }

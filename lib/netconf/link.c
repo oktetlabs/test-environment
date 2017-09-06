@@ -105,3 +105,31 @@ netconf_link_node_free(netconf_node *node)
 
     free(node);
 }
+
+te_errno
+netconf_link_set_ns(netconf_handle nh, const char *ifname,
+                    int32_t fd, pid_t pid)
+{
+    char                req[NETCONF_MAX_REQ_LEN];
+    struct nlmsghdr    *h;
+
+    memset(&req, 0, sizeof(req));
+
+    h = (struct nlmsghdr *)req;
+    h->nlmsg_len = NLMSG_LENGTH(sizeof(struct ifinfomsg));
+    h->nlmsg_type = RTM_NEWLINK;
+    h->nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK;
+    h->nlmsg_seq = ++nh->seq;
+
+    netconf_append_rta(h, ifname, strlen(ifname), IFLA_IFNAME);
+
+    if (fd >= 0)
+        netconf_append_rta(h, &fd, sizeof(fd), IFLA_NET_NS_FD);
+    else
+        netconf_append_rta(h, &pid, sizeof(pid), IFLA_NET_NS_PID);
+
+    if (netconf_talk(nh, &req, sizeof(req), NULL, NULL) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    return 0;
+}

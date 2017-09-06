@@ -62,6 +62,7 @@ const asn_type * const ndn_rte_flow_attr = &ndn_rte_flow_attr_s;
 asn_enum_entry_t _ndn_rte_flow_action_type_enum_entries[] = {
     {"void", NDN_FLOW_ACTION_TYPE_VOID},
     {"queue", NDN_FLOW_ACTION_TYPE_QUEUE},
+    {"rss", NDN_FLOW_ACTION_TYPE_RSS},
 };
 
 asn_type ndn_rte_flow_action_type_s = {
@@ -72,9 +73,115 @@ asn_type ndn_rte_flow_action_type_s = {
 
 const asn_type * const ndn_rte_flow_action_type = &ndn_rte_flow_action_type_s;
 
+static asn_named_entry_t _ndn_rte_flow_action_conf_rss_opt_hf_ne_array[] = {
+    { "ipv4",               &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_IPV4 } },
+    { "frag-ipv4",          &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_FRAG_IPV4 } },
+    { "nonfrag-ipv4-tcp",   &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NONFRAG_IPV4_TCP } },
+    { "nonfrag-ipv4-udp",   &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NONFRAG_IPV4_UDP } },
+    { "nonfrag-ipv4-sctp",  &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NONFRAG_IPV4_SCTP } },
+    { "nonfrag-ipv4-other", &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NONFRAG_IPV4_OTHER } },
+    { "ipv6",               &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_IPV6 } },
+    { "frag-ipv6",          &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_FRAG_IPV6 } },
+    { "nonfrag-ipv6-tcp",   &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NONFRAG_IPV6_TCP } },
+    { "nonfrag-ipv6-udp",   &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NONFRAG_IPV6_UDP } },
+    { "nonfrag-ipv6-sctp",  &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NONFRAG_IPV6_SCTP } },
+    { "nonfrag-ipv6-other", &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NONFRAG_IPV6_OTHER } },
+    { "l2-payload",         &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_L2_PAYLOAD } },
+    { "ipv6-ex",            &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_IPV6_EX } },
+    { "ipv6-tcp-ex",        &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_IPV6_TCP_EX } },
+    { "ipv6-udp-ex",        &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_IPV6_UDP_EX } },
+    { "port",               &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_PORT } },
+    { "vxlan",              &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_VXLAN } },
+    { "geneve",             &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_GENEVE } },
+    { "nvgre",              &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_NVGRE } },
+    { "ip",                 &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_IP } },
+    { "tcp",                &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_TCP } },
+    { "udp",                &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_UDP } },
+    { "sctp",               &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_SCTP } },
+    { "tunnel",             &asn_base_int1_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF_TUNNEL } },
+};
+
+asn_type ndn_rte_flow_action_conf_rss_opt_hf_s = {
+    "Action-Conf-RSS-Opt-HF",
+    { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF }, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_rte_flow_action_conf_rss_opt_hf_ne_array),
+    {_ndn_rte_flow_action_conf_rss_opt_hf_ne_array}
+};
+
+const asn_type * const ndn_rte_flow_action_conf_rss_opt_hf =
+    &ndn_rte_flow_action_conf_rss_opt_hf_s;
+
+static asn_named_entry_t _ndn_rte_flow_action_conf_rss_opt_ne_array[] = {
+    { "rss-key", &asn_base_octstring_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_KEY } },
+    { "rss-hf",  &ndn_rte_flow_action_conf_rss_opt_hf_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT_HF } },
+};
+
+asn_type ndn_rte_flow_action_conf_rss_opt_s = {
+    "Action-Conf-RSS-Opt", { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT }, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_rte_flow_action_conf_rss_opt_ne_array),
+    {_ndn_rte_flow_action_conf_rss_opt_ne_array}
+};
+
+const asn_type * const ndn_rte_flow_action_conf_rss_opt =
+    &ndn_rte_flow_action_conf_rss_opt_s;
+
+asn_type ndn_rte_flow_action_conf_rss_queue_s = {
+    "Action-Conf-RSS-Queue",
+    { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_QUEUE }, SEQUENCE_OF,
+    0, {subtype: &asn_base_int16_s}
+};
+
+const asn_type * const ndn_rte_flow_action_conf_rss_queue =
+    &ndn_rte_flow_action_conf_rss_queue_s;
+
+static asn_named_entry_t _ndn_rte_flow_action_conf_rss_ne_array[] = {
+    { "rss-conf", &ndn_rte_flow_action_conf_rss_opt_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_OPT } },
+    { "queue",    &ndn_rte_flow_action_conf_rss_queue_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_RSS_QUEUE } },
+};
+
+asn_type ndn_rte_flow_action_conf_rss_s = {
+    "Action-Conf-RSS", { PRIVATE, NDN_FLOW_ACTION_CONF_RSS }, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_rte_flow_action_conf_rss_ne_array),
+    {_ndn_rte_flow_action_conf_rss_ne_array}
+};
+
+const asn_type * const ndn_rte_flow_action_conf_rss =
+    &ndn_rte_flow_action_conf_rss_s;
+
 static asn_named_entry_t _ndn_rte_flow_action_conf_ne_array[] = {
     { "index", &asn_base_int16_s,
         {PRIVATE, NDN_FLOW_ACTION_QID} },
+    { "rss",   &ndn_rte_flow_action_conf_rss_s,
+        {PRIVATE, NDN_FLOW_ACTION_CONF_RSS} },
 };
 
 asn_type ndn_rte_flow_action_conf_s = {

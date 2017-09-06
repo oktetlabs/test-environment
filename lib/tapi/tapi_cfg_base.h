@@ -588,6 +588,41 @@ extern te_errno tapi_cfg_base_if_set_macvlan_mode(const char *ta,
                                                   const char *mode);
 
 /**
+ * Add veth interfaces pair.
+ *
+ * @param ta        Test Agent name
+ * @param ifname    The interface name
+ * @param peer      The peer interface name
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_add_veth(const char *ta, const char *ifname,
+                                          const char *peer);
+
+/**
+ * Delete veth interfaces pair.
+ *
+ * @param ta        Test Agent name
+ * @param ifname    The interface name
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_del_veth(const char *ta, const char *ifname);
+
+/**
+ * Get veth peer interface name.
+ *
+ * @param ta        Test Agent name
+ * @param ifname    The interface name
+ * @param peer      The peer interface name (allocated from the heap)
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_get_veth_peer(const char *ta,
+                                               const char *ifname,
+                                               char **peer);
+
+/**
  * It is the same function as @p tapi_cfg_base_if_get_mtu, but it is more
  * user-friendly to use it in tests.
  *

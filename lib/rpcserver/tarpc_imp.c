@@ -7658,9 +7658,9 @@ TARPC_FUNC(splice,
 
     MAKE_CALL(out->retval =
         func(in->fd_in,
-             out->off_in.off_in_len == 0 ? NULL : &off_in,
+             out->off_in.off_in_len == 0 ? NULL : (off64_t *)&off_in,
              in->fd_out,
-             out->off_out.off_out_len == 0 ? NULL : &off_out,
+             out->off_out.off_out_len == 0 ? NULL : (off64_t *)&off_out,
              in->len, splice_flags_rpc2h(in->flags)));
     if (out->off_in.off_in_len > 0)
         out->off_in.off_in_val[0] = (tarpc_off_t)off_in;

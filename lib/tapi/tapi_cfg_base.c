@@ -894,3 +894,78 @@ tapi_cfg_base_if_set_macvlan_mode(const char *ta, const char *link,
                                 "/agent:%s/interface:%s/macvlan:%s",
                                 ta, link, ifname);
 }
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_add_veth(const char *ta, const char *ifname,
+                          const char *peer)
+{
+    int rc;
+    char veth_oid[CFG_OID_MAX];
+
+    snprintf(veth_oid, CFG_OID_MAX, "/agent:%s/veth:%s", ta, ifname);
+    rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, peer), "%s", veth_oid);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_base_if_add_rsrc(ta, ifname);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_base_if_add_rsrc(ta, peer);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_add_instance_fmt(NULL, CVT_STRING, veth_oid,
+                              "/agent:%s/rsrc:veth_%s", ta, ifname);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_base_if_up(ta, ifname);
+    if (rc != 0)
+        return rc;
+
+    return tapi_cfg_base_if_up(ta, peer);
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_get_veth_peer(const char *ta, const char *ifname,
+                               char **peer)
+{
+    return cfg_get_instance_fmt(NULL, peer, "/agent:%s/veth:%s", ta, ifname);
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_del_veth(const char *ta, const char *ifname)
+{
+    char *peer = NULL;
+    int   rc;
+    int   rc2;
+
+    rc = tapi_cfg_base_if_get_veth_peer(ta, ifname, &peer);
+
+    /* Try to delete veth and release resources even if a call fails. */
+    rc2 = cfg_del_instance_fmt(FALSE, "/agent:%s/veth:%s", ta, ifname);
+    if (rc == 0)
+        rc = rc2;
+
+    rc2 = cfg_del_instance_fmt(TRUE, "/agent:%s/rsrc:veth_%s", ta, ifname);
+    if (rc == 0)
+        rc = rc2;
+
+    if (peer != NULL)
+    {
+        rc2 = tapi_cfg_base_if_del_rsrc(ta, peer);
+        free(peer);
+        if (rc == 0)
+            rc = rc2;
+    }
+
+    rc2 = tapi_cfg_base_if_del_rsrc(ta, ifname);
+    if (rc == 0)
+        rc = rc2;
+
+    return rc;
+}

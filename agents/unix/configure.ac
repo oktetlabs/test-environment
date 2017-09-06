@@ -735,6 +735,11 @@ then
     TE_CFLAGS="$TE_CFLAGS --coverage"
 fi
 
+dnl
+dnl Check for setns() function.
+dnl
+AC_CHECK_FUNCS([setns])
+
 AC_SUBST([TE_BASE])
 AC_SUBST([TE_BUILD])
 
