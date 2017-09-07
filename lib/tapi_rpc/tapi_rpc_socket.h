@@ -1079,9 +1079,10 @@ extern int rpc_socket_listen_close(rcf_rpc_server *rpcs,
                                    uint32_t time2run);
 
 /**
- * Send empty IP packet to @p addr to provoke ARP procedure.
+ * Send ICMP ECHO request packet to @p addr to provoke ARP resolution from
+ * both sides.
  *
- * @note The function jumps to @b cleanup in case of fail.
+ * @note The function jumps to @b cleanup in case of failure.
  *
  * @param rpcs  RPC server handle.
  * @param addr  Destination address.

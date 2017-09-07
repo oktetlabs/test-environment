@@ -55,6 +55,9 @@
 #ifdef HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
 #endif
+#ifdef HAVE_NETINET_IP_ICMP_H
+#include <netinet/ip_icmp.h>
+#endif
 #ifdef HAVE_NET_IF_H
 #include <net/if.h>
 #else
@@ -69,6 +72,10 @@
 #include "tapi_rpcsock_macros.h"
 #include "te_alloc.h"
 #include "tapi_test_log.h"
+#include "tad_common.h"
+
+/* ICMP ECHO request data length. */
+#define ICMP_DATALEN 56
 
 /** Initialize and check @b rpc_msghdr.msg_flags value in RPC only if the
  * variable is @c TRUE */
@@ -2568,16 +2575,37 @@ void
 tapi_rpc_provoke_arp_resolution(struct rcf_rpc_server *rpcs,
                                 const struct sockaddr *addr)
 {
-    char buf[1] = {0};
-    int sock;
+#ifdef HAVE_NETINET_IP_ICMP_H
+    struct icmphdr *icp;
+    char            buf[ICMP_DATALEN + sizeof(*icp)] = {0};
+    size_t          req_len = sizeof(buf);
+    rpc_msghdr      msg;
+    rpc_iovec       iov;
+    int             sock;
+
+    memset(&msg, 0, sizeof(msg));
+    memset(&iov, 0, sizeof(iov));
 
     sock = rpc_socket(rpcs, rpc_socket_domain_by_addr(addr),
-                      RPC_SOCK_RAW, RPC_IPPROTO_RAW);
+                      RPC_SOCK_RAW, RPC_IPPROTO_ICMP);
 
-    /* Send invalid 0-length IP datagram which will be dropped by any host
-     * in the network; in this way, we minimize side-effect of this
-     * function.
-     */
-    rpc_sendto(rpcs, sock, buf, sizeof(buf), 0, addr);
+    icp = (struct icmphdr *)buf;
+    icp->type = ICMP_ECHO;
+    icp->checksum = calculate_checksum(buf, req_len);
+    icp->checksum = ~icp->checksum & 0xffff;
+
+    iov.iov_base = buf;
+    iov.iov_len = iov.iov_rlen = req_len;
+    msg.msg_name = SA(addr);
+    msg.msg_namelen = te_sockaddr_get_size(addr);
+    msg.msg_iov = &iov;
+    msg.msg_iovlen = msg.msg_riovlen = 1;
+
+    rpc_sendmsg(rpcs, sock, &msg, 0);
     rpc_close(rpcs, sock);
+#else
+    UNUSED(rpcs);
+    UNUSED(addr);
+    TEST_FAIL("Cannot create ICMP message due to lack of netinet/ip_icmp.h");
+#endif
 }
