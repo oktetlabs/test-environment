@@ -49,7 +49,7 @@ te_str_is_null_or_empty(const char *str)
 }
 
 
-/*
+/**
  * Convert lowercase letters of the @p string to uppercase. The function does
  * not work with multibyte/wide strings.
  *
@@ -61,7 +61,7 @@ te_str_is_null_or_empty(const char *str)
  */
 extern char *te_str_upper(const char *src);
 
-/*
+/**
  * Convert uppercase letters of the @p string to lowercase. The function does
  * not work with multibyte/wide strings.
  *
