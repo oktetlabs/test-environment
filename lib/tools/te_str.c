@@ -31,6 +31,7 @@
 #ifdef HAVE_CTYPE_H
 #include <ctype.h>
 #endif
+#include "logger_api.h"
 
 
 /* See description in te_str.h */
@@ -94,4 +95,20 @@ te_str_concat(const char *first, const char *second)
     str[len1 + len2] = '\0';
 
     return str;
+}
+
+/* See description in te_str.h */
+char *
+te_strncpy(const char *id, char *dst, size_t size, const char *src)
+{
+    size_t n = strlen(src) + 1;
+
+    n = n < size ? n : size;
+    memcpy(dst, src, n);
+    if (dst[n - 1] != '\0')
+    {
+        dst[n - 1] = '\0';
+        ERROR("%s: string \"%s\" is truncated", id, dst);
+    }
+    return dst;
 }

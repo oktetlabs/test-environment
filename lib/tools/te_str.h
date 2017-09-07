@@ -89,6 +89,31 @@ extern char *te_str_lower(const char *src);
  */
 extern char *te_str_concat(const char *first, const char *second);
 
+/**
+ * Copy at most @p size bytes of the string pointed to by @p src to the buffer
+ * pointed to by @p dst. It prints an error message if the @p size of destination
+ * buffer is not big enough to store the whole source string, and terminates the
+ * result string with '\0' forcibly.
+ *
+ * @param id        Prefix for error message, usually __func__.
+ * @param dst       Pointer to destination buffer.
+ * @param size      Size of destination buffer.
+ * @param src       Source string buffer to copy from.
+ *
+ * @return A pointer to the destination string @p dst.
+ */
+extern char *te_strncpy(const char *id, char *dst, size_t size, const char *src);
+
+/**
+ * Copy one string to another. It is a wrapper for te_strncpy().
+ *
+ * @param _dst      Pointer to destination buffer.
+ * @param _size     Size of destination buffer.
+ * @param _src      Pointer to source string buffer to copy from.
+ */
+#define TE_STRNCPY(_dst, _size, _src) \
+    te_strncpy(__func__, _dst, _size, _src)
+
 
 #ifdef __cplusplus
 } /* extern "C" */
