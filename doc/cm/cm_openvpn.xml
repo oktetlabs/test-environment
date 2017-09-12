@@ -60,10 +60,13 @@ a<?xml version="1.0"?>
          Value: "tun" if TUN mode, "tap" if TAP mode -->
     <object oid="/agent/openvpn/mode" access="read_write" type="string"/>
 
-    <!-- Key direction
+    <!-- TLS Authentication direction mode, directly influences which side can
+         perform TLS handshake
          Name: empty
-         Value: "normal", "inverse" (must be complementary on client/server
-                sides), or "bidirectional" -->
+         Value: "normal" (we do TLS handshake),
+                "inverse" (the other side does TLS handshake, must be
+                complementary on client/server sides)
+                "bidirectional" (both sides do) -->
     <object oid="/agent/openvpn/key-direction" access="read_write"
         type="string"/>
 
@@ -79,22 +82,22 @@ a<?xml version="1.0"?>
                 openvpn - -show-digests) -->
     <object oid="/agent/openvpn/digest" access="read_write" type="string"/>
 
-    <!-- Path to TLS key. If not set, will be generated automatically
+    <!-- Filesystem path to TLS key. If not set, will be generated automatically
          Name: empty
          Value: Path to PEM-formatted TLS key, empty string -->
     <object oid="/agent/openvpn/tls-key" access="read_write" type="string"/>
 
-    <!-- Path to Certification Authority certificate
+    <!-- Filesystem path to Certification Authority certificate
          Name: empty
          Value: Path to PEM-formatted certificate -->
     <object oid="/agent/openvpn/ca" access="read_write" type="string"/>
 
-    <!-- Path to client/server own certificate
+    <!-- Filesystem path to client/server own certificate
          Name: empty
          Value: Path to PEM-formatted certificate -->
     <object oid="/agent/openvpn/cert" access="read_write" type="string"/>
 
-    <!-- Path to client/server own private key associated with 'cert'
+    <!-- Filesystem path to client/server own private key associated with 'cert'
          Name: empty
          Value: Path to PEM-formatted private key -->
     <object oid="/agent/openvpn/key" access="read_write" type="string"/>
@@ -109,10 +112,11 @@ a<?xml version="1.0"?>
          Value: 0 if disabled, 1 if enabled -->
     <object oid="/agent/openvpn/lzo" access="read_write" type="integer"/>
 
-    <!-- Interface to bind daemon to
+    <!-- Interface to bind daemon to, the encrypted traffic will flow through it
          Name: empty
          Value: interface name (i.e. "eth1") -->
-    <object oid="/agent/openvpn/lower" access="read_write" type="string"/>
+    <object oid="/agent/openvpn/bind_interface" access="read_write"
+        type="string"/>
 
     <!-- Additional options passed to OpenVPN configuration. Duplicates are
          possible, their handling is determined by daemon itself.
@@ -137,8 +141,8 @@ a<?xml version="1.0"?>
         type="string"/>
 
     <!-- Server -->
-    <!-- Path to Diffie-Hellman parameters (server only). If not set, DH
-         parameters will be generated automatically
+    <!-- File system path to Diffie-Hellman parameters (server only).
+         If not set, DH parameters will be generated automatically
          Name: empty
          Value: Path to PEM-formatted Diffie-Hellman parameters,
                 empty string -->
@@ -190,7 +194,7 @@ a<?xml version="1.0"?>
     <object oid="/agent/openvpn/server/user/password" access="read_write"
         type="string"/>
 
-    <!-- Path to user's certificate (server only)
+    <!-- Filesystem path to user's certificate (server only)
          Name: empty
          Value: Path to PEM-formatted certificate signed by server's
                 Certification Authority -->
