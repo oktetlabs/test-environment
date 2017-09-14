@@ -40,46 +40,44 @@ extern "C" {
 /**
  * Start sfptpd daemon.
  *
- * @param rpcs RPC server
+ * @param ta    Test agent name
  */
 static inline void
-tapi_sfptpd_enable(rcf_rpc_server *rpcs)
+tapi_sfptpd_enable(const char *ta)
 {
     CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)1,
-                                  "/agent:%s/sfptpd:/enable:",
-                                  rpcs->ta));
+                                  "/agent:%s/sfptpd:/enable:", ta));
     TAPI_WAIT_NETWORK;
 }
 
 /**
  * Stop sfptpd daemon.
  *
- * @param rpcs RPC server
+ * @param ta    Test agent name
  */
 static inline void
-tapi_sfptpd_disable(rcf_rpc_server *rpcs)
+tapi_sfptpd_disable(const char *ta)
 {
     CHECK_RC(cfg_set_instance_fmt(CVT_INTEGER, (void *)0,
-                                  "/agent:%s/sfptpd:/enable:",
-                                  rpcs->ta));
+                                  "/agent:%s/sfptpd:/enable:", ta));
 }
 
 /**
  * sfptpd daemon status.
  *
- * @param rpcs RPC server
+ * @param ta    Test agent name
  *
- * @return @c TRUE if deaimon is enabled
+ * @return @c TRUE if daemon is enabled
  */
 static inline te_bool
-tapi_sfptpd_status(rcf_rpc_server *rpcs)
+tapi_sfptpd_status(const char *ta)
 {
     cfg_val_type val_type;
     int val;
 
     val_type = CVT_INTEGER;
     CHECK_RC(cfg_get_instance_fmt(&val_type, &val,
-                                  "/agent:%s/sfptpd:/enable:", rpcs->ta));
+                                  "/agent:%s/sfptpd:/enable:", ta));
 
     return val == 0 ? FALSE : TRUE;
 }
