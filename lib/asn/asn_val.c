@@ -47,6 +47,7 @@
 
 /* this function defined in asn_text.c */
 extern int number_of_digits(int value);
+extern int number_of_digits_unsigned(unsigned int value);
 
 /*
  * Declarations of local methods, for descriptions see their definition.
@@ -191,7 +192,7 @@ asn_init_value(const asn_type * type)
                 memset(ptr, 0, sz);
             }
             break;
-
+        case UINTEGER:
         case INTEGER:
             new_value->txt_len = 1;
             /* fall through */
@@ -1419,7 +1420,29 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
             value->txt_len = 5;
         }
         break;
-
+    case UINTEGER:
+        {
+            unsigned long int val;
+            switch (d_len)
+            {
+                case 0:
+                        return TE_EINVAL;
+                case sizeof(char) :
+                        val = *((const unsigned char *) data);
+                        break;
+                case sizeof(short):
+                        val = *((const unsigned short *)data);
+                        break;
+                case sizeof(long) :
+                        val = *((const unsigned long *) data);
+                        break;
+                default:
+                        val = *((const unsigned int *) data);
+            }
+            value->txt_len = number_of_digits_unsigned(val);
+            value->data.integer = val;
+        }
+        break;
     case INTEGER:
     case ENUMERATED:
         {
@@ -1599,7 +1622,21 @@ asn_impl_write_value_field(asn_value *container,
             container->txt_len = 5;
         }
         break;
-
+    case UINTEGER:
+        {
+            unsigned long int val;
+            switch (d_len)
+            {
+                case 0: return TE_EINVAL;
+                case sizeof(char) : val = *((const unsigned char *) data); break;
+                case sizeof(short): val = *((const unsigned short *)data); break;
+                case sizeof(long) : val = *((const unsigned long *) data); break;
+                default: val = *((const unsigned int *) data);
+            }
+            container->txt_len = number_of_digits_unsigned(val);
+            container->data.integer = val;
+        }
+        break;
     case INTEGER:
     case ENUMERATED:
         {
@@ -1815,6 +1852,7 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
             return TE_ESMALLBUF;
         break;
 #endif
+    case UINTEGER:
     case INTEGER:
     case ENUMERATED:
         {
@@ -2270,6 +2308,7 @@ asn_get_field_data(const asn_value *container,
     switch (subval->syntax)
     {
         case BOOL:
+        case UINTEGER:
         case INTEGER:
         case ENUMERATED:
             *data_ptr = &subval->data.integer;
@@ -3858,10 +3897,15 @@ asn_check_value_contains(asn_value *container, asn_value *value)
     return rc;
 }
 
+
+/**
+ * ASN.1 Universal Tags.
+ */
+#define ASN_UT_UINTEGER  40      /**< Self-defined tag. */
+
 /**
  * Definitions of ASN.1 base types.
  */
-
 const asn_type asn_base_boolean_s =
 { "BOOLEAN",           {UNIVERSAL, 1}, BOOL,        0, {NULL} };
 const asn_type asn_base_integer_s =
@@ -3880,7 +3924,9 @@ const asn_type asn_base_enum_s =
 { "ENUMERATED",        {UNIVERSAL,10}, ENUMERATED,  0, {NULL} };
 const asn_type asn_base_charstring_s =
 { "UniversalString",   {UNIVERSAL,28}, CHAR_STRING, 0, {NULL} };
-
+/* Self-defined base type. */
+const asn_type asn_base_uinteger_s =
+{ "UINTEGER",          {UNIVERSAL, ASN_UT_UINTEGER}, UINTEGER, 0, {NULL}};
 
 const asn_type  asn_base_int1_s =
 { "INTEGER (0..1)",   {UNIVERSAL, 2}, INTEGER, 1, {0}};
@@ -3908,8 +3954,14 @@ const asn_type  asn_base_int24_s =
 { "INTEGER (0..16777215)",   {UNIVERSAL, 2}, INTEGER, 24, {0}};
 const asn_type  asn_base_int32_s =
 { "INTEGER (0..4294967295)",   {UNIVERSAL, 2}, INTEGER, 32, {0}};
+/**
+ * Unsigned integers definition.
+ */
+const asn_type  asn_base_uint32_s =
+{ "UINTEGER (0..4294967295)", {UNIVERSAL, ASN_UT_UINTEGER}, UINTEGER, 32, {0}};
 
 
+const asn_type * const asn_base_uinteger    = &asn_base_uinteger_s;
 const asn_type * const asn_base_boolean     = &asn_base_boolean_s;
 const asn_type * const asn_base_integer     = &asn_base_integer_s;
 const asn_type * const asn_base_int4        = &asn_base_int4_s;

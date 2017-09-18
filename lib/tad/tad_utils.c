@@ -870,6 +870,7 @@ tad_data_unit_convert_simple(const asn_value *ch_du_field,
             {
                 case BOOL:
                 case INTEGER:
+                case UINTEGER:
                 case ENUMERATED:
                     location->du_type = TAD_DU_I32;
                     rc = asn_read_int32(du_field, &(location->val_i32), "");

@@ -138,8 +138,7 @@ asn_type ndn_octet_string6_s = {
 
 const asn_type * const  ndn_octet_string6 = &ndn_octet_string6_s;
 
-
-
+NDN_DATA_UNIT_WITH_RANGE_TYPE(uint32, asn_base_uint32_s,   UINTEGER(0..4294967295));
 //NDN_DATA_UNIT_TYPE(int,   asn_base_integer_s, INTEGER);
 NDN_DATA_UNIT_WITH_RANGE_TYPE(int1,  asn_base_int1_s,    INTEGER(0..1));
 NDN_DATA_UNIT_WITH_RANGE_TYPE(int2,  asn_base_int2_s,    INTEGER(0..3));
@@ -627,6 +626,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
         case SYNTAX_UNDEFINED:
             ERROR("error getting syntax\n");
         case INTEGER:
+        case UINTEGER:
         case ENUMERATED:
             switch (d_len)
             {
@@ -655,6 +655,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
         case NDN_DU_PLAIN:
             switch (plain_syntax)
             {
+                case UINTEGER:
                 case INTEGER:
                 case ENUMERATED:
                     if ((uint32_t)du_val->data.integer != user_int)
@@ -700,7 +701,8 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
                 const asn_value *i_end;
                 unsigned int i;
 
-                if (plain_syntax != INTEGER &&
+                if (plain_syntax != INTEGER  &&
+                    plain_syntax != UINTEGER &&
                     plain_syntax != ENUMERATED)
                 {
                     ERROR("%s(): intervals pattern may be applied "
@@ -761,6 +763,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
 
         switch (plain_syntax)
         {
+            case UINTEGER:
             case INTEGER:
             case ENUMERATED:
                 rc = asn_write_int32(pkt_pdu, user_int, labels_buffer);
@@ -872,7 +875,6 @@ ndn_du_write_plain_int(asn_value *pdu, uint16_t tag, int32_t value)
 
     if ((rc = ndn_get_du_field(pdu, NDN_DU_WR, tag, &du_leaf)) != 0)
         return rc;
-
 
     return asn_write_int32(du_leaf, value, "#plain");
 }

@@ -122,6 +122,8 @@ extern asn_type ndn_data_unit_int16_s;
 extern asn_type ndn_data_unit_int24_s;
 extern asn_type ndn_data_unit_int32_s;
 
+extern asn_type ndn_data_unit_uint32_s;
+
 extern asn_type ndn_data_unit_octet_string_s;
 extern asn_type ndn_data_unit_char_string_s;
 extern asn_type ndn_data_unit_objid_s;

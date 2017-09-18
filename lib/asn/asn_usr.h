@@ -79,25 +79,24 @@ typedef struct asn_type asn_type;
  */
 typedef enum {
     SYNTAX_UNDEFINED = 0,  /**< Undefined syntax, used as error mark. */
-    BOOL = 1,       /**< Boolean syntax */
-    INTEGER,        /**< Integer syntax */
-    PR_ASN_NULL,    /**< ASN_NULL syntax */
-    ENUMERATED,     /**< Enum syntax */
-
+    BOOL = 1,       /**< Boolean syntax          */
+    INTEGER,        /**< Integer syntax          */
+    PR_ASN_NULL,    /**< ASN_NULL syntax         */
+    ENUMERATED,     /**< Enum syntax             */
+    UINTEGER,       /**< Unsigned integer syntax (not a ASN.1 native type) */
 
     PRIMITIVE_VAR_LEN = 0x10, /**< value to be bit-anded with tag
                                    to determine primitive syntax
-                                   with variable length */
+                                   with variable length           */
     LONG_INT    = PRIMITIVE_VAR_LEN | 1, /**< This syntax differs from
                                              "long int" in C! length of its
                                               data in octets is specified
-                                              by asn_type field 'size'. */
-    BIT_STRING  = PRIMITIVE_VAR_LEN | 2, /** ASN.1 "BIT STRING" type */
-    OCT_STRING  = PRIMITIVE_VAR_LEN | 3, /** ASN.1 "OCTET STRING" type */
-    CHAR_STRING = PRIMITIVE_VAR_LEN | 4, /** ASN.1 "GeneralString" type */
-    REAL        = PRIMITIVE_VAR_LEN | 5, /** ASN.1 "REAL" type */
-    OID         = PRIMITIVE_VAR_LEN | 6, /** ASN.1 "OBJECT IDENTIFIER"
-                                           type */
+                                              by asn_type field 'size'.     */
+    BIT_STRING  = PRIMITIVE_VAR_LEN | 2, /**< ASN.1 "BIT STRING" type       */
+    OCT_STRING  = PRIMITIVE_VAR_LEN | 3, /**< ASN.1 "OCTET STRING" type     */
+    CHAR_STRING = PRIMITIVE_VAR_LEN | 4, /**< ASN.1 "GeneralString" type    */
+    REAL        = PRIMITIVE_VAR_LEN | 5, /**< ASN.1 "REAL" type             */
+    OID         = PRIMITIVE_VAR_LEN | 6, /**< ASN.1 "OBJECT IDENTIFIER" type*/
 
     COMPOUND = 0x20, /**< flag of COMPOUND syntax */
     TAGGED      = COMPOUND,
@@ -220,44 +219,46 @@ extern te_errno asn_label_to_tag(const asn_type *type, const char *label,
  * Declaration of structures which describes basic ASN types.
  */
 
-extern const asn_type * const asn_base_boolean; /**< BOOLEAN */
-extern const asn_type * const asn_base_integer; /**< INTEGER */
-extern const asn_type * const asn_base_enum;    /**< ENUMERATED */
+extern const asn_type * const asn_base_boolean;  /**< BOOLEAN    */
+extern const asn_type * const asn_base_integer;  /**< INTEGER    */
+extern const asn_type * const asn_base_uinteger; /**< UINTEGER   */
+extern const asn_type * const asn_base_enum;     /**< ENUMERATED */
 extern const asn_type * const asn_base_charstring; /**< UniversalString */
-extern const asn_type * const asn_base_octstring; /**< OCTET STRING */
-extern const asn_type * const asn_base_bitstring; /**< BIT STRING */
+extern const asn_type * const asn_base_octstring;  /**< OCTET STRING    */
+extern const asn_type * const asn_base_bitstring;  /**< BIT STRING      */
 extern const asn_type * const asn_base_real;    /**< REAL */
 extern const asn_type * const asn_base_null;    /**< NULL */
 extern const asn_type * const asn_base_objid;   /**< OBJECT IDENTIFIER */
 
-extern const asn_type * const asn_base_int4;    /**< INTEGER (0..15) */
-extern const asn_type * const asn_base_int8;    /**< INTEGER (0..255) */
+extern const asn_type * const asn_base_int4;    /**< INTEGER (0..15)    */
+extern const asn_type * const asn_base_int8;    /**< INTEGER (0..255)   */
 extern const asn_type * const asn_base_int16;   /**< INTEGER (0..65535) */
 
-extern const asn_type  asn_base_boolean_s;      /**< BOOLEAN */
-extern const asn_type  asn_base_integer_s;      /**< INTEGER */
-extern const asn_type  asn_base_enum_s;         /**< ENUMERATED */
-extern const asn_type  asn_base_charstring_s;   /**< UniversalString */
-extern const asn_type  asn_base_octstring_s;    /**< OCTET STRING */
-extern const asn_type  asn_base_bitstring_s;    /**< BIT STRING */
-extern const asn_type  asn_base_real_s;         /**< REAL */
-extern const asn_type  asn_base_null_s;         /**< NULL */
+extern const asn_type  asn_base_boolean_s;      /**< BOOLEAN           */
+extern const asn_type  asn_base_integer_s;      /**< INTEGER           */
+extern const asn_type  asn_base_enum_s;         /**< ENUMERATED        */
+extern const asn_type  asn_base_charstring_s;   /**< UniversalString   */
+extern const asn_type  asn_base_octstring_s;    /**< OCTET STRING      */
+extern const asn_type  asn_base_bitstring_s;    /**< BIT STRING        */
+extern const asn_type  asn_base_real_s;         /**< REAL              */
+extern const asn_type  asn_base_null_s;         /**< NULL              */
 extern const asn_type  asn_base_objid_s;        /**< OBJECT IDENTIFIER */
 
-extern const asn_type  asn_base_int1_s;  /**< INTEGER (0..1) */
-extern const asn_type  asn_base_int2_s;  /**< INTEGER (0..3) */
-extern const asn_type  asn_base_int3_s;  /**< INTEGER (0..7) */
-extern const asn_type  asn_base_int4_s;  /**< INTEGER (0..15) */
-extern const asn_type  asn_base_int5_s;  /**< INTEGER (0..31) */
-extern const asn_type  asn_base_int6_s;  /**< INTEGER (0..63) */
-extern const asn_type  asn_base_int7_s;  /**< INTEGER (0..127) */
-extern const asn_type  asn_base_int8_s;  /**< INTEGER (0..255) */
-extern const asn_type  asn_base_int9_s;  /**< INTEGER (0..511) */
-extern const asn_type  asn_base_int12_s; /**< INTEGER (0..4095) */
-extern const asn_type  asn_base_int16_s; /**< INTEGER (0..65535) */
-extern const asn_type  asn_base_int24_s; /**< INTEGER (0..16777215) */
-extern const asn_type  asn_base_int32_s; /**< INTEGER (0..4294967295) */
+extern const asn_type  asn_base_int1_s;  /**< INTEGER (0..1)           */
+extern const asn_type  asn_base_int2_s;  /**< INTEGER (0..3)           */
+extern const asn_type  asn_base_int3_s;  /**< INTEGER (0..7)           */
+extern const asn_type  asn_base_int4_s;  /**< INTEGER (0..15)          */
+extern const asn_type  asn_base_int5_s;  /**< INTEGER (0..31)          */
+extern const asn_type  asn_base_int6_s;  /**< INTEGER (0..63)          */
+extern const asn_type  asn_base_int7_s;  /**< INTEGER (0..127)         */
+extern const asn_type  asn_base_int8_s;  /**< INTEGER (0..255)         */
+extern const asn_type  asn_base_int9_s;  /**< INTEGER (0..511)         */
+extern const asn_type  asn_base_int12_s; /**< INTEGER (0..4095)        */
+extern const asn_type  asn_base_int16_s; /**< INTEGER (0..65535)       */
+extern const asn_type  asn_base_int24_s; /**< INTEGER (0..16777215)    */
+extern const asn_type  asn_base_int32_s; /**< INTEGER (0..4294967295)  */
 
+extern const asn_type asn_base_uint32_s; /**< UINTEGER (0..4294967295) */
 
 
 

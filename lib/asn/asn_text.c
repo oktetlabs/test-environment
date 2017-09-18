@@ -52,6 +52,8 @@
  */
 size_t number_of_digits(int value);
 
+size_t number_of_digits_unsigned(unsigned int value);
+
 size_t asn_count_len_array_fields(const asn_value *value,
                                   unsigned int indent);
 
@@ -65,6 +67,8 @@ te_errno asn_impl_pt_bool(const char *text, const asn_type *type,
                      asn_value **parsed, int *parsed_syms);
 
 te_errno asn_impl_pt_integer(const char *text, const asn_type *type,
+                        asn_value **parsed, int *parsed_syms);
+te_errno asn_impl_pt_uinteger(const char *text, const asn_type *type,
                         asn_value **parsed, int *parsed_syms);
 
 te_errno asn_impl_pt_null(const char*text, const asn_type *type,
@@ -367,6 +371,43 @@ asn_impl_pt_integer(const char *text, const asn_type *type,
     *parsed = asn_init_value(type);
     (*parsed)->data.integer = p_value;
     (*parsed)->txt_len = number_of_digits(p_value);
+    EXIT("text+(*syms_parsed)='%s' *syms_parsed=%d",
+         text + *syms_parsed, *syms_parsed);
+
+    return 0;
+}
+
+/**
+ * Parse textual presentation of single ASN.1 value of UINTEGER type,
+ * create new instance of asn_value type with its internal presentation.
+ *
+ * @param text          text to be parsed;
+ * @param type          ASN type of value to be parsed;
+ * @param parsed        parsed ASN value (OUT);
+ * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
+ *
+ * @return zero on success, otherwise error code.
+ */
+te_errno
+asn_impl_pt_uinteger(const char *text, const asn_type *type,
+                     asn_value **parsed, int *syms_parsed)
+{
+    unsigned long int  p_value;
+    char              *endptr;
+
+    ENTRY("text='%s' type=%p parsed=%p syms_parsed=%p",
+          text, type, parsed, syms_parsed);
+
+    if (!text || !parsed || !syms_parsed)
+        return TE_EWRONGPTR;
+
+    p_value = strtoul(text, &endptr, 10);
+    if ((*syms_parsed = endptr - text) == 0)
+        return TE_EASNTXTNOTINT;
+
+    *parsed                 = asn_init_value(type);
+    (*parsed)->data.integer = (int)p_value;
+    (*parsed)->txt_len      = number_of_digits_unsigned(p_value);
 
     EXIT("text+(*syms_parsed)='%s' *syms_parsed=%d",
          text + *syms_parsed, *syms_parsed);
@@ -902,6 +943,9 @@ asn_parse_value_text(const char *text, const asn_type *type,
         case ENUMERATED:
             return asn_impl_pt_enum      (text, type, parsed, syms_parsed);
 
+        case UINTEGER:
+            return asn_impl_pt_uinteger  (text, type, parsed, syms_parsed);
+
         case CHAR_STRING:
             return asn_impl_pt_charstring(text, type, parsed, syms_parsed);
 
@@ -977,6 +1021,24 @@ number_of_digits(int value)
 
     if (value < 0)
         n++, value = -value;
+    while (value >= 10)
+        value = value / 10, n++;
+
+    return n + 1;
+}
+
+/**
+ * Count number of symbols required to deciamal notation of unsigned integer.
+ *
+ * @param value         unsigned integer number
+ *
+ * @return number of symbols.
+ */
+size_t
+number_of_digits_unsigned(unsigned int value)
+{
+    unsigned int n = 0;
+
     while (value >= 10)
         value = value / 10, n++;
 
@@ -1621,6 +1683,9 @@ asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len,
         case ENUMERATED:
             return asn_sprint_enum(value, buffer, buf_len);
 
+        case UINTEGER:
+            return snprintf(buffer, buf_len, "%u", value->data.integer);
+
         case CHAR_STRING:
             return asn_sprint_charstring(value, buffer, buf_len);
 
@@ -1678,6 +1743,7 @@ asn_count_txt_len(const asn_value *value, unsigned int indent)
                 return strlen("FALSE");
 
         case INTEGER:
+        case UINTEGER:
             return value->txt_len;
 
         case ENUMERATED:
