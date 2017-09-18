@@ -1850,11 +1850,24 @@ tapi_sigaction_simple(rcf_rpc_server *rpcs,
     return 0;
 }
 
-/* 
+/*
  * Join or leave multicast group.
- * For description see tapi_rpc_misc.h
+ *
+ * @param  rpcs        RPC server handle
+ * @param  s           socket descriptor
+ * @param  mcast_addr  multicast address (IPv4 or IPv6).
+ * @param  if_index    interface index
+ * @param  leave_group if @c TRUE, leave a multicasting group,
+ *                     join otherwise
+ * @param  how         joining method:
+ *
+ *    @value TARPC_MCAST_ADD_DROP     sockopt IP_ADD/DROP_MEMBERSHIP
+ *    @value TARPC_MCAST_JOIN_LEAVE   sockopt MCAST_JOIN/LEAVE_GROUP
+ *    @value TARPC_MCAST_WSA          WSAJoinLeaf(), no leave
+ *
+ * @return 0 on success, -1 on failure
  */
-int 
+static int
 rpc_mcast_join_leave(rcf_rpc_server *rpcs, int s,
                      const struct sockaddr *mcast_addr,
                      int if_index, te_bool leave_group,
