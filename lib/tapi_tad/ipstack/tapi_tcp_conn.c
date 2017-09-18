@@ -957,16 +957,14 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
 
     /* start catch our ARP */
     rc = tapi_tad_trrecv_start(agt, conn_descr->arp_sid,
-                               conn_descr->arp_csap, arp_pattern, 
-                               TAD_TIMEOUT_INF, 0, RCF_TRRECV_COUNT); 
-    CHECK_ERROR("%s(): start recv ARPs failed %r",
-                __FUNCTION__, rc);
+                               conn_descr->arp_csap, arp_pattern,
+                               TAD_TIMEOUT_INF, 0, RCF_TRRECV_COUNT);
+    CHECK_ERROR("%s(): failed for arp_csap %r", __FUNCTION__, rc);
 
     rc = tapi_tad_trrecv_start(agt, conn_descr->rcv_sid,
-                               conn_descr->rcv_csap, syn_pattern, 
-                               TAD_TIMEOUT_INF, 0,
-                               RCF_TRRECV_PACKETS); 
-
+                               conn_descr->rcv_csap, syn_pattern,
+                               TAD_TIMEOUT_INF, 0, RCF_TRRECV_PACKETS);
+    CHECK_ERROR("%s(): failed for rcv_csap %r", __FUNCTION__, rc);
     /* send SYN - if we are client */
 
     if (mode == TAPI_TCP_CLIENT)
