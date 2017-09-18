@@ -956,18 +956,18 @@ TCP-Header ::= SEQUENCE {
 }
 */
 static asn_named_entry_t _ndn_tcp_header_ne_array [] = {
-    { "src-port", &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_TCP_SRC_PORT} },
-    { "dst-port", &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_TCP_DST_PORT} },
-    { "seqn",     &ndn_data_unit_int32_s, {PRIVATE, NDN_TAG_TCP_SEQN} },
-    { "ackn",     &ndn_data_unit_int32_s, {PRIVATE, NDN_TAG_TCP_ACKN} },
-    { "hlen",     &ndn_data_unit_int8_s,  {PRIVATE, NDN_TAG_TCP_HLEN} },
-    { "flags",    &ndn_data_unit_int8_s,  {PRIVATE, NDN_TAG_TCP_FLAGS} },
-    { "win-size", &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_TCP_WINDOW} },
-    { "checksum", &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_TCP_CHECKSUM} },
-    { "urg-p",    &ndn_data_unit_int16_s, {PRIVATE, NDN_TAG_TCP_URG} },
-    { "options",  &ndn_tcp_options_seq_s, {PRIVATE, NDN_TAG_TCP_OPTIONS} },
-    { "socket",   &asn_base_integer_s, {PRIVATE, NDN_TAG_TCP_DATA_SOCKET} },
-    { "length",   &asn_base_integer_s, {PRIVATE, NDN_TAG_TCP_DATA_LENGTH} },
+    { "src-port", &ndn_data_unit_int16_s,  {PRIVATE, NDN_TAG_TCP_SRC_PORT   } },
+    { "dst-port", &ndn_data_unit_int16_s,  {PRIVATE, NDN_TAG_TCP_DST_PORT   } },
+    { "seqn",     &ndn_data_unit_uint32_s, {PRIVATE, NDN_TAG_TCP_SEQN       } },
+    { "ackn",     &ndn_data_unit_uint32_s, {PRIVATE, NDN_TAG_TCP_ACKN       } },
+    { "hlen",     &ndn_data_unit_int8_s,   {PRIVATE, NDN_TAG_TCP_HLEN       } },
+    { "flags",    &ndn_data_unit_int8_s,   {PRIVATE, NDN_TAG_TCP_FLAGS      } },
+    { "win-size", &ndn_data_unit_int16_s,  {PRIVATE, NDN_TAG_TCP_WINDOW     } },
+    { "checksum", &ndn_data_unit_int16_s,  {PRIVATE, NDN_TAG_TCP_CHECKSUM   } },
+    { "urg-p",    &ndn_data_unit_int16_s,  {PRIVATE, NDN_TAG_TCP_URG        } },
+    { "options",  &ndn_tcp_options_seq_s,  {PRIVATE, NDN_TAG_TCP_OPTIONS    } },
+    { "socket",   &asn_base_integer_s,     {PRIVATE, NDN_TAG_TCP_DATA_SOCKET} },
+    { "length",   &asn_base_integer_s,     {PRIVATE, NDN_TAG_TCP_DATA_LENGTH} },
 };
 
 asn_type ndn_tcp_header_s = {
