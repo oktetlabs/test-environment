@@ -3901,59 +3901,69 @@ asn_check_value_contains(asn_value *container, asn_value *value)
 /**
  * ASN.1 Universal Tags.
  */
-#define ASN_UT_UINTEGER  40      /**< Self-defined tag. */
+#define ASN_UT_UINTEGER         40      /**< Self-defined tag. */
+#define ASN_UT_BOOLEAN           1
+#define ASN_UT_INTEGER           2
+#define ASN_UT_BIT_STR           3
+#define ASN_UT_OCTET_STR         4
+#define ASN_UT_NULL              5
+#define ASN_UT_OBJ_ID            6
+#define ASN_UT_REAL              9
+#define ASN_UT_ENUM             10
+#define ASN_UT_CHAR_STR         28      /**< Or UniversalStirng */
 
 /**
  * Definitions of ASN.1 base types.
  */
 const asn_type asn_base_boolean_s =
-{ "BOOLEAN",           {UNIVERSAL, 1}, BOOL,        0, {NULL} };
+{ "BOOLEAN",           {UNIVERSAL, ASN_UT_BOOLEAN  }, BOOL,        0, {NULL}};
 const asn_type asn_base_integer_s =
-{ "INTEGER",           {UNIVERSAL, 2}, INTEGER,     0, {NULL} };
+{ "INTEGER",           {UNIVERSAL, ASN_UT_INTEGER  }, INTEGER,     0, {NULL}};
 const asn_type asn_base_bitstring_s =
-{ "BIT STRING",        {UNIVERSAL, 3}, BIT_STRING,  0, {NULL} };
+{ "BIT STRING",        {UNIVERSAL, ASN_UT_BIT_STR  }, BIT_STRING,  0, {NULL}};
 const asn_type asn_base_octstring_s =
-{ "OCTET STRING",      {UNIVERSAL, 4}, OCT_STRING,  0, {NULL} };
+{ "OCTET STRING",      {UNIVERSAL, ASN_UT_OCTET_STR}, OCT_STRING,  0, {NULL}};
 const asn_type asn_base_null_s =
-{ "NULL",              {UNIVERSAL, 5}, PR_ASN_NULL, 0, {NULL} };
+{ "NULL",              {UNIVERSAL, ASN_UT_NULL     }, PR_ASN_NULL, 0, {NULL}};
 const asn_type asn_base_objid_s =
-{ "OBJECT IDENTIFIER", {UNIVERSAL, 6}, OID,         0, {NULL} };
+{ "OBJECT IDENTIFIER", {UNIVERSAL, ASN_UT_OBJ_ID   }, OID,         0, {NULL}};
 const asn_type asn_base_real_s =
-{ "REAL",              {UNIVERSAL, 9}, REAL,        0, {NULL} };
+{ "REAL",              {UNIVERSAL, ASN_UT_REAL     }, REAL,        0, {NULL}};
 const asn_type asn_base_enum_s =
-{ "ENUMERATED",        {UNIVERSAL,10}, ENUMERATED,  0, {NULL} };
+{ "ENUMERATED",        {UNIVERSAL, ASN_UT_ENUM     }, ENUMERATED,  0, {NULL}};
 const asn_type asn_base_charstring_s =
-{ "UniversalString",   {UNIVERSAL,28}, CHAR_STRING, 0, {NULL} };
+{ "UniversalString",   {UNIVERSAL, ASN_UT_CHAR_STR }, CHAR_STRING, 0, {NULL}};
+
 /* Self-defined base type. */
 const asn_type asn_base_uinteger_s =
 { "UINTEGER",          {UNIVERSAL, ASN_UT_UINTEGER}, UINTEGER, 0, {NULL}};
 
 const asn_type  asn_base_int1_s =
-{ "INTEGER (0..1)",   {UNIVERSAL, 2}, INTEGER, 1, {0}};
+{ "INTEGER (0..1)",          {UNIVERSAL, ASN_UT_INTEGER}, INTEGER, 1, {0}};
 const asn_type  asn_base_int2_s =
-{ "INTEGER (0..3)",   {UNIVERSAL, 2}, INTEGER, 2, {0}};
+{ "INTEGER (0..3)",          {UNIVERSAL, ASN_UT_INTEGER}, INTEGER, 2, {0}};
 const asn_type  asn_base_int3_s =
-{ "INTEGER (0..7)",   {UNIVERSAL, 2}, INTEGER, 3, {0}};
+{ "INTEGER (0..7)",          {UNIVERSAL, ASN_UT_INTEGER}, INTEGER, 3, {0}};
 const asn_type  asn_base_int4_s =
-{ "INTEGER (0..15)",   {UNIVERSAL, 2}, INTEGER, 4, {0}};
+{ "INTEGER (0..15)",         {UNIVERSAL, ASN_UT_INTEGER}, INTEGER, 4, {0}};
 const asn_type  asn_base_int5_s =
-{ "INTEGER (0..31)",   {UNIVERSAL, 2}, INTEGER, 5, {0}};
+{ "INTEGER (0..31)",         {UNIVERSAL, ASN_UT_INTEGER}, INTEGER, 5, {0}};
 const asn_type  asn_base_int6_s =
-{ "INTEGER (0..63)",   {UNIVERSAL, 2}, INTEGER, 6, {0}};
+{ "INTEGER (0..63)",         {UNIVERSAL, ASN_UT_INTEGER}, INTEGER, 6, {0}};
 const asn_type  asn_base_int7_s =
-{ "INTEGER (0..127)",   {UNIVERSAL, 2}, INTEGER, 7, {0}};
+{ "INTEGER (0..127)",        {UNIVERSAL, ASN_UT_INTEGER}, INTEGER, 7, {0}};
 const asn_type  asn_base_int8_s =
-{ "INTEGER (0..255)",   {UNIVERSAL, 2}, INTEGER, 8, {0}};
+{ "INTEGER (0..255)",        {UNIVERSAL, ASN_UT_INTEGER}, INTEGER, 8, {0}};
 const asn_type  asn_base_int9_s =
-{ "INTEGER (0..511)",   {UNIVERSAL, 2}, INTEGER, 9, {0}};
+{ "INTEGER (0..511)",        {UNIVERSAL, ASN_UT_INTEGER}, INTEGER, 9, {0}};
 const asn_type  asn_base_int12_s =
-{ "INTEGER (0..4095)",   {UNIVERSAL, 2}, INTEGER, 12, {0}};
+{ "INTEGER (0..4095)",       {UNIVERSAL, ASN_UT_INTEGER}, INTEGER, 12, {0}};
 const asn_type  asn_base_int16_s =
-{ "INTEGER (0..65535)",   {UNIVERSAL, 2}, INTEGER, 16, {0}};
+{ "INTEGER (0..65535)",      {UNIVERSAL, ASN_UT_INTEGER}, INTEGER, 16, {0}};
 const asn_type  asn_base_int24_s =
-{ "INTEGER (0..16777215)",   {UNIVERSAL, 2}, INTEGER, 24, {0}};
+{ "INTEGER (0..16777215)",   {UNIVERSAL, ASN_UT_INTEGER}, INTEGER, 24, {0}};
 const asn_type  asn_base_int32_s =
-{ "INTEGER (0..4294967295)",   {UNIVERSAL, 2}, INTEGER, 32, {0}};
+{ "INTEGER (0..4294967295)", {UNIVERSAL, ASN_UT_INTEGER}, INTEGER, 32, {0}};
 /**
  * Unsigned integers definition.
  */
