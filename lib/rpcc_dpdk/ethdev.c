@@ -2187,6 +2187,7 @@ rpc_rte_eth_xstats_get(rcf_rpc_server *rpcs, uint8_t port_id,
 {
     tarpc_rte_eth_xstats_get_in     in;
     tarpc_rte_eth_xstats_get_out    out;
+    te_log_buf                     *tlbp;
     int                             i;
 
     memset(&in, 0, sizeof(in));
@@ -2209,15 +2210,26 @@ rpc_rte_eth_xstats_get(rcf_rpc_server *rpcs, uint8_t port_id,
                               -TE_RC(TE_TAPI, TE_ECORRUPTED),
                               (out.retval < 0));
 
-    if (xstats != NULL && out.retval > 0)
+    tlbp = te_log_buf_alloc();
+    te_log_buf_append(tlbp, "{ ");
+    if ((xstats != NULL) && (out.retval > 0) &&
+        ((unsigned int)out.retval <= n))
     {
-        for (i = 0; i < out.retval; i++)
+        for (i = 0; i < out.retval; ++i)
+        {
             xstats[i] = out.xstats.xstats_val[i];
+
+            te_log_buf_append(tlbp, "%s%" PRIu64 ":%" PRIu64,
+                              (i == 0) ? "" : ", ",
+                              xstats[i].id, xstats[i].value);
+        }
     }
+    te_log_buf_append(tlbp, " }");
 
     TAPI_RPC_LOG(rpcs, rte_eth_xstats_get,
-                 "%hhu, %u", NEG_ERRNO_FMT, in.port_id, n,
-                 NEG_ERRNO_ARGS(out.retval));
+                 "%hhu, %u", NEG_ERRNO_FMT " xstats = %s", in.port_id, n,
+                 NEG_ERRNO_ARGS(out.retval), te_log_buf_get(tlbp));
+    te_log_buf_free(tlbp);
 
     RETVAL_INT(rte_eth_xstats_get, out.retval);
 }
