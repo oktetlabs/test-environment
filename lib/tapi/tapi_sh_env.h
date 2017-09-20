@@ -291,13 +291,14 @@ tapi_sh_env_save_set_int(rcf_rpc_server *pco,
     return 0;
 }
 
+
 /**
- * Rollback environment variable
+ * Rollback integer shell environment variable
  *
  * @param pco            PCO handle
  * @param env_name       The environment variable name
  * @param existed        Did this variable exist in an environment or not
- * @param env_value      Value to set if the env existed
+ * @param env_value      Integer value to set if the env existed
  * @param restart        Should the PCO be restarted
  *
  * @result Status code
@@ -310,6 +311,27 @@ tapi_sh_env_rollback_int(rcf_rpc_server *pco, const char *env_name,
         return tapi_sh_env_unset(pco, env_name, FALSE, restart);
 
     return tapi_sh_env_set_int(pco, env_name, env_value, TRUE, restart);
+}
+
+/**
+ * Rollback environment variable
+ *
+ * @param pco            PCO handle
+ * @param env_name       The environment variable name
+ * @param existed        Did this variable exist in an environment or not
+ * @param env_value      Value to set if the env existed
+ * @param restart        Should the PCO be restarted
+ *
+ * @result Status code
+ */
+static inline te_errno
+tapi_sh_env_rollback(rcf_rpc_server *pco, const char *env_name,
+                     te_bool existed, const char *env_value, te_bool restart)
+{
+    if (!existed)
+        return tapi_sh_env_unset(pco, env_name, FALSE, restart);
+
+    return tapi_sh_env_set(pco, env_name, env_value, TRUE, restart);
 }
 
 /**
