@@ -683,6 +683,17 @@ asn_get_type_name(const asn_type *type)
     return type->name;
 }
 
+/* See description in asn_usr.h */
+te_bool
+asn_check_type(const asn_value *value, const asn_type *type)
+{
+    assert(value != NULL && type != NULL);
+
+    return (value->asn_type->tag.cl == type->tag.cl &&
+            value->asn_type->tag.val == type->tag.val &&
+            value->asn_type->syntax == type->syntax);
+}
+
 /**
  * Get name of value;
  *

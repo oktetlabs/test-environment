@@ -351,6 +351,16 @@ extern void asn_free_value(asn_value *value);
  */
 extern const asn_type *asn_get_type(const asn_value *value);
 
+/**
+ * Check ASN value for particular type.
+ *
+ * @param value         ASN value.
+ * @param type          ASN type.
+ *
+ * @return @c TRUE if @p value of type of @p type, @c FALSE otherwise.
+ */
+extern te_bool asn_check_type(const asn_value *value, const asn_type *type);
+
 
 
 /*
