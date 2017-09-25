@@ -106,6 +106,7 @@ static te_errno
 tapi_reuse_eal(rcf_rpc_server *rpcs,
                int             argc,
                char           *argv[],
+               const char     *dev_args,
                te_bool        *need_init,
                char          **eal_args_out)
 {
@@ -165,14 +166,54 @@ tapi_reuse_eal(rcf_rpc_server *rpcs,
     {
         if (rpc_rte_eth_dev_is_valid_port(rpcs, i))
         {
+            char   dev_name[RPC_RTE_ETH_NAME_MAX_LEN];
+            size_t dev_na_len;
+
             rpc_rte_eth_dev_close(rpcs, i);
 
-            /* Repeal any changes possibly made by the previous iteration */
-            rc = rpc_rte_eth_dev_set_mtu(rpcs, i, ETHER_DATA_LEN);
+            rc = rpc_rte_eth_dev_detach(rpcs, i, dev_name);
             if (rc != 0)
                 goto out;
 
-            /* TODO: reset mc addr. list taking device state into account */
+            if (dev_name[0] == '\0')
+            {
+                rc = TE_EINVAL;
+                goto out;
+            }
+
+            dev_na_len = strlen(dev_name) + 1;
+            dev_na_len += (dev_args != NULL) ? (strlen(dev_args) + 1) : 0;
+
+            {
+                char     dev_na[dev_na_len];
+                char    *dev_na_generic = dev_name;
+                uint8_t  port_id;
+
+                if (dev_args != NULL)
+                {
+                    int ret;
+
+                    ret = snprintf(dev_na, dev_na_len, "%s,%s",
+                                   dev_name, dev_args);
+                    if ((ret < 0) || (((unsigned int)ret + 1) != dev_na_len))
+                    {
+                        rc = TE_EINVAL;
+                        goto out;
+                    }
+
+                    dev_na_generic = dev_na;
+                }
+
+                rc = rpc_rte_eth_dev_attach(rpcs, dev_na_generic, &port_id);
+                if (rc != 0)
+                    goto out;
+
+                if (port_id != i)
+                {
+                    rc = TE_EINVAL;
+                    goto out;
+                }
+            }
         }
     }
 
@@ -267,8 +308,6 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
         }
     }
 
-    free(dev_args);
-
     /* Add memory channels information */
     val_type = CVT_INTEGER;
     rc = cfg_get_instance_fmt(&val_type, &mem_channels,
@@ -307,7 +346,7 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
 
     if (dpdk_reuse_rpcs())
     {
-        rc = tapi_reuse_eal(rpcs, my_argc, my_argv,
+        rc = tapi_reuse_eal(rpcs, my_argc, my_argv, dev_args,
                             &need_init, &eal_args_new);
         if (rc != 0)
             goto cleanup;
@@ -334,6 +373,9 @@ cleanup:
 
     for (i = 0; i < my_argc; ++i)
         free(my_argv[i]);
+
+    free(dev_args);
+
     free(my_argv);
 
     return rc;
