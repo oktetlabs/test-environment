@@ -733,8 +733,10 @@ rte_mbuf_match_pattern(tarpc_rte_mbuf_match_pattern_in  *in,
 #endif /* HAVE_RTE_RING_ENQUEUE_BULK_ARG_FREE_SPACE */
 
     /* Shove the pattern into the CSAP */
-    rc = tad_recv_start_prepare(csap_instance, in->pattern, in->mbufs.mbufs_len,
-                                TAD_TIMEOUT_INF, RCF_CH_TRRECV_PACKETS, &reply_ctx);
+    rc = tad_recv_start_prepare(csap_instance, in->pattern,
+                                in->mbufs.mbufs_len, TAD_TIMEOUT_INF,
+                                RCF_CH_TRRECV_PACKETS |
+                                RCF_CH_TRRECV_PACKETS_SEQ_MATCH, &reply_ctx);
     if (rc != 0)
         goto out;
 
