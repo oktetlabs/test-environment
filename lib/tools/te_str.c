@@ -112,3 +112,29 @@ te_strncpy(const char *id, char *dst, size_t size, const char *src)
     }
     return dst;
 }
+
+/* See description in te_str.h */
+char *
+te_str_strip_spaces(const char *str)
+{
+    size_t len;
+    size_t offt;
+    char  *res;
+
+    len = strlen(str);
+    while (len > 0 && isspace(str[len - 1]))
+        len--;
+
+    offt = strspn(str, " \f\n\r\t\v");
+    if (offt <= len)
+        len -= offt;
+
+    res = malloc(len + 1);
+    if (res == NULL)
+        return NULL;
+
+    memcpy(res, str + offt, len);
+    res[len] = '\0';
+
+    return res;
+}

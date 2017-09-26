@@ -46,6 +46,7 @@
 #include "ta_common.h"
 #include "unix_internal.h"
 #include "te_shell_cmd.h"
+#include "te_str.h"
 
 #if HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
@@ -305,7 +306,7 @@ trunk_list(aggregation *aggr, char **member_list)
     if ((c = strchr(buf, '\n')) != NULL)
         *c = 0;
 
-    if ((*member_list = strdup(buf)) == NULL)
+    if ((*member_list = te_str_strip_spaces(buf)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     return 0;
@@ -425,7 +426,7 @@ team_list(aggregation *aggr, char **member_list)
     memset(buf, 0, sizeof(buf));
     fread(buf, sizeof(buf), 1, f);
 
-    if ((*member_list = strdup(buf)) == NULL)
+    if ((*member_list = te_str_strip_spaces(buf)) == NULL)
         rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
 cleanup:

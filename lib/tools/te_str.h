@@ -114,6 +114,15 @@ extern char *te_strncpy(const char *id, char *dst, size_t size, const char *src)
 #define TE_STRNCPY(_dst, _size, _src) \
     te_strncpy(__func__, _dst, _size, _src)
 
+/**
+ * Take off heading and trailing spaces (all the symbols " \f\n\r\t\v").
+ *
+ * @param str   String to strip spaces.
+ *
+ * @return Pointer to the duplicated (heap) string without surrounding spaces,
+ *         or @c NULL in case of memory allocation failure.
+ */
+extern char *te_str_strip_spaces(const char *str);
 
 #ifdef __cplusplus
 } /* extern "C" */
