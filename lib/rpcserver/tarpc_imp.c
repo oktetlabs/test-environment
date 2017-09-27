@@ -10441,13 +10441,16 @@ send_flooder_iomux(te_bool use_libc, int sock, iomux_func iomux,
     iomux_return    iomux_ret;
     uint64_t        i;
     int             rc;
-    te_bool         writable;
+    te_bool         writable = FALSE;
     int             back_errno = errno;
     size_t iovcnt = rand_range(1, TARPC_SEND_IOMUX_FLOODER_MAX_IOVCNT);
 
+
     if (tarpc_get_send_function(use_libc, send_func, &func_send) != 0 ||
         iomux_find_func(use_libc, &iomux, &iomux_f) != 0)
+    {
         return -1;
+    }
 
     if ((rc = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0)
     {
@@ -10530,6 +10533,15 @@ send_flooder_iomux(te_bool use_libc, int sock, iomux_func iomux,
         if (rc == -1 && RPC_ERRNO == RPC_EAGAIN)
         {
             (*errors)++;
+
+            if( writable )
+            {
+                ERROR("Iomux call declares socket writable when a send "
+                      "call failed with EAGAIN");
+                rc = -1;
+                errno = EBUSY;
+                break;
+            }
             rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret, 0);
             /* Check no OUT event. */
             rc = iomux_fd_is_writable(sock, iomux, &iomux_st, &iomux_ret,
@@ -10537,12 +10549,7 @@ send_flooder_iomux(te_bool use_libc, int sock, iomux_func iomux,
             if (rc != 0)
                 break;
             if (writable)
-            {
-                ERROR("Iomux call declares socket writable when a send "
-                      "call failed with EAGAIN");
-                rc = -1;
-                break;
-            }
+                continue;
 
             rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
                             TARPC_SEND_IOMUX_FLOODER_TIMEOUT);
@@ -10557,14 +10564,19 @@ send_flooder_iomux(te_bool use_libc, int sock, iomux_func iomux,
                       "timeout %d expiration ",
                       TARPC_SEND_IOMUX_FLOODER_TIMEOUT);
                 rc = -1;
+                errno = ETIMEDOUT;
                 break;
             }
         }
-        else if (rc != packet_size)
+        else
         {
-            ERROR("Send call #%llu returned unexpected value, rc = %d "
-                  "(%r)", i, rc, RPC_ERRNO);
-            break;
+            if (rc != packet_size)
+            {
+                ERROR("Send call #%llu returned unexpected value, rc = %d "
+                      "(%r)", i, rc, RPC_ERRNO);
+                break;
+            }
+            writable = FALSE;
         }
 
         (*packets)++;
@@ -10585,7 +10597,7 @@ send_flooder_iomux(te_bool use_libc, int sock, iomux_func iomux,
     free(iov);
     iomux_close(iomux, &iomux_f, &iomux_st);
 
-    if (back_errno != errno && errno == EAGAIN)
+    if (rc >= 0 && back_errno != errno && errno == EAGAIN)
         errno = back_errno;
 
     return rc;
