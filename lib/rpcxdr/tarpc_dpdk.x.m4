@@ -627,6 +627,7 @@ struct tarpc_rte_mbuf_match_pattern_in {
     string                  pattern<>;
     tarpc_rte_mbuf          mbufs<>;
     tarpc_bool              return_matching_pkts;
+    tarpc_bool              seq_match;
 };
 
 struct tarpc_rte_mbuf_match_pattern_out {

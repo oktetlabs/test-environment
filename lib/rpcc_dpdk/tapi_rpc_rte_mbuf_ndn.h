@@ -82,6 +82,17 @@ extern int rpc_rte_mbuf_match_pattern(rcf_rpc_server     *rpcs,
                                       asn_value        ***packets,
                                       unsigned int       *matched);
 
+/**
+ * Wrapper for rte_mbuf_match_pattern() RPC
+ * intended for sequence matching
+ */
+extern int tapi_rte_mbuf_match_pattern_seq(rcf_rpc_server    *rpcs,
+                                           const asn_value   *pattern,
+                                           rpc_rte_mbuf_p    *mbufs,
+                                           unsigned int       count,
+                                           asn_value       ***packets,
+                                           unsigned int      *matched);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf_ndn --> */
 
 #ifdef __cplusplus

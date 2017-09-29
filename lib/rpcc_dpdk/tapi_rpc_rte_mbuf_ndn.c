@@ -85,19 +85,20 @@ rpc_rte_mk_mbuf_from_template(rcf_rpc_server   *rpcs,
     RETVAL_ZERO_INT(rte_mk_mbuf_from_template, out.retval);
 }
 
-int
-rpc_rte_mbuf_match_pattern(rcf_rpc_server     *rpcs,
-                           const asn_value    *pattern,
-                           rpc_rte_mbuf_p     *mbufs,
-                           unsigned int        count,
-                           asn_value        ***packets,
-                           unsigned int       *matched)
+static int
+tapi_rte_mbuf_match_pattern(rcf_rpc_server    *rpcs,
+                            const asn_value   *pattern,
+                            te_bool            seq_match,
+                            rpc_rte_mbuf_p    *mbufs,
+                            unsigned int       count,
+                            asn_value       ***packets,
+                            unsigned int      *matched)
 {
-    tarpc_rte_mbuf_match_pattern_in     in;
-    tarpc_rte_mbuf_match_pattern_out    out;
-    size_t                              pattern_len;
-    te_log_buf                         *tlbp;
-    unsigned int                        i;
+    tarpc_rte_mbuf_match_pattern_in   in;
+    tarpc_rte_mbuf_match_pattern_out  out;
+    size_t                            pattern_len;
+    te_log_buf                       *tlbp;
+    unsigned int                      i;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
@@ -115,12 +116,15 @@ rpc_rte_mbuf_match_pattern(rcf_rpc_server     *rpcs,
     in.mbufs.mbufs_val = tapi_memdup(mbufs, count * sizeof(*mbufs));
 
     in.return_matching_pkts = (tarpc_bool)(packets != NULL);
+    in.seq_match = (tarpc_bool)seq_match;
 
     rcf_rpc_call(rpcs, "rte_mbuf_match_pattern", &in, &out);
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_mbuf_match_pattern,
-                 "\n%s,\n%s", "%u, " NEG_ERRNO_FMT, in.pattern,
+                 "%s\n%s,\n%s", "%u, " NEG_ERRNO_FMT,
+                 (in.seq_match == TRUE) ? "(sequence matching)" : "",
+                 in.pattern,
                  rpc_rte_mbufs2str(tlbp, in.mbufs.mbufs_val,
                                    in.mbufs.mbufs_len, rpcs),
                  out.matched, NEG_ERRNO_ARGS(out.retval));
@@ -157,4 +161,30 @@ rpc_rte_mbuf_match_pattern(rcf_rpc_server     *rpcs,
     }
 
     RETVAL_ZERO_INT(rte_mbuf_match_pattern, out.retval);
+
 }
+
+int
+rpc_rte_mbuf_match_pattern(rcf_rpc_server     *rpcs,
+                           const asn_value    *pattern,
+                           rpc_rte_mbuf_p     *mbufs,
+                           unsigned int        count,
+                           asn_value        ***packets,
+                           unsigned int       *matched)
+{
+    return tapi_rte_mbuf_match_pattern(rpcs, pattern, FALSE, mbufs,
+                                       count, packets, matched);
+}
+
+int
+tapi_rte_mbuf_match_pattern_seq(rcf_rpc_server    *rpcs,
+                                const asn_value   *pattern,
+                                rpc_rte_mbuf_p    *mbufs,
+                                unsigned int       count,
+                                asn_value       ***packets,
+                                unsigned int      *matched)
+{
+    return tapi_rte_mbuf_match_pattern(rpcs, pattern, TRUE, mbufs,
+                                       count, packets, matched);
+}
+
