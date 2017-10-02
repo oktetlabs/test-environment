@@ -30,9 +30,6 @@ function help_info() {
     exit 0
 }
 
-args_file=$(mktemp)
-echo "$0 $@" > ${args_file}
-
 while (( "$#" )); do
     case $1 in
         -v)
@@ -152,6 +149,9 @@ if [ "x$TRC_HTML_LOGS" == "x" ]; then
 fi
 
 TRC_OPTS="${TRC_OPTS} --html-logs=${TRC_HTML_LOGS}"
+
+args_file=$(mktemp)
+echo "$0 $@" > ${args_file}
 
 TRC_OPTS="${TRC_OPTS} --show-cmd-file=${args_file}"
 
