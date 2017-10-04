@@ -241,6 +241,8 @@ typedef struct unix_ta {
     char    ta_name[RCF_MAX_NAME];  /**< Test agent name */
     char    ta_type[RCF_MAX_NAME];  /**< Test Agent type */
     char    host[RCF_MAX_NAME];     /**< Test Agent host */
+    char    connect[RCF_MAX_NAME];  /**< Test Agent address or hostname to
+                                         connect */
     char    port[RCF_MAX_NAME];     /**< TCP port */
     char    postfix[RCF_MAX_PATH];  /**< Postfix appended to TA directory */
     char    key[RCF_MAX_PATH];      /**< Private ssh key file */
@@ -532,6 +534,19 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         else
             ta->su = FALSE;
     }
+    if (token != NULL && strcmp_start("connect=", token) == 0)
+    {
+        char *value = token + strlen("connect=");
+
+        if (strlen(value) >= sizeof(ta->connect))
+        {
+            ERROR("Too long value in connect= token: %s", value);
+            goto bad_confstr;
+        }
+        strcpy(ta->connect, value);
+
+        GET_TOKEN;
+    }
 
     shell = token;
 
@@ -816,13 +831,14 @@ static te_errno
 rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
                 struct timeval *select_tm)
 {
+    unix_ta    *ta = (unix_ta *)handle;
     te_errno    rc;
     char        buf[16];
     char       *tmp;
     size_t      len = 16;
     char       *host;
     int         tries = 3;
-    
+
     char                *env_retry_max;
     char                *endptr;
 
@@ -856,13 +872,14 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
             tries = rc;
     }
 
-    unix_ta *ta = (unix_ta *)handle;
-    
-    host = strchr(ta->host, '@');
-    if (host != NULL)
-        host++;
+    if (ta->connect[0] != '\0')
+        host = ta->connect;
     else
         host = ta->host;
+
+    tmp = strchr(host, '@');
+    if (tmp != NULL)
+        host = tmp + 1;
 
     VERB("Connecting to TA '%s'", ta->ta_name);
 
