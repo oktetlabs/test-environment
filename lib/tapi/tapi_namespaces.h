@@ -91,7 +91,8 @@ extern te_errno tapi_netns_if_unset(const char *ta, const char *ns_name,
                                     const char *if_name);
 
 /**
- * Create network namespace and configure control network channel.
+ * Create network namespace and configure control network channel using veth
+ * interfaces and iptables to route control traffic.
  *
  * @param ta        Test agent name
  * @param ns_name   The network namespace name
@@ -117,12 +118,32 @@ extern te_errno tapi_netns_create_ns_with_net_channel(const char *ta,
  * @param ta_name   The test agent name
  * @param ta_type   The test agent type
  * @param rcfport   Port number to communicate with RCF
+ * @param ta_conn   Connection hostname or address or @c NULL
  *
  * @return Status code.
  */
 extern te_errno tapi_netns_add_ta(const char *host, const char *ns_name,
                                   const char *ta_name, const char *ta_type,
-                                  int rcfport);
+                                  int rcfport, const char *ta_conn);
+
+/**
+ * Create network namespace and configure control network channel using
+ * auxiliary macvlan interface. IP address is obtained using @b dhclient.
+ *
+ * @param ta            Test agent name
+ * @param ns_name       The network namespace name
+ * @param macvlan_if    MAC VLAN interface name
+ * @param addr          Obtained IP address
+ * @param addr_len      Length of the buffer @p addr
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_netns_create_ns_with_macvlan(const char *ta,
+                                                  const char *ns_name,
+                                                  const char *ctl_if,
+                                                  const char *macvlan_if,
+                                                  char *addr,
+                                                  size_t addr_len);
 
 #ifdef __cplusplus
 } /* extern "C" */

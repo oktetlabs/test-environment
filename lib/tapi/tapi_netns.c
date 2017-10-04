@@ -45,8 +45,14 @@
 /* System tool 'ip' */
 #define IP_TOOL "ip"
 
+/* System tool 'dhclient' */
+#define DHCLIENT_TOOL "dhclient"
+
 /* Template to excecute a command in a net namespace 'ip netns exec %s '. */
-#define IP_NETNS_EXEC_IP_FMT IP_TOOL " netns exec %s " IP_TOOL
+#define IP_NETNS_EXEC_FMT IP_TOOL " netns exec %s "
+
+/* Template to excecute a command in a net namespace 'ip netns exec %s ip'. */
+#define IP_NETNS_EXEC_IP_FMT IP_NETNS_EXEC_FMT IP_TOOL
 
 /* Maximum length of an agent configuration string. */
 #define CONFSTR_LEN 1024
@@ -251,16 +257,164 @@ tapi_netns_create_cleanup:
 /* See description in tapi_namespaces.h */
 te_errno
 tapi_netns_add_ta(const char *host, const char *ns_name, const char *ta_name,
-                  const char *ta_type, int rcfport)
+                  const char *ta_type, int rcfport, const char *ta_conn)
 {
     char    confstr[CONFSTR_LEN];
     int     res;
 
     res = snprintf(confstr, sizeof(confstr),
-                   "%s:%d:sudo:"IP_TOOL" netns exec %s:",
-                   host, rcfport, ns_name);
+                   "%s:%d:sudo:connect=%s:"IP_TOOL" netns exec %s:",
+                   host, rcfport, ta_conn == NULL ? "" : ta_conn, ns_name);
     if (res >= (int)sizeof(confstr))
         return TE_RC(TE_TAPI, TE_ESMALLBUF);
 
     return rcf_add_ta(ta_name, ta_type, "rcfunix", confstr, 0);
+}
+
+/**
+ * Extract issued IP address from dhclient output.
+ *
+ * @param buf       Buffer with dhclient output
+ * @param addr      Buffer to keep extracted IP address
+ * @param addr_len  Length of the buffer @p addr
+ *
+ * @return Status code
+ */
+static te_errno
+dhclient_get_addr(char *buf, char *addr, size_t addr_len)
+{
+    const char *pattern = "bound to ";
+    char       *ptr;
+    size_t      len;
+
+    if (buf == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    ptr = strstr(buf, pattern);
+    if (ptr == NULL)
+        return TE_RC(TE_TAPI, TE_ENOENT);
+    ptr += strlen(pattern);
+    ptr = strtok(ptr, " ");
+    if (ptr == NULL)
+        return TE_RC(TE_TAPI, TE_ENOENT);
+    len = strlen(ptr) + 1;
+    if (len > addr_len)
+        return TE_RC(TE_TAPI, TE_ESMALLBUF);
+    memcpy(addr, ptr, len);
+
+    return 0;
+}
+
+/**
+ * Apply the minimum network configuration in new network namespace, obtain
+ * local address using dhclient.
+ *
+ * @param ta            Test agent name
+ * @param ns_name       The network namespace name
+ * @param ctl_if        The control interface name
+ * @param[out] addr     Issued IP address
+ * @param addr_len      Length of the buffer @p addr
+ *
+ * @param Status code
+ */
+static te_errno
+configure_netns_network_dhclient(const char *ta, const char *ns_name,
+                                 const char *ctl_if, char *addr,
+                                 size_t addr_len)
+{
+    rcf_rpc_server *rpcs   = NULL;
+    te_errno        rc;
+    te_errno        rc2;
+    char           *pbuf[2] = {};
+    rpc_wait_status st;
+
+    rc = rcf_rpc_server_create(ta, "pco_ctl", &rpcs);
+    if (rc != 0)
+        return rc;
+
+    RPC_AWAIT_IUT_ERROR(rpcs);
+    st = rpc_system_ex(rpcs, IP_NETNS_EXEC_IP_FMT" li set dev lo up",
+                       ns_name);
+    if (st.flag != RPC_WAIT_STATUS_EXITED || st.value != 0)
+    {
+        ERROR("Failed to get up loopback interface");
+        rcf_rpc_server_destroy(rpcs);
+        return TE_RC(TE_TAPI, TE_EFAIL);
+    }
+
+    RPC_AWAIT_IUT_ERROR(rpcs);
+    st = rpc_shell_get_all3(rpcs, pbuf, IP_NETNS_EXEC_FMT DHCLIENT_TOOL
+                            " -4 -v %s", ns_name, ctl_if);
+    if (st.flag != RPC_WAIT_STATUS_EXITED || st.value != 0)
+    {
+        ERROR("Failed to get IP using dhclient");
+        if (pbuf[0] != NULL)
+            RING("dhclient: %s", pbuf[0]);
+        if (pbuf[1] != NULL)
+            RING("dhclient stderr: %s", pbuf[1]);
+        free(pbuf[0]);
+        free(pbuf[1]);
+        rcf_rpc_server_destroy(rpcs);
+        return TE_RC(TE_TAPI, TE_EFAIL);
+    }
+
+    rc = dhclient_get_addr(pbuf[1], addr, addr_len);
+    if (rc != 0)
+    {
+        ERROR("Cannot extract obtained IP address from dhclient dump: %r",
+              rc);
+        RING("dhclient stderr: %s", pbuf[1]);
+    }
+    free(pbuf[0]);
+    free(pbuf[1]);
+
+    rc2 = rcf_rpc_server_destroy(rpcs);
+    if (rc == 0)
+        rc = rc2;
+
+    return rc;
+}
+
+/* See description in tapi_namespaces.h */
+te_errno
+tapi_netns_create_ns_with_macvlan(const char *ta, const char *ns_name,
+                                  const char *ctl_if, const char *macvlan_if,
+                                  char *addr, size_t addr_len)
+{
+    cfg_val_type val_type = CVT_STRING;
+
+    te_errno rc = 0;
+    te_errno rc2 = 0;
+    te_bool  grabbed = FALSE;
+
+    rc = tapi_netns_add(ta, ns_name);
+    if (rc != 0)
+        return rc;
+
+    if (cfg_get_instance_fmt(&val_type, NULL, "/agent:%s/rsrc:%s",
+                             ta, ctl_if) == 0)
+        grabbed = TRUE;
+
+    if (!grabbed)
+    {
+        rc = tapi_cfg_base_if_add_rsrc(ta, ctl_if);
+        if (rc != 0)
+            return rc;
+    }
+    rc = tapi_cfg_base_if_add_macvlan(ta, ctl_if, macvlan_if, NULL);
+    if (!grabbed)
+    {
+        rc2 = tapi_cfg_base_if_del_rsrc(ta, ctl_if);
+        if (rc == 0)
+            rc = rc2;
+    }
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_netns_if_set(ta, ns_name, macvlan_if);
+    if (rc != 0)
+        return rc;
+
+    return configure_netns_network_dhclient(ta, ns_name, macvlan_if, addr,
+                                            addr_len);
 }
