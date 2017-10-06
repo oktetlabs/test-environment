@@ -54,6 +54,11 @@
 /* Template to excecute a command in a net namespace 'ip netns exec %s ip'. */
 #define IP_NETNS_EXEC_IP_FMT IP_NETNS_EXEC_FMT IP_TOOL
 
+/* Specify dhclient PID file pathname.
+ * It should contain namespace name, because each net namespace can have its
+ * own instance of dhclient. */
+#define DHCLIENT_PID_FILE_FMT "PATH_DHCLIENT_PID=/tmp/te_dhclient_%s.pid "
+
 /* Maximum length of an agent configuration string. */
 #define CONFSTR_LEN 1024
 
@@ -342,9 +347,15 @@ configure_netns_network_dhclient(const char *ta, const char *ns_name,
         return TE_RC(TE_TAPI, TE_EFAIL);
     }
 
+    /* Stop previously run dhclient if it is, ignore execution result. */
     RPC_AWAIT_IUT_ERROR(rpcs);
-    st = rpc_shell_get_all3(rpcs, pbuf, IP_NETNS_EXEC_FMT DHCLIENT_TOOL
-                            " -4 -v %s", ns_name, ctl_if);
+    rpc_system_ex(rpcs, DHCLIENT_PID_FILE_FMT IP_NETNS_EXEC_FMT
+                  DHCLIENT_TOOL " -x", ns_name, ns_name);
+
+    RPC_AWAIT_IUT_ERROR(rpcs);
+    st = rpc_shell_get_all3(rpcs, pbuf, DHCLIENT_PID_FILE_FMT
+                            IP_NETNS_EXEC_FMT DHCLIENT_TOOL
+                            " -4 -v %s", ns_name, ns_name, ctl_if);
     if (st.flag != RPC_WAIT_STATUS_EXITED || st.value != 0)
     {
         ERROR("Failed to get IP using dhclient");
@@ -375,21 +386,24 @@ configure_netns_network_dhclient(const char *ta, const char *ns_name,
     return rc;
 }
 
-/* See description in tapi_namespaces.h */
-te_errno
-tapi_netns_create_ns_with_macvlan(const char *ta, const char *ns_name,
-                                  const char *ctl_if, const char *macvlan_if,
-                                  char *addr, size_t addr_len)
+/**
+ * Add or delete MAC vlan on @p ctl_if.
+ *
+ * @param ta            Test agent name
+ * @param ctl_if        Control interface name on the test agent
+ * @param macvlan_if    MAC VLAN interface name
+ * @param add           Add if @c TRUE, else - remove the macvlan interface
+ *
+ * @return Status code
+ */
+static te_errno
+add_del_macvlan(const char *ta, const char *ctl_if, const char *macvlan_if,
+                te_bool add)
 {
     cfg_val_type val_type = CVT_STRING;
-
-    te_errno rc = 0;
-    te_errno rc2 = 0;
-    te_bool  grabbed = FALSE;
-
-    rc = tapi_netns_add(ta, ns_name);
-    if (rc != 0)
-        return rc;
+    te_errno     rc = 0;
+    te_errno     rc2 = 0;
+    te_bool      grabbed = FALSE;
 
     if (cfg_get_instance_fmt(&val_type, NULL, "/agent:%s/rsrc:%s",
                              ta, ctl_if) == 0)
@@ -401,13 +415,40 @@ tapi_netns_create_ns_with_macvlan(const char *ta, const char *ns_name,
         if (rc != 0)
             return rc;
     }
-    rc = tapi_cfg_base_if_add_macvlan(ta, ctl_if, macvlan_if, NULL);
+    if (add)
+        rc = tapi_cfg_base_if_add_macvlan(ta, ctl_if, macvlan_if, NULL);
+    else
+    {
+        rc = tapi_cfg_base_if_del_macvlan(ta, ctl_if, macvlan_if);
+        /* Ignore ENOENT - macvlan interface may be not grabbed as the
+         * resource, it is not important. */
+        if (rc == TE_RC(TE_CS, TE_ENOENT))
+            rc = 0;
+    }
+
     if (!grabbed)
     {
         rc2 = tapi_cfg_base_if_del_rsrc(ta, ctl_if);
         if (rc == 0)
             rc = rc2;
     }
+
+    return rc;
+}
+
+/* See description in tapi_namespaces.h */
+te_errno
+tapi_netns_create_ns_with_macvlan(const char *ta, const char *ns_name,
+                                  const char *ctl_if, const char *macvlan_if,
+                                  char *addr, size_t addr_len)
+{
+    te_errno rc = 0;
+
+    rc = tapi_netns_add(ta, ns_name);
+    if (rc != 0)
+        return rc;
+
+    rc = add_del_macvlan(ta, ctl_if, macvlan_if, TRUE);
     if (rc != 0)
         return rc;
 
@@ -417,4 +458,58 @@ tapi_netns_create_ns_with_macvlan(const char *ta, const char *ns_name,
 
     return configure_netns_network_dhclient(ta, ns_name, macvlan_if, addr,
                                             addr_len);
+}
+
+/**
+ * Stop dhclient running in the namespace.
+ *
+ * @param ta            Test agent name
+ * @param ns_name       The network namespace name
+ *
+ * Status code
+ */
+static te_errno
+stop_dhclient(const char *ta, const char *ns_name)
+{
+    rcf_rpc_server *rpcs;
+    te_errno        rc;
+    rpc_wait_status st;
+
+    rc = rcf_rpc_server_create(ta, "pco_ctl", &rpcs);
+    if (rc != 0)
+        return rc;
+
+    RPC_AWAIT_IUT_ERROR(rpcs);
+    st = rpc_system_ex(rpcs, DHCLIENT_PID_FILE_FMT IP_NETNS_EXEC_FMT
+                       DHCLIENT_TOOL " -x", ns_name, ns_name);
+
+    rc = rcf_rpc_server_destroy(rpcs);
+    if (st.flag != RPC_WAIT_STATUS_EXITED || st.value != 0)
+    {
+        ERROR("Failed to kill dhclient");
+        return TE_RC(TE_TAPI, TE_EFAIL);
+    }
+
+    return rc;
+}
+
+/* See description in tapi_namespaces.h */
+te_errno
+tapi_netns_destroy_ns_with_macvlan(const char *ta, const char *ns_name,
+                                   const char *ctl_if, const char *macvlan_if)
+{
+    te_errno rc;
+    te_errno rc2;
+
+    rc = stop_dhclient(ta, ns_name);
+
+    rc2 = tapi_netns_del(ta, ns_name);
+    if (rc == 0)
+        rc = rc2;
+
+    rc2 = add_del_macvlan(ta, ctl_if, macvlan_if, FALSE);
+    if (rc == 0)
+        rc = rc2;
+
+    return rc;
 }

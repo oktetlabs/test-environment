@@ -132,6 +132,7 @@ extern te_errno tapi_netns_add_ta(const char *host, const char *ns_name,
  *
  * @param ta            Test agent name
  * @param ns_name       The network namespace name
+ * @param ctl_if        Control interface name on the test agent
  * @param macvlan_if    MAC VLAN interface name
  * @param addr          Obtained IP address
  * @param addr_len      Length of the buffer @p addr
@@ -144,6 +145,22 @@ extern te_errno tapi_netns_create_ns_with_macvlan(const char *ta,
                                                   const char *macvlan_if,
                                                   char *addr,
                                                   size_t addr_len);
+
+/**
+ * Destroy network namespace and undo other configurations applied by
+ * function tapi_netns_create_ns_with_macvlan().
+ *
+ * @param ta            Test agent name
+ * @param ns_name       The network namespace name
+ * @param ctl_if        Control interface name on the test agent
+ * @param macvlan_if    MAC VLAN interface name
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_netns_destroy_ns_with_macvlan(const char *ta,
+                                                   const char *ns_name,
+                                                   const char *ctl_if,
+                                                   const char *macvlan_if);
 
 #ifdef __cplusplus
 } /* extern "C" */
