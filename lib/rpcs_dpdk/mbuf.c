@@ -1028,6 +1028,47 @@ TARPC_FUNC_STANDALONE(rte_pktmbuf_set_tx_offload, {},
 }
 )
 
+static struct rte_mbuf *
+redist_alloc_seg(struct rte_mempool *mp_def,
+                 tarpc_rte_mempool  *mp_multi,
+                 unsigned int        mp_multi_nb_items,
+                 unsigned int       *mp_multi_next_idxp)
+{
+    unsigned int mp_multi_next_idx;
+    unsigned int i;
+
+    if ((mp_multi_nb_items == 0) || (mp_multi == NULL))
+        goto out;
+
+    mp_multi_next_idx = (mp_multi_next_idxp == NULL) ? 0 : *mp_multi_next_idxp;
+
+    for (i = 0; i < mp_multi_nb_items; ++i)
+    {
+        struct rte_mempool *mp = NULL;
+        unsigned int        idx = (mp_multi_next_idx++ % mp_multi_nb_items);
+
+        RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MEMPOOL, {
+            mp = RCF_PCH_MEM_INDEX_MEM_TO_PTR(mp_multi[idx], ns);
+        });
+
+        if (mp != NULL)
+        {
+            struct rte_mbuf *m = rte_pktmbuf_alloc(mp);
+
+            if (m != NULL)
+            {
+                if (mp_multi_next_idxp != NULL)
+                    *mp_multi_next_idxp = idx;
+
+                return m;
+            }
+        }
+    }
+
+out:
+    return (mp_def == NULL) ? NULL : rte_pktmbuf_alloc(mp_def);
+}
+
 static int
 rte_pktmbuf_redist(tarpc_rte_pktmbuf_redist_in  *in,
                    tarpc_rte_pktmbuf_redist_out *out)
@@ -1038,6 +1079,7 @@ rte_pktmbuf_redist(tarpc_rte_pktmbuf_redist_in  *in,
     uint16_t                        mo_seg_off;
     struct rte_mbuf                *mn = NULL;
     struct rte_mbuf                *mn_seg;
+    unsigned int                    mp_multi_next_idx;
     uint32_t                        data_len_copied;
     struct tarpc_pktmbuf_seg_group *group;
     uint8_t                        *dst;
@@ -1064,6 +1106,7 @@ rte_pktmbuf_redist(tarpc_rte_pktmbuf_redist_in  *in,
     mo_seg_off = 0;
     mn_seg = NULL;
 
+    mp_multi_next_idx = 0;
     data_len_copied = 0;
 
     for (group = in->seg_groups.seg_groups_val; nb_groups_avail-- > 0; ++group)
@@ -1097,7 +1140,9 @@ rte_pktmbuf_redist(tarpc_rte_pktmbuf_redist_in  *in,
 
             if (mn_seg_dlen_avail == 0)
             {
-                mn_seg = rte_pktmbuf_alloc(mo->pool);
+                mn_seg = redist_alloc_seg(mo->pool, in->mp_multi.mp_multi_val,
+                                          in->mp_multi.mp_multi_len,
+                                          &mp_multi_next_idx);
                 if (mn_seg == NULL)
                 {
                     WARN("%s(): All spare mempool objects have been spent",

@@ -545,6 +545,7 @@ struct tarpc_pktmbuf_seg_group {
 struct tarpc_rte_pktmbuf_redist_in {
     struct tarpc_in_arg             common;
     tarpc_rte_mbuf                  m;
+    tarpc_rte_mempool               mp_multi<>;
     struct tarpc_pktmbuf_seg_group  seg_groups<>;
 };
 

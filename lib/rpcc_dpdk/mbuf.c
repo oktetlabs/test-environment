@@ -267,6 +267,27 @@ tarpc_rte_pktmbuf_tx_offload2str(te_log_buf *tlbp,
 }
 
 static const char *
+tarpc_rte_pktmbuf_multipool2str(rcf_rpc_server    *rpcs,
+                                te_log_buf        *tlbp,
+                                rpc_rte_mempool_p *mp_multi,
+                                unsigned int       mp_multi_nb_items)
+{
+    if (mp_multi_nb_items != 0)
+    {
+        unsigned int i;
+
+        te_log_buf_append(tlbp, "(multi-pool:");
+
+        for (i = 0; i < mp_multi_nb_items; ++i)
+            te_log_buf_append(tlbp, " " RPC_PTR_FMT, RPC_PTR_VAL(mp_multi[i]));
+
+        te_log_buf_append(tlbp, ") ");
+    }
+
+    return te_log_buf_get(tlbp);
+}
+
+static const char *
 tarpc_rte_pktmbuf_pattern2str(te_log_buf *tlbp, uint8_t nb_seg_groups,
                               struct tarpc_pktmbuf_seg_group *seg_groups)
 {
@@ -1140,24 +1161,38 @@ rpc_rte_pktmbuf_set_tx_offload(rcf_rpc_server *rpcs,
 }
 
 int
-rpc_rte_pktmbuf_redist(rcf_rpc_server *rpcs,
-                       rpc_rte_mbuf_p *m,
-                       struct tarpc_pktmbuf_seg_group *seg_groups,
-                       uint8_t nb_seg_groups)
+rpc_rte_pktmbuf_redist_multi(rcf_rpc_server                 *rpcs,
+                             rpc_rte_mbuf_p                 *m,
+                             rpc_rte_mempool_p              *mp_multi,
+                             unsigned int                    mp_multi_nb_items,
+                             struct tarpc_pktmbuf_seg_group *seg_groups,
+                             uint8_t                         nb_seg_groups)
 {
     tarpc_rte_pktmbuf_redist_in   in;
     tarpc_rte_pktmbuf_redist_out  out;
-    te_log_buf *tlbp;
+    te_log_buf *tlbp_multipool;
+    te_log_buf *tlbp_pattern;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
     in.m = (tarpc_rte_mbuf)(*m);
+
+    in.mp_multi.mp_multi_len = mp_multi_nb_items;
+    if (mp_multi != NULL)
+    {
+        in.mp_multi.mp_multi_val = tapi_memdup(mp_multi,
+                                               mp_multi_nb_items *
+                                               sizeof(*mp_multi));
+    }
+
     in.seg_groups.seg_groups_len = nb_seg_groups;
     if (seg_groups != NULL)
+    {
         in.seg_groups.seg_groups_val = tapi_memdup(seg_groups,
                                                    nb_seg_groups *
                                                    sizeof(*seg_groups));
+    }
 
     rcf_rpc_call(rpcs, "rte_pktmbuf_redist", &in, &out);
 
@@ -1166,16 +1201,31 @@ rpc_rte_pktmbuf_redist(rcf_rpc_server *rpcs,
 
     *m = out.m;
 
-    tlbp = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, rte_pktmbuf_redist, RPC_PTR_FMT ", %s", NEG_ERRNO_FMT
+    tlbp_multipool = te_log_buf_alloc();
+    tlbp_pattern = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_redist, RPC_PTR_FMT ", %s%s", NEG_ERRNO_FMT
                  " " RPC_PTR_FMT, RPC_PTR_VAL(in.m),
-                 tarpc_rte_pktmbuf_pattern2str(tlbp,
+                 tarpc_rte_pktmbuf_multipool2str(rpcs, tlbp_multipool,
+                                                 in.mp_multi.mp_multi_val,
+                                                 in.mp_multi.mp_multi_len),
+                 tarpc_rte_pktmbuf_pattern2str(tlbp_pattern,
                                                in.seg_groups.seg_groups_len,
                                                in.seg_groups.seg_groups_val),
                  NEG_ERRNO_ARGS(out.retval), RPC_PTR_VAL(out.m));
-    te_log_buf_free(tlbp);
+    te_log_buf_free(tlbp_pattern);
+    te_log_buf_free(tlbp_multipool);
 
     RETVAL_INT(rte_pktmbuf_redist, out.retval);
+}
+
+int
+rpc_rte_pktmbuf_redist(rcf_rpc_server                 *rpcs,
+                       rpc_rte_mbuf_p                 *m,
+                       struct tarpc_pktmbuf_seg_group *seg_groups,
+                       uint8_t                         nb_seg_groups)
+{
+    return rpc_rte_pktmbuf_redist_multi(rpcs, m, NULL, 0,
+                                        seg_groups, nb_seg_groups);
 }
 
 int

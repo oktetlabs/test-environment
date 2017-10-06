@@ -397,15 +397,33 @@ extern void rpc_rte_pktmbuf_set_tx_offload(rcf_rpc_server *rpcs,
 
 /**
  * Redistribute a packet mbuf data across some given number of segments
- * of variable length according to segmentation pattern provided by caller
+ * of variable length according to segmentation pattern provided by the caller
  * (an array of segment group definitions and the number of elements
- *  in the array) to produce a new mbuf chain with a different RPC pointer
+ *  in the array) to produce a new mbuf chain with a different RPC pointer.
  *
- * @param m               RTE mbuf pointer (in / out)
- * @param seg_groups      An array of segment group definitions
- * @param nb_seg_groups   The number of segment group definitions
+ * The new segments are allocated from a subset of memory pools @p mp_multi
+ * in a round-robin style; fallback to the default pool (obtained from @p m)
+ * will happen if either @p mp_multi is unset or mempool shortages take place.
+ *
+ * @param m                 RTE mbuf pointer (in / out)
+ * @param mp_multi          An array of RTE mempool pointers
+ * @param mp_multi_nb_items The number of RTE mempool pointers
+ * @param seg_groups        An array of segment group definitions
+ * @param nb_seg_groups     The number of segment group definitions
  *
  * @return The number of segments produced or a negative errno value
+ */
+extern int rpc_rte_pktmbuf_redist_multi(
+                            rcf_rpc_server                 *rpcs,
+                            rpc_rte_mbuf_p                 *m,
+                            rpc_rte_mempool_p              *mp_multi,
+                            unsigned int                    mp_multi_nb_items,
+                            struct tarpc_pktmbuf_seg_group *seg_groups,
+                            uint8_t                         nb_seg_groups);
+
+/**
+ * Single-pool wrapper for @c rpc_rte_pktmbuf_redist_multi().
+ * Default mempool is picked from @p m.
  */
 extern int rpc_rte_pktmbuf_redist(rcf_rpc_server *rpcs,
                                   rpc_rte_mbuf_p *m,
