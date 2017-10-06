@@ -529,16 +529,14 @@ out:
 
 /* See the description in 'tapi_rte_mbuf.h' */
 void
-tapi_rte_pktmbuf_random_redist(rcf_rpc_server     *rpcs,
-                               rpc_rte_mempool_p   mp,
-                               unsigned int        mp_size,
-                               rpc_rte_mbuf_p     *packets,
-                               unsigned int        nb_packets)
+tapi_rte_pktmbuf_random_redist(rcf_rpc_server    *rpcs,
+                               rpc_rte_mempool_p *mp_multi,
+                               unsigned int       mp_multi_nb_items,
+                               rpc_rte_mbuf_p    *packets,
+                               unsigned int       nb_packets)
 {
-    te_bool                         err_occurred = FALSE;
-    unsigned int                    i;
-    uint8_t                         nb_seg_groups = 0;
-    struct tarpc_pktmbuf_seg_group *seg_groups = NULL;
+    te_bool      err_occurred = FALSE;
+    unsigned int i;
 
     TAPI_ON_JMP(err_occurred = TRUE; goto out);
 
@@ -547,52 +545,24 @@ tapi_rte_pktmbuf_random_redist(rcf_rpc_server     *rpcs,
 
     for (i = 0; i < nb_packets; ++i)
     {
-        unsigned int    nb_spare_objs;
-        uint32_t        packet_len;
+        uint8_t                        nb_groups = rand_range(1, CHAR_BIT << 1);
+        struct tarpc_pktmbuf_seg_group groups[nb_groups];
+        unsigned int                   j;
 
-        nb_spare_objs = mp_size - rpc_rte_mempool_in_use_count(rpcs, mp);
-        if (nb_spare_objs == 0)
-            break;
-
-        packet_len = rpc_rte_pktmbuf_get_pkt_len(rpcs, packets[i]);
-
-        while ((nb_spare_objs > 0) && (packet_len > 0) &&
-               (nb_seg_groups < UINT8_MAX))
+        for (j = 0; j < nb_groups; ++j)
         {
-            uint16_t                        seg_len;
-            struct tarpc_pktmbuf_seg_group *seg_groups_new;
-
-            if (nb_spare_objs == 1)
-                seg_len = MIN(packet_len, UINT16_MAX);
-            else
-                seg_len = rand_range(1, MIN(packet_len, UINT16_MAX));
-
-            seg_groups_new = realloc(seg_groups,
-                                     ((++nb_seg_groups) * sizeof(*seg_groups)));
-            CHECK_NOT_NULL(seg_groups_new);
-            seg_groups = seg_groups_new;
-
-            seg_groups[nb_seg_groups - 1].len = seg_len;
-            seg_groups[nb_seg_groups - 1].num = 1;
-
-            packet_len -= seg_len;
-            nb_spare_objs--;
+            groups[j].num = 1;
+            groups[j].len = rand_range(1, UINT8_MAX);
         }
 
-        (void)rpc_rte_pktmbuf_redist(rpcs, packets + i, seg_groups,
-                                     nb_seg_groups);
-
-        nb_seg_groups = 0;
-        free(seg_groups);
-        seg_groups = NULL;
+        (void)rpc_rte_pktmbuf_redist_multi(rpcs, packets + i,
+                                           mp_multi, mp_multi_nb_items,
+                                           groups, nb_groups);
     }
 
 out:
     if (err_occurred)
-    {
-        free(seg_groups);
         TEST_STOP;
-    }
 
     TAPI_JMP_POP;
 }

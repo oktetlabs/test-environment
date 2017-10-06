@@ -264,21 +264,21 @@ extern void tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
 /**
  * Go through an array of packets (mbuf chains) and try to transform
  * each of them by means of a randomly selected segmentation pattern
- * in accordance with an up-to-date number of spare objects in @p mp
  *
- * @note @c rpc_rte_pktmbuf_redist() is used within the wrapper, and
- *       existing pointers in @p packets may be replaced with others
+ * @note @c rpc_rte_pktmbuf_redist_multi() is used in the wrapper;
+ *       the original pointers from @p packets may be replaced;
+ *       @p packets will likely contain brand-new pointers
  *
- * @p mp            RTE mempool pointer
- * @p mp_size       RTE mempool size
- * @p packets       An array containing the original packets (RTE mbuf pointers)
- * @p nb_packets    The number of packets within the array
+ * @p mp_multi          An array of RTE mempool pointers
+ * @p mp_multi_nb_items The number of RTE mempool pointers in the array
+ * @p packets           An array of RTE mbuf pointers
+ * @p nb_packets        The number of RTE mbuf pointers in the array
  */
-extern void tapi_rte_pktmbuf_random_redist(rcf_rpc_server     *rpcs,
-                                           rpc_rte_mempool_p   mp,
-                                           unsigned int        mp_size,
-                                           rpc_rte_mbuf_p     *packets,
-                                           unsigned int        nb_packets);
+extern void tapi_rte_pktmbuf_random_redist(rcf_rpc_server    *rpcs,
+                                           rpc_rte_mempool_p *mp_multi,
+                                           unsigned int       mp_multi_nb_items,
+                                           rpc_rte_mbuf_p    *packets,
+                                           unsigned int       nb_packets);
 
 #ifdef __cplusplus
 } /* extern "C" */
