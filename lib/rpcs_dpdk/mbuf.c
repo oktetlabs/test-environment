@@ -1028,196 +1028,159 @@ TARPC_FUNC_STANDALONE(rte_pktmbuf_set_tx_offload, {},
 }
 )
 
-static unsigned int
-ta_count_max_segs_within_pattern(tarpc_rte_pktmbuf_redist_in *in, size_t len)
-{
-    unsigned int i;
-    unsigned int j;
-    unsigned int nb_segs = 0;
-
-    for (i = 0; i < in->seg_groups.seg_groups_len; ++i)
-    {
-        for (j = 0;
-             j < in->seg_groups.seg_groups_val[i].num;
-             ++j)
-        {
-            nb_segs++;
-
-            if (len <= in->seg_groups.seg_groups_val[i].len)
-                goto out;
-            else
-                len -= in->seg_groups.seg_groups_val[i].len;
-        }
-    }
-
-out:
-    return (nb_segs);
-}
-
 static int
-rte_pktmbuf_redist(tarpc_rte_pktmbuf_redist_in *in,
+rte_pktmbuf_redist(tarpc_rte_pktmbuf_redist_in  *in,
                    tarpc_rte_pktmbuf_redist_out *out)
 {
-    size_t data_count;
-    unsigned int nb_spare_objs;
-    unsigned int i, j, k;
-    unsigned int pattern_nb_segs = 0;
-    size_t pattern_sum_len = 0;
-    uint8_t nb_segs_new = 0;
-    struct rte_mbuf *m = NULL;
-    struct rte_mbuf *m_cur = NULL;
-    uint8_t *m_contig_data = NULL;
-    struct rte_mbuf **new_segs = NULL;
-    te_errno err = 0;
+    struct rte_mbuf                *mo = NULL;
+    uint64_t                        nb_groups_avail;
+    struct rte_mbuf                *mo_seg;
+    uint16_t                        mo_seg_off;
+    struct rte_mbuf                *mn = NULL;
+    struct rte_mbuf                *mn_seg;
+    uint32_t                        data_len_copied;
+    struct tarpc_pktmbuf_seg_group *group;
+    uint8_t                        *dst;
+    uint16_t                        mn_seg_extent_len;
+    te_errno                        err = 0;
 
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
-        m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
+        mo = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
     });
 
-    /* Flush the local cache and get the number of spare objects */
-    if (m->pool->local_cache != NULL)
-        rte_mempool_cache_flush(m->pool->local_cache, m->pool);
-
-    nb_spare_objs = rte_mempool_avail_count(m->pool);
-
-    /* Initialize out->m to the old pointer (for a possible roll-back) */
-    out->m = in->m;
-
-    /* Sanity checks */
-    if (m == NULL || m->pkt_len == 0)
+    if (mo == NULL)
     {
         err = TE_RC(TE_RPCS, TE_EINVAL);
         goto out;
     }
 
-    if (in->seg_groups.seg_groups_len == 0 ||
-        in->seg_groups.seg_groups_val == NULL)
-        return (m->nb_segs);
+    out->m = in->m;
 
-    /* Calculate the total figures for the pattern */
-    for (i = 0; i < in->seg_groups.seg_groups_len; ++i)
+    nb_groups_avail = in->seg_groups.seg_groups_len;
+    if (nb_groups_avail == 0)
+        return (mo->nb_segs);
+
+    mo_seg = mo;
+    mo_seg_off = 0;
+    mn_seg = NULL;
+
+    data_len_copied = 0;
+
+    for (group = in->seg_groups.seg_groups_val; nb_groups_avail-- > 0; ++group)
     {
-        if (in->seg_groups.seg_groups_val[i].num == 0 ||
-            in->seg_groups.seg_groups_val[i].len == 0)
+        uint8_t group_nb_segs_avail = group->num;
+
+        while (group_nb_segs_avail > 0)
         {
-            err = TE_RC(TE_RPCS, TE_EINVAL);
-            goto out;
-        }
-        pattern_nb_segs += in->seg_groups.seg_groups_val[i].num;
-        pattern_sum_len += in->seg_groups.seg_groups_val[i].num *
-                           in->seg_groups.seg_groups_val[i].len;
-    }
+            uint16_t  mo_seg_dlen_avail = 0;
+            uint16_t  mn_seg_dlen_avail;
+            uint16_t  data_len_to_copy;
 
-    /* Determine the total number of segments in the new chain to be built */
-    data_count = 0;
-    while (data_count < m->pkt_len)
-    {
-        unsigned int nb_segs_to_add;
-        size_t len_to_add = (m->pkt_len - data_count);
+            for (; mo_seg != NULL; mo_seg = mo_seg->next, mo_seg_off = 0)
+            {
+                mo_seg_dlen_avail = mo_seg->data_len - mo_seg_off;
+                if (mo_seg_dlen_avail != 0)
+                     break;
+            }
 
-        if (pattern_sum_len > len_to_add)
-        {
-            nb_segs_to_add = ta_count_max_segs_within_pattern(in, len_to_add);
-            data_count += len_to_add;
-        }
-        else
-        {
-            nb_segs_to_add = pattern_nb_segs;
-            data_count += pattern_sum_len;
-        }
+            if (mo_seg_dlen_avail == 0)
+            {
+                if ((group_nb_segs_avail > 1) || (nb_groups_avail > 1))
+                    WARN("%s(): All the original data has been read out"
+                         " although the pattern has not yet ended",
+                         __FUNCTION__);
+                goto pattern_done;
+            }
 
-        if ((nb_segs_new + nb_segs_to_add) > nb_spare_objs)
-        {
-            nb_segs_new = MIN(nb_spare_objs, UINT8_MAX);
-            break;
-        }
+            mn_seg_dlen_avail = (mn_seg != NULL) ?
+                                group->len - mn_seg->data_len : 0;
 
-        if ((nb_segs_new + nb_segs_to_add) > UINT8_MAX)
-        {
-            nb_segs_new = UINT8_MAX;
-            break;
-        }
-
-        nb_segs_new += nb_segs_to_add;
-    }
-
-    /* Allocate an array of mbuf pointers for the new chain to be built */
-    new_segs = calloc(nb_segs_new, sizeof(*new_segs));
-    if (new_segs == NULL)
-    {
-        err = TE_RC(TE_RPCS, TE_ENOMEM);
-        goto out;
-    }
-
-    /* Allocate mbuf segments for the new chain to be built */
-    err = rte_pktmbuf_alloc_bulk(m->pool, new_segs, nb_segs_new);
-
-    neg_errno_h2rpc(&err);
-    if (err != 0)
-        goto out;
-
-    /* Allocate a contiguous buffer to store the entire chain data */
-    m_contig_data = malloc(m->pkt_len);
-    if (m_contig_data == NULL)
-    {
-        err = TE_RC(TE_RPCS, TE_ENOMEM);
-        goto out;
-    }
-
-    /* Copy entire chain data into the contiguous buffer */
-    for (data_count = 0, m_cur = m; m_cur != NULL;
-         data_count += m_cur->data_len, m_cur = m_cur->next)
-        memcpy(m_contig_data + data_count,
-               rte_pktmbuf_mtod_offset(m_cur, uint8_t *, 0),
-               m_cur->data_len);
-
-    /* Distribute the packet data across the new mbuf segments */
-    k = 0;
-    data_count = 0;
-    while (data_count < m->pkt_len)
-    {
-        for (i = 0; (i < in->seg_groups.seg_groups_len) &&
-             (data_count < m->pkt_len); ++i)
-        {
-                for (j = 0;
-                     (j < in->seg_groups.seg_groups_val[i].num) &&
-                     (data_count < m->pkt_len);
-                     ++j)
+            if (mn_seg_dlen_avail == 0)
+            {
+                mn_seg = rte_pktmbuf_alloc(mo->pool);
+                if (mn_seg == NULL)
                 {
-                    uint8_t *dst;
-                    uint16_t to_copy = m->pkt_len - data_count;
-
-                    if ((k + 1) < UINT8_MAX)
-                        to_copy = MIN(to_copy,
-                                      in->seg_groups.seg_groups_val[i].len);
-
-                    m_cur = new_segs[k++];
-
-                    dst = (uint8_t *)rte_pktmbuf_append(m_cur, to_copy);
-                    if (dst == NULL)
-                    {
-                        err = TE_RC(TE_RPCS, TE_ENOSPC);
-                        goto out;
-                    }
-
-                    memcpy(dst, m_contig_data + data_count, to_copy);
-
-                    data_count += to_copy;
+                    WARN("%s(): All spare mempool objects have been spent",
+                         __FUNCTION__);
+                    goto pattern_done;
                 }
+
+                if (mn == NULL)
+                {
+                    mn = mn_seg;
+                }
+                else if (rte_pktmbuf_chain(mn, mn_seg) != 0)
+                {
+                    WARN("%s(): Reached the maximum allowed number of segments",
+                         __FUNCTION__);
+                    rte_pktmbuf_free(mn_seg);
+                    mn_seg = NULL;
+                    goto pattern_done;
+                }
+
+                mn_seg_dlen_avail = group->len;
+            }
+
+            data_len_to_copy = MIN(mo_seg_dlen_avail, mn_seg_dlen_avail);
+            dst = (uint8_t *)rte_pktmbuf_append(mn, data_len_to_copy);
+            if (dst == NULL)
+            {
+                ERROR("%s(): Failed to append data room of %" PRIu16 " bytes;"
+                      " nb_segs = %" PRIu8 "; current data_len = %" PRIu16,
+                      __FUNCTION__, data_len_to_copy, mn->nb_segs,
+                      mn_seg->data_len);
+                err = TE_RC(TE_RPCS, TE_ENOMEM);
+                goto out;
+            }
+
+            rte_memcpy(dst,
+                       rte_pktmbuf_mtod_offset(mo_seg, uint8_t *, mo_seg_off),
+                       data_len_to_copy);
+
+            mo_seg_off += data_len_to_copy;
+            data_len_copied += data_len_to_copy;
+
+            if (data_len_to_copy == mn_seg_dlen_avail)
+            {
+                --group_nb_segs_avail;
+                mn_seg = NULL;
+            }
         }
     }
 
-    /* Produce a chain from the segments */
-    for (i = 1; i < nb_segs_new; ++i)
+pattern_done:
+    if (mn == NULL)
     {
-        err = rte_pktmbuf_chain(new_segs[0], new_segs[i]);
-
-        neg_errno_h2rpc(&err);
-        if (err != 0)
-            goto out;
+        WARN("%s(): The new mbuf chain has not emerged", __FUNCTION__);
+        WARN("%s(): The original chain will be preserved", __FUNCTION__);
+        return (mo->nb_segs);
     }
 
-#define RTE_PKTMBUF_COPY_FIELD(_field) new_segs[0]->_field = m->_field
+    mn_seg_extent_len = mo->pkt_len - data_len_copied;
+    if (mn_seg_extent_len > 0)
+    {
+        WARN("%s(): %" PRIu16 " bytes of the original data has not been"
+             " distributed after the pattern", __FUNCTION__, mn_seg_extent_len);
+        WARN("%s(): The data will be added to the last segment", __FUNCTION__);
+
+        dst = (uint8_t *)rte_pktmbuf_append(mn, mn_seg_extent_len);
+        if (dst == NULL)
+        {
+            ERROR("%s(): Failed to append data room of %" PRIu16 " bytes",
+                  __FUNCTION__, mn_seg_extent_len);
+            err = TE_RC(TE_RPCS, TE_ENOMEM);
+            goto out;
+        }
+
+        for (; mo_seg != NULL; mo_seg = mo_seg->next, mo_seg_off = 0)
+        {
+            rte_memcpy(dst,
+                       rte_pktmbuf_mtod_offset(mo_seg, uint8_t *, mo_seg_off),
+                       (mo_seg->data_len - mo_seg_off));
+        }
+    }
+
+#define RTE_PKTMBUF_COPY_FIELD(_field) mn->_field = mo->_field
     RTE_PKTMBUF_COPY_FIELD(port);
     RTE_PKTMBUF_COPY_FIELD(ol_flags);
     RTE_PKTMBUF_COPY_FIELD(vlan_tci);
@@ -1229,32 +1192,22 @@ rte_pktmbuf_redist(tarpc_rte_pktmbuf_redist_in *in,
     RTE_PKTMBUF_COPY_FIELD(tx_offload);
 #undef RTE_PKTMBUF_COPY_FIELD
 
-    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
-        out->m = RCF_PCH_MEM_INDEX_ALLOC(new_segs[0], ns);
-    });
-
 out:
-    /* If no error occurred, get rid of the original chain */
     if (err == 0)
     {
-        rte_pktmbuf_free(m);
+        rte_pktmbuf_free(mo);
         RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
             RCF_PCH_MEM_INDEX_FREE(in->m, ns);
+            out->m = RCF_PCH_MEM_INDEX_ALLOC(mn, ns);
         });
     }
-
-    free(m_contig_data);
-
-    if (new_segs != NULL)
+    else
     {
-        if (err != 0)
-            for (i = 0; i < nb_segs_new; ++i)
-                rte_pktmbuf_free(new_segs[i]);
-
-        free(new_segs);
+        ERROR("%s(): Redistribution failed: %r", __FUNCTION__, err);
+        rte_pktmbuf_free(mn);
     }
 
-    return (err != 0) ? ((err > 0) ? -err : err) : (nb_segs_new);
+    return (err != 0) ? ((err > 0) ? -err : err) : mn->nb_segs;
 }
 
 TARPC_FUNC_STATIC(rte_pktmbuf_redist, {},
