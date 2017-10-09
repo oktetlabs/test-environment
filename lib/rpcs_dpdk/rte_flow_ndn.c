@@ -54,6 +54,9 @@
 #define RTE_FLOW_VLAN_DEI_FILED_LEN 1
 #define RTE_FLOW_INT24_FIELD_LEN 3
 #define RTE_FLOW_FIELD_NAME_MAX_LEN 128
+#define RTE_FLOW_BIT_FIELD_LEN 1
+#define RTE_FLOW_VXLAN_VNI_VALID_OFFSET 3
+
 
 static te_errno
 rte_flow_attr_from_ndn(const asn_value *ndn_attr,
@@ -809,6 +812,67 @@ out:
 }
 
 static te_errno
+rte_flow_item_vxlan_from_pdu(const asn_value *vxlan_pdu,
+                             struct rte_flow_item *item)
+{
+    struct rte_flow_item_vxlan *spec = NULL;
+    struct rte_flow_item_vxlan *mask = NULL;
+    struct rte_flow_item_vxlan *last = NULL;
+    uint32_t spec_vni_valid = 0;
+    uint32_t mask_vni_valid = 0;
+    uint32_t last_vni_valid = 0;
+    int rc;
+
+    if (item == NULL)
+        return TE_EINVAL;
+
+    rc = rte_alloc_mem_for_flow_item((void **)&spec,
+                                     (void **)&mask,
+                                     (void **)&last,
+                                     sizeof(struct rte_flow_item_vxlan));
+    if (rc != 0)
+        return rc;
+
+    rc = asn_read_int_field_with_offset(vxlan_pdu, "vni-valid",
+                                        RTE_FLOW_BIT_FIELD_LEN,
+                                        RTE_FLOW_VXLAN_VNI_VALID_OFFSET,
+                                        &spec_vni_valid, &mask_vni_valid,
+                                        &last_vni_valid);
+    if (rc != 0)
+        goto out;
+
+    spec->flags = spec_vni_valid;
+    mask->flags = mask_vni_valid;
+    last->flags = last_vni_valid;
+
+    rc = asn_read_int24_field(vxlan_pdu, "vni", spec->vni, mask->vni, last->vni);
+    if (rc != 0)
+        goto out;
+
+#define FILL_FLOW_ITEM_VXLAN(_field) \
+    do {                                                                        \
+        if (!rte_flow_is_zero_addr(_field->vni, RTE_FLOW_INT24_FIELD_LEN) ||    \
+            _field->flags != 0)                                                 \
+            item->_field = _field;                                              \
+        else                                                                    \
+            free(_field);                                                       \
+    } while(0)
+
+    item->type = RTE_FLOW_ITEM_TYPE_VXLAN;
+    FILL_FLOW_ITEM_VXLAN(spec);
+    FILL_FLOW_ITEM_VXLAN(mask);
+    FILL_FLOW_ITEM_VXLAN(last);
+#undef FILL_FLOW_ITEM_VXLAN
+
+    return 0;
+out:
+    free(spec);
+    free(mask);
+    free(last);
+    return rc;
+}
+
+static te_errno
 rte_flow_item_end(struct rte_flow_item *item)
 {
     if (item == NULL)
@@ -873,6 +937,7 @@ static const struct rte_flow_item_tags_mapping {
     { TE_PROTO_IP6,     rte_flow_item_ipv6_from_pdu },
     { TE_PROTO_TCP,     rte_flow_item_tcp_from_pdu },
     { TE_PROTO_UDP,     rte_flow_item_udp_from_pdu },
+    { TE_PROTO_VXLAN,   rte_flow_item_vxlan_from_pdu },
     { 0,                rte_flow_item_void },
 };
 
