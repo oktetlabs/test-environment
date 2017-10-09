@@ -39,6 +39,7 @@
 #include "asn_usr.h"
 #include "asn_impl.h"
 #include "ndn_rte_flow.h"
+#include "ndn_gre.h"
 
 #include "logger_api.h"
 
@@ -56,6 +57,10 @@
 #define RTE_FLOW_FIELD_NAME_MAX_LEN 128
 #define RTE_FLOW_BIT_FIELD_LEN 1
 #define RTE_FLOW_VXLAN_VNI_VALID_OFFSET 3
+#define RTE_FLOW_GRE_CKSUM_OFFSET 15
+#define RTE_FLOW_GRE_KEY_OFFSET 13
+#define RTE_FLOW_GRE_SEQN_OFFSET 12
+#define RTE_FLOW_GRE_VER_LEN 3
 
 
 static te_errno
@@ -873,6 +878,193 @@ out:
 }
 
 static te_errno
+rte_flow_item_gre_from_pdu(const asn_value *gre_pdu,
+                           struct rte_flow_item *item)
+{
+    struct rte_flow_item_gre *spec = NULL;
+    struct rte_flow_item_gre *mask = NULL;
+    struct rte_flow_item_gre *last = NULL;
+    uint32_t spec_fields = 0;
+    uint32_t mask_fields = 0;
+    uint32_t last_fields = 0;
+    int rc;
+
+    if (item == NULL)
+        return TE_EINVAL;
+
+    rc = rte_alloc_mem_for_flow_item((void **)&spec,
+                                     (void **)&mask,
+                                     (void **)&last,
+                                     sizeof(struct rte_flow_item_gre));
+    if (rc != 0)
+        return rc;
+
+    rc = asn_read_int_field_with_offset(gre_pdu, "cksum-present",
+                                        RTE_FLOW_BIT_FIELD_LEN,
+                                        RTE_FLOW_GRE_CKSUM_OFFSET,
+                                        &spec_fields, &mask_fields,
+                                        &last_fields);
+    if (rc == 0)
+        rc = asn_read_int_field_with_offset(gre_pdu, "version",
+                                            RTE_FLOW_GRE_VER_LEN, 0,
+                                            &spec_fields, &mask_fields,
+                                            &last_fields);
+    if (rc != 0)
+        goto out;
+
+    spec->c_rsvd0_ver = rte_cpu_to_be_16(spec_fields);
+    mask->c_rsvd0_ver = rte_cpu_to_be_16(mask_fields);
+    last->c_rsvd0_ver = rte_cpu_to_be_16(last_fields);
+
+    ASN_READ_INT_RANGE_FIELD(gre_pdu, protocol, protocol, sizeof(spec->protocol));
+
+#define FILL_FLOW_ITEM_GRE(_field) \
+    do {                                    \
+        if (_field->c_rsvd0_ver != 0 ||     \
+            _field->protocol != 0)          \
+            item->_field = _field;          \
+        else                                \
+            free(_field);                   \
+    } while(0)
+
+    item->type = RTE_FLOW_ITEM_TYPE_GRE;
+    FILL_FLOW_ITEM_GRE(spec);
+    FILL_FLOW_ITEM_GRE(mask);
+    FILL_FLOW_ITEM_GRE(last);
+#undef FILL_FLOW_ITEM_GRE
+
+    return 0;
+out:
+    free(spec);
+    free(mask);
+    free(last);
+    return rc;
+}
+
+static te_errno
+rte_flow_item_nvgre_from_pdu(const asn_value *gre_pdu,
+                             asn_value *nvgre_pdu,
+                             struct rte_flow_item *item)
+{
+    struct rte_flow_item_nvgre *spec = NULL;
+    struct rte_flow_item_nvgre *mask = NULL;
+    struct rte_flow_item_nvgre *last = NULL;
+    uint32_t spec_fields = 0;
+    uint32_t mask_fields = 0;
+    uint32_t last_fields = 0;
+    int rc;
+
+    if (item == NULL)
+        return TE_EINVAL;
+
+    rc = rte_alloc_mem_for_flow_item((void **)&spec,
+                                     (void **)&mask,
+                                     (void **)&last,
+                                     sizeof(struct rte_flow_item_nvgre));
+    if (rc != 0)
+        return rc;
+
+    rc = asn_read_int_field_with_offset(gre_pdu, "cksum-present",
+                                        RTE_FLOW_BIT_FIELD_LEN,
+                                        RTE_FLOW_GRE_CKSUM_OFFSET,
+                                        &spec_fields, &mask_fields,
+                                        &last_fields);
+    if (rc == 0)
+        rc = asn_read_int_field_with_offset(gre_pdu, "key-present",
+                                            RTE_FLOW_BIT_FIELD_LEN,
+                                            RTE_FLOW_GRE_KEY_OFFSET,
+                                            &spec_fields, &mask_fields,
+                                            &last_fields);
+    if (rc == 0)
+        rc = asn_read_int_field_with_offset(gre_pdu, "seqn-present",
+                                            RTE_FLOW_BIT_FIELD_LEN,
+                                            RTE_FLOW_GRE_SEQN_OFFSET,
+                                            &spec_fields, &mask_fields,
+                                            &last_fields);
+    if (rc == 0)
+        rc = asn_read_int_field_with_offset(gre_pdu, "version",
+                                            RTE_FLOW_GRE_VER_LEN, 0,
+                                            &spec_fields, &mask_fields,
+                                            &last_fields);
+    if (rc != 0)
+        goto out;
+
+    spec->c_k_s_rsvd0_ver = rte_cpu_to_be_16(spec_fields);
+    mask->c_k_s_rsvd0_ver = rte_cpu_to_be_16(mask_fields);
+    last->c_k_s_rsvd0_ver = rte_cpu_to_be_16(last_fields);
+
+    rc = asn_read_int24_field(nvgre_pdu, "vsid", spec->tni, mask->tni, last->tni);
+    if (rc != 0)
+        goto out;
+
+    ASN_READ_INT_RANGE_FIELD(gre_pdu, protocol, protocol, sizeof(spec->protocol));
+    ASN_READ_INT_RANGE_FIELD(nvgre_pdu, flowid, flow_id, sizeof(spec->flow_id));
+
+#define FILL_FLOW_ITEM_NVGRE(_field) \
+    do {                                                                        \
+        if (_field->c_k_s_rsvd0_ver != 0 ||                                     \
+            _field->protocol != 0 ||                                            \
+            !rte_flow_is_zero_addr(_field->tni, RTE_FLOW_INT24_FIELD_LEN) ||    \
+            _field->flow_id != 0)                                               \
+            item->_field = _field;                                              \
+        else                                                                    \
+            free(_field);                                                       \
+    } while(0)
+
+    item->type = RTE_FLOW_ITEM_TYPE_NVGRE;
+    FILL_FLOW_ITEM_NVGRE(spec);
+    FILL_FLOW_ITEM_NVGRE(mask);
+    FILL_FLOW_ITEM_NVGRE(last);
+#undef FILL_FLOW_ITEM_NVGRE
+
+    return 0;
+out:
+    free(spec);
+    free(mask);
+    free(last);
+    return rc;
+}
+
+static te_errno
+rte_flow_item_gre_and_nvgre_from_pdu(const asn_value *gre_pdu,
+                                     struct rte_flow_item *item)
+{
+    asn_value *opt_key_pdu;
+    asn_value *nvgre_pdu;
+    asn_tag_value opt_key_tag;
+    int rc;
+
+    rc = asn_get_subvalue(gre_pdu, &opt_key_pdu, "opt-key");
+    if (rc == 0)
+    {
+        rc = asn_get_choice_value(opt_key_pdu, &nvgre_pdu, NULL, &opt_key_tag);
+        if (rc != 0)
+            return rc;
+
+        if (opt_key_tag == NDN_TAG_GRE_OPT_KEY_NVGRE)
+        {
+            rc = rte_flow_item_nvgre_from_pdu(gre_pdu, nvgre_pdu, item);
+            if (rc != 0)
+                return rc;
+        }
+        else
+        {
+            return TE_EINVAL;
+        }
+    }
+    else if (rc == TE_EASNINCOMPLVAL)
+    {
+        rc = rte_flow_item_gre_from_pdu(gre_pdu, item);
+        if (rc != 0)
+            return rc;
+    }
+    else if (rc != 0)
+        return rc;
+
+    return 0;
+}
+
+static te_errno
 rte_flow_item_end(struct rte_flow_item *item)
 {
     if (item == NULL)
@@ -938,6 +1130,7 @@ static const struct rte_flow_item_tags_mapping {
     { TE_PROTO_TCP,     rte_flow_item_tcp_from_pdu },
     { TE_PROTO_UDP,     rte_flow_item_udp_from_pdu },
     { TE_PROTO_VXLAN,   rte_flow_item_vxlan_from_pdu },
+    { TE_PROTO_GRE,     rte_flow_item_gre_and_nvgre_from_pdu },
     { 0,                rte_flow_item_void },
 };
 
