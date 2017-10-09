@@ -52,6 +52,8 @@
 #define RTE_FLOW_VLAN_VID_FILED_LEN 12
 #define RTE_FLOW_VLAN_PCP_FILED_LEN 3
 #define RTE_FLOW_VLAN_DEI_FILED_LEN 1
+#define RTE_FLOW_INT24_FIELD_LEN 3
+#define RTE_FLOW_FIELD_NAME_MAX_LEN 128
 
 static te_errno
 rte_flow_attr_from_ndn(const asn_value *ndn_attr,
@@ -186,6 +188,110 @@ rte_int_hton(uint32_t val, void *data, size_t size)
     } while (0)
 
 static te_errno
+asn_read_int_field_with_offset(const asn_value *pdu, const char *name,
+                               size_t size, uint32_t offset, uint32_t *spec_p,
+                               uint32_t *mask_p, uint32_t *last_p)
+{
+    uint32_t val;
+    size_t val_size = size;
+    uint32_t spec_val = 0;
+    uint32_t mask_val = 0;
+    uint32_t last_val = 0;
+    char buf[RTE_FLOW_FIELD_NAME_MAX_LEN];
+    unsigned int i;
+    int rc;
+
+    snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#plain", name);
+    rc = asn_read_value_field(pdu, &val, &val_size, buf);
+    if (rc == 0)
+    {
+        spec_val |= val << offset;
+        for (i = 0; i < size; i++)
+            mask_val |= 1U << (offset + i);
+    }
+    else if (rc == TE_EASNOTHERCHOICE)
+    {
+        snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.first", name);
+        rc = asn_read_value_field(pdu, &val, &val_size, buf);
+        if (rc == 0)
+            spec_val |= val << offset;
+        if (rc == 0 || rc == TE_EASNINCOMPLVAL)
+        {
+            snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.last", name);
+            rc = asn_read_value_field(pdu, &val, &val_size, buf);
+        }
+        if (rc == 0)
+            last_val |= val << offset;
+        if (rc == 0 || rc == TE_EASNINCOMPLVAL)
+        {
+            snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.mask", name);
+            rc = asn_read_value_field(pdu, &val, &val_size, buf);
+        }
+        if (rc == 0)
+            mask_val |= val << offset;
+    }
+    if (rc != 0 && rc != TE_EASNINCOMPLVAL && rc != TE_EASNOTHERCHOICE)
+        return rc;
+
+    *spec_p |= spec_val;
+    *mask_p |= mask_val;
+    *last_p |= last_val;
+
+    return 0;
+}
+
+static void
+convert_int24_to_array(uint8_t *array, uint32_t val)
+{
+    array[0] = val >> (CHAR_BIT << 1);
+    array[1] = val >> CHAR_BIT;
+    array[2] = val;
+}
+
+static te_errno
+asn_read_int24_field(const asn_value *pdu, char *name, uint8_t *spec_val,
+                     uint8_t *mask_val, uint8_t *last_val)
+{
+    uint32_t val;
+    size_t size = sizeof(val);
+    char buf[RTE_FLOW_FIELD_NAME_MAX_LEN];
+    int rc;
+
+    snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#plain", name);
+    rc = asn_read_value_field(pdu, &val, &size, buf);
+    if (rc == 0)
+    {
+        convert_int24_to_array(spec_val, val);
+        memset(mask_val, 0xff, RTE_FLOW_INT24_FIELD_LEN);
+    }
+    else if (rc == TE_EASNOTHERCHOICE)
+    {
+        snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.first", name);
+        rc = asn_read_value_field(pdu, &val, &size, buf);
+        if (rc == 0)
+            convert_int24_to_array(spec_val, val);
+        if (rc == 0 || rc == TE_EASNINCOMPLVAL)
+        {
+            snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.last", name);
+            rc = asn_read_value_field(pdu, &val, &size, buf);
+        }
+        if (rc == 0)
+            convert_int24_to_array(last_val, val);
+        if (rc == 0 || rc == TE_EASNINCOMPLVAL)
+        {
+            snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.mask", name);
+            rc = asn_read_value_field(pdu, &val, &size, buf);
+        }
+        if (rc == 0)
+            convert_int24_to_array(mask_val, val);
+    }
+    if (rc != 0 && rc != TE_EASNINCOMPLVAL && rc != TE_EASNOTHERCHOICE)
+        return rc;
+
+    return 0;
+}
+
+static te_errno
 rte_alloc_mem_for_flow_item(void **spec_out, void **mask_out,
                             void **last_out, size_t size)
 {
@@ -317,9 +423,9 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     struct rte_flow_item *pattern;
     unsigned int item_nb = *item_nb_out;
     asn_value *vlan_pdu = tagged_pdu;
-    uint16_t spec_tci = 0;
-    uint16_t mask_tci = 0;
-    uint16_t last_tci = 0;
+    uint32_t spec_tci = 0;
+    uint32_t mask_tci = 0;
+    uint32_t last_tci = 0;
     te_bool is_empty_outer = FALSE;
     te_bool is_double_tagged = FALSE;
     int rc;
@@ -357,75 +463,52 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     if (is_empty_outer)
         return 0;
 
-#define ASN_READ_VLAN_TCI_RANGE_FIELD(_asn_val, _name, _size, _offset) \
-    do {                                                                    \
-        size_t __size = _size;                                              \
-        uint16_t __val;                                                     \
-        uint16_t __offset = _offset;                                        \
-        unsigned int i;                                                     \
-                                                                            \
-        rc = asn_read_value_field(_asn_val, &__val,                         \
-                                  &__size, #_name ".#plain");               \
-        if (rc == 0)                                                        \
-        {                                                                   \
-            spec_tci |= __val << __offset;                                  \
-            for (i = 0; i < _size; i++)                                     \
-                mask_tci |= 1 << (__offset + i);                            \
-        }                                                                   \
-        else if (rc == TE_EASNOTHERCHOICE)                                  \
-        {                                                                   \
-            rc = asn_read_value_field(_asn_val, &__val,                     \
-                                      &__size, #_name ".#range.first");     \
-            if (rc == 0)                                                    \
-                spec_tci |= __val << __offset;                              \
-            if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
-                rc = asn_read_value_field(_asn_val, &__val,                 \
-                                          &__size, #_name ".#range.last");  \
-            if (rc == 0)                                                    \
-                last_tci |= __val << __offset;                              \
-            if (rc == 0 || rc == TE_EASNINCOMPLVAL)                         \
-                rc = asn_read_value_field(_asn_val, &__val,                 \
-                                          &__size, #_name ".#range.mask");  \
-            if (rc == 0)                                                    \
-                mask_tci |= __val << __offset;                              \
-        }                                                                   \
-        if (rc != 0 && rc != TE_EASNINCOMPLVAL && rc != TE_EASNOTHERCHOICE) \
-            goto out;                                                       \
-    } while (0)
-
-    if (is_double_tagged)
-    {
-        ASN_READ_INT_RANGE_FIELD(vlan_pdu, tpid, tpid, sizeof(spec->tpid));
-        ASN_READ_VLAN_TCI_RANGE_FIELD(vlan_pdu, vid,
-                                      RTE_FLOW_VLAN_VID_FILED_LEN, 0);
-        ASN_READ_VLAN_TCI_RANGE_FIELD(vlan_pdu, dei,
-                                      RTE_FLOW_VLAN_DEI_FILED_LEN,
-                                      RTE_FLOW_VLAN_VID_FILED_LEN);
-        ASN_READ_VLAN_TCI_RANGE_FIELD(vlan_pdu, pcp,
-                                      RTE_FLOW_VLAN_PCP_FILED_LEN,
-                                      RTE_FLOW_VLAN_VID_FILED_LEN +
-                                      RTE_FLOW_VLAN_DEI_FILED_LEN);
-    }
-    else
-    {
-        ASN_READ_VLAN_TCI_RANGE_FIELD(vlan_pdu, vlan-id,
-                                      RTE_FLOW_VLAN_VID_FILED_LEN, 0);
-        ASN_READ_VLAN_TCI_RANGE_FIELD(vlan_pdu, cfi,
-                                      RTE_FLOW_VLAN_DEI_FILED_LEN,
-                                      RTE_FLOW_VLAN_VID_FILED_LEN);
-        ASN_READ_VLAN_TCI_RANGE_FIELD(vlan_pdu, priority,
-                                      RTE_FLOW_VLAN_PCP_FILED_LEN,
-                                      RTE_FLOW_VLAN_VID_FILED_LEN +
-                                      RTE_FLOW_VLAN_DEI_FILED_LEN);
-    }
-#undef ASN_READ_VLAN_TCI_RANGE_FIELD
-
     rc = rte_alloc_mem_for_flow_item((void **)&spec,
                                      (void **)&mask,
                                      (void **)&last,
                                      sizeof(struct rte_flow_item_vlan));
     if (rc != 0)
         return rc;
+
+    if (is_double_tagged)
+    {
+        ASN_READ_INT_RANGE_FIELD(vlan_pdu, tpid, tpid, sizeof(spec->tpid));
+        rc = asn_read_int_field_with_offset(vlan_pdu, "vid",
+                                            RTE_FLOW_VLAN_VID_FILED_LEN, 0,
+                                            &spec_tci, &mask_tci, &last_tci);
+        if (rc == 0)
+            rc = asn_read_int_field_with_offset(vlan_pdu, "dei",
+                                                RTE_FLOW_VLAN_DEI_FILED_LEN,
+                                                RTE_FLOW_VLAN_VID_FILED_LEN,
+                                                &spec_tci, &mask_tci, &last_tci);
+        if (rc == 0)
+            rc = asn_read_int_field_with_offset(vlan_pdu, "pcp",
+                                                RTE_FLOW_VLAN_PCP_FILED_LEN,
+                                                RTE_FLOW_VLAN_VID_FILED_LEN +
+                                                RTE_FLOW_VLAN_DEI_FILED_LEN,
+                                                &spec_tci, &mask_tci, &last_tci);
+        if (rc != 0)
+            goto out;
+    }
+    else
+    {
+        rc = asn_read_int_field_with_offset(vlan_pdu, "vlan-id",
+                                            RTE_FLOW_VLAN_VID_FILED_LEN, 0,
+                                            &spec_tci, &mask_tci, &last_tci);
+        if (rc == 0)
+            rc = asn_read_int_field_with_offset(vlan_pdu, "cfi",
+                                                RTE_FLOW_VLAN_DEI_FILED_LEN,
+                                                RTE_FLOW_VLAN_VID_FILED_LEN,
+                                                &spec_tci, &mask_tci, &last_tci);
+        if (rc == 0)
+            rc = asn_read_int_field_with_offset(vlan_pdu, "priority",
+                                                RTE_FLOW_VLAN_PCP_FILED_LEN,
+                                                RTE_FLOW_VLAN_VID_FILED_LEN +
+                                                RTE_FLOW_VLAN_DEI_FILED_LEN,
+                                                &spec_tci, &mask_tci, &last_tci);
+        if (rc != 0)
+            goto out;
+    }
 
     spec->tci = rte_cpu_to_be_16(spec_tci);
     mask->tci = rte_cpu_to_be_16(mask_tci);
