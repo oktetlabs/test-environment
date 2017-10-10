@@ -1100,7 +1100,6 @@
          Name:  empty
          Value: 0 (disabled) or 1 (enabled)
          Limit: 1 -->
-
     <object oid="/agent/ftpserver" access="read_write" type="integer"/>
     <!-- FTP server standalone or via inetd
          Name:  empty
@@ -1111,6 +1110,37 @@
                 wuftpd
          Limit: 1 -->
     <object oid="/agent/ftpserver/server" access="read_write" type="string"/>
+
+    <!-- PPPoE server enabling/disabling
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1 -->
+    <object oid="/agent/pppoeserver" access="read_write" type="integer"/>
+
+    <!-- PPPoE server interface(s)
+         Name: network interface name
+         Value: none -->
+    <object oid="/agent/pppoeserver/interface" access="read_create" type="none"/>
+
+    <!-- PPPoE server option(s)
+         Name: name of option
+         Value: option's value, or none if option doesn't have a value -->
+    <object oid="/agent/pppoeserver/option" access="read_create" type="string"/>
+
+    <!-- PPPoE server subnet address with prefix length
+         Name: empty
+         Value: subnet IPv4 address with prefix lenght, in format: "1.2.3.0|24" -->
+    <object oid="/agent/pppoeserver/subnet" access="read_write" type="string"/>
+
+    <!-- PPPoE local IP address
+         Name: empty
+         Value: IP address -->
+    <object oid="/agent/pppoeserver/laddr" access="read_only" type="address" volatile="true"/>
+
+    <!-- PPPoE starting remote IP address
+         Name: empty
+         Value: IP address -->
+    <object oid="/agent/pppoeserver/raddr" access="read_only" type="address" volatile="true"/>
 
 
     <!-- SSH daemon.

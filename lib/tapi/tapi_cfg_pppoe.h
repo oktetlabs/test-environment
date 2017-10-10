@@ -95,6 +95,26 @@ tapi_cfg_pppoe_server_subnet_set(const char *ta, const char *subnet);
 extern te_errno
 tapi_cfg_pppoe_server_subnet_get(const char *ta, const char **subnet_p);
 
+/**
+ * Get local IP address of PPPoE server.
+ *
+ * @param[in]  ta           Test agent name.
+ * @param[out] addr         Local IP address. Note, it should be freed with
+ *                          free(3) when it is no longer needed.
+ */
+extern void tapi_cfg_pppoe_server_laddr_get(const char *ta,
+                                            struct sockaddr **addr);
+
+/**
+ * Get starting remote IP address of PPPoE server.
+ *
+ * @param[in]  ta           Test agent name.
+ * @param[out] addr         Starting remote IP address. Note, it should be freed
+ *                          with free(3) when it is no longer needed.
+ */
+extern void tapi_cfg_pppoe_server_raddr_get(const char *ta,
+                                            struct sockaddr **addr);
+
 /**@} <!-- END tapi_conf_pppoe --> */
 
 #ifdef __cplusplus

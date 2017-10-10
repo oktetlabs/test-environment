@@ -39,6 +39,9 @@
 
 #include "te_defs.h"
 #include "te_queue.h"
+#include "te_sockaddr.h"
+#include "rcf_pch.h"
+#include "logger_api.h"
 
 #ifndef __linux__
 #warn PPPoE server support may not work properly on non-linux test agents
@@ -64,6 +67,13 @@
  * of pppoeserver subtreee
  */
 #define PPPOE_SERVER_LIST_SIZE 1024
+
+/** Default local IP address, see manual pppoe-server(8) */
+#define PPPOE_SERVER_LADDR_DEFAULT  "10.0.0.1"
+
+/** Default starting remote IP address, see manual pppoe-server(8) */
+#define PPPOE_SERVER_RADDR_DEFAULT  "10.67.15.1"
+
 
 /* Definitions of types for PPPoE configuring */
 
@@ -99,6 +109,9 @@ typedef struct te_pppoe_server {
     te_bool   started;     /**< admin status for pppoe server */
     te_bool   changed;     /**< configuration changed flag, used to detect
                                 if pppoe-server restart is required */
+
+    struct sockaddr_storage laddr;  /**< Local IP address */
+    struct sockaddr_storage raddr;  /**< Starting remote IP address */
 } te_pppoe_server;
 
 static te_bool
@@ -106,6 +119,62 @@ pppoe_server_is_running(te_pppoe_server *pppoe);
 
 /** Static pppoe server structure */
 static te_pppoe_server pppoe_server;
+
+
+/**
+ * Generate local IP address based on subnet option.
+ *
+ * @param pppoe     pppoe server structure.
+ */
+static void
+generate_laddr(te_pppoe_server *pppoe)
+{
+    struct in_addr *addr = &SIN(&pppoe->laddr)->sin_addr;
+    te_errno        rc;
+
+    SIN(&pppoe->laddr)->sin_family = AF_INET;
+    SIN(&pppoe->laddr)->sin_port = 0;
+
+    if (pppoe->subnet != ntohs(INADDR_ANY))
+        addr->s_addr = htonl(ntohl(pppoe->subnet) + 1);
+    else
+    {
+        /* Use default, see manual pppoe-server(8) */
+        rc = te_sockaddr_str2h(PPPOE_SERVER_LADDR_DEFAULT, SA(&pppoe->laddr));
+        assert(rc == 0);
+    }
+}
+
+/**
+ * Generate starting remote IP address based on subnet option.
+ *
+ * @param pppoe     pppoe server structure.
+ */
+static void
+generate_raddr(te_pppoe_server *pppoe)
+{
+    struct in_addr *addr = &SIN(&pppoe->raddr)->sin_addr;
+    te_errno        rc;
+
+    SIN(&pppoe->raddr)->sin_family = AF_INET;
+    SIN(&pppoe->raddr)->sin_port = 0;
+
+    if (pppoe->subnet != ntohs(INADDR_ANY))
+    {
+        /* This fix is ugly, indeed. Just to prevent overlapping of local
+         * and remote IPs for multiple pppoe clients. To be replaced by
+         * more nice one after all problems with pppoe and dhcp servers
+         * have been fixed.
+         */
+        addr->s_addr = htonl(ntohl(pppoe->subnet) + pppoe->max_sessions + 1);
+    }
+    else
+    {
+        /* Use default, see manual pppoe-server(8) */
+        rc = te_sockaddr_str2h(PPPOE_SERVER_RADDR_DEFAULT, SA(&pppoe->raddr));
+        assert(rc == 0);
+    }
+}
 
 /**
  * Initialise pppoe server structure with default values
@@ -127,6 +196,8 @@ pppoe_server_init(te_pppoe_server *pppoe)
     pppoe->started = pppoe_server_is_running(pppoe);
     pppoe->changed = pppoe->started;
     pppoe->initialised = TRUE;
+    generate_laddr(pppoe);
+    generate_raddr(pppoe);
 }
 
 /**
@@ -213,8 +284,6 @@ static te_errno
 pppoe_server_print_args(te_pppoe_server *pppoe, char *args, int maxlen)
 {
     te_pppoe_if    *iface;
-    struct in_addr  local_addr;
-    struct in_addr  remote_addr;
     char           *p = args;
 
     INFO("%s()", __FUNCTION__);
@@ -222,29 +291,19 @@ pppoe_server_print_args(te_pppoe_server *pppoe, char *args, int maxlen)
     p += snprintf(p, maxlen, "%s -O %s",
                   PPPOE_SERVER_EXEC, PPPOE_SERVER_CONF);
 
-    if (pppoe->subnet != ntohs(INADDR_ANY))
-    {
-        local_addr.s_addr = htonl(ntohl(pppoe->subnet) + 1);
+    if (SIN(&pppoe->laddr)->sin_addr.s_addr != INADDR_ANY)
         p += snprintf(p, maxlen - (p - args),
-                      " -L %s", inet_ntoa(local_addr));
+                      " -L %s", te_sockaddr_get_ipstr(SA(&pppoe->laddr)));
 
-
-        /* This fix is ugly, indeed. Just to prevent overlapping of local
-         * and remote IPs for multiple pppoe clients. To be replaced by
-         * more nice one after all problems with pppoe and dhcp servers
-         * have been fixed.
-         */
-        remote_addr.s_addr = htonl(ntohl(pppoe->subnet) +
-                                   pppoe->max_sessions + 1);
-        p+= snprintf(p, maxlen - (p - args),
-                     " -R %s", inet_ntoa((struct in_addr)remote_addr));
-    }
+    if (SIN(&pppoe->raddr)->sin_addr.s_addr != INADDR_ANY)
+        p += snprintf(p, maxlen - (p - args),
+                      " -R %s", te_sockaddr_get_ipstr(SA(&pppoe->raddr)));
 
     for (iface = SLIST_FIRST(&pppoe->ifs);
          iface != NULL; iface = SLIST_NEXT(iface, list))
     {
-        p+= snprintf(p, maxlen - (p - args),
-                     " -I %s", iface->ifname);
+        p += snprintf(p, maxlen - (p - args),
+                      " -I %s", iface->ifname);
     }
 
     return 0;
@@ -899,10 +958,75 @@ pppoe_server_subnet_set(unsigned int gid, const char *oid,
     }
     pppoe->subnet = htonl(ntohl(pppoe->subnet) &
                           PREFIX2MASK(pppoe->prefix));
+
+    generate_laddr(pppoe);
+    generate_raddr(pppoe);
+
     pppoe->changed = TRUE;
 
     return 0;
 }
+
+/**
+ * Get callback for /agent/pppoeserver/laddr node.
+ *
+ * @param gid           Group identifier.
+ * @param oid           Full identifier of the father instance.
+ * @param value         Location to the local address value.
+ * @param pppoeserver   Dummy parameter due to name of ppppoeserver
+ *                      instance is always empty.
+ *
+ * @return Status code.
+ */
+static te_errno
+pppoe_server_laddr_get(unsigned int gid, const char *oid,
+                       char *value, const char *pppoeserver)
+{
+    te_pppoe_server *pppoe = pppoe_server_find();
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(pppoeserver);
+
+    ENTRY("Get pppoe server local address");
+
+    sprintf(value, "%s", te_sockaddr_get_ipstr(SA(&pppoe->laddr)));
+
+    EXIT("pppoe server local address: %s", value);
+
+    return 0;
+}
+
+/**
+ * Get callback for /agent/pppoeserver/raddr node.
+ *
+ * @param gid           Group identifier.
+ * @param oid           Full identifier of the father instance.
+ * @param value         Location to the starting remote address value.
+ * @param pppoeserver   Dummy parameter due to name of ppppoeserver
+ *                      instance is always empty.
+ *
+ * @return Status code.
+ */
+static te_errno
+pppoe_server_raddr_get(unsigned int gid, const char *oid,
+                       char *value, const char *pppoeserver)
+{
+    te_pppoe_server *pppoe = pppoe_server_find();
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(pppoeserver);
+
+    ENTRY("Get pppoe server starting remote address");
+
+    sprintf(value, "%s", te_sockaddr_get_ipstr(SA(&pppoe->raddr)));
+
+    EXIT("pppoe server starting remote address: %s", value);
+
+    return 0;
+}
+
 
 static rcf_pch_cfg_object node_pppoe_server;
 
@@ -914,8 +1038,16 @@ static rcf_pch_cfg_object node_pppoe_server_options =
       (rcf_ch_cfg_del)pppoe_server_option_del,
       (rcf_ch_cfg_list)pppoe_server_option_list, NULL, &node_pppoe_server };
 
+RCF_PCH_CFG_NODE_RO(node_pppoe_server_raddr, "raddr",
+                    NULL, &node_pppoe_server_options,
+                    pppoe_server_raddr_get);
+
+RCF_PCH_CFG_NODE_RO(node_pppoe_server_laddr, "laddr",
+                    NULL, &node_pppoe_server_raddr,
+                    pppoe_server_laddr_get);
+
 static rcf_pch_cfg_object node_pppoe_server_subnet =
-    { "subnet", 0, NULL, &node_pppoe_server_options,
+    { "subnet", 0, NULL, &node_pppoe_server_laddr,
       (rcf_ch_cfg_get)pppoe_server_subnet_get,
       (rcf_ch_cfg_set)pppoe_server_subnet_set,
       NULL, NULL, NULL, NULL, &node_pppoe_server };

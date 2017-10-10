@@ -40,6 +40,7 @@
 #include "te_defs.h"
 #include "conf_api.h"
 #include "logger_api.h"
+#include "tapi_test.h"
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_pppoe.h"
 
@@ -99,4 +100,20 @@ tapi_cfg_pppoe_server_subnet_get(const char *ta, const char **subnet_p)
     }
 
     return rc;
+}
+
+/* See description in tapi_cfg_pppoe.h */
+void
+tapi_cfg_pppoe_server_laddr_get(const char *ta, struct sockaddr **addr)
+{
+    CHECK_RC(cfg_get_instance_fmt(NULL, addr,
+                                  TE_CFG_TA_PPPOE_SERVER_FMT "/laddr:", ta));
+}
+
+/* See description in tapi_cfg_pppoe.h */
+void
+tapi_cfg_pppoe_server_raddr_get(const char *ta, struct sockaddr **addr)
+{
+    CHECK_RC(cfg_get_instance_fmt(NULL, addr,
+                                  TE_CFG_TA_PPPOE_SERVER_FMT "/raddr:", ta));
 }
