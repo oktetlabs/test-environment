@@ -178,7 +178,7 @@ pppoe_server_save_conf(te_pppoe_server *pppoe)
     for (opt = SLIST_FIRST(&pppoe->options);
          opt != NULL; opt = SLIST_NEXT(opt, list))
     {
-        fprintf(f, "%s %s", opt->name, opt->value);
+        fprintf(f, "%s %s\n", opt->name, opt->value);
     }
 
     if (fsync(fileno(f)) != 0)
