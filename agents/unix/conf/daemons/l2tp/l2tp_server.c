@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include <ifaddrs.h>
 #include "conf_daemons.h"
+#include "rcf_pch.h"
 #include "te_queue.h"
 #include "te_string.h"
 #include "te_shell_cmd.h"
@@ -47,11 +48,6 @@
 #define TMP_PAP_SECRETS_FILE    "/tmp/pap-secrets"
 #define TMP_SECRETS_FILE        "/tmp/secrets"
 
-/**
- * Default amount of memory allocated for list methods
- * of l2tp subtreee
- */
-#define L2TP_SERVER_LIST_SIZE 1024
 
 /** Default buffer size for the full CHAP|PAP secret line */
 #define L2TP_SECRETS_LENGTH   512
@@ -1388,23 +1384,26 @@ l2tp_lns_section_list(unsigned int gid, const char *oid,
     te_l2tp_server  *l2tp = l2tp_server_find();
     te_l2tp_section *l2tp_section;
     te_string        str = TE_STRING_INIT;
-    uint32_t         list_size;
+    te_errno         rc;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    list_size = L2TP_SERVER_LIST_SIZE;
-    if ((*list = (char *)calloc(1, list_size)) == NULL)
-    {
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
     SLIST_FOREACH(l2tp_section, &l2tp->section, list)
     {
         if (strcmp(l2tp_section->secname, L2TP_GLOBAL) != 0)
-            te_string_append(&str, "%s ",l2tp_section->secname);
+        {
+            rc = te_string_append(&str, "%s ",l2tp_section->secname);
+            if (rc != 0)
+            {
+                te_string_free(&str);
+                return TE_RC(TE_TA_UNIX, rc);
+            }
+        }
     }
     *list = str.ptr;
+
     return 0;
 }
 
@@ -1874,31 +1873,30 @@ l2tp_lns_bit_list(unsigned int gid, const char *oid,
     te_l2tp_section *l2tp_section = l2tp_find_section(l2tp, lns_name);
     te_l2tp_option  *l2tp_option;
     te_string        str = TE_STRING_INIT;
-    uint32_t         list_size;
+    te_errno         rc = 0;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    list_size = L2TP_SECRETS_LENGTH;
-    if ((*list = (char *)calloc(1, list_size)) == NULL)
-    {
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-
     SLIST_FOREACH(l2tp_option, &l2tp_section->l2tp_option, list)
     {
         if (strcmp(l2tp_option->name, "hidden bit") == 0)
         {
-            te_string_append(&str, "hidden ");
+            rc = te_string_append(&str, "hidden ");
         }
         else if (strcmp(l2tp_option->name, "length bit") == 0)
         {
-            te_string_append(&str, "length ");
+            rc = te_string_append(&str, "length ");
+        }
+        if (rc != 0)
+        {
+            te_string_free(&str);
+            return TE_RC(TE_TA_UNIX, rc);
         }
     }
-
     *list = str.ptr;
+
     return 0;
 }
 
@@ -2352,6 +2350,7 @@ l2tp_lns_range_list_routine(const char *lns_name, const char *option_name)
     te_l2tp_ipv4_range   *l2tp_range;
 
     te_string        str = TE_STRING_INIT;
+    te_errno         rc;
 
     if (l2tp_section != NULL && l2tp_option != NULL)
     {
@@ -2359,8 +2358,13 @@ l2tp_lns_range_list_routine(const char *lns_name, const char *option_name)
         {
             SLIST_FOREACH(l2tp_range, &l2tp_option->l2tp_range, list)
             {
-                te_string_append(&str, "%s-%s ", l2tp_range->start,
-                                 l2tp_range->end);
+                rc = te_string_append(&str, "%s-%s ", l2tp_range->start,
+                                      l2tp_range->end);
+                if (rc != 0)
+                {
+                    te_string_free(&str);
+                    break;
+                }
             }
         }
     }
@@ -2384,18 +2388,12 @@ l2tp_lns_lac_range_list(unsigned int gid, const char *oid,
                         char **list, const char *l2tp_name,
                         const char *lns_name)
 {
-    uint32_t  list_size;
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    list_size = L2TP_SERVER_LIST_SIZE;
-    if ((*list = (char *)calloc(1, list_size)) == NULL)
-    {
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-
     *list = l2tp_lns_range_list_routine(lns_name, "lac range");
+
     return 0;
 }
 
@@ -2415,18 +2413,12 @@ l2tp_lns_ip_range_list(unsigned int gid, const char *oid,
                        char **list, const char *l2tp_name,
                        const char *lns_name)
 {
-    uint32_t  list_size;
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    list_size = L2TP_SERVER_LIST_SIZE;
-    if ((*list = (char *)calloc(1, list_size)) == NULL)
-    {
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-
     *list = l2tp_lns_range_list_routine(lns_name, "ip range");
+
     return 0;
 }
 
@@ -2643,26 +2635,27 @@ l2tp_lns_pppopt_list(unsigned int gid, const char *oid,
     te_l2tp_section *l2tp_section = l2tp_find_section(l2tp, lns_name);
     te_l2tp_option  *l2tp_option;
     te_string        str = TE_STRING_INIT;
-    uint32_t         list_size;
+    te_errno         rc;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    list_size = L2TP_SERVER_LIST_SIZE;
-    if ((*list = (char *)calloc(1, list_size)) == NULL)
-    {
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
     SLIST_FOREACH(l2tp_option, &l2tp_section->l2tp_option, list)
     {
         if (l2tp_option->type == L2TP_OPTION_TYPE_PPP &&
             l2tp_option->value == NULL)
         {
-            te_string_append(&str, "%s ", l2tp_option->name);
+            rc = te_string_append(&str, "%s ", l2tp_option->name);
+            if (rc != 0)
+            {
+                te_string_free(&str);
+                return TE_RC(TE_TA_UNIX, rc);
+            }
         }
     }
     *list = str.ptr;
+
     return 0;
 }
 
@@ -2788,22 +2781,23 @@ l2tp_lns_client_list(unsigned int gid, const char *oid,
     te_l2tp_opt_auth      *opt_auth = &l2tp_section->l2tp_opt_auth[type];
 
     te_string        str = TE_STRING_INIT;
-    uint32_t         list_size;
+    te_errno         rc;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    list_size = L2TP_SERVER_LIST_SIZE;
-    if ((*list = (char *)calloc(1, list_size)) == NULL)
-    {
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
     SLIST_FOREACH(l2tp_client, &opt_auth->secret, list)
     {
-        te_string_append(&str, "%s ", l2tp_client->name);
+        rc = te_string_append(&str, "%s ", l2tp_client->name);
+        if (rc != 0)
+        {
+            te_string_free(&str);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
     }
     *list = str.ptr;
+
     return 0;
 }
 
@@ -2894,29 +2888,29 @@ l2tp_lns_auth_list(unsigned int gid, const char *oid,
     te_l2tp_opt_auth      *l2tp_opt_auth;
     enum l2tp_secret_prot  type_iter;
     te_string              str = TE_STRING_INIT;
-    uint32_t               list_size;
+    te_errno               rc;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    list_size = L2TP_SECRETS_LENGTH;
-
-    if ((*list = (char *)calloc(1, list_size)) == NULL)
-    {
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
     for (type_iter = L2TP_SECRET_PROT_CHAP;
          type_iter < L2TP_SECRET_PROT_NTYPES; type_iter++)
     {
         l2tp_opt_auth = &l2tp_section->l2tp_opt_auth[type_iter];
         if (l2tp_opt_auth->is_enabled)
         {
-            te_string_append(&str, "%s ", type_iter == L2TP_SECRET_PROT_CHAP
-                                          ? "chap" : "pap");
+            rc = te_string_append(&str, "%s ", type_iter == L2TP_SECRET_PROT_CHAP
+                                               ? "chap" : "pap");
+            if (rc != 0)
+            {
+                te_string_free(&str);
+                return TE_RC(TE_TA_UNIX, rc);
+            }
         }
     }
     *list = str.ptr;
+
     return 0;
 }
 
@@ -3340,29 +3334,29 @@ l2tp_lns_connected_list(unsigned int gid, const char *oid,
                         char **list, const char *l2tp_name)
 {
     te_l2tp_connected *l2tp_connected;
-    uint32_t           list_size;
     te_string          str = TE_STRING_INIT;
     te_l2tp_server    *l2tp = l2tp_server_find();
+    te_errno           rc;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    if (te_l2tp_clients_add(l2tp) == 0)
+    if (te_l2tp_clients_add(l2tp) != 0)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    SLIST_FOREACH(l2tp_connected, &l2tp->client, list)
     {
-        list_size = L2TP_SERVER_LIST_SIZE;
-        if ((*list = (char *)calloc(1, list_size)) == NULL)
+        rc = te_string_append(&str, "%s ", l2tp_connected->cname);
+        if (rc != 0)
         {
-            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+            te_string_free(&str);
+            return TE_RC(TE_TA_UNIX, rc);
         }
-        SLIST_FOREACH(l2tp_connected, &l2tp->client, list)
-        {
-            te_string_append(&str, "%s ", l2tp_connected->cname);
-        }
-        *list = str.ptr;
-        return 0;
     }
-    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    *list = str.ptr;
+
+    return 0;
 }
 
 
