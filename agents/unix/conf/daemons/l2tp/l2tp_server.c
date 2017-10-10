@@ -73,7 +73,6 @@ enum l2tp_value_type {
 enum l2tp_secret_prot {
     L2TP_SECRET_PROT_CHAP,    /**< CHAP authentication */
     L2TP_SECRET_PROT_PAP,     /**< PAP authentication */
-    L2TP_SECRET_PROT_NTYPES   /**< Authentication types number */
 };
 
 /** Type of the request for the l2tp_secret_prot */
@@ -87,6 +86,12 @@ enum l2tp_auth_policy {
 enum l2tp_option_type {
     L2TP_OPTION_TYPE_PPP,    /**< PPP options class */
     L2TP_OPTION_TYPE_L2TP,   /**< L2TP options class */
+};
+
+/* Mapping of authentication protocol to its string representation */
+static const char *l2tp_secret_prot2str[] = {
+    [L2TP_SECRET_PROT_CHAP] = "chap",
+    [L2TP_SECRET_PROT_PAP] = "pap",
 };
 
 /** IP range structure */
@@ -122,18 +127,16 @@ typedef struct te_l2tp_opt_auth {
     SLIST_HEAD(, te_l2tp_secret)     secret;     /**< CHAP|PAP secret */
     enum l2tp_auth_policy            policy;     /**< refuse or require secrets */
     te_bool                          is_enabled; /**< TRUE(yes) or FALSE(no) */
-
+    char                            *name;       /**< Authentication option name:
+                                                      chap|pap */
 } te_l2tp_opt_auth;
 
 /** LNS structure */
 typedef struct te_l2tp_section {
-    SLIST_ENTRY(te_l2tp_section)  list;
-    SLIST_HEAD(, te_l2tp_option)  l2tp_option; /**< Options of the section */
-    te_l2tp_opt_auth              l2tp_opt_auth[L2TP_SECRET_PROT_NTYPES];
-                                  /**< Array of CHAP|PAP authentication options */
-
-    char                         *secname;   /**< Section name */
-
+    SLIST_ENTRY(te_l2tp_section)    list;
+    SLIST_HEAD(, te_l2tp_option)    l2tp_option; /**< Options of the section */
+    SLIST_HEAD(, te_l2tp_opt_auth)  auth_opts;   /**< Authentication options */
+    char                           *secname;     /**< Section name */
 } te_l2tp_section;
 
 /** Connected clients structrure */
@@ -169,6 +172,39 @@ l2tp_is_running(te_l2tp_server *l2tp);
 /** Static L2TP server structure */
 static te_l2tp_server l2tp_server;
 
+
+/**
+ * Free secret's entry.
+ *
+ * @param secret        CHAP|PAP secret structure.
+ */
+static void
+l2tp_secret_free(te_l2tp_secret *secret)
+{
+    free(secret->name);
+    free(secret->server);
+    free(secret->sipv4);
+    free(secret->secret);
+}
+
+/**
+ * Free authentication option's entry.
+ *
+ * @param auth          Authentication options.
+ */
+static void
+l2tp_auth_free(te_l2tp_opt_auth *auth)
+{
+    te_l2tp_secret *secret, *tmp;
+
+    SLIST_FOREACH_SAFE(secret, &auth->secret, list, tmp)
+    {
+        SLIST_REMOVE(&auth->secret, secret, te_l2tp_secret, list);
+        l2tp_secret_free(secret);
+        free(secret);
+    }
+    free(auth->name);
+}
 
 /**
  * Build a template of filename in format "<basename>.XXXXXX".
@@ -233,6 +269,28 @@ l2tp_server_find()
     if (!l2tp->initialized)
         l2tp_server_init(l2tp);
     return l2tp;
+}
+
+/**
+ * Find authentication options in the L2TP section.
+ *
+ * @param section       L2TP section.
+ * @param name          Name of node containing authentication options.
+ *
+ * @return Pointer to authentication options, or @c NULL if they are not found.
+ */
+static te_l2tp_opt_auth *
+l2tp_find_auth_opt(const te_l2tp_section *section, const char *name)
+{
+    te_l2tp_opt_auth *auth;
+
+    SLIST_FOREACH(auth, &section->auth_opts, list)
+    {
+        if (strcmp(auth->name, name) == 0)
+            break;
+    }
+
+    return auth;
 }
 
 /**
@@ -324,24 +382,23 @@ l2tp_server_save_secrets_mode(FILE *l2tp_file,
                               te_l2tp_section *l2tp_section,
                               enum l2tp_secret_prot protocol)
 {
-    te_l2tp_secret        *l2tp_secret;
-    te_l2tp_opt_auth      *l2tp_opt_auth = &l2tp_section->l2tp_opt_auth[protocol];
+    te_l2tp_secret   *l2tp_secret;
+    te_l2tp_opt_auth *auth;
+    const char       *protocol_name = l2tp_secret_prot2str[protocol];
 
-    if (l2tp_opt_auth != NULL && l2tp_opt_auth->policy != L2TP_AUTH_POLICY_NONE)
+    auth = l2tp_find_auth_opt(l2tp_section, protocol_name);
+    if (auth != NULL && auth->policy != L2TP_AUTH_POLICY_NONE)
     {
         fprintf(l2tp_file, "%s %s = %s\n",
-                l2tp_opt_auth->policy == L2TP_AUTH_POLICY_REQUIRE ?
+                auth->policy == L2TP_AUTH_POLICY_REQUIRE ?
                 "require" : "refuse",
-                protocol == L2TP_SECRET_PROT_CHAP ? "chap" : "pap",
-                l2tp_opt_auth->is_enabled ? "yes" : "no");
+                protocol_name,
+                auth->is_enabled ? "yes" : "no");
     }
-
     else
-    {
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
 
-    for (l2tp_secret = SLIST_FIRST(&l2tp_opt_auth->secret);
+    for (l2tp_secret = SLIST_FIRST(&auth->secret);
              l2tp_secret != NULL; l2tp_secret = SLIST_NEXT(l2tp_secret, list))
     {
         if (backup_file != NULL)
@@ -368,11 +425,13 @@ l2tp_server_save_secrets_mode(FILE *l2tp_file,
 static te_bool
 l2tp_secret_is_set(te_l2tp_server *l2tp, enum l2tp_secret_prot protocol)
 {
-    te_l2tp_section *section;
+    te_l2tp_section  *section;
+    te_l2tp_opt_auth *auth;
 
     SLIST_FOREACH(section, &l2tp->section, list)
     {
-        if (!SLIST_EMPTY(&section->l2tp_opt_auth[protocol].secret))
+        auth = l2tp_find_auth_opt(section, l2tp_secret_prot2str[protocol]);
+        if (auth != NULL && !SLIST_EMPTY(&auth->secret))
             return TRUE;
     }
 
@@ -986,34 +1045,24 @@ l2tp_find_option(te_l2tp_server *l2tp, const char *section, const char *name)
 }
 
 /**
- * Find l2tp server's client in options list
+ * Find l2tp server's client in options list.
  *
- * @param l2tp          l2tp server structure
- * @param section       lns section where certain option is located
- * @param name          client name to look for
+ * @param auth          lns auth instance.
+ * @param name          Client name to look for.
  *
- * @return l2tp server option structure
+ * @return Pointer to client options, or @c NULL if they are not found.
  */
 static te_l2tp_secret *
-l2tp_find_client(te_l2tp_server *l2tp, const char *section,
-                 const char *name, enum l2tp_secret_prot type)
+l2tp_find_client(const te_l2tp_opt_auth *auth, const char *name)
 {
-    te_l2tp_section  *sec = l2tp_find_section(l2tp, section);
-    te_l2tp_opt_auth *opt_auth = &sec->l2tp_opt_auth[type];
-    te_l2tp_secret   *secret = NULL;
+    te_l2tp_secret *secret;
 
-    if (sec != NULL && strcmp(sec->secname, section) == 0)
+    SLIST_FOREACH(secret, &auth->secret, list)
     {
-        for (secret = SLIST_FIRST(&opt_auth->secret);
-             secret != NULL;
-             secret = SLIST_NEXT(secret, list))
-        {
-            if (strcmp(secret->name, name) == 0)
-            {
-                break;
-            }
-        }
+        if (strcmp(secret->name, name) == 0)
+            break;
     }
+
     return secret;
 }
 
@@ -1196,18 +1245,24 @@ l2tp_lns_section_add(unsigned int gid, const char *oid, const char *value,
     UNUSED(l2tp_name);
 
     if (l2tp_section != NULL)
-    {
-        return TE_RC(TE_TA_UNIX,  TE_EEXIST);
-    }
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    l2tp_section = (te_l2tp_section *)calloc(1, sizeof(te_l2tp_section));
-    memset(l2tp_section->l2tp_opt_auth, '\0', sizeof(l2tp_section->l2tp_opt_auth));
-    if (l2tp_section != NULL)
-    {
-        l2tp_section->secname = strdup(lns_name);
-    }
-    else
+    if (lns_name == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    l2tp_section = calloc(1, sizeof(*l2tp_section));
+    if (l2tp_section == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    l2tp_section->secname = strdup(lns_name);
+    if (l2tp_section->secname == NULL)
+    {
+        free(l2tp_section);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    SLIST_INIT(&l2tp_section->l2tp_option);
+    SLIST_INIT(&l2tp_section->auth_opts);
+
     SLIST_INSERT_HEAD(&l2tp->section, l2tp_section, list);
     l2tp->changed = TRUE;
 
@@ -1900,36 +1955,60 @@ l2tp_lns_bit_list(unsigned int gid, const char *oid,
     return 0;
 }
 
+/**
+ * Get policy value.
+ *
+ * @param[in]  section      L2TP section.
+ * @param[in]  auth_type    Secret protocol name.
+ * @param[in]  policy       Policy of the interest.
+ * @param[out] value        Policy value.
+ *
+ * @return Status code.
+ */
 static te_errno
 l2tp_lns_policy_get_routine(te_l2tp_section *section,
-                            enum l2tp_secret_prot type,
+                            const char *auth_type,
                             enum l2tp_auth_policy policy,
                             char *value)
 {
-    te_l2tp_opt_auth      *opt_auth = &section->l2tp_opt_auth[type];
+    te_l2tp_opt_auth *auth;
 
-    if (opt_auth->policy != policy)
-    {
-        strcpy(value, "-1");
-    }
+    auth = l2tp_find_auth_opt(section, auth_type);
+    if (auth == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (auth->policy == policy)
+        strcpy(value, auth->is_enabled ? "1" : "0");
     else
-    {
-        strcpy(value, opt_auth->is_enabled ? "1" : "0");
-    }
+        strcpy(value, "-1");
 
     return 0;
 }
 
+/**
+ * Set policy value.
+ *
+ * @param section           L2TP section.
+ * @param auth_type         Secret protocol name.
+ * @param policy            Policy of the interest.
+ * @param value             Policy value to set.
+ *
+ * @return Status code.
+ */
 static te_errno
 l2tp_lns_policy_set_routine(te_l2tp_section *section,
-                            enum l2tp_secret_prot type,
+                            const char *auth_type,
                             enum l2tp_auth_policy policy,
                             te_bool value)
 {
-    te_l2tp_opt_auth      *opt_auth = &section->l2tp_opt_auth[type];
+    te_l2tp_opt_auth *auth;
 
-    opt_auth->policy = policy;
-    opt_auth->is_enabled = value;
+    auth = l2tp_find_auth_opt(section, auth_type);
+    if (auth == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    auth->policy = policy;
+    auth->is_enabled = value;
 
     return 0;
 }
@@ -1951,15 +2030,14 @@ l2tp_lns_require_get(unsigned int gid, const char *oid, char *value,
                      const char *l2tp_name, const char *lns_name,
                      const char *auth_type)
 {
-    te_l2tp_server        *l2tp = l2tp_server_find();
-    te_l2tp_section       *section = l2tp_find_section(l2tp, lns_name);
-    enum l2tp_secret_prot  type = strcmp(auth_type, "chap") == 0 ?
-                                  L2TP_SECRET_PROT_CHAP : L2TP_SECRET_PROT_PAP;
+    te_l2tp_server  *l2tp = l2tp_server_find();
+    te_l2tp_section *section = l2tp_find_section(l2tp, lns_name);
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_policy_get_routine(section, type,
+    return l2tp_lns_policy_get_routine(section, auth_type,
                                        L2TP_AUTH_POLICY_REQUIRE, value);
 }
 
@@ -1981,18 +2059,16 @@ l2tp_lns_require_set(unsigned int gid, const char *oid, char *value,
                      const char *auth_type)
 {
 
-    te_l2tp_server        *l2tp = l2tp_server_find();
-    te_l2tp_section       *section = l2tp_find_section(l2tp, lns_name);
-    enum l2tp_secret_prot  type = strcmp(auth_type, "chap") == 0 ?
-                                  L2TP_SECRET_PROT_CHAP : L2TP_SECRET_PROT_PAP;
+    te_l2tp_server  *l2tp = l2tp_server_find();
+    te_l2tp_section *section = l2tp_find_section(l2tp, lns_name);
 
     UNUSED(oid);
     UNUSED(gid);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_policy_set_routine(section, type, L2TP_AUTH_POLICY_REQUIRE,
-                                       strcmp(value, "1") == 0 ?
-                                       TRUE : FALSE);
+    return l2tp_lns_policy_set_routine(section, auth_type,
+                                       L2TP_AUTH_POLICY_REQUIRE,
+                                       strcmp(value, "1") == 0 ? TRUE : FALSE);
 }
 
 /**
@@ -2012,15 +2088,15 @@ l2tp_lns_refuse_get(unsigned int gid, const char *oid, char *value,
                     const char *l2tp_name, const char *lns_name,
                     const char *auth_type)
 {
-    te_l2tp_server        *l2tp = l2tp_server_find();
-    te_l2tp_section       *section = l2tp_find_section(l2tp, lns_name);
-    enum l2tp_secret_prot  type = strcmp(auth_type, "chap") == 0 ?
-                                  L2TP_SECRET_PROT_CHAP : L2TP_SECRET_PROT_PAP;
+    te_l2tp_server  *l2tp = l2tp_server_find();
+    te_l2tp_section *section = l2tp_find_section(l2tp, lns_name);
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_policy_get_routine(section, type, L2TP_AUTH_POLICY_REFUSE, value);
+    return l2tp_lns_policy_get_routine(section, auth_type,
+                                       L2TP_AUTH_POLICY_REFUSE, value);
 
 }
 
@@ -2041,19 +2117,16 @@ l2tp_lns_refuse_set(unsigned int gid, const char *oid, char *value,
                     const char *l2tp_name, const char *lns_name,
                     const char *auth_type)
 {
-    te_l2tp_server        *l2tp = l2tp_server_find();
-    te_l2tp_section       *section = l2tp_find_section(l2tp, lns_name);
-    enum l2tp_secret_prot  type = strcmp(auth_type, "chap") == 0 ?
-                                  L2TP_SECRET_PROT_CHAP : L2TP_SECRET_PROT_PAP;
+    te_l2tp_server  *l2tp = l2tp_server_find();
+    te_l2tp_section *section = l2tp_find_section(l2tp, lns_name);
 
     UNUSED(oid);
     UNUSED(gid);
     UNUSED(l2tp_name);
 
-    return l2tp_lns_policy_set_routine(section, type,
+    return l2tp_lns_policy_set_routine(section, auth_type,
                                        L2TP_AUTH_POLICY_REFUSE,
-                                       strcmp(value, "1") == 0 ?
-                                       TRUE : FALSE);
+                                       strcmp(value, "1") == 0 ? TRUE : FALSE);
 }
 
 /**
@@ -2677,26 +2750,20 @@ l2tp_lns_client_add(unsigned int gid, const char *oid, const char *value,
                     const char *l2tp_name, const char *lns_name,
                     const char *auth_type, const char *client_name)
 {
-    te_l2tp_secret       *client = NULL;
-    te_l2tp_server       *l2tp = l2tp_server_find();
-    te_l2tp_section      *section = l2tp_find_section(l2tp, lns_name);
-
-    enum l2tp_secret_prot type = strcmp(auth_type, "chap") == 0 ?
-                                 L2TP_SECRET_PROT_CHAP : L2TP_SECRET_PROT_PAP;
-
-    te_l2tp_opt_auth     *opt_auth = &section->l2tp_opt_auth[type];
+    te_l2tp_server   *l2tp = l2tp_server_find();
+    te_l2tp_section  *section = l2tp_find_section(l2tp, lns_name);
+    te_l2tp_opt_auth *auth = l2tp_find_auth_opt(section, auth_type);
+    te_l2tp_secret   *client = l2tp_find_client(auth, client_name);
 
     UNUSED(oid);
     UNUSED(gid);
     UNUSED(value);
     UNUSED(l2tp_name);
 
-    if ((client = l2tp_find_client(l2tp, lns_name, client_name, type)) != NULL)
-    {
-        return TE_RC(TE_TA_UNIX,  TE_EEXIST);
-    }
+    if (client != NULL)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    client = (te_l2tp_secret *)calloc(1, sizeof(te_l2tp_option));
+    client = calloc(1, sizeof(*client));
     if (client == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     client->name = strdup(client_name);
@@ -2704,7 +2771,7 @@ l2tp_lns_client_add(unsigned int gid, const char *oid, const char *value,
     client->sipv4 = strdup("*");
     client->server = strdup("*");
 
-    SLIST_INSERT_HEAD(&opt_auth->secret, client, list);
+    SLIST_INSERT_HEAD(&auth->secret, client, list);
     l2tp->changed = TRUE;
     return 0;
 }
@@ -2728,31 +2795,23 @@ l2tp_lns_client_del(unsigned int gid, const char *oid,
                     const char *auth_type, const char *client_name)
 {
 
-    te_l2tp_secret        *client = NULL;
-    te_l2tp_server        *l2tp = l2tp_server_find();
-    te_l2tp_section       *section = l2tp_find_section(l2tp, lns_name);
-    enum l2tp_secret_prot  type = strcmp(auth_type, "chap") == 0 ?
-                                  L2TP_SECRET_PROT_CHAP : L2TP_SECRET_PROT_PAP;
-    te_l2tp_opt_auth      *opt_auth = &section->l2tp_opt_auth[type];
+    te_l2tp_server   *l2tp = l2tp_server_find();
+    te_l2tp_section  *section = l2tp_find_section(l2tp, lns_name);
+    te_l2tp_opt_auth *auth = l2tp_find_auth_opt(section, auth_type);
+    te_l2tp_secret   *client = l2tp_find_client(auth, client_name);
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    if ((client = l2tp_find_client(l2tp, lns_name, client_name, type)) == NULL)
-    {
-        return TE_RC(TE_TA_UNIX,  TE_ENOENT);
-    }
+    if (client == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    SLIST_REMOVE(&opt_auth->secret, client, te_l2tp_secret, list);
+    SLIST_REMOVE(&auth->secret, client, te_l2tp_secret, list);
+    l2tp_secret_free(client);
+    free(client);
 
     l2tp->changed = TRUE;
-    free(client->name);
-    free(client->server);
-    free(client->sipv4);
-    free(client->secret);
-
-    free(client);
 
     return 0;
 }
@@ -2773,21 +2832,18 @@ l2tp_lns_client_list(unsigned int gid, const char *oid,
                      char **list, const char *l2tp_name, const char *lns_name,
                      const char *auth_type)
 {
-    te_l2tp_server  *l2tp = l2tp_server_find();
-    te_l2tp_section *l2tp_section = l2tp_find_section(l2tp, lns_name);
-    te_l2tp_secret  *l2tp_client;
-    enum l2tp_secret_prot  type = strcmp(auth_type, "chap") == 0 ?
-                                  L2TP_SECRET_PROT_CHAP : L2TP_SECRET_PROT_PAP;
-    te_l2tp_opt_auth      *opt_auth = &l2tp_section->l2tp_opt_auth[type];
-
-    te_string        str = TE_STRING_INIT;
-    te_errno         rc;
+    te_l2tp_server   *l2tp = l2tp_server_find();
+    te_l2tp_section  *l2tp_section = l2tp_find_section(l2tp, lns_name);
+    te_l2tp_opt_auth *auth = l2tp_find_auth_opt(l2tp_section, auth_type);
+    te_l2tp_secret   *l2tp_client;
+    te_string         str = TE_STRING_INIT;
+    te_errno          rc;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    SLIST_FOREACH(l2tp_client, &opt_auth->secret, list)
+    SLIST_FOREACH(l2tp_client, &auth->secret, list)
     {
         rc = te_string_append(&str, "%s ", l2tp_client->name);
         if (rc != 0)
@@ -2818,21 +2874,36 @@ l2tp_lns_auth_add(unsigned int gid, const char *oid, const char *value,
                   const char *l2tp_name, const char *lns_name,
                   const char *auth_type)
 {
-    te_l2tp_server  *l2tp = l2tp_server_find();
-    te_l2tp_section *l2tp_section = l2tp_find_section(l2tp, lns_name);
-    enum l2tp_secret_prot  type = strcmp(auth_type, "chap") == 0 ?
-                                  L2TP_SECRET_PROT_CHAP : L2TP_SECRET_PROT_PAP;
-    te_l2tp_opt_auth     *opt_auth = &l2tp_section->l2tp_opt_auth[type];
+    te_l2tp_server   *l2tp = l2tp_server_find();
+    te_l2tp_section  *l2tp_section = l2tp_find_section(l2tp, lns_name);
+    te_l2tp_opt_auth *auth = l2tp_find_auth_opt(l2tp_section, auth_type);
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
     UNUSED(l2tp_name);
-    if (opt_auth->policy != L2TP_AUTH_POLICY_NONE)
+
+    if (auth != NULL)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+
+    if (auth_type == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    auth = calloc(1, sizeof(*auth));
+    if (auth == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    auth->name = strdup(auth_type);
+    if (auth->name == NULL)
     {
-        return TE_RC(TE_TA_UNIX,  TE_EEXIST);
+        free(auth);
+        return TE_OS_RC(TE_TA_UNIX, errno);
     }
-    opt_auth->is_enabled = TRUE;
+    SLIST_INIT(&auth->secret);
+    auth->policy = L2TP_AUTH_POLICY_NONE;
+    auth->is_enabled = FALSE;
+
+    SLIST_INSERT_HEAD(&l2tp_section->auth_opts, auth, list);
 
     return 0;
 }
@@ -2853,16 +2924,22 @@ static te_errno
 l2tp_lns_auth_del(unsigned int gid, const char *oid, const char *l2tp_name,
                   const char *lns_name, const char *auth_type)
 {
-    te_l2tp_server  *l2tp = l2tp_server_find();
-    te_l2tp_section *l2tp_section = l2tp_find_section(l2tp, lns_name);
-    enum l2tp_secret_prot  type = strcmp(auth_type, "chap") == 0 ?
-                                  L2TP_SECRET_PROT_CHAP : L2TP_SECRET_PROT_PAP;
-    te_l2tp_opt_auth     *opt_auth = &l2tp_section->l2tp_opt_auth[type];
+    te_l2tp_server   *l2tp = l2tp_server_find();
+    te_l2tp_section  *l2tp_section = l2tp_find_section(l2tp, lns_name);
+    te_l2tp_opt_auth *auth = l2tp_find_auth_opt(l2tp_section, auth_type);
+
     UNUSED(oid);
     UNUSED(gid);
     UNUSED(l2tp_name);
 
-    opt_auth->policy = L2TP_AUTH_POLICY_NONE;
+    if (auth == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    SLIST_REMOVE(&l2tp_section->auth_opts, auth, te_l2tp_opt_auth, list);
+    l2tp_auth_free(auth);
+    free(auth);
+
+    l2tp->changed = TRUE;
 
     return 0;
 }
@@ -2883,30 +2960,23 @@ l2tp_lns_auth_list(unsigned int gid, const char *oid,
                    char **list, const char *l2tp_name,
                    const char *lns_name)
 {
-    te_l2tp_server        *l2tp = l2tp_server_find();
-    te_l2tp_section       *l2tp_section = l2tp_find_section(l2tp, lns_name);
-    te_l2tp_opt_auth      *l2tp_opt_auth;
-    enum l2tp_secret_prot  type_iter;
-    te_string              str = TE_STRING_INIT;
-    te_errno               rc;
+    te_l2tp_server   *l2tp = l2tp_server_find();
+    te_l2tp_section  *l2tp_section = l2tp_find_section(l2tp, lns_name);
+    te_l2tp_opt_auth *auth;
+    te_string         str = TE_STRING_INIT;
+    te_errno          rc;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    for (type_iter = L2TP_SECRET_PROT_CHAP;
-         type_iter < L2TP_SECRET_PROT_NTYPES; type_iter++)
+    SLIST_FOREACH(auth, &l2tp_section->auth_opts, list)
     {
-        l2tp_opt_auth = &l2tp_section->l2tp_opt_auth[type_iter];
-        if (l2tp_opt_auth->is_enabled)
+        rc = te_string_append(&str, "%s ", auth->name);
+        if (rc != 0)
         {
-            rc = te_string_append(&str, "%s ", type_iter == L2TP_SECRET_PROT_CHAP
-                                               ? "chap" : "pap");
-            if (rc != 0)
-            {
-                te_string_free(&str);
-                return TE_RC(TE_TA_UNIX, rc);
-            }
+            te_string_free(&str);
+            return TE_RC(TE_TA_UNIX, rc);
         }
     }
     *list = str.ptr;
@@ -2930,16 +3000,13 @@ l2tp_lns_secret_get_routine(const char *lns_name, const char *auth_type,
                             const char *client_name, char *secret,
                             enum l2tp_secret_type secret_type)
 {
-    te_l2tp_secret       *client;
-    te_l2tp_server       *l2tp = l2tp_server_find();
+    te_l2tp_server   *l2tp = l2tp_server_find();
+    te_l2tp_section  *section = l2tp_find_section(l2tp, lns_name);
+    te_l2tp_opt_auth *auth = l2tp_find_auth_opt(section, auth_type);
+    te_l2tp_secret   *client = l2tp_find_client(auth, client_name);
 
-    enum l2tp_secret_prot type = strcmp(auth_type, "chap") == 0 ?
-                                 L2TP_SECRET_PROT_CHAP : L2TP_SECRET_PROT_PAP;
-
-    if ((client = l2tp_find_client(l2tp, lns_name, client_name, type)) == NULL)
-    {
-        return TE_RC(TE_TA_UNIX,  TE_ENOENT);
-    }
+    if (client == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     switch (secret_type)
     {
@@ -3067,15 +3134,13 @@ l2tp_lns_secret_set_routine(const char *lns_name, const char *auth_type,
                             const char *client_name, const char *secret_part,
                             enum l2tp_secret_type secret_type)
 {
-    te_l2tp_secret       *client;
-    te_l2tp_server       *l2tp = l2tp_server_find();
+    te_l2tp_server   *l2tp = l2tp_server_find();
+    te_l2tp_section  *section = l2tp_find_section(l2tp, lns_name);
+    te_l2tp_opt_auth *auth = l2tp_find_auth_opt(section, auth_type);
+    te_l2tp_secret   *client = l2tp_find_client(auth, client_name);
 
-    enum l2tp_secret_prot type = strcmp(auth_type, "chap") == 0 ?
-                                 L2TP_SECRET_PROT_CHAP : L2TP_SECRET_PROT_PAP;
-    if ((client = l2tp_find_client(l2tp, lns_name, client_name, type)) == NULL)
-    {
-        return TE_RC(TE_TA_UNIX,  TE_ENOENT);
-    }
+    if (client == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     switch (secret_type)
     {
@@ -3108,7 +3173,6 @@ l2tp_lns_secret_set_routine(const char *lns_name, const char *auth_type,
             return TE_RC(TE_TA_UNIX,  TE_ENOENT);
         }
     }
-
 }
 
 /**
