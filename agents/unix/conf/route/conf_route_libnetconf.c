@@ -179,6 +179,15 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
             continue;
         }
 
+        if ((rt_info->prefix != route->dstlen) ||
+            (((rt_info->metric & TA_RT_INFO_FLG_METRIC) != 0) &&
+             (rt_info->metric != (uint32_t)route->metric)) ||
+            (rt_info->tos != route->tos)||
+            (rt_info->table != route->table))
+        {
+            continue;
+        }
+
         /*
          * Check the case of INADDR_ANY address or that destination
          * address is equal to requested one.
@@ -200,15 +209,6 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
         }
         else
         {
-            if ((rt_info->prefix != route->dstlen) ||
-                (((rt_info->metric & TA_RT_INFO_FLG_METRIC) != 0) &&
-                 (rt_info->metric != (uint32_t)route->metric)) ||
-                (rt_info->tos != route->tos)||
-                (rt_info->table != route->table))
-            {
-                continue;
-            }
-
             if ((route->family == AF_INET) &&
                 (memcmp(route->dst, &(SIN(&(rt_info->dst))->sin_addr),
                         sizeof(struct in_addr)) == 0))
