@@ -1058,7 +1058,7 @@ redist_alloc_seg(struct rte_mempool *mp_def,
             if (m != NULL)
             {
                 if (mp_multi_next_idxp != NULL)
-                    *mp_multi_next_idxp = idx;
+                    *mp_multi_next_idxp = mp_multi_next_idx;
 
                 return m;
             }
