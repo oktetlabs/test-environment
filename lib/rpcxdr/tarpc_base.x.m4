@@ -1116,7 +1116,7 @@ struct tarpc_send_one_byte_many_in {
     struct tarpc_in_arg common;
 
     tarpc_int       fd;
-    tarpc_int       delay;
+    tarpc_int       duration;
 };
 
 typedef struct tarpc_ssize_t_retval_out tarpc_send_one_byte_many_out;

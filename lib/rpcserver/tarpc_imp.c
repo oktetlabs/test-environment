@@ -2090,17 +2090,30 @@ send_one_byte_many(tarpc_send_one_byte_many_in *in)
     char     buf = 'A';
     api_func send_func;
 
+    struct timeval t, lim;
+
     if (tarpc_find_func(in->common.use_libc, "send", &send_func) != 0)
     {
         ERROR("Failed to find function \"send\"");
         return -1;
     }
 
+    gettimeofday(&lim, NULL);
+    lim.tv_sec += in->duration;
+
     do {
         rc = send_func(in->fd, &buf, 1, MSG_DONTWAIT);
-        if (in->delay != 0)
-            usleep(in->delay);
-    } while (rc > 0 && (sent += rc));
+        if (rc < 0)
+        {
+          if (errno != EAGAIN)
+              return sent;
+          rc = 0;
+        }
+        sent += rc;
+
+        gettimeofday(&t, NULL);
+    } while (TIMEVAL_SUB(lim, t) > 0);
+
     return sent;
 }
 

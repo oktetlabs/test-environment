@@ -476,12 +476,12 @@ extern ssize_t rpc_send_msg_more(rcf_rpc_server *rpcs, int s, rpc_ptr buf,
  *
  * @param rpcs       RPC server handle
  * @param s          socket descriptor
- * @param delay      Delay between sends (in microseconds)
+ * @param duration   Duration of the loop (in seconds)
  *
  * @return On succes, number of bytes actually sent, otherwise -1.
  */
 extern ssize_t rpc_send_one_byte_many(rcf_rpc_server *rpcs, int s,
-                                      int delay);
+                                      int duration);
 
 /**
  * Receive messages and store them in the buffer @b buf of length @b len.
