@@ -396,6 +396,17 @@ extern void rpc_rte_pktmbuf_set_tx_offload(rcf_rpc_server *rpcs,
                          const struct tarpc_rte_pktmbuf_tx_offload *tx_offload);
 
 /**
+ * @c rte_pktmbuf_refcnt_update() RPC
+ *
+ * @param m RTE pktmbuf pointer
+ * @param v The value to be added to reference counters for
+ *          the corresponding segments which @p m consists of
+ */
+extern void rpc_rte_pktmbuf_refcnt_update(rcf_rpc_server *rpcs,
+                                          rpc_rte_mbuf_p  m,
+                                          int16_t         v);
+
+/**
  * Redistribute a packet mbuf data across some given number of segments
  * of variable length according to segmentation pattern provided by the caller
  * (an array of segment group definitions and the number of elements

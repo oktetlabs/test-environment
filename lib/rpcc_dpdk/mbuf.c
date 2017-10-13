@@ -1160,6 +1160,28 @@ rpc_rte_pktmbuf_set_tx_offload(rcf_rpc_server *rpcs,
     RETVAL_VOID(rte_pktmbuf_set_tx_offload);
 }
 
+void
+rpc_rte_pktmbuf_refcnt_update(rcf_rpc_server *rpcs,
+                              rpc_rte_mbuf_p  m,
+                              int16_t         v)
+{
+    tarpc_rte_pktmbuf_refcnt_update_in  in;
+    tarpc_rte_pktmbuf_refcnt_update_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.m = (tarpc_rte_mbuf)m;
+    in.v = v;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_refcnt_update", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_refcnt_update, RPC_PTR_FMT ", %" PRId16, "",
+                 RPC_PTR_VAL(in.m), in.v);
+
+    RETVAL_VOID(rte_pktmbuf_refcnt_update);
+}
+
 int
 rpc_rte_pktmbuf_redist_multi(rcf_rpc_server                 *rpcs,
                              rpc_rte_mbuf_p                 *m,
