@@ -29,6 +29,7 @@
 
 #include "tapi_test_log.h"
 #include "tapi_mem.h"
+#include "tapi_test.h"
 #include "performance_internal.h"
 #include "iperf.h"
 #include "iperf3.h"
@@ -139,9 +140,9 @@ tapi_perf_server_destroy(tapi_perf_server *server)
 
 /* See description in tapi_performance.h */
 te_errno
-tapi_perf_server_start(tapi_perf_server *server, rcf_rpc_server *rpcs)
+tapi_perf_server_start_unreliable(tapi_perf_server *server, rcf_rpc_server *rpcs)
 {
-    ENTRY("Start perf server");
+    ENTRY("Start perf server unreliable");
 
     if (server == NULL ||
         server->methods == NULL ||
@@ -149,6 +150,30 @@ tapi_perf_server_start(tapi_perf_server *server, rcf_rpc_server *rpcs)
         return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 
     return server->methods->start(server, rpcs);
+}
+
+/* See description in tapi_performance.h */
+te_errno
+tapi_perf_server_start(tapi_perf_server *server, rcf_rpc_server *rpcs)
+{
+    te_errno rc;
+
+    ENTRY("Start perf server");
+
+    rc = tapi_perf_server_start_unreliable(server, rpcs);
+    if (rc == 0)
+    {
+        /*
+         * In some cases especially on slow machines it is possible the server
+         * actually starts later than client. We need to have some guarantee
+         * the server has started (and is listening the port) by the time a user
+         * starts the client. Since we cannot determine such moment exactly,
+         * the simple delay is presented here.
+         */
+        SLEEP(1);
+    }
+
+    return rc;
 }
 
 /* See description in tapi_performance.h */

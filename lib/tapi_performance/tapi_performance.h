@@ -291,14 +291,35 @@ extern tapi_perf_server *tapi_perf_server_create(tapi_perf_bench bench,
 extern void tapi_perf_server_destroy(tapi_perf_server *server);
 
 /**
- * Start perf server.
+ * Start perf server. It returns immediately after run the command starting the
+ * server. It can be unreliable to call tapi_perf_client_start() just after this
+ * function because server can not be ready to accept clients by this time,
+ * especially on slow machine. It is recommended to use this function only if
+ * there will be some delay before starting a client, otherwise use
+ * tapi_perf_server_start() instead.
  *
  * @param server            Server context.
  * @param rpcs              RPC server handle.
  *
  * @return Status code.
  *
- * @sa tapi_perf_server_stop
+ * @sa tapi_perf_server_start, tapi_perf_server_stop
+ */
+extern te_errno tapi_perf_server_start_unreliable(tapi_perf_server *server,
+                                                  rcf_rpc_server *rpcs);
+
+/**
+ * Start perf server "reliably". It calls tapi_perf_server_start_unreliable()
+ * and wait until it is ready to accept clients. Note, it is not true reliable
+ * because it doesn't check whether server is ready, or not, it just waits for
+ * some time.
+ *
+ * @param server            Server context.
+ * @param rpcs              RPC server handle.
+ *
+ * @return Status code.
+ *
+ * @sa tapi_perf_server_start_unreliable, tapi_perf_server_stop
  */
 extern te_errno tapi_perf_server_start(tapi_perf_server *server,
                                        rcf_rpc_server *rpcs);
