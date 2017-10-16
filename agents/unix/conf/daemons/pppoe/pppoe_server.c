@@ -40,6 +40,7 @@
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_sockaddr.h"
+#include "te_string.h"
 #include "rcf_pch.h"
 #include "logger_api.h"
 
@@ -279,40 +280,50 @@ pppoe_server_save_conf(te_pppoe_server *pppoe)
 
 
 /**
- * Prepare command line arguments for pppoe-server
+ * Build command to run pppoe-server.
  *
- * @param pppoe   pppoe server structure
- * @param args    buffer for arguments line
- * @param maxlen  size of arguments buffer
+ * @param[in]  pppoe    pppoe server structure.
+ * @param[out] cmd      Buffer contains pppoe server run command.
  *
  * @return Status code
  */
 static te_errno
-pppoe_server_print_args(te_pppoe_server *pppoe, char *args, int maxlen)
+pppoe_server_build_cmd(te_pppoe_server *pppoe, te_string *cmd)
 {
-    te_pppoe_if    *iface;
-    char           *p = args;
+    te_pppoe_if *iface;
+    te_errno     rc;
 
-    ENTRY("Build a command to run pppoe server");
+    te_string_reset(cmd);
 
-    p += snprintf(p, maxlen, "%s -O %s", PPPOE_SERVER_EXEC, PPPOE_SERVER_CONF);
+    rc = te_string_append(cmd, "%s -O %s",
+                          PPPOE_SERVER_EXEC, PPPOE_SERVER_CONF);
+    if (rc != 0)
+        return rc;
 
     if (SIN(&pppoe->laddr)->sin_addr.s_addr != INADDR_ANY)
-        p += snprintf(p, maxlen - (p - args),
-                      " -L %s", te_sockaddr_get_ipstr(SA(&pppoe->laddr)));
-
-    if (SIN(&pppoe->raddr)->sin_addr.s_addr != INADDR_ANY)
-        p += snprintf(p, maxlen - (p - args),
-                      " -R %s", te_sockaddr_get_ipstr(SA(&pppoe->raddr)));
-
-    for (iface = SLIST_FIRST(&pppoe->ifs);
-         iface != NULL; iface = SLIST_NEXT(iface, list))
     {
-        p += snprintf(p, maxlen - (p - args),
-                      " -I %s", iface->ifname);
+        rc = te_string_append(cmd, " -L %s",
+                              te_sockaddr_get_ipstr(SA(&pppoe->laddr)));
+        if (rc != 0)
+            return rc;
     }
 
-    EXIT("Command to run pppoe server: '%s'", args);
+    if (SIN(&pppoe->raddr)->sin_addr.s_addr != INADDR_ANY)
+    {
+        rc = te_string_append(cmd, " -R %s",
+                              te_sockaddr_get_ipstr(SA(&pppoe->raddr)));
+        if (rc != 0)
+            return rc;
+    }
+
+    SLIST_FOREACH(iface, &pppoe->ifs, list)
+    {
+        rc = te_string_append(cmd, " -I %s", iface->ifname);
+        if (rc != 0)
+            return rc;
+    }
+
+    INFO("Command to run pppoe server: '%s'", cmd->ptr);
 
     return 0;
 }
@@ -401,34 +412,37 @@ pppoe_server_stop(te_pppoe_server *pppoe)
 static te_errno
 pppoe_server_start(te_pppoe_server *pppoe)
 {
-    char buf[PPPOE_MAX_CMD_SIZE];
-    te_errno rc;
+    te_string cmd = TE_STRING_INIT;
+    te_errno  rc;
 
     ENTRY("Start pppoe server");
 
+#define PPPOE_SERVER_START_FAIL(_rc, _msg...)   \
+    do {                                        \
+        ERROR(_msg);                            \
+        te_string_free(&cmd);                   \
+        EXIT("Failed to start pppoe server");   \
+        return _rc;                             \
+    } while (0)
+
     rc = pppoe_server_save_conf(pppoe);
     if (rc != 0)
-    {
-        ERROR("Failed to save PPPoE server configuration file");
-        EXIT("Failed to start pppoe server");
-        return rc;
-    }
+        PPPOE_SERVER_START_FAIL(rc,
+                            "Failed to save PPPoE server configuration file");
 
-    rc = pppoe_server_print_args(pppoe, buf, sizeof(buf));
+    rc = pppoe_server_build_cmd(pppoe, &cmd);
     if (rc != 0)
-    {
-        ERROR("Failed to prepare arguments to run pppoe-server");
-        EXIT("Failed to start pppoe server");
-        return rc;
-    }
+        PPPOE_SERVER_START_FAIL(rc,
+                            "Failed to prepare arguments to run pppoe-server");
 
-    if (ta_system(buf) != 0)
-    {
-        ERROR("Command '%s' failed", buf);
-        EXIT("Failed to start pppoe server");
-        return TE_RC(TE_TA_UNIX, TE_ESHCMD);
-    }
+    RING("Run command: %s", cmd.ptr);
+    if (ta_system(cmd.ptr) != 0)
+        PPPOE_SERVER_START_FAIL(TE_RC(TE_TA_UNIX, TE_ESHCMD),
+                                "Command '%s' failed", cmd.ptr);
 
+#undef PPPOE_SERVER_START_FAIL
+
+    te_string_free(&cmd);
     EXIT("pppoe server has been started");
 
     return 0;
