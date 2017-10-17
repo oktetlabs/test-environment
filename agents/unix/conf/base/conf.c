@@ -4892,23 +4892,36 @@ broadcast_set(unsigned int gid, const char *oid, const char *value,
         net_addr.ifindex = ifindex;
         net_addr.address = (uint8_t *)&ip_addr;
 
-        if (netconf_net_addr_modify(nh, NETCONF_CMD_DEL,
-                                    &net_addr) < 0)
-        {
-            ERROR("%s(): Cannot delete address '%s' from "
-                  "interface '%s'",
-                  __FUNCTION__, addr, ifname);
-            return TE_OS_RC(TE_TA_UNIX, errno);
-        }
-
         net_addr.broadcast = (uint8_t *)&bcast;
 
-        if (netconf_net_addr_modify(nh, NETCONF_CMD_ADD,
+        if (netconf_net_addr_modify(nh, NETCONF_CMD_CHANGE,
                                     &net_addr) < 0)
         {
-            ERROR("%s(): Cannot add address '%s' to interface '%s'",
+            /* This case we see on rhel6, so we need to try to set broadcast
+             * anyway.
+             */
+            WARN("%s(): Cannot change address '%s' on interface '%s'"
+                  " to set broadcast. Try to delete and add address again.",
                   __FUNCTION__, addr, ifname);
-            return TE_OS_RC(TE_TA_UNIX, errno);
+
+            if (netconf_net_addr_modify(nh, NETCONF_CMD_DEL,
+                                        &net_addr) < 0)
+            {
+                int save_errno = errno;
+                ERROR("%s(): Cannot delete address '%s' from "
+                      "interface '%s'",
+                      __FUNCTION__, addr, ifname);
+                return TE_OS_RC(TE_TA_UNIX, save_errno);
+            }
+
+            if (netconf_net_addr_modify(nh, NETCONF_CMD_ADD,
+                                        &net_addr) < 0)
+            {
+                int save_errno = errno;
+                ERROR("%s(): Cannot add address '%s' to interface '%s'",
+                      __FUNCTION__, addr, ifname);
+                return TE_OS_RC(TE_TA_UNIX, save_errno);
+            }
         }
 
         return 0;
