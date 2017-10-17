@@ -252,8 +252,8 @@ l2tp_server_init(te_l2tp_server *l2tp)
     l2tp->chap_changed = FALSE;
     l2tp->pap_changed = FALSE;
     l2tp->pid = -1;
-    l2tp->conf_file = l2tp_build_filename(L2TP_SERVER_CONF_BASIS);
-    l2tp->pid_file = l2tp_build_filename(L2TP_TA_PIDFILE);
+    l2tp->conf_file = NULL;
+    l2tp->pid_file = NULL;
     l2tp->initialized = TRUE;
 }
 
@@ -439,7 +439,7 @@ l2tp_secret_is_set(te_l2tp_server *l2tp, enum l2tp_secret_prot protocol)
 }
 
 /**
- * Create a new file, or open an existent one. Note, it truncate the file.
+ * Create a new file with unique name.
  *
  * @param[inout] file_name  File name template.
  * @param[out]   file       File stream.
@@ -851,6 +851,8 @@ l2tp_server_stop(te_l2tp_server *l2tp)
         }
     }
 
+    l2tp_remove_file(l2tp->conf_file);  /* We are not interested in error */
+
     return 0;
 }
 
@@ -871,6 +873,22 @@ l2tp_server_start(te_l2tp_server *l2tp)
     ENTRY("start l2tp server");
 
     l2tp_server_stop(l2tp);
+
+#define L2TP_BUILD_FILE_NAME(_file_name, _base_name)                        \
+    do {                                                                    \
+        free(_file_name);                                                   \
+        _file_name = l2tp_build_filename(_base_name);                       \
+        if (_file_name == NULL)                                             \
+        {                                                                   \
+            ERROR("Failed to build file name based on %s", _base_name);     \
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);                            \
+        }                                                                   \
+    } while (0)
+
+    L2TP_BUILD_FILE_NAME(l2tp->conf_file, L2TP_SERVER_CONF_BASIS);
+    L2TP_BUILD_FILE_NAME(l2tp->pid_file, L2TP_TA_PIDFILE);
+
+#undef L2TP_BUILD_FILE_NAME
 
     res = l2tp_server_save_conf(l2tp);
     if (res != 0)
@@ -3692,9 +3710,6 @@ l2tp_release(const char *name)
         ERROR("Failed to remove ppp options files");
     ASSIGN_RETVAL(rc);
 
-    rc = l2tp_remove_file(l2tp->conf_file);
-    ASSIGN_RETVAL(rc);
-
     if (l2tp->chap_changed)
     {
         if ((rc = l2tp_secrets_recover(L2TP_CHAP_SECRETS)) != 0)
@@ -3708,6 +3723,9 @@ l2tp_release(const char *name)
             ERROR("Failed to recover file " L2TP_PAP_SECRETS ": %r", rc);
         ASSIGN_RETVAL(rc);
     }
+
+    free(l2tp->conf_file);
+    free(l2tp->pid_file);
 
 #undef ASSIGN_RETVAL
 
