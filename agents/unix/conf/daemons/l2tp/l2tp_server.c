@@ -3398,7 +3398,7 @@ te_l2tp_clients_add(te_l2tp_server *l2tp)
     if (getifaddrs(&perm) != 0)
     {
         rc = errno;
-        ERROR("getifaddrs: %s", strerror(rc));
+        ERROR("Failed in getifaddrs(): %s", strerror(rc));
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
 
