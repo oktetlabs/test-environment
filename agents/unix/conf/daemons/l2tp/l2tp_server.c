@@ -3395,35 +3395,34 @@ te_l2tp_clients_add(te_l2tp_server *l2tp)
     char               cip[INET6_ADDRSTRLEN];
     int                rc;
 
-    if (getifaddrs(&perm))
+    if (getifaddrs(&perm) != 0)
     {
         rc = errno;
         ERROR("getifaddrs: %s", strerror(rc));
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
-    else
+
+    for (iter = perm; iter != NULL; iter = iter->ifa_next)
     {
-        for (iter = perm; iter != NULL; iter = iter->ifa_next)
+        if (iter->ifa_addr && iter->ifa_addr->sa_family == AF_INET
+            && l2tp_check_lns_ip(inet_ntoa(
+                ((struct sockaddr_in *) iter->ifa_addr)->sin_addr), l2tp))
         {
-            if (iter->ifa_addr && iter->ifa_addr->sa_family == AF_INET
-                && l2tp_check_lns_ip(inet_ntoa(
-                    ((struct sockaddr_in *) iter->ifa_addr)->sin_addr), l2tp))
+            inet_ntop(AF_INET, &((struct sockaddr_in *)
+                              iter->ifa_ifu.ifu_dstaddr)->sin_addr,
+                      cip, INET_ADDRSTRLEN);
+            client = (te_l2tp_connected *)
+                    calloc(1, sizeof(te_l2tp_connected));
+            if (client == NULL)
+                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+            else if (te_l2tp_check_accessory(l2tp, cip))
             {
-                inet_ntop(AF_INET, &((struct sockaddr_in *)
-                                  iter->ifa_ifu.ifu_dstaddr)->sin_addr,
-                          cip, INET_ADDRSTRLEN);
-                client = (te_l2tp_connected *)
-                        calloc(1, sizeof(te_l2tp_connected));
-                if (client == NULL)
-                    return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                else if (te_l2tp_check_accessory(l2tp, cip))
-                {
-                    client->cname = strdup(cip);
-                    SLIST_INSERT_HEAD(&l2tp->client, client, list);
-                }
+                client->cname = strdup(cip);
+                SLIST_INSERT_HEAD(&l2tp->client, client, list);
             }
         }
     }
+
     freeifaddrs(perm);
     l2tp->changed = TRUE;
     return 0;
