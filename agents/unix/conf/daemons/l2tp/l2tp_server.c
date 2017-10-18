@@ -3354,27 +3354,27 @@ te_l2tp_check_accessory(te_l2tp_server *l2tp, char *cip)
 }
 
 /**
- * Check the ip address is equal to any existing local ip
+ * Check whether the IP address is equal to any existing local IPs, or not.
  *
- * @param local_ip   testing ip
- * @param ranges     array of ip ranges
+ * @param addr          Address to check.
+ * @param l2tp          L2TP server context.
  *
- * @return TRUE if local_ip is equal to
- *         local ip from ranges' array
- *         otherwise it returns FALSE
+ * @return @c TRUE if @p addr is equal to local ip from ranges' array,
+ *         otherwise it returns @c FALSE.
  */
 static te_bool
-l2tp_check_lns_ip(char *local_ip, te_l2tp_server *l2tp)
+l2tp_check_lns_ip(const struct sockaddr *addr, te_l2tp_server *l2tp)
 {
-    te_l2tp_section  *section;
-    te_l2tp_option   *opt;
+    te_l2tp_section *section;
+    te_l2tp_option  *opt;
+    const char      *addr_str = inet_ntoa(SIN(addr)->sin_addr);
 
     SLIST_FOREACH(section, &l2tp->section, list)
     {
         SLIST_FOREACH(opt, &section->l2tp_option, list)
         {
             if (strcmp(opt->name, "local ip") == 0 &&
-                strcmp(opt->value, local_ip) == 0)
+                strcmp(opt->value, addr_str) == 0)
                 return TRUE;
         }
     }
@@ -3405,11 +3405,9 @@ te_l2tp_clients_add(te_l2tp_server *l2tp)
     for (iter = perm; iter != NULL; iter = iter->ifa_next)
     {
         if (iter->ifa_addr && iter->ifa_addr->sa_family == AF_INET
-            && l2tp_check_lns_ip(inet_ntoa(
-                ((struct sockaddr_in *) iter->ifa_addr)->sin_addr), l2tp))
+            && l2tp_check_lns_ip(iter->ifa_addr, l2tp))
         {
-            inet_ntop(AF_INET, &((struct sockaddr_in *)
-                              iter->ifa_ifu.ifu_dstaddr)->sin_addr,
+            inet_ntop(AF_INET, &SIN(iter->ifa_ifu.ifu_dstaddr)->sin_addr,
                       cip, INET_ADDRSTRLEN);
             client = (te_l2tp_connected *)
                     calloc(1, sizeof(te_l2tp_connected));
