@@ -207,6 +207,35 @@ l2tp_auth_free(te_l2tp_opt_auth *auth)
 }
 
 /**
+ * Free connected client's entry.
+ *
+ * @param client        Connected client.
+ */
+static void
+l2tp_connected_free(te_l2tp_connected *client)
+{
+    free(client->cname);
+}
+
+/**
+ * Free connected clients list.
+ *
+ * @param l2tp          L2TP server structure.
+ */
+static void
+l2tp_clients_free(te_l2tp_server *l2tp)
+{
+    te_l2tp_connected *cl, *tmp;
+
+    SLIST_FOREACH_SAFE(cl, &l2tp->client, list, tmp)
+    {
+        SLIST_REMOVE(&l2tp->client, cl, te_l2tp_connected, list);
+        l2tp_connected_free(cl);
+        free(cl);
+    }
+}
+
+/**
  * Build a template of filename in format "<basename>.XXXXXX".
  *
  * @note return value should be freed when it is no longer needed.
@@ -3437,6 +3466,8 @@ l2tp_lns_connected_list(unsigned int gid, const char *oid,
         }
     }
     *list = str.ptr;
+
+    l2tp_clients_free(l2tp);
 
     return 0;
 }
