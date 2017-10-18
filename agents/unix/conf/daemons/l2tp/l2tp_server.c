@@ -3471,8 +3471,9 @@ l2tp_lns_connected_list(unsigned int gid, const char *oid,
     UNUSED(oid);
     UNUSED(l2tp_name);
 
-    if (te_l2tp_clients_add(l2tp) != 0)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    rc = te_l2tp_clients_add(l2tp);
+    if (rc != 0)
+        return rc;
 
     SLIST_FOREACH(l2tp_connected, &l2tp->client, list)
     {
