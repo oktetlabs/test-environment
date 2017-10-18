@@ -3393,7 +3393,7 @@ te_l2tp_clients_add(te_l2tp_server *l2tp)
     struct ifaddrs    *iter;
     struct ifaddrs    *perm;
     char               cip[INET6_ADDRSTRLEN];
-    int                rc;
+    int                rc = 0;
 
     if (getifaddrs(&perm) != 0)
     {
@@ -3407,23 +3407,44 @@ te_l2tp_clients_add(te_l2tp_server *l2tp)
         if (iter->ifa_addr && iter->ifa_addr->sa_family == AF_INET
             && l2tp_check_lns_ip(iter->ifa_addr, l2tp))
         {
-            inet_ntop(AF_INET, &SIN(iter->ifa_ifu.ifu_dstaddr)->sin_addr,
-                      cip, INET_ADDRSTRLEN);
-            client = (te_l2tp_connected *)
-                    calloc(1, sizeof(te_l2tp_connected));
-            if (client == NULL)
-                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-            else if (te_l2tp_check_accessory(l2tp, cip))
+            const char *p;
+
+            p = inet_ntop(AF_INET, &SIN(iter->ifa_ifu.ifu_dstaddr)->sin_addr,
+                          cip, INET_ADDRSTRLEN);
+            if (p == NULL)
             {
+                rc = TE_OS_RC(TE_TA_UNIX, errno);
+                break;
+            }
+
+            if (te_l2tp_check_accessory(l2tp, cip))
+            {
+                client = calloc(1, sizeof(*client));
+                if (client == NULL)
+                {
+                    rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+                    break;
+                }
                 client->cname = strdup(cip);
+                if (client->cname == NULL)
+                {
+                    free(client);
+                    rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+                    break;
+                }
                 SLIST_INSERT_HEAD(&l2tp->client, client, list);
             }
         }
     }
 
     freeifaddrs(perm);
-    l2tp->changed = TRUE;
-    return 0;
+
+    if (rc == 0)
+        l2tp->changed = TRUE;
+    else
+        l2tp_clients_free(l2tp);
+
+    return rc;
 }
 
 /**
