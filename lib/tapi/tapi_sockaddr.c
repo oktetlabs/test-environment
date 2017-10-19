@@ -55,12 +55,10 @@
 #include "te_errno.h"
 #include "te_stdint.h"
 #include "te_alloc.h"
-#include "logger_api.h"
-#include "conf_api.h"
 
 #include "tapi_sockaddr.h"
 #include "tapi_rpc_socket.h"
-#include "tapi_test_log.h"
+#include "tapi_test.h"
 
 /**
  * The minimum available port number
@@ -151,6 +149,16 @@ tapi_allocate_port(struct rcf_rpc_server *pco, uint16_t *p_port)
     return 0;
 }
 
+/* See description in tapi_sockaddr.h */
+uint16_t
+tapi_get_port(rcf_rpc_server *rpcs)
+{
+    uint16_t port;
+
+    CHECK_RC(tapi_allocate_port(rpcs, &port));
+
+    return port;
+}
 
 /* See description in tapi_sockaddr.h */
 te_errno

@@ -83,6 +83,8 @@ do {                                                                \
  * @param p_port    Location for allocated port
  *
  * @return Status code.
+ *
+ * @sa tapi_get_port
  */
 extern te_errno tapi_allocate_port(struct rcf_rpc_server *pco,
                                    uint16_t *p_port);
@@ -107,9 +109,41 @@ extern te_errno tapi_allocate_port_range(struct rcf_rpc_server *pco,
  * @param p_port    Location for allocated port
  *
  * @return Status code.
+ *
+ * @sa tapi_get_port_htons
  */
 extern te_errno tapi_allocate_port_htons(rcf_rpc_server *pco,
                                          uint16_t *p_port);
+
+/**
+ * Retrieve unused in system port in host order. It calls tapi_allocate_port()
+ * to get a port, but unlike that function it jumps to cleanup on failure.
+ *
+ * @param rpcs      RPC server to check that port is free.
+ *
+ * @return Port number.
+ *
+ * @sa tapi_get_port_htons, tapi_allocate_port
+ */
+extern uint16_t tapi_get_port(rcf_rpc_server *rpcs);
+
+/**
+ * Retrieve unused in system port in network order.
+ *
+ * @note It jumps to cleanup on failure.
+ *
+ * @param rpcs      RPC server to check that port is free.
+ *
+ * @return Port number.
+ *
+ * @sa tapi_get_port, tapi_allocate_port_htons
+ */
+static inline uint16_t
+tapi_get_port_htons(rcf_rpc_server *rpcs)
+{
+    return htons(tapi_get_port(rpcs));
+}
+
 
 /**
  * Generate new sockaddr basing on existing one (copy data and
