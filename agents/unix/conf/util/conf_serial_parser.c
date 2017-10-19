@@ -341,17 +341,20 @@ parser_get(unsigned int gid, const char *oid, char *cname,
  * Get instance list of the parsers.
  *
  * @param gid       Group identifier (unused).
- * @param oid       Full object instance identifier (unused).
+ * @param oid       Full parent object instance identifier (unused).
+ * @param sub_id    ID of the object to be listed (unused).
  * @param list      Location for the list pointer.
  *
  * @return Status code
  * @retval 0        Success
  */
 static te_errno
-parsers_list(unsigned int gid, const char *oid, char **list)
+parsers_list(unsigned int gid, const char *oid, const char *sub_id,
+             char **list)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     serial_parser_t  *parser;
     size_t            list_size = 0;
@@ -587,7 +590,8 @@ parser_reset(unsigned int gid, const char *oid, char *value,
  * Get instance list of the events, that are located on the parser subtree
  *
  * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
+ * @param oid       Full parent object instance identifier (unused)
+ * @param sub_id    ID of the object to be listed (unused)
  * @param list      Location for the list pointer
  * @param pname     The parser name
  *
@@ -595,11 +599,12 @@ parser_reset(unsigned int gid, const char *oid, char *value,
  * @retval 0        Success
  */
 static te_errno
-parser_event_list(unsigned int gid, const char *oid, char **list,
-                  const char *pname)
+parser_event_list(unsigned int gid, const char *oid, const char *sub_id,
+                  char **list, const char *pname)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     serial_parser_t  *parser;
     serial_event_t   *event;
@@ -781,7 +786,8 @@ parser_event_set(unsigned int gid, const char *oid, char *value,
  * Get instance list of the patterns, that are located on the event subtree
  *
  * @param gid       Group identifier (unused)
- * @param oid       Full object instance identifier (unused)
+ * @param oid       Full parent object instance identifier (unused)
+ * @param sub_id    ID of the object to be listed (unused)
  * @param list      Location for the list pointer
  * @param pname     The parser name
  * @param ename     The event name
@@ -790,11 +796,13 @@ parser_event_set(unsigned int gid, const char *oid, char *value,
  * @retval 0        Success
  */
 static te_errno
-parser_pattern_list(unsigned int gid, const char *oid, char **list,
+parser_pattern_list(unsigned int gid, const char *oid,
+                    const char *sub_id, char **list,
                     const char *pname, const char *ename)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     serial_parser_t  *parser;
     serial_event_t   *event;

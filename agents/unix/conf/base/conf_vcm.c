@@ -311,18 +311,21 @@ vcmconn_path_set(unsigned int gid, const char *oid,
  * Determine list of VCM boxes.
  *
  * @param gid     group identifier (unused)
- * @param oid     full object instence identifier
+ * @param oid     full parent object instence identifier (unused)
+ * @param sub_id  ID of the object to be listed (unused)
  * @param list    location for the list pointer
- * @param name  interface name
+ * @param name    interface name
  *
  * @return error code
  */
 static te_errno
-vcm_box_list(unsigned int gid, const char *oid, char **list,
-          const char *name)
+vcm_box_list(unsigned int gid, const char *oid,
+             const char *sub_id, char **list,
+             const char *name)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(name);
 
     /* TODO get from VCM */

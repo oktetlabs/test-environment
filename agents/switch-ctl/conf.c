@@ -778,6 +778,7 @@ get_number_of_ports(unsigned int gid, const char *oid, char *value)
  *
  * @param gid       - request group identifier
  * @param oid       - full identifier of the father instance
+ * @param sub_id    - ID of the object to be listed (unused)
  * @param list      - location for the list pointer
  *
  * @return Status code
@@ -785,11 +786,13 @@ get_number_of_ports(unsigned int gid, const char *oid, char *value)
  * @retval TE_ENOMEM   - cannot allocate memory
  */
 static te_errno
-list_ports(unsigned int gid, const char *oid, char **list)
+list_ports(unsigned int gid, const char *oid,
+           const char *sub_id, char **list)
 {
     size_t str_len;
 
     UNUSED(oid);
+    UNUSED(sub_id);
 
     CHECK_RC(update_poe_global(gid));
     CHECK_RC(update_poe_ports(gid));
@@ -1962,6 +1965,7 @@ arl_del_entry(unsigned int gid, const char *oid,
  *
  * @param gid       - request group identifier
  * @param oid       - full identifier of the father instance
+ * @param sub_id    - ID of the object to be listed
  * @param list      - location for the list pointer
  *
  * @return Status code
@@ -1969,7 +1973,8 @@ arl_del_entry(unsigned int gid, const char *oid,
  * @retval TE_ENOMEM   - cannot allocate memory
  */
 static te_errno
-arl_list(unsigned int gid, const char *oid, char **list)
+arl_list(unsigned int gid, const char *oid, const char *sub_id,
+         char **list)
 {
     poe_mac *mac;
     size_t   str_len;
@@ -1977,6 +1982,7 @@ arl_list(unsigned int gid, const char *oid, char **list)
     int      i;
 
     UNUSED(oid);
+    UNUSED(sub_id);
 
     ENTRY("gid %d, oid = %s", gid, oid);
 
@@ -3166,6 +3172,7 @@ stp_del_port(unsigned int gid, const char *oid,
  *
  * @param gid       - request group identifier
  * @param oid       - full identifier of the father instance
+ * @param sub_id    - ID of the object to be listed
  * @param list      - location for the list pointer
  *
  * @return Status code
@@ -3173,7 +3180,8 @@ stp_del_port(unsigned int gid, const char *oid,
  * @retval TE_ENOMEM   - cannot allocate memory
  */
 static te_errno
-stp_port_list(unsigned int gid, const char *oid, char **list)
+stp_port_list(unsigned int gid, const char *oid,
+              const char *sub_id, char **list)
 {
     int mem_len;
     int cur_len;
@@ -3181,6 +3189,7 @@ stp_port_list(unsigned int gid, const char *oid, char **list)
     int num_local_entries = 1; /* Currently no more than one local entry */
 
     UNUSED(oid);
+    UNUSED(sub_id);
 
     VERB("stp_port_list: gid %d, oid = %s", gid, oid);
 
@@ -3496,14 +3505,15 @@ vlan_del(int gid, char *oid, char *vid)
 /**
  * Construct VLAN list.
  *
- * @param gid   groupd identifier (unused)
- * @param oid   full instance identifier (unused)
- * @param list  location for result
+ * @param gid     groupd identifier (unused)
+ * @param oid     full instance identifier (unused)
+ * @param sub_id  ID of the object to be listed
+ * @param list    location for result
  *
  * @return status code
  */
 static te_errno 
-vlan_list(int gid, char *oid, char **list)
+vlan_list(int gid, char *oid, const char *sub_id, char **list)
 {
     poe_vlan       *table;
     char           *tmp;
@@ -3513,6 +3523,7 @@ vlan_list(int gid, char *oid, char **list)
     
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     
     if (poe_vlan_read_table(&table, &num, error_string) < 0)
     {
@@ -3674,15 +3685,17 @@ vlan_port_del(int gid, char *oid, char *vid, char *p)
 /**
  * List VLAN ports.
  *
- * @param gid   groupd identifier (unused)
- * @param oid   full instance identifier (unused)
- * @param list  location for result
- * @param vid   VLAN tag as a string
+ * @param gid     groupd identifier (unused)
+ * @param oid     full instance identifier (unused)
+ * @param sub_id  ID of the object to be listed
+ * @param list    location for result
+ * @param vid     VLAN tag as a string
  *
  * @return status code
  */
 static te_errno
-vlan_port_list(int gid, char *oid, char **list, char *vid)
+vlan_port_list(int gid, char *oid, const char *sub_id,
+               char **list, char *vid)
 {
     poe_vlan vlan;
     te_errno rc;
@@ -3691,6 +3704,7 @@ vlan_port_list(int gid, char *oid, char **list, char *vid)
     
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     
     if ((rc = find_vlan(vid, &vlan)) != 0)
         return TE_RC(TE_TA_SWITCH_CTL, rc);

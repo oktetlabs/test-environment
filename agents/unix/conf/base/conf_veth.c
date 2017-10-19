@@ -123,17 +123,20 @@ veth_list_include_cb(const char *ifname, void *data)
 /**
  * Get veth interfaces list.
  *
- * @param gid   Group identifier (unused)
- * @param oid   Full identifier of the father instance (unused)
- * @param list  Location for the list pointer
+ * @param gid     Group identifier (unused)
+ * @param oid     Full identifier of the father instance (unused)
+ * @param sub_id  ID of the object to be listed (unused)
+ * @param list    Location for the list pointer
  *
  * @return      Status code
  */
 static te_errno
-veth_list(unsigned int gid, const char *oid, char **list)
+veth_list(unsigned int gid, const char *oid,
+          const char *sub_id, char **list)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     return netconf_veth_list(nh, veth_list_include_cb, NULL, list);
 }

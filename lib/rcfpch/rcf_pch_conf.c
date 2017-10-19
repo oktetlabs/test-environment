@@ -331,7 +331,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
                 i++;
             }
 
-            if ((obj->list)(gid, parsed, &tmp_list,
+            if ((obj->list)(gid, parsed, obj->sub_id, &tmp_list,
                             inst_names[0], inst_names[1], inst_names[2],
                             inst_names[3], inst_names[4], inst_names[5],
                             inst_names[6], inst_names[7], inst_names[8],
@@ -767,10 +767,12 @@ rcf_pch_cfg_init(void)
 
 /* See description in rcf_ch_api.h */
 te_errno
-rcf_pch_agent_list(unsigned int id, const char *oid, char **list)
+rcf_pch_agent_list(unsigned int id, const char *oid,
+                   const char *sub_id, char **list)
 {
     UNUSED(id);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     return (*list = strdup(rcf_ch_conf_agent())) == NULL ? TE_ENOMEM : 0;
 }
@@ -1435,6 +1437,7 @@ static rsrc *rsrc_lst;
  *
  * @param gid           group identifier (unused)
  * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          location for the list pointer
  *
  * @return Status code
@@ -1442,7 +1445,8 @@ static rsrc *rsrc_lst;
  * @retval TE_ENOMEM    cannot allocate memory
  */
 static te_errno
-rsrc_list(unsigned int gid, const char *oid, char **list)
+rsrc_list(unsigned int gid, const char *oid,
+          const char *sub_id, char **list)
 {
 #define MEM_BULK        1024
     int   len = MEM_BULK;
@@ -1452,6 +1456,7 @@ rsrc_list(unsigned int gid, const char *oid, char **list)
     
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     
     if (buf == NULL)
         return TE_RC(TE_RCF_PCH, TE_ENOMEM);

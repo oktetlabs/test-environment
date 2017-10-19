@@ -1472,7 +1472,7 @@ ds_radius_user_del(unsigned int gid, const char *oid,
 
 static te_errno
 ds_radius_user_list(unsigned int gid, const char *oid,
-                    char **list,
+                    const char *sub_id, char **list,
                     const char *instance, ...)
 {
     radius_user *user;
@@ -1481,6 +1481,7 @@ ds_radius_user_list(unsigned int gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(instance);
 
     for (user = radius_users; user != NULL; user = user->next)
@@ -1583,14 +1584,15 @@ static te_bool client_list(radius_parameter *rp, void *extra)
 
 static te_errno
 ds_radius_client_list(unsigned int gid, const char *oid,
-                    char **list,
-                    const char *instance, ...)
+                      const char *sub_id, char **list,
+                      const char *instance, ...)
 {
     int   size = 0;
     char *c_iter;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(instance);
 
     VERB("obtaining client list");

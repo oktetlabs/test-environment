@@ -1443,17 +1443,20 @@ sniffer_get(unsigned int gid, const char *oid, char *value,
  * Get instance list of the sniffers for object "/agent/interface/sniffer".
  *
  * @param gid       Request's group identifier (unused).
- * @param oid       Full object instance identifier (unused).
+ * @param oid       Full parent object instance identifier (unused).
+ * @param sub_id    ID of the object to be listed (unused).
  * @param list      Location for the list pointer.
  * @param ifname    Interface name.
  *
  * @return Status code.
  */
 static te_errno
-sniffers_list(unsigned int gid, const char *oid, char **list, const char *ifname)
+sniffers_list(unsigned int gid, const char *oid, const char *sub_id,
+              char **list, const char *ifname)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(ifname);
 
     sniffer_t  *sniff;

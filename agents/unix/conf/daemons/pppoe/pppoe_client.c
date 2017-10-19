@@ -89,7 +89,8 @@ static te_errno pppoe_mac_addr_get(unsigned int gid, const char *oid,
                                    const char *if_name,
                                    const char *pppoe_name);
 static te_errno pppoe_list(unsigned int gid, const char *oid,
-                           char **list, const char *if_name);
+                           const char *sub_id, char **list,
+                           const char *if_name);
 static te_errno pppoe_add(unsigned int gid, const char *oid,
                           const char *value,
                           const char *if_name,
@@ -223,14 +224,16 @@ pppoe_client_find(const char *if_name, const char *name,
  * Get instance list for object "/agent/interface/pppoe".
  *
  * @param gid      request's group identifier (unused)
- * @param oid      full object instance identifier (unused)
+ * @param oid      full parent object instance identifier (unused)
+ * @param sub_id   ID of the object to be listed (unused)
  * @param list     location for the list pointer
  * @param if_name  interface name
  *
  * @return Status code
  */
 static te_errno
-pppoe_list(unsigned int gid, const char *oid, char **list, const char *if_name)
+pppoe_list(unsigned int gid, const char *oid, const char *sub_id,
+           char **list, const char *if_name)
 {
     pppoe_if_group *grp = if_group;
     char           *buf = NULL;
@@ -238,9 +241,9 @@ pppoe_list(unsigned int gid, const char *oid, char **list, const char *if_name)
     size_t          name_len;
     pppoe_client   *clnt;
 
-    UNUSED(oid);
     UNUSED(gid);
-
+    UNUSED(oid);
+    UNUSED(sub_id);
 
     while (grp != NULL)
     {

@@ -130,13 +130,15 @@ extern char *ta_name;
  * Access routines prototypes (comply to procedure types
  * specified in rcf_ch_api.h).
  */
-static te_errno interface_list(unsigned int, const char *, char **);
+static te_errno interface_list(unsigned int, const char *,
+                               const char *, char **);
 
 static te_errno net_addr_add(unsigned int, const char *, const char *,
                              const char *, const char *);
 static te_errno net_addr_del(unsigned int, const char *,
                              const char *, const char *);
-static te_errno net_addr_list(unsigned int, const char *, char **,
+static te_errno net_addr_list(unsigned int, const char *,
+                              const char *, char **,
                               const char *);
 
 static te_errno prefix_get(unsigned int, const char *, char *,
@@ -187,7 +189,8 @@ static te_errno neigh_find(const char *, const char *, const char *,
                           char *);
 static te_errno neigh_del(unsigned int, const char *,
                           const char *, const char *);
-static te_errno neigh_list(unsigned int, const char *, char **,
+static te_errno neigh_list(unsigned int, const char *,
+                           const char *, char **,
                            const char *);
 
 //Multicast
@@ -196,14 +199,15 @@ static te_errno mcast_link_addr_add(unsigned int, const char *,
                                     const char *);
 static te_errno mcast_link_addr_del(unsigned int, const char *,
                                     const char *, const char *);
-static te_errno mcast_link_addr_list(unsigned int, const char *, char **,
+static te_errno mcast_link_addr_list(unsigned int, const char *,
+                                     const char *, char **,
                                      const char *);
 
 /* VLANS */
 static te_errno vlan_ifname_get(unsigned int , const char *,
                                 char *, const char *, const char *);
-static te_errno vlans_list(unsigned int, const char *, char **,
-                           const char*);
+static te_errno vlans_list(unsigned int, const char *,
+                           const char *, char **, const char *);
 static te_errno vlans_add(unsigned int, const char *, const char *,
                           const char *, const char *);
 static te_errno vlans_del(unsigned int, const char *, const char *,
@@ -255,14 +259,18 @@ static rcf_pch_cfg_object node_phy;
  * This is a bit of hack - there are same handlers for static and dynamic
  * branches, handler discovers dynamic subtree by presence of
  * "dynamic" in OID. But list method does not contain the last subid.
+ *
+ * FIXME: now there is an argument for the last subid.
  */
 static te_errno
-neigh_dynamic_list(unsigned int gid, const char *oid, char **list, 
+neigh_dynamic_list(unsigned int gid, const char *oid,
+                   const char *sub_id, char **list, 
                    const char *ifname)
 {
     UNUSED(oid);
+    UNUSED(sub_id);
     
-    return neigh_list(gid, "dynamic", list, ifname);
+    return neigh_list(gid, "dynamic", sub_id, list, ifname);
 }                   
 
 static te_errno route_dev_get(unsigned int, const char *, char *,
@@ -277,7 +285,8 @@ static te_errno route_get(unsigned int, const char *, char *,
                           const char *);
 static te_errno route_set(unsigned int, const char *, const char *,
                           const char *);
-static te_errno route_list(unsigned int, const char *, char **);
+static te_errno route_list(unsigned int, const char *, const char *,
+                           char **);
 
 static te_errno route_commit(unsigned int, const cfg_oid *);
 
@@ -293,7 +302,8 @@ static te_errno env_add(unsigned int, const char *, const char *,
                         const char *);
 static te_errno env_del(unsigned int, const char *,
                         const char *);
-static te_errno env_list(unsigned int, const char *, char **);
+static te_errno env_list(unsigned int, const char *,
+                         const char *, char **);
 
 /** Environment variables hidden in list operation */
 static const char * const env_hidden[] = {
@@ -1403,7 +1413,8 @@ rcf_ch_conf_fini()
  * Get instance list for object "agent/interface".
  *
  * @param gid           group identifier (unused)
- * @param id            full identifier of the father instance
+ * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          location for the list pointer
  *
  * @return status code
@@ -1411,7 +1422,8 @@ rcf_ch_conf_fini()
  * @retval TE_ENOMEM       cannot allocate memory
  */
 static te_errno
-interface_list(unsigned int gid, const char *oid, char **list)
+interface_list(unsigned int gid, const char *oid,
+               const char *sub_id, char **list)
 {
 //    MIB_IFTABLE *table;
     IP_ADAPTER_INFO *ifinfo, *cur_if;
@@ -1421,6 +1433,7 @@ interface_list(unsigned int gid, const char *oid, char **list)
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     efport2ifindex();
 
@@ -1903,7 +1916,8 @@ net_addr_del(unsigned int gid, const char *oid,
  * Get instance list for object "agent/interface/net_addr".
  *
  * @param gid           group identifier (unused)
- * @param id            full identifier of the father instance
+ * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed
  * @param list          location for the list pointer
  * @param ifname        interface name
  *
@@ -1913,7 +1927,8 @@ net_addr_del(unsigned int gid, const char *oid,
  * @retval TE_ENOMEM               cannot allocate memory
  */
 static te_errno
-net_addr_list(unsigned int gid, const char *oid, char **list,
+net_addr_list(unsigned int gid, const char *oid,
+              const char *sub_id, char **list,
               const char *ifname)
 {
     MIB_IPADDRTABLE *table;
@@ -1922,6 +1937,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     GET_IF_ENTRY;
     GET_TABLE(MIB_IPADDRTABLE, GetIpAddrTable);
@@ -2761,6 +2777,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          location for the list pointer
  * @param ifname        interface name
  *
@@ -2771,7 +2788,8 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
  *       due to unwanted arbitrary changes in ARP cache on Vista.
  */
 static te_errno
-neigh_list(unsigned int gid, const char *oid, char **list, 
+neigh_list(unsigned int gid, const char *oid,
+           const char *sub_id, char **list, 
            const char *ifname)
 {
     MIB_IPNETTABLE *table;
@@ -2783,6 +2801,7 @@ neigh_list(unsigned int gid, const char *oid, char **list,
     
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     if (ifindex == 0)
         return TE_RC(TE_TA_WIN32, TE_ENOENT);
@@ -3108,7 +3127,8 @@ route_set(unsigned int gid, const char *oid, const char *value,
  * Get instance list for object "agent/route".
  *
  * @param gid           group identifier (unused)
- * @param id            full identifier of the father instance
+ * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          location for the list pointer
  *
  * @return status code
@@ -3117,7 +3137,8 @@ route_set(unsigned int gid, const char *oid, const char *value,
  * @retval TE_ENOMEM               cannot allocate memory
  */
 static te_errno
-route_list(unsigned int gid, const char *oid, char **list)
+route_list(unsigned int gid, const char *oid,
+           const char *sub_id, char **list)
 {
     MIB_IPFORWARDTABLE *table;
     int                 i;
@@ -3126,6 +3147,7 @@ route_list(unsigned int gid, const char *oid, char **list)
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     GET_TABLE(MIB_IPFORWARDTABLE, GetIpForwardTable);
     if (table == NULL)
@@ -3410,12 +3432,14 @@ env_del(unsigned int gid, const char *oid, const char *name)
  *
  * @param gid       Request's group identifier (unused)
  * @param oid       Full object instance identifier (unused)
+ * @param sub_id    ID of the object to be listed (unused)
  * @param list      Location for the list pointer
  *
  * @return status code
  */
 static te_errno
-env_list(unsigned int gid, const char *oid, char **list)
+env_list(unsigned int gid, const char *oid,
+         const char *sub_id, char **list)
 {
     char **env;
 
@@ -3424,6 +3448,7 @@ env_list(unsigned int gid, const char *oid, char **list)
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     if (environ == NULL)
         return 0;
@@ -3892,7 +3917,8 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
 }
 
 static te_errno
-mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
+mcast_link_addr_list(unsigned int gid, const char *oid,
+                     const char *sub_id, char **list,
                      const char *ifname)
 {
 
@@ -3906,6 +3932,8 @@ mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
+
     if (strstr(ifname, "ef") == NULL)
     {
       sprintf(ret, " ");
@@ -4745,6 +4773,7 @@ vlan_ifname_get(unsigned int gid, const char *oid, char *value,
  *
  * @param gid           group identifier (unused)
  * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          location for the list pointer
  *
  * @return              Status code
@@ -4752,7 +4781,8 @@ vlan_ifname_get(unsigned int gid, const char *oid, char *value,
  * @retval TE_ENOMEM       cannot allocate memory
  */
 static te_errno
-vlans_list(unsigned int gid, const char *oid, char **list,
+vlans_list(unsigned int gid, const char *oid,
+           const char *sub_id, char **list,
            const char *ifname)
 {
     size_t i;
@@ -4760,6 +4790,8 @@ vlans_list(unsigned int gid, const char *oid, char **list,
     char *frname;
     DWORD *vid_list;
     int rc, count, count_skipped = 0;
+
+    UNUSED(sub_id);
 
     if (strstr(ifname, "ef")== NULL)
     {

@@ -872,7 +872,8 @@ typedef te_errno (* rcf_ch_cfg_del)(unsigned int gid, const char *oid,
  * Caller is responsible for releasing of this memory.
  *
  * @param gid       group identifier
- * @param oid       full object instance identifier
+ * @param oid       full object instance identifier of the parent
+ * @param sub_id    ID (name) of the object to be listed
  * @param list      location for the returned list pointer
  *                  (list entries should be separated with SPACE character.
  *                  For example if we need to return names 'a', 'b', 'c',
@@ -883,6 +884,7 @@ typedef te_errno (* rcf_ch_cfg_del)(unsigned int gid, const char *oid,
  * @return Status code
  */
 typedef te_errno (* rcf_ch_cfg_list)(unsigned int gid, const char *oid,
+                                     const char *sub_id,
                                      char **list, const char *instN, ...);
 
 /**

@@ -603,7 +603,8 @@ is_vendor_accessible(const pci_vendor *vendor)
 
 
 static te_errno
-pci_device_list(unsigned int gid, const char *oid, char **list)
+pci_device_list(unsigned int gid, const char *oid,
+                const char *sub_id, char **list)
 {
     unsigned i;
     const pci_device *iter = all_devices;
@@ -613,6 +614,7 @@ pci_device_list(unsigned int gid, const char *oid, char **list)
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     for (i = 0; i < n_all_devices; i++, iter++)
     {
@@ -702,7 +704,8 @@ pci_device_instance_get(unsigned int gid, const char *oid, char *value,
 }
 
 static te_errno
-pci_device_instance_list(unsigned int gid, const char *oid, char **list,
+pci_device_instance_list(unsigned int gid, const char *oid,
+                         const char *sub_id, char **list,
                          const char *unused1, const char *unused2,
                          const char *venid, const char *devid)
 {
@@ -716,6 +719,7 @@ pci_device_instance_list(unsigned int gid, const char *oid, char **list,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(unused1);
     UNUSED(unused2);
 
@@ -744,7 +748,8 @@ pci_device_instance_list(unsigned int gid, const char *oid, char **list,
 }
 
 static te_errno
-pci_vendor_device_list(unsigned int gid, const char *oid, char **list,
+pci_vendor_device_list(unsigned int gid, const char *oid,
+                       const char *sub_id, char **list,
                        const char *unused1, const char *unused2,
                        const char *venid)
 {
@@ -756,6 +761,7 @@ pci_vendor_device_list(unsigned int gid, const char *oid, char **list,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(unused1);
     UNUSED(unused2);
 
@@ -781,7 +787,8 @@ pci_vendor_device_list(unsigned int gid, const char *oid, char **list,
 }
 
 static te_errno
-pci_vendor_list(unsigned int gid, const char *oid, char **list,
+pci_vendor_list(unsigned int gid, const char *oid,
+                const char *sub_id, char **list,
                 const char *unused1, const char *unused2)
 {
     te_string result = TE_STRING_INIT;
@@ -790,6 +797,7 @@ pci_vendor_list(unsigned int gid, const char *oid, char **list,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(unused1);
     UNUSED(unused2);
 

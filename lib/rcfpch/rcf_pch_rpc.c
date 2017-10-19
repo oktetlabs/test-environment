@@ -161,7 +161,8 @@ static te_errno rpcserver_add(unsigned int, const char *, const char *,
                               const char *);
 static te_errno rpcserver_del(unsigned int, const char *,
                               const char *);
-static te_errno rpcserver_list(unsigned int, const char *, char **);
+static te_errno rpcserver_list(unsigned int, const char *, const char *,
+                               char **);
 
 static te_errno rpcserver_dead_get(unsigned int, const char *, char *,
                                    const char *);
@@ -1600,7 +1601,8 @@ rpcserver_del(unsigned int gid, const char *oid, const char *name)
 }
 
 static te_errno
-rpcserver_list(unsigned int gid, const char *oid, char **value)
+rpcserver_list(unsigned int gid, const char *oid,
+               const char *sub_id, char **value)
 {
     rpcserver *rpcs;
     char      *buf;
@@ -1609,6 +1611,7 @@ rpcserver_list(unsigned int gid, const char *oid, char **value)
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     buf = calloc(buflen, 1);
     if (buf == NULL)

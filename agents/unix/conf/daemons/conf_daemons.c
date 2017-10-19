@@ -2984,14 +2984,16 @@ ds_vncserver_del(unsigned int gid, const char *oid, const char *number)
 /**
  * Return list of VNC servers.
  *
- * @param gid    group identifier (unused)
- * @param oid    full object instence identifier (unused)
- * @param list   location for the list pointer
+ * @param gid     group identifier (unused)
+ * @param oid     full parent object instance identifier (unused)
+ * @param sub_id  ID of the object to be listed (unused)
+ * @param list    location for the list pointer
  *
  * @return error code
  */
 static te_errno
-ds_vncserver_list(unsigned int gid, const char *oid, char **list)
+ds_vncserver_list(unsigned int gid, const char *oid,
+                  const char *sub_id, char **list)
 {
     FILE *f;
     char  line[128];
@@ -3001,6 +3003,7 @@ ds_vncserver_list(unsigned int gid, const char *oid, char **list)
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     if ((rc = ta_popen_r("ls /tmp/.vnc/*.pid 2>/dev/null",
                          &cmd_pid, &f)) < 0)
@@ -3233,13 +3236,15 @@ ds_sshd_del(unsigned int gid, const char *oid, const char *port)
  * Return list of SSH daemons.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full parent object instance identifier (unused)
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          location for the list pointer
  *
  * @return error code
  */
 static te_errno
-ds_sshd_list(unsigned int gid, const char *oid, char **list)
+ds_sshd_list(unsigned int gid, const char *oid,
+             const char *sub_id, char **list)
 {
     FILE *f;
     char  line[128];
@@ -3249,6 +3254,7 @@ ds_sshd_list(unsigned int gid, const char *oid, char **list)
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     if ((rc = ta_popen_r(PS_ALL_ARGS " | grep 'sshd -p' | grep -v grep",
                          &cmd_pid, &f)) < 0)
@@ -3417,14 +3423,16 @@ ds_xvfb_del(unsigned int gid, const char *oid, const char *number)
 /**
  * Return list of Xvfb servers.
  *
- * @param gid    group identifier (unused)
- * @param oid    full object instence identifier (unused)
- * @param list   location for the list pointer
+ * @param gid     group identifier (unused)
+ * @param oid     full parent object instance identifier (unused)
+ * @param sub_id  ID of the object to be listed (unused)
+ * @param list    location for the list pointer
  *
  * @return error code
  */
 static te_errno
-ds_xvfb_list(unsigned int gid, const char *oid, char **list)
+ds_xvfb_list(unsigned int gid, const char *oid,
+             const char *sub_id, char **list)
 {
     FILE *f;
     char  line[1024];
@@ -3434,6 +3442,7 @@ ds_xvfb_list(unsigned int gid, const char *oid, char **list)
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     if ((rc = ta_popen_r(PS_ALL_ARGS " | grep -w 'Xvfb' | grep -v grep",
                          &cmd_pid, &f)) < 0)

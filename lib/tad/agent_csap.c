@@ -140,12 +140,14 @@ agent_csap_list_cb(csap_handle_t csap_id, void *ptr, void *opaque)
  * The function complies with rcf_ch_cfg_list prototype.
  */
 static te_errno
-agent_csap_list(unsigned int gid, const char *oid, char **list)
+agent_csap_list(unsigned int gid, const char *oid,
+                const char *sub_id, char **list)
 {
     agent_csap_list_cb_data data;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     data.rc = 0;
     data.list = NULL;

@@ -525,10 +525,12 @@ route_del(unsigned int gid, const char *oid, const char *route)
 
 
 static te_errno
-route_list(unsigned int gid, const char *oid, char **list)
+route_list(unsigned int gid, const char *oid, const char *sub_id,
+           char **list)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     return ta_unix_conf_route_list(list);
 }
@@ -573,10 +575,12 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
 
 
 static te_errno
-blackhole_list(unsigned int gid, const char *oid, char **list)
+blackhole_list(unsigned int gid, const char *oid, const char *sub_id,
+               char **list)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     return ta_unix_conf_route_blackhole_list(list);
 }

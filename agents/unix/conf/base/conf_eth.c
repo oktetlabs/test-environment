@@ -304,6 +304,7 @@ eth_feature_iface_context(const char *ifname)
 static te_errno
 eth_feature_list(unsigned int    gid,
                  const char     *oid_str,
+                 const char     *sub_id,
                  char          **list_out)
 {
     te_errno                    rc;
@@ -314,6 +315,7 @@ eth_feature_list(unsigned int    gid,
     unsigned int                i;
 
     UNUSED(gid);
+    UNUSED(sub_id);
 
     oid = cfg_convert_oid_str(oid_str);
     if (oid == NULL)

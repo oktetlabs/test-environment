@@ -104,13 +104,15 @@
 /*** Macro definitions for uniformal configuring methods ***/
 /** Definition of list method for host and groups */
 #define LIST_METHOD(_gh) \
-static te_errno \
-ds_##_gh##_list(unsigned int gid, const char *oid, char **list) \
+static te_errno                                                 \
+ds_##_gh##_list(unsigned int gid, const char *oid,              \
+                const char *sub_id, char **list)                \
 {                                                               \
     _gh *gh;                                                    \
                                                                 \
-    UNUSED(oid);                                                \
     UNUSED(gid);                                                \
+    UNUSED(oid);                                                \
+    UNUSED(sub_id);                                             \
                                                                 \
     DHCP_SERVER_INIT_CHECK;                                     \
                                                                 \
@@ -269,8 +271,9 @@ ds_##_ghs##_##_attr##_set(unsigned int gid, const char *oid,    \
 #define GET_OPT_LIST(_ghs, _ghs_type, _opt_type) \
 static te_errno \
 ds_##_ghs##_option_list(unsigned int gid, const char *oid,      \
-                       char **list, const char *dhcpserver,     \
-                       const char *name)                        \
+                        const char *sub_id,                     \
+                        char **list, const char *dhcpserver,    \
+                        const char *name)                       \
 {                                                               \
    _ghs_type *ghs;                                              \
                                                                 \
@@ -278,6 +281,7 @@ ds_##_ghs##_option_list(unsigned int gid, const char *oid,      \
                                                                 \
     UNUSED(gid);                                                \
     UNUSED(oid);                                                \
+    UNUSED(sub_id);                                             \
     UNUSED(dhcpserver);                                         \
                                                                 \
     DHCP_SERVER_INIT_CHECK;                                     \
@@ -1812,12 +1816,14 @@ ds_subnet_del(unsigned int gid, const char *oid,
 }
 
 static te_errno
-ds_subnet_list(unsigned int gid, const char *oid, char **list)
+ds_subnet_list(unsigned int gid, const char *oid,
+               const char *sub_id, char **list)
 {
     te_dhcp_server_subnet  *s;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     DHCP_SERVER_INIT_CHECK;
 
@@ -1869,7 +1875,8 @@ ds_lease_get(unsigned int gid, const char *oid, char *value,
 
 /** Obtain the list of leases */
 static te_errno
-ds_lease_list(unsigned int gid, const char *oid, char **list)
+ds_lease_list(unsigned int gid, const char *oid,
+              const char *sub_id, char **list)
 {
     FILE *f;
     char *name;
@@ -1877,6 +1884,7 @@ ds_lease_list(unsigned int gid, const char *oid, char **list)
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     DHCP_SERVER_INIT_CHECK;
 

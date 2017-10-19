@@ -437,7 +437,8 @@ static te_errno env_add(unsigned int, const char *, const char *,
                    const char *);
 static te_errno env_del(unsigned int, const char *,
                    const char *);
-static te_errno env_list(unsigned int, const char *, char **);
+static te_errno env_list(unsigned int, const char *,
+                         const char *, char **);
 
 /** Environment variables hidden in list operation */
 static const char * const env_hidden[] = {
@@ -479,10 +480,11 @@ static te_errno iface_parent_get(unsigned int, const char *, char *,
 static te_errno iface_kind_get(unsigned int, const char *, char *,
                                const char *);
 
-static te_errno interface_list(unsigned int, const char *, char **);
+static te_errno interface_list(unsigned int, const char *,
+                               const char *, char **);
 
-static te_errno vlans_list(unsigned int, const char *, char **,
-                           const char*);
+static te_errno vlans_list(unsigned int, const char *,
+                           const char *, char **, const char *);
 static te_errno vlans_add(unsigned int, const char *, const char *,
                               const char *, const char *);
 static te_errno vlans_del(unsigned int, const char *, const char *,
@@ -493,7 +495,8 @@ static te_errno mcast_link_addr_add(unsigned int, const char *,
                                     const char *);
 static te_errno mcast_link_addr_del(unsigned int, const char *,
                                     const char *, const char *);
-static te_errno mcast_link_addr_list(unsigned int, const char *, char **,
+static te_errno mcast_link_addr_list(unsigned int, const char *,
+                                     const char *, char **,
                                      const char *);
 
 #ifndef __linux__
@@ -517,7 +520,8 @@ static te_errno net_addr_add(unsigned int, const char *, const char *,
                              const char *, const char *);
 static te_errno net_addr_del(unsigned int, const char *,
                              const char *, const char *);
-static te_errno net_addr_list(unsigned int, const char *, char **,
+static te_errno net_addr_list(unsigned int, const char *,
+                              const char *, char **,
                               const char *);
 
 static te_errno prefix_get(unsigned int, const char *, char *,
@@ -599,21 +603,25 @@ static te_errno neigh_add(unsigned int, const char *, const char *,
                           const char *, const char *);
 static te_errno neigh_del(unsigned int, const char *,
                           const char *, const char *);
-static te_errno neigh_list(unsigned int, const char *, char **,
+static te_errno neigh_list(unsigned int, const char *,
+                           const char *, char **,
                            const char *);
 
 /*
  * This is a bit of hack - there are same handlers for static and dynamic
  * branches, handler discovers dynamic subtree by presence of
  * "dynamic" in OID. But list method does not contain the last subid.
+ *
+ * FIXME: now there is an argument for last sub_id.
  */
 static te_errno
-neigh_dynamic_list(unsigned int gid, const char *oid, char **list,
+neigh_dynamic_list(unsigned int gid, const char *oid,
+                   const char *sub_id, char **list,
                    const char *ifname)
 {
     UNUSED(oid);
 
-    return neigh_list(gid, "dynamic", list, ifname);
+    return neigh_list(gid, "dynamic", sub_id, list, ifname);
 }
 
 static te_errno agent_platform_get(unsigned int, const char *, char *,
@@ -625,7 +633,8 @@ static te_errno agent_dir_get(unsigned int, const char *, char *,
 static te_errno nameserver_get(unsigned int, const char *, char *,
                                const char *, ...);
 
-static te_errno user_list(unsigned int, const char *, char **);
+static te_errno user_list(unsigned int, const char *,
+                          const char *, char **);
 static te_errno user_add(unsigned int, const char *, const char *,
                          const char *);
 static te_errno user_del(unsigned int, const char *, const char *);
@@ -673,7 +682,8 @@ static te_errno xen_interface_add(unsigned int, char const *, char const *,
                                   char const *, char const *);
 static te_errno xen_interface_del(unsigned int, char const *, char const *,
                                   char const *);
-static te_errno xen_interface_list(unsigned int, char const *, char **);
+static te_errno xen_interface_list(unsigned int, char const *,
+                                   const char *, char **);
 static te_errno xen_interface_get(unsigned int, char const *, char *,
                                   char const *, char const *);
 static te_errno xen_interface_set(unsigned int, char const *, char const *,
@@ -690,7 +700,8 @@ static te_errno dom_u_add(unsigned int, char const *, char const *,
                           char const *, char const *);
 static te_errno dom_u_del(unsigned int, char const *, char const *,
                           char const *);
-static te_errno dom_u_list(unsigned int, char const *, char **);
+static te_errno dom_u_list(unsigned int, char const *,
+                           const char *, char **);
 static te_errno dom_u_get(unsigned int, char const *, char *,
                           char const *, char const *);
 static te_errno dom_u_set(unsigned int, char const *, char const *,
@@ -724,7 +735,8 @@ static te_errno dom_u_bridge_add(unsigned int, char const *, char const *,
                                  char const *, char const *, char const *);
 static te_errno dom_u_bridge_del(unsigned int, char const *, char const *,
                                  char const *, char const *);
-static te_errno dom_u_bridge_list(unsigned int, char const *, char **,
+static te_errno dom_u_bridge_list(unsigned int, char const *,
+                                  const char *, char **,
                                   char const *, char const *);
 static te_errno dom_u_bridge_get(unsigned int, char const *, char *,
                                  char const *, char const *, char const *);
@@ -768,15 +780,15 @@ static te_errno dom_u_migrate_kind_set(unsigned int, char const *,
 
 RCF_PCH_CFG_NODE_RO(node_platform, "platform",
                     NULL, NULL,
-                    (rcf_ch_cfg_list)agent_platform_get);
+                    (rcf_ch_cfg_get)agent_platform_get);
 
 RCF_PCH_CFG_NODE_RO(node_dir, "dir",
                     NULL, &node_platform,
-                    (rcf_ch_cfg_list)agent_dir_get);
+                    (rcf_ch_cfg_get)agent_dir_get);
 
 RCF_PCH_CFG_NODE_RO(node_dns, "dns",
                     NULL, &node_dir,
-                    (rcf_ch_cfg_list)nameserver_get);
+                    (rcf_ch_cfg_get)nameserver_get);
 
 RCF_PCH_CFG_NODE_RW(node_rp_filter_all, "rp_filter_all",
                     NULL, &node_dns,
@@ -788,7 +800,7 @@ RCF_PCH_CFG_NODE_RW(node_arp_ignore_all, "arp_ignore_all",
 
 RCF_PCH_CFG_NODE_RO(node_neigh_state, "state",
                     NULL, NULL,
-                    (rcf_ch_cfg_list)neigh_state_get);
+                    (rcf_ch_cfg_get)neigh_state_get);
 
 static rcf_pch_cfg_object node_neigh_dynamic =
     { "neigh_dynamic", 0, &node_neigh_state, NULL,
@@ -2471,6 +2483,7 @@ vlan_ifname_get(unsigned int gid, const char *oid, char *value,
  *
  * @param gid           group identifier (unused)
  * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          location for the list pointer
  *
  * @return              Status code
@@ -2478,7 +2491,8 @@ vlan_ifname_get(unsigned int gid, const char *oid, char *value,
  * @retval TE_ENOMEM       cannot allocate memory
  */
 static te_errno
-vlans_list(unsigned int gid, const char *oid, char **list,
+vlans_list(unsigned int gid, const char *oid,
+           const char *sub_id, char **list,
            const char *ifname)
 {
     size_t n_vlans = MAX_VLANS;
@@ -2486,6 +2500,8 @@ vlans_list(unsigned int gid, const char *oid, char **list,
     te_errno rc;
 
     char *b;
+
+    UNUSED(sub_id);
 
     rc = ta_vlan_get_children(ifname, &n_vlans, vlans_buffer);
     if (rc != 0)
@@ -2767,6 +2783,7 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
  *
  * @param gid           group identifier (unused)
  * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          location for the list pointer
  *
  * @return              Status code
@@ -2774,12 +2791,14 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
  * @retval TE_ENOMEM       cannot allocate memory
  */
 static te_errno
-interface_list(unsigned int gid, const char *oid, char **list)
+interface_list(unsigned int gid, const char *oid,
+               const char *sub_id, char **list)
 {
     size_t off = 0;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     ENTRY("gid=%u oid='%s'", gid, oid);
 
@@ -3463,12 +3482,15 @@ mcast_link_addr_del(unsigned int gid, const char *oid, const char *ifname,
 }
 
 static te_errno
-mcast_link_addr_list(unsigned int gid, const char *oid, char **list,
+mcast_link_addr_list(unsigned int gid, const char *oid,
+                     const char *sub_id, char **list,
                      const char *ifname)
 {
     char       *s = NULL;
     int         sp = 0;         /* String Pointer */
     int         buf_segs = 1;
+
+    UNUSED(sub_id);
 
 #define MMAC_ADDR_BUF_SIZE 16384
 #ifndef __linux__
@@ -4119,6 +4141,8 @@ net_addr_del(unsigned int gid, const char *oid,
  * Get instance list for object "agent/interface/net_addr".
  *
  * @param id            full identifier of the father instance
+ * @param oid           OID of the parent instance
+ * @param sub_id        ID of the object to be listed
  * @param list          location for the list pointer
  * @param ifname        interface name
  *
@@ -4128,7 +4152,8 @@ net_addr_del(unsigned int gid, const char *oid,
  * @retval TE_ENOMEM        cannot allocate memory
  */
 static te_errno
-net_addr_list(unsigned int gid, const char *oid, char **list,
+net_addr_list(unsigned int gid, const char *oid,
+              const char *sub_id, char **list,
               const char *ifname)
 {
     te_errno            rc;
@@ -4140,6 +4165,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     if (list == NULL)
     {
@@ -4278,7 +4304,8 @@ net_addr_list_ifreq_cb(struct my_ifreq *ifr, void *opaque)
 }
 
 static te_errno
-net_addr_list(unsigned int gid, const char *oid, char **list,
+net_addr_list(unsigned int gid, const char *oid,
+              const char *sub_id, char **list,
               const char *ifname)
 {
     struct net_addr_list_ifreq_cb_data  cb_data;
@@ -4290,6 +4317,7 @@ net_addr_list(unsigned int gid, const char *oid, char **list,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
     {
@@ -6745,17 +6773,20 @@ ta_unix_conf_neigh_list(const char *iface, te_bool is_static, char **list);
  * Get instance list for object "agent/arp" and "agent/volatile/arp".
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instance identifier
+ * @param oid           full parent object instance identifier
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          location for the list pointer
  * @param ifname        interface name
  *
  * @return Status code
  */
 static te_errno
-neigh_list(unsigned int gid, const char *oid, char **list,
+neigh_list(unsigned int gid, const char *oid,
+           const char *sub_id, char **list,
            const char *ifname)
 {
     UNUSED(gid);
+    UNUSED(sub_id);
 
     return ta_unix_conf_neigh_list(ifname,
                                    strstr(oid, "dynamic") == NULL,
@@ -7000,13 +7031,15 @@ env_del(unsigned int gid, const char *oid, const char *name)
  * Get instance list for object "/agent/env".
  *
  * @param gid       Request's group identifier (unused)
- * @param oid       Full object instance identifier (unused)
+ * @param oid       Full parent object instance identifier (unused)
+ * @param sub_id    ID of the object to be listed (unused)
  * @param list      Location for the list pointer
  *
  * @return Status code
  */
 static te_errno
-env_list(unsigned int gid, const char *oid, char **list)
+env_list(unsigned int gid, const char *oid,
+         const char *sub_id, char **list)
 {
     char * const *env;
 
@@ -7015,6 +7048,7 @@ env_list(unsigned int gid, const char *oid, char **list)
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     if (environ == NULL)
         return 0;
@@ -7093,7 +7127,9 @@ uname_get(unsigned int gid, const char *oid, char *value)
 /**
  * Get instance list for object "agent/user".
  *
- * @param id            full identifier of the father instance
+ * @param gid           group ID
+ * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed
  * @param list          location for the list pointer
  *
  * @return              Status code:
@@ -7101,13 +7137,15 @@ uname_get(unsigned int gid, const char *oid, char *value)
  * @retval TE_ENOMEM        cannot allocate memory
  */
 static te_errno
-user_list(unsigned int gid, const char *oid, char **list)
+user_list(unsigned int gid, const char *oid,
+          const char *sub_id, char **list)
 {
     FILE *f;
     char *s = buf;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     if ((f = fopen("/etc/passwd", "r")) == NULL)
     {
@@ -9556,14 +9594,16 @@ access method is not implemented
  * List XEN virtual tested interfaces.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param oid           full parent object instance identifier (unused)
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          address of a pointer to storage allocated
  *                      for the list pointer is initialized with
  *
  * @return              Status code
  */
 static te_errno
-xen_interface_list(unsigned int gid, char const *oid, char **list)
+xen_interface_list(unsigned int gid, char const *oid,
+                   const char *sub_id, char **list)
 {
 #if XEN_SUPPORT
     unsigned int u;
@@ -9574,6 +9614,7 @@ xen_interface_list(unsigned int gid, char const *oid, char **list)
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
 #if XEN_SUPPORT
     /* Count the whole length of interface names plus one per name */
@@ -10026,14 +10067,16 @@ dom_u_del(unsigned int gid, char const *oid, char const *xen,
  * List domUs.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param oid           full parent object instance identifier (unused)
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          address of a pointer to storage allocated
  *                      for the list pointer is initialized with
  *
  * @return              Status code
  */
 static te_errno
-dom_u_list(unsigned int gid, char const *oid, char **list)
+dom_u_list(unsigned int gid, char const *oid,
+           const char *sub_id, char **list)
 {
 #if XEN_SUPPORT
     unsigned int u;
@@ -10044,6 +10087,7 @@ dom_u_list(unsigned int gid, char const *oid, char **list)
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
 #if XEN_SUPPORT
     /* Count the whole length of domU names plus one per name */
@@ -10858,14 +10902,16 @@ dom_u_bridge_del(unsigned int gid, char const *oid,
  * List domUs.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instance identifier (unused)
+ * @param oid           full parent object instance identifier (unused)
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          address of a pointer to storage allocated
  *                      for the list pointer is initialized with
  *
  * @return              Status code
  */
 static te_errno
-dom_u_bridge_list(unsigned int gid, char const *oid, char **list,
+dom_u_bridge_list(unsigned int gid, char const *oid,
+                  const char *sub_id, char **list,
                   char const *xen, char const *dom_u)
 {
 #if XEN_SUPPORT
@@ -10878,6 +10924,7 @@ dom_u_bridge_list(unsigned int gid, char const *oid, char **list,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(xen);
 
 #if XEN_SUPPORT

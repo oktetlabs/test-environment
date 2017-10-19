@@ -52,8 +52,10 @@
 /** Auxiliary buffer used to construct strings. */
 static char buf[4096];
 
-static te_errno module_list(unsigned int, const char *, char **);
-static te_errno module_param_list(unsigned int, const char *, char **,
+static te_errno module_list(unsigned int, const char *,
+                            const char *, char **);
+static te_errno module_param_list(unsigned int, const char *,
+                                  const char *, char **,
                                   const char *);
 static te_errno module_param_get(unsigned int, const char *, char *,
                                  const char *, const char *);
@@ -93,15 +95,18 @@ module_list_include_callback(const char *module_name, void *data)
  *
  * @param gid           Group identifier (unused).
  * @param oid           Full identifier of the father instance (unused).
+ * @param sub_id        ID of the object to be listed (unused).
  * @param list          Where to save the list.
  *
  * @return Status code.
  */
 static te_errno
-module_list(unsigned int gid, const char *oid, char **list)
+module_list(unsigned int gid, const char *oid,
+            const char *sub_id, char **list)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
 #ifdef __linux__
     {
@@ -129,17 +134,20 @@ module_list(unsigned int gid, const char *oid, char **list)
  *
  * @param gid           Group identifier (unused).
  * @param oid           Full identifier of the father instance (unused).
+ * @param sub_id        ID of the object to be listed (unused).
  * @param list          Where to save the list.
  * @param module_name   Name of the module.
  *
  * @return Status code.
  */
 static te_errno
-module_param_list(unsigned int gid, const char *oid, char **list,
+module_param_list(unsigned int gid, const char *oid,
+                  const char *sub_id, char **list,
                   const char *module_name)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
 #ifdef __linux__
     {

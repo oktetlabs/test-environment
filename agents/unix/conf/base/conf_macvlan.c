@@ -142,19 +142,22 @@ macvlan_get(unsigned int gid, const char *oid, char *mode,
 /**
  * Get MAC VLAN interfaces list.
  *
- * @param gid   Group identifier (unused)
- * @param oid   Full identifier of the father instance (unused)
- * @param list  Location for the list pointer
- * @param link  Parent (link) interface name
+ * @param gid     Group identifier (unused)
+ * @param oid     Full identifier of the father instance (unused)
+ * @param sub_id  ID of the object to be listed (unused)
+ * @param list    Location for the list pointer
+ * @param link    Parent (link) interface name
  *
  * @return      Status code
  */
 static te_errno
-macvlan_list(unsigned int gid, const char *oid, char **list,
+macvlan_list(unsigned int gid, const char *oid,
+             const char *sub_id, char **list,
              const char *link)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     return netconf_macvlan_list(nh, link, list);
 }

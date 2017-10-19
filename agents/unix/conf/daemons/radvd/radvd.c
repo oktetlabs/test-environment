@@ -1238,13 +1238,15 @@ ds_interface_del(unsigned int gid, const char *oid,
 }
 
 static te_errno
-ds_interface_list(unsigned int gid, const char *oid, char **list,
+ds_interface_list(unsigned int gid, const char *oid,
+                  const char *sub_id, char **list,
                   const char *radvd)
 {
     te_radvd_interface  *radvd_if;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(radvd);
 
     radvd_init_check(TRUE);
@@ -1380,15 +1382,15 @@ ds_interface_option_del(unsigned int gid, const char *oid,
 
 static te_errno
 ds_interface_option_list(unsigned int gid, const char *oid,
-                         char **list,
-                        const char *radvd,
-                        const char *ifname)
+                         const char *sub_id, char **list,
+                         const char *radvd, const char *ifname)
 {
     te_radvd_interface *radvd_if;
     te_radvd_option    *option;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(radvd);
 
     FIND_RADVD_IF(TRUE);
@@ -1469,15 +1471,15 @@ ds_prefix_del(unsigned int gid, const char *oid,
 
 static te_errno
 ds_prefix_list(unsigned int gid, const char *oid,
-                         char **list,
-                        const char *radvd,
-                        const char *ifname)
+               const char *sub_id, char **list,
+               const char *radvd, const char *ifname)
 {
     te_radvd_interface     *radvd_if;
     te_radvd_subnet        *prefix;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(radvd);
 
     radvd_init_check(TRUE);
@@ -1560,15 +1562,15 @@ ds_route_del(unsigned int gid, const char *oid,
 
 static te_errno
 ds_route_list(unsigned int gid, const char *oid,
-                         char **list,
-                        const char *radvd,
-                        const char *ifname)
+              const char *sub_id, char **list,
+              const char *radvd, const char *ifname)
 {
     te_radvd_interface     *radvd_if;
     te_radvd_subnet        *route;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(radvd);
 
     radvd_init_check(TRUE);
@@ -1697,15 +1699,15 @@ ds_rdnss_del(unsigned int gid, const char *oid,
 
 static te_errno
 ds_rdnss_list(unsigned int gid, const char *oid,
-                         char **list,
-                        const char *radvd,
-                        const char *ifname)
+              const char *sub_id, char **list,
+              const char *radvd, const char *ifname)
 {
     te_radvd_interface     *radvd_if;
     te_radvd_subnet        *rdnss;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(radvd);
 
     radvd_init_check(TRUE);
@@ -1973,10 +1975,10 @@ ds_prefix_option_del(unsigned int gid, const char *oid,
 
 static te_errno
 ds_prefix_option_list(unsigned int gid, const char *oid,
-                         char **list,
-                        const char *radvd,
-                        const char *ifname,
-                        const char *prefix_name)
+                      const char *sub_id, char **list,
+                      const char *radvd,
+                      const char *ifname,
+                      const char *prefix_name)
 {
     te_radvd_interface *radvd_if;
     te_radvd_subnet    *prefix;
@@ -1984,6 +1986,7 @@ ds_prefix_option_list(unsigned int gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(radvd);
 
     FIND_RADVD_IF(TRUE);
@@ -2148,10 +2151,10 @@ ds_route_option_del(unsigned int gid, const char *oid,
 
 static te_errno
 ds_route_option_list(unsigned int gid, const char *oid,
-                         char **list,
-                        const char *radvd,
-                        const char *ifname,
-                        const char *route_name)
+                     const char *sub_id, char **list,
+                     const char *radvd,
+                     const char *ifname,
+                     const char *route_name)
 {
     te_radvd_interface *radvd_if;
     te_radvd_subnet    *route;
@@ -2159,6 +2162,7 @@ ds_route_option_list(unsigned int gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(radvd);
 
     FIND_RADVD_IF(TRUE);
@@ -2323,10 +2327,10 @@ ds_rdnss_option_del(unsigned int gid, const char *oid,
 
 static te_errno
 ds_rdnss_option_list(unsigned int gid, const char *oid,
-                         char **list,
-                        const char *radvd,
-                        const char *ifname,
-                        const char *rdnss_name)
+                     const char *sub_id, char **list,
+                     const char *radvd,
+                     const char *ifname,
+                     const char *rdnss_name)
 {
     te_radvd_interface *radvd_if;
     te_radvd_subnet    *rdnss;
@@ -2334,6 +2338,7 @@ ds_rdnss_option_list(unsigned int gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(radvd);
 
     FIND_RADVD_IF(TRUE);

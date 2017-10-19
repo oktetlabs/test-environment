@@ -66,7 +66,8 @@ static char iptables_tool_options[RCF_MAX_VAL];
  * Methods
  */
 
-static te_errno iptables_table_list(unsigned int, const char *, char **,
+static te_errno iptables_table_list(unsigned int, const char *,
+                                    const char *, char **,
                                     const char *);
 
 static te_errno iptables_chain_get(unsigned int, const char *, char *,
@@ -85,8 +86,8 @@ static te_errno iptables_chain_del(unsigned int, const char *, const char *,
                                    const char *, const char *,
                                    const char *);
 
-static te_errno iptables_chain_list(unsigned int, const char *, char **,
-                                    const char *, const char *,
+static te_errno iptables_chain_list(unsigned int, const char *, const char *,
+                                    char **, const char *, const char *,
                                     const char *);
 
 static te_errno iptables_rules_get(unsigned int, const char *, char *,
@@ -142,19 +143,23 @@ RCF_PCH_CFG_NODE_NA(node_iptables, "iptables",
  * Obtain list of built-in iptables tables.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full parent object instence identifier (unused)
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          location for the list pointer
  * @param ifname        interface name (unused)
  *
  * @return              Status code
  */
 static te_errno
-iptables_table_list(unsigned int  gid, const char *oid, char **list,
+iptables_table_list(unsigned int  gid, const char *oid,
+                    const char *sub_id, char **list,
                     const char *ifname)
 {
     static char *table_list = "filter mangle nat raw";
 
     INFO("%s started", __FUNCTION__);
+
+    UNUSED(sub_id);
 
     *list = strdup(table_list);
     if (*list == NULL)
@@ -503,6 +508,7 @@ chomp(char *buf)
  *
  * @param gid           group identifier (unused)
  * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          location of the chains list
  * @param ifname        interface name to operate the chain linked to
  * @param dummy         unused value, corresponding to .../iptables: node
@@ -511,9 +517,10 @@ chomp(char *buf)
  * @return              Status code
  */
 static te_errno
-iptables_chain_list(unsigned int  gid, const char *oid, char **list,
-                    const char   *ifname, const char *dummy,
-                    const char   *table)
+iptables_chain_list(unsigned int  gid, const char *oid,
+                    const char *sub_id, char **list,
+                    const char *ifname, const char *dummy,
+                    const char *table)
 {
     int       rc        = 0;
     FILE     *fp;
@@ -526,6 +533,7 @@ iptables_chain_list(unsigned int  gid, const char *oid, char **list,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(dummy);
 
     INFO("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);

@@ -154,9 +154,11 @@ static te_errno phy_modes_speed_duplex_set(unsigned int, const char *,
                                            const char *, const char *);
 
 static te_errno phy_modes_speed_duplex_list(unsigned int, const char *,
-                                            char **, const char *);
+                                            const char *, char **,
+                                            const char *);
 
-static te_errno phy_modes_speed_list(unsigned int, const char *, char **,
+static te_errno phy_modes_speed_list(unsigned int, const char *,
+                                     const char *, char **,
                                      const char *);
 
 
@@ -1241,17 +1243,20 @@ phy_modes_list_ins_value(char **list, char *value)
  * modes (object "agent/interface/phy/speed/duplex").
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instance identifier
+ * @param oid           full parent object instance identifier
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          location for the list pointer
  * @param ifname        interface name
  *
  * @return Status code
  */
 static te_errno
-phy_modes_speed_duplex_list(unsigned int gid, const char *oid, char **list,
+phy_modes_speed_duplex_list(unsigned int gid, const char *oid,
+                            const char *sub_id, char **list,
                             const char *ifname)
 {
     UNUSED(gid);
+    UNUSED(sub_id);
 #if defined __linux__
     struct ethtool_cmd  ecmd;
     char               *speed_pattern = "speed:";
@@ -1302,17 +1307,20 @@ phy_modes_speed_duplex_list(unsigned int gid, const char *oid, char **list,
  * Get instance list for object "agent/interface/phy/speed".
  *
  * @param id            full identifier of the father instance
+ * @param sub_id        ID of the object to be listed
  * @param list          location for the list pointer
  * @param ifname        interface name
  *
  * @return Status code
  */
 static te_errno
-phy_modes_speed_list(unsigned int gid, const char *oid, char **list,
+phy_modes_speed_list(unsigned int gid, const char *oid,
+                     const char *sub_id, char **list,
                      const char *ifname)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     
 #if defined __linux__
     struct ethtool_cmd  ecmd;

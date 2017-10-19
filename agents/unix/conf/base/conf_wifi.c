@@ -1034,14 +1034,16 @@ parse_wep_key_index(const char *in_value, int *out_value)
  * Determine if interface supports wireless extension or not.
  *
  * @param gid     group identifier (unused)
- * @param oid     full object instence identifier
+ * @param oid     full parent object instance identifier
+ * @param sub_id  ID of the object to be listed (unused)
  * @param list    location for the list pointer
  * @param ifname  interface name
  *
  * @return error code
  */
 static te_errno
-wifi_list(unsigned int gid, const char *oid, char **list,
+wifi_list(unsigned int gid, const char *oid,
+          const char *sub_id, char **list,
           const char *ifname)
 {
     wifi_sta_info_t *info;
@@ -1050,6 +1052,7 @@ wifi_list(unsigned int gid, const char *oid, char **list,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     if ((rc = wifi_get_item(ifname, SIOCGIWNAME, &wrq)) != 0)
     {
@@ -1268,18 +1271,21 @@ wifi_wep_key_set(unsigned int gid, const char *oid, char *value,
  * in the system).
  *
  * @param gid     group identifier (unused)
- * @param oid     full object instence identifier
+ * @param oid     full parent object instance identifier (unused)
+ * @param sub_id  ID of the object to be listed (unused)
  * @param list    location for the list pointer
  * @param ifname  interface name
  *
  * @return error code
  */
 static te_errno
-wifi_wep_key_list(unsigned int gid, const char *oid, char **list,
+wifi_wep_key_list(unsigned int gid, const char *oid,
+                  const char *sub_id, char **list,
                   const char *ifname)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(ifname);
 
     /* Any interface supporting WEP should keep four default WEP keys */

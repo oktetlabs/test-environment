@@ -660,19 +660,22 @@ aggregation_del(unsigned int gid, const char *oid, const char *aggr_name)
  * List all aggregations
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full parent object instance identifier (unused)
+ * @param sub_id        ID of the object to be listed (unused)
  * @param aggr_list     Location for the list pointer
  *
  * @return              Status code
  */
 static te_errno 
-aggregation_list(unsigned int gid, const char *oid, char **aggr_list)
+aggregation_list(unsigned int gid, const char *oid,
+                 const char *sub_id, char **aggr_list)
 {
     aggregation *a;
     char        *ptr = buf;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     for (a = aggregation_list_head; a != NULL; a = a->next, *(ptr++) = ' ')
     {
@@ -759,18 +762,21 @@ aggr_member_del(unsigned int gid, const char *oid,
  * List all members of the aggregation
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full parent object instance identifier (unused)
+ * @param sub_id        ID of the object to be listed (unused)
  * @param member_list   Location for the list pointer
  * @param aggr_name     name of aggregation
  *
  * @return              status code
  */
 static te_errno 
-aggr_member_list(unsigned int gid, const char *oid, char **member_list,
-                const char *aggr_name)
+aggr_member_list(unsigned int gid, const char *oid,
+                 const char *sub_id, char **member_list,
+                 const char *aggr_name)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     aggregation *a = aggregation_find(aggr_name);
     if (a == NULL)

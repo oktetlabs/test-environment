@@ -159,7 +159,8 @@ extern int rcf_pch_configure(struct rcf_comm_connection *conn,
  * This function complies with rcf_ch_cfg_list prototype.
  * 
  * @param gid       group identifier
- * @param oid       full object instance identifier
+ * @param oid       full parent object instance identifier
+ * @param sub_id    ID of the object to be listed
  * @param list      (OUT) location for pointer to string with space
  *                  separated list (should be allocated using malloc())
  *
@@ -167,7 +168,7 @@ extern int rcf_pch_configure(struct rcf_comm_connection *conn,
  * @retval TE_ENOMEM   memory allocation failure
  */
 extern te_errno rcf_pch_agent_list(unsigned int gid, const char *oid,
-                                   char **list);
+                                   const char *sub_id, char **list);
 
 /**
  * Default file processing handler.

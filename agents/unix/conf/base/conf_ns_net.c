@@ -467,6 +467,7 @@ netns_interface_del(unsigned int gid, const char *oid, const char *ns,
  *
  * @param gid       Group identifier (unused).
  * @param oid       Full identifier of the father instance (unused).
+ * @param sub_id    ID of the object to be listed (unused).
  * @param list      Where to save the list.
  * @param ns        Namespace configurator instance (unused).
  * @param ns_name   The namespace name.
@@ -474,7 +475,8 @@ netns_interface_del(unsigned int gid, const char *oid, const char *ns,
  * @return Status code.
  */
 static te_errno
-netns_interface_list(unsigned int gid, const char *oid, char **list,
+netns_interface_list(unsigned int gid, const char *oid,
+                     const char *sub_id, char **list,
                      const char *ns, const char *ns_name)
 {
     netns_namespace *netns;
@@ -484,6 +486,7 @@ netns_interface_list(unsigned int gid, const char *oid, char **list,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(ns);
 
     rc = netns_namespace_find_by_name(ns_name, &netns);
@@ -713,21 +716,24 @@ netns_check_rsrc_cb(const char *ns_name, void *data)
 /**
  * Get list of network namespaces.
  *
- * @param gid   Group identifier (unused).
- * @param oid   Full identifier of the father instance (unused).
- * @param list  Where to save the list.
- * @param ns    Namespace configurator instance (unused).
+ * @param gid     Group identifier (unused).
+ * @param oid     Full identifier of the father instance (unused).
+ * @param sub_id  ID of the object to be listed (unused).
+ * @param list    Where to save the list.
+ * @param ns      Namespace configurator instance (unused).
  *
  * @return Status code.
  */
 static te_errno
-netns_list(unsigned int gid, const char *oid, char **list, const char *ns)
+netns_list(unsigned int gid, const char *oid,
+           const char *sub_id, char **list, const char *ns)
 {
     te_errno  rc;
     char      list_buf[NETNS_LIST_BUF_SIZE];
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(ns);
 
     rc = get_dir_list(NETNS_FDS_DIR, list_buf, sizeof(list_buf), TRUE,

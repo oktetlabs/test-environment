@@ -747,6 +747,7 @@ pppoe_server_option_del(unsigned int gid, const char *oid,
  *
  * @param gid           group identifier (unused)
  * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          location for options list
  * @param pppoe_name    dummy parameter due to name of ppppoeserver instance
  *                      name is always empty
@@ -754,7 +755,8 @@ pppoe_server_option_del(unsigned int gid, const char *oid,
  * @return status code
  */
 static te_errno
-pppoe_server_option_list(unsigned int gid, const char *oid, char **list,
+pppoe_server_option_list(unsigned int gid, const char *oid,
+                         const char *sub_id, char **list,
                          const char *pppoe_name)
 {
     te_pppoe_server *pppoe = pppoe_server_find();
@@ -764,6 +766,7 @@ pppoe_server_option_list(unsigned int gid, const char *oid, char **list,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(pppoe_name);
 
     ENTRY("List pppoe server options");
@@ -902,16 +905,18 @@ pppoe_server_ifs_del(unsigned int gid, const char *oid,
 /**
  * List callback for /agent/pppoeserver/interface node.
  *
- * @param gid   group identifier (unused)
- * @param oid   full identifier of the father instance
- * @param list  location to the pppoe server interfaces list
+ * @param gid           group identifier (unused)
+ * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed (unused)
+ * @param list          location to the pppoe server interfaces list
  * @param pppoe_name    dummy parameter due to name of ppppoeserver instance
  *                      name is always empty
  *
  * @return status code
  */
 static te_errno
-pppoe_server_ifs_list(unsigned int gid, const char *oid, char **list,
+pppoe_server_ifs_list(unsigned int gid, const char *oid,
+                      const char *sub_id, char **list,
                       const char *pppoe_name)
 {
     te_pppoe_server *pppoe = pppoe_server_find();
@@ -921,6 +926,7 @@ pppoe_server_ifs_list(unsigned int gid, const char *oid, char **list,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(pppoe_name);
 
     ENTRY("List pppoe server interfaces");

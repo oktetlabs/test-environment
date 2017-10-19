@@ -298,7 +298,7 @@ iscsi_conn_del(unsigned int gid, const char *oid,
 
 static te_errno
 iscsi_conn_list(unsigned int gid, const char *oid,
-                char **list, const char *instance, ...)
+                const char *sub_id, char **list, const char *instance, ...)
 {
     int   cid;
     int   tgt_id = iscsi_get_target_id(oid);
@@ -306,6 +306,7 @@ iscsi_conn_list(unsigned int gid, const char *oid,
     char  conn[15];
     
     UNUSED(gid);
+    UNUSED(sub_id);
     UNUSED(instance);
     
     conns_list[0] = '\0';
@@ -386,7 +387,8 @@ iscsi_target_data_del(unsigned int gid, const char *oid,
 
 static te_errno
 iscsi_target_data_list(unsigned int gid, const char *oid,
-                       char **list, const char *instance, ...)
+                       const char *sub_id, char **list,
+                       const char *instance, ...)
 {
     int   id;
     char  targets_list[ISCSI_MAX_TARGETS_NUMBER * 15];
@@ -394,6 +396,7 @@ iscsi_target_data_list(unsigned int gid, const char *oid,
     
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(instance);
     
     targets_list[0] = '\0';

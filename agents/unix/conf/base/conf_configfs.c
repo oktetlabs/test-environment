@@ -215,15 +215,18 @@ configfs_get(unsigned int gid, const char *oid, char *value,
  *
  * @param gid           group identifier (unused)
  * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          location for the list pointer
  *
  * @return              Status code
  */
 static te_errno 
-configfs_list(unsigned int gid, const char *oid, char **list)
+configfs_list(unsigned int gid, const char *oid,
+              const char *sub_id, char **list)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     if (list == NULL)
     {

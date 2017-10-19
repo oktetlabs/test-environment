@@ -410,11 +410,14 @@ vtund_server_session_del(unsigned int gid, const char *oid,
 }
 
 static te_errno
-vtund_server_session_list(unsigned int gid, const char *oid, char **list,
+vtund_server_session_list(unsigned int gid, const char *oid,
+                          const char *sub_id, char **list,
                           const char *vtund, const char *server_port)
 {
     vtund_server           *srv;
     vtund_server_session   *p;
+
+    UNUSED(sub_id);
 
     *buf = '\0';
 
@@ -687,12 +690,14 @@ vtund_server_del(unsigned int gid, const char *oid,
 }
 
 static te_errno
-vtund_server_list(unsigned int gid, const char *oid, char **list)
+vtund_server_list(unsigned int gid, const char *oid,
+                  const char *sub_id, char **list)
 {
     vtund_server *p;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     
     *buf = '\0';
     SLIST_FOREACH(p, &servers, links)
@@ -1083,12 +1088,14 @@ vtund_client_del(unsigned int gid, const char *oid,
 }
 
 static te_errno
-vtund_client_list(unsigned int gid, const char *oid, char **list)
+vtund_client_list(unsigned int gid, const char *oid,
+                  const char *sub_id, char **list)
 {
     vtund_client *p;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     
     *buf = '\0';
     SLIST_FOREACH(p, &clients, links)

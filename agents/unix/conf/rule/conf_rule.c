@@ -182,15 +182,18 @@ rule_del(unsigned int gid, const char *oid, const char *rule)
  *
  * @param gid           Group identifier (unused)
  * @param oid           Full identifier of the father instance (unused)
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          Location for the list pointer
  *
  * @return              Status code
  */
 static te_errno
-rule_list(unsigned int gid, const char *oid, char **list)
+rule_list(unsigned int gid, const char *oid,
+          const char *sub_id, char **list)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     return ta_unix_conf_rule_list(list);
 }

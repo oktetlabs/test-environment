@@ -81,7 +81,8 @@ static te_errno rpcserver_plugin_add(
 static te_errno rpcserver_plugin_del(
         unsigned int, const char *, const char *);
 static te_errno rpcserver_plugin_list(
-        unsigned int, const char *, char **);
+        unsigned int, const char *,
+        const char *, char **);
 static te_errno rpcserver_plugin_install_get(
         unsigned int, const char *, char *, const char *);
 static te_errno rpcserver_plugin_install_set(
@@ -227,13 +228,15 @@ rpcserver_plugin_del(unsigned int gid, const char *oid, const char *name)
  * Collect the list of RPC server plugin names.
  *
  * @param gid           Group identifier (unused)
- * @param oid           Full object instence identifier (unused)
+ * @param oid           Full parent object instance identifier (unused)
+ * @Param sub_id        ID of the object to be listed (unused)
  * @param list          The list of RPC server plugin names
  *
  * @return Status code
  */
 static te_errno
-rpcserver_plugin_list(unsigned int gid, const char *oid, char **list)
+rpcserver_plugin_list(unsigned int gid, const char *oid,
+                      const char *sub_id, char **list)
 {
     rpcserver_plugin *plugin;
 
@@ -244,6 +247,7 @@ rpcserver_plugin_list(unsigned int gid, const char *oid, char **list)
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     buf = TE_ALLOC(buflen);
     if (buf == NULL)

@@ -188,13 +188,15 @@ ds_slapd_del(unsigned int gid, const char *oid, const char *port)
  * Return list of slapd daemons.
  *
  * @param gid           group identifier (unused)
- * @param oid           full object instence identifier (unused)
+ * @param oid           full parent object instance identifier (unused)
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          location for the list pointer
  *
  * @return error code
  */
 static te_errno
-ds_slapd_list(unsigned int gid, const char *oid, char **list)
+ds_slapd_list(unsigned int gid, const char *oid,
+              const char *sub_id, char **list)
 {
     FILE *f;
     char  line[128];
@@ -204,6 +206,7 @@ ds_slapd_list(unsigned int gid, const char *oid, char **list)
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     if ((rc = ta_popen_r(PS_ALL_ARGS " | grep 'slapd ' | grep -v grep",
                          &cmd_pid, &f)) < 0)

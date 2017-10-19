@@ -1474,6 +1474,7 @@ l2tp_global_port_set(unsigned int gid, const char *oid, const char *value,
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed
  * @param list          location of the lns sections list
  * @param l2tp_name     name of the l2tp instance is always empty
 
@@ -1481,6 +1482,7 @@ l2tp_global_port_set(unsigned int gid, const char *oid, const char *value,
  */
 static te_errno
 l2tp_lns_section_list(unsigned int gid, const char *oid,
+                      const char *sub_id,
                       char **list, const char *l2tp_name)
 {
     te_l2tp_server  *l2tp = l2tp_server_find();
@@ -1490,6 +1492,7 @@ l2tp_lns_section_list(unsigned int gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(l2tp_name);
 
     SLIST_FOREACH(l2tp_section, &l2tp->section, list)
@@ -1961,6 +1964,7 @@ l2tp_lns_bit_del(unsigned int gid, const char *oid,
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed
  * @param list          location of the lns sections list
  * @param l2tp_name     name of the l2tp instance is always empty
 
@@ -1968,6 +1972,7 @@ l2tp_lns_bit_del(unsigned int gid, const char *oid,
  */
 static te_errno
 l2tp_lns_bit_list(unsigned int gid, const char *oid,
+                  const char *sub_id,
                   char **list, const char *l2tp_name,
                   const char *lns_name)
 {
@@ -1979,6 +1984,7 @@ l2tp_lns_bit_list(unsigned int gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(l2tp_name);
 
     SLIST_FOREACH(l2tp_option, &l2tp_section->l2tp_option, list)
@@ -2497,6 +2503,7 @@ l2tp_lns_range_list_routine(const char *lns_name, const char *option_name)
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed
  * @param list          location of the lns sections list
  * @param l2tp_name     name of the l2tp instance is always empty
  * @param lns_name      name of the lns instance
@@ -2505,11 +2512,13 @@ l2tp_lns_range_list_routine(const char *lns_name, const char *option_name)
  */
 static te_errno
 l2tp_lns_lac_range_list(unsigned int gid, const char *oid,
+                        const char *sub_id,
                         char **list, const char *l2tp_name,
                         const char *lns_name)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(l2tp_name);
 
     *list = l2tp_lns_range_list_routine(lns_name, "lac range");
@@ -2522,6 +2531,7 @@ l2tp_lns_lac_range_list(unsigned int gid, const char *oid,
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed
  * @param list          location of the lns sections list
  * @param l2tp_name     name of the l2tp instance is always empty
  * @param lns_name      name of the lns instance
@@ -2530,11 +2540,13 @@ l2tp_lns_lac_range_list(unsigned int gid, const char *oid,
  */
 static te_errno
 l2tp_lns_ip_range_list(unsigned int gid, const char *oid,
+                       const char *sub_id,
                        char **list, const char *l2tp_name,
                        const char *lns_name)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(l2tp_name);
 
     *list = l2tp_lns_range_list_routine(lns_name, "ip range");
@@ -2740,6 +2752,7 @@ l2tp_lns_pppopt_del(unsigned int gid, const char *oid,
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed
  * @param list          location of the option list
  * @param l2tp_name     name of the l2tp instance is always empty
  * @param lns_name      name of the lns
@@ -2748,6 +2761,7 @@ l2tp_lns_pppopt_del(unsigned int gid, const char *oid,
  */
 static te_errno
 l2tp_lns_pppopt_list(unsigned int gid, const char *oid,
+                     const char *sub_id,
                      char **list, const char *l2tp_name,
                      const char *lns_name)
 {
@@ -2759,6 +2773,7 @@ l2tp_lns_pppopt_list(unsigned int gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(l2tp_name);
 
     SLIST_FOREACH(l2tp_option, &l2tp_section->l2tp_option, list)
@@ -2868,6 +2883,7 @@ l2tp_lns_client_del(unsigned int gid, const char *oid,
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed
  * @param list          location of the lns sections list
  * @param l2tp_name     name of the l2tp instance is always empty
  * @param lns_name      name of the lns instance
@@ -2875,7 +2891,7 @@ l2tp_lns_client_del(unsigned int gid, const char *oid,
  * @return status code
  */
 static te_errno
-l2tp_lns_client_list(unsigned int gid, const char *oid,
+l2tp_lns_client_list(unsigned int gid, const char *oid, const char *sub_id,
                      char **list, const char *l2tp_name, const char *lns_name,
                      const char *auth_type)
 {
@@ -2888,6 +2904,7 @@ l2tp_lns_client_list(unsigned int gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(l2tp_name);
 
     SLIST_FOREACH(l2tp_client, &auth->secret, list)
@@ -2996,6 +3013,7 @@ l2tp_lns_auth_del(unsigned int gid, const char *oid, const char *l2tp_name,
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed
  * @param list          location of the lns sections list
  * @param l2tp_name     name of the l2tp instance is always empty
  * @param lns_name      name of the lns instance
@@ -3004,6 +3022,7 @@ l2tp_lns_auth_del(unsigned int gid, const char *oid, const char *l2tp_name,
  */
 static te_errno
 l2tp_lns_auth_list(unsigned int gid, const char *oid,
+                   const char *sub_id,
                    char **list, const char *l2tp_name,
                    const char *lns_name)
 {
@@ -3015,6 +3034,7 @@ l2tp_lns_auth_list(unsigned int gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(l2tp_name);
 
     SLIST_FOREACH(auth, &l2tp_section->auth_opts, list)
@@ -3453,6 +3473,7 @@ te_l2tp_clients_add(te_l2tp_server *l2tp)
  *
  * @param gid           group identifier
  * @param oid           full identifier of the father instance
+ * @param sub_id        ID of the object to be listed
  * @param list          location of the connected clients
  * @param l2tp_name     name of the l2tp instance is always empty
 
@@ -3460,6 +3481,7 @@ te_l2tp_clients_add(te_l2tp_server *l2tp)
  */
 static te_errno
 l2tp_lns_connected_list(unsigned int gid, const char *oid,
+                        const char *sub_id,
                         char **list, const char *l2tp_name)
 {
     te_l2tp_connected *l2tp_connected;
@@ -3469,6 +3491,7 @@ l2tp_lns_connected_list(unsigned int gid, const char *oid,
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(l2tp_name);
 
     rc = te_l2tp_clients_add(l2tp);

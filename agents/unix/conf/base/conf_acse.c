@@ -290,7 +290,8 @@ acs_cpe_del(unsigned int gid, char const *oid,
  * Get the list of acs cpe instances.
  *
  * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
+ * @param oid           Parent object identifier (unused)
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          The list of acs cpe instances
  * @param acse          Name of the acse instance (unused)
  * @param acs           Name of the acs instance
@@ -298,11 +299,12 @@ acs_cpe_del(unsigned int gid, char const *oid,
  * @return              Status code
  */
 static te_errno
-acs_cpe_list(unsigned int gid, char const *oid,
+acs_cpe_list(unsigned int gid, char const *oid, const char *sub_id,
              char **list, char const *acse, char const *acs)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(acse);
 
     return call_list(list, acs);
@@ -367,7 +369,8 @@ acse_acs_del(unsigned int gid, char const *oid,
  * Get the list of acs instances.
  *
  * @param gid           Group identifier (unused)
- * @param oid           Object identifier (unused)
+ * @param oid           Parent object identifier (unused)
+ * @param sub_id        ID of the object to be listed (unused)
  * @param list          The list of acs instances
  * @param acse          Name of the acse instance (unused)
  *
@@ -375,10 +378,12 @@ acse_acs_del(unsigned int gid, char const *oid,
  */
 static te_errno
 acse_acs_list(unsigned int gid, char const *oid,
+              const char *sub_id,
               char **list, char const *acse)
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
     UNUSED(acse);
 
     return call_list(list, NULL);

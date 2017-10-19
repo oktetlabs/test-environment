@@ -210,13 +210,15 @@ cmd_monitor_del(unsigned int gid, const char *oid, const char *name)
  * Get list of names of all command monitor objects
  *
  * @param gid         Group identifier (unused)
- * @param oid         Full object instance identifier (unused)
+ * @param oid         Full parent object instance identifier (unused)
+ * @param sub_id      ID of the object to be listed (unused)
  * @param list [out]  Location for the list
  *
  * @return 0 on success or error code on failure
  */
 static te_errno
-cmd_monitors_list(unsigned int gid, const char *oid, char **list)
+cmd_monitors_list(unsigned int gid, const char *oid, const char *sub_id,
+                  char **list)
 {
     cmd_monitor_t    *monitor;
     size_t            list_size = 0;
@@ -224,6 +226,7 @@ cmd_monitors_list(unsigned int gid, const char *oid, char **list)
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(sub_id);
 
     *list = NULL;
 
