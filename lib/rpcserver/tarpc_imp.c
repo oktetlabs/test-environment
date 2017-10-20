@@ -2878,6 +2878,14 @@ TARPC_FUNC(signal,
 
 /*-------------- bsd_signal() --------------------------------*/
 
+/*
+ * bsd_signal() declaration in /usr/include/signal.h may be disabled
+ * with recent libc because it was removed in POSIX.1-2008.
+ */
+#ifdef __USE_XOPEN2K8
+extern sighandler_t bsd_signal(int signum, sighandler_t handler);
+#endif
+
 TARPC_FUNC(bsd_signal,
 {
     if (in->signum == RPC_SIGINT)
