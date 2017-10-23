@@ -46,7 +46,7 @@
 
 /* UNIX branching heritage: PATH_MAX can still be undefined here yet */
 #if !defined(PATH_MAX)
-#define PATH_MAX 108
+#define PATH_MAX 1024
 #endif
 
 #ifdef __cplusplus

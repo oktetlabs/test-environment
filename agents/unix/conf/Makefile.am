@@ -33,6 +33,7 @@ libconf_a_SOURCES = \
 	base/conf_eth.c \
 	base/conf_stats.c \
 	base/conf_sys.c \
+	base/conf_sys_tree.c \
 	base/conf_phy.c \
 	base/conf_netconsole.c \
 	base/conf_configfs.c \

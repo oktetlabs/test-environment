@@ -1224,6 +1224,45 @@
          Value: Value of the parameter -->
     <object oid="/agent/module/parameter" access="read_write" type="string"/>
 
+    <!-- System settings from /proc/sys/.
+         Name: empty -->
+    <object oid="/agent/sys" access="read_only" type="none"/>
+
+    <!-- Objects corressponding to files under /proc/sys/net.
+
+         To make particular parameter from /proc/sys/net/* paths
+         available, you should also register an object named after
+         that parameter under appropriate object corresponding
+         to a directory. -->
+
+    <!-- System settings from /proc/sys/net/.
+         Name: empty -->
+    <object oid="/agent/sys/net" access="read_only" type="none"/>
+
+    <!-- System settings from /proc/sys/net/core/.
+         Name: empty -->
+    <object oid="/agent/sys/net/core" access="read_only" type="none"/>
+
+    <!-- System settings from /proc/sys/net/ipv4/.
+         Name: empty -->
+    <object oid="/agent/sys/net/ipv4" access="read_only" type="none"/>
+
+    <!-- System settings from /proc/sys/net/ipv4/conf/.
+         Name: name of a directory under */conf/ -->
+    <object oid="/agent/sys/net/ipv4/conf" access="read_only" type="none">
+      <depends oid="/agent/rsrc"/>
+    </object>
+
+    <!-- System settings from /proc/sys/net/ipv4/neigh/.
+         Name: name of a directory under */neigh/ -->
+    <object oid="/agent/sys/net/ipv4/neigh" access="read_only" type="none">
+      <depends oid="/agent/rsrc"/>
+    </object>
+
+    <!-- System settings from /proc/sys/net/ipv4/route/.
+         Name: empty -->
+    <object oid="/agent/sys/net/ipv4/route" access="read_only" type="none"/>
+
     <!-- Volatile engine data root. 
          Name: empty
          -->

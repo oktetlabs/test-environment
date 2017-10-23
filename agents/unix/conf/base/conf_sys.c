@@ -1,7 +1,8 @@
 /** @file
  * @brief Some system wide settings
  *
- * Unix TA system wide settings support
+ * Unix TA system wide settings support. Objects defined in
+ * this file are obsolete; new interface is defined in conf_sys_tree.c
  *
  *
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
