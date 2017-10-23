@@ -986,58 +986,70 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
 #undef ALL_INST_NAMES
 }
 
-/**
- * Add subtree into the configuration tree.
- *
- * @param father        OID of father
- * @param node          node to be inserted
- *
- * @return Status code
- */
-te_errno 
-rcf_pch_add_node(const char *father, rcf_pch_cfg_object *node)
+/* See description in rcf_pch.h */
+te_errno
+rcf_pch_find_node(const char *oid_str, rcf_pch_cfg_object **node)
 {
-    rcf_pch_cfg_object *tmp = rcf_pch_conf_root();
-    rcf_pch_cfg_object *next;
-    cfg_oid            *oid = cfg_convert_oid_str(father);
-    int                 i = 1;
-    
+    rcf_pch_cfg_object  *tmp = rcf_pch_conf_root();
+    cfg_oid             *oid = cfg_convert_oid_str(oid_str);
+    int                  i = 1;
+
     if (oid == NULL || oid->inst || oid->len < 2)
     {
+        ERROR("%s(): OID '%s' cannot be resolved",
+              __FUNCTION__, oid_str);
         cfg_free_oid(oid);
         return TE_RC(TE_RCF_PCH, TE_EINVAL);
     }
-        
+
     while (TRUE)
     {
         for (; tmp != NULL; tmp = tmp->brother)
         {
-            if (strcmp(((cfg_object_subid *)(oid->ids))[i].subid, 
+            if (strcmp(((cfg_object_subid *)(oid->ids))[i].subid,
                        tmp->sub_id) == 0)
             {
                 break;
             }
         }
-           
+
         if (tmp == NULL)
         {
-            ERROR("Failed to find father %s to insert node %s", father, 
-                  node->sub_id);
             cfg_free_oid(oid);
-            return TE_RC(TE_RCF_PCH, TE_EINVAL);
+            return TE_RC(TE_RCF_PCH, TE_ENOENT);
         }
         if (++i == oid->len)
             break;
         tmp = tmp->son;
     }
     cfg_free_oid(oid);
-    
+
+    *node = tmp;
+    return 0;
+}
+
+/* See description in rcf_pch.h */
+te_errno
+rcf_pch_add_node(const char *father, rcf_pch_cfg_object *node)
+{
+    rcf_pch_cfg_object *tmp = NULL;
+    rcf_pch_cfg_object *next;
+    te_errno            rc;
+
+    rc = rcf_pch_find_node(father, &tmp);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to find '%s' in configuration tree",
+              __FUNCTION__, father);
+        return rc;
+    }
+
     next = tmp->son;
     tmp->son = node;
     while (node->brother != NULL)
         node = node->brother;
     node->brother = next;
-    
+
     return 0;
 }
 

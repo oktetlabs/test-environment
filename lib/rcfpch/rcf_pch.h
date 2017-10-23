@@ -301,6 +301,17 @@ extern te_errno rpcserver_plugin_disable(void);
  * @{
  */
 
+/**
+ * Find a node corresponding to an object with a
+ * given OID.
+ *
+ * @param oid_str         OID string.
+ * @param node            Where to save pointer to the node.
+ *
+ * @return Status code.
+ */
+extern te_errno rcf_pch_find_node(const char *oid_str,
+                                  rcf_pch_cfg_object **node);
 
 /**
  * Add subtree into the configuration tree.
