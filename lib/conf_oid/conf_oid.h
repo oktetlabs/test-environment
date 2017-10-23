@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-#define CFG_SUBID_MAX       32   /**< Maximum length of sub-identifier 
+#define CFG_SUBID_MAX       128  /**< Maximum length of sub-identifier
                                       including trailing 0 */
 #define CFG_INST_NAME_MAX   256  /**< Instance name, including trailing 0 */
 
