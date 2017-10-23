@@ -1013,7 +1013,7 @@ extern rpc_ptr rpc_memalign(rcf_rpc_server *rpcs,
  */
 #define CLEANUP_RPC_FREE(_rpcs, _ptr) \
     do {                                                \
-        if ((_ptr != RPC_NULL) >= 0 && (_rpcs) != NULL) \
+        if ((_ptr != RPC_NULL) && ((_rpcs) != NULL))    \
         {                                               \
             rpc_free(_rpcs, _ptr);                      \
             if (!RPC_IS_CALL_OK(_rpcs))                 \
