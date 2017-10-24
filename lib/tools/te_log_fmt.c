@@ -153,6 +153,7 @@ ta_log_msg_raw_buf_check_len(te_log_msg_raw_data *data, size_t len)
 {
     size_t  buflen;
     size_t  off;
+    void   *tmp;
 
     assert(data != NULL);
     assert((data->end == NULL) == (data->buf == NULL));
@@ -183,13 +184,16 @@ fprintf(stderr, "CHECK: BUF=%p END=%p PTR=%p diff=%u len=%u\n",
                   TE_LOG_MSG_RAW_BUF_GROW;
     }
 
-    data->buf = realloc(data->buf, buflen);
-    if (data->buf == NULL)
+    tmp = realloc(data->buf, buflen);
+    if (tmp == NULL)
     {
-        data->end = data->ptr = NULL;
+        free(data->buf);
+        data->buf = data->end = data->ptr = NULL;
+
         return TE_ENOMEM;
     }
 
+    data->buf = (uint8_t *)tmp;
     data->end = data->buf + buflen;
     data->ptr = data->buf + off;
 
@@ -283,17 +287,24 @@ te_log_msg_raw_arg(te_log_msg_out      *out,
     arg_i = data->args_n;
     if (arg_i == data->args_max)
     {
+        void *tmp;
+
         if (data->args_max == 0)
             data->args_max = TE_LOG_MSG_RAW_ARGS_INIT;
         else
             data->args_max += TE_LOG_MSG_RAW_ARGS_GROW;
-        data->args = realloc(data->args,
-                             data->args_max * sizeof(*data->args));
-        if (data->args == NULL)
+
+        tmp = realloc(data->args, data->args_max * sizeof(*data->args));
+        if (tmp == NULL)
         {
+            free(data->args);
+            data->args = NULL;
+
             data->args_len = data->args_n = data->args_max = 0;
+
             return TE_ENOMEM;
         }
+        data->args = (te_log_arg_descr *)tmp;
     }
     /* Now we have to have enough space */
     assert(arg_i < data->args_max);
@@ -649,7 +660,9 @@ te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
             char _tmp = *spec_start;                        \
                                                             \
             *(char *)spec_start = '\0';                     \
-            out->fmt(out, fmt_start, ap_start);             \
+            rc = out->fmt(out, fmt_start, ap_start);        \
+            if (rc != 0)                                    \
+                goto cleanup;                               \
             *(char *)spec_start = _tmp;                     \
             fmt_start = spec_start;                         \
             fmt_needed = FALSE;                             \
@@ -659,8 +672,10 @@ te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
             char _tmp = s[1];                               \
                                                             \
             ((char *)s)[1] = '\0';                          \
-            out->raw(out, fmt_start, s - fmt_start + 1,     \
-                     _type, _addr, _len);                   \
+            rc = out->raw(out, fmt_start, s - fmt_start + 1,\
+                          _type, _addr, _len);              \
+            if (rc != 0)                                    \
+                goto cleanup;                               \
             ((char *)s)[1] = _tmp;                          \
         }                                                   \
         fmt_start = s + 1;                                  \
@@ -934,11 +949,16 @@ case mod_:\
     spec_start = s--;
     TE_LOG_VPRINTF_RAW_ARG(TE_LOG_MSG_FMT_ARG_EOR, NULL, 0);
 
+cleanup:
+
     free((char *)fmt_dup);
+
+    if (out->fmt != NULL)
+        va_end(ap_start);
 
 #undef TE_LOG_VPRINTF_RAW_ARG
 
-    return 0;
+    return rc;
 }
 
 
@@ -984,7 +1004,9 @@ te_log_message_raw_va(te_log_msg_raw_data *data,
     te_log_msg_raw_put_string(data, "");
     fmt_start_off = data->ptr - data->buf;
 
-    te_log_vprintf((te_log_msg_out *)data, fmt, ap);
+    rc = te_log_vprintf((te_log_msg_out *)data, fmt, ap);
+    if (rc != 0)
+        return rc;
 
     /* Calculate format string length */
     fmt_nfl = (data->ptr - data->buf) - fmt_start_off;
