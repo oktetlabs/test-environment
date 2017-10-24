@@ -122,10 +122,21 @@ log_message_va(te_log_msg_raw_data *out,
                const char *entity, const char *user,
                const char *fmt, va_list ap)
 {
-    te_log_message_raw_va(out, sec, usec, level,
-                          te_test_id, entity, user, fmt, ap);
+    te_errno rc;
 
     assert(te_log_message_tx != NULL);
+
+    rc = te_log_message_raw_va(out, sec, usec, level,
+                               te_test_id, entity, user, fmt, ap);
+    if (rc != 0)
+    {
+        log_message_int(out, __FILE__, __LINE__,
+                        TE_LL_ERROR, te_lgr_entity, TE_LGR_USER,
+                        "Cannot print message from %s:%s logged at %s:%u: %r",
+                        entity, user, file, line, rc);
+        return;
+    }
+
     te_log_message_tx(out->buf, out->ptr - out->buf);
 
     if (out->trunc)
