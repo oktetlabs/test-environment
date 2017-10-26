@@ -185,9 +185,9 @@ tapi_reuse_eal(rcf_rpc_server *rpcs,
             dev_na_len += (dev_args != NULL) ? (strlen(dev_args) + 1) : 0;
 
             {
-                char     dev_na[dev_na_len];
-                char    *dev_na_generic = dev_name;
-                uint8_t  port_id;
+                char      dev_na[dev_na_len];
+                char     *dev_na_generic = dev_name;
+                uint16_t  port_id;
 
                 if (dev_args != NULL)
                 {

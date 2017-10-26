@@ -151,7 +151,7 @@ tarpc_rte_flow_error_copy(struct tarpc_rte_flow_error *dst,
 
 int
 rpc_rte_flow_validate(rcf_rpc_server *rpcs,
-                      uint8_t port_id,
+                      uint16_t port_id,
                       rpc_rte_flow_attr_p attr,
                       rpc_rte_flow_item_p pattern,
                       rpc_rte_flow_action_p actions,
@@ -175,7 +175,7 @@ rpc_rte_flow_validate(rcf_rpc_server *rpcs,
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_flow_validate,
-                 "%hhu, "RPC_PTR_FMT", "RPC_PTR_FMT", "RPC_PTR_FMT,
+                 "%hu, "RPC_PTR_FMT", "RPC_PTR_FMT", "RPC_PTR_FMT,
                  NEG_ERRNO_FMT "%s", in.port_id, RPC_PTR_VAL(in.attr),
                  RPC_PTR_VAL(in.pattern), RPC_PTR_VAL(in.actions),
                  NEG_ERRNO_ARGS(out.retval), (out.retval != 0) ?
@@ -189,7 +189,7 @@ rpc_rte_flow_validate(rcf_rpc_server *rpcs,
 
 rpc_rte_flow_p
 rpc_rte_flow_create(rcf_rpc_server *rpcs,
-                    uint8_t port_id,
+                    uint16_t port_id,
                     rpc_rte_flow_attr_p attr,
                     rpc_rte_flow_item_p pattern,
                     rpc_rte_flow_action_p actions,
@@ -213,7 +213,7 @@ rpc_rte_flow_create(rcf_rpc_server *rpcs,
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_flow_create,
-                 "%hhu, "RPC_PTR_FMT", "RPC_PTR_FMT", "RPC_PTR_FMT,
+                 "%hu, "RPC_PTR_FMT", "RPC_PTR_FMT", "RPC_PTR_FMT,
                  RPC_PTR_FMT "%s", in.port_id, RPC_PTR_VAL(in.attr),
                  RPC_PTR_VAL(in.pattern), RPC_PTR_VAL(in.actions),
                  RPC_PTR_VAL(out.flow), (out.error.type != 0) ?
@@ -227,7 +227,7 @@ rpc_rte_flow_create(rcf_rpc_server *rpcs,
 
 int
 rpc_rte_flow_destroy(rcf_rpc_server *rpcs,
-                     uint8_t port_id,
+                     uint16_t port_id,
                      rpc_rte_flow_p flow,
                      struct tarpc_rte_flow_error *error)
 {
@@ -246,7 +246,7 @@ rpc_rte_flow_destroy(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_flow_destroy, out.retval);
 
     tlbp = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, rte_flow_destroy, "%hhu, "RPC_PTR_FMT,
+    TAPI_RPC_LOG(rpcs, rte_flow_destroy, "%hu, "RPC_PTR_FMT,
                  NEG_ERRNO_FMT "%s", in.port_id, RPC_PTR_VAL(in.flow),
                  NEG_ERRNO_ARGS(out.retval), (out.retval != 0) ?
                  tarpc_rte_flow_error2str(tlbp, &out.error) : "");
@@ -259,7 +259,7 @@ rpc_rte_flow_destroy(rcf_rpc_server *rpcs,
 
 int
 rpc_rte_flow_flush(rcf_rpc_server *rpcs,
-                   uint8_t port_id,
+                   uint16_t port_id,
                    struct tarpc_rte_flow_error *error)
 {
     tarpc_rte_flow_flush_in         in;
@@ -276,7 +276,7 @@ rpc_rte_flow_flush(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_flow_flush, out.retval);
 
     tlbp = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, rte_flow_flush, "%hhu",
+    TAPI_RPC_LOG(rpcs, rte_flow_flush, "%hu",
                  NEG_ERRNO_FMT "%s", in.port_id,
                  NEG_ERRNO_ARGS(out.retval), (out.retval != 0) ?
                  tarpc_rte_flow_error2str(tlbp, &out.error) : "");
@@ -289,7 +289,7 @@ rpc_rte_flow_flush(rcf_rpc_server *rpcs,
 
 int
 rpc_rte_flow_isolate(rcf_rpc_server              *rpcs,
-                     uint8_t                      port_id,
+                     uint16_t                     port_id,
                      int                          set,
                      struct tarpc_rte_flow_error *error)
 {
@@ -308,7 +308,7 @@ rpc_rte_flow_isolate(rcf_rpc_server              *rpcs,
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_flow_isolate, out.retval);
 
     tlbp = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, rte_flow_isolate, "%hhu, %d", NEG_ERRNO_FMT "%s",
+    TAPI_RPC_LOG(rpcs, rte_flow_isolate, "%hu, %d", NEG_ERRNO_FMT "%s",
                  in.port_id, in.set, NEG_ERRNO_ARGS(out.retval),
                  (out.retval != 0) ?
                  tarpc_rte_flow_error2str(tlbp, &out.error) : "");

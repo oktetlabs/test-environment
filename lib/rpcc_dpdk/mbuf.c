@@ -676,7 +676,7 @@ rpc_rte_pktmbuf_get_nb_segs(rcf_rpc_server *rpcs,
     return (out.retval);
 }
 
-uint8_t
+uint16_t
 rpc_rte_pktmbuf_get_port(rcf_rpc_server *rpcs,
                          rpc_rte_mbuf_p m)
 {
@@ -690,7 +690,7 @@ rpc_rte_pktmbuf_get_port(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "rte_pktmbuf_get_port", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_port, RPC_PTR_FMT, "%hhu",
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_port, RPC_PTR_FMT, "%hu",
                  RPC_PTR_VAL(in.m), out.retval);
 
     TAPI_RPC_OUT(rte_pktmbuf_get_port, FALSE);
@@ -700,7 +700,7 @@ rpc_rte_pktmbuf_get_port(rcf_rpc_server *rpcs,
 
 void
 rpc_rte_pktmbuf_set_port(rcf_rpc_server *rpcs,
-                         rpc_rte_mbuf_p m, uint8_t port)
+                         rpc_rte_mbuf_p m, uint16_t port)
 {
     tarpc_rte_pktmbuf_set_port_in   in;
     tarpc_rte_pktmbuf_set_port_out  out;
@@ -713,7 +713,7 @@ rpc_rte_pktmbuf_set_port(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "rte_pktmbuf_set_port", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, rte_pktmbuf_set_port, RPC_PTR_FMT ", %hhu", "",
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_set_port, RPC_PTR_FMT ", %hu", "",
                  RPC_PTR_VAL(in.m), in.port);
 
     RETVAL_VOID(rte_pktmbuf_set_port);

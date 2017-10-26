@@ -56,7 +56,7 @@ extern "C" {
  * @return @c 0 on success; jumps out in case of failure
  */
 extern int rpc_rte_flow_validate(rcf_rpc_server *rpcs,
-                                 uint8_t port_id,
+                                 uint16_t port_id,
                                  rpc_rte_flow_attr_p attr,
                                  rpc_rte_flow_item_p pattern,
                                  rpc_rte_flow_action_p actions,
@@ -74,7 +74,7 @@ extern int rpc_rte_flow_validate(rcf_rpc_server *rpcs,
  * @return RTE flow pointer on success; jumps out when pointer is @c NULL
  */
 extern rpc_rte_flow_p rpc_rte_flow_create(rcf_rpc_server *rpcs,
-                                          uint8_t port_id,
+                                          uint16_t port_id,
                                           rpc_rte_flow_attr_p attr,
                                           rpc_rte_flow_item_p pattern,
                                           rpc_rte_flow_action_p actions,
@@ -90,7 +90,7 @@ extern rpc_rte_flow_p rpc_rte_flow_create(rcf_rpc_server *rpcs,
  * @return @c 0 on success; jumps out in case of failure
  */
 extern int rpc_rte_flow_destroy(rcf_rpc_server *rpcs,
-                                uint8_t port_id,
+                                uint16_t port_id,
                                 rpc_rte_flow_p flow,
                                 tarpc_rte_flow_error *error);
 
@@ -104,7 +104,7 @@ extern int rpc_rte_flow_destroy(rcf_rpc_server *rpcs,
  * @return @c 0 on success; jumps out in case of failure
  */
 extern int rpc_rte_flow_flush(rcf_rpc_server *rpcs,
-                              uint8_t port_id,
+                              uint16_t port_id,
                               tarpc_rte_flow_error *error);
 
 /**
@@ -116,7 +116,7 @@ extern int rpc_rte_flow_flush(rcf_rpc_server *rpcs,
  * @return @c 0 on success; jumps out in case of failure
  */
 extern int rpc_rte_flow_isolate(rcf_rpc_server              *rpcs,
-                                uint8_t                      port_id,
+                                uint16_t                     port_id,
                                 int                          set,
                                 struct tarpc_rte_flow_error *error);
 

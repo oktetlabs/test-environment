@@ -56,7 +56,7 @@ tarpc_rte_eth_stats2str(te_log_buf                 *tlbp,
 
 int
 rpc_rte_eth_stats_get(rcf_rpc_server             *rpcs,
-                      uint8_t                     port_id,
+                      uint16_t                    port_id,
                       struct tarpc_rte_eth_stats *stats)
 {
     struct tarpc_rte_eth_stats_get_in   in;
@@ -78,7 +78,7 @@ rpc_rte_eth_stats_get(rcf_rpc_server             *rpcs,
     *stats = out.stats;
 
     tlbp = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, rte_eth_stats_get, "%hhu",
+    TAPI_RPC_LOG(rpcs, rte_eth_stats_get, "%hu",
                  "stats = %s", in.port_id,
                  tarpc_rte_eth_stats2str(tlbp, stats));
     te_log_buf_free(tlbp);
@@ -313,7 +313,7 @@ tarpc_rte_eth_dev_info2str(te_log_buf *tlbp,
 }
 
 void
-rpc_rte_eth_dev_info_get(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
                          struct tarpc_rte_eth_dev_info *dev_info)
 {
     tarpc_rte_eth_dev_info_get_in   in;
@@ -610,7 +610,7 @@ tarpc_rte_eth_conf2str(te_log_buf *tlbp,
 
 int
 rpc_rte_eth_dev_configure(rcf_rpc_server *rpcs,
-                          uint8_t port_id,
+                          uint16_t port_id,
                           uint16_t nb_rx_queue,
                           uint16_t nb_tx_queue,
                           const struct tarpc_rte_eth_conf *eth_conf)
@@ -649,7 +649,7 @@ rpc_rte_eth_dev_configure(rcf_rpc_server *rpcs,
 }
 
 void
-rpc_rte_eth_dev_close(rcf_rpc_server *rpcs, uint8_t port_id)
+rpc_rte_eth_dev_close(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_dev_close_in   in;
     tarpc_rte_eth_dev_close_out  out;
@@ -661,12 +661,12 @@ rpc_rte_eth_dev_close(rcf_rpc_server *rpcs, uint8_t port_id)
 
     rcf_rpc_call(rpcs, "rte_eth_dev_close", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_close, "%hhu", "", in.port_id);
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_close, "%hu", "", in.port_id);
     RETVAL_VOID(rte_eth_dev_close);
 }
 
 int
-rpc_rte_eth_dev_start(rcf_rpc_server *rpcs, uint8_t port_id)
+rpc_rte_eth_dev_start(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_dev_start_in   in;
     tarpc_rte_eth_dev_start_out  out;
@@ -680,13 +680,13 @@ rpc_rte_eth_dev_start(rcf_rpc_server *rpcs, uint8_t port_id)
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_start, out.retval);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_start, "%hhu", NEG_ERRNO_FMT,
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_start, "%hu", NEG_ERRNO_FMT,
                  in.port_id, NEG_ERRNO_ARGS(out.retval));
     RETVAL_ZERO_INT(rte_eth_dev_start, out.retval);
 }
 
 void
-rpc_rte_eth_dev_stop(rcf_rpc_server *rpcs, uint8_t port_id)
+rpc_rte_eth_dev_stop(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_dev_stop_in   in;
     tarpc_rte_eth_dev_stop_out  out;
@@ -698,13 +698,13 @@ rpc_rte_eth_dev_stop(rcf_rpc_server *rpcs, uint8_t port_id)
 
     rcf_rpc_call(rpcs, "rte_eth_dev_stop", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_stop, "%hhu", "", in.port_id);
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_stop, "%hu", "", in.port_id);
     RETVAL_VOID(rte_eth_dev_stop);
 }
 
 int
 rpc_rte_eth_tx_queue_setup(rcf_rpc_server *rpcs,
-                           uint8_t port_id,
+                           uint16_t port_id,
                            uint16_t tx_queue_id,
                            uint16_t nb_tx_desc,
                            unsigned int socket_id,
@@ -735,7 +735,7 @@ rpc_rte_eth_tx_queue_setup(rcf_rpc_server *rpcs,
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_eth_tx_queue_setup,
-                 "%hhu, %hu, %hu, %u, %s", NEG_ERRNO_FMT,
+                 "%hu, %hu, %hu, %u, %s", NEG_ERRNO_FMT,
                  in.port_id, in.tx_queue_id, in.nb_tx_desc, in.socket_id,
                  tarpc_rte_eth_txconf2str(tlbp, tx_conf),
                  NEG_ERRNO_ARGS(out.retval));
@@ -746,7 +746,7 @@ rpc_rte_eth_tx_queue_setup(rcf_rpc_server *rpcs,
 
 int
 rpc_rte_eth_rx_queue_setup(rcf_rpc_server *rpcs,
-                           uint8_t port_id,
+                           uint16_t port_id,
                            uint16_t rx_queue_id,
                            uint16_t nb_rx_desc,
                            unsigned int socket_id,
@@ -777,7 +777,7 @@ rpc_rte_eth_rx_queue_setup(rcf_rpc_server *rpcs,
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_eth_rx_queue_setup,
-                 "%hhu, %hu, %hu, %u, %s, " RPC_PTR_FMT, NEG_ERRNO_FMT,
+                 "%hu, %hu, %hu, %u, %s, " RPC_PTR_FMT, NEG_ERRNO_FMT,
                  in.port_id, in.rx_queue_id, in.nb_rx_desc, in.socket_id,
                  tarpc_rte_eth_rxconf2str(tlbp, rx_conf), RPC_PTR_VAL(mp),
                  NEG_ERRNO_ARGS(out.retval));
@@ -788,7 +788,7 @@ rpc_rte_eth_rx_queue_setup(rcf_rpc_server *rpcs,
 
 uint16_t
 rpc_rte_eth_tx_burst(rcf_rpc_server *rpcs,
-                     uint8_t  port_id,
+                     uint16_t port_id,
                      uint16_t queue_id,
                      rpc_rte_mbuf_p *tx_pkts,
                      uint16_t nb_pkts)
@@ -819,7 +819,7 @@ rpc_rte_eth_tx_burst(rcf_rpc_server *rpcs,
     free(in.tx_pkts.tx_pkts_val);
 
     tlbp = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, rte_eth_tx_burst, "%hhu, %hu, %s, %hu", "%hu",
+    TAPI_RPC_LOG(rpcs, rte_eth_tx_burst, "%hu, %hu, %s, %hu", "%hu",
                  in.port_id, in.queue_id,
                  rpc_rte_mbufs2str(tlbp, tx_pkts, in.tx_pkts.tx_pkts_len,
                                    rpcs),
@@ -833,7 +833,7 @@ rpc_rte_eth_tx_burst(rcf_rpc_server *rpcs,
 
 uint16_t
 rpc_rte_eth_rx_burst(rcf_rpc_server *rpcs,
-                     uint8_t  port_id,
+                     uint16_t port_id,
                      uint16_t queue_id,
                      rpc_rte_mbuf_p *rx_pkts,
                      uint16_t nb_pkts)
@@ -860,7 +860,7 @@ rpc_rte_eth_rx_burst(rcf_rpc_server *rpcs,
            MIN(nb_pkts, out.rx_pkts.rx_pkts_len) * sizeof(*rx_pkts));
 
     tlbp = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, rte_eth_rx_burst, "%hhu, %hu, %hu", "%hu %s",
+    TAPI_RPC_LOG(rpcs, rte_eth_rx_burst, "%hu, %hu, %hu", "%hu %s",
                  in.port_id, in.queue_id, in.nb_pkts, out.rx_pkts.rx_pkts_len,
                  rpc_rte_mbufs2str(tlbp, rx_pkts, out.rx_pkts.rx_pkts_len,
                                    rpcs));
@@ -872,7 +872,7 @@ rpc_rte_eth_rx_burst(rcf_rpc_server *rpcs,
 }
 
 int
-rpc_rte_eth_dev_set_link_up(rcf_rpc_server *rpcs, uint8_t port_id)
+rpc_rte_eth_dev_set_link_up(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_dev_set_link_up_in   in;
     tarpc_rte_eth_dev_set_link_up_out  out;
@@ -886,13 +886,13 @@ rpc_rte_eth_dev_set_link_up(rcf_rpc_server *rpcs, uint8_t port_id)
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_set_link_up, out.retval);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_set_link_up, "%hhu", NEG_ERRNO_FMT,
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_set_link_up, "%hu", NEG_ERRNO_FMT,
                  in.port_id, NEG_ERRNO_ARGS(out.retval));
     RETVAL_ZERO_INT(rte_eth_dev_set_link_up, out.retval);
 }
 
 int
-rpc_rte_eth_dev_set_link_down(rcf_rpc_server *rpcs, uint8_t port_id)
+rpc_rte_eth_dev_set_link_down(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_dev_set_link_down_in   in;
     tarpc_rte_eth_dev_set_link_down_out  out;
@@ -907,13 +907,13 @@ rpc_rte_eth_dev_set_link_down(rcf_rpc_server *rpcs, uint8_t port_id)
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_set_link_down,
                                           out.retval);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_set_link_down, "%hhu", NEG_ERRNO_FMT,
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_set_link_down, "%hu", NEG_ERRNO_FMT,
                  in.port_id, NEG_ERRNO_ARGS(out.retval));
     RETVAL_ZERO_INT(rte_eth_dev_set_link_down, out.retval);
 }
 
 void
-rpc_rte_eth_promiscuous_enable(rcf_rpc_server *rpcs, uint8_t port_id)
+rpc_rte_eth_promiscuous_enable(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_promiscuous_enable_in   in;
     tarpc_rte_eth_promiscuous_enable_out  out;
@@ -925,12 +925,12 @@ rpc_rte_eth_promiscuous_enable(rcf_rpc_server *rpcs, uint8_t port_id)
 
     rcf_rpc_call(rpcs, "rte_eth_promiscuous_enable", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_promiscuous_enable, "%hhu", "", in.port_id);
+    TAPI_RPC_LOG(rpcs, rte_eth_promiscuous_enable, "%hu", "", in.port_id);
     RETVAL_VOID(rte_eth_promiscuous_enable);
 }
 
 void
-rpc_rte_eth_promiscuous_disable(rcf_rpc_server *rpcs, uint8_t port_id)
+rpc_rte_eth_promiscuous_disable(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_promiscuous_disable_in   in;
     tarpc_rte_eth_promiscuous_disable_out  out;
@@ -942,12 +942,12 @@ rpc_rte_eth_promiscuous_disable(rcf_rpc_server *rpcs, uint8_t port_id)
 
     rcf_rpc_call(rpcs, "rte_eth_promiscuous_disable", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_promiscuous_disable, "%hhu", "", in.port_id);
+    TAPI_RPC_LOG(rpcs, rte_eth_promiscuous_disable, "%hu", "", in.port_id);
     RETVAL_VOID(rte_eth_promiscuous_disable);
 }
 
 int
-rpc_rte_eth_promiscuous_get(rcf_rpc_server *rpcs, uint8_t port_id)
+rpc_rte_eth_promiscuous_get(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_promiscuous_get_in   in;
     tarpc_rte_eth_promiscuous_get_out  out;
@@ -962,7 +962,7 @@ rpc_rte_eth_promiscuous_get(rcf_rpc_server *rpcs, uint8_t port_id)
     CHECK_RETVAL_VAR(rte_eth_promiscuous_get, out.retval, ((out.retval != -1)
                      && (out.retval != 0) && (out.retval != 1)), -1);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_promiscuous_get, "%hhu", "%d",
+    TAPI_RPC_LOG(rpcs, rte_eth_promiscuous_get, "%hu", "%d",
                  in.port_id, out.retval);
 
     TAPI_RPC_OUT(rte_eth_promiscuous_get, ((out.retval != 0) &&
@@ -972,7 +972,7 @@ rpc_rte_eth_promiscuous_get(rcf_rpc_server *rpcs, uint8_t port_id)
 }
 
 void
-rpc_rte_eth_allmulticast_enable(rcf_rpc_server *rpcs, uint8_t port_id)
+rpc_rte_eth_allmulticast_enable(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_allmulticast_enable_in   in;
     tarpc_rte_eth_allmulticast_enable_out  out;
@@ -984,12 +984,12 @@ rpc_rte_eth_allmulticast_enable(rcf_rpc_server *rpcs, uint8_t port_id)
 
     rcf_rpc_call(rpcs, "rte_eth_allmulticast_enable", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_allmulticast_enable, "%hhu", "", in.port_id);
+    TAPI_RPC_LOG(rpcs, rte_eth_allmulticast_enable, "%hu", "", in.port_id);
     RETVAL_VOID(rte_eth_allmulticast_enable);
 }
 
 void
-rpc_rte_eth_allmulticast_disable(rcf_rpc_server *rpcs, uint8_t port_id)
+rpc_rte_eth_allmulticast_disable(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_allmulticast_disable_in   in;
     tarpc_rte_eth_allmulticast_disable_out  out;
@@ -1001,12 +1001,12 @@ rpc_rte_eth_allmulticast_disable(rcf_rpc_server *rpcs, uint8_t port_id)
 
     rcf_rpc_call(rpcs, "rte_eth_allmulticast_disable", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_allmulticast_disable, "%hhu", "", in.port_id);
+    TAPI_RPC_LOG(rpcs, rte_eth_allmulticast_disable, "%hu", "", in.port_id);
     RETVAL_VOID(rte_eth_allmulticast_disable);
 }
 
 int
-rpc_rte_eth_allmulticast_get(rcf_rpc_server *rpcs, uint8_t port_id)
+rpc_rte_eth_allmulticast_get(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_allmulticast_get_in   in;
     tarpc_rte_eth_allmulticast_get_out  out;
@@ -1021,7 +1021,7 @@ rpc_rte_eth_allmulticast_get(rcf_rpc_server *rpcs, uint8_t port_id)
     CHECK_RETVAL_VAR(rte_eth_allmulticast_get, out.retval, ((out.retval != -1)
                      && (out.retval != 0) && (out.retval != 1)), -1);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_allmulticast_get, "%hhu", "%d",
+    TAPI_RPC_LOG(rpcs, rte_eth_allmulticast_get, "%hu", "%d",
                  in.port_id, out.retval);
 
     TAPI_RPC_OUT(rte_eth_allmulticast_get, ((out.retval != 0) &&
@@ -1031,7 +1031,7 @@ rpc_rte_eth_allmulticast_get(rcf_rpc_server *rpcs, uint8_t port_id)
 }
 
 int
-rpc_rte_eth_dev_get_mtu(rcf_rpc_server *rpcs, uint8_t port_id, uint16_t *mtu)
+rpc_rte_eth_dev_get_mtu(rcf_rpc_server *rpcs, uint16_t port_id, uint16_t *mtu)
 {
     tarpc_rte_eth_dev_get_mtu_in   in;
     tarpc_rte_eth_dev_get_mtu_out  out;
@@ -1054,7 +1054,7 @@ rpc_rte_eth_dev_get_mtu(rcf_rpc_server *rpcs, uint8_t port_id, uint16_t *mtu)
     if (RPC_IS_CALL_OK(rpcs))
         *mtu = out.mtu;
 
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_get_mtu, "%hhu, %p",
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_get_mtu, "%hu, %p",
                  NEG_ERRNO_FMT " mtu=%hu", port_id, mtu,
                  NEG_ERRNO_ARGS(out.retval), out.mtu);
 
@@ -1062,7 +1062,7 @@ rpc_rte_eth_dev_get_mtu(rcf_rpc_server *rpcs, uint8_t port_id, uint16_t *mtu)
 }
 
 int
-rpc_rte_eth_dev_set_mtu(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_set_mtu(rcf_rpc_server *rpcs, uint16_t port_id,
                         uint16_t mtu)
 {
     tarpc_rte_eth_dev_set_mtu_in   in;
@@ -1079,13 +1079,13 @@ rpc_rte_eth_dev_set_mtu(rcf_rpc_server *rpcs, uint8_t port_id,
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_set_mtu,
                                           out.retval);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_set_mtu, "%hhu, %hu", NEG_ERRNO_FMT,
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_set_mtu, "%hu, %hu", NEG_ERRNO_FMT,
                  in.port_id, in.mtu, NEG_ERRNO_ARGS(out.retval));
     RETVAL_ZERO_INT(rte_eth_dev_set_mtu, out.retval);
 }
 
 int
-rpc_rte_eth_dev_vlan_filter(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_vlan_filter(rcf_rpc_server *rpcs, uint16_t port_id,
                             uint16_t vlan_id, int on)
 {
     tarpc_rte_eth_dev_vlan_filter_in   in;
@@ -1104,7 +1104,7 @@ rpc_rte_eth_dev_vlan_filter(rcf_rpc_server *rpcs, uint8_t port_id,
                                          out.retval);
 
     TAPI_RPC_LOG(rpcs, rte_eth_dev_vlan_filter,
-                 "%hhu, %hu, %d", NEG_ERRNO_FMT,
+                 "%hu, %hu, %d", NEG_ERRNO_FMT,
                  in.port_id, in.vlan_id, in.on,
                  NEG_ERRNO_ARGS(out.retval));
 
@@ -1112,7 +1112,7 @@ rpc_rte_eth_dev_vlan_filter(rcf_rpc_server *rpcs, uint8_t port_id,
 }
 
 int
-rpc_rte_eth_dev_set_vlan_strip_on_queue(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_set_vlan_strip_on_queue(rcf_rpc_server *rpcs, uint16_t port_id,
                                         uint16_t rx_queue_id, int on)
 {
     tarpc_rte_eth_dev_set_vlan_strip_on_queue_in   in;
@@ -1131,7 +1131,7 @@ rpc_rte_eth_dev_set_vlan_strip_on_queue(rcf_rpc_server *rpcs, uint8_t port_id,
                                           out.retval);
 
     TAPI_RPC_LOG(rpcs, rte_eth_dev_set_vlan_strip_on_queue,
-                 "%hhu, %hu, %d", NEG_ERRNO_FMT,
+                 "%hu, %hu, %d", NEG_ERRNO_FMT,
                  in.port_id, in.rx_queue_id, in.on,
                  NEG_ERRNO_ARGS(out.retval));
 
@@ -1166,7 +1166,7 @@ tarpc_rte_vlan_type2str(enum tarpc_rte_vlan_type vlan_type)
 }
 
 int
-rpc_rte_eth_dev_set_vlan_ether_type(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_set_vlan_ether_type(rcf_rpc_server *rpcs, uint16_t port_id,
                                     enum tarpc_rte_vlan_type vlan_type,
                                     uint16_t tag_type)
 {
@@ -1186,7 +1186,7 @@ rpc_rte_eth_dev_set_vlan_ether_type(rcf_rpc_server *rpcs, uint8_t port_id,
                                           out.retval);
 
     TAPI_RPC_LOG(rpcs, rte_eth_dev_set_vlan_ether_type,
-                 "%hhu, %s, %hu", NEG_ERRNO_FMT,
+                 "%hu, %s, %hu", NEG_ERRNO_FMT,
                  in.port_id, tarpc_rte_vlan_type2str(in.vlan_type),
                  in.tag_type, NEG_ERRNO_ARGS(out.retval));
 
@@ -1210,7 +1210,7 @@ tarpc_rte_eth_vlan_offload_mask2str(te_log_buf *tlbp, uint16_t offload_mask)
 }
 
 int
-rpc_rte_eth_dev_set_vlan_offload(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_set_vlan_offload(rcf_rpc_server *rpcs, uint16_t port_id,
                                  tarpc_int offload_mask)
 {
     tarpc_rte_eth_dev_set_vlan_offload_in   in;
@@ -1230,7 +1230,7 @@ rpc_rte_eth_dev_set_vlan_offload(rcf_rpc_server *rpcs, uint8_t port_id,
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_eth_dev_set_vlan_offload,
-                 "%hhu, %s", NEG_ERRNO_FMT,
+                 "%hu, %s", NEG_ERRNO_FMT,
                  in.port_id,
                  tarpc_rte_eth_vlan_offload_mask2str(tlbp, in.offload_mask),
                  NEG_ERRNO_ARGS(out.retval));
@@ -1255,7 +1255,7 @@ tarpc_rte_eth_vlan_offload_mask_valid(uint16_t offload_mask)
 }
 
 int
-rpc_rte_eth_dev_get_vlan_offload(rcf_rpc_server *rpcs, uint8_t port_id)
+rpc_rte_eth_dev_get_vlan_offload(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_dev_get_vlan_offload_in   in;
     tarpc_rte_eth_dev_get_vlan_offload_out  out;
@@ -1277,7 +1277,7 @@ rpc_rte_eth_dev_get_vlan_offload(rcf_rpc_server *rpcs, uint8_t port_id)
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_eth_dev_get_vlan_offload,
-                 "%hhu", "%s",
+                 "%hu", "%s",
                  in.port_id,
                  (out.retval < 0) ? neg_errno_rpc2str(out.retval) :
                      tarpc_rte_eth_vlan_offload_mask2str(tlbp, out.retval));
@@ -1287,7 +1287,7 @@ rpc_rte_eth_dev_get_vlan_offload(rcf_rpc_server *rpcs, uint8_t port_id)
 }
 
 int
-rpc_rte_eth_dev_set_vlan_pvid(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_set_vlan_pvid(rcf_rpc_server *rpcs, uint16_t port_id,
                               uint16_t pvid, int on)
 {
     tarpc_rte_eth_dev_set_vlan_pvid_in   in;
@@ -1306,14 +1306,14 @@ rpc_rte_eth_dev_set_vlan_pvid(rcf_rpc_server *rpcs, uint8_t port_id,
                                           out.retval);
 
     TAPI_RPC_LOG(rpcs, rte_eth_dev_set_vlan_pvid,
-                 "%hhu, %hu, %d", NEG_ERRNO_FMT,
+                 "%hu, %hu, %d", NEG_ERRNO_FMT,
                  in.port_id, in.pvid, in.on, NEG_ERRNO_ARGS(out.retval));
 
     RETVAL_ZERO_INT(rte_eth_dev_set_vlan_pvid, out.retval);
 }
 
 int
-rpc_rte_eth_rx_descriptor_done(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_rx_descriptor_done(rcf_rpc_server *rpcs, uint16_t port_id,
                                uint16_t queue_id, uint16_t offset)
 {
     tarpc_rte_eth_rx_descriptor_done_in   in;
@@ -1333,7 +1333,7 @@ rpc_rte_eth_rx_descriptor_done(rcf_rpc_server *rpcs, uint8_t port_id,
                               (out.retval < 0));
 
     TAPI_RPC_LOG(rpcs, rte_eth_rx_descriptor_done,
-                 "%hhu, %hu, %hu", NEG_ERRNO_FMT,
+                 "%hu, %hu, %hu", NEG_ERRNO_FMT,
                  in.port_id, in.queue_id, in.offset,
                  NEG_ERRNO_ARGS(out.retval));
 
@@ -1341,7 +1341,7 @@ rpc_rte_eth_rx_descriptor_done(rcf_rpc_server *rpcs, uint8_t port_id,
 }
 
 int
-rpc_rte_eth_rx_queue_count(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_rx_queue_count(rcf_rpc_server *rpcs, uint16_t port_id,
                            uint16_t queue_id)
 {
     tarpc_rte_eth_rx_queue_count_in   in;
@@ -1361,7 +1361,7 @@ rpc_rte_eth_rx_queue_count(rcf_rpc_server *rpcs, uint8_t port_id,
                               (out.retval < 0));
 
     TAPI_RPC_LOG(rpcs, rte_eth_rx_queue_count,
-                 "%hhu, %hu", NEG_ERRNO_FMT,
+                 "%hu, %hu", NEG_ERRNO_FMT,
                  in.port_id, in.queue_id, NEG_ERRNO_ARGS(out.retval));
 
     RETVAL_INT(rte_eth_rx_queue_count, out.retval);
@@ -1369,7 +1369,7 @@ rpc_rte_eth_rx_queue_count(rcf_rpc_server *rpcs, uint8_t port_id,
 
 int
 rpc_rte_eth_rx_descriptor_status(rcf_rpc_server *rpcs,
-                                 uint8_t         port_id,
+                                 uint16_t        port_id,
                                  uint16_t        queue_id,
                                  uint16_t        offset)
 {
@@ -1405,14 +1405,14 @@ rpc_rte_eth_rx_descriptor_status(rcf_rpc_server *rpcs,
     if (out.retval < 0)
     {
         TAPI_RPC_LOG(rpcs, rte_eth_rx_descriptor_status,
-                     "%hhu, %hu, %hu", NEG_ERRNO_FMT,
+                     "%hu, %hu, %hu", NEG_ERRNO_FMT,
                      in.port_id, in.queue_id, in.offset,
                      NEG_ERRNO_ARGS(out.retval));
     }
     else if (status_str != NULL)
     {
         TAPI_RPC_LOG(rpcs, rte_eth_rx_descriptor_status,
-                     "%hhu, %hu, %hu", "%s",
+                     "%hu, %hu, %hu", "%s",
                      in.port_id, in.queue_id, in.offset, status_str);
     }
     else
@@ -1425,7 +1425,7 @@ rpc_rte_eth_rx_descriptor_status(rcf_rpc_server *rpcs,
 
 int
 rpc_rte_eth_tx_descriptor_status(rcf_rpc_server *rpcs,
-                                 uint8_t         port_id,
+                                 uint16_t        port_id,
                                  uint16_t        queue_id,
                                  uint16_t        offset)
 {
@@ -1461,14 +1461,14 @@ rpc_rte_eth_tx_descriptor_status(rcf_rpc_server *rpcs,
     if (out.retval < 0)
     {
         TAPI_RPC_LOG(rpcs, rte_eth_tx_descriptor_status,
-                     "%hhu, %hu, %hu", NEG_ERRNO_FMT,
+                     "%hu, %hu, %hu", NEG_ERRNO_FMT,
                      in.port_id, in.queue_id, in.offset,
                      NEG_ERRNO_ARGS(out.retval));
     }
     else if (status_str != NULL)
     {
         TAPI_RPC_LOG(rpcs, rte_eth_tx_descriptor_status,
-                     "%hhu, %hu, %hu", "%s",
+                     "%hu, %hu, %hu", "%s",
                      in.port_id, in.queue_id, in.offset, status_str);
     }
     else
@@ -1480,7 +1480,7 @@ rpc_rte_eth_tx_descriptor_status(rcf_rpc_server *rpcs,
 }
 
 int
-rpc_rte_eth_dev_socket_id(rcf_rpc_server *rpcs, uint8_t port_id)
+rpc_rte_eth_dev_socket_id(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_dev_socket_id_in   in;
     tarpc_rte_eth_dev_socket_id_out  out;
@@ -1494,7 +1494,7 @@ rpc_rte_eth_dev_socket_id(rcf_rpc_server *rpcs, uint8_t port_id)
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(rte_eth_dev_socket_id, out.retval);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_socket_id, "%hhu", "%d",
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_socket_id, "%hu", "%d",
                  in.port_id, out.retval);
 
     TAPI_RPC_OUT(rte_eth_dev_socket_id, out.retval < -1);
@@ -1503,7 +1503,7 @@ rpc_rte_eth_dev_socket_id(rcf_rpc_server *rpcs, uint8_t port_id)
 }
 
 int
-rpc_rte_eth_dev_is_valid_port(rcf_rpc_server *rpcs, uint8_t port_id)
+rpc_rte_eth_dev_is_valid_port(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_dev_is_valid_port_in   in;
     tarpc_rte_eth_dev_is_valid_port_out  out;
@@ -1518,13 +1518,13 @@ rpc_rte_eth_dev_is_valid_port(rcf_rpc_server *rpcs, uint8_t port_id)
     CHECK_RETVAL_VAR(rte_eth_dev_is_valid_port, out.retval, ((out.retval != 1)
                      && (out.retval != 0)), -1);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_is_valid_port, "%hhu", "%d",
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_is_valid_port, "%hu", "%d",
                  in.port_id, out.retval);
     RETVAL_INT(rte_eth_dev_is_valid_port, out.retval);
 }
 
 int
-rpc_rte_eth_dev_rx_queue_start(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_rx_queue_start(rcf_rpc_server *rpcs, uint16_t port_id,
                                uint16_t queue_id)
 {
     tarpc_rte_eth_dev_rx_queue_start_in   in;
@@ -1541,13 +1541,13 @@ rpc_rte_eth_dev_rx_queue_start(rcf_rpc_server *rpcs, uint8_t port_id,
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_rx_queue_start,
                                           out.retval);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_rx_queue_start, "%hhu, %hu", NEG_ERRNO_FMT,
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_rx_queue_start, "%hu, %hu", NEG_ERRNO_FMT,
                  in.port_id, in.queue_id, NEG_ERRNO_ARGS(out.retval));
     RETVAL_ZERO_INT(rte_eth_dev_rx_queue_start, out.retval);
 }
 
 int
-rpc_rte_eth_dev_rx_queue_stop(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_rx_queue_stop(rcf_rpc_server *rpcs, uint16_t port_id,
                               uint16_t queue_id)
 {
     tarpc_rte_eth_dev_rx_queue_stop_in   in;
@@ -1564,13 +1564,13 @@ rpc_rte_eth_dev_rx_queue_stop(rcf_rpc_server *rpcs, uint8_t port_id,
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_rx_queue_stop,
                                           out.retval);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_rx_queue_stop, "%hhu, %hu", NEG_ERRNO_FMT,
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_rx_queue_stop, "%hu, %hu", NEG_ERRNO_FMT,
                  in.port_id, in.queue_id, NEG_ERRNO_ARGS(out.retval));
     RETVAL_ZERO_INT(rte_eth_dev_rx_queue_stop, out.retval);
 }
 
 int
-rpc_rte_eth_dev_tx_queue_start(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_tx_queue_start(rcf_rpc_server *rpcs, uint16_t port_id,
                                uint16_t queue_id)
 {
     tarpc_rte_eth_dev_tx_queue_start_in   in;
@@ -1587,13 +1587,13 @@ rpc_rte_eth_dev_tx_queue_start(rcf_rpc_server *rpcs, uint8_t port_id,
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_tx_queue_start,
                                           out.retval);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_tx_queue_start, "%hhu, %hu", NEG_ERRNO_FMT,
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_tx_queue_start, "%hu, %hu", NEG_ERRNO_FMT,
                  in.port_id, in.queue_id, NEG_ERRNO_ARGS(out.retval));
     RETVAL_ZERO_INT(rte_eth_dev_tx_queue_start, out.retval);
 }
 
 int
-rpc_rte_eth_dev_tx_queue_stop(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_tx_queue_stop(rcf_rpc_server *rpcs, uint16_t port_id,
                               uint16_t queue_id)
 {
     tarpc_rte_eth_dev_tx_queue_stop_in   in;
@@ -1610,13 +1610,13 @@ rpc_rte_eth_dev_tx_queue_stop(rcf_rpc_server *rpcs, uint8_t port_id,
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_tx_queue_stop,
                                           out.retval);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_tx_queue_stop, "%hhu, %hu", NEG_ERRNO_FMT,
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_tx_queue_stop, "%hu, %hu", NEG_ERRNO_FMT,
                  in.port_id, in.queue_id, NEG_ERRNO_ARGS(out.retval));
     RETVAL_ZERO_INT(rte_eth_dev_tx_queue_stop, out.retval);
 }
 
 void
-rpc_rte_eth_macaddr_get(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_macaddr_get(rcf_rpc_server *rpcs, uint16_t port_id,
                         struct tarpc_ether_addr *mac_addr)
 {
     tarpc_rte_eth_macaddr_get_in   in;
@@ -1641,7 +1641,7 @@ rpc_rte_eth_macaddr_get(rcf_rpc_server *rpcs, uint8_t port_id,
                sizeof(out.mac_addr.mac_addr_val[0].addr_bytes));
 
     tlbp = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, rte_eth_macaddr_get, "%hhu, %p", "%s",
+    TAPI_RPC_LOG(rpcs, rte_eth_macaddr_get, "%hu, %p", "%s",
                  in.port_id, mac_addr, te_ether_addr2log_buf(
                     tlbp, (uint8_t *)&out.mac_addr.mac_addr_val[0].addr_bytes));
     te_log_buf_free(tlbp);
@@ -1650,7 +1650,7 @@ rpc_rte_eth_macaddr_get(rcf_rpc_server *rpcs, uint8_t port_id,
 }
 
 int
-rpc_rte_eth_dev_default_mac_addr_set(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_default_mac_addr_set(rcf_rpc_server *rpcs, uint16_t port_id,
                                      struct tarpc_ether_addr *mac_addr)
 {
     tarpc_rte_eth_dev_default_mac_addr_set_in   in;
@@ -1674,7 +1674,7 @@ rpc_rte_eth_dev_default_mac_addr_set(rcf_rpc_server *rpcs, uint8_t port_id,
                                           out.retval);
 
     tlbp = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_default_mac_addr_set, "%hhu, %s", NEG_ERRNO_FMT,
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_default_mac_addr_set, "%hu, %s", NEG_ERRNO_FMT,
                  in.port_id, te_ether_addr2log_buf(
                     tlbp, (uint8_t *)&in.mac_addr.mac_addr_val[0].addr_bytes),
                     NEG_ERRNO_ARGS(out.retval));
@@ -1695,7 +1695,7 @@ tarpc_rte_eth_rxq_info2str(te_log_buf *tlbp,
     te_log_buf_append(tlbp, ", conf=");
     tarpc_rte_eth_rxconf2str(tlbp, &qinfo->conf);
 
-    te_log_buf_append(tlbp, ", scattered_rx=%hhu, nb_desc=%hu",
+    te_log_buf_append(tlbp, ", scattered_rx=%hu, nb_desc=%hu",
                       qinfo->scattered_rx, qinfo->nb_desc);
 
     te_log_buf_append(tlbp, " }");
@@ -1703,7 +1703,7 @@ tarpc_rte_eth_rxq_info2str(te_log_buf *tlbp,
 }
 
 int
-rpc_rte_eth_rx_queue_info_get(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_rx_queue_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
                               uint16_t queue_id,
                               struct tarpc_rte_eth_rxq_info *qinfo)
 {
@@ -1725,7 +1725,7 @@ rpc_rte_eth_rx_queue_info_get(rcf_rpc_server *rpcs, uint8_t port_id,
     *qinfo = out.qinfo;
 
     tlbp = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, rte_eth_rx_queue_info_get, "%hhu, %hu", "qinfo=%s, %s",
+    TAPI_RPC_LOG(rpcs, rte_eth_rx_queue_info_get, "%hu, %hu", "qinfo=%s, %s",
                  in.port_id, in.queue_id,
                  tarpc_rte_eth_rxq_info2str(tlbp, qinfo, rpcs),
                  NEG_ERRNO_ARGS(out.retval));
@@ -1750,7 +1750,7 @@ tarpc_rte_eth_txq_info2str(te_log_buf *tlbp,
 }
 
 int
-rpc_rte_eth_tx_queue_info_get(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_tx_queue_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
                               uint16_t queue_id,
                               struct tarpc_rte_eth_txq_info *qinfo)
 {
@@ -1772,7 +1772,7 @@ rpc_rte_eth_tx_queue_info_get(rcf_rpc_server *rpcs, uint8_t port_id,
     *qinfo = out.qinfo;
 
     tlbp = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, rte_eth_tx_queue_info_get, "%hhu, %hu", "qinfo=%s, %s",
+    TAPI_RPC_LOG(rpcs, rte_eth_tx_queue_info_get, "%hu, %hu", "qinfo=%s, %s",
                  in.port_id, in.queue_id,
                  tarpc_rte_eth_txq_info2str(tlbp, qinfo),
                  NEG_ERRNO_ARGS(out.retval));
@@ -1792,7 +1792,7 @@ rpc_rte_eth_dev_count(rcf_rpc_server *rpcs)
 
     rcf_rpc_call(rpcs, "rte_eth_dev_count", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_count, "", "%hhu", out.retval);
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_count, "", "%hu", out.retval);
 
     TAPI_RPC_OUT(rte_eth_dev_count, FALSE);
 
@@ -1802,7 +1802,7 @@ rpc_rte_eth_dev_count(rcf_rpc_server *rpcs)
 int
 rpc_rte_eth_dev_attach(rcf_rpc_server *rpcs,
                        const char     *devargs,
-                       uint8_t        *port_id)
+                       uint16_t       *port_id)
 {
     tarpc_rte_eth_dev_attach_in  in;
     tarpc_rte_eth_dev_attach_out out;
@@ -1818,14 +1818,14 @@ rpc_rte_eth_dev_attach(rcf_rpc_server *rpcs,
     if ((out.retval == 0) && (port_id != NULL))
         *port_id = out.port_id;
 
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_attach, "%s, %p", NEG_ERRNO_FMT ", %hhu",
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_attach, "%s, %p", NEG_ERRNO_FMT ", %hu",
                  in.devargs, port_id, NEG_ERRNO_ARGS(out.retval), out.port_id);
 
     RETVAL_ZERO_INT(rte_eth_dev_attach, out.retval);
 }
 
 int
-rpc_rte_eth_dev_detach(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_detach(rcf_rpc_server *rpcs, uint16_t port_id,
                        char *devname)
 {
     tarpc_rte_eth_dev_detach_in   in;
@@ -1843,7 +1843,7 @@ rpc_rte_eth_dev_detach(rcf_rpc_server *rpcs, uint8_t port_id,
     if ((out.retval == 0) && (devname != NULL) && (out.devname != NULL))
         memcpy(devname, out.devname, RPC_RTE_ETH_NAME_MAX_LEN);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_detach, "%hhu, %p", NEG_ERRNO_FMT ", %s",
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_detach, "%hu, %p", NEG_ERRNO_FMT ", %s",
                  in.port_id, devname, NEG_ERRNO_ARGS(out.retval), out.devname);
 
     RETVAL_ZERO_INT(rte_eth_dev_detach, out.retval);
@@ -1880,7 +1880,7 @@ tarpc_rte_reta_conf2str(te_log_buf *tlbp,
 }
 
 int
-rpc_rte_eth_dev_rss_reta_query(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_rss_reta_query(rcf_rpc_server *rpcs, uint16_t port_id,
                                struct tarpc_rte_eth_rss_reta_entry64 *reta_conf,
                                uint16_t reta_size)
 {
@@ -1917,7 +1917,7 @@ rpc_rte_eth_dev_rss_reta_query(rcf_rpc_server *rpcs, uint8_t port_id,
     tlbp = te_log_buf_alloc();
 
     TAPI_RPC_LOG(rpcs, rte_eth_dev_rss_reta_query,
-                 "%hhu, %p, %hu", NEG_ERRNO_FMT ", %s",
+                 "%hu, %p, %hu", NEG_ERRNO_FMT ", %s",
                  in.port_id, reta_conf, reta_size,
                  NEG_ERRNO_ARGS(out.retval),
                  tarpc_rte_reta_conf2str(tlbp,
@@ -1929,7 +1929,7 @@ rpc_rte_eth_dev_rss_reta_query(rcf_rpc_server *rpcs, uint8_t port_id,
 }
 
 int
-rpc_rte_eth_dev_rss_hash_conf_get(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_rss_hash_conf_get(rcf_rpc_server *rpcs, uint16_t port_id,
                                   struct tarpc_rte_eth_rss_conf *rss_conf)
 {
     tarpc_rte_eth_dev_rss_hash_conf_get_in   in;
@@ -1961,7 +1961,7 @@ rpc_rte_eth_dev_rss_hash_conf_get(rcf_rpc_server *rpcs, uint8_t port_id,
     tlbp = te_log_buf_alloc();
 
     TAPI_RPC_LOG(rpcs, rte_eth_dev_rss_hash_conf_get,
-                 "%hhu, %p", NEG_ERRNO_FMT ", %s",
+                 "%hu, %p", NEG_ERRNO_FMT ", %s",
                  in.port_id, rss_conf, NEG_ERRNO_ARGS(out.retval),
                  (rss_conf == NULL) ? "NULL" :
                  tarpc_rte_eth_rss_conf2str(tlbp, rss_conf));
@@ -2020,7 +2020,7 @@ tarpc_rte_eth_fc_conf2str(te_log_buf *tlbp,
     return te_log_buf_get(tlbp);
 }
 
-int rpc_rte_eth_dev_flow_ctrl_get(rcf_rpc_server *rpcs, uint8_t port_id,
+int rpc_rte_eth_dev_flow_ctrl_get(rcf_rpc_server *rpcs, uint16_t port_id,
                                   struct tarpc_rte_eth_fc_conf *fc_conf)
 {
     tarpc_rte_eth_dev_flow_ctrl_get_in   in;
@@ -2043,7 +2043,7 @@ int rpc_rte_eth_dev_flow_ctrl_get(rcf_rpc_server *rpcs, uint8_t port_id,
     tlbp = te_log_buf_alloc();
 
     TAPI_RPC_LOG(rpcs, rte_eth_dev_flow_ctrl_get,
-                 "%hhu, %p", NEG_ERRNO_FMT ", %s",
+                 "%hu, %p", NEG_ERRNO_FMT ", %s",
                  in.port_id, fc_conf, NEG_ERRNO_ARGS(out.retval),
                  (fc_conf == NULL) ? "<NULL>" :
                  tarpc_rte_eth_fc_conf2str(tlbp, fc_conf));
@@ -2100,7 +2100,7 @@ tapi_rpc_rte_filter_type2str(enum tarpc_rte_filter_type filter_type)
     return type;
 }
 
-int rpc_rte_eth_dev_filter_supported(rcf_rpc_server *rpcs, uint8_t port_id,
+int rpc_rte_eth_dev_filter_supported(rcf_rpc_server *rpcs, uint16_t port_id,
                                      enum tarpc_rte_filter_type filter_type)
 {
     tarpc_rte_eth_dev_filter_supported_in   in;
@@ -2118,7 +2118,7 @@ int rpc_rte_eth_dev_filter_supported(rcf_rpc_server *rpcs, uint8_t port_id,
                                           out.retval);
 
     TAPI_RPC_LOG(rpcs, rte_eth_dev_filter_supported,
-                 "%hhu, %s", NEG_ERRNO_FMT,
+                 "%hu, %s", NEG_ERRNO_FMT,
                  in.port_id, tapi_rpc_rte_filter_type2str(filter_type),
                  NEG_ERRNO_ARGS(out.retval));
 
@@ -2126,7 +2126,7 @@ int rpc_rte_eth_dev_filter_supported(rcf_rpc_server *rpcs, uint8_t port_id,
 }
 
 int
-rpc_rte_eth_xstats_get_names(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_xstats_get_names(rcf_rpc_server *rpcs, uint16_t port_id,
                              struct tarpc_rte_eth_xstat_name *xstats_names,
                              unsigned int size)
 {
@@ -2173,7 +2173,7 @@ rpc_rte_eth_xstats_get_names(rcf_rpc_server *rpcs, uint8_t port_id,
     te_log_buf_append(tlbp, "}");
 
     TAPI_RPC_LOG(rpcs, rte_eth_xstats_get_names,
-                 "%hhu, %u", NEG_ERRNO_FMT " xstats_names=%s", in.port_id,
+                 "%hu, %u", NEG_ERRNO_FMT " xstats_names=%s", in.port_id,
                  size, NEG_ERRNO_ARGS(out.retval), te_log_buf_get(tlbp));
     te_log_buf_free(tlbp);
 
@@ -2181,7 +2181,7 @@ rpc_rte_eth_xstats_get_names(rcf_rpc_server *rpcs, uint8_t port_id,
 }
 
 int
-rpc_rte_eth_xstats_get(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_xstats_get(rcf_rpc_server *rpcs, uint16_t port_id,
                        struct tarpc_rte_eth_xstat *xstats,
                        unsigned int n)
 {
@@ -2227,7 +2227,7 @@ rpc_rte_eth_xstats_get(rcf_rpc_server *rpcs, uint8_t port_id,
     te_log_buf_append(tlbp, " }");
 
     TAPI_RPC_LOG(rpcs, rte_eth_xstats_get,
-                 "%hhu, %u", NEG_ERRNO_FMT " xstats = %s", in.port_id, n,
+                 "%hu, %u", NEG_ERRNO_FMT " xstats = %s", in.port_id, n,
                  NEG_ERRNO_ARGS(out.retval), te_log_buf_get(tlbp));
     te_log_buf_free(tlbp);
 
@@ -2235,7 +2235,7 @@ rpc_rte_eth_xstats_get(rcf_rpc_server *rpcs, uint8_t port_id,
 }
 
 void
-rpc_rte_eth_xstats_reset(rcf_rpc_server *rpcs, uint8_t port_id)
+rpc_rte_eth_xstats_reset(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_xstats_reset_in   in;
     tarpc_rte_eth_xstats_reset_out  out;
@@ -2247,7 +2247,7 @@ rpc_rte_eth_xstats_reset(rcf_rpc_server *rpcs, uint8_t port_id)
 
     rcf_rpc_call(rpcs, "rte_eth_xstats_reset", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_xstats_reset, "%hhu", "", in.port_id);
+    TAPI_RPC_LOG(rpcs, rte_eth_xstats_reset, "%hu", "", in.port_id);
     RETVAL_VOID(rte_eth_xstats_reset);
 }
 
@@ -2291,7 +2291,7 @@ tarpc_log_kv_array_uint64(te_log_buf   *tlbp,
 
 int
 rpc_rte_eth_xstats_get_by_id(rcf_rpc_server *rpcs,
-                             uint8_t         port_id,
+                             uint16_t        port_id,
                              uint64_t       *ids,
                              uint64_t       *values,
                              unsigned int    n)
@@ -2316,7 +2316,7 @@ rpc_rte_eth_xstats_get_by_id(rcf_rpc_server *rpcs,
 
     tlbp_ids = te_log_buf_alloc();
     tlbp_values = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, rte_eth_xstats_get_by_id, "%hhu, %s, %p, %u",
+    TAPI_RPC_LOG(rpcs, rte_eth_xstats_get_by_id, "%hu, %s, %p, %u",
                  NEG_ERRNO_FMT " %s", in.port_id,
                  tarpc_log_array_uint64(tlbp_ids, ids, n), values, in.n,
                  NEG_ERRNO_ARGS(out.retval),
@@ -2358,7 +2358,7 @@ tarpc_rte_eth_dump_xstat_names(te_log_buf                      *tlbp,
 
 int
 rpc_rte_eth_xstats_get_names_by_id(rcf_rpc_server                  *rpcs,
-                                   uint8_t                          port_id,
+                                   uint16_t                         port_id,
                                    struct tarpc_rte_eth_xstat_name *xstat_names,
                                    unsigned int                     size,
                                    uint64_t                        *ids)
@@ -2383,7 +2383,7 @@ rpc_rte_eth_xstats_get_names_by_id(rcf_rpc_server                  *rpcs,
 
     tlbp_ids = te_log_buf_alloc();
     tlbp_xstat_names = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, rte_eth_xstats_get_names_by_id, "%hhu, %p, %u, %s",
+    TAPI_RPC_LOG(rpcs, rte_eth_xstats_get_names_by_id, "%hu, %p, %u, %s",
                  NEG_ERRNO_FMT " %s", in.port_id, xstat_names,
                  in.size, tarpc_log_array_uint64(tlbp_ids, ids, size),
                  NEG_ERRNO_ARGS(out.retval),
@@ -2600,7 +2600,7 @@ tarpc_rte_filter_arg2str tarpc_filter_arg2str[] = {
 #undef TARPC_FILTER2STR
 };
 
-int rpc_rte_eth_dev_filter_ctrl(rcf_rpc_server *rpcs, uint8_t port_id,
+int rpc_rte_eth_dev_filter_ctrl(rcf_rpc_server *rpcs, uint16_t port_id,
                                 enum tarpc_rte_filter_type filter_type,
                                 enum tarpc_rte_filter_op filter_op,
                                 void *arg)
@@ -2677,7 +2677,7 @@ int rpc_rte_eth_dev_filter_ctrl(rcf_rpc_server *rpcs, uint8_t port_id,
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_eth_dev_filter_ctrl,
-                 "%hhu, %s, %s, filter_arg=%s", NEG_ERRNO_FMT,
+                 "%hu, %s, %s, filter_arg=%s", NEG_ERRNO_FMT,
                  in.port_id, tapi_rpc_rte_filter_type2str(filter_type),
                  tarpc_rte_filter_op2str(filter_op),
                  (tarpc_filter_arg2str[filter_type] == NULL) ? "<NULL>" :
@@ -2689,7 +2689,7 @@ int rpc_rte_eth_dev_filter_ctrl(rcf_rpc_server *rpcs, uint8_t port_id,
 }
 
 int
-rpc_rte_eth_dev_rss_hash_update(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_rss_hash_update(rcf_rpc_server *rpcs, uint16_t port_id,
                                 struct tarpc_rte_eth_rss_conf *rss_conf)
 {
     tarpc_rte_eth_dev_rss_hash_update_in   in;
@@ -2725,7 +2725,7 @@ rpc_rte_eth_dev_rss_hash_update(rcf_rpc_server *rpcs, uint8_t port_id,
     tlbp = te_log_buf_alloc();
 
     TAPI_RPC_LOG(rpcs, rte_eth_dev_rss_hash_update,
-                 "%hhu, %s", NEG_ERRNO_FMT,
+                 "%hu, %s", NEG_ERRNO_FMT,
                  in.port_id, (rss_conf == NULL) ? "NULL" :
                  tarpc_rte_eth_rss_conf2str(tlbp, rss_conf),
                  NEG_ERRNO_ARGS(out.retval));
@@ -2737,7 +2737,7 @@ check_ret:
 }
 
 int
-rpc_rte_eth_dev_rss_reta_update(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_rss_reta_update(rcf_rpc_server *rpcs, uint16_t port_id,
                                struct tarpc_rte_eth_rss_reta_entry64 *reta_conf,
                                uint16_t reta_size)
 {
@@ -2775,7 +2775,7 @@ rpc_rte_eth_dev_rss_reta_update(rcf_rpc_server *rpcs, uint8_t port_id,
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_eth_dev_rss_reta_update,
-                 "%hhu, %p, %hu", NEG_ERRNO_FMT,
+                 "%hu, %p, %hu", NEG_ERRNO_FMT,
                  in.port_id, reta_conf, reta_size,
                  NEG_ERRNO_ARGS(out.retval));
     te_log_buf_free(tlbp);
@@ -2800,7 +2800,7 @@ tarpc_rte_eth_link2str(te_log_buf                 *tlbp,
 }
 
 void
-rpc_rte_eth_link_get_nowait(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_link_get_nowait(rcf_rpc_server *rpcs, uint16_t port_id,
                             struct tarpc_rte_eth_link *eth_link)
 {
     tarpc_rte_eth_link_get_nowait_in   in;
@@ -2820,7 +2820,7 @@ rpc_rte_eth_link_get_nowait(rcf_rpc_server *rpcs, uint8_t port_id,
     *eth_link = out.eth_link;
 
     tlbp = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, rte_eth_link_get_nowait, "%hhu",
+    TAPI_RPC_LOG(rpcs, rte_eth_link_get_nowait, "%hu",
                  "eth_link = %s", in.port_id,
                  tarpc_rte_eth_link2str(tlbp, eth_link));
     te_log_buf_free(tlbp);
@@ -2830,7 +2830,7 @@ rpc_rte_eth_link_get_nowait(rcf_rpc_server *rpcs, uint8_t port_id,
 
 void
 rpc_rte_eth_link_get(rcf_rpc_server *rpcs,
-                     uint8_t port_id,
+                     uint16_t port_id,
                      struct tarpc_rte_eth_link *eth_link)
 {
     tarpc_rte_eth_link_get_in   in;
@@ -2850,7 +2850,7 @@ rpc_rte_eth_link_get(rcf_rpc_server *rpcs,
     *eth_link = out.eth_link;
 
     tlbp = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, rte_eth_link_get, "%hhu",
+    TAPI_RPC_LOG(rpcs, rte_eth_link_get, "%hu",
                  "eth_link = %s", in.port_id,
                  tarpc_rte_eth_link2str(tlbp, eth_link));
     te_log_buf_free(tlbp);
@@ -2858,7 +2858,7 @@ rpc_rte_eth_link_get(rcf_rpc_server *rpcs,
     RETVAL_VOID(rte_eth_link_get);
 }
 
-int rpc_rte_eth_dev_flow_ctrl_set(rcf_rpc_server *rpcs, uint8_t port_id,
+int rpc_rte_eth_dev_flow_ctrl_set(rcf_rpc_server *rpcs, uint16_t port_id,
                                   struct tarpc_rte_eth_fc_conf *fc_conf)
 {
     tarpc_rte_eth_dev_flow_ctrl_set_in   in;
@@ -2883,7 +2883,7 @@ int rpc_rte_eth_dev_flow_ctrl_set(rcf_rpc_server *rpcs, uint8_t port_id,
                                           out.retval);
 
     tlbp = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_flow_ctrl_set, "%hhu, %s",
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_flow_ctrl_set, "%hu, %s",
                  NEG_ERRNO_FMT, in.port_id,
                  tarpc_rte_eth_fc_conf2str(tlbp, fc_conf),
                  NEG_ERRNO_ARGS(out.retval));
@@ -2962,7 +2962,7 @@ tarpc_rte_supported_ptypes2str(te_log_buf *tlbp, uint32_t *ptypes, int num)
 }
 
 int
-rpc_rte_eth_dev_get_supported_ptypes(rcf_rpc_server *rpcs, uint8_t port_id,
+rpc_rte_eth_dev_get_supported_ptypes(rcf_rpc_server *rpcs, uint16_t port_id,
                                      uint32_t ptype_mask, uint32_t *ptypes,
                                      int num)
 {
@@ -3005,7 +3005,7 @@ rpc_rte_eth_dev_get_supported_ptypes(rcf_rpc_server *rpcs, uint8_t port_id,
     }
 
     TAPI_RPC_LOG(rpcs, rpc_rte_eth_dev_get_supported_ptypes,
-                 "%hhu, %s", "%s%s", in.port_id, te_log_buf_get(tlbp_arg),
+                 "%hu, %s", "%s%s", in.port_id, te_log_buf_get(tlbp_arg),
                  NEG_ERRNO_ARGS(out.retval), te_log_buf_get(tlbp_ret));
     te_log_buf_free(tlbp_arg);
     te_log_buf_free(tlbp_ret);
@@ -3034,7 +3034,7 @@ tarpc_ether_addr_list2str(te_log_buf              *tlbp,
 
 int
 rpc_rte_eth_dev_set_mc_addr_list(rcf_rpc_server *rpcs,
-                                 uint8_t port_id,
+                                 uint16_t port_id,
                                  struct tarpc_ether_addr *mc_addr_set,
                                  uint32_t nb_mc_addr)
 {
@@ -3063,7 +3063,7 @@ rpc_rte_eth_dev_set_mc_addr_list(rcf_rpc_server *rpcs,
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_eth_dev_set_mc_addr_list,
-                 "%hhu, %s", NEG_ERRNO_FMT, in.port_id,
+                 "%hu, %s", NEG_ERRNO_FMT, in.port_id,
                  tarpc_ether_addr_list2str(tlbp, mc_addr_set, nb_mc_addr),
                  NEG_ERRNO_ARGS(out.retval));
     te_log_buf_free(tlbp);
@@ -3073,7 +3073,7 @@ rpc_rte_eth_dev_set_mc_addr_list(rcf_rpc_server *rpcs,
 
 int
 rpc_rte_eth_dev_fw_version_get(rcf_rpc_server *rpcs,
-                               uint8_t         port_id,
+                               uint16_t        port_id,
                                char           *fw_version,
                                size_t          fw_size)
 {
@@ -3098,7 +3098,7 @@ rpc_rte_eth_dev_fw_version_get(rcf_rpc_server *rpcs,
     memcpy(fw_version, out.fw_version.fw_version_val, fw_size);
 
     TAPI_RPC_LOG(rpcs, rte_eth_dev_fw_version_get,
-                 "%hhu, %#x, %u", NEG_ERRNO_FMT "; fw_version: %s%s%s",
+                 "%hu, %#x, %u", NEG_ERRNO_FMT "; fw_version: %s%s%s",
                  in.port_id, in.fw_version.fw_version_val,
                  in.fw_version.fw_version_len, NEG_ERRNO_ARGS(out.retval),
                  (out.retval == 0) ? out.fw_version.fw_version_val : "N/A",
@@ -3149,7 +3149,7 @@ tarpc_rte_eth_tunnel_type2str(enum tarpc_rte_eth_tunnel_type tunnel_type)
 
 int
 rpc_rte_eth_dev_udp_tunnel_port_add(rcf_rpc_server                  *rpcs,
-                                    uint8_t                          port_id,
+                                    uint16_t                         port_id,
                                     struct tarpc_rte_eth_udp_tunnel *tunnel_udp)
 {
     tarpc_rte_eth_dev_udp_tunnel_port_add_in  in;
@@ -3173,7 +3173,7 @@ rpc_rte_eth_dev_udp_tunnel_port_add(rcf_rpc_server                  *rpcs,
                                           out.retval);
 
     TAPI_RPC_LOG(rpcs, rte_eth_dev_udp_tunnel_port_add,
-                 "%hhu, udp_port = %" PRIu16 ", prot_type = %s",
+                 "%hu, udp_port = %" PRIu16 ", prot_type = %s",
                  NEG_ERRNO_FMT, in.port_id, in.tunnel_udp.udp_port,
                  tarpc_rte_eth_tunnel_type2str(in.tunnel_udp.prot_type),
                  NEG_ERRNO_ARGS(out.retval));
@@ -3184,7 +3184,7 @@ rpc_rte_eth_dev_udp_tunnel_port_add(rcf_rpc_server                  *rpcs,
 int
 rpc_rte_eth_dev_udp_tunnel_port_delete(
                                 rcf_rpc_server                  *rpcs,
-                                uint8_t                          port_id,
+                                uint16_t                         port_id,
                                 struct tarpc_rte_eth_udp_tunnel *tunnel_udp)
 {
     tarpc_rte_eth_dev_udp_tunnel_port_delete_in  in;
@@ -3208,7 +3208,7 @@ rpc_rte_eth_dev_udp_tunnel_port_delete(
                                           out.retval);
 
     TAPI_RPC_LOG(rpcs, rte_eth_dev_udp_tunnel_port_delete,
-                 "%hhu, udp_port = %" PRIu16 ", prot_type = %s",
+                 "%hu, udp_port = %" PRIu16 ", prot_type = %s",
                  NEG_ERRNO_FMT, in.port_id, in.tunnel_udp.udp_port,
                  tarpc_rte_eth_tunnel_type2str(in.tunnel_udp.prot_type),
                  NEG_ERRNO_ARGS(out.retval));

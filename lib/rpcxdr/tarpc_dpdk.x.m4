@@ -363,14 +363,14 @@ typedef struct tarpc_mbuf_in tarpc_rte_pktmbuf_get_port_in;
 
 struct tarpc_rte_pktmbuf_get_port_out {
     struct tarpc_out_arg    common;
-    uint8_t                 retval;
+    uint16_t                retval;
 };
 
 /** rte_pktmbuf_set_port() */
 struct tarpc_rte_pktmbuf_set_port_in {
     struct tarpc_in_arg     common;
     tarpc_rte_mbuf          m;
-    uint8_t                 port;
+    uint16_t                port;
 };
 
 typedef struct tarpc_void_out tarpc_rte_pktmbuf_set_port_out;
@@ -669,7 +669,7 @@ struct tarpc_rte_eth_stats {
 /** rte_eth_stats_get() */
 struct tarpc_rte_eth_stats_get_in {
     struct tarpc_in_arg             common;
-    uint8_t                         port_id;
+    uint16_t                        port_id;
 };
 
 struct tarpc_rte_eth_stats_get_out {
@@ -680,12 +680,12 @@ struct tarpc_rte_eth_stats_get_out {
 
 struct tarpc_rte_eth_dev_port_id_in {
     struct tarpc_in_arg             common;
-    uint8_t                         port_id;
+    uint16_t                        port_id;
 };
 
 struct tarpc_rte_eth_dev_port_id_queue_id_in {
     struct tarpc_in_arg             common;
-    uint8_t                         port_id;
+    uint16_t                        port_id;
     uint16_t                        queue_id;
 };
 
@@ -960,7 +960,7 @@ struct tarpc_rte_eth_conf {
 /** rte_eth_dev_configure() */
 struct tarpc_rte_eth_dev_configure_in {
     struct tarpc_in_arg         common;
-    uint8_t                     port_id;
+    uint16_t                    port_id;
     uint16_t                    nb_rx_queue;
     uint16_t                    nb_tx_queue;
     struct tarpc_rte_eth_conf   eth_conf<>;
@@ -986,7 +986,7 @@ typedef struct tarpc_void_out tarpc_rte_eth_dev_stop_out;
 /** rte_eth_tx_queue_setup() */
 struct tarpc_rte_eth_tx_queue_setup_in {
     struct tarpc_in_arg         common;
-    uint8_t                     port_id;
+    uint16_t                    port_id;
     uint16_t                    tx_queue_id;
     uint16_t                    nb_tx_desc;
     tarpc_int                   socket_id;
@@ -998,7 +998,7 @@ typedef struct tarpc_int_retval_out tarpc_rte_eth_tx_queue_setup_out;
 /** rte_eth_rx_queue_setup() */
 struct tarpc_rte_eth_rx_queue_setup_in {
     struct tarpc_in_arg         common;
-    uint8_t                     port_id;
+    uint16_t                    port_id;
     uint16_t                    rx_queue_id;
     uint16_t                    nb_rx_desc;
     tarpc_int                   socket_id;
@@ -1011,7 +1011,7 @@ typedef struct tarpc_int_retval_out tarpc_rte_eth_rx_queue_setup_out;
 /** rte_eth_tx_burst() */
 struct tarpc_rte_eth_tx_burst_in {
     struct tarpc_in_arg  common;
-    uint8_t              port_id;
+    uint16_t             port_id;
     uint16_t             queue_id;
     tarpc_rte_mbuf       tx_pkts<>;
 };
@@ -1024,7 +1024,7 @@ struct tarpc_rte_eth_tx_burst_out {
 /** rte_eth_rx_burst() */
 struct tarpc_rte_eth_rx_burst_in {
     struct tarpc_in_arg  common;
-    uint8_t              port_id;
+    uint16_t             port_id;
     uint16_t             queue_id;
     uint16_t             nb_pkts;
 };
@@ -1077,7 +1077,7 @@ typedef struct tarpc_int_retval_out tarpc_rte_eth_allmulticast_get_out;
 /** rte_eth_dev_get_mtu() */
 struct tarpc_rte_eth_dev_get_mtu_in {
     struct tarpc_in_arg  common;
-    uint8_t              port_id;
+    uint16_t             port_id;
     uint16_t             mtu<>;
 
 };
@@ -1091,7 +1091,7 @@ struct tarpc_rte_eth_dev_get_mtu_out {
 /** rte_eth_dev_set_mtu() */
 struct tarpc_rte_eth_dev_set_mtu_in {
     struct tarpc_in_arg  common;
-    uint8_t              port_id;
+    uint16_t             port_id;
     uint16_t             mtu;
 };
 
@@ -1100,7 +1100,7 @@ typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_set_mtu_out;
 /** rte_eth_dev_vlan_filter() */
 struct tarpc_rte_eth_dev_vlan_filter_in {
     struct tarpc_in_arg  common;
-    uint8_t              port_id;
+    uint16_t             port_id;
     uint16_t             vlan_id;
     tarpc_int            on;
 };
@@ -1110,7 +1110,7 @@ typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_vlan_filter_out;
 /** rte_eth_dev_set_vlan_strip_on_queue() */
 struct tarpc_rte_eth_dev_set_vlan_strip_on_queue_in {
     struct tarpc_in_arg  common;
-    uint8_t              port_id;
+    uint16_t             port_id;
     uint16_t             rx_queue_id;
     tarpc_int            on;
 };
@@ -1129,7 +1129,7 @@ enum tarpc_rte_vlan_type {
 /** rte_eth_dev_set_vlan_ether_type() */
 struct tarpc_rte_eth_dev_set_vlan_ether_type_in {
     struct tarpc_in_arg       common;
-    uint8_t                   port_id;
+    uint16_t                  port_id;
     enum tarpc_rte_vlan_type  vlan_type;
     uint16_t                  tag_type;
 };
@@ -1147,7 +1147,7 @@ enum tarpc_rte_eth_vlan_offload_flags {
 /** rte_eth_dev_set_vlan_offload() */
 struct tarpc_rte_eth_dev_set_vlan_offload_in {
     struct tarpc_in_arg     common;
-    uint8_t                 port_id;
+    uint16_t                port_id;
     tarpc_int               offload_mask;
 };
 
@@ -1161,7 +1161,7 @@ typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_get_vlan_offload_out;
 /** rte_eth_dev_set_vlan_pvid() */
 struct tarpc_rte_eth_dev_set_vlan_pvid_in {
     struct tarpc_in_arg     common;
-    uint8_t                 port_id;
+    uint16_t                port_id;
     uint16_t                pvid;
     tarpc_int               on;
 };
@@ -1170,7 +1170,7 @@ typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_set_vlan_pvid_out;
 
 struct tarpc_descriptor_status_in {
     struct tarpc_in_arg common;
-    uint8_t             port_id;
+    uint16_t            port_id;
     uint16_t            queue_id;
     uint16_t            offset;
 };
@@ -1182,7 +1182,7 @@ typedef struct tarpc_int_retval_out tarpc_rte_eth_rx_descriptor_done_out;
 /** rte_eth_rx_queue_count() */
 struct tarpc_rte_eth_rx_queue_count_in {
     struct tarpc_in_arg     common;
-    uint8_t                 port_id;
+    uint16_t                port_id;
     uint16_t                queue_id;
 };
 
@@ -1249,7 +1249,7 @@ struct tarpc_ether_addr {
 /** rte_eth_macaddr_get() */
 struct tarpc_rte_eth_macaddr_get_in {
     struct tarpc_in_arg      common;
-    uint8_t                  port_id;
+    uint16_t                 port_id;
     struct tarpc_ether_addr  mac_addr<>;
 };
 
@@ -1261,7 +1261,7 @@ struct tarpc_rte_eth_macaddr_get_out {
 /** rte_eth_dev_default_mac_addr_set() */
 struct tarpc_rte_eth_dev_default_mac_addr_set_in {
     struct tarpc_in_arg      common;
-    uint8_t                  port_id;
+    uint16_t                 port_id;
     struct tarpc_ether_addr  mac_addr<>;
 };
 
@@ -1324,7 +1324,7 @@ struct tarpc_rte_eth_dev_attach_in {
 struct tarpc_rte_eth_dev_attach_out {
     struct tarpc_out_arg common;
     tarpc_int            retval;
-    uint8_t              port_id;
+    uint16_t             port_id;
 };
 
 /** rte_eth_dev_detach() */
@@ -1344,7 +1344,7 @@ struct tarpc_rte_eth_rss_reta_entry64 {
 /** rte_eth_dev_rss_reta_query() */
 struct tarpc_rte_eth_dev_rss_reta_query_in {
     struct tarpc_in_arg                    common;
-    uint8_t                                port_id;
+    uint16_t                               port_id;
     uint16_t                               reta_size;
     struct tarpc_rte_eth_rss_reta_entry64  reta_conf<>;
 };
@@ -1358,7 +1358,7 @@ struct tarpc_rte_eth_dev_rss_reta_query_out {
 /** rte_eth_dev_rss_reta_update() */
 struct tarpc_rte_eth_dev_rss_reta_update_in {
     struct tarpc_in_arg                    common;
-    uint8_t                                port_id;
+    uint16_t                               port_id;
     uint16_t                               reta_size;
     struct tarpc_rte_eth_rss_reta_entry64  reta_conf<>;
 };
@@ -1405,7 +1405,7 @@ struct tarpc_rte_eth_dev_flow_ctrl_get_out {
 /** rte_eth_dev_flow_ctrl_set() */
 struct tarpc_rte_eth_dev_flow_ctrl_set_in {
     struct tarpc_in_arg                    common;
-    uint8_t                                port_id;
+    uint16_t                               port_id;
     struct tarpc_rte_eth_fc_conf           fc_conf;
 };
 
@@ -1430,7 +1430,7 @@ enum tarpc_rte_filter_type {
 /** rte_eth_dev_filter_supported() */
 struct tarpc_rte_eth_dev_filter_supported_in {
     struct tarpc_in_arg         common;
-    uint8_t                     port_id;
+    uint16_t                    port_id;
     enum tarpc_rte_filter_type  filter_type;
 };
 
@@ -1513,7 +1513,7 @@ struct tarpc_rte_eth_ntuple_filter {
 /** rte_eth_dev_filter_ctrl */
 struct tarpc_rte_eth_dev_filter_ctrl_in {
     struct tarpc_in_arg         common;
-    uint8_t                     port_id;
+    uint16_t                    port_id;
     enum tarpc_rte_filter_type  filter_type;
     enum tarpc_rte_filter_op    filter_op;
     uint8_t                     arg<>;
@@ -1524,7 +1524,7 @@ typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_filter_ctrl_out;
 /** rte_eth_dev_rss_hash_update() */
 struct tarpc_rte_eth_dev_rss_hash_update_in {
     struct tarpc_in_arg                   common;
-    uint8_t                               port_id;
+    uint16_t                              port_id;
     struct tarpc_rte_eth_rss_conf         rss_conf;
 };
 
@@ -1556,7 +1556,7 @@ struct tarpc_rte_eth_link_get_out {
 /** rte_eth_dev_fw_version_get() */
 struct tarpc_rte_eth_dev_fw_version_get_in {
     struct tarpc_in_arg     common;
-    uint8_t                 port_id;
+    uint16_t                port_id;
     char                    fw_version<>;
 };
 
@@ -1582,7 +1582,7 @@ struct tarpc_rte_eth_xstat_name {
 /** rte_eth_xstats_get_names() */
 struct tarpc_rte_eth_xstats_get_names_in {
     struct tarpc_in_arg                     common;
-    uint8_t                                 port_id;
+    uint16_t                                port_id;
     unsigned int                            size;
 };
 
@@ -1595,7 +1595,7 @@ struct tarpc_rte_eth_xstats_get_names_out {
 /** rte_eth_xstats_get() */
 struct tarpc_rte_eth_xstats_get_in {
     struct tarpc_in_arg                     common;
-    uint8_t                                 port_id;
+    uint16_t                                port_id;
     unsigned int                            n;
 };
 
@@ -1608,7 +1608,7 @@ struct tarpc_rte_eth_xstats_get_out {
 /** rte_eth_xstats_reset() */
 struct tarpc_rte_eth_xstats_reset_in {
     struct tarpc_in_arg                     common;
-    uint8_t                                 port_id;
+    uint16_t                                port_id;
 };
 
 typedef struct tarpc_void_out tarpc_rte_eth_xstats_reset_out;
@@ -1616,7 +1616,7 @@ typedef struct tarpc_void_out tarpc_rte_eth_xstats_reset_out;
 /** rte_eth_xstats_get_by_id() */
 struct tarpc_rte_eth_xstats_get_by_id_in {
     struct tarpc_in_arg common;
-    uint8_t             port_id;
+    uint16_t            port_id;
     uint64_t            ids<>;
     unsigned int        n;
 };
@@ -1630,7 +1630,7 @@ struct tarpc_rte_eth_xstats_get_by_id_out {
 /** rte_eth_xstats_get_names_by_id() */
 struct tarpc_rte_eth_xstats_get_names_by_id_in {
     struct tarpc_in_arg common;
-    uint8_t             port_id;
+    uint16_t            port_id;
     uint64_t            ids<>;
     unsigned int        size;
 };
@@ -1656,7 +1656,7 @@ enum tarpc_rte_pktmbuf_types_offsets {
 /** rte_eth_dev_get_supported_ptypes() */
 struct tarpc_rte_eth_dev_get_supported_ptypes_in {
     struct tarpc_in_arg                     common;
-    uint8_t                                 port_id;
+    uint16_t                                port_id;
     uint32_t                                ptype_mask;
     int                                     num;
 };
@@ -1670,7 +1670,7 @@ struct tarpc_rte_eth_dev_get_supported_ptypes_out {
 /** rte_eth_dev_set_mc_addr_list() */
 struct tarpc_rte_eth_dev_set_mc_addr_list_in {
     struct tarpc_in_arg                     common;
-    uint8_t                                 port_id;
+    uint16_t                                port_id;
     struct tarpc_ether_addr                 mc_addr_set<>;
 };
 
@@ -1698,7 +1698,7 @@ struct tarpc_rte_eth_udp_tunnel {
 /** rte_eth_dev_udp_tunnel_port_add() */
 struct tarpc_rte_eth_dev_udp_tunnel_port_add_in {
     struct tarpc_in_arg             common;
-    uint8_t                         port_id;
+    uint16_t                        port_id;
     struct tarpc_rte_eth_udp_tunnel tunnel_udp;
 };
 
@@ -1772,7 +1772,7 @@ typedef struct tarpc_void_out tarpc_rte_free_flow_rule_out;
 /** rte_flow_validate() */
 struct tarpc_rte_flow_validate_in {
     struct tarpc_in_arg             common;
-    uint8_t                         port_id;
+    uint16_t                        port_id;
     tarpc_rte_flow_attr             attr;
     tarpc_rte_flow_item             pattern;
     tarpc_rte_flow_action           actions;
@@ -1796,7 +1796,7 @@ struct tarpc_rte_flow_create_out {
 /** rte_flow_destroy() */
 struct tarpc_rte_flow_destroy_in {
     struct tarpc_in_arg             common;
-    uint8_t                         port_id;
+    uint16_t                        port_id;
     tarpc_rte_flow                  flow;
 };
 
@@ -1805,7 +1805,7 @@ typedef struct tarpc_rte_flow_validate_out tarpc_rte_flow_destroy_out;
 /** rte_flow_flush() */
 struct tarpc_rte_flow_flush_in {
     struct tarpc_in_arg             common;
-    uint8_t                         port_id;
+    uint16_t                        port_id;
 };
 
 typedef struct tarpc_rte_flow_validate_out tarpc_rte_flow_flush_out;
@@ -1813,7 +1813,7 @@ typedef struct tarpc_rte_flow_validate_out tarpc_rte_flow_flush_out;
 /** rte_flow_isolate() */
 struct tarpc_rte_flow_isolate_in {
     struct tarpc_in_arg         common;
-    uint8_t                     port_id;
+    uint16_t                    port_id;
     tarpc_int                   set;
 };
 

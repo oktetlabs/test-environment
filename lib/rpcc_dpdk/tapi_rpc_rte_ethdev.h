@@ -56,7 +56,7 @@ extern "C" {
  * Caller must free memory allocated for driver_name using free().
  */
 extern void rpc_rte_eth_dev_info_get(rcf_rpc_server *rpcs,
-                                     uint8_t port_id,
+                                     uint16_t port_id,
                                      struct tarpc_rte_eth_dev_info *dev_info);
 
 /**
@@ -66,7 +66,7 @@ extern void rpc_rte_eth_dev_info_get(rcf_rpc_server *rpcs,
  * negative return value.
  */
 extern int rpc_rte_eth_dev_configure(rcf_rpc_server *rpcs,
-                                     uint8_t port_id,
+                                     uint16_t port_id,
                                      uint16_t nb_rx_queue,
                                      uint16_t nb_tx_queue,
                                      const struct tarpc_rte_eth_conf *eth_conf);
@@ -78,21 +78,21 @@ extern int rpc_rte_eth_dev_configure(rcf_rpc_server *rpcs,
  * facilities.
  */
 extern struct tarpc_rte_eth_conf *
-    tapi_rpc_rte_eth_make_eth_conf(rcf_rpc_server *rpcs, uint8_t port_id,
+    tapi_rpc_rte_eth_make_eth_conf(rcf_rpc_server *rpcs, uint16_t port_id,
                                    struct tarpc_rte_eth_conf *eth_conf);
 
 /**
  * Do rte_eth_dev_configure() RPC with default eth_conf.
  */
 extern int tapi_rpc_rte_eth_dev_configure_def(rcf_rpc_server *rpcs,
-                                              uint8_t port_id,
+                                              uint16_t port_id,
                                               uint16_t nb_rx_queue,
                                               uint16_t nb_tx_queue);
 
 /**
  * @b rte_eth_dev_close() RPC.
  */
-extern void rpc_rte_eth_dev_close(rcf_rpc_server *rpcs, uint8_t port_id);
+extern void rpc_rte_eth_dev_close(rcf_rpc_server *rpcs, uint16_t port_id);
 
 /**
  * @b rte_eth_dev_start() RPC.
@@ -100,12 +100,12 @@ extern void rpc_rte_eth_dev_close(rcf_rpc_server *rpcs, uint8_t port_id);
  * If error is not expected, the function jumps out in the case
  * of start failure.
  */
-extern int rpc_rte_eth_dev_start(rcf_rpc_server *rpcs, uint8_t port_id);
+extern int rpc_rte_eth_dev_start(rcf_rpc_server *rpcs, uint16_t port_id);
 
 /**
  * @b rte_eth_dev_stop() RPC.
  */
-extern void rpc_rte_eth_dev_stop(rcf_rpc_server *rpcs, uint8_t port_id);
+extern void rpc_rte_eth_dev_stop(rcf_rpc_server *rpcs, uint16_t port_id);
 
 /**
  * @b rte_eth_tx_queue_setup() RPC.
@@ -114,7 +114,7 @@ extern void rpc_rte_eth_dev_stop(rcf_rpc_server *rpcs, uint8_t port_id);
  * non-zero return value.
  */
 extern int rpc_rte_eth_tx_queue_setup(rcf_rpc_server *rpcs,
-                                      uint8_t port_id,
+                                      uint16_t port_id,
                                       uint16_t tx_queue_id,
                                       uint16_t nb_tx_desc,
                                       unsigned int socket_id,
@@ -127,7 +127,7 @@ extern int rpc_rte_eth_tx_queue_setup(rcf_rpc_server *rpcs,
  * non-zero return value.
  */
 extern int rpc_rte_eth_rx_queue_setup(rcf_rpc_server *rpcs,
-                                      uint8_t port_id,
+                                      uint16_t port_id,
                                       uint16_t rx_queue_id,
                                       uint16_t nb_rx_desc,
                                       unsigned int socket_id,
@@ -140,7 +140,7 @@ extern int rpc_rte_eth_rx_queue_setup(rcf_rpc_server *rpcs,
  * The function jumps out in the case of actual number of transmitted packets
  * more than @p nb_pkts
  */
-extern uint16_t rpc_rte_eth_tx_burst(rcf_rpc_server *rpcs, uint8_t  port_id,
+extern uint16_t rpc_rte_eth_tx_burst(rcf_rpc_server *rpcs, uint16_t port_id,
                                      uint16_t queue_id,
                                      rpc_rte_mbuf_p *tx_pkts,
                                      uint16_t nb_pkts);
@@ -151,7 +151,7 @@ extern uint16_t rpc_rte_eth_tx_burst(rcf_rpc_server *rpcs, uint8_t  port_id,
  * The function jumps out in the case of the actual number of received packets
  * more than @p nb_pkts.
  */
-extern uint16_t rpc_rte_eth_rx_burst(rcf_rpc_server *rpcs, uint8_t  port_id,
+extern uint16_t rpc_rte_eth_rx_burst(rcf_rpc_server *rpcs, uint16_t port_id,
                                      uint16_t queue_id,
                                      rpc_rte_mbuf_p *rx_pkts,
                                      uint16_t nb_pkts);
@@ -162,7 +162,7 @@ extern uint16_t rpc_rte_eth_rx_burst(rcf_rpc_server *rpcs, uint8_t  port_id,
  * If failure is not expected, the function jumps out in the case of
  * non-zero return value.
  */
-extern int rpc_rte_eth_dev_set_link_up(rcf_rpc_server *rpcs, uint8_t port_id);
+extern int rpc_rte_eth_dev_set_link_up(rcf_rpc_server *rpcs, uint16_t port_id);
 
 /**
  * @b rte_eth_dev_set_link_down() RPC.
@@ -171,19 +171,19 @@ extern int rpc_rte_eth_dev_set_link_up(rcf_rpc_server *rpcs, uint8_t port_id);
  * non-zero return value.
  */
 extern int rpc_rte_eth_dev_set_link_down(rcf_rpc_server *rpcs,
-                                         uint8_t port_id);
+                                         uint16_t port_id);
 
 /**
  * @b rte_eth_promiscuous_enable() RPC.
  */
 extern void rpc_rte_eth_promiscuous_enable(rcf_rpc_server *rpcs,
-                                           uint8_t port_id);
+                                           uint16_t port_id);
 
 /**
  * @b rte_eth_promiscuous_disable() RPC.
  */
 extern void rpc_rte_eth_promiscuous_disable(rcf_rpc_server *rpcs,
-                                            uint8_t port_id);
+                                            uint16_t port_id);
 
 /**
  * @b rte_eth_promiscuous_get() RPC
@@ -191,19 +191,19 @@ extern void rpc_rte_eth_promiscuous_disable(rcf_rpc_server *rpcs,
  * If failure is not expected, the function jumps out in the case of
  * negative return value.
  */
-extern int rpc_rte_eth_promiscuous_get(rcf_rpc_server *rpcs, uint8_t port_id);
+extern int rpc_rte_eth_promiscuous_get(rcf_rpc_server *rpcs, uint16_t port_id);
 
 /**
  * @b rte_eth_allmulticast_enable() RPC
  */
 extern void rpc_rte_eth_allmulticast_enable(rcf_rpc_server *rpcs,
-                                            uint8_t port_id);
+                                            uint16_t port_id);
 
 /**
  * @b rte_eth_allmulticast_disable() RPC
  */
 extern void rpc_rte_eth_allmulticast_disable(rcf_rpc_server *rpcs,
-                                             uint8_t port_id);
+                                             uint16_t port_id);
 
 /**
  * rte_eth_allmulticast_get() RPC
@@ -212,7 +212,7 @@ extern void rpc_rte_eth_allmulticast_disable(rcf_rpc_server *rpcs,
  * negative return value.
  */
 extern int rpc_rte_eth_allmulticast_get(rcf_rpc_server *rpcs,
-                                        uint8_t port_id);
+                                        uint16_t port_id);
 
 /**
  * rte_eth_dev_get_mtu() RPC
@@ -221,7 +221,7 @@ extern int rpc_rte_eth_allmulticast_get(rcf_rpc_server *rpcs,
  * negative return value.
  */
 extern int rpc_rte_eth_dev_get_mtu(rcf_rpc_server *rpcs,
-                                   uint8_t port_id,
+                                   uint16_t port_id,
                                    uint16_t *mtu);
 
 /**
@@ -230,7 +230,7 @@ extern int rpc_rte_eth_dev_get_mtu(rcf_rpc_server *rpcs,
  * If failure is not expected, the function jumps out in the case of
  * non-zero return value.
  */
-extern int rpc_rte_eth_dev_set_mtu(rcf_rpc_server *rpcs, uint8_t port_id,
+extern int rpc_rte_eth_dev_set_mtu(rcf_rpc_server *rpcs, uint16_t port_id,
                                    uint16_t mtu);
 
 /**
@@ -239,7 +239,7 @@ extern int rpc_rte_eth_dev_set_mtu(rcf_rpc_server *rpcs, uint8_t port_id,
  * If failure is not expected, the function jumps out in the case of
  * non-zero return value.
  */
-extern int rpc_rte_eth_dev_vlan_filter(rcf_rpc_server *rpcs, uint8_t port_id,
+extern int rpc_rte_eth_dev_vlan_filter(rcf_rpc_server *rpcs, uint16_t port_id,
                                        uint16_t vlan_id, int on);
 
 /**
@@ -249,7 +249,7 @@ extern int rpc_rte_eth_dev_vlan_filter(rcf_rpc_server *rpcs, uint8_t port_id,
  * non-zero return value.
  */
 extern int rpc_rte_eth_dev_set_vlan_strip_on_queue(rcf_rpc_server *rpcs,
-                                                   uint8_t port_id,
+                                                   uint16_t port_id,
                                                    uint16_t rx_queue_id,
                                                    int on);
 
@@ -260,7 +260,7 @@ extern int rpc_rte_eth_dev_set_vlan_strip_on_queue(rcf_rpc_server *rpcs,
  * non-zero return value or vlan type is unknown.
  */
 extern int rpc_rte_eth_dev_set_vlan_ether_type(rcf_rpc_server *rpcs,
-                                               uint8_t port_id,
+                                               uint16_t port_id,
                                                enum tarpc_rte_vlan_type vlan_type,
                                                uint16_t tag_type);
 
@@ -270,7 +270,8 @@ extern int rpc_rte_eth_dev_set_vlan_ether_type(rcf_rpc_server *rpcs,
  * If failure is not expected, the function jumps out in the case of
  * non-zero return value.
  */
-extern int rpc_rte_eth_dev_set_vlan_offload(rcf_rpc_server *rpcs, uint8_t port_id,
+extern int rpc_rte_eth_dev_set_vlan_offload(rcf_rpc_server *rpcs,
+                                            uint16_t port_id,
                                             tarpc_int offload_mask);
 
 /**
@@ -279,7 +280,8 @@ extern int rpc_rte_eth_dev_set_vlan_offload(rcf_rpc_server *rpcs, uint8_t port_i
  * If failure is not expected, the function jumps out in the case of
  * negative return value or invalid mask.
  */
-extern int rpc_rte_eth_dev_get_vlan_offload(rcf_rpc_server *rpcs, uint8_t port_id);
+extern int rpc_rte_eth_dev_get_vlan_offload(rcf_rpc_server *rpcs,
+                                            uint16_t port_id);
 
 /**
  * @b rte_eth_dev_set_vlan_pvid() RPC.
@@ -287,7 +289,8 @@ extern int rpc_rte_eth_dev_get_vlan_offload(rcf_rpc_server *rpcs, uint8_t port_i
  * If failure is not expected, the function jumps out in the case of
  * non-zero return value.
  */
-extern int rpc_rte_eth_dev_set_vlan_pvid(rcf_rpc_server *rpcs, uint8_t port_id,
+extern int rpc_rte_eth_dev_set_vlan_pvid(rcf_rpc_server *rpcs,
+                                         uint16_t port_id,
                                          uint16_t pvid, int on);
 
 /**
@@ -296,8 +299,9 @@ extern int rpc_rte_eth_dev_set_vlan_pvid(rcf_rpc_server *rpcs, uint8_t port_id,
  * If failure is not expected, the function jumps out in the case of
  * return value is not equal to 0 or 1.
  */
-extern int rpc_rte_eth_rx_descriptor_done(rcf_rpc_server *rpcs, uint8_t port_id,
-                                          uint16_t queue_id, uint16_t offset);
+extern int rpc_rte_eth_rx_descriptor_done(rcf_rpc_server *rpcs,
+                                          uint16_t port_id, uint16_t queue_id,
+                                          uint16_t offset);
 
 /**
  * @b rte_eth_rx_queue_count() RPC
@@ -305,7 +309,7 @@ extern int rpc_rte_eth_rx_descriptor_done(rcf_rpc_server *rpcs, uint8_t port_id,
  * If failure is not expected, the function jumps out in the case of
  * negative return value.
  */
-extern int rpc_rte_eth_rx_queue_count(rcf_rpc_server *rpcs, uint8_t port_id,
+extern int rpc_rte_eth_rx_queue_count(rcf_rpc_server *rpcs, uint16_t port_id,
                                       uint16_t queue_id);
 
 /**
@@ -315,7 +319,7 @@ extern int rpc_rte_eth_rx_queue_count(rcf_rpc_server *rpcs, uint8_t port_id,
  * jumps out (by default) if the return value is negative error code
  */
 extern int rpc_rte_eth_rx_descriptor_status(rcf_rpc_server *rpcs,
-                                            uint8_t         port_id,
+                                            uint16_t        port_id,
                                             uint16_t        queue_id,
                                             uint16_t        offset);
 
@@ -326,7 +330,7 @@ extern int rpc_rte_eth_rx_descriptor_status(rcf_rpc_server *rpcs,
  * jumps out (by default) if the return value is negative error code
  */
 extern int rpc_rte_eth_tx_descriptor_status(rcf_rpc_server *rpcs,
-                                            uint8_t         port_id,
+                                            uint16_t        port_id,
                                             uint16_t        queue_id,
                                             uint16_t        offset);
 
@@ -336,10 +340,12 @@ extern int rpc_rte_eth_tx_descriptor_status(rcf_rpc_server *rpcs,
  * If failure is not expected, the function jumps out in the case of
  * negative return value.
  */
-extern int rpc_rte_eth_dev_socket_id(rcf_rpc_server *rpcs, uint8_t port_id);
+extern int rpc_rte_eth_dev_socket_id(rcf_rpc_server *rpcs,
+                                     uint16_t port_id);
 
 /** @b rte_eth_dev_is_valid_port() RPC */
-extern int rpc_rte_eth_dev_is_valid_port(rcf_rpc_server *rpcs, uint8_t port_id);
+extern int rpc_rte_eth_dev_is_valid_port(rcf_rpc_server *rpcs,
+                                         uint16_t port_id);
 
 /**
  * @b rte_eth_dev_rx_queue_start() RPC
@@ -348,7 +354,7 @@ extern int rpc_rte_eth_dev_is_valid_port(rcf_rpc_server *rpcs, uint8_t port_id);
  * non-zero return value.
  */
 extern int rpc_rte_eth_dev_rx_queue_start(rcf_rpc_server *rpcs,
-                                          uint8_t port_id,
+                                          uint16_t port_id,
                                           uint16_t queue_id);
 
 /**
@@ -358,7 +364,7 @@ extern int rpc_rte_eth_dev_rx_queue_start(rcf_rpc_server *rpcs,
  * non-zero return value.
  */
 extern int rpc_rte_eth_dev_rx_queue_stop(rcf_rpc_server *rpcs,
-                                         uint8_t port_id,
+                                         uint16_t port_id,
                                          uint16_t queue_id);
 
 /**
@@ -368,7 +374,7 @@ extern int rpc_rte_eth_dev_rx_queue_stop(rcf_rpc_server *rpcs,
  * non-zero return value.
  */
 extern int rpc_rte_eth_dev_tx_queue_start(rcf_rpc_server *rpcs,
-                                          uint8_t port_id,
+                                          uint16_t port_id,
                                           uint16_t queue_id);
 
 /**
@@ -378,13 +384,13 @@ extern int rpc_rte_eth_dev_tx_queue_start(rcf_rpc_server *rpcs,
  * non-zero return value.
  */
 extern int rpc_rte_eth_dev_tx_queue_stop(rcf_rpc_server *rpcs,
-                                         uint8_t port_id,
+                                         uint16_t port_id,
                                          uint16_t queue_id);
 
 /**
  * @b rte_eth_macaddr_get() RPC
  */
-extern void rpc_rte_eth_macaddr_get(rcf_rpc_server *rpcs, uint8_t port_id,
+extern void rpc_rte_eth_macaddr_get(rcf_rpc_server *rpcs, uint16_t port_id,
                                     struct tarpc_ether_addr *mac_addr);
 
 /**
@@ -394,7 +400,7 @@ extern void rpc_rte_eth_macaddr_get(rcf_rpc_server *rpcs, uint8_t port_id,
  * non-zero return value.
  */
 extern int rpc_rte_eth_dev_default_mac_addr_set(rcf_rpc_server *rpcs,
-                                                uint8_t port_id,
+                                                uint16_t port_id,
                                                 struct tarpc_ether_addr *mac_addr);
 
 /**
@@ -403,7 +409,7 @@ extern int rpc_rte_eth_dev_default_mac_addr_set(rcf_rpc_server *rpcs,
  * If failure is not expected, the function jumps out in the case of
  * non-zero return value.
  */
-extern int rpc_rte_eth_rx_queue_info_get(rcf_rpc_server *rpcs, uint8_t port_id,
+extern int rpc_rte_eth_rx_queue_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
                                          uint16_t queue_id,
                                          struct tarpc_rte_eth_rxq_info *qinfo);
 
@@ -413,7 +419,7 @@ extern int rpc_rte_eth_rx_queue_info_get(rcf_rpc_server *rpcs, uint8_t port_id,
  * If failure is not expected, the function jumps out in the case of
  * non-zero return value.
  */
-extern int rpc_rte_eth_tx_queue_info_get(rcf_rpc_server *rpcs, uint8_t port_id,
+extern int rpc_rte_eth_tx_queue_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
                                          uint16_t queue_id,
                                          struct tarpc_rte_eth_txq_info *qinfo);
 
@@ -432,7 +438,7 @@ extern uint8_t rpc_rte_eth_dev_count(rcf_rpc_server *rpcs);
  */
 extern int rpc_rte_eth_dev_attach(rcf_rpc_server *rpcs,
                                   const char     *devargs,
-                                  uint8_t        *port_id);
+                                  uint16_t       *port_id);
 
 /**
  * @b rte_eth_dev_detach() RPC.
@@ -445,7 +451,7 @@ extern int rpc_rte_eth_dev_attach(rcf_rpc_server *rpcs,
  * If failure is not expected, the function jumps out in the case of
  * non-zero or negative return value.
  */
-extern int rpc_rte_eth_dev_detach(rcf_rpc_server *rpcs, uint8_t port_id,
+extern int rpc_rte_eth_dev_detach(rcf_rpc_server *rpcs, uint16_t port_id,
                                   char *devname);
 
 /**
@@ -462,7 +468,7 @@ extern int rpc_rte_eth_dev_detach(rcf_rpc_server *rpcs, uint8_t port_id,
  * or negative return value.
  */
 extern int rpc_rte_eth_dev_rss_reta_query(rcf_rpc_server *rpcs,
-                                          uint8_t port_id,
+                                          uint16_t port_id,
                                           struct tarpc_rte_eth_rss_reta_entry64 *reta_conf,
                                           uint16_t reta_size);
 
@@ -473,7 +479,7 @@ extern int rpc_rte_eth_dev_rss_reta_query(rcf_rpc_server *rpcs,
  * or negative return value.
  */
 extern int rpc_rte_eth_dev_rss_reta_update(rcf_rpc_server *rpcs,
-                                           uint8_t port_id,
+                                           uint16_t port_id,
                                            struct tarpc_rte_eth_rss_reta_entry64 *reta_conf,
                                            uint16_t reta_size);
 
@@ -489,7 +495,7 @@ extern int rpc_rte_eth_dev_rss_reta_update(rcf_rpc_server *rpcs,
  * or negative return value.
  */
 extern int rpc_rte_eth_dev_rss_hash_conf_get(rcf_rpc_server *rpcs,
-                                             uint8_t port_id,
+                                             uint16_t port_id,
                                              struct tarpc_rte_eth_rss_conf *rss_conf);
 
 /**
@@ -503,13 +509,13 @@ extern int rpc_rte_eth_dev_rss_hash_conf_get(rcf_rpc_server *rpcs,
  * If failure is not expected, the function jumps out in the case of non-zero
  * or negative return value.
  */
-extern int rpc_rte_eth_dev_flow_ctrl_get(rcf_rpc_server *rpcs, uint8_t port_id,
+extern int rpc_rte_eth_dev_flow_ctrl_get(rcf_rpc_server *rpcs, uint16_t port_id,
                                          struct tarpc_rte_eth_fc_conf *fc_conf);
 
 /**
  * @b rte_eth_dev_flow_ctrl_set() RPC
  */
-extern int rpc_rte_eth_dev_flow_ctrl_set(rcf_rpc_server *rpcs, uint8_t port_id,
+extern int rpc_rte_eth_dev_flow_ctrl_set(rcf_rpc_server *rpcs, uint16_t port_id,
                                          struct tarpc_rte_eth_fc_conf *fc_conf);
 
 /**
@@ -524,7 +530,7 @@ extern const char * tapi_rpc_rte_filter_type2str(
  * If failure is not expected, the function jumps out in the case of non-zero
  * or negative return value.
  */
-extern int rpc_rte_eth_dev_filter_supported(rcf_rpc_server *rpcs, uint8_t port_id,
+extern int rpc_rte_eth_dev_filter_supported(rcf_rpc_server *rpcs, uint16_t port_id,
                                             enum tarpc_rte_filter_type filter_type);
 
 /**
@@ -539,7 +545,7 @@ extern int rpc_rte_eth_dev_filter_supported(rcf_rpc_server *rpcs, uint8_t port_i
  * @retrun Status code
  */
 extern te_errno tapi_rpc_add_mac_as_octstring2kvpair(rcf_rpc_server *rpcs,
-                                                     uint8_t port_id,
+                                                     uint16_t port_id,
                                                      te_kvpair_h *head,
                                                      const char *name);
 
@@ -549,7 +555,7 @@ extern te_errno tapi_rpc_add_mac_as_octstring2kvpair(rcf_rpc_server *rpcs,
  * If failure is not expected, the function jumps out in the case of non-zero
  * or negative return value.
  */
-extern int rpc_rte_eth_dev_filter_ctrl(rcf_rpc_server *rpcs, uint8_t port_id,
+extern int rpc_rte_eth_dev_filter_ctrl(rcf_rpc_server *rpcs, uint16_t port_id,
                                       enum tarpc_rte_filter_type filter_type,
                                       enum tarpc_rte_filter_op filter_op,
                                       void *arg);
@@ -561,19 +567,19 @@ extern int rpc_rte_eth_dev_filter_ctrl(rcf_rpc_server *rpcs, uint8_t port_id,
  * value.
  */
 extern int rpc_rte_eth_dev_rss_hash_update(
-    rcf_rpc_server *rpcs, uint8_t port_id,
+    rcf_rpc_server *rpcs, uint16_t port_id,
     struct tarpc_rte_eth_rss_conf *rss_conf);
 
 /**
  * @b rte_eth_link_get_nowait() RPC.
  */
-extern void rpc_rte_eth_link_get_nowait(rcf_rpc_server *rpcs, uint8_t port_id,
+extern void rpc_rte_eth_link_get_nowait(rcf_rpc_server *rpcs, uint16_t port_id,
                                         struct tarpc_rte_eth_link *eth_link);
 
 /**
  * @b rte_eth_link_get() RPC.
  */
-extern void rpc_rte_eth_link_get(rcf_rpc_server *rpcs, uint8_t port_id,
+extern void rpc_rte_eth_link_get(rcf_rpc_server *rpcs, uint16_t port_id,
                                  struct tarpc_rte_eth_link *eth_link);
 
 /**
@@ -585,7 +591,7 @@ extern void rpc_rte_eth_link_get(rcf_rpc_server *rpcs, uint8_t port_id,
  * @return @c 0 on success; jumps out on error (negative return code)
  */
 extern int rpc_rte_eth_stats_get(rcf_rpc_server             *rpcs,
-                                 uint8_t                     port_id,
+                                 uint16_t                    port_id,
                                  struct tarpc_rte_eth_stats *stats);
 
 /**
@@ -594,7 +600,7 @@ extern int rpc_rte_eth_stats_get(rcf_rpc_server             *rpcs,
  * If failure is not expected, the function jumps out in the case of
  * negative return value.
  */
-extern int rpc_rte_eth_xstats_get_names(rcf_rpc_server *rpcs, uint8_t port_id,
+extern int rpc_rte_eth_xstats_get_names(rcf_rpc_server *rpcs, uint16_t port_id,
                                         struct tarpc_rte_eth_xstat_name *xstats_names,
                                         unsigned int size);
 
@@ -604,14 +610,14 @@ extern int rpc_rte_eth_xstats_get_names(rcf_rpc_server *rpcs, uint8_t port_id,
  * If failure is not expected, the function jumps out in the case of
  * negative return value.
  */
-extern int rpc_rte_eth_xstats_get(rcf_rpc_server *rpcs, uint8_t port_id,
+extern int rpc_rte_eth_xstats_get(rcf_rpc_server *rpcs, uint16_t port_id,
                                   struct tarpc_rte_eth_xstat *xstats,
                                   unsigned int n);
 
 /**
  * @b rte_eth_xstats_reset() RPC
  */
-extern void rpc_rte_eth_xstats_reset(rcf_rpc_server *rpcs, uint8_t port_id);
+extern void rpc_rte_eth_xstats_reset(rcf_rpc_server *rpcs, uint16_t port_id);
 
 /**
  * @b rte_eth_xstats_get_by_id() RPC
@@ -620,7 +626,7 @@ extern void rpc_rte_eth_xstats_reset(rcf_rpc_server *rpcs, uint8_t port_id);
  * return value is negative error code
  */
 extern int rpc_rte_eth_xstats_get_by_id(rcf_rpc_server *rpcs,
-                                        uint8_t         port_id,
+                                        uint16_t        port_id,
                                         uint64_t       *ids,
                                         uint64_t       *values,
                                         unsigned int    n);
@@ -632,7 +638,7 @@ extern int rpc_rte_eth_xstats_get_by_id(rcf_rpc_server *rpcs,
  * return value is negative error code
  */
 extern int rpc_rte_eth_xstats_get_names_by_id(rcf_rpc_server                  *rpcs,
-                                              uint8_t                          port_id,
+                                              uint16_t                         port_id,
                                               struct tarpc_rte_eth_xstat_name *xstat_names,
                                               unsigned int                     size,
                                               uint64_t                        *ids);
@@ -643,15 +649,16 @@ extern int rpc_rte_eth_xstats_get_names_by_id(rcf_rpc_server                  *r
  * If failure is not expected, the function jumps out in the case of
  * negative return value.
  */
-extern int rpc_rte_eth_dev_get_supported_ptypes(rcf_rpc_server *rpcs, uint8_t port_id,
-                                                uint32_t ptype_mask, uint32_t *ptypes,
-                                                int num);
+extern int rpc_rte_eth_dev_get_supported_ptypes(rcf_rpc_server *rpcs,
+                                                uint16_t port_id,
+                                                uint32_t ptype_mask,
+                                                uint32_t *ptypes, int num);
 
 /**
  * @b rte_eth_dev_set_mc_addr_list() RPC
  */
 extern int rpc_rte_eth_dev_set_mc_addr_list(rcf_rpc_server *rpcs,
-                                            uint8_t port_id,
+                                            uint16_t port_id,
                                             struct tarpc_ether_addr *mc_addr_set,
                                             uint32_t nb_mc_addr);
 
@@ -668,7 +675,7 @@ extern int rpc_rte_eth_dev_set_mc_addr_list(rcf_rpc_server *rpcs,
  *         jumps out on error (in case of negative value)
  */
 extern int rpc_rte_eth_dev_fw_version_get(rcf_rpc_server *rpcs,
-                                          uint8_t         port_id,
+                                          uint16_t        port_id,
                                           char           *fw_version,
                                           size_t          fw_size);
 
@@ -682,7 +689,7 @@ extern int rpc_rte_eth_dev_fw_version_get(rcf_rpc_server *rpcs,
  */
 extern int rpc_rte_eth_dev_udp_tunnel_port_add(
                                 rcf_rpc_server                  *rpcs,
-                                uint8_t                          port_id,
+                                uint16_t                         port_id,
                                 struct tarpc_rte_eth_udp_tunnel *tunnel_udp);
 
 /**
@@ -695,7 +702,7 @@ extern int rpc_rte_eth_dev_udp_tunnel_port_add(
  */
 extern int rpc_rte_eth_dev_udp_tunnel_port_delete(
                                 rcf_rpc_server                  *rpcs,
-                                uint8_t                          port_id,
+                                uint16_t                         port_id,
                                 struct tarpc_rte_eth_udp_tunnel *tunnel_udp);
 
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */

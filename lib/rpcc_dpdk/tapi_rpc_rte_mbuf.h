@@ -209,8 +209,8 @@ extern uint8_t rpc_rte_pktmbuf_get_nb_segs(rcf_rpc_server *rpcs,
  *
  * @return Input port
  */
-extern uint8_t rpc_rte_pktmbuf_get_port(rcf_rpc_server *rpcs,
-                                        rpc_rte_mbuf_p m);
+extern uint16_t rpc_rte_pktmbuf_get_port(rcf_rpc_server *rpcs,
+                                         rpc_rte_mbuf_p m);
 
 /**
  * @b rte_pktmbuf_set_port() RPC
@@ -219,7 +219,7 @@ extern uint8_t rpc_rte_pktmbuf_get_port(rcf_rpc_server *rpcs,
  * @param port            Port number to set
  */
 extern void rpc_rte_pktmbuf_set_port(rcf_rpc_server *rpcs,
-                                     rpc_rte_mbuf_p m, uint8_t port);
+                                     rpc_rte_mbuf_p m, uint16_t port);
 
 /**
  * Get mbuf segment data length
