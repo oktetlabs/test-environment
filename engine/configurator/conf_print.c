@@ -34,7 +34,6 @@
 #endif
 
 #include "conf_defs.h"
-#include "te_log_fmt.h"
 
 /* Minimal buffer size to be allocated */
 #define BUF_SIZE_MIN    (16 * 1024)
@@ -155,9 +154,8 @@ cfg_db_tree_print(const char *filename,
     }
     /* Wanted to keep the "title" separate from the buffer: */
     if (log_lvl != 0)
-        te_log_message_split(__FILE__, __LINE__,
-                             log_lvl, TE_LGR_ENTITY, TE_LGR_USER,
-                             "tree of %s %s:\n%s", title[which], id, buf);
+        TE_LOG(log_lvl, TE_LGR_ENTITY, TE_LGR_USER,
+               "tree of %s %s:\n%s", title[which], id, buf);
     if (filename != NULL)
     {
         if ((f = fopen(filename, "w")) == NULL)
@@ -319,9 +317,7 @@ cfg_db_obj_print_deps(const char *filename,
     }
 
     if (log_lvl != 0)
-        te_log_message_split(__FILE__, __LINE__,
-                             log_lvl, TE_LGR_ENTITY, TE_LGR_USER,
-                             "%s", buf);
+        TE_LOG(log_lvl, TE_LGR_ENTITY, TE_LGR_USER, "%s", buf);
     if (filename != NULL)
     {
         if ((f = fopen(filename, "w")) == NULL)

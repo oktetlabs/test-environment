@@ -190,33 +190,4 @@ extern te_errno te_log_message_raw_va(te_log_msg_raw_data *data,
                                       const char          *fmt,
                                       va_list              ap);
 
-/**
- * Print a given string in log, splitting it in multiple messages
- * if it is too long to fit in a single one.
- *
- * @note This function does not parse TE format specifiers like '%r',
- *       and involves some processing overhead. So use it only when
- *       it is necessary.
- *       This function will try to split the string at '\n' symbols
- *       (removing them from the beginning and the end of each message).
- *       If it is not possible, it will cut the string at arbitrary
- *       positions.
- *
- * @param file        Name of file where this function is called
- *                    (use __FILE__)
- * @param line        Number of line where this function is called
- *                    (use __LINE__)
- * @param level       Log level
- * @param entity      Logger entity
- * @param user        Logger user
- * @param fmt         Format string
- * @param ...         Format string arguments
- *
- * @return Status code
- */
-extern te_errno te_log_message_split(const char *file, unsigned int line,
-                                     unsigned int level, const char *entity,
-                                     const char *user,
-                                     const char *fmt, ...);
-
 #endif /* !__TE_LOG_FMT_H__ */
