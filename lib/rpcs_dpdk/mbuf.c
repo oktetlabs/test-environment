@@ -58,7 +58,12 @@ tarpc_rte_pktmbuf_ol_flags2rpc(uint64_t rte)
         }                                                           \
     } while (0)
 
+#ifdef PKT_RX_VLAN_PKT
     RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_VLAN_PKT);
+#else
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_VLAN);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_VLAN_STRIPPED);
+#endif
     RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_RSS_HASH);
     RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_FDIR);
 
@@ -93,7 +98,12 @@ tarpc_rte_pktmbuf_ol_flags2rpc(uint64_t rte)
     RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_IEEE1588_TMST);
     RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_FDIR_ID);
     RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_FDIR_FLX);
+#ifdef PKT_RX_QINQ_PKT
     RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_QINQ_PKT);
+#else
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_QINQ);
+    RTE_PKTMBUF_OL_FLAGS2RPC(PKT_RX_QINQ_STRIPPED);
+#endif
 
     RTE_PKTMBUF_OL_FLAGS2RPC(PKT_TX_QINQ_PKT);
     RTE_PKTMBUF_OL_FLAGS2RPC(PKT_TX_TCP_SEG);
@@ -138,7 +148,32 @@ tarpc_rte_pktmbuf_ol_flags2rte(uint64_t rpc, uint64_t *rte)
         }                                                           \
     } while (0)
 
-    RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_VLAN_PKT);
+#ifdef PKT_RX_VLAN_PKT
+    if ((rpc & (1UL << TARPC_PKT_RX_VLAN)) ||
+        (rpc & (1UL << TARPC_PKT_RX_VLAN_STRIPPED)))
+    {
+        rpc &= ~(1UL << TARPC_PKT_RX_VLAN);
+        rpc &= ~(1UL << TARPC_PKT_RX_VLAN_STRIPPED);
+        rpc &= ~(1UL << TARPC_PKT_RX_VLAN_PKT);
+        rte_tmp |= PKT_RX_VLAN_PKT;
+    }
+    else
+    {
+        RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_VLAN_PKT);
+    }
+#else
+    if (rpc & (1UL << TARPC_PKT_RX_VLAN_PKT))
+    {
+        rpc &= ~(1UL << TARPC_PKT_RX_VLAN_PKT);
+        rte_tmp |= PKT_RX_VLAN;
+        rte_tmp |= PKT_RX_VLAN_STRIPPED;
+    }
+    else
+    {
+        RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_VLAN);
+        RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_VLAN_STRIPPED);
+    }
+#endif
     RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_RSS_HASH);
     RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_FDIR);
 
@@ -173,7 +208,32 @@ tarpc_rte_pktmbuf_ol_flags2rte(uint64_t rpc, uint64_t *rte)
     RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_IEEE1588_TMST);
     RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_FDIR_ID);
     RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_FDIR_FLX);
-    RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_QINQ_PKT);
+#ifdef PKT_RX_QINQ_PKT
+    if ((rpc & (1UL << TARPC_PKT_RX_QINQ)) ||
+        (rpc & (1UL << TARPC_PKT_RX_QINQ_STRIPPED)))
+    {
+        rpc &= ~(1UL << TARPC_PKT_RX_QINQ);
+        rpc &= ~(1UL << TARPC_PKT_RX_QINQ_STRIPPED);
+        rpc &= ~(1UL << TARPC_PKT_RX_QINQ_PKT);
+        rte_tmp |= PKT_RX_QINQ_PKT;
+    }
+    else
+    {
+        RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_QINQ_PKT);
+    }
+#else
+    if (rpc & (1UL << TARPC_PKT_RX_QINQ_PKT))
+    {
+        rpc &= ~(1UL << TARPC_PKT_RX_QINQ_PKT);
+        rte_tmp |= PKT_RX_QINQ;
+        rte_tmp |= PKT_RX_QINQ_STRIPPED;
+    }
+    else
+    {
+        RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_QINQ);
+        RTE_PKTMBUF_OL_FLAGS2RTE(PKT_RX_QINQ_STRIPPED);
+    }
+#endif
 
     RTE_PKTMBUF_OL_FLAGS2RTE(PKT_TX_QINQ_PKT);
     RTE_PKTMBUF_OL_FLAGS2RTE(PKT_TX_TCP_SEG);

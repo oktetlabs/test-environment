@@ -110,7 +110,11 @@ tad_rte_mbuf_sap_read(tad_rte_mbuf_sap   *sap,
 
     *pkt_len = m->pkt_len;
 
+#ifdef PKT_RX_VLAN_PKT
     if (((m->ol_flags & PKT_RX_VLAN_PKT) == 0) &&
+#else
+    if (((m->ol_flags & PKT_RX_VLAN_STRIPPED) == 0) &&
+#endif
         ((m->ol_flags & PKT_TX_VLAN_PKT) == 0))
         goto out;
 

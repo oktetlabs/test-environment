@@ -89,6 +89,8 @@ struct tarpc_mbuf_retval_out {
 /** Packet Offload Flags */
 enum tarpc_pktmbuf_ol_flags {
     TARPC_PKT_RX_VLAN_PKT = 0,
+    TARPC_PKT_RX_VLAN,
+    TARPC_PKT_RX_VLAN_STRIPPED,
     TARPC_PKT_RX_RSS_HASH,
     TARPC_PKT_RX_FDIR,
     TARPC_PKT_RX_IP_CKSUM_BAD,
@@ -107,6 +109,8 @@ enum tarpc_pktmbuf_ol_flags {
     TARPC_PKT_RX_FDIR_ID,
     TARPC_PKT_RX_FDIR_FLX,
     TARPC_PKT_RX_QINQ_PKT,
+    TARPC_PKT_RX_QINQ,
+    TARPC_PKT_RX_QINQ_STRIPPED,
 
     TARPC_PKT_TX_QINQ_PKT = 32,
     TARPC_PKT_TX_TCP_SEG,
