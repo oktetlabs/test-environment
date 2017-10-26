@@ -151,17 +151,8 @@ typedef struct te_log_msg_raw_data {
     size_t              args_len;   /**< Total length required in raw log
                                          to store raw arguments */
 
-    te_bool             trunc;      /**< Is log message truncated? */
+    te_bool     trunc;  /**< Is log message truncated? */
 
-    struct te_log_msg_save {   /**< Save metadata of truncated message.*/
-        union {
-            const void  *addr; /**< Pointer argument for MEM type. */
-            uint64_t     fd;   /**< File descriptor. */
-        } data;                /**< Type specific data. */
-        size_t        len;     /**< Length of the truncated part. */
-        const char   *fmt;     /**< Format of the message. */
-        size_t        fmt_len; /**< Format length. */
-    } save;
 } te_log_msg_raw_data;
 
 
