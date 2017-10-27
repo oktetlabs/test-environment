@@ -12,7 +12,7 @@ class Packages(object):
         self.base = os.path.normpath(base)
         self.sorting = sorting
 
-        self.groups = self._parse('')
+        self.groups = self._parse(('', None))
 
         self.groups['group'] = os.path.basename(self.base)
         self.context = Context({'groups': [self.groups]})
@@ -25,7 +25,7 @@ class Packages(object):
             scripts += s
             packages += p
             if child.tag == 'package':
-                packages.append(child.attrib['name'])
+                packages.append((child.attrib['name'], child.attrib.get('src')))
             elif child.tag == 'script':
                 script = child.attrib['name']
                 if script.endswith('prologue'):   continue
@@ -62,9 +62,14 @@ class Packages(object):
         }
 
     def _parse(self, name, sub=''):
-        sub = os.path.join(sub, name)
+        name, package_xml = name
+        if not package_xml:
+            sub = os.path.join(sub, name, "package.xml")
+        else:
+            sub = os.path.join(sub, package_xml)
+        sub, package_xml = os.path.split(sub)
 
-        tree = ET.parse(os.path.join(self.base, sub, 'package.xml'))
+        tree = ET.parse(os.path.join(self.base, sub, package_xml))
         description = tree.getroot().find('description').text
 
         scripts, packages = self._parse_node(tree.getroot())
