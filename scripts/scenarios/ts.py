@@ -52,7 +52,7 @@ class Packages(object):
         test_ref, summary = self._parse_summary(filename)
         test_ref = os.path.join(*test_ref.split('-'))
         path = os.path.join(sub, name)
-        if test_ref != path:
+        if test_ref != path and test_ref != os.path.normpath(path):
             self.log.warning('Invalid test reference %s '
                 '(expected %s)',
                 test_ref, path)
