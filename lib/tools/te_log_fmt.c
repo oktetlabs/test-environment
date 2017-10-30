@@ -135,7 +135,6 @@ te_log_msg_fmt(te_log_msg_out *out, const char *fmt, ...)
     return rc;
 }
 
-
 /**
  * Check that raw log buffer has enough space for specified amount
  * of bytes. If no enough space, reallocate to have sufficient.
@@ -200,6 +199,66 @@ fprintf(stderr, "CHECK: BUF=%p END=%p PTR=%p diff=%u len=%u\n",
     return TE_EAGAIN;
 }
 
+/**
+ * Check if there is enough memory for arguments.
+ * Also copy format string to the buffer.
+ *
+ * @param data      Raw log message data.
+ * @param fmt       Format string.
+ * @param fmt_len   Length of the format string.
+ *
+ * @return Status code.
+ *
+ */
+static te_errno
+te_log_msg_prepare_raw_args(te_log_msg_raw_data *data, const char *fmt, size_t fmt_len)
+{
+    te_errno rc;
+    unsigned int arg_i;
+
+    assert((fmt != NULL) || (fmt_len == 0));
+    if (fmt_len > 0)
+    {
+        /* We have not enough space in format string storage */
+        rc = ta_log_msg_raw_buf_check_len(data, fmt_len);
+        if ((rc != 0) && (rc != TE_EAGAIN))
+            return rc;
+
+        memcpy(data->ptr, fmt, fmt_len);
+        data->ptr += fmt_len;
+        assert(data->ptr <= data->end);
+    }
+
+    assert(data != NULL);
+    assert((data->args == NULL) == (data->args_max == 0));
+
+    /* Get the argument index and check that we have enough space */
+    arg_i = data->args_n;
+    if (arg_i == data->args_max)
+    {
+        void *tmp;
+
+        if (data->args_max == 0)
+            data->args_max = TE_LOG_MSG_RAW_ARGS_INIT;
+        else
+            data->args_max += TE_LOG_MSG_RAW_ARGS_GROW;
+
+        tmp = realloc(data->args, data->args_max * sizeof(*data->args));
+        if (tmp == NULL)
+        {
+            free(data->args);
+            data->args = NULL;
+
+            data->args_len = data->args_n = data->args_max = 0;
+
+            return TE_ENOMEM;
+        }
+        data->args = (te_log_arg_descr *)tmp;
+    }
+    /* Now we have to have enough space */
+    assert(arg_i < data->args_max);
+    return 0;
+}
 
 /**
  * Process format string with its arguments in vprintf()-like mode.
@@ -247,6 +306,75 @@ te_log_msg_fmt_args(te_log_msg_out *out, const char *fmt, va_list ap)
 }
 
 /**
+ * Handle truncated log messages.
+ *
+ * If data size is too big to fit into a single argument, add more arguments
+ * of the same type, so that the data can be split between them.
+ *
+ * @param data         Raw log message data.
+ * @param saved_data   Holds saved data of the truncated message.
+ *
+ * @return Exit status.
+ */
+static te_errno
+te_log_msg_handle_trunc(te_log_msg_raw_data  *data,
+                        te_log_msg_truncated *saved_data)
+{
+    te_errno              rc;
+    unsigned int          arg_i;
+    size_t                arg_len;
+    te_log_msg_arg_type   arg_type;
+    size_t                fmt_len = saved_data->fmt_len;
+    const char           *fmt     = saved_data->fmt;
+    te_bool               trunc;
+
+    do {
+        rc = te_log_msg_prepare_raw_args(data, fmt, fmt_len);
+        if (rc != 0)
+            return rc;
+
+        trunc    = FALSE;
+        arg_i    = data->args_n;
+        arg_len  = saved_data->len;
+        arg_type = data->args[arg_i - 1].type;
+        switch (arg_type)
+        {
+            case TE_LOG_MSG_FMT_ARG_FILE:
+            {
+                data->args[arg_i].u.i = saved_data->data.fd;
+                break;
+            }
+            case TE_LOG_MSG_FMT_ARG_MEM:
+            {
+                data->args[arg_i].u.a = saved_data->data.addr;
+                /* Save the rest part of the message. Has no affect if the
+                 * message isn't truncated. */
+                saved_data->data.addr += TE_LOG_FIELD_MAX;
+                break;
+            }
+            default:
+                return TE_EINVAL;
+        }
+
+        if (arg_len > TE_LOG_FIELD_MAX)
+        {
+            trunc = TRUE;
+            saved_data->len = arg_len - TE_LOG_FIELD_MAX;
+            arg_len = TE_LOG_FIELD_MAX;
+        }
+
+        data->args[arg_i].type = arg_type;
+        data->args[arg_i].len  = arg_len;
+
+        data->args_len += sizeof(te_log_nfl) + arg_len;
+
+        data->args_n++;
+    } while (trunc);
+    data->trunc = FALSE;
+    return 0;
+}
+
+/**
  * Process an argument and format string which corresponds to it
  * in raw mode.
  *
@@ -265,50 +393,14 @@ te_log_msg_raw_arg(te_log_msg_out      *out,
     unsigned int            arg_i;
     int                     fd = -1;
     struct stat             stat_buf;
+    te_log_msg_truncated    saved_data = {{ 0 }, 0, NULL, 0};
 
 
-    assert((fmt != NULL) || (fmt_len == 0));
-    if (fmt_len > 0)
-    {
-        /* We have not enough space in format string storage */
-        rc = ta_log_msg_raw_buf_check_len(data, fmt_len);
-        if ((rc != 0) && (rc != TE_EAGAIN))
-            return rc;
+    rc = te_log_msg_prepare_raw_args(data, fmt, fmt_len);
+    if (rc != 0)
+        return rc;
 
-        memcpy(data->ptr, fmt, fmt_len);
-        data->ptr += fmt_len;
-        assert(data->ptr <= data->end);
-    }
-
-    assert(data != NULL);
-    assert((data->args == NULL) == (data->args_max == 0));
-
-    /* Get the argument index and check that we have enough space */
     arg_i = data->args_n;
-    if (arg_i == data->args_max)
-    {
-        void *tmp;
-
-        if (data->args_max == 0)
-            data->args_max = TE_LOG_MSG_RAW_ARGS_INIT;
-        else
-            data->args_max += TE_LOG_MSG_RAW_ARGS_GROW;
-
-        tmp = realloc(data->args, data->args_max * sizeof(*data->args));
-        if (tmp == NULL)
-        {
-            free(data->args);
-            data->args = NULL;
-
-            data->args_len = data->args_n = data->args_max = 0;
-
-            return TE_ENOMEM;
-        }
-        data->args = (te_log_arg_descr *)tmp;
-    }
-    /* Now we have to have enough space */
-    assert(arg_i < data->args_max);
-
     /* Validate requested length */
     switch (arg_type)
     {
@@ -370,8 +462,15 @@ fprintf(stderr, "%s(): INT len=%d\n", __FUNCTION__, arg_len);
                 arg_len = stat_buf.st_size;
                 if (arg_len > TE_LOG_FIELD_MAX)
                 {
-                    arg_len = TE_LOG_FIELD_MAX;
                     data->trunc = TRUE;
+                    /* Save file descriptor of truncated file. */
+                    saved_data.data.fd = fd;
+                    /* Need to save pointer to modifier string. */
+                    saved_data.fmt = rindex(fmt, '%');
+                    saved_data.fmt_len = strlen(saved_data.fmt);
+
+                    saved_data.len = arg_len - TE_LOG_FIELD_MAX;
+                    arg_len = TE_LOG_FIELD_MAX;
                 }
 #if 0
 fprintf(stderr, "%s(): FILE len=%d\n", __FUNCTION__, arg_len);
@@ -387,8 +486,15 @@ fprintf(stderr, "%s(): MEM len=%d\n", __FUNCTION__, arg_len);
             data->args[arg_i].u.a = arg_addr;
             if (arg_len > TE_LOG_FIELD_MAX)
             {
-                arg_len = TE_LOG_FIELD_MAX;
                 data->trunc = TRUE;
+                /* Save the rest part of the message. */
+                saved_data.data.addr = arg_addr + TE_LOG_FIELD_MAX;
+                /* Need to save pointer to modifier string. */
+                saved_data.fmt = rindex(fmt, '%');
+                saved_data.fmt_len = strlen(saved_data.fmt);
+
+                saved_data.len = arg_len - TE_LOG_FIELD_MAX;
+                arg_len = TE_LOG_FIELD_MAX;
             }
             break;
 
@@ -403,7 +509,16 @@ fprintf(stderr, "%s(): MEM len=%d\n", __FUNCTION__, arg_len);
 
     data->args_n++;
 
-    return 0;
+
+    /* Add truncated part of the message as an argument with
+     * the modifier of the message.
+     */
+    if (data->trunc)
+    {
+        rc = te_log_msg_handle_trunc(data, &saved_data);
+    }
+
+    return rc;
 }
 
 /** Raw log version of backend common parameters */
@@ -497,7 +612,7 @@ te_log_msg_raw_put_no_check(te_log_msg_raw_data *data,
                  */
                 len -= r;
             }
-            (void)close(fd);
+
             if (len > 0)
             {
                 /* Unexpected EOF */
@@ -978,7 +1093,8 @@ te_log_message_raw_va(te_log_msg_raw_data *data,
     size_t      fmt_start_off;  /**< Offset of the format string start */
     size_t      fmt_nfl;        /**< Format string NFL value */
 
-    unsigned int    i;
+    unsigned int i;
+    int          fd_prev;
 
 
     data->ptr = data->buf;
@@ -1028,6 +1144,20 @@ te_log_message_raw_va(te_log_msg_raw_data *data,
                 data->args[i].u.a : &data->args[i].u.i,
             data->args[i].len, TRUE);
     }
+    /* Find and close open descriptors if there aren't close already.*/
+    for (fd_prev = -1, i = 0; i < data->args_n; ++i)
+    {
+        if (data->args[i].type == TE_LOG_MSG_FMT_ARG_FILE)
+        {
+            int fd = (int)data->args[i].u.i;
+            if (fd_prev != fd)
+            {
+                close(fd);
+                fd_prev = fd;
+            }
+        }
+    }
+
     assert(data->ptr <= data->end);
 
     return 0;
