@@ -857,6 +857,7 @@ te_sockaddr_get_ipstr(const struct sockaddr *addr)
     return inet_ntop(addr->sa_family,
                      te_sockaddr_get_netaddr(addr), ptr,
                      INET6_ADDRSTRLEN);
+#undef N_BUFS
 }
 
 /* See description in te_sockaddr.h */
