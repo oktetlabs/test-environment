@@ -867,9 +867,9 @@ l2tp_server_stop(te_l2tp_server *l2tp)
     {
         if (!access(L2TP_INIT_SCRIPT, X_OK))
         {
-            if (ta_system(L2TP_INIT_SCRIPT "stop") != 0)
+            if (ta_system(L2TP_INIT_SCRIPT " stop") != 0)
             {
-                ERROR("Command %s failed", L2TP_INIT_SCRIPT "stop");
+                ERROR("Command '%s' failed", L2TP_INIT_SCRIPT " stop");
                 return TE_RC(TE_TA_UNIX, TE_ESHCMD);
             }
         }
