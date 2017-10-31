@@ -14,8 +14,13 @@ class TestGenerator(Generator):
 
     def copyright(self):
         with self.comment() as c:
+            has_objective = False
             for group in self.groups:
-                c.write(group.objective)
+                if group.objective:
+                    c.write(group.objective)
+                    has_objective = True
+            if not has_objective and self.test.summary:
+                c.write(self.test.summary)
             year = datetime.datetime.now().year
             c.write('', 'Copyright (C) %s Solarflare Communications Ltd.' % year)
         self.write('')
