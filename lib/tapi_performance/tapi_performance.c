@@ -357,7 +357,6 @@ tapi_perf_client_check_report(tapi_perf_client *client,
 te_errno
 tapi_perf_server_get_check_report(tapi_perf_server *server,
                                   const char *tag,
-                                  te_bool dump_enabled,
                                   tapi_perf_report *report)
 {
     tapi_perf_report dummy_report;
@@ -367,10 +366,24 @@ tapi_perf_server_get_check_report(tapi_perf_server *server,
 
     work_report = (report != NULL ? report : &dummy_report);
     rc_get = tapi_perf_server_get_report(server, work_report);
+    rc_check = tapi_perf_server_check_report(server, work_report, tag);
+    return (rc_get != 0 ? rc_get : rc_check);
+}
 
-    if (dump_enabled)
-        perf_app_dump_output(&server->app, tag);
+/* See description in tapi_performance.h */
+te_errno
+tapi_perf_server_get_dump_check_report(tapi_perf_server *server,
+                                       const char *tag,
+                                       tapi_perf_report *report)
+{
+    tapi_perf_report dummy_report;
+    tapi_perf_report *work_report;
+    te_errno rc_get;
+    te_errno rc_check;
 
+    work_report = (report != NULL ? report : &dummy_report);
+    rc_get = tapi_perf_server_get_report(server, work_report);
+    perf_app_dump_output(&server->app, tag);
     rc_check = tapi_perf_server_check_report(server, work_report, tag);
     return (rc_get != 0 ? rc_get : rc_check);
 }
@@ -379,7 +392,6 @@ tapi_perf_server_get_check_report(tapi_perf_server *server,
 te_errno
 tapi_perf_client_get_check_report(tapi_perf_client *client,
                                   const char *tag,
-                                  te_bool dump_enabled,
                                   tapi_perf_report *report)
 {
     tapi_perf_report dummy_report;
@@ -389,10 +401,24 @@ tapi_perf_client_get_check_report(tapi_perf_client *client,
 
     work_report = (report != NULL ? report : &dummy_report);
     rc_get = tapi_perf_client_get_report(client, work_report);
+    rc_check = tapi_perf_client_check_report(client, work_report, tag);
+    return (rc_get != 0 ? rc_get : rc_check);
+}
 
-    if (dump_enabled)
-        perf_app_dump_output(&client->app, tag);
+/* See description in tapi_performance.h */
+te_errno
+tapi_perf_client_get_dump_check_report(tapi_perf_client *client,
+                                       const char *tag,
+                                       tapi_perf_report *report)
+{
+    tapi_perf_report dummy_report;
+    tapi_perf_report *work_report;
+    te_errno rc_get;
+    te_errno rc_check;
 
+    work_report = (report != NULL ? report : &dummy_report);
+    rc_get = tapi_perf_client_get_report(client, work_report);
+    perf_app_dump_output(&client->app, tag);
     rc_check = tapi_perf_client_check_report(client, work_report, tag);
     return (rc_get != 0 ? rc_get : rc_check);
 }

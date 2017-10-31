@@ -363,22 +363,38 @@ extern te_errno tapi_perf_server_check_report(tapi_perf_server *server,
 
 /**
  * Get server report and check it for errors. The function is a wrapper which
- * calls @ref tapi_perf_server_get_report and @ref tapi_perf_server_check_report
+ * calls tapi_perf_server_get_report() and tapi_perf_server_check_report()
  *
  * @param[in]  server           Server context.
- * @param[in]  tag              Tag to print in both verdict and dump messages.
- * @param[in]  dump_enabled     Enable/disable to dump to log a server output.
+ * @param[in]  tag              Tag to print in verdict message.
  * @param[out] report           Report with results, it may be @c NULL if you
  *                              don't care about results, but only errors.
  *
  * @return Status code.
  *
- * @sa tapi_perf_server_get_report, tapi_perf_server_check_report
+ * @sa tapi_perf_server_get_report, tapi_perf_server_check_report,
+ * tapi_perf_server_get_dump_check_report
  */
 extern te_errno tapi_perf_server_get_check_report(tapi_perf_server *server,
                                                   const char *tag,
-                                                  te_bool dump_enabled,
                                                   tapi_perf_report *report);
+
+/**
+ * Get server report, dump it to log and check for errors.
+ *
+ * @param[in]  server           Server context.
+ * @param[in]  tag              Tag to print in both verdict and dump messages.
+ * @param[out] report           Report with results, it may be @c NULL if you
+ *                              don't care about results, but only errors.
+ *
+ * @return Status code.
+ *
+ * @sa tapi_perf_server_get_report, tapi_perf_server_check_report,
+ * tapi_perf_server_get_check_report
+ */
+extern te_errno tapi_perf_server_get_dump_check_report(tapi_perf_server *server,
+                                                       const char *tag,
+                                                       tapi_perf_report *report);
 
 /**
  * Create client network throughput test tool proxy.
@@ -473,22 +489,38 @@ extern te_errno tapi_perf_client_check_report(tapi_perf_client *client,
 
 /**
  * Get client report and check it for errors. The function is a wrapper which
- * calls @ref tapi_perf_client_get_report and @ref tapi_perf_client_check_report
+ * calls tapi_perf_client_get_report() and tapi_perf_client_check_report()
  *
  * @param[in]  client           Client context.
- * @param[in]  tag              Tag to print in both verdict and dump messages.
- * @param[in]  dump_enabled     Enable/disable to dump to log a client output.
+ * @param[in]  tag              Tag to print in verdict message.
  * @param[out] report           Report with results, it may be @c NULL if you
  *                              don't care about results, but only errors.
  *
  * @return Status code.
  *
- * @sa tapi_perf_client_get_report, tapi_perf_client_check_report
+ * @sa tapi_perf_client_get_report, tapi_perf_client_check_report,
+ * tapi_perf_client_get_dump_check_report
  */
 extern te_errno tapi_perf_client_get_check_report(tapi_perf_client *client,
                                                   const char *tag,
-                                                  te_bool dump_enabled,
                                                   tapi_perf_report *report);
+
+/**
+ * Get client report, dump it to log and check for errors.
+ *
+ * @param[in]  client           Client context.
+ * @param[in]  tag              Tag to print in both verdict and dump messages.
+ * @param[out] report           Report with results, it may be @c NULL if you
+ *                              don't care about results, but only errors.
+ *
+ * @return Status code.
+ *
+ * @sa tapi_perf_client_get_report, tapi_perf_client_check_report,
+ * tapi_perf_client_get_check_report
+ */
+extern te_errno tapi_perf_client_get_dump_check_report(tapi_perf_client *client,
+                                                       const char *tag,
+                                                       tapi_perf_report *report);
 
 /**
  * Get error description.
