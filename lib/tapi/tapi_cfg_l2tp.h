@@ -87,10 +87,10 @@ typedef struct l2tp_ipaddr_range {
 /** CHAP|PAP secret structure */
 typedef struct l2tp_ppp_secret {
     enum l2tp_auth_prot  is_chap;  /**< CHAP|PAP secret */
-    char                *client;   /**< Client name */
-    char                *server;   /**< Server name */
-    char                *secret;   /**< Secret name */
-    char                *sipv4;    /**< IP address */
+    const char          *client;   /**< Client name */
+    const char          *server;   /**< Server name */
+    const char          *secret;   /**< Secret name */
+    const char          *sipv4;    /**< IP address */
 } l2tp_ppp_secret;
 
 
