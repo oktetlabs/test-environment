@@ -861,6 +861,27 @@ te_sockaddr_get_ipstr(const struct sockaddr *addr)
 }
 
 /* See description in te_sockaddr.h */
+char *
+te_ip2str(const struct sockaddr *addr)
+{
+    char        buf[INET6_ADDRSTRLEN];
+    const char *res;
+
+    if (addr == NULL)
+        return NULL;
+
+    res = inet_ntop(addr->sa_family, te_sockaddr_get_netaddr(addr),
+                    buf, sizeof(buf));
+    if (res == NULL)
+    {
+        ERROR("Failed to convert address to string: %s", strerror(errno));
+        return NULL;
+    }
+
+    return strdup(buf);
+}
+
+/* See description in te_sockaddr.h */
 te_errno
 te_sockaddr_netaddr_from_string(const char      *addr_str,
                                 struct sockaddr *addr)

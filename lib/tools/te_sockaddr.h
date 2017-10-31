@@ -184,8 +184,23 @@ extern void *te_sockaddr_get_netaddr(const struct sockaddr *addr);
  * @note non-rentarable
  * @note non-thread-safe
  * @note does not perform any checks
+ *
+ * @sa te_ip2str, te_sockaddr2str
  */
 extern const char * te_sockaddr_get_ipstr(const struct sockaddr *addr);
+
+/**
+ * Convert IPv4 and IPv6 addresses from binary to text form.
+ *
+ * @note Return value should be freed with free(3) when it is no longer needed.
+ *
+ * @param addr      IP address.
+ *
+ * @return String representation of IP address, or @c NULL in case of error.
+ *
+ * @sa te_sockaddr_get_ipstr, te_sockaddr2str
+ */
+extern char *te_ip2str(const struct sockaddr *addr);
 
 /**
  * Update network address part of sockaddr structure according to
@@ -351,6 +366,8 @@ extern int te_sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
  * @param sa    - pointer to 'struct sockaddr'
  *
  * @return null-terminated string
+ *
+ * @sa te_sockaddr_get_ipstr, te_ip2str
  */
 extern const char *te_sockaddr2str(const struct sockaddr *sa);
 
