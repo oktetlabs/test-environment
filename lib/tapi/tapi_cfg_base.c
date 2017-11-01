@@ -718,6 +718,24 @@ tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
 
 /* See description in tapi_cfg_base.h */
 te_errno
+tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
+                          uint16_t vid)
+{
+    te_errno     rc = 0;
+
+    if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/interface:%s/vlans:%d",
+                                   ta, if_name, vid)) != 0)
+    {
+        ERROR("Failed to delete VLAN with VID=%d from %s", vid, if_name);
+        return rc;
+    }
+
+    return rc;
+}
+
+
+/* See description in tapi_cfg_base.h */
+te_errno
 tapi_cfg_base_if_get_mtu_u(const char *agent, const char *interface,
                            int *mtu)
 {

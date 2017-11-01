@@ -403,21 +403,8 @@ tapi_cfg_base_if_arp_disable(const char *ta, const char * iface)
  *
  * @return Status code
  */
-static inline te_errno
-tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
-                          uint16_t vid)
-{
-    te_errno     rc = 0;
-
-    if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/interface:%s/vlans:%d",
-                                   ta, if_name, vid)) != 0)
-    {
-        ERROR("Failed to delete VLAN with VID=%d from %s", vid, if_name);
-        return rc;
-    }
-
-    return rc;
-}
+extern te_errno tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
+                                          uint16_t vid);
 
 /**
  * Add VLAN interface and get its name.
