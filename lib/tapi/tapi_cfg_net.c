@@ -59,6 +59,7 @@
 #include "tapi_cfg.h"
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_net.h"
+#include "tapi_host_ns.h"
 
 /* See description in tapi_cfg_net.h */
 enum net_node_rsrc_type
@@ -843,6 +844,10 @@ tapi_cfg_net_node_reserve(cfg_net_t *net, cfg_net_node_t *node,
                                       rsrc_name);
             if (rc != 0)
                 ERROR("Failed to reserve resource '%s': %r", oid_str, rc);
+            else if (tapi_host_ns_enabled())
+                rc = tapi_host_ns_if_add(CFG_OID_GET_INST_NAME(oid, 1),
+                                         CFG_OID_GET_INST_NAME(oid, 2),
+                                         NULL);
         }
 
         free(rsrc_name);

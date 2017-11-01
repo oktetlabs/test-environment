@@ -41,6 +41,7 @@
 #include "tapi_cfg.h"
 #include "tapi_cfg_iptables.h"
 #include "tapi_rpc_stdio.h"
+#include "tapi_host_ns.h"
 
 /* System tool 'ip' */
 #define IP_TOOL "ip"
@@ -264,8 +265,9 @@ te_errno
 tapi_netns_add_ta(const char *host, const char *ns_name, const char *ta_name,
                   const char *ta_type, int rcfport, const char *ta_conn)
 {
-    char    confstr[CONFSTR_LEN];
-    int     res;
+    char     confstr[CONFSTR_LEN];
+    int      res;
+    te_errno rc;
 
     res = snprintf(confstr, sizeof(confstr),
                    "%s:%d:sudo:connect=%s:"IP_TOOL" netns exec %s:",
@@ -273,7 +275,14 @@ tapi_netns_add_ta(const char *host, const char *ns_name, const char *ta_name,
     if (res >= (int)sizeof(confstr))
         return TE_RC(TE_TAPI, TE_ESMALLBUF);
 
-    return rcf_add_ta(ta_name, ta_type, "rcfunix", confstr, 0);
+    rc = rcf_add_ta(ta_name, ta_type, "rcfunix", confstr, 0);
+    if (rc != 0)
+        return rc;
+
+    if (tapi_host_ns_enabled())
+        rc = tapi_host_ns_agent_add(host, ta_name, ns_name);
+
+    return rc;
 }
 
 /**
@@ -415,8 +424,20 @@ add_del_macvlan(const char *ta, const char *ctl_if, const char *macvlan_if,
         if (rc != 0)
             return rc;
     }
+
     if (add)
+    {
         rc = tapi_cfg_base_if_add_macvlan(ta, ctl_if, macvlan_if, NULL);
+
+        /* Do not keep it in the configuration tree. */
+        if (rc == 0 && tapi_host_ns_enabled())
+        {
+            rc = tapi_host_ns_if_del(ta, macvlan_if, TRUE);
+            if (rc != 0)
+                ERROR("Failed to remove interface %s/%s from /local/host: %r",
+                      ta, macvlan_if, rc);
+        }
+    }
     else
     {
         rc = tapi_cfg_base_if_del_macvlan(ta, ctl_if, macvlan_if);

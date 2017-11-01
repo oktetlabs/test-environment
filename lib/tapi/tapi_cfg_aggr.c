@@ -36,6 +36,7 @@
 #include "logger_api.h"
 #include "conf_api.h"
 #include "tapi_cfg_base.h"
+#include "tapi_host_ns.h"
 #include "te_ethernet.h"
 
 #define CHECK_BOND(ta_, name_) \
@@ -113,12 +114,15 @@ tapi_cfg_aggr_create_bond(const char *ta, const char *name,
         return rc;
     }
 
+    if (tapi_host_ns_enabled())
+        rc = tapi_host_ns_if_add(ta, bond_ifname, NULL);
+
     if (ifname != NULL)
         *ifname = bond_ifname;
     else
         free(bond_ifname);
 
-    return 0;
+    return rc;
 }
 
 /* See the description in tapi_cfg_aggr.h */
@@ -174,8 +178,11 @@ tapi_cfg_aggr_destroy_bond(const char *ta, const char *name)
 
     cfg_del_instance(rsrc_handle, FALSE);
 
+    if (tapi_host_ns_enabled())
+        rc = tapi_host_ns_if_del(ta, bond_ifname, TRUE);
+
     free(bond_ifname);
-    return 0;
+    return rc;
 }
 
 /* See the description in tapi_cfg_aggr.h */
@@ -235,8 +242,11 @@ tapi_cfg_aggr_bond_enslave(const char *ta, const char *name,
         return rc;
     }
 
+    if (tapi_host_ns_enabled())
+        rc = tapi_host_ns_if_parent_add(ta, bond_ifname, ta, slave_if);
+
     free(bond_ifname);
-    return 0;
+    return rc;
 }
 
 /* See the description in tapi_cfg_aggr.h */
@@ -244,18 +254,36 @@ int
 tapi_cfg_aggr_bond_free_slave(const char *ta, const char *name,
                               const char *slave_if)
 {
-    int             rc = 0;
+    te_errno rc = 0;
+    te_errno rc2;
 
     CHECK_BOND(ta, name);
 
-    rc = cfg_del_instance_fmt(FALSE,
-                              "/agent:%s/aggregation:%s/member:%s",
-                              ta, name, slave_if);
-    if (rc != 0)
+    if (tapi_host_ns_enabled())
     {
-        ERROR("Failed to release slave interface");
-        return rc;
+        char *bond_ifname;
+
+        rc = cfg_get_instance_fmt(NULL, &bond_ifname,
+                            "/agent:%s/aggregation:%s/interface:",
+                            ta, name);
+        if (rc != 0)
+            ERROR("Failed to obtain name of bond interface: %r");
+        else
+        {
+            rc = tapi_host_ns_if_parent_del(ta, bond_ifname, ta, slave_if);
+            free(bond_ifname);
+            if (rc != 0)
+                ERROR("Failed to delete parent interface reference: %r", rc);
+        }
     }
 
-    return 0;
+    rc2 = cfg_del_instance_fmt(FALSE,
+                              "/agent:%s/aggregation:%s/member:%s",
+                              ta, name, slave_if);
+    if (rc2 != 0)
+        ERROR("Failed to release slave interface");
+    if (rc == 0)
+        rc = rc2;
+
+    return rc;
 }

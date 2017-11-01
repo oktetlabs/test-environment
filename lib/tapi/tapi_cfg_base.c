@@ -65,6 +65,7 @@
 
 #include "tapi_cfg_base.h"
 #include "tapi_sockaddr.h"
+#include "tapi_host_ns.h"
 
 /* See the description in tapi_cfg_base.h */
 int
@@ -713,6 +714,9 @@ tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
         return rc;
     }
 
+    if (tapi_host_ns_enabled())
+        rc = tapi_host_ns_if_add(ta, *vlan_ifname, if_name);
+
     return rc;
 }
 
@@ -721,18 +725,37 @@ te_errno
 tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
                           uint16_t vid)
 {
-    te_errno     rc = 0;
+    te_errno rc;
+    te_errno rc2 = 0;
 
-    if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/interface:%s/vlans:%d",
-                                   ta, if_name, vid)) != 0)
+    if (tapi_host_ns_enabled())
     {
-        ERROR("Failed to delete VLAN with VID=%d from %s", vid, if_name);
-        return rc;
+        char *vlan_ifname = NULL;
+
+        rc2 = cfg_get_instance_fmt(NULL, &vlan_ifname,
+                                   "/agent:%s/interface:%s/vlans:%d/ifname:",
+                                   ta, if_name, vid);
+        if (rc2 != 0)
+        {
+            ERROR("Failed to get interface name for VLAN interface "
+                  "with VID=%su on %s", vid, if_name);
+        }
+        else
+        {
+            rc2 = tapi_host_ns_if_del(ta, vlan_ifname, TRUE);
+            free(vlan_ifname);
+        }
     }
+
+    rc = cfg_del_instance_fmt(FALSE, "/agent:%s/interface:%s/vlans:%d",
+                              ta, if_name, vid);
+    if (rc != 0)
+        ERROR("Failed to delete VLAN with VID=%d from %s", vid, if_name);
+    else
+        rc = rc2;
 
     return rc;
 }
-
 
 /* See description in tapi_cfg_base.h */
 te_errno
@@ -876,7 +899,12 @@ tapi_cfg_base_if_add_macvlan(const char *ta, const char *link,
     if (rc != 0)
         return rc;
 
-    return tapi_cfg_base_if_up(ta, ifname);
+    rc = tapi_cfg_base_if_up(ta, ifname);
+
+    if (rc == 0 && tapi_host_ns_enabled())
+        rc = tapi_host_ns_if_add(ta, ifname, link);
+
+    return rc;
 }
 
 /* See description in tapi_cfg_base.h */
@@ -890,7 +918,17 @@ tapi_cfg_base_if_del_macvlan(const char *ta, const char *link,
     if (rc != 0)
         return rc;
 
-    return tapi_cfg_base_if_del_rsrc(ta, ifname);
+    rc = tapi_cfg_base_if_del_rsrc(ta, ifname);
+
+    if (tapi_host_ns_enabled())
+    {
+        te_errno rc2;
+        rc2 = tapi_host_ns_if_del(ta, ifname, TRUE);
+        if (rc == 0)
+            rc = rc2;
+    }
+
+    return rc;
 }
 
 /* See description in tapi_cfg_base.h */
@@ -943,7 +981,16 @@ tapi_cfg_base_if_add_veth(const char *ta, const char *ifname,
     if (rc != 0)
         return rc;
 
-    return tapi_cfg_base_if_up(ta, peer);
+    rc = tapi_cfg_base_if_up(ta, peer);
+
+    if (rc == 0 && tapi_host_ns_enabled())
+    {
+        rc = tapi_host_ns_if_add(ta, ifname, peer);
+        if (rc == 0)
+            rc = tapi_host_ns_if_add(ta, peer, ifname);
+    }
+
+    return rc;
 }
 
 /* See description in tapi_cfg_base.h */
@@ -976,7 +1023,6 @@ tapi_cfg_base_if_del_veth(const char *ta, const char *ifname)
     if (peer != NULL)
     {
         rc2 = tapi_cfg_base_if_del_rsrc(ta, peer);
-        free(peer);
         if (rc == 0)
             rc = rc2;
     }
@@ -984,6 +1030,21 @@ tapi_cfg_base_if_del_veth(const char *ta, const char *ifname)
     rc2 = tapi_cfg_base_if_del_rsrc(ta, ifname);
     if (rc == 0)
         rc = rc2;
+
+    if (tapi_host_ns_enabled())
+    {
+        rc2 = tapi_host_ns_if_del(ta, ifname, TRUE);
+        if (rc == 0)
+            rc = rc2;
+        if (peer != NULL)
+        {
+            rc2 = tapi_host_ns_if_del(ta, peer, TRUE);
+            if (rc == 0)
+                rc = rc2;
+        }
+    }
+
+    free(peer);
 
     return rc;
 }
