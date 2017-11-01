@@ -904,6 +904,49 @@ cfg_find_pattern_fmt(unsigned int *p_num, cfg_handle **p_set,
     return cfg_find_pattern(ptrn, p_num, p_set);
 }
 
+/* See description in conf_api.h */
+te_errno
+cfg_find_pattern_iter_fmt(cfg_handle_cb_func cb_func, void *opaque,
+                          const char *ptrn_fmt, ...)
+{
+    unsigned int count;
+    unsigned int i;
+    cfg_handle  *handles;
+    te_errno     rc;
+    va_list      ap;
+    char         ptrn[CFG_OID_MAX];
+    int          res;
+
+    va_start(ap, ptrn_fmt);
+    res = vsnprintf(ptrn, sizeof(ptrn), ptrn_fmt, ap);
+    va_end(ap);
+    if (res < 0 || res >= (int)sizeof(ptrn))
+    {
+        if (res < 0)
+            rc = TE_OS_RC(TE_CONF_API, errno);
+        else
+            rc = TE_RC(TE_CONF_API, TE_ESMALLBUF);
+        ERROR("Failed to compose pattern string: %r", rc);
+        return rc;
+    }
+
+    rc = cfg_find_pattern(ptrn, &count, &handles);
+    if (rc != 0)
+    {
+        ERROR("Cannot get objects list: %r", rc);
+        return rc;
+    }
+
+    for (i = 0; i < count; i++)
+    {
+        rc = cb_func(handles[i], opaque);
+        if (rc != 0)
+            break;
+    }
+    free(handles);
+
+    return rc;
+}
 
 /**
  * Get handle of the family member of the object or object instance.

@@ -44,7 +44,8 @@ include_HEADERS = \
 	tapi_iomux.h \
 	tapi_network.h \
 	tapi_namespaces.h \
-	tapi_cfg_sys.h
+	tapi_cfg_sys.h \
+	tapi_host_ns.h
 
 lib_LTLIBRARIES = libtapi.la
 
@@ -83,7 +84,8 @@ libtapi_la_SOURCES = \
 	tapi_iomux.c \
 	tapi_network.c \
 	tapi_netns.c \
-	tapi_cfg_sys.c
+	tapi_cfg_sys.c \
+	tapi_host_ns.c
 
 install-exec-hook:
 	touch -c -r libtapi.la $(DESTDIR)/$(libdir)/libtapi.*

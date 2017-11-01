@@ -331,6 +331,31 @@ extern te_errno cfg_find_pattern_fmt(unsigned int *p_num, cfg_handle **p_set,
                                      __attribute__((format(printf, 3, 4)));
 
 /**
+ * Type of callback function which can passed to cfg_find_pattern_iter_fmt().
+ *
+ * @param handle    Configurator object or instance handle
+ * @param opaque    Opaque data
+ *
+ * @return Status code
+ */
+typedef te_errno (*cfg_handle_cb_func)(cfg_handle handle, void *opaque);
+
+/**
+ * Find all objects or object instances matching a pattern and call
+ * @p cb_func for each object.
+ *
+ * @param cb_func   Pointer to a callback function.
+ * @param opaque    Opaque argument to pass @p cb_func.
+ * @param ptrn_fmt  Foramt string with the pattern.
+ *
+ * @return Status code
+ */
+extern te_errno cfg_find_pattern_iter_fmt(cfg_handle_cb_func cb_func,
+                                          void *opaque,
+                                          const char *ptrn_fmt, ...)
+                                     __attribute__((format(printf, 3, 4)));
+
+/**
  * Get handle of the oldest son of the object or object instance.
  *
  * @param handle    handle of the object or object instance
