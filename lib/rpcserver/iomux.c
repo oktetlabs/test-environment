@@ -314,7 +314,7 @@ iomux_wait(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
             {
                 struct timeval tv;
                 tv.tv_sec = timeout / 1000UL;
-                tv.tv_usec = timeout % 1000UL;
+                tv.tv_usec = TE_MS2US(timeout % 1000UL);
                 rc = funcs->select(state->select.maxfds + 1,
                                    &ret->select.rfds,
                                    &ret->select.wfds,
@@ -325,7 +325,7 @@ iomux_wait(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
             {
                 struct timespec ts;
                 ts.tv_sec = timeout / 1000UL;
-                ts.tv_nsec = (timeout % 1000UL) * 1000UL;
+                ts.tv_nsec = TE_MS2NS(timeout % 1000UL);
                 rc = funcs->select(state->select.maxfds + 1,
                                    &ret->select.rfds,
                                    &ret->select.wfds,
@@ -350,7 +350,7 @@ iomux_wait(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
         {
             struct timespec ts;
             ts.tv_sec = timeout / 1000UL;
-            ts.tv_nsec = (timeout % 1000UL) * 1000UL;
+            ts.tv_nsec = TE_MS2NS(timeout % 1000UL);
             rc = funcs->poll(&state->poll.fds[0], state->poll.nfds,
                              &ts, NULL);
             break;
