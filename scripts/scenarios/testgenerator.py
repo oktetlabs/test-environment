@@ -137,7 +137,7 @@ class TestGenerator(Generator):
         self.write('TEST_SUCCESS;', '')
         self.label('cleanup')
         self.write('', 'TEST_END;')
-        self.write(-1, '}', '')
+        self.write(-1, '}')
 
     @staticmethod
     @stdout2str
