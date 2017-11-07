@@ -20,11 +20,17 @@ my $opts = "";
 my $user_opts = "";
 my @tests = ();
 my $dummy_tags = $ENV{"TRC_UPDATE_DUMMY_TAGS"};
-my $dummy_opts = "--tags-list=${dummy_tags} --rules-save=rules.xml ".
-                 "--confls-all --no-exp-only --simpl-tags";
+my $dummy_opts;
 my $tmp_file;
 my $s;
 my $rc = 0;
+
+$dummy_tags =~ s/^\s+|\s+$//g;
+$dummy_tags =~ s/\s+/,/g;
+$dummy_tags =~ s/,+/,/g;
+$dummy_tags = quotemeta($dummy_tags);
+$dummy_opts = "--tags-list=${dummy_tags} --rules-save=rules.xml ".
+              "--confls-all --no-exp-only --simpl-tags";
 
 $date_from->parse("2000.01.01");
 $date_to->parse("2100.01.01");
