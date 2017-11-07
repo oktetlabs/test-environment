@@ -1883,6 +1883,7 @@ trc_update_iter_data_merge_result(trc_update_ctx *ctx,
     int          cur_pos = 0;
     tqh_strings  tag_names;
     tqh_strings *tags_list;
+    te_errno     rc;
 
     if ((ctx->flags & TRC_UPDATE_NO_INCOMPL) &&
         te_result->status == TE_TEST_INCOMPLETE)
@@ -1994,7 +1995,36 @@ trc_update_iter_data_merge_result(trc_update_ctx *ctx,
 
         tq_strings_free(&tag_names, free);
         logic_expr_free(ctx->merge_expr);
-        logic_expr_parse(ctx->merge_str, &ctx->merge_expr);
+        ctx->merge_expr = NULL;
+        if (ctx->merge_str[0] != '\0')
+        {
+            rc = logic_expr_parse(ctx->merge_str, &ctx->merge_expr);
+            if (rc != 0)
+            {
+                trc_exp_result_free(merge_result);
+                return rc;
+            }
+        }
+        else
+        {
+            char *s;
+
+            s = strdup("NO_TAGS_MATCHED");
+            ctx->merge_expr = TE_ALLOC(sizeof(logic_expr));
+            if (ctx->merge_expr == NULL || s == NULL)
+            {
+                trc_exp_result_free(merge_result);
+                free(ctx->merge_expr);
+                ctx->merge_expr = NULL;
+                free(s);
+
+                ERROR("%s(): out of memory", __FUNCTION__);
+                return TE_ENOMEM;
+            }
+
+            ctx->merge_expr->type = LOGIC_EXPR_VALUE;
+            ctx->merge_expr->u.value = s;
+        }
     }
 
     merge_result->tags_expr = logic_expr_dup(ctx->merge_expr);
