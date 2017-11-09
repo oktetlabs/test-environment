@@ -984,11 +984,7 @@ tapi_cfg_base_if_add_veth(const char *ta, const char *ifname,
     rc = tapi_cfg_base_if_up(ta, peer);
 
     if (rc == 0 && tapi_host_ns_enabled())
-    {
         rc = tapi_host_ns_if_add(ta, ifname, peer);
-        if (rc == 0)
-            rc = tapi_host_ns_if_add(ta, peer, ifname);
-    }
 
     return rc;
 }
@@ -1036,12 +1032,6 @@ tapi_cfg_base_if_del_veth(const char *ta, const char *ifname)
         rc2 = tapi_host_ns_if_del(ta, ifname, TRUE);
         if (rc == 0)
             rc = rc2;
-        if (peer != NULL)
-        {
-            rc2 = tapi_host_ns_if_del(ta, peer, TRUE);
-            if (rc == 0)
-                rc = rc2;
-        }
     }
 
     free(peer);
