@@ -144,6 +144,52 @@ extern te_errno tapi_host_ns_if_change_ns(const char *ta, const char *ifname,
                                           const char *ns_name,
                                           const char *ns_ta);
 
+/**
+ * Type of callback function which can be passed to
+ * tapi_host_ns_if_child_iter() or tapi_host_ns_if_parent_iter().
+ *
+ * @param ta        Test agent name
+ * @param ifname    Interface name
+ * @param opaque    Opaque user data
+ *
+ * @return Status code. Also see tapi_host_ns_if_child_iter() and
+ *         tapi_host_ns_if_parent_iter() description for details.
+ */
+typedef te_errno (*tapi_host_ns_if_cb_func)(const char *ta,
+                                            const char *ifname,
+                                            void *opaque);
+
+/**
+ * Iterate by child interfaces.
+ *
+ * @param ta        Test agent name
+ * @param ifname    Interface name
+ * @param opaque    Opaque user data
+ * @param cb        A callback function
+ *
+ * @return Status code. The function stops iterating if @p cb returns non-zero
+ *         value.
+ */
+extern te_errno tapi_host_ns_if_child_iter(const char *ta, const char *ifname,
+                                           tapi_host_ns_if_cb_func cb,
+                                           void *opaque);
+
+/**
+ * Iterate by parent interfaces.
+ *
+ * @param ta        Test agent name
+ * @param ifname    Interface name
+ * @param opaque    Opaque user data
+ * @param cb        A callback function
+ *
+ * @return Status code. The function stops iterating if @p cb returns non-zero
+ *         value.
+ */
+extern te_errno tapi_host_ns_if_parent_iter(const char *ta,
+                                            const char *ifname,
+                                            tapi_host_ns_if_cb_func cb,
+                                            void *opaque);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

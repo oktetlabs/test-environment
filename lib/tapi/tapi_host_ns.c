@@ -597,3 +597,176 @@ tapi_host_ns_if_change_ns(const char *ta, const char *ifname,
 
     return 0;
 }
+
+/* Context to pass to parent and child iterator callbacks. */
+typedef struct iterate_if_ctx {
+    tapi_host_ns_if_cb_func cb;
+    char                   *link;
+    void                   *opaque;
+} iterate_if_ctx;
+
+/**
+ * Callback function to iterate interface children.
+ *
+ * @param handle    Parent instance handle
+ * @param opaque    Iterator context (@b iterate_if_ctx)
+ *
+ * @return Status code.
+ */
+static te_errno
+iterate_child_cb(cfg_handle handle, void *opaque)
+{
+    iterate_if_ctx *ctx = (iterate_if_ctx *)opaque;
+    te_errno        rc;
+    char           *ifname = NULL;
+    char           *val = NULL;
+    char           *ta = NULL;
+
+    rc = cfg_get_instance(handle, NULL, &val);
+    if (rc != 0)
+    {
+        ERROR("Cannot get a parent link: %r", rc);
+        return rc;
+    }
+
+#define CHRC(_rc, _err...) \
+    do {                    \
+        if (_rc != 0)       \
+        {                   \
+            free(ifname);   \
+            free(val);      \
+            free(ta);       \
+            ERROR(_err);    \
+            return _rc;     \
+        }                   \
+    } while (0);
+
+    if (strcmp(ctx->link, val) == 0)
+    {
+        cfg_handle phandle;
+
+        rc = cfg_get_father(handle, &phandle);
+        CHRC(rc, "Failed to get interface handle");
+        rc = cfg_get_inst_name(phandle, &ifname);
+        CHRC(rc, "Failed to get interface instance name");
+        rc = cfg_get_father(phandle, &phandle);
+        CHRC(rc, "Failed to get test agent handle");
+        rc = cfg_get_inst_name(phandle, &ta);
+        CHRC(rc, "Failed to get test agent instance name");
+
+        rc = ctx->cb(ta, ifname, ctx->opaque);
+
+        free(ifname);
+        free(ta);
+    }
+    free(val);
+
+    return rc;
+}
+
+/* See description in tapi_host_ns.h */
+te_errno
+tapi_host_ns_if_child_iter(const char *ta, const char *ifname,
+                           tapi_host_ns_if_cb_func cb, void *opaque)
+{
+    iterate_if_ctx ctx = {.cb = cb, .link = NULL, .opaque = opaque};
+    char          *host = NULL;
+    te_errno       rc;
+
+    rc = tapi_host_ns_get_host(ta, &host);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_host_ns_if_make_link(host, ta, ifname, &ctx.link);
+    if (rc == 0)
+    {
+        rc = cfg_find_pattern_iter_fmt(&iterate_child_cb, (void *)&ctx,
+                                       TAPI_HOST_NS_TREE_IF "/parent:*",
+                                       host, "*", "*");
+        free(ctx.link);
+    }
+    free(host);
+
+    return rc;
+}
+
+/**
+ * Callback function to iterate interface parents.
+ *
+ * @param handle    Parent instance handle
+ * @param opaque    Iterator context (@b iterate_if_ctx)
+ *
+ * @return Status code.
+ */
+static te_errno
+iterate_parent_cb(cfg_handle handle, void *opaque)
+{
+    iterate_if_ctx *ctx = (iterate_if_ctx *)opaque;
+    te_errno rc;
+    char    *link = NULL;
+    char    *ifname = NULL;
+    char    *ta = NULL;
+    char    *saveptr = NULL;
+    char    *saveptr2 = NULL;
+    char    *token = NULL;
+
+    rc = cfg_get_instance(handle, NULL, &link);
+    if (rc != 0)
+    {
+        ERROR("Cannot get a parent link: %r", rc);
+        return rc;
+    }
+
+    for (token = strtok_r(link, "/", &saveptr);
+         token != NULL;
+         token = strtok_r(NULL, "/", &saveptr))
+    {
+        token = strtok_r(token, ":", &saveptr2);
+        if (token != NULL)
+        {
+            if (strcmp(token, "interface") == 0)
+            {
+                ifname = strtok_r(NULL, ":", &saveptr2);
+                break;
+            }
+            else if (strcmp(token, "agent") == 0)
+            {
+                ta = strtok_r(NULL, ":", &saveptr2);
+            }
+        }
+    }
+
+    if (ifname == NULL || ta == NULL)
+    {
+        ERROR("Failed to parse interface link: ta %s, ifname %s", ta, ifname);
+        rc = TE_RC(TE_TAPI, TE_EFMT);
+    }
+    else
+    {
+        rc = ctx->cb(ta, ifname, ctx->opaque);
+    }
+
+    free(link);
+    return rc;
+}
+
+/* See description in tapi_host_ns.h */
+te_errno
+tapi_host_ns_if_parent_iter(const char *ta, const char *ifname,
+                            tapi_host_ns_if_cb_func cb, void *opaque)
+{
+    iterate_if_ctx ctx = {.cb = cb, .opaque = opaque};
+    char          *host = NULL;
+    te_errno       rc;
+
+    rc = tapi_host_ns_get_host(ta, &host);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_find_pattern_iter_fmt(&iterate_parent_cb, (void *)&ctx,
+                                   TAPI_HOST_NS_TREE_IF "/parent:*",
+                                   host, ta, ifname);
+    free(host);
+
+    return rc;
+}
