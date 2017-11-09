@@ -65,6 +65,7 @@
 #include "tapi_test.h"
 #include "tapi_cfg.h"
 #include "tapi_cfg_base.h"
+#include "tapi_host_ns.h"
 
 /* See description in tapi_rpc_misc.h */
 
@@ -2359,66 +2360,6 @@ rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec)
     RETVAL_INT(vfork_pipe_exec, out.retval);
 }
 
-/**
- * Return RPC server errno if it is not @c 0;
- * if it is @c 0, return @c TE_EFAIL.
- *
- * @param rpcs_     RPC server.
- */
-#define GET_RPC_ERR(rpcs_) \
-    (RPC_ERRNO(rpcs_) != 0 ? RPC_ERRNO(rpcs_) : TE_RC(TE_TAPI, TE_EFAIL))
-
-/**
- * Get MTU with help of ioctl()
- *
- * @param rpcs      RPC server handle
- * @param if_name   Interface name
- * @param mtu       Where to save MTU value
- *
- * @return Status code.
- */
-static te_errno
-ioctl_get_if_mtu(rcf_rpc_server *rpcs,
-                 const char *if_name,
-                 int *mtu)
-{
-    struct ifreq  ifreq_var;
-    int           s;
-    int           rc;
-    size_t        max_len;
-
-    memset(&ifreq_var, 0, sizeof(ifreq_var));
-    max_len = sizeof(ifreq_var.ifr_name);
-    strncpy(ifreq_var.ifr_name, if_name, max_len);
-    if (ifreq_var.ifr_name[max_len - 1] != '\0')
-    {
-        ifreq_var.ifr_name[max_len - 1] = '\0';
-        ERROR("Interface name %s was truncated",
-              ifreq_var.ifr_name);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-
-    s = rpc_socket(rpcs, RPC_AF_INET, RPC_SOCK_DGRAM,
-                   RPC_PROTO_DEF);
-    if (s < 0)
-        return GET_RPC_ERR(rpcs);
-
-    rc = rpc_ioctl(rpcs, s, RPC_SIOCGIFMTU, &ifreq_var);
-    if (rc < 0)
-    {
-        rc = GET_RPC_ERR(rpcs);
-        rpc_close(rpcs, s);
-        return rc;
-    }
-
-    rc = rpc_close(rpcs, s);
-    if (rc < 0)
-        return GET_RPC_ERR(rpcs);
-
-    *mtu = ifreq_var.ifr_mtu;
-    return 0;
-}
-
 /* See description in tapi_rpc_misc.h */
 void
 tapi_saved_mtus_free(te_saved_mtus *mtus)
@@ -2457,7 +2398,7 @@ tapi_saved_mtus2str(te_saved_mtus *mtus, char **str)
 
     LIST_FOREACH(saved_mtu, mtus, links)
     {
-        rc = te_string_append(&s, "%s=%d;",
+        rc = te_string_append(&s, "%s/%s=%d;", saved_mtu->ta,
                               saved_mtu->if_name, saved_mtu->mtu);
         if (rc != 0)
         {
@@ -2476,8 +2417,9 @@ tapi_str2saved_mtus(const char *str, te_saved_mtus *mtus)
 {
     te_saved_mtu    *saved_mtu = NULL;
     char             if_name[IFNAMSIZ];
+    char             ta[RCF_MAX_NAME];
     int              mtu;
-    char             buf[IFNAMSIZ];
+    char             buf[RCF_MAX_NAME];
     unsigned int     p;
     unsigned int     q;
     te_errno         rc = 0;
@@ -2486,7 +2428,7 @@ tapi_str2saved_mtus(const char *str, te_saved_mtus *mtus)
 
     for (p = 0, q = 0; str[p] != '\0'; p++)
     {
-        if (str[p] != '=' && str[p] != ';')
+        if (str[p] != '=' && str[p] != ';' && str[p] != '/')
         {
             if (q >= sizeof(buf) - 1)
             {
@@ -2508,6 +2450,10 @@ tapi_str2saved_mtus(const char *str, te_saved_mtus *mtus)
             {
                 strncpy(if_name, buf, IFNAMSIZ);
             }
+            else if (str[p] == '/')
+            {
+                strncpy(ta, buf, RCF_MAX_NAME);
+            }
             else
             {
                 mtu = atoi(buf);
@@ -2521,8 +2467,8 @@ tapi_str2saved_mtus(const char *str, te_saved_mtus *mtus)
                 }
 
                 saved_mtu->mtu = mtu;
-                strncpy(saved_mtu->if_name, if_name,
-                        IFNAMSIZ);
+                strncpy(saved_mtu->if_name, if_name, IFNAMSIZ);
+                strncpy(saved_mtu->ta, ta, RCF_MAX_NAME);
 
                 LIST_INSERT_HEAD(mtus, saved_mtu, links);
             }
@@ -2544,12 +2490,39 @@ cleanup:
 }
 
 /**
+ * Get pointer to a saved MTU instance if it is in the list.
+ *
+ * @param mtus      Saved MTU's list
+ * @param ta        Test agent name
+ * @param if_name   Interface name
+ *
+ * @return Poitner to saved MTU instance or @c NULL.
+ */
+static te_saved_mtu *
+te_saved_mtus_get(te_saved_mtus *mtus, const char *ta, const char *if_name)
+{
+    te_saved_mtu *saved_mtu;
+
+    LIST_FOREACH(saved_mtu, mtus, links)
+    {
+        if (strcmp(saved_mtu->if_name, if_name) == 0 &&
+            strcmp(saved_mtu->ta, ta) == 0)
+        {
+            return saved_mtu;
+        }
+    }
+
+    return NULL;
+}
+
+/**
  * Save MTU value for a given interface in a list.
  *
  * @note If MTU value for a given interface is already in the list,
  *       this function will not update it.
  *
  * @param mtus      List of MTU values.
+ * @param ta        Test agent name.
  * @param if_name   Interface name.
  * @param mtu       MTU value.
  *
@@ -2557,6 +2530,7 @@ cleanup:
  */
 static te_errno
 te_saved_mtus_put(te_saved_mtus *mtus,
+                  const char *ta,
                   const char *if_name,
                   int mtu)
 {
@@ -2569,123 +2543,54 @@ te_saved_mtus_put(te_saved_mtus *mtus,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    LIST_FOREACH(saved_mtu, mtus, links)
-    {
-        if (strcmp(saved_mtu->if_name, if_name) == 0)
-            return 0;
-    }
+    saved_mtu = te_saved_mtus_get(mtus, ta, if_name);
+    if (saved_mtu != NULL)
+        return TE_RC(TE_TAPI, TE_EEXIST);
 
     saved_mtu = TE_ALLOC(sizeof(*saved_mtu));
     if (saved_mtu == NULL)
         return TE_RC(TE_TAPI, TE_ENOMEM);
 
+    strncpy(saved_mtu->ta, ta, RCF_MAX_NAME);
     strncpy(saved_mtu->if_name, if_name, IFNAMSIZ);
-
     saved_mtu->mtu = mtu;
     LIST_INSERT_HEAD(mtus, saved_mtu, links);
+
     return 0;
 }
 
 /* Predeclaration. */
-static te_errno save_descendants_mtus(rcf_rpc_server *rpcs,
+static te_errno save_descendants_mtus(const char *ta,
                                       const char *if_name,
                                       te_saved_mtus *mtus,
                                       te_bool save_target);
+static te_errno tapi_set_if_mtu_smart_aux(const char *ta,
+                                          const char *if_name,
+                                          int mtu, int *old_mtu_p,
+                                          te_saved_mtus *mtus,
+                                          te_bool ancestor,
+                                          te_bool skip_target);
 
 /**
- * Save current MTU values for all MAC VLAN interfaces based
- * on the given one, and all interfaces based on them.
+ * Callback function to iterate an interface descendants.
  *
- * @param rpcs          RPC server handle.
- * @param if_name       Interface name.
- * @param mtus          Where to store MTU values.
+ * @param ta        Test agent name
+ * @param ifname    Interface name
+ * @param opaque    Saved MTU's list (@b te_saved_mtus)
  *
  * @return Status code.
  */
 static te_errno
-save_descendants_macvlans_mtus(rcf_rpc_server *rpcs,
-                               const char *if_name,
-                               te_saved_mtus *mtus)
+save_descendant_cb(const char *ta, const char *ifname, void *opaque)
 {
-    cfg_handle    *interfaces = NULL;
-    unsigned int   count = 0;
-    unsigned int   i = 0;
-    char          *child_if_name = NULL;
-    te_errno       rc = 0;
-
-    rc = cfg_find_pattern_fmt(&count, &interfaces,
-                              "/agent:%s/interface:%s/macvlan:*",
-                              rpcs->ta, if_name);
-    if (rc != 0)
-        return rc;
-
-    for (i = 0; i < count; i++)
-    {
-        rc = cfg_get_inst_name(interfaces[i], &child_if_name);
-        if (rc != 0)
-            break;
-
-        rc = save_descendants_mtus(rpcs, child_if_name, mtus, TRUE);
-        free(child_if_name);
-        if (rc != 0)
-            break;
-    }
-
-    free(interfaces);
-    return rc;
-}
-
-/**
- * Save current MTU values for all VLAN interfaces based
- * on the given one, and all interfaces based on them.
- *
- * @param rpcs          RPC server handle.
- * @param if_name       Interface name.
- * @param mtus          Where to store MTU values.
- *
- * @return Status code.
- */
-static te_errno
-save_descendants_vlans_mtus(rcf_rpc_server *rpcs,
-                            const char *if_name,
-                            te_saved_mtus *mtus)
-{
-    cfg_handle    *interfaces = NULL;
-    unsigned int   count = 0;
-    unsigned int   i = 0;
-    cfg_val_type   val_type;
-    char          *child_if_name = NULL;
-    te_errno       rc = 0;
-
-    rc = cfg_find_pattern_fmt(&count, &interfaces,
-                              "/agent:%s/interface:%s/vlans:*/ifname:",
-                              rpcs->ta, if_name);
-    if (rc != 0)
-        return rc;
-
-    for (i = 0; i < count; i++)
-    {
-        val_type = CVT_STRING;
-        rc = cfg_get_instance(interfaces[i], &val_type,
-                              &child_if_name);
-        if (rc != 0)
-            break;
-
-        rc = save_descendants_mtus(rpcs, child_if_name, mtus, TRUE);
-        free(child_if_name);
-        if (rc != 0)
-            break;
-    }
-
-    free(interfaces);
-    return rc;
+    return save_descendants_mtus(ta, ifname, (te_saved_mtus *)opaque, TRUE);
 }
 
 /**
  * Save current MTU values for all interfaces based
  * on the given one (VLANs, MACVLANs).
  *
- * @param rpcs          RPC server handle.
+ * @param ta            Test agent name
  * @param if_name       Interface name.
  * @param mtus          Where to store MTU values.
  * @param save_target   If @c TRUE, save MTU value
@@ -2694,7 +2599,7 @@ save_descendants_vlans_mtus(rcf_rpc_server *rpcs,
  * @return Status code.
  */
 static te_errno
-save_descendants_mtus(rcf_rpc_server *rpcs,
+save_descendants_mtus(const char *ta,
                       const char *if_name,
                       te_saved_mtus *mtus,
                       te_bool save_target)
@@ -2702,35 +2607,56 @@ save_descendants_mtus(rcf_rpc_server *rpcs,
     int       old_mtu;
     te_errno  rc = 0;
 
-    /**
-     * Skip interface if it is not grabbed.
-     * VLAN interfaces may be not grabbed but still
-     * accessible via configuration tree.
-     */
-    if (!tapi_interface_is_mine(rpcs->ta, if_name))
-        return 0;
+    if (!tapi_interface_is_mine(ta, if_name))
+    {
+        ERROR("Interface %s is not grabbed by agent %s", if_name, ta);
+        return TE_RC(TE_TAPI, TE_EPERM);
+    }
 
     if (save_target)
     {
-        rc = tapi_cfg_base_if_get_mtu_u(rpcs->ta, if_name,
-                                        &old_mtu);
+        rc = tapi_cfg_base_if_get_mtu_u(ta, if_name, &old_mtu);
         if (rc != 0)
             return rc;
 
-        rc = te_saved_mtus_put(mtus, if_name, old_mtu);
+        rc = te_saved_mtus_put(mtus, ta, if_name, old_mtu);
         if (rc != 0)
+        {
+            /* Avoid loop referencing. */
+            if (rc == TE_RC(TE_TAPI, TE_EEXIST))
+                return 0;
             return rc;
+        }
     }
 
-    rc = save_descendants_vlans_mtus(rpcs, if_name, mtus);
-    if (rc != 0)
-        return rc;
+    return tapi_host_ns_if_child_iter(ta, if_name, &save_descendant_cb,
+                                      (void *)mtus);
+}
 
-    rc = save_descendants_macvlans_mtus(rpcs, if_name, mtus);
-    if (rc != 0)
-        return rc;
+/* Context to iterate parent interfaces with the callback function
+ * set_parent_mtu_cb(). */
+typedef struct parent_mtu_ctx {
+    int            mtu;
+    te_bool        aggr;
+    te_saved_mtus *mtus;
+} parent_mtu_ctx;
 
-    return 0;
+/**
+ * Callback function to iterate an interface parents.
+ *
+ * @param ta        Test agent name
+ * @param ifname    Interface name
+ * @param opaque    The context (@b parent_mtu_ctx)
+ *
+ * @return Status code.
+ */
+static te_errno
+set_parent_mtu_cb(const char *ta, const char *ifname, void *opaque)
+{
+    parent_mtu_ctx *ctx = (parent_mtu_ctx *)opaque;
+
+    return tapi_set_if_mtu_smart_aux(ta, ifname, ctx->mtu, NULL, ctx->mtus,
+                                     TRUE, ctx->aggr);
 }
 
 /**
@@ -2738,7 +2664,7 @@ save_descendants_mtus(rcf_rpc_server *rpcs,
  * It increases MTU for the ancestors of a given interface if required,
  * and then sets it for the interface itself.
  *
- * @param rpcs          RPC server handle
+ * @param ta            Test agent name
  * @param if_name       Interface name
  * @param mtu           MTU value
  * @param old_mtu_p     Where to save old MTU value for target interface
@@ -2755,45 +2681,23 @@ save_descendants_mtus(rcf_rpc_server *rpcs,
  * @return Status code.
  */
 static te_errno
-tapi_set_if_mtu_smart_aux(rcf_rpc_server *rpcs,
+tapi_set_if_mtu_smart_aux(const char *ta,
                           const char *if_name,
                           int mtu, int *old_mtu_p,
                           te_saved_mtus *mtus,
                           te_bool ancestor,
                           te_bool skip_target)
 {
-    char          if_parent[IFNAMSIZ];
     int           rc;
     int           old_mtu;
 
-    if (!tapi_interface_is_mine(rpcs->ta, if_name))
+    if (!tapi_interface_is_mine(ta, if_name))
     {
-        /*
-         * We cannot get MTU via Configurator if interface is not grabbed.
-         * However MTU can be obtained with help of ioctl(). MTU should
-         * be changed on "ancestor" interface only if it is lower there
-         * than the value to be set for target interface. If it should not
-         * be changed, then it is OK that "ancestor" is not grabbed.
-         */
-
-        rc = ioctl_get_if_mtu(rpcs, if_name, &old_mtu);
-        if (rc != 0)
-            return rc;
-
-        if (old_mtu < mtu)
-        {
-            ERROR("%s interface is not grabbed by testing, and "
-                  "MTU on it must be increased", if_name);
-            return TE_RC(TE_TAPI, TE_EPERM);
-        }
-        else
-        {
-            return 0;
-        }
+        ERROR("Interface %s is not grabbed by agent %s", if_name, ta);
+        return TE_RC(TE_TAPI, TE_EPERM);
     }
 
-    rc = tapi_cfg_base_if_get_mtu_u(rpcs->ta, if_name,
-                                    &old_mtu);
+    rc = tapi_cfg_base_if_get_mtu_u(ta, if_name, &old_mtu);
     if (rc != 0)
         return rc;
 
@@ -2807,53 +2711,19 @@ tapi_set_if_mtu_smart_aux(rcf_rpc_server *rpcs,
 
     if (mtu > old_mtu)
     {
-        rc = tapi_cfg_get_if_parent(rpcs->ta, if_name,
-                                    if_parent,
-                                    sizeof(if_parent));
+        parent_mtu_ctx ctx = {.mtu = mtu, .aggr = FALSE, .mtus = mtus};
+        te_interface_kind kind;
+
+        rc = tapi_cfg_get_if_kind(ta, if_name, &kind);
         if (rc != 0)
             return rc;
+        if (kind == TE_INTERFACE_KIND_BOND || kind == TE_INTERFACE_KIND_TEAM)
+            ctx.aggr = TRUE;
 
-        if (if_parent[0] != '\0')
-        {
-            rc = tapi_set_if_mtu_smart_aux(rpcs, if_parent,
-                                           mtu, NULL, mtus, TRUE, FALSE);
-            if (rc != 0)
-                return rc;
-        }
-        else
-        {
-            tqh_strings   slaves;
-            tqe_string   *slave = NULL;
-
-            rc = rpc_bond_get_slaves(rpcs, if_name,
-                                     &slaves, NULL);
-            if (rc < 0)
-                return GET_RPC_ERR(rpcs);
-
-            /**
-             * Here it is assumed that it is not allowed to aggregate
-             * two interfaces which are ancestor/descendant (for example,
-             * an interface and a MACVLAN over it). So it is safe to
-             * try to adjust MTU for ancestors of each slave separately
-             * (changing MTU for a slave is not allowed in case of teaming,
-             * so if an ancestor is also a slave, such adjustment will
-             * fail).
-             */
-
-            TAILQ_FOREACH(slave, &slaves, links)
-            {
-                rc = tapi_set_if_mtu_smart_aux(rpcs, slave->v,
-                                               mtu, NULL, mtus,
-                                               TRUE, TRUE);
-                if (rc != 0)
-                {
-                    tq_strings_free(&slaves, &free);
-                    return rc;
-                }
-            }
-
-            tq_strings_free(&slaves, &free);
-        }
+        rc = tapi_host_ns_if_parent_iter(ta, if_name,
+                                         &set_parent_mtu_cb, &ctx);
+        if (rc != 0)
+            return rc;
     }
     else if (ancestor)
     {
@@ -2868,51 +2738,49 @@ tapi_set_if_mtu_smart_aux(rcf_rpc_server *rpcs,
         return 0;
 
     if (mtus != NULL)
-        te_saved_mtus_put(mtus, if_name, old_mtu);
+    {
+        rc = te_saved_mtus_put(mtus, ta, if_name, old_mtu);
+        if (rc != 0)
+            return rc;
+    }
 
-    return tapi_cfg_base_if_set_mtu_ext(rpcs->ta, if_name, mtu,
-                                        NULL, ancestor);
+    return tapi_cfg_base_if_set_mtu_ext(ta, if_name, mtu, NULL, ancestor);
 }
 
 /* See description in tapi_rpc_misc.h */
 te_errno
-tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
-                      const struct if_nameindex *interface,
+tapi_set_if_mtu_smart(const char *ta, const struct if_nameindex *interface,
                       int mtu, int *old_mtu)
 {
-    return tapi_set_if_mtu_smart_aux(rpcs, interface->if_name,
+    return tapi_set_if_mtu_smart_aux(ta, interface->if_name,
                                      mtu, old_mtu, NULL, FALSE, FALSE);
 }
 
 /* See description in tapi_rpc_misc.h */
 te_errno
-tapi_set_if_mtu_smart2(rcf_rpc_server *rpcs,
-                       const char *if_name,
+tapi_set_if_mtu_smart2(const char *ta, const char *if_name,
                        int mtu, te_saved_mtus *backup)
 {
     te_errno  rc = 0;
 
-    rc = save_descendants_mtus(rpcs, if_name,
-                               backup, FALSE);
+    rc = save_descendants_mtus(ta, if_name, backup, FALSE);
     if (rc != 0)
         return rc;
 
-    return tapi_set_if_mtu_smart_aux(rpcs, if_name,
-                                     mtu, NULL,
+    return tapi_set_if_mtu_smart_aux(ta, if_name, mtu, NULL,
                                      backup, FALSE, FALSE);
 }
 
 /* See description in tapi_rpc_misc.h */
 te_errno
-tapi_set_if_mtu_smart2_rollback(rcf_rpc_server *rpcs,
-                                te_saved_mtus *backup)
+tapi_set_if_mtu_smart2_rollback(te_saved_mtus *backup)
 {
     te_saved_mtu  *saved_mtu = NULL;
     te_errno       rc = 0;
 
     LIST_FOREACH(saved_mtu, backup, links)
     {
-        rc = tapi_set_if_mtu_smart_aux(rpcs, saved_mtu->if_name,
+        rc = tapi_set_if_mtu_smart_aux(saved_mtu->ta, saved_mtu->if_name,
                                        saved_mtu->mtu, NULL,
                                        NULL, FALSE, FALSE);
         if (rc != 0)

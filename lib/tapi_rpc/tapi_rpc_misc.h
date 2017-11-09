@@ -1071,7 +1071,7 @@ tapi_interface_is_mine(const char *ta, const char *interface)
  *       interfaces, which may change as a side effect if we descrease
  *       MTU.
  *
- * @param rpcs       RPC server handle
+ * @param ta         Test agent name
  * @param interface  Network interface
  * @param mtu        MTU value
  * @param old_mtu    If not @c NULL, previous value of MTU
@@ -1079,13 +1079,14 @@ tapi_interface_is_mine(const char *ta, const char *interface)
  *
  * @return Status code.
  */
-extern te_errno tapi_set_if_mtu_smart(rcf_rpc_server *rpcs,
+extern te_errno tapi_set_if_mtu_smart(const char *ta,
                                       const struct if_nameindex *interface,
                                       int mtu, int *old_mtu);
 
 /** Structure for storing MTU values. */
 typedef struct te_saved_mtu {
     LIST_ENTRY(te_saved_mtu)    links;              /**< List links. */
+    char                        ta[RCF_MAX_NAME];   /**< Test agent name. */
     char                        if_name[IFNAMSIZ];  /**< Interface name. */
     int                         mtu;                /**< MTU value. */
 } te_saved_mtu;
@@ -1175,7 +1176,7 @@ extern te_errno tapi_retrieve_saved_mtus(const char *ta,
  *       by them can be reverted with a single call of
  *       tapi_set_if_mtu_smart2_rollback().
  *
- * @param rpcs       RPC server handle
+ * @param ta         Test agent name
  * @param if_name    Network interface name
  * @param mtu        MTU value
  * @param backup     If not @c NULL, original values of MTU for all
@@ -1183,7 +1184,7 @@ extern te_errno tapi_retrieve_saved_mtus(const char *ta,
  *
  * @return Status code.
  */
-extern te_errno tapi_set_if_mtu_smart2(rcf_rpc_server *rpcs,
+extern te_errno tapi_set_if_mtu_smart2(const char *ta,
                                        const char *if_name,
                                        int mtu,
                                        te_saved_mtus *backup);
@@ -1191,13 +1192,11 @@ extern te_errno tapi_set_if_mtu_smart2(rcf_rpc_server *rpcs,
 /**
  * Revert changes made by tapi_set_if_mtu_smart2().
  *
- * @param rpcs        RPC server handle.
  * @param backup      Where the original MTU values are saved.
  *
  * @return Status code.
  */
-extern te_errno tapi_set_if_mtu_smart2_rollback(rcf_rpc_server *rpcs,
-                                                te_saved_mtus *backup);
+extern te_errno tapi_set_if_mtu_smart2_rollback(te_saved_mtus *backup);
 
 /**
  * Check if the interface is VLAN interface.
