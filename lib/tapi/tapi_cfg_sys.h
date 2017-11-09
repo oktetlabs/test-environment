@@ -64,12 +64,13 @@ extern te_errno tapi_cfg_sys_get_int(const char *ta, int *val,
  *
  * @param ta        Test agent name.
  * @param val       Value to set.
+ * @param old_val   Where to save previous value (may be @c NULL).
  * @param fmt       Format string of the path.
  * @param ap        List of arguments for format string.
  *
  * @return Status code.
  */
-extern te_errno tapi_cfg_sys_set_int(const char *ta, int val,
+extern te_errno tapi_cfg_sys_set_int(const char *ta, int val, int *old_val,
                                      const char *fmt, ...)
                                   __attribute__((format(printf, 3, 4)));
 
@@ -93,13 +94,15 @@ extern te_errno tapi_cfg_sys_get_str(const char *ta, char **val,
  *
  * @param ta        Test agent name.
  * @param val       Value to set.
+ * @param old_val   Where to save pointer to allocated string
+ *                  containing the previous value (may be @c NULL).
  * @param fmt       Format string of the path.
  * @param ap        List of arguments for format string.
  *
  * @return Status code.
  */
 extern te_errno tapi_cfg_sys_set_str(const char *ta, const char *val,
-                                     const char *fmt, ...)
+                                     char **old_val, const char *fmt, ...)
                                   __attribute__((format(printf, 3, 4)));
 
 #ifdef __cplusplus

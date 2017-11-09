@@ -204,6 +204,7 @@ tapi_cfg_sys_get_va(const char *ta, cfg_val_type type, void *val,
  * @param ta            Test agent name.
  * @param type          Parameter type.
  * @param val           Value to set.
+ * @param old_val       Where to save previous value (if not @c NULL).
  * @param fmt           Format string for parameter's path in /proc/sys/.
  * @param ap            Arguments for the format string.
  *
@@ -211,7 +212,7 @@ tapi_cfg_sys_get_va(const char *ta, cfg_val_type type, void *val,
  */
 static te_errno
 tapi_cfg_sys_set_va(const char *ta, cfg_val_type type, const void *val,
-                    const char *fmt, va_list ap)
+                    void *old_val, const char *fmt, va_list ap)
 {
     char      buf[CFG_OID_MAX];
     te_errno  rc;
@@ -219,6 +220,14 @@ tapi_cfg_sys_set_va(const char *ta, cfg_val_type type, const void *val,
     rc = tapi_cfg_sys_parse_path_va(buf, sizeof(buf), fmt, ap);
     if (rc != 0)
         return rc;
+
+    if (old_val != NULL)
+    {
+        rc = cfg_get_instance_fmt(&type, old_val,
+                                  "/agent:%s/sys:/%s", ta, buf);
+        if (rc != 0)
+            return rc;
+    }
 
     return cfg_set_instance_fmt(type, val, "/agent:%s/sys:/%s", ta, buf);
 }
@@ -232,6 +241,21 @@ tapi_cfg_sys_get_int(const char *ta, int *val, const char *fmt, ...)
 
     va_start(ap, fmt);
     rc = tapi_cfg_sys_get_va(ta, CVT_INTEGER, val, fmt, ap);
+    va_end(ap);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_sys.h */
+te_errno
+tapi_cfg_sys_set_int(const char *ta, int val, int *old_val,
+                     const char *fmt, ...)
+{
+    va_list  ap;
+    te_errno rc;
+
+    va_start(ap, fmt);
+    rc = tapi_cfg_sys_set_va(ta, CFG_VAL(INTEGER, val), old_val, fmt, ap);
     va_end(ap);
 
     return rc;
@@ -253,27 +277,14 @@ tapi_cfg_sys_get_str(const char *ta, char **val, const char *fmt, ...)
 
 /* See description in tapi_cfg_sys.h */
 te_errno
-tapi_cfg_sys_set_int(const char *ta, int val, const char *fmt, ...)
+tapi_cfg_sys_set_str(const char *ta, const char *val, char **old_val,
+                     const char *fmt, ...)
 {
     va_list  ap;
     te_errno rc;
 
     va_start(ap, fmt);
-    rc = tapi_cfg_sys_set_va(ta, CFG_VAL(INTEGER, val), fmt, ap);
-    va_end(ap);
-
-    return rc;
-}
-
-/* See description in tapi_cfg_sys.h */
-te_errno
-tapi_cfg_sys_set_str(const char *ta, const char *val, const char *fmt, ...)
-{
-    va_list  ap;
-    te_errno rc;
-
-    va_start(ap, fmt);
-    rc = tapi_cfg_sys_set_va(ta, CFG_VAL(STRING, val), fmt, ap);
+    rc = tapi_cfg_sys_set_va(ta, CFG_VAL(STRING, val), old_val, fmt, ap);
     va_end(ap);
 
     return rc;
