@@ -72,7 +72,7 @@ extern te_errno tapi_cfg_sys_get_int(const char *ta, int *val,
  */
 extern te_errno tapi_cfg_sys_set_int(const char *ta, int val, int *old_val,
                                      const char *fmt, ...)
-                                  __attribute__((format(printf, 3, 4)));
+                                  __attribute__((format(printf, 4, 5)));
 
 /**
  * Get value of string parameter in /sys: subtree.
@@ -103,7 +103,7 @@ extern te_errno tapi_cfg_sys_get_str(const char *ta, char **val,
  */
 extern te_errno tapi_cfg_sys_set_str(const char *ta, const char *val,
                                      char **old_val, const char *fmt, ...)
-                                  __attribute__((format(printf, 3, 4)));
+                                  __attribute__((format(printf, 4, 5)));
 
 #ifdef __cplusplus
 } /* extern "C" */
