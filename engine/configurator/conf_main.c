@@ -802,20 +802,18 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         return;
     }
 
-    cfg_ta_sync_dependants(inst);
-
-    cfg_conf_delay_update(inst->oid);
-
     /*
      * We should not try to delete locally added instances from
      * Test Agent, as it leads to ESRCH error.
      */
     if (inst->added)
     {
-        while (inst->father != &cfg_inst_root)
-            inst = inst->father;
+        cfg_instance *inst_aux = inst;
 
-        msg->rc = rcf_ta_cfg_del(inst->name, 0, CFG_GET_INST(handle)->oid);
+        while (inst_aux->father != &cfg_inst_root)
+            inst_aux = inst_aux->father;
+
+        msg->rc = rcf_ta_cfg_del(inst_aux->name, 0, inst->oid);
 
         if (msg->rc == 0)
         {
@@ -834,18 +832,21 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
             if (update_dh)
             {
                 cfg_dh_delete_last_command();
+                return;
             }
             else if (TE_RC_GET_ERROR(msg->rc) == TE_ENOENT)
             {
                 ERROR("%s: [kostik] ignoring %x TE_ENOENT",
                       __FUNCTION__, msg->rc);
                 msg->rc = 0;
-                cfg_db_del(handle); /* During restoring backup the entry
-                                       disappears */
+                /* During restoring backup the entry disappears */
             }
-            return;
         }
     }
+
+    cfg_ta_sync_dependants(inst);
+
+    cfg_conf_delay_update(inst->oid);
 
     cfg_db_del(handle);
 }
