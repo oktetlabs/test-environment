@@ -574,6 +574,39 @@ extern te_errno tapi_cfg_set_hwaddr(const char *ta, const char *ifname,
                                     unsigned int hwaddr_len);
 
 /**
+ * Network interface kinds.
+ * This list is mostly Linux-specific, but other OSes may add other kinds or
+ * re-use existing Linux kinds.
+ */
+typedef enum {
+    TE_INTERFACE_KIND_NONE,     /**< Kind is not specified - a usual network
+                                     interface. */
+    TE_INTERFACE_KIND_VLAN,     /**< VLAN */
+    TE_INTERFACE_KIND_MACVLAN,  /**< MAC VLAN */
+    TE_INTERFACE_KIND_VETH,     /**< VETH */
+    TE_INTERFACE_KIND_BOND,     /**< Bonding interface */
+    TE_INTERFACE_KIND_TEAM,     /**< BOND and TEAM are different linux
+                                     implementation of the same Link
+                                     aggregation concept. */
+    TE_INTERFACE_KIND_BRIDGE,   /**< Bridge */
+    TE_INTERFACE_KIND_END       /**< Not a real interface kind, but ending
+                                     enum element. */
+} te_interface_kind;
+
+/**
+ * Get kind of an interface.
+ *
+ * @param ta        Test agent name.
+ * @param ifname    Interface name.
+ * @param kind      Where to save the interface type.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_get_if_kind(const char *ta,
+                                     const char *ifname,
+                                     te_interface_kind *kind);
+
+/**
  * Get name of an interface on which the given interface is based.
  *
  * @param ta              Test agent name.

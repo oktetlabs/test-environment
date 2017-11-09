@@ -1590,6 +1590,54 @@ tapi_cfg_get_if_parent(const char *ta,
     return 0;
 }
 
+/* Network interface kinds mapping array. */
+static const char *te_interface_kinds[TE_INTERFACE_KIND_END] =
+    {
+        [TE_INTERFACE_KIND_NONE] = "",
+        [TE_INTERFACE_KIND_VLAN] = "vlan",
+        [TE_INTERFACE_KIND_MACVLAN] = "macvlan",
+        [TE_INTERFACE_KIND_VETH] = "veth",
+        [TE_INTERFACE_KIND_BOND] = "bond",
+        [TE_INTERFACE_KIND_TEAM] = "team",
+        [TE_INTERFACE_KIND_BRIDGE] = "bridge",
+    };
+
+/* See the description in tapi_cfg.h */
+te_errno
+tapi_cfg_get_if_kind(const char *ta, const char *ifname,
+                     te_interface_kind *kind)
+{
+    te_errno rc;
+    char    *val;
+    int      i;
+
+    rc = cfg_get_instance_fmt(NULL, &val, "/agent:%s/interface:%s/kind:",
+                              ta, ifname);
+    if (rc != 0)
+    {
+        ERROR("Failed to get kind of interface %s/%s: %r", ta, ifname, rc);
+        return rc;
+    }
+
+    rc = TE_RC(TE_TAPI, TE_EINVAL);
+    for (i = 0; i < TE_INTERFACE_KIND_END; i++)
+    {
+        if (strcmp(val, te_interface_kinds[i]) == 0)
+        {
+            rc = 0;
+            *kind = i;
+            break;
+        }
+    }
+
+    if (rc != 0)
+        ERROR("Unknown interface kind '%s'", val);
+
+    free(val);
+
+    return rc;
+}
+
 /* See the description in tapi_cfg.h */
 te_errno
 tapi_cfg_get_if_last_ancestor(const char *ta,
