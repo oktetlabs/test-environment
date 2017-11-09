@@ -2707,7 +2707,7 @@ save_descendants_mtus(rcf_rpc_server *rpcs,
      * VLAN interfaces may be not grabbed but still
      * accessible via configuration tree.
      */
-    if (!tapi_interface_is_mine(rpcs, if_name))
+    if (!tapi_interface_is_mine(rpcs->ta, if_name))
         return 0;
 
     if (save_target)
@@ -2766,7 +2766,7 @@ tapi_set_if_mtu_smart_aux(rcf_rpc_server *rpcs,
     int           rc;
     int           old_mtu;
 
-    if (!tapi_interface_is_mine(rpcs, if_name))
+    if (!tapi_interface_is_mine(rpcs->ta, if_name))
     {
         /*
          * We cannot get MTU via Configurator if interface is not grabbed.
@@ -3152,7 +3152,7 @@ tapi_interface_vlan_count(rcf_rpc_server *rpcs,
     if (if_parent[0] != '\0')
         rc = 1;
 
-    if (!tapi_interface_is_mine(rpcs, if_name))
+    if (!tapi_interface_is_mine(rpcs->ta, if_name))
     {
         ERROR("%s interface is not grabbed by testing", if_name);
         return rc;

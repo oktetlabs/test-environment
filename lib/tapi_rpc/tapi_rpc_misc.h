@@ -1037,19 +1037,19 @@ extern int rpc_vfork_pipe_exec(rcf_rpc_server *rpcs, te_bool use_exec);
 
 /**
  * Determine if the interface is grabbed by the testing.
- * 
- * @param rpcs       RPC server handler
+ *
+ * @param ta         Test agent name
  * @param interface  Interface name
- * 
+ *
  * @return @c TRUE if the interface is grabbed.
  */
 static inline te_bool
-tapi_interface_is_mine(rcf_rpc_server *rpcs, const char *interface)
+tapi_interface_is_mine(const char *ta, const char *interface)
 {
     cfg_val_type  val_type = CVT_STRING;
     char         *val;
 
-    if (cfg_get_instance_fmt(&val_type, &val, "/agent:%s/rsrc:%s", rpcs->ta,
+    if (cfg_get_instance_fmt(&val_type, &val, "/agent:%s/rsrc:%s", ta,
                             interface) == 0)
     {
         free(val);
