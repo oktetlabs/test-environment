@@ -12,7 +12,7 @@ EXPORTS Geneve-Option, Geneve-Options, Geneve-Header, Geneve-CSAP;
 -- - If Geneve options are placed to NDS, it is the duty of
 --   the user to set correct 'options-length' in the header;
 -- - If data is written to an option, the user must specify
-     the value of 'length' field in the option header
+--   the value of 'length' field in the option header
 
 Geneve-Option ::= SEQUENCE
 {
