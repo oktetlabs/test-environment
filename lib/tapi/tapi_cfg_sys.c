@@ -34,6 +34,8 @@
 #include "logger_api.h"
 #include "conf_api.h"
 #include "tapi_cfg_base.h"
+#include "tapi_host_ns.h"
+#include "tapi_cfg_sys.h"
 #include "te_string.h"
 
 /**
@@ -285,6 +287,134 @@ tapi_cfg_sys_set_str(const char *ta, const char *val, char **old_val,
 
     va_start(ap, fmt);
     rc = tapi_cfg_sys_set_va(ta, CFG_VAL(STRING, val), old_val, fmt, ap);
+    va_end(ap);
+
+    return rc;
+}
+
+/**
+ * Get value of specified parameter from /sys: subtree. Use test agent in
+ * default net namespace if the parameter does not exist in current namespace.
+ *
+ * @param ta            Test agent name.
+ * @param type          Parameter type.
+ * @param val           Where to save obtained value.
+ * @param fmt           Format string for parameter's path in /proc/sys/.
+ * @param ap            Arguments for the format string.
+ *
+ * @return Status code.
+ */
+static te_errno
+tapi_cfg_sys_ns_get_va(const char *ta, cfg_val_type type, void *val,
+                       const char *fmt, va_list ap)
+{
+    te_errno    rc;
+    char       *ta_def;
+
+    rc = tapi_cfg_sys_get_va(ta, type, val, fmt, ap);
+    if (rc == 0)
+        return 0;
+    else if (rc != TE_RC(TE_CS, TE_ENOENT))
+        return rc;
+
+    rc = tapi_host_ns_agent_default(ta, &ta_def);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_sys_get_va(ta_def, type, val, fmt, ap);
+    free(ta_def);
+
+    return rc;
+}
+
+/**
+ * Set value of specified parameter in /sys: subtree. Use test agent in
+ * default net namespace if the parameter does not exist in current namespace.
+ *
+ * @param ta            Test agent name.
+ * @param type          Parameter type.
+ * @param val           Value to set.
+ * @param old_val       Where to save previous value (if not @c NULL).
+ * @param fmt           Format string for parameter's path in /proc/sys/.
+ * @param ap            Arguments for the format string.
+ *
+ * @return Status code.
+ */
+static te_errno
+tapi_cfg_sys_ns_set_va(const char *ta, cfg_val_type type, const void *val,
+                       void *old_val, const char *fmt, va_list ap)
+{
+    te_errno rc;
+    char    *ta_def;
+
+    rc = tapi_cfg_sys_set_va(ta, type, val, old_val, fmt, ap);
+    if (rc == 0)
+        return 0;
+    else if (rc != TE_RC(TE_CS, TE_ENOENT))
+        return rc;
+
+    rc = tapi_host_ns_agent_default(ta, &ta_def);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_sys_set_va(ta_def, type, val, old_val, fmt, ap);
+    free(ta_def);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_sys.h */
+te_errno
+tapi_cfg_sys_ns_get_int(const char *ta, int *val, const char *fmt, ...)
+{
+    va_list     ap;
+    te_errno    rc;
+
+    va_start(ap, fmt);
+    rc = tapi_cfg_sys_ns_get_va(ta, CVT_INTEGER, val, fmt, ap);
+    va_end(ap);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_sys.h */
+te_errno
+tapi_cfg_sys_ns_set_int(const char *ta, int val, int *old_val,
+                        const char *fmt, ...)
+{
+    va_list  ap;
+    te_errno rc;
+
+    va_start(ap, fmt);
+    rc = tapi_cfg_sys_ns_set_va(ta, CFG_VAL(INTEGER, val), old_val, fmt, ap);
+    va_end(ap);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_sys.h */
+te_errno
+tapi_cfg_sys_ns_get_str(const char *ta, char **val, const char *fmt, ...)
+{
+    va_list  ap;
+    te_errno rc;
+
+    va_start(ap, fmt);
+    rc = tapi_cfg_sys_ns_get_va(ta, CVT_STRING, val, fmt, ap);
+    va_end(ap);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_sys.h */
+te_errno
+tapi_cfg_sys_ns_set_str(const char *ta, const char *val, char **old_val,
+                     const char *fmt, ...)
+{
+    va_list  ap;
+    te_errno rc;
+    va_start(ap, fmt);
+    rc = tapi_cfg_sys_ns_set_va(ta, CFG_VAL(STRING, val), old_val, fmt, ap);
     va_end(ap);
 
     return rc;

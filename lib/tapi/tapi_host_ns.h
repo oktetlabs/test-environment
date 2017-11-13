@@ -190,6 +190,17 @@ extern te_errno tapi_host_ns_if_parent_iter(const char *ta,
                                             tapi_host_ns_if_cb_func cb,
                                             void *opaque);
 
+/**
+ * Get name of test agent which is in default net namespace on the same host
+ * where @p ta is located.
+ *
+ * @param ta            Test agent name
+ * @param ta_default    Name of the agent in default net namespace
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_host_ns_agent_default(const char *ta, char **ta_default);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

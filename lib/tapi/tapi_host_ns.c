@@ -770,3 +770,79 @@ tapi_host_ns_if_parent_iter(const char *ta, const char *ifname,
 
     return rc;
 }
+
+/**
+ * Callback function to find test agent in default netns. It stops iterating
+ * as soon the first appropriate agent is met.
+ *
+ * @param handle    `netns` instance handle
+ * @param opaque    Pointer to save agent name
+ *
+ * @return Status code:
+ * @retval EOK if test agent is found;
+ * @retval 0 agent is in a net namespace, continue the search.
+ */
+static te_errno
+get_default_netns_ta_cb(cfg_handle handle, void *opaque)
+{
+    cfg_handle  ta_handle;
+    te_errno    rc;
+    char       *netns;
+    char      **ta = (char **)opaque;
+
+    rc = cfg_get_instance(handle, NULL, &netns);
+    if (rc != 0)
+    {
+        ERROR("Failed to get netns instance value: %r", rc);
+        return rc;
+    }
+
+    /* Default netns is empty string. */
+    if (*netns != '\0')
+    {
+        free(netns);
+        return 0;
+    }
+    free(netns);
+
+    rc = cfg_get_father(handle, &ta_handle);
+    if (rc != 0)
+    {
+        ERROR("Failed to get test agent handle");
+        return rc;
+    }
+
+    rc = cfg_get_inst_name(ta_handle, ta);
+    if (rc != 0)
+        ERROR("Failed to get the host name");
+    else
+        rc = TE_RC(TE_TAPI, TE_EOK);
+
+    return rc;
+}
+
+
+/* See description in tapi_host_ns.h */
+te_errno
+tapi_host_ns_agent_default(const char *ta, char **ta_default)
+{
+    te_errno rc;
+    char    *host;
+
+    rc = tapi_host_ns_get_host(ta, &host);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_find_pattern_iter_fmt(&get_default_netns_ta_cb,
+                                   (void *)ta_default,
+                                   TAPI_HOST_NS_TREE_AGENT "/netns:",
+                                   host, "*");
+    free(host);
+
+    if (rc == TE_RC(TE_TAPI, TE_EOK))
+        return 0;
+    else if (rc == 0)
+        return TE_RC(TE_TAPI, TE_ENOENT);
+
+    return rc;
+}
