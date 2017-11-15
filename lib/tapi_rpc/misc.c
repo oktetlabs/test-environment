@@ -2740,7 +2740,10 @@ tapi_set_if_mtu_smart_aux(const char *ta,
     if (mtus != NULL)
     {
         rc = te_saved_mtus_put(mtus, ta, if_name, old_mtu);
-        if (rc != 0)
+        /* Don't save an interface the second time to avoid intermediate
+         * steps rolling back a configuration. Keep only the first saved
+         * value. */
+        if (rc != 0 && rc != TE_RC(TE_TAPI, TE_EEXIST))
             return rc;
     }
 
