@@ -1973,6 +1973,7 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     tester_ctx         *ctx;
     te_errno            status;
     test_id             id;
+    te_errno            rc;
 
     UNUSED(ri);
 
@@ -1997,8 +1998,8 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     {
         cfg_val_type    type = CVT_STRING; 
         char           *reqs = NULL;
-        te_errno        rc = cfg_get_instance_fmt(&type, &reqs,
-                                                  "/local:/reqs:%u", id);
+
+        rc = cfg_get_instance_fmt(&type, &reqs, "/local:/reqs:%u", id);
 
         if (rc == 0)
         {
@@ -2044,6 +2045,14 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
         SLIST_NEXT(ctx, links)->group_step = TRUE;
         EXIT("SKIP");
         return TESTER_CFG_WALK_SKIP;
+    }
+
+    if (!(ctx->flags & (TESTER_NO_CS | TESTER_NO_CFG_TRACK)))
+    {
+        rc = cfg_synchronize("/:", TRUE);
+        if (rc != 0)
+            ERROR("%s(): cfg_synchronize() failed returning %r",
+                  __FUNCTION__, rc);
     }
 
     EXIT("CONT");
