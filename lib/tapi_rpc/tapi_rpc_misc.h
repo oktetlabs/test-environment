@@ -620,7 +620,7 @@ extern int rpc_read_fd2te_dbuf_append(rcf_rpc_server *rpcs, int fd,
  *
  * @note The function resets @p dbuf.
  *
- * @param use_libc  Use libc flag.
+ * @param rpcs      RPC server handle.
  * @param fd        File descriptor or socket.
  * @param time2wait Time to wait for data, milliseconds. Negative value means
                     an infinite timeout.
@@ -640,7 +640,7 @@ extern int rpc_read_fd2te_dbuf(rcf_rpc_server *rpcs, int fd, int time2wait,
  * @note @p buf should be freed with free(3) when it is no longer needed,
  * independently on result.
  *
- * @param use_libc  Use libc flag.
+ * @param rpcs      RPC server handle.
  * @param fd        File descriptor or socket.
  * @param time2wait Time to wait for data, milliseconds. Negative value means
                     an infinite timeout.
@@ -677,7 +677,7 @@ extern int rpc_read_fd2te_string_append(rcf_rpc_server *rpcs, int fd,
  *
  * @note The function resets @p testr.
  *
- * @param use_libc  Use libc flag.
+ * @param rpcs      RPC server handle.
  * @param fd        File descriptor or socket.
  * @param time2wait Time to wait for data, milliseconds. Negative value means
                     an infinite timeout.
