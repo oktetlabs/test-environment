@@ -42,6 +42,11 @@
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_net.h"
 #include "tapi_cfg.h"
+#include "tapi_host_ns.h"
+#include "tapi_rpc_stdio.h"
+
+/* System tool 'ip' */
+#define IP_TOOL "ip"
 
 /* See description in tapi_network.h. */
 void
@@ -261,4 +266,45 @@ tapi_network_setup(te_bool ipv6_supp)
     {
         TEST_FAIL("Failed to prepare testing networks");
     }
+}
+
+/* See description in tapi_network.h */
+te_errno
+tapi_neight_flush(rcf_rpc_server *rpcs, const char *ifname)
+{
+    rpc_wait_status st;
+
+    RPC_AWAIT_IUT_ERROR(rpcs);
+    st = rpc_system_ex(rpcs, IP_TOOL " neigh flush dev %s", ifname);
+    if (st.flag != RPC_WAIT_STATUS_EXITED || st.value != 0)
+    {
+        ERROR("Failed to flush ARP table for interface %s/%s", rpcs->ta,
+              ifname);
+        return TE_RC(TE_TAPI, TE_EFAIL);
+    }
+
+    return 0;
+}
+
+/**
+ * Callback function to flush ARP table on an interface.
+ *
+ * @param ta        Test agent name
+ * @param ifname    Interface name
+ * @param opaque    RPC server handle
+ *
+ * @return Status code. The loop is stopped if an error happens.
+ */
+static te_errno
+flush_neight_cb(const char *ta, const char *ifname, void *opaque)
+{
+    UNUSED(ta);
+    return tapi_neight_flush((rcf_rpc_server *)opaque, ifname);
+}
+
+/* See description in tapi_network.h */
+te_errno
+tapi_neight_flush_ta(rcf_rpc_server *rpcs)
+{
+    return tapi_host_ns_if_ta_iter(rpcs->ta, &flush_neight_cb, (void *)rpcs);
 }

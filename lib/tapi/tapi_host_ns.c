@@ -846,3 +846,60 @@ tapi_host_ns_agent_default(const char *ta, char **ta_default)
 
     return rc;
 }
+
+/**
+ * Callback function to iterate all interfaces on a test agent.
+ *
+ * @param handle    Parent instance handle
+ * @param opaque    Iterator context (@b iterate_if_ctx)
+ *
+ * @return Status code.
+ */
+static te_errno
+iterate_ta_cb(cfg_handle handle, void *opaque)
+{
+    iterate_if_ctx *ctx = (iterate_if_ctx *)opaque;
+    cfg_handle      ta_h = CFG_HANDLE_INVALID;
+
+    te_errno rc;
+    char    *ifname = NULL;
+    char    *ta = NULL;
+
+    rc = cfg_get_inst_name(handle, &ifname);
+    if (rc != 0)
+    {
+        ERROR("Failed to get interface instance name");
+        return rc;
+    }
+
+    if ((rc = cfg_get_father(handle, &ta_h)) != 0 ||
+        (rc = cfg_get_inst_name(ta_h, &ta)) != 0 )
+        ERROR("Failed to get agent name");
+    else
+        rc = ctx->cb(ta, ifname, ctx->opaque);
+
+    free(ifname);
+    free(ta);
+
+    return rc;
+}
+
+/* See description in tapi_host_ns.h */
+te_errno
+tapi_host_ns_if_ta_iter(const char *ta, tapi_host_ns_if_cb_func cb,
+                        void *opaque)
+{
+    iterate_if_ctx ctx = {.cb = cb, .opaque = opaque};
+    char          *host = NULL;
+    te_errno       rc;
+
+    rc = tapi_host_ns_get_host(ta, &host);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_find_pattern_iter_fmt(&iterate_ta_cb, (void *)&ctx,
+                                   TAPI_HOST_NS_TREE_IF, host, ta, "*");
+    free(host);
+
+    return rc;
+}
