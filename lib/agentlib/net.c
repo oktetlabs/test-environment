@@ -206,7 +206,7 @@ ta_bond_get_slaves(const char *ifname, tqh_strings *slaves,
         /* Set here path for logging purpose */
         TE_SPRINTF(path, "%s %s ports", TEAMNL_PATHNAME, ifname);
         TE_SPRINTF(buf,
-               "sudo %s %s ports | "
+               "%s %s ports | "
                "sed s/[0-9]*:\\ */Slave\\ Interface:\\ / "
                "| sed 's/\\([0-9]\\):.*/\\1/'", TEAMNL_PATHNAME, ifname);
         cmd_pid = te_shell_cmd(buf, -1, NULL, &out_fd, NULL);
