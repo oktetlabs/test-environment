@@ -411,6 +411,7 @@ te_sockaddr_cleanup_to_prefix(struct sockaddr *addr, unsigned int prefix)
                     *p &= ((~0u) << (8u - prefix));
                     prefix = 0;
                 }
+                p++;
             }
             break;
         }
