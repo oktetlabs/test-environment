@@ -1209,19 +1209,20 @@ extern te_errno tapi_set_if_mtu_smart2_rollback(te_saved_mtus *backup);
 extern te_bool tapi_interface_is_vlan(rcf_rpc_server *rpcs,
                                       const struct if_nameindex *interface);
 
-/*
+/**
  * Compute number of VLAN interfaces on which the interface is based
  * (including the interface itself). This should be the number of VLAN
  * tags in Ethernet frames going via this interface.
  *
- * @param rpcs       RPC server handle
- * @param if_name    Interface name
+ * @param ta        Test agent name
+ * @param if_name   Interface name
+ * @param num       Number of VLAN "ancestor" interfaces, including this
+ *                  interface itself if it is VLAN
  *
- * @return Number of VLAN "ancestor" interfaces, including this interface
- *         itself if it is VLAN.
+ * @return Status code.
  */
-extern size_t tapi_interface_vlan_count(rcf_rpc_server *rpcs,
-                                        const char *if_name);
+extern te_errno tapi_interface_vlan_count(const char *ta, const char *if_name,
+                                          size_t *num);
 
 /**
  * Release the RPC pointer with specified namespace without any system call

@@ -3011,45 +3011,39 @@ tapi_interface_is_vlan(rcf_rpc_server *rpcs,
     return FALSE;
 }
 
-/* See description in tapi_rpc_misc.h */
-size_t
-tapi_interface_vlan_count(rcf_rpc_server *rpcs,
-                          const char *if_name)
+/**
+ * Callback function to count VLAN interfaces number.
+ *
+ * @param ta        Test agent name
+ * @param if_name   Interface name
+ * @param opaque    Location for the counter (@c size_t)
+ *
+ * @return Status code.
+ */
+static te_errno
+vlan_count_cb(const char *ta, const char *ifname, void *opaque)
 {
-    char    if_parent[IFNAMSIZ];
-    size_t  rc = 0;
+    te_interface_kind kind;
+    te_errno          rc;
+    size_t           *num = (size_t *)opaque;
 
-    rpc_vlan_get_parent(rpcs, if_name, if_parent);
-    if (if_parent[0] != '\0')
-        rc = 1;
-
-    if (!tapi_interface_is_mine(rpcs->ta, if_name))
-    {
-        ERROR("%s interface is not grabbed by testing", if_name);
+    rc = tapi_cfg_get_if_kind(ta, ifname, &kind);
+    if (rc != 0)
         return rc;
-    }
 
-    CHECK_RC(tapi_cfg_get_if_parent(rpcs->ta, if_name,
-                                    if_parent, sizeof(if_parent)));
-    if (if_parent[0] != '\0')
-    {
-        rc += tapi_interface_vlan_count(rpcs, if_parent);
-    }
-    else
-    {
-        tqh_strings   slaves = TAILQ_HEAD_INITIALIZER(slaves);
-        tqe_string   *slave = NULL;
+    if (kind == TE_INTERFACE_KIND_VLAN)
+        (*num)++;
 
-        rpc_bond_get_slaves(rpcs, if_name,
-                            &slaves, NULL);
-        slave = TAILQ_FIRST(&slaves);
-        if (slave != NULL)
-            rc += tapi_interface_vlan_count(rpcs, slave->v);
+    return tapi_host_ns_if_parent_iter(ta, ifname, &vlan_count_cb,
+                                       (void *)num);
+}
 
-        tq_strings_free(&slaves, &free);
-    }
-
-    return rc;
+/* See description in tapi_rpc_misc.h */
+te_errno
+tapi_interface_vlan_count(const char *ta, const char *if_name, size_t *num)
+{
+    *num = 0;
+    return vlan_count_cb(ta, if_name, (void *)num);
 }
 
 /* See description in tapi_rpc_misc.h */
