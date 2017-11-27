@@ -265,42 +265,42 @@ tarpc_rte_pktmbuf_ol_flags2rte(uint64_t rpc, uint64_t *rte)
 }
 
 static void
-tarpc_rte_pktmbuf_packet_type2rpc(struct rte_mbuf *m,
+tarpc_rte_pktmbuf_packet_type2rpc(struct rte_mbuf                      *m,
                                   struct tarpc_rte_pktmbuf_packet_type *p_type)
 {
 #define RTE_PKTMBUF_L2_PTYPE2RPC(_bit) \
-    case RTE_PTYPE_L2_##_bit:                                          \
-        p_type->l2_type = TARPC_RTE_PTYPE_L2_##_bit;                   \
+    case RTE_PTYPE_L2_##_bit:                                    \
+        p_type->l2_type = TARPC_RTE_PTYPE_L2_##_bit;             \
         break
 
 #define RTE_PKTMBUF_L3_PTYPE2RPC(_bit) \
-    case RTE_PTYPE_L3_##_bit:                                          \
-        p_type->l3_type = TARPC_RTE_PTYPE_L3_##_bit;                   \
+    case RTE_PTYPE_L3_##_bit:                                    \
+        p_type->l3_type = TARPC_RTE_PTYPE_L3_##_bit;             \
         break
 
 #define RTE_PKTMBUF_L4_PTYPE2RPC(_bit) \
-    case RTE_PTYPE_L4_##_bit:                                          \
-        p_type->l4_type = TARPC_RTE_PTYPE_L4_##_bit;                   \
+    case RTE_PTYPE_L4_##_bit:                                    \
+        p_type->l4_type = TARPC_RTE_PTYPE_L4_##_bit;             \
         break
 
 #define RTE_PKTMBUF_TUNNEL_PTYPE2RPC(_bit) \
-    case RTE_PTYPE_TUNNEL_##_bit:                                      \
-        p_type->tun_type = TARPC_RTE_PTYPE_TUNNEL_##_bit;              \
+    case RTE_PTYPE_TUNNEL_##_bit:                                \
+        p_type->tun_type = TARPC_RTE_PTYPE_TUNNEL_##_bit;        \
         break
 
 #define RTE_PKTMBUF_INNER_L2_PTYPE2RPC(_bit) \
-    case RTE_PTYPE_INNER_L2_##_bit:                                    \
-        p_type->inner_l2_type = TARPC_RTE_PTYPE_INNER_L2_##_bit;       \
+    case RTE_PTYPE_INNER_L2_##_bit:                              \
+        p_type->inner_l2_type = TARPC_RTE_PTYPE_INNER_L2_##_bit; \
         break
 
 #define RTE_PKTMBUF_INNER_L3_PTYPE2RPC(_bit) \
-    case RTE_PTYPE_INNER_L3_##_bit:                                    \
-        p_type->inner_l3_type = TARPC_RTE_PTYPE_INNER_L3_##_bit;       \
+    case RTE_PTYPE_INNER_L3_##_bit:                              \
+        p_type->inner_l3_type = TARPC_RTE_PTYPE_INNER_L3_##_bit; \
         break
 
 #define RTE_PKTMBUF_INNER_L4_PTYPE2RPC(_bit) \
-    case RTE_PTYPE_INNER_L4_##_bit:                                    \
-        p_type->inner_l4_type = TARPC_RTE_PTYPE_INNER_L4_##_bit;       \
+    case RTE_PTYPE_INNER_L4_##_bit:                              \
+        p_type->inner_l4_type = TARPC_RTE_PTYPE_INNER_L4_##_bit; \
         break
 
     switch (m->packet_type & RTE_PTYPE_L2_MASK) {
@@ -311,6 +311,9 @@ tarpc_rte_pktmbuf_packet_type2rpc(struct rte_mbuf *m,
         RTE_PKTMBUF_L2_PTYPE2RPC(ETHER_TIMESYNC);
         RTE_PKTMBUF_L2_PTYPE2RPC(ETHER_ARP);
         RTE_PKTMBUF_L2_PTYPE2RPC(ETHER_LLDP);
+        RTE_PKTMBUF_L2_PTYPE2RPC(ETHER_NSH);
+        RTE_PKTMBUF_L2_PTYPE2RPC(ETHER_VLAN);
+        RTE_PKTMBUF_L2_PTYPE2RPC(ETHER_QINQ);
         default:
             p_type->l2_type = TARPC_RTE_PTYPE_L2__UNKNOWN;
             break;
@@ -356,6 +359,9 @@ tarpc_rte_pktmbuf_packet_type2rpc(struct rte_mbuf *m,
         RTE_PKTMBUF_TUNNEL_PTYPE2RPC(NVGRE);
         RTE_PKTMBUF_TUNNEL_PTYPE2RPC(GENEVE);
         RTE_PKTMBUF_TUNNEL_PTYPE2RPC(GRENAT);
+        RTE_PKTMBUF_TUNNEL_PTYPE2RPC(GTPC);
+        RTE_PKTMBUF_TUNNEL_PTYPE2RPC(GTPU);
+        RTE_PKTMBUF_TUNNEL_PTYPE2RPC(ESP);
         default:
             p_type->tun_type = TARPC_RTE_PTYPE_TUNNEL__UNKNOWN;
             break;
@@ -367,6 +373,7 @@ tarpc_rte_pktmbuf_packet_type2rpc(struct rte_mbuf *m,
             break;
         RTE_PKTMBUF_INNER_L2_PTYPE2RPC(ETHER);
         RTE_PKTMBUF_INNER_L2_PTYPE2RPC(ETHER_VLAN);
+        RTE_PKTMBUF_INNER_L2_PTYPE2RPC(ETHER_QINQ);
         default:
             p_type->inner_l2_type = TARPC_RTE_PTYPE_INNER_L2__UNKNOWN;
             break;
@@ -413,43 +420,43 @@ tarpc_rte_pktmbuf_packet_type2rpc(struct rte_mbuf *m,
 
 static int
 tarpc_rte_pktmbuf_packet_type2rte(struct tarpc_rte_pktmbuf_packet_type *p_type,
-                                  uint32_t *packet_type)
+                                  uint32_t                             *rte_out)
 {
-    uint32_t rte_tmp = 0;
+    uint32_t rte = 0;
 
 #define RTE_PKTMBUF_L2_PTYPE2RTE(_bit) \
-    case TARPC_RTE_PTYPE_L2_##_bit:                                    \
-        rte_tmp |= RTE_PTYPE_L2_##_bit;                                \
+    case TARPC_RTE_PTYPE_L2_##_bit:    \
+        rte |= RTE_PTYPE_L2_##_bit;    \
         break
 
 #define RTE_PKTMBUF_L3_PTYPE2RTE(_bit) \
-    case TARPC_RTE_PTYPE_L3_##_bit:                                    \
-        rte_tmp |= RTE_PTYPE_L3_##_bit;                                \
+    case TARPC_RTE_PTYPE_L3_##_bit:    \
+        rte |= RTE_PTYPE_L3_##_bit;    \
         break
 
 #define RTE_PKTMBUF_L4_PTYPE2RTE(_bit) \
-    case TARPC_RTE_PTYPE_L4_##_bit:                                    \
-        rte_tmp |= RTE_PTYPE_L4_##_bit;                                \
+    case TARPC_RTE_PTYPE_L4_##_bit:    \
+        rte |= RTE_PTYPE_L4_##_bit;    \
         break
 
 #define RTE_PKTMBUF_TUNNEL_PTYPE2RTE(_bit) \
-    case TARPC_RTE_PTYPE_TUNNEL_##_bit:                                \
-        rte_tmp |= RTE_PTYPE_TUNNEL_##_bit;                            \
+    case TARPC_RTE_PTYPE_TUNNEL_##_bit:    \
+        rte |= RTE_PTYPE_TUNNEL_##_bit;    \
         break
 
 #define RTE_PKTMBUF_INNER_L2_PTYPE2RTE(_bit) \
-    case TARPC_RTE_PTYPE_INNER_L2_##_bit:                              \
-        rte_tmp |= RTE_PTYPE_INNER_L2_##_bit;                          \
+    case TARPC_RTE_PTYPE_INNER_L2_##_bit:    \
+        rte |= RTE_PTYPE_INNER_L2_##_bit;    \
         break
 
 #define RTE_PKTMBUF_INNER_L3_PTYPE2RTE(_bit) \
-    case TARPC_RTE_PTYPE_INNER_L3_##_bit:                              \
-        rte_tmp |= RTE_PTYPE_INNER_L3_##_bit;                          \
+    case TARPC_RTE_PTYPE_INNER_L3_##_bit:    \
+        rte |= RTE_PTYPE_INNER_L3_##_bit;    \
         break
 
 #define RTE_PKTMBUF_INNER_L4_PTYPE2RTE(_bit) \
-    case TARPC_RTE_PTYPE_INNER_L4_##_bit:                              \
-        rte_tmp |= RTE_PTYPE_INNER_L4_##_bit;                          \
+    case TARPC_RTE_PTYPE_INNER_L4_##_bit:    \
+        rte |= RTE_PTYPE_INNER_L4_##_bit;    \
         break
 
     switch (p_type->l2_type) {
@@ -459,6 +466,9 @@ tarpc_rte_pktmbuf_packet_type2rte(struct tarpc_rte_pktmbuf_packet_type *p_type,
         RTE_PKTMBUF_L2_PTYPE2RTE(ETHER_TIMESYNC);
         RTE_PKTMBUF_L2_PTYPE2RTE(ETHER_ARP);
         RTE_PKTMBUF_L2_PTYPE2RTE(ETHER_LLDP);
+        RTE_PKTMBUF_L2_PTYPE2RTE(ETHER_NSH);
+        RTE_PKTMBUF_L2_PTYPE2RTE(ETHER_VLAN);
+        RTE_PKTMBUF_L2_PTYPE2RTE(ETHER_QINQ);
         default:
             return (0);
     }
@@ -498,6 +508,9 @@ tarpc_rte_pktmbuf_packet_type2rte(struct tarpc_rte_pktmbuf_packet_type *p_type,
         RTE_PKTMBUF_TUNNEL_PTYPE2RTE(NVGRE);
         RTE_PKTMBUF_TUNNEL_PTYPE2RTE(GENEVE);
         RTE_PKTMBUF_TUNNEL_PTYPE2RTE(GRENAT);
+        RTE_PKTMBUF_TUNNEL_PTYPE2RTE(GTPC);
+        RTE_PKTMBUF_TUNNEL_PTYPE2RTE(GTPU);
+        RTE_PKTMBUF_TUNNEL_PTYPE2RTE(ESP);
         default:
             return (0);
     }
@@ -507,6 +520,7 @@ tarpc_rte_pktmbuf_packet_type2rte(struct tarpc_rte_pktmbuf_packet_type *p_type,
             break;
         RTE_PKTMBUF_INNER_L2_PTYPE2RTE(ETHER);
         RTE_PKTMBUF_INNER_L2_PTYPE2RTE(ETHER_VLAN);
+        RTE_PKTMBUF_INNER_L2_PTYPE2RTE(ETHER_QINQ);
         default:
             return (0);
     }
@@ -545,7 +559,7 @@ tarpc_rte_pktmbuf_packet_type2rte(struct tarpc_rte_pktmbuf_packet_type *p_type,
 #undef RTE_PKTMBUF_INNER_L3_PTYPE2RTE
 #undef RTE_PKTMBUF_INNER_L4_PTYPE2RTE
 
-    *packet_type = rte_tmp;
+    *rte_out = rte;
 
     return (1);
 }

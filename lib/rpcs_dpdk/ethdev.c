@@ -1863,19 +1863,19 @@ TARPC_FUNC(rte_eth_link_get, {},
 })
 
 static int
-tarpc_rte_pktmbuf_packet_type_mask2rte(uint32_t rpc_ptype_mask,
-                                       uint32_t *rte_ptype_mask)
+tarpc_rte_pktmbuf_packet_type_mask2rte(uint32_t  rpc,
+                                       uint32_t *rte_out)
 {
-    uint32_t rte_tmp = 0;
+    uint32_t rte = 0;
 
-#define RTE_PKTMBUF_PTYPE_MASK2RTE(_layer, _type) \
-    case (TARPC_RTE_PTYPE_##_layer##_##_type << TARPC_RTE_PTYPE_##_layer##_OFFSET): \
-        rte_tmp |= RTE_PTYPE_##_layer##_##_type;                                    \
+#define RTE_PKTMBUF_PTYPE_MASK2RTE(_l, _t) \
+    case (TARPC_RTE_PTYPE_##_l##_##_t << TARPC_RTE_PTYPE_##_l##_OFFSET): \
+        rte |= RTE_PTYPE_##_l##_##_t;                                    \
         break
 
-    switch (rpc_ptype_mask & TARPC_RTE_PTYPE_L2_MASK) {
+    switch (rpc & TARPC_RTE_PTYPE_L2_MASK) {
         case TARPC_RTE_PTYPE_L2_MASK:
-            rte_tmp |= RTE_PTYPE_L2_MASK;
+            rte |= RTE_PTYPE_L2_MASK;
             break;
         case TARPC_RTE_PTYPE_L2_UNKNOWN:
             break;
@@ -1883,29 +1883,32 @@ tarpc_rte_pktmbuf_packet_type_mask2rte(uint32_t rpc_ptype_mask,
         RTE_PKTMBUF_PTYPE_MASK2RTE(L2, ETHER_TIMESYNC);
         RTE_PKTMBUF_PTYPE_MASK2RTE(L2, ETHER_ARP);
         RTE_PKTMBUF_PTYPE_MASK2RTE(L2, ETHER_LLDP);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L2, ETHER_NSH);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L2, ETHER_VLAN);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L2, ETHER_QINQ);
         default:
             return (1);
     }
 
-    switch (rpc_ptype_mask & TARPC_RTE_PTYPE_L3_MASK) {
+    switch (rpc & TARPC_RTE_PTYPE_L3_MASK) {
         case TARPC_RTE_PTYPE_L3_MASK:
-            rte_tmp |= RTE_PTYPE_L3_MASK;
+            rte |= RTE_PTYPE_L3_MASK;
             break;
         case TARPC_RTE_PTYPE_L3_UNKNOWN:
             break;
         RTE_PKTMBUF_PTYPE_MASK2RTE(L3, IPV4);
         RTE_PKTMBUF_PTYPE_MASK2RTE(L3, IPV4_EXT);
-        RTE_PKTMBUF_PTYPE_MASK2RTE(L3, IPV4_EXT_UNKNOWN);
         RTE_PKTMBUF_PTYPE_MASK2RTE(L3, IPV6);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(L3, IPV4_EXT_UNKNOWN);
         RTE_PKTMBUF_PTYPE_MASK2RTE(L3, IPV6_EXT);
         RTE_PKTMBUF_PTYPE_MASK2RTE(L3, IPV6_EXT_UNKNOWN);
         default:
             return (1);
     }
 
-    switch (rpc_ptype_mask & TARPC_RTE_PTYPE_L4_MASK) {
+    switch (rpc & TARPC_RTE_PTYPE_L4_MASK) {
         case TARPC_RTE_PTYPE_L4_MASK:
-            rte_tmp |= RTE_PTYPE_L4_MASK;
+            rte |= RTE_PTYPE_L4_MASK;
             break;
         case TARPC_RTE_PTYPE_L4_UNKNOWN:
             break;
@@ -1919,9 +1922,72 @@ tarpc_rte_pktmbuf_packet_type_mask2rte(uint32_t rpc_ptype_mask,
             return (1);
     }
 
+    switch (rpc & TARPC_RTE_PTYPE_TUNNEL_MASK) {
+        case TARPC_RTE_PTYPE_TUNNEL_MASK:
+            rte |= RTE_PTYPE_TUNNEL_MASK;
+            break;
+        case TARPC_RTE_PTYPE_TUNNEL_UNKNOWN:
+            break;
+        RTE_PKTMBUF_PTYPE_MASK2RTE(TUNNEL, IP);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(TUNNEL, GRE);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(TUNNEL, VXLAN);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(TUNNEL, NVGRE);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(TUNNEL, GENEVE);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(TUNNEL, GRENAT);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(TUNNEL, GTPC);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(TUNNEL, GTPU);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(TUNNEL, ESP);
+        default:
+            return (1);
+    }
+
+    switch (rpc & TARPC_RTE_PTYPE_INNER_L2_MASK) {
+        case TARPC_RTE_PTYPE_INNER_L2_MASK:
+            rte |= RTE_PTYPE_INNER_L2_MASK;
+            break;
+        case TARPC_RTE_PTYPE_INNER_L2_UNKNOWN:
+            break;
+        RTE_PKTMBUF_PTYPE_MASK2RTE(INNER_L2, ETHER);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(INNER_L2, ETHER_VLAN);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(INNER_L2, ETHER_QINQ);
+        default:
+            return (1);
+    }
+
+    switch (rpc & TARPC_RTE_PTYPE_INNER_L3_MASK) {
+        case TARPC_RTE_PTYPE_INNER_L3_MASK:
+            rte |= RTE_PTYPE_INNER_L3_MASK;
+            break;
+        case TARPC_RTE_PTYPE_INNER_L3_UNKNOWN:
+            break;
+        RTE_PKTMBUF_PTYPE_MASK2RTE(INNER_L3, IPV4);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(INNER_L3, IPV4_EXT);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(INNER_L3, IPV6);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(INNER_L3, IPV4_EXT_UNKNOWN);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(INNER_L3, IPV6_EXT);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(INNER_L3, IPV6_EXT_UNKNOWN);
+        default:
+            return (1);
+    }
+
+    switch (rpc & TARPC_RTE_PTYPE_INNER_L4_MASK) {
+        case TARPC_RTE_PTYPE_INNER_L4_MASK:
+            rte |= RTE_PTYPE_INNER_L4_MASK;
+        case TARPC_RTE_PTYPE_INNER_L4_UNKNOWN:
+            break;
+        RTE_PKTMBUF_PTYPE_MASK2RTE(INNER_L4, TCP);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(INNER_L4, UDP);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(INNER_L4, FRAG);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(INNER_L4, SCTP);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(INNER_L4, ICMP);
+        RTE_PKTMBUF_PTYPE_MASK2RTE(INNER_L4, NONFRAG);
+        default:
+            return (1);
+    }
+
 #undef RTE_PKTMBUF_PTYPE_MASK2RTE
 
-    *rte_ptype_mask = rte_tmp;
+    *rte_out = rte;
 
     return (0);
 }
@@ -1929,51 +1995,109 @@ tarpc_rte_pktmbuf_packet_type_mask2rte(uint32_t rpc_ptype_mask,
 static void
 tarpc_rte_pktmbuf_packet_type2rpc_mask(uint32_t *rpc_ptype_mask)
 {
-    uint32_t rpc_tmp = 0;
+    uint32_t rpc;
+    uint32_t d;
 
-#define RTE_PKTMBUF_PTYPE2RPC_MASK(_layer, _type) \
-    case RTE_PTYPE_##_layer##_##_type:                                                       \
-        rpc_tmp = (TARPC_RTE_PTYPE_##_layer##_##_type << TARPC_RTE_PTYPE_##_layer##_OFFSET); \
+    /* switch() default */
+    d = 0;
+
+    d |= (TARPC_RTE_PTYPE_L2__UNKNOWN << TARPC_RTE_PTYPE_L2_OFFSET);
+    d |= (TARPC_RTE_PTYPE_L3__UNKNOWN << TARPC_RTE_PTYPE_L3_OFFSET);
+    d |= (TARPC_RTE_PTYPE_L4__UNKNOWN << TARPC_RTE_PTYPE_L4_OFFSET);
+
+    d |= (TARPC_RTE_PTYPE_TUNNEL__UNKNOWN << TARPC_RTE_PTYPE_TUNNEL_OFFSET);
+    d |= (TARPC_RTE_PTYPE_INNER_L2__UNKNOWN << TARPC_RTE_PTYPE_INNER_L2_OFFSET);
+    d |= (TARPC_RTE_PTYPE_INNER_L3__UNKNOWN << TARPC_RTE_PTYPE_INNER_L3_OFFSET);
+    d |= (TARPC_RTE_PTYPE_INNER_L4__UNKNOWN << TARPC_RTE_PTYPE_INNER_L4_OFFSET);
+
+#define RTE_PKTMBUF_PTYPE2RPC_MASK(_l, _t) \
+    case RTE_PTYPE_##_l##_##_t:             \
+        rpc = TARPC_RTE_PTYPE_##_l##_##_t << TARPC_RTE_PTYPE_##_l##_OFFSET; \
         break
 
     switch (*rpc_ptype_mask) {
         case 0:
             break;
         case RTE_PTYPE_L2_MASK:
-            rpc_tmp = TARPC_RTE_PTYPE_L2_MASK;
+            rpc = TARPC_RTE_PTYPE_L2_MASK;
             break;
         case RTE_PTYPE_L3_MASK:
-            rpc_tmp = TARPC_RTE_PTYPE_L3_MASK;
+            rpc = TARPC_RTE_PTYPE_L3_MASK;
             break;
         case RTE_PTYPE_L4_MASK:
-            rpc_tmp = TARPC_RTE_PTYPE_L4_MASK;
+            rpc = TARPC_RTE_PTYPE_L4_MASK;
             break;
+        case RTE_PTYPE_TUNNEL_MASK:
+            rpc = TARPC_RTE_PTYPE_TUNNEL_MASK;
+            break;
+        case RTE_PTYPE_INNER_L2_MASK:
+            rpc = TARPC_RTE_PTYPE_INNER_L2_MASK;
+            break;
+        case RTE_PTYPE_INNER_L3_MASK:
+            rpc = TARPC_RTE_PTYPE_INNER_L3_MASK;
+            break;
+        case RTE_PTYPE_INNER_L4_MASK:
+            rpc = TARPC_RTE_PTYPE_INNER_L4_MASK;
+            break;
+
         RTE_PKTMBUF_PTYPE2RPC_MASK(L2, ETHER);
         RTE_PKTMBUF_PTYPE2RPC_MASK(L2, ETHER_TIMESYNC);
         RTE_PKTMBUF_PTYPE2RPC_MASK(L2, ETHER_ARP);
         RTE_PKTMBUF_PTYPE2RPC_MASK(L2, ETHER_LLDP);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L2, ETHER_NSH);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L2, ETHER_VLAN);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L2, ETHER_QINQ);
+
         RTE_PKTMBUF_PTYPE2RPC_MASK(L3, IPV4);
         RTE_PKTMBUF_PTYPE2RPC_MASK(L3, IPV4_EXT);
-        RTE_PKTMBUF_PTYPE2RPC_MASK(L3, IPV4_EXT_UNKNOWN);
         RTE_PKTMBUF_PTYPE2RPC_MASK(L3, IPV6);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(L3, IPV4_EXT_UNKNOWN);
         RTE_PKTMBUF_PTYPE2RPC_MASK(L3, IPV6_EXT);
         RTE_PKTMBUF_PTYPE2RPC_MASK(L3, IPV6_EXT_UNKNOWN);
+
         RTE_PKTMBUF_PTYPE2RPC_MASK(L4, TCP);
         RTE_PKTMBUF_PTYPE2RPC_MASK(L4, UDP);
         RTE_PKTMBUF_PTYPE2RPC_MASK(L4, FRAG);
         RTE_PKTMBUF_PTYPE2RPC_MASK(L4, SCTP);
         RTE_PKTMBUF_PTYPE2RPC_MASK(L4, ICMP);
         RTE_PKTMBUF_PTYPE2RPC_MASK(L4, NONFRAG);
+
+        RTE_PKTMBUF_PTYPE2RPC_MASK(TUNNEL, IP);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(TUNNEL, GRE);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(TUNNEL, VXLAN);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(TUNNEL, NVGRE);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(TUNNEL, GENEVE);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(TUNNEL, GRENAT);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(TUNNEL, GTPC);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(TUNNEL, GTPU);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(TUNNEL, ESP);
+
+        RTE_PKTMBUF_PTYPE2RPC_MASK(INNER_L2, ETHER);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(INNER_L2, ETHER_VLAN);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(INNER_L2, ETHER_QINQ);
+
+        RTE_PKTMBUF_PTYPE2RPC_MASK(INNER_L3, IPV4);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(INNER_L3, IPV4_EXT);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(INNER_L3, IPV6);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(INNER_L3, IPV4_EXT_UNKNOWN);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(INNER_L3, IPV6_EXT);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(INNER_L3, IPV6_EXT_UNKNOWN);
+
+        RTE_PKTMBUF_PTYPE2RPC_MASK(INNER_L4, TCP);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(INNER_L4, UDP);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(INNER_L4, FRAG);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(INNER_L4, SCTP);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(INNER_L4, ICMP);
+        RTE_PKTMBUF_PTYPE2RPC_MASK(INNER_L4, NONFRAG);
+
         default:
-            rpc_tmp = (TARPC_RTE_PTYPE_L2__UNKNOWN << TARPC_RTE_PTYPE_L2_OFFSET)
-                      | (TARPC_RTE_PTYPE_L3__UNKNOWN << TARPC_RTE_PTYPE_L3_OFFSET)
-                      | (TARPC_RTE_PTYPE_L4__UNKNOWN << TARPC_RTE_PTYPE_L4_OFFSET);
+            rpc = d;
             break;
     }
 
 #undef RTE_PKTMBUF_PTYPE2RPC_MASK
 
-    *rpc_ptype_mask = rpc_tmp;
+    *rpc_ptype_mask = rpc;
 }
 
 TARPC_FUNC(rte_eth_dev_get_supported_ptypes,{},

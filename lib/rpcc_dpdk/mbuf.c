@@ -90,50 +90,50 @@ tarpc_rte_pktmbuf_ol_flags2str(te_log_buf *tlbp, uint64_t ol_flags)
 }
 
 static const char *
-tarpc_rte_pktmbuf_packet_type2str(te_log_buf *tlbp,
+tarpc_rte_pktmbuf_packet_type2str(te_log_buf                           *tlbp,
                                   struct tarpc_rte_pktmbuf_packet_type *p_type)
 {
     te_bool added = FALSE;
 
 #define CASE_TARPC_RTE_PKTMBUF_L2_PTYPE2STR(_bit) \
-    case TARPC_RTE_PTYPE_L2_##_bit:                                           \
-        te_log_buf_append(tlbp, "L2_%s", #_bit);                              \
-        added = TRUE;                                                         \
+    case TARPC_RTE_PTYPE_L2_##_bit:               \
+        te_log_buf_append(tlbp, "L2_%s", #_bit);  \
+        added = TRUE;                             \
         break
 
 #define CASE_TARPC_RTE_PKTMBUF_L3_PTYPE2STR(_bit) \
-    case TARPC_RTE_PTYPE_L3_##_bit:                                           \
-        te_log_buf_append(tlbp, "%sL3_%s", added ? " | " : "", #_bit);        \
-        added = TRUE;                                                         \
+    case TARPC_RTE_PTYPE_L3_##_bit:                                    \
+        te_log_buf_append(tlbp, "%sL3_%s", added ? " | " : "", #_bit); \
+        added = TRUE;                                                  \
         break
 
 #define CASE_TARPC_RTE_PKTMBUF_L4_PTYPE2STR(_bit) \
-    case TARPC_RTE_PTYPE_L4_##_bit:                                           \
-        te_log_buf_append(tlbp, "%sL4_%s", added ? " | " : "", #_bit);        \
-        added = TRUE;                                                         \
+    case TARPC_RTE_PTYPE_L4_##_bit:                                    \
+        te_log_buf_append(tlbp, "%sL4_%s", added ? " | " : "", #_bit); \
+        added = TRUE;                                                  \
         break
 
 #define CASE_TARPC_RTE_PKTMBUF_TUNNEL_PTYPE2STR(_bit) \
-    case TARPC_RTE_PTYPE_TUNNEL_##_bit:                                       \
-        te_log_buf_append(tlbp, "%sTUNNEL_%s", added ? " | " : "", #_bit);    \
-        added = TRUE;                                                         \
+    case TARPC_RTE_PTYPE_TUNNEL_##_bit:                                    \
+        te_log_buf_append(tlbp, "%sTUNNEL_%s", added ? " | " : "", #_bit); \
+        added = TRUE;                                                      \
         break
 
 #define CASE_TARPC_RTE_PKTMBUF_INNER_L2_PTYPE2STR(_bit) \
-    case TARPC_RTE_PTYPE_INNER_L2_##_bit:                                     \
-        te_log_buf_append(tlbp, "%sINNER_L2_%s", added ? " | " : "", #_bit);  \
-        added = TRUE;                                                         \
+    case TARPC_RTE_PTYPE_INNER_L2_##_bit:                                    \
+        te_log_buf_append(tlbp, "%sINNER_L2_%s", added ? " | " : "", #_bit); \
+        added = TRUE;                                                        \
         break
 
 #define CASE_TARPC_RTE_PKTMBUF_INNER_L3_PTYPE2STR(_bit) \
-    case TARPC_RTE_PTYPE_INNER_L3_##_bit:                                     \
-        te_log_buf_append(tlbp, "%sINNER_L3_%s", added ? " | " : "", #_bit);  \
-        added = TRUE;                                                         \
+    case TARPC_RTE_PTYPE_INNER_L3_##_bit:                                    \
+        te_log_buf_append(tlbp, "%sINNER_L3_%s", added ? " | " : "", #_bit); \
+        added = TRUE;                                                        \
         break
 
 #define CASE_TARPC_RTE_PKTMBUF_INNER_L4_PTYPE2STR(_bit) \
-    case TARPC_RTE_PTYPE_INNER_L4_##_bit:                                     \
-        te_log_buf_append(tlbp, "%sINNER_L4_%s", added ? " | " : "", #_bit);  \
+    case TARPC_RTE_PTYPE_INNER_L4_##_bit:                                    \
+        te_log_buf_append(tlbp, "%sINNER_L4_%s", added ? " | " : "", #_bit); \
         break
 
     switch (p_type->l2_type) {
@@ -143,6 +143,9 @@ tarpc_rte_pktmbuf_packet_type2str(te_log_buf *tlbp,
         CASE_TARPC_RTE_PKTMBUF_L2_PTYPE2STR(ETHER_TIMESYNC);
         CASE_TARPC_RTE_PKTMBUF_L2_PTYPE2STR(ETHER_ARP);
         CASE_TARPC_RTE_PKTMBUF_L2_PTYPE2STR(ETHER_LLDP);
+        CASE_TARPC_RTE_PKTMBUF_L2_PTYPE2STR(ETHER_NSH);
+        CASE_TARPC_RTE_PKTMBUF_L2_PTYPE2STR(ETHER_VLAN);
+        CASE_TARPC_RTE_PKTMBUF_L2_PTYPE2STR(ETHER_QINQ);
         default:
             te_log_buf_append(tlbp, "L2_BAD_TYPE");
             added = TRUE;
@@ -188,6 +191,9 @@ tarpc_rte_pktmbuf_packet_type2str(te_log_buf *tlbp,
         CASE_TARPC_RTE_PKTMBUF_TUNNEL_PTYPE2STR(NVGRE);
         CASE_TARPC_RTE_PKTMBUF_TUNNEL_PTYPE2STR(GENEVE);
         CASE_TARPC_RTE_PKTMBUF_TUNNEL_PTYPE2STR(GRENAT);
+        CASE_TARPC_RTE_PKTMBUF_TUNNEL_PTYPE2STR(GTPC);
+        CASE_TARPC_RTE_PKTMBUF_TUNNEL_PTYPE2STR(GTPU);
+        CASE_TARPC_RTE_PKTMBUF_TUNNEL_PTYPE2STR(ESP);
         default:
             te_log_buf_append(tlbp, "TUNNEL_BAD_TYPE");
             added = TRUE;
@@ -199,6 +205,7 @@ tarpc_rte_pktmbuf_packet_type2str(te_log_buf *tlbp,
             break;
         CASE_TARPC_RTE_PKTMBUF_INNER_L2_PTYPE2STR(ETHER);
         CASE_TARPC_RTE_PKTMBUF_INNER_L2_PTYPE2STR(ETHER_VLAN);
+        CASE_TARPC_RTE_PKTMBUF_INNER_L2_PTYPE2STR(ETHER_QINQ);
         default:
             te_log_buf_append(tlbp, "INNER_L2_BAD_TYPE");
             added = TRUE;

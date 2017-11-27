@@ -2893,11 +2893,12 @@ int rpc_rte_eth_dev_flow_ctrl_set(rcf_rpc_server *rpcs, uint16_t port_id,
 }
 
 static void
-tapi_rpc_rte_packet_type_mask2str(te_log_buf *tlbp, uint32_t ptype_mask)
+tapi_rpc_rte_packet_type_mask2str(te_log_buf *tlbp,
+                                  uint32_t    ptype_mask)
 {
-#define CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(_layer, _type) \
-    case TARPC_RTE_PTYPE_##_layer##_##_type << TARPC_RTE_PTYPE_##_layer##_OFFSET: \
-        te_log_buf_append(tlbp, "%s_%s", #_layer, #_type);                        \
+#define CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(_l, _t) \
+    case TARPC_RTE_PTYPE_##_l##_##_t << TARPC_RTE_PTYPE_##_l##_OFFSET: \
+        te_log_buf_append(tlbp, "%s_%s", #_l, #_t);                    \
         break
 
     switch (ptype_mask) {
@@ -2913,38 +2914,93 @@ tapi_rpc_rte_packet_type_mask2str(te_log_buf *tlbp, uint32_t ptype_mask)
         case TARPC_RTE_PTYPE_L4_MASK:
             te_log_buf_append(tlbp, "L4_ALL");
             break;
+        case TARPC_RTE_PTYPE_TUNNEL_MASK:
+            te_log_buf_append(tlbp, "TUNNEL_ALL");
+            break;
+        case TARPC_RTE_PTYPE_INNER_L2_MASK:
+            te_log_buf_append(tlbp, "INNER_L2_ALL");
+            break;
+        case TARPC_RTE_PTYPE_INNER_L3_MASK:
+            te_log_buf_append(tlbp, "INNER_L3_ALL");
+            break;
+        case TARPC_RTE_PTYPE_INNER_L4_MASK:
+            te_log_buf_append(tlbp, "INNER_L4_ALL");
+            break;
+
         CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L2, ETHER);
         CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L2, ETHER_TIMESYNC);
         CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L2, ETHER_ARP);
         CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L2, ETHER_LLDP);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L2, ETHER_NSH);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L2, ETHER_VLAN);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L2, ETHER_QINQ);
+
         CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L3, IPV4);
         CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L3, IPV4_EXT);
-        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L3, IPV4_EXT_UNKNOWN);
         CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L3, IPV6);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L3, IPV4_EXT_UNKNOWN);
         CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L3, IPV6_EXT);
         CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L3, IPV6_EXT_UNKNOWN);
+
         CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L4, TCP);
         CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L4, UDP);
         CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L4, FRAG);
         CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L4, SCTP);
         CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L4, ICMP);
         CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(L4, NONFRAG);
+
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(TUNNEL, IP);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(TUNNEL, GRE);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(TUNNEL, VXLAN);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(TUNNEL, NVGRE);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(TUNNEL, GENEVE);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(TUNNEL, GRENAT);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(TUNNEL, GTPC);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(TUNNEL, GTPU);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(TUNNEL, ESP);
+
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(INNER_L2, ETHER);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(INNER_L2, ETHER_VLAN);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(INNER_L2, ETHER_QINQ);
+
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(INNER_L3, IPV4);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(INNER_L3, IPV4_EXT);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(INNER_L3, IPV6);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(INNER_L3, IPV4_EXT_UNKNOWN);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(INNER_L3, IPV6_EXT);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(INNER_L3, IPV6_EXT_UNKNOWN);
+
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(INNER_L4, TCP);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(INNER_L4, UDP);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(INNER_L4, FRAG);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(INNER_L4, SCTP);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(INNER_L4, ICMP);
+        CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR(INNER_L4, NONFRAG);
+#undef CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR
+
         default:
             te_log_buf_append(tlbp, "UNKNOWN_TYPE");
             break;
     }
-
-#undef CASE_TARPC_RTE_PKTMBUF_PTYPE_MASK2STR
 }
 
 static void
-tarpc_rte_packet_type_mask_arg2str(te_log_buf  *tlbp, uint32_t ptype_mask)
+tarpc_rte_packet_type_mask_arg2str(te_log_buf *tlbp,
+                                   uint32_t    pm)
 {
-    tapi_rpc_rte_packet_type_mask2str(tlbp, ptype_mask & TARPC_RTE_PTYPE_L2_MASK);
+    tapi_rpc_rte_packet_type_mask2str(tlbp, pm & TARPC_RTE_PTYPE_L2_MASK);
     te_log_buf_append(tlbp, " | ");
-    tapi_rpc_rte_packet_type_mask2str(tlbp, ptype_mask & TARPC_RTE_PTYPE_L3_MASK);
+    tapi_rpc_rte_packet_type_mask2str(tlbp, pm & TARPC_RTE_PTYPE_L3_MASK);
     te_log_buf_append(tlbp, " | ");
-    tapi_rpc_rte_packet_type_mask2str(tlbp, ptype_mask & TARPC_RTE_PTYPE_L4_MASK);
+    tapi_rpc_rte_packet_type_mask2str(tlbp, pm & TARPC_RTE_PTYPE_L4_MASK);
+    te_log_buf_append(tlbp, " | ");
+    tapi_rpc_rte_packet_type_mask2str(tlbp, pm & TARPC_RTE_PTYPE_TUNNEL_MASK);
+    te_log_buf_append(tlbp, " | ");
+    tapi_rpc_rte_packet_type_mask2str(tlbp, pm & TARPC_RTE_PTYPE_INNER_L2_MASK);
+    te_log_buf_append(tlbp, " | ");
+    tapi_rpc_rte_packet_type_mask2str(tlbp, pm & TARPC_RTE_PTYPE_INNER_L3_MASK);
+    te_log_buf_append(tlbp, " | ");
+    tapi_rpc_rte_packet_type_mask2str(tlbp, pm & TARPC_RTE_PTYPE_INNER_L4_MASK);
 }
 
 static void
