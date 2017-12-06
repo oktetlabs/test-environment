@@ -794,6 +794,16 @@ is_quoted(const char *opt_name)
 }
 #endif
 
+/* Remove files containing PID related information */
+static void
+remove_pid_files(void)
+{
+#if defined __linux__
+    unlink(TE_DHCPD_PID_FILENAME);
+    unlink(TE_DHCPD6_PID_FILENAME);
+#endif
+}
+
 /* Find the host in the list */
 static host *
 find_host(const char *name)
@@ -1450,6 +1460,11 @@ ds_dhcpserver_stop(void)
     {
         KILL_DHCPD(TE_DHCPD6_PID_FILENAME);
     }
+    /*
+     * To cope with a situation when another process with a
+     * PID equal to dhcpd.pid prevents server to run.
+     */
+    remove_pid_files();
 #elif defined __sun__
     TE_SPRINTF(buf, "/usr/sbin/svcadm disable -st %s",
                get_ds_name("dhcpserver"));
@@ -1470,6 +1485,10 @@ static te_errno
 ds_dhcpserver_script_start(void)
 {
     INFO("%s()", __FUNCTION__);
+
+    /* Just in case if previous stopping of dhcp server had failed. */
+    remove_pid_files();
+
     TE_SPRINTF(buf, "%s start", dhcp_server_script);
     if (ta_system(buf) != 0)
     {
@@ -1497,6 +1516,9 @@ ds_dhcpserver_start(void)
     }
 
 #if defined __linux__
+    /* Just in case if previous stopping of dhcp server had failed. */
+    remove_pid_files();
+
     TE_SPRINTF(buf,
                (ipv6_subnets) ?
                     "%s -6 -t -cf %s" :
