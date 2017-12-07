@@ -903,3 +903,14 @@ tapi_host_ns_if_ta_iter(const char *ta, tapi_host_ns_if_cb_func cb,
 
     return rc;
 }
+
+/* See description in tapi_host_ns.h */
+te_errno
+tapi_host_ns_if_host_iter(const char *host, tapi_host_ns_if_cb_func cb,
+                          void *opaque)
+{
+    iterate_if_ctx ctx = {.cb = cb, .opaque = opaque};
+
+    return cfg_find_pattern_iter_fmt(&iterate_ta_cb, (void *)&ctx,
+                                     TAPI_HOST_NS_TREE_IF, host, "*", "*");
+}

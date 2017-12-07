@@ -205,6 +205,20 @@ extern te_errno tapi_host_ns_if_ta_iter(const char *ta,
                                         void *opaque);
 
 /**
+ * Iterate by all grabbed interfaces on the @p host.
+ *
+ * @param host      Host name
+ * @param opaque    Opaque user data
+ * @param cb        A callback function
+ *
+ * @return Status code. The function stops iterating if @p cb returns non-zero
+ *         value.
+ */
+extern te_errno tapi_host_ns_if_host_iter(const char *host,
+                                          tapi_host_ns_if_cb_func cb,
+                                          void *opaque);
+
+/**
  * Get name of test agent which is in default net namespace on the same host
  * where @p ta is located.
  *
