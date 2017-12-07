@@ -36,6 +36,7 @@
 
 #define TE_CFG_TA_ETH_FMT "/agent:%s/interface:%s"
 
+/* See description in the tapi_cfg_eth.h */
 te_errno
 tapi_eth_feature_get(const char *ta,
                      const char *ifname,
@@ -53,6 +54,7 @@ tapi_eth_feature_get(const char *ta,
                                      ta, ifname, feature_name);
 }
 
+/* See description in the tapi_cfg_eth.h */
 te_errno
 tapi_eth_feature_set(const char *ta,
                      const char *ifname,
@@ -67,6 +69,34 @@ tapi_eth_feature_set(const char *ta,
                                 TE_CFG_TA_ETH_FMT "/feature:%s",
                                 ta, ifname, feature_name);
 }
+
+/* See description in the tapi_cfg_eth.h */
+te_errno
+tapi_eth_deviceinfo_drivername_get(const char *ta, const char *ifname,
+                                   char **drivername)
+{
+    return cfg_get_instance_fmt(NULL, drivername, TE_CFG_TA_ETH_FMT
+                                "/deviceinfo:/drivername:", ta, ifname);
+}
+
+/* See description in the tapi_cfg_eth.h */
+te_errno
+tapi_eth_deviceinfo_driverversion_get(const char *ta, const char *ifname,
+                                      char **driverversion)
+{
+    return cfg_get_instance_fmt(NULL, driverversion, TE_CFG_TA_ETH_FMT
+                                "/deviceinfo:/driverversion:", ta, ifname);
+}
+
+/* See description in the tapi_cfg_eth.h */
+te_errno
+tapi_eth_deviceinfo_firmwareversion_get(const char *ta, const char *ifname,
+                                        char **firmwareversion)
+{
+    return cfg_get_instance_fmt(NULL, firmwareversion, TE_CFG_TA_ETH_FMT
+                                "/deviceinfo:/firmwareversion:", ta, ifname);
+}
+
 
 /**
  * Get integer value of an interface field

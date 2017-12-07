@@ -64,6 +64,48 @@ extern te_errno tapi_eth_feature_set(const char *ta,
                                      int         feature_value);
 
 /**
+ * Get driver name of a network interface.
+ *
+ * @param ta            Test agent name
+ * @param ifname        Interface name
+ * @param drivername    Driver name, obtained value should be released if
+ *                      not required anymore.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_eth_deviceinfo_drivername_get(const char *ta,
+                                                   const char *ifname,
+                                                   char **drivername);
+
+/**
+ * Get driver version of a network interface.
+ *
+ * @param ta            Test agent name
+ * @param ifname        Interface name
+ * @param driverversion Driver version, obtained value should be released if
+ *                      not required anymore.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_eth_deviceinfo_driverversion_get(const char *ta,
+                                                      const char *ifname,
+                                                      char **driverversion);
+
+/**
+ * Get firmware version of a network interface.
+ *
+ * @param ta                Test agent name
+ * @param ifname            Interface name
+ * @param firmwareversion   Firmware version, obtained value should be
+ *                          released if not required anymore.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_eth_deviceinfo_firmwareversion_get(const char *ta,
+                                                      const char *ifname,
+                                                      char **firmwareversion);
+
+/**
  * Get GRO value of an ethernet interface
  *
  * @param ta        Test agent name

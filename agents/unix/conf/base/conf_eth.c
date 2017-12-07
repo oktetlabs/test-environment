@@ -706,14 +706,160 @@ eth_reset_get(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
+/* List of device info parameters. */
+typedef enum {
+    ETH_DRVINFO_DRIVER = 0,
+    ETH_DRVINFO_VERSION,
+    ETH_DRVINFO_FW_VERSION,
+} eth_drvinfo;
+
+/**
+ * Get driver info using ioctl(SIOCETHTOOL).
+ *
+ * @param ifname    Interface name
+ * @param parameter Requested parameter
+ * @param val       Buffer to save the parameter value
+ * @param len       The buffer length
+ *
+ * @return Status code
+ */
+static te_errno
+eth_drvinfo_get(const char *ifname, eth_drvinfo parameter, char *val,
+                size_t len)
+{
+    struct ethtool_drvinfo  drvinfo = {.cmd = ETHTOOL_GDRVINFO};
+    te_errno                rc = 0;
+
+    rc = eth_feature_ioctl_send(ifname, &drvinfo);
+
+    /* EOPNOTSUPP is returned for loopback interface - leave the function
+     * keeping the value empty. */
+    if (rc == TE_EOPNOTSUPP)
+        return 0;
+    else if (rc != 0)
+        return rc;
+
+#define CHECK_LEN(_str) \
+    do {                                                        \
+        if (strlen(_str) >= len)                                \
+        {                                                       \
+            ERROR("%s,%d: returned %s value is too long",       \
+                  __FUNCTION__, __LINE__, #_str);               \
+            return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);             \
+        }                                                       \
+    } while (0)
+
+    switch (parameter)
+    {
+        case ETH_DRVINFO_DRIVER:
+            CHECK_LEN(drvinfo.driver);
+            strcpy(val, drvinfo.driver);
+            break;
+
+        case ETH_DRVINFO_VERSION:
+            CHECK_LEN(drvinfo.version);
+            strcpy(val, drvinfo.version);
+            break;
+
+        case ETH_DRVINFO_FW_VERSION:
+            CHECK_LEN(drvinfo.fw_version);
+            strcpy(val, drvinfo.fw_version);
+            break;
+
+        default:
+            ERROR("Unknown parameter value %d", parameter);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+#undef CHECK_LEN
+
+    return 0;
+}
+
+/**
+ * Get firmware version using ioctl(SIOCETHTOOL).
+ *
+ * @param gid          Group identifier
+ * @param oid          Full object instance identifier
+ * @param value        Location to save value
+ * @param ifname       Interface name
+ * @param deviceinfo   deviceinfo instance name
+ *
+ * @return Status code
+ */
+static te_errno
+eth_firmwareversion_get(unsigned int gid, const char *oid, char *value,
+                        const char *ifname, const char *deviceinfo)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(deviceinfo);
+
+    return eth_drvinfo_get(ifname, ETH_DRVINFO_FW_VERSION, value,
+                           RCF_MAX_VAL);
+}
+
+/**
+ * Get driver version using ioctl(SIOCETHTOOL).
+ *
+ * @param gid          Group identifier
+ * @param oid          Full object instance identifier
+ * @param value        Location to save value
+ * @param ifname       Interface name
+ * @param deviceinfo   deviceinfo instance name
+ *
+ * @return Status code
+ */
+static te_errno
+eth_driverversion_get(unsigned int gid, const char *oid, char *value,
+                      const char *ifname, const char *deviceinfo)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(deviceinfo);
+
+    return eth_drvinfo_get(ifname, ETH_DRVINFO_VERSION, value, RCF_MAX_VAL);
+}
+
+/**
+ * Get driver name using ioctl(SIOCETHTOOL).
+ *
+ * @param gid          Group identifier
+ * @param oid          Full object instance identifier
+ * @param value        Location to save value
+ * @param ifname       Interface name
+ * @param deviceinfo   deviceinfo instance name
+ *
+ * @return Status code
+ */
+static te_errno
+eth_drivername_get(unsigned int gid, const char *oid, char *value,
+                   const char *ifname, const char *deviceinfo)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(deviceinfo);
+
+    return eth_drvinfo_get(ifname, ETH_DRVINFO_DRIVER, value, RCF_MAX_VAL);
+}
+
+RCF_PCH_CFG_NODE_RO(firmwareversion, "firmwareversion", NULL, NULL,
+                    eth_firmwareversion_get);
+
+RCF_PCH_CFG_NODE_RO(driverversion, "driverversion", NULL, &firmwareversion,
+                    eth_driverversion_get);
+
+RCF_PCH_CFG_NODE_RO(drivername, "drivername", NULL, &driverversion,
+                    eth_drivername_get);
+
+RCF_PCH_CFG_NODE_NA(deviceinfo, "deviceinfo", &drivername, NULL);
+
 static rcf_pch_cfg_object eth_feature = {
-    "feature", 0, NULL, NULL,
+    "feature", 0, NULL, &deviceinfo,
     (rcf_ch_cfg_get)eth_feature_get, (rcf_ch_cfg_set)eth_feature_set,
     NULL, NULL, (rcf_ch_cfg_list)eth_feature_list,
     (rcf_ch_cfg_commit)eth_feature_commit, NULL
 };
-
-
 
 RCF_PCH_CFG_NODE_RW(eth_reset, "reset", NULL, &eth_feature,
                     eth_reset_get, eth_cmd_set);

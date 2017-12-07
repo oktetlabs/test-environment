@@ -374,6 +374,29 @@
     <object oid="/agent/interface/feature" access="read_write"
             type="integer"/>
 
+    <!-- Network interface info
+         Name:  none
+         Value: none -->
+    <object oid="/agent/interface/deviceinfo" access="read_only" type="none"/>
+
+    <!-- Network interface driver name
+         Name:  none
+         Value: Driver name -->
+    <object oid="/agent/interface/deviceinfo/drivername" access="read_only"
+            type="string"/>
+
+    <!-- Network interface driver version
+         Name:  none
+         Value: Driver version -->
+    <object oid="/agent/interface/deviceinfo/driverversion" access="read_only"
+            type="string"/>
+
+    <!-- Network interface firmware version
+         Name:  none
+         Value: Firmware version -->
+    <object oid="/agent/interface/deviceinfo/firmwareversion" access="read_only"
+            type="string"/>
+
     <!-- The following four nodes are considered as legacy which is to get rid
          of eventually; these should not be used in
          the same session where the previous node is used because of possible
