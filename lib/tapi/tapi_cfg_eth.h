@@ -64,6 +64,23 @@ extern te_errno tapi_eth_feature_set(const char *ta,
                                      int         feature_value);
 
 /**
+ * Set feature value of an ethernet interface and all its parents if they are.
+ * Ignore @c EOPNOTSUPP failures if it is successful at least for one
+ * interface.
+ *
+ * @param ta            Test agent name
+ * @param ifname        Interface name
+ * @param feature_name  Feature name
+ * @param feature_value Location for the value
+ *
+ * @return Status code
+ */
+extern te_errno tapi_eth_feature_set_all_parents(const char *ta,
+                                                 const char *ifname,
+                                                 const char *feature_name,
+                                                 int         feature_value);
+
+/**
  * Get driver name of a network interface.
  *
  * @param ta            Test agent name

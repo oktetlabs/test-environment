@@ -33,6 +33,7 @@
 #include "tapi_cfg_eth.h"
 #include "logger_api.h"
 #include "te_ethernet.h"
+#include "tapi_host_ns.h"
 
 #define TE_CFG_TA_ETH_FMT "/agent:%s/interface:%s"
 
@@ -68,6 +69,55 @@ tapi_eth_feature_set(const char *ta,
     return cfg_set_instance_fmt(CFG_VAL(INTEGER, feature_value),
                                 TE_CFG_TA_ETH_FMT "/feature:%s",
                                 ta, ifname, feature_name);
+}
+
+/* Context to set a feature value for interface and its parents. */
+typedef struct eth_feature_set_ctx {
+    const char *name;
+    int         value;
+    te_bool     success;
+} eth_feature_set_ctx;
+
+/**
+ * Callback function to set a feature value for interface and its parents.
+ *
+ * @param ta        Test agent name
+ * @param ifname    Interface name
+ * @param opaque    The context (@c eth_feature_set_ctx)
+ *
+ * @return Status code.
+ */
+static te_errno
+eth_feature_set_cb(const char *ta, const char *ifname, void *opaque)
+{
+    eth_feature_set_ctx *ctx = (eth_feature_set_ctx *)opaque;
+    te_errno rc;
+
+    rc = tapi_eth_feature_set(ta, ifname, ctx->name, ctx->value);
+    if (rc == 0)
+        ctx->success = TRUE;
+    else if (TE_RC_GET_ERROR(rc) != TE_EOPNOTSUPP)
+        return rc;
+
+    return tapi_host_ns_if_parent_iter(ta, ifname, &eth_feature_set_cb,
+                                       opaque);
+}
+
+/* See description in the tapi_cfg_eth.h */
+te_errno
+tapi_eth_feature_set_all_parents(const char *ta, const char *ifname,
+                                 const char *feature_name, int feature_value)
+{
+    eth_feature_set_ctx ctx = {.name = feature_name, .value = feature_value};
+    te_errno            rc;
+
+    rc = eth_feature_set_cb(ta, ifname, &ctx);
+
+    /* Setting of the feature failed with EOPNOTSUPP for all interfaces. */
+    if (rc == 0 && ctx.success == FALSE)
+        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+
+    return rc;
 }
 
 /* See description in the tapi_cfg_eth.h */
