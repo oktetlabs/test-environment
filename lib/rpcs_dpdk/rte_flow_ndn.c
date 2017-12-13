@@ -57,6 +57,12 @@
 #define RTE_FLOW_FIELD_NAME_MAX_LEN 128
 #define RTE_FLOW_BIT_FIELD_LEN 1
 #define RTE_FLOW_VXLAN_VNI_VALID_OFFSET 3
+#define RTE_FLOW_GENEVE_CRITICAL_OFFSET 6
+#define RTE_FLOW_GENEVE_OAM_OFFSET 7
+#define RTE_FLOW_GENEVE_OPT_LEN_OFFSET 8
+#define RTE_FLOW_GENEVE_OPT_LEN_SIZE 6
+#define RTE_FLOW_GENEVE_VER_OFFSET 14
+#define RTE_FLOW_GENEVE_VER_SIZE 2
 #define RTE_FLOW_GRE_CKSUM_OFFSET 15
 #define RTE_FLOW_GRE_KEY_OFFSET 13
 #define RTE_FLOW_GRE_SEQN_OFFSET 12
@@ -878,6 +884,94 @@ out:
 }
 
 static te_errno
+rte_flow_item_geneve_from_pdu(const asn_value *geneve_pdu,
+                              struct rte_flow_item *item)
+{
+#ifdef HAVE_RTE_FLOW_GENEVE
+    struct rte_flow_item_geneve *spec = NULL;
+    struct rte_flow_item_geneve *mask = NULL;
+    struct rte_flow_item_geneve *last = NULL;
+    uint32_t spec_fields = 0;
+    uint32_t mask_fields = 0;
+    uint32_t last_fields = 0;
+    int rc;
+
+    if (item == NULL)
+        return TE_EINVAL;
+
+    rc = rte_alloc_mem_for_flow_item((void **)&spec,
+                                     (void **)&mask,
+                                     (void **)&last,
+                                     sizeof(struct rte_flow_item_geneve));
+    if (rc != 0)
+        return rc;
+
+    rc = asn_read_int_field_with_offset(geneve_pdu, "critical",
+                                        RTE_FLOW_BIT_FIELD_LEN,
+                                        RTE_FLOW_GENEVE_CRITICAL_OFFSET,
+                                        &spec_fields, &mask_fields,
+                                        &last_fields);
+    if (rc == 0)
+        rc = asn_read_int_field_with_offset(geneve_pdu, "oam",
+                                            RTE_FLOW_BIT_FIELD_LEN,
+                                            RTE_FLOW_GENEVE_OAM_OFFSET,
+                                            &spec_fields, &mask_fields,
+                                            &last_fields);
+    if (rc == 0)
+        rc = asn_read_int_field_with_offset(geneve_pdu, "options-length",
+                                            RTE_FLOW_GENEVE_OPT_LEN_SIZE,
+                                            RTE_FLOW_GENEVE_OPT_LEN_OFFSET,
+                                            &spec_fields, &mask_fields,
+                                            &last_fields);
+    if (rc == 0)
+        rc = asn_read_int_field_with_offset(geneve_pdu, "version",
+                                            RTE_FLOW_GENEVE_VER_SIZE,
+                                            RTE_FLOW_GENEVE_VER_OFFSET,
+                                            &spec_fields, &mask_fields,
+                                            &last_fields);
+    if (rc != 0)
+        goto out;
+
+    spec->ver_opt_len_o_c_rsvd0 = rte_cpu_to_be_16(spec_fields);
+    mask->ver_opt_len_o_c_rsvd0 = rte_cpu_to_be_16(mask_fields);
+    last->ver_opt_len_o_c_rsvd0 = rte_cpu_to_be_16(last_fields);
+
+    ASN_READ_INT_RANGE_FIELD(geneve_pdu, protocol, protocol, sizeof(spec->protocol));
+    rc = asn_read_int24_field(geneve_pdu, "vni", spec->vni, mask->vni, last->vni);
+    if (rc != 0)
+        goto out;
+
+#define FILL_FLOW_ITEM_GENEVE(_field) \
+    do {                                                                        \
+        if (!rte_flow_is_zero_addr(_field->vni, RTE_FLOW_INT24_FIELD_LEN) ||    \
+            _field->protocol != 0 ||                                            \
+            _field->ver_opt_len_o_c_rsvd0 != 0)                                 \
+            item->_field = _field;                                              \
+        else                                                                    \
+            free(_field);                                                       \
+    } while(0)
+
+    item->type = RTE_FLOW_ITEM_TYPE_GENEVE;
+    FILL_FLOW_ITEM_GENEVE(spec);
+    FILL_FLOW_ITEM_GENEVE(mask);
+    FILL_FLOW_ITEM_GENEVE(last);
+#undef FILL_FLOW_ITEM_GENEVE
+
+    return 0;
+out:
+    free(spec);
+    free(mask);
+    free(last);
+    return rc;
+#else /* !HAVE_RTE_FLOW_GENEVE */
+    if (item == NULL || geneve_pdu == NULL)
+        return TE_EINVAL;
+
+    return TE_EPROTONOSUPPORT;
+#endif /* HAVE_RTE_FLOW_GENEVE */
+}
+
+static te_errno
 rte_flow_item_gre_from_pdu(const asn_value *gre_pdu,
                            struct rte_flow_item *item)
 {
@@ -1130,6 +1224,7 @@ static const struct rte_flow_item_tags_mapping {
     { TE_PROTO_TCP,     rte_flow_item_tcp_from_pdu },
     { TE_PROTO_UDP,     rte_flow_item_udp_from_pdu },
     { TE_PROTO_VXLAN,   rte_flow_item_vxlan_from_pdu },
+    { TE_PROTO_GENEVE,  rte_flow_item_geneve_from_pdu },
     { TE_PROTO_GRE,     rte_flow_item_gre_and_nvgre_from_pdu },
     { 0,                rte_flow_item_void },
 };

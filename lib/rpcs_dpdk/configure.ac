@@ -60,6 +60,17 @@ struct rte_flow_ops ops;
 [[ops.isolate = NULL;]]
 )], [AC_DEFINE([HAVE_RTE_FLOW_ISOLATE], 1, [ ])], [])
 
+AC_COMPILE_IFELSE([
+AC_LANG_PROGRAM(
+[[
+#include "rte_config.h"
+#include "rte_flow.h"
+
+enum rte_flow_item_type type;
+]],
+[[type = RTE_FLOW_ITEM_TYPE_GENEVE;]]
+)], [AC_DEFINE([HAVE_RTE_FLOW_GENEVE], 1, [ ])], [])
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE
