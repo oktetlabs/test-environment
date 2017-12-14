@@ -526,65 +526,17 @@ eth_reset_set(unsigned int gid, const char *oid, char *value,
               const char *ifname)
 {
 #ifdef ETHTOOL_RESET
-    struct ifreq            ifr;
-    struct ethtool_value    eval;
-    te_errno                rc;
-    tqh_strings             slaves;
-    char                    if_par[IF_NAMESIZE];
-    te_bool                 is_team = FALSE;
+    struct ethtool_value    eval = {.cmd = ETHTOOL_RESET,
+                                    .data = ETH_RESET_ALL};
+    struct ifreq            ifr = {.ifr_data = (void *)&eval};
 
     UNUSED(oid);
     UNUSED(gid);
 
-    TAILQ_INIT(&slaves);
-    memset(&ifr, 0, sizeof(ifr));
-    memset(&eval, 0, sizeof(eval));
-
-    ifr.ifr_data = (void *)&eval;
-    strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name));
-
     if (strcmp(value, "0") == 0)
         return 0;
 
-    if ((rc = ta_vlan_get_parent(ifname, if_par)) != 0)
-        return rc;
-    if ((rc = ta_bond_get_slaves(strlen(if_par) == 0 ? ifname : if_par,
-                                 &slaves, NULL, &is_team)) != 0)
-        return rc;
-    if (!TAILQ_EMPTY(&slaves) && !is_team)
-    {
-        tqe_string *slave = NULL;
-
-        TAILQ_FOREACH(slave, &slaves, links)
-        {
-            eval.cmd = ETHTOOL_RESET;
-            eval.data = ETH_RESET_ALL;
-
-            strncpy(ifr.ifr_name, slave->v, sizeof(ifr.ifr_name));
-            if (ifr.ifr_name[sizeof(ifr.ifr_name) - 1] != '\0')
-            {
-                ERROR("%s(): ta_bond_get_slaves() returned too long "
-                      "interface name", __FUNCTION__);
-                tq_strings_free(&slaves, &free);
-                return TE_OS_RC(TE_TA_UNIX, TE_ESMALLBUF);
-            }
-
-            if (ioctl(cfg_socket, SIOCETHTOOL, &ifr) != 0)
-            {
-                ERROR("ioctl failed on %s: %s", ifr.ifr_name,
-                      strerror(errno));
-                tq_strings_free(&slaves, &free);
-                return TE_OS_RC(TE_TA_UNIX, errno);
-            }
-        }
-        tq_strings_free(&slaves, &free);
-        return 0;
-    }
-    if (strlen(if_par) != 0)
-        strncpy(ifr.ifr_name, if_par, sizeof(ifr.ifr_name));
-
-    eval.cmd = ETHTOOL_RESET;
-    eval.data = ETH_RESET_ALL;
+    strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name));
 
     if (ioctl(cfg_socket, SIOCETHTOOL, &ifr) != 0)
     {
