@@ -512,64 +512,7 @@ eth_feature_commit(unsigned int    gid,
 }
 
 /**
- * Get single ethernet interface configuration value.
- *
- * @param gid          Group identifier
- * @param oid          Full object instance identifier
- * @param value        Location to save value
- * @param ifname       Interface name
- *
- * @return Status code
- */
-static te_errno
-eth_cmd_get(unsigned int gid, const char *oid, char *value,
-            const char *ifname)
-{
-    struct ifreq            ifr;
-    struct ethtool_value    eval;
-
-    UNUSED(gid);
-
-    memset(&ifr, 0, sizeof(ifr));
-    memset(&eval, 0, sizeof(eval));
-
-    ifr.ifr_data = (void *)&eval;
-    strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name));
-
-    if (strstr(oid, "/gso:") != NULL)
-        eval.cmd = ETHTOOL_GGSO;
-#ifdef ETHTOOL_GGRO
-    else if (strstr(oid, "/gro:") != NULL)
-        eval.cmd = ETHTOOL_GGRO;
-#endif
-#ifdef ETHTOOL_GTSO
-    else if (strstr(oid, "/tso:") != NULL)
-        eval.cmd = ETHTOOL_GTSO;
-#endif
-#ifdef ETHTOOL_GFLAGS
-    else if (strstr(oid, "/flags:") != NULL)
-        eval.cmd = ETHTOOL_GFLAGS;
-#endif
-    else
-        return TE_EINVAL;
-
-    if (ioctl(cfg_socket, SIOCETHTOOL, &ifr) != 0)
-    {
-        ERROR("ioctl failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    if (snprintf(value, RCF_MAX_VAL, "%d", eval.data) < 0)
-    {
-        ERROR("failed to write value to buffer: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    return 0;
-}
-
-/**
- * Set single ethernet interface configuration value.
+ * Reset ethernet interface.
  *
  * @param gid          Group identifier
  * @param oid          Full object instance identifier
@@ -579,20 +522,19 @@ eth_cmd_get(unsigned int gid, const char *oid, char *value,
  * @return Status code
  */
 static te_errno
-eth_cmd_set(unsigned int gid, const char *oid, char *value,
-            const char *ifname)
+eth_reset_set(unsigned int gid, const char *oid, char *value,
+              const char *ifname)
 {
+#ifdef ETHTOOL_RESET
     struct ifreq            ifr;
     struct ethtool_value    eval;
-    char                   *endp;
-    int                     rc;
-    uint32_t                cmd, data;
+    te_errno                rc;
     tqh_strings             slaves;
     char                    if_par[IF_NAMESIZE];
     te_bool                 is_team = FALSE;
 
+    UNUSED(oid);
     UNUSED(gid);
-    UNUSED(data);
 
     TAILQ_INIT(&slaves);
     memset(&ifr, 0, sizeof(ifr));
@@ -601,39 +543,8 @@ eth_cmd_set(unsigned int gid, const char *oid, char *value,
     ifr.ifr_data = (void *)&eval;
     strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name));
 
-    eval.data = strtoul(value, &endp, 0);
-    if (endp == value || *endp != '\0')
-    {
-        ERROR("Couldn't convert value '%s' to number, errno %r", value,
-              TE_OS_RC(TE_TA_UNIX, errno));
-        return TE_EINVAL;
-    }
-
-    if (strstr(oid, "/gso:") != NULL)
-        cmd = eval.cmd = ETHTOOL_SGSO;
-#ifdef ETHTOOL_SGRO
-    else if (strstr(oid, "/gro:") != NULL)
-        cmd = eval.cmd = ETHTOOL_SGRO;
-#endif
-#ifdef ETHTOOL_STSO
-    else if (strstr(oid, "/tso:") != NULL)
-        cmd = eval.cmd = ETHTOOL_STSO;
-#endif
-#ifdef ETHTOOL_SFLAGS
-    else if (strstr(oid, "/flags:") != NULL)
-        cmd = eval.cmd = ETHTOOL_SFLAGS;
-#endif
-#ifdef ETHTOOL_RESET
-    else if (strstr(oid, "/reset:") != NULL)
-    {
-        if (eval.data == 0)
-            return 0;
-        cmd = eval.cmd = ETHTOOL_RESET;
-        data = eval.data = ETH_RESET_ALL;
-    }
-#endif
-    else
-        return TE_EINVAL;
+    if (strcmp(value, "0") == 0)
+        return 0;
 
     if ((rc = ta_vlan_get_parent(ifname, if_par)) != 0)
         return rc;
@@ -646,11 +557,9 @@ eth_cmd_set(unsigned int gid, const char *oid, char *value,
 
         TAILQ_FOREACH(slave, &slaves, links)
         {
-            eval.cmd = cmd;
-#ifdef ETHTOOL_RESET
-            if (cmd == ETHTOOL_RESET)
-                eval.data = data;
-#endif
+            eval.cmd = ETHTOOL_RESET;
+            eval.data = ETH_RESET_ALL;
+
             strncpy(ifr.ifr_name, slave->v, sizeof(ifr.ifr_name));
             if (ifr.ifr_name[sizeof(ifr.ifr_name) - 1] != '\0')
             {
@@ -674,6 +583,9 @@ eth_cmd_set(unsigned int gid, const char *oid, char *value,
     if (strlen(if_par) != 0)
         strncpy(ifr.ifr_name, if_par, sizeof(ifr.ifr_name));
 
+    eval.cmd = ETHTOOL_RESET;
+    eval.data = ETH_RESET_ALL;
+
     if (ioctl(cfg_socket, SIOCETHTOOL, &ifr) != 0)
     {
         ERROR("ioctl failed: %s", strerror(errno));
@@ -681,6 +593,13 @@ eth_cmd_set(unsigned int gid, const char *oid, char *value,
     }
 
     return 0;
+#else
+    UNUSED(oid);
+    UNUSED(gid);
+    UNUSED(value);
+    UNUSED(ifname);
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
 }
 
 /**
@@ -862,19 +781,7 @@ static rcf_pch_cfg_object eth_feature = {
 };
 
 RCF_PCH_CFG_NODE_RW(eth_reset, "reset", NULL, &eth_feature,
-                    eth_reset_get, eth_cmd_set);
-
-RCF_PCH_CFG_NODE_RW(eth_gro, "gro", NULL, &eth_reset,
-                    eth_cmd_get, eth_cmd_set);
-
-RCF_PCH_CFG_NODE_RW(eth_gso, "gso", NULL, &eth_gro,
-                    eth_cmd_get, eth_cmd_set);
-
-RCF_PCH_CFG_NODE_RW(eth_tso, "tso", NULL, &eth_gso,
-                    eth_cmd_get, eth_cmd_set);
-
-RCF_PCH_CFG_NODE_RW(eth_flags, "flags", NULL, &eth_tso,
-                    eth_cmd_get, eth_cmd_set);
+                    eth_reset_get, eth_reset_set);
 
 /**
  * Initialize ethernet interface configuration nodes
@@ -884,7 +791,7 @@ ta_unix_conf_eth_init(void)
 {
     SLIST_INIT(&if_contexts);
 
-    return rcf_pch_add_node("/agent/interface", &eth_flags);
+    return rcf_pch_add_node("/agent/interface", &eth_reset);
 }
 #else
 te_errno
