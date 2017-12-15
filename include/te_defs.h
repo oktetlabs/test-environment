@@ -74,6 +74,11 @@ typedef unsigned char te_bool;
 #define TRUE    (!FALSE)
 #endif
 
+/**
+ * Compare two variables of arbitrary types converting them to boolean
+ * previously.
+ */
+#define TE_BOOL_EQUAL(_v1, _v2) (!(_v1) == !(_v2))
 
 /** Ternary (tree-valued, trivalent) logic base type */
 typedef enum te_bool3 {
