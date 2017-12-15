@@ -185,6 +185,18 @@ extern te_errno tapi_pdus_free_fields_by_du_tag(asn_value      *pdus,
                                                 asn_tag_value   du_tag);
 
 /**
+ * Make new PDU sequence instances for outer PDUs and for
+ * inner PDUs (if any) and relist the corresponding PDUs
+ *
+ * @param tmpl       Traffic template
+ * @param pdus_o_out Location for outer PDUs
+ * @param pdus_i_out Location for inner PDUs
+ */
+extern te_errno tapi_tad_tmpl_relist_outer_inner_pdus(asn_value  *tmpl,
+                                                      asn_value **pdus_o_out,
+                                                      asn_value **pdus_i_out);
+
+/**
  * Convert an ASN.1 template to a pattern containing
  * the same set of PDUs as ones in the template
  *

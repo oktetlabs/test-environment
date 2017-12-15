@@ -366,6 +366,138 @@ fail:
     return TE_RC(TE_TAPI, err);
 }
 
+static const int tunnel_types[] = {
+    TE_PROTO_VXLAN,
+    TE_PROTO_GENEVE,
+    TE_PROTO_GRE,
+};
+
+/* See description in 'tapi_ndn.h' */
+te_errno
+tapi_tad_tmpl_relist_outer_inner_pdus(asn_value  *tmpl,
+                                      asn_value **pdus_o_out,
+                                      asn_value **pdus_i_out)
+{
+    asn_value    *pdus_orig = NULL;
+    int           nb_pdus;
+    int           pdu_index_tunnel;
+    asn_value    *pdus_o = NULL;
+    asn_value    *pdus_i = NULL;
+    unsigned int  i, j;
+    te_errno      rc;
+
+    rc = asn_get_subvalue(tmpl, &pdus_orig, "pdus");
+    if (rc != 0)
+        goto fail;
+
+    nb_pdus = asn_get_length(pdus_orig, "");
+    if (nb_pdus < 0)
+    {
+        rc = TE_EINVAL;
+        goto fail;
+    }
+
+    pdu_index_tunnel = -1;
+
+    for (i = 0; i < TE_ARRAY_LEN(tunnel_types); ++i)
+    {
+        asn_child_desc_t *items = NULL;
+        unsigned int      nb = 0;
+
+        rc = asn_find_child_choice_values(pdus_orig, tunnel_types[i],
+                                          &items, &nb);
+        if (rc != 0)
+            goto fail;
+
+        if (nb > 1)
+        {
+            rc = TE_EINVAL;
+            goto fail;
+        }
+
+        if (nb == 1)
+        {
+            pdu_index_tunnel = items[0].index;
+            break;
+        }
+    }
+
+    if (pdu_index_tunnel > 0)
+    {
+        pdus_i = asn_init_value(ndn_generic_pdu_sequence);
+        if (pdus_i == NULL)
+        {
+            rc = TE_ENOMEM;
+            goto fail;
+        }
+
+        for (i = 0; i < (unsigned int)pdu_index_tunnel; ++i)
+        {
+            asn_value *pdu_i = NULL;
+
+            rc = asn_get_indexed(pdus_orig, &pdu_i, i, "");
+            if (rc != 0)
+                goto fail;
+
+            rc = asn_insert_indexed(pdus_i, pdu_i, i, "");
+            if (rc != 0)
+                goto fail;
+        }
+    }
+    else
+    {
+        pdus_i = NULL;
+    }
+
+    pdus_o = asn_init_value(ndn_generic_pdu_sequence);
+    if (pdus_o == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto fail;
+    }
+
+    for (i = pdu_index_tunnel + 1, j = 0; i < (unsigned int)nb_pdus; ++i, ++j)
+    {
+        asn_value *pdu_o = NULL;
+
+        rc = asn_get_indexed(pdus_orig, &pdu_o, i, "");
+        if (rc != 0)
+            goto fail;
+
+        rc = asn_insert_indexed(pdus_o, pdu_o, j, "");
+        if (rc != 0)
+            goto fail;
+    }
+
+    if (pdus_o_out != NULL)
+        *pdus_o_out = pdus_o;
+
+    if (pdus_i_out != NULL)
+        *pdus_i_out = pdus_i;
+
+    return 0;
+
+fail:
+    if (pdus_o != NULL)
+    {
+        pdus_o->len = 0;
+        free(pdus_o->data.array);
+        pdus_o->data.array = NULL;
+    }
+
+    if (pdus_i != NULL)
+    {
+        pdus_i->len = 0;
+        free(pdus_o->data.array);
+        pdus_i->data.array = NULL;
+    }
+
+    asn_free_value(pdus_o);
+    asn_free_value(pdus_i);
+
+    return rc;
+}
+
 /* See the description in tapi_ndn.h */
 asn_value *
 tapi_tad_mk_pattern_from_template(asn_value  *template)
