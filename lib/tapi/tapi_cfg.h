@@ -884,7 +884,7 @@ static inline char * tapi_get_cfg_link(char *link)
 
         if (descr.type != CVT_NONE)
         {
-            if ((rc = cfg_get_instance_fmt(NULL, &s, cur)) != 0)
+            if ((rc = cfg_get_instance_str(NULL, &s, cur)) != 0)
             {
                 ERROR("Failed to get configurator object '%s': rc=%r",
                       cur, rc);
@@ -904,7 +904,7 @@ static inline char * tapi_get_cfg_link(char *link)
         c = strchr(c + 1, '/');
         if (c == NULL)
         {
-            if ((rc = cfg_get_instance_fmt(NULL, &s, cur)) != 0)
+            if ((rc = cfg_get_instance_str(NULL, &s, cur)) != 0)
             {
                 ERROR("Failed to get configurator object '%s': rc=%r",
                       cur, rc);
