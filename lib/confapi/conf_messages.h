@@ -177,9 +177,11 @@ typedef struct cfg_add_msg {
     cfg_val_type    val_type;       /**< Object value type */
     uint8_t         oid_offset;     /**< Offset to OID from the 
                                          message start */
-    struct sockaddr val_addr[0];    /**< start of sockaddr value */
-    char            val_str[0];     /**< start of string value*/
-    int             val_int;        /**< int value */
+    union {
+        struct sockaddr val_addr[0];    /**< start of sockaddr value */
+        char            val_str[0];     /**< start of string value*/
+        int             val_int;        /**< int value */
+    } val;
 } cfg_add_msg;
 
 /** CFG_DEL message content  */
@@ -192,12 +194,14 @@ typedef struct cfg_del_msg {
 typedef struct cfg_set_msg {
     CFG_MSG_FIELDS
     /* IN fields - should not be in answer */
-    cfg_handle      handle;      /**< Object instance handle */
-    te_bool         local;       /**< Local set */
-    cfg_val_type    val_type;    /**< Object value type */
-    struct sockaddr val_addr[0]; /**< start of sockaddr value */
-    char            val_str[0];  /**< start of string value */
-    int             val_int;     /**< int value */
+    cfg_handle   handle;        /**< Object instance handle */
+    te_bool      local;         /**< Local set */
+    cfg_val_type val_type;      /**< Object value type */
+    union {
+        struct sockaddr val_addr[0]; /**< start of sockaddr value */
+        char            val_str[0];  /**< start of string value */
+        int             val_int;     /**< int value */
+    } val;
 } cfg_set_msg;
 
 /** CFG_COMMIT message content  */
@@ -212,9 +216,11 @@ typedef struct cfg_get_msg {
     te_bool         sync;        /**< Synchronization get */
     cfg_handle      handle;      /**< IN */
     cfg_val_type    val_type;    /**< Object value type */
-    struct sockaddr val_addr[0]; /**< start of sockaddr value */
-    char            val_str[0];  /**< start of string value */
-    int             val_int;     /**< int value */
+    union {
+        struct sockaddr val_addr[0]; /**< start of sockaddr value */
+        char            val_str[0];  /**< start of string value */
+        int             val_int;     /**< int value */
+    } val;
 } cfg_get_msg;
 
 /** CFG_SYNC message content  */
