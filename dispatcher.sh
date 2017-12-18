@@ -602,7 +602,7 @@ process_opts()
 
             --build-parallel*)
                 num=${1##--build-parallel=}
-                [ "${num}" = "$1" ] && num=8
+                [ "${num}" = "$1" ] && num=
                 BUILD_MAKEFLAGS="-j${num}"
                 ;;
 
