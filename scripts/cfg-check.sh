@@ -10,11 +10,11 @@ help () {
     exit 0
 }
 
-( [ "$CFG_NAME" = "-h" ] || [ "$CFG_NAME" = "--help" ] ) && help
+( [ -z "$CFG_NAME]" ] || [ "$CFG_NAME" = "-h" ] || [ "$CFG_NAME" = "--help" ] ) && help
 
 CFG_FILE=${CONFDIR}/env.$CFG_NAME
 
-hosts=$(cat $CFG_FILE | egrep "(TE_IUT=|TE_TST[0-9]*=)" | sed "s/.*=//")
+hosts=$(cat $CFG_FILE | egrep "(TE_IUT=|TE_TST[0-9]*=|TE_TST_(LAN|WIFI|SERIAL|WAN).*)" | sed "s/.*=//")
 
 for the_host in ${hosts}; do
     echo -ne "Checking ${the_host}... \t"
