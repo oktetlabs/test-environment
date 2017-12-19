@@ -180,7 +180,8 @@ typedef struct rcf_rpc_server {
                                          be used to change the behavior for
                                          a few calls. */
 
-    char          **namespaces;     /**< Namespaces array */
+    char          **namespaces;     /**< Array of namespaces for memory
+                                     * pointers (rpc_ptr). */
     size_t          namespaces_len; /**< Amount of elements in @p namespaces */
 } rcf_rpc_server;
 
