@@ -144,11 +144,11 @@ extern tarpc_ssize_t rpc_get_sizeof(rcf_rpc_server *rpcs,
  * @return                   TRUE if information in @p buf1 is equal to 
  *                           information in buf2
  */
-extern tarpc_bool rpc_protocol_info_cmp(rcf_rpc_server *rpcs, 
-                                        const uint8_t *buf1,
-                                        const uint8_t *buf2,
-                                        tarpc_bool is_wide1,
-                                        tarpc_bool is_wide2);
+extern te_bool rpc_protocol_info_cmp(rcf_rpc_server *rpcs,
+                                     const uint8_t *buf1,
+                                     const uint8_t *buf2,
+                                     tarpc_bool is_wide1,
+                                     tarpc_bool is_wide2);
 
 
 
