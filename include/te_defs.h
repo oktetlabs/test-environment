@@ -50,7 +50,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
+#include <stdbool.h>
 
 /** Test Environment copyright to be used in applications output */
 #define TE_COPYRIGHT \
@@ -67,11 +67,11 @@
 #endif
 
 /** Boolean type to be used everywhere in Test Environment */
-typedef unsigned char te_bool;
+typedef bool te_bool;
 
 #ifndef FALSE
-#define FALSE   0
-#define TRUE    (!FALSE)
+#define FALSE false
+#define TRUE  true
 #endif
 
 /**
