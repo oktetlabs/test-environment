@@ -458,6 +458,12 @@ te_round_up_pow2(unsigned long long num)
 }
 #endif
 
+/** Align up a value to a power of two specified by mask */
+#define TE_ALIGN_MASK(_v, _m)       (((_v) + (_m)) & ~(_m))
+
+/** Align up a value to a power of two */
+#define TE_ALIGN(_v, _a)            TE_ALIGN_MASK((_v), (typeof(_v))(_a) - 1)
+
 /* Tests related part */
 /* fixme kostik: should be moved */
 
