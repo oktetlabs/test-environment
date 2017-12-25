@@ -783,12 +783,12 @@ tester_log_global(void)
 
             do {
                 c = strstr(p, "__");
-                RING("%s rc=%d c=%p eq=%p", p, rc, c, eq);
+                VERB("%s rc=%d c=%p eq=%p", p, rc, c, eq);
                 if (c != NULL && c < eq) {
                     *c = '\0';
                     rc += snprintf(glob + rc, TESTER_ENV_SIZE - rc,
                                    "%s.", p);
-                    RING("%s rc=%d", p, rc);
+                    VERB("%s rc=%d", p, rc);
                     p = c + 2;
                 }
                 else
@@ -796,7 +796,7 @@ tester_log_global(void)
                     c = NULL;
                     rc += snprintf(glob + rc, TESTER_ENV_SIZE - rc,
                                    "%s\n", p);
-                    RING("%s rc=%d", p, rc);
+                    VERB("%s rc=%d", p, rc);
                 }
             } while (c != NULL);
         }
