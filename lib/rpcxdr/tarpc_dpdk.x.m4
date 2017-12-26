@@ -1835,6 +1835,27 @@ struct tarpc_rte_flow_isolate_in {
 
 typedef struct tarpc_rte_flow_validate_out tarpc_rte_flow_isolate_out;
 
+
+/**
+ * Handmade DPDK utility RPCs
+ */
+
+/*
+ * TODO: look for the other handmade RPCs, relist here,
+ *       move to separate header and source files
+ */
+
+/** dpdk_eth_await_link_up() */
+struct tarpc_dpdk_eth_await_link_up_in {
+    struct tarpc_in_arg common;
+    uint8_t             port_id;
+    unsigned int        nb_attempts;
+    unsigned int        wait_int_ms;
+    unsigned int        after_up_ms;
+};
+
+typedef struct tarpc_int_retval_out tarpc_dpdk_eth_await_link_up_out;
+
 program dpdk
 {
     version ver0
@@ -1962,5 +1983,7 @@ program dpdk
         RPC_DEF(rte_flow_destroy)
         RPC_DEF(rte_flow_flush)
         RPC_DEF(rte_flow_isolate)
+
+        RPC_DEF(dpdk_eth_await_link_up)
     } = 1;
 } = 2;

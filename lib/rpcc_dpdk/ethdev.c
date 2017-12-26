@@ -2858,6 +2858,35 @@ rpc_rte_eth_link_get(rcf_rpc_server *rpcs,
     RETVAL_VOID(rte_eth_link_get);
 }
 
+int
+rpc_dpdk_eth_await_link_up(rcf_rpc_server *rpcs,
+                           uint16_t        port_id,
+                           unsigned int    nb_attempts,
+                           unsigned int    wait_int_ms,
+                           unsigned int    after_up_ms)
+{
+    tarpc_dpdk_eth_await_link_up_in  in;
+    tarpc_dpdk_eth_await_link_up_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.nb_attempts = nb_attempts;
+    in.wait_int_ms = wait_int_ms;
+    in.after_up_ms = after_up_ms;
+
+    rcf_rpc_call(rpcs, "dpdk_eth_await_link_up", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(dpdk_eth_await_link_up, out.retval);
+
+    TAPI_RPC_LOG(rpcs, dpdk_eth_await_link_up,
+                 "%hu, nb_attempts = %u, wait_int_ms = %u, after_up_ms = %u",
+                 NEG_ERRNO_FMT, in.port_id, in.nb_attempts, in.wait_int_ms,
+                 in.after_up_ms, NEG_ERRNO_ARGS(out.retval));
+
+    RETVAL_ZERO_INT(dpdk_eth_await_link_up, out.retval);
+}
+
 int rpc_rte_eth_dev_flow_ctrl_set(rcf_rpc_server *rpcs, uint16_t port_id,
                                   struct tarpc_rte_eth_fc_conf *fc_conf)
 {

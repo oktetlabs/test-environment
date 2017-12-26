@@ -583,6 +583,24 @@ extern void rpc_rte_eth_link_get(rcf_rpc_server *rpcs, uint16_t port_id,
                                  struct tarpc_rte_eth_link *eth_link);
 
 /**
+ * Await link UP after port start/restart
+ *
+ * @param port_id     The port identifier of the Ethernet device
+ * @param nb_attempts The number of attempts to check link status
+ * @param wait_int_ms The amount of time which shall elapse prior attempt (ms)
+ * @param after_up_ms The amount of time which shall elapse after link UP
+ *                    has been detected in order to wait for the other
+ *                    resources to become ready (ms)
+ *
+ * @return @c 0 on success; jumps out on error (negative return code)
+ */
+extern int rpc_dpdk_eth_await_link_up(rcf_rpc_server *rpcs,
+                                      uint16_t        port_id,
+                                      unsigned int    nb_attempts,
+                                      unsigned int    wait_int_ms,
+                                      unsigned int    after_up_ms);
+
+/**
  * @b rte_eth_stats_get() RPC
  *
  * @param port_id         The port identifier of the Ethernet device

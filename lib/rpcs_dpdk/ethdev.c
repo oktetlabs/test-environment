@@ -1862,6 +1862,35 @@ TARPC_FUNC(rte_eth_link_get, {},
     out->eth_link.link_status = eth_link.link_status;
 })
 
+TARPC_FUNC_STANDALONE(dpdk_eth_await_link_up, {},
+{
+    unsigned int i;
+
+    for (i = 0; i < in->nb_attempts; ++i)
+    {
+        struct rte_eth_link eth_link;
+
+	usleep(in->wait_int_ms * 1000);
+
+        memset(&eth_link, 0, sizeof(eth_link));
+
+        MAKE_CALL(rte_eth_link_get_nowait(in->port_id, &eth_link));
+        if (eth_link.link_status)
+        {
+	    out->retval = 0;
+
+            usleep(in->after_up_ms * 1000);
+
+            goto done;
+        }
+    }
+
+    out->retval = TE_ETIMEDOUT;
+
+done:
+    ;
+})
+
 static int
 tarpc_rte_pktmbuf_packet_type_mask2rte(uint32_t  rpc,
                                        uint32_t *rte_out)
