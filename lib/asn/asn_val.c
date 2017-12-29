@@ -1805,8 +1805,8 @@ asn_read_value_field(const asn_value *container, void *data, size_t *d_len,
                      const char *field_labels)
 {
     char *field_labels_int_copy = asn_strdup(field_labels);
-    int   rc = asn_impl_read_value_field(container, data, d_len,
-                                         field_labels_int_copy);
+    te_errno rc = asn_impl_read_value_field(container, data, d_len,
+                                            field_labels_int_copy);
 
     free (field_labels_int_copy);
 
