@@ -1961,8 +1961,15 @@ te_errno
 asn_read_bool(const asn_value *container, te_bool *value,
               const char *labels)
 {
-    size_t len = sizeof(*value);
-    return asn_read_value_field(container, value, &len, labels);
+    uint8_t  val;
+    size_t   len = sizeof(val);
+    te_errno rc;
+
+    rc = asn_read_value_field(container, &val, &len, labels);
+    if (rc == 0)
+        *value = (val == ASN_FALSE ? FALSE : TRUE);
+
+    return rc;
 }
 
 /* see description in asn_usr.h */
