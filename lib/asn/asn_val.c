@@ -1422,12 +1422,12 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
 
         if (* (char*)data) /* TRUE */
         {
-            value->data.integer = 0xff;
+            value->data.integer = ASN_TRUE;
             value->txt_len = 4;
         }
         else  /* FALSE */
         {
-            value->data.integer = 0;
+            value->data.integer = ASN_FALSE;
             value->txt_len = 5;
         }
         break;
@@ -1624,12 +1624,12 @@ asn_impl_write_value_field(asn_value *container,
 
         if (* (char*)data) /* TRUE */
         {
-            container->data.integer = 0xff;
+            container->data.integer = ASN_TRUE;
             container->txt_len = 4;
         }
         else  /* FALSE */
         {
-            container->data.integer = 0;
+            container->data.integer = ASN_FALSE;
             container->txt_len = 5;
         }
         break;
