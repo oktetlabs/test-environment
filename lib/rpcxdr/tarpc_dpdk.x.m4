@@ -856,7 +856,7 @@ struct tarpc_rte_eth_dev_info {
     uint32_t                        max_hash_mac_addrs;
     uint16_t                        max_vfs;
     uint16_t                        max_vmdq_pools;
-    uint32_t                        rx_offload_capa;
+    uint64_t                        rx_offload_capa;
     uint32_t                        tx_offload_capa;
     uint16_t                        reta_size;
     uint8_t                         hash_key_size;

@@ -87,7 +87,7 @@ rpc_rte_eth_stats_get(rcf_rpc_server             *rpcs,
 }
 
 static const char *
-tarpc_rte_eth_rx_offloads2str(te_log_buf *tlbp, uint32_t rx_offloads)
+tarpc_rte_eth_rx_offloads2str(te_log_buf *tlbp, uint64_t rx_offloads)
 {
     const struct te_log_buf_bit2str rx_offloads2str[] = {
 #define TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(_bit) \
