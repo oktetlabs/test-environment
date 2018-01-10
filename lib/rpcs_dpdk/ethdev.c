@@ -116,19 +116,19 @@ tarpc_rte_rx_offloads2rpc(uint64_t rte)
     return rpc;
 }
 
-static uint32_t
-tarpc_rte_tx_offloads2rpc(uint32_t rte)
+static uint64_t
+tarpc_rte_tx_offloads2rpc(uint64_t rte)
 {
-    uint32_t    rpc = 0;
+    uint64_t rpc = 0;
 
 #define RTE_DEV_TX_OFFLOAD2RPC(_bit) \
     do {                                                            \
-        uint32_t flag = DEV_TX_OFFLOAD_##_bit;                      \
+        uint64_t flag = DEV_TX_OFFLOAD_##_bit;                      \
                                                                     \
         if (rte & flag)                                             \
         {                                                           \
             rte &= ~flag;                                           \
-            rpc |= (1 << TARPC_RTE_DEV_TX_OFFLOAD_##_bit##_BIT);    \
+            rpc |= (1ULL << TARPC_RTE_DEV_TX_OFFLOAD_##_bit##_BIT); \
         }                                                           \
     } while (0)
     RTE_DEV_TX_OFFLOAD2RPC(VLAN_INSERT);
@@ -142,7 +142,7 @@ tarpc_rte_tx_offloads2rpc(uint32_t rte)
     RTE_DEV_TX_OFFLOAD2RPC(QINQ_INSERT);
 #undef RTE_DEV_TX_OFFLOAD2RPC
     if (rte != 0)
-        rpc |= (1 << TARPC_RTE_DEV_TX_OFFLOAD__UNKNOWN_BIT);
+        rpc |= (1ULL << TARPC_RTE_DEV_TX_OFFLOAD__UNKNOWN_BIT);
     return rpc;
 }
 

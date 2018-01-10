@@ -869,7 +869,7 @@ struct tarpc_rte_eth_dev_info {
     uint16_t                        max_vmdq_pools;
     uint64_t                        rx_queue_offload_capa;
     uint64_t                        rx_offload_capa;
-    uint32_t                        tx_offload_capa;
+    uint64_t                        tx_offload_capa;
     uint16_t                        reta_size;
     uint8_t                         hash_key_size;
     uint64_t                        flow_type_rss_offloads;

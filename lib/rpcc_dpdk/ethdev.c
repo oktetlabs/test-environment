@@ -118,7 +118,7 @@ tarpc_rte_eth_rx_offloads2str(te_log_buf *tlbp, uint64_t rx_offloads)
 }
 
 static const char *
-tarpc_rte_eth_tx_offloads2str(te_log_buf *tlbp, uint32_t tx_offloads)
+tarpc_rte_eth_tx_offloads2str(te_log_buf *tlbp, uint64_t tx_offloads)
 {
     const struct te_log_buf_bit2str tx_offloads2str[] = {
 #define TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(_bit) \
