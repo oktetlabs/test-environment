@@ -141,6 +141,8 @@ tarpc_rte_eth_tx_offloads2str(te_log_buf *tlbp, uint64_t tx_offloads)
         TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(MULTI_SEGS),
         TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(MBUF_FAST_FREE),
         TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(SECURITY),
+
+        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(_UNSUPPORTED),
 #undef TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR
         { 0, NULL }
     };
@@ -304,6 +306,8 @@ tarpc_rte_eth_dev_info2str(te_log_buf *tlbp,
     tarpc_rte_eth_rx_offloads2str(tlbp, dev_info->rx_queue_offload_capa);
     te_log_buf_append(tlbp, ", rx_offload_capa=");
     tarpc_rte_eth_rx_offloads2str(tlbp, dev_info->rx_offload_capa);
+    te_log_buf_append(tlbp, ", tx_queue_offload_capa=");
+    tarpc_rte_eth_tx_offloads2str(tlbp, dev_info->tx_queue_offload_capa);
     te_log_buf_append(tlbp, ", tx_offload_capa=");
     tarpc_rte_eth_tx_offloads2str(tlbp, dev_info->tx_offload_capa);
 

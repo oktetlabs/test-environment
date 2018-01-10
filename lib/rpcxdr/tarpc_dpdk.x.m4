@@ -762,6 +762,8 @@ enum tarpc_dev_tx_offload_bits {
     TARPC_RTE_DEV_TX_OFFLOAD_MBUF_FAST_FREE_BIT,
     TARPC_RTE_DEV_TX_OFFLOAD_SECURITY_BIT,
 
+    TARPC_RTE_DEV_TX_OFFLOAD__UNSUPPORTED_BIT,
+
     TARPC_RTE_DEV_TX_OFFLOAD__UNKNOWN_BIT
 };
 
@@ -878,6 +880,7 @@ struct tarpc_rte_eth_dev_info {
     uint16_t                        max_vmdq_pools;
     uint64_t                        rx_queue_offload_capa;
     uint64_t                        rx_offload_capa;
+    uint64_t                        tx_queue_offload_capa;
     uint64_t                        tx_offload_capa;
     uint16_t                        reta_size;
     uint8_t                         hash_key_size;

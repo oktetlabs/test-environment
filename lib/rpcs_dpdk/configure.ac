@@ -82,6 +82,18 @@ struct rte_eth_dev_info dev_info;
 [[dev_info.rx_queue_offload_capa = 0;]]
 )], [AC_DEFINE([HAVE_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA], 1, [ ])], [])
 
+AC_COMPILE_IFELSE([
+AC_LANG_PROGRAM(
+[[
+#include "rte_config.h"
+#include "rte_ethdev.h"
+
+struct rte_eth_dev_info dev_info;
+]],
+[[dev_info.tx_queue_offload_capa = 0;]]
+)], [AC_DEFINE([HAVE_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA], 1, [ ])], [])
+
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE

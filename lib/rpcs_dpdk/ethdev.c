@@ -358,6 +358,13 @@ TARPC_FUNC(rte_eth_dev_info_get, {},
 #endif /* HAVE_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA */
     out->dev_info.rx_offload_capa =
         tarpc_rte_rx_offloads2rpc(dev_info.rx_offload_capa);
+#ifdef HAVE_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA
+    out->dev_info.tx_queue_offload_capa =
+        tarpc_rte_tx_offloads2rpc(dev_info.tx_queue_offload_capa);
+#else /* !HAVE_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA */
+    out->dev_info.tx_queue_offload_capa =
+        (1ULL << TARPC_RTE_DEV_TX_OFFLOAD__UNSUPPORTED_BIT);
+#endif /* HAVE_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA */
     out->dev_info.tx_offload_capa =
         tarpc_rte_tx_offloads2rpc(dev_info.tx_offload_capa);
     out->dev_info.reta_size = dev_info.reta_size;
