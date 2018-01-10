@@ -736,6 +736,8 @@ enum tarpc_dev_rx_offload_bits {
     TARPC_RTE_DEV_RX_OFFLOAD_TIMESTAMP_BIT,
     TARPC_RTE_DEV_RX_OFFLOAD_SECURITY_BIT,
 
+    TARPC_RTE_DEV_RX_OFFLOAD__UNSUPPORTED_BIT,
+
     TARPC_RTE_DEV_RX_OFFLOAD__UNKNOWN_BIT
 };
 
@@ -865,6 +867,7 @@ struct tarpc_rte_eth_dev_info {
     uint32_t                        max_hash_mac_addrs;
     uint16_t                        max_vfs;
     uint16_t                        max_vmdq_pools;
+    uint64_t                        rx_queue_offload_capa;
     uint64_t                        rx_offload_capa;
     uint32_t                        tx_offload_capa;
     uint16_t                        reta_size;

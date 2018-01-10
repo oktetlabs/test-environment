@@ -27,9 +27,7 @@
 #define TE_LGR_USER     "RPC rte_eth_dev"
 
 #include "te_config.h"
-#ifdef HAVE_PACKAGE_H
 #include "package.h"
-#endif
 
 #include "te_alloc.h"
 
@@ -306,6 +304,13 @@ TARPC_FUNC(rte_eth_dev_info_get, {},
     out->dev_info.max_hash_mac_addrs = dev_info.max_hash_mac_addrs;
     out->dev_info.max_vfs = dev_info.max_vfs;
     out->dev_info.max_vmdq_pools = dev_info.max_vmdq_pools;
+#ifdef HAVE_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA
+    out->dev_info.rx_queue_offload_capa =
+        tarpc_rte_rx_offloads2rpc(dev_info.rx_queue_offload_capa);
+#else /* !HAVE_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA */
+    out->dev_info.rx_queue_offload_capa =
+        (1ULL << TARPC_RTE_DEV_RX_OFFLOAD__UNSUPPORTED_BIT);
+#endif /* HAVE_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA */
     out->dev_info.rx_offload_capa =
         tarpc_rte_rx_offloads2rpc(dev_info.rx_offload_capa);
     out->dev_info.tx_offload_capa =
