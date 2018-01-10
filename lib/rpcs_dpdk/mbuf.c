@@ -127,7 +127,7 @@ tarpc_rte_pktmbuf_ol_flags2rpc(uint64_t rte)
 #undef RTE_PKTMBUF_OL_FLAGS2RPC
 
     if (rte != 0)
-        rpc = (1UL << TARPC_PKT__UNKNOWN);
+        rpc |= (1UL << TARPC_PKT__UNKNOWN);
 
     return rpc;
 }

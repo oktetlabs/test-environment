@@ -73,7 +73,7 @@ tarpc_rte_rx_offloads2rpc(uint32_t rte)
     RTE_DEV_RX_OFFLOAD2RPC(OUTER_IPV4_CKSUM);
 #undef RTE_DEV_RX_OFFLOAD2RPC
     if (rte != 0)
-        rpc = (1 << TARPC_RTE_DEV_RX_OFFLOAD__UNKNOWN_BIT);
+        rpc |= (1 << TARPC_RTE_DEV_RX_OFFLOAD__UNKNOWN_BIT);
     return rpc;
 }
 
@@ -103,7 +103,7 @@ tarpc_rte_tx_offloads2rpc(uint32_t rte)
     RTE_DEV_TX_OFFLOAD2RPC(QINQ_INSERT);
 #undef RTE_DEV_TX_OFFLOAD2RPC
     if (rte != 0)
-        rpc = (1 << TARPC_RTE_DEV_TX_OFFLOAD__UNKNOWN_BIT);
+        rpc |= (1 << TARPC_RTE_DEV_TX_OFFLOAD__UNKNOWN_BIT);
     return rpc;
 }
 
@@ -140,7 +140,7 @@ tarpc_rte_eth_rss_flow_types2rpc(uint64_t rte)
     RTE_ETH_FLOW_TYPE2RPC(IPV6_UDP_EX);
 #undef RTE_ETH_FLOW_TYPE2RPC
     if (rte != 0)
-        rpc = (1 << TARPC_RTE_ETH_FLOW__UNKNOWN);
+        rpc |= (1 << TARPC_RTE_ETH_FLOW__UNKNOWN);
     return rpc;
 }
 
@@ -187,7 +187,7 @@ tarpc_rte_eth_txq_flags2rpc(uint32_t rte)
     RTE_DEV_TXQ_FLAG2STR(NOXSUMTCP);
 #undef RTE_DEV_TXQ_FLAG2STR
     if (rte != 0)
-        rpc = (1 << TARPC_RTE_ETH_TXQ_FLAGS__UNKNOWN_BIT);
+        rpc |= (1 << TARPC_RTE_ETH_TXQ_FLAGS__UNKNOWN_BIT);
     return rpc;
 }
 
@@ -243,7 +243,7 @@ tarpc_rte_eth_link_speeds2rpc(uint32_t rte)
     RTE_ETH_LINK_SPEED2RPC(100G);
 #undef RTE_ETH_LINK_SPEED2RPC
     if (rte != 0)
-        rpc = (1 << TARPC_RTE_ETH_LINK_SPEED__UNKNOWN);
+        rpc |= (1 << TARPC_RTE_ETH_LINK_SPEED__UNKNOWN);
     return rpc;
 }
 
@@ -493,7 +493,7 @@ rte_rss_hf_h2rpc(uint64_t rte)
     RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NVGRE);
 #undef RTE_RSS_HF2TARPC_RSS_HASH_PROTOS
     if (rte != 0)
-        rpc = TARPC_RTE_ETH_RSS__UNKNOWN;
+        rpc |= TARPC_RTE_ETH_RSS__UNKNOWN;
 
     return rpc;
 }
