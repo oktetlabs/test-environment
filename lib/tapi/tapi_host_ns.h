@@ -1,6 +1,10 @@
 /** @file
  * @brief Configuration TAPI to work with /local/host subtree
  *
+ * @defgroup tapi_host_ns Agents, namespaces and interfaces relations
+ * @ingroup tapi_conf
+ * @{
+ *
  * Definition of test API to manage the configurator subtree `/local/host`.
  * (@path{storage/cm/cm_local.xml})
  *
@@ -228,6 +232,8 @@ extern te_errno tapi_host_ns_if_host_iter(const char *host,
  * @return Status code.
  */
 extern te_errno tapi_host_ns_agent_default(const char *ta, char **ta_default);
+
+/**@} <!-- END tapi_host_ns --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

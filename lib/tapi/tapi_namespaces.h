@@ -1,6 +1,10 @@
 /** @file
  * @brief Linux namespaces configuration test API
  *
+ * @defgroup tapi_namespaces Agent namespaces configuration
+ * @ingroup tapi_conf
+ * @{
+ *
  * Definition of test API for linux namespaces configuration model
  * (@path{doc/cm/cm_namespace.xml}).
  *
@@ -161,6 +165,8 @@ extern te_errno tapi_netns_destroy_ns_with_macvlan(const char *ta,
                                                    const char *ns_name,
                                                    const char *ctl_if,
                                                    const char *macvlan_if);
+
+/**@} <!-- END tapi_namespaces --> */
 
 #ifdef __cplusplus
 } /* extern "C" */
