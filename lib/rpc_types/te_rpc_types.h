@@ -4,7 +4,7 @@
  * Definition data types used in Socket API RPC.
  * 
  * 
- * Copyright (C) 2005 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2005-2018 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or
@@ -26,8 +26,6 @@
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
- *
- * $Id$
  */
  
 #ifndef __TE_RPC_TYPES_H__
@@ -143,16 +141,19 @@ typedef uint32_t rpc_ptr_id_namespace;
     )
 
 /**
- * @defgroup rpc_type_ns Kinds of namespaces for using in RPC
+ * @defgroup rpc_type_ns RPC pointer namespaces
+ * @ingroup te_lib_rpc
  * @{
+ * List of available namespaces to use in RPC pointers.
  */
 
+/** Generic namespace used by default. */
 #define RPC_TYPE_NS_GENERIC    ""
+
+/** FD set to use in select() like RPC calls. */
 #define RPC_TYPE_NS_FD_SET     "fd_set"
 
-/**
- * @}
- */
+/**@} <!-- END rpc_type_ns --> */
 
 /**
  * Extract index of @b ids array item from the identifier @p _id

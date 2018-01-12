@@ -1,7 +1,7 @@
 /**
 
 @defgroup rgt Report Generator Tool
-@ingroup te
+@ingroup te_engine
 @{
 
 @section rgt_introduction Introduction

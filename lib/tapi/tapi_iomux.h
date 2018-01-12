@@ -1,6 +1,11 @@
 /** @file
  * @brief Test API to work with I/O multiplexers via RPC
  *
+ * Find details on page @ref tapi_iomux.
+ * @defgroup tapi_iomux I/O multiplexers
+ * @ingroup te_ts_tapi
+ * @{
+ *
  * This API is dedicated to work with arbitrary I/O multiplexer functions in
  * the single way.
  *
@@ -452,6 +457,8 @@ extern tapi_iomux_evt_fd * tapi_iomux_epoll_get_events(
                                             tapi_iomux_handle *iomux,
                                             struct rpc_epoll_event *events,
                                             int evts_num);
+
+/**@} <!-- END tapi_iomux --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

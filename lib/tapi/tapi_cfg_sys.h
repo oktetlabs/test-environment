@@ -1,8 +1,12 @@
 /** @file
  * @brief Test API to get/set parameters in /proc/sys/
  *
- * Definitions of TAPI to get/set Linux system parameters
- * in /proc/sys/.
+ * @defgroup tapi_cfg_sys System parameters configuration
+ * @ingroup tapi_conf
+ * @{
+ *
+ * Definitions of TAPI to get/set system parameters using `/agent/sys/`
+ * Configurator subtree (@path{doc/cm/cm_base.xml}).
  *
  *
  * Copyright (C) 2017 Test Environment authors (see file AUTHORS
@@ -183,3 +187,5 @@ extern te_errno tapi_cfg_sys_ns_set_str(const char *ta, const char *val,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_CFG_PROC_SYS_H__ */
+
+/**@} <!-- END tapi_cfg_sys --> */

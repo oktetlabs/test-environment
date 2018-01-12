@@ -305,4 +305,10 @@ a test scenario:
 
 @} <!-- END te_ts -->
 
+@defgroup te_ts_tapi Test API
+@ingroup te_ts
+@{
+Miscellaneous API which can be used in tests.
+@} <!-- END te_ts_tapi -->
+
  */
