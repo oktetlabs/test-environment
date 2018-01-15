@@ -330,11 +330,6 @@ tapi_iomux_get_evt_by_fd(tapi_iomux_handle *iomux, int fd)
 }
 
 /**
- * @defgroup iomux_select Methods of @c select API
- */
-/**@{*/
-
-/**
  * Allocate file descritors sets for 'select' API.
  *
  * @param iomux     A multiplexer handle.
@@ -575,14 +570,6 @@ static const tapi_iomux_methods tapi_iomux_methods_pselect =
         .destroy = tapi_iomux_select_destroy,
     };
 
-/**@}*/
-
-
-/**
- * @defgroup iomux_poll Methods of @c poll API
- */
-/**@{*/
-
 /**
  * Allocate and initialize poll events set.
  *
@@ -754,14 +741,6 @@ static const tapi_iomux_methods tapi_iomux_methods_ppoll =
         .call    = tapi_iomux_ppoll_call,
         .destroy = NULL,
     };
-
-/**@}*/
-
-
-/**
- * @defgroup iomux_epoll Methods of @c epoll API
- */
-/**@{*/
 
 /**
  * Creat new epoll set.
@@ -937,8 +916,6 @@ static const tapi_iomux_methods tapi_iomux_methods_epoll =
         .call    = tapi_iomux_epoll_call,
         .destroy = tapi_iomux_epoll_destroy,
     };
-
-/**@}*/
 
 /**
  * Supported iomux methods array.

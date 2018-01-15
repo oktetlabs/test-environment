@@ -1,6 +1,10 @@
 /** @file
  * @brief Test API to use malloc, calloc, realloc, memcpy and strdup
  *
+ * Find details on page @ref tapi_mem.
+ * @defgroup tapi_mem Test API to use memory-related functions conveniently
+ * @ingroup te_ts_tapi
+ * @{
  * Implementation of API to use memory-related functions in a convenient way
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
@@ -32,12 +36,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-/**
- * @defgroup tapi_mem Test API to use memory-related functions conveniently
- * @{
- */
 
 /**
  * @b malloc() wrapper which performs allocation status check internally

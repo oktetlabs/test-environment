@@ -10,7 +10,7 @@ to some parts of configuration tree.
 @} <!-- END tapi_conf -->
 
 
-@defgroup te_lib_tapi_conf_net TAPI: Network topology configuration of Test Agents
+@defgroup te_lib_tapi_conf_net Network topology configuration of Test Agents
 @ingroup te_ts
 @{
 

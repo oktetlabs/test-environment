@@ -1422,12 +1422,12 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
 
         if (* (char*)data) /* TRUE */
         {
-            value->data.integer = 0xff;
+            value->data.integer = ASN_TRUE;
             value->txt_len = 4;
         }
         else  /* FALSE */
         {
-            value->data.integer = 0;
+            value->data.integer = ASN_FALSE;
             value->txt_len = 5;
         }
         break;
@@ -1624,12 +1624,12 @@ asn_impl_write_value_field(asn_value *container,
 
         if (* (char*)data) /* TRUE */
         {
-            container->data.integer = 0xff;
+            container->data.integer = ASN_TRUE;
             container->txt_len = 4;
         }
         else  /* FALSE */
         {
-            container->data.integer = 0;
+            container->data.integer = ASN_FALSE;
             container->txt_len = 5;
         }
         break;
@@ -1805,10 +1805,10 @@ asn_read_value_field(const asn_value *container, void *data, size_t *d_len,
                      const char *field_labels)
 {
     char *field_labels_int_copy = asn_strdup(field_labels);
-    int   rc = asn_impl_read_value_field(container, data, d_len,
-                                         field_labels_int_copy);
+    te_errno rc = asn_impl_read_value_field(container, data, d_len,
+                                            field_labels_int_copy);
 
-    free (field_labels_int_copy);
+    free(field_labels_int_copy);
 
     return rc;
 }
@@ -1961,8 +1961,15 @@ te_errno
 asn_read_bool(const asn_value *container, te_bool *value,
               const char *labels)
 {
-    size_t len = sizeof(*value);
-    return asn_read_value_field(container, value, &len, labels);
+    uint8_t  val;
+    size_t   len = sizeof(val);
+    te_errno rc;
+
+    rc = asn_read_value_field(container, &val, &len, labels);
+    if (rc == 0)
+        *value = (val == ASN_FALSE ? FALSE : TRUE);
+
+    return rc;
 }
 
 /* see description in asn_usr.h */

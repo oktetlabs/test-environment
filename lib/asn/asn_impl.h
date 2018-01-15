@@ -37,6 +37,14 @@ extern "C" {
 #endif
 
 /**
+ * ASN.1 boolean values of false and true are defined as: FALSE is encoded as
+ * zero (0), TRUE is encoded as a nonzero value. And according to
+ * https://msdn.microsoft.com/ru-ru/bb648639 TRUE is 0xff
+ */
+#define ASN_FALSE   0
+#define ASN_TRUE    0xff
+
+/**
  * ASN.1 tagging type
  */
 typedef enum {

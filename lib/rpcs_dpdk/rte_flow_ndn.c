@@ -28,6 +28,9 @@
 
 #define TE_LGR_USER     "RPC rte_flow"
 
+#include <netinet/in.h>
+#include <linux/if_ether.h>
+
 #include "te_config.h"
 #include "package.h"
 #include "te_alloc.h"
@@ -1186,6 +1189,113 @@ rte_flow_free_pattern(struct rte_flow_item *pattern,
     }
 }
 
+static te_errno
+rte_flow_check_item(struct rte_flow_item *item, size_t size)
+{
+    void *spec = NULL;
+    void *mask = NULL;
+    void *last = NULL;
+    int rc;
+
+    if (item->spec == NULL)
+    {
+        rc = rte_alloc_mem_for_flow_item((void **)&spec, (void **)&mask,
+                                         (void **)&last, size);
+        if (rc != 0)
+            return rc;
+
+        item->spec = spec;
+        item->mask = mask;
+        free(last);
+    }
+
+    return 0;
+}
+
+static te_errno
+rte_flow_check_test_items(asn_tag_value tag,
+                          struct rte_flow_item *pattern,
+                          unsigned int pattern_len)
+{
+    struct rte_flow_item *eth = NULL;
+    struct rte_flow_item_eth *eth_spec;
+    struct rte_flow_item_eth *eth_mask;
+    struct rte_flow_item *ip4 = NULL;
+    struct rte_flow_item_ipv4 *ip4_spec;
+    struct rte_flow_item_ipv4 *ip4_mask;
+    unsigned int i;
+    uint16_t ethertype = 0;
+    uint8_t ip_proto = 0;
+    int rc;
+
+    for (i = 0; i < pattern_len; i++)
+    {
+        switch (pattern[i].type)
+        {
+            case RTE_FLOW_ITEM_TYPE_ETH:
+                eth = &pattern[i];
+                break;
+
+            case RTE_FLOW_ITEM_TYPE_IPV4:
+                ip4 = &pattern[i];
+                break;
+
+            case RTE_FLOW_ITEM_TYPE_END:
+                break;
+
+            default:
+                continue;
+        }
+    }
+
+    switch (tag)
+    {
+        case TE_PROTO_ARP:
+            rc = rte_flow_check_item(eth, sizeof(struct rte_flow_item_eth));
+            if (rc != 0)
+                return rc;
+            ethertype = rte_cpu_to_be_16(ETHER_TYPE_ARP);
+            break;
+
+        case TE_PROTO_PPPOE:
+            if (eth == NULL)
+                return TE_EINVAL;
+            eth_spec = (struct rte_flow_item_eth *)eth->spec;
+            if (eth_spec == NULL ||
+                (eth_spec->type != rte_cpu_to_be_16(ETH_P_PPP_DISC) &&
+                 eth_spec->type != rte_cpu_to_be_16(ETH_P_PPP_SES)))
+                return TE_EINVAL;
+            break;
+
+        case TE_PROTO_ICMP4:
+            rc = rte_flow_check_item(ip4, sizeof(struct rte_flow_item_ipv4));
+            if (rc != 0)
+                return rc;
+            ip_proto = IPPROTO_ICMP;
+            break;
+    }
+
+    if (ethertype != 0)
+    {
+        eth_spec = (struct rte_flow_item_eth *)eth->spec;
+        eth_mask = (struct rte_flow_item_eth *)eth->mask;
+
+        eth_spec->type = ethertype;
+        eth_mask->type = UINT16_MAX;
+    }
+
+    if (ip_proto != 0)
+    {
+        ip4_spec = (struct rte_flow_item_ipv4 *)ip4->spec;
+        ip4_mask = (struct rte_flow_item_ipv4 *)ip4->mask;
+
+        ip4_spec->hdr.next_proto_id = ip_proto;
+        ip4_mask->hdr.next_proto_id = UINT8_MAX;
+    }
+
+    return 0;
+}
+
 /*
  * Convert item/action ASN value to rte_flow structures and add
  * to the appropriate list using the map of conversion functions
@@ -1226,6 +1336,9 @@ static const struct rte_flow_item_tags_mapping {
     { TE_PROTO_VXLAN,   rte_flow_item_vxlan_from_pdu },
     { TE_PROTO_GENEVE,  rte_flow_item_geneve_from_pdu },
     { TE_PROTO_GRE,     rte_flow_item_gre_and_nvgre_from_pdu },
+    { TE_PROTO_ICMP4,   rte_flow_item_void },
+    { TE_PROTO_ARP,     rte_flow_item_void },
+    { TE_PROTO_PPPOE,   rte_flow_item_void },
     { 0,                rte_flow_item_void },
 };
 
@@ -1277,6 +1390,10 @@ rte_flow_pattern_from_ndn(const asn_value *ndn_flow,
             if (rc != 0)
                 goto out;
         }
+
+        rc = rte_flow_check_test_items(item_tag, pattern, item_nb);
+        if (rc != 0)
+            goto out;
     }
     rte_flow_item_end(&pattern[item_nb]);
 

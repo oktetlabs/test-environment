@@ -65,8 +65,8 @@ extern "C" {
 #endif
 
 /**
- * @defgroup te_ts_tapi_test TAPI: Test
- * @ingroup te_ts
+ * @defgroup te_ts_tapi_test Test
+ * @ingroup te_ts_tapi
  * @{
  */
 
@@ -210,7 +210,7 @@ cleanup_specific:                                                   \
     } while (0)
 
 /**
- * @defgroup te_ts_tapi_test_misc TAPI: Test misc
+ * @defgroup te_ts_tapi_test_misc Test misc
  * Miscellaneous definitions useful for test scenarios.
  *
  * @ingroup te_ts_tapi_test
@@ -294,7 +294,7 @@ cleanup_specific:                                                   \
 /**@} <!-- END te_ts_tapi_test_misc --> */
 
 /**
- * @defgroup te_ts_tapi_test_param TAPI: Test parameters
+ * @defgroup te_ts_tapi_test_param Test parameters
  *
  * If you need to pass a parameter to a test scenarion you need
  * to specify that parameter in @ref te_engine_tester configuration file

@@ -6728,7 +6728,7 @@ ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
 
         if (((neigh->state & NETCONF_NUD_UNSPEC) != 0) ||
             ((neigh->state & NETCONF_NUD_INCOMPLETE) != 0) ||
-            (!(neigh->state & NETCONF_NUD_PERMANENT) == is_static))
+            (is_static == !(neigh->state & NETCONF_NUD_PERMANENT)))
         {
             continue;
         }

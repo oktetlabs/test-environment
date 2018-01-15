@@ -50,7 +50,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
+#include <stdbool.h>
 
 /** Test Environment copyright to be used in applications output */
 #define TE_COPYRIGHT \
@@ -67,13 +67,12 @@
 #endif
 
 /** Boolean type to be used everywhere in Test Environment */
-typedef unsigned char te_bool;
+typedef bool te_bool;
 
 #ifndef FALSE
-#define FALSE   0
-#define TRUE    (!FALSE)
+#define FALSE false
+#define TRUE  true
 #endif
-
 
 /** Ternary (tree-valued, trivalent) logic base type */
 typedef enum te_bool3 {
@@ -458,6 +457,12 @@ te_round_up_pow2(unsigned long long num)
     return (1 << (sizeof(num) * CHAR_BIT - __builtin_clzll(n)));
 }
 #endif
+
+/** Align up a value to a power of two specified by mask */
+#define TE_ALIGN_MASK(_v, _m)       (((_v) + (_m)) & ~(_m))
+
+/** Align up a value to a power of two */
+#define TE_ALIGN(_v, _a)            TE_ALIGN_MASK((_v), (typeof(_v))(_a) - 1)
 
 /* Tests related part */
 /* fixme kostik: should be moved */

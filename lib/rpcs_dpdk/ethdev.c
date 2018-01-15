@@ -27,9 +27,7 @@
 #define TE_LGR_USER     "RPC rte_eth_dev"
 
 #include "te_config.h"
-#ifdef HAVE_PACKAGE_H
 #include "package.h"
-#endif
 
 #include "te_alloc.h"
 
@@ -49,61 +47,147 @@
 #define CASE_RTE2TARPC(_rte) \
     case (_rte): *rpc = TARPC_##_rte; break
 
-static uint32_t
-tarpc_rte_rx_offloads2rpc(uint32_t rte)
+static uint64_t
+tarpc_rte_rx_offloads2rpc(uint64_t rte)
 {
-    uint32_t    rpc = 0;
+    uint64_t rpc = 0;
 
 #define RTE_DEV_RX_OFFLOAD2RPC(_bit) \
     do {                                                            \
-        uint32_t flag = DEV_RX_OFFLOAD_##_bit;                      \
+        uint64_t flag = DEV_RX_OFFLOAD_##_bit;                      \
                                                                     \
         if (rte & flag)                                             \
         {                                                           \
             rte &= ~flag;                                           \
-            rpc |= (1 << TARPC_RTE_DEV_RX_OFFLOAD_##_bit##_BIT);    \
+            rpc |= (1ULL << TARPC_RTE_DEV_RX_OFFLOAD_##_bit##_BIT); \
         }                                                           \
     } while (0)
+#ifdef DEV_RX_OFFLOAD_VLAN_STRIP
     RTE_DEV_RX_OFFLOAD2RPC(VLAN_STRIP);
+#endif /* DEV_RX_OFFLOAD_VLAN_STRIP */
+#ifdef DEV_RX_OFFLOAD_IPV4_CKSUM
     RTE_DEV_RX_OFFLOAD2RPC(IPV4_CKSUM);
+#endif /* DEV_RX_OFFLOAD_IPV4_CKSUM */
+#ifdef DEV_RX_OFFLOAD_UDP_CKSUM
     RTE_DEV_RX_OFFLOAD2RPC(UDP_CKSUM);
+#endif /* DEV_RX_OFFLOAD_UDP_CKSUM */
+#ifdef DEV_RX_OFFLOAD_TCP_CKSUM
     RTE_DEV_RX_OFFLOAD2RPC(TCP_CKSUM);
+#endif /* DEV_RX_OFFLOAD_TCP_CKSUM */
+#ifdef DEV_RX_OFFLOAD_TCP_LRO
     RTE_DEV_RX_OFFLOAD2RPC(TCP_LRO);
+#endif /* DEV_RX_OFFLOAD_TCP_LRO */
+#ifdef DEV_RX_OFFLOAD_QINQ_STRIP
     RTE_DEV_RX_OFFLOAD2RPC(QINQ_STRIP);
+#endif /* DEV_RX_OFFLOAD_QINQ_STRIP */
+#ifdef DEV_RX_OFFLOAD_OUTER_IPV4_CKSUM
     RTE_DEV_RX_OFFLOAD2RPC(OUTER_IPV4_CKSUM);
+#endif /* DEV_RX_OFFLOAD_OUTER_IPV4_CKSUM */
+#ifdef DEV_RX_OFFLOAD_MACSEC_STRIP
+    RTE_DEV_RX_OFFLOAD2RPC(MACSEC_STRIP);
+#endif /* DEV_RX_OFFLOAD_MACSEC_STRIP */
+#ifdef DEV_RX_OFFLOAD_HEADER_SPLIT
+    RTE_DEV_RX_OFFLOAD2RPC(HEADER_SPLIT);
+#endif /* DEV_RX_OFFLOAD_HEADER_SPLIT */
+#ifdef DEV_RX_OFFLOAD_VLAN_FILTER
+    RTE_DEV_RX_OFFLOAD2RPC(VLAN_FILTER);
+#endif /* DEV_RX_OFFLOAD_VLAN_FILTER */
+#ifdef DEV_RX_OFFLOAD_VLAN_EXTEND
+    RTE_DEV_RX_OFFLOAD2RPC(VLAN_EXTEND);
+#endif /* DEV_RX_OFFLOAD_VLAN_EXTEND */
+#ifdef DEV_RX_OFFLOAD_JUMBO_FRAME
+    RTE_DEV_RX_OFFLOAD2RPC(JUMBO_FRAME);
+#endif /* DEV_RX_OFFLOAD_JUMBO_FRAME */
+#ifdef DEV_RX_OFFLOAD_CRC_STRIP
+    RTE_DEV_RX_OFFLOAD2RPC(CRC_STRIP);
+#endif /* DEV_RX_OFFLOAD_CRC_STRIP */
+#ifdef DEV_RX_OFFLOAD_SCATTER
+    RTE_DEV_RX_OFFLOAD2RPC(SCATTER);
+#endif /* DEV_RX_OFFLOAD_SCATTER */
+#ifdef DEV_RX_OFFLOAD_TIMESTAMP
+    RTE_DEV_RX_OFFLOAD2RPC(TIMESTAMP);
+#endif /* DEV_RX_OFFLOAD_TIMESTAMP */
+#ifdef DEV_RX_OFFLOAD_SECURITY
+    RTE_DEV_RX_OFFLOAD2RPC(SECURITY);
+#endif /* DEV_RX_OFFLOAD_SECURITY */
 #undef RTE_DEV_RX_OFFLOAD2RPC
     if (rte != 0)
-        rpc = (1 << TARPC_RTE_DEV_RX_OFFLOAD__UNKNOWN_BIT);
+        rpc |= (1ULL << TARPC_RTE_DEV_RX_OFFLOAD__UNKNOWN_BIT);
     return rpc;
 }
 
-static uint32_t
-tarpc_rte_tx_offloads2rpc(uint32_t rte)
+static uint64_t
+tarpc_rte_tx_offloads2rpc(uint64_t rte)
 {
-    uint32_t    rpc = 0;
+    uint64_t rpc = 0;
 
 #define RTE_DEV_TX_OFFLOAD2RPC(_bit) \
     do {                                                            \
-        uint32_t flag = DEV_TX_OFFLOAD_##_bit;                      \
+        uint64_t flag = DEV_TX_OFFLOAD_##_bit;                      \
                                                                     \
         if (rte & flag)                                             \
         {                                                           \
             rte &= ~flag;                                           \
-            rpc |= (1 << TARPC_RTE_DEV_TX_OFFLOAD_##_bit##_BIT);    \
+            rpc |= (1ULL << TARPC_RTE_DEV_TX_OFFLOAD_##_bit##_BIT); \
         }                                                           \
     } while (0)
+#ifdef DEV_TX_OFFLOAD_VLAN_INSERT
     RTE_DEV_TX_OFFLOAD2RPC(VLAN_INSERT);
+#endif /* DEV_TX_OFFLOAD_VLAN_INSERT */
+#ifdef DEV_TX_OFFLOAD_IPV4_CKSUM
     RTE_DEV_TX_OFFLOAD2RPC(IPV4_CKSUM);
+#endif /* DEV_TX_OFFLOAD_IPV4_CKSUM */
+#ifdef DEV_TX_OFFLOAD_UDP_CKSUM
     RTE_DEV_TX_OFFLOAD2RPC(UDP_CKSUM);
+#endif /* DEV_TX_OFFLOAD_UDP_CKSUM */
+#ifdef DEV_TX_OFFLOAD_TCP_CKSUM
     RTE_DEV_TX_OFFLOAD2RPC(TCP_CKSUM);
+#endif /* DEV_TX_OFFLOAD_TCP_CKSUM */
+#ifdef DEV_TX_OFFLOAD_SCTP_CKSUM
     RTE_DEV_TX_OFFLOAD2RPC(SCTP_CKSUM);
+#endif /* DEV_TX_OFFLOAD_SCTP_CKSUM */
+#ifdef DEV_TX_OFFLOAD_TCP_TSO
     RTE_DEV_TX_OFFLOAD2RPC(TCP_TSO);
+#endif /* DEV_TX_OFFLOAD_TCP_TSO */
+#ifdef DEV_TX_OFFLOAD_UDP_TSO
     RTE_DEV_TX_OFFLOAD2RPC(UDP_TSO);
+#endif /* DEV_TX_OFFLOAD_UDP_TSO*/
+#ifdef DEV_TX_OFFLOAD_OUTER_IPV4_CKSUM
     RTE_DEV_TX_OFFLOAD2RPC(OUTER_IPV4_CKSUM);
+#endif /* DEV_TX_OFFLOAD_OUTER_IPV4_CKSUM */
+#ifdef DEV_TX_OFFLOAD_QINQ_INSERT
     RTE_DEV_TX_OFFLOAD2RPC(QINQ_INSERT);
+#endif /* DEV_TX_OFFLOAD_QINQ_INSERT */
+#ifdef DEV_TX_OFFLOAD_VXLAN_TNL_TSO
+    RTE_DEV_TX_OFFLOAD2RPC(VXLAN_TNL_TSO);
+#endif /* DEV_TX_OFFLOAD_VXLAN_TNL_TSO */
+#ifdef DEV_TX_OFFLOAD_GRE_TNL_TSO
+    RTE_DEV_TX_OFFLOAD2RPC(GRE_TNL_TSO);
+#endif /* DEV_TX_OFFLOAD_GRE_TNL_TSO */
+#ifdef DEV_TX_OFFLOAD_IPIP_TNL_TSO
+    RTE_DEV_TX_OFFLOAD2RPC(IPIP_TNL_TSO);
+#endif /* DEV_TX_OFFLOAD_IPIP_TNL_TSO */
+#ifdef DEV_TX_OFFLOAD_GENEVE_TNL_TSO
+    RTE_DEV_TX_OFFLOAD2RPC(GENEVE_TNL_TSO);
+#endif /* DEV_TX_OFFLOAD_GENEVE_TNL_TSO */
+#ifdef DEV_TX_OFFLOAD_MACSEC_INSERT
+    RTE_DEV_TX_OFFLOAD2RPC(MACSEC_INSERT);
+#endif /* DEV_TX_OFFLOAD_MACSEC_INSERT */
+#ifdef DEV_TX_OFFLOAD_MT_LOCKFREE
+    RTE_DEV_TX_OFFLOAD2RPC(MT_LOCKFREE);
+#endif /* DEV_TX_OFFLOAD_MT_LOCKFREE */
+#ifdef DEV_TX_OFFLOAD_MULTI_SEGS
+    RTE_DEV_TX_OFFLOAD2RPC(MULTI_SEGS);
+#endif /* DEV_TX_OFFLOAD_MULTI_SEGS */
+#ifdef DEV_TX_OFFLOAD_MBUF_FAST_FREE
+    RTE_DEV_TX_OFFLOAD2RPC(MBUF_FAST_FREE);
+#endif /* DEV_TX_OFFLOAD_MBUF_FAST_FREE */
+#ifdef DEV_TX_OFFLOAD_SECURITY
+    RTE_DEV_TX_OFFLOAD2RPC(SECURITY);
+#endif /* DEV_TX_OFFLOAD_SECURITY */
 #undef RTE_DEV_TX_OFFLOAD2RPC
     if (rte != 0)
-        rpc = (1 << TARPC_RTE_DEV_TX_OFFLOAD__UNKNOWN_BIT);
+        rpc |= (1ULL << TARPC_RTE_DEV_TX_OFFLOAD__UNKNOWN_BIT);
     return rpc;
 }
 
@@ -140,7 +224,7 @@ tarpc_rte_eth_rss_flow_types2rpc(uint64_t rte)
     RTE_ETH_FLOW_TYPE2RPC(IPV6_UDP_EX);
 #undef RTE_ETH_FLOW_TYPE2RPC
     if (rte != 0)
-        rpc = (1 << TARPC_RTE_ETH_FLOW__UNKNOWN);
+        rpc |= (1 << TARPC_RTE_ETH_FLOW__UNKNOWN);
     return rpc;
 }
 
@@ -187,7 +271,7 @@ tarpc_rte_eth_txq_flags2rpc(uint32_t rte)
     RTE_DEV_TXQ_FLAG2STR(NOXSUMTCP);
 #undef RTE_DEV_TXQ_FLAG2STR
     if (rte != 0)
-        rpc = (1 << TARPC_RTE_ETH_TXQ_FLAGS__UNKNOWN_BIT);
+        rpc |= (1 << TARPC_RTE_ETH_TXQ_FLAGS__UNKNOWN_BIT);
     return rpc;
 }
 
@@ -243,7 +327,7 @@ tarpc_rte_eth_link_speeds2rpc(uint32_t rte)
     RTE_ETH_LINK_SPEED2RPC(100G);
 #undef RTE_ETH_LINK_SPEED2RPC
     if (rte != 0)
-        rpc = (1 << TARPC_RTE_ETH_LINK_SPEED__UNKNOWN);
+        rpc |= (1 << TARPC_RTE_ETH_LINK_SPEED__UNKNOWN);
     return rpc;
 }
 
@@ -265,8 +349,22 @@ TARPC_FUNC(rte_eth_dev_info_get, {},
     out->dev_info.max_hash_mac_addrs = dev_info.max_hash_mac_addrs;
     out->dev_info.max_vfs = dev_info.max_vfs;
     out->dev_info.max_vmdq_pools = dev_info.max_vmdq_pools;
+#ifdef HAVE_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA
+    out->dev_info.rx_queue_offload_capa =
+        tarpc_rte_rx_offloads2rpc(dev_info.rx_queue_offload_capa);
+#else /* !HAVE_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA */
+    out->dev_info.rx_queue_offload_capa =
+        (1ULL << TARPC_RTE_DEV_RX_OFFLOAD__UNSUPPORTED_BIT);
+#endif /* HAVE_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA */
     out->dev_info.rx_offload_capa =
         tarpc_rte_rx_offloads2rpc(dev_info.rx_offload_capa);
+#ifdef HAVE_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA
+    out->dev_info.tx_queue_offload_capa =
+        tarpc_rte_tx_offloads2rpc(dev_info.tx_queue_offload_capa);
+#else /* !HAVE_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA */
+    out->dev_info.tx_queue_offload_capa =
+        (1ULL << TARPC_RTE_DEV_TX_OFFLOAD__UNSUPPORTED_BIT);
+#endif /* HAVE_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA */
     out->dev_info.tx_offload_capa =
         tarpc_rte_tx_offloads2rpc(dev_info.tx_offload_capa);
     out->dev_info.reta_size = dev_info.reta_size;
@@ -493,7 +591,7 @@ rte_rss_hf_h2rpc(uint64_t rte)
     RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NVGRE);
 #undef RTE_RSS_HF2TARPC_RSS_HASH_PROTOS
     if (rte != 0)
-        rpc = TARPC_RTE_ETH_RSS__UNKNOWN;
+        rpc |= TARPC_RTE_ETH_RSS__UNKNOWN;
 
     return rpc;
 }
@@ -1860,6 +1958,35 @@ TARPC_FUNC(rte_eth_link_get, {},
     out->eth_link.link_duplex = eth_link.link_duplex;
     out->eth_link.link_autoneg = eth_link.link_autoneg;
     out->eth_link.link_status = eth_link.link_status;
+})
+
+TARPC_FUNC_STANDALONE(dpdk_eth_await_link_up, {},
+{
+    unsigned int i;
+
+    for (i = 0; i < in->nb_attempts; ++i)
+    {
+        struct rte_eth_link eth_link;
+
+	usleep(in->wait_int_ms * 1000);
+
+        memset(&eth_link, 0, sizeof(eth_link));
+
+        MAKE_CALL(rte_eth_link_get_nowait(in->port_id, &eth_link));
+        if (eth_link.link_status)
+        {
+	    out->retval = 0;
+
+            usleep(in->after_up_ms * 1000);
+
+            goto done;
+        }
+    }
+
+    out->retval = TE_ETIMEDOUT;
+
+done:
+    ;
 })
 
 static int

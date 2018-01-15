@@ -144,11 +144,11 @@ extern tarpc_ssize_t rpc_get_sizeof(rcf_rpc_server *rpcs,
  * @return                   TRUE if information in @p buf1 is equal to 
  *                           information in buf2
  */
-extern tarpc_bool rpc_protocol_info_cmp(rcf_rpc_server *rpcs, 
-                                        const uint8_t *buf1,
-                                        const uint8_t *buf2,
-                                        tarpc_bool is_wide1,
-                                        tarpc_bool is_wide2);
+extern te_bool rpc_protocol_info_cmp(rcf_rpc_server *rpcs,
+                                     const uint8_t *buf1,
+                                     const uint8_t *buf2,
+                                     tarpc_bool is_wide1,
+                                     tarpc_bool is_wide2);
 
 
 
@@ -1069,7 +1069,9 @@ tapi_interface_is_mine(const char *ta, const char *interface)
  *       passed to this function, as otherwise Configurator may
  *       be not able to restore MTU values for its "descendant"
  *       interfaces, which may change as a side effect if we descrease
- *       MTU.
+ *       MTU. Function tapi_set_if_mtu_smart2() can be used to change MTU
+ *       saving old values for all related interfaces, then the changes can be
+ *       rolled back using function tapi_set_if_mtu_smart2_rollback().
  *
  * @param ta         Test agent name
  * @param interface  Network interface
@@ -1169,7 +1171,8 @@ extern te_errno tapi_retrieve_saved_mtus(const char *ta,
 
 /**
  * Set new MTU value for a given interface (increasing MTU for
- * the interfaces it is based on if necessary).
+ * the interfaces it is based on if necessary), previously saving MTU of all
+ * related interfaces.
  *
  * @note The same backup argument may be passed to several
  *       calls of this function; in that case all changes made

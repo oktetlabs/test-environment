@@ -471,12 +471,6 @@ static const char * const trc_diff_stats_stats_href_end =
 static const char * const trc_diff_stats_stats_list =
 "diff_stats_map['%s']['%s']['%s']['%s']['%s']['tests']";
 
-static const char * const trc_diff_stats_stats_concat_start =
-".concat(";
-
-static const char * const trc_diff_stats_stats_concat_end =
-")";
-
 static const char * const trc_diff_stats_stats_href_close =
 "</a>";
 
@@ -668,9 +662,6 @@ static const char * const trc_diff_test_result_end =
 
 static const char * const trc_diff_test_result_url =
 "<br/><a href=\"%s/node_%d.html\">[log]</a>";
-
-static const char * const trc_diff_test_iter_hlink =
-"<a name=\"%s\"> </a>";
 
 static const char * trc_diff_js_include_start =
 "<script id=\"source\" language=\"javascript\" type=\"text/javascript\">\n";

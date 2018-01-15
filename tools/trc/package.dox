@@ -1,6 +1,7 @@
 /**
 
 @defgroup trc Test Results Comparator
+@ingroup te_engine
 @{
 
 @section trc_introduction Introduction

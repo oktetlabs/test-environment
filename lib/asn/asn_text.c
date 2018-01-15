@@ -438,12 +438,12 @@ asn_impl_pt_bool(const char*text, const asn_type *type,
     *parsed = asn_init_value(type);
     if (strncmp(text, "TRUE", strlen("TRUE")) == 0)
     {
-        (*parsed)->data.integer = 0xff;
+        (*parsed)->data.integer = ASN_TRUE;
         *syms_parsed = (*parsed)->txt_len = strlen("TRUE");
     }
     else if (strncmp(text, "FALSE", strlen("FALSE")) == 0)
     {
-        (*parsed)->data.integer = 0;
+        (*parsed)->data.integer = ASN_FALSE;
         *syms_parsed = (*parsed)->txt_len = strlen("FALSE");
     }
     else

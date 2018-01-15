@@ -409,7 +409,7 @@ tapi_cfg_del_route_via_gw(const char *ta, int addr_family,
 /**@} <!-- END tapi_conf_route --> */
 
 /**
- * @defgroup tapi_conf_neigh Heighbor Table configuration
+ * @defgroup tapi_conf_neigh Neighbour table configuration
  * @ingroup tapi_conf
  * @{
  */

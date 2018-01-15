@@ -87,7 +87,7 @@ rpc_rte_eth_stats_get(rcf_rpc_server             *rpcs,
 }
 
 static const char *
-tarpc_rte_eth_rx_offloads2str(te_log_buf *tlbp, uint32_t rx_offloads)
+tarpc_rte_eth_rx_offloads2str(te_log_buf *tlbp, uint64_t rx_offloads)
 {
     const struct te_log_buf_bit2str rx_offloads2str[] = {
 #define TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(_bit) \
@@ -99,6 +99,17 @@ tarpc_rte_eth_rx_offloads2str(te_log_buf *tlbp, uint32_t rx_offloads)
         TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(TCP_LRO),
         TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(QINQ_STRIP),
         TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(OUTER_IPV4_CKSUM),
+        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(MACSEC_STRIP),
+        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(HEADER_SPLIT),
+        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(VLAN_FILTER),
+        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(VLAN_EXTEND),
+        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(JUMBO_FRAME),
+        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(CRC_STRIP),
+        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(SCATTER),
+        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(TIMESTAMP),
+        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(SECURITY),
+
+        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(_UNSUPPORTED),
 #undef TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR
         { 0, NULL }
     };
@@ -107,7 +118,7 @@ tarpc_rte_eth_rx_offloads2str(te_log_buf *tlbp, uint32_t rx_offloads)
 }
 
 static const char *
-tarpc_rte_eth_tx_offloads2str(te_log_buf *tlbp, uint32_t tx_offloads)
+tarpc_rte_eth_tx_offloads2str(te_log_buf *tlbp, uint64_t tx_offloads)
 {
     const struct te_log_buf_bit2str tx_offloads2str[] = {
 #define TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(_bit) \
@@ -121,6 +132,17 @@ tarpc_rte_eth_tx_offloads2str(te_log_buf *tlbp, uint32_t tx_offloads)
         TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(UDP_TSO),
         TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(OUTER_IPV4_CKSUM),
         TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(QINQ_INSERT),
+        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(VXLAN_TNL_TSO),
+        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(GRE_TNL_TSO),
+        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(IPIP_TNL_TSO),
+        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(GENEVE_TNL_TSO),
+        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(MACSEC_INSERT),
+        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(MT_LOCKFREE),
+        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(MULTI_SEGS),
+        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(MBUF_FAST_FREE),
+        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(SECURITY),
+
+        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(_UNSUPPORTED),
 #undef TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR
         { 0, NULL }
     };
@@ -280,8 +302,12 @@ tarpc_rte_eth_dev_info2str(te_log_buf *tlbp,
                       dev_info->max_mac_addrs, dev_info->max_hash_mac_addrs,
                       dev_info->max_vfs, dev_info->max_vmdq_pools);
 
+    te_log_buf_append(tlbp, ", rx_queue_offload_capa=");
+    tarpc_rte_eth_rx_offloads2str(tlbp, dev_info->rx_queue_offload_capa);
     te_log_buf_append(tlbp, ", rx_offload_capa=");
     tarpc_rte_eth_rx_offloads2str(tlbp, dev_info->rx_offload_capa);
+    te_log_buf_append(tlbp, ", tx_queue_offload_capa=");
+    tarpc_rte_eth_tx_offloads2str(tlbp, dev_info->tx_queue_offload_capa);
     te_log_buf_append(tlbp, ", tx_offload_capa=");
     tarpc_rte_eth_tx_offloads2str(tlbp, dev_info->tx_offload_capa);
 
@@ -2856,6 +2882,35 @@ rpc_rte_eth_link_get(rcf_rpc_server *rpcs,
     te_log_buf_free(tlbp);
 
     RETVAL_VOID(rte_eth_link_get);
+}
+
+int
+rpc_dpdk_eth_await_link_up(rcf_rpc_server *rpcs,
+                           uint16_t        port_id,
+                           unsigned int    nb_attempts,
+                           unsigned int    wait_int_ms,
+                           unsigned int    after_up_ms)
+{
+    tarpc_dpdk_eth_await_link_up_in  in;
+    tarpc_dpdk_eth_await_link_up_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.nb_attempts = nb_attempts;
+    in.wait_int_ms = wait_int_ms;
+    in.after_up_ms = after_up_ms;
+
+    rcf_rpc_call(rpcs, "dpdk_eth_await_link_up", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(dpdk_eth_await_link_up, out.retval);
+
+    TAPI_RPC_LOG(rpcs, dpdk_eth_await_link_up,
+                 "%hu, nb_attempts = %u, wait_int_ms = %u, after_up_ms = %u",
+                 NEG_ERRNO_FMT, in.port_id, in.nb_attempts, in.wait_int_ms,
+                 in.after_up_ms, NEG_ERRNO_ARGS(out.retval));
+
+    RETVAL_ZERO_INT(dpdk_eth_await_link_up, out.retval);
 }
 
 int rpc_rte_eth_dev_flow_ctrl_set(rcf_rpc_server *rpcs, uint16_t port_id,

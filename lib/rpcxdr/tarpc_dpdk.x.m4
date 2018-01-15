@@ -726,6 +726,17 @@ enum tarpc_dev_rx_offload_bits {
     TARPC_RTE_DEV_RX_OFFLOAD_TCP_LRO_BIT,
     TARPC_RTE_DEV_RX_OFFLOAD_QINQ_STRIP_BIT,
     TARPC_RTE_DEV_RX_OFFLOAD_OUTER_IPV4_CKSUM_BIT,
+    TARPC_RTE_DEV_RX_OFFLOAD_MACSEC_STRIP_BIT,
+    TARPC_RTE_DEV_RX_OFFLOAD_HEADER_SPLIT_BIT,
+    TARPC_RTE_DEV_RX_OFFLOAD_VLAN_FILTER_BIT,
+    TARPC_RTE_DEV_RX_OFFLOAD_VLAN_EXTEND_BIT,
+    TARPC_RTE_DEV_RX_OFFLOAD_JUMBO_FRAME_BIT,
+    TARPC_RTE_DEV_RX_OFFLOAD_CRC_STRIP_BIT,
+    TARPC_RTE_DEV_RX_OFFLOAD_SCATTER_BIT,
+    TARPC_RTE_DEV_RX_OFFLOAD_TIMESTAMP_BIT,
+    TARPC_RTE_DEV_RX_OFFLOAD_SECURITY_BIT,
+
+    TARPC_RTE_DEV_RX_OFFLOAD__UNSUPPORTED_BIT,
 
     TARPC_RTE_DEV_RX_OFFLOAD__UNKNOWN_BIT
 };
@@ -741,6 +752,17 @@ enum tarpc_dev_tx_offload_bits {
     TARPC_RTE_DEV_TX_OFFLOAD_UDP_TSO_BIT,
     TARPC_RTE_DEV_TX_OFFLOAD_OUTER_IPV4_CKSUM_BIT,
     TARPC_RTE_DEV_TX_OFFLOAD_QINQ_INSERT_BIT,
+    TARPC_RTE_DEV_TX_OFFLOAD_VXLAN_TNL_TSO_BIT,
+    TARPC_RTE_DEV_TX_OFFLOAD_GRE_TNL_TSO_BIT,
+    TARPC_RTE_DEV_TX_OFFLOAD_IPIP_TNL_TSO_BIT,
+    TARPC_RTE_DEV_TX_OFFLOAD_GENEVE_TNL_TSO_BIT,
+    TARPC_RTE_DEV_TX_OFFLOAD_MACSEC_INSERT_BIT,
+    TARPC_RTE_DEV_TX_OFFLOAD_MT_LOCKFREE_BIT,
+    TARPC_RTE_DEV_TX_OFFLOAD_MULTI_SEGS_BIT,
+    TARPC_RTE_DEV_TX_OFFLOAD_MBUF_FAST_FREE_BIT,
+    TARPC_RTE_DEV_TX_OFFLOAD_SECURITY_BIT,
+
+    TARPC_RTE_DEV_TX_OFFLOAD__UNSUPPORTED_BIT,
 
     TARPC_RTE_DEV_TX_OFFLOAD__UNKNOWN_BIT
 };
@@ -856,8 +878,10 @@ struct tarpc_rte_eth_dev_info {
     uint32_t                        max_hash_mac_addrs;
     uint16_t                        max_vfs;
     uint16_t                        max_vmdq_pools;
-    uint32_t                        rx_offload_capa;
-    uint32_t                        tx_offload_capa;
+    uint64_t                        rx_queue_offload_capa;
+    uint64_t                        rx_offload_capa;
+    uint64_t                        tx_queue_offload_capa;
+    uint64_t                        tx_offload_capa;
     uint16_t                        reta_size;
     uint8_t                         hash_key_size;
     uint64_t                        flow_type_rss_offloads;
@@ -1835,6 +1859,27 @@ struct tarpc_rte_flow_isolate_in {
 
 typedef struct tarpc_rte_flow_validate_out tarpc_rte_flow_isolate_out;
 
+
+/**
+ * Handmade DPDK utility RPCs
+ */
+
+/*
+ * TODO: look for the other handmade RPCs, relist here,
+ *       move to separate header and source files
+ */
+
+/** dpdk_eth_await_link_up() */
+struct tarpc_dpdk_eth_await_link_up_in {
+    struct tarpc_in_arg common;
+    uint8_t             port_id;
+    unsigned int        nb_attempts;
+    unsigned int        wait_int_ms;
+    unsigned int        after_up_ms;
+};
+
+typedef struct tarpc_int_retval_out tarpc_dpdk_eth_await_link_up_out;
+
 program dpdk
 {
     version ver0
@@ -1962,5 +2007,7 @@ program dpdk
         RPC_DEF(rte_flow_destroy)
         RPC_DEF(rte_flow_flush)
         RPC_DEF(rte_flow_isolate)
+
+        RPC_DEF(dpdk_eth_await_link_up)
     } = 1;
 } = 2;
