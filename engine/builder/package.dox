@@ -1,8 +1,8 @@
 /**
 
-<!-- @page te_engine_builder Test Engine: Builder -->
+<!-- @page te_engine_builder Builder -->
 
-@defgroup te_engine_builder Test Engine: Builder
+@defgroup te_engine_builder Builder
 @ingroup te_engine
 @{
 

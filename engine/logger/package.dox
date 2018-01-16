@@ -1,8 +1,8 @@
 /**
 
-<!-- @page te_engine_logger Test Engine: Logger -->
+<!-- @page te_engine_logger Logger -->
 
-@defgroup te_engine_logger Test Engine: Logger
+@defgroup te_engine_logger Logger
 @ingroup te_engine
 @{
 

@@ -87,9 +87,9 @@ relations between Test Environment components:
 @} <!-- END te_engine -->
 
 
-<!-- @page te_engine_dispatcher Test Engine: Dispatcher -->
+<!-- @page te_engine_dispatcher Dispatcher -->
 
-@defgroup te_engine_dispatcher Test Engine: Dispatcher
+@defgroup te_engine_dispatcher Dispatcher
 @ingroup te_engine
 @{
 

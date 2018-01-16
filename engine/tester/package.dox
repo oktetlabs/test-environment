@@ -1,8 +1,8 @@
 /**
 
-<!-- @page te_engine_tester Test Engine: Tester -->
+<!-- @page te_engine_tester Tester -->
 
-@defgroup te_engine_tester Test Engine: Tester
+@defgroup te_engine_tester Tester
 @ingroup te_engine
 @{
 
