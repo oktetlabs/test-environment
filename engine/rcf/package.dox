@@ -1,8 +1,8 @@
 /**
 
-<!-- @page te_engine_rcf Test Engine: Remote Control Facility (RCF) -->
+<!-- @page te_engine_rcf Remote Control Facility (RCF) -->
 
-@defgroup te_engine_rcf Test Engine: Remote Control Facility (RCF)
+@defgroup te_engine_rcf Remote Control Facility (RCF)
 @ingroup te_engine
 @{
 

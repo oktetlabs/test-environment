@@ -1,8 +1,8 @@
 /**
 
-<!-- @page te_engine_conf Test Engine: Configurator -->
+<!-- @page te_engine_conf Configurator -->
 
-@defgroup te_engine_conf Test Engine: Configurator
+@defgroup te_engine_conf Configurator
 @ingroup te_engine
 @{
 

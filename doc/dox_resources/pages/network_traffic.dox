@@ -1,7 +1,7 @@
 /**
 
 @defgroup net_traffic Network Traffic TAPI
-@ingroup te_engine
+@ingroup te_ts_tapi
 @{
 
 This page contains overview of TAPI for network traffic manipulation.
