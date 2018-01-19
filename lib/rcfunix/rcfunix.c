@@ -790,8 +790,9 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
     if (ta->is_local)
         sprintf(cmd, "rm -rf /tmp/%s%s", ta->ta_type, ta->postfix);
     else
-        sprintf(cmd, RCFUNIX_SSH "%s %s \"rm -rf /tmp/%s%s\"",
-                ta->key, ta->host, ta->ta_type, ta->postfix);
+        sprintf(cmd, RCFUNIX_SSH "%s %s%s \"rm -rf /tmp/%s%s\"",
+                ta->key, ta->user, ta->host, ta->ta_type, ta->postfix);
+    RING("CMD to remove: %s", cmd);
     rc = system_with_timeout(cmd, ta->kill_timeout);
     if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
         return rc;
