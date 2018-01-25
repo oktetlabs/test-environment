@@ -1113,7 +1113,7 @@ phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
             return 0;
         }
         
-        ERROR("failed to get interface properties");
+        ERROR("failed to get interface properties: %s", strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
     
@@ -1278,7 +1278,7 @@ phy_modes_speed_duplex_list(unsigned int gid, const char *oid,
     
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
-        ERROR("failed to get interface properties");
+        ERROR("failed to get interface properties: %s", strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
     
