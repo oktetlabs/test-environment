@@ -118,7 +118,7 @@ cfg_get_force_restart_flag(void)
     int         force_restart = 0;
     te_errno    rc;
 
-    rc = cfg_get_instance_fmt(NULL, &force_restart, cfg_line);
+    rc = cfg_get_instance_str(NULL, &force_restart, cfg_line);
     if (rc != 0 && rc != TE_RC(TE_CS, TE_ENOENT))
         ERROR("Failed to get '%s': %r", cfg_line, rc);
 

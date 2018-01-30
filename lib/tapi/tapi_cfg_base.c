@@ -94,8 +94,8 @@ tapi_cfg_base_ip_fw(const char *ta, te_bool *enabled, const char *vrsn)
                                    "/agent:%s/ip%s_fw:",
                                    ta, vrsn)) != 0)
     {
-        ERROR("Failed to get IPv%s forwarding state on '%s': %r",
-              vrsn, ta, rc);
+        ERROR("%s(): Failed to get IPv%s forwarding state on '%s': %r",
+              __FUNCTION__, vrsn, ta, rc);
         return rc;
     }
 
@@ -107,8 +107,8 @@ tapi_cfg_base_ip_fw(const char *ta, te_bool *enabled, const char *vrsn)
                                        "/agent:%s/ip%s_fw:",
                                        ta, vrsn)) != 0)
         {
-            ERROR("Failed to configure IPv%s forwarding on '%s': %r",
-                  vrsn, ta, rc);
+            ERROR("%s(): Failed to configure IPv%s forwarding on '%s': %r",
+                  __FUNCTION__, vrsn, ta, rc);
             return rc;
         }
 
@@ -149,14 +149,16 @@ tapi_cfg_base_if_get_link_addr(const char *ta, const char *dev,
     rc = cfg_find_str(inst_name, &handle);
     if (rc != 0)
     {
-        ERROR("Failed to find MAC address OID handle for %s", inst_name);
+        ERROR("%s(): Failed to find MAC address OID handle for %s",
+              __FUNCTION__, inst_name);
         return rc;
     }
 
     rc = cfg_get_instance(handle, &type, &addr);
     if (rc != 0)
     {
-        ERROR("Failed to get MAC address using OID %s", inst_name);
+        ERROR("%s(): Failed to get MAC address using OID %s",
+              __FUNCTION__, inst_name);
         return rc;
     }
     memcpy(link_addr, addr, sizeof(struct sockaddr));
@@ -178,14 +180,16 @@ tapi_cfg_base_if_get_mac(const char *oid, uint8_t *mac)
     rc = cfg_find_str(buf, &handle);
     if (rc != 0)
     {
-        ERROR("Failed to find MAC address OID handle for %s", oid);
+        ERROR("%s(): Failed to find MAC address OID handle for %s",
+              __FUNCTION__, oid);
         return rc;
     }
 
     rc = cfg_get_instance(handle, &type, &addr);
     if (rc != 0)
     {
-        ERROR("Failed to get MAC address using OID %s", buf);
+        ERROR("%s(): Failed to get MAC address using OID %s",
+              __FUNCTION__, buf);
         return rc;
     }
     memcpy(mac, addr->sa_data, ETHER_ADDR_LEN);
@@ -210,7 +214,8 @@ tapi_cfg_base_if_set_mac(const char *oid, const uint8_t *mac)
     rc = cfg_find_str(buf, &handle);
     if (rc != 0)
     {
-        ERROR("Failed to find MAC address OID handle for %s", oid);
+        ERROR("%s(): Failed to find MAC address OID handle for %s",
+              __FUNCTION__, oid);
         return rc;
     }
 
@@ -219,7 +224,8 @@ tapi_cfg_base_if_set_mac(const char *oid, const uint8_t *mac)
     rc = cfg_set_instance(handle, CVT_ADDRESS, &addr);
     if (rc != 0)
     {
-        ERROR("Failed to set MAC address using OID %s", buf);
+        ERROR("%s(): Failed to set MAC address using OID %s",
+              __FUNCTION__, buf);
         return rc;
     }
 
@@ -240,14 +246,16 @@ tapi_cfg_base_if_get_bcast_mac(const char *oid, uint8_t *bcast_mac)
     rc = cfg_find_str(buf, &handle);
     if (rc != 0)
     {
-        ERROR("Failed to find MAC address OID handle for %s", oid);
+        ERROR("%s(): Failed to find MAC address OID handle for %s",
+              __FUNCTION__, oid);
         return rc;
     }
 
     rc = cfg_get_instance(handle, &type, &addr);
     if (rc != 0)
     {
-        ERROR("Failed to get MAC address using OID %s", buf);
+        ERROR("%s(): Failed to get MAC address using OID %s",
+              __FUNCTION__, buf);
         return rc;
     }
     memcpy(bcast_mac, addr->sa_data, ETHER_ADDR_LEN);
@@ -274,8 +282,8 @@ tapi_cfg_base_if_set_bcast_mac(const char *oid,
     rc = cfg_find_str(buf, &handle);
     if (rc != 0)
     {
-        ERROR("Failed to find broadcast MAC "
-              "address OID handle for %s", oid);
+        ERROR("%s(): Failed to find broadcast MAC "
+              "address OID handle for %s", __FUNCTION__, oid);
         return rc;
     }
 
@@ -284,7 +292,8 @@ tapi_cfg_base_if_set_bcast_mac(const char *oid,
     rc = cfg_set_instance(handle, CVT_ADDRESS, &addr);
     if (rc != 0)
     {
-        ERROR("Failed to set bcast MAC address using OID %s", buf);
+        ERROR("%s(): Failed to set bcast MAC address using OID %s",
+              __FUNCTION__, buf);
         return rc;
     }
 
@@ -340,7 +349,8 @@ tapi_cfg_base_if_del_mcast_mac(const char *oid,
                                        "%s/mcast_link_addr:*",
                                        oid)) != 0)
         {
-            ERROR("Failed to get mcast_link_addr list for %s", oid);
+            ERROR("%s(): Failed to get mcast_link_addr list for %s",
+                  __FUNCTION__, oid);
             return rc;
         }
         for (i = 0; i < addr_num; i++)
@@ -349,14 +359,15 @@ tapi_cfg_base_if_del_mcast_mac(const char *oid,
             rc = cfg_get_inst_name(addrs[i], &inst_name);
             if (rc != 0)
             {
-                ERROR("Unable to enumerate multicast addresses: %r", rc);
+                ERROR("%s(): Unable to enumerate multicast addresses: %r",
+                      __FUNCTION__, rc);
                 break;
             }
 
             if ((rc = cfg_del_instance(addrs[i], TRUE)) != 0)
             {
-                ERROR("Failed to delete address with handle %#x: %r",
-                      addrs[i], rc);
+                ERROR("%s(): Failed to delete address with handle %#x: %r",
+                      __FUNCTION__, addrs[i], rc);
                 break;
             }
         }
@@ -380,14 +391,16 @@ tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu)
     rc = cfg_find_str(buf, &handle);
     if (rc != 0)
     {
-        ERROR("Failed to find MTU OID handle for %s", oid);
+        ERROR("%s(): Failed to find MTU OID handle for %s",
+              __FUNCTION__, oid);
         return rc;
     }
 
     rc = cfg_get_instance(handle, &type, &mtu);
     if (rc != 0)
     {
-        ERROR("Failed to get MTU using OID %s. %r", buf, rc);
+        ERROR("%s(): Failed to get MTU using OID %s. %r",
+              __FUNCTION__, buf, rc);
         return rc;
     }
     assert(mtu >= 0);
@@ -408,7 +421,8 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
 
     if (addr->sa_family != AF_INET && addr->sa_family != AF_INET6)
     {
-        ERROR("AF_INET and AF_INET6 address families are supported only.");
+        ERROR("%s(): AF_INET and AF_INET6 address families are supported only.",
+              __FUNCTION__);
         return TE_RC(TE_TAPI, TE_EAFNOSUPPORT);
     }
 
@@ -451,7 +465,8 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
                     nmask = IN_CLASSA_HOST;
                 else
                 {
-                    ERROR("Invalid IPv4 address - unknown class");
+                    ERROR("%s(): Invalid IPv4 address - unknown class",
+                          __FUNCTION__);
                     return TE_EINVAL;
                 }
             }
@@ -469,7 +484,8 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
             {
                 int rc2;
 
-                ERROR("Failed to set broadcast address: %r", rc);
+                ERROR("%s(): Failed to set broadcast address: %r",
+                      __FUNCTION__, rc);
                 rc2 = cfg_del_instance_fmt(TRUE,
                                            "%s/net_addr:%s", oid,
                                            inet_ntop(addr->sa_family,
@@ -477,7 +493,8 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
                                                      buf, sizeof(buf)));
                 if (rc2 != 0)
                 {
-                    ERROR("Failed to delete address to rollback: %r", rc2);
+                    ERROR("%s(): Failed to delete address to rollback: %r",
+                          __FUNCTION__, rc2);
                 }
                 return rc;
             }
@@ -491,7 +508,7 @@ tapi_cfg_base_add_net_addr(const char *oid, const struct sockaddr *addr,
     }
     else
     {
-        ERROR("Failed to add address for %s: %r", oid, rc);
+        ERROR("%s(): Failed to add address for %s: %r", __FUNCTION__, oid, rc);
     }
 
     return rc;
@@ -539,8 +556,8 @@ tapi_cfg_save_del_if_ip4_addresses(const char *ta,
                                    "/agent:%s/interface:%s/net_addr:*",
                                    ta, if_name)) != 0)
     {
-        ERROR("Failed to get net_addr list for /agent:%s/interface:%s/",
-              ta, if_name);
+        ERROR("%s(): Failed to get net_addr list for /agent:%s/interface:%s/",
+              __FUNCTION__, ta, if_name);
         return rc;
     }
 
@@ -572,14 +589,14 @@ tapi_cfg_save_del_if_ip4_addresses(const char *ta,
 
         if ((rc = cfg_get_inst_name(addrs[i], &addr_str)) != 0)
         {
-            ERROR("Failed to get instance name: %r", rc);
+            ERROR("%s(): Failed to get instance name: %r", __FUNCTION__, rc);
             break;
         }
         if ((rc = te_sockaddr_netaddr_from_string(addr_str,
                                                   SA(&addr))) != 0)
         {
-            ERROR("Failed to convert address from string '%s': %r",
-                  addr_str, rc);
+            ERROR("%s(): Failed to convert address from string '%s': %r",
+                  __FUNCTION__, addr_str, rc);
             break;
         }
 
@@ -603,8 +620,8 @@ tapi_cfg_save_del_if_ip4_addresses(const char *ta,
 
         if ((rc = cfg_get_instance(addrs[i], CVT_INTEGER, &prefix)) != 0)
         {
-            ERROR("Failed to get prefix of address with handle %#x: %r",
-                  addrs[i], rc);
+            ERROR("%s(): Failed to get prefix of address with handle %#x: %r",
+                  __FUNCTION__, addrs[i], rc);
             break;
         }
 
@@ -613,16 +630,16 @@ tapi_cfg_save_del_if_ip4_addresses(const char *ta,
                                        "%s/broadcast:*",
                                        ta, if_name, addr_str)) != 0)
         {
-            ERROR("Failed to get broadcast address for /agent:%s/"
+            ERROR("%s(): Failed to get broadcast address for /agent:%s/"
                   "interface:%s/net_addr:%s/broadcast:*",
-                  ta, if_name, addr_str);
+                  __FUNCTION__, ta, if_name, addr_str);
             break;
         }
 
         if ((rc = cfg_del_instance(addrs[i], FALSE)) != 0)
         {
-            ERROR("Failed to delete address with handle %#x: %r",
-                  addrs[i], rc);
+            ERROR("%s(): Failed to delete address with handle %#x: %r",
+                  __FUNCTION__, addrs[i], rc);
             break;
         }
         else if (saved_addrs != NULL)
@@ -701,7 +718,8 @@ tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
                                    "/agent:%s/interface:%s/vlans:%d",
                                    ta, if_name, vid)) != 0)
     {
-        ERROR("Failed to add VLAN with VID=%d to %s", vid, if_name);
+        ERROR("%s(): Failed to add VLAN with VID=%d to %s",
+              __FUNCTION__, vid, if_name);
         return rc;
     }
 
@@ -709,8 +727,8 @@ tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
                          "/agent:%s/interface:%s/vlans:%d/ifname:",
                          ta, if_name, vid)) != 0)
     {
-        ERROR("Failed to get interface name for VLAN interface "
-              "with VID=%d on %s", vid, if_name);
+        ERROR("%s(): Failed to get interface name for VLAN interface "
+              "with VID=%d on %s", __FUNCTION__, vid, if_name);
         return rc;
     }
 
@@ -737,8 +755,8 @@ tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
                                    ta, if_name, vid);
         if (rc2 != 0)
         {
-            ERROR("Failed to get interface name for VLAN interface "
-                  "with VID=%su on %s", vid, if_name);
+            ERROR("%s(): Failed to get interface name for VLAN interface "
+                  "with VID=%su on %s", __FUNCTION__, vid, if_name);
         }
         else
         {
@@ -750,7 +768,8 @@ tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
     rc = cfg_del_instance_fmt(FALSE, "/agent:%s/interface:%s/vlans:%d",
                               ta, if_name, vid);
     if (rc != 0)
-        ERROR("Failed to delete VLAN with VID=%d from %s", vid, if_name);
+        ERROR("%s(): Failed to delete VLAN with VID=%d from %s",
+              __FUNCTION__, vid, if_name);
     else
         rc = rc2;
 
@@ -768,8 +787,8 @@ tapi_cfg_base_if_get_mtu_u(const char *agent, const char *interface,
     if ((rc = cfg_get_instance_fmt(&type, (void *)mtu,
                                    "/agent:%s/interface:%s/mtu:",
                                    agent, interface)) != 0)
-        ERROR("Failed to get MTU value for %s on %s: %r", interface,
-              agent, rc);
+        ERROR("%s(): Failed to get MTU value for %s on %s: %r",
+              __FUNCTION__, interface, agent, rc);
 
     return rc;
 }
@@ -791,8 +810,8 @@ do { \
 
     if ((rc = tapi_cfg_base_if_get_mtu_u(agent, interface,
                                          &old_mtu_l)) != 0)
-        MTU_ERR("Failed to get old MTU value for %s on %s: %r",
-                interface, agent, rc);
+        MTU_ERR("%s(): Failed to get old MTU value for %s on %s: %r",
+                __FUNCTION__, interface, agent, rc);
 
     if (old_mtu != NULL)
         *old_mtu = old_mtu_l;
@@ -800,8 +819,8 @@ do { \
     if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, mtu),
                                    "/agent:%s/interface:%s/mtu:",
                                    agent, interface)) != 0)
-        MTU_ERR("Failed to set new MTU for %s on %s: %r",
-                interface, agent, rc);
+        MTU_ERR("%s(): Failed to set new MTU for %s on %s: %r",
+                __FUNCTION__, interface, agent, rc);
 
     /**
      * IPv6 doesn't support MTU value less then 1280, IPv6 address
@@ -816,15 +835,15 @@ do { \
         if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
                                        "/agent:%s/interface:%s/status:",
                                         agent, interface)) != 0)
-            MTU_ERR("Failed to put down interface %s on %s: %r",
-                    interface, agent, rc);
+            MTU_ERR("%s(): Failed to put down interface %s on %s: %r",
+                    __FUNCTION__, interface, agent, rc);
         sleep(1);
 
         if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
                                        "/agent:%s/interface:%s/status:",
                                        agent, interface)) != 0)
-            MTU_ERR("Failed to put up interface %s on %s: %r",
-                    interface, agent, rc);
+            MTU_ERR("%s(): Failed to put up interface %s on %s: %r",
+                    __FUNCTION__, interface, agent, rc);
         if (fast)
             usleep(100000);
         else
@@ -832,17 +851,17 @@ do { \
     }
 
     if (tapi_cfg_base_if_get_mtu_u(agent, interface, &assigned_mtu) != 0)
-        MTU_ERR("Failed to get assigned MTU value for %s on %s: %r",
-                interface, agent, rc);
+        MTU_ERR("%s(): Failed to get assigned MTU value for %s on %s: %r",
+                __FUNCTION__, interface, agent, rc);
 
     if (assigned_mtu != mtu)
     {
         if (assigned_mtu == old_mtu_l)
-            ERROR("MTU was set to %d, but currently it is equal to old "
-                  "MTU %d", mtu, assigned_mtu);
+            ERROR("%s(): MTU was set to %d, but currently it is equal to old "
+                  "MTU %d", __FUNCTION__, mtu, assigned_mtu);
         else
-            ERROR("MTU was set to %d, but currently it is %d", mtu,
-                  assigned_mtu);
+            ERROR("%s(): MTU was set to %d, but currently it is %d",
+                  __FUNCTION__, mtu, assigned_mtu);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 

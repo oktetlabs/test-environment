@@ -623,7 +623,7 @@ static inline char *tapi_cfg_link_dereference(char *link)
     if (val_type == CVT_INTEGER)
     {
         int int_val = 0;
-        if ((rc = cfg_get_instance_fmt(&val_type, &int_val, cur)) != 0)
+        if ((rc = cfg_get_instance_str(&val_type, &int_val, cur)) != 0)
         {
             ERROR("Failed to get configurator object %s: rc=%r", cur, rc);
             return NULL;
@@ -634,7 +634,7 @@ static inline char *tapi_cfg_link_dereference(char *link)
     {
         struct sockaddr *addr = NULL;
 
-        if ((rc = cfg_get_instance_fmt(&val_type, &addr, cur)) != 0)
+        if ((rc = cfg_get_instance_str(&val_type, &addr, cur)) != 0)
         {
             ERROR("Failed to get configurator object %s: rc=%r", cur, rc);
             return NULL;
@@ -662,7 +662,7 @@ static inline char *tapi_cfg_link_dereference(char *link)
     }
     else if ((val_type == CVT_STRING) || (val_type == CVT_NONE))
     {
-        if ((rc = cfg_get_instance_fmt(NULL, &value, cur)) != 0)
+        if ((rc = cfg_get_instance_str(NULL, &value, cur)) != 0)
         {
             ERROR("Failed to get configurator object %s: rc=%r", cur, rc);
             return NULL;

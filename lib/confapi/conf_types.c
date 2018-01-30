@@ -188,9 +188,9 @@ int_copy(cfg_inst_val src, cfg_inst_val *dst)
 static int
 int_get(cfg_msg *msg, cfg_inst_val *val)
 {
-    val->val_int = msg->type == CFG_GET ? ((cfg_get_msg *)msg)->val_int :
-                   msg->type == CFG_SET ? ((cfg_set_msg *)msg)->val_int :
-                   ((cfg_add_msg *)msg)->val_int;
+    val->val_int = msg->type == CFG_GET ? ((cfg_get_msg *)msg)->val.val_int :
+                   msg->type == CFG_SET ? ((cfg_set_msg *)msg)->val.val_int :
+                   ((cfg_add_msg *)msg)->val.val_int;
     return 0;
 }
 
@@ -202,9 +202,9 @@ int_put(cfg_inst_val val, cfg_msg *msg)
     if (msg == NULL)
         return;
         
-    msg_val = (msg->type == CFG_ADD) ? &(((cfg_add_msg *)msg)->val_int) : 
-              (msg->type == CFG_SET) ? &(((cfg_set_msg *)msg)->val_int) : 
-              &(((cfg_get_msg *)msg)->val_int);
+    msg_val = (msg->type == CFG_ADD) ? &(((cfg_add_msg *)msg)->val.val_int) :
+              (msg->type == CFG_SET) ? &(((cfg_set_msg *)msg)->val.val_int) :
+              &(((cfg_get_msg *)msg)->val.val_int);
     *msg_val = val.val_int;
     
     SET_MSG_LEN(msg);
@@ -269,9 +269,9 @@ str_get(cfg_msg *msg, cfg_inst_val *val)
     if (msg == NULL)
          return TE_EINVAL;
 
-    msg_str = (msg->type == CFG_ADD) ? ((cfg_add_msg *)msg)->val_str :
-              (msg->type == CFG_SET) ? ((cfg_set_msg *)msg)->val_str :
-              ((cfg_get_msg *)msg)->val_str;
+    msg_str = (msg->type == CFG_ADD) ? ((cfg_add_msg *)msg)->val.val_str :
+              (msg->type == CFG_SET) ? ((cfg_set_msg *)msg)->val.val_str :
+              ((cfg_get_msg *)msg)->val.val_str;
 
     return ((val->val_str = strdup(msg_str)) == NULL) ? TE_ENOMEM : 0;
 }
@@ -284,9 +284,9 @@ str_put(cfg_inst_val val, cfg_msg *msg)
     if (msg == NULL)
         return;
 
-    msg_str = (msg->type == CFG_ADD) ? ((cfg_add_msg *)msg)->val_str : 
-              (msg->type == CFG_SET) ? ((cfg_set_msg *)msg)->val_str : 
-              ((cfg_get_msg *)msg)->val_str;
+    msg_str = (msg->type == CFG_ADD) ? ((cfg_add_msg *)msg)->val.val_str :
+              (msg->type == CFG_SET) ? ((cfg_set_msg *)msg)->val.val_str :
+              ((cfg_get_msg *)msg)->val.val_str;
               
     SET_MSG_LEN(msg);
 
@@ -535,9 +535,9 @@ addr_get(cfg_msg *msg, cfg_inst_val *val)
     {
         return TE_EINVAL;
     }
-    msg_addr = (msg->type == CFG_ADD) ? ((cfg_add_msg *)msg)->val_addr :
-               (msg->type == CFG_SET) ? ((cfg_set_msg *)msg)->val_addr :
-                                        ((cfg_get_msg *)msg)->val_addr;
+    msg_addr = (msg->type == CFG_ADD) ? ((cfg_add_msg *)msg)->val.val_addr :
+               (msg->type == CFG_SET) ? ((cfg_set_msg *)msg)->val.val_addr :
+                                        ((cfg_get_msg *)msg)->val.val_addr;
     
     switch (msg_addr->sa_family)
     {
@@ -590,9 +590,9 @@ addr_put(cfg_inst_val val, cfg_msg *msg)
     }
     SET_MSG_LEN(msg);
                                         
-    msg_addr = (msg->type == CFG_ADD) ? ((cfg_add_msg *)msg)->val_addr :
-               (msg->type == CFG_SET) ? ((cfg_set_msg *)msg)->val_addr :
-                                        ((cfg_get_msg *)msg)->val_addr;
+    msg_addr = (msg->type == CFG_ADD) ? ((cfg_add_msg *)msg)->val.val_addr :
+               (msg->type == CFG_SET) ? ((cfg_set_msg *)msg)->val.val_addr :
+                                        ((cfg_get_msg *)msg)->val.val_addr;
 
     switch (addr->sa_family)
     {

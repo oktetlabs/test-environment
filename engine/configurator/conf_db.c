@@ -1347,8 +1347,8 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
     {
         for (;
              father != NULL &&
-             (strcmp(father->obj->subid, s->subid) != 0 ||
-              strcmp(father->name, s->name) != 0);
+                 (strcmp(father->obj->subid, s->subid) != 0 ||
+                  strcmp(father->name, s->name) != 0);
              father = father->brother);
 
         s++;

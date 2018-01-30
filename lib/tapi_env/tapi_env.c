@@ -1482,7 +1482,7 @@ prepare_interfaces_net(tapi_env_if *iface, const cfg_nets_t *cfg_nets)
         strcat(xen_oid, slash);
         val_type = CVT_STRING;
 
-        if ((rc = cfg_get_instance_fmt(&val_type,
+        if ((rc = cfg_get_instance_str(&val_type,
                                        &iface->ph_info.if_name,
                                        xen_oid)) != 0)
         {
@@ -1498,7 +1498,7 @@ prepare_interfaces_net(tapi_env_if *iface, const cfg_nets_t *cfg_nets)
         strcat(xen_oid, bridge);
         val_type = CVT_STRING;
 
-        if ((rc = cfg_get_instance_fmt(&val_type,
+        if ((rc = cfg_get_instance_str(&val_type,
                                        &iface->br_info.if_name,
                                        xen_oid)) != 0)
         {
