@@ -91,21 +91,42 @@ tapi_cfg_base_ipv4_fw_enabled(const char *ta, te_bool *enabled)
 
 /* See the description in tapi_cfg_base.h */
 te_errno
-tapi_cfg_base_ipv6_fw(const char *ta, te_bool enable)
+tapi_cfg_ipv4_fw_set(const char *ta, const char *ifname, te_bool enable)
 {
     return tapi_cfg_sys_set_int(ta, enable, NULL,
-                                "net/ipv6/conf/all/forwarding");
-
+                                "net/ipv4/conf/%s/forwarding", ifname);
 }
 
 /* See the description in tapi_cfg_base.h */
 te_errno
-tapi_cfg_base_ipv6_fw_enabled(const char *ta, te_bool *enabled)
+tapi_cfg_ipv4_fw_get(const char *ta, const char *ifname, te_bool *enabled)
 {
     te_errno rc;
     int val;
 
-    rc = tapi_cfg_sys_get_int(ta, &val, "net/ipv6/conf/all/forwarding");
+    rc = tapi_cfg_sys_get_int(ta, &val, "net/ipv4/conf/%s/forwarding", ifname);
+    if (rc == 0)
+        *enabled = val;
+
+    return rc;
+}
+
+/* See the description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_ipv6_fw_set(const char *ta, const char *ifname, te_bool enable)
+{
+    return tapi_cfg_sys_set_int(ta, enable, NULL,
+                                "net/ipv6/conf/%s/forwarding", ifname);
+}
+
+/* See the description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_ipv6_fw_get(const char *ta, const char *ifname, te_bool *enabled)
+{
+    te_errno rc;
+    int val;
+
+    rc = tapi_cfg_sys_get_int(ta, &val, "net/ipv6/conf/%s/forwarding", ifname);
     if (rc == 0)
         *enabled = val;
 

@@ -91,25 +91,112 @@ extern te_errno tapi_cfg_base_ipv4_fw_enabled(const char *ta,
                                               te_bool *enabled);
 
 /**
- * Enable/disable IPv6 forwarding on a Test Agent.
- *
- * @param ta        TA name
- * @param enable    @c TRUE - enable, @c FALSE - disable
- *
- * @return Status code.
- */
-extern te_errno tapi_cfg_base_ipv6_fw(const char *ta, te_bool enable);
-
-/**
- * Get IPv6 forwarding status on a Test Agent.
+ * Enable/disable IPv4 forwarding on a specified network interface
  *
  * @param ta            TA name
+ * @param ifname        Name of network interface
+ * @param enable        @c TRUE - enable, @c FALSE - disable
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_ipv4_fw_set(const char *ta, const char *ifname,
+                                     te_bool enable);
+
+/**
+ * Get IPv4 forwarding status of a specified network interface
+ *
+ * @param ta            TA name
+ * @param ifname        Name of network interface
  * @param[out] enabled  @c TRUE - enabled, @c FALSE - disabled
  *
- * @return Status code.
+ * @return Status code
  */
-extern te_errno tapi_cfg_base_ipv6_fw_enabled(const char *ta,
-                                              te_bool *enabled);
+extern te_errno tapi_cfg_ipv4_fw_get(const char *ta, const char *ifname,
+                                     te_bool *enabled);
+
+/**
+ * It's a wrapper for tapi_cfg_ipv4_fw_set() to enable IPv4 forwarding
+ * on a specified network interface
+ */
+static inline te_errno
+tapi_cfg_ipv4_fw_enable(const char *ta, const char *ifname)
+{
+    return tapi_cfg_ipv4_fw_set(ta, ifname, TRUE);
+}
+
+/**
+ * It's a wrapper for tapi_cfg_ipv4_fw_set() to disable IPv4 forwarding
+ * on a specified network interface
+ */
+static inline te_errno
+tapi_cfg_ipv4_fw_disable(const char *ta, const char *ifname)
+{
+    return tapi_cfg_ipv4_fw_set(ta, ifname, FALSE);
+}
+
+/**
+ * Enable/disable IPv6 forwarding on a specified network interface
+ *
+ * @param ta            TA name
+ * @param ifname        Name of network interface
+ * @param enable        @c TRUE - enable, @c FALSE - disable
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_ipv6_fw_set(const char *ta, const char *ifname,
+                                     te_bool enable);
+
+/**
+ * Get IPv6 forwarding status of a specified network interface
+ *
+ * @param ta            TA name
+ * @param ifname        Name of network interface
+ * @param[out] enabled  @c TRUE - enabled, @c FALSE - disabled
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_ipv6_fw_get(const char *ta, const char *ifname,
+                                     te_bool *enabled);
+
+/**
+ * It's a wrapper for tapi_cfg_ipv6_fw_set() to enable IPv6 forwarding
+ * on a specified network interface
+ */
+static inline te_errno
+tapi_cfg_ipv6_fw_enable(const char *ta, const char *ifname)
+{
+    return tapi_cfg_ipv6_fw_set(ta, ifname, TRUE);
+}
+
+/**
+ * It's a wrapper for tapi_cfg_ipv6_fw_set() to disable IPv6 forwarding
+ * on a specified network interface
+ */
+static inline te_errno
+tapi_cfg_ipv6_fw_disable(const char *ta, const char *ifname)
+{
+    return tapi_cfg_ipv6_fw_set(ta, ifname, FALSE);
+}
+
+/**
+ * It's a wrapper for tapi_cfg_ipv6_fw_set() to enable/disable IPv6 forwarding
+ * on a Test Agent. It sets forwarding to the interface "all".
+ */
+static inline te_errno
+tapi_cfg_base_ipv6_fw(const char *ta, te_bool enable)
+{
+    return tapi_cfg_ipv6_fw_set(ta, "all", enable);
+}
+
+/**
+ * It's a wrapper for tapi_cfg_ipv6_fw_get() to get IPv6 forwarding status
+ * on a Test Agent, i.e. forwarding status of the interface "all".
+ */
+static inline te_errno
+tapi_cfg_base_ipv6_fw_enabled(const char *ta, te_bool *enabled)
+{
+    return tapi_cfg_ipv6_fw_get(ta, "all", enabled);
+}
 
 
 /**@} <!-- END tapi_conf_base_net --> */
