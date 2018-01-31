@@ -73,52 +73,45 @@ extern "C" {
  * Enable/disable IPv4 forwarding on a Test Agent.
  *
  * @param ta        TA name
- * @param enabled   IN: TRUE - enable, FALSE - disable;
- *                  OUT: previous state of forwarding
+ * @param enable    @c TRUE - enable, @c FALSE - disable
  *
  * @return Status code.
- *
- * @note Allocates ip4_fw resource on the Test Agent (if it is not
- * allocated). The resource is not released, because it should be locked
- * while the forwarding state is important to the test. It is recommended
- * to use silent configuration tracking for tests using this function.
  */
-extern int tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled);
+extern te_errno tapi_cfg_base_ipv4_fw(const char *ta, te_bool enable);
+
+/**
+ * Get IPv4 forwarding status on a Test Agent.
+ *
+ * @param ta            TA name
+ * @param[out] enabled  @c TRUE - enabled, @c FALSE - disabled
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_base_ipv4_fw_enabled(const char *ta,
+                                              te_bool *enabled);
 
 /**
  * Enable/disable IPv6 forwarding on a Test Agent.
  *
  * @param ta        TA name
- * @param enabled   IN: TRUE - enable, FALSE - disable;
- *                  OUT: previous state of forwarding
+ * @param enable    @c TRUE - enable, @c FALSE - disable
  *
  * @return Status code.
- *
- * @note Allocates ip6_fw resource on the Test Agent (if it is not
- * allocated). The resource is not released, because it should be locked
- * while the forwarding state is important to the test. It is recommended
- * to use silent configuration tracking for tests using this function.
  */
-extern int tapi_cfg_base_ipv6_fw(const char *ta, te_bool *enabled);
+extern te_errno tapi_cfg_base_ipv6_fw(const char *ta, te_bool enable);
 
 /**
- * Enable/disable IPv4/IPv6 forwarding on a Test Agent
- * (a backend for ...ipv4_fw() and ...ipv6_fw() )
+ * Get IPv6 forwarding status on a Test Agent.
  *
- * @param ta        TA name
- * @param enabled   IN: TRUE - enable, FALSE - disable;
- *                  OUT: previous state of forwarding
- * @param vrsn      a string "4" or "6".
+ * @param ta            TA name
+ * @param[out] enabled  @c TRUE - enabled, @c FALSE - disabled
  *
  * @return Status code.
- *
- * @note Allocates ipN_fw resource on the Test Agent (if it is not
- * allocated). The resource is not released, because it should be locked
- * while the forwarding state is important to the test. It is recommended
- * to use silent configuration tracking for tests using this function.
  */
-extern int tapi_cfg_base_ip_fw(const char *ta, te_bool *enabled,
-                               const char *vrsn);
+extern te_errno tapi_cfg_base_ipv6_fw_enabled(const char *ta,
+                                              te_bool *enabled);
+
+
 /**@} <!-- END tapi_conf_base_net --> */
 
 /**
