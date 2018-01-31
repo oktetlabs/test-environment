@@ -202,7 +202,6 @@ tapi_netns_create_ns_with_net_channel(const char *ta, const char *ns_name,
     char            *addr_str1 = NULL;
     char            *addr_str2 = NULL;
 
-    te_bool  enabled = TRUE;
     int      prefix;
     te_errno rc;
 
@@ -221,7 +220,7 @@ tapi_netns_create_ns_with_net_channel(const char *ta, const char *ns_name,
     CHRC(te_sockaddr_h2str(addr1, &addr_str1));
     CHRC(te_sockaddr_h2str(addr2, &addr_str2));
 
-    CHRC(tapi_cfg_base_ipv4_fw(ta, &enabled));
+    CHRC(tapi_cfg_base_ipv4_fw(ta, TRUE));
     CHRC(tapi_netns_add(ta, ns_name));
     CHRC(tapi_cfg_base_if_add_veth(ta, veth1, veth2));
     CHRC(tapi_netns_if_set(ta, ns_name, veth2));
