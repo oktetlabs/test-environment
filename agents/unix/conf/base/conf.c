@@ -3836,7 +3836,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
     /* Validate specified address prefix */
     prefix = strtol(value, &end, 10);
-    if (end == '\0')
+    if (value == end || *end != '\0')
     {
         ERROR("Invalid value '%s' of prefix length", value);
         return TE_RC(TE_TA_UNIX, TE_EFMT);
