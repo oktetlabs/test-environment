@@ -30,6 +30,7 @@
 #define __TE_STR_H__
 
 #include "te_defs.h"
+#include "te_errno.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -123,6 +124,18 @@ extern char *te_strncpy(const char *id, char *dst, size_t size, const char *src)
  *         or @c NULL in case of memory allocation failure.
  */
 extern char *te_str_strip_spaces(const char *str);
+
+/**
+ * Wrapper over strtoul().
+ *
+ * @param str       String to convert.
+ * @param base      Base of a numeral system.
+ * @param value     Where to save conversion result.
+ *
+ * @return Status code.
+ */
+extern te_errno te_strtoul(const char *str, int base,
+                           unsigned long int *value);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -302,6 +302,8 @@ extern te_errno ta_unix_conf_sniffer_cleanup();
 extern te_errno ta_unix_conf_cmd_monitor_init(void);
 extern te_errno ta_unix_conf_cmd_monitor_cleanup(void);
 
+extern te_errno ta_unix_conf_rlimits_init(void);
+
 #ifdef WITH_UPNP_CP
 # include "conf_upnp_cp.h"
 #endif /* WITH_UPNP_CP */
@@ -1315,6 +1317,12 @@ rcf_ch_conf_init()
         if (ta_unix_conf_veth_init() != 0)
         {
             ERROR("Failed to add veth interfaces configuration subtree");
+            goto fail;
+        }
+
+        if (ta_unix_conf_rlimits_init() != 0)
+        {
+            ERROR("Failed to add resource limits configuration subtree");
             goto fail;
         }
 
@@ -11363,4 +11371,3 @@ dom_u_migrate_kind_set(unsigned int gid, char const *oid,
     return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
-
