@@ -1,8 +1,11 @@
 /** @file
  * @brief Test API to DLNA UPnP routines
  *
- * Definition of Test API for DLNA UPnP Device features.
+ * @defgroup tapi_upnp_device_info Test API to operate the DLNA UPnP Device information
+ * @ingroup tapi_upnp
+ * @{
  *
+ * Definition of Test API for DLNA UPnP Device features.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -298,6 +301,8 @@ extern void tapi_upnp_free_device_info(tapi_upnp_devices *devices);
  * @param devices    Devices context list.
  */
 extern void tapi_upnp_print_device_info(const tapi_upnp_devices *devices);
+
+/**@} <!-- END tapi_upnp_device_info --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

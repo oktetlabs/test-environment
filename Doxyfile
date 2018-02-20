@@ -609,6 +609,7 @@ INPUT                  = mainpage.dox \
                          lib/tapi_media \
                          lib/tapi_performance \
                          lib/tapi_storage \
+                         lib/tapi_upnp \
                          tools/rgt \
                          tools/trc
 
