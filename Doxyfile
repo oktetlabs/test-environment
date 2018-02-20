@@ -607,6 +607,7 @@ INPUT                  = mainpage.dox \
                          agents \
                          lib/tapi \
                          lib/tapi_performance \
+                         lib/tapi_storage \
                          tools/rgt \
                          tools/trc
 
