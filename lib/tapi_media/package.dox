@@ -1,0 +1,6 @@
+/**
+@defgroup tapi_media Test API to operate the media data
+@ingroup te_ts_tapi
+@{
+@} <!-- END tapi_media -->
+*/

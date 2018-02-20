@@ -1,8 +1,11 @@
 /** @file
  * @brief Test API to 'mplayer' routines
  *
- * Test API to control 'mplayer'.
+ * @defgroup tapi_media_player_mplayer Test API to control the mplayer media player
+ * @ingroup tapi_media
+ * @{
  *
+ * Test API to control 'mplayer'.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -44,6 +47,8 @@ extern "C" {
  * @param player    The player access point
  */
 extern void tapi_media_player_mplayer_init(tapi_media_player *player);
+
+/**@} <!-- END tapi_media_player_mplayer --> */
 
 #ifdef __cplusplus
 } /* extern "C" */
