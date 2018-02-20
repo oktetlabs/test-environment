@@ -606,6 +606,7 @@ INPUT                  = mainpage.dox \
                          lib/confapi \
                          agents \
                          lib/tapi \
+                         lib/tapi_performance \
                          tools/rgt \
                          tools/trc
 
