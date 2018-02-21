@@ -3500,6 +3500,10 @@ static struct {
     { "/agent/dhcpserver", dhcpserver_grab, dhcpserver_release }, 
 #endif
 
+#ifdef WITH_OPENVPN
+    { "/agent/openvpn", openvpn_grab, openvpn_release },
+#endif
+
 #ifdef WITH_PPPOE_SERVER
     { "/agent/pppoeserver", pppoeserver_grab, pppoeserver_release }, 
 #endif

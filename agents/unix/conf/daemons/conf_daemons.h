@@ -108,6 +108,7 @@ get_ds_name(const char *oid)
     return
 #if defined __linux__
          (strstr(oid, "l2tp") != NULL) ? "l2tp" :
+         (strstr(oid, "openvpn") != NULL) ? "openvpn" :
          (strstr(oid, "radvd") != NULL) ? "radvd" :       
          (strstr(oid, "dhcpserver") != NULL) ? "dhcpd" :       
          (strstr(oid, "pppoeserver") != NULL) ? "pppoe-server" :       
@@ -309,6 +310,9 @@ extern te_errno radvd_release(const char *radvd);
 
 extern te_errno dhcpserver_grab(const char *name);
 extern te_errno dhcpserver_release(const char *name);
+
+extern te_errno openvpn_grab(const char *name);
+extern te_errno openvpn_release(const char *name);
 
 extern te_errno pppoeserver_grab(const char *name);
 extern te_errno pppoeserver_release(const char *name);
