@@ -610,6 +610,7 @@ INPUT                  = mainpage.dox \
                          lib/tapi_performance \
                          lib/tapi_storage \
                          lib/tapi_upnp \
+                         lib/tapi_tcp_states \
                          tools/rgt \
                          tools/trc
 
