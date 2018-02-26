@@ -1032,19 +1032,10 @@ static int vlans_buffer[MAX_VLANS];
 te_bool
 ta_interface_is_mine(const char *ifname)
 {
-    char parent[IFNAMSIZ] = "";
-
     if (INTERFACE_IS_LOOPBACK(ifname) ||
         rcf_pch_rsrc_accessible("/agent:%s/interface:%s",
                                 ta_name, ifname))
         return TRUE;
-
-    if (ta_vlan_get_parent(ifname, parent) != 0)
-        return FALSE;
-
-    if (*parent)
-        return rcf_pch_rsrc_accessible("/agent:%s/interface:%s",
-                                       ta_name, parent);
 
 #if 0
     if (INTERFACE_IS_PPP(ifname) ||
