@@ -955,6 +955,8 @@ tapi_cfg_base_if_del_macvlan(const char *ta, const char *link,
         return rc;
 
     rc = tapi_cfg_base_if_del_rsrc(ta, ifname);
+    if (rc == TE_RC(TE_CS, TE_ENOENT))
+        rc = 0;
 
     if (tapi_host_ns_enabled())
     {
@@ -1055,11 +1057,15 @@ tapi_cfg_base_if_del_veth(const char *ta, const char *ifname)
     if (peer != NULL)
     {
         rc2 = tapi_cfg_base_if_del_rsrc(ta, peer);
+        if (rc2 == TE_RC(TE_CS, TE_ENOENT))
+            rc2 = 0;
         if (rc == 0)
             rc = rc2;
     }
 
     rc2 = tapi_cfg_base_if_del_rsrc(ta, ifname);
+    if (rc2 == TE_RC(TE_CS, TE_ENOENT))
+        rc2 = 0;
     if (rc == 0)
         rc = rc2;
 
