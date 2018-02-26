@@ -1059,52 +1059,10 @@ ta_interface_is_mine(const char *ifname)
 static te_errno
 interface_grab(const char *name)
 {
-    const char *ifname = strrchr(name, ':');
-    te_errno    rc;
-    char parent[IFNAMSIZ];
-
-
-    if (ifname == NULL)
-    {
-        ERROR("%s(): Invalid interface instance name %s", __FUNCTION__,
-              name);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-    ifname++;
-
-    rc = ta_vlan_get_parent(ifname, parent);
-    if (rc != 0)
-        return rc;
-
-    if (*parent != 0)
-    {
-        rc = rcf_pch_rsrc_check_locks(parent);
-        if (rc != 0)
-            return rc;
-    }
-    else
-    {
-        /* Grab main interface with all its VLANs */
-        unsigned int len = strlen(ifname);
-        size_t n_vlans = MAX_VLANS, i;
-        char         vlan_ifname[len + 10];
-
-        rc = ta_vlan_get_children(ifname, &n_vlans, vlans_buffer);
-        if (rc != 0)
-            return rc;
-
-        for (i = 0; i < n_vlans; i++)
-        {
-            vlan_ifname_get_internal(ifname, vlans_buffer[i], vlan_ifname);
-            rc = rcf_pch_rsrc_check_locks(vlan_ifname);
-            if (rc != 0)
-                return rc;
-        }
-    }
-
 #ifdef ENABLE_8021X
     return supplicant_grab(name);
 #else
+    UNUSED(name);
     return 0;
 #endif
 }
