@@ -732,6 +732,14 @@ tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
         return rc;
     }
 
+    rc = tapi_cfg_base_if_add_rsrc(ta, *vlan_ifname);
+    if (rc != 0)
+    {
+        ERROR("%s(): Failed to grab VLAN interface %s", __FUNCTION__,
+              *vlan_ifname);
+        return rc;
+    }
+
     if (tapi_host_ns_enabled())
         rc = tapi_host_ns_if_add(ta, *vlan_ifname, if_name);
 
@@ -743,34 +751,43 @@ te_errno
 tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
                           uint16_t vid)
 {
+    char    *vlan_ifname = NULL;
     te_errno rc;
     te_errno rc2 = 0;
 
-    if (tapi_host_ns_enabled())
+    rc = cfg_get_instance_fmt(NULL, &vlan_ifname,
+                               "/agent:%s/interface:%s/vlans:%d/ifname:",
+                               ta, if_name, vid);
+    if (rc != 0)
     {
-        char *vlan_ifname = NULL;
+        ERROR("%s(): Failed to get interface name for VLAN interface "
+              "with VID=%hu on %s", __FUNCTION__, vid, if_name);
+    }
+    else
+    {
+        if (tapi_host_ns_enabled())
+            rc = tapi_host_ns_if_del(ta, vlan_ifname, TRUE);
 
-        rc2 = cfg_get_instance_fmt(NULL, &vlan_ifname,
-                                   "/agent:%s/interface:%s/vlans:%d/ifname:",
-                                   ta, if_name, vid);
-        if (rc2 != 0)
+        rc2 = tapi_cfg_base_if_del_rsrc(ta, vlan_ifname);
+        if (rc2 == TE_RC(TE_CS, TE_ENOENT))
+            rc2 = 0;
+        else if (rc2 != 0)
         {
-            ERROR("%s(): Failed to get interface name for VLAN interface "
-                  "with VID=%su on %s", __FUNCTION__, vid, if_name);
+            ERROR("%s(): Failed to release VLAN interface %s", __FUNCTION__,
+                  vlan_ifname);
         }
-        else
-        {
-            rc2 = tapi_host_ns_if_del(ta, vlan_ifname, TRUE);
-            free(vlan_ifname);
-        }
+        if (rc == 0)
+            rc = rc2;
+
+        free(vlan_ifname);
     }
 
-    rc = cfg_del_instance_fmt(FALSE, "/agent:%s/interface:%s/vlans:%d",
+    rc2 = cfg_del_instance_fmt(FALSE, "/agent:%s/interface:%s/vlans:%d",
                               ta, if_name, vid);
-    if (rc != 0)
+    if (rc2 != 0)
         ERROR("%s(): Failed to delete VLAN with VID=%d from %s",
               __FUNCTION__, vid, if_name);
-    else
+    if (rc == 0)
         rc = rc2;
 
     return rc;
