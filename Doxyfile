@@ -592,25 +592,9 @@ INPUT                  = mainpage.dox \
                          doc/dox_resources/pages \
                          engine \
                          include \
-                         lib/rcfrpc \
-                         lib/rpc \
-                         lib/rpc_types \
-                         lib/rpcxdr \
-                         lib/tapi_rpc \
-                         lib/rcfapi \
-                         lib/rcfunix \
-                         lib/rcfpch \
+                         lib \
                          include/tarpc.x.m4 \
-                         lib/loggerten \
-                         lib/loggerta \
-                         lib/confapi \
                          agents \
-                         lib/tapi \
-                         lib/tapi_media \
-                         lib/tapi_performance \
-                         lib/tapi_storage \
-                         lib/tapi_upnp \
-                         lib/tapi_tcp_states \
                          tools/rgt \
                          tools/trc
 
