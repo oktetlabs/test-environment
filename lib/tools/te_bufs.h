@@ -1,6 +1,10 @@
 /** @file
  * @brief API to deal with buffers
  *
+ * @defgroup te_tools_te_bufs Regular binary buffers
+ * @ingroup te_tools
+ * @{
+ *
  * Allocation of buffers, fill in by random numbers, etc.
  *
  *
@@ -114,3 +118,4 @@ te_calloc_fill(size_t num, size_t size, int byte)
 } /* extern "C" */
 #endif
 #endif /* !__TE_TOOLS_BUFS_H__ */
+/**@} <!-- END te_tools_te_bufs --> */

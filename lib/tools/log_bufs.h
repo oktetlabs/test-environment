@@ -1,6 +1,10 @@
 /** @file
  * @brief API to collect long log messages
  *
+ * @defgroup te_tools_log_bufs Log buffers
+ * @ingroup te_tools
+ * @{
+ *
  * Declaration of API to collect long log messages.
  *
  *
@@ -157,3 +161,4 @@ extern const char *te_ip_addr2log_buf(te_log_buf *buf, const void *ip_addr,
 } /* extern "C" */
 #endif
 #endif /* !__TE_LOG_BUFS_H__ */
+/**@} <!-- END te_tools_log_bufs --> */

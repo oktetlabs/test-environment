@@ -1,6 +1,10 @@
 /** @file
  * @brief API to calculate hash used by RSS
  *
+ * @defgroup te_tools_te_toeplitz Toeplitz hash
+ * @ingroup te_tools
+ * @{
+ *
  * Definition of API to calculate hash used by RSS
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
@@ -97,3 +101,4 @@ extern te_toeplitz_hash_cache *te_toeplitz_cache_init(const uint8_t *key);
 } /* extern "C" */
 #endif
 #endif /* !__TE_TOOLS_TOEPLITZ_H__ */
+/**@} <!-- END te_tools_te_toeplitz --> */

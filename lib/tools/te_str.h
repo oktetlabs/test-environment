@@ -1,6 +1,10 @@
 /** @file
  * @brief API to deal with strings
  *
+ * @defgroup te_tools_te_str Regular strings
+ * @ingroup te_tools
+ * @{
+ *
  * Function to operate the strings.
  *
  *
@@ -141,3 +145,4 @@ extern te_errno te_strtoul(const char *str, int base,
 } /* extern "C" */
 #endif
 #endif /* !__TE_STR_H__ */
+/**@} <!-- END te_tools_te_str --> */

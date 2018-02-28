@@ -1,7 +1,8 @@
 /** @file
  * @brief Auxiliary tools to deal with IP stack headers and checksums
  *
- * Implementation of the tools
+ * Implementation of the auxiliary functions to operate the IP stack headers
+ * and checksums
  *
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS in

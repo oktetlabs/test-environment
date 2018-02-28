@@ -1,6 +1,10 @@
 /** @file
  * @brief API to deal with dynamic buffers
  *
+ * @defgroup te_tools_te_dbuf Dynamic buffers
+ * @ingroup te_tools
+ * @{
+ *
  * Definition of functions to work with dynamic buffers.
  *
  *
@@ -25,24 +29,21 @@
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
- * $Id$
- */
-
-/**
- * Example to use.
  *
+ * Example of using:
+ * @code
  * // Init the dynamic buffer with 100% overlength.
  * te_dbuf dbuf = TE_DBUF_INIT(100);
  * ...
  * // Put the "foo\0" into the dbuf
  * if (te_dbuf_append(&dbuf, "foo", 4) == -1) {
- *     ERROR("Memory allocation error.");
+ *     ERROR("Memory allocation error");
  * }
  * ...
  * // Reserve 4 bytes into the dbuf
  * size_t pos = dbuf.len;   // Save current position in the buffer.
  * if (te_dbuf_append(&dbuf, NULL, 4) == -1) {
- *     ERROR("Memory allocation error.");
+ *     ERROR("Memory allocation error");
  * }
  * (uint32_t *)&dbuf.ptr[pos] = 5;  // Put the number to reserved place.
  * ...
@@ -51,6 +52,7 @@
  * ...
  * // Finish work with dynamic buffer, free the memory.
  * te_dbuf_free(&dbuf);
+ * @endcode
  */
 
 #ifndef __TE_DBUF_H__
@@ -152,3 +154,4 @@ extern void te_dbuf_print(const te_dbuf *dbuf);
 } /* extern "C" */
 #endif
 #endif /* !__TE_DBUF_H__ */
+/**@} <!-- END te_tools_te_dbuf --> */

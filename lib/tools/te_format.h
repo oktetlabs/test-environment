@@ -1,6 +1,10 @@
 /** @file
  * @brief Format string parsing
  *
+ * @defgroup te_tools_te_format Format string parsing
+ * @ingroup te_tools
+ * @{
+ *
  * Some TE-specific features, such as memory dump, file content logging,
  * and additional length modifiers are supported.
  *
@@ -65,3 +69,4 @@ extern te_errno te_log_vprintf_old(struct te_log_out_params *param,
                                    const char *fmt, va_list ap);
 
 #endif /* !__TE_TOOLS_FORMAT_H__ */
+/**@} <!-- END te_tools_te_format --> */

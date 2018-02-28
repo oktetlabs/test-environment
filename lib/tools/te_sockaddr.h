@@ -1,5 +1,9 @@
 /** @file
- * @brief Functions to opearate with generic "struct sockaddr"
+ * @brief Functions to opearate generic "struct sockaddr"
+ *
+ * @defgroup te_tools_te_sockaddr Sockaddr
+ * @ingroup te_tools
+ * @{
  *
  * Definition of API for working with struct sockaddr.
  *
@@ -468,3 +472,4 @@ extern te_errno te_sockaddr_ip4_to_ip6_mapped(struct sockaddr *addr);
 } /* extern "C" */
 #endif
 #endif /* !__TE_TOOLS_SOCKADDR_H__ */
+/**@} <!-- END te_tools_te_sockaddr --> */

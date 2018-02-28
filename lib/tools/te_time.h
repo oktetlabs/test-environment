@@ -1,6 +1,10 @@
 /** @file
  * @brief API to operate the time
  *
+ * @defgroup te_tools_te_time Date, time
+ * @ingroup te_tools
+ * @{
+ *
  * Functions to operate the date and time.
  *
  *
@@ -47,3 +51,4 @@ extern char *te_time_current_date2str(void);
 } /* extern "C" */
 #endif
 #endif /* !__TE_TIME_H__ */
+/**@} <!-- END te_tools_te_time --> */

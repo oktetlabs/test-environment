@@ -1,6 +1,10 @@
 /** @file
  * @brief API to call shell commands
  *
+ * @defgroup te_tools_te_shell_cmd Call shell commands
+ * @ingroup te_tools
+ * @{
+ *
  * Routines to call shell commands
  *
  *
@@ -235,3 +239,4 @@ extern pid_t te_shell_cmd(const char *cmd, uid_t uid,
 } /* extern "C" */
 #endif
 #endif /* !__TE_SHELL_CMD_H__ */
+/**@} <!-- END te_tools_te_shell_cmd --> */

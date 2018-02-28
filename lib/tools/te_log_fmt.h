@@ -1,6 +1,10 @@
 /** @file
  * @brief TE log format string processing
  *
+ * @defgroup te_tools_te_log_fmt Log format string processing
+ * @ingroup te_tools
+ * @{
+ *
  * Some TE-specific features, such as memory dump, file content logging,
  * and additional length modifiers are supported.
  *
@@ -220,3 +224,4 @@ extern te_errno te_log_message_split(const char *file, unsigned int line,
                                      const char *fmt, ...);
 
 #endif /* !__TE_LOG_FMT_H__ */
+/**@} <!-- END te_tools_te_log_fmt --> */

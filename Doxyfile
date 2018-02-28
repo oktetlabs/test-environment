@@ -590,6 +590,7 @@ WARN_LOGFILE           = doxygen.warn
 
 INPUT                  = mainpage.dox \
                          doc/dox_resources/pages \
+                         lib/tools \
                          engine \
                          include \
                          lib \

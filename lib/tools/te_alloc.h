@@ -1,6 +1,10 @@
 /** @file
  * @brief API to safely allocate memory
  *
+ * @defgroup te_tools_te_alloc Safe memory allocation
+ * @ingroup te_tools
+ * @{
+ *
  * Safe memory allocation
  *
  *
@@ -65,3 +69,4 @@ extern void *te_alloc_internal(size_t len, const char *filename, int line);
 } /* extern "C" */
 #endif
 #endif /* !__TE_TOOLS_ALLOC_H__ */
+/**@} <!-- END te_tools_te_alloc --> */

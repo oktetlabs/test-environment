@@ -1,0 +1,10 @@
+/**
+@defgroup te_tools Common tools API
+@ingroup te
+@{
+
+Here is a common library which functions are designed for using them everywhere,
+whether in Engine modules, Agent modules, or Test Suite
+
+@} <!-- END te_tools -->
+*/

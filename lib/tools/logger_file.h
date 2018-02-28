@@ -1,6 +1,10 @@
 /** @file
  * @brief Logger subsystem API
  *
+ * @defgroup te_tools_logger_file Logger subsystem
+ * @ingroup te_tools
+ * @{
+ *
  * Logger internal API to be used by standalone TE off-line applications.
  *
  *
@@ -59,3 +63,4 @@ extern void te_log_message_file(const char *file, unsigned int line,
 } /* extern "C" */
 #endif
 #endif /* !__TE_LIB_LOGGER_FILE_H__ */
+/**@} <!-- END te_tools_logger_file --> */

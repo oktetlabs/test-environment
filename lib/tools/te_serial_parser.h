@@ -1,6 +1,10 @@
 /** @file
  * @brief Unix Test Agent serial console parser support.
  *
+ * @defgroup te_tools_te_serial_parser Serial console parser
+ * @ingroup te_tools
+ * @{
+ *
  * Defenition of unix TA serial console parse configuring support.
  *
  * Copyright (C) 2004-2012 Test Environment authors (see file AUTHORS
@@ -126,5 +130,5 @@ extern int te_serial_parser(serial_parser_t *parser);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
 #endif /* ndef __TE_SERIAL_PARSER_H__ */
+/**@} <!-- END te_tools_te_serial_parser --> */
