@@ -124,7 +124,7 @@ extern te_errno te_log_vprintf(te_log_msg_out *out,
 
 
 
-/** Raw log version of backend common parameters */
+/* Raw log version of backend common parameters */
 extern const struct te_log_msg_out te_log_msg_out_raw;
 
 /** Log argument descriptor */

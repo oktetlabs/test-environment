@@ -27,7 +27,7 @@
  * MA  02111-1307  USA
  *
  *
- * @author Oleg Kravtosv <Oleg.Kravtosv@oktetlabs.ru>
+ * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  * $Id$
  */
@@ -41,7 +41,7 @@ extern "C" {
 
 #include <inttypes.h>
 
-/**
+/*
  * Declaration of te_log_buf type, which is defined
  * in the implementation, so user can allocate and operate only
  * with pointer to this data structure.

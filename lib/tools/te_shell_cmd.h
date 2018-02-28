@@ -232,6 +232,9 @@ te_shell_cmd_inline(const char *cmd, uid_t uid,
     return pid;
 }
 
+/**
+ * It is a wrapper for te_shell_cmd_inline()
+ */
 extern pid_t te_shell_cmd(const char *cmd, uid_t uid,
                           int *in_fd, int *out_fd, int *err_fd);
 

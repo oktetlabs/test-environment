@@ -108,7 +108,7 @@ te_kernel_log_set_system_func(void *p)
     func_system = p;
 }
 
-/**
+/*
  * Described in te_kernel_log.h
  */
 te_errno
