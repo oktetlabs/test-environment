@@ -1,7 +1,9 @@
 /** @file
- * @brief Test API for TAD. PPP CSAP
+ * @brief TAPI TAD PPPOE
  *
- * Implementation of Test API
+ * @defgroup tapi_tad_pppoe PPPOE
+ * @ingroup tapi_tad_main
+ * @{
  *
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -22,8 +24,6 @@
  * MA  02111-1307  USA
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
- *
- * $Id: $
  */
 
 #ifndef __TE_TAPI_PPPOE_H__
@@ -88,3 +88,5 @@ extern te_errno tapi_pppoe_add_pdu(asn_value **tmpl_or_ptrn,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_PPPOE_H__ */
+
+/**@} <!-- END tapi_tad_pppoe --> */

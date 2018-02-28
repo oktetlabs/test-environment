@@ -1,5 +1,9 @@
 /** @file
- * @brief Test API
+ * @brief TAPI TAD Generic
+ *
+ * @defgroup tapi_tad Generic TAD API
+ * @ingroup tapi_tad_main
+ * @{
  *
  * Definition of Test API for common Traffic Application Domain
  * features.
@@ -25,8 +29,6 @@
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_TAD_H__
@@ -386,3 +388,5 @@ extern te_errno tapi_tad_csap_get_no_match_pkts(const char *ta_name,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_TAD_H__ */
+
+/**@} <!-- END tapi_tad --> */

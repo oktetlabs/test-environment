@@ -1,7 +1,9 @@
 /** @file
- * @brief Test API for TAD. iSCSI CSAP
+ * @brief TAPI TAD iSCSI
  *
- * Implementation of Test API
+ * @defgroup tapi_tad_iscsi iSCSI
+ * @ingroup tapi_tad_main
+ * @{
  *
  * Copyright (C) 2004 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -21,9 +23,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * @author: Konstantin Abramenko <konst@oktetlabs.ru>
- *
- * $Id$
+ * @author Konstantin Abramenko <konst@oktetlabs.ru>
  */
 
 
@@ -1327,3 +1327,5 @@ extern te_errno tapi_iscsi_initiator_read_file(iscsi_io_handle_t *ioh,
 
 
 #endif /* !__TE_TAPI_ISCSI_H__ */
+
+/**@} <!-- END tapi_tad_iscsi --> */

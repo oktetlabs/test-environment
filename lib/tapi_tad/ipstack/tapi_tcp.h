@@ -1,5 +1,9 @@
 /** @file
- * @brief Test API for TAD. ipstack CSAP
+ * @brief TAPI TAD TCP
+ *
+ * @defgroup tapi_tad_tcp TCP
+ * @ingroup tapi_tad_ipstack
+ * @{
  *
  * Declarations of TAPI methods for raw-TCP CSAP.
  *
@@ -21,9 +25,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * @author: Konstantin Abramenko <konst@oktetlabs.ru>
- *
- * $Id$
+ * @author Konstantin Abramenko <konst@oktetlabs.ru>
  */
 
 
@@ -1143,3 +1145,5 @@ extern int tapi_tcp_wait_packet(tapi_tcp_handler_t handler, int timeout);
 extern int tapi_tcp_get_packets(tapi_tcp_handler_t handler);
 
 #endif /* !__TE_TAPI_TCP_H__ */
+
+/**@} <!-- END tapi_tad_tcp --> */

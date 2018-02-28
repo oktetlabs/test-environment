@@ -1,9 +1,11 @@
 /** @file
- * @brief Packet flow processing API
+ * @brief TAPI TAD Flow
  *
- * Definition of Test API for common Traffic Application Domain
- * features.
+ * @defgroup tapi_tad_flow Packet flow processing
+ * @ingroup tapi_tad_main
+ * @{
  *
+ * Packet flow processing API.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -25,8 +27,6 @@
  *
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
- *
- * $Id: $
  */
 
 #ifndef __TE_TAPI_TAD_FLOW_H__
@@ -245,3 +245,5 @@ extern te_errno tapi_flow_check_all(tapi_flow_t *flow,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_TAD_FLOW_H__ */
+
+/**@} <!-- END tapi_tad_flow --> */

@@ -1,7 +1,9 @@
 /** @file
- * @brief Test API for TAD. ipstack CSAP
+ * @brief TAPI TAD UDP
  *
- * Implementation of Test API
+ * @defgroup tapi_tad_udp UDP
+ * @ingroup tapi_tad_ipstack
+ * @{
  *
  * Copyright (C) 2004 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -21,9 +23,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * @author: Konstantin Abramenko <konst@oktetlabs.ru>
- *
- * $Id$
+ * @author Konstantin Abramenko <konst@oktetlabs.ru>
  */
 
 
@@ -242,3 +242,5 @@ extern te_errno tapi_udp_ip6_eth_csap_create(const char    *ta_name,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_UDP_H__ */
+
+/**@} <!-- END tapi_tad_udp --> */

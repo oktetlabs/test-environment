@@ -1,7 +1,9 @@
 /** @file
- * @brief Test API for TAD. IGMP CSAP
+ * @brief TAPI TAD IGMP
  *
- * Implementation of Test API
+ * @defgroup tapi_tad_igmp IGMP
+ * @ingroup tapi_tad_main
+ * @{
  *
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -22,8 +24,6 @@
  * MA  02111-1307  USA
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
- *
- * $Id: $
  */
 
 #ifndef __TE_TAPI_IGMP2_H__
@@ -830,3 +830,5 @@ tapi_igmp3_group_list_new(tapi_igmp3_group_list_t *group_list, ...);
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_IGMP2_H__ */
+
+/**@} <!-- END tapi_tad_igmp --> */

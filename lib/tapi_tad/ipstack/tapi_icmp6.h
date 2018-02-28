@@ -1,7 +1,9 @@
 /** @file
- * @brief Test API for TAD. ipstack CSAP
+ * @brief TAPI TAD ICMP6
  *
- * Implementation of Test API
+ * @defgroup tapi_tad_icmp6 ICMP6
+ * @ingroup tapi_tad_ipstack
+ * @{
  *
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -22,8 +24,6 @@
  * MA  02111-1307  USA
  *
  * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_ICMP6_H__
@@ -202,3 +202,5 @@ extern te_errno tapi_icmp6_add_pdu(asn_value **tmpl_or_ptrn,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_ICMP6_H__ */
+
+/**@} <!-- END tapi_tad_icmp6 --> */

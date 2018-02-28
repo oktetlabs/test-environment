@@ -1,6 +1,10 @@
 /** @file
  * @brief TAPI TAD Ethernet
  *
+ * @defgroup tapi_tad_eth Ethernet
+ * @ingroup tapi_tad_main
+ * @{
+ *
  * Declarations of test API for Ethernet TAD.
  *
  *
@@ -25,8 +29,6 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_ETH_H__
@@ -303,3 +305,5 @@ extern te_errno tapi_eth_based_csap_create_by_tmpl(const char      *ta_name,
                                                    csap_handle_t   *eth_csap);
 
 #endif /* __TE_TAPI_ETH_H__ */
+
+/**@} <!-- END tapi_tad_eth --> */

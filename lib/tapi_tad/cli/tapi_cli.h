@@ -1,5 +1,9 @@
 /** @file
- * @brief Proteos, TAPI CLI.
+ * @brief TAPI TAD CLI
+ *
+ * @defgroup tapi_tad_cli CLI
+ * @ingroup tapi_tad_main
+ * @{
  *
  * Declarations of API for TAPI CLI.
  *
@@ -24,8 +28,6 @@
  *
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_CLI_H__
@@ -441,3 +443,5 @@ tapi_cli_send_recv_with_prompt(const char *ta_name, int sid,
     } while (0)
 
 #endif /* __TE_TAPI_CLI_H__ */
+
+/**@} <!-- END tapi_tad_cli --> */

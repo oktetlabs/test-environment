@@ -1,5 +1,9 @@
 /** @file
- * @brief Test API for TAD. ipstack CSAP
+ * @brief TAPI TAD Socket
+ *
+ * @defgroup tapi_tad_socket Socket
+ * @ingroup tapi_tad_ipstack
+ * @{
  *
  * Declarations of TAPI methods for raw-TCP CSAP.
  *
@@ -21,9 +25,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA  02111-1307  USA
  *
- * @author: Konstantin Abramenko <konst@oktetlabs.ru>
- *
- * $Id$
+ * @author Konstantin Abramenko <konst@oktetlabs.ru>
  */
 
 
@@ -185,3 +187,5 @@ extern te_errno tapi_udp_csap_create(const char *ta_name, int sid,
 
 
 #endif /* !__TE_TAPI_SOCKET_H__ */
+
+/**@} <!-- END tapi_tad_socket --> */

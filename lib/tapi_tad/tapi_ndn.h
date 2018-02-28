@@ -1,5 +1,9 @@
 /** @file
- * @brief TAPI NDN
+ * @brief TAPI TAD NDN
+ *
+ * @defgroup tapi_ndn Network Data Notation (NDN)
+ * @ingroup tapi_tad_main
+ * @{
  *
  * Declarations of API for TAPI NDN.
  *
@@ -22,9 +26,7 @@
  * MA  02111-1307  USA
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- *
- * $Id$
- */ 
+ */
 
 #ifndef __TE_TAPI_NDN_H__
 #define __TE_TAPI_NDN_H__
@@ -289,3 +291,5 @@ extern te_errno tapi_ndn_subst_env(asn_value *value, te_kvpair_h *params,
 } /* extern "C" */
 #endif
 #endif /* __TE_TAPI_NDN_H__ */
+
+/**@} <!-- END tapi_ndn --> */
