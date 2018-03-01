@@ -1,8 +1,11 @@
 /** @file
  * @brief Generic test API to storage client routines
  *
- * Generic client functions for storage service.
+ * @defgroup tapi_storage_client Test API to control the storage client
+ * @ingroup tapi_storage
+ * @{
  *
+ * Generic client functions for storage service.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -498,6 +501,8 @@ extern te_errno tapi_storage_client_mget(tapi_storage_client *client,
                                          const char          *remote_file,
                                          const char          *local_file,
                                          te_bool              recursive);
+
+/**@} <!-- END tapi_storage_client --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

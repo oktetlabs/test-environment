@@ -1,8 +1,11 @@
 /** @file
- * @brief Proteos, TAPI STP - Spanning tree Protocol.
+ * @brief TAPI TAD STP
  *
- * Declarations of API for TAPI STP.
+ * @defgroup tapi_tad_stp STP
+ * @ingroup tapi_tad_main
+ * @{
  *
+ * Declarations of API for Spanning tree Protocol.
  *
  * Copyright (C) 2003 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -24,9 +27,7 @@
  *
  *
  * @author Oleg Kravtsov <oleg@oktetlabs.ru>
- *
- * $Id$
- */ 
+ */
 
 #ifndef __TE_TAPI_BRIDGE_STP_H__
 #define __TE_TAPI_BRIDGE_STP_H__
@@ -135,3 +136,5 @@ extern int tapi_stp_bpdu_recv_start(const char *ta_name, int sid,
 #endif
 
 #endif /* __TE_TAPI_BRIDGE_STP_H__ */
+
+/**@} <!-- END tapi_tad_stp --> */

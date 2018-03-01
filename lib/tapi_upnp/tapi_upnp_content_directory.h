@@ -1,8 +1,11 @@
 /** @file
  * @brief Test API to DLNA UPnP routines
  *
- * Definition of Test API for DLNA UPnP Content Directory Service features.
+ * @defgroup tapi_upnp_cd_service Test API to operate the DLNA UPnP Content Directory Service
+ * @ingroup tapi_upnp
+ * @{
  *
+ * Definition of Test API for DLNA UPnP Content Directory Service features.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -300,6 +303,8 @@ extern void tapi_upnp_print_content_directory(
 extern size_t tapi_upnp_cd_get_objects_count(
                             const tapi_upnp_cd_container_node *container,
                             tapi_upnp_cd_object_type           type);
+
+/**@} <!-- END tapi_upnp_cd_service --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

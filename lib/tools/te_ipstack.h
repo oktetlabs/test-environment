@@ -1,7 +1,12 @@
 /** @file
  * @brief Auxiliary tools to deal with IP stack headers and checksums
  *
- * Definition of the tools and auxiliary data structures
+ * @defgroup te_tools_te_ipstack IP stack headers
+ * @ingroup te_tools
+ * @{
+ *
+ * Definition of the auxiliary data structures and functions to operate the IP
+ * stack headers and checksums
  *
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS in
@@ -83,5 +88,5 @@ extern te_errno te_ipstack_calc_l4_cksum(const struct sockaddr  *ip_dst_addr,
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
 #endif /* !__TE_TOOLS_IPSTACK__ */
+/**@} <!-- END te_tools_te_ipstack --> */

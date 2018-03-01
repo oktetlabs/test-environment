@@ -160,7 +160,7 @@ msg_output(struct te_log_out_params *param, const char *fmt, ...)
  *
  * @return             Error code
  */
-te_errno
+static te_errno
 msg_end_process(struct te_log_out_params *param)
 {
     if (param->fp != NULL)
@@ -171,19 +171,11 @@ msg_end_process(struct te_log_out_params *param)
     return 0;
 }
 
-/**
-  * Preprocess and output message to log with special features parsing
-  *
-  * @param param        Output parameters
-  * @param fmt          Format string
-  * @param ap           Arguments for the format string
-  *
-  * @return             Error code
-  *
-  * FIXME: Read 'man va_copy'. Add missing 'va_end' calls.
-  * FIXME: Resourse leak here: fmt_dup.
-  * FIXME: Many switches below do not have 'default'. It is not good.
-  */
+/*
+ * FIXME: Read 'man va_copy'. Add missing 'va_end' calls.
+ * FIXME: Resourse leak here: fmt_dup.
+ * FIXME: Many switches below do not have 'default'. It is not good.
+ */
 te_errno
 te_log_vprintf_old(struct te_log_out_params *param,
                    const char *fmt, va_list ap)
@@ -512,4 +504,3 @@ case mod_:\
 
     return 0;
 }
-

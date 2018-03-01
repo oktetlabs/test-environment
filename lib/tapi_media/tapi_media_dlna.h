@@ -1,8 +1,11 @@
 /** @file
  * @brief Test API to DLNA media routines
  *
- * Functions for convenient work with the DLNA files on remote storage.
+ * @defgroup tapi_media_dlna Test API to operate the DLNA media files
+ * @ingroup tapi_media
+ * @{
  *
+ * Functions for convenient work with the DLNA files on remote storage.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -52,6 +55,8 @@ extern "C" {
 extern te_bool tapi_media_dlna_cmp_with_local(
                             const tapi_upnp_cd_container_node *dlna_file,
                             const tapi_media_file             *local_file);
+
+/**@} <!-- END tapi_media_dlna --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

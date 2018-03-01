@@ -1,6 +1,10 @@
 /** @file
  * @brief Mapping of unix signal name->number and number->name
  *
+ * @defgroup te_tools_te_sigmap Mapping of unix signal names and numbers
+ * @ingroup te_tools
+ * @{
+ *
  * Definition of the mapping functions.
  *
  * Copyright (C) 2004-2012 Test Environment authors (see file AUTHORS
@@ -56,5 +60,5 @@ extern char * map_signo_to_name(int signo);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
 #endif /* ndef __TE_SIGMAP_H__ */
+/**@} <!-- END te_tools_te_sigmap --> */

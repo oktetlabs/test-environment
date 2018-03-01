@@ -67,8 +67,9 @@ rpc_rte_eal_init(rcf_rpc_server *rpcs,
      * Number of processed arguments cannot be greater that number of
      * passed arguments.
      */
-    CHECK_RETVAL_VAR(rte_eal_init, out.retval, out.retval > argc,
-                     RETVAL_ECORRUPTED);
+    CHECK_RETVAL_VAR_ERR_COND(rte_eal_init, out.retval,
+                              out.retval > argc, RETVAL_ECORRUPTED,
+                              out.retval < 0);
 
     tlbp = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, rte_eal_init, "%d, %p(%s)", NEG_ERRNO_FMT,

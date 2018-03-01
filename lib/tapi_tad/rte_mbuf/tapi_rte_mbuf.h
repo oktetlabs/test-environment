@@ -1,8 +1,11 @@
 /** @file
  * @brief TAPI TAD RTE mbuf
  *
- * Declarations of test API for RTE mbuf TAD
+ * @defgroup tapi_tad_rte_mbuf RTE mbuf
+ * @ingroup tapi_tad_main
+ * @{
  *
+ * Declarations of test API for RTE mbuf TAD.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS in
  * the root directory of the distribution).
@@ -54,3 +57,5 @@ extern te_errno tapi_rte_mbuf_add_csap_layer(asn_value      **csap_spec,
                                              const char      *pkt_pool);
 
 #endif /* __TE_TAPI_RTE_MBUF_H__ */
+
+/**@} <!-- END tapi_tad_rte_mbuf --> */

@@ -1,8 +1,11 @@
 /** @file
  * @brief Test API to media file routines
  *
- * Functions for convenient work with the media files on local storage.
+ * @defgroup tapi_media_file Test API to operate the media files
+ * @ingroup tapi_media
+ * @{
  *
+ * Functions for convenient work with the media files on local storage.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -93,6 +96,8 @@ extern te_errno tapi_media_file_get_from_local(
  * @sa tapi_media_file_get_from_local
  */
 extern void tapi_media_file_free(tapi_media_file *media_file);
+
+/**@} <!-- END tapi_media_file --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

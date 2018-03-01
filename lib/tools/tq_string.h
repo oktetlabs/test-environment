@@ -1,6 +1,10 @@
 /** @file
  * @brief Tail queue of strings (char *).
  *
+ * @defgroup te_tools_tq_string Tail queue of strings
+ * @ingroup te_tools
+ * @{
+ *
  * Definition of API for working with tail queue of strings.
  *
  *
@@ -123,3 +127,4 @@ extern te_errno tq_strings_add_uniq_dup(tqh_strings *list,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TOOLS_TQ_STRING_H__ */
+/**@} <!-- END te_tools_tq_string --> */

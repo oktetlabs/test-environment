@@ -1,9 +1,12 @@
 /** @file
  * @brief Test API to DLNA UPnP routines
  *
+ * @defgroup tapi_upnp_cd_resources Test API to operate the DLNA UPnP Content Directory Resources
+ * @ingroup tapi_upnp
+ * @{
+ *
  * Definition of Test API for DLNA UPnP Content Directory Resources
  * features.
- *
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -90,6 +93,8 @@ extern void tapi_upnp_resources_free_media_uri(tapi_upnp_media_uri *media);
  * @param res           Content Directory object resource.
  */
 extern void tapi_upnp_print_resource_info(const tapi_upnp_cd_resource *res);
+
+/**@} <!-- END tapi_upnp_cd_resources --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

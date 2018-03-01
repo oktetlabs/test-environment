@@ -1,6 +1,10 @@
 /** @file
  * @brief API to safely allocate memory
  *
+ * @defgroup te_tools_te_alloc Safe memory allocation
+ * @ingroup te_tools
+ * @{
+ *
  * Safe memory allocation
  *
  *
@@ -41,23 +45,22 @@ extern "C" {
 #endif
 
 /**
- * Allocate memory filling it with zeroes.
+ * Allocate @p size bytes and fill allocated memory with zeroes.
  * Logs an error if the memory cannot be allocated.
  * This function should never be called directly,
  * use TE_ALLOC() macro instead
  *
- * @param len      Buffer length
+ * @param size     Number of bytes to allocate
  * @param filename Caller's filename
  * @param line     Caller's line
  */
-extern void *te_alloc_internal(size_t len, const char *filename, int line);
+extern void *te_alloc_internal(size_t size, const char *filename, int line);
 
 
 /**
- * Allocate memory filling it with zeroes
- * Logs an error if the memory cannot be allocated.
+ * It is a wrapper for te_alloc_internal()
  *
- * @param len      Buffer length
+ * @param _size     Number of bytes to allocate
  */
 #define TE_ALLOC(_size) (te_alloc_internal((_size), __FILE__, __LINE__))
 
@@ -65,3 +68,4 @@ extern void *te_alloc_internal(size_t len, const char *filename, int line);
 } /* extern "C" */
 #endif
 #endif /* !__TE_TOOLS_ALLOC_H__ */
+/**@} <!-- END te_tools_te_alloc --> */

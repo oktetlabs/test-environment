@@ -1,5 +1,9 @@
 /** @file
- * @brief Test Environment: 
+ * @brief TAPI TAD SNMP
+ *
+ * @defgroup tapi_tad_snmp SNMP
+ * @ingroup tapi_tad_main
+ * @{
  *
  * Traffic Application Domain Command Handler
  * SNMP protocol implementaion internal declarations.
@@ -26,8 +30,6 @@
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_SNMP_H__
@@ -1183,3 +1185,5 @@ tapi_snmp_gen_trap_by_name(const char *trap_name);
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_SNMP_H__ */
+
+/**@} <!-- END tapi_tad_snmp --> */

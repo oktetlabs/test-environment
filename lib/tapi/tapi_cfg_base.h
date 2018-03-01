@@ -487,7 +487,8 @@ extern te_errno tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
                                           uint16_t vid);
 
 /**
- * Add VLAN interface and get its name.
+ * Add VLAN interface and get its name. The new interface is grabbed just
+ * after creation.
  *
  * @param ta            Test Agent name
  * @param if_name       interface name
@@ -501,8 +502,8 @@ extern te_errno tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
  *
  * @return Status code
  */
-te_errno tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
-                                   uint16_t vid, char **vlan_ifname);
+extern te_errno tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
+                                          uint16_t vid, char **vlan_ifname);
 
 /**
  * Delete VLAN if it exists and add VLAN interface and get its name if

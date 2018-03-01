@@ -1,8 +1,11 @@
 /** @file
  * @brief Generic test API to storage routines
  *
- * Generic high level functions to work with storage.
+ * @defgroup tapi_storage_wrapper Test API to perform the generic operations over the storage
+ * @ingroup tapi_storage
+ * @{
  *
+ * Generic high level functions to work with storage.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -66,6 +69,8 @@ extern te_errno tapi_storage_bootstrap(tapi_storage_client *client,
  */
 extern te_errno tapi_storage_setup(tapi_storage_client *client,
                                    const char          *root);
+
+/**@} <!-- END tapi_storage_wrapper --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

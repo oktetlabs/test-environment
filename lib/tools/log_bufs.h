@@ -1,6 +1,10 @@
 /** @file
  * @brief API to collect long log messages
  *
+ * @defgroup te_tools_log_bufs Log buffers
+ * @ingroup te_tools
+ * @{
+ *
  * Declaration of API to collect long log messages.
  *
  *
@@ -23,7 +27,7 @@
  * MA  02111-1307  USA
  *
  *
- * @author Oleg Kravtosv <Oleg.Kravtosv@oktetlabs.ru>
+ * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  * $Id$
  */
@@ -37,7 +41,7 @@ extern "C" {
 
 #include <inttypes.h>
 
-/**
+/*
  * Declaration of te_log_buf type, which is defined
  * in the implementation, so user can allocate and operate only
  * with pointer to this data structure.
@@ -157,3 +161,4 @@ extern const char *te_ip_addr2log_buf(te_log_buf *buf, const void *ip_addr,
 } /* extern "C" */
 #endif
 #endif /* !__TE_LOG_BUFS_H__ */
+/**@} <!-- END te_tools_log_bufs --> */

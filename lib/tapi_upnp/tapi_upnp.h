@@ -1,8 +1,11 @@
 /** @file
  * @brief Test API to DLNA UPnP routines
  *
- * Definition of Test API DLNA UPnP commons.
+ * @defgroup tapi_upnp_common Test API for DLNA UPnP commons
+ * @ingroup tapi_upnp
+ * @{
  *
+ * Definition of Test API DLNA UPnP commons.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -111,6 +114,8 @@ tapi_upnp_get_st_upnp_forum_service_type(const char *service_type)
 {
     return tapi_upnp_get_st_service_type("schemas-upnp-org", service_type);
 }
+
+/**@} <!-- END tapi_upnp_common --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

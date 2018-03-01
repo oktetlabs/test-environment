@@ -1,0 +1,6 @@
+/**
+@defgroup tapi_upnp Test API to operate the UPnP
+@ingroup te_ts_tapi
+@{
+@} <!-- END tapi_upnp -->
+*/
