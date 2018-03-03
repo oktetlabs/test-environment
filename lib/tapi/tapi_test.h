@@ -1069,11 +1069,13 @@ test_sleep_scale(void)
 }
 
 /**
- * Scalable sleep (sleep scale times for _to_sleep seconds).
+ * Scalable sleep (sleep scale times for _to_sleep seconds). Logs function
+ * name.
  *
  * @param _to_sleep     number of seconds to sleep is scale is 1
  */
-#define SLEEP(_to_sleep)   te_sleep(test_sleep_scale() * (_to_sleep))
+#define SLEEP(_to_sleep)  \
+    te_motivated_sleep(test_sleep_scale() * (_to_sleep), __FUNCTION__)
 
 /**
  * Scalable sleep (sleep scale times for _to_sleep milliseconds).
