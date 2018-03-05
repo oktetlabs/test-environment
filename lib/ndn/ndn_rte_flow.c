@@ -229,4 +229,5 @@ asn_type ndn_rte_flow_rule_s = {
     {_ndn_rte_flow_rule_ne_array}
 };
 
+const asn_type * const ndn_rte_flow_pattern = &ndn_generic_pdu_sequence_s;
 const asn_type * const ndn_rte_flow_rule = &ndn_rte_flow_rule_s;
