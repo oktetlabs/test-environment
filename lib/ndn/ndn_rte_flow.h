@@ -55,6 +55,7 @@ typedef enum {
     NDN_FLOW_ACTION_TYPE_VOID,
     NDN_FLOW_ACTION_TYPE_QUEUE,
     NDN_FLOW_ACTION_TYPE_RSS,
+    NDN_FLOW_ACTION_TYPE_DROP,
 } ndn_rte_flow_action_type_t;
 
 typedef enum {

@@ -1439,7 +1439,7 @@ rte_flow_action_queue_from_pdu(const asn_value *conf_pdu,
     int                             rc;
     unsigned int                    val;
 
-    if (action == NULL)
+    if (action == NULL || conf_pdu == NULL)
         return TE_EINVAL;
 
     rc = asn_get_choice_value(conf_pdu, NULL, NULL, &tag);
@@ -1625,7 +1625,7 @@ rte_flow_action_rss_from_pdu(const asn_value        *conf_pdu,
     te_errno                    rc;
     int                         i;
 
-    if (action == NULL)
+    if (action == NULL || conf_pdu == NULL)
         return TE_EINVAL;
 
     rc = asn_get_choice_value(conf_pdu, &conf_pdu_choice,
@@ -1687,6 +1687,17 @@ fail:
 }
 
 static te_errno
+rte_flow_action_drop_from_pdu(__rte_unused const asn_value *conf_pdu,
+                              struct rte_flow_action *action)
+{
+    if (action == NULL)
+        return TE_EINVAL;
+
+    action->type = RTE_FLOW_ACTION_TYPE_DROP;
+    return 0;
+}
+
+static te_errno
 rte_flow_action_end(struct rte_flow_action *action)
 {
     if (action == NULL)
@@ -1720,6 +1731,7 @@ static const struct rte_flow_action_types_mapping {
     { NDN_FLOW_ACTION_TYPE_RSS,     rte_flow_action_rss_from_pdu },
     { NDN_FLOW_ACTION_TYPE_QUEUE,   rte_flow_action_queue_from_pdu },
     { NDN_FLOW_ACTION_TYPE_VOID,    rte_flow_action_void },
+    { NDN_FLOW_ACTION_TYPE_DROP,    rte_flow_action_drop_from_pdu },
 };
 
 static te_errno
@@ -1768,7 +1780,9 @@ rte_flow_actions_from_ndn(const asn_value *ndn_flow,
             goto out;
 
         rc = asn_get_subvalue(action, &conf, "conf");
-        if (rc != 0)
+        if (rc == TE_EASNINCOMPLVAL)
+            conf = NULL;
+        else if (rc != 0)
             goto out;
 
         ASN_VAL_CONVERT(conf, type, rte_flow_action_types_map,

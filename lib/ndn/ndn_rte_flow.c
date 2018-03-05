@@ -63,6 +63,7 @@ asn_enum_entry_t _ndn_rte_flow_action_type_enum_entries[] = {
     {"void", NDN_FLOW_ACTION_TYPE_VOID},
     {"queue", NDN_FLOW_ACTION_TYPE_QUEUE},
     {"rss", NDN_FLOW_ACTION_TYPE_RSS},
+    {"drop", NDN_FLOW_ACTION_TYPE_DROP},
 };
 
 asn_type ndn_rte_flow_action_type_s = {
