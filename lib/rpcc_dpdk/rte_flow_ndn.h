@@ -40,13 +40,7 @@
 extern "C" {
 #endif
 
-/**
- * Get ndn_rte_flow_rule ASN.1 type test parameter.
- *
- * @param _var_name  Variable whose name is the same as the name of
- *                   parameter we get the value
- */
-#define TEST_GET_NDN_RTE_FLOW_RULE(_var_name) \
+#define TEST_GET_NDN_RTE_FLOW_RULE_GENERIC(_var_name, _rte_flow_ndn_type) \
     do {                                                        \
         const char *_str_val;                                   \
         int _parsed;                                            \
@@ -56,13 +50,50 @@ extern "C" {
             TEST_STOP;                                          \
                                                                 \
         CHECK_RC(asn_parse_value_text(_str_val,                 \
-                                      ndn_rte_flow_rule,        \
+                                      _rte_flow_ndn_type,       \
                                       &(_var_name),             \
                                       &_parsed));               \
         if (_str_val[_parsed] != '\0')                          \
             TEST_FAIL("Trailing symbols after rte "             \
-                      "flow rule '%s'", &_str_val[_parsed]);    \
+                      "flow rule components '%s'",              \
+                      &_str_val[_parsed]);                      \
     } while (0)
+
+/**
+ * Get ndn_rte_flow_rule ASN.1 type test parameter.
+ *
+ * @param _var_name  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ */
+#define TEST_GET_NDN_RTE_FLOW_RULE(_var_name) \
+    TEST_GET_NDN_RTE_FLOW_RULE_GENERIC(_var_name, ndn_rte_flow_rule)
+
+/**
+ * Get ndn_rte_flow_attr ASN.1 type test parameter.
+ *
+ * @param _var_name  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ */
+#define TEST_GET_NDN_RTE_FLOW_ATTR(_var_name) \
+    TEST_GET_NDN_RTE_FLOW_RULE_GENERIC(_var_name, ndn_rte_flow_attr)
+
+/**
+ * Get ndn_rte_flow_pattern ASN.1 type test parameter.
+ *
+ * @param _var_name  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ */
+#define TEST_GET_NDN_RTE_FLOW_PATTERN(_var_name) \
+    TEST_GET_NDN_RTE_FLOW_RULE_GENERIC(_var_name, ndn_rte_flow_pattern)
+
+/**
+ * Get ndn_rte_flow_actions ASN.1 type test parameter.
+ *
+ * @param _var_name  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ */
+#define TEST_GET_NDN_RTE_FLOW_ACTIONS(_var_name) \
+    TEST_GET_NDN_RTE_FLOW_RULE_GENERIC(_var_name, ndn_rte_flow_actions)
 
 /**
  * Make RTE flow components from ASN.1 representation. In one function call,
