@@ -73,14 +73,23 @@
 
 
 static te_errno
-rte_flow_attr_from_ndn(const asn_value *ndn_attr,
+rte_flow_attr_from_ndn(const asn_value *ndn_flow,
                        struct rte_flow_attr **attr_out)
 {
     int                     rc;
-    struct rte_flow_attr   *attr;
+    struct rte_flow_attr   *attr = NULL;
+    asn_value              *ndn_attr;
+    const char             *attr_label;
 
     if (attr_out == NULL)
         return TE_EINVAL;
+
+    /* ndn_flow is could be ASN.1 representation of flow rule or attributes */
+    attr_label = (asn_get_type(ndn_flow) == ndn_rte_flow_rule) ? "attr" : "";
+
+    rc = asn_get_subvalue(ndn_flow, &ndn_attr, attr_label);
+    if (rc != 0)
+        goto out;
 
 #define ASN_READ_ATTR_FIELD(_asn_val, _name, _data, _size) \
     do {                                                            \
@@ -1355,11 +1364,16 @@ rte_flow_pattern_from_ndn(const asn_value *ndn_flow,
     struct rte_flow_item   *pattern = NULL;
     unsigned int            item_nb;
     unsigned int            ndn_len;
+    const char             *pattern_label;
 
     if (pattern_out == NULL || pattern_len == NULL)
         return TE_EINVAL;
 
-    ndn_len = (unsigned int)asn_get_length(ndn_flow, "pattern");
+    /* ndn_flow is could be ASN.1 representation of flow rule or pattern */
+    pattern_label = (asn_get_type(ndn_flow) == ndn_rte_flow_rule) ?
+                    "pattern" : "";
+
+    ndn_len = (unsigned int)asn_get_length(ndn_flow, pattern_label);
     /*
      * Item END is not specified in the pattern NDN
      * and it should be the last item
@@ -1372,7 +1386,7 @@ rte_flow_pattern_from_ndn(const asn_value *ndn_flow,
 
     for (i = 0, item_nb = 0; i < ndn_len; i++, item_nb++)
     {
-        rc = asn_get_indexed(ndn_flow, &gen_pdu, i, "pattern");
+        rc = asn_get_indexed(ndn_flow, &gen_pdu, i, pattern_label);
         if (rc != 0)
             goto out;
 
@@ -1722,11 +1736,16 @@ rte_flow_actions_from_ndn(const asn_value *ndn_flow,
     unsigned int                action_nb;
     unsigned int                actions_len;
     unsigned int                ndn_len;
+    const char                 *actions_label;
 
     if (actions_out == NULL)
         return TE_EINVAL;
 
-    ndn_len = (unsigned int)asn_get_length(ndn_flow, "actions");
+    /* ndn_flow is could be ASN.1 representation of flow rule or actions */
+    actions_label = (asn_get_type(ndn_flow) == ndn_rte_flow_rule) ?
+                    "actions" : "";
+
+    ndn_len = (unsigned int)asn_get_length(ndn_flow, actions_label);
     /*
      * Action END is not specified in the actions NDN
      * and it should be the last action
@@ -1739,7 +1758,7 @@ rte_flow_actions_from_ndn(const asn_value *ndn_flow,
 
     for (i = 0, action_nb = 0; i < ndn_len; i++, action_nb++)
     {
-        rc = asn_get_indexed(ndn_flow, &action, i, "actions");
+        rc = asn_get_indexed(ndn_flow, &action, i, actions_label);
         if (rc != 0)
             goto out;
 
@@ -1765,38 +1784,36 @@ out:
 }
 
 static te_errno
-rte_flow_from_ndn(const asn_value *ndn_flow,
-                  struct rte_flow_attr **attr_out,
-                  struct rte_flow_item **pattern_out,
-                  struct rte_flow_action **actions_out)
+rte_flow_components_from_ndn(const asn_value *ndn_flow_components,
+                             uint8_t component_flags,
+                             struct rte_flow_attr **attr_out,
+                             struct rte_flow_item **pattern_out,
+                             struct rte_flow_action **actions_out)
 {
-    const asn_type *type;
-    asn_value      *ndn_attr;
     unsigned int    pattern_len;
     int             rc;
 
-    type = asn_get_type(ndn_flow);
-    if (type != ndn_rte_flow_rule)
+    if (component_flags & TARPC_RTE_FLOW_ATTR_FLAG)
     {
-        rc = TE_EINVAL;
-        goto out;
+        rc = rte_flow_attr_from_ndn(ndn_flow_components, attr_out);
+        if (rc != 0)
+            goto out;
     }
 
-    rc = asn_get_subvalue(ndn_flow, &ndn_attr, "attr");
-    if (rc != 0)
-        goto out;
+    if (component_flags & TARPC_RTE_FLOW_PATTERN_FLAG)
+    {
+        rc = rte_flow_pattern_from_ndn(ndn_flow_components, pattern_out,
+                                       &pattern_len);
+        if (rc != 0)
+            goto out_pattern;
+    }
 
-    rc = rte_flow_attr_from_ndn(ndn_attr, attr_out);
-    if (rc != 0)
-        goto out;
-
-    rc = rte_flow_pattern_from_ndn(ndn_flow, pattern_out, &pattern_len);
-    if (rc != 0)
-        goto out_pattern;
-
-    rc = rte_flow_actions_from_ndn(ndn_flow, actions_out);
-    if (rc != 0)
-        goto out_actions;
+    if (component_flags & TARPC_RTE_FLOW_ACTIONS_FLAG)
+    {
+        rc = rte_flow_actions_from_ndn(ndn_flow_components, actions_out);
+        if (rc != 0)
+            goto out_actions;
+    }
 
     return 0;
 
@@ -1905,34 +1922,68 @@ TARPC_FUNC_STATIC(rte_free_flow_rule, {},
     });
 })
 
-TARPC_FUNC_STANDALONE(rte_mk_flow_rule_from_str, {},
+static const asn_type *
+tarpc_rte_flow_rule_component_flags2type(uint8_t component_flags)
+{
+    switch (component_flags)
+    {
+        case TARPC_RTE_FLOW_ATTR_FLAG:
+            return ndn_rte_flow_attr;
+
+        case TARPC_RTE_FLOW_PATTERN_FLAG:
+            return ndn_rte_flow_pattern;
+
+        case TARPC_RTE_FLOW_ACTIONS_FLAG:
+            return ndn_rte_flow_actions;
+
+        case TARPC_RTE_FLOW_RULE_FLAGS:
+            return ndn_rte_flow_rule;
+
+        default:
+            return NULL;
+    }
+}
+
+TARPC_FUNC_STANDALONE(rte_mk_flow_rule_components, {},
 {
     te_errno                        rc = 0;
     int                             num_symbols_parsed;
-    asn_value                      *flow_rule = NULL;
+    asn_value                      *flow_rule_components = NULL;
     struct rte_flow_attr           *attr = NULL;
     struct rte_flow_item           *pattern = NULL;
     struct rte_flow_action         *actions = NULL;
+    const asn_type                 *type;
 
-    rc = asn_parse_value_text(in->flow_rule, ndn_rte_flow_rule,
-                              &flow_rule, &num_symbols_parsed);
+    type = tarpc_rte_flow_rule_component_flags2type(in->component_flags);
+    if (type == NULL)
+    {
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    rc = asn_parse_value_text(in->flow_rule_components, type,
+                              &flow_rule_components, &num_symbols_parsed);
     if (rc != 0)
         goto out;
 
-    rc = rte_flow_from_ndn(flow_rule, &attr, &pattern, &actions);
+    rc = rte_flow_components_from_ndn(flow_rule_components, in->component_flags,
+                                      &attr, &pattern, &actions);
     if (rc != 0)
         goto out;
 
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
-        out->attr = RCF_PCH_MEM_INDEX_ALLOC(attr, ns);
-        out->pattern = RCF_PCH_MEM_INDEX_ALLOC(pattern, ns);
-        out->actions = RCF_PCH_MEM_INDEX_ALLOC(actions, ns);
+        if (attr != NULL)
+            out->attr = RCF_PCH_MEM_INDEX_ALLOC(attr, ns);
+        if (pattern != NULL)
+            out->pattern = RCF_PCH_MEM_INDEX_ALLOC(pattern, ns);
+        if (actions != NULL)
+            out->actions = RCF_PCH_MEM_INDEX_ALLOC(actions, ns);
         rc = 0;
     });
 
 out:
     out->retval = -TE_RC(TE_RPCS, rc);
-    asn_free_value(flow_rule);
+    asn_free_value(flow_rule_components);
 })
 
 TARPC_FUNC(rte_flow_validate, {},

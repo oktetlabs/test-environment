@@ -65,21 +65,23 @@ extern "C" {
     } while (0)
 
 /**
- * Make RTE flow structures with attributes, pattern and actions
- * from ASN.1 representation of flow rule.
+ * Make RTE flow components from ASN.1 representation. In one function call,
+ * attributes, pattern and actions can be made all together from ASN.1 flow
+ * rule, or only one of them from corresponding ASN.1 representation.
  *
- * @param[in]  flow_rule   ASN.1 flow rule
- * @param[out] attr        RTE flow attr pointer
- * @param[out] pattern     RTE flow item pointer to the array of items
- * @param[out] actions     RTE flow action pointer to the array of actions
+ * @param[in]  flow_rule_components ASN.1 flow rule components
+ * @param[out] attr                 RTE flow attr pointer
+ * @param[out] pattern              RTE flow item pointer to the array of items
+ * @param[out] actions              RTE flow action pointer to the array of
+ *                                  actions
  *
  * @return @c 0 on success; jumps out in case of failure
  */
-extern int rpc_rte_mk_flow_rule_from_str(rcf_rpc_server *rpcs,
-                                         const asn_value  *flow_rule,
-                                         rpc_rte_flow_attr_p *attr,
-                                         rpc_rte_flow_item_p *pattern,
-                                         rpc_rte_flow_action_p *actions);
+extern int rpc_rte_mk_flow_rule_components(rcf_rpc_server *rpcs,
+                                           const asn_value *flow_rule_components,
+                                           rpc_rte_flow_attr_p *attr,
+                                           rpc_rte_flow_item_p *pattern,
+                                           rpc_rte_flow_action_p *actions);
 
 /**
  * Free RTE flow structures with attributes, pattern and actions.
