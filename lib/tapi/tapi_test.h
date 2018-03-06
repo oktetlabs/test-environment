@@ -1070,12 +1070,23 @@ test_sleep_scale(void)
 
 /**
  * Scalable sleep (sleep scale times for _to_sleep seconds). Logs function
- * name.
+ * name. Use VSLEEP() instead unless you're absolutely sure what you're
+ * doing.
  *
  * @param _to_sleep     number of seconds to sleep is scale is 1
  */
 #define SLEEP(_to_sleep)  \
     te_motivated_sleep(test_sleep_scale() * (_to_sleep), __FUNCTION__)
+
+/**
+ * Scalable sleep (sleep scale times for _to_sleep seconds) that logs extra
+ * information.
+ *
+ * @param _to_sleep     number of seconds to sleep is scale is 1
+ * @param _msg          message to be logged
+ */
+#define VSLEEP(_to_sleep, _msg)                                         \
+    te_motivated_sleep(test_sleep_scale() * (_to_sleep), (_msg))
 
 /**
  * Scalable sleep (sleep scale times for _to_sleep milliseconds).
