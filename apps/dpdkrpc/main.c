@@ -31,6 +31,7 @@
 #include <string.h>
 
 #include <rte_eal.h>
+#include <rte_ethdev.h>
 #include <rte_debug.h>
 
 #define TE_USE_SPECIFIC_ASPRINTF 1
@@ -126,6 +127,15 @@ rcf_rpc_server_init(void)
 int
 rcf_rpc_server_finalize(void)
 {
+    unsigned int port_id;
+
+    for (port_id = rte_eth_find_next(0); port_id < RTE_MAX_ETHPORTS;
+         port_id = rte_eth_find_next(port_id + 1))
+    {
+        RING("rte_eth_dev_stop(%u)", port_id);
+        rte_eth_dev_stop(port_id);
+    }
+
     return 0;
 }
 

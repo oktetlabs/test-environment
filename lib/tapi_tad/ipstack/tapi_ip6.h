@@ -1,7 +1,9 @@
 /** @file
- * @brief Test API for TAD. IPv6 CSAPs
+ * @brief TAPI TAD IPv6
  *
- * Implementation of Test API
+ * @defgroup tapi_tad_ip6 IPv6
+ * @ingroup tapi_tad_ipstack
+ * @{
  *
  * Copyright (C) 2012 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -22,8 +24,6 @@
  * MA  02111-1307  USA
  *
  * @author Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_IP6_H__
@@ -132,3 +132,5 @@ extern te_errno tapi_ip6_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_IP6_H__ */
+
+/**@} <!-- END tapi_tad_ip6 --> */

@@ -1,8 +1,11 @@
 /** @file
  * @brief Test API to FTP client routines
  *
- * Test API to FTP client routines.
+ * @defgroup tapi_storage_client_ftp Test API to control the storage FTP client
+ * @ingroup tapi_storage
+ * @{
  *
+ * Test API to FTP client routines.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -115,6 +118,8 @@ extern te_errno tapi_storage_client_ftp_init(
  * @sa tapi_storage_client_ftp_init
  */
 extern void tapi_storage_client_ftp_fini(tapi_storage_client *client);
+
+/**@} <!-- END tapi_storage_client_ftp --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

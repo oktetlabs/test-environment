@@ -9,14 +9,9 @@ function process(str)
         in_dox_comment = 0;
     else
         in_dox_comment = 1;
-    if (str ~ /[[:space:]]*@page/)
-    {
-        if (was_comment)
-            print "*/";
-        printf "/** ";
-        was_comment = 1;
-    }
+
     print str;
+
     return;
 }
 
@@ -39,5 +34,5 @@ in_dox_comment && /-->/ {   sub(/-->.*/, "");
 
 in_dox_comment { print $0; next }
 
-END { if (was_comment) print "*/"; }
-
+BEGIN { print "/**"; }
+END { print "*/"; }

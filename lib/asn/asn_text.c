@@ -1974,6 +1974,8 @@ asn_clean_count(asn_value *value)
         case SEQUENCE_OF:
         case SET:
         case SET_OF:
+        case CHOICE:
+        case TAGGED:
             need = TRUE;
 
         default:

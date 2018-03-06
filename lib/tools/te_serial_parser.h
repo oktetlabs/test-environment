@@ -1,6 +1,10 @@
 /** @file
  * @brief Unix Test Agent serial console parser support.
  *
+ * @defgroup te_tools_te_serial_parser Serial console parser
+ * @ingroup te_tools
+ * @{
+ *
  * Defenition of unix TA serial console parse configuring support.
  *
  * Copyright (C) 2004-2012 Test Environment authors (see file AUTHORS
@@ -123,24 +127,8 @@ extern te_errno ta_unix_serial_parser_cleanup(void);
  */
 extern int te_serial_parser(serial_parser_t *parser);
 
-/**
- * Log host serial output via Logger component
- *
- * @param ready       Parameter release semaphore
- * @param argc        Number of string arguments
- * @param argv        String arguments:
- *                    - log user
- *                    - log level
- *                    - message interval
- *                    - tty name
- *                    (if it does not start with "/", it is interpreted
- *                     as a conserver connection designator)
- *                    - sharing mode (opt)
- */
-extern int serial_console_log(void *ready, int argc, char *argv[]);
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
 #endif /* ndef __TE_SERIAL_PARSER_H__ */
+/**@} <!-- END te_tools_te_serial_parser --> */

@@ -359,9 +359,15 @@ tarpc_rte_pktmbuf_packet_type2rpc(struct rte_mbuf                      *m,
         RTE_PKTMBUF_TUNNEL_PTYPE2RPC(NVGRE);
         RTE_PKTMBUF_TUNNEL_PTYPE2RPC(GENEVE);
         RTE_PKTMBUF_TUNNEL_PTYPE2RPC(GRENAT);
+#ifdef RTE_PTYPE_TUNNEL_GTPC
         RTE_PKTMBUF_TUNNEL_PTYPE2RPC(GTPC);
+#endif /* RTE_PTYPE_TUNNEL_GTPC */
+#ifdef RTE_PTYPE_TUNNEL_GTPU
         RTE_PKTMBUF_TUNNEL_PTYPE2RPC(GTPU);
+#endif /* RTE_PTYPE_TUNNEL_GTPU */
+#ifdef RTE_PTYPE_TUNNEL_ESP
         RTE_PKTMBUF_TUNNEL_PTYPE2RPC(ESP);
+#endif /* RTE_PTYPE_TUNNEL_ESP */
         default:
             p_type->tun_type = TARPC_RTE_PTYPE_TUNNEL__UNKNOWN;
             break;
@@ -508,9 +514,15 @@ tarpc_rte_pktmbuf_packet_type2rte(struct tarpc_rte_pktmbuf_packet_type *p_type,
         RTE_PKTMBUF_TUNNEL_PTYPE2RTE(NVGRE);
         RTE_PKTMBUF_TUNNEL_PTYPE2RTE(GENEVE);
         RTE_PKTMBUF_TUNNEL_PTYPE2RTE(GRENAT);
+#ifdef RTE_PTYPE_TUNNEL_GTPC
         RTE_PKTMBUF_TUNNEL_PTYPE2RTE(GTPC);
+#endif /* RTE_PTYPE_TUNNEL_GTPC */
+#ifdef RTE_PTYPE_TUNNEL_GTPU
         RTE_PKTMBUF_TUNNEL_PTYPE2RTE(GTPU);
+#endif /* RTE_PTYPE_TUNNEL_GTPU */
+#ifdef RTE_PTYPE_TUNNEL_ESP
         RTE_PKTMBUF_TUNNEL_PTYPE2RTE(ESP);
+#endif /* RTE_PTYPE_TUNNEL_ESP */
         default:
             return (0);
     }

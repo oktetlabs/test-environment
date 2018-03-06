@@ -580,9 +580,9 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     {
         if (ta->notcopy)
         {
-            sprintf(cmd, RCFUNIX_SSH "%s %s %s ln -s %s /tmp/%s%s",
+            sprintf(cmd, RCFUNIX_SSH "%s %s %s%s ln -s %s /tmp/%s%s",
                     *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
-                    ta->key, ta->host, path, ta_type, ta->postfix);
+                    ta->key, ta->user, ta->host, path, ta_type, ta->postfix);
         }
         else
         {
@@ -744,15 +744,17 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
         else
         {
             sprintf(cmd,
-                    RCFUNIX_SSH "%s %s \"%skill %d\" " RCFUNIX_REDIRECT,
-                    ta->key, ta->host, ta->sudo ? "sudo " : "" , ta->pid);
+                    RCFUNIX_SSH "%s %s%s \"%skill %d\" " RCFUNIX_REDIRECT,
+                    ta->key, ta->user, ta->host, ta->sudo ? "sudo " : "",
+                    ta->pid);
             rc = system_with_timeout(cmd, ta->kill_timeout);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
     
             sprintf(cmd,
-                    RCFUNIX_SSH "%s %s \"%skill -9 %d\" " RCFUNIX_REDIRECT,
-                    ta->key, ta->host, ta->sudo ? "sudo " : "" , ta->pid);
+                    RCFUNIX_SSH "%s %s%s \"%skill -9 %d\" " RCFUNIX_REDIRECT,
+                    ta->key, ta->user, ta->host, ta->sudo ? "sudo " : "",
+                    ta->pid);
             rc = system_with_timeout(cmd, ta->kill_timeout);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
@@ -765,9 +767,9 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
                     ta->postfix);
         else
             sprintf(cmd,
-                    RCFUNIX_SSH "%s %s \"%skillall /tmp/%s%s/ta\" " 
+                    RCFUNIX_SSH "%s %s%s \"%skillall /tmp/%s%s/ta\" "
                     RCFUNIX_REDIRECT,
-                    ta->key, ta->host, ta->sudo ? "sudo " : "" , 
+                    ta->key, ta->user, ta->host, ta->sudo ? "sudo " : "",
                     ta->ta_type, ta->postfix);
         rc = system_with_timeout(cmd, ta->kill_timeout);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
@@ -779,8 +781,8 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
                     ta->sudo ? "sudo " : "" , ta->ta_type, ta->postfix);
         else
             sprintf(cmd,
-                    RCFUNIX_SSH "%s %s \"%skillall -9 /tmp/%s%s/ta\" " 
-                    RCFUNIX_REDIRECT, ta->key, ta->host, 
+                    RCFUNIX_SSH "%s %s%s \"%skillall -9 /tmp/%s%s/ta\" "
+                    RCFUNIX_REDIRECT, ta->key, ta->user, ta->host,
                     ta->sudo ? "sudo " : "" , ta->ta_type, ta->postfix);
         rc = system_with_timeout(cmd, ta->kill_timeout);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
@@ -790,8 +792,9 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
     if (ta->is_local)
         sprintf(cmd, "rm -rf /tmp/%s%s", ta->ta_type, ta->postfix);
     else
-        sprintf(cmd, RCFUNIX_SSH "%s %s \"rm -rf /tmp/%s%s\"",
-                ta->key, ta->host, ta->ta_type, ta->postfix);
+        sprintf(cmd, RCFUNIX_SSH "%s %s%s \"rm -rf /tmp/%s%s\"",
+                ta->key, ta->user, ta->host, ta->ta_type, ta->postfix);
+    RING("CMD to remove: %s", cmd);
     rc = system_with_timeout(cmd, ta->kill_timeout);
     if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
         return rc;

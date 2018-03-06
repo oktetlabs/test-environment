@@ -1264,4 +1264,30 @@
     <object oid="/volatile/ta_sockets" access="read_create" type="string"
             volatile="true"/>
 
+    <!-- Resource limits data root.
+         Name: empty
+         -->
+    <object oid="/agent/rlimits" access="read_only" type="none"/>
+
+    <!-- RLIMIT_NOFILE resource limit values.
+         Name: empty
+         -->
+    <object oid="/agent/rlimits/nofile" access="read_only" type="none"/>
+
+    <!-- Current value of RLIMIT_NOFILE. Note: if more than maximum value
+         is set, maximum is adjusted too.
+         Name: empty
+         -->
+    <object oid="/agent/rlimits/nofile/cur" access="read_write" type="integer">
+      <depends oid="/agent/rlimits/nofile/max"/>
+    </object>
+
+    <!-- Maximum value of RLIMIT_NOFILE. Note: if less than current value
+         is set, current value is adjusted too.
+         Name: empty
+         -->
+    <object oid="/agent/rlimits/nofile/max" access="read_write" type="integer">
+      <depends oid="/agent/rlimits/nofile/cur"/>
+    </object>
+
 </backup>

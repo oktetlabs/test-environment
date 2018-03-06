@@ -1,8 +1,11 @@
 /** @file
  * @brief Generic Test API to network throughput test tools
  *
- * Generic high level test API to control a network throughput test tool.
+ * @defgroup tapi_performance Test API to control a network throughput test tool
+ * @ingroup te_ts_tapi
+ * @{
  *
+ * Generic high level test API to control a network throughput test tool.
  *
  * Copyright (C) 2017 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -48,8 +51,8 @@ extern "C" {
  * Supported network throughput test tools list.
  */
 typedef enum tapi_perf_bench {
-    TAPI_PERF_IPERF,
-    TAPI_PERF_IPERF3,
+    TAPI_PERF_IPERF,        /**< iperf tool */
+    TAPI_PERF_IPERF3,       /**< iperf3 tool */
 } tapi_perf_bench;
 
 /**
@@ -579,6 +582,8 @@ extern void tapi_perf_log_report(const tapi_perf_server *server,
                                  const tapi_perf_client *client,
                                  const tapi_perf_report *report,
                                  const char *test_params);
+
+/**@} <!-- END tapi_performance --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

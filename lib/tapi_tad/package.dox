@@ -1,5 +1,13 @@
-/** @page tapi_tad TAPI TAD - Traffic Application Domain
+/**
+@defgroup tapi_tad_main Traffic Application Domain
+@ingroup te_ts_tapi
+@{
 
-- <A HREF="tapi__tad_8h.html">Test API for Traffic Application Domain</A>
+Traffic Application Domain (TAD) is a part of Remote Control Facility (RCF)
+which provides traffic transmission and receiving services on Test Agents.
+Any kind of data are considered as traffic. For example, IPv4 over Ethernet
+packet, CLI command or its output, SNMP request.
 
+Find details in the document: @path{doc/hld/OKTL-HLD-0000236-TE_TAD.sxw}
+@} <!-- END tapi_tad_main -->
 */

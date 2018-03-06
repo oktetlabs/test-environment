@@ -1,8 +1,11 @@
 /** @file
  * @brief Test API to DLNA UPnP routines
  *
- * Definition of Test API for DLNA UPnP Service features.
+ * @defgroup tapi_upnp_service_info Test API to operate the DLNA UPnP Service information
+ * @ingroup tapi_upnp
+ * @{
  *
+ * Definition of Test API for DLNA UPnP Service features.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -493,6 +496,8 @@ extern te_errno tapi_upnp_invoke_action(
  */
 extern void tapi_upnp_print_service_info(
                             const tapi_upnp_services *services);
+
+/**@} <!-- END tapi_upnp_service_info --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

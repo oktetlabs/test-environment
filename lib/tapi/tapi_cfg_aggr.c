@@ -129,59 +129,58 @@ tapi_cfg_aggr_create_bond(const char *ta, const char *name,
 int
 tapi_cfg_aggr_destroy_bond(const char *ta, const char *name)
 {
-    int             rc = 0;
-    cfg_val_type    val_type;
-    char           *bond_ifname = NULL;
-    cfg_handle      aggr_handle = CFG_HANDLE_INVALID;
-    cfg_handle      rsrc_handle = CFG_HANDLE_INVALID;
+    cfg_val_type val_type = CVT_STRING;;
+    te_errno     rc = 0;
+    te_errno     rc2;
+    char        *bond_ifname = NULL;
 
     CHECK_BOND(ta, name);
 
-    val_type = CVT_STRING;
-    rc = cfg_get_instance_fmt(
-                        &val_type, &bond_ifname,
-                        "/agent:%s/aggregation:%s/interface:",
-                        ta, name);
+    rc = cfg_get_instance_fmt(&val_type, &bond_ifname,
+                              "/agent:%s/aggregation:%s/interface:",
+                              ta, name);
     if (rc != 0 || bond_ifname == NULL)
     {
         ERROR("Failed to obtain name of bond interface");
-        return rc;
     }
-
-    rc = tapi_cfg_base_if_down(ta, bond_ifname);
-    if (rc != 0)
+    else
     {
-        ERROR("Failed to bring bond interface down");
+        cfg_handle  rsrc_handle = CFG_HANDLE_INVALID;
+
+        rc = cfg_find_fmt(&rsrc_handle, "/agent:%s/rsrc:%s",
+                          ta, bond_ifname);
+        if (rc != 0)
+        {
+            if (rc == TE_RC(TE_CS, TE_ENOENT))
+                rc = 0;
+            else
+                ERROR("Failed to get rsrc node: %r", rc);
+        }
+        else
+        {
+            rc = tapi_cfg_base_if_down(ta, bond_ifname);
+            if (rc != 0)
+                ERROR("Failed to bring bond interface down: %r", rc);
+
+            rc2 = cfg_del_instance(rsrc_handle, FALSE);
+            if (rc == 0)
+                rc = rc2;
+        }
+
+        if (tapi_host_ns_enabled())
+        {
+            rc2 = tapi_host_ns_if_del(ta, bond_ifname, TRUE);
+            if (rc == 0)
+                rc = rc2;
+        }
+
         free(bond_ifname);
-        return rc;
     }
 
-    rc = cfg_find_fmt(&aggr_handle, "/agent:%s/aggregation:%s",
-                      ta, name);
-    if (rc != 0)
-    {
-        ERROR("Failed to find aggregation node");
-        free(bond_ifname);
-        return rc;
-    }
+    rc2 = cfg_del_instance_fmt(FALSE, "/agent:%s/aggregation:%s", ta, name);
+    if (rc == 0)
+        rc = rc2;
 
-    cfg_del_instance(aggr_handle, FALSE);
-
-    rc = cfg_find_fmt(&rsrc_handle, "/agent:%s/rsrc:%s",
-                      ta, bond_ifname);
-    if (rc != 0)
-    {
-        ERROR("Failed to find rsrc node");
-        free(bond_ifname);
-        return rc;
-    }
-
-    cfg_del_instance(rsrc_handle, FALSE);
-
-    if (tapi_host_ns_enabled())
-        rc = tapi_host_ns_if_del(ta, bond_ifname, TRUE);
-
-    free(bond_ifname);
     return rc;
 }
 

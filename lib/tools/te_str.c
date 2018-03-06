@@ -28,6 +28,8 @@
 
 #include "te_config.h"
 #include "te_defs.h"
+#include "te_errno.h"
+#include <stdlib.h>
 #ifdef HAVE_CTYPE_H
 #include <ctype.h>
 #endif
@@ -137,4 +139,41 @@ te_str_strip_spaces(const char *str)
     res[len] = '\0';
 
     return res;
+}
+
+/* See description in te_str.h */
+te_errno
+te_strtoul(const char *str, int base, unsigned long int *value)
+{
+    char     *endptr = NULL;
+    te_errno  rc = 0;
+    int       saved_errno = errno;
+    int       new_errno = 0;
+
+    if (str == NULL || value == NULL)
+    {
+        ERROR("%s(): invalid arguments", __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    errno = 0;
+    *value = strtoul(str, &endptr, base);
+    new_errno = errno;
+    errno = saved_errno;
+
+    if ((new_errno == ERANGE && *value == ULONG_MAX) ||
+        (new_errno != 0 && *value == 0))
+    {
+        rc = te_rc_os2te(new_errno);
+        ERROR("%s(): strtoul() failed with errno %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    if (endptr == NULL || *endptr != '\0' || endptr == str)
+    {
+        ERROR("%s(): failed to parse '%s'", __FUNCTION__, str);
+        return TE_EINVAL;
+    }
+
+    return 0;
 }

@@ -1,5 +1,9 @@
 /** @file
- * @brief TAPI ATM
+ * @brief TAPI TAD ATM
+ *
+ * @defgroup tapi_tad_atm ATM
+ * @ingroup tapi_tad_main
+ * @{
  *
  * Declarations of API for TAPI ATM.
  *
@@ -22,9 +26,7 @@
  * MA  02111-1307  USA
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- *
- * $Id$
- */ 
+ */
 
 #ifndef __TE_TAPI_ATM_H__
 #define __TE_TAPI_ATM_H__
@@ -158,3 +160,5 @@ extern te_errno tapi_atm_aal5_add_pdu(asn_value     **tmpl_or_ptrn,
 } /* extern "C" */
 #endif
 #endif /* __TE_TAPI_ATM_H__ */
+
+/**@} <!-- END tapi_tad_atm --> */

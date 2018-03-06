@@ -1,7 +1,15 @@
 /** @file
  * @brief Environment Library
  *
- * Common includes and definitions.
+ * @defgroup tapi_env Network environment
+ * @ingroup te_ts_tapi_test
+ * @{
+ *
+ * Optional library which can help to simplify test iteration and description
+ * of the tested network environment schema. If the library is used then every
+ * test in the test suite has to have argument @b env written in YACC which
+ * describes location of IUT and Tester RPC servers, nets, interfaces and
+ * addresses.
  *
  * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -22,8 +30,6 @@
  * MA  02111-1307  USA
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TS_TAPI_ENV_ENV_H__
@@ -685,3 +691,5 @@ extern struct sockaddr **tapi_env_add_addresses(rcf_rpc_server *rpcs,
 } /* extern "C" */
 #endif
 #endif
+
+/**@} <!-- END tapi_env --> */

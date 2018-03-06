@@ -1,8 +1,11 @@
 /** @file
  * @brief Test API to storage device routines
  *
- * Functions for convenient work with storage device.
+ * @defgroup tapi_local_storage_device Test API to control the local storage device
+ * @ingroup tapi_storage
+ * @{
  *
+ * Functions for convenient work with storage device.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -77,7 +80,7 @@ typedef struct tapi_local_storage_device_methods {
  * Devices types.
  */
 typedef enum tapi_local_storage_device_type {
-    TAPI_LOCAL_STORAGE_DEVICE_USB,
+    TAPI_LOCAL_STORAGE_DEVICE_USB,      /**< USB mass storage device */
 } tapi_local_storage_device_type;
 
 /**
@@ -235,6 +238,8 @@ extern te_errno tapi_local_storage_device_init(
  */
 extern void tapi_local_storage_device_fini(
                                         tapi_local_storage_device *device);
+
+/**@} <!-- END tapi_local_storage_device --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

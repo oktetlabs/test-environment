@@ -62,15 +62,25 @@
 /** Auxiliary buffer used to construct strings. */
 static char buf[4096];
 
-static te_errno sys_if_dir_list(unsigned int, const char *,
-                                const char *, char **);
+static te_errno sys_if_dir_list_ipv4(unsigned int, const char *,
+                                     const char *, char **);
 
+static te_errno sys_if_dir_list_ipv6(unsigned int, const char *,
+                                     const char *, char **);
+
+RCF_PCH_CFG_NODE_NA(node_ipv6_icmp, "icmp", NULL, NULL);
+RCF_PCH_CFG_NODE_NA(node_ipv6_route, "route", NULL, &node_ipv6_icmp);
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_ipv6_neigh, "neigh", NULL,
+                               &node_ipv6_route, NULL, sys_if_dir_list_ipv6);
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_ipv6_conf, "conf", NULL, &node_ipv6_neigh,
+                               NULL, sys_if_dir_list_ipv6);
+RCF_PCH_CFG_NODE_NA(node_ipv6, "ipv6", &node_ipv6_conf, NULL);
 RCF_PCH_CFG_NODE_NA(node_route, "route", NULL, NULL);
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_neigh, "neigh", NULL, &node_route,
-                               NULL, sys_if_dir_list);
+                               NULL, sys_if_dir_list_ipv4);
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_conf, "conf", NULL, &node_neigh,
-                               NULL, sys_if_dir_list);
-RCF_PCH_CFG_NODE_NA(node_ipv4, "ipv4", &node_conf, NULL);
+                               NULL, sys_if_dir_list_ipv4);
+RCF_PCH_CFG_NODE_NA(node_ipv4, "ipv4", &node_conf, &node_ipv6);
 RCF_PCH_CFG_NODE_NA(node_core, "core", NULL, &node_ipv4);
 RCF_PCH_CFG_NODE_NA(node_net, "net", &node_core, NULL);
 
@@ -116,10 +126,27 @@ ta_unix_conf_sys_tree_init(void)
     CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/ipv4/route",
                                       "/proc/sys/net/ipv4/route/"));
 
+    CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/ipv6",
+                                      "/proc/sys/net/ipv6/"));
+    CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/ipv6/conf",
+                                      "/proc/sys/net/ipv6/conf/default/"));
+    CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/ipv6/neigh",
+                                      "/proc/sys/net/ipv6/neigh/default/"));
+    CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/ipv6/route",
+                                      "/proc/sys/net/ipv6/route/"));
+    CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/ipv6/icmp",
+                                      "/proc/sys/net/ipv6/icmp/"));
+
     CHECK_NZ_RETURN(rcf_pch_rsrc_info("/agent/sys/net/ipv4/conf",
                                       rcf_pch_rsrc_grab_dummy,
                                       rcf_pch_rsrc_release_dummy));
     CHECK_NZ_RETURN(rcf_pch_rsrc_info("/agent/sys/net/ipv4/neigh",
+                                      rcf_pch_rsrc_grab_dummy,
+                                      rcf_pch_rsrc_release_dummy));
+    CHECK_NZ_RETURN(rcf_pch_rsrc_info("/agent/sys/net/ipv6/conf",
+                                      rcf_pch_rsrc_grab_dummy,
+                                      rcf_pch_rsrc_release_dummy));
+    CHECK_NZ_RETURN(rcf_pch_rsrc_info("/agent/sys/net/ipv6/neigh",
                                       rcf_pch_rsrc_grab_dummy,
                                       rcf_pch_rsrc_release_dummy));
 #endif
@@ -138,11 +165,11 @@ ta_unix_conf_sys_tree_fini(void)
 #if __linux__
     CHECK_NZ_RETURN(unregister_sys_opts("/agent/sys/net/core"));
     CHECK_NZ_RETURN(unregister_sys_opts("/agent/sys/net/ipv4"));
-    CHECK_NZ_RETURN(unregister_sys_opts(
-                              "/agent/sys/net/ipv4/conf"));
-    CHECK_NZ_RETURN(unregister_sys_opts(
-                              "/agent/sys/net/ipv4/neigh"));
+    CHECK_NZ_RETURN(unregister_sys_opts("/agent/sys/net/ipv4/conf"));
+    CHECK_NZ_RETURN(unregister_sys_opts("/agent/sys/net/ipv4/neigh"));
     CHECK_NZ_RETURN(unregister_sys_opts("/agent/sys/net/ipv4/route"));
+    CHECK_NZ_RETURN(unregister_sys_opts("/agent/sys/net/ipv6"));
+    CHECK_NZ_RETURN(unregister_sys_opts("/agent/sys/net/ipv6/conf"));
 #endif
 
     return 0;
@@ -157,7 +184,8 @@ ta_unix_conf_sys_tree_fini(void)
  * rsrc instance for corresponding configuration path is added directly.
  *
  * @param dir_name        Directory name.
- * @param data            Pointer to object name (sub_id).
+ * @param data            Pointer to object name
+ *                        (a prefix like "ipv4:/<sub_id>").
  *
  * @return @c TRUE if directory name should be included in the list,
  *         @c FALSE otherwise.
@@ -165,7 +193,7 @@ ta_unix_conf_sys_tree_fini(void)
 static te_bool
 sys_if_list_include_callback(const char *dir_name, void *data)
 {
-    const char *sub_id = (const char *)data;
+    const char *prefix = (const char *)data;
     te_bool     grabbed = FALSE;
 
     UNUSED(data);
@@ -175,8 +203,8 @@ sys_if_list_include_callback(const char *dir_name, void *data)
     if (!grabbed)
     {
         grabbed = rcf_pch_rsrc_accessible(
-                          "/agent:%s/sys:/net:/ipv4:/%s:%s",
-                          ta_name, sub_id, dir_name);
+                          "/agent:%s/sys:/net:/%s:%s",
+                          ta_name, prefix, dir_name);
     }
 
     return grabbed;
@@ -271,6 +299,47 @@ sys_opt_get_path(const char *oid, const char *sub_id,
  * are either named after interfaces or have names like "all",
  * "default").
  *
+ * @param oid           OID of a father object instance.
+ * @param prefix        Node prefix like "ipv4:" or "ipv6:"
+ * @param sub_id        ID of the object to be listed.
+ * @param list          Where to save list of names.
+ *
+ * @return Status code.
+ */
+static te_errno
+sys_if_dir_list(const char *oid, const char *prefix, const char *sub_id,
+                char **list)
+{
+    te_errno  rc;
+    char      path[PATH_MAX] = "";
+    te_string prefix_ext = TE_STRING_INIT;
+
+    rc = sys_opt_get_path(oid, sub_id, path, sizeof(path));
+    if (rc != 0)
+        return rc;
+
+    rc = te_string_append(&prefix_ext, "%s/%s", prefix, sub_id);
+    if (rc != 0)
+        return rc;
+
+    rc = get_dir_list(path, buf, sizeof(buf), FALSE,
+                      &sys_if_list_include_callback, (void *)prefix_ext.ptr);
+    te_string_free(&prefix_ext);
+    if (rc != 0)
+        return rc;
+
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    return 0;
+}
+
+/**
+ * Get list of instance names corresponding to locations
+ * in /proc/sys/net/ipv4/ like /proc/sys/net/ipv4/conf (where subdirectories
+ * are either named after interfaces or have names like "all",
+ * "default").
+ *
  * @param gid           Group ID (unused).
  * @param oid           OID of a father object instance.
  * @param sub_id        ID of the object to be listed.
@@ -279,27 +348,32 @@ sys_opt_get_path(const char *oid, const char *sub_id,
  * @return Status code.
  */
 static te_errno
-sys_if_dir_list(unsigned int gid, const char *oid,
-                const char *sub_id, char **list)
+sys_if_dir_list_ipv4(unsigned int gid, const char *oid,
+                     const char *sub_id, char **list)
 {
-    te_errno  rc;
-    char      path[PATH_MAX] = "";
-
     UNUSED(gid);
+    return sys_if_dir_list(oid, "ipv4:", sub_id, list);
+}
 
-    rc = sys_opt_get_path(oid, sub_id, path, sizeof(path));
-    if (rc != 0)
-        return rc;
-
-    rc = get_dir_list(path, buf, sizeof(buf), FALSE,
-                      &sys_if_list_include_callback, (void *)sub_id);
-    if (rc != 0)
-        return rc;
-
-    if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    return 0;
+/**
+ * Get list of instance names corresponding to locations
+ * in /proc/sys/net/ipv6/ like /proc/sys/net/ipv6/conf (where subdirectories
+ * are either named after interfaces or have names like "all",
+ * "default").
+ *
+ * @param gid           Group ID (unused).
+ * @param oid           OID of a father object instance.
+ * @param sub_id        ID of the object to be listed.
+ * @param list          Where to save list of names.
+ *
+ * @return Status code.
+ */
+static te_errno
+sys_if_dir_list_ipv6(unsigned int gid, const char *oid,
+                     const char *sub_id, char **list)
+{
+    UNUSED(gid);
+    return sys_if_dir_list(oid, "ipv6:", sub_id, list);
 }
 
 /**

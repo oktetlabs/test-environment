@@ -1,8 +1,11 @@
 /** @file
  * @brief Test API to DLNA UPnP routines
  *
- * Definition of API to configure UPnP Control Point.
+ * @defgroup tapi_upnp_cp Test API to operate the UPnP Control Point
+ * @ingroup tapi_upnp
+ * @{
  *
+ * Definition of API to configure UPnP Control Point.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -115,6 +118,8 @@ extern te_errno rpc_upnp_cp_action(rcf_rpc_server *rpcs,
                                    size_t          request_len,
                                    void          **reply,
                                    size_t         *reply_len);
+
+/**@} <!-- END tapi_upnp_cp --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

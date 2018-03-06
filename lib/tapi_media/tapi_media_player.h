@@ -1,8 +1,11 @@
 /** @file
  * @brief Generic Test API to media player routines
  *
- * Generic high level test API to control a media player.
+ * @defgroup tapi_media_player Test API to control a media player
+ * @ingroup tapi_media
+ * @{
  *
+ * Generic high level test API to control a media player.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -43,7 +46,7 @@ extern "C" {
  * Supported media players list.
  */
 typedef enum tapi_media_player_client {
-    TAPI_MEDIA_PLAYER_MPLAYER,
+    TAPI_MEDIA_PLAYER_MPLAYER,      /**< mplayer media player */
 } tapi_media_player_client;
 
 /**
@@ -206,6 +209,8 @@ extern te_bool tapi_media_player_check_errors(tapi_media_player *player);
  * @param player    Player access point.
  */
 extern void tapi_media_player_log_errors(const tapi_media_player *player);
+
+/**@} <!-- END tapi_media_player --> */
 
 #ifdef __cplusplus
 } /* extern "C" */

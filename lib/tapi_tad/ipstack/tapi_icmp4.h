@@ -1,7 +1,9 @@
 /** @file
- * @brief Test API for TAD. ipstack CSAP
+ * @brief TAPI TAD ICMP4
  *
- * Implementation of Test API
+ * @defgroup tapi_tad_icmp4 ICMP4
+ * @ingroup tapi_tad_ipstack
+ * @{
  *
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -22,8 +24,6 @@
  * MA  02111-1307  USA
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_ICMP4_H__
@@ -206,3 +206,5 @@ tapi_icmp_ip4_csap_create(const char    *ta_name,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_ICMP4_H__ */
+
+/**@} <!-- END tapi_tad_icmp4 --> */

@@ -136,7 +136,7 @@ To run this test suite do the following steps:
 @prog{autoreconf} @prog_option{--install} @prog_option{--force}
 </pre>
 This will generate @prog{configure} script and @path{Makefile.in} file
-under @path{${TE_BASE}/suites/minimal/suite directory.
+under @path{${TE_BASE}/suites/minimal/suite} directory.
 -# export @var{TS_BASE} environment variable, because @ref te_engine_tester
    configuration file (@path{tester.conf}) uses it as the value of
    @attr_name{src} attribute of @attr_name{suite} TAG.

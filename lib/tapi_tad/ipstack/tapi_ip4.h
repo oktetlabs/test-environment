@@ -1,7 +1,9 @@
 /** @file
- * @brief Test API for TAD. ipstack CSAP
+ * @brief TAPI TAD IPv4
  *
- * Implementation of Test API
+ * @defgroup tapi_tad_ip4 IPv4
+ * @ingroup tapi_tad_ipstack
+ * @{
  *
  * Copyright (C) 2004 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -23,8 +25,6 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_IP_H__
@@ -242,3 +242,5 @@ extern te_errno tapi_ip4_template(tapi_ip_frag_spec *fragments,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_IP_H__ */
+
+/**@} <!-- END tapi_tad_ip4 --> */

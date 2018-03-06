@@ -1,6 +1,10 @@
 /** @file
  * @brief TAPI TAD ARP
  *
+ * @defgroup tapi_tad_arp ARP
+ * @ingroup tapi_tad_main
+ * @{
+ *
  * Declarations of test API for ARP TAD.
  *
  * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
@@ -23,9 +27,7 @@
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
- *
- * $Id$
- */ 
+ */
 
 #ifndef __TE_TAPI_ARP_H__
 #define __TE_TAPI_ARP_H__
@@ -411,3 +413,5 @@ extern te_errno tapi_arp_recv(const char *ta_name, int sid,
 
 
 #endif /* __TE_TAPI_ARP_H__ */
+
+/**@} <!-- END tapi_tad_arp --> */

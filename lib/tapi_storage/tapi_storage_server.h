@@ -1,8 +1,11 @@
 /** @file
  * @brief Test API to storage server routines
  *
- * Generic server functions for storage server.
+ * @defgroup tapi_storage_server Test API to control the storage server
+ * @ingroup tapi_storage
+ * @{
  *
+ * Generic server functions for storage server.
  *
  * Copyright (C) 2016 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -354,6 +357,8 @@ extern te_errno tapi_storage_server_init(
  * @sa tapi_storage_server_init
  */
 extern void tapi_storage_server_fini(tapi_storage_server *server);
+
+/**@} <!-- END tapi_storage_server --> */
 
 #ifdef __cplusplus
 } /* extern "C" */
