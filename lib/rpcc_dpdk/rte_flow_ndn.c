@@ -65,40 +65,77 @@ rpc_rte_free_flow_rule(rcf_rpc_server *rpcs,
     RETVAL_VOID(rte_free_flow_rule);
 }
 
-int
-rpc_rte_mk_flow_rule_from_str(rcf_rpc_server *rpcs,
-                              const asn_value  *flow_rule,
-                              rpc_rte_flow_attr_p *attr,
-                              rpc_rte_flow_item_p *pattern,
-                              rpc_rte_flow_action_p *actions)
+static uint8_t
+tarpc_rte_flow_type2rpc_flags(const asn_type *type)
 {
-    tarpc_rte_mk_flow_rule_from_str_in  in;
-    tarpc_rte_mk_flow_rule_from_str_out out;
-    size_t                          flow_len;
+    if (type == ndn_rte_flow_attr)
+        return TARPC_RTE_FLOW_ATTR_FLAG;
+    else if (type == ndn_rte_flow_pattern)
+        return TARPC_RTE_FLOW_PATTERN_FLAG;
+    else if (type == ndn_rte_flow_actions)
+        return TARPC_RTE_FLOW_ACTIONS_FLAG;
+    else if (type == ndn_rte_flow_rule)
+        return TARPC_RTE_FLOW_RULE_FLAGS;
+
+    return 0;
+}
+
+int
+rpc_rte_mk_flow_rule_components(rcf_rpc_server *rpcs,
+                                const asn_value *flow_rule_components,
+                                rpc_rte_flow_attr_p *attr,
+                                rpc_rte_flow_item_p *pattern,
+                                rpc_rte_flow_action_p *actions)
+{
+    tarpc_rte_mk_flow_rule_components_in    in;
+    tarpc_rte_mk_flow_rule_components_out   out;
+    size_t                                  flow_len;
+    uint8_t                                 component_flags;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
-    flow_len = asn_count_txt_len(flow_rule, 0) + 1;
-    in.flow_rule = tapi_calloc(1, flow_len);
+    flow_len = asn_count_txt_len(flow_rule_components, 0) + 1;
+    in.flow_rule_components = tapi_calloc(1, flow_len);
 
-    if (asn_sprint_value(flow_rule, in.flow_rule, flow_len, 0) <= 0)
+    component_flags =
+        tarpc_rte_flow_type2rpc_flags(asn_get_type(flow_rule_components));
+    if (component_flags == 0)
+    {
+        ERROR("%s(): invalid flow rule components ASN.1 type", __FUNCTION__);
+        RETVAL_ZERO_INT(rte_mk_flow_rule_components, -EINVAL);
+    }
+    in.component_flags = component_flags;
+
+    if (((TARPC_RTE_FLOW_ATTR_FLAG & component_flags) && (attr == NULL)) ||
+        ((TARPC_RTE_FLOW_PATTERN_FLAG & component_flags) && (pattern == NULL)) ||
+        ((TARPC_RTE_FLOW_ACTIONS_FLAG & component_flags) && (actions == NULL)))
+    {
+        ERROR("%s(): no RPC pointer for rte flow rule component", __FUNCTION__);
+        RETVAL_ZERO_INT(rte_mk_flow_rule_components, -EINVAL);
+    }
+
+    if (asn_sprint_value(flow_rule_components, in.flow_rule_components,
+                         flow_len, 0) <= 0)
         TEST_FAIL("Failed to prepare textual representation of ASN.1 flow rule");
 
-    rcf_rpc_call(rpcs, "rte_mk_flow_rule_from_str", &in, &out);
-    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_mk_flow_rule_from_str, out.retval);
+    rcf_rpc_call(rpcs, "rte_mk_flow_rule_components", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_mk_flow_rule_components, out.retval);
 
-    TAPI_RPC_LOG(rpcs, rte_mk_flow_rule_from_str, "\n%s,\n",
+    TAPI_RPC_LOG(rpcs, rte_mk_flow_rule_components, "\n%s,\n",
                  "{"RPC_PTR_FMT", "RPC_PTR_FMT", "RPC_PTR_FMT"}, "
-                 NEG_ERRNO_FMT, in.flow_rule, RPC_PTR_VAL(out.attr),
+                 NEG_ERRNO_FMT, in.flow_rule_components, RPC_PTR_VAL(out.attr),
                  RPC_PTR_VAL(out.pattern), RPC_PTR_VAL(out.actions),
                  NEG_ERRNO_ARGS(out.retval));
 
-    *attr = (rpc_rte_flow_attr_p)out.attr;
-    *pattern = (rpc_rte_flow_item_p)out.pattern;
-    *actions = (rpc_rte_flow_action_p)out.actions;
+    if (TARPC_RTE_FLOW_ATTR_FLAG & component_flags)
+        *attr = (rpc_rte_flow_attr_p)out.attr;
+    if (TARPC_RTE_FLOW_PATTERN_FLAG & component_flags)
+        *pattern = (rpc_rte_flow_item_p)out.pattern;
+    if (TARPC_RTE_FLOW_ACTIONS_FLAG & component_flags)
+        *actions = (rpc_rte_flow_action_p)out.actions;
 
-    RETVAL_ZERO_INT(rte_mk_flow_rule_from_str, out.retval);
+    RETVAL_ZERO_INT(rte_mk_flow_rule_components, out.retval);
 }
 
 static const char *

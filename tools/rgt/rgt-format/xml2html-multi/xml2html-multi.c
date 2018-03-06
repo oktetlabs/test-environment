@@ -241,17 +241,15 @@ match_node(rgt_gen_ctx_t *ctx, const char *tin,
     if (ctx->single_node_match)
     {
 #if RGT_HTML_USE_TIN_NAMES
-        if (tin != NULL)
+        if (tin != NULL && ctx->match_tin != NULL)
         {
-            if (ctx->match_tin == NULL ||
-                strcmp(ctx->match_tin, tin) != 0)
+            if (strcmp(ctx->match_tin, tin) != 0)
                 return FALSE;
         }
         else
 #endif
         {
-            if (ctx->match_tin != NULL ||
-                ctx->match_depth != depth ||
+            if (ctx->match_depth != depth ||
                 ctx->match_seq != seq)
                 return FALSE;
         }
@@ -746,7 +744,7 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     }
 
 #if RGT_HTML_USE_TIN_NAMES
-    if (tin != NULL)
+    if (tin != NULL && !(ctx->single_node_match && ctx->match_tin == NULL))
     {
         snprintf(fname, sizeof(fname), "node_%s%s.html", tin, page_str);
     }

@@ -1785,13 +1785,22 @@ struct tarpc_rte_flow_error {
     string                          message<>;
 };
 
-/** rte_mk_flow_rule_from_str() */
-struct tarpc_rte_mk_flow_rule_from_str_in {
-    struct tarpc_in_arg             common;
-    string                          flow_rule<>;
+enum tarpc_rte_flow_rule_component_flags {
+    TARPC_RTE_FLOW_ATTR_FLAG    = 0x01,
+    TARPC_RTE_FLOW_PATTERN_FLAG = 0x02,
+    TARPC_RTE_FLOW_ACTIONS_FLAG = 0x04,
+    /* Flow rule is the union of all the previous components */
+    TARPC_RTE_FLOW_RULE_FLAGS   = 0x07
 };
 
-struct tarpc_rte_mk_flow_rule_from_str_out {
+/** rte_mk_flow_rule_components() */
+struct tarpc_rte_mk_flow_rule_components_in {
+    struct tarpc_in_arg                 common;
+    uint8_t                             component_flags;
+    string                              flow_rule_components<>;
+};
+
+struct tarpc_rte_mk_flow_rule_components_out {
     struct tarpc_out_arg            common;
     tarpc_int                       retval;
     tarpc_rte_flow_attr             attr;
@@ -2000,7 +2009,7 @@ program dpdk
         RPC_DEF(rte_eth_dev_udp_tunnel_port_add)
         RPC_DEF(rte_eth_dev_udp_tunnel_port_delete)
 
-        RPC_DEF(rte_mk_flow_rule_from_str)
+        RPC_DEF(rte_mk_flow_rule_components)
         RPC_DEF(rte_free_flow_rule)
         RPC_DEF(rte_flow_validate)
         RPC_DEF(rte_flow_create)
