@@ -1,6 +1,10 @@
 /** @file
  * @brief Unix Kernel Logger
  *
+ * @defgroup te_tools_te_kernel_log Unix Kernel Logger
+ * @ingroup te_tools
+ * @{
+ *
  * Unix Kernel Logger header file
  *
  *
@@ -95,3 +99,4 @@ extern void te_kernel_log_set_system_func(void *p);
 } /* extern "C" */
 #endif
 #endif /* !__TE_TOOLS_KERNEL_LOG_H__ */
+/**@} <!-- END te_tools_te_kernel_log --> */

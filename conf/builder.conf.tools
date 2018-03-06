@@ -5,7 +5,7 @@
 
 TE_PLATFORM([], [], [-D_GNU_SOURCE], [], [],
             [tools rpc_types conf_oid rpcxdr loggerta logic_expr \
-             trc rcfpch])
+             trc rpctransport agentlib rcfpch])
 
 TE_APP([])
 

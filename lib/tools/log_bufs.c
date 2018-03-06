@@ -23,7 +23,7 @@
  * MA  02111-1307  USA
  *
  *
- * @author Oleg Kravtosv <Oleg.Kravtosv@oktetlabs.ru>
+ * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *
  * $Id$
  */

@@ -1,8 +1,9 @@
 /** @file
- * @brief Proteos, TAPI Ethernet.
+ * @brief TAPI TAD PCAP
  *
- * Declarations of API for TAPI Ethernet.
- *
+ * @defgroup tapi_tad_pcap PCAP
+ * @ingroup tapi_tad_main
+ * @{
  *
  * Copyright (C) 2004 Test Environment authors (see file AUTHORS in the
  * root directory of the distribution).
@@ -24,8 +25,6 @@
  *
  *
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_PCAP_H__
@@ -148,3 +147,5 @@ extern int tapi_pcap_pattern_add(const char *filter,
                                  asn_value **pattern);
 
 #endif /* __TE_TAPI_PCAP_H__ */
+
+/**@} <!-- END tapi_tad_pcap --> */

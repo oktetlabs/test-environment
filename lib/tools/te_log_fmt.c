@@ -720,15 +720,7 @@ te_log_msg_raw_put_string(te_log_msg_raw_data *data, const char *str)
 
 
 
-/**
- * Preprocess and output message to log with special features parsing.
- *
- * @param out      Output parameters
- * @param fmt      Format string
- * @param ap       Arguments for the format string
- *
- * @return Error code (see te_errno.h)
- */
+/* See description in te_log_fmt.h */
 te_errno
 te_log_vprintf(te_log_msg_out *out, const char *fmt, va_list ap)
 {

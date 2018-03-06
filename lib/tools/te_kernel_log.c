@@ -108,7 +108,7 @@ te_kernel_log_set_system_func(void *p)
     func_system = p;
 }
 
-/**
+/*
  * Described in te_kernel_log.h
  */
 te_errno
@@ -539,7 +539,7 @@ log_serial(void *ready, int argc, char *argv[])
 
     if (argc < 4)
     {
-        ERROR("Too few parameters to serial_console_log");
+        ERROR("%s(): too few parameters", __FUNCTION__);
         sem_post(ready);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }

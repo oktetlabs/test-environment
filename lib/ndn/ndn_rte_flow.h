@@ -55,6 +55,7 @@ typedef enum {
     NDN_FLOW_ACTION_TYPE_VOID,
     NDN_FLOW_ACTION_TYPE_QUEUE,
     NDN_FLOW_ACTION_TYPE_RSS,
+    NDN_FLOW_ACTION_TYPE_DROP,
 } ndn_rte_flow_action_type_t;
 
 typedef enum {
@@ -102,7 +103,11 @@ typedef enum {
     NDN_FLOW_RULE_ACTIONS,
 } ndn_rte_flow_rule_t;
 
+extern const asn_type * const ndn_rte_flow_attr;
+extern const asn_type * const ndn_rte_flow_pattern;
+extern const asn_type * const ndn_rte_flow_actions;
 extern const asn_type * const ndn_rte_flow_rule;
+extern const asn_type * const ndn_rte_flow_action;
 extern const asn_type * const ndn_rte_flow_action_conf_rss;
 extern const asn_type * const ndn_rte_flow_action_conf_rss_queue;
 extern const asn_type * const ndn_rte_flow_action_conf_rss_opt;

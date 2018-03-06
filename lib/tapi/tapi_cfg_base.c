@@ -64,72 +64,73 @@
 #include "conf_api.h"
 
 #include "tapi_cfg_base.h"
+#include "tapi_cfg_sys.h"
 #include "tapi_sockaddr.h"
 #include "tapi_host_ns.h"
 
 /* See the description in tapi_cfg_base.h */
-int
-tapi_cfg_base_ip_fw(const char *ta, te_bool *enabled, const char *vrsn)
+te_errno
+tapi_cfg_base_ipv4_fw(const char *ta, te_bool enable)
 {
-    int             rc;
-    cfg_val_type    val_type = CVT_INTEGER;
-    int             val;
-    char           *val_str = NULL;
-    char            obj_id[CFG_OID_MAX];
-
-    snprintf(obj_id, sizeof(obj_id), "/agent/ip%s_fw", vrsn);
-
-    if (cfg_get_instance_fmt(NULL, &val_str,
-                             "/agent:%s/rsrc:ip%s_fw", ta, vrsn) != 0)
-    {
-        rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, obj_id),
-                                  "/agent:%s/rsrc:ip%s_fw", ta, vrsn);
-        if (rc != 0)
-            return rc;
-    }
-    else
-        free(val_str);
-
-    if ((rc = cfg_get_instance_fmt(&val_type, &val,
-                                   "/agent:%s/ip%s_fw:",
-                                   ta, vrsn)) != 0)
-    {
-        ERROR("%s(): Failed to get IPv%s forwarding state on '%s': %r",
-              __FUNCTION__, vrsn, ta, rc);
-        return rc;
-    }
-
-    if (val != *enabled)
-    {
-        int new_val = *enabled;
-
-        if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, new_val),
-                                       "/agent:%s/ip%s_fw:",
-                                       ta, vrsn)) != 0)
-        {
-            ERROR("%s(): Failed to configure IPv%s forwarding on '%s': %r",
-                  __FUNCTION__, vrsn, ta, rc);
-            return rc;
-        }
-
-        *enabled = val;
-    }
-
-    return 0;
-}   /* tapi_cfg_base_ip_fw() */
-
-/* See the description in tapi_cfg_base.h */
-int
-tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled)
-{
-    return tapi_cfg_base_ip_fw(ta, enabled, "4");
+    return tapi_cfg_sys_set_int(ta, enable, NULL, "net/ipv4/ip_forward");
 }
 
 /* See the description in tapi_cfg_base.h */
-int
-tapi_cfg_base_ipv6_fw(const char *ta, te_bool *enabled)
+te_errno
+tapi_cfg_base_ipv4_fw_enabled(const char *ta, te_bool *enabled)
 {
-    return tapi_cfg_base_ip_fw(ta, enabled, "6");
+    te_errno rc;
+    int val;
+
+    rc = tapi_cfg_sys_get_int(ta, &val, "net/ipv4/ip_forward");
+    if (rc == 0)
+        *enabled = val;
+
+    return rc;
+}
+
+/* See the description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_ipv4_fw_set(const char *ta, const char *ifname, te_bool enable)
+{
+    return tapi_cfg_sys_set_int(ta, enable, NULL,
+                                "net/ipv4/conf/%s/forwarding", ifname);
+}
+
+/* See the description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_ipv4_fw_get(const char *ta, const char *ifname, te_bool *enabled)
+{
+    te_errno rc;
+    int val;
+
+    rc = tapi_cfg_sys_get_int(ta, &val, "net/ipv4/conf/%s/forwarding", ifname);
+    if (rc == 0)
+        *enabled = val;
+
+    return rc;
+}
+
+/* See the description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_ipv6_fw_set(const char *ta, const char *ifname, te_bool enable)
+{
+    return tapi_cfg_sys_set_int(ta, enable, NULL,
+                                "net/ipv6/conf/%s/forwarding", ifname);
+}
+
+/* See the description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_ipv6_fw_get(const char *ta, const char *ifname, te_bool *enabled)
+{
+    te_errno rc;
+    int val;
+
+    rc = tapi_cfg_sys_get_int(ta, &val, "net/ipv6/conf/%s/forwarding", ifname);
+    if (rc == 0)
+        *enabled = val;
+
+    return rc;
 }
 
 /* See the description in tapi_cfg_base.h */
@@ -732,6 +733,14 @@ tapi_cfg_base_if_add_vlan(const char *ta, const char *if_name,
         return rc;
     }
 
+    rc = tapi_cfg_base_if_add_rsrc(ta, *vlan_ifname);
+    if (rc != 0)
+    {
+        ERROR("%s(): Failed to grab VLAN interface %s", __FUNCTION__,
+              *vlan_ifname);
+        return rc;
+    }
+
     if (tapi_host_ns_enabled())
         rc = tapi_host_ns_if_add(ta, *vlan_ifname, if_name);
 
@@ -743,34 +752,43 @@ te_errno
 tapi_cfg_base_if_del_vlan(const char *ta, const char *if_name,
                           uint16_t vid)
 {
+    char    *vlan_ifname = NULL;
     te_errno rc;
     te_errno rc2 = 0;
 
-    if (tapi_host_ns_enabled())
+    rc = cfg_get_instance_fmt(NULL, &vlan_ifname,
+                               "/agent:%s/interface:%s/vlans:%d/ifname:",
+                               ta, if_name, vid);
+    if (rc != 0)
     {
-        char *vlan_ifname = NULL;
+        ERROR("%s(): Failed to get interface name for VLAN interface "
+              "with VID=%hu on %s", __FUNCTION__, vid, if_name);
+    }
+    else
+    {
+        if (tapi_host_ns_enabled())
+            rc = tapi_host_ns_if_del(ta, vlan_ifname, TRUE);
 
-        rc2 = cfg_get_instance_fmt(NULL, &vlan_ifname,
-                                   "/agent:%s/interface:%s/vlans:%d/ifname:",
-                                   ta, if_name, vid);
-        if (rc2 != 0)
+        rc2 = tapi_cfg_base_if_del_rsrc(ta, vlan_ifname);
+        if (rc2 == TE_RC(TE_CS, TE_ENOENT))
+            rc2 = 0;
+        else if (rc2 != 0)
         {
-            ERROR("%s(): Failed to get interface name for VLAN interface "
-                  "with VID=%su on %s", __FUNCTION__, vid, if_name);
+            ERROR("%s(): Failed to release VLAN interface %s", __FUNCTION__,
+                  vlan_ifname);
         }
-        else
-        {
-            rc2 = tapi_host_ns_if_del(ta, vlan_ifname, TRUE);
-            free(vlan_ifname);
-        }
+        if (rc == 0)
+            rc = rc2;
+
+        free(vlan_ifname);
     }
 
-    rc = cfg_del_instance_fmt(FALSE, "/agent:%s/interface:%s/vlans:%d",
+    rc2 = cfg_del_instance_fmt(FALSE, "/agent:%s/interface:%s/vlans:%d",
                               ta, if_name, vid);
-    if (rc != 0)
+    if (rc2 != 0)
         ERROR("%s(): Failed to delete VLAN with VID=%d from %s",
               __FUNCTION__, vid, if_name);
-    else
+    if (rc == 0)
         rc = rc2;
 
     return rc;
@@ -938,6 +956,8 @@ tapi_cfg_base_if_del_macvlan(const char *ta, const char *link,
         return rc;
 
     rc = tapi_cfg_base_if_del_rsrc(ta, ifname);
+    if (rc == TE_RC(TE_CS, TE_ENOENT))
+        rc = 0;
 
     if (tapi_host_ns_enabled())
     {
@@ -1038,11 +1058,15 @@ tapi_cfg_base_if_del_veth(const char *ta, const char *ifname)
     if (peer != NULL)
     {
         rc2 = tapi_cfg_base_if_del_rsrc(ta, peer);
+        if (rc2 == TE_RC(TE_CS, TE_ENOENT))
+            rc2 = 0;
         if (rc == 0)
             rc = rc2;
     }
 
     rc2 = tapi_cfg_base_if_del_rsrc(ta, ifname);
+    if (rc2 == TE_RC(TE_CS, TE_ENOENT))
+        rc2 = 0;
     if (rc == 0)
         rc = rc2;
 

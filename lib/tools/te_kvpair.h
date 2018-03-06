@@ -1,6 +1,10 @@
 /** @file
  * @brief Key-value pairs API
  *
+ * @defgroup te_tools_te_kvpair Key-value pairs
+ * @ingroup te_tools
+ * @{
+ *
  * Definition of API for working with key-value pairs
  *
  *
@@ -96,3 +100,4 @@ extern const char *te_kvpairs_get(te_kvpair_h *head, const char *key);
 } /* extern "C" */
 #endif
 #endif /* !__TE_TOOLS_KV_PAIRS_H__ */
+/**@} <!-- END te_tools_te_kvpair --> */

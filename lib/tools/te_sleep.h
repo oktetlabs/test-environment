@@ -1,6 +1,10 @@
 /** @file
  * @brief TE tools
  *
+ * @defgroup te_tools_te_sleep Sleep
+ * @ingroup te_tools
+ * @{
+ *
  * Functions for different delays.
  *
  * Copyright (C) 2006 Test Environment authors (see file AUTHORS
@@ -99,3 +103,4 @@ extern "C" {
 } /* extern "C" */
 #endif
 #endif /* !__TE_SLEEP_H__ */
+/**@} <!-- END te_tools_te_sleep --> */

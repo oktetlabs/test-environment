@@ -1,5 +1,9 @@
 /** @file
- * @brief Proteos, TAPI DHCP.
+ * @brief TAPI TAD DHCP
+ *
+ * @defgroup tapi_tad_dhcp DHCP
+ * @ingroup tapi_tad_main
+ * @{
  *
  * Declarations of API for TAPI DHCP.
  *
@@ -22,8 +26,6 @@
  * MA  02111-1307  USA
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
- *
- * $Id$
  */ 
 
 #ifndef __TE_TAPI_DHCP_H__
@@ -445,3 +447,5 @@ int dhcpv6_prepare_traffic_template(const asn_value *dhcp6_msg,
 int dhcpv6_prepare_traffic_pattern(const asn_value *dhcp_msg,
                                    asn_value **pattern_p);
 #endif /* !__TE_TAPI_DHCP_H__ */
+
+/**@} <!-- END tapi_tad_dhcp --> */

@@ -1,6 +1,10 @@
 /** @file
  * @brief TCP states API library
  *
+ * @defgroup tapi_tcp_states_def TAPI definitions for testing TCP states
+ * @ingroup tapi_tcp_states
+ * @{
+ *
  * TCP states API library - public declarations of API used to achieve
  * a requested TCP socket state following specified sequence of TCP
  * states.
@@ -658,5 +662,7 @@ extern void tsa_packet_handler(const char *packet, void *user_param);
  * @param ctx   Packets stats struct
  */
 extern void tsa_print_packet_stats(tsa_packets_counter *ctx);
+
+/**@} <!-- END tapi_tcp_states_def --> */
 
 #endif /* !__TAPI_TCP_STATES_H__ */

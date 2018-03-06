@@ -63,6 +63,7 @@ asn_enum_entry_t _ndn_rte_flow_action_type_enum_entries[] = {
     {"void", NDN_FLOW_ACTION_TYPE_VOID},
     {"queue", NDN_FLOW_ACTION_TYPE_QUEUE},
     {"rss", NDN_FLOW_ACTION_TYPE_RSS},
+    {"drop", NDN_FLOW_ACTION_TYPE_DROP},
 };
 
 asn_type ndn_rte_flow_action_type_s = {
@@ -229,4 +230,5 @@ asn_type ndn_rte_flow_rule_s = {
     {_ndn_rte_flow_rule_ne_array}
 };
 
+const asn_type * const ndn_rte_flow_pattern = &ndn_generic_pdu_sequence_s;
 const asn_type * const ndn_rte_flow_rule = &ndn_rte_flow_rule_s;

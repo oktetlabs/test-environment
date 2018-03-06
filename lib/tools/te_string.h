@@ -1,5 +1,9 @@
 /** @file
- * @brief Testing Results Comparator: common
+ * @brief API to deal with dynamic strings
+ *
+ * @defgroup te_tools_te_string Dynamic strings
+ * @ingroup te_tools
+ * @{
  *
  * Helper functions to work with strings.
  *
@@ -190,3 +194,4 @@ char *raw2string(uint8_t *data, int size)
 } /* extern "C" */
 #endif
 #endif /* !__TE_STRING_H__ */
+/**@} <!-- END te_tools_te_string --> */

@@ -1,8 +1,9 @@
 /** @file
- * @brief Test API for RADIUS Server Configuration and RADIUS CSAP 
+ * @brief Test API for RADIUS Server Configuration and RADIUS CSAP
  *
- * Definition of API.
- *
+ * @defgroup tapi_radius RADIUS Server Configuration and RADIUS CSAP
+ * @ingroup te_ts_tapi
+ * @{
  *
  * Copyright (C) 2005 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -24,8 +25,6 @@
  *
  * @author Boris Misenov <Boris.Misenov@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_RADIUS_H__
@@ -801,3 +800,5 @@ extern te_errno tapi_supp_reset(const char *ta_name, const char *if_name);
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_RADIUS_H__ */
+
+/**@} <!-- END tapi_radius --> */

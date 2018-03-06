@@ -1,6 +1,10 @@
 /** @file
  * @brief TE iSCSI stuff
  *
+ * @defgroup te_tools_te_iscsi iSCSI
+ * @ingroup te_tools
+ * @{
+ *
  * Functions and constant declared here can be used bothe on the agent
  * and in tests.
  *
@@ -873,3 +877,4 @@ extern "C" {
 } /* extern "C" */
 #endif
 #endif /* !__TE_ISCSI_H__ */
+/**@} <!-- END te_tools_te_iscsi --> */

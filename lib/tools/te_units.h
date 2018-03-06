@@ -1,6 +1,10 @@
 /** @file
  * @brief Test Environment unit-conversion functions
  *
+ * @defgroup te_tools_te_units Unit-conversion
+ * @ingroup te_tools
+ * @{
+ *
  * Unit-conversion functions
  *
  *
@@ -66,10 +70,10 @@ extern "C" {
 
 /** List of supported unit prefixes */
 typedef enum te_unit_prefix {
-    TE_UNIT_PREFIX_NONE,
-    TE_UNIT_PREFIX_KILO,
-    TE_UNIT_PREFIX_MEGA,
-    TE_UNIT_PREFIX_GIGA,
+    TE_UNIT_PREFIX_NONE,    /**< no prefix: value as is */
+    TE_UNIT_PREFIX_KILO,    /**< kilo */
+    TE_UNIT_PREFIX_MEGA,    /**< mega */
+    TE_UNIT_PREFIX_GIGA,    /**< giga */
 } te_unit_prefix;
 
 /** Value-unit pair */
@@ -128,3 +132,4 @@ extern double te_unit_bin_unpack(te_unit value);
 } /* extern "C" */
 #endif
 #endif /* __TE_UNITS_H__ */
+/**@} <!-- END te_tools_te_units --> */
