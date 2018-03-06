@@ -64,72 +64,73 @@
 #include "conf_api.h"
 
 #include "tapi_cfg_base.h"
+#include "tapi_cfg_sys.h"
 #include "tapi_sockaddr.h"
 #include "tapi_host_ns.h"
 
 /* See the description in tapi_cfg_base.h */
-int
-tapi_cfg_base_ip_fw(const char *ta, te_bool *enabled, const char *vrsn)
+te_errno
+tapi_cfg_base_ipv4_fw(const char *ta, te_bool enable)
 {
-    int             rc;
-    cfg_val_type    val_type = CVT_INTEGER;
-    int             val;
-    char           *val_str = NULL;
-    char            obj_id[CFG_OID_MAX];
-
-    snprintf(obj_id, sizeof(obj_id), "/agent/ip%s_fw", vrsn);
-
-    if (cfg_get_instance_fmt(NULL, &val_str,
-                             "/agent:%s/rsrc:ip%s_fw", ta, vrsn) != 0)
-    {
-        rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, obj_id),
-                                  "/agent:%s/rsrc:ip%s_fw", ta, vrsn);
-        if (rc != 0)
-            return rc;
-    }
-    else
-        free(val_str);
-
-    if ((rc = cfg_get_instance_fmt(&val_type, &val,
-                                   "/agent:%s/ip%s_fw:",
-                                   ta, vrsn)) != 0)
-    {
-        ERROR("%s(): Failed to get IPv%s forwarding state on '%s': %r",
-              __FUNCTION__, vrsn, ta, rc);
-        return rc;
-    }
-
-    if (val != *enabled)
-    {
-        int new_val = *enabled;
-
-        if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, new_val),
-                                       "/agent:%s/ip%s_fw:",
-                                       ta, vrsn)) != 0)
-        {
-            ERROR("%s(): Failed to configure IPv%s forwarding on '%s': %r",
-                  __FUNCTION__, vrsn, ta, rc);
-            return rc;
-        }
-
-        *enabled = val;
-    }
-
-    return 0;
-}   /* tapi_cfg_base_ip_fw() */
-
-/* See the description in tapi_cfg_base.h */
-int
-tapi_cfg_base_ipv4_fw(const char *ta, te_bool *enabled)
-{
-    return tapi_cfg_base_ip_fw(ta, enabled, "4");
+    return tapi_cfg_sys_set_int(ta, enable, NULL, "net/ipv4/ip_forward");
 }
 
 /* See the description in tapi_cfg_base.h */
-int
-tapi_cfg_base_ipv6_fw(const char *ta, te_bool *enabled)
+te_errno
+tapi_cfg_base_ipv4_fw_enabled(const char *ta, te_bool *enabled)
 {
-    return tapi_cfg_base_ip_fw(ta, enabled, "6");
+    te_errno rc;
+    int val;
+
+    rc = tapi_cfg_sys_get_int(ta, &val, "net/ipv4/ip_forward");
+    if (rc == 0)
+        *enabled = val;
+
+    return rc;
+}
+
+/* See the description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_ipv4_fw_set(const char *ta, const char *ifname, te_bool enable)
+{
+    return tapi_cfg_sys_set_int(ta, enable, NULL,
+                                "net/ipv4/conf/%s/forwarding", ifname);
+}
+
+/* See the description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_ipv4_fw_get(const char *ta, const char *ifname, te_bool *enabled)
+{
+    te_errno rc;
+    int val;
+
+    rc = tapi_cfg_sys_get_int(ta, &val, "net/ipv4/conf/%s/forwarding", ifname);
+    if (rc == 0)
+        *enabled = val;
+
+    return rc;
+}
+
+/* See the description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_ipv6_fw_set(const char *ta, const char *ifname, te_bool enable)
+{
+    return tapi_cfg_sys_set_int(ta, enable, NULL,
+                                "net/ipv6/conf/%s/forwarding", ifname);
+}
+
+/* See the description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_ipv6_fw_get(const char *ta, const char *ifname, te_bool *enabled)
+{
+    te_errno rc;
+    int val;
+
+    rc = tapi_cfg_sys_get_int(ta, &val, "net/ipv6/conf/%s/forwarding", ifname);
+    if (rc == 0)
+        *enabled = val;
+
+    return rc;
 }
 
 /* See the description in tapi_cfg_base.h */

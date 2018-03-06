@@ -194,7 +194,7 @@ te_errno
 tapi_route_gateway_set_forwarding(tapi_route_gateway *gw,
                                   te_bool enabled)
 {
-    return tapi_cfg_base_ipv4_fw(gw->gw_ta, &enabled);
+    return tapi_cfg_base_ipv4_fw(gw->gw_ta, enabled);
 }
 
 /* See description in tapi_route_gw.h */

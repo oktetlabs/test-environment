@@ -405,12 +405,12 @@ tsa_gw_set(tsa_session *ss, rcf_rpc_server *pco_gw,
     ss->state.sock.route_src_added = TRUE;
 
     /* Turn on forwarding on router host */
-
-    ss->state.sock.ipv4_fw = TRUE;
-    rc = tapi_cfg_base_ipv4_fw(pco_gw->ta, &ss->state.sock.ipv4_fw);
+    rc = tapi_cfg_base_ipv4_fw_enabled(pco_gw->ta, &ss->state.sock.ipv4_fw);
     if (rc != 0)
         return rc;
-
+    rc = tapi_cfg_base_ipv4_fw(pco_gw->ta, TRUE);
+    if (rc != 0)
+        return rc;
     ss->state.sock.ipv4_fw_enabled = TRUE;
 
     return 0;
@@ -701,7 +701,7 @@ tsa_destroy_session(tsa_session *ss)
         if (ss->state.sock.ipv4_fw_enabled)
         {
             rc_aux = tapi_cfg_base_ipv4_fw(ss->config.pco_gw->ta,
-                                           &ss->state.sock.ipv4_fw);
+                                           ss->state.sock.ipv4_fw);
             if (rc_aux != 0)
                 rc = rc_aux;
         }
