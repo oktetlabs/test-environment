@@ -1,6 +1,10 @@
 /** @file
  * @brief Test API to configure command monitor.
  *
+ * @defgroup tapi_cmd_monitor_def Command monitor TAPI
+ * @ingroup tapi_conf
+ * @{
+ *
  * Definition of API to configure command monitor.
  *
  *
@@ -24,8 +28,6 @@
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_CFG_CMD_MONITOR_H__
@@ -37,6 +39,18 @@
 extern "C" {
 #endif
 
+/**
+ * Start a command monitor. It will periodically run specified
+ * shell command and log its output.
+ *
+ * @param ta            Test Agent name.
+ * @param name          Name for a node in configuration tree.
+ * @param command       Command to run.
+ * @param time_to_wait  How long to wait before running a command
+ *                      again, in milliseconds.
+ *
+ * @return Status code.
+ */
 static inline te_errno
 tapi_cfg_cmd_monitor_begin(char const *ta,
                            char const *name,
@@ -70,6 +84,15 @@ tapi_cfg_cmd_monitor_begin(char const *ta,
     return 0;
 }
 
+/**
+ * Stop a command monitor (removing its node from configuration tree).
+ *
+ * @param ta          Test Agent name.
+ * @param name        Name of the command monitor node in configuration
+ *                    tree.
+ *
+ * @return Status code.
+ */
 static inline te_errno
 tapi_cfg_cmd_monitor_end(char const *ta,
                          char const *name)
@@ -82,5 +105,7 @@ tapi_cfg_cmd_monitor_end(char const *ta,
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
+
+/**@} <!-- END tapi_cmd_monitor_def --> */
 
 #endif /* !__TE_TAPI_CFG_CMD_MONITOR_H__ */

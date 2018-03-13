@@ -28,4 +28,5 @@
 
 EXTRA_DIST = \
 	cm_base.xml \
-	cm_net.xml
+	cm_net.xml \
+	cm_cmd_monitor.xml
