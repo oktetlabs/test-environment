@@ -950,6 +950,70 @@ extern int test_map_param_value(const char *var_name,
 extern uint8_t *test_get_octet_string_param(const char *str_val,
                                             size_t len);
 
+
+/**
+ * Generic way to return mapped value of a parameter: string -> enum
+ *
+ * @param argc       Count of arguments
+ * @param argc       List of arguments
+ * @param name       Name of parameter
+ * @param maps       An array of mappings: string -> enum
+ */
+extern int test_get_enum_param(int argc, char **argv,
+                               const char *name,
+                               const struct param_map_entry *maps);
+
+/**
+ * Return parameters of type 'char *', i.e. not parsed
+ * string value of the parameter
+ *
+ * @param argc       Count of arguments
+ * @param argc       List of arguments
+ * @param name       Name of parameter
+ */
+extern const char * test_get_string_param(int argc, char **argv,
+                                          const char *name);
+
+/**
+ * Return parameters of type 'int'
+ *
+ * @param argc       Count of arguments
+ * @param argc       List of arguments
+ * @param name       Name of parameter
+ */
+extern int test_get_int_param(int argc, char **argv,
+                              const char *name);
+
+/**
+ * Return parameters of type 'uint'
+ *
+ * @param argc       Count of arguments
+ * @param argc       List of arguments
+ * @param name       Name of parameter
+ */
+extern unsigned int test_get_uint_param(int argc, char **argv,
+                                        const char *name);
+
+/**
+ * Return parameters of type 'long long int'
+ *
+ * @param argc       Count of arguments
+ * @param argc       List of arguments
+ * @param name       Name of parameter
+ */
+extern int64_t test_get_int64_param(int argc, char **argv,
+                                    const char *name);
+
+/**
+ * Return parameters of type 'double'
+ *
+ * @param argc       Count of arguments
+ * @param argc       List of arguments
+ * @param name       Name of parameter
+ */
+extern double test_get_double_param(int argc, char **argv,
+                                    const char *name);
+
 /**
  * Print octet string.
  *
