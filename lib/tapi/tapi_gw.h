@@ -1,6 +1,10 @@
 /** @file
  * @brief Test GateWay network configuring API
  *
+ * @defgroup ts_tapi_gw Macros to get test parameters on a gateway configuration
+ * @ingroup te_ts_tapi
+ * @{
+ *
  * Macros to be used in tests. The header must be included from test
  * sources only. It is allowed to use the macros only from @b main()
  * function of the test.
@@ -26,8 +30,6 @@
  *
  *
  * @author Konstantin Abramenko <Konstantin Abramenko@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_GW_H__
@@ -76,3 +78,5 @@
     } while (0)
 
 #endif /* !__TE_TAPI_GW_H__ */
+
+/**@} <!-- END ts_tapi_gw --> */

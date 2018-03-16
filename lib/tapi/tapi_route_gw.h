@@ -1,5 +1,9 @@
 /** @file
- * @brief Test GateWay network configuring API
+ * @brief Gateway host configuration API
+ *
+ * @defgroup ts_tapi_route_gw Control network channel using a gateway
+ * @ingroup te_ts_tapi
+ * @{
  *
  * Macros and functions for gateway configuration to be used in tests.
  * "Gateway" here is the third host which forwards packets between
@@ -28,8 +32,6 @@
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_ROUTE_GW_H__
@@ -302,3 +304,5 @@ extern te_errno tapi_route_gateway_break_tst_gw(tapi_route_gateway *gw);
 extern te_errno tapi_route_gateway_repair_tst_gw(tapi_route_gateway *gw);
 
 #endif /* !__TE_TAPI_ROUTE_GW_H__ */
+
+/**@} <!-- END ts_tapi_route_gw --> */

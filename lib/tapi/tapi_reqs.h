@@ -1,6 +1,10 @@
 /** @file
  * @brief API to modify target requirements from prologues
  *
+ * @defgroup ts_tapi_reqs Target requirements modification
+ * @ingroup te_ts_tapi
+ * @{
+ *
  * Declaration of API to modify target requirements from prologues.
  *
  *
@@ -24,8 +28,6 @@
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_REQS_H__
@@ -50,3 +52,5 @@ extern te_errno tapi_reqs_modify(const char *reqs);
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_REQS_H__ */
+
+/**@} <!-- END ts_tapi_reqs --> */

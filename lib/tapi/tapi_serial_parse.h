@@ -1,6 +1,10 @@
 /** @file
  * @brief Test API of serial console parsers
  *
+ * @defgroup tapi_conf_serial_parse Serial console parsers configuration
+ * @ingroup tapi_conf
+ * @{
+ *
  * Definition of API to configure serial console parsers.
  * See design document OKTL-0000469-SERIAL.txt.
  * User manual:
@@ -26,8 +30,6 @@
  *
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_SERIAL_PARSE_H__
@@ -244,3 +246,5 @@ extern te_errno tapi_serial_parser_reset(tapi_parser_id *id);
 #endif
 
 #endif /* ndef __TE_TAPI_SERIAL_PARSE_H__ */
+
+/**@} <!-- END tapi_conf_serial_parse --> */

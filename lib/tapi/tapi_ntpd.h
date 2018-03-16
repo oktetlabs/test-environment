@@ -1,6 +1,10 @@
 /** @file
  * @brief Test API to manage NTP daemon
  *
+ * @defgroup tapi_conf_ntpd NTP daemon configuration
+ * @ingroup tapi_conf
+ * @{
+ *
  * Definition of API to manage ntpd daemon.
  *
  * Copyright (C) 2004-2014 Test Environment authors (see file AUTHORS
@@ -23,8 +27,6 @@
  *
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_NTPD_H__
@@ -91,3 +93,4 @@ tapi_ntpd_status(rcf_rpc_server *rpcs)
 
 #endif /* ndef __TE_TAPI_NTPD_H__ */
 
+/**@} <!-- END tapi_conf_ntpd --> */

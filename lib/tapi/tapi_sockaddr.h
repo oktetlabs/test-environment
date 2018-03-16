@@ -1,6 +1,10 @@
 /** @file
  * @brief Functions to opearate with generic "struct sockaddr"
  *
+ * @defgroup ts_tapi_sockaddr Tools to work with "struct sockaddr"
+ * @ingroup te_ts_tapi
+ * @{
+ *
  * Definition of test API for working with struct sockaddr.
  *
  *
@@ -24,8 +28,6 @@
  *
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_SOCKADDR_H__
@@ -239,3 +241,5 @@ extern te_errno tapi_sockaddr_clone2(const struct sockaddr  *src,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_SOCKADDR_H__ */
+
+/**@} <!-- END ts_tapi_sockaddr --> */

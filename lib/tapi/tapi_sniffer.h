@@ -1,6 +1,10 @@
 /** @file
  * @brief Test API to configure sniffers.
  *
+ * @defgroup tapi_conf_sniffer Network sniffers configuration
+ * @ingroup tapi_conf
+ * @{
+ *
  * Definition of API to configure sniffers.
  *
  * Copyright (C) 2004-2012 Test Environment authors (see file AUTHORS
@@ -23,8 +27,6 @@
  *
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_SNIFFER_H__
@@ -154,3 +156,5 @@ extern te_errno tapi_sniffer_mark(const char *ta, tapi_sniffer_id *id,
 #endif
 
 #endif /* ndef __TE_TAPI_SNIFFER_H__ */
+
+/**@} <!-- END tapi_conf_sniffer --> */

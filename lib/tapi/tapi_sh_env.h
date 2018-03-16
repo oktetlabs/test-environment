@@ -1,5 +1,9 @@
 /** @file
- * @brief Test API to use setjmp/longjmp.
+ * @brief Test API to control environment variables on the agent side
+ *
+ * @defgroup tapi_conf_sh_env Environment variables configuration
+ * @ingroup tapi_conf
+ * @{
  *
  * Definition of API to deal with thread-safe stack of jumps.
  *
@@ -24,8 +28,6 @@
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- *
- * $Id: tapi_jmp.h 33201 2006-11-03 14:36:37Z arybchik $
  */
 
 #ifndef __TE_TAPI_SH_ENV_H__
@@ -365,3 +367,5 @@ tapi_getenv_bool(const char *var_name)
 #endif
 
 #endif
+
+/**@} <!-- END tapi_conf_sh_env --> */

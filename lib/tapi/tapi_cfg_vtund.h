@@ -1,6 +1,10 @@
 /** @file
  * @brief Test API to configure VTund.
  *
+ * @defgroup tapi_conf_vtund VTund configuration
+ * @ingroup tapi_conf
+ * @{
+ *
  * Definition of API to configure VTund.
  *
  *
@@ -24,8 +28,6 @@
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_CFG_VTUND_H__
@@ -80,3 +82,5 @@ extern te_errno tapi_cfg_vtund_create_tunnel(
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_CFG_VTUND_H__ */
+
+/**@} <!-- END tapi_conf_vtund --> */

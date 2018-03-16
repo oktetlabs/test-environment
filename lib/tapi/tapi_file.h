@@ -1,5 +1,9 @@
 /** @file
- * @brief Test API
+ * @brief Test API to work with the files on the engine and TA.
+ *
+ * @defgroup ts_tapi_file Engine and TA files management
+ * @ingroup te_ts_tapi
+ * @{
  *
  * Functions for convinient work with the files on the engine and TA.
  *
@@ -24,8 +28,6 @@
  *
  *
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_FILE_H__
@@ -191,3 +193,5 @@ extern int tapi_file_ta_unlink_fmt(const char *ta,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_FILE_H__ */
+
+/**@} <!-- END ts_tapi_file --> */
