@@ -418,6 +418,20 @@ cleanup_specific:                                                   \
  * @{
  */
 
+
+/**
+ * Generic way to return mapped value of a parameter: string -> enum
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ * @param maps_      An array of mappings: string -> enum
+ * @return mapped value
+ */
+#define TEST_ENUM_PARAM(var_name_, maps_...) \
+    test_get_enum_param(argc, argv, #var_name_,         \
+    (struct param_map_entry []) { maps_, {NULL, 0} })
+
+
 /**
  * Generic way to get mapped value of a parameter: string -> enum
  *
@@ -426,25 +440,19 @@ cleanup_specific:                                                   \
  * @param maps_      An array of mappings: string -> enum
  */
 #define TEST_GET_ENUM_PARAM(var_name_, maps_...) \
-    do {                                                    \
-        const char *val_;                                   \
-        int         mapped_val_;                            \
-        struct param_map_entry maps[] = {                   \
-            maps_,                                          \
-            { NULL, 0 },                                    \
-        };                                                  \
-                                                            \
-        val_ = test_get_param(argc, argv, #var_name_);      \
-        if (val_ != NULL &&                                 \
-            test_map_param_value(#var_name_, maps,          \
-                                 val_, &mapped_val_) == 0)  \
-        {                                                   \
-            (var_name_) = mapped_val_;                      \
-            break;                                          \
-        }                                                   \
-        memset(&(var_name_), 0, sizeof(var_name_));         \
-        TEST_STOP;                                          \
-    } while (0)
+    (var_name_) = TEST_ENUM_PARAM(#var_name_, maps_)
+
+
+/**
+ * The macro to return parameters of type 'char *', i.e. not parsed
+ * string value of the parameter
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ * @return string value
+ */
+#define TEST_STRING_PARAM(var_name_) \
+    test_get_string_param(argc, argv, #var_name_)
 
 
 /**
@@ -455,13 +463,18 @@ cleanup_specific:                                                   \
  *                   parameter we get the value
  */
 #define TEST_GET_STRING_PARAM(var_name_) \
-    do {                                                         \
-        if (((var_name_) = test_get_param(argc, argv,            \
-                                          #var_name_)) == NULL)  \
-        {                                                        \
-            TEST_STOP;                                           \
-        }                                                        \
-    } while (0)
+    (var_name_) = TEST_STRING_PARAM(argc, argv, #var_name_)
+
+
+/**
+ * The macro to return parameters of type 'int'
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ * @return int value
+ */
+#define TEST_INT_PARAM(var_name_) \
+    test_get_int_param(argc, argv, #var_name_)
 
 
 /**
@@ -471,24 +484,19 @@ cleanup_specific:                                                   \
  *                   parameter we get the value
  */
 #define TEST_GET_INT_PARAM(var_name_) \
-    do {                                                        \
-        const char *str_val_;                                   \
-        char       *end_ptr;                                    \
-                                                                \
-        str_val_ = test_get_param(argc, argv, #var_name_);      \
-        if (str_val_ == NULL)                                   \
-        {                                                       \
-            TEST_STOP;                                          \
-        }                                                       \
-        (var_name_) = (int)strtol(str_val_, &end_ptr, 0);       \
-        if (end_ptr == str_val_ || *end_ptr != '\0')            \
-        {                                                       \
-            TEST_FAIL("The value of '%s' parameter should be "  \
-                      "an integer, but it is %s", #var_name_,   \
-                      str_val_);                                \
-        }                                                       \
-    } while (0)
+    (var_name_) = TEST_INT_PARAM(var_name_)
 
+
+/**
+ * Obtain the value of an 'unsigned int' parameter
+ *
+ * @param _parameter    The name to denote both the
+ *                      target 'unsigned int' variable
+ *                      and the parameter of interest
+ * @return unsigned int parameter
+ */
+#define TEST_UINT_PARAM(var_name_) \
+    test_get_uint_param(argc, argv, #var_name_)
 
 /**
  * Obtain the value of an 'unsigned int' parameter
@@ -498,27 +506,18 @@ cleanup_specific:                                                   \
  *                      and the parameter of interest
  */
 #define TEST_GET_UINT_PARAM(_parameter) \
-    do {                                                        \
-        const char     *str_val;                                \
-        unsigned long   ulint_val;                              \
-        char           *end_ptr;                                \
-                                                                \
-        str_val = test_get_param(argc, argv, #_parameter);      \
-        CHECK_NOT_NULL(str_val);                                \
-                                                                \
-        ulint_val = strtoul(str_val, &end_ptr, 0);              \
-        if ((end_ptr == str_val) || (*end_ptr != '\0'))         \
-            TEST_FAIL("Failed to convert '%s' to a number",     \
-                      #_parameter);                             \
-                                                                \
-        if (ulint_val > UINT_MAX)                               \
-            TEST_FAIL("'%s' parameter value is greater"         \
-                      " than %u and cannot be stored in"        \
-                      " an 'unsigned int' variable",            \
-                      #_parameter, UINT_MAX);                   \
-                                                                \
-        _parameter = (unsigned int)ulint_val;                   \
-    } while (0)
+    (_parameter) = TEST_UINT_PARAM(_parameter)
+
+
+/**
+ * The macro to return parameters of type 'int64'
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ * @return int64 value
+ */
+#define TEST_INT64_PARAM(var_name_) \
+    test_get_int64_param(argc, argv, #var_name_)
 
 
 /**
@@ -528,22 +527,20 @@ cleanup_specific:                                                   \
  *                   parameter we get the value
  */
 #define TEST_GET_INT64_PARAM(var_name_) \
-    do {                                                        \
-        const char *str_val_;                                   \
-                                                                \
-        str_val_ = test_get_param(argc, argv, #var_name_);      \
-        if (str_val_ == NULL)                                   \
-        {                                                       \
-            TEST_STOP;                                          \
-        }                                                       \
-        if (sscanf(str_val_, "%lld",                            \
-                   (long long int *)&(var_name_)) != 1)         \
-        {                                                       \
-            TEST_FAIL("The value of '%s' parameter should be "  \
-                      "an integer, but it is %s", #var_name_,   \
-                      str_val_);                                \
-        }                                                       \
-    } while (0)
+    (var_name_) = TEST_INT64_PARAM(var_name_)
+
+
+/**
+ * The macro to return parameters of type 'double' ('float' also may
+ * be used)
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ * @return double value
+ */
+#define TEST_DOUBLE_PARAM(var_name_) \
+    test_get_double_param(argc, argv, #var_name_)
+
 
 /**
  * The macro to get parameters of type 'double' ('float' also may be used)
@@ -552,32 +549,7 @@ cleanup_specific:                                                   \
  *                   parameter we get the value
  */
 #define TEST_GET_DOUBLE_PARAM(var_name_) \
-    do {                                                        \
-        const char *str_val_;                                   \
-        char       *end_ptr;                                    \
-                                                                \
-        str_val_ = test_get_param(argc, argv, #var_name_);      \
-        if (str_val_ == NULL)                                   \
-        {                                                       \
-            TEST_STOP;                                          \
-        }                                                       \
-        (var_name_) = strtod(str_val_, &end_ptr);               \
-        if (end_ptr == str_val_ || *end_ptr != '\0')            \
-        {                                                       \
-            TEST_FAIL("The value of '%s' parameter should be "  \
-                      "a double, but it is %s", #var_name_,     \
-                      str_val_);                                \
-        }                                                       \
-        if (((var_name_) == 0 ||                                \
-             (var_name_) == + HUGE_VAL ||                       \
-             (var_name_) == - HUGE_VAL) &&                      \
-            errno == ERANGE)                                    \
-        {                                                       \
-            TEST_FAIL("The value of '%s' parameter is too "     \
-                      "large or too small: %s", #var_name_,     \
-                      str_val_);                                \
-        }                                                       \
-    } while (0)
+    (var_name_) = TEST_DOUBLE_PARAM(var_name_)
 
 /**
  * The macro to get parameter of type 'octet string'
