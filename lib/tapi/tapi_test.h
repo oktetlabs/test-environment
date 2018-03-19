@@ -440,7 +440,7 @@ cleanup_specific:                                                   \
  * @param maps_      An array of mappings: string -> enum
  */
 #define TEST_GET_ENUM_PARAM(var_name_, maps_...) \
-    (var_name_) = TEST_ENUM_PARAM(#var_name_, maps_)
+    (var_name_) = TEST_ENUM_PARAM(var_name_, maps_)
 
 
 /**
@@ -463,7 +463,7 @@ cleanup_specific:                                                   \
  *                   parameter we get the value
  */
 #define TEST_GET_STRING_PARAM(var_name_) \
-    (var_name_) = TEST_STRING_PARAM(argc, argv, #var_name_)
+    (var_name_) = TEST_STRING_PARAM(var_name_)
 
 
 /**
