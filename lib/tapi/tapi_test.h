@@ -420,6 +420,16 @@ cleanup_specific:                                                   \
 
 
 /**
+ * Check if the parameter identified by the given name is available
+ *
+ * @param var_name_  Parameter name for check
+ *
+ * @return result of check
+ */
+#define TEST_HAS_PARAM(var_name_) \
+    (test_find_param(argc, argv, #var_name_) != NULL)
+
+/**
  * Generic way to return mapped value of a parameter: string -> enum
  *
  * @param var_name_  Variable whose name is the same as the name of
@@ -878,7 +888,20 @@ typedef enum {
 extern unsigned int te_test_id;
 
 /**
- * Finds a particulat parameter in the list of parameters
+ * Finds a particular parameter in the list of parameters
+ *
+ * @param argc  number of parameters
+ * @param argv  Array of parameters in form "<param name>=<param value>"
+ * @param name  Parameter name whose value we want to obtain
+ *
+ * @return Pointer to the parameter
+ * @retval NULL if parameter is not in the list of parameters
+ */
+
+extern const char *test_find_param(int argc, char *argv[], const char *name);
+
+/**
+ * Finds value of particular parameter in the list of parameters
  *
  * @param argc  number of parameters
  * @param argv  Array of parameters in form "<param name>=<param value>"

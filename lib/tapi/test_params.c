@@ -88,14 +88,12 @@ te_test_sig_handler(int signum)
     }
 }
 
-
 /** See the description in tapi_test.h */
 const char *
-test_get_param(int argc, char *argv[], const char *name)
+test_find_param(int argc, char *argv[], const char *name)
 {
     int         i;
     const char *ptr = NULL;
-    const char *value;
 
     for (i = 0; i < argc; i++)
     {
@@ -125,7 +123,18 @@ test_get_param(int argc, char *argv[], const char *name)
 
         break;
     }
-    if (ptr == NULL)
+
+    return ptr;
+}
+
+/** See the description in tapi_test.h */
+const char *
+test_get_param(int argc, char *argv[], const char *name)
+{
+    const char *ptr = NULL;
+    const char *value;
+
+    if ((ptr = test_find_param(argc, argv, name)) == NULL)
     {
         WARN("There is no '%s' parameter specified", name);
         return NULL;
