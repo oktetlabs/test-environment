@@ -900,7 +900,6 @@ test_get_int64_param(int argc, char **argv, const char *name)
                   "large or too small: %s", name, str_val);
     }
 
-
     return (int64_t)value;
 }
 
@@ -923,16 +922,6 @@ test_get_double_param(int argc, char **argv, const char *name)
     {
         TEST_FAIL("The value of '%s' parameter should be "
                   "a double, but it is %s", name,
-                  str_val);
-    }
-
-    if ((value == 0 ||
-         value == + HUGE_VAL ||
-         value == - HUGE_VAL) &&
-        errno == ERANGE)
-    {
-        TEST_FAIL("The value of '%s' parameter is too "
-                  "large or too small: %s", name,
                   str_val);
     }
 
