@@ -57,6 +57,7 @@
 #include "ndn_ipstack.h"
 #include "ndn_eth.h"
 #include "ndn_socket.h"
+#include "tad_common.h"
 #include "tapi_ndn.h"
 #include "tapi_tad.h"
 #include "tapi_tad_internal.h"
@@ -66,7 +67,6 @@
 #include "tapi_udp.h"
 
 #include "tapi_test.h"
-
 
 /* See the description in tapi_udp.h */
 te_errno
@@ -259,6 +259,8 @@ ndn_udp4_dgram_to_plain(asn_value *pkt, udp4_datagram **udp_dgram)
     int         rc = 0;
     int32_t     hdr_field;
     size_t      len;
+    size_t      payload_len;
+    size_t      ip_pld_len;
     asn_value  *pdu;
 
     *udp_dgram = (struct udp4_datagram *)malloc(sizeof(**udp_dgram));
@@ -289,15 +291,51 @@ ndn_udp4_dgram_to_plain(asn_value *pkt, udp4_datagram **udp_dgram)
     READ_PACKET_FIELD(rc, pdu, *udp_dgram, src, addr);
     READ_PACKET_FIELD(rc, pdu, *udp_dgram, dst, addr);
 
-    len = asn_get_length(pkt, "payload");
-    if (len <= 0)
-        return 0;
+    /*
+     * Payload length is computed here because CSAP may
+     * report padding bytes in small Ethernet frames
+     * (which should not be less than 60 bytes even if
+     * there is not enough data) as part of payload.
+     */
 
-    (*udp_dgram)->payload_len = len;
-    (*udp_dgram)->payload = malloc(len);
+    rc = tapi_ip4_get_payload_len(pdu, &ip_pld_len);
+    CHECK_ERROR_CLEANUP(rc, "tapi_ip4_get_payload_len() fails");
 
-    rc = asn_read_value_field(pkt, (*udp_dgram)->payload, &len, "payload");
-    CHECK_ERROR_CLEANUP(rc, "failed to read payload");
+    if (ip_pld_len < TAD_UDP_HDR_LEN)
+        ERROR_CLEANUP(rc, TE_EINVAL,
+                      "IPv4 payload length is less than UDP header length");
+
+    payload_len = ip_pld_len - TAD_UDP_HDR_LEN;
+
+    rc = asn_get_length(pkt, "payload");
+    if (rc < 0)
+    {
+        WARN("%s(): failed to get payload length, assuming there was none",
+             __FUNCTION__);
+        len = 0;
+    }
+    else
+    {
+        len = rc;
+    }
+    rc = 0;
+
+    if (len < payload_len)
+    {
+        ERROR_CLEANUP(rc, TE_EINVAL,
+                      "obtained payload length is less than specified by "
+                      "length fields in IPv4 header");
+    }
+
+    if (len > 0)
+    {
+        (*udp_dgram)->payload_len = payload_len;
+        (*udp_dgram)->payload = malloc(len);
+
+        rc = asn_read_value_field(pkt, (*udp_dgram)->payload,
+                                  &len, "payload");
+        CHECK_ERROR_CLEANUP(rc, "failed to read payload");
+    }
 
 cleanup:
 
