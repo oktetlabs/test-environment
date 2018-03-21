@@ -257,6 +257,9 @@ ndn_tcp4_message_to_plain(asn_value *pkt, tcp4_message **tcp_msg)
     int         rc = 0;
     int32_t     hdr_field;
     size_t      len;
+    size_t      ip_pld_len;
+    size_t      tcp_hdr_len;
+    size_t      payload_len;
     asn_value  *pdu;
 
     *tcp_msg = (struct tcp4_message *)malloc(sizeof(**tcp_msg));
@@ -277,6 +280,10 @@ ndn_tcp4_message_to_plain(asn_value *pkt, tcp4_message **tcp_msg)
     CHECK_ERROR_CLEANUP(rc, "failed to get TCP flags");
     (*tcp_msg)->flags = hdr_field;
 
+    rc = ndn_du_read_plain_int(pdu, NDN_TAG_TCP_HLEN, &hdr_field);
+    CHECK_ERROR_CLEANUP(rc, "failed to get TCP header length");
+    tcp_hdr_len = hdr_field * sizeof(uint32_t);
+
     pdu = asn_read_indexed(pkt, 1, "pdus"); /* this should be IPv4 PDU */
     if (pdu == NULL)
         ERROR_CLEANUP(rc, TE_EASNINCOMPLVAL, "failed to get IPv4 PDU");
@@ -284,15 +291,46 @@ ndn_tcp4_message_to_plain(asn_value *pkt, tcp4_message **tcp_msg)
     READ_PACKET_FIELD(rc, pdu, *tcp_msg, src, addr);
     READ_PACKET_FIELD(rc, pdu, *tcp_msg, dst, addr);
 
-    len = asn_get_length(pkt, "payload");
-    if (len <= 0)
-        return 0;
+    rc = tapi_ip4_get_payload_len(pdu, &ip_pld_len);
+    CHECK_ERROR_CLEANUP(rc, "tapi_ip4_get_payload_len() fails");
 
-    (*tcp_msg)->payload_len = len;
-    (*tcp_msg)->payload = malloc(len);
+    if (ip_pld_len < tcp_hdr_len)
+    {
+        ERROR_CLEANUP(rc, TE_EINVAL,
+                      "IPv4 payload length is less than TCP header length");
+    }
 
-    rc = asn_read_value_field(pkt, (*tcp_msg)->payload, &len, "payload");
-    CHECK_ERROR_CLEANUP(rc, "failed to read payload");
+    payload_len = ip_pld_len - tcp_hdr_len;
+
+    rc = asn_get_length(pkt, "payload");
+    if (rc < 0)
+    {
+        WARN("%s(): failed to get payload length, assuming there was none",
+             __FUNCTION__);
+        len = 0;
+    }
+    else
+    {
+        len = rc;
+    }
+    rc = 0;
+
+    if (len < payload_len)
+    {
+        ERROR_CLEANUP(rc, TE_EINVAL,
+                      "obtained payload length is less than specified by "
+                      "length fields in IPv4 and TCP headers");
+    }
+
+    if (len > 0)
+    {
+        (*tcp_msg)->payload_len = payload_len;
+        (*tcp_msg)->payload = malloc(len);
+
+        rc = asn_read_value_field(pkt, (*tcp_msg)->payload,
+                                  &len, "payload");
+        CHECK_ERROR_CLEANUP(rc, "failed to read payload");
+    }
 
 cleanup:
 
