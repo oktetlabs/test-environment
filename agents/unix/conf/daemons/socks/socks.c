@@ -36,6 +36,7 @@
 #include "rcf_pch.h"
 #include "te_str.h"
 #include "te_queue.h"
+#include "te_rpc_sys_socket.h"
 
 #include <limits.h>
 #include <sys/stat.h>
@@ -98,7 +99,7 @@ typedef struct te_socks_proto {
     LIST_ENTRY(te_socks_proto)  list;   /**< Linked list of protocols */
     char   *name;                       /**< User-friendly name */
     int     proto;                      /**< Protocol to support, e.g.
-                                             IPPROTO_TCP */
+                                             RPC_IPPROTO_TCP */
 } te_socks_proto;
 
 /** Socks server interface structure */
@@ -134,7 +135,7 @@ typedef struct te_socks_server {
     LIST_HEAD(, te_socks_proto)     protocols;  /**< Used protocols (not all
                                                      implementations support
                                                      anything rather than
-                                                     IPPROTO_TCP) */
+                                                     RPC_IPPROTO_TCP) */
     LIST_HEAD(, te_socks_interface) interfaces; /**< Interfaces to listen at */
     char       *outbound_interface;             /**< Interface to send packets
                                                      to */
@@ -590,7 +591,7 @@ socks_server_start(te_socks_server *instance)
     /* Filter out unsupported protocols */
     LIST_FOREACH(proto, &instance->protocols, list)
     {
-        if (proto->proto != IPPROTO_TCP)
+        if (proto->proto != RPC_IPPROTO_TCP)
         {
             ERROR("SOCKS server '%s' doesn't support protocol '%d'",
                   instance->impl, proto->proto);
@@ -605,7 +606,7 @@ socks_server_start(te_socks_server *instance)
         char    ip[AUX_BUF_LEN];
 
         rc = socks_getifaddrs(iface->interface,
-                              iface->addr_family,
+                              addr_family_rpc2h(iface->addr_family),
                               ip,
                               sizeof(ip));
         if (rc != 0)
@@ -1090,7 +1091,7 @@ socks_interface_add(unsigned int gid, const char *oid, const char *value,
     }
 
     iface->port = SOCKS_DEFAULT_PORT;
-    iface->addr_family = AF_INET;
+    iface->addr_family = RPC_AF_INET;
 
     rc = socks_override_str(&iface->interface, value);
     if (rc != 0)
