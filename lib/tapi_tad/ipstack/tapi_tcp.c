@@ -281,14 +281,6 @@ ndn_tcp4_message_to_plain(asn_value *pkt, tcp4_message **tcp_msg)
 
     memset(*tcp_msg, 0, sizeof(**tcp_msg));
 
-    asn_save_to_file(pkt, "/tmp/asn_file.asn");
-
-//    if ((rc = ndn_get_timestamp(pkt, &((*tcp_msg)->ts))) != 0)
-//    {
-//        free(*udp_dgram);
-//        return TE_RC(TE_TAPI, rc);
-//    }
-
     pdu = asn_read_indexed(pkt, 0, "pdus"); /* this should be UDP PDU */
 
     if (pdu == NULL)
