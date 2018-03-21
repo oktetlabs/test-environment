@@ -3492,6 +3492,10 @@ static struct {
     { "/agent/l2tp", l2tp_grab, l2tp_release },
 #endif
 
+#ifdef WITH_SOCKS
+    { "/agent/socks", socks_grab, socks_release },
+#endif
+
 #ifdef WITH_RADVD
     { "/agent/radvd", radvd_grab, radvd_release },
 #endif
