@@ -47,6 +47,7 @@ typedef enum rpc_sysconf_name {
     RPC_SC_HOST_NAME_MAX,
     RPC_SC_OPEN_MAX,
     RPC_SC_PAGESIZE,
+    RPC_SC_NPROCESSORS_ONLN,
     RPC_SC_UNKNOWN,
 } rpc_sysconf_name;
 
