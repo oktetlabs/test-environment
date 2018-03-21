@@ -1,6 +1,10 @@
 /** @file
  * @brief Test API to use setjmp/longjmp.
  *
+ * @defgroup ts_tapi_jmp Stack of jumps
+ * @ingroup te_ts_tapi
+ * @{
+ *
  * Definition of API to deal with thread-safe stack of jumps.
  *
  *
@@ -24,8 +28,6 @@
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_JMP_H__
@@ -178,3 +180,5 @@ extern te_bool tapi_jmp_stack_is_empty(void);
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_JMP_H__ */
+
+/**@} <!-- END ts_tapi_jmp --> */

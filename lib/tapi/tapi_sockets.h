@@ -2,6 +2,10 @@
 /** @file
  * @brief Functions to opearate with socket
  *
+ * @defgroup ts_tapi_sockets High level TAPI to work with sockets
+ * @ingroup te_ts_tapi
+ * @{
+ *
  * Definition of test API for working with socket.
  *
  *
@@ -25,8 +29,6 @@
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
- *
- * $Id:
  */
 
 #ifndef __TE_TAPI_SOCKETS_H__
@@ -92,3 +94,5 @@ extern ssize_t tapi_sock_read_data(rcf_rpc_server *rpcs, int s,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_SOCKETS_H__ */
+
+/**@} <!-- END ts_tapi_sockets --> */

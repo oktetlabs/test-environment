@@ -294,6 +294,10 @@ extern te_errno ta_unix_conf_aggr_init();
 extern te_errno ta_unix_conf_pci_init();
 #endif
 
+#ifdef WITH_SOCKS
+extern te_errno ta_unix_conf_socks_init();
+#endif
+
 #ifdef WITH_SNIFFERS
 extern te_errno ta_unix_conf_sniffer_init();
 extern te_errno ta_unix_conf_sniffer_cleanup();
@@ -1244,6 +1248,14 @@ rcf_ch_conf_init()
             goto fail;
         }
 #endif /* WITH_UPNP_CP */
+
+#ifdef WITH_SOCKS
+        if (ta_unix_conf_socks_init() != 0)
+        {
+            ERROR("Failed to add SOCKS configuration subtree");
+            goto fail;
+        }
+#endif /* WITH_SOCKS */
 
         if (ta_unix_conf_macvlan_init() != 0)
         {

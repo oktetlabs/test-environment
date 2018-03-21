@@ -1,6 +1,16 @@
 /** @file
  * @brief API to configure some system options via /proc/sys
  *
+ * @defgroup tapi_conf_proc TA system options configuration (OBSOLETE)
+ * @ingroup tapi_conf
+ * @{
+ *
+ * ###########################################################################
+ * NOTE! This API is obsolete!
+ *
+ * @ref tapi_cfg_sys must be used in modern tests.
+ * ###########################################################################
+ * 
  * API declaration for access to some system options via /proc/sys
  *
  *
@@ -24,8 +34,6 @@
  *
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_PROC_H__
@@ -550,3 +558,5 @@ extern te_errno tapi_cfg_route_mtu_expires_get(rcf_rpc_server *rpcs,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_PROC_H__ */
+
+/**@} <!-- END tapi_conf_proc --> */

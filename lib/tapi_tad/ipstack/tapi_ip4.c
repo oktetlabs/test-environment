@@ -427,7 +427,44 @@ tapi_ip4_eth_trrecv_cb_data(ip4_callback  callback,
     return res;
 }
 
+/* See the description in tapi_ip4.h */
+te_errno
+tapi_ip4_get_payload_len(asn_value *pdu, size_t *len)
+{
+    size_t      ip_len;
+    size_t      ip_hdr_len;
+    int32_t     hdr_field;
+    te_errno    rc;
 
+    rc = ndn_du_read_plain_int(pdu, NDN_TAG_IP4_HLEN, &hdr_field);
+    if (rc != 0)
+    {
+        ERROR("%s(): ndn_du_read_plain_int(NDN_TAG_IP4_HLEN) failed, rc=%r",
+              __FUNCTION__, rc);
+        return rc;
+    }
+    ip_hdr_len = hdr_field * 4;
+
+    rc = ndn_du_read_plain_int(pdu, NDN_TAG_IP4_LEN, &hdr_field);
+    if (rc != 0)
+    {
+        ERROR("%s(): ndn_du_read_plain_int(NDN_TAG_IP4_LEN) failed, rc=%r",
+              __FUNCTION__, rc);
+        return rc;
+    }
+    ip_len = hdr_field;
+
+    if (ip_len < ip_hdr_len)
+    {
+        ERROR("%s(): IPv4 header length %" TE_PRINTF_SIZE_T "u is greater "
+              "than IPv4 length %" TE_PRINTF_SIZE_T "u", __FUNCTION__,
+              ip_hdr_len, ip_len);
+        return TE_EINVAL;
+    }
+
+    *len = ip_len - ip_hdr_len;
+    return 0;
+}
 
 
 

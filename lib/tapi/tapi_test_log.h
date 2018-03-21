@@ -1,5 +1,9 @@
 /** @file
- * @brief Test API
+ * @brief Test API to report verdicts and control a test execution flow
+ *
+ * @defgroup te_ts_tapi_test_log Test execution flow
+ * @ingroup te_ts_tapi_test
+ * @{
  *
  * Macros to be used in tests. The header must be included from test
  * sources only. It is allowed to use the macros only from @b main()
@@ -27,8 +31,6 @@
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_TEST_LOG_H__
@@ -160,3 +162,5 @@ extern void te_test_verdict(const char *fmt, ...);
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_TEST_LOG_H__ */
+
+/**@} <!-- END te_ts_tapi_test_log --> */

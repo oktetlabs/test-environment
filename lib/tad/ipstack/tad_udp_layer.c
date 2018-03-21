@@ -49,10 +49,6 @@
 #include "tad_bps.h"
 #include "tad_ipstack_impl.h"
 
-
-#define TAD_UDP_HDR_LEN     8
-
-
 /**
  * UDP layer specific data
  */

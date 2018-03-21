@@ -1,7 +1,9 @@
 /** @file
- * @brief Test Environment
+ * @brief Ethernet interface features
  *
- * A test eth configuration
+ * @defgroup tapi_conf_eth Ethernet interface features configuration
+ * @ingroup tapi_conf
+ * @{
  *
  * Copyright (C) 2004-20013 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -22,8 +24,6 @@
  * MA  02111-1307  USA
  *
  * @author Andrey A. Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_CFG_ETH_EXT_H__
@@ -233,3 +233,5 @@ extern te_errno tapi_eth_reset(const char *ta, const char *ifname);
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_CFG_ETH_EXT_H__ */
+
+/**@} <!-- END tapi_conf_eth --> */

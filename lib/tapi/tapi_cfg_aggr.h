@@ -1,6 +1,10 @@
 /** @file
  * @brief Test API to configure bonding and bridging.
  *
+ * @defgroup tapi_conf_aggr Bonding and bridging configuration
+ * @ingroup tapi_conf
+ * @{
+ *
  * Definition of API to configure linux trunks (IEEE 802.3ad) and bridges.
  *
  *
@@ -24,8 +28,6 @@
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_CFG_AGGR_H__
@@ -88,3 +90,5 @@ extern int tapi_cfg_aggr_bond_free_slave(const char *ta, const char *name,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_CFG_AGGR_H__ */
+
+/**@} <!-- END tapi_conf_aggr --> */

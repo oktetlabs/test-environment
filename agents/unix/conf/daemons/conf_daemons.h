@@ -108,6 +108,7 @@ get_ds_name(const char *oid)
     return
 #if defined __linux__
          (strstr(oid, "l2tp") != NULL) ? "l2tp" :
+         (strstr(oid, "socks") != NULL) ? "socks" :
          (strstr(oid, "radvd") != NULL) ? "radvd" :       
          (strstr(oid, "dhcpserver") != NULL) ? "dhcpd" :       
          (strstr(oid, "pppoeserver") != NULL) ? "pppoe-server" :       
@@ -303,6 +304,9 @@ extern int find_file(unsigned int n, const char * const *files,
  */
 extern te_errno l2tp_grab(const char *name);
 extern te_errno l2tp_release(const char *name);
+
+extern te_errno socks_grab(const char *name);
+extern te_errno socks_release(const char *name);
 
 extern te_errno radvd_grab(const char *name);
 extern te_errno radvd_release(const char *radvd);

@@ -1,6 +1,9 @@
 /** @file
- * @brief ip rule Configuration Model TAPI
+ * @brief IP rule Configuration Model TAPI
  *
+ * @defgroup tapi_conf_ip_rule IP rules configuration
+ * @ingroup tapi_conf
+ * @{
  *
  * Copyright (C) 2015 Test Environment authors (see file AUTHORS
  * in the root directory of the distribution).
@@ -22,8 +25,6 @@
  *
  *
  * @author Oleg Sadakov <Oleg.Sadakov@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_CFG_IP_RULE_H_
@@ -90,3 +91,5 @@ extern te_errno tapi_cfg_del_rule(const char *ta, int addr_family,
 #endif
 
 #endif /* !__TE_TAPI_CFG_IP_RULE_H_ */
+
+/**@} <!-- END tapi_conf_ip_rule --> */

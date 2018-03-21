@@ -1,6 +1,10 @@
 /** @file
  * @brief High level test API to configure tested network
  *
+ * @defgroup ts_tapi_network High level TAPI to configure network
+ * @ingroup te_ts_tapi
+ * @{
+ *
  * This API can be used to set up network configurations like resources
  * reservation, assigning IP addresses etc with minimum efforts.
  *
@@ -25,8 +29,6 @@
  *
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_NETWORK_H_
@@ -72,3 +74,5 @@ extern te_errno tapi_neight_flush_ta(rcf_rpc_server *rpcs);
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_NETWORK_H_ */
+
+/**@} <!-- END ts_tapi_network --> */

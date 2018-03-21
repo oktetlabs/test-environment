@@ -1,6 +1,10 @@
 /** @file
  * @brief Test API to configure L2TP.
  *
+ * @defgroup tapi_conf_l2tp L2TP configuration
+ * @ingroup tapi_conf
+ * @{
+ *
  * Definition of TAPI to configure L2TP.
  *
  *
@@ -24,8 +28,8 @@
  *
  *
  * @author Albert Podusenko <albert.podusenko@oktetlabs.ru>
- *
  */
+
 #ifndef __TE_TAPI_CFG_L2TP_H__
 #define __TE_TAPI_CFG_L2TP_H__
 
@@ -513,3 +517,5 @@ extern te_errno tapi_cfg_l2tp_lns_pppopt_del(const char *ta, const char *lns,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_CFG_L2TP_H__ */
+
+/**@} <!-- END tapi_conf_l2tp --> */

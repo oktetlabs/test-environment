@@ -57,15 +57,16 @@
 #include "ndn_ipstack.h"
 #include "ndn_eth.h"
 #include "ndn_socket.h"
+#include "tad_common.h"
 #include "tapi_ndn.h"
 #include "tapi_tad.h"
+#include "tapi_tad_internal.h"
 #include "tapi_eth.h"
 #include "tapi_ip4.h"
 #include "tapi_ip6.h"
 #include "tapi_udp.h"
 
 #include "tapi_test.h"
-
 
 /* See the description in tapi_udp.h */
 te_errno
@@ -240,23 +241,6 @@ typedef struct {
     udp4_callback   callback;
 } udp4_cb_data_t;
 
-
-/**
- * Read field from packet.
- *
- * @param _dir    direction of field: src or dst
- * @param _field  label of desired field: port or addr
- */
-#define READ_PACKET_FIELD(_dir, _field) \
-    do {                                                        \
-        len = sizeof((*udp_dgram)-> _dir ## _ ##_field ); \
-        if (rc == 0)                                            \
-            rc = asn_read_value_field(pdu,                      \
-                        &((*udp_dgram)-> _dir ##_## _field ), \
-                        &len, # _dir "-" # _field);   \
-    } while (0)
-
-
 /**
  * Convert UDP packet ASN value to plain C structure
  *
@@ -275,70 +259,99 @@ ndn_udp4_dgram_to_plain(asn_value *pkt, udp4_datagram **udp_dgram)
     int         rc = 0;
     int32_t     hdr_field;
     size_t      len;
+    size_t      payload_len;
+    size_t      ip_pld_len;
     asn_value  *pdu;
 
     *udp_dgram = (struct udp4_datagram *)malloc(sizeof(**udp_dgram));
     if (*udp_dgram == NULL)
-        return TE_ENOMEM;
+        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     memset(*udp_dgram, 0, sizeof(**udp_dgram));
 
-    asn_save_to_file(pkt, "/tmp/asn_file.asn");
-
-    if ((rc = ndn_get_timestamp(pkt, &((*udp_dgram)->ts))) != 0)
-    {
-        free(*udp_dgram);
-        return TE_RC(TE_TAPI, rc);
-    }
+    rc = ndn_get_timestamp(pkt, &((*udp_dgram)->ts));
+    CHECK_ERROR_CLEANUP(rc, "ndn_get_timestamp() failed");
 
     pdu = asn_read_indexed(pkt, 0, "pdus"); /* this should be UDP PDU */
-
     if (pdu == NULL)
-        rc = TE_EASNINCOMPLVAL;
+        ERROR_CLEANUP(rc, TE_EASNINCOMPLVAL, "failed to get UDP PDU");
 
-    READ_PACKET_FIELD(src, port);
-    READ_PACKET_FIELD(dst, port);
-
-#define CHECK_FAIL(msg_...) \
-    do {                        \
-        if (rc != 0)            \
-        {                       \
-            ERROR(msg_);        \
-            return -1;          \
-        }                       \
-    } while (0)
+    READ_PACKET_FIELD(rc, pdu, *udp_dgram, src, port);
+    READ_PACKET_FIELD(rc, pdu, *udp_dgram, dst, port);
 
     rc = ndn_du_read_plain_int(pdu, NDN_TAG_UDP_CHECKSUM, &hdr_field);
-    CHECK_FAIL("%s(): get UDP checksum fails, rc = %r",
-               __FUNCTION__, rc);
+    CHECK_ERROR_CLEANUP(rc, "get UDP checksum fails");
+
     (*udp_dgram)->checksum = hdr_field;
 
-    pdu = asn_read_indexed(pkt, 1, "pdus"); /* this should be Ip4 PDU */
+    pdu = asn_read_indexed(pkt, 1, "pdus"); /* this should be IPv4 PDU */
     if (pdu == NULL)
-        rc = TE_EASNINCOMPLVAL;
+        ERROR_CLEANUP(rc, TE_EASNINCOMPLVAL, "failed to get IPv4 PDU");
 
-    READ_PACKET_FIELD(src, addr);
-    READ_PACKET_FIELD(dst, addr);
+    READ_PACKET_FIELD(rc, pdu, *udp_dgram, src, addr);
+    READ_PACKET_FIELD(rc, pdu, *udp_dgram, dst, addr);
 
-    if (rc)
+    /*
+     * Payload length is computed here because CSAP may
+     * report padding bytes in small Ethernet frames
+     * (which should not be less than 60 bytes even if
+     * there is not enough data) as part of payload.
+     */
+
+    rc = tapi_ip4_get_payload_len(pdu, &ip_pld_len);
+    CHECK_ERROR_CLEANUP(rc, "tapi_ip4_get_payload_len() fails");
+
+    if (ip_pld_len < TAD_UDP_HDR_LEN)
+        ERROR_CLEANUP(rc, TE_EINVAL,
+                      "IPv4 payload length is less than UDP header length");
+
+    payload_len = ip_pld_len - TAD_UDP_HDR_LEN;
+
+    rc = asn_get_length(pkt, "payload");
+    if (rc < 0)
     {
+        WARN("%s(): failed to get payload length, assuming there was none",
+             __FUNCTION__);
+        len = 0;
+    }
+    else
+    {
+        len = rc;
+    }
+    rc = 0;
+
+    if (len < payload_len)
+    {
+        ERROR_CLEANUP(rc, TE_EINVAL,
+                      "obtained payload length is less than specified by "
+                      "length fields in IPv4 header");
+    }
+
+    if (len > 0)
+    {
+        (*udp_dgram)->payload_len = payload_len;
+        (*udp_dgram)->payload = malloc(len);
+
+        rc = asn_read_value_field(pkt, (*udp_dgram)->payload,
+                                  &len, "payload");
+        CHECK_ERROR_CLEANUP(rc, "failed to read payload");
+    }
+
+cleanup:
+
+    if (rc != 0)
+    {
+        if ((*udp_dgram)->payload != NULL)
+            free((*udp_dgram)->payload);
+
         free(*udp_dgram);
+        *udp_dgram = NULL;
+
         return TE_RC(TE_TAPI, rc);
     }
 
-    len = asn_get_length(pkt, "payload");
-    if (len <= 0)
-        return 0;
-
-    (*udp_dgram)->payload_len = len;
-    (*udp_dgram)->payload = malloc(len);
-
-    rc = asn_read_value_field(pkt, (*udp_dgram)->payload, &len, "payload");
-
-    return TE_RC(TE_TAPI, rc);
+    return 0;
 }
-
-#undef READ_PACKET_FIELD
 
 /**
  * Create Traffic-Pattern-Unit for udp.ip4.eth CSAP

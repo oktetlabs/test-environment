@@ -152,6 +152,10 @@ if CFG_UNIX_DAEMONS_L2TP
 libconf_a_SOURCES += daemons/l2tp/l2tp_server.c
 endif
 
+if CFG_UNIX_DAEMONS_SOCKS
+libconf_a_SOURCES += daemons/socks/socks.c
+endif
+
 endif
 
 

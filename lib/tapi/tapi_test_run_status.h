@@ -1,6 +1,10 @@
 /** @file
  * @brief Test API to set/get test run status.
  *
+ * @defgroup te_ts_tapi_test_run_status Test run status
+ * @ingroup te_ts_tapi_test
+ * @{
+ *
  * Definition of API to set/get test run status.
  *
  *
@@ -24,8 +28,6 @@
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_TEST_RUN_STATUS_H__
@@ -60,3 +62,5 @@ extern void tapi_test_run_status_set(te_test_run_status status);
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_TEST_RUN_STATUS_H__ */
+
+/**@} <!-- END te_ts_tapi_test_run_status --> */
