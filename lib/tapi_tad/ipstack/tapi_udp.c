@@ -59,6 +59,7 @@
 #include "ndn_socket.h"
 #include "tapi_ndn.h"
 #include "tapi_tad.h"
+#include "tapi_tad_internal.h"
 #include "tapi_eth.h"
 #include "tapi_ip4.h"
 #include "tapi_ip6.h"
@@ -240,23 +241,6 @@ typedef struct {
     udp4_callback   callback;
 } udp4_cb_data_t;
 
-
-/**
- * Read field from packet.
- *
- * @param _dir    direction of field: src or dst
- * @param _field  label of desired field: port or addr
- */
-#define READ_PACKET_FIELD(_dir, _field) \
-    do {                                                        \
-        len = sizeof((*udp_dgram)-> _dir ## _ ##_field ); \
-        if (rc == 0)                                            \
-            rc = asn_read_value_field(pdu,                      \
-                        &((*udp_dgram)-> _dir ##_## _field ), \
-                        &len, # _dir "-" # _field);   \
-    } while (0)
-
-
 /**
  * Convert UDP packet ASN value to plain C structure
  *
@@ -279,50 +263,31 @@ ndn_udp4_dgram_to_plain(asn_value *pkt, udp4_datagram **udp_dgram)
 
     *udp_dgram = (struct udp4_datagram *)malloc(sizeof(**udp_dgram));
     if (*udp_dgram == NULL)
-        return TE_ENOMEM;
+        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     memset(*udp_dgram, 0, sizeof(**udp_dgram));
 
-    if ((rc = ndn_get_timestamp(pkt, &((*udp_dgram)->ts))) != 0)
-    {
-        free(*udp_dgram);
-        return TE_RC(TE_TAPI, rc);
-    }
+    rc = ndn_get_timestamp(pkt, &((*udp_dgram)->ts));
+    CHECK_ERROR_CLEANUP(rc, "ndn_get_timestamp() failed");
 
     pdu = asn_read_indexed(pkt, 0, "pdus"); /* this should be UDP PDU */
-
     if (pdu == NULL)
-        rc = TE_EASNINCOMPLVAL;
+        ERROR_CLEANUP(rc, TE_EASNINCOMPLVAL, "failed to get UDP PDU");
 
-    READ_PACKET_FIELD(src, port);
-    READ_PACKET_FIELD(dst, port);
-
-#define CHECK_FAIL(msg_...) \
-    do {                        \
-        if (rc != 0)            \
-        {                       \
-            ERROR(msg_);        \
-            return -1;          \
-        }                       \
-    } while (0)
+    READ_PACKET_FIELD(rc, pdu, *udp_dgram, src, port);
+    READ_PACKET_FIELD(rc, pdu, *udp_dgram, dst, port);
 
     rc = ndn_du_read_plain_int(pdu, NDN_TAG_UDP_CHECKSUM, &hdr_field);
-    CHECK_FAIL("%s(): get UDP checksum fails, rc = %r",
-               __FUNCTION__, rc);
+    CHECK_ERROR_CLEANUP(rc, "get UDP checksum fails");
+
     (*udp_dgram)->checksum = hdr_field;
 
-    pdu = asn_read_indexed(pkt, 1, "pdus"); /* this should be Ip4 PDU */
+    pdu = asn_read_indexed(pkt, 1, "pdus"); /* this should be IPv4 PDU */
     if (pdu == NULL)
-        rc = TE_EASNINCOMPLVAL;
+        ERROR_CLEANUP(rc, TE_EASNINCOMPLVAL, "failed to get IPv4 PDU");
 
-    READ_PACKET_FIELD(src, addr);
-    READ_PACKET_FIELD(dst, addr);
-
-    if (rc)
-    {
-        free(*udp_dgram);
-        return TE_RC(TE_TAPI, rc);
-    }
+    READ_PACKET_FIELD(rc, pdu, *udp_dgram, src, addr);
+    READ_PACKET_FIELD(rc, pdu, *udp_dgram, dst, addr);
 
     len = asn_get_length(pkt, "payload");
     if (len <= 0)
@@ -332,11 +297,23 @@ ndn_udp4_dgram_to_plain(asn_value *pkt, udp4_datagram **udp_dgram)
     (*udp_dgram)->payload = malloc(len);
 
     rc = asn_read_value_field(pkt, (*udp_dgram)->payload, &len, "payload");
+    CHECK_ERROR_CLEANUP(rc, "failed to read payload");
 
-    return TE_RC(TE_TAPI, rc);
+cleanup:
+
+    if (rc != 0)
+    {
+        if ((*udp_dgram)->payload != NULL)
+            free((*udp_dgram)->payload);
+
+        free(*udp_dgram);
+        *udp_dgram = NULL;
+
+        return TE_RC(TE_TAPI, rc);
+    }
+
+    return 0;
 }
-
-#undef READ_PACKET_FIELD
 
 /**
  * Create Traffic-Pattern-Unit for udp.ip4.eth CSAP
