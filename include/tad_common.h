@@ -197,4 +197,7 @@ enum tad_eth_recv_mode {
 /** Receive nothing */
 #define TAD_ETH_RECV_NO     (0)
 
+/** Length of UDP header */
+#define TAD_UDP_HDR_LEN     8
+
 #endif /* !__TE_TAD_COMMON_H__ */
