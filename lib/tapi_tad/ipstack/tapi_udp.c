@@ -283,8 +283,6 @@ ndn_udp4_dgram_to_plain(asn_value *pkt, udp4_datagram **udp_dgram)
 
     memset(*udp_dgram, 0, sizeof(**udp_dgram));
 
-    asn_save_to_file(pkt, "/tmp/asn_file.asn");
-
     if ((rc = ndn_get_timestamp(pkt, &((*udp_dgram)->ts))) != 0)
     {
         free(*udp_dgram);
