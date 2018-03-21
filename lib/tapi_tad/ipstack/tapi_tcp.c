@@ -68,6 +68,7 @@
 
 #include "tapi_ndn.h"
 #include "tapi_tad.h"
+#include "tapi_tad_internal.h"
 #include "tapi_eth.h"
 #include "tapi_ip4.h"
 #include "tapi_ip6.h"
@@ -238,23 +239,6 @@ typedef struct {
     tcp4_callback   callback;
 } tcp4_cb_data_t;
 
-
-/**
- * Read field from packet.
- *
- * @param _dir    direction of field: src or dst
- * @param _field  label of desired field: port or addr
- */
-#define READ_PACKET_FIELD(_dir, _field) \
-    do {                                                        \
-        len = sizeof((*tcp_msg)-> _dir ## _ ##_field ); \
-        if (rc == 0)                                            \
-            rc = asn_read_value_field(pdu,                      \
-                        &((*tcp_msg)-> _dir ##_## _field ), \
-                        &len, # _dir "-" # _field);   \
-    } while (0)
-
-
 /**
  * Convert TCP packet ASN value to plain C structure
  *
@@ -277,44 +261,28 @@ ndn_tcp4_message_to_plain(asn_value *pkt, tcp4_message **tcp_msg)
 
     *tcp_msg = (struct tcp4_message *)malloc(sizeof(**tcp_msg));
     if (*tcp_msg == NULL)
-        return TE_ENOMEM;
+        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     memset(*tcp_msg, 0, sizeof(**tcp_msg));
 
-    pdu = asn_read_indexed(pkt, 0, "pdus"); /* this should be UDP PDU */
+    pdu = asn_read_indexed(pkt, 0, "pdus"); /* this should be TCP PDU */
 
     if (pdu == NULL)
-        rc = TE_EASNINCOMPLVAL;
+        ERROR_CLEANUP(rc, TE_EASNINCOMPLVAL, "failed to get TCP PDU");
 
-    READ_PACKET_FIELD(src, port);
-    READ_PACKET_FIELD(dst, port);
-
-#define CHECK_FAIL(msg_...) \
-    do {                        \
-        if (rc != 0)            \
-        {                       \
-            ERROR(msg_);        \
-            return -1;          \
-        }                       \
-    } while (0)
+    READ_PACKET_FIELD(rc, pdu, *tcp_msg, src, port);
+    READ_PACKET_FIELD(rc, pdu, *tcp_msg, dst, port);
 
     rc = ndn_du_read_plain_int(pdu, NDN_TAG_TCP_FLAGS, &hdr_field);
-    CHECK_FAIL("%s(): get UDP checksum fails, rc = %r",
-               __FUNCTION__, rc);
+    CHECK_ERROR_CLEANUP(rc, "failed to get TCP flags");
     (*tcp_msg)->flags = hdr_field;
 
-    pdu = asn_read_indexed(pkt, 1, "pdus"); /* this should be Ip4 PDU */
+    pdu = asn_read_indexed(pkt, 1, "pdus"); /* this should be IPv4 PDU */
     if (pdu == NULL)
-        rc = TE_EASNINCOMPLVAL;
+        ERROR_CLEANUP(rc, TE_EASNINCOMPLVAL, "failed to get IPv4 PDU");
 
-    READ_PACKET_FIELD(src, addr);
-    READ_PACKET_FIELD(dst, addr);
-
-    if (rc)
-    {
-        free(*tcp_msg);
-        return TE_RC(TE_TAPI, rc);
-    }
+    READ_PACKET_FIELD(rc, pdu, *tcp_msg, src, addr);
+    READ_PACKET_FIELD(rc, pdu, *tcp_msg, dst, addr);
 
     len = asn_get_length(pkt, "payload");
     if (len <= 0)
@@ -324,11 +292,23 @@ ndn_tcp4_message_to_plain(asn_value *pkt, tcp4_message **tcp_msg)
     (*tcp_msg)->payload = malloc(len);
 
     rc = asn_read_value_field(pkt, (*tcp_msg)->payload, &len, "payload");
+    CHECK_ERROR_CLEANUP(rc, "failed to read payload");
+
+cleanup:
+
+    if (rc != 0)
+    {
+        if ((*tcp_msg)->payload != NULL)
+            free((*tcp_msg)->payload);
+
+        free(*tcp_msg);
+        *tcp_msg = NULL;
+
+        return TE_RC(TE_TAPI, rc);
+    }
 
     return TE_RC(TE_TAPI, rc);
 }
-
-#undef READ_PACKET_FIELD
 
 static void
 tcp4_asn_pkt_handler(asn_value *pkt, void *user_param)
