@@ -238,6 +238,17 @@ extern te_errno tapi_ip4_template(tapi_ip_frag_spec *fragments,
                                   size_t pld_len,
                                   asn_value **result_value);
 
+
+/**
+ * Compute IPv4 packet payload length from IP header length fields.
+ *
+ * @param pdu         IPv4 PDU.
+ * @param len         Where to save computed length.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ip4_get_payload_len(asn_value *pdu, size_t *len);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
