@@ -4,8 +4,7 @@
  * Definitions used in code to control IPv6 router
  * advertisement daemon radvd.
  *
- * Copyright (C) 2011 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution).
+ * Copyright (C) 2003-2018 OKTET Labs.
  *
  * @author Konstantin G. Petrov <Konstantin.Petrov@oktetlabs.ru>
  *

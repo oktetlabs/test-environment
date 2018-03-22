@@ -4,7 +4,7 @@
  * RPC analogues of definitions from sys/systeminfo.h.
  * 
  * 
- * Copyright (C) 2006 Test Environment authors (see file AUTHORS
+ * Copyright (C) 2003-2018 OKTET Labs.
  * in the root directory of the distribution).
  *
  * Test Environment is free software; you can redistribute it and/or

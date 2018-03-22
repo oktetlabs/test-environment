@@ -2,7 +2,7 @@
  *
  * Catches changes of IP on network intefaces from netlink socket.
  *
- * Copyright (C) 2017 OKTET Labs, St.-Petersburg, Russia
+ * Copyright (C) 2003-2018 OKTET Labs, St.-Petersburg, Russia
  *
  * @author Maria.Kuklina@oktetlabs.ru
  *

@@ -3,7 +3,7 @@
  *
  * Common includes and definitions.
  *
- * Copyright (C) 2016 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2003-2018 OKTET Labs Ltd., St.-Petersburg, Russia
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  *
