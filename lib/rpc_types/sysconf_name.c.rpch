@@ -38,6 +38,7 @@ sysconf_name_rpc2str(rpc_sysconf_name name)
         RPC2STR(SC_HOST_NAME_MAX);
         RPC2STR(SC_OPEN_MAX);
         RPC2STR(SC_PAGESIZE);
+        RPC2STR(SC_NPROCESSORS_ONLN);
         RPC2STR(SC_UNKNOWN);
         default: return "<SC_FATAL_ERROR>";
     }
@@ -67,6 +68,9 @@ sysconf_name_rpc2h(rpc_sysconf_name name)
 #ifdef _SC_PAGESIZE
         SYSCONF_RPC2H(_SC_PAGESIZE);
 #endif
+#ifdef _SC_NPROCESSORS_ONLN
+        SYSCONF_RPC2H(_SC_NPROCESSORS_ONLN);
+#endif
         default: return -1;
     }
 #undef SYSCONF_RPC2H
@@ -95,6 +99,9 @@ sysconf_name_h2rpc(int name)
 #endif
 #ifdef _SC_PAGESIZE
         SYSCONF_H2RPC(_SC_PAGESIZE);
+#endif
+#ifdef _SC_NPROCESSORS_ONLN
+        SYSCONF_H2RPC(_SC_NPROCESSORS_ONLN);
 #endif
         default: return RPC_SC_UNKNOWN;
     }
