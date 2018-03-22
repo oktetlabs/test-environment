@@ -302,6 +302,7 @@ te_cwmp_pack__ParameterValueStruct(const cwmp__ParameterValueStruct *src,
     {
         case SOAP_TYPE_string:
         case SOAP_TYPE_xsd__anySimpleType:
+        case SOAP_TYPE_xsd__hexBinary:
         case SOAP_TYPE_SOAP_ENC__base64:
             CWMP_PACK_LEAF(string, Value);
             break;
@@ -1027,6 +1028,7 @@ te_cwmp_unpack__ParameterValueStruct(void *msg, size_t max_len)
     {
         case SOAP_TYPE_string:
         case SOAP_TYPE_xsd__anySimpleType:
+        case SOAP_TYPE_xsd__hexBinary:
         case SOAP_TYPE_SOAP_ENC__base64:
             CWMP_UNPACK_LEAF(string, Value);
             break;

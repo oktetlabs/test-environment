@@ -55,15 +55,15 @@ extern "C" {
 #endif
 
 #ifndef SOAP_TYPE_xsd__boolean
-#define SOAP_TYPE_xsd__boolean (11)
+#define SOAP_TYPE_xsd__boolean (12)
 #endif
 
 #ifndef SOAP_TYPE_boolean
-#define SOAP_TYPE_boolean (11)
+#define SOAP_TYPE_boolean (12)
 #endif
 
 #ifndef SOAP_TYPE_time
-#define SOAP_TYPE_time (98)
+#define SOAP_TYPE_time (99)
 #endif
 
 

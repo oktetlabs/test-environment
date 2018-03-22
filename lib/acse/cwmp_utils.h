@@ -478,6 +478,7 @@ cwmp_val_type_s2i(const char *type_name)
     {
         case 'i': return SOAP_TYPE_int;
         case 'u': return SOAP_TYPE_unsignedInt;
+        case 'h': return SOAP_TYPE_xsd__hexBinary;
         case 'b':
             if (strncmp(type_name, "byte", 4) == 0)
                 return SOAP_TYPE_byte;
