@@ -268,6 +268,10 @@ extern te_errno ta_unix_conf_module_init(void);
 extern te_errno ta_unix_conf_ns_net_init(void);
 extern te_errno ta_unix_conf_veth_init(void);
 
+#ifdef WITH_OPENVPN
+extern te_errno ta_unix_conf_openvpn_init(void);
+#endif
+
 #ifdef USE_LIBNETCONF
 netconf_handle nh = NETCONF_HANDLE_INVALID;
 #endif
@@ -1272,6 +1276,14 @@ rcf_ch_conf_init()
             ERROR("Failed to add resource limits configuration subtree");
             goto fail;
         }
+
+#ifdef WITH_OPENVPN
+        if (ta_unix_conf_openvpn_init() != 0)
+        {
+            ERROR("Failed to add OpenVPN configuration subtree");
+            goto fail;
+        }
+#endif /* WITH_OPENVPN */
 
         init = TRUE;
 

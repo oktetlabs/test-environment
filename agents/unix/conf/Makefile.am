@@ -122,6 +122,12 @@ noinst_HEADERS += daemons/dhcp/dhcp_server.h
 
 endif
 
+if CFG_UNIX_DAEMONS_OPENVPN
+
+libconf_a_SOURCES += daemons/openvpn/openvpn.c
+
+endif
+
 if CFG_UNIX_DAEMONS_PPPOE_SERVER
 libconf_a_SOURCES += daemons/pppoe/pppoe_server.c 
 endif

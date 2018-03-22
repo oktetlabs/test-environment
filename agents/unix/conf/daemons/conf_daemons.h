@@ -3,15 +3,9 @@
  *
  * Unix daemons common internal staff
  *
- *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
- *
- * 
- *
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TA_UNIX_CONF_DAEMONS_H__
@@ -94,6 +88,7 @@ get_ds_name(const char *oid)
     return
 #if defined __linux__
          (strstr(oid, "l2tp") != NULL) ? "l2tp" :
+         (strstr(oid, "openvpn") != NULL) ? "openvpn" :
          (strstr(oid, "socks") != NULL) ? "socks" :
          (strstr(oid, "radvd") != NULL) ? "radvd" :       
          (strstr(oid, "dhcpserver") != NULL) ? "dhcpd" :       
@@ -290,6 +285,9 @@ extern int find_file(unsigned int n, const char * const *files,
  */
 extern te_errno l2tp_grab(const char *name);
 extern te_errno l2tp_release(const char *name);
+
+extern te_errno openvpn_grab(const char *name);
+extern te_errno openvpn_release(const char *name);
 
 extern te_errno socks_grab(const char *name);
 extern te_errno socks_release(const char *name);

@@ -3,15 +3,9 @@
  *
  * Unix daemons configuring implementation
  *
- *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
- *
- * 
- *
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- *
- * $Id$
  */
 
 #include "te_config.h"
@@ -3488,6 +3482,10 @@ static struct {
 
 #ifdef WITH_DHCP_SERVER
     { "/agent/dhcpserver", dhcpserver_grab, dhcpserver_release }, 
+#endif
+
+#ifdef WITH_OPENVPN
+    { "/agent/openvpn", openvpn_grab, openvpn_release },
 #endif
 
 #ifdef WITH_PPPOE_SERVER

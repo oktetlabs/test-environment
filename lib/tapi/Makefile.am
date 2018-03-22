@@ -40,6 +40,7 @@ include_HEADERS = \
 	tapi_cfg_aggr.h \
 	tapi_cfg_cmd_monitor.h \
 	tapi_cfg_ip_rule.h \
+	tapi_cfg_openvpn.h \
 	tapi_cfg_l2tp.h \
 	tapi_cfg_socks.h \
 	tapi_iomux.h \
@@ -80,6 +81,7 @@ libtapi_la_SOURCES = \
 	tapi_serial_parse.c \
 	tapi_cfg_aggr.c \
 	tapi_cfg_ip_rule.c \
+	tapi_cfg_openvpn.c \
 	tapi_cfg_l2tp.c \
 	tapi_cfg_socks.c \
 	tapi_route_gw.c \
