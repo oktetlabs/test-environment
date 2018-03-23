@@ -4,7 +4,7 @@
  * Simple RAW Ethernet test: send packet to loopback interface and catch it
  * on another CSAP. 
  * 
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

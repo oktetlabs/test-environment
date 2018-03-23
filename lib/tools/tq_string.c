@@ -4,7 +4,7 @@
  * Implementation of API for working with tail queue of strings.
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

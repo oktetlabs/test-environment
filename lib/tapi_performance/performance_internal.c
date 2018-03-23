@@ -4,7 +4,7 @@
  * Auxiliary functions for internal use in performance TAPI
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

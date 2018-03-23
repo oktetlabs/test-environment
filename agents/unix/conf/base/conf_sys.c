@@ -5,7 +5,7 @@
  * this file are obsolete; new interface is defined in conf_sys_tree.c
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

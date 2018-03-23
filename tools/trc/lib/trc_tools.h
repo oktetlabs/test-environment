@@ -4,7 +4,7 @@
  * Definition of TRC diff tool types and related routines.
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

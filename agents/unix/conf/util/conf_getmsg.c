@@ -3,7 +3,7 @@
  *
  * Unix TA configuring support using getmsg()/putmsg() routines.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

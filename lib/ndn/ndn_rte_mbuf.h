@@ -4,7 +4,7 @@
  * Declarations of ASN.1 types for NDN of RTE mbuf pseudo-protocol
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

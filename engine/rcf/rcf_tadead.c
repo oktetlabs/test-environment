@@ -4,7 +4,7 @@
  * Program which may be called to inform RCF that TA is dead.
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

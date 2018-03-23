@@ -1,7 +1,7 @@
 /** @file
  * @brief Test Environment: implementation of raw log fragmentation.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

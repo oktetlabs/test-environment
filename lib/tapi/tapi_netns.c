@@ -4,7 +4,7 @@
  * Implementation of test API for network namespaces configuration.
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

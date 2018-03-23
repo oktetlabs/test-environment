@@ -7,7 +7,7 @@
  *
  * Functions for convenient work with the media files on local storage.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

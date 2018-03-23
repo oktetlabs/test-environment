@@ -8,7 +8,7 @@
  * Allocation of buffers, fill in by random numbers, etc.
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

@@ -2,7 +2,7 @@
  * @brief Test Environment: rgt-core implementation.
  *    Implementation of main and usage/help functions.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

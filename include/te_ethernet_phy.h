@@ -4,7 +4,7 @@
  * PHY usefull constants definition (Both: TAPI and configurator)
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

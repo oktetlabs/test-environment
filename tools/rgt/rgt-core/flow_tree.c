@@ -4,7 +4,7 @@
  * The module is responsible for keeping track of occured events and 
  * checking if new events are legal.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

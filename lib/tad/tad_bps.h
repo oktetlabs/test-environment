@@ -5,7 +5,7 @@
  * Traffic Application Domain Binary Protocol Support definitions
  * of data types and provided functions.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

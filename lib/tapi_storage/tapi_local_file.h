@@ -4,7 +4,7 @@
  * Functions for convenient work with the files on the engine and TA.
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

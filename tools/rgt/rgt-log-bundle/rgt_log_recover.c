@@ -4,7 +4,7 @@
  * This program recovers original raw log from fragments produced by
  * rgt-log-split.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

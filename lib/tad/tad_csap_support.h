@@ -6,7 +6,7 @@
  * Declarations of types and functions, used in common and
  * protocol-specific modules implemnting TAD.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

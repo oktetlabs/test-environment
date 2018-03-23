@@ -4,7 +4,7 @@
  * The module is responsible for making descisions about message filtering.
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

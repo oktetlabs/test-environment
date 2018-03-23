@@ -3,7 +3,7 @@
  *
  * RPC analogues of definitions from SunOS' sys/systeminfo.h.
  * 
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

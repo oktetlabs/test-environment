@@ -4,7 +4,7 @@
  * Interface for output of control and regular messages
  * into the JUnit XML file.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

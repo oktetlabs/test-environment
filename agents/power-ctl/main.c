@@ -4,7 +4,7 @@
  * Test Agent running on the Linux and used to control the Power
  * Distribution Units via SNMP.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

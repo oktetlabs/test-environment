@@ -4,7 +4,7 @@
  * RPC client API for DPDK ring library functions (implementation)
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

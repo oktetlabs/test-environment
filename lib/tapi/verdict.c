@@ -4,7 +4,7 @@
  * Implementation of test API to register verdicts at Tester.
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

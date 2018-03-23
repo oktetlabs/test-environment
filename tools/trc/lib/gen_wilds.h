@@ -8,7 +8,7 @@
  * select as small as possible number of (wildcard) iteration records
  * enough to describe the test.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

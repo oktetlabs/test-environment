@@ -3,7 +3,7 @@
  *
  * Implementation of API to use memory-related functions in a convenient way
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

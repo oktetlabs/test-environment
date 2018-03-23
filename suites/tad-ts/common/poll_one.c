@@ -3,7 +3,7 @@
  *
  * Tests on generic TAD functionality.
  * 
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  * 

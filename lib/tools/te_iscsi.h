@@ -8,7 +8,7 @@
  * Functions and constant declared here can be used bothe on the agent
  * and in tests.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

@@ -4,7 +4,7 @@
  * TA side Logger functionality for
  * forked TA processes and newly created threads, internal definitions.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  * 

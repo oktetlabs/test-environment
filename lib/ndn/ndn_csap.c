@@ -3,7 +3,7 @@
  *
  * Implementation of functions for work with CSAP using NDN ASN.1 types
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

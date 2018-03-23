@@ -4,7 +4,7 @@
  * Traffic Application Domain Command Handler.
  * IPv4 CSAP layer stack-related callbacks.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

@@ -3,7 +3,7 @@
  *
  * C interface for network communication library from Test Engine side.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

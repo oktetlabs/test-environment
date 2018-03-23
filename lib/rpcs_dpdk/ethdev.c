@@ -3,7 +3,7 @@
  *
  * RPC routines implementation to call DPDK (rte_eth_*) functions.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

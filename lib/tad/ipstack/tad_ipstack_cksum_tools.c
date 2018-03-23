@@ -4,7 +4,7 @@
  * Traffic Application Domain Command Handler
  * Auxiliary tools for the advanced checksum matching mode (implementation)
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

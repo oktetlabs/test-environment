@@ -4,7 +4,7 @@
  * Send/receive test for IEEE Std 802.3 frames with Ethernet2 and LLC
  * encapsulation, 802.1Q tagged/untagged.
  * 
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

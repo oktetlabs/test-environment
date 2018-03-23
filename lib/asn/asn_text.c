@@ -3,7 +3,7 @@
  *
  * Implementation of method to convert to/from textual ASN value notation.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

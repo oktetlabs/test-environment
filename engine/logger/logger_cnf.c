@@ -5,7 +5,7 @@
  * No grammar validity checking is carried out.
  * This code relies on external XML grammar validator.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

@@ -3,7 +3,7 @@
  *
  * Prototypes of functions to be implemented on all Test Agents.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

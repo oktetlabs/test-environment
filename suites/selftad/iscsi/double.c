@@ -3,7 +3,7 @@
  *
  * iSCSI CSAP and TAPI test, twice CSAPs. 
  * 
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

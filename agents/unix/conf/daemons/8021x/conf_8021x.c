@@ -3,7 +3,7 @@
  *
  * IEEE 802.1x supplicants configuring (xsupplicant, wpa_supplicant)
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

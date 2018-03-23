@@ -4,7 +4,7 @@
  * Traffic Application Domain Command Handler.
  * ICMP messages generating routines.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

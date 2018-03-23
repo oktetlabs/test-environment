@@ -4,7 +4,7 @@
  * Implementation of API for access to some system options via /proc/sys.
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *

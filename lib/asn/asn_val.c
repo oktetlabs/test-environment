@@ -3,7 +3,7 @@
  *
  * Implementation of method to dynamic ASN value processing.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights served.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * 
  *
