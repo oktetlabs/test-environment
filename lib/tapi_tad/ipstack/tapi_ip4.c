@@ -3,23 +3,9 @@
  *
  * Implementation of Test API
  *
- * Copyright (C) 2004-2006 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution).
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA  02111-1307  USA
+ * 
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Konstantin Abramenko <konst@oktetlabs.ru>
@@ -427,7 +413,44 @@ tapi_ip4_eth_trrecv_cb_data(ip4_callback  callback,
     return res;
 }
 
+/* See the description in tapi_ip4.h */
+te_errno
+tapi_ip4_get_payload_len(asn_value *pdu, size_t *len)
+{
+    size_t      ip_len;
+    size_t      ip_hdr_len;
+    int32_t     hdr_field;
+    te_errno    rc;
 
+    rc = ndn_du_read_plain_int(pdu, NDN_TAG_IP4_HLEN, &hdr_field);
+    if (rc != 0)
+    {
+        ERROR("%s(): ndn_du_read_plain_int(NDN_TAG_IP4_HLEN) failed, rc=%r",
+              __FUNCTION__, rc);
+        return rc;
+    }
+    ip_hdr_len = hdr_field * 4;
+
+    rc = ndn_du_read_plain_int(pdu, NDN_TAG_IP4_LEN, &hdr_field);
+    if (rc != 0)
+    {
+        ERROR("%s(): ndn_du_read_plain_int(NDN_TAG_IP4_LEN) failed, rc=%r",
+              __FUNCTION__, rc);
+        return rc;
+    }
+    ip_len = hdr_field;
+
+    if (ip_len < ip_hdr_len)
+    {
+        ERROR("%s(): IPv4 header length %" TE_PRINTF_SIZE_T "u is greater "
+              "than IPv4 length %" TE_PRINTF_SIZE_T "u", __FUNCTION__,
+              ip_hdr_len, ip_len);
+        return TE_EINVAL;
+    }
+
+    *len = ip_len - ip_hdr_len;
+    return 0;
+}
 
 
 

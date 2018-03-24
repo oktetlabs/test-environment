@@ -401,6 +401,10 @@ if test -n "$with_cfg_unix_daemons" ; then
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_DHCP_SERVER" ;
             ;;
 
+        openvpn)
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_OPENVPN" ;
+            ;;
+
         pppoe)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_PPPOE_SERVER"
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_PPPOE_CLIENT"
@@ -426,6 +430,9 @@ if test -n "$with_cfg_unix_daemons" ; then
         l2tp)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_L2TP" ;;
 
+        socks)
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_SOCKS" ;;
+
         *)  ;; 
     esac
   done
@@ -439,6 +446,8 @@ AM_CONDITIONAL(CFG_UNIX_DAEMONS_RADVD,
     [expr "$with_cfg_unix_daemons" : ".*radvd" >/dev/null])
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_ISC_DHCP_SERVER,
     [expr "$with_cfg_unix_daemons" : ".*dhcp" >/dev/null])
+AM_CONDITIONAL(CFG_UNIX_DAEMONS_OPENVPN,
+    [expr "$with_cfg_unix_daemons" : ".*openvpn" >/dev/null])
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_PPPOE_SERVER,
     [expr "$with_cfg_unix_daemons" : ".*pppoe" >/dev/null])
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_PPPOE_CLIENT,
@@ -449,7 +458,8 @@ AM_CONDITIONAL([CFG_UNIX_DAEMONS_RADIUS],
     [expr "$with_cfg_unix_daemons" : ".*radius" >/dev/null])
 AM_CONDITIONAL([CFG_UNIX_DAEMONS_L2TP],
     [expr "$with_cfg_unix_daemons" : ".*l2tp" >/dev/null])
-
+AM_CONDITIONAL([CFG_UNIX_DAEMONS_SOCKS],
+    [expr "$with_cfg_unix_daemons" : ".*socks" >/dev/null])
 
 AC_ARG_WITH([libnetconf],
             AS_HELP_STRING([--with-libnetconf],

@@ -1,7 +1,7 @@
 /* 
  * Test Package: CableHome Provisioning Test (PSP-01)
  *
- * Copyright (C) 2003 OKTET Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2003-2018 OKTET Ltd., St.-Petersburg, Russia
  * 
  * $Id$
  */

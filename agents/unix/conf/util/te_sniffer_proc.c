@@ -3,8 +3,7 @@
  *
  * Sniffer process implementation.
  *
- * Copyright (C) 2012 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2018 OKTET Labs.
  *
  * @author Andrey A. Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
  *

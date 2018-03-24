@@ -4,23 +4,9 @@
  * Unix TA configuring support
  *
  *
- * Copyright (C) 2004-2016 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution).
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * Test Environment is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * Test Environment is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA  02111-1307  USA
+ * 
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -282,6 +268,10 @@ extern te_errno ta_unix_conf_module_init(void);
 extern te_errno ta_unix_conf_ns_net_init(void);
 extern te_errno ta_unix_conf_veth_init(void);
 
+#ifdef WITH_OPENVPN
+extern te_errno ta_unix_conf_openvpn_init(void);
+#endif
+
 #ifdef USE_LIBNETCONF
 netconf_handle nh = NETCONF_HANDLE_INVALID;
 #endif
@@ -292,6 +282,10 @@ extern te_errno ta_unix_conf_aggr_init();
 
 #ifdef ENABLE_PCI_SUPPORT
 extern te_errno ta_unix_conf_pci_init();
+#endif
+
+#ifdef WITH_SOCKS
+extern te_errno ta_unix_conf_socks_init();
 #endif
 
 #ifdef WITH_SNIFFERS
@@ -1245,6 +1239,14 @@ rcf_ch_conf_init()
         }
 #endif /* WITH_UPNP_CP */
 
+#ifdef WITH_SOCKS
+        if (ta_unix_conf_socks_init() != 0)
+        {
+            ERROR("Failed to add SOCKS configuration subtree");
+            goto fail;
+        }
+#endif /* WITH_SOCKS */
+
         if (ta_unix_conf_macvlan_init() != 0)
         {
             ERROR("Failed to add macvlan interface configuration subtree");
@@ -1274,6 +1276,14 @@ rcf_ch_conf_init()
             ERROR("Failed to add resource limits configuration subtree");
             goto fail;
         }
+
+#ifdef WITH_OPENVPN
+        if (ta_unix_conf_openvpn_init() != 0)
+        {
+            ERROR("Failed to add OpenVPN configuration subtree");
+            goto fail;
+        }
+#endif /* WITH_OPENVPN */
 
         init = TRUE;
 

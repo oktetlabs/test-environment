@@ -3,23 +3,9 @@
  *
  * Adaptation of original module
  *
- * Copyright (C) 2006 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution).
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * Test Environment is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * Test Environment is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA  02111-1307  USA
+ * 
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -65,109 +51,3 @@ static char sccsid[] = "@(#)xdr_reference.c 1.11 87/08/11 SMI";
  * xdr_reference.c, Generic XDR routines implementation.
  *
  * Copyright (C) 1987, Sun Microsystems, Inc.
- *
- * These are the "non-trivial" xdr primitives used to serialize and de-serialize
- * "pointers".  See xdr.h for more info on the interface to xdr.
- */
-
-#include "internal.h"
-
-#define LASTUNSIGNED	((u_int)0-1)
-
-/*
- * XDR an indirect pointer
- * xdr_reference is for recursively translating a structure that is
- * referenced by a pointer inside the structure that is currently being
- * translated.  pp references a pointer to storage. If *pp is null
- * the  necessary storage is allocated.
- * size is the size of the referneced structure.
- * proc is the routine to handle the referenced structure.
- */
-bool_t
-xdr_reference (xdrs, pp, size, proc)
-     XDR *xdrs;
-     caddr_t *pp;		/* the pointer to work on */
-     u_int size;		/* size of the object pointed to */
-     xdrproc_t proc;		/* xdr routine to handle the object */
-{
-  caddr_t loc = *pp;
-  bool_t stat;
-
-  if (loc == NULL)
-    switch (xdrs->x_op)
-      {
-      case XDR_FREE:
-	return TRUE;
-
-      case XDR_DECODE:
-	*pp = loc = (caddr_t) mem_alloc (size);
-	if (loc == NULL)
-	  {
-#ifdef USE_IN_LIBIO
-	    if (_IO_fwide (stderr, 0) > 0)
-	      (void) __fwprintf (stderr, L"%s",
-				 _("xdr_reference: out of memory\n"));
-	    else
-#endif
-	      (void) fputs (_("xdr_reference: out of memory\n"), stderr);
-	    return FALSE;
-	  }
-	__bzero (loc, (int) size);
-	break;
-      default:
-	break;
-      }
-
-  stat = (*proc) (xdrs, loc, LASTUNSIGNED);
-
-  if (xdrs->x_op == XDR_FREE)
-    {
-      mem_free (loc, size);
-      *pp = NULL;
-    }
-  return stat;
-}
-INTDEF(xdr_reference)
-
-
-/*
- * xdr_pointer():
- *
- * XDR a pointer to a possibly recursive data structure. This
- * differs with xdr_reference in that it can serialize/deserialize
- * trees correctly.
- *
- *  What's sent is actually a union:
- *
- *  union object_pointer switch (boolean b) {
- *  case TRUE: object_data data;
- *  case FALSE: void nothing;
- *  }
- *
- * > objpp: Pointer to the pointer to the object.
- * > obj_size: size of the object.
- * > xdr_obj: routine to XDR an object.
- *
- */
-bool_t
-xdr_pointer (xdrs, objpp, obj_size, xdr_obj)
-     XDR *xdrs;
-     char **objpp;
-     u_int obj_size;
-     xdrproc_t xdr_obj;
-{
-
-  bool_t more_data;
-
-  more_data = (*objpp != NULL);
-  if (!INTUSE(xdr_bool) (xdrs, &more_data))
-    {
-      return FALSE;
-    }
-  if (!more_data)
-    {
-      *objpp = NULL;
-      return TRUE;
-    }
-  return INTUSE(xdr_reference) (xdrs, objpp, obj_size, xdr_obj);
-}

@@ -3,8 +3,7 @@
  *
  * Command monitor process implementation.
  *
- * Copyright (C) 2014 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2018 OKTET Labs.
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  *

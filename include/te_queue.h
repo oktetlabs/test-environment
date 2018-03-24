@@ -9,8 +9,7 @@
  * _KERNEL is removed. Own defition of a list is made iff sys/queue.h
  * does not present or it does not provide corresponding list.
  *
- * Copyright (C) 2006 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution).
+ * Copyright (C) 2003-2018 OKTET Labs.
  *
  * $Id$
  */

@@ -1,31 +1,19 @@
 /** @file
  * @brief Test API to configure command monitor.
  *
+ * @defgroup tapi_cmd_monitor_def Command monitor TAPI
+ * @ingroup tapi_conf
+ * @{
+ *
  * Definition of API to configure command monitor.
  *
  *
- * Copyright (C) 2014 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution).
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2.1
- * of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA  02111-1307  USA
+ * 
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_CFG_CMD_MONITOR_H__
@@ -37,6 +25,18 @@
 extern "C" {
 #endif
 
+/**
+ * Start a command monitor. It will periodically run specified
+ * shell command and log its output.
+ *
+ * @param ta            Test Agent name.
+ * @param name          Name for a node in configuration tree.
+ * @param command       Command to run.
+ * @param time_to_wait  How long to wait before running a command
+ *                      again, in milliseconds.
+ *
+ * @return Status code.
+ */
 static inline te_errno
 tapi_cfg_cmd_monitor_begin(char const *ta,
                            char const *name,
@@ -70,6 +70,15 @@ tapi_cfg_cmd_monitor_begin(char const *ta,
     return 0;
 }
 
+/**
+ * Stop a command monitor (removing its node from configuration tree).
+ *
+ * @param ta          Test Agent name.
+ * @param name        Name of the command monitor node in configuration
+ *                    tree.
+ *
+ * @return Status code.
+ */
 static inline te_errno
 tapi_cfg_cmd_monitor_end(char const *ta,
                          char const *name)
@@ -82,5 +91,7 @@ tapi_cfg_cmd_monitor_end(char const *ta,
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
+
+/**@} <!-- END tapi_cmd_monitor_def --> */
 
 #endif /* !__TE_TAPI_CFG_CMD_MONITOR_H__ */

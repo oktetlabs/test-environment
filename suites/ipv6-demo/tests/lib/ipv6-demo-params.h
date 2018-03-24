@@ -3,7 +3,7 @@
  *
  * Macros to get suite specific test parameters.
  *
- * Copyright (C) 2007 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2003-2018 OKTET Labs Ltd., St.-Petersburg, Russia
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
  *

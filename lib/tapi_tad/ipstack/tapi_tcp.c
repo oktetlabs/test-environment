@@ -3,23 +3,9 @@
  *
  * Implementation of Test API
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA  02111-1307  USA
+ * 
  *
  * @author: Konstantin Abramenko <konst@oktetlabs.ru>
  *
@@ -68,6 +54,7 @@
 
 #include "tapi_ndn.h"
 #include "tapi_tad.h"
+#include "tapi_tad_internal.h"
 #include "tapi_eth.h"
 #include "tapi_ip4.h"
 #include "tapi_ip6.h"
@@ -238,23 +225,6 @@ typedef struct {
     tcp4_callback   callback;
 } tcp4_cb_data_t;
 
-
-/**
- * Read field from packet.
- *
- * @param _dir    direction of field: src or dst
- * @param _field  label of desired field: port or addr
- */
-#define READ_PACKET_FIELD(_dir, _field) \
-    do {                                                        \
-        len = sizeof((*tcp_msg)-> _dir ## _ ##_field ); \
-        if (rc == 0)                                            \
-            rc = asn_read_value_field(pdu,                      \
-                        &((*tcp_msg)-> _dir ##_## _field ), \
-                        &len, # _dir "-" # _field);   \
-    } while (0)
-
-
 /**
  * Convert TCP packet ASN value to plain C structure
  *
@@ -273,70 +243,96 @@ ndn_tcp4_message_to_plain(asn_value *pkt, tcp4_message **tcp_msg)
     int         rc = 0;
     int32_t     hdr_field;
     size_t      len;
+    size_t      ip_pld_len;
+    size_t      tcp_hdr_len;
+    size_t      payload_len;
     asn_value  *pdu;
 
     *tcp_msg = (struct tcp4_message *)malloc(sizeof(**tcp_msg));
     if (*tcp_msg == NULL)
-        return TE_ENOMEM;
+        return TE_RC(TE_TAPI, TE_ENOMEM);
 
     memset(*tcp_msg, 0, sizeof(**tcp_msg));
 
-    asn_save_to_file(pkt, "/tmp/asn_file.asn");
-
-//    if ((rc = ndn_get_timestamp(pkt, &((*tcp_msg)->ts))) != 0)
-//    {
-//        free(*udp_dgram);
-//        return TE_RC(TE_TAPI, rc);
-//    }
-
-    pdu = asn_read_indexed(pkt, 0, "pdus"); /* this should be UDP PDU */
+    pdu = asn_read_indexed(pkt, 0, "pdus"); /* this should be TCP PDU */
 
     if (pdu == NULL)
-        rc = TE_EASNINCOMPLVAL;
+        ERROR_CLEANUP(rc, TE_EASNINCOMPLVAL, "failed to get TCP PDU");
 
-    READ_PACKET_FIELD(src, port);
-    READ_PACKET_FIELD(dst, port);
-
-#define CHECK_FAIL(msg_...) \
-    do {                        \
-        if (rc != 0)            \
-        {                       \
-            ERROR(msg_);        \
-            return -1;          \
-        }                       \
-    } while (0)
+    READ_PACKET_FIELD(rc, pdu, *tcp_msg, src, port);
+    READ_PACKET_FIELD(rc, pdu, *tcp_msg, dst, port);
 
     rc = ndn_du_read_plain_int(pdu, NDN_TAG_TCP_FLAGS, &hdr_field);
-    CHECK_FAIL("%s(): get UDP checksum fails, rc = %r",
-               __FUNCTION__, rc);
+    CHECK_ERROR_CLEANUP(rc, "failed to get TCP flags");
     (*tcp_msg)->flags = hdr_field;
 
-    pdu = asn_read_indexed(pkt, 1, "pdus"); /* this should be Ip4 PDU */
+    rc = ndn_du_read_plain_int(pdu, NDN_TAG_TCP_HLEN, &hdr_field);
+    CHECK_ERROR_CLEANUP(rc, "failed to get TCP header length");
+    tcp_hdr_len = hdr_field * sizeof(uint32_t);
+
+    pdu = asn_read_indexed(pkt, 1, "pdus"); /* this should be IPv4 PDU */
     if (pdu == NULL)
-        rc = TE_EASNINCOMPLVAL;
+        ERROR_CLEANUP(rc, TE_EASNINCOMPLVAL, "failed to get IPv4 PDU");
 
-    READ_PACKET_FIELD(src, addr);
-    READ_PACKET_FIELD(dst, addr);
+    READ_PACKET_FIELD(rc, pdu, *tcp_msg, src, addr);
+    READ_PACKET_FIELD(rc, pdu, *tcp_msg, dst, addr);
 
-    if (rc)
+    rc = tapi_ip4_get_payload_len(pdu, &ip_pld_len);
+    CHECK_ERROR_CLEANUP(rc, "tapi_ip4_get_payload_len() fails");
+
+    if (ip_pld_len < tcp_hdr_len)
     {
+        ERROR_CLEANUP(rc, TE_EINVAL,
+                      "IPv4 payload length is less than TCP header length");
+    }
+
+    payload_len = ip_pld_len - tcp_hdr_len;
+
+    rc = asn_get_length(pkt, "payload");
+    if (rc < 0)
+    {
+        WARN("%s(): failed to get payload length, assuming there was none",
+             __FUNCTION__);
+        len = 0;
+    }
+    else
+    {
+        len = rc;
+    }
+    rc = 0;
+
+    if (len < payload_len)
+    {
+        ERROR_CLEANUP(rc, TE_EINVAL,
+                      "obtained payload length is less than specified by "
+                      "length fields in IPv4 and TCP headers");
+    }
+
+    if (len > 0)
+    {
+        (*tcp_msg)->payload_len = payload_len;
+        (*tcp_msg)->payload = malloc(len);
+
+        rc = asn_read_value_field(pkt, (*tcp_msg)->payload,
+                                  &len, "payload");
+        CHECK_ERROR_CLEANUP(rc, "failed to read payload");
+    }
+
+cleanup:
+
+    if (rc != 0)
+    {
+        if ((*tcp_msg)->payload != NULL)
+            free((*tcp_msg)->payload);
+
         free(*tcp_msg);
+        *tcp_msg = NULL;
+
         return TE_RC(TE_TAPI, rc);
     }
 
-    len = asn_get_length(pkt, "payload");
-    if (len <= 0)
-        return 0;
-
-    (*tcp_msg)->payload_len = len;
-    (*tcp_msg)->payload = malloc(len);
-
-    rc = asn_read_value_field(pkt, (*tcp_msg)->payload, &len, "payload");
-
     return TE_RC(TE_TAPI, rc);
 }
-
-#undef READ_PACKET_FIELD
 
 static void
 tcp4_asn_pkt_handler(asn_value *pkt, void *user_param)

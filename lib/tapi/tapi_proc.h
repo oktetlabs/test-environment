@@ -1,31 +1,25 @@
 /** @file
  * @brief API to configure some system options via /proc/sys
  *
+ * @defgroup tapi_conf_proc TA system options configuration (OBSOLETE)
+ * @ingroup tapi_conf
+ * @{
+ *
+ * ###########################################################################
+ * NOTE! This API is obsolete!
+ *
+ * @ref tapi_cfg_sys must be used in modern tests.
+ * ###########################################################################
+ * 
  * API declaration for access to some system options via /proc/sys
  *
  *
- * Copyright (C) 2013 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution).
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2.1
- * of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA  02111-1307  USA
+ * 
  *
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TAPI_PROC_H__
@@ -550,3 +544,5 @@ extern te_errno tapi_cfg_route_mtu_expires_get(rcf_rpc_server *rpcs,
 } /* extern "C" */
 #endif
 #endif /* !__TE_TAPI_PROC_H__ */
+
+/**@} <!-- END tapi_conf_proc --> */

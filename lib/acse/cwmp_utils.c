@@ -6,23 +6,9 @@
  * different address spaces.
  *
  *
- * Copyright (C) 2010 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution).
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * Test Environment is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * Test Environment is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA  02111-1307  USA
+ * 
  *
  *
  * @author Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
@@ -296,6 +282,7 @@ cwmp_val_array_add_va(cwmp_values_array_t *a,
                 SET_SOAP_TYPE(time_t, time_t); break;
 #undef SET_SOAP_TYPE
             case SOAP_TYPE_string:
+            case SOAP_TYPE_xsd__hexBinary:
             case SOAP_TYPE_SOAP_ENC__base64:
                 {
                     const char * val = va_arg(ap, const char *);
@@ -405,6 +392,7 @@ cwmp_copy_par_value_list(cwmp_parameter_value_list_t *src)
             case SOAP_TYPE_time:
                 val_size = sizeof(time_t); break;
             case SOAP_TYPE_string:
+            case SOAP_TYPE_xsd__hexBinary:
             case SOAP_TYPE_SOAP_ENC__base64: /* TODO: investigate? */
                 val_size = strlen(pval_src->Value) + 1; break;
             default:
@@ -449,6 +437,7 @@ cwmp_par_value_cmp(cwmp_parameter_value_struct_t *first,
             return *((int8_t *)first->Value) !=
                    *((int8_t *)second->Value);
         case SOAP_TYPE_string:
+        case SOAP_TYPE_xsd__hexBinary:
         case SOAP_TYPE_SOAP_ENC__base64: /* TODO: investigate? */
             return !!strcmp(first->Value, second->Value);
     }
@@ -540,6 +529,7 @@ cwmp_val_array_get_int(cwmp_values_array_t *a, const char *name,
 
                 case SOAP_TYPE_time:
                 case SOAP_TYPE_string:
+                case SOAP_TYPE_xsd__hexBinary:
                 case SOAP_TYPE_SOAP_ENC__base64:
                     return TE_EBADTYPE;
             }
@@ -599,6 +589,7 @@ cwmp_val_array_get_str(cwmp_values_array_t *a,
                 case SOAP_TYPE_byte:
                 case SOAP_TYPE_unsignedByte:
                 case SOAP_TYPE_time:
+                case SOAP_TYPE_xsd__hexBinary:
                 case SOAP_TYPE_SOAP_ENC__base64:
                     return TE_EBADTYPE;
             }
@@ -840,6 +831,8 @@ soap_simple_type_string(int type)
         case SOAP_TYPE_unsignedInt:  return "SOAP_TYPE_unsignedInt";
         case SOAP_TYPE_unsignedByte: return "SOAP_TYPE_unsignedByte";
         case SOAP_TYPE_time:         return "SOAP_TYPE_time";
+
+        case SOAP_TYPE_xsd__hexBinary:   return "SOAP_TYPE_hexBinary";
         case SOAP_TYPE_SOAP_ENC__base64: return "SOAP_TYPE_base64";
     }
     snprintf(buf, sizeof(buf), "<unknown: %d>", type);
@@ -876,6 +869,7 @@ snprint_ParamValueStruct(char *buf, size_t len,
     switch (p_v->__type)
     {
         case SOAP_TYPE_string:
+        case SOAP_TYPE_xsd__hexBinary:
         case SOAP_TYPE_SOAP_ENC__base64:
             rv = snprintf(buf + used, len - used, "'%s'",
                             (char *)(p_v->Value));

@@ -3,29 +3,9 @@
  *
  * Unix daemons common internal staff
  *
- *
- * Copyright (C) 2004, 2005 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution).
- *
- * Test Environment is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * Test Environment is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA  02111-1307  USA
- *
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- *
- * $Id$
  */
 
 #ifndef __TE_TA_UNIX_CONF_DAEMONS_H__
@@ -108,6 +88,8 @@ get_ds_name(const char *oid)
     return
 #if defined __linux__
          (strstr(oid, "l2tp") != NULL) ? "l2tp" :
+         (strstr(oid, "openvpn") != NULL) ? "openvpn" :
+         (strstr(oid, "socks") != NULL) ? "socks" :
          (strstr(oid, "radvd") != NULL) ? "radvd" :       
          (strstr(oid, "dhcpserver") != NULL) ? "dhcpd" :       
          (strstr(oid, "pppoeserver") != NULL) ? "pppoe-server" :       
@@ -303,6 +285,12 @@ extern int find_file(unsigned int n, const char * const *files,
  */
 extern te_errno l2tp_grab(const char *name);
 extern te_errno l2tp_release(const char *name);
+
+extern te_errno openvpn_grab(const char *name);
+extern te_errno openvpn_release(const char *name);
+
+extern te_errno socks_grab(const char *name);
+extern te_errno socks_release(const char *name);
 
 extern te_errno radvd_grab(const char *name);
 extern te_errno radvd_release(const char *radvd);

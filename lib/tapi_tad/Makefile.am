@@ -201,6 +201,7 @@ endif
 
 include_HEADERS = \
 	tapi_tad.h \
+	tapi_tad_internal.h \
 	tapi_ndn.h \
 	$(EXTRA_HEADERS)
 
