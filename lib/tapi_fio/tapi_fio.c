@@ -145,7 +145,7 @@ tapi_fio_log_report(tapi_fio_report *report)
 
 /* See description in tapi_fio.h */
 tapi_fio_numjobs_t
-test_get_fio_numjobs(int argc, char *argv[], const char *name)
+test_get_fio_numjobs_param(int argc, char **argv, const char *name)
 {
     char *end_ptr = NULL;
     const char *str_val = NULL;

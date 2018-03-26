@@ -116,7 +116,7 @@ typedef struct tapi_fio_numjobs_t {
  * @return value of parameter of type 'tapi_fio_numjobs_t'
  */
 #define TEST_FIO_NUMJOBS_PARAM(var_name_) \
-    test_get_fio_numjobs(argc, argv, #var_name_)
+    test_get_fio_numjobs_param(argc, argv, #var_name_)
 
 /**
  * Get test parameter numjobs
@@ -255,8 +255,8 @@ typedef struct tapi_fio {
  *
  * @return value of parameter of type 'tapi_fio_numjobs_t'
  */
-extern tapi_fio_numjobs_t test_get_fio_numjobs(int argc, char *argv[],
-                                               const char *name);
+extern tapi_fio_numjobs_t test_get_fio_numjobs_param(int argc, char **argv,
+                                                     const char *name);
 
 /**
  * Create FIO context based on options.
