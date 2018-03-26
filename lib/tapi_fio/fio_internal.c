@@ -19,7 +19,7 @@
 static inline int16_t
 get_default_timeout(const tapi_fio_opts *opts)
 {
-    return opts->runtime_ms + 10;
+    return opts->runtime_sec + 10;
 }
 
 static void

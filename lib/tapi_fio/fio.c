@@ -68,10 +68,10 @@ set_opt_iodepth(te_string *cmd, const tapi_fio_opts *opts)
 static void
 set_opt_runtime(te_string *cmd, const tapi_fio_opts *opts)
 {
-    if (opts->runtime_ms < 0)
+    if (opts->runtime_sec < 0)
         return;
-    CHECK_RC(te_string_append(cmd, " --runtime=%dms --time_based",
-                              opts->runtime_ms));
+    CHECK_RC(te_string_append(cmd, " --runtime=%ds --time_based",
+                              opts->runtime_sec));
 }
 
 static void
