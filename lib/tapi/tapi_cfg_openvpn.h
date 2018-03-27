@@ -50,8 +50,7 @@ static inline te_errno                                                         \
 tapi_cfg_openvpn_##name_## _set(const char *ta, tapi_openvpn_id id,            \
                                  c_type_ val)                                  \
 {                                                                              \
-    return tapi_cfg_openvpn_prop_set(ta, id, prop_, CVT_##cfg_type_,           \
-                                     (void *)val);                             \
+    return tapi_cfg_openvpn_prop_set(ta, id, prop_, CFG_VAL(cfg_type_, val));  \
 }                                                                              \
 static inline te_errno                                                         \
 tapi_cfg_openvpn_##name_## _get(const char *ta, tapi_openvpn_id id,            \
@@ -96,7 +95,7 @@ extern te_errno tapi_cfg_openvpn_prop_set(const char       *ta,
                                           tapi_openvpn_id   id,
                                           const char       *prop,
                                           cfg_val_type      type,
-                                          void             *val);
+                                          const void       *val);
 
 /**
  * Get OpenVPN property.

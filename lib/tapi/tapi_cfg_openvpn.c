@@ -53,7 +53,7 @@ tapi_cfg_openvpn_prop_set(const char       *ta,
                           tapi_openvpn_id   id,
                           const char       *prop,
                           cfg_val_type      type,
-                          void             *val)
+                          const void       *val)
 {
     return cfg_set_instance_fmt(type, val,
                                 "/agent:%s/openvpn:%s/%s",
