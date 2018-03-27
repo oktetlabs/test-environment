@@ -47,14 +47,14 @@ typedef te_errno (*tapi_cfg_openvpn_str_param_set)(const char      *ta,
 /** Macro generating get/set accessors for property */
 #define TAPI_OPENVPN_ACCESSOR(name_, prop_, c_type_, cfg_type_)                \
 static inline te_errno                                                         \
-tapi_cfg_openvpn_##name_## _set(const char *ta, tapi_openvpn_id id,            \
-                                 c_type_ val)                                  \
+tapi_cfg_openvpn_##name_##_set(const char *ta, tapi_openvpn_id id,             \
+                               c_type_ val)                                    \
 {                                                                              \
     return tapi_cfg_openvpn_prop_set(ta, id, prop_, CFG_VAL(cfg_type_, val));  \
 }                                                                              \
 static inline te_errno                                                         \
-tapi_cfg_openvpn_##name_## _get(const char *ta, tapi_openvpn_id id,            \
-                                 c_type_ *val)                                 \
+tapi_cfg_openvpn_##name_##_get(const char *ta, tapi_openvpn_id id,             \
+                               c_type_ *val)                                   \
 {                                                                              \
     return tapi_cfg_openvpn_prop_get(ta, id, prop_, CVT_##cfg_type_,           \
                                      (void *)val);                             \
