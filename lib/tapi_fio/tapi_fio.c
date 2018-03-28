@@ -160,7 +160,7 @@ test_get_fio_numjobs_param(int argc, char **argv, const char *name)
 
     value = strtoul(str_val, &end_ptr, 0);
 
-    if (strcmp(end_ptr, "n") == 0)
+    if (strcmp(end_ptr, "nproc") == 0)
         result.factor = TAPI_FIO_NUMJOBS_NPROC_FACTOR;
     else if (*end_ptr != '\0')
         TEST_FAIL("Failed to convert '%s' to a numjobs", str_val);
