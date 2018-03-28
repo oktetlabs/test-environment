@@ -133,7 +133,7 @@ typedef struct tapi_fio_opts {
     unsigned int blocksize;      /**< Block size unit */
     tapi_fio_numjobs_t numjobs;  /**< Duplicate this job many times */
     unsigned int iodepth;        /**< Number of IO buffers to keep in flight */
-    int runtime_ms;              /**< Stop workload when the time expires */
+    int runtime_sec;             /**< Stop workload when the time expires */
     unsigned int rwmixread;      /**< Percentage of mixed workload that is
                                       reads */
     tapi_fio_rwtype rwtype;      /**< Read or write type */
@@ -151,7 +151,7 @@ typedef struct tapi_fio_opts {
         .factor = TAPI_FIO_NUMJOBS_WITHOUT_FACTOR,      \
     },                                                  \
     .iodepth = 1,                                       \
-    .runtime_ms = 0,                                    \
+    .runtime_sec = 0,                                   \
     .rwmixread = 50,                                    \
     .rwtype = TAPI_FIO_RWTYPE_SEQ,                      \
     .ioengine = TAPI_FIO_IOENGINE_SYNC,                 \
