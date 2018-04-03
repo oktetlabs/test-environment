@@ -3061,6 +3061,9 @@ TARPC_FUNC(sigaction,
 
         if (out->common._errno != 0)
         {
+            ERROR("Cannot convert incoming `oldact.sa_handler` function name "
+                  "'%s' to handler: %r", out_oldact->handler,
+                  out->common._errno);
             out->retval = -1;
             goto finish;
         }
