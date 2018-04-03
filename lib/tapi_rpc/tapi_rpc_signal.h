@@ -145,6 +145,45 @@ typedef struct rpc_struct_sigaction {
                                      process */
 } rpc_struct_sigaction;
 
+/**
+ * Initialise @c rpc_struct_sigaction structure.
+ *
+ * @note Function jumps to cleanup in case of failure.
+ *
+ * @param rpcs  RPC server handle
+ * @param sa    Pointer to a rpc_struct_sigaction structure to be initialised
+ */
+extern void rpc_sigaction_init(rcf_rpc_server *rpcs,
+                               struct rpc_struct_sigaction *sa);
+
+/**
+ * Release @c rpc_struct_sigaction structure.
+ *
+ * @note Function jumps to cleanup in case of failure.
+ *
+ * @param rpcs  RPC server handle
+ * @param sa    Pointer to a rpc_struct_sigaction structure to be released
+ */
+extern void rpc_sigaction_release(rcf_rpc_server *rpcs,
+                                  struct rpc_struct_sigaction *sa);
+
+/**
+ * Relese and initialise @c rpc_struct_sigaction structure. The function can
+ * be useful for subsequent calls of rpc_sigaction() wich reuse the same
+ * structure in argument @c oldact.
+ *
+ * @note Function jumps to cleanup in case of failure.
+ *
+ * @param rpcs  RPC server handle
+ * @param sa    Pointer to a rpc_struct_sigaction structure to be
+ *              reinitialised
+ */
+static inline void
+rpc_sigaction_reinit(rcf_rpc_server *rpcs, struct rpc_struct_sigaction *sa)
+{
+    rpc_sigaction_release(rpcs, sa);
+    rpc_sigaction_init(rpcs, sa);
+}
 
 /**
  * Allow the calling process to examin or specify the action to be 
@@ -156,7 +195,9 @@ typedef struct rpc_struct_sigaction {
  *                  information of action to be associated with
  *                  the signal or NULL
  * @param oldact    Pointer to previously associated with the signal
- *                  action or NULL
+ *                  action or NULL. Note! RPC pointer can be allocated to keep
+ *                  pointer, so @p oldact (if not NULL) must be released using
+ *                  function @c rpc_sigaction_release().
  *
  * @return 0 on success or -1 on failure
  */

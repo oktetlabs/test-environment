@@ -36,6 +36,8 @@
 #include "log_bufs.h"
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_signal.h"
+#include "tapi_rpc_misc.h"
+#include "tapi_test_log.h"
 
 /**
  * Check whether value returned by signal() and related calls
@@ -776,6 +778,30 @@ rpc_sigismember(rcf_rpc_server *rpcs,
     RETVAL_INT(sigismember, out.retval);
 }
 
+/* See description in tapi_rpc_signal.h */
+void
+rpc_sigaction_init(rcf_rpc_server *rpcs, struct rpc_struct_sigaction *sa)
+{
+    if (sa == NULL)
+        TEST_FAIL("Argument 'sa' is NULL");
+
+    memset(sa, 0, sizeof(*sa));
+    sa->mm_mask = rpc_sigset_new(rpcs);
+}
+
+/* See description in tapi_rpc_signal.h */
+void
+rpc_sigaction_release(rcf_rpc_server *rpcs, struct rpc_struct_sigaction *sa)
+{
+    if (rpcs == NULL || sa == NULL)
+        return;
+
+    if (sa->mm_mask != RPC_NULL)
+    {
+        rpc_sigset_delete(rpcs, sa->mm_mask);
+        sa->mm_mask = RPC_NULL;
+    }
+}
 
 /**
  * Convert 'rpc_struct_sigaction' to 'tarpc_sigaction'.
