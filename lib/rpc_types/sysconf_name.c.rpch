@@ -4,24 +4,7 @@
  * RPC analogues of sysconf() constant names.
  * 
  * 
- * Copyright (C) 2012 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution).
- *
- * Test Environment is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * Test Environment is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public 
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA  02111-1307  USA
- *
+ * Copyright (C) 2003-2018 OKTET Labs.
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
  *
@@ -55,6 +38,7 @@ sysconf_name_rpc2str(rpc_sysconf_name name)
         RPC2STR(SC_HOST_NAME_MAX);
         RPC2STR(SC_OPEN_MAX);
         RPC2STR(SC_PAGESIZE);
+        RPC2STR(SC_NPROCESSORS_ONLN);
         RPC2STR(SC_UNKNOWN);
         default: return "<SC_FATAL_ERROR>";
     }
@@ -84,6 +68,9 @@ sysconf_name_rpc2h(rpc_sysconf_name name)
 #ifdef _SC_PAGESIZE
         SYSCONF_RPC2H(_SC_PAGESIZE);
 #endif
+#ifdef _SC_NPROCESSORS_ONLN
+        SYSCONF_RPC2H(_SC_NPROCESSORS_ONLN);
+#endif
         default: return -1;
     }
 #undef SYSCONF_RPC2H
@@ -112,6 +99,9 @@ sysconf_name_h2rpc(int name)
 #endif
 #ifdef _SC_PAGESIZE
         SYSCONF_H2RPC(_SC_PAGESIZE);
+#endif
+#ifdef _SC_NPROCESSORS_ONLN
+        SYSCONF_H2RPC(_SC_NPROCESSORS_ONLN);
 #endif
         default: return RPC_SC_UNKNOWN;
     }

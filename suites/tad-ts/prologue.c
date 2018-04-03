@@ -3,7 +3,7 @@
  *
  * Test Suite prologue.
  *
- * Copyright (C) 2006 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2003-2018 OKTET Labs Ltd., St.-Petersburg, Russia
  *
  * $Id: prologue.c 31899 2006-09-26 10:01:19Z arybchik $
  */

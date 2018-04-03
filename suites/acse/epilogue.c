@@ -3,7 +3,7 @@
  *
  * ACSE Test Suite epilogue.
  *
- * Copyright (C) 2010 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2003-2018 OKTET Labs Ltd., St.-Petersburg, Russia
  *
  * @author Konstantin Abramenko <Konstantin Abramenko@oktetlabs.ru>
  *
@@ -17,7 +17,7 @@
 #include <signal.h>
 #include <sys/socket.h>
 
-#include "acse_suite.h" 
+#include "acse_suite.h"
 #include "tapi_test.h"
 #include "tapi_acse.h"
 
@@ -30,13 +30,13 @@ main(int argc, char *argv[])
     int cfg_value;
 
     TEST_START;
-    
+
     TEST_GET_STRING_PARAM(ta_acse);
 
     CHECK_RC(tapi_acse_stop(ta_acse));
 
     type = CVT_INTEGER;
-    CHECK_RC(cfg_get_instance_fmt(&type, &cfg_value, 
+    CHECK_RC(cfg_get_instance_fmt(&type, &cfg_value,
                                  "/agent:%s/acse:", ta_acse));
 
 

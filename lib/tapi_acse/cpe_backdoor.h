@@ -275,4 +275,26 @@ extern te_errno cpe_internal_get_param(cpe_id_t *cpe,
 extern te_errno cpe_internal_set_param(cpe_id_t *cpe,
                 const char *name, char *value);
 
+/**
+ * Get datamodel on CPE.
+ *
+ * @param[in]   cpe           ID of CPE.
+ * @param[out]  datamodel     Location to store datamodel name.
+ * @param[in]   bufsize       Size of location buffer.
+ *
+ * @return Status code.
+ */
+extern te_errno cpe_get_datamodel(cpe_id_t *cpe, char *datamodel,
+                                  size_t bufsize);
+
+/**
+ * Set datamodel on CPE.
+ *
+ * @param cpe           ID of CPE.
+ * @param datamodel     Datamodel name.
+ *
+ * @return Status code.
+ */
+extern te_errno cpe_set_datamodel(cpe_id_t *cpe, const char *datamodel);
+
 #endif /* __CPE_BACKDOOR__H__ */

@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-SOAP_SOURCE_STAMP("@(#) acse_soapC.c ver 2.7.9l 2010-05-30 18:33:09 GMT")
+SOAP_SOURCE_STAMP("@(#) acse_soapC.c ver 2.7.9l 2018-03-12 12:12:20 GMT")
 
 
 #ifndef WITH_NOGLOBAL
@@ -238,6 +238,8 @@ SOAP_FMAC3 void * SOAP_FMAC4 soap_getelement(struct soap *soap, int *type)
 		return soap_in_cwmp__FaultStruct(soap, NULL, NULL, "cwmp:FaultStruct");
 	case SOAP_TYPE_MethodList:
 		return soap_in_MethodList(soap, NULL, NULL, "xsd:string");
+	case SOAP_TYPE_xsd__hexBinary:
+		return soap_in_xsd__hexBinary(soap, NULL, NULL, "xsd:hexBinary");
 	case SOAP_TYPE_SOAP_ENC__base64:
 		return soap_in_SOAP_ENC__base64(soap, NULL, NULL, "SOAP-ENC:base64");
 	case SOAP_TYPE_PointerTo_cwmp__ID:
@@ -547,6 +549,10 @@ SOAP_FMAC3 void * SOAP_FMAC4 soap_getelement(struct soap *soap, int *type)
 		if (*soap->arrayType && !soap_match_array(soap, "xsd:string"))
 		{	*type = SOAP_TYPE_MethodList;
 			return soap_in_MethodList(soap, NULL, NULL, NULL);
+		}
+		if (!soap_match_tag(soap, t, "xsd:hexBinary"))
+		{	*type = SOAP_TYPE_xsd__hexBinary;
+			return soap_in_xsd__hexBinary(soap, NULL, NULL, NULL);
 		}
 		if (!soap_match_tag(soap, t, "SOAP-ENC:base64"))
 		{	*type = SOAP_TYPE_SOAP_ENC__base64;
@@ -1030,6 +1036,8 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_putelement(struct soap *soap, const void *ptr, co
 		return soap_out_cwmp__FaultStruct(soap, tag, id, (const struct cwmp__FaultStruct *)ptr, "cwmp:FaultStruct");
 	case SOAP_TYPE_MethodList:
 		return soap_out_MethodList(soap, tag, id, (const struct MethodList *)ptr, "xsd:string");
+	case SOAP_TYPE_xsd__hexBinary:
+		return soap_out_xsd__hexBinary(soap, tag, id, (const struct xsd__hexBinary *)ptr, "xsd:hexBinary");
 	case SOAP_TYPE_SOAP_ENC__base64:
 		return soap_out_SOAP_ENC__base64(soap, tag, id, (const struct SOAP_ENC__base64 *)ptr, "SOAP-ENC:base64");
 	case SOAP_TYPE_PointerTo_cwmp__ID:
@@ -1398,6 +1406,9 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_markelement(struct soap *soap, const void *ptr, 
 		break;
 	case SOAP_TYPE_MethodList:
 		soap_serialize_MethodList(soap, (const struct MethodList *)ptr);
+		break;
+	case SOAP_TYPE_xsd__hexBinary:
+		soap_serialize_xsd__hexBinary(soap, (const struct xsd__hexBinary *)ptr);
 		break;
 	case SOAP_TYPE_SOAP_ENC__base64:
 		soap_serialize_SOAP_ENC__base64(soap, (const struct SOAP_ENC__base64 *)ptr);
@@ -10128,6 +10139,72 @@ SOAP_FMAC3 struct MethodList * SOAP_FMAC4 soap_in_MethodList(struct soap *soap, 
 	}
 	else
 	{	a = (struct MethodList *)soap_id_forward(soap, soap->href, (void*)a, 0, SOAP_TYPE_MethodList, 0, sizeof(struct MethodList), 0, NULL);
+		if (soap->body && soap_element_end_in(soap, tag))
+			return NULL;
+	}
+	return a;
+}
+
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_xsd__hexBinary(struct soap *soap, struct xsd__hexBinary *a)
+{
+	a->__size = 0;
+	a->__ptr = NULL;
+}
+
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_xsd__hexBinary(struct soap *soap, struct xsd__hexBinary const*a)
+{
+	if (a->__ptr)
+		soap_array_reference(soap, a, (struct soap_array*)&a->__ptr, 1, SOAP_TYPE_xsd__hexBinary);
+}
+
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_xsd__hexBinary(struct soap *soap, const struct xsd__hexBinary *a, const char *tag, const char *type)
+{
+	register int id = soap_embed(soap, (void*)a, (struct soap_array*)&a->__ptr, 1, tag, SOAP_TYPE_xsd__hexBinary);
+	if (soap_out_xsd__hexBinary(soap, tag, id, a, type))
+		return soap->error;
+	return soap_putindependent(soap);
+}
+
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_xsd__hexBinary(struct soap *soap, const char *tag, int id, const struct xsd__hexBinary *a, const char *type)
+{
+	id = soap_element_id(soap, tag, id, a, (struct soap_array*)&a->__ptr, 1, type, SOAP_TYPE_xsd__hexBinary);
+	if (id < 0)
+		return soap->error;
+	if (soap_element_begin_out(soap, tag, id, type))
+		return soap->error;
+	if (soap_puthex(soap, a->__ptr, a->__size))
+		return soap->error;
+	return soap_element_end_out(soap, tag);
+}
+
+SOAP_FMAC3 struct xsd__hexBinary * SOAP_FMAC4 soap_get_xsd__hexBinary(struct soap *soap, struct xsd__hexBinary *p, const char *tag, const char *type)
+{
+	if ((p = soap_in_xsd__hexBinary(soap, tag, p, type)))
+		if (soap_getindependent(soap))
+			return NULL;
+	return p;
+}
+
+SOAP_FMAC3 struct xsd__hexBinary * SOAP_FMAC4 soap_in_xsd__hexBinary(struct soap *soap, const char *tag, struct xsd__hexBinary *a, const char *type)
+{
+	if (soap_element_begin_in(soap, tag, 1, NULL))
+		return NULL;
+	if (*soap->type && soap_match_tag(soap, soap->type, type) && soap_match_tag(soap, soap->type, ":hexBinary"))
+	{	soap->error = SOAP_TYPE;
+		return NULL;
+	}
+	a = (struct xsd__hexBinary *)soap_id_enter(soap, soap->id, a, SOAP_TYPE_xsd__hexBinary, sizeof(struct xsd__hexBinary), 0, NULL, NULL, NULL);
+	if (!a)
+		return NULL;
+	soap_default_xsd__hexBinary(soap, a);
+	if (soap->body && !*soap->href)
+	{
+		a->__ptr = soap_gethex(soap, &a->__size);
+		if ((!a->__ptr && soap->error) || soap_element_end_in(soap, tag))
+			return NULL;
+	}
+	else
+	{	a = (struct xsd__hexBinary *)soap_id_forward(soap, soap->href, (void*)a, 0, SOAP_TYPE_xsd__hexBinary, 0, sizeof(struct xsd__hexBinary), 0, NULL);
 		if (soap->body && soap_element_end_in(soap, tag))
 			return NULL;
 	}

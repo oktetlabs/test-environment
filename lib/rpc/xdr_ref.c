@@ -3,28 +3,9 @@
  *
  * Adaptation of original module
  *
- * Copyright (C) 2006 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution).
- *
- * Test Environment is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * Test Environment is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA  02111-1307  USA
- *
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
- *
- * $Id$
  */
 
 
@@ -72,7 +53,7 @@ static char sccsid[] = "@(#)xdr_reference.c 1.11 87/08/11 SMI";
 
 #include "internal.h"
 
-#define LASTUNSIGNED	((u_int)0-1)
+#define LASTUNSIGNED   ((u_int)0-1)
 
 /*
  * XDR an indirect pointer
@@ -86,9 +67,9 @@ static char sccsid[] = "@(#)xdr_reference.c 1.11 87/08/11 SMI";
 bool_t
 xdr_reference (xdrs, pp, size, proc)
      XDR *xdrs;
-     caddr_t *pp;		/* the pointer to work on */
-     u_int size;		/* size of the object pointed to */
-     xdrproc_t proc;		/* xdr routine to handle the object */
+     caddr_t *pp;              /* the pointer to work on */
+     u_int size;               /* size of the object pointed to */
+     xdrproc_t proc;           /* xdr routine to handle the object */
 {
   caddr_t loc = *pp;
   bool_t stat;
@@ -97,25 +78,25 @@ xdr_reference (xdrs, pp, size, proc)
     switch (xdrs->x_op)
       {
       case XDR_FREE:
-	return TRUE;
+       return TRUE;
 
       case XDR_DECODE:
-	*pp = loc = (caddr_t) mem_alloc (size);
-	if (loc == NULL)
-	  {
+       *pp = loc = (caddr_t) mem_alloc (size);
+       if (loc == NULL)
+         {
 #ifdef USE_IN_LIBIO
-	    if (_IO_fwide (stderr, 0) > 0)
-	      (void) __fwprintf (stderr, L"%s",
-				 _("xdr_reference: out of memory\n"));
-	    else
+           if (_IO_fwide (stderr, 0) > 0)
+             (void) __fwprintf (stderr, L"%s",
+                                _("xdr_reference: out of memory\n"));
+           else
 #endif
-	      (void) fputs (_("xdr_reference: out of memory\n"), stderr);
-	    return FALSE;
-	  }
-	__bzero (loc, (int) size);
-	break;
+             (void) fputs (_("xdr_reference: out of memory\n"), stderr);
+           return FALSE;
+         }
+       __bzero (loc, (int) size);
+       break;
       default:
-	break;
+       break;
       }
 
   stat = (*proc) (xdrs, loc, LASTUNSIGNED);

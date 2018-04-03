@@ -1,7 +1,7 @@
 /** @file
  * @brief Support functions for netconf library
  *
- * Copyright (C) 2008 OKTET Labs, St.-Petersburg, Russia
+ * Copyright (C) 2003-2018 OKTET Labs, St.-Petersburg, Russia
  *
  * @author Maxim Alyutov <Maxim.Alyutov@oktetlabs.ru>
  *

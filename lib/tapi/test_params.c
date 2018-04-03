@@ -4,23 +4,9 @@
  * Procedures that provide access to test parameter.
  *
  *
- * Copyright (C) 2004 Test Environment authors (see file AUTHORS
- * in the root directory of the distribution).
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2.1
- * of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
- * MA  02111-1307  USA
+ * 
  *
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
@@ -88,14 +74,12 @@ te_test_sig_handler(int signum)
     }
 }
 
-
 /** See the description in tapi_test.h */
 const char *
-test_get_param(int argc, char *argv[], const char *name)
+test_find_param(int argc, char *argv[], const char *name)
 {
     int         i;
     const char *ptr = NULL;
-    const char *value;
 
     for (i = 0; i < argc; i++)
     {
@@ -125,7 +109,18 @@ test_get_param(int argc, char *argv[], const char *name)
 
         break;
     }
-    if (ptr == NULL)
+
+    return ptr;
+}
+
+/** See the description in tapi_test.h */
+const char *
+test_get_param(int argc, char *argv[], const char *name)
+{
+    const char *ptr = NULL;
+    const char *value;
+
+    if ((ptr = test_find_param(argc, argv, name)) == NULL)
     {
         WARN("There is no '%s' parameter specified", name);
         return NULL;
@@ -782,4 +777,148 @@ test_octet_strings2list(const char *str, unsigned int str_len,
         *oct_str_list = list;
 
         free(str_array);
+}
+
+/* See description in tapi_test.h */
+int
+test_get_enum_param(int argc, char **argv, const char *name,
+                    const struct param_map_entry *maps)
+{
+    const char *string_value = NULL;
+    int mapped_value = 0;
+
+    string_value = test_get_param(argc, argv, name);
+
+    if (string_value != NULL &&
+        test_map_param_value(name, maps,
+                             string_value, &mapped_value) == 0)
+    {
+        return mapped_value;
+    }
+
+    TEST_STOP;
+
+    return mapped_value;
+}
+
+/* See description in tapi_test.h */
+const char *
+test_get_string_param(int argc, char **argv, const char *name)
+{
+    const char *value = NULL;
+
+    if ((value = test_get_param(argc, argv, name)) == NULL)
+    {
+        TEST_STOP;
+    }
+
+    return value;
+}
+
+/* See description in tapi_test.h */
+int
+test_get_int_param(int argc, char **argv, const char *name)
+{
+    long value = 0;
+    char *end_ptr = NULL;
+    const char *str_val = NULL;
+
+    str_val = test_get_param(argc, argv, name);
+    if (str_val == NULL)
+    {
+        TEST_STOP;
+    }
+    value = strtol(str_val, &end_ptr, 0);
+    if (end_ptr == str_val || *end_ptr != '\0')
+    {
+        TEST_FAIL("The value of '%s' parameter should be "
+                  "an integer, but it is %s", name, str_val);
+    }
+    if (value < INT_MIN || value > INT_MAX)
+    {
+        TEST_FAIL("The value of '%s' parameter is too "
+                  "large or too small: %s", name, str_val);
+    }
+
+    return (int)value;
+}
+
+/* See description in tapi_test.h */
+unsigned int
+test_get_uint_param(int argc, char **argv, const char *name)
+{
+    char *end_ptr = NULL;
+    const char *str_val = NULL;
+    unsigned long value = 0;
+
+    str_val = test_get_param(argc, argv, name);
+    CHECK_NOT_NULL(str_val);
+
+    value = strtoul(str_val, &end_ptr, 0);
+    if ((end_ptr == str_val) || (*end_ptr != '\0'))
+        TEST_FAIL("Failed to convert '%s' to a number", name);
+
+    if (value > UINT_MAX) {
+        TEST_FAIL("'%s' parameter value is greater"
+                  " than %u and cannot be stored in"
+                  " an 'unsigned int' variable",
+                  name, UINT_MAX);
+    }
+
+    return (unsigned int)value;
+}
+
+/* See description in tapi_test.h */
+int64_t
+test_get_int64_param(int argc, char **argv, const char *name)
+{
+    const char *str_val = NULL;
+    char *end_ptr = NULL;
+    long long int value = 0;
+
+    str_val = test_get_param(argc, argv, name);
+    if (str_val == NULL)
+    {
+        TEST_STOP;
+    }
+
+    value = strtoll(str_val, &end_ptr, 0);
+    if ((end_ptr == str_val) || (*end_ptr != '\0'))
+    {
+        TEST_FAIL("The value of '%s' parameter should be "
+                  "an integer, but it is %s", name,
+                  str_val);
+    }
+    if ((value == LLONG_MAX || value == LLONG_MIN) && errno == ERANGE)
+    {
+        TEST_FAIL("The value of '%s' parameter is too "
+                  "large or too small: %s", name, str_val);
+    }
+
+    return (int64_t)value;
+}
+
+/* See description in tapi_test.h */
+double
+test_get_double_param(int argc, char **argv, const char *name)
+{
+    const char *str_val = NULL;
+    char *end_ptr = NULL;
+    double value = 0.0;
+
+    str_val = test_get_param(argc, argv, name);
+    if (str_val == NULL)
+    {
+        TEST_STOP;
+    }
+
+    value = strtod(str_val, &end_ptr);
+    if (end_ptr == str_val || *end_ptr != '\0')
+    {
+        TEST_FAIL("The value of '%s' parameter should be "
+                  "a double, but it is %s", name,
+                  str_val);
+    }
+
+    return value;
 }

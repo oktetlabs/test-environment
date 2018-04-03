@@ -4,24 +4,7 @@ a<?xml version="1.0"?>
          configuration -->
 
     <!--
-        Copyright (C) 2017 Test Environment authors (see file AUTHORS
-        in the root directory of the distribution).
-
-        Test Environment is free software; you can redistribute it
-        and/or modify it under the terms of the GNU General Public
-        License as published by the Free Software Foundation; either
-        version 2 of the License, or (at your option) any later
-        version.
-
-        Test Environment is distributed in the hope that it will be
-        useful, but WITHOUT ANY WARRANTY; without even the implied
-        warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-        PURPOSE. See the GNU General Public License for more details.
-
-        You should have received a copy of the GNU General Public
-        License along with this program; if not, write to the Free
-        Software Foundation, Inc., 59 Temple Place, Suite 330,
-        Boston, MA  02111-1307  USA
+        Copyright (C) 2003-2018 OKTET Labs.
 
         Author: Svetlana Fishchuk <Svetlana.Fishchuk@oktetlabs.ru>
     -->
@@ -40,6 +23,10 @@ a<?xml version="1.0"?>
          Value: interface name, i.e. tunX, tapX -->
     <object oid="/agent/openvpn/ifname" access="read_only"
         type="string"/>
+
+    <!-- Current endpoint IP address.
+         Name: empty -->
+    <object oid="/agent/openvpn/endpoint_ip" access="read_only" type="address"/>
 
     <!-- Current OpenVPN state. Setting the status triggers the start/stop of
          a daemon, whilst getting of the status tries to get actual status.
@@ -67,7 +54,7 @@ a<?xml version="1.0"?>
                 "inverse" (the other side does TLS handshake, must be
                 complementary on client/server sides)
                 "bidirectional" (both sides do) -->
-    <object oid="/agent/openvpn/key-direction" access="read_write"
+    <object oid="/agent/openvpn/key_direction" access="read_write"
         type="string"/>
 
     <!-- Used cipher
@@ -85,7 +72,7 @@ a<?xml version="1.0"?>
     <!-- Filesystem path to TLS key. If not set, will be generated automatically
          Name: empty
          Value: Path to PEM-formatted TLS key, empty string -->
-    <object oid="/agent/openvpn/tls-key" access="read_write" type="string"/>
+    <object oid="/agent/openvpn/tls_key" access="read_write" type="string"/>
 
     <!-- Filesystem path to Certification Authority certificate
          Name: empty
@@ -115,15 +102,20 @@ a<?xml version="1.0"?>
     <!-- Interface to bind daemon to, the encrypted traffic will flow through it
          Name: empty
          Value: interface name (i.e. "eth1") -->
-    <object oid="/agent/openvpn/bind_interface" access="read_write"
+    <object oid="/agent/openvpn/interface_behind" access="read_write"
         type="string"/>
 
     <!-- Additional options passed to OpenVPN configuration. Duplicates are
          possible, their handling is determined by daemon itself.
          Name: any
+         Value: none -->
+    <object oid="/agent/openvpn/option" access="read_create" type="none"/>
+
+    <!-- Value of the option passed to OpenVPN configuration.
+         Name: empty
          Value: any option permitted by OpenVPN daemon,
                 i.e. "sndbuf 4096" -->
-    <object oid="/agent/openvpn/option" access="read_create" type="string"/>
+    <object oid="/agent/openvpn/option/value" access="read_write" type="string"/>
 
     <!-- Port to bind to
          Name: empty
@@ -140,7 +132,24 @@ a<?xml version="1.0"?>
     <object oid="/agent/openvpn/ip_facility" access="read_write"
         type="string"/>
 
-    <!-- Server -->
+    <!-- Server node. Since instance can act as server or client
+         (controlled by is_server parameter), this node groups
+         server-only parameters
+         Name: empty
+         Value: none -->
+    <object oid="/agent/openvpn/server" access="read_write" type="none"/>
+
+    <!-- Server's own IP (server only)
+         Name: empty
+         Value: any valid IP -->
+    <object oid="/agent/openvpn/server/ip" access="read_write" type="string"/>
+
+    <!-- Server's own subnet mask (server only)
+         Name: empty
+         Value: any valid subnet mask -->
+    <object oid="/agent/openvpn/server/subnet_mask" access="read_write"
+        type="string"/>
+
     <!-- File system path to Diffie-Hellman parameters (server only).
          If not set, DH parameters will be generated automatically
          Name: empty
@@ -156,19 +165,24 @@ a<?xml version="1.0"?>
     <object oid="/agent/openvpn/server/dh/size" access="read_write"
         type="integer"/>
 
+    <!-- Pool node
+         Name: empty
+         Value: none -->
+    <object oid="/agent/openvpn/server/pool" access="read_write" type="none"/>
+
     <!-- Pool start address (server only)
          Name: empty
          Value: any valid and settable IP, lower or equal compared to
                 'pool/end' -->
     <object oid="/agent/openvpn/server/pool/start" access="read_write"
-        type="address"/>
+        type="string"/>
 
     <!-- Pool end address (server only)
          Name: empty
          Value: any valid and settable IP, bigger or equal compared to
                 'pool/start' -->
     <object oid="/agent/openvpn/server/pool/end" access="read_write"
-        type="address"/>
+        type="string"/>
 
     <!-- Requirement of certificates (server only)
          Name: empty
@@ -179,8 +193,8 @@ a<?xml version="1.0"?>
 
     <!-- User array (server only)
          Name: any
-         Value: 0 (inactive), 1 (active) -->
-    <object oid="/agent/openvpn/server/user" access="read_create"/>
+         Value: none -->
+    <object oid="/agent/openvpn/server/user" access="read_create" type="none"/>
 
     <!-- User's login (server only)
          Name: empty
@@ -206,11 +220,21 @@ a<?xml version="1.0"?>
          Value: Number of successfully connected users -->
     <object oid="/agent/openvpn/server/connected_users" access="read_only"/>
 
-    <!-- Client -->
+    <!-- Client node. Since instance can act as server or client
+         (controlled by is_server parameter), this node groups
+         clients-only parameters
+         Name: empty
+         Value: none -->
+    <object oid="/agent/openvpn/server" access="read_write" type="none"/>
+
+         Name: empty
+         Value: none -->
+    <object oid="/agent/openvpn/client" access="read_write" type="none"/>
+
     <!-- Peer array (client only)
-         Name: IP address of remote peer -->
-    <object oid="/agent/openvpn/client/peer" access="read_create"
-        type="string"/>
+         Name: IP address of remote peer
+         Value: none -->
+    <object oid="/agent/openvpn/client/peer" access="read_create" type="none"/>
 
     <!-- Peer's port (client only)
          Name: empty

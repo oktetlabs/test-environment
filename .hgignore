@@ -10,3 +10,6 @@ doc/generated
 doxygen.warn
 *.in
 *~
+.idea
+CMakeLists.txt
+cmake-build-*

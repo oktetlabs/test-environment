@@ -3,7 +3,7 @@
  *
  * Test Suite prologue.
  *
- * Copyright (C) 2007 OKTET Labs Ltd., St.-Petersburg, Russia
+ * Copyright (C) 2003-2018 OKTET Labs Ltd., St.-Petersburg, Russia
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
@@ -109,7 +109,7 @@ main(int argc, char **argv)
 #endif
 
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/:"));
-    
+
     SLEEP(2);
 
     TEST_SUCCESS;

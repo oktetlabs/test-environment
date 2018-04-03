@@ -1,9 +1,8 @@
 /** @file
  * Retrieve TCE data for gcc >= 3.4
- * 
  *
- * Copyright (C) 2007 Test Environment authors (see file AUTHORS in the
- * root directory of the distribution).
+ * Copyright (C) 2003-2018 OKTET Labs.
+ *
  * Copyright (C) 1989, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
  * 2000, 2001, 2002, 2003  Free Software Foundation, Inc.
  *
