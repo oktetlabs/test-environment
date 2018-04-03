@@ -150,6 +150,9 @@ tapi_iomux_evt_to_epoll(tapi_iomux_evt iomux_evt_mask)
     if (iomux_evt_mask & EVT_ET)
         epoll_evts |= RPC_EPOLLET;
 
+    if (iomux_evt_mask & EVT_ONESHOT)
+        epoll_evts |= RPC_EPOLLONESHOT;
+
     return epoll_evts;
 }
 
@@ -251,6 +254,9 @@ tapi_iomux_epoll_to_evt(uint32_t epoll_evt_mask)
 
     if (epoll_evt_mask & RPC_EPOLLET)
         iomux_evts |= EVT_ET;
+
+    if (epoll_evt_mask & RPC_EPOLLONESHOT)
+        iomux_evts |= EVT_ONESHOT;
 
     return iomux_evts;
 }
