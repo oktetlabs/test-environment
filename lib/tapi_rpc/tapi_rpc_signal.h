@@ -139,10 +139,10 @@ extern tarpc_pid_t rpc_waitpid(rcf_rpc_server *rpcs,
  */
 typedef struct rpc_struct_sigaction {
     char          mm_handler[RCF_RPC_MAX_FUNC_NAME];  /**< Action handler*/
-    char          mm_restorer[RCF_RPC_MAX_FUNC_NAME]; /**< Restorer */
-    rpc_sigset_p  mm_mask;   /**< Bitmask of signal numbers*/
-    rpc_sa_flags  mm_flags;  /**< Flags that modify the signal handling 
-                                  process */
+    uint64_t      mm_restorer;  /**< Opaque restorer value */
+    rpc_sigset_p  mm_mask;      /**< Bitmask of signal numbers*/
+    rpc_sa_flags  mm_flags;     /**< Flags that modify the signal handling
+                                     process */
 } rpc_struct_sigaction;
 
 

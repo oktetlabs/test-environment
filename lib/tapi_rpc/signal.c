@@ -800,14 +800,7 @@ rpc_struct_sigaction_to_tarpc_sigaction(
     if (tarpc_struct->handler == NULL)
         return TE_RC(TE_TAPI, TE_ENOMEM);
 
-    tarpc_struct->restorer = strdup(rpc_struct->mm_restorer == NULL ?
-                                        "" : rpc_struct->mm_restorer);
-    if (tarpc_struct->restorer == NULL)
-    {
-        free(tarpc_struct->handler);
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
-
+    tarpc_struct->restorer = rpc_struct->mm_restorer;
     tarpc_struct->mask = (tarpc_sigset_t)rpc_struct->mm_mask;
     tarpc_struct->flags = rpc_struct->mm_flags;
 
@@ -874,34 +867,32 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
     rcf_rpc_call(rpcs, "sigaction", &in, &out);
 
     free(in_act.handler);
-    free(in_act.restorer);
     free(in_oldact.handler);
-    free(in_oldact.restorer);
 
     if (RPC_IS_CALL_OK(rpcs) && oldact != NULL)
     {
         struct tarpc_sigaction *out_oldact = out.oldact.oldact_val;
 
         TE_SPRINTF(oldact->mm_handler, out_oldact->handler);
-        TE_SPRINTF(oldact->mm_restorer, out_oldact->restorer);
+        oldact->mm_restorer = out_oldact->restorer;
         oldact->mm_mask = (rpc_sigset_p)out_oldact->mask;
         oldact->mm_flags = out_oldact->flags;
     }
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(sigaction, out.retval);
     TAPI_RPC_LOG(rpcs, sigaction, "%s, " 
-                 "%p{'%s', '%s', 0x%x, %s}, "
-                 "%p{'%s', '%s', 0x%x, %s}", "%d",
+                 "%p{'%s', '%"TE_PRINTF_64"u', 0x%x, %s}, "
+                 "%p{'%s', '%"TE_PRINTF_64"u', 0x%x, %s}", "%d",
                  signum_rpc2str(signum),
                  act,
                  (act == NULL) ? "" : act->mm_handler,
-                 (act == NULL) ? "" : act->mm_restorer,
+                 (act == NULL) ? 0 : act->mm_restorer,
                  (act == NULL) ? 0 : (unsigned)act->mm_mask,
                  (act == NULL) ? "0" :
                      sigaction_flags_rpc2str(act->mm_flags),
                  oldact,
                  (oldact == NULL) ? "" : oldact->mm_handler,
-                 (oldact == NULL) ? "" : oldact->mm_restorer,
+                 (oldact == NULL) ? 0 : oldact->mm_restorer,
                  (oldact == NULL) ? 0 : (unsigned)oldact->mm_mask,
                  (oldact == NULL) ? "0" :
                      sigaction_flags_rpc2str(oldact->mm_flags),
