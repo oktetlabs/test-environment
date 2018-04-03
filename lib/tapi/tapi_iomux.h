@@ -96,7 +96,9 @@ typedef enum tapi_iomux_evt {
                                         writing half of connection. */
     EVT_ET      = 0x800,           /**< Edge-triggered mode (makes
                                         sense only for epoll). */
-    EVT_NVAL    = 0x1000,          /**< Invalid request */
+    EVT_ONESHOT = 0x1000,          /**< One-shot behavior mode (makes
+                                        sense only for epoll). */
+    EVT_NVAL    = 0x2000,          /**< Invalid request */
 } tapi_iomux_evt;
 
 /** Define one entry in the list of maping entries */
@@ -117,6 +119,7 @@ typedef enum tapi_iomux_evt {
             BIT_MAP_ENTRY(EVT_HUP),     \
             BIT_MAP_ENTRY(EVT_RDHUP),   \
             BIT_MAP_ENTRY(EVT_ET),      \
+            BIT_MAP_ENTRY(EVT_ONESHOT), \
             BIT_MAP_ENTRY(EVT_NVAL)
 
 /**
