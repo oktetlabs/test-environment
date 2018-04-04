@@ -520,11 +520,6 @@ tarpc_rss_hash_protos2str(te_log_buf *tlbp, tarpc_rss_hash_protos_t protos)
             protos &= ~(1ULL << TARPC_ETH_RSS_##_proto);                 \
         }                                                                \
     } while (0)
-    TARPC_RSS_HASH_PROTO2STR(IP);
-    TARPC_RSS_HASH_PROTO2STR(UDP);
-    TARPC_RSS_HASH_PROTO2STR(TCP);
-    TARPC_RSS_HASH_PROTO2STR(SCTP);
-    TARPC_RSS_HASH_PROTO2STR(TUNNEL);
     TARPC_RSS_HASH_PROTO2STR(IPV4);
     TARPC_RSS_HASH_PROTO2STR(FRAG_IPV4);
     TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV4_TCP);

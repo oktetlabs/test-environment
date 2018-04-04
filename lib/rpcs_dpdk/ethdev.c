@@ -507,11 +507,6 @@ rte_rss_hf_rpc2h(tarpc_rss_hash_protos_t rpc, uint64_t *rte)
             *rte |= ETH_RSS_##_proto;                                   \
         }                                                               \
     } while (0)
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(IP);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(TCP);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(UDP);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(SCTP);
-    TARPC_RSS_HASH_PROTO2RTE_RSS_HF(TUNNEL);
     TARPC_RSS_HASH_PROTO2RTE_RSS_HF(IPV4);
     TARPC_RSS_HASH_PROTO2RTE_RSS_HF(FRAG_IPV4);
     TARPC_RSS_HASH_PROTO2RTE_RSS_HF(NONFRAG_IPV4_TCP);
@@ -550,11 +545,6 @@ rte_rss_hf_h2rpc(uint64_t rte)
             rpc |= (1ULL << TARPC_ETH_RSS_##_hf);                   \
         }                                                           \
     } while (0)
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(IP);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(TCP);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(UDP);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(SCTP);
-    RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(TUNNEL);
     RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(IPV4);
     RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(FRAG_IPV4);
     RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NONFRAG_IPV4_TCP);
