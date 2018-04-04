@@ -497,15 +497,15 @@ rte_rss_hf_rpc2h(tarpc_rss_hash_protos_t rpc, uint64_t *rte)
 {
     *rte = 0;
 
-#define TARPC_RSS_HASH_PROTO2RTE_RSS_HF(_proto)                         \
-    do {                                                                \
-        tarpc_rss_hash_protos_t proto = 1ULL << TARPC_ETH_RSS_##_proto; \
-                                                                        \
-        if (rpc & proto)                                                \
-        {                                                               \
-            rpc &= ~proto;                                              \
-            *rte |= ETH_RSS_##_proto;                                   \
-        }                                                               \
+#define TARPC_RSS_HASH_PROTO2RTE_RSS_HF(_proto)                              \
+    do {                                                                     \
+        tarpc_rss_hash_protos_t proto = 1ULL << TARPC_RTE_ETH_FLOW_##_proto; \
+                                                                             \
+        if (rpc & proto)                                                     \
+        {                                                                    \
+            rpc &= ~proto;                                                   \
+            *rte |= ETH_RSS_##_proto;                                        \
+        }                                                                    \
     } while (0)
     TARPC_RSS_HASH_PROTO2RTE_RSS_HF(IPV4);
     TARPC_RSS_HASH_PROTO2RTE_RSS_HF(FRAG_IPV4);
@@ -542,7 +542,7 @@ rte_rss_hf_h2rpc(uint64_t rte)
         if ((rte & hf) == hf)                                       \
         {                                                           \
             rte &= ~hf;                                             \
-            rpc |= (1ULL << TARPC_ETH_RSS_##_hf);                   \
+            rpc |= (1ULL << TARPC_RTE_ETH_FLOW_##_hf);              \
         }                                                           \
     } while (0)
     RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(IPV4);
@@ -567,7 +567,7 @@ rte_rss_hf_h2rpc(uint64_t rte)
     RTE_RSS_HF2TARPC_RSS_HASH_PROTOS(NVGRE);
 #undef RTE_RSS_HF2TARPC_RSS_HASH_PROTOS
     if (rte != 0)
-        rpc |= TARPC_RTE_ETH_RSS__UNKNOWN;
+        rpc |= TARPC_RTE_ETH_FLOW__UNKNOWN;
 
     return rpc;
 }
