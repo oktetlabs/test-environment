@@ -358,7 +358,7 @@ static const int tunnel_types[] = {
     TE_PROTO_GRE,
 };
 
-static te_errno
+te_errno
 tapi_tad_pdus_relist_outer_inner(asn_value  *pdus_orig,
                                  asn_value **pdus_o_out,
                                  asn_value **pdus_i_out)
