@@ -1589,7 +1589,31 @@ rte_flow_action_rss_opt_from_pdu(const asn_value            *conf_pdu_choice,
     if (rc != 0)
         goto fail;
 
+#ifdef HAVE_RTE_FLOW_ITEM_RSS_CONF
     conf->rss_conf = opt;
+#else /* !HAVE_RTE_FLOW_ITEM_RSS_CONF */
+    conf->types = opt->rss_hf;
+
+    if (rss_key_len > 0)
+    {
+        uint8_t *rss_key = NULL;
+
+        rss_key = TE_ALLOC(rss_key_len);
+        if (rss_key == NULL)
+        {
+            rc = TE_ENOMEM;
+            goto fail;
+        }
+
+        memcpy(rss_key, opt->rss_key, rss_key_len);
+
+        conf->key_len = rss_key_len;
+        conf->key = rss_key;
+    }
+
+    free(opt);
+
+#endif /* HAVE_RTE_FLOW_ITEM_RSS_CONF */
 
     return 0;
 
@@ -1604,6 +1628,7 @@ rte_flow_action_rss_from_pdu(const asn_value        *conf_pdu,
                             struct rte_flow_action *action)
 {
     struct rte_flow_action_rss *conf = NULL;
+    uint16_t                   *queue = NULL;
     asn_value                  *conf_pdu_choice;
     asn_tag_value               conf_pdu_choice_tag;
     asn_value                  *queue_list;
@@ -1637,25 +1662,43 @@ rte_flow_action_rss_from_pdu(const asn_value        *conf_pdu,
             return TE_EINVAL;
     }
 
-    conf = TE_ALLOC(sizeof(*conf) + (nb_entries * sizeof(conf->queue[0])));
+    conf = TE_ALLOC(sizeof(*conf));
     if (conf == NULL)
         return TE_ENOMEM;
 
-    conf->num = nb_entries;
+    queue = TE_ALLOC(nb_entries * sizeof(*queue));
+    if (queue == NULL)
+        goto fail_alloc_queue;
 
     for (i = 0; i < nb_entries; ++i)
     {
         asn_value *queue_index;
-        size_t     d_len = sizeof(conf->queue[0]);
+        size_t     d_len = sizeof(*queue);
 
         rc = asn_get_indexed(queue_list, &queue_index, i, "");
         if (rc != 0)
             goto fail;
 
-        rc = asn_read_value_field(queue_index, &conf->queue[i], &d_len, "");
+        rc = asn_read_value_field(queue_index, &queue[i], &d_len, "");
         if (rc != 0)
             goto fail;
     }
+
+#ifdef HAVE_RTE_FLOW_ITEM_RSS_NUM
+    conf->num = nb_entries;
+    conf = realloc(conf, sizeof(*conf) + (nb_entries * sizeof(conf->queue[0])));
+    if (conf == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto fail;
+    }
+
+    memcpy(conf->queue, queue, nb_entries * sizeof(conf->queue[0]));
+    free(queue);
+#else /* !HAVE_RTE_FLOW_ITEM_RSS_NUM */
+    conf->queue_num = nb_entries;
+    conf->queue = queue;
+#endif /* HAVE_RTE_FLOW_ITEM_RSS_NUM */
 
     rc = rte_flow_action_rss_opt_from_pdu(conf_pdu_choice, conf);
     if (rc != 0)
@@ -1667,6 +1710,8 @@ rte_flow_action_rss_from_pdu(const asn_value        *conf_pdu,
     return 0;
 
 fail:
+    free(queue);
+fail_alloc_queue:
     free(conf);
 
     return rc;
