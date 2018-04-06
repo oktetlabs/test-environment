@@ -1205,7 +1205,7 @@ struct tarpc_recvfrom_out {
 /* sigaction() */
 struct tarpc_sigaction {
     string          handler<>;   /**< sa_handler name */
-    string          restorer<>;  /**< sa_restorer name */              
+    uint64_t        restorer;    /**< Opaque sa_restorer value */
     tarpc_sigset_t  mask;        /**< Handle (pointer in server
                                       context) of the allocated set */
     tarpc_int       flags;       /**< Flags to be passed to sigaction */

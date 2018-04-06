@@ -2958,19 +2958,30 @@ TARPC_FUNC(siginterrupt, {},
 
 /*-------------- sigaction() --------------------------------*/
 
-/** Return pointer to sa_restorer field of the structure or dummy address */
-static void **
+/** Return opaque value of sa_restorer field of @p sa. */
+static uint64_t
 get_sa_restorer(struct sigaction *sa)
 {
 #if HAVE_STRUCT_SIGACTION_SA_RESTORER
-    return (void **)&(sa->sa_restorer);
+    return (uint64_t)sa->sa_restorer;
 #else
-    static void *dummy = NULL;
-
     UNUSED(sa);
-    return &dummy;
+    return 0;
 #endif
 }
+
+/** Set opaque value @p restorer to sa_restorer field of @p sa. */
+static void
+set_sa_restorer(struct sigaction *sa, uint64_t restorer)
+{
+#if HAVE_STRUCT_SIGACTION_SA_RESTORER
+    sa->sa_restorer = (void *)restorer;
+#else
+    UNUSED(sa);
+    UNUSED(restorer);
+#endif
+}
+
 
 TARPC_FUNC(sigaction,
 {
@@ -3023,13 +3034,7 @@ TARPC_FUNC(sigaction,
             goto finish;
         }
 
-        out->common._errno = name2handler(in_act->restorer,
-                                          get_sa_restorer(&act));
-        if (out->common._errno != 0)
-        {
-            out->retval = -1;
-            goto finish;
-        }
+        set_sa_restorer(&act, in_act->restorer);
     }
 
     if (out->oldact.oldact_len != 0)
@@ -3056,17 +3061,14 @@ TARPC_FUNC(sigaction,
 
         if (out->common._errno != 0)
         {
+            ERROR("Cannot convert incoming `oldact.sa_handler` function name "
+                  "'%s' to handler: %r", out_oldact->handler,
+                  out->common._errno);
             out->retval = -1;
             goto finish;
         }
 
-        out->common._errno = name2handler(out_oldact->restorer,
-                                          get_sa_restorer(&oldact));
-        if (out->common._errno != 0)
-        {
-            out->retval = -1;
-            goto finish;
-        }
+        set_sa_restorer(&oldact, out_oldact->restorer);
     }
 
     MAKE_CALL(out->retval = func(signum, p_act, p_oldact));
@@ -3091,7 +3093,7 @@ TARPC_FUNC(sigaction,
         out_oldact->handler = handler2name((oldact.sa_flags & SA_SIGINFO) ?
                                            (void *)oldact.sa_sigaction :
                                            (void *)oldact.sa_handler);
-        out_oldact->restorer = handler2name(*(get_sa_restorer(&oldact)));
+        out_oldact->restorer = get_sa_restorer(&oldact);
     }
 
     finish:

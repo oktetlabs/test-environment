@@ -15,5 +15,9 @@ Files power_sw.asm and tn2313def.inc - assembler code for AVR
 attiny2313 controller used in COM/USB power switch devices. Written
 and debugged by Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>.
 
+File sketch_powerswitch.ino - C++ power switch code for Arduino
+nano platform. Intended for compilation and binary loading by
+means of Arduino IDE tool.
+
 File power_sw_descr - description of command set used in COM/USB
 power switch devices.

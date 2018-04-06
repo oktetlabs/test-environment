@@ -173,6 +173,19 @@ extern te_errno tapi_pdus_free_fields_by_du_tag(asn_value      *pdus,
                                                 asn_tag_value   du_tag);
 
 /**
+ * Split outer PDUs from innner PDUs (if any)
+ *
+ * @param pdus_orig  PDU sequence to process
+ * @param pdus_o_out Location for outer PDUs
+ * @param pdus_i_out Location for inner PDUs
+ *
+ * @return Status code
+ */
+extern te_errno tapi_tad_pdus_relist_outer_inner(asn_value  *pdus_orig,
+                                                 asn_value **pdus_o_out,
+                                                 asn_value **pdus_i_out);
+
+/**
  * Make new PDU sequence instances for outer PDUs and for
  * inner PDUs (if any) and relist the corresponding PDUs
  *

@@ -358,7 +358,7 @@ static const int tunnel_types[] = {
     TE_PROTO_GRE,
 };
 
-static te_errno
+te_errno
 tapi_tad_pdus_relist_outer_inner(asn_value  *pdus_orig,
                                  asn_value **pdus_o_out,
                                  asn_value **pdus_i_out)
@@ -402,7 +402,7 @@ tapi_tad_pdus_relist_outer_inner(asn_value  *pdus_orig,
         }
     }
 
-    if (pdu_index_tunnel > 0)
+    if (pdus_i_out != NULL && pdu_index_tunnel > 0)
     {
         pdus_i = asn_init_value(ndn_generic_pdu_sequence);
         if (pdus_i == NULL)
@@ -429,28 +429,30 @@ tapi_tad_pdus_relist_outer_inner(asn_value  *pdus_orig,
         pdus_i = NULL;
     }
 
-    pdus_o = asn_init_value(ndn_generic_pdu_sequence);
-    if (pdus_o == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto fail;
-    }
-
-    for (i = pdu_index_tunnel + 1, j = 0; i < (unsigned int)nb_pdus; ++i, ++j)
-    {
-        asn_value *pdu_o = NULL;
-
-        rc = asn_get_indexed(pdus_orig, &pdu_o, i, "");
-        if (rc != 0)
-            goto fail;
-
-        rc = asn_insert_indexed(pdus_o, pdu_o, j, "");
-        if (rc != 0)
-            goto fail;
-    }
-
     if (pdus_o_out != NULL)
+    {
+        pdus_o = asn_init_value(ndn_generic_pdu_sequence);
+        if (pdus_o == NULL)
+        {
+            rc = TE_ENOMEM;
+            goto fail;
+        }
+
+        for (i = pdu_index_tunnel + 1, j = 0; i < (unsigned int)nb_pdus; ++i, ++j)
+        {
+            asn_value *pdu_o = NULL;
+
+            rc = asn_get_indexed(pdus_orig, &pdu_o, i, "");
+            if (rc != 0)
+                goto fail;
+
+            rc = asn_insert_indexed(pdus_o, pdu_o, j, "");
+            if (rc != 0)
+                goto fail;
+        }
+
         *pdus_o_out = pdus_o;
+    }
 
     if (pdus_i_out != NULL)
         *pdus_i_out = pdus_i;

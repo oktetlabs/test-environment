@@ -509,22 +509,17 @@ tarpc_rss_hash_protos2str(te_log_buf *tlbp, tarpc_rss_hash_protos_t protos)
 {
     te_bool             added = FALSE;
 
-#define TARPC_RSS_HASH_PROTO2STR(_proto)                                 \
-    do {                                                                 \
-        tarpc_rss_hash_protos_t proto = 1ULL << TARPC_ETH_RSS_##_proto;  \
-                                                                         \
-        if ((protos & proto) == proto)                                   \
-        {                                                                \
-            te_log_buf_append(tlbp, "%s%s", added ? "|" : "", #_proto);  \
-            added = TRUE;                                                \
-            protos &= ~(1ULL << TARPC_ETH_RSS_##_proto);                 \
-        }                                                                \
+#define TARPC_RSS_HASH_PROTO2STR(_proto)                                     \
+    do {                                                                     \
+        tarpc_rss_hash_protos_t proto = 1ULL << TARPC_RTE_ETH_FLOW_##_proto; \
+                                                                             \
+        if ((protos & proto) == proto)                                       \
+        {                                                                    \
+            te_log_buf_append(tlbp, "%s%s", added ? "|" : "", #_proto);      \
+            added = TRUE;                                                    \
+            protos &= ~(1ULL << TARPC_RTE_ETH_FLOW_##_proto);                \
+        }                                                                    \
     } while (0)
-    TARPC_RSS_HASH_PROTO2STR(IP);
-    TARPC_RSS_HASH_PROTO2STR(UDP);
-    TARPC_RSS_HASH_PROTO2STR(TCP);
-    TARPC_RSS_HASH_PROTO2STR(SCTP);
-    TARPC_RSS_HASH_PROTO2STR(TUNNEL);
     TARPC_RSS_HASH_PROTO2STR(IPV4);
     TARPC_RSS_HASH_PROTO2STR(FRAG_IPV4);
     TARPC_RSS_HASH_PROTO2STR(NONFRAG_IPV4_TCP);
