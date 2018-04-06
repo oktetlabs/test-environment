@@ -146,6 +146,21 @@ typedef struct rpc_struct_sigaction {
 } rpc_struct_sigaction;
 
 /**
+ * Initializer of @ref rpc_struct_sigaction structure.
+ */
+#define __RPC_STRUCT_SIGACTION_INITIALIZER \
+    { .mm_handler = "",     \
+      .mm_restorer = 0,     \
+      .mm_mask = RPC_NULL,  \
+      .mm_flags = 0 }
+
+/**
+ * Declare initialized @ref rpc_struct_sigaction structure.
+ */
+#define DEFINE_RPC_STRUCT_SIGACTION(sa_) \
+    rpc_struct_sigaction sa_ = __RPC_STRUCT_SIGACTION_INITIALIZER
+
+/**
  * Initialise @c rpc_struct_sigaction structure.
  *
  * @note Function jumps to cleanup in case of failure.
