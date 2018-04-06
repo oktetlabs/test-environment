@@ -115,6 +115,17 @@ struct rte_flow_action_rss conf;
 [[conf.num = 0;]]
 )], [AC_DEFINE([HAVE_RTE_FLOW_ITEM_RSS_NUM], 1, [ ])], [])
 
+AC_COMPILE_IFELSE([
+AC_LANG_PROGRAM(
+[[
+#include "rte_config.h"
+#include "rte_flow.h"
+
+struct rte_flow_item_vlan spec;
+]],
+[[spec.tpid = 0;]]
+)], [AC_DEFINE([HAVE_RTE_FLOW_ITEM_VLAN_TPID], 1, [ ])], [])
+
 
 AC_CONFIG_FILES([Makefile])
 

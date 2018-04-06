@@ -484,7 +484,6 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
 
     if (is_double_tagged)
     {
-        ASN_READ_INT_RANGE_FIELD(vlan_pdu, tpid, tpid, sizeof(spec->tpid));
         rc = asn_read_int_field_with_offset(vlan_pdu, "vid",
                                             RTE_FLOW_VLAN_VID_FILED_LEN, 0,
                                             &spec_tci, &mask_tci, &last_tci);
@@ -526,6 +525,11 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     mask->tci = rte_cpu_to_be_16(mask_tci);
     last->tci = rte_cpu_to_be_16(last_tci);
 
+#ifdef HAVE_RTE_FLOW_ITEM_VLAN_TPID
+
+    if (is_double_tagged)
+        ASN_READ_INT_RANGE_FIELD(vlan_pdu, tpid, tpid, sizeof(spec->tpid));
+
 #define FILL_FLOW_ITEM_VLAN(_field) \
     do {                                            \
         if (_field->tpid != 0 ||                    \
@@ -539,6 +543,65 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     FILL_FLOW_ITEM_VLAN(mask);
     FILL_FLOW_ITEM_VLAN(last);
 #undef FILL_FLOW_ITEM_VLAN
+
+#else /* !HAVE_RTE_FLOW_ITEM_VLAN_TPID */
+
+    /*
+     * Since the NDN representation of VLAN does not have field for
+     * 'inner_type', then in the flow rule pattern move the EtherType
+     * from ETH to the last VLAN item
+     */
+    if (pattern[item_nb - 1].type == RTE_FLOW_ITEM_TYPE_VLAN)
+    {
+        struct rte_flow_item_vlan *prev_mask =
+            (struct rte_flow_item_vlan *)pattern[item_nb - 1].mask;
+        struct rte_flow_item_vlan *prev_spec =
+            (struct rte_flow_item_vlan *)pattern[item_nb - 1].spec;
+
+        if (prev_mask != NULL && prev_mask->inner_type != 0)
+        {
+            mask->inner_type = prev_mask->inner_type;
+            spec->inner_type = prev_spec->inner_type;
+            prev_mask->inner_type = 0;
+            prev_spec->inner_type = 0;
+        }
+    }
+    else if (pattern[item_nb - 1].type == RTE_FLOW_ITEM_TYPE_ETH)
+    {
+        struct rte_flow_item_eth *prev_mask =
+            (struct rte_flow_item_eth *)pattern[item_nb - 1].mask;
+        struct rte_flow_item_eth *prev_spec =
+            (struct rte_flow_item_eth *)pattern[item_nb - 1].spec;
+
+        if (prev_mask != NULL && prev_mask->type != 0)
+        {
+            mask->inner_type = prev_mask->type;
+            spec->inner_type = prev_spec->type;
+            prev_mask->type = 0;
+            prev_spec->type = 0;
+        }
+    }
+    else
+    {
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+#define FILL_FLOW_ITEM_VLAN(_field) \
+    do {                                            \
+        if (_field->inner_type != 0 ||              \
+            _field->tci != 0)                       \
+            pattern[item_nb]._field = _field;       \
+        else                                        \
+            free(_field);                           \
+    } while(0)
+
+    FILL_FLOW_ITEM_VLAN(spec);
+    FILL_FLOW_ITEM_VLAN(mask);
+    FILL_FLOW_ITEM_VLAN(last);
+#undef FILL_FLOW_ITEM_VLAN
+
+#endif /* HAVE_RTE_FLOW_ITEM_VLAN_TPID */
 
     *item_nb_out = item_nb;
     *pattern_out = pattern;
