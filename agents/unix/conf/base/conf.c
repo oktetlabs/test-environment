@@ -9191,19 +9191,15 @@ xen_accel_set(unsigned int gid, char const *oid, char const *value)
 
     if ((rc = xen_accel_get_executive(&status)) == 0)
     {
-        switch (status)
+        if (status)
         {
-            case FALSE:
-                if (needed_status)
-                    cmd = "/sbin/modprobe sfc_netback";
-
-                break;
-
-            default:
-                if (!needed_status)
-                    cmd = "/sbin/rmmod sfc_netback";
-
-                break;
+            if (!needed_status)
+                cmd = "/sbin/rmmod sfc_netback";
+        }
+        else
+        {
+            if (needed_status)
+                cmd = "/sbin/modprobe sfc_netback";
         }
 
         if (cmd != NULL)
