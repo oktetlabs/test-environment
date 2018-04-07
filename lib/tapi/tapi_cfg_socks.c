@@ -367,7 +367,6 @@ te_errno
 tapi_cfg_socks_auth_get(const char *ta, tapi_socks_id id,
                         char **value)
 {
-    te_errno     rc;
     cfg_val_type type = CVT_STRING;
 
     return cfg_get_instance_fmt(&type, value,
