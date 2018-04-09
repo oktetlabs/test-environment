@@ -484,7 +484,6 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
 
     if (is_double_tagged)
     {
-        ASN_READ_INT_RANGE_FIELD(vlan_pdu, tpid, tpid, sizeof(spec->tpid));
         rc = asn_read_int_field_with_offset(vlan_pdu, "vid",
                                             RTE_FLOW_VLAN_VID_FILED_LEN, 0,
                                             &spec_tci, &mask_tci, &last_tci);
@@ -526,6 +525,11 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     mask->tci = rte_cpu_to_be_16(mask_tci);
     last->tci = rte_cpu_to_be_16(last_tci);
 
+#ifdef HAVE_RTE_FLOW_ITEM_VLAN_TPID
+
+    if (is_double_tagged)
+        ASN_READ_INT_RANGE_FIELD(vlan_pdu, tpid, tpid, sizeof(spec->tpid));
+
 #define FILL_FLOW_ITEM_VLAN(_field) \
     do {                                            \
         if (_field->tpid != 0 ||                    \
@@ -539,6 +543,65 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     FILL_FLOW_ITEM_VLAN(mask);
     FILL_FLOW_ITEM_VLAN(last);
 #undef FILL_FLOW_ITEM_VLAN
+
+#else /* !HAVE_RTE_FLOW_ITEM_VLAN_TPID */
+
+    /*
+     * Since the NDN representation of VLAN does not have field for
+     * 'inner_type', then in the flow rule pattern move the EtherType
+     * from ETH to the last VLAN item
+     */
+    if (pattern[item_nb - 1].type == RTE_FLOW_ITEM_TYPE_VLAN)
+    {
+        struct rte_flow_item_vlan *prev_mask =
+            (struct rte_flow_item_vlan *)pattern[item_nb - 1].mask;
+        struct rte_flow_item_vlan *prev_spec =
+            (struct rte_flow_item_vlan *)pattern[item_nb - 1].spec;
+
+        if (prev_mask != NULL && prev_mask->inner_type != 0)
+        {
+            mask->inner_type = prev_mask->inner_type;
+            spec->inner_type = prev_spec->inner_type;
+            prev_mask->inner_type = 0;
+            prev_spec->inner_type = 0;
+        }
+    }
+    else if (pattern[item_nb - 1].type == RTE_FLOW_ITEM_TYPE_ETH)
+    {
+        struct rte_flow_item_eth *prev_mask =
+            (struct rte_flow_item_eth *)pattern[item_nb - 1].mask;
+        struct rte_flow_item_eth *prev_spec =
+            (struct rte_flow_item_eth *)pattern[item_nb - 1].spec;
+
+        if (prev_mask != NULL && prev_mask->type != 0)
+        {
+            mask->inner_type = prev_mask->type;
+            spec->inner_type = prev_spec->type;
+            prev_mask->type = 0;
+            prev_spec->type = 0;
+        }
+    }
+    else
+    {
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+#define FILL_FLOW_ITEM_VLAN(_field) \
+    do {                                            \
+        if (_field->inner_type != 0 ||              \
+            _field->tci != 0)                       \
+            pattern[item_nb]._field = _field;       \
+        else                                        \
+            free(_field);                           \
+    } while(0)
+
+    FILL_FLOW_ITEM_VLAN(spec);
+    FILL_FLOW_ITEM_VLAN(mask);
+    FILL_FLOW_ITEM_VLAN(last);
+#undef FILL_FLOW_ITEM_VLAN
+
+#endif /* HAVE_RTE_FLOW_ITEM_VLAN_TPID */
 
     *item_nb_out = item_nb;
     *pattern_out = pattern;
@@ -1589,7 +1652,31 @@ rte_flow_action_rss_opt_from_pdu(const asn_value            *conf_pdu_choice,
     if (rc != 0)
         goto fail;
 
+#ifdef HAVE_RTE_FLOW_ITEM_RSS_CONF
     conf->rss_conf = opt;
+#else /* !HAVE_RTE_FLOW_ITEM_RSS_CONF */
+    conf->types = opt->rss_hf;
+
+    if (rss_key_len > 0)
+    {
+        uint8_t *rss_key = NULL;
+
+        rss_key = TE_ALLOC(rss_key_len);
+        if (rss_key == NULL)
+        {
+            rc = TE_ENOMEM;
+            goto fail;
+        }
+
+        memcpy(rss_key, opt->rss_key, rss_key_len);
+
+        conf->key_len = rss_key_len;
+        conf->key = rss_key;
+    }
+
+    free(opt);
+
+#endif /* HAVE_RTE_FLOW_ITEM_RSS_CONF */
 
     return 0;
 
@@ -1604,6 +1691,7 @@ rte_flow_action_rss_from_pdu(const asn_value        *conf_pdu,
                             struct rte_flow_action *action)
 {
     struct rte_flow_action_rss *conf = NULL;
+    uint16_t                   *queue = NULL;
     asn_value                  *conf_pdu_choice;
     asn_tag_value               conf_pdu_choice_tag;
     asn_value                  *queue_list;
@@ -1637,25 +1725,43 @@ rte_flow_action_rss_from_pdu(const asn_value        *conf_pdu,
             return TE_EINVAL;
     }
 
-    conf = TE_ALLOC(sizeof(*conf) + (nb_entries * sizeof(conf->queue[0])));
+    conf = TE_ALLOC(sizeof(*conf));
     if (conf == NULL)
         return TE_ENOMEM;
 
-    conf->num = nb_entries;
+    queue = TE_ALLOC(nb_entries * sizeof(*queue));
+    if (queue == NULL)
+        goto fail_alloc_queue;
 
     for (i = 0; i < nb_entries; ++i)
     {
         asn_value *queue_index;
-        size_t     d_len = sizeof(conf->queue[0]);
+        size_t     d_len = sizeof(*queue);
 
         rc = asn_get_indexed(queue_list, &queue_index, i, "");
         if (rc != 0)
             goto fail;
 
-        rc = asn_read_value_field(queue_index, &conf->queue[i], &d_len, "");
+        rc = asn_read_value_field(queue_index, &queue[i], &d_len, "");
         if (rc != 0)
             goto fail;
     }
+
+#ifdef HAVE_RTE_FLOW_ITEM_RSS_NUM
+    conf->num = nb_entries;
+    conf = realloc(conf, sizeof(*conf) + (nb_entries * sizeof(conf->queue[0])));
+    if (conf == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto fail;
+    }
+
+    memcpy(conf->queue, queue, nb_entries * sizeof(conf->queue[0]));
+    free(queue);
+#else /* !HAVE_RTE_FLOW_ITEM_RSS_NUM */
+    conf->queue_num = nb_entries;
+    conf->queue = queue;
+#endif /* HAVE_RTE_FLOW_ITEM_RSS_NUM */
 
     rc = rte_flow_action_rss_opt_from_pdu(conf_pdu_choice, conf);
     if (rc != 0)
@@ -1667,6 +1773,8 @@ rte_flow_action_rss_from_pdu(const asn_value        *conf_pdu,
     return 0;
 
 fail:
+    free(queue);
+fail_alloc_queue:
     free(conf);
 
     return rc;

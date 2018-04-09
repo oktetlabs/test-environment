@@ -913,7 +913,7 @@ extern const char *test_get_param(int argc, char *argv[], const char *name);
  *            message that describes the problem found during the procedure)
  */
 extern int test_map_param_value(const char *var_name,
-                                struct param_map_entry *maps,
+                                const struct param_map_entry *maps,
                                 const char *str_val, int *num_val);
 
 /**

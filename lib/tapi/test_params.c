@@ -154,7 +154,7 @@ test_get_param(int argc, char *argv[], const char *name)
 /** See the description in tapi_test.h */
 int
 test_map_param_value(const char *var_name,
-                     struct param_map_entry *maps, const char *str_val,
+                     const struct param_map_entry *maps, const char *str_val,
                      int *num_val)
 {
     int i;
