@@ -1630,6 +1630,31 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
 }
 
 
+/* see description in asn_usr.h */
+te_errno
+asn_get_enum(const asn_value *container, int32_t *value)
+{
+    size_t len = sizeof(*value);
+
+    if (container == NULL || container->syntax != ENUMERATED)
+        return TE_EINVAL;
+
+    return asn_read_primitive(container, value, &len);
+}
+
+/* see description in asn_usr.h */
+te_errno
+asn_get_enum_name(const asn_value *container, const char **name)
+{
+    int32_t value;
+    te_errno rc;
+
+    rc = asn_get_enum(container, &value);
+    if (rc == 0)
+        *name = container->asn_type->sp.enum_entries[value].name;
+
+    return rc;
+}
 
 
 /*

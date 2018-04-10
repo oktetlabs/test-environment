@@ -909,6 +909,30 @@ extern te_errno asn_read_value_field(const asn_value *container,
 
 
 /**
+ * Get primitive value of enumeration type from ASN value.
+ *
+ * @param[in]  container    ASN value containing data of enumeration type.
+ * @param[out] value        Primitive value.
+ *
+ * @return Status code.
+ */
+extern te_errno asn_get_enum(const asn_value *container, int32_t *value);
+
+/**
+ * Get enumeration value name.
+ *
+ * @note Return value must not be modified, since it points to @p container
+ * internals.
+ *
+ * @param[in]  container    ASN value containing data of enumeration type.
+ * @param[out] name         Name of value of enumeration type.
+ *
+ * @return Status code.
+ */
+extern te_errno asn_get_enum_name(const asn_value *container,
+                                  const char **name);
+
+/**
  * Write 32-bit integer into leaf in specified ASN value.
  *
  * @param container     pointer to ASN value which leaf field is interested
