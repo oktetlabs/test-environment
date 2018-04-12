@@ -109,7 +109,9 @@ tarpc_rte_pktmbuf_ol_flags2rpc(uint64_t rte)
 
     RTE_PKTMBUF_OL_FLAGS2RPC(IND_ATTACHED_MBUF);
 
+#ifdef CTRL_MBUF_FLAG
     RTE_PKTMBUF_OL_FLAGS2RPC(CTRL_MBUF_FLAG);
+#endif /* CTRL_MBUF_FLAG */
 #undef RTE_PKTMBUF_OL_FLAGS2RPC
 
     if (rte != 0)
@@ -239,7 +241,9 @@ tarpc_rte_pktmbuf_ol_flags2rte(uint64_t rpc, uint64_t *rte)
 
     RTE_PKTMBUF_OL_FLAGS2RTE(IND_ATTACHED_MBUF);
 
+#ifdef CTRL_MBUF_FLAG
     RTE_PKTMBUF_OL_FLAGS2RTE(CTRL_MBUF_FLAG);
+#endif /* CTRL_MBUF_FLAG */
 #undef RTE_PKTMBUF_OL_FLAGS2RTE
 
     if (rpc != 0)
