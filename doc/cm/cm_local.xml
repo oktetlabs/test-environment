@@ -34,6 +34,14 @@
          Value: temporary file name. -->
     <object oid="/local/saved_mtus" access="read_create" type="string"/>
 
+    <!-- Disable reuse_pco mode for the one next test iteration
+         (used by tapi_no_reuse_pco_* functions.
+
+         Name: none
+         Value: 1 = disable reuse_pco mode, 0 = usual behavior -->
+    <object oid="/local/no_reuse_pco" access="read_write" type="integer"
+            volatile="true"/>
+
     <!-- This configurator subtree describes relations between agents,
          namespaces and network interfaces on a host.
 
