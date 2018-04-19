@@ -47,6 +47,7 @@ include_HEADERS = \
 	tapi_network.h \
 	tapi_namespaces.h \
 	tapi_cfg_sys.h \
+	tapi_cfg_local.h \
 	tapi_host_ns.h
 
 lib_LTLIBRARIES = libtapi.la
