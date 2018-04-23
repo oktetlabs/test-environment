@@ -19,6 +19,9 @@
 extern "C" {
 #endif
 
+/** Default fio job name */
+#define FIO_DEFAULT_NAME    "default.fio"
+
 /** Initialized methods for fio work */
 extern tapi_fio_methods methods;
 

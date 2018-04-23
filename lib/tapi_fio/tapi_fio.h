@@ -98,7 +98,7 @@ typedef enum {
 typedef enum tapi_fio_numjobs_factor {
     TAPI_FIO_NUMJOBS_NPROC_FACTOR,      /**< Multiply value on CPU Cores */
     TAPI_FIO_NUMJOBS_WITHOUT_FACTOR     /**< No multiply */
-};
+} tapi_fio_numjobs_factor;
 
 /** Contain FIO numjobs */
 typedef struct tapi_fio_numjobs_t {

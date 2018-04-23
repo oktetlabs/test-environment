@@ -27,7 +27,7 @@ extern "C" {
  *
  * @return Status code
  */
-extern te_errno fio_app_start(const char *cmd,
+extern te_errno fio_app_start(char *cmd,
                               tapi_fio_app *app);
 
 /**

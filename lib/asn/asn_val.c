@@ -1389,6 +1389,103 @@ asn_get_indexed(const asn_value *container, asn_value **subval,
 }
 
 
+/**
+ * Read primitive syntax value.
+ *
+ * @param[in]    value      ASN value with primitive syntax.
+ * @param[out]   data       Pointer to buffer for read data
+ * @param[inout] d_len      Length of available buffer / read data; measured in
+ *                          octets for all types except OID and BIT_STRING;
+ *                          for OID measured in sizeof(int),
+ *                          for BIT_STRING measured in bits
+ *
+ * @return Status code.
+ */
+static te_errno
+asn_read_primitive(const asn_value *value, void *data, size_t *d_len)
+{
+    size_t m_len;
+
+    if (value == NULL)
+        return TE_EWRONGPTR;
+
+    if (value->syntax != PR_ASN_NULL &&
+        ((data == NULL) || (d_len == NULL)))
+        return TE_EWRONGPTR;
+
+    m_len = value->len;
+
+    switch(value->syntax)
+    {
+    case BOOL:
+    case UINTEGER:
+    case INTEGER:
+    case ENUMERATED:
+        {
+            long int val = value->data.integer;
+
+            if (*d_len > sizeof(long int))
+                *d_len = sizeof(long int);
+
+            switch (*d_len)
+            {
+                case sizeof(int8_t) : *((int8_t *) data) = val; break;
+                case sizeof(int16_t): *((int16_t *)data) = val; break;
+                case sizeof(int32_t): *((int32_t *)data) = val; break;
+                case sizeof(int64_t): *((int64_t *)data) = val; break;
+                default:
+                    return TE_EASNGENERAL;
+            }
+        }
+        break;
+
+    case OID:
+    case BIT_STRING:
+        if (value->syntax == OID)
+            m_len *= sizeof(int);
+        else
+            m_len = (m_len + 7) >> 3;
+        /* fall through */
+    case CHAR_STRING:
+    case LONG_INT:
+    case OCT_STRING:
+    case REAL:
+        {
+            if (*d_len < value->len)
+                return TE_ESMALLBUF;
+
+            *d_len = value->len;
+            memcpy(data, value->data.other, m_len);
+        }
+        break;
+
+    case PR_ASN_NULL:
+        break;
+
+    case SEQUENCE:
+    case SET:
+    case SEQUENCE_OF:
+    case SET_OF:
+        return TE_EASNNOTLEAF;
+
+    case CHOICE:
+    case TAGGED:
+        {
+            const asn_value *subval = value->data.array[0];
+
+            if (subval == NULL)
+                return TE_EASNINCOMPLVAL;
+            else
+                return asn_read_primitive(subval, data, d_len);
+        }
+        break; /* unreachable */
+
+    default:
+        return 0; /* nothing to do. */
+    }
+
+    return 0;
+}
 
 /* See description in asn_usr.h */
 te_errno
@@ -1533,6 +1630,31 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
 }
 
 
+/* see description in asn_usr.h */
+te_errno
+asn_get_enum(const asn_value *container, int32_t *value)
+{
+    size_t len = sizeof(*value);
+
+    if (container == NULL || container->syntax != ENUMERATED)
+        return TE_EINVAL;
+
+    return asn_read_primitive(container, value, &len);
+}
+
+/* see description in asn_usr.h */
+te_errno
+asn_get_enum_name(const asn_value *container, const char **name)
+{
+    int32_t value;
+    te_errno rc;
+
+    rc = asn_get_enum(container, &value);
+    if (rc == 0)
+        *name = container->asn_type->sp.enum_entries[value].name;
+
+    return rc;
+}
 
 
 /*
@@ -1822,100 +1944,13 @@ asn_impl_read_value_field(const asn_value *container,  void *data,
                           size_t *d_len, char *field_labels)
 {
     asn_value *value;
-    size_t     m_len;
     te_errno   rc;
 
-    if (!container) return TE_EWRONGPTR;
-
     rc = asn_get_descendent(container, &value, field_labels);
-    if (rc) return rc;
+    if (rc != 0)
+        return rc;
 
-    if (value->syntax != PR_ASN_NULL &&
-        ((data == NULL) || (d_len == NULL)))
-        return TE_EWRONGPTR;
-
-    m_len = value->len;
-
-    switch(value->syntax)
-    {
-    case BOOL:
-#if 0
-        if (*d_len)
-        {
-            *((char*)data) = (char) value->data.integer;
-            *d_len = 1;
-        }
-        else
-            return TE_ESMALLBUF;
-        break;
-#endif
-    case UINTEGER:
-    case INTEGER:
-    case ENUMERATED:
-        {
-            long int val = value->data.integer;
-
-            if (*d_len > sizeof(long int))
-                *d_len = sizeof(long int);
-
-            switch (*d_len)
-            {
-                case sizeof(int8_t) : *((int8_t *) data) = val; break;
-                case sizeof(int16_t): *((int16_t *)data) = val; break;
-                case sizeof(int32_t): *((int32_t *)data) = val; break;
-                case sizeof(int64_t): *((int64_t *)data) = val; break;
-                default:
-                    return TE_EASNGENERAL;
-            }
-        }
-        break;
-
-    case OID:
-    case BIT_STRING:
-        if (value->syntax == OID)
-            m_len *= sizeof(int);
-        else
-            m_len = (m_len + 7) >> 3;
-        /* fall through */
-    case CHAR_STRING:
-    case LONG_INT:
-    case OCT_STRING:
-    case REAL:
-        {
-            if (*d_len < value->len)
-                return TE_ESMALLBUF;
-
-            *d_len = value->len;
-            memcpy(data, value->data.other, m_len);
-        }
-        break;
-
-    case PR_ASN_NULL:
-        break;
-
-    case SEQUENCE:
-    case SET:
-    case SEQUENCE_OF:
-    case SET_OF:
-        return TE_EASNNOTLEAF;
-
-    case CHOICE:
-    case TAGGED:
-        {
-            const asn_value *subval = value->data.array[0];
-
-            if (subval == NULL)
-                return TE_EASNINCOMPLVAL;
-            else
-                return asn_impl_read_value_field(subval, data, d_len, "");
-        }
-        break; /* unreachable */
-
-    default:
-        return 0; /* nothing to do. */
-    }
-
-    return 0;
+    return asn_read_primitive(value, data, d_len);
 }
 
 
