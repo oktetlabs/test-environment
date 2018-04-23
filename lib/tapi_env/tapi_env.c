@@ -43,6 +43,7 @@
 #include "tapi_cfg_net.h"
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_ip6.h"
+#include "tapi_cfg_local.h"
 #include "tapi_rpc.h"
 #include "tapi_sockaddr.h"
 #include "te_alloc.h"
@@ -1702,6 +1703,8 @@ prepare_pcos(tapi_env_hosts *hosts)
     te_bool             main_thread;
     cfg_val_type        val_type;
     int                 iut_errno_change_no_check = 0;
+    te_bool             no_reuse_pco = FALSE;
+    te_bool             get_reuse_pco;
     const char         *reuse_pco = getenv("TE_ENV_REUSE_PCO");
     const char         *tst_with_lib = getenv("TE_ENV_TST_WITH_LIB");
 
@@ -1714,7 +1717,14 @@ prepare_pcos(tapi_env_hosts *hosts)
               rc);
         return rc;
     }
-    rc = 0;
+
+    rc = tapi_no_reuse_pco_get(&no_reuse_pco);
+    if (rc != 0)
+        return rc;
+
+    get_reuse_pco = reuse_pco != NULL &&
+                    strcasecmp(reuse_pco, "yes") == 0 &&
+                    !no_reuse_pco;
 
     for (host = SLIST_FIRST(hosts);
          host != NULL && rc == 0;
@@ -1730,8 +1740,7 @@ prepare_pcos(tapi_env_hosts *hosts)
             {
                 if (main_thread)
                 {
-                    if (reuse_pco != NULL &&
-                        strcasecmp(reuse_pco, "yes") == 0)
+                    if (get_reuse_pco)
                         rc = rcf_rpc_server_get(host->ta, pco->name, NULL,
                                             RCF_RPC_SERVER_GET_EXISTING |
                                             RCF_RPC_SERVER_GET_REUSE,
@@ -1806,6 +1815,10 @@ prepare_pcos(tapi_env_hosts *hosts)
             }
         }
     }
+
+    if (no_reuse_pco)
+        rc = tapi_no_reuse_pco_reset();
+
     return rc;
 }
 
