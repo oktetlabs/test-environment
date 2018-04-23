@@ -46,9 +46,8 @@ fio_rwtype_str(tapi_fio_rwtype rwtype)
 static void
 set_opt_name(te_string *cmd, const tapi_fio_opts *opts)
 {
-    if (opts->name == NULL)
-        TEST_FAIL("Test must be specified");
-    CHECK_RC(te_string_append(cmd, " --name=%s", opts->name));
+    const char *name = opts->name ? opts->name: FIO_DEFAULT_NAME;
+    CHECK_RC(te_string_append(cmd, " --name=%s", name));
 }
 
 static void
