@@ -36,7 +36,7 @@ fio_app_close_descriptors(tapi_fio_app *app)
 
 /* See description in tapi_internal.h */
 te_errno
-fio_app_start(const char *cmd, tapi_fio_app *app)
+fio_app_start(char *cmd, tapi_fio_app *app)
 {
     tarpc_pid_t pid;
     int fd_stdout = -1;
