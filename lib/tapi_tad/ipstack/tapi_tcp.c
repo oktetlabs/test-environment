@@ -636,6 +636,13 @@ tapi_tcp_template_gen(te_bool is_eth_pdu,
         return TE_RC(TE_TAPI, rc);
     }
 
+    rc = asn_write_bool(*tmpl, TRUE, "pdus.0.#ip4.dont-frag.#plain");
+    if (rc != 0)
+    {
+        ERROR("%s(): write ip4 dont-frag flag error: %r", __FUNCTION__, rc);
+        goto cleanup;
+    }
+
     rc = tapi_tcp_pdu(-1, -1, seqn, ackn, syn_flag, ack_flag, &tcp_pdu);
     if (rc != 0)
     {
