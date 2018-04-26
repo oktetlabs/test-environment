@@ -2363,3 +2363,14 @@ TARPC_FUNC(rte_eth_dev_get_port_by_name, {},
     neg_errno_h2rpc(&out->retval);
 })
 
+TARPC_FUNC(rte_eth_dev_get_name_by_port, {},
+{
+    out->name = TE_ALLOC(RPC_RTE_ETH_NAME_MAX_LEN);
+    if (out->name == NULL)
+        out->retval = -ENOMEM;
+    else
+        MAKE_CALL(out->retval = func(in->port_id, out->name));
+
+    neg_errno_h2rpc(&out->retval);
+})
+

@@ -1713,6 +1713,15 @@ struct tarpc_rte_eth_dev_get_port_by_name_out {
     tarpc_int            retval;
 };
 
+/** rte_eth_dev_get_name_by_port() */
+typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_get_name_by_port_in;
+
+struct tarpc_rte_eth_dev_get_name_by_port_out {
+    struct tarpc_out_arg common;
+    string               name<>;
+    tarpc_int            retval;
+};
+
 /**
  * rte_flow API
  */
@@ -1973,6 +1982,7 @@ program dpdk
         RPC_DEF(rte_eth_dev_udp_tunnel_port_add)
         RPC_DEF(rte_eth_dev_udp_tunnel_port_delete)
         RPC_DEF(rte_eth_dev_get_port_by_name)
+        RPC_DEF(rte_eth_dev_get_name_by_port)
 
         RPC_DEF(rte_mk_flow_rule_components)
         RPC_DEF(rte_free_flow_rule)
