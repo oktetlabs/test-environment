@@ -154,19 +154,18 @@ tapi_reuse_eal(rcf_rpc_server *rpcs,
         if (rpc_rte_eth_dev_is_valid_port(rpcs, i))
         {
             char   dev_name[RPC_RTE_ETH_NAME_MAX_LEN];
+            char   unused_dev_name[RPC_RTE_ETH_NAME_MAX_LEN];
             size_t dev_na_len;
 
-            rpc_rte_eth_dev_close(rpcs, i);
-
-            rc = rpc_rte_eth_dev_detach(rpcs, i, dev_name);
+            rc = rpc_rte_eth_dev_get_name_by_port(rpcs, i, dev_name);
             if (rc != 0)
                 goto out;
 
-            if (dev_name[0] == '\0')
-            {
-                rc = TE_EINVAL;
+            rpc_rte_eth_dev_close(rpcs, i);
+
+            rc = rpc_rte_eth_dev_detach(rpcs, i, unused_dev_name);
+            if (rc != 0)
                 goto out;
-            }
 
             dev_na_len = strlen(dev_name) + 1;
             dev_na_len += (dev_args != NULL) ? (strlen(dev_args) + 1) : 0;
