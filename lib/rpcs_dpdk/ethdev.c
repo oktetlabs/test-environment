@@ -2357,3 +2357,9 @@ done:
     ;
 })
 
+TARPC_FUNC(rte_eth_dev_get_port_by_name, {},
+{
+    MAKE_CALL(out->retval = func(in->name, &out->port_id));
+    neg_errno_h2rpc(&out->retval);
+})
+

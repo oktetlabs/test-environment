@@ -3308,3 +3308,33 @@ rpc_rte_eth_dev_udp_tunnel_port_delete(
     RETVAL_ZERO_INT(rte_eth_dev_udp_tunnel_port_delete, out.retval);
 }
 
+int
+rpc_rte_eth_dev_get_port_by_name(rcf_rpc_server *rpcs,
+                                 const char     *name,
+                                 uint16_t       *port_id)
+{
+    tarpc_rte_eth_dev_get_port_by_name_in  in;
+    tarpc_rte_eth_dev_get_port_by_name_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.name = tapi_strdup(name);
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_get_port_by_name", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_get_port_by_name,
+                                          out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_get_port_by_name,
+                 "name='%s'", "port_id=%d; " NEG_ERRNO_FMT,
+                 in.name, (out.retval == 0) ? out.port_id : -1,
+                 NEG_ERRNO_ARGS(out.retval));
+
+    free(in.name);
+
+    if (out.retval == 0)
+        *port_id = out.port_id;
+
+    RETVAL_ZERO_INT(rte_eth_dev_get_port_by_name, out.retval);
+}
+
