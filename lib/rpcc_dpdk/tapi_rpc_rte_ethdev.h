@@ -709,6 +709,33 @@ extern int rpc_rte_eth_dev_udp_tunnel_port_delete(
                                 uint16_t                         port_id,
                                 struct tarpc_rte_eth_udp_tunnel *tunnel_udp);
 
+/**
+ * @b rte_eth_dev_get_port_by_name() RPC
+ *
+ * @param name    PCI address or name of the device
+ * @param port_id Location for the port ID to be determined
+ *
+ * @return @c 0 on success; jumps out on error (negative value)
+ */
+extern int rpc_rte_eth_dev_get_port_by_name(rcf_rpc_server *rpcs,
+                                            const char     *name,
+                                            uint16_t       *port_id);
+
+/**
+ * @b rte_eth_dev_get_name_by_port() RPC
+ *
+ * @param port_id The port identifier of the device
+ * @param name    A buffer storage for the name to be retrieved
+ *
+ * @note It's the user's burden to allocate the buffer
+ *       storage of RPC_RTE_ETH_NAME_MAX_LEN bytes.
+ *
+ * @return @c 0 on success; jumps out on error (negative value)
+ */
+extern int rpc_rte_eth_dev_get_name_by_port(rcf_rpc_server *rpcs,
+                                            uint16_t        port_id,
+                                            char           *name);
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus
