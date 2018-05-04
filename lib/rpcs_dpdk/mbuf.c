@@ -109,7 +109,9 @@ tarpc_rte_pktmbuf_ol_flags2rpc(uint64_t rte)
 
     RTE_PKTMBUF_OL_FLAGS2RPC(IND_ATTACHED_MBUF);
 
+#ifdef CTRL_MBUF_FLAG
     RTE_PKTMBUF_OL_FLAGS2RPC(CTRL_MBUF_FLAG);
+#endif /* CTRL_MBUF_FLAG */
 #undef RTE_PKTMBUF_OL_FLAGS2RPC
 
     if (rte != 0)
@@ -239,7 +241,9 @@ tarpc_rte_pktmbuf_ol_flags2rte(uint64_t rpc, uint64_t *rte)
 
     RTE_PKTMBUF_OL_FLAGS2RTE(IND_ATTACHED_MBUF);
 
+#ifdef CTRL_MBUF_FLAG
     RTE_PKTMBUF_OL_FLAGS2RTE(CTRL_MBUF_FLAG);
+#endif /* CTRL_MBUF_FLAG */
 #undef RTE_PKTMBUF_OL_FLAGS2RTE
 
     if (rpc != 0)
@@ -1064,6 +1068,20 @@ TARPC_FUNC_STANDALONE(rte_pktmbuf_get_rss_hash, {},
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
         m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
         out->retval = m->hash.rss;
+    });
+}
+)
+
+TARPC_FUNC_STANDALONE(rte_pktmbuf_get_fdir_id, {},
+{
+    struct rte_mbuf *m;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
+        if (m->ol_flags & PKT_RX_FDIR_ID)
+            out->retval = m->hash.fdir.hi;
+        else
+            out->retval = UINT32_MAX;
     });
 }
 )

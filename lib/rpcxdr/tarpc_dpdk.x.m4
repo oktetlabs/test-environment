@@ -505,6 +505,14 @@ struct tarpc_rte_pktmbuf_get_rss_hash_out {
     uint32_t                retval;
 };
 
+/** rte_pktmbuf_get_fdir_id() */
+typedef struct tarpc_mbuf_in tarpc_rte_pktmbuf_get_fdir_id_in;
+
+struct tarpc_rte_pktmbuf_get_fdir_id_out {
+    struct tarpc_out_arg    common;
+    uint32_t                retval;
+};
+
 struct tarpc_rte_pktmbuf_tx_offload {
     uint16_t l2_len; 
     uint16_t l3_len; 
@@ -1701,6 +1709,27 @@ typedef struct tarpc_rte_eth_dev_udp_tunnel_port_add_in tarpc_rte_eth_dev_udp_tu
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_udp_tunnel_port_delete_out;
 
+/** rte_eth_dev_get_port_by_name() */
+struct tarpc_rte_eth_dev_get_port_by_name_in {
+    struct tarpc_in_arg common;
+    string              name<>;
+};
+
+struct tarpc_rte_eth_dev_get_port_by_name_out {
+    struct tarpc_out_arg common;
+    uint16_t             port_id;
+    tarpc_int            retval;
+};
+
+/** rte_eth_dev_get_name_by_port() */
+typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_get_name_by_port_in;
+
+struct tarpc_rte_eth_dev_get_name_by_port_out {
+    struct tarpc_out_arg common;
+    string               name<>;
+    tarpc_int            retval;
+};
+
 /**
  * rte_flow API
  */
@@ -1881,6 +1910,7 @@ program dpdk
         RPC_DEF(rte_pktmbuf_get_packet_type)
         RPC_DEF(rte_pktmbuf_set_packet_type)
         RPC_DEF(rte_pktmbuf_get_rss_hash)
+        RPC_DEF(rte_pktmbuf_get_fdir_id)
         RPC_DEF(rte_pktmbuf_get_tx_offload)
         RPC_DEF(rte_pktmbuf_set_tx_offload)
         RPC_DEF(rte_pktmbuf_refcnt_update)
@@ -1960,6 +1990,8 @@ program dpdk
         RPC_DEF(rte_eth_dev_fw_version_get)
         RPC_DEF(rte_eth_dev_udp_tunnel_port_add)
         RPC_DEF(rte_eth_dev_udp_tunnel_port_delete)
+        RPC_DEF(rte_eth_dev_get_port_by_name)
+        RPC_DEF(rte_eth_dev_get_name_by_port)
 
         RPC_DEF(rte_mk_flow_rule_components)
         RPC_DEF(rte_free_flow_rule)
