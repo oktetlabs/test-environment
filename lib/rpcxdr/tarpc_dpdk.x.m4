@@ -505,6 +505,14 @@ struct tarpc_rte_pktmbuf_get_rss_hash_out {
     uint32_t                retval;
 };
 
+/** rte_pktmbuf_get_fdir_id() */
+typedef struct tarpc_mbuf_in tarpc_rte_pktmbuf_get_fdir_id_in;
+
+struct tarpc_rte_pktmbuf_get_fdir_id_out {
+    struct tarpc_out_arg    common;
+    uint32_t                retval;
+};
+
 struct tarpc_rte_pktmbuf_tx_offload {
     uint16_t l2_len; 
     uint16_t l3_len; 
@@ -1902,6 +1910,7 @@ program dpdk
         RPC_DEF(rte_pktmbuf_get_packet_type)
         RPC_DEF(rte_pktmbuf_set_packet_type)
         RPC_DEF(rte_pktmbuf_get_rss_hash)
+        RPC_DEF(rte_pktmbuf_get_fdir_id)
         RPC_DEF(rte_pktmbuf_get_tx_offload)
         RPC_DEF(rte_pktmbuf_set_tx_offload)
         RPC_DEF(rte_pktmbuf_refcnt_update)

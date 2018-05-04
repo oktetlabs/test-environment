@@ -1094,6 +1094,33 @@ rpc_rte_pktmbuf_get_rss_hash(rcf_rpc_server *rpcs,
     return (out.retval);
 }
 
+uint32_t
+rpc_rte_pktmbuf_get_fdir_id(rcf_rpc_server *rpcs,
+                            rpc_rte_mbuf_p m)
+{
+    tarpc_rte_pktmbuf_get_fdir_id_in   in;
+    tarpc_rte_pktmbuf_get_fdir_id_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.m = (tarpc_rte_mbuf)m;
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_get_fdir_id", &in, &out);
+
+    if (out.retval == UINT32_MAX)
+        TEST_FAIL("%s(): PKT_RX_FDIR_ID must be in offload flags", __func__);
+
+    CHECK_RETVAL_VAR(rte_pktmbuf_get_fdir_id, out.retval, FALSE, UINT32_MAX);
+
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_fdir_id, RPC_PTR_FMT, "0x%08x",
+                 RPC_PTR_VAL(in.m), out.retval);
+
+    TAPI_RPC_OUT(rte_pktmbuf_get_fdir_id, out.retval == UINT32_MAX);
+
+    return (out.retval);
+}
+
 void
 rpc_rte_pktmbuf_get_tx_offload(rcf_rpc_server *rpcs,
                                rpc_rte_mbuf_p m,
