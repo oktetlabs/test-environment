@@ -1792,6 +1792,59 @@ rte_flow_action_drop_from_pdu(__rte_unused const asn_value *conf_pdu,
 }
 
 static te_errno
+rte_flow_action_flag_from_pdu(__rte_unused const asn_value *conf_pdu,
+                              struct rte_flow_action *action)
+{
+    if (action == NULL)
+        return TE_EINVAL;
+
+    action->type = RTE_FLOW_ACTION_TYPE_FLAG;
+    return 0;
+}
+
+static te_errno
+rte_flow_action_mark_from_pdu(const asn_value *conf_pdu,
+                              struct rte_flow_action *action)
+{
+    struct rte_flow_action_mark    *conf = NULL;
+    asn_tag_value                   tag;
+    size_t                          len;
+    int                             rc;
+    uint32_t                        val;
+
+    if (action == NULL)
+        return TE_EINVAL;
+
+    action->type = RTE_FLOW_ACTION_TYPE_MARK;
+
+    if (conf_pdu == NULL)
+        return 0;
+
+    rc = asn_get_choice_value(conf_pdu, NULL, NULL, &tag);
+    if (rc != 0)
+        return rc;
+    else if (tag != NDN_FLOW_ACTION_MARK_ID)
+        return TE_EINVAL;
+
+    conf = calloc(1, sizeof(*conf));
+    if (conf == NULL)
+        return TE_ENOMEM;
+
+    len = sizeof(conf->id);
+    rc = asn_read_value_field(conf_pdu, &val, &len, "#id");
+    if (rc != 0)
+    {
+        free(conf);
+        return rc;
+    }
+
+    conf->id = val;
+    action->conf = conf;
+
+    return 0;
+}
+
+static te_errno
 rte_flow_action_end(struct rte_flow_action *action)
 {
     if (action == NULL)
@@ -1826,6 +1879,8 @@ static const struct rte_flow_action_types_mapping {
     { NDN_FLOW_ACTION_TYPE_QUEUE,   rte_flow_action_queue_from_pdu },
     { NDN_FLOW_ACTION_TYPE_VOID,    rte_flow_action_void },
     { NDN_FLOW_ACTION_TYPE_DROP,    rte_flow_action_drop_from_pdu },
+    { NDN_FLOW_ACTION_TYPE_FLAG,    rte_flow_action_flag_from_pdu },
+    { NDN_FLOW_ACTION_TYPE_MARK,    rte_flow_action_mark_from_pdu },
 };
 
 static te_errno

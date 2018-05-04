@@ -363,6 +363,16 @@ extern int rpc_rte_pktmbuf_set_packet_type(rcf_rpc_server *rpcs,
 extern uint32_t rpc_rte_pktmbuf_get_rss_hash(rcf_rpc_server *rpcs,
                                              rpc_rte_mbuf_p m);
 
+/**
+ * Get FDIR ID, if PKT_RX_FDIR_ID is in offload flags
+ *
+ * @param m               RTE mbuf pointer
+ *
+ * @return FDIR ID for the particular mbuf
+ */
+extern uint32_t rpc_rte_pktmbuf_get_fdir_id(rcf_rpc_server *rpcs,
+                                            rpc_rte_mbuf_p m);
+
 /** Get parameters needed by TX offload to work
  *
  * @param m               RTE mbuf pointer

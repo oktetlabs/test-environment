@@ -42,6 +42,8 @@ typedef enum {
     NDN_FLOW_ACTION_TYPE_QUEUE,
     NDN_FLOW_ACTION_TYPE_RSS,
     NDN_FLOW_ACTION_TYPE_DROP,
+    NDN_FLOW_ACTION_TYPE_FLAG,
+    NDN_FLOW_ACTION_TYPE_MARK,
 } ndn_rte_flow_action_type_t;
 
 typedef enum {
@@ -81,6 +83,7 @@ typedef enum {
     NDN_FLOW_ACTION_TYPE,
     NDN_FLOW_ACTION_CONF,
     NDN_FLOW_ACTION_QID,
+    NDN_FLOW_ACTION_MARK_ID,
 } ndn_rte_flow_action_t;
 
 typedef enum {
