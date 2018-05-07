@@ -1273,4 +1273,10 @@
       <depends oid="/agent/rlimits/nofile/cur"/>
     </object>
 
+    <!-- Block devices list.
+         Name: Name of the block device -->
+    <object oid="/agent/block" access="read_only" type="none">
+      <depends oid="/agent/rsrc"/>
+    </object>
+
 </backup>

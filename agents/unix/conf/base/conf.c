@@ -267,6 +267,7 @@ extern te_errno ta_unix_conf_macvlan_init();
 extern te_errno ta_unix_conf_module_init(void);
 extern te_errno ta_unix_conf_ns_net_init(void);
 extern te_errno ta_unix_conf_veth_init(void);
+extern te_errno ta_unix_conf_block_dev_init(void);
 
 #ifdef WITH_OPENVPN
 extern te_errno ta_unix_conf_openvpn_init(void);
@@ -1284,6 +1285,12 @@ rcf_ch_conf_init()
             goto fail;
         }
 #endif /* WITH_OPENVPN */
+
+        if (ta_unix_conf_block_dev_init() != 0)
+        {
+            ERROR("Failed to add block devices subtree");
+            goto fail;
+        }
 
         init = TRUE;
 
