@@ -25,6 +25,7 @@
 #include <sys/socket.h>
 #endif
 
+#include "te_defs.h"
 #include "rcf_rpc.h"
 #include "te_rpc_sys_socket.h"
 #include "te_rpc_types.h"
