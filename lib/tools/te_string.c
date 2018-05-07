@@ -127,6 +127,31 @@ te_string_append_va(te_string *str, const char *fmt, va_list ap)
     return 0;
 }
 
+char *
+te_string_fmt_va(const char *fmt,
+                 va_list     ap)
+{
+    te_string str = TE_STRING_INIT;
+
+    te_string_append_va(&str, fmt, ap);
+
+    return str.ptr;
+}
+
+char *
+te_string_fmt(const char *fmt, ...)
+{
+    va_list  ap;
+    char *result;
+
+    va_start(ap, fmt);
+    result = te_string_fmt_va(fmt, ap);
+    va_end(ap);
+
+    return result;
+}
+
+
 void
 te_string_cut(te_string *str, size_t len)
 {

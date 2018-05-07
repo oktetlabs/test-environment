@@ -93,6 +93,28 @@ extern te_errno te_string_append_va(te_string  *str,
                                     va_list     ap);
 
 /**
+ * Return a char * that is a result of sprintf into allocated memory.
+ *
+ * @param fmt       Format string
+ * @param ap        List of arguments
+ *
+ * @return string on which you can call free(), but it will still leak some
+ * bytes.
+ */
+extern char *te_string_fmt_va(const char *fmt,
+                              va_list     ap);
+/**
+ * Return a char * that is a result of sprintf into allocated memory.
+ *
+ * @param fmt       Format string
+ * @param ...       Format string arguments
+ *
+ * @return string on which you can call free().
+ */
+extern char *te_string_fmt(const char *fmt,
+                           ...) __attribute__((format(printf, 1, 2)));
+
+/**
  * Cut from the string specified number of characters.
  *
  * @param str           TE string
