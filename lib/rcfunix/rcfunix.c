@@ -477,8 +477,10 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         char *key = token + strlen("key=");
         
         if (strlen(key) > 0)
-            sprintf(ta->key, "-i %s", key); 
-        
+            sprintf(ta->key, "-i %s %s", key,
+                    " -o UserKnownHostsFile=/dev/null "
+                    "-o StrictHostKeyChecking=no");
+
         GET_TOKEN;
     }
     if (token != NULL && strcmp_start("copy_timeout=", token) == 0)
