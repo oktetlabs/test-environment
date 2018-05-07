@@ -1,12 +1,9 @@
 /** @file
  * retrieve TCE data for gcc < 3.4
  *
- * Copyright (C) 2003-2018 OKTET Labs.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
- *
- * $Id$
- *
  */
 
 /* This file is based on a libgcc2.[ch] files that are part of the GCC 3.3 */

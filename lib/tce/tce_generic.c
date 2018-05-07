@@ -1,12 +1,9 @@
 /** @file
  * Generic part of TCE retrieval procedures
  *
- * Copyright (C) 2003-2018 OKTET Labs.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
- *
- * $Id$
- *
  */
 
 #include "te_config.h"
