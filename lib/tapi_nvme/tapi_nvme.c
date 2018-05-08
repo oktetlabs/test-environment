@@ -27,9 +27,9 @@
 #define BASE_NVME_FABRICS   "/sys/class/nvme-fabrics/ctl"
 #define ENABLE              "1"
 
-#define PORT_SIZE           (6)
-#define DIRECTORY_SIZE      (32)
-#define SUBNQN_SIZE         (256)
+#define PORT_SIZE           NAME_MAX
+#define DIRECTORY_SIZE      NAME_MAX
+#define SUBNQN_SIZE         NAME_MAX
 #define NAMESPACE_SIZE      (32)
 #define MAX_NAMESPACES      (32)
 #define MAX_ADMIN_DEVICES   (32)
