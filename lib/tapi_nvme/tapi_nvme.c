@@ -44,7 +44,6 @@ run_command_generic(rcf_rpc_server *rpcs, te_string *str_stdout,
     int fd_stdout;
     int fd_stderr;
     rpc_wait_status status;
-    rpc_waitpid_opts opts;
 
     pid = rpc_te_shell_cmd(rpcs, command, (tarpc_uid_t) -1, NULL,
                            &fd_stdout, &fd_stderr);
