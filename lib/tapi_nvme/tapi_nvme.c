@@ -36,6 +36,8 @@
 #define TRANPORT_SIZE       (16)
 #define ADDRESS_INFO_SIZE   (128)
 
+#define DEVICE_WAIT_ATTEMPTS (5)
+
 static int
 run_command_generic(rcf_rpc_server *rpcs, te_string *str_stdout,
                     te_string *str_stderr, const char *command)
@@ -143,12 +145,15 @@ read_file(rcf_rpc_server *rpcs, const char *path, char *buffer, size_t size)
 
 
     RPC_AWAIT_IUT_ERROR(rpcs);
-    if (rpc_read(rpcs, fd, buffer, size) == -1) {
+    if (rpc_read(rpcs, fd, buffer, size) == -1)
+    {
         ERROR("Cannot read file %s", path);
         RPC_AWAIT_IUT_ERROR(rpcs);
         rpc_close(rpcs, fd);
         return -1;
-    } else {
+    }
+    else
+    {
         strtok(buffer, "\n");
 
         RPC_AWAIT_IUT_ERROR(rpcs);
@@ -224,12 +229,14 @@ read_nvme_fabric_info_addr(rcf_rpc_server *rpcs,
     unsigned short port;
     char address[INET_ADDRSTRLEN];
 
-    if (read_file(rpcs, filepath, buffer, TE_ARRAY_LEN(buffer))) {
+    if (read_file(rpcs, filepath, buffer, TE_ARRAY_LEN(buffer)))
+    {
         ERROR("Cannot read address info");
         return READ_ERROR;
     }
 
-    if (parse_address(buffer, address, &port) != 0) {
+    if (parse_address(buffer, address, &port) != 0)
+    {
         ERROR("Cannot parse address info");
         return READ_ERROR;
     }
@@ -238,7 +245,7 @@ read_nvme_fabric_info_addr(rcf_rpc_server *rpcs,
     info->addr.sin_family = AF_INET;
     info->addr.sin_addr.s_addr = inet_addr(address);
     info->addr.sin_port = htons(port);
-    
+
     return READ_SUCCESS;
 }
 
@@ -258,13 +265,16 @@ read_nvme_fabric_info_transport(rcf_rpc_server *rpcs,
         TAPI_NVME_TRANSPORT_MAPPING_LIST
     };
 
-    if (read_file(rpcs, filepath, buffer, TE_ARRAY_LEN(buffer)) != 0) {
+    if (read_file(rpcs, filepath, buffer, TE_ARRAY_LEN(buffer)) != 0)
+    {
         ERROR("Cannot read transport");
         return READ_ERROR;
     }
 
-    for (i = 0; i < TE_ARRAY_LEN(map); i++) {
-        if (strncmp(map[i].string, buffer, strlen(map[i].string)) == 0) {
+    for (i = 0; i < TE_ARRAY_LEN(map); i++)
+    {
+        if (strncmp(map[i].string, buffer, strlen(map[i].string)) == 0)
+        {
             info->transport = map[i].transport;
             return READ_SUCCESS;
         }
@@ -280,7 +290,8 @@ read_nvme_fabric_info_subnqn(rcf_rpc_server *rpcs,
                              const char *filepath)
 {
     if (read_file(rpcs, filepath, info->subnqn,
-                  TE_ARRAY_LEN(info->subnqn)) == -1) {
+                  TE_ARRAY_LEN(info->subnqn)) == -1)
+    {
         ERROR("Cannot read subnqn");
         return READ_ERROR;
     }
@@ -308,7 +319,8 @@ read_nvme_fabric_info(rcf_rpc_server *rpcs,
         { read_nvme_fabric_info_transport, "transport" }
     };
 
-    for (i = 0; i < TE_ARRAY_LEN(actions); i++) {
+    for (i = 0; i < TE_ARRAY_LEN(actions); i++)
+    {
         sprintf(path, "%s/%s/%s", BASE_NVME_FABRICS,
                 admin_dev, actions[i].file);
         if ((rc = actions[i].function(rpcs, info, path)) != READ_SUCCESS)
@@ -349,11 +361,11 @@ is_target_eq(const tapi_nvme_target *target, const nvme_fabric_info *info)
 
     debug_target_print(target);
     debug_fabric_info_print(info);
-    
+
     transport_eq = target->transport == info->transport;
     subnqn_eq = strcmp(target->subnqn, info->subnqn) == 0;
     addr_eq = addr2->sin_addr.s_addr == addr1->sin_addr.s_addr;
-    
+
     return transport_eq && subnqn_eq && addr_eq;
 }
 
@@ -374,14 +386,16 @@ get_new_device(const tapi_nvme_host_ctrl *host_ctrl,
     if (count < 0)
         return NULL;
 
-    for (i = 0; i < count; i++) {
+    for (i = 0; i < count; i++)
+    {
         rc = read_nvme_fabric_info(host_ctrl->rpcs, &info, names[i].name);
         if (rc == READ_ERROR)
             return NULL;
         else if (rc == READ_CONTINUE)
             continue;
 
-        if (is_target_eq(target, &info) == TRUE) {
+        if (is_target_eq(target, &info) == TRUE)
+        {
             device = tapi_malloc(256);
             sprintf(device, "/dev/%s", info.namespace);
             break;
@@ -424,24 +438,26 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
                             tapi_nvme_transport_str(target->transport),
                             target->subnqn);
 
-    if (rc == 0) {
+    if (rc == 0)
+    {
         host_ctrl->connected_target = target;
         RING("Success connection to target");
-    } else {
-        RING("stdout:\n%s\nstderr:\n%s", str_stdout.ptr, str_stderr.ptr);
     }
+        RING("stdout:\n%s\nstderr:\n%s", str_stdout.ptr, str_stderr.ptr);
 
 
     (void)tapi_nvme_initiator_list(host_ctrl);
 
-    for (i = 0; i < 5; i++) {
+    for (i = 0; i < DEVICE_WAIT_ATTEMPTS; i++)
+    {
         host_ctrl->device = get_new_device(host_ctrl, target);
         if (host_ctrl->device != NULL)
             break;
         te_motivated_sleep(1, "Waiting device...");
     }
 
-    if (host_ctrl->device == NULL) {
+    if (host_ctrl->device == NULL)
+    {
         ERROR("Connected device not found");
         return TE_ENOENT;
     }
@@ -520,7 +536,8 @@ strrep(const char *source, const char *template,
     const char *found = NULL;
     char *current = result;
 
-    while ((found = strstr(start, template)) != NULL) {
+    while ((found = strstr(start, template)) != NULL)
+    {
         strncpy(current, start, found - start);
         current += found - start;
         strcpy(current, replace);
@@ -571,7 +588,8 @@ create_directories(rcf_rpc_server *rpcs, tapi_nvme_subnqn nqn, int nvmet_port)
         "%s/ports/{port}",
     };
 
-    for (i = 0; i < TE_ARRAY_LEN(directories); i++) {
+    for (i = 0; i < TE_ARRAY_LEN(directories); i++)
+    {
         replace_port(directories[i], nvmet_port, buffer);
         snprintf(path, sizeof(path), buffer, BASE_NVMET_CONFIG, nqn);
         if (try_mkdir(rpcs, path) == FALSE)
@@ -592,6 +610,7 @@ tapi_nvme_transport_str(tapi_nvme_transport transport) {
         [TAPI_NVME_TRANSPORT_RDMA] = "rdma",
         [TAPI_NVME_TRANSPORT_TCP] = "tcp",
     };
+
     if (transport < 0 || transport > TE_ARRAY_LEN(transports))
         return NULL;
     return transports[transport];
@@ -620,7 +639,8 @@ write_config(rcf_rpc_server *rpcs, tapi_nvme_transport transport,
 
     snprintf(port, sizeof(port), "%u", te_sockaddr_get_port(addr));
 
-    for (i = 0; i < TE_ARRAY_LEN(configs); i++) {
+    for (i = 0; i < TE_ARRAY_LEN(configs); i++)
+    {
         replace_port(configs[i].prefix, nvmet_port, buffer);
         snprintf(path, sizeof(path), buffer, BASE_NVMET_CONFIG, nqn);
         if ((rc = file_append(rpcs, path, configs[i].value)) != 0)
@@ -680,7 +700,8 @@ is_dir_exist(rcf_rpc_server *rpcs, const char *path)
     rpc_dir_p dir;
 
     RPC_AWAIT_IUT_ERROR(rpcs);
-    if ((dir = rpc_opendir(rpcs, path)) != 0) {
+    if ((dir = rpc_opendir(rpcs, path)) != 0)
+    {
         RPC_AWAIT_IUT_ERROR(rpcs);
         rpc_closedir(rpcs, dir);
         return TRUE;
@@ -692,9 +713,9 @@ is_dir_exist(rcf_rpc_server *rpcs, const char *path)
 static te_bool
 try_rmdir(rcf_rpc_server *rpcs, const char *path)
 {
-    if (!is_dir_exist(rpcs, path)) {
+    if (!is_dir_exist(rpcs, path))
         return FALSE;
-    }
+
 
     RPC_AWAIT_IUT_ERROR(rpcs);
     return rpc_rmdir(rpcs, path) == 0;
@@ -725,12 +746,14 @@ tapi_nvme_target_cleanup(tapi_nvme_target *target)
              BASE_NVMET_CONFIG, target->nvmet_port, target->subnqn);
 
     RPC_AWAIT_IUT_ERROR(target->rpcs);
-    if (rpc_access(target->rpcs, path, RPC_F_OK) == 0) {
+    if (rpc_access(target->rpcs, path, RPC_F_OK) == 0)
+    {
         RPC_AWAIT_IUT_ERROR(target->rpcs);
         rpc_unlink(target->rpcs, path);
     }
 
-    for (i = 0; i < TE_ARRAY_LEN(directories); i++) {
+    for (i = 0; i < TE_ARRAY_LEN(directories); i++)
+    {
         replace_port(directories[i], target->nvmet_port, buffer);
         snprintf(path, sizeof(path), buffer, BASE_NVMET_CONFIG, target->subnqn);
         try_rmdir(target->rpcs, path);
