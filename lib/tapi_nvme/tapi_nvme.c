@@ -63,10 +63,11 @@ run_command_generic(rcf_rpc_server *rpcs, te_string *str_stdout,
     if (str_stderr != NULL)
         rpc_read_fd2te_string(rpcs, fd_stderr, 100, 0, str_stderr);
 
-    if (status.flag == RPC_WAIT_STATUS_EXITED)
-        return status.value;
+    if (status.flag != RPC_WAIT_STATUS_EXITED)
+        TEST_FAIL("Process is %s", wait_status_flag_rpc2str(status.flag));
 
-    TEST_FAIL("Process is %s", wait_status_flag_rpc2str(status.flag));
+
+    return status.value;
 }
 
 static int
