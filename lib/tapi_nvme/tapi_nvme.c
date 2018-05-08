@@ -113,7 +113,7 @@ filter_directory(rcf_rpc_server *rpcs,
     rpc_dirent *dirent = NULL;
 
     RPC_AWAIT_IUT_ERROR(rpcs);
-    if ((dir = rpc_opendir(rpcs, path)) == NULL)
+    if ((dir = rpc_opendir(rpcs, path)) == RPC_NULL)
         return -1;
 
     while (count < count_names) {
