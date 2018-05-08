@@ -94,6 +94,8 @@ extern te_errno tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
  */
 extern void tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl);
 
+extern te_errno tapi_nvme_initiator_list(tapi_nvme_host_ctrl *host_ctrl);
+
 /**
  * Prepare target for accept connection
  *

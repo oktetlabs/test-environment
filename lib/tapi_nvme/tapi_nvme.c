@@ -431,13 +431,8 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
         RING("stdout:\n%s\nstderr:\n%s", str_stdout.ptr, str_stderr.ptr);
     }
 
-    rc = run_command_output(host_ctrl->rpcs, &str_stdout, &str_stderr,
-                            "nvme list");
 
-    if (rc == 0)
-        RING("stdout:\n%s\nstderr:\n%s", str_stdout.ptr, str_stderr.ptr);
-    else
-        RING("nvme list failed");
+    (void)tapi_nvme_initiator_list(host_ctrl);
 
     for (i = 0; i < 5; i++) {
         host_ctrl->device = get_new_device(host_ctrl, target);
@@ -453,6 +448,23 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
 
     return 0;
 }
+
+te_errno tapi_nvme_initiator_list(tapi_nvme_host_ctrl *host_ctrl)
+{
+    int rc;
+    te_string str_stdout = TE_STRING_INIT;
+    te_string str_stderr = TE_STRING_INIT;
+
+    rc = run_command_output(host_ctrl->rpcs, &str_stdout, &str_stderr,
+                            "nvme list");
+    if (rc != 0)
+        WARN("stderr: \n%s", str_stderr.ptr);
+    else
+        RING("stdout:\n%s\nstderr:\n%s", str_stdout.ptr, str_stderr.ptr);
+
+    return rc == 0 ? 0 : TE_EFAULT;
+}
+
 
 /* See description in tapi_nvme.h */
 void
