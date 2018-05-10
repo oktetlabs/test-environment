@@ -1,12 +1,9 @@
 /** @file
  * TCE-related internal stuff
  *
- * Copyright (C) 2003-2018 OKTET Labs.
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
- *
- * $Id$
- *
  */
 
 #ifndef __TE_TCE_INTERNAL_H__

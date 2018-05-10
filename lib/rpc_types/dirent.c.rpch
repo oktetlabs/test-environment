@@ -2,13 +2,10 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from dirent.h.
- * 
- * 
- * Copyright (C) 2003-2018 OKTET Labs.
+ *
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
- *
- * $Id$
  */
 
 #define TE_LGR_USER     "RPC types"

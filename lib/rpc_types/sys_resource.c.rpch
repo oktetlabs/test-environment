@@ -2,13 +2,10 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from sys/resource.h.
- * 
- * 
- * Copyright (C) 2003-2018 OKTET Labs.
+ *
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * @author Alexander Kukuta <Alexander.Kukuta@oktetlabs.ru>
- *
- * $Id$
  */
 
 #include "te_config.h"
