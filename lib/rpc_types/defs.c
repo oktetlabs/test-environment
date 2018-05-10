@@ -2,16 +2,10 @@
  * @brief RPC types definitions
  *
  * Macros to be used for all RPC types definitions.
- * 
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
- *
- *
  * @author Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
- *
- * $Id$
  */
 
 #include "te_config.h"

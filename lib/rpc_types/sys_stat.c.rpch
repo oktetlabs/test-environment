@@ -2,13 +2,10 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from sys/stat.h.
- * 
- * 
- * Copyright (C) 2003-2018 OKTET Labs.
+ *
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
- *
- * $Id$
  */
 
 #include "te_config.h"
