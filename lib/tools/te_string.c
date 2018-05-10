@@ -104,15 +104,17 @@ te_string_append_va(te_string *str, const char *fmt, va_list ap)
             }
             else
             {
+                char *new_ptr;
                 /* We are going to extend buffer */
                 rest = printed + 1 /* '\0' */ + TE_STRING_EXTRA_LEN;
-                str->size = str->len + rest;
-                str->ptr = realloc(str->ptr, str->size);
-                if (str->ptr == NULL)
+                new_ptr = realloc(str->ptr, str->size + rest);
+                if (new_ptr == NULL)
                 {
                     ERROR("%s(): Memory allocation failure", __FUNCTION__);
                     return TE_ENOMEM;
                 }
+                str->size = str->len + rest;
+                str->ptr = new_ptr;
                 /* Print again */
                 again = TRUE;
             }
