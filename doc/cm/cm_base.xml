@@ -204,8 +204,10 @@
 
     <!-- Network interface VLANs
          Name: integer number, VLAN id 
-         Limit:  depends on Test Agent -->
-    <object oid="/agent/interface/vlans" access="read_create" type="none"/>
+         Limit:  depends on Test Agent
+         Value: interface name (used only on creation; if empty,
+                "[parent_if].[vlan_id]" will be used) -->
+    <object oid="/agent/interface/vlans" access="read_create" type="string"/>
 
     <!-- Network interface VLANs
          Name: VLAN id 

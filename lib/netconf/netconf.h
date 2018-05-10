@@ -176,6 +176,14 @@ typedef struct netconf_macvlan {
     char       *ifname;    /**< Interface name */
 } netconf_macvlan;
 
+/** VLAN network interface */
+typedef struct netconf_vlan {
+    int         link;      /**< Parent (link) interface index */
+    int         ifindex;   /**< VLAN interface index */
+    char       *ifname;    /**< Interface name */
+    uint32_t    vid;       /**< VLAN ID */
+} netconf_vlan;
+
 /** Virtual Ethernet network interface */
 typedef struct netconf_veth {
     char   *ifname;     /**< Interface name */
@@ -192,6 +200,7 @@ typedef enum netconf_node_type {
     NETCONF_NODE_RULE,                  /**< Rule entry in the routing
                                              policy database */
     NETCONF_NODE_MACVLAN,               /**< MAC VLAN interface */
+    NETCONF_NODE_VLAN,                  /**< VLAN interface */
     NETCONF_NODE_VETH,                  /**< Virtual Ethernet interface */
 } netconf_node_type;
 
@@ -207,6 +216,7 @@ typedef struct netconf_node {
         netconf_neigh     neigh;
         netconf_rule      rule;
         netconf_macvlan   macvlan;
+        netconf_vlan      vlan;
         netconf_veth      veth;
     } data;                             /**< Network data */
     struct netconf_node  *next;         /**< Next node of the list */
@@ -505,6 +515,49 @@ extern te_errno netconf_macvlan_list(netconf_handle nh, const char *link,
 extern te_errno netconf_macvlan_get_mode(netconf_handle nh,
                                          const char *ifname,
                                          const char **mode_str);
+
+/**
+ * Add or delete VLAN interface.
+ *
+ * @param nh        Netconf session handle
+ * @param cmd       Action to do
+ * @param link      Link (main) interface name
+ * @param ifname    VLAN interface name (may be NULL or empty)
+ * @param vid       VLAN ID
+ *
+ * @return Status code
+ */
+extern te_errno netconf_vlan_modify(netconf_handle nh, netconf_cmd cmd,
+                                    const char *link,
+                                    const char *ifname,
+                                    unsigned int vid);
+
+/**
+ * Get VLAN interfaces list on @p link.
+ *
+ * @param nh        Netconf session handle
+ * @param link      Link (main) interface name
+ * @param list      Space separated list of VLAN interfaces IDs
+ *
+ * @return Status code
+ */
+extern te_errno netconf_vlan_list(netconf_handle nh, const char *link,
+                                  char **list);
+
+/**
+ * Get name of a VLAN interface by its VLAN ID.
+ *
+ * @param nh        Netconf session handle
+ * @param link      Link (main) interface name
+ * @param vid       VLAN ID
+ * @param ifname    Where to save VLAN interface name
+ * @param len       Length of @p ifname buffer.
+ *
+ * @return Status code
+ */
+extern te_errno netconf_vlan_get_ifname(netconf_handle nh, const char *link,
+                                        unsigned int vid,
+                                        char *ifname, size_t len);
 
 /**
  * Add new veth interface.
