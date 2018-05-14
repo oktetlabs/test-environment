@@ -673,6 +673,21 @@ extern struct sockaddr **tapi_env_add_addresses(rcf_rpc_server *rpcs,
                                            const struct if_nameindex *iface,
                                            int addr_num);
 
+typedef void tapi_env_foreach_if_fn(tapi_env_if *iface, void *opaque);
+
+/**
+ * Run over all interfaces mentioned in the environment and run a
+ * given function for each one.
+ *
+ * Hook can call TEST_FAIL() if things go wrong.
+ *
+ * @param env         Environment
+ * @param fn          Hook pointer
+ * @param opaque      Hook-defined opaque
+ */
+extern void tapi_env_foreach_if(tapi_env *env, tapi_env_foreach_if_fn *fn,
+                                void *opaque);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
