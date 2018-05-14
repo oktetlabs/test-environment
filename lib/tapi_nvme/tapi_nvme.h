@@ -96,6 +96,18 @@ extern void tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl);
 
 extern te_errno tapi_nvme_initiator_list(tapi_nvme_host_ctrl *host_ctrl);
 
+static inline void tapi_nvme_initiator_init(tapi_nvme_host_ctrl *host_ctrl)
+{
+    assert(host_ctrl);
+    *host_ctrl = TAPI_NVME_HOST_CTRL_DEFAULTS;
+}
+
+static inline void tapi_nvme_target_init(tapi_nvme_target *target)
+{
+    assert(target);
+    *target = TAPI_NVME_TARGET_DEFAULTS;
+}
+
 /**
  * Prepare target for accept connection
  *
