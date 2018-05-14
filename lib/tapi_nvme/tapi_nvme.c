@@ -49,6 +49,8 @@ run_command_generic(rcf_rpc_server *rpcs, te_string *str_stdout,
     int fd_stderr;
     rpc_wait_status status;
 
+    te_log_stack_push("Running remove cmd: '%s'", command);
+
     pid = rpc_te_shell_cmd(rpcs, command, (tarpc_uid_t) -1, NULL,
                            &fd_stdout, &fd_stderr);
 
@@ -590,6 +592,9 @@ create_directories(rcf_rpc_server *rpcs, tapi_nvme_subnqn nqn, int nvmet_port)
         "%s/ports/{port}",
     };
 
+    te_log_stack_push("Create target directories for nqn=%s port=%d",
+                      nqn, nvmet_port);
+
     for (i = 0; i < TE_ARRAY_LEN(directories); i++)
     {
         replace_port(directories[i], nvmet_port, buffer);
@@ -639,6 +644,9 @@ write_config(rcf_rpc_server *rpcs, tapi_nvme_transport transport,
         { "%s/ports/{port}/addr_traddr", te_sockaddr_get_ipstr(addr) }
     };
 
+    te_log_stack_push("Writing target config for device=%s port=%d",
+                      device, nvmet_port);
+
     snprintf(port, sizeof(port), "%u", te_sockaddr_get_port(addr));
 
     for (i = 0; i < TE_ARRAY_LEN(configs); i++)
@@ -674,12 +682,16 @@ tapi_nvme_target_setup(tapi_nvme_target *target)
 {
     te_errno rc;
 
-    if (target == NULL ||
-        target->rpcs == NULL ||
+    assert(target);
+    if (target->rpcs == NULL ||
         target->addr == NULL ||
         target->subnqn == NULL ||
         target->addr->sa_family != AF_INET)
+    {
+        ERROR("Target can't be setup: rpcs=%p addr=%p subnqn=%s",
+              target->rpcs, target->addr, target->subnqn);
         return TE_EINVAL;
+    }
 
     tapi_nvme_target_cleanup(target);
 
@@ -742,7 +754,7 @@ tapi_nvme_target_cleanup(tapi_nvme_target *target)
         target->subnqn == NULL)
         return;
 
-    RING("Target cleanup start");
+    te_log_stack_push("Target cleanup start");
 
     snprintf(path, sizeof(path), "%s/ports/%d/subsystems/%s",
              BASE_NVMET_CONFIG, target->nvmet_port, target->subnqn);
@@ -760,8 +772,6 @@ tapi_nvme_target_cleanup(tapi_nvme_target *target)
         snprintf(path, sizeof(path), buffer, BASE_NVMET_CONFIG, target->subnqn);
         try_rmdir(target->rpcs, path);
     }
-
-    RING("Target cleanup end");
 }
 
 /* See description in tapi_nvme.h */
