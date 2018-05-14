@@ -63,6 +63,59 @@ extern "C" {
 #define TAPI_READ_BUF_SIZE 4096
 
 /**
+ * Pattern generator type
+ */
+typedef enum tapi_pat_gen_type {
+    TARPC_PATTERN_GEN_SEQ,  /**< Sequence generator, see
+                                 @ref fill_buff_with_sequence(). */
+    TARPC_PATTERN_GEN_LCG   /**< LCG generator, see
+                                 @ref RPC_PATTERN_GEN_LCG */
+} tapi_pat_gen_type;
+
+/**
+ * Structure describing random value generation.
+ */
+typedef struct tapi_rand_gen {
+    int min;                /**< Minimum value */
+    int max;                /**< Maximum value */
+    tarpc_bool once;        /**< If true, random value is calculated
+                                 only once and used for all messages;
+                                 if false, random value is calculated
+                                 for each message. */
+} tapi_rand_gen;
+
+/**
+ * Pattern sender settings
+ */
+typedef struct tapi_pat_sender {
+    tapi_pat_gen_type   gen;            /**< Pattern generator type*/
+    tarpc_pat_gen_arg   gen_arg;        /**< Pattern generator arguments*/
+    iomux_func          iomux;          /**< Iomux function to be used */
+    tapi_rand_gen       size;           /**< Size of the message*/
+    tapi_rand_gen       delay;          /**< Delay between message*/
+    int                 duration_sec;   /**< How long to run (in seconds)*/
+    tarpc_bool          ignore_err;     /**< Ignore errors while run */
+    /* out */
+    uint64_t           *sent;           /**< Number of sent bytes */
+    te_bool             send_failed;    /**< TRUE if @b send() call
+                                             was failed */
+} tapi_pat_sender;
+
+/**
+ * Pattern receiver settings
+ */
+typedef struct tapi_pat_receiver {
+    tapi_pat_gen_type   gen;            /**< Pattern generator type*/
+    tarpc_pat_gen_arg   gen_arg;        /**< Pattern generator arguments*/
+    iomux_func          iomux;          /**< Iomux function to be used */
+    int                 duration_sec;   /**< How long to run (in seconds)*/
+    /* out */
+    uint64_t           *received;       /**< Number of received bytes */
+    te_bool             recv_failed;    /**< TRUE if @b recv() call
+                                             was failed */
+} tapi_pat_receiver;
+
+/**
  * Try to search a given symbol in the current library used by
  * a given PCO with help of @b tarpc_find_func().
  *
@@ -269,6 +322,34 @@ extern int rpc_simple_sender(rcf_rpc_server *handle,
 extern int rpc_simple_receiver(rcf_rpc_server *handle,
                                int s, uint32_t time2run,
                                uint64_t *received);
+
+/**
+ * Function is a wrapper over rpc_pattern_sender().
+ *
+ * @param rpcs              RPC server
+ * @param s                 Socket for sending data
+ * @param sender            Pointer to @ref tapi_pat_sender structure
+ *                          describing pattern sender settings
+ *
+ * @return Number of sent bytes or -1 in the case of failure
+ */
+extern int tapi_rpc_sender(rcf_rpc_server *rpcs, int s,
+                           tapi_pat_sender *sender);
+
+/**
+ * Function is a wrapper over rpc_pattern_receiver().
+ *
+ * @param rpcs              RPC server
+ * @param s                 Socket for receiving data
+ * @param receiver          Pointer to @ref tapi_pat_receiver structure
+ *                          describing pattern receiver settings
+ *
+ * @return Number of received bytes, -2 if data doesn't match the pattern,
+ *         or -1 in the case of another failure
+ */
+extern int tapi_rpc_receiver(rcf_rpc_server *rpcs, int s,
+                             tapi_pat_receiver *receiver);
+
 /**
  * Patterned data sender.
  *
@@ -299,7 +380,8 @@ extern int rpc_simple_receiver(rcf_rpc_server *handle,
  * @return Number of sent bytes or -1 in the case of failure
  */
 extern int rpc_pattern_sender(rcf_rpc_server *rpcs,
-                              int s, char *fname, tarpc_pat_gen_arg *gen_arg,
+                              int s, const char *fname,
+                              tarpc_pat_gen_arg *gen_arg,
                               int iomux, int size_min,
                               int size_max, int size_rnd_once,
                               int delay_min, int delay_max,
@@ -373,9 +455,9 @@ extern int rpc_pattern_sender(rcf_rpc_server *rpcs,
  *         or -1 in the case of another failure
  */
 extern int rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
-                                char *fname, tarpc_pat_gen_arg *gen_arg, int iomux,
-                                uint32_t time2run, uint64_t *received,
-                                te_bool *recv_failed);
+                                const char *fname, tarpc_pat_gen_arg *gen_arg,
+                                int iomux, uint32_t time2run,
+                                uint64_t *received, te_bool *recv_failed);
 
 /**
  * Wait for readable socket.

@@ -53,6 +53,15 @@
 #include "tapi_cfg_base.h"
 #include "tapi_host_ns.h"
 
+/**
+ * Array containing names of pattern generator functions.
+ * Used with @ref tapi_pat_gen_type.
+ */
+static const char *rpc_pat_gen_func_name[] = {
+    "fill_buff_with_sequence",
+    "fill_buff_with_sequence_lcg"
+};
+
 /* See description in tapi_rpc_misc.h */
 
 te_bool
@@ -718,8 +727,30 @@ rpc_simple_receiver(rcf_rpc_server *rpcs,
 
 /** See description in tapi_rpc_misc.h */
 int
+tapi_rpc_sender(rcf_rpc_server *rpcs, int s, tapi_pat_sender *sender)
+{
+    return rpc_pattern_sender(rpcs, s, rpc_pat_gen_func_name[sender->gen],
+                    &sender->gen_arg, sender->iomux,
+                    sender->size.min, sender->size.max, sender->size.once,
+                    sender->delay.min, sender->delay.max, sender->delay.once,
+                    sender->duration_sec, sender->sent, sender->ignore_err,
+                    &sender->send_failed);
+}
+
+/** See description in tapi_rpc_misc.h */
+int
+tapi_rpc_receiver(rcf_rpc_server *rpcs, int s, tapi_pat_receiver *receiver)
+{
+    return rpc_pattern_receiver(rpcs, s, rpc_pat_gen_func_name[receiver->gen],
+                    &receiver->gen_arg, receiver->iomux,
+                    receiver->duration_sec, receiver->received,
+                    &receiver->recv_failed);
+}
+
+/** See description in tapi_rpc_misc.h */
+int
 rpc_pattern_sender(rcf_rpc_server *rpcs,
-                   int s, char *fname, tarpc_pat_gen_arg *gen_arg,
+                   int s, const char *fname, tarpc_pat_gen_arg *gen_arg,
                    int iomux, int size_min,
                    int size_max, int size_rnd_once, int delay_min,
                    int delay_max, int delay_rnd_once, int time2run,
@@ -793,7 +824,7 @@ rpc_pattern_sender(rcf_rpc_server *rpcs,
 /** See description in tapi_rpc_misc.h */
 int
 rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
-                     char *fname, tarpc_pat_gen_arg *gen_arg,
+                     const char *fname, tarpc_pat_gen_arg *gen_arg,
                      int iomux, uint32_t time2run, uint64_t *received,
                      te_bool *recv_failed)
 {
