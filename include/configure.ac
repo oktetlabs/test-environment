@@ -169,6 +169,7 @@ stdarg.h \
 stddef.h \
 stdint.h \
 stdio.h \
+stdbool.h \
 stdlib.h \
 string.h \
 strings.h \
