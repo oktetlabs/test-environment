@@ -220,6 +220,7 @@ cleanup_specific:                                                   \
             TEST_FAIL("line %d: %s returns 0x%X (%r), but expected 0", \
                       __LINE__, # expr_, rc_, rc_);                    \
         }                                                              \
+        te_log_stack_reset();                                          \
     } while (0)
 
 /**
