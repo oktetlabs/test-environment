@@ -1235,4 +1235,18 @@ te_rc_os2te(int err)
     }
 }
 
+/**
+ * Check whether an expression evaluates to non-zero.
+ * If it is, return its value.
+ *
+ * @param expr_     Expression to evaluate.
+ */
+#define CHECK_NZ_RETURN(expr_) \
+    do {                            \
+        te_errno rc_ = (expr_);     \
+                                    \
+        if (rc_ != 0)               \
+            return rc_;             \
+    } while (0)
+
 #endif /* !__TE_ERRNO_H__ */
