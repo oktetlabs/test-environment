@@ -719,7 +719,8 @@ rpc_simple_receiver(rcf_rpc_server *rpcs,
 /** See description in tapi_rpc_misc.h */
 int
 rpc_pattern_sender(rcf_rpc_server *rpcs,
-                   int s, char *fname, int iomux, int size_min,
+                   int s, char *fname, tarpc_pat_gen_arg *gen_arg,
+                   int iomux, int size_min,
                    int size_max, int size_rnd_once, int delay_min,
                    int delay_max, int delay_rnd_once, int time2run,
                    uint64_t *sent, int ignore_err, te_bool *send_failed)
@@ -746,6 +747,8 @@ rpc_pattern_sender(rcf_rpc_server *rpcs,
     in.s = s;
     in.fname.fname_len = strlen(fname) + 1;
     in.fname.fname_val = strdup(fname);
+    if (gen_arg != NULL)
+        in.gen_arg = *gen_arg;
     in.iomux = iomux;
     in.size_min = size_min;
     in.size_max = size_max;
@@ -761,6 +764,12 @@ rpc_pattern_sender(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "pattern_sender", &in, &out);
 
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
+    {
+        if (gen_arg != NULL)
+            *gen_arg = out.gen_arg;
+    }
+
     free(in.fname.fname_val);
 
     if (sent != NULL)
@@ -770,10 +779,12 @@ rpc_pattern_sender(rcf_rpc_server *rpcs,
         *send_failed = out.func_failed;
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(pattern_sender, out.retval);
-    TAPI_RPC_LOG(rpcs, pattern_sender, "%d, %s, %s, %d, %d, %d, %d, "
-                 "%d, %d, %d, %d", "%d sent=%u",
-                 s, fname, iomux2str(iomux), size_min, size_max,
-                 size_rnd_once, delay_min, delay_max, delay_rnd_once,
+
+    TAPI_RPC_LOG(rpcs, pattern_sender, "%d, %s, %s, " TARPC_PAT_GEN_ARG_FMT
+                 ", %d, %d, %d, %d, %d, %d, %d, %d", "%d sent=%u",
+                 s, fname, iomux2str(iomux), TARPC_PAT_GEN_ARG_VAL(in.gen_arg),
+                 size_min, size_max, size_rnd_once,
+                 delay_min, delay_max, delay_rnd_once,
                  time2run, ignore_err, out.retval,
                  (unsigned int)out.bytes);
     RETVAL_INT(pattern_sender, out.retval);
@@ -782,8 +793,8 @@ rpc_pattern_sender(rcf_rpc_server *rpcs,
 /** See description in tapi_rpc_misc.h */
 int
 rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
-                     char *fname, int iomux,
-                     uint32_t time2run, uint64_t *received,
+                     char *fname, tarpc_pat_gen_arg *gen_arg,
+                     int iomux, uint32_t time2run, uint64_t *received,
                      te_bool *recv_failed)
 {
     tarpc_pattern_receiver_in  in;
@@ -808,12 +819,20 @@ rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
     in.s = s;
     in.fname.fname_len = strlen(fname) + 1;
     in.fname.fname_val = strdup(fname);
+    if(gen_arg != NULL)
+        in.gen_arg = *gen_arg;
     in.iomux = iomux;
     in.time2run = time2run;
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
         rpcs->timeout = TE_SEC2MS(time2run + TAPI_RPC_TIMEOUT_EXTRA_SEC);
 
     rcf_rpc_call(rpcs, "pattern_receiver", &in, &out);
+
+    if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
+    {
+        if(gen_arg != NULL)
+            *gen_arg = out.gen_arg;
+    }
 
     free(in.fname.fname_val);
 
@@ -825,9 +844,11 @@ rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
 
     CHECK_RETVAL_VAR(pattern_receiver, out.retval,
                      !(out.retval <= 0 && out.retval >= -2), -1);
-    TAPI_RPC_LOG(rpcs, pattern_receiver, "%d, %s, %s, %d",
-                 "%d received=%u", s, fname, iomux2str(iomux), time2run,
-                 out.retval, (unsigned long)out.bytes);
+
+    TAPI_RPC_LOG(rpcs, pattern_receiver, "%d, %s, %s, " TARPC_PAT_GEN_ARG_FMT
+                 ", %d", "%d received=%u", s, fname, iomux2str(iomux),
+                 TARPC_PAT_GEN_ARG_VAL(in.gen_arg), time2run, out.retval,
+                 (unsigned long)out.bytes);
     RETVAL_INT(pattern_receiver, out.retval);
 }
 
