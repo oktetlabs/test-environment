@@ -747,6 +747,20 @@ tapi_env_foreach_if(tapi_env *env, tapi_env_foreach_if_fn *fn,
     }
 }
 
+unsigned
+tapi_env_nets_count(tapi_env *env)
+{
+    unsigned i;
+    tapi_env_nets *nets = &env->nets;
+    tapi_env_net *env_net;
+
+    for (env_net = SLIST_FIRST(nets), i = 0;
+         env_net != NULL;
+         env_net = SLIST_NEXT(env_net, links), ++i);
+
+    return i;
+}
+
 
 /**
  * Prepare environment networks.

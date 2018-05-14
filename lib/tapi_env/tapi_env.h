@@ -688,6 +688,15 @@ typedef void tapi_env_foreach_if_fn(tapi_env_if *iface, void *opaque);
 extern void tapi_env_foreach_if(tapi_env *env, tapi_env_foreach_if_fn *fn,
                                 void *opaque);
 
+/**
+ * Return total number of nets in the environment
+ *
+ * @param env     Environment
+ *
+ * @return Number of nets
+ */
+extern unsigned tapi_env_nets_count(tapi_env *env);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
