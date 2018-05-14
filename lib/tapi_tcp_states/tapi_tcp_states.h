@@ -135,9 +135,13 @@ typedef struct tsa_state_sock {
     te_bool     route_src_added;        /**< @c TRUE if route from @p
                                              pco_tst to @p pco_iut
                                              was added */
-    te_bool     ipv4_fw_enabled;        /**< @c TRUE if forwarding is
+    te_bool     ipv4_fw_enabled;        /**< @c TRUE if IPv4 forwarding is
                                              enabled */
-    te_bool     ipv4_fw;                /**< Was forwarding configured
+    te_bool     ipv4_fw;                /**< Was IPv4 forwarding configured
+                                             previously? */
+    te_bool     ipv6_fw_enabled;        /**< @c TRUE if IPv6 forwarding is
+                                             enabled */
+    te_bool     ipv6_fw;                /**< Was IPv6 forwarding configured
                                              previously? */
 
     /**< Sending RST via CSAP */

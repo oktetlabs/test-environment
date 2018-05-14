@@ -274,13 +274,16 @@ extern te_errno tapi_tcp_pdu(int src_port, int dst_port,
                              asn_value **pdu);
 
 /**
- * Prepare Traffic-Template ASN value for 'tcp.ip4.eth' or 'tcp.ip4' CSAP.
+ * Prepare Traffic-Template ASN value for 'tcp.ip(4|6).eth' or 'tcp.ip(4|6)'
+ * CSAP.
  * It is assumed that all connection parameters 
  * (src/dst MACs, IP, and ports) are already set in CSAP.
  * If it is not, fill there parameters in obtained traffic template
  * explicitely. 
  *
  * @param is_eth_pdu    if TRUE include eth header PDU
+ * @param force_ip6     TRUE for IPv6 PDU
+ *                      FALSE for IPv4 PDU
  * @param seqn          sequence number in host byte order
  * @param ackn          acknowledge number in host byte order
  * @param syn_flag      syn flag
@@ -291,7 +294,7 @@ extern te_errno tapi_tcp_pdu(int src_port, int dst_port,
  *
  * @return Status code.
  */
-extern int tapi_tcp_template_gen(te_bool is_eth_pdu,
+extern int tapi_tcp_template_gen(te_bool is_eth_pdu, te_bool force_ip6,
                                  tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
                                  te_bool syn_flag, te_bool ack_flag,
                                  uint8_t *data, size_t pld_len,
@@ -299,11 +302,11 @@ extern int tapi_tcp_template_gen(te_bool is_eth_pdu,
 
 /**
  * The same function as tapi_tcp_template_gen() with is_eth_pdu 
- * parameter set to TRUE, so it prepares value for 'tcp.ip4.eth' CSAP.
+ * parameter set to TRUE, so it prepares value for 'tcp.ip(4|6).eth' CSAP.
  */
-extern int tapi_tcp_template(tapi_tcp_pos_t seqn, tapi_tcp_pos_t ackn, 
-                             te_bool syn_flag, te_bool ack_flag,
-                             uint8_t *data, size_t pld_len,
+extern int tapi_tcp_template(te_bool force_ip6, tapi_tcp_pos_t seqn,
+                             tapi_tcp_pos_t ackn, te_bool syn_flag,
+                             te_bool ack_flag, uint8_t *data, size_t pld_len,
                              asn_value **tmpl);
 
 /**

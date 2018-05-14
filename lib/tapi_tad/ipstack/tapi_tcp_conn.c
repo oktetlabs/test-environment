@@ -121,6 +121,8 @@ typedef struct tapi_tcp_connection_t {
     struct sockaddr_storage loc_addr;
     struct sockaddr_storage rem_addr;
 
+    te_tad_protocols_t ip_proto;
+
     int window;
 
     tapi_tcp_pos_t seq_got;
@@ -538,8 +540,9 @@ create_tcp_template(tapi_tcp_connection_t *conn_descr,
 {
     int rc;
 
-    rc = tapi_tcp_template(seqn, ackn, syn_flag, ack_flag,
-                           data, pld_len, tmpl);
+    rc = tapi_tcp_template(conn_descr->ip_proto == TE_PROTO_IP6,
+                           seqn, ackn, syn_flag, ack_flag, data,
+                           pld_len, tmpl);
     if (rc != 0)
         return rc;
 
@@ -597,7 +600,7 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     tapi_tcp_connection_t *conn_descr = (tapi_tcp_connection_t *)user_param;
     asn_value             *tcp_message = NULL;
     const asn_value       *tcp_pdu;
-    const asn_value       *ip4_pdu;
+    const asn_value       *ip_pdu;
     const asn_value       *val, *subval;
     tapi_tcp_msg_queue_t  *pkt;
 
@@ -610,6 +613,7 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
 
     tapi_tcp_pos_t seq_got, 
                    ack_got;
+    te_tad_protocols_t ip_proto;
 
     /*
      * This handler DOES NOT check that got packet related to
@@ -619,6 +623,12 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     if (pkt_file == NULL || user_param == NULL)
     {
         WARN("%s(): receive strange arguments", __FUNCTION__);
+        return;
+    }
+    ip_proto = conn_descr->ip_proto;
+    if (ip_proto != TE_PROTO_IP4 && ip_proto != TE_PROTO_IP6)
+    {
+        WARN("%s(): bad IP protocol", __FUNCTION__);
         return;
     }
 #define CHECK_ERROR(msg_) \
@@ -647,16 +657,25 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     val = subval;
 
     rc = asn_get_indexed(val, (asn_value **)&subval, 1, NULL);
-    CHECK_ERROR("get IPv4 gen pdu error");
-    rc = asn_get_choice_value(subval, (asn_value **)&ip4_pdu, NULL, NULL);
-    CHECK_ERROR("get IPv4 special choice error");
+    CHECK_ERROR("get IP gen pdu error");
+    rc = asn_get_choice_value(subval, (asn_value **)&ip_pdu, NULL, NULL);
+    CHECK_ERROR("get IP special choice error");
 
-    rc = ndn_du_read_plain_int(ip4_pdu, NDN_TAG_IP4_LEN, &pdu_field);
-    CHECK_ERROR("read IPv4 total length error");
-    data_len = pdu_field;
-    rc = ndn_du_read_plain_int(ip4_pdu, NDN_TAG_IP4_HLEN, &pdu_field);
-    CHECK_ERROR("read IPv4 header length error");
-    data_len -= (pdu_field << 2);
+    if (ip_proto == TE_PROTO_IP4)
+    {
+        rc = ndn_du_read_plain_int(ip_pdu, NDN_TAG_IP4_LEN, &pdu_field);
+        CHECK_ERROR("read IPv4 total length error");
+        data_len = pdu_field;
+        rc = ndn_du_read_plain_int(ip_pdu, NDN_TAG_IP4_HLEN, &pdu_field);
+        CHECK_ERROR("read IPv4 header length error");
+        data_len -= (pdu_field << 2);
+    }
+    else
+    {
+        rc = ndn_du_read_plain_int(ip_pdu, NDN_TAG_IP6_LEN, &pdu_field);
+        CHECK_ERROR("read IPv6 payload length error");
+        data_len = pdu_field;
+    }
 
     rc = asn_get_indexed(val, (asn_value **)&subval, 0, NULL);
     CHECK_ERROR("get TCP gen pdu error");
@@ -789,16 +808,21 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     csap_handle_t rcv_csap = CSAP_INVALID_HANDLE;
     csap_handle_t snd_csap = CSAP_INVALID_HANDLE;
 
-    struct sockaddr_in *local_in_addr  = (struct sockaddr_in *)local_addr;
-    struct sockaddr_in *remote_in_addr = (struct sockaddr_in *)remote_addr;
-
     tapi_tcp_connection_t *conn_descr = NULL;
-
+    sa_family_t            sa_family;
 
     tapi_tcp_conns_db_init();
 
     if (agt == NULL || local_addr == NULL || remote_addr == NULL)
         return TE_RC(TE_TAPI, TE_EWRONGPTR);
+
+    sa_family = local_addr->sa_family;
+    if ((sa_family != AF_INET && sa_family != AF_INET6)
+        || sa_family != remote_addr->sa_family)
+    {
+        ERROR("Invalid local and/or remote address value");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
 
     /*
      * TODO: Make automatic investigation of local interface and
@@ -852,74 +876,121 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     CHECK_ERROR("%s(); create snd session failed %r",
                 __FUNCTION__, rc);
 
-    rc = rcf_ta_create_session(agt, &arp_sid);
-    CHECK_ERROR("%s(); create snd session failed %r",
-                __FUNCTION__, rc);
+    if (sa_family == AF_INET)
+    {
+        struct sockaddr_in const *const local_in_addr  = SIN(local_addr);
+        struct sockaddr_in const *const remote_in_addr = SIN(remote_addr);
 
-    trafic_param = 1;
-    rc = tapi_arp_add_pdu_eth_ip4(&arp_pattern, TRUE,
-                                  &trafic_param, remote_mac, NULL, NULL,
-                                  (uint8_t *)&(local_in_addr->sin_addr));
-    CHECK_ERROR("%s(); create arp pattern fails %r", __FUNCTION__, rc);
-    rc = tapi_eth_add_pdu(&arp_pattern, NULL, TRUE,
-                          broadcast_mac, remote_mac, NULL,
-                          TE_BOOL3_ANY /* tagged/untagged */,
-                          TE_BOOL3_ANY /* Ethernet2/LLC */);
-    
-    CHECK_ERROR("%s(); create arp/eth pattern fails %r",
-                __FUNCTION__, rc);
+        rc = rcf_ta_create_session(agt, &arp_sid);
+        CHECK_ERROR("%s(); create snd session failed %r",
+                    __FUNCTION__, rc);
 
-    func_len = snprintf(arp_reply_method, sizeof(arp_reply_method), 
-                        "tad_eth_arp_reply:%02x:%02x:%02x:%02x:%02x:%02x",
-                        (int)local_mac[0], (int)local_mac[1],
-                        (int)local_mac[2], (int)local_mac[3],
-                        (int)local_mac[4], (int)local_mac[5]); 
+        trafic_param = 1;
+        rc = tapi_arp_add_pdu_eth_ip4(&arp_pattern, TRUE,
+                                      &trafic_param, remote_mac, NULL, NULL,
+                                      (uint8_t *)&(local_in_addr->sin_addr));
+        CHECK_ERROR("%s(); create arp pattern fails %r", __FUNCTION__, rc);
+        rc = tapi_eth_add_pdu(&arp_pattern, NULL, TRUE,
+                              broadcast_mac, remote_mac, NULL,
+                              TE_BOOL3_ANY /* tagged/untagged */,
+                              TE_BOOL3_ANY /* Ethernet2/LLC */);
 
-    rc = asn_write_value_field(arp_pattern, arp_reply_method, func_len + 1,
-                               "0.actions.0.#function");
-    CHECK_ERROR("%s(): write arp reply method name failed %r", 
-                __FUNCTION__, rc);
+        CHECK_ERROR("%s(); create arp/eth pattern fails %r",
+                    __FUNCTION__, rc);
+
+        func_len = snprintf(arp_reply_method, sizeof(arp_reply_method),
+                            "tad_eth_arp_reply:%02x:%02x:%02x:%02x:%02x:%02x",
+                            (int)local_mac[0], (int)local_mac[1],
+                            (int)local_mac[2], (int)local_mac[3],
+                            (int)local_mac[4], (int)local_mac[5]);
+
+        rc = asn_write_value_field(arp_pattern, arp_reply_method, func_len + 1,
+                                   "0.actions.0.#function");
+        CHECK_ERROR("%s(): write arp reply method name failed %r",
+                    __FUNCTION__, rc);
 
 
-    trafic_param = ETH_P_ARP;
+        trafic_param = ETH_P_ARP;
 
-    rc = tapi_arp_eth_csap_create_ip4(agt, arp_sid, local_iface,
-                                      use_native_mac ? 
-                                          TAD_ETH_RECV_HOST |
-                                          TAD_ETH_RECV_BCAST 
-                                        : TAD_ETH_RECV_DEF,
-                                      remote_mac, NULL, &arp_csap);
-    CHECK_ERROR("%s(): create arp csap fails %r", __FUNCTION__, rc);
+        rc = tapi_arp_eth_csap_create_ip4(agt, arp_sid, local_iface,
+                                          use_native_mac ?
+                                              TAD_ETH_RECV_HOST |
+                                              TAD_ETH_RECV_BCAST
+                                            : TAD_ETH_RECV_DEF,
+                                          remote_mac, NULL, &arp_csap);
+        CHECK_ERROR("%s(): create arp csap fails %r", __FUNCTION__, rc);
 
-    INFO("%s(): created arp csap: %d", __FUNCTION__, arp_csap);
+        INFO("%s(): created arp csap: %d", __FUNCTION__, arp_csap);
 
-    rc = tapi_tcp_ip4_eth_csap_create(agt, rcv_sid, local_iface,
-                                      use_native_mac ? 
-                                          TAD_ETH_RECV_HOST 
-                                        : TAD_ETH_RECV_DEF,
-                                      local_mac, remote_mac,
-                                      local_in_addr->sin_addr.s_addr,
-                                      remote_in_addr->sin_addr.s_addr,
-                                      local_in_addr->sin_port,
-                                      remote_in_addr->sin_port,
-                                      &rcv_csap); 
-    CHECK_ERROR("%s(): rcv csap create failed %r",
-                __FUNCTION__, rc);
+        rc = tapi_tcp_ip4_eth_csap_create(agt, rcv_sid, local_iface,
+                                          use_native_mac ?
+                                              TAD_ETH_RECV_HOST
+                                            : TAD_ETH_RECV_DEF,
+                                          local_mac, remote_mac,
+                                          local_in_addr->sin_addr.s_addr,
+                                          remote_in_addr->sin_addr.s_addr,
+                                          local_in_addr->sin_port,
+                                          remote_in_addr->sin_port,
+                                          &rcv_csap);
+        CHECK_ERROR("%s(): rcv csap create failed %r",
+                    __FUNCTION__, rc);
 
-    rc = tapi_tcp_ip4_eth_csap_create(agt, snd_sid, local_iface,
-                                      TAD_ETH_RECV_HOST,
-                                      local_mac, remote_mac,
-                                      local_in_addr->sin_addr.s_addr,
-                                      remote_in_addr->sin_addr.s_addr,
-                                      local_in_addr->sin_port,
-                                      remote_in_addr->sin_port,
-                                      &snd_csap);
-    CHECK_ERROR("%s(): snd csap create failed %r",
-                __FUNCTION__, rc);
+        rc = tapi_tcp_ip4_eth_csap_create(agt, snd_sid, local_iface,
+                                          TAD_ETH_RECV_HOST,
+                                          local_mac, remote_mac,
+                                          local_in_addr->sin_addr.s_addr,
+                                          remote_in_addr->sin_addr.s_addr,
+                                          local_in_addr->sin_port,
+                                          remote_in_addr->sin_port,
+                                          &snd_csap);
+        CHECK_ERROR("%s(): snd csap create failed %r",
+                    __FUNCTION__, rc);
+    }
+    else
+    {
+        struct sockaddr_in6 const *const local_in_addr  = SIN6(local_addr);
+        struct sockaddr_in6 const *const remote_in_addr = SIN6(remote_addr);
+
+        rc = tapi_tcp_ip6_eth_csap_create(agt, rcv_sid, local_iface,
+                                          use_native_mac ?
+                                              TAD_ETH_RECV_HOST
+                                            : TAD_ETH_RECV_DEF,
+                                          local_mac, remote_mac,
+                                          local_in_addr->sin6_addr.s6_addr,
+                                          remote_in_addr->sin6_addr.s6_addr,
+                                          local_in_addr->sin6_port,
+                                          remote_in_addr->sin6_port,
+                                          &rcv_csap);
+        CHECK_ERROR("%s(): rcv csap create failed %r",
+                    __FUNCTION__, rc);
+
+        rc = tapi_tcp_ip6_eth_csap_create(agt, snd_sid, local_iface,
+                                          TAD_ETH_RECV_HOST,
+                                          local_mac, remote_mac,
+                                          local_in_addr->sin6_addr.s6_addr,
+                                          remote_in_addr->sin6_addr.s6_addr,
+                                          local_in_addr->sin6_port,
+                                          remote_in_addr->sin6_port,
+                                          &snd_csap);
+        CHECK_ERROR("%s(): snd csap create failed %r",
+                    __FUNCTION__, rc);
+
+    }
 
     conn_descr = calloc(1, sizeof(*conn_descr));
-    conn_descr->arp_csap = arp_csap;
-    conn_descr->arp_sid = arp_sid;
+
+    if (sa_family == AF_INET)
+    {
+        conn_descr->arp_csap = arp_csap;
+        conn_descr->arp_sid = arp_sid;
+        conn_descr->ip_proto = TE_PROTO_IP4;
+    }
+    else
+    {
+        conn_descr->arp_csap = CSAP_INVALID_HANDLE;
+        conn_descr->ip_proto = TE_PROTO_IP6;
+    }
+
     conn_descr->rcv_csap = rcv_csap;
     conn_descr->rcv_sid = rcv_sid;
     conn_descr->snd_csap = snd_csap;
@@ -934,18 +1005,29 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     INFO("%s(): init TCP connection started, id %d, our ISN %u",
          __FUNCTION__, conn_descr->id, conn_descr->our_isn);
 
-    /* make template for this connection */
-    rc = asn_parse_value_text("{{pdus {tcp:{}, ip4:{}, eth:{}}}}",
-                              ndn_traffic_pattern,
-                              &syn_pattern, &syms);
-    CHECK_ERROR("%s(): parse pattern failed, rc %r, sym %d",
-                __FUNCTION__, rc, syms);
+    if (sa_family == AF_INET)
+    {
+        /* make template for this connection */
+        rc = asn_parse_value_text("{{pdus {tcp:{}, ip4:{}, eth:{}}}}",
+                                  ndn_traffic_pattern,
+                                  &syn_pattern, &syms);
+        CHECK_ERROR("%s(): parse pattern failed, rc %r, sym %d",
+                    __FUNCTION__, rc, syms);
 
-    /* start catch our ARP */
-    rc = tapi_tad_trrecv_start(agt, conn_descr->arp_sid,
-                               conn_descr->arp_csap, arp_pattern,
-                               TAD_TIMEOUT_INF, 0, RCF_TRRECV_COUNT);
-    CHECK_ERROR("%s(): failed for arp_csap %r", __FUNCTION__, rc);
+        /* start catch our ARP */
+        rc = tapi_tad_trrecv_start(agt, conn_descr->arp_sid,
+                                   conn_descr->arp_csap, arp_pattern,
+                                   TAD_TIMEOUT_INF, 0, RCF_TRRECV_COUNT);
+        CHECK_ERROR("%s(): failed for arp_csap %r", __FUNCTION__, rc);
+    }
+    else
+    {
+        rc = asn_parse_value_text("{{pdus {tcp:{}, ip6:{}, eth:{}}}}",
+                                  ndn_traffic_pattern,
+                                  &syn_pattern, &syms);
+        CHECK_ERROR("%s(): parse pattern failed, rc %r, sym %d",
+                    __FUNCTION__, rc, syms);
+    }
 
     rc = tapi_tad_trrecv_start(agt, conn_descr->rcv_sid,
                                conn_descr->rcv_csap, syn_pattern,
@@ -964,7 +1046,8 @@ cleanup:
         tapi_tcp_destroy_conn_descr(conn_descr);
         *handler = 0;
     }
-    asn_free_value(arp_pattern);
+    if (sa_family == AF_INET)
+        asn_free_value(arp_pattern);
     asn_free_value(syn_pattern);
     return TE_RC(TE_TAPI, rc);
 }
