@@ -222,7 +222,8 @@ rpc_te_shell_cmd_gen(rcf_rpc_server *rpcs, const char *cmd,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC parameter", __FUNCTION__);
+        ERROR("%s(): Invalid RPC parameter passed for '%s'",
+              __FUNCTION__, cmd);
         RETVAL_INT(te_shell_cmd, -1);
     }
 
