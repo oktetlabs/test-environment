@@ -49,6 +49,7 @@
 #include "te_errno.h"
 #include "te_defs.h"
 #include "logger_api.h"
+#include "te_log_stack.h"
 #include "conf_api.h"
 #include "conf_messages.h"
 #include "conf_types.h"
@@ -670,6 +671,11 @@ cfg_find_str(const char *oid, cfg_handle *handle)
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&cfgl_lock);
 #endif
+    if (ret_val != 0)
+        te_log_stack_push("Failed to find handle for oid=%s", oid);
+    else
+        te_log_stack_push("Operating on oid=%s", oid);
+
     return TE_RC(TE_CONF_API, ret_val);
 }
 
@@ -1148,6 +1154,11 @@ cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&cfgl_lock);
 #endif
+
+    if (ret_val != 0)
+        te_log_stack_push("Failed to add instance: oid='%s' "
+                          "rc=%s-%s", oid, te_rc_mod2str(ret_val),
+                          te_rc_err2str(ret_val));
 
     return TE_RC(TE_CONF_API, ret_val);
 }
