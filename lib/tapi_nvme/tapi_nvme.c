@@ -8,6 +8,8 @@
  * @author Nikita Somenkov <Nikita.Somenkov@oktetlabs.ru>
  */
 
+#define TE_LGR_USER "NVME TAPI"
+
 #include "te_defs.h"
 #include "rpc_xdr.h"
 #include "te_rpc_sys_stat.h"
