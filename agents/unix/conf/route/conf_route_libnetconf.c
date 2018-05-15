@@ -439,18 +439,34 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
     return 0;
 }
 
-static te_errno
-append_routes(netconf_list *nlist, te_string *const str)
+te_errno
+ta_unix_conf_route_list(char **list)
 {
-    netconf_node *t;
+    netconf_list       *nlist;
+    netconf_node       *t;
+    char               *cur_ptr;
 
+    if (list == NULL)
+    {
+        ERROR("%s(): Invalid value for 'list' argument", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    /* Get IPv4 routes */
+    if ((nlist = netconf_route_dump(nh, AF_INET)) == NULL)
+    {
+        ERROR("%s(): Cannot get list of routes", __FUNCTION__);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    buf[0] = '\0';
+    cur_ptr = buf;
     for (t = nlist->head; t != NULL; t = t->next)
     {
         const netconf_route *route = &(t->data.route);
-        const unsigned char  family = route->family;
         char                 ifname[IF_NAMESIZE];
 
-        if (family != AF_INET && family != AF_INET6)
+        if (route->family != AF_INET)
         {
             assert(0);
             continue;
@@ -484,7 +500,7 @@ append_routes(netconf_list *nlist, te_string *const str)
          * But the kernel does not allow to create the route using only the
          * parameters of the first point. So the test fails.
          */
-        if (family == AF_INET && (route->table == NETCONF_RT_TABLE_LOCAL) &&
+        if ((route->table == NETCONF_RT_TABLE_LOCAL) &&
             (route->type == NETCONF_RTN_BROADCAST) &&
             (route->dst != NULL) &&
             (route->dstlen == 32) &&
@@ -493,93 +509,41 @@ append_routes(netconf_list *nlist, te_string *const str)
             (route->src != NULL))
             continue;
 
-        /*
-         * Netlink returns some IPv6 routes with rtm_protocol field set to
-         * RTPROT_UNSPEC, which defines route origin. Filter IPv6 routes with
-         * unspec origin to prevent Configurator fallback problems on route
-         * deletion.
-         */
-        if (family == AF_INET6 && route->protocol == NETCONF_RTPROT_UNSPEC)
-            continue;
-
         /* Append this route to the list */
 
-        if (str->len != 0)
-            CHECK_NZ_RETURN(te_string_append(str, " "));
+        if (cur_ptr != buf)
+            cur_ptr += sprintf(cur_ptr, " ");
 
         if (route->dst == NULL)
         {
             assert(route->dstlen == 0);
-            CHECK_NZ_RETURN(te_string_append(str, family == AF_INET ?
-                                             "0.0.0.0|0" : "::|0"));
+            cur_ptr += sprintf(cur_ptr, "0.0.0.0|0");
         }
         else
         {
-            char addr_buf[INET6_ADDRSTRLEN];
-
             if (inet_ntop(route->family, route->dst,
-                          addr_buf, sizeof(addr_buf)) != NULL)
-                CHECK_NZ_RETURN(te_string_append(str, "%s|%d", addr_buf,
-                                                 route->dstlen));
+                          cur_ptr, INET_ADDRSTRLEN) != NULL)
+            {
+                cur_ptr += strlen(cur_ptr);
+                cur_ptr += sprintf(cur_ptr, "|%d", route->dstlen);
+            }
         }
 
         if (route->metric != 0)
-            CHECK_NZ_RETURN(te_string_append(str, ",metric=%d", route->metric));
+            cur_ptr += sprintf(cur_ptr, ",metric=%d", route->metric);
+
         if (route->tos != 0)
-            CHECK_NZ_RETURN(te_string_append(str, ",tos=%d", route->tos));
+            cur_ptr += sprintf(cur_ptr, ",tos=%d", route->tos);
+
         if (route->table != NETCONF_RT_TABLE_MAIN)
-            CHECK_NZ_RETURN(te_string_append(str, ",table=%d", route->table));
+            cur_ptr += snprintf(cur_ptr, &buf[BUF_MAXLENGTH-1]-cur_ptr,
+                                ",table=%d", route->table);
     }
 
-    return 0;
-}
-
-
-static te_errno
-retrieve_route_list(sa_family_t family, te_string *const str)
-{
-    netconf_list *nlist;
-    te_errno      rc;
-
-    if ((nlist = netconf_route_dump(nh, family)) == NULL)
-    {
-        ERROR("%s(): Cannot get list of routes", __FUNCTION__);
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    rc = append_routes(nlist, str);
     netconf_list_free(nlist);
 
-    return rc;
-}
-
-te_errno
-ta_unix_conf_route_list(char **list)
-{
-    te_string str = TE_STRING_INIT;
-    te_errno  rc;
-
-    if (list == NULL)
-    {
-        ERROR("%s(): Invalid value for 'list' argument", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    /* Get IPv4 routes */
-    if ((rc = retrieve_route_list(AF_INET, &str)) != 0)
-    {
-        te_string_free(&str);
-        return rc;
-    }
-
-    /* Get IPv6 routes */
-    if ((rc = retrieve_route_list(AF_INET6, &str)) != 0)
-    {
-        te_string_free(&str);
-        return rc;
-    }
-
-    *list = str.ptr;
+    if ((*list = strdup(buf)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     return 0;
 }
