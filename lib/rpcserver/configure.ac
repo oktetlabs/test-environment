@@ -381,10 +381,19 @@ AC_CHECK_FUNCS([svcunix_create svc_exit])
 
 dnl
 dnl Find library with SunRPC XDR functions.
-dnl -lnsl on Solaris2 (SunOS 5.11);
-dnl
-AC_SEARCH_LIBS([xdr_bytes], [rpc nsl], [],
+dnl - libnsl on Solaris2 (SunOS 5.11);
+dnl - Modern Linux distros, such as Fedora 28, do not have RPC support
+dnl   in glibc; libtirpc can be used instead.
+LIBS=${TE_LDFLAGS}
+AC_SEARCH_LIBS([xdr_bytes], [rpc nsl tirpc], [],
                    AC_MSG_ERROR([No RPC library found]))
+
+AC_CHECK_HEADERS([rpc/rpc.h])
+AC_CHECK_TYPES([SVCXPRT], [], [], [
+#ifdef HAVE_RPC_RPC_H
+#include <rpc/rpc.h>
+#endif
+])
 
 AH_TEMPLATE([xdr_uint8_t], [RPC XDR for unsigned 8bit width type])
 AC_CHECK_FUNC([xdr_uint8_t], [],
