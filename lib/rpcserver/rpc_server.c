@@ -579,7 +579,11 @@ rcf_pch_rpc_server(const char *name)
      * we need to pass the local deferred_calls pointer
      * to underlying RPC implementations
      */
-    struct SVCXPRT       pseudo_xprt = {
+#ifdef HAVE_SVCXPRT
+    SVCXPRT         pseudo_xprt = {
+#else
+    struct SVCXPRT  pseudo_xprt = {
+#endif
         .xp_p1 = (void *)&deferred_calls
     };
     struct svc_req       pseudo_req = {

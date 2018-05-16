@@ -547,9 +547,10 @@ static te_errno bcast_link_addr_get(unsigned int, const char *,
 static te_errno vlan_ifname_get(unsigned int , const char *,
                                 char *, const char *, const char *);
 
+#ifndef USE_LIBNETCONF
 static te_errno vlan_ifname_get_internal(const char *ifname, int vlan_id,
                                          char *v_ifname);
-
+#endif
 
 static te_errno ifindex_get(unsigned int, const char *, char *,
                             const char *);
@@ -1020,8 +1021,10 @@ RCF_PCH_CFG_NODE_RW(node_xen, "xen",
                     &node_subpath, &node_hardware,
                     &xen_path_get, &xen_path_set);
 
+#ifndef USE_LIBNETCONF
 #define MAX_VLANS 0xfff
 static int vlans_buffer[MAX_VLANS];
+#endif
 
 te_bool
 ta_interface_is_mine(const char *ifname)
@@ -2394,6 +2397,7 @@ ta_vlan_get_children(const char *devname, size_t *n_vlans, int *vlans)
     return rc;
 }
 
+#ifndef USE_LIBNETCONF
 /**
  * Get VLAN ifname
  *
@@ -2427,6 +2431,7 @@ vlan_ifname_get_internal(const char *ifname, int vlan_id,
 #endif
     return rc;
 }
+#endif
 
 /**
  * Get VLAN ifname
@@ -2448,8 +2453,12 @@ vlan_ifname_get(unsigned int gid, const char *oid, char *value,
     VERB("%s: gid=%u oid='%s', ifname = '%s', vid %d",
          __FUNCTION__, gid, oid, ifname,  vlan_id);
 
-
+#ifdef USE_LIBNETCONF
+    return netconf_vlan_get_ifname(nh, ifname, (unsigned int)vlan_id,
+                                   value, RCF_MAX_VAL);
+#else
     return vlan_ifname_get_internal(ifname, vlan_id, value);
+#endif
 }
 
 /**
@@ -2469,6 +2478,13 @@ vlans_list(unsigned int gid, const char *oid,
            const char *sub_id, char **list,
            const char *ifname)
 {
+#ifdef USE_LIBNETCONF
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+    return netconf_vlan_list(nh, ifname, list);
+#else
     size_t n_vlans = MAX_VLANS;
     size_t i;
     te_errno rc;
@@ -2499,6 +2515,7 @@ vlans_list(unsigned int gid, const char *oid,
 
     VERB("VLAN list: '%s'", *list);
     return 0;
+#endif
 }
 
 /**
@@ -2519,6 +2536,8 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
     te_errno rc;
     int      vid = atoi(vid_str);
 
+    UNUSED(gid);
+    UNUSED(oid);
     UNUSED(value);
 
     VERB("%s: gid=%u oid='%s', vid %s, ifname %s",
@@ -2527,7 +2546,12 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-#if LINUX_VLAN_SUPPORT
+#if defined USE_LIBNETCONF
+
+    return netconf_vlan_modify(nh, NETCONF_CMD_ADD, ifname, value,
+                               (unsigned int)vid);
+
+#elif LINUX_VLAN_SUPPORT
     {
         struct vlan_ioctl_args  if_request;
         struct ifreq            ifr;
@@ -2672,7 +2696,8 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
- * @param ifname        VLAN device name: ethX.VID
+ * @param ifname        parent interface name
+ * @param vid_str       VLAN ID
  *
  * @return              Status code
  */
@@ -2689,7 +2714,10 @@ vlans_del(unsigned int gid, const char *oid, const char *ifname,
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-#if LINUX_VLAN_SUPPORT
+#if defined USE_LIBNETCONF
+    return netconf_vlan_modify(nh, NETCONF_CMD_DEL, ifname, NULL,
+                               (unsigned int)vid);
+#elif LINUX_VLAN_SUPPORT
     {
         struct vlan_ioctl_args if_request;
 

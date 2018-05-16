@@ -13,6 +13,8 @@
     <!-- Root object of wpa_supplicant configuration for the interface.
          Name: empty -->
     <object oid="/agent/interface/supplicant" access="read_write" type="integer"/>
+    <!-- Wireless network ESSID name -->
+    <object oid="/agent/interface/supplicant/network" access="read_write" type="string"/>
     <!-- EAP identity: Double-quoted ASCII
          Name: empty -->
     <object oid="/agent/interface/supplicant/identity" access="read_write" type="string"/>

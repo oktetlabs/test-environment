@@ -219,6 +219,13 @@ void netconf_rule_node_free(netconf_node *node);
 extern void netconf_macvlan_node_free(netconf_node *node);
 
 /**
+ * Free memory used by node of VLAN type.
+ *
+ * @param node  Node to free
+ */
+extern void netconf_vlan_node_free(netconf_node *node);
+
+/**
  * Free memory used by a veth node.
  *
  * @param node  Node to free
@@ -236,6 +243,21 @@ extern void netconf_veth_node_free(netconf_node *node);
  */
 int netconf_talk(netconf_handle nh, void *req, int len,
                  netconf_recv_cb_t recv_cb, netconf_list *list);
+
+/**
+ * Get interface index by its name. Return error if it cannot be done.
+ *
+ * @param _name     Name of the interface.
+ * @param _index    Where to save interface index.
+ */
+#define IFNAME_TO_INDEX(_name, _index) \
+    do {                                                            \
+        if ((_index = if_nametoindex(_name)) == 0)                  \
+        {                                                           \
+            ERROR("Failed to get index of interface %s", _name);    \
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);                    \
+        }                                                           \
+    } while (0)
 
 #ifdef __cplusplus
 }

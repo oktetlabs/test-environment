@@ -70,9 +70,11 @@ AC_CHECK_HEADERS([rpc/xdr.h], [], [], [
 # environment. This macro updates LIBS variable, which is used
 # in the next checkings against in AC_CHECK_MEMBER() macro.
 # - Solaris2 (SunOS 5.11) -lnsl
+# - Modern Linux distros, such as Fedora 28, do not have RPC support
+#   in glibc; libtirpc can be used instead.
 #
 LIBS=${TE_LDFLAGS}
-AC_SEARCH_LIBS([xdr_bytes], [rpc nsl], [],
+AC_SEARCH_LIBS([xdr_bytes], [rpc nsl tirpc], [],
                AC_MSG_ERROR([No RPC library found]))
 
 AH_TEMPLATE([x_putint32], [Put 32-bit integer to the stream])
