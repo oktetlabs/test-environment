@@ -38,6 +38,9 @@ typedef const char * tapi_nvme_subnqn;
 
 /** Target context  */
 typedef struct tapi_nvme_target {
+    LIST_ENTRY(tapi_nvme_target) list; /**< A way to build lists of
+                                        * targets */
+
     rcf_rpc_server *rpcs;           /**< RPC server handle */
     tapi_nvme_transport transport;  /**< Transport type */
     tapi_nvme_subnqn subnqn;        /**< NVMe Qualified Name */
@@ -56,6 +59,8 @@ typedef struct tapi_nvme_target {
 
 /** Initiator context */
 typedef struct tapi_nvme_host_ctrl {
+    LIST_ENTRY(tapi_nvme_host_ctrl) list; /**< A way to build lists of
+                                           * host ctrls */
     rcf_rpc_server *rpcs;                      /**< RPC server handle */
     const tapi_nvme_target *connected_target;  /**< Connected target */
     char *device;                              /**< Name of device */
