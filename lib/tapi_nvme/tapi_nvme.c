@@ -432,8 +432,17 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
     if (target == NULL ||
         target->addr == NULL ||
         target->addr->sa_family != AF_INET ||
-        target->subnqn == NULL)
+        target->subnqn == NULL ||
+        target->device == NULL)
+    {
+        te_log_stack_push("%s: something is invalid in our life: target=%p "
+                          "target->addr=%p sa_family=%u "
+                          "target->subnqn=%p target->device=%p",
+                          target, target->addr,
+                          target->addr ? target->addr->sa_family : -1,
+                          target->subnqn, target->device);
         return TE_EINVAL;
+    }
 
     rc = run_command_output(host_ctrl->rpcs, &str_stdout, &str_stderr,
                             strcat(cmd, opts),
