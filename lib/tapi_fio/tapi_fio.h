@@ -18,6 +18,7 @@
 #include "te_errno.h"
 #include "te_defs.h"
 #include "te_string.h"
+#include "te_queue.h"
 #include "rcf_rpc.h"
 
 #ifdef __cplusplus
@@ -240,6 +241,7 @@ typedef struct tapi_fio_methods {
 
 /** FIO tool context */
 typedef struct tapi_fio {
+    LIST_ENTRY(tapi_fio) list;          /**< A way to put FIO into lists  */
     tapi_fio_app app;                   /**< Tool context */
     const tapi_fio_methods *methods;    /**< Methods to operate FIO */
 } tapi_fio;
