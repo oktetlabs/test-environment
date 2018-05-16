@@ -494,12 +494,10 @@ append_routes(netconf_list *nlist, te_string *const str)
             continue;
 
         /*
-         * Netlink returns some IPv6 routes with rtm_protocol field set to
-         * RTPROT_UNSPEC, which defines route origin. Filter IPv6 routes with
-         * unspec origin to prevent Configurator fallback problems on route
-         * deletion.
+         * The local routing table is maintained by the kernel and shouldn’t be
+         * manipulated by Configurator.
          */
-        if (family == AF_INET6 && route->protocol == NETCONF_RTPROT_UNSPEC)
+        if (family == AF_INET6 && route->table == NETCONF_RT_TABLE_LOCAL)
             continue;
 
         /* Append this route to the list */
