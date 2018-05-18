@@ -398,6 +398,8 @@ extern int rpc_pattern_sender(rcf_rpc_server *rpcs,
  * - @a a is @b arg->coef2,
  * - @a c is @b arg->coef3
  *
+ * See https://en.wikipedia.org/wiki/Linear_congruential_generator for details.
+ *
  * @param buf            Buffer
  * @param size           Buffer size in bytes
  * @param arg            Pointer to @ref tarpc_pat_gen_arg structure, where
