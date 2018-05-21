@@ -493,12 +493,31 @@ append_routes(netconf_list *nlist, te_string *const str)
             (route->src != NULL))
             continue;
 
-        /*
-         * The local routing table is maintained by the kernel and shouldn’t be
-         * manipulated by Configurator.
-         */
-        if (family == AF_INET6 && route->table == NETCONF_RT_TABLE_LOCAL)
-            continue;
+        if (family == AF_INET6)
+        {
+            /*
+             * The local routing table is maintained by the kernel and shouldn’t
+             * be manipulated by Configurator.
+             */
+            if (route->table == NETCONF_RT_TABLE_LOCAL)
+               continue;
+
+            /*
+             * IPv6 requires a link-local address on every network interface.
+             * There is also a corresponding entry in the main routing table.
+             * Don't pass link-local routes to prevent Configurator errors.
+             * Netlink returns RT_SCOPE_UNIVERSE for such routes, so check
+             * prefix with prefix length instead.
+             */
+            if (route->dst != NULL)
+            {
+                struct in6_addr addr;
+
+                memcpy(addr.s6_addr, route->dst, sizeof(addr.s6_addr));
+                if (IN6_IS_ADDR_LINKLOCAL(&addr) && route->dstlen == 64)
+                    continue;
+            }
+        }
 
         /* Append this route to the list */
 
