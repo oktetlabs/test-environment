@@ -273,6 +273,11 @@ extern te_errno ta_unix_conf_block_dev_init(void);
 extern te_errno ta_unix_conf_openvpn_init(void);
 #endif
 
+#ifdef WITH_TC
+extern te_errno ta_unix_conf_tc_init(void);
+extern te_errno ta_unix_conf_tc_fini(void);
+#endif
+
 #ifdef USE_LIBNETCONF
 netconf_handle nh = NETCONF_HANDLE_INVALID;
 #endif
@@ -1285,6 +1290,14 @@ rcf_ch_conf_init()
             goto fail;
         }
 #endif /* WITH_OPENVPN */
+
+#ifdef WITH_TC
+        if (ta_unix_conf_tc_init() != 0)
+        {
+            ERROR("Failed to add resource tc configuration subtree");
+            goto fail;
+        }
+#endif /* WITH_TC */
 
         if (ta_unix_conf_block_dev_init() != 0)
         {
