@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!-- This configuration model is intended for describing of configuration
+         related to Traffic Control interfaces on Agents -->
+
+    <!--
+        Copyright (C) 2018 OKTET Labs.
+
+        Author: Nikita Somenkov E-mail: Nikita.Somenkov@oktetlabs.ru
+    -->
+
+    <!-- Root object of Traffic Control configuration for the interface.
+         Name: empty -->
+    <object oid="/agent/interface/tc" access="read_only" type="none"/>
+    <!-- Queuing Disciplines entry
+         Name: empty -->
+    <object oid="/agent/interface/tc/qdisc" access="read_only" type="none"/>
+    <!-- Queuing Disciplines disable/enable
+         Name: empty
+         Value: 0 (disabled) or 1 (enabled) -->
+    <object oid="/agent/interface/tc/qdisc/enabled" access="read_write"
+            type="string"/>
+    <!-- Queuing Disciplines kind: "netem"
+         Name: empty
+         Value: netem - Network Emulation functionality -->
+    <object oid="/agent/interface/tc/qdisc/kind" access="read_write"
+            type="string" volatate="true"/>
+    <!-- Queuing Disciplines parent: "root"
+         Name: empty
+         Value: root - The primary and more common is the egress qdisc -->
+    <object oid="/agent/interface/tc/qdisc/parent" access="read_only"
+            type="string"/>
+    <!-- Queuing Disciplines handle: "1:0"
+         Name: empty
+         Value: 1:0 - Unique ID for qdisc -->
+    <object oid="/agent/interface/tc/qdisc/handle" access="read_only"
+            type="string"/>
+    <!-- Queuing Disciplines kind specific parameters
+         Name:  Available parameters if kind is "netem":
+                delay                   - Packet delay in micro seconds
+                jitter                  - Packet delay jitter in micro seconds
+                delay_correlation       - Packet delay correlation probability
+                                          [0.00 - 100.00]%
+
+                loss                    - Packet loss probability
+                                          [0.00 - 100.00]%
+                loss_correlation        - Packet loss correlation probability
+                                          [0.00 - 100.00]%
+
+                duplicate               - Packet duplication probability
+                                          [0.00 - 100.00]%
+                duplicate_correlation   - Packet duplication probability
+                                          [0.00 - 100.00]%
+
+                limit                   - Limit in bytes
+                gap                     - Re-ordering gap in packets
+                reorder_probability     - Re-ordering probability
+                                          [0.00 - 100.00]%
+                reorder_correlation     - Re-ordering correlation probability
+                                          [0.00 - 100.00]%
+
+                corruption_probability  - Corruption probability
+                                          [0.00 - 100.00]%
+                corruption_correlation  - Corruption correlation probability
+                                          [0.00 - 100.00]%
+                -->
+    <object oid="/agent/interface/tc/qdisc/param" access="read_create"
+            type="string">
+        <depends oid="/agent/interface/tc/qdisc/kind"/>
+    </object>
+</backup>
