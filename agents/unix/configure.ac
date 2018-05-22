@@ -355,6 +355,19 @@ then
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DENABLE_8021X"
 fi
 
+AC_ARG_WITH([tc],
+            [AS_HELP_STRING([--with-tc],
+                            [support Traffic Control support (default is NO)])],
+            [ac_cv_with_tc=yes], [ac_cv_with_tc=no])
+
+AM_CONDITIONAL([CFG_UNIX_TC], test x"$ac_cv_with_tc" != xno)
+
+if test x"$ac_cv_with_tc" != xno; then
+    NL_LIBS="-lnl-3 -lnl-route-3"
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_TC"
+    EXTRA_LDADD="$EXTRA_LDADD -Wl,-whole-archive ${NL_LIBS} -Wl,-no-whole-archive"
+fi
+
 DS_SOURCES=
 if test -n "$with_cfg_unix_daemons" ; then
   DAEMONS_CFLAGS=-DCFG_UNIX_DAEMONS
@@ -433,7 +446,7 @@ if test -n "$with_cfg_unix_daemons" ; then
         socks)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_SOCKS" ;;
 
-        *)  ;; 
+        *) ;;
     esac
   done
 fi
