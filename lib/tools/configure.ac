@@ -59,8 +59,6 @@ dnl Obtaining network info about host name (and/or service)
 dnl
 AC_CHECK_FUNCS([getaddrinfo])
 
-AC_CONFIG_HEADERS([package.h])
-
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE
