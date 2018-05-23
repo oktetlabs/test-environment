@@ -21,8 +21,6 @@ TE_APP_SET
 # Checks for libraries
 TE_PATH_LIBXML2
 
-AC_CONFIG_HEADERS([config.h])
-
 CPPFLAGS=${XML2_CFLAGS}
 AC_CHECK_TYPES([xmlError], [], [], [#include <libxml/xmlerror.h>])
 
