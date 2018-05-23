@@ -20,8 +20,6 @@ AC_PROG_INSTALL
 
 TE_LIB_SET
 
-AC_CONFIG_HEADERS([config.h])
-
 dnl Check for libjansson
 PKG_CHECK_MODULES([JANSSON], [jansson],
     [],
