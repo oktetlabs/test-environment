@@ -13,7 +13,6 @@
 #define TE_LGR_USER     "RPC rte_eth_dev"
 
 #include "te_config.h"
-#include "package.h"
 
 #include "te_alloc.h"
 

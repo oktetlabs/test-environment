@@ -25,8 +25,6 @@ AC_ARG_VAR([TE_BASE])
 
 TE_LIB_SET
 
-AC_CONFIG_HEADERS([package.h])
-
 TA=unix
 AC_SUBST(TA)
 

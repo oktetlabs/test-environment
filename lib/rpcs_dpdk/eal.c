@@ -13,9 +13,6 @@
 #define TE_LGR_USER     "RPC DPDK EAL"
 
 #include "te_config.h"
-#ifdef HAVE_PACKAGE_H
-#include "package.h"
-#endif
 
 #ifdef HAVE_TIME_H
 #include <time.h>

@@ -14,9 +14,6 @@
 #define TE_LGR_USER     "RPC DPDK MBUF"
 
 #include "te_config.h"
-#ifdef HAVE_PACKAGE_H
-#include "package.h"
-#endif
 
 #include "rte_config.h"
 #include "rte_mbuf.h"

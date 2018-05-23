@@ -18,7 +18,6 @@
 #include <linux/if_ether.h>
 
 #include "te_config.h"
-#include "package.h"
 #include "te_alloc.h"
 
 #include "rte_config.h"
