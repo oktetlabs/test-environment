@@ -4,7 +4,6 @@
 AC_PREREQ([2.59])
 AC_INIT([luaprofiler],[2.0.2])
 AC_CONFIG_SRCDIR([src/core_profiler.h])
-AC_CONFIG_HEADERS([config.h])
 
 AC_CONFIG_AUX_DIR([../../auxdir])
 AC_CONFIG_MACRO_DIR([../../auxdir])
