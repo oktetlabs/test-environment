@@ -15,7 +15,6 @@
 #define TE_LGR_USER     "RCF API"
 
 #include "te_config.h"
-#include "config.h"
 
 #include <stdio.h>
 #include <stdarg.h>

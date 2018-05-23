@@ -22,8 +22,6 @@ TE_LIB_SET
 
 AC_CHECK_TOOL(AR, ar)
 
-AC_CONFIG_HEADERS([config.h])
-
 AH_TEMPLATE(PTHREAD_SETSPECIFIC_BUG,
     [Workaround for pthread_setspecific() bug present in RedHat 9.0])
 
