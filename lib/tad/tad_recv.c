@@ -17,9 +17,6 @@
 #define TE_LGR_USER     "TAD Recv"
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include <assert.h>
 #include <stdio.h>

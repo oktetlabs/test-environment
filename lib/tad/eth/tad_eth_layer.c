@@ -18,9 +18,6 @@
 #define TE_LGR_USER     "TAD Ethernet"
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #if HAVE_STRING_H
 #include <string.h>

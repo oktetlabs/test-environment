@@ -11,7 +11,6 @@
 #endif
 
 #include "te_config.h"
-#include "config.h"
 
 #define TE_LGR_USER "TE Forw/SendQ"
 

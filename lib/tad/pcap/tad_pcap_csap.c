@@ -17,9 +17,6 @@
 #define TE_LGR_USER     "TAD PCAP"
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "te_errno.h"
 #include "tad_csap_support.h"

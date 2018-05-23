@@ -14,9 +14,6 @@
 #define TE_LGR_USER "TAD IP Stack Tools"
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "te_alloc.h"
 #include "tad_ipstack_impl.h"

@@ -15,9 +15,6 @@
 #define TE_LGR_USER "TAD ETH L3"
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include <string.h>
 #include "tad_eth_impl.h"

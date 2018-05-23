@@ -16,9 +16,6 @@
 #define TE_LGR_USER     "TAD CSAPs"
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #if defined(WITH_CS)
 
