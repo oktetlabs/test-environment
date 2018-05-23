@@ -18,9 +18,7 @@
 #define TE_LGR_USER     "TAPI UPnP Content Directory"
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
+
 #if HAVE_ERRNO_H
 #include <errno.h>
 #endif
