@@ -23,8 +23,6 @@ TE_LIB_SET
 RPC_XFILE=${srcdir}/../../include/tarpc.x.m4
 AC_SUBST([RPC_XFILE])
 
-AC_CONFIG_HEADERS([package.h])
-
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE
