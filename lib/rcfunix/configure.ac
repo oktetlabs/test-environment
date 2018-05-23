@@ -20,8 +20,6 @@ TE_LIB_SET
 AC_ARG_WITH([name],,,[with_name=$PACKAGE_NAME])
 AC_SUBST([with_name])
 
-AC_CONFIG_HEADERS([package.h])
-
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE
