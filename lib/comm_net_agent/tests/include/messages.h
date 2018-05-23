@@ -16,7 +16,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "config.h"
 
 /**
  * Compares binary contents of two buffers. 

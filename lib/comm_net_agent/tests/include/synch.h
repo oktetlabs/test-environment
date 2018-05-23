@@ -17,7 +17,6 @@
 extern "C" {
 #endif
 
-#include "config.h"
 
 #include <semaphore.h>
 

@@ -20,8 +20,6 @@ AC_PROG_INSTALL
 
 TE_LIB_SET
 
-AC_CONFIG_HEADER(package.h)
-
 AC_CONFIG_FILES([Makefile])
 
 #AC_CONFIG_SUBDIRS([tests])
