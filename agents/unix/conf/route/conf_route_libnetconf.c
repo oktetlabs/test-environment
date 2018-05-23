@@ -466,57 +466,26 @@ append_routes(netconf_list *nlist, te_string *const str)
             continue;
 
         /*
-         * If you create a new network address for any network interface,
-         * then it automatically adds a several routes. One of these routes
-         * has parameters:
-         *   - table = local,
-         *   - type = broadcast,
-         *   - empty field gateway,
-         *   - dst field has the last bits set to 0, according to the
-         *     network mask used for the address.
-         * In older kernels this route is removed when a secondary network
-         * address is deleted. Sometimes configurator for rollback has to
-         * remove a secondary network address. This causes removal of the
-         * route. Configurator should restore the route using the following
-         * steps:
-         *   1. Add the route with parameters: dst, gateway, table.
-         *   2. Add remaining fields one by one.
-         * But the kernel does not allow to create the route using only the
-         * parameters of the first point. So the test fails.
+         * The local routing table is maintained by the kernel and shouldn't
+         * be manipulated by Configurator.
          */
-        if (family == AF_INET && (route->table == NETCONF_RT_TABLE_LOCAL) &&
-            (route->type == NETCONF_RTN_BROADCAST) &&
-            (route->dst != NULL) &&
-            (route->dstlen == 32) &&
-            ((route->dst[3] & 1) == 0) &&
-            (route->gateway == NULL) &&
-            (route->src != NULL))
-            continue;
+        if (route->table == NETCONF_RT_TABLE_LOCAL)
+           continue;
 
-        if (family == AF_INET6)
+        /*
+         * IPv6 requires a link-local address on every network interface.
+         * There is also a corresponding entry in the main routing table.
+         * Don't pass link-local routes to prevent Configurator errors.
+         * Netlink returns RT_SCOPE_UNIVERSE for such routes, so check
+         * prefix with prefix length instead.
+         */
+        if (family == AF_INET6 && route->dst != NULL)
         {
-            /*
-             * The local routing table is maintained by the kernel and shouldn’t
-             * be manipulated by Configurator.
-             */
-            if (route->table == NETCONF_RT_TABLE_LOCAL)
-               continue;
+            struct in6_addr addr;
 
-            /*
-             * IPv6 requires a link-local address on every network interface.
-             * There is also a corresponding entry in the main routing table.
-             * Don't pass link-local routes to prevent Configurator errors.
-             * Netlink returns RT_SCOPE_UNIVERSE for such routes, so check
-             * prefix with prefix length instead.
-             */
-            if (route->dst != NULL)
-            {
-                struct in6_addr addr;
-
-                memcpy(addr.s6_addr, route->dst, sizeof(addr.s6_addr));
-                if (IN6_IS_ADDR_LINKLOCAL(&addr) && route->dstlen == 64)
-                    continue;
-            }
+            memcpy(addr.s6_addr, route->dst, sizeof(addr.s6_addr));
+            if (IN6_IS_ADDR_LINKLOCAL(&addr) && route->dstlen == 64)
+                continue;
         }
 
         /* Append this route to the list */
