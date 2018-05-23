@@ -28,8 +28,6 @@ AC_SUBST(host)
 
 TE_LIB_SET
 
-AC_CONFIG_HEADER(package.h)
-
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE
