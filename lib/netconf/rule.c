@@ -19,8 +19,6 @@
 #include "te_config.h"
 #include "te_defs.h"
 
-#include "package.h"
-
 #include <linux/fib_rules.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
