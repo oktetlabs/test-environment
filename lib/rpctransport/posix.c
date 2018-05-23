@@ -16,7 +16,6 @@
 #if (!defined(__CYGWIN__) && !defined(WINDOWS)) ||  \
     defined(ENABLE_TCP_TRANSPORT)
 #include "te_config.h"
-#include "package.h"
 
 #define TE_LGR_USER     "RPC Transport"
 
