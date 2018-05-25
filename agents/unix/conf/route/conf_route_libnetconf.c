@@ -472,20 +472,33 @@ append_routes(netconf_list *nlist, te_string *const str)
         if (route->table == NETCONF_RT_TABLE_LOCAL)
            continue;
 
-        /*
-         * IPv6 requires a link-local address on every network interface.
-         * There is also a corresponding entry in the main routing table.
-         * Don't pass link-local routes to prevent Configurator errors.
-         * Netlink returns RT_SCOPE_UNIVERSE for such routes, so check
-         * prefix with prefix length instead.
-         */
-        if (family == AF_INET6 && route->dst != NULL)
+        if (family == AF_INET6)
         {
-            struct in6_addr addr;
-
-            memcpy(addr.s6_addr, route->dst, sizeof(addr.s6_addr));
-            if (IN6_IS_ADDR_LINKLOCAL(&addr) && route->dstlen == 64)
+            /*
+             * We see that Neighbour Discovery and Router Discovery add routes
+             * to the unspec table. It is unclear whether it is a sort of
+             * coincidence or a rule. For now, we ignore the unspec table for
+             * IPv6. Maybe the same check should be added for IPv4, but it
+             * works for now, so let it be as it is.
+             */
+            if (route->table == NETCONF_RT_TABLE_UNSPEC)
                 continue;
+
+            /*
+             * IPv6 requires a link-local address on every network interface.
+             * There is also a corresponding entry in the main routing table.
+             * Don't pass link-local routes to prevent Configurator errors.
+             * Netlink returns RT_SCOPE_UNIVERSE for such routes, so check
+             * prefix with prefix length instead.
+             */
+            if (route->dst != NULL && route->dstlen == 64)
+            {
+                struct in6_addr addr;
+
+                memcpy(addr.s6_addr, route->dst, sizeof(addr.s6_addr));
+                if (IN6_IS_ADDR_LINKLOCAL(&addr))
+                    continue;
+            }
         }
 
         /* Append this route to the list */
