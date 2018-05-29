@@ -454,6 +454,18 @@ te_round_up_pow2(unsigned long long num)
 #define TE_COMPILE_TIME_ASSERT(x) \
     switch(0) {case 0: case x:;}
 
+/**
+ * This macro can be used to suppress -Wcast-function-type warning
+ * when casting function pointer to incompatible function pointer type.
+ * Usually it is not a good idea to do this, use it only if you are
+ * sure it is safe and there is no better alternative.
+ *
+ * @param _func_type      Desired function pointer type.
+ * @param _func_ptr       Function pointer.
+ */
+#define TE_FUNC_CAST(_func_type, _func_ptr) \
+    ((_func_type)(void (*)(void))(_func_ptr))
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
