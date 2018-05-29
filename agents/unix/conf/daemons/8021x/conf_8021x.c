@@ -92,9 +92,6 @@ static void supp_destroy(supplicant *supp);
 static supplicant *supp_find(const char *ifname);
 static te_errno supp_update(supplicant *supp);
 
-extern te_errno wifi_essid_get(unsigned int gid, const char *oid,
-                               char *value, const char *ifname);
-
 /**
  * XSupplicant service control functions
  *
@@ -445,11 +442,11 @@ wpa_supp_write_config(FILE *f, const supplicant *supp)
     const char *s_pairwise = supp_get_param(supp, SP_PAIRWISE);
     const char *s_psk = supp_get_param(supp, SP_PSK);
     const char *s_auth_alg = supp_get_param(supp, SP_AUTH_ALG);
+    const char *s_network = supp_get_param(supp, SP_NETWORK);
 
     fprintf(f, "ctrl_interface=/var/run/wpa_supplicant\n"
                "network={\n"
-               "  ssid=\"%s\"\n",
-            supp_get_param(supp, SP_NETWORK));
+               "  ssid=\"%s\"\n", s_network);
 
     if (s_identity[0] != '\0')
         fprintf(f, "  identity=\"%s\"\n", s_identity);
@@ -805,32 +802,6 @@ ds_supplicant_set(unsigned int gid, const char *oid,
     return 0;
 }
 
-/**
- * Set value of ESSID for supplicant
- *
- * Note: function is not static to be called from conf_wifi.c
- * when changing ESSID
- */
-te_errno
-ds_supplicant_network_set(unsigned int gid, const char *oid,
-                          const char *value, const char *instance, ...)
-{
-    supplicant *supp = supp_find(instance);
-    te_errno    rc;
-
-    UNUSED(gid);
-    UNUSED(oid);
-
-    RING("%s('%s','%s')", __FUNCTION__, instance, value);
-    if (supp == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    if ((rc = supp_set_param(supp, SP_NETWORK, value)) != 0)
-        return rc;
-
-    return supp_update(supp);
-}
-
 #define DS_SUPP_PARAM_GET(_func_name, _param_name) \
     static te_errno                                                     \
     _func_name(unsigned int gid, const char *oid,                       \
@@ -968,6 +939,10 @@ DS_SUPP_PARAM_SET(ds_supp_auth_alg_set, SP_AUTH_ALG)
 DS_SUPP_PARAM_GET(ds_supp_optstr_get, SP_OPTSTR)
 DS_SUPP_PARAM_SET(ds_supp_optstr_set, SP_OPTSTR)
 
+/** Network (ESSID) name */
+DS_SUPP_PARAM_GET(ds_supp_network_get, SP_NETWORK)
+DS_SUPP_PARAM_SET(ds_supp_network_set, SP_NETWORK)
+
 RCF_PCH_CFG_NODE_RW(node_ds_supp_auth_alg, "auth_alg",
                     NULL, &node_ds_supp_eaptls,
                     ds_supp_auth_alg_get,
@@ -1036,8 +1011,13 @@ RCF_PCH_CFG_NODE_RW(node_ds_supp_identity, "identity",
                     ds_supp_identity_get,
                     ds_supp_identity_set);
 
-RCF_PCH_CFG_NODE_RW(node_ds_supp_optstr, "optstr",
+RCF_PCH_CFG_NODE_RW(node_ds_supp_network, "network",
                     NULL, &node_ds_supp_identity,
+                    ds_supp_network_get,
+                    ds_supp_network_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_optstr, "optstr",
+                    NULL, &node_ds_supp_network,
                     ds_supp_optstr_get,
                     ds_supp_optstr_set);
 

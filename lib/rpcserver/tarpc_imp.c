@@ -7098,23 +7098,67 @@ get_nth_elm(int n)
 /**
  * Fill a buffer with values provided by @b get_nth_elm().
  *
- * @param buf       Buffer
- * @param size      Buffer size
- * @param start_n   Starting number in a sequence
+ * @param buf            Buffer
+ * @param size           Buffer size
+ * @param arg            Pointer to @ref tarpc_pat_gen_arg structure, where
+ *                       - coef1 is a starting number in a sequence
  *
  * @return 0 on success
  */
 te_errno
-fill_buff_with_sequence(char *buf, int size, uint64_t start_n)
+fill_buff_with_sequence(char *buf, int size, tarpc_pat_gen_arg *arg)
 {
     int i;
-    start_n = start_n % SEQUENCE_PERIOD_NUM;
+    int start_n = arg->coef1 % SEQUENCE_PERIOD_NUM;
+    arg->coef1 += size;
 
     for (i = 0; i < size; i++)
     {
         buf[i] = get_nth_elm(start_n + i);
     }
 
+    return 0;
+}
+
+/**
+ * Fills the buffer with a linear congruential sequence
+ * and updates @b arg parameter for the next call.
+ *
+ * Each element is calculated using the formula:
+ * X[n] = a * X[n-1] + c, where @a a and @a c are taken from @b arg parameter:
+ * - @a a is @b arg->coef2,
+ * - @a c is @b arg->coef3
+ *
+ * @param buf            Buffer
+ * @param size           Buffer size in bytes
+ * @param arg            Pointer to @ref tarpc_pat_gen_arg structure, where
+ *                       - coef1 is @a x0 - starting number in a sequence,
+ *                       - coef2 is @a a - multiplying constant,
+ *                       - coef3 is @a c - additive constant
+ *
+ * @return 0 on success
+ */
+te_errno
+fill_buff_with_sequence_lcg(char *buf, int size, tarpc_pat_gen_arg *arg)
+{
+    int i;
+    uint32_t x0 = arg->coef1;
+    uint32_t a = arg->coef2;
+    uint32_t c = arg->coef3;
+    uint32_t *p32buf = (uint32_t *)buf;
+    int word_size = (size + arg->offset + 3) / 4;
+
+    arg->offset = (size + arg->offset) % 4;
+    p32buf[0] = htonl(x0);
+
+    for (i = 1; i < word_size; ++i)
+    {
+        uint32_t curr_elem = a * x0 + c;
+        p32buf[i] = htonl(curr_elem);
+        x0 = curr_elem;
+    }
+
+    arg->coef1 = arg->offset ? x0 : (a * x0 + c);
     return 0;
 }
 
@@ -7129,11 +7173,14 @@ fill_buff_with_sequence(char *buf, int size, uint64_t start_n)
 int
 pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
 {
+#define MAX_OFFSET \
+    ((void*)pattern_gen_func == (void*)fill_buff_with_sequence_lcg ? 3 : 0)
+
     int             errno_save = errno;
     api_func_ptr    pattern_gen_func;
     api_func        send_func;
     iomux_funcs     iomux_f;
-    char           *buf;
+    char           *buf = NULL;
     iomux_func      iomux = in->iomux;
 
     int size = rand_range(in->size_min, in->size_max);
@@ -7142,6 +7189,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
     int fd = -1;
     int events = 0;
     int rc = 0;
+    int bytes_rest = 0;
 
     int                     iomux_timeout;
     iomux_state             iomux_st;
@@ -7150,6 +7198,8 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
 
     struct timeval tv_start;
     struct timeval tv_now;
+
+    tarpc_pat_gen_arg tmp_arg = in->gen_arg;
 
     out->bytes = 0;
 
@@ -7180,9 +7230,10 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
         return rc;
     }
 
-    if ((buf = malloc(in->size_max)) == NULL)
+    if ((buf = malloc(in->size_max + MAX_OFFSET)) == NULL)
     {
         ERROR("Out of memory");
+        iomux_close(iomux, &iomux_f, &iomux_st);
         return -1;
     }
 
@@ -7201,16 +7252,16 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
          MSEC_DIFF <= (int)TE_SEC2MS(in->time2run);
          gettimeofday(&tv_now, NULL))
     {
-        int len;
-
-        if (!in->size_rnd_once)
-            size = rand_range(in->size_min, in->size_max);
-
-        if ((rc = pattern_gen_func(buf, size, out->bytes)) != 0)
+        int len = 0;
+        uint32_t offset = in->gen_arg.offset;
+        if (offset > MAX_OFFSET)
         {
-            ERROR("%s(): failed to generate a pattern", __FUNCTION__);
+            ERROR("Offset is too big");
             PTRN_SEND_ERROR;
         }
+
+        if (!in->size_rnd_once && !bytes_rest)
+            size = rand_range(in->size_min, in->size_max);
 
         if (!in->delay_rnd_once)
             delay = rand_range(in->delay_min, in->delay_max);
@@ -7261,7 +7312,22 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
             PTRN_SEND_ERROR;
         }
 
-        len = send_func(in->s, buf, size, 0);
+        if (!bytes_rest)
+        {
+            bytes_rest = size;
+            tmp_arg = in->gen_arg;
+            if ((rc = pattern_gen_func(buf, size, &in->gen_arg)) != 0)
+            {
+                ERROR("%s(): failed to generate a pattern", __FUNCTION__);
+                PTRN_SEND_ERROR;
+            }
+            len = send_func(in->s, buf + offset, size, 0);
+        }
+        else
+        {
+            len = send_func(in->s, buf + offset + (size - bytes_rest),
+                            bytes_rest, 0);
+        }
 
         if (len < 0)
         {
@@ -7278,6 +7344,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
                 continue;
             }
         }
+        bytes_rest -= len;
         out->bytes += len;
     }
 #undef PTRN_SEND_ERROR
@@ -7285,6 +7352,14 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
 
     RING("pattern_sender() stopped, sent %llu bytes",
          out->bytes);
+
+    if (bytes_rest)
+    {
+        pattern_gen_func(buf, size - bytes_rest, &tmp_arg);
+        out->gen_arg = tmp_arg;
+    }
+    else
+        out->gen_arg = in->gen_arg;
 
     iomux_close(iomux, &iomux_f, &iomux_st);
     free(buf);
@@ -7320,8 +7395,8 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
     api_func_ptr    pattern_gen_func;
     api_func        recv_func;
     iomux_funcs     iomux_f;
-    char           *buf;
-    char           *check_buf;
+    char           *buf = NULL;
+    char           *check_buf = NULL;
     iomux_func      iomux = in->iomux;
 
     int fd = -1;
@@ -7360,9 +7435,12 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
     }
 
     if ((buf = malloc(MAX_PKT)) == NULL ||
-        (check_buf = malloc(MAX_PKT)) == NULL)
+        (check_buf = malloc(MAX_PKT + MAX_OFFSET)) == NULL)
     {
         ERROR("Out of memory");
+        free(buf);
+        free(check_buf);
+        iomux_close(iomux, &iomux_f, &iomux_st);
         return -1;
     }
 
@@ -7370,6 +7448,7 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
     do {                                         \
         iomux_close(iomux, &iomux_f, &iomux_st); \
         free(buf);                               \
+        free(check_buf);                         \
         return -1;                               \
     } while (0)
 
@@ -7381,7 +7460,8 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
          MSEC_DIFF <= (int)TE_SEC2MS(in->time2run);
          gettimeofday(&tv_now, NULL))
     {
-        int len;
+        int len = 0;
+        uint32_t offset = in->gen_arg.offset;
 
         iomux_timeout = (int)TE_SEC2MS(in->time2run) - MSEC_DIFF;
         if (iomux_timeout <= 0)
@@ -7425,7 +7505,6 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
         }
 
         len = recv_func(in->s, buf, MAX_PKT, MSG_DONTWAIT);
-
         if (len < 0)
         {
             int recv_errno = errno;
@@ -7440,32 +7519,36 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
         }
         else
         {
-            if ((rc = pattern_gen_func(check_buf, len, out->bytes)) != 0)
+            if ((rc = pattern_gen_func(check_buf, len, &in->gen_arg)) != 0)
             {
                 ERROR("%s(): failed to generate a pattern", __FUNCTION__);
                 PTRN_RECV_ERROR;
             }
 
-            if (memcmp(buf, check_buf, len) != 0)
+            if (memcmp(buf, check_buf + offset, len) != 0)
             {
                 ERROR("%s(): received data doesn't match a pattern",
                       __FUNCTION__);
                 iomux_close(iomux, &iomux_f, &iomux_st);
                 free(buf);
+                free(check_buf);
                 return -2;
             }
         }
-
         out->bytes += len;
     }
 #undef PTRN_RECV_ERROR
 #undef MSEC_DIFF
+#undef MAX_OFFSET
 
     RING("pattern_receiver() stopped, received %llu bytes",
          out->bytes);
 
+    out->gen_arg = in->gen_arg;
+
     iomux_close(iomux, &iomux_f, &iomux_st);
     free(buf);
+    free(check_buf);
 
     /* Clean up errno */
     errno = errno_save;

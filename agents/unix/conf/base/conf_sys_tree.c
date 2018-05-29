@@ -74,20 +74,6 @@ static te_errno register_sys_opts(const char *father, const char *path);
 static te_errno unregister_sys_opts(const char *father);
 
 /**
- * Check whether an expression evaluates to non-zero.
- * If it is, return its value.
- *
- * @param expr_     Expression to evaluate.
- */
-#define CHECK_NZ_RETURN(expr_) \
-    do {                            \
-        te_errno rc_ = (expr_);     \
-                                    \
-        if (rc_ != 0)               \
-            return rc_;             \
-    } while (0)
-
-/**
  * Create a tree of objects corresponding to directories and files in
  * /proc/sys/, link them to configuration tree.
  *

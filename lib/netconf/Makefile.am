@@ -11,6 +11,7 @@ include_HEADERS = netconf.h netconf_internal.h
 libnetconf_a_SOURCES = netconf.c \
 	link.c \
 	macvlan.c \
+	vlan.c \
 	net_addr.c \
 	route.c \
 	neigh.c \

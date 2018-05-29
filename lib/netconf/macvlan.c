@@ -22,15 +22,6 @@
 
 #define NETCONF_LINK_KIND_MACVLAN "macvlan"
 
-#define IFNAME_TO_INDEX(_name, _index) \
-    do {                                                            \
-        if ((_index = if_nametoindex(_name)) == 0)                  \
-        {                                                           \
-            ERROR("Failed to get index of interface %s", _name);    \
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);                    \
-        }                                                           \
-    } while (0)
-
 typedef struct macvlan_mode_map {
     uint32_t    val;
     const char *str;

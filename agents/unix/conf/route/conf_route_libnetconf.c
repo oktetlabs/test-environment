@@ -202,8 +202,8 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
                 found = TRUE;
             }
             else if ((route->family == AF_INET6) &&
-                     (memcmp(&SIN6(&(rt_info->dst))->sin6_addr,
-                             &addr_any, sizeof(struct in6_addr)) == 0))
+                     (memcmp(route->dst, &(SIN6(&(rt_info->dst))->sin6_addr),
+                             sizeof(struct in6_addr)) == 0))
             {
                 found = TRUE;
             }
@@ -439,34 +439,18 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
     return 0;
 }
 
-te_errno
-ta_unix_conf_route_list(char **list)
+static te_errno
+append_routes(netconf_list *nlist, te_string *const str)
 {
-    netconf_list       *nlist;
-    netconf_node       *t;
-    char               *cur_ptr;
+    netconf_node *t;
 
-    if (list == NULL)
-    {
-        ERROR("%s(): Invalid value for 'list' argument", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    /* Get IPv4 routes */
-    if ((nlist = netconf_route_dump(nh, AF_INET)) == NULL)
-    {
-        ERROR("%s(): Cannot get list of routes", __FUNCTION__);
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    buf[0] = '\0';
-    cur_ptr = buf;
     for (t = nlist->head; t != NULL; t = t->next)
     {
         const netconf_route *route = &(t->data.route);
+        const unsigned char  family = route->family;
         char                 ifname[IF_NAMESIZE];
 
-        if (route->family != AF_INET)
+        if (family != AF_INET && family != AF_INET6)
         {
             assert(0);
             continue;
@@ -482,68 +466,119 @@ ta_unix_conf_route_list(char **list)
             continue;
 
         /*
-         * If you create a new network address for any network interface,
-         * then it automatically adds a several routes. One of these routes
-         * has parameters:
-         *   - table = local,
-         *   - type = broadcast,
-         *   - empty field gateway,
-         *   - dst field has the last bits set to 0, according to the
-         *     network mask used for the address.
-         * In older kernels this route is removed when a secondary network
-         * address is deleted. Sometimes configurator for rollback has to
-         * remove a secondary network address. This causes removal of the
-         * route. Configurator should restore the route using the following
-         * steps:
-         *   1. Add the route with parameters: dst, gateway, table.
-         *   2. Add remaining fields one by one.
-         * But the kernel does not allow to create the route using only the
-         * parameters of the first point. So the test fails.
+         * The local routing table is maintained by the kernel and shouldn't
+         * be manipulated by Configurator.
          */
-        if ((route->table == NETCONF_RT_TABLE_LOCAL) &&
-            (route->type == NETCONF_RTN_BROADCAST) &&
-            (route->dst != NULL) &&
-            (route->dstlen == 32) &&
-            ((route->dst[3] & 1) == 0) &&
-            (route->gateway == NULL) &&
-            (route->src != NULL))
-            continue;
+        if (route->table == NETCONF_RT_TABLE_LOCAL)
+           continue;
+
+        if (family == AF_INET6)
+        {
+            /*
+             * We see that Neighbour Discovery and Router Discovery add routes
+             * to the unspec table. It is unclear whether it is a sort of
+             * coincidence or a rule. For now, we ignore the unspec table for
+             * IPv6. Maybe the same check should be added for IPv4, but it
+             * works for now, so let it be as it is.
+             */
+            if (route->table == NETCONF_RT_TABLE_UNSPEC)
+                continue;
+
+            /*
+             * IPv6 requires a link-local address on every network interface.
+             * There is also a corresponding entry in the main routing table.
+             * Don't pass link-local routes to prevent Configurator errors.
+             * Netlink returns RT_SCOPE_UNIVERSE for such routes, so check
+             * prefix with prefix length instead.
+             */
+            if (route->dst != NULL && route->dstlen == 64)
+            {
+                struct in6_addr addr;
+
+                memcpy(addr.s6_addr, route->dst, sizeof(addr.s6_addr));
+                if (IN6_IS_ADDR_LINKLOCAL(&addr))
+                    continue;
+            }
+        }
 
         /* Append this route to the list */
 
-        if (cur_ptr != buf)
-            cur_ptr += sprintf(cur_ptr, " ");
+        if (str->len != 0)
+            CHECK_NZ_RETURN(te_string_append(str, " "));
 
         if (route->dst == NULL)
         {
             assert(route->dstlen == 0);
-            cur_ptr += sprintf(cur_ptr, "0.0.0.0|0");
+            CHECK_NZ_RETURN(te_string_append(str, family == AF_INET ?
+                                             "0.0.0.0|0" : "::|0"));
         }
         else
         {
+            char addr_buf[INET6_ADDRSTRLEN];
+
             if (inet_ntop(route->family, route->dst,
-                          cur_ptr, INET_ADDRSTRLEN) != NULL)
-            {
-                cur_ptr += strlen(cur_ptr);
-                cur_ptr += sprintf(cur_ptr, "|%d", route->dstlen);
-            }
+                          addr_buf, sizeof(addr_buf)) != NULL)
+                CHECK_NZ_RETURN(te_string_append(str, "%s|%d", addr_buf,
+                                                 route->dstlen));
         }
 
         if (route->metric != 0)
-            cur_ptr += sprintf(cur_ptr, ",metric=%d", route->metric);
-
+            CHECK_NZ_RETURN(te_string_append(str, ",metric=%d", route->metric));
         if (route->tos != 0)
-            cur_ptr += sprintf(cur_ptr, ",tos=%d", route->tos);
-
+            CHECK_NZ_RETURN(te_string_append(str, ",tos=%d", route->tos));
         if (route->table != NETCONF_RT_TABLE_MAIN)
-            cur_ptr += snprintf(cur_ptr, &buf[BUF_MAXLENGTH-1]-cur_ptr,
-                                ",table=%d", route->table);
+            CHECK_NZ_RETURN(te_string_append(str, ",table=%d", route->table));
     }
 
+    return 0;
+}
+
+
+static te_errno
+retrieve_route_list(sa_family_t family, te_string *const str)
+{
+    netconf_list *nlist;
+    te_errno      rc;
+
+    if ((nlist = netconf_route_dump(nh, family)) == NULL)
+    {
+        ERROR("%s(): Cannot get list of routes", __FUNCTION__);
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    rc = append_routes(nlist, str);
     netconf_list_free(nlist);
 
-    if ((*list = strdup(buf)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    return rc;
+}
+
+te_errno
+ta_unix_conf_route_list(char **list)
+{
+    te_string str = TE_STRING_INIT;
+    te_errno  rc;
+
+    if (list == NULL)
+    {
+        ERROR("%s(): Invalid value for 'list' argument", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    /* Get IPv4 routes */
+    if ((rc = retrieve_route_list(AF_INET, &str)) != 0)
+    {
+        te_string_free(&str);
+        return rc;
+    }
+
+    /* Get IPv6 routes */
+    if ((rc = retrieve_route_list(AF_INET6, &str)) != 0)
+    {
+        te_string_free(&str);
+        return rc;
+    }
+
+    *list = str.ptr;
 
     return 0;
 }

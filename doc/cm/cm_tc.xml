@@ -10,7 +10,24 @@
         Author: Nikita Somenkov E-mail: Nikita.Somenkov@oktetlabs.ru
     -->
 
-    <!-- Root object of Traffic Control configuration for the interface.
+    <!-- Root object of wpa_supplicant configuration for the interface.
+         Name: empty -->
+    <object oid="/agent/interface/supplicant" access="read_write" type="integer"/>
+    <!-- Wireless network ESSID name -->
+    <object oid="/agent/interface/supplicant/network" access="read_write" type="string"/>
+    <!-- EAP identity: Double-quoted ASCII
+         Name: empty -->
+    <object oid="/agent/interface/supplicant/identity" access="read_write" type="string"/>
+    <!-- EAP method: "eap-md5", "eap-tls" etc.
+         Name: empty -->
+    <object oid="/agent/interface/supplicant/cur_method" access="read_write" type="string"/>
+    <!-- Authentication protocol: "WPA", "WPA2" or "RSN"
+         Name: empty -->
+    <object oid="/agent/interface/supplicant/proto" access="read_write" type="string"/>
+    <!-- Key management: "WPA-PSK", "WPA-EAP" or "NONE"
+         Name: empty -->
+    <object oid="/agent/interface/supplicant/key_mgmt" access="read_write" type="string"/>
+    <!-- WEP key0: Double-quoted string of hex digits
          Name: empty -->
     <object oid="/agent/interface/tc" access="read_only" type="none"/>
     <!-- Queuing Disciplines entry

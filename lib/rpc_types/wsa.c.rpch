@@ -2,14 +2,11 @@
  * @brief RPC types definitions
  *
  * RPC analogues of definitions from WinSock2.
- * 
- * 
- * Copyright (C) 2003-2018 OKTET Labs.
+ *
+ * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
- *
- * $Id$
  */
 
 #include "te_config.h"

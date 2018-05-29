@@ -63,6 +63,59 @@ extern "C" {
 #define TAPI_READ_BUF_SIZE 4096
 
 /**
+ * Pattern generator type
+ */
+typedef enum tapi_pat_gen_type {
+    TARPC_PATTERN_GEN_SEQ,  /**< Sequence generator, see
+                                 @ref fill_buff_with_sequence(). */
+    TARPC_PATTERN_GEN_LCG   /**< LCG generator, see
+                                 @ref RPC_PATTERN_GEN_LCG */
+} tapi_pat_gen_type;
+
+/**
+ * Structure describing random value generation.
+ */
+typedef struct tapi_rand_gen {
+    int min;                /**< Minimum value */
+    int max;                /**< Maximum value */
+    tarpc_bool once;        /**< If true, random value is calculated
+                                 only once and used for all messages;
+                                 if false, random value is calculated
+                                 for each message. */
+} tapi_rand_gen;
+
+/**
+ * Pattern sender settings
+ */
+typedef struct tapi_pat_sender {
+    tapi_pat_gen_type   gen;            /**< Pattern generator type*/
+    tarpc_pat_gen_arg   gen_arg;        /**< Pattern generator arguments*/
+    iomux_func          iomux;          /**< Iomux function to be used */
+    tapi_rand_gen       size;           /**< Size of the message*/
+    tapi_rand_gen       delay;          /**< Delay between message*/
+    int                 duration_sec;   /**< How long to run (in seconds)*/
+    tarpc_bool          ignore_err;     /**< Ignore errors while run */
+    /* out */
+    uint64_t           *sent;           /**< Number of sent bytes */
+    te_bool             send_failed;    /**< TRUE if @b send() call
+                                             was failed */
+} tapi_pat_sender;
+
+/**
+ * Pattern receiver settings
+ */
+typedef struct tapi_pat_receiver {
+    tapi_pat_gen_type   gen;            /**< Pattern generator type*/
+    tarpc_pat_gen_arg   gen_arg;        /**< Pattern generator arguments*/
+    iomux_func          iomux;          /**< Iomux function to be used */
+    int                 duration_sec;   /**< How long to run (in seconds)*/
+    /* out */
+    uint64_t           *received;       /**< Number of received bytes */
+    te_bool             recv_failed;    /**< TRUE if @b recv() call
+                                             was failed */
+} tapi_pat_receiver;
+
+/**
  * Try to search a given symbol in the current library used by
  * a given PCO with help of @b tarpc_find_func().
  *
@@ -269,12 +322,42 @@ extern int rpc_simple_sender(rcf_rpc_server *handle,
 extern int rpc_simple_receiver(rcf_rpc_server *handle,
                                int s, uint32_t time2run,
                                uint64_t *received);
+
+/**
+ * Function is a wrapper over rpc_pattern_sender().
+ *
+ * @param rpcs              RPC server
+ * @param s                 Socket for sending data
+ * @param sender            Pointer to @ref tapi_pat_sender structure
+ *                          describing pattern sender settings
+ *
+ * @return Number of sent bytes or -1 in the case of failure
+ */
+extern int tapi_rpc_sender(rcf_rpc_server *rpcs, int s,
+                           tapi_pat_sender *sender);
+
+/**
+ * Function is a wrapper over rpc_pattern_receiver().
+ *
+ * @param rpcs              RPC server
+ * @param s                 Socket for receiving data
+ * @param receiver          Pointer to @ref tapi_pat_receiver structure
+ *                          describing pattern receiver settings
+ *
+ * @return Number of received bytes, -2 if data doesn't match the pattern,
+ *         or -1 in the case of another failure
+ */
+extern int tapi_rpc_receiver(rcf_rpc_server *rpcs, int s,
+                             tapi_pat_receiver *receiver);
+
 /**
  * Patterned data sender.
  *
  * @param rpcs              RPC server
  * @param s                 a socket to be user for sending
  * @param fname             a function used to generate a pattern
+ * @param gen_arg           specific arguments for the pattern
+ *                          generator function
  * @param iomux             IO multiplexing function
  * @param size_min          minimum size of the message in bytes
  * @param size_max          maximum size of the message in bytes
@@ -297,7 +380,9 @@ extern int rpc_simple_receiver(rcf_rpc_server *handle,
  * @return Number of sent bytes or -1 in the case of failure
  */
 extern int rpc_pattern_sender(rcf_rpc_server *rpcs,
-                              int s, char *fname, int iomux, int size_min,
+                              int s, const char *fname,
+                              tarpc_pat_gen_arg *gen_arg,
+                              int iomux, int size_min,
                               int size_max, int size_rnd_once,
                               int delay_min, int delay_max,
                               int delay_rnd_once, int time2run,
@@ -305,11 +390,62 @@ extern int rpc_pattern_sender(rcf_rpc_server *rpcs,
                               te_bool *send_failed);
 
 /**
+ * Fills the buffer with a linear congruential sequence
+ * and updates @b arg parameter for the next call.
+ *
+ * Each element is calculated using the formula:
+ * X[n] = a * X[n-1] + c, where @a a and @a c are taken from @b arg parameter:
+ * - @a a is @b arg->coef2,
+ * - @a c is @b arg->coef3
+ *
+ * @param buf            Buffer
+ * @param size           Buffer size in bytes
+ * @param arg            Pointer to @ref tarpc_pat_gen_arg structure, where
+ *                       - coef1 is @a x0 - starting number in a sequence,
+ *                       - coef2 is @a a - multiplying constant,
+ *                       - coef3 is @a c - additive constant
+ *
+ * @return 0 on success
+ */
+#define RPC_PATTERN_GEN_LCG "fill_buff_with_sequence_lcg"
+
+/**
+ * @def TARPC_PAT_GEN_ARG_FMT
+ * Macro for logging the @ref tarpc_pat_gen_arg structure members.
+ * Using with @ref TARPC_PAT_GEN_ARG_VAL.
+ *
+ * Example:
+ * @code
+ * tarpc_pat_gen_arg pattern_gen_args = {1,2,3,4};
+ * RING("pattern generator coeffs are "TARPC_PAT_GEN_ARG_FMT,
+ *      TARPC_PAT_GEN_ARG_VAL(pattern_gen_args));
+ * @endcode
+ */
+#define TARPC_PAT_GEN_ARG_FMT "%u, %u, %u, %u"
+
+/**
+ * @def TARPC_PAT_GEN_ARG_VAL
+ * Macro for logging the @ref tarpc_pat_gen_arg structure members.
+ * Using with @ref TARPC_PAT_GEN_ARG_FMT.
+ *
+ * Example:
+ * @code
+ * tarpc_pat_gen_arg pattern_gen_args = {1,2,3,4};
+ * RING("pattern generator coeffs are "TARPC_PAT_GEN_ARG_FMT,
+ *      TARPC_PAT_GEN_ARG_VAL(pattern_gen_args));
+ * @endcode
+ */
+#define TARPC_PAT_GEN_ARG_VAL(_gen_arg) \
+  _gen_arg.offset, _gen_arg.coef1, _gen_arg.coef2, _gen_arg.coef3
+
+/**
  * Patterned data receiver.
  *
  * @param rpcs            RPC server
  * @param s               a socket to be user for receiving
  * @param fname           a function used to generate a pattern
+ * @param gen_arg         specific arguments for the pattern
+ *                        generator function
  * @param iomux           IO multiplexing function
  * @param received        location for number of received bytes
  * @param recv_failed     This will be set to @c TRUE if it was recv()
@@ -319,9 +455,9 @@ extern int rpc_pattern_sender(rcf_rpc_server *rpcs,
  *         or -1 in the case of another failure
  */
 extern int rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
-                                char *fname, int iomux,
-                                uint32_t time2run, uint64_t *received,
-                                te_bool *recv_failed);
+                                const char *fname, tarpc_pat_gen_arg *gen_arg,
+                                int iomux, uint32_t time2run,
+                                uint64_t *received, te_bool *recv_failed);
 
 /**
  * Wait for readable socket.

@@ -316,6 +316,10 @@ netconf_node_free(netconf_node *node)
             netconf_macvlan_node_free(node);
             break;
 
+        case NETCONF_NODE_VLAN:
+            netconf_vlan_node_free(node);
+            break;
+
         case NETCONF_NODE_VETH:
             netconf_veth_node_free(node);
             break;

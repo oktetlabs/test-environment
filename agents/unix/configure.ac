@@ -662,6 +662,14 @@ if test "$with_ntpd" = "yes" ; then
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_NTPD"
 fi
 
+AC_ARG_WITH([tirpc], , , )
+if test "x$with_tirpc" = "xyes" ; then
+    # Modern Linux distros, such as Fedora 28, do not have RPC support
+    # in glibc; libtirpc can be used instead.
+    TIRPC=`${TE_BASE}/engine/builder/static_libs_check.pl "-ltirpc"`
+    EXTRA_LDADD="$EXTRA_LDADD ${TIRPC}"
+fi
+
 AC_SUBST([EXTRA_CPPFLAGS])
 AC_SUBST([EXTRA_LDADD])
 

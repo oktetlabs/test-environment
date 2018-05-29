@@ -270,6 +270,10 @@ app_get_error(tapi_perf_app *app, tapi_perf_report *report)
     {
         const char *ptr = app->stderr.ptr;
 
+        /* TAPI_PERF_ERROR_READ is mostly just a warning, not an error */
+        if (errors[i].code == TAPI_PERF_ERROR_READ)
+            continue;
+
         while ((ptr = strstr(ptr, errors[i].msg)) != NULL)
         {
             report->errors[errors[i].code]++;
@@ -326,14 +330,16 @@ app_get_report(tapi_perf_app *app, tapi_perf_report *report)
     } while (0)
 
     /*
-     * The required data is in a line contains [SUM]. If the line is missed,
-     * a line with [ID] is followed by the line contains the data.
+     * The required data is in a line contains [SUM].
+     * If the line is missed (in case of single stream), a line with [ID] is
+     * followed by the line contains the data.
      * [ ID] Interval       Transfer     Bandwidth
      * [  4]  0.0- 5.1 sec  56.9 MBytes  94.1 Mbits/sec
      * [SUM] 0.0-60.3 sec 544 MBytes 75.6 Mbits/sec
      */
-    str = strstr(app->stdout.ptr, "SUM]");
-    if (str == NULL)
+    if (app->opts.streams > 1)
+        FIND_STRING(str, app->stdout.ptr, "SUM]");
+    else
     {
         FIND_STRING(str, app->stdout.ptr, "ID]");
         FIND_STRING(str, str, "[");  /* Line is below [ID] */

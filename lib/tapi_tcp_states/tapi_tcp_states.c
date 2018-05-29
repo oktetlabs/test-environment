@@ -391,13 +391,20 @@ tsa_gw_set(tsa_session *ss, rcf_rpc_server *pco_gw,
     ss->state.sock.route_src_added = TRUE;
 
     /* Turn on forwarding on router host */
-    rc = tapi_cfg_base_ipv4_fw_enabled(pco_gw->ta, &ss->state.sock.ipv4_fw);
-    if (rc != 0)
-        return rc;
-    rc = tapi_cfg_base_ipv4_fw(pco_gw->ta, TRUE);
-    if (rc != 0)
-        return rc;
-    ss->state.sock.ipv4_fw_enabled = TRUE;
+    if (family == RPC_AF_INET)
+    {
+        CHECK_NZ_RETURN(tapi_cfg_base_ipv4_fw_enabled(pco_gw->ta,
+                                                      &ss->state.sock.ipv4_fw));
+        CHECK_NZ_RETURN(tapi_cfg_base_ipv4_fw(pco_gw->ta, TRUE));
+        ss->state.sock.ipv4_fw_enabled = TRUE;
+    }
+    else if (family == RPC_AF_INET6)
+    {
+        CHECK_NZ_RETURN(tapi_cfg_base_ipv6_fw_enabled(pco_gw->ta,
+                                                      &ss->state.sock.ipv6_fw));
+        CHECK_NZ_RETURN(tapi_cfg_base_ipv6_fw(pco_gw->ta, TRUE));
+        ss->state.sock.ipv6_fw_enabled = TRUE;
+    }
 
     return 0;
 }
@@ -688,6 +695,14 @@ tsa_destroy_session(tsa_session *ss)
         {
             rc_aux = tapi_cfg_base_ipv4_fw(ss->config.pco_gw->ta,
                                            ss->state.sock.ipv4_fw);
+            if (rc_aux != 0)
+                rc = rc_aux;
+        }
+
+        if (ss->state.sock.ipv6_fw_enabled)
+        {
+            rc_aux = tapi_cfg_base_ipv6_fw(ss->config.pco_gw->ta,
+                                           ss->state.sock.ipv6_fw);
             if (rc_aux != 0)
                 rc = rc_aux;
         }

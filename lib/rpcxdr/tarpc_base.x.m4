@@ -4165,6 +4165,29 @@ struct tarpc_echoer_out {
     uint64_t    rx_stat<>;
 };
 
+/**
+ * @struct tarpc_pat_gen_arg
+ * Arguments to pass to the pattern generator function.
+ * Fields coefN can be used in different ways depending on a function.
+ * This structure can also be modified, e.g. add some more fields.
+ *
+ * @param offset    Offset within pattern generator element, from which sender
+ *                  must send and receiver must check the sequence.
+ *                  It is used in generator functions which operates with
+ *                  elements larger than a byte.
+ * @param coef1,
+ *        coef2,
+ *        coef3     Arguments for a pattern generator function.
+ */
+struct tarpc_pat_gen_arg {
+    uint32_t    offset;
+    uint32_t    coef1;
+    uint32_t    coef2;
+    uint32_t    coef3;
+};
+
+typedef struct tarpc_pat_gen_arg tarpc_pat_gen_arg;
+
 struct tarpc_pattern_sender_in {
     struct tarpc_in_arg common;
 
@@ -4178,9 +4201,9 @@ struct tarpc_pattern_sender_in {
                                      calculated only once and used for
                                      all messages; if false, random size
                                      is calculated for each message */
-    uint32_t    delay_min;      /**< Minimum delay between messages in 
+    uint32_t    delay_min;      /**< Minimum delay between messages in
                                      microseconds */
-    uint32_t    delay_max;      /**< Maximum delay between messages in 
+    uint32_t    delay_max;      /**< Maximum delay between messages in
                                      microseconds */
     tarpc_bool  delay_rnd_once; /**< If true, random delay should be
                                      calculated only once and used for
@@ -4189,6 +4212,9 @@ struct tarpc_pattern_sender_in {
                                      message */
     uint32_t    time2run;       /**< How long run (in seconds) */
     tarpc_bool  ignore_err;     /**< Ignore errors while run */
+
+    tarpc_pat_gen_arg gen_arg;  /**< Pattern generator function
+                                     arguments */
 };
 
 struct tarpc_pattern_sender_out {
@@ -4199,15 +4225,21 @@ struct tarpc_pattern_sender_out {
     uint64_t    bytes;          /**< Number of sent bytes */
     tarpc_bool  func_failed;    /**< TRUE if it was data transmitting
                                      function who failed */
+
+    tarpc_pat_gen_arg gen_arg;  /**< Pattern generator function
+                                     arguments */
 };
 
 struct tarpc_pattern_receiver_in {
     struct tarpc_in_arg common;
     
-    tarpc_int   s;               /**< Socket to be used */
-    char        fname<>;         /**< Pattern generating function */
-    iomux_func  iomux;           /**< Iomux function to be used **/
-    uint32_t    time2run;        /**< Receiving duration (in seconds) */
+    tarpc_int   s;              /**< Socket to be used */
+    char        fname<>;        /**< Pattern generating function */
+    iomux_func  iomux;          /**< Iomux function to be used **/
+    uint32_t    time2run;       /**< Receiving duration (in seconds) */
+
+    tarpc_pat_gen_arg gen_arg;  /**< Pattern generator function
+                                     arguments */
 };
 
 typedef struct tarpc_pattern_sender_out tarpc_pattern_receiver_out;
