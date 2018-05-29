@@ -195,7 +195,7 @@ rpc_xdr_decode_result(const char *name, void *buf, size_t buflen,
  * @param objp  C structure pointer
  */
 void
-rpc_xdr_free(rpc_func func, void *objp)
+rpc_xdr_free(rpc_arg_func func, void *objp)
 {
     XDR xdrs;
 
