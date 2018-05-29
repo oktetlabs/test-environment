@@ -89,8 +89,12 @@ extern char ta_dir[RCF_MAX_PATH];
 /** User environment */
 extern char **environ;
 
-#define SOLARIS (defined(__sun) || defined(sun)) && \
+#if (defined(__sun) || defined(sun)) && \
     (defined(__SVR4) || defined(__svr4__))
+#define SOLARIS TRUE
+#else
+#define SOLARIS FALSE
+#endif
 
 extern sigset_t         rpcs_received_signals;
 extern tarpc_siginfo_t  last_siginfo;
