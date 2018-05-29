@@ -695,6 +695,7 @@ tapi_nvme_target_setup(tapi_nvme_target *target)
     if (target->rpcs == NULL ||
         target->addr == NULL ||
         target->subnqn == NULL ||
+        target->device == NULL ||
         target->addr->sa_family != AF_INET)
     {
         ERROR("Target can't be setup: rpcs=%p addr=%p subnqn=%s",
