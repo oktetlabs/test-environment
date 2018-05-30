@@ -192,12 +192,6 @@ AC_CHECK_HEADERS([linux/if_vlan.h])
 AC_CHECK_HEADERS([search.h])
 
 dnl
-dnl Check for 'struct if_nameindex'
-dnl
-AC_CHECK_TYPES([struct if_nameindex], [], [],
-               [#include <net/if.h>])
-
-dnl
 dnl Asynchronous I/O:
 dnl - FreeBSD has in -lc;
 dnl - Linux has in -lnsl -lrt;
