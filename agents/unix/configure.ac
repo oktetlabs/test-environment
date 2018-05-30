@@ -198,11 +198,6 @@ AC_CHECK_HEADERS([inttypes.h])
 AC_CHECK_HEADERS([search.h])
 
 dnl
-dnl Terminal devices
-dnl
-AC_CHECK_HEADERS([termios.h])
-
-dnl
 dnl Parport devices
 dnl
 AC_CHECK_HEADERS([linux/ppdev.h])
