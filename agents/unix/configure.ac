@@ -187,7 +187,6 @@ AC_CHECK_HEADERS([security/pam_appl.h])
 [AC_DEFINE([HAVE_LIBPAM], [0],
            [No PAM (Pluggable Authentication Modules) support])])
 
-AC_CHECK_HEADERS([sys/utsname.h])
 AC_CHECK_HEADERS([sys/klog.h])
 AC_CHECK_HEADERS([linux/if_vlan.h])
 AC_CHECK_HEADERS([dirent.h])
