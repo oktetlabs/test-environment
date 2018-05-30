@@ -110,27 +110,6 @@ AC_CHECK_MEMBERS([struct arpreq.arp_dev], [], [],
                  [#include <net/if_arp.h>])
 
 dnl
-dnl Check for 'd_type' member in 'struct dirent'.
-dnl
-AC_CHECK_MEMBERS([struct dirent.d_type], [], [],
-                 [#include <dirent.h>])
-dnl
-dnl Check for 'd_off' member in 'struct dirent'.
-dnl
-AC_CHECK_MEMBERS([struct dirent.d_off], [], [],
-                 [#include <dirent.h>])
-dnl
-dnl Check for 'd_offset' member in 'struct dirent'.
-dnl
-AC_CHECK_MEMBERS([struct dirent.d_offset], [], [],
-                 [#include <dirent.h>])
-dnl
-dnl Check for 'd_namelen' member in 'struct dirent'.
-dnl
-AC_CHECK_MEMBERS([struct dirent.d_namelen], [], [],
-                 [#include <dirent.h>])
-
-dnl
 dnl Berkley Socket API is provided by:
 dnl - -lc on Linux, FreeBSD (5, 6), NetNSD (1.6, 2.0);
 dnl - -lsocket on Solaris2 (SunOS 5.11).
