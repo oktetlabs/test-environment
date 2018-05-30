@@ -191,7 +191,6 @@ AC_CHECK_HEADERS([sys/utsname.h])
 AC_CHECK_HEADERS([sys/klog.h])
 AC_CHECK_HEADERS([linux/if_vlan.h])
 AC_CHECK_HEADERS([dirent.h])
-AC_CHECK_HEADERS([sys/queue.h])
 AC_CHECK_HEADERS([search.h])
 
 dnl
