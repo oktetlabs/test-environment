@@ -38,8 +38,6 @@ if test x$host = x${host%windows} ; then
     dnl
     AC_SEARCH_LIBS([pthread_create], [pthread kse c_r], [],
                    AC_MSG_ERROR([No POSIX threads]))
-    AC_SEARCH_LIBS([pthread_atfork], [pthread kse c_r], [],
-                   AC_MSG_ERROR([pthread_atfork is not supported]))
 
     dnl
     dnl POSIX semaphores are provided by:
