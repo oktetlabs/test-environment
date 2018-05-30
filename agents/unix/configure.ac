@@ -198,11 +198,6 @@ AC_CHECK_HEADERS([inttypes.h])
 AC_CHECK_HEADERS([search.h])
 
 dnl
-dnl Parport devices
-dnl
-AC_CHECK_HEADERS([linux/ppdev.h])
-
-dnl
 dnl Check for 'struct if_nameindex'
 dnl
 AC_CHECK_TYPES([struct if_nameindex], [], [],
