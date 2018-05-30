@@ -63,12 +63,6 @@ AC_CHECK_TYPES([struct rtentry, struct ortentry], [], [],
                 #include <net/route.h>])
 
 dnl
-dnl Check for 'struct ip_opts'
-dnl
-AC_CHECK_TYPES([struct ip_opts], [], [],
-               [#include <netinet/in.h>])
-
-dnl
 dnl Check for 'struct lifreq'
 dnl
 AC_CHECK_TYPES([struct lifreq], [], [], [#include <net/if.h>])
