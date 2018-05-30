@@ -208,13 +208,6 @@ dnl
 AC_CHECK_HEADERS([linux/ppdev.h])
 
 dnl
-dnl We do not need epoll really, since we use it via RPC and dlopen,
-dnl but we do need the header for struct epoll_event.
-dnl
-AC_CHECK_TYPES([struct epoll_event], [], [],
-               [#include <sys/epoll.h>])
-
-dnl
 dnl Check for 'struct if_nameindex'
 dnl
 AC_CHECK_TYPES([struct if_nameindex], [], [],
