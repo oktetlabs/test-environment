@@ -455,6 +455,12 @@ te_round_up_pow2(unsigned long long num)
     switch(0) {case 0: case x:;}
 
 /**
+ * Void function pointer. Can be casted to any other function
+ * pointer type without cast-function-type warning.
+ */
+typedef void (*te_void_func)(void);
+
+/**
  * This macro can be used to suppress -Wcast-function-type warning
  * when casting function pointer to incompatible function pointer type.
  * Usually it is not a good idea to do this, use it only if you are
@@ -464,7 +470,7 @@ te_round_up_pow2(unsigned long long num)
  * @param _func_ptr       Function pointer.
  */
 #define TE_FUNC_CAST(_func_type, _func_ptr) \
-    ((_func_type)(void (*)(void))(_func_ptr))
+    ((_func_type)(te_void_func)(_func_ptr))
 
 #ifdef __cplusplus
 } /* extern "C" */
