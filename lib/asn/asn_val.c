@@ -165,7 +165,7 @@ asn_init_value(const asn_type * type)
         case CHOICE:
         case TAGGED:
             arr_len = 1;
-            /* fall through */
+            /*@fallthrough@*/
         case SEQUENCE:
         case SET:
             {
@@ -181,7 +181,7 @@ asn_init_value(const asn_type * type)
         case UINTEGER:
         case INTEGER:
             new_value->txt_len = 1;
-            /* fall through */
+            /*@fallthrough@*/
         default:
             new_value->data.integer = 0;
     }
@@ -743,7 +743,7 @@ asn_child_named_index(const asn_type *type, const char *labels,
         case CHOICE:
             if (*labels == '#')
                 labels++;
-            /* pass through ... */
+            /*@fallthrough@*/
         case SEQUENCE:
         case SET:
             n_en = type->sp.named_entries;
@@ -1062,7 +1062,8 @@ asn_get_child_by_index(const asn_value *container, asn_value **child,
     {
         case CHOICE:
         case TAGGED:
-            child_internal_offset = 0; /* fall through ... */
+            child_internal_offset = 0;
+            /*@fallthrough@*/
         case SEQUENCE:
         case SET:
             if ((index < 0) || ((unsigned)index > container->asn_type->len))
@@ -1182,11 +1183,11 @@ asn_put_child_by_index(asn_value *container, asn_value *new_value,
             }
 #endif
 
-            /* pass through ... */
+            /*@fallthrough@*/
         case SEQUENCE:
         case SET:
             index = leaf_type_index;
-            /* pass through ... */
+            /*@fallthrough@*/
 
         case CHOICE:
 
@@ -1445,7 +1446,7 @@ asn_read_primitive(const asn_value *value, void *data, size_t *d_len)
             m_len *= sizeof(int);
         else
             m_len = (m_len + 7) >> 3;
-        /* fall through */
+        /*@fallthrough@*/
     case CHAR_STRING:
     case LONG_INT:
     case OCT_STRING:
@@ -1592,7 +1593,7 @@ asn_write_primitive(asn_value *value, const void *data, size_t d_len)
             m_len *= sizeof(int);
         else
             m_len = (m_len + 7) >> 3;
-        /* fall through */
+        /*@fallthrough@*/
     case LONG_INT:
     case REAL:
     case OCT_STRING:
@@ -1804,7 +1805,7 @@ asn_impl_write_value_field(asn_value *container,
             m_len *= sizeof(int);
         else
             m_len = (m_len + 7) >> 3;
-        /* fall through */
+        /*@fallthrough@*/
     case LONG_INT:
     case REAL:
     case OCT_STRING:
@@ -2147,7 +2148,7 @@ asn_impl_write_component_value(asn_value *container,
             case 0:
                 /* there is subvalue on that place, should be freed first.*/
                 asn_put_child_value_by_label(container, NULL, cur_label);
-                /* pass through ... */
+                /*@fallthrough@*/
             case TE_EASNINCOMPLVAL:
             {
 
@@ -2699,7 +2700,7 @@ asn_impl_fall_down_to_tree_nc(const asn_value *container, char *field_labels,
             case CHOICE:
                 if (rest_labels && (*rest_labels == '#'))
                     rest_labels ++;
-                    /* fall through to the 'default' label. */
+                    /*@fallthrough@*/
                 else
                     break;
             default:
