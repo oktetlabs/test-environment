@@ -21,6 +21,8 @@
 #ifndef __TE_TOOLS_BUFS_H__
 #define __TE_TOOLS_BUFS_H__
 
+#include <stdlib.h>
+
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
