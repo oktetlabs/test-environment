@@ -15,9 +15,6 @@
 #define TE_LGR_USER     "TAD BPS"
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #if HAVE_STDLIB_H
 #include <stdlib.h>

@@ -15,7 +15,6 @@
 #define TE_LGR_USER     "RPC RTE mbuf layer"
 
 #include "te_config.h"
-#include "package.h"
 
 #include "rte_config.h"
 #include "rte_mbuf.h"

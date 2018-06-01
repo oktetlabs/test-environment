@@ -16,9 +16,6 @@
 #ifndef __TE_TAD_DHCP_IMPL_H__
 #define __TE_TAD_DHCP_IMPL_H__
 
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>

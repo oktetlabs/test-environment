@@ -804,12 +804,14 @@ extern int rcf_ch_kill_thread(unsigned int tid);
  * @param oid       full object instance identifier
  * @param value     location for the value
  *                  (a buffer of RCF_MAX_VAL bytes size)
- * @param instN     Nth instance name (maximum 10) or NULL
+ * @param ...       Up to 10 instance names (if there are less instances
+ *                  in configuration path than arguments, extra arguments
+ *                  will be set to @c NULL)
  *
  * @return Status code
  */
 typedef te_errno (* rcf_ch_cfg_get)(unsigned int gid, const char *oid,
-                                    char *value, const char *instN, ...);
+                                    char *value, ...);
 
 /**
  * Prototype for set instance value routine.
@@ -817,13 +819,14 @@ typedef te_errno (* rcf_ch_cfg_get)(unsigned int gid, const char *oid,
  * @param gid       group identifier
  * @param oid       full object instance identifier
  * @param value     value to set
- * @param instN     Nth instance name (maximum 10) or NULL
+ * @param ...       Up to 10 instance names (if there are less instances
+ *                  in configuration path than arguments, extra arguments
+ *                  will be set to @c NULL)
  *
  * @return Status code
  */
 typedef te_errno (* rcf_ch_cfg_set)(unsigned int gid, const char *oid,
-                                    const char *value,
-                                    const char *instN, ...);
+                                    const char *value, ...);
 
 /**
  * Prototype for add instance routine.
@@ -831,25 +834,28 @@ typedef te_errno (* rcf_ch_cfg_set)(unsigned int gid, const char *oid,
  * @param gid       group identifier
  * @param oid       full object instance identifier
  * @param value     value to set or NULL
- * @param instN     Nth instance name (maximum 10) or NULL
+ * @param ...       Up to 10 instance names (if there are less instances
+ *                  in configuration path than arguments, extra arguments
+ *                  will be set to @c NULL)
  *
  * @return Status code
  */
 typedef te_errno (* rcf_ch_cfg_add)(unsigned int gid, const char *oid,
-                                    const char *value,
-                                    const char *instN, ...);
+                                    const char *value, ...);
 
 /**
  * Prototype for delete instance routine.
  *
  * @param gid       group identifier
  * @param oid       full object instance identifier
- * @param instN     Nth instance name (maximum 10) or NULL
+ * @param ...       Up to 10 instance names (if there are less instances
+ *                  in configuration path than arguments, extra arguments
+ *                  will be set to @c NULL)
  *
  * @return Status code
  */
 typedef te_errno (* rcf_ch_cfg_del)(unsigned int gid, const char *oid,
-                                    const char *instN, ...);
+                                    ...);
 
 /**
  * Prototype for a routine that returns the list of instance names
@@ -864,14 +870,15 @@ typedef te_errno (* rcf_ch_cfg_del)(unsigned int gid, const char *oid,
  *                  (list entries should be separated with SPACE character.
  *                  For example if we need to return names 'a', 'b', 'c',
  *                  then returned string would be "a b c"
- * @param instN     Nth instance name (maximum 10, father's
- *                  instance name is last, if fit in 10)
+ * @param ...       Up to 10 instance names (if there are less instances
+ *                  in configuration path than arguments, extra arguments
+ *                  will be set to @c NULL)
  *
  * @return Status code
  */
 typedef te_errno (* rcf_ch_cfg_list)(unsigned int gid, const char *oid,
                                      const char *sub_id,
-                                     char **list, const char *instN, ...);
+                                     char **list, ...);
 
 /**
  * Propotype of the commit function.

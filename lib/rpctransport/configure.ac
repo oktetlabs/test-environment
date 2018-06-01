@@ -50,8 +50,6 @@ fi
 # be done prior to including any headers
 AC_SUBST([EXTRA_CPPFLAGS])
 
-AC_CONFIG_HEADER([package.h])
-
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE

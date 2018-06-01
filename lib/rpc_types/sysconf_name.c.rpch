@@ -9,9 +9,6 @@
  */
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #if HAVE_LIMITS_H
 #include <limits.h>

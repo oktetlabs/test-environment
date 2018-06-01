@@ -17,7 +17,6 @@
 #define TE_LGR_USER      "Configure iSCSI"
 
 #include "te_config.h"
-#include "package.h"
 
 #include <windows.h>
 #include <winioctl.h>
@@ -1702,7 +1701,6 @@ iscsi_win32_init_regexps(void)
 #else
 
 #include "te_config.h"
-#include "package.h"
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"

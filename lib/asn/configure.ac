@@ -21,8 +21,6 @@ AC_PROG_INSTALL
 # We use APP here as we need to build tests
 TE_APP_SET
 
-AC_CONFIG_HEADER(package.h)
-
 AC_CONFIG_FILES([Makefile tests/Makefile])
 
 TE_APP_RESTORE

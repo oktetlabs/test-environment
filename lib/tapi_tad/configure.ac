@@ -88,8 +88,6 @@ fi
 
 AC_CHECK_HEADERS([tapi_env.h])
 
-AC_CONFIG_HEADERS([config.h])
-
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE

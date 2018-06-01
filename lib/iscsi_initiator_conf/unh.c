@@ -17,7 +17,6 @@
 #define TE_LGR_USER      "Configure iSCSI"
 
 #include "te_config.h"
-#include "package.h"
 
 #include "te_defs.h"
 #include "te_errno.h"
@@ -396,7 +395,6 @@ iscsi_initiator_unh_set(iscsi_connection_req *req)
 #else /* __CYGWIN__ */
 
 #include "te_config.h"
-#include "package.h"
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"

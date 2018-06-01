@@ -17,7 +17,6 @@
 #define __TE_CONF_DEFS_H__
 
 #include "te_config.h"
-#include "config.h"
 
 #include <stdio.h>
 

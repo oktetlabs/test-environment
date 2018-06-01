@@ -19,8 +19,6 @@ AC_PROG_INSTALL
 
 TE_LIB_SET
 
-AC_CONFIG_HEADERS([config.h])
-
 dnl Check for libglib
 PKG_CHECK_MODULES([GLIB], [glib-2.0],
     [],

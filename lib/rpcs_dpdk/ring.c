@@ -13,9 +13,6 @@
 #define TE_LGR_USER     "RPC RTE ring"
 
 #include "te_config.h"
-#ifdef HAVE_PACKAGE_H
-#include "package.h"
-#endif
 
 #include "rte_config.h"
 #include "rte_ring.h"

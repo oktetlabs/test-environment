@@ -16,9 +16,6 @@
 #define TE_LGR_USER     "TAD ATM"
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 /* To get ntohl(),... */
 #if HAVE_SYS_TYPES_H

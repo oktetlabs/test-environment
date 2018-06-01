@@ -9,9 +9,6 @@
  */
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include <stdio.h>
 #if HAVE_STRING_H
