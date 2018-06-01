@@ -67,6 +67,7 @@
 #include "te_queue.h"
 #include "te_tools.h"
 #include "te_dbuf.h"
+#include "te_str.h"
 #include "tq_string.h"
 
 #include "agentlib.h"
@@ -171,7 +172,8 @@ tarpc_setlibname(const char *libname)
         return TE_RC(TE_TA_UNIX, TE_ENOSPC);
     }
     dynamic_library_set = TRUE;
-    strncpy(dynamic_library_name, libname, strlen(libname) + 1);
+    TE_STRNCPY(dynamic_library_name, sizeof(dynamic_library_name),
+               libname);
     RING("Dynamic library is set to '%s'", libname);
 
     if (tce_get_peer_function != NULL)
