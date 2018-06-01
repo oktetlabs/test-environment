@@ -33,8 +33,6 @@ AS_IF([test x"$with_tr069" != xno],
 
 AC_SUBST([RPC_XFILE])
 
-AC_CONFIG_HEADERS([config.h])
-
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE

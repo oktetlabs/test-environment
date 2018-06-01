@@ -77,7 +77,18 @@ map_name_to_level(const char *name)
     return 0;
 }
 
+/**
+ * Wrapper for close() to be called in thread cleanup.
+ *
+ * @param p     Pointer to socket FD.
+ */
+static void
+close_cleanup_wrapper(void *p)
+{
+    int *s = (int *)p;
 
+    close(*s);
+}
 
 /**
  * Remote logs output via Logger
@@ -223,9 +234,9 @@ log_remote(void *ready, int argc, char *argv[])
     }
 
     sem_post(ready);
-    
-    pthread_cleanup_push((void (*) (void *))close,
-                         (void *)(uintptr_t)s);
+
+    pthread_cleanup_push(&close_cleanup_wrapper,
+                         (void *)&s);
     pthread_cleanup_push(free, buffer);
     
     for (;;)

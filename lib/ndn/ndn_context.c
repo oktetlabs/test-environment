@@ -14,8 +14,6 @@
 
 #include "te_config.h"
 
-#include "config.h"
-
 #include "asn_impl.h"
 #include "tad_common.h"
 #include "ndn.h"

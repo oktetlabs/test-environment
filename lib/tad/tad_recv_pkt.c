@@ -16,9 +16,6 @@
 
 #define TE_LGR_USER     "TAD Recv Pkt"
 
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "te_config.h"
 

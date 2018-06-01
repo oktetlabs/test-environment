@@ -67,6 +67,7 @@
 #include "te_queue.h"
 #include "te_tools.h"
 #include "te_dbuf.h"
+#include "te_str.h"
 #include "tq_string.h"
 
 #include "agentlib.h"
@@ -89,8 +90,12 @@ extern char ta_dir[RCF_MAX_PATH];
 /** User environment */
 extern char **environ;
 
-#define SOLARIS (defined(__sun) || defined(sun)) && \
+#if (defined(__sun) || defined(sun)) && \
     (defined(__SVR4) || defined(__svr4__))
+#define SOLARIS TRUE
+#else
+#define SOLARIS FALSE
+#endif
 
 extern sigset_t         rpcs_received_signals;
 extern tarpc_siginfo_t  last_siginfo;
@@ -167,7 +172,8 @@ tarpc_setlibname(const char *libname)
         return TE_RC(TE_TA_UNIX, TE_ENOSPC);
     }
     dynamic_library_set = TRUE;
-    strncpy(dynamic_library_name, libname, strlen(libname) + 1);
+    TE_STRNCPY(dynamic_library_name, sizeof(dynamic_library_name),
+               libname);
     RING("Dynamic library is set to '%s'", libname);
 
     if (tce_get_peer_function != NULL)
@@ -7148,6 +7154,9 @@ fill_buff_with_sequence_lcg(char *buf, int size, tarpc_pat_gen_arg *arg)
     uint32_t *p32buf = (uint32_t *)buf;
     int word_size = (size + arg->offset + 3) / 4;
 
+    if (size == 0)
+        return 0;
+
     arg->offset = (size + arg->offset) % 4;
     p32buf[0] = htonl(x0);
 
@@ -7200,7 +7209,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
     struct timeval tv_now;
 
     tarpc_pat_gen_arg tmp_arg = in->gen_arg;
-
+    out->gen_arg = in->gen_arg;
     out->bytes = 0;
 
     RING("%s() started", __FUNCTION__);
@@ -7238,10 +7247,17 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
     }
 
 #define PTRN_SEND_ERROR \
-    do {                                             \
-        iomux_close(iomux, &iomux_f, &iomux_st); \
-        free(buf);                                   \
-        return -1;                                   \
+    do {                                                        \
+        if (bytes_rest != 0)                                    \
+        {                                                       \
+            pattern_gen_func(buf, size - bytes_rest, &tmp_arg); \
+            out->gen_arg = tmp_arg;                             \
+        }                                                       \
+        else                                                    \
+            out->gen_arg = in->gen_arg;                         \
+        iomux_close(iomux, &iomux_f, &iomux_st);                \
+        free(buf);                                              \
+        return -1;                                              \
     } while (0)
 
 #define MSEC_DIFF \
@@ -7260,7 +7276,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
             PTRN_SEND_ERROR;
         }
 
-        if (!in->size_rnd_once && !bytes_rest)
+        if (!in->size_rnd_once && bytes_rest == 0)
             size = rand_range(in->size_min, in->size_max);
 
         if (!in->delay_rnd_once)
@@ -7312,7 +7328,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
             PTRN_SEND_ERROR;
         }
 
-        if (!bytes_rest)
+        if (bytes_rest == 0)
         {
             bytes_rest = size;
             tmp_arg = in->gen_arg;
@@ -7353,7 +7369,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
     RING("pattern_sender() stopped, sent %llu bytes",
          out->bytes);
 
-    if (bytes_rest)
+    if (bytes_rest != 0)
     {
         pattern_gen_func(buf, size - bytes_rest, &tmp_arg);
         out->gen_arg = tmp_arg;
@@ -7411,6 +7427,7 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
     struct timeval tv_start;
     struct timeval tv_now;
 
+    out->gen_arg = in->gen_arg;
     out->bytes = 0;
 
     RING("%s() started", __FUNCTION__);
@@ -7449,6 +7466,7 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
         iomux_close(iomux, &iomux_f, &iomux_st); \
         free(buf);                               \
         free(check_buf);                         \
+        out->gen_arg = in->gen_arg;              \
         return -1;                               \
     } while (0)
 

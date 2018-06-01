@@ -16,7 +16,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "config.h"
 
 #define DEBUG(x...)                             \
     do {                                   \

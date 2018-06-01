@@ -18,8 +18,6 @@
 #include "netconf_internal.h"
 #include "te_config.h"
 
-#include "package.h"
-
 #define NETCONF_LINK_KIND_VLAN "vlan"
 
 /* See description in netconf.h */

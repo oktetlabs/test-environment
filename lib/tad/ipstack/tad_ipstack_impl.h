@@ -16,7 +16,6 @@
 #ifndef __TE_TAD_IPSTACK_IMPL_H__
 #define __TE_TAD_IPSTACK_IMPL_H__
 
-#include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>

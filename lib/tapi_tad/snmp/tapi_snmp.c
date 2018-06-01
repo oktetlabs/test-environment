@@ -15,8 +15,6 @@
 
 #define TE_LGR_USER     "TAPI SNMP"
 
-#include "config.h"
-
 #include "te_config.h"
 
 #include <stdio.h>

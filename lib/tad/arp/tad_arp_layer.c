@@ -16,9 +16,6 @@
 #define TE_LGR_USER     "TAD ARP"
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "te_errno.h"
 #include "logger_api.h"

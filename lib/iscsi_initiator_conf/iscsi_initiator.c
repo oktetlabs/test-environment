@@ -16,7 +16,6 @@
 #define TE_LGR_USER      "Configure iSCSI"
 
 #include "te_config.h"
-#include "package.h"
 
 #include <sys/types.h>
 #include <stddef.h>

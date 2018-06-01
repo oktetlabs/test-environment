@@ -15,7 +15,6 @@
 #define TE_LGR_USER     "RCF API"
 
 #include "te_config.h"
-#include "config.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -96,12 +95,8 @@ static int csap_tr_recv_get(const char *ta_name, int session,
 
 /* If pthread mutexes are supported - OK; otherwise hope for best... */
 #ifdef HAVE_PTHREAD_H
-#ifndef PTHREAD_SETSPECIFIC_BUG
 static pthread_once_t   once_control = PTHREAD_ONCE_INIT;
 static pthread_key_t    key;
-#else
-static pthread_mutex_t  rcf_lock = PTHREAD_MUTEX_INITIALIZER;
-#endif
 #endif
 
 /**
@@ -526,8 +521,6 @@ send_recv_rcf_ipc_message(thread_ctx_t *ctx,
                                 recv_buf, recv_size, p_answer);
 }
 
-#ifndef PTHREAD_SETSPECIFIC_BUG
-
 #ifdef HAVE_PTHREAD_H
 /**
  * Destructor of resources assosiated with thread.
@@ -632,104 +625,6 @@ get_ctx_handle(te_bool create)
     return handle;
 }
 
-#else /* PTHREAD_SETSPECIFIC_BUG */
-
-#ifndef HAVE_PTHREAD_H
-#error PTHREAD_SETSPECIFIC_BUG may be defined only if we have pthread API.
-#endif
-
-#define RCF_MAX_THREADS     1024
-
-/** Work-around against bug in RedHat */
-static struct {
-    pthread_t     tid;
-    thread_ctx_t  ctx_handle;
-} handles[RCF_MAX_THREADS];
-
-/**
- * Find thread IPC handle or initialize a new one.
- *
- * @param create    Create IPC client, if it is not exist or not
- *
- * @return IPC handle or NULL if IPC library returned an error
- */
-thread_ctx_t *
-get_ctx_handle(te_bool create)
-{
-    pthread_t   mine = pthread_self();
-    int         i;
-    te_errno    rc;
-
-    pthread_mutex_lock(&rcf_lock);
-    for (i = 0; i < RCF_MAX_THREADS; i++)
-    {
-        if (handles[i].tid == mine)
-        {
-            pthread_mutex_unlock(&rcf_lock);
-            return handles[i].handle;
-        }
-    }
-
-    if (create)
-    {
-        for (i = 0; i < RCF_MAX_THREADS; i++)
-        {
-            if (handles[i].tid == 0)
-            {
-                char name[RCF_MAX_NAME];
-
-                handles[i].tid = mine;
-
-                snprintf(name, RCF_MAX_NAME, "rcf_client_%u_%u",
-                         (unsigned int)getpid(), (unsigned int)mine);
-
-                rc = ipc_init_client(name, RCF_IPC,
-                                     &(handles[i].handle.ipc_handle));
-                if (rc != 0)
-                {
-                    pthread_mutex_unlock(&rcf_lock);
-                    fprintf(stderr, "ipc_init_client() failed\n");
-                    return NULL;
-                }
-                assert(handles[i].handle.ipc_handle != NULL);
-                CIRCLEQ_INIT(&(handles[i].handle.msg_buf_head));
-                pthread_mutex_unlock(&rcf_lock);
-                return &(handles[i].handle);
-            }
-        }
-        fprintf(stderr, "too many threads\n");
-    }
-    pthread_mutex_unlock(&rcf_lock);
-
-    return NULL;
-}
-
-/**
- * Free IPC client handle.
- */
-static void
-free_ctx_handle(void)
-{
-    pthread_t mine = pthread_self();
-    int       i;
-
-    pthread_mutex_lock(&rcf_lock);
-    for (i = 0; i < RCF_MAX_THREADS; i++)
-    {
-        if (handles[i].tid == mine)
-        {
-            handles[i].tid = 0;
-            handles[i].handle.ipc_handle = NULL;
-            /* @todo clean message buffer */
-            msg_buffer_clear(&(handles[i].handle.msg_buf_head));
-            break;
-        }
-    }
-    pthread_mutex_unlock(&rcf_lock);
-}
-
-#endif /* PTHREAD_SETSPECIFIC_BUG */
-
 
 /**
  * Clean up resources allocated by RCF API.
@@ -738,7 +633,7 @@ free_ctx_handle(void)
 void
 rcf_api_cleanup(void)
 {
-#if HAVE_PTHREAD_H && !PTHREAD_SETSPECIFIC_BUG
+#if HAVE_PTHREAD_H
     rcf_api_thread_ctx_destroy(get_ctx_handle(FALSE));
     /* Write NULL to key value */
     if (pthread_setspecific(key, NULL) != 0)
@@ -754,9 +649,6 @@ rcf_api_cleanup(void)
         ERROR("%s(): ipc_close_client() failed", __FUNCTION__);
         fprintf(stderr, "ipc_close_client() failed\n");
     }
-#if PTHREAD_SETSPECIFIC_BUG
-    free_ctx_handle();
-#endif
 #endif
 }
 

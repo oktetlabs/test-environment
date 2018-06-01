@@ -16,9 +16,6 @@
 #define TE_LGR_USER     "TAD ICMP"
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include <string.h>
 #include <stdlib.h>

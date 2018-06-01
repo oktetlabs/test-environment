@@ -45,7 +45,7 @@ RPCGEN_M4 = $(DESTDIR)/$(datadir)/rpcgen/rpcgen.m4
 	echo '#include "rpc_xdr.h"' >>$@
 	echo '#include "tarpc.h"' >>$@
 	echo 'rpc_info ${*F}_functions[] = {' >>$@
-	sed -n '/^[ \t]*version/,/^[ \t]*}/s/^[ \t]*\(\w\+\)[ \t]*_\(\w\+\)(\(\w\+\)[ \t]*\*)[ \t]*=[ \t]*[0-9]\+;[ \t]*$$/{"\2", \n#ifdef TE_RPC_CLIENT\nNULL,\n#else\n(rpc_func)_\2_1_svc,\n#endif\n (rpc_func)xdr_\3, sizeof(\3), (rpc_func)xdr_\1, sizeof(\1)},/p' $< >>$@
+	sed -n '/^[ \t]*version/,/^[ \t]*}/s/^[ \t]*\(\w\+\)[ \t]*_\(\w\+\)(\(\w\+\)[ \t]*\*)[ \t]*=[ \t]*[0-9]\+;[ \t]*$$/{"\2", \n#ifdef TE_RPC_CLIENT\nNULL,\n#else\n(rpc_func)_\2_1_svc,\n#endif\n (rpc_arg_func)xdr_\3, sizeof(\3), (rpc_arg_func)xdr_\1, sizeof(\1)},/p' $< >>$@
 	echo '{ NULL, NULL, NULL, 0, NULL, 0 }};' >>$@
 
 # What is done here:

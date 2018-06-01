@@ -14,7 +14,6 @@
 #ifndef __TE_TAD_OVERLAY_TOOLS_H__
 #define __TE_TAD_OVERLAY_TOOLS_H__
 
-#include "config.h"
 
 #include "te_defs.h"
 #include "te_errno.h"

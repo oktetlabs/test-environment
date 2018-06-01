@@ -16,7 +16,6 @@
 #ifndef __TE_TAD_SNMP_IMPL_H__
 #define __TE_TAD_SNMP_IMPL_H__
 
-#include "config.h"
 
 #if HAVE_STDIO_H
 #include <stdio.h>

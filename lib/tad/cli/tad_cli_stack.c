@@ -17,9 +17,6 @@
 #define TE_LGR_USER     "TAD CLI"
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #if HAVE_ASSERT_H
 #include <assert.h>

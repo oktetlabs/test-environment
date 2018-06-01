@@ -35,7 +35,6 @@ AC_CHECK_HEADERS(net-snmp/definitions.h, has_snmp=true,has_snmp=false,
 AM_CONDITIONAL(HAS_SNMP, test x$has_snmp = xtrue )
 
 
-AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE

@@ -16,9 +16,6 @@
 #define TE_LGR_USER     "TAD iSCSI"
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include <stdio.h>
 #if HAVE_SYS_TYPES_H

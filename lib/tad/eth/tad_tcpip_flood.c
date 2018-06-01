@@ -16,9 +16,6 @@
 #define TE_LGR_USER     "TAD TCP/IP misc"
 
 #include "te_config.h"
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 /* whole file have no any sence without these libraries */
 #if HAVE_NETPACKET_PACKET_H && HAVE_SYS_IOCTL_H && HAVE_NETINET_IN_H

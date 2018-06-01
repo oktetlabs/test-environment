@@ -18,7 +18,6 @@
 #define TE_LGR_USER      "Log Kernel"
 
 #include "te_config.h"
-#include "package.h"
 
 #include <limits.h>
 #include <sys/time.h>

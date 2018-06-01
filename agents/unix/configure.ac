@@ -63,12 +63,6 @@ AC_CHECK_TYPES([struct rtentry, struct ortentry], [], [],
                 #include <net/route.h>])
 
 dnl
-dnl Check for 'struct ip_opts'
-dnl
-AC_CHECK_TYPES([struct ip_opts], [], [],
-               [#include <netinet/in.h>])
-
-dnl
 dnl Check for 'struct lifreq'
 dnl
 AC_CHECK_TYPES([struct lifreq], [], [], [#include <net/if.h>])
@@ -116,27 +110,6 @@ AC_CHECK_MEMBERS([struct arpreq.arp_dev], [], [],
                  [#include <net/if_arp.h>])
 
 dnl
-dnl Check for 'd_type' member in 'struct dirent'.
-dnl
-AC_CHECK_MEMBERS([struct dirent.d_type], [], [],
-                 [#include <dirent.h>])
-dnl
-dnl Check for 'd_off' member in 'struct dirent'.
-dnl
-AC_CHECK_MEMBERS([struct dirent.d_off], [], [],
-                 [#include <dirent.h>])
-dnl
-dnl Check for 'd_offset' member in 'struct dirent'.
-dnl
-AC_CHECK_MEMBERS([struct dirent.d_offset], [], [],
-                 [#include <dirent.h>])
-dnl
-dnl Check for 'd_namelen' member in 'struct dirent'.
-dnl
-AC_CHECK_MEMBERS([struct dirent.d_namelen], [], [],
-                 [#include <dirent.h>])
-
-dnl
 dnl Berkley Socket API is provided by:
 dnl - -lc on Linux, FreeBSD (5, 6), NetNSD (1.6, 2.0);
 dnl - -lsocket on Solaris2 (SunOS 5.11).
@@ -169,16 +142,6 @@ if test -n "$with_rcf_rpc" -o -n "$with_cfg_unix_daemons" ; then
     AC_CHECK_FUNC([dlopen], [],
                   AC_CHECK_LIB([dl], [dlopen], [],
                                AC_MSG_ERROR([No dynamic linker API found])))
-
-    dnl
-    dnl Check if RTLD_NODELETE constant is defined
-    dnl (it could be defined either as a macro or
-    dnl as an element of enumeration).
-    dnl
-    AH_TEMPLATE([HAVE_RTLD_NODELETE], [check RTLD_NODELETE constant])
-    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <dlfcn.h>]],
-                                    [[dlopen("", RTLD_NODELETE); ]])],
-                   [AC_DEFINE(HAVE_RTLD_NODELETE)],[])
 fi
 
 dnl
@@ -195,8 +158,6 @@ dnl - -lc in QNX (usually included automatically)
 dnl
 AC_SEARCH_LIBS([pthread_create], [pthread kse c_r], [],
                AC_MSG_ERROR([No POSIX threads]))
-AC_SEARCH_LIBS([pthread_atfork], [pthread kse c_r], [],
-               AC_MSG_ERROR([pthread_atfork is not supported]))
 
 dnl
 dnl POSIX semaphores are provided by:
@@ -226,57 +187,9 @@ AC_CHECK_HEADERS([security/pam_appl.h])
 [AC_DEFINE([HAVE_LIBPAM], [0],
            [No PAM (Pluggable Authentication Modules) support])])
 
-AC_CHECK_HEADERS([sys/utsname.h])
-AC_CHECK_HEADERS([sys/systeminfo.h])
 AC_CHECK_HEADERS([sys/klog.h])
 AC_CHECK_HEADERS([linux/if_vlan.h])
-AC_CHECK_HEADERS([dirent.h])
-AC_CHECK_HEADERS([sys/statvfs.h])
-AC_CHECK_HEADERS([sys/queue.h])
-AC_CHECK_HEADERS([inttypes.h])
 AC_CHECK_HEADERS([search.h])
-
-dnl
-dnl Terminal devices
-dnl
-AC_CHECK_HEADERS([termios.h])
-
-dnl
-dnl Parport devices
-dnl
-AC_CHECK_HEADERS([linux/ppdev.h])
-
-dnl
-dnl We do not need epoll really, since we use it via RPC and dlopen,
-dnl but we do need the header for struct epoll_event.
-dnl
-AC_CHECK_TYPES([struct epoll_event], [], [],
-               [#include <sys/epoll.h>])
-
-dnl
-dnl Check for 'struct if_nameindex'
-dnl
-AC_CHECK_TYPES([struct if_nameindex], [], [],
-               [#include <net/if.h>])
-
-
-dnl
-dnl Check for 'struct sg_io_hdr'
-dnl
-AC_CHECK_HEADERS([scsi/sg.h])
-AC_CHECK_HEADERS([cam/scsi/scsi_sg.h])
-
-AC_CHECK_TYPES([struct sg_io_hdr], [], [], [
-#if HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#if HAVE_SCSI_SG_H
-#include <scsi/sg.h>
-#endif
-#if HAVE_CAM_SCSI_SCSI_SG_H
-#include <cam/scsi/scsi_sg.h>
-#endif
-])
 
 dnl
 dnl Asynchronous I/O:

@@ -598,20 +598,33 @@ extern te_bool tarpc_has_deferred_calls(const deferred_call_list *list);
 extern void tarpc_generic_service(deferred_call_list *list,
                                   rpc_call_data *call);
 
+/*
+ * FIXME: here TE_FUNC_CAST() macro is used because we by default
+ * represent function as api_func (take integer argument and may be
+ * other arguments as well, return integer value), and not every
+ * system function matches such prototype. Perhaps we need to
+ * use void (*)(void) as default type which at least can be casted
+ * to any other function pointer type without warning, so that
+ * there will be no need in TE_FUNC_CAST() here.
+ */
+
 #define TARPC_FUNC_DECL_UNSAFE(_func)                                   \
     const api_func func = _call->func;                                  \
-    const api_func_ptr func_ptr = (api_func_ptr)func;                   \
-    const api_func_void func_void =  (api_func_void)func;               \
-    const api_func_ret_ptr func_ret_ptr = (api_func_ret_ptr)func;       \
+    const api_func_ptr func_ptr = TE_FUNC_CAST(api_func_ptr, func);     \
+    const api_func_void func_void =  TE_FUNC_CAST(api_func_void, func); \
+    const api_func_ret_ptr func_ret_ptr =                               \
+        TE_FUNC_CAST(api_func_ret_ptr, func);                           \
     const api_func_ptr_ret_ptr func_ptr_ret_ptr =                       \
-    (api_func_ptr_ret_ptr)func;                                         \
+        TE_FUNC_CAST(api_func_ptr_ret_ptr, func);                       \
                                                                         \
     const api_func_void_ret_ptr func_void_ret_ptr =                     \
-    (api_func_void_ret_ptr)func;                                        \
-    const api_func_ret_int64 func_ret_int64 = (api_func_ret_int64)func;
+        TE_FUNC_CAST(api_func_void_ret_ptr, func);                      \
+    const api_func_ret_int64 func_ret_int64 =                           \
+        TE_FUNC_CAST(api_func_ret_int64, func);
 
 #define TARPC_FUNC_DECL_SAFE(_func)                                     \
-    __typeof(_func) * const func = (__typeof(_func) *)_call->func;      \
+    __typeof(_func) * const func =                                      \
+                  TE_FUNC_CAST(__typeof(_func) *, _call->func);         \
     __typeof(_func) * const func_ptr = func;                            \
     __typeof(_func) * const func_void =  func;                          \
     __typeof(_func) * const func_ret_ptr = func;                        \
@@ -622,8 +635,8 @@ extern void tarpc_generic_service(deferred_call_list *list,
 #define TARPC_FUNC_DECL_STANDALONE(_func)
 
 #define TARPC_FUNC_INIT_DYNAMIC(_func) NULL
-#define TARPC_FUNC_INIT_STATIC(_func) ((api_func)(_func))
-#define TARPC_FUNC_INIT_STANDALONE(_func) ((api_func)(abort))
+#define TARPC_FUNC_INIT_STATIC(_func) (TE_FUNC_CAST(api_func, _func))
+#define TARPC_FUNC_INIT_STANDALONE(_func) (TE_FUNC_CAST(api_func, abort))
 
 #define TARPC_FUNC_UNUSED_UNSAFE                                        \
     UNUSED(func_ptr);                                                   \

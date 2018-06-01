@@ -28,8 +28,6 @@ AC_SUBST(host)
 
 TE_LIB_SET
 
-AC_CONFIG_HEADER(package.h)
-
 AC_CHECK_HEADERS([pthread.h])
 AC_CHECK_FUNCS([pthread_atfork])
 

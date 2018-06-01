@@ -43,7 +43,6 @@ AC_SUBST([ACSE_LIBS])
 # Restore the list of LIBS
 LIBS=$MY_LIBS_SAVED
 
-AC_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile])
 
 TE_APP_RESTORE

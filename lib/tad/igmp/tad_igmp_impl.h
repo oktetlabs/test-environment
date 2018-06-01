@@ -16,9 +16,6 @@
 #ifndef __TE_TAD_IGMP_IMPL_H__
 #define __TE_TAD_IGMP_IMPL_H__
 
-#if HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "te_errno.h"
 

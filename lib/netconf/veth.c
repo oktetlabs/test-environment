@@ -17,8 +17,6 @@
 #include "te_config.h"
 #include "te_alloc.h"
 
-#include "package.h"
-
 /* Assume the linux is modern enough to have veth.h, otherwise - break the
  * build. */
 #include <linux/veth.h>

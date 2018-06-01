@@ -11,8 +11,6 @@ AC_CONFIG_MACRO_DIR([../../../auxdir])
 AM_INIT_AUTOMAKE([1.8.5 foreign -Wall])
 TE_SETUP_AR
 
-AC_CONFIG_HEADERS([include/config.h])
-
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL

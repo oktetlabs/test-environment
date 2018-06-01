@@ -23,6 +23,10 @@ extern "C" {
 #include "te_errno.h"
 #include "tarpc.h"
 
+#ifdef HAVE_RPC_TYPES_H
+#include <rpc/types.h>
+#endif
+
 /** Usual RPC buffer length */
 #define RCF_RPC_BUF_LEN          2048
 
@@ -35,16 +39,17 @@ extern "C" {
 /** Maximum length of the RPC */
 #define RCF_RPC_MAX_NAME        64
 
-typedef te_bool (*rpc_func)(void *xdrs,...);
+typedef bool_t (*rpc_func)(void *in, void *out, void *rqstp);
+typedef bool_t (*rpc_arg_func)(void *xdrs, void *arg);
 
 /** Information about the RPC function */
 typedef struct {
-    const char *name; /**< Name of RPC function, i.g. "bind" */
-    rpc_func rpc;     /**< Address of the RPC function */
-    rpc_func in;      /**< Address of input argument encoder/decoder */
-    int      in_len;  /**< Size of the input argument structure */
-    rpc_func out;     /**< Address of output argument encoder/decoder */
-    int      out_len; /**< Size of the output argument structure */
+    const char   *name;    /**< Name of RPC function, i.g. "bind" */
+    rpc_func      rpc;     /**< Address of the RPC function */
+    rpc_arg_func  in;      /**< Address of input argument encoder/decoder */
+    int           in_len;  /**< Size of the input argument structure */
+    rpc_arg_func  out;     /**< Address of output argument encoder/decoder */
+    int           out_len; /**< Size of the output argument structure */
 } rpc_info;
 
 /** RPC functions table; generated automatically
@@ -161,7 +166,7 @@ extern te_errno rpc_xdr_inspect_result(const void *buf, size_t buflen,
  * @param func  XDR function
  * @param objp  C structure pointer
  */
-extern void rpc_xdr_free(rpc_func func, void *objp);
+extern void rpc_xdr_free(rpc_arg_func func, void *objp);
 
 
 #ifdef __cplusplus
