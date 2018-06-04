@@ -1741,6 +1741,17 @@ struct tarpc_rte_eth_dev_rx_offload_name_out {
     string               retval<>;
 };
 
+/** rte_eth_dev_tx_offload_name() */
+struct tarpc_rte_eth_dev_tx_offload_name_in {
+    struct tarpc_in_arg common;
+    uint64_t            offload;
+};
+
+struct tarpc_rte_eth_dev_tx_offload_name_out {
+    struct tarpc_out_arg common;
+    string               retval<>;
+};
+
 /**
  * rte_flow API
  */
@@ -2004,6 +2015,7 @@ program dpdk
         RPC_DEF(rte_eth_dev_get_port_by_name)
         RPC_DEF(rte_eth_dev_get_name_by_port)
         RPC_DEF(rte_eth_dev_rx_offload_name)
+        RPC_DEF(rte_eth_dev_tx_offload_name)
 
         RPC_DEF(rte_mk_flow_rule_components)
         RPC_DEF(rte_free_flow_rule)

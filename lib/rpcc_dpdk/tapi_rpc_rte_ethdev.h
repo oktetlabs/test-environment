@@ -747,6 +747,18 @@ extern int rpc_rte_eth_dev_get_name_by_port(rcf_rpc_server *rpcs,
 extern char *rpc_rte_eth_dev_rx_offload_name(rcf_rpc_server *rpcs,
                                              uint64_t        offload);
 
+/**
+ * @b rte_eth_dev_tx_offload_name() RPC
+ *
+ * @param offload The offload to query (bit field, not enum)
+ *
+ * @return Offload name; 'UNKNOWN' may mean that the offload
+ *         is unsupported or that the API is not implemented
+ */
+extern char *rpc_rte_eth_dev_tx_offload_name(rcf_rpc_server *rpcs,
+                                             uint64_t        offload);
+
+
 /**@} <!-- END te_lib_rpc_rte_ethdev --> */
 
 #ifdef __cplusplus

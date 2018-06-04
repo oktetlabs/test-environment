@@ -2386,3 +2386,15 @@ TARPC_FUNC_STANDALONE(rte_eth_dev_rx_offload_name, {},
 #endif
 })
 
+TARPC_FUNC_STANDALONE(rte_eth_dev_tx_offload_name, {},
+{
+#if RTE_VERSION >= RTE_VERSION_NUM(18,2,0,1)
+    const char *name;
+
+    MAKE_CALL(name = rte_eth_dev_tx_offload_name(in->offload));
+    out->retval = (name != NULL) ? strdup(name) : NULL;
+#else
+    out->retval = strdup("UNKNOWN");
+#endif
+})
+
