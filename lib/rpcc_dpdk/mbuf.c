@@ -69,6 +69,7 @@ tarpc_rte_pktmbuf_ol_flags2str(te_log_buf *tlbp, uint64_t ol_flags)
 #undef TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR
         { TARPC_IND_ATTACHED_MBUF, "IND_ATTACHED_MBUF" },
         { TARPC_CTRL_MBUF_FLAG, "CTRL_MBUF_FLAG" },
+        { TARPC_EXT_ATTACHED_MBUF, "EXT_ATTACHED_MBUF" },
         { 0, NULL }
     };
 
