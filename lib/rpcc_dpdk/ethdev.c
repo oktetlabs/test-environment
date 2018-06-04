@@ -3366,3 +3366,30 @@ rpc_rte_eth_dev_get_name_by_port(rcf_rpc_server *rpcs,
     RETVAL_ZERO_INT(rte_eth_dev_get_name_by_port, out.retval);
 }
 
+char *
+rpc_rte_eth_dev_rx_offload_name(rcf_rpc_server *rpcs,
+                                uint64_t        offload)
+{
+    tarpc_rte_eth_dev_rx_offload_name_in   in;
+    tarpc_rte_eth_dev_rx_offload_name_out  out;
+    te_log_buf                            *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.offload = offload;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_rx_offload_name", &in, &out);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_rx_offload_name, "offload=%s", "name='%s'",
+                 tarpc_rte_eth_rx_offloads2str(tlbp, in.offload),
+                 (out.retval != NULL) ? out.retval : "UNKNOWN");
+    te_log_buf_free(tlbp);
+
+    if (out.retval != NULL)
+        return tapi_strdup(out.retval);
+    else
+        return NULL;
+}
+
