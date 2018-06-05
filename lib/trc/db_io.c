@@ -352,7 +352,7 @@ xmlNodeNext(xmlNodePtr node)
  *
  * @return Status code
  */
-te_errno
+static te_errno
 get_text_content(xmlNodePtr node, const char *name, char **content)
 {
     if (node->children == NULL)
