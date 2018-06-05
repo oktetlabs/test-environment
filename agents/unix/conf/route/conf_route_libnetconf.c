@@ -496,6 +496,12 @@ append_routes(netconf_list *nlist, te_string *const str)
         if (family == AF_INET6)
         {
             /*
+             * Filter RA routes to prevent configurator restore config errors.
+             */
+            if (route->protocol == NETCONF_RTPROT_RA)
+                continue;
+
+            /*
              * The local routing table is maintained by the kernel and shouldn’t
              * be manipulated by Configurator.
              */
