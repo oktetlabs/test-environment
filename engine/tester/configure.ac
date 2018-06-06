@@ -19,7 +19,9 @@ AC_PROG_INSTALL
 
 TE_APP_SET
 
-AC_ARG_WITH([trc])
+AC_ARG_WITH([trc],
+            [AS_HELP_STRING([--without-trc], [disable integration with TRC])],
+            [with_trc=$withval], [with_trc=yes])
 AM_CONDITIONAL(WITH_TRC, test -n "$with_trc")
 if test -n "$with_trc" ; then
     TE_CPPFLAGS="$TE_CPPFLAGS -DWITH_TRC"

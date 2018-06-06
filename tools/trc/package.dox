@@ -103,13 +103,13 @@ The skipped section
 
 @subsection trc_tool_runtime Runtime results comparison
 
-If @b te_tester is built with @prog_option(\-\-with-trc) flag then it will
-perform run-time results comparison.
+If @b te_tester is built without @prog_option(\-\-without-trc) flag
+(default behaviour) then it will perform run-time results comparison.
 
-To pass the flag add
+To disable @b te_tester integration with TRC add
 
 <pre class="fragment">
-TE_APP_PARMS([tester], [--with-trc])
+TE_APP_PARMS([tester], [--without-trc])
 </pre>
 
 into @path{builder.conf}, see @ref te_engine_builder_conf_file_te_app_parms
