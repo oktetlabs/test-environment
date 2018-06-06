@@ -234,12 +234,9 @@ fi
 
 # Large (>2Gb) log files support
 AC_ARG_WITH([large_logs],
-            [AS_HELP_STRING([--with-large-logs],
-              [Enable support for large logs in RGT. \
-Default - disabled.])],
-            [if test "x${withval}" = "xyes"; then
-                 with_large_logs=yes;
-             fi], [])
+            [AS_HELP_STRING([--without-large-logs],
+              [disable support for large logs in RGT])],
+            [with_large_logs=$withval], [with_large_logs=yes])
 
 if test "x$with_large_logs" = "xyes"; then
     EXTRA_CPPFLAGS="${EXTRA_CPPFLAGS} -D_LARGEFILE64_SOURCE \

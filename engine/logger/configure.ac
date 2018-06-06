@@ -48,12 +48,9 @@ AC_CHECK_FUNCS([getaddrinfo])
 
 # Large (>2Gb) log files support
 AC_ARG_WITH([large_logs],
-            [AS_HELP_STRING([--with-large-logs],
-              [Enable support for large logs in Logger. \
-Default - disabled.])],
-            [if test "x${withval}" = "xyes"; then
-                 with_large_logs=yes;
-             fi], [])
+            [AS_HELP_STRING([--without-large-logs],
+              [disable support for large logs in Logger])],
+            [with_large_logs=$withval], [with_large_logs=yes])
 
 if test "x$with_large_logs" = "xyes"; then
     TE_CPPFLAGS="$TE_CPPFLAGS -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64"
