@@ -59,8 +59,6 @@ if test "x$with_large_logs" = "xyes"; then
     TE_CPPFLAGS="$TE_CPPFLAGS -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64"
 fi
 
-AC_CONFIG_HEADERS([package.h])
-
 AC_CONFIG_FILES([Makefile])
 
 TE_APP_RESTORE
