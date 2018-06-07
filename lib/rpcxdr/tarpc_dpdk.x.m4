@@ -251,6 +251,23 @@ struct tarpc_rte_pktmbuf_pool_create_out {
     tarpc_rte_mempool       retval;
 };
 
+/** rte_pktmbuf_pool_create_by_ops() */
+struct tarpc_rte_pktmbuf_pool_create_by_ops_in {
+    struct tarpc_in_arg     common;
+    string                  name<>;
+    uint32_t                n;
+    uint32_t                cache_size;
+    uint16_t                priv_size;
+    uint16_t                data_room_size;
+    tarpc_int               socket_id;
+    string                  ops_name<>;
+};
+
+struct tarpc_rte_pktmbuf_pool_create_by_ops_out {
+    struct tarpc_out_arg    common;
+    tarpc_rte_mempool       retval;
+};
+
 /** rte_pktmbuf_alloc() */
 struct tarpc_rte_pktmbuf_alloc_in {
     struct tarpc_in_arg     common;
@@ -1904,6 +1921,7 @@ program dpdk
         RPC_DEF(rte_mempool_free)
 
         RPC_DEF(rte_pktmbuf_pool_create)
+        RPC_DEF(rte_pktmbuf_pool_create_by_ops)
         RPC_DEF(rte_pktmbuf_alloc)
         RPC_DEF(rte_pktmbuf_free)
         RPC_DEF(rte_pktmbuf_append_data)

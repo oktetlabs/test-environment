@@ -7199,6 +7199,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
     int events = 0;
     int rc = 0;
     int bytes_rest = 0;
+    int send_flags = iomux == FUNC_NO_IOMUX ? 0 : MSG_DONTWAIT;
 
     int                     iomux_timeout;
     iomux_state             iomux_st;
@@ -7308,20 +7309,20 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
                   iomux2str(iomux));
             PTRN_SEND_ERROR;
         }
-        else if (rc == 0)
+        else if (rc == 0  && iomux != FUNC_NO_IOMUX)
             break;
 
         itr = IOMUX_RETURN_ITERATOR_START;
         itr = iomux_return_iterate(iomux, &iomux_st, &iomux_ret,
                                    itr, &fd, &events);
-        if (fd != in->s)
+        if (fd != in->s && iomux != FUNC_NO_IOMUX)
         {
             ERROR("%s(): %s wait returned incorrect fd %d instead of %d",
                   __FUNCTION__, iomux2str(iomux), fd, in->s);
             PTRN_SEND_ERROR;
         }
 
-        if (!(events & POLLOUT))
+        if (!(events & POLLOUT) && iomux != FUNC_NO_IOMUX)
         {
             ERROR("%s(): %s wait successeed but the socket is "
                   "not writable", __FUNCTION__, iomux2str(iomux));
@@ -7337,12 +7338,12 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
                 ERROR("%s(): failed to generate a pattern", __FUNCTION__);
                 PTRN_SEND_ERROR;
             }
-            len = send_func(in->s, buf + offset, size, 0);
+            len = send_func(in->s, buf + offset, size, send_flags);
         }
         else
         {
             len = send_func(in->s, buf + offset + (size - bytes_rest),
-                            bytes_rest, 0);
+                            bytes_rest, send_flags);
         }
 
         if (len < 0)
@@ -7414,10 +7415,12 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
     char           *buf = NULL;
     char           *check_buf = NULL;
     iomux_func      iomux = in->iomux;
+    api_func        setsockopt_func;
 
     int fd = -1;
     int events = 0;
     int rc = 0;
+    int recv_flags = iomux == FUNC_NO_IOMUX ? 0 : MSG_DONTWAIT;
 
     int                     iomux_timeout;
     iomux_state             iomux_st;
@@ -7426,30 +7429,63 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
 
     struct timeval tv_start;
     struct timeval tv_now;
+    int default_recv_timeout = 0;
 
     out->gen_arg = in->gen_arg;
     out->bytes = 0;
 
     RING("%s() started", __FUNCTION__);
 
+    if (iomux == FUNC_NO_IOMUX)
+    {
+        api_func getsockopt_func;
+        struct timeval tv = {0,0};
+        socklen_t tv_len = sizeof(tv);
+
+        if (tarpc_find_func(in->common.use_libc, "setsockopt",
+                        &setsockopt_func) != 0)
+            return -1;
+
+        if (tarpc_find_func(in->common.use_libc, "getsockopt",
+                        &getsockopt_func) != 0)
+            return -1;
+
+        if (getsockopt_func(in->s, SOL_SOCKET, SO_RCVTIMEO, &tv, &tv_len) == 0)
+        {
+            default_recv_timeout = TE_SEC2US(tv.tv_sec);
+            default_recv_timeout += tv.tv_usec;
+        }
+        else
+        {
+            ERROR("%s(): getsockopt() failed to get default "
+                  "timeout with errno %s (%d)",
+                  __FUNCTION__, strerror(errno), errno);
+            return -1;
+        }
+    }
+    else
+    {
+        if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
+            return -1;
+
+        if ((rc = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0)
+        {
+            iomux_close(iomux, &iomux_f, &iomux_st);
+            return rc;
+        }
+
+        if ((rc = iomux_add_fd(iomux, &iomux_f, &iomux_st,
+                               in->s, POLLIN)) != 0)
+        {
+            iomux_close(iomux, &iomux_f, &iomux_st);
+            return rc;
+        }
+    }
+
     if (tarpc_find_func(in->common.use_libc, "recv", &recv_func) != 0 ||
         (pattern_gen_func =
-                rcf_ch_symbol_addr(in->fname.fname_val, TRUE)) == NULL ||
-        iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
+                rcf_ch_symbol_addr(in->fname.fname_val, TRUE)) == NULL)
         return -1;
-
-    if ((rc = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0)
-    {
-        iomux_close(iomux, &iomux_f, &iomux_st);
-        return rc;
-    }
-
-    if ((rc = iomux_add_fd(iomux, &iomux_f, &iomux_st,
-                           in->s, POLLIN)) != 0)
-    {
-        iomux_close(iomux, &iomux_f, &iomux_st);
-        return rc;
-    }
 
     if ((buf = malloc(MAX_PKT)) == NULL ||
         (check_buf = malloc(MAX_PKT + MAX_OFFSET)) == NULL)
@@ -7461,13 +7497,23 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
         return -1;
     }
 
+#define SET_RECV_TIMEOUT(timeout_us)                         \
+    do {                                                     \
+        struct timeval tv = {0,0};                           \
+        TE_US2TV(timeout_us, &tv);                           \
+        rc = setsockopt_func(in->s, SOL_SOCKET, SO_RCVTIMEO, \
+                             &tv, sizeof(tv));               \
+    } while (0)
+
 #define PTRN_RECV_ERROR \
-    do {                                         \
-        iomux_close(iomux, &iomux_f, &iomux_st); \
-        free(buf);                               \
-        free(check_buf);                         \
-        out->gen_arg = in->gen_arg;              \
-        return -1;                               \
+    do {                                                             \
+        iomux_close(iomux, &iomux_f, &iomux_st);                     \
+        free(buf);                                                   \
+        free(check_buf);                                             \
+        out->gen_arg = in->gen_arg;                                  \
+        if (iomux == FUNC_NO_IOMUX)                                  \
+            SET_RECV_TIMEOUT(default_recv_timeout);                  \
+        return -1;                                                   \
     } while (0)
 
 #define MSEC_DIFF \
@@ -7485,47 +7531,65 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
         if (iomux_timeout <= 0)
             break;
 
-        rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
-                        iomux_timeout);
-
-        if (rc < 0)
+        if (iomux == FUNC_NO_IOMUX)
         {
-            if (errno == EINTR)
-                continue;
-            ERROR("%s(): %s wait failed: %d", __FUNCTION__,
-                  iomux2str(iomux), errno);
-            PTRN_RECV_ERROR;
+            SET_RECV_TIMEOUT(TE_MS2US(iomux_timeout));
+            if (rc != 0)
+            {
+                ERROR("%s(): setsockopt() failed to set %d ms"
+                      "timeout with errno %s (%d)",
+                      __FUNCTION__, iomux_timeout,
+                      strerror(errno), errno);
+                PTRN_RECV_ERROR;
+            }
         }
-        else if (rc > 1)
+        else
         {
-            ERROR("%s(): %s wait returned more then one fd", __FUNCTION__,
-                  iomux2str(iomux));
-            PTRN_RECV_ERROR;
-        }
-        else if (rc == 0)
-            break;
+            rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
+                            iomux_timeout);
+            if (rc < 0)
+            {
+                if (errno == EINTR)
+                    continue;
+                ERROR("%s(): %s wait failed: %d", __FUNCTION__,
+                      iomux2str(iomux), errno);
+                PTRN_RECV_ERROR;
+            }
+            else if (rc > 1)
+            {
+                ERROR("%s(): %s wait returned more then one fd", __FUNCTION__,
+                      iomux2str(iomux));
+                PTRN_RECV_ERROR;
+            }
+            else if (rc == 0)
+                break;
 
-        itr = IOMUX_RETURN_ITERATOR_START;
-        itr = iomux_return_iterate(iomux, &iomux_st, &iomux_ret,
-                                   itr, &fd, &events);
-        if (fd != in->s)
-        {
-            ERROR("%s(): %s wait returned incorrect fd %d instead of %d",
-                  __FUNCTION__, iomux2str(iomux), fd, in->s);
-            PTRN_RECV_ERROR;
+            itr = IOMUX_RETURN_ITERATOR_START;
+            itr = iomux_return_iterate(iomux, &iomux_st, &iomux_ret,
+                                       itr, &fd, &events);
+            if (fd != in->s)
+            {
+                ERROR("%s(): %s wait returned incorrect fd %d instead of %d",
+                      __FUNCTION__, iomux2str(iomux), fd, in->s);
+                PTRN_RECV_ERROR;
+            }
+
+            if (!(events & POLLIN))
+            {
+                ERROR("%s(): %s wait successeed but the socket is "
+                      "not writable", __FUNCTION__, iomux2str(iomux));
+                PTRN_RECV_ERROR;
+            }
         }
 
-        if (!(events & POLLIN))
-        {
-            ERROR("%s(): %s wait successeed but the socket is "
-                  "not writable", __FUNCTION__, iomux2str(iomux));
-            PTRN_RECV_ERROR;
-        }
-
-        len = recv_func(in->s, buf, MAX_PKT, MSG_DONTWAIT);
+        len = recv_func(in->s, buf, MAX_PKT, recv_flags);
         if (len < 0)
         {
             int recv_errno = errno;
+
+            if (iomux == FUNC_NO_IOMUX &&
+                (recv_errno == EAGAIN || recv_errno == EWOULDBLOCK))
+                continue;
 
             ERROR("recv() failed in pattern_receiver(): errno %s (%x)",
                   strerror(errno), errno);
@@ -7550,6 +7614,8 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
                 iomux_close(iomux, &iomux_f, &iomux_st);
                 free(buf);
                 free(check_buf);
+                if (iomux == FUNC_NO_IOMUX)
+                    SET_RECV_TIMEOUT(default_recv_timeout);
                 return -2;
             }
         }
@@ -7568,11 +7634,24 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
     free(buf);
     free(check_buf);
 
+    if (iomux == FUNC_NO_IOMUX)
+    {
+        SET_RECV_TIMEOUT(default_recv_timeout);
+        if (rc != 0)
+        {
+            ERROR("%s(): setsockopt() failed to set default"
+                  "timeout with errno %s (%d)",
+                  __FUNCTION__, strerror(errno), errno);
+            return -1;
+        }
+    }
+
     /* Clean up errno */
     errno = errno_save;
 
     return 0;
 #undef MAX_PKT
+#undef SET_RECV_TIMEOUT
 }
 
 TARPC_FUNC(pattern_receiver, {},

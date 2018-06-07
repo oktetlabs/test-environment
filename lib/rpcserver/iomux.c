@@ -83,6 +83,9 @@ iomux_find_func(te_bool use_libc, iomux_func *iomux, iomux_funcs *funcs)
                  tarpc_find_func(use_libc, "close", &funcs->epoll.close);
             break;
 #endif
+        case FUNC_NO_IOMUX:
+            break;
+
         default:
             rc = -1;
             errno = ENOENT;
@@ -121,6 +124,8 @@ iomux_create_state(iomux_func iomux, iomux_funcs *funcs,
                   __FUNCTION__);
             return -1;
 
+        case FUNC_NO_IOMUX:
+            break;
     }
     return 0;
 }
@@ -210,6 +215,9 @@ do {                                                              \
                   __FUNCTION__);
             return -1;
 
+        case FUNC_NO_IOMUX:
+            break;
+
         default:
             ERROR("Incorrect value of iomux function");
             return -1;
@@ -263,6 +271,9 @@ iomux_mod_fd(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
             ERROR("%s() function can't be used with default iomux",
                   __FUNCTION__);
             return -1;
+
+        case FUNC_NO_IOMUX:
+            break;
 
         default:
             ERROR("Incorrect value of iomux function");
@@ -367,6 +378,9 @@ iomux_wait(iomux_func iomux, iomux_funcs *funcs, iomux_state *state,
             break;
         }
 #endif
+        case FUNC_NO_IOMUX:
+            rc = 0;
+            break;
 
         default:
             errno = ENOENT;
@@ -447,6 +461,7 @@ iomux_return_iterate(iomux_func iomux, iomux_state *st, iomux_return *ret,
             it++;
             break;
 #endif
+        case FUNC_NO_IOMUX:
         default:
             it = IOMUX_RETURN_ITERATOR_END;
     }
