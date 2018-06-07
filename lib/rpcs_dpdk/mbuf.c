@@ -580,6 +580,19 @@ TARPC_FUNC(rte_pktmbuf_pool_create, {},
 }
 )
 
+TARPC_FUNC(rte_pktmbuf_pool_create_by_ops, {},
+{
+    struct rte_mempool *mp;
+
+    MAKE_CALL(mp = func(in->name, in->n, in->cache_size, in->priv_size,
+                        in->data_room_size, in->socket_id, in->ops_name));
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MEMPOOL, {
+        out->retval = RCF_PCH_MEM_INDEX_ALLOC(mp, ns);
+    });
+}
+)
+
 TARPC_FUNC_STATIC(rte_pktmbuf_alloc, {},
 {
     struct rte_mempool *mp = NULL;
