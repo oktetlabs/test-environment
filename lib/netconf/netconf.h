@@ -70,7 +70,8 @@ typedef enum netconf_route_prot {
     NETCONF_RTPROT_REDIRECT,
     NETCONF_RTPROT_KERNEL,
     NETCONF_RTPROT_BOOT,
-    NETCONF_RTPROT_STATIC
+    NETCONF_RTPROT_STATIC,
+    NETCONF_RTPROT_RA = 9
 } netconf_route_prot;
 
 /** Scopes of route entry */

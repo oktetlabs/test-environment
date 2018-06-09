@@ -19,6 +19,7 @@
 #include "rte_config.h"
 #include "rte_ethdev.h"
 #include "rte_eth_ctrl.h"
+#include "rte_version.h"
 
 #include "logger_api.h"
 
@@ -2371,5 +2372,29 @@ TARPC_FUNC(rte_eth_dev_get_name_by_port, {},
         MAKE_CALL(out->retval = func(in->port_id, out->name));
 
     neg_errno_h2rpc(&out->retval);
+})
+
+TARPC_FUNC_STANDALONE(rte_eth_dev_rx_offload_name, {},
+{
+#if RTE_VERSION >= RTE_VERSION_NUM(18,2,0,1)
+    const char *name;
+
+    MAKE_CALL(name = rte_eth_dev_rx_offload_name(in->offload));
+    out->retval = (name != NULL) ? strdup(name) : NULL;
+#else
+    out->retval = strdup("UNKNOWN");
+#endif
+})
+
+TARPC_FUNC_STANDALONE(rte_eth_dev_tx_offload_name, {},
+{
+#if RTE_VERSION >= RTE_VERSION_NUM(18,2,0,1)
+    const char *name;
+
+    MAKE_CALL(name = rte_eth_dev_tx_offload_name(in->offload));
+    out->retval = (name != NULL) ? strdup(name) : NULL;
+#else
+    out->retval = strdup("UNKNOWN");
+#endif
 })
 

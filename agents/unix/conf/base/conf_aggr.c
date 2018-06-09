@@ -248,8 +248,8 @@ trunk_add(aggregation *aggr, const char *ifname)
 {
     struct ifreq ifr;
 
-    strncpy(ifr.ifr_name, aggr->ifname, IFNAMSIZ);
-    strncpy(ifr.ifr_slave, ifname, IFNAMSIZ);
+    TE_STRNCPY(ifr.ifr_name, IFNAMSIZ, aggr->ifname);
+    TE_STRNCPY(ifr.ifr_slave, IFNAMSIZ, ifname);
     if (ioctl(cfg_socket, SIOCBONDENSLAVE, &ifr) < 0)
         return TE_RC(TE_TA_UNIX, errno);
     return 0;
@@ -260,8 +260,8 @@ trunk_del(aggregation *aggr, const char *ifname)
 {
     struct ifreq ifr;
 
-    strncpy(ifr.ifr_name, aggr->ifname, IFNAMSIZ);
-    strncpy(ifr.ifr_slave, ifname, IFNAMSIZ);
+    TE_STRNCPY(ifr.ifr_name, IFNAMSIZ, aggr->ifname);
+    TE_STRNCPY(ifr.ifr_slave, IFNAMSIZ, ifname);
     if (ioctl(cfg_socket, SIOCBONDRELEASE, &ifr) < 0)
         return TE_RC(TE_TA_UNIX, errno);
     return 0;
@@ -535,8 +535,8 @@ aggregation_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
 
-    strncpy(value, aggr_type_to_value(aggregation_find(aggr_name)->type), 
-            RCF_MAX_VAL);
+    TE_STRNCPY(value, RCF_MAX_VAL,
+               aggr_type_to_value(aggregation_find(aggr_name)->type));
     return 0;
 }
 
@@ -695,8 +695,8 @@ aggr_interface_get(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
 
-    strncpy(value, aggregation_find(aggr_name)->ifname, 
-            MIN(IFNAMSIZ, RCF_MAX_VAL));
+    TE_STRNCPY(value, MIN(IFNAMSIZ, RCF_MAX_VAL),
+               aggregation_find(aggr_name)->ifname);
     return 0;
 }
 

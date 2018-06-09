@@ -86,9 +86,8 @@ configure_package()
         export TE_EXT_LIBS_FILE=\"$TE_EXT_LIBS_FILE\"
         TE_DEPENDENCIES='$DEPENDENCIES' \\
         TE_BUILD='$TE_BUILD' \\
-        CFLAGS= \\
-        TE_CFLAGS_VAR='${!TE_CFLAGS_NAME}' \\
-        TE_CPPFLAGS_VAR='${!TE_CPPFLAGS_NAME}' \\
+        CFLAGS='${!TE_CFLAGS_NAME}' \\
+        CPPFLAGS='${!TE_CPPFLAGS_NAME}' \\
         ${PKGSRC}/configure -q --prefix=$PREFIX ${PARMS} ${enable_tce}
     "
 }

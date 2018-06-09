@@ -89,8 +89,15 @@ te_str_concat(const char *first, const char *second)
 char *
 te_strncpy(const char *id, char *dst, size_t size, const char *src)
 {
-    size_t n = strlen(src) + 1;
+    size_t n;
 
+    if (size == 0)
+    {
+        ERROR("%s: destination buffer has zero size", id);
+        return dst;
+    }
+
+    n = strlen(src) + 1;
     n = n < size ? n : size;
     memcpy(dst, src, n);
     if (dst[n - 1] != '\0')

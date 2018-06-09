@@ -351,14 +351,21 @@ extern int tapi_rpc_receiver(rcf_rpc_server *rpcs, int s,
                              tapi_pat_receiver *receiver);
 
 /**
- * Patterned data sender.
+ * Patterned data sender. Data may be sent using IO multiplexing or not,
+ * in according to @p iomux argument, with non-blocking @b send() or blocking,
+ * respectively.
+ *
+ * @note In case of blocking @b send() no timeout is used. If there is any
+ * problems (e.g. @c ERPCTIMEOUT error), you should set the @c SO_SNDTIMEO
+ * via @b setsockopt() like it is implemented in @ref rpc_pattern_receiver.
  *
  * @param rpcs              RPC server
  * @param s                 a socket to be user for sending
  * @param fname             a function used to generate a pattern
  * @param gen_arg           specific arguments for the pattern
  *                          generator function
- * @param iomux             IO multiplexing function
+ * @param iomux             IO multiplexing function or @c FUNC_NO_IOMUX to
+ *                          send data without IO multiplexing
  * @param size_min          minimum size of the message in bytes
  * @param size_max          maximum size of the message in bytes
  * @param size_rnd_once     if true, random size should be calculated
@@ -441,14 +448,20 @@ extern int rpc_pattern_sender(rcf_rpc_server *rpcs,
   _gen_arg.offset, _gen_arg.coef1, _gen_arg.coef2, _gen_arg.coef3
 
 /**
- * Patterned data receiver.
+ * Patterned data receiver. Data may be received using IO multiplexing or not,
+ * in according to @p iomux argument, with non-blocking @b recv() or blocking,
+ * respectively.
+ *
+ * @note In case of blocking @b recv() the function sets SO_RCVTIMEO option
+ * several times and restores it to original value at the end.
  *
  * @param rpcs            RPC server
  * @param s               a socket to be user for receiving
  * @param fname           a function used to generate a pattern
  * @param gen_arg         specific arguments for the pattern
  *                        generator function
- * @param iomux           IO multiplexing function
+ * @param iomux           IO multiplexing function or @c FUNC_NO_IOMUX to
+ *                        receive data without IO multiplexing
  * @param received        location for number of received bytes
  * @param recv_failed     This will be set to @c TRUE if it was recv()
  *                        who failed
