@@ -105,10 +105,12 @@ tarpc_rte_pktmbuf_ol_flags2rpc(uint64_t rte)
     RTE_PKTMBUF_OL_FLAGS2RPC(PKT_TX_OUTER_IPV6);
 
     RTE_PKTMBUF_OL_FLAGS2RPC(IND_ATTACHED_MBUF);
-
 #ifdef CTRL_MBUF_FLAG
     RTE_PKTMBUF_OL_FLAGS2RPC(CTRL_MBUF_FLAG);
 #endif /* CTRL_MBUF_FLAG */
+#ifdef EXT_ATTACHED_MBUF
+    RTE_PKTMBUF_OL_FLAGS2RPC(EXT_ATTACHED_MBUF);
+#endif /* EXT_ATTACHED_MBUF */
 #undef RTE_PKTMBUF_OL_FLAGS2RPC
 
     if (rte != 0)
@@ -237,10 +239,12 @@ tarpc_rte_pktmbuf_ol_flags2rte(uint64_t rpc, uint64_t *rte)
     RTE_PKTMBUF_OL_FLAGS2RTE(PKT_TX_OUTER_IPV6);
 
     RTE_PKTMBUF_OL_FLAGS2RTE(IND_ATTACHED_MBUF);
-
 #ifdef CTRL_MBUF_FLAG
     RTE_PKTMBUF_OL_FLAGS2RTE(CTRL_MBUF_FLAG);
 #endif /* CTRL_MBUF_FLAG */
+#ifdef EXT_ATTACHED_MBUF
+    RTE_PKTMBUF_OL_FLAGS2RTE(EXT_ATTACHED_MBUF);
+#endif /* EXT_ATTACHED_MBUF */
 #undef RTE_PKTMBUF_OL_FLAGS2RTE
 
     if (rpc != 0)
@@ -569,6 +573,19 @@ TARPC_FUNC(rte_pktmbuf_pool_create, {},
 
     MAKE_CALL(mp = func(in->name, in->n, in->cache_size, in->priv_size,
                         in->data_room_size, in->socket_id));
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MEMPOOL, {
+        out->retval = RCF_PCH_MEM_INDEX_ALLOC(mp, ns);
+    });
+}
+)
+
+TARPC_FUNC(rte_pktmbuf_pool_create_by_ops, {},
+{
+    struct rte_mempool *mp;
+
+    MAKE_CALL(mp = func(in->name, in->n, in->cache_size, in->priv_size,
+                        in->data_room_size, in->socket_id, in->ops_name));
 
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MEMPOOL, {
         out->retval = RCF_PCH_MEM_INDEX_ALLOC(mp, ns);

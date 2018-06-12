@@ -69,6 +69,7 @@ tarpc_rte_pktmbuf_ol_flags2str(te_log_buf *tlbp, uint64_t ol_flags)
 #undef TARPC_RTE_PKTMBUF_PKT_OL_FLAGS2STR
         { TARPC_IND_ATTACHED_MBUF, "IND_ATTACHED_MBUF" },
         { TARPC_CTRL_MBUF_FLAG, "CTRL_MBUF_FLAG" },
+        { TARPC_EXT_ATTACHED_MBUF, "EXT_ATTACHED_MBUF" },
         { 0, NULL }
     };
 
@@ -336,6 +337,43 @@ rpc_rte_pktmbuf_pool_create(rcf_rpc_server *rpcs,
 
     RETVAL_RPC_PTR(rte_pktmbuf_pool_create, out.retval);
 }
+
+rpc_rte_mempool_p
+rpc_rte_pktmbuf_pool_create_by_ops(rcf_rpc_server *rpcs,
+                                   const char *name, uint32_t n, uint32_t cache_size,
+                                   uint16_t priv_size, uint16_t data_room_size,
+                                   int socket_id, const char *ops_name)
+{
+    tarpc_rte_pktmbuf_pool_create_by_ops_in    in;
+    tarpc_rte_pktmbuf_pool_create_by_ops_out   out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.name = tapi_strdup(name);
+    in.n = n;
+    in.cache_size = cache_size;
+    in.priv_size = priv_size;
+    in.data_room_size = data_room_size;
+    in.socket_id = socket_id;
+    in.ops_name = (ops_name == NULL ? NULL : tapi_strdup(ops_name));
+
+    rcf_rpc_call(rpcs, "rte_pktmbuf_pool_create_by_ops", &in, &out);
+
+    CHECK_RETVAL_VAR_RPC_PTR(rte_pktmbuf_pool_create_by_ops, out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_pool_create_by_ops,
+                 "%s, %u, %u, %hu, %hu, %d, %s", RPC_PTR_FMT,
+                 in.name, in.n, in.cache_size, in.priv_size, in.data_room_size,
+                 in.socket_id, in.ops_name, RPC_PTR_VAL(out.retval));
+
+    free(in.name);
+    free(in.ops_name);
+
+    RETVAL_RPC_PTR(rte_pktmbuf_pool_create_by_ops, out.retval);
+}
+
+/* Insert rte_.._pool_create_by_ops */
 
 rpc_rte_mbuf_p
 rpc_rte_pktmbuf_alloc(rcf_rpc_server *rpcs,

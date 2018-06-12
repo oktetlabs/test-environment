@@ -41,6 +41,7 @@ void lex_switch_buffer(const char *name)
 %}
 
 %option nounput
+%option noinput
 %option noyywrap
 
 %x COMMENT

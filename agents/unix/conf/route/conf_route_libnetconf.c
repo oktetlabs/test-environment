@@ -480,6 +480,7 @@ append_routes(netconf_list *nlist, te_string *const str)
              * coincidence or a rule. For now, we ignore the unspec table for
              * IPv6. Maybe the same check should be added for IPv4, but it
              * works for now, so let it be as it is.
+            /*
              */
             if (route->table == NETCONF_RT_TABLE_UNSPEC)
                 continue;

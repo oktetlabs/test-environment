@@ -55,6 +55,33 @@ extern rpc_rte_mempool_p rpc_rte_pktmbuf_pool_create(rcf_rpc_server *rpcs,
                                                      int socket_id);
 
 /**
+ * @b rte_pktmbuf_pool_create_by_ops() RPC
+ *
+ * @param name            The name of the mbuf pool
+ * @param n               The number of elements in the mbuf pool
+ * @param cache_size      Size of the per-core object cache
+ * @param priv_size       Size of application private are between the rte_mbuf
+ *                        structure and the data buffer
+ * @param data_room_size  Size of data buffer in each mbuf, including
+ *                        RTE_PKTMBUF_HEADROOM
+ * @param socket_id       The socket identifier where the memory should
+ *                        be allocated
+ * @param ops_name        The mempool ops name to be used for this mempool
+ *                        instead of default mempool. The value can be NULL
+ *                        to use default mempool
+ *
+ * @return RTE mempool pointer on success; jumps out when pointer is @c NULL
+ */
+extern rpc_rte_mempool_p rpc_rte_pktmbuf_pool_create_by_ops(rcf_rpc_server *rpcs,
+                                                            const char *name,
+                                                            uint32_t n,
+                                                            uint32_t cache_size,
+                                                            uint16_t priv_size,
+                                                            uint16_t data_room_size,
+                                                            int socket_id,
+                                                            const char *ops_name);
+
+/**
  * @b rte_pktmbuf_alloc() RPC
  *
  * @param mp              RTE mempool pointer

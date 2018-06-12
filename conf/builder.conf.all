@@ -32,7 +32,6 @@ TE_PLATFORM([], [], [-D_GNU_SOURCE], [], [],
 TE_EXT_LIBS([], [${MY_HOST}], [pam pcap tcl expect crypto netsnmp])
 
 TE_APP_PARMS([rcf], [--enable-ltdl-install])
-TE_APP_PARMS([tester], [--with-trc])
 
 TE_LIB_PARMS([tad], [], [],
              [--with-pcap --with-atm --with-eth --with-bridge \

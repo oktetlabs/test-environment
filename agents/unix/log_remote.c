@@ -43,6 +43,7 @@
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_str.h"
 #include "comm_agent.h"
 #include "te_raw_log.h"
 #include "logger_api.h"
@@ -161,7 +162,7 @@ log_remote(void *ready, int argc, char *argv[])
     }
 
     /* user */
-    strncpy(user, argv[4], 64);
+    TE_STRNCPY(user, sizeof(user), argv[4]);
 
     /* create socket and bind socket */
     s = socket(PF_INET, SOCK_DGRAM, 0);

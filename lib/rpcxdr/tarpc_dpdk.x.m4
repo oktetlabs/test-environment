@@ -112,9 +112,9 @@ enum tarpc_pktmbuf_ol_flags {
     TARPC_PKT_TX_OUTER_IPV4,
     TARPC_PKT_TX_OUTER_IPV6,
 
-    TARPC_IND_ATTACHED_MBUF = 61,
-
-    TARPC_CTRL_MBUF_FLAG = 62,
+    TARPC_IND_ATTACHED_MBUF = 50,
+    TARPC_CTRL_MBUF_FLAG,
+    TARPC_EXT_ATTACHED_MBUF,
 
     TARPC_PKT__UNKNOWN = 63
 };
@@ -247,6 +247,23 @@ struct tarpc_rte_pktmbuf_pool_create_in {
 };
 
 struct tarpc_rte_pktmbuf_pool_create_out {
+    struct tarpc_out_arg    common;
+    tarpc_rte_mempool       retval;
+};
+
+/** rte_pktmbuf_pool_create_by_ops() */
+struct tarpc_rte_pktmbuf_pool_create_by_ops_in {
+    struct tarpc_in_arg     common;
+    string                  name<>;
+    uint32_t                n;
+    uint32_t                cache_size;
+    uint16_t                priv_size;
+    uint16_t                data_room_size;
+    tarpc_int               socket_id;
+    string                  ops_name<>;
+};
+
+struct tarpc_rte_pktmbuf_pool_create_by_ops_out {
     struct tarpc_out_arg    common;
     tarpc_rte_mempool       retval;
 };
@@ -1730,6 +1747,28 @@ struct tarpc_rte_eth_dev_get_name_by_port_out {
     tarpc_int            retval;
 };
 
+/** rte_eth_dev_rx_offload_name() */
+struct tarpc_rte_eth_dev_rx_offload_name_in {
+    struct tarpc_in_arg common;
+    uint64_t            offload;
+};
+
+struct tarpc_rte_eth_dev_rx_offload_name_out {
+    struct tarpc_out_arg common;
+    string               retval<>;
+};
+
+/** rte_eth_dev_tx_offload_name() */
+struct tarpc_rte_eth_dev_tx_offload_name_in {
+    struct tarpc_in_arg common;
+    uint64_t            offload;
+};
+
+struct tarpc_rte_eth_dev_tx_offload_name_out {
+    struct tarpc_out_arg common;
+    string               retval<>;
+};
+
 /**
  * rte_flow API
  */
@@ -1882,6 +1921,7 @@ program dpdk
         RPC_DEF(rte_mempool_free)
 
         RPC_DEF(rte_pktmbuf_pool_create)
+        RPC_DEF(rte_pktmbuf_pool_create_by_ops)
         RPC_DEF(rte_pktmbuf_alloc)
         RPC_DEF(rte_pktmbuf_free)
         RPC_DEF(rte_pktmbuf_append_data)
@@ -1992,6 +2032,8 @@ program dpdk
         RPC_DEF(rte_eth_dev_udp_tunnel_port_delete)
         RPC_DEF(rte_eth_dev_get_port_by_name)
         RPC_DEF(rte_eth_dev_get_name_by_port)
+        RPC_DEF(rte_eth_dev_rx_offload_name)
+        RPC_DEF(rte_eth_dev_tx_offload_name)
 
         RPC_DEF(rte_mk_flow_rule_components)
         RPC_DEF(rte_free_flow_rule)
