@@ -148,6 +148,19 @@ set_opt_time(te_string *cmd, const tapi_perf_opts *options)
 }
 
 /*
+ * Set option of length of buffer in iperf tool format.
+ *
+ * @param cmd           Buffer contains a command to add option to.
+ * @param options       iperf tool options.
+ */
+static void
+set_opt_length(te_string *cmd, const tapi_perf_opts *options)
+{
+    if (options->length >= 0)
+        CHECK_RC(te_string_append(cmd, " -l%"PRId32, options->length));
+}
+
+/*
  * Set option of number of parallel client streams in iperf tool format.
  *
  * @param cmd           Buffer contains a command to add option to.
@@ -196,6 +209,7 @@ build_client_cmd(te_string *cmd, const tapi_perf_opts *options)
         set_opt_ipversion,
         set_opt_protocol,
         set_opt_bandwidth,
+        set_opt_length,
         set_opt_bytes,
         set_opt_time,
         set_opt_streams
