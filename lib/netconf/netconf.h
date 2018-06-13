@@ -154,6 +154,7 @@ typedef struct netconf_route {
     uint32_t            mtu;            /**< Route MTU */
     uint32_t            win;            /**< Route window size */
     uint32_t            irtt;           /**< Route transfer time */
+    int32_t             expires;        /**< Route expiration time */
 } netconf_route;
 
 /** Neighbour table entry (ARP or NDISC cache) */

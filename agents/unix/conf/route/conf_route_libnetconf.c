@@ -472,6 +472,13 @@ append_routes(netconf_list *nlist, te_string *const str)
         if (route->table == NETCONF_RT_TABLE_LOCAL)
            continue;
 
+        /*
+         * If expire time is defined for the route, then drop it.
+         * Configurator doesn't have any good way to restore such routes.
+         */
+        if (route->expires != 0)
+            continue;
+
         if (family == AF_INET6)
         {
             /*
