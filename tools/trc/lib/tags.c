@@ -14,9 +14,7 @@
  */
 
 #include "te_config.h"
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "trc_config.h"
 
 #include <stdio.h>
 #ifdef STDC_HEADERS

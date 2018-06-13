@@ -18,9 +18,7 @@
 #define __TE_LOG_PARSE_H_
 
 #include "te_config.h"
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "trc_config.h"
 
 #include "te_errno.h"
 #include "te_alloc.h"
