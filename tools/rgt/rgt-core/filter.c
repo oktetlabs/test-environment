@@ -16,7 +16,7 @@
 #include "rgt_common.h"
 
 #if (defined WITH_LOG_FILTER)
-#include <tcl.h>
+#include <tcl/tcl.h>
 #endif
 
 #include "filter.h"
