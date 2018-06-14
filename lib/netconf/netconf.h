@@ -23,6 +23,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <linux/rtnetlink.h>
 
 #include "conf_ip_rule.h"
 
@@ -104,6 +105,8 @@ typedef enum netconf_neigh_state {
     NETCONF_NUD_NOARP           = 0x40,
     NETCONF_NUD_PERMANENT       = 0x80
 } netconf_neigh_state;
+
+#define NETCONF_RTM_F_CLONED RTM_F_CLONED
 
 /** Network device */
 typedef struct netconf_link {

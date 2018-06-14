@@ -479,6 +479,13 @@ append_routes(netconf_list *nlist, te_string *const str)
         if (route->expires != 0)
             continue;
 
+        /*
+         * FIXME: Filter cloned routes to prevent configurator errors.
+         * It's a workaround for old kernels with Routing Cache.
+         */
+        if (route->flags & NETCONF_RTM_F_CLONED)
+           continue;
+
         if (family == AF_INET6)
         {
             /*
