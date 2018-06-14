@@ -1133,6 +1133,32 @@ extern int tapi_tcp_wait_packet(tapi_tcp_handler_t handler, int timeout);
  */
 extern int tapi_tcp_get_packets(tapi_tcp_handler_t handler);
 
+/**
+ * Get TCP timestamp option parameters.
+ *
+ * @param val       Pointer to ASN value which stores either whole network
+ *                  packet or TCP PDU.
+ * @param ts_value  Where to save timestamp value.
+ * @param ts_echo   Where to save timestamp echo reply.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tcp_get_ts_opt(asn_value *val,
+                                    uint32_t *ts_value, uint32_t *ts_echo);
+
+/**
+ * Set TCP timestamp option parameters.
+ *
+ * @param val       Pointer to ASN value which stores either whole network
+ *                  packet or TCP PDU.
+ * @param ts_value  Timestamp value.
+ * @param ts_echo   Timestamp echo reply.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tcp_set_ts_opt(asn_value *val,
+                                    uint32_t ts_value, uint32_t ts_echo);
+
 #endif /* !__TE_TAPI_TCP_H__ */
 
 /**@} <!-- END tapi_tad_tcp --> */
