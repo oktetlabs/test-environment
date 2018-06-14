@@ -70,7 +70,7 @@ tapi_cfg_qdisc_kind2str(tapi_cfg_qdisc_kind_t kind)
 tapi_cfg_qdisc_kind_t
 tapi_cfg_qdisc_str2kind(const char *string)
 {
-    int kind;
+    size_t kind;
 
     if (string == NULL)
         return TAPI_CFG_QDISC_KIND_UNKNOWN;
