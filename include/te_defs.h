@@ -40,7 +40,7 @@
 
 /** Test Environment copyright to be used in applications output */
 #define TE_COPYRIGHT \
-"Copyright (C) 2003-2003-2018 OKTET Labs. \n"
+"Copyright (C) 2003-2018 OKTET Labs. All rights reserved.\n"
 
 #ifndef NULL
 #define NULL ((void *)0)

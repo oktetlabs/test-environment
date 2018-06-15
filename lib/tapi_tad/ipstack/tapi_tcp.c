@@ -63,6 +63,8 @@
 
 #include "tapi_test.h"
 
+#include "te_string.h"
+
 /* See the description in tapi_tcp.h */
 te_errno
 tapi_tcp_add_csap_layer(asn_value **csap_spec,
@@ -1413,3 +1415,186 @@ tapi_tcp_ip6_eth_csap_create(const char *ta_name, int sid,
     return TE_RC(TE_TAPI, rc);
 }
 
+/**
+ * Locate TCP PDU, TCP options and TCP timestamp option in a given ASN
+ * value.
+ *
+ * @param val         Pointer to ASN value which stores either whole network
+ *                    packet or TCP PDU.
+ * @param p_tcp_pdu   Where to save pointer to TCP PDU.
+ * @param p_options   Where to save pointer to TCP options.
+ * @param p_ts_opt    Where to save pointer to TCP timestamp option.
+ *
+ * @return Status code.
+ */
+static te_errno
+find_ts_opt(asn_value *val, asn_value **p_tcp_pdu, asn_value **p_options,
+            asn_value **p_ts_opt)
+{
+    asn_value *pdus = NULL;
+    asn_value *tcp_pdu = NULL;
+    asn_value *options = NULL;
+    asn_value *ts_opt = NULL;
+    te_errno   rc = 0;
+
+    rc = asn_get_subvalue(val, &pdus, "pdus");
+    if (rc == 0)
+    {
+        tcp_pdu = asn_find_child_choice_value(pdus, TE_PROTO_TCP);
+        if (tcp_pdu == NULL)
+        {
+            ERROR("%s(): failed to find TCP PDU", __FUNCTION__);
+            return TE_ENOENT;
+        }
+    }
+    else
+    {
+        tcp_pdu = val;
+    }
+
+    if (p_tcp_pdu != NULL)
+        *p_tcp_pdu = tcp_pdu;
+
+    rc = asn_get_subvalue(tcp_pdu, &options, "options");
+    if (rc != 0)
+        return TE_ENOENT;
+
+    if (p_options != NULL)
+        *p_options = options;
+
+    ts_opt = asn_find_child_choice_value(options,
+                                         NDN_TAG_TCP_OPT_TIMESTAMP);
+    if (ts_opt == NULL)
+        return TE_ENOENT;
+
+    if (p_ts_opt != NULL)
+        *p_ts_opt = ts_opt;
+
+    return 0;
+}
+
+/* See description in tapi_tcp.h */
+te_errno
+tapi_tcp_get_ts_opt(asn_value *val,
+                    uint32_t *ts_value, uint32_t *ts_echo)
+{
+    asn_value *ts_opt = NULL;
+    te_errno   rc = 0;
+    int32_t    v;
+
+    rc = find_ts_opt(val, NULL, NULL, &ts_opt);
+    if (rc != 0)
+        return rc;
+
+    if (ts_value != NULL)
+    {
+        rc = asn_read_int32(ts_opt, &v, "value");
+        if (rc != 0)
+        {
+            ERROR("%s(): failed to read TCP timestamp value: %r",
+                  __FUNCTION__, rc);
+            return rc;
+        }
+        *ts_value = (uint32_t)v;
+    }
+
+    if (ts_echo != NULL)
+    {
+        rc = asn_read_int32(ts_opt, &v, "echo-reply");
+        if (rc != 0)
+        {
+            ERROR("%s(): failed to read TCP timestamp echo-reply: %r",
+                  __FUNCTION__, rc);
+            return rc;
+        }
+        *ts_echo = (uint32_t)v;
+    }
+
+    return 0;
+}
+
+/* See description in tapi_tcp.h */
+te_errno
+tapi_tcp_set_ts_opt(asn_value *val,
+                    uint32_t ts_value, uint32_t ts_echo)
+{
+#define CHECK_WRITE_OPT(_pdu, _is_val, _val, _labels...) \
+    do {                                                        \
+        char        _buf[200];                                  \
+        te_string   _labels_str = TE_STRING_BUF_INIT(_buf);     \
+                                                                \
+        rc = te_string_append(&_labels_str, _labels);           \
+        if (rc != 0)                                            \
+            return rc;                                          \
+        if (_is_val)                                            \
+            rc = asn_write_int32(_pdu, (int32_t)_val,           \
+                                 _labels_str.ptr);              \
+        else                                                    \
+            rc = asn_write_value_field(_pdu, NULL, 0,           \
+                                       _labels_str.ptr);        \
+        if (rc != 0)                                            \
+        {                                                       \
+            ERROR("%s(): failed to fill '%s'",                  \
+                  __FUNCTION__, _labels_str.ptr);               \
+            return rc;                                          \
+        }                                                       \
+    } while (0)
+
+    asn_value *tcp_pdu = NULL;
+    asn_value *options = NULL;
+    asn_value *ts_opt = NULL;
+    int        opts_num;
+    te_errno   rc = 0;
+
+    rc = find_ts_opt(val, &tcp_pdu, &options, &ts_opt);
+    if (rc != 0 && tcp_pdu == NULL)
+    {
+        ERROR("%s() failed to find TCP PDU", __FUNCTION__);
+        return rc;
+    }
+
+    if (ts_opt != NULL)
+    {
+        CHECK_WRITE_OPT(ts_opt, TRUE, ts_value, "value.#plain");
+        CHECK_WRITE_OPT(ts_opt, TRUE, ts_echo, "echo.#plain");
+    }
+    else if (options != NULL)
+    {
+        opts_num = asn_get_length(options, "");
+        if (opts_num < 0)
+        {
+            ERROR("%s(): failed to get number of options",
+                  __FUNCTION__);
+            return TE_EFAIL;
+        }
+
+        CHECK_WRITE_OPT(options, TRUE, ts_value,
+                        "%u.#timestamp.value.#plain",
+                        (unsigned int)opts_num);
+        CHECK_WRITE_OPT(options, TRUE, ts_echo,
+                        "%u.#timestamp.echo-reply.#plain",
+                        (unsigned int)opts_num);
+
+        /*
+         * This is done because length of TCP options is defined
+         * in 32bit words ("Data offset" field in TCP header), and TCP
+         * timestamp takes 80 bits, so we need additional 16 bits
+         * for alignment.
+         */
+        CHECK_WRITE_OPT(options, FALSE, 0,
+                        "%u.#nop", (unsigned int)opts_num + 1);
+        CHECK_WRITE_OPT(options, FALSE, 0,
+                        "%u.#nop", (unsigned int)opts_num + 2);
+    }
+    else
+    {
+        CHECK_WRITE_OPT(tcp_pdu, TRUE, ts_value,
+                        "options.0.#timestamp.value.#plain");
+        CHECK_WRITE_OPT(tcp_pdu, TRUE, ts_echo,
+                        "options.0.#timestamp.echo-reply.#plain");
+        CHECK_WRITE_OPT(tcp_pdu, FALSE, 0, "options.1.#nop");
+        CHECK_WRITE_OPT(tcp_pdu, FALSE, 0, "options.2.#nop");
+    }
+
+    return 0;
+}
