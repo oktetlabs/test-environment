@@ -315,9 +315,9 @@ tapi_cfg_socks_interface_addr_family_set(const char               *ta,
                                          int                       value)
 {
     return tapi_cfg_set_int_fmt(value, NULL,
-                                TE_CFG_TA_SOCKS_FMT "/interface:%s/port:",
-                                TE_CFG_TA_SOCKS_ARGS(ta, id),
-                                (const char *)interface_id);
+        TE_CFG_TA_SOCKS_FMT "/interface:%s/addr_family:",
+        TE_CFG_TA_SOCKS_ARGS(ta, id),
+        (const char *)interface_id);
 }
 
 /* See description in tapi_cfg_socks.h */
