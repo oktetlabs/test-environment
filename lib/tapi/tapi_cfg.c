@@ -436,10 +436,9 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
     cfg_handle      *handles;
     tapi_rt_entry_t *tbl;
     char            *rt_name = NULL;
-    unsigned int     num;
-    unsigned int     i;
-
-    UNUSED(addr_family);
+    unsigned int     num, rt_num = 0;
+    unsigned int     i, j;
+    struct sockaddr  *addr;
 
     if (ta == NULL || rt_tbl == NULL || n == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
@@ -448,40 +447,44 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
     if (rc != 0)
         return rc;
 
-    if (num == 0)
+    for (i = 0; i < num; i++)
+    {
+        if ((rc = cfg_get_instance(handles[i], NULL, &addr)) != 0)
+        {
+            ERROR("%s: Cannot obtain route instance value", __FUNCTION__);
+            free(handles);
+            return rc;
+        }
+
+        if (addr->sa_family == addr_family)
+            rt_num++;
+    }
+
+    if (rt_num == 0)
     {
         *rt_tbl = NULL;
         *n = 0;
+        free(handles);
         return 0;
     }
 
-    if ((tbl = (tapi_rt_entry_t *)calloc(num, sizeof(*tbl))) == NULL)
+    if ((tbl = (tapi_rt_entry_t *)calloc(rt_num, sizeof(*tbl))) == NULL)
     {
         free(handles);
         return TE_RC(TE_TAPI, TE_ENOMEM);
     }
 
-    for (i = 0; i < num; i++)
+    i = 0;
+    for (j = 0; j < num; j++)
     {
-        struct sockaddr  *addr;
-
-        if ((rc = cfg_get_inst_name(handles[i], &rt_name)) != 0)
-        {
-            ERROR("%s: Route handle cannot be processed", __FUNCTION__);
-            break;
-        }
-
-        rc = route_parse_inst_name(rt_name, &tbl[i]);
-
-        free(rt_name);
-
-        assert(rc == 0);
-
-        if ((rc = cfg_get_instance(handles[i], NULL, &addr)) != 0)
+        if ((rc = cfg_get_instance(handles[j], NULL, &addr)) != 0)
         {
             ERROR("%s: Cannot obtain route instance value", __FUNCTION__);
             break;
         }
+
+        if (addr->sa_family != addr_family)
+            continue;
 
         if ((addr->sa_family == AF_INET &&
              SIN(addr)->sin_addr.s_addr != htonl(INADDR_ANY)) ||
@@ -494,8 +497,20 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
 
         free(addr);
 
+        if ((rc = cfg_get_inst_name(handles[j], &rt_name)) != 0)
+        {
+            ERROR("%s: Route handle cannot be processed", __FUNCTION__);
+            break;
+        }
+
+        rc = route_parse_inst_name(rt_name, &tbl[i]);
+
+        free(rt_name);
+
+        assert(rc == 0);
+
         /* Get route attributes */
-        if ((rc = cfg_get_son(handles[i], &handle2)) != 0 ||
+        if ((rc = cfg_get_son(handles[j], &handle2)) != 0 ||
             handle2 == CFG_HANDLE_INVALID)
         {
             ERROR("%s: Cannot find any attribute of the route %r",
@@ -594,7 +609,8 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
 
         assert(handle2 == CFG_HANDLE_INVALID);
 
-        tbl[i].hndl = handles[i];
+        tbl[i].hndl = handles[j];
+        i++;
     }
     free(handles);
 
@@ -605,7 +621,7 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
     }
 
     *rt_tbl = tbl;
-    *n = num;
+    *n = rt_num;
 
     return 0;
 }

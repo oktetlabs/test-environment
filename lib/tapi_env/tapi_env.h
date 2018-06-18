@@ -264,8 +264,12 @@
 /** Types of entities in the Environment */
 typedef enum {
     TAPI_ENV_UNSPEC = 0,    /**< Unspecified */
+    TAPI_ENV_INVALID = 1,   /**< The type (or derivative type that we
+                             * established as result of internal logic) is
+                             * invalid. Env with this type will fail to
+                             * bind. */
     TAPI_ENV_IUT,           /**< Implementation Under Testing */
-    TAPI_ENV_TESTER,        /**< Auxiluary tester */
+    TAPI_ENV_TST,           /**< Non-IUT agent */
 } tapi_env_type;
 
 /** Types of addresses */

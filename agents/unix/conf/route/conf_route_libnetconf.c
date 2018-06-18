@@ -466,47 +466,37 @@ append_routes(netconf_list *nlist, te_string *const str)
             continue;
 
         /*
-         * If you create a new network address for any network interface,
-         * then it automatically adds a several routes. One of these routes
-         * has parameters:
-         *   - table = local,
-         *   - type = broadcast,
-         *   - empty field gateway,
-         *   - dst field has the last bits set to 0, according to the
-         *     network mask used for the address.
-         * In older kernels this route is removed when a secondary network
-         * address is deleted. Sometimes configurator for rollback has to
-         * remove a secondary network address. This causes removal of the
-         * route. Configurator should restore the route using the following
-         * steps:
-         *   1. Add the route with parameters: dst, gateway, table.
-         *   2. Add remaining fields one by one.
-         * But the kernel does not allow to create the route using only the
-         * parameters of the first point. So the test fails.
+         * The local routing table is maintained by the kernel and shouldn't
+         * be manipulated by Configurator.
          */
-        if (family == AF_INET && (route->table == NETCONF_RT_TABLE_LOCAL) &&
-            (route->type == NETCONF_RTN_BROADCAST) &&
-            (route->dst != NULL) &&
-            (route->dstlen == 32) &&
-            ((route->dst[3] & 1) == 0) &&
-            (route->gateway == NULL) &&
-            (route->src != NULL))
+        if (route->table == NETCONF_RT_TABLE_LOCAL)
+           continue;
+
+        /*
+         * If expire time is defined for the route, then drop it.
+         * Configurator doesn't have any good way to restore such routes.
+         */
+        if (route->expires != 0)
             continue;
+
+        /*
+         * FIXME: Filter cloned routes to prevent configurator errors.
+         * It's a workaround for old kernels with Routing Cache.
+         */
+        if (route->flags & NETCONF_RTM_F_CLONED)
+           continue;
 
         if (family == AF_INET6)
         {
             /*
-             * Filter RA routes to prevent configurator restore config errors.
+             * We see that Neighbour Discovery and Router Discovery add routes
+             * to the unspec table. It is unclear whether it is a sort of
+             * coincidence or a rule. For now, we ignore the unspec table for
+             * IPv6. Maybe the same check should be added for IPv4, but it
+             * works for now, so let it be as it is.
              */
-            if (route->protocol == NETCONF_RTPROT_RA)
+            if (route->table == NETCONF_RT_TABLE_UNSPEC)
                 continue;
-
-            /*
-             * The local routing table is maintained by the kernel and shouldn’t
-             * be manipulated by Configurator.
-             */
-            if (route->table == NETCONF_RT_TABLE_LOCAL)
-               continue;
 
             /*
              * IPv6 requires a link-local address on every network interface.
@@ -515,12 +505,12 @@ append_routes(netconf_list *nlist, te_string *const str)
              * Netlink returns RT_SCOPE_UNIVERSE for such routes, so check
              * prefix with prefix length instead.
              */
-            if (route->dst != NULL)
+            if (route->dst != NULL && route->dstlen == 64)
             {
                 struct in6_addr addr;
 
                 memcpy(addr.s6_addr, route->dst, sizeof(addr.s6_addr));
-                if (IN6_IS_ADDR_LINKLOCAL(&addr) && route->dstlen == 64)
+                if (IN6_IS_ADDR_LINKLOCAL(&addr))
                     continue;
             }
         }
