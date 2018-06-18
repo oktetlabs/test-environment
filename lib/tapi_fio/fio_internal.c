@@ -53,6 +53,10 @@ fio_app_start(char *cmd, tapi_fio_app *app)
     free(app->cmd);
     app->cmd = cmd;
 
+    rpc_fcntl(app->rpcs,
+              app->fd_stdout, RPC_F_SETPIPE_SZ,
+              TAPI_FIO_MAX_REPORT);
+
     return 0;
 }
 

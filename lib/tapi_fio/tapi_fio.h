@@ -27,6 +27,8 @@ extern "C" {
 /** Estimate timeout from input FIO parameters */
 #define TAPI_FIO_TIMEOUT_DEFAULT    (-1)
 
+#define TAPI_FIO_MAX_REPORT (10 * 1024 * 1024)
+
 /** FIO test tool report. */
 typedef struct tapi_fio_report {
     double bandwidth;   /**< Average data rate */
