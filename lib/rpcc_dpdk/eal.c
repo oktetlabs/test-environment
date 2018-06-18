@@ -237,8 +237,8 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
 {
     te_errno                rc;
     const tapi_env_pco     *pco;
-    char                  **my_argv;
-    int                     my_argc;
+    char                  **my_argv = NULL;
+    int                     my_argc = 0;
     const tapi_env_ps_if   *ps_if;
     int                     ret;
     int                     i;
@@ -256,10 +256,6 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     pco = tapi_env_rpcs2pco(env, rpcs);
     if (pco == NULL)
         return TE_EINVAL;
-
-    /* Reserve space for argumnets provided by caller */
-    my_argv = calloc(argc, sizeof(*my_argv));
-    my_argc = 0;
 
     /* Use RPC server name as a program name */
     append_arg(&my_argc, &my_argv, "%s", rpcs->name);
