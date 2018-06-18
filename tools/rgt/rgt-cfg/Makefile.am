@@ -44,10 +44,7 @@ rgt-filter-xml2tcl.h: tmpls/Makefile
 	    done; \
 	    echo -E "};" >> $${util}.h; \
 	    echo -E "const char *xml2fmt_files[] = {" >> $${util}.h; \
-	    for i in `ls $(srcdir)/tmpls/*.tmpl`; do \
-	    echo "\""$(DESTDIR)/$(pkgdatadir)/tmpls/`basename $${i}`"\"," \
-	        >> $${util}.h; \
-	    done; \
+	    find $(srcdir)/tmpls/*.tmpl -printf "\"%f\"," >> $${util}.h; \
 	    echo -E "};" >> $${util}.h; \
 	    echo -E -n "rgt_tmpl_t xml2fmt_tmpls[" >> $${util}.h; \
 	    echo -E -n "sizeof(xml2fmt_files) / " >> $${util}.h; \

@@ -268,6 +268,15 @@ RGT_DEF_FUNC(proc_document_start)
         int         rc;
         struct stat stat_buf;
         char        buf[1024];
+        char        prefix[PATH_MAX];
+        const char *snprintf_error = "Error writing command to buffer\n";
+        int         n;
+
+        if (rgt_resource_files_prefix_get(NULL, NULL, sizeof(prefix), prefix))
+        {
+            fprintf(stderr, "Failed to get resource files path prefix\n");
+            exit(EXIT_FAILURE);
+        }
 
         rc = stat(ctx->out_fname, &stat_buf);
         if (rc == -1)
@@ -303,7 +312,12 @@ RGT_DEF_FUNC(proc_document_start)
 
         if (shared_url == NULL)
         {
-            snprintf(buf, sizeof(buf), "cp %s/misc/* .", INSTALL_DIR);
+            n = snprintf(buf, sizeof(buf), "cp %s/misc/* .", prefix);
+            if (n < 0 || (size_t)n >= sizeof(buf))
+            {
+                fputs(snprintf_error, stderr);
+                exit(EXIT_FAILURE);
+            }
             system(buf);
 
             if (stat("images", &stat_buf) != 0)
@@ -311,15 +325,24 @@ RGT_DEF_FUNC(proc_document_start)
                 system("mkdir images");
             }
 
-            snprintf(buf, sizeof(buf), "cp %s/images/* images",
-                     INSTALL_DIR);
+            n = snprintf(buf, sizeof(buf), "cp %s/images/* images", prefix);
+            if (n < 0 || (size_t)n >= sizeof(buf))
+            {
+                fputs(snprintf_error, stderr);
+                exit(EXIT_FAILURE);
+            }
             system(buf);
         }
 
-        snprintf(buf, sizeof(buf), "for i in %s/tmpls-simple/* ; do "
-                 "cat $i | sed -e 's;@@SHARED_URL@@;%s;g' "
-                 "> `basename $i` ; done",
-                 INSTALL_DIR, (shared_url == NULL) ? "" : shared_url);
+        n = snprintf(buf, sizeof(buf), "for i in %s/tmpls-simple/* ; do "
+                     "cat $i | sed -e 's;@@SHARED_URL@@;%s;g' "
+                     "> `basename $i` ; done",
+                     prefix, (shared_url == NULL) ? "" : shared_url);
+        if (n < 0 || (size_t)n >= sizeof(buf))
+        {
+            fputs(snprintf_error, stderr);
+            exit(EXIT_FAILURE);
+        }
         system(buf);
     }
 
