@@ -17,7 +17,7 @@ function process(str)
 
 in_dox_comment && /^[[:space:]]*\*/ { sub(/^[[:space:]]*\*/, ""); }
 
-/<!---/ {   n = split($0, arr, /<!---/);
+/<!---/ {   n = split($0, arr, /<!--- /);
             if (in_dox_comment)
                 process(arr[1]);
             in_dox_comment = 1;
@@ -26,7 +26,7 @@ in_dox_comment && /^[[:space:]]*\*/ { sub(/^[[:space:]]*\*/, ""); }
             next;
         }
 
-in_dox_comment && /-->/ {   sub(/-->.*/, "");
+in_dox_comment && /-->/ {   sub(/.*-->.*/, "\n");
                             if ($0) print;
                             in_dox_comment = 0;
                             next;
