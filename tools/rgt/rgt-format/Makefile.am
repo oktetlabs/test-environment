@@ -51,7 +51,7 @@ dist-hook:
 	    rm -f $(distdir)/$${util}.h; \
 	done
 
-$(RGT_SUBDIRS:%=%.h): $(RGT_SUBDIRS:%=%/tmpls/Makefile)
+$(RGT_SUBDIRS:%=%.h): $(RGT_SUBDIRS:%=%/tmpls/Makefile) Makefile
 	util=`echo $@ | sed 's,\.h$$,,'` ; \
 	echo -E "enum {" > $@; \
 	for i in `ls $(srcdir)/$${util}/tmpls/*.tmpl`; do \
