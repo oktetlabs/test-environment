@@ -53,6 +53,7 @@ engine_libs = [
     'tapi_tad',
     'tapi_tcp_states',
     'tce',
+    'trc',
     'rpcc_dpdk',
 ]
 
