@@ -2,6 +2,8 @@ option('cflags', type: 'string', value: '',
        description: 'Extra TE project CFLAGS')
 option('ldflags', type: 'string', value: '',
        description: 'Extra TE project LDFLAGS')
+option('install-dev', type: 'boolean', value: false,
+       description: 'Force install headers and libraries')
 
 option('engine', type: 'boolean', value: false,
        description: 'Build TE engine')
