@@ -10,6 +10,8 @@ option('engine', type: 'boolean', value: false,
 
 option('libs', type: 'string', value: '',
        description: 'Libraries to build')
+option('agents', type: 'string', value: '',
+       description: 'Test Agents to build')
 
 option('large-logs', type: 'boolean', value: true,
        description: 'Support large logs')
@@ -52,3 +54,6 @@ option('tad-cs', type: 'boolean', value: true,
        description: 'TAD Configurator support (enabled by default)')
 option('tad-packet_mmap_rx_ring', type: 'boolean', value: false,
        description: 'TAD: use packet_mmap_rx_ring to sniff')
+
+option('agentsdir', type: 'string', value: '',
+       description: 'Directory to install agents to')

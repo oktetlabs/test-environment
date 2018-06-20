@@ -64,3 +64,4 @@ subdir('lib')
 if get_option('engine')
     subdir('engine')
 endif
+subdir('agents')
