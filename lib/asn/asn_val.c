@@ -1973,6 +1973,22 @@ asn_read_int32(const asn_value *container, int32_t *value,
 
 /* see description in asn_usr.h */
 te_errno
+asn_write_uint32(asn_value *container, uint32_t value, const char *labels)
+{
+    return asn_write_value_field(container, &value, sizeof(value), labels);
+}
+
+/* see description in asn_usr.h */
+te_errno
+asn_read_uint32(const asn_value *container, uint32_t *value,
+                const char *labels)
+{
+    size_t len = sizeof(*value);
+    return asn_read_value_field(container, value, &len, labels);
+}
+
+/* see description in asn_usr.h */
+te_errno
 asn_write_bool(asn_value *container, te_bool value, const char *labels)
 {
     return asn_write_value_field(container, &value, sizeof(value), labels);

@@ -23,8 +23,12 @@
 #include <ctype.h>
 #include <assert.h>
 #include <stdarg.h>
+#include <libgen.h>
+#include <unistd.h>
+#include "te_errno.h"
 
 #include "rgt_tmpls_lib.h"
+#include "rgt_which.h"
 
 /* External declarations */
 static void get_error_point(const char *file, unsigned long offset,
@@ -351,7 +355,110 @@ rgt_tmpls_free(rgt_tmpl_t *tmpls, size_t tmpl_num)
 
 /* The description see in rgt_tmpls_lib.h */
 int
-rgt_tmpls_parse(const char **files, rgt_tmpl_t *tmpls, size_t tmpl_num)
+rgt_resource_files_prefix_get(const char *util_path, const char *argv0,
+                              size_t size, char *prefix)
+{
+    static char prefix_static[PATH_MAX] = {0};
+    static te_bool got_prefix = FALSE;
+
+    const char *getcwd_error = "getcwd failed";
+    const char *snprintf_error = "error writing path to buffer";
+    int n;
+
+    if (prefix == NULL)
+    {
+        fprintf(stderr, "%s: error passing NULL to prefix pointer\n",
+                __FUNCTION__);
+        return 1;
+    }
+
+    if (!got_prefix)
+    {
+        /* relative path from install dir */
+        const char *datadir_path = "share";
+        char argv0_copy[PATH_MAX] = {0};
+        char path_buf[PATH_MAX] = {0};
+        char original_path[PATH_MAX] = {0};
+        const char *chdir_steps[] = {path_buf, "..", datadir_path, util_path};
+        size_t i;
+
+        if (argv0 == NULL || util_path == NULL)
+        {
+            fprintf(stderr, "%s: error passing NULL argument without "
+                    "previous initialization\n", __FUNCTION__);
+            return 1;
+        }
+
+        if (strchr(argv0, '/') != NULL ||
+            rgt_which(argv0, sizeof(path_buf), path_buf))
+        {
+            n = snprintf(argv0_copy, sizeof(argv0_copy), "%s", argv0);
+
+            if (n < 0 || sizeof(argv0_copy) <= (size_t)n)
+            {
+                fprintf(stderr, "%s: %s\n", __FUNCTION__, snprintf_error);
+                return 1;
+            }
+
+            n = snprintf(path_buf, sizeof(path_buf), "%s", dirname(argv0_copy));
+
+            if (n < 0 || sizeof(path_buf) <= (size_t)n)
+            {
+                fprintf(stderr, "%s: %s\n", __FUNCTION__, snprintf_error);
+                return 1;
+            }
+
+        }
+
+        if (getcwd(original_path, sizeof(original_path)) == NULL)
+        {
+            fprintf(stderr, "%s: %s\n", __FUNCTION__, getcwd_error);
+            return 1;
+        }
+
+        for (i = 0; i < TE_ARRAY_LEN(chdir_steps); ++i)
+        {
+            if (chdir(chdir_steps[i]) < 0)
+            {
+                fprintf(stderr, "%s: error accessing directory: %s "
+                        "from path: %s/../%s/%s\n", __FUNCTION__,
+                        chdir_steps[i], path_buf, datadir_path, util_path);
+                chdir(original_path);
+                return 1;
+            }
+        }
+
+        if (getcwd(prefix_static, sizeof(prefix_static)) == NULL)
+        {
+            fprintf(stderr, "%s: %s\n", __FUNCTION__, getcwd_error);
+            chdir(original_path);
+            return 1;
+        }
+
+        if (chdir(original_path) < 0)
+        {
+            fprintf(stderr, "%s: error returning to the original path: %s\n",
+                    __FUNCTION__, original_path);
+            return 1;
+        }
+
+        got_prefix = TRUE;
+    }
+
+    n = snprintf(prefix, size, "%s", prefix_static);
+    if (n < 0 || size <= (size_t)n)
+    {
+        fprintf(stderr, "%s: %s\n", __FUNCTION__, snprintf_error);
+        return 1;
+    }
+
+    return 0;
+}
+
+/* The description see in rgt_tmpls_lib.h */
+int
+rgt_tmpls_parse(const char **files, const char *prefix,
+                rgt_tmpl_t *tmpls, size_t tmpl_num)
 {
     FILE   *fd;
     size_t  i;
@@ -364,10 +471,23 @@ rgt_tmpls_parse(const char **files, rgt_tmpl_t *tmpls, size_t tmpl_num)
 
     for (i = 0; i < tmpl_num; i++)
     {
+        char tmpl_path[PATH_MAX];
+        int n;
+
+        /* Prefix path to a template file */
+        n = snprintf(tmpl_path, sizeof(tmpl_path), "%s/tmpls/%s",
+                     prefix, files[i]);
+
+        if (n < 0 || (size_t)n >= sizeof(tmpl_path)) {
+            fputs("Cannot handle file path of this length\n", stderr);
+            rgt_tmpls_free(tmpls, tmpl_num);
+            return 1;
+        }
+
         /* Open file with a template and parse it */
-        if ((fd = fopen(files[i], "r")) == NULL)
+        if ((fd = fopen(tmpl_path, "r")) == NULL)
         {
-            perror(files[i]);
+            perror(tmpl_path);
             rgt_tmpls_free(tmpls, tmpl_num);
             return 1;
         }
@@ -380,7 +500,7 @@ rgt_tmpls_parse(const char **files, rgt_tmpl_t *tmpls, size_t tmpl_num)
          */
         tmpls[i].raw_ptr = (char *)malloc((fsize = ftell(fd)) + 1);
         if (tmpls[i].raw_ptr == NULL || 
-            (tmpls[i].fname = strdup(files[i])) == NULL)
+            (tmpls[i].fname = strdup(tmpl_path)) == NULL)
         {
             fprintf(stderr, "Not enough memory\n");
             fclose(fd);
@@ -388,13 +508,13 @@ rgt_tmpls_parse(const char **files, rgt_tmpl_t *tmpls, size_t tmpl_num)
             return 1;
         }
         tmpls[i].raw_ptr[fsize] = '\0';
-        strcpy(tmpls[i].fname, files[i]);
+        strcpy(tmpls[i].fname, tmpl_path);
         fseek(fd, 0L, SEEK_SET);
 
         if (fread(tmpls[i].raw_ptr, 1, fsize, fd) != (size_t )fsize)
         {
             fprintf(stderr, "Cannot read the whole template %s\n",
-                    files[i]);
+                    tmpl_path);
             fclose(fd);
             rgt_tmpls_free(tmpls, tmpl_num);
             return 1;
@@ -443,12 +563,12 @@ rgt_tmpls_parse(const char **files, rgt_tmpl_t *tmpls, size_t tmpl_num)
                 
                 if (end_var_ptr == NULL)
                 {
-                    get_error_point(files[i], var_ptr - tmpls[i].raw_ptr,
+                    get_error_point(tmpl_path, var_ptr - tmpls[i].raw_ptr,
                                     &n_row, &n_col);
 
                     fprintf(stderr, "Cannot find trailing %s marker for "
                             "variable started at %s:%d:%d\n",
-                            RGT_TMPLS_VAR_DELIMETER, files[i],
+                            RGT_TMPLS_VAR_DELIMETER, tmpl_path,
                             n_row, n_col);
                     rgt_tmpls_free(tmpls, tmpl_num);
                     return 1;
@@ -463,11 +583,11 @@ rgt_tmpls_parse(const char **files, rgt_tmpl_t *tmpls, size_t tmpl_num)
                 var_ptr = strrchr(fmt_ptr, ':');
                 if (var_ptr == NULL || var_ptr[1] == '\0')
                 {
-                    get_error_point(files[i], fmt_ptr - tmpls[i].raw_ptr,
+                    get_error_point(tmpl_path, fmt_ptr - tmpls[i].raw_ptr,
                                     &n_row, &n_col);
                     fprintf(stderr, "Cannot get format string or "
                             "variable name at %s:%d:%d\n",
-                            files[i], n_row, n_col);
+                            tmpl_path, n_row, n_col);
                     rgt_tmpls_free(tmpls, tmpl_num);
                     return 1;                    
                 }
@@ -482,11 +602,11 @@ rgt_tmpls_parse(const char **files, rgt_tmpl_t *tmpls, size_t tmpl_num)
                 {
                     if (isspace(*p_tmp))
                     {
-                        get_error_point(files[i], p_tmp - tmpls[i].raw_ptr,
+                        get_error_point(tmpl_path, p_tmp - tmpls[i].raw_ptr,
                                         &n_row, &n_col);
                         fprintf(stderr, "Variable name cannot contain any "
                                 "space characters\n%s:%d:%d\n",
-                                files[i], n_row, n_col);
+                                tmpl_path, n_row, n_col);
                         rgt_tmpls_free(tmpls, tmpl_num);
                         return 1;
                     }

@@ -1,0 +1,86 @@
+option('cflags', type: 'string', value: '',
+       description: 'Extra TE project CFLAGS')
+option('ldflags', type: 'string', value: '',
+       description: 'Extra TE project LDFLAGS')
+option('install-dev', type: 'boolean', value: false,
+       description: 'Force install headers and libraries')
+
+option('engine', type: 'boolean', value: false,
+       description: 'Build TE engine')
+
+option('libs', type: 'string', value: '',
+       description: 'Libraries to build')
+option('agents', type: 'string', value: '',
+       description: 'Test Agents to build')
+option('tools', type: 'string', value: '',
+       description: 'Tools to build')
+
+option('large-logs', type: 'boolean', value: true,
+       description: 'Support large logs')
+option('trc', type: 'boolean', value: true,
+       description: 'Integrate with TRC')
+option('tr069', type: 'boolean', value: false,
+       description: 'TR-069 support')
+
+option('rpcdefs', type: 'string', value: '',
+       description: 'List of extra RPC definitions')
+
+option('rpc-transport-local', type: 'boolean', value: true,
+       description: 'Disable local transport for RPC (Unix domain sockets or Windows pipes) (enabled by default)')
+option('rpc-transport-tcp', type: 'boolean', value: false,
+       description: 'Enable TCP transport for RPC (disabled by default)')
+
+option('typesafe-rpc', type: 'boolean', value: true,
+       description: 'Type-safe RPC implementation (enabled by default)')
+option('static-rpc-lookup', type: 'boolean', value: false,
+       description: 'Use compile-time symbol resolution by default')
+option('rpcserver-idle-plugins', type: 'boolean', value: true,
+       description: 'RPC server supports idle plugins (enabled by default)')
+option('rpcserver-smart-mem', type: 'boolean', value: true,
+       description: 'RPC server smart memory management (enabled by default)')
+option('rpcserver-tr069', type: 'boolean', value: false,
+       description: 'RPC server supports TR-069')
+
+option('agentlib-dlfcn-lookup', type: 'boolean', value: false,
+       description: 'Enable dlsym() symbol lookup in TA RPC helper library')
+option('agentlib-ftp', type: 'boolean', value: false,
+       description: 'Enable FTP support in TA RPC helper library')
+option('agentlib-power-sw', type: 'boolean', value: false,
+       description: 'Enable power switch support in TA RPC helper library')
+option('agentlib-telephony', type: 'boolean', value: false,
+       description: 'Enable telephony support in TA RPC helper library')
+option('agentlib-upnp', type: 'boolean', value: false,
+       description: 'Enable UPnP support in TA RPC helper library')
+
+option('tad-protocols', type: 'string', value: '',
+       description: 'TAD protocols to support')
+option('tad-cs', type: 'boolean', value: true,
+       description: 'TAD Configurator support (enabled by default)')
+option('tad-packet_mmap_rx_ring', type: 'boolean', value: false,
+       description: 'TAD: use packet_mmap_rx_ring to sniff')
+
+option('agentsdir', type: 'string', value: '',
+       description: 'Directory to install agents to')
+
+option('agent-unix-name', type: 'string', value: '',
+       description: 'Unix Test Agent name')
+option('agent-unix-conf', type: 'string', value: '',
+       description: 'Unix Test Agent configuration support')
+option('agent-unix-daemons', type: 'string', value: '',
+       description: 'Unix Test Agent daemons configuration support')
+option('agent-unix-symtbl', type: 'boolean', value: true,
+       description: 'Generate and include symbol table in Unix agent')
+
+option('rgt-log-filter', type: 'boolean', value: true,
+       description: 'Embed log fitering stuff in RGT core')
+
+option('trc-spoilers', type: 'boolean', value: false,
+       description: 'Use spoilers to show/hide test parameters in TRC')
+option('trc-popups', type: 'boolean', value: false,
+       description: 'Enable statistics popups in TRC')
+option('trc-log-urls', type: 'boolean', value: false,
+       description: 'Enable links to test logs in detailed tables in TRC')
+option('trc-hidden-stats', type: 'boolean', value: false,
+       description: 'Enable hidden columns in statistics tables in TRC')
+option('trc-ext-scripts', type: 'array', value: [],
+       description: 'Install external scripts with TRC')

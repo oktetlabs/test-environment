@@ -191,9 +191,36 @@ extern const char *rgt_tmpls_xml_attrs_get(const char **attrs,
                                            const char *name);
 
 /**
+ * Get the prefix to resource files of running utility (tmpls, misc, etc.)
+ *
+ * @note First call intializes prefix. If function succeeds, following calls
+ *       return the same value. @p util_path and @p argv0 will be ignored in
+ *       following calls
+ *
+ * @warning Assumes that the executable is in installdir/bindir
+ *          and datadir is "share"
+ *
+ * @param[in] util_path  path to the utility resource directory from datadir
+ * @param[in] argv0      the name of called program (pass argv[0] from main)
+ * @param[in] size       size of the buffer pointed by prefix
+ * @param[out] prefix    pointer to the prefix to be written
+ *
+ * @return  Status code
+ *
+ * @retval 0    On success
+ * @retval 1    On failure
+ */
+
+extern int rgt_resource_files_prefix_get(const char *util_path,
+                                         const char *argv0,
+                                         size_t size,
+                                         char *prefix);
+
+/**
  * Parses themplate files and fills in an appropriate data structure.
  *
  * @param files     An array of template files to be parsed
+ * @param prefix    A path that must be prefixed before every files entry
  * @param tmpls     An array of internal representation of the templates
  * @param tmpl_num  Number of templates in the arrays (the same as the
  *                  number of files passed)
@@ -205,7 +232,7 @@ extern const char *rgt_tmpls_xml_attrs_get(const char **attrs,
  *
  * @se If an error occures the function output error message into stderr
  */
-extern int rgt_tmpls_parse(const char **files, 
+extern int rgt_tmpls_parse(const char **files, const char *prefix,
                            rgt_tmpl_t *tmpls, size_t tmpl_num);
 
 /**

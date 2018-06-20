@@ -51,6 +51,13 @@ RGT_DEF_FUNC(proc_document_start)
     static gen_ctx_user_t  user_ctx;
     gen_ctx_user_t        *gen_user;
     rgt_attrs_t           *attrs;
+    char                   prefix[PATH_MAX];
+
+    if (rgt_resource_files_prefix_get(NULL, NULL, sizeof(prefix), prefix))
+    {
+        fprintf(stderr, "Failed to get resource files path prefix\n");
+        exit(2);
+    }
 
     RGT_FUNC_UNUSED_PRMS();
 
@@ -72,7 +79,7 @@ RGT_DEF_FUNC(proc_document_start)
     }
 
     attrs = rgt_tmpls_attrs_new(xml_attrs);
-    rgt_tmpls_attrs_add_fstr(attrs, "DATADIR", INSTALL_DIR);
+    rgt_tmpls_attrs_add_fstr(attrs, "DATADIR", prefix);
     rgt_tmpls_output(gen_user->fd, &xml2fmt_tmpls[DOCUMENT_START], attrs);
     rgt_tmpls_attrs_free(attrs);
 }

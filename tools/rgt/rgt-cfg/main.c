@@ -1556,12 +1556,21 @@ main(int argc, char **argv)
 {
     rgt_gen_ctx_t gen_ctx;
     int           rc = 0;
+    char          prefix[PATH_MAX] = {0};
+    const char   *util_path = "rgt-cfg";
 
     memset(&gen_ctx, 0, sizeof(gen_ctx));
 
     process_cmd_line_opts(argc, argv, &gen_ctx);
 
-    if (rgt_tmpls_parse(xml2fmt_files, xml2fmt_tmpls,
+    if (rgt_resource_files_prefix_get(util_path, argv[0],
+                                      sizeof(prefix), prefix))
+    {
+        fprintf(stderr, "Failed to get resource files path prefix\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (rgt_tmpls_parse(xml2fmt_files, prefix, xml2fmt_tmpls,
                         xml2fmt_tmpls_num) != 0)
     {
         assert(0);

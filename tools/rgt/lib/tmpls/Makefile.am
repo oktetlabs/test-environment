@@ -14,4 +14,5 @@ AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/@includedir@ @EXTRA_CPPFLAGS@ \
 AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 
 noinst_LIBRARIES = libtmpls.a
-libtmpls_a_SOURCES = rgt_tmpls_lib.c rgt_tmpls_lib.h
+libtmpls_a_SOURCES = rgt_tmpls_lib.c rgt_tmpls_lib.h \
+                     rgt_which.c rgt_which_h
