@@ -250,6 +250,9 @@ tapi_tcp_clear_msg(tapi_tcp_connection_t *conn_descr)
     }
 }
 
+#ifdef ARP_IN_INIT_CON
+static int destroy_arp_session(tapi_tcp_connection_t *conn_descr);
+#endif
 
 /**
  * Remove TCP connection descriptor from data base
@@ -277,7 +280,7 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
                                 &num);
         if (rc != 0)
         {
-            WARN("%s(conn %d): rcv CSAP %d on agt %s stop failed %r",
+            WARN("%s(conn %d): rcv CSAP %u on agt %s stop failed %r",
                  __FUNCTION__, conn_descr->id, conn_descr->rcv_csap,
                  conn_descr->agt, rc);
         }
@@ -286,12 +289,12 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
                                  conn_descr->rcv_csap);
         if (rc != 0)
         {
-            WARN("%s(conn %d): rcv CSAP %d on agt %s destroy failed %r", 
+            WARN("%s(conn %d): rcv CSAP %u on agt %s destroy failed %r",
                  __FUNCTION__, conn_descr->id, conn_descr->rcv_csap,
                  conn_descr->agt, rc);
         }
-        else 
-            INFO("%s(conn %d): rcv CSAP %d on agt %s destroyed",
+        else
+            INFO("%s(conn %d): rcv CSAP %u on agt %s destroyed",
                  __FUNCTION__, conn_descr->id, conn_descr->rcv_csap,
                  conn_descr->agt);
     } 
@@ -302,52 +305,28 @@ tapi_tcp_destroy_conn_descr(tapi_tcp_connection_t *conn_descr)
                                  conn_descr->snd_csap);
         if (rc != 0)
         {
-            WARN("%s(conn %d): snd CSAP %d on agt %s destroy failed %r", 
+            WARN("%s(conn %d): snd CSAP %u on agt %s destroy failed %r",
                  __FUNCTION__, conn_descr->id, conn_descr->snd_csap,
                  conn_descr->agt, rc);
         }
         else
-            INFO("%s(conn %d): snd CSAP %d on agt %s destroyed",
+            INFO("%s(conn %d): snd CSAP %u on agt %s destroyed",
                  __FUNCTION__, conn_descr->id, conn_descr->snd_csap,
                  conn_descr->agt);
-    } 
-
-    if (conn_descr->arp_csap != CSAP_INVALID_HANDLE)
-    {
-        rc = rcf_ta_trrecv_stop(conn_descr->agt, conn_descr->arp_sid,
-                                conn_descr->arp_csap,
-                                tcp_conn_pkt_handler, conn_descr,
-                                &num);
-        if (rc != 0)
-        {
-            WARN("%s(id %d): arp CSAP %d on agt %s stop failed %r",
-                 __FUNCTION__, conn_descr->id, conn_descr->arp_csap,
-                 conn_descr->agt, rc);
-        }
-
-        rc = rcf_ta_csap_destroy(conn_descr->agt, conn_descr->arp_sid,
-                                 conn_descr->arp_csap);
-        if (rc != 0)
-        {
-            WARN("%s(id %d): arp CSAP %d on agt %s destroy failed %r", 
-                 __FUNCTION__, conn_descr->id, conn_descr->arp_csap,
-                 conn_descr->agt, rc);
-        }
-        else
-            INFO("%s(conn %d): arp CSAP %d on agt %s destroyed",
-                 __FUNCTION__, conn_descr->id, conn_descr->arp_csap,
-                 conn_descr->agt);
-    } 
+    }
 
     if (conn_descr->rcv_csap != CSAP_INVALID_HANDLE ||
-        conn_descr->snd_csap != CSAP_INVALID_HANDLE ||
-        conn_descr->arp_csap != CSAP_INVALID_HANDLE)
+        conn_descr->snd_csap != CSAP_INVALID_HANDLE)
     {
         if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/csap:*",
                                       conn_descr->agt)) != 0)
             ERROR("%s(): cfg_synchronize_fmt(/agent:%s/csap:*) failed: %r",
                   __FUNCTION__, conn_descr->agt, rc);
     }
+
+    #ifdef ARP_IN_INIT_CON
+    destroy_arp_session(conn_descr);
+    #endif
 
     if (conn_descr->messages != NULL)
         while (conn_descr->messages->cqh_first != 
@@ -390,7 +369,7 @@ conn_wait_packet(tapi_tcp_connection_t *conn_descr, unsigned int timeout,
         return TE_EINVAL;
     }
 
-    RING("Waiting for a packet on the CSAP %d (%s:%d) timeout is %u "
+    RING("Waiting for a packet on the CSAP %u (%s:%d) timeout is %u "
          "milliseconds", conn_descr->rcv_csap, conn_descr->agt,
          conn_descr->rcv_sid, timeout);
     rcf_tr_op_log(FALSE);
@@ -420,7 +399,7 @@ conn_wait_packet(tapi_tcp_connection_t *conn_descr, unsigned int timeout,
     }
 
     rcf_tr_op_log(tr_op_log);
-    RING("The CSAP %d (%s:%d) got %u packets", conn_descr->rcv_csap,
+    RING("The CSAP %u (%s:%d) got %u packets", conn_descr->rcv_csap,
          conn_descr->agt, conn_descr->rcv_sid, num);
 
     if (duration != NULL)
@@ -646,7 +625,7 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
                                   &tcp_message, &syms);
     if (rc != 0)
     {
-        ERROR("%s(): cannot parse message file: %r, sym %d", 
+        ERROR("%s(): cannot parse message file: %r, sym %d",
               __FUNCTION__, rc, syms);
         return;
     }
@@ -774,8 +753,132 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
 }
 
 
+#ifdef ARP_IN_INIT_CON
+
 static 
 uint8_t broadcast_mac[] = {0xff,0xff,0xff,0xff,0xff,0xff};
+
+static int
+create_arp_session(tapi_tcp_connection_t *conn_descr,
+                   asn_value *arp_pattern,
+                   const struct sockaddr *local_addr,
+                   const char *local_iface,
+                   const uint8_t *local_mac,
+                   const uint8_t *remote_mac,
+                   te_bool  use_native_mac)
+{
+    int rc = 0;
+    int arp_sid;
+    char arp_reply_method[100];
+    csap_handle_t arp_csap = CSAP_INVALID_HANDLE;
+    uint16_t trafic_param;
+    size_t   func_len;
+
+    struct sockaddr_in const *const local_in_addr  = SIN(local_addr);
+
+#define CHECK_ERROR(msg_...)       \
+    do {                             \
+        if (rc != 0)                 \
+        {                          \
+            ERROR(msg_);           \
+            goto proc_exit;          \
+        }                          \
+    } while (0)
+
+
+    rc = rcf_ta_create_session(conn_descr->agt, &arp_sid);
+    CHECK_ERROR("%s(); create snd session failed %r",
+                __FUNCTION__, rc);
+
+    trafic_param = 1;
+    rc = tapi_arp_add_pdu_eth_ip4(&arp_pattern, TRUE,
+                                  &trafic_param, remote_mac, NULL, NULL,
+                                  (uint8_t *)&(local_in_addr->sin_addr));
+    CHECK_ERROR("%s(); create arp pattern fails %r", __FUNCTION__, rc);
+    rc = tapi_eth_add_pdu(&arp_pattern, NULL, TRUE,
+                          broadcast_mac, remote_mac, NULL,
+                          TE_BOOL3_ANY /* tagged/untagged */,
+                          TE_BOOL3_ANY /* Ethernet2/LLC */);
+
+    CHECK_ERROR("%s(); create arp/eth pattern fails %r",
+                __FUNCTION__, rc);
+
+    func_len = snprintf(arp_reply_method, sizeof(arp_reply_method),
+                  "tad_eth_arp_reply:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
+                  local_mac[0], local_mac[1],
+                  local_mac[2], local_mac[3],
+                  local_mac[4], local_mac[5]);
+
+    rc = asn_write_value_field(arp_pattern, arp_reply_method, func_len + 1,
+                               "0.actions.0.#function");
+    CHECK_ERROR("%s(): write arp reply method name failed %r",
+                __FUNCTION__, rc);
+
+
+    trafic_param = ETH_P_ARP;
+
+    rc = tapi_arp_eth_csap_create_ip4(conn_descr->agt, arp_sid, local_iface,
+                                      use_native_mac ?
+                                      TAD_ETH_RECV_HOST |
+                                      TAD_ETH_RECV_BCAST
+                                      : TAD_ETH_RECV_DEF,
+                                      remote_mac, NULL, &arp_csap);
+    CHECK_ERROR("%s(): create arp csap fails %r", __FUNCTION__, rc);
+
+    INFO("%s(): created arp csap: %d", __FUNCTION__, arp_csap);
+
+
+    conn_descr->arp_csap = arp_csap;
+    conn_descr->arp_sid = arp_sid;
+
+    #undef CHECK_ERROR
+
+proc_exit:
+    return rc;
+}
+
+
+static int
+destroy_arp_session(tapi_tcp_connection_t *conn_descr)
+{
+    int rc = 0;
+    unsigned int num;
+    if (conn_descr->arp_csap != CSAP_INVALID_HANDLE)
+    {
+        rc = rcf_ta_trrecv_stop(conn_descr->agt, conn_descr->arp_sid,
+                                conn_descr->arp_csap,
+                                tcp_conn_pkt_handler, conn_descr,
+                                &num);
+        if (rc != 0)
+        {
+            WARN("%s(id %d): arp CSAP %u on agt %s stop failed %r",
+                 __FUNCTION__, conn_descr->id, conn_descr->arp_csap,
+                 conn_descr->agt, rc);
+        }
+
+        rc = rcf_ta_csap_destroy(conn_descr->agt, conn_descr->arp_sid,
+                                 conn_descr->arp_csap);
+        if (rc != 0)
+        {
+            WARN("%s(id %d): arp CSAP %u on agt %s destroy failed %r",
+                 __FUNCTION__, conn_descr->id, conn_descr->arp_csap,
+                 conn_descr->agt, rc);
+        }
+        else
+            INFO("%s(conn %d): arp CSAP %u on agt %s destroyed",
+                 __FUNCTION__, conn_descr->id, conn_descr->arp_csap,
+                 conn_descr->agt);
+
+        if ((rc = cfg_synchronize_fmt(TRUE, "/agent:%s/csap:*",
+                                      conn_descr->agt)) != 0)
+            ERROR("%s(): cfg_synchronize_fmt(/agent:%s/csap:*) failed: %r",
+                  __FUNCTION__, conn_descr->agt, rc);
+    }
+
+    return rc;
+}
+
+#endif
 
 
 int
@@ -792,19 +895,14 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     int arp_sid;
     int rcv_sid;
     int snd_sid;
-    
-    char arp_reply_method[100];
 
     te_bool  use_native_mac = FALSE;
     uint8_t  native_local_mac[6];
     size_t   mac_len = sizeof(native_local_mac);
-    size_t   func_len;
-    uint16_t trafic_param;
 
     asn_value *syn_pattern = NULL;
     asn_value *arp_pattern = NULL;
 
-    csap_handle_t arp_csap = CSAP_INVALID_HANDLE;
     csap_handle_t rcv_csap = CSAP_INVALID_HANDLE;
     csap_handle_t snd_csap = CSAP_INVALID_HANDLE;
 
@@ -881,47 +979,6 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
         struct sockaddr_in const *const local_in_addr  = SIN(local_addr);
         struct sockaddr_in const *const remote_in_addr = SIN(remote_addr);
 
-        rc = rcf_ta_create_session(agt, &arp_sid);
-        CHECK_ERROR("%s(); create snd session failed %r",
-                    __FUNCTION__, rc);
-
-        trafic_param = 1;
-        rc = tapi_arp_add_pdu_eth_ip4(&arp_pattern, TRUE,
-                                      &trafic_param, remote_mac, NULL, NULL,
-                                      (uint8_t *)&(local_in_addr->sin_addr));
-        CHECK_ERROR("%s(); create arp pattern fails %r", __FUNCTION__, rc);
-        rc = tapi_eth_add_pdu(&arp_pattern, NULL, TRUE,
-                              broadcast_mac, remote_mac, NULL,
-                              TE_BOOL3_ANY /* tagged/untagged */,
-                              TE_BOOL3_ANY /* Ethernet2/LLC */);
-
-        CHECK_ERROR("%s(); create arp/eth pattern fails %r",
-                    __FUNCTION__, rc);
-
-        func_len = snprintf(arp_reply_method, sizeof(arp_reply_method),
-                            "tad_eth_arp_reply:%02x:%02x:%02x:%02x:%02x:%02x",
-                            (int)local_mac[0], (int)local_mac[1],
-                            (int)local_mac[2], (int)local_mac[3],
-                            (int)local_mac[4], (int)local_mac[5]);
-
-        rc = asn_write_value_field(arp_pattern, arp_reply_method, func_len + 1,
-                                   "0.actions.0.#function");
-        CHECK_ERROR("%s(): write arp reply method name failed %r",
-                    __FUNCTION__, rc);
-
-
-        trafic_param = ETH_P_ARP;
-
-        rc = tapi_arp_eth_csap_create_ip4(agt, arp_sid, local_iface,
-                                          use_native_mac ?
-                                              TAD_ETH_RECV_HOST |
-                                              TAD_ETH_RECV_BCAST
-                                            : TAD_ETH_RECV_DEF,
-                                          remote_mac, NULL, &arp_csap);
-        CHECK_ERROR("%s(): create arp csap fails %r", __FUNCTION__, rc);
-
-        INFO("%s(): created arp csap: %d", __FUNCTION__, arp_csap);
-
         rc = tapi_tcp_ip4_eth_csap_create(agt, rcv_sid, local_iface,
                                           use_native_mac ?
                                               TAD_ETH_RECV_HOST
@@ -979,18 +1036,6 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
 
     conn_descr = calloc(1, sizeof(*conn_descr));
 
-    if (sa_family == AF_INET)
-    {
-        conn_descr->arp_csap = arp_csap;
-        conn_descr->arp_sid = arp_sid;
-        conn_descr->ip_proto = TE_PROTO_IP4;
-    }
-    else
-    {
-        conn_descr->arp_csap = CSAP_INVALID_HANDLE;
-        conn_descr->ip_proto = TE_PROTO_IP6;
-    }
-
     conn_descr->rcv_csap = rcv_csap;
     conn_descr->rcv_sid = rcv_sid;
     conn_descr->snd_csap = snd_csap;
@@ -999,7 +1044,23 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
     conn_descr->our_isn = rand();
     conn_descr->window = window;
 
-    tapi_tcp_insert_conn(conn_descr); 
+    if (sa_family == AF_INET)
+    {
+        conn_descr->arp_csap = CSAP_INVALID_HANDLE;
+#ifdef ARP_IN_INIT_CON
+        rc = create_arp_session(conn_descr, arp_pattern, local_addr, local_iface,
+                                local_mac, remote_mac, use_native_mac);
+        CHECK_ERROR("%s: fail to create arp session %r", __FUNCTION__, rc);
+#endif
+        conn_descr->ip_proto = TE_PROTO_IP4;
+    }
+    else
+    {
+        conn_descr->arp_csap = CSAP_INVALID_HANDLE;
+        conn_descr->ip_proto = TE_PROTO_IP6;
+    }
+
+    tapi_tcp_insert_conn(conn_descr);
     *handler = conn_descr->id;
 
     INFO("%s(): init TCP connection started, id %d, our ISN %u",
@@ -1014,11 +1075,15 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
         CHECK_ERROR("%s(): parse pattern failed, rc %r, sym %d",
                     __FUNCTION__, rc, syms);
 
+#ifdef ARP_IN_INIT_CON
+
         /* start catch our ARP */
         rc = tapi_tad_trrecv_start(agt, conn_descr->arp_sid,
                                    conn_descr->arp_csap, arp_pattern,
                                    TAD_TIMEOUT_INF, 0, RCF_TRRECV_COUNT);
         CHECK_ERROR("%s(): failed for arp_csap %r", __FUNCTION__, rc);
+
+#endif
     }
     else
     {
