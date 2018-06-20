@@ -51,6 +51,8 @@ gen_c_rpch_c = generator(m4, capture: true, output: [ '@BASENAME@.c' ],
 
 te_rcf_consistency_checks = find_program('engine/builder/te_rcf_consistency_checks')
 
+te_generate_symtbl = find_program('engine/builder/te_generate_symtbl.sh')
+
 cc = meson.get_compiler('c')
 
 dep_threads = dependency('threads')
