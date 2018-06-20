@@ -7,6 +7,7 @@
 # Common libraries
 common_libs = [
     'tools',
+    'conf_oid',
 ]
 
 # Test Engine libraries

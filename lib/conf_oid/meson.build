@@ -1,0 +1,14 @@
+# Copyright (C) 2018 OKTET Labs. All rights reserved.
+
+headers += files(
+    'conf_oid.h',
+    'conf_object.h',
+    'conf_ip.h',
+    'conf_ip_rule.h',
+)
+sources += files(
+    'conf_oid.c',
+    'conf_object.c',
+    'conf_ip_rule.c',
+)
+deps += [ dep_lib_tools ]
