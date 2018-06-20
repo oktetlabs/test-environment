@@ -16,6 +16,7 @@ engine_libs = [
     'logic_expr',
     'ipc',
     'loggerten',
+    'comm_net_engine',
 ]
 
 # Test Agent libraries
