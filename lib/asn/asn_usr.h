@@ -959,6 +959,34 @@ extern te_errno asn_read_int32(const asn_value *container,
                                int32_t *value, const char *labels);
 
 /**
+ * Write 32-bit unsigned integer into leaf in specified ASN value.
+ *
+ * @param container     Pointer to ASN value.
+ * @param value         Value to be written.
+ * @param labels        Textual ASN labels of a leaf which should be
+ *                      changed; see asn_free_subvalue() method for more
+ *                      information.
+ *
+ * @return Status code.
+ */
+extern te_errno asn_write_uint32(asn_value *container,
+                                 uint32_t value, const char *labels);
+
+/**
+ * Read 32-bit unsigned integer from a leaf in specified ASN value.
+ *
+ * @param container     Pointer to ASN value.
+ * @param value         Where to save read value.
+ * @param labels        Textual ASN labels of a leaf from which to read
+ *                      value; see asn_free_subvalue() method for more
+ *                      information.
+ *
+ * @return Status code.
+ */
+extern te_errno asn_read_uint32(const asn_value *container,
+                                uint32_t *value, const char *labels);
+
+/**
  * Write boolean into leaf in specified ASN value.
  *
  * @param container     pointer to ASN value which leaf field is interested
