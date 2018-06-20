@@ -1,5 +1,27 @@
 # Copyright (C) 2018 OKTET Labs. All rights reserved.
 
+tad_protocols = [
+    'arp',
+    'atm',
+    'bridge',
+    'cli',
+    'dhcp',
+    'eth',
+    'flow',
+    'forw',
+    'geneve',
+    'gre',
+    'igmp',
+    'ipstack',
+    'iscsi',
+    'pcap',
+    'ppp',
+    'rte_mbuf',
+    'snmp',
+    'socket',
+    'vxlan',
+]
+
 #
 # Lists of libraries in build/dependency order
 #
@@ -28,6 +50,7 @@ engine_libs = [
     'tapi_rpc',
     'tapi',
     'tapi_env',
+    'tapi_tad',
 ]
 
 # Test Agent libraries

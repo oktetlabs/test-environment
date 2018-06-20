@@ -13,3 +13,6 @@ option('libs', type: 'string', value: '',
 
 option('rpcdefs', type: 'string', value: '',
        description: 'List of extra RPC definitions')
+
+option('tad-protocols', type: 'string', value: '',
+       description: 'TAD protocols to support')
