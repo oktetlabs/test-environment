@@ -43,6 +43,12 @@ m4 = find_program('m4')
 te_rpcgen = find_program('engine/builder/te_rpcgen')
 rpcgen_m4 = files('include/rpcgen.m4')
 
+gen_c_rpch_c = generator(m4, capture: true, output: [ '@BASENAME@.c' ],
+                         arguments: [ '-D__SOURCE__=@INPUT@',
+                                      '-P',
+                                      '@SOURCE_DIR@/include/rpcconv.m4',
+                                      '@INPUT@' ])
+
 cc = meson.get_compiler('c')
 
 dep_threads = dependency('threads')

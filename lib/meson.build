@@ -11,6 +11,7 @@ common_libs = [
     'asn',
     'ndn',
     'rpcxdr',
+    'rpc_types',
 ]
 
 # Test Engine libraries
