@@ -34,7 +34,7 @@ CLEANFILES = rgt-filter-xml2tcl.h
 dist-hook:
 	rm -f $(distdir)/rgt-filter-xml2tcl.h
 
-rgt-filter-xml2tcl.h: tmpls/Makefile
+rgt-filter-xml2tcl.h: tmpls/Makefile Makefile
 	for util in rgt-filter-xml2tcl; do \
 	    echo -E "enum {" > $${util}.h; \
 	    for i in `ls $(srcdir)/tmpls/*.tmpl`; do \
