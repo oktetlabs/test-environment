@@ -52,6 +52,7 @@ engine_libs = [
     'tapi_env',
     'tapi_tad',
     'tapi_tcp_states',
+    'tce',
 ]
 
 # Test Agent libraries
