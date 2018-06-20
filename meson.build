@@ -41,5 +41,7 @@ gram_gen = generator(bison,
 
 cc = meson.get_compiler('c')
 
+dep_threads = dependency('threads')
+
 subdir('include')
 subdir('lib')

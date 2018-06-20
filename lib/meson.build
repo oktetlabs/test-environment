@@ -14,6 +14,7 @@ engine_libs = [
     'bsapi',
     'logic_expr',
     'ipc',
+    'loggerten',
 ]
 
 # Test Agent libraries
