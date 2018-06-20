@@ -36,8 +36,14 @@ if test "${SOURCES:0:1}" != "/" ; then
     SOURCES="${TE_BASE}/suites/${SOURCES:-${SUITE}}"
 fi
 
+if which meson &>/dev/null && test -f "${SOURCES}"/meson.build ; then
+    MESON_BUILD=true
+else
+    MESON_BUILD=false
+fi
+
 pushd "${SOURCES}" >/dev/null
-if test -e configure.ac ; then
+if ! ${MESON_BUILD} && test -e configure.ac ; then
     if test ! -e configure ; then
         aclocal -I ${TE_BASE}/auxdir || exit 1 ;
         if cat configure.ac | grep -q AC_CONFIG_HEADER ; then
@@ -58,6 +64,39 @@ else
 fi
 
 mkdir -p ${TE_INSTALL_SUITE}
+
+if ${MESON_BUILD} ; then
+    ADD_CPPFLAGS="`eval echo '$'${TE_HOST}'_CPPFLAGS'` \
+                  `eval echo '$TE_BS_SUITE_'$SUITE_NAME'_CPPFLAGS'`"
+    ADD_CFLAGS="`eval echo '$'${TE_HOST}'_CFLAGS'` \
+                `eval echo '$TE_BS_SUITE_'$SUITE_NAME'_CFLAGS'`"
+    ADD_LDFLAGS="`eval echo '$'${TE_HOST}'_LDFLAGS'` \
+                 `eval echo '$TE_BS_SUITE_'$SUITE_NAME'_LDFLAGS'`"
+
+    cflags="-I${TE_INSTALL}/${TE_HOST}/include ${ADD_CPPFLAGS} -O0 -ggdb -Wall -W ${ADD_CFLAGS}"
+    ldflags="${ADD_LDFLAGS}"
+
+    meson_nv_args="--prefix=\"${TE_INSTALL_SUITE}\""
+    meson_args=
+    meson_args="${meson_args} -Dte_path=\"${TE_PATH}\""
+    meson_args="${meson_args} -Dte_cflags=\"${cflags}\""
+    meson_args="${meson_args} -Dte_ldflags=\"${ldflags}\""
+    meson_args="${meson_args} -Dte_libdir=\"${TE_INSTALL}/${TE_HOST}/lib\""
+
+    echo "${meson_args}" >meson.args.new
+
+    if test ! -f meson.args ; then
+        eval meson ${meson_nv_args} ${meson_args} "${SOURCES}" || exit 1
+        echo "${meson_nv_args}" >meson.nv_args
+        echo "${meson_args}" >meson.args
+    elif ! diff -q meson.args meson.args.new 2>/dev/null ; then
+        eval meson configure ${meson_args} || exit 1
+        echo "${meson_args}" >meson.args
+    fi
+    ninja install || exit 1
+
+    exit 0
+fi
 
 if test ! -e Makefile ; then
     SUITE_NAME=`echo ${SUITE} | tr .- _`
