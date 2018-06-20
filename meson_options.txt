@@ -14,5 +14,10 @@ option('libs', type: 'string', value: '',
 option('rpcdefs', type: 'string', value: '',
        description: 'List of extra RPC definitions')
 
+option('rpc-transport-local', type: 'boolean', value: true,
+       description: 'Disable local transport for RPC (Unix domain sockets or Windows pipes) (enabled by default)')
+option('rpc-transport-tcp', type: 'boolean', value: false,
+       description: 'Enable TCP transport for RPC (disabled by default)')
+
 option('tad-protocols', type: 'string', value: '',
        description: 'TAD protocols to support')
