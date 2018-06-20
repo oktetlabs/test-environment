@@ -1,0 +1,603 @@
+#!/bin/bash
+#
+# Test Environment
+#
+# Build TE using meson/ninja.
+#
+# Copyright (C) 2018 OKTET Labs. All rights reserved.
+
+set -e
+
+with_config="$1"
+
+# Put initial values to control variables
+RSYNC="rsync --exclude .hg -a"
+
+error() {
+    echo ERROR: $* >&2
+    exit 1
+}
+
+warning() {
+    echo WARNING: $* >&2
+}
+
+process_parameters() {
+    local pfx="$1"; shift
+    local msg="$1"; shift
+
+    local parms_var="${pfx}PARMS"
+    test -z "${!parms_var}" ||
+        warning "${msg} parameters not supported: ${!parms_var}"
+
+    local cppflags_var="${pfx}CPPFLAGS"
+    test -z "${!cppflags_var}" ||
+        warning "${msg} CPPFLAGS not supported: ${!cppflags_var}"
+
+    local cflags_var="${pfx}_CFLAGS"
+    test -z "${!cflags_var}" ||
+        warning "${msg} CFLAGS not supported: ${!cflags_var}"
+
+    local ldflags_var="${pfx}LDFLAGS"
+    test -z "${!ldflags_var}" ||
+        warning "${msg} LDFLAGS not supported: ${!ldflags_var}"
+
+    local libs_var="${pfx}LIBS"
+    test -z "${!libs_var}" ||
+        warning "${msg} LIBS not supported: ${!libs_var}"
+}
+
+process_library_rpcxdr() {
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local parms=
+
+    for p in ${!parms_var} ; do
+        case ${p} in
+            --with-rpcdefs=*)
+                meson_args="${meson_args} -Drpcdefs=${p#--with-rpcdefs=}" ;;
+            *)
+                parms="${parms}${parms:+ }${p}" ;;
+        esac
+    done
+    eval ${parms_var}=\"${parms}\"
+}
+
+process_library_tad() {
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local parms=
+
+    for p in ${!parms_var} ; do
+        case ${p} in
+            --with-packet-mmap-rx-ring)
+                meson_args="${meson_args} -Dtad-packet_mmap_rx_ring=true" ;;
+            --without-cs)
+                meson_args="${meson_args} -Dtad-cs=false" ;;
+            --with-*)
+                tad_with_protocols="${tad_with_protocols} ${p#--with-}" ;;
+            --without-static-libc)
+                # default, in fact --with-static-libc is not supported yet
+                ;;
+            *)
+                parms="${parms}${parms:+ }${p}" ;;
+        esac
+    done
+    eval ${parms_var}=\"${parms}\"
+
+    test -z "${protocols}" ||
+        meson_args="${meson_args} -Dtad-protocols=\"${protocols}\""
+}
+
+process_library_tapi_tad() {
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local parms=
+
+    for p in ${!parms_var} ; do
+        case ${p} in
+            --with-*)
+                tad_with_protocols="${tad_with_protocols} ${p#--with-}" ;;
+            --without-*)
+                tad_without_protocols="${tad_without_protocols} ${p#--without-}" ;;
+            *)
+                parms="${parms}${parms:+ }${p}" ;;
+        esac
+    done
+    eval ${parms_var}=\"${parms}\"
+}
+
+process_library() {
+    local p="$1"; shift
+    local l="$1"; shift
+    local pfx="TE_BS_LIB_${p}_${l}_"
+    local msg="Platform library ${p}/${l}"
+
+    case "${l}" in
+        rpcxdr)     process_library_rpcxdr "${pfx}" ;;
+        tad)        process_library_tad "${pfx}" ;;
+        tapi_tad)   process_library_tapi_tad "${pfx}" ;;
+    esac
+
+
+    process_parameters "${pfx}" "${msg}"
+}
+
+process_agent_unix_parms() {
+    local p
+
+    while test -n "$1" ; do
+        p="$1"
+        case "${p}" in
+            --with-cfg-unix-daemons=*)
+                daemons="${p#--with-cfg-unix-daemons=}"
+                ;;
+            --with-aggr)
+                conf="${conf} aggr" ;;
+            --with-iptables)
+                conf="${conf} iptables" ;;
+            --with-libnetconf)
+                # automatic if netconf library is built
+                ;;
+            --with-ntpd)
+                conf="${conf} ntpd" ;;
+            --enable-pci)
+                conf="${conf} pci" ;;
+            --with-rcf-rpc)
+                # always
+                ;;
+            --with-serialparse)
+                conf="${conf} serial-parser" ;;
+            --with-sfptpd)
+                conf="${conf} sfptpd" ;;
+            --with-sniffers=yes|--with-sniffers)
+                conf="${conf} sniffers" ;;
+            --with-tirpc)
+                # added automatically
+                ;;
+            --without-static-libc)
+                # default, in fact --with-static-libc is not supported yet
+                ;;
+            *)
+                parms="${parms}${parms:+ }\"${p}\"" ;;
+        esac
+        shift
+    done
+}
+
+process_agent_unix() {
+    local ta="$1"; shift
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local parms=
+    local conf=
+    local daemons=
+
+    meson_args="${meson_args} -Dagent-unix-name=${ta}"
+
+    # eval is required interpret correctly parameter values with
+    # whitespaces in quotes
+    eval process_agent_unix_parms ${!parms_var}
+
+    eval ${parms_var}=\"\${parms}\"
+
+    test -z "${conf}" ||
+        meson_args="${meson_args} -Dagent-unix-conf=\"${conf}\""
+    test -z "${daemons}" ||
+        meson_args="${meson_args} -Dagent-unix-daemons=\"${daemons}\""
+}
+
+process_agent() {
+    local p="$1"; shift
+    local ta="$1"; shift
+    local pfx="TE_BS_TA_${ta}_"
+    local msg="Agent ${ta}"
+
+    local src_var="${pfx}SOURCES"
+    local ta_src="$(basename "${!src_var}")"
+
+    build_agents="${build_agents} ${ta_src}"
+
+    case "${ta_src}" in
+        unix)   process_agent_unix "${ta}" "${pfx}" ;;
+    esac
+
+    process_parameters "${pfx}" "${msg}"
+}
+
+process_platform() {
+    local p="$1"; shift
+    local tad_protocols="arp atm bridge cli dhcp eth flow forw geneve gre igmp ipstack iscsi pcap ppp rte_mbuf snmp socket vxlan"
+    local tad_with_protocols=
+    local tad_without_protocols=
+
+    local parms_var="${p}_PARMS"
+    if test -n "${!parms_var}" ; then
+        warning "Platform parameters are not supported"
+        warning "Requested platform parameters: ${!parms_var}"
+    fi
+
+    local te_cflags=
+    for suffix in CPPFLAGS_VAR CFLAGS_VAR CPPFLAGS CFLAGS ; do
+        local var=${p}_${suffix}
+        local value=${!var}
+        test -z "${value}" || te_cflags="${te_cflags} ${value}"
+    done
+    test -z "${te_cflags}" ||
+        meson_args="${meson_args} -Dcflags=\"${te_cflags}\""
+
+    local ldflags_var="${p}_LDFLAGS"
+    if test -n "${!ldflags_var}" ; then
+        local te_ldflags="${!ldflags_var}"
+        meson_args="${meson_args} -Dldflags=\"${te_ldflags}\""
+    fi
+
+    local libs="${p}_LIBS"
+    if test -n "${!libs}" ; then
+        meson_args="${meson_args} -Dlibs=\"${!libs}\""
+    fi
+
+    for l in ${!libs} ; do
+        process_library ${p} ${l}
+    done
+
+    if test -n "${tad_with_protocols}" ; then
+        tad_protocols="${tad_with_protocols}"
+    elif test -n "${tad_without_protocols}" ; then
+        local protocol
+        local protocols=
+
+        for protocol in ${tad_protocols} ; do
+            echo "${tad_without_protocols}" | grep -wq "${protocol}" ||
+                protocols="${protocols} ${protocol}"
+        done
+        tad_protocols="${protocols}"
+    fi
+    test -z "${tad_protocols}" ||
+        meson_args="${meson_args} -Dtad-protocols=\"${tad_protocols}\""
+
+    local build_agents=
+    for ta in ${TE_BS_TA} ; do
+        local platform="TE_BS_TA_${ta}_PLATFORM"
+        test "${!platform}" != "${p}" || process_agent "${p}" "${ta}"
+    done
+    test -z "${build_agents}" ||
+        meson_args="${meson_args} -Dagents=\"${build_agents}\""
+}
+
+process_engine_app() {
+    local a="$1"; shift
+    local pfx="TE_BS_APP_${a}_"
+    local msg="Engine application ${a}"
+
+    local parms_var="${pfx}PARMS"
+    local parms=
+    for p in ${!parms_var} ; do
+        # Just ignore --with-large-logs since it is the default in meson build
+        test "${a}" = logger -a "${p}" = "--with-large-logs" &&
+            continue
+        test "${a}" = rcf -a "${p}" = "--enable-ltdl-install" &&
+            continue
+        test "${a}" = tester -a "${p}" = "--with-trc" && {
+            meson_args="${meson_args} -Dtrc=true"
+            continue
+        }
+        parms="${parms}${parms:+ }${p}"
+    done
+    eval ${parms_var}=\"${parms}\"
+
+    process_parameters "${pfx}" "${msg}"
+}
+
+process_engine_apps() {
+    local a
+
+    for a in ${TE_BS_APPS} ; do
+        process_engine_app "${a}"
+    done
+}
+
+process_engine_tool() {
+    local t="$1"; shift
+    local pfx="TE_BS_TOOL_${t}_"
+    local msg="Engine tool ${t}"
+
+    local parms_var="${pfx}PARMS"
+    local parms=
+    for p in ${!parms_var} ; do
+        # Just ignore --with-large-logs since it is the default in meson build
+        test "${a}" = rgt -a "${p}" = "--with-large-logs" &&
+            continue
+        parms="${parms}${parms:+ }${p}"
+    done
+    eval ${parms_var}=\"${parms}\"
+
+    process_parameters "${pfx}" "${msg}"
+}
+
+process_engine_tools() {
+    local t
+
+    for t in ${TE_BS_TOOLS} ; do
+        process_engine_tool "${a}"
+    done
+}
+
+# Checks for host programs.
+process_host_exec() {
+    local i
+
+    for i in $TE_BS_HOST_EXEC ; do
+        which $i &>/dev/null || error "No host tool $i"
+    done
+}
+
+# rsync_to PLATFORM SRC.. DST
+rsync_to() {
+    local p="$1"; shift
+    local src="$1"; shift
+    local dst="$1"; shift
+    local sshvar="${p}_SSH"
+    local ssh="${!sshvar}"
+    local rsync="${RSYNC}"
+    local rsync_remote=
+
+    while test -n "$1" ; do
+        src="${src} \"${dst}\""
+        dst="$1"
+        shift
+    done
+
+    if test -n "${ssh}" ; then
+        rsync="${rsync} -e \"${ssh% *}\""
+        rsync_remote="${ssh##* }:"
+    fi
+
+    ${rsync} ${src} "${rsync_remote}${dst}"
+}
+
+rsync_from() {
+    local p="$1"; shift
+    local src="$1"; shift
+    local dst="$1"; shift
+    local sshvar="${p}_SSH"
+    local ssh="${!sshvar}"
+    local rsync="${RSYNC}"
+    local rsync_remote=
+
+    if test -n "${ssh}" ; then
+        rsync="${rsync} -e \"${ssh% *}\""
+        rsync_remote="${ssh##* }:"
+    fi
+
+    ${rsync} "${rsync_remote}${src}" "${dst}"
+}
+
+mk_platform_src() {
+    local p="$1"; shift
+    local src_ws="$1"; shift
+    local l
+
+    rsync_to "${p}" "${TE_BASE}"/ "${src_ws}"
+
+    local libs="${p}_LIBS"
+    for l in ${!libs} ; do
+        local src_var="TE_BS_LIB_${p}_${l}_SOURCES"
+        local src="${!src_var}"
+        test -z "${src}" -o "${src}" = "${TE_BASE}/lib/${l}" ||
+            rsync_to "${p}" "${src}"/ "${src_ws}/lib/${l}"
+    done
+}
+
+process_builder_conf() {
+    local config="$1"
+
+    # Parse configuration file
+    echo TE_BASE=$TE_BASE
+    echo TE_BUILD=$TE_BUILD
+    echo TE_INSTALL=$TE_INSTALL
+    echo TE_INSTALL_NUT=$TE_INSTALL_NUT
+    echo TE_INSTALL_SUITE=$TE_INSTALL_SUITE
+
+    if test -n "${config}" ; then
+        if test ! -e "${config}" ; then
+            error "Cannot find ${config}"
+        fi
+        cat "${TE_BASE}/engine/builder/builder.m4" "${config}" |
+            m4 -I"$(dirname "${config}")"
+    fi
+    echo 'TE_PATH=${TE_INSTALL}/${TE_HOST}/bin'
+}
+
+read_processed_builder_conf() {
+    local builder_conf_processed="$1"
+
+    # Dummy loop to avoid breaking in the case of error
+    while test 1 ; do
+        . "${builder_conf_processed}"
+        break
+    done
+    if test -n "$TE_BS_CONF_ERR" ; then
+        echo $TE_BS_CONF_ERR >&2
+        exit 1
+    fi
+    ( set -o posix ; set ) >/tmp/vars
+}
+
+process_platforms() {
+    local builder_conf_processed="$1"
+    local p
+
+    # Dummy loop to avoid breaking in the case of error
+    while test 1 ; do
+        . "${builder_conf_processed}"
+        break
+    done
+    if test -n "$TE_BS_CONF_ERR" ; then
+        echo $TE_BS_CONF_ERR >&2
+        exit 1
+    fi
+
+    for p in ${TE_BS_PLATFORMS} ; do
+        # Non-volatile arguments which require build workspace bootstrap
+        # --libdir is required to avoid host type subdir in lib/
+        local meson_nv_args="--prefix=${TE_INSTALL}/${p} --libdir=lib"
+        # Volatile argument which require workspace reconfigure
+        local meson_args="-Dagentsdir=${TE_INSTALL}/agents"
+
+        process_platform "${p}"
+
+        if test ${p} = "${TE_HOST}" ; then
+            meson_args="${meson_args} -Dengine=true"
+            process_host_exec
+            test -z "${TE_BS_APPS}" || {
+                meson_args="${meson_args} -Dengine-apps=\"${TE_BS_APPS}\""
+                process_engine_apps
+            }
+            test -z "${TE_BS_TOOLS}" || {
+                meson_args="${meson_args} -Dtools=\"${TE_BS_TOOLS}\""
+                process_engine_tools
+            }
+        else
+            # Build only static libraries for non-default platforms
+            meson_nv_args="${meson_nv_args} --default-library=static"
+        fi
+
+        eval TE_BS_MESON_${p}_NV_ARGS=\"\${meson_nv_args}\"
+        eval TE_BS_MESON_${p}_ARGS=\"\${meson_args}\"
+    done
+}
+
+make_workspace() {
+    local p="$1"
+    local ws_file="${p}.ws"
+
+    # Workspace directory
+    if test ! -f "${ws_file}" ; then
+        te_eval_or_ssh "${p}" "mktemp -d -u" >"${ws_file}"
+    fi
+    ws="$(cat "${ws_file}")"
+    warning Platform $p workspace is $ws
+
+    te_eval_or_ssh "${p}" "mkdir -p \"${ws}\""
+
+    # Make source workspace
+    mk_platform_src "${p}" "${ws}"/src "${rsync}"
+
+    # If non-local build, sync build directory
+    if test "${ws}" != . ; then
+        if test -d build ; then
+            rsync_to "${p}" build "${ws}"
+        else
+            te_eval_or_ssh "${p}" "rm -rf \"${ws}\"/build"
+        fi
+    fi
+}
+
+build_platform() {
+    local p="$1"
+    local meson_nv_args="TE_BS_MESON_${p}_NV_ARGS"
+    local meson_args="TE_BS_MESON_${p}_ARGS"
+    local result=0
+    local ws
+    local remote_build=false
+    local destdir
+
+    echo "${!meson_nv_args}" >meson.nv_args.new
+    echo "${!meson_args}" >meson.args.new
+
+    if diff -q meson.nv_args meson.nv_args.new 2>/dev/null ; then
+        rm meson.nv_args.new
+    else
+        rm -rf build meson.nv_args meson.args
+    fi
+
+    make_workspace "${p}"
+
+    test "${ws}" = . || remote_build=true
+
+    if test ! -d build ; then
+        te_eval_or_ssh "${p}" \
+            "cd \"${ws}\" &&
+             meson ${!meson_nv_args} ${!meson_args} src build"
+        echo "${!meson_nv_args}" >meson.nv_args
+        echo "${!meson_args}" >meson.args
+    elif ! diff -q meson.args meson.args.new 2>/dev/null ; then
+        te_eval_or_ssh "${p}" \
+            "cd \"${ws}\"/build && meson configure ${!meson_args}"
+        echo "${!meson_args}" >meson.args
+    fi
+
+    ${remote_build} && destdir="DESTDIR=\"${ws}/destdir\""
+
+    te_eval_or_ssh "${p}" \
+        "which ninja >/dev/null 2>&1 && NINJA=ninja || NINJA=ninja-build ;
+         TE_BASE=\"${ws}\"/src ${destdir} \$NINJA -C \"${ws}\"/build install" ||
+        result=$?
+
+    if ${remote_build} ; then
+        rsync_from "${p}" "${ws}"/build . ||
+            error "Sync build from remote failed"
+
+        if test "${result}" -eq 0 ; then
+            # Get installed platform data
+            te_eval_or_ssh "${p}" \
+                "test ! -d \"${ws}/destdir/${TE_INSTALL}/${p}\"" ||
+            rsync_from "${p}" "${ws}"/destdir/"${TE_INSTALL}/${p}"/ \
+                "${TE_INSTALL}/${p}" ||
+                error "Sync install from remote failed"
+
+            # Get installed agents
+            te_eval_or_ssh "${p}" \
+                "test ! -d \"${ws}/destdir/${te_agents}\"" ||
+            rsync_from "${p}" "${ws}/destdir/${te_agents}"/ \
+                "${te_agents}" ||
+                error "Sync agents from remote failed"
+        fi
+    fi
+
+    return ${result}
+}
+
+do_build() {
+    local p
+    local te_agents="${TE_INSTALL}"/agents
+
+    mkdir -p "${te_agents}"
+
+    for p in ${TE_BS_PLATFORMS} ; do
+
+#        "${TE_BASE}/engine/builder/te_build_ext_helper" \
+#            --prefix="${TE_INSTALL}" --platform="${p}" --mode=lib
+
+        mkdir -p platforms/"${p}" "${TE_INSTALL}/${p}"
+        pushd platforms/"${p}"
+
+        build_platform "${p}"
+
+        popd
+
+    done
+}
+
+
+build_all () {
+    # List of all platforms
+    local TE_BS_PLATFORMS=
+    # TE_BS_TOOLS - what tools should be built by "make all" command.
+    local TE_BS_TOOLS=
+    # List of Test Agents
+    local TE_BS_TA=
+    # List of suites
+    local TE_BS_SUITES=
+
+    process_builder_conf "${with_config}" >builder.conf.processed
+
+    process_platforms builder.conf.processed
+
+    do_build
+}
+
+
+cd "${TE_BUILD}"
+build_all
