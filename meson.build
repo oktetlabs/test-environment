@@ -52,6 +52,10 @@ gen_c_rpch_c = generator(m4, capture: true, output: [ '@BASENAME@.c' ],
 cc = meson.get_compiler('c')
 
 dep_threads = dependency('threads')
+if get_option('engine')
+    dep_libxml2 = dependency('libxml-2.0')
+    dep_popt = dependency('popt')
+endif
 
 subdir('include')
 subdir('lib')

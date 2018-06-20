@@ -2,6 +2,7 @@
 
 apps = [
     'builder',
+    'logger',
 ]
 
 foreach app : apps

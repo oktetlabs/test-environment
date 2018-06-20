@@ -1,0 +1,2 @@
+/* Define to 1 if you have the `sem_init' function. */
+#mesondefine HAVE_SEM_INIT

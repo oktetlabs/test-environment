@@ -11,6 +11,9 @@ option('engine', type: 'boolean', value: false,
 option('libs', type: 'string', value: '',
        description: 'Libraries to build')
 
+option('large-logs', type: 'boolean', value: true,
+       description: 'Support large logs')
+
 option('rpcdefs', type: 'string', value: '',
        description: 'List of extra RPC definitions')
 
