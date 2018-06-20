@@ -62,6 +62,7 @@ agent_libs = [
     'agentlib',
     'rpcserver',
     'rcfpch',
+    'tad',
 ]
 
 all_libs = common_libs + engine_libs + agent_libs

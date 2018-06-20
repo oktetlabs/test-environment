@@ -43,3 +43,7 @@ option('agentlib-upnp', type: 'boolean', value: false,
 
 option('tad-protocols', type: 'string', value: '',
        description: 'TAD protocols to support')
+option('tad-cs', type: 'boolean', value: true,
+       description: 'TAD Configurator support (enabled by default)')
+option('tad-packet_mmap_rx_ring', type: 'boolean', value: false,
+       description: 'TAD: use packet_mmap_rx_ring to sniff')
