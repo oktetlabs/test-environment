@@ -73,3 +73,14 @@ option('agent-unix-symtbl', type: 'boolean', value: true,
 
 option('rgt-log-filter', type: 'boolean', value: true,
        description: 'Embed log fitering stuff in RGT core')
+
+option('trc-spoilers', type: 'boolean', value: false,
+       description: 'Use spoilers to show/hide test parameters in TRC')
+option('trc-popups', type: 'boolean', value: false,
+       description: 'Enable statistics popups in TRC')
+option('trc-log-urls', type: 'boolean', value: false,
+       description: 'Enable links to test logs in detailed tables in TRC')
+option('trc-hidden-stats', type: 'boolean', value: false,
+       description: 'Enable hidden columns in statistics tables in TRC')
+option('trc-ext-scripts', type: 'array', value: [],
+       description: 'Install external scripts with TRC')
