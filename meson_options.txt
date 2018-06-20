@@ -7,3 +7,6 @@ option('install-dev', type: 'boolean', value: false,
 
 option('engine', type: 'boolean', value: false,
        description: 'Build TE engine')
+
+option('libs', type: 'string', value: '',
+       description: 'Libraries to build')

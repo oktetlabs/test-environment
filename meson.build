@@ -26,3 +26,4 @@ install_dev = get_option('install-dev') or get_option('engine')
 cc = meson.get_compiler('c')
 
 subdir('include')
+subdir('lib')
