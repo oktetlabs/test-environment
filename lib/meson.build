@@ -57,6 +57,7 @@ engine_libs = [
 agent_libs = [
     'comm_net_agent',
     'loggerta',
+    'netconf',
 ]
 
 all_libs = common_libs + engine_libs + agent_libs
