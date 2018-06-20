@@ -17,6 +17,7 @@ engine_libs = [
     'ipc',
     'loggerten',
     'comm_net_engine',
+    'rcfapi',
 ]
 
 # Test Agent libraries
