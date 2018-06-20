@@ -1,0 +1,50 @@
+/* Whether to enable dlsym()-based lookup */
+#mesondefine ENABLE_DLFCN_LOOKUP
+
+/* Whether to enable FTP support */
+#mesondefine ENABLE_FTP
+
+/* Whether to enable power switch management support */
+#mesondefine ENABLE_POWER_SW
+
+/* Whether to enable telephony support */
+#mesondefine ENABLE_TELEPHONY
+
+/* Whether to enable upnp support */
+#mesondefine ENABLE_UPNP
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#mesondefine HAVE_DLFCN_H
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#mesondefine HAVE_INTTYPES_H
+
+/* Define to 1 if you have the <linux/ppdev.h> header file. */
+#mesondefine HAVE_LINUX_PPDEV_H
+
+/* Define to 1 if you have the <memory.h> header file. */
+#mesondefine HAVE_MEMORY_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#mesondefine HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#mesondefine HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#mesondefine HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#mesondefine HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#mesondefine HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#mesondefine HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <termios.h> header file. */
+#mesondefine HAVE_TERMIOS_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#mesondefine HAVE_UNISTD_H

@@ -59,6 +59,7 @@ agent_libs = [
     'loggerta',
     'netconf',
     'rpctransport',
+    'agentlib',
 ]
 
 all_libs = common_libs + engine_libs + agent_libs

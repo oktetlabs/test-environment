@@ -19,5 +19,16 @@ option('rpc-transport-local', type: 'boolean', value: true,
 option('rpc-transport-tcp', type: 'boolean', value: false,
        description: 'Enable TCP transport for RPC (disabled by default)')
 
+option('agentlib-dlfcn-lookup', type: 'boolean', value: false,
+       description: 'Enable dlsym() symbol lookup in TA RPC helper library')
+option('agentlib-ftp', type: 'boolean', value: false,
+       description: 'Enable FTP support in TA RPC helper library')
+option('agentlib-power-sw', type: 'boolean', value: false,
+       description: 'Enable power switch support in TA RPC helper library')
+option('agentlib-telephony', type: 'boolean', value: false,
+       description: 'Enable telephony support in TA RPC helper library')
+option('agentlib-upnp', type: 'boolean', value: false,
+       description: 'Enable UPnP support in TA RPC helper library')
+
 option('tad-protocols', type: 'string', value: '',
        description: 'TAD protocols to support')
