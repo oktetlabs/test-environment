@@ -24,6 +24,7 @@ engine_libs = [
     'rcfapi',
     'rcfunix',
     'confapi',
+    'rcfrpc',
 ]
 
 # Test Agent libraries
