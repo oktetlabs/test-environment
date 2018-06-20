@@ -56,6 +56,7 @@ engine_libs = [
 # Test Agent libraries
 agent_libs = [
     'comm_net_agent',
+    'loggerta',
 ]
 
 all_libs = common_libs + engine_libs + agent_libs
