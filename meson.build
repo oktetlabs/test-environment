@@ -23,6 +23,22 @@ endif
 
 install_dev = get_option('install-dev') or get_option('engine')
 
+lexer = find_program('flex')
+lex_gen = generator(lexer,
+                    output: [ '@BASENAME@.c', '@BASENAME@.h' ],
+                    arguments: [ '@EXTRA_ARGS@',
+                                 '--header-file=@OUTPUT1@',
+                                 '-o', '@OUTPUT0@',
+                                 '@INPUT@' ])
+
+bison = find_program('bison')
+gram_gen = generator(bison,
+                     output: [ '@BASENAME@.c', '@BASENAME@.h' ],
+                     arguments: [ '-y', '@EXTRA_ARGS@',
+                                  '--defines=@OUTPUT1@',
+                                  '--output=@OUTPUT0@',
+                                  '@INPUT@' ])
+
 cc = meson.get_compiler('c')
 
 subdir('include')

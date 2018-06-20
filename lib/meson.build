@@ -12,6 +12,7 @@ common_libs = [
 # Test Engine libraries
 engine_libs = [
     'bsapi',
+    'logic_expr',
 ]
 
 # Test Agent libraries
