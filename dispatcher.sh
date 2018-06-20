@@ -92,6 +92,9 @@ Generic options:
   --cs-print-trees              Print configurator trees.
   --cs-log-diff                 Log backup diff unconditionally.
 
+  --build-autotools             Build using autotools (autoconf, automake, make)
+  --build-meson                 Build using meson/ninja
+
   --build-only                  Build TE, do not run RCF and Configurator,
                                 build but do not run Test Suites
                             
@@ -297,6 +300,7 @@ RGT_X2HM_OPTS=
 # Configurator options
 CS_OPTS=
 # Building options
+BUILD=autotools
 BUILDER_OPTS=
 BUILD_MAKEFLAGS=
 PROFILE_BUILD=
@@ -580,6 +584,9 @@ process_opts()
                 RGT_X2HM_OPTS="${RGT_X2HM_OPTS} --${1#--rgt-xml2html-multi-}" ;;
     
             --cs-*) CS_OPTS="${CS_OPTS} --${1#--cs-}" ;;
+
+            --build-autotools)  BUILD=autotools ;;
+            --build-meson)      BUILD=meson ;;
 
             --build-only) RCF= ; CS=
                           TESTER_OPTS="${TESTER_OPTS} --no-run --no-cs" ;; 
@@ -962,8 +969,14 @@ function te_profile_build ()
 }
 fi
 
+if test -z "$BUILD" ; then
+    which meson &>/dev/null && BUILD=meson || BUILD=autotools
+fi
+
 export TE_EXT_LIBS_FILE="${TE_BUILD}/te_ext_libs_files"
 TE_BUILD_LOG="${TE_RUN_DIR}/build.log"
+case "${BUILD}" in
+autotools)
 if test -n "$BUILDER" ; then
     pushd "${TE_BASE}" >/dev/null
     if test ! -e configure -o \
@@ -1008,6 +1021,28 @@ if test -n "${QUIET}" ; then
 else
     $PROFILE_BUILD te_builder_opts $BUILDER_OPTS || exit_with_log
 fi
+;;
+
+meson)
+    if test -n "$BUILDER_OPTS" ; then
+        echo "Builder options are not supported for meson build." >&2
+        exit_with_log
+    fi
+    if test -n "$BUILDER" -o -n "$BUILD_TA" -o -n "$BUILD_TA_FOR" ; then
+        if test -n "${QUIET}" ; then
+            $PROFILE_BUILD "${TE_BASE}"/engine/builder/te_meson_build \
+                "${CONF_BUILDER}" >"${TE_BUILD_LOG}" || exit_with_log
+        else
+            $PROFILE_BUILD "${TE_BASE}"/engine/builder/te_meson_build \
+                "${CONF_BUILDER}" || exit_with_log
+        fi
+    fi
+    ;;
+*)
+    echo "Unknown build: ${BUILD}" >&2
+    exit_with_log
+;;
+esac
 
 if test "$RCF_CONSISTENCY_CHECKS_SIMPLE" = "yes" ; then
     if $PROFILE_BUILD "$TE_BASE/engine/builder/te_rcf_consistency_checks" --check ; then
