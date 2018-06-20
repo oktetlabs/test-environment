@@ -70,3 +70,6 @@ option('agent-unix-daemons', type: 'string', value: '',
        description: 'Unix Test Agent daemons configuration support')
 option('agent-unix-symtbl', type: 'boolean', value: true,
        description: 'Generate and include symbol table in Unix agent')
+
+option('rgt-log-filter', type: 'boolean', value: true,
+       description: 'Embed log fitering stuff in RGT core')
