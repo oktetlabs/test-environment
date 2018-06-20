@@ -5,6 +5,7 @@ apps = [
     'logger',
     'rcf',
     'configurator',
+    'tester',
 ]
 
 foreach app : apps

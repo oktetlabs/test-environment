@@ -13,6 +13,8 @@ option('libs', type: 'string', value: '',
 
 option('large-logs', type: 'boolean', value: true,
        description: 'Support large logs')
+option('trc', type: 'boolean', value: true,
+       description: 'Integrate with TRC')
 
 option('rpcdefs', type: 'string', value: '',
        description: 'List of extra RPC definitions')
