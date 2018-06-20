@@ -8,6 +8,7 @@
 common_libs = [
     'tools',
     'conf_oid',
+    'asn',
 ]
 
 # Test Engine libraries
