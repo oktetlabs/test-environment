@@ -472,6 +472,20 @@ append_routes(netconf_list *nlist, te_string *const str)
         if (route->table == NETCONF_RT_TABLE_LOCAL)
            continue;
 
+        /*
+         * If expire time is defined for the route, then drop it.
+         * Configurator doesn't have any good way to restore such routes.
+         */
+        if (route->expires != 0)
+            continue;
+
+        /*
+         * FIXME: Filter cloned routes to prevent configurator errors.
+         * It's a workaround for old kernels with Routing Cache.
+         */
+        if (route->flags & NETCONF_RTM_F_CLONED)
+           continue;
+
         if (family == AF_INET6)
         {
             /*
@@ -480,7 +494,6 @@ append_routes(netconf_list *nlist, te_string *const str)
              * coincidence or a rule. For now, we ignore the unspec table for
              * IPv6. Maybe the same check should be added for IPv4, but it
              * works for now, so let it be as it is.
-            /*
              */
             if (route->table == NETCONF_RT_TABLE_UNSPEC)
                 continue;

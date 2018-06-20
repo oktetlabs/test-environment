@@ -603,8 +603,10 @@ socks_server_start(te_socks_server *instance)
         }
 
         rc = te_string_append(&cmd,
-                              " -i %s:%u",
+                              " -i %s%s%s:%u",
+                              iface->addr_family == RPC_AF_INET6 ? "[" : "",
                               ip,
+                              iface->addr_family == RPC_AF_INET6 ? "]" : "",
                               (unsigned int)iface->port);
         if (rc != 0)
             goto cleanup;

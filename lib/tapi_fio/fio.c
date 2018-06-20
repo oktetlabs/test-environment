@@ -194,10 +194,12 @@ fio_fake_get_report(tapi_fio *fio, tapi_fio_report *report)
     report->threads = 0;
 
     rpc_read_fd2te_string(fio->app.rpcs, fio->app.fd_stdout,
-                          100, 0,  &fio->app.stdout);
+                          TAPI_FIO_MAX_REPORT, 0,
+                          &fio->app.stdout);
 
     rpc_read_fd2te_string(fio->app.rpcs, fio->app.fd_stderr,
-                          100, 0,  &fio->app.stderr);
+                          TAPI_FIO_MAX_REPORT, 0,
+                          &fio->app.stderr);
 
     RING("CMD stdout:\n%s", fio->app.stdout.ptr);
     RING("CMD stderr:\n%s", fio->app.stderr.ptr);

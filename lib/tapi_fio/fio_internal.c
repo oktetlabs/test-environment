@@ -19,7 +19,7 @@
 static inline int16_t
 get_default_timeout(const tapi_fio_opts *opts)
 {
-    return opts->runtime_sec + 10;
+    return opts->runtime_sec + 30;
 }
 
 static void
@@ -52,6 +52,10 @@ fio_app_start(char *cmd, tapi_fio_app *app)
     app->fd_stderr = fd_stderr;
     free(app->cmd);
     app->cmd = cmd;
+
+    rpc_fcntl(app->rpcs,
+              app->fd_stdout, RPC_F_SETPIPE_SZ,
+              TAPI_FIO_MAX_REPORT);
 
     return 0;
 }

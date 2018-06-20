@@ -23,6 +23,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <linux/rtnetlink.h>
 
 #include "conf_ip_rule.h"
 
@@ -105,6 +106,8 @@ typedef enum netconf_neigh_state {
     NETCONF_NUD_PERMANENT       = 0x80
 } netconf_neigh_state;
 
+#define NETCONF_RTM_F_CLONED RTM_F_CLONED
+
 /** Network device */
 typedef struct netconf_link {
     netconf_link_type   type;           /**< Device type */
@@ -154,6 +157,7 @@ typedef struct netconf_route {
     uint32_t            mtu;            /**< Route MTU */
     uint32_t            win;            /**< Route window size */
     uint32_t            irtt;           /**< Route transfer time */
+    int32_t             expires;        /**< Route expiration time */
 } netconf_route;
 
 /** Neighbour table entry (ARP or NDISC cache) */

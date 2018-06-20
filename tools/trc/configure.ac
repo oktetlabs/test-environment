@@ -92,7 +92,7 @@ AC_SUBST([PERL_LDADD])
 AC_ARG_VAR([PERL_CFLAGS])
 AC_SUBST([PERL_CFLAGS])
 
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([trc_config.h])
 
 AC_CHECK_TYPES([xmlError], [], [], [#include <libxml/xmlerror.h>])
 AC_CHECK_MEMBER([struct _xmlSAXHandler._private], [], [], 

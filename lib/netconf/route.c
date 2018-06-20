@@ -100,6 +100,13 @@ route_list_cb(struct nlmsghdr *h, netconf_list *list)
 
                     break;
                 }
+            case RTA_CACHEINFO:
+                {
+                    struct rta_cacheinfo *ci = RTA_DATA(rta);
+
+                    route->expires = ci->rta_expires;
+                    break;
+                }
         }
 
         rta = RTA_NEXT(rta, len);
