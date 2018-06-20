@@ -1480,7 +1480,6 @@ tapi_tcp_get_ts_opt(asn_value *val,
 {
     asn_value *ts_opt = NULL;
     te_errno   rc = 0;
-    int32_t    v;
 
     rc = find_ts_opt(val, NULL, NULL, &ts_opt);
     if (rc != 0)
@@ -1488,26 +1487,24 @@ tapi_tcp_get_ts_opt(asn_value *val,
 
     if (ts_value != NULL)
     {
-        rc = asn_read_int32(ts_opt, &v, "value");
+        rc = asn_read_uint32(ts_opt, ts_value, "value");
         if (rc != 0)
         {
             ERROR("%s(): failed to read TCP timestamp value: %r",
                   __FUNCTION__, rc);
             return rc;
         }
-        *ts_value = (uint32_t)v;
     }
 
     if (ts_echo != NULL)
     {
-        rc = asn_read_int32(ts_opt, &v, "echo-reply");
+        rc = asn_read_uint32(ts_opt, ts_echo, "echo-reply");
         if (rc != 0)
         {
             ERROR("%s(): failed to read TCP timestamp echo-reply: %r",
                   __FUNCTION__, rc);
             return rc;
         }
-        *ts_echo = (uint32_t)v;
     }
 
     return 0;
@@ -1527,8 +1524,7 @@ tapi_tcp_set_ts_opt(asn_value *val,
         if (rc != 0)                                            \
             return rc;                                          \
         if (_is_val)                                            \
-            rc = asn_write_int32(_pdu, (int32_t)_val,           \
-                                 _labels_str.ptr);              \
+            rc = asn_write_uint32(_pdu, _val, _labels_str.ptr); \
         else                                                    \
             rc = asn_write_value_field(_pdu, NULL, 0,           \
                                        _labels_str.ptr);        \

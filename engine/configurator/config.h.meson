@@ -1,0 +1,2 @@
+/* Define to 1 if the system has the type `xmlError'. */
+#mesondefine HAVE_XMLERROR

@@ -1,0 +1,48 @@
+# Copyright (C) 2018 OKTET Labs. All rights reserved.
+
+headers += files(
+    'tapi_rpc.h',
+    'tapi_rpc_aio.h',
+    'tapi_rpc_client_server.h',
+    'tapi_rpc_dirent.h',
+    'tapi_rpc_dlfcn.h',
+    'tapi_rpc_ifnameindex.h',
+    'tapi_rpc_internal.h',
+    'tapi_rpc_misc.h',
+    'tapi_rpc_netdb.h',
+    'tapi_rpc_params.h',
+    'tapi_rpc_power_sw.h',
+    'tapi_rpc_signal.h',
+    'tapi_rpc_socket.h',
+    'tapi_rpc_stdio.h',
+    'tapi_rpc_telephony.h',
+    'tapi_rpc_unistd.h',
+    'tapi_rpc_winsock2.h',
+    'tapi_rpcsock_macros.h',
+)
+sources = files(
+    'aio.c',
+    'client_server.c',
+    'dirent.c',
+    'dlfcn.c',
+    'ifnameindex.c',
+    'ioctl.c',
+    'misc.c',
+    'netdb.c',
+    'pipe.c',
+    'power_sw.c',
+    'signal.c',
+    'socket.c',
+    'stdio.c',
+    'tapi_rpc_internal.c',
+    'telephony.c',
+    'unistd.c',
+    'wsa.c',
+)
+includes += include_directories('../tapi')
+deps += [
+    dep_lib_conf_oid,
+    dep_lib_asn,
+    dep_lib_rpcxdr,
+    dep_lib_rcfrpc,
+]

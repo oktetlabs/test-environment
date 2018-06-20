@@ -1,0 +1,72 @@
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#mesondefine HAVE_DLFCN_H
+
+/* Define to 1 if you have the <expat.h> header file. */
+#mesondefine HAVE_EXPAT_H
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#mesondefine HAVE_INTTYPES_H
+
+/* Define to 1 if you have the `expat' library (-lexpat). */
+#mesondefine HAVE_LIBEXPAT
+
+/* Define to 1 if you have the <memory.h> header file. */
+#mesondefine HAVE_MEMORY_H
+
+/* Define to 1 if you have the <rpc/types.h> header file. */
+#mesondefine HAVE_RPC_TYPES_H
+
+/* Define to 1 if you have the <rpc/xdr.h> header file. */
+#mesondefine HAVE_RPC_XDR_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#mesondefine HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#mesondefine HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#mesondefine HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#mesondefine HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#mesondefine HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#mesondefine HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#mesondefine HAVE_UNISTD_H
+
+/* Get 32-bit integer from the stream */
+#mesondefine x_getint32
+
+/* Type of the second arguments to get/put 32-bit integer from/to the stream
+   */
+#mesondefine x_int32_arg_t
+
+/* Put 32-bit integer to the stream */
+#mesondefine x_putint32
+
+/* RPC XDR for signed 16bit width type */
+#mesondefine xdr_int16_t
+
+/* RPC XDR for signed 32bit width type */
+#mesondefine xdr_int32_t
+
+/* RPC XDR for signed 8bit width type */
+#mesondefine xdr_int8_t
+
+/* RPC XDR for unsigned 16bit width type */
+#mesondefine xdr_uint16_t
+
+/* RPC XDR for unsigned 32bit width type */
+#mesondefine xdr_uint32_t
+
+/* RPC XDR for unsigned 64bit width type */
+#mesondefine xdr_uint64_t
+
+/* RPC XDR for unsigned 8bit width type */
+#mesondefine xdr_uint8_t

@@ -1014,12 +1014,51 @@ main(int argc, char **argv)
 {
     rgt_gen_ctx_t gen_ctx;
     int           rc;
+    char          util_path[PATH_MAX];
+    char          prefix[PATH_MAX];
+    int           n;
+    char          argv0_copy[PATH_MAX];
+    const char   *prog_name;
+    const char   *prog_prefix = "rgt-";
+
+    n = snprintf(argv0_copy, sizeof(argv0_copy), "%s", argv[0]);
+
+    if (n < 0 || (size_t)n >= sizeof(argv0_copy))
+    {
+        fprintf(stderr, "Cannot handle program name of this length\n");
+        exit(EXIT_FAILURE);
+    }
+
+    prog_name = basename(argv[0]);
+
+    if (strncmp(prog_prefix, prog_name, strlen(prog_prefix)) != 0)
+    {
+        fprintf(stderr, "Cannot use altered executable name\n");
+        exit(EXIT_FAILURE);
+    }
+
+    prog_name += strlen(prog_prefix);
 
     memset(&gen_ctx, 0, sizeof(gen_ctx));
 
     process_cmd_line_opts(argc, argv, &gen_ctx);
 
-    if (rgt_tmpls_parse(xml2fmt_files, xml2fmt_tmpls,
+    n = snprintf(util_path, sizeof(util_path), "rgt-format/%s", prog_name);
+
+    if (n < 0 || sizeof(util_path) <= (size_t)n)
+    {
+        fprintf(stderr, "Cannot handle path of this length\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (rgt_resource_files_prefix_get(util_path, argv[0],
+                                      sizeof(prefix), prefix))
+    {
+        fprintf(stderr, "Failed to get resource files path prefix\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (rgt_tmpls_parse(xml2fmt_files, prefix, xml2fmt_tmpls,
                         xml2fmt_tmpls_num) != 0)
     {
         assert(0);
