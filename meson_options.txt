@@ -12,6 +12,8 @@ option('libs', type: 'string', value: '',
        description: 'Libraries to build')
 option('agents', type: 'string', value: '',
        description: 'Test Agents to build')
+option('tools', type: 'string', value: '',
+       description: 'Tools to build')
 
 option('large-logs', type: 'boolean', value: true,
        description: 'Support large logs')

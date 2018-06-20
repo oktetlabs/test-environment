@@ -67,3 +67,4 @@ if get_option('engine')
     subdir('engine')
 endif
 subdir('agents')
+subdir('tools')
