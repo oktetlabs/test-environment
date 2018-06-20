@@ -55,6 +55,7 @@ engine_libs = [
 
 # Test Agent libraries
 agent_libs = [
+    'comm_net_agent',
 ]
 
 all_libs = common_libs + engine_libs + agent_libs
