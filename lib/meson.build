@@ -10,6 +10,7 @@ common_libs = [
     'conf_oid',
     'asn',
     'ndn',
+    'rpcxdr',
 ]
 
 # Test Engine libraries

@@ -39,6 +39,10 @@ gram_gen = generator(bison,
                                   '--output=@OUTPUT0@',
                                   '@INPUT@' ])
 
+m4 = find_program('m4')
+te_rpcgen = find_program('engine/builder/te_rpcgen')
+rpcgen_m4 = files('include/rpcgen.m4')
+
 cc = meson.get_compiler('c')
 
 dep_threads = dependency('threads')

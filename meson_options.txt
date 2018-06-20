@@ -10,3 +10,6 @@ option('engine', type: 'boolean', value: false,
 
 option('libs', type: 'string', value: '',
        description: 'Libraries to build')
+
+option('rpcdefs', type: 'string', value: '',
+       description: 'List of extra RPC definitions')
