@@ -18,6 +18,7 @@ engine_libs = [
     'loggerten',
     'comm_net_engine',
     'rcfapi',
+    'rcfunix',
 ]
 
 # Test Agent libraries
