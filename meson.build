@@ -55,3 +55,6 @@ dep_threads = dependency('threads')
 
 subdir('include')
 subdir('lib')
+if get_option('engine')
+    subdir('engine')
+endif
