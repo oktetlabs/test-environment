@@ -9,9 +9,7 @@
 #
 # $Id: rgt-conv.in,v 1.1 2003/10/28 09:35:42 arybchik Exp $
 
-us=$(which rgt-conv)
-inst=$(dirname $us)
-prefix=$(dirname $inst)
+prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
 datadir=@datadir@

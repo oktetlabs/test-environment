@@ -64,7 +64,7 @@ $(RGT_SUBDIRS:%=%.h): $(RGT_SUBDIRS:%=%/tmpls/Makefile)
 	echo -E "const char *xml2fmt_files[] = {" >> $@; \
 	for i in `ls $(srcdir)/$${util}/tmpls/*.tmpl`; do \
 		basename $${i} | \
-			sed "s,\(.*\),\"$${util}/tmpls/\1\"," | \
+			sed "s,\(.*\),\"$(pkgdatadir)/$${util}/tmpls/\1\"," | \
 				awk '{ printf "%s", $$1 }'>> $@; \
 		echo "," >> $@; \
 	done; \
@@ -75,5 +75,4 @@ $(RGT_SUBDIRS:%=%.h): $(RGT_SUBDIRS:%=%/tmpls/Makefile)
 	echo -E -n "size_t     xml2fmt_tmpls_num = " >> $@; \
 	echo -E -n "sizeof(xml2fmt_files) / " >> $@; \
 	echo -E "sizeof(xml2fmt_files[0]);" >> $@; \
-	echo "#define BUILDTIME_PKG_DIR \"${pkgdatadir}\"" >> $@; \
 	echo "#define INSTALL_DIR \"${pkgdatadir}/$${util}/\"" >> $@

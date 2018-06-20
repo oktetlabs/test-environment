@@ -1020,10 +1020,9 @@ main(int argc, char **argv)
     process_cmd_line_opts(argc, argv, &gen_ctx);
 
     if (rgt_tmpls_parse(xml2fmt_files, xml2fmt_tmpls,
-                        xml2fmt_tmpls_num, "rgt-format") != 0)
+                        xml2fmt_tmpls_num) != 0)
     {
-        perror("Failed to read templates from the corresponding files");
-        exit(1);
+        assert(0);
     }
 
     gen_ctx.state = RGT_XML2HTML_STATE_INITIAL;

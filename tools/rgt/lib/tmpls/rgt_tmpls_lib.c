@@ -349,18 +349,9 @@ rgt_tmpls_free(rgt_tmpl_t *tmpls, size_t tmpl_num)
     }
 }
 
-static const char *te_install = NULL;
-static const char *te_install_get(void)
-{
-    if (te_install == NULL)
-        te_install = getenv("TE_INSTALL");
-    return te_install;
-}
-
 /* The description see in rgt_tmpls_lib.h */
 int
-rgt_tmpls_parse(const char **files, rgt_tmpl_t *tmpls, size_t tmpl_num,
-                const char *toolname)
+rgt_tmpls_parse(const char **files, rgt_tmpl_t *tmpls, size_t tmpl_num)
 {
     FILE   *fd;
     size_t  i;
@@ -373,25 +364,10 @@ rgt_tmpls_parse(const char **files, rgt_tmpl_t *tmpls, size_t tmpl_num,
 
     for (i = 0; i < tmpl_num; i++)
     {
-        char template_file[PATH_MAX];
-
-        if (files[i][0] == '/')
-            snprintf(template_file, PATH_MAX, "%s", files[i]);
-        else if (te_install_get() != NULL)
-            snprintf(template_file, PATH_MAX,
-                     "%s/default/share/%s/%s",
-                     te_install_get(), toolname, files[i]);
-        else
-        {
-            fprintf(stderr, "Failed to guess templates location. "
-                    "TE_INSTALL='%s'", te_install_get());
-            return 1;
-        }
-
         /* Open file with a template and parse it */
-        if ((fd = fopen(template_file, "r")) == NULL)
+        if ((fd = fopen(files[i], "r")) == NULL)
         {
-            perror(template_file);
+            perror(files[i]);
             rgt_tmpls_free(tmpls, tmpl_num);
             return 1;
         }
@@ -404,7 +380,7 @@ rgt_tmpls_parse(const char **files, rgt_tmpl_t *tmpls, size_t tmpl_num,
          */
         tmpls[i].raw_ptr = (char *)malloc((fsize = ftell(fd)) + 1);
         if (tmpls[i].raw_ptr == NULL || 
-            (tmpls[i].fname = strdup(template_file)) == NULL)
+            (tmpls[i].fname = strdup(files[i])) == NULL)
         {
             fprintf(stderr, "Not enough memory\n");
             fclose(fd);
@@ -412,13 +388,13 @@ rgt_tmpls_parse(const char **files, rgt_tmpl_t *tmpls, size_t tmpl_num,
             return 1;
         }
         tmpls[i].raw_ptr[fsize] = '\0';
-        strcpy(tmpls[i].fname, template_file);
+        strcpy(tmpls[i].fname, files[i]);
         fseek(fd, 0L, SEEK_SET);
 
         if (fread(tmpls[i].raw_ptr, 1, fsize, fd) != (size_t )fsize)
         {
             fprintf(stderr, "Cannot read the whole template %s\n",
-                    template_file);
+                    files[i]);
             fclose(fd);
             rgt_tmpls_free(tmpls, tmpl_num);
             return 1;
@@ -467,12 +443,12 @@ rgt_tmpls_parse(const char **files, rgt_tmpl_t *tmpls, size_t tmpl_num,
                 
                 if (end_var_ptr == NULL)
                 {
-                    get_error_point(template_file, var_ptr - tmpls[i].raw_ptr,
+                    get_error_point(files[i], var_ptr - tmpls[i].raw_ptr,
                                     &n_row, &n_col);
 
                     fprintf(stderr, "Cannot find trailing %s marker for "
                             "variable started at %s:%d:%d\n",
-                            RGT_TMPLS_VAR_DELIMETER, template_file,
+                            RGT_TMPLS_VAR_DELIMETER, files[i],
                             n_row, n_col);
                     rgt_tmpls_free(tmpls, tmpl_num);
                     return 1;
@@ -487,11 +463,11 @@ rgt_tmpls_parse(const char **files, rgt_tmpl_t *tmpls, size_t tmpl_num,
                 var_ptr = strrchr(fmt_ptr, ':');
                 if (var_ptr == NULL || var_ptr[1] == '\0')
                 {
-                    get_error_point(template_file, fmt_ptr - tmpls[i].raw_ptr,
+                    get_error_point(files[i], fmt_ptr - tmpls[i].raw_ptr,
                                     &n_row, &n_col);
                     fprintf(stderr, "Cannot get format string or "
                             "variable name at %s:%d:%d\n",
-                            template_file, n_row, n_col);
+                            files[i], n_row, n_col);
                     rgt_tmpls_free(tmpls, tmpl_num);
                     return 1;                    
                 }
@@ -506,11 +482,11 @@ rgt_tmpls_parse(const char **files, rgt_tmpl_t *tmpls, size_t tmpl_num,
                 {
                     if (isspace(*p_tmp))
                     {
-                        get_error_point(template_file, p_tmp - tmpls[i].raw_ptr,
+                        get_error_point(files[i], p_tmp - tmpls[i].raw_ptr,
                                         &n_row, &n_col);
                         fprintf(stderr, "Variable name cannot contain any "
                                 "space characters\n%s:%d:%d\n",
-                                template_file, n_row, n_col);
+                                files[i], n_row, n_col);
                         rgt_tmpls_free(tmpls, tmpl_num);
                         return 1;
                     }

@@ -1562,7 +1562,7 @@ main(int argc, char **argv)
     process_cmd_line_opts(argc, argv, &gen_ctx);
 
     if (rgt_tmpls_parse(xml2fmt_files, xml2fmt_tmpls,
-                        xml2fmt_tmpls_num, "rgt-cfg") != 0)
+                        xml2fmt_tmpls_num) != 0)
     {
         assert(0);
     }

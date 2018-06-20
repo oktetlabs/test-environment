@@ -193,12 +193,10 @@ extern const char *rgt_tmpls_xml_attrs_get(const char **attrs,
 /**
  * Parses themplate files and fills in an appropriate data structure.
  *
- * @param files                 An array of template files to be parsed
- * @param tmpls                 An array of internal representation of the templates
- * @param tmpl_num              Number of templates in the arrays (the same as the
- *                              number of files passed)
- * @param toolname              Name of the tool to be used if relative
- *                              paths are given.
+ * @param files     An array of template files to be parsed
+ * @param tmpls     An array of internal representation of the templates
+ * @param tmpl_num  Number of templates in the arrays (the same as the
+ *                  number of files passed)
  *
  * @return  Status of the operation
  *
@@ -208,8 +206,7 @@ extern const char *rgt_tmpls_xml_attrs_get(const char **attrs,
  * @se If an error occures the function output error message into stderr
  */
 extern int rgt_tmpls_parse(const char **files, 
-                           rgt_tmpl_t *tmpls, size_t tmpl_num,
-                           const char *toolname);
+                           rgt_tmpl_t *tmpls, size_t tmpl_num);
 
 /**
  * Frees internal representation of templates
