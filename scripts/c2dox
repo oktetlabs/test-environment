@@ -26,14 +26,42 @@ in_header { print; next; }
 }
 
 in_dox_comment && /\*\// { sub(/\*\/.*/, "");
-    in_dox_comment = 0; 
+    in_dox_comment = 0;
     if ($0 ~ /^[[:space:]]*$/) next;
-    if ($0) print; 
-    next; 
+    if ($0) print;
+    next;
 }
 
 in_dox_comment { print $0; next }
 
-END { printf " *\n" author "\n */\n";}
+# Fetch scenario from the logging steps
 
-    
+/TEST_STEP/ {
+  in_dox_log_comment = 1;
+  was_comment = 1;
+  printf "  -# ";
+}
+
+/TEST_SUBSTEP/ {
+    in_dox_log_comment = 1;
+    was_comment = 1;
+    printf "    - ";
+}
+
+in_dox_log_comment {
+    sub(/ *TEST_STEP\("/, "");
+    sub(/ *TEST_SUBSTEP\("/, "");
+    sub(/"/, "");
+}
+
+in_dox_log_comment && /);/ {
+    sub(/);/, "");
+    sub(/"/, "");
+    print $0;
+    in_dox_log_comment = 0;
+    next;
+}
+
+in_dox_log_comment { print $0; next }
+
+END { printf " *\n" author "\n */\n";}

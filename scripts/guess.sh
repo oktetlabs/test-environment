@@ -34,13 +34,13 @@ if test -z "${TE_LOG_RAW}" ; then
 fi
 if test -z "${TE_INSTALL}" ; then
     if test -d "inst" ; then
-        TE_INSTALL="$(pwd -P)/inst"
+        export TE_INSTALL="$(pwd -P)/inst"
     elif test -d "build/inst" ; then
-        TE_INSTALL="$(pwd -P)/build/inst"
+        export TE_INSTALL="$(pwd -P)/build/inst"
     elif test -d "${MYDIR}/inst" ; then
-        TE_INSTALL="${MYDIR}/inst"
+        export TE_INSTALL="${MYDIR}/inst"
     elif test -d "${MYDIR}/build/inst" ; then
-        TE_INSTALL="${MYDIR}/build/inst"
+        export TE_INSTALL="${MYDIR}/build/inst"
     else
         echo "Failed to guess TE_INSTALL" >&2
         exit 1

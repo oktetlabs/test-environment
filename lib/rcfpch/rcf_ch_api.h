@@ -1032,6 +1032,28 @@ typedef struct rcf_pch_cfg_object {
           (rcf_ch_cfg_list)_f_list, _f_commit, NULL }
 
 /**
+ * Define node collection that can be set
+ *
+ * @param _name     node name (rcf_pch_cfg_object)
+ * @param _subid    subidentifier name (const char *)
+ * @param _son      pointer to the first son node
+ * @param _brother  pointer to the next brother node
+ * @param _f_add    add accessor
+ * @param _f_del    delete accessor
+ * @param _f_list   list accessor
+ * @param _f_commit commit function
+ */
+#define RCF_PCH_CFG_NODE_RW_COLLECTION(_name, _subid, _son, _brother,   \
+                                       _f_get,  _f_set,                 \
+                                       _f_add, _f_del, _f_list,         \
+                                       _f_commit)                       \
+    static rcf_pch_cfg_object _name =                                   \
+    { _subid, 0, _son, _brother,                                        \
+      (rcf_ch_cfg_get)_f_get, (rcf_ch_cfg_set)_f_set,                   \
+      (rcf_ch_cfg_add)_f_add, (rcf_ch_cfg_del)_f_del,                   \
+      (rcf_ch_cfg_list)_f_list, _f_commit, NULL }
+
+/**
  * Define read-only node collection.
  *
  * @param _name     node name (rcf_pch_cfg_object)

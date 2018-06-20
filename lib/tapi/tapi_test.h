@@ -81,6 +81,14 @@ extern "C" {
 #define TEST_END_SPECIFIC do { } while (0)
 #endif
 
+#ifndef TEST_ON_JMP_DO_IF_SUCCESS
+#define TEST_ON_JMP_DO_IF_SUCCESS do { } while (0)
+#endif
+
+#ifndef TEST_ON_JMP_DO_IF_FAILURE
+#define TEST_ON_JMP_DO_IF_FAILURE do { } while (0)
+#endif
+
 /**
  * Template action to be done on jump in the test.
  */
@@ -89,6 +97,10 @@ extern "C" {
         if (result == EXIT_SUCCESS || result == EXIT_FAILURE) \
             result = (TE_RC_GET_ERROR(jmp_rc) == TE_EOK) ? EXIT_SUCCESS  \
                                                      : EXIT_FAILURE; \
+        if (result == EXIT_SUCCESS)                                  \
+            TEST_ON_JMP_DO_IF_SUCCESS;                               \
+        else if (result == EXIT_FAILURE)                             \
+            TEST_ON_JMP_DO_IF_FAILURE;                               \
         goto cleanup;                                                \
     } while (0)
 
@@ -215,11 +227,13 @@ cleanup_specific:                                                   \
     do {                                                               \
         int rc_;                                                       \
                                                                        \
+        te_log_stack_reset();                                          \
         if ((rc_ = (expr_)) != 0)                                      \
         {                                                              \
             TEST_FAIL("line %d: %s returns 0x%X (%r), but expected 0", \
                       __LINE__, # expr_, rc_, rc_);                    \
         }                                                              \
+        te_log_stack_reset();                                          \
     } while (0)
 
 /**

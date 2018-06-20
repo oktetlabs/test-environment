@@ -1189,15 +1189,21 @@
     <object oid="/agent/user" access="read_create" type="none"/>
 
     <!-- System module.
-         Name: Name of the system module -->
-    <object oid="/agent/module" access="read_only" type="none">
+         Name: Name of the system module
+         Value: 1 means loadded -->
+    <object oid="/agent/module" access="read_create" type="integer">
       <depends oid="/agent/rsrc"/>
     </object>
+
+    <!-- Name of the file containing the module or 'unknown'.
+         modinfo integration is not yet there.
+         Value: path in the file system -->
+    <object oid="/agent/module/filename" access="read_write" type="string"/>
 
     <!-- Parameter of a system module.
          Name: Name of the parameter
          Value: Value of the parameter -->
-    <object oid="/agent/module/parameter" access="read_write" type="string"/>
+    <object oid="/agent/module/parameter" access="read_create" type="string"/>
 
     <!-- System settings from /proc/sys/.
          Name: empty -->
@@ -1273,6 +1279,12 @@
          -->
     <object oid="/agent/rlimits/nofile/max" access="read_write" type="integer">
       <depends oid="/agent/rlimits/nofile/cur"/>
+    </object>
+
+    <!-- Block devices list.
+         Name: Name of the block device -->
+    <object oid="/agent/block" access="read_only" type="none">
+      <depends oid="/agent/rsrc"/>
     </object>
 
 </backup>

@@ -1535,10 +1535,8 @@ static const char * const trc_test_log_url =
 ">[log]</a>";
 #endif
 
-#ifdef TRC_USE_LOG_URLS
 static const char * const trc_test_exp_got_row_tin_ref =
 "        <a name=\"tin_%d\"> </a>\n";
-#endif
 
 static const char * const trc_test_exp_got_row_start =
 "    <tr>\n"
@@ -2389,8 +2387,12 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
     te_errno                rc = 0;
     const te_test_verdict  *v;
     int                     v_id = -1;
+#if TRC_USE_STATS_POPUP
     te_bool                 obtained_link;
     te_bool                 result_link;
+#else
+    UNUSED(test_type);
+#endif
 
     UNUSED(stats);
     UNUSED(test_path);
@@ -2398,15 +2400,19 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
 
     assert(f != NULL);
 
+#if TRC_USE_STATS_POPUP
     result_link = (test_type == TRC_TEST_SCRIPT &&
                     (result == NULL || result->status == TE_TEST_PASSED ||
                      result->status == TE_TEST_FAILED));
+#endif
 #if 0
     result_link = (result_link &&
                    get_stats_by_status(stats, result->status) !=
                    TRC_STATS_RUN(stats));
 #endif
+#if TRC_USE_STATS_POPUP
     obtained_link = result_link && (tin_id[0] != '\0');
+#endif
 
     WRITE_FILE("<span>");
     WRITE_FILE("Obtained result:");
@@ -2471,6 +2477,7 @@ cleanup:
     return rc;
 }
 
+#if TRC_USE_LOG_URLS
 /**
  * Check whether parameter name or value contain symbols
  * which do not allow to reference test iteration by its parameters in
@@ -2494,6 +2501,7 @@ check_forbidden_symbols(const char *s)
 
     return FALSE;
 }
+#endif
 
 /**
  * Output test iteration expected/obtained results to HTML report.
@@ -2530,9 +2538,11 @@ trc_report_exp_got_to_html(FILE             *f,
     char                              tin_id[128];
     char                             *escaped_path = NULL;
 
+#if TRC_USE_LOG_URLS
     const char *night_logs_history = getenv("TE_NIGHT_LOGS_HISTORY");
     te_bool     ref_history = (night_logs_history != NULL &&
                                night_logs_history[0] != '\0');
+#endif
 
     assert(anchor != NULL);
     assert(test_path != NULL);

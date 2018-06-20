@@ -730,6 +730,37 @@ tapi_env_get_ph(tapi_env *env, const char *name)
     return NULL;
 }
 
+void
+tapi_env_foreach_if(tapi_env *env, tapi_env_foreach_if_fn *fn,
+                    void *opaque)
+{
+    tapi_env_if *p;
+
+    assert(env);
+    assert(fn);
+
+    for (p = env->ifs.cqh_first;
+         p != (void *)&env->ifs;
+         p = p->links.cqe_next)
+    {
+        fn(p, opaque);
+    }
+}
+
+unsigned
+tapi_env_nets_count(tapi_env *env)
+{
+    unsigned i;
+    tapi_env_nets *nets = &env->nets;
+    tapi_env_net *env_net;
+
+    for (env_net = SLIST_FIRST(nets), i = 0;
+         env_net != NULL;
+         env_net = SLIST_NEXT(env_net, links), ++i);
+
+    return i;
+}
+
 
 /**
  * Prepare environment networks.

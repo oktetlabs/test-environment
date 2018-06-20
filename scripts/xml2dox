@@ -17,7 +17,7 @@ function process(str)
 
 in_dox_comment && /^[[:space:]]*\*/ { sub(/^[[:space:]]*\*/, ""); }
 
-/<!---/ {   n = split($0, arr, /<!---/);
+/<!---/ {   n = split($0, arr, /<!--- /);
             if (in_dox_comment)
                 process(arr[1]);
             in_dox_comment = 1;
@@ -26,13 +26,75 @@ in_dox_comment && /^[[:space:]]*\*/ { sub(/^[[:space:]]*\*/, ""); }
             next;
         }
 
-in_dox_comment && /-->/ {   sub(/-->.*/, "");
+in_dox_comment && /-->/ {   sub(/.*-->.*/, "\n");
                             if ($0) print;
                             in_dox_comment = 0;
                             next;
                         }
 
 in_dox_comment { print $0; next }
+
+/<enum name/ {
+  sub(/.*<enum/, "\nName: ");
+  sub(/ name="/, "");
+  sub(/">/, "\n\nValues: \n");
+
+  in_enum = 1;
+
+  print $0;
+  next;
+}
+
+in_enum && /<value/ {
+  sub(/<\/value>/, ",");
+}
+
+in_enum && /req=/ {
+  sub(/.*req="/, "-# (req=");
+  sub(/">/, ") ");
+  print $0;
+  next;
+}
+
+in_enum && /<value/ {
+  sub(/.*>/, "-# ");
+  print $0;
+  next;
+}
+
+/<\/enum>/ {
+  sub(/<\/enum>/, "");
+
+  in_enum = 0;
+  print $0;
+  next;
+}
+
+/run name/ {
+  in_run = 1;
+
+  sub(/.*<run name="/, "@defgroup ");
+  sub(/" *>/, "-xml");
+  print $0;
+  print "@ingroup spec_xml";
+  print "@{";
+  print "@code"
+  next;
+}
+
+in_run && /<\/run>/ {
+  in_run = 0;
+  print "@endcode";
+  print "@}"
+  next;
+}
+
+in_run {
+  print $0;
+  next;
+}
+
+
 
 BEGIN { print "/**"; }
 END { print "*/"; }

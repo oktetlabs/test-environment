@@ -13,3 +13,9 @@ doxygen.warn
 .idea
 CMakeLists.txt
 cmake-build-*
+GTAGS
+GRTAGS
+GPATH
+cscope*
+.reviewboardrc
+.dir-locals.el

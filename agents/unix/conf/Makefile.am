@@ -42,6 +42,7 @@ libconf_a_SOURCES = \
 	base/conf_ns_net.c \
 	base/conf_veth.c \
 	base/conf_rlimits.c \
+	base/conf_block.c \
 	route/conf_route.c \
 	route/conf_route_libnetconf.c \
 	route/conf_route_socket.c \
@@ -172,4 +173,15 @@ endif
 if ISCSI_TARGET_USE
 libconf_a_DEPENDENCIES = \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libiscsi_initiator_conf.a
+endif
+
+if CFG_UNIX_TC
+libconf_a_SOURCES += tc/conf_tc.c
+libconf_a_SOURCES += tc/conf_qdisc.c
+libconf_a_SOURCES += tc/conf_netem.c
+libconf_a_SOURCES += tc/conf_tc_internal.c
+noinst_HEADERS += tc/conf_tc.h
+noinst_HEADERS += tc/conf_qdisc.h
+noinst_HEADERS += tc/conf_netem.h
+noinst_HEADERS += tc/conf_tc_internal.h
 endif

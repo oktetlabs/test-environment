@@ -173,6 +173,9 @@ Generic options:
 
   --test-sigusr2-verdict        Handle the SIGUSR2 signal in test and stop it by TEST_VERDICT.
                                 By default the SIGUSR2 handled like SIGINT, it stops testing.
+  --test-wof                    Wait before jump to cleanup on test failure. Useful to
+                                take a look at what's configured etc. Requires some
+                                nodes in the /local:/test: tree.
 
   --trc-log=<filename>          Generate bzip2-ed TRC log
   --trc-db=<filename>           TRC database to be used
@@ -557,6 +560,9 @@ process_opts()
             --tester-*) TESTER_OPTS="${TESTER_OPTS} --${1#--tester-}" ;;
             --test-sigusr2-verdict*) TE_TEST_SIGUSR2_VERDICT=1
                 export TE_TEST_SIGUSR2_VERDICT ;;
+            --test-wof)
+              export TE_TEST_BEHAVIOUR_WAIT_ON_FAIL=1
+              ;;
 
             --trc-log=*) TRC_LOG="${1#--trc-log=}" ;;
             --trc-db=*) 

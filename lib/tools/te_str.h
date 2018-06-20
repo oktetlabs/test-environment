@@ -127,6 +127,30 @@ extern char *te_str_strip_spaces(const char *str);
 extern te_errno te_strtoul(const char *str, int base,
                            unsigned long int *value);
 
+
+/**
+ * Convert string to long int. Should be used to avoid
+ * creating extra vars for 'end' parameter in the code.
+ *
+ * @param input        String to convert
+ * @param base         Base to be used
+ * @param [out]result  Storage for result
+ *
+ * @return 0 or error
+ */
+extern te_errno te_strtol(const char *input, int base, long int* result);
+
+/**
+ * Convert string to bool meaning 0 - FALSE, not 0 - TRUE
+ *
+ * @param input        String to convert
+ * @param [out]bresult Storage for result
+ *
+ * @return 0 or error
+ */
+extern te_errno te_strtol_bool(const char *input, te_bool *bresult);
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

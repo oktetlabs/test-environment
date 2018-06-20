@@ -14,7 +14,7 @@
 #include "tapi_env.h"
 
 
-#define YYDEBUG 0
+#define YYDEBUG 1
 #define YY_SKIP_YYWRAP
 
 
@@ -32,6 +32,7 @@ static tapi_env_net      *curr_net;
 static tapi_env_if       *curr_host_if;
 static tapi_env_process  *curr_proc;
 
+#define YYERROR_VERBOSE 1
 
 void
 yyerror(const char *str)
