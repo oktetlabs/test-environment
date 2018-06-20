@@ -19,6 +19,7 @@ engine_libs = [
     'comm_net_engine',
     'rcfapi',
     'rcfunix',
+    'confapi',
 ]
 
 # Test Agent libraries
