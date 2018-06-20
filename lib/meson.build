@@ -25,6 +25,7 @@ engine_libs = [
     'rcfunix',
     'confapi',
     'rcfrpc',
+    'tapi_rpc',
 ]
 
 # Test Agent libraries
