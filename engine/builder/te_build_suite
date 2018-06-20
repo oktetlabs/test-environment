@@ -93,7 +93,9 @@ if ${MESON_BUILD} ; then
         eval meson configure ${meson_args} || exit 1
         echo "${meson_args}" >meson.args
     fi
-    ninja install || exit 1
+    # always installed as a dependency and checked by meson above
+    which ninja >/dev/null 2>&1 && NINJA=ninja || NINJA=ninja-build
+    $NINJA install || exit 1
 
     exit 0
 fi
