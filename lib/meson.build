@@ -6,6 +6,7 @@
 
 # Common libraries
 common_libs = [
+    'tools',
 ]
 
 # Test Engine libraries
