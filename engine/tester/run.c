@@ -39,6 +39,9 @@
 #include <pthread.h>
 #endif
 
+#include <fcntl.h>
+#include <poll.h>
+
 #include <openssl/md5.h>
 
 #include "te_alloc.h"
@@ -1260,11 +1263,14 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
         *status = TESTER_TEST_FAKED;
     else
     {
+        struct pollfd pfd[2];
+        int           fdin;
+
         /* Initialize as INCOMPLETE before processing */
         *status = TESTER_TEST_INCOMPLETE;
 
         VERB("ID=%d te_shell_cmd(%s)", exec_id, cmd);
-        pid = te_shell_cmd(cmd, -1, NULL, NULL, NULL);
+        pid = te_shell_cmd(cmd, -1, &fdin, NULL, NULL);
         if (pid < 0)
         {
             ERROR("te_shell_cmd(%s) failed: %s", cmd, strerror(errno));
@@ -1273,6 +1279,43 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
         }
 
         tester_set_serial_pid(pid);
+
+        pfd[0].fd = STDIN_FILENO;
+        pfd[0].events = POLLIN;
+        pfd[1].fd = fdin;
+        pfd[1].events = POLLERR;
+
+        /* Redirect stdin to the test application. */
+        do {
+            ret = poll(pfd, 2, -1);
+            if (ret < 0)
+            {
+                ERROR("Failed to poll() stdin: %s", strerror(errno));
+                break;
+            }
+
+            if ((pfd[0].revents & POLLIN) == POLLIN)
+            {
+                ret = splice(STDIN_FILENO, NULL, fdin, NULL,
+                             TESTER_STR_BULK, 0);
+                if (ret < 0)
+                {
+                    ERROR("Failed to redirect stdin to test using splice(): %s",
+                          strerror(errno));
+                    break;
+                }
+            }
+            if (pfd[0].revents != POLLIN || pfd[1].revents != 0)
+                break;
+        } while(ret > 0);
+
+        close(fdin);
+        if (ret < 0)
+        {
+            free(cmd);
+            return TE_OS_RC(TE_TESTER, errno);
+        }
+
         pid = waitpid(pid, &ret, 0);
         tester_release_serial_pid();
         if (pid < 0)
