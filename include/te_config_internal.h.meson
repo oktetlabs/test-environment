@@ -23,9 +23,6 @@
 /* Define to 1 if you have the <errno.h> header file. */
 #mesondefine HAVE_ERRNO_H
 
-/* Define to 1 if you have the <expect.h> header file. */
-#mesondefine HAVE_EXPECT_H
-
 /* Define to 1 if you have the <fcntl.h> header file. */
 #mesondefine HAVE_FCNTL_H
 
@@ -283,9 +280,6 @@
 
 /* Define to 1 if you have the <sys/wait.h> header file. */
 #mesondefine HAVE_SYS_WAIT_H
-
-/* Define to 1 if you have the <tcl8.4/expect.h> header file. */
-#mesondefine HAVE_TCL8_4_EXPECT_H
 
 /* Define to 1 if you have the <termio.h> header file. */
 #mesondefine HAVE_TERMIO_H

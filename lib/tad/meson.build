@@ -24,6 +24,11 @@ if build_subdirs.contains('atm') or build_subdirs.contains('eth')
 endif
 
 if build_subdirs.contains('cli')
+    if cc.has_header('expect.h')
+        c_args += '-DHAVE_EXPECT_H'
+    elif cc.has_header('tcl8.4/expect.h')
+        c_args += '-DHAVE_TCL8_4_EXPECT_H'
+    endif
     # FIXME In practice expect is sufficient for me, but it is tested
     # on a couple of OS versions only. So, keep below deps commented
     # out just as a reminder
