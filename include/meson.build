@@ -101,7 +101,6 @@ check_headers = [
     'sys/utsname.h',
     'sys/wait.h',
     'sys/syscall.h',
-    'tcl.h',
     'tcl8.4/expect.h',
     'termio.h',
     'time.h',
