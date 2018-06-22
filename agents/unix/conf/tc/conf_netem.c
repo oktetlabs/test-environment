@@ -9,7 +9,7 @@
  */
 
 #include "te_defs.h"
-#include "rcf_api.h"
+#include "rcf_common.h"
 #include "te_string.h"
 #include "te_str.h"
 
