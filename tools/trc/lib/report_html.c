@@ -3425,8 +3425,11 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
         }
     }
     fprintf(f, trc_html_doc_start,
-            ((title != NULL) ? title : title_string.ptr),
-            night_logs_history);
+            ((title != NULL) ? title : title_string.ptr)
+#if TRC_USE_LOG_URLS
+            , night_logs_history
+#endif
+            );
     if (title != NULL)
         fprintf(f, "<h1 align=center>%s</h1>\n", title);
     if (gctx->db->version != NULL)
