@@ -892,7 +892,6 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
 {
     int rc;
     int syms;
-    int arp_sid;
     int rcv_sid;
     int snd_sid;
 
