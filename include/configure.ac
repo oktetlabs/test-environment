@@ -118,7 +118,6 @@ ctype.h \
 dirent.h \
 dlfcn.h \
 errno.h \
-expect.h \
 fcntl.h \
 fnmatch.h \
 glob.h \
@@ -193,8 +192,6 @@ sys/un.h \
 sys/utsname.h \
 sys/wait.h \
 sys/syscall.h \
-tcl.h \
-tcl8.4/expect.h \
 termio.h \
 time.h \
 ucd-snmp/snmp_impl.h \
