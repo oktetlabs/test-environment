@@ -32,14 +32,15 @@ te_libs = [
     'loggerta',
 ]
 
-foreach extra_lib : get_option('libs').split()
+foreach extra_lib : get_option('agent-unix-libs').split()
     if not te_libs.contains(extra_lib)
         te_libs += [ extra_lib ]
     endif
 endforeach
 
-if te_libs.contains('netconf')
+if get_option('libs').split().contains('netconf')
     c_args += [ '-DUSE_LIBNETCONF' ]
+    te_libs += [ 'netconf' ]
 endif
 
 check_headers = [

@@ -171,6 +171,7 @@ process_agent_unix() {
     local ta="$1"; shift
     local pfx="$1"; shift
     local parms_var="${pfx}PARMS"
+    local libs_var="${pfx}LIBS"
     local parms=
     local conf=
     local daemons=
@@ -187,6 +188,11 @@ process_agent_unix() {
         meson_args="${meson_args} -Dagent-unix-conf=\"${conf}\""
     test -z "${daemons}" ||
         meson_args="${meson_args} -Dagent-unix-daemons=\"${daemons}\""
+
+    test -z "${!libs_var}" || {
+        meson_args="${meson_args} -Dagent-unix-libs=\"${!libs_var}\""
+        eval ${libs_var}=
+    }
 }
 
 process_agent() {
