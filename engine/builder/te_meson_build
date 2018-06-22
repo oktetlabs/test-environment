@@ -8,6 +8,8 @@
 
 set -e
 
+SCRIPT_DIR="$(dirname "$0")"
+
 with_config="$1"
 
 # Put initial values to control variables
@@ -564,6 +566,8 @@ do_build() {
     local te_agents="${TE_INSTALL}"/agents
 
     mkdir -p "${te_agents}"
+
+    . "${SCRIPT_DIR}"/te_functions
 
     for p in ${TE_BS_PLATFORMS} ; do
 
