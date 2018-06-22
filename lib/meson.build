@@ -50,6 +50,7 @@ engine_libs = [
     'tapi_rpc',
     'tapi',
     'tapi_env',
+    'tapi_fio',
     'tapi_tad',
     'tapi_tcp_states',
     'tce',
