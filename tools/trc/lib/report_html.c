@@ -1566,8 +1566,10 @@ static const char * const trc_test_exp_got_row_params_end =
 " </div>";
 #endif
 
+#if TRC_USE_STATS_POPUP
 static const char * const trc_test_exp_got_row_result_anchor =
 "  <a name=\"%s_%s\"> </a>";
+#endif
 
 static const char * const trc_test_exp_got_row_mid =
 " </td>\n<td valign=top %s>\n";
