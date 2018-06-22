@@ -10,6 +10,7 @@ includes += include_directories('util')
 
 sources += files(
     'base/conf.c',
+    'base/conf_block.c',
     'base/conf_configfs.c',
     'base/conf_eth.c',
     'base/conf_macvlan.c',
