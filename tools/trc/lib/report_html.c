@@ -1549,10 +1549,12 @@ static const char * const trc_test_exp_got_row_start =
 "      </td>\n"
 "      <td valign=top>";
 
+#if TRC_USE_LOG_URLS
 static const char * const trc_test_iter_history_href =
 "<a href=\"%s\" "
 "onmouseover=\"this.href = getIterHistoryURL('%s', '%s'); "
 "this.target='_blank';\">[history]</a>";
+#endif
 
 #if TRC_USE_PARAMS_SPOILERS
 static const char * const trc_test_exp_got_row_params_start =
