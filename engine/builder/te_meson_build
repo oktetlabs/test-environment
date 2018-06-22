@@ -154,6 +154,8 @@ process_agent_unix_parms() {
                 conf="${conf} sfptpd" ;;
             --with-sniffers=yes|--with-sniffers)
                 conf="${conf} sniffers" ;;
+            --with-tc)
+                conf="${conf} tc" ;;
             --with-tirpc)
                 # added automatically
                 ;;

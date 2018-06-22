@@ -8,6 +8,8 @@ includes = []
 c_args = [ '-fno-strict-aliasing' ]
 c_args += [ '-DRCF_RPC' ]
 
+link_args = []
+
 deps = [ dep_threads, cc.find_library('m') ]
 
 sources = files(
@@ -233,4 +235,5 @@ executable('ta', sources, generated_sources,
            install: true, install_dir: tadir,
            include_directories: includes,
            c_args: c_args,
+           link_args: link_args,
            dependencies: deps)

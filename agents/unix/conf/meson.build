@@ -113,6 +113,28 @@ endif
 if conf.contains('upnp_cp')
     c_args += [ '-DWITH_UPNP_CP' ]
 endif
+if conf.contains('tc')
+    c_args += [ '-DWITH_TC' ]
+    includes += include_directories('tc')
+    sources += files(
+        'tc/conf_tc.c',
+        'tc/conf_qdisc.c',
+        'tc/conf_netem.c',
+        'tc/conf_tc_internal.c',
+    )
+    # In theory link_whole could be used, but it is indended for
+    # internal static libraries build inside the project.
+    link_args += [
+        '-Wl,-whole-archive',
+        '-lnl-route-3',
+        '-lnl-3',
+        '-Wl,-no-whole-archive',
+    ]
+    # In theory we need partial dependecy here to add CFLAGS and
+    # include directories, but partial_dependency() method is supported
+    # since 0.46.0 version only.
+    deps += dependency('libnl-3.0')
+endif
 
 unix_daemons = get_option('agent-unix-daemons').split()
 if unix_daemons.length() != 0
