@@ -997,12 +997,12 @@ rgt_xml2fmt_files_get_idx(const char* short_name)
     char filename[256];
     int  i;
 
-    if (snprintf(filename, 256, "/%s.tmpl", short_name) > 256)
+    if (snprintf(filename, 256, "%s.tmpl", short_name) > 256)
         return -1;
 
     for (i = 0; (unsigned)i < xml2fmt_tmpls_num; i++)
     {
-        if(strstr(xml2fmt_files[i], filename) != NULL)
+        if(strcmp(xml2fmt_files[i], filename) == 0)
             return i;
     }
 
