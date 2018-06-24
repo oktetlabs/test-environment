@@ -102,6 +102,6 @@ te_log_stack_dump(te_log_level log_level)
 void
 te_log_stack_maybe_reset(const char *point)
 {
-    if (strcmp(point, top_point) == 0)
+    if (top_point != NULL && strcmp(point, top_point) == 0)
         log_stack_ptr = 0;
 }
