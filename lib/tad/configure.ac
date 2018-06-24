@@ -358,6 +358,7 @@ AC_ARG_WITH([cli],,
 
     add_lib_in_TA_TAD_LIBS m
 
+    AC_CHECK_HEADERS([expect.h tcl8.4/expect.h])
     AC_CONFIG_FILES([cli/Makefile])
  fi
 ], [w_cli=false])

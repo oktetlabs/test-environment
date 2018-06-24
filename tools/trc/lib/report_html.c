@@ -1549,10 +1549,12 @@ static const char * const trc_test_exp_got_row_start =
 "      </td>\n"
 "      <td valign=top>";
 
+#if TRC_USE_LOG_URLS
 static const char * const trc_test_iter_history_href =
 "<a href=\"%s\" "
 "onmouseover=\"this.href = getIterHistoryURL('%s', '%s'); "
 "this.target='_blank';\">[history]</a>";
+#endif
 
 #if TRC_USE_PARAMS_SPOILERS
 static const char * const trc_test_exp_got_row_params_start =
@@ -1564,8 +1566,10 @@ static const char * const trc_test_exp_got_row_params_end =
 " </div>";
 #endif
 
+#if TRC_USE_STATS_POPUP
 static const char * const trc_test_exp_got_row_result_anchor =
 "  <a name=\"%s_%s\"> </a>";
+#endif
 
 static const char * const trc_test_exp_got_row_mid =
 " </td>\n<td valign=top %s>\n";
@@ -3421,8 +3425,11 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
         }
     }
     fprintf(f, trc_html_doc_start,
-            ((title != NULL) ? title : title_string.ptr),
-            night_logs_history);
+            ((title != NULL) ? title : title_string.ptr)
+#if TRC_USE_LOG_URLS
+            , night_logs_history
+#endif
+            );
     if (title != NULL)
         fprintf(f, "<h1 align=center>%s</h1>\n", title);
     if (gctx->db->version != NULL)

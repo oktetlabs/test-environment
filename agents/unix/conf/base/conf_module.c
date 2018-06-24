@@ -157,7 +157,6 @@ static int
 mod_modprobe(te_kernel_module *module)
 {
     te_kernel_module_param *param;
-    unsigned offset = 0;
     const char *cmd = module->filename != NULL ? "insmod" : "modprobe";
     te_string modprobe_cmd = TE_STRING_BUF_INIT(buf);
 
