@@ -185,7 +185,8 @@ build_server_cmd(te_string *cmd, const tapi_perf_opts *options)
     set_opt_t set_opt[] = {
         set_opt_port,
         set_opt_ipversion,
-        set_opt_protocol
+        set_opt_protocol,
+        set_opt_length
     };
     size_t i;
 
