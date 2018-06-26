@@ -190,6 +190,19 @@ tapi_reuse_eal(rcf_rpc_server   *rpcs,
                 dev_na_generic = dev_name;
             }
         }
+        else if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_RTE_VDEV)
+        {
+            dev_na_generic = NULL;
+
+            for (i = 0; i < (unsigned int)argc; ++i)
+            {
+                if (strncmp(argv[i], dev_name, strlen(dev_name)) == 0)
+                {
+                    dev_na_generic = argv[i];
+                    break;
+                }
+            }
+        }
         else
         {
             continue;
