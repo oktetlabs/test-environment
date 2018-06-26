@@ -90,20 +90,23 @@ append_arg(int *argc_p, char ***argv_p, const char *fmt, ...)
 }
 
 static te_errno
-tapi_reuse_eal(rcf_rpc_server *rpcs,
-               int             argc,
-               char           *argv[],
-               const char     *dev_args,
-               te_bool        *need_init,
-               char          **eal_args_out)
+tapi_reuse_eal(rcf_rpc_server   *rpcs,
+               tapi_env_ps_ifs  *ifsp,
+               int               argc,
+               char             *argv[],
+               const char       *dev_args,
+               te_bool          *need_init,
+               char            **eal_args_out)
 {
-    unsigned int                i;
-    size_t                      eal_args_len;
-    char                       *eal_args = NULL;
-    char                       *eal_args_cfg = NULL;
-    cfg_val_type                val_type = CVT_STRING;
-    uint8_t                     dev_count;
-    te_errno                    rc = 0;
+    size_t                eal_args_len;
+    char                 *eal_args = NULL;
+    char                 *eal_args_cfg = NULL;
+    cfg_val_type          val_type = CVT_STRING;
+    unsigned int          dev_count;
+    const tapi_env_ps_if *ps_if;
+    char                 *dev_na_pci_fn = NULL;
+    te_errno              rc = 0;
+    unsigned int          i;
 
     if ((argc <= 0) || (argv == NULL))
     {
@@ -148,61 +151,75 @@ tapi_reuse_eal(rcf_rpc_server *rpcs,
     }
 
     dev_count = rpc_rte_eth_dev_count(rpcs);
+    if (dev_count == 0)
+        goto skip_reattach;
 
-    for (i = 0; i < dev_count; ++i)
+    STAILQ_FOREACH(ps_if, ifsp, links)
     {
-        if (rpc_rte_eth_dev_is_valid_port(rpcs, i))
+        const char *dev_name = ps_if->iface->if_info.if_name;
+        const char *dev_na_generic = NULL;
+        uint16_t    port_id;
+        uint16_t    port_id_unused;
+
+        if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_PCI_FN)
         {
-            char   dev_name[RPC_RTE_ETH_NAME_MAX_LEN];
-            char   unused_dev_name[RPC_RTE_ETH_NAME_MAX_LEN];
-            size_t dev_na_len;
-
-            rc = rpc_rte_eth_dev_get_name_by_port(rpcs, i, dev_name);
-            if (rc != 0)
-                goto out;
-
-            rpc_rte_eth_dev_close(rpcs, i);
-
-            rc = rpc_rte_eth_dev_detach(rpcs, i, unused_dev_name);
-            if (rc != 0)
-                goto out;
-
-            dev_na_len = strlen(dev_name) + 1;
-            dev_na_len += (dev_args != NULL) ? (strlen(dev_args) + 1) : 0;
-
+            if (dev_args != NULL)
             {
-                char      dev_na[dev_na_len];
-                char     *dev_na_generic = dev_name;
-                uint16_t  port_id;
+                size_t dev_na_len = strlen(dev_name) + strlen(dev_args) + 1;
+                int    ret;
 
-                if (dev_args != NULL)
+                dev_na_pci_fn = TE_ALLOC(dev_na_len + 1);
+                if (dev_na_pci_fn == NULL)
                 {
-                    int ret;
-
-                    ret = snprintf(dev_na, dev_na_len, "%s,%s",
-                                   dev_name, dev_args);
-                    if ((ret < 0) || (((unsigned int)ret + 1) != dev_na_len))
-                    {
-                        rc = TE_EINVAL;
-                        goto out;
-                    }
-
-                    dev_na_generic = dev_na;
+                    rc = TE_ENOMEM;
+                    goto out;
                 }
 
-                rc = rpc_rte_eth_dev_attach(rpcs, dev_na_generic, &port_id);
-                if (rc != 0)
-                    goto out;
-
-                if (port_id != i)
+                ret = snprintf(dev_na_pci_fn, dev_na_len + 1, "%s,%s",
+                               dev_name, dev_args);
+                if (ret < 0 || (size_t)ret != dev_na_len)
                 {
                     rc = TE_EINVAL;
                     goto out;
                 }
+
+                dev_na_generic = dev_na_pci_fn;
+            }
+            else
+            {
+                dev_na_generic = dev_name;
             }
         }
+        else
+        {
+            continue;
+        }
+
+        RPC_AWAIT_ERROR(rpcs);
+        rc = rpc_rte_eth_dev_get_port_by_name(rpcs, dev_name, &port_id);
+        if (rc == 0)
+        {
+            char dev_name_unused[RPC_RTE_ETH_NAME_MAX_LEN];
+
+            rpc_rte_eth_dev_close(rpcs, port_id);
+            rc = rpc_rte_eth_dev_detach(rpcs, port_id, dev_name_unused);
+            if (rc != 0)
+                goto out;
+        }
+        else if (rc != -TE_RC(TE_RPC, TE_ENODEV))
+        {
+            goto out;
+        }
+
+        rc = rpc_rte_eth_dev_attach(rpcs, dev_na_generic, &port_id_unused);
+        if (rc != 0)
+            goto out;
+
+        free(dev_na_pci_fn);
+        dev_na_pci_fn = NULL;
     }
 
+skip_reattach:
     rpc_rte_mempool_free_all(rpcs);
 
     if ((dev_count == 0) || (strcmp(eal_args, eal_args_cfg) != 0))
@@ -223,6 +240,9 @@ tapi_reuse_eal(rcf_rpc_server *rpcs,
     free(eal_args);
 
 out:
+    if (rc != 0)
+        free(dev_na_pci_fn);
+
     free(eal_args_cfg);
 
     if (rc != 0)
@@ -628,7 +648,8 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
 
     if (dpdk_reuse_rpcs())
     {
-        rc = tapi_reuse_eal(rpcs, my_argc, my_argv, dev_args,
+        rc = tapi_reuse_eal(rpcs, &pco->process->ifs,
+                            my_argc, my_argv, dev_args,
                             &need_init, &eal_args_new);
         if (rc != 0)
             goto cleanup;
