@@ -502,6 +502,8 @@ tarpc_rte_eth_txmode2str(te_log_buf *tlbp,
     te_log_buf_append(tlbp, "{ ");
 
     tarpc_rte_eth_tx_mq_mode2str(tlbp, txconf->mq_mode);
+    te_log_buf_append(tlbp, ", offloads=");
+    tarpc_rte_eth_tx_offloads2str(tlbp, txconf->offloads);
     te_log_buf_append(tlbp, ", pvid=%u, flags=", txconf->pvid);
     tarpc_rte_eth_txmode_flags2str(tlbp, txconf->flags);
 

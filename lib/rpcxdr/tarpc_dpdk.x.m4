@@ -934,6 +934,7 @@ enum tarpc_rte_eth_txmode_flags {
 
 struct tarpc_rte_eth_txmode {
     enum tarpc_rte_eth_tx_mq_mode       mq_mode;
+    uint64_t                            offloads;
     uint16_t                            pvid;
     uint8_t                             flags;
 };
