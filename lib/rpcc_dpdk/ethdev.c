@@ -422,6 +422,9 @@ tarpc_rte_eth_rxmode_flags2str(te_log_buf *tlbp, uint16_t flags)
         TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(HW_STRIP_CRC),
         TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(ENABLE_SCATTER),
         TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(ENABLE_LRO),
+        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(HW_TIMESTAMP),
+        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(SECURITY),
+        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(IGNORE_OFFLOAD_BITFIELD),
 #undef TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR
         { 0, NULL }
     };
@@ -437,8 +440,10 @@ tarpc_rte_eth_rxmode2str(te_log_buf *tlbp,
 
     tarpc_rte_eth_rx_mq_mode2str(tlbp, rxconf->mq_mode);
     te_log_buf_append(tlbp, ", max_rx_pkt_len=%u", rxconf->max_rx_pkt_len);
-    te_log_buf_append(tlbp, ", split_hdr_size=%u, flags=",
-                      rxconf->split_hdr_size);
+    te_log_buf_append(tlbp, ", split_hdr_size=%u", rxconf->split_hdr_size);
+    te_log_buf_append(tlbp, ", offloads=");
+    tarpc_rte_eth_rx_offloads2str(tlbp, rxconf->offloads);
+    te_log_buf_append(tlbp, ", flags=");
     tarpc_rte_eth_rxmode_flags2str(tlbp, rxconf->flags);
 
     te_log_buf_append(tlbp, " }");

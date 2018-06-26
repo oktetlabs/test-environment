@@ -102,6 +102,83 @@ tarpc_rte_rx_offloads2rpc(uint64_t rte)
     return rpc;
 }
 
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+static int
+tarpc_rte_rx_offloads2rte(uint64_t rpc, uint64_t *rte)
+{
+    uint64_t rte_tmp = 0;
+
+#define RTE_DEV_RX_OFFLOAD2RTE(_bit) \
+    do {                                                                 \
+        uint64_t flag = (1ULL << TARPC_RTE_DEV_RX_OFFLOAD_##_bit##_BIT); \
+                                                                         \
+        if (rpc & flag)                                                  \
+        {                                                                \
+            rpc &= ~flag;                                                \
+            rte_tmp |= DEV_RX_OFFLOAD_##_bit;                            \
+        }                                                                \
+    } while (0)
+
+#ifdef DEV_RX_OFFLOAD_VLAN_STRIP
+    RTE_DEV_RX_OFFLOAD2RTE(VLAN_STRIP);
+#endif /* DEV_RX_OFFLOAD_VLAN_STRIP */
+#ifdef DEV_RX_OFFLOAD_IPV4_CKSUM
+    RTE_DEV_RX_OFFLOAD2RTE(IPV4_CKSUM);
+#endif /* DEV_RX_OFFLOAD_IPV4_CKSUM */
+#ifdef DEV_RX_OFFLOAD_UDP_CKSUM
+    RTE_DEV_RX_OFFLOAD2RTE(UDP_CKSUM);
+#endif /* DEV_RX_OFFLOAD_UDP_CKSUM */
+#ifdef DEV_RX_OFFLOAD_TCP_CKSUM
+    RTE_DEV_RX_OFFLOAD2RTE(TCP_CKSUM);
+#endif /* DEV_RX_OFFLOAD_TCP_CKSUM */
+#ifdef DEV_RX_OFFLOAD_TCP_LRO
+    RTE_DEV_RX_OFFLOAD2RTE(TCP_LRO);
+#endif /* DEV_RX_OFFLOAD_TCP_LRO */
+#ifdef DEV_RX_OFFLOAD_QINQ_STRIP
+    RTE_DEV_RX_OFFLOAD2RTE(QINQ_STRIP);
+#endif /* DEV_RX_OFFLOAD_QINQ_STRIP */
+#ifdef DEV_RX_OFFLOAD_OUTER_IPV4_CKSUM
+    RTE_DEV_RX_OFFLOAD2RTE(OUTER_IPV4_CKSUM);
+#endif /* DEV_RX_OFFLOAD_OUTER_IPV4_CKSUM */
+#ifdef DEV_RX_OFFLOAD_MACSEC_STRIP
+    RTE_DEV_RX_OFFLOAD2RTE(MACSEC_STRIP);
+#endif /* DEV_RX_OFFLOAD_MACSEC_STRIP */
+#ifdef DEV_RX_OFFLOAD_HEADER_SPLIT
+    RTE_DEV_RX_OFFLOAD2RTE(HEADER_SPLIT);
+#endif /* DEV_RX_OFFLOAD_HEADER_SPLIT */
+#ifdef DEV_RX_OFFLOAD_VLAN_FILTER
+    RTE_DEV_RX_OFFLOAD2RTE(VLAN_FILTER);
+#endif /* DEV_RX_OFFLOAD_VLAN_FILTER */
+#ifdef DEV_RX_OFFLOAD_VLAN_EXTEND
+    RTE_DEV_RX_OFFLOAD2RTE(VLAN_EXTEND);
+#endif /* DEV_RX_OFFLOAD_VLAN_EXTEND */
+#ifdef DEV_RX_OFFLOAD_JUMBO_FRAME
+    RTE_DEV_RX_OFFLOAD2RTE(JUMBO_FRAME);
+#endif /* DEV_RX_OFFLOAD_JUMBO_FRAME */
+#ifdef DEV_RX_OFFLOAD_CRC_STRIP
+    RTE_DEV_RX_OFFLOAD2RTE(CRC_STRIP);
+#endif /* DEV_RX_OFFLOAD_CRC_STRIP */
+#ifdef DEV_RX_OFFLOAD_SCATTER
+    RTE_DEV_RX_OFFLOAD2RTE(SCATTER);
+#endif /* DEV_RX_OFFLOAD_SCATTER */
+#ifdef DEV_RX_OFFLOAD_TIMESTAMP
+    RTE_DEV_RX_OFFLOAD2RTE(TIMESTAMP);
+#endif /* DEV_RX_OFFLOAD_TIMESTAMP */
+#ifdef DEV_RX_OFFLOAD_SECURITY
+    RTE_DEV_RX_OFFLOAD2RTE(SECURITY);
+#endif /* DEV_RX_OFFLOAD_SECURITY */
+
+#undef RTE_DEV_RX_OFFLOAD2RTE
+
+    if (rpc != 0)
+        return (0);
+    else
+        *rte = rte_tmp;
+
+    return (1);
+}
+#endif
+
 static uint64_t
 tarpc_rte_tx_offloads2rpc(uint64_t rte)
 {
@@ -423,6 +500,14 @@ tarpc_eth_rxmode_flags2rte(uint16_t rxmode_flags,
     TARPC_RTE_ETH_RXMODE_BIT2MEMBER(HW_STRIP_CRC, hw_strip_crc);
     TARPC_RTE_ETH_RXMODE_BIT2MEMBER(ENABLE_SCATTER, enable_scatter);
     TARPC_RTE_ETH_RXMODE_BIT2MEMBER(ENABLE_LRO, enable_lro);
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    TARPC_RTE_ETH_RXMODE_BIT2MEMBER(HW_TIMESTAMP, hw_timestamp);
+    TARPC_RTE_ETH_RXMODE_BIT2MEMBER(IGNORE_OFFLOAD_BITFIELD,
+                                    ignore_offload_bitfield);
+#endif
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,2)
+    TARPC_RTE_ETH_RXMODE_BIT2MEMBER(SECURITY, security);
+#endif
 #undef TARPC_RTE_ETH_RXMODE_BIT2MEMBER
     return (rxmode_flags == 0);
 }
@@ -436,6 +521,9 @@ tarpc_eth_rxmode2rte(const struct tarpc_rte_eth_rxmode *rpc,
     ret &= tarpc_eth_rx_mq_mode2rte(rpc->mq_mode, &rte->mq_mode);
     rte->max_rx_pkt_len = rpc->max_rx_pkt_len;
     rte->split_hdr_size = rpc->split_hdr_size;
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    ret &= tarpc_rte_rx_offloads2rte(rpc->offloads, &rte->offloads);
+#endif
     ret &= tarpc_eth_rxmode_flags2rte(rpc->flags, rte);
     return ret;
 }
