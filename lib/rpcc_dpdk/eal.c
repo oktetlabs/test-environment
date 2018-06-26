@@ -102,7 +102,6 @@ tapi_reuse_eal(rcf_rpc_server   *rpcs,
     char                 *eal_args = NULL;
     char                 *eal_args_cfg = NULL;
     cfg_val_type          val_type = CVT_STRING;
-    unsigned int          dev_count;
     const tapi_env_ps_if *ps_if;
     char                 *dev_na_pci_fn = NULL;
     te_errno              rc = 0;
@@ -143,16 +142,13 @@ tapi_reuse_eal(rcf_rpc_server   *rpcs,
     if (rc != 0)
         goto out;
 
-    if (strlen(eal_args_cfg) == 0)
+    if (strlen(eal_args_cfg) == 0 || strcmp(eal_args, eal_args_cfg) != 0)
     {
+        rc = rcf_rpc_server_restart(rpcs);
         *need_init = TRUE;
         *eal_args_out = eal_args;
         goto out;
     }
-
-    dev_count = rpc_rte_eth_dev_count(rpcs);
-    if (dev_count == 0)
-        goto skip_reattach;
 
     STAILQ_FOREACH(ps_if, ifsp, links)
     {
@@ -232,20 +228,7 @@ tapi_reuse_eal(rcf_rpc_server   *rpcs,
         dev_na_pci_fn = NULL;
     }
 
-skip_reattach:
     rpc_rte_mempool_free_all(rpcs);
-
-    if ((dev_count == 0) || (strcmp(eal_args, eal_args_cfg) != 0))
-    {
-        rc = rcf_rpc_server_restart(rpcs);
-        if (rc == 0)
-        {
-            *need_init = TRUE;
-            *eal_args_out = eal_args;
-        }
-
-        goto out;
-    }
 
     *need_init = FALSE;
     *eal_args_out = NULL;
