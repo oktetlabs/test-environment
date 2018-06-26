@@ -1788,24 +1788,6 @@ rpc_rte_eth_tx_queue_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
     RETVAL_ZERO_INT(rte_eth_tx_queue_info_get, out.retval);
 }
 
-uint8_t
-rpc_rte_eth_dev_count(rcf_rpc_server *rpcs)
-{
-    tarpc_rte_eth_dev_count_in   in;
-    tarpc_rte_eth_dev_count_out  out;
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
-
-    rcf_rpc_call(rpcs, "rte_eth_dev_count", &in, &out);
-
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_count, "", "%hu", out.retval);
-
-    TAPI_RPC_OUT(rte_eth_dev_count, FALSE);
-
-    return out.retval;
-}
-
 int
 rpc_rte_eth_dev_attach(rcf_rpc_server *rpcs,
                        const char     *devargs,

@@ -1236,11 +1236,6 @@ TARPC_FUNC(rte_eth_tx_queue_info_get, {},
     out->qinfo.nb_desc = qinfo.nb_desc;
 })
 
-TARPC_FUNC(rte_eth_dev_count, {},
-{
-    MAKE_CALL(out->retval = func());
-})
-
 TARPC_FUNC(rte_eth_dev_attach,{},
 {
     MAKE_CALL(out->retval = func(in->devargs, &out->port_id));
