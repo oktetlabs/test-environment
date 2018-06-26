@@ -828,6 +828,7 @@ struct tarpc_rte_eth_rxconf {
     uint16_t                        rx_free_thresh;
     uint8_t                         rx_drop_en;
     uint8_t                         rx_deferred_start;
+    uint64_t                        offloads;
 };
 
 struct tarpc_rte_eth_txconf {

@@ -184,12 +184,19 @@ tarpc_rte_eth_rxconf2str(te_log_buf *tlbp,
         return te_log_buf_get(tlbp);
     }
 
-    te_log_buf_append(tlbp, "{ rx_thresh=");
+    te_log_buf_append(tlbp, "{ ");
+
+    te_log_buf_append(tlbp, "rx_thresh=");
     tarpc_rte_eth_thresh2str(tlbp, &rxconf->rx_thresh);
     te_log_buf_append(tlbp, ", rx_free_thresh=%u, rx_drop_en=%u, "
-                      "rx_deferred_start=%u }",
+                      "rx_deferred_start=%u",
                       rxconf->rx_free_thresh, rxconf->rx_drop_en,
                       rxconf->rx_deferred_start);
+    te_log_buf_append(tlbp, ", offloads=");
+    tarpc_rte_eth_rx_offloads2str(tlbp, rxconf->offloads);
+
+    te_log_buf_append(tlbp, " }");
+
     return te_log_buf_get(tlbp);
 }
 

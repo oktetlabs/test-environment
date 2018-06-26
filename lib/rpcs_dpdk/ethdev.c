@@ -391,6 +391,9 @@ tarpc_rte_eth_rxconf2rpc(const struct rte_eth_rxconf *rte,
     rpc->rx_free_thresh = rte->rx_free_thresh;
     rpc->rx_drop_en = rte->rx_drop_en;
     rpc->rx_deferred_start = rte->rx_deferred_start;
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    rpc->offloads = tarpc_rte_rx_offloads2rpc(rte->offloads);
+#endif
 }
 
 static uint64_t
@@ -953,6 +956,9 @@ tarpc_eth_rxconf2rte(const struct tarpc_rte_eth_rxconf *rpc,
     rte->rx_free_thresh = rpc->rx_free_thresh;
     rte->rx_drop_en = rpc->rx_drop_en;
     rte->rx_deferred_start = rpc->rx_deferred_start;
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    ret &= tarpc_rte_rx_offloads2rte(rpc->offloads, &rte->offloads);
+#endif
 
     return ret;
 }
