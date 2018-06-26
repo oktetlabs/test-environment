@@ -19,6 +19,7 @@
 #include "log_bufs.h"
 #include "tapi_env.h"
 #include "tapi_rpc_internal.h"
+#include "tapi_rpc_rte_eal.h"
 #include "tapi_rpc_rte_ethdev.h"
 #include "tapi_rpc_rte_mempool.h"
 
@@ -762,3 +763,21 @@ rpc_rte_eal_process_type(rcf_rpc_server *rpcs)
 
     return out.retval;
 }
+
+int
+rpc_dpdk_get_version(rcf_rpc_server *rpcs)
+{
+    tarpc_dpdk_get_version_in  in;
+    tarpc_dpdk_get_version_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    rcf_rpc_call(rpcs, "dpdk_get_version", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, dpdk_get_version, "", "%d.%02d.%d-%d",
+                 out.year, out.month, out.minor, out.release);
+
+    return TAPI_RTE_VERSION_NUM(out.year, out.month, out.minor, out.release);
+}
+

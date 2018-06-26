@@ -1909,6 +1909,16 @@ struct tarpc_dpdk_eth_await_link_up_in {
 
 typedef struct tarpc_int_retval_out tarpc_dpdk_eth_await_link_up_out;
 
+/** dpdk_get_version() */
+typedef struct tarpc_void_in tarpc_dpdk_get_version_in;
+struct tarpc_dpdk_get_version_out {
+    struct tarpc_out_arg common;
+    tarpc_int            year;
+    tarpc_int            month;
+    tarpc_int            minor;
+    tarpc_int            release;
+};
+
 program dpdk
 {
     version ver0
@@ -2043,5 +2053,6 @@ program dpdk
         RPC_DEF(rte_flow_isolate)
 
         RPC_DEF(dpdk_eth_await_link_up)
+        RPC_DEF(dpdk_get_version)
     } = 1;
 } = 2;
