@@ -80,6 +80,10 @@ tapi_cfg_net_get_node_rsrc_type(cfg_net_node_t *node)
     {
         node->rsrc_type = NET_NODE_RSRC_TYPE_PCI_FN;
     }
+    else if (strcmp(obj_oid, "/local/dpdk/vdev") == 0)
+    {
+        node->rsrc_type = NET_NODE_RSRC_TYPE_RTE_VDEV;
+    }
 
     free(inst_oid);
 
@@ -815,6 +819,77 @@ tapi_cfg_net_mk_node_rsrc_desc_pci_fn(const cfg_oid         *oid,
     return 0;
 }
 
+static te_errno
+tapi_cfg_net_mk_node_rsrc_desc_rte_vdev(const cfg_oid         *oid,
+                                        net_node_rsrc_desc_t **rsrc_descp)
+{
+    char                 *oid_str = NULL;
+    unsigned int          nb_slaves = 0;
+    cfg_handle           *slave_handles = NULL;
+    net_node_rsrc_desc_t *d = NULL;
+    te_errno              rc = 0;
+    unsigned int          i;
+
+    oid_str = cfg_convert_oid(oid);
+    if (oid_str == NULL)
+        return TE_ENOMEM;
+
+    rc = cfg_find_pattern_fmt(&nb_slaves, &slave_handles,
+                              "%s/slave:*", oid_str);
+    free(oid_str);
+    if (rc != 0)
+        return rc;
+
+    d = tapi_cfg_net_node_rsrc_desc_alloc(nb_slaves);
+    if (d == NULL)
+    {
+        free(slave_handles);
+        return TE_ENOMEM;
+    }
+
+    for (i = 0; i < nb_slaves; ++i)
+    {
+        cfg_val_type  val_type = CVT_STRING;
+        cfg_oid      *pci_oid = NULL;
+
+        rc = cfg_get_instance(slave_handles[i], &val_type, &d->rsrc_vals[i]);
+        if (rc != 0)
+            goto out;
+
+        pci_oid = cfg_convert_oid_str(d->rsrc_vals[i]);
+        if (pci_oid == NULL) {
+            rc = TE_ENOMEM;
+            goto out;
+        }
+
+        /*
+         * Frankly, RTE vdev slave device is not necessarily a PCI function.
+         * However, considering other possible options is hardly useful for
+         * the most applications of this code.
+         */
+        asprintf(&d->rsrc_names[i], "pci_fn:%s:%s:%s",
+                 CFG_OID_GET_INST_NAME(pci_oid, 4),
+                 CFG_OID_GET_INST_NAME(pci_oid, 5),
+                 CFG_OID_GET_INST_NAME(pci_oid, 6));
+        cfg_free_oid(pci_oid);
+        if (d->rsrc_names[i] == NULL)
+        {
+            rc = TE_ENOMEM;
+            goto out;
+        }
+    }
+
+    *rsrc_descp = d;
+
+out:
+    if (rc != 0)
+        tapi_cfg_net_node_rsrc_desc_free(d);
+
+    free(slave_handles);
+
+    return rc;
+}
+
 /**
  * Derive indirect values of the given node and generate unique resource
  * names for them. Almost all resource types imply that only direct node
@@ -841,6 +916,10 @@ tapi_cfg_net_mk_node_rsrc_names_vals(enum net_node_rsrc_type    rsrc_type,
 
         case NET_NODE_RSRC_TYPE_PCI_FN:
             rc = tapi_cfg_net_mk_node_rsrc_desc_pci_fn(oid, rsrc_descp);
+            break;
+
+        case NET_NODE_RSRC_TYPE_RTE_VDEV:
+            rc = tapi_cfg_net_mk_node_rsrc_desc_rte_vdev(oid, rsrc_descp);
             break;
 
         case NET_NODE_RSRC_TYPE_UNKNOWN:
@@ -946,19 +1025,22 @@ tapi_cfg_net_node_reserve(cfg_net_t *net, cfg_net_node_t *node,
                           const char *oid_str, cfg_oid *oid, void *cookie)
 {
     net_node_rsrc_desc_t *rsrc_desc = NULL;
+    char                  oid_object_str[CFG_OID_MAX];
     int                   rc = 0;
     unsigned int          i;
 
     UNUSED(net);
-    UNUSED(oid_str);
     UNUSED(cookie);
+
+    cfg_oid_inst2obj(oid_str, oid_object_str);
 
     /*
      * We should reserve resource only for OIDs that point to
      * "agent" subtree. Apart from "agent" we may have some
      * user-designed nodes, like "nut" subtree.
      */
-    if (strcmp((((cfg_inst_subid *)(oid->ids))[1].subid), "agent") != 0)
+    if (strcmp((((cfg_inst_subid *)(oid->ids))[1].subid), "agent") != 0 &&
+        strcmp(oid_object_str, "/local/dpdk/vdev") != 0)
         return 0;
 
     rc = tapi_cfg_net_mk_node_rsrc_names_vals(
