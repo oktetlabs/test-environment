@@ -27,10 +27,21 @@ struct tarpc_rte_eth_conf *
 tapi_rpc_rte_eth_make_eth_conf(rcf_rpc_server *rpcs, uint16_t port_id,
                                struct tarpc_rte_eth_conf *eth_conf)
 {
+    char dev_name[RPC_RTE_ETH_NAME_MAX_LEN];
+    char vdev_prefix[] = "net_";
+    int ret = 0;
+
     UNUSED(rpcs);
     UNUSED(port_id);
 
     memset(eth_conf, 0, sizeof(*eth_conf));
+
+    ret = rpc_rte_eth_dev_get_name_by_port(rpcs, port_id, dev_name);
+    if (ret != 0)
+        return NULL;
+
+    if (strncmp(dev_name, vdev_prefix, strlen(vdev_prefix)) == 0)
+        return eth_conf;
 
     eth_conf->rxmode.flags |= (1 << TARPC_RTE_ETH_RXMODE_HW_STRIP_CRC_BIT);
 
