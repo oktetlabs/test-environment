@@ -63,10 +63,27 @@ te_errno
 tapi_rpc_add_mac_as_octstring2kvpair(rcf_rpc_server *rpcs, uint16_t port_id,
                                      te_kvpair_h *head, const char *name)
 {
-    struct tarpc_ether_addr     mac_addr;
-    te_errno                    rc;
+    struct tarpc_ether_addr mac_addr_cmp;
+    struct tarpc_ether_addr mac_addr;
+    te_errno                rc;
 
     rpc_rte_eth_macaddr_get(rpcs, port_id, &mac_addr);
+
+    memset(&mac_addr_cmp, 0, sizeof(mac_addr_cmp));
+    if (memcmp(&mac_addr, &mac_addr_cmp, sizeof(mac_addr_cmp)) == 0)
+    {
+        struct tarpc_rte_eth_conf ec;
+        int                       ret;
+
+        memset(&ec, 0, sizeof(ec));
+
+        ret = rpc_rte_eth_dev_configure(rpcs, port_id, 1, 1, &ec);
+        if (ret != 0)
+            return TE_RC(TE_TAPI, -ret);
+
+        rpc_rte_eth_macaddr_get(rpcs, port_id, &mac_addr);
+        rpc_rte_eth_dev_close(rpcs, port_id);
+    }
 
     rc = te_kvpair_add(head, name, "'%02x%02x%02x%02x%02x%02x'H",
                        mac_addr.addr_bytes[0], mac_addr.addr_bytes[1],
