@@ -18,6 +18,7 @@
 #include "rcf_rpc.h"
 #include "te_rpc_types.h"
 
+#include "tapi_env.h"
 
 #ifdef __cplusplus
 extern "C" {
