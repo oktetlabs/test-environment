@@ -552,6 +552,31 @@ tapi_eal_whitelist_vdev_slaves(tapi_env               *env,
     return 0;
 }
 
+static te_errno
+tapi_eal_get_vdev_port_ids(rcf_rpc_server  *rpcs,
+                           tapi_env_ps_ifs *ifsp)
+{
+    const tapi_env_ps_if *ps_if;
+
+    STAILQ_FOREACH(ps_if, ifsp, links)
+    {
+        if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_RTE_VDEV)
+        {
+            const char *name = ps_if->iface->if_info.if_name;
+            uint16_t    port_id;
+            int         ret = 0;
+
+            ret = rpc_rte_eth_dev_get_port_by_name(rpcs, name, &port_id);
+            if (ret != 0)
+                return TE_RC(TE_TAPI, -ret);
+
+            ps_if->iface->if_info.if_index = port_id;
+        }
+    }
+
+    return 0;
+}
+
 te_errno
 tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
                   int argc, const char **argv)
@@ -682,7 +707,12 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
         rc = cfg_set_instance_fmt(CVT_STRING, eal_args_new,
                                   "/agent:%s/rpcserver:%s/config:",
                                   rpcs->ta, rpcs->name);
+        if (rc != 0)
+            goto cleanup;
     }
+
+    /* Obtain port IDs for RTE vdev interfaces. */
+    rc = tapi_eal_get_vdev_port_ids(rpcs, &pco->process->ifs);
 
 cleanup:
     free(eal_args_new);
