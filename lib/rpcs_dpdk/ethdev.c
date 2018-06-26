@@ -418,6 +418,9 @@ tarpc_rte_eth_txq_flags2rpc(uint32_t rte)
     RTE_DEV_TXQ_FLAG2STR(NOXSUMSCTP);
     RTE_DEV_TXQ_FLAG2STR(NOXSUMUDP);
     RTE_DEV_TXQ_FLAG2STR(NOXSUMTCP);
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    RTE_DEV_TXQ_FLAG2STR(IGNORE);
+#endif
 #undef RTE_DEV_TXQ_FLAG2STR
     if (rte != 0)
         rpc |= (1 << TARPC_RTE_ETH_TXQ_FLAGS__UNKNOWN_BIT);
@@ -433,6 +436,9 @@ tarpc_rte_eth_txconf2rpc(const struct rte_eth_txconf *rte,
     rpc->tx_free_thresh = rte->tx_free_thresh;
     rpc->txq_flags = tarpc_rte_eth_txq_flags2rpc(rte->txq_flags);
     rpc->tx_deferred_start = rte->tx_deferred_start;
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    rpc->offloads = tarpc_rte_tx_offloads2rpc(rte->offloads);
+#endif
 }
 
 static void
@@ -896,6 +902,9 @@ tarpc_eth_txq_flags2rte(uint32_t rpc, uint32_t *rte)
     RPC_DEV_TXQ_FLAG2STR(NOXSUMSCTP);
     RPC_DEV_TXQ_FLAG2STR(NOXSUMUDP);
     RPC_DEV_TXQ_FLAG2STR(NOXSUMTCP);
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    RPC_DEV_TXQ_FLAG2STR(IGNORE);
+#endif
 #undef RPC_DEV_TXQ_FLAG2STR
 
     return (rpc == 0);
@@ -914,6 +923,9 @@ tarpc_eth_txconf2rte(const struct tarpc_rte_eth_txconf *rpc,
     rte->tx_free_thresh = rpc->tx_free_thresh;
     ret &= tarpc_eth_txq_flags2rte(rpc->txq_flags, &rte->txq_flags);
     rte->tx_deferred_start = rpc->tx_deferred_start;
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    ret &= tarpc_rte_tx_offloads2rte(rpc->offloads, &rte->offloads);
+#endif
 
     return ret;
 }

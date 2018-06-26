@@ -213,6 +213,7 @@ tarpc_rte_eth_txq_flags2str(te_log_buf *tlbp, uint32_t txq_flags)
         TARPC_RTE_ETH_TXQ_FLAGS_BIT2STR(NOXSUMSCTP),
         TARPC_RTE_ETH_TXQ_FLAGS_BIT2STR(NOXSUMUDP),
         TARPC_RTE_ETH_TXQ_FLAGS_BIT2STR(NOXSUMTCP),
+        TARPC_RTE_ETH_TXQ_FLAGS_BIT2STR(IGNORE),
 #undef TARPC_RTE_ETH_TXQ_FLAGS_BIT2STR
         { 0, NULL }
     };
@@ -230,14 +231,21 @@ tarpc_rte_eth_txconf2str(te_log_buf *tlbp,
         return te_log_buf_get(tlbp);
     }
 
-    te_log_buf_append(tlbp, "{ tx_thresh=");
+    te_log_buf_append(tlbp, "{ ");
+
+    te_log_buf_append(tlbp, "tx_thresh=");
     tarpc_rte_eth_thresh2str(tlbp, &txconf->tx_thresh);
     te_log_buf_append(tlbp, ", tx_rs_thresh=%u, tx_free_thresh=%u",
                       txconf->tx_rs_thresh, txconf->tx_free_thresh);
     te_log_buf_append(tlbp, ", txq_flags=");
     tarpc_rte_eth_txq_flags2str(tlbp, txconf->txq_flags);
-    te_log_buf_append(tlbp, ", tx_deferred_start=%u }",
+    te_log_buf_append(tlbp, ", tx_deferred_start=%u",
                       txconf->tx_deferred_start);
+    te_log_buf_append(tlbp, ", offloads=");
+    tarpc_rte_eth_tx_offloads2str(tlbp, txconf->offloads);
+
+    te_log_buf_append(tlbp, " }");
+
     return te_log_buf_get(tlbp);
 }
 

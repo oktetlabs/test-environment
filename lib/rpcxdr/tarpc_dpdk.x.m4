@@ -813,6 +813,7 @@ enum tarpc_rte_eth_txq_flags {
     TARPC_RTE_ETH_TXQ_FLAGS_NOXSUMSCTP_BIT,
     TARPC_RTE_ETH_TXQ_FLAGS_NOXSUMUDP_BIT,
     TARPC_RTE_ETH_TXQ_FLAGS_NOXSUMTCP_BIT,
+    TARPC_RTE_ETH_TXQ_FLAGS_IGNORE_BIT,
 
     TARPC_RTE_ETH_TXQ_FLAGS__UNKNOWN_BIT
 };
@@ -837,6 +838,7 @@ struct tarpc_rte_eth_txconf {
     uint16_t                        tx_free_thresh;
     uint32_t                        txq_flags;
     uint8_t                         tx_deferred_start;
+    uint64_t                        offloads;
 };
 
 struct tarpc_rte_eth_desc_lim {
