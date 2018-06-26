@@ -321,6 +321,175 @@ out:
 }
 
 static te_errno
+tapi_eal_get_vdev_properties(tapi_env              *env,
+                             const tapi_env_ps_if  *ps_if,
+                             char                 **namep,
+                             char                 **modep,
+                             te_bool               *is_bondingp)
+{
+    cfg_nets_t     *cfg_nets = &env->cfg_nets;
+    tapi_env_net   *net = ps_if->iface->net;
+    cfg_net_node_t *node;
+    cfg_val_type    val_type;
+    char           *node_val = NULL;
+    char           *name = NULL;
+    char           *mode = NULL;
+    const char      name_prefix_bonding[] = "net_bonding";
+    te_errno        rc = 0;
+
+    node = &cfg_nets->nets[net->i_net].nodes[ps_if->iface->i_node];
+
+    val_type = CVT_STRING;
+    rc = cfg_get_instance(node->handle, &val_type, &node_val);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_get_ith_inst_name(node_val, 3, &name);
+    if (rc != 0)
+        goto out;
+
+    val_type = CVT_STRING;
+    rc = cfg_get_instance_fmt(&val_type, &mode, "%s/mode:", node_val);
+    if (rc != 0)
+        goto out;
+
+    *namep = name;
+    *modep = mode;
+
+    if (strncmp(name, name_prefix_bonding, strlen(name_prefix_bonding)) == 0)
+        *is_bondingp = TRUE;
+    else
+        *is_bondingp = FALSE;
+
+out:
+    if (rc != 0)
+        free(name);
+
+    free(node_val);
+
+    return rc;
+}
+
+static te_errno
+tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
+                                const tapi_env_ps_if  *ps_if,
+                                te_bool                is_bonding,
+                                char                 **slave_list_strp)
+{
+    const char     prefix_bonding[] = ",slave=";
+    const char     prefix_failsafe[] = ",dev(";
+    const char     postfix_bonding[] = "";
+    const char     postfix_failsafe[] = ")";
+    const char    *prefix = NULL;
+    const char    *postfix = NULL;
+    char         **slaves = NULL;
+    unsigned int   nb_slaves = 0;
+    size_t         slave_list_str_len = 0;
+    char          *slave_list_str = NULL;
+    te_errno       rc = 0;
+    unsigned int   i;
+
+    prefix = (is_bonding) ? prefix_bonding : prefix_failsafe;
+    postfix = (is_bonding) ? postfix_bonding : postfix_failsafe;
+
+    rc = tapi_eal_get_vdev_slaves(env, ps_if, &slaves, &nb_slaves);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; i < nb_slaves; ++i)
+    {
+        char   *slave_list_str_new;
+        size_t  slave_list_str_len_new = slave_list_str_len;
+        size_t  len;
+        int     ret;
+
+        slave_list_str_len_new += strlen(prefix);
+        slave_list_str_len_new += strlen(slaves[i]);
+        slave_list_str_len_new += strlen(postfix);
+
+        slave_list_str_new = realloc(slave_list_str,
+                                     slave_list_str_len_new + 1);
+        if (slave_list_str_new == NULL)
+        {
+            rc = TE_ENOMEM;
+            goto out;
+        }
+        slave_list_str = slave_list_str_new;
+
+        len = slave_list_str_len_new - slave_list_str_len;
+        ret = snprintf(slave_list_str + slave_list_str_len, len + 1,
+                       "%s%s%s", prefix, slaves[i], postfix);
+        if (ret < 0 || (size_t)ret != len)
+        {
+            rc = TE_EINVAL;
+            goto out;
+        }
+
+        slave_list_str_len = slave_list_str_len_new;
+    }
+
+    *slave_list_strp = slave_list_str;
+
+out:
+    if (rc != 0)
+        free(slave_list_str);
+
+    for (i = 0; i < nb_slaves; ++i)
+        free(slaves[i]);
+
+    free(slaves);
+
+    return rc;
+}
+
+static te_errno
+tapi_eal_add_vdev_args(tapi_env          *env,
+                       tapi_env_ps_ifs   *ifsp,
+                       int               *argcp,
+                       char            ***argvpp)
+{
+    const tapi_env_ps_if *ps_if;
+    te_errno              rc = 0;
+
+    STAILQ_FOREACH(ps_if, ifsp, links)
+    {
+        if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_RTE_VDEV)
+        {
+            char    *name = NULL;
+            char    *mode = NULL;
+            te_bool  is_bonding;
+            char    *slave_list_str = NULL;
+
+            rc = tapi_eal_get_vdev_properties(env, ps_if, &name, &mode,
+                                              &is_bonding);
+            if (rc != 0)
+                return rc;
+
+            rc = tapi_eal_mk_vdev_slave_list_str(env, ps_if, is_bonding,
+                                                 &slave_list_str);
+            if (rc != 0)
+            {
+                free(mode);
+                free(name);
+                return rc;
+            }
+
+            append_arg(argcp, argvpp, "--vdev");
+            append_arg(argcp, argvpp, "%s%s%s%s", name,
+                       (is_bonding) ? ",mode=" : "",
+                       (is_bonding) ? mode : "",
+                       slave_list_str);
+
+           free(slave_list_str);
+           free(mode);
+           free(name);
+        }
+    }
+
+    return 0;
+}
+
+static te_errno
 tapi_eal_whitelist_vdev_slaves(tapi_env               *env,
                                const tapi_env_ps_if   *ps_if,
                                char                   *dev_args,
@@ -378,6 +547,11 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
 
     /* Use RPC server name as a program name */
     append_arg(&my_argc, &my_argv, "%s", rpcs->name);
+
+    /* Append vdev-related arguments should the need arise */
+    rc = tapi_eal_add_vdev_args(env, &pco->process->ifs, &my_argc, &my_argv);
+    if (rc != 0)
+        goto cleanup;
 
     /* Get device arguments to be specified in whitelist option */
     val_type = CVT_STRING;
