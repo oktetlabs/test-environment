@@ -231,6 +231,125 @@ out:
     return rc;
 }
 
+static te_errno
+tapi_eal_get_vdev_slave_pci_addr(cfg_handle   slave_handle,
+                                 char       **pci_addr_strp)
+{
+    cfg_val_type  val_type;
+    char         *slave_inst_val = NULL;
+    char         *slave_pci_inst_val = NULL;
+    te_errno      rc = 0;
+
+    val_type = CVT_STRING;
+    rc = cfg_get_instance(slave_handle, &val_type, &slave_inst_val);
+    if (rc != 0)
+        return rc;
+
+    val_type = CVT_STRING;
+    rc = cfg_get_instance_fmt(&val_type, &slave_pci_inst_val, slave_inst_val);
+    if (rc != 0)
+        goto out;
+
+    rc = cfg_get_ith_inst_name(slave_pci_inst_val, 4, pci_addr_strp);
+
+out:
+    free(slave_pci_inst_val);
+    free(slave_inst_val);
+
+    return rc;
+}
+
+static te_errno
+tapi_eal_get_vdev_slaves(tapi_env               *env,
+                         const tapi_env_ps_if   *ps_if,
+                         char                 ***slavespp,
+                         unsigned int           *nb_slavesp)
+{
+    cfg_nets_t      *cfg_nets = &env->cfg_nets;
+    tapi_env_net    *net = ps_if->iface->net;
+    cfg_net_node_t  *node;
+    cfg_val_type     val_type;
+    char            *node_val = NULL;
+    unsigned int     nb_slaves = 0;
+    cfg_handle      *slave_handles = NULL;
+    char           **slaves = NULL;
+    te_errno         rc = 0;
+    unsigned int     i;
+
+    node = &cfg_nets->nets[net->i_net].nodes[ps_if->iface->i_node];
+
+    val_type = CVT_STRING;
+    rc = cfg_get_instance(node->handle, &val_type, &node_val);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_find_pattern_fmt(&nb_slaves, &slave_handles,
+                              "%s/slave:*", node_val);
+    if (rc != 0)
+        goto out;
+
+    slaves = TE_ALLOC(nb_slaves * sizeof(*slaves));
+    if (slaves == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    for (i = 0; i < nb_slaves; ++i)
+    {
+        rc = tapi_eal_get_vdev_slave_pci_addr(slave_handles[i], &slaves[i]);
+        if (rc != 0)
+        {
+            unsigned int j;
+
+            for (j = 0; j < i; ++j)
+                free(slaves[i]);
+
+            free(slaves);
+            goto out;
+        }
+    }
+
+    *slavespp = slaves;
+    *nb_slavesp = nb_slaves;
+
+out:
+    free(slave_handles);
+    free(node_val);
+
+    return rc;
+}
+
+static te_errno
+tapi_eal_whitelist_vdev_slaves(tapi_env               *env,
+                               const tapi_env_ps_if   *ps_if,
+                               char                   *dev_args,
+                               int                    *argcp,
+                               char                 ***argvpp)
+{
+    char         **slaves = NULL;
+    unsigned int   nb_slaves = 0;
+    te_errno       rc = 0;
+    unsigned int   i;
+
+    rc = tapi_eal_get_vdev_slaves(env, ps_if, &slaves, &nb_slaves);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; i < nb_slaves; ++i)
+    {
+        append_arg(argcp, argvpp, "--pci-whitelist=%s%s%s", slaves[i],
+                   (dev_args == NULL) ? "" : ",",
+                   (dev_args == NULL) ? "" : dev_args);
+
+        free(slaves[i]);
+    }
+
+    free(slaves);
+
+    return 0;
+}
+
 te_errno
 tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
                   int argc, const char **argv)
@@ -287,6 +406,13 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
                        ps_if->iface->if_info.if_name,
                        (dev_args == NULL) ? "" : ",",
                        (dev_args == NULL) ? "" : dev_args);
+        }
+        else if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_RTE_VDEV)
+        {
+            rc = tapi_eal_whitelist_vdev_slaves(env, ps_if, dev_args,
+                                                &my_argc, &my_argv);
+            if (rc != 0)
+                goto cleanup;
         }
     }
 
