@@ -108,9 +108,9 @@ extern "C" {
         if (TEST_BEHAVIOUR(wait_on_fail))                            \
         {                                                            \
             printf("\n\nWe're about to jump to cleanup, "            \
-                   "but tester config kindly asks \n                 \
+                   "but tester config kindly asks \n"                \
                    "us to wait for a key to be pressed. \n\n"        \
-                   "Press any key to continue...\n");                 \
+                   "Press any key to continue...\n");                \
             getchar();                                               \
         }                                                            \
         goto cleanup;                                                \
