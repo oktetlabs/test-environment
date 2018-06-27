@@ -360,7 +360,7 @@ te_handler(void)
                                     arg_str);
                 if (rc != 0)
                 {
-                    strerror_r(errno, err_buf, sizeof(err_buf));
+                    te_strerror_r(errno, err_buf, sizeof(err_buf));
                     ERROR("Sniffer: pthread_create() failed: %s\n",
                           err_buf);
                 }
@@ -481,7 +481,7 @@ ta_handler(void *ta)
                         inst->agent);
     if (rc != 0)
     {
-        strerror_r(errno, err_buf, sizeof(err_buf));
+        te_strerror_r(errno, err_buf, sizeof(err_buf));
         ERROR("Sniffer: pthread_create() failed: %s\n", err_buf);
     }
 
@@ -982,7 +982,7 @@ main(int argc, const char *argv[])
     /* Initialize IPC before any servers creation */
     if (ipc_init() != 0)
     {
-        strerror_r(errno, err_buf, sizeof(err_buf));
+        te_strerror_r(errno, err_buf, sizeof(err_buf));
         ERROR("IPC initialization failed: %s\n", err_buf);
         goto exit;
     }
@@ -1032,7 +1032,7 @@ main(int argc, const char *argv[])
     res = pthread_create(&te_thread, NULL, (void *)&te_handler, NULL);
     if (res != 0)
     {
-        strerror_r(errno, err_buf, sizeof(err_buf));
+        te_strerror_r(errno, err_buf, sizeof(err_buf));
         ERROR("Server: pthread_create() failed: %s\n", err_buf);
         goto exit;
     }
@@ -1044,7 +1044,7 @@ main(int argc, const char *argv[])
         (void)fprintf(pid_f, "%d", (int)pid);
         if (fclose(pid_f) != 0)
         {
-            strerror_r(errno, err_buf, sizeof(err_buf));
+            te_strerror_r(errno, err_buf, sizeof(err_buf));
             ERROR("Failed to close PID-file: %s", err_buf);
             /* Try to continue */
         }
@@ -1145,7 +1145,7 @@ main(int argc, const char *argv[])
                              (void *)&ta_handler, (void *)ta_el);
         if (res != 0)
         {
-            strerror_r(errno, err_buf, sizeof(err_buf));
+            te_strerror_r(errno, err_buf, sizeof(err_buf));
             ERROR("Logger(client): pthread_create() failed: %s\n", err_buf);
             goto join_te_srv;
         }
@@ -1159,7 +1159,7 @@ join_te_srv:
     INFO("Joining Logger TEN server\n");
     if (pthread_join(te_thread, NULL) != 0)
     {
-        strerror_r(errno, err_buf, sizeof(err_buf));
+        te_strerror_r(errno, err_buf, sizeof(err_buf));
         ERROR("pthread_join() failed: %s", err_buf);
         result = EXIT_FAILURE;
     }
@@ -1197,7 +1197,7 @@ exit:
         if (ta_el->thread_run &&
             pthread_join(ta_el->thread, NULL) != 0)
         {
-            strerror_r(errno, err_buf, sizeof(err_buf));
+            te_strerror_r(errno, err_buf, sizeof(err_buf));
             ERROR("pthread_join() failed: %s\n", err_buf);
             result = EXIT_FAILURE;
         }
@@ -1209,7 +1209,7 @@ exit:
 
     if ((pid_f != NULL) && (fclose(pid_f) != 0))
     {
-        strerror_r(errno, err_buf, sizeof(err_buf));
+        te_strerror_r(errno, err_buf, sizeof(err_buf));
         ERROR("Failed to close PID-file: %s", err_buf);
         result = EXIT_FAILURE;
     }
@@ -1217,7 +1217,7 @@ exit:
     INFO("Close IPC server '%s'\n", LGR_SRV_NAME);
     if (ipc_close_server(logger_ten_srv) != 0)
     {
-        strerror_r(errno, err_buf, sizeof(err_buf));
+        te_strerror_r(errno, err_buf, sizeof(err_buf));
         ERROR("IPC server '%s' shutdown failed: %s",
               LGR_SRV_NAME, err_buf);
         result = EXIT_FAILURE;
@@ -1225,7 +1225,7 @@ exit:
 
     if (ipc_kill() != 0)
     {
-        strerror_r(errno, err_buf, sizeof(err_buf));
+        te_strerror_r(errno, err_buf, sizeof(err_buf));
         ERROR("IPC termination failed: %s", err_buf);
         result = EXIT_FAILURE;
     }
