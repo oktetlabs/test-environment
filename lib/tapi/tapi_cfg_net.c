@@ -719,10 +719,10 @@ tapi_cfg_net_make_node_rsrc_name(enum net_node_rsrc_type rsrc_type,
             return strdup(CFG_OID_GET_INST_NAME(oid, 2));
 
         case NET_NODE_RSRC_TYPE_PCI_FN:
-            asprintf(&rsrc_name, "pci_fn:%s:%s:%s",
-                     CFG_OID_GET_INST_NAME(oid, 4),
-                     CFG_OID_GET_INST_NAME(oid, 5),
-                     CFG_OID_GET_INST_NAME(oid, 6));
+            te_asprintf(&rsrc_name, "pci_fn:%s:%s:%s",
+                        CFG_OID_GET_INST_NAME(oid, 4),
+                        CFG_OID_GET_INST_NAME(oid, 5),
+                        CFG_OID_GET_INST_NAME(oid, 6));
             return rsrc_name;
 
         case NET_NODE_RSRC_TYPE_UNKNOWN:
