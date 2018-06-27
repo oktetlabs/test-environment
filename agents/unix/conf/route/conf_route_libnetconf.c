@@ -489,16 +489,6 @@ append_routes(netconf_list *nlist, te_string *const str)
         if (family == AF_INET6)
         {
             /*
-             * We see that Neighbour Discovery and Router Discovery add routes
-             * to the unspec table. It is unclear whether it is a sort of
-             * coincidence or a rule. For now, we ignore the unspec table for
-             * IPv6. Maybe the same check should be added for IPv4, but it
-             * works for now, so let it be as it is.
-             */
-            if (route->table == NETCONF_RT_TABLE_UNSPEC)
-                continue;
-
-            /*
              * IPv6 requires a link-local address on every network interface.
              * There is also a corresponding entry in the main routing table.
              * Don't pass link-local routes to prevent Configurator errors.
