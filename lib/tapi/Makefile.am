@@ -10,6 +10,7 @@ include_HEADERS = \
 	tapi_proc.h \
 	tapi_test.h \
 	tapi_test_log.h \
+	tapi_test_behaviour.h \
 	tapi_jmp.h \
 	tapi_test_run_status.h \
 	tapi_sockaddr.h \
@@ -48,7 +49,10 @@ include_HEADERS = \
 	tapi_namespaces.h \
 	tapi_cfg_sys.h \
 	tapi_cfg_local.h \
-	tapi_host_ns.h
+	tapi_host_ns.h \
+	tapi_cfg_modules.h \
+	tapi_cfg_qdisc.h \
+	tapi_cfg_netem.h
 
 lib_LTLIBRARIES = libtapi.la
 
@@ -60,6 +64,7 @@ libtapi_la_SOURCES = \
 	tapi_test_run_status.c \
 	tapi_sockaddr.c \
 	tapi_sockets.c \
+	tapi_test_behaviour.c \
 	tapi_cfg.c \
 	tapi_cfg_local_to_ta.c \
 	tapi_cfg_base.c \
@@ -90,7 +95,10 @@ libtapi_la_SOURCES = \
 	tapi_network.c \
 	tapi_netns.c \
 	tapi_cfg_sys.c \
-	tapi_host_ns.c
+	tapi_host_ns.c \
+	tapi_cfg_modules.c \
+	tapi_cfg_qdisc.c \
+	tapi_cfg_netem.c
 
 install-exec-hook:
 	touch -c -r libtapi.la $(DESTDIR)/$(libdir)/libtapi.*

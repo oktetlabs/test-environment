@@ -17,14 +17,17 @@
 #ifndef __TE_DEFS_H__
 #define __TE_DEFS_H__
 
+#include "te_config.h"
+
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#include <stdbool.h>
+#endif
 #ifdef HAVE_ASSERT_H
 #include <assert.h>
 #endif
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
-#endif
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
 #endif
 #include <limits.h>
 #ifdef HAVE_STRING_H
@@ -36,7 +39,6 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <stdbool.h>
 
 /** Test Environment copyright to be used in applications output */
 #define TE_COPYRIGHT \

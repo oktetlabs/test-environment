@@ -1089,12 +1089,17 @@ dhcpv4_message_capture(const char *ta_name, csap_handle_t dhcp_csap,
     {
         rc = rcf_ta_trrecv_get(ta_name, 0, dhcp_csap,
                                dhcp_pkt_handler, &rcv_pkt, &num);
+        if (rc != 0)
+            return NULL;
+
         sleep(1);
         tv--;
     }
 
     rc = rcf_ta_trrecv_stop(ta_name, 0, dhcp_csap,
                             dhcp_pkt_handler, &rcv_pkt, &num);
+    if (rc != 0)
+        return NULL;
 
     msg = rcv_pkt.dhcp_msg;
 #ifdef HAVE_PTHREAD_H

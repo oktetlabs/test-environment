@@ -112,7 +112,7 @@ te_ta_signature()
     local CC=$2
     { cat ${TE_BASE}/engine/builder/te_functions;  \
         echo -e "\nte_ta_signature_local '$CC'"; } | \
-        ssh $HOST $SHELL -
+        ssh $HOST /bin/bash -
     local RES=$?
     test $RES -ne 0 && exit $RES
     return 0

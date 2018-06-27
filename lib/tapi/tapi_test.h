@@ -37,6 +37,7 @@
 #include "logger_api.h"
 #include "logger_ten.h"
 #include "tapi_jmp.h"
+#include "tapi_test_behaviour.h"
 #include "tapi_test_log.h"
 #include "tapi_test_run_status.h"
 #include "asn_impl.h"
@@ -81,6 +82,14 @@ extern "C" {
 #define TEST_END_SPECIFIC do { } while (0)
 #endif
 
+#ifndef TEST_ON_JMP_DO_IF_SUCCESS
+#define TEST_ON_JMP_DO_IF_SUCCESS do { } while (0)
+#endif
+
+#ifndef TEST_ON_JMP_DO_IF_FAILURE
+#define TEST_ON_JMP_DO_IF_FAILURE do { } while (0)
+#endif
+
 /**
  * Template action to be done on jump in the test.
  */
@@ -89,6 +98,21 @@ extern "C" {
         if (result == EXIT_SUCCESS || result == EXIT_FAILURE) \
             result = (TE_RC_GET_ERROR(jmp_rc) == TE_EOK) ? EXIT_SUCCESS  \
                                                      : EXIT_FAILURE; \
+        if (result == EXIT_SUCCESS)                                  \
+            TEST_ON_JMP_DO_IF_SUCCESS;                               \
+        else if (result == EXIT_FAILURE)                             \
+            TEST_ON_JMP_DO_IF_FAILURE;                               \
+                                                                     \
+                                                                     \
+        /* Behaviour switches handling section */                    \
+        if (TEST_BEHAVIOUR(wait_on_fail))                            \
+        {                                                            \
+            printf("\n\nWe're about to jump to cleanup, "            \
+                   "but tester config kindly asks \n                 \
+                   "us to wait for a key to be pressed. \n\n"        \
+                   "Press any key to continue...\n");                 \
+            getchar();                                               \
+        }                                                            \
         goto cleanup;                                                \
     } while (0)
 
@@ -104,6 +128,20 @@ extern "C" {
     } while (0)
 
 /**
+ * Get bool value of behavoiur switch
+ */
+#define TEST_BEHAVIOUR(name_)                   \
+    (__behaviour. name_)
+
+/**
+ * Macro to add behaviour switches in code that does not call TEST_START. It
+ * should not exist yet it does
+ */
+#define TEST_BEHAVIOUR_DEF \
+    test_behaviour __behaviour; \
+    test_behaviour_get(&__behaviour)
+
+/**
  * The first action of any test @b main() function.
  *
  * Variable @a rc and @a result are defined.
@@ -116,6 +154,7 @@ extern "C" {
 #define TEST_START \
     int         rc;                                                 \
     int         result = EXIT_FAILURE;                              \
+    test_behaviour __behaviour;                                     \
     TEST_START_VARS                                                 \
                                                                     \
     assert(tapi_test_run_status_get() == TE_TEST_RUN_STATUS_OK);    \
@@ -157,6 +196,14 @@ extern "C" {
         srand(te_rand_seed);                                        \
         RING("Pseudo-random seed is %d", te_rand_seed);             \
     }                                                               \
+                                                                    \
+    /*                                                              \
+     * Should happen before TS-specific start so that it            \
+     * impacts the startup procedure                                \
+     */                                                             \
+    test_behaviour_get(&__behaviour);                               \
+    if (TEST_BEHAVIOUR(log_stack))                                  \
+        te_log_stack_init();                                        \
                                                                     \
     TEST_START_SPECIFIC;                                            \
                                                                     \
@@ -215,11 +262,13 @@ cleanup_specific:                                                   \
     do {                                                               \
         int rc_;                                                       \
                                                                        \
+        te_log_stack_reset();                                          \
         if ((rc_ = (expr_)) != 0)                                      \
         {                                                              \
             TEST_FAIL("line %d: %s returns 0x%X (%r), but expected 0", \
                       __LINE__, # expr_, rc_, rc_);                    \
         }                                                              \
+        te_log_stack_reset();                                          \
     } while (0)
 
 /**

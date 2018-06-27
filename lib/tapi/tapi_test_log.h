@@ -24,6 +24,7 @@
 
 #include "te_errno.h"
 #include "logger_api.h"
+#include "te_log_stack.h"
 #include "tapi_jmp.h"
 
 
@@ -55,6 +56,7 @@ extern "C" {
     do {                                                            \
         ERROR("Test Failed in %s, line %d, %s()",                   \
               __FILE__, __LINE__, __FUNCTION__);                    \
+        te_log_stack_dump(TE_LL_ERROR);                             \
         ERROR(fmt);                                                 \
         TEST_STOP;                                                  \
     } while (0)

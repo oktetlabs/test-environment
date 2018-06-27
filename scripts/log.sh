@@ -192,7 +192,7 @@ LOG_XML=tmp_converted_log.xml
 if ! $OUTPUT_HTML ; then
     rgt_conv_opts="${rgt_conv_opts} --no-cntrl-msg"
 fi
-rgt-conv -f "${TE_LOG_RAW}" -o "${LOG_XML}" ${rgt_conv_opts}
+rgt-conv -f "${TE_LOG_RAW}" -o "${LOG_XML}" ${rgt_conv_opts} || exit 1
 if test -e "${LOG_XML}" ; then
     LOG_XML_MERGED=tmp_converted_log_merged.xml
 
@@ -221,7 +221,7 @@ if test -e "${LOG_XML}" ; then
         fi
     else
         rgt-xml2text -f "${LOG_XML_MERGED}" -o "${OUTPUT_LOCATION}" \
-                     ${SNIFF_DETAILED_PACKETS}
+                     ${SNIFF_DETAILED_PACKETS} || exit 1
         if test -e "${OUTPUT_LOCATION}" ; then
             rm "${LOG_XML_MERGED}"
             ${PAGER:-less} "${OUTPUT_LOCATION}"

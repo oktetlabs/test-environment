@@ -1,0 +1,158 @@
+#!/bin/bash
+
+TS_DIR=$PWD
+
+if ! [ -e "${TS_DIR}/scripts" ] ; then
+    TS_DIR="${TS_DIR}/../"
+fi
+
+[ -e "${TS_DIR}/scripts/guess.sh" ] && source "${TS_DIR}/scripts/guess.sh" >/dev/null
+source "${TE_BASE}/scripts/guess.sh" > /dev/null
+source "${TE_BASE}/scripts/lib"
+
+
+[ -e "${TS_DIR}/.bublikrc" ] && source "${TS_DIR}/.bublikrc"
+
+help () {
+    echo "Publish logs to the given location over ssh and then import them into bublik."
+    echo ""
+    echo "        --help      : this help"
+    echo "        --logs <v>  : Logs location"
+    echo "                      (default=${TS_DIR})"
+    echo "    --logs-url <v>  : URL for the logs (useful in case of import)"
+    echo "  --target-dir <v>  : where to put the logs on the host"
+    echo "                      (default=${BUBLIK_LOGS_STASH_DIR})"
+    echo " --target-host <v>  : on which host to put the logs"
+    echo "                      (default=${BUBLIK_LOGS_STASH_HOST})"
+    echo "   --stash-url <v>  : URL where the logs are located"
+    echo "                      (default=${BUBLIK_LOGS_STASH_URL})"
+    echo " --static-html      : Generate static HTML logs. Useful if you publish w/o "
+    echo "                      automatic generation"
+    echo "     --no-copy      : Don't copy the logs (cause they're already there?)"
+    echo "   --no-import      : Don't import the session into bublik"
+    echo " --bublik-base <v>  : Bublik directory"
+    echo "                      (default=${BUBLIK_BASE})"
+    echo " --bublik-host <v>  : Host running bublik (default=${BUBLIK_HOST})"
+    echo "        --name      : Log name, default=${LOGS_NAME}"
+    echo "       --debug      : "
+}
+
+# Behaviour switchers
+do_import=true
+do_copy=true
+do_static_html=true
+
+# Defaults
+LOGS_LOCATION=${TS_DIR}
+LOGS_BUNDLE_NAME=${LOGS_BUNDLE_NAME:-raw_log_bundle.tpxz}
+LOGS_META_NAME=${LOGS_META_NAME:-meta_data.txt} # should be in sync with bublik
+LOGS_DIR_NAME=logs_$(date +%Y.%m.%d)
+LOGS_NAME=run_$(date +%H.%M)
+LOGS_URL=""
+while [ -n "$1" ] ; do
+    case "$1" in
+        --help)
+            help
+            exit 0
+            ;;
+        --logs)
+            LOGS_LOCATION=$2
+            shift
+            ;;
+        --logs-url)
+            LOGS_URL=$2
+            shift
+            ;;
+        --target-dir)
+            BUBLIK_LOGS_STASH_DIR=$2
+            shift
+            ;;
+        --target-host)
+            BUBLIK_LOGS_STASH_HOST=$2
+            shift
+            ;;
+        --stash-url)
+            BUBLIK_LOGS_STASH_URL=$2
+            shift
+            ;;
+        --static-html)
+            do_static_html=true
+            ;;
+        --no-copy)
+            do_copy=false
+            ;;
+        --no-import)
+            do_import=false
+            ;;
+        --bublik-base)
+            BUBLIK_BASE=$2
+            shift
+            ;;
+        --bublik-host)
+            BUBLIK_HOST=$2
+            shift
+            ;;
+        --name)
+            LOGS_NAME=$2
+            shift
+            ;;
+        --debug)
+            TRY_DEBUG=true
+            shift
+            ;;
+        *)
+            echo "Unknown option '$1'" >&2
+            help
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+[ -z "$LOGS_URL" ] && LOGS_URL="${BUBLIK_LOGS_STASH_URL}/${LOGS_DIR_NAME}/${LOGS_NAME}"
+
+if $do_copy ; then
+    try enter ${LOGS_LOCATION}
+    # check that all files exist
+    [ -e "tmp_raw_log" ] || fail "Don't see tmp_raw_log in ${LOGS_LOCATION}"
+    if ! [ -e "${TS_DIR}/scripts/meta.sh" -o -e "meta_data.txt" ] ; then
+        fail "We need either ./scripts/meta.sh in the TS or meta_data.txt"
+    fi
+
+    echo "${green}Repacking the log...  ${reset}"
+    try te_repack_raw_logs --log-name=tmp_raw_log .
+    [ -e ${LOGS_BUNDLE_NAME} ] || fail "No ${LOGS_BUNDLE_NAME}"
+    echo "${green}--> Repacking OK${reset}"
+
+    if $do_static_html ; then
+        [ -e "./scripts/html-log.sh" ] && html_log="./scripts/html-log.sh"
+        [ -e "./html-log.sh" ] && html_log="./html-log.sh"
+
+        rm -rf html/
+        try ${html_log}
+    fi
+
+    echo "${green}Generating meta info... ${reset}"
+    if ! [ -e ${LOGS_META_NAME} ] ; then
+        ${TS_DIR}/scripts/meta.sh > ${LOGS_META_NAME}
+        echo "LOGS ${LOGS_URL}"
+    fi
+    echo "${green}--> Meta generated${reset}"
+
+    echo "${green}Coping the logs${reset}"
+    # copy everything
+    try ssh ${BUBLIK_LOGS_STASH_HOST} \
+        mkdir -p ${BUBLIK_LOGS_STASH_DIR}/${LOGS_DIR_NAME}/${LOGS_NAME}
+    try scp ${LOGS_META_NAME} ${LOGS_BUNDLE_NAME} \
+        ${BUBLIK_LOGS_STASH_HOST}:${BUBLIK_LOGS_STASH_DIR}/${LOGS_DIR_NAME}/${LOGS_NAME}/
+    $do_static_html && try scp -r html/ ${BUBLIK_LOGS_STASH_HOST}:${BUBLIK_LOGS_STASH_DIR}/${LOGS_DIR_NAME}/${LOGS_NAME}/
+    echo "${green}--> Files copied into ${BUBLIK_LOGS_STASH_HOST}:${BUBLIK_LOGS_STASH_DIR}/${LOGS_DIR_NAME}/${LOGS_NAME}/${reset}"
+fi
+
+echo "${green}HTML Logs: ${LOGS_URL}{reset}"
+
+if $do_publish ; then
+    echo "${green}Importing logs into bublik... ${reset}"
+    try ssh ${BUBLIK_HOST} /bin/bash -c "\"export PATH=$PATH ; cd ${BUBLIK_BASE} && source .env/bin/activate && ./manage.py importsessions ${LOGS_URL}\""
+    echo "${green}Published, look at your bublik main page${reset}"
+fi

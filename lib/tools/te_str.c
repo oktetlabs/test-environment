@@ -170,3 +170,53 @@ te_strtoul(const char *str, int base, unsigned long int *value)
 
     return 0;
 }
+
+te_errno
+te_strtol(const char *str, int base, long int *result)
+{
+    char     *endptr = NULL;
+    te_errno  rc = 0;
+    int       saved_errno = errno;
+    int       new_errno = 0;
+
+    if (str == NULL || result == NULL)
+    {
+        ERROR("%s(): invalid arguments", __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    errno = 0;
+    *result = strtol(str, &endptr, base);
+    new_errno = errno;
+    errno = saved_errno;
+
+    if ((new_errno == ERANGE && *result == LONG_MAX) ||
+        (new_errno != 0 && *result == 0))
+    {
+        rc = te_rc_os2te(new_errno);
+        ERROR("%s(): strtol() failed with errno %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    if (endptr == NULL || *endptr != '\0' || endptr == str)
+    {
+        ERROR("%s(): failed to parse '%s'", __FUNCTION__, str);
+        return TE_EINVAL;
+    }
+
+    return 0;
+}
+
+te_errno
+te_strtol_bool(const char *input, te_bool *bresult)
+{
+    long int res;
+
+    if (te_strtol(input, 10, &res) != 0)
+        return TE_EINVAL;
+
+    /* explicitly check for == cause bool is 0 or 1 only! */
+    *bresult = (res == 0) ? FALSE : TRUE;
+
+    return 0;
+}
