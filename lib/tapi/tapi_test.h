@@ -37,6 +37,7 @@
 #include "logger_api.h"
 #include "logger_ten.h"
 #include "tapi_jmp.h"
+#include "tapi_test_behaviour.h"
 #include "tapi_test_log.h"
 #include "tapi_test_run_status.h"
 #include "asn_impl.h"
@@ -116,6 +117,20 @@ extern "C" {
     } while (0)
 
 /**
+ * Get bool value of behavoiur switch
+ */
+#define TEST_BEHAVIOUR(name_)                   \
+    (__behaviour. name_)
+
+/**
+ * Macro to add behaviour switches in code that does not call TEST_START. It
+ * should not exist yet it does
+ */
+#define TEST_BEHAVIOUR_DEF \
+    test_behaviour __behaviour; \
+    test_behaviour_get(&__behaviour)
+
+/**
  * The first action of any test @b main() function.
  *
  * Variable @a rc and @a result are defined.
@@ -128,6 +143,7 @@ extern "C" {
 #define TEST_START \
     int         rc;                                                 \
     int         result = EXIT_FAILURE;                              \
+    test_behaviour __behaviour;                                     \
     TEST_START_VARS                                                 \
                                                                     \
     assert(tapi_test_run_status_get() == TE_TEST_RUN_STATUS_OK);    \
@@ -169,6 +185,12 @@ extern "C" {
         srand(te_rand_seed);                                        \
         RING("Pseudo-random seed is %d", te_rand_seed);             \
     }                                                               \
+                                                                    \
+    /*                                                              \
+     * Should happen before TS-specific start so that it            \
+     * impacts the startup procedure                                \
+     */                                                             \
+    test_behaviour_get(&__behaviour);                               \
                                                                     \
     TEST_START_SPECIFIC;                                            \
                                                                     \

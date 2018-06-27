@@ -46,6 +46,7 @@ headers += files(
     'tapi_sockets.h',
     'tapi_test.h',
     'tapi_test_log.h',
+    'tapi_test_behaviour.h',
     'tapi_test_run_status.h',
 )
 sources += files(
@@ -87,6 +88,7 @@ sources += files(
     'tapi_sniffer.c',
     'tapi_sockaddr.c',
     'tapi_sockets.c',
+    'tapi_test_behaviour.c',
     'tapi_test_run_status.c',
     'test_params.c',
     'verdict.c',
