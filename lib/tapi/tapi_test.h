@@ -202,6 +202,8 @@ extern "C" {
      * impacts the startup procedure                                \
      */                                                             \
     test_behaviour_get(&__behaviour);                               \
+    if (TEST_BEHAVIOUR(log_stack))                                  \
+        te_log_stack_init();                                        \
                                                                     \
     TEST_START_SPECIFIC;                                            \
                                                                     \
