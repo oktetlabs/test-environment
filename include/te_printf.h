@@ -148,6 +148,18 @@ te_sprintf(const char *fmt, ...)
     return c;
 }
 
+/** Wrapper around strerror_r version that does not ignore strerror_r return
+ * code. It's a bit crazy, cause latest GCC complains that it should not be
+ * ignored cause it thinks that in case we're using GNU extension it will
+ * store pointed to an important message about errno conversion failure. */
+static inline char *
+te_strerror_r(int in_errno, char *buf, size_t buf_len)
+{
+    char *ret = strerror_r(in_errno, buf, buf_len);
+
+    return ret;
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
