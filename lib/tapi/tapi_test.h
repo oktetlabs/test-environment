@@ -102,6 +102,17 @@ extern "C" {
             TEST_ON_JMP_DO_IF_SUCCESS;                               \
         else if (result == EXIT_FAILURE)                             \
             TEST_ON_JMP_DO_IF_FAILURE;                               \
+                                                                     \
+                                                                     \
+        /* Behaviour switches handling section */                    \
+        if (TEST_BEHAVIOUR(wait_on_fail))                            \
+        {                                                            \
+            printf("\n\nWe're about to jump to cleanup, "            \
+                   "but tester config kindly asks \n                 \
+                   "us to wait for a key to be pressed. \n\n"        \
+                   "Press any key to continue...\n");                 \
+            getchar();                                               \
+        }                                                            \
         goto cleanup;                                                \
     } while (0)
 
