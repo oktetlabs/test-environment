@@ -96,6 +96,8 @@ te_vasprintf(char **strp, const char *fmt, va_list ap)
 {
     va_list aux;
     int len;
+    char *buf;
+    int ret;
 
     /* Duplicate va_list, because vprintf functions modify it */
     va_copy(aux, ap);
@@ -108,10 +110,16 @@ te_vasprintf(char **strp, const char *fmt, va_list ap)
     len++;
 
     /* Allocate buffer with calculated length */
-    if ((*strp = malloc(len)) == NULL)
+    if ((buf = malloc(len)) == NULL)
         return -1;
 
-    return vsnprintf(*strp, len, fmt, ap);
+    ret = vsnprintf(buf, len, fmt, ap);
+    if (ret < 0)
+        free(buf);
+    else
+        *strp = buf;
+
+    return ret;
 }
 #else
 static inline int
