@@ -85,7 +85,7 @@
 #error Unable to print socklen_t integers
 #endif
 
-#if defined (__QNX__)
+#if defined (__QNX__) || !defined(_GNU_SOURCE)
 #define TE_USE_SPECIFIC_ASPRINTF 1
 #endif /* __QNX__ */
 
