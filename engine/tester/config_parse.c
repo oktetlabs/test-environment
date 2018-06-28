@@ -1472,7 +1472,7 @@ alloc_and_get_var_arg(xmlNodePtr node, te_bool is_var,
 
             val = v->plain;
             v->global = TRUE;
-            asprintf(&v->name, "VAR.%s", p->name);
+            te_asprintf(&v->name, "VAR.%s", p->name);
             te_var_name2env(v->name, env_name, sizeof(env_name));
         }
         p->global = TRUE;
