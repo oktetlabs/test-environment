@@ -101,8 +101,11 @@ te_vasprintf(char **strp, const char *fmt, va_list ap)
     va_copy(aux, ap);
 
     /* Calculate length of formatted string */
-    if ((len = vsnprintf(NULL, 0, fmt, aux) + 1) <= 0)
+    if ((len = vsnprintf(NULL, 0, fmt, aux)) < 0)
         return len;
+
+    /* Add space for \0 */
+    len++;
 
     /* Allocate buffer with calculated length */
     if ((*strp = malloc(len)) == NULL)
