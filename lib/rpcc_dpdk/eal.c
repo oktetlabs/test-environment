@@ -83,7 +83,7 @@ append_arg(int *argc_p, char ***argv_p, const char *fmt, ...)
     argv = realloc(argv, (argc + 1) * sizeof(*argv));
 
     va_start(ap, fmt);
-    vasprintf(&(argv[argc]), fmt, ap);
+    te_vasprintf(&(argv[argc]), fmt, ap);
     va_end(ap);
 
     *argc_p = argc + 1;
