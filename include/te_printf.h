@@ -105,7 +105,7 @@ te_vasprintf(char **strp, const char *fmt, va_list ap)
         return len;
 
     /* Allocate buffer with calculated length */
-    if ((*strp = calloc(1, len)) == NULL)
+    if ((*strp = malloc(len)) == NULL)
         return -1;
 
     return vsnprintf(*strp, len, fmt, ap);
