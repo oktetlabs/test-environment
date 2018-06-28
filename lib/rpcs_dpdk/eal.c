@@ -19,6 +19,7 @@
 #endif
 
 #include "rte_config.h"
+#include "rte_version.h"
 #include "rte_eal.h"
 
 #include "logger_api.h"
@@ -88,3 +89,12 @@ TARPC_FUNC(rte_eal_process_type, {},
             break;
     }
 })
+
+TARPC_FUNC_STANDALONE(dpdk_get_version, {},
+{
+    out->year = RTE_VER_YEAR;
+    out->month = RTE_VER_MONTH;
+    out->minor = RTE_VER_MINOR;
+    out->release = RTE_VER_RELEASE;
+})
+

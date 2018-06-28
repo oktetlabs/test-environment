@@ -1665,6 +1665,35 @@ prepare_interfaces_pci_fn(tapi_env_if *iface, cfg_net_node_t *node)
 }
 
 /**
+ * Prepare RTE vdev interface data in accordance with bound
+ * network configuration.
+ *
+ * @param iface Environment interface descriptor to fill in
+ * @param node  Bound network configuration node
+ *
+ * @return Status code.
+ */
+static te_errno
+prepare_interfaces_rte_vdev(tapi_env_if *iface, cfg_net_node_t *node)
+{
+    struct if_nameindex *ini = &iface->if_info;
+    cfg_val_type  val_type;
+    char         *node_val = NULL;
+    te_errno      rc = 0;
+
+    val_type = CVT_STRING;
+    rc = cfg_get_instance(node->handle, &val_type, &node_val);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_get_ith_inst_name(node_val, 3, &ini->if_name);
+
+    free(node_val);
+
+    return rc;
+}
+
+/**
  * Prepare required interfaces data in accordance with bound
  * network configuration.
  *
@@ -1698,6 +1727,10 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
 
                 case NET_NODE_RSRC_TYPE_PCI_FN:
                     rc = prepare_interfaces_pci_fn(p, node);
+                    break;
+
+                case NET_NODE_RSRC_TYPE_RTE_VDEV:
+                    rc = prepare_interfaces_rte_vdev(p, node);
                     break;
 
                 default:

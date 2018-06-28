@@ -31,7 +31,7 @@ test_behaviour_get(test_behaviour *behaviour)
             CHECK_RC(te_strtol_bool(s, &(behaviour-> name_)));           \
             free(s);                                                     \
         }                                                                \
-        else if (rc == TE_RC_GET_ERROR(rc) == TE_ENOENT)                 \
+        else if (TE_RC_GET_ERROR(rc) == TE_ENOENT)                       \
         {                                                                \
             WARN("'%s' switch is not present in the /local subtree",     \
                  #name_);                                                \

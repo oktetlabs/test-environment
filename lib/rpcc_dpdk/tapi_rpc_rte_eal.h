@@ -18,6 +18,9 @@
 #include "rcf_rpc.h"
 #include "te_rpc_types.h"
 
+#include "tapi_env.h"
+
+#define TAPI_RTE_VERSION_NUM(a,b,c,d) ((a) << 24 | (b) << 16 | (c) << 8 | (d))
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,6 +66,18 @@ extern const char *tarpc_rte_proc_type_t2str(enum tarpc_rte_proc_type_t val);
  */
 extern enum tarpc_rte_proc_type_t
     rpc_rte_eal_process_type(rcf_rpc_server *rpcs);
+
+/**
+ * Get DPDK version (4 components combined in a single number).
+ *
+ * @note WARNING: This RPC is a compelled elaboration to cope
+ *                with drastic differences amongst DPDK versions.
+ *                The engineer has to think meticulously before
+ *                attempting to use this RPC for any new code.
+ *
+ * @return DPDK version.
+ */
+extern int rpc_dpdk_get_version(rcf_rpc_server *rpcs);
 
 /**@} <!-- END te_lib_rpc_rte_eal --> */
 

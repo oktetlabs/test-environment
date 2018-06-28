@@ -184,12 +184,19 @@ tarpc_rte_eth_rxconf2str(te_log_buf *tlbp,
         return te_log_buf_get(tlbp);
     }
 
-    te_log_buf_append(tlbp, "{ rx_thresh=");
+    te_log_buf_append(tlbp, "{ ");
+
+    te_log_buf_append(tlbp, "rx_thresh=");
     tarpc_rte_eth_thresh2str(tlbp, &rxconf->rx_thresh);
     te_log_buf_append(tlbp, ", rx_free_thresh=%u, rx_drop_en=%u, "
-                      "rx_deferred_start=%u }",
+                      "rx_deferred_start=%u",
                       rxconf->rx_free_thresh, rxconf->rx_drop_en,
                       rxconf->rx_deferred_start);
+    te_log_buf_append(tlbp, ", offloads=");
+    tarpc_rte_eth_rx_offloads2str(tlbp, rxconf->offloads);
+
+    te_log_buf_append(tlbp, " }");
+
     return te_log_buf_get(tlbp);
 }
 
@@ -206,6 +213,7 @@ tarpc_rte_eth_txq_flags2str(te_log_buf *tlbp, uint32_t txq_flags)
         TARPC_RTE_ETH_TXQ_FLAGS_BIT2STR(NOXSUMSCTP),
         TARPC_RTE_ETH_TXQ_FLAGS_BIT2STR(NOXSUMUDP),
         TARPC_RTE_ETH_TXQ_FLAGS_BIT2STR(NOXSUMTCP),
+        TARPC_RTE_ETH_TXQ_FLAGS_BIT2STR(IGNORE),
 #undef TARPC_RTE_ETH_TXQ_FLAGS_BIT2STR
         { 0, NULL }
     };
@@ -223,14 +231,21 @@ tarpc_rte_eth_txconf2str(te_log_buf *tlbp,
         return te_log_buf_get(tlbp);
     }
 
-    te_log_buf_append(tlbp, "{ tx_thresh=");
+    te_log_buf_append(tlbp, "{ ");
+
+    te_log_buf_append(tlbp, "tx_thresh=");
     tarpc_rte_eth_thresh2str(tlbp, &txconf->tx_thresh);
     te_log_buf_append(tlbp, ", tx_rs_thresh=%u, tx_free_thresh=%u",
                       txconf->tx_rs_thresh, txconf->tx_free_thresh);
     te_log_buf_append(tlbp, ", txq_flags=");
     tarpc_rte_eth_txq_flags2str(tlbp, txconf->txq_flags);
-    te_log_buf_append(tlbp, ", tx_deferred_start=%u }",
+    te_log_buf_append(tlbp, ", tx_deferred_start=%u",
                       txconf->tx_deferred_start);
+    te_log_buf_append(tlbp, ", offloads=");
+    tarpc_rte_eth_tx_offloads2str(tlbp, txconf->offloads);
+
+    te_log_buf_append(tlbp, " }");
+
     return te_log_buf_get(tlbp);
 }
 
@@ -422,6 +437,9 @@ tarpc_rte_eth_rxmode_flags2str(te_log_buf *tlbp, uint16_t flags)
         TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(HW_STRIP_CRC),
         TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(ENABLE_SCATTER),
         TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(ENABLE_LRO),
+        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(HW_TIMESTAMP),
+        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(SECURITY),
+        TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR(IGNORE_OFFLOAD_BITFIELD),
 #undef TARPC_RTE_DEV_RXMODE_FLAG_BIT2STR
         { 0, NULL }
     };
@@ -437,8 +455,10 @@ tarpc_rte_eth_rxmode2str(te_log_buf *tlbp,
 
     tarpc_rte_eth_rx_mq_mode2str(tlbp, rxconf->mq_mode);
     te_log_buf_append(tlbp, ", max_rx_pkt_len=%u", rxconf->max_rx_pkt_len);
-    te_log_buf_append(tlbp, ", split_hdr_size=%u, flags=",
-                      rxconf->split_hdr_size);
+    te_log_buf_append(tlbp, ", split_hdr_size=%u", rxconf->split_hdr_size);
+    te_log_buf_append(tlbp, ", offloads=");
+    tarpc_rte_eth_rx_offloads2str(tlbp, rxconf->offloads);
+    te_log_buf_append(tlbp, ", flags=");
     tarpc_rte_eth_rxmode_flags2str(tlbp, rxconf->flags);
 
     te_log_buf_append(tlbp, " }");
@@ -497,6 +517,8 @@ tarpc_rte_eth_txmode2str(te_log_buf *tlbp,
     te_log_buf_append(tlbp, "{ ");
 
     tarpc_rte_eth_tx_mq_mode2str(tlbp, txconf->mq_mode);
+    te_log_buf_append(tlbp, ", offloads=");
+    tarpc_rte_eth_tx_offloads2str(tlbp, txconf->offloads);
     te_log_buf_append(tlbp, ", pvid=%u, flags=", txconf->pvid);
     tarpc_rte_eth_txmode_flags2str(tlbp, txconf->flags);
 
@@ -1786,24 +1808,6 @@ rpc_rte_eth_tx_queue_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
     te_log_buf_free(tlbp);
 
     RETVAL_ZERO_INT(rte_eth_tx_queue_info_get, out.retval);
-}
-
-uint8_t
-rpc_rte_eth_dev_count(rcf_rpc_server *rpcs)
-{
-    tarpc_rte_eth_dev_count_in   in;
-    tarpc_rte_eth_dev_count_out  out;
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
-
-    rcf_rpc_call(rpcs, "rte_eth_dev_count", &in, &out);
-
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_count, "", "%hu", out.retval);
-
-    TAPI_RPC_OUT(rte_eth_dev_count, FALSE);
-
-    return out.retval;
 }
 
 int

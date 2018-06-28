@@ -1060,10 +1060,10 @@ TARPC_FUNC(bind, {},
 te_bool
 check_port_is_free(uint16_t port)
 {
-    int fd = socket(PF_INET, SOCK_STREAM, 0);
+    int fd = socket(PF_INET6, SOCK_STREAM, 0);
     int rc;
 
-    struct sockaddr_in addr;
+    struct sockaddr_in6 addr;
 
     if (fd < 0)
     {
@@ -1072,8 +1072,8 @@ check_port_is_free(uint16_t port)
     }
 
     memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
+    addr.sin6_family = AF_INET6;
+    addr.sin6_port = htons(port);
     rc = bind(fd, SA(&addr), sizeof(addr));
     if (rc != 0)
     {
@@ -1082,7 +1082,7 @@ check_port_is_free(uint16_t port)
     }
 
     close(fd);
-    fd = socket(PF_INET, SOCK_DGRAM, 0);
+    fd = socket(PF_INET6, SOCK_DGRAM, 0);
     if (fd < 0)
     {
         ERROR("Failed to create UDP socket");

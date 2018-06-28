@@ -27,10 +27,21 @@ struct tarpc_rte_eth_conf *
 tapi_rpc_rte_eth_make_eth_conf(rcf_rpc_server *rpcs, uint16_t port_id,
                                struct tarpc_rte_eth_conf *eth_conf)
 {
+    char dev_name[RPC_RTE_ETH_NAME_MAX_LEN];
+    char vdev_prefix[] = "net_";
+    int ret = 0;
+
     UNUSED(rpcs);
     UNUSED(port_id);
 
     memset(eth_conf, 0, sizeof(*eth_conf));
+
+    ret = rpc_rte_eth_dev_get_name_by_port(rpcs, port_id, dev_name);
+    if (ret != 0)
+        return NULL;
+
+    if (strncmp(dev_name, vdev_prefix, strlen(vdev_prefix)) == 0)
+        return eth_conf;
 
     eth_conf->rxmode.flags |= (1 << TARPC_RTE_ETH_RXMODE_HW_STRIP_CRC_BIT);
 
@@ -52,10 +63,27 @@ te_errno
 tapi_rpc_add_mac_as_octstring2kvpair(rcf_rpc_server *rpcs, uint16_t port_id,
                                      te_kvpair_h *head, const char *name)
 {
-    struct tarpc_ether_addr     mac_addr;
-    te_errno                    rc;
+    struct tarpc_ether_addr mac_addr_cmp;
+    struct tarpc_ether_addr mac_addr;
+    te_errno                rc;
 
     rpc_rte_eth_macaddr_get(rpcs, port_id, &mac_addr);
+
+    memset(&mac_addr_cmp, 0, sizeof(mac_addr_cmp));
+    if (memcmp(&mac_addr, &mac_addr_cmp, sizeof(mac_addr_cmp)) == 0)
+    {
+        struct tarpc_rte_eth_conf ec;
+        int                       ret;
+
+        memset(&ec, 0, sizeof(ec));
+
+        ret = rpc_rte_eth_dev_configure(rpcs, port_id, 1, 1, &ec);
+        if (ret != 0)
+            return TE_RC(TE_TAPI, -ret);
+
+        rpc_rte_eth_macaddr_get(rpcs, port_id, &mac_addr);
+        rpc_rte_eth_dev_close(rpcs, port_id);
+    }
 
     rc = te_kvpair_add(head, name, "'%02x%02x%02x%02x%02x%02x'H",
                        mac_addr.addr_bytes[0], mac_addr.addr_bytes[1],

@@ -410,11 +410,6 @@ extern int rpc_rte_eth_tx_queue_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
                                          struct tarpc_rte_eth_txq_info *qinfo);
 
 /**
- * @b rte_eth_dev_count() RPC.
- */
-extern uint8_t rpc_rte_eth_dev_count(rcf_rpc_server *rpcs);
-
-/**
  * @b rte_eth_dev_attach() RPC
  *
  * @param[in]  devargs A string describing the new device to be attached

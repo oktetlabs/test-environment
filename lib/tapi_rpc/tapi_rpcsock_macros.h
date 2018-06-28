@@ -236,7 +236,8 @@
                 if (rpc_fstat((rpcs_), (sockd_), &buf) != -1 ||     \
                     RPC_ERRNO(rpcs_) != RPC_EBADF)                  \
                 {                                                   \
-                    ERROR_VERDICT("FD is not closed.");             \
+                    if ((rpcs_)->timed_out == FALSE)                \
+                        ERROR_VERDICT("FD is not closed.");         \
                     MACRO_TEST_ERROR;                               \
                 }                                                   \
             }                                                       \
