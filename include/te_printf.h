@@ -158,7 +158,21 @@ te_sprintf(const char *fmt, ...)
 static inline char *
 te_strerror_r(int in_errno, char *buf, size_t buf_len)
 {
-    char *ret = strerror_r(in_errno, buf, buf_len);
+    char *ret;
+
+#if defined(_GNU_SOURCE) || (_POSIX_C_SOURCE < 200112L)
+    ret = strerror_r(in_errno, buf, buf_len);
+#else
+    if (strerror_r(in_errno, buf, buf_len) == 0)
+    {
+        ret = buf;
+    }
+    else
+    {
+        (void)snprintf(buf, buf_len, "Unknown errno %d", in_errno);
+        ret = buf;
+    }
+#endif
 
     return ret;
 }
