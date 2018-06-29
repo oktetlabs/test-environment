@@ -880,15 +880,16 @@ destroy_arp_session(tapi_tcp_connection_t *conn_descr)
 
 #endif
 
-
-int
-tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
-                         const struct sockaddr *local_addr,
-                         const struct sockaddr *remote_addr,
-                         const char *local_iface,
-                         const uint8_t *local_mac,
-                         const uint8_t *remote_mac,
-                         int window, tapi_tcp_handler_t *handler)
+/* See description in tapi_tcp.h */
+te_errno
+tapi_tcp_create_conn(const char *agt,
+                     const struct sockaddr *local_addr,
+                     const struct sockaddr *remote_addr,
+                     const char *local_iface,
+                     const uint8_t *local_mac,
+                     const uint8_t *remote_mac,
+                     int window,
+                     tapi_tcp_handler_t *handler)
 {
     int rc;
     int syms;
@@ -1098,10 +1099,6 @@ tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
                                conn_descr->rcv_csap, syn_pattern,
                                TAD_TIMEOUT_INF, 0, RCF_TRRECV_PACKETS);
     CHECK_ERROR("%s(): failed for rcv_csap %r", __FUNCTION__, rc);
-    /* send SYN - if we are client */
-
-    if (mode == TAPI_TCP_CLIENT)
-        conn_send_syn(conn_descr);
 
 #undef CHECK_ERROR
 
@@ -1115,6 +1112,43 @@ cleanup:
         asn_free_value(arp_pattern);
     asn_free_value(syn_pattern);
     return TE_RC(TE_TAPI, rc);
+}
+
+/* See description in tapi_tcp.h */
+te_errno
+tapi_tcp_start_conn(tapi_tcp_handler_t handler,
+                    tapi_tcp_mode_t mode)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    if (mode != TAPI_TCP_CLIENT)
+        return 0;
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    return conn_send_syn(conn_descr);
+}
+
+/* See description in tapi_tcp.h */
+te_errno
+tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
+                         const struct sockaddr *local_addr,
+                         const struct sockaddr *remote_addr,
+                         const char *local_iface,
+                         const uint8_t *local_mac,
+                         const uint8_t *remote_mac,
+                         int window, tapi_tcp_handler_t *handler)
+{
+    te_errno rc;
+
+    rc = tapi_tcp_create_conn(agt, local_addr, remote_addr,
+                              local_iface, local_mac, remote_mac,
+                              window, handler);
+    if (rc != 0)
+        return rc;
+
+    return tapi_tcp_start_conn(*handler, mode);
 }
 
 /* See description in tapi_tcp.h */

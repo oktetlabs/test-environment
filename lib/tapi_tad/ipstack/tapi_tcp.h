@@ -568,6 +568,56 @@ typedef int tapi_tcp_handler_t;
 #define TAPI_TCP_ZERO_WINDOW -1
 
 /**
+ * Initialize TCP connection internal state. This method does not
+ * start connection establishing. Use @b tapi_tcp_start_conn()
+ * and @b tapi_tcp_wait_open() for establishing connection.
+ *
+ * Local IP address should be fake, not registered on host with TA,
+ * because otherwise OS will respond to TCP packets too.
+ * Local MAC address may be fake, and it is better to use fake one,
+ * because OS sometimes may respond with ICMP messages to IP packets
+ * which are received on its Ethernet device but have foreign IP
+ * destination address.
+ *
+ * If local MAC address is fake, Ethernet device will be turned to
+ * promiscuous mode.
+ *
+ * @param agt           TA name.
+ * @param local_addr    Local socket address.
+ * @param remote_addr   Remote socket address.
+ * @param local_iface   Local interface name.
+ * @param local_mac     Local MAC address.
+ * @param remote_mac    Remote MAC address.
+ * @param window        Window size, or zero (@c TAPI_TCP_DEF_WINDOW)
+ *                      to use default window size. To specify zero
+ *                      window size, pass @c TAPI_TCP_ZERO_WINDOW.
+ * @param handler       Where to save TAPI handler of created TCP
+ *                      connection.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tcp_create_conn(const char *agt,
+                                     const struct sockaddr *local_addr,
+                                     const struct sockaddr *remote_addr,
+                                     const char *local_iface,
+                                     const uint8_t *local_mac,
+                                     const uint8_t *remote_mac,
+                                     int window,
+                                     tapi_tcp_handler_t *handler);
+
+/**
+ * Start TCP connection establishing.
+ *
+ * @param handler     TAPI handler of TCP connection.
+ * @param mode        Connection establishment mode. If @c TAPI_TCP_CLIENT,
+ *                    @c SYN will be sent.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tcp_start_conn(tapi_tcp_handler_t handler,
+                                    tapi_tcp_mode_t mode);
+
+/**
  * Initialize process for open TCP connection.
  * This method does not blocks, only sends SYN (in client mode) 
  * or SYN-ACK (in server mode). Use 'tapi_tcp_wait_open' for wait 
@@ -601,7 +651,8 @@ typedef int tapi_tcp_handler_t;
  *
  * @return Status code
  */
-extern int tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
+extern te_errno tapi_tcp_init_connection(
+                                    const char *agt, tapi_tcp_mode_t mode,
                                     const struct sockaddr *local_addr, 
                                     const struct sockaddr *remote_addr, 
                                     const char *local_iface,
