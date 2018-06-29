@@ -1185,6 +1185,49 @@ extern int tapi_tcp_wait_packet(tapi_tcp_handler_t handler, int timeout);
 extern int tapi_tcp_get_packets(tapi_tcp_handler_t handler);
 
 /**
+ * Enable or disable TCP timestamp option for emulated TCP connection.
+ *
+ * @param handler     TAPI TCP connection handler.
+ * @param enable      Whether to enable or disable timestamp.
+ * @param start_time  If @p enable is @c TRUE, this is the start value
+ *                    for TCP timestamp. Each new TCP timestamp will
+ *                    be computed as this value + number of milliseconds
+ *                    since the moment of time when this function was
+ *                    called.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tcp_conn_enable_ts(tapi_tcp_handler_t handler,
+                                        te_bool enable,
+                                        uint32_t start_value);
+
+/**
+ * Get current status of TCP timestamp option in a given TCP
+ * connection emulation.
+ *
+ * @param handler         TAPI TCP connection handler.
+ * @param enabled         Whether TCP timestamp is enabled. Other
+ *                        parameters are filled only if this is @c TRUE.
+ * @param dst_enabled     Whether peer sends TCP timestamp. If peer did
+ *                        not sent TCP timestamp in its first packet,
+ *                        we will not send it too.
+ * @param ts_value        Current TCP timestamp value (such that
+ *                        would be used if a packet is sent now).
+ * @param ts_echo         Timestamp echo-reply to be used in
+ *                        the next packet.
+ * @param last_ts_echoed  Timestamp echo-reply sent in the last
+ *                        packet.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tcp_conn_get_ts(tapi_tcp_handler_t handler,
+                                     te_bool *enabled,
+                                     te_bool *dst_enabled,
+                                     uint32_t *ts_value,
+                                     uint32_t *ts_echo,
+                                     uint32_t *last_ts_echoed);
+
+/**
  * Get TCP timestamp option parameters.
  *
  * @param val       Pointer to ASN value which stores either whole network
@@ -1194,7 +1237,7 @@ extern int tapi_tcp_get_packets(tapi_tcp_handler_t handler);
  *
  * @return Status code.
  */
-extern te_errno tapi_tcp_get_ts_opt(asn_value *val,
+extern te_errno tapi_tcp_get_ts_opt(const asn_value *val,
                                     uint32_t *ts_value, uint32_t *ts_echo);
 
 /**
@@ -1209,6 +1252,18 @@ extern te_errno tapi_tcp_get_ts_opt(asn_value *val,
  */
 extern te_errno tapi_tcp_set_ts_opt(asn_value *val,
                                     uint32_t ts_value, uint32_t ts_echo);
+
+/**
+ * Compare two TCP sequence numbers.
+ *
+ * @param seqn1     The first SEQN.
+ * @param seqn2     The second SEQN.
+ *
+ * @return @c -1 if the first SEQN is smaller than the second SEQN,
+ *         @c 1 if the first SEQN is greater than the second SEQN,
+ *         @c 0 if they are equal.
+ */
+extern int tapi_tcp_compare_seqn(uint32_t seqn1, uint32_t seqn2);
 
 #endif /* !__TE_TAPI_TCP_H__ */
 

@@ -1475,13 +1475,13 @@ find_ts_opt(asn_value *val, asn_value **p_tcp_pdu, asn_value **p_options,
 
 /* See description in tapi_tcp.h */
 te_errno
-tapi_tcp_get_ts_opt(asn_value *val,
+tapi_tcp_get_ts_opt(const asn_value *val,
                     uint32_t *ts_value, uint32_t *ts_echo)
 {
     asn_value *ts_opt = NULL;
     te_errno   rc = 0;
 
-    rc = find_ts_opt(val, NULL, NULL, &ts_opt);
+    rc = find_ts_opt((asn_value *)val, NULL, NULL, &ts_opt);
     if (rc != 0)
         return rc;
 
@@ -1593,4 +1593,20 @@ tapi_tcp_set_ts_opt(asn_value *val,
     }
 
     return 0;
+}
+
+/* See description in tapi_tcp.h */
+int
+tapi_tcp_compare_seqn(uint32_t seqn1, uint32_t seqn2)
+{
+    uint32_t diff;
+
+    diff = seqn2 - seqn1;
+
+    if (diff == 0)
+        return 0;
+    else if ((int32_t)diff > 0)
+        return -1;
+    else
+        return 1;
 }
