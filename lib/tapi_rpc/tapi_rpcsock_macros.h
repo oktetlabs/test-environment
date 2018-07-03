@@ -229,10 +229,10 @@
             RPC_AWAIT_IUT_ERROR(rpcs_);                             \
             if (rpc_close((rpcs_), (sockd_)) != 0)                  \
                 MACRO_TEST_ERROR;                                   \
-            RPC_AWAIT_IUT_ERROR(rpcs_);                             \
             if (check_fd_leak == NULL ||                            \
                 strcmp(check_fd_leak, "no") != 0)                   \
             {                                                       \
+                RPC_AWAIT_IUT_ERROR(rpcs_);                         \
                 if (rpc_fstat((rpcs_), (sockd_), &buf) != -1 ||     \
                     RPC_ERRNO(rpcs_) != RPC_EBADF)                  \
                 {                                                   \
