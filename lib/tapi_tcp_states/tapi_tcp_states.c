@@ -544,6 +544,20 @@ tsa_create_session(tsa_session *ss, uint32_t flags)
                 return RPC_ERRNO(ss->config.pco_tst);
         }
     }
+    else
+    {
+        rc = tapi_tcp_create_conn(ss->config.pco_tst->ta,
+                                  ss->config.tst_addr,
+                                  ss->config.iut_addr,
+                                  ss->config.tst_if->if_name,
+                                  ss->config.alien_link_addr,
+                                  ss->state.tst_type == TSA_TST_CSAP ?
+                                      ss->config.iut_link_addr :
+                                      ss->config.gw_tst_link_addr,
+                                  0, &ss->state.csap.csap_tst_s);
+        if (rc != 0)
+            return rc;
+    }
 
     rc = tsa_update_cur_state(ss);
     if (rc != 0)

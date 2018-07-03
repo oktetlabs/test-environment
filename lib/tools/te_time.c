@@ -17,6 +17,7 @@
 #include <time.h>
 #endif
 #include "te_time.h"
+#include "logger_api.h"
 
 
 /* See description in te_time.h */
@@ -36,3 +37,19 @@ te_time_current_date2str(void)
 
     return strdup(buf);
 }
+
+/* See description in te_time.h */
+te_errno
+te_gettimeofday(struct timeval *tv, struct timezone *tz)
+{
+    if (gettimeofday(tv, tz) < 0)
+    {
+        te_errno err = te_rc_os2te(errno);
+
+        ERROR("gettimeofday() failed with errno %r", err);
+        return err;
+    }
+
+    return 0;
+}
+

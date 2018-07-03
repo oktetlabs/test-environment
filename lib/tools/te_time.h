@@ -19,6 +19,10 @@
 #ifndef __TE_TIME_H__
 #define __TE_TIME_H__
 
+#if HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#include "te_errno.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,6 +36,16 @@ extern "C" {
  * @return Current date, or @c NULL in case of failure.
  */
 extern char *te_time_current_date2str(void);
+
+/**
+ * Wrapper over gettimeofday() reporting error in TE format.
+ *
+ * @param tv        Pointer to timeval structure.
+ * @param tz        Pointer to timezone structure (may be @c NULL).
+ *
+ * @return Status code.
+ */
+extern te_errno te_gettimeofday(struct timeval *tv, struct timezone *tz);
 
 #ifdef __cplusplus
 } /* extern "C" */
