@@ -685,14 +685,14 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
         if (rc != 0)
             goto cleanup;
 
-        if (eal_args_new == NULL)
-            goto cleanup;
-
-        rc = cfg_set_instance_fmt(CVT_STRING, eal_args_new,
-                                  "/agent:%s/rpcserver:%s/config:",
-                                  rpcs->ta, rpcs->name);
-        if (rc != 0)
-            goto cleanup;
+        if (eal_args_new != NULL)
+        {
+            rc = cfg_set_instance_fmt(CVT_STRING, eal_args_new,
+                                      "/agent:%s/rpcserver:%s/config:",
+                                      rpcs->ta, rpcs->name);
+            if (rc != 0)
+                goto cleanup;
+        }
     }
 
     /* Obtain port IDs for RTE vdev interfaces. */
