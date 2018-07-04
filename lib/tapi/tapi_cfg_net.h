@@ -33,6 +33,7 @@ extern "C" {
 
 /** All possible node types of /net/node configuration model */
 enum net_node_type {
+    NET_NODE_TYPE_INVALID = -1, /**< Node has invalid configuration */
     NET_NODE_TYPE_AGENT = 0,    /**< Node is an Agent */
     NET_NODE_TYPE_NUT = 1,      /**< Node is a NUT */
 };

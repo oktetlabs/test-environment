@@ -2220,21 +2220,23 @@ get_ta_type(cfg_nets_t *cfg_nets, cfg_net_node_t *node)
     unsigned int        i;
     unsigned int        j;
 
-    for (i = 0; i < cfg_nets->n_nets && type == NET_NODE_TYPE_AGENT; ++i)
+    for (i = 0; i < cfg_nets->n_nets; ++i)
     {
-        for (j = 0;
-             j < cfg_nets->nets[i].n_nodes && type == NET_NODE_TYPE_AGENT;
-             ++j)
+        for (j = 0; j < cfg_nets->nets[i].n_nodes; ++j)
         {
             if ((node->handle != cfg_nets->nets[i].nodes[j].handle) &&
                 cmp_agent_names(node->handle,
                     cfg_nets->nets[i].nodes[j].handle) == 0 &&
                 cfg_nets->nets[i].nodes[j].type != NET_NODE_TYPE_AGENT)
             {
-                type = cfg_nets->nets[i].nodes[j].type;
+                if (type == NET_NODE_TYPE_AGENT)
+                    type = cfg_nets->nets[i].nodes[j].type;
+                else if (type != cfg_nets->nets[i].nodes[j].type)
+                    type = NET_NODE_TYPE_INVALID;
             }
         }
     }
+
     VERB("%s(): TA type is %u", __FUNCTION__, type);
 
     return type;
