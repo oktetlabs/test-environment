@@ -22,6 +22,10 @@ extern "C" {
 typedef struct test_behaviour {
     te_bool wait_on_fail; /**< Wait before going to cleanup in case of
                            * test failure */
+    te_bool wait_on_cleanup; /**< Wait before going to cleanup regardless of
+                              * the test result. If both wait_on_fail and
+                              * this one are set - wait will be done
+                              * just once */
     te_bool log_stack;    /**< Enable log stack collection */
 } test_behaviour;
 
