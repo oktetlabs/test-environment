@@ -28,11 +28,13 @@ extern int myindex;
 
 %%
 [[:space:]]+        {}
-IUT|tester          {
-                        yylval.number = (strcmp(yytext, "IUT") == 0) ?
-                            TAPI_ENV_IUT : TAPI_ENV_TESTER;
-                        return ENTITY_TYPE;
-                    }
+IUT|tester|IUT_PEER {
+        yylval.number = (strcmp(yytext, "IUT") == 0) ?
+            TAPI_ENV_IUT : (strcmp(yytext, "IUT_PEER") == 0 ?
+                TAPI_ENV_IUT_PEER : TAPI_ENV_TESTER);
+	return ENTITY_TYPE;
+}
+
 loopback|unicast|broadcast|wildcard|alien|multicast|fake|ip4mapped_uc|mcast_all_hosts|linklocal|sitelocal {
     yylval.number = (strcmp(yytext, "loopback") == 0) ?
                         TAPI_ENV_ADDR_LOOPBACK :

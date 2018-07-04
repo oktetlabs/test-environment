@@ -2181,28 +2181,50 @@ node_is_used(node_indexes *used_nodes, unsigned int net, unsigned int node)
  * @param procs         List of processes
  *
  * @return Environment node type.
- * @retval TAPI_ENV_IUT     At least one process should have IUT
- * @retval TAPI_ENV_TESTER  All processes are Testers
+ * @retval TAPI_ENV_IUT      At least one process should have IUT, no IUT_PEERs
+ * @retval TAPI_ENV_TESTER   All processes are Testers
+ * @retval TAPI_ENV_IUT_PEER At least one process should be IUT_PEER, no IUTs
  */
 static tapi_env_type
 get_pcos_type(tapi_env_processes *procs)
 {
     tapi_env_process *proc;
     tapi_env_pco     *pco;
+    tapi_env_type     type = TAPI_ENV_TESTER;
 
     SLIST_FOREACH(proc, procs, links)
     {
         STAILQ_FOREACH(pco, &proc->pcos, links)
         {
-            if (pco->type == TAPI_ENV_IUT)
+            switch (type)
             {
-                VERB("%s(): PCOs are IUT", __FUNCTION__);
-                return TAPI_ENV_IUT;
+                case TAPI_ENV_INVALID:
+                    break;
+                case TAPI_ENV_TESTER:
+                    type = pco->type;
+                    break;
+                case TAPI_ENV_IUT:
+                    if (pco->type != TAPI_ENV_IUT &&
+                        pco->type != TAPI_ENV_TESTER)
+                    {
+                        type = TAPI_ENV_INVALID;
+                    }
+                    break;
+                case TAPI_ENV_IUT_PEER:
+                    if (pco->type != TAPI_ENV_IUT_PEER &&
+                        pco->type != TAPI_ENV_TESTER)
+                    {
+                        type = TAPI_ENV_INVALID;
+                    }
+                    break;
+                default:
+                    assert(0);
             }
         }
     }
-    VERB("%s(): PCOs are Tester", __FUNCTION__);
-    return TAPI_ENV_TESTER;
+
+    VERB("%s(): PCOs are %s", __FUNCTION__, tapi_env_type_str(type));
+    return type;
 }
 
 /**
@@ -2282,8 +2304,22 @@ check_node_type_vs_pcos(cfg_nets_t         *cfg_nets,
                         cfg_net_node_t     *node,
                         tapi_env_processes *processes)
 {
-    return (get_pcos_type(processes) != TAPI_ENV_IUT) ||
-           (get_ta_type(cfg_nets, node) == NET_NODE_TYPE_NUT);
+    tapi_env_type type = get_pcos_type(processes);
+
+    switch (type)
+    {
+        case TAPI_ENV_INVALID:
+            return FALSE;
+        case TAPI_ENV_IUT:
+            return get_ta_type(cfg_nets, node) == NET_NODE_TYPE_NUT;
+        case TAPI_ENV_IUT_PEER:
+            return get_ta_type(cfg_nets, node) == NET_NODE_TYPE_NUT_PEER;
+        case TAPI_ENV_TESTER:
+            return TRUE;
+        default:
+            assert(0);
+            break;
+    }
 }
 
 /**
@@ -2322,6 +2358,17 @@ check_net_type_cfg_vs_env(cfg_net_t *net, tapi_env_type net_type)
         case TAPI_ENV_TESTER:
             return (node_type == NET_NODE_TYPE_AGENT);
 
+        case TAPI_ENV_IUT_PEER:
+            /*
+             * Right now we can't bind network of this type. It's done
+             * during bind for simplicity and to avoid duplication of values
+             * in lexer file
+             */
+            VERB("%s: you're binding a net with type "
+                 "IUT_PEER - this won't work");
+            return FALSE;
+
+        case TAPI_ENV_INVALID:
         default:
             assert(0);
             return FALSE;
