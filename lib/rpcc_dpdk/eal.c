@@ -391,10 +391,12 @@ static te_errno
 tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
                                 const tapi_env_ps_if  *ps_if,
                                 te_bool                is_bonding,
-                                char                 **slave_list_strp)
+                                char                 **slave_list_strp,
+                                const char            *dev_args)
 {
     const char     prefix_bonding[] = ",slave=";
     const char     prefix_failsafe[] = ",dev(";
+    const char    *dev_args_failsafe = (is_bonding) ? NULL : dev_args;
     const char     postfix_bonding[] = "";
     const char     postfix_failsafe[] = ")";
     const char    *prefix = NULL;
@@ -422,6 +424,11 @@ tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
 
         slave_list_str_len_new += strlen(prefix);
         slave_list_str_len_new += strlen(slaves[i]);
+        if (dev_args_failsafe != NULL)
+        {
+            ++slave_list_str_len_new;
+            slave_list_str_len_new += strlen(dev_args_failsafe);
+        }
         slave_list_str_len_new += strlen(postfix);
 
         slave_list_str_new = realloc(slave_list_str,
@@ -435,7 +442,10 @@ tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
 
         len = slave_list_str_len_new - slave_list_str_len;
         ret = snprintf(slave_list_str + slave_list_str_len, len + 1,
-                       "%s%s%s", prefix, slaves[i], postfix);
+                       "%s%s%s%s%s", prefix, slaves[i],
+                       (dev_args_failsafe != NULL) ? "," : "",
+                       (dev_args_failsafe != NULL) ? dev_args_failsafe : "",
+                       postfix);
         if (ret < 0 || (size_t)ret != len)
         {
             rc = TE_EINVAL;
@@ -463,7 +473,8 @@ static te_errno
 tapi_eal_add_vdev_args(tapi_env          *env,
                        tapi_env_ps_ifs   *ifsp,
                        int               *argcp,
-                       char            ***argvpp)
+                       char            ***argvpp,
+                       const char        *dev_args)
 {
     const tapi_env_ps_if *ps_if;
     te_errno              rc = 0;
@@ -483,7 +494,7 @@ tapi_eal_add_vdev_args(tapi_env          *env,
                 return rc;
 
             rc = tapi_eal_mk_vdev_slave_list_str(env, ps_if, is_bonding,
-                                                 &slave_list_str);
+                                                 &slave_list_str, dev_args);
             if (rc != 0)
             {
                 free(mode);
@@ -590,11 +601,6 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     /* Use RPC server name as a program name */
     append_arg(&my_argc, &my_argv, "%s", rpcs->name);
 
-    /* Append vdev-related arguments should the need arise */
-    rc = tapi_eal_add_vdev_args(env, &pco->process->ifs, &my_argc, &my_argv);
-    if (rc != 0)
-        goto cleanup;
-
     /* Get device arguments to be specified in whitelist option */
     val_type = CVT_STRING;
     rc = cfg_get_instance_fmt(&val_type, &dev_args,
@@ -612,6 +618,12 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
         free(dev_args);
         dev_args = NULL;
     }
+
+    /* Append vdev-related arguments should the need arise */
+    rc = tapi_eal_add_vdev_args(env, &pco->process->ifs, &my_argc, &my_argv,
+                                dev_args);
+    if (rc != 0)
+        goto cleanup;
 
      /* Specify PCI whitelist or virtual device information */
     STAILQ_FOREACH(ps_if, &pco->process->ifs, links)
