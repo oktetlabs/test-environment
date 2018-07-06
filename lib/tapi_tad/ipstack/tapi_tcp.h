@@ -1192,8 +1192,9 @@ extern int tapi_tcp_get_packets(tapi_tcp_handler_t handler);
  * @param start_time  If @p enable is @c TRUE, this is the start value
  *                    for TCP timestamp. Each new TCP timestamp will
  *                    be computed as this value + number of milliseconds
- *                    since the moment of time when this function was
- *                    called.
+ *                    since the moment of time when the first packet
+ *                    was sent (for which this value will be used
+ *                    as TCP timestamp).
  *
  * @return Status code.
  */
@@ -1205,18 +1206,21 @@ extern te_errno tapi_tcp_conn_enable_ts(tapi_tcp_handler_t handler,
  * Get current status of TCP timestamp option in a given TCP
  * connection emulation.
  *
- * @param handler         TAPI TCP connection handler.
- * @param enabled         Whether TCP timestamp is enabled. Other
- *                        parameters are filled only if this is @c TRUE.
- * @param dst_enabled     Whether peer sends TCP timestamp. If peer did
- *                        not sent TCP timestamp in its first packet,
- *                        we will not send it too.
- * @param ts_value        Current TCP timestamp value (such that
- *                        would be used if a packet is sent now).
- * @param ts_echo         Timestamp echo-reply to be used in
- *                        the next packet.
- * @param last_ts_echoed  Timestamp echo-reply sent in the last
- *                        packet.
+ * @param handler           TAPI TCP connection handler.
+ * @param enabled           Whether TCP timestamp is enabled. Other
+ *                          parameters are filled only if this is @c TRUE.
+ * @param dst_enabled       Whether peer sends TCP timestamp. If peer did
+ *                          not sent TCP timestamp in its first packet,
+ *                          we will not send it too.
+ * @param ts_value          Current TCP timestamp value (such that
+ *                          would be used if a packet is sent now).
+ * @param last_ts_sent      Last timestamp sent to peer.
+ * @param last_ts_got       Last timestamp received from peer.
+ * @param ts_to_echo        Value to be sent in echo-reply field in
+ *                          the next @c ACK.
+ * @param last_ts_echo_sent Timestamp echo-reply sent in the last
+ *                          packet.
+ * @param last_ts_echo_got  Last timestamp echo-reply received from peer.
  *
  * @return Status code.
  */
@@ -1224,8 +1228,11 @@ extern te_errno tapi_tcp_conn_get_ts(tapi_tcp_handler_t handler,
                                      te_bool *enabled,
                                      te_bool *dst_enabled,
                                      uint32_t *ts_value,
-                                     uint32_t *ts_echo,
-                                     uint32_t *last_ts_echoed);
+                                     uint32_t *last_ts_sent,
+                                     uint32_t *last_ts_got,
+                                     uint32_t *ts_to_echo,
+                                     uint32_t *last_ts_echo_sent,
+                                     uint32_t *last_ts_echo_got);
 
 /**
  * Get TCP timestamp option parameters.
