@@ -554,8 +554,18 @@ create_tcp_template(tapi_tcp_connection_t *conn_descr,
     if (rc != 0)
         return rc;
 
-    return asn_write_int32(*tmpl, conn_descr->window,
-                           "pdus.0.#tcp.win-size.#plain");
+    rc = asn_write_int32(*tmpl, conn_descr->window,
+                         "pdus.0.#tcp.win-size.#plain");
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to set TCP win-size, %r",
+              __FUNCTION__, rc);
+        asn_free_value(*tmpl);
+        *tmpl = NULL;
+        return rc;
+    }
+
+    return 0;
 }
 
 /**
@@ -1491,9 +1501,15 @@ tapi_tcp_send_fin_gen(tapi_tcp_handler_t handler, int timeout,
         new_ackn = conn_descr->ack_sent;
 
     INFO("%s(conn %d) new ack %u", __FUNCTION__, handler, new_ackn);
-    create_tcp_template(conn_descr, conn_next_seq(conn_descr), new_ackn,
-                        FALSE, TRUE,
-                        NULL, 0, &fin_template);
+    rc = create_tcp_template(conn_descr, conn_next_seq(conn_descr), new_ackn,
+                             FALSE, TRUE,
+                             NULL, 0, &fin_template);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to create FIN template, %r",
+              __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
+    }
 
     flags = TCP_FIN_FLAG | TCP_ACK_FLAG;
     rc = asn_write_int32(fin_template, flags, "pdus.0.#tcp.flags.#plain");
@@ -1501,6 +1517,7 @@ tapi_tcp_send_fin_gen(tapi_tcp_handler_t handler, int timeout,
     {
         ERROR("%s(): set fin flag failed %r",
               __FUNCTION__, rc);
+        asn_free_value(fin_template);
         return TE_RC(TE_TAPI, rc);
     }
 
@@ -1517,6 +1534,7 @@ tapi_tcp_send_fin_gen(tapi_tcp_handler_t handler, int timeout,
     rc = tapi_tad_trsend_start(conn_descr->agt, conn_descr->snd_sid,
                                conn_descr->snd_csap,
                                fin_template, RCF_MODE_BLOCKING);
+    asn_free_value(fin_template);
     if (rc != 0)
     {
         ERROR("%s(): send FIN failed %r", __FUNCTION__, rc);
@@ -1592,8 +1610,15 @@ tapi_tcp_send_rst(tapi_tcp_handler_t handler)
     INFO("%s(conn %d) seq %d, new ack %u",
          __FUNCTION__, handler, conn_next_seq(conn_descr), new_ackn);
 
-    create_tcp_template(conn_descr, conn_next_seq(conn_descr), new_ackn,
-                        FALSE, TRUE, NULL, 0, &rst_template);
+    rc = create_tcp_template(conn_descr, conn_next_seq(conn_descr),
+                             new_ackn, FALSE, TRUE, NULL, 0,
+                             &rst_template);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to create RST template, %r",
+              __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
+    }
 
     flags = TCP_RST_FLAG | TCP_ACK_FLAG;
     rc = asn_write_int32(rst_template, flags, "pdus.0.#tcp.flags.#plain");
@@ -1601,12 +1626,14 @@ tapi_tcp_send_rst(tapi_tcp_handler_t handler)
     {
         ERROR("%s(): set RST flag failed %r",
               __FUNCTION__, rc);
+        asn_free_value(rst_template);
         return TE_RC(TE_TAPI, rc);
     }
 
     rc = tapi_tad_trsend_start(conn_descr->agt, conn_descr->snd_sid,
                                conn_descr->snd_csap,
                                rst_template, RCF_MODE_BLOCKING);
+    asn_free_value(rst_template);
     if (rc != 0)
     {
         ERROR("%s(): send RST failed %r", __FUNCTION__, rc);
@@ -1735,6 +1762,7 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
         if (ip4_pdu == NULL)
         {
             ERROR("Failed to get IPv4 PDU from template: %r", rc);
+            asn_free_value(msg_template);
             return rc;
         }
         rc = tapi_ip4_pdu_tmpl_fragments(NULL, &ip4_pdu,
@@ -1743,6 +1771,7 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
         {
             ERROR("Failed to add fragments specification in IPv4 PDU "
                   "template: %r", rc);
+            asn_free_value(msg_template);
             return rc;
         }
     }
@@ -1750,6 +1779,7 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
     rc = tapi_tad_trsend_start(conn_descr->agt, conn_descr->snd_sid,
                                conn_descr->snd_csap,
                                msg_template, RCF_MODE_BLOCKING);
+    asn_free_value(msg_template);
     if (rc != 0)
     {
         ERROR("%s: send msg %r", __FUNCTION__, rc);
@@ -1964,6 +1994,7 @@ conn_send_ack(tapi_tcp_connection_t *conn_descr, tapi_tcp_pos_t ackn)
     rc = tapi_tad_trsend_start(conn_descr->agt, conn_descr->snd_sid,
                                conn_descr->snd_csap,
                                ack_template, RCF_MODE_BLOCKING);
+    asn_free_value(ack_template);
     if (rc != 0)
     {
         ERROR("%s: send ACK %r", __FUNCTION__, rc);
