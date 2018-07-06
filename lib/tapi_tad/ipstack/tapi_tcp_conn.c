@@ -1297,18 +1297,19 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
 
     te_bool    is_server = FALSE;
 
-    asn_value *syn_ack_template;
+    asn_value *syn_ack_template = NULL;
 
     tapi_tcp_connection_t *conn_descr;
     tapi_tcp_msg_queue_t  *msg = NULL;
 
 #define CHECK_ERROR(msg_...)\
-    do {                           \
-        if (rc != 0)                 \
-        {                          \
-            ERROR(msg_);           \
-            goto cleanup;          \
-        }                          \
+    do {                                        \
+        if (rc != 0)                            \
+        {                                       \
+            ERROR(msg_);                        \
+            asn_free_value(syn_ack_template);   \
+            goto cleanup;                       \
+        }                                       \
     } while (0)
 
 
@@ -1377,6 +1378,9 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
 
     CHECK_ERROR("%s(): send ACK or SYN-ACK failed, rc %r",
                 __FUNCTION__, rc);
+
+    asn_free_value(syn_ack_template);
+    syn_ack_template = NULL;
 
     update_ts_echoed(conn_descr);
 
