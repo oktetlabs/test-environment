@@ -2476,8 +2476,8 @@ TARPC_FUNC(rte_eth_dev_set_mc_addr_list, {},
                    sizeof(mc_addr_set[i].addr_bytes));
     }
 
-    MAKE_CALL(func(in->port_id, mc_addr_set,
-                   in->mc_addr_set.mc_addr_set_len));
+    MAKE_CALL(out->retval = func(in->port_id, mc_addr_set,
+                                 in->mc_addr_set.mc_addr_set_len));
 
     neg_errno_h2rpc(&out->retval);
 })
