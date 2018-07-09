@@ -76,6 +76,7 @@ tapi_perf_opts_init(tapi_perf_opts *opts)
     opts->bandwidth_bits = -1;
     opts->num_bytes = -1;
     opts->duration_sec = 30;
+    opts->interval_sec = TAPI_PERF_INTERVAL_DISABLED;
     opts->length = 1470;
     opts->streams = 1;
     opts->reverse = FALSE;

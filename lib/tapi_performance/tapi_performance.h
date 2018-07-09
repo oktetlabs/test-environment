@@ -34,6 +34,11 @@ extern "C" {
 #define TAPI_PERF_TIMEOUT_DEFAULT   (-1)
 
 /**
+ * Disable periodic bandwidth reports.
+ */
+#define TAPI_PERF_INTERVAL_DISABLED (-1)
+
+/**
  * Supported network throughput test tools list.
  */
 typedef enum tapi_perf_bench {
@@ -209,6 +214,9 @@ typedef struct tapi_perf_opts {
     int64_t bandwidth_bits; /**< Target bandwidth (bits/sec) */
     int64_t num_bytes;      /**< Number of bytes to transmit (instead of time) */
     int32_t duration_sec;   /**< Time in seconds to transmit for */
+    int32_t interval_sec;   /**< Pause in seconds between periodic bandwidth
+                             *   reports. Warning! It can affect report
+                             *   processing */
     int32_t length;         /**< Length of buffer to read or write */
     int16_t streams;        /**< Number of parallel client streams */
     te_bool reverse;        /**< Whether run in reverse mode (server sends,

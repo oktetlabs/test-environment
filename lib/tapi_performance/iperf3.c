@@ -145,6 +145,25 @@ set_opt_time(te_string *cmd, const tapi_perf_opts *options)
 }
 
 /*
+ * Set option of pause in seconds between periodic bandwidth reports in iperf3
+ * tool format.
+ *
+ * @param cmd           Buffer contains a command to add option to.
+ * @param options       iperf3 tool options.
+ */
+static void
+set_opt_interval(te_string *cmd, const tapi_perf_opts *options)
+{
+    int32_t interval = options->interval_sec;
+
+    if (interval == TAPI_PERF_INTERVAL_DISABLED)
+        interval = 0;
+
+    if (interval >= 0)
+        CHECK_RC(te_string_append(cmd, " -i%"PRId32, interval));
+}
+
+/*
  * Set option of length of buffer in iperf3 tool format.
  *
  * @param cmd           Buffer contains a command to add option to.
@@ -193,12 +212,13 @@ static void
 build_server_cmd(te_string *cmd, const tapi_perf_opts *options)
 {
     set_opt_t set_opt[] = {
-        set_opt_port
+        set_opt_port,
+        set_opt_interval
     };
     size_t i;
 
     ENTRY("Build command to run iperf3 server");
-    CHECK_RC(te_string_append(cmd, "iperf3 -s -J -i0"));
+    CHECK_RC(te_string_append(cmd, "iperf3 -s -J"));
     for (i = 0; i < TE_ARRAY_LEN(set_opt); i++)
         set_opt[i](cmd, options);
 }
@@ -220,6 +240,7 @@ build_client_cmd(te_string *cmd, const tapi_perf_opts *options)
         set_opt_length,
         set_opt_bytes,
         set_opt_time,
+        set_opt_interval,
         set_opt_streams,
         set_opt_reverse
     };
@@ -230,7 +251,7 @@ build_client_cmd(te_string *cmd, const tapi_perf_opts *options)
     if (te_str_is_null_or_empty(options->host))
         TEST_FAIL("Host to connect to is unspecified");
 
-    CHECK_RC(te_string_append(cmd, "iperf3 -c %s -J -i0", options->host));
+    CHECK_RC(te_string_append(cmd, "iperf3 -c %s -J", options->host));
     for (i = 0; i < TE_ARRAY_LEN(set_opt); i++)
         set_opt[i](cmd, options);
 }
