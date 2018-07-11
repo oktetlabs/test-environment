@@ -105,7 +105,7 @@ tapi_reuse_eal(rcf_rpc_server   *rpcs,
     char                 *eal_args_cfg = NULL;
     cfg_val_type          val_type = CVT_STRING;
     const tapi_env_ps_if *ps_if;
-    char                 *dev_na_pci_fn = NULL;
+    const char           *da_generic = NULL;
     te_errno              rc = 0;
     unsigned int          i;
 
@@ -154,49 +154,26 @@ tapi_reuse_eal(rcf_rpc_server   *rpcs,
 
     STAILQ_FOREACH(ps_if, ifsp, links)
     {
+        const char *bus_name = NULL;
         const char *dev_name = ps_if->iface->if_info.if_name;
-        const char *dev_na_generic = NULL;
+        const char *da_empty = "";
         uint16_t    port_id;
-        uint16_t    port_id_unused;
 
         if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_PCI_FN)
         {
-            if (dev_args != NULL)
-            {
-                size_t dev_na_len = strlen(dev_name) + strlen(dev_args) + 1;
-                int    ret;
-
-                dev_na_pci_fn = TE_ALLOC(dev_na_len + 1);
-                if (dev_na_pci_fn == NULL)
-                {
-                    rc = TE_ENOMEM;
-                    goto out;
-                }
-
-                ret = snprintf(dev_na_pci_fn, dev_na_len + 1, "%s,%s",
-                               dev_name, dev_args);
-                if (ret < 0 || (size_t)ret != dev_na_len)
-                {
-                    rc = TE_EINVAL;
-                    goto out;
-                }
-
-                dev_na_generic = dev_na_pci_fn;
-            }
-            else
-            {
-                dev_na_generic = dev_name;
-            }
+            bus_name = "pci";
+            da_generic = dev_args;
         }
         else if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_RTE_VDEV)
         {
-            dev_na_generic = NULL;
+            bus_name = "vdev";
+            da_generic = NULL;
 
             for (i = 0; i < (unsigned int)argc; ++i)
             {
                 if (strncmp(argv[i], dev_name, strlen(dev_name)) == 0)
                 {
-                    dev_na_generic = argv[i];
+                    da_generic = strchr(argv[i], ',') + 1;
                     break;
                 }
             }
@@ -210,10 +187,8 @@ tapi_reuse_eal(rcf_rpc_server   *rpcs,
         rc = rpc_rte_eth_dev_get_port_by_name(rpcs, dev_name, &port_id);
         if (rc == 0)
         {
-            char dev_name_unused[RPC_RTE_ETH_NAME_MAX_LEN];
-
             rpc_rte_eth_dev_close(rpcs, port_id);
-            rc = rpc_rte_eth_dev_detach(rpcs, port_id, dev_name_unused);
+            rc = rpc_rte_eal_hotplug_remove(rpcs, bus_name, dev_name);
             if (rc != 0)
                 goto out;
         }
@@ -222,12 +197,10 @@ tapi_reuse_eal(rcf_rpc_server   *rpcs,
             goto out;
         }
 
-        rc = rpc_rte_eth_dev_attach(rpcs, dev_na_generic, &port_id_unused);
+        da_generic = (da_generic == NULL) ? da_empty : da_generic;
+        rc = rpc_rte_eal_hotplug_add(rpcs, bus_name, dev_name, da_generic);
         if (rc != 0)
             goto out;
-
-        free(dev_na_pci_fn);
-        dev_na_pci_fn = NULL;
     }
 
     rpc_rte_mempool_free_all(rpcs);
@@ -238,9 +211,6 @@ tapi_reuse_eal(rcf_rpc_server   *rpcs,
     free(eal_args);
 
 out:
-    if (rc != 0)
-        free(dev_na_pci_fn);
-
     free(eal_args_cfg);
 
     if (rc != 0)
