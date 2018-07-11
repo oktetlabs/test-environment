@@ -103,3 +103,10 @@ TARPC_FUNC(rte_eal_hotplug_add, {},
     MAKE_CALL(out->retval = func(in->busname, in->devname, in->devargs));
     neg_errno_h2rpc(&out->retval);
 })
+
+TARPC_FUNC(rte_eal_hotplug_remove, {},
+{
+    MAKE_CALL(out->retval = func(in->busname, in->devname));
+    neg_errno_h2rpc(&out->retval);
+})
+

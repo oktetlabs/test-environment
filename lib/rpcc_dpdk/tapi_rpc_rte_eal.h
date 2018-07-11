@@ -93,6 +93,18 @@ extern int rpc_rte_eal_hotplug_add(rcf_rpc_server *rpcs,
                                    const char     *devname,
                                    const char     *devargs);
 
+/**
+ * rte_eal_hotplug_remove() RPC
+ *
+ * @param busname Bus name for the device to be removed from
+ * @param devname Device name
+ *
+ * @return @c 0 on success; jumps out on error (negative value).
+ */
+extern int rpc_rte_eal_hotplug_remove(rcf_rpc_server *rpcs,
+                                      const char     *busname,
+                                      const char     *devname);
+
 /**@} <!-- END te_lib_rpc_rte_eal --> */
 
 #ifdef __cplusplus

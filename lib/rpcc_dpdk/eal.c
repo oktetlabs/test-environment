@@ -826,3 +826,29 @@ rpc_rte_eal_hotplug_add(rcf_rpc_server *rpcs,
     RETVAL_ZERO_INT(rte_eal_hotplug_add, out.retval);
 }
 
+int
+rpc_rte_eal_hotplug_remove(rcf_rpc_server *rpcs,
+                           const char     *busname,
+                           const char     *devname)
+{
+    tarpc_rte_eal_hotplug_remove_in  in;
+    tarpc_rte_eal_hotplug_remove_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.busname = tapi_strdup(busname);
+    in.devname = tapi_strdup(devname);
+
+    rcf_rpc_call(rpcs, "rte_eal_hotplug_remove", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eal_hotplug_remove, out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eal_hotplug_remove, "%s; %s", NEG_ERRNO_FMT,
+                 in.busname, in.devname, NEG_ERRNO_ARGS(out.retval));
+
+    free(in.busname);
+    free(in.devname);
+
+    RETVAL_ZERO_INT(rte_eal_hotplug_remove, out.retval);
+}
+
