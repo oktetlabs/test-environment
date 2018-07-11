@@ -60,6 +60,16 @@ struct tarpc_rte_eal_process_type_out {
     enum tarpc_rte_proc_type_t  retval;
 };
 
+/** rte_eal_hotplug_add() */
+struct tarpc_rte_eal_hotplug_add_in {
+    struct tarpc_in_arg common;
+    string              busname<>;
+    string              devname<>;
+    string              devargs<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eal_hotplug_add_out;
+
 struct tarpc_mbuf_in {
     struct tarpc_in_arg     common;
     tarpc_rte_mbuf          m;
@@ -1925,6 +1935,7 @@ program dpdk
     {
         RPC_DEF(rte_eal_init)
         RPC_DEF(rte_eal_process_type)
+        RPC_DEF(rte_eal_hotplug_add)
 
         RPC_DEF(rte_mempool_lookup)
         RPC_DEF(rte_mempool_in_use_count)

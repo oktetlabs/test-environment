@@ -17,6 +17,7 @@
 #include "te_alloc.h"
 
 #include "log_bufs.h"
+#include "tapi_mem.h"
 #include "tapi_env.h"
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_rte_eal.h"
@@ -791,5 +792,37 @@ rpc_dpdk_get_version(rcf_rpc_server *rpcs)
                  out.year, out.month, out.minor, out.release);
 
     return TAPI_RTE_VERSION_NUM(out.year, out.month, out.minor, out.release);
+}
+
+int
+rpc_rte_eal_hotplug_add(rcf_rpc_server *rpcs,
+                        const char     *busname,
+                        const char     *devname,
+                        const char     *devargs)
+{
+    tarpc_rte_eal_hotplug_add_in  in;
+    tarpc_rte_eal_hotplug_add_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.busname = tapi_strdup(busname);
+    in.devname = tapi_strdup(devname);
+    if (devargs != NULL)
+        in.devargs = tapi_strdup(devargs);
+
+    rcf_rpc_call(rpcs, "rte_eal_hotplug_add", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eal_hotplug_add, out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eal_hotplug_add, "%s; %s; %s", NEG_ERRNO_FMT,
+                 in.busname, in.devname,
+                 (in.devargs == NULL) ? "N/A" : in.devargs,
+                 NEG_ERRNO_ARGS(out.retval));
+
+    free(in.busname);
+    free(in.devname);
+    free(in.devargs);
+
+    RETVAL_ZERO_INT(rte_eal_hotplug_add, out.retval);
 }
 

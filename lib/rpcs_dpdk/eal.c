@@ -98,3 +98,8 @@ TARPC_FUNC_STANDALONE(dpdk_get_version, {},
     out->release = RTE_VER_RELEASE;
 })
 
+TARPC_FUNC(rte_eal_hotplug_add, {},
+{
+    MAKE_CALL(out->retval = func(in->busname, in->devname, in->devargs));
+    neg_errno_h2rpc(&out->retval);
+})

@@ -79,6 +79,20 @@ extern enum tarpc_rte_proc_type_t
  */
 extern int rpc_dpdk_get_version(rcf_rpc_server *rpcs);
 
+/**
+ * rte_eal_hotplug_add() RPC
+ *
+ * @param busname Bus name for the device to be added to
+ * @param devname Device name to undergo indentification and probing
+ * @param devargs Device arguments to be passed to the driver
+ *
+ * @return @c 0 on success; jumps out on error (negative value).
+ */
+extern int rpc_rte_eal_hotplug_add(rcf_rpc_server *rpcs,
+                                   const char     *busname,
+                                   const char     *devname,
+                                   const char     *devargs);
+
 /**@} <!-- END te_lib_rpc_rte_eal --> */
 
 #ifdef __cplusplus
