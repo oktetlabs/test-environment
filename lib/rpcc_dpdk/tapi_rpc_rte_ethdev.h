@@ -410,18 +410,6 @@ extern int rpc_rte_eth_tx_queue_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
                                          struct tarpc_rte_eth_txq_info *qinfo);
 
 /**
- * @b rte_eth_dev_attach() RPC
- *
- * @param[in]  devargs A string describing the new device to be attached
- * @param[out] port_id Location for the device port ID actually attached
- *
- * @return Status code (by default jumps out on a non-zero value)
- */
-extern int rpc_rte_eth_dev_attach(rcf_rpc_server *rpcs,
-                                  const char     *devargs,
-                                  uint16_t       *port_id);
-
-/**
  * @b rte_eth_dev_detach() RPC.
  *
  * @param[in]  rpcs        RPC server handle

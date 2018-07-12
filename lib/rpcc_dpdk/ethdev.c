@@ -1811,31 +1811,6 @@ rpc_rte_eth_tx_queue_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
 }
 
 int
-rpc_rte_eth_dev_attach(rcf_rpc_server *rpcs,
-                       const char     *devargs,
-                       uint16_t       *port_id)
-{
-    tarpc_rte_eth_dev_attach_in  in;
-    tarpc_rte_eth_dev_attach_out out;
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
-
-    in.devargs = tapi_strdup(devargs);
-
-    rcf_rpc_call(rpcs, "rte_eth_dev_attach", &in, &out);
-    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_attach, out.retval);
-
-    if ((out.retval == 0) && (port_id != NULL))
-        *port_id = out.port_id;
-
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_attach, "%s, %p", NEG_ERRNO_FMT ", %hu",
-                 in.devargs, port_id, NEG_ERRNO_ARGS(out.retval), out.port_id);
-
-    RETVAL_ZERO_INT(rte_eth_dev_attach, out.retval);
-}
-
-int
 rpc_rte_eth_dev_detach(rcf_rpc_server *rpcs, uint16_t port_id,
                        char *devname)
 {
