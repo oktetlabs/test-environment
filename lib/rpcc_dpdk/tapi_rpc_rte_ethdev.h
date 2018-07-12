@@ -410,20 +410,6 @@ extern int rpc_rte_eth_tx_queue_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
                                          struct tarpc_rte_eth_txq_info *qinfo);
 
 /**
- * @b rte_eth_dev_detach() RPC.
- *
- * @param[in]  rpcs        RPC server handle
- * @param[in]  port_id     Port number
- * @param[out] devname     A pointer to a device name actually detached.
- *                         The memory must be allocated by the caller.
- *
- * If failure is not expected, the function jumps out in the case of
- * non-zero or negative return value.
- */
-extern int rpc_rte_eth_dev_detach(rcf_rpc_server *rpcs, uint16_t port_id,
-                                  char *devname);
-
-/**
  * @b rte_eth_dev_rss_reta_query() RPC.
  *
  * @param[in]  rpcs        RPC server handle

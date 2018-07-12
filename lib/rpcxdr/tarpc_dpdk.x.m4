@@ -1342,15 +1342,6 @@ struct tarpc_rte_vlan_strip_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_vlan_strip_out;
 
-/** rte_eth_dev_detach() */
-typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_detach_in;
-
-struct tarpc_rte_eth_dev_detach_out {
-    struct tarpc_out_arg    common;
-    tarpc_int               retval;
-    string                  devname<>;
-};
-
 struct tarpc_rte_eth_rss_reta_entry64 {
     uint64_t    mask;
     uint16_t    reta[64];
@@ -2031,7 +2022,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_default_mac_addr_set)
         RPC_DEF(rte_eth_rx_queue_info_get)
         RPC_DEF(rte_eth_tx_queue_info_get)
-        RPC_DEF(rte_eth_dev_detach)
         RPC_DEF(rte_eth_dev_rss_reta_query)
         RPC_DEF(rte_eth_dev_rss_hash_conf_get)
         RPC_DEF(rte_eth_dev_flow_ctrl_get)

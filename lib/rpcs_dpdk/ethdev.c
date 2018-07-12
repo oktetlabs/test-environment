@@ -1440,17 +1440,6 @@ TARPC_FUNC(rte_eth_tx_queue_info_get, {},
     out->qinfo.nb_desc = qinfo.nb_desc;
 })
 
-TARPC_FUNC(rte_eth_dev_detach,{},
-{
-    out->devname = TE_ALLOC(RPC_RTE_ETH_NAME_MAX_LEN);
-    if (out->devname == NULL)
-        out->retval = -ENOMEM;
-    else
-        MAKE_CALL(out->retval = func(in->port_id, out->devname));
-
-    neg_errno_h2rpc(&out->retval);
-})
-
 TARPC_FUNC(rte_eth_dev_rss_reta_query,{},
 {
     struct rte_eth_rss_reta_entry64 *reta_conf_p;

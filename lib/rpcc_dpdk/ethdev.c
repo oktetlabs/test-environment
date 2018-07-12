@@ -1810,31 +1810,6 @@ rpc_rte_eth_tx_queue_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
     RETVAL_ZERO_INT(rte_eth_tx_queue_info_get, out.retval);
 }
 
-int
-rpc_rte_eth_dev_detach(rcf_rpc_server *rpcs, uint16_t port_id,
-                       char *devname)
-{
-    tarpc_rte_eth_dev_detach_in   in;
-    tarpc_rte_eth_dev_detach_out  out;
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
-
-    in.port_id = port_id;
-
-    rcf_rpc_call(rpcs, "rte_eth_dev_detach", &in, &out);
-
-    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_detach, out.retval);
-
-    if ((out.retval == 0) && (devname != NULL) && (out.devname != NULL))
-        memcpy(devname, out.devname, RPC_RTE_ETH_NAME_MAX_LEN);
-
-    TAPI_RPC_LOG(rpcs, rte_eth_dev_detach, "%hu, %p", NEG_ERRNO_FMT ", %s",
-                 in.port_id, devname, NEG_ERRNO_ARGS(out.retval), out.devname);
-
-    RETVAL_ZERO_INT(rte_eth_dev_detach, out.retval);
-}
-
 static const char *
 tarpc_rte_reta_conf2str(te_log_buf *tlbp,
                         const struct tarpc_rte_eth_rss_reta_entry64 *reta_conf,
