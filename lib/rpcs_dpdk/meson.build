@@ -2,6 +2,8 @@
 
 prj_args = get_option('cflags').split()
 
+c_args += [ '-DALLOW_EXPERIMENTAL_API' ]
+
 # Check if rte_ring_enqueue_bulk() has free space argument
 code_ring_enqueue_bulk = '''
 #include "rte_config.h"
