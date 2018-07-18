@@ -38,6 +38,9 @@ static char *sfptpd_path = NULL;
 /** sfptpd daemon configuration file pathname. */
 static char *sfptpd_config = NULL;
 
+/** sfptpd daemon interface name to use. */
+static char *sfptpd_ifname = NULL;
+
 /**
  * Retrieve daemon status
  * 
@@ -74,7 +77,7 @@ static te_errno
 sfptpd_enable_set(unsigned int gid, const char *oid, char *value)
 {
     te_bool en = atoi(value);
-    char *s_argv[RCF_MAX_PARAMS] = {sfptpd_path, "-f", sfptpd_config, NULL};
+    char *s_argv[RCF_MAX_PARAMS] = {"-i", sfptpd_ifname, "-f", sfptpd_config, NULL};
     int rc;
 
     UNUSED(gid);
@@ -91,11 +94,65 @@ sfptpd_enable_set(unsigned int gid, const char *oid, char *value)
         return rc;
     }
 
+    if (sfptpd_ifname == NULL || strlen(sfptpd_ifname) == 0)
+    {
+        ERROR("parameter sfptpd_ifname was not set.");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    if (sfptpd_config == NULL || strlen(sfptpd_config) == 0)
+    {
+        ERROR("parameter sfptpd_config was not set.");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
     if ((rc = rcf_ch_start_process(&sfptpd_pid, -1, sfptpd_path, TRUE, 
                                    RCF_MAX_PARAMS, (void **)s_argv)) != 0)
         ERROR("sfptpd process starting failed.");
 
     return rc;
+}
+
+/**
+ * Retrieve the daemon interface name
+ *
+ * @param gid    Group identifier (unused).
+ * @param oid    Full object instance identifier (unused).
+ * @param value  Location for the value
+ *
+ * @return Status code
+ */
+static te_errno
+sfptpd_ifname_get(unsigned int gid, const char *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    *value = 0;
+    snprintf(value, RCF_MAX_VAL, "%s", sfptpd_ifname);
+
+    return 0;
+}
+
+/**
+ * Set the daemon interface name
+ *
+ * @param gid    Group identifier (unused).
+ * @param oid    Full object instance identifier (unused).
+ * @param value  String with a new interface name
+ *
+ * @return Status code
+ */
+static te_errno
+sfptpd_ifname_set(unsigned int gid, const char *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    free(sfptpd_ifname);
+    if ((sfptpd_ifname = strdup(value)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    return 0;
 }
 
 /**
@@ -180,11 +237,16 @@ sfptpd_config_set(unsigned int gid, const char *oid, char *value)
     return 0;
 }
 
+
+
 RCF_PCH_CFG_NODE_RW(node_sfptpd_config, "config", NULL, 
                     NULL, sfptpd_config_get, sfptpd_config_set);
 
+RCF_PCH_CFG_NODE_RW(node_sfptpd_ifname, "ifname", NULL,
+                    &node_sfptpd_config, sfptpd_ifname_get, sfptpd_ifname_set);
+
 RCF_PCH_CFG_NODE_RW(node_sfptpd_path, "path", NULL, 
-                    &node_sfptpd_config, sfptpd_path_get, sfptpd_path_set);
+                    &node_sfptpd_ifname, sfptpd_path_get, sfptpd_path_set);
 
 RCF_PCH_CFG_NODE_RW(node_sfptpd_enable, "enable", NULL, &node_sfptpd_path,
                     sfptpd_enable_get, sfptpd_enable_set);
@@ -198,6 +260,7 @@ ta_unix_conf_sfptpd_init(void)
 {
     sfptpd_path = strdup("");
     sfptpd_config = strdup("");
+    sfptpd_ifname = strdup("");
 
     return rcf_pch_add_node("/agent", &node_sfptpd);
 }
@@ -208,4 +271,5 @@ ta_unix_conf_sfptpd_release(void)
 {
     free(sfptpd_path);
     free(sfptpd_config);
+    free(sfptpd_ifname);
 }
