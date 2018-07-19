@@ -1924,6 +1924,7 @@ rpc_rte_eth_dev_rss_hash_conf_get(rcf_rpc_server *rpcs, uint16_t port_id,
     TAPI_RPC_LOG(rpcs, rte_eth_dev_rss_hash_conf_get,
                  "%hu, %p", NEG_ERRNO_FMT ", %s",
                  in.port_id, rss_conf, NEG_ERRNO_ARGS(out.retval),
+                 (out.retval != 0) ? "n/a" :
                  (rss_conf == NULL) ? "NULL" :
                  tarpc_rte_eth_rss_conf2str(tlbp, rss_conf));
     te_log_buf_free(tlbp);
