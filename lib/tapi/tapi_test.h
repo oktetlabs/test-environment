@@ -105,7 +105,8 @@ extern "C" {
                                                                      \
                                                                      \
         /* Behaviour switches handling section */                    \
-        if (TEST_BEHAVIOUR(wait_on_fail))                            \
+        if (TEST_BEHAVIOUR(wait_on_cleanup) ||                       \
+            (TEST_BEHAVIOUR(wait_on_fail) && result == EXIT_FAILURE))\
         {                                                            \
             printf("\n\nWe're about to jump to cleanup, "            \
                    "but tester config kindly asks \n"                \

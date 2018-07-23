@@ -144,17 +144,29 @@ typedef struct tapi_tcp_connection_t {
                                            enabled. */
     te_bool        dst_enabled_ts;    /**< Whether peer enabled TCP
                                            timestamp. */
-    uint32_t       ts_got;            /**< The last TCP timestamp value
+    uint32_t       last_ts_got;       /**< The last TCP timestamp value
                                            got from the peer. */
-    te_bool        upd_ts_echoed;     /**< Whether last_ts_echoed field
+    uint32_t       ts_to_echo;        /**< Value to be echoed in TCP
+                                           timestamp echo-reply field
+                                           the next time. */
+    uint32_t       last_ts_echo_got;  /**< The last TCP timestamp echo-reply
+                                           value got from the peer. */
+    uint32_t       last_ts;           /**< Last computed TCP timestamp. */
+    uint32_t       last_ts_sent;      /**< Last TCP timestamp sent to
+                                           peer. */
+    te_bool        upd_ts_echo_sent;  /**< Whether last_ts_echo_sent field
                                            should be updated. */
-    uint32_t       last_ts_echoed;    /**< TCP timestamp echo-reply value
+    uint32_t       last_ts_echo_sent; /**< TCP timestamp echo-reply value
                                            sent in the last packet. */
     uint32_t       ts_start_value;    /**< Start value for TCP timestamp. */
     struct timeval ts_start_time;     /**< Moment of time when TCP timestamp
                                            timer started (timestamp value
                                            is increased by number of ms
                                            since this time). */
+    te_bool        ts_timer_started;  /**< Will be set to @c TRUE once
+                                           TCP timestamp timer starts
+                                           (which happens after setting
+                                            timestamp the first time). */
 
     CIRCLEQ_HEAD(tapi_tcp_msg_queue_head, tapi_tcp_msg_queue_t)
         *messages;
@@ -542,8 +554,18 @@ create_tcp_template(tapi_tcp_connection_t *conn_descr,
     if (rc != 0)
         return rc;
 
-    return asn_write_int32(*tmpl, conn_descr->window,
-                           "pdus.0.#tcp.win-size.#plain");
+    rc = asn_write_int32(*tmpl, conn_descr->window,
+                         "pdus.0.#tcp.win-size.#plain");
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to set TCP win-size, %r",
+              __FUNCTION__, rc);
+        asn_free_value(*tmpl);
+        *tmpl = NULL;
+        return rc;
+    }
+
+    return 0;
 }
 
 /**
@@ -559,6 +581,12 @@ get_current_ts(tapi_tcp_connection_t *conn_descr, uint32_t *ts)
 {
     struct timeval  tv;
     te_errno        rc;
+
+    if (!conn_descr->ts_timer_started)
+    {
+        *ts = conn_descr->ts_start_value;
+        return 0;
+    }
 
     rc = te_gettimeofday(&tv, NULL);
     if (rc != 0)
@@ -589,7 +617,7 @@ set_timestamp(tapi_tcp_connection_t *conn_descr, asn_value *pkt,
     te_errno  rc;
     uint32_t  ts_echo;
 
-    conn_descr->upd_ts_echoed = FALSE;
+    conn_descr->upd_ts_echo_sent = FALSE;
 
     if (!conn_descr->enabled_ts)
         return 0;
@@ -600,16 +628,18 @@ set_timestamp(tapi_tcp_connection_t *conn_descr, asn_value *pkt,
     if (rc != 0)
         return rc;
 
+    conn_descr->last_ts = ts;
+
     if (ack)
     {
         if (update_echo)
         {
-            ts_echo = conn_descr->ts_got;
-            conn_descr->upd_ts_echoed = TRUE;
+            ts_echo = conn_descr->ts_to_echo;
+            conn_descr->upd_ts_echo_sent = TRUE;
         }
         else
         {
-            ts_echo = conn_descr->last_ts_echoed;
+            ts_echo = conn_descr->last_ts_echo_sent;
         }
     }
     else
@@ -621,17 +651,32 @@ set_timestamp(tapi_tcp_connection_t *conn_descr, asn_value *pkt,
 }
 
 /**
- * Update last_ts_echoed field after sending a packet.
+ * Update last_ts_sent/last_ts_echo_sent fields after sending a packet.
  *
  * @param conn_descr      Connection descriptor.
  */
 static void
-update_ts_echoed(tapi_tcp_connection_t *conn_descr)
+update_last_ts(tapi_tcp_connection_t *conn_descr)
 {
-    if (conn_descr->upd_ts_echoed)
+    te_errno          rc;
+    struct timeval    tv;
+
+    if (conn_descr->upd_ts_echo_sent)
     {
-        conn_descr->last_ts_echoed = conn_descr->ts_got;
-        conn_descr->upd_ts_echoed = FALSE;
+        conn_descr->last_ts_echo_sent = conn_descr->ts_to_echo;
+        conn_descr->upd_ts_echo_sent = FALSE;
+    }
+
+    conn_descr->last_ts_sent = conn_descr->last_ts;
+
+    if (!conn_descr->ts_timer_started)
+    {
+        rc = te_gettimeofday(&tv, NULL);
+        if (rc == 0)
+        {
+            memcpy(&conn_descr->ts_start_time, &tv, sizeof(tv));
+            conn_descr->ts_timer_started = TRUE;
+        }
     }
 }
 
@@ -674,6 +719,8 @@ conn_send_syn(tapi_tcp_connection_t *conn_descr)
     CHECK_ERROR("%s(): send SYN failed, rc %r",
                 __FUNCTION__, rc);
     conn_update_sent_seq(conn_descr, 1);
+
+    update_last_ts(conn_descr);
 
 #undef CHECK_ERROR
 cleanup:
@@ -830,13 +877,23 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     if (conn_descr->enabled_ts)
     {
         uint32_t ts_got;
+        uint32_t ts_echo_got;
 
-        rc = tapi_tcp_get_ts_opt(tcp_pdu, &ts_got, NULL);
+        rc = tapi_tcp_get_ts_opt(tcp_pdu, &ts_got, &ts_echo_got);
         if (rc == 0)
         {
+            conn_descr->last_ts_got = ts_got;
+            conn_descr->last_ts_echo_got = ts_echo_got;
+            /*
+             * In ts_to_echo is stored value to be sent in
+             * timestamp echo-reply field of the next packet.
+             * So if there is nothing new to acknowledge, peer
+             * timestamp is ignored here. See algorithm on page
+             * 15 of RFC 1323.
+             */
             if (flags & TCP_SYN_FLAG)
             {
-                conn_descr->ts_got = ts_got;
+                conn_descr->ts_to_echo = ts_got;
                 conn_descr->dst_enabled_ts = TRUE;
             }
             else if (tapi_tcp_compare_seqn(conn_descr->ack_sent,
@@ -845,7 +902,7 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
                                            seq_got +
                                            conn_descr->last_len_got) < 0)
             {
-                conn_descr->ts_got = ts_got;
+                conn_descr->ts_to_echo = ts_got;
             }
         }
         else if (conn_descr->dst_enabled_ts)
@@ -1297,18 +1354,19 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
 
     te_bool    is_server = FALSE;
 
-    asn_value *syn_ack_template;
+    asn_value *syn_ack_template = NULL;
 
     tapi_tcp_connection_t *conn_descr;
     tapi_tcp_msg_queue_t  *msg = NULL;
 
 #define CHECK_ERROR(msg_...)\
-    do {                           \
-        if (rc != 0)                 \
-        {                          \
-            ERROR(msg_);           \
-            goto cleanup;          \
-        }                          \
+    do {                                        \
+        if (rc != 0)                            \
+        {                                       \
+            ERROR(msg_);                        \
+            asn_free_value(syn_ack_template);   \
+            goto cleanup;                       \
+        }                                       \
     } while (0)
 
 
@@ -1378,7 +1436,10 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
     CHECK_ERROR("%s(): send ACK or SYN-ACK failed, rc %r",
                 __FUNCTION__, rc);
 
-    update_ts_echoed(conn_descr);
+    asn_free_value(syn_ack_template);
+    syn_ack_template = NULL;
+
+    update_last_ts(conn_descr);
 
     if (is_server)
     {
@@ -1440,9 +1501,15 @@ tapi_tcp_send_fin_gen(tapi_tcp_handler_t handler, int timeout,
         new_ackn = conn_descr->ack_sent;
 
     INFO("%s(conn %d) new ack %u", __FUNCTION__, handler, new_ackn);
-    create_tcp_template(conn_descr, conn_next_seq(conn_descr), new_ackn,
-                        FALSE, TRUE,
-                        NULL, 0, &fin_template);
+    rc = create_tcp_template(conn_descr, conn_next_seq(conn_descr), new_ackn,
+                             FALSE, TRUE,
+                             NULL, 0, &fin_template);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to create FIN template, %r",
+              __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
+    }
 
     flags = TCP_FIN_FLAG | TCP_ACK_FLAG;
     rc = asn_write_int32(fin_template, flags, "pdus.0.#tcp.flags.#plain");
@@ -1450,6 +1517,7 @@ tapi_tcp_send_fin_gen(tapi_tcp_handler_t handler, int timeout,
     {
         ERROR("%s(): set fin flag failed %r",
               __FUNCTION__, rc);
+        asn_free_value(fin_template);
         return TE_RC(TE_TAPI, rc);
     }
 
@@ -1466,13 +1534,14 @@ tapi_tcp_send_fin_gen(tapi_tcp_handler_t handler, int timeout,
     rc = tapi_tad_trsend_start(conn_descr->agt, conn_descr->snd_sid,
                                conn_descr->snd_csap,
                                fin_template, RCF_MODE_BLOCKING);
+    asn_free_value(fin_template);
     if (rc != 0)
     {
         ERROR("%s(): send FIN failed %r", __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
     }
 
-    update_ts_echoed(conn_descr);
+    update_last_ts(conn_descr);
 
 #if FIN_ACK
     conn_descr->ack_sent = new_ackn;
@@ -1541,8 +1610,15 @@ tapi_tcp_send_rst(tapi_tcp_handler_t handler)
     INFO("%s(conn %d) seq %d, new ack %u",
          __FUNCTION__, handler, conn_next_seq(conn_descr), new_ackn);
 
-    create_tcp_template(conn_descr, conn_next_seq(conn_descr), new_ackn,
-                        FALSE, TRUE, NULL, 0, &rst_template);
+    rc = create_tcp_template(conn_descr, conn_next_seq(conn_descr),
+                             new_ackn, FALSE, TRUE, NULL, 0,
+                             &rst_template);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to create RST template, %r",
+              __FUNCTION__, rc);
+        return TE_RC(TE_TAPI, rc);
+    }
 
     flags = TCP_RST_FLAG | TCP_ACK_FLAG;
     rc = asn_write_int32(rst_template, flags, "pdus.0.#tcp.flags.#plain");
@@ -1550,12 +1626,14 @@ tapi_tcp_send_rst(tapi_tcp_handler_t handler)
     {
         ERROR("%s(): set RST flag failed %r",
               __FUNCTION__, rc);
+        asn_free_value(rst_template);
         return TE_RC(TE_TAPI, rc);
     }
 
     rc = tapi_tad_trsend_start(conn_descr->agt, conn_descr->snd_sid,
                                conn_descr->snd_csap,
                                rst_template, RCF_MODE_BLOCKING);
+    asn_free_value(rst_template);
     if (rc != 0)
     {
         ERROR("%s(): send RST failed %r", __FUNCTION__, rc);
@@ -1684,6 +1762,7 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
         if (ip4_pdu == NULL)
         {
             ERROR("Failed to get IPv4 PDU from template: %r", rc);
+            asn_free_value(msg_template);
             return rc;
         }
         rc = tapi_ip4_pdu_tmpl_fragments(NULL, &ip4_pdu,
@@ -1692,6 +1771,7 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
         {
             ERROR("Failed to add fragments specification in IPv4 PDU "
                   "template: %r", rc);
+            asn_free_value(msg_template);
             return rc;
         }
     }
@@ -1699,6 +1779,7 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
     rc = tapi_tad_trsend_start(conn_descr->agt, conn_descr->snd_sid,
                                conn_descr->snd_csap,
                                msg_template, RCF_MODE_BLOCKING);
+    asn_free_value(msg_template);
     if (rc != 0)
     {
         ERROR("%s: send msg %r", __FUNCTION__, rc);
@@ -1713,7 +1794,7 @@ tapi_tcp_send_msg(tapi_tcp_handler_t handler, uint8_t *payload, size_t len,
         if (seq_mode == TAPI_TCP_AUTO)
             conn_update_sent_seq(conn_descr, len);
 
-        update_ts_echoed(conn_descr);
+        update_last_ts(conn_descr);
     }
     return rc;
 }
@@ -1913,6 +1994,7 @@ conn_send_ack(tapi_tcp_connection_t *conn_descr, tapi_tcp_pos_t ackn)
     rc = tapi_tad_trsend_start(conn_descr->agt, conn_descr->snd_sid,
                                conn_descr->snd_csap,
                                ack_template, RCF_MODE_BLOCKING);
+    asn_free_value(ack_template);
     if (rc != 0)
     {
         ERROR("%s: send ACK %r", __FUNCTION__, rc);
@@ -1921,7 +2003,7 @@ conn_send_ack(tapi_tcp_connection_t *conn_descr, tapi_tcp_pos_t ackn)
     {
         conn_descr->ack_sent = ackn;
 
-        update_ts_echoed(conn_descr);
+        update_last_ts(conn_descr);
     }
 
     return rc;
@@ -2258,26 +2340,12 @@ tapi_tcp_conn_enable_ts(tapi_tcp_handler_t handler,
                         uint32_t start_value)
 {
     tapi_tcp_connection_t  *conn_descr;
-    struct timeval          tv;
 
     if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
 
-    if (enable)
-    {
-        te_errno rc;
-
-        rc = te_gettimeofday(&tv, NULL);
-        if (rc != 0)
-            return rc;
-    }
-
     conn_descr->enabled_ts = enable;
-    if (enable)
-    {
-        conn_descr->ts_start_value = start_value;
-        memcpy(&conn_descr->ts_start_time, &tv, sizeof(tv));
-    }
+    conn_descr->ts_start_value = start_value;
 
     return 0;
 }
@@ -2288,8 +2356,11 @@ tapi_tcp_conn_get_ts(tapi_tcp_handler_t handler,
                      te_bool *enabled,
                      te_bool *dst_enabled,
                      uint32_t *ts_value,
-                     uint32_t *ts_echo,
-                     uint32_t *last_ts_echoed)
+                     uint32_t *last_ts_sent,
+                     uint32_t *last_ts_got,
+                     uint32_t *ts_to_echo,
+                     uint32_t *last_ts_echo_sent,
+                     uint32_t *last_ts_echo_got)
 {
     tapi_tcp_connection_t  *conn_descr;
 
@@ -2304,11 +2375,20 @@ tapi_tcp_conn_get_ts(tapi_tcp_handler_t handler,
         if (dst_enabled != NULL)
             *dst_enabled = conn_descr->dst_enabled_ts;
 
-        if (ts_echo != NULL)
-            *ts_echo = conn_descr->ts_got;
+        if (last_ts_sent != NULL)
+            *last_ts_sent = conn_descr->last_ts_sent;
 
-        if (last_ts_echoed != NULL)
-            *last_ts_echoed = conn_descr->last_ts_echoed;
+        if (last_ts_got != NULL)
+            *last_ts_got = conn_descr->last_ts_got;
+
+        if (ts_to_echo != NULL)
+            *ts_to_echo = conn_descr->ts_to_echo;
+
+        if (last_ts_echo_sent != NULL)
+            *last_ts_echo_sent = conn_descr->last_ts_echo_sent;
+
+        if (last_ts_echo_got != NULL)
+            *last_ts_echo_got = conn_descr->last_ts_echo_got;
 
         if (ts_value != NULL)
             return get_current_ts(conn_descr, ts_value);

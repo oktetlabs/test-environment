@@ -60,6 +60,25 @@ struct tarpc_rte_eal_process_type_out {
     enum tarpc_rte_proc_type_t  retval;
 };
 
+/** rte_eal_hotplug_add() */
+struct tarpc_rte_eal_hotplug_add_in {
+    struct tarpc_in_arg common;
+    string              busname<>;
+    string              devname<>;
+    string              devargs<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eal_hotplug_add_out;
+
+/** rte_eal_hotplug_remove() */
+struct tarpc_rte_eal_hotplug_remove_in {
+    struct tarpc_in_arg common;
+    string              busname<>;
+    string              devname<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eal_hotplug_remove_out;
+
 struct tarpc_mbuf_in {
     struct tarpc_in_arg     common;
     tarpc_rte_mbuf          m;
@@ -1323,27 +1342,6 @@ struct tarpc_rte_vlan_strip_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_vlan_strip_out;
 
-/** rte_eth_dev_attach() */
-struct tarpc_rte_eth_dev_attach_in {
-    struct tarpc_in_arg common;
-    string              devargs<>;
-};
-
-struct tarpc_rte_eth_dev_attach_out {
-    struct tarpc_out_arg common;
-    tarpc_int            retval;
-    uint16_t             port_id;
-};
-
-/** rte_eth_dev_detach() */
-typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_detach_in;
-
-struct tarpc_rte_eth_dev_detach_out {
-    struct tarpc_out_arg    common;
-    tarpc_int               retval;
-    string                  devname<>;
-};
-
 struct tarpc_rte_eth_rss_reta_entry64 {
     uint64_t    mask;
     uint16_t    reta[64];
@@ -1925,6 +1923,8 @@ program dpdk
     {
         RPC_DEF(rte_eal_init)
         RPC_DEF(rte_eal_process_type)
+        RPC_DEF(rte_eal_hotplug_add)
+        RPC_DEF(rte_eal_hotplug_remove)
 
         RPC_DEF(rte_mempool_lookup)
         RPC_DEF(rte_mempool_in_use_count)
@@ -2022,8 +2022,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_default_mac_addr_set)
         RPC_DEF(rte_eth_rx_queue_info_get)
         RPC_DEF(rte_eth_tx_queue_info_get)
-        RPC_DEF(rte_eth_dev_attach)
-        RPC_DEF(rte_eth_dev_detach)
         RPC_DEF(rte_eth_dev_rss_reta_query)
         RPC_DEF(rte_eth_dev_rss_hash_conf_get)
         RPC_DEF(rte_eth_dev_flow_ctrl_get)

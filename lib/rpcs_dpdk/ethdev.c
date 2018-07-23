@@ -396,6 +396,7 @@ tarpc_rte_eth_rxconf2rpc(const struct rte_eth_rxconf *rte,
 #endif
 }
 
+#if RTE_VERSION < RTE_VERSION_NUM(18,8,0,0)
 static uint64_t
 tarpc_rte_eth_txq_flags2rpc(uint32_t rte)
 {
@@ -426,6 +427,7 @@ tarpc_rte_eth_txq_flags2rpc(uint32_t rte)
         rpc |= (1 << TARPC_RTE_ETH_TXQ_FLAGS__UNKNOWN_BIT);
     return rpc;
 }
+#endif
 
 static void
 tarpc_rte_eth_txconf2rpc(const struct rte_eth_txconf *rte,
@@ -434,7 +436,9 @@ tarpc_rte_eth_txconf2rpc(const struct rte_eth_txconf *rte,
     tarpc_rte_eth_thresh2rpc(&rte->tx_thresh, &rpc->tx_thresh);
     rpc->tx_rs_thresh = rte->tx_rs_thresh;
     rpc->tx_free_thresh = rte->tx_free_thresh;
+#if RTE_VERSION < RTE_VERSION_NUM(18,8,0,0)
     rpc->txq_flags = tarpc_rte_eth_txq_flags2rpc(rte->txq_flags);
+#endif
     rpc->tx_deferred_start = rte->tx_deferred_start;
 #if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
     rpc->offloads = tarpc_rte_tx_offloads2rpc(rte->offloads);
@@ -569,6 +573,7 @@ tarpc_eth_rx_mq_mode2rte(const enum tarpc_rte_eth_rx_mq_mode rpc,
     return 1;
 }
 
+#if RTE_VERSION < RTE_VERSION_NUM(18,8,0,0)
 static int
 tarpc_eth_rxmode_flags2rte(uint16_t rxmode_flags,
                            struct rte_eth_rxmode *rxmode)
@@ -603,6 +608,7 @@ tarpc_eth_rxmode_flags2rte(uint16_t rxmode_flags,
 #undef TARPC_RTE_ETH_RXMODE_BIT2MEMBER
     return (rxmode_flags == 0);
 }
+#endif
 
 static int
 tarpc_eth_rxmode2rte(const struct tarpc_rte_eth_rxmode *rpc,
@@ -616,7 +622,9 @@ tarpc_eth_rxmode2rte(const struct tarpc_rte_eth_rxmode *rpc,
 #if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
     ret &= tarpc_rte_rx_offloads2rte(rpc->offloads, &rte->offloads);
 #endif
+#if RTE_VERSION < RTE_VERSION_NUM(18,8,0,0)
     ret &= tarpc_eth_rxmode_flags2rte(rpc->flags, rte);
+#endif
     return ret;
 }
 
@@ -880,6 +888,7 @@ tarpc_eth_thresh2rte(const struct tarpc_rte_eth_thresh *rpc,
     return 1;
 }
 
+#if RTE_VERSION < RTE_VERSION_NUM(18,8,0,0)
 static int
 tarpc_eth_txq_flags2rte(uint32_t rpc, uint32_t *rte)
 {
@@ -909,6 +918,7 @@ tarpc_eth_txq_flags2rte(uint32_t rpc, uint32_t *rte)
 
     return (rpc == 0);
 }
+#endif
 
 static int
 tarpc_eth_txconf2rte(const struct tarpc_rte_eth_txconf *rpc,
@@ -921,7 +931,9 @@ tarpc_eth_txconf2rte(const struct tarpc_rte_eth_txconf *rpc,
     ret &= tarpc_eth_thresh2rte(&rpc->tx_thresh, &rte->tx_thresh);
     rte->tx_rs_thresh = rpc->tx_rs_thresh;
     rte->tx_free_thresh = rpc->tx_free_thresh;
+#if RTE_VERSION < RTE_VERSION_NUM(18,8,0,0)
     ret &= tarpc_eth_txq_flags2rte(rpc->txq_flags, &rte->txq_flags);
+#endif
     rte->tx_deferred_start = rpc->tx_deferred_start;
 #if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
     ret &= tarpc_rte_tx_offloads2rte(rpc->offloads, &rte->offloads);
@@ -1426,23 +1438,6 @@ TARPC_FUNC(rte_eth_tx_queue_info_get, {},
                              &out->qinfo.conf);
 
     out->qinfo.nb_desc = qinfo.nb_desc;
-})
-
-TARPC_FUNC(rte_eth_dev_attach,{},
-{
-    MAKE_CALL(out->retval = func(in->devargs, &out->port_id));
-    neg_errno_h2rpc(&out->retval);
-})
-
-TARPC_FUNC(rte_eth_dev_detach,{},
-{
-    out->devname = TE_ALLOC(RPC_RTE_ETH_NAME_MAX_LEN);
-    if (out->devname == NULL)
-        out->retval = -ENOMEM;
-    else
-        MAKE_CALL(out->retval = func(in->port_id, out->devname));
-
-    neg_errno_h2rpc(&out->retval);
 })
 
 TARPC_FUNC(rte_eth_dev_rss_reta_query,{},
@@ -2464,8 +2459,8 @@ TARPC_FUNC(rte_eth_dev_set_mc_addr_list, {},
                    sizeof(mc_addr_set[i].addr_bytes));
     }
 
-    MAKE_CALL(func(in->port_id, mc_addr_set,
-                   in->mc_addr_set.mc_addr_set_len));
+    MAKE_CALL(out->retval = func(in->port_id, mc_addr_set,
+                                 in->mc_addr_set.mc_addr_set_len));
 
     neg_errno_h2rpc(&out->retval);
 })

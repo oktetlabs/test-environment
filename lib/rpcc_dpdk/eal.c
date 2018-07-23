@@ -17,6 +17,7 @@
 #include "te_alloc.h"
 
 #include "log_bufs.h"
+#include "tapi_mem.h"
 #include "tapi_env.h"
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_rte_eal.h"
@@ -104,7 +105,7 @@ tapi_reuse_eal(rcf_rpc_server   *rpcs,
     char                 *eal_args_cfg = NULL;
     cfg_val_type          val_type = CVT_STRING;
     const tapi_env_ps_if *ps_if;
-    char                 *dev_na_pci_fn = NULL;
+    const char           *da_generic = NULL;
     te_errno              rc = 0;
     unsigned int          i;
 
@@ -153,49 +154,26 @@ tapi_reuse_eal(rcf_rpc_server   *rpcs,
 
     STAILQ_FOREACH(ps_if, ifsp, links)
     {
+        const char *bus_name = NULL;
         const char *dev_name = ps_if->iface->if_info.if_name;
-        const char *dev_na_generic = NULL;
+        const char *da_empty = "";
         uint16_t    port_id;
-        uint16_t    port_id_unused;
 
         if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_PCI_FN)
         {
-            if (dev_args != NULL)
-            {
-                size_t dev_na_len = strlen(dev_name) + strlen(dev_args) + 1;
-                int    ret;
-
-                dev_na_pci_fn = TE_ALLOC(dev_na_len + 1);
-                if (dev_na_pci_fn == NULL)
-                {
-                    rc = TE_ENOMEM;
-                    goto out;
-                }
-
-                ret = snprintf(dev_na_pci_fn, dev_na_len + 1, "%s,%s",
-                               dev_name, dev_args);
-                if (ret < 0 || (size_t)ret != dev_na_len)
-                {
-                    rc = TE_EINVAL;
-                    goto out;
-                }
-
-                dev_na_generic = dev_na_pci_fn;
-            }
-            else
-            {
-                dev_na_generic = dev_name;
-            }
+            bus_name = "pci";
+            da_generic = dev_args;
         }
         else if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_RTE_VDEV)
         {
-            dev_na_generic = NULL;
+            bus_name = "vdev";
+            da_generic = NULL;
 
             for (i = 0; i < (unsigned int)argc; ++i)
             {
                 if (strncmp(argv[i], dev_name, strlen(dev_name)) == 0)
                 {
-                    dev_na_generic = argv[i];
+                    da_generic = strchr(argv[i], ',') + 1;
                     break;
                 }
             }
@@ -209,10 +187,8 @@ tapi_reuse_eal(rcf_rpc_server   *rpcs,
         rc = rpc_rte_eth_dev_get_port_by_name(rpcs, dev_name, &port_id);
         if (rc == 0)
         {
-            char dev_name_unused[RPC_RTE_ETH_NAME_MAX_LEN];
-
             rpc_rte_eth_dev_close(rpcs, port_id);
-            rc = rpc_rte_eth_dev_detach(rpcs, port_id, dev_name_unused);
+            rc = rpc_rte_eal_hotplug_remove(rpcs, bus_name, dev_name);
             if (rc != 0)
                 goto out;
         }
@@ -221,12 +197,10 @@ tapi_reuse_eal(rcf_rpc_server   *rpcs,
             goto out;
         }
 
-        rc = rpc_rte_eth_dev_attach(rpcs, dev_na_generic, &port_id_unused);
+        da_generic = (da_generic == NULL) ? da_empty : da_generic;
+        rc = rpc_rte_eal_hotplug_add(rpcs, bus_name, dev_name, da_generic);
         if (rc != 0)
             goto out;
-
-        free(dev_na_pci_fn);
-        dev_na_pci_fn = NULL;
     }
 
     rpc_rte_mempool_free_all(rpcs);
@@ -237,9 +211,6 @@ tapi_reuse_eal(rcf_rpc_server   *rpcs,
     free(eal_args);
 
 out:
-    if (rc != 0)
-        free(dev_na_pci_fn);
-
     free(eal_args_cfg);
 
     if (rc != 0)
@@ -391,10 +362,12 @@ static te_errno
 tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
                                 const tapi_env_ps_if  *ps_if,
                                 te_bool                is_bonding,
-                                char                 **slave_list_strp)
+                                char                 **slave_list_strp,
+                                const char            *dev_args)
 {
     const char     prefix_bonding[] = ",slave=";
     const char     prefix_failsafe[] = ",dev(";
+    const char    *dev_args_failsafe = (is_bonding) ? NULL : dev_args;
     const char     postfix_bonding[] = "";
     const char     postfix_failsafe[] = ")";
     const char    *prefix = NULL;
@@ -422,6 +395,11 @@ tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
 
         slave_list_str_len_new += strlen(prefix);
         slave_list_str_len_new += strlen(slaves[i]);
+        if (dev_args_failsafe != NULL)
+        {
+            ++slave_list_str_len_new;
+            slave_list_str_len_new += strlen(dev_args_failsafe);
+        }
         slave_list_str_len_new += strlen(postfix);
 
         slave_list_str_new = realloc(slave_list_str,
@@ -435,7 +413,10 @@ tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
 
         len = slave_list_str_len_new - slave_list_str_len;
         ret = snprintf(slave_list_str + slave_list_str_len, len + 1,
-                       "%s%s%s", prefix, slaves[i], postfix);
+                       "%s%s%s%s%s", prefix, slaves[i],
+                       (dev_args_failsafe != NULL) ? "," : "",
+                       (dev_args_failsafe != NULL) ? dev_args_failsafe : "",
+                       postfix);
         if (ret < 0 || (size_t)ret != len)
         {
             rc = TE_EINVAL;
@@ -463,7 +444,8 @@ static te_errno
 tapi_eal_add_vdev_args(tapi_env          *env,
                        tapi_env_ps_ifs   *ifsp,
                        int               *argcp,
-                       char            ***argvpp)
+                       char            ***argvpp,
+                       const char        *dev_args)
 {
     const tapi_env_ps_if *ps_if;
     te_errno              rc = 0;
@@ -483,7 +465,7 @@ tapi_eal_add_vdev_args(tapi_env          *env,
                 return rc;
 
             rc = tapi_eal_mk_vdev_slave_list_str(env, ps_if, is_bonding,
-                                                 &slave_list_str);
+                                                 &slave_list_str, dev_args);
             if (rc != 0)
             {
                 free(mode);
@@ -590,11 +572,6 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     /* Use RPC server name as a program name */
     append_arg(&my_argc, &my_argv, "%s", rpcs->name);
 
-    /* Append vdev-related arguments should the need arise */
-    rc = tapi_eal_add_vdev_args(env, &pco->process->ifs, &my_argc, &my_argv);
-    if (rc != 0)
-        goto cleanup;
-
     /* Get device arguments to be specified in whitelist option */
     val_type = CVT_STRING;
     rc = cfg_get_instance_fmt(&val_type, &dev_args,
@@ -612,6 +589,12 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
         free(dev_args);
         dev_args = NULL;
     }
+
+    /* Append vdev-related arguments should the need arise */
+    rc = tapi_eal_add_vdev_args(env, &pco->process->ifs, &my_argc, &my_argv,
+                                dev_args);
+    if (rc != 0)
+        goto cleanup;
 
      /* Specify PCI whitelist or virtual device information */
     STAILQ_FOREACH(ps_if, &pco->process->ifs, links)
@@ -779,5 +762,63 @@ rpc_dpdk_get_version(rcf_rpc_server *rpcs)
                  out.year, out.month, out.minor, out.release);
 
     return TAPI_RTE_VERSION_NUM(out.year, out.month, out.minor, out.release);
+}
+
+int
+rpc_rte_eal_hotplug_add(rcf_rpc_server *rpcs,
+                        const char     *busname,
+                        const char     *devname,
+                        const char     *devargs)
+{
+    tarpc_rte_eal_hotplug_add_in  in;
+    tarpc_rte_eal_hotplug_add_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.busname = tapi_strdup(busname);
+    in.devname = tapi_strdup(devname);
+    if (devargs != NULL)
+        in.devargs = tapi_strdup(devargs);
+
+    rcf_rpc_call(rpcs, "rte_eal_hotplug_add", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eal_hotplug_add, out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eal_hotplug_add, "%s; %s; %s", NEG_ERRNO_FMT,
+                 in.busname, in.devname,
+                 (in.devargs == NULL) ? "N/A" : in.devargs,
+                 NEG_ERRNO_ARGS(out.retval));
+
+    free(in.busname);
+    free(in.devname);
+    free(in.devargs);
+
+    RETVAL_ZERO_INT(rte_eal_hotplug_add, out.retval);
+}
+
+int
+rpc_rte_eal_hotplug_remove(rcf_rpc_server *rpcs,
+                           const char     *busname,
+                           const char     *devname)
+{
+    tarpc_rte_eal_hotplug_remove_in  in;
+    tarpc_rte_eal_hotplug_remove_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.busname = tapi_strdup(busname);
+    in.devname = tapi_strdup(devname);
+
+    rcf_rpc_call(rpcs, "rte_eal_hotplug_remove", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eal_hotplug_remove, out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eal_hotplug_remove, "%s; %s", NEG_ERRNO_FMT,
+                 in.busname, in.devname, NEG_ERRNO_ARGS(out.retval));
+
+    free(in.busname);
+    free(in.devname);
+
+    RETVAL_ZERO_INT(rte_eal_hotplug_remove, out.retval);
 }
 

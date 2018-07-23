@@ -348,6 +348,48 @@ tapi_getenv_bool(const char *var_name)
     return TRUE;
 }
 
+/**
+ * Append a location to the PATH on the agent. No restart of the PCOs is done.
+ *
+ * @param ta            Name of the test agent
+ * @param dir           Directory to be added into the PATH.
+ *
+ * @result Status code
+ */
+static inline te_errno
+tapi_sh_env_ta_path_append(const char *ta, const char *dir)
+{
+    cfg_val_type val_type = CVT_STRING;
+    char new_path_str[PATH_MAX];
+    char *path;
+    te_errno rc;
+    int res;
+
+    rc = cfg_get_instance_fmt(&val_type, &path, "/agent:%s/env:PATH",
+                              ta);
+    if (rc != 0)
+    {
+        ERROR("Failed to get PATH env from agent %s", ta);
+        return rc;
+    }
+
+    res = snprintf(new_path_str, sizeof(new_path_str), "%s:%s", path, dir);
+    if (res >= (int)sizeof(new_path_str))
+    {
+        /* not that this free matters */
+        free(path);
+        ERROR("We're seen PATH that is longer then %z", sizeof(new_path_str));
+        return TE_RC(TE_TAPI, TE_ENOBUFS);
+    }
+
+    free(path);
+
+    rc = cfg_set_instance_fmt(CFG_VAL(STRING, new_path_str),
+                              "/agent:%s/env:PATH", ta);
+
+    return rc;
+}
+
 #ifdef __cplusplus
 }
 #endif

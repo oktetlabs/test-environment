@@ -74,4 +74,14 @@
                 For example: /local:/host:h1/agent:Agt_A/interface:eth1-->
     <object oid="/local/host/agent/interface/parent" access="read_create" type="string"/>
 
+    <!-- Test-related data. -->
+    <object oid="/local/test" access="read_create" type="none"/>
+
+    <!-- Test behaviour tuning. Must not be used to pass test parameters! It's
+         just 'how the test should handle different things' type of behaviour.
+
+         Name: name of the behaviour/tunable
+         Value: 0/1 -->
+    <object oid="/local/test/behaviour" access="read_create" type="integer"/>
+
 </backup>

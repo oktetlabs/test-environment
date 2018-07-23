@@ -176,6 +176,7 @@ Generic options:
   --test-wof                    Wait before jump to cleanup on test failure. Useful to
                                 take a look at what's configured etc. Requires some
                                 nodes in the /local:/test: tree.
+  --test-woc                    Wait before jump to cleanup regardless of test result.
 
   --trc-log=<filename>          Generate bzip2-ed TRC log
   --trc-db=<filename>           TRC database to be used
@@ -558,11 +559,16 @@ process_opts()
                 opt_str="--${opt_name#--tester-}=\"${1#${opt_name}=}\""
                 TESTER_OPTS="${TESTER_OPTS} ${opt_str}" ;;
             --tester-*) TESTER_OPTS="${TESTER_OPTS} --${1#--tester-}" ;;
-            --test-sigusr2-verdict*) TE_TEST_SIGUSR2_VERDICT=1
-                export TE_TEST_SIGUSR2_VERDICT ;;
+            --test-sigusr2-verdict*)
+                TE_TEST_SIGUSR2_VERDICT=1
+                export TE_TEST_SIGUSR2_VERDICT
+                ;;
             --test-wof)
-              export TE_TEST_BEHAVIOUR_WAIT_ON_FAIL=1
-              ;;
+                export TE_TEST_BEHAVIOUR_WAIT_ON_FAIL=1
+                ;;
+            --test-woc)
+                export TE_TEST_BEHAVIOUR_WAIT_ON_CLEANUP=1
+                ;;
 
             --trc-log=*) TRC_LOG="${1#--trc-log=}" ;;
             --trc-db=*) 

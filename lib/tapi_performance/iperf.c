@@ -148,6 +148,20 @@ set_opt_time(te_string *cmd, const tapi_perf_opts *options)
 }
 
 /*
+ * Set option of pause in seconds between periodic bandwidth reports in iperf
+ * tool format.
+ *
+ * @param cmd           Buffer contains a command to add option to.
+ * @param options       iperf tool options.
+ */
+static void
+set_opt_interval(te_string *cmd, const tapi_perf_opts *options)
+{
+    if (options->interval_sec >= 0)
+        CHECK_RC(te_string_append(cmd, " -i%"PRId32, options->interval_sec));
+}
+
+/*
  * Set option of length of buffer in iperf tool format.
  *
  * @param cmd           Buffer contains a command to add option to.
@@ -186,7 +200,8 @@ build_server_cmd(te_string *cmd, const tapi_perf_opts *options)
         set_opt_port,
         set_opt_ipversion,
         set_opt_protocol,
-        set_opt_length
+        set_opt_length,
+        set_opt_interval
     };
     size_t i;
 
@@ -213,6 +228,7 @@ build_client_cmd(te_string *cmd, const tapi_perf_opts *options)
         set_opt_length,
         set_opt_bytes,
         set_opt_time,
+        set_opt_interval,
         set_opt_streams
     };
     size_t i;

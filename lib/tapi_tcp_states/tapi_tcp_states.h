@@ -118,6 +118,10 @@ typedef struct tsa_config {
     /**< Socket options */
     uint32_t            flags;          /**< Flags described in tsa_flags
                                              enum */
+
+    te_bool             gw_preconf;     /**< If @c TRUE, gateway is
+                                             preconfigured, this library
+                                             should not touch it. */
 } tsa_config;
 
 /** Structure describing variables used in @c TSA_TST_SOCKET mode */
@@ -468,6 +472,17 @@ extern te_errno tsa_gw_set(tsa_session *ss, rcf_rpc_server *pco_gw,
                            const struct if_nameindex *gw_iut_if,
                            const struct if_nameindex *gw_tst_if,
                            const void *alien_link_addr);
+
+/**
+ * Specify whether gateway is already configured. It makes sense to call
+ * this function only before @b tsa_gw_set().
+ *
+ * @param ss                    Pointer to TSA session structure
+ * @param preconfigured         If @c TRUE, gateway is already configured,
+ *                              @b tsa_gw_set() should not try to configure
+ *                              routes or forwarding.
+ */
+extern void tsa_gw_preconf(tsa_session *ss, te_bool preconfigured);
 
 /**
  * Break network connection from @p pco_tst to @p pco_iut by

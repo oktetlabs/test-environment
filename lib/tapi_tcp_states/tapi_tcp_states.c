@@ -299,6 +299,81 @@ wait_connectivity_changes(tsa_session *ss)
 }
 
 /* See the tapi_tcp_states.h file for the description. */
+void
+tsa_gw_preconf(tsa_session *ss, te_bool preconfigured)
+{
+    ss->config.gw_preconf = preconfigured;
+}
+
+/**
+ * Configure network connection via gateway.
+ *
+ * @param ss        Pointer to tsa_session structure with filled
+ *                  fields related to gateway.
+ *
+ * @return Status code.
+ */
+static te_errno
+configure_gateway(tsa_session *ss)
+{
+    rpc_socket_addr_family  family;
+    te_errno                rc;
+
+    family = addr_family_h2rpc(ss->config.iut_addr->sa_family);
+
+    /*
+     * Add route on 'pco_iut': 'tst_addr' via gateway
+     * 'gw_iut_addr'
+     */
+    rc = tapi_cfg_add_route_via_gw(
+            ss->config.pco_iut->ta,
+            addr_family_rpc2h(family),
+            te_sockaddr_get_netaddr(ss->config.tst_addr),
+            te_netaddr_get_size(addr_family_rpc2h(family)) * 8,
+            te_sockaddr_get_netaddr(ss->config.gw_iut_addr));
+    if (rc != 0)
+        return rc;
+
+    ss->state.sock.route_dst_added = TRUE;
+
+    /*
+     * Add route on 'pco_tst': 'iut_addr' via gateway
+     * 'gw_tst_addr'
+     */
+    rc = tapi_cfg_add_route_via_gw(
+            ss->config.pco_tst->ta,
+            addr_family_rpc2h(family),
+            te_sockaddr_get_netaddr(ss->config.iut_addr),
+            te_netaddr_get_size(addr_family_rpc2h(
+                family)) * 8,
+            te_sockaddr_get_netaddr(ss->config.gw_tst_addr));
+    if (rc != 0)
+        return rc;
+
+    ss->state.sock.route_src_added = TRUE;
+
+    /* Turn on forwarding on router host */
+    if (family == RPC_AF_INET)
+    {
+        CHECK_NZ_RETURN(tapi_cfg_base_ipv4_fw_enabled(
+                                            ss->config.pco_gw->ta,
+                                            &ss->state.sock.ipv4_fw));
+        CHECK_NZ_RETURN(tapi_cfg_base_ipv4_fw(ss->config.pco_gw->ta, TRUE));
+        ss->state.sock.ipv4_fw_enabled = TRUE;
+    }
+    else if (family == RPC_AF_INET6)
+    {
+        CHECK_NZ_RETURN(tapi_cfg_base_ipv6_fw_enabled(
+                                            ss->config.pco_gw->ta,
+                                            &ss->state.sock.ipv6_fw));
+        CHECK_NZ_RETURN(tapi_cfg_base_ipv6_fw(ss->config.pco_gw->ta, TRUE));
+        ss->state.sock.ipv6_fw_enabled = TRUE;
+    }
+
+    return 0;
+}
+
+/* See the tapi_tcp_states.h file for the description. */
 te_errno
 tsa_gw_set(tsa_session *ss, rcf_rpc_server *pco_gw,
            const struct sockaddr *gw_iut_addr,
@@ -307,8 +382,6 @@ tsa_gw_set(tsa_session *ss, rcf_rpc_server *pco_gw,
            const struct if_nameindex *gw_tst_if,
            const void *alien_link_addr)
 {
-    rpc_socket_addr_family family;
-
     te_errno rc;
 
     if (ss->state.tst_type != TSA_TST_SOCKET &&
@@ -326,7 +399,6 @@ tsa_gw_set(tsa_session *ss, rcf_rpc_server *pco_gw,
     ss->config.gw_tst_if = gw_tst_if;
     ss->config.alien_link_addr = alien_link_addr;
 
-    family = addr_family_h2rpc(ss->config.iut_addr->sa_family);
 
     if (ss->state.tst_type == TSA_TST_GW_CSAP)
     {
@@ -359,51 +431,11 @@ tsa_gw_set(tsa_session *ss, rcf_rpc_server *pco_gw,
             return rc;
     }
 
-    /*
-     * Add route on 'pco_iut': 'tst_addr' via gateway
-     * 'gw_iut_addr'
-     */
-    rc = tapi_cfg_add_route_via_gw(
-            ss->config.pco_iut->ta,
-            addr_family_rpc2h(family),
-            te_sockaddr_get_netaddr(ss->config.tst_addr),
-            te_netaddr_get_size(addr_family_rpc2h(family)) * 8,
-            te_sockaddr_get_netaddr(gw_iut_addr));
-    if (rc != 0)
-        return rc;
-
-    ss->state.sock.route_dst_added = TRUE;
-
-    /*
-     * Add route on 'pco_tst': 'iut_addr' via gateway
-     * 'gw_tst_addr'
-     */
-    rc = tapi_cfg_add_route_via_gw(
-            ss->config.pco_tst->ta,
-            addr_family_rpc2h(family),
-            te_sockaddr_get_netaddr(ss->config.iut_addr),
-            te_netaddr_get_size(addr_family_rpc2h(
-                family)) * 8,
-            te_sockaddr_get_netaddr(gw_tst_addr));
-    if (rc != 0)
-        return rc;
-
-    ss->state.sock.route_src_added = TRUE;
-
-    /* Turn on forwarding on router host */
-    if (family == RPC_AF_INET)
+    if (!ss->config.gw_preconf)
     {
-        CHECK_NZ_RETURN(tapi_cfg_base_ipv4_fw_enabled(pco_gw->ta,
-                                                      &ss->state.sock.ipv4_fw));
-        CHECK_NZ_RETURN(tapi_cfg_base_ipv4_fw(pco_gw->ta, TRUE));
-        ss->state.sock.ipv4_fw_enabled = TRUE;
-    }
-    else if (family == RPC_AF_INET6)
-    {
-        CHECK_NZ_RETURN(tapi_cfg_base_ipv6_fw_enabled(pco_gw->ta,
-                                                      &ss->state.sock.ipv6_fw));
-        CHECK_NZ_RETURN(tapi_cfg_base_ipv6_fw(pco_gw->ta, TRUE));
-        ss->state.sock.ipv6_fw_enabled = TRUE;
+        rc = configure_gateway(ss);
+        if (rc != 0)
+            return rc;
     }
 
     return 0;
