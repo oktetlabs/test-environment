@@ -1971,7 +1971,7 @@ bind_host_if(tapi_env_if *iface, tapi_env_ifs *ifs,
                      i, j, cfg_nets->nets[i].nodes[j].type);
                 continue;
             }
-            VERB("Node (net=%u,node=%u) match PCOs type", i, j);
+            VERB("Node (%u,%u) match PCOs type", i, j);
 
             /* Check that there is no conflicts with already bound nodes */
             p = iface;
@@ -2189,51 +2189,20 @@ get_pcos_type(tapi_env_processes *procs)
 {
     tapi_env_process *proc;
     tapi_env_pco     *pco;
-    tapi_env_type     type = TAPI_ENV_UNSPEC;
 
     SLIST_FOREACH(proc, procs, links)
     {
         STAILQ_FOREACH(pco, &proc->pcos, links)
         {
-            switch (type)
-            {
-                case TAPI_ENV_INVALID:
-                    /* invalid stays invalid */
-                    break;
-                case TAPI_ENV_UNSPEC:
-                    type = pco->type;
-                    break;
-                case TAPI_ENV_IUT:
-                    if (pco->type == TAPI_ENV_UNSPEC
-                        || pco->type == TAPI_ENV_IUT)
-                        type = TAPI_ENV_IUT;
-                    else
-                        type = TAPI_ENV_INVALID;
-                    break;
-                case TAPI_ENV_TST:
-                    if (pco->type == TAPI_ENV_UNSPEC
-                        || type == TAPI_ENV_TST)
-                        type = TAPI_ENV_TST;
-                    else
-                        type = TAPI_ENV_INVALID;
-                    break;
-                default:
-                    assert(0);
-            }
             if (pco->type == TAPI_ENV_IUT)
-
             {
                 VERB("%s(): PCOs are IUT", __FUNCTION__);
                 return TAPI_ENV_IUT;
             }
-
-            if (pco->type == TAPI_ENV_TST)
-                type = TAPI_ENV_TST;
         }
     }
-    VERB("%s(): PCOs are %s", __FUNCTION__,
-         type == TAPI_ENV_TST ? "TST" : "Any");
-    return type;
+    VERB("%s(): PCOs are Tester", __FUNCTION__);
+    return TAPI_ENV_TESTER;
 }
 
 /**
@@ -2311,21 +2280,8 @@ check_node_type_vs_pcos(cfg_nets_t         *cfg_nets,
                         cfg_net_node_t     *node,
                         tapi_env_processes *processes)
 {
-    switch (get_pcos_type(processes))
-    {
-        case TAPI_ENV_UNSPEC:
-            return TRUE;
-        case TAPI_ENV_IUT:
-            return get_ta_type(cfg_nets, node) == NET_NODE_TYPE_NUT;
-        case TAPI_ENV_TST:
-            return get_ta_type(cfg_nets, node) == NET_NODE_TYPE_AGENT;
-        case TAPI_ENV_INVALID:
-            ERROR("Are you trying to bind the environment with INVALID "
-                  "types or types that contradict each other?");
-            return FALSE;
-        default:
-            assert(0);
-    }
+    return (get_pcos_type(processes) != TAPI_ENV_IUT) ||
+           (get_ta_type(cfg_nets, node) == NET_NODE_TYPE_NUT);
 }
 
 /**
@@ -2361,7 +2317,7 @@ check_net_type_cfg_vs_env(cfg_net_t *net, tapi_env_type net_type)
         case TAPI_ENV_IUT:
             return (node_type == NET_NODE_TYPE_NUT);
 
-        case TAPI_ENV_TST:
+        case TAPI_ENV_TESTER:
             return (node_type == NET_NODE_TYPE_AGENT);
 
         default:
