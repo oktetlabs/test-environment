@@ -745,6 +745,16 @@ enum tarpc_eth_link_speeds {
     TARPC_RTE_ETH_LINK_SPEED__UNKNOWN
 };
 
+/** Device capabilities */
+enum tarpc_eth_dev_capa {
+    TARPC_RTE_ETH_DEV_CAPA_RUNTIME_RX_QUEUE_SETUP_BIT = 0,
+    TARPC_RTE_ETH_DEV_CAPA_RUNTIME_TX_QUEUE_SETUP_BIT,
+
+    TARPC_RTE_ETH_DEV_CAPA__UNSUPPORTED_BIT,
+
+    TARPC_RTE_ETH_DEV_CAPA__UNKNOWN_BIT
+};
+
 /** RX offload capabilities of a device */
 enum tarpc_dev_rx_offload_bits {
     TARPC_RTE_DEV_RX_OFFLOAD_VLAN_STRIP_BIT = 0,
@@ -892,6 +902,7 @@ struct tarpc_rte_eth_dev_info {
     struct tarpc_rte_eth_desc_lim   rx_desc_lim;
     struct tarpc_rte_eth_desc_lim   tx_desc_lim;
     uint32_t                        speed_capa;
+    uint64_t                        dev_capa;
 };
 
 /** rte_eth_dev_info_get() */

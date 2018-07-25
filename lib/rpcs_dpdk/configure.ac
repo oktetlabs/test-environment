@@ -80,6 +80,13 @@ AC_CHECK_MEMBERS([struct rte_eth_dev_info.tx_queue_offload_capa],
 #include "rte_ethdev.h"
 ]])
 
+AC_CHECK_MEMBERS([struct rte_eth_dev_info.dev_capa],
+[], [],
+[[
+#include "rte_config.h"
+#include "rte_ethdev.h"
+]])
+
 AC_CHECK_MEMBERS([struct rte_flow_action_rss.rss_conf],
 [], [],
 [[

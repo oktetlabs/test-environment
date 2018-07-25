@@ -287,6 +287,23 @@ tarpc_rte_eth_speeds2str(te_log_buf *tlbp, uint32_t speeds)
 }
 
 static const char *
+tarpc_rte_eth_dev_capa2str(te_log_buf *tlbp, uint64_t capa)
+{
+    const struct te_log_buf_bit2str capa2str[] = {
+#define TARPC_RTE_ETH_DEV_CAPA_BIT2STR(_bit) \
+        {TARPC_RTE_ETH_DEV_CAPA_##_bit##_BIT, #_bit }
+        TARPC_RTE_ETH_DEV_CAPA_BIT2STR(RUNTIME_RX_QUEUE_SETUP),
+        TARPC_RTE_ETH_DEV_CAPA_BIT2STR(RUNTIME_TX_QUEUE_SETUP),
+        TARPC_RTE_ETH_DEV_CAPA_BIT2STR(_UNSUPPORTED),
+        TARPC_RTE_ETH_DEV_CAPA_BIT2STR(_UNKNOWN),
+#undef TARPC_RTE_ETH_DEV_CAPA_BIT2STR
+        { 0, NULL }
+    };
+
+    return te_bit_mask2log_buf(tlbp, capa, capa2str);
+}
+
+static const char *
 tarpc_rte_eth_dev_info2str(te_log_buf *tlbp,
                            const struct tarpc_rte_eth_dev_info *dev_info)
 {
@@ -334,6 +351,9 @@ tarpc_rte_eth_dev_info2str(te_log_buf *tlbp,
 
     te_log_buf_append(tlbp, ", speed_capa=");
     tarpc_rte_eth_speeds2str(tlbp, dev_info->speed_capa);
+
+    te_log_buf_append(tlbp, ", dev_capa=");
+    tarpc_rte_eth_dev_capa2str(tlbp, dev_info->dev_capa);
 
     te_log_buf_append(tlbp, " }");
     return te_log_buf_get(tlbp);

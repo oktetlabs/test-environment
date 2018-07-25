@@ -61,6 +61,10 @@ if cc.has_member('struct rte_eth_dev_info', 'tx_queue_offload_capa',
                  args: prj_args, prefix: code_prefix_ethdev)
     c_args += [ '-DHAVE_STRUCT_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA' ]
 endif
+if cc.has_member('struct rte_eth_dev_info', 'dev_capa',
+                 args: prj_args, prefix: code_prefix_ethdev)
+    c_args += [ '-DHAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA' ]
+endif
 
 code_prefix_flow_api = '''
 #include "rte_config.h"

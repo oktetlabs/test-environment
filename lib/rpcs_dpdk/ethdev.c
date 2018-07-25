@@ -337,6 +337,35 @@ tarpc_rte_tx_offloads2rte(uint64_t rpc, uint64_t *rte)
 }
 #endif
 
+#ifdef HAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA
+static uint64_t
+tarpc_rte_eth_dev_capa2rpc(uint64_t dev)
+{
+    uint64_t rpc = 0;
+
+#define RTE_ETH_DEV_CAPA2RPC(_bit) \
+    do {                                                            \
+        uint64_t flag = RTE_ETH_DEV_CAPA_##_bit;                    \
+                                                                    \
+        if (dev & flag)                                             \
+        {                                                           \
+            dev &= ~flag;                                           \
+            rpc |= (1ULL << TARPC_RTE_ETH_DEV_CAPA_##_bit##_BIT);   \
+        }                                                           \
+    } while (0)
+#ifdef RTE_ETH_DEV_CAPA_RUNTIME_RX_QUEUE_SETUP
+    RTE_ETH_DEV_CAPA2RPC(RUNTIME_RX_QUEUE_SETUP);
+#endif /* RTE_ETH_DEV_CAPA_RUNTIME_RX_QUEUE_SETUP */
+#ifdef RTE_ETH_DEV_CAPA_RUNTIME_TX_QUEUE_SETUP
+    RTE_ETH_DEV_CAPA2RPC(RUNTIME_TX_QUEUE_SETUP);
+#endif /* RTE_ETH_DEV_CAPA_RUNTIME_TX_QUEUE_SETUP */
+#undef RTE_ETH_DEV_CAPA2RPC
+    if (dev != 0)
+        rpc |= (1ULL << TARPC_RTE_ETH_DEV_CAPA__UNKNOWN_BIT);
+    return rpc;
+}
+#endif /* HAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA */
+
 static uint64_t
 tarpc_rte_eth_rss_flow_types2rpc(uint64_t rte)
 {
@@ -542,8 +571,14 @@ TARPC_FUNC(rte_eth_dev_info_get, {},
                                &out->dev_info.tx_desc_lim);
     out->dev_info.speed_capa =
         tarpc_rte_eth_link_speeds2rpc(dev_info.speed_capa);
+#ifdef HAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA
+    out->dev_info.dev_capa =
+        tarpc_rte_eth_dev_capa2rpc(dev_info.dev_capa);
+#else /* !HAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA */
+    out->dev_info.dev_capa =
+        (1ULL << TARPC_RTE_ETH_DEV_CAPA__UNSUPPORTED_BIT);
+#endif /* HAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA */
 })
-
 
 static te_bool
 tarpc_eth_link_speeds2rte(uint32_t rpc, uint32_t *rte)
