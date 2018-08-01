@@ -24,7 +24,7 @@
 #define SERVICE_INITD "/etc/init.d"
 
 /** Possible daemon names. */
-static const char *ntpd_names[] = {"chronyd", "ntpd", "ntp"};
+static const char *ntpd_names[] = {"chronyd", "chrony", "ntpd", "ntp"};
 
 static te_bool ntpd_status = FALSE;
 
