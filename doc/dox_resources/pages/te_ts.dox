@@ -141,11 +141,16 @@ under @path{${TE_BASE}/suites/minimal/suite} directory.
    configuration file (@path{tester.conf}) uses it as the value of
    @attr_name{src} attribute of @attr_name{suite} TAG.
 <pre class="fragment">
-@prog{export} @var{TS_BASE}=@path{${TE_BASE}/suites/minimal/suite}
+@prog{export} @var{TS_BASE}=@path{${TE_BASE}/suites/minimal}
 </pre>
+-# set @var{TE_BUILD} variable to specify allocation of build artifacts.
+<pre class="fragment">
+@prog{export} @var{TE_BUILD}=@path{${TS_BASE}/build}
+</pre>
+If this variable is not set, all generated files will be created in working directory.
 -# run TE:
 <pre class="fragment">
-@path{${TE_BASE}/}@prog{dispatcher.sh} @prog_option{--conf-dir}=@path{conf}
+@path{${TE_BASE}/}@prog{dispatcher.sh} @prog_option{--conf-dir}=@path{${TS_BASE}/conf}
 </pre>
 In our test project all configuration file names match with the default
 names, which is why we do not specify them with separate
@@ -159,19 +164,22 @@ that have TE and suite build and installation files.
 @path{${TE_BASE}/suites/minimal}
   +-- @path{conf}
   +-- @path{suite}
-  +-- @path{engine} - @ref te_engine build directory
-  +-- @path{agents} - @ref te_agents build directory
-  +-- @path{lib} - build directory for TE libraries
-  +-- @path{include} - build directory for includes
-  +-- @path{platforms} - platforms build
-  +-- @path{suites} - test suites build directory
-  +-- @path{inst} - installation directory
-        +-- @path{agents} - @ref te_agents installation directory
-        +-- @path{default} - @ref te_test_engine installation directory
-        +-- @path{suites} - test suites installation directory
-              +-- @path{minimal} -- installation directory of our @path{minimal} test suite
-                    +-- @path{package.xml} - installed package description file
+  +-- @path{build} - build directory
+        +-- @path{engine} - @ref te_engine build directory
+        +-- @path{agents} - @ref te_agents build directory
+        +-- @path{lib} - build directory for TE libraries
+        +-- @path{include} - build directory for includes
+        +-- @path{platforms} - platforms build
+        +-- @path{suites} - test suites build directory
+              +-- @path{minimal} -- build directory of our @path{minimal} test suite
                     +-- @path{sample1} - test executable
+        +-- @path{inst} - installation directory
+              +-- @path{agents} - @ref te_agents installation directory
+              +-- @path{default} - @ref te_test_engine installation directory
+              +-- @path{suites} - test suites installation directory
+                    +-- @path{minimal} -- installation directory of our @path{minimal} test suite
+                          +-- @path{package.xml} - installed package description file
+                          +-- @path{sample1} - test executable
 </pre>
 
 Please note that @ref te_engine_tester runs a test suite from

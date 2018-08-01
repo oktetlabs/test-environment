@@ -132,6 +132,7 @@ typedef struct tapi_tcp_connection_t {
     size_t         last_win_got;
     tapi_tcp_pos_t peer_isn;
 
+    te_bool        ack_flag_got;
     te_bool        fin_got;
     te_bool        reset_got;
 
@@ -841,7 +842,11 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     pkt = calloc(1, sizeof(*pkt));
 
     if (conn_descr->seq_got + conn_descr->last_len_got == seq_got ||
-        (conn_descr->peer_isn == 0 && (flags & TCP_SYN_FLAG)))
+        (conn_descr->peer_isn == 0 && (flags & TCP_SYN_FLAG)) ||
+        /* SYN-SENT -> SYN-RECV, peer sends SYN, we send SYN instead
+         * of acking, peer responds with SYN-ACK. */
+        (conn_descr->seq_got == conn_descr->peer_isn &&
+         (flags & TCP_SYN_FLAG) && (flags & TCP_ACK_FLAG)))
     {
         conn_descr->last_len_got = 0;
         conn_descr->seq_got = seq_got;
@@ -853,7 +858,10 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
         }
 
         if (flags & TCP_ACK_FLAG)
+        {
             conn_descr->ack_got = ack_got;
+            conn_descr->ack_flag_got = TRUE;
+        }
 
         if (flags & TCP_FIN_FLAG)
         {
@@ -1442,9 +1450,11 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
     update_last_ts(conn_descr);
 
     if (is_server)
-    {
         conn_update_sent_seq(conn_descr, 1);
 
+    if (!conn_descr->ack_flag_got ||
+        conn_descr->ack_got != conn_descr->our_isn + 1)
+    {
         /* wait for ACK */
         rc = conn_wait_msg(conn_descr, timeout);
 
@@ -1454,7 +1464,8 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
     }
 
     /* check if we got ACK for our SYN */
-    if (conn_descr->ack_got != conn_descr->our_isn + 1)
+    if (!conn_descr->ack_flag_got ||
+        conn_descr->ack_got != conn_descr->our_isn + 1)
     {
         ERROR("%s(id %d): ACK for our SYN dont got",
                 __FUNCTION__, conn_descr->id);

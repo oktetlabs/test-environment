@@ -2735,6 +2735,11 @@ tapi_set_if_mtu_smart_aux(const char *ta,
         return TE_RC(TE_TAPI, TE_EPERM);
     }
 
+    rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s/mtu:",
+                             ta, if_name);
+    if (rc != 0)
+        return rc;
+
     rc = tapi_cfg_base_if_get_mtu_u(ta, if_name, &old_mtu);
     if (rc != 0)
         return rc;

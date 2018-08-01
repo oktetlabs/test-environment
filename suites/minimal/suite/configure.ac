@@ -38,7 +38,7 @@ AC_ARG_VAR([TE_INSTALL])
 AC_ARG_VAR([TE_PATH])
 AC_ARG_VAR([TE_PLATFORM])
 
-TS_TE_LIBS="-ltapi_env -lrcfrpc -ltapi -ltapi_rpc \
+TS_TE_LIBS="-ltapi_env -lrcfrpc -ltapi -ltapi_rpc -lasn -lndn \
 -lconfapi -lconf_oid -lrcfapi -llogger_ten -lrpcxdr -lrpc_types -lipc \
 -llog_bufs -lpthread -ltools"
 
