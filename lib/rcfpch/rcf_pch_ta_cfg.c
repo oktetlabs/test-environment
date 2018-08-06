@@ -612,3 +612,27 @@ ta_rt_parse_obj(ta_cfg_obj_t *obj, ta_rt_info_t *rt_info)
 
     return ta_rt_parse_attrs(obj->attrs, rt_info);
 }
+
+/* See the description in rcf_pch_ta_cfg.h */
+void
+ta_rt_nexthops_clean(ta_rt_nexthops_t *hops)
+{
+    ta_rt_nexthop_t *nh;
+    ta_rt_nexthop_t *t_nh;
+
+    TAILQ_FOREACH_SAFE(nh, hops, links, t_nh)
+    {
+        TAILQ_REMOVE(hops, nh, links);
+        free(nh);
+    }
+}
+
+/* See the description in rcf_pch_ta_cfg.h */
+void
+ta_rt_info_clean(ta_rt_info_t *rt_info)
+{
+    if (rt_info->flags == TA_RT_INFO_FLG_MULTIPATH)
+        ta_rt_nexthops_clean(&rt_info->nexthops);
+
+    memset(rt_info, 0, sizeof(*rt_info));
+}

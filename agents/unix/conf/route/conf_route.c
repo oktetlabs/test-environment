@@ -51,6 +51,8 @@
 #include "te_errno.h"
 #include "te_defs.h"
 #include "te_sockaddr.h"
+#include "te_string.h"
+#include "te_str.h"
 #include "cs_common.h"
 #include "logger_api.h"
 #include "comm_agent.h"
@@ -99,6 +101,8 @@ route_find(unsigned int gid, const char *route, ta_rt_info_t **rt_info)
     }
 
     /* Make cache invalid */
+    if (rt_cache_name != NULL)
+        ta_rt_info_clean(&rt_cache_info);
     free(rt_cache_name);
     rt_cache_name = NULL;
 
@@ -354,6 +358,25 @@ route_load_attrs(ta_cfg_obj_t *obj)
         }
     }
 
+    if (rt_info->flags & TA_RT_INFO_FLG_MULTIPATH)
+    {
+        ta_rt_nexthops_t  *hops;
+
+        if (obj->user_data != NULL)
+        {
+            ERROR("Trying to fill nexthops in a temporary route object "
+                  "the second time");
+            return TE_EFAIL;
+        }
+
+        hops = calloc(1, sizeof(*hops));
+        if (hops == NULL)
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+        TAILQ_INIT(hops);
+        TAILQ_CONCAT(hops, &rt_info->nexthops, links);
+        obj->user_data = hops;
+    }
 
 #undef ROUTE_LOAD_ATTR
 
@@ -531,7 +554,6 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
     te_errno                rc;
     ta_cfg_obj_action_e     obj_action;
     
-
     UNUSED(gid);
 
     route = ((cfg_inst_subid *)(p_oid->ids))[p_oid->len - 1].name;
@@ -552,11 +574,24 @@ route_commit(unsigned int gid, const cfg_oid *p_oid)
         return rc;
     }
 
+    if (obj->user_data != NULL)
+    {
+        TAILQ_INIT(&rt_info.nexthops);
+        TAILQ_CONCAT(&rt_info.nexthops,
+                     (ta_rt_nexthops_t *)(obj->user_data),
+                     links);
+        free(obj->user_data);
+        obj->user_data = NULL;
+        rt_info.flags |= TA_RT_INFO_FLG_MULTIPATH;
+    }
+
     obj_action = obj->action;
 
     ta_obj_free(obj);
 
-    return ta_unix_conf_route_change(obj_action, &rt_info);
+    rc = ta_unix_conf_route_change(obj_action, &rt_info);
+    ta_rt_info_clean(&rt_info);
+    return rc;
 }
 
 
@@ -605,6 +640,522 @@ blackhole_del(unsigned int gid, const char *oid, const char *route)
     return ta_unix_conf_route_blackhole_del(&rt_info);
 }
 
+/**
+ * Find multipath route nexthop by its ID in a queue of nexthops.
+ *
+ * @param hops        Head of the queue.
+ * @param hop_id      Nexthop ID.
+ * @param nh          Where to save pointer to found nexthop.
+ *
+ * @return Status code.
+ */
+static te_errno
+find_nexthop_by_id(ta_rt_nexthops_t *hops, const char *hop_id,
+                   ta_rt_nexthop_t **nh)
+{
+    te_errno             rc;
+    ta_rt_nexthop_t     *rt_nh = NULL;
+    long unsigned int    id;
+    long unsigned int    i = 0;
+
+    rc = te_strtoul(hop_id, 10, &id);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to convert '%s' to nexthop number",
+              __FUNCTION__, hop_id);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    TAILQ_FOREACH(rt_nh, hops, links)
+    {
+        if (i == id)
+        {
+            *nh = rt_nh;
+            return 0;
+        }
+        i++;
+    }
+
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+}
+
+/**
+ * Find nexthop of a multipath route for the purpose of changing it.
+ *
+ * @param gid       Group ID.
+ * @param route     Route node name.
+ * @param hop_id    Nexthop index.
+ * @param nhq       Where to save pointer to a queue head of
+ *                  route nexthops (may be @c NULL).
+ * @param nh        Where to save pointer to nexthop structure.
+ *
+ * @return Status code.
+ */
+static te_errno
+route_nexthop_set_find(unsigned int gid,
+                       const char *route,
+                       const char *hop_id,
+                       ta_rt_nexthops_t **nhq,
+                       ta_rt_nexthop_t **nh)
+{
+    ta_rt_nexthops_t  *hops = NULL;
+    ta_cfg_obj_t      *route_obj = NULL;
+    te_errno           rc;
+
+    route_obj = ta_obj_find(TA_OBJ_TYPE_ROUTE, route);
+    if (route_obj == NULL)
+    {
+        rc = ta_obj_add(TA_OBJ_TYPE_ROUTE, route, NULL,
+                        gid, NULL, &route_obj);
+
+        if (rc != 0)
+        {
+            ERROR("%s(): failed to create route object '%s'",
+                  __FUNCTION__, route);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+
+        route_obj->action = TA_CFG_OBJ_SET;
+        rc = route_load_attrs(route_obj);
+        if (rc != 0)
+        {
+            ta_obj_free(route_obj);
+            return rc;
+        }
+    }
+
+    hops = (ta_rt_nexthops_t *)route_obj->user_data;
+    if (hops == NULL)
+    {
+        ERROR("%s(): no nexthops in route '%s'", __FUNCTION__, route);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    rc = find_nexthop_by_id(hops, hop_id, nh);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to find nexthop number '%s'",
+              __FUNCTION__, hop_id);
+        return rc;
+    }
+
+    if (nhq != NULL)
+        *nhq = hops;
+
+    return 0;
+}
+
+/**
+ * Find nexthop of a multipath route for reading its properties.
+ *
+ * @param gid       Group ID.
+ * @param route     Route node name.
+ * @param hop_id    Nexthop index.
+ * @param rt        Where to save pointer to route structure
+ *                  (may be @c NULL).
+ * @param nh        Where to save pointer to nexthop structure.
+ *
+ * @return Status code.
+ */
+static te_errno
+route_nexthop_get_find(unsigned int gid, const char *route,
+                       const char *hop_id,
+                       ta_rt_info_t **rt, ta_rt_nexthop_t **nh)
+{
+    te_errno             rc;
+    ta_rt_info_t        *rt_info;
+
+    if ((rc = route_find(gid, route, &rt_info)) != 0)
+        return rc;
+
+    rc = find_nexthop_by_id(&rt_info->nexthops, hop_id, nh);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to find nexthop number '%s'",
+              __FUNCTION__, hop_id);
+        return rc;
+    }
+
+    if (rt != NULL)
+        *rt = rt_info;
+
+    return 0;
+}
+
+/**
+ * Add nexthop to a multipath route.
+ *
+ * @param gid     Group ID (unused).
+ * @param oid     OID (unused).
+ * @param value   Node value (unused).
+ * @param route   Route node name.
+ * @param hop_id  Nexthop index (unused, assigned automatically).
+ *
+ * @return Status code.
+ */
+static te_errno
+route_nexthop_add(unsigned int gid, const char *oid,
+                  const char *value, const char *route, const char *hop_id)
+{
+    ta_cfg_obj_t      *route_obj;
+    ta_rt_nexthop_t   *nh;
+    ta_rt_nexthops_t  *hops;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+    UNUSED(hop_id);
+
+    route_obj = ta_obj_find(TA_OBJ_TYPE_ROUTE, route);
+    if (route_obj == NULL)
+    {
+        ERROR("%s(): failed to find a route '%s'", __FUNCTION__, route);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    nh = calloc(1, sizeof(*nh));
+    if (nh == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    if (route_obj->user_data != NULL)
+    {
+        hops = (ta_rt_nexthops_t *)route_obj->user_data;
+    }
+    else
+    {
+        hops = calloc(1, sizeof(*hops));
+        if (hops == NULL)
+        {
+            free(nh);
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        }
+        TAILQ_INIT(hops);
+
+        route_obj->user_data = hops;
+    }
+
+    nh->weight = 1;
+    TAILQ_INSERT_TAIL(hops, nh, links);
+
+    return 0;
+}
+
+/**
+ * Remove nexthop of a multipath route.
+ *
+ * @param gid       Group ID.
+ * @param oid       OID (unused).
+ * @param route     Route node name.
+ * @param hop_id    Nexthop index.
+ *
+ * @return Status code.
+ */
+static te_errno
+route_nexthop_del(unsigned int gid, const char *oid,
+                  const char *route, const char *hop_id)
+{
+    ta_rt_nexthops_t    *hops = NULL;
+    ta_rt_nexthop_t     *rt_nh = NULL;
+    te_errno             rc;
+
+    UNUSED(oid);
+
+    rc = route_nexthop_set_find(gid, route, hop_id, &hops, &rt_nh);
+    if (rc != 0)
+    {
+        /*
+         * FIXME: This is done to allow Configurator to remove multipath
+         * route automatically in cleanup. Configurator starts
+         * by removing nexthop:0, however after that nexthop:1 becomes
+         * nexthop:0 or even disappears (routes with the single nexthop
+         * are no longer reported as multipath by netlink). So trying
+         * to remove the final nexthop may fail.
+         * Unfortunately I did not find a way to tell Configurator
+         * that after removing a nexthop configurator tree for route
+         * should be synchronized automatically.
+         */
+        if (rc == TE_RC(TE_TA_UNIX, TE_ENOENT))
+            return 0;
+
+        return rc;
+    }
+
+    TAILQ_REMOVE(hops, rt_nh, links);
+    free(rt_nh);
+
+    return 0;
+}
+
+/**
+ * List nexthops (paths) of a multipath route.
+ *
+ * @param gid     Group ID.
+ * @param oid     OID (unused).
+ * @param sub_id  Unused.
+ * @param list    Where to save pointer to a string with list of names.
+ * @param route   Route node name.
+ *
+ * @return Status code.
+ */
+static te_errno
+route_nexthop_list(unsigned int gid, const char *oid, const char *sub_id,
+                   char **list, const char *route)
+{
+    ta_rt_info_t *rt_info = NULL;
+    te_errno      rc;
+    te_string     str = TE_STRING_INIT;
+
+    ta_rt_nexthop_t *rt_nh = NULL;
+    unsigned int     i = 0;
+
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+    rc = route_find(gid, route, &rt_info);
+    if (rc != 0)
+        return rc;
+
+    if (rt_info->flags & TA_RT_INFO_FLG_MULTIPATH)
+    {
+        TAILQ_FOREACH(rt_nh, &rt_info->nexthops, links)
+        {
+            rc = te_string_append(&str, "%u ", i);
+            if (rc != 0)
+            {
+                te_string_free(&str);
+                return rc;
+            }
+            i++;
+        }
+    }
+
+    *list = str.ptr;
+    return 0;
+}
+
+/**
+ * Get gateway of a nexthop of a multipath route.
+ *
+ * @param gid       Group ID.
+ * @param oid       OID (unused).
+ * @param value     Where to save obtained value.
+ * @param route     Route node name.
+ * @param hop_id    Nexthop index.
+ *
+ * @return Status code.
+ */
+static te_errno
+route_nexthop_gw_get(unsigned int gid, const char *oid,
+                     char *value, const char *route, const char *hop_id)
+{
+    te_errno         rc;
+    ta_rt_nexthop_t *rt_nh = NULL;
+    ta_rt_info_t    *rt_info = NULL;
+
+    UNUSED(oid);
+
+    rc = route_nexthop_get_find(gid, route, hop_id, &rt_info, &rt_nh);
+    if (rc != 0)
+        return rc;
+
+    if (rt_nh->flags & TA_RT_NEXTHOP_FLG_GW)
+    {
+        rc = te_sockaddr_h2str_buf(SA(&rt_nh->gw), value, RCF_MAX_VAL);
+        if (rc != 0)
+        {
+            ERROR("%s(): failed to convert address to string, errno=%r",
+                  __FUNCTION__, rc);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+    }
+    else
+    {
+        switch (rt_info->dst.ss_family)
+        {
+            case AF_INET:
+                TE_STRNCPY(value, RCF_MAX_VAL, "0.0.0.0");
+                break;
+
+            case AF_INET6:
+                TE_STRNCPY(value, RCF_MAX_VAL, "::");
+                break;
+
+            default:
+                return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Set gateway of a nexthop of a multipath route.
+ *
+ * @param gid       Group ID.
+ * @param oid       OID (unused).
+ * @param value     Value to set.
+ * @param route     Route node name.
+ * @param hop_id    Nexthop index.
+ *
+ * @return Status code.
+ */
+static te_errno
+route_nexthop_gw_set(unsigned int gid, const char *oid,
+                     const char *value, const char *route, const char *hop_id)
+{
+    te_errno             rc;
+    ta_rt_nexthop_t     *rt_nh = NULL;
+
+    UNUSED(oid);
+
+    rc = route_nexthop_set_find(gid, route, hop_id, NULL, &rt_nh);
+    if (rc != 0)
+        return rc;
+
+    rc = te_sockaddr_netaddr_from_string(value, SA(&rt_nh->gw));
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to parse address '%s'", __FUNCTION__, value);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    rt_nh->flags |= TA_RT_NEXTHOP_FLG_GW;
+
+    return 0;
+}
+
+/**
+ * Get interface name of a nexthop of a multipath route.
+ *
+ * @param gid       Group ID.
+ * @param oid       OID (unused).
+ * @param value     Where to save obtained value.
+ * @param route     Route node name.
+ * @param hop_id    Nexthop index.
+ *
+ * @return Status code.
+ */
+static te_errno
+route_nexthop_dev_get(unsigned int gid, const char *oid,
+                      char *value, const char *route, const char *hop_id)
+{
+    te_errno         rc;
+    ta_rt_nexthop_t *rt_nh = NULL;
+
+    UNUSED(oid);
+
+    rc = route_nexthop_get_find(gid, route, hop_id, NULL, &rt_nh);
+    if (rc != 0)
+        return rc;
+
+    if (rt_nh->flags & TA_RT_NEXTHOP_FLG_OIF)
+        TE_STRNCPY(value, RCF_MAX_VAL, rt_nh->ifname);
+
+    return 0;
+}
+
+/**
+ * Set interface of a nexthop of a multipath route.
+ *
+ * @param gid       Group ID.
+ * @param oid       OID (unused).
+ * @param value     Value to set.
+ * @param route     Route node name.
+ * @param hop_id    Nexthop index.
+ *
+ * @return Status code.
+ */
+static te_errno
+route_nexthop_dev_set(unsigned int gid, const char *oid,
+                      const char *value, const char *route, const char *hop_id)
+{
+    te_errno             rc;
+    ta_rt_nexthop_t     *rt_nh = NULL;
+    size_t               val_len;
+
+    UNUSED(oid);
+
+    rc = route_nexthop_set_find(gid, route, hop_id, NULL, &rt_nh);
+    if (rc != 0)
+        return rc;
+
+    val_len = strnlen(value, RCF_MAX_VAL);
+    if (val_len > sizeof(rt_nh->ifname) - 1)
+        ERROR("%s(): interface name is too long", __FUNCTION__);
+
+    strcpy(rt_nh->ifname, value);
+
+    rt_nh->flags |= TA_RT_NEXTHOP_FLG_OIF;
+
+    return 0;
+}
+
+/**
+ * Get weight of a nexthop of a multipath route.
+ *
+ * @param gid       Group ID.
+ * @param oid       OID (unused).
+ * @param value     Where to save obtained value.
+ * @param route     Route node name.
+ * @param hop_id    Nexthop index.
+ *
+ * @return Status code.
+ */
+static te_errno
+route_nexthop_weight_get(unsigned int gid, const char *oid,
+                         char *value, const char *route, const char *hop_id)
+{
+    te_errno         rc;
+    ta_rt_nexthop_t *rt_nh = NULL;
+
+    UNUSED(oid);
+
+    rc = route_nexthop_get_find(gid, route, hop_id, NULL, &rt_nh);
+    if (rc != 0)
+        return rc;
+
+    snprintf(value, RCF_MAX_VAL, "%u", rt_nh->weight);
+    return 0;
+}
+
+/**
+ * Set weight of a nexthop of a multipath route.
+ *
+ * @param gid       Group ID.
+ * @param oid       OID (unused).
+ * @param value     Value to set.
+ * @param route     Route node name.
+ * @param hop_id    Nexthop index.
+ *
+ * @return Status code.
+ */
+static te_errno
+route_nexthop_weight_set(unsigned int gid, const char *oid,
+                         const char *value, const char *route, const char *hop_id)
+{
+    te_errno             rc;
+    ta_rt_nexthop_t     *rt_nh = NULL;
+    long unsigned int    weight;
+
+    UNUSED(oid);
+
+    rc = te_strtoul(value, 10, &weight);
+    if (rc != 0 || weight > UINT_MAX || weight < 1)
+    {
+        ERROR("%s(): failed to convert '%s' to correct nexthop weight",
+              __FUNCTION__, value);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    rc = route_nexthop_set_find(gid, route, hop_id, NULL, &rt_nh);
+    if (rc != 0)
+        return rc;
+
+    rt_nh->weight = weight;
+
+    return 0;
+}
+
 /*
  * Unix Test Agent routing configuration tree.
  */
@@ -637,8 +1188,27 @@ RCF_PCH_CFG_NODE_RWC(node_route_dev, "dev", NULL, &node_route_mtu,
 RCF_PCH_CFG_NODE_RWC(node_route_src, "src", NULL, &node_route_dev,
                      route_src_get, route_src_set, &node_route);
 
+RCF_PCH_CFG_NODE_RWC(node_route_nexthop_weight, "weight", NULL, NULL,
+                     route_nexthop_weight_get,
+                     route_nexthop_weight_set, &node_route);
+RCF_PCH_CFG_NODE_RWC(node_route_nexthop_dev, "dev", NULL,
+                     &node_route_nexthop_weight,
+                     route_nexthop_dev_get,
+                     route_nexthop_dev_set, &node_route);
+RCF_PCH_CFG_NODE_RWC(node_route_nexthop_gw, "gw", NULL,
+                     &node_route_nexthop_dev,
+                     route_nexthop_gw_get,
+                     route_nexthop_gw_set, &node_route);
+
+static rcf_pch_cfg_object node_route_nexthop =
+    { "nexthop", 0, &node_route_nexthop_gw, &node_route_src,
+      (rcf_ch_cfg_get)NULL, (rcf_ch_cfg_set)NULL,
+      (rcf_ch_cfg_add)route_nexthop_add, (rcf_ch_cfg_del)route_nexthop_del,
+      (rcf_ch_cfg_list)route_nexthop_list, (rcf_ch_cfg_commit)NULL,
+      &node_route };
+
 static rcf_pch_cfg_object node_route =
-    {"route", 0, &node_route_src, &node_blackhole,
+    {"route", 0, &node_route_nexthop, &node_blackhole,
      (rcf_ch_cfg_get)route_get, (rcf_ch_cfg_set)route_set,
      (rcf_ch_cfg_add)route_add, (rcf_ch_cfg_del)route_del,
      (rcf_ch_cfg_list)route_list, (rcf_ch_cfg_commit)route_commit, NULL};

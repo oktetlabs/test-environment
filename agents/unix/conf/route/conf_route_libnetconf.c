@@ -66,6 +66,7 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
+#include "te_str.h"
 #include "cs_common.h"
 #include "logger_api.h"
 #include "rcf_pch.h"
@@ -140,6 +141,7 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
     netconf_list        *list;
     netconf_node        *t;
     te_errno             found;
+    te_errno             result = 0;
 
     if (rt_info == NULL)
     {
@@ -291,16 +293,84 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
             rt_info->table = route->table;
         }
 
+        if (!LIST_EMPTY(&route->hops))
+        {
+            netconf_route_nexthop *nc_nh = NULL;
+            ta_rt_nexthop_t       *ta_nh = NULL;
+
+            TAILQ_INIT(&rt_info->nexthops);
+            rt_info->flags |= TA_RT_INFO_FLG_MULTIPATH;
+
+            LIST_FOREACH(nc_nh, &route->hops, links)
+            {
+                ta_nh = calloc(1, sizeof(*ta_nh));
+                if (ta_nh == NULL)
+                {
+                    ERROR("%s(): out of memory", __FUNCTION__);
+                    result = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+                    goto cleanup;
+                }
+
+                ta_nh->weight = nc_nh->weight;
+
+                if (nc_nh->gateway != NULL)
+                {
+                    ta_nh->gw.ss_family = route->family;
+                    if (route->family == AF_INET)
+                    {
+                        memcpy(&(SIN(&ta_nh->gw)->sin_addr),
+                               nc_nh->gateway,
+                               sizeof(struct in_addr));
+                    }
+                    else
+                    {
+                        memcpy(&(SIN6(&ta_nh->gw)->sin6_addr),
+                               nc_nh->gateway,
+                               sizeof(struct in6_addr));
+                    }
+
+                    ta_nh->flags |= TA_RT_NEXTHOP_FLG_GW;
+                }
+
+                if (nc_nh->oifindex != 0)
+                {
+                    char tmp[IF_NAMESIZE];
+
+                    if (if_indextoname(nc_nh->oifindex, tmp) != NULL)
+                    {
+                        TE_STRNCPY(ta_nh->ifname, IF_NAMESIZE, tmp);
+                        ta_nh->flags |= TA_RT_NEXTHOP_FLG_OIF;
+                    }
+                    else
+                    {
+                        ERROR("%s(): cannot convert interface %d index "
+                              "to interface name", __FUNCTION__,
+                              nc_nh->oifindex);
+                        free(ta_nh);
+                        result = TE_OS_RC(TE_TA_UNIX, errno);
+                        goto cleanup;
+                    }
+                }
+
+                TAILQ_INSERT_TAIL(&rt_info->nexthops, ta_nh, links);
+            }
+        }
+
         /* Find the first one */
         break;
     }
+
+cleanup:
 
     netconf_list_free(list);
 
     if (!found)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    return 0;
+    if (result != 0)
+        ta_rt_info_clean(rt_info);
+
+    return result;
 }
 
 te_errno
@@ -310,6 +380,10 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
     netconf_cmd         cmd;
     netconf_route       route;
     unsigned char       family;
+    te_errno            rc = 0;
+
+    netconf_route_nexthop *nc_nh = NULL;
+    netconf_route_nexthop *nc_nh_aux = NULL;
 
     if (rt_info == NULL)
     {
@@ -427,16 +501,72 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
     if ((rt_info->flags & TA_RT_INFO_FLG_TABLE) != 0)
         route.table = rt_info->table;
 
+    if (rt_info->flags & TA_RT_INFO_FLG_MULTIPATH)
+    {
+        ta_rt_nexthop_t       *ta_nh = NULL;
+
+        TAILQ_FOREACH(ta_nh, &rt_info->nexthops, links)
+        {
+            nc_nh = calloc(1, sizeof(*nc_nh));
+            if (nc_nh == NULL)
+            {
+                ERROR("%s(): out of memory", __FUNCTION__);
+                rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+                goto cleanup;
+            }
+
+            if (nc_nh_aux == NULL)
+                LIST_INSERT_HEAD(&route.hops, nc_nh, links);
+            else
+                LIST_INSERT_AFTER(nc_nh_aux, nc_nh, links);
+
+            nc_nh_aux = nc_nh;
+
+            nc_nh->weight = ta_nh->weight;
+
+            if (ta_nh->flags & TA_RT_NEXTHOP_FLG_OIF)
+            {
+                int idx;
+
+                if ((idx = if_nametoindex(ta_nh->ifname)) == 0)
+                {
+                    ERROR("%s(): Cannot find interface %s",
+                          __FUNCTION__, ta_nh->ifname);
+                    rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+                    goto cleanup;
+                }
+
+                nc_nh->oifindex = idx;
+            }
+
+            if (ta_nh->flags & TA_RT_NEXTHOP_FLG_GW)
+            {
+                if (family == AF_INET)
+                    nc_nh->gateway = (uint8_t *)&(SIN(&ta_nh->gw)->sin_addr);
+                else
+                    nc_nh->gateway = (uint8_t *)&(SIN6(&ta_nh->gw)->sin6_addr);
+            }
+        }
+    }
+
     if (netconf_route_modify(nh, cmd, &route) < 0)
     {
         ERROR("%s(): Cannot change route", __FUNCTION__);
-        return TE_OS_RC(TE_TA_UNIX, errno);
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        goto cleanup;
     }
 
     /* Flush routing cache on success, but ignore errors */
     (void)route_flush(rt_info->dst.ss_family);
 
-    return 0;
+cleanup:
+
+    route.dst = NULL;
+    route.src = NULL;
+    route.gateway = NULL;
+    netconf_route_clean(&route);
+
+    return rc;
 }
 
 static te_errno
@@ -456,14 +586,35 @@ append_routes(netconf_list *nlist, te_string *const str)
             continue;
         }
 
-        if (route->oifindex == 0)
-            continue;
+        if (LIST_EMPTY(&route->hops))
+        {
+            if (route->oifindex == 0)
+                continue;
 
-        if ((if_indextoname(route->oifindex, ifname)) == NULL)
-            continue;
+            if ((if_indextoname(route->oifindex, ifname)) == NULL)
+                continue;
 
-        if (!ta_interface_is_mine(ifname))
-            continue;
+            if (!ta_interface_is_mine(ifname))
+                continue;
+        }
+        else
+        {
+            netconf_route_nexthop *nc_nh = NULL;
+
+            LIST_FOREACH(nc_nh, &route->hops, links)
+            {
+                if (nc_nh->oifindex == 0)
+                    break;
+
+                if ((if_indextoname(nc_nh->oifindex, ifname)) == NULL)
+                    break;
+
+                if (!ta_interface_is_mine(ifname))
+                    break;
+            }
+            if (nc_nh != NULL)
+                continue;
+        }
 
         /*
          * The local routing table is maintained by the kernel and shouldn't

@@ -657,6 +657,24 @@
          Value: irtt value for the route -->
     <object oid="/agent/route/irtt" access="read_write" type="integer"/>
     
+    <!-- Nexthop of a multipath route.
+         Name:  index in array of nexthops -->
+    <object oid="/agent/route/nexthop" access="read_create" type="none"/>
+
+    <!-- Interface of a multipath route's nexthop.
+         Name:  empty
+         Value: interface name -->
+    <object oid="/agent/route/nexthop/dev" access="read_write" type="string"/>
+
+    <!-- Gateway of a multipath route's nexthop.
+         Name:  empty
+         Value: gateway address -->
+    <object oid="/agent/route/nexthop/gw" access="read_write" type="address"/>
+
+    <!-- Weight of a multipath route's nexthop.
+         Name:  empty
+         Value: positive number -->
+    <object oid="/agent/route/nexthop/weight" access="read_write" type="integer"/>
     
     <!-- Blackhole route
          Name: address+prefix -->

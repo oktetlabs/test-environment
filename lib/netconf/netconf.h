@@ -26,6 +26,7 @@
 #include <linux/rtnetlink.h>
 
 #include "conf_ip_rule.h"
+#include "te_queue.h"
 
 /** Invalid netconf session handle */
 #define NETCONF_HANDLE_INVALID NULL
@@ -136,6 +137,19 @@ typedef struct netconf_net_addr {
                                              if not available */
 } netconf_net_addr;
 
+/** Nexthop of a multipath route. */
+typedef struct netconf_route_nexthop {
+    uint32_t    weight;       /**< Weight. */
+    int         oifindex;     /**< Interface index. */
+    uint8_t    *gateway;      /**< Gateway address */
+
+    LIST_ENTRY(netconf_route_nexthop) links;  /**< List links. */
+} netconf_route_nexthop;
+
+/** List head type for list of netconf_route_nexthop. */
+typedef LIST_HEAD(netconf_route_nexthops,
+                  netconf_route_nexthop) netconf_route_nexthops;
+
 /** Routing table entry */
 typedef struct netconf_route {
     unsigned char       family;         /**< Address family of route */
@@ -158,6 +172,9 @@ typedef struct netconf_route {
     uint32_t            win;            /**< Route window size */
     uint32_t            irtt;           /**< Route transfer time */
     int32_t             expires;        /**< Route expiration time */
+
+    netconf_route_nexthops   hops;      /**< Nexthops of a multipath
+                                             route. */
 } netconf_route;
 
 /** Neighbour table entry (ARP or NDISC cache) */
@@ -324,8 +341,19 @@ netconf_list *netconf_net_addr_dump(netconf_handle nh,
  * Set default values to fields in route struct.
  *
  * @param route         Route entry struct
+ *
+ * @sa netconf_route_clean
  */
-void netconf_route_init(netconf_route *route);
+extern void netconf_route_init(netconf_route *route);
+
+/**
+ * Release memory allocated for netconf_route fields.
+ *
+ * @param route     Pointer to netconf_route.
+ *
+ * @sa netconf_route_init
+ */
+extern void netconf_route_clean(netconf_route *route);
 
 /**
  * Modify some route. You should call netconf_route_init() on struct
