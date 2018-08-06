@@ -559,6 +559,7 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     int                     mem_channels;
     int                     mem_amount = 0;
     char                   *app_prefix = NULL;
+    char                   *extra_eal_args = NULL;
     te_bool                 need_init = TRUE;
     char                   *eal_args_new = NULL;
 
@@ -645,6 +646,33 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
         append_arg(&my_argc, &my_argv, "%s%s", app_prefix, rpcs->ta);
 
         free(app_prefix);
+    }
+
+    /* Append extra EAL args */
+    val_type = CVT_STRING;
+    rc = cfg_get_instance_fmt(&val_type, &extra_eal_args,
+                              "/local:%s/dpdk:/extra_eal_args:", rpcs->ta);
+    if (rc == 0)
+    {
+        char *sp = NULL;
+        char *arg = NULL;
+
+        if (extra_eal_args[0] != '\0')
+        {
+            char *str = extra_eal_args;
+
+            while ((arg = strtok_r(str, " ", &sp)) != NULL)
+            {
+                append_arg(&my_argc, &my_argv, arg);
+                str = NULL;
+            }
+        }
+
+        free(extra_eal_args);
+    }
+    else if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+    {
+        goto cleanup;
     }
 
     /* Append arguments provided by caller */
