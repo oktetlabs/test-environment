@@ -425,6 +425,19 @@ typedef struct tapi_cfg_rt_params {
     tapi_cfg_rt_nexthop       *hops;        /**< Nexthops of a multipath
                                                  route. */
     unsigned int               hops_num;    /**< Number of nexthops. */
+
+    /*
+     * These are internal fields, do not fill them for
+     * tapi_cfg_add_route2().
+     */
+    int                        addr_family; /**< Address family. */
+    const void                *dst;         /**< Pointer to network address
+                                                 (struct in_addr,
+                                                 struct in6_addr, etc). */
+    const void                *gw;          /**< Pointer to gateway
+                                                 address. */
+    const void                *src;         /**< Pointer to default source
+                                                 address. */
 } tapi_cfg_rt_params;
 
 /**

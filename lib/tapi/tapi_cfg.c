@@ -69,15 +69,9 @@ enum tapi_cfg_oper {
 };
 
 /* Forward declarations */
-static int tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta,
-                             int addr_family,
-                             const void *dst_addr, int prefix,
-                             const void *gw_addr, const char *dev,
-                             const void *src_addr, const char *type,
-                             uint32_t flags, int metric, int tos, int mtu,
-                             int win, int irtt, int table,
-                             tapi_cfg_rt_nexthop *hops, size_t hops_num,
-                             cfg_handle *cfg_hndl);
+static int cfg_route_op(enum tapi_cfg_oper op, const char *ta,
+                        const tapi_cfg_rt_params *params,
+                        cfg_handle *cfg_hndl);
 
 static int tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
                              const char *ifname,
@@ -636,10 +630,23 @@ tapi_cfg_add_route(const char *ta, int addr_family,
                    uint32_t flags, int metric, int tos, int mtu,
                    int win, int irtt, cfg_handle *cfg_hndl)
 {
-    return tapi_cfg_route_op(OP_ADD, ta, addr_family,
-                             dst_addr, prefix, gw_addr, dev, src_addr, NULL,
-                             flags, metric, tos, mtu, win, irtt,
-                             TAPI_RT_TABLE_MAIN, NULL, 0, cfg_hndl);
+    tapi_cfg_rt_params rt_params;
+
+    tapi_cfg_rt_params_init(&rt_params);
+    rt_params.addr_family = addr_family;
+    rt_params.dst = dst_addr;
+    rt_params.prefix = prefix;
+    rt_params.gw = gw_addr;
+    rt_params.dev = dev;
+    rt_params.src_addr = src_addr;
+    rt_params.flags = flags;
+    rt_params.metric = metric;
+    rt_params.tos = tos;
+    rt_params.mtu = mtu;
+    rt_params.win = win;
+    rt_params.irtt = irtt;
+
+    return cfg_route_op(OP_ADD, ta, &rt_params, cfg_hndl);
 }
 
 static int
@@ -685,6 +692,8 @@ tapi_cfg_add_full_route(const char *ta, int addr_family,
                         uint32_t flags, int metric, int tos, int mtu,
                         int win, int irtt, int table, cfg_handle *cfg_hndl)
 {
+    tapi_cfg_rt_params rt_params;
+
     if (type != NULL && strcmp(type, "blackhole") == 0)
     {
         return tapi_cfg_add_blackhole(ta, addr_family, dst_addr,
@@ -697,10 +706,24 @@ tapi_cfg_add_full_route(const char *ta, int addr_family,
         ERROR("Route type '%s' is not supported yet", type);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
-    return tapi_cfg_route_op(OP_ADD, ta, addr_family,
-                             dst_addr, prefix, gw_addr, dev, src_addr, type,
-                             flags, metric, tos, mtu, win, irtt, table,
-                             NULL, 0, cfg_hndl);
+
+    tapi_cfg_rt_params_init(&rt_params);
+    rt_params.addr_family = addr_family;
+    rt_params.dst = dst_addr;
+    rt_params.prefix = prefix;
+    rt_params.gw = gw_addr;
+    rt_params.dev = dev;
+    rt_params.src_addr = src_addr;
+    rt_params.type = type;
+    rt_params.flags = flags;
+    rt_params.metric = metric;
+    rt_params.tos = tos;
+    rt_params.mtu = mtu;
+    rt_params.win = win;
+    rt_params.irtt = irtt;
+    rt_params.table = table;
+
+    return cfg_route_op(OP_ADD, ta, &rt_params, cfg_hndl);
 }
 
 
@@ -714,10 +737,23 @@ tapi_cfg_modify_route(const char *ta, int addr_family,
                    uint32_t flags, int metric, int tos, int mtu,
                    int win, int irtt, cfg_handle *cfg_hndl)
 {
-    return tapi_cfg_route_op(OP_MODIFY, ta, addr_family,
-                             dst_addr, prefix, gw_addr, dev, src_addr, NULL,
-                             flags, metric, tos, mtu, win, irtt,
-                             TAPI_RT_TABLE_MAIN, NULL, 0, cfg_hndl);
+    tapi_cfg_rt_params rt_params;
+
+    tapi_cfg_rt_params_init(&rt_params);
+    rt_params.addr_family = addr_family;
+    rt_params.dst = dst_addr;
+    rt_params.prefix = prefix;
+    rt_params.gw = gw_addr;
+    rt_params.dev = dev;
+    rt_params.src_addr = src_addr;
+    rt_params.flags = flags;
+    rt_params.metric = metric;
+    rt_params.tos = tos;
+    rt_params.mtu = mtu;
+    rt_params.win = win;
+    rt_params.irtt = irtt;
+
+    return cfg_route_op(OP_MODIFY, ta, &rt_params, cfg_hndl);
 }
 
 
@@ -731,6 +767,8 @@ tapi_cfg_modify_full_route(const char *ta, int addr_family,
                             int win, int irtt, int table,
                             cfg_handle *cfg_hndl)
 {
+    tapi_cfg_rt_params rt_params;
+
     if (type != NULL &&
         strcmp(type, "unicast") != 0 &&
         strcmp(type, "local") != 0)
@@ -738,10 +776,24 @@ tapi_cfg_modify_full_route(const char *ta, int addr_family,
         ERROR("Route type '%s' is not supported yet", type);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
-    return tapi_cfg_route_op(OP_MODIFY, ta, addr_family,
-                             dst_addr, prefix, gw_addr, dev, src_addr, type,
-                             flags, metric, tos, mtu, win, irtt, table,
-                             NULL, 0, cfg_hndl);
+
+    tapi_cfg_rt_params_init(&rt_params);
+    rt_params.addr_family = addr_family;
+    rt_params.dst = dst_addr;
+    rt_params.prefix = prefix;
+    rt_params.gw = gw_addr;
+    rt_params.dev = dev;
+    rt_params.src_addr = src_addr;
+    rt_params.type = type;
+    rt_params.flags = flags;
+    rt_params.metric = metric;
+    rt_params.tos = tos;
+    rt_params.mtu = mtu;
+    rt_params.win = win;
+    rt_params.irtt = irtt;
+    rt_params.table = table;
+
+    return cfg_route_op(OP_MODIFY, ta, &rt_params, cfg_hndl);
 }
 
 /* See the description in tapi_cfg.h */
@@ -752,42 +804,46 @@ tapi_cfg_rt_params_init(tapi_cfg_rt_params *params)
     params->table = TAPI_RT_TABLE_MAIN;
 }
 
+/**
+ * Fill internal fields of tapi_cfg_rt_params before
+ * calling cfg_route_op() (if they are not already
+ * filled by calling function).
+ *
+ * @param params      Pointer to tapi_cfg_rt_params.
+ */
+static void
+fill_cfg_rt_params_internals(tapi_cfg_rt_params *params)
+{
+    params->addr_family = AF_UNSPEC;
+
+    if (params->dst_addr != NULL)
+    {
+        params->addr_family = params->dst_addr->sa_family;
+        params->dst = te_sockaddr_get_netaddr(params->dst_addr);
+    }
+
+    if (params->gw_addr != NULL &&
+        params->gw_addr->sa_family != AF_UNSPEC)
+    {
+        params->gw = te_sockaddr_get_netaddr(params->gw_addr);
+    }
+
+    if (params->src_addr != NULL &&
+        params->src_addr->sa_family != AF_UNSPEC)
+    {
+        params->src = te_sockaddr_get_netaddr(params->src_addr);
+    }
+}
+
 /* See the description in tapi_cfg.h */
 te_errno
 tapi_cfg_add_route2(const char *ta,
                     tapi_cfg_rt_params *params,
                     cfg_handle *rt_hndl)
 {
-    int   addr_family = AF_UNSPEC;
-    void *dst_addr = NULL;
-    void *gw_addr = NULL;
-    void *src_addr = NULL;
+    fill_cfg_rt_params_internals(params);
 
-    if (params->dst_addr != NULL)
-    {
-        addr_family = params->dst_addr->sa_family;
-        dst_addr = te_sockaddr_get_netaddr(params->dst_addr);
-    }
-
-    if (params->gw_addr != NULL &&
-        params->gw_addr->sa_family != AF_UNSPEC)
-    {
-        gw_addr = te_sockaddr_get_netaddr(params->gw_addr);
-    }
-
-    if (params->src_addr != NULL &&
-        params->src_addr->sa_family != AF_UNSPEC)
-    {
-        src_addr = te_sockaddr_get_netaddr(params->src_addr);
-    }
-
-    return tapi_cfg_route_op(OP_ADD, ta, addr_family, dst_addr,
-                             params->prefix,
-                             gw_addr, params->dev, src_addr,
-                             params->type, params->flags,
-                             params->metric, params->tos, params->mtu,
-                             params->win, params->irtt, params->table,
-                             params->hops, params->hops_num, rt_hndl);
+    return cfg_route_op(OP_ADD, ta, params, rt_hndl);
 }
 
 /* See the description in tapi_cfg.h */
@@ -799,10 +855,23 @@ tapi_cfg_del_route_tmp(const char *ta, int addr_family,
                        uint32_t flags, int metric, int tos,
                        int mtu, int win, int irtt)
 {
-    return tapi_cfg_route_op(OP_DEL, ta, addr_family,
-                             dst_addr, prefix, gw_addr, dev, src_addr, NULL,
-                             flags, metric, tos, mtu, win, irtt,
-                             TAPI_RT_TABLE_MAIN, NULL, 0, NULL);
+    tapi_cfg_rt_params rt_params;
+
+    tapi_cfg_rt_params_init(&rt_params);
+    rt_params.addr_family = addr_family;
+    rt_params.dst = dst_addr;
+    rt_params.prefix = prefix;
+    rt_params.gw = gw_addr;
+    rt_params.dev = dev;
+    rt_params.src_addr = src_addr;
+    rt_params.flags = flags;
+    rt_params.metric = metric;
+    rt_params.tos = tos;
+    rt_params.mtu = mtu;
+    rt_params.win = win;
+    rt_params.irtt = irtt;
+
+    return cfg_route_op(OP_DEL, ta, &rt_params, NULL);
 }
 
 /* See the description in tapi_cfg.h */
@@ -935,20 +1004,16 @@ tapi_cfg_del_neigh_dynamic(const char *ta, const char *ifname)
  * @retval 0  on success
  */
 static int
-tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
-                  const void *dst_addr, int prefix, const void *gw_addr,
-                  const char *dev, const void *src_addr, const char *type,
-                  uint32_t flags, int metric, int tos, int mtu, int win,
-                  int irtt, int table,
-                  tapi_cfg_rt_nexthop *hops, size_t hops_num,
-                  cfg_handle *cfg_hndl)
+cfg_route_op(enum tapi_cfg_oper op, const char *ta,
+             const tapi_cfg_rt_params *params,
+             cfg_handle *cfg_hndl)
 {
     cfg_handle  handle;
     char        dst_addr_str[INET6_ADDRSTRLEN];
     char        dst_addr_str_orig[INET6_ADDRSTRLEN];
     char        route_inst_name[1024];
     int         rc;
-    int         netaddr_size = te_netaddr_get_size(addr_family);
+    int         netaddr_size;
     uint8_t    *dst_addr_copy;
     uint32_t    i;
     int         diff;
@@ -957,7 +1022,23 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     struct sockaddr_storage ss;
     struct sockaddr_storage src;
 
-    UNUSED(flags);
+    int                   addr_family = params->addr_family;
+    const void           *dst_addr = params->dst;
+    const void           *gw_addr = params->gw;
+    const void           *src_addr = params->src;
+    int                   prefix = params->prefix;
+    const char           *dev = params->dev;
+    const char           *type = params->type;
+    int                   metric = params->metric;
+    int                   tos = params->tos;
+    int                   mtu = params->mtu;
+    int                   win = params->win;
+    int                   irtt = params->irtt;
+    int                   table = params->table;
+    tapi_cfg_rt_nexthop  *hops = params->hops;
+    unsigned int          hops_num = params->hops_num;
+
+    netaddr_size = te_netaddr_get_size(addr_family);
 
     if (netaddr_size == 0)
     {
