@@ -361,8 +361,8 @@ rpc_waitpid(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_wait_status *status,
 int
 rpc_ta_kill_death(rcf_rpc_server *rpcs, tarpc_pid_t pid)
 {
-    tarpc_kill_in  in;
-    tarpc_kill_out out;
+    tarpc_ta_kill_death_in  in;
+    tarpc_ta_kill_death_out out;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
