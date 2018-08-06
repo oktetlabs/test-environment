@@ -76,6 +76,7 @@ static int tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta,
                              const void *src_addr, const char *type,
                              uint32_t flags, int metric, int tos, int mtu,
                              int win, int irtt, int table,
+                             tapi_cfg_rt_nexthop *hops, size_t hops_num,
                              cfg_handle *cfg_hndl);
 
 static int tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
@@ -638,7 +639,7 @@ tapi_cfg_add_route(const char *ta, int addr_family,
     return tapi_cfg_route_op(OP_ADD, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev, src_addr, NULL,
                              flags, metric, tos, mtu, win, irtt,
-                             TAPI_RT_TABLE_MAIN, cfg_hndl);
+                             TAPI_RT_TABLE_MAIN, NULL, 0, cfg_hndl);
 }
 
 static int
@@ -699,7 +700,7 @@ tapi_cfg_add_full_route(const char *ta, int addr_family,
     return tapi_cfg_route_op(OP_ADD, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev, src_addr, type,
                              flags, metric, tos, mtu, win, irtt, table,
-                             cfg_hndl);
+                             NULL, 0, cfg_hndl);
 }
 
 
@@ -716,7 +717,7 @@ tapi_cfg_modify_route(const char *ta, int addr_family,
     return tapi_cfg_route_op(OP_MODIFY, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev, src_addr, NULL,
                              flags, metric, tos, mtu, win, irtt,
-                             TAPI_RT_TABLE_MAIN, cfg_hndl);
+                             TAPI_RT_TABLE_MAIN, NULL, 0, cfg_hndl);
 }
 
 
@@ -740,7 +741,53 @@ tapi_cfg_modify_full_route(const char *ta, int addr_family,
     return tapi_cfg_route_op(OP_MODIFY, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev, src_addr, type,
                              flags, metric, tos, mtu, win, irtt, table,
-                             cfg_hndl);
+                             NULL, 0, cfg_hndl);
+}
+
+/* See the description in tapi_cfg.h */
+void
+tapi_cfg_rt_params_init(tapi_cfg_rt_params *params)
+{
+    memset(params, 0, sizeof(*params));
+    params->table = TAPI_RT_TABLE_MAIN;
+}
+
+/* See the description in tapi_cfg.h */
+te_errno
+tapi_cfg_add_route2(const char *ta,
+                    tapi_cfg_rt_params *params,
+                    cfg_handle *rt_hndl)
+{
+    int   addr_family = AF_UNSPEC;
+    void *dst_addr = NULL;
+    void *gw_addr = NULL;
+    void *src_addr = NULL;
+
+    if (params->dst_addr != NULL)
+    {
+        addr_family = params->dst_addr->sa_family;
+        dst_addr = te_sockaddr_get_netaddr(params->dst_addr);
+    }
+
+    if (params->gw_addr != NULL &&
+        params->gw_addr->sa_family != AF_UNSPEC)
+    {
+        gw_addr = te_sockaddr_get_netaddr(params->gw_addr);
+    }
+
+    if (params->src_addr != NULL &&
+        params->src_addr->sa_family != AF_UNSPEC)
+    {
+        src_addr = te_sockaddr_get_netaddr(params->src_addr);
+    }
+
+    return tapi_cfg_route_op(OP_ADD, ta, addr_family, dst_addr,
+                             params->prefix,
+                             gw_addr, params->dev, src_addr,
+                             params->type, params->flags,
+                             params->metric, params->tos, params->mtu,
+                             params->win, params->irtt, params->table,
+                             params->hops, params->hops_num, rt_hndl);
 }
 
 /* See the description in tapi_cfg.h */
@@ -755,7 +802,7 @@ tapi_cfg_del_route_tmp(const char *ta, int addr_family,
     return tapi_cfg_route_op(OP_DEL, ta, addr_family,
                              dst_addr, prefix, gw_addr, dev, src_addr, NULL,
                              flags, metric, tos, mtu, win, irtt,
-                             TAPI_RT_TABLE_MAIN, NULL);
+                             TAPI_RT_TABLE_MAIN, NULL, 0, NULL);
 }
 
 /* See the description in tapi_cfg.h */
@@ -879,6 +926,8 @@ tapi_cfg_del_neigh_dynamic(const char *ta, const char *ifname)
  * @param dev           Interface name
  * @param type          Route type
  * @param table         Route table ID
+ * @param hops          Array of nexthops for a multipath route
+ * @param hops_num      Number of elements in @p hops
  * @param cfg_hndl      Handle of the route in Configurator DB (OUT)
  *
  * @return Status code
@@ -890,7 +939,9 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                   const void *dst_addr, int prefix, const void *gw_addr,
                   const char *dev, const void *src_addr, const char *type,
                   uint32_t flags, int metric, int tos, int mtu, int win,
-                  int irtt, int table, cfg_handle *cfg_hndl)
+                  int irtt, int table,
+                  tapi_cfg_rt_nexthop *hops, size_t hops_num,
+                  cfg_handle *cfg_hndl)
 {
     cfg_handle  handle;
     char        dst_addr_str[INET6_ADDRSTRLEN];
@@ -899,7 +950,7 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
     int         rc;
     int         netaddr_size = te_netaddr_get_size(addr_family);
     uint8_t    *dst_addr_copy;
-    int         i;
+    uint32_t    i;
     int         diff;
     uint8_t     mask;
 
@@ -1170,7 +1221,64 @@ tapi_cfg_route_op(enum tapi_cfg_oper op, const char *ta, int addr_family,
                 CFG_RT_SET_LOCAL(win);
                 CFG_RT_SET_LOCAL(mtu);
                 CFG_RT_SET_LOCAL(irtt);
-           } while (FALSE);
+            } while (FALSE);
+
+            if (rc == 0)
+            {
+                for (i = 0; i < hops_num; i++)
+                {
+                    rc = cfg_add_instance_local_fmt(
+                                        NULL, CVT_NONE, NULL,
+                                        "/agent:%s/route:%s/nexthop:%u",
+                                        ta, route_inst_name, i);
+
+                    if (rc != 0)
+                    {
+                        ERROR("%s() failed to add a new nexthop "
+                              "for route %s on '%s' Agent, rc = %r",
+                              __FUNCTION__, route_inst_name, ta, rc);
+                        break;
+                    }
+
+                    rc = cfg_set_instance_local_fmt(
+                              CFG_VAL(INTEGER, hops[i].weight),
+                              "/agent:%s/route:%s/nexthop:%u/weight:",
+                              ta, route_inst_name, i);
+                    if (rc != 0)
+                    {
+                        ERROR("%s() failed to set weight for nexthop, "
+                              "rc = %r", __FUNCTION__, rc);
+                        break;
+                    }
+
+                    rc = cfg_set_instance_local_fmt(
+                              CFG_VAL(STRING, hops[i].ifname),
+                              "/agent:%s/route:%s/nexthop:%u/dev:",
+                              ta, route_inst_name, i);
+                    if (rc != 0)
+                    {
+                        ERROR("%s() failed to set dev for nexthop, "
+                              "rc = %r", __FUNCTION__, rc);
+                        break;
+                    }
+
+                    if (hops[i].gw.ss_family != AF_UNSPEC)
+                    {
+                        rc = cfg_set_instance_local_fmt(
+                                CFG_VAL(ADDRESS, &hops[i].gw),
+                                "/agent:%s/route:%s/nexthop:%u/gw:",
+                                ta, route_inst_name, i);
+
+                        if (rc != 0)
+                        {
+                            ERROR("%s() failed to set gw for nexthop, "
+                                  "rc = %r", __FUNCTION__, rc);
+                            break;
+                        }
+                    }
+
+                }
+            }
 
 #undef CFG_RT_SET_LOCAL
 

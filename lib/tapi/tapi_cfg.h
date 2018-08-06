@@ -392,6 +392,62 @@ tapi_cfg_del_route_via_gw(const char *ta, int addr_family,
     return tapi_cfg_del_route_tmp(ta, addr_family, dst_addr, prefix,
                                   gw_addr, NULL, NULL, 0, 0, 0, 0, 0, 0);
 }
+
+/** Nexthop of a multipath route. */
+typedef struct tapi_cfg_rt_nexthop {
+    struct sockaddr_storage gw;                   /**< Gateway address
+                                                       (considered empty if
+                                                        family is
+                                                        @c AF_UNSPEC) */
+    char                    ifname[IF_NAMESIZE];  /**< Interface name */
+    unsigned int            weight;               /**< Weight */
+} tapi_cfg_rt_nexthop;
+
+/** Structure storing parameters of tapi_cfg_add_route2(). */
+typedef struct tapi_cfg_rt_params {
+    const struct sockaddr     *dst_addr;    /**< Destination address. */
+    int                        prefix;      /**< Route prefix. */
+    const struct sockaddr     *gw_addr;     /**< Gateway address. */
+    const struct sockaddr     *src_addr;    /**< Default source address. */
+    const char                *dev;         /**< Route interface. */
+    const char                *type;        /**< Route type. */
+    uint32_t                   flags;       /**< Route flags. */
+    int                        metric;      /**< Route metric. */
+    int                        tos;         /**< Type of service. */
+    int                        mtu;         /**< TCP maximum segment size
+                                                 (MSS) on the route. */
+    int                        win;         /**< TCP window size. */
+    int                        irtt;        /**< Initial round trip time
+                                                 for TCP connections
+                                                 (in milliseconds). */
+    int                        table;       /**< Route table. */
+
+    tapi_cfg_rt_nexthop       *hops;        /**< Nexthops of a multipath
+                                                 route. */
+    unsigned int               hops_num;    /**< Number of nexthops. */
+} tapi_cfg_rt_params;
+
+/**
+ * Initialize tapi_cfg_rt_params fields.
+ *
+ * @param params      Pointer to tapi_cfg_rt_params structure.
+ */
+extern void tapi_cfg_rt_params_init(tapi_cfg_rt_params *params);
+
+/**
+ * Add a new route.
+ *
+ * @param ta        Test Agent name.
+ * @param params    Route parameters.
+ * @param rt_hndl   Where to save configurator handle of a new route
+ *                  (may be @c NULL).
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_add_route2(const char *ta,
+                                    tapi_cfg_rt_params *params,
+                                    cfg_handle *rt_hndl);
+
 /**@} <!-- END tapi_conf_route --> */
 
 /**
