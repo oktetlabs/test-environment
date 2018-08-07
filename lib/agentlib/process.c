@@ -269,7 +269,7 @@ ta_sigchld_handler(void)
         }
         else
         {
-            ERROR("waitpid() failed with errno %d", errno);
+            LOG_PRINT("waitpid() failed: %s", strerror(errno));
         }
     }
     else
@@ -514,14 +514,14 @@ ta_process_mgmt_init(void)
     if (sem_init(&sigchld_sem, 0, 1) < 0)
     {
         rc = te_rc_os2te(errno);
-        ERROR("Can't initialize sigchld sem: %r");
+        LOG_PRINT("Cannot initialize sigchld sem: %s", strerror(errno));
     }
     /* FIXME: Is it used by RPC */
     sigact.sa_handler = (void *)ta_sigchld_handler;
     if (sigaction(SIGCHLD, &sigact, NULL) != 0)
     {
         rc = te_rc_os2te(errno);
-        ERROR("Cannot set SIGCHLD action: %r");
+        LOG_PRINT("Cannot set SIGCHLD action: %s", strerror(errno));
     }
 #ifdef HAVE_PTHREAD_H
     pthread_atfork(NULL, NULL, ta_children_dead_heap_init);
