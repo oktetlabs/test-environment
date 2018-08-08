@@ -16,6 +16,9 @@
 
 #include <popt.h>
 #include "conf_defs.h"
+#if WITH_CONF_YAML
+#include "conf_yaml.h"
+#endif /* WITH_CONF_YAML */
 
 #include <libxml/xinclude.h>
 
@@ -40,6 +43,11 @@ static struct ipc_server *server = NULL; /**< IPC Server handle */
 static const char *cs_cfg_file[16] =  {NULL, };  
 static const char *cs_sniff_cfg_file = NULL;  /**< Configuration file name
                                                    for sniffer framework */
+
+#if WITH_CONF_YAML
+/** Configuration file in YAML */
+static const char *cs_conf_yaml = NULL;
+#endif /* WITH_CONF_YAML */
 
 /** @name Configurator global options */
 #define CS_PRINT_TREES  0x1     /**< Print objects and object instances
@@ -1572,6 +1580,11 @@ process_cmd_line_opts(int argc, char **argv)
         { "sniff-conf", '\0', POPT_ARG_STRING, &cs_sniff_cfg_file, 0,
           "Auxiliary conf file for the sniffer framework.", NULL },
 
+#if WITH_CONF_YAML
+        { "conf-yaml", '\0', POPT_ARG_STRING, &cs_conf_yaml, 0,
+          "Configuration file in YAML", NULL },
+#endif /* WITH_CONF_YAML */
+
         POPT_AUTOHELP
         POPT_TABLEEND
     };
@@ -1696,6 +1709,25 @@ main(int argc, char **argv)
         ERROR("Fatal error: cannot initialize database");
         goto exit;
     }
+
+#if WITH_CONF_YAML
+    /*
+     * One should pay attention to keep this block before
+     * parse_config calls so that YAML configuration file
+     * gets converted into an XML file with the same name
+     * and appropriate extension to be included by one of
+     * the bona fide configuration files (XML) afterwards.
+     */
+    if (cs_conf_yaml != NULL)
+    {
+        rc = transform_conf_yaml(cs_conf_yaml);
+        if (rc != 0)
+        {
+            ERROR("Failed to parse configuration file in YAML");
+            goto exit;
+        }
+    }
+#endif /* WITH_CONF_YAML */
 
     for (cfg_file_id = 0;
          cs_cfg_file[cfg_file_id] != NULL && cfg_file_id < MAX_CFG_FILES;

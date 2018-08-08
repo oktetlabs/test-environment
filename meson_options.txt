@@ -86,3 +86,6 @@ option('trc-hidden-stats', type: 'boolean', value: false,
        description: 'Enable hidden columns in statistics tables in TRC')
 option('trc-ext-scripts', type: 'array', value: [],
        description: 'Install external scripts with TRC')
+
+option('cs-conf-yaml', type: 'boolean', value: false,
+       description: 'Enable support for YAML configuration file processing')

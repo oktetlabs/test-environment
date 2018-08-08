@@ -91,6 +91,7 @@ Generic options:
 
   --cs-print-trees              Print configurator trees.
   --cs-log-diff                 Log backup diff unconditionally.
+  --cs-conf-yaml                Configuration file in YAML.
 
   --build-autotools             Build using autotools (autoconf, automake, make)
   --build-meson                 Build using meson/ninja
