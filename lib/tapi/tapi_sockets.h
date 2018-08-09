@@ -33,6 +33,7 @@
 #include "te_rpc_types.h"
 #include "te_dbuf.h"
 #include "rcf_rpc.h"
+#include "tapi_rpc_unistd.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,6 +76,25 @@ extern rpc_tcp_state tapi_get_tcp_sock_state(struct rcf_rpc_server *pco,
  */
 extern ssize_t tapi_sock_read_data(rcf_rpc_server *rpcs, int s,
                                    te_dbuf *read_data);
+
+/**
+ * Send a raw TCPv4 packet packet with full ethernet header.
+ *
+ * @param rpcs        RPC server handle.
+ * @param iov         Data vector
+ * @param iov_len     Actual data vector length
+ * @param ifindex     Interface index to send packet
+ * @param raw_socket  Raw socket for sending data
+ *
+ * @note The function uses an already opened raw socket.
+ * It should be created like this:
+ * rpc_socket(rpcs, RPC_AF_PACKET, RPC_SOCK_RAW, RPC_IPPROTO_RAW);
+ *
+ * @return Status code
+ */
+extern te_errno tapi_sock_raw_tcpv4_send(rcf_rpc_server *rpcs, rpc_iovec *iov,
+                                         int iovlen, int ifindex,
+                                         int raw_socket);
 
 #ifdef __cplusplus
 } /* extern "C" */
