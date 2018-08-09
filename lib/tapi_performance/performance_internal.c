@@ -24,6 +24,8 @@
 #include "tapi_test.h"
 #include "te_units.h"
 
+/* Timeout to wait for process to stop */
+#define TAPI_PERF_STOP_TIMEOUT_S (10)
 
 /*
  * Get default timeout according to application options.
@@ -98,7 +100,8 @@ perf_app_stop(tapi_perf_app *app)
 {
     if (app->pid >= 0)
     {
-        rpc_ta_kill_death(app->rpcs, app->pid);
+        rpc_ta_kill_and_wait(app->rpcs, app->pid, RPC_SIGKILL,
+                             TAPI_PERF_STOP_TIMEOUT_S);
         app->pid = -1;
     }
 
