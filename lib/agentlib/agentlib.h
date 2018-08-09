@@ -121,8 +121,26 @@ extern te_errno ta_pclose_r(pid_t cmd_pid, FILE *f);
  *
  * @retval 0 child was exited or killed successfully
  * @retval -1 there is no such child.
+ *
+ * @sa ta_kill_and_wait
  */
 extern int ta_kill_death(pid_t pid);
+
+/**
+ * Kill a child process and wait for process to change state
+ *
+ * @param pid           PID of the child process to be killed
+ * @param sig           Signal to be sent to child process
+ * @param timeout_s     Time to wait for process to change state
+ *
+ * @return Status code
+ * @retval  0   Successful result
+ * @retval -1   Failed to kill the child process
+ * @retval -2   Timed out to wait for changed state of the child process
+ *
+ * @sa ta_kill_death
+ */
+extern int ta_kill_and_wait(pid_t pid, int sig, unsigned int timeout_s);
 
 #if defined(ENABLE_TELEPHONY)
 #include "telephony.h"

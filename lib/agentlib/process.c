@@ -499,6 +499,48 @@ ta_kill_death(pid_t pid)
     return 0;
 }
 
+/* See description in agentlib.h */
+int
+ta_kill_and_wait(pid_t pid, int sig, unsigned int timeout_s)
+{
+    static const unsigned int delay_ms = 500;
+
+    int rc;
+    pid_t wpid;
+    unsigned int num_attempts;
+
+    wpid = ta_waitpid(pid, NULL, WNOHANG);
+    if (wpid == pid || (wpid == -1 && errno == ECHILD))
+        return 0;
+
+    rc = kill(-pid, sig);
+    if (rc != 0 && errno != ESRCH)
+    {
+        LOG_PRINT("Failed to terminate the process %d: %s",
+                  pid, strerror(errno));
+        return -1;
+    }
+
+    num_attempts = TE_SEC2MS(timeout_s) / delay_ms;
+    do {
+        wpid = ta_waitpid(pid, NULL, WNOHANG);
+        if (wpid == pid || (wpid == -1 && errno == ECHILD))
+        {
+            return 0;
+        }
+        else if (wpid != 0)
+        {
+            LOG_PRINT("Failed to wait for pid %d: %s", pid, strerror(errno));
+            return -1;
+        }
+        if (num_attempts > 0)
+            te_msleep(delay_ms);
+    } while (num_attempts-- > 0);
+
+    LOG_PRINT("Got timeout to wait for pid %d", pid);
+    return -2;
+}
+
 te_errno
 ta_process_mgmt_init(void)
 {
