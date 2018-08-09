@@ -176,7 +176,7 @@ test_path_new_arg_value(char *value)
 %}
 
 %pure-parser
-%name-prefix="test_path_"
+%name-prefix "test_path_"
 
 %union {
     char           *str;
