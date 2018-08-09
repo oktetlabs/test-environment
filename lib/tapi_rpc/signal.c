@@ -384,6 +384,28 @@ rpc_ta_kill_death(rcf_rpc_server *rpcs, tarpc_pid_t pid)
     RETVAL_INT(ta_kill_death, out.retval);
 }
 
+int
+rpc_ta_kill_and_wait(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_signum sig,
+                     unsigned int timeout_s)
+{
+    tarpc_ta_kill_and_wait_in  in = {};
+    tarpc_ta_kill_and_wait_out out = {};
+
+    in.pid = pid;
+    in.sig = sig;
+    in.timeout = timeout_s;
+    out.retval = -1;
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+        rpcs->timeout = rpcs->def_timeout + TE_SEC2MS(timeout_s);
+
+    rcf_rpc_call(rpcs, "ta_kill_and_wait", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEGATIVE(ta_kill_and_wait, out.retval);
+    TAPI_RPC_LOG(rpcs, ta_kill_and_wait, "%d, %s, %u", "%d",
+                 pid, signum_rpc2str(sig), timeout_s, out.retval);
+    RETVAL_INT(ta_kill_and_wait, out.retval);
+}
+
 rpc_sigset_p
 rpc_sigset_new(rcf_rpc_server *rpcs)
 {

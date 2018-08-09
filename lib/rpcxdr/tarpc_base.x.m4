@@ -3257,6 +3257,18 @@ struct tarpc_ta_kill_death_in {
 
 typedef struct tarpc_int_retval_out tarpc_ta_kill_death_out;
 
+/* ta_kill_and_wait() */
+
+struct tarpc_ta_kill_and_wait_in {
+    struct tarpc_in_arg common;
+
+    tarpc_pid_t     pid;
+    tarpc_int       sig;
+    tarpc_uint      timeout;
+};
+
+typedef struct tarpc_int_retval_out tarpc_ta_kill_and_wait_out;
+
 
 /*
  * Signal set are allocated/destroyed and manipulated in server context.
@@ -5588,6 +5600,7 @@ program tarpc
         RPC_DEF(call_gettid)
         RPC_DEF(call_tgkill)
         RPC_DEF(ta_kill_death)
+        RPC_DEF(ta_kill_and_wait)
 
         RPC_DEF(sigset_new)
         RPC_DEF(sigset_delete)

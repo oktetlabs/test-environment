@@ -2747,6 +2747,14 @@ TARPC_FUNC(ta_kill_death, {},
 }
 )
 
+/*-------------- ta_kill_and_wait() -----------------------------*/
+
+TARPC_FUNC(ta_kill_and_wait, {},
+{
+    MAKE_CALL(out->retval = func(in->pid, signum_rpc2h(in->sig), in->timeout));
+}
+)
+
 sigset_t rpcs_received_signals;
 
 /* See description in unix_internal.h */
