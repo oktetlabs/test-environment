@@ -119,6 +119,7 @@ extern te_errno ta_pclose_r(pid_t cmd_pid, FILE *f);
  *
  * @param pid PID of the child to be killed
  *
+ * @return Status code
  * @retval 0 child was exited or killed successfully
  * @retval -1 there is no such child.
  *

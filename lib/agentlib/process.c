@@ -469,34 +469,22 @@ ta_pclose_r(pid_t cmd_pid, FILE *f)
     return rc;
 }
 
-/* See description in unix_internal.h */
+/* See description in agentlib.h */
 int
 ta_kill_death(pid_t pid)
 {
+    static const unsigned int timeout_s = 1;
+
     int rc;
     int saved_errno = errno;
 
-    if (ta_waitpid(pid, NULL, WNOHANG) == pid)
-        return 0;
-    rc = kill(-pid, SIGTERM);
-    if (rc != 0 && errno != ESRCH)
-        return -1;
+    rc = ta_kill_and_wait(pid, SIGTERM, timeout_s);
+    if (rc != 0)
+        rc = ta_kill_and_wait(pid, SIGKILL, timeout_s);
+
     errno = saved_errno;
 
-    /* Wait for termination. */
-    te_msleep(500);
-
-    /* Check if the process exited. If kill failed, waitpid can't fail */
-    if (ta_waitpid(pid, NULL, WNOHANG) == pid)
-        return 0;
-    else if (rc != 0)
-        return -1;
-
-    /* Wait for termination. */
-    te_msleep(500);
-    kill(-pid, SIGKILL);
-    ta_waitpid(pid, NULL, 0);
-    return 0;
+    return (rc == 0 ? 0 : -1);
 }
 
 /* See description in agentlib.h */
