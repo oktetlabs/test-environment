@@ -1833,6 +1833,15 @@ rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
     struct tarpc_get_rw_ability_out out;
     int                             rc;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): rpcs is NULL", __FUNCTION__);
+        RETVAL_INT(get_rw_ability, -1);
+    }
+
     in.sock = s;
     in.timeout = timeout;
     in.check_rd = (type[0] == 'R') ? TRUE : FALSE;
@@ -1846,10 +1855,10 @@ rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
     *answer = (out.retval == 1);
     rc = (out.retval > 0) ? 0 : out.retval;
 
-    CHECK_RETVAL_VAR(rpc_get_rw_ability, rc, (rc < 0), -1);
-    TAPI_RPC_LOG(rpcs, rpc_get_rw_ability, "%d %d %s", "%d", s, timeout,
+    CHECK_RETVAL_VAR(get_rw_ability, rc, (rc < 0), -1);
+    TAPI_RPC_LOG(rpcs, get_rw_ability, "%d %d %s", "%d", s, timeout,
                  type, out.retval);
-    RETVAL_INT(rpc_find_func, rc);
+    RETVAL_INT(get_rw_ability, rc);
 }
 
 
