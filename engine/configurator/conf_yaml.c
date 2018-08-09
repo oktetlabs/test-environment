@@ -390,12 +390,6 @@ transform_conf_yaml_cmd(yaml_document_t *d,
         if (k->data.scalar.length == 0)
             continue;
 
-        if (v->type == YAML_NO_NODE)
-            continue;
-
-        if (v->type == YAML_SCALAR_NODE && v->data.scalar.length == 0)
-            continue;
-
         if (strcmp((const char *)k->data.scalar.value, "add") == 0)
         {
             rc = transform_conf_yaml_cmd_add(d, v, xn_history);
