@@ -416,16 +416,8 @@ rpc_set_var(rcf_rpc_server *rpcs, const char *name,
 }
 
 
-/**
- * Convert I/O vector to array.
- *
- * @param len      total data length
- * @param v        I/O vector
- * @param cnt      number of elements in vector
- *
- * @return Pointer to allocated array or NULL.
- */
-static uint8_t *
+/* See description in tapi_rpc_unistd.h */
+uint8_t *
 rpc_iovec_to_array(size_t len, const struct rpc_iovec *v, size_t cnt)
 {
     uint8_t *array = malloc(len);

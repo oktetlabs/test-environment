@@ -312,6 +312,18 @@ typedef struct rpc_iovec {
 } rpc_iovec;
 
 /**
+ * Convert I/O vector to array.
+ *
+ * @param len      total data length
+ * @param v        I/O vector
+ * @param cnt      number of elements in vector
+ *
+ * @return Pointer to allocated array or NULL.
+ */
+extern uint8_t *rpc_iovec_to_array(size_t len, const struct rpc_iovec *v,
+                                   size_t cnt);
+
+/**
  * Compare RPC alalog of 'struct iovec'.
  *
  * @param v1len     total length of the first vector
