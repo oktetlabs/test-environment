@@ -638,7 +638,7 @@ tapi_cfg_add_route(const char *ta, int addr_family,
     rt_params.prefix = prefix;
     rt_params.gw = gw_addr;
     rt_params.dev = dev;
-    rt_params.src_addr = src_addr;
+    rt_params.src = src_addr;
     rt_params.flags = flags;
     rt_params.metric = metric;
     rt_params.tos = tos;
@@ -713,7 +713,7 @@ tapi_cfg_add_full_route(const char *ta, int addr_family,
     rt_params.prefix = prefix;
     rt_params.gw = gw_addr;
     rt_params.dev = dev;
-    rt_params.src_addr = src_addr;
+    rt_params.src = src_addr;
     rt_params.type = type;
     rt_params.flags = flags;
     rt_params.metric = metric;
@@ -745,7 +745,7 @@ tapi_cfg_modify_route(const char *ta, int addr_family,
     rt_params.prefix = prefix;
     rt_params.gw = gw_addr;
     rt_params.dev = dev;
-    rt_params.src_addr = src_addr;
+    rt_params.src = src_addr;
     rt_params.flags = flags;
     rt_params.metric = metric;
     rt_params.tos = tos;
@@ -783,7 +783,7 @@ tapi_cfg_modify_full_route(const char *ta, int addr_family,
     rt_params.prefix = prefix;
     rt_params.gw = gw_addr;
     rt_params.dev = dev;
-    rt_params.src_addr = src_addr;
+    rt_params.src = src_addr;
     rt_params.type = type;
     rt_params.flags = flags;
     rt_params.metric = metric;
@@ -863,7 +863,7 @@ tapi_cfg_del_route_tmp(const char *ta, int addr_family,
     rt_params.prefix = prefix;
     rt_params.gw = gw_addr;
     rt_params.dev = dev;
-    rt_params.src_addr = src_addr;
+    rt_params.src = src_addr;
     rt_params.flags = flags;
     rt_params.metric = metric;
     rt_params.tos = tos;
