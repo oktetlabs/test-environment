@@ -208,7 +208,7 @@ extern te_errno tapi_route_gateway_init(
 extern te_errno tapi_route_gateway_configure(tapi_route_gateway *gw);
 
 /**
- * Enable or disable IPv4 forwarding on gateway.
+ * Enable or disable IPv4 or IPv6 forwarding on gateway.
  *
  * @param gateway       Gateway description.
  *

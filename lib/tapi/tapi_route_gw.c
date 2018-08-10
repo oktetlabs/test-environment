@@ -180,7 +180,19 @@ te_errno
 tapi_route_gateway_set_forwarding(tapi_route_gateway *gw,
                                   te_bool enabled)
 {
-    return tapi_cfg_base_ipv4_fw(gw->gw_ta, enabled);
+    if (gw->gw_iut_addr->sa_family == AF_INET)
+    {
+        return tapi_cfg_base_ipv4_fw(gw->gw_ta, enabled);
+    }
+    else if (gw->gw_iut_addr->sa_family == AF_INET6)
+    {
+        return tapi_cfg_base_ipv6_fw(gw->gw_ta, enabled);
+    }
+    else
+    {
+        ERROR("Unsupported address family");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
 }
 
 /* See description in tapi_route_gw.h */
