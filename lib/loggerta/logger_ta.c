@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -104,7 +104,7 @@ static void
 ta_log_message(const char *file, unsigned int line,
                te_log_ts_sec sec, te_log_ts_usec usec,
                unsigned int level, const char *entity, const char *user,
-               const char *fmt, va_list ap) 
+               const char *fmt, va_list ap)
 {
     ta_log_lock_key     key;
     uint32_t            position;
@@ -116,13 +116,13 @@ ta_log_message(const char *file, unsigned int line,
 
     lgr_mess_header header;
     lgr_mess_header *hdr_addr = NULL;
-    
+
     static char *null_str = "(NULL)";
-    
+
     UNUSED(file);
     UNUSED(line);
     UNUSED(entity);
-    
+
     memset(&header, 0, sizeof(struct lgr_mess_header));
     header.level = level;
     header.user = (user != NULL) ? user : null_str;
@@ -166,7 +166,7 @@ ta_log_message(const char *file, unsigned int line,
             case 'p':
             {
                 void *tmp = va_arg(ap, void *);
-                
+
                 LGR_SET_ARG(header, narg, (ta_log_arg)tmp);
                 break;
             }
@@ -175,7 +175,7 @@ ta_log_message(const char *file, unsigned int line,
             {
                 size_t  length;
                 char   *addr = va_arg(ap, char *);
-                
+
                 if (addr == NULL)
                     addr = null_str;
                 length = strlen(addr) + 1;
@@ -328,9 +328,9 @@ log_get_message(uint32_t length, uint8_t *buffer)
         }                                                           \
         mess_length += (_field_length);                             \
     } while (0)
-    
+
     LGR_CHECK_LENGTH(sizeof(te_log_seqno) + TE_LOG_MSG_COMMON_HDR_SZ);
-        
+
     /* Write message sequence number FIXME */
     *((uint32_t *)tmp_buf) = htonl(header.sequence);
     tmp_buf += sizeof(uint32_t);
@@ -349,7 +349,7 @@ log_get_message(uint32_t length, uint8_t *buffer)
     tmp_buf += sizeof(uint32_t);
 
     /* Write log level */
-    *((te_log_level *)tmp_buf) = 
+    *((te_log_level *)tmp_buf) =
 #if (SIZEOF_TE_LOG_LEVEL == 1)
         header.level;
 #elif (SIZEOF_TE_LOG_LEVEL == 2)
@@ -378,7 +378,7 @@ log_get_message(uint32_t length, uint8_t *buffer)
     tmp_buf += sizeof(te_log_nfl);
     memcpy(tmp_buf, fs, tmp_length);
     tmp_buf += tmp_length;
-    
+
     /* Parse format string */
     for (; *fs; fs++)
     {
@@ -398,7 +398,7 @@ log_get_message(uint32_t length, uint8_t *buffer)
 
         /* skip to conversion char */
         for (; index(skip_width, *fs); ++fs);
-        
+
         switch (*fs)
         {
             case 'd':
@@ -424,13 +424,13 @@ log_get_message(uint32_t length, uint8_t *buffer)
             {
                 void       *val;
                 uint32_t    tmp;
-                
+
                 assert(sizeof(val) == SIZEOF_VOID_P);
                 LGR_CHECK_LENGTH(sizeof(te_log_nfl) + sizeof(void *));
                 *((te_log_nfl *)tmp_buf) = log_nfl_hton(sizeof(void *));
                 tmp_buf += sizeof(te_log_nfl);
                 val = (void *)LGR_GET_ARG(header, argn++);
-                
+
 #if (SIZEOF_VOID_P == 4)
                 tmp = (uint32_t)val;
                 LGR_32_TO_NET(tmp, tmp_buf);
@@ -440,7 +440,7 @@ log_get_message(uint32_t length, uint8_t *buffer)
                 LGR_32_TO_NET(tmp, tmp_buf);
                 tmp_buf += sizeof(uint32_t);
 
-                /* 
+                /*
                  * At first, cast to the integer of appropriate size,
                  * then reject the most significant bits.
                  */
@@ -527,7 +527,7 @@ log_get_message(uint32_t length, uint8_t *buffer)
                 break;
         }
     }
-    
+
     LGR_CHECK_LENGTH(sizeof(te_log_nfl));
     *((te_log_nfl *)tmp_buf) = log_nfl_hton(TE_LOG_RAW_EOR_LEN);
 
@@ -570,7 +570,7 @@ ta_log_init(void)
 #if HAVE_PTHREAD_H
     if (pthread_atfork(NULL, NULL, log_atfork_child) != 0)
         return -1;
-#endif        
+#endif
 
     if (ta_log_lock_init() != 0)
         return -1;

@@ -1,11 +1,11 @@
 /** @file
  * @brief Test Environment: RGT Core
- * 
+ *
  * Implementation of high level functions of message processing.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -35,7 +35,7 @@ f_process_reg_log_msg  reg_msg_proc;
 f_process_log_root     log_root_proc[CTRL_EVT_LAST];
 
 /* External declaration */
-static node_info_t *create_node_by_msg(log_msg *msg, node_type_t type, 
+static node_info_t *create_node_by_msg(log_msg *msg, node_type_t type,
                                        int node_id, int parent_id);
 
 /* See the description in log_msg.h */
@@ -141,7 +141,7 @@ rgt_process_tester_control_message(log_msg *msg)
         while (*fmt_str != '\0' && isspace(*fmt_str))
             fmt_str++;
 
-        if ((node = flow_tree_close_node(parent_id, node_id, 
+        if ((node = flow_tree_close_node(parent_id, node_id,
                                          msg->timestamp,
                                          &err_code)) == NULL)
         {
@@ -223,8 +223,8 @@ rgt_process_regular_message(log_msg *msg)
     }
     else
     {
-        /* 
-         * At first we should check filter by entity name, user name and 
+        /*
+         * At first we should check filter by entity name, user name and
          * timestamp. Then we can attach message to execution flow tree.
          */
         if (rgt_filter_check_message(msg->entity, msg->user,
@@ -300,9 +300,9 @@ msg_arg *
 get_next_arg(log_msg *msg)
 {
     msg_arg *arg;
-    
+
     arg = msg->cur_arg;
-    
+
     if (arg != NULL)
     {
         msg->cur_arg = arg->next;
@@ -344,7 +344,7 @@ rgt_process_event(node_type_t type, enum event_type evt, node_info_t *node)
 
 /**
  * Creates node_info_t structure for an appropriate control log message.
- * 
+ *
  * @param  msg        Control log message
  * @param  type       Type of control event
  * @param  node_id    ID of the processed node
@@ -422,7 +422,7 @@ create_node_by_msg(log_msg *msg, node_type_t type,
         }
         if (arg->len > 0)
         {
-            node->descr.objective = 
+            node->descr.objective =
                 (char *)node_info_obstack_copy0(arg->val, arg->len);
         }
 
@@ -584,7 +584,7 @@ create_node_by_msg(log_msg *msg, node_type_t type,
         while (*param_lst != '\0')
         {
             SKIP_SPACES(param_lst);
-            
+
             *p_prm = (param *)node_info_obstack_alloc(sizeof(param));
             (*p_prm)->name = param_lst;
             if ((param_lst = strchr(param_lst, '=')) == NULL)
@@ -631,8 +631,8 @@ create_node_by_msg(log_msg *msg, node_type_t type,
                 /*
                  * After back slash it is only possible to meet
                  * a quotation mark or a back slash.
-                 * We should strip an extra back slash, which is 
-                 * used to perceive '"' and '\' as a characters in 
+                 * We should strip an extra back slash, which is
+                 * used to perceive '"' and '\' as a characters in
                  * attribute's value.
                  */
                 if (*(param_lst + 1) != '\\' && *(param_lst + 1) != '\"')
@@ -661,7 +661,7 @@ create_node_by_msg(log_msg *msg, node_type_t type,
                 memmove(param_lst, param_lst + 1,
                         strlen(param_lst + 1) + 1);
                 /*
-                 * I intentionally used "strlen(param_lst + 1) + 1" 
+                 * I intentionally used "strlen(param_lst + 1) + 1"
                  * construction instead of simpler "strlen(param_lst)"
                  * in order to be more understandable.
                  */
@@ -696,7 +696,7 @@ rgt_expand_log_msg(log_msg *msg)
         return;
 
     str_len = strlen(msg->fmt_str);
-    
+
     for (i = 0; i < str_len; i++)
     {
         if (msg->fmt_str[i] == '%' && i < str_len - 1)
@@ -728,7 +728,7 @@ rgt_expand_log_msg(log_msg *msg)
                 {
                     char format[3] = {'%', msg->fmt_str[i + 1], '\0'};
 
-                    *((uint32_t *)arg->val) = 
+                    *((uint32_t *)arg->val) =
                         ntohl(*(uint32_t *)arg->val);
 
                     sprintf(tmp, format, *((uint32_t *)arg->val));
@@ -781,7 +781,7 @@ rgt_expand_log_msg(log_msg *msg)
                     const char *src;
                     const char *err_str;
 
-                    err = *((uint32_t *)arg->val) = 
+                    err = *((uint32_t *)arg->val) =
                         ntohl(*(uint32_t *)arg->val);
 
                     src = te_rc_mod2str(err);
@@ -821,10 +821,10 @@ rgt_expand_log_msg(log_msg *msg)
 
 /*
  *  %Tm[[n].[w]] - memory dump, n - the number of elements after
- *                 which "\n" is to be inserted , w - width (in bytes) of 
+ *                 which "\n" is to be inserted , w - width (in bytes) of
  *                 the element.
  */
-                    
+
                     if (strstr(msg->fmt_str + i, "%Tm") !=
                             (msg->fmt_str + i))
                     {
@@ -835,7 +835,7 @@ rgt_expand_log_msg(log_msg *msg)
                     }
 
                     if (/* i > str_len - 10 || */
-                        (rc = sscanf(msg->fmt_str + i, "%%Tm[[%d].[%d]]", 
+                        (rc = sscanf(msg->fmt_str + i, "%%Tm[[%d].[%d]]",
                                &n_tuples, &tuple_width)) != 2)
                     {
                         default_format = TRUE;
@@ -847,12 +847,12 @@ rgt_expand_log_msg(log_msg *msg)
                     while (cur_pos < arg->len)
                     {
                         obstack_grow(msg->obstk, "\n   ", 4);
-                        
+
                         for (j = 0;
                              j < n_tuples && cur_pos < arg->len;
                              j++)
                         {
-                            for (k = 0; 
+                            for (k = 0;
                                  (k < tuple_width) && (cur_pos < arg->len);
                                  k++, cur_pos++)
                             {
@@ -877,7 +877,7 @@ rgt_expand_log_msg(log_msg *msg)
                         {
                         }
 
-                        i--; 
+                        i--;
                     }
 
                     continue;
@@ -887,7 +887,7 @@ rgt_expand_log_msg(log_msg *msg)
 
         obstack_1grow(msg->obstk, msg->fmt_str[i]);
     }
-    
+
     obstack_1grow(msg->obstk, '\0');
 
     str_len = obstack_object_size(msg->obstk);
