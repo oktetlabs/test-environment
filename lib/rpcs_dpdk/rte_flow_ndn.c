@@ -198,13 +198,16 @@ rte_int_hton(uint32_t val, void *data, size_t size)
             goto out;                                                       \
     } while (0)
 
+/*
+ * Get values of spec, mask and last of requested field with specified name
+ * based on size of the value (in bits) and offset of the value (in bits)
+ */
 static te_errno
 asn_read_int_field_with_offset(const asn_value *pdu, const char *name,
                                size_t size, uint32_t offset, uint32_t *spec_p,
                                uint32_t *mask_p, uint32_t *last_p)
 {
     uint32_t val;
-    size_t val_size = size;
     uint32_t spec_val = 0;
     uint32_t mask_val = 0;
     uint32_t last_val = 0;
@@ -213,7 +216,7 @@ asn_read_int_field_with_offset(const asn_value *pdu, const char *name,
     int rc;
 
     snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#plain", name);
-    rc = asn_read_value_field(pdu, &val, &val_size, buf);
+    rc = asn_read_uint32(pdu, &val, buf);
     if (rc == 0)
     {
         spec_val |= val << offset;
@@ -223,20 +226,20 @@ asn_read_int_field_with_offset(const asn_value *pdu, const char *name,
     else if (rc == TE_EASNOTHERCHOICE)
     {
         snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.first", name);
-        rc = asn_read_value_field(pdu, &val, &val_size, buf);
+        rc = asn_read_uint32(pdu, &val, buf);
         if (rc == 0)
             spec_val |= val << offset;
         if (rc == 0 || rc == TE_EASNINCOMPLVAL)
         {
             snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.last", name);
-            rc = asn_read_value_field(pdu, &val, &val_size, buf);
+            rc = asn_read_uint32(pdu, &val, buf);
         }
         if (rc == 0)
             last_val |= val << offset;
         if (rc == 0 || rc == TE_EASNINCOMPLVAL)
         {
             snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.mask", name);
-            rc = asn_read_value_field(pdu, &val, &val_size, buf);
+            rc = asn_read_uint32(pdu, &val, buf);
         }
         if (rc == 0)
             mask_val |= val << offset;
