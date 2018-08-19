@@ -1562,7 +1562,7 @@ process_cmd_line_opts(int argc, char **argv)
 
     int i;
     for (i = 0; i < argc; i++)
-      RING("arg %d - %s", i, argv[i]);
+      VERB("arg %d - %s", i, argv[i]);
 
     /* Option Table */
     struct poptOption options_table[] = {
@@ -1606,13 +1606,13 @@ process_cmd_line_opts(int argc, char **argv)
     }
 
     cfg_files = poptGetArg(optCon);
-    RING("%s: cfg_files=%s", __FUNCTION__, cfg_files);
+    INFO("%s: cfg_files=%s", __FUNCTION__, cfg_files);
     cs_cfg_file[0] = strtok((char *)cfg_files, " ");
-    RING("%s: cs_cfg_file=%s", __FUNCTION__, cs_cfg_file[0]);
+    INFO("%s: cs_cfg_file=%s", __FUNCTION__, cs_cfg_file[0]);
     while( cfg_file_num < MAX_CFG_FILES &&
            cs_cfg_file[cfg_file_num++] != NULL) {
       cs_cfg_file[cfg_file_num] = strtok(NULL, " ");
-      RING("%s: cs_cfg_file=%s", __FUNCTION__, cs_cfg_file[cfg_file_num]);
+      INFO("%s: cs_cfg_file=%s", __FUNCTION__, cs_cfg_file[cfg_file_num]);
     } 
     if (cs_cfg_file[0] == NULL)
     {
@@ -1733,7 +1733,7 @@ main(int argc, char **argv)
          cs_cfg_file[cfg_file_id] != NULL && cfg_file_id < MAX_CFG_FILES;
          cfg_file_id++)
     {
-      RING("-> %s", cs_cfg_file[cfg_file_id]);
+      INFO("-> %s", cs_cfg_file[cfg_file_id]);
       if ((rc = parse_config(cs_cfg_file[cfg_file_id], FALSE)) != 0)
       {
         ERROR("Fatal error during configuration file parsing: %d - %s",
