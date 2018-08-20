@@ -1013,7 +1013,7 @@ cfg_route_op(enum tapi_cfg_oper op, const char *ta,
     char        dst_addr_str_orig[INET6_ADDRSTRLEN];
     char        route_inst_name[1024];
     int         rc;
-    int         netaddr_size;
+    size_t      netaddr_size;
     uint8_t    *dst_addr_copy;
     uint32_t    i;
     int         diff;
@@ -1046,7 +1046,7 @@ cfg_route_op(enum tapi_cfg_oper op, const char *ta,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    if (prefix < 0 || prefix > (netaddr_size << 3))
+    if (prefix < 0 || (size_t)prefix > (netaddr_size << 3))
     {
         ERROR("%s() fails: Incorrect prefix value specified %d",
               __FUNCTION__, prefix);
