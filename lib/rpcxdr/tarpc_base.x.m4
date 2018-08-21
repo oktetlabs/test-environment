@@ -101,6 +101,7 @@ struct tarpc_out_arg {
     tarpc_int   _errno;         /**< @e errno of the operation from
                                      te_errno.h or rcf_rpc_defs.h */
     tarpc_bool  errno_changed;  /**< Was errno modified by the call? */
+    char        err_str<>;      /**< String explaining the error. */
 
     uint32_t    duration;   /**< Duration of the called routine
                                  execution (in microseconds) */

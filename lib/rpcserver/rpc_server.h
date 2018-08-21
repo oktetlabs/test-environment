@@ -152,6 +152,7 @@
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_string.h"
 #include "logger_api.h"
 #include "logfork.h"
 #include "rcf_common.h"
@@ -490,6 +491,32 @@ extern te_errno tarpc_check_args(checked_arg_list *list);
     } while (0)
 
 struct rpc_call_data;
+
+/** Structure for storing data about error occurred during RPC call. */
+typedef struct te_rpc_error_data {
+    te_errno    err;                     /**< Error number. */
+    char        str[RPC_ERROR_MAX_LEN];  /**< String describing error. */
+} te_rpc_error_data;
+
+/**
+ * Save information about error occurred during RPC call which will
+ * be reported to caller.
+ *
+ * @note If this function is not used (or @p err is set to @c 0),
+ *       errno value will be reported to caller.
+ *
+ * @param err    Error number.
+ * @param msg    Format string for error message.
+ * @param ...    Arguments for format string.
+ */
+extern void te_rpc_error_set(te_errno err, const char *msg, ...);
+
+/**
+ * Get error number set with te_rpc_error_set() the last time.
+ *
+ * @return Error number.
+ */
+extern te_errno te_rpc_error_get_num(void);
 
 /**
  * Do some preparations before passing an call to a real function:

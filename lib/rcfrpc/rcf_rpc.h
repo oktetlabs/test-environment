@@ -97,6 +97,27 @@
     ((((rpcs_) != NULL) && ((rpcs_)->name != NULL)) ? \
      (rpcs_)->name : "<UNKNOWN>")
 
+/**
+ * Get RPC error message.
+ *
+ * @param _rpcs   Pointer to rcf_rpc_server structure.
+ */
+#define RPC_ERROR_MSG(_rpcs) ((_rpcs) != NULL ? (_rpcs)->err_msg : "")
+
+/** Format string for logging RPC server error (both number and message) */
+#define RPC_ERROR_FMT "%r%s%s%s"
+
+/**
+ * Arguments for RPC_ERROR_FMT.
+ *
+ * @param _rpcs     Pointer to rcf_rpc_server structure.
+ */
+#define RPC_ERROR_ARGS(_rpcs) \
+    RPC_ERRNO(_rpcs),                                         \
+    (RPC_ERROR_MSG(_rpcs)[0] != '\0' ?                        \
+                                " (error message '" : ""),    \
+    RPC_ERROR_MSG(_rpcs),                                     \
+    (RPC_ERROR_MSG(_rpcs)[0] != '\0' ? "')" : "")
 
 /** RPC server context */
 typedef struct rcf_rpc_server {
@@ -153,6 +174,8 @@ typedef struct rcf_rpc_server {
     /* Returned read-only fields with status of the last operation */
     uint64_t        duration;   /**< Call Duration in microseconds */
     int             _errno;     /**< error number */
+    char            err_msg[RPC_ERROR_MAX_LEN]; /**< Optional error
+                                                     message. */
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_t lock;       /**< lock mutex */

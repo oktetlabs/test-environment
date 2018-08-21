@@ -103,10 +103,61 @@ wait_start(uint64_t msec_start)
         WARN("Start time is gone");
 }
 
+#ifdef TE_THREAD_LOCAL
+/** Thread-local variable for storing RPC error information. */
+static TE_THREAD_LOCAL te_rpc_error_data te_rpc_err = { 0, "" };
+#endif
+
+/* See description in rpc_server.h */
+void
+te_rpc_error_set(te_errno err, const char *msg, ...)
+{
+#ifdef TE_THREAD_LOCAL
+    te_string str = TE_STRING_BUF_INIT(te_rpc_err.str);
+    va_list   ap;
+    te_errno  ret;
+
+    te_rpc_err.err = err;
+
+    va_start(ap, msg);
+    ret = te_string_append_va(&str, msg, ap);
+    va_end(ap);
+    if (ret != 0)
+    {
+        ERROR("te_string_append() failed to write error "
+              "message, rc = %r", ret);
+        te_rpc_err.str[0] = '\0';
+    }
+    else if (str.len > 0)
+    {
+        ERROR("%s", str.ptr);
+    }
+#else
+    ERROR("te_rpc_error_set() cannot be used since there is no "
+          "thread-local specifier support");
+#endif
+}
+
+/* See description in rpc_server.h */
+te_errno
+te_rpc_error_get_num(void)
+{
+#ifdef TE_THREAD_LOCAL
+    return te_rpc_err.err;
+#endif
+
+    return 0;
+}
+
 void tarpc_before_call(struct rpc_call_data *call, const char *id)
 {
     tarpc_in_arg *in_common = (tarpc_in_arg *)((uint8_t *)call->in +
                                                call->info->in_common_offset);
+
+#ifdef TE_THREAD_LOCAL
+    te_rpc_err.err = 0;
+    te_rpc_err.str[0] = '\0';
+#endif
 
     call->saved_errno = errno;
     wait_start(in_common->start);
@@ -123,7 +174,33 @@ void tarpc_after_call(struct rpc_call_data *call)
     int rc;
 
     out_common->errno_changed = (call->saved_errno != errno);
+
+#ifndef TE_THREAD_LOCAL
     out_common->_errno = RPC_ERRNO;
+#else
+    if (te_rpc_err.err == 0)
+    {
+        out_common->_errno = RPC_ERRNO;
+    }
+    else
+    {
+        char *s;
+
+        out_common->_errno = te_rpc_err.err;
+
+        s = strdup(te_rpc_err.str);
+        if (s != NULL)
+        {
+            out_common->err_str.err_str_val = s;
+            out_common->err_str.err_str_len = strlen(s);
+        }
+        else
+        {
+            ERROR("Out of memory when trying to copy RPC error string");
+        }
+    }
+#endif
+
     gettimeofday(&finish, NULL);
     out_common->duration =
         TE_SEC2US(finish.tv_sec - call->call_start.tv_sec) +

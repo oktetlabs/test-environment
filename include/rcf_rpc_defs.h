@@ -64,6 +64,9 @@ typedef enum {
 #define RCF_RPC_SERVER_GET_NET_INIT 0x20
 /*@}*/
 
+/** Maximum length of string describing error. */
+#define RPC_ERROR_MAX_LEN 1024
+
 #ifdef __unix__
 /**
  * Initialize RPC server.

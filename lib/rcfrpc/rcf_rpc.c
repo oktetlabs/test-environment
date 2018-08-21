@@ -61,6 +61,7 @@
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "conf_api.h"
 #include "rcf_api.h"
@@ -592,6 +593,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     pthread_mutex_lock(&rpcs->lock);
 #endif
     rpcs->_errno = 0;
+    rpcs->err_msg[0] = '\0';
     rpcs->err_log = FALSE;
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
         rpcs->timeout = rpcs->def_timeout;
@@ -664,6 +666,13 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     {
         rpcs->duration = out->duration;
         rpcs->_errno = out->_errno;
+
+        if (out->err_str.err_str_len > 0)
+        {
+            TE_STRNCPY(rpcs->err_msg, RPC_ERROR_MAX_LEN,
+                       out->err_str.err_str_val);
+        }
+
         rpcs->timed_out = FALSE;
         if (rpcs->op == RCF_RPC_CALL)
         {
