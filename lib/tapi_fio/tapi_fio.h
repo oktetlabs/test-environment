@@ -97,6 +97,9 @@ typedef enum {
 #define TEST_GET_FIO_RWTYPE_PARAM(var_name_) \
     (var_name_) = TEST_FIO_RWTYPE_PARAM(var_name_)
 
+/** The maximum value of numjobs, used to estimate the timeout */
+#define TAPI_FIO_MAX_NUMJOBS    (1024)
+
 /** Multiplication factor for numjobs */
 typedef enum tapi_fio_numjobs_factor {
     TAPI_FIO_NUMJOBS_NPROC_FACTOR,      /**< Multiply value on CPU Cores */
