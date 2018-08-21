@@ -447,6 +447,54 @@ Notes:
   beyond specified buffer length is not updated;
 .
 
+@subsection tapi_rpc_lib_framework_errors Reporting errors from RPC calls
+
+Normally MAKE_CALL() macro captures errno value and saves it in
+`out->common._errno`. On Test Engine side you can get this error code from
+RPC server structure with the help of RPC_ERRNO() macro (see
+@ref tapi_rpc_lib_usage_error_handling). So if you implement a simple RPC
+wrapper over a system function, such as socket(), you do not need to worry
+about error reporting.
+
+However in case of complex RPC calls (when you have some function
+implemented on TA side which can fail in different places for various
+reasons), returning a negative value and some system errno code may not be
+specific enough. In this case you can use
+
+@code
+void te_rpc_error_set(te_errno err, const char *msg, ...);
+@endcode
+
+to set an error code reported to the RPC caller, together with a string
+describing what happened. If this function is used, the error code set by it
+will be reported from MAKE_CALL() instead of the errno value. Also there is
+
+@code
+te_errno te_rpc_error_get_num(void);
+@endcode
+
+which returns the error code previously set by te_rpc_error_set().
+
+Please note that these functions work correctly only if they are called from
+the same thread in which MAKE_CALL() is used.
+
+On the test side the error data set with @b te_rpc_error_set() can be used
+in the following way:
+
+@code
+RPC_AWAIT_ERROR(rpcs);
+rc = rpc_func(rpcs, x, y, z);
+if (rc < 0)
+{
+    TEST_VERDICT("func() failed reporting error " RPC_ERROR_FMT,
+                 RPC_ERROR_ARGS(rpcs));
+}
+@endcode
+
+In this case both the error code and the error string will be printed out in
+verdict. The error string description can also be obtained via RPC_ERROR_MSG()
+macro, while RPC_ERRNO() macro can be used to access the error code.
+
 @section tapi_rpc_lib_usage Some usage aspects of TAPI RPC library
 
 @subsection tapi_rpc_lib_usage_error_handling Handling expected errors
