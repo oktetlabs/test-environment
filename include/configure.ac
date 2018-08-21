@@ -318,6 +318,23 @@ AC_C_INLINE
 
 fi
 
+AH_TEMPLATE([TE_THREAD_LOCAL], [Thread-local storage specifier])
+AC_MSG_CHECKING([for thread-local storage specifier])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[_Thread_local int x;]],
+                                   [[return 0;]])],
+                  [
+                   AC_MSG_RESULT([yes])
+                   AC_DEFINE([TE_THREAD_LOCAL], [_Thread_local])
+                  ],
+                  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[__thread int x;]],
+                                                      [[return 0;]])],
+                                     [
+                                      AC_MSG_RESULT([yes])
+                                      AC_DEFINE([TE_THREAD_LOCAL],
+                                                [__thread])
+                                      ],
+                                     [AC_MSG_RESULT([no])])])
+
 AC_SUBST(TE_EXT_LIBS_FILE)
 
 AM_CONDITIONAL(WINDOWS, test x$host != x${host%windows})
