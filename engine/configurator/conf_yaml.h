@@ -14,7 +14,7 @@
 #include "te_errno.h"
 
 /**
- * Process YAML configuration file.
+ * Parse YAML configuration file.
  *
  * The input file must be a YAML document containing dynamic history
  * statements. One may leverage these statements to create instances
@@ -23,13 +23,12 @@
  * entry or per a bunch of entries to indicate conditions which must
  * be true for the instances to hit the XML document being generated.
  *
- * The output will be written to a file using the
- * original path and XML extension.
+ * The XML document will be consumed directly by cfg_dh_process_file().
  *
  * @param filename The input file path
  *
  * @return Status code.
  */
-extern te_errno transform_conf_yaml(const char *filename);
+extern te_errno parse_config_yaml(const char *filename);
 
 #endif /* __TE_CONF_YAML_H__ */

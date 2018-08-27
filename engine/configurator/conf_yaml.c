@@ -9,6 +9,8 @@
  */
 
 #include "conf_defs.h"
+#include "conf_dh.h"
+#include "conf_ta.h"
 #include "conf_yaml.h"
 #include "te_str.h"
 
@@ -24,8 +26,8 @@
  * @return Status code.
  */
 static te_errno
-transform_conf_yaml_cond_exp(const char *text,
-                             te_bool    *condp)
+parse_config_yaml_cond_exp(const char *text,
+                           te_bool    *condp)
 {
     char     *text_copy = NULL;
     char     *sp = NULL;
@@ -116,9 +118,9 @@ out:
  * @return Status code.
  */
 static te_errno
-transform_conf_yaml_cond(yaml_document_t *d,
-                         yaml_node_t     *n,
-                         te_bool         *condp)
+parse_config_yaml_cond(yaml_document_t *d,
+                       yaml_node_t     *n,
+                       te_bool         *condp)
 {
     const char *str = NULL;
     te_errno    rc = 0;
@@ -130,7 +132,7 @@ transform_conf_yaml_cond(yaml_document_t *d,
         if (n->data.scalar.length == 0)
             return TE_EINVAL;
 
-        return transform_conf_yaml_cond_exp(str, condp);
+        return parse_config_yaml_cond_exp(str, condp);
     }
     else if (n->type == YAML_SEQUENCE_NODE)
     {
@@ -144,7 +146,7 @@ transform_conf_yaml_cond(yaml_document_t *d,
 
             str = (const char *)in->data.scalar.value;
 
-            rc = transform_conf_yaml_cond_exp(str, condp);
+            rc = parse_config_yaml_cond_exp(str, condp);
             if (rc != 0)
                 return rc;
 
@@ -170,9 +172,9 @@ transform_conf_yaml_cond(yaml_document_t *d,
  * @return Status code.
  */
 static te_errno
-transform_conf_yaml_cmd_add_instance(yaml_document_t *d,
-                                     yaml_node_t     *n,
-                                     xmlNodePtr       xn_add)
+parse_config_yaml_cmd_add_instance(yaml_document_t *d,
+                                   yaml_node_t     *n,
+                                   xmlNodePtr       xn_add)
 {
     xmlNodePtr     xn_instance = NULL;
     xmlAttrPtr     xa_oid = NULL;
@@ -222,7 +224,7 @@ transform_conf_yaml_cmd_add_instance(yaml_document_t *d,
 
             if (strcmp(k_label, "cond") == 0 && check_cond == TRUE)
             {
-                rc = transform_conf_yaml_cond(d, v, &cond);
+                rc = parse_config_yaml_cond(d, v, &cond);
                 if (rc != 0)
                     goto out;
 
@@ -268,9 +270,9 @@ out:
  * @return Status code.
  */
 static te_errno
-transform_conf_yaml_cmd_add_instances(yaml_document_t *d,
-                                      yaml_node_t     *n,
-                                      xmlNodePtr       xn_add)
+parse_config_yaml_cmd_add_instances(yaml_document_t *d,
+                                    yaml_node_t     *n,
+                                    xmlNodePtr       xn_add)
 {
     yaml_node_item_t *item = n->data.sequence.items.start;
 
@@ -281,7 +283,7 @@ transform_conf_yaml_cmd_add_instances(yaml_document_t *d,
         yaml_node_t *in = yaml_document_get_node(d, *item);
         te_errno     rc = 0;
 
-        rc = transform_conf_yaml_cmd_add_instance(d, in, xn_add);
+        rc = parse_config_yaml_cmd_add_instance(d, in, xn_add);
         if (rc != 0)
             return rc;
     } while (++item < n->data.sequence.items.top);
@@ -299,9 +301,9 @@ transform_conf_yaml_cmd_add_instances(yaml_document_t *d,
  * @return Status code.
  */
 static te_errno
-transform_conf_yaml_cmd_add(yaml_document_t *d,
-                            yaml_node_t     *n,
-                            xmlNodePtr       xn_history)
+parse_config_yaml_cmd_add(yaml_document_t *d,
+                          yaml_node_t     *n,
+                          xmlNodePtr       xn_history)
 {
     xmlNodePtr xn_add = NULL;
     te_bool    check_cond = TRUE;
@@ -326,7 +328,7 @@ transform_conf_yaml_cmd_add(yaml_document_t *d,
 
             if (strcmp(k_label, "cond") == 0 && check_cond == TRUE)
             {
-                rc = transform_conf_yaml_cond(d, v, &cond);
+                rc = parse_config_yaml_cond(d, v, &cond);
                 if (rc != 0)
                     goto out;
 
@@ -336,7 +338,7 @@ transform_conf_yaml_cmd_add(yaml_document_t *d,
 
             if (strcmp(k_label, "instances") == 0)
             {
-                rc = transform_conf_yaml_cmd_add_instances(d, v, xn_add);
+                rc = parse_config_yaml_cmd_add_instances(d, v, xn_add);
                 if (rc != 0)
                     goto out;
             }
@@ -371,8 +373,8 @@ out:
  * @return Status code.
  */
 static te_errno
-transform_conf_yaml_cmd(yaml_document_t *d,
-                        xmlNodePtr       xn_history)
+parse_config_yaml_cmd(yaml_document_t *d,
+                      xmlNodePtr       xn_history)
 {
     yaml_node_t      *root = NULL;
     yaml_node_pair_t *pair = NULL;
@@ -392,7 +394,7 @@ transform_conf_yaml_cmd(yaml_document_t *d,
 
         if (strcmp((const char *)k->data.scalar.value, "add") == 0)
         {
-            rc = transform_conf_yaml_cmd_add(d, v, xn_history);
+            rc = parse_config_yaml_cmd_add(d, v, xn_history);
             if (rc != 0)
                 return rc;
         }
@@ -401,74 +403,13 @@ transform_conf_yaml_cmd(yaml_document_t *d,
     return 0;
 }
 
-/**
- * Dump the given XML document to a file.
- *
- * The function will change the file extension to XML.
- *
- * @param d        Handle of the XML document
- * @param filename The original file path
- *
- * @return Status code.
- */
-static te_errno
-transform_conf_yaml_dump_xml(xmlDocPtr   d,
-                             const char *filename)
-{
-    char     *filename_xml = NULL;
-    FILE     *f = NULL;
-    char     *filename_ext = NULL;
-    size_t    filename_ext_len;
-    te_errno  rc = 0;
-    int       ret;
-
-    filename_xml = strdup(filename);
-    if (filename_xml == NULL)
-        return TE_ENOMEM;
-
-    filename_ext = strchr(filename_xml, '.');
-    if (filename_ext == NULL)
-    {
-        rc = TE_EINVAL;
-        goto out;
-    }
-
-    ++filename_ext;
-
-    filename_ext_len = strlen(filename_ext);
-    ret = snprintf(filename_ext, filename_ext_len + 1, "xml");
-    if (ret != (int)filename_ext_len)
-    {
-        rc = TE_EINVAL;
-        goto out;
-    }
-
-    f = fopen(filename_xml, "w");
-    if (f == NULL)
-    {
-        rc = TE_OS_RC(TE_CS, errno);
-        goto out;
-    }
-
-    if (xmlDocFormatDump(f, d, 1) == -1)
-        rc = TE_ENOMEM;
-
-    fclose(f);
-
-out:
-    free(filename_xml);
-
-    return rc;
-}
-
 /* See description in 'conf_yaml.h' */
 te_errno
-transform_conf_yaml(const char *filename)
+parse_config_yaml(const char *filename)
 {
     FILE            *f = NULL;
     yaml_parser_t    parser;
     yaml_document_t  dy;
-    xmlDocPtr        dx = NULL;
     xmlNodePtr       xn_history = NULL;
     te_errno         rc = 0;
 
@@ -481,13 +422,6 @@ transform_conf_yaml(const char *filename)
     yaml_parser_load(&parser, &dy);
     fclose(f);
 
-    dx = xmlNewDoc(BAD_CAST "1.0");
-    if (dx == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto out;
-    }
-
     xn_history = xmlNewNode(NULL, BAD_CAST "history");
     if (xn_history == NULL)
     {
@@ -495,19 +429,19 @@ transform_conf_yaml(const char *filename)
         goto out;
     }
 
-    rc = transform_conf_yaml_cmd(&dy, xn_history);
+    rc = parse_config_yaml_cmd(&dy, xn_history);
     if (rc != 0)
         goto out;
 
     if (xn_history->children != NULL)
-        xmlDocSetRootElement(dx, xn_history);
-    else
-        xmlFreeNode(xn_history);
-
-    rc = transform_conf_yaml_dump_xml(dx, filename);
+    {
+        rcf_log_cfg_changes(TRUE);
+        rc = parse_config_dh_sync(xn_history);
+        rcf_log_cfg_changes(FALSE);
+    }
 
 out:
-    xmlFreeDoc(dx);
+    xmlFreeNode(xn_history);
     yaml_document_delete(&dy);
     yaml_parser_delete(&parser);
 

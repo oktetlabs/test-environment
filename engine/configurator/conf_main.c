@@ -276,6 +276,21 @@ print_otree(cfg_object *obj, int indent)
 }
 #endif
 
+/* See description in 'conf_defs.h' */
+te_errno
+parse_config_dh_sync(xmlNodePtr root_node)
+{
+    te_errno rc = 0;
+
+    rc = cfg_dh_process_file(root_node, FALSE);
+    if (rc == 0 && (rc = cfg_ta_sync("/:", TRUE)) != 0)
+        ERROR("Cannot synchronise database with Test Agents");
+    if (rc == 0 && (rc = cfg_dh_process_file(root_node, TRUE)) != 0)
+        ERROR("Failed to modify database after synchronisation: %r", rc);
+
+    return rc;
+}
+
 /**
  * Parse and execute the configuration file.
  *
@@ -342,12 +357,7 @@ parse_config(const char *file, te_bool restore)
         rc = cfg_backup_process_file(root, restore);
     else if (xmlStrcmp(root->name, (const xmlChar *)"history") == 0)
     {
-        rc = cfg_dh_process_file(root, FALSE);
-        if (rc == 0 && (rc = cfg_ta_sync("/:", TRUE)) != 0)
-            ERROR("Cannot synchronize database with Test Agents");
-        if (rc == 0 && (rc = cfg_dh_process_file(root, TRUE)) != 0)
-            ERROR("Failed to modify database after synchronization: %r",
-                  rc);
+        rc = parse_config_dh_sync(root);
     }
     else
     {
@@ -1710,25 +1720,6 @@ main(int argc, char **argv)
         goto exit;
     }
 
-#if WITH_CONF_YAML
-    /*
-     * One should pay attention to keep this block before
-     * parse_config calls so that YAML configuration file
-     * gets converted into an XML file with the same name
-     * and appropriate extension to be included by one of
-     * the bona fide configuration files (XML) afterwards.
-     */
-    if (cs_conf_yaml != NULL)
-    {
-        rc = transform_conf_yaml(cs_conf_yaml);
-        if (rc != 0)
-        {
-            ERROR("Failed to parse configuration file in YAML");
-            goto exit;
-        }
-    }
-#endif /* WITH_CONF_YAML */
-
     for (cfg_file_id = 0;
          cs_cfg_file[cfg_file_id] != NULL && cfg_file_id < MAX_CFG_FILES;
          cfg_file_id++)
@@ -1749,6 +1740,19 @@ main(int argc, char **argv)
         ERROR("Fatal error during sniffer configuration file parsing");
         goto exit;
     }
+
+#if WITH_CONF_YAML
+    if (cs_conf_yaml != NULL)
+    {
+        INFO("-> %s", cs_conf_yaml);
+        rc = parse_config_yaml(cs_conf_yaml);
+        if (rc != 0)
+        {
+            ERROR("Failed to parse configuration file in YAML");
+            goto exit;
+        }
+    }
+#endif /* WITH_CONF_YAML */
 
     if (cs_flags & CS_PRINT_TREES)
     {
