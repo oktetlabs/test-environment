@@ -7225,18 +7225,38 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
 
     if (in->size_min > in->size_max || in->delay_min > in->delay_max)
     {
-        ERROR("Incorrect size or delay parameters");
+        te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EINVAL),
+                         "Incorrect size or delay parameters");
         return -1;
     }
 
-    if (tarpc_find_func(in->common.use_libc, "send", &send_func) != 0 ||
-        (pattern_gen_func =
-                rcf_ch_symbol_addr(in->fname.fname_val, TRUE)) == NULL ||
-        iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
+    rc = tarpc_find_func(in->common.use_libc, "send", &send_func);
+    if (rc != 0)
+    {
+        te_rpc_error_set(TE_RC(TE_TA_UNIX, rc),
+                         "failed to resolve 'send'");
         return -1;
+    }
+
+    if ((pattern_gen_func =
+                rcf_ch_symbol_addr(in->fname.fname_val, TRUE)) == NULL)
+    {
+        te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOENT),
+                         "failed to resolve '%s'", in->fname.fname_val);
+        return -1;
+    }
+
+    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
+    {
+        te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOENT),
+                         "failed to resolve iomux function");
+        return -1;
+    }
 
     if ((rc = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0)
     {
+        te_rpc_error_set(TE_OS_RC(TE_TA_UNIX, errno),
+                         "failed to create iomux state");
         iomux_close(iomux, &iomux_f, &iomux_st);
         return rc;
     }
@@ -7244,13 +7264,16 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
     if ((rc = iomux_add_fd(iomux, &iomux_f, &iomux_st,
                            in->s, POLLOUT)) != 0)
     {
+        te_rpc_error_set(TE_OS_RC(TE_TA_UNIX, errno),
+                         "failed to add file descriptor to iomux set");
         iomux_close(iomux, &iomux_f, &iomux_st);
         return rc;
     }
 
     if ((buf = malloc(in->size_max + MAX_OFFSET)) == NULL)
     {
-        ERROR("Out of memory");
+        te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOMEM),
+                         "out of memory");
         iomux_close(iomux, &iomux_f, &iomux_st);
         return -1;
     }
@@ -7263,7 +7286,9 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
             out->gen_arg = tmp_arg;                             \
         }                                                       \
         else                                                    \
+        {                                                       \
             out->gen_arg = in->gen_arg;                         \
+        }                                                       \
         iomux_close(iomux, &iomux_f, &iomux_st);                \
         free(buf);                                              \
         return -1;                                              \
@@ -7281,7 +7306,8 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
         uint32_t offset = in->gen_arg.offset;
         if (offset > MAX_OFFSET)
         {
-            ERROR("Offset is too big");
+            te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EINVAL),
+                             "offset is too big");
             PTRN_SEND_ERROR;
         }
 
@@ -7307,33 +7333,41 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
         {
             if (errno == EINTR)
                 continue;
-            ERROR("%s(): %s wait failed: %d", __FUNCTION__,
-                  iomux2str(iomux), errno);
+
+            te_rpc_error_set(TE_OS_RC(TE_TA_UNIX, errno),
+                             "%s wait failed: %r",
+                             iomux2str(iomux), te_rc_os2te(errno));
             PTRN_SEND_ERROR;
         }
         else if (rc > 1)
         {
-            ERROR("%s(): %s wait returned more then one fd", __FUNCTION__,
-                  iomux2str(iomux));
+            te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EFAIL),
+                             "%s wait returned more then one fd",
+                             iomux2str(iomux));
             PTRN_SEND_ERROR;
         }
         else if (rc == 0  && iomux != FUNC_NO_IOMUX)
+        {
             break;
+        }
 
         itr = IOMUX_RETURN_ITERATOR_START;
         itr = iomux_return_iterate(iomux, &iomux_st, &iomux_ret,
                                    itr, &fd, &events);
         if (fd != in->s && iomux != FUNC_NO_IOMUX)
         {
-            ERROR("%s(): %s wait returned incorrect fd %d instead of %d",
-                  __FUNCTION__, iomux2str(iomux), fd, in->s);
+            te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EFAIL),
+                             "%s wait returned incorrect fd %d "
+                             "instead of %d",
+                             iomux2str(iomux), fd, in->s);
             PTRN_SEND_ERROR;
         }
 
         if (!(events & POLLOUT) && iomux != FUNC_NO_IOMUX)
         {
-            ERROR("%s(): %s wait successeed but the socket is "
-                  "not writable", __FUNCTION__, iomux2str(iomux));
+            te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EFAIL),
+                             "%s wait successeed but the socket is "
+                             "not writable", iomux2str(iomux));
             PTRN_SEND_ERROR;
         }
 
@@ -7343,7 +7377,8 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
             tmp_arg = in->gen_arg;
             if ((rc = pattern_gen_func(buf, size, &in->gen_arg)) != 0)
             {
-                ERROR("%s(): failed to generate a pattern", __FUNCTION__);
+                te_rpc_error_set(TE_RC(TE_TA_UNIX, rc),
+                                 "failed to generate a pattern");
                 PTRN_SEND_ERROR;
             }
             len = send_func(in->s, buf + offset, size, send_flags);
