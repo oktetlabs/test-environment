@@ -60,6 +60,12 @@ done:
     ;
 })
 
+TARPC_FUNC(rte_eal_cleanup, {},
+{
+    MAKE_CALL(out->retval = func(););
+    neg_errno_h2rpc(&out->retval);
+})
+
 TARPC_FUNC(rte_eal_process_type, {},
 {
     enum rte_proc_type_t retval;

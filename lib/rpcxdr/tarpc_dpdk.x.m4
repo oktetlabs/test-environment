@@ -39,6 +39,10 @@ struct tarpc_rte_eal_init_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_eal_init_out;
 
+/** rte_eal_cleanup() */
+typedef struct tarpc_void_in tarpc_rte_eal_cleanup_in;
+typedef struct tarpc_int_retval_out tarpc_rte_eal_cleanup_out;
+
 
 /** enum rte_proc_type_t */
 enum tarpc_rte_proc_type_t {
@@ -1933,6 +1937,7 @@ program dpdk
     version ver0
     {
         RPC_DEF(rte_eal_init)
+        RPC_DEF(rte_eal_cleanup)
         RPC_DEF(rte_eal_process_type)
         RPC_DEF(rte_eal_hotplug_add)
         RPC_DEF(rte_eal_hotplug_remove)

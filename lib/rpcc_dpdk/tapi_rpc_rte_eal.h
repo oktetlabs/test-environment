@@ -42,6 +42,13 @@ extern int rpc_rte_eal_init(rcf_rpc_server *rpcs,
                             int argc, char **argv);
 
 /**
+ * @b rte_eal_cleanup() RPC.
+ *
+ * @return Status code; jumps out on error.
+ */
+extern int rpc_rte_eal_cleanup(rcf_rpc_server *rpcs);
+
+/**
  * Initialize EAL library in accordance with environment binding.
  *
  * @param env       Environment binding
