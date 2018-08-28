@@ -192,8 +192,17 @@ read_nvme_fabric_info_namespace(rcf_rpc_server *rpcs,
 
     count = filter_directory(rpcs, filepath, "nvme",
                              names, TE_ARRAY_LEN(names));
-    if (count <= 0)
+    if (count < 0)
         return READ_ERROR;
+
+    /* NOTE Bug 9752
+     *
+     * It is not an error if this particular controller does not have
+     * a corresponding namespace. It is a stalled NVMe connection from
+     * the previous test and it should not affect current test at all.
+     */
+    if (count == 0)
+        return READ_CONTINUE;
 
     return strcpy(info->namespace, names[0].name) != NULL ?
            READ_SUCCESS: READ_ERROR;
