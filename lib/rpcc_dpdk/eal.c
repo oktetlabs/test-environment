@@ -165,9 +165,7 @@ tapi_reuse_eal(rcf_rpc_server   *rpcs,
 
     if (strlen(eal_args_cfg) == 0 || strcmp(eal_args, eal_args_cfg) != 0)
     {
-	if (strlen(eal_args_cfg) != 0)
-            rc = rpc_rte_eal_cleanup(rpcs);
-
+        rc = rcf_rpc_server_restart(rpcs);
         *need_init = TRUE;
         *eal_args_out = eal_args;
         goto out;
