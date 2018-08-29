@@ -69,25 +69,6 @@ rpc_rte_eal_init(rcf_rpc_server *rpcs,
     RETVAL_INT(rte_eal_init, out.retval);
 }
 
-/* See description in 'tapi_rpc_rte_eal.h' */
-int
-rpc_rte_eal_cleanup(rcf_rpc_server *rpcs)
-{
-    tarpc_rte_eal_cleanup_in  in;
-    tarpc_rte_eal_cleanup_out out;
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
-
-    rcf_rpc_call(rpcs, "rte_eal_cleanup", &in, &out);
-    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eal_cleanup, out.retval);
-
-    TAPI_RPC_LOG(rpcs, rte_eal_cleanup, "",
-                 NEG_ERRNO_FMT, NEG_ERRNO_ARGS(out.retval));
-
-    RETVAL_ZERO_INT(rte_eal_cleanup, out.retval);
-}
-
 /**
  * Append a new argument to the argv array.
  *
