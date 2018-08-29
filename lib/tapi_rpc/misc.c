@@ -41,6 +41,7 @@
 
 #include "te_defs.h"
 #include "te_printf.h"
+#include "te_str.h"
 #include "te_string.h"
 #include "tq_string.h"
 #include "tapi_rpc_internal.h"
@@ -762,6 +763,20 @@ rpc_pattern_sender(rcf_rpc_server *rpcs, int s,
         RETVAL_INT(pattern_sender, -1);
     }
 
+    if (!te_str_is_null_or_empty(args->snd_wrapper))
+    {
+        in.swrapper.swrapper_val = strdup(args->snd_wrapper);
+        if (in.swrapper.swrapper_val == NULL)
+        {
+            ERROR("%s(): out of memory", __FUNCTION__);
+            free(in.fname.fname_val);
+            rpcs->_errno = TE_RC(TE_TAPI, TE_ENOMEM);
+            RETVAL_INT(pattern_sender, -1);
+        }
+        in.swrapper.swrapper_len = strlen(args->snd_wrapper) + 1;
+        in.swrapper_data = args->snd_wrapper_ctx;
+    }
+
     if (args->gen_arg_ptr != NULL)
         memcpy(&in.gen_arg, args->gen_arg_ptr, sizeof(in.gen_arg));
     in.iomux = args->iomux;
@@ -787,6 +802,7 @@ rpc_pattern_sender(rcf_rpc_server *rpcs, int s,
     }
 
     free(in.fname.fname_val);
+    free(in.swrapper.swrapper_val);
 
     if (args->sent_ptr != NULL)
         *(args->sent_ptr) = out.bytes;
@@ -797,10 +813,12 @@ rpc_pattern_sender(rcf_rpc_server *rpcs, int s,
 
     TAPI_RPC_LOG(rpcs, pattern_sender, "fd=%d, gen_func='%s', "
                  "gen_arg=[" TARPC_PAT_GEN_ARG_FMT "], "
+                 "snd_wrapper='%s', snd_wrapper_ctx=" RPC_PTR_FMT ", "
                  "iomux='%s', size_min=%d, size_max=%d, size_once=%d, "
                  "delay_min=%d, delay_max=%d, delay_once=%d, "
                  "duration_sec=%d, ignore_err=%d", "%d sent=%u",
                  s, args->gen_func, TARPC_PAT_GEN_ARG_VAL(in.gen_arg),
+                 args->snd_wrapper, RPC_PTR_VAL(args->snd_wrapper_ctx),
                  iomux2str(args->iomux),
                  args->size.min, args->size.max, args->size.once,
                  args->delay.min, args->delay.max, args->delay.once,

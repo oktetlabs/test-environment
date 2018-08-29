@@ -7196,8 +7196,12 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
     int             errno_save = errno;
     api_func_ptr    pattern_gen_func;
     api_func        send_func;
+    api_func_ptr    send_wrapper = NULL;
+    void           *send_wrapper_data = NULL;
     iomux_funcs     iomux_f;
     char           *buf = NULL;
+    char           *send_ptr;
+    size_t          send_size;
     iomux_func      iomux = in->iomux;
 
     int size = rand_range(in->size_min, in->size_max);
@@ -7230,12 +7234,41 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
         return -1;
     }
 
-    rc = tarpc_find_func(in->common.use_libc, "send", &send_func);
-    if (rc != 0)
+    /* 1 is length of empty string here. */
+    if (in->swrapper.swrapper_len > 1)
     {
-        te_rpc_error_set(TE_RC(TE_TA_UNIX, rc),
-                         "failed to resolve 'send'");
-        return -1;
+        send_wrapper = (api_func_ptr)
+                          rcf_ch_symbol_addr(
+                              in->swrapper.swrapper_val,
+                              TRUE);
+        if (send_wrapper == NULL)
+        {
+            te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOENT),
+                             "failed to find function '%s'",
+                             in->swrapper.swrapper_val);
+            return -1;
+        }
+
+        if (in->swrapper_data != RPC_NULL)
+        {
+            send_wrapper_data = rcf_pch_mem_get(in->swrapper_data);
+            if (send_wrapper_data == NULL)
+            {
+                te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOENT),
+                                 "failed to resolve swrapper_data");
+                return -1;
+            }
+        }
+    }
+    else
+    {
+        rc = tarpc_find_func(in->common.use_libc, "send", &send_func);
+        if (rc != 0)
+        {
+            te_rpc_error_set(TE_RC(TE_TA_UNIX, rc),
+                             "failed to resolve 'send'");
+            return -1;
+        }
     }
 
     if ((pattern_gen_func =
@@ -7381,12 +7414,23 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
                                  "failed to generate a pattern");
                 PTRN_SEND_ERROR;
             }
-            len = send_func(in->s, buf + offset, size, send_flags);
+            send_ptr = buf + offset;
+            send_size = size;
         }
         else
         {
-            len = send_func(in->s, buf + offset + (size - bytes_rest),
-                            bytes_rest, send_flags);
+            send_ptr = buf + offset + (size - bytes_rest);
+            send_size = bytes_rest;
+        }
+
+        if (send_wrapper != NULL)
+        {
+            len = send_wrapper(send_wrapper_data, in->s, send_ptr,
+                               send_size, send_flags);
+        }
+        else
+        {
+            len = send_func(in->s, send_ptr, send_size, send_flags);
         }
 
         if (len < 0)

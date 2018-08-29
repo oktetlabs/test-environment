@@ -99,6 +99,11 @@ typedef struct tapi_pat_sender {
     const char         *gen_func;         /**< Pattern generator function
                                                name */
     tarpc_pat_gen_arg   gen_arg;          /**< Pattern generator arguments*/
+    const char         *snd_wrapper;      /**< Name of send function
+                                               wrapper */
+    rpc_ptr             snd_wrapper_ctx;  /**< RPC pointer to the first
+                                               argument of send function
+                                               wrapper */
     iomux_func          iomux;            /**< Iomux function to be used */
     tapi_rand_gen       size;             /**< Size of the message*/
     tapi_rand_gen       delay;            /**< Delay between messages*/

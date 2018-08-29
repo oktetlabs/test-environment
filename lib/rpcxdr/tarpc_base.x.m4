@@ -4208,6 +4208,9 @@ struct tarpc_pattern_sender_in {
     tarpc_int   s;              /**< Socket to be used */
     char        fname<>;        /**< Name of function generating a
                                      pattern */
+    char        swrapper<>;     /**< Send function wrapper (may be empty) */
+    tarpc_ptr   swrapper_data;  /**< Data which should be passed to
+                                     send function wrapper */
     iomux_func  iomux;          /**< Iomux function to be used **/
     uint32_t    size_min;       /**< Minimum size of the message */
     uint32_t    size_max;       /**< Maximum size of the message */
