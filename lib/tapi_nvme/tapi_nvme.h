@@ -65,6 +65,7 @@ typedef struct tapi_nvme_host_ctrl {
     rcf_rpc_server *rpcs;                      /**< RPC server handle */
     const tapi_nvme_target *connected_target;  /**< Connected target */
     char *device;                              /**< Name of device */
+    char *admin_dev;                           /**< Admin device name */
 } tapi_nvme_host_ctrl;
 
 /** Default host_ctrl initialization */
@@ -72,6 +73,7 @@ typedef struct tapi_nvme_host_ctrl {
     .rpcs = NULL,               \
     .connected_target = NULL,   \
     .device = NULL,             \
+    .admin_dev = NULL,          \
 }
 
 /**
@@ -97,8 +99,11 @@ extern te_errno tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
  * Disconnect host_ctrl form connected target.
  *
  * @param host_ctrl     handle of host_ctrl
+ *
+ * @return TE error code
  */
-extern void tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl);
+extern te_errno tapi_nvme_initiator_disconnect(
+    tapi_nvme_host_ctrl *host_ctrl);
 
 extern te_errno tapi_nvme_initiator_list(tapi_nvme_host_ctrl *host_ctrl);
 

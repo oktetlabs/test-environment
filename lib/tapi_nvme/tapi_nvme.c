@@ -382,13 +382,12 @@ is_target_eq(const tapi_nvme_target *target, const nvme_fabric_info *info)
     return transport_eq && subnqn_eq && addr_eq;
 }
 
-static char *
-get_new_device(const tapi_nvme_host_ctrl *host_ctrl,
+static te_errno
+get_new_device(tapi_nvme_host_ctrl *host_ctrl,
                const tapi_nvme_target *target)
 {
     int i, count;
     read_result rc;
-    char *device = NULL;
 
     nvme_fabric_info info;
     directory_name names[MAX_ADMIN_DEVICES];
@@ -397,25 +396,27 @@ get_new_device(const tapi_nvme_host_ctrl *host_ctrl,
                              "nvme", names, TE_ARRAY_LEN(names));
 
     if (count < 0)
-        return NULL;
+        return 0;
 
     for (i = 0; i < count; i++)
     {
         rc = read_nvme_fabric_info(host_ctrl->rpcs, &info, names[i].name);
         if (rc == READ_ERROR)
-            return NULL;
+            return TE_ENODATA;
         else if (rc == READ_CONTINUE)
             continue;
 
         if (is_target_eq(target, &info) == TRUE)
         {
-            device = tapi_malloc(256);
-            sprintf(device, "/dev/%s", info.namespace);
-            break;
+            host_ctrl->admin_dev = tapi_strdup(names[i].name);
+            host_ctrl->device = tapi_malloc(NAME_MAX);
+            snprintf(host_ctrl->device, NAME_MAX, "/dev/%s", info.namespace);
+
+            return 0;
         }
     }
 
-    return device;
+    return TE_ENODATA;
 }
 
 /* See description in tapi_nvme.h */
@@ -472,9 +473,9 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
 
     for (i = 0; i < DEVICE_WAIT_ATTEMPTS; i++)
     {
-        host_ctrl->device = get_new_device(host_ctrl, target);
-        if (host_ctrl->device != NULL)
-            break;
+        if (get_new_device(host_ctrl, target) != 0)
+            continue;
+
         te_motivated_sleep(1, "Waiting device...");
     }
 
@@ -503,30 +504,6 @@ te_errno tapi_nvme_initiator_list(tapi_nvme_host_ctrl *host_ctrl)
     return rc == 0 ? 0 : TE_EFAULT;
 }
 
-
-/* See description in tapi_nvme.h */
-void
-tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl)
-{
-    te_string str_stdout = TE_STRING_INIT;
-    te_string str_stderr = TE_STRING_INIT;
-    const char *template = "nvme disconnect --nqn=%s";
-
-    if (host_ctrl == NULL ||
-        host_ctrl->rpcs == NULL ||
-        host_ctrl->connected_target == NULL ||
-        host_ctrl->connected_target->subnqn == NULL)
-        return;
-
-    run_command_output(host_ctrl->rpcs, &str_stdout, &str_stderr, template,
-                  host_ctrl->connected_target->subnqn);
-
-    RING("stdout: %s\nstderr: %s", str_stdout.ptr, str_stderr.ptr);
-
-    host_ctrl->connected_target = NULL;
-    free(host_ctrl->device);
-}
-
 static te_errno
 file_append(rcf_rpc_server *rpcs, const char *path, const char *string)
 {
@@ -548,6 +525,34 @@ file_append(rcf_rpc_server *rpcs, const char *path, const char *string)
         return rpcs->_errno;
 
     return 0;
+}
+
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl)
+{
+    te_errno rc;
+    char delete_controller[NAME_MAX];
+
+    if (host_ctrl == NULL ||
+        host_ctrl->rpcs == NULL ||
+        host_ctrl->device == NULL ||
+        host_ctrl->admin_dev == NULL ||
+        host_ctrl->connected_target == NULL)
+        return 0;
+
+    snprintf(delete_controller, sizeof(delete_controller),
+             BASE_NVME_FABRICS "/%s/delete_controller", host_ctrl->admin_dev);
+
+    rc = file_append(host_ctrl->rpcs, delete_controller, ENABLE);
+
+    free(host_ctrl->device);
+    free(host_ctrl->admin_dev);
+    host_ctrl->device = NULL;
+    host_ctrl->admin_dev = NULL;
+    host_ctrl->connected_target = NULL;
+
+    return rc;
 }
 
 static char *
