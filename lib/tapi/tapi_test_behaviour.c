@@ -37,7 +37,10 @@ test_behaviour_get(test_behaviour *behaviour)
                  #name_);                                                \
         }                                                                \
         else                                                             \
-            TEST_FAIL("Failed to get '%s' behaviour specifier", #name_); \
+        {                                                                \
+            TEST_FAIL("Failed to get '%s' behaviour specifier: %r",      \
+                      #name_, rc);                                       \
+        }                                                                \
     } while (0)                                                          \
 
     GET_BEHV(wait_on_fail);
