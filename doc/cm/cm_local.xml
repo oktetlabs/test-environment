@@ -82,6 +82,6 @@
 
          Name: name of the behaviour/tunable
          Value: 0/1 -->
-    <object oid="/local/test/behaviour" access="read_create" type="integer"/>
+    <object oid="/local/test/behaviour" access="read_create" type="string"/>
 
 </backup>
