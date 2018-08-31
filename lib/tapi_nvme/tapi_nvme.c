@@ -38,7 +38,10 @@
 #define TRANPORT_SIZE       (16)
 #define ADDRESS_INFO_SIZE   (128)
 
-#define DEVICE_WAIT_ATTEMPTS (5)
+#define BUFFER_SIZE         (128)
+
+#define DEVICE_WAIT_ATTEMPTS    (5)
+#define DEVICE_WAIT_TIMEOUT_S   (10)
 
 static int
 run_command_generic(rcf_rpc_server *rpcs, te_string *str_stdout,
@@ -527,6 +530,60 @@ file_append(rcf_rpc_server *rpcs, const char *path, const char *string)
     return 0;
 }
 
+static te_bool
+is_dir_exist(rcf_rpc_server *rpcs, const char *path)
+{
+    rpc_dir_p dir;
+
+    RPC_AWAIT_IUT_ERROR(rpcs);
+    dir = rpc_opendir(rpcs, path);
+    if (dir != RPC_NULL)
+    {
+        RPC_AWAIT_IUT_ERROR(rpcs);
+        rpc_closedir(rpcs, dir);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static te_bool
+is_disconnected(rcf_rpc_server *rpcs, const char *admin_dev)
+{
+    char path[NAME_MAX];
+
+    TE_SPRINTF(path, BASE_NVME_FABRICS "/%s", admin_dev);
+
+    return is_dir_exist(rpcs, path);
+}
+
+static te_errno
+wait_device_disapperance(rcf_rpc_server *rpcs, const char *admin_dev)
+{
+    char why_message[BUFFER_SIZE];
+    unsigned int wait_sec = DEVICE_WAIT_TIMEOUT_S;
+    unsigned int i;
+
+    for (i = 1; i <= DEVICE_WAIT_ATTEMPTS; i++)
+    {
+        if (is_disconnected(rpcs, admin_dev))
+            return 0;
+
+        TE_SPRINTF(why_message,
+                   "[%d/%d] Waiting for disconnecting device '%s'...",
+                   i, DEVICE_WAIT_ATTEMPTS, admin_dev);
+
+        te_motivated_sleep(wait_sec, why_message);
+
+        /* If NVMoF TCP kernel initiator driver will not free the device
+         * withing a few seconds interval, then it will hang up for a long
+         * time, thus there are no point in high frequency polling. */
+        wait_sec += DEVICE_WAIT_TIMEOUT_S;
+    }
+
+    return TE_RC(TE_TAPI, TE_ETIMEDOUT);
+}
+
 /* See description in tapi_nvme.h */
 te_errno
 tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl)
@@ -544,7 +601,15 @@ tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl)
     snprintf(delete_controller, sizeof(delete_controller),
              BASE_NVME_FABRICS "/%s/delete_controller", host_ctrl->admin_dev);
 
+    RING("Device '%s' tries to disconnect", host_ctrl->admin_dev);
+
     rc = file_append(host_ctrl->rpcs, delete_controller, ENABLE);
+    if (rc == 0)
+        rc = wait_device_disapperance(host_ctrl->rpcs, host_ctrl->admin_dev);
+    if (rc == 0)
+        RING("Device '%s' disconnected successfully", host_ctrl->admin_dev);
+    else
+        ERROR("Disconnection for device '%s' failed", host_ctrl->admin_dev);
 
     free(host_ctrl->device);
     free(host_ctrl->admin_dev);
@@ -730,22 +795,6 @@ tapi_nvme_target_setup(tapi_nvme_target *target)
 
     return make_namespace_target_available(target->rpcs, target->subnqn,
                                            target->nvmet_port);
-}
-
-static te_bool
-is_dir_exist(rcf_rpc_server *rpcs, const char *path)
-{
-    rpc_dir_p dir;
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    if ((dir = rpc_opendir(rpcs, path)) != 0)
-    {
-        RPC_AWAIT_IUT_ERROR(rpcs);
-        rpc_closedir(rpcs, dir);
-        return TRUE;
-    }
-
-    return FALSE;
 }
 
 static te_bool
