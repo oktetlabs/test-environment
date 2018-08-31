@@ -715,6 +715,26 @@ rpc_rte_eth_dev_close(rcf_rpc_server *rpcs, uint16_t port_id)
 }
 
 int
+rpc_rte_eth_dev_reset(rcf_rpc_server *rpcs, uint16_t port_id)
+{
+    tarpc_rte_eth_dev_reset_in   in;
+    tarpc_rte_eth_dev_reset_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_reset", &in, &out);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_reset, out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_reset, "%hu", NEG_ERRNO_FMT,
+                 in.port_id, NEG_ERRNO_ARGS(out.retval));
+
+    RETVAL_ZERO_INT(rte_eth_dev_reset, out.retval);
+}
+
+int
 rpc_rte_eth_dev_start(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_dev_start_in   in;

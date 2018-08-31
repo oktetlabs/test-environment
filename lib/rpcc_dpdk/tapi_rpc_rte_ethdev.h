@@ -81,6 +81,14 @@ extern int tapi_rpc_rte_eth_dev_configure_def(rcf_rpc_server *rpcs,
 extern void rpc_rte_eth_dev_close(rcf_rpc_server *rpcs, uint16_t port_id);
 
 /**
+ * @b rte_eth_dev_reset() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * non-zero return value.
+ */
+extern int rpc_rte_eth_dev_reset(rcf_rpc_server *rpcs, uint16_t port_id);
+
+/**
  * @b rte_eth_dev_start() RPC.
  *
  * If error is not expected, the function jumps out in the case
