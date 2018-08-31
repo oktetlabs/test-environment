@@ -51,6 +51,9 @@
 /* Alien link address location in the configurator tree. */
 #define CFG_ALIEN_LINK_ADDR "/volatile:/alien_link_addr:"
 
+/* IPv6 address length */
+#define IPV6_ADDR_LEN    16
+
 /**
  * Function provided by FLEX.
  *
@@ -1370,6 +1373,61 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             else if (env_addr->type == TAPI_ENV_ADDR_WILDCARD)
             {
                 SIN6(env_addr->addr)->sin6_addr = in6addr_any;
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_LOOPBACK)
+            {
+                SIN6(env_addr->addr)->sin6_addr = in6addr_loopback;
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_FAKE_UNICAST)
+            {
+                rc = tapi_env_allocate_addr(env_addr->iface->net, AF_INET6,
+                                            &env_addr->addr, NULL);
+                if (rc != 0)
+                {
+                    ERROR("Failed to allocate additional IPv6 "
+                          "address: %r", rc);
+                    break;
+                }
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_MULTICAST)
+            {
+                int i;
+                uint8_t mcast_addr[IPV6_ADDR_LEN] = {0xff, 0x0e};
+
+                for (i = 2; i < IPV6_ADDR_LEN; i++)
+                {
+                    mcast_addr[i] = rand_range(0x00, UINT8_MAX);
+                }
+                memcpy(SIN6(env_addr->addr)->sin6_addr.s6_addr, mcast_addr, IPV6_ADDR_LEN);
+            }
+            else if ((env_addr->type == TAPI_ENV_ADDR_BROADCAST) ||
+                     (env_addr->type == TAPI_ENV_ADDR_MCAST_ALL_HOSTS))
+            {
+                /* Link local all nodes: ff02::1 */
+                static const uint8_t broadcast_addr[IPV6_ADDR_LEN] = {[0] = 0xff, [1] = 0x02, [15] = 0x01};
+                memcpy(SIN6(env_addr->addr)->sin6_addr.s6_addr, broadcast_addr, IPV6_ADDR_LEN);
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_ALIEN)
+            {
+                static te_bool first_time = TRUE;
+                static uint8_t alien_addr[IPV6_ADDR_LEN] = {0};
+
+                if (first_time)
+                {
+                    struct sockaddr *tmp;
+                    cfg_val_type     type = CVT_ADDRESS;
+
+                    first_time = FALSE;
+
+                    rc = cfg_get_instance_fmt(&type, &tmp,
+                                              "/local:/ip6_alien:");
+                    if (rc != 0)
+                        break;
+                    memcpy(alien_addr, SIN6(tmp)->sin6_addr.s6_addr, IPV6_ADDR_LEN);
+                    free(tmp);
+                }
+                memcpy(SIN6(env_addr->addr)->sin6_addr.s6_addr, alien_addr, IPV6_ADDR_LEN);
+                alien_addr[5] += 1;
             }
             else
             {
