@@ -595,6 +595,7 @@ static char *isc_dhcp_quoted_options[] = {
 
 /** DHCP server interfaces */
 static char *dhcp_server_ifs = NULL;
+static te_bool allow_unknown_clients = FALSE;
 
 static TAILQ_HEAD(te_dhcp_server_subnets, te_dhcp_server_subnet) subnets;
 
@@ -992,12 +993,15 @@ ds_dhcpserver_save_conf(void)
     ipv6_subnets = FALSE;
     ipv4_subnets = FALSE;
 
-    /*
-     * Hardcoded 'deny unknown-clients' to start server
-     * with empty configuration
-     */
-    fprintf(f, "deny unknown-clients;\n\n");
-    fprintf(f, "\n");
+    if (!allow_unknown_clients)
+    {
+        /*
+         * Hardcoded 'deny unknown-clients' to start server
+         * with empty configuration
+         */
+        fprintf(f, "deny unknown-clients;\n\n");
+        fprintf(f, "\n");
+    }
 
     /* Vendor option space specifications */
     for (sp = spaces; sp != NULL; sp = sp->next)
@@ -1665,6 +1669,47 @@ ds_dhcpserver_commit(unsigned int gid, const char *oid)
     dhcp_server_changed = FALSE;
 
     return rc;
+}
+
+/*** Node /agent/dhcpserver/allow_unknown_clients methods ***/
+/** Get DHCP server's 'allow unknown clients' option state */
+static te_errno
+ds_dhcpserver_allow_unknown_clients_get(unsigned int gid, const char *oid,
+                                        char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    INFO("%s()", __FUNCTION__);
+
+    DHCP_SERVER_INIT_CHECK;
+
+    strcpy(value, allow_unknown_clients ? "1" : "0");
+
+    return 0;
+}
+
+/** Set DHCP server 'allow unknown clients' option state */
+static te_errno
+ds_dhcpserver_allow_unknown_clients_set(unsigned int gid, const char *oid,
+                                        const char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    /* TODO Check value */
+    INFO("%s()", __FUNCTION__);
+
+    DHCP_SERVER_INIT_CHECK;
+
+    if (strcmp(value, "0") != 0 && strcmp(value, "1") != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    allow_unknown_clients = (atoi(value) > 0) ? TRUE : FALSE;
+
+    dhcp_server_changed = TRUE;
+
+    return 0;
 }
 
 /*** Node /agent/dhcpserver/interfaces methods ***/
@@ -2623,8 +2668,14 @@ static rcf_pch_cfg_object node_ds_subnet =
       (rcf_ch_cfg_del)ds_subnet_del,
       (rcf_ch_cfg_list)ds_subnet_list, NULL, NULL };
 
-RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver_ifs, "interfaces",
+RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver_allow_unknown_clients,
+                    "allow_unknown_clients",
                     NULL, &node_ds_subnet,
+                    ds_dhcpserver_allow_unknown_clients_get,
+                    ds_dhcpserver_allow_unknown_clients_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_dhcpserver_ifs, "interfaces",
+                    NULL, &node_ds_dhcpserver_allow_unknown_clients,
                     ds_dhcpserver_ifs_get, ds_dhcpserver_ifs_set);
 
 /*** Configuration subtree root /agent/dhcpserver ***/
