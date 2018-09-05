@@ -875,6 +875,12 @@
     <object oid="/agent/dhcpserver/interfaces"
             access="read_write" type="string"/>
 
+    <!-- Should DHCP server allow unknown clients?
+         Name: empty
+         Value: 0 (deny) or 1 (allow) -->
+    <object oid="/agent/dhcpserver/allow_unknown_clients"
+            access="read_write" type="integer"/>
+
     <!-- DHCP server operates in three term areas: its clients, which may
          obtain some resources, resource configured for particular
          clients and resources really distributed within clients. 
