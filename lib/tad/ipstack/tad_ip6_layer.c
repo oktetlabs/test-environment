@@ -1170,7 +1170,7 @@ tad_ip6_confirm_ptrn_cb(csap_p csap, unsigned int layer,
     uint32_t                    ext_hdr_id = 0;
     asn_value                  *prev_hdr = layer_pdu;
     asn_value                  *hdrs;
-    int                         val;
+    int32_t                     val;
 
     F_ENTRY("(%d:%u) layer_pdu=%p", csap->id, layer,
                 (void *)layer_pdu);
