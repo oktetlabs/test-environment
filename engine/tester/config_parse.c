@@ -884,8 +884,8 @@ get_test_attrs(xmlNodePtr node, test_attrs *attrs)
         {
             attrs->track_conf = TESTER_TRACK_CONF_YES;
         }
-        if (xmlStrcmp(s, CONST_CHAR2XML("barf_nohistory")) == 0 ||
-            xmlStrcmp(s, CONST_CHAR2XML("yes_nohistory")) == 0)
+        else if (xmlStrcmp(s, CONST_CHAR2XML("barf_nohistory")) == 0 ||
+                 xmlStrcmp(s, CONST_CHAR2XML("yes_nohistory")) == 0)
         {
             attrs->track_conf = TESTER_TRACK_CONF_YES_NOHISTORY;
         }
