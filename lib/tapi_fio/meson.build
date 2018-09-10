@@ -6,4 +6,7 @@ sources += files(
     'fio.c',
     'fio_internal.c',
 )
-deps += [ dep_lib_tapi ]
+deps += [
+    dep_lib_tapi,
+    dependency('jansson'),
+]
