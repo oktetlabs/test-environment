@@ -135,12 +135,70 @@ tapi_fio_stop(tapi_fio *fio)
     return fio->methods->stop(fio);
 }
 
+#define REPORT(...)                                         \
+    do {                                                    \
+        te_errno rc;                                        \
+        if ((rc = te_string_append(log, __VA_ARGS__)) != 0) \
+            return rc;                                      \
+    } while (0)
+
+static te_errno
+log_report_bw(te_string *log, const tapi_fio_report_bw *rbw)
+{
+    REPORT("\tbandwidth\n");
+    REPORT("\t\tmin:\t%d\n", rbw->min);
+    REPORT("\t\tmax:\t%d\n", rbw->max);
+    REPORT("\t\tmean:\t%f\n", rbw->mean);
+    REPORT("\t\tstddev:\t%f\n", rbw->stddev);
+
+    return 0;
+}
+
+static te_errno
+log_report_lat(te_string *log, const tapi_fio_report_lat *rlat)
+{
+    REPORT("\tlatency\n");
+    REPORT("\t\tmin:\t%d\n", rlat->min_ns);
+    REPORT("\t\tmax:\t%d\n", rlat->max_ns);
+    REPORT("\t\tmean:\t%f\n", rlat->mean_ns);
+    REPORT("\t\tstddev:\t%f\n", rlat->stddev_ns);
+
+    return 0;
+}
+
+#undef REPORT
+
+static te_errno
+log_report_io(te_string *log, const tapi_fio_report_io *rio)
+{
+    te_errno rc;
+
+    if ((rc = log_report_lat(log, &rio->latency)) != 0)
+        return rc;
+
+    if ((rc = log_report_bw(log, &rio->bandwidth)) != 0)
+        return rc;
+
+    return 0;
+}
+
 /* See description in tapi_fio.h */
 void
-tapi_fio_log_report(tapi_fio_report *report)
+tapi_fio_log_report(tapi_fio_report *rp)
 {
-    RING("FIO REPORT: threads=%d bandwidth=%f latency=%f",
-         report->threads, report->bandwidth, report->latency);
+    te_errno rc;
+    te_string report = TE_STRING_INIT;
+
+    te_string_append(&report, "read\n");
+    if ((rc = log_report_io(&report, &rp->read)) != 0)
+        ERROR("Log report exit with error %r", rc);
+
+    te_string_append(&report, "write\n");
+    if ((rc = log_report_io(&report, &rp->write)) != 0)
+        ERROR("Log report exit with error %r", rc);
+
+    RING("SHORT FIO REPORT:\n%s", report.ptr);
+    te_string_free(&report);
 }
 
 /* See description in tapi_fio.h */

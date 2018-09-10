@@ -28,13 +28,38 @@ extern "C" {
 /** Estimate timeout from input FIO parameters */
 #define TAPI_FIO_TIMEOUT_DEFAULT    (-1)
 
+/** FIO report max size */
 #define TAPI_FIO_MAX_REPORT (10 * 1024 * 1024)
+
+/** Latency FIO report */
+typedef struct tapi_fio_report_lat
+{
+    int min_ns;         /**< Minimal latency in nanoseconds */
+    int max_ns;         /**< Maximum latency in nanoseconds */
+    double mean_ns;     /**< Latency mean in nanoseconds */
+    double stddev_ns;   /**< Latency standard deviation in nanoseconds */
+} tapi_fio_report_lat;
+
+/** Bandwidth FIO report */
+typedef struct tapi_fio_report_bw
+{
+    int min;          /**< Minimal bandwidth */
+    int max;          /**< Maximal bandwidth */
+    double mean;      /**< Bandwidth mean */
+    double stddev;    /**< Bandwidth standard deviation */
+} tapi_fio_report_bw;
+
+/** FIO report of latency and bandwidth*/
+typedef struct tapi_fio_report_io
+{
+    tapi_fio_report_lat latency;
+    tapi_fio_report_bw bandwidth;
+} tapi_fio_report_io;
 
 /** FIO test tool report. */
 typedef struct tapi_fio_report {
-    double bandwidth;   /**< Average data rate */
-    double latency;     /**< I/O latency */
-    int threads;        /**< Count of thread */
+    tapi_fio_report_io read;    /**< Read FIO report */
+    tapi_fio_report_io write;   /**< Write FIO report */
 } tapi_fio_report;
 
 /** List of possible IO engines to use. */
