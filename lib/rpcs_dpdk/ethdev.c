@@ -1071,6 +1071,39 @@ TARPC_FUNC(rte_eth_dev_rx_intr_disable, {},
     neg_errno_h2rpc(&out->retval);
 })
 
+static int
+tarpc_intr_op2rte(const enum tarpc_rte_intr_op rpc,
+                  int *rte)
+{
+    switch (rpc)
+    {
+        CASE_TARPC2RTE(RTE_INTR_EVENT_ADD);
+        CASE_TARPC2RTE(RTE_INTR_EVENT_DEL);
+        default:
+            return 0;
+    }
+    return 1;
+}
+
+TARPC_FUNC(rte_eth_dev_rx_intr_ctl_q, {},
+{
+    int op;
+
+    if (!tarpc_intr_op2rte(in->op, &op))
+    {
+        out->common._errno = TE_RC(TE_RPCS, TE_EINVAL);
+        out->retval = -out->common._errno;
+        goto done;
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, in->queue_id,
+                                 in->epfd, op, (void *)in->data));
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    ;
+})
+
 TARPC_FUNC_STATIC(rte_eth_tx_burst, {},
 {
     struct rte_mbuf **tx_pkts;

@@ -903,6 +903,65 @@ rpc_rte_eth_dev_rx_intr_disable(rcf_rpc_server *rpcs,
     RETVAL_ZERO_INT(rte_eth_dev_rx_intr_disable, out.retval);
 }
 
+static const char *
+tarpc_rte_intr_op2str(te_log_buf *tlbp, enum tarpc_rte_intr_op op)
+{
+    const char *str;
+
+    switch (op)
+    {
+#define CASE_TARPC_RTE_INTR2STR(_op) \
+        case TARPC_RTE_INTR_##_op: str = "RTE_INTR_" #_op; break
+
+        CASE_TARPC_RTE_INTR2STR(EVENT_ADD);
+        CASE_TARPC_RTE_INTR2STR(EVENT_DEL);
+#undef CASE_TARPC_RTE_INTR2STR
+        default:
+            str = "<UNKNOWN>";
+            break;
+    }
+    te_log_buf_append(tlbp, "%s", str);
+
+    return te_log_buf_get(tlbp);
+}
+
+int
+rpc_rte_eth_dev_rx_intr_ctl_q(rcf_rpc_server *rpcs,
+                              uint16_t port_id,
+                              uint16_t queue_id,
+                              int epfd,
+                              enum tarpc_rte_intr_op op,
+                              uint64_t data)
+{
+    tarpc_rte_eth_dev_rx_intr_ctl_q_in      in;
+    tarpc_rte_eth_dev_rx_intr_ctl_q_out     out;
+    te_log_buf                             *tlbp;
+
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.queue_id = queue_id;
+    in.epfd = epfd;
+    in.op = op;
+    in.data = data;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_rx_intr_ctl_q", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_rx_intr_ctl_q,
+                                          out.retval);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_rx_intr_ctl_q, "%hu, %hu, %d, %s, %" PRIu64,
+                 NEG_ERRNO_FMT, in.port_id, in.queue_id,
+                 in.epfd, tarpc_rte_intr_op2str(tlbp, in.op),
+                 in.data, NEG_ERRNO_ARGS(out.retval));
+    te_log_buf_free(tlbp);
+
+    RETVAL_ZERO_INT(rte_eth_dev_rx_intr_ctl_q, out.retval);
+}
+
 uint16_t
 rpc_rte_eth_tx_burst(rcf_rpc_server *rpcs,
                      uint16_t port_id,
