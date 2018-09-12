@@ -1065,6 +1065,12 @@ TARPC_FUNC(rte_eth_dev_rx_intr_enable, {},
     neg_errno_h2rpc(&out->retval);
 })
 
+TARPC_FUNC(rte_eth_dev_rx_intr_disable, {},
+{
+    MAKE_CALL(out->retval = func(in->port_id, in->queue_id));
+    neg_errno_h2rpc(&out->retval);
+})
+
 TARPC_FUNC_STATIC(rte_eth_tx_burst, {},
 {
     struct rte_mbuf **tx_pkts;

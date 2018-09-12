@@ -879,6 +879,30 @@ rpc_rte_eth_dev_rx_intr_enable(rcf_rpc_server *rpcs,
     RETVAL_ZERO_INT(rte_eth_dev_rx_intr_enable, out.retval);
 }
 
+int
+rpc_rte_eth_dev_rx_intr_disable(rcf_rpc_server *rpcs,
+                                uint16_t port_id,
+                                uint16_t queue_id)
+{
+    tarpc_rte_eth_dev_rx_intr_disable_in     in;
+    tarpc_rte_eth_dev_rx_intr_disable_out    out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.queue_id = queue_id;
+
+    rcf_rpc_call(rpcs, "rte_eth_dev_rx_intr_disable", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_dev_rx_intr_disable,
+                                          out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_dev_rx_intr_disable, "%hu, %hu", NEG_ERRNO_FMT,
+                 in.port_id, in.queue_id, NEG_ERRNO_ARGS(out.retval));
+    RETVAL_ZERO_INT(rte_eth_dev_rx_intr_disable, out.retval);
+}
+
 uint16_t
 rpc_rte_eth_tx_burst(rcf_rpc_server *rpcs,
                      uint16_t port_id,
