@@ -850,3 +850,89 @@ rpc_rte_eal_hotplug_remove(rcf_rpc_server *rpcs,
     RETVAL_ZERO_INT(rte_eal_hotplug_remove, out.retval);
 }
 
+static const char *
+tarpc_rte_epoll_data2str(te_log_buf *tlbp,
+                         struct tarpc_rte_epoll_data *epoll_data)
+{
+    te_log_buf_append(tlbp, "{ event=%u, data=%llu }",
+                      epoll_data->event, epoll_data->data);
+
+    return te_log_buf_get(tlbp);
+}
+
+static const char *
+tarpc_rte_epoll_event2str(te_log_buf *tlbp,
+                          struct tarpc_rte_epoll_event *event)
+{
+    te_log_buf_append(tlbp, "{ status=%u, fd=%d, epfd=%d, epdata=",
+                      event->status, event->fd, event->epfd);
+    tarpc_rte_epoll_data2str(tlbp, &event->epdata);
+    te_log_buf_append(tlbp, " }");
+
+    return te_log_buf_get(tlbp);
+}
+
+static const char *
+tarpc_rte_epoll_events2str(te_log_buf *tlbp,
+                           struct tarpc_rte_epoll_event *events,
+                           int event_count)
+{
+    int i;
+
+    for (i = 0; i < event_count; i++)
+    {
+        if (i != 0)
+            te_log_buf_append(tlbp, ", ");
+
+        tarpc_rte_epoll_event2str(tlbp, &events[i]);
+    }
+
+    return te_log_buf_get(tlbp);
+}
+
+int
+rpc_rte_epoll_wait(rcf_rpc_server *rpcs,
+                   int epfd,
+                   struct tarpc_rte_epoll_event *events,
+                   int maxevents,
+                   int timeout)
+{
+    tarpc_rte_epoll_wait_in     in;
+    tarpc_rte_epoll_wait_out    out;
+    te_log_buf                 *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.epfd = epfd;
+    in.maxevents = maxevents;
+    in.timeout = timeout;
+
+    if (events != NULL)
+    {
+        in.events.events_val = tapi_calloc(maxevents, sizeof(*events));
+        in.events.events_len = maxevents;
+    }
+
+    rcf_rpc_call(rpcs, "rte_epoll_wait", &in, &out);
+    CHECK_RETVAL_VAR_ERR_COND(rte_epoll_wait, out.retval, FALSE,
+                              -TE_RC(TE_TAPI, TE_ECORRUPTED), (out.retval < 0));
+
+    if (events != NULL && out.events.events_len != 0)
+    {
+        memcpy(events, out.events.events_val, out.events.events_len);
+    }
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_epoll_wait, "%d, {}, %d, %d",
+                 NEG_ERRNO_FMT "; events: { %s }", in.epfd,
+                 in.maxevents, in.timeout,
+                 NEG_ERRNO_ARGS(out.retval),
+                 (out.retval > 0) ?
+                 tarpc_rte_epoll_events2str(tlbp, out.events.events_val,
+                                            out.retval) : "n/a");
+    te_log_buf_free(tlbp);
+    free(in.events.events_val);
+
+    RETVAL_ZERO_INT(rte_epoll_wait, out.retval);
+}

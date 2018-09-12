@@ -21,6 +21,7 @@
 #include "rte_config.h"
 #include "rte_version.h"
 #include "rte_eal.h"
+#include "rte_interrupts.h"
 
 #include "logger_api.h"
 
@@ -110,3 +111,54 @@ TARPC_FUNC(rte_eal_hotplug_remove, {},
     neg_errno_h2rpc(&out->retval);
 })
 
+static void
+tarpc_rte_epoll_data2rpc(const struct rte_epoll_data *rte,
+                         struct tarpc_rte_epoll_data *rpc)
+{
+    rpc->event = rte->event;
+    rpc->data = (uint64_t)rte->data;
+}
+
+static void
+tarpc_rte_epoll_event2rpc(const struct rte_epoll_event *rte,
+                          struct tarpc_rte_epoll_event *rpc)
+{
+    rpc->status = rte->status;
+    rpc->fd = rte->fd;
+    rpc->epfd = rte->epfd;
+    tarpc_rte_epoll_data2rpc(&rte->epdata, &rpc->epdata);
+}
+
+TARPC_FUNC(rte_epoll_wait,
+{
+    COPY_ARG(events);
+},
+{
+    struct rte_epoll_event *events = NULL;
+    int i;
+
+    if (out->events.events_len != 0)
+    {
+        events = calloc(in->maxevents, sizeof(*events));
+        if (events == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+        }
+    }
+
+    MAKE_CALL(out->retval = func(in->epfd,
+                                 events,
+                                 in->maxevents,
+                                 in->timeout));
+
+    for (i = 0; i < out->retval; i++)
+        tarpc_rte_epoll_event2rpc(&events[i], &out->events.events_val[i]);
+
+    free(events);
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    ;
+})

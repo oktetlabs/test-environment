@@ -79,6 +79,35 @@ struct tarpc_rte_eal_hotplug_remove_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_eal_hotplug_remove_out;
 
+/** rte_epoll_wait() */
+
+struct tarpc_rte_epoll_data {
+    uint32_t event;
+    uint64_t data; /* Only plain data without pointer mapping is supported */
+    /* Callback is not supported yet */
+};
+
+struct tarpc_rte_epoll_event {
+    uint32_t                    status;
+    int                         fd;
+    int                         epfd;
+    struct tarpc_rte_epoll_data epdata;
+};
+
+struct tarpc_rte_epoll_wait_in {
+    struct tarpc_in_arg     common;
+    int                     epfd;
+    tarpc_rte_epoll_event   events<>;
+    int                     maxevents;
+    int                     timeout;
+};
+
+struct tarpc_rte_epoll_wait_out {
+    struct tarpc_out_arg    common;
+    tarpc_rte_epoll_event   events<>;
+    tarpc_int               retval;
+};
+
 struct tarpc_mbuf_in {
     struct tarpc_in_arg     common;
     tarpc_rte_mbuf          m;
@@ -1951,6 +1980,7 @@ program dpdk
         RPC_DEF(rte_eal_process_type)
         RPC_DEF(rte_eal_hotplug_add)
         RPC_DEF(rte_eal_hotplug_remove)
+        RPC_DEF(rte_epoll_wait)
 
         RPC_DEF(rte_mempool_lookup)
         RPC_DEF(rte_mempool_in_use_count)

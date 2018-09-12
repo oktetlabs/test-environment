@@ -105,6 +105,18 @@ extern int rpc_rte_eal_hotplug_remove(rcf_rpc_server *rpcs,
                                       const char     *busname,
                                       const char     *devname);
 
+/**
+ * @b rte_epoll_wait() RPC
+ *
+ * If error is not expected using #RPC_AWAIT_IUT_ERROR(), the function
+ * jumps out in the case of failure.
+ */
+extern int rpc_rte_epoll_wait(rcf_rpc_server *rpcs,
+                              int epfd,
+                              struct tarpc_rte_epoll_event *events,
+                              int maxevents,
+                              int timeout);
+
 /**@} <!-- END te_lib_rpc_rte_eal --> */
 
 #ifdef __cplusplus

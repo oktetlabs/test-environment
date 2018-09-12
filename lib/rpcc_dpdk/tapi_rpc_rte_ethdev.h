@@ -36,6 +36,8 @@ extern "C" {
 
 #define RPC_RSS_HASH_KEY_LEN_DEF 40
 
+#define RPC_RTE_EPOLL_PER_THREAD -1
+
 /**
  * rte_eth_dev_info() RPC.
  *
