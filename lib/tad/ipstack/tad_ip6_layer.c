@@ -1228,7 +1228,7 @@ tad_ip6_confirm_ptrn_cb(csap_p csap, unsigned int layer,
                     if (ext_hdr_def != NULL)
                     {
                         IF_RC_RETURN(
-                            tad_ip6_nds_to_data_and_confirm(
+                            tad_bps_nds_to_data_units(
                                     ext_hdr_def, prev_hdr,
                                     &ptrn_data->ext_hdrs[ext_hdr_id].hdr));
                     }
@@ -1303,14 +1303,14 @@ ext_hdr_end:
     /* Convert the last Extension Header */
     if (ext_hdr_def != NULL)
     {
-        IF_RC_RETURN(tad_ip6_nds_to_data_and_confirm(
+        IF_RC_RETURN(tad_bps_nds_to_data_units(
                                     ext_hdr_def, prev_hdr,
                                     &ptrn_data->ext_hdrs[ext_hdr_id].hdr));
     }
 
     /* Check IPv6 Header */
-    IF_RC_RETURN(tad_ip6_nds_to_data_and_confirm(&proto_data->hdr, layer_pdu,
-                                         &ptrn_data->hdr));
+    IF_RC_RETURN(tad_bps_nds_to_data_units(&proto_data->hdr, layer_pdu,
+                                           &ptrn_data->hdr));
 
     return rc;
 }
