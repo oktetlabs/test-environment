@@ -1059,6 +1059,11 @@ struct tarpc_rte_eth_rx_queue_setup_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_rx_queue_setup_out;
 
+/** rte_eth_dev_rx_intr_enable() */
+typedef struct tarpc_rte_eth_dev_port_id_queue_id_in tarpc_rte_eth_dev_rx_intr_enable_in;
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_rx_intr_enable_out;
+
 /** rte_eth_tx_burst() */
 struct tarpc_rte_eth_tx_burst_in {
     struct tarpc_in_arg  common;
@@ -2007,6 +2012,7 @@ program dpdk
         RPC_DEF(rte_eth_dev_stop)
         RPC_DEF(rte_eth_tx_queue_setup)
         RPC_DEF(rte_eth_rx_queue_setup)
+        RPC_DEF(rte_eth_dev_rx_intr_enable)
         RPC_DEF(rte_eth_tx_burst)
         RPC_DEF(rte_eth_rx_burst)
         RPC_DEF(rte_eth_dev_set_link_up)

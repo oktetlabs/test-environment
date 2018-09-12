@@ -129,6 +129,16 @@ extern int rpc_rte_eth_rx_queue_setup(rcf_rpc_server *rpcs,
                                       rpc_rte_mempool_p mp);
 
 /**
+ * @b rte_eth_dev_rx_intr_enable() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * non-zero return value.
+ */
+extern int rpc_rte_eth_dev_rx_intr_enable(rcf_rpc_server *rpcs,
+                                          uint16_t port_id,
+                                          uint16_t queue_id);
+
+/**
  * @b rte_eth_tx_burst() RPC.
  *
  * The function jumps out in the case of actual number of transmitted packets
