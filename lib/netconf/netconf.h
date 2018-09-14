@@ -408,10 +408,10 @@ netconf_list *netconf_rule_dump(netconf_handle nh,
  * @param cmd           Action to do
  * @param rule          Rule to modify
  *
- * @return @c 0 on success, @c -1 on error (check @b errno for details).
+ * @return Status code.
  */
-int netconf_rule_modify(netconf_handle nh, netconf_cmd cmd,
-                        const netconf_rule *rule);
+extern te_errno netconf_rule_modify(netconf_handle nh, netconf_cmd cmd,
+                                    const netconf_rule *rule);
 
 /**
  * Set default values to fields in neighbour struct.
