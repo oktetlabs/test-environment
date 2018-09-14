@@ -86,11 +86,10 @@ tapi_update_arp(const char *ta_src,
                 const struct sockaddr *link_addr_dest,
                 te_bool is_static)
 {
-    static struct sockaddr link_addr;
-
-    RETURN_ON_ERROR(tapi_cfg_del_neigh_entry(
-                              ta_src, iface_src->if_name,
-                              addr_dest));
+    const unsigned int      max_attempts = 10;
+    unsigned int            i;
+    static struct sockaddr  link_addr;
+    te_errno                rc;
 
     if (link_addr_dest != NULL)
     {
@@ -109,9 +108,22 @@ tapi_update_arp(const char *ta_src,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    return tapi_cfg_add_neigh_entry(ta_src, iface_src->if_name,
-                                    addr_dest, link_addr.sa_data,
-                                    is_static);
+    for (i = 0; i < max_attempts; i++)
+    {
+        RETURN_ON_ERROR(tapi_cfg_del_neigh_entry(
+                                  ta_src, iface_src->if_name,
+                                  addr_dest));
+
+        rc = tapi_cfg_add_neigh_entry(ta_src, iface_src->if_name,
+                                      addr_dest, link_addr.sa_data,
+                                      is_static);
+        if (rc == 0)
+            break;
+        else if (rc != TE_RC(TE_CS, TE_EEXIST))
+            return rc;
+    }
+
+    return rc;
 }
 
 /* See description in tapi_route_gw.h */
