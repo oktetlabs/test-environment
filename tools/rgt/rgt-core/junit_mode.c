@@ -52,12 +52,15 @@ static int junit_process_test_start(node_info_t *node,
                                     msg_queue *verdicts);
 static int junit_process_test_end(node_info_t *node,
                                   msg_queue *verdicts);
-
+static int junit_process_regular_msg(log_msg *log);
 static int junit_process_open(void);
 static int junit_process_close(void);
 
 /** List of currently processed packages, from top to bottom. */
 static tqh_strings pkg_names;
+
+/** Collect all error and warning logs */
+static struct obstack *ew_log_obstk = NULL;
 
 /* See the description in junit_mode.h */
 void
@@ -75,7 +78,7 @@ junit_mode_init(f_process_ctrl_log_msg
     ctrl_proc[CTRL_EVT_START][NT_BRANCH] = NULL;
     ctrl_proc[CTRL_EVT_END][NT_BRANCH] = NULL;
 
-    *reg_proc = NULL;
+    *reg_proc = junit_process_regular_msg;
 
     root_proc[CTRL_EVT_START] = junit_process_open;
     root_proc[CTRL_EVT_END] = junit_process_close;
@@ -197,6 +200,9 @@ junit_process_test_start(node_info_t *node, msg_queue *verdicts)
     tqe_string    *tqe_str;
     double         time_val;
 
+    if (ew_log_obstk == NULL)
+        ew_log_obstk = obstack_initialize();
+
     fputs("<testcase classname=\"", rgt_ctx.out_fd);
 
     tqe_str = TAILQ_FIRST(&pkg_names);
@@ -234,33 +240,77 @@ junit_process_test_start(node_info_t *node, msg_queue *verdicts)
     time_val = RGT_TIME_DIFF(node->end_ts, node->start_ts);
     fprintf(rgt_ctx.out_fd, "\" time=\"%.3f\">\n", time_val);
 
-    if (!string_empty(node->result.err))
+    return 0;
+}
+
+/** Process "failure" node */
+static void
+process_failure(node_info_t *node, msg_queue *verdicts)
+{
+    struct param *p;
+
+    fprintf(rgt_ctx.out_fd, "<failure message=\"%s: %s\">\n",
+            result_status2str(node->result.status), node->result.err);
+
+    fprintf(rgt_ctx.out_fd, "Test parameters:\n");
+    for (p = node->params; p != NULL; p = p->next)
     {
-        fprintf(rgt_ctx.out_fd, "<failure message=\"%s\">\n",
-                node->result.err);
-
-        fprintf(rgt_ctx.out_fd, "%s\n",
-                result_status2str(node->result.status));
-
-        if (!msg_queue_is_empty(verdicts))
-        {
-            fputs("\n", rgt_ctx.out_fd);
-            msg_queue_foreach(verdicts, process_verdict_cb, NULL);
-        }
-
-        fputs("</failure>\n", rgt_ctx.out_fd);
+        fprintf(rgt_ctx.out_fd, "  %s = ", p->name);
+        write_xml_string(NULL, p->val, FALSE);
+        fputc('\n', rgt_ctx.out_fd);
     }
 
-    return 0;
+    fprintf(rgt_ctx.out_fd, "\nError and warning messages:\n");
+    if (ew_log_obstk != NULL)
+    {
+        obstack_1grow(ew_log_obstk, '\0');
+        fputs(obstack_finish(ew_log_obstk), rgt_ctx.out_fd);
+    }
+
+    if (!msg_queue_is_empty(verdicts))
+    {
+        fputs("\nVerdict: ", rgt_ctx.out_fd);
+        msg_queue_foreach(verdicts, process_verdict_cb, NULL);
+    }
+
+    fputs("</failure>\n", rgt_ctx.out_fd);
 }
 
 /** Process "test ended" control message. */
 static int
 junit_process_test_end(node_info_t *node, msg_queue *verdicts)
 {
-    UNUSED(node);
-    UNUSED(verdicts);
+    if (!string_empty(node->result.err))
+        process_failure(node, verdicts);
 
     fputs("</testcase>\n", rgt_ctx.out_fd);
+
+    if (ew_log_obstk != NULL) {
+        obstack_destroy(ew_log_obstk);
+        ew_log_obstk = NULL;
+    }
+
+    return 0;
+}
+
+/** Collect all error and warning logs */
+static int
+junit_process_regular_msg(log_msg *log)
+{
+    if (log->level != TE_LL_ERROR && log->level != TE_LL_WARN)
+        return 0;
+
+    if (ew_log_obstk == NULL)
+        return 0;
+
+    rgt_expand_log_msg(log);
+    if (log->txt_msg == NULL)
+        return 0;
+
+    obstack_printf(ew_log_obstk, "%s %s %s\n",
+                   log->level_str, log->entity, log->user);
+    write_xml_string(ew_log_obstk, log->txt_msg, FALSE);
+    obstack_grow(ew_log_obstk, "\n\n", strlen("\n\n"));
+
     return 0;
 }
