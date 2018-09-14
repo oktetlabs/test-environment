@@ -58,7 +58,10 @@ cc = meson.get_compiler('c')
 dep_threads = dependency('threads')
 if get_option('engine')
     dep_libxml2 = dependency('libxml-2.0')
-    dep_popt = dependency('popt')
+    dep_popt = dependency('popt', required : false)
+    if not dep_popt.found()
+        dep_popt = cc.find_library('popt')
+    endif
 endif
 
 subdir('include')
