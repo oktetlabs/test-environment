@@ -164,6 +164,21 @@ extern te_errno tapi_update_arp(const char *ta_src,
                                 te_bool is_static);
 
 /**
+ * Remove existing ARP table entry, wait for a while, check that it
+ * did not reappear automatically. If it did, try to remove it again
+ * a few times before giving up.
+ *
+ * @param ta            Test Agent name.
+ * @param if_name       Interface name.
+ * @param net_addr      IP address.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_remove_arp(const char *ta,
+                                const char *if_name,
+                                const struct sockaddr *net_addr);
+
+/**
  * Initialize gateway structure.
  *
  * @param gw                Pointer to gateway structure.

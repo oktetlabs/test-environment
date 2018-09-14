@@ -128,6 +128,36 @@ tapi_update_arp(const char *ta_src,
 
 /* See description in tapi_route_gw.h */
 te_errno
+tapi_remove_arp(const char *ta,
+                const char *if_name,
+                const struct sockaddr *net_addr)
+{
+    const unsigned int max_attempts = 10;
+    unsigned int       i;
+    te_errno           rc = 0;
+
+    for (i = 0; i < max_attempts; i++)
+    {
+        rc = tapi_cfg_del_neigh_entry(ta, if_name, net_addr);
+        if (rc != 0)
+            return rc;
+
+        TAPI_WAIT_NETWORK;
+
+        rc = tapi_cfg_get_neigh_entry(ta, if_name, net_addr,
+                                      NULL, NULL, NULL);
+        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+            return 0;
+        else if (rc != 0)
+            return rc;
+    }
+
+    ERROR("Failed to ensure that removed ARP entry does not reappear");
+    return TE_RC(TE_TAPI, TE_EFAIL);
+}
+
+/* See description in tapi_route_gw.h */
+te_errno
 tapi_route_gateway_init(
                   tapi_route_gateway *gw,
                   const char *iut_ta,
