@@ -11,6 +11,7 @@
 #define TE_LGR_USER "NVME TAPI"
 
 #include "te_defs.h"
+#include "te_str.h"
 #include "rpc_xdr.h"
 #include "te_rpc_sys_stat.h"
 #include "te_rpc_types.h"
@@ -211,29 +212,48 @@ read_nvme_fabric_info_namespace(rcf_rpc_server *rpcs,
            READ_SUCCESS: READ_ERROR;
 }
 
-static read_result
-parse_address(const char *str, char *address, unsigned short *port)
+/**
+ * Parse address and port in format:
+ * traddr=xxx.xxx.xxx.xxx,trsvcid=xxxxxx
+ *
+ * @param str[in]           Buffer with string for parsing
+ * @param address[out]      Parsed IP Address
+ * @param port[out]         Parsed port
+ *
+ * @note address is string with a capacity of at least
+ * INET_ADDRSTRLEN characters
+ *
+ * @return Status code
+ **/
+static te_errno
+parse_endpoint(char *str, char *address, unsigned short *port)
 {
+    te_errno rc;
+
     const char *traddr = "traddr=";
     const char *trsvcid = "trsvcid=";
-    char *delimeter = strchr(str, ',');
-    char *start_traddr = strstr(str, traddr);
-    char *start_trsvcid = strstr(str, trsvcid);
-    char buffer[32];
 
-    if (delimeter == NULL || start_traddr == NULL || start_trsvcid == NULL ||
-        start_trsvcid < start_traddr || start_traddr > delimeter)
-        return READ_ERROR;
+    char *p;
+    long temp_port;
+    char *temp_address;
 
-    strncpy(buffer, str, delimeter - str);
-    if (sscanf(buffer, "traddr=%s", address) != 1)
-        return READ_ERROR;
+    if ((p = strtok(str, ",")) == NULL &&
+        strncmp(p, traddr, strlen(traddr)) != 0)
+        return TE_EINVAL;
 
-    strcpy(buffer, delimeter + 1);
-    if (sscanf(buffer, "trsvcid=%hu", port) != 1)
-        return READ_ERROR;
+    temp_address = p + strlen(traddr);
 
-    return READ_SUCCESS;
+    if ((p = strtok(NULL, ",")) == NULL &&
+        strncmp(p, trsvcid, strlen(trsvcid)) != 0)
+        return TE_EINVAL;
+
+    if ((rc = te_strtol(p + strlen(trsvcid), 10, &temp_port)) != 0)
+        return rc;
+
+    TE_STRNCPY(address, INET_ADDRSTRLEN, temp_address);
+    *port = (unsigned short) temp_port;
+
+    return 0;
 }
 
 static read_result
@@ -251,7 +271,7 @@ read_nvme_fabric_info_addr(rcf_rpc_server *rpcs,
         return READ_ERROR;
     }
 
-    if (parse_address(buffer, address, &port) != 0)
+    if (parse_endpoint(buffer, address, &port) != 0)
     {
         ERROR("Cannot parse address info");
         return READ_ERROR;
