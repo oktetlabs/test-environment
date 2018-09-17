@@ -237,13 +237,13 @@ parse_endpoint(char *str, char *address, unsigned short *port)
     long temp_port;
     char *temp_address;
 
-    if ((p = strtok(str, ",")) == NULL &&
+    if ((p = strtok(str, ",")) == NULL ||
         strncmp(p, traddr, strlen(traddr)) != 0)
         return TE_EINVAL;
 
     temp_address = p + strlen(traddr);
 
-    if ((p = strtok(NULL, ",")) == NULL &&
+    if ((p = strtok(NULL, ",")) == NULL ||
         strncmp(p, trsvcid, strlen(trsvcid)) != 0)
         return TE_EINVAL;
 
