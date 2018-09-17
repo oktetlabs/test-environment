@@ -251,7 +251,7 @@ parse_endpoint(char *str, char *address, unsigned short *port)
         return rc;
 
     TE_STRNCPY(address, INET_ADDRSTRLEN, temp_address);
-    *port = (unsigned short) temp_port;
+    *port = (unsigned short)temp_port;
 
     return 0;
 }
