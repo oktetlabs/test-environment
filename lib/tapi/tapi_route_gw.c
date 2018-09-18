@@ -329,3 +329,14 @@ tapi_route_gateway_repair_tst_gw(tapi_route_gateway *gw)
                            gw->gw_tst_if->if_name,
                            gw->gw_tst_addr, NULL, FALSE);
 }
+
+/* See description in tapi_route_gw.h */
+te_errno
+tapi_route_gateway_down_up_ifaces(tapi_route_gateway *gw)
+{
+    RETURN_ON_ERROR(tapi_cfg_base_if_down_up(gw->iut_ta, gw->iut_if->if_name));
+    RETURN_ON_ERROR(tapi_cfg_base_if_down_up(gw->tst_ta, gw->tst_if->if_name));
+    RETURN_ON_ERROR(tapi_cfg_base_if_down_up(gw->gw_ta, gw->gw_iut_if->if_name));
+
+    return tapi_cfg_base_if_down_up(gw->gw_ta, gw->gw_tst_if->if_name);
+}

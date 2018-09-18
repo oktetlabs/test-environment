@@ -304,6 +304,17 @@ extern te_errno tapi_route_gateway_break_tst_gw(tapi_route_gateway *gw);
  */
 extern te_errno tapi_route_gateway_repair_tst_gw(tapi_route_gateway *gw);
 
+/**
+ * Down up all interfaces that were in gateway connection.
+ *
+ * @param gateway       Gateway description.
+ *
+ * @note Caller should take care about wait for the interfaces to be raised.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_route_gateway_down_up_ifaces(tapi_route_gateway *gw);
+
 #endif /* !__TE_TAPI_ROUTE_GW_H__ */
 
 /**@} <!-- END ts_tapi_route_gw --> */
