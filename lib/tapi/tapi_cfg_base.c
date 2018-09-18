@@ -1067,3 +1067,16 @@ tapi_cfg_base_if_del_veth(const char *ta, const char *ifname)
 
     return rc;
 }
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_down_up(const char *ta, const char *ifname)
+{
+    int rc;
+
+    rc = tapi_cfg_base_if_down(ta, ifname);
+    if (rc != 0)
+        return rc;
+
+    return tapi_cfg_base_if_up(ta, ifname);
+}

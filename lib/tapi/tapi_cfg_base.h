@@ -722,6 +722,19 @@ tapi_cfg_base_if_set_mtu(const char *agent, const char *interface, int mtu,
                                         FALSE);
 }
 
+/**
+ * Down up interface.
+ *
+ * @param agent     Agent name
+ * @param interface Interface name
+ *
+ * @note Caller should take care about wait for the interface to be raised.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_down_up(const char *agent,
+                                         const char *interface);
+
 /**@} <!-- END tapi_conf_iface --> */
 
 #ifdef __cplusplus
