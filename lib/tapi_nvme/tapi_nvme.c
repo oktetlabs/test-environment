@@ -484,13 +484,17 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
                             tapi_nvme_transport_str(target->transport),
                             target->subnqn);
 
-    if (rc == 0)
+    if (rc != 0)
     {
-        host_ctrl->connected_target = target;
-        RING("Success connection to target");
+        RING("nvme-cli output\n"
+             "stdout:\n%s\n"
+             "stderr:\n%s",
+             str_stdout.ptr, str_stderr.ptr);
+        return rc;
     }
-        RING("stdout:\n%s\nstderr:\n%s", str_stdout.ptr, str_stderr.ptr);
 
+    host_ctrl->connected_target = target;
+    RING("Success connection to target");
 
     (void)tapi_nvme_initiator_list(host_ctrl);
 
