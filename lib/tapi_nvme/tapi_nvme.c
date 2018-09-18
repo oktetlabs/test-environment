@@ -366,28 +366,9 @@ read_nvme_fabric_info(rcf_rpc_server *rpcs,
     return READ_SUCCESS;
 }
 
-static void
-debug_target_print(const tapi_nvme_target *target)
-{
-    const struct sockaddr_in *addr1 = SIN(target->addr);
-    INFO("target->nqn='%s'; target->addr='%s:%hu'",
-         target->subnqn,
-         te_sockaddr_get_ipstr(SA(addr1)),
-         te_sockaddr_get_port(SA(addr1)));
-}
-
-static void
-debug_fabric_info_print(const nvme_fabric_info *info)
-{
-    const struct sockaddr_in *addr2 = SIN(&info->addr);
-    INFO("info->nqn='%s'; info->addr='%s:%hu'",
-         info->subnqn,
-         te_sockaddr_get_ipstr(SA(addr2)),
-         te_sockaddr_get_port(SA(addr2)));
-}
-
 static te_bool
-is_target_eq(const tapi_nvme_target *target, const nvme_fabric_info *info)
+is_target_eq(const tapi_nvme_target *target, const nvme_fabric_info *info,
+             const char *admin_dev)
 {
     const struct sockaddr_in *addr1 = SIN(target->addr);
     const struct sockaddr_in *addr2 = SIN(&info->addr);
@@ -395,8 +376,10 @@ is_target_eq(const tapi_nvme_target *target, const nvme_fabric_info *info)
     te_bool addr_eq;
     te_bool transport_eq;
 
-    debug_target_print(target);
-    debug_fabric_info_print(info);
+    RING("Searching for connected device, comparing expected "
+         "'%s' with '%s' from %s",
+         te_sockaddr2str(SA(addr1)), te_sockaddr2str(SA(addr2)),
+         admin_dev);
 
     transport_eq = target->transport == info->transport;
     subnqn_eq = strcmp(target->subnqn, info->subnqn) == 0;
@@ -429,7 +412,7 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl,
         else if (rc == READ_CONTINUE)
             continue;
 
-        if (is_target_eq(target, &info) == TRUE)
+        if (is_target_eq(target, &info, names[i].name) == TRUE)
         {
             host_ctrl->admin_dev = tapi_strdup(names[i].name);
             host_ctrl->device = tapi_malloc(NAME_MAX);
