@@ -278,9 +278,9 @@ read_nvme_fabric_info_addr(rcf_rpc_server *rpcs,
     }
 
     memset(&info->addr, 0, sizeof(info->addr));
-    info->addr.sin_family = AF_INET;
-    info->addr.sin_addr.s_addr = inet_addr(address);
-    info->addr.sin_port = htons(port);
+    if (te_sockaddr_str2h(address, SA(&info->addr)) != 0)
+        return READ_ERROR;
+    te_sockaddr_set_port(SA(&info->addr), htons(port));
 
     return READ_SUCCESS;
 }
@@ -461,7 +461,7 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
     rc = run_command_output(host_ctrl->rpcs, &str_stdout, &str_stderr,
                             strcat(cmd, opts),
                             te_sockaddr_get_ipstr(target->addr),
-                            te_sockaddr_get_port(target->addr),
+                            ntohs(te_sockaddr_get_port(target->addr)),
                             tapi_nvme_transport_str(target->transport),
                             target->subnqn);
 
@@ -742,7 +742,7 @@ write_config(rcf_rpc_server *rpcs, tapi_nvme_transport transport,
     te_log_stack_push("Writing target config for device=%s port=%d",
                       device, nvmet_port);
 
-    TE_SPRINTF(port, "%u", te_sockaddr_get_port(addr));
+    TE_SPRINTF(port, "%hu", ntohs(te_sockaddr_get_port(addr)));
 
     for (i = 0; i < TE_ARRAY_LEN(configs); i++)
     {
