@@ -401,9 +401,6 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl,
     count = filter_directory(host_ctrl->rpcs, BASE_NVME_FABRICS,
                              "nvme", names, TE_ARRAY_LEN(names));
 
-    if (count < 0)
-        return 0;
-
     for (i = 0; i < count; i++)
     {
         rc = read_nvme_fabric_info(host_ctrl->rpcs, &info, names[i].name);
@@ -483,13 +480,15 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
 
     for (i = 0; i < DEVICE_WAIT_ATTEMPTS; i++)
     {
-        if (get_new_device(host_ctrl, target) != 0)
-            continue;
+        rc = get_new_device(host_ctrl, target);
+        if (rc == 0)
+            return 0;
 
         te_motivated_sleep(1, "Waiting device...");
     }
 
-    if (host_ctrl->device == NULL)
+    rc = get_new_device(host_ctrl, target);
+    if (rc != 0)
     {
         ERROR("Connected device not found");
         return TE_ENOENT;
