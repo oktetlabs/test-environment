@@ -383,7 +383,8 @@ is_target_eq(const tapi_nvme_target *target, const nvme_fabric_info *info,
 
     transport_eq = target->transport == info->transport;
     subnqn_eq = strcmp(target->subnqn, info->subnqn) == 0;
-    addr_eq = addr2->sin_addr.s_addr == addr1->sin_addr.s_addr;
+    addr_eq = te_sockaddrcmp(SA(addr1), sizeof(*addr1),
+                             SA(addr2), sizeof(*addr2)) == 0;
 
     return transport_eq && subnqn_eq && addr_eq;
 }
