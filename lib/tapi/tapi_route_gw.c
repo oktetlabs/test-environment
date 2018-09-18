@@ -206,6 +206,21 @@ tapi_route_gateway_configure(tapi_route_gateway *gw)
                te_netaddr_get_size(gw->tst_addr->sa_family) * 8,
                te_sockaddr_get_netaddr(gw->gw_iut_addr)));
 
+    /*
+     * We need to add IPv6 neighbors entries manually because there are cases
+     * when Linux can not re-resolve FAILED entries for gateway routes.
+     * See bug 9774.
+     */
+    if (gw->iut_addr->sa_family == AF_INET6)
+    {
+        RETURN_ON_ERROR(tapi_update_arp(gw->iut_ta, gw->iut_if->if_name,
+                                        gw->gw_ta, gw->gw_iut_if->if_name,
+                                        gw->gw_iut_addr, NULL, FALSE));
+        RETURN_ON_ERROR(tapi_update_arp(gw->gw_ta, gw->gw_iut_if->if_name,
+                                        gw->iut_ta, gw->iut_if->if_name,
+                                        gw->iut_addr, NULL, FALSE));
+    }
+
     RETURN_ON_ERROR(
             tapi_cfg_add_route_via_gw(
                gw->tst_ta,
@@ -213,6 +228,16 @@ tapi_route_gateway_configure(tapi_route_gateway *gw)
                te_sockaddr_get_netaddr(gw->iut_addr),
                te_netaddr_get_size(gw->iut_addr->sa_family) * 8,
                te_sockaddr_get_netaddr(gw->gw_tst_addr)));
+
+    if (gw->tst_addr->sa_family == AF_INET6)
+    {
+        RETURN_ON_ERROR(tapi_update_arp(gw->tst_ta, gw->tst_if->if_name,
+                                        gw->gw_ta, gw->gw_tst_if->if_name,
+                                        gw->gw_tst_addr, NULL, FALSE));
+        RETURN_ON_ERROR(tapi_update_arp(gw->gw_ta, gw->gw_tst_if->if_name,
+                                        gw->tst_ta, gw->tst_if->if_name,
+                                        gw->tst_addr, NULL, FALSE));
+    }
 
     return tapi_route_gateway_set_forwarding(gw, TRUE);
 }
