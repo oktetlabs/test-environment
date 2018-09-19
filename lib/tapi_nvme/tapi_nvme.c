@@ -430,6 +430,7 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
     opts_t run_opts = {
         .str_stdout = &str_stdout,
         .str_stderr = &str_stderr,
+        .timeout = TE_SEC2MS(30),
     };
 
     if (host_ctrl == NULL)
