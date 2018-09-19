@@ -44,9 +44,13 @@
 #define DEVICE_WAIT_ATTEMPTS    (5)
 #define DEVICE_WAIT_TIMEOUT_S   (10)
 
+typedef struct opts_t {
+    te_string *str_stdout;
+    te_string *str_stderr;
+} opts_t;
+
 static int
-run_command_generic(rcf_rpc_server *rpcs, te_string *str_stdout,
-                    te_string *str_stderr, const char *command)
+run_command_generic(rcf_rpc_server *rpcs, opts_t opts, const char *command)
 {
     tarpc_pid_t pid;
     int fd_stdout;
@@ -68,10 +72,10 @@ run_command_generic(rcf_rpc_server *rpcs, te_string *str_stdout,
     if (pid == -1)
         TEST_FAIL("waitpid: %s", command);
 
-    if (str_stdout != NULL)
-        rpc_read_fd2te_string(rpcs, fd_stdout, 100, 0, str_stdout);
-    if (str_stderr != NULL)
-        rpc_read_fd2te_string(rpcs, fd_stderr, 100, 0, str_stderr);
+    if (opts.str_stdout != NULL)
+        rpc_read_fd2te_string(rpcs, fd_stdout, 100, 0, opts.str_stdout );
+    if (opts.str_stderr != NULL)
+        rpc_read_fd2te_string(rpcs, fd_stderr, 100, 0, opts.str_stderr);
 
     if (status.flag != RPC_WAIT_STATUS_EXITED)
         TEST_FAIL("Process is %s", wait_status_flag_rpc2str(status.flag));
@@ -81,8 +85,7 @@ run_command_generic(rcf_rpc_server *rpcs, te_string *str_stdout,
 }
 
 static int
-run_command_output(rcf_rpc_server *rpcs, te_string *str_stdour,
-                   te_string *str_stderr, const char *format_cmd, ...)
+run_command(rcf_rpc_server *rpcs, opts_t opts, const char *format_cmd, ...)
 {
     va_list arguments;
     char command[RPC_SHELL_CMDLINE_MAX];
@@ -91,20 +94,7 @@ run_command_output(rcf_rpc_server *rpcs, te_string *str_stdour,
     vsnprintf(command, sizeof(command), format_cmd, arguments);
     va_end(arguments);
 
-    return run_command_generic(rpcs, str_stdour, str_stderr, command);
-}
-
-static int
-run_command(rcf_rpc_server *rpcs, const char *format_cmd, ...)
-{
-    va_list arguments;
-    char command[RPC_SHELL_CMDLINE_MAX];
-
-    va_start(arguments, format_cmd);
-    vsnprintf(command, sizeof(command), format_cmd, arguments);
-    va_end(arguments);
-
-    return run_command_generic(rpcs, NULL, NULL, command);
+    return run_command_generic(rpcs, opts, command);
 }
 
 typedef struct directory_name {
@@ -436,6 +426,10 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
                        "--trsvcid=%d "
                        "--transport=%s "
                        "--nqn=%s ";
+    opts_t run_opts = {
+        .str_stdout = &str_stdout,
+        .str_stderr = &str_stderr,
+    };
 
     if (host_ctrl == NULL)
         return TE_EINVAL;
@@ -458,12 +452,11 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
         return TE_EINVAL;
     }
 
-    rc = run_command_output(host_ctrl->rpcs, &str_stdout, &str_stderr,
-                            strcat(cmd, opts),
-                            te_sockaddr_get_ipstr(target->addr),
-                            ntohs(te_sockaddr_get_port(target->addr)),
-                            tapi_nvme_transport_str(target->transport),
-                            target->subnqn);
+    rc = run_command(host_ctrl->rpcs, run_opts, strcat(cmd, opts),
+                     te_sockaddr_get_ipstr(target->addr),
+                     ntohs(te_sockaddr_get_port(target->addr)),
+                     tapi_nvme_transport_str(target->transport),
+                     target->subnqn);
 
     if (rc != 0)
     {
@@ -503,9 +496,13 @@ te_errno tapi_nvme_initiator_list(tapi_nvme_host_ctrl *host_ctrl)
     int rc;
     te_string str_stdout = TE_STRING_INIT;
     te_string str_stderr = TE_STRING_INIT;
+    opts_t run_opts = {
+        .str_stdout = &str_stdout,
+        .str_stderr = &str_stderr,
+    };
 
-    rc = run_command_output(host_ctrl->rpcs, &str_stdout, &str_stderr,
-                            "nvme list");
+    rc = run_command(host_ctrl->rpcs, run_opts, "nvme list");
+
     if (rc != 0)
         WARN("stderr: \n%s", str_stderr.ptr);
     else
@@ -865,7 +862,8 @@ tapi_nvme_target_format(tapi_nvme_target *target)
         target->device == NULL)
         return TE_EINVAL;
 
-    run_command(target->rpcs, "nvme format --ses=%d --namespace-id=%d %s",
+    run_command(target->rpcs, (opts_t){},
+                "nvme format --ses=%d --namespace-id=%d %s",
                 0, 1, target->device);
 
     return 0;
