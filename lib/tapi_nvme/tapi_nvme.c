@@ -571,16 +571,19 @@ wait_device_disapperance(rcf_rpc_server *rpcs, const char *admin_dev)
     unsigned int wait_sec = DEVICE_WAIT_TIMEOUT_S;
     unsigned int i;
 
+    if (is_disconnected(rpcs, admin_dev))
+        return 0;
+
     for (i = 1; i <= DEVICE_WAIT_ATTEMPTS; i++)
     {
-        if (is_disconnected(rpcs, admin_dev))
-            return 0;
-
         TE_SPRINTF(why_message,
                    "[%d/%d] Waiting for disconnecting device '%s'...",
                    i, DEVICE_WAIT_ATTEMPTS, admin_dev);
 
         te_motivated_sleep(wait_sec, why_message);
+
+        if (is_disconnected(rpcs, admin_dev))
+            return 0;
 
         /* If NVMoF TCP kernel initiator driver will not free the device
          * withing a few seconds interval, then it will hang up for a long
