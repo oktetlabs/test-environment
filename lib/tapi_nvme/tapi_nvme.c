@@ -561,7 +561,7 @@ is_disconnected(rcf_rpc_server *rpcs, const char *admin_dev)
 
     TE_SPRINTF(path, BASE_NVME_FABRICS "/%s", admin_dev);
 
-    return is_dir_exist(rpcs, path);
+    return !is_dir_exist(rpcs, path);
 }
 
 static te_errno
