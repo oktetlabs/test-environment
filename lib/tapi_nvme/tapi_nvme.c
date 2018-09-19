@@ -47,6 +47,7 @@
 typedef struct opts_t {
     te_string *str_stdout;
     te_string *str_stderr;
+    unsigned int timeout;
 } opts_t;
 
 static int
@@ -66,7 +67,7 @@ run_command_generic(rcf_rpc_server *rpcs, opts_t opts, const char *command)
         TEST_FAIL("Cannot run command: %s", command);
 
     RPC_AWAIT_IUT_ERROR(rpcs);
-    rpcs->timeout = 1000;
+    rpcs->timeout = opts.timeout >= 0 ? opts.timeout: TE_SEC2MS(1);
     pid = rpc_waitpid(rpcs, pid, &status, 0);
 
     if (pid == -1)
