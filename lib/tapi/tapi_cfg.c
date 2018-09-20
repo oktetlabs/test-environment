@@ -80,6 +80,36 @@ static int tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
                              void *ret_addr, te_bool *is_static,
                              cs_neigh_entry_state *state);
 
+/**
+ * Fill internal fields of tapi_cfg_rt_params before
+ * calling cfg_route_op() (if they are not already
+ * filled by calling function).
+ *
+ * @param params      Pointer to @ref tapi_cfg_rt_params.
+ */
+static void
+fill_cfg_rt_params_internals(tapi_cfg_rt_params *params)
+{
+    params->addr_family = AF_UNSPEC;
+
+    if (params->dst_addr != NULL)
+    {
+        params->addr_family = params->dst_addr->sa_family;
+        params->dst = te_sockaddr_get_netaddr(params->dst_addr);
+    }
+
+    if (params->gw_addr != NULL &&
+        params->gw_addr->sa_family != AF_UNSPEC)
+    {
+        params->gw = te_sockaddr_get_netaddr(params->gw_addr);
+    }
+
+    if (params->src_addr != NULL &&
+        params->src_addr->sa_family != AF_UNSPEC)
+    {
+        params->src = te_sockaddr_get_netaddr(params->src_addr);
+    }
+}
 
 /* See description in tapi_cfg.h */
 int
@@ -756,6 +786,16 @@ tapi_cfg_modify_route(const char *ta, int addr_family,
     return cfg_route_op(OP_MODIFY, ta, &rt_params, cfg_hndl);
 }
 
+/* See the description in tapi_cfg.h */
+te_errno
+tapi_cfg_modify_route2(const char *ta,
+                       tapi_cfg_rt_params *params,
+                       cfg_handle *rt_hndl)
+{
+    fill_cfg_rt_params_internals(params);
+
+    return cfg_route_op(OP_MODIFY, ta, params, rt_hndl);
+}
 
 /* See the description in tapi_cfg.h */
 int
@@ -802,37 +842,6 @@ tapi_cfg_rt_params_init(tapi_cfg_rt_params *params)
 {
     memset(params, 0, sizeof(*params));
     params->table = TAPI_RT_TABLE_MAIN;
-}
-
-/**
- * Fill internal fields of tapi_cfg_rt_params before
- * calling cfg_route_op() (if they are not already
- * filled by calling function).
- *
- * @param params      Pointer to tapi_cfg_rt_params.
- */
-static void
-fill_cfg_rt_params_internals(tapi_cfg_rt_params *params)
-{
-    params->addr_family = AF_UNSPEC;
-
-    if (params->dst_addr != NULL)
-    {
-        params->addr_family = params->dst_addr->sa_family;
-        params->dst = te_sockaddr_get_netaddr(params->dst_addr);
-    }
-
-    if (params->gw_addr != NULL &&
-        params->gw_addr->sa_family != AF_UNSPEC)
-    {
-        params->gw = te_sockaddr_get_netaddr(params->gw_addr);
-    }
-
-    if (params->src_addr != NULL &&
-        params->src_addr->sa_family != AF_UNSPEC)
-    {
-        params->src = te_sockaddr_get_netaddr(params->src_addr);
-    }
 }
 
 /* See the description in tapi_cfg.h */
@@ -981,6 +990,118 @@ tapi_cfg_del_neigh_dynamic(const char *ta, const char *ifname)
     free(hndls);
 
     return result;
+}
+
+/**
+ * Add locally nexthops of a multipath route.
+ *
+ * @param ta                Test Agent name.
+ * @param route_inst_name   Configuration instance name of a route.
+ * @param hops              Array of nexthops descriptions.
+ * @param hops_num          Number of elements in the array.
+ *
+ * @return Status code.
+ */
+static te_errno
+add_nexthops(const char *ta,
+             const char *route_inst_name,
+             tapi_cfg_rt_nexthop *hops,
+             unsigned int hops_num)
+{
+    unsigned int i;
+    te_errno     rc = 0;
+
+    for (i = 0; i < hops_num; i++)
+    {
+        rc = cfg_add_instance_local_fmt(
+                            NULL, CFG_VAL(NONE, NULL),
+                            "/agent:%s/route:%s/nexthop:%u",
+                            ta, route_inst_name, i);
+
+        if (rc != 0)
+        {
+            ERROR("%s() failed to add a new nexthop "
+                  "for route %s on '%s' Agent, rc = %r",
+                  __FUNCTION__, route_inst_name, ta, rc);
+            break;
+        }
+
+        rc = cfg_set_instance_local_fmt(
+                  CFG_VAL(INTEGER, hops[i].weight),
+                  "/agent:%s/route:%s/nexthop:%u/weight:",
+                  ta, route_inst_name, i);
+        if (rc != 0)
+        {
+            ERROR("%s() failed to set weight for nexthop, "
+                  "rc = %r", __FUNCTION__, rc);
+            break;
+        }
+
+        rc = cfg_set_instance_local_fmt(
+                  CFG_VAL(STRING, hops[i].ifname),
+                  "/agent:%s/route:%s/nexthop:%u/dev:",
+                  ta, route_inst_name, i);
+        if (rc != 0)
+        {
+            ERROR("%s() failed to set dev for nexthop, "
+                  "rc = %r", __FUNCTION__, rc);
+            break;
+        }
+
+        if (hops[i].gw.ss_family != AF_UNSPEC)
+        {
+            rc = cfg_set_instance_local_fmt(
+                    CFG_VAL(ADDRESS, &hops[i].gw),
+                    "/agent:%s/route:%s/nexthop:%u/gw:",
+                    ta, route_inst_name, i);
+
+            if (rc != 0)
+            {
+                ERROR("%s() failed to set gw for nexthop, "
+                      "rc = %r", __FUNCTION__, rc);
+                break;
+            }
+        }
+    }
+
+    return rc;
+}
+
+/**
+ * Remove locally all nexthops from a route.
+ *
+ * @param ta                Test Agent name.
+ * @param route_inst_name   Name of route instance.
+ *
+ * @return Status code.
+ */
+static te_errno
+remove_nexthops(const char *ta,
+                const char *route_inst_name)
+{
+    cfg_handle    *nexthops = NULL;
+    unsigned int   num = 0;
+    unsigned int   i;
+    te_errno       rc = 0;
+
+    rc = cfg_find_pattern_fmt(&num, &nexthops,
+                              "/agent:%s/route:%s/nexthop:*",
+                              ta, route_inst_name);
+    if (rc != 0)
+        return rc;
+
+    free(nexthops);
+
+    for (i = 0; i < num; i++)
+    {
+        rc = cfg_del_instance_local_fmt(FALSE,
+                                        "/agent:%s/route:%s/nexthop:%u",
+                                        ta, route_inst_name, i);
+        if (rc != 0)
+            return rc;
+    }
+
+    return 0;
 }
 
 /**
@@ -1224,6 +1345,10 @@ cfg_route_op(enum tapi_cfg_oper op, const char *ta,
 
 #undef CFG_RT_SET_LOCAL
 
+            rc = remove_nexthops(ta, route_inst_name);
+            if (rc == 0)
+                rc = add_nexthops(ta, route_inst_name, hops, hops_num);
+
             if (rc == 0)
             {
                 rc = cfg_commit_fmt("/agent:%s/route:%s",
@@ -1306,59 +1431,8 @@ cfg_route_op(enum tapi_cfg_oper op, const char *ta,
 
             if (rc == 0)
             {
-                for (i = 0; i < hops_num; i++)
-                {
-                    rc = cfg_add_instance_local_fmt(
-                                        NULL, CVT_NONE, NULL,
-                                        "/agent:%s/route:%s/nexthop:%u",
-                                        ta, route_inst_name, i);
-
-                    if (rc != 0)
-                    {
-                        ERROR("%s() failed to add a new nexthop "
-                              "for route %s on '%s' Agent, rc = %r",
-                              __FUNCTION__, route_inst_name, ta, rc);
-                        break;
-                    }
-
-                    rc = cfg_set_instance_local_fmt(
-                              CFG_VAL(INTEGER, hops[i].weight),
-                              "/agent:%s/route:%s/nexthop:%u/weight:",
-                              ta, route_inst_name, i);
-                    if (rc != 0)
-                    {
-                        ERROR("%s() failed to set weight for nexthop, "
-                              "rc = %r", __FUNCTION__, rc);
-                        break;
-                    }
-
-                    rc = cfg_set_instance_local_fmt(
-                              CFG_VAL(STRING, hops[i].ifname),
-                              "/agent:%s/route:%s/nexthop:%u/dev:",
-                              ta, route_inst_name, i);
-                    if (rc != 0)
-                    {
-                        ERROR("%s() failed to set dev for nexthop, "
-                              "rc = %r", __FUNCTION__, rc);
-                        break;
-                    }
-
-                    if (hops[i].gw.ss_family != AF_UNSPEC)
-                    {
-                        rc = cfg_set_instance_local_fmt(
-                                CFG_VAL(ADDRESS, &hops[i].gw),
-                                "/agent:%s/route:%s/nexthop:%u/gw:",
-                                ta, route_inst_name, i);
-
-                        if (rc != 0)
-                        {
-                            ERROR("%s() failed to set gw for nexthop, "
-                                  "rc = %r", __FUNCTION__, rc);
-                            break;
-                        }
-                    }
-
-                }
+                rc = add_nexthops(ta, route_inst_name, hops,
+                                  hops_num);
             }
 
 #undef CFG_RT_SET_LOCAL
