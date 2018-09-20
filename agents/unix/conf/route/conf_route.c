@@ -253,26 +253,6 @@ route_get(unsigned int gid, const char *oid,
 }
 
 /**
- * Set route value.
- *
- * @param       gid        Group identifier (unused)
- * @param       oid        Object identifier
- * @param       value      New value for the route
- * @param       route_name Name of the route
- *
- * @return      Status code.
- */
-static te_errno
-route_set(unsigned int gid, const char *oid, const char *value,
-          const char *route_name)
-{   
-    UNUSED(gid);
-    UNUSED(oid);
-
-    return ta_obj_value_set(TA_OBJ_TYPE_ROUTE, route_name, value, gid);
-}
-
-/**
  * Load all route-specific attributes into route object.
  *
  * @param obj  Object to be uploaded
@@ -350,7 +330,7 @@ route_load_attrs(ta_cfg_obj_t *obj)
         }
 
         rc = ta_obj_value_set(TA_OBJ_TYPE_ROUTE, obj->name, val,
-                              obj->gid);
+                              obj->gid, NULL);
         if (rc != 0)
         {
             ERROR("Failed to set route object value: %r", rc);
@@ -381,6 +361,26 @@ route_load_attrs(ta_cfg_obj_t *obj)
 #undef ROUTE_LOAD_ATTR
 
     return 0;
+}
+
+/**
+ * Set route value.
+ *
+ * @param       gid        Group identifier
+ * @param       oid        Object identifier
+ * @param       value      New value for the route
+ * @param       route_name Name of the route
+ *
+ * @return      Status code.
+ */
+static te_errno
+route_set(unsigned int gid, const char *oid, const char *value,
+          const char *route_name)
+{
+    UNUSED(oid);
+
+    return ta_obj_value_set(TA_OBJ_TYPE_ROUTE, route_name, value, gid,
+                            route_load_attrs);
 }
 
 #define DEF_ROUTE_GET_FUNC(field_) \
@@ -702,27 +702,10 @@ route_nexthop_set_find(unsigned int gid,
     ta_cfg_obj_t      *route_obj = NULL;
     te_errno           rc;
 
-    route_obj = ta_obj_find(TA_OBJ_TYPE_ROUTE, route);
-    if (route_obj == NULL)
-    {
-        rc = ta_obj_add(TA_OBJ_TYPE_ROUTE, route, NULL,
-                        gid, NULL, &route_obj);
-
-        if (rc != 0)
-        {
-            ERROR("%s(): failed to create route object '%s'",
-                  __FUNCTION__, route);
-            return TE_RC(TE_TA_UNIX, rc);
-        }
-
-        route_obj->action = TA_CFG_OBJ_SET;
-        rc = route_load_attrs(route_obj);
-        if (rc != 0)
-        {
-            ta_obj_free(route_obj);
-            return rc;
-        }
-    }
+    rc = ta_obj_find_create(TA_OBJ_TYPE_ROUTE, route, gid,
+                            route_load_attrs, &route_obj, NULL);
+    if (rc != 0)
+        return rc;
 
     hops = (ta_rt_nexthops_t *)route_obj->user_data;
     if (hops == NULL)
