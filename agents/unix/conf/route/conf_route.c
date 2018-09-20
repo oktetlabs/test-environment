@@ -641,39 +641,49 @@ blackhole_del(unsigned int gid, const char *oid, const char *route)
 }
 
 /**
+ * Convert nexthop ID from string representation to numeric value.
+ *
+ * @param id_str_     ID in string representation.
+ * @param id_num_     Where to save numeric value.
+ */
+#define CONVERT_NH_ID(id_str_, id_num_) \
+    do {                                                              \
+        te_errno          rc_;                                        \
+        long unsigned int res_;                                       \
+                                                                      \
+        rc_ = te_strtoul((id_str_), 10, &res_);                       \
+        if (rc_ != 0)                                                 \
+        {                                                             \
+            ERROR("%s(): failed to convert '%s' to nexthop number",   \
+                  __FUNCTION__, (id_str_));                           \
+            return TE_RC(TE_TA_UNIX, rc_);                            \
+        }                                                             \
+                                                                      \
+        (id_num_) = res_;                                             \
+    } while (0)
+
+/**
  * Find multipath route nexthop by its ID in a queue of nexthops.
  *
  * @param hops        Head of the queue.
- * @param hop_id      Nexthop ID.
+ * @param id          Nexthop ID.
  * @param nh          Where to save pointer to found nexthop.
  *
  * @return Status code.
  */
 static te_errno
-find_nexthop_by_id(ta_rt_nexthops_t *hops, const char *hop_id,
+find_nexthop_by_id(ta_rt_nexthops_t *hops, unsigned int id,
                    ta_rt_nexthop_t **nh)
 {
-    te_errno             rc;
     ta_rt_nexthop_t     *rt_nh = NULL;
-    long unsigned int    id;
-    long unsigned int    i = 0;
-
-    rc = te_strtoul(hop_id, 10, &id);
-    if (rc != 0)
-    {
-        ERROR("%s(): failed to convert '%s' to nexthop number",
-              __FUNCTION__, hop_id);
-        return TE_RC(TE_TA_UNIX, rc);
-    }
 
     TAILQ_FOREACH(rt_nh, hops, links)
     {
-        if (i == id)
+        if (rt_nh->id == id)
         {
             *nh = rt_nh;
             return 0;
         }
-        i++;
     }
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -701,6 +711,9 @@ route_nexthop_set_find(unsigned int gid,
     ta_rt_nexthops_t  *hops = NULL;
     ta_cfg_obj_t      *route_obj = NULL;
     te_errno           rc;
+    unsigned int       id;
+
+    CONVERT_NH_ID(hop_id, id);
 
     rc = ta_obj_find_create(TA_OBJ_TYPE_ROUTE, route, gid,
                             route_load_attrs, &route_obj, NULL);
@@ -714,7 +727,7 @@ route_nexthop_set_find(unsigned int gid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
-    rc = find_nexthop_by_id(hops, hop_id, nh);
+    rc = find_nexthop_by_id(hops, id, nh);
     if (rc != 0)
     {
         ERROR("%s(): failed to find nexthop number '%s'",
@@ -747,11 +760,14 @@ route_nexthop_get_find(unsigned int gid, const char *route,
 {
     te_errno             rc;
     ta_rt_info_t        *rt_info;
+    unsigned int         id;
+
+    CONVERT_NH_ID(hop_id, id);
 
     if ((rc = route_find(gid, route, &rt_info)) != 0)
         return rc;
 
-    rc = find_nexthop_by_id(&rt_info->nexthops, hop_id, nh);
+    rc = find_nexthop_by_id(&rt_info->nexthops, id, nh);
     if (rc != 0)
     {
         ERROR("%s(): failed to find nexthop number '%s'",
@@ -782,12 +798,15 @@ route_nexthop_add(unsigned int gid, const char *oid,
 {
     ta_cfg_obj_t      *route_obj;
     ta_rt_nexthop_t   *nh;
+    ta_rt_nexthop_t   *nh_aux;
     ta_rt_nexthops_t  *hops;
+    unsigned int       id;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(value);
-    UNUSED(hop_id);
+
+    CONVERT_NH_ID(hop_id, id);
 
     route_obj = ta_obj_find(TA_OBJ_TYPE_ROUTE, route);
     if (route_obj == NULL)
@@ -795,10 +814,6 @@ route_nexthop_add(unsigned int gid, const char *oid,
         ERROR("%s(): failed to find a route '%s'", __FUNCTION__, route);
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
-
-    nh = calloc(1, sizeof(*nh));
-    if (nh == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
     if (route_obj->user_data != NULL)
     {
@@ -808,17 +823,35 @@ route_nexthop_add(unsigned int gid, const char *oid,
     {
         hops = calloc(1, sizeof(*hops));
         if (hops == NULL)
-        {
-            free(nh);
             return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        }
         TAILQ_INIT(hops);
 
         route_obj->user_data = hops;
     }
 
+    TAILQ_FOREACH(nh_aux, hops, links)
+    {
+        if (nh_aux->id == id)
+        {
+            ERROR("%s(): nexthop %u exists already", __FUNCTION__, id);
+            return TE_RC(TE_TA_UNIX, TE_EEXIST);
+        }
+
+        if (nh_aux->id > id)
+            break;
+    }
+
+    nh = calloc(1, sizeof(*nh));
+    if (nh == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
     nh->weight = 1;
-    TAILQ_INSERT_TAIL(hops, nh, links);
+    nh->id = id;
+
+    if (nh_aux == NULL)
+        TAILQ_INSERT_TAIL(hops, nh, links);
+    else
+        TAILQ_INSERT_BEFORE(nh_aux, nh, links);
 
     return 0;
 }

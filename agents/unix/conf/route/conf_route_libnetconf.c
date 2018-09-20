@@ -297,6 +297,7 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
         {
             netconf_route_nexthop *nc_nh = NULL;
             ta_rt_nexthop_t       *ta_nh = NULL;
+            unsigned int           nh_id = 0;
 
             TAILQ_INIT(&rt_info->nexthops);
             rt_info->flags |= TA_RT_INFO_FLG_MULTIPATH;
@@ -310,6 +311,9 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
                     result = TE_RC(TE_TA_UNIX, TE_ENOMEM);
                     goto cleanup;
                 }
+
+                ta_nh->id = nh_id;
+                nh_id++;
 
                 ta_nh->weight = nc_nh->weight;
 

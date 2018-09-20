@@ -311,6 +311,9 @@ typedef struct ta_rt_nexthop_t {
     struct sockaddr_storage gw;                   /**< Gateway address. */
     char                    ifname[IF_NAMESIZE];  /**< Interface name. */
     unsigned int            weight;               /**< Weight. */
+    unsigned int            id;                   /**< Internal ID, used
+                                                       when editing existing
+                                                       route. */
 } ta_rt_nexthop_t;
 
 /** Queue head type for nexthops of a multipath route. */
