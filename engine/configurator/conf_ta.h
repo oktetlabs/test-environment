@@ -28,8 +28,8 @@ extern char *cfg_get_buf;
 /*
  * NOTES:
  *
- * 1. It is not allowed to perform any command after local SET/ADD command
- * until COMMIT is performed. All non-local commands shall fail with
+ * 1. It is not allowed to perform any command after local SET/ADD/DEL
+ * command until COMMIT is performed. All non-local commands shall fail with
  * EACCESS error code notifying that there is open local-commnd sequence.
  *
  * 2. It is not allowed to COMMIT only a part of local changes
@@ -50,7 +50,8 @@ extern te_bool local_cmd_seq;
 extern char max_commit_subtree[CFG_INST_NAME_MAX];
 
 /**
- * Backup file name which reflects situation before local SET/ADD command
+ * Backup file name which reflects situation before local SET/ADD/DEL
+ * command.
  */
 extern char local_cmd_bkp[1024];
 

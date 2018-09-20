@@ -881,7 +881,8 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
 
             case CFG_ADD:
             {
-                cfg_del_msg msg = { CFG_DEL, sizeof(msg), 0, 0};
+                cfg_del_msg msg = { .type = CFG_DEL, .len = sizeof(msg),
+                                    .rc = 0, .handle = 0, .local = FALSE };
                 cfg_msg    *p_msg = (cfg_msg *)&msg;
 
                 rc = cfg_db_find((char *)(tmp->cmd) +
@@ -1000,7 +1001,40 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
                 msg->len += strlen(tmp->old_oid) + 1;
                 strcpy((char *)msg + msg->oid_offset, tmp->old_oid);
 
-                cfg_process_msg((cfg_msg **)&msg, FALSE);
+                if (tmp->committed)
+                {
+                    cfg_process_msg((cfg_msg **)&msg, FALSE);
+                }
+                else
+                {
+                    cfg_del_msg  *del_msg = NULL;
+                    cfg_instance *inst = NULL;
+
+                    VERB("Do not add %s as it is locally modified",
+                         tmp->old_oid);
+
+                    del_msg = (cfg_del_msg *)tmp->cmd;
+                    if (del_msg == NULL)
+                    {
+                        ERROR("No cfg_del_msg was attached to local remove "
+                              "command for %s", tmp->old_oid);
+                        TE_RC_UPDATE(result, TE_ENOENT);
+                    }
+                    else
+                    {
+                        inst = CFG_GET_INST(del_msg->handle);
+                        if (inst == NULL)
+                        {
+                            ERROR("Failed to find an instance %s which was "
+                                  "scheduled for removal", tmp->old_oid);
+                            TE_RC_UPDATE(result, TE_ENOENT);
+                        }
+                        else
+                        {
+                            inst->remove = FALSE;
+                        }
+                    }
+                }
 
                 rc = msg->rc;
                 free(msg);
@@ -1406,10 +1440,11 @@ cfg_dh_apply_commit(const char *oid)
         switch (tmp->cmd->type)
         {
             /*
-             * We are only interested in ADD and SET commands,
+             * We are only interested in ADD, DEL and SET commands,
              * which could be local.
              */
             case CFG_ADD:
+            case CFG_DEL:
             case CFG_SET:
             {
                 entry_oid = (tmp->cmd->type == CFG_ADD) ?

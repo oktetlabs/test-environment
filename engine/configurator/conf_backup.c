@@ -363,7 +363,8 @@ parse_instances(xmlNodePtr node, cfg_instance **list)
 static int
 delete_with_children(cfg_instance *inst, te_bool *has_deps)
 {
-    cfg_del_msg msg = { CFG_DEL, sizeof(cfg_del_msg), 0, 0};
+    cfg_del_msg msg = { .type = CFG_DEL, .len = sizeof(cfg_del_msg),
+                        .rc = 0, .handle = 0, .local = FALSE};
     cfg_msg    *p_msg = (cfg_msg *)&msg;
     int         rc;
 

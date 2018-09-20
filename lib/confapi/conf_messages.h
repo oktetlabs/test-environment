@@ -174,6 +174,7 @@ typedef struct cfg_add_msg {
 typedef struct cfg_del_msg {
     CFG_MSG_FIELDS
     cfg_handle handle;  /**< IN: object to be deleted */
+    te_bool    local;   /**< IN: local delete */
 } cfg_del_msg;
 
 /** CFG_SET message content  */

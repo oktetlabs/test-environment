@@ -508,6 +508,31 @@ extern te_errno cfg_del_instance_fmt(te_bool with_children,
                                      __attribute__((format(printf, 2, 3)));
 
 /**
+ * Delete an object instance locally. Commit should be called to propagate
+ * this change together with other not committed local changes to TA.
+ *
+ * @param handle                Object instance handle.
+ * @param with_children         Delete the children subtree, if necessary.
+ *
+ * @return Status code (see te_errno.h).
+ */
+extern te_errno cfg_del_instance_local(cfg_handle handle,
+                                       te_bool with_children);
+
+/**
+ * Same as @b cfg_del_instance_local(), but accepts OID string.
+ *
+ * @param with_children         Delete the children subtree, if necessary.
+ * @param oid_fmt               Format string for OID.
+ * @param ...                   Format string arguments.
+ *
+ * @return Status code (see te_errno.h).
+ */
+extern te_errno cfg_del_instance_local_fmt(te_bool with_children,
+                                           const char *oid_fmt, ...)
+                                     __attribute__((format(printf, 2, 3)));
+
+/**
  * Change object instance value.
  *
  * @param handle    object instance handle
