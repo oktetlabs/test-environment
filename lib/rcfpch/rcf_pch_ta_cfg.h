@@ -158,9 +158,34 @@ extern void ta_obj_free(ta_cfg_obj_t *obj);
  * @param type  Object type - user-defined constant
  * @param name  Object name - actually, instance name
  *
- * @return Error code or 0
+ * @return Pointer to object in case of success, @c NULL otherwise.
  */
 extern ta_cfg_obj_t *ta_obj_find(const char *type, const char *name);
+
+/**
+ * Prototype for callback function used to fill created
+ * object attributes()
+ */
+typedef te_errno (* ta_obj_cb)(ta_cfg_obj_t *obj);
+
+/**
+ * Find an object of specified type whose name is the same as @p name
+ * parameter. Creates an object if it does not exist.
+ *
+ * @param type        Object type - user-defined constant.
+ * @param name        Object name - instance name.
+ * @param gid         Request group ID.
+ * @param cb_func     Callback function for filling object attributes
+ *                    if it is created.
+ * @param obj         Where to save pointer to object.
+ * @param created     Will be set to @c TRUE if not @c NULL and object
+ *                    is created.
+ *
+ * @return Status code.
+ */
+extern te_errno ta_obj_find_create(const char *type, const char *name,
+                                   unsigned int gid, ta_obj_cb cb_func,
+                                   ta_cfg_obj_t **obj, te_bool *created);
 
 /**
  * Create an object of specified type with particular value.
@@ -185,12 +210,14 @@ extern int ta_obj_add(const char *type, const char *name,
  * @param name       Object name
  * @param value      Object value
  * @param gid        Request group ID
+ * @param cb_func    Callback function for filling object attributes
+ *                   if it is created.
+ *
+ * @return Status code.
  */
-extern int ta_obj_value_set(const char *type, const char *name,
-                            const char *value, unsigned int gid); 
-
-/** Prototype for callback function used in ta_obj_set/del() */
-typedef int (* ta_obj_cb)(ta_cfg_obj_t *obj);
+extern te_errno ta_obj_value_set(const char *type, const char *name,
+                                 const char *value, unsigned int gid,
+                                 ta_obj_cb cb_func);
 
 /**
  * Create or update object of specified type.

@@ -165,6 +165,46 @@ ta_obj_find(const char *type, const char *name)
 }
 
 /* See the description in rcf_pch_ta_cfg.h */
+te_errno
+ta_obj_find_create(const char *type, const char *name,
+                   unsigned int gid, ta_obj_cb cb_func,
+                   ta_cfg_obj_t **obj, te_bool *created)
+{
+    ta_cfg_obj_t *tmp = NULL;
+    int           rc;
+
+    tmp = ta_obj_find(type, name);
+    if (tmp != NULL)
+    {
+        if (created != NULL)
+            *created = FALSE;
+
+        *obj = tmp;
+
+        return 0;
+    }
+
+    rc = ta_obj_add(type, name, NULL, gid, NULL, &tmp);
+    if (rc != 0)
+        return rc;
+
+    if (cb_func != NULL && (rc = cb_func(tmp)) != 0)
+    {
+        ta_obj_free(tmp);
+        return rc;
+    }
+
+    if (created != NULL)
+        *created = TRUE;
+
+    tmp->action = TA_CFG_OBJ_SET;
+    tmp->gid = gid;
+    *obj = tmp;
+
+    return 0;
+}
+
+/* See the description in rcf_pch_ta_cfg.h */
 int
 ta_obj_add(const char *type, const char *name, const char *value,
            unsigned int gid, void *user_data, ta_cfg_obj_t **new_obj)
@@ -208,23 +248,28 @@ ta_obj_add(const char *type, const char *name, const char *value,
 }
 
 /* See the description in rcf_pch_ta_cfg.h */
-int
+te_errno
 ta_obj_value_set(const char *type, const char *name, const char *value,
-                 unsigned int gid)
+                 unsigned int gid, ta_obj_cb cb_func)
 {
-    ta_cfg_obj_t *obj = ta_obj_find(type, name);
-    int           rc;
-    
-    if (obj == NULL)
-    {
-        /* Add object first, but reset add flag */
-        if ((rc = ta_obj_add(type, name, NULL, gid, NULL, &obj)) != 0)
-            return rc;
+    ta_cfg_obj_t *obj = NULL;
+    te_bool       locally_created = FALSE;
+    te_errno      rc;
 
-        obj->action = TA_CFG_OBJ_SET;
-    }
+    rc = ta_obj_find_create(type, name, gid, cb_func,
+                            &obj, &locally_created);
+    if (rc != 0)
+        return rc;
 
     obj->value = ((value != NULL) ? strdup(value) : NULL);
+    if (obj->value == NULL && value != NULL)
+    {
+        if (locally_created)
+            ta_obj_free(obj);
+
+        ERROR("%s(): out of memory", __FUNCTION__);
+        return TE_ENOMEM;
+    }
 
     return 0;
 }
@@ -235,27 +280,16 @@ ta_obj_set(const char *type, const char *name,
            const char *attr_name, const char *attr_value,
            unsigned int gid, ta_obj_cb cb_func)
 {
-    ta_cfg_obj_t *obj = ta_obj_find(type, name);
+    ta_cfg_obj_t *obj = NULL;
     te_bool       locally_created = FALSE;
     int           rc;
 
-    if (obj == NULL)
-    {
-        /* Add object first, but reset add flag */
-        if ((rc = ta_obj_add(type, name, NULL, gid, NULL, &obj)) != 0)
-            return rc;
+    rc = ta_obj_find_create(type, name, gid, cb_func,
+                            &obj, &locally_created);
+    if (rc != 0)
+        return rc;
 
-        obj->action = TA_CFG_OBJ_SET;
-        obj->gid = gid;
-        locally_created = TRUE;
-        
-        if (cb_func != NULL && (rc = cb_func(obj)) != 0)
-        {
-            ta_obj_free(obj);
-            return rc;
-        }
-    }
-    else if (gid != obj->gid)
+    if (gid != obj->gid)
     {
         ERROR("%s(): Request GID=%u does not match object GID=%u",
               __FUNCTION__, gid, obj->gid);
