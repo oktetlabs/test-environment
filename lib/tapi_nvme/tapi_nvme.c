@@ -85,6 +85,10 @@ run_command_generic(rcf_rpc_server *rpcs, opts_t opts, const char *command)
     return status.value;
 }
 
+static int run_command(rcf_rpc_server *rpcs, opts_t opts,
+                       const char *format_cmd, ...)
+                       __attribute__((format(printf, 3, 4)));
+
 static int
 run_command(rcf_rpc_server *rpcs, opts_t opts, const char *format_cmd, ...)
 {
