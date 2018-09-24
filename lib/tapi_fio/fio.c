@@ -12,6 +12,7 @@
 #include "tapi_test_log.h"
 #include "tapi_test.h"
 #include "tapi_rpc_misc.h"
+#include "tapi_file.h"
 #include "fio_internal.h"
 #include "fio.h"
 
@@ -113,6 +114,13 @@ set_opt_numjobs(te_string *cmd, const tapi_fio_opts *opts)
 }
 
 static void
+set_opt_output(te_string *cmd, const tapi_fio_opts *opts)
+{
+    CHECK_RC(te_string_append(cmd, " --output-format=json --group_reporting"
+                                   " --output=%s", opts->output_path.ptr));
+}
+
+static void
 set_opt_user(te_string *cmd, const tapi_fio_opts *opts)
 {
     if (opts->user == NULL)
@@ -134,13 +142,13 @@ build_command(te_string *cmd, const tapi_fio_opts *opts)
         set_opt_runtime,
         set_opt_rwmixread,
         set_opt_rwtype,
+        set_opt_output,
         set_opt_user
     };
 
     CHECK_RC(te_string_append(cmd, "fio"));
     for (i = 0; i < TE_ARRAY_LEN(set_opt); i++)
         set_opt[i](cmd, opts);
-    CHECK_RC(te_string_append(cmd, " --output-format=json --group_reporting"));
 }
 
 static te_errno
@@ -286,6 +294,7 @@ fio_get_report(tapi_fio *fio, tapi_fio_report *report)
 {
     json_t *jrpt;
     te_errno rc;
+    char *json_output = NULL;
 
     ENTRY("FIO get reporting");
 
@@ -300,9 +309,18 @@ fio_get_report(tapi_fio *fio, tapi_fio_report *report)
     RING("FIO stdout:\n%s", fio->app.stdout.ptr);
     RING("FIO stderr:\n%s", fio->app.stderr.ptr);
 
-    jrpt = json_loads(fio->app.stdout.ptr, 0, 0);
+    rc = tapi_file_read_ta(fio->app.rpcs->ta,
+                           fio->app.opts.output_path.ptr,
+                           &json_output);
+
+    if (rc != 0)
+        return TE_EFAIL;
+
+    RING("FIO result.json:\n%s", json_output);
+    jrpt = json_loads(json_output, 0, 0);
     if (!json_is_object(jrpt))
     {
+        free(json_output);
         ERROR("Cannot parse FIO output");
         EXIT();
         return TE_RC(TE_TAPI, TE_EINVAL);
@@ -311,6 +329,7 @@ fio_get_report(tapi_fio *fio, tapi_fio_report *report)
     rc = get_report(jrpt, report);
     json_decref(jrpt);
 
+    free(json_output);
     EXIT();
     return rc;
 }

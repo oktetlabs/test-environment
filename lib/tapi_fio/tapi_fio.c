@@ -10,6 +10,7 @@
 
 #include "tapi_fio.h"
 #include "tapi_mem.h"
+#include "tapi_file.h"
 #include "te_alloc.h"
 #include "tapi_test.h"
 #include "tapi_rpc_unistd.h"
@@ -40,6 +41,12 @@ app_init(tapi_fio_app *app, const tapi_fio_opts *opts, rcf_rpc_server *rpcs)
         tapi_fio_opts_init(&app->opts);
     else
         app->opts = *opts;
+
+    if (app->opts.output_path.ptr == NULL)
+    {
+        te_string_append(&app->opts.output_path, "%s.json",
+                         tapi_file_generate_name());
+    }
 
     numjobs_transform(app->rpcs, &app->opts.numjobs);
 }

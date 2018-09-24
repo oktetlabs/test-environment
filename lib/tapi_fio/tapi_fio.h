@@ -169,6 +169,7 @@ typedef struct tapi_fio_opts {
                                       reads */
     tapi_fio_rwtype rwtype;      /**< Read or write type */
     tapi_fio_ioengine ioengine;  /**< I/O Engine type */
+    te_string output_path;       /**< File name where store FIO result */
     const char *user;            /**< Raw string passed to fio */
 } tapi_fio_opts;
 
@@ -186,6 +187,7 @@ typedef struct tapi_fio_opts {
     .rwmixread = 50,                                    \
     .rwtype = TAPI_FIO_RWTYPE_SEQ,                      \
     .ioengine = TAPI_FIO_IOENGINE_SYNC,                 \
+    .output_path = TE_STRING_INIT,                      \
     .user = "",                                         \
 })
 
