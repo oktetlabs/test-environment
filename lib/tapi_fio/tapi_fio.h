@@ -171,6 +171,8 @@ typedef struct tapi_fio_opts {
     tapi_fio_ioengine ioengine;  /**< I/O Engine type */
     te_string output_path;       /**< File name where store FIO result */
     te_bool direct;              /**< Use O_DIRECT I/O */
+    te_bool exit_on_error;       /**< Terminate all jobs when one exits in
+                                    * error */
     const char *user;            /**< Raw string passed to fio */
 } tapi_fio_opts;
 
@@ -190,6 +192,7 @@ typedef struct tapi_fio_opts {
     .ioengine = TAPI_FIO_IOENGINE_SYNC,                 \
     .output_path = TE_STRING_INIT,                      \
     .direct = TRUE,                                     \
+    .exit_on_error = TRUE,                              \
     .user = "",                                         \
 })
 

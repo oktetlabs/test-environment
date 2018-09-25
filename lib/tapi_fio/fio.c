@@ -134,6 +134,8 @@ set_opt_generic(te_string *cmd, const tapi_fio_opts *opts)
     UNUSED(opts);
 
     CHECK_RC(te_string_append(cmd, " --direct=%d", opts->direct ? 1: 0));
+    CHECK_RC(te_string_append(cmd, " --exitall_on_error=%d",
+                              opts->exit_on_error ? 1: 0));
 }
 
 static void
