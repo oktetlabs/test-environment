@@ -129,6 +129,14 @@ set_opt_user(te_string *cmd, const tapi_fio_opts *opts)
 }
 
 static void
+set_opt_generic(te_string *cmd, const tapi_fio_opts *opts)
+{
+    UNUSED(opts);
+
+    CHECK_RC(te_string_append(cmd, " --direct=%d", opts->direct ? 1: 0));
+}
+
+static void
 build_command(te_string *cmd, const tapi_fio_opts *opts)
 {
     size_t i;
@@ -143,7 +151,8 @@ build_command(te_string *cmd, const tapi_fio_opts *opts)
         set_opt_rwmixread,
         set_opt_rwtype,
         set_opt_output,
-        set_opt_user
+        set_opt_generic,
+        set_opt_user,
     };
 
     CHECK_RC(te_string_append(cmd, "fio"));

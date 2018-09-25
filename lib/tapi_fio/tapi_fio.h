@@ -170,6 +170,7 @@ typedef struct tapi_fio_opts {
     tapi_fio_rwtype rwtype;      /**< Read or write type */
     tapi_fio_ioengine ioengine;  /**< I/O Engine type */
     te_string output_path;       /**< File name where store FIO result */
+    te_bool direct;              /**< Use O_DIRECT I/O */
     const char *user;            /**< Raw string passed to fio */
 } tapi_fio_opts;
 
@@ -188,6 +189,7 @@ typedef struct tapi_fio_opts {
     .rwtype = TAPI_FIO_RWTYPE_SEQ,                      \
     .ioengine = TAPI_FIO_IOENGINE_SYNC,                 \
     .output_path = TE_STRING_INIT,                      \
+    .direct = TRUE,                                     \
     .user = "",                                         \
 })
 
