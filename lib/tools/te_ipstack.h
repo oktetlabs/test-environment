@@ -52,6 +52,14 @@ struct te_ipstack_pseudo_header_ip6 {
 };
 
 /**
+ * VLAN header
+ */
+struct vlanhdr {
+    uint16_t vlan_tci; /**< Priority (3) + CFI (1) + Identifier Code (12) */
+    uint16_t vlan_eth; /**< Ethernet type of encapsulated frame */
+};
+
+/**
  * Auxiliary function to calculate checksums for L4 datagrams (UDP, TCP)
  * using a so-called pseudo-header in accordance with principles of checksum
  * calculation defined by RFC 793 (in case of underlying IPv4 network)

@@ -122,6 +122,7 @@ te_ipstack_prepare_raw_tcpv4_packet(uint8_t *raw_packet, ssize_t *total_size,
                                     struct sockaddr_ll *sadr_ll)
 {
     struct ethhdr          *ethh;
+    struct vlanhdr         *vlanh;
     struct iphdr           *iph;
     struct tcphdr          *tcph;
 
@@ -132,6 +133,7 @@ te_ipstack_prepare_raw_tcpv4_packet(uint8_t *raw_packet, ssize_t *total_size,
     int                     offset;
     int                     ip4_hdr_len;
     int                     eth_hdr_len;
+    int                     vlan_hdr_len;
     te_errno                rc = 0;
 
     if (raw_packet == NULL || total_size == NULL)
@@ -140,6 +142,21 @@ te_ipstack_prepare_raw_tcpv4_packet(uint8_t *raw_packet, ssize_t *total_size,
     /* Get destination MAC address to send packet */
     ethh = (struct ethhdr *)(raw_packet);
     eth_hdr_len = sizeof(*ethh);
+
+    /* FIXME: Make a new parameter to controle removing of vlan hdr */
+    /* Remove vlan header to avoid duplication during sending */
+    while (ethh->h_proto == htons(ETH_P_8021Q))
+    {
+        vlanh = (struct vlanhdr *)(raw_packet + eth_hdr_len);
+        vlan_hdr_len = sizeof(*vlanh);
+        ethh->h_proto = vlanh->vlan_eth;
+
+        memmove(raw_packet + eth_hdr_len,
+                raw_packet + eth_hdr_len + vlan_hdr_len,
+                *total_size - (eth_hdr_len + vlan_hdr_len));
+
+        *total_size -= vlan_hdr_len;
+    }
 
     if (ethh->h_proto != htons(ETH_P_IP))
         return TE_EINVAL;
