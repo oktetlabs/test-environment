@@ -24,6 +24,19 @@
 #include "tad_common.h"
 #include "te_defs.h"
 
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_NETINET_IP_H
+#include <netinet/ip.h>
+#endif
+#ifdef HAVE_NETINET_TCP_H
+#include <netinet/tcp.h>
+#endif
+#ifdef HAVE_NET_ETHERNET_H
+#include <net/ethernet.h>
+#endif
+
 te_errno
 te_ipstack_calc_l4_cksum(const struct sockaddr  *ip_dst_addr,
                          const struct sockaddr  *ip_src_addr,
@@ -101,4 +114,77 @@ te_ipstack_calc_l4_cksum(const struct sockaddr  *ip_dst_addr,
 out:
 
     return rc;
+}
+
+/* See description in te_ipstack.h */
+te_errno
+te_ipstack_prepare_raw_tcpv4_packet(uint8_t *raw_packet, ssize_t *total_size,
+                                    struct sockaddr_ll *sadr_ll)
+{
+    struct ethhdr          *ethh;
+    struct iphdr           *iph;
+    struct tcphdr          *tcph;
+
+    struct sockaddr_in      dst_ip;
+    struct sockaddr_in      src_ip;
+
+    int                     i;
+    int                     offset;
+    int                     ip4_hdr_len;
+    int                     eth_hdr_len;
+    te_errno                rc = 0;
+
+    if (raw_packet == NULL || total_size == NULL)
+        return TE_EINVAL;
+
+    /* Get destination MAC address to send packet */
+    ethh = (struct ethhdr *)(raw_packet);
+    eth_hdr_len = sizeof(*ethh);
+
+    if (ethh->h_proto != htons(ETH_P_IP))
+        return TE_EINVAL;
+
+    offset = eth_hdr_len;
+
+    /* Calculate IP4 checksum */
+    iph = (struct iphdr *)(raw_packet + offset);
+
+    if (iph->protocol != IPPROTO_TCP)
+        return TE_EINVAL;
+
+    ip4_hdr_len = iph->ihl * WORD_4BYTE;
+
+    if (iph->check == 0)
+        iph->check = ~calculate_checksum((void *)iph, ip4_hdr_len);
+
+    offset += ip4_hdr_len;
+
+    /* Calculate TCP checksum */
+    tcph = (struct tcphdr *)(raw_packet + offset);
+
+    if (tcph->check == 0)
+    {
+        dst_ip.sin_family = AF_INET;
+        dst_ip.sin_addr.s_addr = iph->daddr;
+        src_ip.sin_family = AF_INET;
+        src_ip.sin_addr.s_addr = iph->saddr;
+
+        rc = te_ipstack_calc_l4_cksum(CONST_SA(&dst_ip), CONST_SA(&src_ip),
+                                      IPPROTO_TCP, (uint8_t *)tcph,
+                                      (ntohs(iph->tot_len) - ip4_hdr_len),
+                                      &tcph->check);
+        if (rc != 0)
+            return rc;
+
+        tcph->check = ~tcph->check;
+    }
+
+    if (sadr_ll != NULL)
+    {
+        for (i = 0; i < ETH_ALEN; i++)
+            sadr_ll->sll_addr[i] = ethh->h_dest[i];
+        sadr_ll->sll_halen = ETH_ALEN;
+    }
+
+    return 0;
 }
