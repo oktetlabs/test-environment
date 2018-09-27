@@ -119,6 +119,7 @@ out:
 /* See description in te_ipstack.h */
 te_errno
 te_ipstack_prepare_raw_tcpv4_packet(uint8_t *raw_packet, ssize_t *total_size,
+                                    te_bool remove_vlan_hdr,
                                     struct sockaddr_ll *sadr_ll)
 {
     struct ethhdr          *ethh;
@@ -143,21 +144,22 @@ te_ipstack_prepare_raw_tcpv4_packet(uint8_t *raw_packet, ssize_t *total_size,
     ethh = (struct ethhdr *)(raw_packet);
     eth_hdr_len = sizeof(*ethh);
 
-    /* FIXME: Make a new parameter to controle removing of vlan hdr */
-    /* Remove vlan header to avoid duplication during sending */
-    while (ethh->h_proto == htons(ETH_P_8021Q))
+    /* Remove all VLAN headers if @p remove_vlan_hdr is @c TRUE */
+    if (remove_vlan_hdr)
     {
-        vlanh = (struct vlanhdr *)(raw_packet + eth_hdr_len);
-        vlan_hdr_len = sizeof(*vlanh);
-        ethh->h_proto = vlanh->vlan_eth;
+        while (ethh->h_proto == htons(ETH_P_8021Q))
+        {
+            vlanh = (struct vlanhdr *)(raw_packet + eth_hdr_len);
+            vlan_hdr_len = sizeof(*vlanh);
+            ethh->h_proto = vlanh->vlan_eth;
 
-        memmove(raw_packet + eth_hdr_len,
-                raw_packet + eth_hdr_len + vlan_hdr_len,
-                *total_size - (eth_hdr_len + vlan_hdr_len));
+            memmove(raw_packet + eth_hdr_len,
+                    raw_packet + eth_hdr_len + vlan_hdr_len,
+                    *total_size - (eth_hdr_len + vlan_hdr_len));
 
-        *total_size -= vlan_hdr_len;
+            *total_size -= vlan_hdr_len;
+        }
     }
-
     if (ethh->h_proto != htons(ETH_P_IP))
         return TE_EINVAL;
 

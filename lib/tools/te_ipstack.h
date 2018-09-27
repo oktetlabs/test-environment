@@ -29,6 +29,7 @@
 #endif
 
 #include "te_errno.h"
+#include "te_defs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -92,12 +93,14 @@ extern te_errno te_ipstack_calc_l4_cksum(const struct sockaddr  *ip_dst_addr,
  *
  * @param raw_packet      Pointer to buffer with headers and payload
  * @param total_size      Total size of raw packet
+ * @param remove_vlan_hdr Remove all VLAN headers if @c TRUE
  * @param sadr_ll         Link local address to filling. May be @c NULL.
  *
  * @return Status code
  */
 extern te_errno te_ipstack_prepare_raw_tcpv4_packet(
-    uint8_t *raw_packet, ssize_t *total_size, struct sockaddr_ll *sadr_ll);
+    uint8_t *raw_packet, ssize_t *total_size,
+    te_bool remove_vlan_hdr, struct sockaddr_ll *sadr_ll);
 
 #ifdef __cplusplus
 } /* extern "C" */

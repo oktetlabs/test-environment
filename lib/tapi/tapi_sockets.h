@@ -80,11 +80,12 @@ extern ssize_t tapi_sock_read_data(rcf_rpc_server *rpcs, int s,
 /**
  * Send a raw TCPv4 packet packet with full ethernet header.
  *
- * @param rpcs        RPC server handle.
- * @param iov         Data vector
- * @param iov_len     Actual data vector length
- * @param ifindex     Interface index to send packet
- * @param raw_socket  Raw socket for sending data
+ * @param rpcs            RPC server handle.
+ * @param iov             Data vector
+ * @param iov_len         Actual data vector length
+ * @param ifindex         Interface index to send packet
+ * @param raw_socket      Raw socket for sending data
+ * @param remove_vlan_hdr Remove all VLAN headers if @c TRUE
  *
  * @note The function uses an already opened raw socket.
  * It should be created like this:
@@ -94,7 +95,8 @@ extern ssize_t tapi_sock_read_data(rcf_rpc_server *rpcs, int s,
  */
 extern te_errno tapi_sock_raw_tcpv4_send(rcf_rpc_server *rpcs, rpc_iovec *iov,
                                          int iovlen, int ifindex,
-                                         int raw_socket);
+                                         int raw_socket,
+                                         te_bool remove_vlan_hdr);
 
 #ifdef __cplusplus
 } /* extern "C" */

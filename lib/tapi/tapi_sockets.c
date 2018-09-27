@@ -109,7 +109,8 @@ tapi_sock_read_data(rcf_rpc_server *rpcs,
 
 te_errno
 tapi_sock_raw_tcpv4_send(rcf_rpc_server *rpcs, rpc_iovec *iov,
-                         int iovlen, int ifindex, int raw_socket)
+                         int iovlen, int ifindex, int raw_socket,
+                         te_bool remove_vlan_hdr)
 {
     uint8_t                *raw_packet;
     ssize_t                 total_size = 0;
@@ -125,7 +126,7 @@ tapi_sock_raw_tcpv4_send(rcf_rpc_server *rpcs, rpc_iovec *iov,
         return TE_RC(TE_TAPI, TE_ENOMEM);
 
     rc = te_ipstack_prepare_raw_tcpv4_packet(raw_packet, &total_size,
-                                             &sadr_ll);
+                                             remove_vlan_hdr, &sadr_ll);
     if (rc != 0)
     {
         rc = TE_RC(TE_TAPI, rc);
