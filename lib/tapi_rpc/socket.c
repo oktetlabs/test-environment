@@ -1791,10 +1791,10 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                                                 opt_ip_pktoptions_val;
 
                 int      rc;
-                int      tmp_optlen = raw_roptlen;
+                size_t   tmp_optlen = raw_roptlen;
 
                 rc = msg_control_rpc2h(rpc_c, len, raw_optval,
-                                       (size_t *)&tmp_optlen);
+                                       &tmp_optlen);
                 if (rc != 0)
                 {
                     ERROR("%s(): failed to convert control message",
