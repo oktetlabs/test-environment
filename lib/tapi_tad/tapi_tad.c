@@ -694,7 +694,7 @@ tapi_tad_csap_destroy_all_by_ta(cfg_handle ta_cfg_handle,
 {
     char         *ta_name;
     unsigned int  nb_csap_cfg_handles;
-    cfg_handle   *csap_cfg_handles;
+    cfg_handle   *csap_cfg_handles = NULL;
     te_errno      rc;
     unsigned int  i;
 
