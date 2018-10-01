@@ -1996,10 +1996,10 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
                 
                 struct tarpc_cmsghdr *rpc_c = 
                     rpc_msg.msg_control.msg_control_val;
-                
-                for (i = 0, c = CMSG_FIRSTHDR((struct msghdr *)msg); 
-                     i < rpc_msg.msg_control.msg_control_len && c != NULL; 
-                     i++, c = CMSG_NXTHDR((struct msghdr *)msg, c), rpc_c++)
+
+                for (i = 0, c = RPC_CMSG_FIRSTHDR(msg);
+                     i < rpc_msg.msg_control.msg_control_len && c != NULL;
+                     i++, c = RPC_CMSG_NXTHDR(msg, c), rpc_c++)
                 {
                     c->cmsg_level = socklevel_rpc2h(rpc_c->level);
                     c->cmsg_type = sockopt_rpc2h(rpc_c->type);

@@ -334,6 +334,51 @@ struct rpc_mmsghdr {
     unsigned int      msg_len;  /* Number of received bytes for header */
 };
 
+/*
+ * The following macros are implemented because it is wrong to cast
+ * rpc_msghdr to struct msghdr, however standard macros like CMSG_NXTHDR
+ * expect struct msghdr.
+ */
+
+/**
+ * Get the first cmsghdr from control data stored in
+ * rpc_msghdr.
+ *
+ * @param rpc_msg     Pointer to rpc_msghdr structure.
+ *
+ * @return Pointer to the first cmsghdr.
+ */
+extern struct cmsghdr *rpc_cmsg_firsthdr(rpc_msghdr *rpc_msg);
+
+/**
+ * Get the first cmsghdr from control data stored in
+ * rpc_msghdr.
+ *
+ * @param _rpc_msg     Pointer to rpc_msghdr structure.
+ */
+#define RPC_CMSG_FIRSTHDR(_rpc_msg) rpc_cmsg_firsthdr(_rpc_msg)
+
+/**
+ * Get the next cmsghdr from control data stored in
+ * rpc_msghdr.
+ *
+ * @param _rpc_msg     Pointer to rpc_msghdr structure.
+ * @param _cmsg        Pointer to the current cmsghdr structure.
+ *
+ * @return Pointer to the next cmsghdr.
+ */
+extern struct cmsghdr *rpc_cmsg_nxthdr(rpc_msghdr *rpc_msg,
+                                       struct cmsghdr *cmsg);
+
+/**
+ * Get the next cmsghdr from control data stored in
+ * rpc_msghdr.
+ *
+ * @param rpc_msg     Pointer to rpc_msghdr structure.
+ * @param cmsg        Pointer to the current cmsghdr structure.
+ */
+#define RPC_CMSG_NXTHDR(_rpc_msg, _cmsg) rpc_cmsg_nxthdr(_rpc_msg, _cmsg)
+
 /** Generate a random value in range [0, RPC_MSG_UNKNOWN) for @b msg_flags
  * initialization. */
 static inline int

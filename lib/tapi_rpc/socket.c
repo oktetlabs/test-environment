@@ -90,6 +90,27 @@ do {                                                                \
     }                                                               \
 } while (0)
 
+/* See description in tapi_rpc_socket.h */
+struct cmsghdr *
+rpc_cmsg_firsthdr(rpc_msghdr *rpc_msg)
+{
+    struct msghdr msg = { .msg_controllen = rpc_msg->msg_controllen,
+                          .msg_control = rpc_msg->msg_control };
+
+    return CMSG_FIRSTHDR(&msg);
+}
+
+/* See description in tapi_rpc_socket.h */
+struct cmsghdr *
+rpc_cmsg_nxthdr(rpc_msghdr *rpc_msg,
+                struct cmsghdr *cmsg)
+{
+    struct msghdr msg = { .msg_controllen = rpc_msg->msg_controllen,
+                          .msg_control = rpc_msg->msg_control };
+
+    return CMSG_NXTHDR(&msg, cmsg);
+}
+
 int
 rpc_socket(rcf_rpc_server *rpcs,
            rpc_socket_domain domain, rpc_socket_type type,
@@ -858,7 +879,7 @@ msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg, tarpc_msghdr *tarpc_msg)
                 TE_ALLOC(sizeof(tarpc_cmsghdr) * RCF_RPC_MAX_CMSGHDR);
 
         rc = msg_control_h2rpc(
-                        (uint8_t *)CMSG_FIRSTHDR((struct msghdr *)rpc_msg),
+                        (uint8_t *)RPC_CMSG_FIRSTHDR((rpc_msghdr *)rpc_msg),
                         rpc_msg->msg_controllen,
                         &tarpc_msg->msg_control.msg_control_val,
                         &tarpc_msg->msg_control.msg_control_len);
@@ -1093,7 +1114,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
         if (msg->msg_control != NULL)
         {
             uint8_t *first_cmsg =
-                            (uint8_t *)CMSG_FIRSTHDR((struct msghdr *)msg);
+                            (uint8_t *)RPC_CMSG_FIRSTHDR(msg);
             int      retval;
 
             retval = msg_control_rpc2h(rpc_msg.msg_control.msg_control_val,
@@ -2324,7 +2345,7 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
             if (msg->msg_control != NULL)
             {
                 uint8_t *first_cmsg =
-                            (uint8_t *)CMSG_FIRSTHDR((struct msghdr *)msg);
+                            (uint8_t *)RPC_CMSG_FIRSTHDR(msg);
                 int      retval;
                 size_t   controllen = msg->msg_controllen;
 
