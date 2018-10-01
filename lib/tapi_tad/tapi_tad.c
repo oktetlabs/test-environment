@@ -673,7 +673,6 @@ tapi_tad_csap_destroy_by_cfg_handle(const char *ta_name,
     if (rc == 0)
         rc = rcf_ta_csap_destroy(ta_name, session, id);
 
-out:
     free(cfg_inst_name);
 
     return rc;
