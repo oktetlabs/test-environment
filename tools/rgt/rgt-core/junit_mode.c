@@ -200,6 +200,8 @@ junit_process_test_start(node_info_t *node, msg_queue *verdicts)
     tqe_string    *tqe_str;
     double         time_val;
 
+    UNUSED(verdicts);
+
     if (ew_log_obstk == NULL)
         ew_log_obstk = obstack_initialize();
 
