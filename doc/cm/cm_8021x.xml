@@ -82,4 +82,9 @@
          wpa_supplicant, double-quoted ASCII
          Name: empty -->
     <object oid="/agent/interface/supplicant/optstr" access="read_write" type="string"/>
+    <!-- wpa_supplicant configuration option scan_ssid used to test
+         access points with hidden SSID, ASCII digit symbol
+         Value: 0..1
+         Name: empty -->
+    <object oid="/agent/interface/supplicant/scan_ssid" access="read_write" type="string"/>
 </backup>
