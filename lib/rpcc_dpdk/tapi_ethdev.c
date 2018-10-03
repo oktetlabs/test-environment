@@ -119,6 +119,10 @@ tapi_rpc_rte_eth_make_eth_conf(rcf_rpc_server *rpcs, uint16_t port_id,
 
     memset(eth_conf, 0, sizeof(*eth_conf));
 
+    rc = tapi_rpc_rte_eth_conf_set_fixed_dev_tx_offloads(offloadsp);
+    if (rc != 0)
+        return NULL;
+
     ret = rpc_rte_eth_dev_get_name_by_port(rpcs, port_id, dev_name);
     if (ret != 0)
         return NULL;
@@ -127,10 +131,6 @@ tapi_rpc_rte_eth_make_eth_conf(rcf_rpc_server *rpcs, uint16_t port_id,
         return eth_conf;
 
     eth_conf->rxmode.flags |= (1 << TARPC_RTE_ETH_RXMODE_HW_STRIP_CRC_BIT);
-
-    rc = tapi_rpc_rte_eth_conf_set_fixed_dev_tx_offloads(offloadsp);
-    if (rc != 0)
-        return NULL;
 
     return eth_conf;
 }
