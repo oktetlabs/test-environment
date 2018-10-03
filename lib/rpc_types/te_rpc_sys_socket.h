@@ -105,6 +105,29 @@ extern const char * scm_tstamp_rpc2str(rpc_scm_tstamp type);
     (size_t)((len) - ((uint8_t *)(c) - (uint8_t *)(p)))
 
 /**
+ * Estimate buffer length required to store a given
+ * control data.
+ *
+ * @param rpc_cmsg      Pointer to @ref tarpc_cmsghdr structure storing
+ *                      information about control data.
+ *
+ * @return Buffer length.
+ */
+extern size_t tarpc_cmsg_data_len(tarpc_cmsghdr *rpc_cmsg);
+
+/**
+ * Get length of control data required to store @ref cmsghdr structures
+ * corresponding to array of @ref tarpc_cmsghdr structures.
+ *
+ * @param rpc_cmsghdr       Pointer to the first element of the array.
+ * @param num               Number of elements in the array.
+ *
+ * @return Length of control data.
+ */
+extern size_t tarpc_cmsg_total_len(tarpc_cmsghdr *rpc_cmsg,
+                                   unsigned int num);
+
+/**
  * Convert native cmsghdr data representation into TARPC one.
  *
  * @param level     Originating protocol
