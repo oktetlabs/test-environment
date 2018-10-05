@@ -735,7 +735,9 @@ extern te_errno rcf_ta_trsend_stop(const char *ta_name, int session,
 /** Function - handler of received packets */
 typedef void (*rcf_pkt_handler)(
     const char *pkt,        /**< File name where received packet
-                                 was saved */
+                                 was saved. The file is deleted after the
+                                 handler invocation, so the caller should
+                                 rename or copy to keep it. */
     void       *user_param  /**< Parameter provided by caller of
                                  rcf_ta_trrecv_start */
 );

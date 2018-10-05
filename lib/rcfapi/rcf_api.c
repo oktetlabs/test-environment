@@ -2553,6 +2553,12 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
         if (handler != NULL)
             handler(msg.file, user_param);
 
+        /*
+         * Delete temporary file if it has not be removed or renamed by
+         * the handler specified by the caller.
+         */
+        (void)unlink(msg.file);
+
         anslen = sizeof(msg);
         if ((rc = wait_rcf_ipc_message(ctx_handle->ipc_handle,
                                        &(ctx_handle->msg_buf_head),
