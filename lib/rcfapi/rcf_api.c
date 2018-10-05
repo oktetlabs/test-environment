@@ -1354,10 +1354,14 @@ rcf_ta_cfg_get(const char *ta_name, int session, const char *oid,
             if (read(fd, &tmp, 1) != 0)
             {
                 close(fd);
+                if (unlink(msg.file) != 0)
+                    ERROR("Cannot unlink file %s saved by RCF process", msg.file);
                 return TE_RC(TE_RCF_API, TE_ESMALLBUF);
             }
         }
         close(fd);
+        if (unlink(msg.file) != 0)
+            ERROR("Cannot unlink file %s saved by RCF process", msg.file);
     }
     else
     {
