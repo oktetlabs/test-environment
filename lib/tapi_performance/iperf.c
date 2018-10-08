@@ -188,6 +188,19 @@ set_opt_streams(te_string *cmd, const tapi_perf_opts *options)
 }
 
 /*
+ * Set option of dual (bidirectional) mode.
+ *
+ * @param cmd           Buffer contains a command to add option to.
+ * @param options       iperf tool options.
+ */
+static void
+set_opt_dual(te_string *cmd, const tapi_perf_opts *options)
+{
+    if (options->dual)
+        CHECK_RC(te_string_append(cmd, " -d"));
+}
+
+/*
  * Build command string to run iperf server.
  *
  * @param cmd           Buffer to put built command to.
@@ -229,7 +242,8 @@ build_client_cmd(te_string *cmd, const tapi_perf_opts *options)
         set_opt_bytes,
         set_opt_time,
         set_opt_interval,
-        set_opt_streams
+        set_opt_streams,
+        set_opt_dual
     };
     size_t i;
 

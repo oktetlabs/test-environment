@@ -221,6 +221,7 @@ typedef struct tapi_perf_opts {
     int16_t streams;        /**< Number of parallel client streams */
     te_bool reverse;        /**< Whether run in reverse mode (server sends,
                                  client receives), or not */
+    te_bool dual;           /**< Bidirectional mode */
 } tapi_perf_opts;
 
 /**
