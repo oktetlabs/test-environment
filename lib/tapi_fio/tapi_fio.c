@@ -12,6 +12,7 @@
 #include "tapi_mem.h"
 #include "tapi_file.h"
 #include "te_alloc.h"
+#include "te_units.h"
 #include "tapi_test.h"
 #include "tapi_rpc_unistd.h"
 #include "fio.h"
@@ -149,14 +150,20 @@ tapi_fio_stop(tapi_fio *fio)
             return rc;                                      \
     } while (0)
 
+#define KBYTE2MBIT(_val)    ((_val) * 8 / 1000.)
+
 static te_errno
 log_report_bw(te_string *log, const tapi_fio_report_bw *rbw)
 {
     REPORT("\tbandwidth\n");
-    REPORT("\t\tmin:\t%d\n", rbw->min);
-    REPORT("\t\tmax:\t%d\n", rbw->max);
-    REPORT("\t\tmean:\t%f\n", rbw->mean);
-    REPORT("\t\tstddev:\t%f\n", rbw->stddev);
+    REPORT("\t\tmin:\t%f MB/sec  %f Mbit/sec\n",
+           TE_UNITS_BIN_U2K(rbw->min), KBYTE2MBIT(rbw->min));
+    REPORT("\t\tmax:\t%f MB/sec  %f Mbit/sec\n",
+           TE_UNITS_BIN_U2K(rbw->max), KBYTE2MBIT(rbw->max));
+    REPORT("\t\tmean:\t%f MB/sec  %f Mbit/sec\n",
+           TE_UNITS_BIN_U2K(rbw->mean), KBYTE2MBIT(rbw->mean));
+    REPORT("\t\tstddev:\t%f MB/sec  %f Mbit/sec\n",
+           TE_UNITS_BIN_U2K(rbw->stddev), KBYTE2MBIT(rbw->stddev));
 
     return 0;
 }
@@ -165,10 +172,10 @@ static te_errno
 log_report_lat(te_string *log, const tapi_fio_report_lat *rlat)
 {
     REPORT("\tlatency\n");
-    REPORT("\t\tmin:\t%d\n", rlat->min_ns);
-    REPORT("\t\tmax:\t%d\n", rlat->max_ns);
-    REPORT("\t\tmean:\t%f\n", rlat->mean_ns);
-    REPORT("\t\tstddev:\t%f\n", rlat->stddev_ns);
+    REPORT("\t\tmin:\t%f us\n", TE_NS2US((double)rlat->min_ns));
+    REPORT("\t\tmax:\t%f us\n", TE_NS2US((double)rlat->max_ns));
+    REPORT("\t\tmean:\t%f us\n", TE_NS2US(rlat->mean_ns));
+    REPORT("\t\tstddev:\t%f us\n", TE_NS2US(rlat->stddev_ns));
 
     return 0;
 }
