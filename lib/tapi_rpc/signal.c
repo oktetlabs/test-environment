@@ -388,8 +388,11 @@ int
 rpc_ta_kill_and_wait(rcf_rpc_server *rpcs, tarpc_pid_t pid, rpc_signum sig,
                      unsigned int timeout_s)
 {
-    tarpc_ta_kill_and_wait_in  in = {};
-    tarpc_ta_kill_and_wait_out out = {};
+    tarpc_ta_kill_and_wait_in  in;
+    tarpc_ta_kill_and_wait_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
 
     in.pid = pid;
     in.sig = sig;
