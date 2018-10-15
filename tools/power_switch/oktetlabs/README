@@ -1,0 +1,20 @@
+File application/power_sw_app.c - source for application to control power
+switch device from tester host. Oktetlabs LPT and COM/USB power switch
+devices are supported.
+
+Files in firmware/ directory - source files for oktetlabs power switch firmware.
+COM/USB power switch devices need controllers to interprete and execute
+commands sent via serial port. AVR controllers are supported now. Specific
+commands set are designed together with power switch controllers.
+
+File firmware/power_sw_descr - description of commands set to control
+COM/USB power switch devices
+
+Files firmware/power_sw_tn2313.asm and tn2313def.inc - assembler code for
+AVR attiny2313 controller.
+
+File firmware/power_sw_mega8.asm - assembler code for AVR Atmega8 controller.
+
+File firmware/sketch_powerswitch.ino - C++ power switch code for Arduino
+nano platform (AVR atmega328 controller). Intended for compilation and binary
+loading by means of Arduino IDE tool.
