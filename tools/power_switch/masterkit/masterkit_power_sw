@@ -3,7 +3,7 @@
 print_help()
 {
 cat <<EOF
-usage:  power_sw mask mode  (mask is 0xF, mode is on/off/rst)
+usage:  masterkit_power_sw mask mode  (mask is 0xF, mode is on/off/rst)
 
 EOF
 exit 1
