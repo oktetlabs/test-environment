@@ -1288,7 +1288,10 @@ struct tarpc_msghdr {
     struct tarpc_iovec   msg_iov<>;      /**< Vector */
     tarpc_size_t         msg_iovlen;     /**< Passed to recvmsg() */
     struct tarpc_cmsghdr msg_control<>;  /**< Control info array */
-    tarpc_size_t         msg_controllen; /**< Control data buffer length */
+    /*
+     * msg_controllen is not required here, it will be computed
+     * from elements of msg_control array.
+     */
     tarpc_int            msg_flags;      /**< Flags on received message */
     tarpc_int            in_msg_flags;   /**< Original msg_flags value */
 };

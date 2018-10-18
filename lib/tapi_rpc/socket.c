@@ -1086,7 +1086,6 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
                 RETVAL_INT(recvmsg, -1);
             }
         }
-        rpc_msg.msg_controllen = msg->msg_controllen;
     }
 
     rcf_rpc_call(rpcs, "recvmsg", &in, &out);
