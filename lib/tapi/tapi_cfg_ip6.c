@@ -123,3 +123,41 @@ tapi_cfg_ip6_get_linklocal_addr(const char *ta, const char *iface,
 
     return rc;
 }
+
+/* See description in tapi_cfg_ip6.h */
+te_errno
+tapi_cfg_ip6_get_mcastall_addr(const char *ta, const char *iface,
+                                struct sockaddr_in6 *p_addr)
+{
+    int             rc;
+    unsigned int    num;
+    cfg_handle     *handles = NULL;
+    cfg_val_type    type = CVT_INTEGER;
+    int             index;
+
+    /* Link local all nodes: ff02::1 */
+    static const uint8_t broadcast_addr[IPV6_ADDR_LEN] =
+        {[0] = 0xff, [1] = 0x02, [15] = 0x01};
+
+    if (ta == NULL || iface == NULL || p_addr == NULL)
+    {
+        ERROR("%s(): Invalid argument", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = cfg_get_instance_fmt(&type, &index,
+                              "/agent:%s/interface:%s/index:",
+                              ta, iface);
+    if (rc != 0)
+    {
+        ERROR("Failed to get index of the interface '%s' on "
+              "TA '%s': %r", ta, iface, rc);
+    }
+    else
+    {
+        p_addr->sin6_scope_id = index;
+        memcpy(p_addr->sin6_addr.s6_addr, broadcast_addr, IPV6_ADDR_LEN);
+    }
+
+    return rc;
+}

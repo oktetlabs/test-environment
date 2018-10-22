@@ -51,9 +51,6 @@
 /* Alien link address location in the configurator tree. */
 #define CFG_ALIEN_LINK_ADDR "/volatile:/alien_link_addr:"
 
-/* IPv6 address length */
-#define IPV6_ADDR_LEN    16
-
 /**
  * Function provided by FLEX.
  *
@@ -1403,9 +1400,38 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             else if ((env_addr->type == TAPI_ENV_ADDR_BROADCAST) ||
                      (env_addr->type == TAPI_ENV_ADDR_MCAST_ALL_HOSTS))
             {
-                /* Link local all nodes: ff02::1 */
-                static const uint8_t broadcast_addr[IPV6_ADDR_LEN] = {[0] = 0xff, [1] = 0x02, [15] = 0x01};
-                memcpy(SIN6(env_addr->addr)->sin6_addr.s6_addr, broadcast_addr, IPV6_ADDR_LEN);
+                char       *oid_string;
+                cfg_oid    *oid_struct;
+
+                val_type = CVT_STRING;
+                rc = cfg_get_instance(handle, &val_type, &oid_string);
+                if (rc != 0)
+                {
+                    ERROR("Failed to get instance value by handle "
+                          "0x%x: %r", handle, rc);
+                    return rc;
+                }
+                oid_struct = cfg_convert_oid_str(oid_string);
+                if (oid_struct == NULL)
+                {
+                    ERROR("Failed to convert OID '%s' to structure",
+                          oid_string);
+                    free(oid_string);
+                    return TE_RC(TE_TAPI, TE_EINVAL);
+                }
+
+                rc = tapi_cfg_ip6_get_mcastall_addr(
+                         CFG_OID_GET_INST_NAME(oid_struct, 1),
+                         CFG_OID_GET_INST_NAME(oid_struct, 2),
+                         SIN6(env_addr->addr));
+                if (rc != 0)
+                {
+                    ERROR("Failed to get link-local address for '%s': %r",
+                          oid_string, rc);
+                }
+
+                free(oid_string);
+                cfg_free_oid(oid_struct);
             }
             else if (env_addr->type == TAPI_ENV_ADDR_ALIEN)
             {
