@@ -173,6 +173,7 @@ typedef struct tapi_fio_opts {
     te_bool direct;              /**< Use O_DIRECT I/O */
     te_bool exit_on_error;       /**< Terminate all jobs when one exits in
                                     * error */
+    const char *rand_gen;        /**< Random generator type */
     const char *user;            /**< Raw string passed to fio */
 } tapi_fio_opts;
 
@@ -193,6 +194,7 @@ typedef struct tapi_fio_opts {
     .output_path = TE_STRING_INIT,                      \
     .direct = TRUE,                                     \
     .exit_on_error = TRUE,                              \
+    .rand_gen = NULL,                                   \
     .user = "",                                         \
 })
 
