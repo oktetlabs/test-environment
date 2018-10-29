@@ -55,7 +55,7 @@ typedef struct tapi_nvme_target {
     .transport = TAPI_NVME_TRANSPORT_TCP,   \
     .nvmet_port = 1,                        \
     .device = NULL,                         \
-    .subnqn = "device"                      \
+    .subnqn = "te_testing"                  \
 }
 
 /** Initiator context */
