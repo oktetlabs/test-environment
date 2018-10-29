@@ -2029,7 +2029,7 @@ rpc_wsa_recv_msg(rcf_rpc_server *rpcs, int s,
                      "msg_iov: %p, "
                      "msg_iovlen: %" TE_PRINTF_SIZE_T "d, "
                      "msg_control: %p, "
-                     "msg_controllen: %" TE_PRINTF_SOCKLEN_T "d, "
+                     "msg_controllen: %" TE_PRINTF_SIZE_T "u, "
                      "msg_flags: %s",
                      msg->msg_name, msg->msg_namelen,
                      msg->msg_iov, msg->msg_iovlen,

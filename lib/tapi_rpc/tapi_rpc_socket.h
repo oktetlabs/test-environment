@@ -312,8 +312,8 @@ typedef struct rpc_msghdr {
     struct rpc_iovec *msg_iov;          /**< scatter/gather array */
     size_t            msg_iovlen;       /**< elements in msg_iov */
     void             *msg_control;      /**< ancillary data */
+    size_t            msg_controllen;   /**< length of ancillary data */
 
-    socklen_t            msg_controllen; /**< length of ancillary data */
     rpc_send_recv_flags  msg_flags;      /**< flags returned by recvmsg() */
 
     /* Non-standard fields for test purposes */

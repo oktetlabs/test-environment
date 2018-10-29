@@ -1119,7 +1119,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
             retval = msg_control_rpc2h(rpc_msg.msg_control.msg_control_val,
                                        rpc_msg.msg_control.msg_control_len,
                                        first_cmsg,
-                                       (size_t *)&msg->msg_controllen);
+                                       &msg->msg_controllen);
             if (retval != 0)
             {
                 ERROR("%s(): control message conversion failed",
@@ -1136,7 +1136,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
                  "msg_name: %p, msg_namelen: %" TE_PRINTF_SOCKLEN_T "d, "
                  "msg_iov: %p, msg_iovlen: %" TE_PRINTF_SIZE_T "d, "
                  "msg_control: %p, msg_controllen: "
-                 "%" TE_PRINTF_SOCKLEN_T "d, "
+                 "%" TE_PRINTF_SIZE_T "u, "
                  "msg_flags: %s", msg->msg_name, msg->msg_namelen,
                  msg->msg_iov, msg->msg_iovlen,
                  msg->msg_control, msg->msg_controllen,
@@ -2369,7 +2369,7 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
                      "{{msg_name: %p, msg_namelen: %" TE_PRINTF_SOCKLEN_T
                      "d, msg_iov: %p, msg_iovlen: %" TE_PRINTF_SIZE_T "d, "
                      "msg_control: %p, msg_controllen: "
-                     "%" TE_PRINTF_SOCKLEN_T "d, msg_flags: %s}, %d}",
+                     "%" TE_PRINTF_SIZE_T "u, msg_flags: %s}, %d}",
                      msg->msg_name, msg->msg_namelen,
                      msg->msg_iov, msg->msg_iovlen,
                      msg->msg_control, msg->msg_controllen,
@@ -2474,7 +2474,7 @@ rpc_sendmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
                      "{{msg_name: %p, msg_namelen: %" TE_PRINTF_SOCKLEN_T
                      "d, msg_iov: %p, msg_iovlen: %" TE_PRINTF_SIZE_T "d, "
                      "msg_control: %p, msg_controllen: "
-                     "%" TE_PRINTF_SOCKLEN_T "d, msg_flags: %s}, %d}",
+                     "%" TE_PRINTF_SIZE_T "u, msg_flags: %s}, %d}",
                      msg->msg_name, msg->msg_namelen,
                      msg->msg_iov, msg->msg_iovlen,
                      msg->msg_control, msg->msg_controllen,
