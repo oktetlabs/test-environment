@@ -69,6 +69,7 @@ typedef enum tapi_perf_bench {
 typedef enum tapi_perf_error {
     TAPI_PERF_ERROR_FORMAT,     /**< Wrong report format. */
     TAPI_PERF_ERROR_READ,       /**< Read failed. */
+    TAPI_PERF_ERROR_WRITE_CONN_RESET, /**< Write failed. Connection reset. */
     TAPI_PERF_ERROR_CONNECT,    /**< Connect failed. */
     TAPI_PERF_ERROR_NOROUTE,    /**< No route to host. */
     TAPI_PERF_ERROR_BIND,       /**< Bind failed. */
