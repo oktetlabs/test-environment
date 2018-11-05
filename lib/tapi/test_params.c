@@ -557,7 +557,7 @@ tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
 
     if (creation_param_count + change_param_count == 0)
     {
-        ERROR("No ASN configuration test parameters found");
+        WARN("No ASN configuration test parameters found");
     }
     else
     {
