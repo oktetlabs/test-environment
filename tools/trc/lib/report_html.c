@@ -2462,7 +2462,7 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
     {
         v_id++;
         WRITE_FILE("<span id=\"%s_%d\">", tin_id, v_id);
-        WRITE_FILE(v->str);
+        WRITE_FILE("%s", v->str);
         WRITE_FILE("</span>\n");
 #if TRC_USE_STATS_POPUP
         if ((flags & TRC_REPORT_WILD_VERBOSE) && obtained_link)
