@@ -1,0 +1,15 @@
+File mp751.c is source of application to control masterkit mp751 power switch
+
+To Build and install support for masterkit mp751 power switch
+1) Run 'make mp751'
+2) Install mp751 application into /srv/local/bin/
+3) Install wrapper script masterkit_power_sw into /srv/local/bin
+4) Run 'make clean'
+
+File sw_dsl.c is source of application to control DSLAM lines switch
+with mp751 power switch device.
+
+To build and install application sw_dsl
+1) Run 'make sw_dsl'
+2) Install sw_dsl into any folder you like
+4) Run 'make clean'

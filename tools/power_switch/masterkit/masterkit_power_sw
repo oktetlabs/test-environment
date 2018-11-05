@@ -20,7 +20,7 @@ N=$(($1))
 for I in `seq 1 4`; do
     if [ $((N & 1)) == 1 ];
     then
-        /usr/local/bin/mp751 ${I} ${ACT}
+        /srv/local/bin/mp751 ${I} ${ACT}
     fi
     ((N /= 2))
 done
