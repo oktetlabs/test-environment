@@ -130,8 +130,6 @@ tapi_cfg_ip6_get_mcastall_addr(const char *ta, const char *iface,
                                 struct sockaddr_in6 *p_addr)
 {
     int             rc;
-    unsigned int    num;
-    cfg_handle     *handles = NULL;
     cfg_val_type    type = CVT_INTEGER;
     int             index;
 
