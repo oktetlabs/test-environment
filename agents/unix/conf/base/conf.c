@@ -3942,6 +3942,14 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         net_addr.address = (uint8_t *)&ip_addr;
         net_addr.broadcast = (uint8_t *)&broadcast;
 
+        /*
+         * Duplicate Address Discovery (DAD) makes IPv6 address assignment
+         * a bit slow, which causes failures in some tests.
+         * So disable DAD in case of IPv6.
+         */
+        if (family == AF_INET6)
+            net_addr.flags = IFA_F_NODAD;
+
         if (netconf_net_addr_modify(nh, NETCONF_CMD_ADD, &net_addr) < 0)
         {
             ERROR("%s(): Cannot add address '%s' on interface '%s'",
