@@ -70,8 +70,8 @@ do {                                                                    \
                      out.common.errno_changed)                          \
             {                                                           \
                 ERROR("Function %s() returned correct value, but "      \
-                      "changed errno to %s", #func,                     \
-                      errno_rpc2str(RPC_ERRNO(rpcs)));                  \
+                      "changed errno to " RPC_ERROR_FMT, #func,         \
+                      RPC_ERROR_ARGS(rpcs));                            \
                 rpcs->_errno = TE_RC(TE_TAPI, TE_ECORRUPTED);           \
                 if (rpcs->iut_err_jump)                                 \
                     rpcs->err_log = TRUE;                               \

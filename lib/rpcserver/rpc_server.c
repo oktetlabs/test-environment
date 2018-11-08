@@ -187,6 +187,7 @@ void tarpc_after_call(struct rpc_call_data *call)
         char *s;
 
         out_common->_errno = te_rpc_err.err;
+        out_common->errno_changed = TRUE;
 
         s = strdup(te_rpc_err.str);
         if (s != NULL)
