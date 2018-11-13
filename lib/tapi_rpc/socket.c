@@ -882,7 +882,8 @@ msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg, tarpc_msghdr *tarpc_msg)
                         (uint8_t *)RPC_CMSG_FIRSTHDR((rpc_msghdr *)rpc_msg),
                         rpc_msg->msg_controllen,
                         &tarpc_msg->msg_control.msg_control_val,
-                        &tarpc_msg->msg_control.msg_control_len);
+                        &tarpc_msg->msg_control.msg_control_len,
+                        NULL, NULL);
 
         if (rc != 0)
         {
@@ -1122,6 +1123,7 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
 
             retval = msg_control_rpc2h(rpc_msg.msg_control.msg_control_val,
                                        rpc_msg.msg_control.msg_control_len,
+                                       NULL, 0,
                                        msg->msg_control,
                                        &control_len);
             if (retval != 0)
@@ -1845,7 +1847,7 @@ rpc_getsockopt_gen(rcf_rpc_server *rpcs,
                 int      rc;
                 size_t   tmp_optlen = raw_roptlen;
 
-                rc = msg_control_rpc2h(rpc_c, len, raw_optval,
+                rc = msg_control_rpc2h(rpc_c, len, NULL, 0, raw_optval,
                                        &tmp_optlen);
                 if (rc != 0)
                 {
@@ -2383,6 +2385,7 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
                 retval = msg_control_rpc2h(
                                     rpc_msg->msg_control.msg_control_val,
                                     rpc_msg->msg_control.msg_control_len,
+                                    NULL, 0,
                                     first_cmsg, &controllen);
                 msg->msg_controllen = controllen;
                 if (retval != 0)

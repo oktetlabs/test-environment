@@ -3727,7 +3727,8 @@ tarpc_getsockopt(tarpc_getsockopt_in *in, tarpc_getsockopt_out *out,
                 int                  rc;
 
                 rc = msg_control_h2rpc((uint8_t *)opt, optlen,
-                                       &OPTVAL, &OPTLEN);
+                                       &OPTVAL, &OPTLEN,
+                                       NULL, NULL);
                 if (rc != 0)
                 {
                     ERROR("Failed to process IP_PKTOPTIONS value");
@@ -4595,6 +4596,7 @@ msghdr_free(struct msghdr *msg)
             retval = msg_control_rpc2h(                                 \
                         (tarpc_msg_)->msg_control.msg_control_val,      \
                         (tarpc_msg_)->msg_control.msg_control_len,      \
+                        NULL, 0,                                        \
                         (msg_)->msg_control, &(msg_)->msg_controllen);  \
             if (retval != 0)                                            \
             {                                                           \
@@ -4817,7 +4819,8 @@ TARPC_FUNC(recvmsg,
             TE_SCM_RIGHTS2TE(msg.msg_control);
             rc = msg_control_h2rpc(msg.msg_control,
                                    msg.msg_controllen,
-                                   &rpc_c, &rpc_len);
+                                   &rpc_c, &rpc_len,
+                                   NULL, NULL);
             if (rc != 0)
             {
                 ERROR("%s(): failed cmsghdr conversion",
@@ -10254,7 +10257,8 @@ TARPC_FUNC(recvmmsg_alt,
 
                 rc = msg_control_h2rpc(msg->msg_control,
                                        msg->msg_controllen,
-                                       &rpc_c, &rpc_len);
+                                       &rpc_c, &rpc_len,
+                                       NULL, NULL);
                 if (rc != 0)
                 {
                     ERROR("%s(): failed cmsghdr conversion",

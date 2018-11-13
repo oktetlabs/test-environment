@@ -4030,7 +4030,9 @@ cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
 te_errno
 msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
                   tarpc_cmsghdr **rpc_cmsg,
-                  unsigned int *rpc_cmsg_count)
+                  unsigned int *rpc_cmsg_count,
+                  uint8_t **tail,
+                  unsigned int *tail_len)
 {
     struct msghdr        msg = { .msg_control = cmsg_buf,
                                  .msg_controllen = cmsg_len };
@@ -4038,6 +4040,7 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
     uint8_t             *end_byte;
     uint8_t             *first_byte;
     size_t               real_len;
+    size_t               final_spacing;
     int                  i;
     uint8_t             *data;
     int                  data_len;
@@ -4052,21 +4055,15 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
             *rpc_cmsg_count = 0;
         if (rpc_cmsg != NULL)
             *rpc_cmsg = NULL;
-        return 0;
-    }
 
-    if (cmsg_len < sizeof(struct cmsghdr))
-    {
-        ERROR("%s(): buffer length is too small to contain a single "
-              "cmsghdr structure", __FUNCTION__);
-        return TE_EINVAL;
+        return 0;
     }
 
     if (rpc_cmsg == NULL ||
         rpc_cmsg_count == NULL)
     {
         ERROR("%s(): not specified where to place converted value",
-              __FUNCTION__);
+               __FUNCTION__);
         return 0;
     }
 
@@ -4083,75 +4080,134 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
     {
         WARN("%s(): the first cmsghdr has too big length, supplied "
              "buffer does not contain correct control data", __FUNCTION__);
+        c = NULL;
+    }
+
+    if (c == NULL)
+    {
         *rpc_cmsg = NULL;
         *rpc_cmsg_count = 0;
-        return 0;
+        real_len = 0;
     }
-
-    if (c != NULL)
-        first_byte = (uint8_t *)c;
-
-    for (i = 0; c != NULL; i++, c = CMSG_NXTHDR(&msg, c))
+    else
     {
-        data_len = c->cmsg_len - ((uint8_t *)CMSG_DATA(c) - (uint8_t *)c);
-        end_byte = (uint8_t *)c + CMSG_SPACE(data_len);
-    }
+        first_byte = end_byte = (uint8_t *)c;
+        final_spacing = 0;
 
-    real_len = end_byte - first_byte + (first_byte - cmsg_buf);
-
-    if (real_len != cmsg_len)
-    {
-        WARN("%s(): actual size of control messages is %"
-             TE_PRINTF_SIZE_T "u but %" TE_PRINTF_SIZE_T "u "
-             "was specified",
-             __FUNCTION__, real_len, cmsg_len);
-    }
-
-    if (i > RCF_RPC_MAX_CMSGHDR)
-    {
-        ERROR("%s(): too many cmsghdr structures", __FUNCTION__);
-        return TE_EILSEQ;
-    }
-
-    *rpc_cmsg = calloc(1, sizeof(**rpc_cmsg) * i);
-    *rpc_cmsg_count = i;
-
-    if (i > 0 && *rpc_cmsg == NULL)
-    {
-        ERROR("%s(): out of memory when processing "
-              "control message", __FUNCTION__);
-        *rpc_cmsg_count = 0;
-        return TE_ENOMEM;
-    }
-
-    rpc_cmsg_aux = *rpc_cmsg;
-    for (i = 0, c = CMSG_FIRSTHDR(&msg);
-         i < (int)*rpc_cmsg_count;
-         i++, c = CMSG_NXTHDR(&msg, c), rpc_cmsg_aux++)
-    {
-        data = CMSG_DATA(c);
-
-        rpc_cmsg_aux->level = socklevel_h2rpc(c->cmsg_level);
-        rpc_cmsg_aux->type = sockopt_h2rpc(c->cmsg_level,
-                                           c->cmsg_type);
-        data_len = c->cmsg_len - (data - (uint8_t *)c);
-
-        if (data_len > 0)
+        for (i = 0; c != NULL; i++, c = CMSG_NXTHDR(&msg, c))
         {
-            rc = cmsg_data_h2rpc(c->cmsg_level, c->cmsg_type,
-                                 CMSG_DATA(c), data_len,
-                                 rpc_cmsg_aux);
-            if (rc != 0)
+            data_len = c->cmsg_len -
+                       ((uint8_t *)CMSG_DATA(c) - (uint8_t *)c);
+            end_byte = (uint8_t *)c + CMSG_SPACE(data_len);
+            final_spacing = CMSG_SPACE(data_len) - CMSG_LEN(data_len);
+        }
+
+        real_len = end_byte - first_byte + (first_byte - cmsg_buf);
+
+        if (real_len != cmsg_len)
+        {
+            if (real_len > cmsg_len)
             {
-                for (i--, rpc_cmsg_aux--; i >= 0; i--, rpc_cmsg_aux--)
-                    free(rpc_cmsg_aux->data.data_val);
+                if (real_len <= cmsg_len + final_spacing)
+                {
+                    WARN("%s(): controllen does not include %"
+                         TE_PRINTF_SIZE_T "u bytes of final spacing "
+                         "(CMSG_SPACE(last_cmsg) - CMSG_LEN(last_cmsg) = %"
+                         TE_PRINTF_SIZE_T "u)", __FUNCTION__,
+                         real_len - cmsg_len, final_spacing);
+                }
+                else
+                {
+                    ERROR("%s(): computed length of control messages %"
+                          TE_PRINTF_SIZE_T "u is bigger than supplied one %"
+                          TE_PRINTF_SIZE_T "u", __FUNCTION__,
+                          cmsg_len, real_len);
+                    return TE_EINVAL;
+                }
+            }
+            else
+            {
+                WARN("%s(): actual size of control messages is %"
+                     TE_PRINTF_SIZE_T "u but %" TE_PRINTF_SIZE_T "u "
+                     "was specified", __FUNCTION__, real_len, cmsg_len);
+            }
+        }
+
+        if (i > RCF_RPC_MAX_CMSGHDR)
+        {
+            ERROR("%s(): too many cmsghdr structures", __FUNCTION__);
+            return TE_EILSEQ;
+        }
+
+        *rpc_cmsg = calloc(1, sizeof(**rpc_cmsg) * i);
+        *rpc_cmsg_count = i;
+
+        if (i > 0 && *rpc_cmsg == NULL)
+        {
+            ERROR("%s(): out of memory when processing "
+                  "control message", __FUNCTION__);
+            *rpc_cmsg_count = 0;
+            return TE_ENOMEM;
+        }
+
+        rpc_cmsg_aux = *rpc_cmsg;
+        for (i = 0, c = CMSG_FIRSTHDR(&msg);
+             i < (int)*rpc_cmsg_count;
+             i++, c = CMSG_NXTHDR(&msg, c), rpc_cmsg_aux++)
+        {
+            data = CMSG_DATA(c);
+
+            rpc_cmsg_aux->level = socklevel_h2rpc(c->cmsg_level);
+            rpc_cmsg_aux->type = sockopt_h2rpc(c->cmsg_level,
+                                               c->cmsg_type);
+            data_len = c->cmsg_len - (data - (uint8_t *)c);
+
+            if (data_len > 0)
+            {
+                rc = cmsg_data_h2rpc(c->cmsg_level, c->cmsg_type,
+                                     CMSG_DATA(c), data_len,
+                                     rpc_cmsg_aux);
+                if (rc != 0)
+                {
+                    for (i--, rpc_cmsg_aux--; i >= 0; i--, rpc_cmsg_aux--)
+                        free(rpc_cmsg_aux->data.data_val);
+                    free(*rpc_cmsg);
+                    *rpc_cmsg = NULL;
+                    *rpc_cmsg_count = 0;
+
+                    ERROR("%s(): conversion of cmsghdr failed", __FUNCTION__);
+                    return rc;
+                }
+            }
+        }
+    }
+
+    if (tail != NULL && tail_len != NULL)
+    {
+        if (real_len < cmsg_len)
+        {
+            *tail = calloc(1, cmsg_len - real_len);
+            if (*tail == NULL)
+            {
+                *tail_len = 0;
                 free(*rpc_cmsg);
                 *rpc_cmsg = NULL;
                 *rpc_cmsg_count = 0;
 
-                ERROR("%s(): conversion of cmsghdr failed", __FUNCTION__);
-                return rc;
+                ERROR("%s(): out of memory when processing "
+                      "remained data in control buffer", __FUNCTION__);
+                return TE_ENOMEM;
             }
+            else
+            {
+                *tail_len = cmsg_len - real_len;
+                memcpy(*tail, cmsg_buf + real_len, *tail_len);
+            }
+        }
+        else
+        {
+            *tail = NULL;
+            *tail_len = 0;
         }
     }
 
@@ -4164,6 +4220,8 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
 te_errno
 msg_control_rpc2h(tarpc_cmsghdr *rpc_cmsg,
                   unsigned int rpc_cmsg_count,
+                  uint8_t *tail,
+                  unsigned int tail_len,
                   uint8_t *cmsg_buf, size_t *cmsg_len)
 {
     struct msghdr   msg = { .msg_control = cmsg_buf };
@@ -4174,24 +4232,48 @@ msg_control_rpc2h(tarpc_cmsghdr *rpc_cmsg,
     int             data_len = 0;
     int             rc;
 
-    if (rpc_cmsg == NULL || rpc_cmsg_count == 0)
+    if (rpc_cmsg == NULL && rpc_cmsg_count > 0)
     {
-        if (cmsg_len != NULL)
-            *cmsg_len = 0;
-        return 0;
+        ERROR("%s(): rpc_msg is NULL, but rpc_cmsg_count > 0",
+              __FUNCTION__);
+        return TE_EINVAL;
     }
 
     if (cmsg_buf == NULL || cmsg_len == NULL ||
         *cmsg_len == 0)
     {
-        ERROR("%s(): not specified where to place "
-              "converted value", __FUNCTION__);
+        if (rpc_cmsg_count > 0 || tail_len > 0)
+        {
+            ERROR("%s(): not specified where to place "
+                  "converted value", __FUNCTION__);
+        }
+        return 0;
+    }
+
+    if (rpc_cmsg_count == 0)
+    {
+        if (tail == NULL)
+        {
+            *cmsg_len = 0;
+        }
+        else
+        {
+            if (*cmsg_len < tail_len)
+            {
+                ERROR("%s(): not enough space for not parsed 'tail' of "
+                      "control data", __FUNCTION__);
+                return TE_ESMALLBUF;
+            }
+
+            memcpy(cmsg_buf, tail, tail_len);
+            *cmsg_len = tail_len;
+        }
         return 0;
     }
 
     msg.msg_controllen = *cmsg_len;
 
-    total_len = tarpc_cmsg_total_len(rpc_cmsg, rpc_cmsg_count);
+    total_len = tarpc_cmsg_total_len(rpc_cmsg, rpc_cmsg_count) + tail_len;
     c = CMSG_FIRSTHDR(&msg);
     if (c == NULL || *cmsg_len < ((uint8_t *)c - cmsg_buf) + total_len)
     {
@@ -4246,6 +4328,21 @@ msg_control_rpc2h(tarpc_cmsghdr *rpc_cmsg,
     }
 
     *cmsg_len = end_byte - cmsg_buf;
+    if (total_len - *cmsg_len < tail_len)
+    {
+        ERROR("%s(): not enough space for not parsed part of control data",
+              __FUNCTION__);
+        return TE_ESMALLBUF;
+    }
+
+    memcpy(cmsg_buf + *cmsg_len, tail, tail_len);
+    *cmsg_len += tail_len;
+    if (*cmsg_len != total_len)
+    {
+        WARN("%s(): actual length of control data buffer differs from "
+             "precomputed one", __FUNCTION__);
+    }
+
     return 0;
 }
 

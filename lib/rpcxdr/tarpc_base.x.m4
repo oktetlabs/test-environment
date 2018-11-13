@@ -1290,6 +1290,11 @@ struct tarpc_msghdr {
     struct tarpc_cmsghdr msg_control<>;  /**< Control info array */
     tarpc_size_t         msg_controllen; /**< msg_controllen actually
                                               used/retrieved on TA */
+
+    uint8_t              msg_control_tail<>;  /**< Not parsed, will be
+                                                   appended to msg_control
+                                                   after control messages */
+
     tarpc_int            msg_flags;      /**< Flags on received message */
     tarpc_int            in_msg_flags;   /**< Original msg_flags value */
 };

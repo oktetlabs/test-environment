@@ -156,23 +156,37 @@ extern te_errno cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
 /**
  * Convert native control message representation into TARPC one.
  *
+ * @note If some bytes at the end of @p cmsg_buf cannot be parsed
+ *       as valid @b cmsghdr (for example, because there is not enough
+ *       space for @b cmsghdr structure itself), this function will not
+ *       fail but will store these bytes in @p tail).
+ *
  * @param cmsg_buf          Buffer with control message to be converted
  * @param cmsg_len          Length of control message
  * @param rpc_cmsg          Where to place converted control message
  * @param rpc_cmsg_count    Will be set to count of cmsghdr headers
  *                          in a message
+ * @param tail              Where to save remaining (not parsed) part
+ *                          of control data (memory is allocated,
+ *                          should be freed by caller)
+ * @param tail_len          Number of bytes saved in @p tail
  *
  * @return 0 on success or error code
  */
 extern te_errno msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
                                   tarpc_cmsghdr **rpc_cmsg,
-                                  unsigned int *rpc_cmsg_count);
+                                  unsigned int *rpc_cmsg_count,
+                                  uint8_t **tail,
+                                  unsigned int *tail_len);
 
 /**
  * Convert TARPC control message representation into native one.
  *
  * @param rpc_cmsg          Control message to be converted
  * @param rpc_cmsg_count    Count of cmsghdr headers
+ * @param tail              Not parsed part of control data to be
+ *                          appended at the end
+ * @param tail_len          Number of bytes in @p tail
  * @param cmsg_buf          Where to place converted control message
  * @param cmsg_len          Available space in @p cmsg_buf
  *
@@ -180,6 +194,7 @@ extern te_errno msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
  */
 extern te_errno msg_control_rpc2h(tarpc_cmsghdr *rpc_cmsg,
                                   unsigned int rpc_cmsg_count,
+                                  uint8_t *tail, unsigned int tail_len,
                                   uint8_t *cmsg_buf, size_t *cmsg_len);
 
 /**< Non-standard protocol family for Ethernet addresses */
