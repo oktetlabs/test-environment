@@ -1283,8 +1283,10 @@ struct tarpc_cmsghdr {
 
 struct tarpc_msghdr {
     struct tarpc_sa      msg_name;       /**< Destination/source address */
-    tarpc_socklen_t      msg_namelen;    /**< To be passed to 
-                                              recvmsg/sendmsg */
+    int64_t              msg_namelen;    /**< To be passed to
+                                              recvmsg/sendmsg; in case of
+                                              negative value will be
+                                              determined from msg_name */
     struct tarpc_iovec   msg_iov<>;      /**< Vector */
     tarpc_size_t         msg_iovlen;     /**< Passed to recvmsg() */
     struct tarpc_cmsghdr msg_control<>;  /**< Control info array */
