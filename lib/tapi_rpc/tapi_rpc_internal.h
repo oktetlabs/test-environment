@@ -30,6 +30,7 @@
 #include "logger_api.h"
 #include "tapi_sockaddr.h"
 #include "te_rpc_types.h"
+#include "tapi_rpc_socket.h"
 
 /*
  * It is mandatory to include signal.h before tarpc.h, since tarpc.h
@@ -505,5 +506,68 @@ extern te_errno tapi_rpc_namespace_check(
  */
 extern const char *tapi_rpc_namespace_get(
         rcf_rpc_server *rpcs, rpc_ptr ptr);
+
+/**
+ * Initialize and check @b rpc_msghdr.msg_flags value in RPC only if the
+ * variable is @c TRUE.
+ */
+extern te_bool rpc_msghdr_msg_flags_init_check_enabled;
+
+/**
+ * Initialize @b msg_flags by a random value.
+ *
+ * @param _msg      Message to check @b msg_flags_mode if the initialization
+ *                  is requested
+ * @param _msg_set  Message where the new value should be assigned
+ */
+#define MSGHDR_MSG_FLAGS_INIT(_msg, _msg_set) \
+    do {                                                                \
+        if (rpc_msghdr_msg_flags_init_check_enabled &&                  \
+            ((_msg)->msg_flags_mode & RPC_MSG_FLAGS_NO_SET) == 0)       \
+        {                                                               \
+            (_msg_set)->msg_flags = tapi_send_recv_flags_rand();        \
+            (_msg_set)->in_msg_flags = (_msg_set)->msg_flags;           \
+        }                                                               \
+    } while (0)
+
+/**
+ * Transform value of rpc_msghdr type to value of tarpc_msghdr type.
+ *
+ * @note This function does not copy data, so do not release
+ *       pointers to data buffers in iov_base in cleanup.
+ *
+ * @param rpc_msg           Pointer to value of type rpc_msghdr.
+ * @param tarpc_msg         Where value of type tarpc_msghdr should be
+ *                          saved (call @b tarpc_msghdr_free() to
+ *                          free memory after this function, even if
+ *                          it failed).
+ * @param recv_call         Set to @c TRUE if conversion is done for
+ *                          receive function call.
+ *
+ * @return Status code.
+ */
+extern te_errno msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg,
+                                 tarpc_msghdr *tarpc_msg,
+                                 te_bool recv_call);
+
+/**
+ * Release memory allocated by @b msghdr_rpc2tarpc() for converted value.
+ *
+ * @param msg       Pointer to tarpc_msghdr value filled by
+ *                  @b msghdr_rpc2tarpc().
+ */
+extern void tarpc_msghdr_free(tarpc_msghdr *msg);
+
+/**
+ * Transform value of tarpc_msghdr type to value of rpc_msghdr type.
+ *
+ * @param tarpc_msg         Pointer to value of type tarpc_msghdr.
+ * @param rpc_msg           Where value of type rpc_msghdr should be
+ *                          saved.
+ *
+ * @return Status code.
+ */
+extern te_errno msghdr_tarpc2rpc(const tarpc_msghdr *tarpc_msg,
+                                 rpc_msghdr *rpc_msg);
 
 #endif /* !__TE_TAPI_RPC_INTERNAL_H__ */

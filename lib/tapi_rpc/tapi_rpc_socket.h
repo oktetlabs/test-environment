@@ -304,6 +304,15 @@ typedef enum rpc_msg_flags_mode {
                                        vlue */
 } rpc_msg_flags_mode;
 
+/**  Processing mode for rpc_msghdr fields */
+typedef enum rpc_msghdr_field_mode {
+    RPC_MSGHDR_FIELD_DEFAULT = 0, /**< Choose what to do depending
+                                       on function and field. */
+    RPC_MSGHDR_FIELD_CONVERT,     /**< Convert field to host-independent
+                                       form before calling RPC. */
+    RPC_MSGHDR_FIELD_RAW,         /**< Pass field as a raw value. */
+} rpc_msghdr_field_mode;
+
 /** Store information about message */
 typedef struct rpc_msghdr {
     /* Standard fields */
@@ -333,9 +342,41 @@ typedef struct rpc_msghdr {
                                                 structures in
                                                 @b msg_control */
 
-    socklen_t          msg_rnamelen;    /**< real size of protocol
-                                             address buffer to be copied
-                                             by RPC */
+    /*
+     * FIXME: this field should be removed after usage of
+     * msg_cmsghdr_num is fixed in existing tests so that
+     * it is set to nonzero only if we really want to parse
+     * control data.
+     */
+    rpc_msghdr_field_mode msg_control_mode;   /**< How to process
+                                                   msg_control when calling
+                                                   RPC: in case of default
+                                                   mode, msg_control will
+                                                   be parsed only for
+                                                   send calls, and will
+                                                   be passed as a raw
+                                                   value for receive
+                                                   calls. */
+
+    rpc_msghdr_field_mode msg_name_mode;      /**< How to process msg_name
+                                                   (in case of default mode,
+                                                    address will be parsed
+                                                    for send calls but
+                                                    passed as raw value for
+                                                    receive calls on input).
+                                                    */
+    te_bool               msg_namelen_exact;  /**< If @c TRUE, use specified
+                                                   msg_namelen value on a
+                                                   remote host; otherwise
+                                                   compute it on remote
+                                                   host from address type.
+                                                   */
+    socklen_t             got_msg_namelen;    /**< Here msg_namelen obtained
+                                                   on remote host will be
+                                                   retrieved. */
+    socklen_t             msg_rnamelen;       /**< Real size of protocol
+                                                   address buffer. */
+
     size_t             msg_riovlen;     /**< real number of elements
                                              in msg_iov */
     rpc_msg_flags_mode msg_flags_mode;  /**< determine how to process
