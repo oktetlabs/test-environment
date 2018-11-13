@@ -4494,131 +4494,6 @@ calculate_msg_controllen(struct tarpc_msghdr *rpc_msg)
 
 /*-------------- sendmsg() ------------------------------*/
 
-/**
- * Release memory allocated for value of type msghdr.
- *
- * @param msg   Pointer to memory to be released
- */
-static void
-msghdr_free(struct msghdr *msg)
-{
-    free(msg->msg_iov);
-    free(msg->msg_control);
-    free(msg->msg_name);
-}
-
-/**
- * Transform value of tarpc_msghdr type into value of msghdr type.
- *
- * @param tarpc_msg_    Value of tarpc_msghdr type (handle)
- * @param msg_          Value of msghdr type (handle)
- *
- * @return Status code
- */
-#define MSGHDR_TARPC2H(tarpc_msg_, msg_) \
-    do {                                                                \
-        struct iovec    *iovec_arr;                                     \
-                                                                        \
-        iovec_arr = TE_ALLOC(sizeof(*iovec_arr) * RCF_RPC_MAX_IOVEC);   \
-        if (iovec_arr == NULL)                                          \
-        {                                                               \
-            ERROR("%s(), line %d: out of memory",                       \
-                  __FUNCTION__, __LINE__);                              \
-            out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);          \
-            goto finish;                                                \
-        }                                                               \
-                                                                        \
-        memset((msg_), 0, sizeof(*(msg_)));                             \
-                                                                        \
-        PREPARE_ADDR_GEN(name, (tarpc_msg_)->msg_name, 0, FALSE,        \
-                         TRUE);                                         \
-        if (out->common._errno != 0)                                    \
-        {                                                               \
-            ERROR("%s(): failed to prepare address", __FUNCTION__);     \
-            goto finish;                                                \
-        }                                                               \
-                                                                        \
-        if ((size_t)((tarpc_msg_)->msg_namelen) <=                      \
-                                    sizeof(struct sockaddr_storage))    \
-        {                                                               \
-            (msg_)->msg_name = name_dup;                                \
-            (msg_)->msg_namelen = namelen;                              \
-        }                                                               \
-        else                                                            \
-        {                                                               \
-            (msg_)->msg_name = TE_ALLOC((tarpc_msg_)->msg_namelen);     \
-            if ((msg_)->msg_name == NULL)                               \
-            {                                                           \
-                ERROR("%s(): failed to allocate memory for address",    \
-                      __FUNCTION__);                                    \
-                goto finish;                                            \
-            }                                                           \
-            memcpy((msg_)->msg_name,                                    \
-                   (tarpc_msg_)->msg_name.raw.raw_val,                  \
-                   (tarpc_msg_)->msg_namelen);                          \
-            (msg_)->msg_namelen = (tarpc_msg_)->msg_namelen;            \
-        }                                                               \
-                                                                        \
-        (msg_)->msg_iovlen = (tarpc_msg_)->msg_iovlen;                  \
-                                                                        \
-        if ((tarpc_msg_)->msg_iov.msg_iov_val != NULL)                  \
-        {                                                               \
-            for (i = 0; i < (tarpc_msg_)->msg_iov.msg_iov_len; i++)     \
-            {                                                           \
-                INIT_CHECKED_ARG(                                       \
-                    (tarpc_msg_)->msg_iov.msg_iov_val[i].               \
-                                            iov_base.iov_base_val,      \
-                    (tarpc_msg_)->msg_iov.msg_iov_val[i].               \
-                                            iov_base.iov_base_len,      \
-                    0);                                                 \
-                iovec_arr[i].iov_base =                                 \
-                    (tarpc_msg_)->msg_iov.msg_iov_val[i].               \
-                                            iov_base.iov_base_val;      \
-                iovec_arr[i].iov_len =                                  \
-                    (tarpc_msg_)->msg_iov.msg_iov_val[i].iov_len;       \
-            }                                                           \
-            (msg_)->msg_iov = iovec_arr;                                \
-            INIT_CHECKED_ARG((char *)iovec_arr,                         \
-                             sizeof(*iovec_arr) *                       \
-                                    RCF_RPC_MAX_IOVEC,                  \
-                             0);                                        \
-        }                                                               \
-                                                                        \
-        if ((tarpc_msg_)->msg_control.msg_control_val != NULL)          \
-        {                                                               \
-            int      len = calculate_msg_controllen((tarpc_msg_));      \
-            int      retval;                                            \
-                                                                        \
-            if (((msg_)->msg_control = calloc(1, len)) == NULL)         \
-            {                                                           \
-                out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);      \
-                goto finish;                                            \
-            }                                                           \
-            (msg_)->msg_controllen = len;                               \
-                                                                        \
-            retval = msg_control_rpc2h(                                 \
-                        (tarpc_msg_)->msg_control.msg_control_val,      \
-                        (tarpc_msg_)->msg_control.msg_control_len,      \
-                        NULL, 0,                                        \
-                        (msg_)->msg_control, &(msg_)->msg_controllen);  \
-            if (retval != 0)                                            \
-            {                                                           \
-                ERROR("%s(): failed to convert control message from "   \
-                      "TARPC representation",                           \
-                      __FUNCTION__);                                    \
-                out->common._errno = TE_RC(TE_TA_UNIX, retval);         \
-                goto finish;                                            \
-            }                                                           \
-                                                                        \
-            INIT_CHECKED_ARG((msg_)->msg_control,                       \
-                             (msg_)->msg_controllen, 0);                \
-        }                                                               \
-                                                                        \
-        (msg_)->msg_flags =                                             \
-                send_recv_flags_rpc2h((tarpc_msg_)->msg_flags);         \
-        INIT_CHECKED_ARG((char *)(msg_), sizeof(*(msg_)), 0);           \
-    } while (0)
-
 TARPC_FUNC(sendmsg, {},
 {
     rpcs_msghdr_helper   msg_helper;
@@ -9889,40 +9764,15 @@ recvmmsg_alt(int fd, struct mmsghdr *mmsghdr, unsigned int vlen,
 
 TARPC_FUNC(recvmmsg_alt,
 {
-    unsigned int i;
-    struct tarpc_msghdr msg;
-    if (in->mmsg.mmsg_val != NULL &&
-        in->mmsg.mmsg_len > RCF_RPC_MAX_MSGHDR)
-    {
-        ERROR("Too long mmsghdr is provided");
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        return TRUE;
-    }
-    if (in->mmsg.mmsg_val != NULL)
-       for (i = 0; i < in->mmsg.mmsg_len; i++)
-       {
-           msg = in->mmsg.mmsg_val[i].msg_hdr;
-           if (msg.msg_iov.msg_iov_val != NULL &&
-               msg.msg_iov.msg_iov_len > RCF_RPC_MAX_IOVEC)
-           {
-               ERROR("Too long iovec is provided");
-               out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-               return TRUE;
-           }
-       }
     COPY_ARG(mmsg);
 },
 {
-    struct iovec        iovec_arr[RCF_RPC_MAX_MSGHDR][RCF_RPC_MAX_IOVEC];
-    struct mmsghdr      mmsg[RCF_RPC_MAX_MSGHDR];
-    te_bool             free_name[RCF_RPC_MAX_MSGHDR];
+    struct mmsghdr        *mmsg = NULL;
+    rpcs_msghdr_helper    *msg_helpers = NULL;
+    te_errno               rc;
 
-    unsigned int  i;
-    unsigned int  j;
     struct timespec  tv;
     struct timespec *ptv = NULL;
-
-    memset(free_name, 0, sizeof(free_name));
 
     if (in->timeout.timeout_len > 0)
     {
@@ -9930,9 +9780,6 @@ TARPC_FUNC(recvmmsg_alt,
         tv.tv_nsec = in->timeout.timeout_val[0].tv_nsec;
         ptv = &tv;
     }
-
-    memset(iovec_arr, 0, sizeof(iovec_arr));
-    memset(mmsg, 0, sizeof(mmsg));
 
     if (out->mmsg.mmsg_val == NULL)
     {
@@ -9942,118 +9789,13 @@ TARPC_FUNC(recvmmsg_alt,
     }
     else
     {
-        te_errno                name_rc;
-        struct sockaddr_storage name_st[RCF_RPC_MAX_MSGHDR];
-        socklen_t               name_len[RCF_RPC_MAX_MSGHDR];
-        struct sockaddr        *name[RCF_RPC_MAX_MSGHDR];
-        struct tarpc_msghdr    *rpc_msg;
-        struct msghdr          *msg;
-
-        for (j = 0; j < out->mmsg.mmsg_len; j++)
+        rc = rpcs_mmsghdrs_tarpc2h(TRUE, out->mmsg.mmsg_val,
+                                   out->mmsg.mmsg_len,
+                                   &msg_helpers, &mmsg, arglist);
+        if (rc != 0)
         {
-            free_name[j] = FALSE;
-            mmsg[j].msg_len = out->mmsg.mmsg_val[j].msg_len;
-            msg = &mmsg[j].msg_hdr;
-            rpc_msg = &(out->mmsg.mmsg_val[j].msg_hdr);
-            name_len[j] = 0;
-
-            if (!(rpc_msg->msg_name.flags & TARPC_SA_RAW &&
-                  rpc_msg->msg_name.raw.raw_len >
-                  sizeof(struct sockaddr_storage)))
-            {
-                name_rc = sockaddr_rpc2h(&(rpc_msg->msg_name),
-                                         SA(&name_st[j]),
-                                         sizeof(struct sockaddr_storage),
-                                         &name[j], &name_len[j]);
-
-                if (name_rc != 0)
-                {
-                    out->common._errno = name_rc;
-                    goto finish;
-                }
-
-                INIT_CHECKED_ARG((char *)name[j], name_len[j],
-                                 rpc_msg->msg_namelen);
-                msg->msg_name = name[j];
-            }
-            else
-            {
-                if (rpc_msg->msg_name.raw.raw_len > 0 &&
-                    rpc_msg->msg_name.raw.raw_val != NULL)
-                {
-                    msg->msg_name = calloc(1,
-                                           rpc_msg->msg_name.raw.raw_len);
-                    if (msg->msg_name == NULL)
-                    {
-                        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                        goto finish;
-                    }
-                    free_name[j] = TRUE;
-                    memcpy(msg->msg_name, rpc_msg->msg_name.raw.raw_val,
-                           rpc_msg->msg_name.raw.raw_len);
-                }
-                else
-                    msg->msg_name = rpc_msg->msg_name.raw.raw_val;
-            }
-            msg->msg_namelen = rpc_msg->msg_namelen;
-
-            msg->msg_iovlen = rpc_msg->msg_iovlen;
-            if (rpc_msg->msg_iov.msg_iov_val != NULL)
-            {
-                for (i = 0; i < rpc_msg->msg_iov.msg_iov_len; i++)
-                {
-                    INIT_CHECKED_ARG(
-                     rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_val,
-                     rpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_len,
-                     rpc_msg->msg_iov.msg_iov_val[i].iov_len);
-                    iovec_arr[j][i].iov_base =
-                        rpc_msg->msg_iov.msg_iov_val[i].iov_base.
-                            iov_base_val;
-                    iovec_arr[j][i].iov_len =
-                        rpc_msg->msg_iov.msg_iov_val[i].iov_len;
-                }
-                msg->msg_iov = iovec_arr[j];
-                INIT_CHECKED_ARG((char *)iovec_arr[j], sizeof(iovec_arr[j]),
-                                 0);
-            }
-            if (rpc_msg->msg_control.msg_control_val != NULL)
-            {
-                int len = calculate_msg_controllen(rpc_msg);
-                int rlen = len * 2;
-                int data_len = rpc_msg->msg_control.msg_control_val[0].
-                                data.data_len;
-
-                free(rpc_msg->msg_control.msg_control_val[0].data.data_val);
-                free(rpc_msg->msg_control.msg_control_val);
-                rpc_msg->msg_control.msg_control_val = NULL;
-                rpc_msg->msg_control.msg_control_len = 0;
-
-                msg->msg_controllen = len;
-                if ((msg->msg_control = calloc(1, rlen)) == NULL)
-                {
-                    out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-                    goto finish;
-                }
-                CMSG_FIRSTHDR(msg)->cmsg_len = CMSG_LEN(data_len);
-                INIT_CHECKED_ARG((char *)(msg->msg_control), rlen, len);
-            }
-            msg->msg_flags = send_recv_flags_rpc2h(rpc_msg->msg_flags);
-            rpc_msg->in_msg_flags = send_recv_flags_h2rpc(msg->msg_flags);
-
-            /*
-             * msg_name, msg_iov, msg_iovlen and msg_control MUST NOT be
-             * changed.
-             *
-             * msg_namelen, msg_controllen and msg_flags MAY be changed.
-             */
-            INIT_CHECKED_ARG((char *)&msg->msg_name,
-                             sizeof(msg->msg_name), 0);
-            INIT_CHECKED_ARG((char *)&msg->msg_iov,
-                             sizeof(msg->msg_iov), 0);
-            INIT_CHECKED_ARG((char *)&msg->msg_iovlen,
-                             sizeof(msg->msg_iovlen), 0);
-            INIT_CHECKED_ARG((char *)&msg->msg_control,
-                             sizeof(msg->msg_control), 0);
+            out->common._errno = TE_RC(TE_TA_UNIX, rc);
+            goto finish;
         }
 
         VERB("recvmmsg_alt(): in mmsg=%s",
@@ -10064,75 +9806,17 @@ TARPC_FUNC(recvmmsg_alt,
         VERB("recvmmsg_alt(): out mmsg=%s",
              mmsghdr2str(mmsg, out->retval));
 
-        for (j = 0; j < out->mmsg.mmsg_len; j++)
+        rc = rpcs_mmsghdrs_h2tarpc(mmsg, msg_helpers,
+                                   out->mmsg.mmsg_val, out->mmsg.mmsg_len);
+        if (rc != 0)
         {
-            out->mmsg.mmsg_val[j].msg_len = mmsg[j].msg_len;
-            msg = &mmsg[j].msg_hdr;
-            rpc_msg = &(out->mmsg.mmsg_val[j].msg_hdr);
-
-            rpc_msg->msg_flags = send_recv_flags_h2rpc(msg->msg_flags);
-
-            if (msg->msg_namelen <
-                    (tarpc_socklen_t)sizeof(struct sockaddr_storage))
-                sockaddr_output_h2rpc(msg->msg_name,
-                                      name_len[j] > 0 ?
-                                        name_len[j] :
-                                        rpc_msg->msg_name.raw.raw_len,
-                                      msg->msg_namelen,
-                                      &(rpc_msg->msg_name));
-            else
-            {
-                if (msg->msg_name != NULL &&
-                    rpc_msg->msg_name.raw.raw_val != NULL)
-                    memcpy(rpc_msg->msg_name.raw.raw_val, msg->msg_name,
-                           rpc_msg->msg_name.raw.raw_len <
-                                                msg->msg_namelen ?
-                                rpc_msg->msg_name.raw.raw_len :
-                                msg->msg_namelen);
-            }
-
-            rpc_msg->msg_namelen = msg->msg_namelen;
-
-            if (rpc_msg->msg_iov.msg_iov_val != NULL)
-            {
-                for (i = 0; i < rpc_msg->msg_iov.msg_iov_len; i++)
-                {
-                    rpc_msg->msg_iov.msg_iov_val[i].iov_len =
-                        iovec_arr[j][i].iov_len;
-                }
-            }
-
-            /* in case retval < 0 cmsg is not filled */
-            if (out->retval >= 0 && msg->msg_control != NULL)
-            {
-                int                   rc;
-                unsigned int          rpc_len;
-                struct tarpc_cmsghdr *rpc_c;
-
-                rc = msg_control_h2rpc(msg->msg_control,
-                                       msg->msg_controllen,
-                                       &rpc_c, &rpc_len,
-                                       NULL, NULL);
-                if (rc != 0)
-                {
-                    ERROR("%s(): failed cmsghdr conversion",
-                          __FUNCTION__);
-                    out->common._errno = TE_RC(TE_TA_UNIX, rc);
-                    goto finish;
-                }
-
-                rpc_msg->msg_control.msg_control_val = rpc_c;
-                rpc_msg->msg_control.msg_control_len = rpc_len;
-            }
+            out->common._errno = TE_RC(TE_TA_UNIX, rc);
+            goto finish;
         }
     }
-    finish:
-    for (j = 0; j < out->mmsg.mmsg_len; j++)
-    {
-        free(mmsg[j].msg_hdr.msg_control);
-        if (free_name[j])
-            free(mmsg[j].msg_hdr.msg_name);
-    }
+
+finish:
+    rpcs_mmsghdrs_helpers_clean(msg_helpers, mmsg, out->mmsg.mmsg_len);
 }
 )
 
@@ -10156,38 +9840,12 @@ sendmmsg_alt(int fd, struct mmsghdr *mmsghdr, unsigned int vlen,
 
 TARPC_FUNC(sendmmsg_alt,
 {
-    unsigned int i;
-    struct tarpc_msghdr msg;
-    if (in->mmsg.mmsg_val != NULL &&
-        in->mmsg.mmsg_len > RCF_RPC_MAX_MSGHDR)
-    {
-        ERROR("Too long mmsghdr is provided");
-        out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-        return TRUE;
-    }
-    if (in->mmsg.mmsg_val != NULL)
-       for (i = 0; i < in->mmsg.mmsg_len; i++)
-       {
-           msg = in->mmsg.mmsg_val[i].msg_hdr;
-           if (msg.msg_iov.msg_iov_val != NULL &&
-               msg.msg_iov.msg_iov_len > RCF_RPC_MAX_IOVEC)
-           {
-               ERROR("Too long iovec is provided");
-               out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
-               return TRUE;
-           }
-       }
     COPY_ARG(mmsg);
 },
 {
-    struct iovec        iovec_arr[RCF_RPC_MAX_MSGHDR][RCF_RPC_MAX_IOVEC];
-    struct mmsghdr      mmsg[RCF_RPC_MAX_MSGHDR];
-
-    unsigned int  i;
-    unsigned int  j;
-
-    memset(iovec_arr, 0, sizeof(iovec_arr));
-    memset(mmsg, 0, sizeof(mmsg));
+    struct mmsghdr      *mmsg = NULL;
+    rpcs_msghdr_helper  *msg_helpers = NULL;
+    te_errno             rc;
 
     if (out->mmsg.mmsg_val == NULL)
     {
@@ -10197,33 +9855,34 @@ TARPC_FUNC(sendmmsg_alt,
     }
     else
     {
-        struct tarpc_msghdr    *rpc_msg;
-        struct msghdr          *msg;
-
-        for (j = 0; j < out->mmsg.mmsg_len; j++)
+        rc = rpcs_mmsghdrs_tarpc2h(FALSE, out->mmsg.mmsg_val,
+                                   out->mmsg.mmsg_len,
+                                   &msg_helpers, &mmsg, arglist);
+        if (rc != 0)
         {
-            mmsg[j].msg_len = out->mmsg.mmsg_val[j].msg_len;
-            msg = &mmsg[j].msg_hdr;
-            rpc_msg = &(out->mmsg.mmsg_val[j].msg_hdr);
-
-            MSGHDR_TARPC2H(rpc_msg, msg);
-       }
+            out->common._errno = TE_RC(TE_TA_UNIX, rc);
+            goto finish;
+        }
 
         VERB("sendmmsg_alt(): in mmsg=%s",
              mmsghdr2str(mmsg, out->mmsg.mmsg_len));
         MAKE_CALL(out->retval = func(in->fd, mmsg, in->vlen,
                                      send_recv_flags_rpc2h(in->flags),
                                      in->common.use_libc));
+        VERB("sendmmsg_alt(): out mmsg=%s",
+             mmsghdr2str(mmsg, out->retval));
 
-        for (j = 0; j < out->mmsg.mmsg_len; j++)
+        rc = rpcs_mmsghdrs_h2tarpc(mmsg, msg_helpers,
+                                   out->mmsg.mmsg_val, out->mmsg.mmsg_len);
+        if (rc != 0)
         {
-            msg = &mmsg[j].msg_hdr;
-            out->mmsg.mmsg_val[j].msg_len = mmsg[j].msg_len;
-            msghdr_free(msg);
-       }
+            out->common._errno = TE_RC(TE_TA_UNIX, rc);
+            goto finish;
+        }
     }
+
 finish:
-    ;
+    rpcs_mmsghdrs_helpers_clean(msg_helpers, mmsg, out->mmsg.mmsg_len);
 }
 )
 

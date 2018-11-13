@@ -217,3 +217,114 @@ rpcs_msghdr_helper_clean(rpcs_msghdr_helper *h, struct msghdr *msg)
         free(msg->msg_control);
     }
 }
+
+/* See description in rpcs_msghdr.h */
+te_errno
+rpcs_mmsghdrs_tarpc2h(te_bool recv_call,
+                      const tarpc_mmsghdr *tarpc_mmsgs,
+                      unsigned int num,
+                      rpcs_msghdr_helper **helpers,
+                      struct mmsghdr **mmsgs,
+                      checked_arg_list *arglist)
+{
+    unsigned int i;
+    te_errno     rc = 0;
+
+    char        name_buf[MAX_ARG_NAME_LEN];
+    te_string   name_str = TE_STRING_BUF_INIT(name_buf);
+
+    rpcs_msghdr_helper *helpers_aux = NULL;
+    struct mmsghdr     *mmsgs_aux = NULL;
+
+    if (mmsgs == NULL || helpers == NULL)
+    {
+        ERROR("%s(): mmsgs and helpers arguments must not be NULL",
+              __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    mmsgs_aux = TE_ALLOC(sizeof(struct mmsghdr) * num);
+    helpers_aux = TE_ALLOC(sizeof(rpcs_msghdr_helper) * num);
+    if (mmsgs_aux == NULL || helpers_aux == NULL)
+    {
+        ERROR("%s(): out of memory", __FUNCTION__);
+        rc = TE_ENOMEM;
+        goto finish;
+    }
+
+    for (i = 0; i < num; i++)
+    {
+        te_string_reset(&name_str);
+        rc = te_string_append(&name_str, "mmsgs[%u]", i);
+        if (rc != 0)
+            goto finish;
+
+        mmsgs_aux[i].msg_len = tarpc_mmsgs[i].msg_len;
+        rc = rpcs_msghdr_tarpc2h(recv_call, &tarpc_mmsgs[i].msg_hdr,
+                                 &helpers_aux[i], &mmsgs_aux[i].msg_hdr,
+                                 arglist, "%s", name_str.ptr);
+        if (rc != 0)
+            goto finish;
+    }
+
+    *helpers = helpers_aux;
+    *mmsgs = mmsgs_aux;
+
+finish:
+
+    if (rc != 0)
+        rpcs_mmsghdrs_helpers_clean(helpers_aux, mmsgs_aux, num);
+
+    return rc;
+}
+
+/* See description in rpcs_msghdr.h */
+te_errno
+rpcs_mmsghdrs_h2tarpc(const struct mmsghdr *mmsgs,
+                      const rpcs_msghdr_helper *helpers,
+                      struct tarpc_mmsghdr *tarpc_mmsgs,
+                      unsigned int num)
+{
+    unsigned int  i;
+    te_errno      rc;
+
+    if (num == 0)
+        return 0;
+
+    if (mmsgs == NULL || helpers == NULL || tarpc_mmsgs == NULL)
+    {
+        ERROR("%s(): some arguments are NULL", __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    for (i = 0; i < num; i++)
+    {
+        tarpc_mmsgs[i].msg_len = mmsgs[i].msg_len;
+        rc = rpcs_msghdr_h2tarpc(&mmsgs[i].msg_hdr, &helpers[i],
+                                 &tarpc_mmsgs[i].msg_hdr);
+        if (rc != 0)
+            return rc;
+    }
+
+    return 0;
+}
+
+/* See description in rpcs_msghdr.h */
+void
+rpcs_mmsghdrs_helpers_clean(rpcs_msghdr_helper *helpers,
+                            struct mmsghdr *mmsgs,
+                            unsigned int num)
+{
+    unsigned int i;
+
+    if (helpers != NULL && mmsgs != NULL)
+    {
+        for (i = 0; i < num; i++)
+        {
+            rpcs_msghdr_helper_clean(&helpers[i], &mmsgs[i].msg_hdr);
+        }
+    }
+
+    free(helpers);
+    free(mmsgs);
+}

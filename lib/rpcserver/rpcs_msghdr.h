@@ -97,4 +97,68 @@ extern te_errno rpcs_msghdr_h2tarpc(const struct msghdr *msg,
 extern void rpcs_msghdr_helper_clean(rpcs_msghdr_helper *h,
                                      struct msghdr *msg);
 
+/**
+ * Convert array of tarpc_mmsghdr structures to array of
+ * mmsghdr structures.
+ *
+ * @note Use @b rpcs_mmsghdrs_helpers_clean() to release memory
+ *       after calling this function.
+ *
+ * @param recv_call     Pass @c TRUE if receive function call is prepared,
+ *                      @c FALSE otherwise.
+ * @param tarpc_mmsgs   Pointer to array of tarpc_mmsghdr structures.
+ * @param num           Number of elements in @p tarpc_mmsgs.
+ * @param helpers       Where to save pointer to array of helper structures
+ *                      storing auxiliary data for converted values.
+ * @param mmsgs         Where to save pointer to array of mmsghdr
+ *                      structures.
+ * @param arglist       Pointer to list of variable-length arguments which
+ *                      are checked after target function call (to ensure
+ *                      that the target function changes only what it is
+ *                      supposed to).
+ *
+ * @return Status code.
+ *
+ * @sa rpcs_mmsghdrs_h2tarpc, rpcs_mmsghdrs_helpers_clean
+ */
+extern te_errno rpcs_mmsghdrs_tarpc2h(te_bool recv_call,
+                                      const tarpc_mmsghdr *tarpc_mmsgs,
+                                      unsigned int num,
+                                      rpcs_msghdr_helper **helpers,
+                                      struct mmsghdr **mmsgs,
+                                      checked_arg_list *arglist);
+
+/**
+ * Convert array of mmsghdr structures back to array of
+ * tarpc_mmsghdr structures.
+ *
+ * @note This function should be used after @b rpcs_mmsghdrs_tarpc2h().
+ *
+ * @param mmsgs         Pointer to array of mmsghdr structures.
+ * @param helpers       Pointer to array of helper structures storing
+ *                      auxiliary data for converted values.
+ * @param tarpc_mmsgs   Pointer to array of tarpc_mmsghdr structures.
+ * @param num           Number of elements in arrays.
+ *
+ * @return Status code.
+ *
+ * @sa rpcs_mmsghdrs_tarpc2h, rpcs_mmsghdrs_helpers_clean
+ */
+extern te_errno rpcs_mmsghdrs_h2tarpc(const struct mmsghdr *mmsgs,
+                                      const rpcs_msghdr_helper *helpers,
+                                      struct tarpc_mmsghdr *tarpc_mmsgs,
+                                      unsigned int num);
+
+/**
+ * Release memory allocated for arrays after calling
+ * @b rpcs_mmsghdrs_tarpc2h().
+ *
+ * @param helpers         Pointer to array of rpcs_msghdr_helper structures.
+ * @param mmsgs           Pointer to array of mmsghdr structures.
+ * @param num             Number of elements in arrays.
+ */
+extern void rpcs_mmsghdrs_helpers_clean(rpcs_msghdr_helper *helpers,
+                                        struct mmsghdr *mmsgs,
+                                        unsigned int num);
+
 #endif /* __RPCSERVER_RPCS_MSGHDR_H__ */
