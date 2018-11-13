@@ -210,14 +210,14 @@ tarpc_dynamic_library_loaded(void)
 /**
  * Find the function by its name.
  *
- * @param lib   library name or empty string
- * @param name  function name
- * @param func  location for function address
+ * @param lib_flags     how to resolve function name
+ * @param name          function name
+ * @param func          location for function address
  *
  * @return status code
  */
 int
-tarpc_find_func(te_bool use_libc, const char *name, api_func *func)
+tarpc_find_func(tarpc_lib_flags lib_flags, const char *name, api_func *func)
 {
     te_errno    rc;
     void       *handle;
@@ -240,7 +240,7 @@ tarpc_find_func(te_bool use_libc, const char *name, api_func *func)
     errno = 0;
 #endif
 
-    if (use_libc || !tarpc_dynamic_library_loaded())
+    if ((lib_flags & TARPC_LIB_USE_LIBC) || !tarpc_dynamic_library_loaded())
     {
         static void *libc_handle = NULL;
         static te_bool dlopen_null = FALSE;
@@ -423,7 +423,7 @@ _rpc_find_func_1_svc(tarpc_rpc_find_func_in  *in,
 
     memset(out, 0, sizeof(*out));
 
-    out->find_result = tarpc_find_func(in->common.use_libc,
+    out->find_result = tarpc_find_func(in->common.lib_flags,
                                        in->func_name, &func);
     return TRUE;
 }
@@ -590,7 +590,7 @@ ta_rpc_execve(const char *name)
     VERB("execve() args: %s, %s, %s, %s",
          argv[0], argv[1], argv[2], argv[3]);
     /* Call execve() */
-    rc = tarpc_find_func(FALSE, "execve", (api_func *)&func);
+    rc = tarpc_find_func(TARPC_LIB_DEFAULT, "execve", (api_func *)&func);
     if (rc != 0)
     {
         rc = errno;
@@ -654,7 +654,7 @@ _vfork_1_svc(tarpc_vfork_in *in,
     UNUSED(rqstp);
     memset(out, 0, sizeof(*out));
 
-    rc = tarpc_find_func(in->common.use_libc, "vfork", (api_func *)&func);
+    rc = tarpc_find_func(in->common.lib_flags, "vfork", (api_func *)&func);
     if (rc != 0)
     {
         rc = errno;
@@ -830,7 +830,7 @@ execve_gen(const char *filename, char *const argv[], char *const envp[])
 {
     api_func_ptr func_execve;
 
-    if (tarpc_find_func(FALSE, "execve",
+    if (tarpc_find_func(TARPC_LIB_DEFAULT, "execve",
                         (api_func *)&func_execve) != 0)
     {
         ERROR("Failed to find function execve()");
@@ -1019,7 +1019,7 @@ closesocket(tarpc_closesocket_in *in)
 {
     api_func close_func;
 
-    if (tarpc_find_func(in->common.use_libc, "close", &close_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "close", &close_func) != 0)
     {
         ERROR("Failed to find function \"close\"");
         return -1;
@@ -1192,11 +1192,11 @@ socket_connect_close(const struct sockaddr *addr,
     api_func    connect_func;
     api_func    close_func;
 
-    if (tarpc_find_func(FALSE, "socket", &socket_func) != 0)
+    if (tarpc_find_func(TARPC_LIB_DEFAULT, "socket", &socket_func) != 0)
         return -1;
-    if (tarpc_find_func(FALSE, "connect", &connect_func) != 0)
+    if (tarpc_find_func(TARPC_LIB_DEFAULT, "connect", &connect_func) != 0)
         return -1;
-    if (tarpc_find_func(FALSE, "close", &close_func) != 0)
+    if (tarpc_find_func(TARPC_LIB_DEFAULT, "close", &close_func) != 0)
         return -1;
 
     start = now = time(NULL);
@@ -1235,13 +1235,13 @@ socket_listen_close(const struct sockaddr *addr,
     api_func    listen_func;
     api_func    close_func;
 
-    if (tarpc_find_func(FALSE, "socket", &socket_func) != 0)
+    if (tarpc_find_func(TARPC_LIB_DEFAULT, "socket", &socket_func) != 0)
         return -1;
-    if (tarpc_find_func(FALSE, "bind", &bind_func) != 0)
+    if (tarpc_find_func(TARPC_LIB_DEFAULT, "bind", &bind_func) != 0)
         return -1;
-    if (tarpc_find_func(FALSE, "listen", &listen_func) != 0)
+    if (tarpc_find_func(TARPC_LIB_DEFAULT, "listen", &listen_func) != 0)
         return -1;
-    if (tarpc_find_func(FALSE, "close", &close_func) != 0)
+    if (tarpc_find_func(TARPC_LIB_DEFAULT, "close", &close_func) != 0)
         return -1;
 
     start = now = time(NULL);
@@ -1390,7 +1390,7 @@ TARPC_FUNC(shutdown, {},
     tobuf->te_mtime = outbuf.st_mtime
 
 int
-te_fstat(te_bool use_libc, int fd, rpc_stat *rpcbuf)
+te_fstat(tarpc_lib_flags lib_flags, int fd, rpc_stat *rpcbuf)
 {
 #if defined (__QNX__) || defined (__ANDROID__)
     api_func    stat_func;
@@ -1413,7 +1413,7 @@ te_fstat(te_bool use_libc, int fd, rpc_stat *rpcbuf)
     struct stat buf;
 
     memset(&buf, 0, sizeof(buf));
-    if (tarpc_find_func(use_libc, "__fxstat", &stat_func) != 0)
+    if (tarpc_find_func(lib_flags, "__fxstat", &stat_func) != 0)
     {
         ERROR("Failed to find __fxstat function");
         return -1;
@@ -1426,7 +1426,7 @@ te_fstat(te_bool use_libc, int fd, rpc_stat *rpcbuf)
     FSTAT_COPY(rpcbuf, buf);
     return 0;
 #else
-    UNUSED(use_libc);
+    UNUSED(lib_flags);
     UNUSED(rpcbuf);
 
 /*
@@ -1438,7 +1438,7 @@ te_fstat(te_bool use_libc, int fd, rpc_stat *rpcbuf)
 }
 
 int
-te_fstat64(te_bool use_libc, int fd, rpc_stat *rpcbuf)
+te_fstat64(tarpc_lib_flags lib_flags, int fd, rpc_stat *rpcbuf)
 {
 /**
  * To have __USE_LARGEFILE64 defined in Linux, specify
@@ -1451,7 +1451,7 @@ te_fstat64(te_bool use_libc, int fd, rpc_stat *rpcbuf)
     struct stat64 buf;
 
     memset(&buf, 0, sizeof(buf));
-    if (tarpc_find_func(use_libc, "__fxstat64", &stat_func) != 0)
+    if (tarpc_find_func(lib_flags, "__fxstat64", &stat_func) != 0)
     {
         ERROR("Failed to find __fxstat64 function");
         return -1;
@@ -1467,7 +1467,7 @@ te_fstat64(te_bool use_libc, int fd, rpc_stat *rpcbuf)
 /*
  * #error "fstat family is not currently supported for non-linux unixes."
  */
-    UNUSED(use_libc);
+    UNUSED(lib_flags);
     UNUSED(fd);
     UNUSED(rpcbuf);
 
@@ -1478,13 +1478,13 @@ te_fstat64(te_bool use_libc, int fd, rpc_stat *rpcbuf)
 
 TARPC_FUNC(te_fstat, {},
 {
-    MAKE_CALL(out->retval = func(in->common.use_libc, in->fd, &out->buf));
+    MAKE_CALL(out->retval = func(in->common.lib_flags, in->fd, &out->buf));
 }
 )
 
 TARPC_FUNC(te_fstat64, {},
 {
-    MAKE_CALL(out->retval = func(in->common.use_libc, in->fd, &out->buf));
+    MAKE_CALL(out->retval = func(in->common.lib_flags, in->fd, &out->buf));
 }
 )
 
@@ -1742,23 +1742,23 @@ read_via_splice(tarpc_read_via_splice_in *in,
     flags = SPLICE_F_MOVE;
 #endif
 
-    if (tarpc_find_func(in->common.use_libc, "pipe",
+    if (tarpc_find_func(in->common.lib_flags, "pipe",
                         (api_func *)&pipe_func) != 0)
     {
         ERROR("%s(): Failed to resolve pipe() function", __FUNCTION__);
         return -1;
     }
-    if (tarpc_find_func(in->common.use_libc, "splice", &splice_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "splice", &splice_func) != 0)
     {
         ERROR("%s(): Failed to resolve splice() function", __FUNCTION__);
         return -1;
     }
-    if (tarpc_find_func(in->common.use_libc, "close", &close_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "close", &close_func) != 0)
     {
         ERROR("%s(): Failed to resolve close() function", __FUNCTION__);
         return -1;
     }
-    if (tarpc_find_func(in->common.use_libc, "read", &read_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "read", &read_func) != 0)
     {
         ERROR("%s(): Failed to resolve read() function", __FUNCTION__);
         return -1;
@@ -1845,23 +1845,23 @@ write_via_splice(tarpc_write_via_splice_in *in)
     flags = SPLICE_F_MOVE;
 #endif
 
-    if (tarpc_find_func(in->common.use_libc, "pipe",
+    if (tarpc_find_func(in->common.lib_flags, "pipe",
                         (api_func *)&pipe_func) != 0)
     {
         ERROR("%s(): Failed to resolve pipe() function", __FUNCTION__);
         return -1;
     }
-    if (tarpc_find_func(in->common.use_libc, "splice", &splice_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "splice", &splice_func) != 0)
     {
         ERROR("%s(): Failed to resolve splice() function", __FUNCTION__);
         return -1;
     }
-    if (tarpc_find_func(in->common.use_libc, "close", &close_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "close", &close_func) != 0)
     {
         ERROR("%s(): Failed to resolve close() function", __FUNCTION__);
         return -1;
     }
-    if (tarpc_find_func(in->common.use_libc, "write", &write_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "write", &write_func) != 0)
     {
         ERROR("%s(): Failed to resolve write() function", __FUNCTION__);
         return -1;
@@ -1929,12 +1929,12 @@ _write_and_close_1_svc(tarpc_write_and_close_in *in,
     UNUSED(rqstp);
     memset(out, 0, sizeof(*out));
 
-    if (tarpc_find_func(in->common.use_libc, "write", &write_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "write", &write_func) != 0)
     {
         ERROR("Failed to find function \"write\"");
         out->retval =  -1;
     }
-    else if (tarpc_find_func(in->common.use_libc, "close",
+    else if (tarpc_find_func(in->common.lib_flags, "close",
                              &close_func) != 0)
     {
         ERROR("Failed to find function \"close\"");
@@ -1961,7 +1961,7 @@ readbuf(tarpc_readbuf_in *in)
 {
     api_func read_func;
 
-    if (tarpc_find_func(in->common.use_libc, "read", &read_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "read", &read_func) != 0)
     {
         ERROR("Failed to find function \"read\"");
         return -1;
@@ -1983,7 +1983,7 @@ recvbuf(tarpc_recvbuf_in *in)
 {
     api_func recv_func;
 
-    if (tarpc_find_func(in->common.use_libc, "recv", &recv_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "recv", &recv_func) != 0)
     {
         ERROR("Failed to find function \"recv\"");
         return -1;
@@ -2005,7 +2005,7 @@ writebuf(tarpc_writebuf_in *in)
 {
     api_func write_func;
 
-    if (tarpc_find_func(in->common.use_libc, "write", &write_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "write", &write_func) != 0)
     {
         ERROR("Failed to find function \"write\"");
         return -1;
@@ -2027,7 +2027,7 @@ sendbuf(tarpc_sendbuf_in *in)
 {
     api_func send_func;
 
-    if (tarpc_find_func(in->common.use_libc, "send", &send_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "send", &send_func) != 0)
     {
         ERROR("Failed to find function \"send\"");
         return -1;
@@ -2050,7 +2050,7 @@ send_msg_more(tarpc_send_msg_more_in *in)
 
     api_func send_func;
 
-    if (tarpc_find_func(in->common.use_libc, "send", &send_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "send", &send_func) != 0)
     {
         ERROR("Failed to find function \"send\"");
         return -1;
@@ -2084,7 +2084,7 @@ send_one_byte_many(tarpc_send_one_byte_many_in *in)
 
     struct timeval t, lim;
 
-    if (tarpc_find_func(in->common.use_libc, "send", &send_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "send", &send_func) != 0)
     {
         ERROR("Failed to find function \"send\"");
         return -1;
@@ -6179,7 +6179,7 @@ simple_sender(tarpc_simple_sender_in *in, tarpc_simple_sender_out *out)
         return -1;
     }
 
-    if (tarpc_find_func(in->common.use_libc, "send", &send_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "send", &send_func) != 0)
         return -1;
 
     if ((buf = malloc(in->size_max)) == NULL)
@@ -6278,8 +6278,8 @@ simple_receiver(tarpc_simple_receiver_in *in,
 
     RING("%s() started", __FUNCTION__);
 
-    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0 ||
-        tarpc_find_func(in->common.use_libc, "recv", &recv_func) != 0)
+    if (iomux_find_func(in->common.lib_flags, &iomux, &iomux_f) != 0 ||
+        tarpc_find_func(in->common.lib_flags, "recv", &recv_func) != 0)
     {
         ERROR("failed to resolve function(s)");
         return -1;
@@ -6404,7 +6404,7 @@ wait_readable(tarpc_wait_readable_in *in,
 
     RING("%s() started", __FUNCTION__);
 
-    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
+    if (iomux_find_func(in->common.lib_flags, &iomux, &iomux_f) != 0)
     {
         return -1;
     }
@@ -6472,7 +6472,7 @@ recv_verify(tarpc_recv_verify_in *in, tarpc_recv_verify_out *out)
 
     RING("%s() started", __FUNCTION__);
 
-    if (tarpc_find_func(in->common.use_libc, "recv", &recv_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "recv", &recv_func) != 0)
     {
         return -1;
     }
@@ -6592,10 +6592,10 @@ flooder(tarpc_flooder_in *in)
     memset(rcv_buf, 0x0, FLOODER_BUF);
     memset(snd_buf, 'X', FLOODER_BUF);
 
-    if ((iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)    ||
-        (tarpc_find_func(in->common.use_libc, "recv", &recv_func) != 0) ||
-        (tarpc_find_func(in->common.use_libc, "send", &send_func) != 0) ||
-        (tarpc_find_func(in->common.use_libc, "ioctl", &ioctl_func) != 0))
+    if ((iomux_find_func(in->common.lib_flags, &iomux, &iomux_f) != 0)    ||
+        (tarpc_find_func(in->common.lib_flags, "recv", &recv_func) != 0) ||
+        (tarpc_find_func(in->common.lib_flags, "send", &send_func) != 0) ||
+        (tarpc_find_func(in->common.lib_flags, "ioctl", &ioctl_func) != 0))
     {
         ERROR("failed to resolve function");
         return -1;
@@ -6913,9 +6913,9 @@ echoer(tarpc_echoer_in *in)
 
     TAILQ_INIT(&buffs);
 
-    if ((iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)    ||
-        (tarpc_find_func(in->common.use_libc, "read", &read_func) != 0) ||
-        (tarpc_find_func(in->common.use_libc, "write", &write_func) != 0))
+    if ((iomux_find_func(in->common.lib_flags, &iomux, &iomux_f) != 0)    ||
+        (tarpc_find_func(in->common.lib_flags, "read", &read_func) != 0) ||
+        (tarpc_find_func(in->common.lib_flags, "write", &write_func) != 0))
     {
         return -1;
     }
@@ -7262,7 +7262,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
     }
     else
     {
-        rc = tarpc_find_func(in->common.use_libc, "send", &send_func);
+        rc = tarpc_find_func(in->common.lib_flags, "send", &send_func);
         if (rc != 0)
         {
             te_rpc_error_set(TE_RC(TE_TA_UNIX, rc),
@@ -7279,7 +7279,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
         return -1;
     }
 
-    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
+    if (iomux_find_func(in->common.lib_flags, &iomux, &iomux_f) != 0)
     {
         te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOENT),
                          "failed to resolve iomux function");
@@ -7529,11 +7529,11 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
         struct timeval tv = {0,0};
         socklen_t tv_len = sizeof(tv);
 
-        if (tarpc_find_func(in->common.use_libc, "setsockopt",
+        if (tarpc_find_func(in->common.lib_flags, "setsockopt",
                         &setsockopt_func) != 0)
             return -1;
 
-        if (tarpc_find_func(in->common.use_libc, "getsockopt",
+        if (tarpc_find_func(in->common.lib_flags, "getsockopt",
                         &getsockopt_func) != 0)
             return -1;
 
@@ -7552,7 +7552,7 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
     }
     else
     {
-        if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
+        if (iomux_find_func(in->common.lib_flags, &iomux, &iomux_f) != 0)
             return -1;
 
         if ((rc = iomux_create_state(iomux, &iomux_f, &iomux_st)) != 0)
@@ -7569,7 +7569,7 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
         }
     }
 
-    if (tarpc_find_func(in->common.use_libc, "recv", &recv_func) != 0 ||
+    if (tarpc_find_func(in->common.lib_flags, "recv", &recv_func) != 0 ||
         (pattern_gen_func =
                 rcf_ch_symbol_addr(in->fname.fname_val, TRUE)) == NULL)
         return -1;
@@ -7770,7 +7770,7 @@ TARPC_FUNC_DYNAMIC_UNSAFE(sendfile,
             ta_off64_t  offset = 0;
             const char *real_func_name = "sendfile64";
 
-            if ((rc = tarpc_find_func(in->common.use_libc,
+            if ((rc = tarpc_find_func(in->common.lib_flags,
                                       real_func_name, &func64)) == 0)
             {
                 real_func = func64;
@@ -7849,18 +7849,18 @@ sendfile_via_splice(tarpc_sendfile_via_splice_in *in,
     flags = SPLICE_F_NONBLOCK | SPLICE_F_MOVE;
 #endif
 
-    if (tarpc_find_func(in->common.use_libc, "pipe",
+    if (tarpc_find_func(in->common.lib_flags, "pipe",
                         (api_func *)&pipe_func) != 0)
     {
         ERROR("%s(): Failed to resolve pipe() function", __FUNCTION__);
         return -1;
     }
-    if (tarpc_find_func(in->common.use_libc, "splice", &splice_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "splice", &splice_func) != 0)
     {
         ERROR("%s(): Failed to resolve splice() function", __FUNCTION__);
         return -1;
     }
-    if (tarpc_find_func(in->common.use_libc, "close", &close_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "close", &close_func) != 0)
     {
         ERROR("%s(): Failed to resolve close() function", __FUNCTION__);
         return -1;
@@ -7989,11 +7989,11 @@ socket_to_file(tarpc_socket_to_file_in *in)
     INFO("%s() called with: sock=%d, path=%s, timeout=%ld",
          __FUNCTION__, sock, path, time2run);
 
-    if ((iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0) ||
-        (tarpc_find_func(in->common.use_libc, "read", &read_func) != 0) ||
-        (tarpc_find_func(in->common.use_libc, "write", &write_func) != 0) ||
-        (tarpc_find_func(in->common.use_libc, "close", &close_func) != 0) ||
-        (tarpc_find_func(in->common.use_libc, "open",
+    if ((iomux_find_func(in->common.lib_flags, &iomux, &iomux_f) != 0) ||
+        (tarpc_find_func(in->common.lib_flags, "read", &read_func) != 0) ||
+        (tarpc_find_func(in->common.lib_flags, "write", &write_func) != 0) ||
+        (tarpc_find_func(in->common.lib_flags, "close", &close_func) != 0) ||
+        (tarpc_find_func(in->common.lib_flags, "open",
                          (api_func *)&open_func) != 0))
     {
         ERROR("Failed to resolve functions addresses");
@@ -8211,21 +8211,21 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
 
     memset(buf, 0xAD, sizeof(max_len));
 
-    if (tarpc_find_func(in->common.use_libc, "ioctl", &ioctl_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "ioctl", &ioctl_func) != 0)
     {
         ERROR("%s(): Failed to resolve ioctl() function", __FUNCTION__);
         ret = -1;
         goto overfill_buffers_exit;
     }
 
-    if (tarpc_find_func(in->common.use_libc, "send", &send_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "send", &send_func) != 0)
     {
         ERROR("%s(): Failed to resolve send() function", __FUNCTION__);
         ret = -1;
         goto overfill_buffers_exit;
     }
 
-    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
+    if (iomux_find_func(in->common.lib_flags, &iomux, &iomux_f) != 0)
     {
         ERROR("%s(): Failed to resolve iomux %s function(s)",
               __FUNCTION__, iomux2str(iomux));
@@ -8370,14 +8370,14 @@ iomux_splice(tarpc_iomux_splice_in *in,
     }
     end.tv_sec += (time_t)(in->time2run);
 
-    if (tarpc_find_func(in->common.use_libc, "splice", &splice_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "splice", &splice_func) != 0)
     {
         ERROR("%s(): Failed to resolve splice() function", __FUNCTION__);
         ret = -1;
         goto iomux_splice_exit;
     }
 
-    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
+    if (iomux_find_func(in->common.lib_flags, &iomux, &iomux_f) != 0)
     {
         ERROR("%s(): Failed to resolve iomux %s function(s)",
               __FUNCTION__, iomux2str(iomux));
@@ -8504,14 +8504,14 @@ overfill_fd(tarpc_overfill_fd_in *in,
 
     memset(buf, 0xAD, sizeof(max_len));
 
-    if (tarpc_find_func(in->common.use_libc, "fcntl", &fcntl_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "fcntl", &fcntl_func) != 0)
     {
         ERROR("%s(): Failed to resolve fcntl() function", __FUNCTION__);
         ret = -1;
         goto overfill_fd_exit;
     }
 
-    if (tarpc_find_func(in->common.use_libc, "write", &write_func) != 0)
+    if (tarpc_find_func(in->common.lib_flags, "write", &write_func) != 0)
     {
         ERROR("%s(): Failed to resolve write() function", __FUNCTION__);
         ret = -1;
@@ -8584,7 +8584,7 @@ TARPC_FUNC(iomux_create_state,{},
     iomux_state    *iomux_st = NULL;
     te_bool         is_fail = FALSE;
 
-    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
+    if (iomux_find_func(in->common.lib_flags, &iomux, &iomux_f) != 0)
     {
         ERROR("%s(): Failed to resolve iomux %s function(s)",
               __FUNCTION__, iomux2str(iomux));
@@ -8616,14 +8616,14 @@ finish:
 )
 
 int
-iomux_close_state(te_bool use_libc, iomux_func iomux,
+iomux_close_state(tarpc_lib_flags lib_flags, iomux_func iomux,
                   tarpc_iomux_state tapi_iomux_st)
 {
     iomux_funcs     iomux_f;
     iomux_state    *iomux_st = NULL;
     int             sock;
 
-    if (iomux_find_func(use_libc, &iomux, &iomux_f) != 0)
+    if (iomux_find_func(lib_flags, &iomux, &iomux_f) != 0)
     {
         ERROR("%s(): Failed to resolve iomux %s function(s)",
               __FUNCTION__, iomux2str(iomux));
@@ -8647,7 +8647,7 @@ iomux_close_state(te_bool use_libc, iomux_func iomux,
 
 TARPC_FUNC(iomux_close_state,{},
 {
-    MAKE_CALL(out->retval = func_ptr(in->common.use_libc, in->iomux,
+    MAKE_CALL(out->retval = func_ptr(in->common.lib_flags, in->iomux,
                                      in->iomux_st));
 }
 )
@@ -8729,7 +8729,7 @@ multiple_iomux_wait(tarpc_multiple_iomux_wait_in *in,
     iomux_state    *iomux_st = NULL;
     int             rc;
 
-    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
+    if (iomux_find_func(in->common.lib_flags, &iomux, &iomux_f) != 0)
     {
         ERROR("%s(): Failed to resolve iomux %s function(s)",
               __FUNCTION__, iomux2str(iomux));
@@ -8767,7 +8767,7 @@ multiple_iomux(tarpc_multiple_iomux_in *in,
     iomux_state     iomux_st;
     int             ret;
 
-    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
+    if (iomux_find_func(in->common.lib_flags, &iomux, &iomux_f) != 0)
     {
         ERROR("%s(): Failed to resolve iomux %s function(s)",
               __FUNCTION__, iomux2str(iomux));
@@ -9469,11 +9469,11 @@ mcast_join_leave(tarpc_mcast_join_leave_in  *in,
     api_func_ret_ptr    if_indextoname_func;
     api_func            ioctl_func;
 
-    if (tarpc_find_func(in->common.use_libc, "setsockopt",
+    if (tarpc_find_func(in->common.lib_flags, "setsockopt",
                         &setsockopt_func) != 0 ||
-        tarpc_find_func(in->common.use_libc, "if_indextoname",
+        tarpc_find_func(in->common.lib_flags, "if_indextoname",
                         (api_func *)&if_indextoname_func) != 0 ||
-        tarpc_find_func(in->common.use_libc, "ioctl",
+        tarpc_find_func(in->common.lib_flags, "ioctl",
                         &ioctl_func) != 0)
     {
         ERROR("Cannot resolve function name");
@@ -9671,11 +9671,11 @@ mcast_source_join_leave(tarpc_mcast_source_join_leave_in  *in,
     api_func_ret_ptr    if_indextoname_func;
     api_func            ioctl_func;
 
-    if (tarpc_find_func(in->common.use_libc, "setsockopt",
+    if (tarpc_find_func(in->common.lib_flags, "setsockopt",
                         &setsockopt_func) != 0 ||
-        tarpc_find_func(in->common.use_libc, "if_indextoname",
+        tarpc_find_func(in->common.lib_flags, "if_indextoname",
                         (api_func *)&if_indextoname_func) != 0 ||
-        tarpc_find_func(in->common.use_libc, "ioctl",
+        tarpc_find_func(in->common.lib_flags, "ioctl",
                         &ioctl_func) != 0)
     {
         ERROR("Cannot resolve function name");
@@ -9820,9 +9820,9 @@ ta_dlopen(tarpc_ta_dlopen_in *in)
     api_func_ptr_ret_ptr    dlopen_func;
     api_func_void_ret_ptr   dlerror_func;
 
-    if ((tarpc_find_func(in->common.use_libc, "dlopen",
+    if ((tarpc_find_func(in->common.lib_flags, "dlopen",
                          (api_func *)&dlopen_func) != 0) ||
-        (tarpc_find_func(in->common.use_libc, "dlerror",
+        (tarpc_find_func(in->common.lib_flags, "dlerror",
                          (api_func *)&dlerror_func) != 0))
     {
         ERROR("Failed to resolve functions, %s", __FUNCTION__);
@@ -9855,9 +9855,9 @@ ta_dlsym(tarpc_ta_dlsym_in *in)
     api_func_ptr_ret_ptr    dlsym_func;
     api_func_void_ret_ptr   dlerror_func;
 
-    if ((tarpc_find_func(in->common.use_libc, "dlsym",
+    if ((tarpc_find_func(in->common.lib_flags, "dlsym",
                          (api_func *)&dlsym_func) != 0) ||
-        (tarpc_find_func(in->common.use_libc, "dlerror",
+        (tarpc_find_func(in->common.lib_flags, "dlerror",
                          (api_func *)&dlerror_func) != 0))
     {
         ERROR("Failed to resolve functions, %s", __FUNCTION__);
@@ -9893,9 +9893,9 @@ ta_dlsym_call(tarpc_ta_dlsym_call_in *in)
 
     int (*func)(void);
 
-    if ((tarpc_find_func(in->common.use_libc, "dlsym",
+    if ((tarpc_find_func(in->common.lib_flags, "dlsym",
                          (api_func *)&dlsym_func) != 0) ||
-        (tarpc_find_func(in->common.use_libc, "dlerror",
+        (tarpc_find_func(in->common.lib_flags, "dlerror",
                          (api_func *)&dlerror_func) != 0))
     {
         ERROR("Failed to resolve functions, %s", __FUNCTION__);
@@ -9933,7 +9933,7 @@ ta_dlerror(tarpc_ta_dlerror_in *in)
 {
     api_func_void_ret_ptr   dlerror_func;
 
-    if (tarpc_find_func(in->common.use_libc, "dlerror",
+    if (tarpc_find_func(in->common.lib_flags, "dlerror",
                         (api_func *)&dlerror_func) != 0)
     {
         ERROR("Failed to resolve functions, %s", __FUNCTION__);
@@ -9964,7 +9964,7 @@ ta_dlclose(tarpc_ta_dlclose_in *in)
 {
     api_func_ptr    dlclose_func;
 
-    if (tarpc_find_func(in->common.use_libc, "dlclose",
+    if (tarpc_find_func(in->common.lib_flags, "dlclose",
                         (api_func *)&dlclose_func) != 0)
     {
         ERROR("Failed to resolve functions, %s", __FUNCTION__);
@@ -10015,11 +10015,12 @@ dlclose(void *handle)
 /*------------ recvmmsg_alt() ---------------------------*/
 int
 recvmmsg_alt(int fd, struct mmsghdr_alt *mmsghdr, unsigned int vlen,
-             unsigned int flags, struct timespec *timeout, te_bool use_libc)
+             unsigned int flags, struct timespec *timeout,
+             tarpc_lib_flags lib_flags)
 {
     api_func            recvmmsg_func;
 
-    if (tarpc_find_func(use_libc, "recvmmsg",
+    if (tarpc_find_func(lib_flags, "recvmmsg",
                         &recvmmsg_func) == 0)
         return recvmmsg_func(fd, mmsghdr, vlen, flags, timeout);
     else
@@ -10081,7 +10082,7 @@ TARPC_FUNC(recvmmsg_alt,
     {
         MAKE_CALL(out->retval = func(in->fd, NULL, in->vlen,
                                      send_recv_flags_rpc2h(in->flags),
-                                     ptv, in->common.use_libc));
+                                     ptv, in->common.lib_flags));
     }
     else
     {
@@ -10203,7 +10204,7 @@ TARPC_FUNC(recvmmsg_alt,
              mmsghdr2str(mmsg, out->mmsg.mmsg_len));
         MAKE_CALL(out->retval = func(in->fd, mmsg, in->vlen,
                                      send_recv_flags_rpc2h(in->flags),
-                                     ptv, in->common.use_libc));
+                                     ptv, in->common.lib_flags));
         VERB("recvmmsg_alt(): out mmsg=%s",
              mmsghdr2str(mmsg, out->retval));
 
@@ -10281,11 +10282,11 @@ TARPC_FUNC(recvmmsg_alt,
 /*------------ sendmmsg_alt() ---------------------------*/
 int
 sendmmsg_alt(int fd, struct mmsghdr_alt *mmsghdr, unsigned int vlen,
-             unsigned int flags, te_bool use_libc)
+             unsigned int flags, tarpc_lib_flags lib_flags)
 {
     api_func            sendmmsg_func;
 
-    if (tarpc_find_func(use_libc, "sendmmsg",
+    if (tarpc_find_func(lib_flags, "sendmmsg",
                         &sendmmsg_func) == 0)
         return sendmmsg_func(fd, mmsghdr, vlen, flags);
     else
@@ -10335,7 +10336,7 @@ TARPC_FUNC(sendmmsg_alt,
     {
         MAKE_CALL(out->retval = func(in->fd, NULL, in->vlen,
                                      send_recv_flags_rpc2h(in->flags),
-                                     in->common.use_libc));
+                                     in->common.lib_flags));
     }
     else
     {
@@ -10355,7 +10356,7 @@ TARPC_FUNC(sendmmsg_alt,
              mmsghdr2str(mmsg, out->mmsg.mmsg_len));
         MAKE_CALL(out->retval = func(in->fd, mmsg, in->vlen,
                                      send_recv_flags_rpc2h(in->flags),
-                                     in->common.use_libc));
+                                     in->common.lib_flags));
 
         for (j = 0; j < out->mmsg.mmsg_len; j++)
         {
@@ -10391,31 +10392,31 @@ vfork_pipe_exec(tarpc_vfork_pipe_exec_in *in)
 
     char       *argv[4];
 
-    if (tarpc_find_func(in->common.use_libc, "pipe",
+    if (tarpc_find_func(in->common.lib_flags, "pipe",
                         (api_func *)&pipe_func) != 0)
     {
         ERROR("Failed to find function \"pipe\"");
         return -1;
     }
-    if (tarpc_find_func(in->common.use_libc, "vfork",
+    if (tarpc_find_func(in->common.lib_flags, "vfork",
                         (api_func *)&vfork_func) != 0)
     {
         ERROR("Failed to find function \"vfork\"");
         return -1;
     }
-    if (tarpc_find_func(in->common.use_libc, "read",
+    if (tarpc_find_func(in->common.lib_flags, "read",
                         (api_func *)&read_func) != 0)
     {
         ERROR("Failed to find function \"read\"");
         return -1;
     }
-    if (tarpc_find_func(in->common.use_libc, "execve",
+    if (tarpc_find_func(in->common.lib_flags, "execve",
                         (api_func *)&execve_func) != 0)
     {
         ERROR("Failed to find function \"execve\"");
         return -1;
     }
-    if (tarpc_find_func(in->common.use_libc, "write",
+    if (tarpc_find_func(in->common.lib_flags, "write",
                         (api_func *)&write_func) != 0)
     {
         ERROR("Failed to find function \"write\"");
@@ -10558,7 +10559,7 @@ get_rw_ability(tarpc_get_rw_ability_in *in)
 
     int rc;
 
-    if (iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0)
+    if (iomux_find_func(in->common.lib_flags, &iomux, &iomux_f) != 0)
     {
         ERROR("failed to resolve iomux function");
         return -1;
@@ -10614,14 +10615,14 @@ TARPC_FUNC(rpcserver_plugin_disable, {},
 /**
  * Find pointer to a send function.
  *
- * @param use_libc      Use libc flag.
+ * @param lib_flags     How to resolve function name.
  * @param send_func     Send function type.
  * @param func          Pointer to the function.
  *
  * @return Status code.
  */
 static te_errno
-tarpc_get_send_function(te_bool use_libc, tarpc_send_function send_func,
+tarpc_get_send_function(tarpc_lib_flags lib_flags, tarpc_send_function send_func,
                         api_func *func)
 {
     int rc;
@@ -10629,24 +10630,24 @@ tarpc_get_send_function(te_bool use_libc, tarpc_send_function send_func,
     switch (send_func)
     {
         case TARPC_SEND_FUNC_WRITE:
-            rc = tarpc_find_func(use_libc, "write",
+            rc = tarpc_find_func(lib_flags, "write",
                                  (api_func *)func);
             break;
 
         case TARPC_SEND_FUNC_WRITEV:
-            rc = tarpc_find_func(use_libc, "writev", (api_func *)func);
+            rc = tarpc_find_func(lib_flags, "writev", (api_func *)func);
             break;
 
         case TARPC_SEND_FUNC_SEND:
-            rc = tarpc_find_func(use_libc, "send", (api_func *)func);
+            rc = tarpc_find_func(lib_flags, "send", (api_func *)func);
             break;
 
         case TARPC_SEND_FUNC_SENDTO:
-            rc = tarpc_find_func(use_libc, "sendto", (api_func *)func);
+            rc = tarpc_find_func(lib_flags, "sendto", (api_func *)func);
             break;
 
         case TARPC_SEND_FUNC_SENDMSG:
-            rc = tarpc_find_func(use_libc, "sendmsg", (api_func *)func);
+            rc = tarpc_find_func(lib_flags, "sendmsg", (api_func *)func);
             break;
 
         default:
@@ -10661,7 +10662,7 @@ tarpc_get_send_function(te_bool use_libc, tarpc_send_function send_func,
  * Send packets during a period of time, call an iomux to check OUT
  * event if send operation is failed.
  *
- * @param use_libc      Use libc flag.
+ * @param lib_flags     How to resolve function name.
  * @param sock          Socket.
  * @param iomux         Multiplexer function.
  * @param send_func     Transmitting function.
@@ -10674,7 +10675,7 @@ tarpc_get_send_function(te_bool use_libc, tarpc_send_function send_func,
  * @return @c 0 on success or @c -1 in the case of failure.
  */
 static int
-send_flooder_iomux(te_bool use_libc, int sock, iomux_func iomux,
+send_flooder_iomux(tarpc_lib_flags lib_flags, int sock, iomux_func iomux,
                    tarpc_send_function send_func, te_bool msg_dontwait,
                    int packet_size, int duration, uint64_t *packets,
                    uint32_t *errors)
@@ -10696,8 +10697,8 @@ send_flooder_iomux(te_bool use_libc, int sock, iomux_func iomux,
     size_t iovcnt = rand_range(1, TARPC_SEND_IOMUX_FLOODER_MAX_IOVCNT);
 
 
-    if (tarpc_get_send_function(use_libc, send_func, &func_send) != 0 ||
-        iomux_find_func(use_libc, &iomux, &iomux_f) != 0)
+    if (tarpc_get_send_function(lib_flags, send_func, &func_send) != 0 ||
+        iomux_find_func(lib_flags, &iomux, &iomux_f) != 0)
     {
         return -1;
     }
@@ -10855,7 +10856,7 @@ send_flooder_iomux(te_bool use_libc, int sock, iomux_func iomux,
 
 TARPC_FUNC_STATIC(send_flooder_iomux, {},
 {
-    MAKE_CALL(out->retval = func_ptr(in->common.use_libc, in->sock,
+    MAKE_CALL(out->retval = func_ptr(in->common.lib_flags, in->sock,
                                      in->iomux, in->send_func,
                                      in->msg_dontwait, in->packet_size,
                                      in->duration, &out->packets,
@@ -10899,9 +10900,9 @@ copy_fd2fd(tarpc_copy_fd2fd_in *in)
         return -1;                                  \
     } while (0)
 
-    if ((iomux_find_func(in->common.use_libc, &iomux, &iomux_f) != 0) ||
-        (tarpc_find_func(in->common.use_libc, "read", &read_func) != 0) ||
-        (tarpc_find_func(in->common.use_libc, "write", &write_func) != 0))
+    if ((iomux_find_func(in->common.lib_flags, &iomux, &iomux_f) != 0) ||
+        (tarpc_find_func(in->common.lib_flags, "read", &read_func) != 0) ||
+        (tarpc_find_func(in->common.lib_flags, "write", &write_func) != 0))
     {
         ERROR("Failed to resolve functions addresses");
         return -1;
@@ -10984,7 +10985,7 @@ TARPC_FUNC_STATIC(copy_fd2fd, {},
 /**
  * Read all data on an fd.
  *
- * @param use_libc  Use libc flag.
+ * @param lib_flags How to resolve function name.
  * @param fd        File descriptor or socket.
  * @param size      Intermediate read buffer size, bytes.
  * @param time2wait Time to wait for data, milliseconds. Negative value means
@@ -10999,8 +11000,8 @@ TARPC_FUNC_STATIC(copy_fd2fd, {},
  * @p amount bytes is read, EOF is got).
  */
 static int
-read_fd(te_bool use_libc, int fd, size_t size, int time2wait, size_t amount,
-        uint8_t **buf, size_t *read)
+read_fd(tarpc_lib_flags lib_flags, int fd, size_t size, int time2wait,
+        size_t amount, uint8_t **buf, size_t *read)
 {
     api_func      read_func;
     iomux_funcs   iomux_f;
@@ -11012,13 +11013,13 @@ read_fd(te_bool use_libc, int fd, size_t size, int time2wait, size_t amount,
     int num = 0;
     int rc;
 
-    if (tarpc_find_func(use_libc, "read", &read_func) != 0)
+    if (tarpc_find_func(lib_flags, "read", &read_func) != 0)
     {
         ERROR("Failed to resolve read function address");
         return -1;
     }
 
-    if (iomux_find_func(use_libc, &iomux, &iomux_f) != 0)
+    if (iomux_find_func(lib_flags, &iomux, &iomux_f) != 0)
     {
         ERROR("Failed to resolve iomux function address");
         return -1;
@@ -11104,7 +11105,7 @@ TARPC_FUNC_STATIC(read_fd, {},
     }
     else
     {
-        MAKE_CALL(out->retval = func(in->common.use_libc, in->fd, in->size,
+        MAKE_CALL(out->retval = func(in->common.lib_flags, in->fd, in->size,
                                      in->time2wait, in->amount,
                                      &out->buf.buf_val, &read));
         if (read <= UINT_MAX)
@@ -11124,7 +11125,7 @@ TARPC_FUNC_STATIC(read_fd, {},
 /**
  * Drain all data on a fd.
  *
- * @param use_libc  Use libc flag.
+ * @param lib_flags How to resolve function name.
  * @param fd        File descriptor or socket.
  * @param size      Read buffer size, bytes.
  * @param time2wait Time to wait for extra data, milliseconds. If a negative
@@ -11136,7 +11137,7 @@ TARPC_FUNC_STATIC(read_fd, {},
  * failure or @c 0 on success.
  */
 static int
-drain_fd(te_bool use_libc, int fd, size_t size, int time2wait,
+drain_fd(tarpc_lib_flags lib_flags, int fd, size_t size, int time2wait,
          uint64_t *read)
 {
     api_func      recv_func;
@@ -11149,7 +11150,7 @@ drain_fd(te_bool use_libc, int fd, size_t size, int time2wait,
     int num = 0;
     int rc;
 
-    if (tarpc_find_func(use_libc, "recv", &recv_func) != 0)
+    if (tarpc_find_func(lib_flags, "recv", &recv_func) != 0)
     {
         ERROR("Failed to resolve recv function address");
         return -1;
@@ -11161,7 +11162,7 @@ drain_fd(te_bool use_libc, int fd, size_t size, int time2wait,
     }
     else if (time2wait > 0)
     {
-        if (iomux_find_func(use_libc, &iomux, &iomux_f) != 0)
+        if (iomux_find_func(lib_flags, &iomux, &iomux_f) != 0)
         {
             ERROR("Failed to resolve iomux function address");
             return -1;
@@ -11214,6 +11215,6 @@ drain_fd(te_bool use_libc, int fd, size_t size, int time2wait,
 
 TARPC_FUNC_STATIC(drain_fd, {},
 {
-   MAKE_CALL(out->retval = func(in->common.use_libc, in->fd, in->size,
+   MAKE_CALL(out->retval = func(in->common.lib_flags, in->fd, in->size,
                                 in->time2wait, &out->read));
 })

@@ -230,7 +230,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
         memset(&out, 0, sizeof(out));
 
         in.common.op = RCF_RPC_CALL_WAIT;
-        in.common.use_libc = FALSE;
+        in.common.lib_flags = TARPC_LIB_DEFAULT;
 
         if ((rc = rcf_ta_call_rpc(ta, sid, name, RCF_RPC_DEFAULT_TIMEOUT,
                                   "getpid", &in, &out)) != 0)
@@ -498,7 +498,7 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     in.name = rpcs->name;
-    in.common.use_libc = FALSE;
+    in.common.lib_flags = TARPC_LIB_DEFAULT;
 
     rpcs->op = RCF_RPC_CALL_WAIT;
     rc = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name, 0xFFFFFFFF,
@@ -640,7 +640,11 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     in->start = rpcs->start;
     in->op = rpcs->op;
     in->jobid = rpcs->jobid0;
-    in->use_libc = rpcs->use_libc || rpcs->use_libc_once;
+    in->lib_flags = TARPC_LIB_DEFAULT;
+    if (rpcs->use_libc || rpcs->use_libc_once)
+        in->lib_flags |= TARPC_LIB_USE_LIBC;
+    if (rpcs->use_syscall)
+        in->lib_flags |= TARPC_LIB_USE_SYSCALL;
 
     rpcs->last_op = rpcs->op;
     rpcs->last_use_libc = rpcs->use_libc_once;
@@ -966,7 +970,7 @@ rcf_rpc_server_create_process(rcf_rpc_server *rpcs,
     memset(&out, 0, sizeof(out));
 
     in.common.op = RCF_RPC_CALL_WAIT;
-    in.common.use_libc = FALSE;
+    in.common.lib_flags = TARPC_LIB_DEFAULT;
     in.name.name_len = strlen(name) + 1;
     in.name.name_val = strdup(name);
     in.flags = flags;
@@ -1029,7 +1033,12 @@ rcf_rpc_server_vfork(rcf_rpc_server *rpcs,
         rpcs->timeout = rpcs->def_timeout;
 
     in.common.op = RCF_RPC_CALL_WAIT;
-    in.common.use_libc = rpcs->use_libc || rpcs->use_libc_once;
+    in.common.lib_flags = TARPC_LIB_DEFAULT;
+    if (rpcs->use_libc || rpcs->use_libc_once)
+        in.common.lib_flags |= TARPC_LIB_USE_LIBC;
+    if (rpcs->use_syscall)
+        in.common.lib_flags |= TARPC_LIB_USE_SYSCALL;
+
     in.name.name_len = strlen(name) + 1;
     in.name.name_val = strdup(name);
     in.time_to_wait = time_to_wait;

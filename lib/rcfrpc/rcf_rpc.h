@@ -165,6 +165,8 @@ typedef struct rcf_rpc_server {
     te_bool     use_libc;       /**< Use libc library instead of set one */
     te_bool     use_libc_once;  /**< Same as use_libc, but one call only */
     te_bool     last_use_libc;  /**< Last value of use_libc_once */
+    te_bool     use_syscall;    /**< Try to use syscall with library according
+                                     to flag use_libc */
 
     /* Read-only fields filled by API internals when server is created */
     char        ta[RCF_MAX_NAME];   /**< Test Agent name */

@@ -343,13 +343,13 @@ extern te_bool tarpc_dynamic_library_loaded(void);
 /**
  * Find the function by its name.
  *
- * @param use_libc  use the preset library or libc?
+ * @param lib_flags how to resolve function name
  * @param name      function name
  * @param func      location for function address
  *
  * @return status code
  */
-extern int tarpc_find_func(te_bool use_libc, const char *name,
+extern int tarpc_find_func(tarpc_lib_flags lib_flags, const char *name,
                            api_func *func);
 
 /** Structure for checking of variable-length arguments safety */
