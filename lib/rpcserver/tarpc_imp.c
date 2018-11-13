@@ -3900,7 +3900,7 @@ TARPC_FUNC(fcntl,
 #endif
         )
         MAKE_CALL(out->retval = func(in->fd, fcntl_rpc2h(in->cmd)));
-#if defined (F_GETOWN_EX) || defined (F_SETOWN_EX)
+#if defined (F_GETOWN_EX) && defined (F_SETOWN_EX)
     else if (in->cmd == RPC_F_GETOWN_EX || in->cmd == RPC_F_SETOWN_EX)
     {
         struct f_owner_ex foex_arg;
