@@ -115,6 +115,8 @@ Generic options:
   --build-ta-missing            Build only new Test Agents.
   --build-ta-all                Force build all Test Agents.
   --build-ta-for=<hostname>     Rebuild agent (and all the libraries) used for <hostname>.
+  --build-ta-rm-lock            Remove lock from previous agent build even
+                                if it is still in progress.
   --profile-build=<logfile>     Gather timings for the build process into <logfile>
 
   --no-rcf-cc-simple            Do not execute simple RCF consistency checks.
@@ -623,6 +625,7 @@ process_opts()
             --build-ta-none)    BUILD_TA= ;;
             --build-ta-missing) BUILD_TA=missing ;;
             --build-ta-all)     BUILD_TA=all ;;
+            --build-ta-rm-lock) BUILD_TA_RM=yes ;;
             --build-ta-for=*)   BUILD_TA_FOR="${BUILD_TA_FOR} ${1#--build-ta-for=}" ;;
 
             --build-*) 
@@ -1022,6 +1025,7 @@ fi
 if test -n "$BUILD_TA" -o -n "$BUILD_TA_FOR" ; then
     export BUILD_TA=$BUILD_TA
     export BUILD_TA_FOR=$BUILD_TA_FOR
+    export BUILD_TA_RM=$BUILD_TA_RM
     if test -n "${QUIET}" ; then
         $PROFILE_BUILD te_cross_build "${TE_INSTALL}" >>"${TE_BUILD_LOG}" || exit_with_log
     else
