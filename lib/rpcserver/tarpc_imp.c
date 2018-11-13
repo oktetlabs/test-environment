@@ -4451,13 +4451,15 @@ msghdr2str(const struct msghdr *msg)
     return buf;
 }
 
-struct mmsghdr_alt {
+#if !HAVE_STRUCT_MMSGHDR
+struct mmsghdr {
     struct msghdr msg_hdr;  /* Message header */
     unsigned int  msg_len;  /* Number of received bytes for header */
 };
+#endif
 
 static const char *
-mmsghdr2str(const struct mmsghdr_alt *mmsg, int len)
+mmsghdr2str(const struct mmsghdr *mmsg, int len)
 {
     int          i;
     static char  buf[256];
@@ -9869,7 +9871,7 @@ dlclose(void *handle)
 
 /*------------ recvmmsg_alt() ---------------------------*/
 int
-recvmmsg_alt(int fd, struct mmsghdr_alt *mmsghdr, unsigned int vlen,
+recvmmsg_alt(int fd, struct mmsghdr *mmsghdr, unsigned int vlen,
              unsigned int flags, struct timespec *timeout, te_bool use_libc)
 {
     api_func            recvmmsg_func;
@@ -9912,7 +9914,7 @@ TARPC_FUNC(recvmmsg_alt,
 },
 {
     struct iovec        iovec_arr[RCF_RPC_MAX_MSGHDR][RCF_RPC_MAX_IOVEC];
-    struct mmsghdr_alt  mmsg[RCF_RPC_MAX_MSGHDR];
+    struct mmsghdr      mmsg[RCF_RPC_MAX_MSGHDR];
     te_bool             free_name[RCF_RPC_MAX_MSGHDR];
 
     unsigned int  i;
@@ -10136,7 +10138,7 @@ TARPC_FUNC(recvmmsg_alt,
 
 /*------------ sendmmsg_alt() ---------------------------*/
 int
-sendmmsg_alt(int fd, struct mmsghdr_alt *mmsghdr, unsigned int vlen,
+sendmmsg_alt(int fd, struct mmsghdr *mmsghdr, unsigned int vlen,
              unsigned int flags, te_bool use_libc)
 {
     api_func            sendmmsg_func;
@@ -10179,7 +10181,7 @@ TARPC_FUNC(sendmmsg_alt,
 },
 {
     struct iovec        iovec_arr[RCF_RPC_MAX_MSGHDR][RCF_RPC_MAX_IOVEC];
-    struct mmsghdr_alt  mmsg[RCF_RPC_MAX_MSGHDR];
+    struct mmsghdr      mmsg[RCF_RPC_MAX_MSGHDR];
 
     unsigned int  i;
     unsigned int  j;
