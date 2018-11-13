@@ -4828,6 +4828,7 @@ TARPC_FUNC(recvmsg,
 
             rpc_msg->msg_control.msg_control_val = rpc_c;
             rpc_msg->msg_control.msg_control_len = rpc_len;
+            rpc_msg->msg_controllen = msg.msg_controllen;
         }
     }
     finish:

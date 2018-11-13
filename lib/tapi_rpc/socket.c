@@ -1112,14 +1112,18 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
         }
         if (msg->msg_control != NULL)
         {
-            uint8_t *first_cmsg =
-                            (uint8_t *)RPC_CMSG_FIRSTHDR(msg);
             int      retval;
+            size_t   control_len;
+
+            if (msg->real_msg_controllen > 0)
+                control_len = msg->real_msg_controllen;
+            else
+                control_len = msg->msg_controllen;
 
             retval = msg_control_rpc2h(rpc_msg.msg_control.msg_control_val,
                                        rpc_msg.msg_control.msg_control_len,
-                                       first_cmsg,
-                                       &msg->msg_controllen);
+                                       msg->msg_control,
+                                       &control_len);
             if (retval != 0)
             {
                 ERROR("%s(): control message conversion failed",
@@ -1127,6 +1131,34 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
                 rpcs->_errno = TE_RC(TE_RCF, retval);
                 RETVAL_INT(recvmsg, -1);
             }
+
+            if (control_len > msg->msg_controllen)
+            {
+                /*
+                 * In case of control data truncation it is possible
+                 * that here more bytes will be required to represent
+                 * the same data than on TA. Reasons: 1) in case of
+                 * truncation trailing bytes (as computed by CMSG_SPACE())
+                 * may be ommitted for the last cmsghdr but here we
+                 * always include them 2) alignment may differ from
+                 * that on TA, resulting in more space eaten by each
+                 * cmsghdr.
+                 *
+                 * We do not need this in case we do not check truncated
+                 * control data as we can set msg_controllen itself to
+                 * big enough value.
+                 */
+                if (!(rpc_msg.msg_flags & RPC_MSG_CTRUNC))
+                {
+                    ERROR("%s(): after conversion control data is too "
+                          "long while there was no truncation",
+                          __FUNCTION__);
+                    rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
+                    RETVAL_INT(recvmsg, -1);
+                }
+            }
+            msg->msg_controllen = control_len;
+            msg->got_msg_controllen = rpc_msg.msg_controllen;
         }
 
         msg->msg_flags = (rpc_send_recv_flags)rpc_msg.msg_flags;

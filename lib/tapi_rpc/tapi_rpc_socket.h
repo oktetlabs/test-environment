@@ -306,24 +306,38 @@ typedef enum rpc_msg_flags_mode {
 
 /** Store information about message */
 typedef struct rpc_msghdr {
-    /* Standard fields - do not change types/order! */
-    void             *msg_name;         /**< protocol address */
-    socklen_t         msg_namelen;      /**< size of protocol address */
-    struct rpc_iovec *msg_iov;          /**< scatter/gather array */
-    size_t            msg_iovlen;       /**< elements in msg_iov */
-    void             *msg_control;      /**< ancillary data */
-    size_t            msg_controllen;   /**< length of ancillary data */
-
-    rpc_send_recv_flags  msg_flags;      /**< flags returned by recvmsg() */
+    /* Standard fields */
+    void                *msg_name;         /**< protocol address */
+    socklen_t            msg_namelen;      /**< size of protocol address */
+    struct rpc_iovec    *msg_iov;          /**< scatter/gather array */
+    size_t               msg_iovlen;       /**< elements in msg_iov */
+    void                *msg_control;      /**< ancillary data */
+    size_t               msg_controllen;   /**< length of ancillary data */
+    rpc_send_recv_flags  msg_flags;        /**< flags returned by
+                                                recvmsg() */
 
     /* Non-standard fields for test purposes */
+    size_t            real_msg_controllen; /**< Real length of msg_control
+                                                buffer (used only when
+                                                converting control data
+                                                back from TARPC
+                                                representation - as due to
+                                                alignment issues it is
+                                                possible that more bytes
+                                                are required for the same
+                                                data than on TA). Ignored
+                                                if zero. */
+    size_t            got_msg_controllen;  /**< msg_controllen value
+                                                obtained on TA */
+    int               msg_cmsghdr_num;     /**< Number of valid @b cmsghdr
+                                                structures in
+                                                @b msg_control */
+
     socklen_t          msg_rnamelen;    /**< real size of protocol
                                              address buffer to be copied
                                              by RPC */
     size_t             msg_riovlen;     /**< real number of elements
                                              in msg_iov */
-    int                msg_cmsghdr_num; /**< Number of elements in
-                                             the array */
     rpc_msg_flags_mode msg_flags_mode;  /**< determine how to process
                                              field msg_flags */
     rpc_send_recv_flags in_msg_flags;   /**< msg_flags value passed in */

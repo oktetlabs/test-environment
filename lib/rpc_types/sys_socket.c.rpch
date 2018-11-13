@@ -3452,7 +3452,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                     {
                         ERROR("%s(): incorrect data len for IP_TTL value",
                               __FUNCTION__);
-                        return TE_EINVAL;
+                        break;
                     }
                     rpc_cmsg->data_aux.type = TARPC_CMSG_DATA_INT;
                     rpc_cmsg->data_aux.tarpc_cmsg_data_u.int_data =
@@ -3478,7 +3478,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                     {
                         ERROR("%s(): incorrect data len %d "
                               "for IP_TOS value", __FUNCTION__, len);
-                        return TE_EINVAL;
+                        break;
                     }
                     processed = TRUE;
                     break;
@@ -3497,7 +3497,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                         {
                             ERROR("%s(): incorrect data len for IP_RECVERR "
                                   "value", __FUNCTION__);
-                            return TE_EINVAL;
+                            break;
                         }
 
                         rpc_cmsg->data_aux.type =
@@ -3535,7 +3535,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                         {
                             ERROR("%s(): incorrect data len for IP_PKTINFO "
                                   "value", __FUNCTION__);
-                            return TE_EINVAL;
+                            break;
                         }
 
                         rpc_cmsg->data_aux.type =
@@ -3570,7 +3570,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                         {
                             ERROR("%s(): incorrect data len for "
                                   "SO_TIMESTAMP value", __FUNCTION__);
-                            return TE_EINVAL;
+                            break;
                         }
 
                         rpc_cmsg->data_aux.type =
@@ -3595,7 +3595,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                         {
                             ERROR("%s(): incorrect data len for "
                                   "SO_TIMESTAMPNS value", __FUNCTION__);
-                            return TE_EINVAL;
+                            break;
                         }
 
                         rpc_cmsg->data_aux.type =
@@ -3620,7 +3620,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                             ERROR("%s(): incorrect data len %d for "
                                   "SO_TIMESTAMPING value",
                                   __FUNCTION__, len);
-                            return TE_EINVAL;
+                            break;
                         }
 
                         rpc_cmsg->data_aux.type =
@@ -3649,7 +3649,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                         ERROR("%s(): incorrect data len %d/%d for "
                               "ONLOAD_SCM_TIMESTAMPING_STREAM value",
                               __FUNCTION__, len, sizeof(*ts));
-                        return TE_EINVAL;
+                        break;
                     }
 
                     rpc_cmsg->data_aux.type =
@@ -3675,7 +3675,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                     {
                         ERROR("%s(): incorrect data len for SCM_RIGHTS"
                               " value", __FUNCTION__);
-                        return TE_EINVAL;
+                        break;
                     }
                     rpc_cmsg->data_aux.type = TARPC_CMSG_DATA_INT;
                     rpc_cmsg->data_aux.tarpc_cmsg_data_u.int_data =
