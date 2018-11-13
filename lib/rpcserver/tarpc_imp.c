@@ -11379,10 +11379,9 @@ TARPC_SYSCALL_WRAPPER(close, int, (int a), a)
  */
 /*TARPC_SYSCALL_WRAPPER(fcntl, int, (int a, int b), a, b)*/
 
-/**
- * TODO: will be done in next changes
- */
-/*TARPC_SYSCALL_WRAPPER(ioctl, int, (int a, unsigned long b, ...), a, b, ...)*/
+#ifdef SYS_ioctl
+TARPC_SYSCALL_WRAPPER(ioctl, int, (int a, unsigned long b, void *c), a, b, c)
+#endif
 
 #ifdef SYS_dup
 TARPC_SYSCALL_WRAPPER(dup, int, (int a), a)
@@ -11396,10 +11395,9 @@ TARPC_SYSCALL_WRAPPER(dup2, int, (int a, int b), a, b)
 TARPC_SYSCALL_WRAPPER(dup3, int, (int a, int b, int c), a, b, c)
 #endif
 
-/**
- * TODO: will be done in next changes
- */
-/*TARPC_SYSCALL_WRAPPER(vfork, pid_t, (void a), a)*/
+#ifdef SYS_vfork
+TARPC_SYSCALL_WRAPPER(vfork, pid_t, (void))
+#endif
 
 /**
  * NOTE: <man 2 open>
