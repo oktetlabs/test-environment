@@ -1988,21 +1988,13 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
     tarpc_recvmmsg_alt_in  in;
     tarpc_recvmmsg_alt_out out;
 
-    struct rpc_msghdr *msg;
-    unsigned int       j;
-
-    struct tarpc_mmsghdr rpc_mmsg[RCF_RPC_MAX_MSGHDR];
-    struct tarpc_msghdr *rpc_msg;
-    struct tarpc_iovec   iovec_arr[RCF_RPC_MAX_MSGHDR][RCF_RPC_MAX_IOVEC];
-    struct tarpc_cmsghdr cmsg_hdrs[RCF_RPC_MAX_MSGHDR][RCF_RPC_MAX_CMSGHDR];
-
-    size_t i;
+    struct tarpc_mmsghdr *tarpc_mmsg = NULL;
+    rpc_msghdr           *msg = NULL;
+    unsigned int          j;
+    te_errno              rc;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    memset(rpc_mmsg, 0, sizeof(rpc_mmsg));
-    memset(iovec_arr, 0, sizeof(iovec_arr));
-    memset(cmsg_hdrs, 0, sizeof(cmsg_hdrs));
 
     if (rpcs == NULL)
     {
@@ -2022,136 +2014,36 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
 
     if (mmsg != NULL && rpcs->op != RCF_RPC_WAIT)
     {
-        in.mmsg.mmsg_val = rpc_mmsg;
-        in.mmsg.mmsg_len = vlen;
-
-        for (j = 0; j < vlen; j++)
+        rc = mmsghdrs_rpc2tarpc(mmsg, vlen, &tarpc_mmsg, TRUE);
+        if (rc != 0)
         {
-            msg = &mmsg[j].msg_hdr;
-            rpc_msg = &rpc_mmsg[j].msg_hdr;
-            rpc_mmsg[j].msg_len = mmsg[j].msg_len;
-
-            /** Initialize @b msg_flags with a random value by default, it
-             * should not affect anything since the field is
-             * "write only". */
-            MSGHDR_MSG_FLAGS_INIT(msg, msg);
-
-            if (msg->msg_riovlen > RCF_RPC_MAX_IOVEC)
-            {
-                rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
-                ERROR("Length of the I/O vector is too long (%u) - "
-                      "increase RCF_RPC_MAX_IOVEC(%u)",
-                      msg->msg_riovlen, RCF_RPC_MAX_IOVEC);
-                RETVAL_INT(recvmmsg_alt, -1);
-            }
-
-            if (msg->msg_cmsghdr_num > RCF_RPC_MAX_CMSGHDR)
-            {
-                rpcs->_errno = TE_RC(TE_RCF, TE_ENOMEM);
-                ERROR("Too many cmsg headers - increase "
-                      "RCF_RPC_MAX_CMSGHDR");
-                RETVAL_INT(recvmmsg_alt, -1);
-            }
-
-            if (msg->msg_control != NULL && msg->msg_cmsghdr_num == 0)
-            {
-                rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
-                ERROR("Number of cmsg headers is incorrect");
-                RETVAL_INT(recvmmsg_alt, -1);
-            }
-
-            if (msg->msg_iovlen > msg->msg_riovlen ||
-                msg->msg_namelen > msg->msg_rnamelen)
-            {
-                rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
-                RETVAL_INT(recvmmsg_alt, -1);
-            }
-
-            for (i = 0; i < msg->msg_riovlen && msg->msg_iov != NULL; i++)
-            {
-                iovec_arr[j][i].iov_base.iov_base_val =
-                    msg->msg_iov[i].iov_base;
-                iovec_arr[j][i].iov_base.iov_base_len =
-                    msg->msg_iov[i].iov_rlen;
-                iovec_arr[j][i].iov_len = msg->msg_iov[i].iov_len;
-            }
-
-            if (msg->msg_iov != NULL)
-            {
-                rpc_msg->msg_iov.msg_iov_val = iovec_arr[j];
-                rpc_msg->msg_iov.msg_iov_len = msg->msg_riovlen;
-            }
-            rpc_msg->msg_iovlen = msg->msg_iovlen;
-
-            rpc_msg->msg_namelen = msg->msg_namelen;
-            sockaddr_raw2rpc(msg->msg_name, msg->msg_rnamelen,
-                             &rpc_msg->msg_name);
-
-            rpc_msg->msg_flags = msg->msg_flags;
-
-            if (msg->msg_control != NULL)
-            {
-                rpc_msg->msg_control.msg_control_val = cmsg_hdrs[j];
-                rpc_msg->msg_control.msg_control_len = msg->msg_cmsghdr_num;
-                cmsg_hdrs[j][0].data.data_val = msg->msg_control;
-                cmsg_hdrs[j][0].data.data_len = msg->msg_controllen -
-                                             msg->msg_cmsghdr_num *
-                                        CMSG_ALIGN(sizeof(struct cmsghdr));
-            }
+            rpcs->_errno = TE_RC(TE_TAPI, rc);
+            RETVAL_INT(recvmmsg_alt, -1);
         }
+
+        in.mmsg.mmsg_val = tarpc_mmsg;
+        in.mmsg.mmsg_len = vlen;
     }
 
     rcf_rpc_call(rpcs, "recvmmsg_alt", &in, &out);
+    tarpc_mmsghdrs_free(tarpc_mmsg, vlen);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(recvmmsg_alt, out.retval);
 
     if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT &&
         mmsg != NULL && out.mmsg.mmsg_val != NULL)
     {
+        rc = mmsghdrs_tarpc2rpc(out.mmsg.mmsg_val, mmsg,
+                                out.mmsg.mmsg_len);
+        if (rc != 0)
+        {
+            rpcs->_errno = TE_RC(TE_TAPI, rc);
+            RETVAL_INT(recvmmsg_alt, -1);
+        }
+
         for (j = 0; j < out.mmsg.mmsg_len; j++)
         {
             msg = &mmsg[j].msg_hdr;
-            rpc_msg = &out.mmsg.mmsg_val[j].msg_hdr;
-            mmsg[j].msg_len = out.mmsg.mmsg_val[j].msg_len;
-
-            sockaddr_rpc2h(&rpc_msg->msg_name, msg->msg_name,
-                           msg->msg_rnamelen,
-                           NULL, &msg->msg_namelen);
-            msg->msg_namelen = rpc_msg->msg_namelen;
-
-            for (i = 0; i < msg->msg_riovlen && msg->msg_iov != NULL; i++)
-            {
-                msg->msg_iov[i].iov_len =
-                    rpc_msg->msg_iov.msg_iov_val[i].iov_len;
-                memcpy(msg->msg_iov[i].iov_base,
-                       rpc_msg->msg_iov.msg_iov_val[i].iov_base.
-                                                        iov_base_val,
-                       msg->msg_iov[i].iov_rlen);
-            }
-            if (msg->msg_control != NULL)
-            {
-                uint8_t *first_cmsg =
-                            (uint8_t *)RPC_CMSG_FIRSTHDR(msg);
-                int      retval;
-                size_t   controllen = msg->msg_controllen;
-
-                retval = msg_control_rpc2h(
-                                    rpc_msg->msg_control.msg_control_val,
-                                    rpc_msg->msg_control.msg_control_len,
-                                    NULL, 0,
-                                    first_cmsg, &controllen);
-                msg->msg_controllen = controllen;
-                if (retval != 0)
-                {
-                    ERROR("%s(): cmsghdr data conversion failed",
-                          __FUNCTION__);
-                    rpcs->_errno = TE_RC(TE_RCF, retval);
-                }
-            }
-
-            msg->msg_flags = (rpc_send_recv_flags)rpc_msg->msg_flags;
-            msg->in_msg_flags = (rpc_send_recv_flags)rpc_msg->in_msg_flags;
-
             snprintf(str_buf + strlen(str_buf),
                      sizeof(str_buf) - strlen(str_buf),
                      "{{msg_name: %p, msg_namelen: %" TE_PRINTF_SOCKLEN_T
@@ -2198,15 +2090,13 @@ rpc_sendmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
     tarpc_sendmmsg_alt_in  in;
     tarpc_sendmmsg_alt_out out;
 
-    struct rpc_msghdr *msg;
-    unsigned int       j;
-
-    struct tarpc_mmsghdr rpc_mmsg[RCF_RPC_MAX_MSGHDR];
-    struct tarpc_msghdr *rpc_msg;
+    tarpc_mmsghdr        *tarpc_mmsg = NULL;
+    rpc_msghdr           *msg;
+    unsigned int          j;
+    te_errno              rc;
 
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
-    memset(rpc_mmsg, 0, sizeof(rpc_mmsg));
 
     if (rpcs == NULL)
     {
@@ -2220,48 +2110,36 @@ rpc_sendmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
 
     if (mmsg != NULL && rpcs->op != RCF_RPC_WAIT)
     {
-        in.mmsg.mmsg_val = rpc_mmsg;
-        in.mmsg.mmsg_len = vlen;
-
-        for (j = 0; j < vlen; j++)
+        rc = mmsghdrs_rpc2tarpc(mmsg, vlen, &tarpc_mmsg, FALSE);
+        if (rc != 0)
         {
-            msg = &mmsg[j].msg_hdr;
-            rpc_msg = &rpc_mmsg[j].msg_hdr;
-            rpc_mmsg[j].msg_len = mmsg[j].msg_len;
-
-            msghdr_rpc2tarpc(msg, rpc_msg, FALSE);
-            /*
-             * FIXME: this should be removed after sendmmsg()
-             * is reworked using newer API for msghdr
-             * processing.
-             */
-            rpc_msg->msg_namelen = msg->msg_namelen;
-
-            /** Initialize @b msg_flags with a random value by default, it
-             * should not affect anything since the field is ignored. */
-            MSGHDR_MSG_FLAGS_INIT(msg, rpc_msg);
+            rpcs->_errno = TE_RC(TE_TAPI, rc);
+            RETVAL_INT(sendmmsg_alt, -1);
         }
+
+        in.mmsg.mmsg_val = tarpc_mmsg;
+        in.mmsg.mmsg_len = vlen;
     }
 
     rcf_rpc_call(rpcs, "sendmmsg_alt", &in, &out);
-
-    for (j = 0; j < vlen; j++)
-    {
-        rpc_msg = &rpc_mmsg[j].msg_hdr;
-        tarpc_msghdr_free(rpc_msg);
-    }
+    tarpc_mmsghdrs_free(tarpc_mmsg, vlen);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(sendmmsg_alt, out.retval);
 
     if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT &&
         mmsg != NULL && out.mmsg.mmsg_val != NULL)
     {
+        rc = mmsghdrs_tarpc2rpc(out.mmsg.mmsg_val, mmsg,
+                                out.mmsg.mmsg_len);
+        if (rc != 0)
+        {
+            rpcs->_errno = TE_RC(TE_TAPI, rc);
+            RETVAL_INT(recvmmsg_alt, -1);
+        }
+
         for (j = 0; j < out.mmsg.mmsg_len; j++)
         {
             msg = &mmsg[j].msg_hdr;
-            rpc_msg = &out.mmsg.mmsg_val[j].msg_hdr;
-
-            mmsg[j].msg_len = out.mmsg.mmsg_val[j].msg_len;
 
             snprintf(str_buf + strlen(str_buf),
                      sizeof(str_buf) - strlen(str_buf),

@@ -570,4 +570,53 @@ extern void tarpc_msghdr_free(tarpc_msghdr *msg);
 extern te_errno msghdr_tarpc2rpc(const tarpc_msghdr *tarpc_msg,
                                  rpc_msghdr *rpc_msg);
 
+/**
+ * Convert array of rpc_mmsghdr structures to array of
+ * tarpc_mmsghdr structures.
+ *
+ * @note @b tarpc_mmsghdrs_free() should be used to release memory
+ *       after successful call of this function.
+ *
+ * @param rpc_mmsgs       Pointer to array of rpc_mmsghdr structures.
+ * @param num             Number of elements in @p rpc_mmsgs.
+ * @param tarpc_mmsgs     Where to save a pointer to array of converted
+ *                        values.
+ * @param recv_call       If @c TRUE, conversion is done for receive call.
+ *
+ * @return Status code.
+ *
+ * @sa mmsghdrs_tarpc2rpc, tarpc_mmsghdrs_free
+ */
+extern te_errno mmsghdrs_rpc2tarpc(const struct rpc_mmsghdr *rpc_mmsgs,
+                                   unsigned int num,
+                                   tarpc_mmsghdr **tarpc_mmsgs,
+                                   te_bool recv_call);
+
+/**
+ * Release memory allocated by @b mmsghdrs_rpc2tarpc() for converted values.
+ *
+ * @param taprc_mmsgs       Pointer to array of tarpc_mmsghdr structures.
+ * @param num               Number of elements in the array.
+ *
+ * @return Status code.
+ */
+extern void tarpc_mmsghdrs_free(tarpc_mmsghdr *tarpc_mmsgs,
+                                unsigned int num);
+
+/**
+ * Convert array of tarpc_mmsghdr structures back to array of
+ * rpc_mmsghdr structures after RPC call.
+ *
+ * @param tarpc_mmsgs     Pointer to array of tarpc_mmsghdr structures.
+ * @param rpc_mmsgs       Pointer to array of rpc_mmsghdr structures.
+ * @param num             Number of elements in arrays.
+ *
+ * @return Status code.
+ *
+ * @sa mmsghdrs_rpc2tarpc
+ */
+extern te_errno mmsghdrs_tarpc2rpc(const tarpc_mmsghdr *tarpc_mmsgs,
+                                   struct rpc_mmsghdr *rpc_mmsgs,
+                                   unsigned int num);
+
 #endif /* !__TE_TAPI_RPC_INTERNAL_H__ */

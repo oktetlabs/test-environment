@@ -383,3 +383,90 @@ msghdr_tarpc2rpc(const tarpc_msghdr *tarpc_msg, rpc_msghdr *rpc_msg)
 
     return 0;
 }
+
+/* See description in tapi_rpc_internal.h */
+te_errno
+mmsghdrs_rpc2tarpc(const struct rpc_mmsghdr *rpc_mmsgs, unsigned int num,
+                   tarpc_mmsghdr **tarpc_mmsgs, te_bool recv_call)
+{
+    unsigned int     i;
+    te_errno         rc = 0;
+    tarpc_mmsghdr   *tarpc_mmsgs_aux = NULL;
+
+    if (tarpc_mmsgs == NULL)
+    {
+        ERROR("%s(): tarpc_mmsgs argument must not be NULL", __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    tarpc_mmsgs_aux = TE_ALLOC(sizeof(tarpc_mmsghdr) * num);
+    if (tarpc_mmsgs_aux == NULL)
+        return TE_ENOMEM;
+
+    for (i = 0; i < num; i++)
+    {
+        rc = msghdr_rpc2tarpc(&rpc_mmsgs[i].msg_hdr,
+                              &tarpc_mmsgs_aux[i].msg_hdr,
+                              recv_call);
+        if (rc != 0)
+        {
+            ERROR("%s(): conversion failed for mmsg[%u], rc=%r",
+                  __FUNCTION__, i, rc);
+            goto finish;
+        }
+
+        tarpc_mmsgs_aux[i].msg_len = rpc_mmsgs[i].msg_len;
+    }
+
+    *tarpc_mmsgs = tarpc_mmsgs_aux;
+
+finish:
+
+    if (rc != 0)
+        tarpc_mmsghdrs_free(tarpc_mmsgs_aux, num);
+
+    return rc;
+}
+
+/* See description in tapi_rpc_internal.h */
+void
+tarpc_mmsghdrs_free(tarpc_mmsghdr *tarpc_mmsgs, unsigned int num)
+{
+    unsigned int i;
+
+    if (tarpc_mmsgs == NULL)
+        return;
+
+    for (i = 0; i < num; i++)
+    {
+        tarpc_msghdr_free(&tarpc_mmsgs[i].msg_hdr);
+    }
+
+    free(tarpc_mmsgs);
+}
+
+/* See description in tapi_rpc_internal.h */
+te_errno
+mmsghdrs_tarpc2rpc(const tarpc_mmsghdr *tarpc_mmsgs,
+                   struct rpc_mmsghdr *rpc_mmsgs,
+                   unsigned int num)
+{
+    unsigned int i;
+    te_errno     rc;
+
+    for (i = 0; i < num; i++)
+    {
+        rc = msghdr_tarpc2rpc(&tarpc_mmsgs[i].msg_hdr,
+                              &rpc_mmsgs[i].msg_hdr);
+        if (rc != 0)
+        {
+            ERROR("%s(): conversion failed for mmsg[%u], rc=%r",
+                  __FUNCTION__, i, rc);
+            return rc;
+        }
+
+        rpc_mmsgs[i].msg_len = tarpc_mmsgs[i].msg_len;
+    }
+
+    return 0;
+}
