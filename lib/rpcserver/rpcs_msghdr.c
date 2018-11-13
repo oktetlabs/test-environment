@@ -70,7 +70,7 @@ rpcs_msghdr_tarpc2h(te_bool recv_call, const struct tarpc_msghdr *tarpc_msg,
     }
     else
     {
-        rc = sockaddr_rpc2h(tarpc_addr, SA(&helper->addr_data),
+        rc = sockaddr_rpc2h(tarpc_addr, SA(helper->addr_data),
                             max_addr_len,
                             &helper->addr, &helper->addr_len);
         if (rc != 0)
