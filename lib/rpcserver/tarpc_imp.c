@@ -11461,3 +11461,106 @@ TARPC_SYSCALL_WRAPPER(epoll_pwait, int, (int a, struct epoll_event *b, int c,
                       int d, const sigset_t *e), a, b, c, d, e)
 #endif
 
+/**
+ * Implement common syscall operations for fcntl().
+ *
+ * @param use_libc      How to resolve syscall function.
+ * @param fd            Opened file descriptor.
+ * @param cmd           Operation to execute.
+ * @param argp          Optional argument. Whether or not this argument is
+ *                      required is determined by @c cmd
+ *
+ * @return              Return the syscall() result.
+ */
+static int
+fcntl_te_wrap_syscall_common(te_bool use_libc,
+                             int fd,
+                             int cmd,
+                             va_list argp)
+{
+    int             int_arg;
+    api_func        syscall_func = NULL;
+    static api_func syscall_func_use_libc = NULL;
+    static api_func syscall_func_default = NULL;
+
+    syscall_func = use_libc ? syscall_func_use_libc : syscall_func_default;
+
+    if (syscall_func == NULL &&
+        tarpc_find_func(use_libc ? TARPC_LIB_USE_LIBC : TARPC_LIB_DEFAULT,
+                        "syscall", &syscall_func) != 0)
+    {
+        if (use_libc)
+            syscall_func_use_libc = NULL;
+        else
+            syscall_func_default = NULL;
+
+        ERROR("Failed to find function \"syscall\" in %s",
+              use_libc ? "libc" : "dynamic lib");
+        return -1;
+    }
+
+    if (cmd == F_GETFD || cmd == F_GETFL ||cmd == F_GETSIG
+#if defined (F_GETPIPE_SZ)
+        || cmd == F_GETPIPE_SZ
+#endif
+        )
+        return syscall_func(SYS_fcntl, fd, cmd);
+#if defined (F_GETOWN_EX) && defined (F_SETOWN_EX)
+    else if (cmd == F_GETOWN_EX || cmd == F_SETOWN_EX)
+    {
+        struct f_owner_ex *foex_arg;
+        foex_arg = va_arg(argp, struct f_owner_ex*);
+        return syscall_func(SYS_fcntl, fd, cmd, foex_arg);
+    }
+#endif
+    int_arg = va_arg(argp, int);
+    return syscall_func(SYS_fcntl, fd, cmd, int_arg);
+}
+
+
+
+
+/**
+ * Wrapper for syscall(fcntl) from libc.
+ *
+ * @param fd        Opened file descriptor.
+ * @param cmd       Operation to execute.
+ * @param ...       Optional argument. Whether or not this argument is
+ *                  required is determined by @c cmd
+ *
+ * @return @c -1 in the case of syscall was not found
+ *         or return the result of syscall.
+ */
+int fcntl_te_wrap_syscall(int fd, int cmd, ...)
+{
+    va_list argp;
+    int rc;
+
+    va_start(argp, cmd);
+    rc = fcntl_te_wrap_syscall_common(TRUE, fd, cmd, argp);
+    va_end(argp);
+    return rc;
+}
+
+/**
+ * Wrapper for syscall(fcntl) from dynamic library.
+ *
+ * @param fd        Opened file descriptor.
+ * @param cmd       Operation to execute.
+ * @param ...       Optional argument. Whether or not this argument is
+ *                  required is determined by @c cmd
+ *
+ * @return @c -1 in the case of syscall was not found
+ *         or return the result of syscall.
+ */
+int fcntl_te_wrap_syscall_dl(int fd, int cmd, ...)
+{
+    va_list argp;
+    int rc;
+
+    va_start(argp, cmd);
+    rc = fcntl_te_wrap_syscall_common(FALSE, fd, cmd, argp);
+    va_end(argp);
+    return rc;
+}
+
