@@ -4193,7 +4193,7 @@ msg_control_rpc2h(tarpc_cmsghdr *rpc_cmsg,
 
     total_len = tarpc_cmsg_total_len(rpc_cmsg, rpc_cmsg_count);
     c = CMSG_FIRSTHDR(&msg);
-    if (*cmsg_len < ((uint8_t *)c - cmsg_buf) + total_len)
+    if (c == NULL || *cmsg_len < ((uint8_t *)c - cmsg_buf) + total_len)
     {
         ERROR("%s(): too small control message buffer",
               __FUNCTION__);
