@@ -16,7 +16,7 @@
  */
 
 #define TE_LGR_USER     "RCF RPC"
-
+#include "te_alloc.h"
 #include "te_config.h"
 
 #include <stdio.h>
@@ -111,6 +111,39 @@ cfg_get_force_restart_flag(void)
 
     return force_restart != 0;
 }
+
+/* See description in rcf_rpc.h */
+te_errno
+rcf_rpc_server_hook_register(void (*hook_to_register)(rcf_rpc_server *rpcs))
+{
+    rcf_rpc_server_hook *new_hook = TE_ALLOC(sizeof(*new_hook));
+
+    if (new_hook == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    new_hook->hook = hook_to_register;
+
+    SLIST_INSERT_HEAD(&rcf_rpc_server_hooks_list, new_hook, next);
+
+    return 0;
+}
+
+
+/**
+ * Run all registered hooks after rcf_rpc_server was created
+ */
+static void
+rcf_rpc_server_hooks_run(rcf_rpc_server *rpcs)
+{
+    const rcf_rpc_server_hook *hook;
+
+    SLIST_FOREACH(hook, &rcf_rpc_server_hooks_list, next)
+    {
+        hook->hook(rpcs);
+    }
+    return;
+}
+
 
 /* See description in rcf_rpc.h */
 te_errno
@@ -301,6 +334,9 @@ rcf_rpc_server_get(const char *ta, const char *name,
     rpcs->def_timeout = RCF_RPC_DEFAULT_TIMEOUT;
     rpcs->timeout = RCF_RPC_UNSPEC_TIMEOUT;
     rpcs->sid = sid;
+
+    rcf_rpc_server_hooks_run(rpcs);
+
     if (p_handle != NULL)
         *p_handle = rpcs;
     else

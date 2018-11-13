@@ -240,6 +240,23 @@ tarpc_find_func(tarpc_lib_flags lib_flags, const char *name, api_func *func)
     errno = 0;
 #endif
 
+#define TARPC_MAX_FUNC_NAME 64
+
+    if (lib_flags & TARPC_LIB_USE_SYSCALL)
+    {
+        char func_syscall_wrap_name[TARPC_MAX_FUNC_NAME] = {0};
+
+        if ((lib_flags & TARPC_LIB_USE_LIBC) || !tarpc_dynamic_library_loaded())
+            TE_SPRINTF(func_syscall_wrap_name, "%s_te_wrap_syscall", name);
+        else
+            TE_SPRINTF(func_syscall_wrap_name, "%s_te_wrap_syscall_dl", name);
+
+        if ((*func = rcf_ch_symbol_addr(func_syscall_wrap_name, 1)) != NULL)
+            return 0;
+
+        /* Wrapper was not found, continues to standart name resolving */
+    }
+
     if ((lib_flags & TARPC_LIB_USE_LIBC) || !tarpc_dynamic_library_loaded())
     {
         static void *libc_handle = NULL;
@@ -11218,3 +11235,231 @@ TARPC_FUNC_STATIC(drain_fd, {},
    MAKE_CALL(out->retval = func(in->common.lib_flags, in->fd, in->size,
                                 in->time2wait, &out->read));
 })
+
+
+/*---------------------- wrappers for syscall -------------------------------*/
+/*
+ * This is not an exhaustive list of syscalls, it is designed to test the
+ * capabilities of some libraries by some test suites.
+ *
+ * WARNING: Some architectures have very quirky syscalls,
+ * for example x86-64 and ARM there is no socketcall() system call,
+ * see man socketcall(2) for details.
+ * There are other quirky architectures and quirky syscalls.
+ */
+
+#ifdef SYS_setrlimit
+TARPC_SYSCALL_WRAPPER(setrlimit, int,
+                      (int a, const struct rlimit *b), a, b)
+#endif
+
+#ifdef SYS_socket
+TARPC_SYSCALL_WRAPPER(socket, int,
+                      (int a, int b, int c), a, b, c)
+#endif
+
+#ifdef SYS_bind
+TARPC_SYSCALL_WRAPPER(bind, int,
+                      (int a, const struct sockaddr *b, socklen_t c), a, b, c)
+#endif
+
+#ifdef SYS_listen
+TARPC_SYSCALL_WRAPPER(listen, int,
+                      (int a, int b), a, b)
+#endif
+
+#ifdef SYS_accept
+TARPC_SYSCALL_WRAPPER(accept, int, (int a, struct sockaddr *b, socklen_t *c),
+                      a, b, c)
+#endif
+
+#ifdef SYS_accept4
+TARPC_SYSCALL_WRAPPER(accept4, int, (int a, struct sockaddr *b, socklen_t *c,
+                      int d), a, b, c, d)
+#endif
+
+#ifdef SYS_connect
+TARPC_SYSCALL_WRAPPER(connect, int, (int a, const struct sockaddr *b,
+                      socklen_t c), a, b, c)
+#endif
+
+#ifdef SYS_shutdown
+TARPC_SYSCALL_WRAPPER(shutdown, int, (int a, int b), a, b)
+#endif
+
+#ifdef SYS_getsockname
+TARPC_SYSCALL_WRAPPER(getsockname, int,
+                      (int a, struct sockaddr *b, socklen_t *c), a, b, c)
+#endif
+
+#ifdef SYS_getpeername
+TARPC_SYSCALL_WRAPPER(getpeername, int,
+                      (int a, struct sockaddr *b, socklen_t *c), a, b, c)
+#endif
+
+#ifdef SYS_getsockopt
+TARPC_SYSCALL_WRAPPER(getsockopt, int, (int a, int b, int c, void *d,
+                      socklen_t *e), a, b, c, d, e)
+#endif
+
+#ifdef SYS_setsockopt
+TARPC_SYSCALL_WRAPPER(setsockopt, int, (int a, int b, int c, const void *d,
+                      socklen_t e), a, b, c, d, e)
+#endif
+
+#ifdef SYS_recvfrom
+TARPC_SYSCALL_WRAPPER(recvfrom, ssize_t, (int a, void *b, size_t c, int d,
+                       struct sockaddr *e, socklen_t *f), a, b, c, d, e, f)
+#endif
+
+#ifdef SYS_recvmsg
+TARPC_SYSCALL_WRAPPER(recvmsg, ssize_t, (int a, struct msghdr *b, int c),
+                      a, b, c)
+#endif
+
+#ifdef SYS_recvmmsg
+TARPC_SYSCALL_WRAPPER(recvmmsg, int, (int a, struct mmsghdr *b, unsigned int c,
+                      unsigned int d, struct timespec *e), a, b, c, d, e)
+#endif
+
+#ifdef SYS_sendto
+TARPC_SYSCALL_WRAPPER(sendto, ssize_t, (int a, const void *b, size_t c, int d,
+                      const struct sockaddr *e, socklen_t f), a, b, c, d, e, f)
+#endif
+
+#ifdef SYS_sendmsg
+TARPC_SYSCALL_WRAPPER(sendmsg, ssize_t, (int a, const struct msghdr *b, int c),
+                      a, b, c)
+#endif
+
+#ifdef SYS_select
+TARPC_SYSCALL_WRAPPER(select, int, (int a, fd_set *b, fd_set *c, fd_set *d,
+                      struct timeval *e), a, b, c, d, e)
+#endif
+
+#ifdef SYS_poll
+TARPC_SYSCALL_WRAPPER(poll, int, (struct pollfd *a, nfds_t b, int c), a, b, c)
+#endif
+
+#ifdef SYS_ppoll
+TARPC_SYSCALL_WRAPPER(ppoll, int, (struct pollfd *a, nfds_t b,
+                      const struct timespec *c, const sigset_t *d), a, b, c, d)
+#endif
+
+#ifdef SYS_splice
+TARPC_SYSCALL_WRAPPER(splice, ssize_t, (int a, loff_t *b, int c, loff_t *d,
+                      size_t e, unsigned int f), a, b, c, d, e, f)
+#endif
+
+#ifdef SYS_read
+TARPC_SYSCALL_WRAPPER(read, ssize_t, (int a, void *b, size_t c), a, b, c)
+#endif
+
+
+#ifdef SYS_write
+TARPC_SYSCALL_WRAPPER(write, ssize_t, (int a, const void *b, size_t c), a, b, c)
+#endif
+
+#ifdef SYS_readv
+TARPC_SYSCALL_WRAPPER(readv, ssize_t, (int a, const struct iovec *b, int c),
+                      a, b, c)
+#endif
+
+#ifdef SYS_writev
+TARPC_SYSCALL_WRAPPER(writev, ssize_t, (int a, const struct iovec *b, int c),
+                      a, b, c)
+#endif
+
+#ifdef SYS_close
+TARPC_SYSCALL_WRAPPER(close, int, (int a), a)
+#endif
+
+/**
+ * TODO: will be done in next changes
+ */
+/*TARPC_SYSCALL_WRAPPER(fcntl, int, (int a, int b), a, b)*/
+
+/**
+ * TODO: will be done in next changes
+ */
+/*TARPC_SYSCALL_WRAPPER(ioctl, int, (int a, unsigned long b, ...), a, b, ...)*/
+
+#ifdef SYS_dup
+TARPC_SYSCALL_WRAPPER(dup, int, (int a), a)
+#endif
+
+#ifdef SYS_dup2
+TARPC_SYSCALL_WRAPPER(dup2, int, (int a, int b), a, b)
+#endif
+
+#ifdef SYS_dup3
+TARPC_SYSCALL_WRAPPER(dup3, int, (int a, int b, int c), a, b, c)
+#endif
+
+/**
+ * TODO: will be done in next changes
+ */
+/*TARPC_SYSCALL_WRAPPER(vfork, pid_t, (void a), a)*/
+
+/**
+ * NOTE: <man 2 open>
+ * open() can called with two or three arguments,
+ * TE uses variant with 3 arguments only
+ */
+#ifdef SYS_open
+TARPC_SYSCALL_WRAPPER(open, int, (const char *a, int b, mode_t c), a, b, c)
+#endif
+
+#ifdef SYS_creat
+TARPC_SYSCALL_WRAPPER(creat, int, (const char *a, mode_t b), a, b)
+#endif
+
+#ifdef SYS_socketpair
+TARPC_SYSCALL_WRAPPER(socketpair, int, (int a, int b, int c, int *d),
+                      a, b, c, d)
+#endif
+
+#ifdef SYS_pipe
+TARPC_SYSCALL_WRAPPER(pipe, int, (int a[2]), a)
+#endif
+
+#ifdef SYS_pipe2
+TARPC_SYSCALL_WRAPPER(pipe2, int, (int a[2], int b), a, b)
+#endif
+
+#ifdef SYS_setuid
+TARPC_SYSCALL_WRAPPER(setuid, int, (uid_t a), a)
+#endif
+
+#ifdef SYS_chroot
+TARPC_SYSCALL_WRAPPER(chroot, int, (const char *a), a)
+#endif
+
+#ifdef SYS_execve
+TARPC_SYSCALL_WRAPPER(execve, int, (const char *a, char *const b[],
+                      char *const c[]), a, b, c)
+#endif
+
+#ifdef SYS_epoll_create
+TARPC_SYSCALL_WRAPPER(epoll_create, int, (int a), a)
+#endif
+
+#ifdef SYS_epoll_create1
+TARPC_SYSCALL_WRAPPER(epoll_create1, int, (int a), a)
+#endif
+
+#ifdef SYS_epoll_ctl
+TARPC_SYSCALL_WRAPPER(epoll_ctl, int, (int a, int b, int c,
+                      struct epoll_event *d), a, b, c, d)
+#endif
+
+#ifdef SYS_epoll_wait
+TARPC_SYSCALL_WRAPPER(epoll_wait, int, (int a, struct epoll_event *b, int c,
+                      int d), a, b, c, d)
+#endif
+
+#ifdef SYS_epoll_pwait
+TARPC_SYSCALL_WRAPPER(epoll_pwait, int, (int a, struct epoll_event *b, int c,
+                      int d, const sigset_t *e), a, b, c, d, e)
+#endif
+

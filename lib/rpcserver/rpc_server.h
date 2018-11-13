@@ -1063,5 +1063,42 @@ extern void signal_registrar_siginfo(int signum, siginfo_t *siginfo,
 extern sigset_t rpcs_received_signals;
 extern tarpc_siginfo_t last_siginfo;
 
+/**
+ * Macro to define syscall function wrapper content.
+ *
+ * @param _name     Function name (bind, connect, etc.)
+ * @param _rettype  Return type (according to man _name)
+ * @param _args     Arguments list (according to man _name)
+ * @param ...       Values of arguments
+ */
+#define TARPC_SYSCALL_WRAPPER(_name, _rettype, _args, ...)                  \
+_rettype _name##_te_wrap_syscall _args                                      \
+{                                                                           \
+    static api_func syscall_func = NULL;                                    \
+                                                                            \
+    if (syscall_func == NULL &&                                             \
+        tarpc_find_func(TARPC_LIB_USE_LIBC, "syscall", &syscall_func) != 0) \
+    {                                                                       \
+        syscall_func = NULL;                                                \
+        ERROR("Failed to find function \"syscall\" in libc");               \
+        return -1;                                                          \
+    }                                                                       \
+    return (_rettype)syscall_func(SYS_##_name, __VA_ARGS__);                \
+}                                                                           \
+                                                                            \
+_rettype _name##_te_wrap_syscall_dl _args                                   \
+{                                                                           \
+    static api_func syscall_func = NULL;                                    \
+                                                                            \
+    if (syscall_func == NULL &&                                             \
+        tarpc_find_func(0, "syscall", &syscall_func) != 0)                  \
+    {                                                                       \
+        syscall_func = NULL;                                                \
+        ERROR("Failed to find function \"syscall\" in dynamic lib");        \
+        return -1;                                                          \
+    }                                                                       \
+    return (_rettype)syscall_func(SYS_##_name, __VA_ARGS__);                \
+}
+
 
 #endif /* __TARPC_SERVER_H__ */

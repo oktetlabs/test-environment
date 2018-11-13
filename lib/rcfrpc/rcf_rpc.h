@@ -37,6 +37,7 @@
 #include "rcf_rpc_defs.h"
 #include "te_rpc_types.h"
 #include "conf_api.h"
+#include "te_queue.h"
 
 #include "tarpc.h"
 
@@ -666,6 +667,26 @@ extern void rcf_rpc_namespace_free_cache(rcf_rpc_server *rpcs);
  */
 extern te_errno rcf_rpc_namespace_id2str(
         rcf_rpc_server *rpcs, rpc_ptr_id_namespace id, char **str);
+
+
+/* Hook's entry for rcf_rpc_server. */
+typedef struct rcf_rpc_server_hook {
+    SLIST_ENTRY(rcf_rpc_server_hook) next;  /**< next hook */
+    void (*hook)(rcf_rpc_server *rpcs);     /**< function to execute */
+} rcf_rpc_server_hook;
+
+SLIST_HEAD(, rcf_rpc_server_hook) rcf_rpc_server_hooks_list;
+
+/**
+ * Add new hook to rcf_rpc_server_hook_list, that will be executed after
+ * rcf_rpc_server is created.
+ *
+ * @param hook_to_register  Function to execute
+ *
+ * @return                  Status code
+ */
+extern te_errno rcf_rpc_server_hook_register(
+          void (*hook_to_register)(rcf_rpc_server *rpcs));
 
 /**@} <!-- END te_lib_rcfrpc --> */
 
