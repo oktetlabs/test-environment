@@ -1083,7 +1083,7 @@ _rettype _name##_te_wrap_syscall _args                                      \
         ERROR("Failed to find function \"syscall\" in libc");               \
         return -1;                                                          \
     }                                                                       \
-    return (_rettype)syscall_func(SYS_##_name, __VA_ARGS__);                \
+    return (_rettype)syscall_func(SYS_##_name, ##__VA_ARGS__);              \
 }                                                                           \
                                                                             \
 _rettype _name##_te_wrap_syscall_dl _args                                   \
@@ -1097,7 +1097,7 @@ _rettype _name##_te_wrap_syscall_dl _args                                   \
         ERROR("Failed to find function \"syscall\" in dynamic lib");        \
         return -1;                                                          \
     }                                                                       \
-    return (_rettype)syscall_func(SYS_##_name, __VA_ARGS__);                \
+    return (_rettype)syscall_func(SYS_##_name, ##__VA_ARGS__);              \
 }
 
 
