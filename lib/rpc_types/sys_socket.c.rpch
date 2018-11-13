@@ -4072,6 +4072,22 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
 
     first_byte = end_byte = cmsg_buf;
     c = CMSG_FIRSTHDR(&msg);
+
+    /*
+     * This may happen if buffer with random data is passed to
+     * this function. CMSG_FIRSTHDR() does not check whether
+     * length of the first cmsghdr is acceptable, unlike
+     * CMSG_NXTHDR().
+     */
+    if (c != NULL && (uint8_t *)c + c->cmsg_len > cmsg_buf + cmsg_len)
+    {
+        WARN("%s(): the first cmsghdr has too big length, supplied "
+             "buffer does not contain correct control data", __FUNCTION__);
+        *rpc_cmsg = NULL;
+        *rpc_cmsg_count = 0;
+        return 0;
+    }
+
     if (c != NULL)
         first_byte = (uint8_t *)c;
 
