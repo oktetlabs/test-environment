@@ -267,8 +267,9 @@ build_client_cmd(te_string *cmd, const tapi_perf_opts *options)
 static te_errno
 get_report(const json_t *jrpt, tapi_perf_report *report)
 {
-    json_t *jend, *jsum, *jval, *jint;
+    json_t *jstart, *jtstart, *jtmp, *jend, *jsum, *jval, *jint;
     tapi_perf_report tmp_report;
+    te_bool is_server, reverse;
 
 #define GET_REPORT_ERROR(_obj)                                  \
     do {                                                        \
@@ -279,12 +280,59 @@ get_report(const json_t *jrpt, tapi_perf_report *report)
     if (!json_is_object(jrpt))
         GET_REPORT_ERROR("object");
 
-    jend = json_object_get(jrpt, "intervals");
-    if (!json_is_array(jend))
-        GET_REPORT_ERROR("array \"intervals\"");
+    /*
+     * Read the role (server, client) of the peer in report by checking if it
+     * has start.accepted_connection or start.connection_to
+     */
+    jstart = json_object_get(jrpt, "start");
+    if (!json_is_object(jstart))
+        GET_REPORT_ERROR("object \"start\"");
 
-    jint = json_array_get(jend, json_array_size(jend) - 1);
-    jsum = json_object_get(jint, "sum");
+    jtmp = json_object_get(jstart, "accepted_connection");
+    if (json_is_object(jtmp))
+    {
+        is_server = TRUE;
+    }
+    else
+    {
+        jtmp = json_object_get(jstart, "connecting_to");
+        if (json_is_object(jtmp))
+        {
+            is_server = FALSE;
+        }
+        else
+        {
+            GET_REPORT_ERROR("object \"accepted_connection\" or "
+                             "\"connecting to\"");
+        }
+    }
+
+    /*
+     * Check if it is reverse test
+     */
+    jtstart = json_object_get(jstart, "test_start");
+    if (!json_is_object(jtstart))
+        GET_REPORT_ERROR("object \"test_start\"");
+
+    jval = json_object_get(jtstart, "reverse");
+    if (!json_is_integer(jval))
+        GET_REPORT_ERROR("value \"reverse\"");
+    reverse = json_integer_value(jval);
+
+    jend = json_object_get(jrpt, "end");
+    if (!json_is_object(jend))
+        GET_REPORT_ERROR("object \"end\"");
+
+    /*
+     * The logics from statement derives from the following logical table:
+     * is_server   reverse     which side
+     * 0           0           sent
+     * 0           1           received
+     * 1           0           received
+     * 1           1           sent
+     */
+    jsum = json_object_get(jend,
+        (is_server == reverse) ? "sum_sent" : "sum_received");
     if (!json_is_object(jsum))
         GET_REPORT_ERROR("object \"sum\"");
 
