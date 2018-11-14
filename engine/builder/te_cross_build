@@ -161,6 +161,7 @@ wait_progress () {
     local package=$1
     local in_prog_msg=
 
+    mkdir -p agents/$package
     while true ; do
         take_agent_lock $package
         if [ $? -eq 0 ] ; then
