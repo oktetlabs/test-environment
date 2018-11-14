@@ -11374,11 +11374,6 @@ TARPC_SYSCALL_WRAPPER(writev, ssize_t, (int a, const struct iovec *b, int c),
 TARPC_SYSCALL_WRAPPER(close, int, (int a), a)
 #endif
 
-/**
- * TODO: will be done in next changes
- */
-/*TARPC_SYSCALL_WRAPPER(fcntl, int, (int a, int b), a, b)*/
-
 #ifdef SYS_ioctl
 TARPC_SYSCALL_WRAPPER(ioctl, int, (int a, unsigned long b, void *c), a, b, c)
 #endif
