@@ -29,6 +29,11 @@ if get_option('rpcserver-tr069')
     conf.set('WITH_TR069_SUPPORT', 1)
 endif
 
+t = 'struct mmsghdr'
+if cc.has_type(t, prefix: '#include <sys/socket.h>')
+    conf.set('HAVE_' + t.to_upper().underscorify(), 1)
+endif
+
 t = 'struct ip_mreqn'
 if cc.has_type(t, prefix: '#include <netinet/in.h>')
     conf.set('HAVE_' + t.to_upper().underscorify(), 1)

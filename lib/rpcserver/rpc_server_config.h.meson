@@ -91,6 +91,9 @@
 /* Define to 1 if `ipv6mr_interface' is a member of `struct ipv6_mreq'. */
 #mesondefine HAVE_STRUCT_IPV6_MREQ_IPV6MR_INTERFACE
 
+/* Define to 1 if the system has the type `struct mmsghdr'. */
+#mesondefine HAVE_STRUCT_MMSGHDR
+
 /* Define to 1 if the system has the type `struct ip_mreqn'. */
 #mesondefine HAVE_STRUCT_IP_MREQN
 
