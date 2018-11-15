@@ -30,7 +30,7 @@ if get_option('rpcserver-tr069')
 endif
 
 t = 'struct mmsghdr'
-if cc.has_type(t, prefix: '#include <sys/socket.h>')
+if cc.has_type(t, prefix: '#include <sys/socket.h>', args: te_cflags)
     conf.set('HAVE_' + t.to_upper().underscorify(), 1)
 endif
 
@@ -433,6 +433,7 @@ sources += files(
     'iomux.c',
     'rcf_pch_mem.c',
     'rpc_server.c',
+    'rpcs_msghdr.c',
     'tarpc_imp.c',
 )
 deps += [
