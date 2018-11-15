@@ -1,9 +1,9 @@
-/** @file 
+/** @file
  * @brief Test Environment: xml2text utility callbacks.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -33,7 +33,7 @@ int detailed_packets = 0;
 
 /** Structure to keep basic user data in general parsing context */
 typedef struct gen_ctx_user {
-    FILE             *fd; /**< File descriptor of the document to output 
+    FILE             *fd; /**< File descriptor of the document to output
                                the result */
 } gen_ctx_user_t;
 
@@ -62,7 +62,7 @@ RGT_DEF_FUNC(proc_document_start)
 
     /* In text output all XML entities should be expanded */
     ctx->expand_entities = TRUE;
-    
+
     if (ctx->out_fname == NULL)
         gen_user->fd = stdout;
     else
