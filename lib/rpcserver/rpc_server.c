@@ -48,7 +48,17 @@ tarpc_init_checked_arg(checked_arg_list *list, uint8_t *real_arg,
     arg->real_arg = real_arg;
     arg->len = len;
     arg->len_visible = len_visible;
-    arg->name = name;
+
+    arg->name = strdup(name);
+    if (arg->name == NULL)
+    {
+        ERROR("%s(): out of memory when duplicating argument name",
+              __FUNCTION__);
+        free(arg->pristine);
+        free(arg);
+        return;
+    }
+
     STAILQ_INSERT_TAIL(list, arg, next);
 }
 
@@ -75,6 +85,7 @@ tarpc_check_args(checked_arg_list *list)
             rc = TE_RC(TE_TA_UNIX, TE_ECORRUPTED);
         }
         free(cur->pristine);
+        free(cur->name);
         STAILQ_REMOVE_HEAD(list, next);
         free(cur);
     }
