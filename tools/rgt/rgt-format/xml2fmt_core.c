@@ -1,9 +1,9 @@
-/** @file 
+/** @file
  * @brief Test Environment: Engine of RGT format module.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -62,7 +62,7 @@ rgt_log_start_document(void *user_data)
 }
 
 /**
- * Callback function that is called when XML parser reaches the end 
+ * Callback function that is called when XML parser reaches the end
  * of the document.
  *
  * @param  user_data  Pointer to user-specific data (user context)
@@ -73,7 +73,7 @@ static void
 rgt_log_end_document(void *user_data)
 {
     rgt_gen_ctx_t   *ctx = (rgt_gen_ctx_t *)user_data;
-    rgt_depth_ctx_t *depth_ctx = 
+    rgt_depth_ctx_t *depth_ctx =
         &g_array_index(ctx->depth_info,
                        rgt_depth_ctx_t, (ctx->depth - 1));
 
@@ -125,7 +125,7 @@ rgt_process_cntrl_start(rgt_gen_ctx_t *ctx,
 }
 
 /**
- * Callback function that is called when XML parser meets the end of 
+ * Callback function that is called when XML parser meets the end of
  * an element.
  *
  * @param  user_data  Pointer to user-specific data (user context)
@@ -187,7 +187,7 @@ rgt_log_end_element(void *user_data, const rgt_xmlChar *xml_tag)
             proc_mem_dump_end(ctx, depth_ctx, NULL);
             ctx->state = RGT_XML2HTML_STATE_LOG_MSG;
             break;
-        
+
         case RGT_XML2HTML_STATE_MEM_DUMP_ROW:
             assert(strcmp(tag, "row") == 0);
             proc_mem_row_end(ctx, depth_ctx, NULL);
@@ -202,9 +202,9 @@ rgt_log_end_element(void *user_data, const rgt_xmlChar *xml_tag)
             {
                 ctx->mem_ctx.mem_width++;
             }
-            
+
             proc_mem_elem_end(ctx, depth_ctx, NULL);
-            
+
             ctx->mem_ctx.cur_num++;
             ctx->state = RGT_XML2HTML_STATE_MEM_DUMP_ROW;
             break;
@@ -247,7 +247,7 @@ rgt_log_end_element(void *user_data, const rgt_xmlChar *xml_tag)
             proc_meta_end(ctx, depth_ctx, NULL);
             ctx->state = RGT_XML2HTML_STATE_BLOCK;
             break;
-        
+
         case RGT_XML2HTML_STATE_START_TS:
             assert(ctx->depth >= 1);
             proc_meta_start_ts_end(ctx, depth_ctx, NULL);
@@ -323,7 +323,7 @@ rgt_log_end_element(void *user_data, const rgt_xmlChar *xml_tag)
             proc_meta_params_end(ctx, depth_ctx, NULL);
             ctx->state = RGT_XML2HTML_STATE_META;
             break;
-            
+
         case RGT_XML2HTML_STATE_FILE:
             if (strcmp(tag, "file") == 0)
             {
@@ -390,7 +390,7 @@ rgt_log_start_element(void *user_data,
             /* Control message */
             rgt_process_cntrl_start(ctx, tag, RGT_XML2CHAR(attrs));
             break;
-        
+
         case RGT_XML2HTML_STATE_META:
             assert(ctx->depth >= 1);
 
@@ -450,7 +450,7 @@ rgt_log_start_element(void *user_data,
             }
 
             break;
-            
+
         case RGT_XML2HTML_STATE_AUTHORS:
             assert(strcmp(tag, "author") == 0);
             proc_meta_author_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
@@ -538,7 +538,7 @@ rgt_log_start_element(void *user_data,
             proc_mem_elem_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
             ctx->state = RGT_XML2HTML_STATE_MEM_DUMP_ELEM;
             break;
-            
+
         case RGT_XML2HTML_STATE_FILE:
             assert(strcmp(tag, "br") == 0);
             proc_log_msg_br(ctx, depth_ctx, RGT_XML2CHAR(attrs));
@@ -593,9 +593,9 @@ rgt_log_characters(void *user_data, const rgt_xmlChar *ch, int len)
  * The callback is called for resolving entities (& NAME ;)
  * In case of SAX parser it converts standard entities into their values
  * (&gt; -> ">", &lt; -> "<", &amp; -> "&"),
- * but in case of HTML we must not convert them, but leave them as they 
+ * but in case of HTML we must not convert them, but leave them as they
  * are, so that this function makes a HACK for that.
- * If you want how to force libxml2 SAX parser leave standard entries 
+ * If you want how to force libxml2 SAX parser leave standard entries
  * without expanding - update this code!
  */
 static xmlEntityPtr
@@ -634,10 +634,10 @@ rgt_get_entity(void *user_data, const rgt_xmlChar *xml_name)
     /*
      * The following lines are dirty hack in order to fix a bug
      * found in libxml2 (see http://bugzilla.gnome.org BugId 389843).
-     * It works very badly with entities in attribute values, and 
+     * It works very badly with entities in attribute values, and
      * looking at the code of libxml2 I've found a work-around:
      * - In order to keep attribute entity unconverted we can use
-     *   entity data structure filled as following: 
+     *   entity data structure filled as following:
      *   "etype" (entity type) is set to "XML_INTERNAL_GENERAL_ENTITY";
      *   "content" is set to NULL;
      * Here we assume that entities can present only in attributes of
@@ -670,7 +670,7 @@ rgt_report_problem(void *user_data, const char *msg, ...)
     va_list ap;
 
     UNUSED(user_data);
-    
+
     va_start(ap, msg);
     vfprintf(stderr, msg, ap);
     va_end(ap);
@@ -727,7 +727,7 @@ static xmlSAXHandler sax_handler = {
 
 /**
  * Parses XML file specified in context.
- * 
+ *
  * @param gen_ctx  Context set up by main() entry point
  *
  * @return Status of the operation
@@ -854,13 +854,13 @@ rgt_parse_file(rgt_gen_ctx_t *gen_ctx)
  *
  * @return  Nothing.
  *
- * @se Frees popt Context (specified in optCon) and 
+ * @se Frees popt Context (specified in optCon) and
  * exits with specified code.
  */
 void
 usage(poptContext optCon, int exitcode, char *error, char *addl)
 {
-    poptSetOtherOptionHelp(optCon, 
+    poptSetOtherOptionHelp(optCon,
         "[<xml report file>] [<output file>]");
     poptPrintUsage(optCon, stderr, 0);
     if (error)
@@ -878,17 +878,17 @@ usage(poptContext optCon, int exitcode, char *error, char *addl)
 
 /**
  * Process command line options and parameters specified in argv.
- * The procedure contains "Option table" that should be updated 
+ * The procedure contains "Option table" that should be updated
  * if some new options are going to be added.
  *
  * @param  argc   Number of elements in array "argv".
- * @param  argv   Array of strings that represents all command 
+ * @param  argv   Array of strings that represents all command
  *                line arguments.
  *
  * @return  Nothing.
  *
  * @se
- *    The function updates the following global variables according to 
+ *    The function updates the following global variables according to
  *    the command line arguments specified in argv:
  *      html_tmpls    - Array of template file names
  *
@@ -901,16 +901,16 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
                                               with -o option */
     poptContext  optCon; /* Context for parsing command-line options */
     int          rc;
-    
+
     /* Option Table */
     struct poptOption optionsTable[] = {
-        { "xml-report-file", 'f', POPT_ARG_STRING, NULL, 'f', 
+        { "xml-report-file", 'f', POPT_ARG_STRING, NULL, 'f',
           "XML report file name.", "FILE" },
 
-        { "output", 'o', POPT_ARG_STRING, NULL, 'o', 
+        { "output", 'o', POPT_ARG_STRING, NULL, 'o',
           "Output file name.", "FILE" },
 
-        { "version", 'v', POPT_ARG_NONE, NULL, 'v', 
+        { "version", 'v', POPT_ARG_NONE, NULL, 'v',
           "Display version information.", NULL },
 
         { NULL, '\0', POPT_ARG_INCLUDE_TABLE, rgt_options_table, 0,
@@ -945,7 +945,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
         }
         else if (rc == 'v')
         {
-            printf("Package %s: %s version %s\n%s\n", 
+            printf("Package %s: %s version %s\n%s\n",
                    PACKAGE, UTILITY_NAME, VERSION, TE_COPYRIGHT);
             poptFreeContext(optCon);
             exit(0);
@@ -964,7 +964,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
         exit(1);
     }
 
-    if (ctx->xml_fname == NULL && 
+    if (ctx->xml_fname == NULL &&
         (ctx->xml_fname = poptGetArg(optCon)) == NULL)
     {
         usage(optCon, 1, "Specify XML report file", NULL);
@@ -972,7 +972,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
 
     /* Get output file name */
     ctx->out_fname = poptGetArg(optCon);
-    
+
     if (ctx->out_fname != NULL && opt_out_file_name != NULL)
     {
         usage(optCon, 1, "Output file name specified twice: "
@@ -1066,7 +1066,7 @@ main(int argc, char **argv)
 
     gen_ctx.state = RGT_XML2HTML_STATE_INITIAL;
     gen_ctx.depth = 0;
-    gen_ctx.depth_info = g_array_new(FALSE, FALSE, 
+    gen_ctx.depth_info = g_array_new(FALSE, FALSE,
                                      sizeof(rgt_depth_ctx_t));
     if (gen_ctx.depth_info == NULL)
     {
