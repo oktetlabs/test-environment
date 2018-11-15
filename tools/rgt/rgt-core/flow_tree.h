@@ -1,12 +1,12 @@
 /** @file
  * @brief Test Environment: Interface for test execution flow.
  *
- * The module is responsible for keeping track of occured events and 
+ * The module is responsible for keeping track of occured events and
  * checking if new events are legal.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -36,7 +36,7 @@ typedef gint node_id_t;
  *
  * @return Nothing
  *
- * @se Add session node with id equals to ROOT_ID into the tree and insert 
+ * @se Add session node with id equals to ROOT_ID into the tree and insert
  *     it into set of patential parent nodes (so called "new set").
  */
 void
@@ -60,7 +60,7 @@ extern void flow_tree_destroy();
  * @retval 1 New node was successfully added.
  * @retval 0 The parent node can't get children.
  */
-extern void *flow_tree_add_node(node_id_t parent_id, node_id_t node_id, 
+extern void *flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
                                 node_type_t new_node_type,
                                 char *node_name, uint32_t *timestamp,
                                 void *user_data, int *err_code);
@@ -82,13 +82,13 @@ extern void *flow_tree_close_node(node_id_t parent_id, node_id_t node_id,
 /**
  * Returns ID (and parent ID) of a node that is waiting for close
  * operation.
- * Note that there could be more than one node in "close" set, 
+ * Note that there could be more than one node in "close" set,
  * this function returns an arbitrary one because they all are
  * not distinguishable
  *
  * @param id         ID of a node waiting for close
  * @param parent_id  ID of parent node
- * 
+ *
  * @return 0 on success, TE_ENOENT if all the nodes are closed.
  */
 extern te_errno flow_tree_get_close_node(node_id_t *id,
@@ -97,7 +97,7 @@ extern te_errno flow_tree_get_close_node(node_id_t *id,
 /**
  * Filters message according to package/test filtering.
  *
- * @param msg A message to be checked 
+ * @param msg A message to be checked
  *
  * @return Returns a filtering mode of a node which the message links with
  */
@@ -126,7 +126,7 @@ void flow_tree_trace();
 
 #ifdef FLOW_TREE_LIBRARY_DEBUG
 
-/* 
+/*
  * These routines are auxiluary in debugging of the library and should
  * not be compiled while it's build for working binaries.
  */
@@ -159,7 +159,7 @@ flow_tree_check_set(enum flow_tree_set_name set_name, const char *user_set);
  * (nodes waiting for child node or nodes waiting for close event).
  *
  * @param  set_name  Name of the desired category of the nodes.
- * @param  buf       User prepared buffer where information will be placed. 
+ * @param  buf       User prepared buffer where information will be placed.
  * @param  len       Length of user specified buffer.
  *
  * @return  Status of operation.
@@ -171,7 +171,7 @@ int
 flow_tree_get_set(enum flow_tree_set_name set_name, char *buf, gint len);
 
 int
-flow_tree_check_parent_list(enum flow_tree_set_name set_name, 
+flow_tree_check_parent_list(enum flow_tree_set_name set_name,
                             node_id_t node_id, const char *par_list);
 
 #endif /* FLOW_TREE_LIBRARY_DEBUG */

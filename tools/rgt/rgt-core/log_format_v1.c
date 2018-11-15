@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -37,13 +37,13 @@ enum e_error_msg_index {
     RLF_V1_RLM_UNKNOWN_LOGLEVEL  = 8,  /**< Unknown log level value */
 };
 
-/** 
- * This variable contains error index that expresses possible error 
+/**
+ * This variable contains error index that expresses possible error
  * of the operation to be performed.
  */
 static enum e_error_msg_index cur_error_index;
 
-/** 
+/**
  * This is an array of error messages each corresponding
  * to an appropriate error index of enum "e_error_msg_index".
  * DON'T CHANGE THE ORDER OF THESE MESSAGES!
@@ -62,7 +62,7 @@ static struct debug_msg {
     {"*** Value of log level is unkown."},
 };
 
-/** 
+/**
  * Set index of the error event that can be occured during the operation
  * to be performed or just to output an error message.
  */
@@ -71,8 +71,8 @@ static struct debug_msg {
         cur_error_index = (err_index);  \
     } while (0)
 
-/** 
- * Output error message to the stderr according to 
+/**
+ * Output error message to the stderr according to
  * the value of cur_error_index variable.
  */
 #define PRINT_ERROR \
@@ -84,8 +84,8 @@ static struct debug_msg {
                 dbg_msgs[cur_error_index].content);                       \
     } while (0)
 
-/** 
- * Reads specified number of bytes from "_fd" file descriptor and 
+/**
+ * Reads specified number of bytes from "_fd" file descriptor and
  * generates an exception if not all bytes read.
  * @se It may never return control.
  */
@@ -99,7 +99,7 @@ static struct debug_msg {
         }                                                                  \
     } while (0)
 
-/* 
+/*
  * Macro to convert "next field length" field from network to
  * host byte order.
  */
@@ -135,7 +135,7 @@ static struct debug_msg {
  *
  * @se
  *   If the structure of a log message doesn't comfim to the specification,
- *   this function never returns, but rather it throws an exception with 
+ *   this function never returns, but rather it throws an exception with
  *   longjmp call.
  */
 int
@@ -180,12 +180,12 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
         PRINT_ERROR;
         THROW_EXCEPTION;
     }
-    
+
     /* START PROCESSING OF A NEW MESSAGE */
     *msg = alloc_log_msg();
     obstk = (*msg)->obstk;
     arg = &((*msg)->args);
-    
+
     /* Read timestamp */
     LOG_FORMAT_DEBUG_SET(RLF_V1_RLM_TIMESTAMP);
     READ(fd, &ts_sec,  sizeof(ts_sec));
@@ -248,7 +248,7 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
 
     /* Process format string arguments */
     (*msg)->args_count = 0;
-    
+
     /* Read the next argument length */
     READ(fd, &nflen, sizeof(nflen));
     RGT_NFL_NTOH(nflen);
@@ -259,10 +259,10 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
         *arg = (msg_arg *)obstack_alloc(obstk, sizeof(msg_arg));
         (*arg)->len = nflen;
 
-        /* 
+        /*
          * Here we append parameter with '\0' character:
-         * If parameter is a string it terminates string, if 
-         * it is interger the '\0' character won't be taken into 
+         * If parameter is a string it terminates string, if
+         * it is interger the '\0' character won't be taken into
          * account (according to the len field).
          */
         (*arg)->val = (uint8_t *)obstack_alloc(obstk, nflen + 1);

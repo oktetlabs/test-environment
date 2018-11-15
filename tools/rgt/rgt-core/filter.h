@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -33,7 +33,7 @@ enum node_fltr_mode {
 };
 
 /**
- * Initialize filter module. 
+ * Initialize filter module.
  *
  * @param fltr_fname  Name of the TCL filter file
  *
@@ -52,7 +52,7 @@ extern int rgt_filter_init(const char *fltr_fname);
 extern void rgt_filter_destroy();
 
 /**
- * Validates if log message with a particular tuple (entity name, 
+ * Validates if log message with a particular tuple (entity name,
  * user name and timestamp) passes through user defined filter.
  * The function updates message flags.
  *
@@ -76,13 +76,13 @@ extern enum node_fltr_mode rgt_filter_check_message(
                                 uint32_t *flags);
 
 /**
- * Verifies if the whole branch of execution flow should be excluded or 
+ * Verifies if the whole branch of execution flow should be excluded or
  * included from the log report.
  *
  * @param   path  Path (name) of the branch to be checked.
  *                Path is formed from names of packages and/or test
  *                of the execution flow separated by '/'. For example
- *                path "/a/b/c/d" means that execution flow is 
+ *                path "/a/b/c/d" means that execution flow is
  *                pkg "a" -> pkg "b" -> pkg "c" -> [test | pkg] "d"
  *
  * @return  Returns filtering mode for the branch.
@@ -90,7 +90,7 @@ extern enum node_fltr_mode rgt_filter_check_message(
 extern enum node_fltr_mode rgt_filter_check_branch(const char *path);
 
 /**
- * Validates if the particular node (TEST, SESSION or PACKAGE) passes 
+ * Validates if the particular node (TEST, SESSION or PACKAGE) passes
  * through duration filter.
  *
  * @param node_type  Typo of the node ("TEST", "SESSION" or "PACKAGE")

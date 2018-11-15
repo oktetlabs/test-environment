@@ -1,12 +1,12 @@
 /** @file
  * @brief Test Environment: Live mode specific routines.
  *
- * Interface for output control message events and regular messages 
+ * Interface for output control message events and regular messages
  * into the screen.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -37,7 +37,7 @@ static int live_process_branch_end(node_info_t *node, msg_queue *verdicts);
 static int live_process_regular_msg(log_msg *msg);
 
 void
-live_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST], 
+live_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST],
                f_process_reg_log_msg  *reg_proc,
                f_process_log_root root_proc[CTRL_EVT_LAST])
 {
@@ -73,7 +73,7 @@ print_ts(uint32_t *ts)
         THROW_EXCEPTION;
     }
     memcpy(&tm, tm_tmp, sizeof(tm));
-    
+
 #if 0
     /* Long date/time format (date & time) */
     res = strftime(time_buf, TIME_BUF_LEN, "%b %d %T", &tm);
@@ -91,12 +91,12 @@ static void
 print_params(param *prms)
 {
     param *prm = prms;
-    
+
     if (prm != NULL)
     {
         fprintf(rgt_ctx.out_fd, "|- Parameters:\n");
     }
-    
+
     while (prm != NULL)
     {
         fprintf(rgt_ctx.out_fd, "     + %s = %s\n", prm->name, prm->val);
@@ -136,7 +136,7 @@ live_process_end_event(node_info_t *node, const char *node_name,
                        msg_queue *verdicts)
 {
     const char *result;
-    
+
     UNUSED(verdicts);
 
     switch (node->result.status)

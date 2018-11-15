@@ -4,7 +4,7 @@
 
 #include "memory.h"
 
-/** 
+/**
  * Pointer to an obstack that is used for allocation of log_msg data
  * structure.
  */
@@ -23,7 +23,7 @@ internal_obstack_alloc_failed()
     THROW_EXCEPTION;
 }
 
-/** 
+/**
  * These two definitions are for correct working of "obstack_init"
  * function.
  */
@@ -54,7 +54,7 @@ obstack_destroy(struct obstack *obstk)
 
 void initialize_log_msg_pool()
 {
-    if (log_msg_obstk == NULL && 
+    if (log_msg_obstk == NULL &&
         ((log_msg_obstk = obstack_initialize()) == NULL))
     {
         THROW_EXCEPTION;
@@ -105,7 +105,7 @@ free_log_msg(log_msg *msg)
 
 void initialize_node_info_pool()
 {
-    if (node_info_obstk == NULL && 
+    if (node_info_obstk == NULL &&
         ((node_info_obstk = obstack_initialize()) == NULL))
     {
         THROW_EXCEPTION;

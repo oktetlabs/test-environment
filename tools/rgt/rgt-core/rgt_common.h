@@ -1,9 +1,9 @@
-/** @file 
+/** @file
  * @brief Test Environment: RGT common declarations.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -100,7 +100,7 @@ extern "C" {
 #define UINT32_MAX (4294967295U)
 #endif
 
-/** 
+/**
  * Compares two timestamp values and returns the following values depending
  * on ts1 and ts2 values:
  *  if ts1 < ts2 it returns -1
@@ -174,7 +174,7 @@ struct rgt_gen_ctx;
 typedef int (* f_fetch_log_msg)(struct log_msg **msg,
                                 struct rgt_gen_ctx *ctx);
 
-/** 
+/**
  * Structure that keeps generic data used in processing raw log file.
  */
 typedef struct rgt_gen_ctx {
@@ -193,31 +193,31 @@ typedef struct rgt_gen_ctx {
                                  of message pointers into files */
 
     rgt_op_mode_t  op_mode; /**< Rgt operation mode */
-    const char    *op_mode_str; /**< Rgt operation mode in string 
+    const char    *op_mode_str; /**< Rgt operation mode in string
                                      representation */
 
     /**
-     * Operation mode (live or postponed) influences on desirable 
+     * Operation mode (live or postponed) influences on desirable
      * read behaviour that can be blocking or nonblocking.
      * This field keeps current rgt reading mode.
      */
     rgt_io_mode_t  io_mode;
 
     /**
-     * Pointer to a function that should be used for 
+     * Pointer to a function that should be used for
      * extracting of log messages from a raw log file.
      * This field is set to an appropriate function according to
      * RLF version determined from the first byte of the RLF.
      */
     f_fetch_log_msg fetch_log_msg;
-        
-    te_bool         proc_cntrl_msg; /**< Whether Rgt should process control 
+
+    te_bool         proc_cntrl_msg; /**< Whether Rgt should process control
                                          messages or not */
 
-    te_bool         proc_incomplete; /**< Whether Rgt should process 
+    te_bool         proc_incomplete; /**< Whether Rgt should process
                                           incomplete log reports as normal
                                           or give error message */
-                                        
+
     te_bool         verb; /**< Whether to use verbose output or not */
 } rgt_gen_ctx_t;
 
@@ -239,18 +239,18 @@ struct rgt_statistics {
                                  recent message */
     uint16_t n_files;       /**< Total number of files logged */
     uint16_t n_mem;         /**< Total number of memory dumps logged */
-    
+
     /**
-     * The following fields are counted only when RGT works 
+     * The following fields are counted only when RGT works
      * in the mode with detailed statistics.
      */
     /**
-     * @todo Number of logs from a particulat entity/user name 
+     * @todo Number of logs from a particulat entity/user name
      * May be it should be implemented with Hash tables.
      */
 };
 
-/** 
+/**
  * Structure that represents argument in its raw representation
  * There must be some more information given to determine which type
  * of data it consists of. (This information can be obtained form
@@ -258,7 +258,7 @@ struct rgt_statistics {
  */
 typedef struct msg_arg {
     struct msg_arg *next; /**< Pointer to the next argument */
-    uint8_t        *val;  /**< Pointer to raw argument content 
+    uint8_t        *val;  /**< Pointer to raw argument content
                                (numbers are keeped in network byte order) */
     int             len;  /**< Number of bytes allocated for the argument */
 } msg_arg;
@@ -269,11 +269,11 @@ typedef struct msg_arg {
 
 /** Structure that keeps log message in an universal format */
 typedef struct log_msg {
-    struct obstack *obstk;      /**< Internal field: 
+    struct obstack *obstk;      /**< Internal field:
                                      Obstack for the message */
 
     unsigned      id;           /**< ID of the log message, which currently
-                                     defines which test is logged this 
+                                     defines which test is logged this
                                      message */
     uint32_t      flags;        /**< Message flags */
     char         *entity;       /**< Entity name of the message */
@@ -283,7 +283,7 @@ typedef struct log_msg {
     const char   *level_str;    /**< Log level in string format */
     char         *fmt_str;      /**< Raw format string */
     msg_arg      *args;         /**< List of arguments for format string */
-    msg_arg      *cur_arg;      /**< Internal field: 
+    msg_arg      *cur_arg;      /**< Internal field:
                                      used by get_next_arg function */
     int           args_count;   /**< Total number of the arguments */
 
