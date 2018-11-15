@@ -2134,7 +2134,7 @@ rpc_sendmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
         if (rc != 0)
         {
             rpcs->_errno = TE_RC(TE_TAPI, rc);
-            RETVAL_INT(recvmmsg_alt, -1);
+            RETVAL_INT(sendmmsg_alt, -1);
         }
 
         for (j = 0; j < out.mmsg.mmsg_len; j++)
