@@ -647,7 +647,7 @@ function clickOnFolder(folderId)
   if (isLinked(clicked.hreference)) {
       highlightObjLink(clicked);
   }
-  
+
   /* Save current folder name in parent context */
 /*  parent.lfId = folderId;
   parent.hlName = null;
@@ -773,7 +773,7 @@ function highlightObjLink(nodeObj) {
         lastClickedBgColor  = clickedDOMObj.style.backgroundColor;
         clickedDOMObj.style.color=HIGHLIGHT_COLOR;
         clickedDOMObj.style.backgroundColor=HIGHLIGHT_BG;
-      
+
         lastClicked = nodeObj;
 
         /* Update current left frame ID */
@@ -1084,10 +1084,10 @@ function OpenFolders(folderId)
         return;
 
     var obj = findObj(folderId);
- 
+
     obj.forceOpeningOfAncestorFolders();
     clickOnNodeObj(obj);
-    
+
     if (parent.hlName != null)
     {
         /* we should activate a test */

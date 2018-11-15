@@ -17,7 +17,7 @@
         if (highlightObjLink(name) != 1)
 	{
 	    /* User select a folder */
-	    fname = name;    
+	    fname = name;
 	    if (par_name != "")
                 fname = par_name;
 
@@ -30,7 +30,7 @@
 	    parent.hlName = name;
 	}
     }
-    
+
     function UpHl()
     {
         if (parent.hlName != null)
@@ -43,7 +43,7 @@
     {
         id = "n_" + depth + "_" + seq;
 
-        var cmd = "parent.basefrm.location.href='" + 
+        var cmd = "parent.basefrm.location.href='" +
                   "node_" + depth + "_" + seq + ".html" + "'";
         eval(cmd);
 
@@ -59,13 +59,13 @@
 	    parent.hlName = id;
 	}
     }
-    
+
     function highlightObjLink(id)
     {
       if (browserVersion == 1 || browserVersion == 3)
       {
         var clickedDOMObj = getElById(id);
-            
+
 	if (clickedDOMObj != null)
 	{
           if (lastClickedId != null)
@@ -90,7 +90,7 @@
       }
       return 2;
     }
-    
+
     function TreeView()
     {
         parent.PageId = "n_@@%d:depth@@_@@%d:seq@@";
