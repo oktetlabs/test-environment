@@ -152,8 +152,27 @@ rpcs_msghdr_tarpc2h(te_bool recv_call, const struct tarpc_msghdr *tarpc_msg,
     memcpy(helper->orig_control, msg->msg_control, msg->msg_controllen);
     helper->orig_controllen = msg->msg_controllen;
 
+    if (!recv_call)
+    {
+        te_string_reset(&name_str);
+        rc = te_string_append(&name_str, "%s.msg_control", name_base_str.ptr);
+        if (rc != 0)
+            return rc;
+
+        tarpc_init_checked_arg(
+                    arglist, (uint8_t *)msg->msg_control,
+                    msg->msg_controllen, 0, name_str.ptr);
+    }
+
     msg->msg_flags = send_recv_flags_rpc2h(tarpc_msg->msg_flags);
     helper->orig_msg_flags = msg->msg_flags;
+
+    if (!recv_call)
+    {
+        tarpc_init_checked_arg(
+                    arglist, (uint8_t *)msg, sizeof(*msg), 0,
+                    name_base_str.ptr);
+    }
 
     return 0;
 }

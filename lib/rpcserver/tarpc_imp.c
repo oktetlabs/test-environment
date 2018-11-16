@@ -9846,6 +9846,7 @@ TARPC_FUNC(sendmmsg_alt,
     struct mmsghdr      *mmsg = NULL;
     rpcs_msghdr_helper  *msg_helpers = NULL;
     te_errno             rc;
+    unsigned int         i;
 
     if (out->mmsg.mmsg_val == NULL)
     {
@@ -9872,13 +9873,13 @@ TARPC_FUNC(sendmmsg_alt,
         VERB("sendmmsg_alt(): out mmsg=%s",
              mmsghdr2str(mmsg, out->retval));
 
-        rc = rpcs_mmsghdrs_h2tarpc(mmsg, msg_helpers,
-                                   out->mmsg.mmsg_val, out->mmsg.mmsg_len);
-        if (rc != 0)
-        {
-            out->common._errno = TE_RC(TE_TA_UNIX, rc);
-            goto finish;
-        }
+        /*
+         * Reverse conversion is not done because this function should
+         * not change anything except msg_len fields, and that nothing
+         * else changed is checked with tarpc_check_args().
+         */
+        for (i = 0; i < in->vlen; i++)
+            out->mmsg.mmsg_val[i].msg_len = mmsg[i].msg_len;
     }
 
 finish:

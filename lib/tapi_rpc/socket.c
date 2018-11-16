@@ -2129,13 +2129,20 @@ rpc_sendmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
     if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT &&
         mmsg != NULL && out.mmsg.mmsg_val != NULL)
     {
-        rc = mmsghdrs_tarpc2rpc(out.mmsg.mmsg_val, mmsg,
-                                out.mmsg.mmsg_len);
-        if (rc != 0)
+        /*
+         * Reverse conversion is not done because this function should
+         * not change anything except msg_len fields, and that nothing
+         * else changed is checked with tarpc_check_args() on TA side.
+         */
+        if (out.mmsg.mmsg_len > vlen)
         {
-            rpcs->_errno = TE_RC(TE_TAPI, rc);
+            ERROR("%s(): too many mmsghdr structures were retrieved "
+                  "from TA", __FUNCTION__);
+            rpcs->_errno = TE_RC(TE_TAPI, TE_EINVAL);
             RETVAL_INT(sendmmsg_alt, -1);
         }
+        for (j = 0; j < out.mmsg.mmsg_len; j++)
+            mmsg[j].msg_len = out.mmsg.mmsg_val[j].msg_len;
 
         for (j = 0; j < out.mmsg.mmsg_len; j++)
         {
