@@ -218,8 +218,13 @@ void tarpc_after_call(struct rpc_call_data *call)
         TE_SEC2US(finish.tv_sec - call->call_start.tv_sec) +
         finish.tv_usec - call->call_start.tv_usec;
     rc = tarpc_check_args(&call->checked_args);
-    if (out_common->_errno == 0 && rc != 0)
+    if (rc != 0)
+    {
         out_common->_errno = rc;
+        free(out_common->err_str.err_str_val);
+        out_common->err_str.err_str_val = NULL;
+        out_common->err_str.err_str_len = 0;
+    }
 }
 
 void tarpc_call_unsupported(const char *name, void *out,
