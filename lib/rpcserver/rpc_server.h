@@ -361,7 +361,7 @@ typedef struct checked_arg {
     size_t      len;          /**< Whole length of the buffer */
     size_t      len_visible;  /**< Length passed to the function
                                    under test */
-    const char *name;         /**< Argument name to be displayed
+    char       *name;         /**< Argument name to be displayed
                                    in error message */
 } checked_arg;
 

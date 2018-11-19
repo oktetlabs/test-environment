@@ -1,23 +1,26 @@
-Code to control power switch device from tester host.
+Applications and firmware to control power switch devices.
 
-File power_sw_orig.c - original code written by Igor Vasiliev
-<Igor.Vasiliev@oktetlabs.ru>. LPT power switch devices with four
-power lines are only supported.
+Four types of power switch devices are supported: masterkit mp751,
+GemBird, Oktetlabs parport and Oktetlabs tty type. Applications and firmware
+are split into three folders.
 
-File power_sw.c - modified code.
-Enabled support for LPT power switch devices with up to eight power lines
-and COM/USB power swicth devices with up to sixteen power lines.
-Support for COM/USB power switch devices was written by Ivan Soloducha
-<Ivan.Soloducha@oktetlabs.ru>, code was merged and debugged by
-Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>.
+Source files for applications and script to control masterkit mp751 device
+are located in masterkit/ folder. To build and install applications to control
+mp751 device please follow instructions in masterkit/README file
 
-Files power_sw.asm and tn2313def.inc - assembler code for AVR
-attiny2313 controller used in COM/USB power switch devices. Written
-and debugged by Konstantin Petrov <Konstantin.Petrov@oktetlabs.ru>.
+Script to control GemBird power switch is located in gembird/ folder.
+To enable support of GemBird power switch please install script
+gembird_power_sw.sh into /srv/local/bin folder
 
-File sketch_powerswitch.ino - C++ power switch code for Arduino
-nano platform. Intended for compilation and binary loading by
-means of Arduino IDE tool.
+Source files for application to control Oktetlabs parport and Oktetlabs
+tty power switch are located in oktetlabs/application/ folder. To enable
+support of these types of power switch please follow instructions in the
+file oktetlabs/README.
 
-File power_sw_descr - description of command set used in COM/USB
-power switch devices.
+Source files for Oktetlabs tty power switch firmware are located in
+oktetlabs/firmware/ folder. To build and install firmware please follow
+instructions in oktetlabs/README file.
+
+Generic script to control all types of power switch devices is located
+in power_switch root folder. Install script power_sw into /srv/local/bin
+folder.

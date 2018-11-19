@@ -304,26 +304,81 @@ typedef enum rpc_msg_flags_mode {
                                        vlue */
 } rpc_msg_flags_mode;
 
+/**  Processing mode for rpc_msghdr fields */
+typedef enum rpc_msghdr_field_mode {
+    RPC_MSGHDR_FIELD_DEFAULT = 0, /**< Choose what to do depending
+                                       on function and field. */
+    RPC_MSGHDR_FIELD_CONVERT,     /**< Convert field to host-independent
+                                       form before calling RPC. */
+    RPC_MSGHDR_FIELD_RAW,         /**< Pass field as a raw value. */
+} rpc_msghdr_field_mode;
+
 /** Store information about message */
 typedef struct rpc_msghdr {
-    /* Standard fields - do not change types/order! */
-    void             *msg_name;         /**< protocol address */
-    socklen_t         msg_namelen;      /**< size of protocol address */
-    struct rpc_iovec *msg_iov;          /**< scatter/gather array */
-    size_t            msg_iovlen;       /**< elements in msg_iov */
-    void             *msg_control;      /**< ancillary data */
-
-    socklen_t            msg_controllen; /**< length of ancillary data */
-    rpc_send_recv_flags  msg_flags;      /**< flags returned by recvmsg() */
+    /* Standard fields */
+    void                *msg_name;         /**< protocol address */
+    socklen_t            msg_namelen;      /**< size of protocol address */
+    struct rpc_iovec    *msg_iov;          /**< scatter/gather array */
+    size_t               msg_iovlen;       /**< elements in msg_iov */
+    void                *msg_control;      /**< ancillary data */
+    size_t               msg_controllen;   /**< length of ancillary data */
+    rpc_send_recv_flags  msg_flags;        /**< flags returned by
+                                                recvmsg() */
 
     /* Non-standard fields for test purposes */
-    socklen_t          msg_rnamelen;    /**< real size of protocol
-                                             address buffer to be copied
-                                             by RPC */
+    size_t            real_msg_controllen; /**< Real length of msg_control
+                                                buffer (used only when
+                                                converting control data
+                                                back from TARPC
+                                                representation - as due to
+                                                alignment issues it is
+                                                possible that more bytes
+                                                are required for the same
+                                                data than on TA). Ignored
+                                                if zero. */
+    size_t            got_msg_controllen;  /**< msg_controllen value
+                                                obtained on TA */
+    int               msg_cmsghdr_num;     /**< Number of valid @b cmsghdr
+                                                structures in
+                                                @b msg_control */
+
+    /*
+     * FIXME: this field should be removed after usage of
+     * msg_cmsghdr_num is fixed in existing tests so that
+     * it is set to nonzero only if we really want to parse
+     * control data.
+     */
+    rpc_msghdr_field_mode msg_control_mode;   /**< How to process
+                                                   msg_control when calling
+                                                   RPC: in case of default
+                                                   mode, msg_control will
+                                                   be parsed only for
+                                                   send calls, and will
+                                                   be passed as a raw
+                                                   value for receive
+                                                   calls. */
+
+    rpc_msghdr_field_mode msg_name_mode;      /**< How to process msg_name
+                                                   (in case of default mode,
+                                                    address will be parsed
+                                                    for send calls but
+                                                    passed as raw value for
+                                                    receive calls on input).
+                                                    */
+    te_bool               msg_namelen_exact;  /**< If @c TRUE, use specified
+                                                   msg_namelen value on a
+                                                   remote host; otherwise
+                                                   compute it on remote
+                                                   host from address type.
+                                                   */
+    socklen_t             got_msg_namelen;    /**< Here msg_namelen obtained
+                                                   on remote host will be
+                                                   retrieved. */
+    socklen_t             msg_rnamelen;       /**< Real size of protocol
+                                                   address buffer. */
+
     size_t             msg_riovlen;     /**< real number of elements
                                              in msg_iov */
-    int                msg_cmsghdr_num; /**< Number of elements in
-                                             the array */
     rpc_msg_flags_mode msg_flags_mode;  /**< determine how to process
                                              field msg_flags */
     rpc_send_recv_flags in_msg_flags;   /**< msg_flags value passed in */
@@ -333,6 +388,51 @@ struct rpc_mmsghdr {
     struct rpc_msghdr msg_hdr;  /* Message header */
     unsigned int      msg_len;  /* Number of received bytes for header */
 };
+
+/*
+ * The following macros are implemented because it is wrong to cast
+ * rpc_msghdr to struct msghdr, however standard macros like CMSG_NXTHDR
+ * expect struct msghdr.
+ */
+
+/**
+ * Get the first cmsghdr from control data stored in
+ * rpc_msghdr.
+ *
+ * @param rpc_msg     Pointer to rpc_msghdr structure.
+ *
+ * @return Pointer to the first cmsghdr.
+ */
+extern struct cmsghdr *rpc_cmsg_firsthdr(rpc_msghdr *rpc_msg);
+
+/**
+ * Get the first cmsghdr from control data stored in
+ * rpc_msghdr.
+ *
+ * @param _rpc_msg     Pointer to rpc_msghdr structure.
+ */
+#define RPC_CMSG_FIRSTHDR(_rpc_msg) rpc_cmsg_firsthdr(_rpc_msg)
+
+/**
+ * Get the next cmsghdr from control data stored in
+ * rpc_msghdr.
+ *
+ * @param _rpc_msg     Pointer to rpc_msghdr structure.
+ * @param _cmsg        Pointer to the current cmsghdr structure.
+ *
+ * @return Pointer to the next cmsghdr.
+ */
+extern struct cmsghdr *rpc_cmsg_nxthdr(rpc_msghdr *rpc_msg,
+                                       struct cmsghdr *cmsg);
+
+/**
+ * Get the next cmsghdr from control data stored in
+ * rpc_msghdr.
+ *
+ * @param rpc_msg     Pointer to rpc_msghdr structure.
+ * @param cmsg        Pointer to the current cmsghdr structure.
+ */
+#define RPC_CMSG_NXTHDR(_rpc_msg, _cmsg) rpc_cmsg_nxthdr(_rpc_msg, _cmsg)
 
 /** Generate a random value in range [0, RPC_MSG_UNKNOWN) for @b msg_flags
  * initialization. */

@@ -7,7 +7,7 @@
 # Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
 
-SUBDIRS = . 
+SUBDIRS = .
 
 pkgdatadir = $(datadir)/$(subdir)
 

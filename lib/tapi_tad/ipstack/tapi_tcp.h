@@ -917,6 +917,15 @@ extern int tapi_tcp_send_ack(tapi_tcp_handler_t handler,
 extern int tapi_tcp_ack_all(tapi_tcp_handler_t handler);
 
 /**
+ * Return the first received SEQ number in established TCP connection.
+ *
+ * @param handler       TAPI handler of TCP connection.
+ *
+ * @return SEQ number or zero if @p hanlder is not valid.
+ */
+extern tapi_tcp_pos_t tapi_tcp_first_seqn_got(tapi_tcp_handler_t handler);
+
+/**
  * Return last received SEQ number in established TCP connection.
  *
  * @param handler       TAPI handler of TCP connection;     
@@ -933,6 +942,15 @@ extern tapi_tcp_pos_t tapi_tcp_last_seqn_got(tapi_tcp_handler_t handler);
  * @return ACK number of zero if 'hanlder' not valid.
  */
 extern tapi_tcp_pos_t tapi_tcp_last_ackn_got(tapi_tcp_handler_t handler);
+
+/**
+ * Return the first sent SEQ number in established TCP connection.
+ *
+ * @param handler       TAPI handler of TCP connection.
+ *
+ * @return SEQ number or zero if @p handler is not valid.
+ */
+extern tapi_tcp_pos_t tapi_tcp_first_seqn_sent(tapi_tcp_handler_t handler);
 
 /**
  * Return last sent SEQ number in established TCP connection.

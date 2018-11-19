@@ -811,6 +811,7 @@ tad_ip6_upper_checksum_cb(tad_pkt *pdu, void *opaque)
     size_t                              len = tad_pkt_len(pdu);
     uint16_t                            tmp;
     tad_ip6_upper_checksum_seg_cb_data  seg_data;
+    uint16_t                            csum;
 
     if (data->upper_checksum_offset == -1)
     {
@@ -839,22 +840,33 @@ tad_ip6_upper_checksum_cb(tad_pkt *pdu, void *opaque)
         seg_data.checksum += calculate_checksum(&tmp, sizeof(tmp));
     }
 
+    /* Get checksum from template */
+    csum = *(uint16_t *)((uint8_t *)seg->data_ptr +
+                         data->upper_checksum_offset);
+
     /* Preset checksum field by zeros */
     memset((uint8_t *)seg->data_ptr +
            data->upper_checksum_offset, 0, 2);
 
-    /* Upper layer data checksum */
-    (void)tad_pkt_enumerate_seg(pdu,
-                                tad_ip6_upper_checksum_seg_cb,
-                                &seg_data);
+    if (ntohs(csum) != TE_IP6_UPPER_LAYER_CSUM_ZERO)
+    {
+        /* Upper layer data checksum */
+        (void)tad_pkt_enumerate_seg(pdu,
+                                    tad_ip6_upper_checksum_seg_cb,
+                                    &seg_data);
 
-    /* Finalize checksum calculation */
-    tmp = ~((seg_data.checksum & 0xffff) +
-            (seg_data.checksum >> 16));
+        /* Finalize checksum calculation */
+        tmp = ~((seg_data.checksum & 0xffff) +
+                (seg_data.checksum >> 16));
 
-    /* Write calculcated checksum to packet */
-    memcpy((uint8_t *)seg->data_ptr +
-           data->upper_checksum_offset, &tmp, sizeof(tmp));
+        /* Corrupt checksum if necessary */
+        if (ntohs(csum) == TE_IP6_UPPER_LAYER_CSUM_BAD)
+            tmp = ((tmp + 1) == 0) ? tmp + 2 : tmp + 1;
+
+        /* Write calculcated checksum to packet */
+        memcpy((uint8_t *)seg->data_ptr +
+               data->upper_checksum_offset, &tmp, sizeof(tmp));
+    }
 
     return 0;
 }

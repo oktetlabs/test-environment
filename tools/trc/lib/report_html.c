@@ -69,20 +69,22 @@
         {                                                   \
             rc = te_rc_os2te(errno);                        \
             assert(rc != 0);                                \
-            ERROR("Writing to the file failed: %r", rc);    \
+            ERROR("%s:%d: Writing to the file failed: %r",  \
+                  __FUNCTION__, __LINE__, rc);              \
             goto cleanup;                                   \
         }                                                   \
     } while (0)
 
 #define WRITE_STR(str) \
-    do {                                                \
-        fflush(f);                                      \
-        if (fwrite(str, strlen(str), 1, f) != 1)        \
-        {                                               \
-            rc = te_rc_os2te(errno) ? : TE_EIO;         \
-            ERROR("Writing to the file failed");        \
-            goto cleanup;                               \
-        }                                               \
+    do {                                                    \
+        fflush(f);                                          \
+        if (fwrite(str, strlen(str), 1, f) != 1)            \
+        {                                                   \
+            rc = te_rc_os2te(errno) ? : TE_EIO;             \
+            ERROR("%s:%d: Writing to the file failed: %r",  \
+                  __FUNCTION__, __LINE__, rc);              \
+            goto cleanup;                                   \
+        }                                                   \
     } while (0)
 
 #define PRINT_STR(str_) (((str_) != NULL) ? (str_) : "")
@@ -2462,7 +2464,7 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
     {
         v_id++;
         WRITE_FILE("<span id=\"%s_%d\">", tin_id, v_id);
-        WRITE_FILE(v->str);
+        WRITE_FILE("%s", v->str);
         WRITE_FILE("</span>\n");
 #if TRC_USE_STATS_POPUP
         if ((flags & TRC_REPORT_WILD_VERBOSE) && obtained_link)

@@ -1296,12 +1296,20 @@ struct tarpc_cmsghdr {
 
 struct tarpc_msghdr {
     struct tarpc_sa      msg_name;       /**< Destination/source address */
-    tarpc_socklen_t      msg_namelen;    /**< To be passed to 
-                                              recvmsg/sendmsg */
+    int64_t              msg_namelen;    /**< To be passed to
+                                              recvmsg/sendmsg; in case of
+                                              negative value will be
+                                              determined from msg_name */
     struct tarpc_iovec   msg_iov<>;      /**< Vector */
     tarpc_size_t         msg_iovlen;     /**< Passed to recvmsg() */
     struct tarpc_cmsghdr msg_control<>;  /**< Control info array */
-    tarpc_size_t         msg_controllen; /**< Control data buffer length */
+    tarpc_size_t         msg_controllen; /**< msg_controllen actually
+                                              used/retrieved on TA */
+
+    uint8_t              msg_control_tail<>;  /**< Not parsed, will be
+                                                   appended to msg_control
+                                                   after control messages */
+
     tarpc_int            msg_flags;      /**< Flags on received message */
     tarpc_int            in_msg_flags;   /**< Original msg_flags value */
 };

@@ -69,6 +69,7 @@ typedef enum tapi_perf_bench {
 typedef enum tapi_perf_error {
     TAPI_PERF_ERROR_FORMAT,     /**< Wrong report format. */
     TAPI_PERF_ERROR_READ,       /**< Read failed. */
+    TAPI_PERF_ERROR_WRITE_CONN_RESET, /**< Write failed. Connection reset. */
     TAPI_PERF_ERROR_CONNECT,    /**< Connect failed. */
     TAPI_PERF_ERROR_NOROUTE,    /**< No route to host. */
     TAPI_PERF_ERROR_BIND,       /**< Bind failed. */
@@ -221,6 +222,7 @@ typedef struct tapi_perf_opts {
     int16_t streams;        /**< Number of parallel client streams */
     te_bool reverse;        /**< Whether run in reverse mode (server sends,
                                  client receives), or not */
+    te_bool dual;           /**< Bidirectional mode */
 } tapi_perf_opts;
 
 /**

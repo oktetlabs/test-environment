@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -37,7 +37,7 @@ rgt_filter_init(const char *fltr_fname)
         TRACE("rgt_filter library has already been initialized");
         return -1;
     }
-    
+
     if (fltr_fname == NULL)
     {
         initialized = TRUE;
@@ -58,7 +58,7 @@ rgt_filter_init(const char *fltr_fname)
         Tcl_DeleteInterp(tcl_interp);
         return -1;
     }
-    
+
     initialized = TRUE;
     return 0;
 }
@@ -126,7 +126,7 @@ run_tcl_cmd(const char *cmd, const char *func_name)
     }
     else
     {
-        /* 
+        /*
          * Something awful is occured: Tcl filter file doesn't contain
          * standard routine "rgt_branch_filter" that is used for filtering.
          */
@@ -140,7 +140,7 @@ run_tcl_cmd(const char *cmd, const char *func_name)
 }
 
 /**
- * Validates if log message with a particular tuple (level, entity name, 
+ * Validates if log message with a particular tuple (level, entity name,
  * user name and timestamp) passes through user defined filter.
  * The function updates message flags.
  *
@@ -181,7 +181,7 @@ rgt_filter_check_message(const char *entity, const char *user,
 }
 
 /**
- * Verifies if the whole branch of execution flow should be excluded or 
+ * Verifies if the whole branch of execution flow should be excluded or
  * included from the log report.
  *
  * @param   path  Path (name) of the branch to be checked.
@@ -196,14 +196,14 @@ enum node_fltr_mode
 rgt_filter_check_branch(const char *path)
 {
     char cmd[MAX_CMD_LEN];
-        
+
     snprintf(cmd, sizeof(cmd), "rgt_branch_filter %s", path);
 
     return run_tcl_cmd(cmd, "rgt_branch_filter");
 }
 
 /**
- * Validates if the particular node (TEST, SESSION or PACKAGE) passes 
+ * Validates if the particular node (TEST, SESSION or PACKAGE) passes
  * through duration filter.
  *
  * @param node_type  Typo of the node ("TEST", "SESSION" or "PACKAGE")
@@ -281,7 +281,7 @@ rgt_filter_check_duration(const char *node_type,
     UNUSED(node_type);
     UNUSED(start_ts);
     UNUSED(end_ts);
-    
+
     return NFMODE_INCLUDE;
 }
 

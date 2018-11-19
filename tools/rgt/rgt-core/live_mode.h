@@ -1,12 +1,12 @@
-/** @file 
+/** @file
  * @brief Test Environment: Live mode specific routines.
  *
- * Interface for output control message events and regular messages 
+ * Interface for output control message events and regular messages
  * into the screen.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>

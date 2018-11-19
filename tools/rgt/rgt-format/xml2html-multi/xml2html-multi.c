@@ -1,9 +1,9 @@
-/** @file 
+/** @file
  * @brief Test Environment: xml2html multidocument utility callbacks.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -64,7 +64,7 @@ typedef struct depth_ctx_user {
     te_bool is_test; /**< Is this test iteration? */
     char *log_level; /**< Log level value in string representation */
 
-    GHashTable *depth_log_names; /**< Hash table for log names for 
+    GHashTable *depth_log_names; /**< Hash table for log names for
                                       the particular node:
                                       key - entity name,
                                       value - array of user names */
@@ -283,7 +283,7 @@ RGT_DEF_FUNC(proc_document_start)
         {
             if (errno != ENOENT)
             {
-                perror(ctx->out_fname);                
+                perror(ctx->out_fname);
                 exit(1);
             }
             if (mkdir(ctx->out_fname, 0777) < 0)
@@ -401,7 +401,7 @@ RGT_DEF_FUNC(proc_document_start)
     rgt_tmpls_attrs_add_uint32(attrs, "seq", depth_ctx->seq);
     rgt_tmpls_output(gen_user->js_fd, &xml2fmt_tmpls[JS_DOC_START], attrs);
     rgt_tmpls_attrs_free(attrs);
-    
+
     /* Initialize log names hash */
     gen_user->strings = g_string_chunk_new(1024);
     if (gen_user->strings == NULL)
@@ -429,7 +429,7 @@ ptr_strcmp(gconstpointer a, gconstpointer b)
 /**
  * Auxiliary function that appends string key into array of pointers.
  *
- * @param key        String value representing string key 
+ * @param key        String value representing string key
  *                   (entity or user name)
  * @param value      Unused (when key is entity name, it is the hash of
  *                   user names for this entity name.
@@ -437,7 +437,7 @@ ptr_strcmp(gconstpointer a, gconstpointer b)
  * @param user_data  Pointer to an array of pointers where we want to
  *                   append the key to
  *
- * @note The function is intended to be used as callback for 
+ * @note The function is intended to be used as callback for
  * g_hash_table_foreach() calls.
  */
 static void
@@ -451,13 +451,13 @@ key_append_to_array(gpointer key, gpointer value, gpointer user_data)
 }
 
 /**
- * Output the information about a single entity name into file 
+ * Output the information about a single entity name into file
  * prepared by user (JavaScript file).
  *
- * @param data       Pointer to string representing entity name for 
- *                   which all the pairs (entity name, user name) 
+ * @param data       Pointer to string representing entity name for
+ *                   which all the pairs (entity name, user name)
  *                   should be output (const char *)
- * @param user_data  Pointer to user callback data, 
+ * @param user_data  Pointer to user callback data,
  *                   here it is the data of type (log_msg_name_t *)
  *
  * @note The function is intended to be used as callback for
@@ -477,7 +477,7 @@ log_entity_out(gpointer data, gpointer user_data)
     GPtrArray      *users;
     const char     *user;
     guint           i;
-    
+
     user_hash = (GHashTable *)g_hash_table_lookup(entity_hash, entity);
 
     assert(user_hash != NULL);
@@ -513,7 +513,7 @@ log_entity_out(gpointer data, gpointer user_data)
  * node_${depth}_${seq}_log_names.js
  *
  * @param entity_hash  Hash of entity names (value of each element in
- *                     the hash is a hash of all user names for this 
+ *                     the hash is a hash of all user names for this
  *                     particular entity name)
  * @param depth        The depth of processing
  * @param seq          The sequence number of processing
@@ -532,7 +532,7 @@ output_log_names(GHashTable **entity_hash, uint32_t depth, uint32_t seq)
     assert(entity_hash != NULL);
 
     cb_data.entity_hash = *entity_hash;
-    
+
     snprintf(fname, sizeof(fname), "node_%u_%u_log_names.js", depth, seq);
     if ((cb_data.fd = fopen(fname, "w")) == NULL)
     {
@@ -555,7 +555,7 @@ output_log_names(GHashTable **entity_hash, uint32_t depth, uint32_t seq)
     entries = g_ptr_array_new();
     g_hash_table_foreach(cb_data.entity_hash, key_append_to_array, entries);
     g_ptr_array_sort(entries, (GCompareFunc)ptr_strcmp);
-    
+
     /* Now we have sorted array of entity names */
     g_ptr_array_foreach(entries, log_entity_out, &cb_data);
     g_ptr_array_free(entries, TRUE);
@@ -690,7 +690,7 @@ lf_end(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx)
 
     if (!depth_user->is_test)
     {
-        rgt_tmpls_output(depth_user->dir_fd, 
+        rgt_tmpls_output(depth_user->dir_fd,
                          &xml2fmt_tmpls[LF_DOC_END], NULL);
 
         fclose(depth_user->dir_fd);
@@ -699,9 +699,9 @@ lf_end(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx)
 
 /**
  * Function for processing start of control node event.
- * 
+ *
  * @param ctx        Pointer to the global processing context
- * @param depth_ctx  Pointer to the depth processing context 
+ * @param depth_ctx  Pointer to the depth processing context
  * @param xml_attrs  Pointer to the list of attributes in libxml style
  * @param node_type  String representation of the node type
  */
@@ -731,7 +731,7 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
 
     if (name == NULL)
         name = "session";
-    
+
     depth_user->is_test = strcmp(node_type, "Test") == 0;
 
     if ((err != NULL && err[0] != '\0') ||
@@ -839,9 +839,9 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
 
 /**
  * Function for processing end of control node event.
- * 
+ *
  * @param ctx        Pointer to the global processing context
- * @param depth_ctx  Pointer to the depth processing context 
+ * @param depth_ctx  Pointer to the depth processing context
  * @param xml_attrs  Pointer to the list of attributes in libxml style
  * @param node_type  String representation of the node type
  */
@@ -1246,17 +1246,17 @@ add_log_user(gen_ctx_user_t *gen_user, depth_ctx_user_t *depth_user,
 {
     gchar *entity_cp;
     gchar *user_cp;
-    
+
     entity_cp = g_string_chunk_insert_const(gen_user->strings, entity);
     user_cp = g_string_chunk_insert_const(gen_user->strings, user);
-    
+
     assert(entity_cp != NULL && user_cp != NULL);
 
     add_log_user_to_hash(gen_user->log_names, entity_cp, user_cp);
-    
+
     if (depth_user->depth_log_names == NULL)
     {
-        depth_user->depth_log_names = 
+        depth_user->depth_log_names =
             g_hash_table_new(g_str_hash, g_str_equal);
         assert(depth_user->depth_log_names != NULL);
     }
@@ -1264,7 +1264,7 @@ add_log_user(gen_ctx_user_t *gen_user, depth_ctx_user_t *depth_user,
     add_log_user_to_hash(depth_user->depth_log_names, entity_cp, user_cp);
 }
 
-/** 
+/**
  * Array of pointer to depth-specific user data
  * (it is used as stack).
  */
@@ -1272,7 +1272,7 @@ static GPtrArray *depth_array = NULL;
 
 /**
  * Returns a pointer to depth-specific user data
- * 
+ *
  * @param depth  Processing depth value
  *
  * @return Pointer to depth-specific user data (not initialized)

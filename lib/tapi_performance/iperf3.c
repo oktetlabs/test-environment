@@ -24,9 +24,10 @@
 #include "tapi_test.h"
 #include "performance_internal.h"
 
-
+/* The minimal representative duration */
+#define IPERF_MIN_REPRESENTATIVE_DURATION   (1.0)
 /* Time to wait till data is ready to read from stdout */
-#define IPERF3_TIMEOUT_MS           (500)
+#define IPERF3_TIMEOUT_MS                   (500)
 
 /* Prototype of function to set option in iperf3 tool format */
 typedef void (*set_opt_t)(te_string *, const tapi_perf_opts *);
@@ -257,6 +258,39 @@ build_client_cmd(te_string *cmd, const tapi_perf_opts *options)
 }
 
 /*
+ * Retrieve a double precision number from JSON object
+ *
+ * @param[in]  jobj   JSON object
+ * @param[out] value  Pointer to a variable receiving value retrieved from JSON
+ *                    object
+ *
+ * @return Status code
+ */
+static te_errno
+jsonvalue2double(const json_t *jobj, double *value)
+{
+    double result;
+
+    if (json_is_integer(jobj))
+    {
+        result = json_integer_value(jobj);
+    }
+    else if (json_is_real(jobj))
+    {
+        result = json_real_value(jobj);
+    }
+    else
+    {
+        return TE_EINVAL;
+    }
+
+    if (value != NULL)
+        *value = result;
+
+    return 0;
+}
+
+/*
  * Extract report from JSON object.
  *
  * @param[in]  jrpt         JSON object contains report data.
@@ -269,6 +303,8 @@ get_report(const json_t *jrpt, tapi_perf_report *report)
 {
     json_t *jend, *jsum, *jval, *jint;
     tapi_perf_report tmp_report;
+    size_t  i;
+    double  seconds;
 
 #define GET_REPORT_ERROR(_obj)                                  \
     do {                                                        \
@@ -283,30 +319,76 @@ get_report(const json_t *jrpt, tapi_perf_report *report)
     if (!json_is_array(jend))
         GET_REPORT_ERROR("array \"intervals\"");
 
-    jint = json_array_get(jend, json_array_size(jend) - 1);
-    jsum = json_object_get(jint, "sum");
+    if (json_array_size(jend) == 0)
+        GET_REPORT_ERROR("non-empty array \"intervals\"");
+
+    /*
+     * The interval selection method is as follows:
+     * 1) Traverse through intervals, save up the interval data
+     *    if it seems to be valid ('sum' and 'sum.seconds' are present)
+     * 2) Stop on interval with representative duration and all data present
+     *
+     * That guarantees that we choose the first sane interval, or the last
+     * complete interval if it is present at all.
+     * When choosing among unrepresentative intervals, the method assumes they
+     * are equally good or bad.
+     */
+    jsum = NULL;
+
+    for (i = 0; i < json_array_size(jend); ++i)
+    {
+        json_t *tmp_jsum;
+        double  tmp_seconds;
+
+        jint = json_array_get(jend, i);
+        tmp_jsum = json_object_get(jint, "sum");
+        if (!json_is_object(tmp_jsum))
+        {
+            /*
+             * This failure isn't fatal - iperf3 report can be
+             * incomplete. Skip the entry as there is nothing to retrieve data
+             * from
+             */
+            continue;
+        }
+
+        jval = json_object_get(tmp_jsum, "seconds");
+        if (jsonvalue2double(jval, &tmp_seconds) != 0 ||
+            !json_is_integer(json_object_get(tmp_jsum, "bytes")) ||
+            !json_is_real(json_object_get(tmp_jsum, "bits_per_second")))
+        {
+            /*
+             * This failure isn't fatal - some of (or all) specifications are
+             * missing or invalid. Skip the entry as we won't be able to
+             * retrieve useful data from it
+             */
+            continue;
+        }
+
+        jsum = tmp_jsum;
+        seconds = tmp_seconds;
+
+        if (tmp_seconds >= IPERF_MIN_REPRESENTATIVE_DURATION)
+            break;
+    }
+
+    /* We could find no valid intervals, in the case jsum would be NULL */
     if (!json_is_object(jsum))
-        GET_REPORT_ERROR("object \"sum\"");
+        GET_REPORT_ERROR("complete \"intervals.sum\"");
 
+    tmp_report.seconds = seconds;
+    if (seconds < IPERF_MIN_REPRESENTATIVE_DURATION)
+    {
+        WARN("%s: the retrieved interval of %.1f duration might be "
+             "unrepresentative", __FUNCTION__, seconds);
+    }
+
+    /* We already checked these objects */
     jval = json_object_get(jsum, "bytes");
-    if (json_is_integer(jval))
-        tmp_report.bytes = json_integer_value(jval);
-    else
-        GET_REPORT_ERROR("value \"bytes\"");
-
-    jval = json_object_get(jsum, "seconds");
-    if (json_is_integer(jval))
-        tmp_report.seconds = json_integer_value(jval);
-    else if (json_is_real(jval))
-        tmp_report.seconds = json_real_value(jval);
-    else
-        GET_REPORT_ERROR("value \"seconds\"");
+    tmp_report.bytes = json_integer_value(jval);
 
     jval = json_object_get(jsum, "bits_per_second");
-    if (json_is_real(jval))
-        tmp_report.bits_per_second = json_real_value(jval);
-    else
-        GET_REPORT_ERROR("value \"bits_per_second\"");
+    tmp_report.bits_per_second = json_real_value(jval);
 
     *report = tmp_report;
     return 0;

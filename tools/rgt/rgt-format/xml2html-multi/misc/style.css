@@ -1,9 +1,9 @@
 /*  TAG REDEFINITION SECTION  */
 BODY {
-     COLOR: #000000; 
-     FONT-FAMILY:  Tahoma, Verdana,  sans-serif; 
-     FONT-SIZE: 10pt; 
-     MARGIN-LEFT: 10px; 
+     COLOR: #000000;
+     FONT-FAMILY:  Tahoma, Verdana,  sans-serif;
+     FONT-SIZE: 10pt;
+     MARGIN-LEFT: 10px;
      MARGIN-RIGHT: 10px;
      MARGIN-TOP: 10px;
      MARGIN-BOTTOM: 10px;
@@ -17,7 +17,7 @@ BODY {
      BACKGROUND-POSITION: center 50%;
      BACKGROUND-REPEAT: no-repeat;
      BACKGROUND-ATTACHMENT: fixed;
-     background-color: #F8FEF6; 
+     background-color: #F8FEF6;
      }
 STRONG {FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif;}
 B {FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 10pt; FONT-WEIGHT: bold}
@@ -41,8 +41,8 @@ TD {FONT-FAMILY:Tahoma, Arial, Verdana,  sans-serif; FONT-SIZE: 10pt;}
 /*  END of BACKGROUNDS SECTION  */
 
 /*  TEXT CLASSES SECTION  */
-.t8 {FONT-WEIGHT: normal; FONT-SIZE: 8pt; COLOR: #636563; FONT-FAMILY: Arial, Verdana, arial, sans-serif;} 
-.h8 {FONT-WEIGHT: bold; FONT-SIZE: 8pt; COLOR: #636563; FONT-FAMILY: Arial, Verdana, arial, sans-serif;} 
+.t8 {FONT-WEIGHT: normal; FONT-SIZE: 8pt; COLOR: #636563; FONT-FAMILY: Arial, Verdana, arial, sans-serif;}
+.h8 {FONT-WEIGHT: bold; FONT-SIZE: 8pt; COLOR: #636563; FONT-FAMILY: Arial, Verdana, arial, sans-serif;}
 .address {letter-spacing: 1px}
 .heading {COLOR: #000000; FONT-VARIANT: small-caps; FONT-FAMILY: Tahoma, Arial, Verdana, sans-serif; FONT-WEIGHT: bold; FONT-SIZE: 12pt;}
 .tdsubhead {COLOR: #838383; FONT-FAMILY: Tahoma, Verdana, sans-serif; FONT-WEIGHT: bold; FONT-SIZE: 10pt;}

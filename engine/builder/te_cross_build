@@ -149,6 +149,42 @@ build_platform() {
     test -z "$libs"
 }
 
+take_agent_lock() {
+    mkdir agents/$1/in_progress/ 2>/dev/null
+}
+
+put_agent_lock() {
+    rmdir agents/$1/in_progress/
+}
+
+wait_progress () {
+    local package=$1
+    local in_prog_msg=
+
+    mkdir -p agents/$package
+    while true ; do
+        take_agent_lock $package
+        if [ $? -eq 0 ] ; then
+            break
+        fi
+        if test "x$BUILD_TA_RM" == "xyes" ; then
+            echo "WARNING: Removing build lock for agent: $package"
+            put_agent_lock $package
+            continue
+        fi
+        if test "x$in_prog_msg" == "x" ; then
+            echo -n "Agent $package building is already in progress, " >&2
+            echo -n "waiting" >&2
+            in_prog_msg="yes"
+        fi
+        echo -n "." >&2
+        sleep 10
+    done
+    if test "x$in_prog_msg" == "xyes" ; then
+        echo "" >&2
+    fi
+}
+
 need_build_agent() {
     local package=$1
     local mode=$2
@@ -380,9 +416,11 @@ build_platform_and_agent() {
     if test -n "${CONSTRUCTED[$p]}" ; then return ; fi
     local AGENT_EXIST=$(te_is_in_list $p $DUMMY $TE_BS_TA \
         && echo yes || echo no)
+    wait_progress $p
     if ! need_build_platform "$p" "$mode" && \
         ( test "$AGENT_EXIST" = "no" || \
         ! need_build_agent "$p" "$mode" ) ; then
+        put_agent_lock $p
         return
     fi
     print_build_agent_start "$p" >&2
@@ -448,6 +486,7 @@ build() {
             echo "Build agent $(print_platform $p) - fail ($res)" >&2
             ERRORS[$p]=$res
         fi
+        put_agent_lock $p
     done
 
     if test "${#ERRORS[@]}" -ne "0" ; then

@@ -42,7 +42,7 @@ rgt_xml2html_multi_SOURCES = xml2html-multi/xml2html-multi.c \
 rgt_xml2html_multi_LDADD = $(GEN_LDADD) -lcapture
 rgt_xml2html_multi_DEPENDENCIES = $(GEN_DEP)
 
-BUILT_SOURCES = xml2text.h xml2html.h xml2html-multi.h 
+BUILT_SOURCES = xml2text.h xml2html.h xml2html-multi.h
 
 CLEANFILES=$(RGT_SUBDIRS:%=%.h)
 

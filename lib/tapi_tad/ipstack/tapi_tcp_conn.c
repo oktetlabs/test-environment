@@ -2089,6 +2089,20 @@ tapi_tcp_rst_got(tapi_tcp_handler_t handler)
     return conn_descr->reset_got;
 }
 
+/* See description in tapi_tcp.h */
+tapi_tcp_pos_t
+tapi_tcp_first_seqn_got(tapi_tcp_handler_t handler)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    tapi_tcp_conns_db_init();
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return 0;
+
+    return conn_descr->peer_isn;
+}
+
 tapi_tcp_pos_t
 tapi_tcp_last_seqn_got(tapi_tcp_handler_t handler)
 {
@@ -2116,6 +2130,19 @@ tapi_tcp_last_ackn_got(tapi_tcp_handler_t handler)
     return conn_descr->ack_got;
 }
 
+/* See description in tapi_tcp.h */
+tapi_tcp_pos_t
+tapi_tcp_first_seqn_sent(tapi_tcp_handler_t handler)
+{
+    tapi_tcp_connection_t *conn_descr;
+
+    tapi_tcp_conns_db_init();
+
+    if ((conn_descr = tapi_tcp_find_conn(handler)) == NULL)
+        return 0;
+
+    return conn_descr->our_isn;
+}
 
 tapi_tcp_pos_t
 tapi_tcp_last_seqn_sent(tapi_tcp_handler_t handler)

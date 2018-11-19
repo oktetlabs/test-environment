@@ -129,6 +129,32 @@ set_opt_user(te_string *cmd, const tapi_fio_opts *opts)
 }
 
 static void
+set_opt_random_generator(te_string *cmd, const tapi_fio_opts *opts)
+{
+    size_t i;
+    static const char *generators[] = {
+        "lfsr",
+        "tausworthe",
+        "tausworthe64",
+    };
+
+    if (opts->rand_gen == NULL)
+        return;
+
+    for (i = 0; i < TE_ARRAY_LEN(generators); i++)
+    {
+        if (strcmp(opts->rand_gen, generators[i]) == 0)
+        {
+            CHECK_RC(te_string_append(cmd, " --random_generator=%s",
+                                      opts->rand_gen));
+            return;
+        }
+    }
+
+    TEST_FAIL("Random generator '%s' is not supported", opts->rand_gen);
+}
+
+static void
 set_opt_generic(te_string *cmd, const tapi_fio_opts *opts)
 {
     UNUSED(opts);
@@ -153,6 +179,7 @@ build_command(te_string *cmd, const tapi_fio_opts *opts)
         set_opt_rwmixread,
         set_opt_rwtype,
         set_opt_output,
+        set_opt_random_generator,
         set_opt_generic,
         set_opt_user,
     };

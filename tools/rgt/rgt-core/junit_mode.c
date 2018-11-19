@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
@@ -199,6 +199,8 @@ junit_process_test_start(node_info_t *node, msg_queue *verdicts)
 {
     tqe_string    *tqe_str;
     double         time_val;
+
+    UNUSED(verdicts);
 
     if (ew_log_obstk == NULL)
         ew_log_obstk = obstack_initialize();

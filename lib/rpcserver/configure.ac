@@ -379,6 +379,11 @@ dnl NetBSD has no svcunix_create().
 dnl
 AC_CHECK_FUNCS([svcunix_create svc_exit])
 
+AH_TEMPLATE([struct mmsghdr], [check if struct mmsghdr is defined])
+AC_CHECK_TYPES([struct mmsghdr], [], [], [
+#include <sys/socket.h>
+])
+
 dnl
 dnl Find library with SunRPC XDR functions.
 dnl - libnsl on Solaris2 (SunOS 5.11);

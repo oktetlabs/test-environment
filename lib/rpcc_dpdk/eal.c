@@ -91,8 +91,65 @@ append_arg(int *argc_p, char ***argv_p, const char *fmt, ...)
     *argv_p = argv;
 }
 
+static te_errno tapi_eal_get_vdev_slaves(tapi_env               *env,
+                                         const tapi_env_ps_if   *ps_if,
+                                         char                 ***slavespp,
+                                         unsigned int           *nb_slavesp);
+
 static te_errno
-tapi_reuse_eal(rcf_rpc_server   *rpcs,
+tapi_eal_close_bond_slave_pci_devices(tapi_env             *env,
+                                      const tapi_env_ps_if *ps_if,
+                                      rcf_rpc_server       *rpcs,
+                                      const char           *dev_args)
+{
+    char         **slaves = NULL;
+    unsigned int   nb_slaves;
+    const char    *da_empty = "";
+    const char    *da = (dev_args == NULL) ? da_empty : dev_args;
+    te_errno       rc;
+    unsigned int   i;
+
+    rc = tapi_eal_get_vdev_slaves(env, ps_if, &slaves, &nb_slaves);
+    if (rc != 0)
+        goto out;
+
+    for (i = 0; i < nb_slaves; ++i)
+    {
+        size_t name_len = strlen(slaves[i]);
+
+        if (name_len > 1 && slaves[i][name_len - 1 - 1] == '.')
+        {
+            uint16_t port_id;
+
+            RPC_AWAIT_ERROR(rpcs);
+            rc = rpc_rte_eth_dev_get_port_by_name(rpcs, slaves[i], &port_id);
+            if (rc == 0)
+            {
+                rpc_rte_eth_dev_close(rpcs, port_id);
+                rc = rpc_rte_eal_hotplug_remove(rpcs, "pci", slaves[i]);
+                if (rc != 0)
+                    goto out;
+
+                rc = rpc_rte_eal_hotplug_add(rpcs, "pci", slaves[i], da);
+                if (rc != 0)
+                    goto out;
+            }
+            else if (rc != -TE_RC(TE_RPC, TE_ENODEV))
+            {
+                goto out;
+            }
+        }
+    }
+
+out:
+    free(slaves);
+
+    return rc;
+}
+
+static te_errno
+tapi_reuse_eal(tapi_env         *env,
+               rcf_rpc_server   *rpcs,
                tapi_env_ps_ifs  *ifsp,
                int               argc,
                char             *argv[],
@@ -158,6 +215,7 @@ tapi_reuse_eal(rcf_rpc_server   *rpcs,
         const char *dev_name = ps_if->iface->if_info.if_name;
         const char *da_empty = "";
         uint16_t    port_id;
+        const char *net_bonding_prefix = "net_bonding";
 
         if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_PCI_FN)
         {
@@ -195,6 +253,15 @@ tapi_reuse_eal(rcf_rpc_server   *rpcs,
         else if (rc != -TE_RC(TE_RPC, TE_ENODEV))
         {
             goto out;
+        }
+
+        if (strncmp(dev_name, net_bonding_prefix,
+                    strlen(net_bonding_prefix)) == 0)
+        {
+            rc = tapi_eal_close_bond_slave_pci_devices(env, ps_if, rpcs,
+                                                       dev_args);
+            if (rc != 0)
+                goto out;
         }
 
         da_generic = (da_generic == NULL) ? da_empty : da_generic;
@@ -681,7 +748,7 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
 
     if (dpdk_reuse_rpcs())
     {
-        rc = tapi_reuse_eal(rpcs, &pco->process->ifs,
+        rc = tapi_reuse_eal(env, rpcs, &pco->process->ifs,
                             my_argc, my_argv, dev_args,
                             &need_init, &eal_args_new);
         if (rc != 0)

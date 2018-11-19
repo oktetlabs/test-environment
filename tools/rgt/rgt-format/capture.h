@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Roman Kolobov  <Roman.Kolobov@oktetlabs.ru>
@@ -18,7 +18,7 @@
 extern "C" {
 #endif
 
-/* 
+/*
  * Flag turning on detailed packet dumps in log.
  */
 extern int detailed_packets;

@@ -1,0 +1,54 @@
+File application/power_sw_app.c - source for application to control power
+switch device from tester host. Oktetlabs LPT (masterkit NM4413) and COM/USB
+power switch devices are supported.
+
+To enable support of oktetlabs power switch please build and install
+ol_power_sw application:
+
+1) Run 'make all' in the folder application/
+2) Install ol_power_sw into /srv/local/bin folder
+3) Run 'make clean' in the folder application/
+
+Files in firmware/ directory - source files for oktetlabs power switch firmware.
+COM/USB power switch devices need controllers to interprete and execute
+commands sent via serial port. AVR controllers are supported now. Specific
+commands set are designed together with power switch controllers.
+
+File firmware/power_sw_descr - description of commands set to control
+COM/USB power switch devices
+
+Files firmware/power_sw_tn2313.asm and tn2313def.inc - assembler code for
+AVR attiny2313 controller.
+
+Files firmware/power_sw_mega8.asm and m8def.inc - assembler code for
+AVR Atmega8 controller.
+
+To build and install firmware for power switch devices with attiny2313 and
+atmega8 controllers:
+1) Run command 'make all' or 'make tn2313' or 'make mega8' in the
+folder firmware/ to build firmware binaries.
+2) To install flash images and set fuse bits on power switch controller
+you may use avrdude or any other tool you know. For example we're using
+avrdude tool and avr910 programmer. Commands in this case will look like.
+    2.1 Run command in interactive mode to check and program fuses
+        avrdude -p t2313 -c avr910 -t -b 19200 -F
+        Fuses for attiny2313 lfuse 0xff, hfuse 0xdf, efuse 0xff
+        Fuses for atmega8 lfuse 0xef, hfuse 0xdf, efuse 0xff
+    2.2 Load flash image
+        avrdude -p <type> -c avr910 -b 19200 -U flash:w:<filename.hex>:i
+        <type> will be t2313 or m8
+        <filename.hex> will be power_sw_tn2312.hex power_sw_mega8.hex
+Note we do nothing with controller EEPROM.
+3) Run command 'make clean' in the folder firmware/ to remove
+built artifacts.
+
+File firmware/sketch_powerswitch.ino - C++ power switch code for Arduino
+nano platform (AVR atmega328 controller). Intended for compilation and binary
+loading by means of Arduino IDE tool.
+
+Firmware for Arduino Nano power switch is built and uploaded via
+Arduino IDE. Current 1.8.6 version of IDE is used. To build and upload
+firmware for Arduino Nano power switch please open Arduino IDE then open
+sketch firmware/sketch_powerswitch.ino in IDE. Call compile and upload
+commands. Do not forget to verify fuse bits. For Arduino Nano using
+atmega328 controller fuses are: lfuse 0xef, hfuse 0xdf, efuse 0xff.

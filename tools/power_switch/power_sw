@@ -1,0 +1,40 @@
+#!/bin/bash
+
+print_help_and_exit()
+{
+cat <<EOF
+
+usage: "$(basename $0)" type specific_arguments
+
+    type: masterkit|gembird|tty|parport
+
+    specific_arguments:
+
+        for type masterkit and gembird: mask mode
+
+            mask is 0x1-0xF, mode is on/off/rst
+
+        for type parport: [-d device] mask mode
+
+            device /dev/parportXX (parport0 on default),
+
+            mask 0x1-0xFF, mode on/off/rst
+
+        for type tty: -d device mask mode
+
+            device /dev/ttyXXXX, mask 0x1-0xFFFF, mode on/off/rst
+
+EOF
+exit 1
+}
+
+switch_type=$1
+shift
+
+case "$switch_type" in
+    "masterkit")    /srv/local/bin/masterkit_power_sw $@ ;;
+    "gembird")      /srv/local/bin/gembird_power_sw $@ ;;
+    "parport")      /srv/local/bin/ol_power_sw $@ ;;
+    "tty")          /srv/local/bin/ol_power_sw -t tty $@ ;;
+    *) print_help_and_exit ;;
+esac

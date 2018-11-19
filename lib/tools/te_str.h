@@ -127,6 +127,18 @@ extern char *te_str_strip_spaces(const char *str);
 extern te_errno te_strtoul(const char *str, int base,
                            unsigned long int *value);
 
+/**
+ * Wrapper for te_strtoul() with overflow check.
+ *
+ * @param str   String to convert
+ * @param base  Base of the numeral system
+ * @param value Location for the resulting value
+ *
+ * @return Status code
+ */
+extern te_errno te_strtoui(const char   *str,
+                           int           base,
+                           unsigned int *value);
 
 /**
  * Convert string to long int. Should be used to avoid

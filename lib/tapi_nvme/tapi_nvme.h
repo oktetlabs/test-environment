@@ -38,15 +38,15 @@ typedef const char * tapi_nvme_subnqn;
 
 /** Target context  */
 typedef struct tapi_nvme_target {
-    LIST_ENTRY(tapi_nvme_target) list; /**< A way to build lists of
-                                        * targets */
+    LIST_ENTRY(tapi_nvme_target) list;  /**< A way to build lists of
+                                          * targets */
 
-    rcf_rpc_server *rpcs;           /**< RPC server handle */
-    tapi_nvme_transport transport;  /**< Transport type */
-    tapi_nvme_subnqn subnqn;        /**< NVMe Qualified Name */
-    unsigned int nvmet_port;        /**< NVMe target port */
-    const char *device;             /**< Name of device */
-    const struct sockaddr *addr;    /**< Endpoint to target */
+    rcf_rpc_server *rpcs;               /**< RPC server handle */
+    tapi_nvme_transport transport;      /**< Transport type */
+    tapi_nvme_subnqn subnqn;            /**< NVMe Qualified Name */
+    unsigned int nvmet_port;            /**< NVMe target port */
+    const char *device;                 /**< Name of device */
+    const struct sockaddr *addr;        /**< Endpoint to target */
 } tapi_nvme_target;
 
 /** Default target initialization */
@@ -55,13 +55,13 @@ typedef struct tapi_nvme_target {
     .transport = TAPI_NVME_TRANSPORT_TCP,   \
     .nvmet_port = 1,                        \
     .device = NULL,                         \
-    .subnqn = "device"                      \
+    .subnqn = "te_testing"                  \
 }
 
 /** Initiator context */
 typedef struct tapi_nvme_host_ctrl {
-    LIST_ENTRY(tapi_nvme_host_ctrl) list; /**< A way to build lists of
-                                           * host ctrls */
+    LIST_ENTRY(tapi_nvme_host_ctrl) list;      /**< A way to build lists of
+                                                  * host ctrls */
     rcf_rpc_server *rpcs;                      /**< RPC server handle */
     const tapi_nvme_target *connected_target;  /**< Connected target */
     char *device;                              /**< Name of device */

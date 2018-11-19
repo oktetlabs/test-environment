@@ -1,11 +1,11 @@
-/** @file 
+/** @file
  * @brief RGT core: I/O functions.
  *
  * Auxiliary functions for I/O operations.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
