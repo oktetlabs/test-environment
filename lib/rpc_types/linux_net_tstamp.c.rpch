@@ -10,6 +10,10 @@
 
 #include "te_config.h"
 
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
+
 #if HAVE_LINUX_NET_TSTAMP_H
 #include <linux/net_tstamp.h>
 #endif
