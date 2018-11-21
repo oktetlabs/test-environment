@@ -83,14 +83,9 @@ tapi_perf_opts_init(tapi_perf_opts *opts)
     opts->dual = FALSE;
 }
 
-/*
- * Compare important parts of the run.
- *
- * Length is missing cause it's fine to mix short and long runs - this is
- * actually quite useful.
- */
-static bool
-perf_opts_cmp(const tapi_perf_opts *opts_a, const tapi_perf_opts *opts_b)
+/* See description in tapi_performance.h */
+bool
+tapi_perf_opts_cmp(const tapi_perf_opts *opts_a, const tapi_perf_opts *opts_b)
 {
     return (opts_a->ipversion == opts_b->ipversion &&
             opts_a->protocol == opts_b->protocol &&
@@ -480,8 +475,8 @@ tapi_perf_log_cumulative_report(const tapi_perf_server *server[],
     {
         int e;
 
-        if (!perf_opts_cmp(&server[i]->app.opts, server_opts) ||
-            !perf_opts_cmp(&client[i]->app.opts, client_opts))
+        if (!tapi_perf_opts_cmp(&server[i]->app.opts, server_opts) ||
+            !tapi_perf_opts_cmp(&client[i]->app.opts, client_opts))
             TEST_FAIL("Cumulative report can't be done for "
                       "non-uniform instances");
 

@@ -599,6 +599,19 @@ extern void tapi_perf_log_cumulative_report(const tapi_perf_server *server[],
                                             int number_of_instances,
                                             const char *test_params);
 
+/**
+ * Compare important parts of the run.
+ *
+ * @param opts_a First object for comparison
+ * @param opts_b Second object for comparison
+ *
+ * @return @c TRUE if objects' important properties are equal, @c FALSE if not
+ *
+ * @remark Duration comparison is missing cause it's fine to mix short and long
+ *         runs - this is actually quite useful.
+ */
+extern bool tapi_perf_opts_cmp(const tapi_perf_opts *opts_a,
+                               const tapi_perf_opts *opts_b);
 
 /**@} <!-- END tapi_performance --> */
 
