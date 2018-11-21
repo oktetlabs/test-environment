@@ -1,0 +1,6 @@
+.ERROR { background-color: #FF2A17; valign: top; }
+.WARN { background-color: #FFA857; valign: top; }
+/* .RING { background-color: #AB94FF; valign: top; } */
+.INFO { background-color: #B2FFDF; valign: top; }
+.VERB { background-color: #EFF2FF; valign: top; }
+.PACKET { background-color: #E5E5E5; valign: top; }
