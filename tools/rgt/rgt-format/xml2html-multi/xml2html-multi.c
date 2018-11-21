@@ -68,7 +68,6 @@ typedef struct depth_ctx_user {
                                       the particular node:
                                       key - entity name,
                                       value - array of user names */
-    uint32_t linum; /**< Line number */
 } depth_ctx_user_t;
 
 /**< Struct to keep values related to log message name JS callback */
@@ -933,8 +932,6 @@ RGT_DEF_FUNC(proc_log_msg_start)
         attrs = rgt_tmpls_attrs_new(xml_attrs);
         rgt_tmpls_attrs_add_uint32(attrs, "level_id",
                                    te_log_level_str2h(level));
-        rgt_tmpls_attrs_add_uint32(attrs, "linum",
-                                   depth_user->linum++);
         rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOG_MSG_START],
                          attrs);
         rgt_tmpls_attrs_free(attrs);
@@ -987,8 +984,6 @@ RGT_DEF_FUNC(proc_logs_start)
     rgt_attrs_t      *attrs;
 
     RGT_FUNC_UNUSED_PRMS();
-
-    depth_user->linum = 1;
 
     if (depth_user->fd != NULL)
     {
