@@ -460,6 +460,8 @@ static type_info_t type_info[] =
     {"struct sockaddr_in", sizeof(struct sockaddr_in)},
     {"struct sockaddr_in6", sizeof(struct sockaddr_in6)},
     {"struct sockaddr_storage", sizeof(struct sockaddr_storage)},
+    {"struct cmsghdr", sizeof(struct cmsghdr)},
+    {"struct msghdr", sizeof(struct msghdr)},
 };
 
 /*-------------- get_sizeof() ---------------------------------*/
