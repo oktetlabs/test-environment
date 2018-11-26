@@ -84,7 +84,7 @@ tapi_perf_opts_init(tapi_perf_opts *opts)
 }
 
 /* See description in tapi_performance.h */
-bool
+te_bool
 tapi_perf_opts_cmp(const tapi_perf_opts *opts_a, const tapi_perf_opts *opts_b)
 {
     return (opts_a->ipversion == opts_b->ipversion &&

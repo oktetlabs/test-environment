@@ -607,8 +607,8 @@ extern void tapi_perf_log_cumulative_report(const tapi_perf_server *server[],
  *
  * @return @c TRUE if objects' important properties are equal, @c FALSE if not
  */
-extern bool tapi_perf_opts_cmp(const tapi_perf_opts *opts_a,
-                               const tapi_perf_opts *opts_b);
+extern te_bool tapi_perf_opts_cmp(const tapi_perf_opts *opts_a,
+                                  const tapi_perf_opts *opts_b);
 
 /**@} <!-- END tapi_performance --> */
 
