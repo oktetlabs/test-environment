@@ -2077,6 +2077,8 @@ void
 sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
                       socklen_t len, tarpc_sa *rpc)
 {
+    te_bool raw_fallback = FALSE;
+
     assert(rpc != NULL);
 
     if (sa == NULL)
@@ -2116,10 +2118,10 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
                           sizeof(sa->sa_family)))
     {
         ERROR("%s(): Address is too short (%u), it does not contain "
-              "even 'sa_family' - assertion failure", __FUNCTION__,
-              (unsigned)len);
-        assert(FALSE); /* Not supported yet */
-        return;
+              "even 'sa_family'; will be retrieved in RAW format",
+              __FUNCTION__, (unsigned)len);
+        raw_fallback = TRUE;
+        goto finish;
     }
 
     switch (sa->sa_family)
@@ -2130,12 +2132,32 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
 
             if (len < (socklen_t)sizeof(struct sockaddr_in))
             {
-                ERROR("%s(): Address is too short (%u) to be 'struct "
-                      "sockaddr_in' (%u) - assertion failure",
-                      __FUNCTION__, (unsigned)len,
-                      (unsigned)sizeof(struct sockaddr_in));
-                assert(FALSE); /* Not supported yet */
-                return;
+                if (len >= (uint8_t *)&sin->sin_addr - (uint8_t *)sin +
+                           sizeof(sin->sin_addr))
+                {
+                    WARN("%s(): address length is smaller than "
+                         "sizeof(sockaddr_in) but big enough to "
+                         "contain all its meaningful fields",
+                         __FUNCTION__);
+                    /*
+                     * This is done to prevent assertion due to length
+                     * mismatch when converting address back in
+                     * sockaddr_rpc2h(). If real buffer is longer than
+                     * specified length (rlen > len), we do not try to
+                     * pass bytes which should belong to sockaddr_in as
+                     * part of raw "tail" (see end of this function).
+                     */
+                    len = sizeof(struct sockaddr_in);
+                }
+                else
+                {
+                    ERROR("%s(): Address is too short (%u) to be 'struct "
+                          "sockaddr_in' (%u); will be retrieved in RAW "
+                          "format", __FUNCTION__, (unsigned)len,
+                          (unsigned)sizeof(struct sockaddr_in));
+                    raw_fallback = TRUE;
+                    goto finish;
+                }
             }
             rpc->sa_family = rpc->data.type = RPC_AF_INET;
             rpc->data.tarpc_sa_data_u.in.port = ntohs(sin->sin_port);
@@ -2153,11 +2175,11 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
             if (len < (socklen_t)sizeof(struct sockaddr_in6))
             {
                 ERROR("%s(): Address is too short (%u) to be 'struct "
-                      "sockaddr_in6' (%u) - assertion failure",
+                      "sockaddr_in6' (%u); will be retrieved in RAW format",
                       __FUNCTION__, (unsigned)len,
                       (unsigned)sizeof(struct sockaddr_in6));
-                assert(FALSE); /* Not supported yet */
-                return;
+                raw_fallback = TRUE;
+                goto finish;
             }
             rpc->sa_family = rpc->data.type = RPC_AF_INET6;
             rpc->data.tarpc_sa_data_u.in6.port = ntohs(sin6->sin6_port);
@@ -2179,10 +2201,11 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
             if (len < sizeof(struct sockaddr_un))
             {
                 ERROR("%s(): Address has wrong length (%u) to be 'struct "
-                      "sockaddr_un' (%u) - assertion failure",
+                      "sockaddr_un' (%u); will be retrieved in RAW format",
                       __FUNCTION__, (unsigned)len,
                       (unsigned)sizeof(struct sockaddr_un));
-                assert(FALSE);
+                raw_fallback = TRUE;
+                goto finish;
             }
             rpc->sa_family = rpc->data.type = RPC_AF_LOCAL;
             memcpy(rpc->data.tarpc_sa_data_u.un.path,
@@ -2195,10 +2218,11 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
            if (len < (socklen_t)sizeof(struct sockaddr))
             {
                ERROR("%s(): Address is too short (%u) to be 'struct "
-                     "sockaddr' (%u) assertion failure",
+                     "sockaddr' (%u); will be retrieved in RAW format",
                       __FUNCTION__, (unsigned)len,
                      (unsigned)sizeof(struct sockaddr));
-               assert(FALSE);
+                raw_fallback = TRUE;
+                goto finish;
             }
             rpc->sa_family = rpc->data.type = RPC_AF_ETHER;
             memcpy(rpc->data.tarpc_sa_data_u.local.data, sa->sa_data,
@@ -2211,10 +2235,11 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
             if (len < (socklen_t)sizeof(struct sockaddr_ll))
             {
                ERROR("%s(): Address is too short (%u) to be 'struct "
-                     "sockaddr_ll' (%u) assertion failure",
+                     "sockaddr_ll' (%u); will be retrieved in RAW format",
                       __FUNCTION__, (unsigned)len,
                      (unsigned)sizeof(struct sockaddr_ll));
-               assert(FALSE);
+                raw_fallback = TRUE;
+                goto finish;
             }
 
             af_packet_addr_h2rpc(sa, rpc);
@@ -2226,10 +2251,16 @@ sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
         default:
             WARN("%s(): Address family %u is not supported - use raw "
                  "representation", __FUNCTION__, sa->sa_family);
-            /* Raw representation */
-            rpc->flags |= TARPC_SA_RAW;
-            len = 0;
+            raw_fallback = TRUE;
             break;
+    }
+
+finish:
+
+    if (raw_fallback)
+    {
+        rpc->flags |= TARPC_SA_RAW;
+        len = 0;
     }
 
     if (rlen > len)
