@@ -18,7 +18,8 @@
 
 /* See description in rpcs_msghdr.h */
 te_errno
-rpcs_msghdr_tarpc2h(te_bool recv_call, const struct tarpc_msghdr *tarpc_msg,
+rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
+                    const struct tarpc_msghdr *tarpc_msg,
                     rpcs_msghdr_helper *helper, struct msghdr *msg,
                     checked_arg_list *arglist, const char *name_fmt, ...)
 {
@@ -77,17 +78,6 @@ rpcs_msghdr_tarpc2h(te_bool recv_call, const struct tarpc_msghdr *tarpc_msg,
     else
         msg->msg_namelen = helper->addr_len;
 
-    if (msg->msg_name != NULL)
-    {
-        rc = te_string_append(&name_str, "%s.msg_name", name_base_str.ptr);
-        if (rc != 0)
-            return rc;
-        tarpc_init_checked_arg(arglist, (uint8_t *)helper->addr,
-                               max_addr_len,
-                               (recv_call ? msg->msg_namelen : 0),
-                               name_str.ptr);
-    }
-
     msg->msg_iovlen = tarpc_msg->msg_iovlen;
 
     if (tarpc_msg->msg_iov.msg_iov_val != NULL)
@@ -104,26 +94,24 @@ rpcs_msghdr_tarpc2h(te_bool recv_call, const struct tarpc_msghdr *tarpc_msg,
             msg->msg_iov[i].iov_len =
                     tarpc_msg->msg_iov.msg_iov_val[i].iov_len;
 
-            te_string_reset(&name_str);
-            rc = te_string_append(&name_str, "%s.msg_iov[%d].iov_val",
-                                  name_base_str.ptr, i);
-            if (rc != 0)
-                return rc;
-            tarpc_init_checked_arg(
+            if (check_args != RPCS_MSGHDR_CHECK_ARGS_NONE)
+            {
+                te_string_reset(&name_str);
+                rc = te_string_append(&name_str, "%s.msg_iov[%d].iov_val",
+                                      name_base_str.ptr, i);
+                if (rc != 0)
+                    return rc;
+
+                tarpc_init_checked_arg(
                     arglist, msg->msg_iov[i].iov_base,
                     tarpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_len,
-                    (recv_call ? msg->msg_iov[i].iov_len : 0),
+                    (check_args == RPCS_MSGHDR_CHECK_ARGS_RECV ?
+                                          msg->msg_iov[i].iov_len : 0),
                     name_str.ptr);
+            }
         }
 
-        te_string_reset(&name_str);
-        rc = te_string_append(&name_str, "%s.msg_iov", name_base_str.ptr);
-        if (rc != 0)
-            return rc;
-        tarpc_init_checked_arg(
-                    arglist, (uint8_t *)msg->msg_iov,
-                    sizeof(*(msg->msg_iov)) * tarpc_msg->msg_iov.msg_iov_len,
-                    0, name_str.ptr);
+
     }
 
     if (tarpc_msg->msg_control.msg_control_val != NULL ||
@@ -151,19 +139,6 @@ rpcs_msghdr_tarpc2h(te_bool recv_call, const struct tarpc_msghdr *tarpc_msg,
 
         memcpy(helper->orig_control, msg->msg_control, msg->msg_controllen);
         helper->orig_controllen = msg->msg_controllen;
-
-        if (!recv_call)
-        {
-            te_string_reset(&name_str);
-            rc = te_string_append(&name_str, "%s.msg_control",
-                                  name_base_str.ptr);
-            if (rc != 0)
-                return rc;
-
-            tarpc_init_checked_arg(
-                        arglist, (uint8_t *)msg->msg_control,
-                        msg->msg_controllen, 0, name_str.ptr);
-        }
     }
     else
     {
@@ -174,12 +149,58 @@ rpcs_msghdr_tarpc2h(te_bool recv_call, const struct tarpc_msghdr *tarpc_msg,
     msg->msg_flags = send_recv_flags_rpc2h(tarpc_msg->msg_flags);
     helper->orig_msg_flags = msg->msg_flags;
 
-    if (!recv_call)
+    if (check_args != RPCS_MSGHDR_CHECK_ARGS_NONE)
     {
-        tarpc_init_checked_arg(
-                    arglist, (uint8_t *)msg, sizeof(*msg), 0,
-                    name_base_str.ptr);
-    }
+        if (msg->msg_name != NULL)
+        {
+            te_string_reset(&name_str);
+            rc = te_string_append(&name_str, "%s.msg_name",
+                                   name_base_str.ptr);
+             if (rc != 0)
+                 return rc;
+
+             tarpc_init_checked_arg(
+               arglist, (uint8_t *)helper->addr,
+               max_addr_len,
+               (check_args == RPCS_MSGHDR_CHECK_ARGS_RECV ?
+                                              msg->msg_namelen : 0),
+               name_str.ptr);
+         }
+
+        if (msg->msg_iov != NULL)
+        {
+            te_string_reset(&name_str);
+            rc = te_string_append(&name_str, "%s.msg_iov",
+                                  name_base_str.ptr);
+            if (rc != 0)
+                return rc;
+
+            tarpc_init_checked_arg(
+                arglist, (uint8_t *)msg->msg_iov,
+                sizeof(*(msg->msg_iov)) * tarpc_msg->msg_iov.msg_iov_len,
+                0, name_str.ptr);
+        }
+
+        if (check_args == RPCS_MSGHDR_CHECK_ARGS_SEND)
+        {
+            tarpc_init_checked_arg(
+                        arglist, (uint8_t *)msg, sizeof(*msg), 0,
+                        name_base_str.ptr);
+
+            if (msg->msg_control != NULL)
+            {
+                te_string_reset(&name_str);
+                rc = te_string_append(&name_str, "%s.msg_control",
+                                      name_base_str.ptr);
+                if (rc != 0)
+                    return rc;
+
+                tarpc_init_checked_arg(
+                            arglist, (uint8_t *)msg->msg_control,
+                            msg->msg_controllen, 0, name_str.ptr);
+            }
+        }
+     }
 
     return 0;
 }
@@ -246,7 +267,7 @@ rpcs_msghdr_helper_clean(rpcs_msghdr_helper *h, struct msghdr *msg)
 
 /* See description in rpcs_msghdr.h */
 te_errno
-rpcs_mmsghdrs_tarpc2h(te_bool recv_call,
+rpcs_mmsghdrs_tarpc2h(rpcs_msghdr_check_args_mode check_args,
                       const tarpc_mmsghdr *tarpc_mmsgs,
                       unsigned int num,
                       rpcs_msghdr_helper **helpers,
@@ -286,7 +307,7 @@ rpcs_mmsghdrs_tarpc2h(te_bool recv_call,
             goto finish;
 
         mmsgs_aux[i].msg_len = tarpc_mmsgs[i].msg_len;
-        rc = rpcs_msghdr_tarpc2h(recv_call, &tarpc_mmsgs[i].msg_hdr,
+        rc = rpcs_msghdr_tarpc2h(check_args, &tarpc_mmsgs[i].msg_hdr,
                                  &helpers_aux[i], &mmsgs_aux[i].msg_hdr,
                                  arglist, "%s", name_str.ptr);
         if (rc != 0)

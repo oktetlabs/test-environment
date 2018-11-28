@@ -38,11 +38,23 @@ typedef struct rpcs_msghdr_helper {
 } rpcs_msghdr_helper;
 
 /**
+ * Variants of checking whether there are unexpected changes
+ * of arguments after function call.
+ */
+typedef enum rpcs_msghdr_check_args_mode {
+    RPCS_MSGHDR_CHECK_ARGS_NONE,    /**< Do not check. */
+    RPCS_MSGHDR_CHECK_ARGS_RECV,    /**< Expect changes which can
+                                         be made by receive call. */
+    RPCS_MSGHDR_CHECK_ARGS_SEND,    /**< Expect changes which can
+                                         be made by send call. */
+} rpcs_msghdr_check_args_mode;
+
+/**
  * Convert tarpc_msghdr to struct msghdr (@b rpcs_msghdr_h2tarpc() should
  * be used for reverse conversion after RPC call).
  *
- * @param recv_call   Pass @c TRUE if receive function call is prepared,
- *                    @c FALSE otherwise.
+ * @param check_args  How to check arguments for unexpected changes after
+ *                    target function call.
  * @param tarpc_msg   tarpc_msghdr value to convert.
  * @param helper      Helper structure storing auxiliary data for
  *                    converted value.
@@ -60,7 +72,7 @@ typedef struct rpcs_msghdr_helper {
  * @sa rpcs_msghdr_h2tarpc, rpcs_msghdr_helper_clean
  */
 extern te_errno rpcs_msghdr_tarpc2h(
-                               te_bool recv_call,
+                               rpcs_msghdr_check_args_mode check_args,
                                const struct tarpc_msghdr *tarpc_msg,
                                rpcs_msghdr_helper *helper,
                                struct msghdr *msg,
@@ -104,8 +116,8 @@ extern void rpcs_msghdr_helper_clean(rpcs_msghdr_helper *h,
  * @note Use @b rpcs_mmsghdrs_helpers_clean() to release memory
  *       after calling this function.
  *
- * @param recv_call     Pass @c TRUE if receive function call is prepared,
- *                      @c FALSE otherwise.
+ * @param check_args    How to check arguments for unexpected changes after
+ *                      target function call.
  * @param tarpc_mmsgs   Pointer to array of tarpc_mmsghdr structures.
  * @param num           Number of elements in @p tarpc_mmsgs.
  * @param helpers       Where to save pointer to array of helper structures
@@ -121,12 +133,13 @@ extern void rpcs_msghdr_helper_clean(rpcs_msghdr_helper *h,
  *
  * @sa rpcs_mmsghdrs_h2tarpc, rpcs_mmsghdrs_helpers_clean
  */
-extern te_errno rpcs_mmsghdrs_tarpc2h(te_bool recv_call,
-                                      const tarpc_mmsghdr *tarpc_mmsgs,
-                                      unsigned int num,
-                                      rpcs_msghdr_helper **helpers,
-                                      struct mmsghdr **mmsgs,
-                                      checked_arg_list *arglist);
+extern te_errno rpcs_mmsghdrs_tarpc2h(
+                                  rpcs_msghdr_check_args_mode check_args,
+                                  const tarpc_mmsghdr *tarpc_mmsgs,
+                                  unsigned int num,
+                                  rpcs_msghdr_helper **helpers,
+                                  struct mmsghdr **mmsgs,
+                                  checked_arg_list *arglist);
 
 /**
  * Convert array of mmsghdr structures back to array of
