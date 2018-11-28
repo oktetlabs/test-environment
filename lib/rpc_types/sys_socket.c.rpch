@@ -1331,8 +1331,6 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(ONLOAD_SCM_TIMESTAMPING_STREAM);
                 H2RPC_CHECK(SO_BUSY_POLL);
                 H2RPC_CHECK(SO_SELECT_ERR_QUEUE);
-                case TE_SCM_RIGHTS:
-                    return RPC_SCM_RIGHTS;
                 default: return RPC_SOCKOPT_UNKNOWN;
             }
             break;
@@ -1436,6 +1434,39 @@ sockopt_h2rpc(int opt_type, int opt)
             break;
 
         default: return RPC_SOCKOPT_UNKNOWN;
+    }
+}
+
+/* See description in te_rpc_sys_socket.h */
+rpc_sockopt
+cmsg_type_h2rpc(int level, int type)
+{
+    switch (level)
+    {
+        case SOL_SOCKET:
+            switch (type)
+            {
+                case SCM_RIGHTS:
+                    return RPC_SCM_RIGHTS;
+
+                case SCM_TIMESTAMP:
+                    return RPC_SO_TIMESTAMP;
+
+                case SCM_TIMESTAMPNS:
+                    return RPC_SO_TIMESTAMPNS;
+
+                case SCM_TIMESTAMPING:
+                    return RPC_SO_TIMESTAMPING;
+
+                case ONLOAD_SCM_TIMESTAMPING_STREAM:
+                    return RPC_ONLOAD_SCM_TIMESTAMPING_STREAM;
+
+                default:
+                    return RPC_SOCKOPT_UNKNOWN;
+            }
+
+        default:
+            return sockopt_h2rpc(level, type);
     }
 }
 
@@ -3459,7 +3490,7 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
     }
 
     rpc_level = socklevel_h2rpc(level);
-    rpc_type = sockopt_h2rpc(level, type);
+    rpc_type = cmsg_type_h2rpc(level, type);
 
     rpc_cmsg->data_aux.type = TARPC_CMSG_DATA_RAW;
 
@@ -4189,8 +4220,9 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
             data = CMSG_DATA(c);
 
             rpc_cmsg_aux->level = socklevel_h2rpc(c->cmsg_level);
-            rpc_cmsg_aux->type = sockopt_h2rpc(c->cmsg_level,
-                                               c->cmsg_type);
+            rpc_cmsg_aux->type = cmsg_type_h2rpc(c->cmsg_level,
+                                                 c->cmsg_type);
+
             data_len = c->cmsg_len - (data - (uint8_t *)c);
 
             if (data_len > 0)
