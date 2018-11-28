@@ -16,6 +16,13 @@
 /** Maximum length of argument name */
 #define MAX_ARG_NAME_LEN 1024
 
+/**
+ * Extra bytes allocated for some arguments to check that
+ * a target function does not change them beyond specified
+ * length.
+ */
+#define ARG_EXTRA_LEN 200
+
 /* See description in rpcs_msghdr.h */
 te_errno
 rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
@@ -61,7 +68,8 @@ rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
                 max_addr_len = tarpc_msg->msg_namelen;
         }
 
-        helper->addr_data = TE_ALLOC(max_addr_len);
+        helper->addr_rlen = max_addr_len + ARG_EXTRA_LEN;
+        helper->addr_data = TE_ALLOC(helper->addr_rlen);
         if (helper->addr_data == NULL)
             return TE_ENOMEM;
     }
@@ -122,7 +130,8 @@ rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
                               tarpc_msg->msg_control.msg_control_len);
         control_len += tarpc_msg->msg_control_tail.msg_control_tail_len;
 
-        msg->msg_control = TE_ALLOC(control_len);
+        helper->real_controllen = control_len + ARG_EXTRA_LEN;
+        msg->msg_control = TE_ALLOC(helper->real_controllen);
         helper->orig_control = TE_ALLOC(control_len);
         if (msg->msg_control == NULL || helper->orig_control == NULL)
             return TE_ENOMEM;
@@ -161,7 +170,7 @@ rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
 
              tarpc_init_checked_arg(
                arglist, (uint8_t *)helper->addr,
-               max_addr_len,
+               helper->addr_rlen,
                (check_args == RPCS_MSGHDR_CHECK_ARGS_RECV ?
                                               msg->msg_namelen : 0),
                name_str.ptr);
@@ -181,24 +190,28 @@ rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
                 0, name_str.ptr);
         }
 
+        if (msg->msg_control != NULL)
+        {
+            te_string_reset(&name_str);
+            rc = te_string_append(&name_str, "%s.msg_control",
+                                  name_base_str.ptr);
+            if (rc != 0)
+                return rc;
+
+            tarpc_init_checked_arg(
+              arglist, (uint8_t *)msg->msg_control,
+              helper->real_controllen,
+              (check_args == RPCS_MSGHDR_CHECK_ARGS_RECV ?
+                                      msg->msg_controllen : 0),
+              name_str.ptr);
+        }
+
         if (check_args == RPCS_MSGHDR_CHECK_ARGS_SEND)
         {
             tarpc_init_checked_arg(
                         arglist, (uint8_t *)msg, sizeof(*msg), 0,
                         name_base_str.ptr);
 
-            if (msg->msg_control != NULL)
-            {
-                te_string_reset(&name_str);
-                rc = te_string_append(&name_str, "%s.msg_control",
-                                      name_base_str.ptr);
-                if (rc != 0)
-                    return rc;
-
-                tarpc_init_checked_arg(
-                            arglist, (uint8_t *)msg->msg_control,
-                            msg->msg_controllen, 0, name_str.ptr);
-            }
         }
      }
 

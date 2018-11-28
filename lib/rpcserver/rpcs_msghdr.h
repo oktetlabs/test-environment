@@ -27,6 +27,9 @@ typedef struct rpcs_msghdr_helper {
                                                      msg_name */
     socklen_t                 addr_len;         /**< Value to set for
                                                      msg_namelen */
+    socklen_t                 addr_rlen;        /**< Real length of
+                                                     @b addr_data
+                                                     buffer */
 
     int                       orig_msg_flags;   /**< Original value of
                                                      msg_flags */
@@ -35,6 +38,9 @@ typedef struct rpcs_msghdr_helper {
                                                      stored */
     size_t                    orig_controllen;  /**< Original value of
                                                      msg_controllen */
+    size_t                    real_controllen;  /**< Real length of buffer
+                                                     allocated for
+                                                     msg_control */
 } rpcs_msghdr_helper;
 
 /**
