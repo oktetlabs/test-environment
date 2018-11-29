@@ -229,6 +229,7 @@ rpcs_msghdr_h2tarpc(const struct msghdr *msg,
     unsigned int          rpc_len = 0;
     uint8_t              *tail = NULL;
     unsigned int          tail_len = 0;
+    unsigned int          i;
 
     tarpc_msg->msg_flags = send_recv_flags_h2rpc(msg->msg_flags);
     tarpc_msg->in_msg_flags = send_recv_flags_h2rpc(helper->orig_msg_flags);
@@ -236,6 +237,15 @@ rpcs_msghdr_h2tarpc(const struct msghdr *msg,
     sockaddr_output_h2rpc(msg->msg_name, helper->addr_len,
                           msg->msg_namelen, &tarpc_msg->msg_name);
     tarpc_msg->msg_namelen = msg->msg_namelen;
+
+    if (tarpc_msg->msg_iov.msg_iov_val != NULL)
+    {
+        for (i = 0; i < tarpc_msg->msg_iov.msg_iov_len; i++)
+        {
+            tarpc_msg->msg_iov.msg_iov_val[i].iov_len =
+                                              msg->msg_iov[i].iov_len;
+        }
+    }
 
     if (helper->orig_controllen != msg->msg_controllen ||
         memcmp(helper->orig_control, msg->msg_control,
