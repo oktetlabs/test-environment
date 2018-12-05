@@ -42,8 +42,7 @@
               </xs:sequence>
           </xs:complexType>
         </xs:element>
-        <xs:element name="logs" minOccurs="0" maxOccurs="1" type="proteos:logs_t"/>
-        <xs:element name="session" type="proteos:session_t"/>
+        <xs:element name="branch" type="proteos:flow_t"/>
       </xs:sequence>
 
       <xs:attribute name="name" type="xs:string"/>
