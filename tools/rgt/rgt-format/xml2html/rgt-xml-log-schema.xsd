@@ -32,17 +32,7 @@
 
     <xs:complexType name="package_t">
       <xs:sequence>
-        <xs:element name="meta">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="start-ts" type="xs:string"/>
-              <xs:element name="end-ts" type="xs:string"/>
-              <xs:element name="duration" type="xs:string"/>
-              <xs:element name="objective" type="xs:string" minOccurs="0"/>
-              <xs:element name="authors" type="proteos:author_t" minOccurs="0"/>
-              </xs:sequence>
-          </xs:complexType>
-        </xs:element>
+        <xs:element name="meta" type="proteos:meta_t_pkg"/>
         <xs:element name="branch" type="proteos:flow_t"/>
       </xs:sequence>
 
@@ -52,16 +42,7 @@
 
     <xs:complexType name="session_t">
       <xs:sequence>
-        <xs:element name="meta">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="start-ts" type="xs:string"/>
-              <xs:element name="end-ts" type="xs:string"/>
-              <xs:element name="duration" type="xs:string"/>
-              <xs:element name="objective" type="xs:string"/>
-            </xs:sequence>
-          </xs:complexType>
-        </xs:element>
+        <xs:element name="meta" type="proteos:meta_t_session"/>
         <xs:element name="logs" minOccurs="0" maxOccurs="1" type="proteos:logs_t"/>
         <xs:element name="branch" minOccurs="1" maxOccurs="unbounded"
                  type="proteos:flow_t"/>
@@ -72,40 +53,7 @@
 
     <xs:complexType name="test_t">
       <xs:sequence>
-        <xs:element name="meta">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="start-ts" type="xs:string"/>
-              <xs:element name="end-ts" type="xs:string"/>
-              <xs:element name="duration" type="xs:string"/>
-              <xs:element name="objective" type="xs:string"/>
-              <xs:element name="page" type="xs:string" minOccurs="0"/>
-              <xs:element name="verdicts" minOccurs="0">
-                <xs:complexType>
-                  <xs:sequence>
-                    <xs:element name="verdict" type="xs:string" maxOccurs="unbounded"/>
-                  </xs:sequence>
-                </xs:complexType>
-              </xs:element>
-              <xs:element name="params">
-                <xs:complexType>
-                  <xs:sequence>
-                    <xs:element name="param" maxOccurs="unbounded" minOccurs="0">
-                      <xs:complexType>
-                        <xs:simpleContent>
-                          <xs:extension base="xs:string">
-                            <xs:attribute name="name" type="xs:string"/>
-                            <xs:attribute name="value" type="xs:string"/>
-                          </xs:extension>
-                        </xs:simpleContent>
-                      </xs:complexType>
-                    </xs:element>
-                  </xs:sequence>
-                </xs:complexType>
-              </xs:element>
-            </xs:sequence>
-          </xs:complexType>
-        </xs:element>
+	<xs:element name="meta" type="proteos:meta_t_test"/>
         <xs:element name="logs" minOccurs="0" maxOccurs="1" type="proteos:logs_t"/>
       </xs:sequence>
 
@@ -114,6 +62,58 @@
       <xs:attributeGroup ref="proteos:result_attr_group"/>
     </xs:complexType>
 
+    <xs:group name="meta_common">
+      <xs:sequence>
+        <xs:element name="start-ts" type="xs:string"/>
+        <xs:element name="end-ts" type="xs:string"/>
+        <xs:element name="duration" type="xs:string"/>
+        <xs:element  name="objective" type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+    </xs:group>
+
+    <xs:complexType name="meta_t_pkg">
+      <xs:sequence>
+        <xs:group ref="proteos:meta_common"/>
+        <xs:element name="authors"  minOccurs="0" type="proteos:author_t" />
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="meta_t_session">
+      <xs:sequence>
+        <xs:group ref="proteos:meta_common"/>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="meta_t_test">
+      <xs:sequence>
+        <xs:group ref="proteos:meta_common"/>
+        <xs:element name="objective" type="xs:string" minOccurs="0"/>
+        <xs:element name="page" type="xs:string" minOccurs="0"/>
+        <xs:element name="verdicts" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="verdict" type="xs:string" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="params">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="param" maxOccurs="unbounded" minOccurs="0">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:string">
+                      <xs:attribute name="name" type="xs:string"/>
+                      <xs:attribute name="value" type="xs:string"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
 
     <xs:attributeGroup name="result_attr_group">
       <xs:attribute name="hash" type="xs:string"/>
