@@ -2163,13 +2163,9 @@ TARPC_FUNC(rte_eth_dev_rss_hash_update,{},
 
 TARPC_FUNC(rte_eth_dev_rss_reta_update,{},
 {
-    struct rte_eth_rss_reta_entry64 *reta_conf_p;
+    struct rte_eth_rss_reta_entry64 *reta_conf_p = NULL;
 
-    if (in->reta_conf.reta_conf_len == 0)
-    {
-        reta_conf_p = NULL;
-    }
-    else
+    if (in->reta_conf.reta_conf_len != 0)
     {
         reta_conf_p = calloc(in->reta_conf.reta_conf_len, sizeof(*reta_conf_p));
 
@@ -2179,6 +2175,8 @@ TARPC_FUNC(rte_eth_dev_rss_reta_update,{},
 
     MAKE_CALL(out->retval = func(in->port_id, reta_conf_p, in->reta_size));
     neg_errno_h2rpc(&out->retval);
+
+    free(reta_conf_p);
 })
 
 TARPC_FUNC(rte_eth_link_get_nowait, {},
