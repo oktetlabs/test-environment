@@ -131,6 +131,7 @@
                   <xs:complexType/>
                 </xs:element>
               </xs:sequence>
+            <xs:attribute name="name" type="xs:string"/>
             </xs:complexType>
           </xs:element>
           <xs:element name="mem-dump" type="proteos:mem-dump_t"/>
