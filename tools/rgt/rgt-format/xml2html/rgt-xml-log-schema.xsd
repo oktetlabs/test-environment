@@ -77,10 +77,34 @@
             <xs:sequence>
               <xs:element name="start-ts" type="xs:string"/>
               <xs:element name="end-ts" type="xs:string"/>
+              <xs:element name="duration" type="xs:string"/>
               <xs:element name="objective" type="xs:string"/>
-              <xs:element name="author" type="xs:string"/>
+              <xs:element name="page" type="xs:string" minOccurs="0"/>
+              <xs:element name="verdicts" minOccurs="0">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="verdict" type="xs:string" maxOccurs="unbounded"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="params">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="param" maxOccurs="unbounded" minOccurs="0">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:string">
+                            <xs:attribute name="name" type="xs:string"/>
+                            <xs:attribute name="value" type="xs:string"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
             </xs:sequence>
-            </xs:complexType>
+          </xs:complexType>
         </xs:element>
         <xs:element name="logs" minOccurs="0" maxOccurs="1" type="proteos:logs_t"/>
       </xs:sequence>
