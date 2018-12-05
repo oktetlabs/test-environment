@@ -147,6 +147,7 @@
       <xs:attribute name="level" type="xs:string"/>
       <xs:attribute name="entity" type="xs:string"/>
       <xs:attribute name="user" type="xs:string"/>
+      <xs:attribute name="ts_val" type="xs:string"/>
       <xs:attribute name="ts" type="xs:string"/>
     </xs:complexType>
 
