@@ -2058,7 +2058,7 @@ TARPC_FUNC(rte_eth_xstats_get,{},
     out->xstats.xstats_len = in->n;
 
 done:
-    ;
+    free(xstats);
 })
 
 TARPC_FUNC(rte_eth_xstats_reset,{},
