@@ -1,3 +1,4 @@
+
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
     XML Schema for RGT log report XML format.
@@ -36,7 +37,8 @@
             <xs:sequence>
               <xs:element name="start-ts" type="xs:string"/>
               <xs:element name="end-ts" type="xs:string"/>
-              <xs:element name="title" type="xs:string"/>
+              <xs:element name="duration" type="xs:string"/>
+              <xs:element name="objective" type="xs:string" minOccurs="0"/>
               <xs:element name="author" type="xs:string"/>
               </xs:sequence>
           </xs:complexType>
