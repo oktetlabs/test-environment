@@ -1110,8 +1110,15 @@ TARPC_FUNC_STATIC(rte_eth_tx_burst, {},
     uint16_t i;
 
     if (in->tx_pkts.tx_pkts_len != 0)
+    {
         tx_pkts = (struct rte_mbuf **)calloc(in->tx_pkts.tx_pkts_len,
                                              sizeof(*tx_pkts));
+        if (tx_pkts == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            goto done;
+        }
+    }
 
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
         for (i = 0; i < in->tx_pkts.tx_pkts_len; i++)
@@ -1130,6 +1137,7 @@ TARPC_FUNC_STATIC(rte_eth_tx_burst, {},
             RCF_PCH_MEM_INDEX_FREE(in->tx_pkts.tx_pkts_val[i], ns);
     });
 
+done:
     free(tx_pkts);
 })
 
