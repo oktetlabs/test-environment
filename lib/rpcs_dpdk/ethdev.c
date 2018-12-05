@@ -1602,7 +1602,7 @@ TARPC_FUNC(rte_eth_dev_rss_hash_conf_get,{},
     }
 
 done:
-    ;
+    free(rss_conf_p->rss_key);
 })
 
 static int
