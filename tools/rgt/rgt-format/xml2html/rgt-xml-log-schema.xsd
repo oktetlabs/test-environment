@@ -93,8 +93,14 @@
       <xs:attribute name="result" use="required">
         <xs:simpleType>
           <xs:restriction base="xs:string">
-            <xs:enumeration value="pass"/>
-            <xs:enumeration value="fail"/>
+            <xs:enumeration value="CORED"/>
+            <xs:enumeration value="EMPTY"/>
+            <xs:enumeration value="FAILED"/>
+            <xs:enumeration value="FAKED"/>
+            <xs:enumeration value="INCOMPLETE"/>
+            <xs:enumeration value="KILLED"/>
+            <xs:enumeration value="PASSED"/>
+            <xs:enumeration value="SKIPPED"/>
           </xs:restriction>
         </xs:simpleType>
       </xs:attribute>
