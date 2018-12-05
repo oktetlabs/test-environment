@@ -2022,7 +2022,7 @@ TARPC_FUNC(rte_eth_xstats_get_names,{},
     out->xstats_names.xstats_names_len = in->size;
 
 done:
-    ;
+    free(xstats_names);
 })
 
 TARPC_FUNC(rte_eth_xstats_get,{},
