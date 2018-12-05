@@ -57,8 +57,8 @@
             <xs:sequence>
               <xs:element name="start-ts" type="xs:string"/>
               <xs:element name="end-ts" type="xs:string"/>
+              <xs:element name="duration" type="xs:string"/>
               <xs:element name="objective" type="xs:string"/>
-              <xs:element name="n-branches" type="unsignedShort"/>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
