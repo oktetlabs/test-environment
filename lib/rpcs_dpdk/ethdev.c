@@ -1555,6 +1555,12 @@ TARPC_FUNC(rte_eth_dev_rss_reta_query,{},
     if (in->reta_conf.reta_conf_len != 0)
     {
         reta_conf_p = calloc(in->reta_conf.reta_conf_len, sizeof(*reta_conf_p));
+        if (reta_conf_p == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+        }
 
         for (cur_group = 0; cur_group < in->reta_conf.reta_conf_len; cur_group++)
         {
@@ -1571,6 +1577,12 @@ TARPC_FUNC(rte_eth_dev_rss_reta_query,{},
         out->reta_conf.reta_conf_len = in->reta_conf.reta_conf_len;
         out->reta_conf.reta_conf_val = calloc(out->reta_conf.reta_conf_len,
                                               sizeof(*out->reta_conf.reta_conf_val));
+        if (out->reta_conf.reta_conf_val == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+        }
 
         for (cur_group = 0;  cur_group < out->reta_conf.reta_conf_len; cur_group++)
             memcpy(&out->reta_conf.reta_conf_val[cur_group],
@@ -1578,6 +1590,7 @@ TARPC_FUNC(rte_eth_dev_rss_reta_query,{},
                    sizeof(out->reta_conf.reta_conf_val[cur_group]));
     }
 
+done:
     free(reta_conf_p);
 })
 
