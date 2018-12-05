@@ -2574,6 +2574,14 @@ TARPC_FUNC(rte_eth_dev_set_mc_addr_list, {},
     {
         mc_addr_set = malloc(in->mc_addr_set.mc_addr_set_len *
                              sizeof(struct ether_addr));
+        if (mc_addr_set == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+
+        }
+
         for (i = 0; i < in->mc_addr_set.mc_addr_set_len; i++)
             memcpy(mc_addr_set[i].addr_bytes,
                    in->mc_addr_set.mc_addr_set_val[i].addr_bytes,
@@ -2585,6 +2593,7 @@ TARPC_FUNC(rte_eth_dev_set_mc_addr_list, {},
 
     neg_errno_h2rpc(&out->retval);
 
+done:
     free(mc_addr_set);
 })
 
