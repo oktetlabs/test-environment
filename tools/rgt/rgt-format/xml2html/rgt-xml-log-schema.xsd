@@ -39,7 +39,7 @@
               <xs:element name="end-ts" type="xs:string"/>
               <xs:element name="duration" type="xs:string"/>
               <xs:element name="objective" type="xs:string" minOccurs="0"/>
-              <xs:element name="author" type="xs:string"/>
+              <xs:element name="authors" type="proteos:author_t" minOccurs="0"/>
               </xs:sequence>
           </xs:complexType>
         </xs:element>
@@ -133,6 +133,20 @@
       </xs:attribute>
       <xs:attribute name="err" type="xs:string"/>
     </xs:attributeGroup>
+
+     <xs:complexType name="author_t">
+        <xs:sequence>
+          <xs:element name="author">
+            <xs:complexType>
+              <xs:simpleContent>
+                <xs:extension base="xs:string">
+                  <xs:attribute name="email" type="xs:string"/>
+                </xs:extension>
+              </xs:simpleContent>
+            </xs:complexType>
+          </xs:element>
+        </xs:sequence>
+    </xs:complexType>
 
     <xs:complexType name="flow_t">
       <xs:sequence minOccurs="0" maxOccurs="unbounded">
