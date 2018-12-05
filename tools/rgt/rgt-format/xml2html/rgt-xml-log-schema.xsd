@@ -90,6 +90,7 @@
 
 
     <xs:attributeGroup name="result_attr_group">
+      <xs:attribute name="hash" type="xs:string"/>
       <xs:attribute name="result" use="required">
         <xs:simpleType>
           <xs:restriction base="xs:string">
