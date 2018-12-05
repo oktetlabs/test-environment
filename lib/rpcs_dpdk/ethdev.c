@@ -2201,6 +2201,12 @@ TARPC_FUNC(rte_eth_dev_rss_reta_update,{},
     if (in->reta_conf.reta_conf_len != 0)
     {
         reta_conf_p = calloc(in->reta_conf.reta_conf_len, sizeof(*reta_conf_p));
+        if (reta_conf_p == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+        }
 
         memcpy(reta_conf_p, in->reta_conf.reta_conf_val,
                in->reta_conf.reta_conf_len * sizeof(*reta_conf_p));
@@ -2209,6 +2215,7 @@ TARPC_FUNC(rte_eth_dev_rss_reta_update,{},
     MAKE_CALL(out->retval = func(in->port_id, reta_conf_p, in->reta_size));
     neg_errno_h2rpc(&out->retval);
 
+done:
     free(reta_conf_p);
 })
 
