@@ -1106,14 +1106,12 @@ done:
 
 TARPC_FUNC_STATIC(rte_eth_tx_burst, {},
 {
-    struct rte_mbuf **tx_pkts;
+    struct rte_mbuf **tx_pkts = NULL;
     uint16_t i;
 
     if (in->tx_pkts.tx_pkts_len != 0)
         tx_pkts = (struct rte_mbuf **)calloc(in->tx_pkts.tx_pkts_len,
                                              sizeof(*tx_pkts));
-    else
-        tx_pkts = NULL;
 
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
         for (i = 0; i < in->tx_pkts.tx_pkts_len; i++)
@@ -1131,6 +1129,8 @@ TARPC_FUNC_STATIC(rte_eth_tx_burst, {},
         for (i = 0; i < MIN(in->tx_pkts.tx_pkts_len, out->retval); i++)
             RCF_PCH_MEM_INDEX_FREE(in->tx_pkts.tx_pkts_val[i], ns);
     });
+
+    free(tx_pkts);
 })
 
 TARPC_FUNC_STATIC(rte_eth_rx_burst, {},
