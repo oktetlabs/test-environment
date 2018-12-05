@@ -762,23 +762,6 @@ typedef enum rpc_sockopt {
 
 } rpc_sockopt;
 
-/**
- * Transfer file descriptor.
- * It's defined to be processed properly in TE RPC conversion functions.
- * The system SCM_RIGHTS can not be used because it is equal to SO_DEBUG.
- */
-#define TE_SCM_RIGHTS 1000
-
-/**
- * Replace SCM_RIGHTS to process it properly in TE RPC functions
- */
-#define TE_SCM_RIGHTS2TE(_cmsg) \
-do {                                                                \
-    if (((struct cmsghdr *)(_cmsg))->cmsg_level == SOL_SOCKET &&    \
-        ((struct cmsghdr *)(_cmsg))->cmsg_type == SCM_RIGHTS)       \
-        ((struct cmsghdr *)(_cmsg))->cmsg_type = TE_SCM_RIGHTS;     \
-} while (0)
-
 /** Convert RPC socket option to string */
 extern const char * sockopt_rpc2str(rpc_sockopt opt);
 
@@ -787,6 +770,16 @@ extern int sockopt_rpc2h(rpc_sockopt opt);
 
 /** Convert native socket options to RPC one */
 extern rpc_sockopt sockopt_h2rpc(int opt_type, int opt);
+
+/**
+ * Convert native control message type to RPC one.
+ *
+ * @param level     Value of cmsg_level.
+ * @param type      Value of cmsg_type.
+ *
+ * @return Converted value.
+ */
+extern rpc_sockopt cmsg_type_h2rpc(int level, int type);
 
 /** Has socket option boolean semantic? */
 extern te_bool sockopt_is_boolean(rpc_sockopt opt);

@@ -103,6 +103,17 @@ extern "C" {
         else if (result == EXIT_FAILURE)                             \
             TEST_ON_JMP_DO_IF_FAILURE;                               \
                                                                      \
+        if (TEST_BEHAVIOUR(verdict_test_fail_state) &&               \
+            result == EXIT_FAILURE)                                  \
+        {                                                            \
+            const char *s = te_test_verdict_fail_state_get();        \
+            if (s != NULL)                                           \
+                ERROR_VERDICT("STATE: %s", s);                       \
+                                                                     \
+            s = te_test_verdict_fail_substate_get();                 \
+            if (s != NULL)                                           \
+                ERROR_VERDICT("SUBSTATE: %s", s);                    \
+        }                                                            \
                                                                      \
         /* Behaviour switches handling section */                    \
         if (TEST_BEHAVIOUR(wait_on_cleanup) ||                       \

@@ -3781,8 +3781,8 @@ wsa_recv_msg_control_out(struct tarpc_msghdr *rpc_msg, WSAMSG *msg)
         char *data = WSA_CMSG_DATA(c);
 
         rpc_c->level = socklevel_h2rpc(c->cmsg_level);
-        rpc_c->type = sockopt_h2rpc(c->cmsg_level, 
-                                    c->cmsg_type);
+        rpc_c->type = cmsg_type_h2rpc(c->cmsg_level,
+                                      c->cmsg_type);
         if ((rpc_c->data.data_len = 
              c->cmsg_len - (data - (char *)c)) > 0)
         {

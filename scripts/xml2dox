@@ -70,31 +70,29 @@ in_enum && /<value/ {
   next;
 }
 
-/run name/ {
-  in_run = 1;
+# /run name/ {
+#   in_run = 1;
 
-  sub(/.*<run name="/, "@defgroup ");
-  sub(/" *>/, "-xml");
-  print $0;
-  print "@ingroup spec_xml";
-  print "@{";
-  print "@code"
-  next;
-}
+#   sub(/.*<run name="/, "@defgroup ");
+#   sub(/" *>/, "-xml");
+#   print $0;
+#   print "@ingroup spec_xml";
+#   print "@{";
+#   print "@code"
+#   next;
+# }
 
-in_run && /<\/run>/ {
-  in_run = 0;
-  print "@endcode";
-  print "@}"
-  next;
-}
+# in_run && /<\/run>/ {
+#   in_run = 0;
+#   print "@endcode";
+#   print "@}"
+#   next;
+# }
 
-in_run {
-  print $0;
-  next;
-}
-
-
+# in_run {
+#   print $0;
+#   next;
+# }
 
 BEGIN { print "/**"; }
 END { print "*/"; }

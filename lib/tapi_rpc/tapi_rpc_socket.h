@@ -29,6 +29,7 @@
 #include "rcf_rpc.h"
 #include "te_rpc_sys_socket.h"
 #include "te_rpc_types.h"
+#include "te_string.h"
 
 
 #ifdef __cplusplus
@@ -388,6 +389,31 @@ struct rpc_mmsghdr {
     struct rpc_msghdr msg_hdr;  /* Message header */
     unsigned int      msg_len;  /* Number of received bytes for header */
 };
+
+/**
+ * Append rpc_msghdr string representation to string.
+ *
+ * @param rpc_msg     Pointer to rpc_msghdr structure.
+ * @param str         Pointer to te_string.
+ *
+ * @return Pointer to updated character string.
+ */
+extern const char *msghdr_rpc2str(const rpc_msghdr *rpc_msg,
+                                  te_string *str);
+
+/**
+ * Append string representation of array of rpc_mmsghdr structures
+ * to string.
+ *
+ * @param rpc_mmsgs   Pointer to array of rpc_mmsghdr structures.
+ * @param num         Number of elements in the array.
+ * @param str         Pointer to te_string.
+ *
+ * @return Pointer to updated character string.
+ */
+extern const char *mmsghdrs_rpc2str(const struct rpc_mmsghdr *rpc_mmsgs,
+                                    unsigned int num,
+                                    te_string *str);
 
 /*
  * The following macros are implemented because it is wrong to cast

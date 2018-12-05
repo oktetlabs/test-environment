@@ -9,11 +9,19 @@ AM_LDFLAGS = -L$(DESTDIR)/$(libdir)
 
 lib_LTLIBRARIES=libtapi_nvme.la
 
-include_HEADERS= \
-    tapi_nvme.h
+noinst_HEADERS= \
+    tapi_nvme_internal.h
 
-libtapi_nvme_la_SOURCES= \
-    tapi_nvme.c
+include_HEADERS=                \
+    tapi_nvme.h                 \
+    tapi_nvme_kern_target.h     \
+    tapi_nvme_onvme_target.h
+
+libtapi_nvme_la_SOURCES=        \
+    tapi_nvme.c                 \
+    tapi_nvme_internal.c        \
+    tapi_nvme_kern_target.c     \
+    tapi_nvme_onvme_target.c
 
 install-exec-hook:
 	touch -c -r libtapi_nvme.la $(DESTDIR)/$(libdir)/libtapi_nvme.*

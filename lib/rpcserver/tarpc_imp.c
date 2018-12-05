@@ -477,6 +477,8 @@ static type_info_t type_info[] =
     {"struct sockaddr_in", sizeof(struct sockaddr_in)},
     {"struct sockaddr_in6", sizeof(struct sockaddr_in6)},
     {"struct sockaddr_storage", sizeof(struct sockaddr_storage)},
+    {"struct cmsghdr", sizeof(struct cmsghdr)},
+    {"struct msghdr", sizeof(struct msghdr)},
 };
 
 /*-------------- get_sizeof() ---------------------------------*/
@@ -4529,7 +4531,8 @@ TARPC_FUNC(sendmsg, {},
     {
         struct tarpc_msghdr *rpc_msg = in->msg.msg_val;
 
-        rc = rpcs_msghdr_tarpc2h(FALSE, rpc_msg, &msg_helper,
+        rc = rpcs_msghdr_tarpc2h(RPCS_MSGHDR_CHECK_ARGS_SEND,
+                                 rpc_msg, &msg_helper,
                                  &msg, arglist, "msg");
         if (rc != 0)
         {
@@ -4564,8 +4567,8 @@ TARPC_FUNC(recvmsg,
     memset(&msg_helper, 0, sizeof(msg_helper));
     memset(&msg, 0, sizeof(msg));
 
-    rc = rpcs_msghdr_tarpc2h(TRUE, out->msg.msg_val, &msg_helper,
-                             &msg, arglist, "msg");
+    rc = rpcs_msghdr_tarpc2h(RPCS_MSGHDR_CHECK_ARGS_RECV, out->msg.msg_val,
+                             &msg_helper, &msg, arglist, "msg");
     if (rc != 0)
     {
         out->common._errno = TE_RC(TE_TA_UNIX, rc);
@@ -9807,7 +9810,8 @@ TARPC_FUNC(recvmmsg_alt,
     }
     else
     {
-        rc = rpcs_mmsghdrs_tarpc2h(TRUE, out->mmsg.mmsg_val,
+        rc = rpcs_mmsghdrs_tarpc2h(RPCS_MSGHDR_CHECK_ARGS_RECV,
+                                   out->mmsg.mmsg_val,
                                    out->mmsg.mmsg_len,
                                    &msg_helpers, &mmsg, arglist);
         if (rc != 0)
@@ -9874,7 +9878,8 @@ TARPC_FUNC(sendmmsg_alt,
     }
     else
     {
-        rc = rpcs_mmsghdrs_tarpc2h(FALSE, out->mmsg.mmsg_val,
+        rc = rpcs_mmsghdrs_tarpc2h(RPCS_MSGHDR_CHECK_ARGS_SEND,
+                                   out->mmsg.mmsg_val,
                                    out->mmsg.mmsg_len,
                                    &msg_helpers, &mmsg, arglist);
         if (rc != 0)

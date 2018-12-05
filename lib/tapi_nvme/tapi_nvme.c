@@ -18,28 +18,21 @@
 #include "te_sockaddr.h"
 #include "tapi_rpc.h"
 #include "tapi_rpc_dirent.h"
+#include "tapi_test.h"
 #include "tapi_test_log.h"
 #include "te_sleep.h"
 #include "tapi_mem.h"
+#include "tapi_nvme_internal.h"
 #include "tapi_nvme.h"
 
-#define DEFAULT_MODE \
-    (RPC_S_IRWXU | RPC_S_IRGRP | RPC_S_IXGRP | RPC_S_IROTH | RPC_S_IXOTH)
+#define BASE_NVME_FABRICS       "/sys/class/nvme-fabrics/ctl"
 
-#define BASE_NVMET_CONFIG   "/sys/kernel/config/nvmet"
-#define BASE_NVME_FABRICS   "/sys/class/nvme-fabrics/ctl"
-#define ENABLE              "1"
-
-#define PORT_SIZE           NAME_MAX
-#define DIRECTORY_SIZE      NAME_MAX
-#define SUBNQN_SIZE         NAME_MAX
-#define NAMESPACE_SIZE      (32)
-#define MAX_NAMESPACES      (32)
-#define MAX_ADMIN_DEVICES   (32)
-#define TRANPORT_SIZE       (16)
-#define ADDRESS_INFO_SIZE   (128)
-
-#define BUFFER_SIZE         (128)
+#define NAMESPACE_SIZE          (32)
+#define MAX_NAMESPACES          (32)
+#define MAX_ADMIN_DEVICES       (32)
+#define TRANPORT_SIZE           (16)
+#define ADDRESS_INFO_SIZE       (128)
+#define BUFFER_SIZE             (128)
 
 #define DEVICE_WAIT_ATTEMPTS    (5)
 #define DEVICE_WAIT_TIMEOUT_S   (10)
@@ -102,72 +95,10 @@ run_command(rcf_rpc_server *rpcs, opts_t opts, const char *format_cmd, ...)
     return run_command_generic(rpcs, opts, command);
 }
 
-typedef struct directory_name {
-    char name[DIRECTORY_SIZE];
-} directory_name;
-
-static int
-filter_directory(rcf_rpc_server *rpcs,
-                 const char * path,
-                 const char * start_from,
-                 directory_name *directory_names,
-                 int count_names)
-{
-    int count = 0;
-    rpc_dir_p dir;
-    rpc_dirent *dirent = NULL;
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    if ((dir = rpc_opendir(rpcs, path)) == RPC_NULL)
-        return -1;
-
-    while (count < count_names) {
-        RPC_AWAIT_IUT_ERROR(rpcs);
-        if ((dirent = rpc_readdir(rpcs, dir)) == NULL)
-            break;
-
-        if (strstr(dirent->d_name, start_from) == dirent->d_name)
-            strcpy(directory_names[count++].name, dirent->d_name);
-    }
-
-    if (rpc_readdir(rpcs, dir) != NULL)
-        WARN("Too many of the directories found");
-
-    rpc_closedir(rpcs, dir);
-    return count;
-}
-
-static int
-read_file(rcf_rpc_server *rpcs, const char *path, char *buffer, size_t size)
-{
-    int fd;
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    if ((fd = rpc_open(rpcs, path, RPC_O_RDONLY, DEFAULT_MODE)) == -1)
-        return -1;
-
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    if (rpc_read(rpcs, fd, buffer, size) == -1)
-    {
-        ERROR("Cannot read file %s", path);
-        RPC_AWAIT_IUT_ERROR(rpcs);
-        rpc_close(rpcs, fd);
-        return -1;
-    }
-    else
-    {
-        strtok(buffer, "\n");
-
-        RPC_AWAIT_IUT_ERROR(rpcs);
-        return rpc_close(rpcs, fd);
-    }
-}
-
 typedef struct nvme_fabric_info {
     struct sockaddr_in addr;
     tapi_nvme_transport transport;
-    char subnqn[SUBNQN_SIZE];
+    char subnqn[NAME_MAX];
     char namespace[NAMESPACE_SIZE];    /* TODO: it is list in future */
 } nvme_fabric_info;
 
@@ -187,10 +118,10 @@ read_nvme_fabric_info_namespace(rcf_rpc_server *rpcs,
                                 const char *filepath)
 {
     int count;
-    directory_name names[MAX_NAMESPACES];
+    tapi_nvme_internal_dirinfo names[MAX_NAMESPACES];
 
-    count = filter_directory(rpcs, filepath, "nvme",
-                             names, TE_ARRAY_LEN(names));
+    count = tapi_nvme_internal_filterdir(rpcs, filepath, "nvme", names,
+                                         TE_ARRAY_LEN(names));
     if (count < 0)
         return READ_ERROR;
 
@@ -232,6 +163,13 @@ parse_endpoint(char *str, char *address, unsigned short *port)
     long temp_port;
     char *temp_address;
 
+    if (strlen(str) > 0) {
+        /* After read file subnqn store with \n, remove it */
+        strtok(str, "\n");
+    } else {
+        return TE_EINVAL;
+    }
+
     if ((p = strtok(str, ",")) == NULL ||
         strncmp(p, traddr, strlen(traddr)) != 0)
         return TE_EINVAL;
@@ -259,8 +197,11 @@ read_nvme_fabric_info_addr(rcf_rpc_server *rpcs,
     char buffer[ADDRESS_INFO_SIZE];
     unsigned short port;
     char address[INET_ADDRSTRLEN];
+    int size;
 
-    if (read_file(rpcs, filepath, buffer, TE_ARRAY_LEN(buffer)))
+    size = tapi_nvme_internal_file_read(rpcs, buffer, TE_ARRAY_LEN(buffer),
+                                        filepath);
+    if (size < 0)
     {
         ERROR("Cannot read address info");
         return READ_ERROR;
@@ -268,7 +209,7 @@ read_nvme_fabric_info_addr(rcf_rpc_server *rpcs,
 
     if (parse_endpoint(buffer, address, &port) != 0)
     {
-        ERROR("Cannot parse address info");
+        ERROR("Cannot parse address info: %s", buffer);
         return READ_ERROR;
     }
 
@@ -296,7 +237,8 @@ read_nvme_fabric_info_transport(rcf_rpc_server *rpcs,
         TAPI_NVME_TRANSPORT_MAPPING_LIST
     };
 
-    if (read_file(rpcs, filepath, buffer, TE_ARRAY_LEN(buffer)) != 0)
+    if (tapi_nvme_internal_file_read(rpcs, buffer, TE_ARRAY_LEN(buffer),
+                                     filepath) < 0)
     {
         ERROR("Cannot read transport");
         return READ_ERROR;
@@ -320,12 +262,15 @@ read_nvme_fabric_info_subnqn(rcf_rpc_server *rpcs,
                              nvme_fabric_info *info,
                              const char *filepath)
 {
-    if (read_file(rpcs, filepath, info->subnqn,
-                  TE_ARRAY_LEN(info->subnqn)) == -1)
+    if (tapi_nvme_internal_file_read(rpcs,
+        info->subnqn, TE_ARRAY_LEN(info->subnqn), filepath) == -1)
     {
         ERROR("Cannot read subnqn");
         return READ_ERROR;
     }
+
+    /* After read file subnqn store with \n, remove it */
+    strtok(info->subnqn, "\n");
 
     return READ_SUCCESS;
 }
@@ -392,10 +337,10 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl,
     read_result rc;
 
     nvme_fabric_info info;
-    directory_name names[MAX_ADMIN_DEVICES];
+    tapi_nvme_internal_dirinfo names[MAX_ADMIN_DEVICES];
 
-    count = filter_directory(host_ctrl->rpcs, BASE_NVME_FABRICS,
-                             "nvme", names, TE_ARRAY_LEN(names));
+    count = tapi_nvme_internal_filterdir(host_ctrl->rpcs, BASE_NVME_FABRICS,
+                                         "nvme", names, TE_ARRAY_LEN(names));
 
     for (i = 0; i < count; i++)
     {
@@ -404,13 +349,11 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl,
             return TE_ENODATA;
         else if (rc == READ_CONTINUE)
             continue;
-
         if (is_target_eq(target, &info, names[i].name) == TRUE)
         {
             host_ctrl->admin_dev = tapi_strdup(names[i].name);
             host_ctrl->device = tapi_malloc(NAME_MAX);
             snprintf(host_ctrl->device, NAME_MAX, "/dev/%s", info.namespace);
-
             return 0;
         }
     }
@@ -497,7 +440,9 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
     return 0;
 }
 
-te_errno tapi_nvme_initiator_list(tapi_nvme_host_ctrl *host_ctrl)
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_initiator_list(tapi_nvme_host_ctrl *host_ctrl)
 {
     int rc;
     te_string str_stdout = TE_STRING_INIT;
@@ -510,51 +455,11 @@ te_errno tapi_nvme_initiator_list(tapi_nvme_host_ctrl *host_ctrl)
     rc = run_command(host_ctrl->rpcs, run_opts, "nvme list");
 
     if (rc != 0)
-        WARN("stderr: \n%s", str_stderr.ptr);
+        WARN("stderr:\n%s", str_stderr.ptr);
     else
         RING("stdout:\n%s\nstderr:\n%s", str_stdout.ptr, str_stderr.ptr);
 
     return rc == 0 ? 0 : TE_EFAULT;
-}
-
-static te_errno
-file_append(rcf_rpc_server *rpcs, const char *path, const char *string)
-{
-    int fd;
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    fd = rpc_open(rpcs, path, RPC_O_CREAT | RPC_O_APPEND | RPC_O_WRONLY,
-                  DEFAULT_MODE);
-
-    if (fd == -1)
-        return rpcs->_errno;
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    if (rpc_write(rpcs, fd, string, strlen(string)) == -1)
-        return rpcs->_errno;
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    if (rpc_close(rpcs, fd) == -1)
-        return rpcs->_errno;
-
-    return 0;
-}
-
-static te_bool
-is_dir_exist(rcf_rpc_server *rpcs, const char *path)
-{
-    rpc_dir_p dir;
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    dir = rpc_opendir(rpcs, path);
-    if (dir != RPC_NULL)
-    {
-        RPC_AWAIT_IUT_ERROR(rpcs);
-        rpc_closedir(rpcs, dir);
-        return TRUE;
-    }
-
-    return FALSE;
 }
 
 static te_bool
@@ -564,7 +469,7 @@ is_disconnected(rcf_rpc_server *rpcs, const char *admin_dev)
 
     TE_SPRINTF(path, BASE_NVME_FABRICS "/%s", admin_dev);
 
-    return !is_dir_exist(rpcs, path);
+    return !tapi_nvme_internal_isdir_exist(rpcs, path);
 }
 
 static te_errno
@@ -602,7 +507,6 @@ te_errno
 tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl)
 {
     te_errno rc;
-    char delete_controller[NAME_MAX];
 
     if (host_ctrl == NULL ||
         host_ctrl->rpcs == NULL ||
@@ -611,12 +515,10 @@ tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl)
         host_ctrl->connected_target == NULL)
         return 0;
 
-    TE_SPRINTF(delete_controller, BASE_NVME_FABRICS "/%s/delete_controller",
-               host_ctrl->admin_dev);
-
     RING("Device '%s' tries to disconnect", host_ctrl->admin_dev);
 
-    rc = file_append(host_ctrl->rpcs, delete_controller, ENABLE);
+    rc = tapi_nvme_internal_file_append(host_ctrl->rpcs, "1",
+        BASE_NVME_FABRICS"/%s/delete_controller", host_ctrl->admin_dev);
     if (rc == 0)
         rc = wait_device_disapperance(host_ctrl->rpcs, host_ctrl->admin_dev);
     if (rc == 0)
@@ -633,85 +535,7 @@ tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl)
     return rc;
 }
 
-static char *
-strrep(const char *source, const char *template,
-       const char *replace, char *result)
-{
-    const char *start = source;
-    const char *found = NULL;
-    char *current = result;
-
-    while ((found = strstr(start, template)) != NULL)
-    {
-        strncpy(current, start, found - start);
-        current += found - start;
-        strcpy(current, replace);
-        current += strlen(replace);
-        start = found + strlen(template);
-    }
-
-    strcpy(current, start);
-
-    return result;
-}
-
-static char *
-replace_port(const char *source, int nvmet_port, char *buffer)
-{
-    char port_str[16];
-
-    TE_SPRINTF(port_str, "%d", nvmet_port);
-    strrep(source, "{port}", port_str, buffer);
-
-    return buffer;
-}
-
-static te_bool
-try_mkdir(rcf_rpc_server *rpcs, const char *path)
-{
-    int rc;
-
-    RING("Creating dir '%s'", path);
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    rc = rpc_mkdir(rpcs, path, DEFAULT_MODE);
-
-    if (rc == -1 && rpcs->_errno == TE_EEXIST)
-        return TRUE;
-
-    return rc == 0;
-}
-
-static te_errno
-create_directories(rcf_rpc_server *rpcs, tapi_nvme_subnqn nqn, int nvmet_port)
-{
-    size_t i;
-    char path[RCF_MAX_PATH];
-    char buffer[RCF_MAX_PATH];
-    const char *directories[] = {
-        "%s/subsystems/%s",
-        "%s/subsystems/%s/namespaces/{port}",
-        "%s/ports/{port}",
-    };
-
-    te_log_stack_push("Create target directories for nqn=%s port=%d",
-                      nqn, nvmet_port);
-
-    for (i = 0; i < TE_ARRAY_LEN(directories); i++)
-    {
-        replace_port(directories[i], nvmet_port, buffer);
-        TE_SPRINTF(path, buffer, BASE_NVMET_CONFIG, nqn);
-        if (try_mkdir(rpcs, path) == FALSE)
-            return rpcs->_errno;
-    }
-
-    return 0;
-}
-
-typedef struct nvme_target_config {
-    const char *prefix;
-    const char *value;
-} nvme_target_config;
-
+/* See description in tapi_nvme.h */
 const char *
 tapi_nvme_transport_str(tapi_nvme_transport transport) {
     static const char *transports[] = {
@@ -724,139 +548,52 @@ tapi_nvme_transport_str(tapi_nvme_transport transport) {
     return transports[transport];
 };
 
-static te_errno
-write_config(rcf_rpc_server *rpcs, tapi_nvme_transport transport,
-             const char *device, const struct sockaddr *addr,
-             int nvmet_port, tapi_nvme_subnqn nqn)
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_target_init(tapi_nvme_target *target, void *opts)
 {
-    size_t i;
-    te_errno rc;
-    char port[PORT_SIZE];
-    char path[RCF_MAX_PATH];
-    char buffer[RCF_MAX_PATH];
-    const char *transport_str = tapi_nvme_transport_str(transport);
-    nvme_target_config configs[] = {
-        { "%s/subsystems/%s/namespaces/{port}/device_path", device },
-        { "%s/subsystems/%s/namespaces/{port}/enable", ENABLE },
-        { "%s/subsystems/%s/attr_allow_any_host", ENABLE },
-        { "%s/ports/{port}/addr_adrfam", "ipv4" },
-        { "%s/ports/{port}/addr_trtype", transport_str},
-        { "%s/ports/{port}/addr_trsvcid", port },
-        { "%s/ports/{port}/addr_traddr", te_sockaddr_get_ipstr(addr) }
-    };
-
-    te_log_stack_push("Writing target config for device=%s port=%d",
-                      device, nvmet_port);
-
-    TE_SPRINTF(port, "%hu", ntohs(te_sockaddr_get_port(addr)));
-
-    for (i = 0; i < TE_ARRAY_LEN(configs); i++)
-    {
-        replace_port(configs[i].prefix, nvmet_port, buffer);
-        TE_SPRINTF(path, buffer, BASE_NVMET_CONFIG, nqn);
-        if ((rc = file_append(rpcs, path, configs[i].value)) != 0)
-            return rc;
-    }
-
-    return 0;
-}
-
-static te_errno
-make_namespace_target_available(rcf_rpc_server *rpcs,
-                                tapi_nvme_subnqn nqn, int nvmet_port)
-{
-    char path1[RCF_MAX_PATH];
-    char path2[RCF_MAX_PATH];
-
-    TE_SPRINTF(path1, BASE_NVMET_CONFIG "/subsystems/%s", nqn);
-    TE_SPRINTF(path2, BASE_NVMET_CONFIG "/ports/%d/subsystems/%s",
-               nvmet_port, nqn);
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    return rpc_symlink(rpcs, path1, path2) == 0 ? 0: rpcs->_errno;
+    if (target == NULL || target->methods.init == NULL)
+        return TE_EINVAL;
+    return target->methods.init(target, opts);
 }
 
 /* See description in tapi_nvme.h */
 te_errno
 tapi_nvme_target_setup(tapi_nvme_target *target)
 {
-    te_errno rc;
-
-    assert(target);
-    if (target->rpcs == NULL ||
+    if (target == NULL ||
+        target->rpcs == NULL ||
         target->addr == NULL ||
         target->subnqn == NULL ||
         target->device == NULL ||
-        target->addr->sa_family != AF_INET)
-    {
-        ERROR("Target can't be setup: rpcs=%p addr=%p subnqn=%s",
-              target->rpcs, target->addr, target->subnqn);
+        target->methods.setup == NULL)
         return TE_EINVAL;
-    }
 
-    tapi_nvme_target_cleanup(target);
-
-    rc = create_directories(target->rpcs, target->subnqn, target->nvmet_port);
-    if (rc != 0)
-        return rc;
-
-    rc = write_config(target->rpcs, target->transport, target->device,
-                      target->addr, target->nvmet_port, target->subnqn);
-    if (rc != 0)
-        return rc;
-
-    return make_namespace_target_available(target->rpcs, target->subnqn,
-                                           target->nvmet_port);
-}
-
-static te_bool
-try_rmdir(rcf_rpc_server *rpcs, const char *path)
-{
-    if (!is_dir_exist(rpcs, path))
-        return FALSE;
-
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    return rpc_rmdir(rpcs, path) == 0;
+    return target->methods.setup(target);
 }
 
 /* See description in tapi_nvme.h */
 void
 tapi_nvme_target_cleanup(tapi_nvme_target *target)
 {
-    size_t i;
-    char path[RCF_MAX_PATH];
-    char buffer[RCF_MAX_PATH];
-    const char *directories[] = {
-        "%s/subsystems/%s/namespaces/{port}",
-        "%s/subsystems/%s",
-        "%s/ports/{port}"
-    };
-
     if (target == NULL ||
         target->rpcs == NULL ||
         target->addr == NULL ||
-        target->subnqn == NULL)
+        target->subnqn == NULL ||
+        target->methods.cleanup == NULL)
         return;
 
-    te_log_stack_push("Target cleanup start");
+    target->methods.cleanup(target);
+}
 
-    TE_SPRINTF(path, BASE_NVMET_CONFIG "/ports/%d/subsystems/%s",
-               target->nvmet_port, target->subnqn);
-
-    RPC_AWAIT_IUT_ERROR(target->rpcs);
-    if (rpc_access(target->rpcs, path, RPC_F_OK) == 0)
-    {
-        RPC_AWAIT_IUT_ERROR(target->rpcs);
-        rpc_unlink(target->rpcs, path);
-    }
-
-    for (i = 0; i < TE_ARRAY_LEN(directories); i++)
-    {
-        replace_port(directories[i], target->nvmet_port, buffer);
-        TE_SPRINTF(path, buffer, BASE_NVMET_CONFIG, target->subnqn);
-        try_rmdir(target->rpcs, path);
-    }
+/* See description in tapi_nvme.h */
+void
+tapi_nvme_target_fini(tapi_nvme_target *target)
+{
+    tapi_nvme_target_cleanup(target);
+    if (target == NULL || target->methods.fini == NULL)
+        return;
+    target->methods.fini(target);
 }
 
 /* See description in tapi_nvme.h */

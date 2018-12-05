@@ -90,6 +90,146 @@ rpc_cmsg_nxthdr(rpc_msghdr *rpc_msg,
     return CMSG_NXTHDR(&msg, cmsg);
 }
 
+/**
+ * Check return value of te_string operation, go to the final part
+ * of the current function if it failed.
+ *
+ * @param _expr       Expression to check.
+ */
+#define TE_STR_RC(_expr) \
+    do {                          \
+        rc = (_expr);             \
+        if (rc != 0)              \
+            goto finish;          \
+    } while (0)
+
+/**
+ * Replace end of string with "...".
+ *
+ * @param str     Pointer to te_string structure.
+ */
+static void
+str_final_dots(te_string *str)
+{
+    const char tail[] = "...";
+
+    if (str->size >= sizeof(tail))
+    {
+        memcpy(str->ptr + MIN(str->len, str->size - sizeof(tail)),
+               tail, sizeof(tail));
+    }
+    else
+    {
+        ERROR("%s(): string is too small to print dots at the end",
+              __FUNCTION__);
+    }
+}
+
+/* See description in tapi_rpc_socket.h */
+const char *
+msghdr_rpc2str(const rpc_msghdr *rpc_msg, te_string *str)
+{
+    unsigned int  i;
+    te_errno      rc = 0;
+
+    if (rpc_msg == NULL)
+    {
+        TE_STR_RC(te_string_append(str, "(nil)"));
+        goto finish;
+    }
+
+    TE_STR_RC(te_string_append(str, "{ "));
+
+    TE_STR_RC(te_string_append(
+                       str,
+                       "msg_name: %p [%s], ",
+                       rpc_msg->msg_name,
+                       sockaddr_h2str(rpc_msg->msg_name)));
+
+    TE_STR_RC(te_string_append(str,
+                               "msg_namelen: %" TE_PRINTF_SOCKLEN_T "u, ",
+                               rpc_msg->msg_namelen));
+
+    if (rpc_msg->msg_iov == NULL)
+    {
+        TE_STR_RC(te_string_append(str, "msg_iov: (nil), "));
+    }
+    else
+    {
+        TE_STR_RC(te_string_append(str, "msg_iov: { "));
+
+        for (i = 0; i < rpc_msg->msg_riovlen; i++)
+        {
+            TE_STR_RC(te_string_append(
+                       str,
+                       "{ iov_base: %p, iov_len: %" TE_PRINTF_SIZE_T "u }",
+                       rpc_msg->msg_iov[i].iov_base,
+                       rpc_msg->msg_iov[i].iov_len));
+
+            if (i < rpc_msg->msg_riovlen - 1)
+                TE_STR_RC(te_string_append(str, ", "));
+        }
+
+        TE_STR_RC(te_string_append(str, " }, "));
+    }
+
+    TE_STR_RC(te_string_append(str, "msg_iovlen: %" TE_PRINTF_SIZE_T "u, ",
+                               rpc_msg->msg_iovlen));
+
+    TE_STR_RC(te_string_append(
+                 str, "msg_control: %p, msg_controllen: %"
+                 TE_PRINTF_SIZE_T "u, ",
+                 rpc_msg->msg_control,
+                 rpc_msg->msg_controllen));
+
+    TE_STR_RC(te_string_append(
+                        str, "msg_flags: %s",
+                        send_recv_flags_rpc2str(rpc_msg->msg_flags)));
+
+    TE_STR_RC(te_string_append(str, " }"));
+
+finish:
+
+    if (rc != 0)
+        str_final_dots(str);
+
+    return str->ptr;
+}
+
+/* See description in tapi_rpc_socket.h */
+const char *
+mmsghdrs_rpc2str(const struct rpc_mmsghdr *rpc_mmsgs, unsigned int num,
+                 te_string *str)
+{
+    unsigned int  i;
+    te_errno      rc = 0;
+
+    if (rpc_mmsgs == NULL)
+    {
+        TE_STR_RC(te_string_append(str, "(nil)"));
+        goto finish;
+    }
+
+    for (i = 0; i < num; i++)
+    {
+        TE_STR_RC(te_string_append(str, "{ msg_hdr: "));
+        msghdr_rpc2str(&rpc_mmsgs[i].msg_hdr, str);
+        TE_STR_RC(te_string_append(str, ", msg_len: %u }",
+                                   rpc_mmsgs[i].msg_len));
+        if (i < num - 1)
+            TE_STR_RC(te_string_append(str, ", "));
+    }
+
+finish:
+
+    if (rc != 0)
+        str_final_dots(str);
+
+    return str->ptr;
+}
+
+#undef TE_STR_RC
+
 int
 rpc_socket(rcf_rpc_server *rpcs,
            rpc_socket_domain domain, rpc_socket_type type,
@@ -806,6 +946,8 @@ ssize_t
 rpc_sendmsg(rcf_rpc_server *rpcs,
             int s, const struct rpc_msghdr *msg, rpc_send_recv_flags flags)
 {
+    te_string str_msg = TE_STRING_INIT_STATIC(1024);
+
     tarpc_sendmsg_in  in;
     tarpc_sendmsg_out out;
 
@@ -844,20 +986,8 @@ rpc_sendmsg(rcf_rpc_server *rpcs,
     tarpc_msghdr_free(&rpc_msg);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(sendmsg, out.retval);
-    TAPI_RPC_LOG(rpcs, sendmsg, "%d, %p (msg_name: %p, "
-                                "msg_namelen: %" TE_PRINTF_SOCKLEN_T "d, "
-                                "msg_iov: %p, msg_iovlen: %d, "
-                                "msg_control: %p, msg_controllen: %d, "
-                                "msg_flags: %s)"
-         ", %s)", "%d",
-         s, msg,
-         msg != NULL ? msg->msg_name : NULL,
-         msg != NULL ? (int)msg->msg_namelen : -1,
-         msg != NULL ? msg->msg_iov : NULL,
-         msg != NULL ? (int)msg->msg_iovlen : -1,
-         msg != NULL ? msg->msg_control : NULL,
-         msg != NULL ? (int)msg->msg_controllen : -1,
-         msg != NULL ? send_recv_flags_rpc2str(msg->msg_flags) : "",
+    TAPI_RPC_LOG(rpcs, sendmsg, "%d, %p (%s), %s", "%d",
+         s, msg, msghdr_rpc2str(msg, &str_msg),
          send_recv_flags_rpc2str(flags),
          out.retval);
     RETVAL_INT(sendmsg, out.retval);
@@ -867,7 +997,8 @@ ssize_t
 rpc_recvmsg(rcf_rpc_server *rpcs,
             int s, struct rpc_msghdr *msg, rpc_send_recv_flags flags)
 {
-    char              str_buf[1024];
+    te_string str_msg = TE_STRING_INIT_STATIC(1024);
+
     tarpc_recvmsg_in  in;
     tarpc_recvmsg_out out;
 
@@ -918,20 +1049,11 @@ rpc_recvmsg(rcf_rpc_server *rpcs,
             rpcs->_errno = TE_RC(TE_TAPI, rc);
             RETVAL_INT(recvmsg, -1);
         }
-
-        snprintf(str_buf, sizeof(str_buf),
-                 "msg_name: %p, msg_namelen: %" TE_PRINTF_SOCKLEN_T "d, "
-                 "msg_iov: %p, msg_iovlen: %" TE_PRINTF_SIZE_T "d, "
-                 "msg_control: %p, msg_controllen: "
-                 "%" TE_PRINTF_SIZE_T "u, "
-                 "msg_flags: %s", msg->msg_name, msg->msg_namelen,
-                 msg->msg_iov, msg->msg_iovlen,
-                 msg->msg_control, msg->msg_controllen,
-                 send_recv_flags_rpc2str(msg->msg_flags));
     }
 
-    TAPI_RPC_LOG(rpcs, recvmsg, "%d, %p(%s), %s", "%ld",
-                 s, msg, str_buf, send_recv_flags_rpc2str(flags),
+    TAPI_RPC_LOG(rpcs, recvmsg, "%d, %p (%s), %s", "%ld",
+                 s, msg, msghdr_rpc2str(msg, &str_msg),
+                 send_recv_flags_rpc2str(flags),
                  (long)out.retval);
 
     if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
@@ -1984,12 +2106,13 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
                  unsigned int vlen, rpc_send_recv_flags flags,
                  struct tarpc_timespec *timeout)
 {
-    char                   str_buf[4096] = {0};
+    te_string str_msg = TE_STRING_INIT_STATIC(4096);
+
+    char                   str_buf[256] = {0};
     tarpc_recvmmsg_alt_in  in;
     tarpc_recvmmsg_alt_out out;
 
     struct tarpc_mmsghdr *tarpc_mmsg = NULL;
-    rpc_msghdr           *msg = NULL;
     unsigned int          j;
     te_errno              rc;
 
@@ -2040,37 +2163,24 @@ rpc_recvmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
             rpcs->_errno = TE_RC(TE_TAPI, rc);
             RETVAL_INT(recvmmsg_alt, -1);
         }
-
-        for (j = 0; j < out.mmsg.mmsg_len; j++)
-        {
-            msg = &mmsg[j].msg_hdr;
-            snprintf(str_buf + strlen(str_buf),
-                     sizeof(str_buf) - strlen(str_buf),
-                     "{{msg_name: %p, msg_namelen: %" TE_PRINTF_SOCKLEN_T
-                     "d, msg_iov: %p, msg_iovlen: %" TE_PRINTF_SIZE_T "d, "
-                     "msg_control: %p, msg_controllen: "
-                     "%" TE_PRINTF_SIZE_T "u, msg_flags: %s}, %d}",
-                     msg->msg_name, msg->msg_namelen,
-                     msg->msg_iov, msg->msg_iovlen,
-                     msg->msg_control, msg->msg_controllen,
-                     send_recv_flags_rpc2str(msg->msg_flags),
-                     mmsg[j].msg_len);
-        }
     }
 
-    snprintf(str_buf + strlen(str_buf), sizeof(str_buf) - strlen(str_buf),
-             "), %d, %s, ", vlen, send_recv_flags_rpc2str(flags));
     if (timeout == NULL)
-        snprintf(str_buf + strlen(str_buf), sizeof(str_buf) -
-                    strlen(str_buf), "(nil)");
+    {
+        TE_SPRINTF(str_buf, "(nil)");
+    }
     else
-        snprintf(str_buf + strlen(str_buf), sizeof(str_buf) -
-                    strlen(str_buf),
-                 "{%lld,%lld}", (long long int)timeout->tv_sec,
-                 (long long int)timeout->tv_nsec);
+    {
+        TE_SPRINTF(str_buf, "{ %lld, %lld }",
+                   (long long int)timeout->tv_sec,
+                   (long long int)timeout->tv_nsec);
+    }
+    /* To avoid too bad output in case of some sprintf() failure. */
+    str_buf[sizeof(str_buf) - 1] = '\0';
 
-    TAPI_RPC_LOG(rpcs, recvmmsg_alt, "%d, %p(%s", "%d",
-                 fd, mmsg, str_buf, out.retval);
+    TAPI_RPC_LOG(rpcs, recvmmsg_alt, "%d, %p (%s), %u, %s, %s", "%d",
+                 fd, mmsg, mmsghdrs_rpc2str(mmsg, vlen, &str_msg),
+                 vlen, send_recv_flags_rpc2str(flags), str_buf, out.retval);
 
     if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT &&
         mmsg != NULL && out.mmsg.mmsg_val != NULL && out.retval >= 0)
@@ -2086,12 +2196,12 @@ int
 rpc_sendmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
                  unsigned int vlen, rpc_send_recv_flags flags)
 {
-    char                   str_buf[1024];
+    te_string str_msg = TE_STRING_INIT_STATIC(4096);
+
     tarpc_sendmmsg_alt_in  in;
     tarpc_sendmmsg_alt_out out;
 
     tarpc_mmsghdr        *tarpc_mmsg = NULL;
-    rpc_msghdr           *msg;
     unsigned int          j;
     te_errno              rc;
 
@@ -2143,29 +2253,11 @@ rpc_sendmmsg_alt(rcf_rpc_server *rpcs, int fd, struct rpc_mmsghdr *mmsg,
         }
         for (j = 0; j < out.mmsg.mmsg_len; j++)
             mmsg[j].msg_len = out.mmsg.mmsg_val[j].msg_len;
-
-        for (j = 0; j < out.mmsg.mmsg_len; j++)
-        {
-            msg = &mmsg[j].msg_hdr;
-
-            snprintf(str_buf + strlen(str_buf),
-                     sizeof(str_buf) - strlen(str_buf),
-                     "{{msg_name: %p, msg_namelen: %" TE_PRINTF_SOCKLEN_T
-                     "d, msg_iov: %p, msg_iovlen: %" TE_PRINTF_SIZE_T "d, "
-                     "msg_control: %p, msg_controllen: "
-                     "%" TE_PRINTF_SIZE_T "u, msg_flags: %s}, %d}",
-                     msg->msg_name, msg->msg_namelen,
-                     msg->msg_iov, msg->msg_iovlen,
-                     msg->msg_control, msg->msg_controllen,
-                     send_recv_flags_rpc2str(msg->msg_flags),
-                     mmsg[j].msg_len);
-        }
     }
 
-    snprintf(str_buf + strlen(str_buf), sizeof(str_buf) - strlen(str_buf),
-             "), %d, %s", vlen, send_recv_flags_rpc2str(flags));
-    TAPI_RPC_LOG(rpcs, sendmmsg_alt, "%d, %p(%s", "%d",
-                 fd, mmsg, str_buf, out.retval);
+    TAPI_RPC_LOG(rpcs, sendmmsg_alt, "%d, %p (%s), %u, %s", "%d",
+                 fd, mmsg, mmsghdrs_rpc2str(mmsg, vlen, &str_msg),
+                 vlen, send_recv_flags_rpc2str(flags), out.retval);
     RETVAL_INT(sendmmsg_alt, out.retval);
 }
 

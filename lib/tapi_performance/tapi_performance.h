@@ -579,6 +579,37 @@ extern void tapi_perf_log_report(const tapi_perf_server *server,
                                  const tapi_perf_report *report,
                                  const char *test_params);
 
+/**
+ * Print a network throughput test tool report by adding throughput of all
+ * server/client pairs. Note, that we expect server/client pairs to run
+ * roughly the same traffic, see perf_opts_cmp() for details.
+ *
+ * @param server              List of server contexts.
+ * @param client              List of client contexts.
+ * @param report              List of reports (user decides which one
+ *                            is taken where).
+ * @param number_of_instances Number of instances in the above 3 lists
+ * @param test_params         Test specific params; It should be represented
+ *                            in the form of comma-separated pairs
+ *                            "param=value".
+ */
+extern void tapi_perf_log_cumulative_report(const tapi_perf_server *server[],
+                                            const tapi_perf_client *client[],
+                                            const tapi_perf_report *report[],
+                                            int number_of_instances,
+                                            const char *test_params);
+
+/**
+ * Compare important parts of the run.
+ *
+ * @param opts_a First object for comparison
+ * @param opts_b Second object for comparison
+ *
+ * @return @c TRUE if objects' important properties are equal, @c FALSE if not
+ */
+extern te_bool tapi_perf_opts_cmp(const tapi_perf_opts *opts_a,
+                                  const tapi_perf_opts *opts_b);
+
 /**@} <!-- END tapi_performance --> */
 
 #ifdef __cplusplus

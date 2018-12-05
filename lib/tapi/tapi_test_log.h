@@ -146,6 +146,32 @@ extern "C" {
  */
 extern void te_test_verdict(const char *fmt, ...);
 
+/**
+ * Update state of the test to be dumped in case of failure.
+ *
+ * @param fmt     printf()-like format string w/o! TE extensions
+ */
+extern void te_test_verdict_fail_state_update(const char *fmt, ...)
+    __attribute__((format(printf, 1, 2)));
+
+/**
+ * Update substate of the test to be dumped in case of failure.
+ *
+ * @param fmt     printf()-like format string w/o! TE extensions
+ */
+extern void te_test_verdict_fail_substate_update(const char *fmt, ...)
+    __attribute__((format(printf, 1, 2)));
+
+/**
+ * Get the current test state string or @c NULL if it's not filled in.
+ */
+extern const char * te_test_verdict_fail_state_get(void);
+
+/**
+ * Get the current test substate string or @c NULL if it's not filled in.
+ */
+extern const char * te_test_verdict_fail_substate_get(void);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

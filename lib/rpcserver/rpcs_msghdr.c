@@ -16,9 +16,17 @@
 /** Maximum length of argument name */
 #define MAX_ARG_NAME_LEN 1024
 
+/**
+ * Extra bytes allocated for some arguments to check that
+ * a target function does not change them beyond specified
+ * length.
+ */
+#define ARG_EXTRA_LEN 200
+
 /* See description in rpcs_msghdr.h */
 te_errno
-rpcs_msghdr_tarpc2h(te_bool recv_call, const struct tarpc_msghdr *tarpc_msg,
+rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
+                    const struct tarpc_msghdr *tarpc_msg,
                     rpcs_msghdr_helper *helper, struct msghdr *msg,
                     checked_arg_list *arglist, const char *name_fmt, ...)
 {
@@ -31,10 +39,11 @@ rpcs_msghdr_tarpc2h(te_bool recv_call, const struct tarpc_msghdr *tarpc_msg,
     te_errno        rc = 0;
     unsigned int    i;
     size_t          control_len;
-    size_t          max_addr_len;
+    size_t          max_addr_len = 0;
 
     va_list ap;
 
+    memset(msg, 0, sizeof(*msg));
     memset(helper, 0, sizeof(*helper));
 
     va_start(ap, name_fmt);
@@ -45,51 +54,37 @@ rpcs_msghdr_tarpc2h(te_bool recv_call, const struct tarpc_msghdr *tarpc_msg,
 
     tarpc_addr = &tarpc_msg->msg_name;
 
-    max_addr_len = sizeof(struct sockaddr_storage);
-    if (tarpc_addr->flags & TARPC_SA_RAW)
+    if (tarpc_addr->flags & TARPC_SA_NOT_NULL)
     {
-        if (tarpc_addr->raw.raw_len > max_addr_len)
-            max_addr_len = tarpc_addr->raw.raw_len;
-    }
-    if (tarpc_msg->msg_namelen >= 0)
-    {
-        if ((size_t)(tarpc_msg->msg_namelen) > max_addr_len)
-            max_addr_len = tarpc_msg->msg_namelen;
+        max_addr_len = sizeof(struct sockaddr_storage);
+        if (tarpc_addr->flags & TARPC_SA_RAW)
+        {
+            if (tarpc_addr->raw.raw_len > max_addr_len)
+                max_addr_len = tarpc_addr->raw.raw_len;
+        }
+        if (tarpc_msg->msg_namelen >= 0)
+        {
+            if ((size_t)(tarpc_msg->msg_namelen) > max_addr_len)
+                max_addr_len = tarpc_msg->msg_namelen;
+        }
+
+        helper->addr_rlen = max_addr_len + ARG_EXTRA_LEN;
+        helper->addr_data = TE_ALLOC(helper->addr_rlen);
+        if (helper->addr_data == NULL)
+            return TE_ENOMEM;
     }
 
-    helper->addr_data = TE_ALLOC(max_addr_len);
-    if (helper->addr_data == NULL)
-        return TE_ENOMEM;
-
-    if (tarpc_addr->flags & TARPC_SA_RAW)
-    {
-        memcpy(helper->addr_data, tarpc_addr->raw.raw_val,
-               tarpc_addr->raw.raw_len);
-        helper->addr = SA(helper->addr_data);
-        helper->addr_len = tarpc_addr->raw.raw_len;
-    }
-    else
-    {
-        rc = sockaddr_rpc2h(tarpc_addr, SA(helper->addr_data),
-                            max_addr_len,
-                            &helper->addr, &helper->addr_len);
-        if (rc != 0)
-            return rc;
-    }
+    rc = sockaddr_rpc2h(tarpc_addr, SA(helper->addr_data),
+                        max_addr_len,
+                        &helper->addr, &helper->addr_len);
+    if (rc != 0)
+        return rc;
 
     msg->msg_name = helper->addr;
     if (tarpc_msg->msg_namelen >= 0)
         msg->msg_namelen = tarpc_msg->msg_namelen;
     else
         msg->msg_namelen = helper->addr_len;
-
-    rc = te_string_append(&name_str, "%s.msg_name", name_base_str.ptr);
-    if (rc != 0)
-        return rc;
-    tarpc_init_checked_arg(arglist, (uint8_t *)helper->addr,
-                           max_addr_len,
-                           (recv_call ? msg->msg_namelen : 0),
-                           name_str.ptr);
 
     msg->msg_iovlen = tarpc_msg->msg_iovlen;
 
@@ -107,72 +102,118 @@ rpcs_msghdr_tarpc2h(te_bool recv_call, const struct tarpc_msghdr *tarpc_msg,
             msg->msg_iov[i].iov_len =
                     tarpc_msg->msg_iov.msg_iov_val[i].iov_len;
 
-            te_string_reset(&name_str);
-            rc = te_string_append(&name_str, "%s.msg_iov[%d].iov_val",
-                                  name_base_str.ptr, i);
-            if (rc != 0)
-                return rc;
-            tarpc_init_checked_arg(
+            if (check_args != RPCS_MSGHDR_CHECK_ARGS_NONE)
+            {
+                te_string_reset(&name_str);
+                rc = te_string_append(&name_str, "%s.msg_iov[%d].iov_val",
+                                      name_base_str.ptr, i);
+                if (rc != 0)
+                    return rc;
+
+                tarpc_init_checked_arg(
                     arglist, msg->msg_iov[i].iov_base,
                     tarpc_msg->msg_iov.msg_iov_val[i].iov_base.iov_base_len,
-                    (recv_call ? msg->msg_iov[i].iov_len : 0),
+                    (check_args == RPCS_MSGHDR_CHECK_ARGS_RECV ?
+                                          msg->msg_iov[i].iov_len : 0),
                     name_str.ptr);
+            }
         }
 
-        te_string_reset(&name_str);
-        rc = te_string_append(&name_str, "%s.msg_iov", name_base_str.ptr);
-        if (rc != 0)
-            return rc;
-        tarpc_init_checked_arg(
-                    arglist, (uint8_t *)msg->msg_iov,
-                    sizeof(*(msg->msg_iov)) * tarpc_msg->msg_iov.msg_iov_len,
-                    0, name_str.ptr);
+
     }
 
-    control_len = tarpc_cmsg_total_len(
-                          tarpc_msg->msg_control.msg_control_val,
-                          tarpc_msg->msg_control.msg_control_len);
-    control_len += tarpc_msg->msg_control_tail.msg_control_tail_len;
-
-    msg->msg_control = TE_ALLOC(control_len);
-    helper->orig_control = TE_ALLOC(control_len);
-    if (msg->msg_control == NULL || helper->orig_control == NULL)
-        return TE_ENOMEM;
-    msg->msg_controllen = control_len;
-
-    rc = msg_control_rpc2h(
-                  tarpc_msg->msg_control.msg_control_val,
-                  tarpc_msg->msg_control.msg_control_len,
-                  tarpc_msg->msg_control_tail.msg_control_tail_val,
-                  tarpc_msg->msg_control_tail.msg_control_tail_len,
-                  msg->msg_control, &msg->msg_controllen);
-    if (rc != 0)
-        return rc;
-
-    memcpy(helper->orig_control, msg->msg_control, msg->msg_controllen);
-    helper->orig_controllen = msg->msg_controllen;
-
-    if (!recv_call)
+    if (tarpc_msg->msg_control.msg_control_val != NULL ||
+        tarpc_msg->msg_control_tail.msg_control_tail_val != NULL)
     {
-        te_string_reset(&name_str);
-        rc = te_string_append(&name_str, "%s.msg_control", name_base_str.ptr);
+        control_len = tarpc_cmsg_total_len(
+                              tarpc_msg->msg_control.msg_control_val,
+                              tarpc_msg->msg_control.msg_control_len);
+        control_len += tarpc_msg->msg_control_tail.msg_control_tail_len;
+
+        helper->real_controllen = control_len + ARG_EXTRA_LEN;
+        msg->msg_control = TE_ALLOC(helper->real_controllen);
+        helper->orig_control = TE_ALLOC(control_len);
+        if (msg->msg_control == NULL || helper->orig_control == NULL)
+            return TE_ENOMEM;
+        msg->msg_controllen = control_len;
+
+        rc = msg_control_rpc2h(
+                      tarpc_msg->msg_control.msg_control_val,
+                      tarpc_msg->msg_control.msg_control_len,
+                      tarpc_msg->msg_control_tail.msg_control_tail_val,
+                      tarpc_msg->msg_control_tail.msg_control_tail_len,
+                      msg->msg_control, &msg->msg_controllen);
         if (rc != 0)
             return rc;
 
-        tarpc_init_checked_arg(
-                    arglist, (uint8_t *)msg->msg_control,
-                    msg->msg_controllen, 0, name_str.ptr);
+        memcpy(helper->orig_control, msg->msg_control, msg->msg_controllen);
+        helper->orig_controllen = msg->msg_controllen;
+    }
+    else
+    {
+        msg->msg_control = NULL;
+        msg->msg_controllen = 0;
     }
 
     msg->msg_flags = send_recv_flags_rpc2h(tarpc_msg->msg_flags);
     helper->orig_msg_flags = msg->msg_flags;
 
-    if (!recv_call)
+    if (check_args != RPCS_MSGHDR_CHECK_ARGS_NONE)
     {
-        tarpc_init_checked_arg(
-                    arglist, (uint8_t *)msg, sizeof(*msg), 0,
-                    name_base_str.ptr);
-    }
+        if (msg->msg_name != NULL)
+        {
+            te_string_reset(&name_str);
+            rc = te_string_append(&name_str, "%s.msg_name",
+                                   name_base_str.ptr);
+             if (rc != 0)
+                 return rc;
+
+             tarpc_init_checked_arg(
+               arglist, (uint8_t *)helper->addr,
+               helper->addr_rlen,
+               (check_args == RPCS_MSGHDR_CHECK_ARGS_RECV ?
+                                              msg->msg_namelen : 0),
+               name_str.ptr);
+         }
+
+        if (msg->msg_iov != NULL)
+        {
+            te_string_reset(&name_str);
+            rc = te_string_append(&name_str, "%s.msg_iov",
+                                  name_base_str.ptr);
+            if (rc != 0)
+                return rc;
+
+            tarpc_init_checked_arg(
+                arglist, (uint8_t *)msg->msg_iov,
+                sizeof(*(msg->msg_iov)) * tarpc_msg->msg_iov.msg_iov_len,
+                0, name_str.ptr);
+        }
+
+        if (msg->msg_control != NULL)
+        {
+            te_string_reset(&name_str);
+            rc = te_string_append(&name_str, "%s.msg_control",
+                                  name_base_str.ptr);
+            if (rc != 0)
+                return rc;
+
+            tarpc_init_checked_arg(
+              arglist, (uint8_t *)msg->msg_control,
+              helper->real_controllen,
+              (check_args == RPCS_MSGHDR_CHECK_ARGS_RECV ?
+                                      msg->msg_controllen : 0),
+              name_str.ptr);
+        }
+
+        if (check_args == RPCS_MSGHDR_CHECK_ARGS_SEND)
+        {
+            tarpc_init_checked_arg(
+                        arglist, (uint8_t *)msg, sizeof(*msg), 0,
+                        name_base_str.ptr);
+
+        }
+     }
 
     return 0;
 }
@@ -188,6 +229,7 @@ rpcs_msghdr_h2tarpc(const struct msghdr *msg,
     unsigned int          rpc_len = 0;
     uint8_t              *tail = NULL;
     unsigned int          tail_len = 0;
+    unsigned int          i;
 
     tarpc_msg->msg_flags = send_recv_flags_h2rpc(msg->msg_flags);
     tarpc_msg->in_msg_flags = send_recv_flags_h2rpc(helper->orig_msg_flags);
@@ -195,6 +237,15 @@ rpcs_msghdr_h2tarpc(const struct msghdr *msg,
     sockaddr_output_h2rpc(msg->msg_name, helper->addr_len,
                           msg->msg_namelen, &tarpc_msg->msg_name);
     tarpc_msg->msg_namelen = msg->msg_namelen;
+
+    if (tarpc_msg->msg_iov.msg_iov_val != NULL)
+    {
+        for (i = 0; i < tarpc_msg->msg_iov.msg_iov_len; i++)
+        {
+            tarpc_msg->msg_iov.msg_iov_val[i].iov_len =
+                                              msg->msg_iov[i].iov_len;
+        }
+    }
 
     if (helper->orig_controllen != msg->msg_controllen ||
         memcmp(helper->orig_control, msg->msg_control,
@@ -239,7 +290,7 @@ rpcs_msghdr_helper_clean(rpcs_msghdr_helper *h, struct msghdr *msg)
 
 /* See description in rpcs_msghdr.h */
 te_errno
-rpcs_mmsghdrs_tarpc2h(te_bool recv_call,
+rpcs_mmsghdrs_tarpc2h(rpcs_msghdr_check_args_mode check_args,
                       const tarpc_mmsghdr *tarpc_mmsgs,
                       unsigned int num,
                       rpcs_msghdr_helper **helpers,
@@ -279,7 +330,7 @@ rpcs_mmsghdrs_tarpc2h(te_bool recv_call,
             goto finish;
 
         mmsgs_aux[i].msg_len = tarpc_mmsgs[i].msg_len;
-        rc = rpcs_msghdr_tarpc2h(recv_call, &tarpc_mmsgs[i].msg_hdr,
+        rc = rpcs_msghdr_tarpc2h(check_args, &tarpc_mmsgs[i].msg_hdr,
                                  &helpers_aux[i], &mmsgs_aux[i].msg_hdr,
                                  arglist, "%s", name_str.ptr);
         if (rc != 0)

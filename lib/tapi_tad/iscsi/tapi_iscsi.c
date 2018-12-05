@@ -2,10 +2,10 @@
  * @brief Test API for TAD. ipstack CSAP
  *
  * Implementation of Test API
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author: Konstantin Abramenko <konst@oktetlabs.ru>
  *
@@ -120,8 +120,8 @@ tapi_iscsi_sock_csap_create(const char        *ta_name,
     CHECK_RC(asn_write_int32(csap_spec, data_dig,
                              "layers.0.#iscsi.data-digest"));
 
-    rc = tapi_tad_csap_create(ta_name, 0 /* sid */, "iscsi", 
-                              csap_spec, csap); 
+    rc = tapi_tad_csap_create(ta_name, 0 /* sid */, "iscsi",
+                              csap_spec, csap);
     if (rc != 0)
         ERROR("%s(): csap create failed, rc %X", __FUNCTION__, rc);
 
@@ -170,14 +170,14 @@ tapi_iscsi_ini_csap_create(const char        *ta_name,
                            iscsi_digest_type  data_dig,
                            csap_handle_t     *csap)
 {
-    te_errno    rc; 
-    int         ini_socket; 
+    te_errno    rc;
+    int         ini_socket;
 
-    rc = tapi_tcp_server_recv(ta_name, sid, listen_csap, 
+    rc = tapi_tcp_server_recv(ta_name, sid, listen_csap,
                               timeout, &ini_socket);
     if (rc != 0)
     {
-        WARN("%s(): wait for accepted socket failed: %r", 
+        WARN("%s(): wait for accepted socket failed: %r",
              __FUNCTION__, rc);
         return TE_RC(TE_TAPI, rc);
     }
@@ -198,8 +198,8 @@ struct iscsi_data_message {
 
 
 
-/* 
- * Pkt handler for TCP packets 
+/*
+ * Pkt handler for TCP packets
  */
 static void
 iscsi_msg_handler(const char *pkt_fname, void *user_param)
@@ -211,19 +211,19 @@ iscsi_msg_handler(const char *pkt_fname, void *user_param)
     int rc = 0;
     size_t len;
 
-    if (user_param == NULL) 
+    if (user_param == NULL)
     {
         ERROR("%s called with NULL user param", __FUNCTION__);
         return;
-    } 
+    }
     msg = user_param;
 
     if ((rc = asn_parse_dvalue_in_file(pkt_fname, ndn_raw_packet,
                                        &pkt, &s_parsed)) != 0)
-    {                                      
+    {
         ERROR("%s(): parse packet fails, rc = %r, sym %d, pkt file: %Tf",
               __FUNCTION__, rc, s_parsed, pkt_fname);
-        msg->error = rc; 
+        msg->error = rc;
         return;
     }
     msg->error = 0;
@@ -284,10 +284,10 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
                               ndn_traffic_pattern, &pattern, &syms);
     if (rc != 0)
     {
-        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d",
               __FUNCTION__, rc, syms);
         return rc;
-    } 
+    }
 
     if (forward != CSAP_INVALID_HANDLE)
     {
@@ -318,13 +318,13 @@ tapi_iscsi_recv_pkt(const char *ta_name, int sid, csap_handle_t csap,
     {
         if (buffer != NULL)
             *length = msg.length;
-        
+
         if (msg.error != 0)
         {
             rc = msg.error;
             if (rc == TE_EFAIL)
                 ERROR("%s(): iscsi callback was not called", __FUNCTION__);
-            else 
+            else
                 ERROR("%s(): iscsi callback failed: %r", __FUNCTION__, rc);
         }
     }
@@ -343,11 +343,11 @@ tapi_iscsi_start_poll_recv_pkt(unsigned n_csaps,
     te_errno        rc = 0;
     unsigned int    num;
     unsigned int    i;
- 
+
     for (i = 0; i < n_csaps; i++)
     {
-        rc = tapi_tad_trrecv_start(csaps[i].ta, 0, 
-                                   csaps[i].csap_id, 
+        rc = tapi_tad_trrecv_start(csaps[i].ta, 0,
+                                   csaps[i].csap_id,
                                    NULL, timeout, 1,
                                    RCF_TRRECV_PACKETS);
         if (rc != 0)
@@ -370,7 +370,7 @@ tapi_iscsi_start_poll_recv_pkt(unsigned n_csaps,
 int
 tapi_iscsi_recv_polled_pkt(rcf_trpoll_csap *the_csap,
                            iscsi_target_params_t *params,
-                           uint8_t *buffer, 
+                           uint8_t *buffer,
                            size_t  *length)
 {
     te_errno        rc;
@@ -378,7 +378,7 @@ tapi_iscsi_recv_polled_pkt(rcf_trpoll_csap *the_csap,
 
     struct iscsi_data_message msg;
 
-    if (socket == NULL || buffer == NULL || length == NULL)
+    if (buffer == NULL || length == NULL)
         return TE_EWRONGPTR;
 
     msg.error  = 0;
@@ -389,7 +389,7 @@ tapi_iscsi_recv_polled_pkt(rcf_trpoll_csap *the_csap,
     msg.length = *length;
     msg.error  = TE_EFAIL;
 
-    rc = rcf_ta_trrecv_stop(the_csap->ta, 0, 
+    rc = rcf_ta_trrecv_stop(the_csap->ta, 0,
                             the_csap->csap_id,
                             iscsi_msg_handler,
                             &msg, &num);
@@ -404,7 +404,7 @@ tapi_iscsi_recv_polled_pkt(rcf_trpoll_csap *the_csap,
         else
         {
             *length = msg.length;
-        
+
             if (msg.error != 0)
             {
                 rc = msg.error;
@@ -413,9 +413,9 @@ tapi_iscsi_recv_polled_pkt(rcf_trpoll_csap *the_csap,
                     ERROR("%s(): iscsi callback was not called",
                           __FUNCTION__);
                 }
-                else 
+                else
                 {
-                    ERROR("%s(): iscsi callback failed: %r", 
+                    ERROR("%s(): iscsi callback failed: %r",
                           __FUNCTION__, rc);
                 }
             }
@@ -436,14 +436,14 @@ tapi_iscsi_send_pkt(const char *ta_name, int sid, csap_handle_t csap,
     te_errno    rc;
     int         syms;
 
-    if (ta_name == NULL || socket == NULL)
+    if (ta_name == NULL)
         return TE_EWRONGPTR;
 
     rc = asn_parse_value_text("{pdus { iscsi:{} } }",
                               ndn_traffic_template, &template, &syms);
     if (rc != 0)
     {
-        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d",
               __FUNCTION__, rc, syms);
         return rc;
     }
@@ -453,7 +453,7 @@ tapi_iscsi_send_pkt(const char *ta_name, int sid, csap_handle_t csap,
     {
         ERROR("%s(): write payload failed %r", __FUNCTION__, rc);
         goto cleanup;
-    } 
+    }
 
     if (params != NULL)
         asn_write_int32(template, params->param, "pdus.0.#iscsi.param");
@@ -464,7 +464,7 @@ tapi_iscsi_send_pkt(const char *ta_name, int sid, csap_handle_t csap,
     {
         ERROR("%s(): trsend_start failed %r", __FUNCTION__, rc);
         goto cleanup;
-    } 
+    }
 
 cleanup:
     asn_free_value(template);
@@ -472,7 +472,7 @@ cleanup:
 }
 
 int
-tapi_iscsi_send_pkt_last(const char   *ta_name, int sid, 
+tapi_iscsi_send_pkt_last(const char   *ta_name, int sid,
                          csap_handle_t csap, uint8_t *buffer,
                          size_t        length)
 {
@@ -481,14 +481,14 @@ tapi_iscsi_send_pkt_last(const char   *ta_name, int sid,
     te_errno    rc;
     int         syms;
 
-    if (ta_name == NULL || socket == NULL)
+    if (ta_name == NULL)
         return TE_EWRONGPTR;
 
     rc = asn_parse_value_text("{pdus { iscsi:{} } }",
                               ndn_traffic_template, &template, &syms);
     if (rc != 0)
     {
-        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d",
               __FUNCTION__, rc, syms);
         return rc;
     }
@@ -498,7 +498,7 @@ tapi_iscsi_send_pkt_last(const char   *ta_name, int sid,
     {
         ERROR("%s(): write payload failed %r", __FUNCTION__, rc);
         goto cleanup;
-    } 
+    }
 
     rc = asn_write_value_field(template, NULL, 0,
                                "pdus.0.#iscsi.last-data");
@@ -506,7 +506,7 @@ tapi_iscsi_send_pkt_last(const char   *ta_name, int sid,
     {
         ERROR("%s(): write last-data flag failed %r", __FUNCTION__, rc);
         goto cleanup;
-    } 
+    }
 
     rc = tapi_tad_trsend_start(ta_name, sid, csap, template,
                                RCF_MODE_BLOCKING);
@@ -514,7 +514,7 @@ tapi_iscsi_send_pkt_last(const char   *ta_name, int sid,
     {
         ERROR("%s(): trsend_start failed %r", __FUNCTION__, rc);
         goto cleanup;
-    } 
+    }
 
 cleanup:
     asn_free_value(template);
@@ -526,7 +526,7 @@ cleanup:
 
 /* See description in tapi_iscsi.h */
 te_errno
-tapi_iscsi_exchange_until_silent(const char *ta, int session, 
+tapi_iscsi_exchange_until_silent(const char *ta, int session,
                                  csap_handle_t csap_a,
                                  csap_handle_t csap_b,
                                  unsigned int timeout)
@@ -534,14 +534,14 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
     te_errno    rc = 0;
     int         syms;
     asn_value  *pattern = NULL;
-    unsigned    pkts_a = 0, pkts_b = 0, 
+    unsigned    pkts_a = 0, pkts_b = 0,
                 prev_pkts_a, prev_pkts_b;
 
     uint32_t    periods_silent = 0;
 
     struct timespec ts_timeout;
 
-    if (csap_a == CSAP_INVALID_HANDLE || 
+    if (csap_a == CSAP_INVALID_HANDLE ||
         csap_b == CSAP_INVALID_HANDLE)
     {
 
@@ -553,15 +553,15 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
                               ndn_traffic_pattern, &pattern, &syms);
     if (rc != 0)
     {
-        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d",
               __FUNCTION__, rc, syms);
         return rc;
-    } 
+    }
 
     /*First, start receive on A */
     asn_write_int32(pattern, csap_b, "0.actions.0.#forw-pld");
 
-    rc = tapi_tad_trrecv_start(ta, session, csap_a, pattern, 
+    rc = tapi_tad_trrecv_start(ta, session, csap_a, pattern,
                                TAD_TIMEOUT_INF, 0, RCF_TRRECV_COUNT);
     if (rc != 0)
     {
@@ -572,7 +572,7 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
     /* Then, start receive on B */
     asn_write_int32(pattern, csap_a, "0.actions.0.#forw-pld");
 
-    rc = tapi_tad_trrecv_start(ta, session, csap_b, pattern, 
+    rc = tapi_tad_trrecv_start(ta, session, csap_b, pattern,
                                TAD_TIMEOUT_INF, 0, RCF_TRRECV_COUNT);
     if (rc != 0)
     {
@@ -580,7 +580,7 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
         goto cleanup;
     }
 
-    do { 
+    do {
         tad_csap_status_t csap_a_status, csap_b_status;
 
         rc = tapi_csap_get_status(ta, session, csap_a, &csap_a_status);
@@ -598,7 +598,7 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
 
         if (csap_a_status != CSAP_BUSY || csap_b_status != CSAP_BUSY)
         {
-            INFO("%s(): csap status are not 'busy': A %d, B %d", 
+            INFO("%s(): csap status are not 'busy': A %d, B %d",
                  __FUNCTION__, csap_a_status, csap_b_status);
             break;
         }
@@ -608,7 +608,7 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
 
         ts_timeout.tv_sec  = 0;
         ts_timeout.tv_nsec = INTERNAL_SLEEP_TIMEOUT * 1000000;
-        INFO("%s(): Sleeping %u milliseconds", 
+        INFO("%s(): Sleeping %u milliseconds",
              __FUNCTION__, INTERNAL_SLEEP_TIMEOUT);
         if (nanosleep(&ts_timeout, NULL) != 0)
         {
@@ -628,12 +628,12 @@ tapi_iscsi_exchange_until_silent(const char *ta, int session,
         {
             ERROR("%s(): trrecv_get on B failed %r", __FUNCTION__, rc);
             goto cleanup;
-        } 
-        INFO("%s(): a %d, b %d, new a %d, new b %d", 
+        }
+        INFO("%s(): a %d, b %d, new a %d, new b %d",
              __FUNCTION__, prev_pkts_a, prev_pkts_b, pkts_a, pkts_b);
         if (prev_pkts_a < pkts_a || prev_pkts_b < pkts_b)
             periods_silent = 0;
-        else 
+        else
             periods_silent++;
 
     } while (periods_silent < (timeout/INTERNAL_SLEEP_TIMEOUT + 1));
@@ -649,7 +649,7 @@ cleanup:
 }
 
 te_errno
-tapi_iscsi_exchange_until_pattern(const char *ta, int session, 
+tapi_iscsi_exchange_until_pattern(const char *ta, int session,
                                   csap_handle_t csap_a,
                                   csap_handle_t csap_b,
                                   asn_value *pattern,
@@ -668,9 +668,9 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
     if (ta == NULL || pattern == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
 
-    if (csap_a == CSAP_INVALID_HANDLE || 
+    if (csap_a == CSAP_INVALID_HANDLE ||
         csap_b == CSAP_INVALID_HANDLE)
-    { 
+    {
         ERROR("%s(): both CSAPs should be valid", __FUNCTION__);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
@@ -678,10 +678,10 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
     if ((rc = asn_parse_value_text("{{pdus { iscsi:{} } }}",
                               ndn_traffic_pattern, &pattern_a, &syms)) != 0)
     {
-        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d",
               __FUNCTION__, rc, syms);
         return rc;
-    } 
+    }
 
     msg.error  = 0;
     if (buffer != NULL)
@@ -700,7 +700,7 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
 
     /*First, start receive on A */
     asn_write_int32(pattern_a, csap_b, "0.actions.0.#forw-pld");
-    rc = asn_write_value_field(pattern_a, NULL, 0, 
+    rc = asn_write_value_field(pattern_a, NULL, 0,
                                "0.actions.1.#no-report");
     if (rc != 0)
     {
@@ -716,12 +716,12 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
     if ((rc = asn_insert_indexed(pattern_a,
                                  asn_copy_value(pattern), 0, "")) != 0)
     {
-        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d",
               __FUNCTION__, rc, syms);
         return rc;
     }
 
-    rc = tapi_tad_trrecv_start(ta, session, csap_a, pattern_a, 
+    rc = tapi_tad_trrecv_start(ta, session, csap_a, pattern_a,
                                timeout, 0, RCF_TRRECV_PACKETS);
     if (rc != 0)
     {
@@ -730,7 +730,7 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
         goto cleanup;
     }
 
-    rc = tapi_tad_trrecv_start(ta, session, csap_b, pattern_b, 
+    rc = tapi_tad_trrecv_start(ta, session, csap_b, pattern_b,
                                TAD_TIMEOUT_INF, 0, RCF_TRRECV_COUNT);
     if (rc != 0)
     {
@@ -763,7 +763,7 @@ tapi_iscsi_exchange_until_pattern(const char *ta, int session,
     }
 
     if ((rc = rcf_ta_trrecv_stop(ta, session, csap_b, NULL, NULL, &num))
-         != 0) 
+         != 0)
     {
         WARN("%s() trrecv_stop failed: %r", __FUNCTION__, rc);
         rc = 0;
@@ -772,11 +772,11 @@ cleanup:
     asn_free_value(pattern_a);
     asn_free_value(pattern_b);
 
-    return result; 
+    return result;
 }
 
 te_errno
-tapi_iscsi_exchange_until_stop(const char *ta, int session, 
+tapi_iscsi_exchange_until_stop(const char *ta, int session,
                                csap_handle_t csap_a,
                                csap_handle_t csap_b,
                                unsigned int timeout)
@@ -787,14 +787,12 @@ tapi_iscsi_exchange_until_stop(const char *ta, int session,
     asn_value  *pattern_a = NULL;
     asn_value  *pattern_b = NULL;
 
-    struct iscsi_data_message msg;
-
     if (ta == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
 
-    if (csap_a == CSAP_INVALID_HANDLE || 
+    if (csap_a == CSAP_INVALID_HANDLE ||
         csap_b == CSAP_INVALID_HANDLE)
-    { 
+    {
         ERROR("%s(): both CSAPs should be valid", __FUNCTION__);
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
@@ -802,18 +800,16 @@ tapi_iscsi_exchange_until_stop(const char *ta, int session,
     if ((rc = asn_parse_value_text("{{pdus { iscsi:{} } }}",
                               ndn_traffic_pattern, &pattern_a, &syms)) != 0)
     {
-        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d",
               __FUNCTION__, rc, syms);
         return rc;
-    } 
-
-    msg.error  = 0;
+    }
 
     pattern_b = asn_copy_value(pattern_a);
 
     /*First, start receive on A */
     asn_write_int32(pattern_a, csap_b, "0.actions.0.#forw-pld");
-    rc = asn_write_value_field(pattern_a, NULL, 0, 
+    rc = asn_write_value_field(pattern_a, NULL, 0,
                                "0.actions.1.#no-report");
     if (rc != 0)
     {
@@ -823,7 +819,7 @@ tapi_iscsi_exchange_until_stop(const char *ta, int session,
         goto cleanup;
     }
     asn_write_int32(pattern_b, csap_a, "0.actions.0.#forw-pld");
-    rc = asn_write_value_field(pattern_a, NULL, 0, 
+    rc = asn_write_value_field(pattern_a, NULL, 0,
                                "0.actions.1.#no-report");
     if (rc != 0)
     {
@@ -833,7 +829,7 @@ tapi_iscsi_exchange_until_stop(const char *ta, int session,
         goto cleanup;
     }
 
-    rc = tapi_tad_trrecv_start(ta, session, csap_a, pattern_a, 
+    rc = tapi_tad_trrecv_start(ta, session, csap_a, pattern_a,
                                timeout, 0, RCF_TRRECV_PACKETS);
     if (rc != 0)
     {
@@ -844,7 +840,7 @@ tapi_iscsi_exchange_until_stop(const char *ta, int session,
 
     RING("Starting permanent traffic exchange");
 
-    rc = tapi_tad_trrecv_start(ta, session, csap_b, pattern_b, 
+    rc = tapi_tad_trrecv_start(ta, session, csap_b, pattern_b,
                                TAD_TIMEOUT_INF, 0, RCF_TRRECV_COUNT);
     if (rc != 0)
     {
@@ -857,11 +853,11 @@ cleanup:
     asn_free_value(pattern_a);
     asn_free_value(pattern_b);
 
-    return result; 
+    return result;
 }
 
-te_errno 
-tapi_iscsi_exchange_stop(const char *ta, int session, 
+te_errno
+tapi_iscsi_exchange_stop(const char *ta, int session,
                          csap_handle_t csap_a,
                          csap_handle_t csap_b)
 
@@ -869,18 +865,18 @@ tapi_iscsi_exchange_stop(const char *ta, int session,
     unsigned int    num_a;
     unsigned int    num_b;
     te_errno        rc;
- 
+
     RING("Stopping permanent traffic exchange");
 
     if ((rc = rcf_ta_trrecv_stop(ta, session, csap_a, NULL, NULL, &num_a))
-        != 0) 
+        != 0)
     {
         WARN("%s() trrecv_stop failed: %r", __FUNCTION__, rc);
         rc = 0;
     }
-    
+
     if ((rc = rcf_ta_trrecv_stop(ta, session, csap_b, NULL, NULL, &num_b))
-        != 0) 
+        != 0)
     {
         WARN("%s() trrecv_stop failed: %r", __FUNCTION__, rc);
         rc = 0;
@@ -898,33 +894,33 @@ tapi_iscsi_prepare_pattern_unit(iscsi_bit_spec_t i_bit,
     te_errno rc = 0;
     int syms;
 
-    if (pattern == NULL) 
+    if (pattern == NULL)
         return TE_RC(TE_TAPI, TE_EWRONGPTR);
 
     rc = asn_parse_value_text("{pdus { iscsi:{} } }",
                               ndn_traffic_pattern_unit, pattern, &syms);
     if (rc != 0)
     {
-        ERROR("%s(): parse ASN pattern failed %r, sym %d", 
+        ERROR("%s(): parse ASN pattern failed %r, sym %d",
               __FUNCTION__, rc, syms);
         return rc;
     }
 
     if (i_bit != ISCSI_BIT_UNDEF)
     {
-        asn_write_bool(*pattern, i_bit == ISCSI_BIT_TRUE, 
+        asn_write_bool(*pattern, i_bit == ISCSI_BIT_TRUE,
                        "pdus.0.#iscsi.i-bit.#plain");
     }
 
     if (opcode != ISCSI_OPCODE_UNDEF)
     {
-        asn_write_int32(*pattern, opcode, 
+        asn_write_int32(*pattern, opcode,
                         "pdus.0.#iscsi.opcode.#plain");
     }
 
     if (f_bit != ISCSI_BIT_UNDEF)
     {
-        asn_write_bool(*pattern, f_bit == ISCSI_BIT_TRUE, 
+        asn_write_bool(*pattern, f_bit == ISCSI_BIT_TRUE,
                        "pdus.0.#iscsi.f-bit.#plain");
     }
 
@@ -933,7 +929,7 @@ tapi_iscsi_prepare_pattern_unit(iscsi_bit_spec_t i_bit,
 
 
 /* See description in tapi_iscsi.h */
-int 
+int
 tapi_iscsi_get_key_num(iscsi_segment_data data)
 {
     int segment_data_len;
@@ -946,7 +942,7 @@ tapi_iscsi_get_key_num(iscsi_segment_data data)
     }
     return segment_data_len;
 }
-    
+
 /* See description in tapi_iscsi.h */
 char *
 tapi_iscsi_get_key_name(iscsi_segment_data segment_data, int key_index)
@@ -965,7 +961,7 @@ tapi_iscsi_get_key_name(iscsi_segment_data segment_data, int key_index)
 
     if ((rc = asn_read_string((asn_value *)key_pair,
                               &name, "key")) != 0)
-    {    
+    {
         ERROR("%s, %d: cannot get key name, %r",
               __FUNCTION__, __LINE__, rc);
         return NULL;
@@ -980,7 +976,7 @@ tapi_iscsi_get_key_index_by_name(iscsi_segment_data data, char *name)
     int rc;
 
     int key_num;
-    int key_index; 
+    int key_index;
 
     char *key;
 
@@ -1002,12 +998,12 @@ tapi_iscsi_get_key_index_by_name(iscsi_segment_data data, char *name)
        }
        if ((rc = asn_read_string(key_pair,
                                  &key, "key")) != 0)
-       {    
+       {
             ERROR("%s, %d: cannot get key name, %r",
                   __FUNCTION__, __LINE__, rc);
             return TAPI_ISCSI_KEY_INVALID;
        }
-       if ((strlen(key) == strlen(name)) && 
+       if ((strlen(key) == strlen(name)) &&
            (strcmp(key, name) == 0))
            break;
     }
@@ -1066,11 +1062,11 @@ tapi_iscsi_get_key_values_num(iscsi_key_values values)
 
 /* See description in tapi_iscsi.h */
 int
-tapi_iscsi_get_key_value(iscsi_key_values values, 
+tapi_iscsi_get_key_value(iscsi_key_values values,
                          int key_value_index, char **str)
 {
     int rc;
-    
+
     asn_value     *elem;
 
     if ((rc = asn_get_indexed(values, &elem, key_value_index, NULL)) != 0)
@@ -1142,7 +1138,7 @@ tapi_iscsi_add_new_key(iscsi_segment_data data, char *name, int key_index)
               __FUNCTION__, __LINE__, rc);
         return rc;
     }
-    
+
     if ((rc = asn_insert_indexed(data, key_pair, key_index, "")) != 0)
     {
         ERROR("%s, %d: cannot insert element, %r",
@@ -1154,11 +1150,11 @@ tapi_iscsi_add_new_key(iscsi_segment_data data, char *name, int key_index)
 }
 
 /* See description in tapi_iscsi.h */
-iscsi_key_values 
+iscsi_key_values
 tapi_iscsi_key_values_create(int num, ...)
 {
     int rc = 0;
-    
+
     va_list list;
 
     asn_value *key_values = NULL;
@@ -1169,7 +1165,7 @@ tapi_iscsi_key_values_create(int num, ...)
     char *str_val;
 
     va_start(list, num);
-    
+
     if ((key_values = asn_init_value(ndn_iscsi_key_values)) == NULL)
     {
         ERROR("%s, %d: cannot init asn_value",
@@ -1188,7 +1184,7 @@ tapi_iscsi_key_values_create(int num, ...)
         }
 
         str_val = va_arg(list, char *);
-        if ((rc = asn_write_string(key_value, 
+        if ((rc = asn_write_string(key_value,
                                    str_val, "")) != 0)
         {
             ERROR("%s, %d: cannot write string value, %r",
@@ -1221,7 +1217,7 @@ tapi_iscsi_set_key_values(iscsi_segment_data data,
 
     asn_value *key_pair;
 
-    if ((rc = asn_get_indexed(data, &key_pair, 
+    if ((rc = asn_get_indexed(data, &key_pair,
                               key_index, NULL)) != 0)
     {
         ERROR("%s, %d: cannot get element, %r",
@@ -1229,7 +1225,7 @@ tapi_iscsi_set_key_values(iscsi_segment_data data,
         return rc;
     }
     if ((rc = asn_put_child_value_by_label(key_pair,
-                                           values, 
+                                           values,
                                            "values")) != 0)
     {
         ERROR("%s, %d: cannot put child, %r",
@@ -1237,7 +1233,7 @@ tapi_iscsi_set_key_values(iscsi_segment_data data,
         return rc;
     }
     return 0;
-}    
+}
 
 /* See description in tapi_iscsi.h */
 void
@@ -1267,7 +1263,7 @@ iscsi_segment_data
 tapi_iscsi_keys_create(int num, ...)
 {
     int rc = 0;
-    
+
     va_list list;
 
     char *key;
@@ -1278,8 +1274,8 @@ tapi_iscsi_keys_create(int num, ...)
     int i;
 
     va_start(list, num);
-    
-    
+
+
     if ((segment_data = asn_init_value(ndn_iscsi_segment_data)) == NULL)
     {
         ERROR("%s, %d: cannot init asn_value",
@@ -1303,14 +1299,14 @@ tapi_iscsi_keys_create(int num, ...)
                   __FUNCTION__, __LINE__, rc);
             goto cleanup;
         }
-        if ((rc = asn_insert_indexed(segment_data, 
+        if ((rc = asn_insert_indexed(segment_data,
                                      key_pair, i, "")) != 0)
         {
             ERROR("%s, %d: cannot insert element, %r",
                   __FUNCTION__, __LINE__);
             goto cleanup;
         }
-    }    
+    }
 cleanup:
     if (key_pair == NULL || segment_data == NULL || rc != 0)
     {
@@ -1319,7 +1315,7 @@ cleanup:
     }
     return segment_data;
 }
-           
+
 /* See description in tapi_iscsi.h */
 void
 tapi_iscsi_keys_data_free(iscsi_segment_data segment_data)
@@ -1331,12 +1327,12 @@ tapi_iscsi_keys_data_free(iscsi_segment_data segment_data)
 /* See description in tapi_iscsi.h */
 int
 tapi_iscsi_change_key_values(iscsi_segment_data segment_data,
-                             char *key_name, 
+                             char *key_name,
                              tapi_iscsi_change_key_val_type change,
                              int num, ...)
 {
     int                rc;
-    
+
     int                key_index;
     iscsi_key_values   key_values;
     asn_value         *key_value;
@@ -1345,7 +1341,7 @@ tapi_iscsi_change_key_values(iscsi_segment_data segment_data,
 
     va_list list;
 
-    if ((key_index = 
+    if ((key_index =
          tapi_iscsi_get_key_index_by_name(segment_data, key_name)) ==
             TAPI_ISCSI_KEY_INVALID)
     {
@@ -1361,7 +1357,7 @@ tapi_iscsi_change_key_values(iscsi_segment_data segment_data,
               __FUNCTION__, __LINE__);
         return -1;
     }
-    if ((key_values_num = 
+    if ((key_values_num =
          tapi_iscsi_get_key_values_num(key_values)) == -1)
     {
         ERROR("%s, %d: cannot get key values number",
@@ -1403,7 +1399,7 @@ tapi_iscsi_change_key_values(iscsi_segment_data segment_data,
         }
         if (change == tapi_iscsi_replace_key_values ||
             change == tapi_iscsi_insert_key_values)
-        {    
+        {
             if ((rc = asn_insert_indexed(key_values,
                                          key_value,
                                          -1, "")) != 0)
@@ -1431,7 +1427,7 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
                               const char *key_name, int num, ...)
 {
     int                rc;
-    
+
     int                key_index;
     iscsi_key_values   key_values;
     int                key_values_num;
@@ -1447,8 +1443,8 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
         return -1;
     }
 
-    if ((key_index = 
-         tapi_iscsi_get_key_index_by_name(segment_data, 
+    if ((key_index =
+         tapi_iscsi_get_key_index_by_name(segment_data,
                                           (char *)key_name)) ==
             TAPI_ISCSI_KEY_INVALID)
     {
@@ -1464,7 +1460,7 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
               __FUNCTION__, __LINE__);
         return -1;
     }
-    if ((key_values_num = 
+    if ((key_values_num =
          tapi_iscsi_get_key_values_num(key_values)) == -1)
     {
         ERROR("%s, %d: cannot get key values number",
@@ -1484,7 +1480,7 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
              (key_values_index < key_values_num) && (found == FALSE);
              key_values_index++)
         {
-            if ((rc = 
+            if ((rc =
                  tapi_iscsi_get_key_value(
                                           key_values,
                                           key_values_index,
@@ -1507,7 +1503,7 @@ tapi_iscsi_find_key_and_value(iscsi_segment_data segment_data,
                   __FUNCTION__, __LINE__, search_value, key_name);
             return -1;
         }
-    }    
+    }
     va_end(list);
     return 0;
 }
@@ -1527,7 +1523,7 @@ tapi_iscsi_return_key_value(iscsi_segment_data segment_data,
 
 
     if ((key_index =
-         tapi_iscsi_get_key_index_by_name(segment_data, 
+         tapi_iscsi_get_key_index_by_name(segment_data,
                                           (char *)key_name)) ==
             TAPI_ISCSI_KEY_INVALID)
     {
@@ -1561,7 +1557,7 @@ tapi_iscsi_find_key_values(iscsi_segment_data segment_data,
         return -1;
 
     if ((key_index =
-         tapi_iscsi_get_key_index_by_name(segment_data, 
+         tapi_iscsi_get_key_index_by_name(segment_data,
                                           (char *)key_name)) ==
             TAPI_ISCSI_KEY_INVALID)
     {
@@ -1596,11 +1592,11 @@ tapi_iscsi_key_value_read(iscsi_key_values val_array,
 
     if ((rc = asn_read_value_field((asn_value *)key_value,
                                    buf, buf_len, "")) != 0)
-    {    
+    {
         ERROR("%s(): cannot read key value %d, %r",
               __FUNCTION__, rc);
         return rc;
-    } 
+    }
 
     return 0;
 }
@@ -1621,7 +1617,7 @@ tapi_iscsi_key_value_write(iscsi_key_values val_array,
         return rc;
     }
 
-    if ((rc = asn_get_indexed(val_array, &key_value, 
+    if ((rc = asn_get_indexed(val_array, &key_value,
                               val_index, NULL)) != 0)
     {
         ERROR("%s(): asn_get_indexed failed %r", __FUNCTION__, rc);
@@ -1640,7 +1636,7 @@ tapi_iscsi_key_value_write(iscsi_key_values val_array,
 
 /* Target configuration */
 static te_errno
-tapi_iscsi_send_target_msg(const char *ta, const char *msg, 
+tapi_iscsi_send_target_msg(const char *ta, const char *msg,
                            const char *fmt, ...)
 {
     static char buffer[RCF_MAX_PATH + 1];
@@ -1664,26 +1660,26 @@ tapi_iscsi_send_target_msg(const char *ta, const char *msg,
         va_end(args);
     }
 
-    local_rc = rcf_ta_call(ta, 0, "iscsi_target_send_simple_msg", 
+    local_rc = rcf_ta_call(ta, 0, "iscsi_target_send_simple_msg",
                            &remote_rc,
                            2, FALSE,
                            RCF_STRING, msg, RCF_STRING, buffer);
     return (local_rc == 0 ? remote_rc : local_rc);
-}                          
+}
 
 
 
 /* see description in tapi_iscsi.h */
 int
 tapi_iscsi_target_set_parameter(const char *ta,
-                                tapi_iscsi_parameter param, 
+                                tapi_iscsi_parameter param,
                                 const char *value)
 {
     static char *mapping[] = {
         "oper:/header_digest:",
         "oper:/data_digest:",
         "oper:/max_connections:",
-        "oper:/send_targets:",  
+        "oper:/send_targets:",
         "oper:/target_name:",
         "oper:/initiator_name:",
         "oper:/target_alias:",
@@ -1727,9 +1723,9 @@ tapi_iscsi_target_set_parameter(const char *ta,
 }
 
 /* see description in tapi_iscsi.h */
-int 
-tapi_iscsi_target_customize(const char *ta, int id, 
-                            const char *key, 
+int
+tapi_iscsi_target_customize(const char *ta, int id,
+                            const char *key,
                             const char *value)
 {
     INFO("Setting %s to %s on %s:%d", key, value, ta, id);
@@ -1739,11 +1735,11 @@ tapi_iscsi_target_customize(const char *ta, int id,
 }
 
 int
-tapi_iscsi_target_customize_intval(const char *ta, int id, 
+tapi_iscsi_target_customize_intval(const char *ta, int id,
                                    const char *key, int value)
 {
     char buf[16];
-    
+
     snprintf(buf, sizeof(buf), "%d", value);
     return tapi_iscsi_target_customize(ta, id, key, buf);
 }
@@ -1753,12 +1749,12 @@ tapi_iscsi_target_cause_logout(const char *ta, int id, int timeout)
 {
     int  rc;
 
-    rc = tapi_iscsi_target_customize_intval(ta, id, 
+    rc = tapi_iscsi_target_customize_intval(ta, id,
                                             "async_logout_timeout",
                                             timeout);
     if (rc != 0)
         return rc;
-    return tapi_iscsi_target_customize(ta, id, "send_async", 
+    return tapi_iscsi_target_customize(ta, id, "send_async",
                                        "logout_request");
 }
 
@@ -1767,7 +1763,7 @@ tapi_iscsi_target_cause_renegotiate(const char *ta, int id, int timeout)
 {
     int  rc;
 
-    rc = tapi_iscsi_target_customize_intval(ta, id, 
+    rc = tapi_iscsi_target_customize_intval(ta, id,
                                             "async_text_timeout", timeout);
     if (rc != 0)
         return rc;
@@ -1776,51 +1772,51 @@ tapi_iscsi_target_cause_renegotiate(const char *ta, int id, int timeout)
 
 
 int
-tapi_iscsi_target_will_drop(const char *ta, int id, te_bool drop_all, 
+tapi_iscsi_target_will_drop(const char *ta, int id, te_bool drop_all,
                             int time2wait, int time2retain)
 {
     int  rc;
-    rc = tapi_iscsi_target_customize_intval(ta, id, 
-                                            "async_drop_time2wait", 
+    rc = tapi_iscsi_target_customize_intval(ta, id,
+                                            "async_drop_time2wait",
                                             time2wait);
     if (rc != 0)
         return rc;
-    rc = tapi_iscsi_target_customize_intval(ta, id, 
-                                            "async_drop_time2retain", 
+    rc = tapi_iscsi_target_customize_intval(ta, id,
+                                            "async_drop_time2retain",
                                             time2retain);
     if (rc != 0)
         return rc;
 
-    return tapi_iscsi_target_customize(ta, id, "send_async", 
-                                       drop_all ? "drop_all_connections" : 
+    return tapi_iscsi_target_customize(ta, id, "send_async",
+                                       drop_all ? "drop_all_connections" :
                                        "drop_connection");
 }
 
 
 int
-tapi_iscsi_target_set_failure_state(const char *ta, int id, 
+tapi_iscsi_target_set_failure_state(const char *ta, int id,
                                     const char *status,
-                                    const char *sense, 
+                                    const char *sense,
                                     const char *additional_code)
 {
     int rc;
-    
+
     if (additional_code != NULL)
     {
-        rc = tapi_iscsi_target_customize(ta, id, "asc_value", 
+        rc = tapi_iscsi_target_customize(ta, id, "asc_value",
                                          additional_code);
         if (rc != 0)
             return rc;
     }
-    
-    
+
+
     if (sense != NULL)
     {
         rc = tapi_iscsi_target_customize(ta, id, "sense", sense);
         if (rc != 0)
             return rc;
     }
-    
+
     return tapi_iscsi_target_customize(ta, id, "force_status", status);
 }
 
@@ -1835,7 +1831,7 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
         OFFER_HEADER_DIGEST,
         OFFER_DATA_DIGEST,
         OFFER_MAX_CONNECTIONS,
-        0,  
+        0,
         0,
         0,
         0,
@@ -1878,7 +1874,7 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
 
     par2adv = atoi(offer);
     free(offer);
-    
+
     if (offer_mapping[param] != 0)
     {
         if (advertize == TRUE)
@@ -1886,7 +1882,7 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
         else
             par2adv &= ~(offer_mapping[param]);
     }
-    
+
 #define MAX_OFFER_LENGTH 15
     offer = calloc(MAX_OFFER_LENGTH, 1);
 #undef MAX_OFFER_LENGTH
@@ -1902,27 +1898,27 @@ tapi_iscsi_initiator_advertize_set(const char *ta,
         ERROR("Failed to set current parameters2advertize");
         return rc;
     }
-    
+
     free(offer);
     return 0;
 }
 
 /* see description in tapi_iscsi.h */
-int 
+int
 tapi_iscsi_initiator_set_parameter(const char *ta,
                                    iscsi_target_id target_id,
                                    iscsi_cid cid,
                                    tapi_iscsi_parameter param,
-                                   const char *value, 
+                                   const char *value,
                                    te_bool advertize)
 {
     int rc = -1;
-    
+
     static char *mapping[] = {
         "header_digest:",                         /* - */
         "data_digest:",                           /* - */
         "max_connections:",                       /* - */
-        "",  
+        "",
         "target_name:",                           /* - */
         "initiator_name:",
         "target_alias:",                          /* - */
@@ -1960,11 +1956,11 @@ tapi_iscsi_initiator_set_parameter(const char *ta,
     assert(ta != NULL);
     assert(param < sizeof(mapping) / sizeof(*mapping));
     assert(mapping[param] != NULL);
-    
-    INFO("Set %s (%s, target=%d, cid=%d param=%d) to %s, %s advertizing", 
-         log_mapping[param], 
+
+    INFO("Set %s (%s, target=%d, cid=%d param=%d) to %s, %s advertizing",
+         log_mapping[param],
          ta, target_id, cid, param, value, advertize ? "with":"without");
-    
+
 
     if (cid == ISCSI_ALL_CONNECTIONS)
     {
@@ -1979,7 +1975,7 @@ tapi_iscsi_initiator_set_parameter(const char *ta,
                     strlen("chap:/")) != 0)
         {
             rc = tapi_iscsi_initiator_advertize_set(ta, target_id, cid,
-                                                    param, 
+                                                    param,
                                                     advertize);
             if (rc != 0)
             {
@@ -1999,7 +1995,7 @@ tapi_iscsi_initiator_set_parameter(const char *ta,
     {
         ERROR("Failed to set %s parameter to %s, cid=%d, rc = %d (%r)",
               log_mapping[param], value, cid, rc, rc);
-        
+
         return rc;
     }
 
@@ -2014,7 +2010,7 @@ static int iscsi_current_cid[MAX_TARGETS_NUMBER];
 static int iscsi_current_target = 0;
 
 /* see description in tapi_iscsi.h */
-iscsi_cid 
+iscsi_cid
 tapi_iscsi_initiator_conn_add(const char *ta,
                               iscsi_target_id tgt_id)
 {
@@ -2043,7 +2039,7 @@ tapi_iscsi_initiator_conn_establish(const char *ta,
 {
     int  rc;
     char cmd[10];
-    
+
     sprintf(cmd, "%d", ISCSI_CONNECTION_UP);
 
     INFO("Setting: /agent:%s/iscsi_initiator:/target_data:"
@@ -2083,11 +2079,11 @@ tapi_iscsi_initiator_conn_down(const char *ta,
         ERROR("Failed to down the connection");
         return rc;
     }
-    
+
     return 0;
 }
 
-int 
+int
 tapi_iscsi_initiator_conn_del(const char *ta,
                               iscsi_target_id tgt_id,
                               iscsi_cid cid)
@@ -2140,7 +2136,7 @@ tapi_iscsi_initiator_add_target(const char *ta,
 
     INFO("Initiator (%s): add Target: addr=%s, port=%d",
          ta, target_addr_param, target_port);
-    
+
     rc = cfg_add_instance_fmt(&handle, CVT_STRING,
                         "",
                         "/agent:%s/iscsi_initiator:/target_data:target_%d",
@@ -2160,7 +2156,7 @@ tapi_iscsi_initiator_add_target(const char *ta,
     if (rc != 0)
     {
         ERROR("Failed to set TargetAddress parameter of "
-              "the target rc = %r", 
+              "the target rc = %r",
               rc);
         return -rc;
     }
@@ -2188,7 +2184,7 @@ tapi_iscsi_initiator_add_target(const char *ta,
 }
 
 /* see description in tapi_iscsi.h */
-int 
+int
 tapi_iscsi_initiator_del_target(const char *ta,
                                 iscsi_target_id tgt_id)
 {
@@ -2254,9 +2250,9 @@ tapi_iscsi_get_param_map(const char *param)
         "AuthMethod",
     };
     static int param_map_size = sizeof(param_map) / sizeof(char *);
-    
+
     int param_id = -1;
-    
+
     for (param_id = 0; param_id < param_map_size; param_id++)
     {
         if (strcmp(param, param_map[param_id]) == 0)
@@ -2283,18 +2279,18 @@ tapi_iscsi_forward_all(const char *ta_name, int session,
                               ndn_traffic_pattern, &pattern, &syms);
     if (rc != 0)
     {
-        ERROR("%s(): parse ASN csap_spec failed %X, sym %d", 
+        ERROR("%s(): parse ASN csap_spec failed %X, sym %d",
               __FUNCTION__, rc, syms);
         return rc;
     }
 
-    rc = tapi_tad_forward_all(ta_name, session, csap_rcv, csap_fwd, 
+    rc = tapi_tad_forward_all(ta_name, session, csap_rcv, csap_fwd,
                               pattern, timeout, forwarded);
     asn_free_value(pattern);
     return rc;
 }
 
-iscsi_digest_type 
+iscsi_digest_type
 iscsi_digest_str2enum(const char *digest_type)
 {
     if (strcmp(digest_type, "CRC32C") == 0)
@@ -2303,7 +2299,7 @@ iscsi_digest_str2enum(const char *digest_type)
     return ISCSI_DIGEST_NONE;
 }
 
-char* 
+char*
 iscsi_digest_enum2str(iscsi_digest_type digest_type)
 {
     static char *digest_map[] = {
@@ -2324,8 +2320,8 @@ static char *
 get_target_mountpoint(void)
 {
     static char mountpoint[64];
-    snprintf(mountpoint, sizeof(mountpoint), 
-             "/tmp/te_target_fs.%lu", 
+    snprintf(mountpoint, sizeof(mountpoint),
+             "/tmp/te_target_fs.%lu",
             (unsigned long)getpid());
     return mountpoint;
 }
@@ -2346,17 +2342,17 @@ tapi_iscsi_target_mount(const char *ta)
     if (rc != 0)
         return rc;
 
-    return cfg_set_instance_fmt(CVT_STRING, 
+    return cfg_set_instance_fmt(CVT_STRING,
                                 get_target_mountpoint(),
                                 "/agent:%s/iscsi_target:/backing_store_mp:",
-                                ta);    
+                                ta);
 }
 
 
 te_errno
 tapi_iscsi_target_unmount(const char *ta)
 {
-    return cfg_set_instance_fmt(CVT_STRING, 
+    return cfg_set_instance_fmt(CVT_STRING,
                                 get_target_mountpoint(),
                                 "/agent:%s/iscsi_target:/backing_store_mp:",
                                 ta);
@@ -2374,7 +2370,7 @@ check_mounted(const char *ta)
     rc  = cfg_get_instance_fmt(&type, mountpoint,
                                "/agent:%s/iscsi_target:/backing_store_mp:",
                                ta);
-    return (rc != 0 || 
+    return (rc != 0 ||
             strcmp(mountpoint, expected_mountpoint) != 0);
 }
 
@@ -2386,7 +2382,7 @@ multiply_file_content(const char *fname, int multiply,
 
     ssize_t  result_len = 0;
     te_errno status     = 0;
-    
+
     if (fd < 0)
         return TE_OS_RC(TE_TAPI, errno);
     for (; multiply != 0; multiply--)
@@ -2394,7 +2390,7 @@ multiply_file_content(const char *fname, int multiply,
         result_len = write(fd, data, length);
         if (result_len != (ssize_t)length)
         {
-            status = (result_len < 0 ? TE_OS_RC(TE_TAPI, errno) : 
+            status = (result_len < 0 ? TE_OS_RC(TE_TAPI, errno) :
                       TE_RC(TE_TAPI, TE_ENOSPC));
             break;
         }
@@ -2414,7 +2410,7 @@ tapi_iscsi_target_file_read(const char *ta, const char *fname,
     ssize_t     result_len;
 
     snprintf(source, sizeof(source),
-             "%s/%s", 
+             "%s/%s",
              get_target_mountpoint(),
              fname);
 
@@ -2440,7 +2436,7 @@ tapi_iscsi_target_file_read(const char *ta, const char *fname,
     return rc;
 }
 
-int 
+int
 tapi_iscsi_target_file_write(const char *ta, const char *fname,
                              const void *buf, size_t length,
                              size_t multiply)
@@ -2450,7 +2446,7 @@ tapi_iscsi_target_file_write(const char *ta, const char *fname,
     int         rc;
 
     snprintf(destination, sizeof(destination),
-             "%s/%s", 
+             "%s/%s",
              get_target_mountpoint(),
              fname);
 
@@ -2478,7 +2474,7 @@ tapi_iscsi_target_raw_write(const char *ta, off_t offset,
                             size_t multiply)
 {
     int rc;
-    const char *localfname; 
+    const char *localfname;
     const char *remotefname;
 
     remotefname = tapi_file_generate_name();
@@ -2506,9 +2502,9 @@ tapi_iscsi_target_raw_write(const char *ta, off_t offset,
     }
 
     return tapi_iscsi_send_target_msg(ta, "write",
-                                      "0 0 %lu %s %lu", 
+                                      "0 0 %lu %s %lu",
                                       (unsigned long)offset,
-                                      remotefname, 
+                                      remotefname,
                                       (unsigned long)length * multiply);
 }
 
@@ -2518,12 +2514,12 @@ tapi_iscsi_target_raw_read(const char *ta, off_t offset,
 {
    int rc;
    int fd;
-    
+
    ssize_t result_len;
 
-   const char *localfname; 
+   const char *localfname;
    const char *remotefname;
-   
+
    remotefname = tapi_file_generate_name();
    if (remotefname == NULL)
        return TE_RC(TE_TAPI, TE_EBADF);
@@ -2531,8 +2527,8 @@ tapi_iscsi_target_raw_read(const char *ta, off_t offset,
    if (localfname == NULL)
        return TE_RC(TE_TAPI, TE_EBADF);
 
-   rc = tapi_iscsi_send_target_msg(ta, "read", 
-                                   "0 0 %lu %s %lu", 
+   rc = tapi_iscsi_send_target_msg(ta, "read",
+                                   "0 0 %lu %s %lu",
                                    (unsigned long)offset,
                                    remotefname, (unsigned long)length);
    if (rc != 0)
@@ -2543,7 +2539,7 @@ tapi_iscsi_target_raw_read(const char *ta, off_t offset,
    if (rc != 0)
        return rc;
    fd = open(localfname, O_RDONLY);
-   remove(localfname);    
+   remove(localfname);
    if (fd < 0)
    {
        rc = TE_OS_RC(TE_TAPI, errno);
@@ -2552,7 +2548,7 @@ tapi_iscsi_target_raw_read(const char *ta, off_t offset,
    result_len = read(fd, data, length);
    if (result_len < 0)
        rc = TE_OS_RC(TE_TAPI, errno);
-   else 
+   else
        rc = ((size_t)result_len == length ? 0 : TE_RC(TE_TAPI, TE_EFAIL));
    close(fd);
    return rc;
@@ -2560,7 +2556,7 @@ tapi_iscsi_target_raw_read(const char *ta, off_t offset,
 
 /** Asynchronous requests handler type */
 typedef te_errno (*iscsi_io_command_t)(iscsi_io_handle_t *ioh,
-                                       int *fd, void *data, 
+                                       int *fd, void *data,
                                        ssize_t length);
 
 typedef void (*iscsi_io_data_destroy_t)(void *);
@@ -2610,10 +2606,10 @@ struct iscsi_io_handle_t
 
 /**
  * Get a SCSI device corresponding to a given iSCSI session
- * 
+ *
  * @param ta    Test Agent name
  * @param id    session id
- * 
+ *
  * @return a pointer to a malloc'ed string containing the device name
  */
 static char *
@@ -2653,7 +2649,7 @@ tapi_iscsi_initiator_is_device_ready(const char *ta, iscsi_target_id id)
         cfg_val_type type = CVT_STRING;
         char        *status;
         int          rc;
-        
+
         rc = cfg_get_instance_fmt(&type, &status,
                                   "/agent:%s/iscsi_initiator:"
                                   "/target_data:target_%d/conn:0/status:",
@@ -2685,7 +2681,7 @@ rpc_server_destructor (void *arg)
 #endif
 
 /**
- * The thread routine that interacts with a TA 
+ * The thread routine that interacts with a TA
  * when performing I/O operations
  */
 static void *
@@ -2709,7 +2705,7 @@ tapi_iscsi_io_thread(void *param)
         sem_wait(&ioh->cmd_wait);
         if (ioh->terminate)
             break;
-        
+
         cmd = NULL;
         for (i = 0; i < MAX_ISCSI_IO_CMDS; i++)
         {
@@ -2722,7 +2718,7 @@ tapi_iscsi_io_thread(void *param)
         if (cmd != NULL)
         {
             iscsi_io_command_t op = cmd->cmd;
-            
+
             cmd->cmd    = NULL;
             RING("Executing task %d: fd = %d, data = %p, length = %lu",
                  i, cmd->fd, cmd->data, (unsigned long)cmd->length);
@@ -2731,7 +2727,7 @@ tapi_iscsi_io_thread(void *param)
                 int next;
 
                 cmd->status = op(ioh, &cmd->fd, cmd->data, cmd->length);
-                RING("I/O Task status for task %d is %r, fd = %d", 
+                RING("I/O Task status for task %d is %r, fd = %d",
                      i, cmd->status, cmd->fd);
                 if (cmd->spread_fd)
                 {
@@ -2770,18 +2766,18 @@ tapi_iscsi_io_thread(void *param)
 }
 
 static te_errno
-command_open(iscsi_io_handle_t *ioh, int *fd, 
+command_open(iscsi_io_handle_t *ioh, int *fd,
              void *data, ssize_t length)
 {
     if (*(char *)data == '\\') /* a filename is a Win32 filename */
     {
         int mode = 0;
         int crmode = 0;
-        
+
         if ((length & RPC_O_RDONLY) != 0)
             mode |= RPC_CF_GENERIC_READ;
         if ((length & RPC_O_WRONLY) != 0)
-            mode |= RPC_CF_GENERIC_WRITE;        
+            mode |= RPC_CF_GENERIC_WRITE;
         if ((length & RPC_O_RDWR) != 0)
         {
             mode |= RPC_CF_GENERIC_READ;
@@ -2806,10 +2802,10 @@ command_open(iscsi_io_handle_t *ioh, int *fd,
         }
 
         RING("Win32 filename is %s", data);
-        
+
         *fd = rpc_create_file(ioh->rpcs, data,
                               mode,
-                              RPC_CF_FILE_SHARE_READ | 
+                              RPC_CF_FILE_SHARE_READ |
                               RPC_CF_FILE_SHARE_WRITE,
                               RPC_NULL,
                               crmode,
@@ -2837,7 +2833,7 @@ realloc_buffer(iscsi_io_handle_t *ioh, size_t bufsize)
 }
 
 static te_errno
-command_close(iscsi_io_handle_t *ioh, int *fd, 
+command_close(iscsi_io_handle_t *ioh, int *fd,
               void *data, ssize_t length)
 {
     UNUSED(data);
@@ -2852,7 +2848,7 @@ command_close(iscsi_io_handle_t *ioh, int *fd,
 }
 
 static te_errno
-command_noop(iscsi_io_handle_t *ioh, int *fd, 
+command_noop(iscsi_io_handle_t *ioh, int *fd,
               void *data, ssize_t length)
 {
     UNUSED(data);
@@ -2864,7 +2860,7 @@ command_noop(iscsi_io_handle_t *ioh, int *fd,
 
 
 static te_errno
-command_fsync(iscsi_io_handle_t *ioh, int *fd, 
+command_fsync(iscsi_io_handle_t *ioh, int *fd,
               void *data, ssize_t length)
 {
     UNUSED(data);
@@ -2881,45 +2877,45 @@ command_fsync(iscsi_io_handle_t *ioh, int *fd,
 
 
 static te_errno
-command_seek(iscsi_io_handle_t *ioh, int *fd, 
+command_seek(iscsi_io_handle_t *ioh, int *fd,
              void *data, ssize_t length)
 {
-    off_t result = rpc_lseek(ioh->rpcs, *fd, 
+    off_t result = rpc_lseek(ioh->rpcs, *fd,
                              (off_t)length, RPC_SEEK_SET);
     UNUSED(data);
     return (result == (off_t)-1 ? RPC_ERRNO(ioh->rpcs) : 0);
 }
- 
+
 static te_errno
-command_read(iscsi_io_handle_t *ioh, int *fd, 
+command_read(iscsi_io_handle_t *ioh, int *fd,
                 void *data, ssize_t length)
 {
     ssize_t   result_len;
     te_errno  status;
-         
+
     if (!realloc_buffer(ioh, length))
         return RPC_ERRNO(ioh->rpcs);
 
     result_len = rpc_readbuf(ioh->rpcs, *fd, ioh->buffer, length);
-    status = (result_len < 0 ? RPC_ERRNO(ioh->rpcs) : 
+    status = (result_len < 0 ? RPC_ERRNO(ioh->rpcs) :
               (result_len != length ? TE_RC(TE_TAPI, TE_EIO) : 0));
     if (status == 0)
     {
         rpc_get_buf(ioh->rpcs, ioh->buffer, length, data);
     }
-    
+
     return status;
 }
 
 static te_errno
-command_write(iscsi_io_handle_t *ioh, int *fd, 
+command_write(iscsi_io_handle_t *ioh, int *fd,
               void *data, ssize_t length)
 {
     ssize_t  result_len;
 
     if (!realloc_buffer(ioh, length))
         return RPC_ERRNO(ioh->rpcs);
-    
+
     RING("Doing RPC write");
     rpc_set_buf(ioh->rpcs, data, length, ioh->buffer);
     ioh->rpcs->timeout = 120000;
@@ -2935,7 +2931,7 @@ command_write(iscsi_io_handle_t *ioh, int *fd,
 #define ISCSI_COPY_FILE_OUT 1
 
 static te_errno
-command_copy_file(iscsi_io_handle_t *ioh, int *fd, 
+command_copy_file(iscsi_io_handle_t *ioh, int *fd,
                   void *data, ssize_t direction)
 {
     ssize_t   length;
@@ -2952,33 +2948,33 @@ command_copy_file(iscsi_io_handle_t *ioh, int *fd,
 
     if (direction == ISCSI_COPY_FILE_IN)
     {
-        open_fd = src_fd = rpc_open(ioh->rpcs, data, 
+        open_fd = src_fd = rpc_open(ioh->rpcs, data,
                                     RPC_O_RDONLY | RPC_O_SYNC, 0);
         dest_fd = *fd;
         status  = (src_fd < 0 ? RPC_ERRNO(ioh->rpcs) : 0);
     }
     else
     {
-        open_fd = dest_fd = rpc_open(ioh->rpcs, data, 
+        open_fd = dest_fd = rpc_open(ioh->rpcs, data,
                                      RPC_O_WRONLY | RPC_O_SYNC,
                                      RPC_S_IREAD | RPC_S_IWRITE);
         src_fd = *fd;
         status = (dest_fd < 0 ? RPC_ERRNO(ioh->rpcs) : 0);
     }
-    
+
     if (status != 0)
         return status;
     do {
-        length = rpc_readbuf(ioh->rpcs, src_fd, 
+        length = rpc_readbuf(ioh->rpcs, src_fd,
                              ioh->buffer, ioh->chunksize);
         if (length < 0)
         {
             status = RPC_ERRNO(ioh->rpcs);
             break;
         }
-        result_len = rpc_writebuf(ioh->rpcs, dest_fd, ioh->buffer, 
-                                  ((size_t)length > ioh->chunksize ? 
-                                   ioh->chunksize : 
+        result_len = rpc_writebuf(ioh->rpcs, dest_fd, ioh->buffer,
+                                  ((size_t)length > ioh->chunksize ?
+                                   ioh->chunksize :
                                    (size_t)length));
         if (result_len < 0)
             status = RPC_ERRNO(ioh->rpcs);
@@ -2986,14 +2982,14 @@ command_copy_file(iscsi_io_handle_t *ioh, int *fd,
             status = TE_RC(TE_TAPI, TE_ENOSPC);
     } while (status == 0 && length != 0);
 
-    status_close = (rpc_close(ioh->rpcs, open_fd) == 0 ? 0 : 
+    status_close = (rpc_close(ioh->rpcs, open_fd) == 0 ? 0 :
                     RPC_ERRNO(ioh->rpcs));
     return status == 0 ? status_close : status;
 }
 
 
 static te_errno
-command_shell(iscsi_io_handle_t *ioh, int *fd, 
+command_shell(iscsi_io_handle_t *ioh, int *fd,
               void *data, ssize_t length)
 {
     rpc_wait_status status;
@@ -3001,7 +2997,7 @@ command_shell(iscsi_io_handle_t *ioh, int *fd,
     UNUSED(fd);
     status = rpc_system(ioh->rpcs, data);
     return (status.flag == RPC_WAIT_STATUS_EXITED &&
-            status.value == 0 ? 0 : 
+            status.value == 0 ? 0 :
             TE_RC(TE_TAPI, TE_ESHCMD));
 }
 
@@ -3018,7 +3014,7 @@ iscsi_io_signal_handler(int signo)
 #define ISCSI_RPC_TIMEOUT 120000
 
 te_errno
-tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id, 
+tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
                       te_bool use_signal, te_bool use_fs,
                       size_t chunksize,
                       iscsi_io_handle_t **ioh)
@@ -3038,7 +3034,7 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
     }
 
     strncpy((*ioh)->agent, ta, sizeof((*ioh)->agent) - 1);
-    sprintf((*ioh)->mountpoint, 
+    sprintf((*ioh)->mountpoint,
             "/tmp/te_iscsi_fs_%s.%u", ta, id);
     dev = get_host_device(ta, id);
     if (dev == NULL || *dev == '\0')
@@ -3093,8 +3089,8 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
         sigaddset(&mask, ISCSI_IO_SIGNAL);
         sigprocmask(SIG_UNBLOCK, &mask, NULL);
     }
-    
-    rc = pthread_create(&((*ioh)->thread), NULL, 
+
+    rc = pthread_create(&((*ioh)->thread), NULL,
                         tapi_iscsi_io_thread, *ioh);
     if (rc != 0)
     {
@@ -3140,7 +3136,7 @@ te_errno
 tapi_iscsi_io_reset(iscsi_io_handle_t *ioh)
 {
     int i;
-    
+
     for (i = 0; i < MAX_ISCSI_IO_CMDS; i++)
     {
         if (!ioh->cmds[i].is_complete)
@@ -3218,8 +3214,8 @@ post_command(iscsi_io_handle_t *ioh, iscsi_io_cmd_t *src,
     ioc->fd          = tmp_fd;
     ioc->status      = tmp_status;
 
-    VERB("Posting task %d: fd = %d, data = %p, length = %lu", 
-         ioh->next_cmd - 1, 
+    VERB("Posting task %d: fd = %d, data = %p, length = %lu",
+         ioh->next_cmd - 1,
          ioc->fd, ioc->data, (unsigned long)ioc->length);
     sem_post(&ioh->cmd_wait);
     return 0;
@@ -3244,9 +3240,9 @@ tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh, iscsi_io_taskid *taskid)
     }
     else
     {
-        char  mount[128];
-        
-        snprintf(mount, sizeof(mount), 
+        char  mount[1024];
+
+        snprintf(mount, sizeof(mount),
                  "mkdir %s && /bin/mount -o sync %s %s", ioh->mountpoint,
                  ioh->device, ioh->mountpoint);
         cmd.cmd       = command_shell;
@@ -3260,7 +3256,7 @@ tapi_iscsi_initiator_mount(iscsi_io_handle_t *ioh, iscsi_io_taskid *taskid)
 }
 
 te_errno
-tapi_iscsi_initiator_unmount(iscsi_io_handle_t *ioh, 
+tapi_iscsi_initiator_unmount(iscsi_io_handle_t *ioh,
                              iscsi_io_taskid *taskid)
 {
     iscsi_io_cmd_t cmd;
@@ -3278,10 +3274,10 @@ tapi_iscsi_initiator_unmount(iscsi_io_handle_t *ioh,
     }
     else
     {
-        char  umount[128];
-        
-        snprintf(umount, sizeof(umount), 
-                 "/bin/umount %s && rmdir %s", 
+        char  umount[1024];
+
+        snprintf(umount, sizeof(umount),
+                 "/bin/umount %s && rmdir %s",
                 ioh->mountpoint, ioh->mountpoint);
 
         cmd.cmd       = command_shell;
@@ -3303,10 +3299,10 @@ tapi_iscsi_initiator_open(iscsi_io_handle_t *ioh,
 
     if (!ioh->use_fs)
         return TE_RC(TE_TAPI, TE_ENOTBLK);
-    
+
     cmd.cmd       = command_open;
     cmd.fd        = -1;
-    cmd.length    = fcntl_flags_h2rpc(mode) 
+    cmd.length    = fcntl_flags_h2rpc(mode)
         /* | RPC_O_SYNC | RPC_O_DIRECT */;
     cmd.data      = strdup(fname);
     cmd.spread_fd = TRUE;
@@ -3324,7 +3320,7 @@ tapi_iscsi_initiator_close(iscsi_io_handle_t *ioh,
 
     if (!ioh->use_fs)
         return TE_RC(TE_TAPI, TE_ENOTBLK);
-    
+
     cmd.cmd       = command_close;
     cmd.fd        = -1;
     cmd.length    = 0;
@@ -3377,7 +3373,7 @@ tapi_iscsi_initiator_seek(iscsi_io_handle_t *ioh,
                           off_t pos)
 {
     iscsi_io_cmd_t cmd;
-    
+
     cmd.cmd       = command_seek;
     cmd.fd        = -1;
     cmd.length    = pos;
@@ -3396,7 +3392,7 @@ tapi_iscsi_initiator_write(iscsi_io_handle_t *ioh,
                            void *data, size_t length)
 {
     iscsi_io_cmd_t cmd;
-    
+
     cmd.cmd       = command_write;
     cmd.fd        = -1;
     cmd.length    = length;
@@ -3414,7 +3410,7 @@ tapi_iscsi_initiator_read(iscsi_io_handle_t *ioh,
                           void *data, size_t length)
 {
     iscsi_io_cmd_t cmd;
-    
+
     cmd.cmd       = command_read;
     cmd.fd        = -1;
     cmd.length    = length;
@@ -3433,7 +3429,7 @@ tapi_iscsi_initiator_write_file(iscsi_io_handle_t *ioh,
                                 const char *filename)
 {
     iscsi_io_cmd_t cmd;
-    
+
     cmd.cmd       = command_copy_file;
     cmd.fd        = -1;
     cmd.length    = ISCSI_COPY_FILE_IN;
@@ -3451,7 +3447,7 @@ tapi_iscsi_initiator_read_file(iscsi_io_handle_t *ioh,
                           const char *filename)
 {
     iscsi_io_cmd_t cmd;
-    
+
     cmd.cmd       = command_copy_file;
     cmd.fd        = -1;
     cmd.length    = ISCSI_COPY_FILE_OUT;
@@ -3462,4 +3458,3 @@ tapi_iscsi_initiator_read_file(iscsi_io_handle_t *ioh,
     cmd.destroy   = free;
     return post_command(ioh, &cmd, taskid);
 }
-
