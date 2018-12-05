@@ -14,15 +14,14 @@ CLEANFILES = tests-info.xml
 
 
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir)
-AM_CFLAGS = @TE_CFLAGS@ 
+AM_CFLAGS = @TE_CFLAGS@
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
-MY_LDADD=-ltapi_rpc -lrpc_types -ltapi_env -ltapi -lasn -lndn -lrcfrpc \
+MY_LDADD=-ltapi_rpc -ltapi_env -ltapi -ltapi_rpc -lrpc_types -lasn -lndn -lrcfrpc  \
          -lconfapi -lconf_oid -lrcfapi -lrpcxdr -llogger_ten -lipc \
          -llog_bufs -ltools -lexpat -lpthread
 
 tetest_PROGRAMS = example
-       
 example_SOURCES = example.c
 example_LDADD = $(MY_LDADD)
 example_DEPENDENCIES = \
@@ -31,6 +30,6 @@ example_DEPENDENCIES = \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libipc.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtapi.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconfapi.a \
-    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconf_types.a 
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconf_types.a
 
 
