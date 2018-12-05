@@ -1529,12 +1529,10 @@ TARPC_FUNC(rte_eth_tx_queue_info_get, {},
 
 TARPC_FUNC(rte_eth_dev_rss_reta_query,{},
 {
-    struct rte_eth_rss_reta_entry64 *reta_conf_p;
+    struct rte_eth_rss_reta_entry64 *reta_conf_p = NULL;
     unsigned                         cur_group;
 
-    if (in->reta_conf.reta_conf_len == 0)
-        reta_conf_p = NULL;
-    else
+    if (in->reta_conf.reta_conf_len != 0)
     {
         reta_conf_p = calloc(in->reta_conf.reta_conf_len, sizeof(*reta_conf_p));
 
@@ -1559,6 +1557,8 @@ TARPC_FUNC(rte_eth_dev_rss_reta_query,{},
                    &reta_conf_p[cur_group],
                    sizeof(out->reta_conf.reta_conf_val[cur_group]));
     }
+
+    free(reta_conf_p);
 })
 
 TARPC_FUNC(rte_eth_dev_rss_hash_conf_get,{},
