@@ -1151,6 +1151,8 @@ TARPC_FUNC_STATIC(rte_eth_rx_burst, {},
         for (i = 0; i < MIN(in->nb_pkts, out->rx_pkts.rx_pkts_len); i++)
             out->rx_pkts.rx_pkts_val[i] = RCF_PCH_MEM_INDEX_ALLOC(rx_pkts[i], ns);
     });
+
+    free(rx_pkts);
 })
 
 TARPC_FUNC(rte_eth_dev_set_link_up, {},
