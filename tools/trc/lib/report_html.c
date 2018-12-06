@@ -1390,25 +1390,25 @@ static const char * const trc_report_html_tests_stats_start =
 #endif
 "      </td>\n"
 "      <td name=\"test_stats_passed_exp\">\n"
-"        Passed expect\n"
+"        Pass OK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('passed_exp')\">x</a>\n"
 #endif
 "      </td>\n"
 "      <td name=\"test_stats_failed_exp\">\n"
-"        Failed expect\n"
+"        Fail OK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('failed_exp')\">x</a>\n"
 #endif
 "      </td>\n"
 "      <td name=\"test_stats_passed_unexp\">\n"
-"        Passed unexp\n"
+"        Pass NOK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('passed_unexp')\">x</a>\n"
 #endif
 "      </td>\n"
 "      <td name=\"test_stats_failed_unexp\">\n"
-"        Failed unexp\n"
+"        Fail NOK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('failed_unexp')\">x</a>\n"
 #endif
@@ -1426,13 +1426,13 @@ static const char * const trc_report_html_tests_stats_start =
 #endif
 "      </td>\n"
 "      <td name=\"test_stats_skipped_exp\">\n"
-"        Skipped expect\n"
+"        Skipped OK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('skipped_exp')\">x</a>\n"
 #endif
 "      </td>\n"
 "      <td name=\"test_stats_skipped_unexp\">\n"
-"        Skipped unexp\n"
+"        Skipped NOK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('skipped_unexp')\">x</a>\n"
 #endif
