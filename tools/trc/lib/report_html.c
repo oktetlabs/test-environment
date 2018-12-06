@@ -2467,12 +2467,13 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
         return 0;
 
     WRITE_FILE("<br/><br/>\n");
+    WRITE_FILE("<ul class=\"list-group\">");
     TAILQ_FOREACH(v, &result->verdicts, links)
     {
         v_id++;
-        WRITE_FILE("<span id=\"%s_%d\">", tin_id, v_id);
+        WRITE_FILE("<li class=\"list-group-item\">");
         WRITE_FILE("%s", v->str);
-        WRITE_FILE("</span>\n");
+        WRITE_FILE("</li>\n");
 #if TRC_USE_STATS_POPUP
         if ((flags & TRC_REPORT_WILD_VERBOSE) && obtained_link)
         {
@@ -2483,8 +2484,8 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
             WRITE_FILE("[*]</a>");
         }
 #endif
-        WRITE_FILE("<br/>\n");
     }
+    WRITE_FILE("</ul>");
 
 cleanup:
     return rc;
