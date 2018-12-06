@@ -1138,6 +1138,37 @@ done:
     free(tx_pkts);
 })
 
+TARPC_FUNC_STATIC(rte_eth_tx_prepare, {},
+{
+    uint16_t          nb_pkts = in->tx_pkts.tx_pkts_len;
+    struct rte_mbuf **tx_pkts = NULL;
+    uint16_t          i;
+
+    if (nb_pkts != 0)
+    {
+        tx_pkts = (struct rte_mbuf **)TE_ALLOC(nb_pkts * sizeof(*tx_pkts));
+        if (tx_pkts == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            goto done;
+        }
+    }
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        for (i = 0; i < nb_pkts; i++)
+        {
+            tarpc_rte_mbuf mem_index = in->tx_pkts.tx_pkts_val[i];
+
+            tx_pkts[i] = RCF_PCH_MEM_INDEX_MEM_TO_PTR(mem_index, ns);
+        }
+    });
+
+    MAKE_CALL(out->retval = func(in->port_id, in->queue_id, tx_pkts, nb_pkts));
+
+done:
+    free(tx_pkts);
+})
+
 TARPC_FUNC_STATIC(rte_eth_rx_burst, {},
 {
     struct rte_mbuf **rx_pkts;

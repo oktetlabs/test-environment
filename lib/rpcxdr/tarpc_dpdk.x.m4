@@ -1128,6 +1128,10 @@ struct tarpc_rte_eth_tx_burst_out {
     uint16_t                retval;
 };
 
+/** rte_eth_tx_prepare() */
+typedef struct tarpc_rte_eth_tx_burst_in tarpc_rte_eth_tx_prepare_in;
+typedef struct tarpc_rte_eth_tx_burst_out tarpc_rte_eth_tx_prepare_out;
+
 /** rte_eth_rx_burst() */
 struct tarpc_rte_eth_rx_burst_in {
     struct tarpc_in_arg  common;
@@ -2068,6 +2072,7 @@ program dpdk
         RPC_DEF(rte_eth_dev_rx_intr_disable)
         RPC_DEF(rte_eth_dev_rx_intr_ctl_q)
         RPC_DEF(rte_eth_tx_burst)
+        RPC_DEF(rte_eth_tx_prepare)
         RPC_DEF(rte_eth_rx_burst)
         RPC_DEF(rte_eth_dev_set_link_up)
         RPC_DEF(rte_eth_dev_set_link_down)
