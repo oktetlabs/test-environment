@@ -609,6 +609,25 @@ cleanup_specific:                                                   \
     (var_name_) = TEST_DOUBLE_PARAM(var_name_)
 
 /**
+ * The macro to get parameters of type 'value-unit' (double with unit prefix)
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ * @return double value
+ */
+#define TEST_VALUE_UNIT_PARAM(var_name_) \
+    test_get_value_unit_param(argc, argv, #var_name_)
+
+/**
+ * The macro to get parameters of type 'value-unit' (double with unit prefix)
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ */
+#define TEST_GET_VALUE_UNIT_PARAM(var_name_) \
+    (var_name_) = TEST_VALUE_UNIT_PARAM(var_name_)
+
+/**
  * The macro to get parameter of type 'octet string'
  *
  * @param var_name_  Variable whose name is the same as the name of
@@ -1055,6 +1074,16 @@ extern int64_t test_get_int64_param(int argc, char **argv,
  */
 extern double test_get_double_param(int argc, char **argv,
                                     const char *name);
+
+/**
+ * Return parameters of type 'value-unit' ('double')
+ *
+ * @param argc       Count of arguments
+ * @param argv       List of arguments
+ * @param name       Name of parameter
+ */
+extern double test_get_value_unit_param(int argc, char **argv,
+                                        const char *name);
 
 /**
  * Print octet string.
