@@ -3460,7 +3460,7 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
         WRITE_STR("<b>Tags:</b>");
         TAILQ_FOREACH(tag, &gctx->tags, links)
         {
-            fprintf(f, "  %s", tag->v);
+            fprintf(f, "  <span class=\"label label-primary\">%s</span>", tag->v);
         }
         WRITE_STR("<p/>");
 
