@@ -176,6 +176,7 @@ static const char * const trc_html_doc_start =
 "    .test_stats_keys { }\n"
 "    .test_stats_names { }\n"
 "    .table-nonfluid { width: auto !important; }\n"
+"    .test_obtained_nok_verdict_list { background-color: #ffd2c8; }\n"
 "    wbr { display: inline-block; }\n"
 #if TRC_USE_STATS_POPUP
 "    #StatsTip {\n"
@@ -2500,7 +2501,8 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
     TAILQ_FOREACH(v, &result->verdicts, links)
     {
         v_id++;
-        WRITE_FILE("<li class=\"list-group-item\">");
+        WRITE_FILE("<li class=\"list-group-item%s\">",
+                   is_expected ? "" : " test_obtained_nok_verdict_list");
         WRITE_FILE("%s", v->str);
         WRITE_FILE("</li>\n");
 #if TRC_USE_STATS_POPUP
