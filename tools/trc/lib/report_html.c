@@ -1506,7 +1506,7 @@ static const char * const trc_tests_stats_row =
 "    </tr>\n";
 
 static const char * const trc_report_html_test_exp_got_start =
-"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\">\n"
+"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\" class=\"table table-bordered table-hover table-nonfluid\">\n"
 "  <thead>\n"
 "    <tr>\n"
 "      <td>\n"
