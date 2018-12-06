@@ -2377,6 +2377,32 @@ trc_report_result_anchor(FILE *f, const char *test_path,
 }
 #endif
 
+static inline const char *
+test_status_to_label(te_test_status status, te_bool is_expected)
+{
+    switch (status)
+    {
+#define TE_TEST_STATUS_TO_STR(_status, _label)          \
+        case TE_TEST_ ## _status:   return #_label;
+
+        TE_TEST_STATUS_TO_STR(INCOMPLETE, warning);
+        TE_TEST_STATUS_TO_STR(UNSPEC, warning);
+        TE_TEST_STATUS_TO_STR(EMPTY, warning);
+        TE_TEST_STATUS_TO_STR(SKIPPED, info);
+        TE_TEST_STATUS_TO_STR(FAKED, info);
+        case TE_TEST_PASSED:
+        case TE_TEST_FAILED:
+            return is_expected ? "success" : "danger";
+
+#undef TE_TEST_STATUS_TO_STR
+
+        default:
+            assert(0);
+            return "danger";
+    }
+}
+
+
 /**
  * Output TRC test result entry to HTML file.
  *
@@ -2392,6 +2418,7 @@ trc_report_result_anchor(FILE *f, const char *test_path,
  */
 static te_errno
 trc_report_test_result_to_html(FILE *f, const te_test_result *result,
+                               te_bool is_expected,
                                trc_test_type test_type,
                                const char *test_path,
                                const trc_report_stats *stats,
@@ -2427,7 +2454,7 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
     obtained_link = result_link && (tin_id[0] != '\0');
 #endif
 
-    WRITE_FILE("<span>");
+    WRITE_FILE("<h6>");
     WRITE_FILE("Obtained result:");
 #if TRC_USE_STATS_POPUP
     if (obtained_link)
@@ -2438,9 +2465,11 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
         WRITE_FILE("[*]</a>\n");
     }
 #endif
-    WRITE_FILE("</span><br/>\n");
+    WRITE_FILE("</h6>\n");
 
-    WRITE_FILE("<span>");
+    WRITE_FILE("<span class=\"label label-%s\">",
+               result == NULL ? test_status_to_label(TE_TEST_UNSPEC, FALSE) :
+               test_status_to_label(result->status, is_expected));
     if (result == NULL)
     {
         WRITE_FILE(te_test_status_to_str(TE_TEST_UNSPEC));
@@ -2787,10 +2816,11 @@ trc_report_exp_got_to_html(FILE             *f,
 
             free(escaped_path);
             rc = trc_report_test_result_to_html(f, (iter_entry == NULL) ?
-                                                NULL : &iter_entry->result,
-                                                test->type,
-                                                test_path, stats, tin_id,
-                                                flags);
+                                 NULL : &iter_entry->result,
+                                 (iter_entry == NULL || iter_entry->is_exp),
+                                 test->type,
+                                 test_path, stats, tin_id,
+                                 flags);
             if (rc != 0)
                 break;
 
