@@ -141,7 +141,7 @@ static const char * const trc_html_doc_start =
 "    a { color: #23527c }\n"
 "    a:focus { color: #0000ff }\n"
 "    body { color: #000 }\n"
-"    td { padding-left: 1px; padding-right: 1px; padding-top: 2px; padding-bottom: 2px; }\n"
+"    td { padding: 2px !important; padding-left: 1px; padding-right: 1px; padding-top: 2px; padding-bottom: 2px; }\n"
 "    .A {padding-left: 0.14in; padding-right: 0.14in}\n"
 "    .B {padding-left: 0.24in; padding-right: 0.04in}\n"
 "    .C {text-align: right; padding-left: 0.14in; padding-right: 0.14in}\n"
@@ -150,7 +150,8 @@ static const char * const trc_html_doc_start =
 "padding-left: 0.14in; padding-right: 0.14in}\n"
 "    .test_stats_name { font-weight: bold;}\n"
 "    .test_stats_objective { }\n"
-"    .test_stats_run_total { font-weight: bold; text-align: right; "
+"    .test_stats_column { text-align: right; }\n"
+"    .test_stats_total { font-weight: bold; text-align: right; "
 "padding-left: 0.14in; padding-right: 0.14in}\n"
 "    .test_stats_passed_exp { text-align: right; padding-left: 0.14in; "
 "padding-right: 0.14in}\n"
@@ -174,6 +175,7 @@ static const char * const trc_html_doc_start =
 "padding-right: 0.14in}\n"
 "    .test_stats_keys { }\n"
 "    .test_stats_names { }\n"
+"    .table-nonfluid { width: auto !important; }\n"
 "    wbr { display: inline-block; }\n"
 #if TRC_USE_STATS_POPUP
 "    #StatsTip {\n"
@@ -1270,7 +1272,7 @@ static const char * const trc_html_doc_end =
 "</html>\n";
 
 static const char * const trc_stats_table =
-"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\">\n"
+"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\" class=\"table-nonfluid\">\n"
 "  <tr>\n"
 "    <td rowspan=7>\n"
 "      <h2>Run</h2>\n"
@@ -1360,7 +1362,7 @@ static const char * const trc_stats_table =
 "</table>\n";
 
 static const char * const trc_report_html_tests_stats_start =
-"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\">\n"
+"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\"  class=\"table table-bordered table-hover table-nonfluid\">\n"
 "  <thead>\n"
 "    <tr>\n"
 "      <td rowspan=2>\n"
@@ -1383,55 +1385,55 @@ static const char * const trc_report_html_tests_stats_start =
 "      </td>\n"
 "    </tr>\n"
 "    <tr>\n"
-"      <td name=\"test_stats_total\">\n"
+"      <td name=\"test_stats_total\" class=\"test_stats_column\">\n"
 "        <b>Total</b>\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('total')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td name=\"test_stats_passed_exp\">\n"
+"      <td name=\"test_stats_passed_exp\" class=\"test_stats_column\">\n"
 "        Pass OK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('passed_exp')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td name=\"test_stats_failed_exp\">\n"
+"      <td name=\"test_stats_failed_exp\" class=\"test_stats_column\">\n"
 "        Fail OK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('failed_exp')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td name=\"test_stats_passed_unexp\">\n"
+"      <td name=\"test_stats_passed_unexp\" class=\"test_stats_column\">\n"
 "        Pass NOK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('passed_unexp')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td name=\"test_stats_failed_unexp\">\n"
+"      <td name=\"test_stats_failed_unexp\" class=\"test_stats_column\">\n"
 "        Fail NOK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('failed_unexp')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td name=\"test_stats_aborted_new\">\n"
+"      <td name=\"test_stats_aborted_new\" class=\"test_stats_column\">\n"
 "        Aborted, New\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('aborted_new')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td name=\"test_stats_not_run\">\n"
+"      <td name=\"test_stats_not_run\" class=\"test_stats_column\">\n"
 "        <b>Total</b>\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('not_run')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td name=\"test_stats_skipped_exp\">\n"
+"      <td name=\"test_stats_skipped_exp\" class=\"test_stats_column\">\n"
 "        Skipped OK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('skipped_exp')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td name=\"test_stats_skipped_unexp\">\n"
+"      <td name=\"test_stats_skipped_unexp\" class=\"test_stats_column\">\n"
 "        Skipped NOK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('skipped_unexp')\">x</a>\n"
