@@ -35,6 +35,7 @@
 #include "filter.h"
 #include "log_format.h"
 #include "memory.h"
+#include "logger_defs.h"
 
 #if HAVE_UNISTD_H
 #include <unistd.h>
@@ -1458,6 +1459,44 @@ wrapper_process_regular_msg(gpointer data, gpointer user_data)
     if (reg_msg_proc != NULL)
     {
         msg = log_msg_read(msg_ptr);
+        if (msg->id != TE_LOG_ID_UNDEFINED)
+        {
+            if (~msg->level & TE_LL_CONTROL)
+            {
+                msg->nest_lvl = rgt_ctx.current_nest_lvl;
+            }
+            else
+            {
+                if (strcmp(msg->user, TE_USER_STEP) == 0)
+                {
+                    msg->nest_lvl = 0;
+                    rgt_ctx.current_nest_lvl = 1;
+                }
+                else if (strcmp(msg->user, TE_USER_SUBSTEP) == 0)
+                {
+                    msg->nest_lvl = 1;
+                    rgt_ctx.current_nest_lvl = 2;
+                }
+                else if (strcmp(msg->user, TE_USER_STEP_PUSH) == 0)
+                {
+                    msg->nest_lvl = rgt_ctx.current_nest_lvl;
+                    rgt_ctx.current_nest_lvl++;
+                }
+                else if (strcmp(msg->user, TE_USER_STEP_POP) == 0)
+                {
+                    rgt_ctx.current_nest_lvl--;
+                    msg->nest_lvl = rgt_ctx.current_nest_lvl;
+                }
+                else if (strcmp(msg->user, TE_USER_STEP_NEXT) == 0)
+                {
+                    msg->nest_lvl = rgt_ctx.current_nest_lvl - 1;
+                }
+                else
+                {
+                    msg->nest_lvl = rgt_ctx.current_nest_lvl;
+                }
+            }
+        }
         reg_msg_proc(msg);
         free_log_msg(msg);
     }
@@ -1535,6 +1574,7 @@ flow_tree_wander(node_t *cur_node)
         if (ctrl_msg_proc[CTRL_EVT_END][cur_node->type] != NULL)
             ctrl_msg_proc[CTRL_EVT_END][cur_node->type](
                 cur_node->user_data, &cur_node->ctrl_data);
+        rgt_ctx.current_nest_lvl = 0;
     }
 
     /* Output messages that were after the node */
@@ -1787,4 +1827,3 @@ flow_tree_get_set(enum flow_tree_set_name set_name, char *buf, gint len)
 }
 
 #endif /* FLOW_TREE_LIBRARY_DEBUG */
-

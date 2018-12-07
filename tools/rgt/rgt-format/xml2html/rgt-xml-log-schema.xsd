@@ -195,6 +195,7 @@
       <xs:attribute name="user" type="xs:string"/>
       <xs:attribute name="ts_val" type="xs:string"/>
       <xs:attribute name="ts" type="xs:string"/>
+      <xs:attribute name="nl" type="xs:integer"/>
     </xs:complexType>
 
     <xs:complexType name="mem-dump_t">

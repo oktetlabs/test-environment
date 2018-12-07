@@ -219,6 +219,7 @@ typedef struct rgt_gen_ctx {
                                           or give error message */
 
     te_bool         verb; /**< Whether to use verbose output or not */
+    int             current_nest_lvl;  /**< Current nesting level */
 } rgt_gen_ctx_t;
 
 
@@ -289,6 +290,7 @@ typedef struct log_msg {
     int           args_count;   /**< Total number of the arguments */
 
     char         *txt_msg;      /**< Processed fmt_str + args */
+    int           nest_lvl;     /**< Nesting level */
 } log_msg;
 
 /**

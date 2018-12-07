@@ -446,7 +446,7 @@ postponed_process_regular_msg(log_msg *msg)
             "ts=\"", msg->level_str, msg->entity, msg->user,
             msg->timestamp[0], msg->timestamp[1]);
     print_ts(rgt_ctx.out_fd, msg->timestamp);
-    fprintf(rgt_ctx.out_fd, "\">");
+    fprintf(rgt_ctx.out_fd, "\" nl=\"%d\">", msg->nest_lvl);
     output_regular_log_msg(msg);
     fprintf(rgt_ctx.out_fd, "</msg>\n");
 
