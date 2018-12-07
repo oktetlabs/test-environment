@@ -141,9 +141,19 @@ extern const char *te_lgr_entity;
  * TE_LOG_LEVEL.
  */
 #ifndef TE_LOG_LEVEL
-/** Default log level */
-#define TE_LOG_LEVEL    (TE_LL_ERROR | TE_LL_WARN | TE_LL_RING)
+/**
+ * Default log level. Zero means printing only messages which
+ * cannot be ignored: ERROR/WARN/RING/CONTROL.
+ */
+#define TE_LOG_LEVEL 0
 #endif
+
+/**
+ * Log levels which are always enabled (whatever TE_LOG_LEVEL
+ * is defined to).
+ */
+#define TE_LOG_LEVELS_MANDATORY \
+    (TE_LL_ERROR | TE_LL_WARN | TE_LL_RING | TE_LL_CONTROL)
 
 /**
  * Convert Log level value from integer to readable string.
