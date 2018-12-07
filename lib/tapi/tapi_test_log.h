@@ -45,7 +45,11 @@ extern "C" {
  * @param _fs - format string and arguments
  */
 #define TEST_STEP(_fs...) \
-    LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_STEP, _fs)
+    do {                                                            \
+        LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_STEP, _fs); \
+        te_test_verdict_fail_state_update(_fs);                     \
+        te_test_verdict_fail_substate_update("");                   \
+    } while (0)
 
 /**
  * Logging of nesting level sub-step.
@@ -58,7 +62,11 @@ extern "C" {
  * @param _fs - format string and arguments
  */
 #define TEST_SUBSTEP(_fs...) \
-    LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_SUBSTEP, _fs)
+    do {                                                                \
+        LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_SUBSTEP, _fs);  \
+        te_test_verdict_fail_substate_update(_fs);                      \
+    } while(0)                                                          \
+
 
 /**
  * Logging of nesting level step push.
