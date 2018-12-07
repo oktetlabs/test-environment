@@ -2493,30 +2493,47 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
     }
 #endif
 
-    if (TAILQ_EMPTY(&result->verdicts))
-        return 0;
-
-    WRITE_FILE("<br/><br/>\n");
-    WRITE_FILE("<ul class=\"list-group\">");
-    TAILQ_FOREACH(v, &result->verdicts, links)
+    if (!TAILQ_EMPTY(&result->verdicts))
     {
-        v_id++;
-        WRITE_FILE("<li class=\"list-group-item%s\">",
-                   is_expected ? "" : " test_obtained_nok_verdict_list");
-        WRITE_FILE("%s", v->str);
-        WRITE_FILE("</li>\n");
-#if TRC_USE_STATS_POPUP
-        if ((flags & TRC_REPORT_WILD_VERBOSE) && obtained_link)
+        WRITE_FILE("<br/><br/>\n");
+        WRITE_FILE("<ul class=\"list-group\">");
+        TAILQ_FOREACH(v, &result->verdicts, links)
         {
-            WRITE_FILE("<a href=\"javascript:showVerdictWilds("
-                       "'StatsTip', '%s', getInnerText(document."
-                       "getElementById('%s_%d')))\">", test_path,
-                       tin_id, v_id);
-            WRITE_FILE("[*]</a>");
-        }
+            v_id++;
+            WRITE_FILE("<li class=\"list-group-item%s\">",
+                       is_expected ? "" :
+                                     " test_obtained_nok_verdict_list");
+            WRITE_FILE("%s", v->str);
+            WRITE_FILE("</li>\n");
+#if TRC_USE_STATS_POPUP
+            if ((flags & TRC_REPORT_WILD_VERBOSE) && obtained_link)
+            {
+                WRITE_FILE("<a href=\"javascript:showVerdictWilds("
+                           "'StatsTip', '%s', getInnerText(document."
+                           "getElementById('%s_%d')))\">", test_path,
+                           tin_id, v_id);
+                WRITE_FILE("[*]</a>");
+            }
 #endif
+        }
+        WRITE_FILE("</ul>\n");
     }
-    WRITE_FILE("</ul>");
+
+    if (!TAILQ_EMPTY(&result->artifacts))
+    {
+        WRITE_FILE("<br/><br/><b>Artifacts</b>:\n");
+        WRITE_FILE("<ul class=\"list-group\">");
+        TAILQ_FOREACH(v, &result->artifacts, links)
+        {
+            v_id++;
+            WRITE_FILE("<li class=\"list-group-item%s\">",
+                       is_expected ? "" :
+                                     " test_obtained_nok_verdict_list");
+            WRITE_FILE("%s", v->str);
+            WRITE_FILE("</li>\n");
+        }
+        WRITE_FILE("</ul>\n");
+    }
 
 cleanup:
     return rc;
