@@ -108,11 +108,11 @@ extern "C" {
         {                                                            \
             const char *s = te_test_verdict_fail_state_get();        \
             if (s != NULL)                                           \
-                ERROR_VERDICT("STATE: %s", s);                       \
+                TEST_ARTIFACT("STATE: %s", s);                       \
                                                                      \
             s = te_test_verdict_fail_substate_get();                 \
             if (s != NULL)                                           \
-                ERROR_VERDICT("SUBSTATE: %s", s);                    \
+                TEST_ARTIFACT("SUBSTATE: %s", s);                    \
         }                                                            \
                                                                      \
         /* Behaviour switches handling section */                    \
