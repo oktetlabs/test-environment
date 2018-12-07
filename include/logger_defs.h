@@ -82,6 +82,21 @@ extern const char *te_lgr_entity;
 #define TE_LGR_USER     "Self"
 #endif
 
+/** @group Reserved log users for logs nesting control
+ * @{
+ */
+/** Reserved log user for #TEST_STEP() macro */
+#define TE_USER_STEP         "Step"
+/** Reserved log user for #TEST_SUBSTEP() macro */
+#define TE_USER_SUBSTEP      "SubStep"
+/** Reserved log user for #TEST_STEP_PUSH() macro */
+#define TE_USER_STEP_PUSH    "StepPush"
+/** Reserved log user for #TEST_STEP_POP() macro  */
+#define TE_USER_STEP_POP     "StepPop"
+/** Reserved log user for #TEST_STEP_NEXT() macro  */
+#define TE_USER_STEP_NEXT    "StepNext"
+
+/*@}*/
 
 /*
  * 16-bit field is provided for TE_LOG_LEVEL masks

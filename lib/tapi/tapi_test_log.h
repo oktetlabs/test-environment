@@ -32,6 +32,72 @@
 extern "C" {
 #endif
 
+/** @group Logs nesting controls */
+
+/**
+ * Logging of nesting level step.
+ *
+ * Reset nesting level to 0, log message with zero nesting level and increment
+ * it for subsequent messages (level equal to 1).
+ * The macro should be used in the test main function only.
+ * The macro is used to extract the test description (generated using Doxygen).
+ *
+ * @param _fs - format string and arguments
+ */
+#define TEST_STEP(_fs...) \
+    LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_STEP, _fs)
+
+/**
+ * Logging of nesting level sub-step.
+ *
+ * Reset nesting level to 1, log message with the nesting level and increment
+ * it for subsequent messages (level equal to 2).
+ * The macro should be used in the test main function only.
+ * The macro is used to extract the test description (generated using Doxygen).
+ *
+ * @param _fs - format string and arguments
+ */
+#define TEST_SUBSTEP(_fs...) \
+    LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_SUBSTEP, _fs)
+
+/**
+ * Logging of nesting level step push.
+ *
+ * Log message at current nesting level and increment nesting level for
+ * subsequent log messages.
+ * Subsequent messages will have greater nesting level and will be considered
+ * as details of the step implementation.
+ *
+ * @param _fs - format string and arguments
+ */
+#define TEST_STEP_PUSH(_fs...) \
+    LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_STEP_PUSH, _fs)
+
+/**
+ * Logging of nesting level step pop.
+ *
+ * Decrement log nesting level and log the message (if not empty).
+ * It wraps the block and message could be used to summarize results.
+ *
+ * @param _fs - format string and arguments
+ */
+#define TEST_STEP_POP(_fs...) \
+    LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_STEP_POP, _fs)
+
+/**
+ * Logging of nesting level step next.
+ *
+ * Keep current nesting level, but log the message with previous nesting level.
+ * So, the message will have the same nesting level as previous step-push and
+ * subsequent step-next messages.
+ *
+ * @param _fs - format string and arguments
+ */
+#define TEST_STEP_NEXT(_fs...) \
+    LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_STEP_NEXT, _fs)
+
+/*@}*/
+
 /** @addtogroup te_ts_tapi_test
  * @{
  */
