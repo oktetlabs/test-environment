@@ -52,7 +52,7 @@
 
     <xs:complexType name="test_t">
       <xs:sequence>
-	<xs:element name="meta" type="proteos:meta_t_test"/>
+        <xs:element name="meta" type="proteos:meta_t_test"/>
         <xs:element name="logs" minOccurs="0" maxOccurs="1" type="proteos:logs_t"/>
       </xs:sequence>
 
