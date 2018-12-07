@@ -89,7 +89,7 @@ trc_exp_result_entry_free(trc_exp_result_entry *rentry)
     if (rentry == NULL)
         return;
 
-    te_test_result_free_verdicts(&rentry->result);
+    te_test_result_clean(&rentry->result);
     free(rentry->key);
     free(rentry->notes);
 }

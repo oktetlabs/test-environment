@@ -25,6 +25,7 @@
 #endif
 
 #include "te_queue.h"
+#include "te_errno.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -134,15 +135,32 @@ te_test_result_free_verdict(te_test_verdict *verdict)
 
 /** Free resourses allocated for test result verdicts. */
 static inline void
-te_test_result_free_verdicts(te_test_result *result)
+te_test_result_free_verdicts(te_test_verdicts *verdicts)
 {
     te_test_verdict *v;
 
-    while ((v = TAILQ_FIRST(&result->verdicts)) != NULL)
+    if (verdicts == NULL)
+        return;
+
+    while ((v = TAILQ_FIRST(verdicts)) != NULL)
     {
-        TAILQ_REMOVE(&result->verdicts, v, links);
+        TAILQ_REMOVE(verdicts, v, links);
         te_test_result_free_verdict(v);
     }
+}
+
+/**
+ * Clean memory allocated for te_test_result members.
+ *
+ * @param result    TE test result
+ */
+static inline void
+te_test_result_clean(te_test_result *result)
+{
+    if (result == NULL)
+        return;
+
+    te_test_result_free_verdicts(&result->verdicts);
 }
 
 /**
@@ -153,12 +171,46 @@ te_test_result_free_verdicts(te_test_result *result)
 static inline void
 te_test_result_free(te_test_result *result)
 {
-    if (result == NULL)
-        return;
-
-    te_test_result_free_verdicts(result);
+    te_test_result_clean(result);
     free(result);
 }
+
+/**
+ * Copy test verdicts.
+ *
+ * @param dst       Where copied verdicts should be placed
+ *                  (should be initialized already).
+ * @param src       From where to copy verdicts.
+ *
+ * @return Status code.
+ */
+static inline te_errno
+te_test_result_verdicts_cpy(te_test_verdicts *dst, te_test_verdicts *src)
+{
+    te_test_verdict *v;
+    te_test_verdict *dup_verdict;
+
+    TAILQ_FOREACH(v, src, links)
+    {
+       dup_verdict = calloc(1, sizeof(te_test_verdict));
+       if (dup_verdict == NULL)
+            return TE_ENOMEM;
+
+       if (v->str != NULL)
+       {
+           dup_verdict->str = strdup(v->str);
+           if (dup_verdict->str == NULL)
+           {
+              free(dup_verdict);
+              return TE_ENOMEM;
+           }
+       }
+       TAILQ_INSERT_TAIL(dst, dup_verdict, links);
+    }
+
+    return 0;
+}
+
 
 /**
  * Duplicate test result.
@@ -172,22 +224,19 @@ static inline te_test_result *
 te_test_result_dup(te_test_result *result)
 {
     te_test_result  *dup;
-    te_test_verdict *v;
-    te_test_verdict *dup_verdict;
 
     if (result == NULL)
         return NULL;
 
     dup = calloc(1, sizeof(te_test_result));
     dup->status = result->status;
+
     TAILQ_INIT(&dup->verdicts);
 
-    TAILQ_FOREACH(v, &result->verdicts, links)
+    if (te_test_result_verdicts_cpy(&dup->verdicts, &result->verdicts) != 0)
     {
-       dup_verdict = calloc(1, sizeof(te_test_verdict));
-       if (v->str != NULL)
-           dup_verdict->str = strdup(v->str);
-       TAILQ_INSERT_TAIL(&dup->verdicts, dup_verdict, links);
+        te_test_result_free(dup);
+        return NULL;
     }
 
     return dup;
@@ -196,26 +245,16 @@ te_test_result_dup(te_test_result *result)
 /**
  * Copy test result.
  *
- * @param dest    Where to copy
+ * @param dest    Where to copy (will be initialized by this function)
  * @param src     What to copy
  */
 static inline void
 te_test_result_cpy(te_test_result *dest, te_test_result *src)
 {
-    te_test_verdict *v;
-    te_test_verdict *dup_verdict;
-
+    te_test_result_init(dest);
     dest->status = src->status;
-    te_test_result_free_verdicts(dest);
-    TAILQ_INIT(&dest->verdicts);
 
-    TAILQ_FOREACH(v, &src->verdicts, links)
-    {
-       dup_verdict = calloc(1, sizeof(te_test_verdict));
-       if (v->str != NULL)
-           dup_verdict->str = strdup(v->str);
-       TAILQ_INSERT_TAIL(&dest->verdicts, dup_verdict, links);
-    }
+    te_test_result_verdicts_cpy(&dest->verdicts, &src->verdicts);
 }
 
 #ifdef __cplusplus
