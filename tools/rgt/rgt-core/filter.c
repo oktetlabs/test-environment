@@ -14,12 +14,42 @@
  */
 
 #include "rgt_common.h"
+#include "logger_defs.h"
 
 #if (defined WITH_LOG_FILTER)
 #include <tcl.h>
 #endif
 
 #include "filter.h"
+
+/**
+ * Get control message flags.
+ *
+ * @param user        Log user.
+ * @param level       Log level.
+ * @param flags       Where to set control message flags.
+ */
+static void
+get_control_msg_flags(const char *user, te_log_level level,
+                      uint32_t *flags)
+{
+    if (rgt_ctx.proc_cntrl_msg)
+    {
+        if (level & TE_LL_CONTROL)
+        {
+            if (strcmp(user, TE_LOG_VERDICT_USER) == 0)
+                *flags |= RGT_MSG_FLG_VERDICT;
+        }
+        else if (strcmp(user, TE_LOG_CMSG_USER) == 0)
+        {
+            /*
+             * This is kept for backward compatibility with
+             * previously generated night testing raw logs.
+             */
+            *flags |= RGT_MSG_FLG_VERDICT;
+        }
+    }
+}
 
 #if (defined WITH_LOG_FILTER)
 static Tcl_Interp *tcl_interp = NULL;
@@ -163,8 +193,7 @@ rgt_filter_check_message(const char *entity, const char *user,
 {
     char cmd[MAX_CMD_LEN];
 
-    if (rgt_ctx.proc_cntrl_msg && strcmp(user, TE_LOG_CMSG_USER) == 0)
-        *flags |= RGT_MSG_FLG_VERDICT;
+    get_control_msg_flags(user, level, flags);
 
     snprintf(cmd, sizeof(cmd), "rgt_msg_filter {%s} {%s} %u %d",
              entity, user, level, *timestamp);
@@ -258,8 +287,7 @@ rgt_filter_check_message(const char *entity, const char *user,
     UNUSED(timestamp);
     UNUSED(flags);
 
-    if (rgt_ctx.proc_cntrl_msg && strcmp(user, TE_LOG_CMSG_USER) == 0)
-        *flags |= RGT_MSG_FLG_VERDICT;
+    get_control_msg_flags(user, level, flags);
 
     *flags |= RGT_MSG_FLG_NORMAL;
 
