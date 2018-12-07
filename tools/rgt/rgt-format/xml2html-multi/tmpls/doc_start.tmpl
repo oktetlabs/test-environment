@@ -21,6 +21,9 @@
       padding-top: 2px;
       padding-bottom: 2px;
     }
+    .te_fold {
+      font-family: monospace;
+    }
 </style>
 
 <title>
@@ -109,12 +112,12 @@ function expand_nested_rows(row_id) {
 
 function show_collapse_button(row_id) {
   var holder = document.getElementById('log_toggle' + row_id);
-  holder.innerHTML = '<input type="button" value="-" onclick="collapse_nested_rows(' + row_id + ');">';
+  holder.innerHTML = '<input type="button" class="btn btn-default btn-sm te_fold" value="-" onclick="collapse_nested_rows(' + row_id + ');">';
 }
 
 function show_expand_button(row_id) {
   var holder = document.getElementById('log_toggle' + row_id);
-  holder.innerHTML = '<input type="button" value="+" onclick="expand_nested_rows(' + row_id + ');">';
+  holder.innerHTML = '<input type="button" class="btn btn-primary btn-sm te_fold" value="+" onclick="expand_nested_rows(' + row_id + ');">';
 }
 
 function process_nested_rows(nest_lvl) {

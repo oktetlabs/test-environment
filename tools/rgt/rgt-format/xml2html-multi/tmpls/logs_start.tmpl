@@ -1,17 +1,18 @@
 <table id="log_table" summary="Test Log" class="table table-bordered table-hover">
 <caption> Test Log:
-	<input type="button" value="0" onclick="process_nested_rows(0);"/>
-	<input type="button" value="1" onclick="process_nested_rows(1);"/>
-	<input type="button" value="2" onclick="process_nested_rows(2);"/>
-	<input type="button" value="ALL" onclick="process_nested_rows(-1);"/>
+	<input type="button" class="btn btn-primary" value="0" onclick="process_nested_rows(0);"/>
+	<input type="button" class="btn btn-primary" value="1" onclick="process_nested_rows(1);"/>
+	<input type="button" class="btn btn-primary" value="2" onclick="process_nested_rows(2);"/>
+	<input type="button" class="btn btn-primary" value="ALL" onclick="process_nested_rows(-1);"/>
 </caption>
 
 <tr>
-  <th class="col-sm-1 text-right">No.</th>
+  <th class="text-right">+</th>
+  <th class="text-right">No.</th>
   <th class="col-sm-1">Level</th>
   <th class="col-sm-1">Entity Name</th>
   <th class="col-sm-1">User Name</th>
   <th class="col-sm-1">Timestamp</th>
-  <th class="col-sm-7">Log content</th>
+  <th class="col-sm-10">Log content</th>
 </tr>
 
