@@ -78,13 +78,4 @@ function expand_range(from_row, to_row) {
   }
 }
 
-function toggle_node(node)
-{
-    if (typeof node == 'string')
-        node = document.getElementById(node);
-    if (!node)
-        return;
-    node.style.display = (node.style.display != 'none') ? 'none' : 'block';
-}
-
 </script>
