@@ -111,6 +111,11 @@ extern const char *te_lgr_entity;
 /** Events of network packet received (PACKET macro) */
 #define TE_LL_PACKET        0x0040
 
+/**
+ * Control message (this is a flag which can come together with
+ * ERROR/WARN/RING).
+ */
+#define TE_LL_CONTROL       0x8000
 
 /** @name A set of macros used for string representation of log level */
 #define TE_LL_ERROR_STR       "ERROR"
@@ -120,6 +125,7 @@ extern const char *te_lgr_entity;
 #define TE_LL_VERB_STR        "VERB"
 #define TE_LL_ENTRY_EXIT_STR  "ENTRY/EXIT"
 #define TE_LL_PACKET_STR      "PACKET"
+#define TE_LL_CONTROL_STR     "CONTROL"
 /*@}*/
 
 /*
@@ -152,6 +158,13 @@ extern const char *te_lgr_entity;
 static inline const char *
 te_log_level2str(te_log_level level)
 {
+    /*
+     * Ignore TE_LL_CONTROL here unless it is
+     * the only bit set.
+     */
+    if (level != TE_LL_CONTROL)
+        level &= ~TE_LL_CONTROL;
+
     switch (level)
     {
 #define TE_LL_CASE(lvl_) \
@@ -166,6 +179,7 @@ te_log_level2str(te_log_level level)
         TE_LL_CASE(VERB);
         TE_LL_CASE(ENTRY_EXIT);
         TE_LL_CASE(PACKET);
+        TE_LL_CASE(CONTROL);
 
 #undef TE_LL_CASE
     }

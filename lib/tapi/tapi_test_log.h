@@ -98,9 +98,9 @@ extern "C" {
  * @param fmt  the content of the verdict as format string with arguments
  */
 #define RING_VERDICT(fmt...) \
-    do {                                        \
-        TE_LOG_RING(TE_LOG_CMSG_USER, fmt);     \
-        te_test_verdict(fmt);                   \
+    do {                                                                   \
+        LGR_MESSAGE(TE_LL_RING | TE_LL_CONTROL, TE_LOG_VERDICT_USER, fmt); \
+        te_test_verdict(fmt);                                              \
     } while (0)
 
 /**
@@ -109,9 +109,9 @@ extern "C" {
  * @param fmt  the content of the verdict as format string with arguments
  */
 #define WARN_VERDICT(fmt...) \
-    do {                                        \
-        TE_LOG_WARN(TE_LOG_CMSG_USER, fmt);     \
-        te_test_verdict(fmt);                   \
+    do {                                                                   \
+        LGR_MESSAGE(TE_LL_WARN | TE_LL_CONTROL, TE_LOG_VERDICT_USER, fmt); \
+        te_test_verdict(fmt);                                              \
     } while (0)
 
 /**
@@ -120,9 +120,10 @@ extern "C" {
  * @param fmt  the content of the verdict as format string with arguments
  */
 #define ERROR_VERDICT(fmt...) \
-    do {                                        \
-        TE_LOG_ERROR(TE_LOG_CMSG_USER, fmt);    \
-        te_test_verdict(fmt);                   \
+    do {                                                                   \
+        LGR_MESSAGE(TE_LL_ERROR | TE_LL_CONTROL, TE_LOG_VERDICT_USER,      \
+                    fmt);                                                  \
+        te_test_verdict(fmt);                                              \
     } while (0)
 
 /**

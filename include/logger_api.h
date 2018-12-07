@@ -72,7 +72,7 @@
  */
 #define LGR_MESSAGE(_lvl, _lgruser, _fs...) \
     do {                                                \
-        if (TE_LOG_LEVEL & (_lvl))                      \
+        if ((TE_LOG_LEVEL | TE_LL_CONTROL) & (_lvl))    \
         {                                               \
             TE_LOG(_lvl, TE_LGR_ENTITY, _lgruser, _fs); \
         }                                               \
