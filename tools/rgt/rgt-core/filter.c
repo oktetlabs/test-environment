@@ -39,6 +39,8 @@ get_control_msg_flags(const char *user, te_log_level level,
         {
             if (strcmp(user, TE_LOG_VERDICT_USER) == 0)
                 *flags |= RGT_MSG_FLG_VERDICT;
+            if (strcmp(user, TE_LOG_ARTIFACT_USER) == 0)
+                *flags |= RGT_MSG_FLG_ARTIFACT;
         }
         else if (strcmp(user, TE_LOG_CMSG_USER) == 0)
         {
@@ -203,9 +205,10 @@ rgt_filter_check_message(const char *entity, const char *user,
 
     /*
      * Include ordinary log messages if they pass through the filter
-     * and any verdicts even if they do not pass through the filter.
+     * and any control messages even if they do not pass through the filter.
      */
-    return (*flags & (RGT_MSG_FLG_VERDICT | RGT_MSG_FLG_NORMAL)) ?
+    return (*flags & (RGT_MSG_FLG_VERDICT | RGT_MSG_FLG_ARTIFACT |
+                      RGT_MSG_FLG_NORMAL)) ?
                 NFMODE_INCLUDE : NFMODE_EXCLUDE;
 }
 

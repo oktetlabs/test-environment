@@ -171,9 +171,9 @@ junit_process_pkg_end(node_info_t *node, ctrl_msg_data *data)
     return 0;
 }
 
-/** Callback for printing verdicts to file. */
+/** Callback for printing verdicts and artifacts to file. */
 static void
-process_verdict_cb(gpointer data, gpointer user_data)
+process_result_cb(gpointer data, gpointer user_data)
 {
     log_msg_ptr *msg_ptr = (log_msg_ptr *)data;
     log_msg     *msg = NULL;
@@ -274,7 +274,12 @@ process_failure(node_info_t *node, ctrl_msg_data *data)
         if (!msg_queue_is_empty(&data->verdicts))
         {
             fputs("\nVerdict: ", rgt_ctx.out_fd);
-            msg_queue_foreach(&data->verdicts, process_verdict_cb, NULL);
+            msg_queue_foreach(&data->verdicts, process_result_cb, NULL);
+        }
+        if (!msg_queue_is_empty(&data->artifacts))
+        {
+            fputs("\nArtifacts: ", rgt_ctx.out_fd);
+            msg_queue_foreach(&data->artifacts, process_result_cb, NULL);
         }
     }
 

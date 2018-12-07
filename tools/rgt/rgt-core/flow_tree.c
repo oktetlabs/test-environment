@@ -251,6 +251,7 @@ static void
 ctrl_msg_data_init(ctrl_msg_data *data)
 {
     msg_queue_init(&data->verdicts);
+    msg_queue_init(&data->artifacts);
 }
 
 /**
@@ -262,6 +263,7 @@ static void
 ctrl_msg_data_destroy(ctrl_msg_data *data)
 {
     msg_queue_destroy(&data->verdicts);
+    msg_queue_destroy(&data->artifacts);
 }
 
 /**
@@ -1403,7 +1405,7 @@ flow_tree_attach_message(log_msg *msg)
         flow_tree_attach_from_node(cur_node, log_msg_ref(msg));
 
     /* Check if we are processing Test Control message */
-    if ((msg->flags & RGT_MSG_FLG_VERDICT) != 0)
+    if ((msg->flags & (RGT_MSG_FLG_VERDICT | RGT_MSG_FLG_ARTIFACT)) != 0)
     {
         int idlen = strlen(TE_TEST_OBJECTIVE_ID);
 
@@ -1428,8 +1430,16 @@ flow_tree_attach_message(log_msg *msg)
         }
         else
         {
-            msg_queue_attach(&cur_node->ctrl_data.verdicts,
-                             log_msg_ref(msg));
+            if (msg->flags & RGT_MSG_FLG_ARTIFACT)
+            {
+                msg_queue_attach(&cur_node->ctrl_data.artifacts,
+                                 log_msg_ref(msg));
+            }
+            else
+            {
+                msg_queue_attach(&cur_node->ctrl_data.verdicts,
+                                 log_msg_ref(msg));
+            }
         }
     }
 

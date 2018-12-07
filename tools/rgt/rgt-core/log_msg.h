@@ -176,6 +176,7 @@ typedef struct node_info {
 /** Additional data passed to callbacks processing control messages */
 typedef struct ctrl_msg_data {
     msg_queue verdicts;    /**< Test verdicts */
+    msg_queue artifacts;   /**< Test artifacts */
 } ctrl_msg_data;
 
 /**

@@ -186,22 +186,45 @@ print_params(node_info_t *node)
     }
 }
 
-/*
- * Callback to process verdict message.
+/**
+ * Process verdict or artifact message.
+ *
+ * @param data        Pointer to log_msg_ptr.
+ * @param user_data   Not used.
+ * @param tag         Tag in which to print message.
  */
 static void
-process_verdict_cb(gpointer data, gpointer user_data)
+process_result_msg(gpointer data, gpointer user_data,
+                   const char *tag)
 {
     log_msg_ptr *msg_ptr = (log_msg_ptr *)data;
     log_msg     *msg = NULL;
 
     UNUSED(user_data);
 
-    fputs("<verdict>", rgt_ctx.out_fd);
+    fprintf(rgt_ctx.out_fd, "<%s>", tag);
     msg = log_msg_read(msg_ptr);
     output_regular_log_msg(msg);
     free_log_msg(msg);
-    fputs("</verdict>\n", rgt_ctx.out_fd);
+    fprintf(rgt_ctx.out_fd, "</%s>\n", tag);
+}
+
+/*
+ * Callback to process verdict message.
+ */
+static void
+process_verdict_cb(gpointer data, gpointer user_data)
+{
+    process_result_msg(data, user_data, "verdict");
+}
+
+/*
+ * Callback to process artifact message.
+ */
+static void
+process_artifact_cb(gpointer data, gpointer user_data)
+{
+    process_result_msg(data, user_data, "artifact");
 }
 
 static inline int
@@ -306,6 +329,13 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
             fputs("<verdicts>", rgt_ctx.out_fd);
             msg_queue_foreach(&data->verdicts, process_verdict_cb, NULL);
             fputs("</verdicts>\n", rgt_ctx.out_fd);
+        }
+
+        if (!msg_queue_is_empty(&data->artifacts))
+        {
+            fputs("<artifacts>", rgt_ctx.out_fd);
+            msg_queue_foreach(&data->artifacts, process_artifact_cb, NULL);
+            fputs("</artifacts>\n", rgt_ctx.out_fd);
         }
     }
 

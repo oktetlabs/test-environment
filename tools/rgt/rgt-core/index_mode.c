@@ -194,7 +194,7 @@ index_process_regular_msg(log_msg *msg)
 
     UNUSED(msg);
 
-    if ((msg->flags & RGT_MSG_FLG_VERDICT) ||
+    if ((msg->flags & (RGT_MSG_FLG_VERDICT | RGT_MSG_FLG_ARTIFACT)) ||
         strcmp(msg->user, "TRC tags") == 0)
         to_start_frag = 1;
 
