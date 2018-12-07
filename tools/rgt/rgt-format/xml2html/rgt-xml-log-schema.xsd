@@ -98,7 +98,7 @@
         <xs:element name="params">
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="param" maxOccurs="unbounded" minOccurs="0">
+              <xs:element name="param" minOccurs="0" maxOccurs="unbounded">
                 <xs:complexType>
                   <xs:simpleContent>
                     <xs:extension base="xs:string">
