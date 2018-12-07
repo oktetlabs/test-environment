@@ -13,5 +13,6 @@ dist_miscdata_DATA = right_frame.html \
                      filter_conf.html \
                      lframe_style.css \
                      style.css \
+                     log_style.css \
                      ftiens4.js \
                      ua.js

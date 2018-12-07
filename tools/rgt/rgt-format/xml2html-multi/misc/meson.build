@@ -4,6 +4,7 @@ data = files(
     'filter_conf.html',
     'ftiens4.js',
     'lframe_style.css',
+    'log_style.css',
     'right_frame.html',
     'style.css',
     'ua.js',
