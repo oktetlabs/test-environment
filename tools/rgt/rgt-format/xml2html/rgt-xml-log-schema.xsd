@@ -95,6 +95,13 @@
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+        <xs:element name="artifacts" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="artifact" type="xs:string" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
         <xs:element name="params">
           <xs:complexType>
             <xs:sequence>
