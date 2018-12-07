@@ -20,62 +20,113 @@
 </head>
 <body>
 
-<script>
+<script type="text/javascript">
+
+
+function toggle_node(node)
+{
+    if (typeof node == 'string')
+        node = document.getElementById(node);
+    if (!node)
+        return;
+    node.style.display = (node.style.display != 'none') ? 'none' : 'block';
+}
 
 function hide_table_row(table_row) {
-  // var entries = table_row.getElementsByTagName('td');
-  // for (var entry_id = 0 ; entry_id < entries.length; entry_id++) {
-  //   console.log('TD=' + entries[entry_id].innerHTML);
-  //   entries[entry_id].style.display='none';
-  // }
   table_row.style.display='none';
 }
 
 function show_table_row(table_row) {
   table_row.style.display='';
-  // var entries = table_row.getElementsByTagName('td');
-  // for (var entry_id = 0 ; entry_id < entries.length; entry_id++) {
-  //   entries[entry_id].style.display='';
-  // }
 }
 
-function hide_expand_button(from_row, to_row) {
-  var expand_row = document.getElementById('log_expand_' + from_row + '_' + to_row);
-  hide_table_row(expand_row);
+function get_row_entity(row) {
+  return row.getAttribute('data-entity');
 }
 
-function show_expand_button(from_row, to_row) {
-  var expand_row = document.getElementById('log_expand_' + from_row + '_' + to_row);
-  show_table_row(expand_row);
+function is_same_entity(row1, row2) {
+  return (get_row_entity(row1) == get_row_entity(row2));
 }
 
-function row_is_visible(row_id) {
-  var log_row = document.getElementById('log_row' + row_id);
-  return log_row.style.display != 'none';
+function is_user_control(row) {
+  return (row.getAttribute('data-user') == "Control")
 }
 
-function collapse_row(row_id) {
-  var log_row = document.getElementById('log_row' + row_id);
-  hide_table_row(log_row);
+function get_row_nest_lvl(row) {
+  return parseInt(row.getAttribute('data-nest-lvl'));
 }
 
-function collapse_range(from_row, to_row) {
-  for (var row_id = from_row; row_id <= to_row ; row_id++) {
-    collapse_row(row_id);
+function is_nested(row1, row2) {
+  return (get_row_nest_lvl(row1) < get_row_nest_lvl(row2));
+}
+
+function get_nested_rows(row_id) {
+  var table = document.getElementById('log_table');
+  var row = table.rows[row_id];
+  console.assert(row.id == ('log_row' + row_id));
+
+  var nested_rows = new Array();
+  for (var nested_row_id = row_id + 1; nested_row_id < table.rows.length ; nested_row_id++) {
+    if (is_user_control(table.rows[nested_row_id])) {
+      continue;
+    }
+    if (!is_same_entity(row, table.rows[nested_row_id])) {
+      continue;
+    }
+    if (!is_nested(row, table.rows[nested_row_id])) {
+      break;
+    }
+    nested_rows.push(table.rows[nested_row_id]);
   }
-  show_expand_button(from_row, to_row);
+  return nested_rows;
 }
 
-function expand_row(row_id) {
-  var log_row = document.getElementById('log_row' + row_id);
-  show_table_row(log_row);
+function collapse_nested_rows(row_id) {
+  var nested_rows = get_nested_rows(row_id);
+  for (var idx = 0 ; idx < nested_rows.length ; idx++) {
+    hide_table_row(nested_rows[idx]);
+  }
+  show_expand_button(row_id);
 }
 
-function expand_range(from_row, to_row) {
-  hide_expand_button(from_row, to_row);
-  for (var row_id = from_row; row_id <= to_row ; row_id++) {
-    expand_row(row_id);
+function expand_nested_rows(row_id) {
+  var nested_rows = get_nested_rows(row_id);
+  for (var idx = 0 ; idx < nested_rows.length ; idx++) {
+    show_table_row(nested_rows[idx]);
+  }
+  show_collapse_button(row_id);
+}
+
+function show_collapse_button(row_id) {
+  var holder = document.getElementById('log_toggle' + row_id);
+  holder.innerHTML = '<input type="button" value="-" onclick="collapse_nested_rows(' + row_id + ');">';
+}
+
+function show_expand_button(row_id) {
+  var holder = document.getElementById('log_toggle' + row_id);
+  holder.innerHTML = '<input type="button" value="+" onclick="expand_nested_rows(' + row_id + ');">';
+}
+
+function process_nested_rows(nest_lvl) {
+  var table = document.getElementById('log_table');
+  for (var row_id = 1; row_id < table.rows.length ; row_id++) {
+    show_table_row(table.rows[row_id]);
+  }
+
+  for (var row_id = 1; row_id < table.rows.length - 1 ; row_id++) {
+    var nested_rows = get_nested_rows(row_id);
+    if (nested_rows.length > 0) {
+      show_collapse_button(row_id);
+      if ((nest_lvl >= 0) && (nest_lvl == get_row_nest_lvl(table.rows[row_id]))) {
+        collapse_nested_rows(row_id);
+      }
+    }
   }
 }
+
+document.addEventListener("DOMContentLoaded", function(event) {
+  process_nested_rows(-1);
+});
 
 </script>
+

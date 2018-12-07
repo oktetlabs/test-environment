@@ -1,5 +1,10 @@
-<table summary="Test Log" class="table table-bordered table-hover">
-<caption>Test Log</caption>
+<table id="log_table" summary="Test Log" class="table table-bordered table-hover">
+<caption> Test Log:
+	<input type="button" value="0" onclick="process_nested_rows(0);"/>
+	<input type="button" value="1" onclick="process_nested_rows(1);"/>
+	<input type="button" value="2" onclick="process_nested_rows(2);"/>
+	<input type="button" value="ALL" onclick="process_nested_rows(-1);"/>
+</caption>
 
 <tr>
   <th class="col-sm-1 text-right">No.</th>
