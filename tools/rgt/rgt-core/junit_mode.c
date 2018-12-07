@@ -45,13 +45,13 @@
      ((long int)ts_end_[1] - (long int)ts_start_[1]) / 1000000.0)
 
 static int junit_process_pkg_start(node_info_t *node,
-                                   msg_queue *verdicts);
+                                   ctrl_msg_data *data);
 static int junit_process_pkg_end(node_info_t *node,
-                                 msg_queue *verdicts);
+                                 ctrl_msg_data *data);
 static int junit_process_test_start(node_info_t *node,
-                                    msg_queue *verdicts);
+                                    ctrl_msg_data *data);
 static int junit_process_test_end(node_info_t *node,
-                                  msg_queue *verdicts);
+                                  ctrl_msg_data *data);
 static int junit_process_regular_msg(log_msg *log);
 static int junit_process_open(void);
 static int junit_process_close(void);
@@ -120,12 +120,12 @@ junit_process_close(void)
 
 /** Process "package started" control message. */
 static int
-junit_process_pkg_start(node_info_t *node, msg_queue *verdicts)
+junit_process_pkg_start(node_info_t *node, ctrl_msg_data *data)
 {
     tqe_string  *tqe_str;
     double       time_val;
 
-    UNUSED(verdicts);
+    UNUSED(data);
 
     time_val = RGT_TIME_DIFF(node->end_ts, node->start_ts);
 
@@ -153,12 +153,12 @@ junit_process_pkg_start(node_info_t *node, msg_queue *verdicts)
 
 /** Process "package ended" control message. */
 static int
-junit_process_pkg_end(node_info_t *node, msg_queue *verdicts)
+junit_process_pkg_end(node_info_t *node, ctrl_msg_data *data)
 {
     tqe_string    *tqe_str;
 
     UNUSED(node);
-    UNUSED(verdicts);
+    UNUSED(data);
 
     fputs("</testsuite>\n", rgt_ctx.out_fd);
 
@@ -195,12 +195,12 @@ static te_bool string_empty(const char *str)
 
 /** Process "test started" control message. */
 static int
-junit_process_test_start(node_info_t *node, msg_queue *verdicts)
+junit_process_test_start(node_info_t *node, ctrl_msg_data *data)
 {
     tqe_string    *tqe_str;
     double         time_val;
 
-    UNUSED(verdicts);
+    UNUSED(data);
 
     if (ew_log_obstk == NULL)
         ew_log_obstk = obstack_initialize();
@@ -247,7 +247,7 @@ junit_process_test_start(node_info_t *node, msg_queue *verdicts)
 
 /** Process "failure" node */
 static void
-process_failure(node_info_t *node, msg_queue *verdicts)
+process_failure(node_info_t *node, ctrl_msg_data *data)
 {
     struct param *p;
 
@@ -269,10 +269,13 @@ process_failure(node_info_t *node, msg_queue *verdicts)
         fputs(obstack_finish(ew_log_obstk), rgt_ctx.out_fd);
     }
 
-    if (!msg_queue_is_empty(verdicts))
+    if (data != NULL)
     {
-        fputs("\nVerdict: ", rgt_ctx.out_fd);
-        msg_queue_foreach(verdicts, process_verdict_cb, NULL);
+        if (!msg_queue_is_empty(&data->verdicts))
+        {
+            fputs("\nVerdict: ", rgt_ctx.out_fd);
+            msg_queue_foreach(&data->verdicts, process_verdict_cb, NULL);
+        }
     }
 
     fputs("</failure>\n", rgt_ctx.out_fd);
@@ -280,10 +283,10 @@ process_failure(node_info_t *node, msg_queue *verdicts)
 
 /** Process "test ended" control message. */
 static int
-junit_process_test_end(node_info_t *node, msg_queue *verdicts)
+junit_process_test_end(node_info_t *node, ctrl_msg_data *data)
 {
     if (!string_empty(node->result.err))
-        process_failure(node, verdicts);
+        process_failure(node, data);
 
     fputs("</testcase>\n", rgt_ctx.out_fd);
 

@@ -25,15 +25,15 @@
 
 #include "te_errno.h"
 
-static int live_process_test_start(node_info_t *node, msg_queue *verdicts);
-static int live_process_test_end(node_info_t *node, msg_queue *verdicts);
-static int live_process_pkg_start(node_info_t *node, msg_queue *verdicts);
-static int live_process_pkg_end(node_info_t *node, msg_queue *verdicts);
-static int live_process_sess_start(node_info_t *node, msg_queue *verdicts);
-static int live_process_sess_end(node_info_t *node, msg_queue *verdicts);
+static int live_process_test_start(node_info_t *node, ctrl_msg_data *data);
+static int live_process_test_end(node_info_t *node, ctrl_msg_data *data);
+static int live_process_pkg_start(node_info_t *node, ctrl_msg_data *data);
+static int live_process_pkg_end(node_info_t *node, ctrl_msg_data *data);
+static int live_process_sess_start(node_info_t *node, ctrl_msg_data *data);
+static int live_process_sess_end(node_info_t *node, ctrl_msg_data *data);
 static int live_process_branch_start(node_info_t *node,
-                                     msg_queue *verdicts);
-static int live_process_branch_end(node_info_t *node, msg_queue *verdicts);
+                                     ctrl_msg_data *data);
+static int live_process_branch_end(node_info_t *node, ctrl_msg_data *data);
 static int live_process_regular_msg(log_msg *msg);
 
 void
@@ -106,9 +106,9 @@ print_params(param *prms)
 
 static inline int
 live_process_start_event(node_info_t *node, const char *node_name,
-                         msg_queue *verdicts)
+                         ctrl_msg_data *data)
 {
-    UNUSED(verdicts);
+    UNUSED(data);
 
     fprintf(rgt_ctx.out_fd, "| Starting %s: %s\n",
             node_name, node->descr.name);
@@ -133,11 +133,11 @@ live_process_start_event(node_info_t *node, const char *node_name,
 
 static inline int
 live_process_end_event(node_info_t *node, const char *node_name,
-                       msg_queue *verdicts)
+                       ctrl_msg_data *data)
 {
     const char *result;
 
-    UNUSED(verdicts);
+    UNUSED(data);
 
     switch (node->result.status)
     {
@@ -169,54 +169,54 @@ live_process_end_event(node_info_t *node, const char *node_name,
 }
 
 static int
-live_process_test_start(node_info_t *node, msg_queue *verdicts)
+live_process_test_start(node_info_t *node, ctrl_msg_data *data)
 {
-    return live_process_start_event(node, "test", verdicts);
+    return live_process_start_event(node, "test", data);
 }
 
 static int
-live_process_test_end(node_info_t *node, msg_queue *verdicts)
+live_process_test_end(node_info_t *node, ctrl_msg_data *data)
 {
-    return live_process_end_event(node, "Test", verdicts);
+    return live_process_end_event(node, "Test", data);
 }
 
 static int
-live_process_pkg_start(node_info_t *node, msg_queue *verdicts)
+live_process_pkg_start(node_info_t *node, ctrl_msg_data *data)
 {
-    return live_process_start_event(node, "package", verdicts);
+    return live_process_start_event(node, "package", data);
 }
 
 static int
-live_process_pkg_end(node_info_t *node, msg_queue *verdicts)
+live_process_pkg_end(node_info_t *node, ctrl_msg_data *data)
 {
-    return live_process_end_event(node, "Package", verdicts);
+    return live_process_end_event(node, "Package", data);
 }
 
 static int
-live_process_sess_start(node_info_t *node, msg_queue *verdicts)
+live_process_sess_start(node_info_t *node, ctrl_msg_data *data)
 {
-    return live_process_start_event(node, "session", verdicts);
+    return live_process_start_event(node, "session", data);
 }
 
 static int
-live_process_sess_end(node_info_t *node, msg_queue *verdicts)
+live_process_sess_end(node_info_t *node, ctrl_msg_data *data)
 {
-    return live_process_end_event(node, "Session", verdicts);
+    return live_process_end_event(node, "Session", data);
 }
 
 static int
-live_process_branch_end(node_info_t *node, msg_queue *verdicts)
+live_process_branch_end(node_info_t *node, ctrl_msg_data *data)
 {
     UNUSED(node);
-    UNUSED(verdicts);
+    UNUSED(data);
     return 1;
 }
 
 static int
-live_process_branch_start(node_info_t *node, msg_queue *verdicts)
+live_process_branch_start(node_info_t *node, ctrl_msg_data *data)
 {
     UNUSED(node);
-    UNUSED(verdicts);
+    UNUSED(data);
     return 1;
 }
 
