@@ -139,6 +139,19 @@ extern "C" {
 
 
 /**
+ * Print test artifact to log. Artifact is a string describing
+ * test results like a verdict. But it is not taken into account
+ * when matching obtained results to TRC database.
+ *
+ * @param _fmt       Message describing the artifact (format string
+ *                   with parameters)
+ */
+#define TEST_ARTIFACT(_fmt...) \
+    LGR_MESSAGE(TE_LL_RING | TE_LL_CONTROL, TE_LOG_ARTIFACT_USER, \
+                _fmt)
+
+
+/**
  * Compose test verdict message and send it to Tester.
  *
  * @param fmt           printf()-like format string with TE extensions

@@ -103,6 +103,8 @@ typedef enum te_bool3 {
 #define TE_LOG_CMSG_USER          "Control"
 /* User name for verdict control messages from tests */
 #define TE_LOG_VERDICT_USER       "Verdict"
+/* User name for artifact control messages from tests */
+#define TE_LOG_ARTIFACT_USER      "Artifact"
 
 #ifndef __CONCAT
 #define __CONCAT(_a, _b) _a##_b
