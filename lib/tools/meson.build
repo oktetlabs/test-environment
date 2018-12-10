@@ -58,3 +58,4 @@ sources += files(
     'te_units.c',
     'tq_string.c',
 )
+deps = [ cc.find_library('m') ]
