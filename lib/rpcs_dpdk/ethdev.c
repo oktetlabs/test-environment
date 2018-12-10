@@ -2296,7 +2296,8 @@ TARPC_FUNC_STANDALONE(dpdk_eth_await_link_up, {},
         }
     }
 
-    out->retval = TE_ETIMEDOUT;
+    out->retval = -ETIMEDOUT;
+    neg_errno_h2rpc(&out->retval);
 
 done:
     ;
