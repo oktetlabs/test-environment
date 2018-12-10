@@ -1409,9 +1409,6 @@ maybe_load_driver(const char *drvname)
  * its vendor and device should be made known to the driver by writing
  * to new_id. In theory, that means that when the device is unbound, its IDs
  * should be removed via writing to remove_id.
- * However, we have no reliable way to know whether the device was not
- * already known to the driver and so writing to remove_id for non-generic
- * driver like a network driver may have adverse effects.
  * On the other hand, e.g. vfio-pci seems to ignore remove_id completely.
  * Another issue is that writing a new vendor/device IDs to new_id causes
  * the driver to probe all the devices with these IDs and bind them if they
@@ -1422,7 +1419,7 @@ maybe_load_driver(const char *drvname)
  */
 
 static te_errno
-let_driver_know_pci_device(const pci_device *dev, const char *drvname)
+let_generic_driver_know_pci_device(const pci_device *dev, const char *drvname)
 {
     te_errno rc;
     te_string buf = TE_STRING_INIT;
@@ -1549,12 +1546,23 @@ pci_driver_set(unsigned int gid, const char *oid, const char *value,
 
     if (*value != '\0')
     {
+        const char *generic_drivers[] = {"uio_pci_generic", "igb_uio",
+                                         "vfio-pci"};
+        te_bool is_gen_driver = FALSE;
+        unsigned int i;
+
         rc = maybe_load_driver(value);
         if (rc != 0)
             return rc;
-        rc = let_driver_know_pci_device(dev, value);
-        if (rc != 0)
-            return rc;
+        for (i = 0; i < TE_ARRAY_LEN(generic_drivers) && !is_gen_driver; i++)
+            is_gen_driver = (strcmp(generic_drivers[i], value) == 0);
+
+        if (is_gen_driver)
+        {
+            rc = let_generic_driver_know_pci_device(dev, value);
+            if (rc != 0)
+                return rc;
+        }
         rc = bind_pci_device(dev, value);
         if (rc != 0)
             return rc;
