@@ -58,6 +58,7 @@
 #include "rcf_pch.h"
 #include "logger_api.h"
 #include "unix_internal.h"
+#include "conf_common.h"
 
 /** PCI device address */
 typedef struct pci_address {
@@ -1562,8 +1563,58 @@ pci_driver_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
+static te_errno
+pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
+             char **list, const char *unused1, const char *unused2,
+             const char *addr_str)
+{
+    te_string buf = TE_STRING_INIT;
+    const pci_device *dev;
+    char *result = NULL;
+    te_errno rc;
+
+    UNUSED(sub_id);
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+    rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);
+    if (rc != 0)
+        return rc;
+
+    rc = format_sysfs_device_name(&buf, dev, "/net");
+    if (rc != 0)
+    {
+        te_string_free(&buf);
+        return rc;
+    }
+
+    result = calloc(1, RCF_MAX_VAL);
+    if (result == NULL)
+    {
+        te_string_free(&buf);
+        ERROR("Out of memory");
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    rc = get_dir_list(buf.ptr, result, RCF_MAX_VAL, TRUE, NULL, NULL);
+    te_string_free(&buf);
+    if (rc != 0)
+    {
+        free(result);
+        return rc;
+    }
+
+    *list = result;
+    return rc;
+}
+
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_net, "net",
+                               NULL, NULL,
+                               NULL, pci_net_list);
 RCF_PCH_CFG_NODE_RW(node_pci_driver, "driver",
-                    NULL, NULL,
+                    NULL, &node_pci_net,
                     pci_driver_get, pci_driver_set);
 
 
