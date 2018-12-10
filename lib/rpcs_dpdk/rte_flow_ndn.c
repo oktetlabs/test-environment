@@ -1654,9 +1654,9 @@ rte_flow_action_rss_opt_from_pdu(const asn_value            *conf_pdu_choice,
     if (rc != 0)
         goto fail;
 
-#ifdef HAVE_STRUCT_RTE_FLOW_ITEM_RSS_CONF
+#ifdef HAVE_STRUCT_RTE_FLOW_ACTION_RSS_RSS_CONF
     conf->rss_conf = opt;
-#else /* !HAVE_STRUCT_RTE_FLOW_ITEM_RSS_CONF */
+#else /* !HAVE_STRUCT_RTE_FLOW_ACTION_RSS_RSS_CONF */
     conf->types = opt->rss_hf;
 
     if (rss_key_len > 0)
@@ -1678,7 +1678,7 @@ rte_flow_action_rss_opt_from_pdu(const asn_value            *conf_pdu_choice,
 
     free(opt);
 
-#endif /* HAVE_STRUCT_RTE_FLOW_ITEM_RSS_CONF */
+#endif /* HAVE_STRUCT_RTE_FLOW_ACTION_RSS_RSS_CONF */
 
     return 0;
 
@@ -1749,7 +1749,7 @@ rte_flow_action_rss_from_pdu(const asn_value        *conf_pdu,
             goto fail;
     }
 
-#ifdef HAVE_STRUCT_RTE_FLOW_ITEM_RSS_NUM
+#ifdef HAVE_STRUCT_RTE_FLOW_ACTION_RSS_NUM
     conf->num = nb_entries;
     conf = realloc(conf, sizeof(*conf) + (nb_entries * sizeof(conf->queue[0])));
     if (conf == NULL)
@@ -1760,10 +1760,10 @@ rte_flow_action_rss_from_pdu(const asn_value        *conf_pdu,
 
     memcpy(conf->queue, queue, nb_entries * sizeof(conf->queue[0]));
     free(queue);
-#else /* !HAVE_STRUCT_RTE_FLOW_ITEM_RSS_NUM */
+#else /* !HAVE_STRUCT_RTE_FLOW_ACTION_RSS_NUM */
     conf->queue_num = nb_entries;
     conf->queue = queue;
-#endif /* HAVE_STRUCT_RTE_FLOW_ITEM_RSS_NUM */
+#endif /* HAVE_STRUCT_RTE_FLOW_ACTION_RSS_NUM */
 
     rc = rte_flow_action_rss_opt_from_pdu(conf_pdu_choice, conf);
     if (rc != 0)
