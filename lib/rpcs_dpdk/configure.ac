@@ -108,6 +108,10 @@ AC_CHECK_MEMBERS([struct rte_flow_item_vlan.tpid],
 #include "rte_flow.h"
 ]])
 
+LIBS="-lnuma -lpthread -ldl $LIBS"
+LIBS="-lrte_mbuf -lrte_net -lrte_mempool -lrte_ring -lrte_eal -lrte_kvargs $LIBS"
+AC_CHECK_FUNCS([rte_pktmbuf_pool_create_by_ops])
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE

@@ -173,15 +173,20 @@ typedef struct node_info {
     result_info_t   result;      /**< Node result info */
 } node_info_t;
 
+/** Additional data passed to callbacks processing control messages */
+typedef struct ctrl_msg_data {
+    msg_queue verdicts;    /**< Test verdicts */
+    msg_queue artifacts;   /**< Test artifacts */
+} ctrl_msg_data;
+
 /**
  * Type of callback function used for processing control messages
  *
  * @param node      Control node information
- * @param verdicts  The queue of verdicts for this node;
- *                  queue keeps pointers to "log_msg" structures.
+ * @param data      Additional data (like test verdicts)
  */
 typedef int (* f_process_ctrl_log_msg)(node_info_t *node,
-                                       msg_queue *verdicts);
+                                       ctrl_msg_data *data);
 
 /* Type of callback function used for processing regular messages */
 typedef int (* f_process_reg_log_msg)(log_msg *);

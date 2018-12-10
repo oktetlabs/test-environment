@@ -35,6 +35,7 @@
 #include "filter.h"
 #include "log_format.h"
 #include "memory.h"
+#include "logger_defs.h"
 
 #if HAVE_UNISTD_H
 #include <unistd.h>
@@ -158,8 +159,8 @@ typedef struct node_t {
                                       attached to the node */
     msg_queue     msg_after_att; /**< The queue of pointers to messages
                                       following the node */
-    msg_queue     verdicts;      /**< The queue of verdict message
-                                      pointers */
+    ctrl_msg_data ctrl_data;     /**< Data for callbacks processing
+                                      control messages */
 
     int n_branches;        /**< Number of branches under the node */
     int n_active_branches; /**< Number of active branches */
@@ -243,6 +244,30 @@ msg_queue_destroy(msg_queue *q)
 }
 
 /**
+ * Initializer for ctrl_msg_data.
+ *
+ * @param data      Pointer to ctrl_msg_data.
+ */
+static void
+ctrl_msg_data_init(ctrl_msg_data *data)
+{
+    msg_queue_init(&data->verdicts);
+    msg_queue_init(&data->artifacts);
+}
+
+/**
+ * Release memory allocated for members of ctrl_msg_data structure.
+ *
+ * @param data      Pointer to ctrl_msg_data.
+ */
+static void
+ctrl_msg_data_destroy(ctrl_msg_data *data)
+{
+    msg_queue_destroy(&data->verdicts);
+    msg_queue_destroy(&data->artifacts);
+}
+
+/**
  * Initialize flow tree library:
  * Initializes obstack data structure, two hashes for set of nodes
  * ("new" set and "close" set) and creates root session node.
@@ -266,7 +291,7 @@ flow_tree_init()
     root->name = "";
     msg_queue_init(&root->msg_att);
     msg_queue_init(&root->msg_after_att);
-    msg_queue_init(&root->verdicts);
+    ctrl_msg_data_init(&root->ctrl_data);
     root->user_data = NULL;
 
     memcpy(root->start_ts, zero_timestamp, sizeof(root->start_ts));
@@ -299,7 +324,7 @@ flow_tree_free_attachments(node_t *cur_node)
 
     msg_queue_destroy(&cur_node->msg_att);
     msg_queue_destroy(&cur_node->msg_after_att);
-    msg_queue_destroy(&cur_node->verdicts);
+    ctrl_msg_data_destroy(&cur_node->ctrl_data);
 
     if (cur_node->type != NT_TEST)
     {
@@ -394,7 +419,7 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
 
     msg_queue_init(&cur_node->msg_att);
     msg_queue_init(&cur_node->msg_after_att);
-    msg_queue_init(&cur_node->verdicts);
+    ctrl_msg_data_init(&cur_node->ctrl_data);
 
     memcpy(cur_node->start_ts, timestamp, sizeof(cur_node->start_ts));
     memcpy(cur_node->end_ts, max_timestamp, sizeof(cur_node->end_ts));
@@ -1381,7 +1406,7 @@ flow_tree_attach_message(log_msg *msg)
         flow_tree_attach_from_node(cur_node, log_msg_ref(msg));
 
     /* Check if we are processing Test Control message */
-    if ((msg->flags & RGT_MSG_FLG_VERDICT) != 0)
+    if ((msg->flags & (RGT_MSG_FLG_VERDICT | RGT_MSG_FLG_ARTIFACT)) != 0)
     {
         int idlen = strlen(TE_TEST_OBJECTIVE_ID);
 
@@ -1406,7 +1431,16 @@ flow_tree_attach_message(log_msg *msg)
         }
         else
         {
-            msg_queue_attach(&cur_node->verdicts, log_msg_ref(msg));
+            if (msg->flags & RGT_MSG_FLG_ARTIFACT)
+            {
+                msg_queue_attach(&cur_node->ctrl_data.artifacts,
+                                 log_msg_ref(msg));
+            }
+            else
+            {
+                msg_queue_attach(&cur_node->ctrl_data.verdicts,
+                                 log_msg_ref(msg));
+            }
         }
     }
 
@@ -1425,6 +1459,44 @@ wrapper_process_regular_msg(gpointer data, gpointer user_data)
     if (reg_msg_proc != NULL)
     {
         msg = log_msg_read(msg_ptr);
+        if (msg->id != TE_LOG_ID_UNDEFINED)
+        {
+            if (~msg->level & TE_LL_CONTROL)
+            {
+                msg->nest_lvl = rgt_ctx.current_nest_lvl;
+            }
+            else
+            {
+                if (strcmp(msg->user, TE_USER_STEP) == 0)
+                {
+                    msg->nest_lvl = 0;
+                    rgt_ctx.current_nest_lvl = 1;
+                }
+                else if (strcmp(msg->user, TE_USER_SUBSTEP) == 0)
+                {
+                    msg->nest_lvl = 1;
+                    rgt_ctx.current_nest_lvl = 2;
+                }
+                else if (strcmp(msg->user, TE_USER_STEP_PUSH) == 0)
+                {
+                    msg->nest_lvl = rgt_ctx.current_nest_lvl;
+                    rgt_ctx.current_nest_lvl++;
+                }
+                else if (strcmp(msg->user, TE_USER_STEP_POP) == 0)
+                {
+                    rgt_ctx.current_nest_lvl--;
+                    msg->nest_lvl = rgt_ctx.current_nest_lvl;
+                }
+                else if (strcmp(msg->user, TE_USER_STEP_NEXT) == 0)
+                {
+                    msg->nest_lvl = rgt_ctx.current_nest_lvl - 1;
+                }
+                else
+                {
+                    msg->nest_lvl = rgt_ctx.current_nest_lvl;
+                }
+            }
+        }
         reg_msg_proc(msg);
         free_log_msg(msg);
     }
@@ -1458,7 +1530,7 @@ flow_tree_wander(node_t *cur_node)
         {
             if (ctrl_msg_proc[CTRL_EVT_START][cur_node->type] != NULL)
                 ctrl_msg_proc[CTRL_EVT_START][cur_node->type](
-                    cur_node->user_data, &cur_node->verdicts);
+                    cur_node->user_data, &cur_node->ctrl_data);
 
             /* Output messages that belongs to the node */
             msg_queue_foreach(&cur_node->msg_att,
@@ -1479,7 +1551,7 @@ flow_tree_wander(node_t *cur_node)
             {
                 if (ctrl_msg_proc[CTRL_EVT_START][NT_BRANCH] != NULL)
                     ctrl_msg_proc[CTRL_EVT_START][NT_BRANCH](
-                        cur_node->user_data, &cur_node->verdicts);
+                        cur_node->user_data, &cur_node->ctrl_data);
             }
 
             flow_tree_wander(cur_node->branches[i].first_el);
@@ -1490,7 +1562,7 @@ flow_tree_wander(node_t *cur_node)
             {
                 if (ctrl_msg_proc[CTRL_EVT_END][NT_BRANCH] != NULL)
                     ctrl_msg_proc[CTRL_EVT_END][NT_BRANCH](
-                        cur_node->user_data, &cur_node->verdicts);
+                        cur_node->user_data, &cur_node->ctrl_data);
             }
         }
     }
@@ -1501,7 +1573,8 @@ flow_tree_wander(node_t *cur_node)
     {
         if (ctrl_msg_proc[CTRL_EVT_END][cur_node->type] != NULL)
             ctrl_msg_proc[CTRL_EVT_END][cur_node->type](
-                cur_node->user_data, &cur_node->verdicts);
+                cur_node->user_data, &cur_node->ctrl_data);
+        rgt_ctx.current_nest_lvl = 0;
     }
 
     /* Output messages that were after the node */
@@ -1754,4 +1827,3 @@ flow_tree_get_set(enum flow_tree_set_name set_name, char *buf, gint len)
 }
 
 #endif /* FLOW_TREE_LIBRARY_DEBUG */
-

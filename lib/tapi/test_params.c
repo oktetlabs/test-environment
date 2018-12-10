@@ -38,6 +38,7 @@
 #include "te_defs.h"
 #include "te_param.h"
 #include "te_ethernet.h"
+#include "te_units.h"
 #include "logger_api.h"
 
 #include "tapi_test.h"
@@ -921,4 +922,27 @@ test_get_double_param(int argc, char **argv, const char *name)
     }
 
     return value;
+}
+
+/* See description in tapi_test.h */
+double
+test_get_value_unit_param(int argc, char **argv, const char *name)
+{
+    const char *str_val = NULL;
+    te_unit     unit;
+
+    str_val = test_get_param(argc, argv, name);
+    if (str_val == NULL)
+    {
+        TEST_STOP;
+    }
+
+    if (te_unit_from_string(str_val, &unit) != 0)
+    {
+        TEST_FAIL("The value of '%s' parameter should be "
+                  "convertible to double, but '%s' is not", name,
+                  str_val);
+    }
+
+    return te_unit_unpack(unit);
 }

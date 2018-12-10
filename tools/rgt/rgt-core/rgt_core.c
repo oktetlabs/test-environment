@@ -507,6 +507,7 @@ rgt_ctx_set_defaults(rgt_gen_ctx_t *ctx)
     ctx->proc_incomplete = FALSE;
     ctx->verb = FALSE;
     ctx->tmp_dir = NULL;
+    ctx->current_nest_lvl = 0;
 }
 
 /**

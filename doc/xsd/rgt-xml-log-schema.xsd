@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    XML Schema for RGT log report XML format.
+  -->
+<xs:schema targetNamespace="http://www.oktetlabs.ru/proteos"
+        xmlns:proteos="http://www.oktetlabs.ru/proteos"
+        version="$Id: rgt-xml-log-schema.xsd,v 1.1 2003/10/28 09:35:42 arybchik Exp $"
+        xml:lang="en"
+        xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:annotation>
+        <xs:documentation>
+            Test Environment
+            XML schema for RGT log report XML format
+
+            Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+
+            Author: Oleg Kravtsov &lt;Oleg.Kravtsov@oktetlabs.ru&lt;
+        </xs:documentation>
+    </xs:annotation>
+
+
+    <xs:element name="log_report">
+      <xs:complexType>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+          <xs:element name="logs" type="proteos:logs_t"/>
+          <xs:element name="pkg" type="proteos:package_t"/>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="package_t">
+      <xs:sequence>
+        <xs:element name="meta" type="proteos:meta_t_pkg"/>
+        <xs:element name="branch" type="proteos:flow_t"/>
+      </xs:sequence>
+
+      <xs:attribute name="name" type="xs:string"/>
+      <xs:attributeGroup ref="proteos:result_attr_group"/>
+    </xs:complexType>
+
+    <xs:complexType name="session_t">
+      <xs:sequence>
+        <xs:element name="meta" type="proteos:meta_t_session"/>
+        <xs:element name="logs" minOccurs="0" maxOccurs="1" type="proteos:logs_t"/>
+        <xs:element name="branch" minOccurs="1" maxOccurs="unbounded"
+                 type="proteos:flow_t"/>
+      </xs:sequence>
+
+      <xs:attributeGroup ref="proteos:result_attr_group"/>
+    </xs:complexType>
+
+    <xs:complexType name="test_t">
+      <xs:sequence>
+        <xs:element name="meta" type="proteos:meta_t_test"/>
+        <xs:element name="logs" minOccurs="0" maxOccurs="1" type="proteos:logs_t"/>
+      </xs:sequence>
+
+      <xs:attribute name="name" type="xs:string"/>
+      <xs:attribute name="tin" type="xs:integer" use="optional"/>
+      <xs:attributeGroup ref="proteos:result_attr_group"/>
+    </xs:complexType>
+
+    <xs:group name="meta_common">
+      <xs:sequence>
+        <xs:element name="start-ts" type="xs:string"/>
+        <xs:element name="end-ts" type="xs:string"/>
+        <xs:element name="duration" type="xs:string"/>
+        <xs:element  name="objective" type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+    </xs:group>
+
+    <xs:complexType name="meta_t_pkg">
+      <xs:sequence>
+        <xs:group ref="proteos:meta_common"/>
+        <xs:element name="authors"  minOccurs="0" type="proteos:author_t" />
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="meta_t_session">
+      <xs:sequence>
+        <xs:group ref="proteos:meta_common"/>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="meta_t_test">
+      <xs:sequence>
+        <xs:group ref="proteos:meta_common"/>
+        <xs:element name="objective" type="xs:string" minOccurs="0"/>
+        <xs:element name="page" type="xs:string" minOccurs="0"/>
+        <xs:element name="verdicts" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="verdict" type="xs:string" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="artifacts" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="artifact" type="xs:string" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="params">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="param" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:string">
+                      <xs:attribute name="name" type="xs:string"/>
+                      <xs:attribute name="value" type="xs:string"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:attributeGroup name="result_attr_group">
+      <xs:attribute name="hash" type="xs:string"/>
+      <xs:attribute name="result" use="required">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="CORED"/>
+            <xs:enumeration value="EMPTY"/>
+            <xs:enumeration value="FAILED"/>
+            <xs:enumeration value="FAKED"/>
+            <xs:enumeration value="INCOMPLETE"/>
+            <xs:enumeration value="KILLED"/>
+            <xs:enumeration value="PASSED"/>
+            <xs:enumeration value="SKIPPED"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="err" type="xs:string"/>
+    </xs:attributeGroup>
+
+     <xs:complexType name="author_t">
+        <xs:sequence>
+          <xs:element name="author">
+            <xs:complexType>
+              <xs:simpleContent>
+                <xs:extension base="xs:string">
+                  <xs:attribute name="email" type="xs:string"/>
+                </xs:extension>
+              </xs:simpleContent>
+            </xs:complexType>
+          </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="flow_t">
+      <xs:sequence minOccurs="0" maxOccurs="unbounded">
+        <xs:choice>
+          <xs:element name="test" type="proteos:test_t"/>
+          <xs:element name="pkg" type="proteos:package_t"/>
+          <xs:element name="session" type="proteos:session_t"/>
+        </xs:choice>
+        <xs:element name="logs" minOccurs="0" maxOccurs="1" type="proteos:logs_t"/>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="logs_t">
+      <xs:sequence>
+        <xs:element name="msg" minOccurs="1" maxOccurs="unbounded" type="proteos:log_t"/>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="log_t" mixed="true">
+      <xs:sequence>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+          <xs:element name="br">
+            <xs:complexType/>
+          </xs:element>
+          <xs:element name="file">
+            <xs:complexType mixed="true">
+              <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                <xs:element name="br">
+                  <xs:complexType/>
+                </xs:element>
+              </xs:sequence>
+            <xs:attribute name="name" type="xs:string"/>
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="mem-dump" type="proteos:mem-dump_t"/>
+        </xs:choice>
+      </xs:sequence>
+      <xs:attribute name="level" type="xs:string"/>
+      <xs:attribute name="entity" type="xs:string"/>
+      <xs:attribute name="user" type="xs:string"/>
+      <xs:attribute name="ts_val" type="xs:string"/>
+      <xs:attribute name="ts" type="xs:string"/>
+      <xs:attribute name="nl" type="xs:integer"/>
+    </xs:complexType>
+
+    <xs:complexType name="mem-dump_t">
+      <xs:sequence>
+        <xs:element name="row" minOccurs="1" maxOccurs="unbounded">
+           <xs:complexType>
+             <xs:sequence>
+               <xs:element name="elem" type="xs:hexBinary"
+                        minOccurs="1" maxOccurs="unbounded"/>
+             </xs:sequence>
+           </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
+</xs:schema>

@@ -10,6 +10,7 @@
 # Author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
 
 EXTRA_DIST = \
+	rgt-xml-log-schema.xsd \
 	rcf_config.xsd \
 	logger_config.xsd \
 	cs_config.xsd \

@@ -72,15 +72,20 @@ code_prefix_flow_api = '''
 '''
 if cc.has_member('struct rte_flow_action_rss', 'rss_conf', args: prj_args,
                  prefix: code_prefix_flow_api)
-    c_args += [ '-DHAVE_STRUCT_RTE_FLOW_ITEM_RSS_CONF' ]
+    c_args += [ '-DHAVE_STRUCT_RTE_FLOW_ACTION_RSS_RSS_CONF' ]
 endif
 if cc.has_member('struct rte_flow_action_rss', 'num', args: prj_args,
                  prefix: code_prefix_flow_api)
-    c_args += [ '-DHAVE_STRUCT_RTE_FLOW_ITEM_RSS_NUM' ]
+    c_args += [ '-DHAVE_STRUCT_RTE_FLOW_ACTION_RSS_NUM' ]
 endif
 if cc.has_member('struct rte_flow_item_vlan', 'tpid', args: prj_args,
                  prefix: code_prefix_flow_api)
     c_args += [ '-DHAVE_STRUCT_RTE_FLOW_ITEM_VLAN_TPID' ]
+endif
+
+f = 'rte_pktmbuf_pool_create_by_ops'
+if cc.has_function(f, args: prj_args)
+    c_args += [ '-DHAVE_' + f.to_upper() ]
 endif
 
 sources += files(

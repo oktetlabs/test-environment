@@ -219,6 +219,7 @@ typedef struct rgt_gen_ctx {
                                           or give error message */
 
     te_bool         verb; /**< Whether to use verbose output or not */
+    int             current_nest_lvl;  /**< Current nesting level */
 } rgt_gen_ctx_t;
 
 
@@ -264,8 +265,9 @@ typedef struct msg_arg {
 } msg_arg;
 
 /** Message flag values */
-#define RGT_MSG_FLG_NORMAL   1 /**< An ordinary message */
-#define RGT_MSG_FLG_VERDICT  2 /**< A message is verdict */
+#define RGT_MSG_FLG_NORMAL   0x1 /**< An ordinary message */
+#define RGT_MSG_FLG_VERDICT  0x2 /**< A message is verdict */
+#define RGT_MSG_FLG_ARTIFACT 0x4 /**< A message is artifact */
 
 /** Structure that keeps log message in an universal format */
 typedef struct log_msg {
@@ -288,6 +290,7 @@ typedef struct log_msg {
     int           args_count;   /**< Total number of the arguments */
 
     char         *txt_msg;      /**< Processed fmt_str + args */
+    int           nest_lvl;     /**< Nesting level */
 } log_msg;
 
 /**

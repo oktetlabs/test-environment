@@ -3043,7 +3043,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 #endif
                              );
 
-        te_test_result_free_verdicts(&ctx->current_result.result);
+        te_test_result_clean(&ctx->current_result.result);
     }
     else
     {

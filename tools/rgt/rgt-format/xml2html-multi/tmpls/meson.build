@@ -55,6 +55,10 @@ xml2html_multi_tmpls = files(
     'meta_verdicts_end.tmpl',
     'meta_verdicts_start.tmpl',
     'meta_verdict_start.tmpl',
+    'meta_artifact_end.tmpl',
+    'meta_artifacts_end.tmpl',
+    'meta_artifacts_start.tmpl',
+    'meta_artifact_start.tmpl',
     'page_selector.tmpl',
     'param_start.tmpl',
 )

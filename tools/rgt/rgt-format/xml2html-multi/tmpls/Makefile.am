@@ -42,6 +42,10 @@ dist_pkgdata_DATA = \
     meta_verdicts_end.tmpl\
     meta_verdict_start.tmpl\
     meta_verdict_end.tmpl\
+    meta_artifacts_start.tmpl\
+    meta_artifacts_end.tmpl\
+    meta_artifact_start.tmpl\
+    meta_artifact_end.tmpl\
     meta_params_start.tmpl\
     meta_params_end.tmpl\
     meta_page_start.tmpl\

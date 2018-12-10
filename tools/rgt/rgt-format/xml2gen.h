@@ -58,6 +58,8 @@ typedef enum rgt_state {
     RGT_XML2HTML_STATE_AUTHOR,
     RGT_XML2HTML_STATE_VERDICTS,
     RGT_XML2HTML_STATE_VERDICT,
+    RGT_XML2HTML_STATE_ARTIFACTS,
+    RGT_XML2HTML_STATE_ARTIFACT,
     RGT_XML2HTML_STATE_OBJECTIVE,
     RGT_XML2HTML_STATE_PAGE,
     RGT_XML2HTML_STATE_PARAMS,
@@ -242,6 +244,10 @@ RGT_EXTERN_FUNC(proc_meta_verdicts_start);
 RGT_EXTERN_FUNC(proc_meta_verdicts_end);
 RGT_EXTERN_FUNC(proc_meta_verdict_start);
 RGT_EXTERN_FUNC(proc_meta_verdict_end);
+RGT_EXTERN_FUNC(proc_meta_artifacts_start);
+RGT_EXTERN_FUNC(proc_meta_artifacts_end);
+RGT_EXTERN_FUNC(proc_meta_artifact_start);
+RGT_EXTERN_FUNC(proc_meta_artifact_end);
 RGT_EXTERN_FUNC(proc_meta_page_start);
 RGT_EXTERN_FUNC(proc_meta_page_end);
 RGT_EXTERN_FUNC(proc_mem_dump_start);

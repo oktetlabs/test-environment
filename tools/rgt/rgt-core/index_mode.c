@@ -26,15 +26,15 @@
 
 #include "te_errno.h"
 
-static int index_process_test_start(node_info_t *node, msg_queue *verdicts);
-static int index_process_test_end(node_info_t *node, msg_queue *verdicts);
-static int index_process_pkg_start(node_info_t *node, msg_queue *verdicts);
-static int index_process_pkg_end(node_info_t *node, msg_queue *verdicts);
-static int index_process_sess_start(node_info_t *node, msg_queue *verdicts);
-static int index_process_sess_end(node_info_t *node, msg_queue *verdicts);
+static int index_process_test_start(node_info_t *node, ctrl_msg_data *data);
+static int index_process_test_end(node_info_t *node, ctrl_msg_data *data);
+static int index_process_pkg_start(node_info_t *node, ctrl_msg_data *data);
+static int index_process_pkg_end(node_info_t *node, ctrl_msg_data *data);
+static int index_process_sess_start(node_info_t *node, ctrl_msg_data *data);
+static int index_process_sess_end(node_info_t *node, ctrl_msg_data *data);
 static int index_process_branch_start(node_info_t *node,
-                                      msg_queue *verdicts);
-static int index_process_branch_end(node_info_t *node, msg_queue *verdicts);
+                                      ctrl_msg_data *data);
+static int index_process_branch_end(node_info_t *node, ctrl_msg_data *data);
 static int index_process_regular_msg(log_msg *msg);
 
 /** Offset of the previous message in raw log */
@@ -112,64 +112,64 @@ print_node_end(node_info_t *node)
 
 /** Process "test started" control message */
 static int
-index_process_test_start(node_info_t *node, msg_queue *verdicts)
+index_process_test_start(node_info_t *node, ctrl_msg_data *data)
 {
-    UNUSED(verdicts);
+    UNUSED(data);
 
     return print_node_start(node);
 }
 
 /** Process "test finished" control message */
 static int
-index_process_test_end(node_info_t *node, msg_queue *verdicts)
+index_process_test_end(node_info_t *node, ctrl_msg_data *data)
 {
-    UNUSED(verdicts);
+    UNUSED(data);
 
     return print_node_end(node);
 }
 
 /** Process "package started" control message */
 static int
-index_process_pkg_start(node_info_t *node, msg_queue *verdicts)
+index_process_pkg_start(node_info_t *node, ctrl_msg_data *data)
 {
-    UNUSED(verdicts);
+    UNUSED(data);
 
     return print_node_start(node);
 }
 
 /** Process "package finished" control message */
 static int
-index_process_pkg_end(node_info_t *node, msg_queue *verdicts)
+index_process_pkg_end(node_info_t *node, ctrl_msg_data *data)
 {
-    UNUSED(verdicts);
+    UNUSED(data);
 
     return print_node_end(node);
 }
 
 /** Process "session started" control message */
 static int
-index_process_sess_start(node_info_t *node, msg_queue *verdicts)
+index_process_sess_start(node_info_t *node, ctrl_msg_data *data)
 {
-    UNUSED(verdicts);
+    UNUSED(data);
 
     return print_node_start(node);
 }
 
 /** Process "session finished" control message */
 static int
-index_process_sess_end(node_info_t *node, msg_queue *verdicts)
+index_process_sess_end(node_info_t *node, ctrl_msg_data *data)
 {
-    UNUSED(verdicts);
+    UNUSED(data);
 
     return print_node_end(node);
 }
 
 /** Process "branch start" event */
 static int
-index_process_branch_start(node_info_t *node, msg_queue *verdicts)
+index_process_branch_start(node_info_t *node, ctrl_msg_data *data)
 {
     UNUSED(node);
-    UNUSED(verdicts);
+    UNUSED(data);
 
     /* Do nothing - this is "generation event", not raw log message */
     return 0;
@@ -177,10 +177,10 @@ index_process_branch_start(node_info_t *node, msg_queue *verdicts)
 
 /** Process "branch end" event */
 static int
-index_process_branch_end(node_info_t *node, msg_queue *verdicts)
+index_process_branch_end(node_info_t *node, ctrl_msg_data *data)
 {
     UNUSED(node);
-    UNUSED(verdicts);
+    UNUSED(data);
 
     /* Do nothing - this is "generation event", not raw log message */
     return 0;
@@ -194,7 +194,7 @@ index_process_regular_msg(log_msg *msg)
 
     UNUSED(msg);
 
-    if ((msg->flags & RGT_MSG_FLG_VERDICT) ||
+    if ((msg->flags & (RGT_MSG_FLG_VERDICT | RGT_MSG_FLG_ARTIFACT)) ||
         strcmp(msg->user, "TRC tags") == 0)
         to_start_frag = 1;
 

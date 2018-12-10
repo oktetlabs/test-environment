@@ -37,21 +37,21 @@ static int logs_closed = 1;
 static struct obstack *log_obstk = NULL;
 
 static int postponed_process_test_start(node_info_t *node,
-                                        msg_queue *verdicts);
+                                        ctrl_msg_data *data);
 static int postponed_process_test_end(node_info_t *node,
-                                      msg_queue *verdicts);
+                                      ctrl_msg_data *data);
 static int postponed_process_pkg_start(node_info_t *node,
-                                       msg_queue *verdicts);
+                                       ctrl_msg_data *data);
 static int postponed_process_pkg_end(node_info_t *node,
-                                     msg_queue *verdicts);
+                                     ctrl_msg_data *data);
 static int postponed_process_sess_start(node_info_t *node,
-                                        msg_queue *verdicts);
+                                        ctrl_msg_data *data);
 static int postponed_process_sess_end(node_info_t *node,
-                                      msg_queue *verdicts);
+                                      ctrl_msg_data *data);
 static int postponed_process_branch_start(node_info_t *node,
-                                          msg_queue *verdicts);
+                                          ctrl_msg_data *data);
 static int postponed_process_branch_end(node_info_t *node,
-                                        msg_queue *verdicts);
+                                        ctrl_msg_data *data);
 static int postponed_process_regular_msg(log_msg *msg);
 
 static int postponed_process_open(void);
@@ -186,27 +186,50 @@ print_params(node_info_t *node)
     }
 }
 
-/*
- * Callback to process verdict message.
+/**
+ * Process verdict or artifact message.
+ *
+ * @param data        Pointer to log_msg_ptr.
+ * @param user_data   Not used.
+ * @param tag         Tag in which to print message.
  */
 static void
-process_verdict_cb(gpointer data, gpointer user_data)
+process_result_msg(gpointer data, gpointer user_data,
+                   const char *tag)
 {
     log_msg_ptr *msg_ptr = (log_msg_ptr *)data;
     log_msg     *msg = NULL;
 
     UNUSED(user_data);
 
-    fputs("<verdict>", rgt_ctx.out_fd);
+    fprintf(rgt_ctx.out_fd, "<%s>", tag);
     msg = log_msg_read(msg_ptr);
     output_regular_log_msg(msg);
     free_log_msg(msg);
-    fputs("</verdict>\n", rgt_ctx.out_fd);
+    fprintf(rgt_ctx.out_fd, "</%s>\n", tag);
+}
+
+/*
+ * Callback to process verdict message.
+ */
+static void
+process_verdict_cb(gpointer data, gpointer user_data)
+{
+    process_result_msg(data, user_data, "verdict");
+}
+
+/*
+ * Callback to process artifact message.
+ */
+static void
+process_artifact_cb(gpointer data, gpointer user_data)
+{
+    process_result_msg(data, user_data, "artifact");
 }
 
 static inline int
 postponed_process_start_event(node_info_t *node, const char *node_name,
-                              msg_queue *verdicts)
+                              ctrl_msg_data *data)
 {
     if (!logs_closed)
     {
@@ -299,11 +322,21 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
         fputs("</authors>\n", rgt_ctx.out_fd);
     }
 
-    if (!msg_queue_is_empty(verdicts))
+    if (data != NULL)
     {
-        fputs("<verdicts>", rgt_ctx.out_fd);
-        msg_queue_foreach(verdicts, process_verdict_cb, NULL);
-        fputs("</verdicts>\n", rgt_ctx.out_fd);
+        if (!msg_queue_is_empty(&data->verdicts))
+        {
+            fputs("<verdicts>", rgt_ctx.out_fd);
+            msg_queue_foreach(&data->verdicts, process_verdict_cb, NULL);
+            fputs("</verdicts>\n", rgt_ctx.out_fd);
+        }
+
+        if (!msg_queue_is_empty(&data->artifacts))
+        {
+            fputs("<artifacts>", rgt_ctx.out_fd);
+            msg_queue_foreach(&data->artifacts, process_artifact_cb, NULL);
+            fputs("</artifacts>\n", rgt_ctx.out_fd);
+        }
     }
 
     print_params(node);
@@ -315,10 +348,10 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
 
 static inline int
 postponed_process_end_event(node_info_t *node, const char *node_name,
-                            msg_queue *verdicts)
+                            ctrl_msg_data *data)
 {
     UNUSED(node);
-    UNUSED(verdicts);
+    UNUSED(data);
 
     if (!logs_closed)
     {
@@ -332,46 +365,46 @@ postponed_process_end_event(node_info_t *node, const char *node_name,
 }
 
 static int
-postponed_process_test_start(node_info_t *node, msg_queue *verdicts)
+postponed_process_test_start(node_info_t *node, ctrl_msg_data *data)
 {
-    return postponed_process_start_event(node, "test", verdicts);
+    return postponed_process_start_event(node, "test", data);
 }
 
 static int
-postponed_process_test_end(node_info_t *node, msg_queue *verdicts)
+postponed_process_test_end(node_info_t *node, ctrl_msg_data *data)
 {
-    return postponed_process_end_event(node, "test", verdicts);
+    return postponed_process_end_event(node, "test", data);
 }
 
 static int
-postponed_process_pkg_start(node_info_t *node, msg_queue *verdicts)
+postponed_process_pkg_start(node_info_t *node, ctrl_msg_data *data)
 {
-    return postponed_process_start_event(node, "pkg", verdicts);
+    return postponed_process_start_event(node, "pkg", data);
 }
 
 static int
-postponed_process_pkg_end(node_info_t *node, msg_queue *verdicts)
+postponed_process_pkg_end(node_info_t *node, ctrl_msg_data *data)
 {
-    return postponed_process_end_event(node, "pkg", verdicts);
+    return postponed_process_end_event(node, "pkg", data);
 }
 
 static int
-postponed_process_sess_start(node_info_t *node, msg_queue *verdicts)
+postponed_process_sess_start(node_info_t *node, ctrl_msg_data *data)
 {
-    return postponed_process_start_event(node, "session", verdicts);
+    return postponed_process_start_event(node, "session", data);
 }
 
 static int
-postponed_process_sess_end(node_info_t *node, msg_queue *verdicts)
+postponed_process_sess_end(node_info_t *node, ctrl_msg_data *data)
 {
-    return postponed_process_end_event(node, "session", verdicts);
+    return postponed_process_end_event(node, "session", data);
 }
 
 static int
-postponed_process_branch_start(node_info_t *node, msg_queue *verdicts)
+postponed_process_branch_start(node_info_t *node, ctrl_msg_data *data)
 {
     UNUSED(node);
-    UNUSED(verdicts);
+    UNUSED(data);
 
     if (!logs_closed)
     {
@@ -384,10 +417,10 @@ postponed_process_branch_start(node_info_t *node, msg_queue *verdicts)
 }
 
 static int
-postponed_process_branch_end(node_info_t *node, msg_queue *verdicts)
+postponed_process_branch_end(node_info_t *node, ctrl_msg_data *data)
 {
     UNUSED(node);
-    UNUSED(verdicts);
+    UNUSED(data);
 
     if (!logs_closed)
     {
@@ -413,7 +446,7 @@ postponed_process_regular_msg(log_msg *msg)
             "ts=\"", msg->level_str, msg->entity, msg->user,
             msg->timestamp[0], msg->timestamp[1]);
     print_ts(rgt_ctx.out_fd, msg->timestamp);
-    fprintf(rgt_ctx.out_fd, "\">");
+    fprintf(rgt_ctx.out_fd, "\" nl=\"%d\">", msg->nest_lvl);
     output_regular_log_msg(msg);
     fprintf(rgt_ctx.out_fd, "</msg>\n");
 

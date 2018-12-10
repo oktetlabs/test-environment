@@ -94,8 +94,17 @@ typedef enum te_bool3 {
 
 /* Entity name used to logging Control messages from Tester */
 #define TE_LOG_CMSG_ENTITY_TESTER "Tester"
-/* User name for all control messages (from Tester and tests) */
+/*
+ * User name for all control messages (from Tester and tests).
+ * Usage of this name for logging verdicts from tests is
+ * deprecated now. Use instead more specific user names listed
+ * below.
+ */
 #define TE_LOG_CMSG_USER          "Control"
+/* User name for verdict control messages from tests */
+#define TE_LOG_VERDICT_USER       "Verdict"
+/* User name for artifact control messages from tests */
+#define TE_LOG_ARTIFACT_USER      "Artifact"
 
 #ifndef __CONCAT
 #define __CONCAT(_a, _b) _a##_b

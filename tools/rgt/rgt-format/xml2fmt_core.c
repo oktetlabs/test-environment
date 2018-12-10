@@ -310,6 +310,25 @@ rgt_log_end_element(void *user_data, const rgt_xmlChar *xml_tag)
                 assert(strcmp(tag, "br") == 0);
             break;
 
+        case RGT_XML2HTML_STATE_ARTIFACTS:
+            assert(strcmp(tag, "artifacts") == 0);
+            assert(ctx->depth >= 1);
+            proc_meta_artifacts_end(ctx, depth_ctx, NULL);
+            ctx->state = RGT_XML2HTML_STATE_META;
+            break;
+
+        case RGT_XML2HTML_STATE_ARTIFACT:
+            if (strcmp(tag, "artifact") == 0)
+            {
+                proc_meta_artifact_end(ctx, depth_ctx, NULL);
+                ctx->state = RGT_XML2HTML_STATE_ARTIFACTS;
+            }
+            else
+            {
+                assert(strcmp(tag, "br") == 0);
+            }
+            break;
+
         case RGT_XML2HTML_STATE_PARAMS:
             assert(ctx->depth >= 1);
 
@@ -436,6 +455,12 @@ rgt_log_start_element(void *user_data,
                                          RGT_XML2CHAR(attrs));
                 ctx->state = RGT_XML2HTML_STATE_VERDICTS;
             }
+            else if (strcmp(tag, "artifacts") == 0)
+            {
+                proc_meta_artifacts_start(ctx, depth_ctx,
+                                         RGT_XML2CHAR(attrs));
+                ctx->state = RGT_XML2HTML_STATE_ARTIFACTS;
+            }
             else if (strcmp(tag, "params") == 0)
             {
                 proc_meta_params_start(ctx, depth_ctx,
@@ -464,6 +489,17 @@ rgt_log_start_element(void *user_data,
             break;
 
         case RGT_XML2HTML_STATE_VERDICT:
+            assert(strcmp(tag, "br") == 0);
+            proc_log_msg_br(ctx, depth_ctx, RGT_XML2CHAR(attrs));
+            break;
+
+        case RGT_XML2HTML_STATE_ARTIFACTS:
+            assert(strcmp(tag, "artifact") == 0);
+            proc_meta_artifact_start(ctx, depth_ctx, RGT_XML2CHAR(attrs));
+            ctx->state = RGT_XML2HTML_STATE_ARTIFACT;
+            break;
+
+        case RGT_XML2HTML_STATE_ARTIFACT:
             assert(strcmp(tag, "br") == 0);
             proc_log_msg_br(ctx, depth_ctx, RGT_XML2CHAR(attrs));
             break;
@@ -575,6 +611,7 @@ rgt_log_characters(void *user_data, const rgt_xmlChar *ch, int len)
         case RGT_XML2HTML_STATE_OBJECTIVE:
         case RGT_XML2HTML_STATE_PAGE:
         case RGT_XML2HTML_STATE_VERDICT:
+        case RGT_XML2HTML_STATE_ARTIFACT:
         case RGT_XML2HTML_STATE_LOG_MSG:
         case RGT_XML2HTML_STATE_MEM_DUMP_ELEM:
         case RGT_XML2HTML_STATE_FILE:

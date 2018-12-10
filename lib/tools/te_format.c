@@ -92,26 +92,23 @@ msg_va_output(struct te_log_out_params *param, const char *fmt, va_list ap)
         ret = vsnprintf((char *)(param->buf + param->offset),
                         param->buflen - param->offset, fmt, ap);
 
-        /*
-         * If buffer is too small, expand it and write rest of
-         * the message.
-         */
-        if (param->offset + ret >= param->buflen)
+        if (ret < 0)
         {
-            param->buflen = MIN(param->offset + ret + TEF_BUFFER_EXT_STEP,
-                                TEF_BUFFER_MAX);
-            param->buf = realloc(param->buf, param->buflen);
-            if (param->buf == NULL)
-                return TE_ENOMEM;
-
-            ret = vsnprintf((char *)(param->buf + param->offset),
-                            param->buflen - param->offset, fmt, ap);
-            if (param->offset + ret >= param->buflen)
-            {
-                param->offset = param->buflen - 1;
-                return TE_E2BIG;
-            }
+            return te_rc_os2te(errno);
         }
+        else if (param->offset + ret >= param->buflen)
+        {
+            const char trunc_str[] = "<TRUNCATED!>";
+
+            if (param->buflen > sizeof(trunc_str))
+            {
+                memcpy(param->buf + param->buflen - sizeof(trunc_str),
+                       trunc_str, sizeof(trunc_str));
+            }
+            param->offset = param->buflen - 1;
+            return TE_ESMALLBUF;
+        }
+
         param->offset += ret;
     }
 
@@ -177,11 +174,15 @@ te_log_vprintf_old(struct te_log_out_params *param,
     char  tmp;
     int   i;
 
-    te_errno    rc;
+    te_errno    rc = 0;
     va_list     ap0;
 
     if (param == NULL)
         return TE_EINVAL;
+
+    if (param->buflen == 0)
+        return TE_EINVAL;
+    param->buf[0] = '\0';
 
     if (fmt == NULL)
     {
@@ -190,24 +191,19 @@ te_log_vprintf_old(struct te_log_out_params *param,
 
     fmt_dup = strdup(fmt);
     if (fmt_dup == NULL)
-    {
-        /* FIXME: I think it is better to nothing with param */
-        param->buf = NULL;
-        param->buflen = 0;
         return TE_ENOMEM;
-    }
 
     va_copy(ap0, ap);
 
 /* FIXME: Incorrect macro definition */
 #define FLUSH(arg...) \
     if ((rc = msg_output(param, arg)) != 0)\
-        return rc;
+        goto finish;
 
 /* FIXME: Incorrect macro definition */
 #define VFLUSH(arg...) \
     if ((rc = msg_va_output(param, arg)) != 0)\
-        return rc;
+        goto finish;
 
     for (s = s0 = fmt_dup; *s != '\0'; s++)
     {
@@ -481,6 +477,8 @@ case mod_:\
         }
     }
     VFLUSH(s0, ap0);
+
+finish:
     msg_end_process(param);
 
 #undef FLUSH
@@ -488,5 +486,5 @@ case mod_:\
 
     free(fmt_dup);
 
-    return 0;
+    return rc;
 }

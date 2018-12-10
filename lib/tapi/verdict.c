@@ -191,7 +191,7 @@ te_test_verdict(const char *fmt, ...)
     rc = te_log_vprintf_old(&cm, fmt, ap);
     va_end(ap);
 
-    if (rc == 0)
+    if (rc == 0 || rc == TE_ESMALLBUF)
     {
         rc = ipc_send_message(ipcc, ipcs_name, &msg,
                               sizeof(msg.hdr) + cm.offset + 1);

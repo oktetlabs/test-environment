@@ -1,56 +1,43 @@
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-gb" xml:lang="en-gb" >
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Logs from @@%s:reporter@@</title>
-<link rel='stylesheet' type='text/css' href='@@%s:shared_url@@style.css'>
+<meta http-equiv="content-language" content="en"/>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
 
-<script src="node_@@%u:depth@@_@@%u:seq@@_log_names.js">
-</script>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<link rel="stylesheet" href="log_style.css">
 
-<script>
+<!-- jQuery library -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 
-function getAllLogs()
-{
-    if (document.getElementsByTagName)
-    {
-        return document.getElementsByTagName("div");
+<!-- Latest compiled JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+<style type="text/css">
+    td {
+      padding: 2px !important;
+      padding-left: 1px;
+      padding-right: 1px;
+      padding-top: 2px;
+      padding-bottom: 2px;
     }
-    else if (document.getElementsById)
-    {
-        alert("Extend sources with getElementsById");
+    .te_fold {
+      font-family: monospace;
     }
-    else
-    {
-        alert("Not supported");
+    .te_params {
+      width: 50% !important;
     }
-}
+</style>
 
-function open_filter_window()
-{
-    window.top.filter_win = window.open(
-        "@@%s:shared_url@@filter_conf.html",
-        "parwin",
-        "dependent,toolbar=no,menubar=no,status=no," +
-        "width=400,height=300,top=0,left=1000,scrollbars=no");
-}
+<title>
+  Logs from @@%s:reporter@@
+</title>
 
-function activate_link(name, doc_name, par_name)
-{
-    parent.treeframe.activate_node(name, par_name);
-    document.location.href=doc_name;
-}
+</head>
+<body>
 
-function refresh_filter_window()
-{
-    if (typeof(window.top.filter_win) != "undefined")
-    {
-        // test to see if a window is still open
-        if (!(window.top.filter_win.closed))
-        {
-            window.top.filter_win.location.reload();
-        }
-    }
-}
+<script type="text/javascript">
+
 
 function toggle_node(node)
 {
@@ -60,22 +47,103 @@ function toggle_node(node)
         return;
     node.style.display = (node.style.display != 'none') ? 'none' : 'block';
 }
+
+function hide_table_row(table_row) {
+  table_row.style.display='none';
+}
+
+function show_table_row(table_row) {
+  table_row.style.display='';
+}
+
+function get_row_entity(row) {
+  return row.getAttribute('data-entity');
+}
+
+function is_same_entity(row1, row2) {
+  return (get_row_entity(row1) == get_row_entity(row2));
+}
+
+function is_user_visible(row) {
+  return ((row.getAttribute('data-user') == "Verdict") ||
+          (row.getAttribute('data-user') == "Artifact"));
+}
+
+function get_row_nest_lvl(row) {
+  return parseInt(row.getAttribute('data-nest-lvl'));
+}
+
+function is_nested(row1, row2) {
+  return (get_row_nest_lvl(row1) < get_row_nest_lvl(row2));
+}
+
+function get_nested_rows(row_id) {
+  var table = document.getElementById('log_table');
+  var row = table.rows[row_id];
+  console.assert(row.id == ('log_row' + row_id));
+
+  var nested_rows = new Array();
+  for (var nested_row_id = row_id + 1; nested_row_id < table.rows.length ; nested_row_id++) {
+    if (is_user_visible(table.rows[nested_row_id])) {
+      continue;
+    }
+    if (!is_same_entity(row, table.rows[nested_row_id])) {
+      continue;
+    }
+    if (!is_nested(row, table.rows[nested_row_id])) {
+      break;
+    }
+    nested_rows.push(table.rows[nested_row_id]);
+  }
+  return nested_rows;
+}
+
+function collapse_nested_rows(row_id) {
+  var nested_rows = get_nested_rows(row_id);
+  for (var idx = 0 ; idx < nested_rows.length ; idx++) {
+    hide_table_row(nested_rows[idx]);
+  }
+  show_expand_button(row_id);
+}
+
+function expand_nested_rows(row_id) {
+  var nested_rows = get_nested_rows(row_id);
+  for (var idx = 0 ; idx < nested_rows.length ; idx++) {
+    show_table_row(nested_rows[idx]);
+  }
+  show_collapse_button(row_id);
+}
+
+function show_collapse_button(row_id) {
+  var holder = document.getElementById('log_toggle' + row_id);
+  holder.innerHTML = '<input type="button" class="btn btn-default btn-sm te_fold" value="-" onclick="collapse_nested_rows(' + row_id + ');">';
+}
+
+function show_expand_button(row_id) {
+  var holder = document.getElementById('log_toggle' + row_id);
+  holder.innerHTML = '<input type="button" class="btn btn-primary btn-sm te_fold" value="+" onclick="expand_nested_rows(' + row_id + ');">';
+}
+
+function process_nested_rows(nest_lvl) {
+  var table = document.getElementById('log_table');
+  for (var row_id = 1; row_id < table.rows.length ; row_id++) {
+    show_table_row(table.rows[row_id]);
+  }
+
+  for (var row_id = 1; row_id < table.rows.length - 1 ; row_id++) {
+    var nested_rows = get_nested_rows(row_id);
+    if (nested_rows.length > 0) {
+      show_collapse_button(row_id);
+      if ((nest_lvl >= 0) && (nest_lvl == get_row_nest_lvl(table.rows[row_id]))) {
+        collapse_nested_rows(row_id);
+      }
+    }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function(event) {
+  process_nested_rows(-1);
+});
+
 </script>
 
-</head>
-
-<body onLoad='javascript:refresh_filter_window()'>
-
-<table border='0' cellpadding='0' cellspacing='0' width='100%%'>
-<tr class='tdheading'>
-    <td width='100%%' class='heading' height='25'>
-        &nbsp;&nbsp;&nbsp;Logs from @@%s:reporter@@
-    </td>
-</table>
-<br>
-
-<form name='form0'>
-    <input type='button' value='Log Filter'
-           onClick='javascript:open_filter_window()'>
-</form>
-<br/>
