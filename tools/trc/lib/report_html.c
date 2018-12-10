@@ -290,6 +290,7 @@ static const char * const trc_html_doc_start =
 "        var params_td;\n"
 "        var results_td;\n"
 "        var results_list;\n"
+"        var verdicts_list;\n"
 "        var i;\n"
 "        var j;\n"
 "        var k;\n"
@@ -342,21 +343,24 @@ static const char * const trc_html_doc_start =
 "            else\n"
 "                iters[i].expected = true;\n"
 "\n"
-"            results_list = results_td.getElementsByTagName('span');\n"
-"            iters[i].result = getInnerText(results_list[1]).\n"
+"            results_list =\n"
+"                 results_td.getElementsByClassName('test_result');\n"
+"            iters[i].result = getInnerText(results_list[0]).\n"
 "                                replace(/^\\s+|\\s+$/g, '');\n"
-"            iters[i].verdicts = new Array();\n"
 "\n"
-"            for (j = 2; j < results_list.length; j++)\n"
+"            iters[i].verdicts = new Array();\n"
+"            verdicts_list = results_td.getElementsByClassName(\n"
+"                                                   'test_verdict');\n"
+"            for (j = 0; j < verdicts_list.length; j++)\n"
 "            {\n"
-"                inner_text = getInnerText(results_list[j]);\n"
+"                inner_text = getInnerText(verdicts_list[j]);\n"
 "                k = inner_text.lastIndexOf(';');\n"
 "                if (k != -1)\n"
-"                    iters[i].verdicts[j - 2] =\n"
+"                    iters[i].verdicts[j] =\n"
 "                        inner_text.substring(0, k - 1).\n"
 "                        replace(/^\\s+|\\s+$/g, '');\n"
 "                else\n"
-"                    iters[i].verdicts[j - 2] = inner_text.\n"
+"                    iters[i].verdicts[j] = inner_text.\n"
 "                        replace(/^\\s+|\\s+$/g, '');\n"
 "            }\n"
 "        }\n"
@@ -2468,7 +2472,7 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
 #endif
     WRITE_FILE("</h6>\n");
 
-    WRITE_FILE("<span class=\"label label-%s\">",
+    WRITE_FILE("<span class=\"test_result label label-%s\">",
                result == NULL ? test_status_to_label(TE_TEST_UNSPEC, FALSE) :
                test_status_to_label(result->status, is_expected));
     if (result == NULL)
@@ -2500,7 +2504,7 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
         TAILQ_FOREACH(v, &result->verdicts, links)
         {
             v_id++;
-            WRITE_FILE("<li class=\"list-group-item%s\">",
+            WRITE_FILE("<li class=\"test_verdict list-group-item%s\">",
                        is_expected ? "" :
                                      " test_obtained_nok_verdict_list");
             WRITE_FILE("%s", v->str);
