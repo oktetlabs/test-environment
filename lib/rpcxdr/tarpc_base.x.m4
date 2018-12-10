@@ -77,6 +77,19 @@ typedef int64_t     tarpc_dlsymaddr;
 typedef uint32_t tarpc_ethtool_command;
 
 /**
+ * Flags to resolve function name.
+ *
+ * @attention   These are bit flags, with the exception of
+ *              @c TARPC_LIB_DEFAULT, which is used as the
+ *              initialization value.
+ */
+enum tarpc_lib_flags {
+    TARPC_LIB_DEFAULT       = 0x0,
+    TARPC_LIB_USE_LIBC      = 0x1,  /* 1 << 0 */
+    TARPC_LIB_USE_SYSCALL   = 0x2   /* 1 << 1 */
+};
+
+/**
  * Input arguments common for all RPC calls.
  *
  * @attention It should be the first field of all routine-specific 
@@ -86,8 +99,8 @@ typedef uint32_t tarpc_ethtool_command;
 struct tarpc_in_arg {
     tarpc_op        op;         /**< RPC operation */
     uint64_t        start;
-    uint64_t        jobid;        /**< Job identifier (for async calls) */
-    tarpc_bool      use_libc;   /**< Use libc instead of preset lib */
+    uint64_t        jobid;      /**< Job identifier (for async calls) */
+    tarpc_lib_flags lib_flags;  /**< How to resolve function name */
 };
 
 /**

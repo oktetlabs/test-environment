@@ -353,7 +353,7 @@ tarpc_generic_service(deferred_call_list *async_list, rpc_call_data *call)
 
     if (call->func == NULL)
     {
-        rc = tarpc_find_func(in_common->use_libc, call->info->funcname,
+        rc = tarpc_find_func(in_common->lib_flags, call->info->funcname,
                              &call->func);
         if (rc != 0)
         {
