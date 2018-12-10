@@ -580,6 +580,7 @@ TARPC_FUNC(rte_pktmbuf_pool_create, {},
 }
 )
 
+#ifdef HAVE_RTE_PKTMBUF_POOL_CREATE_BY_OPS
 TARPC_FUNC(rte_pktmbuf_pool_create_by_ops, {},
 {
     struct rte_mempool *mp;
@@ -592,6 +593,7 @@ TARPC_FUNC(rte_pktmbuf_pool_create_by_ops, {},
     });
 }
 )
+#endif
 
 TARPC_FUNC_STATIC(rte_pktmbuf_alloc, {},
 {

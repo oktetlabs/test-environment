@@ -83,6 +83,11 @@ if cc.has_member('struct rte_flow_item_vlan', 'tpid', args: prj_args,
     c_args += [ '-DHAVE_STRUCT_RTE_FLOW_ITEM_VLAN_TPID' ]
 endif
 
+f = 'rte_pktmbuf_pool_create_by_ops'
+if cc.has_function(f, args: prj_args)
+    c_args += [ '-DHAVE_' + f.to_upper() ]
+endif
+
 sources += files(
     'eal.c',
     'ethdev.c',
