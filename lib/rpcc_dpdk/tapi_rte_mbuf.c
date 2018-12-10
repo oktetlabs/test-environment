@@ -521,7 +521,7 @@ tapi_rte_pktmbuf_random_redist(rcf_rpc_server    *rpcs,
                                rpc_rte_mbuf_p    *packets,
                                unsigned int       nb_packets)
 {
-    te_bool      err_occurred = FALSE;
+    te_bool      err_occurred;
     unsigned int i;
 
     TAPI_ON_JMP(err_occurred = TRUE; goto out);
@@ -546,6 +546,7 @@ tapi_rte_pktmbuf_random_redist(rcf_rpc_server    *rpcs,
                                            groups, nb_groups);
     }
 
+    err_occurred = FALSE;
 out:
     if (err_occurred)
         TEST_STOP;
