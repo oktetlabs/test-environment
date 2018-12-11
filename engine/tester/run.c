@@ -66,10 +66,22 @@
 /** Format string for GDB init filename */
 #define TESTER_GDB_FILENAME_FMT "gdb.%d"
 
-/** Tester run path log user */
-#define TESTER_CONTROL             TE_LOG_CMSG_USER
 /** Prefix of all messages from Tester:Flow user */
 #define TESTER_CONTROL_MSG_PREFIX  "%u %u "
+
+/**
+ * Output Tester control log message (i.e. message about
+ * package/session/test start/end).
+ *
+ * @param _parent_id  ID of parent item (package/session).
+ * @param _id         ID of current item (package/session/test)
+ * @param _fmt        Format string.
+ * @param _args...    Arguments for the format string (it is assumed
+ *                    there is always at least one argument here).
+ */
+#define TESTER_CONTROL_LOG(_parent_id, _id, _fmt, _args...) \
+    LGR_MESSAGE(TE_LL_RING | TE_LL_CONTROL, TE_LOG_CMSG_USER, \
+                TESTER_CONTROL_MSG_PREFIX _fmt, _parent_id, _id, _args)
 
 /** Size of the Tester shell command buffer */
 #define TESTER_CMD_BUF_SZ           32768
@@ -867,19 +879,20 @@ log_test_start(unsigned int flags,
             {
                 if (ri->u.script.page == NULL)
                 {
-                    TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                    TESTER_CONTROL_LOG(
+                                parent, test,
                                 "TEST %s \"%s\" TIN %u HASH %s ARGs%s",
-                                parent, test, name,
+                                name,
                                 PRINT_STRING(ri->u.script.objective),
                                 tin, PRINT_STRING(hash_str),
                                 PRINT_STRING(params_str));
                 }
                 else
                 {
-                    TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                    TESTER_CONTROL_LOG(
+                                parent, test,
                                 "TEST %s \"%s\" TIN %u PAGE %s HASH %s "
-                                "ARGs%s",
-                                parent, test, name,
+                                "ARGs%s", name,
                                 PRINT_STRING(ri->u.script.objective),
                                 tin, ri->u.script.page,
                                 PRINT_STRING(hash_str),
@@ -898,18 +911,20 @@ log_test_start(unsigned int flags,
             {
                 if (ri->u.script.page == NULL)
                 {
-                    TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                    TESTER_CONTROL_LOG(
+                                parent, test,
                                 "TEST %s \"%s\" HASH %s ARGs%s",
-                                parent, test, name,
+                                name,
                                 PRINT_STRING(ri->u.script.objective),
                                 PRINT_STRING(hash_str),
                                 PRINT_STRING(params_str));
                 }
                 else
                 {
-                    TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                    TESTER_CONTROL_LOG(
+                                parent, test,
                                 "TEST %s \"%s\" PAGE %s HASH %s ARGs%s",
-                                parent, test, name,
+                                name,
                                 PRINT_STRING(ri->u.script.objective),
                                 ri->u.script.page,
                                 PRINT_STRING(hash_str),
@@ -920,11 +935,10 @@ log_test_start(unsigned int flags,
 
         case RUN_ITEM_SESSION:
             assert(tin == TE_TIN_INVALID);
-            TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
-                        "SESSION HASH %s ARGs%s",
-                        parent, test,
-                        PRINT_STRING(hash_str),
-                        PRINT_STRING(params_str));
+            TESTER_CONTROL_LOG(parent, test,
+                               "SESSION HASH %s ARGs%s",
+                               PRINT_STRING(hash_str),
+                               PRINT_STRING(params_str));
             break;
 
         case RUN_ITEM_PACKAGE:
@@ -932,18 +946,20 @@ log_test_start(unsigned int flags,
             authors = persons_info_to_string(&ri->u.package->authors);
             if (authors == NULL)
             {
-                TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                TESTER_CONTROL_LOG(
+                            parent, test,
                             "PACKAGE %s \"%s\" HASH %s ARGs%s",
-                            parent, test, name,
+                            name,
                             PRINT_STRING(ri->u.package->objective),
                             PRINT_STRING(hash_str),
                             PRINT_STRING(params_str));
             }
             else
             {
-                TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                TESTER_CONTROL_LOG(
+                            parent, test,
                             "PACKAGE %s \"%s\" AUTHORS%s HASH %s ARGs%s",
-                            parent, test, ri->u.package->name,
+                            ri->u.package->name,
                             PRINT_STRING(ri->u.package->objective),
                             PRINT_STRING(authors),
                             PRINT_STRING(hash_str),
@@ -971,10 +987,9 @@ static void
 log_test_result(test_id parent, test_id test, te_test_status status,
                 const char *error)
 {
-    TE_LOG_RING(TESTER_CONTROL,
-                TESTER_CONTROL_MSG_PREFIX "%s %s",
-                parent, test, te_test_status_to_str(status),
-                error == NULL ? "" : error);
+    TESTER_CONTROL_LOG(parent, test, "%s %s",
+                       te_test_status_to_str(status),
+                       error == NULL ? "" : error);
 }
 
 
@@ -1084,8 +1099,8 @@ tester_test_status_to_te_test_result(tester_test_status status,
              */
             saved_id = te_test_id;
             te_test_id = id;
-            TE_LOG(TE_LL_ERROR, "Tester Verdict", TE_LOG_CMSG_USER,
-                   "%s", *error);
+            TE_LOG(TE_LL_ERROR | TE_LL_CONTROL, "Tester Verdict",
+                   TE_LOG_VERDICT_USER, "%s", *error);
             te_test_id = saved_id;
         }
 
