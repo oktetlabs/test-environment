@@ -220,11 +220,16 @@ te_test_verdict_fail_state_update(const char *fmt, ...)
 
     tester_test_verdict_fail_state.hdr.id = te_test_id;
 
-    va_start(ap, fmt);
-    (void)vsnprintf(tester_test_verdict_fail_state.str,
-                    sizeof(tester_test_verdict_fail_state.str),
-                    fmt, ap);
-    va_end(ap);
+    if (fmt != NULL)
+    {
+        va_start(ap, fmt);
+        (void)vsnprintf(tester_test_verdict_fail_state.str,
+                        sizeof(tester_test_verdict_fail_state.str),
+                        fmt, ap);
+        va_end(ap);
+    }
+    else
+        tester_test_verdict_fail_state.str[0] = '\0';
 }
 
 void
@@ -234,11 +239,16 @@ te_test_verdict_fail_substate_update(const char *fmt, ...)
 
     tester_test_verdict_fail_substate.hdr.id = te_test_id;
 
-    va_start(ap, fmt);
-    (void)vsnprintf(tester_test_verdict_fail_substate.str,
-                    sizeof(tester_test_verdict_fail_substate.str),
-                    fmt, ap);
-    va_end(ap);
+    if (fmt != NULL)
+    {
+        va_start(ap, fmt);
+        (void)vsnprintf(tester_test_verdict_fail_substate.str,
+                        sizeof(tester_test_verdict_fail_substate.str),
+                        fmt, ap);
+        va_end(ap);
+    }
+    else
+        tester_test_verdict_fail_substate.str[0] = '\0';
 }
 
 
@@ -246,8 +256,11 @@ te_test_verdict_fail_substate_update(const char *fmt, ...)
 const char *
 te_test_verdict_fail_state_get(void)
 {
-    if (strlen(tester_test_verdict_fail_state.str) > 0)
+    if (tester_test_verdict_fail_state.str != NULL &&
+        strlen(tester_test_verdict_fail_state.str) > 0)
+    {
         return tester_test_verdict_fail_state.str;
+    }
     else
         return NULL;
 }
@@ -255,8 +268,11 @@ te_test_verdict_fail_state_get(void)
 const char *
 te_test_verdict_fail_substate_get(void)
 {
-    if (strlen(tester_test_verdict_fail_substate.str) > 0)
+    if (tester_test_verdict_fail_substate.str != NULL && 
+        strlen(tester_test_verdict_fail_substate.str) > 0)
+    {
         return tester_test_verdict_fail_substate.str;
+    }
     else
         return NULL;
 }

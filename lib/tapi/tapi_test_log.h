@@ -48,7 +48,7 @@ extern "C" {
     do {                                                            \
         LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_STEP, _fs); \
         te_test_verdict_fail_state_update(_fs);                     \
-        te_test_verdict_fail_substate_update("");                   \
+        te_test_verdict_fail_substate_update(NULL);                 \
     } while (0)
 
 /**
