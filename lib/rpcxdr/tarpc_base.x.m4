@@ -1303,8 +1303,14 @@ struct tarpc_msghdr {
     struct tarpc_iovec   msg_iov<>;      /**< Vector */
     tarpc_size_t         msg_iovlen;     /**< Passed to recvmsg() */
     struct tarpc_cmsghdr msg_control<>;  /**< Control info array */
-    tarpc_size_t         msg_controllen; /**< msg_controllen actually
-                                              used/retrieved on TA */
+    int64_t              msg_controllen; /**< msg_controllen actually
+                                              used/retrieved on TA. If
+                                              negative value is passed
+                                              by RPC caller, it is
+                                              ignored; msg_controllen
+                                              used on TA is computed
+                                              from control messages
+                                              lengths in that case. */
 
     uint8_t              msg_control_tail<>;  /**< Not parsed, will be
                                                    appended to msg_control

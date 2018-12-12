@@ -328,15 +328,10 @@ typedef struct rpc_msghdr {
 
     /* Non-standard fields for test purposes */
     size_t            real_msg_controllen; /**< Real length of msg_control
-                                                buffer (used only when
-                                                converting control data
-                                                back from TARPC
-                                                representation - as due to
-                                                alignment issues it is
-                                                possible that more bytes
-                                                are required for the same
-                                                data than on TA). Ignored
-                                                if zero. */
+                                                buffer. Ignored if zero;
+                                                if non-zero. value of
+                                                msg_controllen will be used
+                                                explicitly on TA. */
     size_t            got_msg_controllen;  /**< msg_controllen value
                                                 obtained on TA */
     int               msg_cmsghdr_num;     /**< Number of valid @b cmsghdr

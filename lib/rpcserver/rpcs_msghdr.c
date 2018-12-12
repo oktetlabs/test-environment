@@ -155,6 +155,9 @@ rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
         msg->msg_controllen = 0;
     }
 
+    if (tarpc_msg->msg_controllen >= 0)
+        msg->msg_controllen = tarpc_msg->msg_controllen;
+
     msg->msg_flags = send_recv_flags_rpc2h(tarpc_msg->msg_flags);
     helper->orig_msg_flags = msg->msg_flags;
 

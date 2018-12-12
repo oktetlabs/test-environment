@@ -181,6 +181,8 @@ msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg, tarpc_msghdr *tarpc_msg,
      */
     MSGHDR_MSG_FLAGS_INIT(rpc_msg, tarpc_msg);
 
+    tarpc_msg->msg_controllen = -1;
+
     if (rpc_msg->msg_control != NULL)
     {
         int rc;
@@ -193,6 +195,12 @@ msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg, tarpc_msghdr *tarpc_msg,
         unsigned int    tail_len;
         size_t          data_len;
         int             cmsghdr_num;
+
+        if (rpc_msg->real_msg_controllen > 0)
+        {
+            msg.msg_controllen = rpc_msg->real_msg_controllen;
+            tarpc_msg->msg_controllen = rpc_msg->msg_controllen;
+        }
 
         /*
          * By default parse msg_control only for send calls.
@@ -236,9 +244,9 @@ msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg, tarpc_msghdr *tarpc_msg,
         }
 
         if ((size_t)(tail_start - (uint8_t *)rpc_msg->msg_control) <
-                                                  rpc_msg->msg_controllen)
+                                                  msg.msg_controllen)
         {
-            tail_len = rpc_msg->msg_controllen -
+            tail_len = msg.msg_controllen -
                        (tail_start - (uint8_t *)rpc_msg->msg_control);
         }
         else
@@ -260,11 +268,11 @@ msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg, tarpc_msghdr *tarpc_msg,
             tarpc_msg->msg_control_tail.msg_control_tail_len = tail_len;
         }
 
-        if (tail_len < rpc_msg->msg_controllen)
+        if (tail_len < msg.msg_controllen)
         {
             rc = msg_control_h2rpc(
                             (uint8_t *)rpc_msg->msg_control,
-                            rpc_msg->msg_controllen - tail_len,
+                            msg.msg_controllen - tail_len,
                             &tarpc_msg->msg_control.msg_control_val,
                             &tarpc_msg->msg_control.msg_control_len,
                             NULL, 0);
@@ -276,6 +284,12 @@ msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg, tarpc_msghdr *tarpc_msg,
                 return rc;
             }
         }
+    }
+    else
+    {
+        /* Passing non-zero msg_controllen with NULL msg_control. */
+        if (rpc_msg->msg_controllen > 0)
+            tarpc_msg->msg_controllen = rpc_msg->msg_controllen;
     }
 
     return 0;
