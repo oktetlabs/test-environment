@@ -54,6 +54,7 @@ engine_libs = [
     'tapi_nvme',
     'tapi_tad',
     'tapi_tcp_states',
+    'tapi_packetdrill',
     'tce',
     'trc',
     'rpcc_dpdk',
