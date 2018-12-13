@@ -91,8 +91,8 @@ static struct te_log_out_params cm =
  * State of the test that should be logged in case of test failure if @b
  * verdict_test_fail_state behaviour is enabled.
  */
-static struct tester_test_verdict tester_test_verdict_fail_state = {};
-static struct tester_test_verdict tester_test_verdict_fail_substate = {};
+static struct tester_test_verdict tester_test_verdict_fail_state;
+static struct tester_test_verdict tester_test_verdict_fail_substate;
 
 /**
  * atexit() callback to deallocate resources used by test verdicts
