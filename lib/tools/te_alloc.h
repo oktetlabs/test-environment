@@ -21,6 +21,11 @@
 #ifndef __TE_TOOLS_ALLOC_H__
 #define __TE_TOOLS_ALLOC_H__
 
+#include "te_config.h"
+
+#ifdef HAVE_STDDEF_H
+#include <stddef.h>
+#endif
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
