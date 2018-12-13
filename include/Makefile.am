@@ -47,7 +47,6 @@ te_headers = \
 	logger_int.h \
 	rcf_internal.h \
 	te_config.h \
-	te_expand.h \
 	ta_common.h \
 	te_win_defs.h \
 	te_ethernet.h \

@@ -308,7 +308,6 @@ headers += [
     'te_ethernet.h',
     'te_ethernet_phy.h',
     'te_ethtool.h',
-    'te_expand.h',
     'te_param.h',
     'te_power_sw.h',
     'te_printf.h',
