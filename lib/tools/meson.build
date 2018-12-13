@@ -23,7 +23,7 @@ headers += files(
     'te_kernel_log.h',
     'te_kvpair.h',
     'te_log_fmt.h',
-    'te_expand.h'
+    'te_expand.h',
     'te_log_stack.h',
     'te_serial_parser.h',
     'te_shell_cmd.h',
@@ -48,7 +48,7 @@ sources += files(
     'te_kvpair.c',
     'te_log_file.c',
     'te_log_fmt.c',
-    'te_expand.c'
+    'te_expand.c',
     'te_log_stack.c',
     'te_shell_cmd.c',
     'te_sigmap.c',
