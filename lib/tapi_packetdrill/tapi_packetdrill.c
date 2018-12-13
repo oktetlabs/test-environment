@@ -386,6 +386,82 @@ tapi_packetdrill_app_stop(tapi_packetdrill_app *app)
     return 0;
 }
 
+/**
+ * Map packetdrill log line to native TE log style.
+ *
+ * @param str           String with one line of packetdrill log.
+ * @param test_name     Packetdrill test name.
+ */
+static void
+parse_log_str(char *str, const char *test_name)
+{
+    char *tmp_ptr = NULL;
+
+    /* Example: socket syscall: 1544162535.818347 */
+    tmp_ptr = strstr(str, "syscall:");
+    if (tmp_ptr != NULL)
+    {
+        *(tmp_ptr - 1) = '\0';
+        TE_LOG_RING(test_name, "%s() -> 0", str);
+        return;
+    }
+
+    /*
+     * Example:tests/linux/close/close-so-linger-onoff-1-linger-0-rst.pkt:14:
+     * warning handling packet: bad value outbound TCP option 3
+     */
+    tmp_ptr = strstr(str, "warning");
+    if (tmp_ptr != NULL)
+    {
+        TE_LOG_WARN(test_name, "%s", str);
+        return;
+    }
+
+    /*
+     * Example: tmp_mss-getsockopt-tcp_maxseg-client.pkt:7:
+     * runtime error in connect call: Expected result 0 but
+     * got -1 with errno 111 (Connection refused)
+     */
+    tmp_ptr = strstr(str, "error");
+    if (tmp_ptr != NULL)
+    {
+        /*
+         * Any packetdrill test errors contain the name of the test,
+         * the rest of errors is displayed as INFO()
+         */
+        tmp_ptr = strstr(str, test_name);
+        if (tmp_ptr != NULL)
+        {
+            tmp_ptr += strlen(test_name) + 1;
+            TEST_VERDICT("%s", tmp_ptr);;
+        }
+    }
+
+    TE_LOG_INFO(test_name, "%s", str);
+}
+
+/**
+ * Parse packetdrill logs line-by-line to make it looks like native TE logs.
+ *
+ * @param packetdrill_logs   Packetdrill output.
+ * @param test_name          Packetdrill test name.
+ */
+static void
+parse_logs(te_string *packetdrill_logs, const char *test_name)
+{
+    char *tmp_str = NULL;
+    char *line = NULL;
+    char *rest = NULL;
+
+    tmp_str = tapi_strdup(packetdrill_logs->ptr);
+    rest = tmp_str;
+
+    while ((line = strtok_r(rest, "\n", &rest)) != NULL)
+        parse_log_str(line, test_name);
+
+    free(tmp_str);
+}
+
 /* See description in tapi_packetdrill.h */
 te_errno
 tapi_packetdrill_print_logs(tapi_packetdrill_app *app)
@@ -396,7 +472,7 @@ tapi_packetdrill_print_logs(tapi_packetdrill_app *app)
                           &app->stdout);
 
     if (app->stdout.ptr != NULL && app->stdout.len != 0)
-        RING("%s", app->stdout.ptr);
+        parse_logs(&app->stdout, app->opts.short_test_name);
 
     return 0;
 }
