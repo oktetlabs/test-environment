@@ -174,7 +174,7 @@ extern "C" {
 #define RING_VERDICT(fmt...) \
     do {                                                                   \
         LGR_MESSAGE(TE_LL_RING | TE_LL_CONTROL, TE_LOG_VERDICT_USER, fmt); \
-        te_test_verdict(fmt);                                              \
+        te_test_tester_message(fmt);                                       \
     } while (0)
 
 /**
@@ -185,7 +185,7 @@ extern "C" {
 #define WARN_VERDICT(fmt...) \
     do {                                                                   \
         LGR_MESSAGE(TE_LL_WARN | TE_LL_CONTROL, TE_LOG_VERDICT_USER, fmt); \
-        te_test_verdict(fmt);                                              \
+        te_test_tester_message(fmt);                                       \
     } while (0)
 
 /**
@@ -197,7 +197,7 @@ extern "C" {
     do {                                                                   \
         LGR_MESSAGE(TE_LL_ERROR | TE_LL_CONTROL, TE_LOG_VERDICT_USER,      \
                     fmt);                                                  \
-        te_test_verdict(fmt);                                              \
+        te_test_tester_message(fmt);                                       \
     } while (0)
 
 /**
@@ -226,13 +226,13 @@ extern "C" {
 
 
 /**
- * Compose test verdict message and send it to Tester.
+ * Compose test message and send it to Tester.
  *
  * @param fmt           printf()-like format string with TE extensions
  *
  * @note The function uses @e te_test_id global variable.
  */
-extern void te_test_verdict(const char *fmt, ...);
+extern void te_test_tester_message(const char *fmt, ...);
 
 /**
  * Update state of the test to be dumped in case of failure.

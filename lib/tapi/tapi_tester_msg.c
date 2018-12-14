@@ -1,7 +1,7 @@
 /** @file
- * @brief Test API to register verdicts
+ * @brief Test API to send messages to Tester
  *
- * Implementation of test API to register verdicts at Tester.
+ * Implementation of test API to send messages to Tester.
  *
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
@@ -14,7 +14,7 @@
  * $Id$
  */
 
-#define TE_LGR_USER     "Verdict TAPI"
+#define TE_LGR_USER     "Test-Tester Messages TAPI"
 
 #include "te_config.h"
 
@@ -50,8 +50,8 @@
 #include "tester_internal.h"
 
 
-/** Maximum length of the test verdict */
-#define TEST_VERDICT_LEN_MAX    1000
+/** Maximum length of the test message */
+#define TEST_MSG_LEN_MAX    1000
 
 
 #ifdef HAVE_PTHREAD_H
@@ -69,17 +69,17 @@ static struct ipc_client *ipcc = NULL;
 /** Name of the Tester IPC server */
 static const char *ipcs_name;
 
-struct tester_test_verdict {
+struct tester_test_message {
     tester_test_msg_hdr     hdr;
-    char                    str[TEST_VERDICT_LEN_MAX];
+    char                    str[TEST_MSG_LEN_MAX];
 };
 
 /**
- * Storage for test verdict message.
+ * Storage for test message.
  *
  * @note It should be used under lock only.
  */
-static struct tester_test_verdict msg;
+static struct tester_test_message msg;
 
 /**
  * Parameters of the converter to single string.
@@ -88,11 +88,11 @@ static struct te_log_out_params cm =
     { NULL, (uint8_t *)msg.str, sizeof(msg.str), 0 };
 
 /**
- * atexit() callback to deallocate resources used by test verdicts
+ * atexit() callback to deallocate resources used by test message
  * interface.
  */
 static void
-te_test_verdict_close(void)
+te_test_tester_message_close(void)
 {
     int res;
 
@@ -124,14 +124,14 @@ te_test_verdict_close(void)
 }
 
 /**
- * Compose test verdict message and send it to Tester.
+ * Compose test message and send it to Tester.
  *
  * @param fmt           printf()-like format string with TE extensions
  *
  * @note The function uses @e te_test_id global variable.
  */
 void
-te_test_verdict(const char *fmt, ...)
+te_test_tester_message(const char *fmt, ...)
 {
     te_errno    rc;
     va_list     ap;
@@ -173,7 +173,7 @@ te_test_verdict(const char *fmt, ...)
             return;
         }
         assert(ipcc != NULL);
-        atexit(te_test_verdict_close);
+        atexit(te_test_tester_message_close);
 
         msg.hdr.id = te_test_id;
     }
