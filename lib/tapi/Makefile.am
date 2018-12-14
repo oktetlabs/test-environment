@@ -80,7 +80,7 @@ libtapi_la_SOURCES = \
 	tapi_cfg_iptables.c \
 	tapi_cfg_eth.c \
 	tapi_file.c \
-	verdict.c \
+	tapi_tester_msg.c \
 	tapi_test_fail_state.c \
 	tapi_reqs.c \
 	tapi_cfg_acse.c \
