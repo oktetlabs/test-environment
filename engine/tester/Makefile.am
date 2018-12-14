@@ -56,7 +56,7 @@ te_tester_SOURCES = \
 	mix.c \
 	run.c \
 	scenario.c \
-	verdicts.c \
+	test_msg.c \
 	tester.c \
 	tester_interactive.c \
 	tester_serial_thread.c \
