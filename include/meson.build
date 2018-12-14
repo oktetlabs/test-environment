@@ -319,7 +319,7 @@ headers += [
     'te_test_result.h',
     'te_upnp.h',
     'te_win_defs.h',
-    'tester_internal.h',
+    'tester_msg.h',
 ]
 
 if install_dev

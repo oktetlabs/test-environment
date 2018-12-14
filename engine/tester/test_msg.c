@@ -41,7 +41,7 @@
 #include "te_errno.h"
 #include "te_alloc.h"
 #include "ipc_server.h"
-#include "tester_internal.h"
+#include "tester_msg.h"
 #include "tester_result.h"
 
 

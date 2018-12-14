@@ -47,7 +47,7 @@
 #include "te_format.h"
 #include "ipc_client.h"
 #include "tapi_test.h"
-#include "tester_internal.h"
+#include "tester_msg.h"
 
 
 /** Maximum length of the test message */
