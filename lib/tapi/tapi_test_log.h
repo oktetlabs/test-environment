@@ -222,8 +222,11 @@ extern "C" {
  *                   with parameters)
  */
 #define TEST_ARTIFACT(_fmt...) \
-    LGR_MESSAGE(TE_LL_RING | TE_LL_CONTROL, TE_LOG_ARTIFACT_USER, \
-                _fmt)
+    do {                                                              \
+        LGR_MESSAGE(TE_LL_RING | TE_LL_CONTROL, TE_LOG_ARTIFACT_USER, \
+                    _fmt);                                            \
+        te_test_tester_message(TE_TEST_MSG_ARTIFACT, _fmt);           \
+    } while (0)
 
 
 /**

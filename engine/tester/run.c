@@ -2869,6 +2869,15 @@ te_test_result_to_log_buf(te_log_buf *lb, const te_test_result *result)
     {
         te_log_buf_append(lb, "%s;\n", v->str);
     }
+
+    if (!TAILQ_EMPTY(&result->artifacts))
+    {
+        te_log_buf_append(lb, "\nArtifacts:\n");
+        TAILQ_FOREACH(v, &result->artifacts, links)
+        {
+            te_log_buf_append(lb, "%s;\n", v->str);
+        }
+    }
 }
 
 /**

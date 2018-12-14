@@ -22,6 +22,7 @@
  */
 typedef enum te_test_msg_type {
     TE_TEST_MSG_VERDICT,    /**< Test verdict */
+    TE_TEST_MSG_ARTIFACT,   /**< Test artifact */
 } te_test_msg_type;
 
 /**

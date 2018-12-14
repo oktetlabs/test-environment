@@ -83,7 +83,7 @@ register_message(tester_test_results *results,
               rc, (unsigned)id);
         free(msg);
     }
-    else if (type == TE_TEST_MSG_VERDICT)
+    else if (type == TE_TEST_MSG_VERDICT || type == TE_TEST_MSG_ARTIFACT)
     {
         for (test = SLIST_FIRST(&results->list);
              test != NULL && test->id != id;
@@ -102,7 +102,10 @@ register_message(tester_test_results *results,
             if (p != NULL)
             {
                 p->str = msg;
-                TAILQ_INSERT_TAIL(&test->result.verdicts, p, links);
+                if (type == TE_TEST_MSG_VERDICT)
+                    TAILQ_INSERT_TAIL(&test->result.verdicts, p, links);
+                else
+                    TAILQ_INSERT_TAIL(&test->result.artifacts, p, links);
             }
         }
 
