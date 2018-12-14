@@ -26,6 +26,7 @@
 #include "logger_api.h"
 #include "te_log_stack.h"
 #include "tapi_jmp.h"
+#include "tester_msg.h"
 
 
 #ifdef __cplusplus
@@ -174,7 +175,7 @@ extern "C" {
 #define RING_VERDICT(fmt...) \
     do {                                                                   \
         LGR_MESSAGE(TE_LL_RING | TE_LL_CONTROL, TE_LOG_VERDICT_USER, fmt); \
-        te_test_tester_message(fmt);                                       \
+        te_test_tester_message(TE_TEST_MSG_VERDICT, fmt);                  \
     } while (0)
 
 /**
@@ -185,7 +186,7 @@ extern "C" {
 #define WARN_VERDICT(fmt...) \
     do {                                                                   \
         LGR_MESSAGE(TE_LL_WARN | TE_LL_CONTROL, TE_LOG_VERDICT_USER, fmt); \
-        te_test_tester_message(fmt);                                       \
+        te_test_tester_message(TE_TEST_MSG_VERDICT, fmt);                  \
     } while (0)
 
 /**
@@ -197,7 +198,7 @@ extern "C" {
     do {                                                                   \
         LGR_MESSAGE(TE_LL_ERROR | TE_LL_CONTROL, TE_LOG_VERDICT_USER,      \
                     fmt);                                                  \
-        te_test_tester_message(fmt);                                       \
+        te_test_tester_message(TE_TEST_MSG_VERDICT, fmt);                  \
     } while (0)
 
 /**
@@ -228,11 +229,13 @@ extern "C" {
 /**
  * Compose test message and send it to Tester.
  *
+ * @param type          Message type
  * @param fmt           printf()-like format string with TE extensions
  *
  * @note The function uses @e te_test_id global variable.
  */
-extern void te_test_tester_message(const char *fmt, ...);
+extern void te_test_tester_message(te_test_msg_type type,
+                                   const char *fmt, ...);
 
 /**
  * Update state of the test to be dumped in case of failure.

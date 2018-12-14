@@ -17,6 +17,12 @@
 /** Type of IPC used by Tester IPC */
 #define TESTER_IPC              (TRUE)  /** Connection-oriented */
 
+/**
+ * Types of messages which tests send to Tester.
+ */
+typedef enum te_test_msg_type {
+    TE_TEST_MSG_VERDICT,    /**< Test verdict */
+} te_test_msg_type;
 
 /**
  * Representation of the message header passed from tests to Tester.
@@ -24,6 +30,7 @@
  */
 typedef struct tester_test_msg_hdr {
         uint32_t    id;     /**< ID of the test */
+        uint32_t    type;   /**< Message type (see tester_test_msg_type). */
 } tester_test_msg_hdr;
 
 #endif /* !__TE_TESTER_MSG_H__ */

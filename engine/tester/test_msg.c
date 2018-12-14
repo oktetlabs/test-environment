@@ -60,13 +60,14 @@ struct tester_test_msg_listener {
  *
  * @param results       List with tests which are in progress
  * @param id            ID of the test which sent a message
+ * @param type          Message type
  * @param msg           Message body (owned by the routine;
  *                      it is currently assumed to be null-terminated
  *                      string)
  */
 static void
 register_message(tester_test_results *results,
-                 test_id id, char *msg)
+                 test_id id, te_test_msg_type type, char *msg)
 {
     int                 ret;
     te_errno            rc;
@@ -82,7 +83,7 @@ register_message(tester_test_results *results,
               rc, (unsigned)id);
         free(msg);
     }
-    else
+    else if (type == TE_TEST_MSG_VERDICT)
     {
         for (test = SLIST_FIRST(&results->list);
              test != NULL && test->id != id;
@@ -112,6 +113,11 @@ register_message(tester_test_results *results,
             ERROR("Failed to unlock list with status of tests which "
                   "are in progress: %r - deadlock is possible", rc);
         }
+    }
+    else
+    {
+        ERROR("Unknown test message type %u", (unsigned int)type);
+        free(msg);
     }
 }
 
@@ -166,7 +172,7 @@ receive_and_process_message(struct ipc_server *ipcs,
             }
             else
             {
-                register_message(results, hdr.id, str);
+                register_message(results, hdr.id, hdr.type, str);
 
                 /*
                  * Send confirmation that test message

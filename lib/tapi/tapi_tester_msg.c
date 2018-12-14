@@ -131,7 +131,7 @@ te_test_tester_message_close(void)
  * @note The function uses @e te_test_id global variable.
  */
 void
-te_test_tester_message(const char *fmt, ...)
+te_test_tester_message(te_test_msg_type type, const char *fmt, ...)
 {
     te_errno    rc;
     va_list     ap;
@@ -178,6 +178,7 @@ te_test_tester_message(const char *fmt, ...)
         msg.hdr.id = te_test_id;
     }
 
+    msg.hdr.type = type;
     cm.offset = 0;
 
     va_start(ap, fmt);
