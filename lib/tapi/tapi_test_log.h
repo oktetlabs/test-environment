@@ -47,8 +47,8 @@ extern "C" {
 #define TEST_STEP(_fs...) \
     do {                                                            \
         LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_STEP, _fs); \
-        te_test_verdict_fail_state_update(_fs);                     \
-        te_test_verdict_fail_substate_update(NULL);                 \
+        te_test_fail_state_update(_fs);                             \
+        te_test_fail_substate_update(NULL);                         \
     } while (0)
 
 /**
@@ -64,7 +64,7 @@ extern "C" {
 #define TEST_SUBSTEP(_fs...) \
     do {                                                                \
         LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_SUBSTEP, _fs);  \
-        te_test_verdict_fail_substate_update(_fs);                      \
+        te_test_fail_substate_update(_fs);                              \
     } while(0)                                                          \
 
 
@@ -239,7 +239,7 @@ extern void te_test_verdict(const char *fmt, ...);
  *
  * @param fmt     printf()-like format string w/o! TE extensions
  */
-extern void te_test_verdict_fail_state_update(const char *fmt, ...)
+extern void te_test_fail_state_update(const char *fmt, ...)
     __attribute__((format(printf, 1, 2)));
 
 /**
@@ -247,18 +247,18 @@ extern void te_test_verdict_fail_state_update(const char *fmt, ...)
  *
  * @param fmt     printf()-like format string w/o! TE extensions
  */
-extern void te_test_verdict_fail_substate_update(const char *fmt, ...)
+extern void te_test_fail_substate_update(const char *fmt, ...)
     __attribute__((format(printf, 1, 2)));
 
 /**
  * Get the current test state string or @c NULL if it's not filled in.
  */
-extern const char * te_test_verdict_fail_state_get(void);
+extern const char *te_test_fail_state_get(void);
 
 /**
  * Get the current test substate string or @c NULL if it's not filled in.
  */
-extern const char * te_test_verdict_fail_substate_get(void);
+extern const char *te_test_fail_substate_get(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

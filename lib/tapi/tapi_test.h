@@ -103,14 +103,14 @@ extern "C" {
         else if (result == EXIT_FAILURE)                             \
             TEST_ON_JMP_DO_IF_FAILURE;                               \
                                                                      \
-        if (TEST_BEHAVIOUR(verdict_test_fail_state) &&               \
+        if (TEST_BEHAVIOUR(log_test_fail_state) &&                   \
             result == EXIT_FAILURE)                                  \
         {                                                            \
-            const char *s = te_test_verdict_fail_state_get();        \
+            const char *s = te_test_fail_state_get();                \
             if (s != NULL)                                           \
                 TEST_ARTIFACT("STATE: %s", s);                       \
                                                                      \
-            s = te_test_verdict_fail_substate_get();                 \
+            s = te_test_fail_substate_get();                         \
             if (s != NULL)                                           \
                 TEST_ARTIFACT("SUBSTATE: %s", s);                    \
         }                                                            \

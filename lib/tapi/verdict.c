@@ -88,13 +88,6 @@ static struct te_log_out_params cm =
     { NULL, (uint8_t *)msg.str, sizeof(msg.str), 0 };
 
 /**
- * State of the test that should be logged in case of test failure if @b
- * verdict_test_fail_state behaviour is enabled.
- */
-static struct tester_test_verdict tester_test_verdict_fail_state;
-static struct tester_test_verdict tester_test_verdict_fail_substate;
-
-/**
  * atexit() callback to deallocate resources used by test verdicts
  * interface.
  */
@@ -211,68 +204,4 @@ te_test_verdict(const char *fmt, ...)
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&lock);
 #endif
-}
-
-void
-te_test_verdict_fail_state_update(const char *fmt, ...)
-{
-    va_list ap;
-
-    tester_test_verdict_fail_state.hdr.id = te_test_id;
-
-    if (fmt != NULL)
-    {
-        va_start(ap, fmt);
-        (void)vsnprintf(tester_test_verdict_fail_state.str,
-                        sizeof(tester_test_verdict_fail_state.str),
-                        fmt, ap);
-        va_end(ap);
-    }
-    else
-        tester_test_verdict_fail_state.str[0] = '\0';
-}
-
-void
-te_test_verdict_fail_substate_update(const char *fmt, ...)
-{
-    va_list ap;
-
-    tester_test_verdict_fail_substate.hdr.id = te_test_id;
-
-    if (fmt != NULL)
-    {
-        va_start(ap, fmt);
-        (void)vsnprintf(tester_test_verdict_fail_substate.str,
-                        sizeof(tester_test_verdict_fail_substate.str),
-                        fmt, ap);
-        va_end(ap);
-    }
-    else
-        tester_test_verdict_fail_substate.str[0] = '\0';
-}
-
-
-
-const char *
-te_test_verdict_fail_state_get(void)
-{
-    if (tester_test_verdict_fail_state.str != NULL &&
-        strlen(tester_test_verdict_fail_state.str) > 0)
-    {
-        return tester_test_verdict_fail_state.str;
-    }
-    else
-        return NULL;
-}
-
-const char *
-te_test_verdict_fail_substate_get(void)
-{
-    if (tester_test_verdict_fail_substate.str != NULL && 
-        strlen(tester_test_verdict_fail_substate.str) > 0)
-    {
-        return tester_test_verdict_fail_substate.str;
-    }
-    else
-        return NULL;
 }

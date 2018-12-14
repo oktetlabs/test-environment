@@ -92,6 +92,7 @@ sources += files(
     'tapi_test_run_status.c',
     'test_params.c',
     'verdict.c',
+    'tapi_test_fail_state.c',
 )
 deps += [
     dep_lib_asn,

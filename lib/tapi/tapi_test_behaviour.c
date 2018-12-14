@@ -46,7 +46,7 @@ test_behaviour_get(test_behaviour *behaviour)
     GET_BEHV(wait_on_fail);
     GET_BEHV(wait_on_cleanup);
     GET_BEHV(log_stack);
-    GET_BEHV(verdict_test_fail_state);
+    GET_BEHV(log_test_fail_state);
 
 #undef GET_BEHV
 }

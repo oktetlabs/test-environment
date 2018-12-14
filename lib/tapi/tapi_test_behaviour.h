@@ -27,8 +27,9 @@ typedef struct test_behaviour {
                               * this one are set - wait will be done
                               * just once */
     te_bool log_stack;    /**< Enable log stack collection */
-    te_bool verdict_test_fail_state; /**< Verdict state/substate of the
-                                      * test on failure */
+
+    te_bool log_test_fail_state;  /**< Log state/substate of the
+                                       test on failure */
 } test_behaviour;
 
 /**
