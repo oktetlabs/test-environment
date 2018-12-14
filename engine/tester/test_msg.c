@@ -45,26 +45,28 @@
 #include "tester_result.h"
 
 
-struct tester_verdicts_listener {
+struct tester_test_msg_listener {
     struct ipc_server      *ipcs;       /**< IPC server data */
     pthread_t               thread;     /**< Thread control data */
     tester_test_results    *results;    /**< List with tests which
                                              are in progress to store
-                                             received verdicts */
+                                             data from received messages */
     volatile te_bool        stop;       /**< Control to stop listener */
 };
 
 
 /**
- * Register received verdict message.
+ * Register received message.
  *
  * @param results       List with tests which are in progress
- * @param id            ID of the test which generates verdict
- * @param verdict       Verdict (owned by the routine)
+ * @param id            ID of the test which sent a message
+ * @param msg           Message body (owned by the routine;
+ *                      it is currently assumed to be null-terminated
+ *                      string)
  */
 static void
-register_verdict(tester_test_results *results,
-                 test_id id, char *verdict)
+register_message(tester_test_results *results,
+                 test_id id, char *msg)
 {
     int                 ret;
     te_errno            rc;
@@ -76,9 +78,9 @@ register_verdict(tester_test_results *results,
     {
         rc = TE_OS_RC(TE_TESTER, ret);
         ERROR("Failed to lock list with status of tests which are "
-              "in progress: %r - drop verdict for test test %u",
+              "in progress: %r - drop message for test %u",
               rc, (unsigned)id);
-        free(verdict);
+        free(msg);
     }
     else
     {
@@ -88,18 +90,17 @@ register_verdict(tester_test_results *results,
     
         if (test == NULL)
         {
-            ERROR("Verdict message from the test %u which is not "
-                  "running:\n%s", id, verdict);
-            free(verdict);
+            ERROR("Message from the test %u which is not "
+                  "running:\n%s", id, msg);
+            free(msg);
         }
         else
         {
-            /* Add verdict to the list of verdicts */
             te_test_verdict *p = TE_ALLOC(sizeof(*p));
 
             if (p != NULL)
             {
-                p->str = verdict;
+                p->str = msg;
                 TAILQ_INSERT_TAIL(&test->result.verdicts, p, links);
             }
         }
@@ -115,7 +116,7 @@ register_verdict(tester_test_results *results,
 }
 
 /**
- * Receive and process IPC message with test verdict.
+ * Receive and process IPC message from a test.
  *
  * @param ipcs          IPC server to receive message
  * @param results       List with tests which are in progress
@@ -125,7 +126,7 @@ receive_and_process_message(struct ipc_server *ipcs,
                             tester_test_results *results)
 {
     te_errno                    rc;
-    tester_test_verdict_hdr     hdr;
+    tester_test_msg_hdr         hdr;
     size_t                      len = sizeof(hdr);
     struct ipc_server_client   *client = NULL;
     char                       *str;
@@ -135,7 +136,7 @@ receive_and_process_message(struct ipc_server *ipcs,
     {
         if (len == sizeof(hdr))
         {
-            WARN("Empty verdict message is received from the test "
+            WARN("Empty message is received from the test "
                  "with ID %u - ignore", (unsigned)(hdr.id));
         }
         else
@@ -145,7 +146,7 @@ receive_and_process_message(struct ipc_server *ipcs,
     }
     else if (TE_RC_GET_ERROR(rc) != TE_ESMALLBUF)
     {
-        ERROR("Failed to receive verdict message: %r - "
+        ERROR("Failed to receive message: %r - "
               "try to continue", rc);
     }
     else
@@ -154,28 +155,27 @@ receive_and_process_message(struct ipc_server *ipcs,
         str = malloc(len);
         if (str == NULL)
         {
-            ERROR("Failed to allocate memory for verdict string - skip");
+            ERROR("Failed to allocate memory for message body - skip");
         }
         else
         {
             rc = ipc_receive_message(ipcs, str, &len, &client);
             if (rc != 0)
             {
-                ERROR("Failed to receive verdict message "
-                      "string: %r - skip", rc);
+                ERROR("Failed to receive message body: %r - skip", rc);
             }
             else
             {
-                register_verdict(results, hdr.id, str);
+                register_message(results, hdr.id, str);
 
-                /* 
-                 * Send confirmation that verdict message
+                /*
+                 * Send confirmation that test message
                  * has been processed
                  */
                 rc = ipc_send_answer(ipcs, client, NULL, 0);
                 if (rc != 0)
                 {
-                    ERROR("Failed to send verdict message processing "
+                    ERROR("Failed to send test message processing "
                           "confirmation: %r - test %u will hang on",
                           rc, (unsigned)(hdr.id));
                 }
@@ -185,12 +185,12 @@ receive_and_process_message(struct ipc_server *ipcs,
 }
 
 /**
- * Entry point of the verdicts listener thread.
+ * Entry point of the test message listener thread.
  */
 static void *
-tester_verdicts_listener_thread(void *opaque)
+tester_test_msg_listener_thread(void *opaque)
 {
-    tester_verdicts_listener   *ctx = opaque;
+    tester_test_msg_listener   *ctx = opaque;
     fd_set                      fds;
     int                         max_fd;
     struct timeval              timeout;
@@ -223,7 +223,7 @@ tester_verdicts_listener_thread(void *opaque)
 
 /* See the description in tester_result.h */
 te_errno
-tester_verdicts_listener_start(tester_verdicts_listener **ctx,
+tester_test_msg_listener_start(tester_test_msg_listener **ctx,
                                tester_test_results       *results)
 {
     te_errno  rc;
@@ -273,7 +273,7 @@ tester_verdicts_listener_start(tester_verdicts_listener **ctx,
     INFO("IPC server '%s' registered", name);
 
     if (pthread_create(&(*ctx)->thread, NULL,
-                       tester_verdicts_listener_thread, *ctx) != 0)
+                       tester_test_msg_listener_thread, *ctx) != 0)
     {
         rc = TE_OS_RC(TE_TESTER, errno);
         (void)ipc_close_server((*ctx)->ipcs);
@@ -287,7 +287,7 @@ tester_verdicts_listener_start(tester_verdicts_listener **ctx,
 
 /* See the description in tester_result.h */
 te_errno
-tester_verdicts_listener_stop(tester_verdicts_listener **ctx)
+tester_test_msg_listener_stop(tester_test_msg_listener **ctx)
 {
     te_errno    rc;
     int         ret;

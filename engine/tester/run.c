@@ -168,7 +168,7 @@ typedef struct tester_run_data {
     tester_test_results         results;    /**< Global storage of
                                                  results for tests
                                                  which are in progress */
-    tester_verdicts_listener   *vl;         /**< Verdicts listener
+    tester_test_msg_listener   *vl;         /**< Test messages listener
                                                  control data */
 #if WITH_TRC
     const te_trc_db            *trc_db;     /**< TRC database handle */
@@ -3228,10 +3228,10 @@ tester_run(testing_scenario   *scenario,
     if (rc != 0)
         return rc;
 
-    rc = tester_verdicts_listener_start(&data.vl, &data.results);
+    rc = tester_test_msg_listener_start(&data.vl, &data.results);
     if (rc != 0)
     {
-        ERROR("Failed to start verdicts listener: %r", rc);
+        ERROR("Failed to start test messages listener: %r", rc);
         return rc;
     }
 
@@ -3304,10 +3304,10 @@ tester_run(testing_scenario   *scenario,
 
     tester_run_destroy_ctx(&data);
 
-    rc2 = tester_verdicts_listener_stop(&data.vl);
+    rc2 = tester_test_msg_listener_stop(&data.vl);
     if (rc2 != 0)
     {
-        ERROR("Failed to stop verdicts listener: %r", rc2);
+        ERROR("Failed to stop test messages listener: %r", rc2);
         TE_RC_UPDATE(rc, rc2);
     }
 

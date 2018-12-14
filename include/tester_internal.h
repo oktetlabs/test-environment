@@ -25,11 +25,11 @@
 
 
 /**
- * Representation of the verdict header passed from tests to Tester.
- * Verdict message string is passed just after the header.
+ * Representation of the message header passed from tests to Tester.
+ * Message body is passed just after the header.
  */
-typedef struct tester_test_verdict_hdr {
+typedef struct tester_test_msg_hdr {
         uint32_t    id;     /**< ID of the test */
-} tester_test_verdict_hdr;
+} tester_test_msg_hdr;
 
 #endif /* !__TE_TESTER_INTERNAL_H__ */

@@ -70,7 +70,7 @@ static struct ipc_client *ipcc = NULL;
 static const char *ipcs_name;
 
 struct tester_test_verdict {
-    tester_test_verdict_hdr hdr;
+    tester_test_msg_hdr     hdr;
     char                    str[TEST_VERDICT_LEN_MAX];
 };
 
