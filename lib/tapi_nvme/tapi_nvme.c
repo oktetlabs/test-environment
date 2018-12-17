@@ -409,10 +409,10 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
 
     if (rc != 0)
     {
-        RING("nvme-cli output\n"
-             "stdout:\n%s\n"
-             "stderr:\n%s",
-             str_stdout.ptr, str_stderr.ptr);
+        ERROR("nvme-cli output\n"
+              "stdout:\n%s\n"
+              "stderr:\n%s",
+              str_stdout.ptr, str_stderr.ptr);
         return rc;
     }
 
