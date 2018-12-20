@@ -10763,7 +10763,8 @@ TARPC_FUNC_STATIC(drain_fd, {},
 /*---------------------- wrappers for syscall -------------------------------*/
 /*
  * This is not an exhaustive list of syscalls, it is designed to test the
- * capabilities of some libraries by some test suites.
+ * capabilities of some libraries by some test suites,
+ * see: https://bugzilla.oktetlabs.ru/show_bug.cgi?id=9863
  *
  * WARNING: Some architectures have very quirky syscalls,
  * for example x86-64 and ARM there is no socketcall() system call,
