@@ -29,7 +29,18 @@
 extern "C" {
 #endif
 
-/* Flavors of IP versions we support. */
+/** @page lib-tapi_packetdrill-instruction Instruction to work with packetdrill API
+ *
+ * \code{.sh}
+ * git clone --single-branch --branch te https://git.oktetlabs.ru/git/oktetlabs/packetdrill.git
+ * cd packetdrill/gtests/net/packetdrill
+ * ./configure
+ * make
+ * export TE_PACKETDRILL_DIR=$PWD
+ * \endcode
+ */
+
+/** Flavors of IP versions we support. */
 typedef enum {
     TAPI_PACKETDRILL_IP_UNKNOWN = -1,
     TAPI_PACKETDRILL_IP_VERSION_4,          /**< Native IPv4, with AF_INET
