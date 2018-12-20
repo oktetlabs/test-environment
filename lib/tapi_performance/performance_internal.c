@@ -118,7 +118,7 @@ perf_app_wait(tapi_perf_app *app, int16_t timeout)
     if (timeout == TAPI_PERF_TIMEOUT_DEFAULT)
         timeout = get_default_timeout(&app->opts);
     app->rpcs->timeout = TE_SEC2MS(timeout);
-    RPC_AWAIT_IUT_ERROR(app->rpcs);
+    RPC_AWAIT_ERROR(app->rpcs);
     pid = rpc_waitpid(app->rpcs, app->pid, &stat, 0);
     if (pid != app->pid)
     {
