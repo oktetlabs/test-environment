@@ -239,7 +239,17 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
 
     while (ctx->rc == 0 && attrs[0] != NULL && attrs[1] != NULL)
     {
-        if (xmlStrcmp(attrs[0], CONST_CHAR2XML("name")) == 0)
+        /*
+         * Session name is ignored because currently Tester ignores
+         * name attribute of <session> tag in package.xml, instead
+         * using name attribute of parent <run> tag. And it does
+         * not match this name to TRC database, but only allows to
+         * use it when specifying test path to be executed.
+         * For consistency the same should be done here if session
+         * name is printed to RAW log.
+         */
+        if (ctx->type != TRC_TEST_SESSION &&
+            xmlStrcmp(attrs[0], CONST_CHAR2XML("name")) == 0)
         {
             name_found = TRUE;
             if (!trc_db_walker_step_test(ctx->db_walker,
