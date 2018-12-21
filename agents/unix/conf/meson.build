@@ -57,23 +57,6 @@ endif
 if conf.contains('tr069')
     sources += files('base/conf_acse.c')
 endif
-if conf.contains('wifi')
-    dep_iw = cc.find_library('iw')
-    if dep_iw.found() and cc.has_function('iw_sockets_open', args: te_cflags,
-                                          dependencies: dep_iw)
-        c_args += [ '-DHAVE_LIBPAM' ]
-        deps += [ dep_iw ]
-        h = 'iwlib.h'
-        if cc.has_header(h)
-            c_args += [ '-DHAVE_' + h.to_upper().underscorify() ]
-        else
-            error('Cannot find iwlib.h header')
-        endif
-    else
-        error('Cannot find iw library')
-    endif
-    sources += files('base/conf_wifi.c')
-endif
 if conf.contains('iptables')
     c_args += [ '-DWITH_IPTABLES' ]
     sources += files('base/conf_iptables.c')

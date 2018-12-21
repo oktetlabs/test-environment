@@ -73,10 +73,6 @@ if CFG_TR069
 libconf_a_SOURCES += base/conf_acse.c 
 endif
 
-if CFG_UNIX_WIFI
-libconf_a_SOURCES += base/conf_wifi.c
-endif
-
 if CFG_IPTABLES_SUPPORT
 libconf_a_SOURCES += base/conf_iptables.c
 endif

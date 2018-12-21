@@ -234,9 +234,6 @@ extern te_errno ta_unix_conf_net_snmp_stats_init();
 #ifdef ENABLE_VCM_SUPPORT
 extern te_errno ta_unix_conf_vcm_init();
 #endif
-#ifdef ENABLE_WIFI_SUPPORT
-extern te_errno ta_unix_conf_wifi_init();
-#endif
 
 #ifdef WITH_ISCSI
 extern te_errno ta_unix_iscsi_target_init();
@@ -1166,10 +1163,6 @@ rcf_ch_conf_init()
         if (ta_unix_iscsi_target_init() != 0)
             goto fail;
         if (iscsi_initiator_conf_init() != 0)
-            goto fail;
-#endif
-#ifdef ENABLE_WIFI_SUPPORT
-        if (ta_unix_conf_wifi_init() != 0)
             goto fail;
 #endif
 #ifdef ENABLE_PCI_SUPPORT
