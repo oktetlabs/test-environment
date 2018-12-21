@@ -936,7 +936,8 @@ log_test_start(unsigned int flags,
         case RUN_ITEM_SESSION:
             assert(tin == TE_TIN_INVALID);
             TESTER_CONTROL_LOG(parent, test,
-                               "SESSION HASH %s ARGs%s",
+                               "SESSION %s HASH %s ARGs%s",
+                               (name == NULL ? "session" : name),
                                PRINT_STRING(hash_str),
                                PRINT_STRING(params_str));
             break;
