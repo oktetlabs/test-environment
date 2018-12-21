@@ -423,7 +423,7 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl,
 {
     int i, count;
     read_result rc;
-    te_string device_str = TE_STRING_INIT;
+    te_string device_str = TE_STRING_INIT_STATIC(BUFFER_SIZE);
 
     nvme_fabric_info info;
     tapi_nvme_internal_dirinfo names[MAX_ADMIN_DEVICES];
