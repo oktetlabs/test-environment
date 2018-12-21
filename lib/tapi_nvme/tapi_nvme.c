@@ -27,7 +27,6 @@
 
 #define BASE_NVME_FABRICS       "/sys/class/nvme-fabrics/ctl"
 
-#define NAMESPACE_SIZE          (32)
 #define MAX_NAMESPACES          (32)
 #define MAX_ADMIN_DEVICES       (32)
 #define TRANPORT_SIZE           (16)
@@ -95,11 +94,33 @@ run_command(rcf_rpc_server *rpcs, opts_t opts, const char *format_cmd, ...)
     return run_command_generic(rpcs, opts, command);
 }
 
+typedef struct nvme_fabric_namespace_info {
+    int admin_device_index;
+    int controller_index;
+    int namespace_index;
+} nvme_fabric_namespace_info;
+
+#define NVME_FABRIC_NAMESPACE_INFO_DEFAULTS (nvme_fabric_namespace_info) {  \
+        .admin_device_index = -1,                                           \
+        .controller_index = -1,                                             \
+        .namespace_index = -1,                                              \
+    }
+
+static te_errno
+nvme_fabric_namespace_info_string(nvme_fabric_namespace_info *info,
+                                  te_string *string)
+{
+    return te_string_append(string, "nvme%dn%d",
+                            info->admin_device_index,
+                            info->namespace_index);
+}
+
 typedef struct nvme_fabric_info {
     struct sockaddr_in addr;
     tapi_nvme_transport transport;
     char subnqn[NAME_MAX];
-    char namespace[NAMESPACE_SIZE];    /* TODO: it is list in future */
+    nvme_fabric_namespace_info namespaces[MAX_NAMESPACES];
+    int namespaces_count;
 } nvme_fabric_info;
 
 typedef enum read_result {
@@ -112,12 +133,65 @@ typedef read_result (*read_info)(rcf_rpc_server *rpcs,
                                  nvme_fabric_info *info,
                                  const char *filepath);
 
-static read_result
-read_nvme_fabric_info_namespace(rcf_rpc_server *rpcs,
-                                nvme_fabric_info *info,
-                                const char *filepath)
+static te_bool
+parse_with_prefix(const char *prefix, const char **str, int *result,
+                  te_bool is_optional)
 {
-    int count;
+    size_t prefix_len = strlen(prefix);
+
+    if (strncmp(prefix, *str, prefix_len) == 0)
+    {
+        const char *value_str = *str + prefix_len;
+        char *end = NULL;
+        long value;
+
+        value = strtol(value_str, &end, 10);
+        if (value > INT_MAX || value < INT_MIN || end == value_str)
+            return FALSE;
+
+        *result = (int)value;
+        *str = end;
+    }
+    else if (!is_optional)
+        return FALSE;
+
+    return TRUE;
+}
+
+static te_errno
+parse_namespace_info(const char *str,
+                     nvme_fabric_namespace_info *namespace_info)
+{
+    nvme_fabric_namespace_info result = NVME_FABRIC_NAMESPACE_INFO_DEFAULTS;
+
+    if (str == NULL || namespace_info == NULL)
+        return TE_EINVAL;
+
+#define PARSE(_prefix, _value, _is_optional)                            \
+    do {                                                                \
+        if (!parse_with_prefix(_prefix, &str, &_value, _is_optional))   \
+            return TE_EINVAL;                                           \
+    } while (0)
+
+    PARSE("nvme", result.admin_device_index, FALSE);
+    PARSE("c", result.controller_index, TRUE);
+    PARSE("n", result.namespace_index, FALSE);
+
+#undef PARSE
+
+    if (*str != '\0')
+        return TE_EINVAL;
+
+    *namespace_info = result;
+    return 0;
+}
+
+static read_result
+read_nvme_fabric_info_namespaces(rcf_rpc_server *rpcs,
+                                 nvme_fabric_info *info,
+                                 const char *filepath)
+{
+    int i, count;
     tapi_nvme_internal_dirinfo names[MAX_NAMESPACES];
 
     count = tapi_nvme_internal_filterdir(rpcs, filepath, "nvme", names,
@@ -134,8 +208,22 @@ read_nvme_fabric_info_namespace(rcf_rpc_server *rpcs,
     if (count == 0)
         return READ_CONTINUE;
 
-    return strcpy(info->namespace, names[0].name) != NULL ?
-           READ_SUCCESS: READ_ERROR;
+    info->namespaces_count = 0;
+    for (i = 0; i < count; i++)
+    {
+        te_errno rc;
+
+        rc = parse_namespace_info(names[i].name, info->namespaces + i);
+        if (rc != 0)
+            WARN("Cannot parse namespace '%s'", names[i].name);
+        else
+            info->namespaces_count++;
+    }
+
+    if (info->namespaces_count == 0)
+        return READ_CONTINUE;
+
+    return READ_SUCCESS;
 }
 
 /**
@@ -289,7 +377,7 @@ read_nvme_fabric_info(rcf_rpc_server *rpcs,
     read_result rc;
     char path[RCF_MAX_PATH];
     read_nvme_fabric_read_action actions[] = {
-        { read_nvme_fabric_info_namespace, "" },
+        { read_nvme_fabric_info_namespaces, "" },
         { read_nvme_fabric_info_addr, "address" },
         { read_nvme_fabric_info_subnqn, "subsysnqn" },
         { read_nvme_fabric_info_transport, "transport" }
@@ -335,6 +423,7 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl,
 {
     int i, count;
     read_result rc;
+    te_string device_str = TE_STRING_INIT;
 
     nvme_fabric_info info;
     tapi_nvme_internal_dirinfo names[MAX_ADMIN_DEVICES];
@@ -351,9 +440,31 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl,
             continue;
         if (is_target_eq(target, &info, names[i].name) == TRUE)
         {
+            te_errno error;
+
+            /* Currently we are configuring only 1 namespace per subsystem
+             * while using kernel targets. We have no control over onvme
+             * namespace configuration right now, but it also doing in the
+             * same way. So appearance of more than 1 namespace per NVMoF
+             * device would be very suspicious and highly likely a bug.
+             * Fail the entire test for further investigation.
+             */
+            if (info.namespaces_count > 1)
+            {
+                TEST_FAIL("We found %d namespaces for %s device, "
+                          "but only one was expected",
+                          info.namespaces_count, host_ctrl->admin_dev);
+            }
+
             host_ctrl->admin_dev = tapi_strdup(names[i].name);
             host_ctrl->device = tapi_malloc(NAME_MAX);
-            snprintf(host_ctrl->device, NAME_MAX, "/dev/%s", info.namespace);
+
+            error = nvme_fabric_namespace_info_string(&info.namespaces[0],
+                                                      &device_str);
+            if (error != 0)
+                return error;
+
+            snprintf(host_ctrl->device, NAME_MAX, "/dev/%s", device_str.ptr);
             return 0;
         }
     }
