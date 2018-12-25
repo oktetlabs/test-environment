@@ -1290,6 +1290,38 @@ extern te_errno tapi_tcp_set_ts_opt(asn_value *val,
  */
 extern int tapi_tcp_compare_seqn(uint32_t seqn1, uint32_t seqn2);
 
+/**
+ * Create tcp eth CSAP for given ip address family
+ * For creating csap for anyaddr (0.0.0.0 or ::) pass @c NULL as @p loc_addr or
+ * @p rem_addr.
+ *
+ * @param      ta_name       Test Agent name
+ * @param      sid           RCF SID
+ * @param      eth_dev       Name of Ethernet interface
+ * @param      receive_mode  Receive mode bitmask, see #tad_eth_recv_mode
+ *                           in tad_common.h. Use @c TAD_ETH_RECV_DEF
+ *                           by default.
+ * @param      loc_mac       Local MAC address (or NULL)
+ * @param      rem_mac       Remote MAC address (or NULL)
+ * @param      loc_addr      Local IP sockaddr (or NULL)
+ * @param      rem_addr      Remote IP sockaddr (or NULL)
+ * @param[out] tcp_csap      Location for the IP CSAP handle
+ * @param      ip_family     Address family of created csap
+ *                           (AF_INET or AF_INET6)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tcp_ip_eth_csap_create(const char            *ta_name,
+                                            int                    sid,
+                                            const char            *eth_dev,
+                                            unsigned int           receive_mode,
+                                            const uint8_t         *loc_mac,
+                                            const uint8_t         *rem_mac,
+                                            const struct sockaddr *loc_addr,
+                                            const struct sockaddr *rem_addr,
+                                            csap_handle_t         *tcp_csap,
+                                            int                    ip_family);
+
 #endif /* !__TE_TAPI_TCP_H__ */
 
 /**@} <!-- END tapi_tad_tcp --> */
