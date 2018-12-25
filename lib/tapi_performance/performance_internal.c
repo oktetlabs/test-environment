@@ -120,9 +120,15 @@ perf_app_wait(tapi_perf_app *app, int16_t timeout)
     app->rpcs->timeout = TE_SEC2MS(timeout);
     RPC_AWAIT_ERROR(app->rpcs);
     pid = rpc_waitpid(app->rpcs, app->pid, &stat, 0);
-    if (pid != app->pid)
+    if (RPC_ERRNO(app->rpcs) != 0)
     {
         ERROR("waitpid() failed with errno %r", RPC_ERRNO(app->rpcs));
+        return RPC_ERRNO(app->rpcs);
+    }
+    else if (pid != app->pid)
+    {
+        ERROR("waitpid() has returned %d: process with pid %d has not exited",
+              pid, app->pid);
         return TE_RC(TE_TAPI, TE_EFAIL);
     }
     app->pid = -1;
