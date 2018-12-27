@@ -95,6 +95,8 @@ extern const char *te_lgr_entity;
 #define TE_USER_STEP_POP     "StepPop"
 /** Reserved log user for #TEST_STEP_NEXT() macro  */
 #define TE_USER_STEP_NEXT    "StepNext"
+/** Reserved log user for #TEST_STEP_RESET() macro  */
+#define TE_USER_STEP_RESET    "StepReset"
 
 /*@}*/
 

@@ -1453,6 +1453,7 @@ wrapper_process_regular_msg(gpointer data, gpointer user_data)
 {
     log_msg_ptr *msg_ptr = (log_msg_ptr *)data;
     log_msg     *msg = NULL;
+    te_bool      msg_visible = TRUE;
 
     UNUSED(user_data);
 
@@ -1491,13 +1492,19 @@ wrapper_process_regular_msg(gpointer data, gpointer user_data)
                 {
                     msg->nest_lvl = rgt_ctx.current_nest_lvl - 1;
                 }
+                else if (strcmp(msg->user, TE_USER_STEP_RESET) == 0)
+                {
+                    msg_visible = FALSE;
+                    rgt_ctx.current_nest_lvl = 0;
+                }
                 else
                 {
                     msg->nest_lvl = rgt_ctx.current_nest_lvl;
                 }
             }
         }
-        reg_msg_proc(msg);
+        if (msg_visible)
+            reg_msg_proc(msg);
         free_log_msg(msg);
     }
 }

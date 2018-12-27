@@ -105,6 +105,14 @@ extern "C" {
 #define TEST_STEP_NEXT(_fs...) \
     LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_STEP_NEXT, _fs)
 
+/**
+ * Logging of nesting level step reset
+ *
+ * Reset nesting level to 0
+ */
+#define TEST_STEP_RESET() \
+    LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_STEP_RESET, "")
+
 /*@}*/
 
 /** @addtogroup te_ts_tapi_test
