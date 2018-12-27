@@ -125,6 +125,7 @@ extern "C" {
                    "Press any key to continue...\n");                \
             getchar();                                               \
         }                                                            \
+        TEST_STEP("Test cleanup");                                   \
         goto cleanup;                                                \
     } while (0)
 
@@ -194,12 +195,19 @@ extern "C" {
     (void)signal(SIGUSR2, te_test_sig_handler);                     \
                                                                     \
     /*                                                              \
+     * Get te_test_id parameter which is required to associate      \
+     * further logs with the test (including steps and jump point   \
+     * management logs).                                            \
+     */                                                             \
+    te_test_id = test_get_test_id(argc, argv);                      \
+    if (te_test_id == TE_LOG_ID_UNDEFINED)                          \
+        return EXIT_FAILURE;                                        \
+    TEST_STEP("Test start");                                        \
+    /*                                                              \
      * Set jump point to cleanup_specific label to handle           \
      * if TEST_START_SPECIFIC fail                                  \
      */                                                             \
     TAPI_ON_JMP(TEST_ON_JMP_DO_SPECIFIC);                           \
-    TEST_GET_INT_PARAM(te_test_id);                                 \
-                                                                    \
     /* Initialize pseudo-random generator */                        \
     {                                                               \
         int te_rand_seed;                                           \
@@ -221,7 +229,8 @@ extern "C" {
                                                                     \
     /* Resetup jump point to cleanup label */                       \
     TAPI_JMP_POP;                                                   \
-    TAPI_ON_JMP(TEST_ON_JMP_DO)
+    TAPI_ON_JMP(TEST_ON_JMP_DO);                                    \
+    TEST_STEP_RESET()
 
 /**
  * The last action of the test @b main() function.
@@ -1044,6 +1053,19 @@ extern const char * test_get_string_param(int argc, char **argv,
  */
 extern int test_get_int_param(int argc, char **argv,
                               const char *name);
+
+/**
+ * Dedicated function to get te_test_id before
+ * any jump points installed (since logging of
+ * jump point setup requires te_test_id to associate
+ * the log message with the test).
+ *
+ * @param argc        Count of arguments
+ * @param argc        List of arguments
+ *
+ * @return TE test ID
+ */
+extern unsigned int test_get_test_id(int argc, char **argv);
 
 /**
  * Return parameters of type 'uint'

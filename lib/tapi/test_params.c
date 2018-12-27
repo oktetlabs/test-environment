@@ -846,6 +846,31 @@ test_get_int_param(int argc, char **argv, const char *name)
 
 /* See description in tapi_test.h */
 unsigned int
+test_get_test_id(int argc, char **argv)
+{
+    unsigned long int value;
+    char *end_ptr;
+    const char *str_val;
+    te_errno rc;
+
+    str_val = test_get_param(argc, argv, "te_test_id");
+    if (str_val == NULL)
+    {
+        ERROR("te_test_id parameter not found");
+        return TE_LOG_ID_UNDEFINED;
+    }
+    rc = te_strtoul(str_val, 0, &value);
+    if (rc != 0 || value > UINT_MAX)
+    {
+        ERROR("Cannot convert '%s' to te_test_id");
+        return TE_LOG_ID_UNDEFINED;
+    }
+
+    return value;
+}
+
+/* See description in tapi_test.h */
+unsigned int
 test_get_uint_param(int argc, char **argv, const char *name)
 {
     char *end_ptr = NULL;
