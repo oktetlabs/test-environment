@@ -35,6 +35,7 @@
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 
+#include "tad_common.h"
 #include "tad_pkt.h"
 
 
@@ -64,6 +65,9 @@ tad_pkt_init_seg_data(tad_pkt_seg *seg,
     seg->data_ptr = ptr;
     seg->data_len = len;
     seg->data_free = free;
+
+    seg->layer_tag_set = FALSE;
+    seg->layer_tag = TE_PROTO_INVALID;
 }
 
 /* See description in tad_pkt.h */
@@ -923,11 +927,15 @@ tad_pkt_fragment(tad_pkt *pkt, size_t frag_data_len,
  * of the packet.
  */
 typedef struct tad_pkt_get_frag_cb_data {
-    size_t      frag_off;   /**< Interested fragment offset */
-    size_t      frag_end;   /**< End of the interested fragment */
-    size_t      seg_off;    /**< Current segment offset in the packet */
-    tad_pkt    *dst;        /**< Packet to appent segments of the
-                                 interested packet */
+    size_t   frag_off;            /**< Interested fragment offset */
+    size_t   frag_end;            /**< End of the interested fragment */
+    size_t   seg_off;             /**< Current segment offset in the packet */
+    tad_pkt *dst;                 /**< Packet to appent segments of the
+                                       interested packet */
+
+    te_bool  preserve_layer_tags; /**< Read TE protocol IDs from the source
+                                       segments and provide them for the
+                                       destination segments */
 } tad_pkt_get_frag_cb_data;
 
 /**
@@ -971,6 +979,12 @@ tad_pkt_get_frag_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
         tad_pkt_append_seg(data->dst, dst_seg);
         F_VERB("%s(): Segment off=%u len=%u appended", __FUNCTION__,
                off, len);
+
+        if (data->preserve_layer_tags)
+        {
+            dst_seg->layer_tag_set = seg->layer_tag_set;
+            dst_seg->layer_tag = seg->layer_tag;
+        }
     }
     data->seg_off = next_seg_off;
 
@@ -990,13 +1004,16 @@ tad_pkt_get_frag(tad_pkt *dst, tad_pkt *src,
                  tad_pkt_get_frag_mode mode)
 {
     tad_pkt_get_frag_cb_data  data =
-        { frag_off, frag_off + frag_len, 0, dst };
+        { frag_off, frag_off + frag_len, 0, dst, FALSE };
 
     int         add_seg_len;
     te_errno    rc;
 
     F_ENTRY("off=%u len=%u mode=%u", (unsigned)frag_off,
             (unsigned)frag_len, mode);
+
+    /* Preserve layer tags if the packet is not going to be fragmented */
+    data.preserve_layer_tags = (frag_off == 0 && frag_len == tad_pkt_len(src));
 
     /* At first, check sizes */
     add_seg_len = frag_off + frag_len - tad_pkt_len(src);
@@ -1285,6 +1302,31 @@ tad_pkt_realloc_segs(tad_pkt *pkt, size_t new_len)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
     }
     tad_pkt_append_seg(pkt, seg);
+
+    return 0;
+}
+
+/* See description in 'tad_pkt.h' */
+te_errno
+tad_pkt_mark_layer_segments_cb(tad_pkt *pkt,
+                               void    *opaque)
+{
+    te_tad_protocols_t *layer_tagp = opaque;
+    tad_pkt_seg        *seg;
+
+    assert(pkt != NULL);
+
+    TAD_PKT_FOR_EACH_SEG_FWD(&pkt->segs, seg)
+    {
+        /* Stop at first segment which already belongs to a custom tag */
+        if (seg->layer_tag_set)
+            break;
+
+        seg->layer_tag_set = TRUE;
+
+        if (layer_tagp != NULL)
+            seg->layer_tag = *layer_tagp;
+    }
 
     return 0;
 }

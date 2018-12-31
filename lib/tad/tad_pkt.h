@@ -39,6 +39,8 @@
 #include "te_errno.h"
 #include "te_queue.h"
 
+#include "tad_common.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -124,12 +126,16 @@ typedef void (*tad_pkt_ctrl_free)(void *ptr);
 struct tad_pkt_seg {
     CIRCLEQ_ENTRY(tad_pkt_seg)  links;  /**< List links */
 
-    void               *data_ptr;   /**< Data pointer */
-    size_t              data_len;   /**< Data length */
-    tad_pkt_seg_free    data_free;  /**< Data free function */
+    void               *data_ptr;      /**< Data pointer */
+    size_t              data_len;      /**< Data length */
+    tad_pkt_seg_free    data_free;     /**< Data free function */
 
-    tad_pkt_ctrl_free   my_free;    /**< Function to free this
-                                         control block */
+    tad_pkt_ctrl_free   my_free;       /**< Function to free this
+                                            control block */
+
+    te_bool             layer_tag_set; /**< Custom layer tag is set below */
+    te_tad_protocols_t  layer_tag;     /**< TE protocol ID of the layer from
+                                            which the segment originates */
 };
 
 /** Head of packet segments list */
@@ -717,6 +723,21 @@ extern te_errno tad_pkt_match_bytes(const tad_pkt *pkt, size_t len,
  * @return Status code.
  */
 extern te_errno tad_pkt_realloc_segs(tad_pkt *pkt, size_t new_len);
+
+/**
+ * A helper to set the given layer tag in the outermost TAD
+ * packet segments which don't yet belong to any custom tag.
+ *
+ * This function complies with @c tad_pkt_enum_cb prototype
+ * and must be invoked with @c tad_pkt_enumerate() facility.
+ *
+ * The opaque pointer must refer to the new tag value or be
+ * equal to @c NULL. In the latter case the target segments
+ * will be flagged as containing custom tag values although
+ * the tag values themselves won't change from default ones.
+ */
+extern te_errno tad_pkt_mark_layer_segments_cb(tad_pkt *pkt,
+                                               void    *opaque);
 
 #ifdef __cplusplus
 } /* extern "C" */
