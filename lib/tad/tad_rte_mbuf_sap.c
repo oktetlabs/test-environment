@@ -143,13 +143,76 @@ out:
     return TE_RC(TE_TAD_CSAP, err);
 }
 
+static void
+handle_layer_info(const tad_pkt      *pkt,
+                  te_tad_protocols_t  layer_tag,
+                  size_t              layer_data_len,
+                  struct rte_mbuf    *m,
+                  uint64_t           *ol_flags_inner,
+                  uint64_t           *ol_flags_outer)
+{
+    te_bool encap_header_detected = FALSE;
+
+    UNUSED(pkt);
+    UNUSED(ol_flags_inner);
+    UNUSED(ol_flags_outer);
+
+    switch (layer_tag)
+    {
+        case TE_PROTO_ETH:
+            m->l2_len = layer_data_len;
+            break;
+
+        case TE_PROTO_IP4:
+            m->l3_len = layer_data_len;
+            break;
+
+        case TE_PROTO_IP6:
+            m->l3_len = layer_data_len;
+            break;
+
+        case TE_PROTO_TCP:
+            /*@fallthrough@*/
+        case TE_PROTO_UDP:
+            m->l4_len = layer_data_len;
+            break;
+
+        case TE_PROTO_VXLAN:
+            encap_header_detected = TRUE;
+            break;
+
+        case TE_PROTO_GENEVE:
+            encap_header_detected = TRUE;
+            break;
+
+        case TE_PROTO_GRE:
+            encap_header_detected = TRUE;
+            break;
+
+        default:
+            break;
+    }
+
+    if (encap_header_detected)
+    {
+        m->outer_l2_len = m->l2_len;
+        m->l2_len = 0;
+
+        m->outer_l3_len = m->l3_len;
+        m->l3_len = 0;
+        m->l4_len = 0;
+    }
+}
+
 te_errno
 tad_rte_mbuf_sap_write(tad_rte_mbuf_sap   *sap,
                        const               tad_pkt *pkt)
 {
-    struct rte_mbuf        *m;
-    tad_pkt_seg            *tad_seg;
-    int err = 0;
+    struct rte_mbuf    *m;
+    tad_pkt_seg        *tad_seg;
+    te_tad_protocols_t  layer_tag_prev = TE_PROTO_INVALID;
+    size_t              layer_data_len = 0;
+    int                 err = 0;
 
     if ((m = rte_pktmbuf_alloc(sap->pkt_pool)) == NULL)
     {
@@ -193,22 +256,27 @@ tad_rte_mbuf_sap_write(tad_rte_mbuf_sap   *sap,
             bytes_copied += to_copy;
         }
 
-        /*
-         * For the sake of convenience we try to fill in 'l2_len', 'l3_len'
-         * and 'l4_len' fields of the mbuf being prepared; we rely here on
-         * an assumption that a header of an arbitrary layer occupies an
-         * individual TAD segment (the last segment is considered as payload)
-         */
-        if (CIRCLEQ_NEXT(tad_seg, links) != CIRCLEQ_END(&pkt->segs))
+        if (tad_seg->layer_tag != layer_tag_prev)
         {
-            if (m->l2_len == 0)
-                m->l2_len = tad_seg->data_len;
-            else if (m->l3_len == 0)
-                m->l3_len = tad_seg->data_len;
-            else if (m->l4_len == 0)
-                m->l4_len = tad_seg->data_len;
+            /*
+             * The next layer starts here.
+             * Handle the tag and length of the previous layer.
+             */
+            handle_layer_info(pkt, layer_tag_prev, layer_data_len, m,
+                              NULL, NULL);
+            layer_tag_prev = tad_seg->layer_tag;
+            layer_data_len = tad_seg->data_len;
+        }
+        else
+        {
+            /* This segment belongs to the same layer as the previous one. */
+            layer_data_len += tad_seg->data_len;
         }
     }
+
+    /* If data in the last segment(s) is payload, this will do nothing. */
+    handle_layer_info(pkt, layer_tag_prev, layer_data_len, m,
+                      NULL, NULL);
 
     /*
      * In fact, rte_ring_enqueue() can return -EDQUOT which among other things
