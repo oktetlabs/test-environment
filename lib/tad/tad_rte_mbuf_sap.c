@@ -162,9 +162,6 @@ handle_layer_info(const tad_pkt      *pkt,
     uint8_t  gre_hdr_first_word[WORD_4BYTE];
     uint16_t gre_hdr_protocol_type;
 
-    UNUSED(ol_flags_inner);
-    UNUSED(ol_flags_outer);
-
     switch (layer_tag)
     {
         case TE_PROTO_ETH:
@@ -173,10 +170,14 @@ handle_layer_info(const tad_pkt      *pkt,
 
         case TE_PROTO_IP4:
             m->l3_len = layer_data_len;
+            *ol_flags_inner |= PKT_TX_IPV4;
+            *ol_flags_outer |= PKT_TX_OUTER_IPV4;
             break;
 
         case TE_PROTO_IP6:
             m->l3_len = layer_data_len;
+            *ol_flags_inner |= PKT_TX_IPV6;
+            *ol_flags_outer |= PKT_TX_OUTER_IPV6;
             break;
 
         case TE_PROTO_TCP:
@@ -230,6 +231,9 @@ handle_layer_info(const tad_pkt      *pkt,
         m->outer_l3_len = m->l3_len;
         m->l3_len = 0;
         m->l4_len = 0;
+
+        m->ol_flags |= *ol_flags_outer;
+        *ol_flags_inner = 0;
     }
 }
 
@@ -241,6 +245,8 @@ tad_rte_mbuf_sap_write(tad_rte_mbuf_sap   *sap,
     tad_pkt_seg        *tad_seg;
     te_tad_protocols_t  layer_tag_prev = TE_PROTO_INVALID;
     size_t              layer_data_len = 0;
+    uint64_t            ol_flags_inner = 0;
+    uint64_t            ol_flags_outer = 0;
     int                 err = 0;
 
     if ((m = rte_pktmbuf_alloc(sap->pkt_pool)) == NULL)
@@ -292,7 +298,7 @@ tad_rte_mbuf_sap_write(tad_rte_mbuf_sap   *sap,
              * Handle the tag and length of the previous layer.
              */
             handle_layer_info(pkt, layer_tag_prev, layer_data_len, m,
-                              NULL, NULL);
+                              &ol_flags_inner, &ol_flags_outer);
             layer_tag_prev = tad_seg->layer_tag;
             layer_data_len = tad_seg->data_len;
         }
@@ -305,7 +311,9 @@ tad_rte_mbuf_sap_write(tad_rte_mbuf_sap   *sap,
 
     /* If data in the last segment(s) is payload, this will do nothing. */
     handle_layer_info(pkt, layer_tag_prev, layer_data_len, m,
-                      NULL, NULL);
+                      &ol_flags_inner, &ol_flags_outer);
+
+    m->ol_flags |= ol_flags_inner;
 
     /*
      * In fact, rte_ring_enqueue() can return -EDQUOT which among other things

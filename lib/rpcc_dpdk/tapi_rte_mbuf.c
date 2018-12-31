@@ -347,8 +347,6 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
         asn_value        *pdus;
         te_bool           ip4_inner = FALSE;
         te_bool           ip4_outer = FALSE;
-        te_bool           ip6_inner = FALSE;
-        te_bool           ip6_outer = FALSE;
         asn_value        *pdu_tcp;
         asn_value        *pdu_udp;
 
@@ -374,15 +372,13 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
 
         if ((nb_pdus_ip4 == 1) && (nb_pdus_ip6 == 1))
         {
-            ip4_inner = ip6_outer = (pdus_ip4[0].index < pdus_ip6[0].index);
-            ip6_inner = ip4_outer = !ip4_inner;
+            ip4_inner = (pdus_ip4[0].index < pdus_ip6[0].index);
+            ip4_outer = !ip4_inner;
         }
         else
         {
             ip4_inner = (nb_pdus_ip4 > 0);
             ip4_outer = (nb_pdus_ip4 > 1);
-            ip6_inner = (nb_pdus_ip6 > 0);
-            ip6_outer = (nb_pdus_ip6 > 1);
         }
 
         pdu_tcp = asn_find_child_choice_value(pdus, TE_PROTO_TCP);
@@ -404,27 +400,15 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
                                              transform->vlan_tci);
             }
 
-            if (ip4_inner)
-            {
-                ol_flags |= (1UL << TARPC_PKT_TX_IPV4);
-                if ((transform->hw_flags & SEND_COND_HW_OFFL_IP_CKSUM) ==
-                    SEND_COND_HW_OFFL_IP_CKSUM)
+            if (ip4_inner &&
+                (transform->hw_flags & SEND_COND_HW_OFFL_IP_CKSUM) ==
+                SEND_COND_HW_OFFL_IP_CKSUM)
                     ol_flags |= (1UL << TARPC_PKT_TX_IP_CKSUM);
-            }
 
-            if (ip4_outer)
-            {
-                ol_flags |= (1UL << TARPC_PKT_TX_OUTER_IPV4);
-                if ((transform->hw_flags & SEND_COND_HW_OFFL_OUTER_IP_CKSUM) ==
-                    SEND_COND_HW_OFFL_OUTER_IP_CKSUM)
+            if (ip4_outer &&
+                (transform->hw_flags & SEND_COND_HW_OFFL_OUTER_IP_CKSUM) ==
+                SEND_COND_HW_OFFL_OUTER_IP_CKSUM)
                     ol_flags |= (1UL << TARPC_PKT_TX_OUTER_IP_CKSUM);
-            }
-
-            if (ip6_inner)
-                ol_flags |= (1UL << TARPC_PKT_TX_IPV6);
-
-            if (ip6_outer)
-                ol_flags |= (1UL << TARPC_PKT_TX_OUTER_IPV6);
 
             if ((transform->hw_flags & SEND_COND_HW_OFFL_L4_CKSUM) ==
                 SEND_COND_HW_OFFL_L4_CKSUM)
