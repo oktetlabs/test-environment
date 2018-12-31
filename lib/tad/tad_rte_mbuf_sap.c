@@ -31,6 +31,12 @@
 #include "tad_eth_sap.h"
 #include "te_ethernet.h"
 
+#include "rte_byteorder.h"
+
+
+#define GRE_HDR_PROTOCOL_TYPE_OFFSET sizeof(uint16_t)
+#define GRE_HDR_PROTOCOL_TYPE_NVGRE 0x6558
+
 te_errno
 tad_rte_mbuf_sap_read(tad_rte_mbuf_sap   *sap,
                       tad_pkt            *pkt,
@@ -151,9 +157,11 @@ handle_layer_info(const tad_pkt      *pkt,
                   uint64_t           *ol_flags_inner,
                   uint64_t           *ol_flags_outer)
 {
-    te_bool encap_header_detected = FALSE;
+    te_bool  encap_header_detected = FALSE;
+    size_t   gre_hdr_offset;
+    uint8_t  gre_hdr_first_word[WORD_4BYTE];
+    uint16_t gre_hdr_protocol_type;
 
-    UNUSED(pkt);
     UNUSED(ol_flags_inner);
     UNUSED(ol_flags_outer);
 
@@ -179,14 +187,35 @@ handle_layer_info(const tad_pkt      *pkt,
 
         case TE_PROTO_VXLAN:
             encap_header_detected = TRUE;
+            m->ol_flags |= PKT_TX_TUNNEL_VXLAN;
             break;
 
         case TE_PROTO_GENEVE:
             encap_header_detected = TRUE;
+            m->ol_flags |= PKT_TX_TUNNEL_GENEVE;
             break;
 
         case TE_PROTO_GRE:
             encap_header_detected = TRUE;
+            /*
+             * At this point m->l2_len and m->l3_len describe outer header.
+             * These will become m->outer_l2_len and m->outer_l3_len below.
+             */
+            gre_hdr_offset = m->l2_len + m->l3_len;
+            /*
+             * TE_PROTO_GRE may serve either GRE or NVGRE tunnel types.
+             * RTE has no Tx tunnel offload flag for the latter.
+             * Rule out NVGRE and set PKT_TX_TUNNEL_GRE flag.
+             */
+            assert(gre_hdr_offset + WORD_4BYTE <= tad_pkt_len(pkt));
+            tad_pkt_read_bits(pkt, gre_hdr_offset << 3, WORD_32BIT,
+                              gre_hdr_first_word);
+            memcpy(&gre_hdr_protocol_type,
+                   gre_hdr_first_word + GRE_HDR_PROTOCOL_TYPE_OFFSET,
+                   sizeof(gre_hdr_protocol_type));
+            gre_hdr_protocol_type = rte_be_to_cpu_16(gre_hdr_protocol_type);
+            if (gre_hdr_protocol_type != GRE_HDR_PROTOCOL_TYPE_NVGRE)
+                m->ol_flags |= PKT_TX_TUNNEL_GRE;
             break;
 
         default:
