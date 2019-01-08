@@ -23,6 +23,7 @@
 #include "tapi_rpc_misc.h"
 #include "tapi_test.h"
 #include "performance_internal.h"
+#include "tapi_mem.h"
 
 /* The minimal representative duration */
 #define IPERF_MIN_REPRESENTATIVE_DURATION   (1.0)
@@ -303,8 +304,14 @@ get_report(const json_t *jrpt, tapi_perf_report *report)
 {
     json_t *jend, *jsum, *jval, *jint;
     tapi_perf_report tmp_report;
-    size_t  i;
-    double  seconds;
+    size_t   i;
+    double  *seconds;
+    double  *bits_per_second;
+    double   total_seconds = 0.0;
+    uint64_t total_bytes = 0;
+    double   total_bits_per_second = 0.0;
+    const double eps = 0.00001;
+    size_t   total_intervals = 0;
 
 #define GET_REPORT_ERROR(_obj)                                  \
     do {                                                        \
@@ -323,26 +330,18 @@ get_report(const json_t *jrpt, tapi_perf_report *report)
         GET_REPORT_ERROR("non-empty array \"intervals\"");
 
     /*
-     * The interval selection method is as follows:
-     * 1) Traverse through intervals, save up the interval data
-     *    if it seems to be valid ('sum' and 'sum.seconds' are present)
-     * 2) Stop on interval with representative duration and all data present
-     *
-     * That guarantees that we choose the first sane interval, or the last
-     * complete interval if it is present at all.
-     * When choosing among unrepresentative intervals, the method assumes they
-     * are equally good or bad.
+     * Calculate an average of throughput results weighted by interval
+     * durations, skipping completely wrong intervals altogether.
      */
-    jsum = NULL;
-
+    seconds = tapi_calloc(json_array_size(jend), sizeof(double));
+    bits_per_second = tapi_calloc(json_array_size(jend), sizeof(double));
     for (i = 0; i < json_array_size(jend); ++i)
     {
-        json_t *tmp_jsum;
         double  tmp_seconds;
 
         jint = json_array_get(jend, i);
-        tmp_jsum = json_object_get(jint, "sum");
-        if (!json_is_object(tmp_jsum))
+        jsum = json_object_get(jint, "sum");
+        if (!json_is_object(jsum))
         {
             /*
              * This failure isn't fatal - iperf3 report can be
@@ -352,10 +351,10 @@ get_report(const json_t *jrpt, tapi_perf_report *report)
             continue;
         }
 
-        jval = json_object_get(tmp_jsum, "seconds");
+        jval = json_object_get(jsum, "seconds");
         if (jsonvalue2double(jval, &tmp_seconds) != 0 ||
-            !json_is_integer(json_object_get(tmp_jsum, "bytes")) ||
-            !json_is_real(json_object_get(tmp_jsum, "bits_per_second")))
+            !json_is_integer(json_object_get(jsum, "bytes")) ||
+            !json_is_real(json_object_get(jsum, "bits_per_second")))
         {
             /*
              * This failure isn't fatal - some of (or all) specifications are
@@ -365,30 +364,40 @@ get_report(const json_t *jrpt, tapi_perf_report *report)
             continue;
         }
 
-        jsum = tmp_jsum;
-        seconds = tmp_seconds;
+        seconds[total_intervals] = tmp_seconds;
+        total_seconds += tmp_seconds;
 
-        if (tmp_seconds >= IPERF_MIN_REPRESENTATIVE_DURATION)
-            break;
+        jval = json_object_get(jsum, "bytes");
+        total_bytes += json_integer_value(jval);
+
+        jval = json_object_get(jsum, "bits_per_second");
+        bits_per_second[total_intervals] = json_real_value(jval);
+        total_intervals++;
     }
 
-    /* We could find no valid intervals, in the case jsum would be NULL */
-    if (!json_is_object(jsum))
-        GET_REPORT_ERROR("complete \"intervals.sum\"");
+    if (total_intervals == 0)
+        GET_REPORT_ERROR("array of sane \"interval\" objects");
 
-    tmp_report.seconds = seconds;
-    if (seconds < IPERF_MIN_REPRESENTATIVE_DURATION)
+    if (total_seconds < eps)
+        GET_REPORT_ERROR("object \"seconds\"");
+    for (i = 0; i < total_intervals; ++i)
+    {
+        total_bits_per_second += bits_per_second[i] * seconds[i]
+            / total_seconds;
+    }
+
+    free(bits_per_second);
+    free(seconds);
+
+    tmp_report.seconds = total_seconds;
+    if (total_seconds < IPERF_MIN_REPRESENTATIVE_DURATION)
     {
         WARN("%s: the retrieved interval of %.1f duration might be "
-             "unrepresentative", __FUNCTION__, seconds);
+             "unrepresentative", __FUNCTION__, total_seconds);
     }
 
-    /* We already checked these objects */
-    jval = json_object_get(jsum, "bytes");
-    tmp_report.bytes = json_integer_value(jval);
-
-    jval = json_object_get(jsum, "bits_per_second");
-    tmp_report.bits_per_second = json_real_value(jval);
+    tmp_report.bytes = total_bytes;
+    tmp_report.bits_per_second = total_bits_per_second;
 
     *report = tmp_report;
     return 0;
