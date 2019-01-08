@@ -36,8 +36,12 @@
 /* Root log node sequential number */
 #define ROOT_NODE_SEQ     0
 
-/* Max attribute length in one line */
-int  rgt_max_attribute_length = 98;
+/*
+ * Max attribute length in one line. Zero means it is not limited and
+ * attributes will not be splitted into multiple lines. Splitting can
+ * break HTML links if an attribute is used inside href.
+ */
+int  rgt_max_attribute_length = 0;
 /* A tag to separate lines */
 const char *rgt_line_separator = "<br>";
 /* Flag turning on detailed packet dumps in log. */
