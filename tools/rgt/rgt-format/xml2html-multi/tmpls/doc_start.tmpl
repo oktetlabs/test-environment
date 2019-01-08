@@ -43,6 +43,11 @@
 
 <script type="text/javascript">
 
+function activate_link(name, doc_name, par_name)
+{
+    parent.treeframe.activate_node(name, par_name);
+    document.location.href = doc_name;
+}
 
 function toggle_node(node)
 {
