@@ -193,9 +193,11 @@ set_opt_streams(te_string *cmd, const tapi_perf_opts *options)
 
 /*
  * Set option of dual (bidirectional) mode.
+ * It is supported since 3.6+ github (not 3.6 release) version.
+ * See https://github.com/esnet/iperf/pull/780.
  *
  * @param cmd           Buffer contains a command to add option to.
- * @param options       iperf tool options.
+ * @param options       iperf3 tool options.
  */
 static void
 set_opt_dual(te_string *cmd, const tapi_perf_opts *options)
