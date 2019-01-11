@@ -1411,11 +1411,11 @@ cwmp_resume_session(cwmp_session_t *sess, int socket)
 void
 acse_timer_handler(int sig, siginfo_t *info, void *p)
 {
-    cwmp_session_t *sess;
     UNUSED(sig);
     UNUSED(p);
+    UNUSED(info);
 
-    sess = info->si_value.sival_ptr;
+    ERROR("%s(): implementation is incomplete");
 }
 
 
