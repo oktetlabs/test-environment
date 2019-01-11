@@ -126,6 +126,8 @@ tapi_nvme_onvme_target_setup(tapi_nvme_target *target)
         return TE_ENOTCONN;
     }
 
+    te_motivated_sleep(5, "Give target a while to start");
+
     proc->pid = pid;
     proc->stdout_fd = stdout_fd;
     proc->stderr_fd = stderr_fd;
