@@ -512,16 +512,20 @@ app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
 
     memset(report->errors, 0, sizeof(report->errors));
 
-    /* Read tool output */
-    rpc_read_fd2te_string(app->rpcs, app->fd_stdout, IPERF3_TIMEOUT_MS, 0,
-                          &app->stdout);
-
-    /* Check for available data */
     if (app->stdout.ptr == NULL || app->stdout.len == 0)
     {
-        ERROR("There are no data in the output");
-        return TE_RC(TE_TAPI, TE_ENODATA);
+        /* Read tool output */
+        rpc_read_fd2te_string(app->rpcs, app->fd_stdout, IPERF3_TIMEOUT_MS, 0,
+                              &app->stdout);
+
+        /* Check for available data */
+        if (app->stdout.ptr == NULL || app->stdout.len == 0)
+        {
+            ERROR("There are no data in the output");
+            return TE_RC(TE_TAPI, TE_ENODATA);
+        }
     }
+
     INFO("iperf3 stdout:\n%s", app->stdout.ptr);
 
     /* Parse raw report */

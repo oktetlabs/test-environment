@@ -301,16 +301,20 @@ app_get_error(tapi_perf_app *app, tapi_perf_report *report)
 {
     size_t i;
 
-    /* Read tool output */
-    rpc_read_fd2te_string(app->rpcs, app->fd_stderr, IPERF_TIMEOUT_MS, 0,
-                          &app->stderr);
-
-    /* Check for available data */
     if (app->stderr.ptr == NULL || app->stderr.len == 0)
     {
-        VERB("There is no error message");
-        return;
+        /* Read tool output */
+        rpc_read_fd2te_string(app->rpcs, app->fd_stderr, IPERF_TIMEOUT_MS, 0,
+                              &app->stderr);
+
+        /* Check for available data */
+        if (app->stderr.ptr == NULL || app->stderr.len == 0)
+        {
+            VERB("There is no error message");
+            return;
+        }
     }
+
     INFO("iperf stderr:\n%s", app->stderr.ptr);
 
     for (i = 0; i < TE_ARRAY_LEN(errors); i++)
@@ -360,15 +364,18 @@ app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    /* Read tool output */
-    rpc_read_fd2te_string(app->rpcs, app->fd_stdout, IPERF_TIMEOUT_MS, 0,
-                          &app->stdout);
-
-    /* Check for available data */
     if (app->stdout.ptr == NULL || app->stdout.len == 0)
     {
-        ERROR("There are no data in the output");
-        return TE_RC(TE_TAPI, TE_ENODATA);
+        /* Read tool output */
+        rpc_read_fd2te_string(app->rpcs, app->fd_stdout, IPERF_TIMEOUT_MS, 0,
+                              &app->stdout);
+
+        /* Check for available data */
+        if (app->stdout.ptr == NULL || app->stdout.len == 0)
+        {
+            ERROR("There are no data in the output");
+            return TE_RC(TE_TAPI, TE_ENODATA);
+        }
     }
 
     INFO("iperf stdout:\n%s", app->stdout.ptr);
