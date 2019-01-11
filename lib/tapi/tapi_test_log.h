@@ -226,16 +226,50 @@ extern "C" {
  * test results like a verdict. But it is not taken into account
  * when matching obtained results to TRC database.
  *
+ * @param _level     Level of the message/artifact that will go into the log
+ * @param _fmt       Message describing the artifact (format string
+ *                   with parameters)
+ */
+#define REGISTER_ARTIFACT(_level, _fmt...) \
+    do {                                   \
+        LGR_MESSAGE((_level) | TE_LL_CONTROL, TE_LOG_ARTIFACT_USER, _fmt); \
+        te_test_tester_message(TE_TEST_MSG_ARTIFACT, _fmt);                \
+    } while(0)
+
+/**
+ * Macro should be used to output artifact from tests.
+ *
+ * @param fmt  the content of the artifact as format string with arguments
+ */
+#define RING_ARTIFACT(_fmt...) \
+    REGISTER_ARTIFACT(TE_LL_RING, _fmt)
+
+/**
+ * Macro should be used to output artifact with WARN log level from tests.
+ *
+ * @param fmt  the content of the artifact as format string with arguments
+ */
+#define WARN_ARTIFACT(_fmt...) \
+    REGISTER_ARTIFACT(TE_LL_WARN, _fmt)
+
+/**
+ * Macro should be used to output artifact with ERROR log level from tests.
+ *
+ * @param fmt  the content of the artifact as format string with arguments
+ */
+#define ERROR_ARTIFACT(_fmt...) \
+    REGISTER_ARTIFACT(TE_LL_ERRRO, _fmt)
+
+/**
+ * Print test artifact to log. Artifact is a string describing
+ * test results like a verdict. But it is not taken into account
+ * when matching obtained results to TRC database.
+ *
  * @param _fmt       Message describing the artifact (format string
  *                   with parameters)
  */
 #define TEST_ARTIFACT(_fmt...) \
-    do {                                                              \
-        LGR_MESSAGE(TE_LL_RING | TE_LL_CONTROL, TE_LOG_ARTIFACT_USER, \
-                    _fmt);                                            \
-        te_test_tester_message(TE_TEST_MSG_ARTIFACT, _fmt);           \
-    } while (0)
-
+    RING_ARTIFACT(_fmt)
 
 /**
  * Compose test message and send it to Tester.
