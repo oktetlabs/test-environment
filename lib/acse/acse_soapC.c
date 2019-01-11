@@ -16,13 +16,13 @@ SOAP_SOURCE_STAMP("@(#) acse_soapC.c ver 2.7.9l 2018-03-12 12:12:20 GMT")
 
 #ifndef WITH_NOGLOBAL
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serializeheader(struct soap *soap)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serializeheader(__attribute__((unused)) struct soap *soap)
 {
 	if (soap->header)
 		soap_serialize_SOAP_ENV__Header(soap, soap->header);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_putheader(struct soap *soap)
+SOAP_FMAC3 int SOAP_FMAC4 soap_putheader(__attribute__((unused)) struct soap *soap)
 {
 	if (soap->header)
 	{	soap->part = SOAP_IN_HEADER;
@@ -33,7 +33,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_putheader(struct soap *soap)
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_getheader(struct soap *soap)
+SOAP_FMAC3 int SOAP_FMAC4 soap_getheader(__attribute__((unused)) struct soap *soap)
 {
 	soap->part = SOAP_IN_HEADER;
 	soap->header = soap_in_SOAP_ENV__Header(soap, "SOAP-ENV:Header", NULL, NULL);
@@ -41,7 +41,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_getheader(struct soap *soap)
 	return soap->header == NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_header(struct soap *soap)
+SOAP_FMAC3 void SOAP_FMAC4 soap_header(__attribute__((unused)) struct soap *soap)
 {
 	if (!soap->header)
 	{	soap->header = (struct SOAP_ENV__Header*)soap_malloc(soap, sizeof(struct SOAP_ENV__Header));
@@ -49,7 +49,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_header(struct soap *soap)
 	}
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_fault(struct soap *soap)
+SOAP_FMAC3 void SOAP_FMAC4 soap_fault(__attribute__((unused)) struct soap *soap)
 {
 	if (!soap->fault)
 	{	soap->fault = (struct SOAP_ENV__Fault*)soap_malloc(soap, sizeof(struct SOAP_ENV__Fault));
@@ -65,25 +65,25 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_fault(struct soap *soap)
 	}
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serializefault(struct soap *soap)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serializefault(__attribute__((unused)) struct soap *soap)
 {
 	if (soap->fault)
 		soap_serialize_SOAP_ENV__Fault(soap, soap->fault);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_putfault(struct soap *soap)
+SOAP_FMAC3 int SOAP_FMAC4 soap_putfault(__attribute__((unused)) struct soap *soap)
 {
 	if (soap->fault)
 		return soap_put_SOAP_ENV__Fault(soap, soap->fault, "SOAP-ENV:Fault", NULL);
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_getfault(struct soap *soap)
+SOAP_FMAC3 int SOAP_FMAC4 soap_getfault(__attribute__((unused)) struct soap *soap)
 {
 	return (soap->fault = soap_get_SOAP_ENV__Fault(soap, NULL, "SOAP-ENV:Fault", NULL)) == NULL;
 }
 
-SOAP_FMAC3 const char ** SOAP_FMAC4 soap_faultcode(struct soap *soap)
+SOAP_FMAC3 const char ** SOAP_FMAC4 soap_faultcode(__attribute__((unused)) struct soap *soap)
 {
 	soap_fault(soap);
 	if (soap->version == 2)
@@ -91,7 +91,7 @@ SOAP_FMAC3 const char ** SOAP_FMAC4 soap_faultcode(struct soap *soap)
 	return (const char**)&soap->fault->faultcode;
 }
 
-SOAP_FMAC3 const char ** SOAP_FMAC4 soap_faultsubcode(struct soap *soap)
+SOAP_FMAC3 const char ** SOAP_FMAC4 soap_faultsubcode(__attribute__((unused)) struct soap *soap)
 {
 	soap_fault(soap);
 	if (soap->version == 2)
@@ -104,7 +104,7 @@ SOAP_FMAC3 const char ** SOAP_FMAC4 soap_faultsubcode(struct soap *soap)
 	return (const char**)&soap->fault->faultcode;
 }
 
-SOAP_FMAC3 const char ** SOAP_FMAC4 soap_faultstring(struct soap *soap)
+SOAP_FMAC3 const char ** SOAP_FMAC4 soap_faultstring(__attribute__((unused)) struct soap *soap)
 {
 	soap_fault(soap);
 	if (soap->version == 2)
@@ -112,7 +112,7 @@ SOAP_FMAC3 const char ** SOAP_FMAC4 soap_faultstring(struct soap *soap)
 	return (const char**)&soap->fault->faultstring;
 }
 
-SOAP_FMAC3 const char ** SOAP_FMAC4 soap_faultdetail(struct soap *soap)
+SOAP_FMAC3 const char ** SOAP_FMAC4 soap_faultdetail(__attribute__((unused)) struct soap *soap)
 {
 	soap_fault(soap);
 	if (soap->version == 1)
@@ -132,7 +132,7 @@ SOAP_FMAC3 const char ** SOAP_FMAC4 soap_faultdetail(struct soap *soap)
 #endif
 
 #ifndef WITH_NOIDREF
-SOAP_FMAC3 int SOAP_FMAC4 soap_getindependent(struct soap *soap)
+SOAP_FMAC3 int SOAP_FMAC4 soap_getindependent(__attribute__((unused)) struct soap *soap)
 {
 	int t;
 	for (;;)
@@ -146,7 +146,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_getindependent(struct soap *soap)
 #endif
 
 #ifndef WITH_NOIDREF
-SOAP_FMAC3 void * SOAP_FMAC4 soap_getelement(struct soap *soap, int *type)
+SOAP_FMAC3 void * SOAP_FMAC4 soap_getelement(__attribute__((unused)) struct soap *soap, int *type)
 {
 	if (soap_peek_element(soap))
 		return NULL;
@@ -806,7 +806,7 @@ SOAP_FMAC3 void * SOAP_FMAC4 soap_getelement(struct soap *soap, int *type)
 }
 #endif
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_ignore_element(struct soap *soap)
+SOAP_FMAC3 int SOAP_FMAC4 soap_ignore_element(__attribute__((unused)) struct soap *soap)
 {
 	if (!soap_peek_element(soap))
 	{	int t;
@@ -837,7 +837,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_ignore_element(struct soap *soap)
 }
 
 #ifndef WITH_NOIDREF
-SOAP_FMAC3 int SOAP_FMAC4 soap_putindependent(struct soap *soap)
+SOAP_FMAC3 int SOAP_FMAC4 soap_putindependent(__attribute__((unused)) struct soap *soap)
 {
 	int i;
 	struct soap_plist *pp;
@@ -852,7 +852,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_putindependent(struct soap *soap)
 #endif
 
 #ifndef WITH_NOIDREF
-SOAP_FMAC3 int SOAP_FMAC4 soap_putelement(struct soap *soap, const void *ptr, const char *tag, int id, int type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_putelement(__attribute__((unused)) struct soap *soap, const void *ptr, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, int type)
 {
 	switch (type)
 	{
@@ -1168,7 +1168,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_putelement(struct soap *soap, const void *ptr, co
 #endif
 
 #ifndef WITH_NOIDREF
-SOAP_FMAC3 void SOAP_FMAC4 soap_markelement(struct soap *soap, const void *ptr, int type)
+SOAP_FMAC3 void SOAP_FMAC4 soap_markelement(__attribute__((unused)) struct soap *soap, const void *ptr, int type)
 {
 	(void)soap; (void)ptr; (void)type; /* appease -Wall -Werror */
 	switch (type)
@@ -1600,7 +1600,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_markelement(struct soap *soap, const void *ptr, 
 }
 #endif
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_byte(struct soap *soap, char *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_byte(__attribute__((unused)) struct soap *soap, char *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT_byte
 	*a = SOAP_DEFAULT_byte;
@@ -1609,7 +1609,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default_byte(struct soap *soap, char *a)
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_byte(struct soap *soap, const char *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_byte(__attribute__((unused)) struct soap *soap, const char *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_byte);
 	if (soap_out_byte(soap, tag, id, a, type))
@@ -1617,12 +1617,12 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_byte(struct soap *soap, const char *a, const 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_byte(struct soap *soap, const char *tag, int id, const char *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_byte(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const char *a, __attribute__((unused)) const char *type)
 {
 	return soap_outbyte(soap, tag, id, a, type, SOAP_TYPE_byte);
 }
 
-SOAP_FMAC3 char * SOAP_FMAC4 soap_get_byte(struct soap *soap, char *p, const char *tag, const char *type)
+SOAP_FMAC3 char * SOAP_FMAC4 soap_get_byte(__attribute__((unused)) struct soap *soap, char *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_byte(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -1630,12 +1630,12 @@ SOAP_FMAC3 char * SOAP_FMAC4 soap_get_byte(struct soap *soap, char *p, const cha
 	return p;
 }
 
-SOAP_FMAC3 char * SOAP_FMAC4 soap_in_byte(struct soap *soap, const char *tag, char *a, const char *type)
+SOAP_FMAC3 char * SOAP_FMAC4 soap_in_byte(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, char *a, __attribute__((unused)) const char *type)
 {
 	return soap_inbyte(soap, tag, a, type, SOAP_TYPE_byte);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_int(struct soap *soap, int *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_int(__attribute__((unused)) struct soap *soap, int *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT_int
 	*a = SOAP_DEFAULT_int;
@@ -1644,7 +1644,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default_int(struct soap *soap, int *a)
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_int(struct soap *soap, const int *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_int(__attribute__((unused)) struct soap *soap, const int *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_int);
 	if (soap_out_int(soap, tag, id, a, type))
@@ -1652,12 +1652,12 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_int(struct soap *soap, const int *a, const ch
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_int(struct soap *soap, const char *tag, int id, const int *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_int(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const int *a, __attribute__((unused)) const char *type)
 {
 	return soap_outint(soap, tag, id, a, type, SOAP_TYPE_int);
 }
 
-SOAP_FMAC3 int * SOAP_FMAC4 soap_get_int(struct soap *soap, int *p, const char *tag, const char *type)
+SOAP_FMAC3 int * SOAP_FMAC4 soap_get_int(__attribute__((unused)) struct soap *soap, int *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_int(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -1665,12 +1665,12 @@ SOAP_FMAC3 int * SOAP_FMAC4 soap_get_int(struct soap *soap, int *p, const char *
 	return p;
 }
 
-SOAP_FMAC3 int * SOAP_FMAC4 soap_in_int(struct soap *soap, const char *tag, int *a, const char *type)
+SOAP_FMAC3 int * SOAP_FMAC4 soap_in_int(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, int *a, __attribute__((unused)) const char *type)
 {
 	return soap_inint(soap, tag, a, type, SOAP_TYPE_int);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_unsignedByte(struct soap *soap, unsigned char *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_unsignedByte(__attribute__((unused)) struct soap *soap, unsigned char *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT_unsignedByte
 	*a = SOAP_DEFAULT_unsignedByte;
@@ -1679,7 +1679,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default_unsignedByte(struct soap *soap, unsigned
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_unsignedByte(struct soap *soap, const unsigned char *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_unsignedByte(__attribute__((unused)) struct soap *soap, const unsigned char *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_unsignedByte);
 	if (soap_out_unsignedByte(soap, tag, id, a, type))
@@ -1687,12 +1687,12 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_unsignedByte(struct soap *soap, const unsigne
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_unsignedByte(struct soap *soap, const char *tag, int id, const unsigned char *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_unsignedByte(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const unsigned char *a, __attribute__((unused)) const char *type)
 {
 	return soap_outunsignedByte(soap, tag, id, a, type, SOAP_TYPE_unsignedByte);
 }
 
-SOAP_FMAC3 unsigned char * SOAP_FMAC4 soap_get_unsignedByte(struct soap *soap, unsigned char *p, const char *tag, const char *type)
+SOAP_FMAC3 unsigned char * SOAP_FMAC4 soap_get_unsignedByte(__attribute__((unused)) struct soap *soap, unsigned char *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_unsignedByte(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -1700,12 +1700,12 @@ SOAP_FMAC3 unsigned char * SOAP_FMAC4 soap_get_unsignedByte(struct soap *soap, u
 	return p;
 }
 
-SOAP_FMAC3 unsigned char * SOAP_FMAC4 soap_in_unsignedByte(struct soap *soap, const char *tag, unsigned char *a, const char *type)
+SOAP_FMAC3 unsigned char * SOAP_FMAC4 soap_in_unsignedByte(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, unsigned char *a, __attribute__((unused)) const char *type)
 {
 	return soap_inunsignedByte(soap, tag, a, type, SOAP_TYPE_unsignedByte);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_unsignedInt(struct soap *soap, unsigned int *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_unsignedInt(__attribute__((unused)) struct soap *soap, unsigned int *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT_unsignedInt
 	*a = SOAP_DEFAULT_unsignedInt;
@@ -1714,7 +1714,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default_unsignedInt(struct soap *soap, unsigned 
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_unsignedInt(struct soap *soap, const unsigned int *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_unsignedInt(__attribute__((unused)) struct soap *soap, const unsigned int *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_unsignedInt);
 	if (soap_out_unsignedInt(soap, tag, id, a, type))
@@ -1722,12 +1722,12 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_unsignedInt(struct soap *soap, const unsigned
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_unsignedInt(struct soap *soap, const char *tag, int id, const unsigned int *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_unsignedInt(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const unsigned int *a, __attribute__((unused)) const char *type)
 {
 	return soap_outunsignedInt(soap, tag, id, a, type, SOAP_TYPE_unsignedInt);
 }
 
-SOAP_FMAC3 unsigned int * SOAP_FMAC4 soap_get_unsignedInt(struct soap *soap, unsigned int *p, const char *tag, const char *type)
+SOAP_FMAC3 unsigned int * SOAP_FMAC4 soap_get_unsignedInt(__attribute__((unused)) struct soap *soap, unsigned int *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_unsignedInt(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -1735,12 +1735,12 @@ SOAP_FMAC3 unsigned int * SOAP_FMAC4 soap_get_unsignedInt(struct soap *soap, uns
 	return p;
 }
 
-SOAP_FMAC3 unsigned int * SOAP_FMAC4 soap_in_unsignedInt(struct soap *soap, const char *tag, unsigned int *a, const char *type)
+SOAP_FMAC3 unsigned int * SOAP_FMAC4 soap_in_unsignedInt(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, unsigned int *a, __attribute__((unused)) const char *type)
 {
 	return soap_inunsignedInt(soap, tag, a, type, SOAP_TYPE_unsignedInt);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_time(struct soap *soap, time_t *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_time(__attribute__((unused)) struct soap *soap, time_t *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT_time
 	*a = SOAP_DEFAULT_time;
@@ -1749,7 +1749,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default_time(struct soap *soap, time_t *a)
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_time(struct soap *soap, const time_t *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_time(__attribute__((unused)) struct soap *soap, const time_t *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_time);
 	if (soap_out_time(soap, tag, id, a, type))
@@ -1757,12 +1757,12 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_time(struct soap *soap, const time_t *a, cons
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_time(struct soap *soap, const char *tag, int id, const time_t *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_time(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const time_t *a, __attribute__((unused)) const char *type)
 {
 	return soap_outdateTime(soap, tag, id, a, type, SOAP_TYPE_time);
 }
 
-SOAP_FMAC3 time_t * SOAP_FMAC4 soap_get_time(struct soap *soap, time_t *p, const char *tag, const char *type)
+SOAP_FMAC3 time_t * SOAP_FMAC4 soap_get_time(__attribute__((unused)) struct soap *soap, time_t *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_time(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -1770,12 +1770,12 @@ SOAP_FMAC3 time_t * SOAP_FMAC4 soap_get_time(struct soap *soap, time_t *p, const
 	return p;
 }
 
-SOAP_FMAC3 time_t * SOAP_FMAC4 soap_in_time(struct soap *soap, const char *tag, time_t *a, const char *type)
+SOAP_FMAC3 time_t * SOAP_FMAC4 soap_in_time(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, time_t *a, __attribute__((unused)) const char *type)
 {
 	return soap_indateTime(soap, tag, a, type, SOAP_TYPE_time);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__UploadResponse_Status(struct soap *soap, enum _cwmp__UploadResponse_Status *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__UploadResponse_Status(__attribute__((unused)) struct soap *soap, enum _cwmp__UploadResponse_Status *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT__cwmp__UploadResponse_Status
 	*a = SOAP_DEFAULT__cwmp__UploadResponse_Status;
@@ -1784,7 +1784,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__UploadResponse_Status(struct soap
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__UploadResponse_Status(struct soap *soap, const enum _cwmp__UploadResponse_Status *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__UploadResponse_Status(__attribute__((unused)) struct soap *soap, const enum _cwmp__UploadResponse_Status *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__UploadResponse_Status);
 	if (soap_out__cwmp__UploadResponse_Status(soap, tag, id, a, type))
@@ -1798,20 +1798,20 @@ static const struct soap_code_map soap_codes__cwmp__UploadResponse_Status[] =
 	{ 0, NULL }
 };
 
-SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__UploadResponse_Status2s(struct soap *soap, enum _cwmp__UploadResponse_Status n)
+SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__UploadResponse_Status2s(__attribute__((unused)) struct soap *soap, enum _cwmp__UploadResponse_Status n)
 {	const char *s = soap_code_str(soap_codes__cwmp__UploadResponse_Status, (long)n);
 	if (s)
 		return s;
 	return soap_long2s(soap, (long)n);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__UploadResponse_Status(struct soap *soap, const char *tag, int id, const enum _cwmp__UploadResponse_Status *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__UploadResponse_Status(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const enum _cwmp__UploadResponse_Status *a, __attribute__((unused)) const char *type)
 {	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__UploadResponse_Status), type) || soap_send(soap, soap__cwmp__UploadResponse_Status2s(soap, *a)))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 enum _cwmp__UploadResponse_Status * SOAP_FMAC4 soap_get__cwmp__UploadResponse_Status(struct soap *soap, enum _cwmp__UploadResponse_Status *p, const char *tag, const char *type)
+SOAP_FMAC3 enum _cwmp__UploadResponse_Status * SOAP_FMAC4 soap_get__cwmp__UploadResponse_Status(__attribute__((unused)) struct soap *soap, enum _cwmp__UploadResponse_Status *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__UploadResponse_Status(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -1819,7 +1819,7 @@ SOAP_FMAC3 enum _cwmp__UploadResponse_Status * SOAP_FMAC4 soap_get__cwmp__Upload
 	return p;
 }
 
-SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__UploadResponse_Status(struct soap *soap, const char *s, enum _cwmp__UploadResponse_Status *a)
+SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__UploadResponse_Status(__attribute__((unused)) struct soap *soap, const char *s, enum _cwmp__UploadResponse_Status *a)
 {
 	const struct soap_code_map *map;
 	if (!s)
@@ -1832,7 +1832,7 @@ SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__UploadResponse_Status(struct soap *soa
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 enum _cwmp__UploadResponse_Status * SOAP_FMAC4 soap_in__cwmp__UploadResponse_Status(struct soap *soap, const char *tag, enum _cwmp__UploadResponse_Status *a, const char *type)
+SOAP_FMAC3 enum _cwmp__UploadResponse_Status * SOAP_FMAC4 soap_in__cwmp__UploadResponse_Status(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, enum _cwmp__UploadResponse_Status *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -1851,7 +1851,7 @@ SOAP_FMAC3 enum _cwmp__UploadResponse_Status * SOAP_FMAC4 soap_in__cwmp__UploadR
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__DownloadResponse_Status(struct soap *soap, enum _cwmp__DownloadResponse_Status *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__DownloadResponse_Status(__attribute__((unused)) struct soap *soap, enum _cwmp__DownloadResponse_Status *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT__cwmp__DownloadResponse_Status
 	*a = SOAP_DEFAULT__cwmp__DownloadResponse_Status;
@@ -1860,7 +1860,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__DownloadResponse_Status(struct so
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__DownloadResponse_Status(struct soap *soap, const enum _cwmp__DownloadResponse_Status *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__DownloadResponse_Status(__attribute__((unused)) struct soap *soap, const enum _cwmp__DownloadResponse_Status *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__DownloadResponse_Status);
 	if (soap_out__cwmp__DownloadResponse_Status(soap, tag, id, a, type))
@@ -1874,20 +1874,20 @@ static const struct soap_code_map soap_codes__cwmp__DownloadResponse_Status[] =
 	{ 0, NULL }
 };
 
-SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__DownloadResponse_Status2s(struct soap *soap, enum _cwmp__DownloadResponse_Status n)
+SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__DownloadResponse_Status2s(__attribute__((unused)) struct soap *soap, enum _cwmp__DownloadResponse_Status n)
 {	const char *s = soap_code_str(soap_codes__cwmp__DownloadResponse_Status, (long)n);
 	if (s)
 		return s;
 	return soap_long2s(soap, (long)n);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__DownloadResponse_Status(struct soap *soap, const char *tag, int id, const enum _cwmp__DownloadResponse_Status *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__DownloadResponse_Status(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const enum _cwmp__DownloadResponse_Status *a, __attribute__((unused)) const char *type)
 {	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__DownloadResponse_Status), type) || soap_send(soap, soap__cwmp__DownloadResponse_Status2s(soap, *a)))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 enum _cwmp__DownloadResponse_Status * SOAP_FMAC4 soap_get__cwmp__DownloadResponse_Status(struct soap *soap, enum _cwmp__DownloadResponse_Status *p, const char *tag, const char *type)
+SOAP_FMAC3 enum _cwmp__DownloadResponse_Status * SOAP_FMAC4 soap_get__cwmp__DownloadResponse_Status(__attribute__((unused)) struct soap *soap, enum _cwmp__DownloadResponse_Status *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__DownloadResponse_Status(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -1895,7 +1895,7 @@ SOAP_FMAC3 enum _cwmp__DownloadResponse_Status * SOAP_FMAC4 soap_get__cwmp__Down
 	return p;
 }
 
-SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__DownloadResponse_Status(struct soap *soap, const char *s, enum _cwmp__DownloadResponse_Status *a)
+SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__DownloadResponse_Status(__attribute__((unused)) struct soap *soap, const char *s, enum _cwmp__DownloadResponse_Status *a)
 {
 	const struct soap_code_map *map;
 	if (!s)
@@ -1908,7 +1908,7 @@ SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__DownloadResponse_Status(struct soap *s
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 enum _cwmp__DownloadResponse_Status * SOAP_FMAC4 soap_in__cwmp__DownloadResponse_Status(struct soap *soap, const char *tag, enum _cwmp__DownloadResponse_Status *a, const char *type)
+SOAP_FMAC3 enum _cwmp__DownloadResponse_Status * SOAP_FMAC4 soap_in__cwmp__DownloadResponse_Status(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, enum _cwmp__DownloadResponse_Status *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -1927,7 +1927,7 @@ SOAP_FMAC3 enum _cwmp__DownloadResponse_Status * SOAP_FMAC4 soap_in__cwmp__Downl
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__DeleteObjectResponse_Status(struct soap *soap, enum _cwmp__DeleteObjectResponse_Status *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__DeleteObjectResponse_Status(__attribute__((unused)) struct soap *soap, enum _cwmp__DeleteObjectResponse_Status *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT__cwmp__DeleteObjectResponse_Status
 	*a = SOAP_DEFAULT__cwmp__DeleteObjectResponse_Status;
@@ -1936,7 +1936,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__DeleteObjectResponse_Status(struc
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__DeleteObjectResponse_Status(struct soap *soap, const enum _cwmp__DeleteObjectResponse_Status *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__DeleteObjectResponse_Status(__attribute__((unused)) struct soap *soap, const enum _cwmp__DeleteObjectResponse_Status *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__DeleteObjectResponse_Status);
 	if (soap_out__cwmp__DeleteObjectResponse_Status(soap, tag, id, a, type))
@@ -1950,20 +1950,20 @@ static const struct soap_code_map soap_codes__cwmp__DeleteObjectResponse_Status[
 	{ 0, NULL }
 };
 
-SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__DeleteObjectResponse_Status2s(struct soap *soap, enum _cwmp__DeleteObjectResponse_Status n)
+SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__DeleteObjectResponse_Status2s(__attribute__((unused)) struct soap *soap, enum _cwmp__DeleteObjectResponse_Status n)
 {	const char *s = soap_code_str(soap_codes__cwmp__DeleteObjectResponse_Status, (long)n);
 	if (s)
 		return s;
 	return soap_long2s(soap, (long)n);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__DeleteObjectResponse_Status(struct soap *soap, const char *tag, int id, const enum _cwmp__DeleteObjectResponse_Status *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__DeleteObjectResponse_Status(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const enum _cwmp__DeleteObjectResponse_Status *a, __attribute__((unused)) const char *type)
 {	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__DeleteObjectResponse_Status), type) || soap_send(soap, soap__cwmp__DeleteObjectResponse_Status2s(soap, *a)))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 enum _cwmp__DeleteObjectResponse_Status * SOAP_FMAC4 soap_get__cwmp__DeleteObjectResponse_Status(struct soap *soap, enum _cwmp__DeleteObjectResponse_Status *p, const char *tag, const char *type)
+SOAP_FMAC3 enum _cwmp__DeleteObjectResponse_Status * SOAP_FMAC4 soap_get__cwmp__DeleteObjectResponse_Status(__attribute__((unused)) struct soap *soap, enum _cwmp__DeleteObjectResponse_Status *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__DeleteObjectResponse_Status(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -1971,7 +1971,7 @@ SOAP_FMAC3 enum _cwmp__DeleteObjectResponse_Status * SOAP_FMAC4 soap_get__cwmp__
 	return p;
 }
 
-SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__DeleteObjectResponse_Status(struct soap *soap, const char *s, enum _cwmp__DeleteObjectResponse_Status *a)
+SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__DeleteObjectResponse_Status(__attribute__((unused)) struct soap *soap, const char *s, enum _cwmp__DeleteObjectResponse_Status *a)
 {
 	const struct soap_code_map *map;
 	if (!s)
@@ -1984,7 +1984,7 @@ SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__DeleteObjectResponse_Status(struct soa
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 enum _cwmp__DeleteObjectResponse_Status * SOAP_FMAC4 soap_in__cwmp__DeleteObjectResponse_Status(struct soap *soap, const char *tag, enum _cwmp__DeleteObjectResponse_Status *a, const char *type)
+SOAP_FMAC3 enum _cwmp__DeleteObjectResponse_Status * SOAP_FMAC4 soap_in__cwmp__DeleteObjectResponse_Status(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, enum _cwmp__DeleteObjectResponse_Status *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -2003,7 +2003,7 @@ SOAP_FMAC3 enum _cwmp__DeleteObjectResponse_Status * SOAP_FMAC4 soap_in__cwmp__D
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__AddObjectResponse_Status(struct soap *soap, enum _cwmp__AddObjectResponse_Status *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__AddObjectResponse_Status(__attribute__((unused)) struct soap *soap, enum _cwmp__AddObjectResponse_Status *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT__cwmp__AddObjectResponse_Status
 	*a = SOAP_DEFAULT__cwmp__AddObjectResponse_Status;
@@ -2012,7 +2012,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__AddObjectResponse_Status(struct s
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AddObjectResponse_Status(struct soap *soap, const enum _cwmp__AddObjectResponse_Status *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AddObjectResponse_Status(__attribute__((unused)) struct soap *soap, const enum _cwmp__AddObjectResponse_Status *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__AddObjectResponse_Status);
 	if (soap_out__cwmp__AddObjectResponse_Status(soap, tag, id, a, type))
@@ -2026,20 +2026,20 @@ static const struct soap_code_map soap_codes__cwmp__AddObjectResponse_Status[] =
 	{ 0, NULL }
 };
 
-SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__AddObjectResponse_Status2s(struct soap *soap, enum _cwmp__AddObjectResponse_Status n)
+SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__AddObjectResponse_Status2s(__attribute__((unused)) struct soap *soap, enum _cwmp__AddObjectResponse_Status n)
 {	const char *s = soap_code_str(soap_codes__cwmp__AddObjectResponse_Status, (long)n);
 	if (s)
 		return s;
 	return soap_long2s(soap, (long)n);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__AddObjectResponse_Status(struct soap *soap, const char *tag, int id, const enum _cwmp__AddObjectResponse_Status *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__AddObjectResponse_Status(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const enum _cwmp__AddObjectResponse_Status *a, __attribute__((unused)) const char *type)
 {	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__AddObjectResponse_Status), type) || soap_send(soap, soap__cwmp__AddObjectResponse_Status2s(soap, *a)))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 enum _cwmp__AddObjectResponse_Status * SOAP_FMAC4 soap_get__cwmp__AddObjectResponse_Status(struct soap *soap, enum _cwmp__AddObjectResponse_Status *p, const char *tag, const char *type)
+SOAP_FMAC3 enum _cwmp__AddObjectResponse_Status * SOAP_FMAC4 soap_get__cwmp__AddObjectResponse_Status(__attribute__((unused)) struct soap *soap, enum _cwmp__AddObjectResponse_Status *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__AddObjectResponse_Status(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -2047,7 +2047,7 @@ SOAP_FMAC3 enum _cwmp__AddObjectResponse_Status * SOAP_FMAC4 soap_get__cwmp__Add
 	return p;
 }
 
-SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__AddObjectResponse_Status(struct soap *soap, const char *s, enum _cwmp__AddObjectResponse_Status *a)
+SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__AddObjectResponse_Status(__attribute__((unused)) struct soap *soap, const char *s, enum _cwmp__AddObjectResponse_Status *a)
 {
 	const struct soap_code_map *map;
 	if (!s)
@@ -2060,7 +2060,7 @@ SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__AddObjectResponse_Status(struct soap *
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 enum _cwmp__AddObjectResponse_Status * SOAP_FMAC4 soap_in__cwmp__AddObjectResponse_Status(struct soap *soap, const char *tag, enum _cwmp__AddObjectResponse_Status *a, const char *type)
+SOAP_FMAC3 enum _cwmp__AddObjectResponse_Status * SOAP_FMAC4 soap_in__cwmp__AddObjectResponse_Status(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, enum _cwmp__AddObjectResponse_Status *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -2079,7 +2079,7 @@ SOAP_FMAC3 enum _cwmp__AddObjectResponse_Status * SOAP_FMAC4 soap_in__cwmp__AddO
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetParameterValuesResponse_Status(struct soap *soap, enum _cwmp__SetParameterValuesResponse_Status *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetParameterValuesResponse_Status(__attribute__((unused)) struct soap *soap, enum _cwmp__SetParameterValuesResponse_Status *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT__cwmp__SetParameterValuesResponse_Status
 	*a = SOAP_DEFAULT__cwmp__SetParameterValuesResponse_Status;
@@ -2088,7 +2088,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetParameterValuesResponse_Status
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterValuesResponse_Status(struct soap *soap, const enum _cwmp__SetParameterValuesResponse_Status *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterValuesResponse_Status(__attribute__((unused)) struct soap *soap, const enum _cwmp__SetParameterValuesResponse_Status *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__SetParameterValuesResponse_Status);
 	if (soap_out__cwmp__SetParameterValuesResponse_Status(soap, tag, id, a, type))
@@ -2102,20 +2102,20 @@ static const struct soap_code_map soap_codes__cwmp__SetParameterValuesResponse_S
 	{ 0, NULL }
 };
 
-SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__SetParameterValuesResponse_Status2s(struct soap *soap, enum _cwmp__SetParameterValuesResponse_Status n)
+SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__SetParameterValuesResponse_Status2s(__attribute__((unused)) struct soap *soap, enum _cwmp__SetParameterValuesResponse_Status n)
 {	const char *s = soap_code_str(soap_codes__cwmp__SetParameterValuesResponse_Status, (long)n);
 	if (s)
 		return s;
 	return soap_long2s(soap, (long)n);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetParameterValuesResponse_Status(struct soap *soap, const char *tag, int id, const enum _cwmp__SetParameterValuesResponse_Status *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetParameterValuesResponse_Status(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const enum _cwmp__SetParameterValuesResponse_Status *a, __attribute__((unused)) const char *type)
 {	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__SetParameterValuesResponse_Status), type) || soap_send(soap, soap__cwmp__SetParameterValuesResponse_Status2s(soap, *a)))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 enum _cwmp__SetParameterValuesResponse_Status * SOAP_FMAC4 soap_get__cwmp__SetParameterValuesResponse_Status(struct soap *soap, enum _cwmp__SetParameterValuesResponse_Status *p, const char *tag, const char *type)
+SOAP_FMAC3 enum _cwmp__SetParameterValuesResponse_Status * SOAP_FMAC4 soap_get__cwmp__SetParameterValuesResponse_Status(__attribute__((unused)) struct soap *soap, enum _cwmp__SetParameterValuesResponse_Status *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__SetParameterValuesResponse_Status(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -2123,7 +2123,7 @@ SOAP_FMAC3 enum _cwmp__SetParameterValuesResponse_Status * SOAP_FMAC4 soap_get__
 	return p;
 }
 
-SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__SetParameterValuesResponse_Status(struct soap *soap, const char *s, enum _cwmp__SetParameterValuesResponse_Status *a)
+SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__SetParameterValuesResponse_Status(__attribute__((unused)) struct soap *soap, const char *s, enum _cwmp__SetParameterValuesResponse_Status *a)
 {
 	const struct soap_code_map *map;
 	if (!s)
@@ -2136,7 +2136,7 @@ SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__SetParameterValuesResponse_Status(stru
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 enum _cwmp__SetParameterValuesResponse_Status * SOAP_FMAC4 soap_in__cwmp__SetParameterValuesResponse_Status(struct soap *soap, const char *tag, enum _cwmp__SetParameterValuesResponse_Status *a, const char *type)
+SOAP_FMAC3 enum _cwmp__SetParameterValuesResponse_Status * SOAP_FMAC4 soap_in__cwmp__SetParameterValuesResponse_Status(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, enum _cwmp__SetParameterValuesResponse_Status *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -2155,7 +2155,7 @@ SOAP_FMAC3 enum _cwmp__SetParameterValuesResponse_Status * SOAP_FMAC4 soap_in__c
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__OptionStruct_IsTransferable(struct soap *soap, enum _cwmp__OptionStruct_IsTransferable *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__OptionStruct_IsTransferable(__attribute__((unused)) struct soap *soap, enum _cwmp__OptionStruct_IsTransferable *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT__cwmp__OptionStruct_IsTransferable
 	*a = SOAP_DEFAULT__cwmp__OptionStruct_IsTransferable;
@@ -2164,7 +2164,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__OptionStruct_IsTransferable(struc
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__OptionStruct_IsTransferable(struct soap *soap, const enum _cwmp__OptionStruct_IsTransferable *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__OptionStruct_IsTransferable(__attribute__((unused)) struct soap *soap, const enum _cwmp__OptionStruct_IsTransferable *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__OptionStruct_IsTransferable);
 	if (soap_out__cwmp__OptionStruct_IsTransferable(soap, tag, id, a, type))
@@ -2178,20 +2178,20 @@ static const struct soap_code_map soap_codes__cwmp__OptionStruct_IsTransferable[
 	{ 0, NULL }
 };
 
-SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__OptionStruct_IsTransferable2s(struct soap *soap, enum _cwmp__OptionStruct_IsTransferable n)
+SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__OptionStruct_IsTransferable2s(__attribute__((unused)) struct soap *soap, enum _cwmp__OptionStruct_IsTransferable n)
 {	const char *s = soap_code_str(soap_codes__cwmp__OptionStruct_IsTransferable, (long)n);
 	if (s)
 		return s;
 	return soap_long2s(soap, (long)n);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__OptionStruct_IsTransferable(struct soap *soap, const char *tag, int id, const enum _cwmp__OptionStruct_IsTransferable *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__OptionStruct_IsTransferable(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const enum _cwmp__OptionStruct_IsTransferable *a, __attribute__((unused)) const char *type)
 {	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__OptionStruct_IsTransferable), type) || soap_send(soap, soap__cwmp__OptionStruct_IsTransferable2s(soap, *a)))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 enum _cwmp__OptionStruct_IsTransferable * SOAP_FMAC4 soap_get__cwmp__OptionStruct_IsTransferable(struct soap *soap, enum _cwmp__OptionStruct_IsTransferable *p, const char *tag, const char *type)
+SOAP_FMAC3 enum _cwmp__OptionStruct_IsTransferable * SOAP_FMAC4 soap_get__cwmp__OptionStruct_IsTransferable(__attribute__((unused)) struct soap *soap, enum _cwmp__OptionStruct_IsTransferable *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__OptionStruct_IsTransferable(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -2199,7 +2199,7 @@ SOAP_FMAC3 enum _cwmp__OptionStruct_IsTransferable * SOAP_FMAC4 soap_get__cwmp__
 	return p;
 }
 
-SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__OptionStruct_IsTransferable(struct soap *soap, const char *s, enum _cwmp__OptionStruct_IsTransferable *a)
+SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__OptionStruct_IsTransferable(__attribute__((unused)) struct soap *soap, const char *s, enum _cwmp__OptionStruct_IsTransferable *a)
 {
 	const struct soap_code_map *map;
 	if (!s)
@@ -2212,7 +2212,7 @@ SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__OptionStruct_IsTransferable(struct soa
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 enum _cwmp__OptionStruct_IsTransferable * SOAP_FMAC4 soap_in__cwmp__OptionStruct_IsTransferable(struct soap *soap, const char *tag, enum _cwmp__OptionStruct_IsTransferable *a, const char *type)
+SOAP_FMAC3 enum _cwmp__OptionStruct_IsTransferable * SOAP_FMAC4 soap_in__cwmp__OptionStruct_IsTransferable(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, enum _cwmp__OptionStruct_IsTransferable *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -2231,7 +2231,7 @@ SOAP_FMAC3 enum _cwmp__OptionStruct_IsTransferable * SOAP_FMAC4 soap_in__cwmp__O
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__OptionStruct_Mode(struct soap *soap, enum _cwmp__OptionStruct_Mode *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__OptionStruct_Mode(__attribute__((unused)) struct soap *soap, enum _cwmp__OptionStruct_Mode *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT__cwmp__OptionStruct_Mode
 	*a = SOAP_DEFAULT__cwmp__OptionStruct_Mode;
@@ -2240,7 +2240,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__OptionStruct_Mode(struct soap *so
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__OptionStruct_Mode(struct soap *soap, const enum _cwmp__OptionStruct_Mode *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__OptionStruct_Mode(__attribute__((unused)) struct soap *soap, const enum _cwmp__OptionStruct_Mode *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__OptionStruct_Mode);
 	if (soap_out__cwmp__OptionStruct_Mode(soap, tag, id, a, type))
@@ -2255,20 +2255,20 @@ static const struct soap_code_map soap_codes__cwmp__OptionStruct_Mode[] =
 	{ 0, NULL }
 };
 
-SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__OptionStruct_Mode2s(struct soap *soap, enum _cwmp__OptionStruct_Mode n)
+SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__OptionStruct_Mode2s(__attribute__((unused)) struct soap *soap, enum _cwmp__OptionStruct_Mode n)
 {	const char *s = soap_code_str(soap_codes__cwmp__OptionStruct_Mode, (long)n);
 	if (s)
 		return s;
 	return soap_long2s(soap, (long)n);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__OptionStruct_Mode(struct soap *soap, const char *tag, int id, const enum _cwmp__OptionStruct_Mode *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__OptionStruct_Mode(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const enum _cwmp__OptionStruct_Mode *a, __attribute__((unused)) const char *type)
 {	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__OptionStruct_Mode), type) || soap_send(soap, soap__cwmp__OptionStruct_Mode2s(soap, *a)))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 enum _cwmp__OptionStruct_Mode * SOAP_FMAC4 soap_get__cwmp__OptionStruct_Mode(struct soap *soap, enum _cwmp__OptionStruct_Mode *p, const char *tag, const char *type)
+SOAP_FMAC3 enum _cwmp__OptionStruct_Mode * SOAP_FMAC4 soap_get__cwmp__OptionStruct_Mode(__attribute__((unused)) struct soap *soap, enum _cwmp__OptionStruct_Mode *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__OptionStruct_Mode(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -2276,7 +2276,7 @@ SOAP_FMAC3 enum _cwmp__OptionStruct_Mode * SOAP_FMAC4 soap_get__cwmp__OptionStru
 	return p;
 }
 
-SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__OptionStruct_Mode(struct soap *soap, const char *s, enum _cwmp__OptionStruct_Mode *a)
+SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__OptionStruct_Mode(__attribute__((unused)) struct soap *soap, const char *s, enum _cwmp__OptionStruct_Mode *a)
 {
 	const struct soap_code_map *map;
 	if (!s)
@@ -2289,7 +2289,7 @@ SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__OptionStruct_Mode(struct soap *soap, c
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 enum _cwmp__OptionStruct_Mode * SOAP_FMAC4 soap_in__cwmp__OptionStruct_Mode(struct soap *soap, const char *tag, enum _cwmp__OptionStruct_Mode *a, const char *type)
+SOAP_FMAC3 enum _cwmp__OptionStruct_Mode * SOAP_FMAC4 soap_in__cwmp__OptionStruct_Mode(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, enum _cwmp__OptionStruct_Mode *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -2308,7 +2308,7 @@ SOAP_FMAC3 enum _cwmp__OptionStruct_Mode * SOAP_FMAC4 soap_in__cwmp__OptionStruc
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__OptionStruct_State(struct soap *soap, enum _cwmp__OptionStruct_State *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__OptionStruct_State(__attribute__((unused)) struct soap *soap, enum _cwmp__OptionStruct_State *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT__cwmp__OptionStruct_State
 	*a = SOAP_DEFAULT__cwmp__OptionStruct_State;
@@ -2317,7 +2317,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__OptionStruct_State(struct soap *s
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__OptionStruct_State(struct soap *soap, const enum _cwmp__OptionStruct_State *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__OptionStruct_State(__attribute__((unused)) struct soap *soap, const enum _cwmp__OptionStruct_State *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__OptionStruct_State);
 	if (soap_out__cwmp__OptionStruct_State(soap, tag, id, a, type))
@@ -2333,20 +2333,20 @@ static const struct soap_code_map soap_codes__cwmp__OptionStruct_State[] =
 	{ 0, NULL }
 };
 
-SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__OptionStruct_State2s(struct soap *soap, enum _cwmp__OptionStruct_State n)
+SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__OptionStruct_State2s(__attribute__((unused)) struct soap *soap, enum _cwmp__OptionStruct_State n)
 {	const char *s = soap_code_str(soap_codes__cwmp__OptionStruct_State, (long)n);
 	if (s)
 		return s;
 	return soap_long2s(soap, (long)n);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__OptionStruct_State(struct soap *soap, const char *tag, int id, const enum _cwmp__OptionStruct_State *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__OptionStruct_State(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const enum _cwmp__OptionStruct_State *a, __attribute__((unused)) const char *type)
 {	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__OptionStruct_State), type) || soap_send(soap, soap__cwmp__OptionStruct_State2s(soap, *a)))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 enum _cwmp__OptionStruct_State * SOAP_FMAC4 soap_get__cwmp__OptionStruct_State(struct soap *soap, enum _cwmp__OptionStruct_State *p, const char *tag, const char *type)
+SOAP_FMAC3 enum _cwmp__OptionStruct_State * SOAP_FMAC4 soap_get__cwmp__OptionStruct_State(__attribute__((unused)) struct soap *soap, enum _cwmp__OptionStruct_State *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__OptionStruct_State(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -2354,7 +2354,7 @@ SOAP_FMAC3 enum _cwmp__OptionStruct_State * SOAP_FMAC4 soap_get__cwmp__OptionStr
 	return p;
 }
 
-SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__OptionStruct_State(struct soap *soap, const char *s, enum _cwmp__OptionStruct_State *a)
+SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__OptionStruct_State(__attribute__((unused)) struct soap *soap, const char *s, enum _cwmp__OptionStruct_State *a)
 {
 	const struct soap_code_map *map;
 	if (!s)
@@ -2367,7 +2367,7 @@ SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__OptionStruct_State(struct soap *soap, 
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 enum _cwmp__OptionStruct_State * SOAP_FMAC4 soap_in__cwmp__OptionStruct_State(struct soap *soap, const char *tag, enum _cwmp__OptionStruct_State *a, const char *type)
+SOAP_FMAC3 enum _cwmp__OptionStruct_State * SOAP_FMAC4 soap_in__cwmp__OptionStruct_State(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, enum _cwmp__OptionStruct_State *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -2386,7 +2386,7 @@ SOAP_FMAC3 enum _cwmp__OptionStruct_State * SOAP_FMAC4 soap_in__cwmp__OptionStru
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__AllQueuedTransferStruct_State(struct soap *soap, enum _cwmp__AllQueuedTransferStruct_State *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__AllQueuedTransferStruct_State(__attribute__((unused)) struct soap *soap, enum _cwmp__AllQueuedTransferStruct_State *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT__cwmp__AllQueuedTransferStruct_State
 	*a = SOAP_DEFAULT__cwmp__AllQueuedTransferStruct_State;
@@ -2395,7 +2395,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__AllQueuedTransferStruct_State(str
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AllQueuedTransferStruct_State(struct soap *soap, const enum _cwmp__AllQueuedTransferStruct_State *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AllQueuedTransferStruct_State(__attribute__((unused)) struct soap *soap, const enum _cwmp__AllQueuedTransferStruct_State *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__AllQueuedTransferStruct_State);
 	if (soap_out__cwmp__AllQueuedTransferStruct_State(soap, tag, id, a, type))
@@ -2410,20 +2410,20 @@ static const struct soap_code_map soap_codes__cwmp__AllQueuedTransferStruct_Stat
 	{ 0, NULL }
 };
 
-SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__AllQueuedTransferStruct_State2s(struct soap *soap, enum _cwmp__AllQueuedTransferStruct_State n)
+SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__AllQueuedTransferStruct_State2s(__attribute__((unused)) struct soap *soap, enum _cwmp__AllQueuedTransferStruct_State n)
 {	const char *s = soap_code_str(soap_codes__cwmp__AllQueuedTransferStruct_State, (long)n);
 	if (s)
 		return s;
 	return soap_long2s(soap, (long)n);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__AllQueuedTransferStruct_State(struct soap *soap, const char *tag, int id, const enum _cwmp__AllQueuedTransferStruct_State *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__AllQueuedTransferStruct_State(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const enum _cwmp__AllQueuedTransferStruct_State *a, __attribute__((unused)) const char *type)
 {	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__AllQueuedTransferStruct_State), type) || soap_send(soap, soap__cwmp__AllQueuedTransferStruct_State2s(soap, *a)))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 enum _cwmp__AllQueuedTransferStruct_State * SOAP_FMAC4 soap_get__cwmp__AllQueuedTransferStruct_State(struct soap *soap, enum _cwmp__AllQueuedTransferStruct_State *p, const char *tag, const char *type)
+SOAP_FMAC3 enum _cwmp__AllQueuedTransferStruct_State * SOAP_FMAC4 soap_get__cwmp__AllQueuedTransferStruct_State(__attribute__((unused)) struct soap *soap, enum _cwmp__AllQueuedTransferStruct_State *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__AllQueuedTransferStruct_State(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -2431,7 +2431,7 @@ SOAP_FMAC3 enum _cwmp__AllQueuedTransferStruct_State * SOAP_FMAC4 soap_get__cwmp
 	return p;
 }
 
-SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__AllQueuedTransferStruct_State(struct soap *soap, const char *s, enum _cwmp__AllQueuedTransferStruct_State *a)
+SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__AllQueuedTransferStruct_State(__attribute__((unused)) struct soap *soap, const char *s, enum _cwmp__AllQueuedTransferStruct_State *a)
 {
 	const struct soap_code_map *map;
 	if (!s)
@@ -2444,7 +2444,7 @@ SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__AllQueuedTransferStruct_State(struct s
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 enum _cwmp__AllQueuedTransferStruct_State * SOAP_FMAC4 soap_in__cwmp__AllQueuedTransferStruct_State(struct soap *soap, const char *tag, enum _cwmp__AllQueuedTransferStruct_State *a, const char *type)
+SOAP_FMAC3 enum _cwmp__AllQueuedTransferStruct_State * SOAP_FMAC4 soap_in__cwmp__AllQueuedTransferStruct_State(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, enum _cwmp__AllQueuedTransferStruct_State *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -2463,7 +2463,7 @@ SOAP_FMAC3 enum _cwmp__AllQueuedTransferStruct_State * SOAP_FMAC4 soap_in__cwmp_
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__QueuedTransferStruct_State(struct soap *soap, enum _cwmp__QueuedTransferStruct_State *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__QueuedTransferStruct_State(__attribute__((unused)) struct soap *soap, enum _cwmp__QueuedTransferStruct_State *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT__cwmp__QueuedTransferStruct_State
 	*a = SOAP_DEFAULT__cwmp__QueuedTransferStruct_State;
@@ -2472,7 +2472,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__QueuedTransferStruct_State(struct
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__QueuedTransferStruct_State(struct soap *soap, const enum _cwmp__QueuedTransferStruct_State *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__QueuedTransferStruct_State(__attribute__((unused)) struct soap *soap, const enum _cwmp__QueuedTransferStruct_State *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__QueuedTransferStruct_State);
 	if (soap_out__cwmp__QueuedTransferStruct_State(soap, tag, id, a, type))
@@ -2487,20 +2487,20 @@ static const struct soap_code_map soap_codes__cwmp__QueuedTransferStruct_State[]
 	{ 0, NULL }
 };
 
-SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__QueuedTransferStruct_State2s(struct soap *soap, enum _cwmp__QueuedTransferStruct_State n)
+SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__QueuedTransferStruct_State2s(__attribute__((unused)) struct soap *soap, enum _cwmp__QueuedTransferStruct_State n)
 {	const char *s = soap_code_str(soap_codes__cwmp__QueuedTransferStruct_State, (long)n);
 	if (s)
 		return s;
 	return soap_long2s(soap, (long)n);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__QueuedTransferStruct_State(struct soap *soap, const char *tag, int id, const enum _cwmp__QueuedTransferStruct_State *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__QueuedTransferStruct_State(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const enum _cwmp__QueuedTransferStruct_State *a, __attribute__((unused)) const char *type)
 {	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__QueuedTransferStruct_State), type) || soap_send(soap, soap__cwmp__QueuedTransferStruct_State2s(soap, *a)))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 enum _cwmp__QueuedTransferStruct_State * SOAP_FMAC4 soap_get__cwmp__QueuedTransferStruct_State(struct soap *soap, enum _cwmp__QueuedTransferStruct_State *p, const char *tag, const char *type)
+SOAP_FMAC3 enum _cwmp__QueuedTransferStruct_State * SOAP_FMAC4 soap_get__cwmp__QueuedTransferStruct_State(__attribute__((unused)) struct soap *soap, enum _cwmp__QueuedTransferStruct_State *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__QueuedTransferStruct_State(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -2508,7 +2508,7 @@ SOAP_FMAC3 enum _cwmp__QueuedTransferStruct_State * SOAP_FMAC4 soap_get__cwmp__Q
 	return p;
 }
 
-SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__QueuedTransferStruct_State(struct soap *soap, const char *s, enum _cwmp__QueuedTransferStruct_State *a)
+SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__QueuedTransferStruct_State(__attribute__((unused)) struct soap *soap, const char *s, enum _cwmp__QueuedTransferStruct_State *a)
 {
 	const struct soap_code_map *map;
 	if (!s)
@@ -2521,7 +2521,7 @@ SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__QueuedTransferStruct_State(struct soap
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 enum _cwmp__QueuedTransferStruct_State * SOAP_FMAC4 soap_in__cwmp__QueuedTransferStruct_State(struct soap *soap, const char *tag, enum _cwmp__QueuedTransferStruct_State *a, const char *type)
+SOAP_FMAC3 enum _cwmp__QueuedTransferStruct_State * SOAP_FMAC4 soap_in__cwmp__QueuedTransferStruct_State(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, enum _cwmp__QueuedTransferStruct_State *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -2540,7 +2540,7 @@ SOAP_FMAC3 enum _cwmp__QueuedTransferStruct_State * SOAP_FMAC4 soap_in__cwmp__Qu
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__ParameterAttributeStruct_Notification(struct soap *soap, enum _cwmp__ParameterAttributeStruct_Notification *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__ParameterAttributeStruct_Notification(__attribute__((unused)) struct soap *soap, enum _cwmp__ParameterAttributeStruct_Notification *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT__cwmp__ParameterAttributeStruct_Notification
 	*a = SOAP_DEFAULT__cwmp__ParameterAttributeStruct_Notification;
@@ -2549,7 +2549,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__ParameterAttributeStruct_Notifica
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__ParameterAttributeStruct_Notification(struct soap *soap, const enum _cwmp__ParameterAttributeStruct_Notification *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__ParameterAttributeStruct_Notification(__attribute__((unused)) struct soap *soap, const enum _cwmp__ParameterAttributeStruct_Notification *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__ParameterAttributeStruct_Notification);
 	if (soap_out__cwmp__ParameterAttributeStruct_Notification(soap, tag, id, a, type))
@@ -2564,20 +2564,20 @@ static const struct soap_code_map soap_codes__cwmp__ParameterAttributeStruct_Not
 	{ 0, NULL }
 };
 
-SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__ParameterAttributeStruct_Notification2s(struct soap *soap, enum _cwmp__ParameterAttributeStruct_Notification n)
+SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__ParameterAttributeStruct_Notification2s(__attribute__((unused)) struct soap *soap, enum _cwmp__ParameterAttributeStruct_Notification n)
 {	const char *s = soap_code_str(soap_codes__cwmp__ParameterAttributeStruct_Notification, (long)n);
 	if (s)
 		return s;
 	return soap_long2s(soap, (long)n);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__ParameterAttributeStruct_Notification(struct soap *soap, const char *tag, int id, const enum _cwmp__ParameterAttributeStruct_Notification *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__ParameterAttributeStruct_Notification(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const enum _cwmp__ParameterAttributeStruct_Notification *a, __attribute__((unused)) const char *type)
 {	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__ParameterAttributeStruct_Notification), type) || soap_send(soap, soap__cwmp__ParameterAttributeStruct_Notification2s(soap, *a)))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 enum _cwmp__ParameterAttributeStruct_Notification * SOAP_FMAC4 soap_get__cwmp__ParameterAttributeStruct_Notification(struct soap *soap, enum _cwmp__ParameterAttributeStruct_Notification *p, const char *tag, const char *type)
+SOAP_FMAC3 enum _cwmp__ParameterAttributeStruct_Notification * SOAP_FMAC4 soap_get__cwmp__ParameterAttributeStruct_Notification(__attribute__((unused)) struct soap *soap, enum _cwmp__ParameterAttributeStruct_Notification *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__ParameterAttributeStruct_Notification(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -2585,7 +2585,7 @@ SOAP_FMAC3 enum _cwmp__ParameterAttributeStruct_Notification * SOAP_FMAC4 soap_g
 	return p;
 }
 
-SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__ParameterAttributeStruct_Notification(struct soap *soap, const char *s, enum _cwmp__ParameterAttributeStruct_Notification *a)
+SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__ParameterAttributeStruct_Notification(__attribute__((unused)) struct soap *soap, const char *s, enum _cwmp__ParameterAttributeStruct_Notification *a)
 {
 	const struct soap_code_map *map;
 	if (!s)
@@ -2598,7 +2598,7 @@ SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__ParameterAttributeStruct_Notification(
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 enum _cwmp__ParameterAttributeStruct_Notification * SOAP_FMAC4 soap_in__cwmp__ParameterAttributeStruct_Notification(struct soap *soap, const char *tag, enum _cwmp__ParameterAttributeStruct_Notification *a, const char *type)
+SOAP_FMAC3 enum _cwmp__ParameterAttributeStruct_Notification * SOAP_FMAC4 soap_in__cwmp__ParameterAttributeStruct_Notification(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, enum _cwmp__ParameterAttributeStruct_Notification *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -2617,7 +2617,7 @@ SOAP_FMAC3 enum _cwmp__ParameterAttributeStruct_Notification * SOAP_FMAC4 soap_i
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetParameterAttributesStruct_Notification(struct soap *soap, enum _cwmp__SetParameterAttributesStruct_Notification *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetParameterAttributesStruct_Notification(__attribute__((unused)) struct soap *soap, enum _cwmp__SetParameterAttributesStruct_Notification *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT__cwmp__SetParameterAttributesStruct_Notification
 	*a = SOAP_DEFAULT__cwmp__SetParameterAttributesStruct_Notification;
@@ -2626,7 +2626,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetParameterAttributesStruct_Noti
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterAttributesStruct_Notification(struct soap *soap, const enum _cwmp__SetParameterAttributesStruct_Notification *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterAttributesStruct_Notification(__attribute__((unused)) struct soap *soap, const enum _cwmp__SetParameterAttributesStruct_Notification *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__SetParameterAttributesStruct_Notification);
 	if (soap_out__cwmp__SetParameterAttributesStruct_Notification(soap, tag, id, a, type))
@@ -2641,20 +2641,20 @@ static const struct soap_code_map soap_codes__cwmp__SetParameterAttributesStruct
 	{ 0, NULL }
 };
 
-SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__SetParameterAttributesStruct_Notification2s(struct soap *soap, enum _cwmp__SetParameterAttributesStruct_Notification n)
+SOAP_FMAC3S const char* SOAP_FMAC4S soap__cwmp__SetParameterAttributesStruct_Notification2s(__attribute__((unused)) struct soap *soap, enum _cwmp__SetParameterAttributesStruct_Notification n)
 {	const char *s = soap_code_str(soap_codes__cwmp__SetParameterAttributesStruct_Notification, (long)n);
 	if (s)
 		return s;
 	return soap_long2s(soap, (long)n);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetParameterAttributesStruct_Notification(struct soap *soap, const char *tag, int id, const enum _cwmp__SetParameterAttributesStruct_Notification *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetParameterAttributesStruct_Notification(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const enum _cwmp__SetParameterAttributesStruct_Notification *a, __attribute__((unused)) const char *type)
 {	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__SetParameterAttributesStruct_Notification), type) || soap_send(soap, soap__cwmp__SetParameterAttributesStruct_Notification2s(soap, *a)))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 enum _cwmp__SetParameterAttributesStruct_Notification * SOAP_FMAC4 soap_get__cwmp__SetParameterAttributesStruct_Notification(struct soap *soap, enum _cwmp__SetParameterAttributesStruct_Notification *p, const char *tag, const char *type)
+SOAP_FMAC3 enum _cwmp__SetParameterAttributesStruct_Notification * SOAP_FMAC4 soap_get__cwmp__SetParameterAttributesStruct_Notification(__attribute__((unused)) struct soap *soap, enum _cwmp__SetParameterAttributesStruct_Notification *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__SetParameterAttributesStruct_Notification(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -2662,7 +2662,7 @@ SOAP_FMAC3 enum _cwmp__SetParameterAttributesStruct_Notification * SOAP_FMAC4 so
 	return p;
 }
 
-SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__SetParameterAttributesStruct_Notification(struct soap *soap, const char *s, enum _cwmp__SetParameterAttributesStruct_Notification *a)
+SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__SetParameterAttributesStruct_Notification(__attribute__((unused)) struct soap *soap, const char *s, enum _cwmp__SetParameterAttributesStruct_Notification *a)
 {
 	const struct soap_code_map *map;
 	if (!s)
@@ -2675,7 +2675,7 @@ SOAP_FMAC3S int SOAP_FMAC4S soap_s2_cwmp__SetParameterAttributesStruct_Notificat
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 enum _cwmp__SetParameterAttributesStruct_Notification * SOAP_FMAC4 soap_in__cwmp__SetParameterAttributesStruct_Notification(struct soap *soap, const char *tag, enum _cwmp__SetParameterAttributesStruct_Notification *a, const char *type)
+SOAP_FMAC3 enum _cwmp__SetParameterAttributesStruct_Notification * SOAP_FMAC4 soap_in__cwmp__SetParameterAttributesStruct_Notification(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, enum _cwmp__SetParameterAttributesStruct_Notification *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -2694,7 +2694,7 @@ SOAP_FMAC3 enum _cwmp__SetParameterAttributesStruct_Notification * SOAP_FMAC4 so
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_xsd__boolean(struct soap *soap, enum xsd__boolean *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_xsd__boolean(__attribute__((unused)) struct soap *soap, enum xsd__boolean *a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT_xsd__boolean
 	*a = SOAP_DEFAULT_xsd__boolean;
@@ -2703,7 +2703,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default_xsd__boolean(struct soap *soap, enum xsd
 #endif
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_xsd__boolean(struct soap *soap, const enum xsd__boolean *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_xsd__boolean(__attribute__((unused)) struct soap *soap, const enum xsd__boolean *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_xsd__boolean);
 	if (soap_out_xsd__boolean(soap, tag, id, a, type))
@@ -2717,17 +2717,17 @@ static const struct soap_code_map soap_codes_xsd__boolean[] =
 	{ 0, NULL }
 };
 
-SOAP_FMAC3S const char* SOAP_FMAC4S soap_xsd__boolean2s(struct soap *soap, enum xsd__boolean n)
+SOAP_FMAC3S const char* SOAP_FMAC4S soap_xsd__boolean2s(__attribute__((unused)) struct soap *soap, enum xsd__boolean n)
 {	return soap_code_str(soap_codes_xsd__boolean, n!=0);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_xsd__boolean(struct soap *soap, const char *tag, int id, const enum xsd__boolean *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_xsd__boolean(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const enum xsd__boolean *a, __attribute__((unused)) const char *type)
 {	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_xsd__boolean), type) || soap_send(soap, soap_xsd__boolean2s(soap, *a)))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 enum xsd__boolean * SOAP_FMAC4 soap_get_xsd__boolean(struct soap *soap, enum xsd__boolean *p, const char *tag, const char *type)
+SOAP_FMAC3 enum xsd__boolean * SOAP_FMAC4 soap_get_xsd__boolean(__attribute__((unused)) struct soap *soap, enum xsd__boolean *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_xsd__boolean(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -2735,7 +2735,7 @@ SOAP_FMAC3 enum xsd__boolean * SOAP_FMAC4 soap_get_xsd__boolean(struct soap *soa
 	return p;
 }
 
-SOAP_FMAC3S int SOAP_FMAC4S soap_s2xsd__boolean(struct soap *soap, const char *s, enum xsd__boolean *a)
+SOAP_FMAC3S int SOAP_FMAC4S soap_s2xsd__boolean(__attribute__((unused)) struct soap *soap, const char *s, enum xsd__boolean *a)
 {
 	const struct soap_code_map *map;
 	if (!s)
@@ -2752,7 +2752,7 @@ SOAP_FMAC3S int SOAP_FMAC4S soap_s2xsd__boolean(struct soap *soap, const char *s
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 enum xsd__boolean * SOAP_FMAC4 soap_in_xsd__boolean(struct soap *soap, const char *tag, enum xsd__boolean *a, const char *type)
+SOAP_FMAC3 enum xsd__boolean * SOAP_FMAC4 soap_in_xsd__boolean(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, enum xsd__boolean *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, NULL))
 		return NULL;
@@ -2777,7 +2777,7 @@ SOAP_FMAC3 enum xsd__boolean * SOAP_FMAC4 soap_in_xsd__boolean(struct soap *soap
 
 #ifndef WITH_NOGLOBAL
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENV__Fault(struct soap *soap, struct SOAP_ENV__Fault *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENV__Fault(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Fault *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default__QName(soap, &a->faultcode);
@@ -2791,7 +2791,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENV__Fault(struct soap *soap, struc
 	a->SOAP_ENV__Detail = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SOAP_ENV__Fault(struct soap *soap, const struct SOAP_ENV__Fault *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SOAP_ENV__Fault(__attribute__((unused)) struct soap *soap, const struct SOAP_ENV__Fault *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize__QName(soap, &a->faultcode);
@@ -2805,7 +2805,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SOAP_ENV__Fault(struct soap *soap, con
 	soap_serialize_PointerToSOAP_ENV__Detail(soap, &a->SOAP_ENV__Detail);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENV__Fault(struct soap *soap, const struct SOAP_ENV__Fault *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENV__Fault(__attribute__((unused)) struct soap *soap, const struct SOAP_ENV__Fault *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_SOAP_ENV__Fault);
 	if (soap_out_SOAP_ENV__Fault(soap, tag, id, a, type))
@@ -2813,7 +2813,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENV__Fault(struct soap *soap, const stru
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENV__Fault(struct soap *soap, const char *tag, int id, const struct SOAP_ENV__Fault *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENV__Fault(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct SOAP_ENV__Fault *a, __attribute__((unused)) const char *type)
 {
 	const char *soap_tmp_faultcode = soap_QName2s(soap, a->faultcode);
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_SOAP_ENV__Fault), type))
@@ -2839,7 +2839,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENV__Fault(struct soap *soap, const char
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct SOAP_ENV__Fault * SOAP_FMAC4 soap_get_SOAP_ENV__Fault(struct soap *soap, struct SOAP_ENV__Fault *p, const char *tag, const char *type)
+SOAP_FMAC3 struct SOAP_ENV__Fault * SOAP_FMAC4 soap_get_SOAP_ENV__Fault(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Fault *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_SOAP_ENV__Fault(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -2847,7 +2847,7 @@ SOAP_FMAC3 struct SOAP_ENV__Fault * SOAP_FMAC4 soap_get_SOAP_ENV__Fault(struct s
 	return p;
 }
 
-SOAP_FMAC3 struct SOAP_ENV__Fault * SOAP_FMAC4 soap_in_SOAP_ENV__Fault(struct soap *soap, const char *tag, struct SOAP_ENV__Fault *a, const char *type)
+SOAP_FMAC3 struct SOAP_ENV__Fault * SOAP_FMAC4 soap_in_SOAP_ENV__Fault(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct SOAP_ENV__Fault *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_faultcode = 1, soap_flag_faultstring = 1, soap_flag_faultactor = 1, soap_flag_detail = 1, soap_flag_SOAP_ENV__Code = 1, soap_flag_SOAP_ENV__Reason = 1, soap_flag_SOAP_ENV__Node = 1, soap_flag_SOAP_ENV__Role = 1, soap_flag_SOAP_ENV__Detail = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -2927,19 +2927,19 @@ SOAP_FMAC3 struct SOAP_ENV__Fault * SOAP_FMAC4 soap_in_SOAP_ENV__Fault(struct so
 
 #ifndef WITH_NOGLOBAL
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENV__Reason(struct soap *soap, struct SOAP_ENV__Reason *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENV__Reason(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Reason *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_string(soap, &a->SOAP_ENV__Text);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SOAP_ENV__Reason(struct soap *soap, const struct SOAP_ENV__Reason *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SOAP_ENV__Reason(__attribute__((unused)) struct soap *soap, const struct SOAP_ENV__Reason *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_string(soap, &a->SOAP_ENV__Text);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENV__Reason(struct soap *soap, const struct SOAP_ENV__Reason *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENV__Reason(__attribute__((unused)) struct soap *soap, const struct SOAP_ENV__Reason *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_SOAP_ENV__Reason);
 	if (soap_out_SOAP_ENV__Reason(soap, tag, id, a, type))
@@ -2947,7 +2947,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENV__Reason(struct soap *soap, const str
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENV__Reason(struct soap *soap, const char *tag, int id, const struct SOAP_ENV__Reason *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENV__Reason(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct SOAP_ENV__Reason *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_SOAP_ENV__Reason), type))
 		return soap->error;
@@ -2956,7 +2956,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENV__Reason(struct soap *soap, const cha
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct SOAP_ENV__Reason * SOAP_FMAC4 soap_get_SOAP_ENV__Reason(struct soap *soap, struct SOAP_ENV__Reason *p, const char *tag, const char *type)
+SOAP_FMAC3 struct SOAP_ENV__Reason * SOAP_FMAC4 soap_get_SOAP_ENV__Reason(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Reason *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_SOAP_ENV__Reason(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -2964,7 +2964,7 @@ SOAP_FMAC3 struct SOAP_ENV__Reason * SOAP_FMAC4 soap_get_SOAP_ENV__Reason(struct
 	return p;
 }
 
-SOAP_FMAC3 struct SOAP_ENV__Reason * SOAP_FMAC4 soap_in_SOAP_ENV__Reason(struct soap *soap, const char *tag, struct SOAP_ENV__Reason *a, const char *type)
+SOAP_FMAC3 struct SOAP_ENV__Reason * SOAP_FMAC4 soap_in_SOAP_ENV__Reason(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct SOAP_ENV__Reason *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_SOAP_ENV__Text = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -3004,7 +3004,7 @@ SOAP_FMAC3 struct SOAP_ENV__Reason * SOAP_FMAC4 soap_in_SOAP_ENV__Reason(struct 
 
 #ifndef WITH_NOGLOBAL
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENV__Detail(struct soap *soap, struct SOAP_ENV__Detail *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENV__Detail(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Detail *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->__type = 0;
@@ -3012,13 +3012,13 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENV__Detail(struct soap *soap, stru
 	a->__any = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SOAP_ENV__Detail(struct soap *soap, const struct SOAP_ENV__Detail *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SOAP_ENV__Detail(__attribute__((unused)) struct soap *soap, const struct SOAP_ENV__Detail *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_markelement(soap, a->fault, a->__type);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENV__Detail(struct soap *soap, const struct SOAP_ENV__Detail *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENV__Detail(__attribute__((unused)) struct soap *soap, const struct SOAP_ENV__Detail *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_SOAP_ENV__Detail);
 	if (soap_out_SOAP_ENV__Detail(soap, tag, id, a, type))
@@ -3026,7 +3026,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENV__Detail(struct soap *soap, const str
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENV__Detail(struct soap *soap, const char *tag, int id, const struct SOAP_ENV__Detail *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENV__Detail(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct SOAP_ENV__Detail *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_SOAP_ENV__Detail), type))
 		return soap->error;
@@ -3036,7 +3036,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENV__Detail(struct soap *soap, const cha
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct SOAP_ENV__Detail * SOAP_FMAC4 soap_get_SOAP_ENV__Detail(struct soap *soap, struct SOAP_ENV__Detail *p, const char *tag, const char *type)
+SOAP_FMAC3 struct SOAP_ENV__Detail * SOAP_FMAC4 soap_get_SOAP_ENV__Detail(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Detail *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_SOAP_ENV__Detail(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -3044,7 +3044,7 @@ SOAP_FMAC3 struct SOAP_ENV__Detail * SOAP_FMAC4 soap_get_SOAP_ENV__Detail(struct
 	return p;
 }
 
-SOAP_FMAC3 struct SOAP_ENV__Detail * SOAP_FMAC4 soap_in_SOAP_ENV__Detail(struct soap *soap, const char *tag, struct SOAP_ENV__Detail *a, const char *type)
+SOAP_FMAC3 struct SOAP_ENV__Detail * SOAP_FMAC4 soap_in_SOAP_ENV__Detail(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct SOAP_ENV__Detail *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_fault = 1, soap_flag___any = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -3089,21 +3089,21 @@ SOAP_FMAC3 struct SOAP_ENV__Detail * SOAP_FMAC4 soap_in_SOAP_ENV__Detail(struct 
 
 #ifndef WITH_NOGLOBAL
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENV__Code(struct soap *soap, struct SOAP_ENV__Code *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENV__Code(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Code *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default__QName(soap, &a->SOAP_ENV__Value);
 	a->SOAP_ENV__Subcode = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SOAP_ENV__Code(struct soap *soap, const struct SOAP_ENV__Code *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SOAP_ENV__Code(__attribute__((unused)) struct soap *soap, const struct SOAP_ENV__Code *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize__QName(soap, &a->SOAP_ENV__Value);
 	soap_serialize_PointerToSOAP_ENV__Code(soap, &a->SOAP_ENV__Subcode);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENV__Code(struct soap *soap, const struct SOAP_ENV__Code *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENV__Code(__attribute__((unused)) struct soap *soap, const struct SOAP_ENV__Code *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_SOAP_ENV__Code);
 	if (soap_out_SOAP_ENV__Code(soap, tag, id, a, type))
@@ -3111,7 +3111,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENV__Code(struct soap *soap, const struc
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENV__Code(struct soap *soap, const char *tag, int id, const struct SOAP_ENV__Code *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENV__Code(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct SOAP_ENV__Code *a, __attribute__((unused)) const char *type)
 {
 	const char *soap_tmp_SOAP_ENV__Value = soap_QName2s(soap, a->SOAP_ENV__Value);
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_SOAP_ENV__Code), type))
@@ -3123,7 +3123,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENV__Code(struct soap *soap, const char 
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct SOAP_ENV__Code * SOAP_FMAC4 soap_get_SOAP_ENV__Code(struct soap *soap, struct SOAP_ENV__Code *p, const char *tag, const char *type)
+SOAP_FMAC3 struct SOAP_ENV__Code * SOAP_FMAC4 soap_get_SOAP_ENV__Code(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Code *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_SOAP_ENV__Code(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -3131,7 +3131,7 @@ SOAP_FMAC3 struct SOAP_ENV__Code * SOAP_FMAC4 soap_get_SOAP_ENV__Code(struct soa
 	return p;
 }
 
-SOAP_FMAC3 struct SOAP_ENV__Code * SOAP_FMAC4 soap_in_SOAP_ENV__Code(struct soap *soap, const char *tag, struct SOAP_ENV__Code *a, const char *type)
+SOAP_FMAC3 struct SOAP_ENV__Code * SOAP_FMAC4 soap_in_SOAP_ENV__Code(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct SOAP_ENV__Code *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_SOAP_ENV__Value = 1, soap_flag_SOAP_ENV__Subcode = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -3176,21 +3176,21 @@ SOAP_FMAC3 struct SOAP_ENV__Code * SOAP_FMAC4 soap_in_SOAP_ENV__Code(struct soap
 
 #ifndef WITH_NOGLOBAL
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENV__Header(struct soap *soap, struct SOAP_ENV__Header *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENV__Header(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Header *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->cwmp__HoldRequests = NULL;
 	a->cwmp__ID = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SOAP_ENV__Header(struct soap *soap, const struct SOAP_ENV__Header *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SOAP_ENV__Header(__attribute__((unused)) struct soap *soap, const struct SOAP_ENV__Header *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerTo_cwmp__HoldRequests(soap, &a->cwmp__HoldRequests);
 	soap_serialize_PointerTo_cwmp__ID(soap, &a->cwmp__ID);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENV__Header(struct soap *soap, const struct SOAP_ENV__Header *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENV__Header(__attribute__((unused)) struct soap *soap, const struct SOAP_ENV__Header *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_SOAP_ENV__Header);
 	if (soap_out_SOAP_ENV__Header(soap, tag, id, a, type))
@@ -3198,7 +3198,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENV__Header(struct soap *soap, const str
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENV__Header(struct soap *soap, const char *tag, int id, const struct SOAP_ENV__Header *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENV__Header(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct SOAP_ENV__Header *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_SOAP_ENV__Header), type))
 		return soap->error;
@@ -3209,7 +3209,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENV__Header(struct soap *soap, const cha
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct SOAP_ENV__Header * SOAP_FMAC4 soap_get_SOAP_ENV__Header(struct soap *soap, struct SOAP_ENV__Header *p, const char *tag, const char *type)
+SOAP_FMAC3 struct SOAP_ENV__Header * SOAP_FMAC4 soap_get_SOAP_ENV__Header(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Header *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_SOAP_ENV__Header(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -3217,7 +3217,7 @@ SOAP_FMAC3 struct SOAP_ENV__Header * SOAP_FMAC4 soap_get_SOAP_ENV__Header(struct
 	return p;
 }
 
-SOAP_FMAC3 struct SOAP_ENV__Header * SOAP_FMAC4 soap_in_SOAP_ENV__Header(struct soap *soap, const char *tag, struct SOAP_ENV__Header *a, const char *type)
+SOAP_FMAC3 struct SOAP_ENV__Header * SOAP_FMAC4 soap_in_SOAP_ENV__Header(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct SOAP_ENV__Header *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_cwmp__HoldRequests = 1, soap_flag_cwmp__ID = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -3260,19 +3260,19 @@ SOAP_FMAC3 struct SOAP_ENV__Header * SOAP_FMAC4 soap_in_SOAP_ENV__Header(struct 
 
 #endif
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__Kicked(struct soap *soap, struct __cwmp__Kicked *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__Kicked(__attribute__((unused)) struct soap *soap, struct __cwmp__Kicked *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->cwmp__Kicked = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__Kicked(struct soap *soap, const struct __cwmp__Kicked *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__Kicked(__attribute__((unused)) struct soap *soap, const struct __cwmp__Kicked *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerTo_cwmp__Kicked(soap, &a->cwmp__Kicked);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__Kicked(struct soap *soap, const struct __cwmp__Kicked *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__Kicked(__attribute__((unused)) struct soap *soap, const struct __cwmp__Kicked *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = 0;
 	if (soap_out___cwmp__Kicked(soap, tag, id, a, type))
@@ -3280,14 +3280,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__Kicked(struct soap *soap, const struc
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out___cwmp__Kicked(struct soap *soap, const char *tag, int id, const struct __cwmp__Kicked *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out___cwmp__Kicked(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct __cwmp__Kicked *a, __attribute__((unused)) const char *type)
 {
 	if (soap_out_PointerTo_cwmp__Kicked(soap, "cwmp:Kicked", -1, &a->cwmp__Kicked, ""))
 		return soap->error;
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 struct __cwmp__Kicked * SOAP_FMAC4 soap_get___cwmp__Kicked(struct soap *soap, struct __cwmp__Kicked *p, const char *tag, const char *type)
+SOAP_FMAC3 struct __cwmp__Kicked * SOAP_FMAC4 soap_get___cwmp__Kicked(__attribute__((unused)) struct soap *soap, struct __cwmp__Kicked *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in___cwmp__Kicked(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -3295,7 +3295,7 @@ SOAP_FMAC3 struct __cwmp__Kicked * SOAP_FMAC4 soap_get___cwmp__Kicked(struct soa
 	return p;
 }
 
-SOAP_FMAC3 struct __cwmp__Kicked * SOAP_FMAC4 soap_in___cwmp__Kicked(struct soap *soap, const char *tag, struct __cwmp__Kicked *a, const char *type)
+SOAP_FMAC3 struct __cwmp__Kicked * SOAP_FMAC4 soap_in___cwmp__Kicked(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct __cwmp__Kicked *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_cwmp__Kicked = 1;
 	short soap_flag;
@@ -3323,19 +3323,19 @@ SOAP_FMAC3 struct __cwmp__Kicked * SOAP_FMAC4 soap_in___cwmp__Kicked(struct soap
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__RequestDownload(struct soap *soap, struct __cwmp__RequestDownload *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__RequestDownload(__attribute__((unused)) struct soap *soap, struct __cwmp__RequestDownload *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->cwmp__RequestDownload = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__RequestDownload(struct soap *soap, const struct __cwmp__RequestDownload *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__RequestDownload(__attribute__((unused)) struct soap *soap, const struct __cwmp__RequestDownload *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerTo_cwmp__RequestDownload(soap, &a->cwmp__RequestDownload);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__RequestDownload(struct soap *soap, const struct __cwmp__RequestDownload *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__RequestDownload(__attribute__((unused)) struct soap *soap, const struct __cwmp__RequestDownload *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = 0;
 	if (soap_out___cwmp__RequestDownload(soap, tag, id, a, type))
@@ -3343,14 +3343,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__RequestDownload(struct soap *soap, co
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out___cwmp__RequestDownload(struct soap *soap, const char *tag, int id, const struct __cwmp__RequestDownload *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out___cwmp__RequestDownload(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct __cwmp__RequestDownload *a, __attribute__((unused)) const char *type)
 {
 	if (soap_out_PointerTo_cwmp__RequestDownload(soap, "cwmp:RequestDownload", -1, &a->cwmp__RequestDownload, ""))
 		return soap->error;
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 struct __cwmp__RequestDownload * SOAP_FMAC4 soap_get___cwmp__RequestDownload(struct soap *soap, struct __cwmp__RequestDownload *p, const char *tag, const char *type)
+SOAP_FMAC3 struct __cwmp__RequestDownload * SOAP_FMAC4 soap_get___cwmp__RequestDownload(__attribute__((unused)) struct soap *soap, struct __cwmp__RequestDownload *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in___cwmp__RequestDownload(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -3358,7 +3358,7 @@ SOAP_FMAC3 struct __cwmp__RequestDownload * SOAP_FMAC4 soap_get___cwmp__RequestD
 	return p;
 }
 
-SOAP_FMAC3 struct __cwmp__RequestDownload * SOAP_FMAC4 soap_in___cwmp__RequestDownload(struct soap *soap, const char *tag, struct __cwmp__RequestDownload *a, const char *type)
+SOAP_FMAC3 struct __cwmp__RequestDownload * SOAP_FMAC4 soap_in___cwmp__RequestDownload(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct __cwmp__RequestDownload *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_cwmp__RequestDownload = 1;
 	short soap_flag;
@@ -3386,19 +3386,19 @@ SOAP_FMAC3 struct __cwmp__RequestDownload * SOAP_FMAC4 soap_in___cwmp__RequestDo
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__AutonomousTransferComplete(struct soap *soap, struct __cwmp__AutonomousTransferComplete *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__AutonomousTransferComplete(__attribute__((unused)) struct soap *soap, struct __cwmp__AutonomousTransferComplete *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->cwmp__AutonomousTransferComplete = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__AutonomousTransferComplete(struct soap *soap, const struct __cwmp__AutonomousTransferComplete *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__AutonomousTransferComplete(__attribute__((unused)) struct soap *soap, const struct __cwmp__AutonomousTransferComplete *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerTo_cwmp__AutonomousTransferComplete(soap, &a->cwmp__AutonomousTransferComplete);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__AutonomousTransferComplete(struct soap *soap, const struct __cwmp__AutonomousTransferComplete *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__AutonomousTransferComplete(__attribute__((unused)) struct soap *soap, const struct __cwmp__AutonomousTransferComplete *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = 0;
 	if (soap_out___cwmp__AutonomousTransferComplete(soap, tag, id, a, type))
@@ -3406,14 +3406,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__AutonomousTransferComplete(struct soa
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out___cwmp__AutonomousTransferComplete(struct soap *soap, const char *tag, int id, const struct __cwmp__AutonomousTransferComplete *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out___cwmp__AutonomousTransferComplete(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct __cwmp__AutonomousTransferComplete *a, __attribute__((unused)) const char *type)
 {
 	if (soap_out_PointerTo_cwmp__AutonomousTransferComplete(soap, "cwmp:AutonomousTransferComplete", -1, &a->cwmp__AutonomousTransferComplete, ""))
 		return soap->error;
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 struct __cwmp__AutonomousTransferComplete * SOAP_FMAC4 soap_get___cwmp__AutonomousTransferComplete(struct soap *soap, struct __cwmp__AutonomousTransferComplete *p, const char *tag, const char *type)
+SOAP_FMAC3 struct __cwmp__AutonomousTransferComplete * SOAP_FMAC4 soap_get___cwmp__AutonomousTransferComplete(__attribute__((unused)) struct soap *soap, struct __cwmp__AutonomousTransferComplete *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in___cwmp__AutonomousTransferComplete(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -3421,7 +3421,7 @@ SOAP_FMAC3 struct __cwmp__AutonomousTransferComplete * SOAP_FMAC4 soap_get___cwm
 	return p;
 }
 
-SOAP_FMAC3 struct __cwmp__AutonomousTransferComplete * SOAP_FMAC4 soap_in___cwmp__AutonomousTransferComplete(struct soap *soap, const char *tag, struct __cwmp__AutonomousTransferComplete *a, const char *type)
+SOAP_FMAC3 struct __cwmp__AutonomousTransferComplete * SOAP_FMAC4 soap_in___cwmp__AutonomousTransferComplete(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct __cwmp__AutonomousTransferComplete *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_cwmp__AutonomousTransferComplete = 1;
 	short soap_flag;
@@ -3449,19 +3449,19 @@ SOAP_FMAC3 struct __cwmp__AutonomousTransferComplete * SOAP_FMAC4 soap_in___cwmp
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__TransferComplete(struct soap *soap, struct __cwmp__TransferComplete *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__TransferComplete(__attribute__((unused)) struct soap *soap, struct __cwmp__TransferComplete *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->cwmp__TransferComplete = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__TransferComplete(struct soap *soap, const struct __cwmp__TransferComplete *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__TransferComplete(__attribute__((unused)) struct soap *soap, const struct __cwmp__TransferComplete *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerTo_cwmp__TransferComplete(soap, &a->cwmp__TransferComplete);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__TransferComplete(struct soap *soap, const struct __cwmp__TransferComplete *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__TransferComplete(__attribute__((unused)) struct soap *soap, const struct __cwmp__TransferComplete *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = 0;
 	if (soap_out___cwmp__TransferComplete(soap, tag, id, a, type))
@@ -3469,14 +3469,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__TransferComplete(struct soap *soap, c
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out___cwmp__TransferComplete(struct soap *soap, const char *tag, int id, const struct __cwmp__TransferComplete *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out___cwmp__TransferComplete(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct __cwmp__TransferComplete *a, __attribute__((unused)) const char *type)
 {
 	if (soap_out_PointerTo_cwmp__TransferComplete(soap, "cwmp:TransferComplete", -1, &a->cwmp__TransferComplete, ""))
 		return soap->error;
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 struct __cwmp__TransferComplete * SOAP_FMAC4 soap_get___cwmp__TransferComplete(struct soap *soap, struct __cwmp__TransferComplete *p, const char *tag, const char *type)
+SOAP_FMAC3 struct __cwmp__TransferComplete * SOAP_FMAC4 soap_get___cwmp__TransferComplete(__attribute__((unused)) struct soap *soap, struct __cwmp__TransferComplete *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in___cwmp__TransferComplete(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -3484,7 +3484,7 @@ SOAP_FMAC3 struct __cwmp__TransferComplete * SOAP_FMAC4 soap_get___cwmp__Transfe
 	return p;
 }
 
-SOAP_FMAC3 struct __cwmp__TransferComplete * SOAP_FMAC4 soap_in___cwmp__TransferComplete(struct soap *soap, const char *tag, struct __cwmp__TransferComplete *a, const char *type)
+SOAP_FMAC3 struct __cwmp__TransferComplete * SOAP_FMAC4 soap_in___cwmp__TransferComplete(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct __cwmp__TransferComplete *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_cwmp__TransferComplete = 1;
 	short soap_flag;
@@ -3512,19 +3512,19 @@ SOAP_FMAC3 struct __cwmp__TransferComplete * SOAP_FMAC4 soap_in___cwmp__Transfer
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__Inform(struct soap *soap, struct __cwmp__Inform *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__Inform(__attribute__((unused)) struct soap *soap, struct __cwmp__Inform *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->cwmp__Inform = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__Inform(struct soap *soap, const struct __cwmp__Inform *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__Inform(__attribute__((unused)) struct soap *soap, const struct __cwmp__Inform *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerTo_cwmp__Inform(soap, &a->cwmp__Inform);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__Inform(struct soap *soap, const struct __cwmp__Inform *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__Inform(__attribute__((unused)) struct soap *soap, const struct __cwmp__Inform *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = 0;
 	if (soap_out___cwmp__Inform(soap, tag, id, a, type))
@@ -3532,14 +3532,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__Inform(struct soap *soap, const struc
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out___cwmp__Inform(struct soap *soap, const char *tag, int id, const struct __cwmp__Inform *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out___cwmp__Inform(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct __cwmp__Inform *a, __attribute__((unused)) const char *type)
 {
 	if (soap_out_PointerTo_cwmp__Inform(soap, "cwmp:Inform", -1, &a->cwmp__Inform, ""))
 		return soap->error;
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 struct __cwmp__Inform * SOAP_FMAC4 soap_get___cwmp__Inform(struct soap *soap, struct __cwmp__Inform *p, const char *tag, const char *type)
+SOAP_FMAC3 struct __cwmp__Inform * SOAP_FMAC4 soap_get___cwmp__Inform(__attribute__((unused)) struct soap *soap, struct __cwmp__Inform *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in___cwmp__Inform(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -3547,7 +3547,7 @@ SOAP_FMAC3 struct __cwmp__Inform * SOAP_FMAC4 soap_get___cwmp__Inform(struct soa
 	return p;
 }
 
-SOAP_FMAC3 struct __cwmp__Inform * SOAP_FMAC4 soap_in___cwmp__Inform(struct soap *soap, const char *tag, struct __cwmp__Inform *a, const char *type)
+SOAP_FMAC3 struct __cwmp__Inform * SOAP_FMAC4 soap_in___cwmp__Inform(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct __cwmp__Inform *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_cwmp__Inform = 1;
 	short soap_flag;
@@ -3575,19 +3575,19 @@ SOAP_FMAC3 struct __cwmp__Inform * SOAP_FMAC4 soap_in___cwmp__Inform(struct soap
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__GetRPCMethods(struct soap *soap, struct __cwmp__GetRPCMethods *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default___cwmp__GetRPCMethods(__attribute__((unused)) struct soap *soap, struct __cwmp__GetRPCMethods *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->cwmp__GetRPCMethods = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__GetRPCMethods(struct soap *soap, const struct __cwmp__GetRPCMethods *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize___cwmp__GetRPCMethods(__attribute__((unused)) struct soap *soap, const struct __cwmp__GetRPCMethods *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerTo_cwmp__GetRPCMethods(soap, &a->cwmp__GetRPCMethods);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__GetRPCMethods(struct soap *soap, const struct __cwmp__GetRPCMethods *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__GetRPCMethods(__attribute__((unused)) struct soap *soap, const struct __cwmp__GetRPCMethods *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = 0;
 	if (soap_out___cwmp__GetRPCMethods(soap, tag, id, a, type))
@@ -3595,14 +3595,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put___cwmp__GetRPCMethods(struct soap *soap, cons
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out___cwmp__GetRPCMethods(struct soap *soap, const char *tag, int id, const struct __cwmp__GetRPCMethods *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out___cwmp__GetRPCMethods(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct __cwmp__GetRPCMethods *a, __attribute__((unused)) const char *type)
 {
 	if (soap_out_PointerTo_cwmp__GetRPCMethods(soap, "cwmp:GetRPCMethods", -1, &a->cwmp__GetRPCMethods, ""))
 		return soap->error;
 	return SOAP_OK;
 }
 
-SOAP_FMAC3 struct __cwmp__GetRPCMethods * SOAP_FMAC4 soap_get___cwmp__GetRPCMethods(struct soap *soap, struct __cwmp__GetRPCMethods *p, const char *tag, const char *type)
+SOAP_FMAC3 struct __cwmp__GetRPCMethods * SOAP_FMAC4 soap_get___cwmp__GetRPCMethods(__attribute__((unused)) struct soap *soap, struct __cwmp__GetRPCMethods *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in___cwmp__GetRPCMethods(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -3610,7 +3610,7 @@ SOAP_FMAC3 struct __cwmp__GetRPCMethods * SOAP_FMAC4 soap_get___cwmp__GetRPCMeth
 	return p;
 }
 
-SOAP_FMAC3 struct __cwmp__GetRPCMethods * SOAP_FMAC4 soap_in___cwmp__GetRPCMethods(struct soap *soap, const char *tag, struct __cwmp__GetRPCMethods *a, const char *type)
+SOAP_FMAC3 struct __cwmp__GetRPCMethods * SOAP_FMAC4 soap_in___cwmp__GetRPCMethods(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct __cwmp__GetRPCMethods *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_cwmp__GetRPCMethods = 1;
 	short soap_flag;
@@ -3638,7 +3638,7 @@ SOAP_FMAC3 struct __cwmp__GetRPCMethods * SOAP_FMAC4 soap_in___cwmp__GetRPCMetho
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Fault_SetParameterValuesFault(struct soap *soap, struct _cwmp__Fault_SetParameterValuesFault *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Fault_SetParameterValuesFault(__attribute__((unused)) struct soap *soap, struct _cwmp__Fault_SetParameterValuesFault *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_string(soap, &a->ParameterName);
@@ -3646,7 +3646,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Fault_SetParameterValuesFault(str
 	soap_default_string(soap, &a->FaultString);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Fault_SetParameterValuesFault(struct soap *soap, const struct _cwmp__Fault_SetParameterValuesFault *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Fault_SetParameterValuesFault(__attribute__((unused)) struct soap *soap, const struct _cwmp__Fault_SetParameterValuesFault *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_string(soap, &a->ParameterName);
@@ -3654,7 +3654,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Fault_SetParameterValuesFault(s
 	soap_serialize_string(soap, &a->FaultString);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Fault_SetParameterValuesFault(struct soap *soap, const struct _cwmp__Fault_SetParameterValuesFault *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Fault_SetParameterValuesFault(__attribute__((unused)) struct soap *soap, const struct _cwmp__Fault_SetParameterValuesFault *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__Fault_SetParameterValuesFault);
 	if (soap_out__cwmp__Fault_SetParameterValuesFault(soap, tag, id, a, type))
@@ -3662,7 +3662,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Fault_SetParameterValuesFault(struct s
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Fault_SetParameterValuesFault(struct soap *soap, const char *tag, int id, const struct _cwmp__Fault_SetParameterValuesFault *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Fault_SetParameterValuesFault(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__Fault_SetParameterValuesFault *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__Fault_SetParameterValuesFault), type))
 		return soap->error;
@@ -3675,7 +3675,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Fault_SetParameterValuesFault(struct s
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__Fault_SetParameterValuesFault * SOAP_FMAC4 soap_get__cwmp__Fault_SetParameterValuesFault(struct soap *soap, struct _cwmp__Fault_SetParameterValuesFault *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__Fault_SetParameterValuesFault * SOAP_FMAC4 soap_get__cwmp__Fault_SetParameterValuesFault(__attribute__((unused)) struct soap *soap, struct _cwmp__Fault_SetParameterValuesFault *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__Fault_SetParameterValuesFault(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -3683,7 +3683,7 @@ SOAP_FMAC3 struct _cwmp__Fault_SetParameterValuesFault * SOAP_FMAC4 soap_get__cw
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__Fault_SetParameterValuesFault * SOAP_FMAC4 soap_in__cwmp__Fault_SetParameterValuesFault(struct soap *soap, const char *tag, struct _cwmp__Fault_SetParameterValuesFault *a, const char *type)
+SOAP_FMAC3 struct _cwmp__Fault_SetParameterValuesFault * SOAP_FMAC4 soap_in__cwmp__Fault_SetParameterValuesFault(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__Fault_SetParameterValuesFault *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_ParameterName = 1, soap_flag_FaultCode = 1, soap_flag_FaultString = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -3733,17 +3733,17 @@ SOAP_FMAC3 struct _cwmp__Fault_SetParameterValuesFault * SOAP_FMAC4 soap_in__cwm
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__RequestDownloadResponse(struct soap *soap, struct _cwmp__RequestDownloadResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__RequestDownloadResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__RequestDownloadResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__RequestDownloadResponse(struct soap *soap, const struct _cwmp__RequestDownloadResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__RequestDownloadResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__RequestDownloadResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__RequestDownloadResponse(struct soap *soap, const struct _cwmp__RequestDownloadResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__RequestDownloadResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__RequestDownloadResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__RequestDownloadResponse);
 	if (soap_out__cwmp__RequestDownloadResponse(soap, tag, id, a, type))
@@ -3751,14 +3751,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__RequestDownloadResponse(struct soap *s
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__RequestDownloadResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__RequestDownloadResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__RequestDownloadResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__RequestDownloadResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__RequestDownloadResponse), type))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__RequestDownloadResponse * SOAP_FMAC4 soap_get__cwmp__RequestDownloadResponse(struct soap *soap, struct _cwmp__RequestDownloadResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__RequestDownloadResponse * SOAP_FMAC4 soap_get__cwmp__RequestDownloadResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__RequestDownloadResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__RequestDownloadResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -3766,7 +3766,7 @@ SOAP_FMAC3 struct _cwmp__RequestDownloadResponse * SOAP_FMAC4 soap_get__cwmp__Re
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__RequestDownloadResponse * SOAP_FMAC4 soap_in__cwmp__RequestDownloadResponse(struct soap *soap, const char *tag, struct _cwmp__RequestDownloadResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__RequestDownloadResponse * SOAP_FMAC4 soap_in__cwmp__RequestDownloadResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__RequestDownloadResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -3796,21 +3796,21 @@ SOAP_FMAC3 struct _cwmp__RequestDownloadResponse * SOAP_FMAC4 soap_in__cwmp__Req
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__RequestDownload(struct soap *soap, struct _cwmp__RequestDownload *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__RequestDownload(__attribute__((unused)) struct soap *soap, struct _cwmp__RequestDownload *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_string(soap, &a->FileType);
 	a->FileTypeArg_ = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__RequestDownload(struct soap *soap, const struct _cwmp__RequestDownload *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__RequestDownload(__attribute__((unused)) struct soap *soap, const struct _cwmp__RequestDownload *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_string(soap, &a->FileType);
 	soap_serialize_PointerToFileTypeArg(soap, &a->FileTypeArg_);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__RequestDownload(struct soap *soap, const struct _cwmp__RequestDownload *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__RequestDownload(__attribute__((unused)) struct soap *soap, const struct _cwmp__RequestDownload *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__RequestDownload);
 	if (soap_out__cwmp__RequestDownload(soap, tag, id, a, type))
@@ -3818,7 +3818,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__RequestDownload(struct soap *soap, con
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__RequestDownload(struct soap *soap, const char *tag, int id, const struct _cwmp__RequestDownload *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__RequestDownload(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__RequestDownload *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__RequestDownload), type))
 		return soap->error;
@@ -3829,7 +3829,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__RequestDownload(struct soap *soap, con
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__RequestDownload * SOAP_FMAC4 soap_get__cwmp__RequestDownload(struct soap *soap, struct _cwmp__RequestDownload *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__RequestDownload * SOAP_FMAC4 soap_get__cwmp__RequestDownload(__attribute__((unused)) struct soap *soap, struct _cwmp__RequestDownload *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__RequestDownload(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -3837,7 +3837,7 @@ SOAP_FMAC3 struct _cwmp__RequestDownload * SOAP_FMAC4 soap_get__cwmp__RequestDow
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__RequestDownload * SOAP_FMAC4 soap_in__cwmp__RequestDownload(struct soap *soap, const char *tag, struct _cwmp__RequestDownload *a, const char *type)
+SOAP_FMAC3 struct _cwmp__RequestDownload * SOAP_FMAC4 soap_in__cwmp__RequestDownload(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__RequestDownload *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_FileType = 1, soap_flag_FileTypeArg_ = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -3882,19 +3882,19 @@ SOAP_FMAC3 struct _cwmp__RequestDownload * SOAP_FMAC4 soap_in__cwmp__RequestDown
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__KickedResponse(struct soap *soap, struct _cwmp__KickedResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__KickedResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__KickedResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_string(soap, &a->NextURL);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__KickedResponse(struct soap *soap, const struct _cwmp__KickedResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__KickedResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__KickedResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_string(soap, &a->NextURL);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__KickedResponse(struct soap *soap, const struct _cwmp__KickedResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__KickedResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__KickedResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__KickedResponse);
 	if (soap_out__cwmp__KickedResponse(soap, tag, id, a, type))
@@ -3902,7 +3902,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__KickedResponse(struct soap *soap, cons
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__KickedResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__KickedResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__KickedResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__KickedResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__KickedResponse), type))
 		return soap->error;
@@ -3911,7 +3911,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__KickedResponse(struct soap *soap, cons
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__KickedResponse * SOAP_FMAC4 soap_get__cwmp__KickedResponse(struct soap *soap, struct _cwmp__KickedResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__KickedResponse * SOAP_FMAC4 soap_get__cwmp__KickedResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__KickedResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__KickedResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -3919,7 +3919,7 @@ SOAP_FMAC3 struct _cwmp__KickedResponse * SOAP_FMAC4 soap_get__cwmp__KickedRespo
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__KickedResponse * SOAP_FMAC4 soap_in__cwmp__KickedResponse(struct soap *soap, const char *tag, struct _cwmp__KickedResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__KickedResponse * SOAP_FMAC4 soap_in__cwmp__KickedResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__KickedResponse *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_NextURL = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -3959,7 +3959,7 @@ SOAP_FMAC3 struct _cwmp__KickedResponse * SOAP_FMAC4 soap_in__cwmp__KickedRespon
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Kicked(struct soap *soap, struct _cwmp__Kicked *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Kicked(__attribute__((unused)) struct soap *soap, struct _cwmp__Kicked *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_string(soap, &a->Command);
@@ -3968,7 +3968,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Kicked(struct soap *soap, struct 
 	soap_default_string(soap, &a->Next);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Kicked(struct soap *soap, const struct _cwmp__Kicked *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Kicked(__attribute__((unused)) struct soap *soap, const struct _cwmp__Kicked *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_string(soap, &a->Command);
@@ -3977,7 +3977,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Kicked(struct soap *soap, const
 	soap_serialize_string(soap, &a->Next);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Kicked(struct soap *soap, const struct _cwmp__Kicked *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Kicked(__attribute__((unused)) struct soap *soap, const struct _cwmp__Kicked *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__Kicked);
 	if (soap_out__cwmp__Kicked(soap, tag, id, a, type))
@@ -3985,7 +3985,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Kicked(struct soap *soap, const struct
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Kicked(struct soap *soap, const char *tag, int id, const struct _cwmp__Kicked *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Kicked(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__Kicked *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__Kicked), type))
 		return soap->error;
@@ -4000,7 +4000,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Kicked(struct soap *soap, const char *
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__Kicked * SOAP_FMAC4 soap_get__cwmp__Kicked(struct soap *soap, struct _cwmp__Kicked *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__Kicked * SOAP_FMAC4 soap_get__cwmp__Kicked(__attribute__((unused)) struct soap *soap, struct _cwmp__Kicked *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__Kicked(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -4008,7 +4008,7 @@ SOAP_FMAC3 struct _cwmp__Kicked * SOAP_FMAC4 soap_get__cwmp__Kicked(struct soap 
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__Kicked * SOAP_FMAC4 soap_in__cwmp__Kicked(struct soap *soap, const char *tag, struct _cwmp__Kicked *a, const char *type)
+SOAP_FMAC3 struct _cwmp__Kicked * SOAP_FMAC4 soap_in__cwmp__Kicked(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__Kicked *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_Command = 1, soap_flag_Referer = 1, soap_flag_Arg = 1, soap_flag_Next = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -4063,17 +4063,17 @@ SOAP_FMAC3 struct _cwmp__Kicked * SOAP_FMAC4 soap_in__cwmp__Kicked(struct soap *
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__AutonomousTransferCompleteResponse(struct soap *soap, struct _cwmp__AutonomousTransferCompleteResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__AutonomousTransferCompleteResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__AutonomousTransferCompleteResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__AutonomousTransferCompleteResponse(struct soap *soap, const struct _cwmp__AutonomousTransferCompleteResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__AutonomousTransferCompleteResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__AutonomousTransferCompleteResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AutonomousTransferCompleteResponse(struct soap *soap, const struct _cwmp__AutonomousTransferCompleteResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AutonomousTransferCompleteResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__AutonomousTransferCompleteResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__AutonomousTransferCompleteResponse);
 	if (soap_out__cwmp__AutonomousTransferCompleteResponse(soap, tag, id, a, type))
@@ -4081,14 +4081,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AutonomousTransferCompleteResponse(str
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__AutonomousTransferCompleteResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__AutonomousTransferCompleteResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__AutonomousTransferCompleteResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__AutonomousTransferCompleteResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__AutonomousTransferCompleteResponse), type))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__AutonomousTransferCompleteResponse * SOAP_FMAC4 soap_get__cwmp__AutonomousTransferCompleteResponse(struct soap *soap, struct _cwmp__AutonomousTransferCompleteResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__AutonomousTransferCompleteResponse * SOAP_FMAC4 soap_get__cwmp__AutonomousTransferCompleteResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__AutonomousTransferCompleteResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__AutonomousTransferCompleteResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -4096,7 +4096,7 @@ SOAP_FMAC3 struct _cwmp__AutonomousTransferCompleteResponse * SOAP_FMAC4 soap_ge
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__AutonomousTransferCompleteResponse * SOAP_FMAC4 soap_in__cwmp__AutonomousTransferCompleteResponse(struct soap *soap, const char *tag, struct _cwmp__AutonomousTransferCompleteResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__AutonomousTransferCompleteResponse * SOAP_FMAC4 soap_in__cwmp__AutonomousTransferCompleteResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__AutonomousTransferCompleteResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -4126,7 +4126,7 @@ SOAP_FMAC3 struct _cwmp__AutonomousTransferCompleteResponse * SOAP_FMAC4 soap_in
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__AutonomousTransferComplete(struct soap *soap, struct _cwmp__AutonomousTransferComplete *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__AutonomousTransferComplete(__attribute__((unused)) struct soap *soap, struct _cwmp__AutonomousTransferComplete *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_string(soap, &a->AnnounceURL);
@@ -4140,7 +4140,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__AutonomousTransferComplete(struct
 	soap_default_time(soap, &a->CompleteTime);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__AutonomousTransferComplete(struct soap *soap, const struct _cwmp__AutonomousTransferComplete *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__AutonomousTransferComplete(__attribute__((unused)) struct soap *soap, const struct _cwmp__AutonomousTransferComplete *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_string(soap, &a->AnnounceURL);
@@ -4152,7 +4152,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__AutonomousTransferComplete(stru
 	soap_embedded(soap, &a->CompleteTime, SOAP_TYPE_time);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AutonomousTransferComplete(struct soap *soap, const struct _cwmp__AutonomousTransferComplete *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AutonomousTransferComplete(__attribute__((unused)) struct soap *soap, const struct _cwmp__AutonomousTransferComplete *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__AutonomousTransferComplete);
 	if (soap_out__cwmp__AutonomousTransferComplete(soap, tag, id, a, type))
@@ -4160,7 +4160,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AutonomousTransferComplete(struct soap
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__AutonomousTransferComplete(struct soap *soap, const char *tag, int id, const struct _cwmp__AutonomousTransferComplete *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__AutonomousTransferComplete(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__AutonomousTransferComplete *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__AutonomousTransferComplete), type))
 		return soap->error;
@@ -4185,7 +4185,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__AutonomousTransferComplete(struct soap
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__AutonomousTransferComplete * SOAP_FMAC4 soap_get__cwmp__AutonomousTransferComplete(struct soap *soap, struct _cwmp__AutonomousTransferComplete *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__AutonomousTransferComplete * SOAP_FMAC4 soap_get__cwmp__AutonomousTransferComplete(__attribute__((unused)) struct soap *soap, struct _cwmp__AutonomousTransferComplete *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__AutonomousTransferComplete(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -4193,7 +4193,7 @@ SOAP_FMAC3 struct _cwmp__AutonomousTransferComplete * SOAP_FMAC4 soap_get__cwmp_
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__AutonomousTransferComplete * SOAP_FMAC4 soap_in__cwmp__AutonomousTransferComplete(struct soap *soap, const char *tag, struct _cwmp__AutonomousTransferComplete *a, const char *type)
+SOAP_FMAC3 struct _cwmp__AutonomousTransferComplete * SOAP_FMAC4 soap_in__cwmp__AutonomousTransferComplete(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__AutonomousTransferComplete *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_AnnounceURL = 1, soap_flag_TransferURL = 1, soap_flag_IsDownload = 1, soap_flag_FileType = 1, soap_flag_FileSize = 1, soap_flag_TargetFileName = 1, soap_flag_FaultStruct = 1, soap_flag_StartTime = 1, soap_flag_CompleteTime = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -4273,17 +4273,17 @@ SOAP_FMAC3 struct _cwmp__AutonomousTransferComplete * SOAP_FMAC4 soap_in__cwmp__
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__TransferCompleteResponse(struct soap *soap, struct _cwmp__TransferCompleteResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__TransferCompleteResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__TransferCompleteResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__TransferCompleteResponse(struct soap *soap, const struct _cwmp__TransferCompleteResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__TransferCompleteResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__TransferCompleteResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__TransferCompleteResponse(struct soap *soap, const struct _cwmp__TransferCompleteResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__TransferCompleteResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__TransferCompleteResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__TransferCompleteResponse);
 	if (soap_out__cwmp__TransferCompleteResponse(soap, tag, id, a, type))
@@ -4291,14 +4291,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__TransferCompleteResponse(struct soap *
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__TransferCompleteResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__TransferCompleteResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__TransferCompleteResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__TransferCompleteResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__TransferCompleteResponse), type))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__TransferCompleteResponse * SOAP_FMAC4 soap_get__cwmp__TransferCompleteResponse(struct soap *soap, struct _cwmp__TransferCompleteResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__TransferCompleteResponse * SOAP_FMAC4 soap_get__cwmp__TransferCompleteResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__TransferCompleteResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__TransferCompleteResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -4306,7 +4306,7 @@ SOAP_FMAC3 struct _cwmp__TransferCompleteResponse * SOAP_FMAC4 soap_get__cwmp__T
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__TransferCompleteResponse * SOAP_FMAC4 soap_in__cwmp__TransferCompleteResponse(struct soap *soap, const char *tag, struct _cwmp__TransferCompleteResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__TransferCompleteResponse * SOAP_FMAC4 soap_in__cwmp__TransferCompleteResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__TransferCompleteResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -4336,7 +4336,7 @@ SOAP_FMAC3 struct _cwmp__TransferCompleteResponse * SOAP_FMAC4 soap_in__cwmp__Tr
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__TransferComplete(struct soap *soap, struct _cwmp__TransferComplete *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__TransferComplete(__attribute__((unused)) struct soap *soap, struct _cwmp__TransferComplete *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_cwmp__CommandKeyType(soap, &a->CommandKey);
@@ -4345,7 +4345,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__TransferComplete(struct soap *soa
 	soap_default_time(soap, &a->CompleteTime);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__TransferComplete(struct soap *soap, const struct _cwmp__TransferComplete *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__TransferComplete(__attribute__((unused)) struct soap *soap, const struct _cwmp__TransferComplete *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_cwmp__CommandKeyType(soap, &a->CommandKey);
@@ -4354,7 +4354,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__TransferComplete(struct soap *s
 	soap_embedded(soap, &a->CompleteTime, SOAP_TYPE_time);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__TransferComplete(struct soap *soap, const struct _cwmp__TransferComplete *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__TransferComplete(__attribute__((unused)) struct soap *soap, const struct _cwmp__TransferComplete *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__TransferComplete);
 	if (soap_out__cwmp__TransferComplete(soap, tag, id, a, type))
@@ -4362,7 +4362,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__TransferComplete(struct soap *soap, co
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__TransferComplete(struct soap *soap, const char *tag, int id, const struct _cwmp__TransferComplete *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__TransferComplete(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__TransferComplete *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__TransferComplete), type))
 		return soap->error;
@@ -4377,7 +4377,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__TransferComplete(struct soap *soap, co
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__TransferComplete * SOAP_FMAC4 soap_get__cwmp__TransferComplete(struct soap *soap, struct _cwmp__TransferComplete *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__TransferComplete * SOAP_FMAC4 soap_get__cwmp__TransferComplete(__attribute__((unused)) struct soap *soap, struct _cwmp__TransferComplete *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__TransferComplete(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -4385,7 +4385,7 @@ SOAP_FMAC3 struct _cwmp__TransferComplete * SOAP_FMAC4 soap_get__cwmp__TransferC
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__TransferComplete * SOAP_FMAC4 soap_in__cwmp__TransferComplete(struct soap *soap, const char *tag, struct _cwmp__TransferComplete *a, const char *type)
+SOAP_FMAC3 struct _cwmp__TransferComplete * SOAP_FMAC4 soap_in__cwmp__TransferComplete(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__TransferComplete *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_CommandKey = 1, soap_flag_FaultStruct = 1, soap_flag_StartTime = 1, soap_flag_CompleteTime = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -4440,18 +4440,18 @@ SOAP_FMAC3 struct _cwmp__TransferComplete * SOAP_FMAC4 soap_in__cwmp__TransferCo
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__InformResponse(struct soap *soap, struct _cwmp__InformResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__InformResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__InformResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_unsignedInt(soap, &a->MaxEnvelopes);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__InformResponse(struct soap *soap, const struct _cwmp__InformResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__InformResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__InformResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__InformResponse(struct soap *soap, const struct _cwmp__InformResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__InformResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__InformResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__InformResponse);
 	if (soap_out__cwmp__InformResponse(soap, tag, id, a, type))
@@ -4459,7 +4459,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__InformResponse(struct soap *soap, cons
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__InformResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__InformResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__InformResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__InformResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__InformResponse), type))
 		return soap->error;
@@ -4468,7 +4468,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__InformResponse(struct soap *soap, cons
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__InformResponse * SOAP_FMAC4 soap_get__cwmp__InformResponse(struct soap *soap, struct _cwmp__InformResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__InformResponse * SOAP_FMAC4 soap_get__cwmp__InformResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__InformResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__InformResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -4476,7 +4476,7 @@ SOAP_FMAC3 struct _cwmp__InformResponse * SOAP_FMAC4 soap_get__cwmp__InformRespo
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__InformResponse * SOAP_FMAC4 soap_in__cwmp__InformResponse(struct soap *soap, const char *tag, struct _cwmp__InformResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__InformResponse * SOAP_FMAC4 soap_in__cwmp__InformResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__InformResponse *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_MaxEnvelopes = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -4516,7 +4516,7 @@ SOAP_FMAC3 struct _cwmp__InformResponse * SOAP_FMAC4 soap_in__cwmp__InformRespon
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Inform(struct soap *soap, struct _cwmp__Inform *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Inform(__attribute__((unused)) struct soap *soap, struct _cwmp__Inform *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->DeviceId = NULL;
@@ -4527,7 +4527,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Inform(struct soap *soap, struct 
 	a->ParameterList = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Inform(struct soap *soap, const struct _cwmp__Inform *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Inform(__attribute__((unused)) struct soap *soap, const struct _cwmp__Inform *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerTocwmp__DeviceIdStruct(soap, &a->DeviceId);
@@ -4536,7 +4536,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Inform(struct soap *soap, const
 	soap_serialize_PointerToParameterValueList(soap, &a->ParameterList);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Inform(struct soap *soap, const struct _cwmp__Inform *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Inform(__attribute__((unused)) struct soap *soap, const struct _cwmp__Inform *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__Inform);
 	if (soap_out__cwmp__Inform(soap, tag, id, a, type))
@@ -4544,7 +4544,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Inform(struct soap *soap, const struct
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Inform(struct soap *soap, const char *tag, int id, const struct _cwmp__Inform *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Inform(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__Inform *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__Inform), type))
 		return soap->error;
@@ -4563,7 +4563,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Inform(struct soap *soap, const char *
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__Inform * SOAP_FMAC4 soap_get__cwmp__Inform(struct soap *soap, struct _cwmp__Inform *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__Inform * SOAP_FMAC4 soap_get__cwmp__Inform(__attribute__((unused)) struct soap *soap, struct _cwmp__Inform *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__Inform(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -4571,7 +4571,7 @@ SOAP_FMAC3 struct _cwmp__Inform * SOAP_FMAC4 soap_get__cwmp__Inform(struct soap 
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__Inform * SOAP_FMAC4 soap_in__cwmp__Inform(struct soap *soap, const char *tag, struct _cwmp__Inform *a, const char *type)
+SOAP_FMAC3 struct _cwmp__Inform * SOAP_FMAC4 soap_in__cwmp__Inform(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__Inform *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_DeviceId = 1, soap_flag_Event = 1, soap_flag_MaxEnvelopes = 1, soap_flag_CurrentTime = 1, soap_flag_RetryCount = 1, soap_flag_ParameterList = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -4636,19 +4636,19 @@ SOAP_FMAC3 struct _cwmp__Inform * SOAP_FMAC4 soap_in__cwmp__Inform(struct soap *
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetAllQueuedTransfersResponse(struct soap *soap, struct _cwmp__GetAllQueuedTransfersResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetAllQueuedTransfersResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__GetAllQueuedTransfersResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->TransferList_ = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetAllQueuedTransfersResponse(struct soap *soap, const struct _cwmp__GetAllQueuedTransfersResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetAllQueuedTransfersResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetAllQueuedTransfersResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerToAllTransferList(soap, &a->TransferList_);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetAllQueuedTransfersResponse(struct soap *soap, const struct _cwmp__GetAllQueuedTransfersResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetAllQueuedTransfersResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetAllQueuedTransfersResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__GetAllQueuedTransfersResponse);
 	if (soap_out__cwmp__GetAllQueuedTransfersResponse(soap, tag, id, a, type))
@@ -4656,7 +4656,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetAllQueuedTransfersResponse(struct s
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetAllQueuedTransfersResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__GetAllQueuedTransfersResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetAllQueuedTransfersResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__GetAllQueuedTransfersResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__GetAllQueuedTransfersResponse), type))
 		return soap->error;
@@ -4665,7 +4665,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetAllQueuedTransfersResponse(struct s
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__GetAllQueuedTransfersResponse * SOAP_FMAC4 soap_get__cwmp__GetAllQueuedTransfersResponse(struct soap *soap, struct _cwmp__GetAllQueuedTransfersResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__GetAllQueuedTransfersResponse * SOAP_FMAC4 soap_get__cwmp__GetAllQueuedTransfersResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__GetAllQueuedTransfersResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__GetAllQueuedTransfersResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -4673,7 +4673,7 @@ SOAP_FMAC3 struct _cwmp__GetAllQueuedTransfersResponse * SOAP_FMAC4 soap_get__cw
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__GetAllQueuedTransfersResponse * SOAP_FMAC4 soap_in__cwmp__GetAllQueuedTransfersResponse(struct soap *soap, const char *tag, struct _cwmp__GetAllQueuedTransfersResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__GetAllQueuedTransfersResponse * SOAP_FMAC4 soap_in__cwmp__GetAllQueuedTransfersResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__GetAllQueuedTransfersResponse *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_TransferList_ = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -4713,17 +4713,17 @@ SOAP_FMAC3 struct _cwmp__GetAllQueuedTransfersResponse * SOAP_FMAC4 soap_in__cwm
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetAllQueuedTransfers(struct soap *soap, struct _cwmp__GetAllQueuedTransfers *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetAllQueuedTransfers(__attribute__((unused)) struct soap *soap, struct _cwmp__GetAllQueuedTransfers *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetAllQueuedTransfers(struct soap *soap, const struct _cwmp__GetAllQueuedTransfers *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetAllQueuedTransfers(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetAllQueuedTransfers *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetAllQueuedTransfers(struct soap *soap, const struct _cwmp__GetAllQueuedTransfers *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetAllQueuedTransfers(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetAllQueuedTransfers *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__GetAllQueuedTransfers);
 	if (soap_out__cwmp__GetAllQueuedTransfers(soap, tag, id, a, type))
@@ -4731,14 +4731,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetAllQueuedTransfers(struct soap *soa
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetAllQueuedTransfers(struct soap *soap, const char *tag, int id, const struct _cwmp__GetAllQueuedTransfers *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetAllQueuedTransfers(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__GetAllQueuedTransfers *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__GetAllQueuedTransfers), type))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__GetAllQueuedTransfers * SOAP_FMAC4 soap_get__cwmp__GetAllQueuedTransfers(struct soap *soap, struct _cwmp__GetAllQueuedTransfers *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__GetAllQueuedTransfers * SOAP_FMAC4 soap_get__cwmp__GetAllQueuedTransfers(__attribute__((unused)) struct soap *soap, struct _cwmp__GetAllQueuedTransfers *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__GetAllQueuedTransfers(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -4746,7 +4746,7 @@ SOAP_FMAC3 struct _cwmp__GetAllQueuedTransfers * SOAP_FMAC4 soap_get__cwmp__GetA
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__GetAllQueuedTransfers * SOAP_FMAC4 soap_in__cwmp__GetAllQueuedTransfers(struct soap *soap, const char *tag, struct _cwmp__GetAllQueuedTransfers *a, const char *type)
+SOAP_FMAC3 struct _cwmp__GetAllQueuedTransfers * SOAP_FMAC4 soap_in__cwmp__GetAllQueuedTransfers(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__GetAllQueuedTransfers *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -4776,17 +4776,17 @@ SOAP_FMAC3 struct _cwmp__GetAllQueuedTransfers * SOAP_FMAC4 soap_in__cwmp__GetAl
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__FactoryResetResponse(struct soap *soap, struct _cwmp__FactoryResetResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__FactoryResetResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__FactoryResetResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__FactoryResetResponse(struct soap *soap, const struct _cwmp__FactoryResetResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__FactoryResetResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__FactoryResetResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__FactoryResetResponse(struct soap *soap, const struct _cwmp__FactoryResetResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__FactoryResetResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__FactoryResetResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__FactoryResetResponse);
 	if (soap_out__cwmp__FactoryResetResponse(soap, tag, id, a, type))
@@ -4794,14 +4794,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__FactoryResetResponse(struct soap *soap
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__FactoryResetResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__FactoryResetResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__FactoryResetResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__FactoryResetResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__FactoryResetResponse), type))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__FactoryResetResponse * SOAP_FMAC4 soap_get__cwmp__FactoryResetResponse(struct soap *soap, struct _cwmp__FactoryResetResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__FactoryResetResponse * SOAP_FMAC4 soap_get__cwmp__FactoryResetResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__FactoryResetResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__FactoryResetResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -4809,7 +4809,7 @@ SOAP_FMAC3 struct _cwmp__FactoryResetResponse * SOAP_FMAC4 soap_get__cwmp__Facto
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__FactoryResetResponse * SOAP_FMAC4 soap_in__cwmp__FactoryResetResponse(struct soap *soap, const char *tag, struct _cwmp__FactoryResetResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__FactoryResetResponse * SOAP_FMAC4 soap_in__cwmp__FactoryResetResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__FactoryResetResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -4839,17 +4839,17 @@ SOAP_FMAC3 struct _cwmp__FactoryResetResponse * SOAP_FMAC4 soap_in__cwmp__Factor
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__FactoryReset(struct soap *soap, struct _cwmp__FactoryReset *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__FactoryReset(__attribute__((unused)) struct soap *soap, struct _cwmp__FactoryReset *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__FactoryReset(struct soap *soap, const struct _cwmp__FactoryReset *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__FactoryReset(__attribute__((unused)) struct soap *soap, const struct _cwmp__FactoryReset *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__FactoryReset(struct soap *soap, const struct _cwmp__FactoryReset *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__FactoryReset(__attribute__((unused)) struct soap *soap, const struct _cwmp__FactoryReset *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__FactoryReset);
 	if (soap_out__cwmp__FactoryReset(soap, tag, id, a, type))
@@ -4857,14 +4857,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__FactoryReset(struct soap *soap, const 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__FactoryReset(struct soap *soap, const char *tag, int id, const struct _cwmp__FactoryReset *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__FactoryReset(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__FactoryReset *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__FactoryReset), type))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__FactoryReset * SOAP_FMAC4 soap_get__cwmp__FactoryReset(struct soap *soap, struct _cwmp__FactoryReset *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__FactoryReset * SOAP_FMAC4 soap_get__cwmp__FactoryReset(__attribute__((unused)) struct soap *soap, struct _cwmp__FactoryReset *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__FactoryReset(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -4872,7 +4872,7 @@ SOAP_FMAC3 struct _cwmp__FactoryReset * SOAP_FMAC4 soap_get__cwmp__FactoryReset(
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__FactoryReset * SOAP_FMAC4 soap_in__cwmp__FactoryReset(struct soap *soap, const char *tag, struct _cwmp__FactoryReset *a, const char *type)
+SOAP_FMAC3 struct _cwmp__FactoryReset * SOAP_FMAC4 soap_in__cwmp__FactoryReset(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__FactoryReset *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -4902,7 +4902,7 @@ SOAP_FMAC3 struct _cwmp__FactoryReset * SOAP_FMAC4 soap_in__cwmp__FactoryReset(s
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__UploadResponse(struct soap *soap, struct _cwmp__UploadResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__UploadResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__UploadResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default__cwmp__UploadResponse_Status(soap, &a->Status);
@@ -4910,14 +4910,14 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__UploadResponse(struct soap *soap,
 	soap_default_time(soap, &a->CompleteTime);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__UploadResponse(struct soap *soap, const struct _cwmp__UploadResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__UploadResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__UploadResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_embedded(soap, &a->StartTime, SOAP_TYPE_time);
 	soap_embedded(soap, &a->CompleteTime, SOAP_TYPE_time);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__UploadResponse(struct soap *soap, const struct _cwmp__UploadResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__UploadResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__UploadResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__UploadResponse);
 	if (soap_out__cwmp__UploadResponse(soap, tag, id, a, type))
@@ -4925,7 +4925,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__UploadResponse(struct soap *soap, cons
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__UploadResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__UploadResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__UploadResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__UploadResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__UploadResponse), type))
 		return soap->error;
@@ -4938,7 +4938,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__UploadResponse(struct soap *soap, cons
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__UploadResponse * SOAP_FMAC4 soap_get__cwmp__UploadResponse(struct soap *soap, struct _cwmp__UploadResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__UploadResponse * SOAP_FMAC4 soap_get__cwmp__UploadResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__UploadResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__UploadResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -4946,7 +4946,7 @@ SOAP_FMAC3 struct _cwmp__UploadResponse * SOAP_FMAC4 soap_get__cwmp__UploadRespo
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__UploadResponse * SOAP_FMAC4 soap_in__cwmp__UploadResponse(struct soap *soap, const char *tag, struct _cwmp__UploadResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__UploadResponse * SOAP_FMAC4 soap_in__cwmp__UploadResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__UploadResponse *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_Status = 1, soap_flag_StartTime = 1, soap_flag_CompleteTime = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -4996,7 +4996,7 @@ SOAP_FMAC3 struct _cwmp__UploadResponse * SOAP_FMAC4 soap_in__cwmp__UploadRespon
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Upload(struct soap *soap, struct _cwmp__Upload *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Upload(__attribute__((unused)) struct soap *soap, struct _cwmp__Upload *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_cwmp__CommandKeyType(soap, &a->CommandKey);
@@ -5007,7 +5007,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Upload(struct soap *soap, struct 
 	soap_default_unsignedInt(soap, &a->DelaySeconds);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Upload(struct soap *soap, const struct _cwmp__Upload *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Upload(__attribute__((unused)) struct soap *soap, const struct _cwmp__Upload *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_cwmp__CommandKeyType(soap, &a->CommandKey);
@@ -5017,7 +5017,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Upload(struct soap *soap, const
 	soap_serialize_string(soap, &a->Password);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Upload(struct soap *soap, const struct _cwmp__Upload *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Upload(__attribute__((unused)) struct soap *soap, const struct _cwmp__Upload *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__Upload);
 	if (soap_out__cwmp__Upload(soap, tag, id, a, type))
@@ -5025,7 +5025,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Upload(struct soap *soap, const struct
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Upload(struct soap *soap, const char *tag, int id, const struct _cwmp__Upload *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Upload(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__Upload *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__Upload), type))
 		return soap->error;
@@ -5044,7 +5044,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Upload(struct soap *soap, const char *
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__Upload * SOAP_FMAC4 soap_get__cwmp__Upload(struct soap *soap, struct _cwmp__Upload *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__Upload * SOAP_FMAC4 soap_get__cwmp__Upload(__attribute__((unused)) struct soap *soap, struct _cwmp__Upload *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__Upload(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -5052,7 +5052,7 @@ SOAP_FMAC3 struct _cwmp__Upload * SOAP_FMAC4 soap_get__cwmp__Upload(struct soap 
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__Upload * SOAP_FMAC4 soap_in__cwmp__Upload(struct soap *soap, const char *tag, struct _cwmp__Upload *a, const char *type)
+SOAP_FMAC3 struct _cwmp__Upload * SOAP_FMAC4 soap_in__cwmp__Upload(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__Upload *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_CommandKey = 1, soap_flag_FileType = 1, soap_flag_URL = 1, soap_flag_Username = 1, soap_flag_Password = 1, soap_flag_DelaySeconds = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -5117,19 +5117,19 @@ SOAP_FMAC3 struct _cwmp__Upload * SOAP_FMAC4 soap_in__cwmp__Upload(struct soap *
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetOptionsResponse(struct soap *soap, struct _cwmp__GetOptionsResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetOptionsResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__GetOptionsResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->OptionList_ = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetOptionsResponse(struct soap *soap, const struct _cwmp__GetOptionsResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetOptionsResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetOptionsResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerToOptionList(soap, &a->OptionList_);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetOptionsResponse(struct soap *soap, const struct _cwmp__GetOptionsResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetOptionsResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetOptionsResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__GetOptionsResponse);
 	if (soap_out__cwmp__GetOptionsResponse(soap, tag, id, a, type))
@@ -5137,7 +5137,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetOptionsResponse(struct soap *soap, 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetOptionsResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__GetOptionsResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetOptionsResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__GetOptionsResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__GetOptionsResponse), type))
 		return soap->error;
@@ -5146,7 +5146,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetOptionsResponse(struct soap *soap, 
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__GetOptionsResponse * SOAP_FMAC4 soap_get__cwmp__GetOptionsResponse(struct soap *soap, struct _cwmp__GetOptionsResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__GetOptionsResponse * SOAP_FMAC4 soap_get__cwmp__GetOptionsResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__GetOptionsResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__GetOptionsResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -5154,7 +5154,7 @@ SOAP_FMAC3 struct _cwmp__GetOptionsResponse * SOAP_FMAC4 soap_get__cwmp__GetOpti
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__GetOptionsResponse * SOAP_FMAC4 soap_in__cwmp__GetOptionsResponse(struct soap *soap, const char *tag, struct _cwmp__GetOptionsResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__GetOptionsResponse * SOAP_FMAC4 soap_in__cwmp__GetOptionsResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__GetOptionsResponse *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_OptionList_ = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -5194,19 +5194,19 @@ SOAP_FMAC3 struct _cwmp__GetOptionsResponse * SOAP_FMAC4 soap_in__cwmp__GetOptio
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetOptions(struct soap *soap, struct _cwmp__GetOptions *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetOptions(__attribute__((unused)) struct soap *soap, struct _cwmp__GetOptions *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_string(soap, &a->OptionName);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetOptions(struct soap *soap, const struct _cwmp__GetOptions *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetOptions(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetOptions *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_string(soap, &a->OptionName);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetOptions(struct soap *soap, const struct _cwmp__GetOptions *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetOptions(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetOptions *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__GetOptions);
 	if (soap_out__cwmp__GetOptions(soap, tag, id, a, type))
@@ -5214,7 +5214,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetOptions(struct soap *soap, const st
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetOptions(struct soap *soap, const char *tag, int id, const struct _cwmp__GetOptions *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetOptions(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__GetOptions *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__GetOptions), type))
 		return soap->error;
@@ -5223,7 +5223,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetOptions(struct soap *soap, const ch
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__GetOptions * SOAP_FMAC4 soap_get__cwmp__GetOptions(struct soap *soap, struct _cwmp__GetOptions *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__GetOptions * SOAP_FMAC4 soap_get__cwmp__GetOptions(__attribute__((unused)) struct soap *soap, struct _cwmp__GetOptions *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__GetOptions(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -5231,7 +5231,7 @@ SOAP_FMAC3 struct _cwmp__GetOptions * SOAP_FMAC4 soap_get__cwmp__GetOptions(stru
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__GetOptions * SOAP_FMAC4 soap_in__cwmp__GetOptions(struct soap *soap, const char *tag, struct _cwmp__GetOptions *a, const char *type)
+SOAP_FMAC3 struct _cwmp__GetOptions * SOAP_FMAC4 soap_in__cwmp__GetOptions(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__GetOptions *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_OptionName = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -5271,17 +5271,17 @@ SOAP_FMAC3 struct _cwmp__GetOptions * SOAP_FMAC4 soap_in__cwmp__GetOptions(struc
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetVouchersResponse(struct soap *soap, struct _cwmp__SetVouchersResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetVouchersResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__SetVouchersResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__SetVouchersResponse(struct soap *soap, const struct _cwmp__SetVouchersResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__SetVouchersResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__SetVouchersResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetVouchersResponse(struct soap *soap, const struct _cwmp__SetVouchersResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetVouchersResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__SetVouchersResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__SetVouchersResponse);
 	if (soap_out__cwmp__SetVouchersResponse(soap, tag, id, a, type))
@@ -5289,14 +5289,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetVouchersResponse(struct soap *soap,
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetVouchersResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__SetVouchersResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetVouchersResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__SetVouchersResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__SetVouchersResponse), type))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__SetVouchersResponse * SOAP_FMAC4 soap_get__cwmp__SetVouchersResponse(struct soap *soap, struct _cwmp__SetVouchersResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__SetVouchersResponse * SOAP_FMAC4 soap_get__cwmp__SetVouchersResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__SetVouchersResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__SetVouchersResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -5304,7 +5304,7 @@ SOAP_FMAC3 struct _cwmp__SetVouchersResponse * SOAP_FMAC4 soap_get__cwmp__SetVou
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__SetVouchersResponse * SOAP_FMAC4 soap_in__cwmp__SetVouchersResponse(struct soap *soap, const char *tag, struct _cwmp__SetVouchersResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__SetVouchersResponse * SOAP_FMAC4 soap_in__cwmp__SetVouchersResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__SetVouchersResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -5334,19 +5334,19 @@ SOAP_FMAC3 struct _cwmp__SetVouchersResponse * SOAP_FMAC4 soap_in__cwmp__SetVouc
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetVouchers(struct soap *soap, struct _cwmp__SetVouchers *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetVouchers(__attribute__((unused)) struct soap *soap, struct _cwmp__SetVouchers *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->VoucherList_ = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__SetVouchers(struct soap *soap, const struct _cwmp__SetVouchers *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__SetVouchers(__attribute__((unused)) struct soap *soap, const struct _cwmp__SetVouchers *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerToVoucherList(soap, &a->VoucherList_);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetVouchers(struct soap *soap, const struct _cwmp__SetVouchers *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetVouchers(__attribute__((unused)) struct soap *soap, const struct _cwmp__SetVouchers *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__SetVouchers);
 	if (soap_out__cwmp__SetVouchers(soap, tag, id, a, type))
@@ -5354,7 +5354,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetVouchers(struct soap *soap, const s
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetVouchers(struct soap *soap, const char *tag, int id, const struct _cwmp__SetVouchers *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetVouchers(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__SetVouchers *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__SetVouchers), type))
 		return soap->error;
@@ -5363,7 +5363,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetVouchers(struct soap *soap, const c
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__SetVouchers * SOAP_FMAC4 soap_get__cwmp__SetVouchers(struct soap *soap, struct _cwmp__SetVouchers *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__SetVouchers * SOAP_FMAC4 soap_get__cwmp__SetVouchers(__attribute__((unused)) struct soap *soap, struct _cwmp__SetVouchers *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__SetVouchers(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -5371,7 +5371,7 @@ SOAP_FMAC3 struct _cwmp__SetVouchers * SOAP_FMAC4 soap_get__cwmp__SetVouchers(st
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__SetVouchers * SOAP_FMAC4 soap_in__cwmp__SetVouchers(struct soap *soap, const char *tag, struct _cwmp__SetVouchers *a, const char *type)
+SOAP_FMAC3 struct _cwmp__SetVouchers * SOAP_FMAC4 soap_in__cwmp__SetVouchers(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__SetVouchers *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_VoucherList_ = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -5411,17 +5411,17 @@ SOAP_FMAC3 struct _cwmp__SetVouchers * SOAP_FMAC4 soap_in__cwmp__SetVouchers(str
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__ScheduleInformResponse(struct soap *soap, struct _cwmp__ScheduleInformResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__ScheduleInformResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__ScheduleInformResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__ScheduleInformResponse(struct soap *soap, const struct _cwmp__ScheduleInformResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__ScheduleInformResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__ScheduleInformResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__ScheduleInformResponse(struct soap *soap, const struct _cwmp__ScheduleInformResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__ScheduleInformResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__ScheduleInformResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__ScheduleInformResponse);
 	if (soap_out__cwmp__ScheduleInformResponse(soap, tag, id, a, type))
@@ -5429,14 +5429,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__ScheduleInformResponse(struct soap *so
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__ScheduleInformResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__ScheduleInformResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__ScheduleInformResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__ScheduleInformResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__ScheduleInformResponse), type))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__ScheduleInformResponse * SOAP_FMAC4 soap_get__cwmp__ScheduleInformResponse(struct soap *soap, struct _cwmp__ScheduleInformResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__ScheduleInformResponse * SOAP_FMAC4 soap_get__cwmp__ScheduleInformResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__ScheduleInformResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__ScheduleInformResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -5444,7 +5444,7 @@ SOAP_FMAC3 struct _cwmp__ScheduleInformResponse * SOAP_FMAC4 soap_get__cwmp__Sch
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__ScheduleInformResponse * SOAP_FMAC4 soap_in__cwmp__ScheduleInformResponse(struct soap *soap, const char *tag, struct _cwmp__ScheduleInformResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__ScheduleInformResponse * SOAP_FMAC4 soap_in__cwmp__ScheduleInformResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__ScheduleInformResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -5474,20 +5474,20 @@ SOAP_FMAC3 struct _cwmp__ScheduleInformResponse * SOAP_FMAC4 soap_in__cwmp__Sche
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__ScheduleInform(struct soap *soap, struct _cwmp__ScheduleInform *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__ScheduleInform(__attribute__((unused)) struct soap *soap, struct _cwmp__ScheduleInform *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_unsignedInt(soap, &a->DelaySeconds);
 	soap_default_cwmp__CommandKeyType(soap, &a->CommandKey);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__ScheduleInform(struct soap *soap, const struct _cwmp__ScheduleInform *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__ScheduleInform(__attribute__((unused)) struct soap *soap, const struct _cwmp__ScheduleInform *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_cwmp__CommandKeyType(soap, &a->CommandKey);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__ScheduleInform(struct soap *soap, const struct _cwmp__ScheduleInform *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__ScheduleInform(__attribute__((unused)) struct soap *soap, const struct _cwmp__ScheduleInform *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__ScheduleInform);
 	if (soap_out__cwmp__ScheduleInform(soap, tag, id, a, type))
@@ -5495,7 +5495,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__ScheduleInform(struct soap *soap, cons
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__ScheduleInform(struct soap *soap, const char *tag, int id, const struct _cwmp__ScheduleInform *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__ScheduleInform(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__ScheduleInform *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__ScheduleInform), type))
 		return soap->error;
@@ -5506,7 +5506,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__ScheduleInform(struct soap *soap, cons
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__ScheduleInform * SOAP_FMAC4 soap_get__cwmp__ScheduleInform(struct soap *soap, struct _cwmp__ScheduleInform *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__ScheduleInform * SOAP_FMAC4 soap_get__cwmp__ScheduleInform(__attribute__((unused)) struct soap *soap, struct _cwmp__ScheduleInform *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__ScheduleInform(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -5514,7 +5514,7 @@ SOAP_FMAC3 struct _cwmp__ScheduleInform * SOAP_FMAC4 soap_get__cwmp__ScheduleInf
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__ScheduleInform * SOAP_FMAC4 soap_in__cwmp__ScheduleInform(struct soap *soap, const char *tag, struct _cwmp__ScheduleInform *a, const char *type)
+SOAP_FMAC3 struct _cwmp__ScheduleInform * SOAP_FMAC4 soap_in__cwmp__ScheduleInform(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__ScheduleInform *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_DelaySeconds = 1, soap_flag_CommandKey = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -5559,19 +5559,19 @@ SOAP_FMAC3 struct _cwmp__ScheduleInform * SOAP_FMAC4 soap_in__cwmp__ScheduleInfo
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetQueuedTransfersResponse(struct soap *soap, struct _cwmp__GetQueuedTransfersResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetQueuedTransfersResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__GetQueuedTransfersResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->TransferList_ = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetQueuedTransfersResponse(struct soap *soap, const struct _cwmp__GetQueuedTransfersResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetQueuedTransfersResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetQueuedTransfersResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerToTransferList(soap, &a->TransferList_);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetQueuedTransfersResponse(struct soap *soap, const struct _cwmp__GetQueuedTransfersResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetQueuedTransfersResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetQueuedTransfersResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__GetQueuedTransfersResponse);
 	if (soap_out__cwmp__GetQueuedTransfersResponse(soap, tag, id, a, type))
@@ -5579,7 +5579,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetQueuedTransfersResponse(struct soap
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetQueuedTransfersResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__GetQueuedTransfersResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetQueuedTransfersResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__GetQueuedTransfersResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__GetQueuedTransfersResponse), type))
 		return soap->error;
@@ -5588,7 +5588,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetQueuedTransfersResponse(struct soap
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__GetQueuedTransfersResponse * SOAP_FMAC4 soap_get__cwmp__GetQueuedTransfersResponse(struct soap *soap, struct _cwmp__GetQueuedTransfersResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__GetQueuedTransfersResponse * SOAP_FMAC4 soap_get__cwmp__GetQueuedTransfersResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__GetQueuedTransfersResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__GetQueuedTransfersResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -5596,7 +5596,7 @@ SOAP_FMAC3 struct _cwmp__GetQueuedTransfersResponse * SOAP_FMAC4 soap_get__cwmp_
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__GetQueuedTransfersResponse * SOAP_FMAC4 soap_in__cwmp__GetQueuedTransfersResponse(struct soap *soap, const char *tag, struct _cwmp__GetQueuedTransfersResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__GetQueuedTransfersResponse * SOAP_FMAC4 soap_in__cwmp__GetQueuedTransfersResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__GetQueuedTransfersResponse *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_TransferList_ = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -5636,17 +5636,17 @@ SOAP_FMAC3 struct _cwmp__GetQueuedTransfersResponse * SOAP_FMAC4 soap_in__cwmp__
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetQueuedTransfers(struct soap *soap, struct _cwmp__GetQueuedTransfers *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetQueuedTransfers(__attribute__((unused)) struct soap *soap, struct _cwmp__GetQueuedTransfers *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetQueuedTransfers(struct soap *soap, const struct _cwmp__GetQueuedTransfers *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetQueuedTransfers(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetQueuedTransfers *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetQueuedTransfers(struct soap *soap, const struct _cwmp__GetQueuedTransfers *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetQueuedTransfers(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetQueuedTransfers *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__GetQueuedTransfers);
 	if (soap_out__cwmp__GetQueuedTransfers(soap, tag, id, a, type))
@@ -5654,14 +5654,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetQueuedTransfers(struct soap *soap, 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetQueuedTransfers(struct soap *soap, const char *tag, int id, const struct _cwmp__GetQueuedTransfers *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetQueuedTransfers(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__GetQueuedTransfers *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__GetQueuedTransfers), type))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__GetQueuedTransfers * SOAP_FMAC4 soap_get__cwmp__GetQueuedTransfers(struct soap *soap, struct _cwmp__GetQueuedTransfers *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__GetQueuedTransfers * SOAP_FMAC4 soap_get__cwmp__GetQueuedTransfers(__attribute__((unused)) struct soap *soap, struct _cwmp__GetQueuedTransfers *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__GetQueuedTransfers(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -5669,7 +5669,7 @@ SOAP_FMAC3 struct _cwmp__GetQueuedTransfers * SOAP_FMAC4 soap_get__cwmp__GetQueu
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__GetQueuedTransfers * SOAP_FMAC4 soap_in__cwmp__GetQueuedTransfers(struct soap *soap, const char *tag, struct _cwmp__GetQueuedTransfers *a, const char *type)
+SOAP_FMAC3 struct _cwmp__GetQueuedTransfers * SOAP_FMAC4 soap_in__cwmp__GetQueuedTransfers(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__GetQueuedTransfers *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -5699,17 +5699,17 @@ SOAP_FMAC3 struct _cwmp__GetQueuedTransfers * SOAP_FMAC4 soap_in__cwmp__GetQueue
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__RebootResponse(struct soap *soap, struct _cwmp__RebootResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__RebootResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__RebootResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__RebootResponse(struct soap *soap, const struct _cwmp__RebootResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__RebootResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__RebootResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__RebootResponse(struct soap *soap, const struct _cwmp__RebootResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__RebootResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__RebootResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__RebootResponse);
 	if (soap_out__cwmp__RebootResponse(soap, tag, id, a, type))
@@ -5717,14 +5717,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__RebootResponse(struct soap *soap, cons
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__RebootResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__RebootResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__RebootResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__RebootResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__RebootResponse), type))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__RebootResponse * SOAP_FMAC4 soap_get__cwmp__RebootResponse(struct soap *soap, struct _cwmp__RebootResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__RebootResponse * SOAP_FMAC4 soap_get__cwmp__RebootResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__RebootResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__RebootResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -5732,7 +5732,7 @@ SOAP_FMAC3 struct _cwmp__RebootResponse * SOAP_FMAC4 soap_get__cwmp__RebootRespo
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__RebootResponse * SOAP_FMAC4 soap_in__cwmp__RebootResponse(struct soap *soap, const char *tag, struct _cwmp__RebootResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__RebootResponse * SOAP_FMAC4 soap_in__cwmp__RebootResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__RebootResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -5762,19 +5762,19 @@ SOAP_FMAC3 struct _cwmp__RebootResponse * SOAP_FMAC4 soap_in__cwmp__RebootRespon
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Reboot(struct soap *soap, struct _cwmp__Reboot *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Reboot(__attribute__((unused)) struct soap *soap, struct _cwmp__Reboot *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_cwmp__CommandKeyType(soap, &a->CommandKey);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Reboot(struct soap *soap, const struct _cwmp__Reboot *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Reboot(__attribute__((unused)) struct soap *soap, const struct _cwmp__Reboot *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_cwmp__CommandKeyType(soap, &a->CommandKey);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Reboot(struct soap *soap, const struct _cwmp__Reboot *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Reboot(__attribute__((unused)) struct soap *soap, const struct _cwmp__Reboot *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__Reboot);
 	if (soap_out__cwmp__Reboot(soap, tag, id, a, type))
@@ -5782,7 +5782,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Reboot(struct soap *soap, const struct
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Reboot(struct soap *soap, const char *tag, int id, const struct _cwmp__Reboot *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Reboot(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__Reboot *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__Reboot), type))
 		return soap->error;
@@ -5791,7 +5791,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Reboot(struct soap *soap, const char *
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__Reboot * SOAP_FMAC4 soap_get__cwmp__Reboot(struct soap *soap, struct _cwmp__Reboot *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__Reboot * SOAP_FMAC4 soap_get__cwmp__Reboot(__attribute__((unused)) struct soap *soap, struct _cwmp__Reboot *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__Reboot(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -5799,7 +5799,7 @@ SOAP_FMAC3 struct _cwmp__Reboot * SOAP_FMAC4 soap_get__cwmp__Reboot(struct soap 
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__Reboot * SOAP_FMAC4 soap_in__cwmp__Reboot(struct soap *soap, const char *tag, struct _cwmp__Reboot *a, const char *type)
+SOAP_FMAC3 struct _cwmp__Reboot * SOAP_FMAC4 soap_in__cwmp__Reboot(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__Reboot *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_CommandKey = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -5839,7 +5839,7 @@ SOAP_FMAC3 struct _cwmp__Reboot * SOAP_FMAC4 soap_in__cwmp__Reboot(struct soap *
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__DownloadResponse(struct soap *soap, struct _cwmp__DownloadResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__DownloadResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__DownloadResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default__cwmp__DownloadResponse_Status(soap, &a->Status);
@@ -5847,14 +5847,14 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__DownloadResponse(struct soap *soa
 	soap_default_time(soap, &a->CompleteTime);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__DownloadResponse(struct soap *soap, const struct _cwmp__DownloadResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__DownloadResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__DownloadResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_embedded(soap, &a->StartTime, SOAP_TYPE_time);
 	soap_embedded(soap, &a->CompleteTime, SOAP_TYPE_time);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__DownloadResponse(struct soap *soap, const struct _cwmp__DownloadResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__DownloadResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__DownloadResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__DownloadResponse);
 	if (soap_out__cwmp__DownloadResponse(soap, tag, id, a, type))
@@ -5862,7 +5862,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__DownloadResponse(struct soap *soap, co
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__DownloadResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__DownloadResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__DownloadResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__DownloadResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__DownloadResponse), type))
 		return soap->error;
@@ -5875,7 +5875,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__DownloadResponse(struct soap *soap, co
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__DownloadResponse * SOAP_FMAC4 soap_get__cwmp__DownloadResponse(struct soap *soap, struct _cwmp__DownloadResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__DownloadResponse * SOAP_FMAC4 soap_get__cwmp__DownloadResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__DownloadResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__DownloadResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -5883,7 +5883,7 @@ SOAP_FMAC3 struct _cwmp__DownloadResponse * SOAP_FMAC4 soap_get__cwmp__DownloadR
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__DownloadResponse * SOAP_FMAC4 soap_in__cwmp__DownloadResponse(struct soap *soap, const char *tag, struct _cwmp__DownloadResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__DownloadResponse * SOAP_FMAC4 soap_in__cwmp__DownloadResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__DownloadResponse *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_Status = 1, soap_flag_StartTime = 1, soap_flag_CompleteTime = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -5933,7 +5933,7 @@ SOAP_FMAC3 struct _cwmp__DownloadResponse * SOAP_FMAC4 soap_in__cwmp__DownloadRe
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Download(struct soap *soap, struct _cwmp__Download *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Download(__attribute__((unused)) struct soap *soap, struct _cwmp__Download *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_cwmp__CommandKeyType(soap, &a->CommandKey);
@@ -5948,7 +5948,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Download(struct soap *soap, struc
 	soap_default_string(soap, &a->FailureURL);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Download(struct soap *soap, const struct _cwmp__Download *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Download(__attribute__((unused)) struct soap *soap, const struct _cwmp__Download *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_cwmp__CommandKeyType(soap, &a->CommandKey);
@@ -5961,7 +5961,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Download(struct soap *soap, con
 	soap_serialize_string(soap, &a->FailureURL);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Download(struct soap *soap, const struct _cwmp__Download *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Download(__attribute__((unused)) struct soap *soap, const struct _cwmp__Download *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__Download);
 	if (soap_out__cwmp__Download(soap, tag, id, a, type))
@@ -5969,7 +5969,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Download(struct soap *soap, const stru
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Download(struct soap *soap, const char *tag, int id, const struct _cwmp__Download *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Download(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__Download *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__Download), type))
 		return soap->error;
@@ -5996,7 +5996,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Download(struct soap *soap, const char
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__Download * SOAP_FMAC4 soap_get__cwmp__Download(struct soap *soap, struct _cwmp__Download *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__Download * SOAP_FMAC4 soap_get__cwmp__Download(__attribute__((unused)) struct soap *soap, struct _cwmp__Download *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__Download(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -6004,7 +6004,7 @@ SOAP_FMAC3 struct _cwmp__Download * SOAP_FMAC4 soap_get__cwmp__Download(struct s
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__Download * SOAP_FMAC4 soap_in__cwmp__Download(struct soap *soap, const char *tag, struct _cwmp__Download *a, const char *type)
+SOAP_FMAC3 struct _cwmp__Download * SOAP_FMAC4 soap_in__cwmp__Download(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__Download *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_CommandKey = 1, soap_flag_FileType = 1, soap_flag_URL = 1, soap_flag_Username = 1, soap_flag_Password = 1, soap_flag_FileSize = 1, soap_flag_TargetFileName = 1, soap_flag_DelaySeconds = 1, soap_flag_SuccessURL = 1, soap_flag_FailureURL = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -6089,18 +6089,18 @@ SOAP_FMAC3 struct _cwmp__Download * SOAP_FMAC4 soap_in__cwmp__Download(struct so
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__DeleteObjectResponse(struct soap *soap, struct _cwmp__DeleteObjectResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__DeleteObjectResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__DeleteObjectResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default__cwmp__DeleteObjectResponse_Status(soap, &a->Status);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__DeleteObjectResponse(struct soap *soap, const struct _cwmp__DeleteObjectResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__DeleteObjectResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__DeleteObjectResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__DeleteObjectResponse(struct soap *soap, const struct _cwmp__DeleteObjectResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__DeleteObjectResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__DeleteObjectResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__DeleteObjectResponse);
 	if (soap_out__cwmp__DeleteObjectResponse(soap, tag, id, a, type))
@@ -6108,7 +6108,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__DeleteObjectResponse(struct soap *soap
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__DeleteObjectResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__DeleteObjectResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__DeleteObjectResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__DeleteObjectResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__DeleteObjectResponse), type))
 		return soap->error;
@@ -6117,7 +6117,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__DeleteObjectResponse(struct soap *soap
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__DeleteObjectResponse * SOAP_FMAC4 soap_get__cwmp__DeleteObjectResponse(struct soap *soap, struct _cwmp__DeleteObjectResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__DeleteObjectResponse * SOAP_FMAC4 soap_get__cwmp__DeleteObjectResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__DeleteObjectResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__DeleteObjectResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -6125,7 +6125,7 @@ SOAP_FMAC3 struct _cwmp__DeleteObjectResponse * SOAP_FMAC4 soap_get__cwmp__Delet
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__DeleteObjectResponse * SOAP_FMAC4 soap_in__cwmp__DeleteObjectResponse(struct soap *soap, const char *tag, struct _cwmp__DeleteObjectResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__DeleteObjectResponse * SOAP_FMAC4 soap_in__cwmp__DeleteObjectResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__DeleteObjectResponse *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_Status = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -6165,21 +6165,21 @@ SOAP_FMAC3 struct _cwmp__DeleteObjectResponse * SOAP_FMAC4 soap_in__cwmp__Delete
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__DeleteObject(struct soap *soap, struct _cwmp__DeleteObject *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__DeleteObject(__attribute__((unused)) struct soap *soap, struct _cwmp__DeleteObject *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_cwmp__ObjectNameType(soap, &a->ObjectName);
 	soap_default_cwmp__ParameterKeyType(soap, &a->ParameterKey);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__DeleteObject(struct soap *soap, const struct _cwmp__DeleteObject *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__DeleteObject(__attribute__((unused)) struct soap *soap, const struct _cwmp__DeleteObject *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_cwmp__ObjectNameType(soap, &a->ObjectName);
 	soap_serialize_cwmp__ParameterKeyType(soap, &a->ParameterKey);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__DeleteObject(struct soap *soap, const struct _cwmp__DeleteObject *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__DeleteObject(__attribute__((unused)) struct soap *soap, const struct _cwmp__DeleteObject *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__DeleteObject);
 	if (soap_out__cwmp__DeleteObject(soap, tag, id, a, type))
@@ -6187,7 +6187,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__DeleteObject(struct soap *soap, const 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__DeleteObject(struct soap *soap, const char *tag, int id, const struct _cwmp__DeleteObject *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__DeleteObject(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__DeleteObject *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__DeleteObject), type))
 		return soap->error;
@@ -6198,7 +6198,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__DeleteObject(struct soap *soap, const 
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__DeleteObject * SOAP_FMAC4 soap_get__cwmp__DeleteObject(struct soap *soap, struct _cwmp__DeleteObject *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__DeleteObject * SOAP_FMAC4 soap_get__cwmp__DeleteObject(__attribute__((unused)) struct soap *soap, struct _cwmp__DeleteObject *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__DeleteObject(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -6206,7 +6206,7 @@ SOAP_FMAC3 struct _cwmp__DeleteObject * SOAP_FMAC4 soap_get__cwmp__DeleteObject(
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__DeleteObject * SOAP_FMAC4 soap_in__cwmp__DeleteObject(struct soap *soap, const char *tag, struct _cwmp__DeleteObject *a, const char *type)
+SOAP_FMAC3 struct _cwmp__DeleteObject * SOAP_FMAC4 soap_in__cwmp__DeleteObject(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__DeleteObject *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_ObjectName = 1, soap_flag_ParameterKey = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -6251,19 +6251,19 @@ SOAP_FMAC3 struct _cwmp__DeleteObject * SOAP_FMAC4 soap_in__cwmp__DeleteObject(s
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__AddObjectResponse(struct soap *soap, struct _cwmp__AddObjectResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__AddObjectResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__AddObjectResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_unsignedInt(soap, &a->InstanceNumber);
 	soap_default__cwmp__AddObjectResponse_Status(soap, &a->Status);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__AddObjectResponse(struct soap *soap, const struct _cwmp__AddObjectResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__AddObjectResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__AddObjectResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AddObjectResponse(struct soap *soap, const struct _cwmp__AddObjectResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AddObjectResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__AddObjectResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__AddObjectResponse);
 	if (soap_out__cwmp__AddObjectResponse(soap, tag, id, a, type))
@@ -6271,7 +6271,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AddObjectResponse(struct soap *soap, c
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__AddObjectResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__AddObjectResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__AddObjectResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__AddObjectResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__AddObjectResponse), type))
 		return soap->error;
@@ -6282,7 +6282,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__AddObjectResponse(struct soap *soap, c
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__AddObjectResponse * SOAP_FMAC4 soap_get__cwmp__AddObjectResponse(struct soap *soap, struct _cwmp__AddObjectResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__AddObjectResponse * SOAP_FMAC4 soap_get__cwmp__AddObjectResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__AddObjectResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__AddObjectResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -6290,7 +6290,7 @@ SOAP_FMAC3 struct _cwmp__AddObjectResponse * SOAP_FMAC4 soap_get__cwmp__AddObjec
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__AddObjectResponse * SOAP_FMAC4 soap_in__cwmp__AddObjectResponse(struct soap *soap, const char *tag, struct _cwmp__AddObjectResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__AddObjectResponse * SOAP_FMAC4 soap_in__cwmp__AddObjectResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__AddObjectResponse *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_InstanceNumber = 1, soap_flag_Status = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -6335,21 +6335,21 @@ SOAP_FMAC3 struct _cwmp__AddObjectResponse * SOAP_FMAC4 soap_in__cwmp__AddObject
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__AddObject(struct soap *soap, struct _cwmp__AddObject *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__AddObject(__attribute__((unused)) struct soap *soap, struct _cwmp__AddObject *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_cwmp__ObjectNameType(soap, &a->ObjectName);
 	soap_default_cwmp__ParameterKeyType(soap, &a->ParameterKey);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__AddObject(struct soap *soap, const struct _cwmp__AddObject *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__AddObject(__attribute__((unused)) struct soap *soap, const struct _cwmp__AddObject *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_cwmp__ObjectNameType(soap, &a->ObjectName);
 	soap_serialize_cwmp__ParameterKeyType(soap, &a->ParameterKey);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AddObject(struct soap *soap, const struct _cwmp__AddObject *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AddObject(__attribute__((unused)) struct soap *soap, const struct _cwmp__AddObject *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__AddObject);
 	if (soap_out__cwmp__AddObject(soap, tag, id, a, type))
@@ -6357,7 +6357,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__AddObject(struct soap *soap, const str
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__AddObject(struct soap *soap, const char *tag, int id, const struct _cwmp__AddObject *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__AddObject(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__AddObject *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__AddObject), type))
 		return soap->error;
@@ -6368,7 +6368,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__AddObject(struct soap *soap, const cha
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__AddObject * SOAP_FMAC4 soap_get__cwmp__AddObject(struct soap *soap, struct _cwmp__AddObject *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__AddObject * SOAP_FMAC4 soap_get__cwmp__AddObject(__attribute__((unused)) struct soap *soap, struct _cwmp__AddObject *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__AddObject(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -6376,7 +6376,7 @@ SOAP_FMAC3 struct _cwmp__AddObject * SOAP_FMAC4 soap_get__cwmp__AddObject(struct
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__AddObject * SOAP_FMAC4 soap_in__cwmp__AddObject(struct soap *soap, const char *tag, struct _cwmp__AddObject *a, const char *type)
+SOAP_FMAC3 struct _cwmp__AddObject * SOAP_FMAC4 soap_in__cwmp__AddObject(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__AddObject *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_ObjectName = 1, soap_flag_ParameterKey = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -6421,19 +6421,19 @@ SOAP_FMAC3 struct _cwmp__AddObject * SOAP_FMAC4 soap_in__cwmp__AddObject(struct 
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetParameterAttributesResponse(struct soap *soap, struct _cwmp__GetParameterAttributesResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetParameterAttributesResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__GetParameterAttributesResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->ParameterList = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetParameterAttributesResponse(struct soap *soap, const struct _cwmp__GetParameterAttributesResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetParameterAttributesResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetParameterAttributesResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerToParameterAttributeList(soap, &a->ParameterList);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterAttributesResponse(struct soap *soap, const struct _cwmp__GetParameterAttributesResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterAttributesResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetParameterAttributesResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__GetParameterAttributesResponse);
 	if (soap_out__cwmp__GetParameterAttributesResponse(soap, tag, id, a, type))
@@ -6441,7 +6441,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterAttributesResponse(struct 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterAttributesResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__GetParameterAttributesResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterAttributesResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__GetParameterAttributesResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__GetParameterAttributesResponse), type))
 		return soap->error;
@@ -6450,7 +6450,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterAttributesResponse(struct 
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__GetParameterAttributesResponse * SOAP_FMAC4 soap_get__cwmp__GetParameterAttributesResponse(struct soap *soap, struct _cwmp__GetParameterAttributesResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__GetParameterAttributesResponse * SOAP_FMAC4 soap_get__cwmp__GetParameterAttributesResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__GetParameterAttributesResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__GetParameterAttributesResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -6458,7 +6458,7 @@ SOAP_FMAC3 struct _cwmp__GetParameterAttributesResponse * SOAP_FMAC4 soap_get__c
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__GetParameterAttributesResponse * SOAP_FMAC4 soap_in__cwmp__GetParameterAttributesResponse(struct soap *soap, const char *tag, struct _cwmp__GetParameterAttributesResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__GetParameterAttributesResponse * SOAP_FMAC4 soap_in__cwmp__GetParameterAttributesResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__GetParameterAttributesResponse *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_ParameterList = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -6498,19 +6498,19 @@ SOAP_FMAC3 struct _cwmp__GetParameterAttributesResponse * SOAP_FMAC4 soap_in__cw
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetParameterAttributes(struct soap *soap, struct _cwmp__GetParameterAttributes *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetParameterAttributes(__attribute__((unused)) struct soap *soap, struct _cwmp__GetParameterAttributes *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->ParameterNames_ = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetParameterAttributes(struct soap *soap, const struct _cwmp__GetParameterAttributes *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetParameterAttributes(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetParameterAttributes *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerToParameterNames(soap, &a->ParameterNames_);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterAttributes(struct soap *soap, const struct _cwmp__GetParameterAttributes *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterAttributes(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetParameterAttributes *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__GetParameterAttributes);
 	if (soap_out__cwmp__GetParameterAttributes(soap, tag, id, a, type))
@@ -6518,7 +6518,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterAttributes(struct soap *so
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterAttributes(struct soap *soap, const char *tag, int id, const struct _cwmp__GetParameterAttributes *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterAttributes(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__GetParameterAttributes *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__GetParameterAttributes), type))
 		return soap->error;
@@ -6527,7 +6527,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterAttributes(struct soap *so
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__GetParameterAttributes * SOAP_FMAC4 soap_get__cwmp__GetParameterAttributes(struct soap *soap, struct _cwmp__GetParameterAttributes *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__GetParameterAttributes * SOAP_FMAC4 soap_get__cwmp__GetParameterAttributes(__attribute__((unused)) struct soap *soap, struct _cwmp__GetParameterAttributes *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__GetParameterAttributes(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -6535,7 +6535,7 @@ SOAP_FMAC3 struct _cwmp__GetParameterAttributes * SOAP_FMAC4 soap_get__cwmp__Get
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__GetParameterAttributes * SOAP_FMAC4 soap_in__cwmp__GetParameterAttributes(struct soap *soap, const char *tag, struct _cwmp__GetParameterAttributes *a, const char *type)
+SOAP_FMAC3 struct _cwmp__GetParameterAttributes * SOAP_FMAC4 soap_in__cwmp__GetParameterAttributes(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__GetParameterAttributes *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_ParameterNames_ = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -6575,17 +6575,17 @@ SOAP_FMAC3 struct _cwmp__GetParameterAttributes * SOAP_FMAC4 soap_in__cwmp__GetP
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetParameterAttributesResponse(struct soap *soap, struct _cwmp__SetParameterAttributesResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetParameterAttributesResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__SetParameterAttributesResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__SetParameterAttributesResponse(struct soap *soap, const struct _cwmp__SetParameterAttributesResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__SetParameterAttributesResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__SetParameterAttributesResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterAttributesResponse(struct soap *soap, const struct _cwmp__SetParameterAttributesResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterAttributesResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__SetParameterAttributesResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__SetParameterAttributesResponse);
 	if (soap_out__cwmp__SetParameterAttributesResponse(soap, tag, id, a, type))
@@ -6593,14 +6593,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterAttributesResponse(struct 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetParameterAttributesResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__SetParameterAttributesResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetParameterAttributesResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__SetParameterAttributesResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__SetParameterAttributesResponse), type))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__SetParameterAttributesResponse * SOAP_FMAC4 soap_get__cwmp__SetParameterAttributesResponse(struct soap *soap, struct _cwmp__SetParameterAttributesResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__SetParameterAttributesResponse * SOAP_FMAC4 soap_get__cwmp__SetParameterAttributesResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__SetParameterAttributesResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__SetParameterAttributesResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -6608,7 +6608,7 @@ SOAP_FMAC3 struct _cwmp__SetParameterAttributesResponse * SOAP_FMAC4 soap_get__c
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__SetParameterAttributesResponse * SOAP_FMAC4 soap_in__cwmp__SetParameterAttributesResponse(struct soap *soap, const char *tag, struct _cwmp__SetParameterAttributesResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__SetParameterAttributesResponse * SOAP_FMAC4 soap_in__cwmp__SetParameterAttributesResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__SetParameterAttributesResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -6638,19 +6638,19 @@ SOAP_FMAC3 struct _cwmp__SetParameterAttributesResponse * SOAP_FMAC4 soap_in__cw
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetParameterAttributes(struct soap *soap, struct _cwmp__SetParameterAttributes *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetParameterAttributes(__attribute__((unused)) struct soap *soap, struct _cwmp__SetParameterAttributes *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->ParameterList = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__SetParameterAttributes(struct soap *soap, const struct _cwmp__SetParameterAttributes *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__SetParameterAttributes(__attribute__((unused)) struct soap *soap, const struct _cwmp__SetParameterAttributes *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerToSetParameterAttributesList(soap, &a->ParameterList);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterAttributes(struct soap *soap, const struct _cwmp__SetParameterAttributes *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterAttributes(__attribute__((unused)) struct soap *soap, const struct _cwmp__SetParameterAttributes *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__SetParameterAttributes);
 	if (soap_out__cwmp__SetParameterAttributes(soap, tag, id, a, type))
@@ -6658,7 +6658,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterAttributes(struct soap *so
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetParameterAttributes(struct soap *soap, const char *tag, int id, const struct _cwmp__SetParameterAttributes *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetParameterAttributes(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__SetParameterAttributes *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__SetParameterAttributes), type))
 		return soap->error;
@@ -6667,7 +6667,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetParameterAttributes(struct soap *so
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__SetParameterAttributes * SOAP_FMAC4 soap_get__cwmp__SetParameterAttributes(struct soap *soap, struct _cwmp__SetParameterAttributes *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__SetParameterAttributes * SOAP_FMAC4 soap_get__cwmp__SetParameterAttributes(__attribute__((unused)) struct soap *soap, struct _cwmp__SetParameterAttributes *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__SetParameterAttributes(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -6675,7 +6675,7 @@ SOAP_FMAC3 struct _cwmp__SetParameterAttributes * SOAP_FMAC4 soap_get__cwmp__Set
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__SetParameterAttributes * SOAP_FMAC4 soap_in__cwmp__SetParameterAttributes(struct soap *soap, const char *tag, struct _cwmp__SetParameterAttributes *a, const char *type)
+SOAP_FMAC3 struct _cwmp__SetParameterAttributes * SOAP_FMAC4 soap_in__cwmp__SetParameterAttributes(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__SetParameterAttributes *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_ParameterList = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -6715,19 +6715,19 @@ SOAP_FMAC3 struct _cwmp__SetParameterAttributes * SOAP_FMAC4 soap_in__cwmp__SetP
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetParameterNamesResponse(struct soap *soap, struct _cwmp__GetParameterNamesResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetParameterNamesResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__GetParameterNamesResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->ParameterList = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetParameterNamesResponse(struct soap *soap, const struct _cwmp__GetParameterNamesResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetParameterNamesResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetParameterNamesResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerToParameterInfoList(soap, &a->ParameterList);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterNamesResponse(struct soap *soap, const struct _cwmp__GetParameterNamesResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterNamesResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetParameterNamesResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__GetParameterNamesResponse);
 	if (soap_out__cwmp__GetParameterNamesResponse(soap, tag, id, a, type))
@@ -6735,7 +6735,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterNamesResponse(struct soap 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterNamesResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__GetParameterNamesResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterNamesResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__GetParameterNamesResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__GetParameterNamesResponse), type))
 		return soap->error;
@@ -6744,7 +6744,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterNamesResponse(struct soap 
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__GetParameterNamesResponse * SOAP_FMAC4 soap_get__cwmp__GetParameterNamesResponse(struct soap *soap, struct _cwmp__GetParameterNamesResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__GetParameterNamesResponse * SOAP_FMAC4 soap_get__cwmp__GetParameterNamesResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__GetParameterNamesResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__GetParameterNamesResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -6752,7 +6752,7 @@ SOAP_FMAC3 struct _cwmp__GetParameterNamesResponse * SOAP_FMAC4 soap_get__cwmp__
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__GetParameterNamesResponse * SOAP_FMAC4 soap_in__cwmp__GetParameterNamesResponse(struct soap *soap, const char *tag, struct _cwmp__GetParameterNamesResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__GetParameterNamesResponse * SOAP_FMAC4 soap_in__cwmp__GetParameterNamesResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__GetParameterNamesResponse *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_ParameterList = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -6792,20 +6792,20 @@ SOAP_FMAC3 struct _cwmp__GetParameterNamesResponse * SOAP_FMAC4 soap_in__cwmp__G
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetParameterNames(struct soap *soap, struct _cwmp__GetParameterNames *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetParameterNames(__attribute__((unused)) struct soap *soap, struct _cwmp__GetParameterNames *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->ParameterPath = NULL;
 	soap_default_xsd__boolean(soap, &a->NextLevel);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetParameterNames(struct soap *soap, const struct _cwmp__GetParameterNames *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetParameterNames(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetParameterNames *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerTostring(soap, &a->ParameterPath);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterNames(struct soap *soap, const struct _cwmp__GetParameterNames *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterNames(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetParameterNames *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__GetParameterNames);
 	if (soap_out__cwmp__GetParameterNames(soap, tag, id, a, type))
@@ -6813,7 +6813,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterNames(struct soap *soap, c
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterNames(struct soap *soap, const char *tag, int id, const struct _cwmp__GetParameterNames *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterNames(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__GetParameterNames *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__GetParameterNames), type))
 		return soap->error;
@@ -6824,7 +6824,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterNames(struct soap *soap, c
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__GetParameterNames * SOAP_FMAC4 soap_get__cwmp__GetParameterNames(struct soap *soap, struct _cwmp__GetParameterNames *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__GetParameterNames * SOAP_FMAC4 soap_get__cwmp__GetParameterNames(__attribute__((unused)) struct soap *soap, struct _cwmp__GetParameterNames *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__GetParameterNames(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -6832,7 +6832,7 @@ SOAP_FMAC3 struct _cwmp__GetParameterNames * SOAP_FMAC4 soap_get__cwmp__GetParam
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__GetParameterNames * SOAP_FMAC4 soap_in__cwmp__GetParameterNames(struct soap *soap, const char *tag, struct _cwmp__GetParameterNames *a, const char *type)
+SOAP_FMAC3 struct _cwmp__GetParameterNames * SOAP_FMAC4 soap_in__cwmp__GetParameterNames(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__GetParameterNames *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_ParameterPath = 1, soap_flag_NextLevel = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -6877,19 +6877,19 @@ SOAP_FMAC3 struct _cwmp__GetParameterNames * SOAP_FMAC4 soap_in__cwmp__GetParame
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetParameterValuesResponse(struct soap *soap, struct _cwmp__GetParameterValuesResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetParameterValuesResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__GetParameterValuesResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->ParameterList = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetParameterValuesResponse(struct soap *soap, const struct _cwmp__GetParameterValuesResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetParameterValuesResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetParameterValuesResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerToParameterValueList(soap, &a->ParameterList);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterValuesResponse(struct soap *soap, const struct _cwmp__GetParameterValuesResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterValuesResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetParameterValuesResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__GetParameterValuesResponse);
 	if (soap_out__cwmp__GetParameterValuesResponse(soap, tag, id, a, type))
@@ -6897,7 +6897,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterValuesResponse(struct soap
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterValuesResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__GetParameterValuesResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterValuesResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__GetParameterValuesResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__GetParameterValuesResponse), type))
 		return soap->error;
@@ -6906,7 +6906,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterValuesResponse(struct soap
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__GetParameterValuesResponse * SOAP_FMAC4 soap_get__cwmp__GetParameterValuesResponse(struct soap *soap, struct _cwmp__GetParameterValuesResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__GetParameterValuesResponse * SOAP_FMAC4 soap_get__cwmp__GetParameterValuesResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__GetParameterValuesResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__GetParameterValuesResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -6914,7 +6914,7 @@ SOAP_FMAC3 struct _cwmp__GetParameterValuesResponse * SOAP_FMAC4 soap_get__cwmp_
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__GetParameterValuesResponse * SOAP_FMAC4 soap_in__cwmp__GetParameterValuesResponse(struct soap *soap, const char *tag, struct _cwmp__GetParameterValuesResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__GetParameterValuesResponse * SOAP_FMAC4 soap_in__cwmp__GetParameterValuesResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__GetParameterValuesResponse *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_ParameterList = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -6954,19 +6954,19 @@ SOAP_FMAC3 struct _cwmp__GetParameterValuesResponse * SOAP_FMAC4 soap_in__cwmp__
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetParameterValues(struct soap *soap, struct _cwmp__GetParameterValues *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetParameterValues(__attribute__((unused)) struct soap *soap, struct _cwmp__GetParameterValues *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->ParameterNames_ = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetParameterValues(struct soap *soap, const struct _cwmp__GetParameterValues *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetParameterValues(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetParameterValues *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerToParameterNames(soap, &a->ParameterNames_);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterValues(struct soap *soap, const struct _cwmp__GetParameterValues *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterValues(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetParameterValues *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__GetParameterValues);
 	if (soap_out__cwmp__GetParameterValues(soap, tag, id, a, type))
@@ -6974,7 +6974,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetParameterValues(struct soap *soap, 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterValues(struct soap *soap, const char *tag, int id, const struct _cwmp__GetParameterValues *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterValues(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__GetParameterValues *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__GetParameterValues), type))
 		return soap->error;
@@ -6983,7 +6983,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetParameterValues(struct soap *soap, 
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__GetParameterValues * SOAP_FMAC4 soap_get__cwmp__GetParameterValues(struct soap *soap, struct _cwmp__GetParameterValues *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__GetParameterValues * SOAP_FMAC4 soap_get__cwmp__GetParameterValues(__attribute__((unused)) struct soap *soap, struct _cwmp__GetParameterValues *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__GetParameterValues(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -6991,7 +6991,7 @@ SOAP_FMAC3 struct _cwmp__GetParameterValues * SOAP_FMAC4 soap_get__cwmp__GetPara
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__GetParameterValues * SOAP_FMAC4 soap_in__cwmp__GetParameterValues(struct soap *soap, const char *tag, struct _cwmp__GetParameterValues *a, const char *type)
+SOAP_FMAC3 struct _cwmp__GetParameterValues * SOAP_FMAC4 soap_in__cwmp__GetParameterValues(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__GetParameterValues *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_ParameterNames_ = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -7031,18 +7031,18 @@ SOAP_FMAC3 struct _cwmp__GetParameterValues * SOAP_FMAC4 soap_in__cwmp__GetParam
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetParameterValuesResponse(struct soap *soap, struct _cwmp__SetParameterValuesResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetParameterValuesResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__SetParameterValuesResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default__cwmp__SetParameterValuesResponse_Status(soap, &a->Status);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__SetParameterValuesResponse(struct soap *soap, const struct _cwmp__SetParameterValuesResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__SetParameterValuesResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__SetParameterValuesResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterValuesResponse(struct soap *soap, const struct _cwmp__SetParameterValuesResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterValuesResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__SetParameterValuesResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__SetParameterValuesResponse);
 	if (soap_out__cwmp__SetParameterValuesResponse(soap, tag, id, a, type))
@@ -7050,7 +7050,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterValuesResponse(struct soap
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetParameterValuesResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__SetParameterValuesResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetParameterValuesResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__SetParameterValuesResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__SetParameterValuesResponse), type))
 		return soap->error;
@@ -7059,7 +7059,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetParameterValuesResponse(struct soap
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__SetParameterValuesResponse * SOAP_FMAC4 soap_get__cwmp__SetParameterValuesResponse(struct soap *soap, struct _cwmp__SetParameterValuesResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__SetParameterValuesResponse * SOAP_FMAC4 soap_get__cwmp__SetParameterValuesResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__SetParameterValuesResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__SetParameterValuesResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -7067,7 +7067,7 @@ SOAP_FMAC3 struct _cwmp__SetParameterValuesResponse * SOAP_FMAC4 soap_get__cwmp_
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__SetParameterValuesResponse * SOAP_FMAC4 soap_in__cwmp__SetParameterValuesResponse(struct soap *soap, const char *tag, struct _cwmp__SetParameterValuesResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__SetParameterValuesResponse * SOAP_FMAC4 soap_in__cwmp__SetParameterValuesResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__SetParameterValuesResponse *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_Status = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -7107,21 +7107,21 @@ SOAP_FMAC3 struct _cwmp__SetParameterValuesResponse * SOAP_FMAC4 soap_in__cwmp__
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetParameterValues(struct soap *soap, struct _cwmp__SetParameterValues *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__SetParameterValues(__attribute__((unused)) struct soap *soap, struct _cwmp__SetParameterValues *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->ParameterList = NULL;
 	soap_default_cwmp__ParameterKeyType(soap, &a->ParameterKey);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__SetParameterValues(struct soap *soap, const struct _cwmp__SetParameterValues *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__SetParameterValues(__attribute__((unused)) struct soap *soap, const struct _cwmp__SetParameterValues *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerToParameterValueList(soap, &a->ParameterList);
 	soap_serialize_cwmp__ParameterKeyType(soap, &a->ParameterKey);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterValues(struct soap *soap, const struct _cwmp__SetParameterValues *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterValues(__attribute__((unused)) struct soap *soap, const struct _cwmp__SetParameterValues *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__SetParameterValues);
 	if (soap_out__cwmp__SetParameterValues(soap, tag, id, a, type))
@@ -7129,7 +7129,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__SetParameterValues(struct soap *soap, 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetParameterValues(struct soap *soap, const char *tag, int id, const struct _cwmp__SetParameterValues *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetParameterValues(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__SetParameterValues *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__SetParameterValues), type))
 		return soap->error;
@@ -7140,7 +7140,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__SetParameterValues(struct soap *soap, 
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__SetParameterValues * SOAP_FMAC4 soap_get__cwmp__SetParameterValues(struct soap *soap, struct _cwmp__SetParameterValues *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__SetParameterValues * SOAP_FMAC4 soap_get__cwmp__SetParameterValues(__attribute__((unused)) struct soap *soap, struct _cwmp__SetParameterValues *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__SetParameterValues(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -7148,7 +7148,7 @@ SOAP_FMAC3 struct _cwmp__SetParameterValues * SOAP_FMAC4 soap_get__cwmp__SetPara
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__SetParameterValues * SOAP_FMAC4 soap_in__cwmp__SetParameterValues(struct soap *soap, const char *tag, struct _cwmp__SetParameterValues *a, const char *type)
+SOAP_FMAC3 struct _cwmp__SetParameterValues * SOAP_FMAC4 soap_in__cwmp__SetParameterValues(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__SetParameterValues *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_ParameterList = 1, soap_flag_ParameterKey = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -7193,19 +7193,19 @@ SOAP_FMAC3 struct _cwmp__SetParameterValues * SOAP_FMAC4 soap_in__cwmp__SetParam
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetRPCMethodsResponse(struct soap *soap, struct _cwmp__GetRPCMethodsResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetRPCMethodsResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__GetRPCMethodsResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->MethodList_ = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetRPCMethodsResponse(struct soap *soap, const struct _cwmp__GetRPCMethodsResponse *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetRPCMethodsResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetRPCMethodsResponse *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerToMethodList(soap, &a->MethodList_);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetRPCMethodsResponse(struct soap *soap, const struct _cwmp__GetRPCMethodsResponse *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetRPCMethodsResponse(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetRPCMethodsResponse *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__GetRPCMethodsResponse);
 	if (soap_out__cwmp__GetRPCMethodsResponse(soap, tag, id, a, type))
@@ -7213,7 +7213,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetRPCMethodsResponse(struct soap *soa
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetRPCMethodsResponse(struct soap *soap, const char *tag, int id, const struct _cwmp__GetRPCMethodsResponse *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetRPCMethodsResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__GetRPCMethodsResponse *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__GetRPCMethodsResponse), type))
 		return soap->error;
@@ -7222,7 +7222,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetRPCMethodsResponse(struct soap *soa
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__GetRPCMethodsResponse * SOAP_FMAC4 soap_get__cwmp__GetRPCMethodsResponse(struct soap *soap, struct _cwmp__GetRPCMethodsResponse *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__GetRPCMethodsResponse * SOAP_FMAC4 soap_get__cwmp__GetRPCMethodsResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__GetRPCMethodsResponse *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__GetRPCMethodsResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -7230,7 +7230,7 @@ SOAP_FMAC3 struct _cwmp__GetRPCMethodsResponse * SOAP_FMAC4 soap_get__cwmp__GetR
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__GetRPCMethodsResponse * SOAP_FMAC4 soap_in__cwmp__GetRPCMethodsResponse(struct soap *soap, const char *tag, struct _cwmp__GetRPCMethodsResponse *a, const char *type)
+SOAP_FMAC3 struct _cwmp__GetRPCMethodsResponse * SOAP_FMAC4 soap_in__cwmp__GetRPCMethodsResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__GetRPCMethodsResponse *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_MethodList_ = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -7270,17 +7270,17 @@ SOAP_FMAC3 struct _cwmp__GetRPCMethodsResponse * SOAP_FMAC4 soap_in__cwmp__GetRP
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetRPCMethods(struct soap *soap, struct _cwmp__GetRPCMethods *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__GetRPCMethods(__attribute__((unused)) struct soap *soap, struct _cwmp__GetRPCMethods *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetRPCMethods(struct soap *soap, const struct _cwmp__GetRPCMethods *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__GetRPCMethods(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetRPCMethods *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetRPCMethods(struct soap *soap, const struct _cwmp__GetRPCMethods *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetRPCMethods(__attribute__((unused)) struct soap *soap, const struct _cwmp__GetRPCMethods *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__GetRPCMethods);
 	if (soap_out__cwmp__GetRPCMethods(soap, tag, id, a, type))
@@ -7288,14 +7288,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__GetRPCMethods(struct soap *soap, const
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetRPCMethods(struct soap *soap, const char *tag, int id, const struct _cwmp__GetRPCMethods *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__GetRPCMethods(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__GetRPCMethods *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__GetRPCMethods), type))
 		return soap->error;
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__GetRPCMethods * SOAP_FMAC4 soap_get__cwmp__GetRPCMethods(struct soap *soap, struct _cwmp__GetRPCMethods *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__GetRPCMethods * SOAP_FMAC4 soap_get__cwmp__GetRPCMethods(__attribute__((unused)) struct soap *soap, struct _cwmp__GetRPCMethods *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__GetRPCMethods(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -7303,7 +7303,7 @@ SOAP_FMAC3 struct _cwmp__GetRPCMethods * SOAP_FMAC4 soap_get__cwmp__GetRPCMethod
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__GetRPCMethods * SOAP_FMAC4 soap_in__cwmp__GetRPCMethods(struct soap *soap, const char *tag, struct _cwmp__GetRPCMethods *a, const char *type)
+SOAP_FMAC3 struct _cwmp__GetRPCMethods * SOAP_FMAC4 soap_in__cwmp__GetRPCMethods(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__GetRPCMethods *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 0, type))
 		return NULL;
@@ -7333,7 +7333,7 @@ SOAP_FMAC3 struct _cwmp__GetRPCMethods * SOAP_FMAC4 soap_in__cwmp__GetRPCMethods
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Fault(struct soap *soap, struct _cwmp__Fault *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Fault(__attribute__((unused)) struct soap *soap, struct _cwmp__Fault *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_cwmp__FaultCodeType(soap, &a->FaultCode);
@@ -7342,7 +7342,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__Fault(struct soap *soap, struct _
 	a->SetParameterValuesFault = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Fault(struct soap *soap, const struct _cwmp__Fault *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Fault(__attribute__((unused)) struct soap *soap, const struct _cwmp__Fault *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_cwmp__FaultCodeType(soap, &a->FaultCode);
@@ -7357,7 +7357,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__Fault(struct soap *soap, const 
 	}
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Fault(struct soap *soap, const struct _cwmp__Fault *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Fault(__attribute__((unused)) struct soap *soap, const struct _cwmp__Fault *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__Fault);
 	if (soap_out__cwmp__Fault(soap, tag, id, a, type))
@@ -7365,7 +7365,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__Fault(struct soap *soap, const struct 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Fault(struct soap *soap, const char *tag, int id, const struct _cwmp__Fault *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Fault(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__Fault *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE__cwmp__Fault), type))
 		return soap->error;
@@ -7382,7 +7382,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__Fault(struct soap *soap, const char *t
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct _cwmp__Fault * SOAP_FMAC4 soap_get__cwmp__Fault(struct soap *soap, struct _cwmp__Fault *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__Fault * SOAP_FMAC4 soap_get__cwmp__Fault(__attribute__((unused)) struct soap *soap, struct _cwmp__Fault *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__Fault(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -7390,7 +7390,7 @@ SOAP_FMAC3 struct _cwmp__Fault * SOAP_FMAC4 soap_get__cwmp__Fault(struct soap *s
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__Fault * SOAP_FMAC4 soap_in__cwmp__Fault(struct soap *soap, const char *tag, struct _cwmp__Fault *a, const char *type)
+SOAP_FMAC3 struct _cwmp__Fault * SOAP_FMAC4 soap_in__cwmp__Fault(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__Fault *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_FaultCode = 1, soap_flag_FaultString = 1, soap_flag_SetParameterValuesFault = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -7450,19 +7450,19 @@ SOAP_FMAC3 struct _cwmp__Fault * SOAP_FMAC4 soap_in__cwmp__Fault(struct soap *so
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__HoldRequests(struct soap *soap, struct _cwmp__HoldRequests *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__HoldRequests(__attribute__((unused)) struct soap *soap, struct _cwmp__HoldRequests *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_unsignedInt(soap, &a->__item);
 	soap_default__SOAP_ENV__mustUnderstand(soap, &a->SOAP_ENV__mustUnderstand);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__HoldRequests(struct soap *soap, const struct _cwmp__HoldRequests *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__HoldRequests(__attribute__((unused)) struct soap *soap, const struct _cwmp__HoldRequests *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__HoldRequests(struct soap *soap, const struct _cwmp__HoldRequests *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__HoldRequests(__attribute__((unused)) struct soap *soap, const struct _cwmp__HoldRequests *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__HoldRequests);
 	if (soap_out__cwmp__HoldRequests(soap, tag, id, a, type))
@@ -7470,14 +7470,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__HoldRequests(struct soap *soap, const 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__HoldRequests(struct soap *soap, const char *tag, int id, const struct _cwmp__HoldRequests *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__HoldRequests(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__HoldRequests *a, __attribute__((unused)) const char *type)
 {
 	if (a->SOAP_ENV__mustUnderstand)
 		soap_set_attr(soap, "SOAP-ENV:mustUnderstand", a->SOAP_ENV__mustUnderstand);
 	return soap_out_unsignedInt(soap, tag, id, &a->__item, "");
 }
 
-SOAP_FMAC3 struct _cwmp__HoldRequests * SOAP_FMAC4 soap_get__cwmp__HoldRequests(struct soap *soap, struct _cwmp__HoldRequests *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__HoldRequests * SOAP_FMAC4 soap_get__cwmp__HoldRequests(__attribute__((unused)) struct soap *soap, struct _cwmp__HoldRequests *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__HoldRequests(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -7485,7 +7485,7 @@ SOAP_FMAC3 struct _cwmp__HoldRequests * SOAP_FMAC4 soap_get__cwmp__HoldRequests(
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__HoldRequests * SOAP_FMAC4 soap_in__cwmp__HoldRequests(struct soap *soap, const char *tag, struct _cwmp__HoldRequests *a, const char *type)
+SOAP_FMAC3 struct _cwmp__HoldRequests * SOAP_FMAC4 soap_in__cwmp__HoldRequests(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__HoldRequests *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -7501,20 +7501,20 @@ SOAP_FMAC3 struct _cwmp__HoldRequests * SOAP_FMAC4 soap_in__cwmp__HoldRequests(s
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__ID(struct soap *soap, struct _cwmp__ID *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__cwmp__ID(__attribute__((unused)) struct soap *soap, struct _cwmp__ID *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_string(soap, &a->__item);
 	soap_default__SOAP_ENV__mustUnderstand(soap, &a->SOAP_ENV__mustUnderstand);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__ID(struct soap *soap, const struct _cwmp__ID *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__cwmp__ID(__attribute__((unused)) struct soap *soap, const struct _cwmp__ID *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_string(soap, &a->__item);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__ID(struct soap *soap, const struct _cwmp__ID *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__ID(__attribute__((unused)) struct soap *soap, const struct _cwmp__ID *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__cwmp__ID);
 	if (soap_out__cwmp__ID(soap, tag, id, a, type))
@@ -7522,14 +7522,14 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__cwmp__ID(struct soap *soap, const struct _cw
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__ID(struct soap *soap, const char *tag, int id, const struct _cwmp__ID *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__cwmp__ID(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct _cwmp__ID *a, __attribute__((unused)) const char *type)
 {
 	if (a->SOAP_ENV__mustUnderstand)
 		soap_set_attr(soap, "SOAP-ENV:mustUnderstand", a->SOAP_ENV__mustUnderstand);
 	return soap_out_string(soap, tag, id, &a->__item, "");
 }
 
-SOAP_FMAC3 struct _cwmp__ID * SOAP_FMAC4 soap_get__cwmp__ID(struct soap *soap, struct _cwmp__ID *p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__ID * SOAP_FMAC4 soap_get__cwmp__ID(__attribute__((unused)) struct soap *soap, struct _cwmp__ID *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__cwmp__ID(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -7537,7 +7537,7 @@ SOAP_FMAC3 struct _cwmp__ID * SOAP_FMAC4 soap_get__cwmp__ID(struct soap *soap, s
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__ID * SOAP_FMAC4 soap_in__cwmp__ID(struct soap *soap, const char *tag, struct _cwmp__ID *a, const char *type)
+SOAP_FMAC3 struct _cwmp__ID * SOAP_FMAC4 soap_in__cwmp__ID(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__ID *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -7553,13 +7553,13 @@ SOAP_FMAC3 struct _cwmp__ID * SOAP_FMAC4 soap_in__cwmp__ID(struct soap *soap, co
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_FileTypeArg(struct soap *soap, struct FileTypeArg *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_FileTypeArg(__attribute__((unused)) struct soap *soap, struct FileTypeArg *a)
 {
 	a->__size = 0;
 	a->__ptrArgStruct = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_FileTypeArg(struct soap *soap, struct FileTypeArg const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_FileTypeArg(__attribute__((unused)) struct soap *soap, struct FileTypeArg const*a)
 {
 	int i;
 	if (a->__ptrArgStruct && !soap_array_reference(soap, a, (struct soap_array*)&a->__ptrArgStruct, 1, SOAP_TYPE_FileTypeArg))
@@ -7569,7 +7569,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_FileTypeArg(struct soap *soap, struct 
 		}
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_FileTypeArg(struct soap *soap, const struct FileTypeArg *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_FileTypeArg(__attribute__((unused)) struct soap *soap, const struct FileTypeArg *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, (struct soap_array*)&a->__ptrArgStruct, 1, tag, SOAP_TYPE_FileTypeArg);
 	if (soap_out_FileTypeArg(soap, tag, id, a, type))
@@ -7577,7 +7577,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_FileTypeArg(struct soap *soap, const struct F
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_FileTypeArg(struct soap *soap, const char *tag, int id, const struct FileTypeArg *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_FileTypeArg(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct FileTypeArg *a, __attribute__((unused)) const char *type)
 {
 	int i, n = a->__size;
 	char *t = soap_putsize(soap, "cwmp:ArgStruct", a->__size);
@@ -7596,7 +7596,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_FileTypeArg(struct soap *soap, const char *ta
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct FileTypeArg * SOAP_FMAC4 soap_get_FileTypeArg(struct soap *soap, struct FileTypeArg *p, const char *tag, const char *type)
+SOAP_FMAC3 struct FileTypeArg * SOAP_FMAC4 soap_get_FileTypeArg(__attribute__((unused)) struct soap *soap, struct FileTypeArg *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_FileTypeArg(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -7604,7 +7604,7 @@ SOAP_FMAC3 struct FileTypeArg * SOAP_FMAC4 soap_get_FileTypeArg(struct soap *soa
 	return p;
 }
 
-SOAP_FMAC3 struct FileTypeArg * SOAP_FMAC4 soap_in_FileTypeArg(struct soap *soap, const char *tag, struct FileTypeArg *a, const char *type)
+SOAP_FMAC3 struct FileTypeArg * SOAP_FMAC4 soap_in_FileTypeArg(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct FileTypeArg *a, __attribute__((unused)) const char *type)
 {	int i, j;
 	struct cwmp__ArgStruct **p;
 	if (soap_element_begin_in(soap, tag, 1, NULL))
@@ -7670,21 +7670,21 @@ SOAP_FMAC3 struct FileTypeArg * SOAP_FMAC4 soap_in_FileTypeArg(struct soap *soap
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__ArgStruct(struct soap *soap, struct cwmp__ArgStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__ArgStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ArgStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_string(soap, &a->Name);
 	soap_default_string(soap, &a->Value);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__ArgStruct(struct soap *soap, const struct cwmp__ArgStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__ArgStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__ArgStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_string(soap, &a->Name);
 	soap_serialize_string(soap, &a->Value);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ArgStruct(struct soap *soap, const struct cwmp__ArgStruct *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ArgStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__ArgStruct *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_cwmp__ArgStruct);
 	if (soap_out_cwmp__ArgStruct(soap, tag, id, a, type))
@@ -7692,7 +7692,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ArgStruct(struct soap *soap, const stru
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ArgStruct(struct soap *soap, const char *tag, int id, const struct cwmp__ArgStruct *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ArgStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct cwmp__ArgStruct *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_cwmp__ArgStruct), type))
 		return soap->error;
@@ -7703,7 +7703,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ArgStruct(struct soap *soap, const char
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct cwmp__ArgStruct * SOAP_FMAC4 soap_get_cwmp__ArgStruct(struct soap *soap, struct cwmp__ArgStruct *p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__ArgStruct * SOAP_FMAC4 soap_get_cwmp__ArgStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ArgStruct *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_cwmp__ArgStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -7711,7 +7711,7 @@ SOAP_FMAC3 struct cwmp__ArgStruct * SOAP_FMAC4 soap_get_cwmp__ArgStruct(struct s
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__ArgStruct * SOAP_FMAC4 soap_in_cwmp__ArgStruct(struct soap *soap, const char *tag, struct cwmp__ArgStruct *a, const char *type)
+SOAP_FMAC3 struct cwmp__ArgStruct * SOAP_FMAC4 soap_in_cwmp__ArgStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__ArgStruct *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_Name = 1, soap_flag_Value = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -7756,13 +7756,13 @@ SOAP_FMAC3 struct cwmp__ArgStruct * SOAP_FMAC4 soap_in_cwmp__ArgStruct(struct so
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_OptionList(struct soap *soap, struct OptionList *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_OptionList(__attribute__((unused)) struct soap *soap, struct OptionList *a)
 {
 	a->__size = 0;
 	a->__ptrOptionStruct = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_OptionList(struct soap *soap, struct OptionList const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_OptionList(__attribute__((unused)) struct soap *soap, struct OptionList const*a)
 {
 	int i;
 	if (a->__ptrOptionStruct && !soap_array_reference(soap, a, (struct soap_array*)&a->__ptrOptionStruct, 1, SOAP_TYPE_OptionList))
@@ -7772,7 +7772,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_OptionList(struct soap *soap, struct O
 		}
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_OptionList(struct soap *soap, const struct OptionList *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_OptionList(__attribute__((unused)) struct soap *soap, const struct OptionList *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, (struct soap_array*)&a->__ptrOptionStruct, 1, tag, SOAP_TYPE_OptionList);
 	if (soap_out_OptionList(soap, tag, id, a, type))
@@ -7780,7 +7780,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_OptionList(struct soap *soap, const struct Op
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_OptionList(struct soap *soap, const char *tag, int id, const struct OptionList *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_OptionList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct OptionList *a, __attribute__((unused)) const char *type)
 {
 	int i, n = a->__size;
 	char *t = soap_putsize(soap, "cwmp:OptionStruct", a->__size);
@@ -7799,7 +7799,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_OptionList(struct soap *soap, const char *tag
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct OptionList * SOAP_FMAC4 soap_get_OptionList(struct soap *soap, struct OptionList *p, const char *tag, const char *type)
+SOAP_FMAC3 struct OptionList * SOAP_FMAC4 soap_get_OptionList(__attribute__((unused)) struct soap *soap, struct OptionList *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_OptionList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -7807,7 +7807,7 @@ SOAP_FMAC3 struct OptionList * SOAP_FMAC4 soap_get_OptionList(struct soap *soap,
 	return p;
 }
 
-SOAP_FMAC3 struct OptionList * SOAP_FMAC4 soap_in_OptionList(struct soap *soap, const char *tag, struct OptionList *a, const char *type)
+SOAP_FMAC3 struct OptionList * SOAP_FMAC4 soap_in_OptionList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct OptionList *a, __attribute__((unused)) const char *type)
 {	int i, j;
 	struct cwmp__OptionStruct **p;
 	if (soap_element_begin_in(soap, tag, 1, NULL))
@@ -7873,7 +7873,7 @@ SOAP_FMAC3 struct OptionList * SOAP_FMAC4 soap_in_OptionList(struct soap *soap, 
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__OptionStruct(struct soap *soap, struct cwmp__OptionStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__OptionStruct(__attribute__((unused)) struct soap *soap, struct cwmp__OptionStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_string(soap, &a->OptionName);
@@ -7885,7 +7885,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__OptionStruct(struct soap *soap, st
 	soap_default__cwmp__OptionStruct_IsTransferable(soap, &a->IsTransferable);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__OptionStruct(struct soap *soap, const struct cwmp__OptionStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__OptionStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__OptionStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_string(soap, &a->OptionName);
@@ -7893,7 +7893,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__OptionStruct(struct soap *soap, 
 	soap_serialize_PointerTotime(soap, &a->ExpirationDate);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__OptionStruct(struct soap *soap, const struct cwmp__OptionStruct *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__OptionStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__OptionStruct *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_cwmp__OptionStruct);
 	if (soap_out_cwmp__OptionStruct(soap, tag, id, a, type))
@@ -7901,7 +7901,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__OptionStruct(struct soap *soap, const s
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__OptionStruct(struct soap *soap, const char *tag, int id, const struct cwmp__OptionStruct *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__OptionStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct cwmp__OptionStruct *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_cwmp__OptionStruct), type))
 		return soap->error;
@@ -7922,7 +7922,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__OptionStruct(struct soap *soap, const c
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct cwmp__OptionStruct * SOAP_FMAC4 soap_get_cwmp__OptionStruct(struct soap *soap, struct cwmp__OptionStruct *p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__OptionStruct * SOAP_FMAC4 soap_get_cwmp__OptionStruct(__attribute__((unused)) struct soap *soap, struct cwmp__OptionStruct *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_cwmp__OptionStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -7930,7 +7930,7 @@ SOAP_FMAC3 struct cwmp__OptionStruct * SOAP_FMAC4 soap_get_cwmp__OptionStruct(st
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__OptionStruct * SOAP_FMAC4 soap_in_cwmp__OptionStruct(struct soap *soap, const char *tag, struct cwmp__OptionStruct *a, const char *type)
+SOAP_FMAC3 struct cwmp__OptionStruct * SOAP_FMAC4 soap_in_cwmp__OptionStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__OptionStruct *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_OptionName = 1, soap_flag_VoucherSN = 1, soap_flag_State = 1, soap_flag_Mode = 1, soap_flag_StartDate = 1, soap_flag_ExpirationDate = 1, soap_flag_IsTransferable = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -8000,13 +8000,13 @@ SOAP_FMAC3 struct cwmp__OptionStruct * SOAP_FMAC4 soap_in_cwmp__OptionStruct(str
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_VoucherList(struct soap *soap, struct VoucherList *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_VoucherList(__attribute__((unused)) struct soap *soap, struct VoucherList *a)
 {
 	a->__size = 0;
 	a->__ptrbase64 = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_VoucherList(struct soap *soap, struct VoucherList const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_VoucherList(__attribute__((unused)) struct soap *soap, struct VoucherList const*a)
 {
 	int i;
 	if (a->__ptrbase64 && !soap_array_reference(soap, a, (struct soap_array*)&a->__ptrbase64, 1, SOAP_TYPE_VoucherList))
@@ -8016,7 +8016,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_VoucherList(struct soap *soap, struct 
 		}
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_VoucherList(struct soap *soap, const struct VoucherList *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_VoucherList(__attribute__((unused)) struct soap *soap, const struct VoucherList *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, (struct soap_array*)&a->__ptrbase64, 1, tag, SOAP_TYPE_VoucherList);
 	if (soap_out_VoucherList(soap, tag, id, a, type))
@@ -8024,7 +8024,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_VoucherList(struct soap *soap, const struct V
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_VoucherList(struct soap *soap, const char *tag, int id, const struct VoucherList *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_VoucherList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct VoucherList *a, __attribute__((unused)) const char *type)
 {
 	int i, n = a->__size;
 	char *t = soap_putsize(soap, "SOAP-ENC:base64", a->__size);
@@ -8043,7 +8043,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_VoucherList(struct soap *soap, const char *ta
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct VoucherList * SOAP_FMAC4 soap_get_VoucherList(struct soap *soap, struct VoucherList *p, const char *tag, const char *type)
+SOAP_FMAC3 struct VoucherList * SOAP_FMAC4 soap_get_VoucherList(__attribute__((unused)) struct soap *soap, struct VoucherList *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_VoucherList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -8051,7 +8051,7 @@ SOAP_FMAC3 struct VoucherList * SOAP_FMAC4 soap_get_VoucherList(struct soap *soa
 	return p;
 }
 
-SOAP_FMAC3 struct VoucherList * SOAP_FMAC4 soap_in_VoucherList(struct soap *soap, const char *tag, struct VoucherList *a, const char *type)
+SOAP_FMAC3 struct VoucherList * SOAP_FMAC4 soap_in_VoucherList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct VoucherList *a, __attribute__((unused)) const char *type)
 {	int i, j;
 	struct SOAP_ENC__base64 **p;
 	if (soap_element_begin_in(soap, tag, 1, NULL))
@@ -8117,13 +8117,13 @@ SOAP_FMAC3 struct VoucherList * SOAP_FMAC4 soap_in_VoucherList(struct soap *soap
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_AllTransferList(struct soap *soap, struct AllTransferList *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_AllTransferList(__attribute__((unused)) struct soap *soap, struct AllTransferList *a)
 {
 	a->__size = 0;
 	a->__ptrAllQueuedTransferStruct = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_AllTransferList(struct soap *soap, struct AllTransferList const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_AllTransferList(__attribute__((unused)) struct soap *soap, struct AllTransferList const*a)
 {
 	int i;
 	if (a->__ptrAllQueuedTransferStruct && !soap_array_reference(soap, a, (struct soap_array*)&a->__ptrAllQueuedTransferStruct, 1, SOAP_TYPE_AllTransferList))
@@ -8133,7 +8133,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_AllTransferList(struct soap *soap, str
 		}
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_AllTransferList(struct soap *soap, const struct AllTransferList *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_AllTransferList(__attribute__((unused)) struct soap *soap, const struct AllTransferList *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, (struct soap_array*)&a->__ptrAllQueuedTransferStruct, 1, tag, SOAP_TYPE_AllTransferList);
 	if (soap_out_AllTransferList(soap, tag, id, a, type))
@@ -8141,7 +8141,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_AllTransferList(struct soap *soap, const stru
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_AllTransferList(struct soap *soap, const char *tag, int id, const struct AllTransferList *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_AllTransferList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct AllTransferList *a, __attribute__((unused)) const char *type)
 {
 	int i, n = a->__size;
 	char *t = soap_putsize(soap, "cwmp:AllQueuedTransferStruct", a->__size);
@@ -8160,7 +8160,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_AllTransferList(struct soap *soap, const char
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct AllTransferList * SOAP_FMAC4 soap_get_AllTransferList(struct soap *soap, struct AllTransferList *p, const char *tag, const char *type)
+SOAP_FMAC3 struct AllTransferList * SOAP_FMAC4 soap_get_AllTransferList(__attribute__((unused)) struct soap *soap, struct AllTransferList *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_AllTransferList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -8168,7 +8168,7 @@ SOAP_FMAC3 struct AllTransferList * SOAP_FMAC4 soap_get_AllTransferList(struct s
 	return p;
 }
 
-SOAP_FMAC3 struct AllTransferList * SOAP_FMAC4 soap_in_AllTransferList(struct soap *soap, const char *tag, struct AllTransferList *a, const char *type)
+SOAP_FMAC3 struct AllTransferList * SOAP_FMAC4 soap_in_AllTransferList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct AllTransferList *a, __attribute__((unused)) const char *type)
 {	int i, j;
 	struct cwmp__AllQueuedTransferStruct **p;
 	if (soap_element_begin_in(soap, tag, 1, NULL))
@@ -8234,7 +8234,7 @@ SOAP_FMAC3 struct AllTransferList * SOAP_FMAC4 soap_in_AllTransferList(struct so
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__AllQueuedTransferStruct(struct soap *soap, struct cwmp__AllQueuedTransferStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__AllQueuedTransferStruct(__attribute__((unused)) struct soap *soap, struct cwmp__AllQueuedTransferStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_cwmp__CommandKeyType(soap, &a->CommandKey);
@@ -8245,7 +8245,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__AllQueuedTransferStruct(struct soa
 	soap_default_string(soap, &a->TargetFileName);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__AllQueuedTransferStruct(struct soap *soap, const struct cwmp__AllQueuedTransferStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__AllQueuedTransferStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__AllQueuedTransferStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_cwmp__CommandKeyType(soap, &a->CommandKey);
@@ -8253,7 +8253,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__AllQueuedTransferStruct(struct s
 	soap_serialize_string(soap, &a->TargetFileName);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__AllQueuedTransferStruct(struct soap *soap, const struct cwmp__AllQueuedTransferStruct *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__AllQueuedTransferStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__AllQueuedTransferStruct *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_cwmp__AllQueuedTransferStruct);
 	if (soap_out_cwmp__AllQueuedTransferStruct(soap, tag, id, a, type))
@@ -8261,7 +8261,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__AllQueuedTransferStruct(struct soap *so
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__AllQueuedTransferStruct(struct soap *soap, const char *tag, int id, const struct cwmp__AllQueuedTransferStruct *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__AllQueuedTransferStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct cwmp__AllQueuedTransferStruct *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_cwmp__AllQueuedTransferStruct), type))
 		return soap->error;
@@ -8280,7 +8280,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__AllQueuedTransferStruct(struct soap *so
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct * SOAP_FMAC4 soap_get_cwmp__AllQueuedTransferStruct(struct soap *soap, struct cwmp__AllQueuedTransferStruct *p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct * SOAP_FMAC4 soap_get_cwmp__AllQueuedTransferStruct(__attribute__((unused)) struct soap *soap, struct cwmp__AllQueuedTransferStruct *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_cwmp__AllQueuedTransferStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -8288,7 +8288,7 @@ SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct * SOAP_FMAC4 soap_get_cwmp__AllQ
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct * SOAP_FMAC4 soap_in_cwmp__AllQueuedTransferStruct(struct soap *soap, const char *tag, struct cwmp__AllQueuedTransferStruct *a, const char *type)
+SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct * SOAP_FMAC4 soap_in_cwmp__AllQueuedTransferStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__AllQueuedTransferStruct *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_CommandKey = 1, soap_flag_State = 1, soap_flag_IsDownload = 1, soap_flag_FileType = 1, soap_flag_FileSize = 1, soap_flag_TargetFileName = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -8353,13 +8353,13 @@ SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct * SOAP_FMAC4 soap_in_cwmp__AllQu
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_TransferList(struct soap *soap, struct TransferList *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_TransferList(__attribute__((unused)) struct soap *soap, struct TransferList *a)
 {
 	a->__size = 0;
 	a->__ptrQueuedTransferStruct = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_TransferList(struct soap *soap, struct TransferList const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_TransferList(__attribute__((unused)) struct soap *soap, struct TransferList const*a)
 {
 	int i;
 	if (a->__ptrQueuedTransferStruct && !soap_array_reference(soap, a, (struct soap_array*)&a->__ptrQueuedTransferStruct, 1, SOAP_TYPE_TransferList))
@@ -8369,7 +8369,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_TransferList(struct soap *soap, struct
 		}
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_TransferList(struct soap *soap, const struct TransferList *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_TransferList(__attribute__((unused)) struct soap *soap, const struct TransferList *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, (struct soap_array*)&a->__ptrQueuedTransferStruct, 1, tag, SOAP_TYPE_TransferList);
 	if (soap_out_TransferList(soap, tag, id, a, type))
@@ -8377,7 +8377,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_TransferList(struct soap *soap, const struct 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_TransferList(struct soap *soap, const char *tag, int id, const struct TransferList *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_TransferList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct TransferList *a, __attribute__((unused)) const char *type)
 {
 	int i, n = a->__size;
 	char *t = soap_putsize(soap, "cwmp:QueuedTransferStruct", a->__size);
@@ -8396,7 +8396,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_TransferList(struct soap *soap, const char *t
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct TransferList * SOAP_FMAC4 soap_get_TransferList(struct soap *soap, struct TransferList *p, const char *tag, const char *type)
+SOAP_FMAC3 struct TransferList * SOAP_FMAC4 soap_get_TransferList(__attribute__((unused)) struct soap *soap, struct TransferList *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_TransferList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -8404,7 +8404,7 @@ SOAP_FMAC3 struct TransferList * SOAP_FMAC4 soap_get_TransferList(struct soap *s
 	return p;
 }
 
-SOAP_FMAC3 struct TransferList * SOAP_FMAC4 soap_in_TransferList(struct soap *soap, const char *tag, struct TransferList *a, const char *type)
+SOAP_FMAC3 struct TransferList * SOAP_FMAC4 soap_in_TransferList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct TransferList *a, __attribute__((unused)) const char *type)
 {	int i, j;
 	struct cwmp__QueuedTransferStruct **p;
 	if (soap_element_begin_in(soap, tag, 1, NULL))
@@ -8470,20 +8470,20 @@ SOAP_FMAC3 struct TransferList * SOAP_FMAC4 soap_in_TransferList(struct soap *so
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__QueuedTransferStruct(struct soap *soap, struct cwmp__QueuedTransferStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__QueuedTransferStruct(__attribute__((unused)) struct soap *soap, struct cwmp__QueuedTransferStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_cwmp__CommandKeyType(soap, &a->CommandKey);
 	soap_default__cwmp__QueuedTransferStruct_State(soap, &a->State);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__QueuedTransferStruct(struct soap *soap, const struct cwmp__QueuedTransferStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__QueuedTransferStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__QueuedTransferStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_cwmp__CommandKeyType(soap, &a->CommandKey);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__QueuedTransferStruct(struct soap *soap, const struct cwmp__QueuedTransferStruct *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__QueuedTransferStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__QueuedTransferStruct *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_cwmp__QueuedTransferStruct);
 	if (soap_out_cwmp__QueuedTransferStruct(soap, tag, id, a, type))
@@ -8491,7 +8491,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__QueuedTransferStruct(struct soap *soap,
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__QueuedTransferStruct(struct soap *soap, const char *tag, int id, const struct cwmp__QueuedTransferStruct *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__QueuedTransferStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct cwmp__QueuedTransferStruct *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_cwmp__QueuedTransferStruct), type))
 		return soap->error;
@@ -8502,7 +8502,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__QueuedTransferStruct(struct soap *soap,
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct cwmp__QueuedTransferStruct * SOAP_FMAC4 soap_get_cwmp__QueuedTransferStruct(struct soap *soap, struct cwmp__QueuedTransferStruct *p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__QueuedTransferStruct * SOAP_FMAC4 soap_get_cwmp__QueuedTransferStruct(__attribute__((unused)) struct soap *soap, struct cwmp__QueuedTransferStruct *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_cwmp__QueuedTransferStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -8510,7 +8510,7 @@ SOAP_FMAC3 struct cwmp__QueuedTransferStruct * SOAP_FMAC4 soap_get_cwmp__QueuedT
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__QueuedTransferStruct * SOAP_FMAC4 soap_in_cwmp__QueuedTransferStruct(struct soap *soap, const char *tag, struct cwmp__QueuedTransferStruct *a, const char *type)
+SOAP_FMAC3 struct cwmp__QueuedTransferStruct * SOAP_FMAC4 soap_in_cwmp__QueuedTransferStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__QueuedTransferStruct *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_CommandKey = 1, soap_flag_State = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -8555,13 +8555,13 @@ SOAP_FMAC3 struct cwmp__QueuedTransferStruct * SOAP_FMAC4 soap_in_cwmp__QueuedTr
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_ParameterAttributeList(struct soap *soap, struct ParameterAttributeList *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_ParameterAttributeList(__attribute__((unused)) struct soap *soap, struct ParameterAttributeList *a)
 {
 	a->__size = 0;
 	a->__ptrParameterAttributeStruct = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_ParameterAttributeList(struct soap *soap, struct ParameterAttributeList const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_ParameterAttributeList(__attribute__((unused)) struct soap *soap, struct ParameterAttributeList const*a)
 {
 	int i;
 	if (a->__ptrParameterAttributeStruct && !soap_array_reference(soap, a, (struct soap_array*)&a->__ptrParameterAttributeStruct, 1, SOAP_TYPE_ParameterAttributeList))
@@ -8571,7 +8571,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_ParameterAttributeList(struct soap *so
 		}
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_ParameterAttributeList(struct soap *soap, const struct ParameterAttributeList *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_ParameterAttributeList(__attribute__((unused)) struct soap *soap, const struct ParameterAttributeList *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, (struct soap_array*)&a->__ptrParameterAttributeStruct, 1, tag, SOAP_TYPE_ParameterAttributeList);
 	if (soap_out_ParameterAttributeList(soap, tag, id, a, type))
@@ -8579,7 +8579,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_ParameterAttributeList(struct soap *soap, con
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_ParameterAttributeList(struct soap *soap, const char *tag, int id, const struct ParameterAttributeList *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_ParameterAttributeList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct ParameterAttributeList *a, __attribute__((unused)) const char *type)
 {
 	int i, n = a->__size;
 	char *t = soap_putsize(soap, "cwmp:ParameterAttributeStruct", a->__size);
@@ -8598,7 +8598,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_ParameterAttributeList(struct soap *soap, con
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct ParameterAttributeList * SOAP_FMAC4 soap_get_ParameterAttributeList(struct soap *soap, struct ParameterAttributeList *p, const char *tag, const char *type)
+SOAP_FMAC3 struct ParameterAttributeList * SOAP_FMAC4 soap_get_ParameterAttributeList(__attribute__((unused)) struct soap *soap, struct ParameterAttributeList *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_ParameterAttributeList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -8606,7 +8606,7 @@ SOAP_FMAC3 struct ParameterAttributeList * SOAP_FMAC4 soap_get_ParameterAttribut
 	return p;
 }
 
-SOAP_FMAC3 struct ParameterAttributeList * SOAP_FMAC4 soap_in_ParameterAttributeList(struct soap *soap, const char *tag, struct ParameterAttributeList *a, const char *type)
+SOAP_FMAC3 struct ParameterAttributeList * SOAP_FMAC4 soap_in_ParameterAttributeList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct ParameterAttributeList *a, __attribute__((unused)) const char *type)
 {	int i, j;
 	struct cwmp__ParameterAttributeStruct **p;
 	if (soap_element_begin_in(soap, tag, 1, NULL))
@@ -8672,7 +8672,7 @@ SOAP_FMAC3 struct ParameterAttributeList * SOAP_FMAC4 soap_in_ParameterAttribute
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__ParameterAttributeStruct(struct soap *soap, struct cwmp__ParameterAttributeStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__ParameterAttributeStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterAttributeStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_string(soap, &a->Name);
@@ -8680,14 +8680,14 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__ParameterAttributeStruct(struct so
 	a->AccessList_ = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__ParameterAttributeStruct(struct soap *soap, const struct cwmp__ParameterAttributeStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__ParameterAttributeStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__ParameterAttributeStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_string(soap, &a->Name);
 	soap_serialize_PointerToAccessList(soap, &a->AccessList_);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ParameterAttributeStruct(struct soap *soap, const struct cwmp__ParameterAttributeStruct *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ParameterAttributeStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__ParameterAttributeStruct *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_cwmp__ParameterAttributeStruct);
 	if (soap_out_cwmp__ParameterAttributeStruct(soap, tag, id, a, type))
@@ -8695,7 +8695,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ParameterAttributeStruct(struct soap *s
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ParameterAttributeStruct(struct soap *soap, const char *tag, int id, const struct cwmp__ParameterAttributeStruct *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ParameterAttributeStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct cwmp__ParameterAttributeStruct *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_cwmp__ParameterAttributeStruct), type))
 		return soap->error;
@@ -8708,7 +8708,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ParameterAttributeStruct(struct soap *s
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct cwmp__ParameterAttributeStruct * SOAP_FMAC4 soap_get_cwmp__ParameterAttributeStruct(struct soap *soap, struct cwmp__ParameterAttributeStruct *p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterAttributeStruct * SOAP_FMAC4 soap_get_cwmp__ParameterAttributeStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterAttributeStruct *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_cwmp__ParameterAttributeStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -8716,7 +8716,7 @@ SOAP_FMAC3 struct cwmp__ParameterAttributeStruct * SOAP_FMAC4 soap_get_cwmp__Par
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__ParameterAttributeStruct * SOAP_FMAC4 soap_in_cwmp__ParameterAttributeStruct(struct soap *soap, const char *tag, struct cwmp__ParameterAttributeStruct *a, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterAttributeStruct * SOAP_FMAC4 soap_in_cwmp__ParameterAttributeStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__ParameterAttributeStruct *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_Name = 1, soap_flag_Notification = 1, soap_flag_AccessList_ = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -8766,13 +8766,13 @@ SOAP_FMAC3 struct cwmp__ParameterAttributeStruct * SOAP_FMAC4 soap_in_cwmp__Para
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_SetParameterAttributesList(struct soap *soap, struct SetParameterAttributesList *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_SetParameterAttributesList(__attribute__((unused)) struct soap *soap, struct SetParameterAttributesList *a)
 {
 	a->__size = 0;
 	a->__ptrSetParameterAttributesStruct = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SetParameterAttributesList(struct soap *soap, struct SetParameterAttributesList const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SetParameterAttributesList(__attribute__((unused)) struct soap *soap, struct SetParameterAttributesList const*a)
 {
 	int i;
 	if (a->__ptrSetParameterAttributesStruct && !soap_array_reference(soap, a, (struct soap_array*)&a->__ptrSetParameterAttributesStruct, 1, SOAP_TYPE_SetParameterAttributesList))
@@ -8782,7 +8782,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SetParameterAttributesList(struct soap
 		}
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_SetParameterAttributesList(struct soap *soap, const struct SetParameterAttributesList *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_SetParameterAttributesList(__attribute__((unused)) struct soap *soap, const struct SetParameterAttributesList *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, (struct soap_array*)&a->__ptrSetParameterAttributesStruct, 1, tag, SOAP_TYPE_SetParameterAttributesList);
 	if (soap_out_SetParameterAttributesList(soap, tag, id, a, type))
@@ -8790,7 +8790,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_SetParameterAttributesList(struct soap *soap,
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_SetParameterAttributesList(struct soap *soap, const char *tag, int id, const struct SetParameterAttributesList *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_SetParameterAttributesList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct SetParameterAttributesList *a, __attribute__((unused)) const char *type)
 {
 	int i, n = a->__size;
 	char *t = soap_putsize(soap, "cwmp:SetParameterAttributesStruct", a->__size);
@@ -8809,7 +8809,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_SetParameterAttributesList(struct soap *soap,
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct SetParameterAttributesList * SOAP_FMAC4 soap_get_SetParameterAttributesList(struct soap *soap, struct SetParameterAttributesList *p, const char *tag, const char *type)
+SOAP_FMAC3 struct SetParameterAttributesList * SOAP_FMAC4 soap_get_SetParameterAttributesList(__attribute__((unused)) struct soap *soap, struct SetParameterAttributesList *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_SetParameterAttributesList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -8817,7 +8817,7 @@ SOAP_FMAC3 struct SetParameterAttributesList * SOAP_FMAC4 soap_get_SetParameterA
 	return p;
 }
 
-SOAP_FMAC3 struct SetParameterAttributesList * SOAP_FMAC4 soap_in_SetParameterAttributesList(struct soap *soap, const char *tag, struct SetParameterAttributesList *a, const char *type)
+SOAP_FMAC3 struct SetParameterAttributesList * SOAP_FMAC4 soap_in_SetParameterAttributesList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct SetParameterAttributesList *a, __attribute__((unused)) const char *type)
 {	int i, j;
 	struct cwmp__SetParameterAttributesStruct **p;
 	if (soap_element_begin_in(soap, tag, 1, NULL))
@@ -8883,7 +8883,7 @@ SOAP_FMAC3 struct SetParameterAttributesList * SOAP_FMAC4 soap_in_SetParameterAt
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__SetParameterAttributesStruct(struct soap *soap, struct cwmp__SetParameterAttributesStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__SetParameterAttributesStruct(__attribute__((unused)) struct soap *soap, struct cwmp__SetParameterAttributesStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	a->Name = NULL;
@@ -8893,14 +8893,14 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__SetParameterAttributesStruct(struc
 	a->AccessList_ = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__SetParameterAttributesStruct(struct soap *soap, const struct cwmp__SetParameterAttributesStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__SetParameterAttributesStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__SetParameterAttributesStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_PointerTostring(soap, &a->Name);
 	soap_serialize_PointerToAccessList(soap, &a->AccessList_);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__SetParameterAttributesStruct(struct soap *soap, const struct cwmp__SetParameterAttributesStruct *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__SetParameterAttributesStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__SetParameterAttributesStruct *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_cwmp__SetParameterAttributesStruct);
 	if (soap_out_cwmp__SetParameterAttributesStruct(soap, tag, id, a, type))
@@ -8908,7 +8908,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__SetParameterAttributesStruct(struct soa
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__SetParameterAttributesStruct(struct soap *soap, const char *tag, int id, const struct cwmp__SetParameterAttributesStruct *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__SetParameterAttributesStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct cwmp__SetParameterAttributesStruct *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_cwmp__SetParameterAttributesStruct), type))
 		return soap->error;
@@ -8925,7 +8925,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__SetParameterAttributesStruct(struct soa
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct * SOAP_FMAC4 soap_get_cwmp__SetParameterAttributesStruct(struct soap *soap, struct cwmp__SetParameterAttributesStruct *p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct * SOAP_FMAC4 soap_get_cwmp__SetParameterAttributesStruct(__attribute__((unused)) struct soap *soap, struct cwmp__SetParameterAttributesStruct *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_cwmp__SetParameterAttributesStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -8933,7 +8933,7 @@ SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct * SOAP_FMAC4 soap_get_cwmp_
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct * SOAP_FMAC4 soap_in_cwmp__SetParameterAttributesStruct(struct soap *soap, const char *tag, struct cwmp__SetParameterAttributesStruct *a, const char *type)
+SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct * SOAP_FMAC4 soap_in_cwmp__SetParameterAttributesStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__SetParameterAttributesStruct *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_Name = 1, soap_flag_NotificationChange = 1, soap_flag_Notification = 1, soap_flag_AccessListChange = 1, soap_flag_AccessList_ = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -8993,13 +8993,13 @@ SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct * SOAP_FMAC4 soap_in_cwmp__
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_AccessList(struct soap *soap, struct AccessList *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_AccessList(__attribute__((unused)) struct soap *soap, struct AccessList *a)
 {
 	a->__size = 0;
 	a->__ptrstring = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_AccessList(struct soap *soap, struct AccessList const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_AccessList(__attribute__((unused)) struct soap *soap, struct AccessList const*a)
 {
 	int i;
 	if (a->__ptrstring && !soap_array_reference(soap, a, (struct soap_array*)&a->__ptrstring, 1, SOAP_TYPE_AccessList))
@@ -9009,7 +9009,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_AccessList(struct soap *soap, struct A
 		}
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_AccessList(struct soap *soap, const struct AccessList *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_AccessList(__attribute__((unused)) struct soap *soap, const struct AccessList *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, (struct soap_array*)&a->__ptrstring, 1, tag, SOAP_TYPE_AccessList);
 	if (soap_out_AccessList(soap, tag, id, a, type))
@@ -9017,7 +9017,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_AccessList(struct soap *soap, const struct Ac
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_AccessList(struct soap *soap, const char *tag, int id, const struct AccessList *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_AccessList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct AccessList *a, __attribute__((unused)) const char *type)
 {
 	int i, n = a->__size;
 	char *t = soap_putsize(soap, "xsd:string", a->__size);
@@ -9036,7 +9036,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_AccessList(struct soap *soap, const char *tag
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct AccessList * SOAP_FMAC4 soap_get_AccessList(struct soap *soap, struct AccessList *p, const char *tag, const char *type)
+SOAP_FMAC3 struct AccessList * SOAP_FMAC4 soap_get_AccessList(__attribute__((unused)) struct soap *soap, struct AccessList *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_AccessList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -9044,7 +9044,7 @@ SOAP_FMAC3 struct AccessList * SOAP_FMAC4 soap_get_AccessList(struct soap *soap,
 	return p;
 }
 
-SOAP_FMAC3 struct AccessList * SOAP_FMAC4 soap_in_AccessList(struct soap *soap, const char *tag, struct AccessList *a, const char *type)
+SOAP_FMAC3 struct AccessList * SOAP_FMAC4 soap_in_AccessList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct AccessList *a, __attribute__((unused)) const char *type)
 {	int i, j;
 	char **p;
 	if (soap_element_begin_in(soap, tag, 1, NULL))
@@ -9110,13 +9110,13 @@ SOAP_FMAC3 struct AccessList * SOAP_FMAC4 soap_in_AccessList(struct soap *soap, 
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_ParameterNames(struct soap *soap, struct ParameterNames *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_ParameterNames(__attribute__((unused)) struct soap *soap, struct ParameterNames *a)
 {
 	a->__size = 0;
 	a->__ptrstring = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_ParameterNames(struct soap *soap, struct ParameterNames const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_ParameterNames(__attribute__((unused)) struct soap *soap, struct ParameterNames const*a)
 {
 	int i;
 	if (a->__ptrstring && !soap_array_reference(soap, a, (struct soap_array*)&a->__ptrstring, 1, SOAP_TYPE_ParameterNames))
@@ -9126,7 +9126,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_ParameterNames(struct soap *soap, stru
 		}
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_ParameterNames(struct soap *soap, const struct ParameterNames *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_ParameterNames(__attribute__((unused)) struct soap *soap, const struct ParameterNames *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, (struct soap_array*)&a->__ptrstring, 1, tag, SOAP_TYPE_ParameterNames);
 	if (soap_out_ParameterNames(soap, tag, id, a, type))
@@ -9134,7 +9134,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_ParameterNames(struct soap *soap, const struc
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_ParameterNames(struct soap *soap, const char *tag, int id, const struct ParameterNames *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_ParameterNames(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct ParameterNames *a, __attribute__((unused)) const char *type)
 {
 	int i, n = a->__size;
 	char *t = soap_putsize(soap, "xsd:string", a->__size);
@@ -9155,7 +9155,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_ParameterNames(struct soap *soap, const char 
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct ParameterNames * SOAP_FMAC4 soap_get_ParameterNames(struct soap *soap, struct ParameterNames *p, const char *tag, const char *type)
+SOAP_FMAC3 struct ParameterNames * SOAP_FMAC4 soap_get_ParameterNames(__attribute__((unused)) struct soap *soap, struct ParameterNames *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_ParameterNames(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -9163,7 +9163,7 @@ SOAP_FMAC3 struct ParameterNames * SOAP_FMAC4 soap_get_ParameterNames(struct soa
 	return p;
 }
 
-SOAP_FMAC3 struct ParameterNames * SOAP_FMAC4 soap_in_ParameterNames(struct soap *soap, const char *tag, struct ParameterNames *a, const char *type)
+SOAP_FMAC3 struct ParameterNames * SOAP_FMAC4 soap_in_ParameterNames(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct ParameterNames *a, __attribute__((unused)) const char *type)
 {	int i, j;
 	char **p;
 	if (soap_element_begin_in(soap, tag, 1, NULL))
@@ -9229,13 +9229,13 @@ SOAP_FMAC3 struct ParameterNames * SOAP_FMAC4 soap_in_ParameterNames(struct soap
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_ParameterInfoList(struct soap *soap, struct ParameterInfoList *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_ParameterInfoList(__attribute__((unused)) struct soap *soap, struct ParameterInfoList *a)
 {
 	a->__size = 0;
 	a->__ptrParameterInfoStruct = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_ParameterInfoList(struct soap *soap, struct ParameterInfoList const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_ParameterInfoList(__attribute__((unused)) struct soap *soap, struct ParameterInfoList const*a)
 {
 	int i;
 	if (a->__ptrParameterInfoStruct && !soap_array_reference(soap, a, (struct soap_array*)&a->__ptrParameterInfoStruct, 1, SOAP_TYPE_ParameterInfoList))
@@ -9245,7 +9245,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_ParameterInfoList(struct soap *soap, s
 		}
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_ParameterInfoList(struct soap *soap, const struct ParameterInfoList *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_ParameterInfoList(__attribute__((unused)) struct soap *soap, const struct ParameterInfoList *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, (struct soap_array*)&a->__ptrParameterInfoStruct, 1, tag, SOAP_TYPE_ParameterInfoList);
 	if (soap_out_ParameterInfoList(soap, tag, id, a, type))
@@ -9253,7 +9253,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_ParameterInfoList(struct soap *soap, const st
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_ParameterInfoList(struct soap *soap, const char *tag, int id, const struct ParameterInfoList *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_ParameterInfoList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct ParameterInfoList *a, __attribute__((unused)) const char *type)
 {
 	int i, n = a->__size;
 	char *t = soap_putsize(soap, "cwmp:ParameterInfoStruct", a->__size);
@@ -9272,7 +9272,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_ParameterInfoList(struct soap *soap, const ch
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct ParameterInfoList * SOAP_FMAC4 soap_get_ParameterInfoList(struct soap *soap, struct ParameterInfoList *p, const char *tag, const char *type)
+SOAP_FMAC3 struct ParameterInfoList * SOAP_FMAC4 soap_get_ParameterInfoList(__attribute__((unused)) struct soap *soap, struct ParameterInfoList *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_ParameterInfoList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -9280,7 +9280,7 @@ SOAP_FMAC3 struct ParameterInfoList * SOAP_FMAC4 soap_get_ParameterInfoList(stru
 	return p;
 }
 
-SOAP_FMAC3 struct ParameterInfoList * SOAP_FMAC4 soap_in_ParameterInfoList(struct soap *soap, const char *tag, struct ParameterInfoList *a, const char *type)
+SOAP_FMAC3 struct ParameterInfoList * SOAP_FMAC4 soap_in_ParameterInfoList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct ParameterInfoList *a, __attribute__((unused)) const char *type)
 {	int i, j;
 	struct cwmp__ParameterInfoStruct **p;
 	if (soap_element_begin_in(soap, tag, 1, NULL))
@@ -9346,20 +9346,20 @@ SOAP_FMAC3 struct ParameterInfoList * SOAP_FMAC4 soap_in_ParameterInfoList(struc
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__ParameterInfoStruct(struct soap *soap, struct cwmp__ParameterInfoStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__ParameterInfoStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterInfoStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_string(soap, &a->Name);
 	soap_default_xsd__boolean(soap, &a->Writable);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__ParameterInfoStruct(struct soap *soap, const struct cwmp__ParameterInfoStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__ParameterInfoStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__ParameterInfoStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_string(soap, &a->Name);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ParameterInfoStruct(struct soap *soap, const struct cwmp__ParameterInfoStruct *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ParameterInfoStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__ParameterInfoStruct *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_cwmp__ParameterInfoStruct);
 	if (soap_out_cwmp__ParameterInfoStruct(soap, tag, id, a, type))
@@ -9367,7 +9367,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ParameterInfoStruct(struct soap *soap, 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ParameterInfoStruct(struct soap *soap, const char *tag, int id, const struct cwmp__ParameterInfoStruct *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ParameterInfoStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct cwmp__ParameterInfoStruct *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_cwmp__ParameterInfoStruct), type))
 		return soap->error;
@@ -9378,7 +9378,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ParameterInfoStruct(struct soap *soap, 
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct cwmp__ParameterInfoStruct * SOAP_FMAC4 soap_get_cwmp__ParameterInfoStruct(struct soap *soap, struct cwmp__ParameterInfoStruct *p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterInfoStruct * SOAP_FMAC4 soap_get_cwmp__ParameterInfoStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterInfoStruct *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_cwmp__ParameterInfoStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -9386,7 +9386,7 @@ SOAP_FMAC3 struct cwmp__ParameterInfoStruct * SOAP_FMAC4 soap_get_cwmp__Paramete
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__ParameterInfoStruct * SOAP_FMAC4 soap_in_cwmp__ParameterInfoStruct(struct soap *soap, const char *tag, struct cwmp__ParameterInfoStruct *a, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterInfoStruct * SOAP_FMAC4 soap_in_cwmp__ParameterInfoStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__ParameterInfoStruct *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_Name = 1, soap_flag_Writable = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -9431,13 +9431,13 @@ SOAP_FMAC3 struct cwmp__ParameterInfoStruct * SOAP_FMAC4 soap_in_cwmp__Parameter
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_ParameterValueList(struct soap *soap, struct ParameterValueList *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_ParameterValueList(__attribute__((unused)) struct soap *soap, struct ParameterValueList *a)
 {
 	a->__size = 0;
 	a->__ptrParameterValueStruct = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_ParameterValueList(struct soap *soap, struct ParameterValueList const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_ParameterValueList(__attribute__((unused)) struct soap *soap, struct ParameterValueList const*a)
 {
 	int i;
 	if (a->__ptrParameterValueStruct && !soap_array_reference(soap, a, (struct soap_array*)&a->__ptrParameterValueStruct, 1, SOAP_TYPE_ParameterValueList))
@@ -9447,7 +9447,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_ParameterValueList(struct soap *soap, 
 		}
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_ParameterValueList(struct soap *soap, const struct ParameterValueList *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_ParameterValueList(__attribute__((unused)) struct soap *soap, const struct ParameterValueList *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, (struct soap_array*)&a->__ptrParameterValueStruct, 1, tag, SOAP_TYPE_ParameterValueList);
 	if (soap_out_ParameterValueList(soap, tag, id, a, type))
@@ -9455,7 +9455,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_ParameterValueList(struct soap *soap, const s
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_ParameterValueList(struct soap *soap, const char *tag, int id, const struct ParameterValueList *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_ParameterValueList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct ParameterValueList *a, __attribute__((unused)) const char *type)
 {
 	int i, n = a->__size;
 	char *t = soap_putsize(soap, "cwmp:ParameterValueStruct", a->__size);
@@ -9474,7 +9474,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_ParameterValueList(struct soap *soap, const c
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct ParameterValueList * SOAP_FMAC4 soap_get_ParameterValueList(struct soap *soap, struct ParameterValueList *p, const char *tag, const char *type)
+SOAP_FMAC3 struct ParameterValueList * SOAP_FMAC4 soap_get_ParameterValueList(__attribute__((unused)) struct soap *soap, struct ParameterValueList *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_ParameterValueList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -9482,7 +9482,7 @@ SOAP_FMAC3 struct ParameterValueList * SOAP_FMAC4 soap_get_ParameterValueList(st
 	return p;
 }
 
-SOAP_FMAC3 struct ParameterValueList * SOAP_FMAC4 soap_in_ParameterValueList(struct soap *soap, const char *tag, struct ParameterValueList *a, const char *type)
+SOAP_FMAC3 struct ParameterValueList * SOAP_FMAC4 soap_in_ParameterValueList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct ParameterValueList *a, __attribute__((unused)) const char *type)
 {	int i, j;
 	struct cwmp__ParameterValueStruct **p;
 	if (soap_element_begin_in(soap, tag, 1, NULL))
@@ -9548,7 +9548,7 @@ SOAP_FMAC3 struct ParameterValueList * SOAP_FMAC4 soap_in_ParameterValueList(str
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__ParameterValueStruct(struct soap *soap, struct cwmp__ParameterValueStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__ParameterValueStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterValueStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_string(soap, &a->Name);
@@ -9556,14 +9556,14 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__ParameterValueStruct(struct soap *
 	a->Value = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__ParameterValueStruct(struct soap *soap, const struct cwmp__ParameterValueStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__ParameterValueStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__ParameterValueStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_string(soap, &a->Name);
 	soap_markelement(soap, a->Value, a->__type);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ParameterValueStruct(struct soap *soap, const struct cwmp__ParameterValueStruct *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ParameterValueStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__ParameterValueStruct *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_cwmp__ParameterValueStruct);
 	if (soap_out_cwmp__ParameterValueStruct(soap, tag, id, a, type))
@@ -9571,7 +9571,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ParameterValueStruct(struct soap *soap,
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ParameterValueStruct(struct soap *soap, const char *tag, int id, const struct cwmp__ParameterValueStruct *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ParameterValueStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct cwmp__ParameterValueStruct *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_cwmp__ParameterValueStruct), type))
 		return soap->error;
@@ -9582,7 +9582,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ParameterValueStruct(struct soap *soap,
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct cwmp__ParameterValueStruct * SOAP_FMAC4 soap_get_cwmp__ParameterValueStruct(struct soap *soap, struct cwmp__ParameterValueStruct *p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterValueStruct * SOAP_FMAC4 soap_get_cwmp__ParameterValueStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterValueStruct *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_cwmp__ParameterValueStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -9590,7 +9590,7 @@ SOAP_FMAC3 struct cwmp__ParameterValueStruct * SOAP_FMAC4 soap_get_cwmp__Paramet
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__ParameterValueStruct * SOAP_FMAC4 soap_in_cwmp__ParameterValueStruct(struct soap *soap, const char *tag, struct cwmp__ParameterValueStruct *a, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterValueStruct * SOAP_FMAC4 soap_in_cwmp__ParameterValueStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__ParameterValueStruct *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_Name = 1, soap_flag_Value = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -9635,13 +9635,13 @@ SOAP_FMAC3 struct cwmp__ParameterValueStruct * SOAP_FMAC4 soap_in_cwmp__Paramete
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_EventList(struct soap *soap, struct EventList *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_EventList(__attribute__((unused)) struct soap *soap, struct EventList *a)
 {
 	a->__size = 0;
 	a->__ptrEventStruct = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_EventList(struct soap *soap, struct EventList const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_EventList(__attribute__((unused)) struct soap *soap, struct EventList const*a)
 {
 	int i;
 	if (a->__ptrEventStruct && !soap_array_reference(soap, a, (struct soap_array*)&a->__ptrEventStruct, 1, SOAP_TYPE_EventList))
@@ -9651,7 +9651,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_EventList(struct soap *soap, struct Ev
 		}
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_EventList(struct soap *soap, const struct EventList *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_EventList(__attribute__((unused)) struct soap *soap, const struct EventList *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, (struct soap_array*)&a->__ptrEventStruct, 1, tag, SOAP_TYPE_EventList);
 	if (soap_out_EventList(soap, tag, id, a, type))
@@ -9659,7 +9659,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_EventList(struct soap *soap, const struct Eve
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_EventList(struct soap *soap, const char *tag, int id, const struct EventList *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_EventList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct EventList *a, __attribute__((unused)) const char *type)
 {
 	int i, n = a->__size;
 	char *t = soap_putsize(soap, "cwmp:EventStruct", a->__size);
@@ -9678,7 +9678,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_EventList(struct soap *soap, const char *tag,
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct EventList * SOAP_FMAC4 soap_get_EventList(struct soap *soap, struct EventList *p, const char *tag, const char *type)
+SOAP_FMAC3 struct EventList * SOAP_FMAC4 soap_get_EventList(__attribute__((unused)) struct soap *soap, struct EventList *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_EventList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -9686,7 +9686,7 @@ SOAP_FMAC3 struct EventList * SOAP_FMAC4 soap_get_EventList(struct soap *soap, s
 	return p;
 }
 
-SOAP_FMAC3 struct EventList * SOAP_FMAC4 soap_in_EventList(struct soap *soap, const char *tag, struct EventList *a, const char *type)
+SOAP_FMAC3 struct EventList * SOAP_FMAC4 soap_in_EventList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct EventList *a, __attribute__((unused)) const char *type)
 {	int i, j;
 	struct cwmp__EventStruct **p;
 	if (soap_element_begin_in(soap, tag, 1, NULL))
@@ -9752,21 +9752,21 @@ SOAP_FMAC3 struct EventList * SOAP_FMAC4 soap_in_EventList(struct soap *soap, co
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__EventStruct(struct soap *soap, struct cwmp__EventStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__EventStruct(__attribute__((unused)) struct soap *soap, struct cwmp__EventStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_string(soap, &a->EventCode);
 	soap_default_cwmp__CommandKeyType(soap, &a->CommandKey);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__EventStruct(struct soap *soap, const struct cwmp__EventStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__EventStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__EventStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_string(soap, &a->EventCode);
 	soap_serialize_cwmp__CommandKeyType(soap, &a->CommandKey);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__EventStruct(struct soap *soap, const struct cwmp__EventStruct *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__EventStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__EventStruct *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_cwmp__EventStruct);
 	if (soap_out_cwmp__EventStruct(soap, tag, id, a, type))
@@ -9774,7 +9774,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__EventStruct(struct soap *soap, const st
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__EventStruct(struct soap *soap, const char *tag, int id, const struct cwmp__EventStruct *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__EventStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct cwmp__EventStruct *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_cwmp__EventStruct), type))
 		return soap->error;
@@ -9785,7 +9785,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__EventStruct(struct soap *soap, const ch
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct cwmp__EventStruct * SOAP_FMAC4 soap_get_cwmp__EventStruct(struct soap *soap, struct cwmp__EventStruct *p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__EventStruct * SOAP_FMAC4 soap_get_cwmp__EventStruct(__attribute__((unused)) struct soap *soap, struct cwmp__EventStruct *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_cwmp__EventStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -9793,7 +9793,7 @@ SOAP_FMAC3 struct cwmp__EventStruct * SOAP_FMAC4 soap_get_cwmp__EventStruct(stru
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__EventStruct * SOAP_FMAC4 soap_in_cwmp__EventStruct(struct soap *soap, const char *tag, struct cwmp__EventStruct *a, const char *type)
+SOAP_FMAC3 struct cwmp__EventStruct * SOAP_FMAC4 soap_in_cwmp__EventStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__EventStruct *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_EventCode = 1, soap_flag_CommandKey = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -9838,7 +9838,7 @@ SOAP_FMAC3 struct cwmp__EventStruct * SOAP_FMAC4 soap_in_cwmp__EventStruct(struc
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__DeviceIdStruct(struct soap *soap, struct cwmp__DeviceIdStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__DeviceIdStruct(__attribute__((unused)) struct soap *soap, struct cwmp__DeviceIdStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_string(soap, &a->Manufacturer);
@@ -9847,7 +9847,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__DeviceIdStruct(struct soap *soap, 
 	soap_default_string(soap, &a->SerialNumber);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__DeviceIdStruct(struct soap *soap, const struct cwmp__DeviceIdStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__DeviceIdStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__DeviceIdStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_string(soap, &a->Manufacturer);
@@ -9856,7 +9856,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__DeviceIdStruct(struct soap *soap
 	soap_serialize_string(soap, &a->SerialNumber);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__DeviceIdStruct(struct soap *soap, const struct cwmp__DeviceIdStruct *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__DeviceIdStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__DeviceIdStruct *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_cwmp__DeviceIdStruct);
 	if (soap_out_cwmp__DeviceIdStruct(soap, tag, id, a, type))
@@ -9864,7 +9864,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__DeviceIdStruct(struct soap *soap, const
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__DeviceIdStruct(struct soap *soap, const char *tag, int id, const struct cwmp__DeviceIdStruct *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__DeviceIdStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct cwmp__DeviceIdStruct *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_cwmp__DeviceIdStruct), type))
 		return soap->error;
@@ -9879,7 +9879,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__DeviceIdStruct(struct soap *soap, const
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct cwmp__DeviceIdStruct * SOAP_FMAC4 soap_get_cwmp__DeviceIdStruct(struct soap *soap, struct cwmp__DeviceIdStruct *p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__DeviceIdStruct * SOAP_FMAC4 soap_get_cwmp__DeviceIdStruct(__attribute__((unused)) struct soap *soap, struct cwmp__DeviceIdStruct *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_cwmp__DeviceIdStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -9887,7 +9887,7 @@ SOAP_FMAC3 struct cwmp__DeviceIdStruct * SOAP_FMAC4 soap_get_cwmp__DeviceIdStruc
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__DeviceIdStruct * SOAP_FMAC4 soap_in_cwmp__DeviceIdStruct(struct soap *soap, const char *tag, struct cwmp__DeviceIdStruct *a, const char *type)
+SOAP_FMAC3 struct cwmp__DeviceIdStruct * SOAP_FMAC4 soap_in_cwmp__DeviceIdStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__DeviceIdStruct *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_Manufacturer = 1, soap_flag_OUI = 1, soap_flag_ProductClass = 1, soap_flag_SerialNumber = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -9942,21 +9942,21 @@ SOAP_FMAC3 struct cwmp__DeviceIdStruct * SOAP_FMAC4 soap_in_cwmp__DeviceIdStruct
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__FaultStruct(struct soap *soap, struct cwmp__FaultStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__FaultStruct(__attribute__((unused)) struct soap *soap, struct cwmp__FaultStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_default_string(soap, &a->FaultCode);
 	soap_default_string(soap, &a->FaultString);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__FaultStruct(struct soap *soap, const struct cwmp__FaultStruct *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__FaultStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__FaultStruct *a)
 {
 	(void)soap; (void)a; /* appease -Wall -Werror */
 	soap_serialize_string(soap, &a->FaultCode);
 	soap_serialize_string(soap, &a->FaultString);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__FaultStruct(struct soap *soap, const struct cwmp__FaultStruct *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__FaultStruct(__attribute__((unused)) struct soap *soap, const struct cwmp__FaultStruct *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_cwmp__FaultStruct);
 	if (soap_out_cwmp__FaultStruct(soap, tag, id, a, type))
@@ -9964,7 +9964,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__FaultStruct(struct soap *soap, const st
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__FaultStruct(struct soap *soap, const char *tag, int id, const struct cwmp__FaultStruct *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__FaultStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct cwmp__FaultStruct *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_out(soap, tag, soap_embedded_id(soap, id, a, SOAP_TYPE_cwmp__FaultStruct), type))
 		return soap->error;
@@ -9975,7 +9975,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__FaultStruct(struct soap *soap, const ch
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct cwmp__FaultStruct * SOAP_FMAC4 soap_get_cwmp__FaultStruct(struct soap *soap, struct cwmp__FaultStruct *p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__FaultStruct * SOAP_FMAC4 soap_get_cwmp__FaultStruct(__attribute__((unused)) struct soap *soap, struct cwmp__FaultStruct *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_cwmp__FaultStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -9983,7 +9983,7 @@ SOAP_FMAC3 struct cwmp__FaultStruct * SOAP_FMAC4 soap_get_cwmp__FaultStruct(stru
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__FaultStruct * SOAP_FMAC4 soap_in_cwmp__FaultStruct(struct soap *soap, const char *tag, struct cwmp__FaultStruct *a, const char *type)
+SOAP_FMAC3 struct cwmp__FaultStruct * SOAP_FMAC4 soap_in_cwmp__FaultStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__FaultStruct *a, __attribute__((unused)) const char *type)
 {
 	short soap_flag_FaultCode = 1, soap_flag_FaultString = 1;
 	if (soap_element_begin_in(soap, tag, 0, type))
@@ -10028,13 +10028,13 @@ SOAP_FMAC3 struct cwmp__FaultStruct * SOAP_FMAC4 soap_in_cwmp__FaultStruct(struc
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_MethodList(struct soap *soap, struct MethodList *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_MethodList(__attribute__((unused)) struct soap *soap, struct MethodList *a)
 {
 	a->__size = 0;
 	a->__ptrstring = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_MethodList(struct soap *soap, struct MethodList const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_MethodList(__attribute__((unused)) struct soap *soap, struct MethodList const*a)
 {
 	int i;
 	if (a->__ptrstring && !soap_array_reference(soap, a, (struct soap_array*)&a->__ptrstring, 1, SOAP_TYPE_MethodList))
@@ -10044,7 +10044,7 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_MethodList(struct soap *soap, struct M
 		}
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_MethodList(struct soap *soap, const struct MethodList *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_MethodList(__attribute__((unused)) struct soap *soap, const struct MethodList *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, (struct soap_array*)&a->__ptrstring, 1, tag, SOAP_TYPE_MethodList);
 	if (soap_out_MethodList(soap, tag, id, a, type))
@@ -10052,7 +10052,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_MethodList(struct soap *soap, const struct Me
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_MethodList(struct soap *soap, const char *tag, int id, const struct MethodList *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_MethodList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct MethodList *a, __attribute__((unused)) const char *type)
 {
 	int i, n = a->__size;
 	char *t = soap_putsize(soap, "xsd:string", a->__size);
@@ -10071,7 +10071,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_MethodList(struct soap *soap, const char *tag
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct MethodList * SOAP_FMAC4 soap_get_MethodList(struct soap *soap, struct MethodList *p, const char *tag, const char *type)
+SOAP_FMAC3 struct MethodList * SOAP_FMAC4 soap_get_MethodList(__attribute__((unused)) struct soap *soap, struct MethodList *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_MethodList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -10079,7 +10079,7 @@ SOAP_FMAC3 struct MethodList * SOAP_FMAC4 soap_get_MethodList(struct soap *soap,
 	return p;
 }
 
-SOAP_FMAC3 struct MethodList * SOAP_FMAC4 soap_in_MethodList(struct soap *soap, const char *tag, struct MethodList *a, const char *type)
+SOAP_FMAC3 struct MethodList * SOAP_FMAC4 soap_in_MethodList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct MethodList *a, __attribute__((unused)) const char *type)
 {	int i, j;
 	char **p;
 	if (soap_element_begin_in(soap, tag, 1, NULL))
@@ -10145,19 +10145,19 @@ SOAP_FMAC3 struct MethodList * SOAP_FMAC4 soap_in_MethodList(struct soap *soap, 
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_xsd__hexBinary(struct soap *soap, struct xsd__hexBinary *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_xsd__hexBinary(__attribute__((unused)) struct soap *soap, struct xsd__hexBinary *a)
 {
 	a->__size = 0;
 	a->__ptr = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_xsd__hexBinary(struct soap *soap, struct xsd__hexBinary const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_xsd__hexBinary(__attribute__((unused)) struct soap *soap, struct xsd__hexBinary const*a)
 {
 	if (a->__ptr)
 		soap_array_reference(soap, a, (struct soap_array*)&a->__ptr, 1, SOAP_TYPE_xsd__hexBinary);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_xsd__hexBinary(struct soap *soap, const struct xsd__hexBinary *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_xsd__hexBinary(__attribute__((unused)) struct soap *soap, const struct xsd__hexBinary *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, (struct soap_array*)&a->__ptr, 1, tag, SOAP_TYPE_xsd__hexBinary);
 	if (soap_out_xsd__hexBinary(soap, tag, id, a, type))
@@ -10165,7 +10165,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_xsd__hexBinary(struct soap *soap, const struc
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_xsd__hexBinary(struct soap *soap, const char *tag, int id, const struct xsd__hexBinary *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_xsd__hexBinary(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct xsd__hexBinary *a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, a, (struct soap_array*)&a->__ptr, 1, type, SOAP_TYPE_xsd__hexBinary);
 	if (id < 0)
@@ -10177,7 +10177,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_xsd__hexBinary(struct soap *soap, const char 
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct xsd__hexBinary * SOAP_FMAC4 soap_get_xsd__hexBinary(struct soap *soap, struct xsd__hexBinary *p, const char *tag, const char *type)
+SOAP_FMAC3 struct xsd__hexBinary * SOAP_FMAC4 soap_get_xsd__hexBinary(__attribute__((unused)) struct soap *soap, struct xsd__hexBinary *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_xsd__hexBinary(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -10185,7 +10185,7 @@ SOAP_FMAC3 struct xsd__hexBinary * SOAP_FMAC4 soap_get_xsd__hexBinary(struct soa
 	return p;
 }
 
-SOAP_FMAC3 struct xsd__hexBinary * SOAP_FMAC4 soap_in_xsd__hexBinary(struct soap *soap, const char *tag, struct xsd__hexBinary *a, const char *type)
+SOAP_FMAC3 struct xsd__hexBinary * SOAP_FMAC4 soap_in_xsd__hexBinary(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct xsd__hexBinary *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -10211,19 +10211,19 @@ SOAP_FMAC3 struct xsd__hexBinary * SOAP_FMAC4 soap_in_xsd__hexBinary(struct soap
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENC__base64(struct soap *soap, struct SOAP_ENC__base64 *a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_SOAP_ENC__base64(__attribute__((unused)) struct soap *soap, struct SOAP_ENC__base64 *a)
 {
 	a->__size = 0;
 	a->__ptr = NULL;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SOAP_ENC__base64(struct soap *soap, struct SOAP_ENC__base64 const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_SOAP_ENC__base64(__attribute__((unused)) struct soap *soap, struct SOAP_ENC__base64 const*a)
 {
 	if (a->__ptr)
 		soap_array_reference(soap, a, (struct soap_array*)&a->__ptr, 1, SOAP_TYPE_SOAP_ENC__base64);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENC__base64(struct soap *soap, const struct SOAP_ENC__base64 *a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENC__base64(__attribute__((unused)) struct soap *soap, const struct SOAP_ENC__base64 *a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, (struct soap_array*)&a->__ptr, 1, tag, SOAP_TYPE_SOAP_ENC__base64);
 	if (soap_out_SOAP_ENC__base64(soap, tag, id, a, type))
@@ -10231,7 +10231,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_SOAP_ENC__base64(struct soap *soap, const str
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENC__base64(struct soap *soap, const char *tag, int id, const struct SOAP_ENC__base64 *a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENC__base64(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, const struct SOAP_ENC__base64 *a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, a, (struct soap_array*)&a->__ptr, 1, type, SOAP_TYPE_SOAP_ENC__base64);
 	if (id < 0)
@@ -10243,7 +10243,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_SOAP_ENC__base64(struct soap *soap, const cha
 	return soap_element_end_out(soap, tag);
 }
 
-SOAP_FMAC3 struct SOAP_ENC__base64 * SOAP_FMAC4 soap_get_SOAP_ENC__base64(struct soap *soap, struct SOAP_ENC__base64 *p, const char *tag, const char *type)
+SOAP_FMAC3 struct SOAP_ENC__base64 * SOAP_FMAC4 soap_get_SOAP_ENC__base64(__attribute__((unused)) struct soap *soap, struct SOAP_ENC__base64 *p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_SOAP_ENC__base64(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -10251,7 +10251,7 @@ SOAP_FMAC3 struct SOAP_ENC__base64 * SOAP_FMAC4 soap_get_SOAP_ENC__base64(struct
 	return p;
 }
 
-SOAP_FMAC3 struct SOAP_ENC__base64 * SOAP_FMAC4 soap_in_SOAP_ENC__base64(struct soap *soap, const char *tag, struct SOAP_ENC__base64 *a, const char *type)
+SOAP_FMAC3 struct SOAP_ENC__base64 * SOAP_FMAC4 soap_in_SOAP_ENC__base64(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct SOAP_ENC__base64 *a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -10279,13 +10279,13 @@ SOAP_FMAC3 struct SOAP_ENC__base64 * SOAP_FMAC4 soap_in_SOAP_ENC__base64(struct 
 
 #ifndef WITH_NOGLOBAL
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToSOAP_ENV__Reason(struct soap *soap, struct SOAP_ENV__Reason *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToSOAP_ENV__Reason(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Reason *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_SOAP_ENV__Reason))
 		soap_serialize_SOAP_ENV__Reason(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSOAP_ENV__Reason(struct soap *soap, struct SOAP_ENV__Reason *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSOAP_ENV__Reason(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Reason *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToSOAP_ENV__Reason);
 	if (soap_out_PointerToSOAP_ENV__Reason(soap, tag, id, a, type))
@@ -10293,7 +10293,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSOAP_ENV__Reason(struct soap *soap, 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToSOAP_ENV__Reason(struct soap *soap, const char *tag, int id, struct SOAP_ENV__Reason *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToSOAP_ENV__Reason(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct SOAP_ENV__Reason *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_SOAP_ENV__Reason);
 	if (id < 0)
@@ -10301,7 +10301,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToSOAP_ENV__Reason(struct soap *soap, 
 	return soap_out_SOAP_ENV__Reason(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct SOAP_ENV__Reason ** SOAP_FMAC4 soap_get_PointerToSOAP_ENV__Reason(struct soap *soap, struct SOAP_ENV__Reason **p, const char *tag, const char *type)
+SOAP_FMAC3 struct SOAP_ENV__Reason ** SOAP_FMAC4 soap_get_PointerToSOAP_ENV__Reason(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Reason **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToSOAP_ENV__Reason(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -10309,7 +10309,7 @@ SOAP_FMAC3 struct SOAP_ENV__Reason ** SOAP_FMAC4 soap_get_PointerToSOAP_ENV__Rea
 	return p;
 }
 
-SOAP_FMAC3 struct SOAP_ENV__Reason ** SOAP_FMAC4 soap_in_PointerToSOAP_ENV__Reason(struct soap *soap, const char *tag, struct SOAP_ENV__Reason **a, const char *type)
+SOAP_FMAC3 struct SOAP_ENV__Reason ** SOAP_FMAC4 soap_in_PointerToSOAP_ENV__Reason(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct SOAP_ENV__Reason **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -10334,13 +10334,13 @@ SOAP_FMAC3 struct SOAP_ENV__Reason ** SOAP_FMAC4 soap_in_PointerToSOAP_ENV__Reas
 
 #ifndef WITH_NOGLOBAL
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToSOAP_ENV__Detail(struct soap *soap, struct SOAP_ENV__Detail *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToSOAP_ENV__Detail(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Detail *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_SOAP_ENV__Detail))
 		soap_serialize_SOAP_ENV__Detail(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSOAP_ENV__Detail(struct soap *soap, struct SOAP_ENV__Detail *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSOAP_ENV__Detail(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Detail *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToSOAP_ENV__Detail);
 	if (soap_out_PointerToSOAP_ENV__Detail(soap, tag, id, a, type))
@@ -10348,7 +10348,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSOAP_ENV__Detail(struct soap *soap, 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToSOAP_ENV__Detail(struct soap *soap, const char *tag, int id, struct SOAP_ENV__Detail *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToSOAP_ENV__Detail(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct SOAP_ENV__Detail *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_SOAP_ENV__Detail);
 	if (id < 0)
@@ -10356,7 +10356,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToSOAP_ENV__Detail(struct soap *soap, 
 	return soap_out_SOAP_ENV__Detail(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct SOAP_ENV__Detail ** SOAP_FMAC4 soap_get_PointerToSOAP_ENV__Detail(struct soap *soap, struct SOAP_ENV__Detail **p, const char *tag, const char *type)
+SOAP_FMAC3 struct SOAP_ENV__Detail ** SOAP_FMAC4 soap_get_PointerToSOAP_ENV__Detail(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Detail **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToSOAP_ENV__Detail(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -10364,7 +10364,7 @@ SOAP_FMAC3 struct SOAP_ENV__Detail ** SOAP_FMAC4 soap_get_PointerToSOAP_ENV__Det
 	return p;
 }
 
-SOAP_FMAC3 struct SOAP_ENV__Detail ** SOAP_FMAC4 soap_in_PointerToSOAP_ENV__Detail(struct soap *soap, const char *tag, struct SOAP_ENV__Detail **a, const char *type)
+SOAP_FMAC3 struct SOAP_ENV__Detail ** SOAP_FMAC4 soap_in_PointerToSOAP_ENV__Detail(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct SOAP_ENV__Detail **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -10389,13 +10389,13 @@ SOAP_FMAC3 struct SOAP_ENV__Detail ** SOAP_FMAC4 soap_in_PointerToSOAP_ENV__Deta
 
 #ifndef WITH_NOGLOBAL
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToSOAP_ENV__Code(struct soap *soap, struct SOAP_ENV__Code *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToSOAP_ENV__Code(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Code *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_SOAP_ENV__Code))
 		soap_serialize_SOAP_ENV__Code(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSOAP_ENV__Code(struct soap *soap, struct SOAP_ENV__Code *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSOAP_ENV__Code(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Code *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToSOAP_ENV__Code);
 	if (soap_out_PointerToSOAP_ENV__Code(soap, tag, id, a, type))
@@ -10403,7 +10403,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSOAP_ENV__Code(struct soap *soap, st
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToSOAP_ENV__Code(struct soap *soap, const char *tag, int id, struct SOAP_ENV__Code *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToSOAP_ENV__Code(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct SOAP_ENV__Code *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_SOAP_ENV__Code);
 	if (id < 0)
@@ -10411,7 +10411,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToSOAP_ENV__Code(struct soap *soap, co
 	return soap_out_SOAP_ENV__Code(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct SOAP_ENV__Code ** SOAP_FMAC4 soap_get_PointerToSOAP_ENV__Code(struct soap *soap, struct SOAP_ENV__Code **p, const char *tag, const char *type)
+SOAP_FMAC3 struct SOAP_ENV__Code ** SOAP_FMAC4 soap_get_PointerToSOAP_ENV__Code(__attribute__((unused)) struct soap *soap, struct SOAP_ENV__Code **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToSOAP_ENV__Code(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -10419,7 +10419,7 @@ SOAP_FMAC3 struct SOAP_ENV__Code ** SOAP_FMAC4 soap_get_PointerToSOAP_ENV__Code(
 	return p;
 }
 
-SOAP_FMAC3 struct SOAP_ENV__Code ** SOAP_FMAC4 soap_in_PointerToSOAP_ENV__Code(struct soap *soap, const char *tag, struct SOAP_ENV__Code **a, const char *type)
+SOAP_FMAC3 struct SOAP_ENV__Code ** SOAP_FMAC4 soap_in_PointerToSOAP_ENV__Code(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct SOAP_ENV__Code **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -10442,13 +10442,13 @@ SOAP_FMAC3 struct SOAP_ENV__Code ** SOAP_FMAC4 soap_in_PointerToSOAP_ENV__Code(s
 
 #endif
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__ID(struct soap *soap, struct _cwmp__ID *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__ID(__attribute__((unused)) struct soap *soap, struct _cwmp__ID *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE__cwmp__ID))
 		soap_serialize__cwmp__ID(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__ID(struct soap *soap, struct _cwmp__ID *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__ID(__attribute__((unused)) struct soap *soap, struct _cwmp__ID *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTo_cwmp__ID);
 	if (soap_out_PointerTo_cwmp__ID(soap, tag, id, a, type))
@@ -10456,7 +10456,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__ID(struct soap *soap, struct 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__ID(struct soap *soap, const char *tag, int id, struct _cwmp__ID *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__ID(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct _cwmp__ID *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE__cwmp__ID);
 	if (id < 0)
@@ -10464,7 +10464,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__ID(struct soap *soap, const c
 	return soap_out__cwmp__ID(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct _cwmp__ID ** SOAP_FMAC4 soap_get_PointerTo_cwmp__ID(struct soap *soap, struct _cwmp__ID **p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__ID ** SOAP_FMAC4 soap_get_PointerTo_cwmp__ID(__attribute__((unused)) struct soap *soap, struct _cwmp__ID **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTo_cwmp__ID(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -10472,7 +10472,7 @@ SOAP_FMAC3 struct _cwmp__ID ** SOAP_FMAC4 soap_get_PointerTo_cwmp__ID(struct soa
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__ID ** SOAP_FMAC4 soap_in_PointerTo_cwmp__ID(struct soap *soap, const char *tag, struct _cwmp__ID **a, const char *type)
+SOAP_FMAC3 struct _cwmp__ID ** SOAP_FMAC4 soap_in_PointerTo_cwmp__ID(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__ID **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -10493,13 +10493,13 @@ SOAP_FMAC3 struct _cwmp__ID ** SOAP_FMAC4 soap_in_PointerTo_cwmp__ID(struct soap
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__HoldRequests(struct soap *soap, struct _cwmp__HoldRequests *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__HoldRequests(__attribute__((unused)) struct soap *soap, struct _cwmp__HoldRequests *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE__cwmp__HoldRequests))
 		soap_serialize__cwmp__HoldRequests(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__HoldRequests(struct soap *soap, struct _cwmp__HoldRequests *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__HoldRequests(__attribute__((unused)) struct soap *soap, struct _cwmp__HoldRequests *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTo_cwmp__HoldRequests);
 	if (soap_out_PointerTo_cwmp__HoldRequests(soap, tag, id, a, type))
@@ -10507,7 +10507,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__HoldRequests(struct soap *soa
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__HoldRequests(struct soap *soap, const char *tag, int id, struct _cwmp__HoldRequests *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__HoldRequests(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct _cwmp__HoldRequests *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE__cwmp__HoldRequests);
 	if (id < 0)
@@ -10515,7 +10515,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__HoldRequests(struct soap *soa
 	return soap_out__cwmp__HoldRequests(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct _cwmp__HoldRequests ** SOAP_FMAC4 soap_get_PointerTo_cwmp__HoldRequests(struct soap *soap, struct _cwmp__HoldRequests **p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__HoldRequests ** SOAP_FMAC4 soap_get_PointerTo_cwmp__HoldRequests(__attribute__((unused)) struct soap *soap, struct _cwmp__HoldRequests **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTo_cwmp__HoldRequests(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -10523,7 +10523,7 @@ SOAP_FMAC3 struct _cwmp__HoldRequests ** SOAP_FMAC4 soap_get_PointerTo_cwmp__Hol
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__HoldRequests ** SOAP_FMAC4 soap_in_PointerTo_cwmp__HoldRequests(struct soap *soap, const char *tag, struct _cwmp__HoldRequests **a, const char *type)
+SOAP_FMAC3 struct _cwmp__HoldRequests ** SOAP_FMAC4 soap_in_PointerTo_cwmp__HoldRequests(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__HoldRequests **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -10544,13 +10544,13 @@ SOAP_FMAC3 struct _cwmp__HoldRequests ** SOAP_FMAC4 soap_in_PointerTo_cwmp__Hold
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__KickedResponse(struct soap *soap, struct _cwmp__KickedResponse *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__KickedResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__KickedResponse *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE__cwmp__KickedResponse))
 		soap_serialize__cwmp__KickedResponse(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__KickedResponse(struct soap *soap, struct _cwmp__KickedResponse *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__KickedResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__KickedResponse *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTo_cwmp__KickedResponse);
 	if (soap_out_PointerTo_cwmp__KickedResponse(soap, tag, id, a, type))
@@ -10558,7 +10558,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__KickedResponse(struct soap *s
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__KickedResponse(struct soap *soap, const char *tag, int id, struct _cwmp__KickedResponse *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__KickedResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct _cwmp__KickedResponse *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE__cwmp__KickedResponse);
 	if (id < 0)
@@ -10566,7 +10566,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__KickedResponse(struct soap *s
 	return soap_out__cwmp__KickedResponse(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct _cwmp__KickedResponse ** SOAP_FMAC4 soap_get_PointerTo_cwmp__KickedResponse(struct soap *soap, struct _cwmp__KickedResponse **p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__KickedResponse ** SOAP_FMAC4 soap_get_PointerTo_cwmp__KickedResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__KickedResponse **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTo_cwmp__KickedResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -10574,7 +10574,7 @@ SOAP_FMAC3 struct _cwmp__KickedResponse ** SOAP_FMAC4 soap_get_PointerTo_cwmp__K
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__KickedResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__KickedResponse(struct soap *soap, const char *tag, struct _cwmp__KickedResponse **a, const char *type)
+SOAP_FMAC3 struct _cwmp__KickedResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__KickedResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__KickedResponse **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -10595,13 +10595,13 @@ SOAP_FMAC3 struct _cwmp__KickedResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__Ki
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__Kicked(struct soap *soap, struct _cwmp__Kicked *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__Kicked(__attribute__((unused)) struct soap *soap, struct _cwmp__Kicked *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE__cwmp__Kicked))
 		soap_serialize__cwmp__Kicked(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__Kicked(struct soap *soap, struct _cwmp__Kicked *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__Kicked(__attribute__((unused)) struct soap *soap, struct _cwmp__Kicked *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTo_cwmp__Kicked);
 	if (soap_out_PointerTo_cwmp__Kicked(soap, tag, id, a, type))
@@ -10609,7 +10609,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__Kicked(struct soap *soap, str
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__Kicked(struct soap *soap, const char *tag, int id, struct _cwmp__Kicked *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__Kicked(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct _cwmp__Kicked *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE__cwmp__Kicked);
 	if (id < 0)
@@ -10617,7 +10617,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__Kicked(struct soap *soap, con
 	return soap_out__cwmp__Kicked(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct _cwmp__Kicked ** SOAP_FMAC4 soap_get_PointerTo_cwmp__Kicked(struct soap *soap, struct _cwmp__Kicked **p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__Kicked ** SOAP_FMAC4 soap_get_PointerTo_cwmp__Kicked(__attribute__((unused)) struct soap *soap, struct _cwmp__Kicked **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTo_cwmp__Kicked(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -10625,7 +10625,7 @@ SOAP_FMAC3 struct _cwmp__Kicked ** SOAP_FMAC4 soap_get_PointerTo_cwmp__Kicked(st
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__Kicked ** SOAP_FMAC4 soap_in_PointerTo_cwmp__Kicked(struct soap *soap, const char *tag, struct _cwmp__Kicked **a, const char *type)
+SOAP_FMAC3 struct _cwmp__Kicked ** SOAP_FMAC4 soap_in_PointerTo_cwmp__Kicked(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__Kicked **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -10646,13 +10646,13 @@ SOAP_FMAC3 struct _cwmp__Kicked ** SOAP_FMAC4 soap_in_PointerTo_cwmp__Kicked(str
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__RequestDownloadResponse(struct soap *soap, struct _cwmp__RequestDownloadResponse *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__RequestDownloadResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__RequestDownloadResponse *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE__cwmp__RequestDownloadResponse))
 		soap_serialize__cwmp__RequestDownloadResponse(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__RequestDownloadResponse(struct soap *soap, struct _cwmp__RequestDownloadResponse *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__RequestDownloadResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__RequestDownloadResponse *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTo_cwmp__RequestDownloadResponse);
 	if (soap_out_PointerTo_cwmp__RequestDownloadResponse(soap, tag, id, a, type))
@@ -10660,7 +10660,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__RequestDownloadResponse(struc
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__RequestDownloadResponse(struct soap *soap, const char *tag, int id, struct _cwmp__RequestDownloadResponse *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__RequestDownloadResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct _cwmp__RequestDownloadResponse *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE__cwmp__RequestDownloadResponse);
 	if (id < 0)
@@ -10668,7 +10668,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__RequestDownloadResponse(struc
 	return soap_out__cwmp__RequestDownloadResponse(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct _cwmp__RequestDownloadResponse ** SOAP_FMAC4 soap_get_PointerTo_cwmp__RequestDownloadResponse(struct soap *soap, struct _cwmp__RequestDownloadResponse **p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__RequestDownloadResponse ** SOAP_FMAC4 soap_get_PointerTo_cwmp__RequestDownloadResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__RequestDownloadResponse **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTo_cwmp__RequestDownloadResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -10676,7 +10676,7 @@ SOAP_FMAC3 struct _cwmp__RequestDownloadResponse ** SOAP_FMAC4 soap_get_PointerT
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__RequestDownloadResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__RequestDownloadResponse(struct soap *soap, const char *tag, struct _cwmp__RequestDownloadResponse **a, const char *type)
+SOAP_FMAC3 struct _cwmp__RequestDownloadResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__RequestDownloadResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__RequestDownloadResponse **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -10697,13 +10697,13 @@ SOAP_FMAC3 struct _cwmp__RequestDownloadResponse ** SOAP_FMAC4 soap_in_PointerTo
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__RequestDownload(struct soap *soap, struct _cwmp__RequestDownload *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__RequestDownload(__attribute__((unused)) struct soap *soap, struct _cwmp__RequestDownload *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE__cwmp__RequestDownload))
 		soap_serialize__cwmp__RequestDownload(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__RequestDownload(struct soap *soap, struct _cwmp__RequestDownload *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__RequestDownload(__attribute__((unused)) struct soap *soap, struct _cwmp__RequestDownload *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTo_cwmp__RequestDownload);
 	if (soap_out_PointerTo_cwmp__RequestDownload(soap, tag, id, a, type))
@@ -10711,7 +10711,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__RequestDownload(struct soap *
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__RequestDownload(struct soap *soap, const char *tag, int id, struct _cwmp__RequestDownload *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__RequestDownload(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct _cwmp__RequestDownload *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE__cwmp__RequestDownload);
 	if (id < 0)
@@ -10719,7 +10719,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__RequestDownload(struct soap *
 	return soap_out__cwmp__RequestDownload(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct _cwmp__RequestDownload ** SOAP_FMAC4 soap_get_PointerTo_cwmp__RequestDownload(struct soap *soap, struct _cwmp__RequestDownload **p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__RequestDownload ** SOAP_FMAC4 soap_get_PointerTo_cwmp__RequestDownload(__attribute__((unused)) struct soap *soap, struct _cwmp__RequestDownload **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTo_cwmp__RequestDownload(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -10727,7 +10727,7 @@ SOAP_FMAC3 struct _cwmp__RequestDownload ** SOAP_FMAC4 soap_get_PointerTo_cwmp__
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__RequestDownload ** SOAP_FMAC4 soap_in_PointerTo_cwmp__RequestDownload(struct soap *soap, const char *tag, struct _cwmp__RequestDownload **a, const char *type)
+SOAP_FMAC3 struct _cwmp__RequestDownload ** SOAP_FMAC4 soap_in_PointerTo_cwmp__RequestDownload(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__RequestDownload **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -10748,13 +10748,13 @@ SOAP_FMAC3 struct _cwmp__RequestDownload ** SOAP_FMAC4 soap_in_PointerTo_cwmp__R
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__AutonomousTransferCompleteResponse(struct soap *soap, struct _cwmp__AutonomousTransferCompleteResponse *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__AutonomousTransferCompleteResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__AutonomousTransferCompleteResponse *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE__cwmp__AutonomousTransferCompleteResponse))
 		soap_serialize__cwmp__AutonomousTransferCompleteResponse(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__AutonomousTransferCompleteResponse(struct soap *soap, struct _cwmp__AutonomousTransferCompleteResponse *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__AutonomousTransferCompleteResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__AutonomousTransferCompleteResponse *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTo_cwmp__AutonomousTransferCompleteResponse);
 	if (soap_out_PointerTo_cwmp__AutonomousTransferCompleteResponse(soap, tag, id, a, type))
@@ -10762,7 +10762,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__AutonomousTransferCompleteRes
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__AutonomousTransferCompleteResponse(struct soap *soap, const char *tag, int id, struct _cwmp__AutonomousTransferCompleteResponse *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__AutonomousTransferCompleteResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct _cwmp__AutonomousTransferCompleteResponse *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE__cwmp__AutonomousTransferCompleteResponse);
 	if (id < 0)
@@ -10770,7 +10770,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__AutonomousTransferCompleteRes
 	return soap_out__cwmp__AutonomousTransferCompleteResponse(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct _cwmp__AutonomousTransferCompleteResponse ** SOAP_FMAC4 soap_get_PointerTo_cwmp__AutonomousTransferCompleteResponse(struct soap *soap, struct _cwmp__AutonomousTransferCompleteResponse **p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__AutonomousTransferCompleteResponse ** SOAP_FMAC4 soap_get_PointerTo_cwmp__AutonomousTransferCompleteResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__AutonomousTransferCompleteResponse **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTo_cwmp__AutonomousTransferCompleteResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -10778,7 +10778,7 @@ SOAP_FMAC3 struct _cwmp__AutonomousTransferCompleteResponse ** SOAP_FMAC4 soap_g
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__AutonomousTransferCompleteResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__AutonomousTransferCompleteResponse(struct soap *soap, const char *tag, struct _cwmp__AutonomousTransferCompleteResponse **a, const char *type)
+SOAP_FMAC3 struct _cwmp__AutonomousTransferCompleteResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__AutonomousTransferCompleteResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__AutonomousTransferCompleteResponse **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -10799,13 +10799,13 @@ SOAP_FMAC3 struct _cwmp__AutonomousTransferCompleteResponse ** SOAP_FMAC4 soap_i
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__AutonomousTransferComplete(struct soap *soap, struct _cwmp__AutonomousTransferComplete *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__AutonomousTransferComplete(__attribute__((unused)) struct soap *soap, struct _cwmp__AutonomousTransferComplete *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE__cwmp__AutonomousTransferComplete))
 		soap_serialize__cwmp__AutonomousTransferComplete(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__AutonomousTransferComplete(struct soap *soap, struct _cwmp__AutonomousTransferComplete *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__AutonomousTransferComplete(__attribute__((unused)) struct soap *soap, struct _cwmp__AutonomousTransferComplete *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTo_cwmp__AutonomousTransferComplete);
 	if (soap_out_PointerTo_cwmp__AutonomousTransferComplete(soap, tag, id, a, type))
@@ -10813,7 +10813,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__AutonomousTransferComplete(st
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__AutonomousTransferComplete(struct soap *soap, const char *tag, int id, struct _cwmp__AutonomousTransferComplete *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__AutonomousTransferComplete(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct _cwmp__AutonomousTransferComplete *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE__cwmp__AutonomousTransferComplete);
 	if (id < 0)
@@ -10821,7 +10821,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__AutonomousTransferComplete(st
 	return soap_out__cwmp__AutonomousTransferComplete(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct _cwmp__AutonomousTransferComplete ** SOAP_FMAC4 soap_get_PointerTo_cwmp__AutonomousTransferComplete(struct soap *soap, struct _cwmp__AutonomousTransferComplete **p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__AutonomousTransferComplete ** SOAP_FMAC4 soap_get_PointerTo_cwmp__AutonomousTransferComplete(__attribute__((unused)) struct soap *soap, struct _cwmp__AutonomousTransferComplete **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTo_cwmp__AutonomousTransferComplete(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -10829,7 +10829,7 @@ SOAP_FMAC3 struct _cwmp__AutonomousTransferComplete ** SOAP_FMAC4 soap_get_Point
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__AutonomousTransferComplete ** SOAP_FMAC4 soap_in_PointerTo_cwmp__AutonomousTransferComplete(struct soap *soap, const char *tag, struct _cwmp__AutonomousTransferComplete **a, const char *type)
+SOAP_FMAC3 struct _cwmp__AutonomousTransferComplete ** SOAP_FMAC4 soap_in_PointerTo_cwmp__AutonomousTransferComplete(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__AutonomousTransferComplete **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -10850,13 +10850,13 @@ SOAP_FMAC3 struct _cwmp__AutonomousTransferComplete ** SOAP_FMAC4 soap_in_Pointe
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__TransferCompleteResponse(struct soap *soap, struct _cwmp__TransferCompleteResponse *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__TransferCompleteResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__TransferCompleteResponse *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE__cwmp__TransferCompleteResponse))
 		soap_serialize__cwmp__TransferCompleteResponse(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__TransferCompleteResponse(struct soap *soap, struct _cwmp__TransferCompleteResponse *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__TransferCompleteResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__TransferCompleteResponse *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTo_cwmp__TransferCompleteResponse);
 	if (soap_out_PointerTo_cwmp__TransferCompleteResponse(soap, tag, id, a, type))
@@ -10864,7 +10864,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__TransferCompleteResponse(stru
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__TransferCompleteResponse(struct soap *soap, const char *tag, int id, struct _cwmp__TransferCompleteResponse *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__TransferCompleteResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct _cwmp__TransferCompleteResponse *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE__cwmp__TransferCompleteResponse);
 	if (id < 0)
@@ -10872,7 +10872,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__TransferCompleteResponse(stru
 	return soap_out__cwmp__TransferCompleteResponse(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct _cwmp__TransferCompleteResponse ** SOAP_FMAC4 soap_get_PointerTo_cwmp__TransferCompleteResponse(struct soap *soap, struct _cwmp__TransferCompleteResponse **p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__TransferCompleteResponse ** SOAP_FMAC4 soap_get_PointerTo_cwmp__TransferCompleteResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__TransferCompleteResponse **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTo_cwmp__TransferCompleteResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -10880,7 +10880,7 @@ SOAP_FMAC3 struct _cwmp__TransferCompleteResponse ** SOAP_FMAC4 soap_get_Pointer
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__TransferCompleteResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__TransferCompleteResponse(struct soap *soap, const char *tag, struct _cwmp__TransferCompleteResponse **a, const char *type)
+SOAP_FMAC3 struct _cwmp__TransferCompleteResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__TransferCompleteResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__TransferCompleteResponse **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -10901,13 +10901,13 @@ SOAP_FMAC3 struct _cwmp__TransferCompleteResponse ** SOAP_FMAC4 soap_in_PointerT
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__TransferComplete(struct soap *soap, struct _cwmp__TransferComplete *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__TransferComplete(__attribute__((unused)) struct soap *soap, struct _cwmp__TransferComplete *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE__cwmp__TransferComplete))
 		soap_serialize__cwmp__TransferComplete(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__TransferComplete(struct soap *soap, struct _cwmp__TransferComplete *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__TransferComplete(__attribute__((unused)) struct soap *soap, struct _cwmp__TransferComplete *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTo_cwmp__TransferComplete);
 	if (soap_out_PointerTo_cwmp__TransferComplete(soap, tag, id, a, type))
@@ -10915,7 +10915,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__TransferComplete(struct soap 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__TransferComplete(struct soap *soap, const char *tag, int id, struct _cwmp__TransferComplete *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__TransferComplete(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct _cwmp__TransferComplete *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE__cwmp__TransferComplete);
 	if (id < 0)
@@ -10923,7 +10923,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__TransferComplete(struct soap 
 	return soap_out__cwmp__TransferComplete(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct _cwmp__TransferComplete ** SOAP_FMAC4 soap_get_PointerTo_cwmp__TransferComplete(struct soap *soap, struct _cwmp__TransferComplete **p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__TransferComplete ** SOAP_FMAC4 soap_get_PointerTo_cwmp__TransferComplete(__attribute__((unused)) struct soap *soap, struct _cwmp__TransferComplete **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTo_cwmp__TransferComplete(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -10931,7 +10931,7 @@ SOAP_FMAC3 struct _cwmp__TransferComplete ** SOAP_FMAC4 soap_get_PointerTo_cwmp_
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__TransferComplete ** SOAP_FMAC4 soap_in_PointerTo_cwmp__TransferComplete(struct soap *soap, const char *tag, struct _cwmp__TransferComplete **a, const char *type)
+SOAP_FMAC3 struct _cwmp__TransferComplete ** SOAP_FMAC4 soap_in_PointerTo_cwmp__TransferComplete(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__TransferComplete **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -10952,13 +10952,13 @@ SOAP_FMAC3 struct _cwmp__TransferComplete ** SOAP_FMAC4 soap_in_PointerTo_cwmp__
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__InformResponse(struct soap *soap, struct _cwmp__InformResponse *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__InformResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__InformResponse *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE__cwmp__InformResponse))
 		soap_serialize__cwmp__InformResponse(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__InformResponse(struct soap *soap, struct _cwmp__InformResponse *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__InformResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__InformResponse *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTo_cwmp__InformResponse);
 	if (soap_out_PointerTo_cwmp__InformResponse(soap, tag, id, a, type))
@@ -10966,7 +10966,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__InformResponse(struct soap *s
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__InformResponse(struct soap *soap, const char *tag, int id, struct _cwmp__InformResponse *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__InformResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct _cwmp__InformResponse *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE__cwmp__InformResponse);
 	if (id < 0)
@@ -10974,7 +10974,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__InformResponse(struct soap *s
 	return soap_out__cwmp__InformResponse(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct _cwmp__InformResponse ** SOAP_FMAC4 soap_get_PointerTo_cwmp__InformResponse(struct soap *soap, struct _cwmp__InformResponse **p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__InformResponse ** SOAP_FMAC4 soap_get_PointerTo_cwmp__InformResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__InformResponse **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTo_cwmp__InformResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -10982,7 +10982,7 @@ SOAP_FMAC3 struct _cwmp__InformResponse ** SOAP_FMAC4 soap_get_PointerTo_cwmp__I
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__InformResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__InformResponse(struct soap *soap, const char *tag, struct _cwmp__InformResponse **a, const char *type)
+SOAP_FMAC3 struct _cwmp__InformResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__InformResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__InformResponse **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11003,13 +11003,13 @@ SOAP_FMAC3 struct _cwmp__InformResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__In
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__Inform(struct soap *soap, struct _cwmp__Inform *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__Inform(__attribute__((unused)) struct soap *soap, struct _cwmp__Inform *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE__cwmp__Inform))
 		soap_serialize__cwmp__Inform(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__Inform(struct soap *soap, struct _cwmp__Inform *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__Inform(__attribute__((unused)) struct soap *soap, struct _cwmp__Inform *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTo_cwmp__Inform);
 	if (soap_out_PointerTo_cwmp__Inform(soap, tag, id, a, type))
@@ -11017,7 +11017,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__Inform(struct soap *soap, str
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__Inform(struct soap *soap, const char *tag, int id, struct _cwmp__Inform *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__Inform(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct _cwmp__Inform *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE__cwmp__Inform);
 	if (id < 0)
@@ -11025,7 +11025,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__Inform(struct soap *soap, con
 	return soap_out__cwmp__Inform(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct _cwmp__Inform ** SOAP_FMAC4 soap_get_PointerTo_cwmp__Inform(struct soap *soap, struct _cwmp__Inform **p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__Inform ** SOAP_FMAC4 soap_get_PointerTo_cwmp__Inform(__attribute__((unused)) struct soap *soap, struct _cwmp__Inform **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTo_cwmp__Inform(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11033,7 +11033,7 @@ SOAP_FMAC3 struct _cwmp__Inform ** SOAP_FMAC4 soap_get_PointerTo_cwmp__Inform(st
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__Inform ** SOAP_FMAC4 soap_in_PointerTo_cwmp__Inform(struct soap *soap, const char *tag, struct _cwmp__Inform **a, const char *type)
+SOAP_FMAC3 struct _cwmp__Inform ** SOAP_FMAC4 soap_in_PointerTo_cwmp__Inform(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__Inform **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11054,13 +11054,13 @@ SOAP_FMAC3 struct _cwmp__Inform ** SOAP_FMAC4 soap_in_PointerTo_cwmp__Inform(str
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__GetRPCMethodsResponse(struct soap *soap, struct _cwmp__GetRPCMethodsResponse *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__GetRPCMethodsResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__GetRPCMethodsResponse *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE__cwmp__GetRPCMethodsResponse))
 		soap_serialize__cwmp__GetRPCMethodsResponse(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__GetRPCMethodsResponse(struct soap *soap, struct _cwmp__GetRPCMethodsResponse *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__GetRPCMethodsResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__GetRPCMethodsResponse *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTo_cwmp__GetRPCMethodsResponse);
 	if (soap_out_PointerTo_cwmp__GetRPCMethodsResponse(soap, tag, id, a, type))
@@ -11068,7 +11068,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__GetRPCMethodsResponse(struct 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__GetRPCMethodsResponse(struct soap *soap, const char *tag, int id, struct _cwmp__GetRPCMethodsResponse *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__GetRPCMethodsResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct _cwmp__GetRPCMethodsResponse *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE__cwmp__GetRPCMethodsResponse);
 	if (id < 0)
@@ -11076,7 +11076,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__GetRPCMethodsResponse(struct 
 	return soap_out__cwmp__GetRPCMethodsResponse(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct _cwmp__GetRPCMethodsResponse ** SOAP_FMAC4 soap_get_PointerTo_cwmp__GetRPCMethodsResponse(struct soap *soap, struct _cwmp__GetRPCMethodsResponse **p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__GetRPCMethodsResponse ** SOAP_FMAC4 soap_get_PointerTo_cwmp__GetRPCMethodsResponse(__attribute__((unused)) struct soap *soap, struct _cwmp__GetRPCMethodsResponse **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTo_cwmp__GetRPCMethodsResponse(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11084,7 +11084,7 @@ SOAP_FMAC3 struct _cwmp__GetRPCMethodsResponse ** SOAP_FMAC4 soap_get_PointerTo_
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__GetRPCMethodsResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__GetRPCMethodsResponse(struct soap *soap, const char *tag, struct _cwmp__GetRPCMethodsResponse **a, const char *type)
+SOAP_FMAC3 struct _cwmp__GetRPCMethodsResponse ** SOAP_FMAC4 soap_in_PointerTo_cwmp__GetRPCMethodsResponse(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__GetRPCMethodsResponse **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11105,13 +11105,13 @@ SOAP_FMAC3 struct _cwmp__GetRPCMethodsResponse ** SOAP_FMAC4 soap_in_PointerTo_c
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__GetRPCMethods(struct soap *soap, struct _cwmp__GetRPCMethods *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__GetRPCMethods(__attribute__((unused)) struct soap *soap, struct _cwmp__GetRPCMethods *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE__cwmp__GetRPCMethods))
 		soap_serialize__cwmp__GetRPCMethods(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__GetRPCMethods(struct soap *soap, struct _cwmp__GetRPCMethods *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__GetRPCMethods(__attribute__((unused)) struct soap *soap, struct _cwmp__GetRPCMethods *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTo_cwmp__GetRPCMethods);
 	if (soap_out_PointerTo_cwmp__GetRPCMethods(soap, tag, id, a, type))
@@ -11119,7 +11119,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__GetRPCMethods(struct soap *so
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__GetRPCMethods(struct soap *soap, const char *tag, int id, struct _cwmp__GetRPCMethods *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__GetRPCMethods(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct _cwmp__GetRPCMethods *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE__cwmp__GetRPCMethods);
 	if (id < 0)
@@ -11127,7 +11127,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__GetRPCMethods(struct soap *so
 	return soap_out__cwmp__GetRPCMethods(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct _cwmp__GetRPCMethods ** SOAP_FMAC4 soap_get_PointerTo_cwmp__GetRPCMethods(struct soap *soap, struct _cwmp__GetRPCMethods **p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__GetRPCMethods ** SOAP_FMAC4 soap_get_PointerTo_cwmp__GetRPCMethods(__attribute__((unused)) struct soap *soap, struct _cwmp__GetRPCMethods **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTo_cwmp__GetRPCMethods(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11135,7 +11135,7 @@ SOAP_FMAC3 struct _cwmp__GetRPCMethods ** SOAP_FMAC4 soap_get_PointerTo_cwmp__Ge
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__GetRPCMethods ** SOAP_FMAC4 soap_in_PointerTo_cwmp__GetRPCMethods(struct soap *soap, const char *tag, struct _cwmp__GetRPCMethods **a, const char *type)
+SOAP_FMAC3 struct _cwmp__GetRPCMethods ** SOAP_FMAC4 soap_in_PointerTo_cwmp__GetRPCMethods(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__GetRPCMethods **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11156,13 +11156,13 @@ SOAP_FMAC3 struct _cwmp__GetRPCMethods ** SOAP_FMAC4 soap_in_PointerTo_cwmp__Get
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__ArgStruct(struct soap *soap, struct cwmp__ArgStruct **const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__ArgStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ArgStruct **const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_PointerTocwmp__ArgStruct))
 		soap_serialize_PointerTocwmp__ArgStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__ArgStruct(struct soap *soap, struct cwmp__ArgStruct **const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__ArgStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ArgStruct **const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToPointerTocwmp__ArgStruct);
 	if (soap_out_PointerToPointerTocwmp__ArgStruct(soap, tag, id, a, type))
@@ -11170,7 +11170,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__ArgStruct(struct soap
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__ArgStruct(struct soap *soap, const char *tag, int id, struct cwmp__ArgStruct **const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__ArgStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__ArgStruct **const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_PointerTocwmp__ArgStruct);
 	if (id < 0)
@@ -11178,7 +11178,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__ArgStruct(struct soap
 	return soap_out_PointerTocwmp__ArgStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__ArgStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__ArgStruct(struct soap *soap, struct cwmp__ArgStruct ***p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__ArgStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__ArgStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ArgStruct ***p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToPointerTocwmp__ArgStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11186,7 +11186,7 @@ SOAP_FMAC3 struct cwmp__ArgStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__ArgStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__ArgStruct(struct soap *soap, const char *tag, struct cwmp__ArgStruct ***a, const char *type)
+SOAP_FMAC3 struct cwmp__ArgStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__ArgStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__ArgStruct ***a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11207,13 +11207,13 @@ SOAP_FMAC3 struct cwmp__ArgStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp_
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__ArgStruct(struct soap *soap, struct cwmp__ArgStruct *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__ArgStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ArgStruct *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_cwmp__ArgStruct))
 		soap_serialize_cwmp__ArgStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__ArgStruct(struct soap *soap, struct cwmp__ArgStruct *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__ArgStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ArgStruct *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTocwmp__ArgStruct);
 	if (soap_out_PointerTocwmp__ArgStruct(soap, tag, id, a, type))
@@ -11221,7 +11221,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__ArgStruct(struct soap *soap, s
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__ArgStruct(struct soap *soap, const char *tag, int id, struct cwmp__ArgStruct *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__ArgStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__ArgStruct *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_cwmp__ArgStruct);
 	if (id < 0)
@@ -11229,7 +11229,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__ArgStruct(struct soap *soap, c
 	return soap_out_cwmp__ArgStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__ArgStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__ArgStruct(struct soap *soap, struct cwmp__ArgStruct **p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__ArgStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__ArgStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ArgStruct **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTocwmp__ArgStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11237,7 +11237,7 @@ SOAP_FMAC3 struct cwmp__ArgStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__ArgStruc
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__ArgStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__ArgStruct(struct soap *soap, const char *tag, struct cwmp__ArgStruct **a, const char *type)
+SOAP_FMAC3 struct cwmp__ArgStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__ArgStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__ArgStruct **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11258,13 +11258,13 @@ SOAP_FMAC3 struct cwmp__ArgStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__ArgStruct
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__OptionStruct(struct soap *soap, struct cwmp__OptionStruct **const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__OptionStruct(__attribute__((unused)) struct soap *soap, struct cwmp__OptionStruct **const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_PointerTocwmp__OptionStruct))
 		soap_serialize_PointerTocwmp__OptionStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__OptionStruct(struct soap *soap, struct cwmp__OptionStruct **const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__OptionStruct(__attribute__((unused)) struct soap *soap, struct cwmp__OptionStruct **const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToPointerTocwmp__OptionStruct);
 	if (soap_out_PointerToPointerTocwmp__OptionStruct(soap, tag, id, a, type))
@@ -11272,7 +11272,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__OptionStruct(struct s
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__OptionStruct(struct soap *soap, const char *tag, int id, struct cwmp__OptionStruct **const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__OptionStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__OptionStruct **const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_PointerTocwmp__OptionStruct);
 	if (id < 0)
@@ -11280,7 +11280,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__OptionStruct(struct s
 	return soap_out_PointerTocwmp__OptionStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__OptionStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__OptionStruct(struct soap *soap, struct cwmp__OptionStruct ***p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__OptionStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__OptionStruct(__attribute__((unused)) struct soap *soap, struct cwmp__OptionStruct ***p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToPointerTocwmp__OptionStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11288,7 +11288,7 @@ SOAP_FMAC3 struct cwmp__OptionStruct *** SOAP_FMAC4 soap_get_PointerToPointerToc
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__OptionStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__OptionStruct(struct soap *soap, const char *tag, struct cwmp__OptionStruct ***a, const char *type)
+SOAP_FMAC3 struct cwmp__OptionStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__OptionStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__OptionStruct ***a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11309,13 +11309,13 @@ SOAP_FMAC3 struct cwmp__OptionStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocw
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__OptionStruct(struct soap *soap, struct cwmp__OptionStruct *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__OptionStruct(__attribute__((unused)) struct soap *soap, struct cwmp__OptionStruct *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_cwmp__OptionStruct))
 		soap_serialize_cwmp__OptionStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__OptionStruct(struct soap *soap, struct cwmp__OptionStruct *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__OptionStruct(__attribute__((unused)) struct soap *soap, struct cwmp__OptionStruct *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTocwmp__OptionStruct);
 	if (soap_out_PointerTocwmp__OptionStruct(soap, tag, id, a, type))
@@ -11323,7 +11323,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__OptionStruct(struct soap *soap
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__OptionStruct(struct soap *soap, const char *tag, int id, struct cwmp__OptionStruct *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__OptionStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__OptionStruct *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_cwmp__OptionStruct);
 	if (id < 0)
@@ -11331,7 +11331,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__OptionStruct(struct soap *soap
 	return soap_out_cwmp__OptionStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__OptionStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__OptionStruct(struct soap *soap, struct cwmp__OptionStruct **p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__OptionStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__OptionStruct(__attribute__((unused)) struct soap *soap, struct cwmp__OptionStruct **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTocwmp__OptionStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11339,7 +11339,7 @@ SOAP_FMAC3 struct cwmp__OptionStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__Optio
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__OptionStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__OptionStruct(struct soap *soap, const char *tag, struct cwmp__OptionStruct **a, const char *type)
+SOAP_FMAC3 struct cwmp__OptionStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__OptionStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__OptionStruct **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11360,13 +11360,13 @@ SOAP_FMAC3 struct cwmp__OptionStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__Option
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerToSOAP_ENC__base64(struct soap *soap, struct SOAP_ENC__base64 **const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerToSOAP_ENC__base64(__attribute__((unused)) struct soap *soap, struct SOAP_ENC__base64 **const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_PointerToSOAP_ENC__base64))
 		soap_serialize_PointerToSOAP_ENC__base64(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerToSOAP_ENC__base64(struct soap *soap, struct SOAP_ENC__base64 **const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerToSOAP_ENC__base64(__attribute__((unused)) struct soap *soap, struct SOAP_ENC__base64 **const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToPointerToSOAP_ENC__base64);
 	if (soap_out_PointerToPointerToSOAP_ENC__base64(soap, tag, id, a, type))
@@ -11374,7 +11374,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerToSOAP_ENC__base64(struct soa
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerToSOAP_ENC__base64(struct soap *soap, const char *tag, int id, struct SOAP_ENC__base64 **const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerToSOAP_ENC__base64(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct SOAP_ENC__base64 **const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_PointerToSOAP_ENC__base64);
 	if (id < 0)
@@ -11382,7 +11382,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerToSOAP_ENC__base64(struct soa
 	return soap_out_PointerToSOAP_ENC__base64(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct SOAP_ENC__base64 *** SOAP_FMAC4 soap_get_PointerToPointerToSOAP_ENC__base64(struct soap *soap, struct SOAP_ENC__base64 ***p, const char *tag, const char *type)
+SOAP_FMAC3 struct SOAP_ENC__base64 *** SOAP_FMAC4 soap_get_PointerToPointerToSOAP_ENC__base64(__attribute__((unused)) struct soap *soap, struct SOAP_ENC__base64 ***p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToPointerToSOAP_ENC__base64(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11390,7 +11390,7 @@ SOAP_FMAC3 struct SOAP_ENC__base64 *** SOAP_FMAC4 soap_get_PointerToPointerToSOA
 	return p;
 }
 
-SOAP_FMAC3 struct SOAP_ENC__base64 *** SOAP_FMAC4 soap_in_PointerToPointerToSOAP_ENC__base64(struct soap *soap, const char *tag, struct SOAP_ENC__base64 ***a, const char *type)
+SOAP_FMAC3 struct SOAP_ENC__base64 *** SOAP_FMAC4 soap_in_PointerToPointerToSOAP_ENC__base64(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct SOAP_ENC__base64 ***a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11411,13 +11411,13 @@ SOAP_FMAC3 struct SOAP_ENC__base64 *** SOAP_FMAC4 soap_in_PointerToPointerToSOAP
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToSOAP_ENC__base64(struct soap *soap, struct SOAP_ENC__base64 *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToSOAP_ENC__base64(__attribute__((unused)) struct soap *soap, struct SOAP_ENC__base64 *const*a)
 {
 	if (*a)
 		soap_serialize_SOAP_ENC__base64(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSOAP_ENC__base64(struct soap *soap, struct SOAP_ENC__base64 *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSOAP_ENC__base64(__attribute__((unused)) struct soap *soap, struct SOAP_ENC__base64 *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToSOAP_ENC__base64);
 	if (soap_out_PointerToSOAP_ENC__base64(soap, tag, id, a, type))
@@ -11425,7 +11425,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSOAP_ENC__base64(struct soap *soap, 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToSOAP_ENC__base64(struct soap *soap, const char *tag, int id, struct SOAP_ENC__base64 *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToSOAP_ENC__base64(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct SOAP_ENC__base64 *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, (struct soap_array*)&(*a)->__ptr, 1, type, SOAP_TYPE_SOAP_ENC__base64);
 	if (id < 0)
@@ -11433,7 +11433,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToSOAP_ENC__base64(struct soap *soap, 
 	return soap_out_SOAP_ENC__base64(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct SOAP_ENC__base64 ** SOAP_FMAC4 soap_get_PointerToSOAP_ENC__base64(struct soap *soap, struct SOAP_ENC__base64 **p, const char *tag, const char *type)
+SOAP_FMAC3 struct SOAP_ENC__base64 ** SOAP_FMAC4 soap_get_PointerToSOAP_ENC__base64(__attribute__((unused)) struct soap *soap, struct SOAP_ENC__base64 **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToSOAP_ENC__base64(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11441,7 +11441,7 @@ SOAP_FMAC3 struct SOAP_ENC__base64 ** SOAP_FMAC4 soap_get_PointerToSOAP_ENC__bas
 	return p;
 }
 
-SOAP_FMAC3 struct SOAP_ENC__base64 ** SOAP_FMAC4 soap_in_PointerToSOAP_ENC__base64(struct soap *soap, const char *tag, struct SOAP_ENC__base64 **a, const char *type)
+SOAP_FMAC3 struct SOAP_ENC__base64 ** SOAP_FMAC4 soap_in_PointerToSOAP_ENC__base64(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct SOAP_ENC__base64 **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11462,13 +11462,13 @@ SOAP_FMAC3 struct SOAP_ENC__base64 ** SOAP_FMAC4 soap_in_PointerToSOAP_ENC__base
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__AllQueuedTransferStruct(struct soap *soap, struct cwmp__AllQueuedTransferStruct **const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__AllQueuedTransferStruct(__attribute__((unused)) struct soap *soap, struct cwmp__AllQueuedTransferStruct **const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_PointerTocwmp__AllQueuedTransferStruct))
 		soap_serialize_PointerTocwmp__AllQueuedTransferStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__AllQueuedTransferStruct(struct soap *soap, struct cwmp__AllQueuedTransferStruct **const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__AllQueuedTransferStruct(__attribute__((unused)) struct soap *soap, struct cwmp__AllQueuedTransferStruct **const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToPointerTocwmp__AllQueuedTransferStruct);
 	if (soap_out_PointerToPointerTocwmp__AllQueuedTransferStruct(soap, tag, id, a, type))
@@ -11476,7 +11476,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__AllQueuedTransferStru
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__AllQueuedTransferStruct(struct soap *soap, const char *tag, int id, struct cwmp__AllQueuedTransferStruct **const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__AllQueuedTransferStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__AllQueuedTransferStruct **const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_PointerTocwmp__AllQueuedTransferStruct);
 	if (id < 0)
@@ -11484,7 +11484,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__AllQueuedTransferStru
 	return soap_out_PointerTocwmp__AllQueuedTransferStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__AllQueuedTransferStruct(struct soap *soap, struct cwmp__AllQueuedTransferStruct ***p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__AllQueuedTransferStruct(__attribute__((unused)) struct soap *soap, struct cwmp__AllQueuedTransferStruct ***p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToPointerTocwmp__AllQueuedTransferStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11492,7 +11492,7 @@ SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct *** SOAP_FMAC4 soap_get_PointerT
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__AllQueuedTransferStruct(struct soap *soap, const char *tag, struct cwmp__AllQueuedTransferStruct ***a, const char *type)
+SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__AllQueuedTransferStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__AllQueuedTransferStruct ***a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11513,13 +11513,13 @@ SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct *** SOAP_FMAC4 soap_in_PointerTo
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__AllQueuedTransferStruct(struct soap *soap, struct cwmp__AllQueuedTransferStruct *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__AllQueuedTransferStruct(__attribute__((unused)) struct soap *soap, struct cwmp__AllQueuedTransferStruct *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_cwmp__AllQueuedTransferStruct))
 		soap_serialize_cwmp__AllQueuedTransferStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__AllQueuedTransferStruct(struct soap *soap, struct cwmp__AllQueuedTransferStruct *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__AllQueuedTransferStruct(__attribute__((unused)) struct soap *soap, struct cwmp__AllQueuedTransferStruct *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTocwmp__AllQueuedTransferStruct);
 	if (soap_out_PointerTocwmp__AllQueuedTransferStruct(soap, tag, id, a, type))
@@ -11527,7 +11527,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__AllQueuedTransferStruct(struct
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__AllQueuedTransferStruct(struct soap *soap, const char *tag, int id, struct cwmp__AllQueuedTransferStruct *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__AllQueuedTransferStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__AllQueuedTransferStruct *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_cwmp__AllQueuedTransferStruct);
 	if (id < 0)
@@ -11535,7 +11535,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__AllQueuedTransferStruct(struct
 	return soap_out_cwmp__AllQueuedTransferStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__AllQueuedTransferStruct(struct soap *soap, struct cwmp__AllQueuedTransferStruct **p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__AllQueuedTransferStruct(__attribute__((unused)) struct soap *soap, struct cwmp__AllQueuedTransferStruct **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTocwmp__AllQueuedTransferStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11543,7 +11543,7 @@ SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct ** SOAP_FMAC4 soap_get_PointerTo
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__AllQueuedTransferStruct(struct soap *soap, const char *tag, struct cwmp__AllQueuedTransferStruct **a, const char *type)
+SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__AllQueuedTransferStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__AllQueuedTransferStruct **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11564,13 +11564,13 @@ SOAP_FMAC3 struct cwmp__AllQueuedTransferStruct ** SOAP_FMAC4 soap_in_PointerToc
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__QueuedTransferStruct(struct soap *soap, struct cwmp__QueuedTransferStruct **const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__QueuedTransferStruct(__attribute__((unused)) struct soap *soap, struct cwmp__QueuedTransferStruct **const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_PointerTocwmp__QueuedTransferStruct))
 		soap_serialize_PointerTocwmp__QueuedTransferStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__QueuedTransferStruct(struct soap *soap, struct cwmp__QueuedTransferStruct **const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__QueuedTransferStruct(__attribute__((unused)) struct soap *soap, struct cwmp__QueuedTransferStruct **const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToPointerTocwmp__QueuedTransferStruct);
 	if (soap_out_PointerToPointerTocwmp__QueuedTransferStruct(soap, tag, id, a, type))
@@ -11578,7 +11578,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__QueuedTransferStruct(
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__QueuedTransferStruct(struct soap *soap, const char *tag, int id, struct cwmp__QueuedTransferStruct **const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__QueuedTransferStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__QueuedTransferStruct **const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_PointerTocwmp__QueuedTransferStruct);
 	if (id < 0)
@@ -11586,7 +11586,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__QueuedTransferStruct(
 	return soap_out_PointerTocwmp__QueuedTransferStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__QueuedTransferStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__QueuedTransferStruct(struct soap *soap, struct cwmp__QueuedTransferStruct ***p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__QueuedTransferStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__QueuedTransferStruct(__attribute__((unused)) struct soap *soap, struct cwmp__QueuedTransferStruct ***p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToPointerTocwmp__QueuedTransferStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11594,7 +11594,7 @@ SOAP_FMAC3 struct cwmp__QueuedTransferStruct *** SOAP_FMAC4 soap_get_PointerToPo
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__QueuedTransferStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__QueuedTransferStruct(struct soap *soap, const char *tag, struct cwmp__QueuedTransferStruct ***a, const char *type)
+SOAP_FMAC3 struct cwmp__QueuedTransferStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__QueuedTransferStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__QueuedTransferStruct ***a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11615,13 +11615,13 @@ SOAP_FMAC3 struct cwmp__QueuedTransferStruct *** SOAP_FMAC4 soap_in_PointerToPoi
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__QueuedTransferStruct(struct soap *soap, struct cwmp__QueuedTransferStruct *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__QueuedTransferStruct(__attribute__((unused)) struct soap *soap, struct cwmp__QueuedTransferStruct *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_cwmp__QueuedTransferStruct))
 		soap_serialize_cwmp__QueuedTransferStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__QueuedTransferStruct(struct soap *soap, struct cwmp__QueuedTransferStruct *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__QueuedTransferStruct(__attribute__((unused)) struct soap *soap, struct cwmp__QueuedTransferStruct *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTocwmp__QueuedTransferStruct);
 	if (soap_out_PointerTocwmp__QueuedTransferStruct(soap, tag, id, a, type))
@@ -11629,7 +11629,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__QueuedTransferStruct(struct so
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__QueuedTransferStruct(struct soap *soap, const char *tag, int id, struct cwmp__QueuedTransferStruct *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__QueuedTransferStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__QueuedTransferStruct *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_cwmp__QueuedTransferStruct);
 	if (id < 0)
@@ -11637,7 +11637,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__QueuedTransferStruct(struct so
 	return soap_out_cwmp__QueuedTransferStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__QueuedTransferStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__QueuedTransferStruct(struct soap *soap, struct cwmp__QueuedTransferStruct **p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__QueuedTransferStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__QueuedTransferStruct(__attribute__((unused)) struct soap *soap, struct cwmp__QueuedTransferStruct **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTocwmp__QueuedTransferStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11645,7 +11645,7 @@ SOAP_FMAC3 struct cwmp__QueuedTransferStruct ** SOAP_FMAC4 soap_get_PointerTocwm
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__QueuedTransferStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__QueuedTransferStruct(struct soap *soap, const char *tag, struct cwmp__QueuedTransferStruct **a, const char *type)
+SOAP_FMAC3 struct cwmp__QueuedTransferStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__QueuedTransferStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__QueuedTransferStruct **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11666,13 +11666,13 @@ SOAP_FMAC3 struct cwmp__QueuedTransferStruct ** SOAP_FMAC4 soap_in_PointerTocwmp
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__ParameterAttributeStruct(struct soap *soap, struct cwmp__ParameterAttributeStruct **const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__ParameterAttributeStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterAttributeStruct **const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_PointerTocwmp__ParameterAttributeStruct))
 		soap_serialize_PointerTocwmp__ParameterAttributeStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__ParameterAttributeStruct(struct soap *soap, struct cwmp__ParameterAttributeStruct **const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__ParameterAttributeStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterAttributeStruct **const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToPointerTocwmp__ParameterAttributeStruct);
 	if (soap_out_PointerToPointerTocwmp__ParameterAttributeStruct(soap, tag, id, a, type))
@@ -11680,7 +11680,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__ParameterAttributeStr
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__ParameterAttributeStruct(struct soap *soap, const char *tag, int id, struct cwmp__ParameterAttributeStruct **const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__ParameterAttributeStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__ParameterAttributeStruct **const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_PointerTocwmp__ParameterAttributeStruct);
 	if (id < 0)
@@ -11688,7 +11688,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__ParameterAttributeStr
 	return soap_out_PointerTocwmp__ParameterAttributeStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__ParameterAttributeStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__ParameterAttributeStruct(struct soap *soap, struct cwmp__ParameterAttributeStruct ***p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterAttributeStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__ParameterAttributeStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterAttributeStruct ***p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToPointerTocwmp__ParameterAttributeStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11696,7 +11696,7 @@ SOAP_FMAC3 struct cwmp__ParameterAttributeStruct *** SOAP_FMAC4 soap_get_Pointer
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__ParameterAttributeStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__ParameterAttributeStruct(struct soap *soap, const char *tag, struct cwmp__ParameterAttributeStruct ***a, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterAttributeStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__ParameterAttributeStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__ParameterAttributeStruct ***a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11717,13 +11717,13 @@ SOAP_FMAC3 struct cwmp__ParameterAttributeStruct *** SOAP_FMAC4 soap_in_PointerT
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__ParameterAttributeStruct(struct soap *soap, struct cwmp__ParameterAttributeStruct *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__ParameterAttributeStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterAttributeStruct *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_cwmp__ParameterAttributeStruct))
 		soap_serialize_cwmp__ParameterAttributeStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__ParameterAttributeStruct(struct soap *soap, struct cwmp__ParameterAttributeStruct *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__ParameterAttributeStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterAttributeStruct *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTocwmp__ParameterAttributeStruct);
 	if (soap_out_PointerTocwmp__ParameterAttributeStruct(soap, tag, id, a, type))
@@ -11731,7 +11731,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__ParameterAttributeStruct(struc
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__ParameterAttributeStruct(struct soap *soap, const char *tag, int id, struct cwmp__ParameterAttributeStruct *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__ParameterAttributeStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__ParameterAttributeStruct *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_cwmp__ParameterAttributeStruct);
 	if (id < 0)
@@ -11739,7 +11739,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__ParameterAttributeStruct(struc
 	return soap_out_cwmp__ParameterAttributeStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__ParameterAttributeStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__ParameterAttributeStruct(struct soap *soap, struct cwmp__ParameterAttributeStruct **p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterAttributeStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__ParameterAttributeStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterAttributeStruct **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTocwmp__ParameterAttributeStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11747,7 +11747,7 @@ SOAP_FMAC3 struct cwmp__ParameterAttributeStruct ** SOAP_FMAC4 soap_get_PointerT
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__ParameterAttributeStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__ParameterAttributeStruct(struct soap *soap, const char *tag, struct cwmp__ParameterAttributeStruct **a, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterAttributeStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__ParameterAttributeStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__ParameterAttributeStruct **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11768,13 +11768,13 @@ SOAP_FMAC3 struct cwmp__ParameterAttributeStruct ** SOAP_FMAC4 soap_in_PointerTo
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__SetParameterAttributesStruct(struct soap *soap, struct cwmp__SetParameterAttributesStruct **const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__SetParameterAttributesStruct(__attribute__((unused)) struct soap *soap, struct cwmp__SetParameterAttributesStruct **const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_PointerTocwmp__SetParameterAttributesStruct))
 		soap_serialize_PointerTocwmp__SetParameterAttributesStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__SetParameterAttributesStruct(struct soap *soap, struct cwmp__SetParameterAttributesStruct **const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__SetParameterAttributesStruct(__attribute__((unused)) struct soap *soap, struct cwmp__SetParameterAttributesStruct **const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToPointerTocwmp__SetParameterAttributesStruct);
 	if (soap_out_PointerToPointerTocwmp__SetParameterAttributesStruct(soap, tag, id, a, type))
@@ -11782,7 +11782,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__SetParameterAttribute
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__SetParameterAttributesStruct(struct soap *soap, const char *tag, int id, struct cwmp__SetParameterAttributesStruct **const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__SetParameterAttributesStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__SetParameterAttributesStruct **const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_PointerTocwmp__SetParameterAttributesStruct);
 	if (id < 0)
@@ -11790,7 +11790,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__SetParameterAttribute
 	return soap_out_PointerTocwmp__SetParameterAttributesStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__SetParameterAttributesStruct(struct soap *soap, struct cwmp__SetParameterAttributesStruct ***p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__SetParameterAttributesStruct(__attribute__((unused)) struct soap *soap, struct cwmp__SetParameterAttributesStruct ***p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToPointerTocwmp__SetParameterAttributesStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11798,7 +11798,7 @@ SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct *** SOAP_FMAC4 soap_get_Poi
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__SetParameterAttributesStruct(struct soap *soap, const char *tag, struct cwmp__SetParameterAttributesStruct ***a, const char *type)
+SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__SetParameterAttributesStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__SetParameterAttributesStruct ***a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11819,13 +11819,13 @@ SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct *** SOAP_FMAC4 soap_in_Poin
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__SetParameterAttributesStruct(struct soap *soap, struct cwmp__SetParameterAttributesStruct *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__SetParameterAttributesStruct(__attribute__((unused)) struct soap *soap, struct cwmp__SetParameterAttributesStruct *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_cwmp__SetParameterAttributesStruct))
 		soap_serialize_cwmp__SetParameterAttributesStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__SetParameterAttributesStruct(struct soap *soap, struct cwmp__SetParameterAttributesStruct *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__SetParameterAttributesStruct(__attribute__((unused)) struct soap *soap, struct cwmp__SetParameterAttributesStruct *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTocwmp__SetParameterAttributesStruct);
 	if (soap_out_PointerTocwmp__SetParameterAttributesStruct(soap, tag, id, a, type))
@@ -11833,7 +11833,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__SetParameterAttributesStruct(s
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__SetParameterAttributesStruct(struct soap *soap, const char *tag, int id, struct cwmp__SetParameterAttributesStruct *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__SetParameterAttributesStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__SetParameterAttributesStruct *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_cwmp__SetParameterAttributesStruct);
 	if (id < 0)
@@ -11841,7 +11841,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__SetParameterAttributesStruct(s
 	return soap_out_cwmp__SetParameterAttributesStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__SetParameterAttributesStruct(struct soap *soap, struct cwmp__SetParameterAttributesStruct **p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__SetParameterAttributesStruct(__attribute__((unused)) struct soap *soap, struct cwmp__SetParameterAttributesStruct **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTocwmp__SetParameterAttributesStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11849,7 +11849,7 @@ SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct ** SOAP_FMAC4 soap_get_Poin
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__SetParameterAttributesStruct(struct soap *soap, const char *tag, struct cwmp__SetParameterAttributesStruct **a, const char *type)
+SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__SetParameterAttributesStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__SetParameterAttributesStruct **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11870,13 +11870,13 @@ SOAP_FMAC3 struct cwmp__SetParameterAttributesStruct ** SOAP_FMAC4 soap_in_Point
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__ParameterInfoStruct(struct soap *soap, struct cwmp__ParameterInfoStruct **const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__ParameterInfoStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterInfoStruct **const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_PointerTocwmp__ParameterInfoStruct))
 		soap_serialize_PointerTocwmp__ParameterInfoStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__ParameterInfoStruct(struct soap *soap, struct cwmp__ParameterInfoStruct **const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__ParameterInfoStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterInfoStruct **const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToPointerTocwmp__ParameterInfoStruct);
 	if (soap_out_PointerToPointerTocwmp__ParameterInfoStruct(soap, tag, id, a, type))
@@ -11884,7 +11884,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__ParameterInfoStruct(s
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__ParameterInfoStruct(struct soap *soap, const char *tag, int id, struct cwmp__ParameterInfoStruct **const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__ParameterInfoStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__ParameterInfoStruct **const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_PointerTocwmp__ParameterInfoStruct);
 	if (id < 0)
@@ -11892,7 +11892,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__ParameterInfoStruct(s
 	return soap_out_PointerTocwmp__ParameterInfoStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__ParameterInfoStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__ParameterInfoStruct(struct soap *soap, struct cwmp__ParameterInfoStruct ***p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterInfoStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__ParameterInfoStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterInfoStruct ***p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToPointerTocwmp__ParameterInfoStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11900,7 +11900,7 @@ SOAP_FMAC3 struct cwmp__ParameterInfoStruct *** SOAP_FMAC4 soap_get_PointerToPoi
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__ParameterInfoStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__ParameterInfoStruct(struct soap *soap, const char *tag, struct cwmp__ParameterInfoStruct ***a, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterInfoStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__ParameterInfoStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__ParameterInfoStruct ***a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11921,13 +11921,13 @@ SOAP_FMAC3 struct cwmp__ParameterInfoStruct *** SOAP_FMAC4 soap_in_PointerToPoin
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__ParameterInfoStruct(struct soap *soap, struct cwmp__ParameterInfoStruct *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__ParameterInfoStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterInfoStruct *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_cwmp__ParameterInfoStruct))
 		soap_serialize_cwmp__ParameterInfoStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__ParameterInfoStruct(struct soap *soap, struct cwmp__ParameterInfoStruct *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__ParameterInfoStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterInfoStruct *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTocwmp__ParameterInfoStruct);
 	if (soap_out_PointerTocwmp__ParameterInfoStruct(soap, tag, id, a, type))
@@ -11935,7 +11935,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__ParameterInfoStruct(struct soa
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__ParameterInfoStruct(struct soap *soap, const char *tag, int id, struct cwmp__ParameterInfoStruct *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__ParameterInfoStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__ParameterInfoStruct *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_cwmp__ParameterInfoStruct);
 	if (id < 0)
@@ -11943,7 +11943,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__ParameterInfoStruct(struct soa
 	return soap_out_cwmp__ParameterInfoStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__ParameterInfoStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__ParameterInfoStruct(struct soap *soap, struct cwmp__ParameterInfoStruct **p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterInfoStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__ParameterInfoStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterInfoStruct **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTocwmp__ParameterInfoStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -11951,7 +11951,7 @@ SOAP_FMAC3 struct cwmp__ParameterInfoStruct ** SOAP_FMAC4 soap_get_PointerTocwmp
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__ParameterInfoStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__ParameterInfoStruct(struct soap *soap, const char *tag, struct cwmp__ParameterInfoStruct **a, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterInfoStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__ParameterInfoStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__ParameterInfoStruct **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -11972,13 +11972,13 @@ SOAP_FMAC3 struct cwmp__ParameterInfoStruct ** SOAP_FMAC4 soap_in_PointerTocwmp_
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__ParameterValueStruct(struct soap *soap, struct cwmp__ParameterValueStruct **const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__ParameterValueStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterValueStruct **const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_PointerTocwmp__ParameterValueStruct))
 		soap_serialize_PointerTocwmp__ParameterValueStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__ParameterValueStruct(struct soap *soap, struct cwmp__ParameterValueStruct **const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__ParameterValueStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterValueStruct **const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToPointerTocwmp__ParameterValueStruct);
 	if (soap_out_PointerToPointerTocwmp__ParameterValueStruct(soap, tag, id, a, type))
@@ -11986,7 +11986,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__ParameterValueStruct(
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__ParameterValueStruct(struct soap *soap, const char *tag, int id, struct cwmp__ParameterValueStruct **const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__ParameterValueStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__ParameterValueStruct **const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_PointerTocwmp__ParameterValueStruct);
 	if (id < 0)
@@ -11994,7 +11994,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__ParameterValueStruct(
 	return soap_out_PointerTocwmp__ParameterValueStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__ParameterValueStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__ParameterValueStruct(struct soap *soap, struct cwmp__ParameterValueStruct ***p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterValueStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__ParameterValueStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterValueStruct ***p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToPointerTocwmp__ParameterValueStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12002,7 +12002,7 @@ SOAP_FMAC3 struct cwmp__ParameterValueStruct *** SOAP_FMAC4 soap_get_PointerToPo
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__ParameterValueStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__ParameterValueStruct(struct soap *soap, const char *tag, struct cwmp__ParameterValueStruct ***a, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterValueStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__ParameterValueStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__ParameterValueStruct ***a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12023,13 +12023,13 @@ SOAP_FMAC3 struct cwmp__ParameterValueStruct *** SOAP_FMAC4 soap_in_PointerToPoi
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__ParameterValueStruct(struct soap *soap, struct cwmp__ParameterValueStruct *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__ParameterValueStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterValueStruct *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_cwmp__ParameterValueStruct))
 		soap_serialize_cwmp__ParameterValueStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__ParameterValueStruct(struct soap *soap, struct cwmp__ParameterValueStruct *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__ParameterValueStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterValueStruct *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTocwmp__ParameterValueStruct);
 	if (soap_out_PointerTocwmp__ParameterValueStruct(soap, tag, id, a, type))
@@ -12037,7 +12037,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__ParameterValueStruct(struct so
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__ParameterValueStruct(struct soap *soap, const char *tag, int id, struct cwmp__ParameterValueStruct *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__ParameterValueStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__ParameterValueStruct *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_cwmp__ParameterValueStruct);
 	if (id < 0)
@@ -12045,7 +12045,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__ParameterValueStruct(struct so
 	return soap_out_cwmp__ParameterValueStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__ParameterValueStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__ParameterValueStruct(struct soap *soap, struct cwmp__ParameterValueStruct **p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterValueStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__ParameterValueStruct(__attribute__((unused)) struct soap *soap, struct cwmp__ParameterValueStruct **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTocwmp__ParameterValueStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12053,7 +12053,7 @@ SOAP_FMAC3 struct cwmp__ParameterValueStruct ** SOAP_FMAC4 soap_get_PointerTocwm
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__ParameterValueStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__ParameterValueStruct(struct soap *soap, const char *tag, struct cwmp__ParameterValueStruct **a, const char *type)
+SOAP_FMAC3 struct cwmp__ParameterValueStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__ParameterValueStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__ParameterValueStruct **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12074,13 +12074,13 @@ SOAP_FMAC3 struct cwmp__ParameterValueStruct ** SOAP_FMAC4 soap_in_PointerTocwmp
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__EventStruct(struct soap *soap, struct cwmp__EventStruct **const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToPointerTocwmp__EventStruct(__attribute__((unused)) struct soap *soap, struct cwmp__EventStruct **const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_PointerTocwmp__EventStruct))
 		soap_serialize_PointerTocwmp__EventStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__EventStruct(struct soap *soap, struct cwmp__EventStruct **const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__EventStruct(__attribute__((unused)) struct soap *soap, struct cwmp__EventStruct **const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToPointerTocwmp__EventStruct);
 	if (soap_out_PointerToPointerTocwmp__EventStruct(soap, tag, id, a, type))
@@ -12088,7 +12088,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToPointerTocwmp__EventStruct(struct so
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__EventStruct(struct soap *soap, const char *tag, int id, struct cwmp__EventStruct **const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__EventStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__EventStruct **const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_PointerTocwmp__EventStruct);
 	if (id < 0)
@@ -12096,7 +12096,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToPointerTocwmp__EventStruct(struct so
 	return soap_out_PointerTocwmp__EventStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__EventStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__EventStruct(struct soap *soap, struct cwmp__EventStruct ***p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__EventStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocwmp__EventStruct(__attribute__((unused)) struct soap *soap, struct cwmp__EventStruct ***p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToPointerTocwmp__EventStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12104,7 +12104,7 @@ SOAP_FMAC3 struct cwmp__EventStruct *** SOAP_FMAC4 soap_get_PointerToPointerTocw
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__EventStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__EventStruct(struct soap *soap, const char *tag, struct cwmp__EventStruct ***a, const char *type)
+SOAP_FMAC3 struct cwmp__EventStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwmp__EventStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__EventStruct ***a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12125,13 +12125,13 @@ SOAP_FMAC3 struct cwmp__EventStruct *** SOAP_FMAC4 soap_in_PointerToPointerTocwm
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__EventStruct(struct soap *soap, struct cwmp__EventStruct *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__EventStruct(__attribute__((unused)) struct soap *soap, struct cwmp__EventStruct *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_cwmp__EventStruct))
 		soap_serialize_cwmp__EventStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__EventStruct(struct soap *soap, struct cwmp__EventStruct *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__EventStruct(__attribute__((unused)) struct soap *soap, struct cwmp__EventStruct *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTocwmp__EventStruct);
 	if (soap_out_PointerTocwmp__EventStruct(soap, tag, id, a, type))
@@ -12139,7 +12139,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__EventStruct(struct soap *soap,
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__EventStruct(struct soap *soap, const char *tag, int id, struct cwmp__EventStruct *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__EventStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__EventStruct *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_cwmp__EventStruct);
 	if (id < 0)
@@ -12147,7 +12147,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__EventStruct(struct soap *soap,
 	return soap_out_cwmp__EventStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__EventStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__EventStruct(struct soap *soap, struct cwmp__EventStruct **p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__EventStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__EventStruct(__attribute__((unused)) struct soap *soap, struct cwmp__EventStruct **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTocwmp__EventStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12155,7 +12155,7 @@ SOAP_FMAC3 struct cwmp__EventStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__EventS
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__EventStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__EventStruct(struct soap *soap, const char *tag, struct cwmp__EventStruct **a, const char *type)
+SOAP_FMAC3 struct cwmp__EventStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__EventStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__EventStruct **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12176,13 +12176,13 @@ SOAP_FMAC3 struct cwmp__EventStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__EventSt
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToFileTypeArg(struct soap *soap, struct FileTypeArg *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToFileTypeArg(__attribute__((unused)) struct soap *soap, struct FileTypeArg *const*a)
 {
 	if (*a)
 		soap_serialize_FileTypeArg(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToFileTypeArg(struct soap *soap, struct FileTypeArg *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToFileTypeArg(__attribute__((unused)) struct soap *soap, struct FileTypeArg *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToFileTypeArg);
 	if (soap_out_PointerToFileTypeArg(soap, tag, id, a, type))
@@ -12190,7 +12190,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToFileTypeArg(struct soap *soap, struc
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToFileTypeArg(struct soap *soap, const char *tag, int id, struct FileTypeArg *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToFileTypeArg(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct FileTypeArg *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, (struct soap_array*)&(*a)->__ptrArgStruct, 1, type, SOAP_TYPE_FileTypeArg);
 	if (id < 0)
@@ -12198,7 +12198,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToFileTypeArg(struct soap *soap, const
 	return soap_out_FileTypeArg(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct FileTypeArg ** SOAP_FMAC4 soap_get_PointerToFileTypeArg(struct soap *soap, struct FileTypeArg **p, const char *tag, const char *type)
+SOAP_FMAC3 struct FileTypeArg ** SOAP_FMAC4 soap_get_PointerToFileTypeArg(__attribute__((unused)) struct soap *soap, struct FileTypeArg **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToFileTypeArg(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12206,7 +12206,7 @@ SOAP_FMAC3 struct FileTypeArg ** SOAP_FMAC4 soap_get_PointerToFileTypeArg(struct
 	return p;
 }
 
-SOAP_FMAC3 struct FileTypeArg ** SOAP_FMAC4 soap_in_PointerToFileTypeArg(struct soap *soap, const char *tag, struct FileTypeArg **a, const char *type)
+SOAP_FMAC3 struct FileTypeArg ** SOAP_FMAC4 soap_in_PointerToFileTypeArg(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct FileTypeArg **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12227,13 +12227,13 @@ SOAP_FMAC3 struct FileTypeArg ** SOAP_FMAC4 soap_in_PointerToFileTypeArg(struct 
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__FaultStruct(struct soap *soap, struct cwmp__FaultStruct *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__FaultStruct(__attribute__((unused)) struct soap *soap, struct cwmp__FaultStruct *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_cwmp__FaultStruct))
 		soap_serialize_cwmp__FaultStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__FaultStruct(struct soap *soap, struct cwmp__FaultStruct *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__FaultStruct(__attribute__((unused)) struct soap *soap, struct cwmp__FaultStruct *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTocwmp__FaultStruct);
 	if (soap_out_PointerTocwmp__FaultStruct(soap, tag, id, a, type))
@@ -12241,7 +12241,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__FaultStruct(struct soap *soap,
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__FaultStruct(struct soap *soap, const char *tag, int id, struct cwmp__FaultStruct *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__FaultStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__FaultStruct *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_cwmp__FaultStruct);
 	if (id < 0)
@@ -12249,7 +12249,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__FaultStruct(struct soap *soap,
 	return soap_out_cwmp__FaultStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__FaultStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__FaultStruct(struct soap *soap, struct cwmp__FaultStruct **p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__FaultStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__FaultStruct(__attribute__((unused)) struct soap *soap, struct cwmp__FaultStruct **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTocwmp__FaultStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12257,7 +12257,7 @@ SOAP_FMAC3 struct cwmp__FaultStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__FaultS
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__FaultStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__FaultStruct(struct soap *soap, const char *tag, struct cwmp__FaultStruct **a, const char *type)
+SOAP_FMAC3 struct cwmp__FaultStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__FaultStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__FaultStruct **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12278,13 +12278,13 @@ SOAP_FMAC3 struct cwmp__FaultStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__FaultSt
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToEventList(struct soap *soap, struct EventList *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToEventList(__attribute__((unused)) struct soap *soap, struct EventList *const*a)
 {
 	if (*a)
 		soap_serialize_EventList(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToEventList(struct soap *soap, struct EventList *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToEventList(__attribute__((unused)) struct soap *soap, struct EventList *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToEventList);
 	if (soap_out_PointerToEventList(soap, tag, id, a, type))
@@ -12292,7 +12292,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToEventList(struct soap *soap, struct 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToEventList(struct soap *soap, const char *tag, int id, struct EventList *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToEventList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct EventList *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, (struct soap_array*)&(*a)->__ptrEventStruct, 1, type, SOAP_TYPE_EventList);
 	if (id < 0)
@@ -12300,7 +12300,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToEventList(struct soap *soap, const c
 	return soap_out_EventList(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct EventList ** SOAP_FMAC4 soap_get_PointerToEventList(struct soap *soap, struct EventList **p, const char *tag, const char *type)
+SOAP_FMAC3 struct EventList ** SOAP_FMAC4 soap_get_PointerToEventList(__attribute__((unused)) struct soap *soap, struct EventList **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToEventList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12308,7 +12308,7 @@ SOAP_FMAC3 struct EventList ** SOAP_FMAC4 soap_get_PointerToEventList(struct soa
 	return p;
 }
 
-SOAP_FMAC3 struct EventList ** SOAP_FMAC4 soap_in_PointerToEventList(struct soap *soap, const char *tag, struct EventList **a, const char *type)
+SOAP_FMAC3 struct EventList ** SOAP_FMAC4 soap_in_PointerToEventList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct EventList **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12329,13 +12329,13 @@ SOAP_FMAC3 struct EventList ** SOAP_FMAC4 soap_in_PointerToEventList(struct soap
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__DeviceIdStruct(struct soap *soap, struct cwmp__DeviceIdStruct *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTocwmp__DeviceIdStruct(__attribute__((unused)) struct soap *soap, struct cwmp__DeviceIdStruct *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_cwmp__DeviceIdStruct))
 		soap_serialize_cwmp__DeviceIdStruct(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__DeviceIdStruct(struct soap *soap, struct cwmp__DeviceIdStruct *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__DeviceIdStruct(__attribute__((unused)) struct soap *soap, struct cwmp__DeviceIdStruct *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTocwmp__DeviceIdStruct);
 	if (soap_out_PointerTocwmp__DeviceIdStruct(soap, tag, id, a, type))
@@ -12343,7 +12343,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTocwmp__DeviceIdStruct(struct soap *so
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__DeviceIdStruct(struct soap *soap, const char *tag, int id, struct cwmp__DeviceIdStruct *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__DeviceIdStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct cwmp__DeviceIdStruct *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_cwmp__DeviceIdStruct);
 	if (id < 0)
@@ -12351,7 +12351,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTocwmp__DeviceIdStruct(struct soap *so
 	return soap_out_cwmp__DeviceIdStruct(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct cwmp__DeviceIdStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__DeviceIdStruct(struct soap *soap, struct cwmp__DeviceIdStruct **p, const char *tag, const char *type)
+SOAP_FMAC3 struct cwmp__DeviceIdStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__DeviceIdStruct(__attribute__((unused)) struct soap *soap, struct cwmp__DeviceIdStruct **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTocwmp__DeviceIdStruct(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12359,7 +12359,7 @@ SOAP_FMAC3 struct cwmp__DeviceIdStruct ** SOAP_FMAC4 soap_get_PointerTocwmp__Dev
 	return p;
 }
 
-SOAP_FMAC3 struct cwmp__DeviceIdStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__DeviceIdStruct(struct soap *soap, const char *tag, struct cwmp__DeviceIdStruct **a, const char *type)
+SOAP_FMAC3 struct cwmp__DeviceIdStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__DeviceIdStruct(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct cwmp__DeviceIdStruct **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12380,13 +12380,13 @@ SOAP_FMAC3 struct cwmp__DeviceIdStruct ** SOAP_FMAC4 soap_in_PointerTocwmp__Devi
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToAllTransferList(struct soap *soap, struct AllTransferList *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToAllTransferList(__attribute__((unused)) struct soap *soap, struct AllTransferList *const*a)
 {
 	if (*a)
 		soap_serialize_AllTransferList(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToAllTransferList(struct soap *soap, struct AllTransferList *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToAllTransferList(__attribute__((unused)) struct soap *soap, struct AllTransferList *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToAllTransferList);
 	if (soap_out_PointerToAllTransferList(soap, tag, id, a, type))
@@ -12394,7 +12394,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToAllTransferList(struct soap *soap, s
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToAllTransferList(struct soap *soap, const char *tag, int id, struct AllTransferList *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToAllTransferList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct AllTransferList *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, (struct soap_array*)&(*a)->__ptrAllQueuedTransferStruct, 1, type, SOAP_TYPE_AllTransferList);
 	if (id < 0)
@@ -12402,7 +12402,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToAllTransferList(struct soap *soap, c
 	return soap_out_AllTransferList(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct AllTransferList ** SOAP_FMAC4 soap_get_PointerToAllTransferList(struct soap *soap, struct AllTransferList **p, const char *tag, const char *type)
+SOAP_FMAC3 struct AllTransferList ** SOAP_FMAC4 soap_get_PointerToAllTransferList(__attribute__((unused)) struct soap *soap, struct AllTransferList **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToAllTransferList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12410,7 +12410,7 @@ SOAP_FMAC3 struct AllTransferList ** SOAP_FMAC4 soap_get_PointerToAllTransferLis
 	return p;
 }
 
-SOAP_FMAC3 struct AllTransferList ** SOAP_FMAC4 soap_in_PointerToAllTransferList(struct soap *soap, const char *tag, struct AllTransferList **a, const char *type)
+SOAP_FMAC3 struct AllTransferList ** SOAP_FMAC4 soap_in_PointerToAllTransferList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct AllTransferList **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12431,13 +12431,13 @@ SOAP_FMAC3 struct AllTransferList ** SOAP_FMAC4 soap_in_PointerToAllTransferList
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToOptionList(struct soap *soap, struct OptionList *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToOptionList(__attribute__((unused)) struct soap *soap, struct OptionList *const*a)
 {
 	if (*a)
 		soap_serialize_OptionList(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToOptionList(struct soap *soap, struct OptionList *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToOptionList(__attribute__((unused)) struct soap *soap, struct OptionList *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToOptionList);
 	if (soap_out_PointerToOptionList(soap, tag, id, a, type))
@@ -12445,7 +12445,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToOptionList(struct soap *soap, struct
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToOptionList(struct soap *soap, const char *tag, int id, struct OptionList *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToOptionList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct OptionList *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, (struct soap_array*)&(*a)->__ptrOptionStruct, 1, type, SOAP_TYPE_OptionList);
 	if (id < 0)
@@ -12453,7 +12453,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToOptionList(struct soap *soap, const 
 	return soap_out_OptionList(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct OptionList ** SOAP_FMAC4 soap_get_PointerToOptionList(struct soap *soap, struct OptionList **p, const char *tag, const char *type)
+SOAP_FMAC3 struct OptionList ** SOAP_FMAC4 soap_get_PointerToOptionList(__attribute__((unused)) struct soap *soap, struct OptionList **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToOptionList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12461,7 +12461,7 @@ SOAP_FMAC3 struct OptionList ** SOAP_FMAC4 soap_get_PointerToOptionList(struct s
 	return p;
 }
 
-SOAP_FMAC3 struct OptionList ** SOAP_FMAC4 soap_in_PointerToOptionList(struct soap *soap, const char *tag, struct OptionList **a, const char *type)
+SOAP_FMAC3 struct OptionList ** SOAP_FMAC4 soap_in_PointerToOptionList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct OptionList **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12482,13 +12482,13 @@ SOAP_FMAC3 struct OptionList ** SOAP_FMAC4 soap_in_PointerToOptionList(struct so
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToVoucherList(struct soap *soap, struct VoucherList *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToVoucherList(__attribute__((unused)) struct soap *soap, struct VoucherList *const*a)
 {
 	if (*a)
 		soap_serialize_VoucherList(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToVoucherList(struct soap *soap, struct VoucherList *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToVoucherList(__attribute__((unused)) struct soap *soap, struct VoucherList *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToVoucherList);
 	if (soap_out_PointerToVoucherList(soap, tag, id, a, type))
@@ -12496,7 +12496,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToVoucherList(struct soap *soap, struc
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToVoucherList(struct soap *soap, const char *tag, int id, struct VoucherList *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToVoucherList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct VoucherList *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, (struct soap_array*)&(*a)->__ptrbase64, 1, type, SOAP_TYPE_VoucherList);
 	if (id < 0)
@@ -12504,7 +12504,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToVoucherList(struct soap *soap, const
 	return soap_out_VoucherList(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct VoucherList ** SOAP_FMAC4 soap_get_PointerToVoucherList(struct soap *soap, struct VoucherList **p, const char *tag, const char *type)
+SOAP_FMAC3 struct VoucherList ** SOAP_FMAC4 soap_get_PointerToVoucherList(__attribute__((unused)) struct soap *soap, struct VoucherList **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToVoucherList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12512,7 +12512,7 @@ SOAP_FMAC3 struct VoucherList ** SOAP_FMAC4 soap_get_PointerToVoucherList(struct
 	return p;
 }
 
-SOAP_FMAC3 struct VoucherList ** SOAP_FMAC4 soap_in_PointerToVoucherList(struct soap *soap, const char *tag, struct VoucherList **a, const char *type)
+SOAP_FMAC3 struct VoucherList ** SOAP_FMAC4 soap_in_PointerToVoucherList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct VoucherList **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12533,13 +12533,13 @@ SOAP_FMAC3 struct VoucherList ** SOAP_FMAC4 soap_in_PointerToVoucherList(struct 
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToTransferList(struct soap *soap, struct TransferList *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToTransferList(__attribute__((unused)) struct soap *soap, struct TransferList *const*a)
 {
 	if (*a)
 		soap_serialize_TransferList(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToTransferList(struct soap *soap, struct TransferList *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToTransferList(__attribute__((unused)) struct soap *soap, struct TransferList *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToTransferList);
 	if (soap_out_PointerToTransferList(soap, tag, id, a, type))
@@ -12547,7 +12547,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToTransferList(struct soap *soap, stru
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToTransferList(struct soap *soap, const char *tag, int id, struct TransferList *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToTransferList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct TransferList *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, (struct soap_array*)&(*a)->__ptrQueuedTransferStruct, 1, type, SOAP_TYPE_TransferList);
 	if (id < 0)
@@ -12555,7 +12555,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToTransferList(struct soap *soap, cons
 	return soap_out_TransferList(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct TransferList ** SOAP_FMAC4 soap_get_PointerToTransferList(struct soap *soap, struct TransferList **p, const char *tag, const char *type)
+SOAP_FMAC3 struct TransferList ** SOAP_FMAC4 soap_get_PointerToTransferList(__attribute__((unused)) struct soap *soap, struct TransferList **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToTransferList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12563,7 +12563,7 @@ SOAP_FMAC3 struct TransferList ** SOAP_FMAC4 soap_get_PointerToTransferList(stru
 	return p;
 }
 
-SOAP_FMAC3 struct TransferList ** SOAP_FMAC4 soap_in_PointerToTransferList(struct soap *soap, const char *tag, struct TransferList **a, const char *type)
+SOAP_FMAC3 struct TransferList ** SOAP_FMAC4 soap_in_PointerToTransferList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct TransferList **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12584,13 +12584,13 @@ SOAP_FMAC3 struct TransferList ** SOAP_FMAC4 soap_in_PointerToTransferList(struc
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToParameterAttributeList(struct soap *soap, struct ParameterAttributeList *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToParameterAttributeList(__attribute__((unused)) struct soap *soap, struct ParameterAttributeList *const*a)
 {
 	if (*a)
 		soap_serialize_ParameterAttributeList(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToParameterAttributeList(struct soap *soap, struct ParameterAttributeList *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToParameterAttributeList(__attribute__((unused)) struct soap *soap, struct ParameterAttributeList *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToParameterAttributeList);
 	if (soap_out_PointerToParameterAttributeList(soap, tag, id, a, type))
@@ -12598,7 +12598,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToParameterAttributeList(struct soap *
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToParameterAttributeList(struct soap *soap, const char *tag, int id, struct ParameterAttributeList *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToParameterAttributeList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct ParameterAttributeList *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, (struct soap_array*)&(*a)->__ptrParameterAttributeStruct, 1, type, SOAP_TYPE_ParameterAttributeList);
 	if (id < 0)
@@ -12606,7 +12606,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToParameterAttributeList(struct soap *
 	return soap_out_ParameterAttributeList(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct ParameterAttributeList ** SOAP_FMAC4 soap_get_PointerToParameterAttributeList(struct soap *soap, struct ParameterAttributeList **p, const char *tag, const char *type)
+SOAP_FMAC3 struct ParameterAttributeList ** SOAP_FMAC4 soap_get_PointerToParameterAttributeList(__attribute__((unused)) struct soap *soap, struct ParameterAttributeList **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToParameterAttributeList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12614,7 +12614,7 @@ SOAP_FMAC3 struct ParameterAttributeList ** SOAP_FMAC4 soap_get_PointerToParamet
 	return p;
 }
 
-SOAP_FMAC3 struct ParameterAttributeList ** SOAP_FMAC4 soap_in_PointerToParameterAttributeList(struct soap *soap, const char *tag, struct ParameterAttributeList **a, const char *type)
+SOAP_FMAC3 struct ParameterAttributeList ** SOAP_FMAC4 soap_in_PointerToParameterAttributeList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct ParameterAttributeList **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12635,13 +12635,13 @@ SOAP_FMAC3 struct ParameterAttributeList ** SOAP_FMAC4 soap_in_PointerToParamete
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToSetParameterAttributesList(struct soap *soap, struct SetParameterAttributesList *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToSetParameterAttributesList(__attribute__((unused)) struct soap *soap, struct SetParameterAttributesList *const*a)
 {
 	if (*a)
 		soap_serialize_SetParameterAttributesList(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSetParameterAttributesList(struct soap *soap, struct SetParameterAttributesList *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSetParameterAttributesList(__attribute__((unused)) struct soap *soap, struct SetParameterAttributesList *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToSetParameterAttributesList);
 	if (soap_out_PointerToSetParameterAttributesList(soap, tag, id, a, type))
@@ -12649,7 +12649,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToSetParameterAttributesList(struct so
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToSetParameterAttributesList(struct soap *soap, const char *tag, int id, struct SetParameterAttributesList *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToSetParameterAttributesList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct SetParameterAttributesList *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, (struct soap_array*)&(*a)->__ptrSetParameterAttributesStruct, 1, type, SOAP_TYPE_SetParameterAttributesList);
 	if (id < 0)
@@ -12657,7 +12657,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToSetParameterAttributesList(struct so
 	return soap_out_SetParameterAttributesList(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct SetParameterAttributesList ** SOAP_FMAC4 soap_get_PointerToSetParameterAttributesList(struct soap *soap, struct SetParameterAttributesList **p, const char *tag, const char *type)
+SOAP_FMAC3 struct SetParameterAttributesList ** SOAP_FMAC4 soap_get_PointerToSetParameterAttributesList(__attribute__((unused)) struct soap *soap, struct SetParameterAttributesList **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToSetParameterAttributesList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12665,7 +12665,7 @@ SOAP_FMAC3 struct SetParameterAttributesList ** SOAP_FMAC4 soap_get_PointerToSet
 	return p;
 }
 
-SOAP_FMAC3 struct SetParameterAttributesList ** SOAP_FMAC4 soap_in_PointerToSetParameterAttributesList(struct soap *soap, const char *tag, struct SetParameterAttributesList **a, const char *type)
+SOAP_FMAC3 struct SetParameterAttributesList ** SOAP_FMAC4 soap_in_PointerToSetParameterAttributesList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct SetParameterAttributesList **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12686,13 +12686,13 @@ SOAP_FMAC3 struct SetParameterAttributesList ** SOAP_FMAC4 soap_in_PointerToSetP
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToParameterInfoList(struct soap *soap, struct ParameterInfoList *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToParameterInfoList(__attribute__((unused)) struct soap *soap, struct ParameterInfoList *const*a)
 {
 	if (*a)
 		soap_serialize_ParameterInfoList(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToParameterInfoList(struct soap *soap, struct ParameterInfoList *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToParameterInfoList(__attribute__((unused)) struct soap *soap, struct ParameterInfoList *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToParameterInfoList);
 	if (soap_out_PointerToParameterInfoList(soap, tag, id, a, type))
@@ -12700,7 +12700,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToParameterInfoList(struct soap *soap,
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToParameterInfoList(struct soap *soap, const char *tag, int id, struct ParameterInfoList *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToParameterInfoList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct ParameterInfoList *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, (struct soap_array*)&(*a)->__ptrParameterInfoStruct, 1, type, SOAP_TYPE_ParameterInfoList);
 	if (id < 0)
@@ -12708,7 +12708,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToParameterInfoList(struct soap *soap,
 	return soap_out_ParameterInfoList(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct ParameterInfoList ** SOAP_FMAC4 soap_get_PointerToParameterInfoList(struct soap *soap, struct ParameterInfoList **p, const char *tag, const char *type)
+SOAP_FMAC3 struct ParameterInfoList ** SOAP_FMAC4 soap_get_PointerToParameterInfoList(__attribute__((unused)) struct soap *soap, struct ParameterInfoList **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToParameterInfoList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12716,7 +12716,7 @@ SOAP_FMAC3 struct ParameterInfoList ** SOAP_FMAC4 soap_get_PointerToParameterInf
 	return p;
 }
 
-SOAP_FMAC3 struct ParameterInfoList ** SOAP_FMAC4 soap_in_PointerToParameterInfoList(struct soap *soap, const char *tag, struct ParameterInfoList **a, const char *type)
+SOAP_FMAC3 struct ParameterInfoList ** SOAP_FMAC4 soap_in_PointerToParameterInfoList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct ParameterInfoList **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12737,13 +12737,13 @@ SOAP_FMAC3 struct ParameterInfoList ** SOAP_FMAC4 soap_in_PointerToParameterInfo
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToParameterNames(struct soap *soap, struct ParameterNames *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToParameterNames(__attribute__((unused)) struct soap *soap, struct ParameterNames *const*a)
 {
 	if (*a)
 		soap_serialize_ParameterNames(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToParameterNames(struct soap *soap, struct ParameterNames *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToParameterNames(__attribute__((unused)) struct soap *soap, struct ParameterNames *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToParameterNames);
 	if (soap_out_PointerToParameterNames(soap, tag, id, a, type))
@@ -12751,7 +12751,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToParameterNames(struct soap *soap, st
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToParameterNames(struct soap *soap, const char *tag, int id, struct ParameterNames *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToParameterNames(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct ParameterNames *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, (struct soap_array*)&(*a)->__ptrstring, 1, type, SOAP_TYPE_ParameterNames);
 	if (id < 0)
@@ -12759,7 +12759,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToParameterNames(struct soap *soap, co
 	return soap_out_ParameterNames(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct ParameterNames ** SOAP_FMAC4 soap_get_PointerToParameterNames(struct soap *soap, struct ParameterNames **p, const char *tag, const char *type)
+SOAP_FMAC3 struct ParameterNames ** SOAP_FMAC4 soap_get_PointerToParameterNames(__attribute__((unused)) struct soap *soap, struct ParameterNames **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToParameterNames(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12767,7 +12767,7 @@ SOAP_FMAC3 struct ParameterNames ** SOAP_FMAC4 soap_get_PointerToParameterNames(
 	return p;
 }
 
-SOAP_FMAC3 struct ParameterNames ** SOAP_FMAC4 soap_in_PointerToParameterNames(struct soap *soap, const char *tag, struct ParameterNames **a, const char *type)
+SOAP_FMAC3 struct ParameterNames ** SOAP_FMAC4 soap_in_PointerToParameterNames(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct ParameterNames **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12788,13 +12788,13 @@ SOAP_FMAC3 struct ParameterNames ** SOAP_FMAC4 soap_in_PointerToParameterNames(s
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToParameterValueList(struct soap *soap, struct ParameterValueList *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToParameterValueList(__attribute__((unused)) struct soap *soap, struct ParameterValueList *const*a)
 {
 	if (*a)
 		soap_serialize_ParameterValueList(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToParameterValueList(struct soap *soap, struct ParameterValueList *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToParameterValueList(__attribute__((unused)) struct soap *soap, struct ParameterValueList *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToParameterValueList);
 	if (soap_out_PointerToParameterValueList(soap, tag, id, a, type))
@@ -12802,7 +12802,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToParameterValueList(struct soap *soap
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToParameterValueList(struct soap *soap, const char *tag, int id, struct ParameterValueList *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToParameterValueList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct ParameterValueList *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, (struct soap_array*)&(*a)->__ptrParameterValueStruct, 1, type, SOAP_TYPE_ParameterValueList);
 	if (id < 0)
@@ -12810,7 +12810,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToParameterValueList(struct soap *soap
 	return soap_out_ParameterValueList(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct ParameterValueList ** SOAP_FMAC4 soap_get_PointerToParameterValueList(struct soap *soap, struct ParameterValueList **p, const char *tag, const char *type)
+SOAP_FMAC3 struct ParameterValueList ** SOAP_FMAC4 soap_get_PointerToParameterValueList(__attribute__((unused)) struct soap *soap, struct ParameterValueList **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToParameterValueList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12818,7 +12818,7 @@ SOAP_FMAC3 struct ParameterValueList ** SOAP_FMAC4 soap_get_PointerToParameterVa
 	return p;
 }
 
-SOAP_FMAC3 struct ParameterValueList ** SOAP_FMAC4 soap_in_PointerToParameterValueList(struct soap *soap, const char *tag, struct ParameterValueList **a, const char *type)
+SOAP_FMAC3 struct ParameterValueList ** SOAP_FMAC4 soap_in_PointerToParameterValueList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct ParameterValueList **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12839,13 +12839,13 @@ SOAP_FMAC3 struct ParameterValueList ** SOAP_FMAC4 soap_in_PointerToParameterVal
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToMethodList(struct soap *soap, struct MethodList *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToMethodList(__attribute__((unused)) struct soap *soap, struct MethodList *const*a)
 {
 	if (*a)
 		soap_serialize_MethodList(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToMethodList(struct soap *soap, struct MethodList *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToMethodList(__attribute__((unused)) struct soap *soap, struct MethodList *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToMethodList);
 	if (soap_out_PointerToMethodList(soap, tag, id, a, type))
@@ -12853,7 +12853,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToMethodList(struct soap *soap, struct
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToMethodList(struct soap *soap, const char *tag, int id, struct MethodList *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToMethodList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct MethodList *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, (struct soap_array*)&(*a)->__ptrstring, 1, type, SOAP_TYPE_MethodList);
 	if (id < 0)
@@ -12861,7 +12861,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToMethodList(struct soap *soap, const 
 	return soap_out_MethodList(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct MethodList ** SOAP_FMAC4 soap_get_PointerToMethodList(struct soap *soap, struct MethodList **p, const char *tag, const char *type)
+SOAP_FMAC3 struct MethodList ** SOAP_FMAC4 soap_get_PointerToMethodList(__attribute__((unused)) struct soap *soap, struct MethodList **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToMethodList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12869,7 +12869,7 @@ SOAP_FMAC3 struct MethodList ** SOAP_FMAC4 soap_get_PointerToMethodList(struct s
 	return p;
 }
 
-SOAP_FMAC3 struct MethodList ** SOAP_FMAC4 soap_in_PointerToMethodList(struct soap *soap, const char *tag, struct MethodList **a, const char *type)
+SOAP_FMAC3 struct MethodList ** SOAP_FMAC4 soap_in_PointerToMethodList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct MethodList **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12890,13 +12890,13 @@ SOAP_FMAC3 struct MethodList ** SOAP_FMAC4 soap_in_PointerToMethodList(struct so
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__Fault_SetParameterValuesFault(struct soap *soap, struct _cwmp__Fault_SetParameterValuesFault *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTo_cwmp__Fault_SetParameterValuesFault(__attribute__((unused)) struct soap *soap, struct _cwmp__Fault_SetParameterValuesFault *const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE__cwmp__Fault_SetParameterValuesFault))
 		soap_serialize__cwmp__Fault_SetParameterValuesFault(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__Fault_SetParameterValuesFault(struct soap *soap, struct _cwmp__Fault_SetParameterValuesFault *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__Fault_SetParameterValuesFault(__attribute__((unused)) struct soap *soap, struct _cwmp__Fault_SetParameterValuesFault *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTo_cwmp__Fault_SetParameterValuesFault);
 	if (soap_out_PointerTo_cwmp__Fault_SetParameterValuesFault(soap, tag, id, a, type))
@@ -12904,7 +12904,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTo_cwmp__Fault_SetParameterValuesFault
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__Fault_SetParameterValuesFault(struct soap *soap, const char *tag, int id, struct _cwmp__Fault_SetParameterValuesFault *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__Fault_SetParameterValuesFault(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct _cwmp__Fault_SetParameterValuesFault *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE__cwmp__Fault_SetParameterValuesFault);
 	if (id < 0)
@@ -12912,7 +12912,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTo_cwmp__Fault_SetParameterValuesFault
 	return soap_out__cwmp__Fault_SetParameterValuesFault(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct _cwmp__Fault_SetParameterValuesFault ** SOAP_FMAC4 soap_get_PointerTo_cwmp__Fault_SetParameterValuesFault(struct soap *soap, struct _cwmp__Fault_SetParameterValuesFault **p, const char *tag, const char *type)
+SOAP_FMAC3 struct _cwmp__Fault_SetParameterValuesFault ** SOAP_FMAC4 soap_get_PointerTo_cwmp__Fault_SetParameterValuesFault(__attribute__((unused)) struct soap *soap, struct _cwmp__Fault_SetParameterValuesFault **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTo_cwmp__Fault_SetParameterValuesFault(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12920,7 +12920,7 @@ SOAP_FMAC3 struct _cwmp__Fault_SetParameterValuesFault ** SOAP_FMAC4 soap_get_Po
 	return p;
 }
 
-SOAP_FMAC3 struct _cwmp__Fault_SetParameterValuesFault ** SOAP_FMAC4 soap_in_PointerTo_cwmp__Fault_SetParameterValuesFault(struct soap *soap, const char *tag, struct _cwmp__Fault_SetParameterValuesFault **a, const char *type)
+SOAP_FMAC3 struct _cwmp__Fault_SetParameterValuesFault ** SOAP_FMAC4 soap_in_PointerTo_cwmp__Fault_SetParameterValuesFault(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct _cwmp__Fault_SetParameterValuesFault **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12941,12 +12941,12 @@ SOAP_FMAC3 struct _cwmp__Fault_SetParameterValuesFault ** SOAP_FMAC4 soap_in_Poi
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTotime(struct soap *soap, time_t *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTotime(__attribute__((unused)) struct soap *soap, time_t *const*a)
 {
 	soap_reference(soap, *a, SOAP_TYPE_time);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTotime(struct soap *soap, time_t *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTotime(__attribute__((unused)) struct soap *soap, time_t *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTotime);
 	if (soap_out_PointerTotime(soap, tag, id, a, type))
@@ -12954,7 +12954,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTotime(struct soap *soap, time_t *cons
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTotime(struct soap *soap, const char *tag, int id, time_t *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTotime(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, time_t *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_time);
 	if (id < 0)
@@ -12962,7 +12962,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTotime(struct soap *soap, const char *
 	return soap_out_time(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 time_t ** SOAP_FMAC4 soap_get_PointerTotime(struct soap *soap, time_t **p, const char *tag, const char *type)
+SOAP_FMAC3 time_t ** SOAP_FMAC4 soap_get_PointerTotime(__attribute__((unused)) struct soap *soap, time_t **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTotime(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -12970,7 +12970,7 @@ SOAP_FMAC3 time_t ** SOAP_FMAC4 soap_get_PointerTotime(struct soap *soap, time_t
 	return p;
 }
 
-SOAP_FMAC3 time_t ** SOAP_FMAC4 soap_in_PointerTotime(struct soap *soap, const char *tag, time_t **a, const char *type)
+SOAP_FMAC3 time_t ** SOAP_FMAC4 soap_in_PointerTotime(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, time_t **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -12991,13 +12991,13 @@ SOAP_FMAC3 time_t ** SOAP_FMAC4 soap_in_PointerTotime(struct soap *soap, const c
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToAccessList(struct soap *soap, struct AccessList *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerToAccessList(__attribute__((unused)) struct soap *soap, struct AccessList *const*a)
 {
 	if (*a)
 		soap_serialize_AccessList(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToAccessList(struct soap *soap, struct AccessList *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToAccessList(__attribute__((unused)) struct soap *soap, struct AccessList *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerToAccessList);
 	if (soap_out_PointerToAccessList(soap, tag, id, a, type))
@@ -13005,7 +13005,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerToAccessList(struct soap *soap, struct
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToAccessList(struct soap *soap, const char *tag, int id, struct AccessList *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToAccessList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, struct AccessList *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, (struct soap_array*)&(*a)->__ptrstring, 1, type, SOAP_TYPE_AccessList);
 	if (id < 0)
@@ -13013,7 +13013,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerToAccessList(struct soap *soap, const 
 	return soap_out_AccessList(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 struct AccessList ** SOAP_FMAC4 soap_get_PointerToAccessList(struct soap *soap, struct AccessList **p, const char *tag, const char *type)
+SOAP_FMAC3 struct AccessList ** SOAP_FMAC4 soap_get_PointerToAccessList(__attribute__((unused)) struct soap *soap, struct AccessList **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerToAccessList(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -13021,7 +13021,7 @@ SOAP_FMAC3 struct AccessList ** SOAP_FMAC4 soap_get_PointerToAccessList(struct s
 	return p;
 }
 
-SOAP_FMAC3 struct AccessList ** SOAP_FMAC4 soap_in_PointerToAccessList(struct soap *soap, const char *tag, struct AccessList **a, const char *type)
+SOAP_FMAC3 struct AccessList ** SOAP_FMAC4 soap_in_PointerToAccessList(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, struct AccessList **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -13042,13 +13042,13 @@ SOAP_FMAC3 struct AccessList ** SOAP_FMAC4 soap_in_PointerToAccessList(struct so
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTostring(struct soap *soap, char **const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTostring(__attribute__((unused)) struct soap *soap, char **const*a)
 {
 	if (!soap_reference(soap, *a, SOAP_TYPE_string))
 		soap_serialize_string(soap, *a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTostring(struct soap *soap, char **const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTostring(__attribute__((unused)) struct soap *soap, char **const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTostring);
 	if (soap_out_PointerTostring(soap, tag, id, a, type))
@@ -13056,7 +13056,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTostring(struct soap *soap, char **con
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTostring(struct soap *soap, const char *tag, int id, char **const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTostring(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, char **const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_string);
 	if (id < 0)
@@ -13064,7 +13064,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTostring(struct soap *soap, const char
 	return soap_out_string(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 char *** SOAP_FMAC4 soap_get_PointerTostring(struct soap *soap, char ***p, const char *tag, const char *type)
+SOAP_FMAC3 char *** SOAP_FMAC4 soap_get_PointerTostring(__attribute__((unused)) struct soap *soap, char ***p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTostring(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -13072,7 +13072,7 @@ SOAP_FMAC3 char *** SOAP_FMAC4 soap_get_PointerTostring(struct soap *soap, char 
 	return p;
 }
 
-SOAP_FMAC3 char *** SOAP_FMAC4 soap_in_PointerTostring(struct soap *soap, const char *tag, char ***a, const char *type)
+SOAP_FMAC3 char *** SOAP_FMAC4 soap_in_PointerTostring(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, char ***a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -13093,15 +13093,15 @@ SOAP_FMAC3 char *** SOAP_FMAC4 soap_in_PointerTostring(struct soap *soap, const 
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__ObjectNameType(struct soap *soap, char **a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__ObjectNameType(__attribute__((unused)) struct soap *soap, char **a)
 {	soap_default_string(soap, a);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__ObjectNameType(struct soap *soap, char *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__ObjectNameType(__attribute__((unused)) struct soap *soap, char *const*a)
 {	soap_serialize_string(soap, a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ObjectNameType(struct soap *soap, char *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ObjectNameType(__attribute__((unused)) struct soap *soap, char *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_cwmp__ObjectNameType);
 	if (soap_out_cwmp__ObjectNameType(soap, tag, id, a, type))
@@ -13109,12 +13109,12 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ObjectNameType(struct soap *soap, char 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ObjectNameType(struct soap *soap, const char *tag, int id, char *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ObjectNameType(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, char *const*a, __attribute__((unused)) const char *type)
 {
 	return soap_outstring(soap, tag, id, a, type, SOAP_TYPE_cwmp__ObjectNameType);
 }
 
-SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_cwmp__ObjectNameType(struct soap *soap, char **p, const char *tag, const char *type)
+SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_cwmp__ObjectNameType(__attribute__((unused)) struct soap *soap, char **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_cwmp__ObjectNameType(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -13122,20 +13122,20 @@ SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_cwmp__ObjectNameType(struct soap *soap, c
 	return p;
 }
 
-SOAP_FMAC3 char * * SOAP_FMAC4 soap_in_cwmp__ObjectNameType(struct soap *soap, const char *tag, char **a, const char *type)
+SOAP_FMAC3 char * * SOAP_FMAC4 soap_in_cwmp__ObjectNameType(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, char **a, __attribute__((unused)) const char *type)
 {
 	return soap_instring(soap, tag, a, type, SOAP_TYPE_cwmp__ObjectNameType, 1, -1, 256);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__CommandKeyType(struct soap *soap, char **a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__CommandKeyType(__attribute__((unused)) struct soap *soap, char **a)
 {	soap_default_string(soap, a);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__CommandKeyType(struct soap *soap, char *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__CommandKeyType(__attribute__((unused)) struct soap *soap, char *const*a)
 {	soap_serialize_string(soap, a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__CommandKeyType(struct soap *soap, char *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__CommandKeyType(__attribute__((unused)) struct soap *soap, char *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_cwmp__CommandKeyType);
 	if (soap_out_cwmp__CommandKeyType(soap, tag, id, a, type))
@@ -13143,12 +13143,12 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__CommandKeyType(struct soap *soap, char 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__CommandKeyType(struct soap *soap, const char *tag, int id, char *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__CommandKeyType(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, char *const*a, __attribute__((unused)) const char *type)
 {
 	return soap_outstring(soap, tag, id, a, type, SOAP_TYPE_cwmp__CommandKeyType);
 }
 
-SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_cwmp__CommandKeyType(struct soap *soap, char **p, const char *tag, const char *type)
+SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_cwmp__CommandKeyType(__attribute__((unused)) struct soap *soap, char **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_cwmp__CommandKeyType(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -13156,20 +13156,20 @@ SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_cwmp__CommandKeyType(struct soap *soap, c
 	return p;
 }
 
-SOAP_FMAC3 char * * SOAP_FMAC4 soap_in_cwmp__CommandKeyType(struct soap *soap, const char *tag, char **a, const char *type)
+SOAP_FMAC3 char * * SOAP_FMAC4 soap_in_cwmp__CommandKeyType(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, char **a, __attribute__((unused)) const char *type)
 {
 	return soap_instring(soap, tag, a, type, SOAP_TYPE_cwmp__CommandKeyType, 1, -1, 32);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__ParameterKeyType(struct soap *soap, char **a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__ParameterKeyType(__attribute__((unused)) struct soap *soap, char **a)
 {	soap_default_string(soap, a);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__ParameterKeyType(struct soap *soap, char *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__ParameterKeyType(__attribute__((unused)) struct soap *soap, char *const*a)
 {	soap_serialize_string(soap, a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ParameterKeyType(struct soap *soap, char *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ParameterKeyType(__attribute__((unused)) struct soap *soap, char *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_cwmp__ParameterKeyType);
 	if (soap_out_cwmp__ParameterKeyType(soap, tag, id, a, type))
@@ -13177,12 +13177,12 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__ParameterKeyType(struct soap *soap, cha
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ParameterKeyType(struct soap *soap, const char *tag, int id, char *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__ParameterKeyType(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, char *const*a, __attribute__((unused)) const char *type)
 {
 	return soap_outstring(soap, tag, id, a, type, SOAP_TYPE_cwmp__ParameterKeyType);
 }
 
-SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_cwmp__ParameterKeyType(struct soap *soap, char **p, const char *tag, const char *type)
+SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_cwmp__ParameterKeyType(__attribute__((unused)) struct soap *soap, char **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_cwmp__ParameterKeyType(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -13190,20 +13190,20 @@ SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_cwmp__ParameterKeyType(struct soap *soap,
 	return p;
 }
 
-SOAP_FMAC3 char * * SOAP_FMAC4 soap_in_cwmp__ParameterKeyType(struct soap *soap, const char *tag, char **a, const char *type)
+SOAP_FMAC3 char * * SOAP_FMAC4 soap_in_cwmp__ParameterKeyType(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, char **a, __attribute__((unused)) const char *type)
 {
 	return soap_instring(soap, tag, a, type, SOAP_TYPE_cwmp__ParameterKeyType, 1, -1, 32);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__FaultCodeType(struct soap *soap, char **a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_cwmp__FaultCodeType(__attribute__((unused)) struct soap *soap, char **a)
 {	soap_default_string(soap, a);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__FaultCodeType(struct soap *soap, char *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_cwmp__FaultCodeType(__attribute__((unused)) struct soap *soap, char *const*a)
 {	soap_serialize_string(soap, a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__FaultCodeType(struct soap *soap, char *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__FaultCodeType(__attribute__((unused)) struct soap *soap, char *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_cwmp__FaultCodeType);
 	if (soap_out_cwmp__FaultCodeType(soap, tag, id, a, type))
@@ -13211,12 +13211,12 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_cwmp__FaultCodeType(struct soap *soap, char *
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__FaultCodeType(struct soap *soap, const char *tag, int id, char *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_cwmp__FaultCodeType(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, char *const*a, __attribute__((unused)) const char *type)
 {
 	return soap_outstring(soap, tag, id, a, type, SOAP_TYPE_cwmp__FaultCodeType);
 }
 
-SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_cwmp__FaultCodeType(struct soap *soap, char **p, const char *tag, const char *type)
+SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_cwmp__FaultCodeType(__attribute__((unused)) struct soap *soap, char **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_cwmp__FaultCodeType(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -13224,20 +13224,20 @@ SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_cwmp__FaultCodeType(struct soap *soap, ch
 	return p;
 }
 
-SOAP_FMAC3 char * * SOAP_FMAC4 soap_in_cwmp__FaultCodeType(struct soap *soap, const char *tag, char **a, const char *type)
+SOAP_FMAC3 char * * SOAP_FMAC4 soap_in_cwmp__FaultCodeType(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, char **a, __attribute__((unused)) const char *type)
 {
 	return soap_instring(soap, tag, a, type, SOAP_TYPE_cwmp__FaultCodeType, 1, -1, -1);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__SOAP_ENV__mustUnderstand(struct soap *soap, char **a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__SOAP_ENV__mustUnderstand(__attribute__((unused)) struct soap *soap, char **a)
 {	soap_default_string(soap, a);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__SOAP_ENV__mustUnderstand(struct soap *soap, char *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__SOAP_ENV__mustUnderstand(__attribute__((unused)) struct soap *soap, char *const*a)
 {	soap_serialize_string(soap, a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__SOAP_ENV__mustUnderstand(struct soap *soap, char *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__SOAP_ENV__mustUnderstand(__attribute__((unused)) struct soap *soap, char *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__SOAP_ENV__mustUnderstand);
 	if (soap_out__SOAP_ENV__mustUnderstand(soap, tag, id, a, type))
@@ -13245,12 +13245,12 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__SOAP_ENV__mustUnderstand(struct soap *soap, 
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__SOAP_ENV__mustUnderstand(struct soap *soap, const char *tag, int id, char *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__SOAP_ENV__mustUnderstand(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, char *const*a, __attribute__((unused)) const char *type)
 {
 	return soap_outstring(soap, tag, id, a, type, SOAP_TYPE__SOAP_ENV__mustUnderstand);
 }
 
-SOAP_FMAC3 char ** SOAP_FMAC4 soap_get__SOAP_ENV__mustUnderstand(struct soap *soap, char **p, const char *tag, const char *type)
+SOAP_FMAC3 char ** SOAP_FMAC4 soap_get__SOAP_ENV__mustUnderstand(__attribute__((unused)) struct soap *soap, char **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__SOAP_ENV__mustUnderstand(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -13258,20 +13258,20 @@ SOAP_FMAC3 char ** SOAP_FMAC4 soap_get__SOAP_ENV__mustUnderstand(struct soap *so
 	return p;
 }
 
-SOAP_FMAC3 char * * SOAP_FMAC4 soap_in__SOAP_ENV__mustUnderstand(struct soap *soap, const char *tag, char **a, const char *type)
+SOAP_FMAC3 char * * SOAP_FMAC4 soap_in__SOAP_ENV__mustUnderstand(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, char **a, __attribute__((unused)) const char *type)
 {
 	return soap_instring(soap, tag, a, type, SOAP_TYPE__SOAP_ENV__mustUnderstand, 1, -1, -1);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_xsd__anySimpleType(struct soap *soap, char **a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_xsd__anySimpleType(__attribute__((unused)) struct soap *soap, char **a)
 {	soap_default_string(soap, a);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_xsd__anySimpleType(struct soap *soap, char *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_xsd__anySimpleType(__attribute__((unused)) struct soap *soap, char *const*a)
 {	soap_serialize_string(soap, a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_xsd__anySimpleType(struct soap *soap, char *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_xsd__anySimpleType(__attribute__((unused)) struct soap *soap, char *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_xsd__anySimpleType);
 	if (soap_out_xsd__anySimpleType(soap, tag, id, a, type))
@@ -13279,12 +13279,12 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_xsd__anySimpleType(struct soap *soap, char *c
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_xsd__anySimpleType(struct soap *soap, const char *tag, int id, char *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_xsd__anySimpleType(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, char *const*a, __attribute__((unused)) const char *type)
 {
 	return soap_outstring(soap, tag, id, a, type, SOAP_TYPE_xsd__anySimpleType);
 }
 
-SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_xsd__anySimpleType(struct soap *soap, char **p, const char *tag, const char *type)
+SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_xsd__anySimpleType(__attribute__((unused)) struct soap *soap, char **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_xsd__anySimpleType(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -13292,17 +13292,17 @@ SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_xsd__anySimpleType(struct soap *soap, cha
 	return p;
 }
 
-SOAP_FMAC3 char * * SOAP_FMAC4 soap_in_xsd__anySimpleType(struct soap *soap, const char *tag, char **a, const char *type)
+SOAP_FMAC3 char * * SOAP_FMAC4 soap_in_xsd__anySimpleType(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, char **a, __attribute__((unused)) const char *type)
 {
 	return soap_instring(soap, tag, a, type, SOAP_TYPE_xsd__anySimpleType, 1, -1, -1);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTounsignedByte(struct soap *soap, unsigned char *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_PointerTounsignedByte(__attribute__((unused)) struct soap *soap, unsigned char *const*a)
 {
 	soap_reference(soap, *a, SOAP_TYPE_unsignedByte);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTounsignedByte(struct soap *soap, unsigned char *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTounsignedByte(__attribute__((unused)) struct soap *soap, unsigned char *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_PointerTounsignedByte);
 	if (soap_out_PointerTounsignedByte(soap, tag, id, a, type))
@@ -13310,7 +13310,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_PointerTounsignedByte(struct soap *soap, unsi
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTounsignedByte(struct soap *soap, const char *tag, int id, unsigned char *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTounsignedByte(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, unsigned char *const*a, __attribute__((unused)) const char *type)
 {
 	id = soap_element_id(soap, tag, id, *a, NULL, 0, type, SOAP_TYPE_unsignedByte);
 	if (id < 0)
@@ -13318,7 +13318,7 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_out_PointerTounsignedByte(struct soap *soap, cons
 	return soap_out_unsignedByte(soap, tag, id, *a, type);
 }
 
-SOAP_FMAC3 unsigned char ** SOAP_FMAC4 soap_get_PointerTounsignedByte(struct soap *soap, unsigned char **p, const char *tag, const char *type)
+SOAP_FMAC3 unsigned char ** SOAP_FMAC4 soap_get_PointerTounsignedByte(__attribute__((unused)) struct soap *soap, unsigned char **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_PointerTounsignedByte(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -13326,7 +13326,7 @@ SOAP_FMAC3 unsigned char ** SOAP_FMAC4 soap_get_PointerTounsignedByte(struct soa
 	return p;
 }
 
-SOAP_FMAC3 unsigned char ** SOAP_FMAC4 soap_in_PointerTounsignedByte(struct soap *soap, const char *tag, unsigned char **a, const char *type)
+SOAP_FMAC3 unsigned char ** SOAP_FMAC4 soap_in_PointerTounsignedByte(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, unsigned char **a, __attribute__((unused)) const char *type)
 {
 	if (soap_element_begin_in(soap, tag, 1, NULL))
 		return NULL;
@@ -13347,15 +13347,15 @@ SOAP_FMAC3 unsigned char ** SOAP_FMAC4 soap_in_PointerTounsignedByte(struct soap
 	return a;
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default__QName(struct soap *soap, char **a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default__QName(__attribute__((unused)) struct soap *soap, char **a)
 {	soap_default_string(soap, a);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__QName(struct soap *soap, char *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize__QName(__attribute__((unused)) struct soap *soap, char *const*a)
 {	soap_serialize_string(soap, a);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put__QName(struct soap *soap, char *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put__QName(__attribute__((unused)) struct soap *soap, char *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE__QName);
 	if (soap_out__QName(soap, tag, id, a, type))
@@ -13363,12 +13363,12 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put__QName(struct soap *soap, char *const*a, cons
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out__QName(struct soap *soap, const char *tag, int id, char *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out__QName(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, char *const*a, __attribute__((unused)) const char *type)
 {
 	return soap_outstring(soap, tag, id, a, type, SOAP_TYPE__QName);
 }
 
-SOAP_FMAC3 char ** SOAP_FMAC4 soap_get__QName(struct soap *soap, char **p, const char *tag, const char *type)
+SOAP_FMAC3 char ** SOAP_FMAC4 soap_get__QName(__attribute__((unused)) struct soap *soap, char **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in__QName(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -13376,12 +13376,12 @@ SOAP_FMAC3 char ** SOAP_FMAC4 soap_get__QName(struct soap *soap, char **p, const
 	return p;
 }
 
-SOAP_FMAC3 char * * SOAP_FMAC4 soap_in__QName(struct soap *soap, const char *tag, char **a, const char *type)
+SOAP_FMAC3 char * * SOAP_FMAC4 soap_in__QName(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, char **a, __attribute__((unused)) const char *type)
 {
 	return soap_instring(soap, tag, a, type, SOAP_TYPE__QName, 2, -1, -1);
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_default_string(struct soap *soap, char **a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_default_string(__attribute__((unused)) struct soap *soap, char **a)
 {	(void)soap; /* appease -Wall -Werror */
 #ifdef SOAP_DEFAULT_string
 	*a = SOAP_DEFAULT_string;
@@ -13390,12 +13390,12 @@ SOAP_FMAC3 void SOAP_FMAC4 soap_default_string(struct soap *soap, char **a)
 #endif
 }
 
-SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_string(struct soap *soap, char *const*a)
+SOAP_FMAC3 void SOAP_FMAC4 soap_serialize_string(__attribute__((unused)) struct soap *soap, char *const*a)
 {
 	soap_reference(soap, *a, SOAP_TYPE_string);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_put_string(struct soap *soap, char *const*a, const char *tag, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_put_string(__attribute__((unused)) struct soap *soap, char *const*a, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	register int id = soap_embed(soap, (void*)a, NULL, 0, tag, SOAP_TYPE_string);
 	if (soap_out_string(soap, tag, id, a, type))
@@ -13403,12 +13403,12 @@ SOAP_FMAC3 int SOAP_FMAC4 soap_put_string(struct soap *soap, char *const*a, cons
 	return soap_putindependent(soap);
 }
 
-SOAP_FMAC3 int SOAP_FMAC4 soap_out_string(struct soap *soap, const char *tag, int id, char *const*a, const char *type)
+SOAP_FMAC3 int SOAP_FMAC4 soap_out_string(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, __attribute__((unused)) int id, char *const*a, __attribute__((unused)) const char *type)
 {
 	return soap_outstring(soap, tag, id, a, type, SOAP_TYPE_string);
 }
 
-SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_string(struct soap *soap, char **p, const char *tag, const char *type)
+SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_string(__attribute__((unused)) struct soap *soap, char **p, __attribute__((unused)) const char *tag, __attribute__((unused)) const char *type)
 {
 	if ((p = soap_in_string(soap, tag, p, type)))
 		if (soap_getindependent(soap))
@@ -13416,7 +13416,7 @@ SOAP_FMAC3 char ** SOAP_FMAC4 soap_get_string(struct soap *soap, char **p, const
 	return p;
 }
 
-SOAP_FMAC3 char * * SOAP_FMAC4 soap_in_string(struct soap *soap, const char *tag, char **a, const char *type)
+SOAP_FMAC3 char * * SOAP_FMAC4 soap_in_string(__attribute__((unused)) struct soap *soap, __attribute__((unused)) const char *tag, char **a, __attribute__((unused)) const char *type)
 {
 	return soap_instring(soap, tag, a, type, SOAP_TYPE_string, 1, -1, -1);
 }
