@@ -55,9 +55,6 @@ static asn_type ndn_iscsi_digest_s = {
     { enum_entries: _ndn_iscsi_digest_enum_entries }
 };
 
-static const asn_type * const ndn_iscsi_digest = &ndn_iscsi_digest_s;
-
-
 /* ISCSI-CSAP definitions */
 static asn_named_entry_t _ndn_iscsi_csap_ne_array[] = {
     { "socket",        &asn_base_int16_s,
