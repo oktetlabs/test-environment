@@ -431,30 +431,6 @@ send_control_msg_va(tapi_storage_client *client,
 }
 
 /**
- * Fill a buffer with data from @p fmt and send this command to ftp server
- * over control connection. This function calls @p send_control_msg_va.
- *
- * @param client        Client handle.
- * @param fmt           Format string.
- * @param ...           Format string arguments.
- *
- * @return Status code.
- *
- * @sa send_control_msg_va
- */
-static te_errno
-send_control_msg(tapi_storage_client *client, const char *fmt, ...)
-{
-    va_list  ap;
-    te_errno rc;
-
-    va_start(ap, fmt);
-    rc = send_control_msg_va(client, fmt, ap);
-    va_end(ap);
-    return rc;
-}
-
-/**
  * Read reply from ftp server over control connection and check it on error.
  * This function overwrites the control connection read buffer. If you have
  * unread data in it use @b get_control_msg function instead.
