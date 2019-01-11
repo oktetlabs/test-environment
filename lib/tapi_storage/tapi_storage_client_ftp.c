@@ -255,7 +255,7 @@ send_request(rcf_rpc_server *rpcs, int fd, const te_string *request)
 
     VERB("Request: %s", request->ptr);
     written = rpc_send(rpcs, fd, request->ptr, request->len, 0);
-    return (written == request->len ? 0 : TE_EIO);
+    return ((written >= 0 && (size_t)written == request->len) ? 0 : TE_EIO);
 }
 
 /**
