@@ -77,6 +77,15 @@ typedef enum tapi_perf_error {
 } tapi_perf_error;
 
 /**
+ * List of possible report kinds.
+ */
+typedef enum tapi_perf_report_kind {
+    TAPI_PERF_REPORT_KIND_DEFAULT,   /**< Iperf specific default report kind */
+    TAPI_PERF_REPORT_KIND_SENDER,    /**< Sender's report */
+    TAPI_PERF_REPORT_KIND_RECEIVER,  /**< Receiver's report */
+} tapi_perf_report_kind;
+
+/**
  * Network throughput test tool report.
  */
 typedef struct tapi_perf_report {
@@ -124,8 +133,9 @@ typedef te_errno (* tapi_perf_server_method_stop)(tapi_perf_server *server);
  * @return Status code.
  */
 typedef te_errno (* tapi_perf_server_method_get_report)(
-                                                tapi_perf_server *server,
-                                                tapi_perf_report *report);
+                                                tapi_perf_server     *server,
+                                                tapi_perf_report_kind kind,
+                                                tapi_perf_report     *report);
 
 /**
  * Methods to operate the server network throughput test tool.
@@ -190,8 +200,9 @@ typedef te_errno (* tapi_perf_client_method_wait)(tapi_perf_client *client,
  * @return Status code.
  */
 typedef te_errno (* tapi_perf_client_method_get_report)(
-                                                tapi_perf_client *client,
-                                                tapi_perf_report *report);
+                                                tapi_perf_client     *client,
+                                                tapi_perf_report_kind kind,
+                                                tapi_perf_report     *report);
 
 /**
  * Methods to operate the client network throughput test tool.
@@ -346,6 +357,21 @@ extern te_errno tapi_perf_server_get_report(tapi_perf_server *server,
                                             tapi_perf_report *report);
 
 /**
+ * Get server report of specified kind. The function reads server
+ * output (stdout, stderr).
+ *
+ * @param[in]  server       Server context.
+ * @param[in]  kind         Report kind, e.g. default or receiver's,
+ *                          or sender's.
+ * @param[out] report       Report with results.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_perf_server_get_specific_report(tapi_perf_server *server,
+    tapi_perf_report_kind kind,
+    tapi_perf_report     *report);
+
+/**
  * Check server report for errors. The function prints verdicts in case of
  * errors are presents in the @p report.
  *
@@ -470,6 +496,21 @@ extern te_errno tapi_perf_client_wait(tapi_perf_client *client,
  */
 extern te_errno tapi_perf_client_get_report(tapi_perf_client *client,
                                             tapi_perf_report *report);
+
+/**
+ * Get client report of specified kind. The function reads client
+ * output (stdout, stderr).
+ *
+ * @param[in]  client       Client context.
+ * @param[in]  kind         Report kind, e.g. default or receiver's,
+ *                          or sender's.
+ * @param[out] report       Report with results.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_perf_client_get_specific_report(tapi_perf_client *client,
+    tapi_perf_report_kind kind,
+    tapi_perf_report     *report);
 
 /**
  * Check client report for errors. The function prints verdicts in case of

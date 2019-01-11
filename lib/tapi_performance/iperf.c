@@ -333,12 +333,14 @@ app_get_error(tapi_perf_app *app, tapi_perf_report *report)
  * Get iperf report. The function reads an application stdout.
  *
  * @param[in]  app          iperf tool context.
+ * @param[in]  kind         Report kind.
  * @param[out] report       Report with results.
  *
  * @return Status code.
  */
 static te_errno
-app_get_report(tapi_perf_app *app, tapi_perf_report *report)
+app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
+               tapi_perf_report *report)
 {
     const char *str;
     double time;
@@ -352,6 +354,12 @@ app_get_report(tapi_perf_app *app, tapi_perf_report *report)
     memset(report->errors, 0, sizeof(report->errors));
     app_get_error(app, report);
 
+    if (kind != TAPI_PERF_REPORT_KIND_DEFAULT)
+    {
+        ERROR("iperf2 TAPI doesn't support non-default report kind");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
     /* Read tool output */
     rpc_read_fd2te_string(app->rpcs, app->fd_stdout, IPERF_TIMEOUT_MS, 0,
                           &app->stdout);
@@ -362,6 +370,7 @@ app_get_report(tapi_perf_app *app, tapi_perf_report *report)
         ERROR("There are no data in the output");
         return TE_RC(TE_TAPI, TE_ENODATA);
     }
+
     INFO("iperf stdout:\n%s", app->stdout.ptr);
 
 /* Find the first occurrence of the substring _pattern in the string _src */
@@ -515,32 +524,36 @@ client_wait(tapi_perf_client *client, int16_t timeout)
  * Get server report. The function reads server stdout.
  *
  * @param[in]  server       Server context.
+ * @param[in]  kind         Report kind.
  * @param[out] report       Report with results.
  *
  * @return Status code.
  */
 static te_errno
-server_get_report(tapi_perf_server *server, tapi_perf_report *report)
+server_get_report(tapi_perf_server *server, tapi_perf_report_kind kind,
+                  tapi_perf_report *report)
 {
     ENTRY("Get iperf server report");
 
-    return app_get_report(&server->app, report);
+    return app_get_report(&server->app, kind, report);
 }
 
 /*
  * Get client report. The function reads client stdout.
  *
  * @param[in]  client       Client context.
+ * @param[in]  kind         Report kind.
  * @param[out] report       Report with results.
  *
  * @return Status code.
  */
 static te_errno
-client_get_report(tapi_perf_client *client, tapi_perf_report *report)
+client_get_report(tapi_perf_client *client, tapi_perf_report_kind kind,
+                  tapi_perf_report *report)
 {
     ENTRY("Get iperf client report");
 
-    return app_get_report(&client->app, report);
+    return app_get_report(&client->app, kind, report);
 }
 
 

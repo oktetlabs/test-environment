@@ -311,12 +311,14 @@ jsonvalue2double(const json_t *jobj, double *value)
  * Extract report from JSON object.
  *
  * @param[in]  jrpt         JSON object contains report data.
+ * @param[in]  kind         Report kind.
  * @param[out] report       Report.
  *
  * @return Status code.
  */
 static te_errno
-get_report(const json_t *jrpt, tapi_perf_report *report)
+get_report(const json_t *jrpt, tapi_perf_report_kind kind,
+           tapi_perf_report *report)
 {
     json_t *jend, *jsum, *jval, *jint;
     tapi_perf_report tmp_report;
@@ -354,9 +356,40 @@ get_report(const json_t *jrpt, tapi_perf_report *report)
     for (i = 0; i < json_array_size(jend); ++i)
     {
         double  tmp_seconds;
+        json_t *jsums;
 
         jint = json_array_get(jend, i);
-        jsum = json_object_get(jint, "sum");
+        jsums = json_object_get(jint, "sums");
+        if (json_is_array(jsums))
+        {
+            size_t j;
+
+            for (j = 0; j < json_array_size(jsums); ++j)
+            {
+                jsum = json_array_get(jsums, j);
+
+                if (kind == TAPI_PERF_REPORT_KIND_DEFAULT)
+                    break;
+
+                jval = json_object_get(jsum, "sender");
+                if (json_is_boolean(jval))
+                {
+                    te_bool sender;
+
+                    sender = json_boolean_value(jval);
+                    if (sender ==
+                        (kind == TAPI_PERF_REPORT_KIND_SENDER))
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        else
+        {
+            jsum = json_object_get(jint, "sum");
+        }
+
         if (!json_is_object(jsum))
         {
             /*
@@ -464,12 +497,14 @@ get_report_error(const json_t *jrpt, tapi_perf_report *report)
  * Get iperf3 report. The function reads an application output.
  *
  * @param[in]  app          iperf3 tool context.
+ * @param[in]  kind         Report kind.
  * @param[out] report       Report with results.
  *
  * @return Status code.
  */
 static te_errno
-app_get_report(tapi_perf_app *app, tapi_perf_report *report)
+app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
+               tapi_perf_report *report)
 {
     json_error_t error;
     json_t *jrpt;
@@ -502,7 +537,7 @@ app_get_report(tapi_perf_app *app, tapi_perf_report *report)
     rc = get_report_error(jrpt, report);
     if (rc == 0)
     {
-        rc = get_report(jrpt, report);
+        rc = get_report(jrpt, kind, report);
         if (rc != 0)
             report->errors[TAPI_PERF_ERROR_FORMAT]++;
     }
@@ -611,32 +646,36 @@ client_wait(tapi_perf_client *client, int16_t timeout)
  * Get server report. The function reads server output.
  *
  * @param[in]  server       Server context.
+ * @param[in]  kind         Report kind.
  * @param[out] report       Report with results.
  *
  * @return Status code.
  */
 static te_errno
-server_get_report(tapi_perf_server *server, tapi_perf_report *report)
+server_get_report(tapi_perf_server *server, tapi_perf_report_kind kind,
+                  tapi_perf_report *report)
 {
     ENTRY("Get iperf3 server report");
 
-    return app_get_report(&server->app, report);
+    return app_get_report(&server->app, kind, report);
 }
 
 /*
  * Get client report. The function reads client output.
  *
  * @param[in]  client       Client context.
+ * @param[in]  kind         Report kind.
  * @param[out] report       Report with results.
  *
  * @return Status code.
  */
 static te_errno
-client_get_report(tapi_perf_client *client, tapi_perf_report *report)
+client_get_report(tapi_perf_client *client, tapi_perf_report_kind kind,
+                  tapi_perf_report *report)
 {
     ENTRY("Get iperf3 client report");
 
-    return app_get_report(&client->app, report);
+    return app_get_report(&client->app, kind, report);
 }
 
 

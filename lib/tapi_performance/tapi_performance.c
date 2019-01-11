@@ -203,9 +203,25 @@ tapi_perf_server_get_report(tapi_perf_server *server, tapi_perf_report *report)
         server->methods->get_report == NULL)
         return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 
-    return server->methods->get_report(server, report);
+    return server->methods->get_report(server, TAPI_PERF_REPORT_KIND_DEFAULT,
+                                       report);
 }
 
+/* See description in tapi_performance.h */
+te_errno
+tapi_perf_server_get_specific_report(tapi_perf_server       *server,
+                                     tapi_perf_report_kind   kind,
+                                     tapi_perf_report       *report)
+{
+    ENTRY("Get perf server specific report");
+
+    if (server == NULL ||
+        server->methods == NULL ||
+        server->methods->get_report == NULL)
+        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+
+    return server->methods->get_report(server, kind, report);
+}
 
 /* See description in tapi_performance.h */
 tapi_perf_client *
@@ -303,7 +319,24 @@ tapi_perf_client_get_report(tapi_perf_client *client, tapi_perf_report *report)
         client->methods->get_report == NULL)
         return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 
-    return client->methods->get_report(client, report);
+    return client->methods->get_report(client, TAPI_PERF_REPORT_KIND_DEFAULT,
+                                       report);
+}
+
+/* See description in tapi_performance.h */
+te_errno
+tapi_perf_client_get_specific_report(tapi_perf_client       *client,
+                                     tapi_perf_report_kind   kind,
+                                     tapi_perf_report       *report)
+{
+    ENTRY("Get perf client specific report");
+
+    if (client == NULL ||
+        client->methods == NULL ||
+        client->methods->get_report == NULL)
+        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+
+    return client->methods->get_report(client, kind, report);
 }
 
 /* See description in tapi_performance.h */
