@@ -1215,7 +1215,7 @@ te_errno
 epc_cfg_after_poll(void *data, struct pollfd *pfd)
 {
     static acse_epc_config_data_t msg;
-    te_errno       rc, status;
+    te_errno       rc;
 
     UNUSED(data);
 
@@ -1248,7 +1248,9 @@ epc_cfg_after_poll(void *data, struct pollfd *pfd)
         return TE_RC(TE_ACSE, rc);
     }
 
-    status = acse_epc_config(&msg);
+    rc = acse_epc_config(&msg);
+    if (rc != 0)
+        return TE_RC(TE_ACSE, rc);
 
     /* Now send response, all data prepared in specific calls above. */
     rc = acse_epc_conf_send(&msg);
