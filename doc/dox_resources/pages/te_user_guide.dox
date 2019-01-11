@@ -44,6 +44,11 @@ work_dir/
 When you get TE in source code form you need to build TE before
 it can be used for testing.
 
+If you're living on a deb-based distribution you could benefit from
+installing @lib_name{ol-te} and other packages. They will automatically
+install all the deps for the engine and your project. Contact developers if
+you need access to the the debian repository or to get the .deb file.
+
 To build any of components TE Engine or TA it is necessary to install
 development toolchain. You can use these packages on Debian derivatives:
 - @lib_name{build-essential} - this package provokes the installation of
