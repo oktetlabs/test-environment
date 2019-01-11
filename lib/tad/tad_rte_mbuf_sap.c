@@ -165,7 +165,11 @@ handle_layer_info(const tad_pkt      *pkt,
     switch (layer_tag)
     {
         case TE_PROTO_ETH:
-            m->l2_len = layer_data_len;
+            /*
+             * m->l2_len may already count for outer L4 (if any)
+             * and tunnel headers. Add Ethernet layer length.
+             */
+            m->l2_len += layer_data_len;
             break;
 
         case TE_PROTO_IP4:
@@ -226,9 +230,10 @@ handle_layer_info(const tad_pkt      *pkt,
     if (encap_header_detected)
     {
         m->outer_l2_len = m->l2_len;
-        m->l2_len = 0;
-
         m->outer_l3_len = m->l3_len;
+
+        /* Inner L2 length counts for outer L4 (if any) and tunnel headers. */
+        m->l2_len = m->l4_len + layer_data_len;
         m->l3_len = 0;
         m->l4_len = 0;
 
