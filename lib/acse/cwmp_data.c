@@ -970,18 +970,18 @@ ssize_t \
 te_cwmp_unpack__ ## _list_type (void *msg, size_t max_len) \
 { \
     _list_type *res = msg; \
-    unsigned int ofs; \
+    ssize_t ofs; \
     int i; \
     ssize_t rc = 0; \
  \
-    ofs = (unsigned int)(res->__ptr ## _elem_type); \
+    ofs = (ssize_t)(res->__ptr ## _elem_type); \
     if (ofs == 0) \
     { \
         res->__ptr ## _elem_type = NULL; \
         return sizeof(_list_type); \
     } \
  \
-    if (ofs >= max_len && res->__size > 0) \
+    if (ofs >= (ssize_t)max_len && res->__size > 0)    \
     { \
         ERROR("UNPACK_LEAF at line %d failed, ofs %u >= max_len %u", \
               __LINE__, ofs, max_len); \
@@ -991,7 +991,7 @@ te_cwmp_unpack__ ## _list_type (void *msg, size_t max_len) \
     res->__ptr ## _elem_type = (void *)((char *)msg + ofs); \
     for (i = 0; i < res->__size; i++) \
     { \
-        ofs = (unsigned int)(res->__ptr ## _elem_type[i]); \
+        ofs = (ssize_t)(res->__ptr ## _elem_type[i]); \
         rc = te_cwmp_unpack__ ## _elem_type (msg + ofs, max_len - ofs); \
         if (rc < 0) \
         { \
