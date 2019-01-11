@@ -399,6 +399,11 @@ cwmp_op_check(tarpc_cwmp_op_check_in *in,
             out->buf.buf_len = d_len;
             packed_len = epc_pack_response_data(out->buf.buf_val,
                                                 d_len, cwmp_data);
+            if (packed_len < 0)
+            {
+                ERROR("%s(): pack response data failed", __FUNCTION__);
+                return -1;
+            }
 #if 0 /* Debug print */
             if (TE_CWMP_FAULT == msg_resp.status)
             {
