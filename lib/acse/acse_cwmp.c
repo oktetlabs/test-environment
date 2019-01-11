@@ -1034,7 +1034,7 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
         {
             /* match IP address */
             static struct sockaddr_storage peer_addr;
-            size_t a_len = sizeof(peer_addr);
+            socklen_t a_len = sizeof(peer_addr);
             void *in_a = NULL;
             void *susp_a = NULL;
             size_t mlen = 4;
