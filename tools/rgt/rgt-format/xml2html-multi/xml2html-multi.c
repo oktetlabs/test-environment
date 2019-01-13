@@ -1022,6 +1022,7 @@ RGT_DEF_FUNC(proc_logs_end)
     if (depth_user->fd != NULL)
     {
         attrs = rgt_tmpls_attrs_new(xml_attrs);
+        rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOGS_END], attrs);
         if (ctx->page_selector_set && ctx->cur_page >= 1)
         {
             rgt_tmpls_attrs_add_fstr(attrs, "selector_name", "bottom");
