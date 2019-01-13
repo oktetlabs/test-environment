@@ -997,7 +997,6 @@ RGT_DEF_FUNC(proc_logs_start)
     if (depth_user->fd != NULL)
     {
         attrs = rgt_tmpls_attrs_new(xml_attrs);
-        rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOGS_START], attrs);
         if (ctx->page_selector_set && ctx->cur_page >= 1)
         {
             rgt_tmpls_attrs_add_fstr(attrs, "selector_name", "top");
@@ -1008,6 +1007,7 @@ RGT_DEF_FUNC(proc_logs_start)
             rgt_tmpls_output(depth_user->fd,
                              &xml2fmt_tmpls[PAGE_SELECTOR], attrs);
         }
+        rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOGS_START], attrs);
         rgt_tmpls_attrs_free(attrs);
     }
 }
