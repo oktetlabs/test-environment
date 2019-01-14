@@ -323,8 +323,6 @@ get_report(const json_t *jrpt, tapi_perf_report_kind kind,
     json_t *jend, *jsum, *jval, *jint;
     tapi_perf_report tmp_report;
     size_t   i;
-    double  *seconds;
-    double  *bits_per_second;
     double   total_seconds = 0.0;
     uint64_t total_bytes = 0;
     double   total_bits_per_second = 0.0;
@@ -351,8 +349,6 @@ get_report(const json_t *jrpt, tapi_perf_report_kind kind,
      * Calculate an average of throughput results weighted by interval
      * durations, skipping completely wrong intervals altogether.
      */
-    seconds = tapi_calloc(json_array_size(jend), sizeof(double));
-    bits_per_second = tapi_calloc(json_array_size(jend), sizeof(double));
     for (i = 0; i < json_array_size(jend); ++i)
     {
         double  tmp_seconds;
@@ -403,7 +399,8 @@ get_report(const json_t *jrpt, tapi_perf_report_kind kind,
         jval = json_object_get(jsum, "seconds");
         if (jsonvalue2double(jval, &tmp_seconds) != 0 ||
             !json_is_integer(json_object_get(jsum, "bytes")) ||
-            !json_is_real(json_object_get(jsum, "bits_per_second")))
+            !json_is_real(json_object_get(jsum, "bits_per_second")) ||
+            tmp_seconds < IPERF_MIN_REPRESENTATIVE_DURATION)
         {
             /*
              * This failure isn't fatal - some of (or all) specifications are
@@ -413,14 +410,14 @@ get_report(const json_t *jrpt, tapi_perf_report_kind kind,
             continue;
         }
 
-        seconds[total_intervals] = tmp_seconds;
         total_seconds += tmp_seconds;
 
         jval = json_object_get(jsum, "bytes");
         total_bytes += json_integer_value(jval);
 
         jval = json_object_get(jsum, "bits_per_second");
-        bits_per_second[total_intervals] = json_real_value(jval);
+        total_bits_per_second += json_real_value(jval) * tmp_seconds;
+
         total_intervals++;
     }
 
@@ -429,14 +426,8 @@ get_report(const json_t *jrpt, tapi_perf_report_kind kind,
 
     if (total_seconds < eps)
         GET_REPORT_ERROR("object \"seconds\"");
-    for (i = 0; i < total_intervals; ++i)
-    {
-        total_bits_per_second += bits_per_second[i] * seconds[i]
-            / total_seconds;
-    }
 
-    free(bits_per_second);
-    free(seconds);
+    total_bits_per_second /= total_seconds;
 
     tmp_report.seconds = total_seconds;
     if (total_seconds < IPERF_MIN_REPRESENTATIVE_DURATION)
