@@ -80,7 +80,7 @@ typedef enum tapi_perf_error {
  * List of possible report kinds.
  */
 typedef enum tapi_perf_report_kind {
-    TAPI_PERF_REPORT_KIND_DEFAULT,   /**< Iperf specific default report kind */
+    TAPI_PERF_REPORT_KIND_DEFAULT,   /**< Specific default report kind */
     TAPI_PERF_REPORT_KIND_SENDER,    /**< Sender's report */
     TAPI_PERF_REPORT_KIND_RECEIVER,  /**< Receiver's report */
 } tapi_perf_report_kind;
@@ -368,8 +368,7 @@ extern te_errno tapi_perf_server_get_report(tapi_perf_server *server,
  * @return Status code.
  */
 extern te_errno tapi_perf_server_get_specific_report(tapi_perf_server *server,
-    tapi_perf_report_kind kind,
-    tapi_perf_report     *report);
+    tapi_perf_report_kind kind, tapi_perf_report *report);
 
 /**
  * Check server report for errors. The function prints verdicts in case of
@@ -509,8 +508,7 @@ extern te_errno tapi_perf_client_get_report(tapi_perf_client *client,
  * @return Status code.
  */
 extern te_errno tapi_perf_client_get_specific_report(tapi_perf_client *client,
-    tapi_perf_report_kind kind,
-    tapi_perf_report     *report);
+    tapi_perf_report_kind kind, tapi_perf_report *report);
 
 /**
  * Check client report for errors. The function prints verdicts in case of

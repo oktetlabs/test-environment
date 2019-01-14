@@ -360,7 +360,7 @@ app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
 
     if (kind != TAPI_PERF_REPORT_KIND_DEFAULT)
     {
-        ERROR("iperf2 TAPI doesn't support non-default report kind");
+        ERROR("iperf TAPI doesn't support non-default report kind");
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
