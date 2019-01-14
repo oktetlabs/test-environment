@@ -83,6 +83,9 @@ perf_app_start(rcf_rpc_server *rpcs, char *cmd, tapi_perf_app *app)
         return TE_RC(TE_TAPI, TE_EFAIL);
     }
 
+    te_string_free(&app->stdout);
+    te_string_free(&app->stderr);
+
     perf_app_close_descriptors(app);
     app->rpcs = rpcs;
     app->pid = pid;
