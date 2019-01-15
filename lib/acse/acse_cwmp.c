@@ -1415,7 +1415,7 @@ acse_timer_handler(int sig, siginfo_t *info, void *p)
     UNUSED(p);
     UNUSED(info);
 
-    ERROR("%s(): implementation is incomplete");
+    ERROR("%s(): implementation is incomplete", __FUNCTION__);
 }
 
 
