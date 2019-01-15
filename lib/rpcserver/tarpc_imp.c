@@ -7088,7 +7088,8 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
          gettimeofday(&tv_now, NULL))
     {
         int len = 0;
-        uint32_t offset = in->gen_arg.offset;
+        uint32_t offset = bytes_rest == 0 ? in->gen_arg.offset :
+                                            tmp_arg.offset;
         if (offset > MAX_OFFSET)
         {
             te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EINVAL),
