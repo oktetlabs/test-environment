@@ -1549,9 +1549,6 @@ static const char * const trc_test_log_url =
 ">[log]</a>";
 #endif
 
-static const char * const trc_test_exp_got_row_tin_ref =
-"        <a name=\"tin_%d\"> </a>\n";
-
 static const char * const trc_test_exp_got_row_start =
 "    <tr>\n"
 "      <td valign=top>\n"
@@ -2599,7 +2596,6 @@ trc_report_exp_got_to_html(FILE             *f,
     trc_report_test_iter_data        *iter_data;
     const trc_report_test_iter_entry *iter_entry;
     te_errno                          rc = 0;
-    char                              tin_ref[128];
     char                              id_tin_id[128];
     char                              tin_id[128];
     char                             *escaped_path = NULL;
@@ -2739,16 +2735,12 @@ trc_report_exp_got_to_html(FILE             *f,
             }
             assert(iter_data != NULL);
 
-            tin_ref[0] = '\0';
             id_tin_id[0] = '\0';
             tin_id[0] = '\0';
             if ((test->type == TRC_TEST_SCRIPT) &&
                 (iter_entry != NULL) &&
                 (iter_entry->tin >= 0))
             {
-                if (~flags & TRC_REPORT_NO_KEYS)
-                    sprintf(tin_ref, trc_test_exp_got_row_tin_ref,
-                            iter_entry->tin);
                 sprintf(tin_id, "tin_%d",
                         iter_entry->tin);
                 sprintf(id_tin_id, "id=\"%s\"",
