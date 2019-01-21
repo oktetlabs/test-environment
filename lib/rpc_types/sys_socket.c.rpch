@@ -4140,9 +4140,12 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
      */
     if (c != NULL && (uint8_t *)c + c->cmsg_len > cmsg_buf + cmsg_len)
     {
-        WARN("%s(): the first cmsghdr has too big length, supplied "
-             "buffer does not contain correct control data", __FUNCTION__);
-        c = NULL;
+        ERROR("%s(): the first cmsghdr has too big length (%"
+              TE_PRINTF_SIZE_T "u vs %" TE_PRINTF_SIZE_T "u provided), "
+              "supplied buffer does not contain correct control data",
+              __FUNCTION__, (size_t)(c->cmsg_len),
+              cmsg_len - (cmsg_buf - (uint8_t *)c));
+        return TE_EINVAL;
     }
 
     if (c == NULL)
@@ -4158,6 +4161,15 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
 
         for (i = 0; c != NULL; i++, c = CMSG_NXTHDR(&msg, c))
         {
+            if (c->cmsg_len < sizeof(struct cmsghdr))
+            {
+                ERROR("cmsg_len=%" TE_PRINTF_SIZE_T "u which is smaller "
+                      "than sizeof(struct cmsghdr) (%"
+                      TE_PRINTF_SIZE_T "u)",
+                      (size_t)(c->cmsg_len), sizeof(struct cmsghdr));
+                return TE_EINVAL;
+            }
+
             data_len = c->cmsg_len -
                        ((uint8_t *)CMSG_DATA(c) - (uint8_t *)c);
             end_byte = (uint8_t *)c + CMSG_SPACE(data_len);
