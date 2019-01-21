@@ -147,7 +147,6 @@ rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
             return rc;
 
         memcpy(helper->orig_control, msg->msg_control, msg->msg_controllen);
-        helper->orig_controllen = msg->msg_controllen;
     }
     else
     {
@@ -157,6 +156,8 @@ rpcs_msghdr_tarpc2h(rpcs_msghdr_check_args_mode check_args,
 
     if (tarpc_msg->msg_controllen >= 0)
         msg->msg_controllen = tarpc_msg->msg_controllen;
+
+    helper->orig_controllen = msg->msg_controllen;
 
     msg->msg_flags = send_recv_flags_rpc2h(tarpc_msg->msg_flags);
     helper->orig_msg_flags = msg->msg_flags;
