@@ -363,31 +363,10 @@ msghdr_tarpc2rpc(const tarpc_msghdr *tarpc_msg, rpc_msghdr *rpc_msg)
         if (rc != 0)
             return rc;
 
-        if (control_len > rpc_msg->msg_controllen)
-        {
-            /*
-             * In case of control data truncation it is possible
-             * that here more bytes will be required to represent
-             * the same data than on TA. Reasons: 1) in case of
-             * truncation trailing bytes (as computed by CMSG_SPACE())
-             * may be ommitted for the last cmsghdr but here we
-             * always include them 2) alignment may differ from
-             * that on TA, resulting in more space eaten by each
-             * cmsghdr.
-             *
-             * We do not need this in case we do not check truncated
-             * control data as we can set msg_controllen itself to
-             * big enough value.
-             */
-            if (!(tarpc_msg->msg_flags & RPC_MSG_CTRUNC))
-            {
-                ERROR("%s(): after conversion control data is too "
-                      "long while there was no truncation",
-                      __FUNCTION__);
-                return TE_EINVAL;
-            }
-        }
-        rpc_msg->msg_controllen = control_len;
+        rpc_msg->msg_controllen =
+                  tarpc_cmsg_total_len(
+                            tarpc_msg->msg_control.msg_control_val,
+                            tarpc_msg->msg_control.msg_control_len);
         rpc_msg->got_msg_controllen = tarpc_msg->msg_controllen;
         rpc_msg->msg_cmsghdr_num = tarpc_msg->msg_control.msg_control_len;
     }
