@@ -237,6 +237,12 @@ msghdr_rpc2tarpc(const rpc_msghdr *rpc_msg, tarpc_msghdr *tarpc_msg,
                       __FUNCTION__, i);
                 return TE_EINVAL;
             }
+            else if (c->cmsg_len < sizeof(struct cmsghdr))
+            {
+                ERROR("%s(): control message %d has too small length",
+                      __FUNCTION__, i);
+                return TE_EINVAL;
+            }
 
             data_len = c->cmsg_len -
                        ((uint8_t *)CMSG_DATA(c) - (uint8_t *)c);
