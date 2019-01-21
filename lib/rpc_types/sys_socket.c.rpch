@@ -4292,6 +4292,8 @@ msg_control_rpc2h(tarpc_cmsghdr *rpc_cmsg,
     uint8_t        *end_byte = cmsg_buf;
     unsigned int    i;
     size_t          total_len;
+    size_t          initial_space;
+    size_t          diff;
     int             data_len = 0;
     int             rc;
 
@@ -4336,14 +4338,25 @@ msg_control_rpc2h(tarpc_cmsghdr *rpc_cmsg,
 
     msg.msg_controllen = *cmsg_len;
 
-    total_len = tarpc_cmsg_total_len(rpc_cmsg, rpc_cmsg_count) + tail_len;
+    total_len = tarpc_cmsg_total_len(rpc_cmsg, rpc_cmsg_count);
     c = CMSG_FIRSTHDR(&msg);
-    if (c == NULL || *cmsg_len < ((uint8_t *)c - cmsg_buf) + total_len)
+    initial_space = ((uint8_t *)c - cmsg_buf);
+    if (c == NULL || *cmsg_len < initial_space + total_len)
     {
         ERROR("%s(): too small control message buffer",
               __FUNCTION__);
         return TE_EINVAL;
     }
+    diff = *cmsg_len - (initial_space + total_len);
+    if (tail_len > diff)
+    {
+        WARN("%s(): tailing bytes were truncated when converting "
+             "control messages", __FUNCTION__);
+        tail += (tail_len - diff);
+        tail_len = diff;
+    }
+    total_len += tail_len;
+
     /*
      * This is necessary for CMSG_NXTHDR() to work correctly -
      * it tries to check that length of the next cmsghdr is not
