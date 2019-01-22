@@ -849,7 +849,6 @@ unsigned int
 test_get_test_id(int argc, char **argv)
 {
     unsigned long int value;
-    char *end_ptr;
     const char *str_val;
     te_errno rc;
 
