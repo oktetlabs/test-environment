@@ -752,17 +752,19 @@ test_octet_strings2list(const char *str, unsigned int str_len,
 
         if (str == NULL)
         {
-            TEST_STOP;
+            TEST_FAIL("%s: function input is invalid, string to "
+                      "convert can't be NULL", __FUNCTION__);
         }
 
         len = test_split_param_list(str,
                                     TEST_LIST_PARAM_SEPARATOR,
                                     &str_array);
-        if (len == 0 ||
-            (list = calloc(len, sizeof(uint8_t *))) == NULL)
-        {
-            TEST_STOP;
-        }
+        if (len == 0)
+            TEST_FAIL("Test parameter list returned zero parameters");
+
+        if ((list = TE_ALLOC(len * sizeof(uint8_t *))) == NULL)
+            TEST_FAIL("Failed to allocate %u bytes", len * sizeof(uint8_t *));
+
         for (i = 0; i < len; i++)
         {
             oct_str = test_get_octet_string_param(str_array[i], str_len);
@@ -797,7 +799,7 @@ test_get_enum_param(int argc, char **argv, const char *name,
         return mapped_value;
     }
 
-    TEST_STOP;
+    TEST_FAIL("Enum param %s get failed", name);
 
     return mapped_value;
 }
@@ -810,7 +812,7 @@ test_get_string_param(int argc, char **argv, const char *name)
 
     if ((value = test_get_param(argc, argv, name)) == NULL)
     {
-        TEST_STOP;
+        TEST_FAIL("String param %s get failed", name);
     }
 
     return value;
@@ -827,7 +829,7 @@ test_get_int_param(int argc, char **argv, const char *name)
     str_val = test_get_param(argc, argv, name);
     if (str_val == NULL)
     {
-        TEST_STOP;
+        TEST_FAIL("Str value for name=%s was not found", name);
     }
     value = strtol(str_val, &end_ptr, 0);
     if (end_ptr == str_val || *end_ptr != '\0')
@@ -904,7 +906,7 @@ test_get_int64_param(int argc, char **argv, const char *name)
     str_val = test_get_param(argc, argv, name);
     if (str_val == NULL)
     {
-        TEST_STOP;
+        TEST_FAIL("Failed to get int64 value for param %s", name);
     }
 
     value = strtoll(str_val, &end_ptr, 0);
@@ -934,7 +936,7 @@ test_get_double_param(int argc, char **argv, const char *name)
     str_val = test_get_param(argc, argv, name);
     if (str_val == NULL)
     {
-        TEST_STOP;
+        TEST_FAIL("Failed to get double value for param %s", name);
     }
 
     value = strtod(str_val, &end_ptr);
@@ -958,7 +960,7 @@ test_get_value_unit_param(int argc, char **argv, const char *name)
     str_val = test_get_param(argc, argv, name);
     if (str_val == NULL)
     {
-        TEST_STOP;
+        TEST_FAIL("Failed to get unit value for param %s", name);
     }
 
     if (te_unit_from_string(str_val, &unit) != 0)
