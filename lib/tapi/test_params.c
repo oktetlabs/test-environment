@@ -489,8 +489,6 @@ tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
     unsigned int    asn_path_len = BUFLEN;
     char            temp_buf[BUFLEN];
 
-    tapi_asn_param_pair *param = NULL;
-
     /* Sets for different kind of parameters */
     tapi_asn_param_pair *creation_param = NULL;
     tapi_asn_param_pair *change_param = NULL;
@@ -570,39 +568,33 @@ tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
     INFO("%s: process creation parameters", __FUNCTION__);
     for (i = 0; i < creation_param_count; i++)
     {
-        unsigned int subtype_id;
+        tapi_asn_param_pair *param = &creation_param[i];
+        const asn_type *type;
+        char *param_type = strdup(param->name);
+        char *array_start = strrchr(param_type, '[');
 
-        param = &creation_param[i];
-        RING("%s: name='%s' value='%s'",
-             __FUNCTION__, param->name, param->value);
-
-        for (subtype_id = 0; subtype_id < conf_type->len; subtype_id++)
+        /* Two cases:
+         * - we're substrituting an array member: a.b.[]
+         * - or just a member a.b.c
+         *
+         * in the case of array we grab a.b and then take subtype.
+         */
+        if (array_start != NULL)
+            *array_start = '\0';
+        rc = asn_get_subtype(conf_type, &type, param_type);
+        if (rc != 0)
         {
-            const asn_named_entry_t *entry =
-                &conf_type->sp.named_entries[subtype_id];
-
-            RING("Iterate entry %s", entry->name);
-
-            if (strncmp(param->name, entry->name, strlen(entry->name)) == 0)
-            {
-                if (entry->type->syntax != SEQUENCE_OF)
-                {
-                    ERROR("Syntax of %s is not SEQUENCE_OF", entry->name);
-                    rc = TE_EINVAL;
-                    break;
-                }
-                rc = asn_parse_value_text(param->value,
-                                          &entry->type->sp.subtype[0],
-                                          &asn_param_value, &parsed_syms);
-                break;
-            }
+            ERROR("Failed to get subtype for %s", param_type);
+            goto cleanup;
         }
-        if (subtype_id >= conf_type->len)
-        {
-            RING("Failed to find matching entry for %s", param->name);
-            rc = TE_RC(TE_TAPI, TE_EINVAL);
-        }
+        if (array_start != NULL)
+            type = type->sp.subtype;
 
+        INFO("Type for node %s found : type_name='%s'",
+             param->name, type->name);
+        rc = asn_parse_value_text(param->value,
+                                  type,
+                                  &asn_param_value, &parsed_syms);
         if (rc != 0)
         {
             ERROR("Failed to parse creation param #%d, value='%s'."
@@ -629,7 +621,8 @@ tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
     /* Process parameter change */
     for (i = 0; i < change_param_count; i++)
     {
-        param = &change_param[i];
+        tapi_asn_param_pair *param = &change_param[i];
+
 #if 0
         RING("%s: name='%s' value='%s'", __FUNCTION__,
              param->name, param->value);
