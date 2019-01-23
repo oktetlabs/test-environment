@@ -268,9 +268,9 @@ rpcs_msghdr_h2tarpc(const struct msghdr *msg,
         free(tarpc_msg->msg_control_tail.msg_control_tail_val);
         tarpc_msg->msg_control_tail.msg_control_tail_val = tail;
         tarpc_msg->msg_control_tail.msg_control_tail_len = tail_len;
-
-        tarpc_msg->msg_controllen = msg->msg_controllen;
     }
+
+    tarpc_msg->msg_controllen = msg->msg_controllen;
 
     return 0;
 }

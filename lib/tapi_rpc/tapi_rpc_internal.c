@@ -369,10 +369,7 @@ msghdr_tarpc2rpc(const tarpc_msghdr *tarpc_msg, rpc_msghdr *rpc_msg)
         if (rc != 0)
             return rc;
 
-        rpc_msg->msg_controllen =
-                  tarpc_cmsg_total_len(
-                            tarpc_msg->msg_control.msg_control_val,
-                            tarpc_msg->msg_control.msg_control_len);
+        rpc_msg->msg_controllen = control_len;
         rpc_msg->got_msg_controllen = tarpc_msg->msg_controllen;
         rpc_msg->msg_cmsghdr_num = tarpc_msg->msg_control.msg_control_len;
     }
