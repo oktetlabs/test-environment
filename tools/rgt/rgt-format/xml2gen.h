@@ -107,6 +107,19 @@ typedef struct rgt_mem_ctx {
 } rgt_mem_ctx_t;
 
 /**
+ * Variants how a single log file may be specified.
+ */
+typedef enum {
+    RGT_MATCH_TIN,        /**< Test Identification Number */
+    RGT_MATCH_NODE_ID,    /**< Log node ID */
+    RGT_MATCH_DEPTH_SEQ,  /**< Depth and sequential numbers in
+                               log nodes tree */
+} rgt_match_type;
+
+/** Prefix used for node ID in HTML log file name */
+#define RGT_NODE_ID_PREFIX "id"
+
+/**
  * Structure that keeps basic data used in processing XML file.
  */
 typedef struct rgt_gen_ctx {
@@ -129,7 +142,9 @@ typedef struct rgt_gen_ctx {
 
     te_bool         single_node_match;    /**< Output HTML page only
                                                for specified log node */
-    char           *match_tin;            /**< TIN of log node */
+    rgt_match_type  match_type;           /**< How a single log node
+                                               was specified */
+    char           *match_id;             /**< ID of log node */
     uint32_t        match_depth;          /**< Depth of log node */
     uint32_t        match_seq;            /**< Sequential number of
                                                log node */

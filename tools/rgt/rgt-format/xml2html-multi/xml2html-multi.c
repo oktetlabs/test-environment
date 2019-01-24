@@ -29,7 +29,14 @@
 #include "xml2gen.h"
 #include "xml2html-multi.h"
 
-#define RGT_HTML_USE_TIN_NAMES 1
+/*
+ * Name all files by depth and sequence numbers in tree,
+ * including test iteration nodes. If this is turned off,
+ * then test iteration nodes will be named by node ID.
+ * If this is turned on, references to logs files in
+ * TRC report will be broken.
+ */
+static te_bool rgt_html_depth_seq_names = FALSE;
 
 /* Root log node depth in the tree of log nodes */
 #define ROOT_NODE_DEPTH   1
@@ -171,7 +178,19 @@ void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val)
 
         if (strchr(match_exp, '_') == NULL)
         {
-            ctx->match_tin = match_exp;
+            if (strcmp_start(RGT_NODE_ID_PREFIX, match_exp) == 0)
+            {
+                ctx->match_id = strdup(match_exp +
+                                       strlen(RGT_NODE_ID_PREFIX));
+                assert(ctx->match_id != NULL);
+                free(match_exp);
+                ctx->match_type = RGT_MATCH_NODE_ID;
+            }
+            else
+            {
+                ctx->match_id = match_exp;
+                ctx->match_type = RGT_MATCH_TIN;
+            }
         }
         else
         {
@@ -179,6 +198,7 @@ void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val)
                    &ctx->match_depth,
                    &ctx->match_seq);
             free(match_exp);
+            ctx->match_type = RGT_MATCH_DEPTH_SEQ;
         }
         ctx->single_node_match = TRUE;
     }
@@ -217,32 +237,40 @@ void rgt_tmpls_attrs_add_globals(rgt_attrs_t *attrs)
 /**
  * Check whether a given log node (HTML log file) should be output.
  *
- * @param ctx     RGT context
- * @param tin     TIN of test iteration represented by this node
- * @param depth   Node depth in log tree
- * @param seq     Node sequential number (in then list of chidren of its
- *                parent)
+ * @param ctx       RGT context
+ * @param tin       TIN of test iteration represented by this node
+ * @param node_id   Node ID
+ * @param depth     Node depth in log tree
+ * @param seq       Node sequential number (in then list of chidren of its
+ *                  parent)
  *
  * return TRUE if node should be output, FALSE otherwise.
  */
 static inline te_bool
-match_node(rgt_gen_ctx_t *ctx, const char *tin,
+match_node(rgt_gen_ctx_t *ctx, const char *tin, const char *node_id,
            uint32_t depth, uint32_t seq)
 {
     if (ctx->single_node_match)
     {
-#if RGT_HTML_USE_TIN_NAMES
-        if (tin != NULL && ctx->match_tin != NULL)
+        switch (ctx->match_type)
         {
-            if (strcmp(ctx->match_tin, tin) != 0)
-                return FALSE;
-        }
-        else
-#endif
-        {
-            if (ctx->match_depth != depth ||
-                ctx->match_seq != seq)
-                return FALSE;
+            case RGT_MATCH_TIN:
+                if (tin == NULL ||
+                    strcmp(ctx->match_id, tin) != 0)
+                    return FALSE;
+                break;
+
+            case RGT_MATCH_NODE_ID:
+                if (node_id == NULL ||
+                    strcmp(ctx->match_id, node_id) != 0)
+                    return FALSE;
+                break;
+
+            case RGT_MATCH_DEPTH_SEQ:
+                if (ctx->match_depth != depth ||
+                    ctx->match_seq != seq)
+                    return FALSE;
+                break;
         }
     }
 
@@ -361,7 +389,7 @@ RGT_DEF_FUNC(proc_document_start)
 
     lf_start(ctx, depth_ctx, NULL, NULL, NULL);
 
-    if (match_node(ctx, NULL, ROOT_NODE_DEPTH, ROOT_NODE_SEQ))
+    if (match_node(ctx, NULL, NULL, ROOT_NODE_DEPTH, ROOT_NODE_SEQ))
     {
         char fname[255];
 
@@ -721,13 +749,16 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     const char       *name = rgt_tmpls_xml_attrs_get(xml_attrs, "name");
     const char       *result = rgt_tmpls_xml_attrs_get(xml_attrs, "result");
     const char       *tin = rgt_tmpls_xml_attrs_get(xml_attrs, "tin");
+    const char       *node_id = rgt_tmpls_xml_attrs_get(xml_attrs,
+                                                        "test_id");
     const char       *err = rgt_tmpls_xml_attrs_get(xml_attrs, "err");
     const char       *hash = rgt_tmpls_xml_attrs_get(xml_attrs, "hash");
     const char       *node_class;
-    char              fname[255];
+    char              fname[255] = "";
     char              page_str[255] = "";
     rgt_attrs_t      *attrs;
     te_bool           matched = TRUE;
+    rgt_match_type    name_type;
 
     assert(ctx->depth >= 2);
 
@@ -757,21 +788,62 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
             snprintf(page_str, sizeof(page_str), "_p%u", ctx->cur_page);
     }
 
-#if RGT_HTML_USE_TIN_NAMES
-    if (tin != NULL && !(ctx->single_node_match && ctx->match_tin == NULL))
-    {
-        snprintf(fname, sizeof(fname), "node_%s%s.html", tin, page_str);
-    }
+    /*
+     * Default file name format. TIN is chosen here for backward
+     * compatibility with old XML logs in which there is no node IDs.
+     */
+    if (rgt_html_depth_seq_names)
+        name_type = RGT_MATCH_DEPTH_SEQ;
     else
-#endif
+        name_type = RGT_MATCH_TIN;
+
+    if (ctx->single_node_match)
     {
-        snprintf(fname, sizeof(fname), "node_%d_%d%s.html",
-                 ctx->depth, depth_ctx->seq, page_str);
+        /*
+         * If single log node was requested, use name format corresponding
+         * to how that node was specified.
+         */
+        name_type = ctx->match_type;
+    }
+    else if (!rgt_html_depth_seq_names && depth_user->is_test &&
+             node_id != NULL)
+    {
+        /*
+         * Otherwise use node_id<NODE_ID>.html format if possible.
+         */
+        name_type = RGT_MATCH_NODE_ID;
+    }
+
+    /*
+     * Fall back to node_<DEPTH>_<SEQ>.html name format if no
+     * TIN or node ID is available for the desired name format.
+     */
+    if ((name_type == RGT_MATCH_TIN && tin == NULL) ||
+        (name_type == RGT_MATCH_NODE_ID && node_id == NULL))
+    {
+        name_type = RGT_MATCH_DEPTH_SEQ;
+    }
+
+    switch (name_type)
+    {
+        case RGT_MATCH_TIN:
+            snprintf(fname, sizeof(fname), "node_%s%s.html", tin, page_str);
+            break;
+
+        case RGT_MATCH_NODE_ID:
+            snprintf(fname, sizeof(fname), "node_id%s%s.html",
+                     node_id, page_str);
+            break;
+
+        case RGT_MATCH_DEPTH_SEQ:
+            snprintf(fname, sizeof(fname), "node_%d_%d%s.html",
+                     ctx->depth, depth_ctx->seq, page_str);
+            break;
     }
 
     depth_user->name = strdup(name);
 
-    matched = match_node(ctx, tin, ctx->depth, depth_ctx->seq);
+    matched = match_node(ctx, tin, node_id, ctx->depth, depth_ctx->seq);
 
     if (matched)
     {
