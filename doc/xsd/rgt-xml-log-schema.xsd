@@ -58,6 +58,7 @@
 
       <xs:attribute name="name" type="xs:string"/>
       <xs:attribute name="tin" type="xs:integer" use="optional"/>
+      <xs:attribute name="test_id" type="xs:integer" use="optional"/>
       <xs:attributeGroup ref="proteos:result_attr_group"/>
     </xs:complexType>
 
