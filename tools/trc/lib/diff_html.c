@@ -646,7 +646,7 @@ static const char * const trc_diff_test_result_end =
 "</font>";
 
 static const char * const trc_diff_test_result_url =
-"<br/><a href=\"%s/node_%d.html\">[log]</a>";
+"<br/><a href=\"%s/node_%s.html\">[log]</a>";
 
 static const char * trc_diff_js_include_start =
 "<script id=\"source\" language=\"javascript\" type=\"text/javascript\">\n";
@@ -2160,6 +2160,7 @@ trc_diff_exp_results_to_html(FILE                 *f,
     trc_report_test_iter_data       *iter_data;
     trc_report_test_iter_entry      *iter_entry;
     te_errno                         rc = 0;
+    const char                      *iter_id = NULL;
 
     for (set = TAILQ_FIRST(sets);
          set != NULL && rc == 0;
@@ -2180,15 +2181,17 @@ trc_diff_exp_results_to_html(FILE                 *f,
                 {
                     TAILQ_FOREACH(iter_entry, &iter_data->runs, links)
                     {
+                        iter_id = trc_report_get_iter_id(iter_entry);
+
                         WRITE_STR("<HR/>");
                         fprintf(f, trc_diff_test_result_start,
                                 (iter_entry->is_exp) ?
                                 "matched" : "unmatched");
                         rc = te_test_result_to_html(f, &iter_entry->result);
-                        if ((set->url != NULL) && (iter_entry->tin != 0))
+                        if ((set->url != NULL) && (iter_id[0] != '\0'))
                         {
                             fprintf(f, trc_diff_test_result_url,
-                                    set->url, iter_entry->tin);
+                                    set->url, iter_id);
                         }
                         fprintf(f, trc_diff_test_result_end);
                     }
