@@ -156,6 +156,8 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
         filter_seq="${BASH_REMATCH[2]}"
     elif [[ "${node}" =~ ^([0-9]+) ]] ; then
         filter_tin="${BASH_REMATCH[1]}"
+    elif [[ "${node}" =~ ^id([0-9]+) ]] ; then
+        filter_test_id="${BASH_REMATCH[1]}"
     else
         err_cleanup "Cannot obtain \"${req_path}\""
     fi
@@ -186,7 +188,10 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
                     \( -n "${filter_depth}" \
                        -a x"${filter_depth}" = x"${frag_depth}" \
                        -a -n "${filter_seq}" \
-                       -a x"${filter_seq}" = x"${frag_seq}" \) ; then
+                       -a x"${filter_seq}" = x"${frag_seq}" \) -o \
+                    \( -n "${filter_test_id}" \
+                       -a x"${frag_name}" = \
+                                  x"${filter_test_id}_frag_start" \) ; then
 
                 pages_count="${frag_pages_cnt}"
 
