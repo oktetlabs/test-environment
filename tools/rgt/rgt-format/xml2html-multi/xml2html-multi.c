@@ -874,6 +874,7 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     rgt_tmpls_attrs_add_fstr(attrs, "name", name);
     rgt_tmpls_attrs_add_fstr(attrs, "result", result);
     rgt_tmpls_attrs_add_fstr(attrs, "tin", tin);
+    rgt_tmpls_attrs_add_fstr(attrs, "test_id", node_id);
     rgt_tmpls_attrs_add_fstr(attrs, "err", err);
     rgt_tmpls_output(depth_user->fd,
                      &xml2fmt_tmpls[DOC_CNTRL_NODE_TITLE], attrs);
