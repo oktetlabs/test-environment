@@ -904,8 +904,6 @@ te_sockaddr_netaddr_from_string(const char      *addr_str,
     return TE_RC(TE_TAPI, TE_EINVAL);
 }
 
-
-#if 0
 /* See description in te_sockaddr.h */
 te_errno
 te_sockaddr_ip4_to_ip6_mapped(struct sockaddr *addr)
@@ -920,7 +918,7 @@ te_sockaddr_ip4_to_ip6_mapped(struct sockaddr *addr)
     }
 
     ip4_addr = (uint32_t)SIN(addr)->sin_addr.s_addr;
-    port = (uint32_t)SIN(addr)->sin_port;
+    port = SIN(addr)->sin_port;
 
     memset(addr, 0, sizeof(struct sockaddr_in6));
 
@@ -931,6 +929,5 @@ te_sockaddr_ip4_to_ip6_mapped(struct sockaddr *addr)
 
     return 0;
 }
-#endif
 
 //#endif /* __CYGWIN__ */
