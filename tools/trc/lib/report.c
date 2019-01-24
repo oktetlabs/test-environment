@@ -250,3 +250,22 @@ trc_report_collect_stats(trc_report_ctx *ctx)
 
     return rc;
 }
+
+/* See description in trc_report.h */
+const char *
+trc_report_get_iter_id(const trc_report_test_iter_entry *iter)
+{
+    static char iter_id[TRC_REPORT_ITER_ID_LEN];
+
+    iter_id[0] = '\0';
+
+    if (iter != NULL)
+    {
+        if (iter->test_id >= 0)
+            TE_SPRINTF(iter_id, "id%d", iter->test_id);
+        else if (iter->tin >= 0)
+            TE_SPRINTF(iter_id, "%d", iter->tin);
+    }
+
+    return iter_id;
+}

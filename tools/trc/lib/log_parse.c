@@ -228,6 +228,7 @@ static void
 trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
 {
     int                      tin = -1;
+    int                      test_id = -1;
     char                    *hash = NULL;
     te_bool                  name_found = FALSE;
     te_bool                  status_found = FALSE;
@@ -291,6 +292,13 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
         else if (xmlStrcmp(attrs[0], CONST_CHAR2XML("tin")) == 0)
         {
             if (sscanf(XML2CHAR(attrs[1]), "%d", &tin) < 1)
+            {
+                ctx->rc = TE_EFMT;
+            }
+        }
+        else if (xmlStrcmp(attrs[0], CONST_CHAR2XML("test_id")) == 0)
+        {
+            if (sscanf(XML2CHAR(attrs[1]), "%d", &test_id) < 1)
             {
                 ctx->rc = TE_EFMT;
             }
@@ -379,6 +387,7 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
         te_test_result_init(&entry->result);
         entry->result.status = status;
         entry->tin = tin;
+        entry->test_id = test_id;
         entry->hash = hash;
         entry->args = NULL;
         entry->args_max = 0;

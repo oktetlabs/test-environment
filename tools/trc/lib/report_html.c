@@ -1542,9 +1542,9 @@ static const char * const trc_test_exp_got_end =
 
 #if TRC_USE_LOG_URLS
 static const char * const trc_test_log_url =
-"<a href=\"%s/node_%d.html\" "
+"<a href=\"%s/node_%s.html\" "
 #if TRC_USE_STATS_POPUP
-"onClick=\"showLog('%s', '%s/node_%d.html', event); return false;\""
+"onClick=\"showLog('%s', '%s/node_%s.html', event); return false;\""
 #endif
 ">[log]</a>";
 #endif
@@ -2212,7 +2212,8 @@ trc_report_keys_to_html(FILE           *f,
                  FWRITE_FMT("#%s", key_test->key_path);
                  TAILQ_FOREACH(key_iter, &key_test->iters, links)
                  {
-                     FWRITE_FMT("|%d", key_iter->iter->tin);
+                     FWRITE_FMT("|%s",
+                                trc_report_get_iter_id(key_iter->iter));
                  }
              }
              else
@@ -2413,7 +2414,7 @@ test_status_to_label(te_test_status status, te_bool is_expected)
  * @param test_type     Test type
  * @param test_path     Test path
  * @param stats         Test statistics
- * @param tin_id        Test iteration ID
+ * @param iter_id       Test iteration ID
  * @param flags         Current output flags
  *
  * @return Status code.
@@ -2424,7 +2425,7 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
                                trc_test_type test_type,
                                const char *test_path,
                                const trc_report_stats *stats,
-                               char *tin_id, unsigned int flags)
+                               char *iter_id, unsigned int flags)
 {
     te_errno                rc = 0;
     const te_test_verdict  *v;
@@ -2453,7 +2454,7 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
                    TRC_STATS_RUN(stats));
 #endif
 #if TRC_USE_STATS_POPUP
-    obtained_link = result_link && (tin_id[0] != '\0');
+    obtained_link = result_link && (iter_id[0] != '\0');
 #endif
 
     WRITE_FILE("<h6>");
@@ -2463,7 +2464,7 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
     {
         WRITE_FILE("<a href=\"javascript:showIterResultTextWilds("
                    "'StatsTip', '%s', document.getElementById('%s'))\">",
-                   test_path, tin_id);
+                   test_path, iter_id);
         WRITE_FILE("[*]</a>\n");
     }
 #endif
@@ -2512,7 +2513,7 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
                 WRITE_FILE("<a href=\"javascript:showVerdictWilds("
                            "'StatsTip', '%s', getInnerText(document."
                            "getElementById('%s_%d')))\">", test_path,
-                           tin_id, v_id);
+                           iter_id, v_id);
                 WRITE_FILE("[*]</a>");
             }
 #endif
@@ -2596,8 +2597,9 @@ trc_report_exp_got_to_html(FILE             *f,
     trc_report_test_iter_data        *iter_data;
     const trc_report_test_iter_entry *iter_entry;
     te_errno                          rc = 0;
-    char                              id_tin_id[128];
-    char                              tin_id[128];
+    char                              id_iter_id[128];
+    char                              iter_id[128];
+    const char                       *id = NULL;
     char                             *escaped_path = NULL;
 
 #if TRC_USE_LOG_URLS
@@ -2618,24 +2620,28 @@ trc_report_exp_got_to_html(FILE             *f,
     iter_entry = (iter_data == NULL) ? NULL : TAILQ_FIRST(&iter_data->runs);
 
     do {
+        id = trc_report_get_iter_id(iter_entry);
+
         if (trc_report_test_iter_entry_output(test, iter_entry, flags))
         {
 #if TRC_USE_LOG_URLS
             char *iter_history_url = NULL;
             char *test_url = NULL;
-            if ((iter_entry != NULL) && (iter_entry->tin >= 0) &&
+
+            if (test->type == TRC_TEST_SCRIPT &&
+                (iter_entry != NULL) && (id[0] != '\0') &&
                 (ctx->html_logs_path != NULL))
             {
                 test_url = te_sprintf(trc_test_log_url,
 #if TRC_USE_STATS_POPUP
                                       ctx->html_logs_path,
-                                      iter_entry->tin,
+                                      id,
                                       test->name,
                                       ctx->html_logs_path,
-                                      iter_entry->tin);
+                                      id);
 #else
                                       ctx->html_logs_path,
-                                      iter_entry->tin);
+                                      id);
 #endif
             }
 
@@ -2735,16 +2741,15 @@ trc_report_exp_got_to_html(FILE             *f,
             }
             assert(iter_data != NULL);
 
-            id_tin_id[0] = '\0';
-            tin_id[0] = '\0';
+            id_iter_id[0] = '\0';
+            iter_id[0] = '\0';
             if ((test->type == TRC_TEST_SCRIPT) &&
                 (iter_entry != NULL) &&
-                (iter_entry->tin >= 0))
+                (id[0] != '\0'))
             {
-                sprintf(tin_id, "tin_%d",
-                        iter_entry->tin);
-                sprintf(id_tin_id, "id=\"%s\"",
-                        tin_id);
+                sprintf(iter_id, "iter_%s", id);
+                sprintf(id_iter_id, "id=\"%s\"",
+                        iter_id);
             }
 
             escaped_path = escape_test_path(test_path);
@@ -2804,19 +2809,19 @@ trc_report_exp_got_to_html(FILE             *f,
                 break;
 
             if (iter_entry == NULL || iter_entry->is_exp)
-                WRITE_FILE(trc_test_exp_got_row_mid, id_tin_id);
+                WRITE_FILE(trc_test_exp_got_row_mid, id_iter_id);
             else if (iter_entry->result.status == TE_TEST_PASSED)
                 WRITE_FILE(trc_test_exp_got_row_mid_pass_unexp,
                            !(flags & TRC_REPORT_NO_EXPECTED) ?
                            "class=\"test_stats_passed_unexp\"" :
                            "class=\"unexp_no_highligth\"",
-                           id_tin_id);
+                           id_iter_id);
             else
                 WRITE_FILE(trc_test_exp_got_row_mid_fail_unexp,
                            !(flags & TRC_REPORT_NO_EXPECTED) ?
                            "class=\"test_stats_failed_unexp\"" :
                            "class=\"unexp_no_highlight\"",
-                           id_tin_id);
+                           id_iter_id);
 
 #if TRC_USE_STATS_POPUP
             rc = trc_report_result_anchor(f, test_path, iter_entry,
@@ -2834,7 +2839,7 @@ trc_report_exp_got_to_html(FILE             *f,
                                  NULL : &iter_entry->result,
                                  (iter_entry == NULL || iter_entry->is_exp),
                                  test->type,
-                                 test_path, stats, tin_id,
+                                 test_path, stats, iter_id,
                                  flags);
             if (rc != 0)
                 break;
