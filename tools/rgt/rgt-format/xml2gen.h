@@ -140,6 +140,8 @@ typedef struct rgt_gen_ctx {
 
     void           *user_data; /**< User-specific data pointer */
 
+    te_bool         index_only;           /**< If @c TRUE, output HTML
+                                               index files only */
     te_bool         single_node_match;    /**< Output HTML page only
                                                for specified log node */
     rgt_match_type  match_type;           /**< How a single log node

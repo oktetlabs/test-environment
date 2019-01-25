@@ -204,10 +204,7 @@ void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val)
     }
     else if (val == 'x')
     {
-        ctx->single_node_match = TRUE;
-        ctx->match_type = RGT_MATCH_DEPTH_SEQ;
-        ctx->match_depth = 0;
-        ctx->match_seq = 0;
+        ctx->index_only = TRUE;
     }
     else if (val == 'p')
     {
@@ -251,6 +248,9 @@ static inline te_bool
 match_node(rgt_gen_ctx_t *ctx, const char *tin, const char *node_id,
            uint32_t depth, uint32_t seq)
 {
+    if (ctx->index_only)
+        return FALSE;
+
     if (ctx->single_node_match)
     {
         switch (ctx->match_type)
@@ -798,7 +798,7 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     else
         name_type = RGT_MATCH_TIN;
 
-    if (ctx->single_node_match)
+    if (ctx->single_node_match && !(ctx->index_only))
     {
         /*
          * If single log node was requested, use name format corresponding
