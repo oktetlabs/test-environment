@@ -205,6 +205,7 @@ void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val)
     else if (val == 'x')
     {
         ctx->single_node_match = TRUE;
+        ctx->match_type = RGT_MATCH_DEPTH_SEQ;
         ctx->match_depth = 0;
         ctx->match_seq = 0;
     }
@@ -255,13 +256,13 @@ match_node(rgt_gen_ctx_t *ctx, const char *tin, const char *node_id,
         switch (ctx->match_type)
         {
             case RGT_MATCH_TIN:
-                if (tin == NULL ||
+                if (tin == NULL || ctx->match_id == NULL ||
                     strcmp(ctx->match_id, tin) != 0)
                     return FALSE;
                 break;
 
             case RGT_MATCH_NODE_ID:
-                if (node_id == NULL ||
+                if (node_id == NULL || ctx->match_id == NULL ||
                     strcmp(ctx->match_id, node_id) != 0)
                     return FALSE;
                 break;
