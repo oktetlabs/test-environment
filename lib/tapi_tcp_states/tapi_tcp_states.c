@@ -334,6 +334,25 @@ configure_gateway(tsa_session *ss)
     if (rc != 0)
         return rc;
 
+    /*
+     * We need to add IPv6 neighbors entries manually because there are cases
+     * when Linux can not re-resolve FAILED entries for gateway routes.
+     * See bug 9774.
+     */
+    if (family == RPC_AF_INET6)
+    {
+        CHECK_NZ_RETURN(tapi_update_arp(ss->config.pco_iut->ta,
+                                        ss->config.iut_if->if_name,
+                                        ss->config.pco_gw->ta,
+                                        ss->config.gw_iut_if->if_name,
+                                        ss->config.gw_iut_addr, NULL, FALSE));
+        CHECK_NZ_RETURN(tapi_update_arp(ss->config.pco_gw->ta,
+                                        ss->config.gw_iut_if->if_name,
+                                        ss->config.pco_iut->ta,
+                                        ss->config.iut_if->if_name,
+                                        ss->config.iut_addr, NULL, FALSE));
+    }
+
     ss->state.sock.route_dst_added = TRUE;
 
     /*
