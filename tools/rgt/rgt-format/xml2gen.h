@@ -1,9 +1,9 @@
-/** @file 
+/** @file
  * @brief Test Environment: XML2FORMAT module.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -45,12 +45,12 @@ typedef char rgt_xmlChar;
 /** The list of possible states in XML processing state machine */
 typedef enum rgt_state {
     RGT_XML2HTML_STATE_INITIAL, /**< Initial state */
-    
+
     RGT_XML2HTML_STATE_BLOCK,
     RGT_XML2HTML_STATE_LOGS, /**< state on entering "logs" TAG */
 
     RGT_XML2HTML_STATE_META, /**< state on entering "meta" TAG */
-    
+
     RGT_XML2HTML_STATE_START_TS,
     RGT_XML2HTML_STATE_END_TS,
     RGT_XML2HTML_STATE_DURATION,
@@ -58,6 +58,8 @@ typedef enum rgt_state {
     RGT_XML2HTML_STATE_AUTHOR,
     RGT_XML2HTML_STATE_VERDICTS,
     RGT_XML2HTML_STATE_VERDICT,
+    RGT_XML2HTML_STATE_ARTIFACTS,
+    RGT_XML2HTML_STATE_ARTIFACT,
     RGT_XML2HTML_STATE_OBJECTIVE,
     RGT_XML2HTML_STATE_PAGE,
     RGT_XML2HTML_STATE_PARAMS,
@@ -78,7 +80,7 @@ typedef enum rgt_node {
     NT_SESSION, /**< Node of session type */
     NT_PACKAGE, /**< Node of package type */
     NT_TEST,    /**< Node of test type */
-    NT_BRANCH,  /**< It is used only for generation events 
+    NT_BRANCH,  /**< It is used only for generation events
                      "branch start" / "branch end" */
     NT_LAST     /**< Last marker - the biggest value of the all evements */
 } rgt_node_t;
@@ -89,34 +91,47 @@ typedef enum rgt_node {
  */
 typedef struct rgt_depth_ctx {
     rgt_node_t  type; /**< Current node type */
-    uint32_t    seq; /**< Current sequence number used on the 
+    uint32_t    seq; /**< Current sequence number used on the
                                particular depth */
     void       *user_data; /**< User-specific data pointer */
 } rgt_depth_ctx_t;
 
-/** 
+/**
  * Structure that keeps context of mem-dump processing sequence.
  */
 typedef struct rgt_mem_ctx {
     uint32_t mem_width; /**< Number of elements in a memory row */
     uint32_t cur_num; /**< Current element number in memory row */
-    te_bool  first_row; /* Wheter we are working with the first 
+    te_bool  first_row; /* Wheter we are working with the first
                            memory row or not */
 } rgt_mem_ctx_t;
 
-/** 
+/**
+ * Variants how a single log file may be specified.
+ */
+typedef enum {
+    RGT_MATCH_TIN,        /**< Test Identification Number */
+    RGT_MATCH_NODE_ID,    /**< Log node ID */
+    RGT_MATCH_DEPTH_SEQ,  /**< Depth and sequential numbers in
+                               log nodes tree */
+} rgt_match_type;
+
+/** Prefix used for node ID in HTML log file name */
+#define RGT_NODE_ID_PREFIX "id"
+
+/**
  * Structure that keeps basic data used in processing XML file.
  */
 typedef struct rgt_gen_ctx {
     const char     *xml_fname; /**< XML file name */
     const char     *out_fname; /**< Output file name */
-    te_bool         expand_entities; /**< Wheter to expand standard 
-                                          XML entities 
+    te_bool         expand_entities; /**< Wheter to expand standard
+                                          XML entities
                                           like &lt; and &gt; or not? */
 
-    uint32_t        depth; /**< The current processing depth 
+    uint32_t        depth; /**< The current processing depth
                                 in the node tree */
-    GArray         *depth_info; /**< Array of information about 
+    GArray         *depth_info; /**< Array of information about
                                      the particular depth */
     rgt_state_t     state; /**< Current processing state */
 
@@ -125,9 +140,13 @@ typedef struct rgt_gen_ctx {
 
     void           *user_data; /**< User-specific data pointer */
 
+    te_bool         index_only;           /**< If @c TRUE, output HTML
+                                               index files only */
     te_bool         single_node_match;    /**< Output HTML page only
                                                for specified log node */
-    char           *match_tin;            /**< TIN of log node */
+    rgt_match_type  match_type;           /**< How a single log node
+                                               was specified */
+    char           *match_id;             /**< ID of log node */
     uint32_t        match_depth;          /**< Depth of log node */
     uint32_t        match_seq;            /**< Sequential number of
                                                log node */
@@ -185,7 +204,7 @@ typedef void (* rgt_xml2fmt_cb_func)(rgt_gen_ctx_t *ctx,
     void name_(rgt_gen_ctx_t *ctx,                \
                rgt_depth_ctx_t *depth_ctx,        \
                const char **xml_attrs)
-               
+
 /**
  * Macro to define empty callback function
  *
@@ -242,6 +261,10 @@ RGT_EXTERN_FUNC(proc_meta_verdicts_start);
 RGT_EXTERN_FUNC(proc_meta_verdicts_end);
 RGT_EXTERN_FUNC(proc_meta_verdict_start);
 RGT_EXTERN_FUNC(proc_meta_verdict_end);
+RGT_EXTERN_FUNC(proc_meta_artifacts_start);
+RGT_EXTERN_FUNC(proc_meta_artifacts_end);
+RGT_EXTERN_FUNC(proc_meta_artifact_start);
+RGT_EXTERN_FUNC(proc_meta_artifact_end);
 RGT_EXTERN_FUNC(proc_meta_page_start);
 RGT_EXTERN_FUNC(proc_meta_page_end);
 RGT_EXTERN_FUNC(proc_mem_dump_start);
@@ -284,9 +307,9 @@ extern te_bool proc_expand_entities(void);
 
 /**
  * Get index of the element in xml2fmt_files massive. Search by short name.
- * 
+ *
  * @param short_name    Short name of the template
- * 
+ *
  * @return Index
  * @retval -1   In case of failure
  */

@@ -17,7 +17,10 @@ class ReviewBoard(object):
         self.api_token = api_token
         if not self.api_token:
             self.api_token = take_api_token()
-        assert self.api_token
+        if not self.api_token:
+            print("Failed to get RB API token.")
+            print("Please provide RB API token in ~/.hgrc")
+            sys.exit(-1)
 
     def _get(self, href):
         r = requests.get(href, headers = {

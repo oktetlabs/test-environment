@@ -1,10 +1,10 @@
-/** @file 
+/** @file
  * @brief Test Environment: rgt-core implementation.
  *    Implementation of main and usage/help functions.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -59,7 +59,7 @@ static void rgt_update_progress_bar(rgt_gen_ctx_t *ctx);
 /** Global RGT context */
 rgt_gen_ctx_t rgt_ctx;
 
-/** 
+/**
  * The stack context of the main procedure.
  * It is used for exception generations
  */
@@ -80,7 +80,7 @@ jmp_buf rgt_mainjmp;
 static void
 usage(poptContext optCon, int exitcode, char *error, char *addl)
 {
-    poptSetOtherOptionHelp(optCon, 
+    poptSetOtherOptionHelp(optCon,
         "<raw log file> [<output file>]");
     poptPrintUsage(optCon, stderr, 0);
     if (error)
@@ -108,9 +108,9 @@ usage(poptContext optCon, int exitcode, char *error, char *addl)
  * @return  Nothing.
  *
  * @se
- *    The function can update some of the following global variables 
+ *    The function can update some of the following global variables
  *    according to the command line arguments specified in argv.
- *    
+ *
  *      fltr_file_name   - Name of the TCL filter file.
  *      raw_file_name    - Name of the Raw log file.
  *      output_file_name - Name of the output file.
@@ -126,7 +126,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
 {
     poptContext  optCon; /* context for parsing command-line options */
     int          rc;
-    
+
     /* Option Table */
     struct poptOption optionsTable[] = {
 #if (defined WITH_LOG_FILTER)
@@ -153,19 +153,19 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
 
         { NULL, 'V', POPT_ARG_NONE, NULL, 'V',
           "Verbose trace.", NULL },
-          
-        { "version", 'v', POPT_ARG_NONE, NULL, 'v', 
+
+        { "version", 'v', POPT_ARG_NONE, NULL, 'v',
           "Display version information.", 0 },
-          
+
         POPT_AUTOHELP
         POPT_TABLEEND
     };
-    
+
     /* Process command line options */
     optCon = poptGetContext(NULL, argc, (const char **)argv, optionsTable,
                             0);
-  
-    poptSetOtherOptionHelp(optCon, 
+
+    poptSetOtherOptionHelp(optCon,
         "[OPTION...] [<raw log file>] [<output file>]");
 
     while ((rc = poptGetNextOpt(optCon)) >= 0)
@@ -240,7 +240,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
             case 'V':
                 ctx->verb = TRUE;
                 break;
-            
+
             default:
                 assert(0);
                 break;
@@ -340,8 +340,8 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
  * arriving SIGINT signal to the programm.
  *
  * @param  signo  Signal number by which the programm is terminated.
- *                If signo is equal to zero it means an error was occured 
- *                during the programm operation. We use an assertion that 
+ *                If signo is equal to zero it means an error was occured
+ *                during the programm operation. We use an assertion that
  *                no one signal has code equal to zero.
  *
  * @return  Nothing.
@@ -375,7 +375,7 @@ static void free_resources(int signo)
  *
  * @param argc  Number of arguments passed in command line
  * @param argv  Array of command line argumetns
- * 
+ *
  */
 int
 main(int argc, char **argv)
@@ -423,7 +423,7 @@ main(int argc, char **argv)
 
             if (rgt_ctx.fetch_log_msg(&msg, &rgt_ctx) == 0)
                 break;
-            
+
             if (!rgt_ctx.proc_cntrl_msg)
             {
                 /* We do not need to care about Log ID */
@@ -436,7 +436,7 @@ main(int argc, char **argv)
             {
                 memcpy(&latest_ts, &(msg->timestamp), sizeof(latest_ts));
             }
-            
+
             rgt_core_process_log_msg(msg);
         }
 
@@ -475,7 +475,7 @@ main(int argc, char **argv)
 static void
 rgt_core_process_log_msg(log_msg *msg)
 {
-    /* 
+    /*
      * Check if it is a control message.
      * Control messages have well-known User name.
      */
@@ -491,10 +491,10 @@ rgt_core_process_log_msg(log_msg *msg)
     }
 }
 
-/** 
+/**
  * Set default values into rgt context data structure
  *
- * @param ctx  context to be updated 
+ * @param ctx  context to be updated
  */
 static void
 rgt_ctx_set_defaults(rgt_gen_ctx_t *ctx)
@@ -507,6 +507,7 @@ rgt_ctx_set_defaults(rgt_gen_ctx_t *ctx)
     ctx->proc_incomplete = FALSE;
     ctx->verb = FALSE;
     ctx->tmp_dir = NULL;
+    ctx->current_nest_lvl = 0;
 }
 
 /**

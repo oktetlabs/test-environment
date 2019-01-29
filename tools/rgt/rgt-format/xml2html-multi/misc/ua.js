@@ -40,7 +40,7 @@ function xbDetectBrowser()
   var element = null;
 
   window.onerror = null;
-  
+
   // work around bug in xpcdom Mozilla 0.9.1
   window.saveNavigator = window.navigator;
 
@@ -60,10 +60,10 @@ function xbDetectBrowser()
     else if (platform.indexOf('unix') != -1 || platform.indexOf('linux') != -1 || platform.indexOf('sun') != -1)
       navigator.OS = 'nix';
   }
-  
+
   var i = 0;
   var ua = window.navigator.userAgent.toLowerCase();
-  
+
   if (ua.indexOf('safari') != -1)
   {
     i = ua.indexOf('safari');
@@ -82,7 +82,7 @@ function xbDetectBrowser()
   {
     navigator.org    = 'microsoft';
     navigator.version  = parseFloat('0' + ua.substr(i+5), 10);
-    
+
     if (navigator.version < 4)
       navigator.family = 'ie3';
     else
@@ -100,7 +100,7 @@ function xbDetectBrowser()
         var rv      = ua.substring(rvStart+3, rvEnd);
         var rvParts = rv.split('.');
         var exp     = 1;
-        
+
         for (var i = 0; i < rvParts.length; i++)
         {
             var val = parseInt(rvParts[i]);
@@ -120,7 +120,7 @@ function xbDetectBrowser()
   else if ((ua.indexOf('mozilla') !=-1) && (ua.indexOf('spoofer')==-1) && (ua.indexOf('compatible') == -1) && (ua.indexOf('opera')==-1)&& (ua.indexOf('webtv')==-1) && (ua.indexOf('hotjava')==-1))
   {
     var is_major = parseFloat(navigator.appVersion);
-    
+
     if (is_major < 4)
       navigator.version = is_major;
     else
@@ -147,7 +147,7 @@ function xbDetectBrowser()
   }
 
   window.onerror = oldOnError;
-  
+
   switch(navigator.family)
   {
     case 'ie4':
@@ -157,7 +157,7 @@ function xbDetectBrowser()
       browserVersion = (navigator.version > 6 ? 1 : 0); //opera7 has a good DOM
       break;
     case 'nn4':
-      browserVersion = 2 //NS4.x 
+      browserVersion = 2 //NS4.x
       break;
     case 'gecko':
       browserVersion = 3 //NS6.x
@@ -166,7 +166,7 @@ function xbDetectBrowser()
       browserVersion = 1 //Safari Beta 3 seems to behave like IE in spite of being based on Konkeror
       break;
 	default:
-      browserVersion = 0 //other, possibly without DHTML  
+      browserVersion = 0 //other, possibly without DHTML
       break;
   }
 

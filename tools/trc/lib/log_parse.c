@@ -228,6 +228,7 @@ static void
 trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
 {
     int                      tin = -1;
+    int                      test_id = -1;
     char                    *hash = NULL;
     te_bool                  name_found = FALSE;
     te_bool                  status_found = FALSE;
@@ -239,7 +240,17 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
 
     while (ctx->rc == 0 && attrs[0] != NULL && attrs[1] != NULL)
     {
-        if (xmlStrcmp(attrs[0], CONST_CHAR2XML("name")) == 0)
+        /*
+         * Session name is ignored because currently Tester ignores
+         * name attribute of <session> tag in package.xml, instead
+         * using name attribute of parent <run> tag. And it does
+         * not match this name to TRC database, but only allows to
+         * use it when specifying test path to be executed.
+         * For consistency the same should be done here if session
+         * name is printed to RAW log.
+         */
+        if (ctx->type != TRC_TEST_SESSION &&
+            xmlStrcmp(attrs[0], CONST_CHAR2XML("name")) == 0)
         {
             name_found = TRUE;
             if (!trc_db_walker_step_test(ctx->db_walker,
@@ -281,6 +292,13 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
         else if (xmlStrcmp(attrs[0], CONST_CHAR2XML("tin")) == 0)
         {
             if (sscanf(XML2CHAR(attrs[1]), "%d", &tin) < 1)
+            {
+                ctx->rc = TE_EFMT;
+            }
+        }
+        else if (xmlStrcmp(attrs[0], CONST_CHAR2XML("test_id")) == 0)
+        {
+            if (sscanf(XML2CHAR(attrs[1]), "%d", &test_id) < 1)
             {
                 ctx->rc = TE_EFMT;
             }
@@ -369,6 +387,7 @@ trc_log_parse_test_entry(trc_log_parse_ctx *ctx, const xmlChar **attrs)
         te_test_result_init(&entry->result);
         entry->result.status = status;
         entry->tin = tin;
+        entry->test_id = test_id;
         entry->hash = hash;
         entry->args = NULL;
         entry->args_max = 0;
@@ -667,6 +686,7 @@ trc_log_parse_characters(void *user_data, const xmlChar *ch, int len)
     switch (ctx->state)
     {
         case TRC_LOG_PARSE_VERDICT:
+        case TRC_LOG_PARSE_ARTIFACT:
         case TRC_LOG_PARSE_OBJECTIVE:
         case TRC_LOG_PARSE_TAGS:
             break;
@@ -813,6 +833,10 @@ trc_log_parse_start_element(void *user_data,
             {
                 ctx->state = TRC_LOG_PARSE_VERDICTS;
             }
+            else if (strcmp(tag, "artifacts") == 0)
+            {
+                ctx->state = TRC_LOG_PARSE_ARTIFACTS;
+            }
             else if (strcmp(tag, "params") == 0)
             {
                 ctx->state = TRC_LOG_PARSE_PARAMS;
@@ -838,7 +862,21 @@ trc_log_parse_start_element(void *user_data,
             }
             break;
 
+        case TRC_LOG_PARSE_ARTIFACTS:
+            if (strcmp(tag, "artifact") == 0)
+            {
+                ctx->state = TRC_LOG_PARSE_ARTIFACT;
+                assert(ctx->str == NULL);
+            }
+            else
+            {
+                ERROR("Unexpected element '%s' in 'artifacts'", tag);
+                ctx->rc = TE_EFMT;
+            }
+            break;
+
         case TRC_LOG_PARSE_VERDICT:
+        case TRC_LOG_PARSE_ARTIFACT:
             if (strcmp(tag, "br") == 0)
             {
                 trc_log_parse_characters(user_data,
@@ -847,7 +885,8 @@ trc_log_parse_start_element(void *user_data,
             }
             else
             {
-                ERROR("Unexpected element '%s' in 'verdict'", tag);
+                ERROR("Unexpected element '%s' in 'verdict' or 'artifact'",
+                      tag);
                 ctx->rc = TE_EFMT;
             }
             break;
@@ -1156,10 +1195,21 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
             ctx->state = TRC_LOG_PARSE_META;
             break;
 
+        case TRC_LOG_PARSE_ARTIFACTS:
+            assert(strcmp(tag, "artifacts") == 0);
+            ctx->state = TRC_LOG_PARSE_META;
+            break;
+
         case TRC_LOG_PARSE_VERDICT:
+        case TRC_LOG_PARSE_ARTIFACT:
             if (strcmp(tag, "br") == 0)
                 break;
-            assert(strcmp(tag, "verdict") == 0);
+
+            if (ctx->state == TRC_LOG_PARSE_VERDICT)
+                assert(strcmp(tag, "verdict") == 0);
+            else
+                assert(strcmp(tag, "artifact") == 0);
+
             if (ctx->str != NULL)
             {
                 te_test_verdict *verdict;
@@ -1176,11 +1226,26 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
                 verdict->str = ctx->str;
                 ctx->str = NULL;
                 assert(ctx->iter_data != NULL);
-                TAILQ_INSERT_TAIL(
-                    &TAILQ_FIRST(&ctx->iter_data->runs)->result.verdicts,
-                    verdict, links);
+
+                if (ctx->state == TRC_LOG_PARSE_VERDICT)
+                {
+                    TAILQ_INSERT_TAIL(
+                      &TAILQ_FIRST(&ctx->iter_data->runs)->result.verdicts,
+                      verdict, links);
+                }
+                else
+                {
+                    TAILQ_INSERT_TAIL(
+                      &TAILQ_FIRST(&ctx->iter_data->runs)->result.artifacts,
+                      verdict, links);
+                }
             }
-            ctx->state = TRC_LOG_PARSE_VERDICTS;
+
+            if (ctx->state == TRC_LOG_PARSE_VERDICT)
+                ctx->state = TRC_LOG_PARSE_VERDICTS;
+            else
+                ctx->state = TRC_LOG_PARSE_ARTIFACTS;
+
             break;
 
         case TRC_LOG_PARSE_TAGS:

@@ -58,7 +58,7 @@ A commercial use license is available from Genivia, Inc., contact@genivia.com
 extern "C" {
 #endif
 
-int md5_handler(struct soap *soap, void **context, enum md5_action action, char *buf, size_t len)
+int md5_handler(__attribute__((unused)) struct soap *soap, void **context, enum md5_action action, char *buf, size_t len)
 { EVP_MD_CTX *ctx;
   unsigned char hash[EVP_MAX_MD_SIZE];
   unsigned int size;

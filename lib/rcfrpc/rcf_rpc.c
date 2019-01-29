@@ -16,7 +16,7 @@
  */
 
 #define TE_LGR_USER     "RCF RPC"
-
+#include "te_alloc.h"
 #include "te_config.h"
 
 #include <stdio.h>
@@ -61,6 +61,7 @@
 #include "te_defs.h"
 #include "te_stdint.h"
 #include "te_errno.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "conf_api.h"
 #include "rcf_api.h"
@@ -110,6 +111,39 @@ cfg_get_force_restart_flag(void)
 
     return force_restart != 0;
 }
+
+/* See description in rcf_rpc.h */
+te_errno
+rcf_rpc_server_hook_register(void (*hook_to_register)(rcf_rpc_server *rpcs))
+{
+    rcf_rpc_server_hook *new_hook = TE_ALLOC(sizeof(*new_hook));
+
+    if (new_hook == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    new_hook->hook = hook_to_register;
+
+    SLIST_INSERT_HEAD(&rcf_rpc_server_hooks_list, new_hook, next);
+
+    return 0;
+}
+
+
+/**
+ * Run all registered hooks after rcf_rpc_server was created
+ */
+static void
+rcf_rpc_server_hooks_run(rcf_rpc_server *rpcs)
+{
+    const rcf_rpc_server_hook *hook;
+
+    SLIST_FOREACH(hook, &rcf_rpc_server_hooks_list, next)
+    {
+        hook->hook(rpcs);
+    }
+    return;
+}
+
 
 /* See description in rcf_rpc.h */
 te_errno
@@ -229,7 +263,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
         memset(&out, 0, sizeof(out));
 
         in.common.op = RCF_RPC_CALL_WAIT;
-        in.common.use_libc = FALSE;
+        in.common.lib_flags = TARPC_LIB_DEFAULT;
 
         if ((rc = rcf_ta_call_rpc(ta, sid, name, RCF_RPC_DEFAULT_TIMEOUT,
                                   "getpid", &in, &out)) != 0)
@@ -300,6 +334,9 @@ rcf_rpc_server_get(const char *ta, const char *name,
     rpcs->def_timeout = RCF_RPC_DEFAULT_TIMEOUT;
     rpcs->timeout = RCF_RPC_UNSPEC_TIMEOUT;
     rpcs->sid = sid;
+
+    rcf_rpc_server_hooks_run(rpcs);
+
     if (p_handle != NULL)
         *p_handle = rpcs;
     else
@@ -497,7 +534,7 @@ rcf_rpc_server_exec(rcf_rpc_server *rpcs)
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
     in.name = rpcs->name;
-    in.common.use_libc = FALSE;
+    in.common.lib_flags = TARPC_LIB_DEFAULT;
 
     rpcs->op = RCF_RPC_CALL_WAIT;
     rc = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name, 0xFFFFFFFF,
@@ -592,6 +629,7 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     pthread_mutex_lock(&rpcs->lock);
 #endif
     rpcs->_errno = 0;
+    rpcs->err_msg[0] = '\0';
     rpcs->err_log = FALSE;
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
         rpcs->timeout = rpcs->def_timeout;
@@ -638,7 +676,11 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     in->start = rpcs->start;
     in->op = rpcs->op;
     in->jobid = rpcs->jobid0;
-    in->use_libc = rpcs->use_libc || rpcs->use_libc_once;
+    in->lib_flags = TARPC_LIB_DEFAULT;
+    if (rpcs->use_libc || rpcs->use_libc_once)
+        in->lib_flags |= TARPC_LIB_USE_LIBC;
+    if (rpcs->use_syscall)
+        in->lib_flags |= TARPC_LIB_USE_SYSCALL;
 
     rpcs->last_op = rpcs->op;
     rpcs->last_use_libc = rpcs->use_libc_once;
@@ -664,6 +706,13 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
     {
         rpcs->duration = out->duration;
         rpcs->_errno = out->_errno;
+
+        if (out->err_str.err_str_len > 0)
+        {
+            TE_STRNCPY(rpcs->err_msg, RPC_ERROR_MAX_LEN,
+                       out->err_str.err_str_val);
+        }
+
         rpcs->timed_out = FALSE;
         if (rpcs->op == RCF_RPC_CALL)
         {
@@ -957,7 +1006,7 @@ rcf_rpc_server_create_process(rcf_rpc_server *rpcs,
     memset(&out, 0, sizeof(out));
 
     in.common.op = RCF_RPC_CALL_WAIT;
-    in.common.use_libc = FALSE;
+    in.common.lib_flags = TARPC_LIB_DEFAULT;
     in.name.name_len = strlen(name) + 1;
     in.name.name_val = strdup(name);
     in.flags = flags;
@@ -1020,7 +1069,12 @@ rcf_rpc_server_vfork(rcf_rpc_server *rpcs,
         rpcs->timeout = rpcs->def_timeout;
 
     in.common.op = RCF_RPC_CALL_WAIT;
-    in.common.use_libc = rpcs->use_libc || rpcs->use_libc_once;
+    in.common.lib_flags = TARPC_LIB_DEFAULT;
+    if (rpcs->use_libc || rpcs->use_libc_once)
+        in.common.lib_flags |= TARPC_LIB_USE_LIBC;
+    if (rpcs->use_syscall)
+        in.common.lib_flags |= TARPC_LIB_USE_SYSCALL;
+
     in.name.name_len = strlen(name) + 1;
     in.name.name_val = strdup(name);
     in.time_to_wait = time_to_wait;

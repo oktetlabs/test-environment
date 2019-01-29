@@ -23,10 +23,12 @@
 #include "tapi_rpc_misc.h"
 #include "tapi_test.h"
 #include "performance_internal.h"
+#include "tapi_mem.h"
 
-
+/* The minimal representative duration */
+#define IPERF_MIN_REPRESENTATIVE_DURATION   (1.0)
 /* Time to wait till data is ready to read from stdout */
-#define IPERF3_TIMEOUT_MS           (500)
+#define IPERF3_TIMEOUT_MS                   (500)
 
 /* Prototype of function to set option in iperf3 tool format */
 typedef void (*set_opt_t)(te_string *, const tapi_perf_opts *);
@@ -145,6 +147,25 @@ set_opt_time(te_string *cmd, const tapi_perf_opts *options)
 }
 
 /*
+ * Set option of pause in seconds between periodic bandwidth reports in iperf3
+ * tool format.
+ *
+ * @param cmd           Buffer contains a command to add option to.
+ * @param options       iperf3 tool options.
+ */
+static void
+set_opt_interval(te_string *cmd, const tapi_perf_opts *options)
+{
+    int32_t interval = options->interval_sec;
+
+    if (interval == TAPI_PERF_INTERVAL_DISABLED)
+        interval = 0;
+
+    if (interval >= 0)
+        CHECK_RC(te_string_append(cmd, " -i%"PRId32, interval));
+}
+
+/*
  * Set option of length of buffer in iperf3 tool format.
  *
  * @param cmd           Buffer contains a command to add option to.
@@ -171,6 +192,21 @@ set_opt_streams(te_string *cmd, const tapi_perf_opts *options)
 }
 
 /*
+ * Set option of dual (bidirectional) mode.
+ * It is supported since 3.6+ github (not 3.6 release) version.
+ * See https://github.com/esnet/iperf/pull/780.
+ *
+ * @param cmd           Buffer contains a command to add option to.
+ * @param options       iperf3 tool options.
+ */
+static void
+set_opt_dual(te_string *cmd, const tapi_perf_opts *options)
+{
+    if (options->dual)
+        CHECK_RC(te_string_append(cmd, " --bidir"));
+}
+
+/*
  * Set option of reverse mode.
  *
  * @param cmd           Buffer contains a command to add option to.
@@ -193,12 +229,13 @@ static void
 build_server_cmd(te_string *cmd, const tapi_perf_opts *options)
 {
     set_opt_t set_opt[] = {
-        set_opt_port
+        set_opt_port,
+        set_opt_interval
     };
     size_t i;
 
     ENTRY("Build command to run iperf3 server");
-    CHECK_RC(te_string_append(cmd, "iperf3 -s -J -i0"));
+    CHECK_RC(te_string_append(cmd, "iperf3 -s -J"));
     for (i = 0; i < TE_ARRAY_LEN(set_opt); i++)
         set_opt[i](cmd, options);
 }
@@ -220,8 +257,10 @@ build_client_cmd(te_string *cmd, const tapi_perf_opts *options)
         set_opt_length,
         set_opt_bytes,
         set_opt_time,
+        set_opt_interval,
         set_opt_streams,
-        set_opt_reverse
+        set_opt_reverse,
+        set_opt_dual
     };
     size_t i;
 
@@ -230,24 +269,65 @@ build_client_cmd(te_string *cmd, const tapi_perf_opts *options)
     if (te_str_is_null_or_empty(options->host))
         TEST_FAIL("Host to connect to is unspecified");
 
-    CHECK_RC(te_string_append(cmd, "iperf3 -c %s -J -i0", options->host));
+    CHECK_RC(te_string_append(cmd, "iperf3 -c %s -J", options->host));
     for (i = 0; i < TE_ARRAY_LEN(set_opt); i++)
         set_opt[i](cmd, options);
+}
+
+/*
+ * Retrieve a double precision number from JSON object
+ *
+ * @param[in]  jobj   JSON object
+ * @param[out] value  Pointer to a variable receiving value retrieved from JSON
+ *                    object
+ *
+ * @return Status code
+ */
+static te_errno
+jsonvalue2double(const json_t *jobj, double *value)
+{
+    double result;
+
+    if (json_is_integer(jobj))
+    {
+        result = json_integer_value(jobj);
+    }
+    else if (json_is_real(jobj))
+    {
+        result = json_real_value(jobj);
+    }
+    else
+    {
+        return TE_EINVAL;
+    }
+
+    if (value != NULL)
+        *value = result;
+
+    return 0;
 }
 
 /*
  * Extract report from JSON object.
  *
  * @param[in]  jrpt         JSON object contains report data.
+ * @param[in]  kind         Report kind.
  * @param[out] report       Report.
  *
  * @return Status code.
  */
 static te_errno
-get_report(const json_t *jrpt, tapi_perf_report *report)
+get_report(const json_t *jrpt, tapi_perf_report_kind kind,
+           tapi_perf_report *report)
 {
     json_t *jend, *jsum, *jval, *jint;
     tapi_perf_report tmp_report;
+    size_t   i;
+    double   total_seconds = 0.0;
+    uint64_t total_bytes = 0;
+    double   total_bits_per_second = 0.0;
+    const double eps = 0.00001;
+    size_t   total_intervals = 0;
 
 #define GET_REPORT_ERROR(_obj)                                  \
     do {                                                        \
@@ -262,30 +342,102 @@ get_report(const json_t *jrpt, tapi_perf_report *report)
     if (!json_is_array(jend))
         GET_REPORT_ERROR("array \"intervals\"");
 
-    jint = json_array_get(jend, json_array_size(jend) - 1);
-    jsum = json_object_get(jint, "sum");
-    if (!json_is_object(jsum))
-        GET_REPORT_ERROR("object \"sum\"");
+    if (json_array_size(jend) == 0)
+        GET_REPORT_ERROR("non-empty array \"intervals\"");
 
-    jval = json_object_get(jsum, "bytes");
-    if (json_is_integer(jval))
-        tmp_report.bytes = json_integer_value(jval);
-    else
-        GET_REPORT_ERROR("value \"bytes\"");
+    /*
+     * Calculate an average of throughput results weighted by interval
+     * durations, skipping completely wrong intervals altogether.
+     */
+    for (i = 0; i < json_array_size(jend); ++i)
+    {
+        double  tmp_seconds;
+        json_t *jsums;
 
-    jval = json_object_get(jsum, "seconds");
-    if (json_is_integer(jval))
-        tmp_report.seconds = json_integer_value(jval);
-    else if (json_is_real(jval))
-        tmp_report.seconds = json_real_value(jval);
-    else
-        GET_REPORT_ERROR("value \"seconds\"");
+        jint = json_array_get(jend, i);
+        jsums = json_object_get(jint, "sums");
+        if (json_is_array(jsums))
+        {
+            size_t j;
 
-    jval = json_object_get(jsum, "bits_per_second");
-    if (json_is_real(jval))
-        tmp_report.bits_per_second = json_real_value(jval);
-    else
-        GET_REPORT_ERROR("value \"bits_per_second\"");
+            for (j = 0; j < json_array_size(jsums); ++j)
+            {
+                jsum = json_array_get(jsums, j);
+
+                if (kind == TAPI_PERF_REPORT_KIND_DEFAULT)
+                    break;
+
+                jval = json_object_get(jsum, "sender");
+                if (json_is_boolean(jval))
+                {
+                    te_bool sender;
+
+                    sender = json_boolean_value(jval);
+                    if (sender ==
+                        (kind == TAPI_PERF_REPORT_KIND_SENDER))
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        else
+        {
+            jsum = json_object_get(jint, "sum");
+        }
+
+        if (!json_is_object(jsum))
+        {
+            /*
+             * This failure isn't fatal - iperf3 report can be
+             * incomplete. Skip the entry as there is nothing to retrieve data
+             * from
+             */
+            continue;
+        }
+
+        jval = json_object_get(jsum, "seconds");
+        if (jsonvalue2double(jval, &tmp_seconds) != 0 ||
+            !json_is_integer(json_object_get(jsum, "bytes")) ||
+            !json_is_real(json_object_get(jsum, "bits_per_second")) ||
+            tmp_seconds < IPERF_MIN_REPRESENTATIVE_DURATION)
+        {
+            /*
+             * This failure isn't fatal - some of (or all) specifications are
+             * missing or invalid. Skip the entry as we won't be able to
+             * retrieve useful data from it
+             */
+            continue;
+        }
+
+        total_seconds += tmp_seconds;
+
+        jval = json_object_get(jsum, "bytes");
+        total_bytes += json_integer_value(jval);
+
+        jval = json_object_get(jsum, "bits_per_second");
+        total_bits_per_second += json_real_value(jval) * tmp_seconds;
+
+        total_intervals++;
+    }
+
+    if (total_intervals == 0)
+        GET_REPORT_ERROR("array of sane \"interval\" objects");
+
+    if (total_seconds < eps)
+        GET_REPORT_ERROR("object \"seconds\"");
+
+    total_bits_per_second /= total_seconds;
+
+    tmp_report.seconds = total_seconds;
+    if (total_seconds < IPERF_MIN_REPRESENTATIVE_DURATION)
+    {
+        WARN("%s: the retrieved interval of %.1f duration might be "
+             "unrepresentative", __FUNCTION__, total_seconds);
+    }
+
+    tmp_report.bytes = total_bytes;
+    tmp_report.bits_per_second = total_bits_per_second;
 
     *report = tmp_report;
     return 0;
@@ -336,12 +488,14 @@ get_report_error(const json_t *jrpt, tapi_perf_report *report)
  * Get iperf3 report. The function reads an application output.
  *
  * @param[in]  app          iperf3 tool context.
+ * @param[in]  kind         Report kind.
  * @param[out] report       Report with results.
  *
  * @return Status code.
  */
 static te_errno
-app_get_report(tapi_perf_app *app, tapi_perf_report *report)
+app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
+               tapi_perf_report *report)
 {
     json_error_t error;
     json_t *jrpt;
@@ -349,16 +503,20 @@ app_get_report(tapi_perf_app *app, tapi_perf_report *report)
 
     memset(report->errors, 0, sizeof(report->errors));
 
-    /* Read tool output */
-    rpc_read_fd2te_string(app->rpcs, app->fd_stdout, IPERF3_TIMEOUT_MS, 0,
-                          &app->stdout);
-
-    /* Check for available data */
     if (app->stdout.ptr == NULL || app->stdout.len == 0)
     {
-        ERROR("There are no data in the output");
-        return TE_RC(TE_TAPI, TE_ENODATA);
+        /* Read tool output */
+        rpc_read_fd2te_string(app->rpcs, app->fd_stdout, IPERF3_TIMEOUT_MS, 0,
+                              &app->stdout);
+
+        /* Check for available data */
+        if (app->stdout.ptr == NULL || app->stdout.len == 0)
+        {
+            ERROR("There are no data in the output");
+            return TE_RC(TE_TAPI, TE_ENODATA);
+        }
     }
+
     INFO("iperf3 stdout:\n%s", app->stdout.ptr);
 
     /* Parse raw report */
@@ -374,7 +532,7 @@ app_get_report(tapi_perf_app *app, tapi_perf_report *report)
     rc = get_report_error(jrpt, report);
     if (rc == 0)
     {
-        rc = get_report(jrpt, report);
+        rc = get_report(jrpt, kind, report);
         if (rc != 0)
             report->errors[TAPI_PERF_ERROR_FORMAT]++;
     }
@@ -483,32 +641,36 @@ client_wait(tapi_perf_client *client, int16_t timeout)
  * Get server report. The function reads server output.
  *
  * @param[in]  server       Server context.
+ * @param[in]  kind         Report kind.
  * @param[out] report       Report with results.
  *
  * @return Status code.
  */
 static te_errno
-server_get_report(tapi_perf_server *server, tapi_perf_report *report)
+server_get_report(tapi_perf_server *server, tapi_perf_report_kind kind,
+                  tapi_perf_report *report)
 {
     ENTRY("Get iperf3 server report");
 
-    return app_get_report(&server->app, report);
+    return app_get_report(&server->app, kind, report);
 }
 
 /*
  * Get client report. The function reads client output.
  *
  * @param[in]  client       Client context.
+ * @param[in]  kind         Report kind.
  * @param[out] report       Report with results.
  *
  * @return Status code.
  */
 static te_errno
-client_get_report(tapi_perf_client *client, tapi_perf_report *report)
+client_get_report(tapi_perf_client *client, tapi_perf_report_kind kind,
+                  tapi_perf_report *report)
 {
     ENTRY("Get iperf3 client report");
 
-    return app_get_report(&client->app, report);
+    return app_get_report(&client->app, kind, report);
 }
 
 

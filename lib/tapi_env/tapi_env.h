@@ -264,13 +264,31 @@
 /** Types of entities in the Environment */
 typedef enum {
     TAPI_ENV_UNSPEC = 0,    /**< Unspecified */
-    TAPI_ENV_INVALID = 1,   /**< The type (or derivative type that we
-                             * established as result of internal logic) is
-                             * invalid. Env with this type will fail to
-                             * bind. */
     TAPI_ENV_IUT,           /**< Implementation Under Testing */
-    TAPI_ENV_TST,           /**< Non-IUT agent */
+    TAPI_ENV_TESTER,        /**< Auxiluary tester */
+    TAPI_ENV_IUT_PEER,      /**< Peer of the IUT */
+    TAPI_ENV_INVALID,       /**< Environment is inconsistent */
 } tapi_env_type;
+
+static inline const char *
+tapi_env_type_str(tapi_env_type type)
+{
+    switch (type)
+    {
+        case TAPI_ENV_UNSPEC:
+            return "Unspecified";
+        case TAPI_ENV_IUT:
+            return "IUT";
+        case TAPI_ENV_TESTER:
+            return "tester";
+        case TAPI_ENV_IUT_PEER:
+            return "IUT-Peer";
+        case TAPI_ENV_INVALID:
+            return "INVALID";
+        default:
+            return "Unknown";
+    }
+}
 
 /** Types of addresses */
 typedef enum {

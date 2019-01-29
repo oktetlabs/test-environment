@@ -568,6 +568,56 @@ typedef int tapi_tcp_handler_t;
 #define TAPI_TCP_ZERO_WINDOW -1
 
 /**
+ * Initialize TCP connection internal state. This method does not
+ * start connection establishing. Use @b tapi_tcp_start_conn()
+ * and @b tapi_tcp_wait_open() for establishing connection.
+ *
+ * Local IP address should be fake, not registered on host with TA,
+ * because otherwise OS will respond to TCP packets too.
+ * Local MAC address may be fake, and it is better to use fake one,
+ * because OS sometimes may respond with ICMP messages to IP packets
+ * which are received on its Ethernet device but have foreign IP
+ * destination address.
+ *
+ * If local MAC address is fake, Ethernet device will be turned to
+ * promiscuous mode.
+ *
+ * @param agt           TA name.
+ * @param local_addr    Local socket address.
+ * @param remote_addr   Remote socket address.
+ * @param local_iface   Local interface name.
+ * @param local_mac     Local MAC address.
+ * @param remote_mac    Remote MAC address.
+ * @param window        Window size, or zero (@c TAPI_TCP_DEF_WINDOW)
+ *                      to use default window size. To specify zero
+ *                      window size, pass @c TAPI_TCP_ZERO_WINDOW.
+ * @param handler       Where to save TAPI handler of created TCP
+ *                      connection.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tcp_create_conn(const char *agt,
+                                     const struct sockaddr *local_addr,
+                                     const struct sockaddr *remote_addr,
+                                     const char *local_iface,
+                                     const uint8_t *local_mac,
+                                     const uint8_t *remote_mac,
+                                     int window,
+                                     tapi_tcp_handler_t *handler);
+
+/**
+ * Start TCP connection establishing.
+ *
+ * @param handler     TAPI handler of TCP connection.
+ * @param mode        Connection establishment mode. If @c TAPI_TCP_CLIENT,
+ *                    @c SYN will be sent.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tcp_start_conn(tapi_tcp_handler_t handler,
+                                    tapi_tcp_mode_t mode);
+
+/**
  * Initialize process for open TCP connection.
  * This method does not blocks, only sends SYN (in client mode) 
  * or SYN-ACK (in server mode). Use 'tapi_tcp_wait_open' for wait 
@@ -601,7 +651,8 @@ typedef int tapi_tcp_handler_t;
  *
  * @return Status code
  */
-extern int tapi_tcp_init_connection(const char *agt, tapi_tcp_mode_t mode,
+extern te_errno tapi_tcp_init_connection(
+                                    const char *agt, tapi_tcp_mode_t mode,
                                     const struct sockaddr *local_addr, 
                                     const struct sockaddr *remote_addr, 
                                     const char *local_iface,
@@ -866,6 +917,15 @@ extern int tapi_tcp_send_ack(tapi_tcp_handler_t handler,
 extern int tapi_tcp_ack_all(tapi_tcp_handler_t handler);
 
 /**
+ * Return the first received SEQ number in established TCP connection.
+ *
+ * @param handler       TAPI handler of TCP connection.
+ *
+ * @return SEQ number or zero if @p hanlder is not valid.
+ */
+extern tapi_tcp_pos_t tapi_tcp_first_seqn_got(tapi_tcp_handler_t handler);
+
+/**
  * Return last received SEQ number in established TCP connection.
  *
  * @param handler       TAPI handler of TCP connection;     
@@ -882,6 +942,15 @@ extern tapi_tcp_pos_t tapi_tcp_last_seqn_got(tapi_tcp_handler_t handler);
  * @return ACK number of zero if 'hanlder' not valid.
  */
 extern tapi_tcp_pos_t tapi_tcp_last_ackn_got(tapi_tcp_handler_t handler);
+
+/**
+ * Return the first sent SEQ number in established TCP connection.
+ *
+ * @param handler       TAPI handler of TCP connection.
+ *
+ * @return SEQ number or zero if @p handler is not valid.
+ */
+extern tapi_tcp_pos_t tapi_tcp_first_seqn_sent(tapi_tcp_handler_t handler);
 
 /**
  * Return last sent SEQ number in established TCP connection.
@@ -1134,6 +1203,56 @@ extern int tapi_tcp_wait_packet(tapi_tcp_handler_t handler, int timeout);
 extern int tapi_tcp_get_packets(tapi_tcp_handler_t handler);
 
 /**
+ * Enable or disable TCP timestamp option for emulated TCP connection.
+ *
+ * @param handler     TAPI TCP connection handler.
+ * @param enable      Whether to enable or disable timestamp.
+ * @param start_time  If @p enable is @c TRUE, this is the start value
+ *                    for TCP timestamp. Each new TCP timestamp will
+ *                    be computed as this value + number of milliseconds
+ *                    since the moment of time when the first packet
+ *                    was sent (for which this value will be used
+ *                    as TCP timestamp).
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tcp_conn_enable_ts(tapi_tcp_handler_t handler,
+                                        te_bool enable,
+                                        uint32_t start_value);
+
+/**
+ * Get current status of TCP timestamp option in a given TCP
+ * connection emulation.
+ *
+ * @param handler           TAPI TCP connection handler.
+ * @param enabled           Whether TCP timestamp is enabled. Other
+ *                          parameters are filled only if this is @c TRUE.
+ * @param dst_enabled       Whether peer sends TCP timestamp. If peer did
+ *                          not sent TCP timestamp in its first packet,
+ *                          we will not send it too.
+ * @param ts_value          Current TCP timestamp value (such that
+ *                          would be used if a packet is sent now).
+ * @param last_ts_sent      Last timestamp sent to peer.
+ * @param last_ts_got       Last timestamp received from peer.
+ * @param ts_to_echo        Value to be sent in echo-reply field in
+ *                          the next @c ACK.
+ * @param last_ts_echo_sent Timestamp echo-reply sent in the last
+ *                          packet.
+ * @param last_ts_echo_got  Last timestamp echo-reply received from peer.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tcp_conn_get_ts(tapi_tcp_handler_t handler,
+                                     te_bool *enabled,
+                                     te_bool *dst_enabled,
+                                     uint32_t *ts_value,
+                                     uint32_t *last_ts_sent,
+                                     uint32_t *last_ts_got,
+                                     uint32_t *ts_to_echo,
+                                     uint32_t *last_ts_echo_sent,
+                                     uint32_t *last_ts_echo_got);
+
+/**
  * Get TCP timestamp option parameters.
  *
  * @param val       Pointer to ASN value which stores either whole network
@@ -1143,7 +1262,7 @@ extern int tapi_tcp_get_packets(tapi_tcp_handler_t handler);
  *
  * @return Status code.
  */
-extern te_errno tapi_tcp_get_ts_opt(asn_value *val,
+extern te_errno tapi_tcp_get_ts_opt(const asn_value *val,
                                     uint32_t *ts_value, uint32_t *ts_echo);
 
 /**
@@ -1158,6 +1277,50 @@ extern te_errno tapi_tcp_get_ts_opt(asn_value *val,
  */
 extern te_errno tapi_tcp_set_ts_opt(asn_value *val,
                                     uint32_t ts_value, uint32_t ts_echo);
+
+/**
+ * Compare two TCP sequence numbers.
+ *
+ * @param seqn1     The first SEQN.
+ * @param seqn2     The second SEQN.
+ *
+ * @return @c -1 if the first SEQN is smaller than the second SEQN,
+ *         @c 1 if the first SEQN is greater than the second SEQN,
+ *         @c 0 if they are equal.
+ */
+extern int tapi_tcp_compare_seqn(uint32_t seqn1, uint32_t seqn2);
+
+/**
+ * Create tcp eth CSAP for given ip address family
+ * For creating csap for anyaddr (0.0.0.0 or ::) pass @c NULL as @p loc_addr or
+ * @p rem_addr.
+ *
+ * @param      ta_name       Test Agent name
+ * @param      sid           RCF SID
+ * @param      eth_dev       Name of Ethernet interface
+ * @param      receive_mode  Receive mode bitmask, see #tad_eth_recv_mode
+ *                           in tad_common.h. Use @c TAD_ETH_RECV_DEF
+ *                           by default.
+ * @param      loc_mac       Local MAC address (or NULL)
+ * @param      rem_mac       Remote MAC address (or NULL)
+ * @param      loc_addr      Local IP sockaddr (or NULL)
+ * @param      rem_addr      Remote IP sockaddr (or NULL)
+ * @param[out] tcp_csap      Location for the IP CSAP handle
+ * @param      ip_family     Address family of created csap
+ *                           (AF_INET or AF_INET6)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tcp_ip_eth_csap_create(const char            *ta_name,
+                                            int                    sid,
+                                            const char            *eth_dev,
+                                            unsigned int           receive_mode,
+                                            const uint8_t         *loc_mac,
+                                            const uint8_t         *rem_mac,
+                                            const struct sockaddr *loc_addr,
+                                            const struct sockaddr *rem_addr,
+                                            csap_handle_t         *tcp_csap,
+                                            int                    ip_family);
 
 #endif /* !__TE_TAPI_TCP_H__ */
 

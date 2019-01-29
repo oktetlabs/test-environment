@@ -255,7 +255,7 @@ send_request(rcf_rpc_server *rpcs, int fd, const te_string *request)
 
     VERB("Request: %s", request->ptr);
     written = rpc_send(rpcs, fd, request->ptr, request->len, 0);
-    return (written == request->len ? 0 : TE_EIO);
+    return ((written >= 0 && (size_t)written == request->len) ? 0 : TE_EIO);
 }
 
 /**
@@ -427,30 +427,6 @@ send_control_msg_va(tapi_storage_client *client,
     if (rc != 0)
         return rc;
     rc = send_request(client->rpcs, ftp_context->control_socket, cmdbuf_w);
-    return rc;
-}
-
-/**
- * Fill a buffer with data from @p fmt and send this command to ftp server
- * over control connection. This function calls @p send_control_msg_va.
- *
- * @param client        Client handle.
- * @param fmt           Format string.
- * @param ...           Format string arguments.
- *
- * @return Status code.
- *
- * @sa send_control_msg_va
- */
-static te_errno
-send_control_msg(tapi_storage_client *client, const char *fmt, ...)
-{
-    va_list  ap;
-    te_errno rc;
-
-    va_start(ap, fmt);
-    rc = send_control_msg_va(client, fmt, ap);
-    va_end(ap);
     return rc;
 }
 

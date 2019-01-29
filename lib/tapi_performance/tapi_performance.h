@@ -34,6 +34,11 @@ extern "C" {
 #define TAPI_PERF_TIMEOUT_DEFAULT   (-1)
 
 /**
+ * Disable periodic bandwidth reports.
+ */
+#define TAPI_PERF_INTERVAL_DISABLED (-1)
+
+/**
  * Supported network throughput test tools list.
  */
 typedef enum tapi_perf_bench {
@@ -64,11 +69,21 @@ typedef enum tapi_perf_bench {
 typedef enum tapi_perf_error {
     TAPI_PERF_ERROR_FORMAT,     /**< Wrong report format. */
     TAPI_PERF_ERROR_READ,       /**< Read failed. */
+    TAPI_PERF_ERROR_WRITE_CONN_RESET, /**< Write failed. Connection reset. */
     TAPI_PERF_ERROR_CONNECT,    /**< Connect failed. */
     TAPI_PERF_ERROR_NOROUTE,    /**< No route to host. */
     TAPI_PERF_ERROR_BIND,       /**< Bind failed. */
     TAPI_PERF_ERROR_MAX,        /**< Not error, but elements number. */
 } tapi_perf_error;
+
+/**
+ * List of possible report kinds.
+ */
+typedef enum tapi_perf_report_kind {
+    TAPI_PERF_REPORT_KIND_DEFAULT,   /**< Specific default report kind */
+    TAPI_PERF_REPORT_KIND_SENDER,    /**< Sender's report */
+    TAPI_PERF_REPORT_KIND_RECEIVER,  /**< Receiver's report */
+} tapi_perf_report_kind;
 
 /**
  * Network throughput test tool report.
@@ -118,8 +133,9 @@ typedef te_errno (* tapi_perf_server_method_stop)(tapi_perf_server *server);
  * @return Status code.
  */
 typedef te_errno (* tapi_perf_server_method_get_report)(
-                                                tapi_perf_server *server,
-                                                tapi_perf_report *report);
+                                                tapi_perf_server     *server,
+                                                tapi_perf_report_kind kind,
+                                                tapi_perf_report     *report);
 
 /**
  * Methods to operate the server network throughput test tool.
@@ -184,8 +200,9 @@ typedef te_errno (* tapi_perf_client_method_wait)(tapi_perf_client *client,
  * @return Status code.
  */
 typedef te_errno (* tapi_perf_client_method_get_report)(
-                                                tapi_perf_client *client,
-                                                tapi_perf_report *report);
+                                                tapi_perf_client     *client,
+                                                tapi_perf_report_kind kind,
+                                                tapi_perf_report     *report);
 
 /**
  * Methods to operate the client network throughput test tool.
@@ -209,10 +226,14 @@ typedef struct tapi_perf_opts {
     int64_t bandwidth_bits; /**< Target bandwidth (bits/sec) */
     int64_t num_bytes;      /**< Number of bytes to transmit (instead of time) */
     int32_t duration_sec;   /**< Time in seconds to transmit for */
+    int32_t interval_sec;   /**< Pause in seconds between periodic bandwidth
+                             *   reports. Warning! It can affect report
+                             *   processing */
     int32_t length;         /**< Length of buffer to read or write */
     int16_t streams;        /**< Number of parallel client streams */
     te_bool reverse;        /**< Whether run in reverse mode (server sends,
                                  client receives), or not */
+    te_bool dual;           /**< Bidirectional mode */
 } tapi_perf_opts;
 
 /**
@@ -334,6 +355,20 @@ extern te_errno tapi_perf_server_stop(tapi_perf_server *server);
  */
 extern te_errno tapi_perf_server_get_report(tapi_perf_server *server,
                                             tapi_perf_report *report);
+
+/**
+ * Get server report of specified kind. The function reads server
+ * output (stdout, stderr).
+ *
+ * @param[in]  server       Server context.
+ * @param[in]  kind         Report kind, e.g. default or receiver's,
+ *                          or sender's.
+ * @param[out] report       Report with results.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_perf_server_get_specific_report(tapi_perf_server *server,
+    tapi_perf_report_kind kind, tapi_perf_report *report);
 
 /**
  * Check server report for errors. The function prints verdicts in case of
@@ -462,6 +497,20 @@ extern te_errno tapi_perf_client_get_report(tapi_perf_client *client,
                                             tapi_perf_report *report);
 
 /**
+ * Get client report of specified kind. The function reads client
+ * output (stdout, stderr).
+ *
+ * @param[in]  client       Client context.
+ * @param[in]  kind         Report kind, e.g. default or receiver's,
+ *                          or sender's.
+ * @param[out] report       Report with results.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_perf_client_get_specific_report(tapi_perf_client *client,
+    tapi_perf_report_kind kind, tapi_perf_report *report);
+
+/**
  * Check client report for errors. The function prints verdicts in case of
  * errors are presents in the @p report.
  *
@@ -568,6 +617,37 @@ extern void tapi_perf_log_report(const tapi_perf_server *server,
                                  const tapi_perf_client *client,
                                  const tapi_perf_report *report,
                                  const char *test_params);
+
+/**
+ * Print a network throughput test tool report by adding throughput of all
+ * server/client pairs. Note, that we expect server/client pairs to run
+ * roughly the same traffic, see perf_opts_cmp() for details.
+ *
+ * @param server              List of server contexts.
+ * @param client              List of client contexts.
+ * @param report              List of reports (user decides which one
+ *                            is taken where).
+ * @param number_of_instances Number of instances in the above 3 lists
+ * @param test_params         Test specific params; It should be represented
+ *                            in the form of comma-separated pairs
+ *                            "param=value".
+ */
+extern void tapi_perf_log_cumulative_report(const tapi_perf_server *server[],
+                                            const tapi_perf_client *client[],
+                                            const tapi_perf_report *report[],
+                                            int number_of_instances,
+                                            const char *test_params);
+
+/**
+ * Compare important parts of the run.
+ *
+ * @param opts_a First object for comparison
+ * @param opts_b Second object for comparison
+ *
+ * @return @c TRUE if objects' important properties are equal, @c FALSE if not
+ */
+extern te_bool tapi_perf_opts_cmp(const tapi_perf_opts *opts_a,
+                                  const tapi_perf_opts *opts_b);
 
 /**@} <!-- END tapi_performance --> */
 

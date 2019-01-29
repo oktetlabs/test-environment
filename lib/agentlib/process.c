@@ -269,7 +269,7 @@ ta_sigchld_handler(void)
         }
         else
         {
-            ERROR("waitpid() failed with errno %d", errno);
+            LOG_PRINT("waitpid() failed: %s", strerror(errno));
         }
     }
     else
@@ -469,34 +469,64 @@ ta_pclose_r(pid_t cmd_pid, FILE *f)
     return rc;
 }
 
-/* See description in unix_internal.h */
+/* See description in agentlib.h */
 int
 ta_kill_death(pid_t pid)
 {
+    static const unsigned int timeout_s = 1;
+
     int rc;
     int saved_errno = errno;
 
-    if (ta_waitpid(pid, NULL, WNOHANG) == pid)
-        return 0;
-    rc = kill(-pid, SIGTERM);
-    if (rc != 0 && errno != ESRCH)
-        return -1;
+    rc = ta_kill_and_wait(pid, SIGTERM, timeout_s);
+    if (rc != 0)
+        rc = ta_kill_and_wait(pid, SIGKILL, timeout_s);
+
     errno = saved_errno;
 
-    /* Wait for termination. */
-    te_msleep(500);
+    return (rc == 0 ? 0 : -1);
+}
 
-    /* Check if the process exited. If kill failed, waitpid can't fail */
-    if (ta_waitpid(pid, NULL, WNOHANG) == pid)
+/* See description in agentlib.h */
+int
+ta_kill_and_wait(pid_t pid, int sig, unsigned int timeout_s)
+{
+    static const unsigned int delay_ms = 500;
+
+    int rc;
+    pid_t wpid;
+    unsigned int num_attempts;
+
+    wpid = ta_waitpid(pid, NULL, WNOHANG);
+    if (wpid == pid || (wpid == -1 && errno == ECHILD))
         return 0;
-    else if (rc != 0)
-        return -1;
 
-    /* Wait for termination. */
-    te_msleep(500);
-    kill(-pid, SIGKILL);
-    ta_waitpid(pid, NULL, 0);
-    return 0;
+    rc = kill(-pid, sig);
+    if (rc != 0 && errno != ESRCH)
+    {
+        LOG_PRINT("Failed to terminate the process %d: %s",
+                  pid, strerror(errno));
+        return -1;
+    }
+
+    num_attempts = TE_SEC2MS(timeout_s) / delay_ms;
+    do {
+        wpid = ta_waitpid(pid, NULL, WNOHANG);
+        if (wpid == pid || (wpid == -1 && errno == ECHILD))
+        {
+            return 0;
+        }
+        else if (wpid != 0)
+        {
+            LOG_PRINT("Failed to wait for pid %d: %s", pid, strerror(errno));
+            return -1;
+        }
+        if (num_attempts > 0)
+            te_msleep(delay_ms);
+    } while (num_attempts-- > 0);
+
+    LOG_PRINT("Got timeout to wait for pid %d", pid);
+    return -2;
 }
 
 te_errno
@@ -514,14 +544,14 @@ ta_process_mgmt_init(void)
     if (sem_init(&sigchld_sem, 0, 1) < 0)
     {
         rc = te_rc_os2te(errno);
-        ERROR("Can't initialize sigchld sem: %r");
+        LOG_PRINT("Cannot initialize sigchld sem: %s", strerror(errno));
     }
     /* FIXME: Is it used by RPC */
     sigact.sa_handler = (void *)ta_sigchld_handler;
     if (sigaction(SIGCHLD, &sigact, NULL) != 0)
     {
         rc = te_rc_os2te(errno);
-        ERROR("Cannot set SIGCHLD action: %r");
+        LOG_PRINT("Cannot set SIGCHLD action: %s", strerror(errno));
     }
 #ifdef HAVE_PTHREAD_H
     pthread_atfork(NULL, NULL, ta_children_dead_heap_init);

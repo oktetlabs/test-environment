@@ -1007,6 +1007,7 @@ tad_send_prepare_bin(csap_p csap, asn_value *nds,
     te_errno        rc = 0;
     const asn_value *layer_pdu = NULL;
     char  label[32];
+    csap_layer_t *rw_layer;
 
     tad_pkts_init(pdus);
     rc = tad_pkts_alloc(pdus, 1, 0, 0);
@@ -1128,6 +1129,22 @@ tad_send_prepare_bin(csap_p csap, asn_value *nds,
         return TE_RC(TE_TAD_CH, rc);
     }
 
+    rw_layer = &csap->layers[csap_get_rw_layer(csap)];
+    if (rw_layer->rw_use_tad_pkt_seg_tagging)
+    {
+        /*
+         * Flag payload segments as purportedly containing a custom layer tag
+         * value so that they won't be marked with a bona fide layer tag once
+         * that layer prepends extra segments containing the protocol headers.
+         */
+        rc = tad_pkt_enumerate(pdus, tad_pkt_mark_layer_segments_cb, NULL);
+        if (rc != 0)
+        {
+            tad_free_pkts(pdus);
+            return TE_RC(TE_TAD_CH, rc);
+        }
+    }
+
     /* All layers should be passed in any case to initialize pdus */
     for (layer = 0; layer < csap->depth; layer++)
     {
@@ -1156,6 +1173,11 @@ tad_send_prepare_bin(csap_p csap, asn_value *nds,
                       "(%s) failed: %r", CSAP_LOG_ARGS(csap), layer,
                       csap_get_proto_support(csap, layer)->proto, rc);
             }
+        }
+        if (rw_layer->rw_use_tad_pkt_seg_tagging && rc == 0)
+        {
+            rc = tad_pkt_enumerate(pdus, tad_pkt_mark_layer_segments_cb,
+                                   &csap->layers[layer].proto_tag);
         }
     }
 

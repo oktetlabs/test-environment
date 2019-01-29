@@ -28,13 +28,38 @@ extern "C" {
 /** Estimate timeout from input FIO parameters */
 #define TAPI_FIO_TIMEOUT_DEFAULT    (-1)
 
+/** FIO report max size */
 #define TAPI_FIO_MAX_REPORT (10 * 1024 * 1024)
+
+/** Latency FIO report */
+typedef struct tapi_fio_report_lat
+{
+    int min_ns;         /**< Minimal latency in nanoseconds */
+    int max_ns;         /**< Maximum latency in nanoseconds */
+    double mean_ns;     /**< Latency mean in nanoseconds */
+    double stddev_ns;   /**< Latency standard deviation in nanoseconds */
+} tapi_fio_report_lat;
+
+/** Bandwidth FIO report */
+typedef struct tapi_fio_report_bw
+{
+    int min;          /**< Minimal bandwidth */
+    int max;          /**< Maximal bandwidth */
+    double mean;      /**< Bandwidth mean */
+    double stddev;    /**< Bandwidth standard deviation */
+} tapi_fio_report_bw;
+
+/** FIO report of latency and bandwidth*/
+typedef struct tapi_fio_report_io
+{
+    tapi_fio_report_lat latency;
+    tapi_fio_report_bw bandwidth;
+} tapi_fio_report_io;
 
 /** FIO test tool report. */
 typedef struct tapi_fio_report {
-    double bandwidth;   /**< Average data rate */
-    double latency;     /**< I/O latency */
-    int threads;        /**< Count of thread */
+    tapi_fio_report_io read;    /**< Read FIO report */
+    tapi_fio_report_io write;   /**< Write FIO report */
 } tapi_fio_report;
 
 /** List of possible IO engines to use. */
@@ -97,6 +122,9 @@ typedef enum {
 #define TEST_GET_FIO_RWTYPE_PARAM(var_name_) \
     (var_name_) = TEST_FIO_RWTYPE_PARAM(var_name_)
 
+/** The maximum value of numjobs, used to estimate the timeout */
+#define TAPI_FIO_MAX_NUMJOBS    (1024)
+
 /** Multiplication factor for numjobs */
 typedef enum tapi_fio_numjobs_factor {
     TAPI_FIO_NUMJOBS_NPROC_FACTOR,      /**< Multiply value on CPU Cores */
@@ -141,6 +169,11 @@ typedef struct tapi_fio_opts {
                                       reads */
     tapi_fio_rwtype rwtype;      /**< Read or write type */
     tapi_fio_ioengine ioengine;  /**< I/O Engine type */
+    te_string output_path;       /**< File name where store FIO result */
+    te_bool direct;              /**< Use O_DIRECT I/O */
+    te_bool exit_on_error;       /**< Terminate all jobs when one exits in
+                                    * error */
+    const char *rand_gen;        /**< Random generator type */
     const char *user;            /**< Raw string passed to fio */
 } tapi_fio_opts;
 
@@ -158,6 +191,10 @@ typedef struct tapi_fio_opts {
     .rwmixread = 50,                                    \
     .rwtype = TAPI_FIO_RWTYPE_SEQ,                      \
     .ioengine = TAPI_FIO_IOENGINE_SYNC,                 \
+    .output_path = TE_STRING_INIT,                      \
+    .direct = TRUE,                                     \
+    .exit_on_error = TRUE,                              \
+    .rand_gen = NULL,                                   \
     .user = "",                                         \
 })
 

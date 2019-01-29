@@ -58,6 +58,7 @@
 #include "rcf_pch.h"
 #include "logger_api.h"
 #include "unix_internal.h"
+#include "conf_common.h"
 
 /** PCI device address */
 typedef struct pci_address {
@@ -1408,9 +1409,6 @@ maybe_load_driver(const char *drvname)
  * its vendor and device should be made known to the driver by writing
  * to new_id. In theory, that means that when the device is unbound, its IDs
  * should be removed via writing to remove_id.
- * However, we have no reliable way to know whether the device was not
- * already known to the driver and so writing to remove_id for non-generic
- * driver like a network driver may have adverse effects.
  * On the other hand, e.g. vfio-pci seems to ignore remove_id completely.
  * Another issue is that writing a new vendor/device IDs to new_id causes
  * the driver to probe all the devices with these IDs and bind them if they
@@ -1421,7 +1419,7 @@ maybe_load_driver(const char *drvname)
  */
 
 static te_errno
-let_driver_know_pci_device(const pci_device *dev, const char *drvname)
+let_generic_driver_know_pci_device(const pci_device *dev, const char *drvname)
 {
     te_errno rc;
     te_string buf = TE_STRING_INIT;
@@ -1548,12 +1546,23 @@ pci_driver_set(unsigned int gid, const char *oid, const char *value,
 
     if (*value != '\0')
     {
+        const char *generic_drivers[] = {"uio_pci_generic", "igb_uio",
+                                         "vfio-pci"};
+        te_bool is_gen_driver = FALSE;
+        unsigned int i;
+
         rc = maybe_load_driver(value);
         if (rc != 0)
             return rc;
-        rc = let_driver_know_pci_device(dev, value);
-        if (rc != 0)
-            return rc;
+        for (i = 0; i < TE_ARRAY_LEN(generic_drivers) && !is_gen_driver; i++)
+            is_gen_driver = (strcmp(generic_drivers[i], value) == 0);
+
+        if (is_gen_driver)
+        {
+            rc = let_generic_driver_know_pci_device(dev, value);
+            if (rc != 0)
+                return rc;
+        }
         rc = bind_pci_device(dev, value);
         if (rc != 0)
             return rc;
@@ -1562,8 +1571,58 @@ pci_driver_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
+static te_errno
+pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
+             char **list, const char *unused1, const char *unused2,
+             const char *addr_str)
+{
+    te_string buf = TE_STRING_INIT;
+    const pci_device *dev;
+    char *result = NULL;
+    te_errno rc;
+
+    UNUSED(sub_id);
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+    rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);
+    if (rc != 0)
+        return rc;
+
+    rc = format_sysfs_device_name(&buf, dev, "/net");
+    if (rc != 0)
+    {
+        te_string_free(&buf);
+        return rc;
+    }
+
+    result = calloc(1, RCF_MAX_VAL);
+    if (result == NULL)
+    {
+        te_string_free(&buf);
+        ERROR("Out of memory");
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    rc = get_dir_list(buf.ptr, result, RCF_MAX_VAL, TRUE, NULL, NULL);
+    te_string_free(&buf);
+    if (rc != 0)
+    {
+        free(result);
+        return rc;
+    }
+
+    *list = result;
+    return rc;
+}
+
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_net, "net",
+                               NULL, NULL,
+                               NULL, pci_net_list);
 RCF_PCH_CFG_NODE_RW(node_pci_driver, "driver",
-                    NULL, NULL,
+                    NULL, &node_pci_net,
                     pci_driver_get, pci_driver_set);
 
 

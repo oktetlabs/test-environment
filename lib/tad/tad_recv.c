@@ -646,7 +646,7 @@ fail_bad_ptrn:
 fail_no_ptrn:
     (void)csap_command(csap, TAD_OP_IDLE);
 fail_command:
-    return 0;
+    return rc;
 }
 
 /**

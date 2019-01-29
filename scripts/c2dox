@@ -10,6 +10,8 @@
     }
     header_finished = 0;
 }
+/\/\*\*.*\*\// && !header_finished { header_finished = 1; print; next; }
+
 /\/\*\*/ && !header_finished { in_header = 1; print; next; }
 
 in_header && /[[:space:]]*@author/ {
@@ -39,24 +41,27 @@ in_dox_comment { print $0; next }
 /TEST_STEP/ {
   in_dox_log_comment = 1;
   was_comment = 1;
-  printf "  -# ";
+  printf "   -# ";
 }
 
 /TEST_SUBSTEP/ {
     in_dox_log_comment = 1;
     was_comment = 1;
-    printf "    - ";
+    printf "     - ";
 }
 
 in_dox_log_comment {
     sub(/ *TEST_STEP\("/, "");
     sub(/ *TEST_SUBSTEP\("/, "");
-    sub(/"/, "");
+
+    $0 = gensub(/([^\\])"/, "\\1", "g");
+    sub(/^"/, "");
+    sub(/"$/, "");
+    $0 = gensub(/\\"/, "\"", "g");
 }
 
 in_dox_log_comment && /);/ {
     sub(/);/, "");
-    sub(/"/, "");
     print $0;
     in_dox_log_comment = 0;
     next;

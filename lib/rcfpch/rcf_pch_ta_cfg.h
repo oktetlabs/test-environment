@@ -32,6 +32,7 @@
 
 #include "te_stdint.h"
 #include "te_defs.h"
+#include "te_queue.h"
 #include "rcf_common.h"
 
 
@@ -157,9 +158,34 @@ extern void ta_obj_free(ta_cfg_obj_t *obj);
  * @param type  Object type - user-defined constant
  * @param name  Object name - actually, instance name
  *
- * @return Error code or 0
+ * @return Pointer to object in case of success, @c NULL otherwise.
  */
 extern ta_cfg_obj_t *ta_obj_find(const char *type, const char *name);
+
+/**
+ * Prototype for callback function used to fill created
+ * object attributes()
+ */
+typedef te_errno (* ta_obj_cb)(ta_cfg_obj_t *obj);
+
+/**
+ * Find an object of specified type whose name is the same as @p name
+ * parameter. Creates an object if it does not exist.
+ *
+ * @param type        Object type - user-defined constant.
+ * @param name        Object name - instance name.
+ * @param gid         Request group ID.
+ * @param cb_func     Callback function for filling object attributes
+ *                    if it is created.
+ * @param obj         Where to save pointer to object.
+ * @param created     Will be set to @c TRUE if not @c NULL and object
+ *                    is created.
+ *
+ * @return Status code.
+ */
+extern te_errno ta_obj_find_create(const char *type, const char *name,
+                                   unsigned int gid, ta_obj_cb cb_func,
+                                   ta_cfg_obj_t **obj, te_bool *created);
 
 /**
  * Create an object of specified type with particular value.
@@ -184,12 +210,14 @@ extern int ta_obj_add(const char *type, const char *name,
  * @param name       Object name
  * @param value      Object value
  * @param gid        Request group ID
+ * @param cb_func    Callback function for filling object attributes
+ *                   if it is created.
+ *
+ * @return Status code.
  */
-extern int ta_obj_value_set(const char *type, const char *name,
-                            const char *value, unsigned int gid); 
-
-/** Prototype for callback function used in ta_obj_set/del() */
-typedef int (* ta_obj_cb)(ta_cfg_obj_t *obj);
+extern te_errno ta_obj_value_set(const char *type, const char *name,
+                                 const char *value, unsigned int gid,
+                                 ta_obj_cb cb_func);
 
 /**
  * Create or update object of specified type.
@@ -270,6 +298,35 @@ typedef enum ta_route_type {
  */
 extern const char *ta_rt_type2name(ta_route_type type);
 
+/** Flag which is set if gateway is specified for route nexthop. */
+#define TA_RT_NEXTHOP_FLG_GW 0x1
+/** Flag which is set if interface is specified for route nexthop. */
+#define TA_RT_NEXTHOP_FLG_OIF 0x2
+
+/** Nexthop of a multipath route. */
+typedef struct ta_rt_nexthop_t {
+    TAILQ_ENTRY(ta_rt_nexthop_t) links;           /**< Queue links. */
+
+    uint16_t                flags;                /**< Flags (see above). */
+    struct sockaddr_storage gw;                   /**< Gateway address. */
+    char                    ifname[IF_NAMESIZE];  /**< Interface name. */
+    unsigned int            weight;               /**< Weight. */
+    unsigned int            id;                   /**< Internal ID, used
+                                                       when editing existing
+                                                       route. */
+} ta_rt_nexthop_t;
+
+/** Queue head type for nexthops of a multipath route. */
+typedef TAILQ_HEAD(ta_rt_nexthops_t, ta_rt_nexthop_t) ta_rt_nexthops_t;
+
+/**
+ * Remove all elements from a queue of route nexthops, release memory
+ * occupied by them.
+ *
+ * @param hops      Head of nexthops queue.
+ */
+extern void ta_rt_nexthops_clean(ta_rt_nexthops_t *hops);
+
 /** Structure that keeps system independent representation of the route */
 typedef struct ta_rt_info_t {
     struct sockaddr_storage dst; /**< Route destination address */
@@ -277,6 +334,9 @@ typedef struct ta_rt_info_t {
     uint32_t                prefix; /**< Route destination address prefix */
     /** Gateway address - for indirect routes */
     struct sockaddr_storage gw;
+
+    ta_rt_nexthops_t        nexthops; /**< Nexthops of a multipath route. */
+
     /** Interface name - for direct routes */
     char                    ifname[IF_NAMESIZE];
     uint16_t                flags;  /**< Route flags */
@@ -288,6 +348,14 @@ typedef struct ta_rt_info_t {
     ta_route_type           type;   /**< Route type (e.g. unicast) */
     uint32_t                table;  /**< Route table id */
 } ta_rt_info_t;
+
+/**
+ * Release dynamic memory allocated for fields of ta_rt_info_t structure,
+ * clear its fields.
+ *
+ * @param rt_info     Pointer to ta_rt_info_t structure.
+ */
+extern void ta_rt_info_clean(ta_rt_info_t *rt_info);
 
 /** Gateway address is specified for the route */
 #define TA_RT_INFO_FLG_GW     0x0001
@@ -307,6 +375,8 @@ typedef struct ta_rt_info_t {
 #define TA_RT_INFO_FLG_SRC    0x0080
 /** Table ID is specified for the route */
 #define TA_RT_INFO_FLG_TABLE  0x0100
+/** Route is multipath */
+#define TA_RT_INFO_FLG_MULTIPATH  0x0200
 
 /**
  * Initialize ta_rt_info_t data structure.

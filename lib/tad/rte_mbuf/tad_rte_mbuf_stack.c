@@ -93,6 +93,8 @@ tad_rte_mbuf_rw_init_cb(csap_p  csap)
 
     csap_set_rw_data(csap, spec_data);
 
+    csap->layers[layer].rw_use_tad_pkt_seg_tagging = TRUE;
+
     return 0;
 }
 

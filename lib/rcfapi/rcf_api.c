@@ -1354,10 +1354,14 @@ rcf_ta_cfg_get(const char *ta_name, int session, const char *oid,
             if (read(fd, &tmp, 1) != 0)
             {
                 close(fd);
+                if (unlink(msg.file) != 0)
+                    ERROR("Cannot unlink file %s saved by RCF process", msg.file);
                 return TE_RC(TE_RCF_API, TE_ESMALLBUF);
             }
         }
         close(fd);
+        if (unlink(msg.file) != 0)
+            ERROR("Cannot unlink file %s saved by RCF process", msg.file);
     }
     else
     {
@@ -2548,6 +2552,12 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
                  "packet\n%Tf", csap_id, ta_name, session, msg.file);
         if (handler != NULL)
             handler(msg.file, user_param);
+
+        /*
+         * Delete temporary file if it has not be removed or renamed by
+         * the handler specified by the caller.
+         */
+        (void)unlink(msg.file);
 
         anslen = sizeof(msg);
         if ((rc = wait_rcf_ipc_message(ctx_handle->ipc_handle,

@@ -192,7 +192,7 @@ tapi_acse_ta_cs_init(tapi_acse_context_t *ctx)
 
 #define COPY_ACS_CPE_PARAM(_lv, _type, _par_name) \
     do { \
-        char *str = NULL; int num = 0;                                  \
+        char *str = NULL; long int num = 0;                             \
         type = _type;                                                   \
         if ((rc = cfg_get_instance_fmt(&type,                           \
                     (CVT_INTEGER == _type) ? (void*)&num : (void*)&str, \

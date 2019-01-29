@@ -706,9 +706,9 @@ main(int argc, char *argv[])
     TAILQ_FOREACH(diff_set, &ctx->sets, links)
     {
         if ((diff_set->name == NULL) &&
-            (asprintf(&(diff_set->name), "Set %u", diff_set->id) == -1))
+            (te_asprintf(&(diff_set->name), "Set %u", diff_set->id) == -1))
         {
-            ERROR("asprintf() failed");
+            ERROR("te_asprintf() failed");
             goto exit;
         }
     }

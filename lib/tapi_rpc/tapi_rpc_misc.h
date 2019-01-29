@@ -63,16 +63,6 @@ extern "C" {
 #define TAPI_READ_BUF_SIZE 4096
 
 /**
- * Pattern generator type
- */
-typedef enum tapi_pat_gen_type {
-    TARPC_PATTERN_GEN_SEQ,  /**< Sequence generator, see
-                                 @ref fill_buff_with_sequence(). */
-    TARPC_PATTERN_GEN_LCG   /**< LCG generator, see
-                                 @ref RPC_PATTERN_GEN_LCG */
-} tapi_pat_gen_type;
-
-/**
  * Structure describing random value generation.
  */
 typedef struct tapi_rand_gen {
@@ -85,35 +75,105 @@ typedef struct tapi_rand_gen {
 } tapi_rand_gen;
 
 /**
+ * Set fields of @ref tapi_rand_gen structure.
+ *
+ * @param arg       Pointer to @ref tapi_rand_gen structure.
+ * @param min       Minimum value.
+ * @param max       Maximum value.
+ * @param once      Value for once field (see description in
+ *                  @ref tapi_rand_gen declaration).
+ */
+static inline void
+tapi_rand_gen_set(tapi_rand_gen *arg,
+                  int min, int max, tarpc_bool once)
+{
+    arg->min = min;
+    arg->max = max;
+    arg->once = once;
+}
+
+/**
  * Pattern sender settings
  */
 typedef struct tapi_pat_sender {
-    tapi_pat_gen_type   gen;            /**< Pattern generator type*/
-    tarpc_pat_gen_arg   gen_arg;        /**< Pattern generator arguments*/
-    iomux_func          iomux;          /**< Iomux function to be used */
-    tapi_rand_gen       size;           /**< Size of the message*/
-    tapi_rand_gen       delay;          /**< Delay between message*/
-    int                 duration_sec;   /**< How long to run (in seconds)*/
-    tarpc_bool          ignore_err;     /**< Ignore errors while run */
+    const char         *gen_func;         /**< Pattern generator function
+                                               name */
+    tarpc_pat_gen_arg   gen_arg;          /**< Pattern generator arguments*/
+    const char         *snd_wrapper;      /**< Name of send function
+                                               wrapper */
+    rpc_ptr             snd_wrapper_ctx;  /**< RPC pointer to the first
+                                               argument of send function
+                                               wrapper */
+    iomux_func          iomux;            /**< Iomux function to be used */
+    tapi_rand_gen       size;             /**< Size of the message*/
+    tapi_rand_gen       delay;            /**< Delay between messages*/
+    int                 duration_sec;     /**< How long to run (in seconds)*/
+    tarpc_bool          ignore_err;       /**< Ignore errors while run */
+
     /* out */
-    uint64_t           *sent;           /**< Number of sent bytes */
-    te_bool             send_failed;    /**< TRUE if @b send() call
-                                             was failed */
+    uint64_t            sent;             /**< Number of sent bytes */
+    te_bool             send_failed;      /**< @c TRUE if @b send() call
+                                               failed */
+
+    /*
+     * These fields are alternative to fields without "_ptr". After
+     * calling @ref tapi_pat_sender_init() they point to locations of
+     * those fields, but if it is more convenient for you to store
+     * some information outside of this structure, you can assign
+     * different addresses to these pointers.
+     */
+    tarpc_pat_gen_arg  *gen_arg_ptr;      /**< Pointer to arguments of
+                                               pattern generator */
+    uint64_t           *sent_ptr;         /**< Where to save number of
+                                               sent bytes */
+    te_bool            *send_failed_ptr;  /**< Pointer to a variable which
+                                               will be set to @c TRUE if
+                                               sending fails */
 } tapi_pat_sender;
+
+/**
+ * Initialize fields of @ref tapi_pat_sender structure.
+ *
+ * @param p       Pointer to @ref tapi_pat_sender structure.
+ */
+extern void tapi_pat_sender_init(tapi_pat_sender *p);
 
 /**
  * Pattern receiver settings
  */
 typedef struct tapi_pat_receiver {
-    tapi_pat_gen_type   gen;            /**< Pattern generator type*/
+    const char         *gen_func;       /**< Pattern generator function
+                                             name */
     tarpc_pat_gen_arg   gen_arg;        /**< Pattern generator arguments*/
     iomux_func          iomux;          /**< Iomux function to be used */
     int                 duration_sec;   /**< How long to run (in seconds)*/
     /* out */
-    uint64_t           *received;       /**< Number of received bytes */
-    te_bool             recv_failed;    /**< TRUE if @b recv() call
+    uint64_t            received;       /**< Number of received bytes */
+    te_bool             recv_failed;    /**< @c TRUE if @b recv() call
                                              was failed */
+
+    /*
+     * These fields are alternative to fields without "_ptr". After
+     * calling @ref tapi_pat_receiver_init() they point to locations of
+     * those fields, but if it is more convenient for you to store
+     * some information outside of this structure, you can assign
+     * different addresses to these pointers.
+     */
+    tarpc_pat_gen_arg  *gen_arg_ptr;      /**< Pointer to arguments of
+                                               pattern generator */
+    uint64_t           *received_ptr;     /**< Where to save number of
+                                               received bytes */
+    te_bool            *recv_failed_ptr;  /**< Pointer to a variable which
+                                               will be set to @c TRUE if
+                                               @b recv() fails. */
 } tapi_pat_receiver;
+
+/**
+ * Initialize fields of @ref tapi_pat_receiver structure.
+ *
+ * @param p       Pointer to @ref tapi_pat_receiver structure.
+ */
+extern void tapi_pat_receiver_init(tapi_pat_receiver *p);
 
 /**
  * Try to search a given symbol in the current library used by
@@ -324,77 +384,24 @@ extern int rpc_simple_receiver(rcf_rpc_server *handle,
                                uint64_t *received);
 
 /**
- * Function is a wrapper over rpc_pattern_sender().
- *
- * @param rpcs              RPC server
- * @param s                 Socket for sending data
- * @param sender            Pointer to @ref tapi_pat_sender structure
- *                          describing pattern sender settings
- *
- * @return Number of sent bytes or -1 in the case of failure
- */
-extern int tapi_rpc_sender(rcf_rpc_server *rpcs, int s,
-                           tapi_pat_sender *sender);
-
-/**
- * Function is a wrapper over rpc_pattern_receiver().
- *
- * @param rpcs              RPC server
- * @param s                 Socket for receiving data
- * @param receiver          Pointer to @ref tapi_pat_receiver structure
- *                          describing pattern receiver settings
- *
- * @return Number of received bytes, -2 if data doesn't match the pattern,
- *         or -1 in the case of another failure
- */
-extern int tapi_rpc_receiver(rcf_rpc_server *rpcs, int s,
-                             tapi_pat_receiver *receiver);
-
-/**
  * Patterned data sender. Data may be sent using IO multiplexing or not,
- * in according to @p iomux argument, with non-blocking @b send() or blocking,
+ * according to @p iomux argument, with non-blocking @b send() or blocking,
  * respectively.
  *
  * @note In case of blocking @b send() no timeout is used. If there is any
  * problems (e.g. @c ERPCTIMEOUT error), you should set the @c SO_SNDTIMEO
  * via @b setsockopt() like it is implemented in @ref rpc_pattern_receiver.
  *
- * @param rpcs              RPC server
- * @param s                 a socket to be user for sending
- * @param fname             a function used to generate a pattern
- * @param gen_arg           specific arguments for the pattern
- *                          generator function
- * @param iomux             IO multiplexing function or @c FUNC_NO_IOMUX to
- *                          send data without IO multiplexing
- * @param size_min          minimum size of the message in bytes
- * @param size_max          maximum size of the message in bytes
- * @param size_rnd_once     if true, random size should be calculated
- *                          only once and used for all messages;
- *                          if false, random size is calculated for
- *                          each message
- * @param delay_min         minimum delay between messages in microseconds
- * @param delay_max         maximum delay between messages in microseconds
- * @param delay_rnd_once    if true, random delay should be calculated
- *                          only once and used for all messages;
- *                          if false, random delay is calculated for
- *                          each message
- * @param time2run          how long run (in seconds)
- * @param sent              location for number of sent bytes
- * @param ignore_err        Ignore errors while run
- * @param send_failed       This will be set to @c TRUE if it was send()
- *                          who failed
+ * @param rpcs              RPC server.
+ * @param s                 A socket to be used for sending.
+ * @param args              Pointer to @ref tapi_pat_sender structure.
  *
- * @return Number of sent bytes or -1 in the case of failure
+ * @return Status code.
+ * @retval 0    on success
+ * @retval -1   in the case of failure
  */
-extern int rpc_pattern_sender(rcf_rpc_server *rpcs,
-                              int s, const char *fname,
-                              tarpc_pat_gen_arg *gen_arg,
-                              int iomux, int size_min,
-                              int size_max, int size_rnd_once,
-                              int delay_min, int delay_max,
-                              int delay_rnd_once, int time2run,
-                              uint64_t *sent, int ignore_err,
-                              te_bool *send_failed);
+extern int rpc_pattern_sender(rcf_rpc_server *rpcs, int s,
+                              tapi_pat_sender *args);
 
 /**
  * Fills the buffer with a linear congruential sequence
@@ -449,30 +456,23 @@ extern int rpc_pattern_sender(rcf_rpc_server *rpcs,
 
 /**
  * Patterned data receiver. Data may be received using IO multiplexing or not,
- * in according to @p iomux argument, with non-blocking @b recv() or blocking,
+ * according to @p iomux argument, with non-blocking @b recv() or blocking,
  * respectively.
  *
- * @note In case of blocking @b recv() the function sets SO_RCVTIMEO option
- * several times and restores it to original value at the end.
+ * @note In case of blocking @b recv() the function sets @c SO_RCVTIMEO
+ * option several times and restores it to original value at the end.
  *
- * @param rpcs            RPC server
- * @param s               a socket to be user for receiving
- * @param fname           a function used to generate a pattern
- * @param gen_arg         specific arguments for the pattern
- *                        generator function
- * @param iomux           IO multiplexing function or @c FUNC_NO_IOMUX to
- *                        receive data without IO multiplexing
- * @param received        location for number of received bytes
- * @param recv_failed     This will be set to @c TRUE if it was recv()
- *                        who failed
+ * @param rpcs            RPC server.
+ * @param s               Socket descriptor.
+ * @param args            Pointer to @ref tapi_pat_receiver structure.
  *
- * @return number of received bytes, -2 if data doesn't match the pattern,
- *         or -1 in the case of another failure
+ * @return Status code.
+ * @retval >= 0   number of received bytes
+ * @retval -2     data doesn't match the pattern
+ * @retval -1     in the case of another failure
  */
 extern int rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
-                                const char *fname, tarpc_pat_gen_arg *gen_arg,
-                                int iomux, uint32_t time2run,
-                                uint64_t *received, te_bool *recv_failed);
+                                tapi_pat_receiver *args);
 
 /**
  * Wait for readable socket.

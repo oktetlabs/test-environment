@@ -16,6 +16,9 @@
 
 #include <popt.h>
 #include "conf_defs.h"
+#if WITH_CONF_YAML
+#include "conf_yaml.h"
+#endif /* WITH_CONF_YAML */
 
 #include <libxml/xinclude.h>
 
@@ -41,6 +44,11 @@ static const char *cs_cfg_file[16] =  {NULL, };
 static const char *cs_sniff_cfg_file = NULL;  /**< Configuration file name
                                                    for sniffer framework */
 
+#if WITH_CONF_YAML
+/** Configuration file in YAML */
+static const char *cs_conf_yaml = NULL;
+#endif /* WITH_CONF_YAML */
+
 /** @name Configurator global options */
 #define CS_PRINT_TREES  0x1     /**< Print objects and object instances
                                      trees after initialization */
@@ -56,10 +64,10 @@ static unsigned int cs_flags = 0;
 static void process_backup(cfg_backup_msg *msg);
 
 /**
- * This function should be called before processing ADD and SET requestes.
- * It tries to avoid two problems described in conf_ta.h file.
+ * This function should be called before processing ADD, DEL and SET
+ * requests. It tries to avoid two problems described in conf_ta.h file.
  *
- * @param cmd        Command name ("add" or "set")
+ * @param cmd        Command name ("add", "del" or "set")
  * @param oid        OID used in operation
  * @param msg        Message that should be processed
  * @param update_dh  Wheter t update dynamic history?
@@ -71,15 +79,27 @@ static int
 cfg_avoid_local_cmd_problem(const char *cmd, const char *oid,
                             cfg_msg *msg, te_bool update_dh)
 {
-    te_bool msg_local;
+    te_bool msg_local = FALSE;
 
     UNUSED(update_dh);
 
-    assert(msg->type == CFG_ADD || msg->type == CFG_SET);
+    assert(msg->type == CFG_ADD || msg->type == CFG_SET ||
+           msg->type == CFG_DEL);
 
-    msg_local = (msg->type == CFG_ADD) ?
-        ((cfg_add_msg *)msg)->local :
-        ((cfg_set_msg *)msg)->local;
+    switch (msg->type)
+    {
+        case CFG_ADD:
+            msg_local = ((cfg_add_msg *)msg)->local;
+            break;
+
+        case CFG_DEL:
+            msg_local = ((cfg_del_msg *)msg)->local;
+            break;
+
+        case CFG_SET:
+            msg_local = ((cfg_set_msg *)msg)->local;
+            break;
+    }
 
     if (local_cmd_seq)
     {
@@ -165,12 +185,12 @@ cfg_avoid_local_cmd_problem(const char *cmd, const char *oid,
 
 /**
  * This function should be called when an error occures during processing
- * ADD and SET requestes.
+ * ADD, DEL and SET requests.
  * In case of local commands processing state, it rolles back all the
  * configuration that was before the first local command (in sequence of
  * local commands) and clears all resources allocated under local commands.
  * In case of non-local command it deletes an instance specified by
- * @p handle parameter.
+ * @p handle parameter if it was local addition.
  *
  * @param type       Command type
  * @param handle     Handle of the instance to delete from Data Base
@@ -180,7 +200,7 @@ cfg_avoid_local_cmd_problem(const char *cmd, const char *oid,
 static void
 cfg_wipe_cmd_error(uint8_t type, cfg_handle handle)
 {
-    if (type != CFG_ADD && type != CFG_SET)
+    if (type != CFG_ADD && type != CFG_SET && type != CFG_DEL)
     {
         ERROR("Please support handling %d type in %s function",
               type, __FUNCTION__);
@@ -192,11 +212,12 @@ cfg_wipe_cmd_error(uint8_t type, cfg_handle handle)
     {
         int rc;
 
-        /* Restore configuration before the first local SET/ADD */
+        /* Restore configuration before the first local SET/ADD/DEL */
         local_cmd_seq = FALSE;
         rc = cfg_dh_restore_backup(local_cmd_bkp, FALSE);
         WARN("Restore backup to configuration which was before "
-             "the first local ADD/SET commands. Restored with code %r", rc);
+             "the first local ADD/DEL/SET commands. Restored with code %r",
+             rc);
     }
     else if (type == CFG_ADD)
     {
@@ -268,6 +289,21 @@ print_otree(cfg_object *obj, int indent)
 }
 #endif
 
+/* See description in 'conf_defs.h' */
+te_errno
+parse_config_dh_sync(xmlNodePtr root_node)
+{
+    te_errno rc = 0;
+
+    rc = cfg_dh_process_file(root_node, FALSE);
+    if (rc == 0 && (rc = cfg_ta_sync("/:", TRUE)) != 0)
+        ERROR("Cannot synchronise database with Test Agents");
+    if (rc == 0 && (rc = cfg_dh_process_file(root_node, TRUE)) != 0)
+        ERROR("Failed to modify database after synchronisation: %r", rc);
+
+    return rc;
+}
+
 /**
  * Parse and execute the configuration file.
  *
@@ -334,12 +370,7 @@ parse_config(const char *file, te_bool restore)
         rc = cfg_backup_process_file(root, restore);
     else if (xmlStrcmp(root->name, (const xmlChar *)"history") == 0)
     {
-        rc = cfg_dh_process_file(root, FALSE);
-        if (rc == 0 && (rc = cfg_ta_sync("/:", TRUE)) != 0)
-            ERROR("Cannot synchronize database with Test Agents");
-        if (rc == 0 && (rc = cfg_dh_process_file(root, TRUE)) != 0)
-            ERROR("Failed to modify database after synchronization: %r",
-                  rc);
+        rc = parse_config_dh_sync(root);
     }
     else
     {
@@ -745,8 +776,10 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
     if ((inst = CFG_GET_INST(handle)) == NULL)
     {
         msg->rc = TE_ENOENT;
+        cfg_wipe_cmd_error(CFG_DEL, CFG_HANDLE_INVALID);
         return;
     }
+
     obj = inst->obj;
     if (cfg_instance_volatile(inst))
         update_dh = FALSE;
@@ -756,6 +789,7 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         ERROR("Only READ-CREATE objects can be removed from "
               "the configuration tree. object: %s", obj->oid);
         msg->rc = TE_EACCES;
+        cfg_wipe_cmd_error(CFG_DEL, CFG_HANDLE_INVALID);
         return;
     }
 
@@ -772,14 +806,34 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
     else if (msg->rc != 0)
     {
         ERROR("%s: cfg_db_del_check fails %r", __FUNCTION__, msg->rc);
+        cfg_wipe_cmd_error(CFG_DEL, CFG_HANDLE_INVALID);
         return;
     }
 
+    if (cfg_avoid_local_cmd_problem("del", inst->oid, (cfg_msg *)msg,
+                                    update_dh) != 0)
+        return;
+
     if (update_dh &&
-        (msg->rc = cfg_dh_add_command((cfg_msg *)msg, FALSE)) != 0)
+        (msg->rc = cfg_dh_add_command((cfg_msg *)msg, msg->local)) != 0)
     {
         ERROR("%s: Failed to add into DH errno %r",
               __FUNCTION__, msg->rc);
+        cfg_wipe_cmd_error(CFG_DEL, CFG_HANDLE_INVALID);
+        return;
+    }
+
+    if (msg->local)
+    {
+        if (!inst->added)
+        {
+            ERROR("Removing locally added instance which was not committed "
+                  "is not supported");
+            msg->rc = TE_EOPNOTSUPP;
+            cfg_wipe_cmd_error(CFG_DEL, CFG_HANDLE_INVALID);
+            return;
+        }
+        inst->remove = TRUE;
         return;
     }
 
@@ -816,6 +870,7 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
         else
         {
             ERROR("%s: rcf_ta_cfg_del returns %r", __FUNCTION__, msg->rc);
+            cfg_wipe_cmd_error(CFG_DEL, CFG_HANDLE_INVALID);
             if (update_dh)
             {
                 cfg_dh_delete_last_command();
@@ -841,6 +896,7 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
     {
         ERROR("%s(): out of memory", __FUNCTION__);
         msg->rc = TE_ENOMEM;
+        cfg_wipe_cmd_error(CFG_DEL, CFG_HANDLE_INVALID);
         return;
     }
 
@@ -1554,7 +1610,7 @@ process_cmd_line_opts(int argc, char **argv)
 
     int i;
     for (i = 0; i < argc; i++)
-      RING("arg %d - %s", i, argv[i]);
+      VERB("arg %d - %s", i, argv[i]);
 
     /* Option Table */
     struct poptOption options_table[] = {
@@ -1571,6 +1627,11 @@ process_cmd_line_opts(int argc, char **argv)
 
         { "sniff-conf", '\0', POPT_ARG_STRING, &cs_sniff_cfg_file, 0,
           "Auxiliary conf file for the sniffer framework.", NULL },
+
+#if WITH_CONF_YAML
+        { "conf-yaml", '\0', POPT_ARG_STRING, &cs_conf_yaml, 0,
+          "Configuration file in YAML", NULL },
+#endif /* WITH_CONF_YAML */
 
         POPT_AUTOHELP
         POPT_TABLEEND
@@ -1593,13 +1654,13 @@ process_cmd_line_opts(int argc, char **argv)
     }
 
     cfg_files = poptGetArg(optCon);
-    RING("%s: cfg_files=%s", __FUNCTION__, cfg_files);
+    INFO("%s: cfg_files=%s", __FUNCTION__, cfg_files);
     cs_cfg_file[0] = strtok((char *)cfg_files, " ");
-    RING("%s: cs_cfg_file=%s", __FUNCTION__, cs_cfg_file[0]);
+    INFO("%s: cs_cfg_file=%s", __FUNCTION__, cs_cfg_file[0]);
     while( cfg_file_num < MAX_CFG_FILES &&
            cs_cfg_file[cfg_file_num++] != NULL) {
       cs_cfg_file[cfg_file_num] = strtok(NULL, " ");
-      RING("%s: cs_cfg_file=%s", __FUNCTION__, cs_cfg_file[cfg_file_num]);
+      INFO("%s: cs_cfg_file=%s", __FUNCTION__, cs_cfg_file[cfg_file_num]);
     } 
     if (cs_cfg_file[0] == NULL)
     {
@@ -1701,7 +1762,7 @@ main(int argc, char **argv)
          cs_cfg_file[cfg_file_id] != NULL && cfg_file_id < MAX_CFG_FILES;
          cfg_file_id++)
     {
-      RING("-> %s", cs_cfg_file[cfg_file_id]);
+      INFO("-> %s", cs_cfg_file[cfg_file_id]);
       if ((rc = parse_config(cs_cfg_file[cfg_file_id], FALSE)) != 0)
       {
         ERROR("Fatal error during configuration file parsing: %d - %s",
@@ -1717,6 +1778,19 @@ main(int argc, char **argv)
         ERROR("Fatal error during sniffer configuration file parsing");
         goto exit;
     }
+
+#if WITH_CONF_YAML
+    if (cs_conf_yaml != NULL)
+    {
+        INFO("-> %s", cs_conf_yaml);
+        rc = parse_config_yaml(cs_conf_yaml);
+        if (rc != 0)
+        {
+            ERROR("Failed to parse configuration file in YAML");
+            goto exit;
+        }
+    }
+#endif /* WITH_CONF_YAML */
 
     if (cs_flags & CS_PRINT_TREES)
     {

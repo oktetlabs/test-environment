@@ -118,7 +118,6 @@ ctype.h \
 dirent.h \
 dlfcn.h \
 errno.h \
-expect.h \
 fcntl.h \
 fnmatch.h \
 glob.h \
@@ -193,8 +192,6 @@ sys/un.h \
 sys/utsname.h \
 sys/wait.h \
 sys/syscall.h \
-tcl.h \
-tcl8.4/expect.h \
 termio.h \
 time.h \
 ucd-snmp/snmp_impl.h \
@@ -320,6 +317,23 @@ AC_CHECK_SIZEOF([te_log_seqno],   [], [#include "te_raw_log.h"])
 AC_C_INLINE
 
 fi
+
+AH_TEMPLATE([TE_THREAD_LOCAL], [Thread-local storage specifier])
+AC_MSG_CHECKING([for thread-local storage specifier])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[_Thread_local int x;]],
+                                   [[return 0;]])],
+                  [
+                   AC_MSG_RESULT([yes])
+                   AC_DEFINE([TE_THREAD_LOCAL], [_Thread_local])
+                  ],
+                  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[__thread int x;]],
+                                                      [[return 0;]])],
+                                     [
+                                      AC_MSG_RESULT([yes])
+                                      AC_DEFINE([TE_THREAD_LOCAL],
+                                                [__thread])
+                                      ],
+                                     [AC_MSG_RESULT([no])])])
 
 AC_SUBST(TE_EXT_LIBS_FILE)
 

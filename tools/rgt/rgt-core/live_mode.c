@@ -1,12 +1,12 @@
 /** @file
  * @brief Test Environment: Live mode specific routines.
  *
- * Interface for output control message events and regular messages 
+ * Interface for output control message events and regular messages
  * into the screen.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -25,19 +25,19 @@
 
 #include "te_errno.h"
 
-static int live_process_test_start(node_info_t *node, msg_queue *verdicts);
-static int live_process_test_end(node_info_t *node, msg_queue *verdicts);
-static int live_process_pkg_start(node_info_t *node, msg_queue *verdicts);
-static int live_process_pkg_end(node_info_t *node, msg_queue *verdicts);
-static int live_process_sess_start(node_info_t *node, msg_queue *verdicts);
-static int live_process_sess_end(node_info_t *node, msg_queue *verdicts);
+static int live_process_test_start(node_info_t *node, ctrl_msg_data *data);
+static int live_process_test_end(node_info_t *node, ctrl_msg_data *data);
+static int live_process_pkg_start(node_info_t *node, ctrl_msg_data *data);
+static int live_process_pkg_end(node_info_t *node, ctrl_msg_data *data);
+static int live_process_sess_start(node_info_t *node, ctrl_msg_data *data);
+static int live_process_sess_end(node_info_t *node, ctrl_msg_data *data);
 static int live_process_branch_start(node_info_t *node,
-                                     msg_queue *verdicts);
-static int live_process_branch_end(node_info_t *node, msg_queue *verdicts);
+                                     ctrl_msg_data *data);
+static int live_process_branch_end(node_info_t *node, ctrl_msg_data *data);
 static int live_process_regular_msg(log_msg *msg);
 
 void
-live_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST], 
+live_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST],
                f_process_reg_log_msg  *reg_proc,
                f_process_log_root root_proc[CTRL_EVT_LAST])
 {
@@ -73,7 +73,7 @@ print_ts(uint32_t *ts)
         THROW_EXCEPTION;
     }
     memcpy(&tm, tm_tmp, sizeof(tm));
-    
+
 #if 0
     /* Long date/time format (date & time) */
     res = strftime(time_buf, TIME_BUF_LEN, "%b %d %T", &tm);
@@ -91,12 +91,12 @@ static void
 print_params(param *prms)
 {
     param *prm = prms;
-    
+
     if (prm != NULL)
     {
         fprintf(rgt_ctx.out_fd, "|- Parameters:\n");
     }
-    
+
     while (prm != NULL)
     {
         fprintf(rgt_ctx.out_fd, "     + %s = %s\n", prm->name, prm->val);
@@ -106,9 +106,9 @@ print_params(param *prms)
 
 static inline int
 live_process_start_event(node_info_t *node, const char *node_name,
-                         msg_queue *verdicts)
+                         ctrl_msg_data *data)
 {
-    UNUSED(verdicts);
+    UNUSED(data);
 
     fprintf(rgt_ctx.out_fd, "| Starting %s: %s\n",
             node_name, node->descr.name);
@@ -133,11 +133,11 @@ live_process_start_event(node_info_t *node, const char *node_name,
 
 static inline int
 live_process_end_event(node_info_t *node, const char *node_name,
-                       msg_queue *verdicts)
+                       ctrl_msg_data *data)
 {
     const char *result;
-    
-    UNUSED(verdicts);
+
+    UNUSED(data);
 
     switch (node->result.status)
     {
@@ -169,54 +169,54 @@ live_process_end_event(node_info_t *node, const char *node_name,
 }
 
 static int
-live_process_test_start(node_info_t *node, msg_queue *verdicts)
+live_process_test_start(node_info_t *node, ctrl_msg_data *data)
 {
-    return live_process_start_event(node, "test", verdicts);
+    return live_process_start_event(node, "test", data);
 }
 
 static int
-live_process_test_end(node_info_t *node, msg_queue *verdicts)
+live_process_test_end(node_info_t *node, ctrl_msg_data *data)
 {
-    return live_process_end_event(node, "Test", verdicts);
+    return live_process_end_event(node, "Test", data);
 }
 
 static int
-live_process_pkg_start(node_info_t *node, msg_queue *verdicts)
+live_process_pkg_start(node_info_t *node, ctrl_msg_data *data)
 {
-    return live_process_start_event(node, "package", verdicts);
+    return live_process_start_event(node, "package", data);
 }
 
 static int
-live_process_pkg_end(node_info_t *node, msg_queue *verdicts)
+live_process_pkg_end(node_info_t *node, ctrl_msg_data *data)
 {
-    return live_process_end_event(node, "Package", verdicts);
+    return live_process_end_event(node, "Package", data);
 }
 
 static int
-live_process_sess_start(node_info_t *node, msg_queue *verdicts)
+live_process_sess_start(node_info_t *node, ctrl_msg_data *data)
 {
-    return live_process_start_event(node, "session", verdicts);
+    return live_process_start_event(node, "session", data);
 }
 
 static int
-live_process_sess_end(node_info_t *node, msg_queue *verdicts)
+live_process_sess_end(node_info_t *node, ctrl_msg_data *data)
 {
-    return live_process_end_event(node, "Session", verdicts);
+    return live_process_end_event(node, "Session", data);
 }
 
 static int
-live_process_branch_end(node_info_t *node, msg_queue *verdicts)
+live_process_branch_end(node_info_t *node, ctrl_msg_data *data)
 {
     UNUSED(node);
-    UNUSED(verdicts);
+    UNUSED(data);
     return 1;
 }
 
 static int
-live_process_branch_start(node_info_t *node, msg_queue *verdicts)
+live_process_branch_start(node_info_t *node, ctrl_msg_data *data)
 {
     UNUSED(node);
-    UNUSED(verdicts);
+    UNUSED(data);
     return 1;
 }
 

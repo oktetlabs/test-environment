@@ -1,11 +1,9 @@
-<div level='@@%u:level_id@@' entityname='@@%s:entity@@' username='@@%s:user@@'>
-  <table border='0' cellpadding='0' cellspacing='0' width='100%%'>
-  <tr>
-    <td class='@@%s:level@@'>
-      <table border='0' cellpadding='0' cellspacing='0'>
-      <tr>
-        <td width='50' class='level'>@@%s:level@@</td>
-        <td width='100' class='entityname'>@@%s:entity@@</td>
-        <td width='100' class='username'>@@%s:user@@</td>
-        <td width='150' class='timestamp'>@@%s:ts@@</td>
-        <td class='log'>
+<tr name="line@@%u:linum@@" id="line@@%u:linum@@" data-nest-lvl = "@@%s:nl@@" data-entity="@@%s:entity@@" data-user="@@%s:user@@">
+  <td class="text-right te-fold @@%s:level@@"><span id="log_toggle@@%u:linum@@"></span></td>
+  <td class="text-right @@%s:level@@"><a href="#line@@%u:linum@@">@@%u:linum@@</a></td>
+  <td class="col-sm-1 text-center @@%s:level@@">@@%s:level@@</td>
+  <td class="col-sm-1 @@%s:level@@">@@%s:entity@@</td>
+  <td class="col-sm-1 @@%s:level@@">@@%s:user@@</td>
+  <td class="col-sm-1 @@%s:level@@">@@%s:ts@@</td>
+  <td class="col-sm-10 @@%s:level@@">
+

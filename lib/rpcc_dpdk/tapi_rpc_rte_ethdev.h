@@ -36,6 +36,8 @@ extern "C" {
 
 #define RPC_RSS_HASH_KEY_LEN_DEF 40
 
+#define RPC_RTE_EPOLL_PER_THREAD -1
+
 /**
  * rte_eth_dev_info() RPC.
  *
@@ -81,6 +83,14 @@ extern int tapi_rpc_rte_eth_dev_configure_def(rcf_rpc_server *rpcs,
 extern void rpc_rte_eth_dev_close(rcf_rpc_server *rpcs, uint16_t port_id);
 
 /**
+ * @b rte_eth_dev_reset() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * non-zero return value.
+ */
+extern int rpc_rte_eth_dev_reset(rcf_rpc_server *rpcs, uint16_t port_id);
+
+/**
  * @b rte_eth_dev_start() RPC.
  *
  * If error is not expected, the function jumps out in the case
@@ -121,6 +131,39 @@ extern int rpc_rte_eth_rx_queue_setup(rcf_rpc_server *rpcs,
                                       rpc_rte_mempool_p mp);
 
 /**
+ * @b rte_eth_dev_rx_intr_enable() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * non-zero return value.
+ */
+extern int rpc_rte_eth_dev_rx_intr_enable(rcf_rpc_server *rpcs,
+                                          uint16_t port_id,
+                                          uint16_t queue_id);
+
+/**
+ * @b rte_eth_dev_rx_intr_disable() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * non-zero return value.
+ */
+extern int rpc_rte_eth_dev_rx_intr_disable(rcf_rpc_server *rpcs,
+                                           uint16_t port_id,
+                                           uint16_t queue_id);
+
+/**
+ * @b rte_eth_dev_rx_intr_ctl_q() RPC.
+ *
+ * If failure is not expected, the function jumps out in the case of
+ * non-zero return value.
+ */
+extern int rpc_rte_eth_dev_rx_intr_ctl_q(rcf_rpc_server *rpcs,
+                                         uint16_t port_id,
+                                         uint16_t queue_id,
+                                         int epfd,
+                                         enum tarpc_rte_intr_op op,
+                                         uint64_t data);
+
+/**
  * @b rte_eth_tx_burst() RPC.
  *
  * The function jumps out in the case of actual number of transmitted packets
@@ -130,6 +173,18 @@ extern uint16_t rpc_rte_eth_tx_burst(rcf_rpc_server *rpcs, uint16_t port_id,
                                      uint16_t queue_id,
                                      rpc_rte_mbuf_p *tx_pkts,
                                      uint16_t nb_pkts);
+
+/**
+ * @b rte_eth_tx_prepare() RPC.
+ *
+ * The function jumps out when the number of prepared
+ * packets is more than @p nb_pkts .
+ */
+extern uint16_t rpc_rte_eth_tx_prepare(rcf_rpc_server *rpcs,
+                                       uint16_t        port_id,
+                                       uint16_t        queue_id,
+                                       rpc_rte_mbuf_p *tx_pkts,
+                                       uint16_t        nb_pkts);
 
 /**
  * @b rte_eth_rx_burst() RPC.
@@ -408,37 +463,6 @@ extern int rpc_rte_eth_rx_queue_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
 extern int rpc_rte_eth_tx_queue_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
                                          uint16_t queue_id,
                                          struct tarpc_rte_eth_txq_info *qinfo);
-
-/**
- * @b rte_eth_dev_count() RPC.
- */
-extern uint8_t rpc_rte_eth_dev_count(rcf_rpc_server *rpcs);
-
-/**
- * @b rte_eth_dev_attach() RPC
- *
- * @param[in]  devargs A string describing the new device to be attached
- * @param[out] port_id Location for the device port ID actually attached
- *
- * @return Status code (by default jumps out on a non-zero value)
- */
-extern int rpc_rte_eth_dev_attach(rcf_rpc_server *rpcs,
-                                  const char     *devargs,
-                                  uint16_t       *port_id);
-
-/**
- * @b rte_eth_dev_detach() RPC.
- *
- * @param[in]  rpcs        RPC server handle
- * @param[in]  port_id     Port number
- * @param[out] devname     A pointer to a device name actually detached.
- *                         The memory must be allocated by the caller.
- *
- * If failure is not expected, the function jumps out in the case of
- * non-zero or negative return value.
- */
-extern int rpc_rte_eth_dev_detach(rcf_rpc_server *rpcs, uint16_t port_id,
-                                  char *devname);
 
 /**
  * @b rte_eth_dev_rss_reta_query() RPC.

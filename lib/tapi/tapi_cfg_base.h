@@ -355,6 +355,44 @@ extern te_errno tapi_cfg_del_if_ip4_addresses(const char *ta,
                                                   *addr_to_save);
 
 /**
+ * Save and delete addresses of chosen address family on a given interface,
+ * except for @p addr_to_save or the first address in acquired list.
+ *
+ * @param ta                Test Agent name
+ * @param if_name           interface name
+ * @param addr_to_save      address to save on the interface.
+ *                          If this parameter is @c NULL, then save
+ *                          the first address in address list returned by
+ *                          `ip addr list` output.
+ *                          If one needs to delete all addresses on
+ *                          the interface, one should pass sockaddr with family
+ *                          from @p addr_fam and address @c INADDR_ANY.
+ * @param save_first        If @p addr_to_save is @c NULL but @p save_first is
+ *                          @c TRUE, do not delete first address from acquired
+ *                          list.
+ * @param saved_addrs       Where address of array of deleted addresses
+ *                          should be placed
+ * @param saved_prefixes    Where address of array of deleted addresses'
+ *                          prefixes should be placed
+ * @param saved_broadcasts  Where address of array of deleted addresses'
+ *                          broadcasts should be placed
+ * @param saved_count       Where count of saved and deleted addresses
+ *                          should be placed
+ * @param addr_fam          Address family of deleted addresses
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_save_del_if_addresses(const char *ta,
+                                      const char *if_name,
+                                      const struct sockaddr *addr_to_save,
+                                      te_bool save_first,
+                                      struct sockaddr **saved_addrs,
+                                      int **saved_prefixes,
+                                      te_bool **saved_broadcasts,
+                                      int *saved_count,
+                                      int addr_fam);
+
+/**
  * Save and delete all IPv4 addresses on a given interface, except of
  * addr_to_save or the first address in acquired list (if save_first
  * is TRUE).
@@ -396,7 +434,67 @@ extern te_errno tapi_cfg_save_del_if_ip4_addresses(const char *ta,
                                                   int *saved_count);
 
 /**
+ * Delete all IPv6 addresses on a given interface, except for
+ * @p addr_to_save or the first address in acquired list.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       interface name
+ * @param addr_to_save  address to save on interface.
+ *                      If this parameter is NULL, then save
+ *                      the first address in address list returned by
+ *                      'ip addr list' output.
+ *                      If one need to delete all addresses on interface,
+ *                      he has to pass sockaddr with family @c AF_INET6
+ *                      and address @c INADDR_ANY.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_del_if_ip6_addresses(
+                    const char *ta,
+                    const char *if_name,
+                    const struct sockaddr *addr_to_save);
+
+/**
+ * Save and delete all IPv6 addresses on a given interface, except for
+ * @p addr_to_save or the first address in acquired list (if save_first
+ * is TRUE).
+ *
+ * @param ta                Test Agent name
+ * @param if_name           interface name
+ * @param addr_to_save      address to save on interface.
+ *                          If this parameter is NULL, then save
+ *                          the first address in address list returned by
+ *                          'ip addr list' output.
+ *                          If one need to delete all addresses on
+ *                          interface, he has to pass sockaddr with family
+ *                          @c AF_INET6 and address @c INADDR_ANY.
+ * @param save_first        If addr_to_save is NULL but save_first is
+ *                          TRUE, do not delete first address from acquired
+ *                          list.
+ * @param saved_addrs       Where address of array of deleted addresses
+ *                          should be placed
+ * @param saved_prefixes    Where address of array of deleted addresses'
+ *                          prefixes should be placed
+ * @param saved_broadcasts  Where address of array of deleted addresses'
+ *                          broadcasts should be placed
+ * @param saved_count       Where count of saved and deleted addresses
+ *                          should be placed
+ * @return Status code
+ */
+extern te_errno tapi_cfg_save_del_if_ip6_addresses(
+                    const char *ta,
+                    const char *if_name,
+                    const struct sockaddr *addr_to_save,
+                    te_bool save_first,
+                    struct sockaddr **saved_addrs,
+                    int **saved_prefixes,
+                    te_bool **saved_broadcasts,
+                    int *saved_count);
+
+/**
  * Restore previously removed IPv4 addresses on a given interface
+ *
+ * @deprecated It is same as function tapi_cfg_restore_if_addresses
  *
  * @param ta                Test Agent name
  * @param if_name           interface name
@@ -418,6 +516,26 @@ extern te_errno tapi_cfg_restore_if_ip4_addresses(const char *ta,
                                                   int *saved_prefixes,
                                                   te_bool *saved_broadcasts,
                                                   int saved_count);
+
+/**
+ * Restore previously removed addresses on a given interface
+ *
+ * @param ta                Test Agent name
+ * @param if_name           interface name
+ * @param saved_addrs       Pointer to array of deleted addresses
+ * @param saved_prefixes    Pointer to array of deleted addresses' prefixes
+ * @param saved_broadcasts  Pointer to array of deleted addresses' broadcasts
+ * @param saved_count       Count of saved and deleted addresses
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_restore_if_addresses(
+                    const char *ta,
+                    const char *if_name,
+                    struct sockaddr *saved_addrs,
+                    int *saved_prefixes,
+                    te_bool *saved_broadcasts,
+                    int saved_count);
 
 static inline te_errno
 tapi_cfg_base_if_up(const char *ta, const char *iface)
@@ -721,6 +839,19 @@ tapi_cfg_base_if_set_mtu(const char *agent, const char *interface, int mtu,
     return tapi_cfg_base_if_set_mtu_ext(agent, interface, mtu, old_mtu,
                                         FALSE);
 }
+
+/**
+ * Down up interface.
+ *
+ * @param agent     Agent name
+ * @param interface Interface name
+ *
+ * @note Caller should take care about wait for the interface to be raised.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_down_up(const char *agent,
+                                         const char *interface);
 
 /**@} <!-- END tapi_conf_iface --> */
 

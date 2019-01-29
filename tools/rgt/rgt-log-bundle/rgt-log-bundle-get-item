@@ -156,6 +156,8 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
         filter_seq="${BASH_REMATCH[2]}"
     elif [[ "${node}" =~ ^([0-9]+) ]] ; then
         filter_tin="${BASH_REMATCH[1]}"
+    elif [[ "${node}" =~ ^id([0-9]+) ]] ; then
+        filter_test_id="${BASH_REMATCH[1]}"
     else
         err_cleanup "Cannot obtain \"${req_path}\""
     fi
@@ -175,6 +177,7 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
         err_cleanup "Failed to extract log_gist.raw and frags_list"
     fi
 
+    frags_str=
     while read frag_name frag_tin frag_depth frag_seq \
           frag_len frag_start_len frag_pages_cnt || \
           [[ -n "${frag_name}" ]] ; do
@@ -186,7 +189,10 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
                     \( -n "${filter_depth}" \
                        -a x"${filter_depth}" = x"${frag_depth}" \
                        -a -n "${filter_seq}" \
-                       -a x"${filter_seq}" = x"${frag_seq}" \) ; then
+                       -a x"${filter_seq}" = x"${frag_seq}" \) -o \
+                    \( -n "${filter_test_id}" \
+                       -a x"${frag_name}" = \
+                                  x"${filter_test_id}_frag_start" \) ; then
 
                 pages_count="${frag_pages_cnt}"
 
@@ -197,11 +203,17 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
                             frags_str="${frags_str} ${frag_name}_$i"
                         done
                     else
-                        frags_str="${frag_name}_$(($cur_page - 1))"
+                        frags_str="${frags_str} ${frag_name}_$(($cur_page - 1))"
                     fi
                 fi
 
-                break
+                #
+                # TIN may be not unique, so we should not stop searching
+                # for fragments after the first match is found.
+                #
+                if test -z "${filter_tin}" ; then
+                    break
+                fi
             fi
         fi
 

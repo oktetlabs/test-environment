@@ -701,13 +701,11 @@ te_sockaddr2str(const struct sockaddr *sa)
     return ptr;
 }
 
-
 /* See the description in te_sockaddr.h */
 te_errno
-te_sockaddr_h2str(const struct sockaddr *sa, char **string)
+te_sockaddr_h2str_buf(const struct sockaddr *sa, char *buf, size_t len)
 {
-    char buf[INET6_ADDRSTRLEN];
-    const char* result = NULL;
+    const char *result = NULL;
 
     switch(sa->sa_family)
     {
@@ -717,22 +715,39 @@ te_sockaddr_h2str(const struct sockaddr *sa, char **string)
                                sa->sa_family == AF_INET ?
                                (const void *)&(CONST_SIN (sa)->sin_addr ) :
                                (const void *)&(CONST_SIN6(sa)->sin6_addr),
-                               buf, sizeof(buf));
+                               buf, len);
             break;
 
         default:
-            *string = NULL;
             return TE_RC(TE_TOOL_EXT, TE_EAFNOSUPPORT);
     }
 
     if (result == NULL)
-    {
-        *string = NULL;
         return TE_OS_RC(TE_TOOL_EXT, errno);
+
+    return 0;
+}
+
+/* See the description in te_sockaddr.h */
+te_errno
+te_sockaddr_h2str(const struct sockaddr *sa, char **string)
+{
+    char      buf[INET6_ADDRSTRLEN];
+    te_errno  rc;
+    char     *s;
+
+    rc = te_sockaddr_h2str_buf(sa, buf, sizeof(buf));
+
+    if (rc == 0)
+    {
+        s = strdup(buf);
+        if (s == NULL)
+            rc = TE_OS_RC(TE_TOOL_EXT, errno);
+        else
+            *string = s;
     }
 
-    *string = strdup(buf);
-    return 0;
+    return rc;
 }
 
 
@@ -889,8 +904,6 @@ te_sockaddr_netaddr_from_string(const char      *addr_str,
     return TE_RC(TE_TAPI, TE_EINVAL);
 }
 
-
-#if 0
 /* See description in te_sockaddr.h */
 te_errno
 te_sockaddr_ip4_to_ip6_mapped(struct sockaddr *addr)
@@ -905,7 +918,7 @@ te_sockaddr_ip4_to_ip6_mapped(struct sockaddr *addr)
     }
 
     ip4_addr = (uint32_t)SIN(addr)->sin_addr.s_addr;
-    port = (uint32_t)SIN(addr)->sin_port;
+    port = SIN(addr)->sin_port;
 
     memset(addr, 0, sizeof(struct sockaddr_in6));
 
@@ -916,6 +929,5 @@ te_sockaddr_ip4_to_ip6_mapped(struct sockaddr *addr)
 
     return 0;
 }
-#endif
 
 //#endif /* __CYGWIN__ */

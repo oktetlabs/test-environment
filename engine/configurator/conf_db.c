@@ -63,8 +63,18 @@ int cfg_all_obj_size;
 
 /** Root of configuration instances */
 cfg_instance cfg_inst_root =
-    { 0x10000, "/:", { 0 }, &cfg_obj_root, TRUE, NULL, NULL, NULL,
-      { 0 } };
+    {
+        .handle = 0x10000,
+        .oid = "/:",
+        .name = "",
+        .obj = &cfg_obj_root,
+        .added = TRUE,
+        .remove = FALSE,
+        .father = NULL,
+        .son = NULL,
+        .brother = NULL,
+        .val = { 0 }
+    };
 
 /** Pool with configuration instances */
 cfg_instance **cfg_all_inst = NULL;
@@ -1334,7 +1344,8 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
         for (;
              father != NULL &&
                  (strcmp(father->obj->subid, s->subid) != 0 ||
-                  strcmp(father->name, s->name) != 0);
+                  strcmp(father->name, s->name) != 0 ||
+                  father->remove);
              father = father->brother);
 
         s++;
@@ -1367,7 +1378,7 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
 
     /* Try to find instance with the same name */
     for (inst = father->son, prev = NULL;
-         inst != NULL && strcmp(inst->oid, oid_s) < 0;
+         inst != NULL && (strcmp(inst->oid, oid_s) < 0 || inst->remove);
          prev = inst, inst = inst->brother);
 
     if (inst != NULL && strcmp(inst->oid, oid_s) == 0)
@@ -1651,12 +1662,18 @@ cfg_db_find(const char *oid_s, cfg_handle *handle)
 
         while (TRUE)
         {
+            /*
+             * Instance which is scheduled for removal after commit
+             * is skipped here. It does not make sense to perform
+             * some operations on a deleted instance.
+             */
             for (;
                  tmp != NULL &&
-                 !(strcmp(tmp->obj->subid,
-                          ((cfg_inst_subid *)(oid->ids))[i].subid) == 0 &&
-                   strcmp(tmp->name,
-                          ((cfg_inst_subid *)(oid->ids))[i].name) == 0);
+                 (!(strcmp(tmp->obj->subid,
+                           ((cfg_inst_subid *)(oid->ids))[i].subid) == 0 &&
+                    strcmp(tmp->name,
+                           ((cfg_inst_subid *)(oid->ids))[i].name) == 0)
+                  || tmp->remove);
                  tmp = tmp->brother);
 
             if (++i == oid->len || tmp == NULL)
@@ -1860,10 +1877,19 @@ cfg_get_ins_by_ins_id_str(const char *ins_id_str)
 
     for (i = 0;;)
     {
-        while (ins != NULL && \
-               (strcmp(ins->obj->subid, ids->subid) != 0 || \
-                strcmp(ins->name,       ids->name ) != 0   )  )
+        /*
+         * Instance which is scheduled for removal after commit
+         * is skipped here. It does not make sense to perform
+         * some operations on a deleted instance.
+         */
+        while (ins != NULL &&
+               (strcmp(ins->obj->subid, ids->subid) != 0 ||
+                strcmp(ins->name, ids->name ) != 0 ||
+                ins->remove))
+        {
             ins = ins->brother;
+        }
+
         if (++i == idsplit->len || ins == NULL)
             break;
 

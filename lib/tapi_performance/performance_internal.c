@@ -24,6 +24,8 @@
 #include "tapi_test.h"
 #include "te_units.h"
 
+/* Timeout to wait for process to stop */
+#define TAPI_PERF_STOP_TIMEOUT_S (10)
 
 /*
  * Get default timeout according to application options.
@@ -81,6 +83,9 @@ perf_app_start(rcf_rpc_server *rpcs, char *cmd, tapi_perf_app *app)
         return TE_RC(TE_TAPI, TE_EFAIL);
     }
 
+    te_string_free(&app->stdout);
+    te_string_free(&app->stderr);
+
     perf_app_close_descriptors(app);
     app->rpcs = rpcs;
     app->pid = pid;
@@ -98,7 +103,8 @@ perf_app_stop(tapi_perf_app *app)
 {
     if (app->pid >= 0)
     {
-        rpc_ta_kill_death(app->rpcs, app->pid);
+        rpc_ta_kill_and_wait(app->rpcs, app->pid, RPC_SIGKILL,
+                             TAPI_PERF_STOP_TIMEOUT_S);
         app->pid = -1;
     }
 
@@ -115,11 +121,17 @@ perf_app_wait(tapi_perf_app *app, int16_t timeout)
     if (timeout == TAPI_PERF_TIMEOUT_DEFAULT)
         timeout = get_default_timeout(&app->opts);
     app->rpcs->timeout = TE_SEC2MS(timeout);
-    RPC_AWAIT_IUT_ERROR(app->rpcs);
+    RPC_AWAIT_ERROR(app->rpcs);
     pid = rpc_waitpid(app->rpcs, app->pid, &stat, 0);
-    if (pid != app->pid)
+    if (pid == -1)
     {
         ERROR("waitpid() failed with errno %r", RPC_ERRNO(app->rpcs));
+        return RPC_ERRNO(app->rpcs);
+    }
+    else if (pid != app->pid)
+    {
+        ERROR("waitpid() has returned %d: process with pid %d has not exited",
+              pid, app->pid);
         return TE_RC(TE_TAPI, TE_EFAIL);
     }
     app->pid = -1;
@@ -158,34 +170,39 @@ perf_app_dump_output(tapi_perf_app *app, const char *tag)
 }
 
 /* See description in performance_internal.h */
-char *
-perf_get_tool_tuple(const tapi_perf_server *server,
-                    const tapi_perf_client *client,
-                    const tapi_perf_report *report)
+void
+perf_get_tool_input_tuple(const tapi_perf_server *server,
+                          const tapi_perf_client *client,
+                          te_string *output_str)
 {
     te_unit bandwidth;
-    te_unit throughput;
-    te_string buf = TE_STRING_INIT;
     const tapi_perf_opts *opts = &client->app.opts;
 
     bandwidth = te_unit_pack(opts->bandwidth_bits);
+
+    CHECK_RC(te_string_append(output_str, "ip=%s, ", proto_rpc2str(opts->ipversion)));
+    CHECK_RC(te_string_append(output_str, "protocol=%s, ",
+                              proto_rpc2str(opts->protocol)));
+    CHECK_RC(te_string_append(output_str, "bandwidth=%.1f%sbits/sec, ",
+                              bandwidth.value, te_unit_prefix2str(bandwidth.unit)));
+    CHECK_RC(te_string_append(output_str, "num_bytes=%"PRId64", ", opts->num_bytes));
+    CHECK_RC(te_string_append(output_str, "duration=%"PRId32"sec, ", opts->duration_sec));
+    CHECK_RC(te_string_append(output_str, "length=%"PRId32"bytes, ", opts->length));
+    CHECK_RC(te_string_append(output_str, "num_streams=%"PRId16", ", opts->streams));
+    CHECK_RC(te_string_append(output_str, "server_cmd=\"%s\", ", server->app.cmd));
+    CHECK_RC(te_string_append(output_str, "client_cmd=\"%s\", ", client->app.cmd));
+}
+
+void
+perf_get_tool_result_tuple(const tapi_perf_report *report,
+                           te_string *output_str)
+{
+    te_unit throughput;
+
     throughput = te_unit_pack(report->bits_per_second);
 
-    CHECK_RC(te_string_append(&buf, "ip=%s, ", proto_rpc2str(opts->ipversion)));
-    CHECK_RC(te_string_append(&buf, "protocol=%s, ",
-                              proto_rpc2str(opts->protocol)));
-    CHECK_RC(te_string_append(&buf, "bandwidth=%.1f%sbits/sec, ",
-                              bandwidth.value, te_unit_prefix2str(bandwidth.unit)));
-    CHECK_RC(te_string_append(&buf, "num_bytes=%"PRId64", ", opts->num_bytes));
-    CHECK_RC(te_string_append(&buf, "duration=%"PRId32"sec, ", opts->duration_sec));
-    CHECK_RC(te_string_append(&buf, "length=%"PRId32"bytes, ", opts->length));
-    CHECK_RC(te_string_append(&buf, "num_streams=%"PRId16", ", opts->streams));
-    CHECK_RC(te_string_append(&buf, "res_num_bytes=%"PRIu64", ", report->bytes));
-    CHECK_RC(te_string_append(&buf, "res_time=%.1fsec, ", report->seconds));
-    CHECK_RC(te_string_append(&buf, "res_throughput=%.1f%sbits/sec, ",
+    CHECK_RC(te_string_append(output_str, "res_num_bytes=%"PRIu64", ", report->bytes));
+    CHECK_RC(te_string_append(output_str, "res_time=%.1fsec, ", report->seconds));
+    CHECK_RC(te_string_append(output_str, "res_throughput=%.1f%sbits/sec",
                               throughput.value, te_unit_prefix2str(throughput.unit)));
-    CHECK_RC(te_string_append(&buf, "server_cmd=\"%s\", ", server->app.cmd));
-    CHECK_RC(te_string_append(&buf, "client_cmd=\"%s\"", client->app.cmd));
-
-    return buf.ptr;
 }

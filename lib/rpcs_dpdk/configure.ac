@@ -46,17 +46,13 @@ AC_LANG_PROGRAM(
 [[(void)rte_ring_dequeue_bulk(NULL, NULL, 0, NULL);]]
 )], [AC_DEFINE([HAVE_RTE_RING_DEQUEUE_BULK_ARG_AVAILABLE], 1, [ ])], [])
 
-AC_COMPILE_IFELSE([
-AC_LANG_PROGRAM(
+AC_CHECK_MEMBERS([struct rte_flow_ops.isolate],
+[], [],
 [[
 #include "rte_config.h"
 #include "rte_flow.h"
 #include "rte_flow_driver.h"
-
-struct rte_flow_ops ops;
-]],
-[[ops.isolate = NULL;]]
-)], [AC_DEFINE([HAVE_RTE_FLOW_ISOLATE], 1, [ ])], [])
+]])
 
 AC_COMPILE_IFELSE([
 AC_LANG_PROGRAM(
@@ -69,61 +65,52 @@ enum rte_flow_item_type type;
 [[type = RTE_FLOW_ITEM_TYPE_GENEVE;]]
 )], [AC_DEFINE([HAVE_RTE_FLOW_GENEVE], 1, [ ])], [])
 
-AC_COMPILE_IFELSE([
-AC_LANG_PROGRAM(
+
+AC_CHECK_MEMBERS([struct rte_eth_dev_info.rx_queue_offload_capa],
+[], [],
 [[
 #include "rte_config.h"
 #include "rte_ethdev.h"
+]])
 
-struct rte_eth_dev_info dev_info;
-]],
-[[dev_info.rx_queue_offload_capa = 0;]]
-)], [AC_DEFINE([HAVE_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA], 1, [ ])], [])
-
-AC_COMPILE_IFELSE([
-AC_LANG_PROGRAM(
+AC_CHECK_MEMBERS([struct rte_eth_dev_info.tx_queue_offload_capa],
+[], [],
 [[
 #include "rte_config.h"
 #include "rte_ethdev.h"
+]])
 
-struct rte_eth_dev_info dev_info;
-]],
-[[dev_info.tx_queue_offload_capa = 0;]]
-)], [AC_DEFINE([HAVE_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA], 1, [ ])], [])
+AC_CHECK_MEMBERS([struct rte_eth_dev_info.dev_capa],
+[], [],
+[[
+#include "rte_config.h"
+#include "rte_ethdev.h"
+]])
 
-AC_COMPILE_IFELSE([
-AC_LANG_PROGRAM(
+AC_CHECK_MEMBERS([struct rte_flow_action_rss.rss_conf],
+[], [],
 [[
 #include "rte_config.h"
 #include "rte_flow.h"
+]])
 
-struct rte_flow_action_rss conf;
-]],
-[[conf.rss_conf = NULL;]]
-)], [AC_DEFINE([HAVE_RTE_FLOW_ITEM_RSS_CONF], 1, [ ])], [])
-
-AC_COMPILE_IFELSE([
-AC_LANG_PROGRAM(
+AC_CHECK_MEMBERS([struct rte_flow_action_rss.num],
+[], [],
 [[
 #include "rte_config.h"
 #include "rte_flow.h"
+]])
 
-struct rte_flow_action_rss conf;
-]],
-[[conf.num = 0;]]
-)], [AC_DEFINE([HAVE_RTE_FLOW_ITEM_RSS_NUM], 1, [ ])], [])
-
-AC_COMPILE_IFELSE([
-AC_LANG_PROGRAM(
+AC_CHECK_MEMBERS([struct rte_flow_item_vlan.tpid],
+[], [],
 [[
 #include "rte_config.h"
 #include "rte_flow.h"
+]])
 
-struct rte_flow_item_vlan spec;
-]],
-[[spec.tpid = 0;]]
-)], [AC_DEFINE([HAVE_RTE_FLOW_ITEM_VLAN_TPID], 1, [ ])], [])
-
+LIBS="-lnuma -lpthread -ldl $LIBS"
+LIBS="-lrte_mbuf -lrte_net -lrte_mempool -lrte_ring -lrte_eal -lrte_kvargs $LIBS"
+AC_CHECK_FUNCS([rte_pktmbuf_pool_create_by_ops])
 
 AC_CONFIG_FILES([Makefile])
 

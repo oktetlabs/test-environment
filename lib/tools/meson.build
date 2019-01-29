@@ -23,6 +23,8 @@ headers += files(
     'te_kernel_log.h',
     'te_kvpair.h',
     'te_log_fmt.h',
+    'te_expand.h',
+    'te_log_stack.h',
     'te_serial_parser.h',
     'te_shell_cmd.h',
     'te_sigmap.h',
@@ -46,6 +48,8 @@ sources += files(
     'te_kvpair.c',
     'te_log_file.c',
     'te_log_fmt.c',
+    'te_expand.c',
+    'te_log_stack.c',
     'te_shell_cmd.c',
     'te_sigmap.c',
     'te_sockaddr.c',
@@ -56,3 +60,4 @@ sources += files(
     'te_units.c',
     'tq_string.c',
 )
+deps = [ cc.find_library('m') ]

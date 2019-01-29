@@ -97,23 +97,27 @@ struct csap_spt_type_t;
  * Collection of common protocol layer attributes of CSAP.
  */
 typedef struct csap_layer_t {
-    char               *proto;      /**< Protocol layer text label */
-    te_tad_protocols_t  proto_tag;  /**< Protocol layer int tag */
+    char               *proto;               /**< Protocol layer text label */
+    te_tad_protocols_t  proto_tag;           /**< Protocol layer int tag */
 
-    void        *specific_data;     /**< Protocol-specific data */
-    asn_value   *nds;               /**< ASN.1 value with CSAP
-                                         specification layer PDU */
+    void        *specific_data;              /**< Protocol-specific data */
+    te_bool      rw_use_tad_pkt_seg_tagging; /**< This layer has to make use of
+                                                  layer tag field in TAD packet
+                                                  segment control blocks during
+                                                  read-write opearation */
+    asn_value   *nds;                        /**< ASN.1 value with CSAP
+                                                  specification layer PDU */
 
-    asn_value   *pdu;               /**< Current value of PDU on
-                                         this layer to be sent.
-                                         It might be useful to allow one
-                                         layer to set/update PDU fields
-                                         of another layer.
-                                         (This field is used for
-                                          traffic templates only) */
+    asn_value   *pdu;                        /**< Current value of PDU on
+                                                  this layer to be sent.
+                                                  It might be useful to allow
+                                                  one layer to set/update PDU
+                                                  fields of another layer.
+                                                  (This field is used for
+                                                   traffic templates only) */
 
-    struct csap_spt_type_t *proto_support; /**< Protocol layer
-                                                support descriptor */
+    struct csap_spt_type_t *proto_support;   /**< Protocol layer
+                                                  support descriptor */
 } csap_layer_t;
 
 

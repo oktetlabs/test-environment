@@ -228,10 +228,10 @@ pppoe_server_save_conf(te_pppoe_server *pppoe)
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    /* TODO: initialise option list with default options */
+    /* TODO: it's a temporary solution, see Bug 9769 */
     fprintf(f, "noauth\n");
-    fprintf(f, "lcp-echo-interval 10\n");
-    fprintf(f, "lcp-echo-failure 2\n");
+    fprintf(f, "lcp-echo-interval 60\n");
+    fprintf(f, "lcp-echo-failure 10\n");
     fprintf(f, "nodefaultroute\n");
     fprintf(f, "mru 1492\n");
     fprintf(f, "mtu 1492\n");

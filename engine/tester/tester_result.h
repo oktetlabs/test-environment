@@ -90,15 +90,15 @@ typedef struct tester_test_results {
     SLIST_HEAD(, tester_test_result) list;
     /**
      * Mutual exclusion device to protect the list used in Tester main
-     * thread and verdicts listener.
+     * thread and test messages listener.
      */
     pthread_mutex_t lock;
 } tester_test_results;
 
 /* Forward declaration */
-struct tester_verdicts_listener;
-/** Verdicts listener control data. */
-typedef struct tester_verdicts_listener tester_verdicts_listener;
+struct tester_test_msg_listener;
+/** Test messages listener control data. */
+typedef struct tester_test_msg_listener tester_test_msg_listener;
 
 
 /**
@@ -158,26 +158,27 @@ tester_test_result_del(tester_test_results *results,
 }
 
 /**
- * Start verdicts listener.
+ * Start test messages listener.
  *
- * @param ctx           Location for verdicts listener control data
+ * @param ctx           Location for listener control data
  * @param results       List of tests which are in progress to store
- *                      received verdicts
+ *                      data from received messages
  *
  * @return Status code.
  */
-extern te_errno tester_verdicts_listener_start(
-                    tester_verdicts_listener **ctx,
+extern te_errno tester_test_msg_listener_start(
+                    tester_test_msg_listener **ctx,
                     tester_test_results       *results);
 
 /**
- * Stop verdicts listener.
+ * Stop test messages listener.
  *
- * @param ctx           Location of verdicts listener control data
+ * @param ctx           Location of listener control data
  *
  * @return Status code.
  */
-extern te_errno tester_verdicts_listener_stop(
-                    tester_verdicts_listener **ctx);
+extern te_errno tester_test_msg_listener_stop(
+                    tester_test_msg_listener **ctx);
 
 #endif /* !__TE_TESTER_RESULT_H__ */
+

@@ -59,7 +59,6 @@
 #define TE_LOG(_level, _entity, _user, _fs...) \
     te_log_message(__FILE__, __LINE__, _level, _entity, _user, _fs)
 
-
 /**
  * Log message of the specified level from the user.
  *
@@ -71,11 +70,11 @@
  * @param _fs       - format string and arguments
  */
 #define LGR_MESSAGE(_lvl, _lgruser, _fs...) \
-    do {                                                \
-        if (TE_LOG_LEVEL & (_lvl))                      \
-        {                                               \
-            TE_LOG(_lvl, TE_LGR_ENTITY, _lgruser, _fs); \
-        }                                               \
+    do {                                                              \
+        if ((TE_LOG_LEVEL | TE_LOG_LEVELS_MANDATORY) & (_lvl))        \
+        {                                                             \
+            TE_LOG(_lvl, TE_LGR_ENTITY, _lgruser, _fs);               \
+        }                                                             \
     } while (0)
 
 /**

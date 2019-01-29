@@ -152,6 +152,7 @@
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_string.h"
 #include "logger_api.h"
 #include "logfork.h"
 #include "rcf_common.h"
@@ -342,13 +343,13 @@ extern te_bool tarpc_dynamic_library_loaded(void);
 /**
  * Find the function by its name.
  *
- * @param use_libc  use the preset library or libc?
+ * @param lib_flags how to resolve function name
  * @param name      function name
  * @param func      location for function address
  *
  * @return status code
  */
-extern int tarpc_find_func(te_bool use_libc, const char *name,
+extern int tarpc_find_func(tarpc_lib_flags lib_flags, const char *name,
                            api_func *func);
 
 /** Structure for checking of variable-length arguments safety */
@@ -360,7 +361,7 @@ typedef struct checked_arg {
     size_t      len;          /**< Whole length of the buffer */
     size_t      len_visible;  /**< Length passed to the function
                                    under test */
-    const char *name;         /**< Argument name to be displayed
+    char       *name;         /**< Argument name to be displayed
                                    in error message */
 } checked_arg;
 
@@ -490,6 +491,32 @@ extern te_errno tarpc_check_args(checked_arg_list *list);
     } while (0)
 
 struct rpc_call_data;
+
+/** Structure for storing data about error occurred during RPC call. */
+typedef struct te_rpc_error_data {
+    te_errno    err;                     /**< Error number. */
+    char        str[RPC_ERROR_MAX_LEN];  /**< String describing error. */
+} te_rpc_error_data;
+
+/**
+ * Save information about error occurred during RPC call which will
+ * be reported to caller.
+ *
+ * @note If this function is not used (or @p err is set to @c 0),
+ *       errno value will be reported to caller.
+ *
+ * @param err    Error number.
+ * @param msg    Format string for error message.
+ * @param ...    Arguments for format string.
+ */
+extern void te_rpc_error_set(te_errno err, const char *msg, ...);
+
+/**
+ * Get error number set with te_rpc_error_set() the last time.
+ *
+ * @return Error number.
+ */
+extern te_errno te_rpc_error_get_num(void);
 
 /**
  * Do some preparations before passing an call to a real function:
@@ -1035,6 +1062,43 @@ extern void signal_registrar_siginfo(int signum, siginfo_t *siginfo,
 
 extern sigset_t rpcs_received_signals;
 extern tarpc_siginfo_t last_siginfo;
+
+/**
+ * Macro to define syscall function wrapper content.
+ *
+ * @param _name     Function name (bind, connect, etc.)
+ * @param _rettype  Return type (according to man _name)
+ * @param _args     Arguments list (according to man _name)
+ * @param ...       Values of arguments
+ */
+#define TARPC_SYSCALL_WRAPPER(_name, _rettype, _args, ...)                  \
+_rettype _name##_te_wrap_syscall _args                                      \
+{                                                                           \
+    static api_func syscall_func = NULL;                                    \
+                                                                            \
+    if (syscall_func == NULL &&                                             \
+        tarpc_find_func(TARPC_LIB_USE_LIBC, "syscall", &syscall_func) != 0) \
+    {                                                                       \
+        syscall_func = NULL;                                                \
+        ERROR("Failed to find function \"syscall\" in libc");               \
+        return -1;                                                          \
+    }                                                                       \
+    return (_rettype)syscall_func(SYS_##_name, ##__VA_ARGS__);              \
+}                                                                           \
+                                                                            \
+_rettype _name##_te_wrap_syscall_dl _args                                   \
+{                                                                           \
+    static api_func syscall_func = NULL;                                    \
+                                                                            \
+    if (syscall_func == NULL &&                                             \
+        tarpc_find_func(0, "syscall", &syscall_func) != 0)                  \
+    {                                                                       \
+        syscall_func = NULL;                                                \
+        ERROR("Failed to find function \"syscall\" in dynamic lib");        \
+        return -1;                                                          \
+    }                                                                       \
+    return (_rettype)syscall_func(SYS_##_name, ##__VA_ARGS__);              \
+}
 
 
 #endif /* __TARPC_SERVER_H__ */

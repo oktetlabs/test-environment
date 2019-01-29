@@ -35,30 +35,8 @@ iut_syn_csap_handler(tsa_session *ss)
 {
     te_errno rc;
 
-    if (ss->state.csap.csap_tst_s != -1)
-    {
-        rc = tapi_tcp_destroy_connection(
-                          ss->state.csap.csap_tst_s);
-
-        if (rc != 0)
-        {
-            ERROR("%s(): destroying of CSAP connection failed",
-                  __FUNCTION__);
-            return rc;
-        }
-        ss->state.csap.csap_tst_s = -1;
-    }
-
-    rc = tapi_tcp_init_connection(ss->config.pco_tst->ta,
-                                  TAPI_TCP_SERVER,
-                                  ss->config.tst_addr,
-                                  ss->config.iut_addr,
-                                  ss->config.tst_if->if_name,
-                                  ss->config.alien_link_addr,
-                                  ss->state.tst_type == TSA_TST_CSAP ?
-                                  ss->config.iut_link_addr :
-                                  ss->config.gw_tst_link_addr,
-                                  0, &ss->state.csap.csap_tst_s);
+    rc = tapi_tcp_start_conn(ss->state.csap.csap_tst_s,
+                             TAPI_TCP_SERVER);
     if (rc != 0)
         return rc;
     ss->state.tst_wait_connect = TRUE;
@@ -94,29 +72,8 @@ tst_syn_csap_handler(tsa_session *ss)
 {
     te_errno rc = 0;
 
-    if (ss->state.csap.csap_tst_s != -1)
-    {
-        rc = tapi_tcp_destroy_connection(
-                          ss->state.csap.csap_tst_s);
-        if (rc != 0)
-        {
-            ERROR("%s(): destroying of CSAP connection failed",
-                  __FUNCTION__);
-            return rc;
-        }
-        ss->state.csap.csap_tst_s = -1;
-    }
-
-    rc = tapi_tcp_init_connection(ss->config.pco_tst->ta,
-                                TAPI_TCP_CLIENT,
-                                ss->config.tst_addr,
-                                ss->config.iut_addr,
-                                ss->config.tst_if->if_name,
-                                ss->config.alien_link_addr,
-                                ss->state.tst_type == TSA_TST_CSAP ?
-                                ss->config.iut_link_addr :
-                                ss->config.gw_tst_link_addr,
-                                0, &ss->state.csap.csap_tst_s);
+    rc = tapi_tcp_start_conn(ss->state.csap.csap_tst_s,
+                             TAPI_TCP_CLIENT);
 
     ss->state.tst_wait_connect = TRUE;
     return rc;

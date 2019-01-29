@@ -8,6 +8,7 @@
  * @author Nikita Somenkov <Nikita.Somenkov@oktetlabs.ru>
  */
 
+#include <math.h>
 #include "te_string.h"
 #include "rcf_rpc.h"
 #include "tapi_rpc_stdio.h"
@@ -19,7 +20,12 @@
 static inline int16_t
 get_default_timeout(const tapi_fio_opts *opts)
 {
-    return opts->runtime_sec + 30;
+    const int16_t error = 30;
+    const int16_t five_minutes = 5 * 60;
+    const double numjobs_coef = ((double)opts->numjobs.value) /
+                                TAPI_FIO_MAX_NUMJOBS;
+
+    return opts->runtime_sec + round(five_minutes * numjobs_coef) + error;
 }
 
 static void
@@ -82,6 +88,7 @@ fio_app_wait(tapi_fio_app *app, int16_t timeout_sec)
 
     if (timeout_sec == TAPI_FIO_TIMEOUT_DEFAULT)
         timeout_sec = get_default_timeout(&app->opts);
+    RING("Waiting fio %d second(s)...", timeout_sec);
     app->rpcs->timeout = TE_SEC2MS(timeout_sec);
     RPC_AWAIT_IUT_ERROR(app->rpcs);
     pid = rpc_waitpid(app->rpcs, app->pid, &stat, 0);

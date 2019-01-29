@@ -141,6 +141,7 @@ typedef struct trc_report_test_iter_entry {
     TAILQ_ENTRY(trc_report_test_iter_entry) links;  /**< List links */
 
     int             tin;        /**< Test Identification Number */
+    int             test_id;    /**< Test ID */
     char           *hash;       /**< Test arguments hash */
     te_test_result  result;     /**< Obtained result */
     te_bool         is_exp;     /**< Does obtained result match one of
@@ -276,6 +277,24 @@ extern void trc_report_free_test_iter_data(trc_report_test_iter_data *data);
 
 extern te_errno trc_report_to_perl(trc_report_ctx *gctx,
                                    const char *filename);
+
+/** Maximum length of test iteration ID */
+#define TRC_REPORT_ITER_ID_LEN 128
+
+/**
+ * Return iteration ID (based on test ID, if available, or TIN).
+ *
+ * @note This function returns pointer to static variable, it is not
+ *       thread-safe, every call overwrites previously returned value.
+ *       It is supposed that in HTML logs a file for the iteration is
+ *       named "node_<ID>.html".
+ *
+ * @param iter      Pointer to structure describing iteration.
+ *
+ * @return String ID (empty if neither test ID nor TIN are available).
+ */
+extern const char *trc_report_get_iter_id(
+                                const trc_report_test_iter_entry *iter);
 
 #ifdef __cplusplus
 } /* extern "C" */

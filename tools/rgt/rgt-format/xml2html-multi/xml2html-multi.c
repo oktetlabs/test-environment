@@ -1,9 +1,9 @@
-/** @file 
+/** @file
  * @brief Test Environment: xml2html multidocument utility callbacks.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -29,15 +29,26 @@
 #include "xml2gen.h"
 #include "xml2html-multi.h"
 
-#define RGT_HTML_USE_TIN_NAMES 1
+/*
+ * Name all files by depth and sequence numbers in tree,
+ * including test iteration nodes. If this is turned off,
+ * then test iteration nodes will be named by node ID.
+ * If this is turned on, references to logs files in
+ * TRC report will be broken.
+ */
+static te_bool rgt_html_depth_seq_names = FALSE;
 
 /* Root log node depth in the tree of log nodes */
 #define ROOT_NODE_DEPTH   1
 /* Root log node sequential number */
 #define ROOT_NODE_SEQ     0
 
-/* Max attribute length in one line */
-int  rgt_max_attribute_length = 98;
+/*
+ * Max attribute length in one line. Zero means it is not limited and
+ * attributes will not be splitted into multiple lines. Splitting can
+ * break HTML links if an attribute is used inside href.
+ */
+int  rgt_max_attribute_length = 0;
 /* A tag to separate lines */
 const char *rgt_line_separator = "<br>";
 /* Flag turning on detailed packet dumps in log. */
@@ -64,10 +75,11 @@ typedef struct depth_ctx_user {
     te_bool is_test; /**< Is this test iteration? */
     char *log_level; /**< Log level value in string representation */
 
-    GHashTable *depth_log_names; /**< Hash table for log names for 
+    GHashTable *depth_log_names; /**< Hash table for log names for
                                       the particular node:
                                       key - entity name,
                                       value - array of user names */
+    uint32_t linum; /**< Line number in HTML */
 } depth_ctx_user_t;
 
 /**< Struct to keep values related to log message name JS callback */
@@ -166,7 +178,19 @@ void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val)
 
         if (strchr(match_exp, '_') == NULL)
         {
-            ctx->match_tin = match_exp;
+            if (strcmp_start(RGT_NODE_ID_PREFIX, match_exp) == 0)
+            {
+                ctx->match_id = strdup(match_exp +
+                                       strlen(RGT_NODE_ID_PREFIX));
+                assert(ctx->match_id != NULL);
+                free(match_exp);
+                ctx->match_type = RGT_MATCH_NODE_ID;
+            }
+            else
+            {
+                ctx->match_id = match_exp;
+                ctx->match_type = RGT_MATCH_TIN;
+            }
         }
         else
         {
@@ -174,14 +198,13 @@ void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val)
                    &ctx->match_depth,
                    &ctx->match_seq);
             free(match_exp);
+            ctx->match_type = RGT_MATCH_DEPTH_SEQ;
         }
         ctx->single_node_match = TRUE;
     }
     else if (val == 'x')
     {
-        ctx->single_node_match = TRUE;
-        ctx->match_depth = 0;
-        ctx->match_seq = 0;
+        ctx->index_only = TRUE;
     }
     else if (val == 'p')
     {
@@ -212,32 +235,43 @@ void rgt_tmpls_attrs_add_globals(rgt_attrs_t *attrs)
 /**
  * Check whether a given log node (HTML log file) should be output.
  *
- * @param ctx     RGT context
- * @param tin     TIN of test iteration represented by this node
- * @param depth   Node depth in log tree
- * @param seq     Node sequential number (in then list of chidren of its
- *                parent)
+ * @param ctx       RGT context
+ * @param tin       TIN of test iteration represented by this node
+ * @param node_id   Node ID
+ * @param depth     Node depth in log tree
+ * @param seq       Node sequential number (in then list of chidren of its
+ *                  parent)
  *
  * return TRUE if node should be output, FALSE otherwise.
  */
 static inline te_bool
-match_node(rgt_gen_ctx_t *ctx, const char *tin,
+match_node(rgt_gen_ctx_t *ctx, const char *tin, const char *node_id,
            uint32_t depth, uint32_t seq)
 {
+    if (ctx->index_only)
+        return FALSE;
+
     if (ctx->single_node_match)
     {
-#if RGT_HTML_USE_TIN_NAMES
-        if (tin != NULL && ctx->match_tin != NULL)
+        switch (ctx->match_type)
         {
-            if (strcmp(ctx->match_tin, tin) != 0)
-                return FALSE;
-        }
-        else
-#endif
-        {
-            if (ctx->match_depth != depth ||
-                ctx->match_seq != seq)
-                return FALSE;
+            case RGT_MATCH_TIN:
+                if (tin == NULL || ctx->match_id == NULL ||
+                    strcmp(ctx->match_id, tin) != 0)
+                    return FALSE;
+                break;
+
+            case RGT_MATCH_NODE_ID:
+                if (node_id == NULL || ctx->match_id == NULL ||
+                    strcmp(ctx->match_id, node_id) != 0)
+                    return FALSE;
+                break;
+
+            case RGT_MATCH_DEPTH_SEQ:
+                if (ctx->match_depth != depth ||
+                    ctx->match_seq != seq)
+                    return FALSE;
+                break;
         }
     }
 
@@ -283,7 +317,7 @@ RGT_DEF_FUNC(proc_document_start)
         {
             if (errno != ENOENT)
             {
-                perror(ctx->out_fname);                
+                perror(ctx->out_fname);
                 exit(1);
             }
             if (mkdir(ctx->out_fname, 0777) < 0)
@@ -356,7 +390,7 @@ RGT_DEF_FUNC(proc_document_start)
 
     lf_start(ctx, depth_ctx, NULL, NULL, NULL);
 
-    if (match_node(ctx, NULL, ROOT_NODE_DEPTH, ROOT_NODE_SEQ))
+    if (match_node(ctx, NULL, NULL, ROOT_NODE_DEPTH, ROOT_NODE_SEQ))
     {
         char fname[255];
 
@@ -401,7 +435,7 @@ RGT_DEF_FUNC(proc_document_start)
     rgt_tmpls_attrs_add_uint32(attrs, "seq", depth_ctx->seq);
     rgt_tmpls_output(gen_user->js_fd, &xml2fmt_tmpls[JS_DOC_START], attrs);
     rgt_tmpls_attrs_free(attrs);
-    
+
     /* Initialize log names hash */
     gen_user->strings = g_string_chunk_new(1024);
     if (gen_user->strings == NULL)
@@ -429,7 +463,7 @@ ptr_strcmp(gconstpointer a, gconstpointer b)
 /**
  * Auxiliary function that appends string key into array of pointers.
  *
- * @param key        String value representing string key 
+ * @param key        String value representing string key
  *                   (entity or user name)
  * @param value      Unused (when key is entity name, it is the hash of
  *                   user names for this entity name.
@@ -437,7 +471,7 @@ ptr_strcmp(gconstpointer a, gconstpointer b)
  * @param user_data  Pointer to an array of pointers where we want to
  *                   append the key to
  *
- * @note The function is intended to be used as callback for 
+ * @note The function is intended to be used as callback for
  * g_hash_table_foreach() calls.
  */
 static void
@@ -451,13 +485,13 @@ key_append_to_array(gpointer key, gpointer value, gpointer user_data)
 }
 
 /**
- * Output the information about a single entity name into file 
+ * Output the information about a single entity name into file
  * prepared by user (JavaScript file).
  *
- * @param data       Pointer to string representing entity name for 
- *                   which all the pairs (entity name, user name) 
+ * @param data       Pointer to string representing entity name for
+ *                   which all the pairs (entity name, user name)
  *                   should be output (const char *)
- * @param user_data  Pointer to user callback data, 
+ * @param user_data  Pointer to user callback data,
  *                   here it is the data of type (log_msg_name_t *)
  *
  * @note The function is intended to be used as callback for
@@ -477,7 +511,7 @@ log_entity_out(gpointer data, gpointer user_data)
     GPtrArray      *users;
     const char     *user;
     guint           i;
-    
+
     user_hash = (GHashTable *)g_hash_table_lookup(entity_hash, entity);
 
     assert(user_hash != NULL);
@@ -513,7 +547,7 @@ log_entity_out(gpointer data, gpointer user_data)
  * node_${depth}_${seq}_log_names.js
  *
  * @param entity_hash  Hash of entity names (value of each element in
- *                     the hash is a hash of all user names for this 
+ *                     the hash is a hash of all user names for this
  *                     particular entity name)
  * @param depth        The depth of processing
  * @param seq          The sequence number of processing
@@ -532,7 +566,7 @@ output_log_names(GHashTable **entity_hash, uint32_t depth, uint32_t seq)
     assert(entity_hash != NULL);
 
     cb_data.entity_hash = *entity_hash;
-    
+
     snprintf(fname, sizeof(fname), "node_%u_%u_log_names.js", depth, seq);
     if ((cb_data.fd = fopen(fname, "w")) == NULL)
     {
@@ -555,7 +589,7 @@ output_log_names(GHashTable **entity_hash, uint32_t depth, uint32_t seq)
     entries = g_ptr_array_new();
     g_hash_table_foreach(cb_data.entity_hash, key_append_to_array, entries);
     g_ptr_array_sort(entries, (GCompareFunc)ptr_strcmp);
-    
+
     /* Now we have sorted array of entity names */
     g_ptr_array_foreach(entries, log_entity_out, &cb_data);
     g_ptr_array_free(entries, TRUE);
@@ -690,7 +724,7 @@ lf_end(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx)
 
     if (!depth_user->is_test)
     {
-        rgt_tmpls_output(depth_user->dir_fd, 
+        rgt_tmpls_output(depth_user->dir_fd,
                          &xml2fmt_tmpls[LF_DOC_END], NULL);
 
         fclose(depth_user->dir_fd);
@@ -699,9 +733,9 @@ lf_end(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx)
 
 /**
  * Function for processing start of control node event.
- * 
+ *
  * @param ctx        Pointer to the global processing context
- * @param depth_ctx  Pointer to the depth processing context 
+ * @param depth_ctx  Pointer to the depth processing context
  * @param xml_attrs  Pointer to the list of attributes in libxml style
  * @param node_type  String representation of the node type
  */
@@ -716,13 +750,16 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     const char       *name = rgt_tmpls_xml_attrs_get(xml_attrs, "name");
     const char       *result = rgt_tmpls_xml_attrs_get(xml_attrs, "result");
     const char       *tin = rgt_tmpls_xml_attrs_get(xml_attrs, "tin");
+    const char       *node_id = rgt_tmpls_xml_attrs_get(xml_attrs,
+                                                        "test_id");
     const char       *err = rgt_tmpls_xml_attrs_get(xml_attrs, "err");
     const char       *hash = rgt_tmpls_xml_attrs_get(xml_attrs, "hash");
     const char       *node_class;
-    char              fname[255];
+    char              fname[255] = "";
     char              page_str[255] = "";
     rgt_attrs_t      *attrs;
     te_bool           matched = TRUE;
+    rgt_match_type    name_type;
 
     assert(ctx->depth >= 2);
 
@@ -731,7 +768,7 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
 
     if (name == NULL)
         name = "session";
-    
+
     depth_user->is_test = strcmp(node_type, "Test") == 0;
 
     if ((err != NULL && err[0] != '\0') ||
@@ -752,21 +789,62 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
             snprintf(page_str, sizeof(page_str), "_p%u", ctx->cur_page);
     }
 
-#if RGT_HTML_USE_TIN_NAMES
-    if (tin != NULL && !(ctx->single_node_match && ctx->match_tin == NULL))
-    {
-        snprintf(fname, sizeof(fname), "node_%s%s.html", tin, page_str);
-    }
+    /*
+     * Default file name format. TIN is chosen here for backward
+     * compatibility with old XML logs in which there is no node IDs.
+     */
+    if (rgt_html_depth_seq_names)
+        name_type = RGT_MATCH_DEPTH_SEQ;
     else
-#endif
+        name_type = RGT_MATCH_TIN;
+
+    if (ctx->single_node_match && !(ctx->index_only))
     {
-        snprintf(fname, sizeof(fname), "node_%d_%d%s.html",
-                 ctx->depth, depth_ctx->seq, page_str);
+        /*
+         * If single log node was requested, use name format corresponding
+         * to how that node was specified.
+         */
+        name_type = ctx->match_type;
+    }
+    else if (!rgt_html_depth_seq_names && depth_user->is_test &&
+             node_id != NULL)
+    {
+        /*
+         * Otherwise use node_id<NODE_ID>.html format if possible.
+         */
+        name_type = RGT_MATCH_NODE_ID;
+    }
+
+    /*
+     * Fall back to node_<DEPTH>_<SEQ>.html name format if no
+     * TIN or node ID is available for the desired name format.
+     */
+    if ((name_type == RGT_MATCH_TIN && tin == NULL) ||
+        (name_type == RGT_MATCH_NODE_ID && node_id == NULL))
+    {
+        name_type = RGT_MATCH_DEPTH_SEQ;
+    }
+
+    switch (name_type)
+    {
+        case RGT_MATCH_TIN:
+            snprintf(fname, sizeof(fname), "node_%s%s.html", tin, page_str);
+            break;
+
+        case RGT_MATCH_NODE_ID:
+            snprintf(fname, sizeof(fname), "node_id%s%s.html",
+                     node_id, page_str);
+            break;
+
+        case RGT_MATCH_DEPTH_SEQ:
+            snprintf(fname, sizeof(fname), "node_%d_%d%s.html",
+                     ctx->depth, depth_ctx->seq, page_str);
+            break;
     }
 
     depth_user->name = strdup(name);
 
-    matched = match_node(ctx, tin, ctx->depth, depth_ctx->seq);
+    matched = match_node(ctx, tin, node_id, ctx->depth, depth_ctx->seq);
 
     if (matched)
     {
@@ -797,6 +875,7 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     rgt_tmpls_attrs_add_fstr(attrs, "name", name);
     rgt_tmpls_attrs_add_fstr(attrs, "result", result);
     rgt_tmpls_attrs_add_fstr(attrs, "tin", tin);
+    rgt_tmpls_attrs_add_fstr(attrs, "test_id", node_id);
     rgt_tmpls_attrs_add_fstr(attrs, "err", err);
     rgt_tmpls_output(depth_user->fd,
                      &xml2fmt_tmpls[DOC_CNTRL_NODE_TITLE], attrs);
@@ -839,9 +918,9 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
 
 /**
  * Function for processing end of control node event.
- * 
+ *
  * @param ctx        Pointer to the global processing context
- * @param depth_ctx  Pointer to the depth processing context 
+ * @param depth_ctx  Pointer to the depth processing context
  * @param xml_attrs  Pointer to the list of attributes in libxml style
  * @param node_type  String representation of the node type
  */
@@ -932,6 +1011,8 @@ RGT_DEF_FUNC(proc_log_msg_start)
         attrs = rgt_tmpls_attrs_new(xml_attrs);
         rgt_tmpls_attrs_add_uint32(attrs, "level_id",
                                    te_log_level_str2h(level));
+        rgt_tmpls_attrs_add_uint32(attrs, "linum",
+                                   depth_user->linum++);
         rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOG_MSG_START],
                          attrs);
         rgt_tmpls_attrs_free(attrs);
@@ -985,10 +1066,11 @@ RGT_DEF_FUNC(proc_logs_start)
 
     RGT_FUNC_UNUSED_PRMS();
 
+    depth_user->linum = 1;
+
     if (depth_user->fd != NULL)
     {
         attrs = rgt_tmpls_attrs_new(xml_attrs);
-        rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOGS_START], attrs);
         if (ctx->page_selector_set && ctx->cur_page >= 1)
         {
             rgt_tmpls_attrs_add_fstr(attrs, "selector_name", "top");
@@ -999,6 +1081,7 @@ RGT_DEF_FUNC(proc_logs_start)
             rgt_tmpls_output(depth_user->fd,
                              &xml2fmt_tmpls[PAGE_SELECTOR], attrs);
         }
+        rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOGS_START], attrs);
         rgt_tmpls_attrs_free(attrs);
     }
 }
@@ -1013,6 +1096,7 @@ RGT_DEF_FUNC(proc_logs_end)
     if (depth_user->fd != NULL)
     {
         attrs = rgt_tmpls_attrs_new(xml_attrs);
+        rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOGS_END], attrs);
         if (ctx->page_selector_set && ctx->cur_page >= 1)
         {
             rgt_tmpls_attrs_add_fstr(attrs, "selector_name", "bottom");
@@ -1109,6 +1193,10 @@ DEF_FUNC_WITHOUT_ATTRS(proc_meta_verdicts_start, META_VERDICTS_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_verdicts_end, META_VERDICTS_END)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_verdict_start, META_VERDICT_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_verdict_end, META_VERDICT_END)
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_artifacts_start, META_ARTIFACTS_START)
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_artifacts_end, META_ARTIFACTS_END)
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_artifact_start, META_ARTIFACT_START)
+DEF_FUNC_WITHOUT_ATTRS(proc_meta_artifact_end, META_ARTIFACT_END)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_params_start, META_PARAMS_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_params_end, META_PARAMS_END)
 DEF_FUNC_WITHOUT_ATTRS(proc_mem_dump_start, MEM_DUMP_START)
@@ -1246,17 +1334,17 @@ add_log_user(gen_ctx_user_t *gen_user, depth_ctx_user_t *depth_user,
 {
     gchar *entity_cp;
     gchar *user_cp;
-    
+
     entity_cp = g_string_chunk_insert_const(gen_user->strings, entity);
     user_cp = g_string_chunk_insert_const(gen_user->strings, user);
-    
+
     assert(entity_cp != NULL && user_cp != NULL);
 
     add_log_user_to_hash(gen_user->log_names, entity_cp, user_cp);
-    
+
     if (depth_user->depth_log_names == NULL)
     {
-        depth_user->depth_log_names = 
+        depth_user->depth_log_names =
             g_hash_table_new(g_str_hash, g_str_equal);
         assert(depth_user->depth_log_names != NULL);
     }
@@ -1264,7 +1352,7 @@ add_log_user(gen_ctx_user_t *gen_user, depth_ctx_user_t *depth_user,
     add_log_user_to_hash(depth_user->depth_log_names, entity_cp, user_cp);
 }
 
-/** 
+/**
  * Array of pointer to depth-specific user data
  * (it is used as stack).
  */
@@ -1272,7 +1360,7 @@ static GPtrArray *depth_array = NULL;
 
 /**
  * Returns a pointer to depth-specific user data
- * 
+ *
  * @param depth  Processing depth value
  *
  * @return Pointer to depth-specific user data (not initialized)

@@ -146,9 +146,9 @@ typedef struct tapi_route_gateway {
  * Update ARP table to set fake or actual MAC address.
  *
  * @param ta_src            Source TA.
- * @param iface_src         Source interface.
+ * @param ifname_src        Source interface name.
  * @param ta_dest           Destination TA.
- * @param iface_dest        Destination interface.
+ * @param ifname_dest       Destination interface name.
  * @param addr_dest         Destination address.
  * @param link_addr_dest    New destination MAC or @c NULL.
  * @param is_static         If the new ARP row should be static.
@@ -156,12 +156,27 @@ typedef struct tapi_route_gateway {
  * @return Status code.
  */
 extern te_errno tapi_update_arp(const char *ta_src,
-                                const struct if_nameindex *iface_src,
+                                const char *ifname_src,
                                 const char *ta_dest,
-                                const struct if_nameindex *iface_dest,
+                                const char *ifname_dest,
                                 const struct sockaddr *addr_dest,
                                 const struct sockaddr *link_addr_dest,
                                 te_bool is_static);
+
+/**
+ * Remove existing ARP table entry, wait for a while, check that it
+ * did not reappear automatically. If it did, try to remove it again
+ * a few times before giving up.
+ *
+ * @param ta            Test Agent name.
+ * @param if_name       Interface name.
+ * @param net_addr      IP address.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_remove_arp(const char *ta,
+                                const char *if_name,
+                                const struct sockaddr *net_addr);
 
 /**
  * Initialize gateway structure.
@@ -208,7 +223,7 @@ extern te_errno tapi_route_gateway_init(
 extern te_errno tapi_route_gateway_configure(tapi_route_gateway *gw);
 
 /**
- * Enable or disable IPv4 forwarding on gateway.
+ * Enable or disable IPv4 or IPv6 forwarding on gateway.
  *
  * @param gateway       Gateway description.
  *
@@ -288,6 +303,17 @@ extern te_errno tapi_route_gateway_break_tst_gw(tapi_route_gateway *gw);
  * @return Status code.
  */
 extern te_errno tapi_route_gateway_repair_tst_gw(tapi_route_gateway *gw);
+
+/**
+ * Down up all interfaces that were in gateway connection.
+ *
+ * @param gateway       Gateway description.
+ *
+ * @note Caller should take care about wait for the interfaces to be raised.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_route_gateway_down_up_ifaces(tapi_route_gateway *gw);
 
 #endif /* !__TE_TAPI_ROUTE_GW_H__ */
 

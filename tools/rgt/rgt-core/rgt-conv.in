@@ -50,7 +50,7 @@ Usage: $prog_name [OPTION...] [<Raw Log file> [<Output file>]]
   --incomplete-log         Do not shout on truncated log report, but complete
                            it automatically.
 EOF
-  
+
     if [ "@WITH_LOG_FILTER@" = "yes" ] ; then
         cat <<EOF
 
@@ -62,7 +62,7 @@ EOF
     cat <<EOF
 
   -f FILE, --raw-log=FILE  Specify Raw Log file name to be processed.
-  
+
   -o FILE, --output=FILE   Result file name. If it is not specified then the
                            result is output in stdout.
 
@@ -71,9 +71,9 @@ EOF
                             speed of processing). Alternatively, you can set
                            RGT_DISABLE_QUEUE_OFFLOADING environment variable
                            to "yes" to achieve the same effect.
-  
+
   -v, --version            Display version information.
-  
+
   -h, --help               Show this help message.
 
 EOF
@@ -138,13 +138,13 @@ get_tmp_dir_path () {
 
 #
 # Generates unique temp file name and creates it.
-# The name of the file is placed in variable with name given 
+# The name of the file is placed in variable with name given
 # in the first argument.
 #
 get_tmp_file_name () {
 
     get_tmp_dir_path
-    
+
     # choose tmp file name
     tmp=""
     {
@@ -162,7 +162,7 @@ get_tmp_file_name () {
     eval "$1=$tmp"
 }
 
-# Check arguments 
+# Check arguments
 while [ $# != 0 ]
 do
     case "$1" in
@@ -264,7 +264,7 @@ do
             echo "Unknown option: $1" >&2
             { (exit 1); exit 1; }
         fi
-        
+
         if [ -z "$rlf_file" ]; then
             rlf_file=$1
             check_file $rlf_file "raw log file"

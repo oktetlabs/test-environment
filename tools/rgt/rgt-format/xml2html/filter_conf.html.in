@@ -16,7 +16,7 @@ function logsVisibility(entity, user, visSt)
 {
     var divList = window.opener.getAllLogs();
     var i;
-      
+
     for (i = 0; i < divList.length; i++)
     {
         var DivElem = divList.item(i);
@@ -41,7 +41,7 @@ function update_line_colours()
         {
             if (divList.item(i).style.display == "")
             {
-                divList.item(i).firstChild.firstChild.firstChild.firstChild.className = 
+                divList.item(i).firstChild.firstChild.firstChild.firstChild.className =
                     ((j++ % 2 == 0) ? "tdlight" : "tddark");
                 /* Refresh the style */
                 divList.item(i).style.display = "none";
@@ -128,7 +128,7 @@ function logsHide(entity, user)
     }
     else
     {
-        alert("Logs from " + ((entity == "") ? "*" : entity) + 
+        alert("Logs from " + ((entity == "") ? "*" : entity) +
               ":" + ((user == "") ? "*" : user) + " have been already hidden");
     }
 }
@@ -146,7 +146,7 @@ function logsHide(entity, user)
         var i, j;
         var message = "";
 
-        message += 
+        message +=
 "The logs from the following objectes are hidden:<br>" +
 "<table border=\"0\"cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">" +
 "<form name=\"show_form\">" +
@@ -189,18 +189,18 @@ function logsHide(entity, user)
 "      <img border=\"0\" src=\"@@PATH_TO_AUX_FILE@@/pics/tr.gif\" width=\"1\" height=\"10\"><br>" +
 "  </td>" +
 "</tr>" +
-"<tr>" + 
+"<tr>" +
 "  <td>" +
 "      <input type=\"button\" value=\"Show\" onClick=\"javascript:logsShow()\">" +
 "  </td>" +
 "</tr>" +
 "</form>" +
 "</table>";
-        
+
         document.write(message);
     }
 </script>
-    
+
 <br>Hide logs from object with:<br>
 <table border="0" cellpadding="0" cellspacing="0">
   <form name="hide_form">

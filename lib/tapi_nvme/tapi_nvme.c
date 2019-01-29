@@ -11,38 +11,39 @@
 #define TE_LGR_USER "NVME TAPI"
 
 #include "te_defs.h"
+#include "te_str.h"
 #include "rpc_xdr.h"
 #include "te_rpc_sys_stat.h"
 #include "te_rpc_types.h"
 #include "te_sockaddr.h"
 #include "tapi_rpc.h"
 #include "tapi_rpc_dirent.h"
+#include "tapi_test.h"
 #include "tapi_test_log.h"
 #include "te_sleep.h"
 #include "tapi_mem.h"
+#include "tapi_nvme_internal.h"
 #include "tapi_nvme.h"
 
-#define DEFAULT_MODE \
-    (RPC_S_IRWXU | RPC_S_IRGRP | RPC_S_IXGRP | RPC_S_IROTH | RPC_S_IXOTH)
+#define BASE_NVME_FABRICS       "/sys/class/nvme-fabrics/ctl"
 
-#define BASE_NVMET_CONFIG   "/sys/kernel/config/nvmet"
-#define BASE_NVME_FABRICS   "/sys/class/nvme-fabrics/ctl"
-#define ENABLE              "1"
+#define MAX_NAMESPACES          (32)
+#define MAX_ADMIN_DEVICES       (32)
+#define TRANPORT_SIZE           (16)
+#define ADDRESS_INFO_SIZE       (128)
+#define BUFFER_SIZE             (128)
 
-#define PORT_SIZE           NAME_MAX
-#define DIRECTORY_SIZE      NAME_MAX
-#define SUBNQN_SIZE         NAME_MAX
-#define NAMESPACE_SIZE      (32)
-#define MAX_NAMESPACES      (32)
-#define MAX_ADMIN_DEVICES   (32)
-#define TRANPORT_SIZE       (16)
-#define ADDRESS_INFO_SIZE   (128)
+#define DEVICE_WAIT_ATTEMPTS    (5)
+#define DEVICE_WAIT_TIMEOUT_S   (10)
 
-#define DEVICE_WAIT_ATTEMPTS (5)
+typedef struct opts_t {
+    te_string *str_stdout;
+    te_string *str_stderr;
+    unsigned int timeout;
+} opts_t;
 
 static int
-run_command_generic(rcf_rpc_server *rpcs, te_string *str_stdout,
-                    te_string *str_stderr, const char *command)
+run_command_generic(rcf_rpc_server *rpcs, opts_t opts, const char *command)
 {
     tarpc_pid_t pid;
     int fd_stdout;
@@ -58,16 +59,16 @@ run_command_generic(rcf_rpc_server *rpcs, te_string *str_stdout,
         TEST_FAIL("Cannot run command: %s", command);
 
     RPC_AWAIT_IUT_ERROR(rpcs);
-    rpcs->timeout = 1000;
+    rpcs->timeout = opts.timeout >= 0 ? opts.timeout: TE_SEC2MS(1);
     pid = rpc_waitpid(rpcs, pid, &status, 0);
 
     if (pid == -1)
         TEST_FAIL("waitpid: %s", command);
 
-    if (str_stdout != NULL)
-        rpc_read_fd2te_string(rpcs, fd_stdout, 100, 0, str_stdout);
-    if (str_stderr != NULL)
-        rpc_read_fd2te_string(rpcs, fd_stderr, 100, 0, str_stderr);
+    if (opts.str_stdout != NULL)
+        rpc_read_fd2te_string(rpcs, fd_stdout, 100, 0, opts.str_stdout );
+    if (opts.str_stderr != NULL)
+        rpc_read_fd2te_string(rpcs, fd_stderr, 100, 0, opts.str_stderr);
 
     if (status.flag != RPC_WAIT_STATUS_EXITED)
         TEST_FAIL("Process is %s", wait_status_flag_rpc2str(status.flag));
@@ -76,9 +77,12 @@ run_command_generic(rcf_rpc_server *rpcs, te_string *str_stdout,
     return status.value;
 }
 
+static int run_command(rcf_rpc_server *rpcs, opts_t opts,
+                       const char *format_cmd, ...)
+                       __attribute__((format(printf, 3, 4)));
+
 static int
-run_command_output(rcf_rpc_server *rpcs, te_string *str_stdour,
-                   te_string *str_stderr, const char *format_cmd, ...)
+run_command(rcf_rpc_server *rpcs, opts_t opts, const char *format_cmd, ...)
 {
     va_list arguments;
     char command[RPC_SHELL_CMDLINE_MAX];
@@ -87,89 +91,36 @@ run_command_output(rcf_rpc_server *rpcs, te_string *str_stdour,
     vsnprintf(command, sizeof(command), format_cmd, arguments);
     va_end(arguments);
 
-    return run_command_generic(rpcs, str_stdour, str_stderr, command);
+    return run_command_generic(rpcs, opts, command);
 }
 
-static int
-run_command(rcf_rpc_server *rpcs, const char *format_cmd, ...)
-{
-    va_list arguments;
-    char command[RPC_SHELL_CMDLINE_MAX];
+typedef struct nvme_fabric_namespace_info {
+    int admin_device_index;
+    int controller_index;
+    int namespace_index;
+} nvme_fabric_namespace_info;
 
-    va_start(arguments, format_cmd);
-    vsnprintf(command, sizeof(command), format_cmd, arguments);
-    va_end(arguments);
-
-    return run_command_generic(rpcs, NULL, NULL, command);
-}
-
-typedef struct directory_name {
-    char name[DIRECTORY_SIZE];
-} directory_name;
-
-static int
-filter_directory(rcf_rpc_server *rpcs,
-                 const char * path,
-                 const char * start_from,
-                 directory_name *directory_names,
-                 int count_names)
-{
-    int count = 0;
-    rpc_dir_p dir;
-    rpc_dirent *dirent = NULL;
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    if ((dir = rpc_opendir(rpcs, path)) == RPC_NULL)
-        return -1;
-
-    while (count < count_names) {
-        RPC_AWAIT_IUT_ERROR(rpcs);
-        if ((dirent = rpc_readdir(rpcs, dir)) == NULL)
-            break;
-
-        if (strstr(dirent->d_name, start_from) == dirent->d_name)
-            strcpy(directory_names[count++].name, dirent->d_name);
+#define NVME_FABRIC_NAMESPACE_INFO_DEFAULTS (nvme_fabric_namespace_info) {  \
+        .admin_device_index = -1,                                           \
+        .controller_index = -1,                                             \
+        .namespace_index = -1,                                              \
     }
 
-    if (rpc_readdir(rpcs, dir) != NULL)
-        WARN("Too many of the directories found");
-
-    rpc_closedir(rpcs, dir);
-    return count;
-}
-
-static int
-read_file(rcf_rpc_server *rpcs, const char *path, char *buffer, size_t size)
+static te_errno
+nvme_fabric_namespace_info_string(nvme_fabric_namespace_info *info,
+                                  te_string *string)
 {
-    int fd;
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    if ((fd = rpc_open(rpcs, path, RPC_O_RDONLY, DEFAULT_MODE)) == -1)
-        return -1;
-
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    if (rpc_read(rpcs, fd, buffer, size) == -1)
-    {
-        ERROR("Cannot read file %s", path);
-        RPC_AWAIT_IUT_ERROR(rpcs);
-        rpc_close(rpcs, fd);
-        return -1;
-    }
-    else
-    {
-        strtok(buffer, "\n");
-
-        RPC_AWAIT_IUT_ERROR(rpcs);
-        return rpc_close(rpcs, fd);
-    }
+    return te_string_append(string, "nvme%dn%d",
+                            info->admin_device_index,
+                            info->namespace_index);
 }
 
 typedef struct nvme_fabric_info {
     struct sockaddr_in addr;
     tapi_nvme_transport transport;
-    char subnqn[SUBNQN_SIZE];
-    char namespace[NAMESPACE_SIZE];    /* TODO: it is list in future */
+    char subnqn[NAME_MAX];
+    nvme_fabric_namespace_info namespaces[MAX_NAMESPACES];
+    int namespaces_count;
 } nvme_fabric_info;
 
 typedef enum read_result {
@@ -182,46 +133,148 @@ typedef read_result (*read_info)(rcf_rpc_server *rpcs,
                                  nvme_fabric_info *info,
                                  const char *filepath);
 
-static read_result
-read_nvme_fabric_info_namespace(rcf_rpc_server *rpcs,
-                                nvme_fabric_info *info,
-                                const char *filepath)
+static te_bool
+parse_with_prefix(const char *prefix, const char **str, int *result,
+                  te_bool is_optional)
 {
-    int count;
-    directory_name names[MAX_NAMESPACES];
+    size_t prefix_len = strlen(prefix);
 
-    count = filter_directory(rpcs, filepath, "nvme",
-                             names, TE_ARRAY_LEN(names));
-    if (count <= 0)
-        return READ_ERROR;
+    if (strncmp(prefix, *str, prefix_len) == 0)
+    {
+        const char *value_str = *str + prefix_len;
+        char *end = NULL;
+        long value;
 
-    return strcpy(info->namespace, names[0].name) != NULL ?
-           READ_SUCCESS: READ_ERROR;
+        value = strtol(value_str, &end, 10);
+        if (value > INT_MAX || value < INT_MIN || end == value_str)
+            return FALSE;
+
+        *result = (int)value;
+        *str = end;
+    }
+    else if (!is_optional)
+        return FALSE;
+
+    return TRUE;
+}
+
+static te_errno
+parse_namespace_info(const char *str,
+                     nvme_fabric_namespace_info *namespace_info)
+{
+    nvme_fabric_namespace_info result = NVME_FABRIC_NAMESPACE_INFO_DEFAULTS;
+
+    if (str == NULL || namespace_info == NULL)
+        return TE_EINVAL;
+
+#define PARSE(_prefix, _value, _is_optional)                            \
+    do {                                                                \
+        if (!parse_with_prefix(_prefix, &str, &_value, _is_optional))   \
+            return TE_EINVAL;                                           \
+    } while (0)
+
+    PARSE("nvme", result.admin_device_index, FALSE);
+    PARSE("c", result.controller_index, TRUE);
+    PARSE("n", result.namespace_index, FALSE);
+
+#undef PARSE
+
+    if (*str != '\0')
+        return TE_EINVAL;
+
+    *namespace_info = result;
+    return 0;
 }
 
 static read_result
-parse_address(const char *str, char *address, unsigned short *port)
+read_nvme_fabric_info_namespaces(rcf_rpc_server *rpcs,
+                                 nvme_fabric_info *info,
+                                 const char *filepath)
 {
-    const char *traddr = "traddr=";
-    const char *trsvcid = "trsvcid=";
-    char *delimeter = strchr(str, ',');
-    char *start_traddr = strstr(str, traddr);
-    char *start_trsvcid = strstr(str, trsvcid);
-    char buffer[32];
+    int i, count;
+    tapi_nvme_internal_dirinfo names[MAX_NAMESPACES];
 
-    if (delimeter == NULL || start_traddr == NULL || start_trsvcid == NULL ||
-        start_trsvcid < start_traddr || start_traddr > delimeter)
+    count = tapi_nvme_internal_filterdir(rpcs, filepath, "nvme", names,
+                                         TE_ARRAY_LEN(names));
+    if (count < 0)
         return READ_ERROR;
 
-    strncpy(buffer, str, delimeter - str);
-    if (sscanf(buffer, "traddr=%s", address) != 1)
-        return READ_ERROR;
+    /* NOTE Bug 9752
+     *
+     * It is not an error if this particular controller does not have
+     * a corresponding namespace. It is a stalled NVMe connection from
+     * the previous test and it should not affect current test at all.
+     */
+    if (count == 0)
+        return READ_CONTINUE;
 
-    strcpy(buffer, delimeter + 1);
-    if (sscanf(buffer, "trsvcid=%hu", port) != 1)
-        return READ_ERROR;
+    info->namespaces_count = 0;
+    for (i = 0; i < count; i++)
+    {
+        te_errno rc;
+
+        rc = parse_namespace_info(names[i].name, info->namespaces + i);
+        if (rc != 0)
+            WARN("Cannot parse namespace '%s'", names[i].name);
+        else
+            info->namespaces_count++;
+    }
+
+    if (info->namespaces_count == 0)
+        return READ_CONTINUE;
 
     return READ_SUCCESS;
+}
+
+/**
+ * Parse address and port in format:
+ * traddr=xxx.xxx.xxx.xxx,trsvcid=xxxxxx
+ *
+ * @param str[in]           Buffer with string for parsing
+ * @param address[out]      Parsed IP Address
+ * @param port[out]         Parsed port
+ *
+ * @note address is string with a capacity of at least
+ * INET_ADDRSTRLEN characters
+ *
+ * @return Status code
+ **/
+static te_errno
+parse_endpoint(char *str, char *address, unsigned short *port)
+{
+    te_errno rc;
+
+    const char *traddr = "traddr=";
+    const char *trsvcid = "trsvcid=";
+
+    char *p;
+    long temp_port;
+    char *temp_address;
+
+    if (strlen(str) > 0) {
+        /* After read file subnqn store with \n, remove it */
+        strtok(str, "\n");
+    } else {
+        return TE_EINVAL;
+    }
+
+    if ((p = strtok(str, ",")) == NULL ||
+        strncmp(p, traddr, strlen(traddr)) != 0)
+        return TE_EINVAL;
+
+    temp_address = p + strlen(traddr);
+
+    if ((p = strtok(NULL, ",")) == NULL ||
+        strncmp(p, trsvcid, strlen(trsvcid)) != 0)
+        return TE_EINVAL;
+
+    if ((rc = te_strtol(p + strlen(trsvcid), 10, &temp_port)) != 0)
+        return rc;
+
+    TE_STRNCPY(address, INET_ADDRSTRLEN, temp_address);
+    *port = (unsigned short)temp_port;
+
+    return 0;
 }
 
 static read_result
@@ -232,23 +285,26 @@ read_nvme_fabric_info_addr(rcf_rpc_server *rpcs,
     char buffer[ADDRESS_INFO_SIZE];
     unsigned short port;
     char address[INET_ADDRSTRLEN];
+    int size;
 
-    if (read_file(rpcs, filepath, buffer, TE_ARRAY_LEN(buffer)))
+    size = tapi_nvme_internal_file_read(rpcs, buffer, TE_ARRAY_LEN(buffer),
+                                        filepath);
+    if (size < 0)
     {
         ERROR("Cannot read address info");
         return READ_ERROR;
     }
 
-    if (parse_address(buffer, address, &port) != 0)
+    if (parse_endpoint(buffer, address, &port) != 0)
     {
-        ERROR("Cannot parse address info");
+        ERROR("Cannot parse address info: %s", buffer);
         return READ_ERROR;
     }
 
     memset(&info->addr, 0, sizeof(info->addr));
-    info->addr.sin_family = AF_INET;
-    info->addr.sin_addr.s_addr = inet_addr(address);
-    info->addr.sin_port = htons(port);
+    if (te_sockaddr_str2h(address, SA(&info->addr)) != 0)
+        return READ_ERROR;
+    te_sockaddr_set_port(SA(&info->addr), htons(port));
 
     return READ_SUCCESS;
 }
@@ -269,7 +325,8 @@ read_nvme_fabric_info_transport(rcf_rpc_server *rpcs,
         TAPI_NVME_TRANSPORT_MAPPING_LIST
     };
 
-    if (read_file(rpcs, filepath, buffer, TE_ARRAY_LEN(buffer)) != 0)
+    if (tapi_nvme_internal_file_read(rpcs, buffer, TE_ARRAY_LEN(buffer),
+                                     filepath) < 0)
     {
         ERROR("Cannot read transport");
         return READ_ERROR;
@@ -293,12 +350,15 @@ read_nvme_fabric_info_subnqn(rcf_rpc_server *rpcs,
                              nvme_fabric_info *info,
                              const char *filepath)
 {
-    if (read_file(rpcs, filepath, info->subnqn,
-                  TE_ARRAY_LEN(info->subnqn)) == -1)
+    if (tapi_nvme_internal_file_read(rpcs,
+        info->subnqn, TE_ARRAY_LEN(info->subnqn), filepath) == -1)
     {
         ERROR("Cannot read subnqn");
         return READ_ERROR;
     }
+
+    /* After read file subnqn store with \n, remove it */
+    strtok(info->subnqn, "\n");
 
     return READ_SUCCESS;
 }
@@ -317,7 +377,7 @@ read_nvme_fabric_info(rcf_rpc_server *rpcs,
     read_result rc;
     char path[RCF_MAX_PATH];
     read_nvme_fabric_read_action actions[] = {
-        { read_nvme_fabric_info_namespace, "" },
+        { read_nvme_fabric_info_namespaces, "" },
         { read_nvme_fabric_info_addr, "address" },
         { read_nvme_fabric_info_subnqn, "subsysnqn" },
         { read_nvme_fabric_info_transport, "transport" }
@@ -325,8 +385,8 @@ read_nvme_fabric_info(rcf_rpc_server *rpcs,
 
     for (i = 0; i < TE_ARRAY_LEN(actions); i++)
     {
-        sprintf(path, "%s/%s/%s", BASE_NVME_FABRICS,
-                admin_dev, actions[i].file);
+        TE_SPRINTF(path, BASE_NVME_FABRICS "/%s/%s",
+                   admin_dev, actions[i].file);
         if ((rc = actions[i].function(rpcs, info, path)) != READ_SUCCESS)
             return rc;
     }
@@ -334,28 +394,9 @@ read_nvme_fabric_info(rcf_rpc_server *rpcs,
     return READ_SUCCESS;
 }
 
-static void
-debug_target_print(const tapi_nvme_target *target)
-{
-    const struct sockaddr_in *addr1 = SIN(target->addr);
-    INFO("target->nqn='%s'; target->addr='%s:%hu'",
-         target->subnqn,
-         te_sockaddr_get_ipstr(SA(addr1)),
-         te_sockaddr_get_port(SA(addr1)));
-}
-
-static void
-debug_fabric_info_print(const nvme_fabric_info *info)
-{
-    const struct sockaddr_in *addr2 = SIN(&info->addr);
-    INFO("info->nqn='%s'; info->addr='%s:%hu'",
-         info->subnqn,
-         te_sockaddr_get_ipstr(SA(addr2)),
-         te_sockaddr_get_port(SA(addr2)));
-}
-
 static te_bool
-is_target_eq(const tapi_nvme_target *target, const nvme_fabric_info *info)
+is_target_eq(const tapi_nvme_target *target, const nvme_fabric_info *info,
+             const char *admin_dev)
 {
     const struct sockaddr_in *addr1 = SIN(target->addr);
     const struct sockaddr_in *addr2 = SIN(&info->addr);
@@ -363,50 +404,72 @@ is_target_eq(const tapi_nvme_target *target, const nvme_fabric_info *info)
     te_bool addr_eq;
     te_bool transport_eq;
 
-    debug_target_print(target);
-    debug_fabric_info_print(info);
+    RING("Searching for connected device, comparing expected "
+         "'%s' with '%s' from %s",
+         te_sockaddr2str(SA(addr1)), te_sockaddr2str(SA(addr2)),
+         admin_dev);
 
     transport_eq = target->transport == info->transport;
     subnqn_eq = strcmp(target->subnqn, info->subnqn) == 0;
-    addr_eq = addr2->sin_addr.s_addr == addr1->sin_addr.s_addr;
+    addr_eq = te_sockaddrcmp(SA(addr1), sizeof(*addr1),
+                             SA(addr2), sizeof(*addr2)) == 0;
 
     return transport_eq && subnqn_eq && addr_eq;
 }
 
-static char *
-get_new_device(const tapi_nvme_host_ctrl *host_ctrl,
+static te_errno
+get_new_device(tapi_nvme_host_ctrl *host_ctrl,
                const tapi_nvme_target *target)
 {
     int i, count;
     read_result rc;
-    char *device = NULL;
+    te_string device_str = TE_STRING_INIT_STATIC(BUFFER_SIZE);
 
     nvme_fabric_info info;
-    directory_name names[MAX_ADMIN_DEVICES];
+    tapi_nvme_internal_dirinfo names[MAX_ADMIN_DEVICES];
 
-    count = filter_directory(host_ctrl->rpcs, BASE_NVME_FABRICS,
-                             "nvme", names, TE_ARRAY_LEN(names));
-
-    if (count < 0)
-        return NULL;
+    count = tapi_nvme_internal_filterdir(host_ctrl->rpcs, BASE_NVME_FABRICS,
+                                         "nvme", names, TE_ARRAY_LEN(names));
 
     for (i = 0; i < count; i++)
     {
         rc = read_nvme_fabric_info(host_ctrl->rpcs, &info, names[i].name);
         if (rc == READ_ERROR)
-            return NULL;
+            return TE_ENODATA;
         else if (rc == READ_CONTINUE)
             continue;
-
-        if (is_target_eq(target, &info) == TRUE)
+        if (is_target_eq(target, &info, names[i].name) == TRUE)
         {
-            device = tapi_malloc(256);
-            sprintf(device, "/dev/%s", info.namespace);
-            break;
+            te_errno error;
+
+            /* Currently we are configuring only 1 namespace per subsystem
+             * while using kernel targets. We have no control over onvme
+             * namespace configuration right now, but it also doing in the
+             * same way. So appearance of more than 1 namespace per NVMoF
+             * device would be very suspicious and highly likely a bug.
+             * Fail the entire test for further investigation.
+             */
+            if (info.namespaces_count > 1)
+            {
+                TEST_FAIL("We found %d namespaces for %s device, "
+                          "but only one was expected",
+                          info.namespaces_count, host_ctrl->admin_dev);
+            }
+
+            host_ctrl->admin_dev = tapi_strdup(names[i].name);
+            host_ctrl->device = tapi_malloc(NAME_MAX);
+
+            error = nvme_fabric_namespace_info_string(&info.namespaces[0],
+                                                      &device_str);
+            if (error != 0)
+                return error;
+
+            snprintf(host_ctrl->device, NAME_MAX, "/dev/%s", device_str.ptr);
+            return 0;
         }
     }
 
-    return device;
+    return TE_ENODATA;
 }
 
 /* See description in tapi_nvme.h */
@@ -422,6 +485,11 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
                        "--trsvcid=%d "
                        "--transport=%s "
                        "--nqn=%s ";
+    opts_t run_opts = {
+        .str_stdout = &str_stdout,
+        .str_stderr = &str_stderr,
+        .timeout = TE_SEC2MS(30),
+    };
 
     if (host_ctrl == NULL)
         return TE_EINVAL;
@@ -444,32 +512,37 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
         return TE_EINVAL;
     }
 
-    rc = run_command_output(host_ctrl->rpcs, &str_stdout, &str_stderr,
-                            strcat(cmd, opts),
-                            te_sockaddr_get_ipstr(target->addr),
-                            te_sockaddr_get_port(target->addr),
-                            tapi_nvme_transport_str(target->transport),
-                            target->subnqn);
+    rc = run_command(host_ctrl->rpcs, run_opts, strcat(cmd, opts),
+                     te_sockaddr_get_ipstr(target->addr),
+                     ntohs(te_sockaddr_get_port(target->addr)),
+                     tapi_nvme_transport_str(target->transport),
+                     target->subnqn);
 
-    if (rc == 0)
+    if (rc != 0)
     {
-        host_ctrl->connected_target = target;
-        RING("Success connection to target");
+        ERROR("nvme-cli output\n"
+              "stdout:\n%s\n"
+              "stderr:\n%s",
+              str_stdout.ptr, str_stderr.ptr);
+        return rc;
     }
-        RING("stdout:\n%s\nstderr:\n%s", str_stdout.ptr, str_stderr.ptr);
 
+    host_ctrl->connected_target = target;
+    RING("Success connection to target");
 
     (void)tapi_nvme_initiator_list(host_ctrl);
 
     for (i = 0; i < DEVICE_WAIT_ATTEMPTS; i++)
     {
-        host_ctrl->device = get_new_device(host_ctrl, target);
-        if (host_ctrl->device != NULL)
-            break;
+        rc = get_new_device(host_ctrl, target);
+        if (rc == 0)
+            return 0;
+
         te_motivated_sleep(1, "Waiting device...");
     }
 
-    if (host_ctrl->device == NULL)
+    rc = get_new_device(host_ctrl, target);
+    if (rc != 0)
     {
         ERROR("Connected device not found");
         return TE_ENOENT;
@@ -478,148 +551,102 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
     return 0;
 }
 
-te_errno tapi_nvme_initiator_list(tapi_nvme_host_ctrl *host_ctrl)
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_initiator_list(tapi_nvme_host_ctrl *host_ctrl)
 {
     int rc;
     te_string str_stdout = TE_STRING_INIT;
     te_string str_stderr = TE_STRING_INIT;
+    opts_t run_opts = {
+        .str_stdout = &str_stdout,
+        .str_stderr = &str_stderr,
+    };
 
-    rc = run_command_output(host_ctrl->rpcs, &str_stdout, &str_stderr,
-                            "nvme list");
+    rc = run_command(host_ctrl->rpcs, run_opts, "nvme list");
+
     if (rc != 0)
-        WARN("stderr: \n%s", str_stderr.ptr);
+        WARN("stderr:\n%s", str_stderr.ptr);
     else
         RING("stdout:\n%s\nstderr:\n%s", str_stdout.ptr, str_stderr.ptr);
 
     return rc == 0 ? 0 : TE_EFAULT;
 }
 
+static te_bool
+is_disconnected(rcf_rpc_server *rpcs, const char *admin_dev)
+{
+    char path[NAME_MAX];
+
+    TE_SPRINTF(path, BASE_NVME_FABRICS "/%s", admin_dev);
+
+    return !tapi_nvme_internal_isdir_exist(rpcs, path);
+}
+
+static te_errno
+wait_device_disapperance(rcf_rpc_server *rpcs, const char *admin_dev)
+{
+    char why_message[BUFFER_SIZE];
+    unsigned int wait_sec = DEVICE_WAIT_TIMEOUT_S;
+    unsigned int i;
+
+    if (is_disconnected(rpcs, admin_dev))
+        return 0;
+
+    for (i = 1; i <= DEVICE_WAIT_ATTEMPTS; i++)
+    {
+        TE_SPRINTF(why_message,
+                   "[%d/%d] Waiting for disconnecting device '%s'...",
+                   i, DEVICE_WAIT_ATTEMPTS, admin_dev);
+
+        te_motivated_sleep(wait_sec, why_message);
+
+        if (is_disconnected(rpcs, admin_dev))
+            return 0;
+
+        /* If NVMoF TCP kernel initiator driver will not free the device
+         * withing a few seconds interval, then it will hang up for a long
+         * time, thus there are no point in high frequency polling. */
+        wait_sec += DEVICE_WAIT_TIMEOUT_S;
+    }
+
+    return TE_RC(TE_TAPI, TE_ETIMEDOUT);
+}
 
 /* See description in tapi_nvme.h */
-void
+te_errno
 tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl)
 {
-    te_string str_stdout = TE_STRING_INIT;
-    te_string str_stderr = TE_STRING_INIT;
-    const char *template = "nvme disconnect --nqn=%s";
+    te_errno rc;
 
     if (host_ctrl == NULL ||
         host_ctrl->rpcs == NULL ||
-        host_ctrl->connected_target == NULL ||
-        host_ctrl->connected_target->subnqn == NULL)
-        return;
+        host_ctrl->device == NULL ||
+        host_ctrl->admin_dev == NULL ||
+        host_ctrl->connected_target == NULL)
+        return 0;
 
-    run_command_output(host_ctrl->rpcs, &str_stdout, &str_stderr, template,
-                  host_ctrl->connected_target->subnqn);
+    RING("Device '%s' tries to disconnect", host_ctrl->admin_dev);
 
-    RING("stdout: %s\nstderr: %s", str_stdout.ptr, str_stderr.ptr);
+    rc = tapi_nvme_internal_file_append(host_ctrl->rpcs, "1",
+        BASE_NVME_FABRICS"/%s/delete_controller", host_ctrl->admin_dev);
+    if (rc == 0)
+        rc = wait_device_disapperance(host_ctrl->rpcs, host_ctrl->admin_dev);
+    if (rc == 0)
+        RING("Device '%s' disconnected successfully", host_ctrl->admin_dev);
+    else
+        ERROR("Disconnection for device '%s' failed", host_ctrl->admin_dev);
 
-    host_ctrl->connected_target = NULL;
     free(host_ctrl->device);
+    free(host_ctrl->admin_dev);
+    host_ctrl->device = NULL;
+    host_ctrl->admin_dev = NULL;
+    host_ctrl->connected_target = NULL;
+
+    return rc;
 }
 
-static te_errno
-file_append(rcf_rpc_server *rpcs, const char *path, const char *string)
-{
-    int fd;
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    fd = rpc_open(rpcs, path, RPC_O_CREAT | RPC_O_APPEND | RPC_O_WRONLY,
-                  DEFAULT_MODE);
-
-    if (fd == -1)
-        return rpcs->_errno;
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    if (rpc_write(rpcs, fd, string, strlen(string)) == -1)
-        return rpcs->_errno;
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    if (rpc_close(rpcs, fd) == -1)
-        return rpcs->_errno;
-
-    return 0;
-}
-
-static char *
-strrep(const char *source, const char *template,
-       const char *replace, char *result)
-{
-    const char *start = source;
-    const char *found = NULL;
-    char *current = result;
-
-    while ((found = strstr(start, template)) != NULL)
-    {
-        strncpy(current, start, found - start);
-        current += found - start;
-        strcpy(current, replace);
-        current += strlen(replace);
-        start = found + strlen(template);
-    }
-
-    strcpy(current, start);
-
-    return result;
-}
-
-static char *
-replace_port(const char *source, int nvmet_port, char *buffer)
-{
-    char port_str[16];
-
-    sprintf(port_str, "%d", nvmet_port);
-    strrep(source, "{port}", port_str, buffer);
-
-    return buffer;
-}
-
-static te_bool
-try_mkdir(rcf_rpc_server *rpcs, const char *path)
-{
-    int rc;
-
-    RING("Creating dir '%s'", path);
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    rc = rpc_mkdir(rpcs, path, DEFAULT_MODE);
-
-    if (rc == -1 && rpcs->_errno == TE_EEXIST)
-        return TRUE;
-
-    return rc == 0;
-}
-
-static te_errno
-create_directories(rcf_rpc_server *rpcs, tapi_nvme_subnqn nqn, int nvmet_port)
-{
-    size_t i;
-    char path[RCF_MAX_PATH];
-    char buffer[RCF_MAX_PATH];
-    const char *directories[] = {
-        "%s/subsystems/%s",
-        "%s/subsystems/%s/namespaces/{port}",
-        "%s/ports/{port}",
-    };
-
-    te_log_stack_push("Create target directories for nqn=%s port=%d",
-                      nqn, nvmet_port);
-
-    for (i = 0; i < TE_ARRAY_LEN(directories); i++)
-    {
-        replace_port(directories[i], nvmet_port, buffer);
-        snprintf(path, sizeof(path), buffer, BASE_NVMET_CONFIG, nqn);
-        if (try_mkdir(rpcs, path) == FALSE)
-            return rpcs->_errno;
-    }
-
-    return 0;
-}
-
-typedef struct nvme_target_config {
-    const char *prefix;
-    const char *value;
-} nvme_target_config;
-
+/* See description in tapi_nvme.h */
 const char *
 tapi_nvme_transport_str(tapi_nvme_transport transport) {
     static const char *transports[] = {
@@ -632,156 +659,52 @@ tapi_nvme_transport_str(tapi_nvme_transport transport) {
     return transports[transport];
 };
 
-static te_errno
-write_config(rcf_rpc_server *rpcs, tapi_nvme_transport transport,
-             const char *device, const struct sockaddr *addr,
-             int nvmet_port, tapi_nvme_subnqn nqn)
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_target_init(tapi_nvme_target *target, void *opts)
 {
-    size_t i;
-    te_errno rc;
-    char port[PORT_SIZE];
-    char path[RCF_MAX_PATH];
-    char buffer[RCF_MAX_PATH];
-    const char *transport_str = tapi_nvme_transport_str(transport);
-    nvme_target_config configs[] = {
-        { "%s/subsystems/%s/namespaces/{port}/device_path", device },
-        { "%s/subsystems/%s/namespaces/{port}/enable", ENABLE },
-        { "%s/subsystems/%s/attr_allow_any_host", ENABLE },
-        { "%s/ports/{port}/addr_adrfam", "ipv4" },
-        { "%s/ports/{port}/addr_trtype", transport_str},
-        { "%s/ports/{port}/addr_trsvcid", port },
-        { "%s/ports/{port}/addr_traddr", te_sockaddr_get_ipstr(addr) }
-    };
-
-    te_log_stack_push("Writing target config for device=%s port=%d",
-                      device, nvmet_port);
-
-    snprintf(port, sizeof(port), "%u", te_sockaddr_get_port(addr));
-
-    for (i = 0; i < TE_ARRAY_LEN(configs); i++)
-    {
-        replace_port(configs[i].prefix, nvmet_port, buffer);
-        snprintf(path, sizeof(path), buffer, BASE_NVMET_CONFIG, nqn);
-        if ((rc = file_append(rpcs, path, configs[i].value)) != 0)
-            return rc;
-    }
-
-    return 0;
-}
-
-static te_errno
-make_namespace_target_available(rcf_rpc_server *rpcs,
-                                tapi_nvme_subnqn nqn, int nvmet_port)
-{
-    char path1[RCF_MAX_PATH];
-    char path2[RCF_MAX_PATH];
-
-    snprintf(path1, sizeof(path1),
-             "%s/subsystems/%s", BASE_NVMET_CONFIG, nqn);
-    snprintf(path2, sizeof(path2),
-             "%s/ports/%d/subsystems/%s", BASE_NVMET_CONFIG, nvmet_port, nqn);
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    return rpc_symlink(rpcs, path1, path2) == 0 ? 0: rpcs->_errno;
+    if (target == NULL || target->methods.init == NULL)
+        return TE_EINVAL;
+    return target->methods.init(target, opts);
 }
 
 /* See description in tapi_nvme.h */
 te_errno
 tapi_nvme_target_setup(tapi_nvme_target *target)
 {
-    te_errno rc;
-
-    assert(target);
-    if (target->rpcs == NULL ||
+    if (target == NULL ||
+        target->rpcs == NULL ||
         target->addr == NULL ||
         target->subnqn == NULL ||
         target->device == NULL ||
-        target->addr->sa_family != AF_INET)
-    {
-        ERROR("Target can't be setup: rpcs=%p addr=%p subnqn=%s",
-              target->rpcs, target->addr, target->subnqn);
+        target->methods.setup == NULL)
         return TE_EINVAL;
-    }
 
-    tapi_nvme_target_cleanup(target);
-
-    rc = create_directories(target->rpcs, target->subnqn, target->nvmet_port);
-    if (rc != 0)
-        return rc;
-
-    rc = write_config(target->rpcs, target->transport, target->device,
-                      target->addr, target->nvmet_port, target->subnqn);
-    if (rc != 0)
-        return rc;
-
-    return make_namespace_target_available(target->rpcs, target->subnqn,
-                                           target->nvmet_port);
-}
-
-static te_bool
-is_dir_exist(rcf_rpc_server *rpcs, const char *path)
-{
-    rpc_dir_p dir;
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    if ((dir = rpc_opendir(rpcs, path)) != 0)
-    {
-        RPC_AWAIT_IUT_ERROR(rpcs);
-        rpc_closedir(rpcs, dir);
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-static te_bool
-try_rmdir(rcf_rpc_server *rpcs, const char *path)
-{
-    if (!is_dir_exist(rpcs, path))
-        return FALSE;
-
-
-    RPC_AWAIT_IUT_ERROR(rpcs);
-    return rpc_rmdir(rpcs, path) == 0;
+    return target->methods.setup(target);
 }
 
 /* See description in tapi_nvme.h */
 void
 tapi_nvme_target_cleanup(tapi_nvme_target *target)
 {
-    size_t i;
-    char path[RCF_MAX_PATH];
-    char buffer[RCF_MAX_PATH];
-    const char *directories[] = {
-        "%s/subsystems/%s/namespaces/{port}",
-        "%s/subsystems/%s",
-        "%s/ports/{port}"
-    };
-
     if (target == NULL ||
         target->rpcs == NULL ||
         target->addr == NULL ||
-        target->subnqn == NULL)
+        target->subnqn == NULL ||
+        target->methods.cleanup == NULL)
         return;
 
-    te_log_stack_push("Target cleanup start");
+    target->methods.cleanup(target);
+}
 
-    snprintf(path, sizeof(path), "%s/ports/%d/subsystems/%s",
-             BASE_NVMET_CONFIG, target->nvmet_port, target->subnqn);
-
-    RPC_AWAIT_IUT_ERROR(target->rpcs);
-    if (rpc_access(target->rpcs, path, RPC_F_OK) == 0)
-    {
-        RPC_AWAIT_IUT_ERROR(target->rpcs);
-        rpc_unlink(target->rpcs, path);
-    }
-
-    for (i = 0; i < TE_ARRAY_LEN(directories); i++)
-    {
-        replace_port(directories[i], target->nvmet_port, buffer);
-        snprintf(path, sizeof(path), buffer, BASE_NVMET_CONFIG, target->subnqn);
-        try_rmdir(target->rpcs, path);
-    }
+/* See description in tapi_nvme.h */
+void
+tapi_nvme_target_fini(tapi_nvme_target *target)
+{
+    tapi_nvme_target_cleanup(target);
+    if (target == NULL || target->methods.fini == NULL)
+        return;
+    target->methods.fini(target);
 }
 
 /* See description in tapi_nvme.h */
@@ -793,7 +716,8 @@ tapi_nvme_target_format(tapi_nvme_target *target)
         target->device == NULL)
         return TE_EINVAL;
 
-    run_command(target->rpcs, "nvme format --ses=%d --namespace-id=%d %s",
+    run_command(target->rpcs, (opts_t){},
+                "nvme format --ses=%d --namespace-id=%d %s",
                 0, 1, target->device);
 
     return 0;

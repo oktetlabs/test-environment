@@ -24,10 +24,14 @@
 
 DEFINE_LGR_ENTITY("RGT LOG MERGE");
 
-/** Whether to search log node to be merged by TIN or by depth/seq */
-static int use_tin = 0;
+/** If @c TRUE, find log messages to be merged by TIN */
+static te_bool use_tin = FALSE;
+/** If @c TRUE, find log messages to be merged by test ID */
+static te_bool use_test_id = FALSE;
 /** TIN of log node to be merged */
 static unsigned int filter_tin = (unsigned int)-1;
+/** Test ID of log node to be merged */
+static unsigned int filter_test_id = (unsigned int)-1;
 /** Depth of log node to be merged */
 static int filter_depth = 0;
 /** Sequential number of log node to be merged */
@@ -64,8 +68,9 @@ merge(const char *split_log_path,
     uint64_t i;
 
     unsigned int tin;
-    int depth;
-    int seq;
+    unsigned int test_id;
+    int          depth;
+    int          seq;
 
     off_t raw_fp;
 
@@ -80,11 +85,16 @@ merge(const char *split_log_path,
                    &length, &start_len, &frags_cnt) <= 0)
             break;
 
+        if (sscanf(frag_name, "%u_", &test_id) <= 0)
+            break;
+
         cum_length += length;
 
         if ((name_suff = strstr(frag_name, "_start")) != NULL &&
             ((use_tin && filter_tin == tin) ||
-             (!use_tin && filter_depth == depth && filter_seq == seq)))
+             (use_test_id && filter_test_id == test_id) ||
+             (!use_tin && !use_test_id &&
+              filter_depth == depth && filter_seq == seq)))
         {
             FILE *f;
             off_t frag_len;
@@ -183,12 +193,16 @@ process_cmd_line_opts(int argc, char **argv)
             if (strchr(filter, '_') != NULL)
             {
                 sscanf(filter, "%d_%d", &filter_depth, &filter_seq);
-                use_tin = 0;
+            }
+            else if (strstr(filter, "id") == filter)
+            {
+                sscanf(filter, "id%u", &filter_test_id);
+                use_test_id = TRUE;
             }
             else
             {
                 sscanf(filter, "%u", &filter_tin);
-                use_tin = 1;
+                use_tin = TRUE;
             }
 
             free(filter);

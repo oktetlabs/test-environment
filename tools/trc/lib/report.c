@@ -79,7 +79,7 @@ trc_report_free_test_iter_data(trc_report_test_iter_data *data)
     while ((p = TAILQ_FIRST(&data->runs)) != NULL)
     {
         TAILQ_REMOVE(&data->runs, p, links);
-        te_test_result_free_verdicts(&p->result);
+        te_test_result_clean(&p->result);
         for (p->args_n = 0; p->args_n < p->args_max; p->args_n++)
         {
             free(p->args[p->args_n].name);
@@ -249,4 +249,23 @@ trc_report_collect_stats(trc_report_ctx *ctx)
     trc_db_free_walker(walker);
 
     return rc;
+}
+
+/* See description in trc_report.h */
+const char *
+trc_report_get_iter_id(const trc_report_test_iter_entry *iter)
+{
+    static char iter_id[TRC_REPORT_ITER_ID_LEN];
+
+    iter_id[0] = '\0';
+
+    if (iter != NULL)
+    {
+        if (iter->test_id >= 0)
+            TE_SPRINTF(iter_id, "id%d", iter->test_id);
+        else if (iter->tin >= 0)
+            TE_SPRINTF(iter_id, "%d", iter->tin);
+    }
+
+    return iter_id;
 }

@@ -179,6 +179,12 @@ typedef enum {
     TE_IP4_UPPER_LAYER_CSUM_BAD
 } te_ip4_upper_layer_csum_t;
 
+typedef enum {
+    TE_IP6_UPPER_LAYER_CSUM_CORRECT = 0,
+    TE_IP6_UPPER_LAYER_CSUM_ZERO,
+    TE_IP6_UPPER_LAYER_CSUM_BAD
+} te_ip6_upper_layer_csum_t;
+
 /* NDN ASN types. */
     /* DATA-UNIT wrappers over respecive bit integer fields */
 extern const asn_type *const ndn_data_unit_int4;

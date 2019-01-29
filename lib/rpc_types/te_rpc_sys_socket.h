@@ -105,6 +105,29 @@ extern const char * scm_tstamp_rpc2str(rpc_scm_tstamp type);
     (size_t)((len) - ((uint8_t *)(c) - (uint8_t *)(p)))
 
 /**
+ * Estimate buffer length required to store a given
+ * control data.
+ *
+ * @param rpc_cmsg      Pointer to @ref tarpc_cmsghdr structure storing
+ *                      information about control data.
+ *
+ * @return Buffer length.
+ */
+extern size_t tarpc_cmsg_data_len(tarpc_cmsghdr *rpc_cmsg);
+
+/**
+ * Get length of control data required to store @ref cmsghdr structures
+ * corresponding to array of @ref tarpc_cmsghdr structures.
+ *
+ * @param rpc_cmsghdr       Pointer to the first element of the array.
+ * @param num               Number of elements in the array.
+ *
+ * @return Length of control data.
+ */
+extern size_t tarpc_cmsg_total_len(tarpc_cmsghdr *rpc_cmsg,
+                                   unsigned int num);
+
+/**
  * Convert native cmsghdr data representation into TARPC one.
  *
  * @param level     Originating protocol
@@ -133,23 +156,37 @@ extern te_errno cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
 /**
  * Convert native control message representation into TARPC one.
  *
+ * @note If some bytes at the end of @p cmsg_buf cannot be parsed
+ *       as valid @b cmsghdr (for example, because there is not enough
+ *       space for @b cmsghdr structure itself), this function will not
+ *       fail but will store these bytes in @p tail).
+ *
  * @param cmsg_buf          Buffer with control message to be converted
  * @param cmsg_len          Length of control message
  * @param rpc_cmsg          Where to place converted control message
  * @param rpc_cmsg_count    Will be set to count of cmsghdr headers
  *                          in a message
+ * @param tail              Where to save remaining (not parsed) part
+ *                          of control data (memory is allocated,
+ *                          should be freed by caller)
+ * @param tail_len          Number of bytes saved in @p tail
  *
  * @return 0 on success or error code
  */
 extern te_errno msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
                                   tarpc_cmsghdr **rpc_cmsg,
-                                  unsigned int *rpc_cmsg_count);
+                                  unsigned int *rpc_cmsg_count,
+                                  uint8_t **tail,
+                                  unsigned int *tail_len);
 
 /**
  * Convert TARPC control message representation into native one.
  *
  * @param rpc_cmsg          Control message to be converted
  * @param rpc_cmsg_count    Count of cmsghdr headers
+ * @param tail              Not parsed part of control data to be
+ *                          appended at the end
+ * @param tail_len          Number of bytes in @p tail
  * @param cmsg_buf          Where to place converted control message
  * @param cmsg_len          Available space in @p cmsg_buf
  *
@@ -157,6 +194,7 @@ extern te_errno msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
  */
 extern te_errno msg_control_rpc2h(tarpc_cmsghdr *rpc_cmsg,
                                   unsigned int rpc_cmsg_count,
+                                  uint8_t *tail, unsigned int tail_len,
                                   uint8_t *cmsg_buf, size_t *cmsg_len);
 
 /**< Non-standard protocol family for Ethernet addresses */
@@ -724,23 +762,6 @@ typedef enum rpc_sockopt {
 
 } rpc_sockopt;
 
-/**
- * Transfer file descriptor.
- * It's defined to be processed properly in TE RPC conversion functions.
- * The system SCM_RIGHTS can not be used because it is equal to SO_DEBUG.
- */
-#define TE_SCM_RIGHTS 1000
-
-/**
- * Replace SCM_RIGHTS to process it properly in TE RPC functions
- */
-#define TE_SCM_RIGHTS2TE(_cmsg) \
-do {                                                                \
-    if (((struct cmsghdr *)(_cmsg))->cmsg_level == SOL_SOCKET &&    \
-        ((struct cmsghdr *)(_cmsg))->cmsg_type == SCM_RIGHTS)       \
-        ((struct cmsghdr *)(_cmsg))->cmsg_type = TE_SCM_RIGHTS;     \
-} while (0)
-
 /** Convert RPC socket option to string */
 extern const char * sockopt_rpc2str(rpc_sockopt opt);
 
@@ -749,6 +770,16 @@ extern int sockopt_rpc2h(rpc_sockopt opt);
 
 /** Convert native socket options to RPC one */
 extern rpc_sockopt sockopt_h2rpc(int opt_type, int opt);
+
+/**
+ * Convert native control message type to RPC one.
+ *
+ * @param level     Value of cmsg_level.
+ * @param type      Value of cmsg_type.
+ *
+ * @return Converted value.
+ */
+extern rpc_sockopt cmsg_type_h2rpc(int level, int type);
 
 /** Has socket option boolean semantic? */
 extern te_bool sockopt_is_boolean(rpc_sockopt opt);

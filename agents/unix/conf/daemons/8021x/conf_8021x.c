@@ -49,6 +49,7 @@ typedef enum {
     SP_TLS_KEY_PASSWD,      /**< EAP-TLS password for user private key */
     SP_TLS_ROOT_CERT_PATH,  /**< EAP-TLS path to root certificate file */
     SP_OPTSTR,              /**< wpa_supplicand option string */
+    SP_SCAN_SSID,           /**< wpa_supplicant parameter scan_ssid */
     SP_MAX                  /**< Last value to determine the size of array */
 } supp_param_t;
 
@@ -443,10 +444,14 @@ wpa_supp_write_config(FILE *f, const supplicant *supp)
     const char *s_psk = supp_get_param(supp, SP_PSK);
     const char *s_auth_alg = supp_get_param(supp, SP_AUTH_ALG);
     const char *s_network = supp_get_param(supp, SP_NETWORK);
+    const char *s_scan_ssid = supp_get_param(supp, SP_SCAN_SSID);
 
     fprintf(f, "ctrl_interface=/var/run/wpa_supplicant\n"
                "network={\n"
                "  ssid=\"%s\"\n", s_network);
+
+    if (s_scan_ssid[0] != '\0')
+        fprintf(f, "  scan_ssid=%s\n", s_scan_ssid);
 
     if (s_identity[0] != '\0')
         fprintf(f, "  identity=\"%s\"\n", s_identity);
@@ -943,6 +948,10 @@ DS_SUPP_PARAM_SET(ds_supp_optstr_set, SP_OPTSTR)
 DS_SUPP_PARAM_GET(ds_supp_network_get, SP_NETWORK)
 DS_SUPP_PARAM_SET(ds_supp_network_set, SP_NETWORK)
 
+/** Parameter scan_ssid */
+DS_SUPP_PARAM_GET(ds_supp_scan_ssid_get, SP_SCAN_SSID)
+DS_SUPP_PARAM_SET(ds_supp_scan_ssid_set, SP_SCAN_SSID)
+
 RCF_PCH_CFG_NODE_RW(node_ds_supp_auth_alg, "auth_alg",
                     NULL, &node_ds_supp_eaptls,
                     ds_supp_auth_alg_get,
@@ -1021,8 +1030,13 @@ RCF_PCH_CFG_NODE_RW(node_ds_supp_optstr, "optstr",
                     ds_supp_optstr_get,
                     ds_supp_optstr_set);
 
+RCF_PCH_CFG_NODE_RW(node_ds_supp_scan_ssid, "scan_ssid",
+                    NULL, &node_ds_supp_optstr,
+                    ds_supp_scan_ssid_get,
+                    ds_supp_scan_ssid_set);
+
 static rcf_pch_cfg_object node_ds_supplicant = {
-                    "supplicant", 0, &node_ds_supp_optstr, NULL,
+                    "supplicant", 0, &node_ds_supp_scan_ssid, NULL,
                     ds_supplicant_get, ds_supplicant_set,
                     NULL, NULL, NULL, ds_supplicant_commit, NULL };
 

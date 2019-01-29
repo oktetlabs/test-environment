@@ -6,6 +6,7 @@ AM_CPPFLAGS = -I$(DESTDIR)/$(includedir) \
               -I$(TE_BASE)/agents/@TA@/rpc \
               @TE_CPPFLAGS@ \
               $(TE_CPPFLAGS_VAR) \
+              -DALLOW_EXPERIMENTAL_API \
               -D'INCLUDE(x)='
 
 AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)

@@ -401,8 +401,28 @@ extern int rpc_sigsuspend(rcf_rpc_server *rpcs, const rpc_sigset_p set);
  *
  * @return 0 if child was exited or killed successfully or
  *         -1 there is no such child.
+ *
+ * @sa rpc_ta_kill_and_wait
  */
 extern int rpc_ta_kill_death(rcf_rpc_server *rpcs, tarpc_pid_t pid);
+
+/**
+ * Kill a child process and wait for process to change state
+ *
+ * @param rpcs          RPC server handle
+ * @param pid           PID of the child process to be killed
+ * @param sig           Signal to be sent to child process
+ * @param timeout_s     Time to wait for process to change state
+ *
+ * @return Status code
+ * @retval  0   Successful result
+ * @retval -1   Failed to kill the child process, of @p rpcs is @c NULL
+ * @retval -2   Timed out to wait for changed state of the child process
+ *
+ * @sa rpc_ta_kill_death
+ */
+extern int rpc_ta_kill_and_wait(rcf_rpc_server *rpcs, tarpc_pid_t pid,
+                                rpc_signum sig, unsigned int timeout_s);
 
 extern int rpc_siginterrupt(rcf_rpc_server *rpcs, rpc_signum signum,
                             int flag);

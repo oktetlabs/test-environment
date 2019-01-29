@@ -1371,6 +1371,90 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             {
                 SIN6(env_addr->addr)->sin6_addr = in6addr_any;
             }
+            else if (env_addr->type == TAPI_ENV_ADDR_LOOPBACK)
+            {
+                SIN6(env_addr->addr)->sin6_addr = in6addr_loopback;
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_FAKE_UNICAST)
+            {
+                rc = tapi_env_allocate_addr(env_addr->iface->net, AF_INET6,
+                                            &env_addr->addr, NULL);
+                if (rc != 0)
+                {
+                    ERROR("Failed to allocate additional IPv6 "
+                          "address: %r", rc);
+                    break;
+                }
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_MULTICAST)
+            {
+                int i;
+                uint8_t mcast_addr[IPV6_ADDR_LEN] = {0xff, 0x0e};
+
+                for (i = 2; i < IPV6_ADDR_LEN; i++)
+                {
+                    mcast_addr[i] = rand_range(0x00, UINT8_MAX);
+                }
+                memcpy(SIN6(env_addr->addr)->sin6_addr.s6_addr, mcast_addr, IPV6_ADDR_LEN);
+            }
+            else if ((env_addr->type == TAPI_ENV_ADDR_BROADCAST) ||
+                     (env_addr->type == TAPI_ENV_ADDR_MCAST_ALL_HOSTS))
+            {
+                char       *oid_string;
+                cfg_oid    *oid_struct;
+
+                val_type = CVT_STRING;
+                rc = cfg_get_instance(handle, &val_type, &oid_string);
+                if (rc != 0)
+                {
+                    ERROR("Failed to get instance value by handle "
+                          "0x%x: %r", handle, rc);
+                    return rc;
+                }
+                oid_struct = cfg_convert_oid_str(oid_string);
+                if (oid_struct == NULL)
+                {
+                    ERROR("Failed to convert OID '%s' to structure",
+                          oid_string);
+                    free(oid_string);
+                    return TE_RC(TE_TAPI, TE_EINVAL);
+                }
+
+                rc = tapi_cfg_ip6_get_mcastall_addr(
+                         CFG_OID_GET_INST_NAME(oid_struct, 1),
+                         CFG_OID_GET_INST_NAME(oid_struct, 2),
+                         SIN6(env_addr->addr));
+                if (rc != 0)
+                {
+                    ERROR("Failed to get link-local address for '%s': %r",
+                          oid_string, rc);
+                }
+
+                free(oid_string);
+                cfg_free_oid(oid_struct);
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_ALIEN)
+            {
+                static te_bool first_time = TRUE;
+                static uint8_t alien_addr[IPV6_ADDR_LEN] = {0};
+
+                if (first_time)
+                {
+                    struct sockaddr *tmp;
+                    cfg_val_type     type = CVT_ADDRESS;
+
+                    first_time = FALSE;
+
+                    rc = cfg_get_instance_fmt(&type, &tmp,
+                                              "/local:/ip6_alien:");
+                    if (rc != 0)
+                        break;
+                    memcpy(alien_addr, SIN6(tmp)->sin6_addr.s6_addr, IPV6_ADDR_LEN);
+                    free(tmp);
+                }
+                memcpy(SIN6(env_addr->addr)->sin6_addr.s6_addr, alien_addr, IPV6_ADDR_LEN);
+                alien_addr[5] += 1;
+            }
             else
             {
                 ERROR("Unsupported IPv6 address type");
@@ -1665,6 +1749,35 @@ prepare_interfaces_pci_fn(tapi_env_if *iface, cfg_net_node_t *node)
 }
 
 /**
+ * Prepare RTE vdev interface data in accordance with bound
+ * network configuration.
+ *
+ * @param iface Environment interface descriptor to fill in
+ * @param node  Bound network configuration node
+ *
+ * @return Status code.
+ */
+static te_errno
+prepare_interfaces_rte_vdev(tapi_env_if *iface, cfg_net_node_t *node)
+{
+    struct if_nameindex *ini = &iface->if_info;
+    cfg_val_type  val_type;
+    char         *node_val = NULL;
+    te_errno      rc = 0;
+
+    val_type = CVT_STRING;
+    rc = cfg_get_instance(node->handle, &val_type, &node_val);
+    if (rc != 0)
+        return rc;
+
+    rc = cfg_get_ith_inst_name(node_val, 3, &ini->if_name);
+
+    free(node_val);
+
+    return rc;
+}
+
+/**
  * Prepare required interfaces data in accordance with bound
  * network configuration.
  *
@@ -1698,6 +1811,10 @@ prepare_interfaces(tapi_env_ifs *ifs, cfg_nets_t *cfg_nets)
 
                 case NET_NODE_RSRC_TYPE_PCI_FN:
                     rc = prepare_interfaces_pci_fn(p, node);
+                    break;
+
+                case NET_NODE_RSRC_TYPE_RTE_VDEV:
+                    rc = prepare_interfaces_rte_vdev(p, node);
                     break;
 
                 default:
@@ -1938,7 +2055,7 @@ bind_host_if(tapi_env_if *iface, tapi_env_ifs *ifs,
                      i, j, cfg_nets->nets[i].nodes[j].type);
                 continue;
             }
-            VERB("Node (net=%u,node=%u) match PCOs type", i, j);
+            VERB("Node (%u,%u) match PCOs type", i, j);
 
             /* Check that there is no conflicts with already bound nodes */
             p = iface;
@@ -2148,15 +2265,16 @@ node_is_used(node_indexes *used_nodes, unsigned int net, unsigned int node)
  * @param procs         List of processes
  *
  * @return Environment node type.
- * @retval TAPI_ENV_IUT     At least one process should have IUT
- * @retval TAPI_ENV_TESTER  All processes are Testers
+ * @retval TAPI_ENV_IUT      At least one process should have IUT, no IUT_PEERs
+ * @retval TAPI_ENV_TESTER   All processes are Testers
+ * @retval TAPI_ENV_IUT_PEER At least one process should be IUT_PEER, no IUTs
  */
 static tapi_env_type
 get_pcos_type(tapi_env_processes *procs)
 {
     tapi_env_process *proc;
     tapi_env_pco     *pco;
-    tapi_env_type     type = TAPI_ENV_UNSPEC;
+    tapi_env_type     type = TAPI_ENV_TESTER;
 
     SLIST_FOREACH(proc, procs, links)
     {
@@ -2165,41 +2283,31 @@ get_pcos_type(tapi_env_processes *procs)
             switch (type)
             {
                 case TAPI_ENV_INVALID:
-                    /* invalid stays invalid */
                     break;
-                case TAPI_ENV_UNSPEC:
+                case TAPI_ENV_TESTER:
                     type = pco->type;
                     break;
                 case TAPI_ENV_IUT:
-                    if (pco->type == TAPI_ENV_UNSPEC
-                        || pco->type == TAPI_ENV_IUT)
-                        type = TAPI_ENV_IUT;
-                    else
+                    if (pco->type != TAPI_ENV_IUT &&
+                        pco->type != TAPI_ENV_TESTER)
+                    {
                         type = TAPI_ENV_INVALID;
+                    }
                     break;
-                case TAPI_ENV_TST:
-                    if (pco->type == TAPI_ENV_UNSPEC
-                        || type == TAPI_ENV_TST)
-                        type = TAPI_ENV_TST;
-                    else
+                case TAPI_ENV_IUT_PEER:
+                    if (pco->type != TAPI_ENV_IUT_PEER &&
+                        pco->type != TAPI_ENV_TESTER)
+                    {
                         type = TAPI_ENV_INVALID;
+                    }
                     break;
                 default:
                     assert(0);
             }
-            if (pco->type == TAPI_ENV_IUT)
-
-            {
-                VERB("%s(): PCOs are IUT", __FUNCTION__);
-                return TAPI_ENV_IUT;
-            }
-
-            if (pco->type == TAPI_ENV_TST)
-                type = TAPI_ENV_TST;
         }
     }
-    VERB("%s(): PCOs are %s", __FUNCTION__,
-         type == TAPI_ENV_TST ? "TST" : "Any");
+
+    VERB("%s(): PCOs are %s", __FUNCTION__, tapi_env_type_str(type));
     return type;
 }
 
@@ -2218,21 +2326,23 @@ get_ta_type(cfg_nets_t *cfg_nets, cfg_net_node_t *node)
     unsigned int        i;
     unsigned int        j;
 
-    for (i = 0; i < cfg_nets->n_nets && type == NET_NODE_TYPE_AGENT; ++i)
+    for (i = 0; i < cfg_nets->n_nets; ++i)
     {
-        for (j = 0;
-             j < cfg_nets->nets[i].n_nodes && type == NET_NODE_TYPE_AGENT;
-             ++j)
+        for (j = 0; j < cfg_nets->nets[i].n_nodes; ++j)
         {
             if ((node->handle != cfg_nets->nets[i].nodes[j].handle) &&
                 cmp_agent_names(node->handle,
                     cfg_nets->nets[i].nodes[j].handle) == 0 &&
                 cfg_nets->nets[i].nodes[j].type != NET_NODE_TYPE_AGENT)
             {
-                type = cfg_nets->nets[i].nodes[j].type;
+                if (type == NET_NODE_TYPE_AGENT)
+                    type = cfg_nets->nets[i].nodes[j].type;
+                else if (type != cfg_nets->nets[i].nodes[j].type)
+                    type = NET_NODE_TYPE_INVALID;
             }
         }
     }
+
     VERB("%s(): TA type is %u", __FUNCTION__, type);
 
     return type;
@@ -2278,20 +2388,21 @@ check_node_type_vs_pcos(cfg_nets_t         *cfg_nets,
                         cfg_net_node_t     *node,
                         tapi_env_processes *processes)
 {
-    switch (get_pcos_type(processes))
+    tapi_env_type type = get_pcos_type(processes);
+
+    switch (type)
     {
-        case TAPI_ENV_UNSPEC:
-            return TRUE;
+        case TAPI_ENV_INVALID:
+            return FALSE;
         case TAPI_ENV_IUT:
             return get_ta_type(cfg_nets, node) == NET_NODE_TYPE_NUT;
-        case TAPI_ENV_TST:
-            return get_ta_type(cfg_nets, node) == NET_NODE_TYPE_AGENT;
-        case TAPI_ENV_INVALID:
-            ERROR("Are you trying to bind the environment with INVALID "
-                  "types or types that contradict each other?");
-            return FALSE;
+        case TAPI_ENV_IUT_PEER:
+            return get_ta_type(cfg_nets, node) == NET_NODE_TYPE_NUT_PEER;
+        case TAPI_ENV_TESTER:
+            return TRUE;
         default:
             assert(0);
+            break;
     }
 }
 
@@ -2328,9 +2439,20 @@ check_net_type_cfg_vs_env(cfg_net_t *net, tapi_env_type net_type)
         case TAPI_ENV_IUT:
             return (node_type == NET_NODE_TYPE_NUT);
 
-        case TAPI_ENV_TST:
+        case TAPI_ENV_TESTER:
             return (node_type == NET_NODE_TYPE_AGENT);
 
+        case TAPI_ENV_IUT_PEER:
+            /*
+             * Right now we can't bind network of this type. It's done
+             * during bind for simplicity and to avoid duplication of values
+             * in lexer file
+             */
+            VERB("%s: you're binding a net with type "
+                 "IUT_PEER - this won't work");
+            return FALSE;
+
+        case TAPI_ENV_INVALID:
         default:
             assert(0);
             return FALSE;

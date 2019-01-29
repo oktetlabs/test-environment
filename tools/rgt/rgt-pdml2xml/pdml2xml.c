@@ -421,7 +421,7 @@ static void
 rgt_print_saved_packet(rgt_user_ctx *ctx)
 {
     fprintf(res_fd, "<msg level=\"PACKET\" entity=\"%s\" user=\"%s/%s\""
-            " ts_val=\"%s\" ts=\"%s\">", ctx->agent,
+            " ts_val=\"%s\" ts=\"%s\" nl=\"0\">", ctx->agent,
             ctx->interface, ctx->sniffer, ctx->ts_val, ctx->ts_str);
     assert(fprintf(res_fd, "%s</msg>\n", pbuff.p) == (int)(pbuff.offset+7));
 }

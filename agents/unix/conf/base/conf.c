@@ -234,9 +234,6 @@ extern te_errno ta_unix_conf_net_snmp_stats_init();
 #ifdef ENABLE_VCM_SUPPORT
 extern te_errno ta_unix_conf_vcm_init();
 #endif
-#ifdef ENABLE_WIFI_SUPPORT
-extern te_errno ta_unix_conf_wifi_init();
-#endif
 
 #ifdef WITH_ISCSI
 extern te_errno ta_unix_iscsi_target_init();
@@ -1166,10 +1163,6 @@ rcf_ch_conf_init()
         if (ta_unix_iscsi_target_init() != 0)
             goto fail;
         if (iscsi_initiator_conf_init() != 0)
-            goto fail;
-#endif
-#ifdef ENABLE_WIFI_SUPPORT
-        if (ta_unix_conf_wifi_init() != 0)
             goto fail;
 #endif
 #ifdef ENABLE_PCI_SUPPORT
@@ -3941,6 +3934,14 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         net_addr.ifindex = ifindex;
         net_addr.address = (uint8_t *)&ip_addr;
         net_addr.broadcast = (uint8_t *)&broadcast;
+
+        /*
+         * Duplicate Address Discovery (DAD) makes IPv6 address assignment
+         * a bit slow, which causes failures in some tests.
+         * So disable DAD in case of IPv6.
+         */
+        if (family == AF_INET6)
+            net_addr.flags = IFA_F_NODAD;
 
         if (netconf_net_addr_modify(nh, NETCONF_CMD_ADD, &net_addr) < 0)
         {

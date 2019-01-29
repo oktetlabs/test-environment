@@ -76,9 +76,25 @@ tapi_perf_opts_init(tapi_perf_opts *opts)
     opts->bandwidth_bits = -1;
     opts->num_bytes = -1;
     opts->duration_sec = 30;
+    opts->interval_sec = TAPI_PERF_INTERVAL_DISABLED;
     opts->length = 1470;
     opts->streams = 1;
     opts->reverse = FALSE;
+    opts->dual = FALSE;
+}
+
+/* See description in tapi_performance.h */
+te_bool
+tapi_perf_opts_cmp(const tapi_perf_opts *opts_a, const tapi_perf_opts *opts_b)
+{
+    return (opts_a->ipversion == opts_b->ipversion &&
+            opts_a->protocol == opts_b->protocol &&
+            opts_a->num_bytes == opts_b->num_bytes &&
+            opts_a->duration_sec == opts_b->duration_sec &&
+            opts_a->bandwidth_bits == opts_b->bandwidth_bits &&
+            opts_a->streams == opts_b->streams &&
+            opts_a->reverse == opts_b->reverse &&
+            opts_a->dual == opts_b->dual);
 }
 
 /* See description in tapi_performance.h */
@@ -187,9 +203,25 @@ tapi_perf_server_get_report(tapi_perf_server *server, tapi_perf_report *report)
         server->methods->get_report == NULL)
         return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 
-    return server->methods->get_report(server, report);
+    return server->methods->get_report(server, TAPI_PERF_REPORT_KIND_DEFAULT,
+                                       report);
 }
 
+/* See description in tapi_performance.h */
+te_errno
+tapi_perf_server_get_specific_report(tapi_perf_server       *server,
+                                     tapi_perf_report_kind   kind,
+                                     tapi_perf_report       *report)
+{
+    ENTRY("Get perf server specific report");
+
+    if (server == NULL ||
+        server->methods == NULL ||
+        server->methods->get_report == NULL)
+        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+
+    return server->methods->get_report(server, kind, report);
+}
 
 /* See description in tapi_performance.h */
 tapi_perf_client *
@@ -287,7 +319,24 @@ tapi_perf_client_get_report(tapi_perf_client *client, tapi_perf_report *report)
         client->methods->get_report == NULL)
         return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 
-    return client->methods->get_report(client, report);
+    return client->methods->get_report(client, TAPI_PERF_REPORT_KIND_DEFAULT,
+                                       report);
+}
+
+/* See description in tapi_performance.h */
+te_errno
+tapi_perf_client_get_specific_report(tapi_perf_client       *client,
+                                     tapi_perf_report_kind   kind,
+                                     tapi_perf_report       *report)
+{
+    ENTRY("Get perf client specific report");
+
+    if (client == NULL ||
+        client->methods == NULL ||
+        client->methods->get_report == NULL)
+        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+
+    return client->methods->get_report(client, kind, report);
 }
 
 /* See description in tapi_performance.h */
@@ -297,6 +346,7 @@ tapi_perf_error2str(tapi_perf_error error)
     static const char *errors[] = {
         [TAPI_PERF_ERROR_FORMAT] = "wrong report format",
         [TAPI_PERF_ERROR_READ] = "read failed",
+        [TAPI_PERF_ERROR_WRITE_CONN_RESET] = "connection reset by peer",
         [TAPI_PERF_ERROR_CONNECT] = "connect failed",
         [TAPI_PERF_ERROR_NOROUTE] = "no route",
         [TAPI_PERF_ERROR_BIND] = "bind failed",
@@ -417,12 +467,64 @@ tapi_perf_log_report(const tapi_perf_server *server,
                      const char *test_params)
 {
     char *report_name = te_str_upper(tapi_perf_server_get_name(server));
-    char *results = perf_get_tool_tuple(server, client, report);
+    te_string buf = TE_STRING_INIT;
     char *date = te_time_current_date2str();
 
-    RING("%s_REPORT: date=%s, %s, %s", report_name, date, test_params, results);
+    perf_get_tool_input_tuple(server, client, &buf);
+    perf_get_tool_result_tuple(report, &buf);
+
+    RING("%s_REPORT: date=%s, %s, %s", report_name, date, test_params, buf.ptr);
 
     free(date);
-    free(results);
+    te_string_free(&buf);
     free(report_name);
+}
+
+void
+tapi_perf_log_cumulative_report(const tapi_perf_server *server[],
+                                const tapi_perf_client *client[],
+                                const tapi_perf_report *report[],
+                                int number_of_instances,
+                                const char *test_params)
+{
+    char *date = te_time_current_date2str();
+    te_string buf = TE_STRING_INIT;
+    tapi_perf_report cumulative_report = { 0, };
+    int i;
+
+    const tapi_perf_opts *server_opts = &server[0]->app.opts;
+    const tapi_perf_opts *client_opts = &client[0]->app.opts;
+    char *report_name = te_str_upper(tapi_perf_server_get_name(server[0]));
+
+    perf_get_tool_input_tuple(server[0], client[0], &buf);
+
+    /*
+     * should not matter too much cause it matches duration in all cases we
+     * can think of
+     */
+    cumulative_report.seconds = report[0]->seconds;
+
+    for (i = 0; i < number_of_instances; i++)
+    {
+        int e;
+
+        if (!tapi_perf_opts_cmp(&server[i]->app.opts, server_opts) ||
+            !tapi_perf_opts_cmp(&client[i]->app.opts, client_opts))
+            TEST_FAIL("Cumulative report can't be done for "
+                      "non-uniform instances");
+
+        cumulative_report.bits_per_second += report[i]->bits_per_second;
+        cumulative_report.bytes += report[i]->bytes;
+        for (e = 0; e < TAPI_PERF_ERROR_MAX; e++)
+            cumulative_report.errors[e] += report[i]->errors[e];
+    }
+
+    perf_get_tool_result_tuple(&cumulative_report, &buf);
+
+    RING("%s_REPORT: date=%s, %s, %s", report_name, date,
+         test_params, buf.ptr);
+
+    free(date);
+    free(report_name);
+    te_string_free(&buf);
 }

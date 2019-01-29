@@ -39,6 +39,9 @@
 #include <pthread.h>
 #endif
 
+#include <fcntl.h>
+#include <poll.h>
+
 #include <openssl/md5.h>
 
 #include "te_alloc.h"
@@ -63,10 +66,22 @@
 /** Format string for GDB init filename */
 #define TESTER_GDB_FILENAME_FMT "gdb.%d"
 
-/** Tester run path log user */
-#define TESTER_CONTROL             TE_LOG_CMSG_USER
 /** Prefix of all messages from Tester:Flow user */
 #define TESTER_CONTROL_MSG_PREFIX  "%u %u "
+
+/**
+ * Output Tester control log message (i.e. message about
+ * package/session/test start/end).
+ *
+ * @param _parent_id  ID of parent item (package/session).
+ * @param _id         ID of current item (package/session/test)
+ * @param _fmt        Format string.
+ * @param _args...    Arguments for the format string (it is assumed
+ *                    there is always at least one argument here).
+ */
+#define TESTER_CONTROL_LOG(_parent_id, _id, _fmt, _args...) \
+    LGR_MESSAGE(TE_LL_RING | TE_LL_CONTROL, TE_LOG_CMSG_USER, \
+                TESTER_CONTROL_MSG_PREFIX _fmt, _parent_id, _id, _args)
 
 /** Size of the Tester shell command buffer */
 #define TESTER_CMD_BUF_SZ           32768
@@ -79,12 +94,6 @@
 
 /** ID assigned by the Tester to the test instance */
 extern unsigned int te_test_id;
-
-/**
- * The last TIN used - this is used for TIN
- * computation only if some iteration is run multiple times.
- */
-static unsigned int current_tin = 0;
 
 #if 0
 #undef TE_LOG_LEVEL
@@ -153,7 +162,7 @@ typedef struct tester_run_data {
     tester_test_results         results;    /**< Global storage of
                                                  results for tests
                                                  which are in progress */
-    tester_verdicts_listener   *vl;         /**< Verdicts listener
+    tester_test_msg_listener   *vl;         /**< Test messages listener
                                                  control data */
 #if WITH_TRC
     const te_trc_db            *trc_db;     /**< TRC database handle */
@@ -864,19 +873,20 @@ log_test_start(unsigned int flags,
             {
                 if (ri->u.script.page == NULL)
                 {
-                    TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                    TESTER_CONTROL_LOG(
+                                parent, test,
                                 "TEST %s \"%s\" TIN %u HASH %s ARGs%s",
-                                parent, test, name,
+                                name,
                                 PRINT_STRING(ri->u.script.objective),
                                 tin, PRINT_STRING(hash_str),
                                 PRINT_STRING(params_str));
                 }
                 else
                 {
-                    TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                    TESTER_CONTROL_LOG(
+                                parent, test,
                                 "TEST %s \"%s\" TIN %u PAGE %s HASH %s "
-                                "ARGs%s",
-                                parent, test, name,
+                                "ARGs%s", name,
                                 PRINT_STRING(ri->u.script.objective),
                                 tin, ri->u.script.page,
                                 PRINT_STRING(hash_str),
@@ -895,18 +905,20 @@ log_test_start(unsigned int flags,
             {
                 if (ri->u.script.page == NULL)
                 {
-                    TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                    TESTER_CONTROL_LOG(
+                                parent, test,
                                 "TEST %s \"%s\" HASH %s ARGs%s",
-                                parent, test, name,
+                                name,
                                 PRINT_STRING(ri->u.script.objective),
                                 PRINT_STRING(hash_str),
                                 PRINT_STRING(params_str));
                 }
                 else
                 {
-                    TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                    TESTER_CONTROL_LOG(
+                                parent, test,
                                 "TEST %s \"%s\" PAGE %s HASH %s ARGs%s",
-                                parent, test, name,
+                                name,
                                 PRINT_STRING(ri->u.script.objective),
                                 ri->u.script.page,
                                 PRINT_STRING(hash_str),
@@ -917,11 +929,11 @@ log_test_start(unsigned int flags,
 
         case RUN_ITEM_SESSION:
             assert(tin == TE_TIN_INVALID);
-            TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
-                        "SESSION HASH %s ARGs%s",
-                        parent, test,
-                        PRINT_STRING(hash_str),
-                        PRINT_STRING(params_str));
+            TESTER_CONTROL_LOG(parent, test,
+                               "SESSION %s HASH %s ARGs%s",
+                               (name == NULL ? "session" : name),
+                               PRINT_STRING(hash_str),
+                               PRINT_STRING(params_str));
             break;
 
         case RUN_ITEM_PACKAGE:
@@ -929,18 +941,20 @@ log_test_start(unsigned int flags,
             authors = persons_info_to_string(&ri->u.package->authors);
             if (authors == NULL)
             {
-                TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                TESTER_CONTROL_LOG(
+                            parent, test,
                             "PACKAGE %s \"%s\" HASH %s ARGs%s",
-                            parent, test, name,
+                            name,
                             PRINT_STRING(ri->u.package->objective),
                             PRINT_STRING(hash_str),
                             PRINT_STRING(params_str));
             }
             else
             {
-                TE_LOG_RING(TESTER_CONTROL, TESTER_CONTROL_MSG_PREFIX
+                TESTER_CONTROL_LOG(
+                            parent, test,
                             "PACKAGE %s \"%s\" AUTHORS%s HASH %s ARGs%s",
-                            parent, test, ri->u.package->name,
+                            ri->u.package->name,
                             PRINT_STRING(ri->u.package->objective),
                             PRINT_STRING(authors),
                             PRINT_STRING(hash_str),
@@ -968,10 +982,9 @@ static void
 log_test_result(test_id parent, test_id test, te_test_status status,
                 const char *error)
 {
-    TE_LOG_RING(TESTER_CONTROL,
-                TESTER_CONTROL_MSG_PREFIX "%s %s",
-                parent, test, te_test_status_to_str(status),
-                error == NULL ? "" : error);
+    TESTER_CONTROL_LOG(parent, test, "%s %s",
+                       te_test_status_to_str(status),
+                       error == NULL ? "" : error);
 }
 
 
@@ -1081,8 +1094,8 @@ tester_test_status_to_te_test_result(tester_test_status status,
              */
             saved_id = te_test_id;
             te_test_id = id;
-            TE_LOG(TE_LL_ERROR, "Tester Verdict", TE_LOG_CMSG_USER,
-                   "%s", *error);
+            TE_LOG(TE_LL_ERROR | TE_LL_CONTROL, "Tester Verdict",
+                   TE_LOG_VERDICT_USER, "%s", *error);
             te_test_id = saved_id;
         }
 
@@ -1151,12 +1164,12 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
     ENTRY("name=%s exec_id=%u n_args=%u arg=%p flags=0x%x",
           script->name, exec_id, n_args, args, flags);
 
-    if (asprintf(&params_str,
-                 " te_test_id=%u te_test_name=\"%s\" te_rand_seed=%d",
-                 exec_id, run_name != NULL ? run_name : script->name,
-                 rand()) < 0)
+    if (te_asprintf(&params_str,
+                    " te_test_id=%u te_test_name=\"%s\" te_rand_seed=%d",
+                    exec_id, run_name != NULL ? run_name : script->name,
+                    rand()) < 0)
     {
-        ERROR("%s(): asprintf() failed", __FUNCTION__);
+        ERROR("%s(): te_asprintf() failed", __FUNCTION__);
         return TE_RC(TE_TESTER, TE_ENOMEM);
     }
     
@@ -1260,11 +1273,14 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
         *status = TESTER_TEST_FAKED;
     else
     {
+        struct pollfd pfd[2];
+        int           fdin;
+
         /* Initialize as INCOMPLETE before processing */
         *status = TESTER_TEST_INCOMPLETE;
 
         VERB("ID=%d te_shell_cmd(%s)", exec_id, cmd);
-        pid = te_shell_cmd(cmd, -1, NULL, NULL, NULL);
+        pid = te_shell_cmd(cmd, -1, &fdin, NULL, NULL);
         if (pid < 0)
         {
             ERROR("te_shell_cmd(%s) failed: %s", cmd, strerror(errno));
@@ -1273,6 +1289,50 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
         }
 
         tester_set_serial_pid(pid);
+
+        pfd[0].fd = STDIN_FILENO;
+        pfd[0].events = POLLIN;
+        pfd[1].fd = fdin;
+        pfd[1].events = POLLERR;
+
+        /* Redirect stdin to the test application. */
+        do {
+            ret = poll(pfd, 2, -1);
+            if (ret < 0)
+            {
+                if (errno == EINTR)
+                {
+                    ret = 1;
+                    if (tester_sigint_received)
+                        kill(pid, SIGINT);
+                    continue;
+                }
+                ERROR("Failed to poll() stdin: %s", strerror(errno));
+                break;
+            }
+
+            if ((pfd[0].revents & POLLIN) == POLLIN)
+            {
+                ret = splice(STDIN_FILENO, NULL, fdin, NULL,
+                             TESTER_STR_BULK, 0);
+                if (ret < 0)
+                {
+                    ERROR("Failed to redirect stdin to test using splice(): %s",
+                          strerror(errno));
+                    break;
+                }
+            }
+            if (pfd[0].revents != POLLIN || pfd[1].revents != 0)
+                break;
+        } while(ret > 0);
+
+        close(fdin);
+        if (ret < 0)
+        {
+            free(cmd);
+            return TE_OS_RC(TE_TESTER, errno);
+        }
+
         pid = waitpid(pid, &ret, 0);
         tester_release_serial_pid();
         if (pid < 0)
@@ -2744,26 +2804,8 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
     ctx->current_result.id = tester_get_id();
 
-    if (!iterate_was_used)
-    {
-        tin = (ctx->flags & TESTER_INLOGUE || ri->type != RUN_ITEM_SCRIPT) ?
-                  TE_TIN_INVALID : cfg_id_off;
-    }
-    else
-    {
-        /* TODO: this is a temporary fix for bug 8448, it should be replaced
-         * with a better one. */
-        if (ctx->flags & TESTER_INLOGUE || ri->type != RUN_ITEM_SCRIPT)
-        {
-            tin = TE_TIN_INVALID;
-        }
-        else
-        {
-            current_tin++;
-            tin = current_tin;
-        }
-    }
-
+    tin = (ctx->flags & TESTER_INLOGUE || ri->type != RUN_ITEM_SCRIPT) ?
+              TE_TIN_INVALID : cfg_id_off;
     /* Test is considered here as run, if such event is logged */
     tester_term_out_start(ctx->flags, ri->type, run_item_name(ri), tin,
                           ctx->group_result.id, ctx->current_result.id);
@@ -2810,6 +2852,15 @@ te_test_result_to_log_buf(te_log_buf *lb, const te_test_result *result)
     TAILQ_FOREACH(v, &result->verdicts, links)
     {
         te_log_buf_append(lb, "%s;\n", v->str);
+    }
+
+    if (!TAILQ_EMPTY(&result->artifacts))
+    {
+        te_log_buf_append(lb, "\nArtifacts:\n");
+        TAILQ_FOREACH(v, &result->artifacts, links)
+        {
+            te_log_buf_append(lb, "%s;\n", v->str);
+        }
     }
 }
 
@@ -2969,22 +3020,8 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         }
 #endif
 
-        if (!iterate_was_used)
-        {
-            tin = (ctx->flags & TESTER_INLOGUE ||
-                   ri->type != RUN_ITEM_SCRIPT) ?
-                      TE_TIN_INVALID : cfg_id_off;
-        }
-        else
-        {
-            /* TODO: this is a temporary fix for bug 8448, it should be
-             * replaced with a better one. */
-            if (ctx->flags & TESTER_INLOGUE || ri->type != RUN_ITEM_SCRIPT)
-                tin = TE_TIN_INVALID;
-            else
-                tin = current_tin;
-        }
-
+        tin = (ctx->flags & TESTER_INLOGUE || ri->type != RUN_ITEM_SCRIPT) ?
+                  TE_TIN_INVALID : cfg_id_off;
         log_test_result(ctx->group_result.id, ctx->current_result.id,
                         ctx->current_result.result.status,
                         ctx->current_result.error);
@@ -3000,7 +3037,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 #endif
                              );
 
-        te_test_result_free_verdicts(&ctx->current_result.result);
+        te_test_result_clean(&ctx->current_result.result);
     }
     else
     {
@@ -3170,10 +3207,10 @@ tester_run(testing_scenario   *scenario,
     if (rc != 0)
         return rc;
 
-    rc = tester_verdicts_listener_start(&data.vl, &data.results);
+    rc = tester_test_msg_listener_start(&data.vl, &data.results);
     if (rc != 0)
     {
-        ERROR("Failed to start verdicts listener: %r", rc);
+        ERROR("Failed to start test messages listener: %r", rc);
         return rc;
     }
 
@@ -3246,10 +3283,10 @@ tester_run(testing_scenario   *scenario,
 
     tester_run_destroy_ctx(&data);
 
-    rc2 = tester_verdicts_listener_stop(&data.vl);
+    rc2 = tester_test_msg_listener_stop(&data.vl);
     if (rc2 != 0)
     {
-        ERROR("Failed to stop verdicts listener: %r", rc2);
+        ERROR("Failed to stop test messages listener: %r", rc2);
         TE_RC_UPDATE(rc, rc2);
     }
 

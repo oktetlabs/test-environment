@@ -1627,7 +1627,7 @@ main(int argc, char **argv)
         if (sigaction(SIGINT, &sigact, &sigaction_int) != 0)
         {
             rc = te_rc_os2te(errno);
-            ERROR("Cannot set SIGINT action: %r");
+            LOG_PRINT("Cannot set SIGINT action: %s", strerror(errno));
         }
     }
 #if defined (__QNX__)
@@ -1640,7 +1640,7 @@ main(int argc, char **argv)
     if (sigaction(SIGPIPE, &sigact, &sigaction_pipe) != 0)
     {
         rc = te_rc_os2te(errno);
-        ERROR("Cannot set SIGPIPE action: %r");
+        LOG_PRINT("Cannot set SIGPIPE action: %s", strerror(errno));
     }
 
     rc = ta_process_mgmt_init();

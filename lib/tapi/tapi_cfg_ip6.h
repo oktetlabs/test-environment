@@ -39,6 +39,9 @@ extern "C" {
  * @{
  */
 
+/* IPv6 address length */
+#define IPV6_ADDR_LEN    sizeof(struct in6_addr)
+
 /**
  * Get link-local address of the interface.
  *
@@ -53,6 +56,20 @@ extern te_errno tapi_cfg_ip6_get_linklocal_addr(const char *ta,
                                                 const char *iface,
                                                 struct sockaddr_in6
                                                     *p_addr);
+
+/**
+ * Get multicast all link-local address of the interface.
+ *
+ * @param ta        Test Agent name
+ * @parma iface     Interface name
+ * @param p_addr    Location for pointer to sockaddr with IPv6
+ *                  multicast address
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_ip6_get_mcastall_addr(const char *ta,
+                                               const char *iface,
+                                               struct sockaddr_in6 *p_addr);
 
 /**@} <!-- END tapi_conf_ip6 --> */
 

@@ -69,20 +69,22 @@
         {                                                   \
             rc = te_rc_os2te(errno);                        \
             assert(rc != 0);                                \
-            ERROR("Writing to the file failed: %r", rc);    \
+            ERROR("%s:%d: Writing to the file failed: %r",  \
+                  __FUNCTION__, __LINE__, rc);              \
             goto cleanup;                                   \
         }                                                   \
     } while (0)
 
 #define WRITE_STR(str) \
-    do {                                                \
-        fflush(f);                                      \
-        if (fwrite(str, strlen(str), 1, f) != 1)        \
-        {                                               \
-            rc = te_rc_os2te(errno) ? : TE_EIO;         \
-            ERROR("Writing to the file failed");        \
-            goto cleanup;                               \
-        }                                               \
+    do {                                                    \
+        fflush(f);                                          \
+        if (fwrite(str, strlen(str), 1, f) != 1)            \
+        {                                                   \
+            rc = te_rc_os2te(errno) ? : TE_EIO;             \
+            ERROR("%s:%d: Writing to the file failed: %r",  \
+                  __FUNCTION__, __LINE__, rc);              \
+            goto cleanup;                                   \
+        }                                                   \
     } while (0)
 
 #define PRINT_STR(str_) (((str_) != NULL) ? (str_) : "")
@@ -134,7 +136,12 @@ static const char * const trc_html_doc_start =
 "  <meta http-equiv=\"content-type\" content=\"text/html; "
 "charset=utf-8\">\n"
 "  <title>%s</title>\n"
+"  <link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css\">\n"
 "  <style type=\"text/css\">\n"
+"    a { color: #23527c }\n"
+"    a:focus { color: #0000ff }\n"
+"    body { color: #000 }\n"
+"    td { padding: 2px !important; padding-left: 1px; padding-right: 1px; padding-top: 2px; padding-bottom: 2px; }\n"
 "    .A {padding-left: 0.14in; padding-right: 0.14in}\n"
 "    .B {padding-left: 0.24in; padding-right: 0.04in}\n"
 "    .C {text-align: right; padding-left: 0.14in; padding-right: 0.14in}\n"
@@ -143,7 +150,8 @@ static const char * const trc_html_doc_start =
 "padding-left: 0.14in; padding-right: 0.14in}\n"
 "    .test_stats_name { font-weight: bold;}\n"
 "    .test_stats_objective { }\n"
-"    .test_stats_run_total { font-weight: bold; text-align: right; "
+"    .test_stats_column { text-align: right; }\n"
+"    .test_stats_total { font-weight: bold; text-align: right; "
 "padding-left: 0.14in; padding-right: 0.14in}\n"
 "    .test_stats_passed_exp { text-align: right; padding-left: 0.14in; "
 "padding-right: 0.14in}\n"
@@ -167,6 +175,8 @@ static const char * const trc_html_doc_start =
 "padding-right: 0.14in}\n"
 "    .test_stats_keys { }\n"
 "    .test_stats_names { }\n"
+"    .table-nonfluid { width: auto !important; }\n"
+"    .test_obtained_nok_verdict_list { background-color: #ffd2c8; }\n"
 "    wbr { display: inline-block; }\n"
 #if TRC_USE_STATS_POPUP
 "    #StatsTip {\n"
@@ -280,6 +290,7 @@ static const char * const trc_html_doc_start =
 "        var params_td;\n"
 "        var results_td;\n"
 "        var results_list;\n"
+"        var verdicts_list;\n"
 "        var i;\n"
 "        var j;\n"
 "        var k;\n"
@@ -332,21 +343,24 @@ static const char * const trc_html_doc_start =
 "            else\n"
 "                iters[i].expected = true;\n"
 "\n"
-"            results_list = results_td.getElementsByTagName('span');\n"
-"            iters[i].result = getInnerText(results_list[1]).\n"
+"            results_list =\n"
+"                 results_td.getElementsByClassName('test_result');\n"
+"            iters[i].result = getInnerText(results_list[0]).\n"
 "                                replace(/^\\s+|\\s+$/g, '');\n"
-"            iters[i].verdicts = new Array();\n"
 "\n"
-"            for (j = 2; j < results_list.length; j++)\n"
+"            iters[i].verdicts = new Array();\n"
+"            verdicts_list = results_td.getElementsByClassName(\n"
+"                                                   'test_verdict');\n"
+"            for (j = 0; j < verdicts_list.length; j++)\n"
 "            {\n"
-"                inner_text = getInnerText(results_list[j]);\n"
+"                inner_text = getInnerText(verdicts_list[j]);\n"
 "                k = inner_text.lastIndexOf(';');\n"
 "                if (k != -1)\n"
-"                    iters[i].verdicts[j - 2] =\n"
+"                    iters[i].verdicts[j] =\n"
 "                        inner_text.substring(0, k - 1).\n"
 "                        replace(/^\\s+|\\s+$/g, '');\n"
 "                else\n"
-"                    iters[i].verdicts[j - 2] = inner_text.\n"
+"                    iters[i].verdicts[j] = inner_text.\n"
 "                        replace(/^\\s+|\\s+$/g, '');\n"
 "            }\n"
 "        }\n"
@@ -1263,7 +1277,7 @@ static const char * const trc_html_doc_end =
 "</html>\n";
 
 static const char * const trc_stats_table =
-"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\">\n"
+"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\" class=\"table-nonfluid\">\n"
 "  <tr>\n"
 "    <td rowspan=7>\n"
 "      <h2>Run</h2>\n"
@@ -1353,7 +1367,7 @@ static const char * const trc_stats_table =
 "</table>\n";
 
 static const char * const trc_report_html_tests_stats_start =
-"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\">\n"
+"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\"  class=\"table table-bordered table-hover table-nonfluid\">\n"
 "  <thead>\n"
 "    <tr>\n"
 "      <td rowspan=2>\n"
@@ -1376,56 +1390,56 @@ static const char * const trc_report_html_tests_stats_start =
 "      </td>\n"
 "    </tr>\n"
 "    <tr>\n"
-"      <td name=\"test_stats_total\">\n"
+"      <td name=\"test_stats_total\" class=\"test_stats_column\">\n"
 "        <b>Total</b>\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('total')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td name=\"test_stats_passed_exp\">\n"
-"        Passed expect\n"
+"      <td name=\"test_stats_passed_exp\" class=\"test_stats_column\">\n"
+"        Pass OK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('passed_exp')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td name=\"test_stats_failed_exp\">\n"
-"        Failed expect\n"
+"      <td name=\"test_stats_failed_exp\" class=\"test_stats_column\">\n"
+"        Fail OK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('failed_exp')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td name=\"test_stats_passed_unexp\">\n"
-"        Passed unexp\n"
+"      <td name=\"test_stats_passed_unexp\" class=\"test_stats_column\">\n"
+"        Pass NOK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('passed_unexp')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td name=\"test_stats_failed_unexp\">\n"
-"        Failed unexp\n"
+"      <td name=\"test_stats_failed_unexp\" class=\"test_stats_column\">\n"
+"        Fail NOK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('failed_unexp')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td name=\"test_stats_aborted_new\">\n"
+"      <td name=\"test_stats_aborted_new\" class=\"test_stats_column\">\n"
 "        Aborted, New\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('aborted_new')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td name=\"test_stats_not_run\">\n"
+"      <td name=\"test_stats_not_run\" class=\"test_stats_column\">\n"
 "        <b>Total</b>\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('not_run')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td name=\"test_stats_skipped_exp\">\n"
-"        Skipped expect\n"
+"      <td name=\"test_stats_skipped_exp\" class=\"test_stats_column\">\n"
+"        Skipped OK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('skipped_exp')\">x</a>\n"
 #endif
 "      </td>\n"
-"      <td name=\"test_stats_skipped_unexp\">\n"
-"        Skipped unexp\n"
+"      <td name=\"test_stats_skipped_unexp\" class=\"test_stats_column\">\n"
+"        Skipped NOK\n"
 #if TRC_USE_HIDDEN_STATS
 "        <a href=\"javascript:statsHideColumn('skipped_unexp')\">x</a>\n"
 #endif
@@ -1497,7 +1511,7 @@ static const char * const trc_tests_stats_row =
 "    </tr>\n";
 
 static const char * const trc_report_html_test_exp_got_start =
-"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\">\n"
+"<table border=1 cellpadding=4 cellspacing=3 style=\"font-size:small;\" class=\"table table-bordered table-hover table-nonfluid\">\n"
 "  <thead>\n"
 "    <tr>\n"
 "      <td>\n"
@@ -1528,15 +1542,12 @@ static const char * const trc_test_exp_got_end =
 
 #if TRC_USE_LOG_URLS
 static const char * const trc_test_log_url =
-"<a href=\"%s/node_%d.html\" "
+"<a href=\"%s/node_%s.html\" "
 #if TRC_USE_STATS_POPUP
-"onClick=\"showLog('%s', '%s/node_%d.html', event); return false;\""
+"onClick=\"showLog('%s', '%s/node_%s.html', event); return false;\""
 #endif
 ">[log]</a>";
 #endif
-
-static const char * const trc_test_exp_got_row_tin_ref =
-"        <a name=\"tin_%d\"> </a>\n";
 
 static const char * const trc_test_exp_got_row_start =
 "    <tr>\n"
@@ -1549,10 +1560,12 @@ static const char * const trc_test_exp_got_row_start =
 "      </td>\n"
 "      <td valign=top>";
 
+#if TRC_USE_LOG_URLS
 static const char * const trc_test_iter_history_href =
 "<a href=\"%s\" "
 "onmouseover=\"this.href = getIterHistoryURL('%s', '%s'); "
 "this.target='_blank';\">[history]</a>";
+#endif
 
 #if TRC_USE_PARAMS_SPOILERS
 static const char * const trc_test_exp_got_row_params_start =
@@ -1564,8 +1577,10 @@ static const char * const trc_test_exp_got_row_params_end =
 " </div>";
 #endif
 
+#if TRC_USE_STATS_POPUP
 static const char * const trc_test_exp_got_row_result_anchor =
 "  <a name=\"%s_%s\"> </a>";
+#endif
 
 static const char * const trc_test_exp_got_row_mid =
 " </td>\n<td valign=top %s>\n";
@@ -2197,7 +2212,8 @@ trc_report_keys_to_html(FILE           *f,
                  FWRITE_FMT("#%s", key_test->key_path);
                  TAILQ_FOREACH(key_iter, &key_test->iters, links)
                  {
-                     FWRITE_FMT("|%d", key_iter->iter->tin);
+                     FWRITE_FMT("|%s",
+                                trc_report_get_iter_id(key_iter->iter));
                  }
              }
              else
@@ -2364,6 +2380,32 @@ trc_report_result_anchor(FILE *f, const char *test_path,
 }
 #endif
 
+static inline const char *
+test_status_to_label(te_test_status status, te_bool is_expected)
+{
+    switch (status)
+    {
+#define TE_TEST_STATUS_TO_STR(_status, _label)          \
+        case TE_TEST_ ## _status:   return #_label;
+
+        TE_TEST_STATUS_TO_STR(INCOMPLETE, warning);
+        TE_TEST_STATUS_TO_STR(UNSPEC, warning);
+        TE_TEST_STATUS_TO_STR(EMPTY, warning);
+        TE_TEST_STATUS_TO_STR(SKIPPED, info);
+        TE_TEST_STATUS_TO_STR(FAKED, info);
+        case TE_TEST_PASSED:
+        case TE_TEST_FAILED:
+            return is_expected ? "success" : "danger";
+
+#undef TE_TEST_STATUS_TO_STR
+
+        default:
+            assert(0);
+            return "danger";
+    }
+}
+
+
 /**
  * Output TRC test result entry to HTML file.
  *
@@ -2372,17 +2414,18 @@ trc_report_result_anchor(FILE *f, const char *test_path,
  * @param test_type     Test type
  * @param test_path     Test path
  * @param stats         Test statistics
- * @param tin_id        Test iteration ID
+ * @param iter_id       Test iteration ID
  * @param flags         Current output flags
  *
  * @return Status code.
  */
 static te_errno
 trc_report_test_result_to_html(FILE *f, const te_test_result *result,
+                               te_bool is_expected,
                                trc_test_type test_type,
                                const char *test_path,
                                const trc_report_stats *stats,
-                               char *tin_id, unsigned int flags)
+                               char *iter_id, unsigned int flags)
 {
     te_errno                rc = 0;
     const te_test_verdict  *v;
@@ -2411,23 +2454,25 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
                    TRC_STATS_RUN(stats));
 #endif
 #if TRC_USE_STATS_POPUP
-    obtained_link = result_link && (tin_id[0] != '\0');
+    obtained_link = result_link && (iter_id[0] != '\0');
 #endif
 
-    WRITE_FILE("<span>");
+    WRITE_FILE("<h6>");
     WRITE_FILE("Obtained result:");
 #if TRC_USE_STATS_POPUP
     if (obtained_link)
     {
         WRITE_FILE("<a href=\"javascript:showIterResultTextWilds("
                    "'StatsTip', '%s', document.getElementById('%s'))\">",
-                   test_path, tin_id);
+                   test_path, iter_id);
         WRITE_FILE("[*]</a>\n");
     }
 #endif
-    WRITE_FILE("</span><br/>\n");
+    WRITE_FILE("</h6>\n");
 
-    WRITE_FILE("<span>");
+    WRITE_FILE("<span class=\"test_result label label-%s\">",
+               result == NULL ? test_status_to_label(TE_TEST_UNSPEC, FALSE) :
+               test_status_to_label(result->status, is_expected));
     if (result == NULL)
     {
         WRITE_FILE(te_test_status_to_str(TE_TEST_UNSPEC));
@@ -2450,27 +2495,46 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
     }
 #endif
 
-    if (TAILQ_EMPTY(&result->verdicts))
-        return 0;
-
-    WRITE_FILE("<br/><br/>\n");
-    TAILQ_FOREACH(v, &result->verdicts, links)
+    if (!TAILQ_EMPTY(&result->verdicts))
     {
-        v_id++;
-        WRITE_FILE("<span id=\"%s_%d\">", tin_id, v_id);
-        WRITE_FILE(v->str);
-        WRITE_FILE("</span>\n");
-#if TRC_USE_STATS_POPUP
-        if ((flags & TRC_REPORT_WILD_VERBOSE) && obtained_link)
+        WRITE_FILE("<br/><br/>\n");
+        WRITE_FILE("<ul class=\"list-group\">");
+        TAILQ_FOREACH(v, &result->verdicts, links)
         {
-            WRITE_FILE("<a href=\"javascript:showVerdictWilds("
-                       "'StatsTip', '%s', getInnerText(document."
-                       "getElementById('%s_%d')))\">", test_path,
-                       tin_id, v_id);
-            WRITE_FILE("[*]</a>");
-        }
+            v_id++;
+            WRITE_FILE("<li class=\"test_verdict list-group-item%s\">",
+                       is_expected ? "" :
+                                     " test_obtained_nok_verdict_list");
+            WRITE_FILE("%s", v->str);
+            WRITE_FILE("</li>\n");
+#if TRC_USE_STATS_POPUP
+            if ((flags & TRC_REPORT_WILD_VERBOSE) && obtained_link)
+            {
+                WRITE_FILE("<a href=\"javascript:showVerdictWilds("
+                           "'StatsTip', '%s', getInnerText(document."
+                           "getElementById('%s_%d')))\">", test_path,
+                           iter_id, v_id);
+                WRITE_FILE("[*]</a>");
+            }
 #endif
-        WRITE_FILE("<br/>\n");
+        }
+        WRITE_FILE("</ul>\n");
+    }
+
+    if (!TAILQ_EMPTY(&result->artifacts))
+    {
+        WRITE_FILE("<br/><br/><b>Artifacts</b>:\n");
+        WRITE_FILE("<ul class=\"list-group\">");
+        TAILQ_FOREACH(v, &result->artifacts, links)
+        {
+            v_id++;
+            WRITE_FILE("<li class=\"list-group-item%s\">",
+                       is_expected ? "" :
+                                     " test_obtained_nok_verdict_list");
+            WRITE_FILE("%s", v->str);
+            WRITE_FILE("</li>\n");
+        }
+        WRITE_FILE("</ul>\n");
     }
 
 cleanup:
@@ -2533,9 +2597,9 @@ trc_report_exp_got_to_html(FILE             *f,
     trc_report_test_iter_data        *iter_data;
     const trc_report_test_iter_entry *iter_entry;
     te_errno                          rc = 0;
-    char                              tin_ref[128];
-    char                              id_tin_id[128];
-    char                              tin_id[128];
+    char                              id_iter_id[128];
+    char                              iter_id[128];
+    const char                       *id = NULL;
     char                             *escaped_path = NULL;
 
 #if TRC_USE_LOG_URLS
@@ -2556,24 +2620,28 @@ trc_report_exp_got_to_html(FILE             *f,
     iter_entry = (iter_data == NULL) ? NULL : TAILQ_FIRST(&iter_data->runs);
 
     do {
+        id = trc_report_get_iter_id(iter_entry);
+
         if (trc_report_test_iter_entry_output(test, iter_entry, flags))
         {
 #if TRC_USE_LOG_URLS
             char *iter_history_url = NULL;
             char *test_url = NULL;
-            if ((iter_entry != NULL) && (iter_entry->tin >= 0) &&
+
+            if (test->type == TRC_TEST_SCRIPT &&
+                (iter_entry != NULL) && (id[0] != '\0') &&
                 (ctx->html_logs_path != NULL))
             {
                 test_url = te_sprintf(trc_test_log_url,
 #if TRC_USE_STATS_POPUP
                                       ctx->html_logs_path,
-                                      iter_entry->tin,
+                                      id,
                                       test->name,
                                       ctx->html_logs_path,
-                                      iter_entry->tin);
+                                      id);
 #else
                                       ctx->html_logs_path,
-                                      iter_entry->tin);
+                                      id);
 #endif
             }
 
@@ -2673,20 +2741,15 @@ trc_report_exp_got_to_html(FILE             *f,
             }
             assert(iter_data != NULL);
 
-            tin_ref[0] = '\0';
-            id_tin_id[0] = '\0';
-            tin_id[0] = '\0';
+            id_iter_id[0] = '\0';
+            iter_id[0] = '\0';
             if ((test->type == TRC_TEST_SCRIPT) &&
                 (iter_entry != NULL) &&
-                (iter_entry->tin >= 0))
+                (id[0] != '\0'))
             {
-                if (~flags & TRC_REPORT_NO_KEYS)
-                    sprintf(tin_ref, trc_test_exp_got_row_tin_ref,
-                            iter_entry->tin);
-                sprintf(tin_id, "tin_%d",
-                        iter_entry->tin);
-                sprintf(id_tin_id, "id=\"%s\"",
-                        tin_id);
+                sprintf(iter_id, "iter_%s", id);
+                sprintf(id_iter_id, "id=\"%s\"",
+                        iter_id);
             }
 
             escaped_path = escape_test_path(test_path);
@@ -2746,19 +2809,19 @@ trc_report_exp_got_to_html(FILE             *f,
                 break;
 
             if (iter_entry == NULL || iter_entry->is_exp)
-                WRITE_FILE(trc_test_exp_got_row_mid, id_tin_id);
+                WRITE_FILE(trc_test_exp_got_row_mid, id_iter_id);
             else if (iter_entry->result.status == TE_TEST_PASSED)
                 WRITE_FILE(trc_test_exp_got_row_mid_pass_unexp,
                            !(flags & TRC_REPORT_NO_EXPECTED) ?
                            "class=\"test_stats_passed_unexp\"" :
                            "class=\"unexp_no_highligth\"",
-                           id_tin_id);
+                           id_iter_id);
             else
                 WRITE_FILE(trc_test_exp_got_row_mid_fail_unexp,
                            !(flags & TRC_REPORT_NO_EXPECTED) ?
                            "class=\"test_stats_failed_unexp\"" :
                            "class=\"unexp_no_highlight\"",
-                           id_tin_id);
+                           id_iter_id);
 
 #if TRC_USE_STATS_POPUP
             rc = trc_report_result_anchor(f, test_path, iter_entry,
@@ -2773,10 +2836,11 @@ trc_report_exp_got_to_html(FILE             *f,
 
             free(escaped_path);
             rc = trc_report_test_result_to_html(f, (iter_entry == NULL) ?
-                                                NULL : &iter_entry->result,
-                                                test->type,
-                                                test_path, stats, tin_id,
-                                                flags);
+                                 NULL : &iter_entry->result,
+                                 (iter_entry == NULL || iter_entry->is_exp),
+                                 test->type,
+                                 test_path, stats, iter_id,
+                                 flags);
             if (rc != 0)
                 break;
 
@@ -3421,8 +3485,11 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
         }
     }
     fprintf(f, trc_html_doc_start,
-            ((title != NULL) ? title : title_string.ptr),
-            night_logs_history);
+            ((title != NULL) ? title : title_string.ptr)
+#if TRC_USE_LOG_URLS
+            , night_logs_history
+#endif
+            );
     if (title != NULL)
         fprintf(f, "<h1 align=center>%s</h1>\n", title);
     if (gctx->db->version != NULL)
@@ -3444,7 +3511,7 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
         WRITE_STR("<b>Tags:</b>");
         TAILQ_FOREACH(tag, &gctx->tags, links)
         {
-            fprintf(f, "  %s", tag->v);
+            fprintf(f, "  <span class=\"label label-primary\">%s</span>", tag->v);
         }
         WRITE_STR("<p/>");
 

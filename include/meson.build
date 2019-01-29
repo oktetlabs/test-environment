@@ -27,7 +27,6 @@ check_headers = [
     'dirent.h',
     'dlfcn.h',
     'errno.h',
-    'expect.h',
     'fcntl.h',
     'fnmatch.h',
     'glob.h',
@@ -101,8 +100,6 @@ check_headers = [
     'sys/utsname.h',
     'sys/wait.h',
     'sys/syscall.h',
-    'tcl.h',
-    'tcl8.4/expect.h',
     'termio.h',
     'time.h',
     'ucd-snmp/snmp_impl.h',
@@ -311,7 +308,6 @@ headers += [
     'te_ethernet.h',
     'te_ethernet_phy.h',
     'te_ethtool.h',
-    'te_expand.h',
     'te_param.h',
     'te_power_sw.h',
     'te_printf.h',
@@ -323,7 +319,7 @@ headers += [
     'te_test_result.h',
     'te_upnp.h',
     'te_win_defs.h',
-    'tester_internal.h',
+    'tester_msg.h',
 ]
 
 if install_dev

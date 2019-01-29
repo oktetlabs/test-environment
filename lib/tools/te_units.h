@@ -24,6 +24,7 @@
 #include <stdint.h>
 #endif
 
+#include "te_errno.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,7 +68,6 @@ typedef struct te_unit {
     double value;           /**< Value */
     te_unit_prefix unit;    /**< Unit prefix */
 } te_unit;
-
 
 /**
  * Convert unit prefix to string.
@@ -113,6 +113,16 @@ extern te_unit te_unit_bin_pack(double value);
  * @return Plain value.
  */
 extern double te_unit_bin_unpack(te_unit value);
+
+/**
+ * Read value-unit from the string and store it to @p unit
+ *
+ * @param str               String representation of value-unit
+ * @param value             Value-unit to store result in
+ *
+ * @return Status code.
+ */
+extern te_errno te_unit_from_string(const char *str, te_unit *value);
 
 #ifdef __cplusplus
 } /* extern "C" */

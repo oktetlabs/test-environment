@@ -73,7 +73,7 @@ sources = [
     'tester_interactive.c',
     'tester_serial_thread.c',
     'type_lib.c',
-    'verdicts.c',
+    'test_msg.c',
 ]
 
 sources += lex_gen.process('test_path_lex.l')

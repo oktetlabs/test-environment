@@ -228,30 +228,6 @@ then
 fi
 AM_CONDITIONAL([CFG_PCI], test x"$ac_cv_enable_pci" != xno)
 
-
-AC_ARG_ENABLE([wifi],
-              AS_HELP_STRING([--enable-wifi],
-                             [enable WiFi support (default is NO)]),
-              [ac_cv_enable_wifi=$enableval], [ac_cv_enable_wifi=no])
-AC_CACHE_CHECK([whether to enable WiFi],
-               [ac_cv_enable_wifi], [ac_cv_enable_wifi=no])
-
-if test x"$ac_cv_enable_wifi" != xno
-then
-dnl
-dnl Check that we have iwlib installed in our system
-dnl
-    AC_CHECK_HEADERS([iwlib.h], [],
-                     AC_MSG_ERROR([Cannot find iwlib.h header]))
-    AC_CHECK_LIB([iw], [iw_sockets_open], [EXTRA_LDADD="$EXTRA_LDADD -liw"],
-                 AC_MSG_ERROR([Cannot find iw library]), [-lm])
-
-    AC_DEFINE([ENABLE_WIFI_SUPPORT], [], [Whether to enable WiFi support])
-    LIBS="$LIBS -lm"
-fi
-
-AM_CONDITIONAL([CFG_UNIX_WIFI], test x"$ac_cv_enable_wifi" != xno)
-
 AC_ARG_ENABLE([8021x],
               AS_HELP_STRING([--enable-8021x],
                              [enable IEEE802.1x support (default is NO)]),

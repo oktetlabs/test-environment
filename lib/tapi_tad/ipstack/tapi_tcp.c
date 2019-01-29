@@ -1475,13 +1475,13 @@ find_ts_opt(asn_value *val, asn_value **p_tcp_pdu, asn_value **p_options,
 
 /* See description in tapi_tcp.h */
 te_errno
-tapi_tcp_get_ts_opt(asn_value *val,
+tapi_tcp_get_ts_opt(const asn_value *val,
                     uint32_t *ts_value, uint32_t *ts_echo)
 {
     asn_value *ts_opt = NULL;
     te_errno   rc = 0;
 
-    rc = find_ts_opt(val, NULL, NULL, &ts_opt);
+    rc = find_ts_opt((asn_value *)val, NULL, NULL, &ts_opt);
     if (rc != 0)
         return rc;
 
@@ -1593,4 +1593,78 @@ tapi_tcp_set_ts_opt(asn_value *val,
     }
 
     return 0;
+}
+
+/* See description in tapi_tcp.h */
+int
+tapi_tcp_compare_seqn(uint32_t seqn1, uint32_t seqn2)
+{
+    uint32_t diff;
+
+    diff = seqn2 - seqn1;
+
+    if (diff == 0)
+        return 0;
+    else if ((int32_t)diff > 0)
+        return -1;
+    else
+        return 1;
+}
+
+/* See description in tapi_tcp.h */
+te_errno
+tapi_tcp_ip_eth_csap_create(const char *ta_name, int sid, const char *eth_dev,
+                            unsigned int receive_mode, const uint8_t *loc_mac,
+                            const uint8_t *rem_mac,
+                            const struct sockaddr *loc_addr,
+                            const struct sockaddr *rem_addr,
+                            csap_handle_t *tcp_csap, int ip_family)
+{
+    in_addr_t ip4_locaddr = 0;
+    in_addr_t ip4_remaddr = 0;
+    uint8_t  *ip6_locaddr = NULL;
+    uint8_t  *ip6_remaddr = NULL;
+    int       locport = -1;
+    int       remport = -1;
+
+    switch (ip_family)
+    {
+        case AF_INET:
+            if (loc_addr != NULL)
+            {
+                ip4_locaddr = SIN(loc_addr)->sin_addr.s_addr;
+                locport = SIN(loc_addr)->sin_port;
+            }
+            if (rem_addr != NULL)
+            {
+                ip4_remaddr = SIN(rem_addr)->sin_addr.s_addr;
+                remport = SIN(rem_addr)->sin_port;
+            }
+
+            return tapi_tcp_ip4_eth_csap_create(ta_name, sid, eth_dev,
+                                                receive_mode,
+                                                loc_mac, rem_mac,
+                                                ip4_locaddr, ip4_remaddr,
+                                                locport, remport, tcp_csap);
+        case AF_INET6:
+            if (loc_addr != NULL)
+            {
+                ip6_locaddr = SIN6(loc_addr)->sin6_addr.s6_addr;
+                locport = SIN6(loc_addr)->sin6_port;
+            }
+            if (rem_addr != NULL)
+            {
+                ip6_remaddr = SIN6(rem_addr)->sin6_addr.s6_addr;
+                remport = SIN6(rem_addr)->sin6_port;
+            }
+
+            return tapi_tcp_ip6_eth_csap_create(ta_name, sid, eth_dev,
+                                                receive_mode,
+                                                loc_mac, rem_mac,
+                                                ip6_locaddr, ip6_remaddr,
+                                                locport, remport, tcp_csap);
+        default:
+            ERROR("Invalid ip address family");
+            return TE_EINVAL;
+    }
 }

@@ -10,6 +10,7 @@
 
 #include "netconf.h"
 #include "netconf_internal.h"
+#include "te_sockaddr.h"
 
 /**
  * Callback of routes dump.
@@ -41,6 +42,7 @@ route_list_cb(struct nlmsghdr *h, netconf_list *list)
     route->scope = rtm->rtm_scope;
     route->type = rtm->rtm_type;
     route->flags = rtm->rtm_flags;
+    LIST_INIT(&route->hops);
 
     rta = (struct rtattr *)((char *)h +
                             NLMSG_SPACE(sizeof(struct rtmsg)));
@@ -107,6 +109,59 @@ route_list_cb(struct nlmsghdr *h, netconf_list *list)
                     route->expires = ci->rta_expires;
                     break;
                 }
+            case RTA_MULTIPATH:
+                {
+                    struct rtnexthop *nh;
+                    struct rtattr    *nh_rta;
+                    int               len;
+                    int               nh_len;
+
+                    netconf_route_nexthop   *nc_nh_prev = NULL;
+                    netconf_route_nexthop   *nc_nh;
+
+                    len = RTA_PAYLOAD(rta);
+                    nh = RTA_DATA(rta);
+
+                    while (len > 0 &&
+                           (unsigned int)len >= sizeof(struct rtnexthop) &&
+                           RTNH_OK(nh, len))
+                    {
+                        nh_rta = RTNH_DATA(nh);
+                        nh_len = nh->rtnh_len -
+                                      ((uint8_t *)nh_rta - (uint8_t *)nh);
+
+                        nc_nh = calloc(1, sizeof(*nc_nh));
+                        if (nc_nh == NULL)
+                            return -1;
+
+                        if (nc_nh_prev != NULL)
+                            LIST_INSERT_AFTER(nc_nh_prev, nc_nh, links);
+                        else
+                            LIST_INSERT_HEAD(&route->hops, nc_nh, links);
+
+                        nc_nh_prev = nc_nh;
+
+                        nc_nh->weight = nh->rtnh_hops + 1;
+                        nc_nh->oifindex = nh->rtnh_ifindex;
+
+                        while (RTA_OK(nh_rta, nh_len))
+                        {
+                            switch (nh_rta->rta_type)
+                            {
+                                case RTA_GATEWAY:
+                                    nc_nh->gateway = netconf_dup_rta(nh_rta);
+                                    break;
+                            }
+
+                            nh_rta = RTA_NEXT(nh_rta, nh_len);
+                        }
+
+                        len -= (uint8_t *)RTNH_NEXT(nh) - (uint8_t *)nh;
+                        nh = RTNH_NEXT(nh);
+                    }
+
+                    break;
+                }
         }
 
         rta = RTA_NEXT(rta, len);
@@ -122,18 +177,34 @@ netconf_route_dump(netconf_handle nh, unsigned char family)
                                 route_list_cb);
 }
 
+/* See description in netconf.h */
+void
+netconf_route_clean(netconf_route *route)
+{
+    netconf_route_nexthop *nc_nh;
+    netconf_route_nexthop *nc_nh_next;
+
+    NETCONF_ASSERT(route != NULL);
+
+    if (route->dst != NULL)
+        free(route->dst);
+    if (route->src != NULL)
+        free(route->src);
+    if (route->gateway != NULL)
+        free(route->gateway);
+
+    LIST_FOREACH_SAFE(nc_nh, &route->hops, links, nc_nh_next)
+    {
+        LIST_REMOVE(nc_nh, links);
+        free(nc_nh);
+    }
+}
+
 void
 netconf_route_node_free(netconf_node *node)
 {
     NETCONF_ASSERT(node != NULL);
-
-    if (node->data.route.dst != NULL)
-        free(node->data.route.dst);
-    if (node->data.route.src != NULL)
-        free(node->data.route.src);
-    if (node->data.route.gateway != NULL)
-        free(node->data.route.gateway);
-
+    netconf_route_clean(&node->data.route);
     free(node);
 }
 
@@ -148,6 +219,84 @@ netconf_route_init(netconf_route *route)
     route->protocol = NETCONF_RTPROT_UNSPEC;
     route->scope = NETCONF_RT_SCOPE_UNSPEC;
     route->type = NETCONF_RTN_UNSPEC;
+    LIST_INIT(&route->hops);
+}
+
+/**
+ * Fill nexthops of a multipath route in netlink request.
+ *
+ * @param h             Pointer to nlmsghdr structure.
+ * @param max_size      Maximum number of bytes in netlink request.
+ * @param addr_family   Route address family.
+ * @param hops          List of route nexthops.
+ *
+ * @return @c 0 on success, @c -1 on failure. Sets errno in case
+ *         of failure.
+ */
+static int
+fill_nexthops(struct nlmsghdr *h,
+              size_t max_size,
+              int addr_family,
+              const netconf_route_nexthops *hops)
+{
+    netconf_route_nexthop *p;
+
+    struct rtattr    *rta_main;
+    struct rtattr    *rta;
+    struct rtnexthop *rt_nh;
+    size_t            addr_len;
+    size_t            attr_len;
+    size_t            total_size;
+    size_t            new_nl_len;
+
+    rta_main = NETCONF_NLMSG_TAIL(h);
+
+    addr_len = te_netaddr_get_size(addr_family);
+    total_size = 0;
+
+    LIST_FOREACH(p, hops, links)
+    {
+        total_size += RTNH_SPACE(p->gateway != NULL ?
+                                 RTA_SPACE(addr_len) :
+                                 0);
+    }
+
+    new_nl_len =
+          NLMSG_LENGTH(((uint8_t *)rta_main + RTA_SPACE(total_size)) -
+                       (uint8_t *)NLMSG_DATA(h));
+
+    if (new_nl_len > max_size)
+    {
+        errno = ENOBUFS;
+        return -1;
+    }
+
+    rta_main->rta_type = RTA_MULTIPATH;
+    rt_nh = RTA_DATA(rta_main);
+
+    LIST_FOREACH(p, hops, links)
+    {
+        rt_nh->rtnh_hops = p->weight - 1;
+        rt_nh->rtnh_ifindex = p->oifindex;
+        attr_len = 0;
+        if (p->gateway != NULL)
+        {
+            rta = RTNH_DATA(rt_nh);
+            rta->rta_type = RTA_GATEWAY;
+            memcpy(RTA_DATA(rta), p->gateway, addr_len);
+            rta->rta_len = RTA_LENGTH(addr_len);
+            attr_len = RTA_SPACE(addr_len);
+        }
+
+        rt_nh->rtnh_len = RTNH_LENGTH(attr_len);
+
+        rt_nh = RTNH_NEXT(rt_nh);
+    }
+
+    rta_main->rta_len = RTA_LENGTH(total_size);
+    h->nlmsg_len = new_nl_len;
+
+    return 0;
 }
 
 int
@@ -248,6 +397,14 @@ netconf_route_modify(netconf_handle nh, netconf_cmd cmd,
 
                 break;
         }
+
+        /*
+         * This is not always necessary, however for unknown reason
+         * adding multipath route with scope LINK fails with ENETUNREACH
+         * error if gateways are specified in nexthops.
+         */
+        if (!LIST_EMPTY(&route->hops))
+            rtm->rtm_scope = RT_SCOPE_UNIVERSE;
     }
     else
     {
@@ -326,6 +483,13 @@ netconf_route_modify(netconf_handle nh, netconf_cmd cmd,
 
     if (mxbuflen > RTA_LENGTH(0))
         netconf_append_rta(h, mxbuf, mxbuflen, RTA_METRICS);
+
+    if (!LIST_EMPTY(&route->hops))
+    {
+        if (fill_nexthops(h, sizeof(req), route->family,
+                          &route->hops) < 0)
+            return -1;
+    }
 
     /* Send request and receive ACK */
     return netconf_talk(nh, &req, sizeof(req), NULL, NULL);

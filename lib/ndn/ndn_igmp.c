@@ -69,6 +69,8 @@ static asn_named_entry_t _ndn_igmp_message_ne_array [] = {
         { PRIVATE, NDN_TAG_IGMP_GROUP_ADDRESS }},
 
     /* IGMPv3 Query specific fields */
+    { "reserved", &ndn_data_unit_int4_s,
+        { PRIVATE, NDN_TAG_IGMP3_RESERVED }},
     { "s-flag", &ndn_data_unit_int8_s,
         { PRIVATE, NDN_TAG_IGMP3_S_FLAG }},
     { "qrv", &ndn_data_unit_int8_s,

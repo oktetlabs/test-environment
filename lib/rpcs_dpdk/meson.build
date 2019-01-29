@@ -2,6 +2,8 @@
 
 prj_args = get_option('cflags').split()
 
+c_args += [ '-DALLOW_EXPERIMENTAL_API' ]
+
 # Check if rte_ring_enqueue_bulk() has free space argument
 code_ring_enqueue_bulk = '''
 #include "rte_config.h"
@@ -39,7 +41,7 @@ code_prefix_flow_api_driver = '''
 '''
 if cc.has_member('struct rte_flow_ops', 'isolate', args: prj_args,
                  prefix: code_prefix_flow_api_driver)
-    c_args += [ '-DHAVE_RTE_FLOW_ISOLATE' ]
+    c_args += [ '-DHAVE_STRUCT_RTE_FLOW_OPS_ISOLATE' ]
 endif
 
 if cc.has_header_symbol('rte_flow.h', 'RTE_FLOW_ITEM_TYPE_GENEVE',
@@ -53,11 +55,15 @@ code_prefix_ethdev = '''
 '''
 if cc.has_member('struct rte_eth_dev_info', 'rx_queue_offload_capa',
                  args: prj_args, prefix: code_prefix_ethdev)
-    c_args += [ '-DHAVE_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA' ]
+    c_args += [ '-DHAVE_STRUCT_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA' ]
 endif
 if cc.has_member('struct rte_eth_dev_info', 'tx_queue_offload_capa',
                  args: prj_args, prefix: code_prefix_ethdev)
-    c_args += [ '-DHAVE_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA' ]
+    c_args += [ '-DHAVE_STRUCT_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA' ]
+endif
+if cc.has_member('struct rte_eth_dev_info', 'dev_capa',
+                 args: prj_args, prefix: code_prefix_ethdev)
+    c_args += [ '-DHAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA' ]
 endif
 
 code_prefix_flow_api = '''
@@ -66,15 +72,20 @@ code_prefix_flow_api = '''
 '''
 if cc.has_member('struct rte_flow_action_rss', 'rss_conf', args: prj_args,
                  prefix: code_prefix_flow_api)
-    c_args += [ '-DHAVE_RTE_FLOW_ITEM_RSS_CONF' ]
+    c_args += [ '-DHAVE_STRUCT_RTE_FLOW_ACTION_RSS_RSS_CONF' ]
 endif
 if cc.has_member('struct rte_flow_action_rss', 'num', args: prj_args,
                  prefix: code_prefix_flow_api)
-    c_args += [ '-DHAVE_RTE_FLOW_ITEM_RSS_NUM' ]
+    c_args += [ '-DHAVE_STRUCT_RTE_FLOW_ACTION_RSS_NUM' ]
 endif
 if cc.has_member('struct rte_flow_item_vlan', 'tpid', args: prj_args,
                  prefix: code_prefix_flow_api)
-    c_args += [ '-DHAVE_RTE_FLOW_ITEM_VLAN_TPID' ]
+    c_args += [ '-DHAVE_STRUCT_RTE_FLOW_ITEM_VLAN_TPID' ]
+endif
+
+f = 'rte_pktmbuf_pool_create_by_ops'
+if cc.has_function(f, args: prj_args)
+    c_args += [ '-DHAVE_' + f.to_upper() ]
 endif
 
 sources += files(

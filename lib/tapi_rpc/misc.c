@@ -41,6 +41,7 @@
 
 #include "te_defs.h"
 #include "te_printf.h"
+#include "te_str.h"
 #include "te_string.h"
 #include "tq_string.h"
 #include "tapi_rpc_internal.h"
@@ -52,15 +53,7 @@
 #include "tapi_cfg.h"
 #include "tapi_cfg_base.h"
 #include "tapi_host_ns.h"
-
-/**
- * Array containing names of pattern generator functions.
- * Used with @ref tapi_pat_gen_type.
- */
-static const char *rpc_pat_gen_func_name[] = {
-    "fill_buff_with_sequence",
-    "fill_buff_with_sequence_lcg"
-};
+#include "tarpc.h"
 
 /* See description in tapi_rpc_misc.h */
 
@@ -416,16 +409,8 @@ rpc_set_var(rcf_rpc_server *rpcs, const char *name,
 }
 
 
-/**
- * Convert I/O vector to array.
- *
- * @param len      total data length
- * @param v        I/O vector
- * @param cnt      number of elements in vector
- *
- * @return Pointer to allocated array or NULL.
- */
-static uint8_t *
+/* See description in tapi_rpc_unistd.h */
+uint8_t *
 rpc_iovec_to_array(size_t len, const struct rpc_iovec *v, size_t cnt)
 {
     uint8_t *array = malloc(len);
@@ -726,35 +711,20 @@ rpc_simple_receiver(rcf_rpc_server *rpcs,
 }
 
 /** See description in tapi_rpc_misc.h */
-int
-tapi_rpc_sender(rcf_rpc_server *rpcs, int s, tapi_pat_sender *sender)
+void
+tapi_pat_sender_init(tapi_pat_sender *p)
 {
-    return rpc_pattern_sender(rpcs, s, rpc_pat_gen_func_name[sender->gen],
-                    &sender->gen_arg, sender->iomux,
-                    sender->size.min, sender->size.max, sender->size.once,
-                    sender->delay.min, sender->delay.max, sender->delay.once,
-                    sender->duration_sec, sender->sent, sender->ignore_err,
-                    &sender->send_failed);
+    memset(p, 0, sizeof(*p));
+    p->iomux = FUNC_DEFAULT_IOMUX;
+    p->gen_arg_ptr = &p->gen_arg;
+    p->sent_ptr = &p->sent;
+    p->send_failed_ptr = &p->send_failed;
 }
 
 /** See description in tapi_rpc_misc.h */
 int
-tapi_rpc_receiver(rcf_rpc_server *rpcs, int s, tapi_pat_receiver *receiver)
-{
-    return rpc_pattern_receiver(rpcs, s, rpc_pat_gen_func_name[receiver->gen],
-                    &receiver->gen_arg, receiver->iomux,
-                    receiver->duration_sec, receiver->received,
-                    &receiver->recv_failed);
-}
-
-/** See description in tapi_rpc_misc.h */
-int
-rpc_pattern_sender(rcf_rpc_server *rpcs,
-                   int s, const char *fname, tarpc_pat_gen_arg *gen_arg,
-                   int iomux, int size_min,
-                   int size_max, int size_rnd_once, int delay_min,
-                   int delay_max, int delay_rnd_once, int time2run,
-                   uint64_t *sent, int ignore_err, te_bool *send_failed)
+rpc_pattern_sender(rcf_rpc_server *rpcs, int s,
+                   tapi_pat_sender *args)
 {
     tarpc_pattern_sender_in  in;
     tarpc_pattern_sender_out out;
@@ -764,69 +734,114 @@ rpc_pattern_sender(rcf_rpc_server *rpcs,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        ERROR("%s(): invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(pattern_sender, -1);
     }
 
-    if (fname == NULL)
+    if (args == NULL)
     {
-        ERROR("%s(): Invalid pattern generating function name",
+        ERROR("%s(): pointer to arguments is missing",
+              __FUNCTION__);
+        RETVAL_INT(pattern_sender, -1);
+    }
+
+    if (args->gen_func == NULL)
+    {
+        ERROR("%s(): invalid pattern generating function name",
               __FUNCTION__);
         RETVAL_INT(pattern_sender, -1);
     }
 
     in.s = s;
-    in.fname.fname_len = strlen(fname) + 1;
-    in.fname.fname_val = strdup(fname);
-    if (gen_arg != NULL)
-        in.gen_arg = *gen_arg;
-    in.iomux = iomux;
-    in.size_min = size_min;
-    in.size_max = size_max;
-    in.size_rnd_once = size_rnd_once;
-    in.delay_min = delay_min;
-    in.delay_max = delay_max;
-    in.delay_rnd_once = delay_rnd_once;
-    in.time2run = time2run;
-    in.ignore_err = ignore_err;
+    in.fname.fname_len = strlen(args->gen_func) + 1;
+    in.fname.fname_val = strdup(args->gen_func);
+
+    if (in.fname.fname_val == NULL)
+    {
+        ERROR("%s(): out of memory", __FUNCTION__);
+        rpcs->_errno = TE_RC(TE_TAPI, TE_ENOMEM);
+        RETVAL_INT(pattern_sender, -1);
+    }
+
+    if (!te_str_is_null_or_empty(args->snd_wrapper))
+    {
+        in.swrapper.swrapper_val = strdup(args->snd_wrapper);
+        if (in.swrapper.swrapper_val == NULL)
+        {
+            ERROR("%s(): out of memory", __FUNCTION__);
+            free(in.fname.fname_val);
+            rpcs->_errno = TE_RC(TE_TAPI, TE_ENOMEM);
+            RETVAL_INT(pattern_sender, -1);
+        }
+        in.swrapper.swrapper_len = strlen(args->snd_wrapper) + 1;
+        in.swrapper_data = args->snd_wrapper_ctx;
+    }
+
+    if (args->gen_arg_ptr != NULL)
+        memcpy(&in.gen_arg, args->gen_arg_ptr, sizeof(in.gen_arg));
+    in.iomux = args->iomux;
+    in.size_min = args->size.min;
+    in.size_max = args->size.max;
+    in.size_rnd_once = args->size.once;
+    in.delay_min = args->delay.min;
+    in.delay_max = args->delay.max;
+    in.delay_rnd_once = args->delay.once;
+    in.time2run = args->duration_sec;
+    in.ignore_err = args->ignore_err;
 
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
-        rpcs->timeout = TE_SEC2MS(time2run + TAPI_RPC_TIMEOUT_EXTRA_SEC);
+        rpcs->timeout = TE_SEC2MS(args->duration_sec +
+                                  TAPI_RPC_TIMEOUT_EXTRA_SEC);
 
     rcf_rpc_call(rpcs, "pattern_sender", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
     {
-        if (gen_arg != NULL)
-            *gen_arg = out.gen_arg;
+        if (args->gen_arg_ptr != NULL)
+            memcpy(args->gen_arg_ptr, &out.gen_arg, sizeof(out.gen_arg));
     }
 
     free(in.fname.fname_val);
+    free(in.swrapper.swrapper_val);
 
-    if (sent != NULL)
-        *sent = out.bytes;
-
-    if (send_failed != NULL)
-        *send_failed = out.func_failed;
+    if (args->sent_ptr != NULL)
+        *(args->sent_ptr) = out.bytes;
+    if (args->send_failed_ptr != NULL)
+        *(args->send_failed_ptr) = out.func_failed;
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(pattern_sender, out.retval);
 
-    TAPI_RPC_LOG(rpcs, pattern_sender, "%d, %s, %s, " TARPC_PAT_GEN_ARG_FMT
-                 ", %d, %d, %d, %d, %d, %d, %d, %d", "%d sent=%u",
-                 s, fname, iomux2str(iomux), TARPC_PAT_GEN_ARG_VAL(in.gen_arg),
-                 size_min, size_max, size_rnd_once,
-                 delay_min, delay_max, delay_rnd_once,
-                 time2run, ignore_err, out.retval,
+    TAPI_RPC_LOG(rpcs, pattern_sender, "fd=%d, gen_func='%s', "
+                 "gen_arg=[" TARPC_PAT_GEN_ARG_FMT "], "
+                 "snd_wrapper='%s', snd_wrapper_ctx=" RPC_PTR_FMT ", "
+                 "iomux='%s', size_min=%d, size_max=%d, size_once=%d, "
+                 "delay_min=%d, delay_max=%d, delay_once=%d, "
+                 "duration_sec=%d, ignore_err=%d", "%d sent=%u",
+                 s, args->gen_func, TARPC_PAT_GEN_ARG_VAL(in.gen_arg),
+                 args->snd_wrapper, RPC_PTR_VAL(args->snd_wrapper_ctx),
+                 iomux2str(args->iomux),
+                 args->size.min, args->size.max, args->size.once,
+                 args->delay.min, args->delay.max, args->delay.once,
+                 args->duration_sec, args->ignore_err, out.retval,
                  (unsigned int)out.bytes);
     RETVAL_INT(pattern_sender, out.retval);
 }
 
 /** See description in tapi_rpc_misc.h */
+void
+tapi_pat_receiver_init(tapi_pat_receiver *p)
+{
+    memset(p, 0, sizeof(*p));
+    p->iomux = FUNC_DEFAULT_IOMUX;
+    p->gen_arg_ptr = &p->gen_arg;
+    p->received_ptr = &p->received;
+    p->recv_failed_ptr = &p->recv_failed;
+}
+
+/** See description in tapi_rpc_misc.h */
 int
 rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
-                     const char *fname, tarpc_pat_gen_arg *gen_arg,
-                     int iomux, uint32_t time2run, uint64_t *received,
-                     te_bool *recv_failed)
+                     tapi_pat_receiver *args)
 {
     tarpc_pattern_receiver_in  in;
     tarpc_pattern_receiver_out out;
@@ -836,50 +851,66 @@ rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
 
     if (rpcs == NULL)
     {
-        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        ERROR("%s(): invalid RPC server handle", __FUNCTION__);
         RETVAL_INT(pattern_receiver, -1);
     }
 
-    if (fname == NULL)
+    if (args == NULL)
     {
-        ERROR("%s(): Invalid pattern generating function name",
+        ERROR("%s(): args is NULL", __FUNCTION__);
+        RETVAL_INT(pattern_receiver, -1);
+    }
+
+    if (args->gen_func == NULL)
+    {
+        ERROR("%s(): invalid pattern generating function name",
               __FUNCTION__);
-        RETVAL_INT(pattern_sender, -1);
+        RETVAL_INT(pattern_receiver, -1);
     }
 
     in.s = s;
-    in.fname.fname_len = strlen(fname) + 1;
-    in.fname.fname_val = strdup(fname);
-    if(gen_arg != NULL)
-        in.gen_arg = *gen_arg;
-    in.iomux = iomux;
-    in.time2run = time2run;
+    in.fname.fname_val = strdup(args->gen_func);
+    if (in.fname.fname_val == NULL)
+    {
+        ERROR("%s(): out of memory", __FUNCTION__);
+        rpcs->_errno = TE_RC(TE_TAPI, TE_ENOMEM);
+        RETVAL_INT(pattern_receiver, -1);
+    }
+
+    in.fname.fname_len = strlen(args->gen_func) + 1;
+    if(args->gen_arg_ptr != NULL)
+        memcpy(&in.gen_arg, args->gen_arg_ptr, sizeof(in.gen_arg));
+    in.iomux = args->iomux;
+    in.time2run = args->duration_sec;
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
-        rpcs->timeout = TE_SEC2MS(time2run + TAPI_RPC_TIMEOUT_EXTRA_SEC);
+        rpcs->timeout = TE_SEC2MS(args->duration_sec +
+                                  TAPI_RPC_TIMEOUT_EXTRA_SEC);
 
     rcf_rpc_call(rpcs, "pattern_receiver", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
     {
-        if(gen_arg != NULL)
-            *gen_arg = out.gen_arg;
+        if(args->gen_arg_ptr != NULL)
+            memcpy(args->gen_arg_ptr, &out.gen_arg, sizeof(out.gen_arg));
     }
 
     free(in.fname.fname_val);
 
-    if (received != NULL)
-        *received = out.bytes;
+    if (args->received_ptr != NULL)
+        *(args->received_ptr) = out.bytes;
 
-    if (recv_failed != NULL)
-        *recv_failed = out.func_failed;
+    if (args->recv_failed_ptr != NULL)
+        *(args->recv_failed_ptr) = out.func_failed;
 
     CHECK_RETVAL_VAR(pattern_receiver, out.retval,
                      !(out.retval <= 0 && out.retval >= -2), -1);
 
-    TAPI_RPC_LOG(rpcs, pattern_receiver, "%d, %s, %s, " TARPC_PAT_GEN_ARG_FMT
-                 ", %d", "%d received=%u", s, fname, iomux2str(iomux),
-                 TARPC_PAT_GEN_ARG_VAL(in.gen_arg), time2run, out.retval,
-                 (unsigned long)out.bytes);
+    TAPI_RPC_LOG(rpcs, pattern_receiver, "fd=%d, gen_func='%s', "
+                 "gen_arg=[" TARPC_PAT_GEN_ARG_FMT "], iomux='%s', "
+                 "duration_sec=%d", "%d received=%u",
+                 s, args->gen_func, TARPC_PAT_GEN_ARG_VAL(in.gen_arg),
+                 iomux2str(args->iomux), args->duration_sec,
+                 out.retval, (unsigned long)out.bytes);
     RETVAL_INT(pattern_receiver, out.retval);
 }
 
@@ -1833,6 +1864,15 @@ rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
     struct tarpc_get_rw_ability_out out;
     int                             rc;
 
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): rpcs is NULL", __FUNCTION__);
+        RETVAL_INT(get_rw_ability, -1);
+    }
+
     in.sock = s;
     in.timeout = timeout;
     in.check_rd = (type[0] == 'R') ? TRUE : FALSE;
@@ -1846,10 +1886,10 @@ rpc_get_rw_ability(te_bool *answer, rcf_rpc_server *rpcs,
     *answer = (out.retval == 1);
     rc = (out.retval > 0) ? 0 : out.retval;
 
-    CHECK_RETVAL_VAR(rpc_get_rw_ability, rc, (rc < 0), -1);
-    TAPI_RPC_LOG(rpcs, rpc_get_rw_ability, "%d %d %s", "%d", s, timeout,
+    CHECK_RETVAL_VAR(get_rw_ability, rc, (rc < 0), -1);
+    TAPI_RPC_LOG(rpcs, get_rw_ability, "%d %d %s", "%d", s, timeout,
                  type, out.retval);
-    RETVAL_INT(rpc_find_func, rc);
+    RETVAL_INT(get_rw_ability, rc);
 }
 
 
@@ -2734,6 +2774,11 @@ tapi_set_if_mtu_smart_aux(const char *ta,
         ERROR("Interface %s is not grabbed by agent %s", if_name, ta);
         return TE_RC(TE_TAPI, TE_EPERM);
     }
+
+    rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s/mtu:",
+                             ta, if_name);
+    if (rc != 0)
+        return rc;
 
     rc = tapi_cfg_base_if_get_mtu_u(ta, if_name, &old_mtu);
     if (rc != 0)

@@ -222,7 +222,7 @@ upnp_cp_action(tarpc_upnp_cp_action_in *in, tarpc_upnp_cp_action_out *out)
         ERROR("Fail to send request");
         return -1;
     }
-    rc = get_reply(client, &out->buf.buf_val, &out->buf.buf_len);
+    rc = get_reply(client, &out->buf.buf_val, (size_t* )&out->buf.buf_len);
     if (rc != 0)
     {
         ERROR("Fail to get reply");

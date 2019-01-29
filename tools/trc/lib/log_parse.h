@@ -61,6 +61,8 @@ typedef enum trc_log_parse_state {
     TRC_LOG_PARSE_OBJECTIVE, /**< Inside 'objective' element */
     TRC_LOG_PARSE_VERDICTS,  /**< Inside 'verdicts' element */
     TRC_LOG_PARSE_VERDICT,   /**< Inside 'verdict' element */
+    TRC_LOG_PARSE_ARTIFACTS, /**< Inside 'artifacts' element */
+    TRC_LOG_PARSE_ARTIFACT,  /**< Inside 'artifact' element */
     TRC_LOG_PARSE_PARAMS,    /**< Inside 'params' element */
     TRC_LOG_PARSE_LOGS,      /**< Inside 'logs' element */
     TRC_LOG_PARSE_SKIP,      /**< Skip entire contents */

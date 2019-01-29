@@ -114,7 +114,8 @@ dlna_file_to_local(const tapi_upnp_cd_container_node *dlna_file)
 static void
 release_media_file(tapi_media_file *media_file)
 {
-    free(media_file->file.pathname);
+    /* cast is required to remove const */
+    free((char *)media_file->file.pathname);
 }
 
 

@@ -72,4 +72,14 @@ cfg_instance_volatile(cfg_instance *inst)
     return inst->obj->vol;
 }
 
+/**
+ * Process XML document containing dynamic history and
+ * synchronise resulting database with Test Agents.
+ *
+ * @param root_node Root node of the input document
+ *
+ * @return Status code.
+ */
+extern te_errno parse_config_dh_sync(xmlNodePtr root_node);
+
 #endif /* !__TE_CONF_DEFS_H__ */

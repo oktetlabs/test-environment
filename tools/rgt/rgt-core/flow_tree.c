@@ -1,12 +1,12 @@
 /** @file
  * @brief Test Environment: Interface for test execution flow.
  *
- * The module is responsible for keeping track of occured events and 
+ * The module is responsible for keeping track of occured events and
  * checking if new events are legal.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -35,6 +35,7 @@
 #include "filter.h"
 #include "log_format.h"
 #include "memory.h"
+#include "logger_defs.h"
 
 #if HAVE_UNISTD_H
 #include <unistd.h>
@@ -80,7 +81,7 @@ static unsigned long msg_put_to_tail;
 /** Counter for the number of messages added by using cache information. */
 static unsigned long msg_use_cache;
 /**
- * Counter for the number of messages that added immediately after 
+ * Counter for the number of messages that added immediately after
  * cached message.
  */
 static unsigned long msg_put_after_cache_quick;
@@ -116,11 +117,11 @@ static GQueue *offload_queue = NULL;
 
 /**
  * Status of the session branch
- * 
+ *
  * @todo Remove this field from all sources.
  */
 enum branch_status {
-    BSTATUS_ACTIVE, /**< Branch is active: 
+    BSTATUS_ACTIVE, /**< Branch is active:
                          There is at least one non closed node. */
     BSTATUS_IDLE,   /**< Branch is idle. */
 };
@@ -129,7 +130,7 @@ enum branch_status {
 typedef struct branch_info {
     struct node_t      *first_el; /**< Pointer to the first element in
                                        the branch */
-    struct node_t      *last_el;  /**< Pointer to the last element 
+    struct node_t      *last_el;  /**< Pointer to the last element
                                        in the branch */
     enum branch_status  status;   /**< Status of the branch */
     uint32_t           *start_ts; /**< Branch start timestamp */
@@ -139,16 +140,16 @@ typedef struct branch_info {
 /** Node of the execution flow tree */
 typedef struct node_t {
     struct node_t *parent; /**< Pointer to the parent node */
-    struct node_t *prev;   /**< Pointer to the previous node 
+    struct node_t *prev;   /**< Pointer to the previous node
                                 in execution order */
-    struct node_t *next;   /**< For package node used as a pointer 
+    struct node_t *next;   /**< For package node used as a pointer
                                 to the session underneath */
 
     node_id_t      id;     /**< Node id (key that is used by g_hash
                                 outines) */
     struct node_t *self;   /**< Pointer to this structure (self pointer) */
     char          *name;   /**< Node name */
-    
+
     node_type_t         type; /**< Type of the node */
     enum node_fltr_mode fmode; /**< Filter mode for current node */
     uint32_t            start_ts[2]; /**< Node start timestamp */
@@ -158,8 +159,8 @@ typedef struct node_t {
                                       attached to the node */
     msg_queue     msg_after_att; /**< The queue of pointers to messages
                                       following the node */
-    msg_queue     verdicts;      /**< The queue of verdict message
-                                      pointers */
+    ctrl_msg_data ctrl_data;     /**< Data for callbacks processing
+                                      control messages */
 
     int n_branches;        /**< Number of branches under the node */
     int n_active_branches; /**< Number of active branches */
@@ -198,8 +199,8 @@ static GHashTable *new_set;
 /** Set of nodes that are waiting to be closed */
 static GHashTable *close_set;
 
-/** 
- * Pointer to the root of the tree. 
+/**
+ * Pointer to the root of the tree.
  * This node is created in flow_tree_init routine.
  */
 static node_t *root = NULL;
@@ -243,20 +244,44 @@ msg_queue_destroy(msg_queue *q)
 }
 
 /**
+ * Initializer for ctrl_msg_data.
+ *
+ * @param data      Pointer to ctrl_msg_data.
+ */
+static void
+ctrl_msg_data_init(ctrl_msg_data *data)
+{
+    msg_queue_init(&data->verdicts);
+    msg_queue_init(&data->artifacts);
+}
+
+/**
+ * Release memory allocated for members of ctrl_msg_data structure.
+ *
+ * @param data      Pointer to ctrl_msg_data.
+ */
+static void
+ctrl_msg_data_destroy(ctrl_msg_data *data)
+{
+    msg_queue_destroy(&data->verdicts);
+    msg_queue_destroy(&data->artifacts);
+}
+
+/**
  * Initialize flow tree library:
- * Initializes obstack data structure, two hashes for set of nodes 
+ * Initializes obstack data structure, two hashes for set of nodes
  * ("new" set and "close" set) and creates root session node.
  *
  * @return Nothing
  *
- * @se Add session node with id equals to ROOT_ID into the tree and insert 
+ * @se Add session node with id equals to ROOT_ID into the tree and insert
  *     it into set of patential parent nodes (so-called "new set").
  */
 void
 flow_tree_init()
 {
     obstk = obstack_initialize();
-    
+
     root = (node_t *)obstack_alloc(obstk, sizeof(node_t));
     root->parent = root->prev = root->next = NULL;
     root->type = NT_SESSION;
@@ -266,9 +291,9 @@ flow_tree_init()
     root->name = "";
     msg_queue_init(&root->msg_att);
     msg_queue_init(&root->msg_after_att);
-    msg_queue_init(&root->verdicts);
+    ctrl_msg_data_init(&root->ctrl_data);
     root->user_data = NULL;
-    
+
     memcpy(root->start_ts, zero_timestamp, sizeof(root->start_ts));
     memcpy(root->end_ts, max_timestamp, sizeof(root->end_ts));
 
@@ -283,7 +308,7 @@ flow_tree_init()
 }
 
 /**
- * Frees control messages linked with each node and regular messages that 
+ * Frees control messages linked with each node and regular messages that
  * belong to the node and goes after it.
  *
  * @param  cur_node  The root of the flow tree subtree for which
@@ -299,7 +324,7 @@ flow_tree_free_attachments(node_t *cur_node)
 
     msg_queue_destroy(&cur_node->msg_att);
     msg_queue_destroy(&cur_node->msg_after_att);
-    msg_queue_destroy(&cur_node->verdicts);
+    ctrl_msg_data_destroy(&cur_node->ctrl_data);
 
     if (cur_node->type != NT_TEST)
     {
@@ -313,7 +338,7 @@ flow_tree_free_attachments(node_t *cur_node)
 
     flow_tree_free_attachments(cur_node->next);
     /* We don't need to free user_data. This should be done be user */
-    
+
     /* Free branch_info in sessions */
     if (cur_node->type != NT_TEST)
     {
@@ -331,7 +356,7 @@ flow_tree_destroy()
 {
     if (root == NULL)
         return;
- 
+
     g_hash_table_destroy(new_set);
     g_hash_table_destroy(close_set);
 
@@ -367,9 +392,9 @@ flow_tree_destroy()
  *               it also updates err_code parameter with appropriate code.
  */
 void *
-flow_tree_add_node(node_id_t parent_id, node_id_t node_id, 
+flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
                    node_type_t new_node_type,
-                   char *node_name, uint32_t *timestamp, 
+                   char *node_name, uint32_t *timestamp,
                    void *user_data, int *err_code)
 {
     node_t **p_par_node;
@@ -394,14 +419,14 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
 
     msg_queue_init(&cur_node->msg_att);
     msg_queue_init(&cur_node->msg_after_att);
-    msg_queue_init(&cur_node->verdicts);
+    ctrl_msg_data_init(&cur_node->ctrl_data);
 
     memcpy(cur_node->start_ts, timestamp, sizeof(cur_node->start_ts));
     memcpy(cur_node->end_ts, max_timestamp, sizeof(cur_node->end_ts));
 
     /* This will be overwritten if necessary below */
     cur_node->fmode = par_node->fmode;
-    
+
     FILL_BRANCH_INFO(cur_node);
 
     /* Form node name */
@@ -419,10 +444,10 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
 
         str_len = strlen(par_node->name);
         node_name_len = strlen(node_name);
-        
+
         /* TODO: Clarification (comments) */
         /* Define filtering mode by filter module */
-        cur_node->name = (char *)obstack_alloc(obstk, 
+        cur_node->name = (char *)obstack_alloc(obstk,
                                      str_len + 1 + node_name_len + 1);
         memcpy(cur_node->name, par_node->name, str_len);
         cur_node->name[str_len] = '/';
@@ -445,7 +470,7 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
         branch_info *old_ptr = par_node->branches;
 
         /* Create new branch */
-        par_node->branches = 
+        par_node->branches =
             realloc(old_ptr, sizeof(branch_info) *
                              (par_node->n_branches + 1));
         if (par_node->branches == NULL)
@@ -502,10 +527,10 @@ flow_tree_add_node(node_id_t parent_id, node_id_t node_id,
         }
         g_hash_table_remove(close_set, &par_node->id);
         g_hash_table_insert(close_set, &cur_node->id, &cur_node->self);
-        
-        /* 
-         * more_branches equals to false, so we have to remove 
-         * session from new set. 
+
+        /*
+         * more_branches equals to false, so we have to remove
+         * session from new set.
          */
         g_hash_table_remove(new_set, &par_node->id);
     }
@@ -581,10 +606,10 @@ flow_tree_close_node(node_id_t parent_id, node_id_t node_id,
 
     par_node->more_branches = FALSE;
     par_node->n_active_branches--;
-        
-    /* 
-     * This operation actually deletes node only once, a first child 
-     * is going to be closed 
+
+    /*
+     * This operation actually deletes node only once, a first child
+     * is going to be closed
      */
     g_hash_table_remove(new_set, &par_node->id);
 
@@ -623,7 +648,7 @@ static void
 get_node_id_callback(gpointer key, gpointer value, gpointer user_data)
 {
     node_t **p_node = (node_t **)user_data;
-    
+
     UNUSED(key);
 
     *p_node = *(node_t **)value;
@@ -641,7 +666,7 @@ flow_tree_get_close_node(node_id_t *id, node_id_t *parent_id)
     {
         /*
          * All the nodes are closed:
-         * Root node can present in "close" set, as a result of 
+         * Root node can present in "close" set, as a result of
          * common close processing algorithm, so do not care about it.
          */
         return TE_ENOENT;
@@ -659,7 +684,7 @@ enum node_fltr_mode
 closed_tree_get_mode(node_t *node, uint32_t *ts)
 {
     enum node_fltr_mode res = NFMODE_DEFAULT;
-    
+
     if (node == NULL)
         return NFMODE_DEFAULT;
 
@@ -710,8 +735,8 @@ closed_tree_get_mode(node_t *node, uint32_t *ts)
                     break;
                 }
 
-                /* 
-                 * cur_node is a pointer to the node in which 
+                /*
+                 * cur_node is a pointer to the node in which
                  * context message is received
                  */
                 res = closed_tree_get_mode(cur_node, ts);
@@ -725,9 +750,9 @@ closed_tree_get_mode(node_t *node, uint32_t *ts)
             {
                 return NFMODE_INCLUDE;
             }
-            
-            /* 
-             * Continue with the next branch until at least one node 
+
+            /*
+             * Continue with the next branch until at least one node
              * has NFMODE_INCLUDE filtering mode for the message timestamp.
              */
         }
@@ -753,7 +778,7 @@ closed_tree_get_mode(node_t *node, uint32_t *ts)
 /**
  * Filters message according to package/test filtering.
  *
- * @param msg A message to be checked 
+ * @param msg A message to be checked
  *
  * @return Returns a filtering mode of a node which the message links with
  */
@@ -769,11 +794,11 @@ attach_msg_to_gqueue(GQueue *queue, GList **cache, log_msg_ptr *msg)
 {
     log_msg_ptr *tail_msg = g_queue_peek_tail(queue);
 
-    if (tail_msg != NULL && 
+    if (tail_msg != NULL &&
         TIMESTAMP_CMP(msg->timestamp, tail_msg->timestamp) >= 0)
     {
         /*
-         * Just add to the tail - do not need to traverse 
+         * Just add to the tail - do not need to traverse
          * through the list.
          */
         g_queue_push_tail(queue, msg);
@@ -800,16 +825,16 @@ attach_msg_to_gqueue(GQueue *queue, GList **cache, log_msg_ptr *msg)
 
             if (TIMESTAMP_CMP(msg->timestamp, tail_msg->timestamp) >= 0 &&
                 (after_cache_elem = g_list_next(*cache)) != NULL &&
-                (after_cache_msg = 
+                (after_cache_msg =
                     (log_msg_ptr *)after_cache_elem->data) != NULL)
             {
                 /*
-                 * The message we want to put into the queue should go 
+                 * The message we want to put into the queue should go
                  * after cached message (as its timestamp is bigger than
                  * one of the cached message):
                  * ... -> / cached msg / -> /after cache msg / -> ...
                  *
-                 * Now try to find out if it should go just immediately 
+                 * Now try to find out if it should go just immediately
                  * after chached message:
                  * ... ->/ cached msg / -> / MSG / -> /after cache msg / ->
                  *
@@ -817,15 +842,15 @@ attach_msg_to_gqueue(GQueue *queue, GList **cache, log_msg_ptr *msg)
                  * ... ->/ cached msg / ->/after cache msg / -> ... / MSG /
                  */
 
-                if (TIMESTAMP_CMP(msg->timestamp, 
+                if (TIMESTAMP_CMP(msg->timestamp,
                                   after_cache_msg->timestamp) <= 0)
                 {
 #ifdef RGT_PROF_STAT
                     msg_put_after_cache_quick++;
 #endif
 
-                    /* 
-                     * Insert the message just after cached and 
+                    /*
+                     * Insert the message just after cached and
                      * update cache with this new message.
                      */
                     g_queue_insert_after(queue, *cache, msg);
@@ -841,8 +866,8 @@ attach_msg_to_gqueue(GQueue *queue, GList **cache, log_msg_ptr *msg)
                     msg_put_after_cache_slow++;
 #endif
 
-                    /* 
-                     * Find the place in the queue where the message 
+                    /*
+                     * Find the place in the queue where the message
                      * should be inserted, starting from the cached message.
                      */
 
@@ -872,10 +897,10 @@ attach_msg_to_gqueue(GQueue *queue, GList **cache, log_msg_ptr *msg)
 #endif
 
                 /*
-                 * The message we want to put into the queue should go 
+                 * The message we want to put into the queue should go
                  * before cached message (as its timestamp is less than
                  * one of the cached message):
-                 * go in backward directon to find the place 
+                 * go in backward directon to find the place
                  * for the message.
                  */
 
@@ -911,7 +936,7 @@ attach_msg_to_gqueue(GQueue *queue, GList **cache, log_msg_ptr *msg)
          * Go through the queue to find out the right place for the message.
          */
         g_queue_insert_sorted(queue, msg, timestamp_cmp, NULL);
-        
+
         /* Find the entry we've just put into the queue */
         *cache = g_queue_find(queue, msg);
 
@@ -1288,7 +1313,7 @@ flow_tree_attach_from_node(node_t *node, log_msg_ptr *msg)
                 continue;
             }
 
-            /* 
+            /*
              * Start working from the latest entry in the list,
              * as in most cases messages go in time order.
              */
@@ -1357,16 +1382,16 @@ flow_tree_attach_message(log_msg *msg)
     }
 
     /*
-     * Each message keeps "Log ID" value, which is used to differentiate 
+     * Each message keeps "Log ID" value, which is used to differentiate
      * log messages came from tests. That feature is essential for
      * the case when we run many tests together (parallel execution).
      *
      * NOTE:
      * Currently this field has sense only for messages came from tests,
-     * and keeps TE_LOG_ID_UNDEFINED value for messages came from 
+     * and keeps TE_LOG_ID_UNDEFINED value for messages came from
      * Engine processes and Test Agents.
      *
-     * Here we expect that log messages from the particular test can't be 
+     * Here we expect that log messages from the particular test can't be
      * mixed in time, as we use a set of "expected to close" nodes.
      */
     if ((p_cur_node = (node_t **)
@@ -1381,10 +1406,10 @@ flow_tree_attach_message(log_msg *msg)
         flow_tree_attach_from_node(cur_node, log_msg_ref(msg));
 
     /* Check if we are processing Test Control message */
-    if ((msg->flags & RGT_MSG_FLG_VERDICT) != 0)
+    if ((msg->flags & (RGT_MSG_FLG_VERDICT | RGT_MSG_FLG_ARTIFACT)) != 0)
     {
         int idlen = strlen(TE_TEST_OBJECTIVE_ID);
-        
+
         /* Currently Control messages can be generated only for tests */
         assert(cur_node->type == NT_TEST);
 
@@ -1393,9 +1418,9 @@ flow_tree_attach_message(log_msg *msg)
         {
             node_info_t *info = cur_node->user_data;
 
-            info->descr.objective = 
+            info->descr.objective =
             node_info_obstack_copy0(msg->txt_msg +
-                                    idlen, 
+                                    idlen,
                                     strlen(msg->txt_msg + idlen));
 
             if ((msg->flags & RGT_MSG_FLG_NORMAL) == 0)
@@ -1406,7 +1431,16 @@ flow_tree_attach_message(log_msg *msg)
         }
         else
         {
-            msg_queue_attach(&cur_node->verdicts, log_msg_ref(msg));
+            if (msg->flags & RGT_MSG_FLG_ARTIFACT)
+            {
+                msg_queue_attach(&cur_node->ctrl_data.artifacts,
+                                 log_msg_ref(msg));
+            }
+            else
+            {
+                msg_queue_attach(&cur_node->ctrl_data.verdicts,
+                                 log_msg_ref(msg));
+            }
         }
     }
 
@@ -1419,13 +1453,58 @@ wrapper_process_regular_msg(gpointer data, gpointer user_data)
 {
     log_msg_ptr *msg_ptr = (log_msg_ptr *)data;
     log_msg     *msg = NULL;
+    te_bool      msg_visible = TRUE;
 
     UNUSED(user_data);
 
     if (reg_msg_proc != NULL)
     {
         msg = log_msg_read(msg_ptr);
-        reg_msg_proc(msg);
+        if (msg->id != TE_LOG_ID_UNDEFINED)
+        {
+            if (~msg->level & TE_LL_CONTROL)
+            {
+                msg->nest_lvl = rgt_ctx.current_nest_lvl;
+            }
+            else
+            {
+                if (strcmp(msg->user, TE_USER_STEP) == 0)
+                {
+                    msg->nest_lvl = 0;
+                    rgt_ctx.current_nest_lvl = 1;
+                }
+                else if (strcmp(msg->user, TE_USER_SUBSTEP) == 0)
+                {
+                    msg->nest_lvl = 1;
+                    rgt_ctx.current_nest_lvl = 2;
+                }
+                else if (strcmp(msg->user, TE_USER_STEP_PUSH) == 0)
+                {
+                    msg->nest_lvl = rgt_ctx.current_nest_lvl;
+                    rgt_ctx.current_nest_lvl++;
+                }
+                else if (strcmp(msg->user, TE_USER_STEP_POP) == 0)
+                {
+                    rgt_ctx.current_nest_lvl--;
+                    msg->nest_lvl = rgt_ctx.current_nest_lvl;
+                }
+                else if (strcmp(msg->user, TE_USER_STEP_NEXT) == 0)
+                {
+                    msg->nest_lvl = rgt_ctx.current_nest_lvl - 1;
+                }
+                else if (strcmp(msg->user, TE_USER_STEP_RESET) == 0)
+                {
+                    msg_visible = FALSE;
+                    rgt_ctx.current_nest_lvl = 0;
+                }
+                else
+                {
+                    msg->nest_lvl = rgt_ctx.current_nest_lvl;
+                }
+            }
+        }
+        if (msg_visible)
+            reg_msg_proc(msg);
         free_log_msg(msg);
     }
 }
@@ -1458,8 +1537,8 @@ flow_tree_wander(node_t *cur_node)
         {
             if (ctrl_msg_proc[CTRL_EVT_START][cur_node->type] != NULL)
                 ctrl_msg_proc[CTRL_EVT_START][cur_node->type](
-                    cur_node->user_data, &cur_node->verdicts);
-        
+                    cur_node->user_data, &cur_node->ctrl_data);
+
             /* Output messages that belongs to the node */
             msg_queue_foreach(&cur_node->msg_att,
                               wrapper_process_regular_msg, NULL);
@@ -1479,18 +1558,18 @@ flow_tree_wander(node_t *cur_node)
             {
                 if (ctrl_msg_proc[CTRL_EVT_START][NT_BRANCH] != NULL)
                     ctrl_msg_proc[CTRL_EVT_START][NT_BRANCH](
-                        cur_node->user_data, &cur_node->verdicts);
+                        cur_node->user_data, &cur_node->ctrl_data);
             }
-            
+
             flow_tree_wander(cur_node->branches[i].first_el);
-            
+
             /* Call branch-end routine */
             if (cur_node->fmode == NFMODE_INCLUDE &&
                 cur_node->user_data != NULL)
             {
                 if (ctrl_msg_proc[CTRL_EVT_END][NT_BRANCH] != NULL)
                     ctrl_msg_proc[CTRL_EVT_END][NT_BRANCH](
-                        cur_node->user_data, &cur_node->verdicts);
+                        cur_node->user_data, &cur_node->ctrl_data);
             }
         }
     }
@@ -1501,7 +1580,8 @@ flow_tree_wander(node_t *cur_node)
     {
         if (ctrl_msg_proc[CTRL_EVT_END][cur_node->type] != NULL)
             ctrl_msg_proc[CTRL_EVT_END][cur_node->type](
-                cur_node->user_data, &cur_node->verdicts);
+                cur_node->user_data, &cur_node->ctrl_data);
+        rgt_ctx.current_nest_lvl = 0;
     }
 
     /* Output messages that were after the node */
@@ -1516,7 +1596,7 @@ flow_tree_wander(node_t *cur_node)
 
 /**
  * Goes through the flow tree and calls callback functions for each node.
- * First it calls start node callback, then calls message processing 
+ * First it calls start node callback, then calls message processing
  * callback for all messages attached to the node and goes to the subtree.
  * After that it calls end node callback and message processing callback
  * for all messages attached after the node.
@@ -1579,7 +1659,7 @@ timestamp_cmp(gconstpointer a, gconstpointer b, gpointer user_data)
 
 #ifdef FLOW_TREE_LIBRARY_DEBUG
 
-/* 
+/*
  * These routines are auxiluary in debugging of the library and should
  * not be compiled while it's build for working binaries.
  */
@@ -1608,7 +1688,7 @@ flow_tree_check_set(enum flow_tree_set_name set_name, const char *user_set)
     const char *cur_ptr = user_set;
 
     check_set = ((set_name == FLOW_TREE_SET_NEW) ? new_set : close_set);
-       
+
     while ((*cur_ptr) != '\0')
     {
         id = (node_id_t)strtol(user_set, (char **)&cur_ptr, 0);
@@ -1632,7 +1712,7 @@ flow_tree_check_set(enum flow_tree_set_name set_name, const char *user_set)
 }
 
 int
-flow_tree_check_parent_list(enum flow_tree_set_name set_name, 
+flow_tree_check_parent_list(enum flow_tree_set_name set_name,
                             node_id_t node_id, const char *par_list)
 {
     GHashTable  *check_set;
@@ -1719,7 +1799,7 @@ set_info_callback(gpointer key, gpointer value, gpointer user_data)
  * (nodes waiting for child node or nodes waiting for close event).
  *
  * @param  set_name  Name of the desired category of the nodes.
- * @param  buf       User prepared buffer where information will be placed. 
+ * @param  buf       User prepared buffer where information will be placed.
  * @param  len       Length of user specified buffer.
  *
  * @return  Status of operation.
@@ -1737,10 +1817,10 @@ flow_tree_get_set(enum flow_tree_set_name set_name, char *buf, gint len)
     ubuf.len = len;
     ubuf.status = STATUS_OK;
 
-    set = ((set_name == FLOW_TREE_SET_NEW) ? new_set : close_set);  
+    set = ((set_name == FLOW_TREE_SET_NEW) ? new_set : close_set);
 
     g_hash_table_foreach(set, set_info_callback, &ubuf);
-    
+
     if (ubuf.status == STATUS_OVERFLOW)
         return 0;
 
@@ -1754,4 +1834,3 @@ flow_tree_get_set(enum flow_tree_set_name set_name, char *buf, gint len)
 }
 
 #endif /* FLOW_TREE_LIBRARY_DEBUG */
-

@@ -33,8 +33,13 @@ extern "C" {
 
 /** All possible node types of /net/node configuration model */
 enum net_node_type {
+    NET_NODE_TYPE_INVALID = -1, /**< Node has invalid configuration */
     NET_NODE_TYPE_AGENT = 0,    /**< Node is an Agent */
     NET_NODE_TYPE_NUT = 1,      /**< Node is a NUT */
+    NET_NODE_TYPE_NUT_PEER = 2, /**< Node is a NUT peer, i.e. something that
+                                 * might have IUT-components. This is a
+                                 * half-measure before proper typization of
+                                 * nodes is implemented. */
 };
 
 /** All possible node types of /net/node resources */
@@ -42,6 +47,7 @@ enum net_node_rsrc_type {
     NET_NODE_RSRC_TYPE_UNKNOWN = 0, /**< Unknown type of the resource */
     NET_NODE_RSRC_TYPE_INTERFACE,   /**< Network interface */
     NET_NODE_RSRC_TYPE_PCI_FN,      /**< PCI function */
+    NET_NODE_RSRC_TYPE_RTE_VDEV,    /**< RTE vdev */
 };
 
 /** Node description structure */

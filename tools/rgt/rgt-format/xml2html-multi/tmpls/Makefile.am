@@ -7,7 +7,7 @@
 # Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
 
-SUBDIRS = . 
+SUBDIRS = .
 
 pkgdatadir = $(datadir)/$(subdir)
 
@@ -27,6 +27,7 @@ dist_pkgdata_DATA = \
     log_msg_end.tmpl\
     param_start.tmpl\
     logs_start.tmpl\
+    logs_end.tmpl\
     meta_start_ts_start.tmpl\
     meta_start_ts_end.tmpl\
     meta_end_ts_start.tmpl\
@@ -42,6 +43,10 @@ dist_pkgdata_DATA = \
     meta_verdicts_end.tmpl\
     meta_verdict_start.tmpl\
     meta_verdict_end.tmpl\
+    meta_artifacts_start.tmpl\
+    meta_artifacts_end.tmpl\
+    meta_artifact_start.tmpl\
+    meta_artifact_end.tmpl\
     meta_params_start.tmpl\
     meta_params_end.tmpl\
     meta_page_start.tmpl\

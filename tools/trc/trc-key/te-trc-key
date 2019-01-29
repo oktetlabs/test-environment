@@ -98,15 +98,15 @@ for my $b (@bugs)
         {
             chomp $test_line;
 
-            my @tins;
+            my @ids;
             my ($test_name, $test_ref) = split('#', $test_line);
             if ($test_ref)
             {
-                @tins = split('\|', $test_ref);
-                $test_ref = $tins[0];
+                @ids = split('\|', $test_ref);
+                $test_ref = $ids[0];
                 $test_links .= "<a href=\"#$test_ref\">$test_name</a>";
 
-                for (my $iter_no = 1; $iter_no <= $#tins; $iter_no++)
+                for (my $iter_no = 1; $iter_no <= $#ids; $iter_no++)
                 {
                     if ($iter_no == 1)
                     {
@@ -114,14 +114,14 @@ for my $b (@bugs)
                     }
                     else
                     {
-                        if (($#tins > 5) and ($iter_no > 3) and ($iter_no < $#tins))
+                        if (($#ids > 5) and ($iter_no > 3) and ($iter_no < $#ids))
                         {
                             $test_links .= ",..." if ($iter_no == 4);
                             next;
                         }
                         $test_links .= ",";
                     }
-                    $test_links .= "<a href=\"#tin_$tins[$iter_no]\">$iter_no</a>";
+                    $test_links .= "<a href=\"#iter_$ids[$iter_no]\">$iter_no</a>";
                 }
                 $test_links .= "]<br/>";
             }

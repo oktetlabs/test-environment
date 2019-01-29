@@ -1,12 +1,12 @@
-/** @file 
+/** @file
  * @brief Test Environment: Postponed mode specific routines.
  *
- * Interface for output control message events and regular messages 
+ * Interface for output control message events and regular messages
  * into the XML file.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -37,21 +37,21 @@ static int logs_closed = 1;
 static struct obstack *log_obstk = NULL;
 
 static int postponed_process_test_start(node_info_t *node,
-                                        msg_queue *verdicts);
+                                        ctrl_msg_data *data);
 static int postponed_process_test_end(node_info_t *node,
-                                      msg_queue *verdicts);
+                                      ctrl_msg_data *data);
 static int postponed_process_pkg_start(node_info_t *node,
-                                       msg_queue *verdicts);
+                                       ctrl_msg_data *data);
 static int postponed_process_pkg_end(node_info_t *node,
-                                     msg_queue *verdicts);
+                                     ctrl_msg_data *data);
 static int postponed_process_sess_start(node_info_t *node,
-                                        msg_queue *verdicts);
+                                        ctrl_msg_data *data);
 static int postponed_process_sess_end(node_info_t *node,
-                                      msg_queue *verdicts);
+                                      ctrl_msg_data *data);
 static int postponed_process_branch_start(node_info_t *node,
-                                          msg_queue *verdicts);
+                                          ctrl_msg_data *data);
 static int postponed_process_branch_end(node_info_t *node,
-                                        msg_queue *verdicts);
+                                        ctrl_msg_data *data);
 static int postponed_process_regular_msg(log_msg *msg);
 
 static int postponed_process_open(void);
@@ -73,7 +73,7 @@ postponed_mode_init(f_process_ctrl_log_msg
     ctrl_proc[CTRL_EVT_END][NT_PACKAGE] = postponed_process_pkg_end;
     ctrl_proc[CTRL_EVT_START][NT_BRANCH] = postponed_process_branch_start;
     ctrl_proc[CTRL_EVT_END][NT_BRANCH] = postponed_process_branch_end;
-    
+
     *reg_proc = postponed_process_regular_msg;
 
     root_proc[CTRL_EVT_START] = postponed_process_open;
@@ -82,7 +82,7 @@ postponed_mode_init(f_process_ctrl_log_msg
 
 static void
 print_ts(FILE *fd, uint32_t *ts)
-{ 
+{
 #define TIME_BUF_LEN 40
     time_t     time_block;
     char       time_buf[TIME_BUF_LEN];
@@ -121,7 +121,7 @@ print_ts_info(node_info_t *node)
     fprintf(rgt_ctx.out_fd, "<end-ts>");
     print_ts(rgt_ctx.out_fd, node->end_ts);
     fprintf(rgt_ctx.out_fd, "</end-ts>\n");
-    
+
     /*
      * This information is surplus but it could be useful to get it
      * without additional processing "start-ts" and "end-ts" tags.
@@ -186,27 +186,50 @@ print_params(node_info_t *node)
     }
 }
 
-/*
- * Callback to process verdict message.
+/**
+ * Process verdict or artifact message.
+ *
+ * @param data        Pointer to log_msg_ptr.
+ * @param user_data   Not used.
+ * @param tag         Tag in which to print message.
  */
 static void
-process_verdict_cb(gpointer data, gpointer user_data)
+process_result_msg(gpointer data, gpointer user_data,
+                   const char *tag)
 {
     log_msg_ptr *msg_ptr = (log_msg_ptr *)data;
     log_msg     *msg = NULL;
 
     UNUSED(user_data);
 
-    fputs("<verdict>", rgt_ctx.out_fd);
+    fprintf(rgt_ctx.out_fd, "<%s>", tag);
     msg = log_msg_read(msg_ptr);
     output_regular_log_msg(msg);
     free_log_msg(msg);
-    fputs("</verdict>\n", rgt_ctx.out_fd);
+    fprintf(rgt_ctx.out_fd, "</%s>\n", tag);
+}
+
+/*
+ * Callback to process verdict message.
+ */
+static void
+process_verdict_cb(gpointer data, gpointer user_data)
+{
+    process_result_msg(data, user_data, "verdict");
+}
+
+/*
+ * Callback to process artifact message.
+ */
+static void
+process_artifact_cb(gpointer data, gpointer user_data)
+{
+    process_result_msg(data, user_data, "artifact");
 }
 
 static inline int
 postponed_process_start_event(node_info_t *node, const char *node_name,
-                              msg_queue *verdicts)
+                              ctrl_msg_data *data)
 {
     if (!logs_closed)
     {
@@ -218,6 +241,7 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
     fprintf(rgt_ctx.out_fd, "<%s", node_name);
     if (node->descr.tin != TE_TIN_INVALID)
         fprintf(rgt_ctx.out_fd, " tin=\"%u\"", node->descr.tin);
+    fprintf(rgt_ctx.out_fd, " test_id=\"%d\"", node->node_id);
     if (node->descr.name)
         fprintf(rgt_ctx.out_fd, " name=\"%s\"", node->descr.name);
     if (node->descr.hash != NULL)
@@ -299,11 +323,21 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
         fputs("</authors>\n", rgt_ctx.out_fd);
     }
 
-    if (!msg_queue_is_empty(verdicts))
+    if (data != NULL)
     {
-        fputs("<verdicts>", rgt_ctx.out_fd);
-        msg_queue_foreach(verdicts, process_verdict_cb, NULL);
-        fputs("</verdicts>\n", rgt_ctx.out_fd);
+        if (!msg_queue_is_empty(&data->verdicts))
+        {
+            fputs("<verdicts>", rgt_ctx.out_fd);
+            msg_queue_foreach(&data->verdicts, process_verdict_cb, NULL);
+            fputs("</verdicts>\n", rgt_ctx.out_fd);
+        }
+
+        if (!msg_queue_is_empty(&data->artifacts))
+        {
+            fputs("<artifacts>", rgt_ctx.out_fd);
+            msg_queue_foreach(&data->artifacts, process_artifact_cb, NULL);
+            fputs("</artifacts>\n", rgt_ctx.out_fd);
+        }
     }
 
     print_params(node);
@@ -315,10 +349,10 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
 
 static inline int
 postponed_process_end_event(node_info_t *node, const char *node_name,
-                            msg_queue *verdicts)
+                            ctrl_msg_data *data)
 {
     UNUSED(node);
-    UNUSED(verdicts);
+    UNUSED(data);
 
     if (!logs_closed)
     {
@@ -326,52 +360,52 @@ postponed_process_end_event(node_info_t *node, const char *node_name,
         logs_opened = 0;
         logs_closed = 1;
     }
-    
+
     fprintf(rgt_ctx.out_fd, "</%s>\n", node_name);
     return 1;
 }
 
 static int
-postponed_process_test_start(node_info_t *node, msg_queue *verdicts)
+postponed_process_test_start(node_info_t *node, ctrl_msg_data *data)
 {
-    return postponed_process_start_event(node, "test", verdicts);
+    return postponed_process_start_event(node, "test", data);
 }
 
 static int
-postponed_process_test_end(node_info_t *node, msg_queue *verdicts)
+postponed_process_test_end(node_info_t *node, ctrl_msg_data *data)
 {
-    return postponed_process_end_event(node, "test", verdicts);
+    return postponed_process_end_event(node, "test", data);
 }
 
 static int
-postponed_process_pkg_start(node_info_t *node, msg_queue *verdicts)
+postponed_process_pkg_start(node_info_t *node, ctrl_msg_data *data)
 {
-    return postponed_process_start_event(node, "pkg", verdicts);
+    return postponed_process_start_event(node, "pkg", data);
 }
 
 static int
-postponed_process_pkg_end(node_info_t *node, msg_queue *verdicts)
+postponed_process_pkg_end(node_info_t *node, ctrl_msg_data *data)
 {
-    return postponed_process_end_event(node, "pkg", verdicts);
+    return postponed_process_end_event(node, "pkg", data);
 }
 
 static int
-postponed_process_sess_start(node_info_t *node, msg_queue *verdicts)
+postponed_process_sess_start(node_info_t *node, ctrl_msg_data *data)
 {
-    return postponed_process_start_event(node, "session", verdicts);
+    return postponed_process_start_event(node, "session", data);
 }
 
 static int
-postponed_process_sess_end(node_info_t *node, msg_queue *verdicts)
+postponed_process_sess_end(node_info_t *node, ctrl_msg_data *data)
 {
-    return postponed_process_end_event(node, "session", verdicts);
+    return postponed_process_end_event(node, "session", data);
 }
 
 static int
-postponed_process_branch_start(node_info_t *node, msg_queue *verdicts)
+postponed_process_branch_start(node_info_t *node, ctrl_msg_data *data)
 {
     UNUSED(node);
-    UNUSED(verdicts);
+    UNUSED(data);
 
     if (!logs_closed)
     {
@@ -384,10 +418,10 @@ postponed_process_branch_start(node_info_t *node, msg_queue *verdicts)
 }
 
 static int
-postponed_process_branch_end(node_info_t *node, msg_queue *verdicts)
+postponed_process_branch_end(node_info_t *node, ctrl_msg_data *data)
 {
     UNUSED(node);
-    UNUSED(verdicts);
+    UNUSED(data);
 
     if (!logs_closed)
     {
@@ -413,7 +447,7 @@ postponed_process_regular_msg(log_msg *msg)
             "ts=\"", msg->level_str, msg->entity, msg->user,
             msg->timestamp[0], msg->timestamp[1]);
     print_ts(rgt_ctx.out_fd, msg->timestamp);
-    fprintf(rgt_ctx.out_fd, "\">");
+    fprintf(rgt_ctx.out_fd, "\" nl=\"%d\">", msg->nest_lvl);
     output_regular_log_msg(msg);
     fprintf(rgt_ctx.out_fd, "</msg>\n");
 
@@ -423,7 +457,7 @@ postponed_process_regular_msg(log_msg *msg)
 static void
 print_message_info(log_msg *msg)
 {
-    fprintf(stderr, "entity name: %s\nuser name: %s\ntimestmp: ", 
+    fprintf(stderr, "entity name: %s\nuser name: %s\ntimestmp: ",
             msg->entity, msg->user);
     print_ts(stderr, msg->timestamp);
     fprintf(stderr, "\nformat string: %s\n", msg->fmt_str);
@@ -470,7 +504,7 @@ output_regular_log_msg(log_msg *msg)
                     i++;
                     continue;
                 }
-                
+
                 if ((arg = get_next_arg(msg)) == NULL)
                 {
                     /* Too few arguments in the message */
@@ -478,7 +512,7 @@ output_regular_log_msg(log_msg *msg)
                     write_xml_string(log_obstk, msg->fmt_str + i, FALSE);
                     break;
                 }
-                
+
                 /* Parse output format */
                 switch (msg->fmt_str[i + 1])
                 {
@@ -486,11 +520,11 @@ output_regular_log_msg(log_msg *msg)
                     {
                         uint32_t val;
                         char     c_buf[2] = {};
-                        
+
                         val = ntohl(*(uint32_t *)arg->val);
                         if (val > UCHAR_MAX)
                         {
-                            obstack_printf(log_obstk, "&lt;0x%08x&gt;", 
+                            obstack_printf(log_obstk, "&lt;0x%08x&gt;",
                                            val);
                         }
                         else
@@ -498,12 +532,12 @@ output_regular_log_msg(log_msg *msg)
                             c_buf[0] = (char)val;
                             write_xml_string(log_obstk, c_buf, FALSE);
                         }
-                        
+
                         i++;
-                        
+
                         continue;
                     }
-                    
+
                     case 'd':
                     case 'u':
                     case 'o':
@@ -511,62 +545,62 @@ output_regular_log_msg(log_msg *msg)
                     case 'X':
                     {
                         char  format[3] = {'%', msg->fmt_str[i + 1], '\0'};
-                        
-                        *((uint32_t *)arg->val) = 
+
+                        *((uint32_t *)arg->val) =
                         ntohl(*(uint32_t *)arg->val);
-                        
+
                         obstack_printf(log_obstk, format,
                                        *((uint32_t *)arg->val));
                         i++;
-                        
+
                         continue;
                     }
-                    
+
                     case 'p':
                     {
                         uint32_t val;
                         int      j;
-                        
+
                         /* Address should be 4 bytes aligned */
                         assert(arg->len % 4 == 0);
-                        
+
                         obstack_grow(log_obstk, "0x", strlen("0x"));
                         for (j = 0; j < arg->len / 4; j++)
                         {
                             val = *(((uint32_t *)arg->val) + j);
-                            
+
                             /* Skip not trailing zero words */
                             if (val == 0 && (j + 1) < arg->len / 4)
                             {
                                 continue;
                             }
                             val = ntohl(val);
-                            
+
                             obstack_printf(log_obstk, "%08x", val);
                         }
-                        
+
                         i++;
-                        
+
                         continue;
                     }
-                    
+
                     case 's':
                     {
                         write_xml_string(log_obstk, (const char *)arg->val,
                                          FALSE);
                         i++;
-                        
+
                         continue;
                     }
-                    
+
                     case 'r':
                     {
                         te_errno    err;
                         const char *src;
-                        
-                        err = *((uint32_t *)arg->val) = 
+
+                        err = *((uint32_t *)arg->val) =
                         ntohl(*(uint32_t *)arg->val);
-                        
+
                         src = te_rc_mod2str(err);
                         if (strlen(src) > 0)
                         {
@@ -576,10 +610,10 @@ output_regular_log_msg(log_msg *msg)
                         write_xml_string(log_obstk, te_rc_err2str(err),
                                          FALSE);
                         i++;
-                        
+
                         continue;
                     }
-                    
+
                     case 'T':
                     {
                         int  j;
@@ -589,7 +623,7 @@ output_regular_log_msg(log_msg *msg)
                         char one_byte_str[3];
                         int  default_format = FALSE;
                         int  k;
-                        
+
                         /* @todo think of better way to implement this! */
                         if (strstr(msg->fmt_str + i, "%Tf") ==
                             (msg->fmt_str + i))
@@ -602,13 +636,13 @@ output_regular_log_msg(log_msg *msg)
                             /* End file tag */
                             obstack_grow(log_obstk, "</file>",
                                          strlen("</file>"));
-                            
+
                             /* shift to the end of "%Tf" */
                             i += 2;
                             continue;
                         }
-                        
-                        
+
+
                         /*
                          * %Tm[[n].[w]] - memory dump, n - the number of
                          * elements after which "\n" is to be inserted,
@@ -623,20 +657,20 @@ output_regular_log_msg(log_msg *msg)
                             print_message_info(msg);
                             break;
                         }
-                        
+
                         obstack_grow(log_obstk,
                                      "<mem-dump>", strlen("<mem-dump>"));
-                        if (sscanf(msg->fmt_str + i, "%%Tm[[%d].[%d]]", 
+                        if (sscanf(msg->fmt_str + i, "%%Tm[[%d].[%d]]",
                                    &n_tuples, &tuple_width) != 2)
                         {
                             default_format = TRUE;
                             tuple_width = 1;
                             n_tuples = 16; /* @todo remove hardcode */
                         }
-                        
+
                         while (cur_pos < arg->len)
                         {
-                            obstack_grow(log_obstk, "<row>", 
+                            obstack_grow(log_obstk, "<row>",
                                          strlen("<row>"));
                             /* Start a memory table row */
                             for (j = 0;
@@ -646,14 +680,14 @@ output_regular_log_msg(log_msg *msg)
                                 /* Start a block in a row */
                                 obstack_grow(log_obstk, "<elem>",
                                              strlen("<elem>"));
-                                for (k = 0; 
+                                for (k = 0;
                                      k < tuple_width && cur_pos < arg->len;
                                      k++, cur_pos++)
                                 {
-                                    snprintf(one_byte_str, 
+                                    snprintf(one_byte_str,
                                              sizeof(one_byte_str),
                                              "%02X", *(arg->val + cur_pos));
-                                    obstack_grow(log_obstk, 
+                                    obstack_grow(log_obstk,
                                                  one_byte_str, 2);
                                 }
                                 /* End a block in a row */
@@ -661,30 +695,30 @@ output_regular_log_msg(log_msg *msg)
                                              strlen("</elem>"));
                             }
                             /* End a memory table row */
-                            obstack_grow(log_obstk, "</row>", 
+                            obstack_grow(log_obstk, "</row>",
                                          strlen("</row>"));
                         }
                         obstack_grow(log_obstk, "</mem-dump>",
                                      strlen("</mem-dump>"));
-                        
+
                         /* shift to the end of "%Tm" */
                         i += 2;
-                        
+
                         if (!default_format)
                         {
                             j = 0;
                             i += 2; /* shift to the end of "[[" */
                             while (*(msg->fmt_str + i++) != ']' || ++j != 3)
                                 ;
-                            
-                            i--; 
+
+                            i--;
                         }
-                        
+
                         continue;
                     }
                 } /* switch */
             }
-            
+
             switch (msg->fmt_str[i])
             {
                 case '\r':
@@ -692,30 +726,30 @@ output_regular_log_msg(log_msg *msg)
                     {
                         /*
                          * Skip \r after \n, because it does not bring any
-                         * formating, but just follows after ]n on some 
+                         * formating, but just follows after ]n on some
                          * systems
                          */
                         break;
                     }
                     /* Process it as ordinary new line character */
                     /* FALLTHROUGH */
-                    
+
                 case '\n':
                     obstack_grow(log_obstk, "<br/>", 5);
                     break;
-                    
+
                 case '<':
                     obstack_grow(log_obstk, "&lt;", 4);
                     break;
-                    
+
                 case '>':
                     obstack_grow(log_obstk, "&gt;", 4);
                     break;
-                    
+
                 case '&':
                     obstack_grow(log_obstk, "&amp;", 5);
                     break;
-                    
+
                 default:
                     if (msg->fmt_str[i] == '\t' || isprint(msg->fmt_str[i]))
                     {
@@ -728,7 +762,7 @@ output_regular_log_msg(log_msg *msg)
                     }
                     break;
             }
-            
+
         } /* for */
     } /* if (msg->txt_msg != NULL) */
 
@@ -742,7 +776,7 @@ output_regular_log_msg(log_msg *msg)
         str_len = obstack_object_size(log_obstk);
         out_str = (char *)obstack_finish(log_obstk);
 
-        /* 
+        /*
          * Truncate trailing end of line characters:
          * @todo - maybe it's better not to make this by default.
          */

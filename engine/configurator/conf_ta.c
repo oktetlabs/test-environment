@@ -644,7 +644,7 @@ cfg_ta_commit_instance(const char *ta, cfg_instance *inst)
 
     ENTRY("ta=%s inst=0x%X", ta, inst);
     VERB("Commit to '%s' instance '%s'", ta, inst->oid);
-    if ((inst->added && obj->type == CVT_NONE) ||
+    if ((inst->added && obj->type == CVT_NONE && !inst->remove) ||
         (obj->access != CFG_READ_WRITE && obj->access != CFG_READ_CREATE))
     {
         VERB("Skip object with type %d(%d) and access %d(%d,%d)",
@@ -679,35 +679,49 @@ cfg_ta_commit_instance(const char *ta, cfg_instance *inst)
         }
     }
 
-    if (!inst->added && obj->access == CFG_READ_CREATE)
+    if (inst->remove)
     {
-        /*
-         * We need to add a new instance to the Test Agent -
-         * postponed add operation.
-         */
-        if ((rc = rcf_ta_cfg_add(ta, 0, inst->oid, val_str)) != 0)
+        if ((rc = rcf_ta_cfg_del(ta, 0, inst->oid)) != 0)
         {
-            ERROR("Cannot add '%s' with value '%s' via RCF, rc = %r",
-                  inst->oid, val_str, rc);
+            ERROR("Cannot del '%s' via RCF, rc = %r",
+                  inst->oid, rc);
+        }
+        else
+        {
+            cfg_db_del(inst->handle);
         }
     }
     else
     {
-        assert(obj->type != CVT_NONE);
-
-        if ((rc = rcf_ta_cfg_set(ta, 0, inst->oid, val_str)) != 0)
+        if (!inst->added && obj->access == CFG_READ_CREATE)
         {
-            ERROR("Failed to set '%s' to value '%s' via RCF, rc = %r",
-                  inst->oid, val_str, rc);
+            /*
+             * We need to add a new instance to the Test Agent -
+             * postponed add operation.
+             */
+            if ((rc = rcf_ta_cfg_add(ta, 0, inst->oid, val_str)) != 0)
+            {
+                ERROR("Cannot add '%s' with value '%s' via RCF, rc = %r",
+                      inst->oid, val_str, rc);
+            }
+        }
+        else
+        {
+            assert(obj->type != CVT_NONE);
+
+            if ((rc = rcf_ta_cfg_set(ta, 0, inst->oid, val_str)) != 0)
+            {
+                ERROR("Failed to set '%s' to value '%s' via RCF, rc = %r",
+                      inst->oid, val_str, rc);
+            }
+        }
+        if (rc == 0)
+        {
+            inst->added = TRUE;
         }
     }
 
     free(val_str);
-
-    if (rc == 0)
-    {
-        inst->added = TRUE;
-    }
 
     EXIT("%r", rc);
     return rc;
@@ -730,6 +744,11 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
     te_bool       forward;
     te_bool       need_sync = FALSE;
 
+    cfg_instance *father;
+    cfg_instance *son;
+    cfg_instance *brother;
+    te_bool       is_commit_root;
+
     assert(ta != NULL);
     assert(inst != NULL);
 
@@ -747,14 +766,23 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
 
     for (commit_root = inst, p = inst, forward = TRUE; p != NULL; )
     {
+        father = p->father;
+        son = p->son;
+        brother = p->brother;
+        is_commit_root = (p == commit_root);
+
         if (forward)
         {
             /*
-             * We need to sync subtree in case local add operation
+             * We need to sync subtree in case local add or del operation
              * is performed.
              */
-            if (!p->added && p->obj->access == CFG_READ_CREATE)
+            if ((!p->added && p->obj->access == CFG_READ_CREATE) ||
+                p->remove)
                 need_sync = TRUE;
+
+            if (p->remove)
+                son = NULL;
 
             rc = cfg_ta_commit_instance(ta, p);
             if (rc != 0)
@@ -765,20 +793,20 @@ cfg_ta_commit(const char *ta, cfg_instance *inst)
             }
         }
 
-        if (forward && (p->son != NULL))
+        if (forward && (son != NULL))
         {
             /* At first go to all children */
-            p = p->son;
+            p = son;
         }
-        else if (p->brother != NULL && p != commit_root)
+        else if (brother != NULL && !is_commit_root)
         {
             /* There are no children - go to brother */
-            p = p->brother;
+            p = brother;
             forward = TRUE;
         }
-        else if ((p != commit_root) && (p->father != commit_root))
+        else if (!is_commit_root && (father != commit_root))
         {
-            p = p->father;
+            p = father;
             assert(p != NULL);
             forward = FALSE;
         }
@@ -914,11 +942,11 @@ cfg_tas_commit(const char *oid)
         {
             int ret;
 
-            /* Restore configuration before the first local SET/ADD */
+            /* Restore configuration before the first local SET/ADD/DEL */
             ret = cfg_dh_restore_backup(local_cmd_bkp, FALSE);
             WARN("Restore backup to configuration which was before "
-                 "the first local ADD/SET commands restored with code %r",
-                 ret);
+                 "the first local ADD/DEL/SET commands restored with "
+                 "code %r", ret);
         }
     }
 

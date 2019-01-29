@@ -77,6 +77,19 @@ typedef int64_t     tarpc_dlsymaddr;
 typedef uint32_t tarpc_ethtool_command;
 
 /**
+ * Flags to resolve function name.
+ *
+ * @attention   These are bit flags, with the exception of
+ *              @c TARPC_LIB_DEFAULT, which is used as the
+ *              initialization value.
+ */
+enum tarpc_lib_flags {
+    TARPC_LIB_DEFAULT       = 0x0,
+    TARPC_LIB_USE_LIBC      = 0x1,  /* 1 << 0 */
+    TARPC_LIB_USE_SYSCALL   = 0x2   /* 1 << 1 */
+};
+
+/**
  * Input arguments common for all RPC calls.
  *
  * @attention It should be the first field of all routine-specific 
@@ -86,8 +99,8 @@ typedef uint32_t tarpc_ethtool_command;
 struct tarpc_in_arg {
     tarpc_op        op;         /**< RPC operation */
     uint64_t        start;
-    uint64_t        jobid;        /**< Job identifier (for async calls) */
-    tarpc_bool      use_libc;   /**< Use libc instead of preset lib */
+    uint64_t        jobid;      /**< Job identifier (for async calls) */
+    tarpc_lib_flags lib_flags;  /**< How to resolve function name */
 };
 
 /**
@@ -101,6 +114,7 @@ struct tarpc_out_arg {
     tarpc_int   _errno;         /**< @e errno of the operation from
                                      te_errno.h or rcf_rpc_defs.h */
     tarpc_bool  errno_changed;  /**< Was errno modified by the call? */
+    char        err_str<>;      /**< String explaining the error. */
 
     uint32_t    duration;   /**< Duration of the called routine
                                  execution (in microseconds) */
@@ -1282,12 +1296,26 @@ struct tarpc_cmsghdr {
 
 struct tarpc_msghdr {
     struct tarpc_sa      msg_name;       /**< Destination/source address */
-    tarpc_socklen_t      msg_namelen;    /**< To be passed to 
-                                              recvmsg/sendmsg */
+    int64_t              msg_namelen;    /**< To be passed to
+                                              recvmsg/sendmsg; in case of
+                                              negative value will be
+                                              determined from msg_name */
     struct tarpc_iovec   msg_iov<>;      /**< Vector */
     tarpc_size_t         msg_iovlen;     /**< Passed to recvmsg() */
     struct tarpc_cmsghdr msg_control<>;  /**< Control info array */
-    tarpc_size_t         msg_controllen; /**< Control data buffer length */
+    int64_t              msg_controllen; /**< msg_controllen actually
+                                              used/retrieved on TA. If
+                                              negative value is passed
+                                              by RPC caller, it is
+                                              ignored; msg_controllen
+                                              used on TA is computed
+                                              from control messages
+                                              lengths in that case. */
+
+    uint8_t              msg_control_tail<>;  /**< Not parsed, will be
+                                                   appended to msg_control
+                                                   after control messages */
+
     tarpc_int            msg_flags;      /**< Flags on received message */
     tarpc_int            in_msg_flags;   /**< Original msg_flags value */
 };
@@ -3257,6 +3285,18 @@ struct tarpc_ta_kill_death_in {
 
 typedef struct tarpc_int_retval_out tarpc_ta_kill_death_out;
 
+/* ta_kill_and_wait() */
+
+struct tarpc_ta_kill_and_wait_in {
+    struct tarpc_in_arg common;
+
+    tarpc_pid_t     pid;
+    tarpc_int       sig;
+    tarpc_uint      timeout;
+};
+
+typedef struct tarpc_int_retval_out tarpc_ta_kill_and_wait_out;
+
 
 /*
  * Signal set are allocated/destroyed and manipulated in server context.
@@ -4195,6 +4235,9 @@ struct tarpc_pattern_sender_in {
     tarpc_int   s;              /**< Socket to be used */
     char        fname<>;        /**< Name of function generating a
                                      pattern */
+    char        swrapper<>;     /**< Send function wrapper (may be empty) */
+    tarpc_ptr   swrapper_data;  /**< Data which should be passed to
+                                     send function wrapper */
     iomux_func  iomux;          /**< Iomux function to be used **/
     uint32_t    size_min;       /**< Minimum size of the message */
     uint32_t    size_max;       /**< Maximum size of the message */
@@ -5588,6 +5631,7 @@ program tarpc
         RPC_DEF(call_gettid)
         RPC_DEF(call_tgkill)
         RPC_DEF(ta_kill_death)
+        RPC_DEF(ta_kill_and_wait)
 
         RPC_DEF(sigset_new)
         RPC_DEF(sigset_delete)

@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * Author: Oleg N. Kravtsov  <Oleg.Kravtsov@oktetlabs.ru>
@@ -23,8 +23,8 @@
 
 #include "logger_defs.h"
 
-/* 
- * The following declarations are about Control Log Messages that 
+/*
+ * The following declarations are about Control Log Messages that
  * outline test execution flow.
  */
 
@@ -41,7 +41,7 @@
 extern "C" {
 #endif
 
-/* 
+/*
  * Structures that are used for representation of control log messages.
  * They are high level structures obtained from "struct log_msg" objects.
  */
@@ -49,19 +49,19 @@ extern "C" {
 /** Structure that represents session/test/package "parameter" entity */
 typedef struct param {
     struct param *next; /**< Pointer to the next parameter */
-    
+
     char *name; /**< Parameter name */
     char *val;  /**< Parameter value in string representation */
 } param;
 
 /** Possible results of test, package or session */
 typedef enum result_status {
-    RES_STATUS_PASSED, 
-    RES_STATUS_KILLED, 
-    RES_STATUS_CORED, 
-    RES_STATUS_SKIPPED, 
-    RES_STATUS_FAKED, 
-    RES_STATUS_FAILED, 
+    RES_STATUS_PASSED,
+    RES_STATUS_KILLED,
+    RES_STATUS_CORED,
+    RES_STATUS_SKIPPED,
+    RES_STATUS_FAKED,
+    RES_STATUS_FAILED,
     RES_STATUS_EMPTY,
     RES_STATUS_INCOMPLETE,
 } result_status_t;
@@ -107,7 +107,7 @@ typedef enum node_type {
     NT_SESSION, /**< Node of session type */
     NT_PACKAGE, /**< Node of package type */
     NT_TEST,    /**< Node of test type */
-    NT_BRANCH,  /**< It is used only for generation events 
+    NT_BRANCH,  /**< It is used only for generation events
                      "branch start" / "branch end" */
     NT_LAST     /**< Last marker - the biggest value of the all evements */
 } node_type_t;
@@ -119,7 +119,7 @@ node_type2str(node_type_t node_type)
     {
 #define NODE_TYPE_CASE(val_) \
         case NT_ ## val_: return #val_
-        
+
         NODE_TYPE_CASE(SESSION);
         NODE_TYPE_CASE(PACKAGE);
         NODE_TYPE_CASE(TEST);
@@ -150,7 +150,7 @@ node_type2str(node_type_t node_type)
 
 /**
  * Structure that represents information about a particular entry.
- * It is used for passing information about start/end events. 
+ * It is used for passing information about start/end events.
  */
 typedef struct node_descr {
     char           *name;       /**< Entry name */
@@ -173,15 +173,20 @@ typedef struct node_info {
     result_info_t   result;      /**< Node result info */
 } node_info_t;
 
+/** Additional data passed to callbacks processing control messages */
+typedef struct ctrl_msg_data {
+    msg_queue verdicts;    /**< Test verdicts */
+    msg_queue artifacts;   /**< Test artifacts */
+} ctrl_msg_data;
+
 /**
- * Type of callback function used for processing control messages 
+ * Type of callback function used for processing control messages
  *
  * @param node      Control node information
- * @param verdicts  The queue of verdicts for this node;
- *                  queue keeps pointers to "log_msg" structures.
+ * @param data      Additional data (like test verdicts)
  */
 typedef int (* f_process_ctrl_log_msg)(node_info_t *node,
-                                       msg_queue *verdicts);
+                                       ctrl_msg_data *data);
 
 /* Type of callback function used for processing regular messages */
 typedef int (* f_process_reg_log_msg)(log_msg *);
@@ -202,8 +207,8 @@ extern f_process_ctrl_log_msg ctrl_msg_proc[CTRL_EVT_LAST][NT_LAST];
 extern f_process_reg_log_msg  reg_msg_proc;
 extern f_process_log_root     log_root_proc[CTRL_EVT_LAST];
 
-/** 
- * The list of events that can be generated from the flow tree 
+/**
+ * The list of events that can be generated from the flow tree
  * for a particular node
  */
 enum event_type {
@@ -211,7 +216,7 @@ enum event_type {
 };
 
 /**
- * Process control message from Tester: 
+ * Process control message from Tester:
  * Insert a new node into the flow tree if it is a start event;
  * Close node if it's an end event.
  *
@@ -241,7 +246,7 @@ extern int rgt_process_tester_control_message(log_msg *msg);
 extern void rgt_process_regular_message(log_msg *msg);
 
 /**
- * Emulate a set of close messages from Tester in order to 
+ * Emulate a set of close messages from Tester in order to
  * correctly complete flow tree.
  *
  * @param latest_ts  Timestamp of the latest log message,
@@ -290,8 +295,8 @@ extern log_msg *alloc_log_msg();
  *
  * @return  Nothing.
  *
- * @se 
- *     The freeing of a log message leads to freeing all messages allocated 
+ * @se
+ *     The freeing of a log message leads to freeing all messages allocated
  *     after the message.
  */
 extern void free_log_msg(log_msg *msg);

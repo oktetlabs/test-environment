@@ -79,6 +79,11 @@
          Value: kernel module name of a driver, empty if unmanaged -->
     <object oid="/agent/hardware/pci/device/driver" access="read_write" type="string" />
 
+    <!-- Device's network interfaces
+
+         Name: interface name
+         Value: none -->
+    <object oid="/agent/hardware/pci/device/net" access="read_only" type="none" />
 
     <!-- Virtual function management
 

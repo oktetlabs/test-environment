@@ -19,3 +19,6 @@ GPATH
 cscope*
 .reviewboardrc
 .dir-locals.el
+build
+cmake
+.vscode

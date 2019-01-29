@@ -362,6 +362,18 @@ extern int te_sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
 extern const char *te_sockaddr2str(const struct sockaddr *sa);
 
 /**
+ * Convert sockaddr to string, save result in a provided buffer.
+ *
+ * @param sa      Pointer to struct sockaddr.
+ * @param buf     Where to save a string representation.
+ * @param len     Number of bytes available for a string.
+ *
+ * @reutnr Status code.
+ */
+extern te_errno te_sockaddr_h2str_buf(const struct sockaddr *sa,
+                                      char *buf, size_t len);
+
+/**
  * Convert a @b sockaddr to a string or return an error.
  *
  * @param [in]sa        source @b sockaddr

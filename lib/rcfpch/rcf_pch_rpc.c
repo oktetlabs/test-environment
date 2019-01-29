@@ -288,7 +288,7 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
 
     tarpc_in_arg *in_arg = (tarpc_in_arg *)in;
 
-    in_arg->use_libc = 0;
+    in_arg->lib_flags = TARPC_LIB_DEFAULT;
 
     if (rpcs->sent > 0)
     {

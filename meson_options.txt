@@ -70,6 +70,8 @@ option('agent-unix-daemons', type: 'string', value: '',
        description: 'Unix Test Agent daemons configuration support')
 option('agent-unix-symtbl', type: 'boolean', value: true,
        description: 'Generate and include symbol table in Unix agent')
+option('agent-unix-libs', type: 'string', value: '',
+       description: 'Extra libraries to be linked to Unix agent')
 
 option('rgt-log-filter', type: 'boolean', value: true,
        description: 'Embed log fitering stuff in RGT core')
@@ -84,3 +86,6 @@ option('trc-hidden-stats', type: 'boolean', value: false,
        description: 'Enable hidden columns in statistics tables in TRC')
 option('trc-ext-scripts', type: 'array', value: [],
        description: 'Install external scripts with TRC')
+
+option('cs-conf-yaml', type: 'boolean', value: false,
+       description: 'Enable support for YAML configuration file processing')

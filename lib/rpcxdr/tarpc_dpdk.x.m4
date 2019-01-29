@@ -60,6 +60,54 @@ struct tarpc_rte_eal_process_type_out {
     enum tarpc_rte_proc_type_t  retval;
 };
 
+/** rte_eal_hotplug_add() */
+struct tarpc_rte_eal_hotplug_add_in {
+    struct tarpc_in_arg common;
+    string              busname<>;
+    string              devname<>;
+    string              devargs<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eal_hotplug_add_out;
+
+/** rte_eal_hotplug_remove() */
+struct tarpc_rte_eal_hotplug_remove_in {
+    struct tarpc_in_arg common;
+    string              busname<>;
+    string              devname<>;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eal_hotplug_remove_out;
+
+/** rte_epoll_wait() */
+
+struct tarpc_rte_epoll_data {
+    uint32_t event;
+    uint64_t data; /* Only plain data without pointer mapping is supported */
+    /* Callback is not supported yet */
+};
+
+struct tarpc_rte_epoll_event {
+    uint32_t                    status;
+    int                         fd;
+    int                         epfd;
+    struct tarpc_rte_epoll_data epdata;
+};
+
+struct tarpc_rte_epoll_wait_in {
+    struct tarpc_in_arg     common;
+    int                     epfd;
+    tarpc_rte_epoll_event   events<>;
+    int                     maxevents;
+    int                     timeout;
+};
+
+struct tarpc_rte_epoll_wait_out {
+    struct tarpc_out_arg    common;
+    tarpc_rte_epoll_event   events<>;
+    tarpc_int               retval;
+};
+
 struct tarpc_mbuf_in {
     struct tarpc_in_arg     common;
     tarpc_rte_mbuf          m;
@@ -111,6 +159,10 @@ enum tarpc_pktmbuf_ol_flags {
     TARPC_PKT_TX_OUTER_IP_CKSUM,
     TARPC_PKT_TX_OUTER_IPV4,
     TARPC_PKT_TX_OUTER_IPV6,
+
+    TARPC_PKT_TX_TUNNEL_VXLAN,
+    TARPC_PKT_TX_TUNNEL_GENEVE,
+    TARPC_PKT_TX_TUNNEL_GRE,
 
     TARPC_IND_ATTACHED_MBUF = 50,
     TARPC_CTRL_MBUF_FLAG,
@@ -726,6 +778,16 @@ enum tarpc_eth_link_speeds {
     TARPC_RTE_ETH_LINK_SPEED__UNKNOWN
 };
 
+/** Device capabilities */
+enum tarpc_eth_dev_capa {
+    TARPC_RTE_ETH_DEV_CAPA_RUNTIME_RX_QUEUE_SETUP_BIT = 0,
+    TARPC_RTE_ETH_DEV_CAPA_RUNTIME_TX_QUEUE_SETUP_BIT,
+
+    TARPC_RTE_ETH_DEV_CAPA__UNSUPPORTED_BIT,
+
+    TARPC_RTE_ETH_DEV_CAPA__UNKNOWN_BIT
+};
+
 /** RX offload capabilities of a device */
 enum tarpc_dev_rx_offload_bits {
     TARPC_RTE_DEV_RX_OFFLOAD_VLAN_STRIP_BIT = 0,
@@ -813,6 +875,7 @@ enum tarpc_rte_eth_txq_flags {
     TARPC_RTE_ETH_TXQ_FLAGS_NOXSUMSCTP_BIT,
     TARPC_RTE_ETH_TXQ_FLAGS_NOXSUMUDP_BIT,
     TARPC_RTE_ETH_TXQ_FLAGS_NOXSUMTCP_BIT,
+    TARPC_RTE_ETH_TXQ_FLAGS_IGNORE_BIT,
 
     TARPC_RTE_ETH_TXQ_FLAGS__UNKNOWN_BIT
 };
@@ -828,6 +891,7 @@ struct tarpc_rte_eth_rxconf {
     uint16_t                        rx_free_thresh;
     uint8_t                         rx_drop_en;
     uint8_t                         rx_deferred_start;
+    uint64_t                        offloads;
 };
 
 struct tarpc_rte_eth_txconf {
@@ -836,6 +900,7 @@ struct tarpc_rte_eth_txconf {
     uint16_t                        tx_free_thresh;
     uint32_t                        txq_flags;
     uint8_t                         tx_deferred_start;
+    uint64_t                        offloads;
 };
 
 struct tarpc_rte_eth_desc_lim {
@@ -870,6 +935,7 @@ struct tarpc_rte_eth_dev_info {
     struct tarpc_rte_eth_desc_lim   rx_desc_lim;
     struct tarpc_rte_eth_desc_lim   tx_desc_lim;
     uint32_t                        speed_capa;
+    uint64_t                        dev_capa;
 };
 
 /** rte_eth_dev_info_get() */
@@ -903,13 +969,17 @@ enum tarpc_rte_eth_rxmode_flags {
     TARPC_RTE_ETH_RXMODE_JUMBO_FRAME_BIT,
     TARPC_RTE_ETH_RXMODE_HW_STRIP_CRC_BIT,
     TARPC_RTE_ETH_RXMODE_ENABLE_SCATTER_BIT,
-    TARPC_RTE_ETH_RXMODE_ENABLE_LRO_BIT
+    TARPC_RTE_ETH_RXMODE_ENABLE_LRO_BIT,
+    TARPC_RTE_ETH_RXMODE_HW_TIMESTAMP_BIT,
+    TARPC_RTE_ETH_RXMODE_SECURITY_BIT,
+    TARPC_RTE_ETH_RXMODE_IGNORE_OFFLOAD_BITFIELD_BIT
 };
 
 struct tarpc_rte_eth_rxmode {
     enum tarpc_rte_eth_rx_mq_mode       mq_mode;
     uint32_t                            max_rx_pkt_len;
     uint16_t                            split_hdr_size;
+    uint64_t                            offloads;
     uint16_t                            flags;
 };
 
@@ -930,6 +1000,7 @@ enum tarpc_rte_eth_txmode_flags {
 
 struct tarpc_rte_eth_txmode {
     enum tarpc_rte_eth_tx_mq_mode       mq_mode;
+    uint64_t                            offloads;
     uint16_t                            pvid;
     uint8_t                             flags;
 };
@@ -981,6 +1052,11 @@ typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_close_in;
 
 typedef struct tarpc_void_out tarpc_rte_eth_dev_close_out;
 
+/** rte_eth_dev_reset() */
+typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_reset_in;
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_reset_out;
+
 /** rte_eth_dev_start() */
 typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_start_in;
 
@@ -1016,6 +1092,33 @@ struct tarpc_rte_eth_rx_queue_setup_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_rx_queue_setup_out;
 
+/** rte_eth_dev_rx_intr_enable() */
+typedef struct tarpc_rte_eth_dev_port_id_queue_id_in tarpc_rte_eth_dev_rx_intr_enable_in;
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_rx_intr_enable_out;
+
+/** rte_eth_dev_rx_intr_disable() */
+typedef struct tarpc_rte_eth_dev_port_id_queue_id_in tarpc_rte_eth_dev_rx_intr_disable_in;
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_rx_intr_disable_out;
+
+/** rte_eth_dev_rx_intr_ctl_q() */
+enum tarpc_rte_intr_op {
+    TARPC_RTE_INTR_EVENT_ADD = 0,
+    TARPC_RTE_INTR_EVENT_DEL
+};
+
+struct tarpc_rte_eth_dev_rx_intr_ctl_q_in {
+    struct tarpc_in_arg         common;
+    uint16_t                    port_id;
+    uint16_t                    queue_id;
+    int                         epfd;
+    enum tarpc_rte_intr_op      op;
+    uint64_t                    data;
+};
+
+typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_rx_intr_ctl_q_out;
+
 /** rte_eth_tx_burst() */
 struct tarpc_rte_eth_tx_burst_in {
     struct tarpc_in_arg  common;
@@ -1028,6 +1131,10 @@ struct tarpc_rte_eth_tx_burst_out {
     struct tarpc_out_arg    common;
     uint16_t                retval;
 };
+
+/** rte_eth_tx_prepare() */
+typedef struct tarpc_rte_eth_tx_burst_in tarpc_rte_eth_tx_prepare_in;
+typedef struct tarpc_rte_eth_tx_burst_out tarpc_rte_eth_tx_prepare_out;
 
 /** rte_eth_rx_burst() */
 struct tarpc_rte_eth_rx_burst_in {
@@ -1314,35 +1421,6 @@ struct tarpc_rte_vlan_strip_in {
 };
 
 typedef struct tarpc_int_retval_out tarpc_rte_vlan_strip_out;
-
-/** rte_eth_dev_count() */
-typedef struct tarpc_void_in tarpc_rte_eth_dev_count_in;
-
-struct tarpc_rte_eth_dev_count_out {
-    struct tarpc_out_arg    common;
-    uint8_t                 retval;
-};
-
-/** rte_eth_dev_attach() */
-struct tarpc_rte_eth_dev_attach_in {
-    struct tarpc_in_arg common;
-    string              devargs<>;
-};
-
-struct tarpc_rte_eth_dev_attach_out {
-    struct tarpc_out_arg common;
-    tarpc_int            retval;
-    uint16_t             port_id;
-};
-
-/** rte_eth_dev_detach() */
-typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_dev_detach_in;
-
-struct tarpc_rte_eth_dev_detach_out {
-    struct tarpc_out_arg    common;
-    tarpc_int               retval;
-    string                  devname<>;
-};
 
 struct tarpc_rte_eth_rss_reta_entry64 {
     uint64_t    mask;
@@ -1909,12 +1987,25 @@ struct tarpc_dpdk_eth_await_link_up_in {
 
 typedef struct tarpc_int_retval_out tarpc_dpdk_eth_await_link_up_out;
 
+/** dpdk_get_version() */
+typedef struct tarpc_void_in tarpc_dpdk_get_version_in;
+struct tarpc_dpdk_get_version_out {
+    struct tarpc_out_arg common;
+    tarpc_int            year;
+    tarpc_int            month;
+    tarpc_int            minor;
+    tarpc_int            release;
+};
+
 program dpdk
 {
     version ver0
     {
         RPC_DEF(rte_eal_init)
         RPC_DEF(rte_eal_process_type)
+        RPC_DEF(rte_eal_hotplug_add)
+        RPC_DEF(rte_eal_hotplug_remove)
+        RPC_DEF(rte_epoll_wait)
 
         RPC_DEF(rte_mempool_lookup)
         RPC_DEF(rte_mempool_in_use_count)
@@ -1976,11 +2067,16 @@ program dpdk
         RPC_DEF(rte_eth_dev_info_get)
         RPC_DEF(rte_eth_dev_configure)
         RPC_DEF(rte_eth_dev_close)
+        RPC_DEF(rte_eth_dev_reset)
         RPC_DEF(rte_eth_dev_start)
         RPC_DEF(rte_eth_dev_stop)
         RPC_DEF(rte_eth_tx_queue_setup)
         RPC_DEF(rte_eth_rx_queue_setup)
+        RPC_DEF(rte_eth_dev_rx_intr_enable)
+        RPC_DEF(rte_eth_dev_rx_intr_disable)
+        RPC_DEF(rte_eth_dev_rx_intr_ctl_q)
         RPC_DEF(rte_eth_tx_burst)
+        RPC_DEF(rte_eth_tx_prepare)
         RPC_DEF(rte_eth_rx_burst)
         RPC_DEF(rte_eth_dev_set_link_up)
         RPC_DEF(rte_eth_dev_set_link_down)
@@ -2012,9 +2108,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_default_mac_addr_set)
         RPC_DEF(rte_eth_rx_queue_info_get)
         RPC_DEF(rte_eth_tx_queue_info_get)
-        RPC_DEF(rte_eth_dev_count)
-        RPC_DEF(rte_eth_dev_attach)
-        RPC_DEF(rte_eth_dev_detach)
         RPC_DEF(rte_eth_dev_rss_reta_query)
         RPC_DEF(rte_eth_dev_rss_hash_conf_get)
         RPC_DEF(rte_eth_dev_flow_ctrl_get)
@@ -2044,5 +2137,6 @@ program dpdk
         RPC_DEF(rte_flow_isolate)
 
         RPC_DEF(dpdk_eth_await_link_up)
+        RPC_DEF(dpdk_get_version)
     } = 1;
 } = 2;

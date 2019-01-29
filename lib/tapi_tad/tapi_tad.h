@@ -370,6 +370,18 @@ extern te_errno tapi_tad_csap_get_no_match_pkts(const char *ta_name,
                                                 csap_handle_t csap_id,
                                                 unsigned int *val);
 
+/**
+ * Finalise all CSAP instances on all Test Agents using RCF.
+ *
+ * @param session RCF session ID
+ *
+ * @note The function will synchronise @c /agent/csap
+ *       subtrees for all the agents.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tad_csap_destroy_all(int session);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

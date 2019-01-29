@@ -657,6 +657,24 @@
          Value: irtt value for the route -->
     <object oid="/agent/route/irtt" access="read_write" type="integer"/>
     
+    <!-- Nexthop of a multipath route.
+         Name:  index in array of nexthops -->
+    <object oid="/agent/route/nexthop" access="read_create" type="none"/>
+
+    <!-- Interface of a multipath route's nexthop.
+         Name:  empty
+         Value: interface name -->
+    <object oid="/agent/route/nexthop/dev" access="read_write" type="string"/>
+
+    <!-- Gateway of a multipath route's nexthop.
+         Name:  empty
+         Value: gateway address -->
+    <object oid="/agent/route/nexthop/gw" access="read_write" type="address"/>
+
+    <!-- Weight of a multipath route's nexthop.
+         Name:  empty
+         Value: positive number -->
+    <object oid="/agent/route/nexthop/weight" access="read_write" type="integer"/>
     
     <!-- Blackhole route
          Name: address+prefix -->
@@ -856,6 +874,12 @@
          Value: Space separated list of interfaces -->
     <object oid="/agent/dhcpserver/interfaces"
             access="read_write" type="string"/>
+
+    <!-- Should DHCP server allow unknown clients?
+         Name: empty
+         Value: 0 (deny) or 1 (allow) -->
+    <object oid="/agent/dhcpserver/allow_unknown_clients"
+            access="read_write" type="integer"/>
 
     <!-- DHCP server operates in three term areas: its clients, which may
          obtain some resources, resource configured for particular
@@ -1286,5 +1310,31 @@
     <object oid="/agent/block" access="read_only" type="none">
       <depends oid="/agent/rsrc"/>
     </object>
+
+    <!-- Root object for sfptpd settings
+         Name: empty
+         -->
+    <object oid="/agent/sfptpd" access="read_create" type="none"/>
+
+    <!-- Shell command to run sfptpd.
+         Name: empty
+         Value: full path with file name to sfptpd -->
+    <object oid="/agent/sfptpd/path" access="read_write" type="string"/>
+
+    <!-- Name of the configuration file of sfptpd.
+         Name: empty
+         Value: full path with file name to configuration file -->
+    <object oid="/agent/sfptpd/config" access="read_write" type="string"/>
+
+    <!-- Interface name to use with sfptpd.
+         Name: empty
+         Value: network interface name -->
+    <object oid="/agent/sfptpd/ifname" access="read_write" type="string"/>
+
+    <!-- Enable state for sfptpd
+         Name: empty
+         Value: 0 (disabled) or 1 (enabled) -->
+    <object oid="/agent/sfptpd/enable" access="read_write" type="integer"/>
+
 
 </backup>

@@ -8,6 +8,8 @@
 
 set -e
 
+SCRIPT_DIR="$(dirname "$0")"
+
 with_config="$1"
 
 # Put initial values to control variables
@@ -152,6 +154,8 @@ process_agent_unix_parms() {
                 conf="${conf} sfptpd" ;;
             --with-sniffers=yes|--with-sniffers)
                 conf="${conf} sniffers" ;;
+            --with-tc)
+                conf="${conf} tc" ;;
             --with-tirpc)
                 # added automatically
                 ;;
@@ -169,6 +173,7 @@ process_agent_unix() {
     local ta="$1"; shift
     local pfx="$1"; shift
     local parms_var="${pfx}PARMS"
+    local libs_var="${pfx}LIBS"
     local parms=
     local conf=
     local daemons=
@@ -185,6 +190,11 @@ process_agent_unix() {
         meson_args="${meson_args} -Dagent-unix-conf=\"${conf}\""
     test -z "${daemons}" ||
         meson_args="${meson_args} -Dagent-unix-daemons=\"${daemons}\""
+
+    test -z "${!libs_var}" || {
+        meson_args="${meson_args} -Dagent-unix-libs=\"${!libs_var}\""
+        eval ${libs_var}=
+    }
 }
 
 process_agent() {
@@ -564,6 +574,8 @@ do_build() {
     local te_agents="${TE_INSTALL}"/agents
 
     mkdir -p "${te_agents}"
+
+    . "${SCRIPT_DIR}"/te_functions
 
     for p in ${TE_BS_PLATFORMS} ; do
 

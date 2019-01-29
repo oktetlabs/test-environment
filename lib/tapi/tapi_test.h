@@ -37,6 +37,7 @@
 #include "logger_api.h"
 #include "logger_ten.h"
 #include "tapi_jmp.h"
+#include "tapi_test_behaviour.h"
 #include "tapi_test_log.h"
 #include "tapi_test_run_status.h"
 #include "asn_impl.h"
@@ -101,6 +102,30 @@ extern "C" {
             TEST_ON_JMP_DO_IF_SUCCESS;                               \
         else if (result == EXIT_FAILURE)                             \
             TEST_ON_JMP_DO_IF_FAILURE;                               \
+                                                                     \
+        if (TEST_BEHAVIOUR(log_test_fail_state) &&                   \
+            result == EXIT_FAILURE)                                  \
+        {                                                            \
+            const char *s = te_test_fail_state_get();                \
+            if (s != NULL)                                           \
+                TEST_ARTIFACT("STATE: %s", s);                       \
+                                                                     \
+            s = te_test_fail_substate_get();                         \
+            if (s != NULL)                                           \
+                TEST_ARTIFACT("SUBSTATE: %s", s);                    \
+        }                                                            \
+                                                                     \
+        /* Behaviour switches handling section */                    \
+        if (TEST_BEHAVIOUR(wait_on_cleanup) ||                       \
+            (TEST_BEHAVIOUR(wait_on_fail) && result == EXIT_FAILURE))\
+        {                                                            \
+            printf("\n\nWe're about to jump to cleanup, "            \
+                   "but tester config kindly asks \n"                \
+                   "us to wait for a key to be pressed. \n\n"        \
+                   "Press any key to continue...\n");                \
+            getchar();                                               \
+        }                                                            \
+        TEST_STEP("Test cleanup");                                   \
         goto cleanup;                                                \
     } while (0)
 
@@ -116,6 +141,20 @@ extern "C" {
     } while (0)
 
 /**
+ * Get bool value of behavoiur switch
+ */
+#define TEST_BEHAVIOUR(name_)                   \
+    (__behaviour. name_)
+
+/**
+ * Macro to add behaviour switches in code that does not call TEST_START. It
+ * should not exist yet it does
+ */
+#define TEST_BEHAVIOUR_DEF \
+    test_behaviour __behaviour; \
+    test_behaviour_get(&__behaviour)
+
+/**
  * The first action of any test @b main() function.
  *
  * Variable @a rc and @a result are defined.
@@ -128,6 +167,7 @@ extern "C" {
 #define TEST_START \
     int         rc;                                                 \
     int         result = EXIT_FAILURE;                              \
+    test_behaviour __behaviour;                                     \
     TEST_START_VARS                                                 \
                                                                     \
     assert(tapi_test_run_status_get() == TE_TEST_RUN_STATUS_OK);    \
@@ -155,12 +195,19 @@ extern "C" {
     (void)signal(SIGUSR2, te_test_sig_handler);                     \
                                                                     \
     /*                                                              \
+     * Get te_test_id parameter which is required to associate      \
+     * further logs with the test (including steps and jump point   \
+     * management logs).                                            \
+     */                                                             \
+    te_test_id = test_get_test_id(argc, argv);                      \
+    if (te_test_id == TE_LOG_ID_UNDEFINED)                          \
+        return EXIT_FAILURE;                                        \
+    TEST_STEP("Test start");                                        \
+    /*                                                              \
      * Set jump point to cleanup_specific label to handle           \
      * if TEST_START_SPECIFIC fail                                  \
      */                                                             \
     TAPI_ON_JMP(TEST_ON_JMP_DO_SPECIFIC);                           \
-    TEST_GET_INT_PARAM(te_test_id);                                 \
-                                                                    \
     /* Initialize pseudo-random generator */                        \
     {                                                               \
         int te_rand_seed;                                           \
@@ -170,11 +217,20 @@ extern "C" {
         RING("Pseudo-random seed is %d", te_rand_seed);             \
     }                                                               \
                                                                     \
+    /*                                                              \
+     * Should happen before TS-specific start so that it            \
+     * impacts the startup procedure                                \
+     */                                                             \
+    test_behaviour_get(&__behaviour);                               \
+    if (TEST_BEHAVIOUR(log_stack))                                  \
+        te_log_stack_init();                                        \
+                                                                    \
     TEST_START_SPECIFIC;                                            \
                                                                     \
     /* Resetup jump point to cleanup label */                       \
     TAPI_JMP_POP;                                                   \
-    TAPI_ON_JMP(TEST_ON_JMP_DO)
+    TAPI_ON_JMP(TEST_ON_JMP_DO);                                    \
+    TEST_STEP_RESET()
 
 /**
  * The last action of the test @b main() function.
@@ -560,6 +616,25 @@ cleanup_specific:                                                   \
  */
 #define TEST_GET_DOUBLE_PARAM(var_name_) \
     (var_name_) = TEST_DOUBLE_PARAM(var_name_)
+
+/**
+ * The macro to get parameters of type 'value-unit' (double with unit prefix)
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ * @return double value
+ */
+#define TEST_VALUE_UNIT_PARAM(var_name_) \
+    test_get_value_unit_param(argc, argv, #var_name_)
+
+/**
+ * The macro to get parameters of type 'value-unit' (double with unit prefix)
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ */
+#define TEST_GET_VALUE_UNIT_PARAM(var_name_) \
+    (var_name_) = TEST_VALUE_UNIT_PARAM(var_name_)
 
 /**
  * The macro to get parameter of type 'octet string'
@@ -980,6 +1055,19 @@ extern int test_get_int_param(int argc, char **argv,
                               const char *name);
 
 /**
+ * Dedicated function to get te_test_id before
+ * any jump points installed (since logging of
+ * jump point setup requires te_test_id to associate
+ * the log message with the test).
+ *
+ * @param argc        Count of arguments
+ * @param argc        List of arguments
+ *
+ * @return TE test ID
+ */
+extern unsigned int test_get_test_id(int argc, char **argv);
+
+/**
  * Return parameters of type 'uint'
  *
  * @param argc       Count of arguments
@@ -1008,6 +1096,16 @@ extern int64_t test_get_int64_param(int argc, char **argv,
  */
 extern double test_get_double_param(int argc, char **argv,
                                     const char *name);
+
+/**
+ * Return parameters of type 'value-unit' ('double')
+ *
+ * @param argc       Count of arguments
+ * @param argv       List of arguments
+ * @param name       Name of parameter
+ */
+extern double test_get_value_unit_param(int argc, char **argv,
+                                        const char *name);
 
 /**
  * Print octet string.

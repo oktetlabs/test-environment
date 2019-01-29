@@ -26,11 +26,94 @@
 #include "logger_api.h"
 #include "te_log_stack.h"
 #include "tapi_jmp.h"
+#include "tester_msg.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @group Logs nesting controls */
+
+/**
+ * Logging of nesting level step.
+ *
+ * Reset nesting level to 0, log message with zero nesting level and increment
+ * it for subsequent messages (level equal to 1).
+ * The macro should be used in the test main function only.
+ * The macro is used to extract the test description (generated using Doxygen).
+ *
+ * @param _fs - format string and arguments
+ */
+#define TEST_STEP(_fs...) \
+    do {                                                            \
+        LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_STEP, _fs); \
+        te_test_fail_state_update(_fs);                             \
+        te_test_fail_substate_update(NULL);                         \
+    } while (0)
+
+/**
+ * Logging of nesting level sub-step.
+ *
+ * Reset nesting level to 1, log message with the nesting level and increment
+ * it for subsequent messages (level equal to 2).
+ * The macro should be used in the test main function only.
+ * The macro is used to extract the test description (generated using Doxygen).
+ *
+ * @param _fs - format string and arguments
+ */
+#define TEST_SUBSTEP(_fs...) \
+    do {                                                                \
+        LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_SUBSTEP, _fs);  \
+        te_test_fail_substate_update(_fs);                              \
+    } while(0)                                                          \
+
+
+/**
+ * Logging of nesting level step push.
+ *
+ * Log message at current nesting level and increment nesting level for
+ * subsequent log messages.
+ * Subsequent messages will have greater nesting level and will be considered
+ * as details of the step implementation.
+ *
+ * @param _fs - format string and arguments
+ */
+#define TEST_STEP_PUSH(_fs...) \
+    LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_STEP_PUSH, _fs)
+
+/**
+ * Logging of nesting level step pop.
+ *
+ * Decrement log nesting level and log the message (if not empty).
+ * It wraps the block and message could be used to summarize results.
+ *
+ * @param _fs - format string and arguments
+ */
+#define TEST_STEP_POP(_fs...) \
+    LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_STEP_POP, _fs)
+
+/**
+ * Logging of nesting level step next.
+ *
+ * Keep current nesting level, but log the message with previous nesting level.
+ * So, the message will have the same nesting level as previous step-push and
+ * subsequent step-next messages.
+ *
+ * @param _fs - format string and arguments
+ */
+#define TEST_STEP_NEXT(_fs...) \
+    LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_STEP_NEXT, _fs)
+
+/**
+ * Logging of nesting level step reset
+ *
+ * Reset nesting level to 0
+ */
+#define TEST_STEP_RESET() \
+    LGR_MESSAGE(TE_LL_CONTROL | TE_LL_RING, TE_USER_STEP_RESET, "")
+
+/*@}*/
 
 /** @addtogroup te_ts_tapi_test
  * @{
@@ -98,9 +181,9 @@ extern "C" {
  * @param fmt  the content of the verdict as format string with arguments
  */
 #define RING_VERDICT(fmt...) \
-    do {                                        \
-        TE_LOG_RING(TE_LOG_CMSG_USER, fmt);     \
-        te_test_verdict(fmt);                   \
+    do {                                                                   \
+        LGR_MESSAGE(TE_LL_RING | TE_LL_CONTROL, TE_LOG_VERDICT_USER, fmt); \
+        te_test_tester_message(TE_TEST_MSG_VERDICT, fmt);                  \
     } while (0)
 
 /**
@@ -109,9 +192,9 @@ extern "C" {
  * @param fmt  the content of the verdict as format string with arguments
  */
 #define WARN_VERDICT(fmt...) \
-    do {                                        \
-        TE_LOG_WARN(TE_LOG_CMSG_USER, fmt);     \
-        te_test_verdict(fmt);                   \
+    do {                                                                   \
+        LGR_MESSAGE(TE_LL_WARN | TE_LL_CONTROL, TE_LOG_VERDICT_USER, fmt); \
+        te_test_tester_message(TE_TEST_MSG_VERDICT, fmt);                  \
     } while (0)
 
 /**
@@ -120,9 +203,10 @@ extern "C" {
  * @param fmt  the content of the verdict as format string with arguments
  */
 #define ERROR_VERDICT(fmt...) \
-    do {                                        \
-        TE_LOG_ERROR(TE_LOG_CMSG_USER, fmt);    \
-        te_test_verdict(fmt);                   \
+    do {                                                                   \
+        LGR_MESSAGE(TE_LL_ERROR | TE_LL_CONTROL, TE_LOG_VERDICT_USER,      \
+                    fmt);                                                  \
+        te_test_tester_message(TE_TEST_MSG_VERDICT, fmt);                  \
     } while (0)
 
 /**
@@ -138,13 +222,91 @@ extern "C" {
 
 
 /**
- * Compose test verdict message and send it to Tester.
+ * Print test artifact to log. Artifact is a string describing
+ * test results like a verdict. But it is not taken into account
+ * when matching obtained results to TRC database.
  *
+ * @param _level     Level of the message/artifact that will go into the log
+ * @param _fmt       Message describing the artifact (format string
+ *                   with parameters)
+ */
+#define REGISTER_ARTIFACT(_level, _fmt...) \
+    do {                                   \
+        LGR_MESSAGE((_level) | TE_LL_CONTROL, TE_LOG_ARTIFACT_USER, _fmt); \
+        te_test_tester_message(TE_TEST_MSG_ARTIFACT, _fmt);                \
+    } while(0)
+
+/**
+ * Macro should be used to output artifact from tests.
+ *
+ * @param fmt  the content of the artifact as format string with arguments
+ */
+#define RING_ARTIFACT(_fmt...) \
+    REGISTER_ARTIFACT(TE_LL_RING, _fmt)
+
+/**
+ * Macro should be used to output artifact with WARN log level from tests.
+ *
+ * @param fmt  the content of the artifact as format string with arguments
+ */
+#define WARN_ARTIFACT(_fmt...) \
+    REGISTER_ARTIFACT(TE_LL_WARN, _fmt)
+
+/**
+ * Macro should be used to output artifact with ERROR log level from tests.
+ *
+ * @param fmt  the content of the artifact as format string with arguments
+ */
+#define ERROR_ARTIFACT(_fmt...) \
+    REGISTER_ARTIFACT(TE_LL_ERRRO, _fmt)
+
+/**
+ * Print test artifact to log. Artifact is a string describing
+ * test results like a verdict. But it is not taken into account
+ * when matching obtained results to TRC database.
+ *
+ * @param _fmt       Message describing the artifact (format string
+ *                   with parameters)
+ */
+#define TEST_ARTIFACT(_fmt...) \
+    RING_ARTIFACT(_fmt)
+
+/**
+ * Compose test message and send it to Tester.
+ *
+ * @param type          Message type
  * @param fmt           printf()-like format string with TE extensions
  *
  * @note The function uses @e te_test_id global variable.
  */
-extern void te_test_verdict(const char *fmt, ...);
+extern void te_test_tester_message(te_test_msg_type type,
+                                   const char *fmt, ...);
+
+/**
+ * Update state of the test to be dumped in case of failure.
+ *
+ * @param fmt     printf()-like format string w/o! TE extensions
+ */
+extern void te_test_fail_state_update(const char *fmt, ...)
+    __attribute__((format(printf, 1, 2)));
+
+/**
+ * Update substate of the test to be dumped in case of failure.
+ *
+ * @param fmt     printf()-like format string w/o! TE extensions
+ */
+extern void te_test_fail_substate_update(const char *fmt, ...)
+    __attribute__((format(printf, 1, 2)));
+
+/**
+ * Get the current test state string or @c NULL if it's not filled in.
+ */
+extern const char *te_test_fail_state_get(void);
+
+/**
+ * Get the current test substate string or @c NULL if it's not filled in.
+ */
+extern const char *te_test_fail_substate_get(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

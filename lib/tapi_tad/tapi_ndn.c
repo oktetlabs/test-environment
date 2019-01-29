@@ -702,6 +702,28 @@ out:
 }
 
 static te_errno
+tapi_tad_tso_seg_fix_udph(asn_value *udp_pdu,
+                          size_t     payload_len,
+                          size_t     seg_len)
+{
+    te_errno err = 0;
+    uint16_t len;
+    size_t   len_size = sizeof(len);
+
+    err = asn_read_value_field(udp_pdu, &len, &len_size, "length.#plain");
+    if (err != 0)
+        goto out;
+
+    len -= payload_len;
+    len += seg_len;
+
+    err = asn_write_value_field(udp_pdu, &len, sizeof(len), "length.#plain");
+
+out:
+    return TE_RC(TE_TAPI, err);
+}
+
+static te_errno
 tapi_tad_set_cksum_script_correct(asn_value  *proto_pdu,
                                   char       *du_cksum_label)
 {
@@ -876,6 +898,8 @@ tapi_tad_generate_pattern_unit(asn_value      *pdus,
     asn_child_desc_t  *ip6_pdus = NULL;
     unsigned int       nb_ip6_pdus;
     asn_value         *tcp_pdu = NULL;
+    asn_child_desc_t  *udp_pdus = NULL;
+    unsigned int       nb_udp_pdus;
     size_t             seg_len = 0;
     asn_value        **pattern_units_new = *pattern_units;
     unsigned int       i;
@@ -920,6 +944,11 @@ tapi_tad_generate_pattern_unit(asn_value      *pdus,
 
     tcp_pdu = asn_find_child_choice_value(pdus_copy, TE_PROTO_TCP);
 
+    err = asn_find_child_choice_values(pdus_copy, TE_PROTO_UDP,
+                                       &udp_pdus, &nb_udp_pdus);
+    if (err != 0)
+        goto out;
+
     if (is_tso)
     {
         if (tcp_pdu == NULL)
@@ -952,6 +981,19 @@ tapi_tad_generate_pattern_unit(asn_value      *pdus,
                                         transform->tso_segsz);
         if (err != 0)
             goto out;
+
+        /*
+         * Fix length field in UDP header(s).
+         * This comes in handy for encapsulated frames which have outer
+         * UDP header and for UDP GSO use cases.
+         */
+        for (i = 0; i < nb_udp_pdus; ++i)
+        {
+            err = tapi_tad_tso_seg_fix_udph(udp_pdus[i].value, payload_len,
+                                            seg_len);
+            if (err != 0)
+                goto out;
+        }
     }
 
     err = asn_write_value_field(pattern_unit, payload_data + *data_offset,
@@ -1010,6 +1052,7 @@ out:
 
     free(ip4_pdus);
     free(ip6_pdus);
+    free(udp_pdus);
 
     return TE_RC(TE_TAPI, err);
 }

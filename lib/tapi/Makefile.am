@@ -10,6 +10,7 @@ include_HEADERS = \
 	tapi_proc.h \
 	tapi_test.h \
 	tapi_test_log.h \
+	tapi_test_behaviour.h \
 	tapi_jmp.h \
 	tapi_test_run_status.h \
 	tapi_sockaddr.h \
@@ -63,6 +64,7 @@ libtapi_la_SOURCES = \
 	tapi_test_run_status.c \
 	tapi_sockaddr.c \
 	tapi_sockets.c \
+	tapi_test_behaviour.c \
 	tapi_cfg.c \
 	tapi_cfg_local_to_ta.c \
 	tapi_cfg_base.c \
@@ -78,7 +80,8 @@ libtapi_la_SOURCES = \
 	tapi_cfg_iptables.c \
 	tapi_cfg_eth.c \
 	tapi_file.c \
-	verdict.c \
+	tapi_tester_msg.c \
+	tapi_test_fail_state.c \
 	tapi_reqs.c \
 	tapi_cfg_acse.c \
 	tapi_sniffer.c \

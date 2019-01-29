@@ -88,6 +88,9 @@ typedef struct cfg_instance {
                                          to the Test Agent or not
                                          (has sense only for read-create
                                          instances) */
+    te_bool     remove;             /**< Whether this instance should be
+                                         removed from TA when committing
+                                         changes */
 
     /** @name Family */
     struct cfg_instance *father;    /**< Link to father */

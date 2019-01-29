@@ -38,13 +38,18 @@
 #ifdef HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
 #endif
+#ifdef HAVE_NETPACKET_PACKET_H
+#include <netpacket/packet.h>
+#endif
 
 #include "te_errno.h"
 #include "te_stdint.h"
+#include "te_ipstack.h"
+#include "te_alloc.h"
 #include "logger_api.h"
 #include "conf_api.h"
 #include "tapi_rpc_socket.h"
-
+#include "tad_common.h"
 #include "tapi_sockets.h"
 
 /* See description in tapi_sockets.h */
@@ -100,4 +105,53 @@ tapi_sock_read_data(rcf_rpc_server *rpcs,
     }
 
     return total_len;
+}
+
+te_errno
+tapi_sock_raw_tcpv4_send(rcf_rpc_server *rpcs, rpc_iovec *iov,
+                         int iovlen, int ifindex, int raw_socket,
+                         te_bool remove_vlan_hdr)
+{
+    uint8_t                *raw_packet;
+    ssize_t                 total_size = 0;
+    struct sockaddr_ll      sadr_ll;
+    ssize_t                 sent;
+    te_errno                rc = 0;
+
+    /* Prepare packet: headers + payload */
+    total_size = rpc_iov_data_len(iov, iovlen);
+    raw_packet = rpc_iovec_to_array(total_size, iov, iovlen);
+
+    if (raw_packet == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
+    rc = te_ipstack_prepare_raw_tcpv4_packet(raw_packet, &total_size,
+                                             remove_vlan_hdr, &sadr_ll);
+    if (rc != 0)
+    {
+        rc = TE_RC(TE_TAPI, rc);
+        goto out;
+    }
+
+    /* Prepare destination address */
+    sadr_ll.sll_ifindex = ifindex;
+
+    /* Send prepared raw packet */
+    RPC_AWAIT_ERROR(rpcs);
+    sent = rpc_sendto_raw(rpcs, raw_socket, raw_packet, total_size, 0,
+                          CONST_SA(&sadr_ll), sizeof(sadr_ll));
+    if (sent < 0)
+    {
+        rc = RPC_ERRNO(rpcs);
+    }
+    else if (sent != total_size)
+    {
+        ERROR("sendto() returns %d, but expected return value is %d", sent,
+               total_size);
+        rc = TE_RC(TE_TAPI, TE_EFAIL);
+    }
+
+out:
+    free(raw_packet);
+    return rc;
 }

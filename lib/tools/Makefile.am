@@ -16,7 +16,9 @@ include_HEADERS = \
 	te_log_fmt.h \
 	logger_file.h \
 	te_kernel_log.h \
+	te_file.h \
 	te_format.h \
+	te_expand.h \
 	te_iscsi.h \
 	tq_string.h \
 	te_string.h \
@@ -65,7 +67,9 @@ libtools_la_SOURCES = \
 	te_log_fmt.c \
 	te_log_file.c \
 	te_kernel_log.c \
+	te_file.c \
 	te_format.c \
+	te_expand.c \
 	tq_string.c \
 	te_string.c \
 	te_sigmap.c \

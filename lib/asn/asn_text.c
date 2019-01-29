@@ -341,8 +341,8 @@ asn_impl_pt_integer(const char *text, const asn_type *type,
     int   p_value;
     char *endptr;
 
-    ENTRY("text='%s' type=%p parsed=%p syms_parsed=%p",
-          text, type, parsed, syms_parsed);
+    ENTRY("text='%s' type=%p (%s) parsed=%p syms_parsed=%p",
+          text, type, type->name, parsed, syms_parsed);
 
     if (!text || !parsed || !syms_parsed)
         return TE_EWRONGPTR;
@@ -381,8 +381,8 @@ asn_impl_pt_uinteger(const char *text, const asn_type *type,
     unsigned long int  p_value;
     char              *endptr;
 
-    ENTRY("text='%s' type=%p parsed=%p syms_parsed=%p",
-          text, type, parsed, syms_parsed);
+    ENTRY("text='%s' type=%p (%s) parsed=%p syms_parsed=%p",
+          text, type, type->name, parsed, syms_parsed);
 
     if (!text || !parsed || !syms_parsed)
         return TE_EWRONGPTR;
@@ -495,8 +495,8 @@ asn_impl_pt_enum(const char*text, const asn_type *type,
     char  label_buf[100];
     int   p_s = sizeof(label_buf);
 
-    ENTRY("text='%s' type=%p parsed=%p syms_parsed=%p",
-          text, type, parsed, syms_parsed);
+    ENTRY("text='%s' type=%p (%s) parsed=%p syms_parsed=%p",
+          text, type, type->name, parsed, syms_parsed);
 
     if (!text || !parsed || !syms_parsed)
         return TE_EWRONGPTR;
@@ -660,8 +660,8 @@ asn_impl_pt_named_array(const char *text, const asn_type *type,
 
     char label_buf[100];
 
-    ENTRY("text='%s' type=%p parsed=%p parsed_syms=%p",
-          text, type, parsed, parsed_syms);
+    ENTRY("text='%s' type=%p (%s) parsed=%p parsed_syms=%p",
+          text, type, type->name, parsed, parsed_syms);
 
     if (!text || !type || !parsed || !parsed_syms)
         return TE_EWRONGPTR;

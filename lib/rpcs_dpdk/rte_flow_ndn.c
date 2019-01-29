@@ -198,13 +198,16 @@ rte_int_hton(uint32_t val, void *data, size_t size)
             goto out;                                                       \
     } while (0)
 
+/*
+ * Get values of spec, mask and last of requested field with specified name
+ * based on size of the value (in bits) and offset of the value (in bits)
+ */
 static te_errno
 asn_read_int_field_with_offset(const asn_value *pdu, const char *name,
                                size_t size, uint32_t offset, uint32_t *spec_p,
                                uint32_t *mask_p, uint32_t *last_p)
 {
     uint32_t val;
-    size_t val_size = size;
     uint32_t spec_val = 0;
     uint32_t mask_val = 0;
     uint32_t last_val = 0;
@@ -213,7 +216,7 @@ asn_read_int_field_with_offset(const asn_value *pdu, const char *name,
     int rc;
 
     snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#plain", name);
-    rc = asn_read_value_field(pdu, &val, &val_size, buf);
+    rc = asn_read_uint32(pdu, &val, buf);
     if (rc == 0)
     {
         spec_val |= val << offset;
@@ -223,20 +226,20 @@ asn_read_int_field_with_offset(const asn_value *pdu, const char *name,
     else if (rc == TE_EASNOTHERCHOICE)
     {
         snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.first", name);
-        rc = asn_read_value_field(pdu, &val, &val_size, buf);
+        rc = asn_read_uint32(pdu, &val, buf);
         if (rc == 0)
             spec_val |= val << offset;
         if (rc == 0 || rc == TE_EASNINCOMPLVAL)
         {
             snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.last", name);
-            rc = asn_read_value_field(pdu, &val, &val_size, buf);
+            rc = asn_read_uint32(pdu, &val, buf);
         }
         if (rc == 0)
             last_val |= val << offset;
         if (rc == 0 || rc == TE_EASNINCOMPLVAL)
         {
             snprintf(buf, RTE_FLOW_FIELD_NAME_MAX_LEN, "%s.#range.mask", name);
-            rc = asn_read_value_field(pdu, &val, &val_size, buf);
+            rc = asn_read_uint32(pdu, &val, buf);
         }
         if (rc == 0)
             mask_val |= val << offset;
@@ -524,7 +527,7 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     mask->tci = rte_cpu_to_be_16(mask_tci);
     last->tci = rte_cpu_to_be_16(last_tci);
 
-#ifdef HAVE_RTE_FLOW_ITEM_VLAN_TPID
+#ifdef HAVE_STRUCT_RTE_FLOW_ITEM_VLAN_TPID
 
     if (is_double_tagged)
         ASN_READ_INT_RANGE_FIELD(vlan_pdu, tpid, tpid, sizeof(spec->tpid));
@@ -543,7 +546,7 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     FILL_FLOW_ITEM_VLAN(last);
 #undef FILL_FLOW_ITEM_VLAN
 
-#else /* !HAVE_RTE_FLOW_ITEM_VLAN_TPID */
+#else /* !HAVE_STRUCT_RTE_FLOW_ITEM_VLAN_TPID */
 
     /*
      * Since the NDN representation of VLAN does not have field for
@@ -600,7 +603,7 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     FILL_FLOW_ITEM_VLAN(last);
 #undef FILL_FLOW_ITEM_VLAN
 
-#endif /* HAVE_RTE_FLOW_ITEM_VLAN_TPID */
+#endif /* HAVE_STRUCT_RTE_FLOW_ITEM_VLAN_TPID */
 
     *item_nb_out = item_nb;
     *pattern_out = pattern;
@@ -1651,9 +1654,9 @@ rte_flow_action_rss_opt_from_pdu(const asn_value            *conf_pdu_choice,
     if (rc != 0)
         goto fail;
 
-#ifdef HAVE_RTE_FLOW_ITEM_RSS_CONF
+#ifdef HAVE_STRUCT_RTE_FLOW_ACTION_RSS_RSS_CONF
     conf->rss_conf = opt;
-#else /* !HAVE_RTE_FLOW_ITEM_RSS_CONF */
+#else /* !HAVE_STRUCT_RTE_FLOW_ACTION_RSS_RSS_CONF */
     conf->types = opt->rss_hf;
 
     if (rss_key_len > 0)
@@ -1675,7 +1678,7 @@ rte_flow_action_rss_opt_from_pdu(const asn_value            *conf_pdu_choice,
 
     free(opt);
 
-#endif /* HAVE_RTE_FLOW_ITEM_RSS_CONF */
+#endif /* HAVE_STRUCT_RTE_FLOW_ACTION_RSS_RSS_CONF */
 
     return 0;
 
@@ -1746,7 +1749,7 @@ rte_flow_action_rss_from_pdu(const asn_value        *conf_pdu,
             goto fail;
     }
 
-#ifdef HAVE_RTE_FLOW_ITEM_RSS_NUM
+#ifdef HAVE_STRUCT_RTE_FLOW_ACTION_RSS_NUM
     conf->num = nb_entries;
     conf = realloc(conf, sizeof(*conf) + (nb_entries * sizeof(conf->queue[0])));
     if (conf == NULL)
@@ -1757,10 +1760,10 @@ rte_flow_action_rss_from_pdu(const asn_value        *conf_pdu,
 
     memcpy(conf->queue, queue, nb_entries * sizeof(conf->queue[0]));
     free(queue);
-#else /* !HAVE_RTE_FLOW_ITEM_RSS_NUM */
+#else /* !HAVE_STRUCT_RTE_FLOW_ACTION_RSS_NUM */
     conf->queue_num = nb_entries;
     conf->queue = queue;
-#endif /* HAVE_RTE_FLOW_ITEM_RSS_NUM */
+#endif /* HAVE_STRUCT_RTE_FLOW_ACTION_RSS_NUM */
 
     rc = rte_flow_action_rss_opt_from_pdu(conf_pdu_choice, conf);
     if (rc != 0)
@@ -2235,11 +2238,11 @@ TARPC_FUNC_STANDALONE(rte_flow_isolate, {},
 
     memset(&error, 0, sizeof(error));
 
-#ifdef HAVE_RTE_FLOW_ISOLATE
+#ifdef HAVE_STRUCT_RTE_FLOW_OPS_ISOLATE
     MAKE_CALL(out->retval = rte_flow_isolate(in->port_id, in->set, &error));
-#else /* !HAVE_RTE_FLOW_ISOLATE */
+#else /* !HAVE_STRUCT_RTE_FLOW_OPS_ISOLATE */
     out->retval = -ENOTSUP;
-#endif /* HAVE_RTE_FLOW_ISOLATE */
+#endif /* HAVE_STRUCT_RTE_FLOW_OPS_ISOLATE */
 
     neg_errno_h2rpc(&out->retval);
     tarpc_rte_error2tarpc(&out->error, &error);

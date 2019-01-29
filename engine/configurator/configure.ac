@@ -28,6 +28,19 @@ AC_CHECK_TYPES([xmlError], [], [], [#include <libxml/xmlerror.h>])
 
 AC_CONFIG_FILES([Makefile])
 
+TE_CS_CPPFLAGS=
+
+AC_ARG_WITH([conf_yaml],,
+[if test "${withval}" = yes; then
+   AC_SEARCH_LIBS([yaml_parser_load], [yaml])
+   TE_CS_CPPFLAGS="-DWITH_CONF_YAML"
+   with_conf_yaml=yes
+ fi],
+[with_conf_yaml=no])
+
+AC_SUBST([TE_CS_CPPFLAGS])
+AM_CONDITIONAL(WITH_CONF_YAML, test "$with_conf_yaml" = "yes")
+
 #if test -n "$with_tests"; then
 #    AC_SUBST([prefix])
 #    AC_SUBST([srcdir])

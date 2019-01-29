@@ -40,7 +40,7 @@ static int rgt_max_attribute_length = 0;
 static const char *rgt_line_separator = NULL;
 
 /** Array of Rgt attributes */
-static rgt_attrs_t global_attrs[20];
+static rgt_attrs_t global_attrs[32];
 #define ATTR_NUM (sizeof(global_attrs) / sizeof(global_attrs[0]))
 
 /** The number of attributes in attribute array */
@@ -48,12 +48,12 @@ static unsigned int global_attr_num = 0;
 /** Wheter the attribute array is currently used or not */
 static te_bool      attr_locked = FALSE;
 
-#define N_BUFS 11
+#define N_BUFS ATTR_NUM
 #define BUF_LEN 128
 /** The array of buffers for keeping string value attributes */
 static char bufs[N_BUFS][BUF_LEN];
 /** Currently used buffer */
-static int cur_buf = 0;
+static unsigned int cur_buf = 0;
 
 /* The description see in rgt_tmpls_lib.h */
 rgt_attrs_t *

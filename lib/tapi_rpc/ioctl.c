@@ -411,8 +411,8 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 in.req.req_val[0].ioctl_request_u.req_sgio.
                    info = ((sg_io_hdr_t *) arg)->info;
 #endif
-                break;
             }
+            break;
 
         case RPC_SIOCGHWTSTAMP:
         case RPC_SIOCSHWTSTAMP:

@@ -102,6 +102,83 @@ tarpc_rte_rx_offloads2rpc(uint64_t rte)
     return rpc;
 }
 
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+static int
+tarpc_rte_rx_offloads2rte(uint64_t rpc, uint64_t *rte)
+{
+    uint64_t rte_tmp = 0;
+
+#define RTE_DEV_RX_OFFLOAD2RTE(_bit) \
+    do {                                                                 \
+        uint64_t flag = (1ULL << TARPC_RTE_DEV_RX_OFFLOAD_##_bit##_BIT); \
+                                                                         \
+        if (rpc & flag)                                                  \
+        {                                                                \
+            rpc &= ~flag;                                                \
+            rte_tmp |= DEV_RX_OFFLOAD_##_bit;                            \
+        }                                                                \
+    } while (0)
+
+#ifdef DEV_RX_OFFLOAD_VLAN_STRIP
+    RTE_DEV_RX_OFFLOAD2RTE(VLAN_STRIP);
+#endif /* DEV_RX_OFFLOAD_VLAN_STRIP */
+#ifdef DEV_RX_OFFLOAD_IPV4_CKSUM
+    RTE_DEV_RX_OFFLOAD2RTE(IPV4_CKSUM);
+#endif /* DEV_RX_OFFLOAD_IPV4_CKSUM */
+#ifdef DEV_RX_OFFLOAD_UDP_CKSUM
+    RTE_DEV_RX_OFFLOAD2RTE(UDP_CKSUM);
+#endif /* DEV_RX_OFFLOAD_UDP_CKSUM */
+#ifdef DEV_RX_OFFLOAD_TCP_CKSUM
+    RTE_DEV_RX_OFFLOAD2RTE(TCP_CKSUM);
+#endif /* DEV_RX_OFFLOAD_TCP_CKSUM */
+#ifdef DEV_RX_OFFLOAD_TCP_LRO
+    RTE_DEV_RX_OFFLOAD2RTE(TCP_LRO);
+#endif /* DEV_RX_OFFLOAD_TCP_LRO */
+#ifdef DEV_RX_OFFLOAD_QINQ_STRIP
+    RTE_DEV_RX_OFFLOAD2RTE(QINQ_STRIP);
+#endif /* DEV_RX_OFFLOAD_QINQ_STRIP */
+#ifdef DEV_RX_OFFLOAD_OUTER_IPV4_CKSUM
+    RTE_DEV_RX_OFFLOAD2RTE(OUTER_IPV4_CKSUM);
+#endif /* DEV_RX_OFFLOAD_OUTER_IPV4_CKSUM */
+#ifdef DEV_RX_OFFLOAD_MACSEC_STRIP
+    RTE_DEV_RX_OFFLOAD2RTE(MACSEC_STRIP);
+#endif /* DEV_RX_OFFLOAD_MACSEC_STRIP */
+#ifdef DEV_RX_OFFLOAD_HEADER_SPLIT
+    RTE_DEV_RX_OFFLOAD2RTE(HEADER_SPLIT);
+#endif /* DEV_RX_OFFLOAD_HEADER_SPLIT */
+#ifdef DEV_RX_OFFLOAD_VLAN_FILTER
+    RTE_DEV_RX_OFFLOAD2RTE(VLAN_FILTER);
+#endif /* DEV_RX_OFFLOAD_VLAN_FILTER */
+#ifdef DEV_RX_OFFLOAD_VLAN_EXTEND
+    RTE_DEV_RX_OFFLOAD2RTE(VLAN_EXTEND);
+#endif /* DEV_RX_OFFLOAD_VLAN_EXTEND */
+#ifdef DEV_RX_OFFLOAD_JUMBO_FRAME
+    RTE_DEV_RX_OFFLOAD2RTE(JUMBO_FRAME);
+#endif /* DEV_RX_OFFLOAD_JUMBO_FRAME */
+#ifdef DEV_RX_OFFLOAD_CRC_STRIP
+    RTE_DEV_RX_OFFLOAD2RTE(CRC_STRIP);
+#endif /* DEV_RX_OFFLOAD_CRC_STRIP */
+#ifdef DEV_RX_OFFLOAD_SCATTER
+    RTE_DEV_RX_OFFLOAD2RTE(SCATTER);
+#endif /* DEV_RX_OFFLOAD_SCATTER */
+#ifdef DEV_RX_OFFLOAD_TIMESTAMP
+    RTE_DEV_RX_OFFLOAD2RTE(TIMESTAMP);
+#endif /* DEV_RX_OFFLOAD_TIMESTAMP */
+#ifdef DEV_RX_OFFLOAD_SECURITY
+    RTE_DEV_RX_OFFLOAD2RTE(SECURITY);
+#endif /* DEV_RX_OFFLOAD_SECURITY */
+
+#undef RTE_DEV_RX_OFFLOAD2RTE
+
+    if (rpc != 0)
+        return (0);
+    else
+        *rte = rte_tmp;
+
+    return (1);
+}
+#endif
+
 static uint64_t
 tarpc_rte_tx_offloads2rpc(uint64_t rte)
 {
@@ -177,6 +254,118 @@ tarpc_rte_tx_offloads2rpc(uint64_t rte)
     return rpc;
 }
 
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+static int
+tarpc_rte_tx_offloads2rte(uint64_t rpc, uint64_t *rte)
+{
+    uint64_t rte_tmp = 0;
+
+#define RTE_DEV_TX_OFFLOAD2RTE(_bit) \
+    do {                                                                 \
+        uint64_t flag = (1ULL << TARPC_RTE_DEV_TX_OFFLOAD_##_bit##_BIT); \
+                                                                         \
+        if (rpc & flag)                                                  \
+        {                                                                \
+            rpc &= ~flag;                                                \
+            rte_tmp |= DEV_TX_OFFLOAD_##_bit;                            \
+        }                                                                \
+    } while (0)
+
+#ifdef DEV_TX_OFFLOAD_VLAN_INSERT
+    RTE_DEV_TX_OFFLOAD2RTE(VLAN_INSERT);
+#endif /* DEV_TX_OFFLOAD_VLAN_INSERT */
+#ifdef DEV_TX_OFFLOAD_IPV4_CKSUM
+    RTE_DEV_TX_OFFLOAD2RTE(IPV4_CKSUM);
+#endif /* DEV_TX_OFFLOAD_IPV4_CKSUM */
+#ifdef DEV_TX_OFFLOAD_UDP_CKSUM
+    RTE_DEV_TX_OFFLOAD2RTE(UDP_CKSUM);
+#endif /* DEV_TX_OFFLOAD_UDP_CKSUM */
+#ifdef DEV_TX_OFFLOAD_TCP_CKSUM
+    RTE_DEV_TX_OFFLOAD2RTE(TCP_CKSUM);
+#endif /* DEV_TX_OFFLOAD_TCP_CKSUM */
+#ifdef DEV_TX_OFFLOAD_SCTP_CKSUM
+    RTE_DEV_TX_OFFLOAD2RTE(SCTP_CKSUM);
+#endif /* DEV_TX_OFFLOAD_SCTP_CKSUM */
+#ifdef DEV_TX_OFFLOAD_TCP_TSO
+    RTE_DEV_TX_OFFLOAD2RTE(TCP_TSO);
+#endif /* DEV_TX_OFFLOAD_TCP_TSO */
+#ifdef DEV_TX_OFFLOAD_UDP_TSO
+    RTE_DEV_TX_OFFLOAD2RTE(UDP_TSO);
+#endif /* DEV_TX_OFFLOAD_UDP_TSO*/
+#ifdef DEV_TX_OFFLOAD_OUTER_IPV4_CKSUM
+    RTE_DEV_TX_OFFLOAD2RTE(OUTER_IPV4_CKSUM);
+#endif /* DEV_TX_OFFLOAD_OUTER_IPV4_CKSUM */
+#ifdef DEV_TX_OFFLOAD_QINQ_INSERT
+    RTE_DEV_TX_OFFLOAD2RTE(QINQ_INSERT);
+#endif /* DEV_TX_OFFLOAD_QINQ_INSERT */
+#ifdef DEV_TX_OFFLOAD_VXLAN_TNL_TSO
+    RTE_DEV_TX_OFFLOAD2RTE(VXLAN_TNL_TSO);
+#endif /* DEV_TX_OFFLOAD_VXLAN_TNL_TSO */
+#ifdef DEV_TX_OFFLOAD_GRE_TNL_TSO
+    RTE_DEV_TX_OFFLOAD2RTE(GRE_TNL_TSO);
+#endif /* DEV_TX_OFFLOAD_GRE_TNL_TSO */
+#ifdef DEV_TX_OFFLOAD_IPIP_TNL_TSO
+    RTE_DEV_TX_OFFLOAD2RTE(IPIP_TNL_TSO);
+#endif /* DEV_TX_OFFLOAD_IPIP_TNL_TSO */
+#ifdef DEV_TX_OFFLOAD_GENEVE_TNL_TSO
+    RTE_DEV_TX_OFFLOAD2RTE(GENEVE_TNL_TSO);
+#endif /* DEV_TX_OFFLOAD_GENEVE_TNL_TSO */
+#ifdef DEV_TX_OFFLOAD_MACSEC_INSERT
+    RTE_DEV_TX_OFFLOAD2RTE(MACSEC_INSERT);
+#endif /* DEV_TX_OFFLOAD_MACSEC_INSERT */
+#ifdef DEV_TX_OFFLOAD_MT_LOCKFREE
+    RTE_DEV_TX_OFFLOAD2RTE(MT_LOCKFREE);
+#endif /* DEV_TX_OFFLOAD_MT_LOCKFREE */
+#ifdef DEV_TX_OFFLOAD_MULTI_SEGS
+    RTE_DEV_TX_OFFLOAD2RTE(MULTI_SEGS);
+#endif /* DEV_TX_OFFLOAD_MULTI_SEGS */
+#ifdef DEV_TX_OFFLOAD_MBUF_FAST_FREE
+    RTE_DEV_TX_OFFLOAD2RTE(MBUF_FAST_FREE);
+#endif /* DEV_TX_OFFLOAD_MBUF_FAST_FREE */
+#ifdef DEV_TX_OFFLOAD_SECURITY
+    RTE_DEV_TX_OFFLOAD2RTE(SECURITY);
+#endif /* DEV_TX_OFFLOAD_SECURITY */
+
+#undef RTE_DEV_TX_OFFLOAD2RTE
+
+    if (rpc != 0)
+        return (0);
+    else
+        *rte = rte_tmp;
+
+    return (1);
+}
+#endif
+
+#ifdef HAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA
+static uint64_t
+tarpc_rte_eth_dev_capa2rpc(uint64_t dev)
+{
+    uint64_t rpc = 0;
+
+#define RTE_ETH_DEV_CAPA2RPC(_bit) \
+    do {                                                            \
+        uint64_t flag = RTE_ETH_DEV_CAPA_##_bit;                    \
+                                                                    \
+        if (dev & flag)                                             \
+        {                                                           \
+            dev &= ~flag;                                           \
+            rpc |= (1ULL << TARPC_RTE_ETH_DEV_CAPA_##_bit##_BIT);   \
+        }                                                           \
+    } while (0)
+#ifdef RTE_ETH_DEV_CAPA_RUNTIME_RX_QUEUE_SETUP
+    RTE_ETH_DEV_CAPA2RPC(RUNTIME_RX_QUEUE_SETUP);
+#endif /* RTE_ETH_DEV_CAPA_RUNTIME_RX_QUEUE_SETUP */
+#ifdef RTE_ETH_DEV_CAPA_RUNTIME_TX_QUEUE_SETUP
+    RTE_ETH_DEV_CAPA2RPC(RUNTIME_TX_QUEUE_SETUP);
+#endif /* RTE_ETH_DEV_CAPA_RUNTIME_TX_QUEUE_SETUP */
+#undef RTE_ETH_DEV_CAPA2RPC
+    if (dev != 0)
+        rpc |= (1ULL << TARPC_RTE_ETH_DEV_CAPA__UNKNOWN_BIT);
+    return rpc;
+}
+#endif /* HAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA */
+
 static uint64_t
 tarpc_rte_eth_rss_flow_types2rpc(uint64_t rte)
 {
@@ -231,8 +420,12 @@ tarpc_rte_eth_rxconf2rpc(const struct rte_eth_rxconf *rte,
     rpc->rx_free_thresh = rte->rx_free_thresh;
     rpc->rx_drop_en = rte->rx_drop_en;
     rpc->rx_deferred_start = rte->rx_deferred_start;
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    rpc->offloads = tarpc_rte_rx_offloads2rpc(rte->offloads);
+#endif
 }
 
+#if RTE_VERSION < RTE_VERSION_NUM(18,8,0,0)
 static uint64_t
 tarpc_rte_eth_txq_flags2rpc(uint32_t rte)
 {
@@ -255,11 +448,15 @@ tarpc_rte_eth_txq_flags2rpc(uint32_t rte)
     RTE_DEV_TXQ_FLAG2STR(NOXSUMSCTP);
     RTE_DEV_TXQ_FLAG2STR(NOXSUMUDP);
     RTE_DEV_TXQ_FLAG2STR(NOXSUMTCP);
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    RTE_DEV_TXQ_FLAG2STR(IGNORE);
+#endif
 #undef RTE_DEV_TXQ_FLAG2STR
     if (rte != 0)
         rpc |= (1 << TARPC_RTE_ETH_TXQ_FLAGS__UNKNOWN_BIT);
     return rpc;
 }
+#endif
 
 static void
 tarpc_rte_eth_txconf2rpc(const struct rte_eth_txconf *rte,
@@ -268,8 +465,13 @@ tarpc_rte_eth_txconf2rpc(const struct rte_eth_txconf *rte,
     tarpc_rte_eth_thresh2rpc(&rte->tx_thresh, &rpc->tx_thresh);
     rpc->tx_rs_thresh = rte->tx_rs_thresh;
     rpc->tx_free_thresh = rte->tx_free_thresh;
+#if RTE_VERSION < RTE_VERSION_NUM(18,8,0,0)
     rpc->txq_flags = tarpc_rte_eth_txq_flags2rpc(rte->txq_flags);
+#endif
     rpc->tx_deferred_start = rte->tx_deferred_start;
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    rpc->offloads = tarpc_rte_tx_offloads2rpc(rte->offloads);
+#endif
 }
 
 static void
@@ -335,22 +537,22 @@ TARPC_FUNC(rte_eth_dev_info_get, {},
     out->dev_info.max_hash_mac_addrs = dev_info.max_hash_mac_addrs;
     out->dev_info.max_vfs = dev_info.max_vfs;
     out->dev_info.max_vmdq_pools = dev_info.max_vmdq_pools;
-#ifdef HAVE_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA
+#ifdef HAVE_STRUCT_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA
     out->dev_info.rx_queue_offload_capa =
         tarpc_rte_rx_offloads2rpc(dev_info.rx_queue_offload_capa);
-#else /* !HAVE_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA */
+#else /* !HAVE_STRUCT_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA */
     out->dev_info.rx_queue_offload_capa =
         (1ULL << TARPC_RTE_DEV_RX_OFFLOAD__UNSUPPORTED_BIT);
-#endif /* HAVE_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA */
+#endif /* HAVE_STRUCT_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA */
     out->dev_info.rx_offload_capa =
         tarpc_rte_rx_offloads2rpc(dev_info.rx_offload_capa);
-#ifdef HAVE_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA
+#ifdef HAVE_STRUCT_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA
     out->dev_info.tx_queue_offload_capa =
         tarpc_rte_tx_offloads2rpc(dev_info.tx_queue_offload_capa);
-#else /* !HAVE_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA */
+#else /* !HAVE_STRUCT_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA */
     out->dev_info.tx_queue_offload_capa =
         (1ULL << TARPC_RTE_DEV_TX_OFFLOAD__UNSUPPORTED_BIT);
-#endif /* HAVE_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA */
+#endif /* HAVE_STRUCT_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA */
     out->dev_info.tx_offload_capa =
         tarpc_rte_tx_offloads2rpc(dev_info.tx_offload_capa);
     out->dev_info.reta_size = dev_info.reta_size;
@@ -369,8 +571,14 @@ TARPC_FUNC(rte_eth_dev_info_get, {},
                                &out->dev_info.tx_desc_lim);
     out->dev_info.speed_capa =
         tarpc_rte_eth_link_speeds2rpc(dev_info.speed_capa);
+#ifdef HAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA
+    out->dev_info.dev_capa =
+        tarpc_rte_eth_dev_capa2rpc(dev_info.dev_capa);
+#else /* !HAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA */
+    out->dev_info.dev_capa =
+        (1ULL << TARPC_RTE_ETH_DEV_CAPA__UNSUPPORTED_BIT);
+#endif /* HAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA */
 })
-
 
 static te_bool
 tarpc_eth_link_speeds2rte(uint32_t rpc, uint32_t *rte)
@@ -400,6 +608,7 @@ tarpc_eth_rx_mq_mode2rte(const enum tarpc_rte_eth_rx_mq_mode rpc,
     return 1;
 }
 
+#if RTE_VERSION < RTE_VERSION_NUM(18,8,0,0)
 static int
 tarpc_eth_rxmode_flags2rte(uint16_t rxmode_flags,
                            struct rte_eth_rxmode *rxmode)
@@ -423,9 +632,18 @@ tarpc_eth_rxmode_flags2rte(uint16_t rxmode_flags,
     TARPC_RTE_ETH_RXMODE_BIT2MEMBER(HW_STRIP_CRC, hw_strip_crc);
     TARPC_RTE_ETH_RXMODE_BIT2MEMBER(ENABLE_SCATTER, enable_scatter);
     TARPC_RTE_ETH_RXMODE_BIT2MEMBER(ENABLE_LRO, enable_lro);
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    TARPC_RTE_ETH_RXMODE_BIT2MEMBER(HW_TIMESTAMP, hw_timestamp);
+    TARPC_RTE_ETH_RXMODE_BIT2MEMBER(IGNORE_OFFLOAD_BITFIELD,
+                                    ignore_offload_bitfield);
+#endif
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,2)
+    TARPC_RTE_ETH_RXMODE_BIT2MEMBER(SECURITY, security);
+#endif
 #undef TARPC_RTE_ETH_RXMODE_BIT2MEMBER
     return (rxmode_flags == 0);
 }
+#endif
 
 static int
 tarpc_eth_rxmode2rte(const struct tarpc_rte_eth_rxmode *rpc,
@@ -436,7 +654,12 @@ tarpc_eth_rxmode2rte(const struct tarpc_rte_eth_rxmode *rpc,
     ret &= tarpc_eth_rx_mq_mode2rte(rpc->mq_mode, &rte->mq_mode);
     rte->max_rx_pkt_len = rpc->max_rx_pkt_len;
     rte->split_hdr_size = rpc->split_hdr_size;
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    ret &= tarpc_rte_rx_offloads2rte(rpc->offloads, &rte->offloads);
+#endif
+#if RTE_VERSION < RTE_VERSION_NUM(18,8,0,0)
     ret &= tarpc_eth_rxmode_flags2rte(rpc->flags, rte);
+#endif
     return ret;
 }
 
@@ -487,6 +710,9 @@ tarpc_eth_txmode2rte(const struct tarpc_rte_eth_txmode *rpc,
     int ret = 1;
 
     ret &= tarpc_eth_tx_mq_mode2rte(rpc->mq_mode, &rte->mq_mode);
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    ret &= tarpc_rte_tx_offloads2rte(rpc->offloads, &rte->offloads);
+#endif
     rte->pvid = rpc->pvid;
     ret &= tarpc_eth_txmode_flags2rte(rpc->flags, rte);
     return ret;
@@ -673,6 +899,11 @@ TARPC_FUNC(rte_eth_dev_close, {},
     MAKE_CALL(func(in->port_id));
 })
 
+TARPC_FUNC(rte_eth_dev_reset, {},
+{
+    MAKE_CALL(func(in->port_id));
+})
+
 TARPC_FUNC(rte_eth_dev_start, {},
 {
     MAKE_CALL(out->retval = func(in->port_id));
@@ -697,6 +928,7 @@ tarpc_eth_thresh2rte(const struct tarpc_rte_eth_thresh *rpc,
     return 1;
 }
 
+#if RTE_VERSION < RTE_VERSION_NUM(18,8,0,0)
 static int
 tarpc_eth_txq_flags2rte(uint32_t rpc, uint32_t *rte)
 {
@@ -719,10 +951,14 @@ tarpc_eth_txq_flags2rte(uint32_t rpc, uint32_t *rte)
     RPC_DEV_TXQ_FLAG2STR(NOXSUMSCTP);
     RPC_DEV_TXQ_FLAG2STR(NOXSUMUDP);
     RPC_DEV_TXQ_FLAG2STR(NOXSUMTCP);
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    RPC_DEV_TXQ_FLAG2STR(IGNORE);
+#endif
 #undef RPC_DEV_TXQ_FLAG2STR
 
     return (rpc == 0);
 }
+#endif
 
 static int
 tarpc_eth_txconf2rte(const struct tarpc_rte_eth_txconf *rpc,
@@ -735,8 +971,13 @@ tarpc_eth_txconf2rte(const struct tarpc_rte_eth_txconf *rpc,
     ret &= tarpc_eth_thresh2rte(&rpc->tx_thresh, &rte->tx_thresh);
     rte->tx_rs_thresh = rpc->tx_rs_thresh;
     rte->tx_free_thresh = rpc->tx_free_thresh;
+#if RTE_VERSION < RTE_VERSION_NUM(18,8,0,0)
     ret &= tarpc_eth_txq_flags2rte(rpc->txq_flags, &rte->txq_flags);
+#endif
     rte->tx_deferred_start = rpc->tx_deferred_start;
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    ret &= tarpc_rte_tx_offloads2rte(rpc->offloads, &rte->offloads);
+#endif
 
     return ret;
 }
@@ -779,6 +1020,9 @@ tarpc_eth_rxconf2rte(const struct tarpc_rte_eth_rxconf *rpc,
     rte->rx_free_thresh = rpc->rx_free_thresh;
     rte->rx_drop_en = rpc->rx_drop_en;
     rte->rx_deferred_start = rpc->rx_deferred_start;
+#if RTE_VERSION >= RTE_VERSION_NUM(17,11,0,1)
+    ret &= tarpc_rte_rx_offloads2rte(rpc->offloads, &rte->offloads);
+#endif
 
     return ret;
 }
@@ -815,53 +1059,147 @@ done:
     ;
 })
 
+TARPC_FUNC(rte_eth_dev_rx_intr_enable, {},
+{
+    MAKE_CALL(out->retval = func(in->port_id, in->queue_id));
+    neg_errno_h2rpc(&out->retval);
+})
+
+TARPC_FUNC(rte_eth_dev_rx_intr_disable, {},
+{
+    MAKE_CALL(out->retval = func(in->port_id, in->queue_id));
+    neg_errno_h2rpc(&out->retval);
+})
+
+static int
+tarpc_intr_op2rte(const enum tarpc_rte_intr_op rpc,
+                  int *rte)
+{
+    switch (rpc)
+    {
+        CASE_TARPC2RTE(RTE_INTR_EVENT_ADD);
+        CASE_TARPC2RTE(RTE_INTR_EVENT_DEL);
+        default:
+            return 0;
+    }
+    return 1;
+}
+
+TARPC_FUNC(rte_eth_dev_rx_intr_ctl_q, {},
+{
+    int op;
+
+    if (!tarpc_intr_op2rte(in->op, &op))
+    {
+        out->common._errno = TE_RC(TE_RPCS, TE_EINVAL);
+        out->retval = -out->common._errno;
+        goto done;
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, in->queue_id,
+                                 in->epfd, op, (void *)in->data));
+    neg_errno_h2rpc(&out->retval);
+
+done:
+    ;
+})
+
 TARPC_FUNC_STATIC(rte_eth_tx_burst, {},
 {
-    struct rte_mbuf **tx_pkts;
-    uint16_t i;
+    uint16_t          nb_pkts = in->tx_pkts.tx_pkts_len;
+    struct rte_mbuf **tx_pkts = NULL;
+    uint16_t          i;
 
-    if (in->tx_pkts.tx_pkts_len != 0)
-        tx_pkts = (struct rte_mbuf **)calloc(in->tx_pkts.tx_pkts_len,
-                                             sizeof(*tx_pkts));
-    else
-        tx_pkts = NULL;
+    if (nb_pkts != 0)
+    {
+        tx_pkts = (struct rte_mbuf **)TE_ALLOC(nb_pkts * sizeof(*tx_pkts));
+        if (tx_pkts == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            goto done;
+        }
+    }
 
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
-        for (i = 0; i < in->tx_pkts.tx_pkts_len; i++)
+        for (i = 0; i < nb_pkts; i++)
             tx_pkts[i] = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->tx_pkts.tx_pkts_val[i],
                                                       ns);
     });
 
 
-    MAKE_CALL(out->retval = func(in->port_id,
-                                 in->queue_id,
-                                 tx_pkts,
-                                 in->tx_pkts.tx_pkts_len));
+    MAKE_CALL(out->retval = func(in->port_id, in->queue_id, tx_pkts, nb_pkts));
 
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
-        for (i = 0; i < MIN(in->tx_pkts.tx_pkts_len, out->retval); i++)
+        for (i = 0; i < MIN(nb_pkts, out->retval); i++)
             RCF_PCH_MEM_INDEX_FREE(in->tx_pkts.tx_pkts_val[i], ns);
     });
+
+done:
+    free(tx_pkts);
+})
+
+TARPC_FUNC_STATIC(rte_eth_tx_prepare, {},
+{
+    uint16_t          nb_pkts = in->tx_pkts.tx_pkts_len;
+    struct rte_mbuf **tx_pkts = NULL;
+    uint16_t          i;
+
+    if (nb_pkts != 0)
+    {
+        tx_pkts = (struct rte_mbuf **)TE_ALLOC(nb_pkts * sizeof(*tx_pkts));
+        if (tx_pkts == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            goto done;
+        }
+    }
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        for (i = 0; i < nb_pkts; i++)
+        {
+            tarpc_rte_mbuf mem_index = in->tx_pkts.tx_pkts_val[i];
+
+            tx_pkts[i] = RCF_PCH_MEM_INDEX_MEM_TO_PTR(mem_index, ns);
+        }
+    });
+
+    MAKE_CALL(out->retval = func(in->port_id, in->queue_id, tx_pkts, nb_pkts));
+
+done:
+    free(tx_pkts);
 })
 
 TARPC_FUNC_STATIC(rte_eth_rx_burst, {},
 {
     struct rte_mbuf **rx_pkts;
-    uint16_t i;
+    uint16_t          nb_pkts_rx;
+    uint16_t          i;
 
-    rx_pkts = (struct rte_mbuf **)calloc(in->nb_pkts, sizeof(*rx_pkts));
+    rx_pkts = (struct rte_mbuf **)TE_ALLOC(in->nb_pkts * sizeof(*rx_pkts));
+    if (rx_pkts == NULL)
+    {
+        out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+        goto done;
+    }
 
-    MAKE_CALL(out->rx_pkts.rx_pkts_len = func(in->port_id,
-                                              in->queue_id,
-                                              rx_pkts,
-                                              in->nb_pkts));
+    MAKE_CALL(nb_pkts_rx = func(in->port_id, in->queue_id,
+                                rx_pkts, in->nb_pkts));
+    out->rx_pkts.rx_pkts_len = nb_pkts_rx;
+
+    out->rx_pkts.rx_pkts_val = TE_ALLOC(nb_pkts_rx * sizeof(tarpc_rte_mbuf));
+    if (out->rx_pkts.rx_pkts_val == NULL)
+    {
+        out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+        goto done;
+    }
 
     RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
-        out->rx_pkts.rx_pkts_val = calloc(out->rx_pkts.rx_pkts_len,
-                                          sizeof(tarpc_rte_mbuf));
-        for (i = 0; i < MIN(in->nb_pkts, out->rx_pkts.rx_pkts_len); i++)
+        for (i = 0; i < MIN(in->nb_pkts, nb_pkts_rx); i++)
             out->rx_pkts.rx_pkts_val[i] = RCF_PCH_MEM_INDEX_ALLOC(rx_pkts[i], ns);
     });
+
+done:
+    free(rx_pkts);
 })
 
 TARPC_FUNC(rte_eth_dev_set_link_up, {},
@@ -1236,40 +1574,24 @@ TARPC_FUNC(rte_eth_tx_queue_info_get, {},
     out->qinfo.nb_desc = qinfo.nb_desc;
 })
 
-TARPC_FUNC(rte_eth_dev_count, {},
-{
-    MAKE_CALL(out->retval = func());
-})
-
-TARPC_FUNC(rte_eth_dev_attach,{},
-{
-    MAKE_CALL(out->retval = func(in->devargs, &out->port_id));
-    neg_errno_h2rpc(&out->retval);
-})
-
-TARPC_FUNC(rte_eth_dev_detach,{},
-{
-    out->devname = TE_ALLOC(RPC_RTE_ETH_NAME_MAX_LEN);
-    if (out->devname == NULL)
-        out->retval = -ENOMEM;
-    else
-        MAKE_CALL(out->retval = func(in->port_id, out->devname));
-
-    neg_errno_h2rpc(&out->retval);
-})
-
 TARPC_FUNC(rte_eth_dev_rss_reta_query,{},
 {
-    struct rte_eth_rss_reta_entry64 *reta_conf_p;
+    struct rte_eth_rss_reta_entry64 *reta_conf_p = NULL;
+    unsigned int                     reta_conf_len;
     unsigned                         cur_group;
 
-    if (in->reta_conf.reta_conf_len == 0)
-        reta_conf_p = NULL;
-    else
+    reta_conf_len = in->reta_conf.reta_conf_len;
+    if (reta_conf_len != 0)
     {
-        reta_conf_p = calloc(in->reta_conf.reta_conf_len, sizeof(*reta_conf_p));
+        reta_conf_p = TE_ALLOC(reta_conf_len * sizeof(*reta_conf_p));
+        if (reta_conf_p == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+        }
 
-        for (cur_group = 0; cur_group < in->reta_conf.reta_conf_len; cur_group++)
+        for (cur_group = 0; cur_group < reta_conf_len; cur_group++)
         {
             memset(&reta_conf_p[cur_group], 0, sizeof(*reta_conf_p));
             reta_conf_p[cur_group].mask = in->reta_conf.reta_conf_val[cur_group].mask;
@@ -1281,15 +1603,24 @@ TARPC_FUNC(rte_eth_dev_rss_reta_query,{},
 
     if (reta_conf_p != NULL && out->retval == 0)
     {
-        out->reta_conf.reta_conf_len = in->reta_conf.reta_conf_len;
-        out->reta_conf.reta_conf_val = calloc(out->reta_conf.reta_conf_len,
-                                              sizeof(*out->reta_conf.reta_conf_val));
+        out->reta_conf.reta_conf_len = reta_conf_len;
+        out->reta_conf.reta_conf_val =
+            TE_ALLOC(reta_conf_len * sizeof(*out->reta_conf.reta_conf_val));
+        if (out->reta_conf.reta_conf_val == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+        }
 
-        for (cur_group = 0;  cur_group < out->reta_conf.reta_conf_len; cur_group++)
+        for (cur_group = 0;  cur_group < reta_conf_len; cur_group++)
             memcpy(&out->reta_conf.reta_conf_val[cur_group],
                    &reta_conf_p[cur_group],
                    sizeof(out->reta_conf.reta_conf_val[cur_group]));
     }
+
+done:
+    free(reta_conf_p);
 })
 
 TARPC_FUNC(rte_eth_dev_rss_hash_conf_get,{},
@@ -1298,8 +1629,7 @@ TARPC_FUNC(rte_eth_dev_rss_hash_conf_get,{},
     struct rte_eth_rss_conf *rss_conf_p;
 
     rss_conf_p = &rss_conf;
-    rss_conf_p->rss_key = malloc(RPC_RSS_HASH_KEY_LEN_DEF);
-
+    rss_conf_p->rss_key = TE_ALLOC(RPC_RSS_HASH_KEY_LEN_DEF);
     if (rss_conf_p->rss_key == NULL)
     {
         out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
@@ -1308,8 +1638,8 @@ TARPC_FUNC(rte_eth_dev_rss_hash_conf_get,{},
     }
 
     out->rss_conf.rss_key.rss_key_len = RPC_RSS_HASH_KEY_LEN_DEF;
-    out->rss_conf.rss_key.rss_key_val = malloc(
-        out->rss_conf.rss_key.rss_key_len);
+    out->rss_conf.rss_key.rss_key_val =
+        TE_ALLOC(out->rss_conf.rss_key.rss_key_len);
 
     if (out->rss_conf.rss_key.rss_key_val == NULL)
     {
@@ -1333,7 +1663,7 @@ TARPC_FUNC(rte_eth_dev_rss_hash_conf_get,{},
     }
 
 done:
-    ;
+    free(rss_conf_p->rss_key);
 })
 
 static int
@@ -1687,7 +2017,7 @@ TARPC_FUNC(rte_eth_dev_filter_ctrl,{},
 
     if (in->arg.arg_len != 0)
     {
-        filter_arg = malloc(in->arg.arg_len);
+        filter_arg = TE_ALLOC(in->arg.arg_len);
 
         if (filter_arg == NULL)
         {
@@ -1727,9 +2057,9 @@ TARPC_FUNC(rte_eth_xstats_get_names,{},
 
     if (in->size != 0)
     {
-        xstats_names = calloc(in->size, sizeof(struct rte_eth_xstat_name));
+        xstats_names = TE_ALLOC(in->size * sizeof(struct rte_eth_xstat_name));
         out->xstats_names.xstats_names_val =
-            calloc(in->size, sizeof(struct tarpc_rte_eth_xstat_name));
+            TE_ALLOC(in->size * sizeof(struct tarpc_rte_eth_xstat_name));
 
         if (xstats_names == NULL ||
             out->xstats_names.xstats_names_val == NULL)
@@ -1753,7 +2083,7 @@ TARPC_FUNC(rte_eth_xstats_get_names,{},
     out->xstats_names.xstats_names_len = in->size;
 
 done:
-    ;
+    free(xstats_names);
 })
 
 TARPC_FUNC(rte_eth_xstats_get,{},
@@ -1763,9 +2093,9 @@ TARPC_FUNC(rte_eth_xstats_get,{},
 
     if (in->n != 0)
     {
-        xstats = malloc(sizeof(struct rte_eth_xstat) * in->n);
+        xstats = TE_ALLOC(in->n * sizeof(struct rte_eth_xstat));
         out->xstats.xstats_val =
-            malloc(sizeof(struct tarpc_rte_eth_xstat) * in->n);
+            TE_ALLOC(in->n * sizeof(struct tarpc_rte_eth_xstat));
 
         if (xstats == NULL || out->xstats.xstats_val == NULL)
         {
@@ -1789,7 +2119,7 @@ TARPC_FUNC(rte_eth_xstats_get,{},
     out->xstats.xstats_len = in->n;
 
 done:
-    ;
+    free(xstats);
 })
 
 TARPC_FUNC(rte_eth_xstats_reset,{},
@@ -1803,7 +2133,7 @@ TARPC_FUNC(rte_eth_xstats_get_by_id, {},
 
     if (in->n > 0)
     {
-        values = TE_ALLOC(sizeof(*values) * in->n);
+        values = TE_ALLOC(in->n * sizeof(*values));
         if (values == NULL)
         {
             out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
@@ -1836,7 +2166,7 @@ TARPC_FUNC(rte_eth_xstats_get_names_by_id, {},
 
     if (in->size > 0)
     {
-        xstat_names = TE_ALLOC(sizeof(*xstat_names) * in->size);
+        xstat_names = TE_ALLOC(in->size * sizeof(*xstat_names));
         if (xstat_names == NULL)
         {
             out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
@@ -1853,7 +2183,7 @@ TARPC_FUNC(rte_eth_xstats_get_names_by_id, {},
         struct tarpc_rte_eth_xstat_name *xstat_names_out;
         int i;
 
-        xstat_names_out = TE_ALLOC(sizeof(*xstat_names_out) * out->retval);
+        xstat_names_out = TE_ALLOC(out->retval * sizeof(*xstat_names_out));
         if (xstat_names_out == NULL)
         {
             out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
@@ -1894,22 +2224,29 @@ TARPC_FUNC(rte_eth_dev_rss_hash_update,{},
 
 TARPC_FUNC(rte_eth_dev_rss_reta_update,{},
 {
-    struct rte_eth_rss_reta_entry64 *reta_conf_p;
+    struct rte_eth_rss_reta_entry64 *reta_conf_p = NULL;
+    unsigned int                     reta_conf_len;
 
-    if (in->reta_conf.reta_conf_len == 0)
+    reta_conf_len = in->reta_conf.reta_conf_len;
+    if (reta_conf_len != 0)
     {
-        reta_conf_p = NULL;
-    }
-    else
-    {
-        reta_conf_p = calloc(in->reta_conf.reta_conf_len, sizeof(*reta_conf_p));
+        reta_conf_p = TE_ALLOC(reta_conf_len * sizeof(*reta_conf_p));
+        if (reta_conf_p == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+        }
 
         memcpy(reta_conf_p, in->reta_conf.reta_conf_val,
-               in->reta_conf.reta_conf_len * sizeof(*reta_conf_p));
+               reta_conf_len * sizeof(*reta_conf_p));
     }
 
     MAKE_CALL(out->retval = func(in->port_id, reta_conf_p, in->reta_size));
     neg_errno_h2rpc(&out->retval);
+
+done:
+    free(reta_conf_p);
 })
 
 TARPC_FUNC(rte_eth_link_get_nowait, {},
@@ -1944,14 +2281,14 @@ TARPC_FUNC_STANDALONE(dpdk_eth_await_link_up, {},
     {
         struct rte_eth_link eth_link;
 
-	usleep(in->wait_int_ms * 1000);
+        usleep(in->wait_int_ms * 1000);
 
         memset(&eth_link, 0, sizeof(eth_link));
 
         MAKE_CALL(rte_eth_link_get_nowait(in->port_id, &eth_link));
         if (eth_link.link_status)
         {
-	    out->retval = 0;
+            out->retval = 0;
 
             usleep(in->after_up_ms * 1000);
 
@@ -1959,7 +2296,8 @@ TARPC_FUNC_STANDALONE(dpdk_eth_await_link_up, {},
         }
     }
 
-    out->retval = TE_ETIMEDOUT;
+    out->retval = -ETIMEDOUT;
+    neg_errno_h2rpc(&out->retval);
 
 done:
     ;
@@ -2231,7 +2569,7 @@ TARPC_FUNC(rte_eth_dev_get_supported_ptypes,{},
 
     if (in->num != 0)
     {
-        ptypes = calloc(in->num, sizeof(uint32_t));
+        ptypes = TE_ALLOC(in->num * sizeof(uint32_t));
         if (ptypes == NULL)
         {
             out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
@@ -2260,27 +2598,34 @@ done:
 
 TARPC_FUNC(rte_eth_dev_set_mc_addr_list, {},
 {
-    struct ether_addr *mc_addr_set;
+    struct ether_addr *mc_addr_set = NULL;
     unsigned int i;
 
-    if (in->mc_addr_set.mc_addr_set_len == 0)
+    if (in->mc_addr_set.mc_addr_set_len != 0)
     {
-        mc_addr_set = NULL;
-    }
-    else
-    {
-        mc_addr_set = malloc(in->mc_addr_set.mc_addr_set_len *
-                             sizeof(struct ether_addr));
+        mc_addr_set = TE_ALLOC(in->mc_addr_set.mc_addr_set_len *
+                               sizeof(struct ether_addr));
+        if (mc_addr_set == NULL)
+        {
+            out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+            out->retval = -out->common._errno;
+            goto done;
+
+        }
+
         for (i = 0; i < in->mc_addr_set.mc_addr_set_len; i++)
             memcpy(mc_addr_set[i].addr_bytes,
                    in->mc_addr_set.mc_addr_set_val[i].addr_bytes,
                    sizeof(mc_addr_set[i].addr_bytes));
     }
 
-    MAKE_CALL(func(in->port_id, mc_addr_set,
-                   in->mc_addr_set.mc_addr_set_len));
+    MAKE_CALL(out->retval = func(in->port_id, mc_addr_set,
+                                 in->mc_addr_set.mc_addr_set_len));
 
     neg_errno_h2rpc(&out->retval);
+
+done:
+    free(mc_addr_set);
 })
 
 TARPC_FUNC(rte_eth_dev_fw_version_get,

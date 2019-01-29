@@ -24,7 +24,12 @@
 #include <sys/socket.h>
 #endif
 
+#ifdef HAVE_NETPACKET_PACKET_H
+#include <netpacket/packet.h>
+#endif
+
 #include "te_errno.h"
+#include "te_defs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,6 +50,14 @@ struct te_ipstack_pseudo_header_ip6 {
     uint16_t _pad0;
     uint8_t _pad1;
     uint8_t next_hdr;
+};
+
+/**
+ * VLAN header
+ */
+struct vlanhdr {
+    uint16_t vlan_tci; /**< Priority (3) + CFI (1) + Identifier Code (12) */
+    uint16_t vlan_eth; /**< Ethernet type of encapsulated frame */
 };
 
 /**
@@ -70,6 +83,24 @@ extern te_errno te_ipstack_calc_l4_cksum(const struct sockaddr  *ip_dst_addr,
                                          const uint8_t          *datagram,
                                          const size_t            datagram_len,
                                          uint16_t               *cksum_out);
+
+
+/**
+ * Function to prepare raw TCPv4 packet for sending via raw socket.
+ * This includes checking headers, filling checksums and removing of
+ * the VLAN header to avoid duplication during sending via raw socket.
+ * In addition, it prepares the address for sending based on given headers.
+ *
+ * @param raw_packet      Pointer to buffer with headers and payload
+ * @param total_size      Total size of raw packet
+ * @param remove_vlan_hdr Remove all VLAN headers if @c TRUE
+ * @param sadr_ll         Link local address to filling. May be @c NULL.
+ *
+ * @return Status code
+ */
+extern te_errno te_ipstack_prepare_raw_tcpv4_packet(
+    uint8_t *raw_packet, ssize_t *total_size,
+    te_bool remove_vlan_hdr, struct sockaddr_ll *sadr_ll);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -35,7 +35,8 @@
         {                                                   \
             rc = te_rc_os2te(errno);                        \
             assert(rc != 0);                                \
-            ERROR("Writing to the file failed: %r", rc);    \
+            ERROR("%s:%d: Writing to the file failed: %r",  \
+                  __FUNCTION__, __LINE__, rc);              \
             goto cleanup;                                   \
         }                                                   \
     } while (0)
@@ -65,14 +66,16 @@ te_test_result_to_html(FILE *f, const te_test_result *result)
         return 0;
 
     WRITE_STR("<br/><br/>");
+    WRITE_STR("<ul class=\"list-group\">");
     TAILQ_FOREACH(v, &result->verdicts, links)
     {
-        WRITE_STR("<span>");
+        WRITE_STR("<li class=\"list-group-item\">");
         WRITE_STR(v->str);
         if (TAILQ_NEXT(v, links) != NULL)
             WRITE_STR("; ");
-        WRITE_STR("</span><br/>");
+        WRITE_STR("</li>");
     }
+    WRITE_STR("</ul>");
 
 cleanup:
     return rc;

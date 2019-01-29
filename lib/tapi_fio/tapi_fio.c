@@ -10,7 +10,9 @@
 
 #include "tapi_fio.h"
 #include "tapi_mem.h"
+#include "tapi_file.h"
 #include "te_alloc.h"
+#include "te_units.h"
 #include "tapi_test.h"
 #include "tapi_rpc_unistd.h"
 #include "fio.h"
@@ -40,6 +42,12 @@ app_init(tapi_fio_app *app, const tapi_fio_opts *opts, rcf_rpc_server *rpcs)
         tapi_fio_opts_init(&app->opts);
     else
         app->opts = *opts;
+
+    if (app->opts.output_path.ptr == NULL)
+    {
+        te_string_append(&app->opts.output_path, "%s.json",
+                         tapi_file_generate_name());
+    }
 
     numjobs_transform(app->rpcs, &app->opts.numjobs);
 }
@@ -135,12 +143,76 @@ tapi_fio_stop(tapi_fio *fio)
     return fio->methods->stop(fio);
 }
 
+#define REPORT(...)                                         \
+    do {                                                    \
+        te_errno rc;                                        \
+        if ((rc = te_string_append(log, __VA_ARGS__)) != 0) \
+            return rc;                                      \
+    } while (0)
+
+#define KBYTE2MBIT(_val)    ((_val) * 8 / 1000.)
+
+static te_errno
+log_report_bw(te_string *log, const tapi_fio_report_bw *rbw)
+{
+    REPORT("\tbandwidth\n");
+    REPORT("\t\tmin:\t%f MB/sec  %f Mbit/sec\n",
+           TE_UNITS_BIN_U2K(rbw->min), KBYTE2MBIT(rbw->min));
+    REPORT("\t\tmax:\t%f MB/sec  %f Mbit/sec\n",
+           TE_UNITS_BIN_U2K(rbw->max), KBYTE2MBIT(rbw->max));
+    REPORT("\t\tmean:\t%f MB/sec  %f Mbit/sec\n",
+           TE_UNITS_BIN_U2K(rbw->mean), KBYTE2MBIT(rbw->mean));
+    REPORT("\t\tstddev:\t%f MB/sec  %f Mbit/sec\n",
+           TE_UNITS_BIN_U2K(rbw->stddev), KBYTE2MBIT(rbw->stddev));
+
+    return 0;
+}
+
+static te_errno
+log_report_lat(te_string *log, const tapi_fio_report_lat *rlat)
+{
+    REPORT("\tlatency\n");
+    REPORT("\t\tmin:\t%f us\n", TE_NS2US((double)rlat->min_ns));
+    REPORT("\t\tmax:\t%f us\n", TE_NS2US((double)rlat->max_ns));
+    REPORT("\t\tmean:\t%f us\n", TE_NS2US(rlat->mean_ns));
+    REPORT("\t\tstddev:\t%f us\n", TE_NS2US(rlat->stddev_ns));
+
+    return 0;
+}
+
+#undef REPORT
+
+static te_errno
+log_report_io(te_string *log, const tapi_fio_report_io *rio)
+{
+    te_errno rc;
+
+    if ((rc = log_report_lat(log, &rio->latency)) != 0)
+        return rc;
+
+    if ((rc = log_report_bw(log, &rio->bandwidth)) != 0)
+        return rc;
+
+    return 0;
+}
+
 /* See description in tapi_fio.h */
 void
-tapi_fio_log_report(tapi_fio_report *report)
+tapi_fio_log_report(tapi_fio_report *rp)
 {
-    RING("FIO REPORT: threads=%d bandwidth=%f latency=%f",
-         report->threads, report->bandwidth, report->latency);
+    te_errno rc;
+    te_string report = TE_STRING_INIT;
+
+    te_string_append(&report, "read\n");
+    if ((rc = log_report_io(&report, &rp->read)) != 0)
+        ERROR("Log report exit with error %r", rc);
+
+    te_string_append(&report, "write\n");
+    if ((rc = log_report_io(&report, &rp->write)) != 0)
+        ERROR("Log report exit with error %r", rc);
+
+    RING("SHORT FIO REPORT:\n%s", report.ptr);
+    te_string_free(&report);
 }
 
 /* See description in tapi_fio.h */

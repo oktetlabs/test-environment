@@ -124,8 +124,8 @@ static char cfgl_msg_buf[CFG_MSG_MAX] = {0,};
 static int cfg_get_family_member(cfg_handle handle,
                                  uint8_t who,
                                  cfg_handle *member);
-static int kill_all(cfg_handle handle);
-static int kill(cfg_handle handle);
+static int kill_all(cfg_handle handle, te_bool local);
+static int kill(cfg_handle handle, te_bool local);
 
 
 /**
@@ -1348,12 +1348,13 @@ cfg_add_instance_child_fmt(cfg_handle *p_handle, cfg_val_type type,
 /*
  * Delete an object instance with it's subtree
  *
- * @param    handle    object instance handle
+ * @param handle    object instance handle
+ * @param local     if @c TRUE, it is local delete
  *
  * @return Status code
  */
 static te_errno
-kill_all(cfg_handle handle)
+kill_all(cfg_handle handle, te_bool local)
 {
     te_errno    ret_val;
     cfg_handle  son;
@@ -1371,7 +1372,7 @@ kill_all(cfg_handle handle)
     }
     if (son != CFG_HANDLE_INVALID)
     {
-        ret_val = kill_all(son);
+        ret_val = kill_all(son, local);
         if (ret_val != 0 && TE_RC_GET_ERROR(ret_val) != TE_EACCES)
         {
             return TE_RC(TE_CONF_API, ret_val);
@@ -1385,14 +1386,14 @@ kill_all(cfg_handle handle)
     }
     if (brother != CFG_HANDLE_INVALID)
     {
-        ret_val = kill_all(brother);
+        ret_val = kill_all(brother, local);
         if (ret_val != 0 && TE_RC_GET_ERROR(ret_val) != TE_EACCES)
         {
             return TE_RC(TE_CONF_API, ret_val);
         }
     }
 
-    ret_val = kill(handle);
+    ret_val = kill(handle, local);
     if (ret_val != 0 && TE_RC_GET_ERROR(ret_val) != TE_EACCES)
     {
         return TE_RC(TE_CONF_API, ret_val);
@@ -1405,11 +1406,12 @@ kill_all(cfg_handle handle)
  * Delete an object instance
  *
  * @param handle    Object instance handle
+ * @param local     if @c TRUE, it is local delete
  *
  * @return Status code
  */
 static te_errno
-kill(cfg_handle handle)
+kill(cfg_handle handle, te_bool local)
 {
     cfg_del_msg *msg;
 
@@ -1441,6 +1443,7 @@ kill(cfg_handle handle)
     msg->type = CFG_DEL;
     msg->len = sizeof(cfg_del_msg);
     msg->handle = handle;
+    msg->local = local;
     len = CFG_MSG_MAX;
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
@@ -1456,22 +1459,25 @@ kill(cfg_handle handle)
     if (ret_val == 0 &&  oidstr != NULL && 
         strncmp(oidstr, AGENT_BOID, BOID_LEN) == 0)
     {
-        RING("Deleted %s", oidstr);
+        RING("Deleted %s%s", (local ? "locally " : ""), oidstr);
     }
     free(oidstr);
     return TE_RC(TE_CONF_API, ret_val);
 }
 
 /**
- * Delete an object instance.
+ * Remove instance locally or on the agent.
  *
- * @param handle                object instance handle
- * @param with_children         delete the children subtree, if necessary
+ * @param handle          Instance handle.
+ * @param with_children   If @c TRUE, remove children subtree.
+ * @param local           If @c TRUE, remove locally (should be
+ *                        committed later).
  *
- * @return status code (see te_errno.h)
+ * @return Status code.
  */
-te_errno
-cfg_del_instance(cfg_handle handle, te_bool with_children)
+static te_errno
+cfg_del_instance_gen(cfg_handle handle, te_bool with_children,
+                     te_bool local)
 {
     cfg_handle  son;
     te_errno    ret_val;
@@ -1486,13 +1492,20 @@ cfg_del_instance(cfg_handle handle, te_bool with_children)
         ret_val = cfg_get_son(handle, &son);
         if (ret_val == 0 && son != CFG_HANDLE_INVALID)
         {
-            ret_val = kill_all(son);
+            ret_val = kill_all(son, local);
         }
         if (ret_val != 0)
             return TE_RC(TE_CONF_API, ret_val);
     }
-    ret_val = kill(handle);
+    ret_val = kill(handle, local);
     return TE_RC(TE_CONF_API, ret_val);
+}
+
+/* See description in conf_api.h */
+te_errno
+cfg_del_instance(cfg_handle handle, te_bool with_children)
+{
+    return cfg_del_instance_gen(handle, with_children, FALSE);
 }
 
 /* See description in conf_api.h */
@@ -1501,6 +1514,21 @@ cfg_del_instance_fmt(te_bool with_children, const char *oid_fmt, ...)
 {
     _CFG_HANDLE_BY_FMT;
     return cfg_del_instance(handle, with_children);
+}
+
+/* See description in conf_api.h */
+te_errno
+cfg_del_instance_local(cfg_handle handle, te_bool with_children)
+{
+    return cfg_del_instance_gen(handle, with_children, TRUE);
+}
+
+/* See description in conf_api.h */
+te_errno
+cfg_del_instance_local_fmt(te_bool with_children, const char *oid_fmt, ...)
+{
+    _CFG_HANDLE_BY_FMT;
+    return cfg_del_instance_local(handle, with_children);
 }
 
 /**

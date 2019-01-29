@@ -30,6 +30,7 @@ xml2html_multi_tmpls = files(
     'log_packet_proto_start.tmpl',
     'log_packet_start.tmpl',
     'logs_start.tmpl',
+    'logs_end.tmpl',
     'mem_dump_end.tmpl',
     'mem_dump_start.tmpl',
     'mem_elem_end.tmpl',
@@ -55,6 +56,10 @@ xml2html_multi_tmpls = files(
     'meta_verdicts_end.tmpl',
     'meta_verdicts_start.tmpl',
     'meta_verdict_start.tmpl',
+    'meta_artifact_end.tmpl',
+    'meta_artifacts_end.tmpl',
+    'meta_artifacts_start.tmpl',
+    'meta_artifact_start.tmpl',
     'page_selector.tmpl',
     'param_start.tmpl',
 )

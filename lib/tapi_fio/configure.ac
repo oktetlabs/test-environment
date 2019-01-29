@@ -20,6 +20,12 @@ AC_PROG_INSTALL
 
 TE_LIB_SET
 
+dnl Check for libjansson
+PKG_CHECK_MODULES([JANSSON], [jansson],
+    [],
+    [AC_MSG_ERROR([jansson not found])]
+)
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE

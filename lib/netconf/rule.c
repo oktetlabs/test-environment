@@ -432,15 +432,19 @@ netconf_rule_dump(netconf_handle nh, unsigned char family)
 }
 
 /* See the description in netconf.h */
-int
+te_errno
 netconf_rule_modify(netconf_handle nh, netconf_cmd cmd,
                     const netconf_rule *rule)
 {
-    char req[NETCONF_MAX_REQ_LEN] = {0};
+    char      req[NETCONF_MAX_REQ_LEN] = {0};
+    te_errno  rc;
 
-    errno = rule_modify(nh, cmd, rule, req);
-    if (errno == 0)
-        errno = netconf_talk(nh, req, sizeof(req), NULL, NULL);
+    rc = rule_modify(nh, cmd, rule, req);
+    if (rc != 0)
+        return rc;
 
-    return (errno == 0) ? 0 : -1;
+    if (netconf_talk(nh, req, sizeof(req), NULL, NULL) < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    return 0;
 }

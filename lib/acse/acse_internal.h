@@ -348,7 +348,7 @@ typedef struct cwmp_session_t {
     struct timeval      last_sent;  /**< Time when last message was sent.*/
 
     struct sockaddr_storage cpe_addr;
-    size_t                  cpe_addr_len;
+    socklen_t               cpe_addr_len;
 } cwmp_session_t;
 
 

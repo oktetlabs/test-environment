@@ -91,6 +91,7 @@ Generic options:
 
   --cs-print-trees              Print configurator trees.
   --cs-log-diff                 Log backup diff unconditionally.
+  --cs-conf-yaml                Configuration file in YAML.
 
   --build-autotools             Build using autotools (autoconf, automake, make)
   --build-meson                 Build using meson/ninja
@@ -114,6 +115,8 @@ Generic options:
   --build-ta-missing            Build only new Test Agents.
   --build-ta-all                Force build all Test Agents.
   --build-ta-for=<hostname>     Rebuild agent (and all the libraries) used for <hostname>.
+  --build-ta-rm-lock            Remove lock from previous agent build even
+                                if it is still in progress.
   --profile-build=<logfile>     Gather timings for the build process into <logfile>
 
   --no-rcf-cc-simple            Do not execute simple RCF consistency checks.
@@ -176,6 +179,7 @@ Generic options:
   --test-wof                    Wait before jump to cleanup on test failure. Useful to
                                 take a look at what's configured etc. Requires some
                                 nodes in the /local:/test: tree.
+  --test-woc                    Wait before jump to cleanup regardless of test result.
 
   --trc-log=<filename>          Generate bzip2-ed TRC log
   --trc-db=<filename>           TRC database to be used
@@ -558,11 +562,16 @@ process_opts()
                 opt_str="--${opt_name#--tester-}=\"${1#${opt_name}=}\""
                 TESTER_OPTS="${TESTER_OPTS} ${opt_str}" ;;
             --tester-*) TESTER_OPTS="${TESTER_OPTS} --${1#--tester-}" ;;
-            --test-sigusr2-verdict*) TE_TEST_SIGUSR2_VERDICT=1
-                export TE_TEST_SIGUSR2_VERDICT ;;
+            --test-sigusr2-verdict*)
+                TE_TEST_SIGUSR2_VERDICT=1
+                export TE_TEST_SIGUSR2_VERDICT
+                ;;
             --test-wof)
-              export TE_TEST_BEHAVIOUR_WAIT_ON_FAIL=1
-              ;;
+                export TE_TEST_BEHAVIOUR_WAIT_ON_FAIL=1
+                ;;
+            --test-woc)
+                export TE_TEST_BEHAVIOUR_WAIT_ON_CLEANUP=1
+                ;;
 
             --trc-log=*) TRC_LOG="${1#--trc-log=}" ;;
             --trc-db=*) 
@@ -616,6 +625,7 @@ process_opts()
             --build-ta-none)    BUILD_TA= ;;
             --build-ta-missing) BUILD_TA=missing ;;
             --build-ta-all)     BUILD_TA=all ;;
+            --build-ta-rm-lock) BUILD_TA_RM=yes ;;
             --build-ta-for=*)   BUILD_TA_FOR="${BUILD_TA_FOR} ${1#--build-ta-for=}" ;;
 
             --build-*) 
@@ -1015,6 +1025,7 @@ fi
 if test -n "$BUILD_TA" -o -n "$BUILD_TA_FOR" ; then
     export BUILD_TA=$BUILD_TA
     export BUILD_TA_FOR=$BUILD_TA_FOR
+    export BUILD_TA_RM=$BUILD_TA_RM
     if test -n "${QUIET}" ; then
         $PROFILE_BUILD te_cross_build "${TE_INSTALL}" >>"${TE_BUILD_LOG}" || exit_with_log
     else

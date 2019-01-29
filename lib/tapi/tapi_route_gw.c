@@ -79,28 +79,27 @@
 /* See description in tapi_route_gw.h */
 te_errno
 tapi_update_arp(const char *ta_src,
-                const struct if_nameindex *iface_src,
+                const char *ifname_src,
                 const char *ta_dest,
-                const struct if_nameindex *iface_dest,
+                const char *ifname_dest,
                 const struct sockaddr *addr_dest,
                 const struct sockaddr *link_addr_dest,
                 te_bool is_static)
 {
-    static struct sockaddr link_addr;
-
-    RETURN_ON_ERROR(tapi_cfg_del_neigh_entry(
-                              ta_src, iface_src->if_name,
-                              addr_dest));
+    const unsigned int      max_attempts = 10;
+    unsigned int            i;
+    static struct sockaddr  link_addr;
+    te_errno                rc;
 
     if (link_addr_dest != NULL)
     {
         memcpy(&link_addr, link_addr_dest, sizeof(link_addr));
     }
-    else if (ta_dest != NULL && iface_dest != NULL)
+    else if (ta_dest != NULL && ifname_dest != NULL)
     {
         RETURN_ON_ERROR(tapi_cfg_base_if_get_link_addr(
                                             ta_dest,
-                                            iface_dest->if_name,
+                                            ifname_dest,
                                             &link_addr));
     }
     else
@@ -109,9 +108,52 @@ tapi_update_arp(const char *ta_src,
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
-    return tapi_cfg_add_neigh_entry(ta_src, iface_src->if_name,
-                                    addr_dest, link_addr.sa_data,
-                                    is_static);
+    for (i = 0; i < max_attempts; i++)
+    {
+        RETURN_ON_ERROR(tapi_cfg_del_neigh_entry(
+                                  ta_src, ifname_src,
+                                  addr_dest));
+
+        rc = tapi_cfg_add_neigh_entry(ta_src, ifname_src,
+                                      addr_dest, link_addr.sa_data,
+                                      is_static);
+        if (rc == 0)
+            break;
+        else if (rc != TE_RC(TE_CS, TE_EEXIST))
+            return rc;
+    }
+
+    return rc;
+}
+
+/* See description in tapi_route_gw.h */
+te_errno
+tapi_remove_arp(const char *ta,
+                const char *if_name,
+                const struct sockaddr *net_addr)
+{
+    const unsigned int max_attempts = 10;
+    unsigned int       i;
+    te_errno           rc = 0;
+
+    for (i = 0; i < max_attempts; i++)
+    {
+        rc = tapi_cfg_del_neigh_entry(ta, if_name, net_addr);
+        if (rc != 0)
+            return rc;
+
+        TAPI_WAIT_NETWORK;
+
+        rc = tapi_cfg_get_neigh_entry(ta, if_name, net_addr,
+                                      NULL, NULL, NULL);
+        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+            return 0;
+        else if (rc != 0)
+            return rc;
+    }
+
+    ERROR("Failed to ensure that removed ARP entry does not reappear");
+    return TE_RC(TE_TAPI, TE_EFAIL);
 }
 
 /* See description in tapi_route_gw.h */
@@ -164,6 +206,21 @@ tapi_route_gateway_configure(tapi_route_gateway *gw)
                te_netaddr_get_size(gw->tst_addr->sa_family) * 8,
                te_sockaddr_get_netaddr(gw->gw_iut_addr)));
 
+    /*
+     * We need to add IPv6 neighbors entries manually because there are cases
+     * when Linux can not re-resolve FAILED entries for gateway routes.
+     * See bug 9774.
+     */
+    if (gw->iut_addr->sa_family == AF_INET6)
+    {
+        RETURN_ON_ERROR(tapi_update_arp(gw->iut_ta, gw->iut_if->if_name,
+                                        gw->gw_ta, gw->gw_iut_if->if_name,
+                                        gw->gw_iut_addr, NULL, FALSE));
+        RETURN_ON_ERROR(tapi_update_arp(gw->gw_ta, gw->gw_iut_if->if_name,
+                                        gw->iut_ta, gw->iut_if->if_name,
+                                        gw->iut_addr, NULL, FALSE));
+    }
+
     RETURN_ON_ERROR(
             tapi_cfg_add_route_via_gw(
                gw->tst_ta,
@@ -171,6 +228,16 @@ tapi_route_gateway_configure(tapi_route_gateway *gw)
                te_sockaddr_get_netaddr(gw->iut_addr),
                te_netaddr_get_size(gw->iut_addr->sa_family) * 8,
                te_sockaddr_get_netaddr(gw->gw_tst_addr)));
+
+    if (gw->tst_addr->sa_family == AF_INET6)
+    {
+        RETURN_ON_ERROR(tapi_update_arp(gw->tst_ta, gw->tst_if->if_name,
+                                        gw->gw_ta, gw->gw_tst_if->if_name,
+                                        gw->gw_tst_addr, NULL, FALSE));
+        RETURN_ON_ERROR(tapi_update_arp(gw->gw_ta, gw->gw_tst_if->if_name,
+                                        gw->tst_ta, gw->tst_if->if_name,
+                                        gw->tst_addr, NULL, FALSE));
+    }
 
     return tapi_route_gateway_set_forwarding(gw, TRUE);
 }
@@ -180,14 +247,26 @@ te_errno
 tapi_route_gateway_set_forwarding(tapi_route_gateway *gw,
                                   te_bool enabled)
 {
-    return tapi_cfg_base_ipv4_fw(gw->gw_ta, enabled);
+    if (gw->gw_iut_addr->sa_family == AF_INET)
+    {
+        return tapi_cfg_base_ipv4_fw(gw->gw_ta, enabled);
+    }
+    else if (gw->gw_iut_addr->sa_family == AF_INET6)
+    {
+        return tapi_cfg_base_ipv6_fw(gw->gw_ta, enabled);
+    }
+    else
+    {
+        ERROR("Unsupported address family");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
 }
 
 /* See description in tapi_route_gw.h */
 te_errno
 tapi_route_gateway_break_gw_iut(tapi_route_gateway *gw)
 {
-    return tapi_update_arp(gw->gw_ta, gw->gw_iut_if, NULL, NULL,
+    return tapi_update_arp(gw->gw_ta, gw->gw_iut_if->if_name, NULL, NULL,
                            gw->iut_addr, gw->alien_link_addr, TRUE);
 }
 
@@ -195,8 +274,8 @@ tapi_route_gateway_break_gw_iut(tapi_route_gateway *gw)
 te_errno
 tapi_route_gateway_repair_gw_iut(tapi_route_gateway *gw)
 {
-    return tapi_update_arp(gw->gw_ta, gw->gw_iut_if,
-                           gw->iut_ta, gw->iut_if,
+    return tapi_update_arp(gw->gw_ta, gw->gw_iut_if->if_name,
+                           gw->iut_ta, gw->iut_if->if_name,
                            gw->iut_addr, NULL, FALSE);
 }
 
@@ -204,7 +283,7 @@ tapi_route_gateway_repair_gw_iut(tapi_route_gateway *gw)
 te_errno
 tapi_route_gateway_break_gw_tst(tapi_route_gateway *gw)
 {
-    return tapi_update_arp(gw->gw_ta, gw->gw_tst_if, NULL, NULL,
+    return tapi_update_arp(gw->gw_ta, gw->gw_tst_if->if_name, NULL, NULL,
                            gw->tst_addr, gw->alien_link_addr, TRUE);
 }
 
@@ -212,7 +291,8 @@ tapi_route_gateway_break_gw_tst(tapi_route_gateway *gw)
 te_errno
 tapi_route_gateway_repair_gw_tst(tapi_route_gateway *gw)
 {
-    return tapi_update_arp(gw->gw_ta, gw->gw_tst_if, gw->tst_ta, gw->tst_if,
+    return tapi_update_arp(gw->gw_ta, gw->gw_tst_if->if_name,
+                           gw->tst_ta, gw->tst_if->if_name,
                            gw->tst_addr, NULL, FALSE);
 }
 
@@ -220,7 +300,7 @@ tapi_route_gateway_repair_gw_tst(tapi_route_gateway *gw)
 te_errno
 tapi_route_gateway_break_iut_gw(tapi_route_gateway *gw)
 {
-    return tapi_update_arp(gw->iut_ta, gw->iut_if, NULL, NULL,
+    return tapi_update_arp(gw->iut_ta, gw->iut_if->if_name, NULL, NULL,
                            gw->gw_iut_addr, gw->alien_link_addr, TRUE);
 }
 
@@ -228,7 +308,8 @@ tapi_route_gateway_break_iut_gw(tapi_route_gateway *gw)
 te_errno
 tapi_route_gateway_repair_iut_gw(tapi_route_gateway *gw)
 {
-    return tapi_update_arp(gw->iut_ta, gw->iut_if, gw->gw_ta, gw->gw_iut_if,
+    return tapi_update_arp(gw->iut_ta, gw->iut_if->if_name, gw->gw_ta,
+                           gw->gw_iut_if->if_name,
                            gw->gw_iut_addr, NULL, FALSE);
 }
 
@@ -236,7 +317,7 @@ tapi_route_gateway_repair_iut_gw(tapi_route_gateway *gw)
 te_errno
 tapi_route_gateway_break_tst_gw(tapi_route_gateway *gw)
 {
-    return tapi_update_arp(gw->tst_ta, gw->tst_if, NULL, NULL,
+    return tapi_update_arp(gw->tst_ta, gw->tst_if->if_name, NULL, NULL,
                            gw->gw_tst_addr, gw->alien_link_addr, TRUE);
 }
 
@@ -244,6 +325,18 @@ tapi_route_gateway_break_tst_gw(tapi_route_gateway *gw)
 te_errno
 tapi_route_gateway_repair_tst_gw(tapi_route_gateway *gw)
 {
-    return tapi_update_arp(gw->tst_ta, gw->tst_if, gw->gw_ta, gw->gw_tst_if,
+    return tapi_update_arp(gw->tst_ta, gw->tst_if->if_name, gw->gw_ta,
+                           gw->gw_tst_if->if_name,
                            gw->gw_tst_addr, NULL, FALSE);
+}
+
+/* See description in tapi_route_gw.h */
+te_errno
+tapi_route_gateway_down_up_ifaces(tapi_route_gateway *gw)
+{
+    RETURN_ON_ERROR(tapi_cfg_base_if_down_up(gw->iut_ta, gw->iut_if->if_name));
+    RETURN_ON_ERROR(tapi_cfg_base_if_down_up(gw->tst_ta, gw->tst_if->if_name));
+    RETURN_ON_ERROR(tapi_cfg_base_if_down_up(gw->gw_ta, gw->gw_iut_if->if_name));
+
+    return tapi_cfg_base_if_down_up(gw->gw_ta, gw->gw_tst_if->if_name);
 }

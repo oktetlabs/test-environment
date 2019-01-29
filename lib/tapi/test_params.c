@@ -38,6 +38,7 @@
 #include "te_defs.h"
 #include "te_param.h"
 #include "te_ethernet.h"
+#include "te_units.h"
 #include "logger_api.h"
 
 #include "tapi_test.h"
@@ -488,8 +489,6 @@ tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
     unsigned int    asn_path_len = BUFLEN;
     char            temp_buf[BUFLEN];
 
-    tapi_asn_param_pair *param = NULL;
-
     /* Sets for different kind of parameters */
     tapi_asn_param_pair *creation_param = NULL;
     tapi_asn_param_pair *change_param = NULL;
@@ -557,7 +556,7 @@ tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
 
     if (creation_param_count + change_param_count == 0)
     {
-        ERROR("No ASN configuration test parameters found");
+        WARN("No ASN configuration test parameters found");
     }
     else
     {
@@ -569,39 +568,33 @@ tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
     INFO("%s: process creation parameters", __FUNCTION__);
     for (i = 0; i < creation_param_count; i++)
     {
-        unsigned int subtype_id;
+        tapi_asn_param_pair *param = &creation_param[i];
+        const asn_type *type;
+        char *param_type = strdup(param->name);
+        char *array_start = strrchr(param_type, '[');
 
-        param = &creation_param[i];
-        RING("%s: name='%s' value='%s'",
-             __FUNCTION__, param->name, param->value);
-
-        for (subtype_id = 0; subtype_id < conf_type->len; subtype_id++)
+        /* Two cases:
+         * - we're substrituting an array member: a.b.[]
+         * - or just a member a.b.c
+         *
+         * in the case of array we grab a.b and then take subtype.
+         */
+        if (array_start != NULL)
+            *array_start = '\0';
+        rc = asn_get_subtype(conf_type, &type, param_type);
+        if (rc != 0)
         {
-            const asn_named_entry_t *entry =
-                &conf_type->sp.named_entries[subtype_id];
-
-            RING("Iterate entry %s", entry->name);
-
-            if (strncmp(param->name, entry->name, strlen(entry->name)) == 0)
-            {
-                if (entry->type->syntax != SEQUENCE_OF)
-                {
-                    ERROR("Syntax of %s is not SEQUENCE_OF", entry->name);
-                    rc = TE_EINVAL;
-                    break;
-                }
-                rc = asn_parse_value_text(param->value,
-                                          &entry->type->sp.subtype[0],
-                                          &asn_param_value, &parsed_syms);
-                break;
-            }
+            ERROR("Failed to get subtype for %s", param_type);
+            goto cleanup;
         }
-        if (subtype_id >= conf_type->len)
-        {
-            RING("Failed to find matching entry for %s", param->name);
-            rc = TE_RC(TE_TAPI, TE_EINVAL);
-        }
+        if (array_start != NULL)
+            type = type->sp.subtype;
 
+        INFO("Type for node %s found : type_name='%s'",
+             param->name, type->name);
+        rc = asn_parse_value_text(param->value,
+                                  type,
+                                  &asn_param_value, &parsed_syms);
         if (rc != 0)
         {
             ERROR("Failed to parse creation param #%d, value='%s'."
@@ -628,7 +621,8 @@ tapi_asn_params_get(int argc, char **argv, const char *conf_prefix,
     /* Process parameter change */
     for (i = 0; i < change_param_count; i++)
     {
-        param = &change_param[i];
+        tapi_asn_param_pair *param = &change_param[i];
+
 #if 0
         RING("%s: name='%s' value='%s'", __FUNCTION__,
              param->name, param->value);
@@ -751,17 +745,19 @@ test_octet_strings2list(const char *str, unsigned int str_len,
 
         if (str == NULL)
         {
-            TEST_STOP;
+            TEST_FAIL("%s: function input is invalid, string to "
+                      "convert can't be NULL", __FUNCTION__);
         }
 
         len = test_split_param_list(str,
                                     TEST_LIST_PARAM_SEPARATOR,
                                     &str_array);
-        if (len == 0 ||
-            (list = calloc(len, sizeof(uint8_t *))) == NULL)
-        {
-            TEST_STOP;
-        }
+        if (len == 0)
+            TEST_FAIL("Test parameter list returned zero parameters");
+
+        if ((list = TE_ALLOC(len * sizeof(uint8_t *))) == NULL)
+            TEST_FAIL("Failed to allocate %u bytes", len * sizeof(uint8_t *));
+
         for (i = 0; i < len; i++)
         {
             oct_str = test_get_octet_string_param(str_array[i], str_len);
@@ -796,7 +792,7 @@ test_get_enum_param(int argc, char **argv, const char *name,
         return mapped_value;
     }
 
-    TEST_STOP;
+    TEST_FAIL("Enum param %s get failed", name);
 
     return mapped_value;
 }
@@ -809,7 +805,7 @@ test_get_string_param(int argc, char **argv, const char *name)
 
     if ((value = test_get_param(argc, argv, name)) == NULL)
     {
-        TEST_STOP;
+        TEST_FAIL("String param %s get failed", name);
     }
 
     return value;
@@ -826,7 +822,7 @@ test_get_int_param(int argc, char **argv, const char *name)
     str_val = test_get_param(argc, argv, name);
     if (str_val == NULL)
     {
-        TEST_STOP;
+        TEST_FAIL("Str value for name=%s was not found", name);
     }
     value = strtol(str_val, &end_ptr, 0);
     if (end_ptr == str_val || *end_ptr != '\0')
@@ -841,6 +837,30 @@ test_get_int_param(int argc, char **argv, const char *name)
     }
 
     return (int)value;
+}
+
+/* See description in tapi_test.h */
+unsigned int
+test_get_test_id(int argc, char **argv)
+{
+    unsigned long int value;
+    const char *str_val;
+    te_errno rc;
+
+    str_val = test_get_param(argc, argv, "te_test_id");
+    if (str_val == NULL)
+    {
+        ERROR("te_test_id parameter not found");
+        return TE_LOG_ID_UNDEFINED;
+    }
+    rc = te_strtoul(str_val, 0, &value);
+    if (rc != 0 || value > UINT_MAX)
+    {
+        ERROR("Cannot convert '%s' to te_test_id");
+        return TE_LOG_ID_UNDEFINED;
+    }
+
+    return value;
 }
 
 /* See description in tapi_test.h */
@@ -879,7 +899,7 @@ test_get_int64_param(int argc, char **argv, const char *name)
     str_val = test_get_param(argc, argv, name);
     if (str_val == NULL)
     {
-        TEST_STOP;
+        TEST_FAIL("Failed to get int64 value for param %s", name);
     }
 
     value = strtoll(str_val, &end_ptr, 0);
@@ -909,7 +929,7 @@ test_get_double_param(int argc, char **argv, const char *name)
     str_val = test_get_param(argc, argv, name);
     if (str_val == NULL)
     {
-        TEST_STOP;
+        TEST_FAIL("Failed to get double value for param %s", name);
     }
 
     value = strtod(str_val, &end_ptr);
@@ -921,4 +941,27 @@ test_get_double_param(int argc, char **argv, const char *name)
     }
 
     return value;
+}
+
+/* See description in tapi_test.h */
+double
+test_get_value_unit_param(int argc, char **argv, const char *name)
+{
+    const char *str_val = NULL;
+    te_unit     unit;
+
+    str_val = test_get_param(argc, argv, name);
+    if (str_val == NULL)
+    {
+        TEST_FAIL("Failed to get unit value for param %s", name);
+    }
+
+    if (te_unit_from_string(str_val, &unit) != 0)
+    {
+        TEST_FAIL("The value of '%s' parameter should be "
+                  "convertible to double, but '%s' is not", name,
+                  str_val);
+    }
+
+    return te_unit_unpack(unit);
 }

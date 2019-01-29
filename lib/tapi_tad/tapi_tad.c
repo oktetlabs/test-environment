@@ -33,6 +33,7 @@
 
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_str.h"
 #include "tad_common.h"
 
 #include "logger_api.h"
@@ -423,9 +424,6 @@ tapi_tad_trrecv_pkt_handler(const char *filename, void *my_data)
         return;
     }
 
-    /* remove file with received packet when it is already parsed */
-    unlink(filename);
-
     if (cb_data != NULL && cb_data->callback != NULL)
     {
         cb_data->callback(packet, cb_data->user_data);
@@ -642,4 +640,109 @@ tapi_tad_csap_get_no_match_pkts(const char *ta_name, int session,
     *val = (unsigned int)tmp;
 
     RETURN_RC(0);
+}
+
+/**
+ * Destroy CSAP by its Configurator handle using RCF.
+ *
+ * @param ta_name         Test Agent name
+ * @param session         RCF session ID
+ * @param csap_cfg_handle Configurator handle of the given CSAP
+ *
+ * @note The function will not use Configurator itself for CSAP removal.
+ *
+ * @return Status code.
+ */
+static te_errno
+tapi_tad_csap_destroy_by_cfg_handle(const char *ta_name,
+                                    int         session,
+                                    cfg_handle  csap_cfg_handle)
+{
+    char              *cfg_inst_name;
+    csap_handle_t      id;
+    te_errno           rc;
+
+    rc = cfg_get_inst_name(csap_cfg_handle, &cfg_inst_name);
+    if (rc != 0)
+        return rc;
+
+    rc = te_strtoui(cfg_inst_name, 0, &id);
+    if (rc == 0)
+        rc = rcf_ta_csap_destroy(ta_name, session, id);
+
+    free(cfg_inst_name);
+
+    return rc;
+}
+
+/**
+ * Destroy all CSAP instances on a Test Agent using RCF.
+ *
+ * @param ta_cfg_handle Configurator handle of the given Test Agent
+ * @param session       RCF session ID
+ *
+ * @note The function will not use Configurator itself for CSAP removal.
+ *
+ * @return Status code.
+ */
+static te_errno
+tapi_tad_csap_destroy_all_by_ta(cfg_handle ta_cfg_handle,
+                                int        session)
+{
+    char         *ta_name;
+    unsigned int  nb_csap_cfg_handles;
+    cfg_handle   *csap_cfg_handles = NULL;
+    te_errno      rc;
+    unsigned int  i;
+
+    rc = cfg_get_inst_name(ta_cfg_handle, &ta_name);
+    if (rc != 0)
+        goto out;
+
+    rc = cfg_find_pattern_fmt(&nb_csap_cfg_handles, &csap_cfg_handles,
+                              "/agent:%s/csap:*", ta_name);
+    if (rc != 0)
+        goto out;
+
+    for (i = 0; i < nb_csap_cfg_handles; ++i)
+    {
+        rc = tapi_tad_csap_destroy_by_cfg_handle(ta_name, session,
+                                                 csap_cfg_handles[i]);
+        if (rc != 0)
+            break;
+    }
+
+    if (rc == 0)
+        rc = cfg_synchronize_fmt(TRUE, "/agent:%s/csap:*", ta_name);
+
+out:
+    free(csap_cfg_handles);
+    free(ta_name);
+
+    return rc;
+}
+
+/* See description in 'tapi_tad.h' */
+te_errno
+tapi_tad_csap_destroy_all(int session)
+{
+    unsigned int  nb_ta_cfg_handles;
+    cfg_handle   *ta_cfg_handles;
+    te_errno      rc;
+    unsigned int  i;
+
+    rc = cfg_find_pattern_fmt(&nb_ta_cfg_handles, &ta_cfg_handles, "/agent:*");
+    if (rc != 0)
+       return rc;
+
+    for (i = 0; i < nb_ta_cfg_handles; ++i)
+    {
+        rc = tapi_tad_csap_destroy_all_by_ta(ta_cfg_handles[i], session);
+        if (rc != 0)
+            break;
+    }
+
+    free(ta_cfg_handles);
+
+    return rc;
 }

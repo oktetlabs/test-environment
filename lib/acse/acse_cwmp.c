@@ -1034,7 +1034,7 @@ cwmp_accept_cpe_connection(acs_t *acs, int socket)
         {
             /* match IP address */
             static struct sockaddr_storage peer_addr;
-            size_t a_len = sizeof(peer_addr);
+            socklen_t a_len = sizeof(peer_addr);
             void *in_a = NULL;
             void *susp_a = NULL;
             size_t mlen = 4;
@@ -1411,11 +1411,11 @@ cwmp_resume_session(cwmp_session_t *sess, int socket)
 void
 acse_timer_handler(int sig, siginfo_t *info, void *p)
 {
-    cwmp_session_t *sess;
     UNUSED(sig);
     UNUSED(p);
+    UNUSED(info);
 
-    sess = info->si_value.sival_ptr;
+    ERROR("%s(): implementation is incomplete", __FUNCTION__);
 }
 
 

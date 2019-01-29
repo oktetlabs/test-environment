@@ -37,6 +37,8 @@ typedef void (*set_opt_t)(te_string *, const tapi_perf_opts *);
 /* Map of error messages corresponding to them codes. */
 static tapi_perf_error_map errors[] = {
     { TAPI_PERF_ERROR_READ,     "read failed: Connection refused" },
+    { TAPI_PERF_ERROR_WRITE_CONN_RESET,
+                                "write failed: Connection reset by peer" },
     { TAPI_PERF_ERROR_CONNECT,  "connect failed: Connection refused" },
     { TAPI_PERF_ERROR_NOROUTE,  "connect failed: No route to host" },
     { TAPI_PERF_ERROR_BIND,     "bind failed: Address already in use" }
@@ -148,6 +150,20 @@ set_opt_time(te_string *cmd, const tapi_perf_opts *options)
 }
 
 /*
+ * Set option of pause in seconds between periodic bandwidth reports in iperf
+ * tool format.
+ *
+ * @param cmd           Buffer contains a command to add option to.
+ * @param options       iperf tool options.
+ */
+static void
+set_opt_interval(te_string *cmd, const tapi_perf_opts *options)
+{
+    if (options->interval_sec >= 0)
+        CHECK_RC(te_string_append(cmd, " -i%"PRId32, options->interval_sec));
+}
+
+/*
  * Set option of length of buffer in iperf tool format.
  *
  * @param cmd           Buffer contains a command to add option to.
@@ -174,6 +190,19 @@ set_opt_streams(te_string *cmd, const tapi_perf_opts *options)
 }
 
 /*
+ * Set option of dual (bidirectional) mode.
+ *
+ * @param cmd           Buffer contains a command to add option to.
+ * @param options       iperf tool options.
+ */
+static void
+set_opt_dual(te_string *cmd, const tapi_perf_opts *options)
+{
+    if (options->dual)
+        CHECK_RC(te_string_append(cmd, " -d"));
+}
+
+/*
  * Build command string to run iperf server.
  *
  * @param cmd           Buffer to put built command to.
@@ -185,7 +214,9 @@ build_server_cmd(te_string *cmd, const tapi_perf_opts *options)
     set_opt_t set_opt[] = {
         set_opt_port,
         set_opt_ipversion,
-        set_opt_protocol
+        set_opt_protocol,
+        set_opt_length,
+        set_opt_interval
     };
     size_t i;
 
@@ -212,7 +243,9 @@ build_client_cmd(te_string *cmd, const tapi_perf_opts *options)
         set_opt_length,
         set_opt_bytes,
         set_opt_time,
-        set_opt_streams
+        set_opt_interval,
+        set_opt_streams,
+        set_opt_dual
     };
     size_t i;
 
@@ -268,16 +301,20 @@ app_get_error(tapi_perf_app *app, tapi_perf_report *report)
 {
     size_t i;
 
-    /* Read tool output */
-    rpc_read_fd2te_string(app->rpcs, app->fd_stderr, IPERF_TIMEOUT_MS, 0,
-                          &app->stderr);
-
-    /* Check for available data */
     if (app->stderr.ptr == NULL || app->stderr.len == 0)
     {
-        VERB("There is no error message");
-        return;
+        /* Read tool output */
+        rpc_read_fd2te_string(app->rpcs, app->fd_stderr, IPERF_TIMEOUT_MS, 0,
+                              &app->stderr);
+
+        /* Check for available data */
+        if (app->stderr.ptr == NULL || app->stderr.len == 0)
+        {
+            VERB("There is no error message");
+            return;
+        }
     }
+
     INFO("iperf stderr:\n%s", app->stderr.ptr);
 
     for (i = 0; i < TE_ARRAY_LEN(errors); i++)
@@ -300,12 +337,14 @@ app_get_error(tapi_perf_app *app, tapi_perf_report *report)
  * Get iperf report. The function reads an application stdout.
  *
  * @param[in]  app          iperf tool context.
+ * @param[in]  kind         Report kind.
  * @param[out] report       Report with results.
  *
  * @return Status code.
  */
 static te_errno
-app_get_report(tapi_perf_app *app, tapi_perf_report *report)
+app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
+               tapi_perf_report *report)
 {
     const char *str;
     double time;
@@ -319,16 +358,26 @@ app_get_report(tapi_perf_app *app, tapi_perf_report *report)
     memset(report->errors, 0, sizeof(report->errors));
     app_get_error(app, report);
 
-    /* Read tool output */
-    rpc_read_fd2te_string(app->rpcs, app->fd_stdout, IPERF_TIMEOUT_MS, 0,
-                          &app->stdout);
+    if (kind != TAPI_PERF_REPORT_KIND_DEFAULT)
+    {
+        ERROR("iperf TAPI doesn't support non-default report kind");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
 
-    /* Check for available data */
     if (app->stdout.ptr == NULL || app->stdout.len == 0)
     {
-        ERROR("There are no data in the output");
-        return TE_RC(TE_TAPI, TE_ENODATA);
+        /* Read tool output */
+        rpc_read_fd2te_string(app->rpcs, app->fd_stdout, IPERF_TIMEOUT_MS, 0,
+                              &app->stdout);
+
+        /* Check for available data */
+        if (app->stdout.ptr == NULL || app->stdout.len == 0)
+        {
+            ERROR("There are no data in the output");
+            return TE_RC(TE_TAPI, TE_ENODATA);
+        }
     }
+
     INFO("iperf stdout:\n%s", app->stdout.ptr);
 
 /* Find the first occurrence of the substring _pattern in the string _src */
@@ -482,32 +531,36 @@ client_wait(tapi_perf_client *client, int16_t timeout)
  * Get server report. The function reads server stdout.
  *
  * @param[in]  server       Server context.
+ * @param[in]  kind         Report kind.
  * @param[out] report       Report with results.
  *
  * @return Status code.
  */
 static te_errno
-server_get_report(tapi_perf_server *server, tapi_perf_report *report)
+server_get_report(tapi_perf_server *server, tapi_perf_report_kind kind,
+                  tapi_perf_report *report)
 {
     ENTRY("Get iperf server report");
 
-    return app_get_report(&server->app, report);
+    return app_get_report(&server->app, kind, report);
 }
 
 /*
  * Get client report. The function reads client stdout.
  *
  * @param[in]  client       Client context.
+ * @param[in]  kind         Report kind.
  * @param[out] report       Report with results.
  *
  * @return Status code.
  */
 static te_errno
-client_get_report(tapi_perf_client *client, tapi_perf_report *report)
+client_get_report(tapi_perf_client *client, tapi_perf_report_kind kind,
+                  tapi_perf_report *report)
 {
     ENTRY("Get iperf client report");
 
-    return app_get_report(&client->app, report);
+    return app_get_report(&client->app, kind, report);
 }
 
 

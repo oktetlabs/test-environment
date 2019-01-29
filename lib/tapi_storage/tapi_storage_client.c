@@ -81,7 +81,7 @@ tapi_storage_client_mput(tapi_storage_client   *client,
     char     *real_local_pathname;
     char     *remote_pathname = NULL;
     size_t    remote_pathname_len = 0;
-    char     *basename;
+    const char *basename;
     tapi_local_file_list  files;
     tapi_local_file_le   *f;
     tapi_local_file      *file;
@@ -188,6 +188,12 @@ tapi_storage_client_mget(tapi_storage_client *client,
                          const char          *local_file,
                          te_bool              recursive)
 {
+    UNUSED(client);
+    UNUSED(remote_file);
+    UNUSED(local_file);
+    UNUSED(recursive);
+
     ERROR("%s:%d: Not implemented yet", __FUNCTION__, __LINE__);
+
     return TE_RC(TE_TAPI, TE_ENOSYS);
 }
