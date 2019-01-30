@@ -73,6 +73,7 @@ typedef enum tapi_perf_error {
     TAPI_PERF_ERROR_CONNECT,    /**< Connect failed. */
     TAPI_PERF_ERROR_NOROUTE,    /**< No route to host. */
     TAPI_PERF_ERROR_BIND,       /**< Bind failed. */
+    TAPI_PERF_ERROR_SOCKET_CLOSED,  /**< Socket closed unexpectedly. */
     TAPI_PERF_ERROR_MAX,        /**< Not error, but elements number. */
 } tapi_perf_error;
 

@@ -41,7 +41,9 @@ static tapi_perf_error_map errors[] = {
     { TAPI_PERF_ERROR_NOROUTE,
         "unable to connect to server: No route to host" },
     { TAPI_PERF_ERROR_BIND,
-        "unable to start listener for connections: Address already in use" }
+        "unable to start listener for connections: Address already in use" },
+    { TAPI_PERF_ERROR_SOCKET_CLOSED,
+        "control socket has closed unexpectedly" },
 };
 
 
