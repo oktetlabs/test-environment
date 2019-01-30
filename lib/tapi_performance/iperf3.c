@@ -354,6 +354,7 @@ get_report(const json_t *jrpt, tapi_perf_report_kind kind,
     for (i = 0; i < json_array_size(jend); ++i)
     {
         double  tmp_seconds;
+        double  tmp_bps;
         json_t *jsums;
 
         jint = json_array_get(jend, i);
@@ -401,7 +402,7 @@ get_report(const json_t *jrpt, tapi_perf_report_kind kind,
         jval = json_object_get(jsum, "seconds");
         if (jsonvalue2double(jval, &tmp_seconds) != 0 ||
             !json_is_integer(json_object_get(jsum, "bytes")) ||
-            !json_is_real(json_object_get(jsum, "bits_per_second")) ||
+            !json_is_number(json_object_get(jsum, "bits_per_second")) ||
             tmp_seconds < IPERF_MIN_REPRESENTATIVE_DURATION)
         {
             /*
@@ -418,7 +419,9 @@ get_report(const json_t *jrpt, tapi_perf_report_kind kind,
         total_bytes += json_integer_value(jval);
 
         jval = json_object_get(jsum, "bits_per_second");
-        total_bits_per_second += json_real_value(jval) * tmp_seconds;
+        /* This shouldn't fail, it is verified */
+        jsonvalue2double(jval, &tmp_bps);
+        total_bits_per_second += tmp_bps * tmp_seconds;
 
         total_intervals++;
     }
