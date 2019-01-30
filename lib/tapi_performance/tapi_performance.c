@@ -350,6 +350,8 @@ tapi_perf_error2str(tapi_perf_error error)
         [TAPI_PERF_ERROR_CONNECT] = "connect failed",
         [TAPI_PERF_ERROR_NOROUTE] = "no route",
         [TAPI_PERF_ERROR_BIND] = "bind failed",
+        [TAPI_PERF_ERROR_SOCKET_CLOSED] =
+            "control socket has closed unexpectedly",
     };
 
     assert(error < TE_ARRAY_LEN(errors) && errors[error] != NULL);
