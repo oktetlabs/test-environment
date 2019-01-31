@@ -49,7 +49,7 @@ extern "C" {
  *
  * @return Status code
  */
-extern te_errno tapi_nvme_kern_target_init(struct tapi_nvme_target *target);
+extern te_errno tapi_nvme_kern_target_init(struct tapi_nvme_target *target, void *opts);
 
 /**
  * Setup kernel version implementation of target

@@ -23,9 +23,10 @@
 #define PORT_STRLEN         (11)
 
 te_errno
-tapi_nvme_kern_target_init(struct tapi_nvme_target *target)
+tapi_nvme_kern_target_init(struct tapi_nvme_target *target, void *opts)
 {
     UNUSED(target);
+    UNUSED(opts);
     return 0;
 }
 
