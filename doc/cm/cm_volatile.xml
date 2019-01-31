@@ -20,7 +20,6 @@
     <!-- Socket library ("berkeley", "winsock2").
          Name: TA name
          Value: readable library name -->
-    <object oid="/volatile/ta_sockets" access="read_create" type="string"
-            volatile="true"/>
+    <object oid="/volatile/ta_sockets" access="read_create" type="string"/>
 
 </backup>
