@@ -491,26 +491,13 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
         .timeout = TE_SEC2MS(30),
     };
 
-    if (host_ctrl == NULL)
-        return TE_EINVAL;
-
-    if (host_ctrl->connected_target != NULL)
-        return TE_EISCONN;
-
-    if (target == NULL ||
-        target->addr == NULL ||
-        target->addr->sa_family != AF_INET ||
-        target->subnqn == NULL ||
-        target->device == NULL)
-    {
-        te_log_stack_push("%s: something is invalid in our life: target=%p "
-                          "target->addr=%p sa_family=%u "
-                          "target->subnqn=%p target->device=%p",
-                          target, target->addr,
-                          target->addr ? target->addr->sa_family : -1,
-                          target->subnqn, target->device);
-        return TE_EINVAL;
-    }
+    assert(host_ctrl);
+    assert(host_ctrl->connected_target == NULL);
+    assert(target);
+    assert(target->addr);
+    assert(target->addr->sa_family == AF_INET);
+    assert(target->subnqn);
+    assert(target->device);
 
     rc = run_command(host_ctrl->rpcs, run_opts, strcat(cmd, opts),
                      te_sockaddr_get_ipstr(target->addr),
@@ -663,8 +650,9 @@ tapi_nvme_transport_str(tapi_nvme_transport transport) {
 te_errno
 tapi_nvme_target_init(tapi_nvme_target *target, void *opts)
 {
-    if (target == NULL || target->methods.init == NULL)
-        return TE_EINVAL;
+    assert(target);
+    assert(target->methods.init);
+
     return target->methods.init(target, opts);
 }
 
@@ -672,13 +660,12 @@ tapi_nvme_target_init(tapi_nvme_target *target, void *opts)
 te_errno
 tapi_nvme_target_setup(tapi_nvme_target *target)
 {
-    if (target == NULL ||
-        target->rpcs == NULL ||
-        target->addr == NULL ||
-        target->subnqn == NULL ||
-        target->device == NULL ||
-        target->methods.setup == NULL)
-        return TE_EINVAL;
+    assert(target);
+    assert(target->rpcs);
+    assert(target->addr);
+    assert(target->subnqn);
+    assert(target->device);
+    assert(target->methods.setup);
 
     return target->methods.setup(target);
 }
@@ -711,10 +698,9 @@ tapi_nvme_target_fini(tapi_nvme_target *target)
 te_errno
 tapi_nvme_target_format(tapi_nvme_target *target)
 {
-    if (target == NULL ||
-        target->rpcs == NULL ||
-        target->device == NULL)
-        return TE_EINVAL;
+    assert(target);
+    assert(target->rpcs);
+    assert(target->device);
 
     run_command(target->rpcs, (opts_t){},
                 "nvme format --ses=%d --namespace-id=%d %s",
