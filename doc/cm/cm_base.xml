@@ -1268,17 +1268,6 @@
          Name: empty -->
     <object oid="/agent/sys/net/ipv4/route" access="read_only" type="none"/>
 
-    <!-- Volatile engine data root. 
-         Name: empty
-         -->
-    <object oid="/volatile" access="read_create" type="none" volatile="true"/>
-    
-    <!-- Socket library ("berkeley", "winsock2").
-         Name: TA name
-         Value: readable library name -->
-    <object oid="/volatile/ta_sockets" access="read_create" type="string"
-            volatile="true"/>
-
     <!-- Resource limits data root.
          Name: empty
          -->
