@@ -135,7 +135,8 @@ te_string_fmt_va(const char *fmt,
 {
     te_string str = TE_STRING_INIT;
 
-    te_string_append_va(&str, fmt, ap);
+    if (te_string_append_va(&str, fmt, ap) != 0)
+        te_string_free(&str);
 
     return str.ptr;
 }

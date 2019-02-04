@@ -107,8 +107,7 @@ extern te_errno te_string_append_va(te_string  *str,
  * @param fmt       Format string
  * @param ap        List of arguments
  *
- * @return string on which you can call free(), but it will still leak some
- * bytes.
+ * @return string on which you can call free(), or @c NULL in case of error
  */
 extern char *te_string_fmt_va(const char *fmt,
                               va_list     ap);
@@ -118,7 +117,7 @@ extern char *te_string_fmt_va(const char *fmt,
  * @param fmt       Format string
  * @param ...       Format string arguments
  *
- * @return string on which you can call free().
+ * @return string on which you can call free(), or @c NULL in case of error
  */
 extern char *te_string_fmt(const char *fmt,
                            ...) __attribute__((format(printf, 1, 2)));
