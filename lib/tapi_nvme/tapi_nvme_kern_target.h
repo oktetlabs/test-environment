@@ -30,7 +30,7 @@ extern "C" {
 }
 
 /** Default kernel target initialization */
-#define TAPI_NVME_KENR_TARGET (tapi_nvme_target) {  \
+#define TAPI_NVME_KERN_TARGET (tapi_nvme_target) {  \
     .list = LIST_HEAD_INITIALIZER(list),            \
     .rpcs = NULL,                                   \
     .transport = TAPI_NVME_TRANSPORT_TCP,           \
