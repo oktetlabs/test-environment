@@ -2,20 +2,14 @@
  * @brief Test Environment
  *
  * Check VLAN support in Configurator
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
- *
- * 
- *
- * $Id: ip4_send_udp.c 34433 2006-12-23 14:00:41Z arybchik $
  */
 
 /** @page ipstack-ip4_send_udp Send UDP/IP4 datagram via udp.ip4.eth CSAP and receive it via DGRAM socket
  *
  * @objective Check that udp.ip4.eth CSAP can send UDP datagrams
  *            with user-specified ports and checksum.
- *
- * @param host_csap     TA with CSAP
  *
  * @par Scenario:
  *
@@ -34,6 +28,10 @@
 #include <string.h>
 #endif
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 #include "tad_common.h"
 #include "rcf_rpc.h"
 #include "asn_usr.h"
@@ -50,9 +48,6 @@
 int
 main(int argc, char *argv[])
 {
-    tapi_env_host              *host_csap = NULL;
-    const struct if_nameindex  *csap_if;
-
     char           *if_name;
     char           *vlan_ifn;
     cfg_handle     *handles;
@@ -64,8 +59,9 @@ main(int argc, char *argv[])
                           &n_handles, &handles); 
     RING("find vlans on Agt_A rc %r, n: %d", rc, n_handles);
     {
-        int i;
+        unsigned int i;
         char *name;
+
         for (i = 0; i < n_handles; i++)
         {
             cfg_get_inst_name(handles[i], &name);
@@ -76,10 +72,10 @@ main(int argc, char *argv[])
     rc = cfg_find_pattern("/agent:Agt_A/interface:*", 
                           &n_handles, &handles); 
     RING("find interfaces on Agt_A rc %r, n: %d", rc, n_handles);
-
     {
-        int i;
+        unsigned int i;
         char *name;
+
         for (i = 0; i < n_handles; i++)
         {
             cfg_get_inst_name(handles[i], &name);
@@ -104,8 +100,9 @@ main(int argc, char *argv[])
     RING("After add vlan: find vlans on eth1 on Agt_A rc %r, n: %d",
          rc, n_handles);
     {
-        int i;
+        unsigned int i;
         char *name;
+
         for (i = 0; i < n_handles; i++)
         {
             cfg_get_inst_name(handles[i], &name);
@@ -116,10 +113,10 @@ main(int argc, char *argv[])
     rc = cfg_find_pattern("/agent:Agt_A/interface:*", 
                           &n_handles, &handles); 
     RING("After add vlan: find interfaces on Agt_A rc %r, n: %d", rc, n_handles);
-
     {
-        int i;
+        unsigned int i;
         char *name;
+
         for (i = 0; i < n_handles; i++)
         {
             cfg_get_inst_name(handles[i], &name);
