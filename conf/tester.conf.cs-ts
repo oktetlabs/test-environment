@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<tester_cfg version="1.0">
+    <maintainer mailto="Andrew.Rybchenko@oktetlabs.ru"/>
+    <description>Configurator subsystem tests</description>
+    <suite name="cs-ts"/>
+    <run>
+        <package name="cs-ts"/>
+    </run>
+</tester_cfg>
