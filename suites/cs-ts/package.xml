@@ -20,16 +20,10 @@
       <script name="phy" track_conf="nohistory">
       </script>
       <arg name="ta">
-        <value>Agt_B</value>
+        <value>Agt_A</value>
       </arg>
       <arg name="iface_name">
         <value>eth1</value>
-      </arg>
-      <arg name="second_ta">
-        <value>Agt_A</value>
-      </arg>
-      <arg name="second_iface">
-        <value>eth3</value>
       </arg>
       <arg name="speed">
         <value>10</value>
