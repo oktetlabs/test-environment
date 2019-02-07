@@ -93,6 +93,7 @@ typedef struct tapi_perf_report {
     uint64_t bytes;         /**< Number of bytes was transmitted */
     double seconds;         /**< Number of seconds was expired during test */
     double bits_per_second; /**< Throughput */
+    size_t zero_intervals;  /**< Number of zero intervals */
     uint32_t errors[TAPI_PERF_ERROR_MAX];  /**< Errors counters. */
 } tapi_perf_report;
 

@@ -330,6 +330,7 @@ get_report(const json_t *jrpt, tapi_perf_report_kind kind,
     double   total_bits_per_second = 0.0;
     const double eps = 0.00001;
     size_t   total_intervals = 0;
+    size_t   zero_intervals = 0;
 
 #define GET_REPORT_ERROR(_obj)                                  \
     do {                                                        \
@@ -356,6 +357,7 @@ get_report(const json_t *jrpt, tapi_perf_report_kind kind,
         double  tmp_seconds;
         double  tmp_bps;
         json_t *jsums;
+        uint64_t bytes = 0;
 
         jint = json_array_get(jend, i);
         jsums = json_object_get(jint, "sums");
@@ -417,7 +419,10 @@ get_report(const json_t *jrpt, tapi_perf_report_kind kind,
         total_seconds += tmp_seconds;
 
         jval = json_object_get(jsum, "bytes");
-        total_bytes += json_integer_value(jval);
+        bytes = json_integer_value(jval);
+        if (bytes < 50)
+            zero_intervals++;
+        total_bytes += bytes;
 
         total_bits_per_second += tmp_bps * tmp_seconds;
 
@@ -441,6 +446,7 @@ get_report(const json_t *jrpt, tapi_perf_report_kind kind,
 
     tmp_report.bytes = total_bytes;
     tmp_report.bits_per_second = total_bits_per_second;
+    tmp_report.zero_intervals = zero_intervals;
 
     *report = tmp_report;
     return 0;

@@ -419,6 +419,8 @@ app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
         report->seconds = time;
         report->bytes = tounit(bytes, bytes_unit, 1024);
         report->bits_per_second = tounit(throughput, throughput_unit, 1000);
+        /* Not supported */
+        report->zero_intervals = 0;
     }
     else
     {
