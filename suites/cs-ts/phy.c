@@ -16,9 +16,6 @@
  *
  * @param ta            Test agent name
  * @param iface_name    Interface name
- * @param second_ta     The name of a test agent connected
- *                      with @p ta by physical link
- * @param second_iface  @p second_ta interface name
  * @param speed         Interface speed
  * @param duplex        Interface duplex state
  * @param speed_adver   Interface speed to advertise
@@ -63,10 +60,8 @@
 int
 main(int argc, char *argv[])
 {
-    char    *ta = NULL;
-    char    *iface_name = NULL;
-    char    *second_ta = NULL;
-    char    *second_iface = NULL;
+    const char    *ta = NULL;
+    const char    *iface_name = NULL;
     int      link_state = -1;
     int      autoneg = -1;
     int      duplex = -1;
@@ -75,8 +70,6 @@ main(int argc, char *argv[])
     int      tmp_speed = -1;
     int      speed_adver = -1;
     int      duplex_adver = -1;
-    int      tmp_speed_adver = -1;
-    int      tmp_duplex_adver = -1;
     te_bool  mode = FALSE;
     te_bool  tmp_mode = FALSE;
 
@@ -85,8 +78,6 @@ main(int argc, char *argv[])
     /* Get test parameters */
     TEST_GET_STRING_PARAM(ta);
     TEST_GET_STRING_PARAM(iface_name);
-    TEST_GET_STRING_PARAM(second_ta);
-    TEST_GET_STRING_PARAM(second_iface);
     TEST_GET_INT_PARAM(speed);
     TEST_GET_INT_PARAM(duplex);
     TEST_GET_INT_PARAM(speed_adver);
