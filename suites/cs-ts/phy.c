@@ -2,10 +2,10 @@
  * @brief Test Environment
  *
  * Check PHY support in Configurator
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * $Id: phy.c 34433 2006-12-23 14:00:41Z arybchik $
  */
@@ -24,7 +24,7 @@
  * @param speed_adver   Interface speed to advertise
  * @param duplex_adver  Interface duplex state to advertise
  *
- * @par Scenario 
+ * @par Scenario
  * -# Get PHY state value
  * -# Check that PHY is at state ON
  * -# Get PHY autonegotiation state
@@ -79,9 +79,9 @@ main(int argc, char *argv[])
     int      tmp_duplex_adver = -1;
     te_bool  mode = FALSE;
     te_bool  tmp_mode = FALSE;
-    
-    TEST_START; 
-    
+
+    TEST_START;
+
     /* Get test parameters */
     TEST_GET_STRING_PARAM(ta);
     TEST_GET_STRING_PARAM(iface_name);
@@ -91,34 +91,34 @@ main(int argc, char *argv[])
     TEST_GET_INT_PARAM(duplex);
     TEST_GET_INT_PARAM(speed_adver);
     TEST_GET_INT_PARAM(duplex_adver);
-    
+
     CHECK_RC(cfg_tree_print(NULL, TE_LL_RING, "/:"));
-    
+
     /* Check link state */
     CHECK_RC(tapi_cfg_phy_state_get(ta, iface_name, &link_state));
     if (link_state != TE_PHY_STATE_UP)
         TEST_FAIL("link down at TA `%s' for interface `%s'", ta,
                   iface_name);
-    
+
     /* Get autonegotiation state */
     CHECK_RC(tapi_cfg_phy_autoneg_oper_get(ta, iface_name, &autoneg));
     RING("Autonegatiation state: %d", autoneg);
-    
+
     autoneg = TE_PHY_AUTONEG_OFF;
     CHECK_RC(tapi_cfg_phy_autoneg_admin_set(ta, iface_name, autoneg));
-    
+
     CHECK_RC(tapi_cfg_phy_speed_admin_set(ta, iface_name, speed));
-    
+
     CHECK_RC(tapi_cfg_phy_duplex_admin_set(ta, iface_name, duplex));
-    
+
     CHECK_RC(tapi_cfg_phy_commit(ta, iface_name));
-    
+
     CFG_WAIT_CHANGES;
-    
+
     /*
      * Check the result
      */
-    
+
     /* Check that PHY duplex state has been set correctly */
     CHECK_RC(tapi_cfg_phy_duplex_oper_get(ta, iface_name, &tmp_duplex));
     if (tmp_duplex != duplex)
@@ -131,67 +131,67 @@ main(int argc, char *argv[])
 
     /* Reset value */
     autoneg = -1;
-    
+
     /* Check that PHY autonegotiation is at state OFF */
     CHECK_RC(tapi_cfg_phy_autoneg_oper_get(ta, iface_name, &autoneg));
     if (autoneg != TE_PHY_AUTONEG_OFF)
         TEST_FAIL("failed to set autonegotiation to state OFF");
 
-    
+
     /*
      * Autonegotiation
      */
-    
+
     /* Turn PHY autonegotiation to state ON */
     autoneg = TE_PHY_AUTONEG_ON;
     CHECK_RC(tapi_cfg_phy_autoneg_admin_set(ta, iface_name, autoneg));
     CHECK_RC(tapi_cfg_phy_commit(ta, iface_name));
     CFG_WAIT_CHANGES;
-    
+
     /*
      * Advertising
      */
-    
+
     /* Check that mode is advertised */
     CHECK_RC(tapi_cfg_phy_is_mode_advertised(ta, iface_name,
                                              speed_adver, duplex_adver,
                                              &mode));
     if (!mode)
         TEST_FAIL("mode is not advertised on %s at %s", ta, iface_name);
-    
+
     /* Turn off advertising for this mode */
     CHECK_RC(tapi_cfg_phy_advertise_mode(ta, iface_name,
                                          speed_adver, duplex_adver,
                                          0));
-    
+
     CHECK_RC(tapi_cfg_phy_commit(ta, iface_name));
     CFG_WAIT_CHANGES;
-    
+
     /* Check that mode is not advertised */
     CHECK_RC(tapi_cfg_phy_is_mode_advertised(ta, iface_name,
                                              speed_adver, duplex_adver,
                                              &tmp_mode));
     if (tmp_mode)
         TEST_FAIL("failed to turn off mode advertising");
-    
+
     /* Turn on advertising for this mode */
     CHECK_RC(tapi_cfg_phy_advertise_mode(ta, iface_name,
                                          speed_adver, duplex_adver, 1));
-    
+
     CHECK_RC(tapi_cfg_phy_commit(ta, iface_name));
     CFG_WAIT_CHANGES;
-    
+
     /* Check that mode is advertised */
     CHECK_RC(tapi_cfg_phy_is_mode_advertised(ta, iface_name,
                                              speed_adver, duplex_adver,
                                              &tmp_mode));
     if (!tmp_mode)
         TEST_FAIL("failed to advertise mode");
-    
+
     /*
      * Restart PHY autonegotiation
      */
-    
+
     TEST_SUCCESS;
 
 cleanup:
