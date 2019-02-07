@@ -40,8 +40,8 @@ AC_ARG_VAR([TE_INSTALL])
 AC_ARG_VAR([TE_PATH])
 AC_ARG_VAR([TE_PLATFORM])
 
-TS_LIBS=" -ltapi_env -ltapi_rpc -lrcfrpc -ltapi -lconfapi \
--lconf_oid -lrcfapi -lrpcxdr -lrpc_types -llogger_ten \
+TS_LIBS=" -ltapi_env -Wl,--start-group -ltapi_rpc -ltapi -Wl,--end-group \
+-lrcfrpc -lconfapi -lconf_oid -lrcfapi -lrpcxdr -lrpc_types -llogger_ten \
 -lipc -llog_bufs -ltools -lpthread -lm"
 
 TS_DEPS="\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libtools.a \
