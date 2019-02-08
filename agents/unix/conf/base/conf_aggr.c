@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Alexandra Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
@@ -43,7 +43,7 @@
 
 static char buf[4096];
 
-/** 
+/**
  * Type of link aggregations. This enum should be syncronised with
  * aggr_types_data array.
  */
@@ -115,7 +115,7 @@ aggr_interface_get_free(const char *format, char ifname[IFNAMSIZ])
     for (i = 0; i < INT_MAX ; i++)
     {
         snprintf(ifname, IFNAMSIZ, format, i);
-        snprintf(rsrc, RCF_MAX_VAL, "/agent:%s/interface:%s", 
+        snprintf(rsrc, RCF_MAX_VAL, "/agent:%s/interface:%s",
                  ta_name, ifname);
         if (if_nametoindex(ifname) == 0 && ta_rsrc_create_lock(rsrc) == 0)
             break;
@@ -133,7 +133,7 @@ aggr_interface_get_free(const char *format, char ifname[IFNAMSIZ])
  * Bonding support
  */
 
-static te_errno 
+static te_errno
 trunk_create(aggregation *aggr)
 {
     FILE *f;
@@ -273,7 +273,7 @@ trunk_list(aggregation *aggr, char **member_list)
     FILE *f;
     char *c;
 
-    if (snprintf(buf, sizeof(buf), "/sys/class/net/%s/bonding/slaves", 
+    if (snprintf(buf, sizeof(buf), "/sys/class/net/%s/bonding/slaves",
                  aggr->ifname) <= 0)
     {
         ERROR("Failed to snprintf filename in /sys");
@@ -436,7 +436,7 @@ cleanup:
  * General aggregation code
  */
 
-/** 
+/**
  * Array to be used in conversions to/from aggr_type and human-readable
  * values provided by users. This array should be syncronised with
  * aggr_type enum.
@@ -453,8 +453,8 @@ static aggr_type_info aggr_types_data[] = {
 static  aggregation *aggregation_list_head = NULL;
 
 
-/** 
- * Convert aggregation type from human-readable value provided by user 
+/**
+ * Convert aggregation type from human-readable value provided by user
  * to aggr_type
  */
 static inline aggr_type
@@ -470,12 +470,12 @@ aggr_value_to_type(const char *type_string, aggr_mode *mode)
             return (aggr_type)(t - aggr_types_data);
         }
     }
-    ERROR("Failed to convert string \"%s\" to aggregation type", 
+    ERROR("Failed to convert string \"%s\" to aggregation type",
           type_string);
     return AGGREGATION_INVALID;
 }
 
-/** 
+/**
  * Convert aggregation type from aggr_type to human-readable value.
  * Should be called for valid types only.
  */
@@ -528,7 +528,7 @@ aggregation_find(const char *name)
  *
  * @return              Status code
  */
-static te_errno 
+static te_errno
 aggregation_get(unsigned int gid, const char *oid, char *value,
                 const char *aggr_name)
 {
@@ -550,8 +550,8 @@ aggregation_get(unsigned int gid, const char *oid, char *value,
  *
  * @return              Status code
  */
-static te_errno 
-aggregation_add(unsigned int gid, const char *oid, char *value, 
+static te_errno
+aggregation_add(unsigned int gid, const char *oid, char *value,
                 const char *aggr_name)
 {
     aggregation *a = aggregation_find(aggr_name);
@@ -607,7 +607,7 @@ aggregation_add(unsigned int gid, const char *oid, char *value,
  *
  * @return              Status code
  */
-static te_errno 
+static te_errno
 aggregation_del(unsigned int gid, const char *oid, const char *aggr_name)
 {
     aggregation *a = aggregation_find(aggr_name);
@@ -652,7 +652,7 @@ aggregation_del(unsigned int gid, const char *oid, const char *aggr_name)
  *
  * @return              Status code
  */
-static te_errno 
+static te_errno
 aggregation_list(unsigned int gid, const char *oid,
                  const char *sub_id, char **aggr_list)
 {
@@ -674,7 +674,7 @@ aggregation_list(unsigned int gid, const char *oid,
 
     if ((*aggr_list = strdup(buf)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    
+
     return 0;
 }
 
@@ -688,8 +688,8 @@ aggregation_list(unsigned int gid, const char *oid,
  *
  * @return              status code
  */
-static te_errno 
-aggr_interface_get(unsigned int gid, const char *oid, char *value, 
+static te_errno
+aggr_interface_get(unsigned int gid, const char *oid, char *value,
                    const char *aggr_name)
 {
     UNUSED(gid);
@@ -711,8 +711,8 @@ aggr_interface_get(unsigned int gid, const char *oid, char *value,
  *
  * @return              status code
  */
-static te_errno 
-aggr_member_add(unsigned int gid, const char *oid, char *value, 
+static te_errno
+aggr_member_add(unsigned int gid, const char *oid, char *value,
                 const char *aggr_name, const char *member_name)
 {
     UNUSED(gid);
@@ -733,8 +733,8 @@ aggr_member_add(unsigned int gid, const char *oid, char *value,
  *
  * @return              status code
  */
-static te_errno 
-aggr_member_del(unsigned int gid, const char *oid, 
+static te_errno
+aggr_member_del(unsigned int gid, const char *oid,
                 const char *aggr_name, const char *member_name)
 {
     UNUSED(gid);
@@ -755,7 +755,7 @@ aggr_member_del(unsigned int gid, const char *oid,
  *
  * @return              status code
  */
-static te_errno 
+static te_errno
 aggr_member_list(unsigned int gid, const char *oid,
                  const char *sub_id, char **member_list,
                  const char *aggr_name)
@@ -777,7 +777,7 @@ aggr_member_list(unsigned int gid, const char *oid,
 RCF_PCH_CFG_NODE_RO(node_aggr_interface, "interface", NULL, NULL,
                     aggr_interface_get);
 
-RCF_PCH_CFG_NODE_COLLECTION(node_aggr_member, "member", 
+RCF_PCH_CFG_NODE_COLLECTION(node_aggr_member, "member",
                             NULL, &node_aggr_interface,
                             aggr_member_add, aggr_member_del,
                             aggr_member_list, NULL);
@@ -790,7 +790,7 @@ static rcf_pch_cfg_object node_aggr =
       (rcf_ch_cfg_del)aggregation_del,
       (rcf_ch_cfg_list)aggregation_list,
       NULL, NULL };
-      
+
 te_errno
 ta_unix_conf_aggr_init(void)
 {

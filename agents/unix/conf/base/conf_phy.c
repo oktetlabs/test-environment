@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Vadim V. Galitsyn <Vadim.Galitsyn@oktetlabs.ru>
@@ -240,7 +240,7 @@ static struct phy_iflist_head {
     struct phy_iflist_head *prev;           /**< Previous list item */
     const char             *ifname;         /**< Interface name  */
     struct ethtool_cmd      ecmd;           /**< Interface parameters */
-    struct admin_params     admin;          /**< Admininstrative values 
+    struct admin_params     admin;          /**< Admininstrative values
                                                  of interface parameters */
     te_bool                 adver_cached;   /**< Adver cache state flag */
 } phy_iflist;
@@ -265,18 +265,18 @@ phy_iflist_add_item(struct phy_iflist_head *list, const char *ifname)
 {
     struct phy_iflist_head *new_list_item;
     struct phy_iflist_head *next;
-    
+
     new_list_item =
         (struct phy_iflist_head *)malloc(sizeof(struct phy_iflist_head));
     if (new_list_item == NULL)
         return NULL;
-    
+
     new_list_item->ifname = strdup(ifname);
-    
+
     next = list->next;
     list->next = new_list_item;
     new_list_item->prev = list;
-    
+
     if (next != NULL)
     {
         next->prev = new_list_item;
@@ -284,7 +284,7 @@ phy_iflist_add_item(struct phy_iflist_head *list, const char *ifname)
     }
     else
         new_list_item->next = NULL;
-    
+
     memset(&(new_list_item->ecmd), 0, sizeof(struct ethtool_cmd));
     new_list_item->ecmd.speed = TE_PHY_SPEED_UNKNOWN;
     new_list_item->ecmd.duplex = TE_PHY_DUPLEX_UNKNOWN;
@@ -295,7 +295,7 @@ phy_iflist_add_item(struct phy_iflist_head *list, const char *ifname)
     new_list_item->admin.speed = TE_PHY_SPEED_100;
     new_list_item->admin.duplex = TE_PHY_DUPLEX_FULL;
     new_list_item->admin.autoneg = TE_PHY_AUTONEG_ON;
-    
+
     return new_list_item;
 }
 
@@ -315,22 +315,22 @@ static struct phy_iflist_head *
 phy_iflist_find(struct phy_iflist_head *list, const char *ifname)
 {
     struct phy_iflist_head *list_item = list;
-    
+
     /* Walking through the list items */
     while (1)
     {
         /* Check for valid pointer */
         if (list_item->next == NULL)
             break;
-        
+
         /* Check for search condition */
         if (strcmp(list_item->next->ifname, ifname) == 0)
             return list_item->next;
-        
+
         /* Switch to next list item */
         list_item = list_item->next;
     }
-    
+
     /* If item does not exeists, return NULL */
     return NULL;
 }
@@ -352,13 +352,13 @@ static struct phy_iflist_head *
 phy_iflist_find_or_add(struct phy_iflist_head *list, const char *ifname)
 {
     struct phy_iflist_head *list_item;
-    
+
     list_item = phy_iflist_find(list, ifname);
-    
+
     /* If item does not exists add a new one */
     if (list_item == NULL)
         return phy_iflist_add_item(list, ifname);
-    
+
     return list_item;
 }
 
@@ -375,13 +375,13 @@ phy_get_duplex_by_name(const char *name)
 {
     if (name == NULL)
         return -1;
-    
+
     if (strcasecmp(name, TE_PHY_DUPLEX_STRING_FULL) == 0)
         return DUPLEX_FULL;
-    
+
     if (strcasecmp(name, TE_PHY_DUPLEX_STRING_HALF) == 0)
         return DUPLEX_HALF;
-    
+
     return -1;
 }
 
@@ -402,17 +402,17 @@ static int
 phy_property(const char *ifname, struct ethtool_cmd *ecmd, int type)
 {
     struct ifreq        ifr;
-    
+
     /* Reset errno value */
     errno = 0;
-    
+
     memset(&ifr, 0, sizeof(ifr));
     strcpy(ifr.ifr_name, ifname);
-    
+
     ecmd->cmd = type;
     ifr.ifr_data = (caddr_t)ecmd;
     ioctl(cfg_socket, SIOCETHTOOL, &ifr);
-    
+
     return errno;
 }
 
@@ -433,32 +433,32 @@ phy_get_mode(int speed, const char *duplex)
         {
             if (strcmp(duplex, TE_PHY_DUPLEX_STRING_HALF) == 0)
                 return ADVERTISED_10baseT_Half;
-            
+
             if (strcmp(duplex, TE_PHY_DUPLEX_STRING_FULL) == 0)
                 return ADVERTISED_10baseT_Full;
-            
+
             break;
         }
-        
+
         case SPEED_100:
         {
             if (strcmp(duplex, TE_PHY_DUPLEX_STRING_HALF) == 0)
                 return ADVERTISED_100baseT_Half;
-            
+
             if (strcmp(duplex, TE_PHY_DUPLEX_STRING_FULL) == 0)
                 return ADVERTISED_100baseT_Full;
-            
+
             break;
         }
-        
+
         case SPEED_1000:
         {
             if (strcmp(duplex, TE_PHY_DUPLEX_STRING_HALF) == 0)
                 return ADVERTISED_1000baseT_Half;
-            
+
             if (strcmp(duplex, TE_PHY_DUPLEX_STRING_FULL) == 0)
                 return ADVERTISED_1000baseT_Full;
-            
+
             break;
         }
 
@@ -467,12 +467,12 @@ phy_get_mode(int speed, const char *duplex)
         {
             if (strcmp(duplex, TE_PHY_DUPLEX_STRING_FULL) == 0)
                 return ADVERTISED_10000baseT_Full;
-            
+
             break;
         }
 #endif /* LINUX_VERSION_CODE */
     }
-    
+
     return 0;
 }
 
@@ -489,23 +489,23 @@ phy_reset(const char *ifname)
     struct ifreq         ifr;
     int                  rc = -1;
     struct ethtool_value edata;
-    
+
     memset(&edata, 0, sizeof(edata));
     memset(&ifr, 0, sizeof(ifr));
     strcpy(ifr.ifr_name, ifname);
-    
+
     edata.cmd = ETHTOOL_NWAY_RST;
     ifr.ifr_data = (caddr_t)&edata;
     rc = ioctl(cfg_socket, SIOCETHTOOL, &ifr);
-    
+
     if (rc < 0)
     {
         VERB("failed to restart autonegotiation at %s, errno=%d (%s)",
              ifname, errno, strerror(errno));
-        
+
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
-    
+
     return 0;
 }
 #endif /* __linux__ && HAVE_LINUX_ETHTOOL_H */
@@ -545,7 +545,7 @@ phy_get_duplex_by_id(int id)
         case 2: return TE_PHY_DUPLEX_STRING_FULL;
 #endif /* __linux__ */
     }
-    
+
     return NULL;
 }
 
@@ -567,25 +567,25 @@ phy_execute_shell_cmd(char *cmd)
     FILE *fp;
     char *out_buf;
     int   result = -1;
-    
+
     pid = te_shell_cmd(cmd, -1, NULL, &out_fd, NULL);
-    
+
     if (pid < 0)
     {
         ERROR("failed to execute command line while getting: %s: "
               "%s", cmd, strerror(errno));
         return -1;
     }
-    
+
     if ((fp = fdopen(out_fd, "r")) == NULL)
     {
         ERROR("failed to get shell command execution result while "
               "getting duplex state: %s", cmd);
         fclose(fp);
-        
+
         return -1;
     }
-    
+
     if ((out_buf = (char *)malloc(BUFFER_SIZE)) == NULL)
     {
         ERROR("failed to allocate memory while getting duplex state");
@@ -593,9 +593,9 @@ phy_execute_shell_cmd(char *cmd)
         close(out_fd);
         return -1;
     }
-    
+
     memset(out_buf, 0, BUFFER_SIZE);
-    
+
     if (fgets(out_buf, BUFFER_SIZE, fp) == NULL)
     {
         VERB("failed to read command execution result");
@@ -604,16 +604,16 @@ phy_execute_shell_cmd(char *cmd)
         close(out_fd);
         return -1;
     }
-    
+
     /* Remove \r\n */
     out_buf[strlen(out_buf) - 1] = '\0';
-    
+
     result = atoi(out_buf);
-    
+
     free(out_buf);
     fclose(fp);
     close(out_fd);
-    
+
     return result;
 }
 
@@ -653,14 +653,14 @@ phy_autoneg_oper_get(unsigned int gid, const char *oid, char *value,
 {
     UNUSED(gid);
     UNUSED(oid);
-    
+
 #if defined __linux__
     struct ethtool_cmd ecmd;
     int                state;
     int                rc = -1;
-    
+
     memset(&ecmd, 0, sizeof(ecmd));
-    
+
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
         /*
@@ -675,56 +675,56 @@ phy_autoneg_oper_get(unsigned int gid, const char *oid, char *value,
         ERROR("failed to get autonegatiation state");
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
-    
+
     state = (ecmd.autoneg == AUTONEG_ENABLE) ?
             TE_PHY_AUTONEG_ON : TE_PHY_AUTONEG_OFF;
-    
+
     snprintf(value, RCF_MAX_VAL, "%d", state);
-    
+
 #elif defined __sun__
-    
+
     char   drv[IFNAME_MAX];
     int    instance = -1;
     char  *cmd;
     int    autoneg = -1;
-    
+
     VERB("get autoneg");
-    
+
     /* Extract driver name and instance number from interface name */
     if (phy_extract_ifname(ifname, drv, &instance) != 2)
     {
         ERROR("failed to parse interface name");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    
+
     if((cmd = (char *)malloc(BUFFER_SIZE)) == NULL)
     {
         ERROR("Failed to allocate memory for shell command buffer "
               "while getting duplex state");
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
-    
+
     /* Construct a command line */
     sprintf(cmd, KSTAT_GET_AUTONEG_CMD, drv, instance);
-    
+
     autoneg = phy_execute_shell_cmd(cmd);
-    
+
     if (autoneg == -1)
     {
         VERB("failed to get autoneg state at %s", ifname);
         free(cmd);
-        
+
         /* If this option is not supported we should not
            * return negative result code because configurator
            * never starts */
         snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_AUTONEG_UNKNOWN);
-        
+
         return 0;
     }
-    
+
     /* Check for valid value */
     switch (autoneg) {
-    
+
         case TE_PHY_AUTONEG_ON: snprintf(value, RCF_MAX_VAL, "%d",
                                          TE_PHY_AUTONEG_ON);
                                 break;
@@ -733,16 +733,16 @@ phy_autoneg_oper_get(unsigned int gid, const char *oid, char *value,
                                  break;
         default: snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_AUTONEG_UNKNOWN);
     };
-    
+
     free(cmd);
 
 #else
 
     UNUSED(ifname);
     snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_AUTONEG_UNKNOWN);
-    
+
 #endif /* __linux__ */
-    
+
     return 0;
 }
 
@@ -770,19 +770,19 @@ phy_autoneg_admin_set(unsigned int gid, const char *oid, const char *value,
 {
     UNUSED(oid);
     UNUSED(gid);
-    
+
 #if defined __linux__
     int                     autoneg = -1;
     struct phy_iflist_head *list_item;
-    
+
     /* Try to get a pointer to list item associated with
      * current interface name */
     list_item = phy_iflist_find_or_add(&phy_iflist, ifname);
     if (list_item == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    
+
     sscanf(value, "%d", &autoneg);
-    
+
     if (autoneg != TE_PHY_AUTONEG_ON &&
         autoneg != TE_PHY_AUTONEG_OFF)
     {
@@ -790,10 +790,10 @@ phy_autoneg_admin_set(unsigned int gid, const char *oid, const char *value,
               "to wrong value");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    
+
     list_item->ecmd.autoneg = (uint8_t)autoneg;
     list_item->admin.autoneg = (uint8_t)autoneg;
-    
+
     return 0;
 #else
     UNUSED(value);
@@ -819,10 +819,10 @@ phy_autoneg_admin_get(unsigned int gid, const char *oid, char *value,
 {
     UNUSED(oid);
     UNUSED(gid);
-    
+
 #if defined __linux__
     struct phy_iflist_head *list_item;
-    
+
     /* Try to get a pointer to list item associated with
      * current interface name */
     list_item = phy_iflist_find_or_add(&phy_iflist, ifname);
@@ -871,9 +871,9 @@ phy_duplex_oper_get(unsigned int gid, const char *oid, char *value,
     struct ethtool_cmd  ecmd;
     int                 rc;
     char               *duplex;
-    
+
     memset(&ecmd, 0, sizeof(ecmd));
-    
+
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
         /* Check that option does not supported */
@@ -886,71 +886,71 @@ phy_duplex_oper_get(unsigned int gid, const char *oid, char *value,
                      TE_PHY_DUPLEX_STRING_UNKNOWN);
             return 0;
         }
-        
+
         ERROR("failed to get duplex state");
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
-    
+
     duplex = phy_get_duplex_by_id(ecmd.duplex);
-    
+
     if (duplex == NULL)
     {
         ERROR("unknown duplex value: %d", ecmd.duplex);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    
+
     snprintf(value, RCF_MAX_VAL, "%s", duplex);
-    
+
 #elif defined __sun__
     char   drv[IFNAME_MAX];
     int    instance = -1;
     char  *cmd;
     int    result = -1;
     char  *duplex;
-    
+
     /* Extract driver name and instance number from interface name */
     if (phy_extract_ifname(ifname, drv, &instance) != 2)
     {
         ERROR("failed to parse interface name");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    
+
     if((cmd = (char *)malloc(BUFFER_SIZE)) == NULL)
     {
         ERROR("Failed to allocate memory for shell command buffer "
               "while getting duplex state");
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
-    
+
     /* Construct a command line */
     sprintf(cmd, KSTAT_GET_DUPLEX_CMD, drv, instance);
-    
+
     result = phy_execute_shell_cmd(cmd);
-    
+
     if (result == -1)
     {
         VERB("failed to get duplex state at %s", ifname);
         free(cmd);
-        
+
         /* If this option is not supported we should not
            * return negative result code because configurator
            * never starts */
         snprintf(value, RCF_MAX_VAL, "%s", TE_PHY_DUPLEX_STRING_UNKNOWN);
-        
+
         return 0;
     }
-    
+
     duplex = phy_get_duplex_by_id(result);
-    
+
     if (duplex == NULL)
     {
         ERROR("unknown duplex value %d at %s", result, ifname);
         free(cmd);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    
+
     snprintf(value, RCF_MAX_VAL, "%s", duplex);
-    
+
     free(cmd);
 #else
     UNUSED(value);
@@ -983,28 +983,28 @@ phy_duplex_admin_set(unsigned int gid, const char *oid, const char *value,
 {
     UNUSED(oid);
     UNUSED(gid);
-    
+
 #if defined __linux__
     int                     duplex = -1;
     struct phy_iflist_head *list_item;
-    
+
     /* Try to get a pointer to list item associated with
      * current interface name */
     list_item = phy_iflist_find_or_add(&phy_iflist, ifname);
     if (list_item == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    
+
     duplex = phy_get_duplex_by_name(value);
-    
+
     if (duplex == -1)
     {
         ERROR("cannot set unknown duplex state: %s", value);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    
+
     list_item->ecmd.duplex = duplex;
     list_item->admin.duplex = duplex;
-    
+
     return 0;
 #else
     UNUSED(value);
@@ -1030,27 +1030,27 @@ phy_duplex_admin_get(unsigned int gid, const char *oid, char *value,
 {
     UNUSED(oid);
     UNUSED(gid);
-    
+
 #if defined __linux__
     char                   *duplex = NULL;
     struct phy_iflist_head *list_item;
-    
+
     /* Try to get a pointer to list item associated with
      * current interface name */
     list_item = phy_iflist_find_or_add(&phy_iflist, ifname);
     if (list_item == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    
-    duplex = phy_get_duplex_by_id(list_item->admin.duplex); 
+
+    duplex = phy_get_duplex_by_id(list_item->admin.duplex);
     if (duplex == NULL)
     {
         ERROR("unknown duplex value %d at %s",
               list_item->admin.duplex, ifname);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    
+
     snprintf(value, RCF_MAX_VAL, "%s", duplex);
-    
+
 #else
     UNUSED(value);
     UNUSED(ifname);
@@ -1084,9 +1084,9 @@ phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
     struct ethtool_cmd  ecmd;
     int                 rc = -1;
     int                 mode = -1;
-    
+
     memset(&ecmd, 0, sizeof(ecmd));
-    
+
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
         /*
@@ -1098,19 +1098,19 @@ phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
             snprintf(value, RCF_MAX_VAL, "%d", -1);
             return 0;
         }
-        
+
         ERROR("failed to get interface properties: %s", strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
-    
+
     mode = phy_get_mode(atoi(speed), duplex);
-    
+
     /* Set mode state */
     if (ecmd.advertising & mode)
         snprintf(value, RCF_MAX_VAL, "%d", 1);
     else
         snprintf(value, RCF_MAX_VAL, "%d", 0);
-    
+
     return 0;
 #else
     UNUSED(value);
@@ -1152,31 +1152,31 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
     struct phy_iflist_head *list_item;
     te_errno                rc;
     u32                     advertising = 0;
-    
+
     memset(&ecmd, 0, sizeof(ecmd));
-    
+
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
         ERROR("failed to get PHY properties while setting "
               "mode to advertising state");
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
-    
+
     mode = phy_get_mode(atoi(speed), duplex);
     if (mode == 0)
     {
         ERROR("trying to advertise bad mode");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    
+
     set = atoi(value);
-    
+
     /* Try to get a pointer to list item associated with
      * current interface name */
     list_item = phy_iflist_find_or_add(&phy_iflist, ifname);
     if (list_item == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    
+
     /* Extract from cache or not */
     if (list_item->adver_cached)
     {
@@ -1187,21 +1187,21 @@ phy_modes_speed_duplex_set(unsigned int gid, const char *oid,
         advertising = ecmd.advertising;
         list_item->adver_cached = TRUE;
     }
-    
+
     if (set == 1)
         list_item->ecmd.advertising =
             advertising | mode;
     else
         list_item->ecmd.advertising =
             advertising & (~mode);
-    
+
     return 0;
 #else
     UNUSED(value);
     UNUSED(ifname);
     UNUSED(speed);
     UNUSED(duplex);
-    
+
     ERROR("mode advertising is not supported at this platform");
     return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif /* __linux__ */
@@ -1248,9 +1248,9 @@ phy_modes_speed_duplex_list(unsigned int gid, const char *oid,
     char               *speed_pattern = "speed:";
     int                 speed = -1;
     int                 rc = -1;
-    
+
     memset(&ecmd, 0, sizeof(ecmd));
-    
+
     *list = (char *)malloc(TE_PHY_DUPLEX_LIST_MAX_ITEMS *
                            TE_PHY_LIST_MAX_ITEM_SIZE);
     if (*list == NULL)
@@ -1258,27 +1258,27 @@ phy_modes_speed_duplex_list(unsigned int gid, const char *oid,
         ERROR("out of memory");
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
-    
+
     memset(*list, 0, TE_PHY_DUPLEX_LIST_MAX_ITEMS *
            TE_PHY_LIST_MAX_ITEM_SIZE);
-    
+
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
         ERROR("failed to get interface properties: %s", strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
-    
+
     /* Extract speed value for current list item */
     speed = atoi(strstr(oid, speed_pattern) +
                  strlen(speed_pattern));
-    
+
     /*
      * Insert an items
      */
-    
+
     if (ecmd.supported & phy_get_mode(speed, TE_PHY_DUPLEX_STRING_HALF))
         phy_modes_list_ins_value(list, TE_PHY_DUPLEX_STRING_HALF);
-    
+
     if (ecmd.supported & phy_get_mode(speed, TE_PHY_DUPLEX_STRING_FULL))
         phy_modes_list_ins_value(list, TE_PHY_DUPLEX_STRING_FULL);
 #else
@@ -1307,45 +1307,45 @@ phy_modes_speed_list(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(sub_id);
-    
+
 #if defined __linux__
     struct ethtool_cmd  ecmd;
     int                 rc = -1;
-    
+
     memset(&ecmd, 0, sizeof(ecmd));
-    
+
     *list = (char *)malloc(TE_PHY_SPEED_LIST_MAX_ITEMS *
                            TE_PHY_LIST_MAX_ITEM_SIZE);
-    
+
     if (*list == NULL)
     {
         ERROR("out of memory");
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
-    
+
     memset(*list, 0, TE_PHY_SPEED_LIST_MAX_ITEMS *
            TE_PHY_LIST_MAX_ITEM_SIZE);
-    
+
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
         VERB("No modes supported/advertized by `%s'", ifname);
         return 0;
     }
-    
+
     /* Add 10BaseT support */
     if (ecmd.supported & SUPPORTED_10baseT_Half ||
         ecmd.supported & SUPPORTED_10baseT_Full)
     {
         phy_modes_list_ins_value(list, TE_PHY_SPEED_STRING_10);
     }
-    
+
     /* Add 100BaseT support */
     if (ecmd.supported & SUPPORTED_100baseT_Half ||
         ecmd.supported & SUPPORTED_100baseT_Full)
     {
         phy_modes_list_ins_value(list, TE_PHY_SPEED_STRING_100);
     }
-  
+
     /* Add 1000BaseT support */
     if (ecmd.supported & SUPPORTED_1000baseT_Half ||
         ecmd.supported & SUPPORTED_1000baseT_Full)
@@ -1383,50 +1383,50 @@ phy_speed_oper_get(unsigned int gid, const char *oid, char *value,
 {
     UNUSED(gid);
     UNUSED(oid);
-    
+
 #if defined __linux__
     struct ethtool_cmd ecmd;
     int                rc = -1;
-    
+
     memset(&ecmd, 0, sizeof(ecmd));
-    
+
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
         /*
          * Check for option support: if option is not
          * supported the leaf value should be set to -1
          */
-        
+
         if (rc == EOPNOTSUPP)
         {
             snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_SPEED_UNKNOWN);
             return 0;
         }
-        
+
         ERROR("failed to get PHY properties while getting speed value");
-        
+
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
-    
+
     /* Store value */
     snprintf(value, RCF_MAX_VAL, "%d", ecmd.speed);
-    
+
     return 0;
 #elif defined __sun__
     char  *cmd;
     int    result = -1;
     int    speed = -1;
-    
+
     if((cmd = (char *)malloc(BUFFER_SIZE)) == NULL)
     {
         ERROR("Failed to allocate memory for shell command buffer "
               "while getting speed value");
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
-    
+
     /* Construct a command line */
     sprintf(cmd, KSTAT_GET_SPEED_CMD, ifname);
-    
+
     if ((result = phy_execute_shell_cmd(cmd)) == -1)
     {
         VERB("failed to get speed value for interface %s", ifname);
@@ -1434,11 +1434,11 @@ phy_speed_oper_get(unsigned int gid, const char *oid, char *value,
         free(cmd);
         return 0;
     }
-    
+
     speed = result / KSTAT_SPEED_UNITS_IN_M;
-    
+
     snprintf(value, RCF_MAX_VAL, "%d", speed);
-    
+
     free(cmd);
 #else
     UNUSED(value);
@@ -1466,24 +1466,24 @@ phy_speed_admin_set(unsigned int gid, const char *oid, const char *value,
 {
     UNUSED(oid);
     UNUSED(gid);
-    
+
 #if defined __linux__
     int                     speed;
     struct phy_iflist_head *list_item;
-    
+
     /* Try to get a pointer to list item associated with
      * current interface name */
-    
+
     list_item = phy_iflist_find_or_add(&phy_iflist, ifname);
     if (list_item == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    
+
     /* Get value provided by caller */
     sscanf(value, "%d", &speed);
-    
+
     list_item->ecmd.speed = speed;
     list_item->admin.speed = speed;
-    
+
     return 0;
 #else
     UNUSED(value);
@@ -1512,10 +1512,10 @@ phy_speed_admin_get(unsigned int gid, const char *oid, char *value,
 
 #if defined __linux__
     struct phy_iflist_head *list_item;
-    
+
     /* Try to get a pointer to list item associated with
      * current interface name */
-    
+
     list_item = phy_iflist_find_or_add(&phy_iflist, ifname);
     if (list_item == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
@@ -1526,7 +1526,7 @@ phy_speed_admin_get(unsigned int gid, const char *oid, char *value,
     UNUSED(ifname);
 #endif /* __linux__ */
     return 0;
-   
+
 }
 
 /**
@@ -1545,21 +1545,21 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
 {
     UNUSED(gid);
     UNUSED(oid);
-    
+
 #if defined __linux__
     struct ifreq         ifr;
     struct ethtool_value edata;
     int                  state = -1;
-    
+
     memset(&edata, 0, sizeof(edata));
-    
+
     /* Initialize control structure */
     memset(&ifr, 0, sizeof(ifr));
     strcpy(ifr.ifr_name, ifname);
-    
+
     edata.cmd = ETHTOOL_GLINK;
     ifr.ifr_data = (caddr_t)&edata;
-    
+
     /* Get link state */
     if (ioctl(cfg_socket, SIOCETHTOOL, &ifr) != 0)
     {
@@ -1572,40 +1572,40 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
             snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_STATE_UNKNOWN);
             return 0;
         }
-        
+
         ERROR("failed to get interface state value");
         return TE_RC(TE_TA_UNIX, errno);
     }
-    
+
     state = edata.data ? TE_PHY_STATE_UP : TE_PHY_STATE_DOWN;
-    
+
     snprintf(value, RCF_MAX_VAL, "%d", state);
-    
+
     return 0;
 #elif defined __sun__
     char   drv[IFNAME_MAX];
     int    instance = -1;
     char  *cmd;
     int    state = -1;
-    
+
     /* Extract driver name and instance number from interface name */
     if (phy_extract_ifname(ifname, drv, &instance) != 2)
     {
         ERROR("failed to parse interface name");
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    
+
     if((cmd = (char *)malloc(BUFFER_SIZE)) == NULL)
     {
         ERROR("Failed to allocate memory for shell command buffer "
               "while getting link state");
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
-    
+
     sprintf(cmd, KSTAT_GET_STATE_CMD, drv, instance);
-    
+
     state = phy_execute_shell_cmd(cmd);
-    
+
     /* Check that duplex state information is supported */
     if (state == -1)
     {
@@ -1614,12 +1614,12 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
         free(cmd);
         return 0;
     }
-    
+
     /* Correct state */
     state = (state == 0 || state == 1) ? state : TE_PHY_STATE_UNKNOWN;
-    
+
     snprintf(value, RCF_MAX_VAL, "%d", state);
-    
+
     free(cmd);
 #else
     UNUSED(value);
@@ -1687,7 +1687,7 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
     /* Speed and duplex must be unchanged if we are going to enable
      * autonegotiation. Also in case L5 NIC if speed and duplex values
      * are zeroed, then driver will try to change speed and duplex to 0,
-     * so speed and duplex values should be equal to current speed 
+     * so speed and duplex values should be equal to current speed
      * and duplex values */
     if (list_item->ecmd.autoneg)
     {

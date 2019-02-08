@@ -5,11 +5,11 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrey A. Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
- * 
+ *
  * $Id$
  */
 
