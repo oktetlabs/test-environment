@@ -64,7 +64,7 @@ net_addr_list_cb(struct nlmsghdr *h, netconf_list *list)
         rta = RTA_NEXT(rta, len);
     }
 
-    /* 
+    /*
      * NOTE:
      * IFA_ADDRESS is prefix address, rather than local interface address.
      * It makes no difference for normally configured broadcast interfaces,
