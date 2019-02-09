@@ -35,6 +35,7 @@ typedef struct onvme_proc {
     .opts = TAPI_NVME_ONVME_TARGET_OPTS_DEFAULTS,   \
 }
 #define ONVME_PROC_SIGINT_TIMEOUT     (5)
+#define ONVME_PROC_INIT_TIMEOUT       (15)
 
 /* See description in tapi_nvme_onvme_target.h */
 te_errno
@@ -127,7 +128,7 @@ tapi_nvme_onvme_target_setup(tapi_nvme_target *target)
         return TE_ENOTCONN;
     }
 
-    te_motivated_sleep(5, "Give target a while to start");
+    te_motivated_sleep(ONVME_PROC_INIT_TIMEOUT, "Give target a while to start");
 
     proc->pid = pid;
     proc->stdout_fd = stdout_fd;
