@@ -76,6 +76,9 @@ onvme_output_print(tapi_nvme_target *target)
 
     RING("stdout:\n%s\n"
          "stdout:\n%s\n", out.ptr, err.ptr);
+
+    te_string_free(&out);
+    te_string_free(&err);
 }
 
 static te_errno
