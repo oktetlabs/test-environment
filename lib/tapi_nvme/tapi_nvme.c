@@ -71,12 +71,19 @@ run_command_generic(rcf_rpc_server *rpcs, opts_t opts, const char *command)
     pid = rpc_waitpid(rpcs, pid, &status, 0);
 
     if (pid == -1)
+    {
+        rpc_close(rpcs, fd_stdout);
+        rpc_close(rpcs, fd_stderr);
         TEST_FAIL("waitpid: %s", command);
+    }
 
     if (opts.str_stdout != NULL)
         rpc_read_fd2te_string(rpcs, fd_stdout, 100, 0, opts.str_stdout);
     if (opts.str_stderr != NULL)
         rpc_read_fd2te_string(rpcs, fd_stderr, 100, 0, opts.str_stderr);
+
+    rpc_close(rpcs, fd_stdout);
+    rpc_close(rpcs, fd_stderr);
 
     if (status.flag != RPC_WAIT_STATUS_EXITED)
         TEST_FAIL("Process is %s", wait_status_flag_rpc2str(status.flag));
