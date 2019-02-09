@@ -34,6 +34,7 @@ typedef struct onvme_proc {
     .stderr_fd = -1,                                \
     .opts = TAPI_NVME_ONVME_TARGET_OPTS_DEFAULTS,   \
 }
+#define ONVME_PROC_SIGINT_TIMEOUT     (5)
 
 /* See description in tapi_nvme_onvme_target.h */
 te_errno
@@ -163,6 +164,7 @@ bind_nvme(tapi_nvme_target *target, bind_nvme_type btype)
 void
 tapi_nvme_onvme_target_cleanup(tapi_nvme_target *target)
 {
+    int rc;
     onvme_proc *proc = (onvme_proc *)target->impl;
     tapi_nvme_onvme_target_opts old_opts;
 
@@ -171,7 +173,18 @@ tapi_nvme_onvme_target_cleanup(tapi_nvme_target *target)
 
     te_log_stack_push("ONVMe target cleanup start");
 
-    if (rpc_ta_kill_death(target->rpcs, proc->pid) == -1)
+    RPC_AWAIT_IUT_ERROR(target->rpcs);
+    rc = rpc_ta_kill_and_wait(target->rpcs, proc->pid, RPC_SIGINT,
+                              ONVME_PROC_SIGINT_TIMEOUT);
+
+    /* timeout of rpc_ta_kill_and_wait */
+    if (rc == -2)
+    {
+        RPC_AWAIT_IUT_ERROR(target->rpcs);
+        rc = rpc_ta_kill_death(target->rpcs, proc->pid);
+    }
+
+    if (rc == -1)
     {
         ERROR("Cannot kill proccess with pid=%d on %s, rc=%r", proc->pid,
               target->rpcs->ta, RPC_ERRNO(target->rpcs));
