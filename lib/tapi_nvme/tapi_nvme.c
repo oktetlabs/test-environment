@@ -478,19 +478,25 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl,
     return TE_ENODATA;
 }
 
-/* See description in tapi_nvme.h */
-te_errno
-tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
-                            const tapi_nvme_target *target)
+#define NVME_ADD_OPT(_te_str, args...)                        \
+    do {                                                      \
+        te_errno rc;                                          \
+        if ((rc = te_string_append(_te_str, args)) != 0)      \
+        {                                                     \
+            te_string_free(_te_str);                          \
+            return rc;                                        \
+        }                                                     \
+    } while(0)
+
+static te_errno
+nvme_initiator_connect_generic(tapi_nvme_host_ctrl *host_ctrl,
+                               const tapi_nvme_target *target,
+                               const char *extra_opts)
 {
     int i, rc;
     te_string str_stdout = TE_STRING_INIT;
     te_string str_stderr = TE_STRING_INIT;
-    char cmd[RPC_SHELL_CMDLINE_MAX] = "nvme connect ";
-    const char *opts = "--traddr=%s "
-                       "--trsvcid=%d "
-                       "--transport=%s "
-                       "--nqn=%s ";
+    te_string cmd = TE_STRING_INIT_STATIC(RPC_SHELL_CMDLINE_MAX);
     opts_t run_opts = {
         .str_stdout = &str_stdout,
         .str_stderr = &str_stderr,
@@ -505,20 +511,28 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
     assert(target->subnqn);
     assert(target->device);
 
-    rc = run_command(host_ctrl->rpcs, run_opts, strcat(cmd, opts),
-                     te_sockaddr_get_ipstr(target->addr),
-                     ntohs(te_sockaddr_get_port(target->addr)),
-                     tapi_nvme_transport_str(target->transport),
-                     target->subnqn);
+    NVME_ADD_OPT(&cmd, "nvme connect ");
+    NVME_ADD_OPT(&cmd, "--traddr=%s ", te_sockaddr_get_ipstr(target->addr));
+    NVME_ADD_OPT(&cmd, "--trsvcid=%d ",
+                 ntohs(te_sockaddr_get_port(target->addr)));
+    NVME_ADD_OPT(&cmd, "--transport=%s ",
+                 tapi_nvme_transport_str(target->transport));
+    NVME_ADD_OPT(&cmd, "--nqn=%s ",  target->subnqn);
+    if (extra_opts != NULL)
+        NVME_ADD_OPT(&cmd, "%s",  extra_opts);
 
-    if (rc != 0)
+    if ((rc = run_command(host_ctrl->rpcs, run_opts, "%s", cmd.ptr)) != 0)
     {
         ERROR("nvme-cli output\n"
               "stdout:\n%s\n"
-              "stderr:\n%s",
-              str_stdout.ptr, str_stderr.ptr);
-        return rc;
+              "stderr:\n%s", str_stdout.ptr, str_stderr.ptr);
+        te_string_free(&str_stdout);
+        te_string_free(&str_stderr);
+        return TE_EFAIL;
     }
+
+    te_string_free(&str_stdout);
+    te_string_free(&str_stderr);
 
     host_ctrl->connected_target = target;
     RING("Success connection to target");
@@ -527,21 +541,27 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
 
     for (i = 0; i < DEVICE_WAIT_ATTEMPTS; i++)
     {
-        rc = get_new_device(host_ctrl, target);
-        if (rc == 0)
+        if (get_new_device(host_ctrl, target) == 0)
             return 0;
 
         te_motivated_sleep(1, "Waiting device...");
     }
 
-    rc = get_new_device(host_ctrl, target);
-    if (rc != 0)
+    if (get_new_device(host_ctrl, target) != 0)
     {
         ERROR("Connected device not found");
         return TE_ENOENT;
     }
 
     return 0;
+}
+
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
+                            const tapi_nvme_target *target)
+{
+    return nvme_initiator_connect_generic(host_ctrl, target, NULL);
 }
 
 /* See description in tapi_nvme.h */
