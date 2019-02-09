@@ -178,14 +178,19 @@ tapi_nvme_onvme_target_cleanup(tapi_nvme_target *target)
     rc = rpc_ta_kill_and_wait(target->rpcs, proc->pid, RPC_SIGINT,
                               ONVME_PROC_SIGINT_TIMEOUT);
 
-    onvme_output_print(target);
-
     /* timeout of rpc_ta_kill_and_wait */
     if (rc == -2)
     {
         RPC_AWAIT_IUT_ERROR(target->rpcs);
         rc = rpc_ta_kill_death(target->rpcs, proc->pid);
     }
+
+    onvme_output_print(target);
+
+    if (proc->stderr_fd >= 0)
+        rpc_close(target->rpcs, proc->stderr_fd);
+    if (proc->stdout_fd >= 0)
+        rpc_close(target->rpcs, proc->stdout_fd);
 
     if (rc == -1)
     {
