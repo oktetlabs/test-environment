@@ -564,6 +564,37 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
     return nvme_initiator_connect_generic(host_ctrl, target, NULL);
 }
 
+static te_errno
+nvme_connect_build_opts(te_string *str_opts,  const tapi_nvme_connect_opts *opts)
+{
+    if (opts->hdr_digest == TRUE)
+        NVME_ADD_OPT(str_opts, "--hdr_digest ");
+
+    if (opts->data_digest == TRUE)
+        NVME_ADD_OPT(str_opts, "--data_digest ");
+
+    return 0;
+}
+
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_initiator_connect_opts(tapi_nvme_host_ctrl *host_ctrl,
+                                 const tapi_nvme_target *target,
+                                 const tapi_nvme_connect_opts *opts)
+{
+    te_errno rc;
+    te_string str_opts = TE_STRING_INIT;
+
+    assert(opts);
+    if ((rc = nvme_connect_build_opts(&str_opts, opts)) != 0)
+        return rc;
+    rc = nvme_initiator_connect_generic(host_ctrl, target, str_opts.ptr);
+
+    te_string_free(&str_opts);
+
+    return rc;
+}
+
 /* See description in tapi_nvme.h */
 te_errno
 tapi_nvme_initiator_list(tapi_nvme_host_ctrl *host_ctrl)

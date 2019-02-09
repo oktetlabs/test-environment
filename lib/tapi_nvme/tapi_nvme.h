@@ -161,6 +161,26 @@ extern const char * tapi_nvme_transport_str(tapi_nvme_transport transport);
 extern te_errno tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
                                             const tapi_nvme_target *target);
 
+/* Additional opts for nvme connect */
+typedef struct tapi_nvme_connect_opts {
+    te_bool hdr_digest;         /* Enable transport protocol header */
+    te_bool data_digest;        /* Enable transport protocol data */
+} tapi_nvme_connect_opts;
+
+/**
+ * Connect initiator host to target host with additional options
+ *
+ * @param host_ctrl     handle of host_ctrl
+ * @param target        handle of target
+ * @param opts          additional opts for nvme connect
+ *
+ * @return TE error code
+ */
+extern te_errno tapi_nvme_initiator_connect_opts(
+    tapi_nvme_host_ctrl *host_ctrl,
+    const tapi_nvme_target *target,
+    const tapi_nvme_connect_opts *opts);
+
 /**
  * Disconnect host_ctrl form connected target.
  *
