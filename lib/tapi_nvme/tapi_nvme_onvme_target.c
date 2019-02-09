@@ -177,6 +177,8 @@ tapi_nvme_onvme_target_cleanup(tapi_nvme_target *target)
     rc = rpc_ta_kill_and_wait(target->rpcs, proc->pid, RPC_SIGINT,
                               ONVME_PROC_SIGINT_TIMEOUT);
 
+    onvme_output_print(target);
+
     /* timeout of rpc_ta_kill_and_wait */
     if (rc == -2)
     {
