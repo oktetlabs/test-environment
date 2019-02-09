@@ -48,6 +48,8 @@ typedef struct opts_t {
     .timeout    = 0                 \
 }
 
+#define RUN_COMMAND_DEF_TIMEOUT (0)
+
 static int
 run_command_generic(rcf_rpc_server *rpcs, opts_t opts, const char *command)
 {
@@ -98,6 +100,51 @@ run_command(rcf_rpc_server *rpcs, opts_t opts, const char *format_cmd, ...)
     va_end(arguments);
 
     return run_command_generic(rpcs, opts, command);
+}
+
+static te_errno run_command_dump_output_rc(rcf_rpc_server *rpcs,
+                                           unsigned int timeout,
+                                           const char *format_cmd, ...)
+                                           __attribute__((format(printf, 3, 4)));
+
+static te_errno
+run_command_dump_output_rc(rcf_rpc_server *rpcs, unsigned int timeout,
+                           const char *format_cmd, ...)
+{
+    te_errno rc;
+    te_string str_stdout = TE_STRING_INIT;
+    te_string str_stderr = TE_STRING_INIT;
+    char command[RPC_SHELL_CMDLINE_MAX];
+    opts_t run_opts = {
+        .str_stdout = &str_stdout,
+        .str_stderr = &str_stderr,
+        .timeout = timeout,
+    };
+    va_list arguments;
+
+    va_start(arguments, format_cmd);
+    vsnprintf(command, sizeof(command), format_cmd, arguments);
+    va_end(arguments);
+
+    rc = run_command_generic(rpcs, (opts_t)run_opts, command);
+
+    if (rc != 0)
+    {
+        ERROR("stdout:\n%s\n"
+              "stderr:\n%s\n"
+              "return code: %d", str_stdout.ptr, str_stderr.ptr, rc);
+        rc = TE_EFAULT;
+    }
+    else
+    {
+        RING("stdout:\n%s\n"
+             "stderr:\n%s", str_stdout.ptr, str_stderr.ptr);
+    }
+
+    te_string_free(&str_stdout);
+    te_string_free(&str_stderr);
+
+    return rc;
 }
 
 typedef struct nvme_fabric_namespace_info {
@@ -583,7 +630,7 @@ tapi_nvme_initiator_connect_opts(tapi_nvme_host_ctrl *host_ctrl,
                                  const tapi_nvme_connect_opts *opts)
 {
     te_errno rc;
-    te_string str_opts = TE_STRING_INIT;
+    te_string str_opts = TE_STRING_INIT_STATIC(RPC_SHELL_CMDLINE_MAX);
 
     assert(opts);
     if ((rc = nvme_connect_build_opts(&str_opts, opts)) != 0)
@@ -599,22 +646,164 @@ tapi_nvme_initiator_connect_opts(tapi_nvme_host_ctrl *host_ctrl,
 te_errno
 tapi_nvme_initiator_list(tapi_nvme_host_ctrl *host_ctrl)
 {
-    int rc;
-    te_string str_stdout = TE_STRING_INIT;
-    te_string str_stderr = TE_STRING_INIT;
-    opts_t run_opts = {
-        .str_stdout = &str_stdout,
-        .str_stderr = &str_stderr,
-    };
+    assert(host_ctrl);
+    assert(host_ctrl->rpcs);
 
-    rc = run_command(host_ctrl->rpcs, run_opts, "nvme list");
+    return run_command_dump_output_rc(host_ctrl->rpcs, RUN_COMMAND_DEF_TIMEOUT,
+                                      "nvme list");
+}
 
-    if (rc != 0)
-        WARN("stderr:\n%s", str_stderr.ptr);
-    else
-        RING("stdout:\n%s\nstderr:\n%s", str_stdout.ptr, str_stderr.ptr);
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_initiator_id_ctrl(tapi_nvme_host_ctrl *host_ctrl)
+{
+    assert(host_ctrl);
+    assert(host_ctrl->rpcs);
+    assert(host_ctrl->device);
 
-    return rc == 0 ? 0 : TE_EFAULT;
+    return run_command_dump_output_rc(host_ctrl->rpcs, RUN_COMMAND_DEF_TIMEOUT,
+                                      "nvme id-ctrl %s", host_ctrl->device);
+}
+
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_initiator_id_ns(tapi_nvme_host_ctrl *host_ctrl)
+{
+    assert(host_ctrl);
+    assert(host_ctrl->rpcs);
+    assert(host_ctrl->device);
+
+    return run_command_dump_output_rc(host_ctrl->rpcs, RUN_COMMAND_DEF_TIMEOUT,
+                                      "nvme id-ns %s", host_ctrl->device);
+}
+
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_initiator_get_id_ns(tapi_nvme_host_ctrl *host_ctrl)
+{
+    assert(host_ctrl);
+    assert(host_ctrl->rpcs);
+    assert(host_ctrl->device);
+
+    return run_command_dump_output_rc(host_ctrl->rpcs, RUN_COMMAND_DEF_TIMEOUT,
+                                      "nvme get-id-ns %s", host_ctrl->device);
+}
+
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_initiator_show_regs(tapi_nvme_host_ctrl *host_ctrl)
+{
+    assert(host_ctrl);
+    assert(host_ctrl->rpcs);
+    assert(host_ctrl->device);
+
+    return run_command_dump_output_rc(host_ctrl->rpcs, RUN_COMMAND_DEF_TIMEOUT,
+                                      "nvme show-regs %s", host_ctrl->device);
+}
+
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_initiator_fw_log(tapi_nvme_host_ctrl *host_ctrl)
+{
+    assert(host_ctrl);
+    assert(host_ctrl->rpcs);
+    assert(host_ctrl->device);
+
+    return run_command_dump_output_rc(host_ctrl->rpcs, RUN_COMMAND_DEF_TIMEOUT,
+                                      "nvme fw-log %s", host_ctrl->device);
+}
+
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_initiator_smart_log(tapi_nvme_host_ctrl *host_ctrl)
+{
+    assert(host_ctrl);
+    assert(host_ctrl->rpcs);
+    assert(host_ctrl->device);
+
+   return run_command_dump_output_rc(host_ctrl->rpcs, RUN_COMMAND_DEF_TIMEOUT,
+                                      "nvme smart-log %s", host_ctrl->device);
+}
+
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_initiator_error_log(tapi_nvme_host_ctrl *host_ctrl)
+{
+    assert(host_ctrl);
+    assert(host_ctrl->rpcs);
+    assert(host_ctrl->device);
+
+    return run_command_dump_output_rc(host_ctrl->rpcs, RUN_COMMAND_DEF_TIMEOUT,
+                                      "nvme error-log %s", host_ctrl->device);
+}
+
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_initiator_get_feature(tapi_nvme_host_ctrl *host_ctrl, int feature)
+{
+    assert(host_ctrl);
+    assert(host_ctrl->rpcs);
+    assert(host_ctrl->device);
+
+    return run_command_dump_output_rc(host_ctrl->rpcs, TE_SEC2MS(5),
+                                      "nvme get-feature %s --feature-id=%d",
+                                      host_ctrl->device, feature);
+}
+
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_initiator_flush(tapi_nvme_host_ctrl *host_ctrl,
+                          const char *namespace)
+{
+    assert(host_ctrl);
+    assert(host_ctrl->rpcs);
+    assert(host_ctrl->device);
+
+    te_string cmd = TE_STRING_INIT_STATIC(RPC_SHELL_CMDLINE_MAX);
+
+    NVME_ADD_OPT(&cmd, "nvme flush %s ", host_ctrl->device);
+    if (namespace != NULL)
+        NVME_ADD_OPT(&cmd, "--namespace-id=%s", namespace);
+
+    return run_command_dump_output_rc(host_ctrl->rpcs, RUN_COMMAND_DEF_TIMEOUT,
+                                      "%s", cmd.ptr);
+}
+
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_initiator_reset(tapi_nvme_host_ctrl *host_ctrl)
+{
+    assert(host_ctrl);
+    assert(host_ctrl->rpcs);
+    assert(host_ctrl->device);
+
+    return run_command_dump_output_rc(host_ctrl->rpcs, RUN_COMMAND_DEF_TIMEOUT,
+                                      "nvme reset %s", host_ctrl->device);
+}
+
+/* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_initiator_discover_from(tapi_nvme_host_ctrl *host_ctrl)
+{
+    te_string cmd = TE_STRING_INIT;
+    const tapi_nvme_target *target;
+
+    assert(host_ctrl);
+    assert(host_ctrl->rpcs);
+
+    if ((target = host_ctrl->connected_target) == NULL)
+        TEST_FAIL("You're allowed to call discover only if "
+                  "target is connected");
+
+    NVME_ADD_OPT(&cmd, "nvme discover ");
+    NVME_ADD_OPT(&cmd, "--traddr=%s ", te_sockaddr_get_ipstr(target->addr));
+    NVME_ADD_OPT(&cmd, "--trsvcid=%d ",
+                 ntohs(te_sockaddr_get_port(target->addr)));
+    NVME_ADD_OPT(&cmd, "--transport=%s ",
+                 tapi_nvme_transport_str(target->transport));
+
+    return run_command_dump_output_rc(
+        host_ctrl->rpcs, RUN_COMMAND_DEF_TIMEOUT, "%s", cmd.ptr);
 }
 
 static te_bool

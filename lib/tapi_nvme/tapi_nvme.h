@@ -190,7 +190,156 @@ extern te_errno tapi_nvme_initiator_connect_opts(
  */
 extern te_errno tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl);
 
+/**
+ * Call 'nvme list' on the initiator side.
+ *
+ * @param host_ctrl     handle of host_ctrl
+ *
+ * @return TE error code
+ */
 extern te_errno tapi_nvme_initiator_list(tapi_nvme_host_ctrl *host_ctrl);
+
+/**
+ * Send NVMe Identify Controller
+ *
+ * nvme id-ctrl /dev/nvme0n1
+ *
+ * @param host_ctrl     handle of host_ctrl
+ *
+ * @return TE error code
+ */
+extern te_errno tapi_nvme_initiator_id_ctrl(tapi_nvme_host_ctrl *host_ctrl);
+
+/**
+ * Send NVMe Identify Namespace
+ *
+ * nvme id-ns /dev/nvme0n1
+ *
+ * @param host_ctrl     handle of host_ctrl
+ *
+ * @return TE error code
+ */
+extern te_errno tapi_nvme_initiator_id_ns(tapi_nvme_host_ctrl *host_ctrl);
+
+/**
+ * Retrieve the namespace ID of opened block device
+ *
+ * nvme get-ns-id /dev/nvme0n1
+ *
+ * @param host_ctrl     handle of host ctrl on initiator side
+ *
+ * @return TE error code
+ */
+extern te_errno tapi_nvme_initiator_get_id_ns(tapi_nvme_host_ctrl *host_ctrl);
+
+/**
+ * Reads and shows the defined NVMe controller registers
+ *
+ * nvme show-regs /dev/nvme0n1
+ *
+ * @param host_ctrl     handle of host ctrl on initiator side
+ *
+ * @return TE error code
+ */
+extern te_errno tapi_nvme_initiator_show_regs(tapi_nvme_host_ctrl *host_ctrl);
+
+/**
+ * Retrieve FW Log, show it
+ *
+ * nvme fw-log /dev/nvme0n1
+ *
+ * @param host_ctrl     handle of host ctrl on initiator side
+ *
+ * @return TE error code
+ */
+extern te_errno tapi_nvme_initiator_fw_log(tapi_nvme_host_ctrl *host_ctrl);
+
+/**
+ * Retrieve SMART Log, show it
+ *
+ * nvme smart-log /dev/nvme0n1
+ *
+ * @param host_ctrl     handle of host ctrl on initiator side
+ *
+ * @return TE error code
+ */
+extern te_errno tapi_nvme_initiator_smart_log(tapi_nvme_host_ctrl *host_ctrl);
+
+/**
+ * Retrieve Error Log, show it
+ *
+ * nvme error-log /dev/nvme0n1
+ *
+ * @param host_ctrl     handle of host ctrl on initiator side
+ *
+ * @return TE error code
+ */
+extern te_errno tapi_nvme_initiator_error_log(tapi_nvme_host_ctrl *host_ctrl);
+
+/** Supported nvme feature */
+typedef enum tapi_nvme_feature {
+    TAPI_NVME_FEAT_ARBITRATION      = 0x01,
+    TAPI_NVME_FEAT_POWER_MGMT       = 0x02,
+    TAPI_NVME_FEAT_LBA_RANGE        = 0x03,
+    TAPI_NVME_FEAT_TEMP_THRESH      = 0x04,
+    TAPI_NVME_FEAT_ERR_RECOVERY     = 0x05,
+    TAPI_NVME_FEAT_VOLATILE_WC      = 0x06,
+    TAPI_NVME_FEAT_NUM_QUEUES       = 0x07,
+    TAPI_NVME_FEAT_IRQ_COALESCE     = 0x08,
+    TAPI_NVME_FEAT_IRQ_CONFIG       = 0x09,
+    TAPI_NVME_FEAT_WRITE_ATOMIC     = 0x0a,
+    TAPI_NVME_FEAT_ASYNC_EVENT      = 0x0b,
+    TAPI_NVME_FEAT_AUTO_PST         = 0x0c,
+    TAPI_NVME_FEAT_HOST_MEM_BUF     = 0x0d,
+    TAPI_NVME_FEAT_TIMESTAMP        = 0x0e,
+    TAPI_NVME_FEAT_KATO             = 0x0f,
+    TAPI_NVME_FEAT_HCTM             = 0x10,
+    TAPI_NVME_FEAT_NOPSC            = 0x11,
+    TAPI_NVME_FEAT_RRL              = 0x12,
+    TAPI_NVME_FEAT_PLM_CONFIG       = 0x13,
+    TAPI_NVME_FEAT_PLM_WINDOW       = 0x14,
+    TAPI_NVME_FEAT_HOST_BEHAVIOR    = 0x16,
+    TAPI_NVME_FEAT_SW_PROGRESS      = 0x80,
+    TAPI_NVME_FEAT_HOST_ID          = 0x81,
+    TAPI_NVME_FEAT_RESV_MASK        = 0x82,
+    TAPI_NVME_FEAT_RESV_PERSIST     = 0x83,
+    TAPI_NVME_FEAT_WRITE_PROTECT    = 0x84,
+} tapi_nvme_feature;
+
+/**
+ * Get feature and show the resulting value
+ *
+ * nvme get-feature /dev/nvme0n1
+ *
+ * @param host_ctrl     handle of host ctrl on initiator side
+ *
+ * @return TE error code
+ */
+extern te_errno tapi_nvme_initiator_get_feature(tapi_nvme_host_ctrl *host_ctrl,
+                                                int feature);
+
+/**
+ * Submit flush command
+ *
+ * nvme flush /dev/nvme0n1 [-n <namespace>]
+ *
+ * @param host_ctrl     handle of host ctrl on initiator side
+ * @param namespace     NULL (all) or namespace name
+ *
+ * @return TE error code
+ */
+extern te_errno tapi_nvme_initiator_flush(tapi_nvme_host_ctrl *host_ctrl,
+                                          const char *namespace);
+
+/**
+ * Submit nvme discover command
+ *
+ * @param host_ctrl     handle of host ctrl on initiator side
+ *
+ * @return TE error code
+ */
+extern te_errno tapi_nvme_initiator_discover_from(
+    tapi_nvme_host_ctrl *host_ctrl);
 
 static inline void tapi_nvme_initiator_init(tapi_nvme_host_ctrl *host_ctrl)
 {
