@@ -42,6 +42,12 @@ typedef struct opts_t {
     unsigned int timeout;
 } opts_t;
 
+#define OPTS_DEFAULTS (opts_t) {    \
+    .str_stdout = NULL,             \
+    .str_stderr = NULL,             \
+    .timeout    = 0                 \
+}
+
 static int
 run_command_generic(rcf_rpc_server *rpcs, opts_t opts, const char *command)
 {
@@ -59,7 +65,7 @@ run_command_generic(rcf_rpc_server *rpcs, opts_t opts, const char *command)
         TEST_FAIL("Cannot run command: %s", command);
 
     RPC_AWAIT_IUT_ERROR(rpcs);
-    rpcs->timeout = opts.timeout >= 0 ? opts.timeout: TE_SEC2MS(1);
+    rpcs->timeout = opts.timeout == 0 ? TE_SEC2MS(1): opts.timeout;
     pid = rpc_waitpid(rpcs, pid, &status, 0);
 
     if (pid == -1)
@@ -702,7 +708,7 @@ tapi_nvme_target_format(tapi_nvme_target *target)
     assert(target->rpcs);
     assert(target->device);
 
-    run_command(target->rpcs, (opts_t){},
+    run_command(target->rpcs, OPTS_DEFAULTS,
                 "nvme format --ses=%d --namespace-id=%d %s",
                 0, 1, target->device);
 
