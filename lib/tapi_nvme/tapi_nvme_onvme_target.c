@@ -137,6 +137,28 @@ tapi_nvme_onvme_target_setup(tapi_nvme_target *target)
     return 0;
 }
 
+typedef enum bind_nvme_type {
+    BIND_NVME_KERNEL,
+    BIND_NVME_USER,
+} bind_nvme_type;
+
+static te_errno
+bind_nvme(tapi_nvme_target *target, bind_nvme_type btype)
+{
+    tarpc_pid_t pid;
+    static const char *btype_str[] = {
+        [BIND_NVME_KERNEL] = "kernel",
+        [BIND_NVME_USER] = "user",
+    };
+
+    assert(btype >= 0 && btype < TE_ARRAY_LEN(btype_str));
+
+    pid = rpc_te_shell_cmd(target->rpcs, "bind-nvme.sh %s", -1,
+                           NULL, NULL, NULL, btype_str[btype]);
+
+    return pid == -1 ? TE_EFAIL : 0;
+}
+
 /* See description in tapi_nvme_onvme_target.h */
 void
 tapi_nvme_onvme_target_cleanup(tapi_nvme_target *target)
@@ -154,6 +176,8 @@ tapi_nvme_onvme_target_cleanup(tapi_nvme_target *target)
         ERROR("Cannot kill proccess with pid=%d on %s, rc=%r", proc->pid,
               target->rpcs->ta, RPC_ERRNO(target->rpcs));
     }
+
+    (void)bind_nvme(target, BIND_NVME_KERNEL);
 
     old_opts = proc->opts;
     *proc = ONVME_PROC_INIT;
