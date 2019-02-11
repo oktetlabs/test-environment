@@ -361,6 +361,7 @@ get_report(const json_t *jrpt, tapi_perf_report_kind kind,
 
         jint = json_array_get(jend, i);
         jsums = json_object_get(jint, "sums");
+        jsum = NULL;
         if (json_is_array(jsums))
         {
             size_t j;
