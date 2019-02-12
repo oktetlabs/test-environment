@@ -1306,7 +1306,8 @@ ext_hdr_end:
      * Set the last "next-header" field (either the field of IPv6 header or
      * the field of the last extension header) to upper layer protocol
      */
-    if ((rc = asn_read_int32(prev_hdr, &val, "next-header")) != 0)
+    if (proto_data->upper_protocol != IPPROTO_NONE &&
+        asn_read_int32(prev_hdr, &val, "next-header") != 0)
     {
         IF_RC_RETURN(asn_write_int32(prev_hdr, proto_data->upper_protocol,
                                      "next-header.#plain"));
