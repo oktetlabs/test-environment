@@ -901,8 +901,7 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
 
     if ((rc = rcf_net_engine_receive(ta->conn, buf, &len, &tmp)) != 0)
     {
-        ERROR("Cannot read TA PID from the TA %s (error %x)", ta->ta_name,
-              rc);
+        ERROR("Cannot read TA PID from the TA %s (error %r)", ta->ta_name, rc);
         TA_LIST_F_ERROR;
         return TE_RC(TE_RCF, TE_EINVAL);
     }
