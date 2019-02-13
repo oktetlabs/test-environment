@@ -1,7 +1,7 @@
 /** @file
  *
  * @page rcfunix_conflib RCF Library for UNIX Test Agents
- * 
+ *
  * @brief Test Environment: RCF library for UNIX Test Agents
  *
  * @ref te_engine_rcf_comm_lib_unix should be used to control and interact
@@ -12,7 +12,7 @@
  * @ref te_engine_rcf as logging entity name and Test Agent name as
  * logging user name and to @path{ta.<name>} file in run directory.
  *
- * 
+ *
  * Apart from @attr_name{rcflib} attribute for each Test Agent
  * @ref te_engine_rcf configuration file contains @attr_name{confstr}
  * attribute that specifies configuration string passed to communication
@@ -124,7 +124,7 @@
 /*
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  *
@@ -246,7 +246,7 @@ typedef struct unix_ta {
     unsigned int   *flags;      /**< Flags */
     pid_t           start_pid;  /**< PID of the SSH process which
                                      started the agent */
-    
+
     struct rcf_net_connection  *conn;   /**< Connection handle */
 } unix_ta;
 
@@ -258,7 +258,7 @@ typedef struct unix_ta {
  *
  * @return Status code.
  * @return TE_ETIMEDOUT    Command timed out
- */   
+ */
 static te_errno
 system_with_timeout(const char *cmd, int timeout)
 {
@@ -276,18 +276,18 @@ system_with_timeout(const char *cmd, int timeout)
         ERROR("te_shell_cmd() for the command <%s> failed", cmd);
         return rc;
     }
-    
+
     while (1)
     {
         struct timeval tv;
         fd_set set;
-        
+
         tv.tv_sec = timeout;
         tv.tv_usec = 0;
-        
+
         FD_ZERO(&set);
         FD_SET(fd, &set);
-        
+
         if (select(fd + 1, &set, 0, 0, &tv) == 0)
         {
             ERROR("Command <%s> timed out", cmd);
@@ -302,7 +302,7 @@ system_with_timeout(const char *cmd, int timeout)
                 RING("Process of the shell command killed by SIGKILL");
             return TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT);
         }
-        
+
         if (read(fd, buf, sizeof(buf)) == 0)
         {
             if (close(fd) != 0)
@@ -334,7 +334,7 @@ system_with_timeout(const char *cmd, int timeout)
             return 0;
         }
     }
-    
+
     /* Unreachable */
 }
 
@@ -393,7 +393,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     } while (FALSE)
 
 
-    if (ta_name == NULL || ta_type == NULL || 
+    if (ta_name == NULL || ta_type == NULL ||
         strlen(ta_name) >= RCF_MAX_NAME ||
         strlen(ta_type) >= RCF_MAX_NAME ||
         conf_str == NULL || flags == NULL)
@@ -428,7 +428,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     ta->flags = flags;
     tmp = getenv("LOGNAME");
-    sprintf(ta->postfix, "_%s_%u_%u", 
+    sprintf(ta->postfix, "_%s_%u_%u",
             (tmp == NULL) ? "" : tmp, (unsigned int)time(NULL), seqno++);
 
     VERB("Unique postfix '%s'", ta->postfix);
@@ -468,14 +468,14 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         char *user = token + strlen("user=");
 
         if (strlen(user) > 0)
-            sprintf(ta->user, "%s@", user); 
+            sprintf(ta->user, "%s@", user);
 
         GET_TOKEN;
     }
     if (token != NULL && strcmp_start("key=", token) == 0)
     {
         char *key = token + strlen("key=");
-        
+
         if (strlen(key) > 0)
             sprintf(ta->key, "-i %s %s", key,
                     " -o UserKnownHostsFile=/dev/null "
@@ -486,27 +486,27 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     if (token != NULL && strcmp_start("copy_timeout=", token) == 0)
     {
         char *value = token + strlen("copy_timeout=");
-        
+
         if (strlen(value) > 0)
         {
             ta->copy_timeout = strtoul(value, &tmp, 0);
             if (tmp == value || *tmp != 0)
                 goto bad_confstr;
         }
-        
+
         GET_TOKEN;
     }
     if (token != NULL && strcmp_start("kill_timeout=", token) == 0)
     {
         char *value = token + strlen("kill_timeout=");
-        
+
         if (strlen(value) > 0)
         {
             ta->kill_timeout = strtoul(value, &tmp, 0);
             if (tmp == value || *tmp != 0)
                 goto bad_confstr;
         }
-        
+
         GET_TOKEN;
     }
     if (token != NULL && strcmp(token, "notcopy") == 0)
@@ -548,14 +548,14 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     shell = token;
 
-    /* 
-     * It's assumed that the rest of configuration string should be 
+    /*
+     * It's assumed that the rest of configuration string should be
      * passed to agent.
      */
 
     if (ta->is_local)
     {
-        /* 
+        /*
          * DO NOT suppress command output in order to have a chance
          * to see possible problems.
          */
@@ -574,7 +574,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         }
         else
         {
-            /* 
+            /*
              * Preserves modification times, access times, and modes.
              * Disables the progress meter.
              * Be quite, but DO NOT suppress command output in order
@@ -597,7 +597,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         free(conf_str_dup);
         return rc;
     }
-    
+
     /* Clean up command string */
     cmd[0] = '\0';
 
@@ -616,7 +616,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     else if (ta->su)
         strcat(cmd, "su -c '");
 
-    /* 
+    /*
      * Add directory with agent to the PATH
      */
     sprintf(cmd + strlen(cmd), "PATH=\\$PATH:/tmp/%s%s ", ta_type,
@@ -629,7 +629,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         strcat(cmd, " ");
     }
 
-    /* 
+    /*
      * Test Agent is always running in background, therefore it's
      * necessary to redirect its stdout and stderr to a file.
      */
@@ -651,14 +651,14 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     {
         sprintf(cmd + strlen(cmd), "\"");
     }
-    sprintf(cmd + strlen(cmd), " 2>&1 | te_tee %s %s 10 >ta.%s ", 
+    sprintf(cmd + strlen(cmd), " 2>&1 | te_tee %s %s 10 >ta.%s ",
             TE_LGR_ENTITY, ta->ta_name, ta->ta_name);
 
     free(conf_str_dup);
 
     RING("Command to start TA: %s", cmd);
     if (!(*flags & TA_FAKE) &&
-        ((ta->start_pid = 
+        ((ta->start_pid =
           te_shell_cmd_inline(cmd, -1, NULL, NULL, NULL)) <= 0))
     {
         rc = TE_OS_RC(TE_RCF_UNIX, errno);
@@ -708,17 +708,17 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
     unix_ta    *ta = (unix_ta *)handle;
     te_errno    rc;
     char        cmd[RCFUNIX_SHELL_CMD_MAX];
-    
+
     (void)parms;
 
     if (ta == NULL)
         return TE_EINVAL;
 
     RING("Finish method is called for TA %s", ta->ta_name);
-    
+
     if (*(ta->flags) & TA_FAKE)
         return 0;
-    
+
     if ((ta->pid > 0) &&
         ((*(ta->flags) & TA_DEAD) ||
          strcmp_start("solaris2", ta->ta_type) == 0))
@@ -738,7 +738,7 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
             rc = system_with_timeout(cmd, ta->kill_timeout);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
-    
+
             sprintf(cmd,
                     RCFUNIX_SSH "%s %s%s \"%skill -9 %d\" " RCFUNIX_REDIRECT,
                     ta->key, ta->user, ta->host, ta->sudo ? "sudo -n" : "",
@@ -751,7 +751,7 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
         if (ta->is_local)
             sprintf(cmd,
                     "%skillall /tmp/%s%s/ta " RCFUNIX_REDIRECT,
-                    ta->sudo ? "sudo " : "" , ta->ta_type, 
+                    ta->sudo ? "sudo " : "" , ta->ta_type,
                     ta->postfix);
         else
             sprintf(cmd,
@@ -786,7 +786,7 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
     rc = system_with_timeout(cmd, ta->kill_timeout);
     if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
         return rc;
-    
+
     if (ta->start_pid > 0)
     {
         killpg(getpgid(ta->start_pid), SIGTERM);
@@ -798,7 +798,7 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
 
 /**
  * Close all interactions with TA.
- * 
+ *
  * @param handle        TA handle
  * @param select_set    FD_SET to be updated with the TA connection file
  *                      descriptor (for Test Agents supporting listening
@@ -885,14 +885,14 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
 
     VERB("Connecting to TA '%s'", ta->ta_name);
 
-    while ((rc = rcf_net_engine_connect(host, ta->port, &ta->conn, 
+    while ((rc = rcf_net_engine_connect(host, ta->port, &ta->conn,
                                         select_set)) != 0 && (--tries) > 0)
     {
-       WARN("Connecting to TA failed (%r) - connect again after delay\n", 
+       WARN("Connecting to TA failed (%r) - connect again after delay\n",
             rc);
        te_sleep(5);
     }
-    
+
     if (rc != 0)
     {
         TA_LIST_F_ERROR;
@@ -901,20 +901,20 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
 
     if ((rc = rcf_net_engine_receive(ta->conn, buf, &len, &tmp)) != 0)
     {
-        ERROR("Cannot read TA PID from the TA %s (error %x)", ta->ta_name, 
+        ERROR("Cannot read TA PID from the TA %s (error %x)", ta->ta_name,
               rc);
         TA_LIST_F_ERROR;
         return TE_RC(TE_RCF, TE_EINVAL);
     }
-    
-    if (strncmp(buf, "PID ", 4) != 0 || 
+
+    if (strncmp(buf, "PID ", 4) != 0 ||
         (ta->pid = strtol(buf + 4, &tmp, 10), *tmp != 0))
     {
         ta->pid = 0;
         TA_LIST_F_ERROR;
         return TE_RC(TE_RCF, TE_EINVAL);
     }
-    
+
     INFO("PID of TA %s is %d", ta->ta_name, ta->pid);
     if (ta_list_f != NULL)
     {
@@ -922,7 +922,7 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
         fclose(ta_list_f);
         ta_list_f = NULL;
     }
-    
+
     return 0;
 }
 
