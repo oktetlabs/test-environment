@@ -93,6 +93,12 @@ if get_option('large-logs')
     c_args += ['-D_LARGEFILE64_SOURCE', '-D_FILE_OFFSET_BITS=64']
 endif
 
+# RGT uses many GNU extensions:
+#  - obstack_printf
+#  - program_invocation_short_name
+# Force it here to be able to build the rest w/o _GNU_SOURCE.
+c_args += '-D_GNU_SOURCE'
+
 # Check libxml members
 
 _xmlSAXHandler_members = [

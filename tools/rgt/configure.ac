@@ -243,6 +243,12 @@ if test "x$with_large_logs" = "xyes"; then
                     -D_FILE_OFFSET_BITS=64"
 fi
 
+# RGT uses many GNU extensions:
+#  - obstack_printf
+#  - program_invocation_short_name
+# Force it here to be able to build the rest w/o _GNU_SOURCE.
+EXTRA_CPPFLAGS="${EXTRA_CPPFLAGS} -D_GNU_SOURCE"
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_TYPE_OFF_T
