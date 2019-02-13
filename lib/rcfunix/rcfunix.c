@@ -575,8 +575,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     if (ta->is_local)
     {
-        ta->cmd_prefix[0] = '\0';
-        ta->cmd_suffix = "";
+        sprintf(ta->cmd_prefix, "(");
+        ta->cmd_suffix = ")";
     }
     else
     {
