@@ -23,6 +23,7 @@
  * <pre class="fragment">
  * [[@attr_val{user}@]@attr_val{<IP_address_or_hostname>}]:@attr_val{<port>}
  * [:@attr_name{key}=@attr_val{<ssh_private_key_file>}]
+ * [:@attr_name{ssh_port}=@attr_val{<port>}]
  * [:@attr_name{copy_timeout}=@attr_val{<timeout>}]
  * [:@attr_name{kill_timeout}=@attr_val{<timeout>}][:@attr_val{notcopy}]
  * [:@attr_val{sudo|su}][:@attr_val{<shell>}][:@attr_val{<parameters>}]
@@ -42,6 +43,8 @@
  *   which address and port to connect);
  * - @attr_name{key} - specifies file from which the identity (private key)
  *   for RSA or DSA authentication is read;
+ * - @attr_name{ssh_port} - specifies TCP port to be used by SSH. May be
+ *   unspecified or 0 to use standard SSH port 22;
  * - @attr_name{copy_timeout} - specifies the maximum time duration
  *   (in seconds) that is allowed for image copy operation. If image copy
  *   takes more than this timeout, Test Agent start-up procedure fails;
@@ -185,7 +188,7 @@
  * Configuration string for UNIX TA should have format:
  *
  * [[user@]<IP address or hostname>]:<port>
- *     [:key=<ssh private key file>][:copy_timeout=<timeout>]
+ *     [:key=<ssh private key file>][:ssh_port=<port>][:copy_timeout=<timeout>]
  *     [:kill_timeout=<timeout>][:notcopy][:sudo|su][:<shell>][:parameters]
  *
  * If host is not specified, the Test Agent is started on the local
@@ -234,6 +237,7 @@ typedef struct unix_ta {
     char    key[RCF_MAX_PATH];      /**< Private ssh key file */
     char    user[RCF_MAX_PATH];     /**< User to be used (with @) */
 
+    unsigned int    ssh_port;       /**< 0 or special SSH port to use */
     unsigned int    copy_timeout;   /**< TA image copy timeout */
     unsigned int    kill_timeout;   /**< TA kill timeout */
 
@@ -487,6 +491,18 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
         GET_TOKEN;
     }
+    if (token != NULL && strcmp_start("ssh_port=", token) == 0)
+    {
+        char *value = token + strlen("ssh_port=");
+
+        if (strlen(value) > 0)
+        {
+            ta->ssh_port = strtoul(value, &tmp, 0);
+            if (tmp == value || *tmp != 0 || ta->ssh_port > UINT16_MAX)
+                goto bad_confstr;
+        }
+        GET_TOKEN;
+    }
     if (token != NULL && strcmp_start("copy_timeout=", token) == 0)
     {
         char *value = token + strlen("copy_timeout=");
@@ -564,9 +580,15 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     }
     else
     {
-        sprintf(ta->cmd_prefix, RCFUNIX_SSH "%s %s %s%s \"",
-                *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
-                ta->key, ta->user, ta->host);
+        char ssh_port_str[6] = "";
+
+        if (ta->ssh_port != 0)
+            snprintf(ssh_port_str, sizeof(ssh_port_str), "%u", ta->ssh_port);
+
+        sprintf(ta->cmd_prefix, RCFUNIX_SSH "%s %s %s %s %s%s \"",
+                *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "", ta->key,
+                ta->ssh_port != 0 ? "-p" : "", ssh_port_str,
+                ta->user, ta->host);
         ta->cmd_suffix = "\"";
     }
 
@@ -586,6 +608,11 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     }
     else
     {
+        char ssh_port_str[6] = "";
+
+        if (ta->ssh_port != 0)
+            snprintf(ssh_port_str, sizeof(ssh_port_str), "%u", ta->ssh_port);
+
         /*
          * Preserves modification times, access times, and modes.
          * Disables the progress meter.
@@ -593,7 +620,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
          * to have to see possible problems.
          */
         sprintf(cmd,
-                "scp -rBpq %s %s %s %s%s:/tmp/%s%s >/dev/null 2>&1",
+                "scp -rBpq %s %s %s %s %s %s%s:/tmp/%s%s >/dev/null 2>&1",
+                ta->ssh_port != 0 ? "-P" : "", ssh_port_str,
                 *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
                 ta->key, path, ta->user, ta->host, ta_type, ta->postfix);
     }
