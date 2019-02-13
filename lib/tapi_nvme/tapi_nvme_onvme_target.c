@@ -14,6 +14,7 @@
 #include "te_alloc.h"
 #include "te_log_stack.h"
 #include "te_sockaddr.h"
+#include "tapi_rpc_unistd.h"
 #include "tapi_rpc_stdio.h"
 #include "tapi_rpc_signal.h"
 #include "tapi_rpc_misc.h"
