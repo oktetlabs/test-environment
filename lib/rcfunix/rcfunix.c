@@ -619,8 +619,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     /*
      * Add directory with agent to the PATH
      */
-    sprintf(cmd + strlen(cmd), "PATH=\\$PATH:/tmp/%s%s ", ta_type,
-            ta->postfix);
+    sprintf(cmd + strlen(cmd), "PATH=%s$PATH:/tmp/%s%s ",
+            ta->is_local ? "" : "\\", ta_type, ta->postfix);
 
     if ((shell != NULL) && (strlen(shell) > 0))
     {
