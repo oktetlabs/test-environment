@@ -30,7 +30,8 @@ extern "C" {
 }
 
 /** Default kernel target initialization */
-#define TAPI_NVME_KENR_TARGET (tapi_nvme_target) {  \
+#define TAPI_NVME_KERN_TARGET (tapi_nvme_target) {  \
+    .list = LIST_HEAD_INITIALIZER(list),            \
     .rpcs = NULL,                                   \
     .transport = TAPI_NVME_TRANSPORT_TCP,           \
     .subnqn = "te_testing",                         \
@@ -48,7 +49,7 @@ extern "C" {
  *
  * @return Status code
  */
-extern te_errno tapi_nvme_kern_target_init(struct tapi_nvme_target *target);
+extern te_errno tapi_nvme_kern_target_init(struct tapi_nvme_target *target, void *opts);
 
 /**
  * Setup kernel version implementation of target

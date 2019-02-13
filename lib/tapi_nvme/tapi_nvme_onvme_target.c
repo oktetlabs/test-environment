@@ -34,6 +34,8 @@ typedef struct onvme_proc {
     .stderr_fd = -1,                                \
     .opts = TAPI_NVME_ONVME_TARGET_OPTS_DEFAULTS,   \
 }
+#define ONVME_PROC_SIGINT_TIMEOUT     (5)
+#define ONVME_PROC_INIT_TIMEOUT       (15)
 
 /* See description in tapi_nvme_onvme_target.h */
 te_errno
@@ -74,6 +76,9 @@ onvme_output_print(tapi_nvme_target *target)
 
     RING("stdout:\n%s\n"
          "stdout:\n%s\n", out.ptr, err.ptr);
+
+    te_string_free(&out);
+    te_string_free(&err);
 }
 
 static te_errno
@@ -126,7 +131,7 @@ tapi_nvme_onvme_target_setup(tapi_nvme_target *target)
         return TE_ENOTCONN;
     }
 
-    te_motivated_sleep(5, "Give target a while to start");
+    te_motivated_sleep(ONVME_PROC_INIT_TIMEOUT, "Give target a while to start");
 
     proc->pid = pid;
     proc->stdout_fd = stdout_fd;
@@ -137,10 +142,33 @@ tapi_nvme_onvme_target_setup(tapi_nvme_target *target)
     return 0;
 }
 
+typedef enum bind_nvme_type {
+    BIND_NVME_KERNEL,
+    BIND_NVME_USER,
+} bind_nvme_type;
+
+static te_errno
+bind_nvme(tapi_nvme_target *target, bind_nvme_type btype)
+{
+    tarpc_pid_t pid;
+    static const char *btype_str[] = {
+        [BIND_NVME_KERNEL] = "kernel",
+        [BIND_NVME_USER] = "user",
+    };
+
+    assert(btype >= 0 && btype < TE_ARRAY_LEN(btype_str));
+
+    pid = rpc_te_shell_cmd(target->rpcs, "bind-nvme.sh %s", -1,
+                           NULL, NULL, NULL, btype_str[btype]);
+
+    return pid == -1 ? TE_EFAIL : 0;
+}
+
 /* See description in tapi_nvme_onvme_target.h */
 void
 tapi_nvme_onvme_target_cleanup(tapi_nvme_target *target)
 {
+    int rc;
     onvme_proc *proc = (onvme_proc *)target->impl;
     tapi_nvme_onvme_target_opts old_opts;
 
@@ -149,11 +177,31 @@ tapi_nvme_onvme_target_cleanup(tapi_nvme_target *target)
 
     te_log_stack_push("ONVMe target cleanup start");
 
-    if (rpc_ta_kill_death(target->rpcs, proc->pid) == -1)
+    RPC_AWAIT_IUT_ERROR(target->rpcs);
+    rc = rpc_ta_kill_and_wait(target->rpcs, proc->pid, RPC_SIGINT,
+                              ONVME_PROC_SIGINT_TIMEOUT);
+
+    /* timeout of rpc_ta_kill_and_wait */
+    if (rc == -2)
+    {
+        RPC_AWAIT_IUT_ERROR(target->rpcs);
+        rc = rpc_ta_kill_death(target->rpcs, proc->pid);
+    }
+
+    onvme_output_print(target);
+
+    if (proc->stderr_fd >= 0)
+        rpc_close(target->rpcs, proc->stderr_fd);
+    if (proc->stdout_fd >= 0)
+        rpc_close(target->rpcs, proc->stdout_fd);
+
+    if (rc == -1)
     {
         ERROR("Cannot kill proccess with pid=%d on %s, rc=%r", proc->pid,
               target->rpcs->ta, RPC_ERRNO(target->rpcs));
     }
+
+    (void)bind_nvme(target, BIND_NVME_KERNEL);
 
     old_opts = proc->opts;
     *proc = ONVME_PROC_INIT;

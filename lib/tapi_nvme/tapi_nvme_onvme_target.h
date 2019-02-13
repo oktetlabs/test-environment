@@ -43,6 +43,7 @@ typedef struct tapi_nvme_onvme_target_opts {
 
 /** Default ONVMe target initialization */
 #define TAPI_NVME_ONVME_TARGET (tapi_nvme_target) {  \
+    .list = LIST_HEAD_INITIALIZER(list),             \
     .rpcs = NULL,                                    \
     .transport = TAPI_NVME_TRANSPORT_TCP,            \
     .subnqn = "te_testing",                          \
