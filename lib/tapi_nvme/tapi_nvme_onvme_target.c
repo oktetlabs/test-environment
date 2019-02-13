@@ -186,6 +186,7 @@ tapi_nvme_onvme_target_cleanup(tapi_nvme_target *target)
     {
         RPC_AWAIT_IUT_ERROR(target->rpcs);
         rc = rpc_ta_kill_death(target->rpcs, proc->pid);
+        (void)bind_nvme(target, BIND_NVME_KERNEL);
     }
 
     onvme_output_print(target);
@@ -200,8 +201,6 @@ tapi_nvme_onvme_target_cleanup(tapi_nvme_target *target)
         ERROR("Cannot kill proccess with pid=%d on %s, rc=%r", proc->pid,
               target->rpcs->ta, RPC_ERRNO(target->rpcs));
     }
-
-    (void)bind_nvme(target, BIND_NVME_KERNEL);
 
     old_opts = proc->opts;
     *proc = ONVME_PROC_INIT;
