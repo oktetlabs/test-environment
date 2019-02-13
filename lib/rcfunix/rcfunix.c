@@ -242,6 +242,10 @@ typedef struct unix_ta {
     te_bool notcopy;    /**< Do not copy TA image to remote host */
     te_bool is_local;   /**< TA is started on the local PC */
 
+    char        cmd_prefix[RCFUNIX_SHELL_CMD_MAX];  /**< Command prefix */
+    const char *cmd_suffix;                         /**< Command suffix
+                                                         before redirection */
+
     uint32_t        pid;        /**< TA pid */
     unsigned int   *flags;      /**< Flags */
     pid_t           start_pid;  /**< PID of the SSH process which
@@ -555,36 +559,43 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     if (ta->is_local)
     {
-        /*
-         * DO NOT suppress command output in order to have a chance
-         * to see possible problems.
-         */
-        if (ta->notcopy)
-            sprintf(cmd, "ln -s %s /tmp/%s%s", path, ta_type, ta->postfix);
-        else
-            sprintf(cmd, "cp -a %s /tmp/%s%s", path, ta_type, ta->postfix);
+        ta->cmd_prefix[0] = '\0';
+        ta->cmd_suffix = "";
     }
     else
     {
-        if (ta->notcopy)
-        {
-            sprintf(cmd, RCFUNIX_SSH "%s %s %s%s ln -s %s /tmp/%s%s",
-                    *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
-                    ta->key, ta->user, ta->host, path, ta_type, ta->postfix);
-        }
-        else
-        {
-            /*
-             * Preserves modification times, access times, and modes.
-             * Disables the progress meter.
-             * Be quite, but DO NOT suppress command output in order
-             * to have to see possible problems.
-             */
-            sprintf(cmd,
-                    "scp -rBpq %s %s %s %s%s:/tmp/%s%s >/dev/null 2>&1",
-                    *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
-                    ta->key, path, ta->user, ta->host, ta_type, ta->postfix);
-        }
+        sprintf(ta->cmd_prefix, RCFUNIX_SSH "%s %s %s%s \"",
+                *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
+                ta->key, ta->user, ta->host);
+        ta->cmd_suffix = "\"";
+    }
+
+    /*
+     * DO NOT suppress command output in order to have a chance
+     * to see possible problems.
+     */
+    if (ta->notcopy)
+    {
+        sprintf(cmd, "%sln -s %s /tmp/%s%s%s", ta->cmd_prefix,
+                path, ta_type, ta->postfix, ta->cmd_suffix);
+    }
+    else if (ta->is_local)
+    {
+        sprintf(cmd, "%scp -a %s /tmp/%s%s%s", ta->cmd_prefix,
+                path, ta_type, ta->postfix, ta->cmd_suffix);
+    }
+    else
+    {
+        /*
+         * Preserves modification times, access times, and modes.
+         * Disables the progress meter.
+         * Be quite, but DO NOT suppress command output in order
+         * to have to see possible problems.
+         */
+        sprintf(cmd,
+                "scp -rBpq %s %s %s %s%s:/tmp/%s%s >/dev/null 2>&1",
+                *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
+                ta->key, path, ta->user, ta->host, ta_type, ta->postfix);
     }
 
     RING("CMD to copy: %s", cmd);
@@ -601,11 +612,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     /* Clean up command string */
     cmd[0] = '\0';
 
-    if (!ta->is_local)
-    {
-        sprintf(cmd, RCFUNIX_SSH "%s %s%s \"", ta->key, ta->user,
-                ta->host);
-    }
+    sprintf(cmd, "%s", ta->cmd_prefix);
+
 #if defined RCF_UNIX_SOLARIS
     strcat(cmd, "sudo /usr/bin/coreadm -g /tmp/core.%n-%p-%t -e global; ");
 #else
@@ -647,12 +655,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     strcat(cmd, "; sudo sysctl -w kernel.core_pattern=\"core\" ");
 #endif
     strcat(cmd, "; sudo mv /tmp/core* /var/tmp ");
-    if (!ta->is_local)
-    {
-        sprintf(cmd + strlen(cmd), "\"");
-    }
-    sprintf(cmd + strlen(cmd), " 2>&1 | te_tee %s %s 10 >ta.%s ",
-            TE_LGR_ENTITY, ta->ta_name, ta->ta_name);
+    sprintf(cmd + strlen(cmd), "%s 2>&1 | te_tee %s %s 10 >ta.%s ",
+            ta->cmd_suffix, TE_LGR_ENTITY, ta->ta_name, ta->ta_name);
 
     free(conf_str_dup);
 
@@ -731,57 +735,39 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
         }
         else
         {
-            sprintf(cmd,
-                    RCFUNIX_SSH "%s %s%s \"%skill %d\" " RCFUNIX_REDIRECT,
-                    ta->key, ta->user, ta->host, ta->sudo ? "sudo -n" : "",
-                    ta->pid);
+            sprintf(cmd, "%s%skill %d%s " RCFUNIX_REDIRECT,
+                    ta->cmd_prefix, ta->sudo ? "sudo -n" : "", ta->pid,
+                    ta->cmd_suffix);
             rc = system_with_timeout(cmd, ta->kill_timeout);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
 
-            sprintf(cmd,
-                    RCFUNIX_SSH "%s %s%s \"%skill -9 %d\" " RCFUNIX_REDIRECT,
-                    ta->key, ta->user, ta->host, ta->sudo ? "sudo -n" : "",
-                    ta->pid);
+            sprintf(cmd, "%s%skill -9 %d%s " RCFUNIX_REDIRECT,
+                    ta->cmd_prefix, ta->sudo ? "sudo -n" : "", ta->pid,
+                    ta->cmd_suffix);
             rc = system_with_timeout(cmd, ta->kill_timeout);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
         }
 
-        if (ta->is_local)
-            sprintf(cmd,
-                    "%skillall /tmp/%s%s/ta " RCFUNIX_REDIRECT,
-                    ta->sudo ? "sudo " : "" , ta->ta_type,
-                    ta->postfix);
-        else
-            sprintf(cmd,
-                    RCFUNIX_SSH "%s %s%s \"%skillall /tmp/%s%s/ta\" "
-                    RCFUNIX_REDIRECT,
-                    ta->key, ta->user, ta->host, ta->sudo ? "sudo -n" : "",
-                    ta->ta_type, ta->postfix);
+        sprintf(cmd,
+                "%s%skillall /tmp/%s%s/ta%s " RCFUNIX_REDIRECT,
+                ta->cmd_prefix, ta->sudo ? "sudo " : "" , ta->ta_type,
+                ta->postfix, ta->cmd_suffix);
         rc = system_with_timeout(cmd, ta->kill_timeout);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
 
-        if (ta->is_local)
-            sprintf(cmd,
-                    "%skillall -9 /tmp/%s%s/ta " RCFUNIX_REDIRECT,
-                    ta->sudo ? "sudo -n " : "" , ta->ta_type, ta->postfix);
-        else
-            sprintf(cmd,
-                    RCFUNIX_SSH "%s %s%s \"%skillall -9 /tmp/%s%s/ta\" "
-                    RCFUNIX_REDIRECT, ta->key, ta->user, ta->host,
-                    ta->sudo ? "sudo -n " : "" , ta->ta_type, ta->postfix);
+        sprintf(cmd, "%s%skillall -9 /tmp/%s%s/ta%s " RCFUNIX_REDIRECT,
+                ta->cmd_prefix, ta->sudo ? "sudo -n " : "" ,
+                ta->ta_type, ta->postfix, ta->cmd_suffix);
         rc = system_with_timeout(cmd, ta->kill_timeout);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
     }
 
-    if (ta->is_local)
-        sprintf(cmd, "rm -rf /tmp/%s%s", ta->ta_type, ta->postfix);
-    else
-        sprintf(cmd, RCFUNIX_SSH "%s %s%s \"rm -rf /tmp/%s%s\"",
-                ta->key, ta->user, ta->host, ta->ta_type, ta->postfix);
+    sprintf(cmd, "%srm -rf /tmp/%s%s%s",
+            ta->cmd_prefix, ta->ta_type, ta->postfix, ta->cmd_suffix);
     RING("CMD to remove: %s", cmd);
     rc = system_with_timeout(cmd, ta->kill_timeout);
     if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
