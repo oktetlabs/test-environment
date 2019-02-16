@@ -335,8 +335,8 @@ tester_term_out_done(unsigned int flags,
 {
     char                    ids[20] = "";
     char                    tin_str[16] = "";
-    char                    msg_out[256];
-    char                    msg_in[256];
+    char                    msg_out[512];
+    char                    msg_in[512];
     char                   *msg;
     colored_verdict_type    cvt;
 
