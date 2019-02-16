@@ -269,6 +269,7 @@ tester_term_out_start(unsigned int flags, run_item_type type,
     char ids[20] = "";
     char tin_str[16] = "";
     char msg[256];
+    int actual_msg_len;
 
     if ((~flags & TESTER_VERBOSE) ||
         ((~flags & TESTER_VVERB) && (type == RUN_ITEM_SESSION)))
@@ -294,11 +295,14 @@ tester_term_out_start(unsigned int flags, run_item_type type,
         }
     }
 
-    if (snprintf(msg, sizeof(msg), "Starting%s %s %s%s",
-                 ids, run_item_type_to_string(type), name, tin_str) >=
+    if (((actual_msg_len =
+          snprintf(msg, sizeof(msg), "Starting%s %s %s%s",
+                   ids, run_item_type_to_string(type), name, tin_str))) >=
             (int)sizeof(msg))
     {
-        ERROR("Too short buffer for output message");
+        ERROR("%s: Too short buffer for output message: msg_len=%d "
+              "and available len %d",
+              __FUNCTION__, actual_msg_len, (int)sizeof(msg));
         /* Continue */
     }
 
@@ -338,6 +342,7 @@ tester_term_out_done(unsigned int flags,
     char                    msg_out[512];
     char                    msg_in[512];
     char                   *msg;
+    int                     actual_msg_len;
     colored_verdict_type    cvt;
 
     assert(status < TESTER_TEST_STATUS_MAX);
@@ -399,11 +404,14 @@ tester_term_out_done(unsigned int flags,
     }
 
     /* Prepare message to be output in another line */
-    if (snprintf(msg_out, sizeof(msg_out), "Done%s %s %s%s ",
-                 ids, run_item_type_to_string(type), name, tin_str) >=
+    if ((actual_msg_len =
+         snprintf(msg_out, sizeof(msg_out), "Done%s %s %s%s ",
+                  ids, run_item_type_to_string(type), name, tin_str)) >=
             (int)sizeof(msg_out))
     {
-        ERROR("Too short buffer for output message");
+        ERROR("%s: Too short buffer for output message: msg_len=%d "
+              "and available len %d",
+              __FUNCTION__, actual_msg_len, (int)sizeof(msg));
         /* Continue */
     }
     /* We have a chance to output in the same line, prepare offset string */
@@ -415,7 +423,9 @@ tester_term_out_done(unsigned int flags,
             n_spaces = 1;
         if ((size_t)n_spaces >= sizeof(msg_in))
         {
-            ERROR("Too short buffer for output message");
+            ERROR("Too short buffer for output message: "
+                  "n_spaces = %d, msg_in=%u", n_spaces,
+                  (unsigned)sizeof(msg_in));
             n_spaces = sizeof(msg_in) - 1;
         }
         memset(msg_in, ' ', n_spaces);
