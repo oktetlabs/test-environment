@@ -39,6 +39,7 @@
 #include "te_param.h"
 #include "te_ethernet.h"
 #include "te_units.h"
+#include "te_str.h"
 #include "logger_api.h"
 
 #include "tapi_test.h"
@@ -811,6 +812,67 @@ test_get_string_param(int argc, char **argv, const char *name)
     return value;
 }
 
+static int
+test_get_rand_int(const char *name, const char *str_val)
+{
+    te_errno rc = 0;
+    long min = 0;
+    long max = 0;
+    long value = 0;
+    const char *ptr = str_val;
+    char *end_ptr = NULL;
+
+    ptr++;  /* Move ptr from opening bracket to left edge */
+    rc = te_strtol_raw(ptr, &end_ptr, 0, &min);
+    if (rc != 0)
+    {
+        TEST_FAIL("Wrong range format of '%s' parameter: %s "
+                  "(invalid left edge)", name, str_val);
+    }
+    if (*end_ptr != ',')
+    {
+        TEST_FAIL("Wrong range format of '%s' parameter: %s "
+                  "(invalid separator)", name, str_val);
+    }
+    ptr = end_ptr + 1;  /* Move ptr from left edge to right edge */
+    rc = te_strtol_raw(ptr, &end_ptr, 0, &max);
+    if (rc != 0)
+    {
+         TEST_FAIL("Wrong range format of '%s' parameter: %s "
+                  "(invalid right edge)", name, str_val);
+    }
+    if (*end_ptr != ']' || *(end_ptr + 1) != '\0')
+    {
+         TEST_FAIL("Wrong range format of '%s' parameter: %s "
+                  "(invalid closing symbol)", name, str_val);
+    }
+    if (min < INT_MIN || min > INT_MAX)
+    {
+        TEST_FAIL("The left range of '%s' parameter is too "
+                  "large or too small: %s", name, str_val);
+    }
+    if (max < INT_MIN || max > INT_MAX)
+    {
+        TEST_FAIL("The right range of '%s' parameter is too "
+                  "large or too small: %s", name, str_val);
+    }
+    if (min > max)
+    {
+        TEST_FAIL("Wrong range declaration of '%s' parameter: %s "
+                  "(left edge is greater than right)", name, str_val);
+    }
+    if (max - min > RAND_MAX)
+    {
+        TEST_FAIL("Not supported range size of '%s' parameter: %s",
+                    name, str_val);
+    }
+    value = rand_range(min, max);
+    RING("Generated value of '%s' parameter in range [%ld,%ld] is %ld",
+            name, min, max, value);
+
+    return (int)value;
+}
+
 /* See description in tapi_test.h */
 int
 test_get_int_param(int argc, char **argv, const char *name)
@@ -824,16 +886,23 @@ test_get_int_param(int argc, char **argv, const char *name)
     {
         TEST_FAIL("Str value for name=%s was not found", name);
     }
-    value = strtol(str_val, &end_ptr, 0);
-    if (end_ptr == str_val || *end_ptr != '\0')
+    if (*str_val == '[')
     {
-        TEST_FAIL("The value of '%s' parameter should be "
-                  "an integer, but it is %s", name, str_val);
+        value = test_get_rand_int(name, str_val);
     }
-    if (value < INT_MIN || value > INT_MAX)
+    else
     {
-        TEST_FAIL("The value of '%s' parameter is too "
+        value = strtol(str_val, &end_ptr, 0);
+        if (end_ptr == str_val || *end_ptr != '\0')
+        {
+            TEST_FAIL("The value of '%s' parameter should be "
+                  "an integer, but it is %s", name, str_val);
+        }
+        if (value < INT_MIN || value > INT_MAX)
+        {
+            TEST_FAIL("The value of '%s' parameter is too "
                   "large or too small: %s", name, str_val);
+        }
     }
 
     return (int)value;
