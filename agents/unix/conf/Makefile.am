@@ -2,7 +2,7 @@
 ACLOCAL_AMFLAGS = -I $(TE_M4)
 
 AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include $(TE_CPPFLAGS) \
-              -I$(srcdir)/.. -I$(srcdir)/base -I$(srcdir)/util \
+              -I$(srcdir)/.. -I$(srcdir)/base -I$(srcdir)/util -I$(srcdir)/vm \
               -I$(srcdir)/route -I$(srcdir)/rule -I$(srcdir)/daemons -I. \
               @EXTRA_CPPFLAGS@ $(TE_CPPFLAGS_VAR)
 
@@ -24,7 +24,8 @@ noinst_HEADERS = \
 	route/conf_route.h \
 	rule/conf_rule.h \
 	util/conf_dlpi.h \
-	util/te_cmd_monitor.h
+	util/te_cmd_monitor.h \
+	vm/conf_vm.h
         
 noinst_LIBRARIES=libconf.a
 
@@ -50,7 +51,8 @@ libconf_a_SOURCES = \
 	util/conf_getmsg.c \
 	util/conf_dlpi.c \
 	util/te_cmd_monitor.c \
-	util/conf_cmd_monitor.c
+	util/conf_cmd_monitor.c \
+	vm/conf_vm.c
 
 CLEANFILES=
 

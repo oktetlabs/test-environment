@@ -181,6 +181,7 @@ typedef struct pam_message const pam_message_t;
 #include "conf_dlpi.h"
 #include "conf_route.h"
 #include "conf_rule.h"
+#include "conf_vm.h"
 #include "conf_common.h"
 #include "te_shell_cmd.h"
 
@@ -1139,6 +1140,9 @@ rcf_ch_conf_init()
             goto fail;
 
         if (ta_unix_conf_rule_init() != 0)
+            goto fail;
+
+        if (ta_unix_conf_vm_init() != 0)
             goto fail;
 
 #ifdef RCF_RPC

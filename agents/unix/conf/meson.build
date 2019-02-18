@@ -1,4 +1,4 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2019 OKTET Labs. All rights reserved.
 
 install_data([ 'daemons/ldap/slapd_run.sh', 'daemons/ldap/slapd.conf' ],
              install_dir: tadir)
@@ -7,6 +7,7 @@ includes += include_directories('base')
 includes += include_directories('route')
 includes += include_directories('rule')
 includes += include_directories('util')
+includes += include_directories('vm')
 
 sources += files(
     'base/conf.c',
@@ -31,6 +32,7 @@ sources += files(
     'util/conf_dlpi.c',
     'util/conf_getmsg.c',
     'util/te_cmd_monitor.c',
+    'vm/conf_vm.c',
 )
 
 conf = get_option('agent-unix-conf')
