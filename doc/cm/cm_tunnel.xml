@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!--
+        This configuration model describes tunnel interfaces control.
+
+        Copyright (C) 2019 OKTET Labs.
+
+        Author: Andrew Rybchenko E-mail: Andrew.Rybchenko@oktetlabs.ru
+    -->
+
+
+    <!-- Tunnel controls root.
+         Name: none -->
+    <object oid="/agent/tunnel" access="read_only" type="none"/>
+
+    <!-- VXLAN interface.
+         Name: interface name
+         Value: true (created) or false -->
+    <object oid="/agent/tunnel/vxlan" access="read_create" type="boolean">
+      <depends oid="/agent/rsrc"/>
+    </object>
+
+    <!-- VXLAN network identifier to use.
+         Name: none
+         Value: 0 .. 16777215 -->
+    <object oid="/agent/tunnel/vxlan/vni" access="read_write" type="integer"/>
+
+    <!-- Unicast or multicast destination IP address to use in outgoing packets
+         when the destination link layer address is not known in the VXLAN device
+         forwarding database.
+         Name: none
+         Value: remote IPv4/IPv6 address -->
+    <object oid="/agent/tunnel/vxlan/remote" access="read_write" type="address"/>
+
+    <!-- Source IP address to use in outgoing packets.
+         Name: none
+         Value: local IPv4/IPv6 address -->
+    <object oid="/agent/tunnel/vxlan/local" access="read_write" type="address"/>
+
+    <!-- UDP destination port used to communicate to the remove endpoint.
+         Name: none
+         Value: 0 .. 65535, default 4789 -->
+    <object oid="/agent/tunnel/vxlan/port" access="read_write" type="integer"/>
+
+    <!-- The physical device to use for tunnel endpoint communication.
+         Name: none
+         Value: empty or physical device OID -->
+    <object oid="/agent/tunnel/vxlan/dev" access="read_write" type="string"/>
+
+</backup>
