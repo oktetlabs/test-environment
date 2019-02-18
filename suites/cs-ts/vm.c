@@ -42,15 +42,13 @@ main(int argc, char *argv[])
     TEST_START;
 
     TEST_STEP("Add a virtual machine");
-    CHECK_RC(cfg_add_instance_fmt(NULL, CVT_NONE, NULL,
-                                  "/agent:%s/vm:%s", ta, vm_name));
+    CHECK_RC(tapi_cfg_vm_add(ta, vm_name, NULL, FALSE));
 
     CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/vm:%s", ta, vm_name));
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/vm:%s", ta, vm_name));
 
     TEST_STEP("Start the virtual machine");
-    CHECK_RC(cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
-                                  "/agent:%s/vm:%s/status:", ta, vm_name));
+    CHECK_RC(tapi_cfg_vm_start(ta, vm_name));
 
     TEST_STEP("Start a test agent on the virtual machine");
     CHECK_RC(cfg_get_instance_fmt(&val_type, &ssh_port,
@@ -73,7 +71,7 @@ main(int argc, char *argv[])
     CHECK_RC(rcf_del_ta(ta_vm));
 
     TEST_STEP("Delete the virtual machine");
-    CHECK_RC(cfg_del_instance_fmt(FALSE, "/agent:%s/vm:%s", ta, vm_name));
+    CHECK_RC(tapi_cfg_vm_del(ta, vm_name));
 
     TEST_SUCCESS;
 

@@ -22,6 +22,7 @@ include_HEADERS = \
 	tapi_cfg_arl.h \
 	tapi_cfg_dhcp.h \
 	tapi_cfg_pppoe.h \
+	tapi_cfg_vm.h \
 	tapi_cfg_vtund.h \
 	tapi_cfg_ip6.h \
 	tapi_cfg_stats.h \
@@ -73,6 +74,7 @@ libtapi_la_SOURCES = \
 	tapi_cfg_arl.c \
 	tapi_cfg_dhcp.c \
 	tapi_cfg_pppoe.c \
+	tapi_cfg_vm.c \
 	tapi_cfg_vtund.c \
 	tapi_cfg_ip6.c \
 	tapi_cfg_stats.c \
