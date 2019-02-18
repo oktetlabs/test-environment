@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!--
+        This configuration model describes Ethernet bridges control.
+
+        Copyright (C) 2019 OKTET Labs.
+
+        Author: Andrew Rybchenko E-mail: Andrew.Rybchenko@oktetlabs.ru
+    -->
+
+    <!-- Bridge instance.
+         More providers may be supported in the future (e.g. OpenVSwitch).
+         Name: interface name
+         Value: provider (empty for default) -->
+    <object oid="/agent/bridge" access="read_create" type="string">
+      <depends oid="/agent/rsrc"/>
+    </object>
+
+    <!-- Bridge port.
+         Name: port name (just internal)
+         Value: interface OID -->
+    <object oid="/agent/bridge/port" access="read_create" type="string"/>
+
+</backup>
