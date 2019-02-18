@@ -129,6 +129,53 @@ te_string_append_va(te_string *str, const char *fmt, va_list ap)
     return 0;
 }
 
+te_errno
+te_string_append_shell_args_as_is(te_string *str, ...)
+{
+    va_list args;
+    const char *arg;
+    te_errno rc = 0;
+
+    va_start(args, str);
+    while ((arg = va_arg(args, const char *)) != NULL)
+    {
+        if (str->len != 0)
+        {
+            rc = te_string_append(str, " ");
+            if (rc != 0)
+                break;
+        }
+
+        do {
+            const char *p;
+            int len;
+
+            p = strchr(arg, '\'');
+            if (p == NULL)
+                len = strlen(arg);
+            else
+                len = p - arg;
+
+            /* Print up to ' or end of string */
+            rc = te_string_append(str, "'%.*s'", len, arg);
+            if (rc != 0)
+                break;
+            arg += len;
+
+            if (*arg == '\'')
+            {
+                rc = te_string_append(str, "\\\'");
+                if (rc != 0)
+                    break;
+                arg++;
+            }
+        } while (*arg != '\0');
+    }
+    va_end(args);
+
+    return rc;
+}
+
 char *
 te_string_fmt_va(const char *fmt,
                  va_list     ap)
