@@ -299,7 +299,7 @@ tarpc_rte_pktmbuf_pattern2str(te_log_buf *tlbp, uint8_t nb_seg_groups,
     else
     {
         for (i = 0; i < nb_seg_groups; ++i)
-            te_log_buf_append(tlbp, "%hhu x %hu b  ",
+            te_log_buf_append(tlbp, "%hu x %hu b  ",
                               seg_groups[i].num, seg_groups[i].len);
     }
 
@@ -686,7 +686,7 @@ rpc_rte_pktmbuf_chain(rcf_rpc_server *rpcs,
     RETVAL_ZERO_INT(rte_pktmbuf_chain, out.retval);
 }
 
-uint8_t
+uint16_t
 rpc_rte_pktmbuf_get_nb_segs(rcf_rpc_server *rpcs,
                             rpc_rte_mbuf_p m)
 {
@@ -702,7 +702,7 @@ rpc_rte_pktmbuf_get_nb_segs(rcf_rpc_server *rpcs,
 
     CHECK_RETVAL_VAR(rte_pktmbuf_get_nb_segs, out.retval, out.retval == 0, 0);
 
-    TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_nb_segs, RPC_PTR_FMT, "%hhu",
+    TAPI_RPC_LOG(rpcs, rte_pktmbuf_get_nb_segs, RPC_PTR_FMT, "%hu",
                  RPC_PTR_VAL(in.m), out.retval);
 
     TAPI_RPC_OUT(rte_pktmbuf_get_nb_segs, out.retval == 0);

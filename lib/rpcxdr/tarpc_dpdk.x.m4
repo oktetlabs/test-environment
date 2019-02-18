@@ -415,7 +415,7 @@ typedef struct tarpc_mbuf_in tarpc_rte_pktmbuf_get_nb_segs_in;
 
 struct tarpc_rte_pktmbuf_get_nb_segs_out {
     struct tarpc_out_arg    common;
-    uint8_t                 retval;
+    uint16_t                retval;
 };
 
 /** rte_pktmbuf_get_port() */
@@ -619,7 +619,7 @@ typedef struct tarpc_void_out tarpc_rte_pktmbuf_refcnt_update_out;
 
 struct tarpc_pktmbuf_seg_group {
     uint16_t len;  /**< Segment length */
-    uint8_t  num;  /**< Number of segments */
+    uint16_t num;  /**< Number of segments */
 };
 
 /** rte_pktmbuf_redist() */

@@ -1235,7 +1235,7 @@ rte_pktmbuf_redist(tarpc_rte_pktmbuf_redist_in  *in,
 
     for (group = in->seg_groups.seg_groups_val; nb_groups_avail-- > 0; ++group)
     {
-        uint8_t group_nb_segs_avail = group->num;
+        uint16_t group_nb_segs_avail = group->num;
 
         while (group_nb_segs_avail > 0)
         {
@@ -1295,7 +1295,7 @@ rte_pktmbuf_redist(tarpc_rte_pktmbuf_redist_in  *in,
             if (dst == NULL)
             {
                 ERROR("%s(): Failed to append data room of %" PRIu16 " bytes;"
-                      " nb_segs = %" PRIu8 "; current data_len = %" PRIu16,
+                      " nb_segs = %" PRIu16 "; current data_len = %" PRIu16,
                       __FUNCTION__, data_len_to_copy, mn->nb_segs,
                       mn_seg->data_len);
                 err = TE_RC(TE_RPCS, TE_ENOMEM);

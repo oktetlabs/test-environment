@@ -212,8 +212,8 @@ extern int rpc_rte_pktmbuf_chain(rcf_rpc_server *rpcs,
  *
  * @return The number of segments in the mbuf chain
  */
-extern uint8_t rpc_rte_pktmbuf_get_nb_segs(rcf_rpc_server *rpcs,
-                                           rpc_rte_mbuf_p m);
+extern uint16_t rpc_rte_pktmbuf_get_nb_segs(rcf_rpc_server *rpcs,
+                                            rpc_rte_mbuf_p m);
 
 /**
  * @b rte_pktmbuf_get_port() RPC
