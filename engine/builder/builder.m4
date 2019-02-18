@@ -358,6 +358,10 @@ dnl                        for the current platform
 dnl           - TE_CPPFLAGS: gcc preprocess flags to use TE-provided headers
 dnl           - TE_LDFLAGS: linker flags to use TE libraries
 dnl           - EXT_SOURCES: absolute path to the sources
+dnl           - TE_AGENT_PREFIX: agent's installation prefix for the current
+dnl                              platform - the directory that will be
+dnl                              exported as agent's working directory at TE
+dnl                              runtime
 dnl       list of executables to copy to TA agent directory
 dnl       list of environment variables to export to the build script
 dnl       (this only matters for remote builds)

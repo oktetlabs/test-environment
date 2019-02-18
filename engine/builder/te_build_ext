@@ -131,6 +131,9 @@ done
                       export TE_CPPFLAGS=\"$tecppflags\" ;
                       export TE_LDFLAGS=\"$telibflags\" ;
                       export EXT_SOURCES=\"$srcdir\" ;
+                      if test -n \"$tatype\" ; then
+                          export TE_AGENT_PREFIX=\"$prefix/agents/$tatype\" ;
+                      fi ;
                       $exports
                       $build"
 ) || exit 1
