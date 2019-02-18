@@ -39,5 +39,9 @@
       </arg>
     </run>
 
+    <run>
+      <script name="vm"/>
+    </run>
+
   </session>
 </package>

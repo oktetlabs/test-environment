@@ -42,6 +42,7 @@ endforeach
 tests = [
     'vlans',
     'phy',
+    'vm',
 ]
 
 package_dir = 'cs-ts'
