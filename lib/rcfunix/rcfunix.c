@@ -899,25 +899,29 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
 
     VERB("Connecting to TA '%s'", ta->ta_name);
 
-    while ((rc = rcf_net_engine_connect(host, ta->port, &ta->conn,
-                                        select_set)) != 0 && (--tries) > 0)
-    {
-       WARN("Connecting to TA failed (%r) - connect again after delay\n",
-            rc);
-       te_sleep(5);
-    }
+    do {
+        rc = rcf_net_engine_connect(host, ta->port, &ta->conn, select_set);
+        if (rc == 0)
+        {
+            rc = rcf_net_engine_receive(ta->conn, buf, &len, &tmp);
+            if (rc == 0)
+                break;
 
+            (void)rcf_net_engine_close(&ta->conn, select_set);
+            if (rc != TE_OS_RC(TE_COMM, EPIPE))
+            {
+                ERROR("Cannot read TA PID from the TA %s (error %r)",
+                      ta->ta_name, rc);
+                break;
+            }
+        }
+        WARN("Connecting to TA failed (%r) - connect again after delay\n", rc);
+        te_sleep(5);
+    } while (rc != 0 && --tries > 0);
     if (rc != 0)
     {
         TA_LIST_F_ERROR;
         return rc;
-    }
-
-    if ((rc = rcf_net_engine_receive(ta->conn, buf, &len, &tmp)) != 0)
-    {
-        ERROR("Cannot read TA PID from the TA %s (error %r)", ta->ta_name, rc);
-        TA_LIST_F_ERROR;
-        return TE_RC(TE_RCF, TE_EINVAL);
     }
 
     if (strncmp(buf, "PID ", 4) != 0 ||
