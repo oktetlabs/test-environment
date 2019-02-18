@@ -56,7 +56,7 @@ main(int argc, char *argv[])
     CHECK_RC(cfg_get_instance_fmt(&val_type, &rcf_port,
                                   "/agent:%s/vm:%s/rcf_port:", ta, vm_name));
 
-    SLEEP(30);
+    SLEEP(2);
 
     confstr = te_string_fmt("%s:%d:user=root:key=%s:ssh_port=%u:",
                             "127.0.0.1", rcf_port, key, ssh_port);
