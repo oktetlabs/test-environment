@@ -14,6 +14,8 @@
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 
 #include "te_errno.h"
@@ -21,7 +23,10 @@
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_alloc.h"
+#include "te_string.h"
+#include "te_shell_cmd.h"
 #include "rcf_pch.h"
+#include "agentlib.h"
 #include "conf_vm.h"
 
 #if __linux__
@@ -32,6 +37,8 @@ struct vm_entry {
     uint16_t                host_ssh_port;
     uint16_t                guest_ssh_port;
     uint16_t                rcf_port;
+    te_string               cmd;
+    pid_t                   pid;
 };
 
 
@@ -50,22 +57,89 @@ vm_alloc_tcp_port(void)
 static te_bool
 vm_is_running(struct vm_entry *vm)
 {
-    UNUSED(vm);
-    return FALSE;
+    return (vm->pid == -1) ? FALSE : (ta_waitpid(vm->pid, NULL, WNOHANG) == 0);
 }
 
 static te_errno
 vm_start(struct vm_entry *vm)
 {
-    UNUSED(vm);
-    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+    in_addr_t local_ip = htonl(INADDR_LOOPBACK);
+    char local_ip_str[INET_ADDRSTRLEN];
+    te_string name_str = TE_STRING_INIT;
+    te_string net_mgmt_str = TE_STRING_INIT;
+    te_errno rc;
+
+    if (inet_ntop(AF_INET, &local_ip, local_ip_str, sizeof(local_ip_str)) == NULL)
+    {
+        ERROR("Cannot make local IP address string");
+        rc = TE_RC(TE_TA_UNIX, TE_EFAULT);
+        goto exit;
+    }
+
+    rc = te_string_append(&name_str, "guest=%s", vm->name);
+    if (rc != 0)
+    {
+        ERROR("Cannot compose VM name parameter");
+        goto exit;
+    }
+
+    rc = te_string_append(&net_mgmt_str,
+             "user,id=mgmt,restrict=on,hostfwd=tcp:%s:%hu-:%hu,"
+             "hostfwd=tcp:%s:%hu-:%hu",
+             local_ip_str, vm->host_ssh_port, vm->guest_ssh_port,
+             local_ip_str, vm->rcf_port, vm->rcf_port);
+    if (rc != 0)
+    {
+        ERROR("Cannot compose management network config");
+        goto exit;
+    }
+
+    te_string_free(&vm->cmd);
+    rc = te_string_append_shell_args_as_is(&vm->cmd,
+             "qemu-system-x86_64",
+             "-name", name_str.ptr,
+             "-no-user-config",
+             "-nodefaults",
+             "-nographic",
+             "-machine", "pc-i440fx-2.8,usb=off,vmport=off,dump-guest-core=off",
+             "-drive", "file=/srv/virtual/testvm.qcow2,snapshot=on",
+             "-netdev", net_mgmt_str.ptr,
+             "-device", "virtio-net-pci,netdev=mgmt,romfile=,bus=pci.0,addr=0x3",
+             NULL);
+    if (rc != 0)
+    {
+        ERROR("Cannot compose VM start command line");
+        goto exit;
+    }
+
+    INFO("VM %s command-line: %s", vm->name, vm->cmd.ptr);
+
+    vm->pid = te_shell_cmd(vm->cmd.ptr, -1, NULL, NULL, NULL);
+    if (vm->pid == -1)
+    {
+        ERROR("Cannot start VM: %s", vm->cmd.ptr);
+        rc = TE_RC(TE_TA_UNIX, TE_EFAULT);
+        goto exit;
+    }
+
+
+exit:
+    te_string_free(&name_str);
+    te_string_free(&net_mgmt_str);
+    return rc;
 }
 
 static te_errno
 vm_stop(struct vm_entry *vm)
 {
-    UNUSED(vm);
-    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+    te_errno rc;
+
+    if (ta_kill_death(vm->pid) == 0)
+        rc = 0;
+    else
+        rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return rc;
 }
 
 
@@ -155,6 +229,8 @@ vm_add(unsigned int gid, const char *oid, const char *value,
     vm->guest_ssh_port = guest_ssh_port;
     vm->rcf_port = vm_alloc_tcp_port();
 
+    vm->pid = -1;
+
     SLIST_INSERT_HEAD(&vms, vm, links);
 
     return 0;
@@ -177,6 +253,10 @@ vm_del(unsigned int gid, const char *oid,
 
     SLIST_REMOVE(&vms, vm, vm_entry, links);
 
+    if (vm_is_running(vm))
+        (void)vm_stop(vm);
+
+    te_string_free(&vm->cmd);
     free(vm->name);
     free(vm);
 
