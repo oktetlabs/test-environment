@@ -812,18 +812,16 @@ test_get_string_param(int argc, char **argv, const char *name)
     return value;
 }
 
-static int
-test_get_rand_int(const char *name, const char *str_val)
+static void
+test_parse_range(const char *name, const char *str_val, long value_min,
+                 long value_max, long *min, long *max)
 {
     te_errno rc = 0;
-    long min = 0;
-    long max = 0;
-    long value = 0;
     const char *ptr = str_val;
     char *end_ptr = NULL;
 
     ptr++;  /* Move ptr from opening bracket to left edge */
-    rc = te_strtol_raw(ptr, &end_ptr, 0, &min);
+    rc = te_strtol_raw(ptr, &end_ptr, 0, min);
     if (rc != 0)
     {
         TEST_FAIL("Wrong range format of '%s' parameter: %s "
@@ -835,7 +833,7 @@ test_get_rand_int(const char *name, const char *str_val)
                   "(invalid separator)", name, str_val);
     }
     ptr = end_ptr + 1;  /* Move ptr from left edge to right edge */
-    rc = te_strtol_raw(ptr, &end_ptr, 0, &max);
+    rc = te_strtol_raw(ptr, &end_ptr, 0, max);
     if (rc != 0)
     {
          TEST_FAIL("Wrong range format of '%s' parameter: %s "
@@ -846,31 +844,41 @@ test_get_rand_int(const char *name, const char *str_val)
          TEST_FAIL("Wrong range format of '%s' parameter: %s "
                   "(invalid closing symbol)", name, str_val);
     }
-    if (min < INT_MIN || min > INT_MAX)
+    if (*min < value_min || *min > value_max)
     {
         TEST_FAIL("The left range of '%s' parameter is too "
                   "large or too small: %s", name, str_val);
     }
-    if (max < INT_MIN || max > INT_MAX)
+    if (*max < value_min || *max > value_max)
     {
         TEST_FAIL("The right range of '%s' parameter is too "
                   "large or too small: %s", name, str_val);
     }
-    if (min > max)
+    if (*min > *max)
     {
         TEST_FAIL("Wrong range declaration of '%s' parameter: %s "
                   "(left edge is greater than right)", name, str_val);
     }
-    if (max - min > RAND_MAX)
+    if (*max - *min > RAND_MAX)
     {
         TEST_FAIL("Not supported range size of '%s' parameter: %s",
                     name, str_val);
     }
-    value = rand_range(min, max);
-    RING("Generated value of '%s' parameter in range [%ld,%ld] is %ld",
-            name, min, max, value);
+}
 
-    return (int)value;
+static int
+test_get_rand_int(const char *name, const char *str_val)
+{
+    long min = 0;
+    long max = 0;
+    int value = 0;
+
+    test_parse_range(name, str_val, INT_MIN, INT_MAX, &min, &max);
+    value = (int)rand_range(min, max);
+    RING("Generated int value of '%s' parameter in range [%ld,%ld] is %d",
+         name, min, max, value);
+
+    return value;
 }
 
 /* See description in tapi_test.h */
@@ -932,6 +940,22 @@ test_get_test_id(int argc, char **argv)
     return value;
 }
 
+static unsigned int
+test_get_rand_uint(const char *name, const char *str_val)
+{
+    long min = 0;
+    long max = 0;
+    unsigned int value = 0;
+
+    /* Right range edge greater than INT_MAX is not supported */
+    test_parse_range(name, str_val, 0, INT_MAX, &min, &max);
+    value = (unsigned int)rand_range(min, max);
+    RING("Generated unsigned int value of '%s' parameter in range"
+         "[%ld,%ld] is %u", name, min, max, value);
+
+    return value;
+}
+
 /* See description in tapi_test.h */
 unsigned int
 test_get_uint_param(int argc, char **argv, const char *name)
@@ -943,15 +967,22 @@ test_get_uint_param(int argc, char **argv, const char *name)
     str_val = test_get_param(argc, argv, name);
     CHECK_NOT_NULL(str_val);
 
-    value = strtoul(str_val, &end_ptr, 0);
-    if ((end_ptr == str_val) || (*end_ptr != '\0'))
-        TEST_FAIL("Failed to convert '%s' to a number", name);
+    if (*str_val == '[')
+    {
+        value = test_get_rand_uint(name, str_val);
+    }
+    else
+    {
+        value = strtoul(str_val, &end_ptr, 0);
+        if ((end_ptr == str_val) || (*end_ptr != '\0'))
+            TEST_FAIL("Failed to convert '%s' to a number", name);
 
-    if (value > UINT_MAX) {
-        TEST_FAIL("'%s' parameter value is greater"
-                  " than %u and cannot be stored in"
-                  " an 'unsigned int' variable",
-                  name, UINT_MAX);
+        if (value > UINT_MAX) {
+            TEST_FAIL("'%s' parameter value is greater"
+                      " than %u and cannot be stored in"
+                      " an 'unsigned int' variable",
+                      name, UINT_MAX);
+        }
     }
 
     return (unsigned int)value;
