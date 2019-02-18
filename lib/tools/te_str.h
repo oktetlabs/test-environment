@@ -141,6 +141,20 @@ extern te_errno te_strtoui(const char   *str,
                            unsigned int *value);
 
 /**
+ * Convert string to long int. Following characters are
+ * allowed.
+ *
+ * @param input        String to convert
+ * @param [out]endptr  Pointer to the end of parsed int
+ * @param base         Base to be used
+ * @param [out]result  Storage for result
+ *
+ * @return 0 or error
+ */
+extern te_errno te_strtol_raw(const char *input, char **endptr, int base,
+			      long int *result);
+
+/**
  * Convert string to long int. Should be used to avoid
  * creating extra vars for 'end' parameter in the code.
  *

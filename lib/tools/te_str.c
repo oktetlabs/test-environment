@@ -194,10 +194,10 @@ te_strtoui(const char   *str,
     return 0;
 }
 
+/* See description in te_str.h */
 te_errno
-te_strtol(const char *str, int base, long int *result)
+te_strtol_raw(const char *str, char **endptr,  int base, long int *result)
 {
-    char     *endptr = NULL;
     te_errno  rc = 0;
     int       saved_errno = errno;
     int       new_errno = 0;
@@ -209,7 +209,8 @@ te_strtol(const char *str, int base, long int *result)
     }
 
     errno = 0;
-    *result = strtol(str, &endptr, base);
+    *endptr = NULL;
+    *result = strtol(str, endptr, base);
     new_errno = errno;
     errno = saved_errno;
 
@@ -221,7 +222,26 @@ te_strtol(const char *str, int base, long int *result)
         return rc;
     }
 
-    if (endptr == NULL || *endptr != '\0' || endptr == str)
+    if (*endptr == NULL || *endptr == str)
+    {
+        ERROR("%s(): failed to parse '%s'", __FUNCTION__, str);
+        return TE_EINVAL;
+    }
+
+    return 0;
+}
+
+te_errno
+te_strtol(const char *str, int base, long int *result)
+{
+    char      *endptr;
+    te_errno  rc;
+
+    rc = te_strtol_raw(str, &endptr, base, result);
+    if (!rc)
+        return rc;
+
+    if (*endptr != '\0')
     {
         ERROR("%s(): failed to parse '%s'", __FUNCTION__, str);
         return TE_EINVAL;
