@@ -7,12 +7,77 @@
  *
  * Generic high level test API to control a network throughput test tool.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
- *
- * 
- *
+ * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
  *
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
+ *
+ * @section tapi_performance_example Example of usage
+ *
+ * Lets assume we need to send @attr_val{UDP} traffic with iperf.
+ * We need to check the result throughput with the following input options:
+ * @attr_name{total bandwidth} = @attr_val{1000 Mbit/s}, @attr_name{streams} =
+ * @attr_val{5}, and @attr_name{test duration} = @attr_val{60 sec}. Server
+ * iperf should use any free port on the host, and its host address is
+ * @attr_val{192.168.1.1}.
+ *
+ * So, we have the following commands for both server and client:
+ *
+ * @cmd{iperf -s -u -p 60000}
+ *
+ * @cmd{iperf -c 192.168.1.1 -p 60000 -u -b 200 -P 5 -t 60}
+ *
+ * @code
+ * int main(int argc, char *argv[])
+ * {
+ *     tapi_perf_server    *perf_server = NULL;
+ *     tapi_perf_client    *perf_client = NULL;
+ *     tapi_perf_opts       perf_opts;
+ *     tapi_perf_report     perf_server_report;
+ *     tapi_perf_report     perf_client_report;
+ *     rcf_rpc_server      *perf_server_rpcs;
+ *     rcf_rpc_server      *perf_client_rpcs;
+ *
+ *     TEST_START;
+ *
+ *     // Set default perf options
+ *     tapi_perf_opts_init(&perf_opts);
+ *
+ *     // Set test specific perf options
+ *     perf_opts.host = "192.168.1.1";
+ *     perf_opts.protocol = IPPROTO_UDP;
+ *     perf_opts.port = tapi_get_port(perf_server_rpcs);
+ *     perf_opts.streams = 5;
+ *     perf_opts.bandwidth_bits = TE_UNITS_DEC_M2U(1000) / perf_opts.streams;
+ *     perf_opts.duration_sec = 60;
+ *     // To force server to print a report at the end of test even if it lost
+ *     // connection with client (iperf tool issue, Bug 9714)
+ *     perf_opts.interval_sec = perf_opts.duration_sec;
+ *
+ *     perf_server = tapi_perf_server_create(TAPI_PERF_IPERF, &perf_opts);
+ *     perf_client = tapi_perf_client_create(TAPI_PERF_IPERF, &perf_opts);
+ *     CHECK_RC(tapi_perf_server_start(perf_server, perf_server_rpcs));
+ *     CHECK_RC(tapi_perf_client_start(perf_client, perf_client_rpcs));
+ *     CHECK_RC(tapi_perf_client_wait(perf_client, TAPI_PERF_TIMEOUT_DEFAULT));
+ *     // Time is relative and goes differently on different hosts.
+ *     // Sometimes we need to wait for a few moments until report is ready.
+ *     VSLEEP(1, "ensure perf server has printed its report");
+ *
+ *     CHECK_RC(tapi_perf_client_get_dump_check_report(perf_client, "client",
+ *                                                     &perf_client_report));
+ *     CHECK_RC(tapi_perf_server_get_dump_check_report(perf_server, "server",
+ *                                                     &perf_server_report));
+ *
+ *     // Analyze the obtained reports
+ *     ...
+ *
+ *     TEST_SUCCESS;
+ *
+ * cleanup:
+ *     tapi_perf_client_destroy(perf_client);
+ *     tapi_perf_server_destroy(perf_server);
+ *     TEST_END;
+ * }
+ * @endcode
  */
 
 #ifndef __TAPI_PERFORMANCE_H__
