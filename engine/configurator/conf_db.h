@@ -15,6 +15,15 @@
 
 #ifndef __TE_CONF_DB_H__
 #define __TE_CONF_DB_H__
+
+#include <stdint.h>
+
+#include "te_defs.h"
+#include "logger_ten.h"
+#include "rcf_common.h"
+#include "conf_api.h"
+#include "conf_messages.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
