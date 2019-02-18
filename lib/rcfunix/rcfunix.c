@@ -212,6 +212,9 @@
 #define RCFUNIX_KILL_TIMEOUT    15
 #define RCFUNIX_COPY_TIMEOUT    30
 
+/** Maximum sleep between reconnect attempts */
+#define RCFUNIX_RECONNECT_SLEEP_MAX 5
+
 #define RCFUNIX_SHELL_CMD_MAX   2048
 
 #define RCFUNIX_WAITPID_N_MAX       100
@@ -854,6 +857,7 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
     size_t      len = 16;
     char       *host;
     int         tries = 3;
+    int         sleep_sec = 1;
 
     char                *env_retry_max;
     char                *endptr;
@@ -916,7 +920,14 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
             }
         }
         WARN("Connecting to TA failed (%r) - connect again after delay\n", rc);
-        te_sleep(5);
+        te_sleep(sleep_sec);
+
+        if (sleep_sec < RCFUNIX_RECONNECT_SLEEP_MAX)
+        {
+            sleep_sec *= 2;
+            if (sleep_sec > RCFUNIX_RECONNECT_SLEEP_MAX)
+                sleep_sec = RCFUNIX_RECONNECT_SLEEP_MAX;
+        }
     } while (rc != 0 && --tries > 0);
     if (rc != 0)
     {
