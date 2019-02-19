@@ -22,19 +22,6 @@
 
 #include "tapi_nvme_onvme_target.h"
 
-typedef struct onvme_proc {
-    tarpc_pid_t pid;
-    int stdout_fd;
-    int stderr_fd;
-    tapi_nvme_onvme_target_opts opts;
-} onvme_proc;
-
-#define ONVME_PROC_INIT (onvme_proc) {              \
-    .pid = -1,                                      \
-    .stdout_fd = -1,                                \
-    .stderr_fd = -1,                                \
-    .opts = TAPI_NVME_ONVME_TARGET_OPTS_DEFAULTS,   \
-}
 #define ONVME_PROC_SIGINT_TIMEOUT     (5)
 #define ONVME_PROC_INIT_TIMEOUT       (15)
 
@@ -42,12 +29,12 @@ typedef struct onvme_proc {
 te_errno
 tapi_nvme_onvme_target_init(struct tapi_nvme_target *target, void *opts)
 {
-    onvme_proc *proc;
+    tapi_nvme_onvme_target_proc *proc;
 
     if ((proc = TE_ALLOC(sizeof(*proc))) == NULL)
         return TE_ENOMEM;
 
-    *proc = ONVME_PROC_INIT;
+    *proc = TAPI_NVME_ONVME_TARGET_PROC_DEFAULTS;
     if (opts != NULL)
     {
         tapi_nvme_onvme_target_opts *onvme_opts = opts;
@@ -57,13 +44,13 @@ tapi_nvme_onvme_target_init(struct tapi_nvme_target *target, void *opts)
     return 0;
 }
 
-
 static void
 onvme_output_print(tapi_nvme_target *target)
 {
     te_string out = TE_STRING_INIT;
     te_string err = TE_STRING_INIT;
-    onvme_proc *proc = (onvme_proc*)target->impl;
+    tapi_nvme_onvme_target_proc *proc =
+        (tapi_nvme_onvme_target_proc*)target->impl;
     int out_fd = proc->stdout_fd;
     int err_fd = proc->stderr_fd;
 
@@ -85,7 +72,8 @@ onvme_output_print(tapi_nvme_target *target)
 static te_errno
 onvme_build_cmd(te_string *cmd, tapi_nvme_target *target)
 {
-    onvme_proc *proc = (onvme_proc*)target->impl;
+    tapi_nvme_onvme_target_proc *proc =
+        (tapi_nvme_onvme_target_proc*)target->impl;
 
     CHECK_RC(te_string_append(cmd, "onvme-target-start "));
 
@@ -111,7 +99,8 @@ tapi_nvme_onvme_target_setup(tapi_nvme_target *target)
     te_errno rc;
     tarpc_pid_t pid;
     te_string command = TE_STRING_INIT;
-    onvme_proc *proc = (onvme_proc *)target->impl;
+    tapi_nvme_onvme_target_proc *proc =
+        (tapi_nvme_onvme_target_proc *)target->impl;
     int stdout_fd, stderr_fd;
 
     if (proc == NULL)
@@ -170,7 +159,7 @@ void
 tapi_nvme_onvme_target_cleanup(tapi_nvme_target *target)
 {
     int rc;
-    onvme_proc *proc = (onvme_proc *)target->impl;
+    tapi_nvme_onvme_target_proc *proc = (tapi_nvme_onvme_target_proc *)target->impl;
     tapi_nvme_onvme_target_opts old_opts;
 
     if (proc == NULL || proc->pid == -1)
@@ -204,7 +193,7 @@ tapi_nvme_onvme_target_cleanup(tapi_nvme_target *target)
     }
 
     old_opts = proc->opts;
-    *proc = ONVME_PROC_INIT;
+    *proc = TAPI_NVME_ONVME_TARGET_PROC_DEFAULTS;
     proc->opts = old_opts;
 }
 
@@ -212,7 +201,8 @@ tapi_nvme_onvme_target_cleanup(tapi_nvme_target *target)
 void
 tapi_nvme_onvme_target_fini(tapi_nvme_target *target)
 {
-    onvme_proc *proc = (onvme_proc *)target->impl;
+    tapi_nvme_onvme_target_proc *proc =
+        (tapi_nvme_onvme_target_proc *)target->impl;
 
     if (proc == NULL)
         return;
@@ -222,4 +212,3 @@ tapi_nvme_onvme_target_fini(tapi_nvme_target *target)
 
     target->impl = NULL;
 }
-
