@@ -8,6 +8,8 @@
  * @author Nikita Somenkov <Nikita.Somenkov@oktetlabs.ru>
  */
 
+#define TE_LGR_USER "TAPI FIO"
+
 #include <math.h>
 #include "te_string.h"
 #include "rcf_rpc.h"

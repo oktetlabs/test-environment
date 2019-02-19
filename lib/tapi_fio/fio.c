@@ -8,6 +8,7 @@
  * @author Nikita Somenkov <Nikita.Somenkov@oktetlabs.ru>
  */
 
+#define TE_LGR_USER "TAPI FIO"
 
 #include "tapi_test_log.h"
 #include "tapi_test.h"
