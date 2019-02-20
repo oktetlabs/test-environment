@@ -11,11 +11,18 @@ function process(str)
         in_dox_comment = 1;
 
     if (sub(/@page/, str)) {
-        if (in_page)
+        if (in_page) {
+            if (run_found) {
+                print ""
+                printf("RUN NAME: %s\n", run_name);
+            }
             print "*/";
+        }
 
         print "/**";
         in_page = 1;
+
+        run_found = 0;
     }
 
     print str;
@@ -79,28 +86,17 @@ in_enum && /<value/ {
   next;
 }
 
-# /run name/ {
-#   in_run = 1;
+/<run name/ {
+    if (in_page && ! run_logged) {
+        run_name = $0
+        gsub(" .*<run name=\"", "", run_name);
+        gsub("\".*>", "", run_name);
+        run_found = 1;
+    }
+}
 
-#   sub(/.*<run name="/, "@defgroup ");
-#   sub(/" *>/, "-xml");
-#   print $0;
-#   print "@ingroup spec_xml";
-#   print "@{";
-#   print "@code"
-#   next;
-# }
-
-# in_run && /<\/run>/ {
-#   in_run = 0;
-#   print "@endcode";
-#   print "@}"
-#   next;
-# }
-
-# in_run {
-#   print $0;
-#   next;
-# }
+in_run && /<\/run>/ {
+    in_run = 0;
+}
 
 END { print "*/"; }
