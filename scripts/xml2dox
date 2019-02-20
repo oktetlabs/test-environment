@@ -14,7 +14,8 @@ function objective_handle(str)
         # if we were in objective - it's time to leave
         if (!match(str, /@objective/) && (match(str, /@/) || match(str, /<run/))) {
             gsub(/ [ ]+/, " ", objective);
-            printf("@objective %s\n", objective);
+            # we need another newline
+            printf("@objective %s\n\n", objective);
             in_objective = 0;
             objective = "";
         }
