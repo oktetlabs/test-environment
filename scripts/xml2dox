@@ -3,6 +3,34 @@
 # This script extracts comments from a `package.xml' file and converts them
 # to the form suitable for Doxygen processing
 
+function objective_handle(str)
+{
+    if (sub(/@objective/, str)) {
+        in_objective = 1;
+        objective = ""
+    }
+
+    if (in_objective) {
+        # if we were in objective - it's time to leave
+        if (!match(str, /@objective/) && (match(str, /@/) || match(str, /<run/))) {
+            gsub(/ [ ]+/, " ", objective);
+            printf("@objective %s\n", objective);
+            in_objective = 0;
+            objective = "";
+        }
+    }
+
+    if (in_objective) {
+        objective_line = str;
+        gsub("<!---", "", objective_line);
+        gsub("@objective ", "", objective_line);
+        gsub(" *[\n]+$", "", objective_line);
+        objective = objective " " objective_line;
+
+        next
+    }
+}
+
 function process(str)
 {
     if (sub(/-->.*/, " ", str))
@@ -25,6 +53,10 @@ function process(str)
         run_found = 0;
     }
 
+    if (in_dox_comment) {
+        objective_handle(str)
+    }
+
     print str;
 
     return;
@@ -32,21 +64,25 @@ function process(str)
 
 in_dox_comment && /^[[:space:]]*\*/ { sub(/^[[:space:]]*\*/, ""); }
 
-/<!---/ {   n = split($0, arr, /<!--- /);
-            if (in_dox_comment)
-                process(arr[1]);
-            in_dox_comment = 1;
-            for (i = 2; i <= n; i++)
-                process(arr[i]);
+/<!---/ {
+    line = $0;
+    gsub("<!--- ", "", $line);
+    process($line);
 
-            next;
-        }
+    next;
+}
 
-in_dox_comment && /-->/ {   sub(/.*-->.*/, "\n");
-                            if ($0) print;
-                            in_dox_comment = 0;
-                            next;
-                        }
+in_dox_comment {
+    objective_handle($0)
+}
+
+in_dox_comment && /-->/ {
+    sub(/.*-->.*/, "\n");
+    if ($0)
+        print;
+    in_dox_comment = 0;
+    next;
+}
 
 in_dox_comment { print $0; next }
 
