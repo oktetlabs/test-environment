@@ -45,6 +45,7 @@
 #include <assert.h>
 #endif
 
+#include "te_alloc.h"
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
@@ -2723,5 +2724,141 @@ cfg_unregister_object_str(const char *id_fmt, ...)
     pthread_mutex_unlock(&cfgl_lock);
 #endif
     return TE_RC(TE_CONF_API, ret_val);
+}
+
+static te_errno copy_subtree(const char *top_dst_oid,
+                             size_t      top_src_oid_len,
+                             cfg_handle  src_child_handle);
+
+static te_errno
+copy_subtree_children(const char *top_dst_oid,
+                      size_t      top_src_oid_len,
+                      cfg_handle  src_handle)
+{
+    cfg_handle src_child_handle;
+    te_errno   rc = 0;
+
+    for (rc = cfg_get_son(src_handle, &src_child_handle);
+         rc == 0 && src_child_handle != CFG_HANDLE_INVALID;
+         rc = cfg_get_brother(src_child_handle, &src_child_handle))
+    {
+        rc = copy_subtree(top_dst_oid, top_src_oid_len, src_child_handle);
+        if (rc != 0)
+            break;
+    }
+
+    return rc;
+}
+
+static te_errno
+copy_subtree(const char *top_dst_oid,
+             size_t      top_src_oid_len,
+             cfg_handle  src_handle)
+{
+    cfg_val_type   src_v_type = CVT_UNSPECIFIED;
+    char          *src_oid = NULL;
+    cfg_inst_val   v;
+    cfg_handle     dst_handle;
+    te_bool        v_set = FALSE;
+    te_errno       rc = 0;
+
+    rc = cfg_get_instance(src_handle, &src_v_type, &v);
+    if (rc != 0)
+        goto out;
+
+    rc = cfg_get_oid_str(src_handle, &src_oid);
+    if (rc != 0)
+        goto out;
+
+    rc = cfg_find_fmt(&dst_handle, "%s%s",
+                      top_dst_oid, src_oid + top_src_oid_len);
+
+    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+    {
+        const void *vp;
+
+        v_set = TRUE;
+
+        switch (src_v_type)
+        {
+            case CVT_INTEGER:
+                vp = (const void *)(long)v.val_int;
+                break;
+
+            case CVT_STRING:
+                vp = (const void *)v.val_str;
+                break;
+
+            case CVT_ADDRESS:
+                vp = (const void *)v.val_addr;
+                break;
+
+            default:
+                vp = NULL;
+                break;
+        }
+
+        rc = cfg_add_instance_fmt(&dst_handle, src_v_type, vp, "%s%s",
+                                  top_dst_oid, src_oid + top_src_oid_len);
+    }
+
+    if (rc != 0)
+        goto out;
+
+    if (src_v_type != CVT_NONE && !v_set)
+    {
+        rc = cfg_set_instance(dst_handle, src_v_type, v);
+        if (rc != 0)
+            goto out;
+    }
+
+    rc = copy_subtree_children(top_dst_oid, top_src_oid_len, src_handle);
+
+out:
+    if (src_v_type == CVT_STRING)
+        free(v.val_str);
+    else if (src_v_type == CVT_ADDRESS)
+        free(v.val_addr);
+
+    free(src_oid);
+
+    return rc;
+}
+
+/* See description in 'conf_api.h' */
+te_errno
+cfg_copy_subtree_fmt(const char *dst_oid,
+                     const char *src_oid_fmt,
+                     ...)
+{
+    va_list     ap;
+    char       *backup_name;
+    char        src_oid[CFG_OID_MAX];
+    size_t      src_oid_len;
+    cfg_handle  src_handle;
+    te_errno    rc = 0;
+
+    rc = cfg_create_backup(&backup_name);
+    if (rc != 0)
+        return TE_RC(TE_CONF_API, rc);
+
+    va_start(ap, src_oid_fmt);
+    vsnprintf(src_oid, sizeof(src_oid), src_oid_fmt, ap);
+    va_end(ap);
+
+    src_oid_len = strlen(src_oid);
+    assert(src_oid_len != 0);
+
+    rc = cfg_find_str(src_oid, &src_handle);
+    if (rc != 0)
+        return TE_RC(TE_CONF_API, rc);
+
+    rc = copy_subtree(dst_oid, src_oid_len, src_handle);
+    if (rc != 0)
+        (void)cfg_restore_backup(backup_name);
+
+    (void)cfg_release_backup(&backup_name);
+
+    return TE_RC(TE_CONF_API, rc);
 }
 

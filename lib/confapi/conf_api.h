@@ -846,6 +846,20 @@ extern te_errno cfg_tree_print(const char *filename,
  */
 extern void cfg_api_cleanup(void);
 
+/**
+ * Copy a subtree pointed to by its OID format string to a
+ * destination pointed to by OID of the tree to be created.
+ *
+ * @param dst_oid     Destination tree OID
+ * @param src_oid_fmt Format string of the source tree OID
+ *
+ * @return            Status code.
+ */
+extern te_errno cfg_copy_subtree_fmt(const char *dst_oid,
+                                     const char *src_oid_fmt,
+                                     ...)
+                __attribute__((format(printf, 2, 3)));
+
 /**@}*/
 
 #ifdef __cplusplus
