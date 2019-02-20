@@ -23,6 +23,10 @@ function dump() {
         gsub("@c", "", objective);
         gsub("@e", "", objective);
         gsub("@p", "", objective);
+
+        gsub("<", "&lt;", objective);
+        gsub(">", "&gt;", objective);
+
         printf("  <test name=\"%s\"%s>\n", test_name, page_name);
         printf("    <objective>%s</objective>\n", objective);
         printf("  </test>\n");
