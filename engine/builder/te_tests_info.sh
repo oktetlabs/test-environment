@@ -57,8 +57,15 @@ for i in `find $1 -maxdepth 1 -name \*.c` ; do
                  else                              \
                     printf(" page=\"%s\"", $2);    \
              } ' $i`
+    TEST_NAME=`awk --posix '
+             /@run_name/ {                         \
+                 if ($1 == "*" || $1 == "**")      \
+                    printf("%s", $3);              \
+                 else                              \
+                    printf("%s", $2);              \
+             } ' $i`
     if test -n "${OBJECTIVE}" ; then
-        TEST_NAME=`basename $i`
+        [ -z "$TEST_NAME" ] && TEST_NAME=`basename $i`
         TEST_NAME=${TEST_NAME/.c/}
         echo "  <test name=\"${TEST_NAME}\"$PAGE>"
         echo "    <objective>${OBJECTIVE}</objective>"
