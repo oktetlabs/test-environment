@@ -10,6 +10,14 @@ function process(str)
     else
         in_dox_comment = 1;
 
+    if (sub(/@page/, str)) {
+        if (in_page)
+            print "*/";
+
+        print "/**";
+        in_page = 1;
+    }
+
     print str;
 
     return;
@@ -23,6 +31,7 @@ in_dox_comment && /^[[:space:]]*\*/ { sub(/^[[:space:]]*\*/, ""); }
             in_dox_comment = 1;
             for (i = 2; i <= n; i++)
                 process(arr[i]);
+
             next;
         }
 
@@ -94,5 +103,4 @@ in_enum && /<value/ {
 #   next;
 # }
 
-BEGIN { print "/**"; }
 END { print "*/"; }
