@@ -3082,6 +3082,21 @@ process_cmd_line_opts(int argc, const char **argv)
     return EXIT_SUCCESS;
 }
 
+static int
+rcf_daemon(void)
+{
+    pid_t pid;
+
+    pid = fork();
+    if (pid == -1)
+        return -1;
+
+    if (pid != 0)
+        exit(EXIT_SUCCESS);
+
+    return 0;
+}
+
 /**
  * Main routine of the RCF process. Usage: rcf <configuration file name>
  *
@@ -3146,9 +3161,9 @@ main(int argc, const char *argv[])
      * Go to background, if foreground mode is not requested.
      * No threads should be created before become a daemon.
      */
-    if ((~flags & RCF_FOREGROUND) && (daemon(TRUE, TRUE) != 0))
+    if ((~flags & RCF_FOREGROUND) && (rcf_daemon() != 0))
     {
-        ERROR("daemon() failed");
+        ERROR("rcf_daemon() failed");
         goto exit;
     }
 
