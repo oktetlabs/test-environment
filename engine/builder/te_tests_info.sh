@@ -13,64 +13,29 @@
 # $Id$
 #
 
+SRC_DIR=$1
+AWK_PROGRAM=$2
+
+if [ -z $AWK_PROGRAM ] ; then
+    AWK_PROGRAM=$(which $0 | sed "s/\.sh/\.awk/")
+fi
+
 echo -en \
 "<?xml version=\"1.0\"?>\\n"\
 "<tests-info>\\n"
 
-for i in `find $1 -maxdepth 1 -name \*.c` ; do
+for i in `find $SRC_DIR -maxdepth 1 -name \*.c` ; do
+    TEST_NAME=`basename $i`
+    TEST_NAME=${TEST_NAME/.c/}
 
-    OBJECTIVE=`awk --posix '
-    BEGIN { put = 0; }                               \
-    {                                                \
-        if ($1 == "*" && $2 == "@objective")         \
-        {                                            \
-            for (i = 3; i <= NF; i++)                \
-                printf("%s ", $i);                   \
-            put = 1;                                 \
-        }                                            \
-        else if ($1 == "@objective")                 \
-        {                                            \
-            for (i = 2; i <= NF; i++)                \
-                printf("%s ", $i);                   \
-            put = 1;                                 \
-        }                                            \
-        else if (put == 1 && $1 == "*" && NF == 1)   \
-            put = 0;                                 \
-        else if (put == 1 && NF == 0)                \
-            put = 0;                                 \
-        else if (put)                                \
-        {                                            \
-            for (i = 2; i <= NF; i++)                \
-                printf("%s ", $i);                   \
-        }                                            \
-    } ' $i`
+    cat $i | awk --posix -f $AWK_PROGRAM | sed "s/TAKE_FROM_C_FILE/$TEST_NAME/g"
+done
 
-    OBJECTIVE=`echo $OBJECTIVE | sed -e "s/@a //g"`
-    OBJECTIVE=`echo $OBJECTIVE | sed -e "s/@b //g"`
-    OBJECTIVE=`echo $OBJECTIVE | sed -e "s/@c //g"`
-    OBJECTIVE=`echo $OBJECTIVE | sed -e "s/@e //g"`
-    OBJECTIVE=`echo $OBJECTIVE | sed -e "s/@p //g"`
-    PAGE=`awk --posix '
-             /@page/ {                             \
-                 if ($1 == "*" || $1 == "**")      \
-                    printf(" page=\"%s\"", $3);    \
-                 else                              \
-                    printf(" page=\"%s\"", $2);    \
-             } ' $i`
-    TEST_NAME=`awk --posix '
-             /@run_name/ {                         \
-                 if ($1 == "*" || $1 == "**")      \
-                    printf("%s", $3);              \
-                 else                              \
-                    printf("%s", $2);              \
-             } ' $i`
-    if test -n "${OBJECTIVE}" ; then
-        [ -z "$TEST_NAME" ] && TEST_NAME=`basename $i`
-        TEST_NAME=${TEST_NAME/.c/}
-        echo "  <test name=\"${TEST_NAME}\"$PAGE>"
-        echo "    <objective>${OBJECTIVE}</objective>"
-        echo "  </test>"
-    fi
+for i in `find $SRC_DIR -maxdepth 1 -name \*.xml` ; do
+    TEST_NAME=`basename $i`
+    TEST_NAME=${TEST_NAME/.xml/}
+
+    cat $i | $TE_BASE/scripts/xml2dox | awk --posix -f $AWK_PROGRAM | sed "s/TAKE_FROM_C_FILE/$TEST_NAME/g"
 done
 
 echo "</tests-info>"
