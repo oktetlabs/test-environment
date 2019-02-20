@@ -1747,6 +1747,10 @@ cfg_commit_fmt(const char *oid_fmt, ...)
  * Obtain value of the object instance. Memory for strings and
  * addresses is allocated by the routine using malloc().
  *
+ * If the object value type is @c CVT_NONE, no value will be
+ * placed at the given location; @c CVT_NONE will be written
+ * at the given type location to indicate this.
+ *
  * @param handle      object instance handle
  * @param type        location for value type, may be NULL
  * @param  ...        OUT: location for the value
@@ -1842,8 +1846,6 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
          }
          case CVT_NONE:
          {
-             ERROR("Get Configurator instance of NONE type");
-             rc = TE_RC(TE_CONF_API, TE_EINVAL);
              break;
          }
          default:
