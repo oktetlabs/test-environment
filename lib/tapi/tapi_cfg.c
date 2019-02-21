@@ -1241,6 +1241,22 @@ cfg_route_op(enum tapi_cfg_oper op, const char *ta,
     route_inst_name[0] = '\0';
     PUT_INTO_BUF(route_inst_name, "%s|%d", dst_addr_str, prefix);
 
+    if (addr_family == AF_INET6 && metric < 1)
+    {
+        /*
+         * Setting metric to 0 (or not setting it at all) does not work
+         * for IPv6 - it seems Linux considers zero as "not defined" and
+         * sets metric to 1024 in such case (IP6_RT_PRIO_USER¸ see
+         * ip6_route_info_create() in net/ipv6/route.c in kernel sources).
+         */
+        metric = 1;
+        WARN("%s(): route metric is set to 1 by default for IPv6 route, "
+             "because otherwise Linux will set it to another value "
+             "instead of zero and it will cause Configuration issues "
+             "because the route on TA and in Configurator DB will be named "
+             "differently. See OL Bug 9918.", __FUNCTION__);
+    }
+
     if (metric > 0)
         PUT_INTO_BUF(route_inst_name, ",metric=%d", metric);
 
