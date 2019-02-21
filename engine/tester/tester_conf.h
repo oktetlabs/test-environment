@@ -267,6 +267,8 @@ struct run_item {
     const test_session *context;    /**< Parent session */
 
     char               *name;       /**< Name or NULL */
+    char               *objective;  /**< Objective, if NULL - taken from script */
+    char               *page;       /**< Page, if NULL - taken from script */
     tester_handdown     handdown;   /**< Type of executable inheritance */
     run_item_type       type;       /**< Type of the run item */
     union {

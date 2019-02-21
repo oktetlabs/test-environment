@@ -1956,6 +1956,19 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
         p->name = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("name")));
         VERB("Preprocessing 'run' item '%s'", p->name ? : "(noname)");
 
+        if (p->name != NULL)
+        {
+            const test_info *ti =
+                find_test_info(cfg->cur_pkg->ti, p->name);
+
+            if (ti != NULL)
+            {
+                p->objective =
+                    ti->objective != NULL ? strdup(ti->objective) : NULL;
+                p->page = ti->page != NULL ? strdup(ti->page) : NULL;
+            }
+        }
+
         /* 'iterate' is optional */
         rc = get_uint_prop(node, "iterate", &p->iterate);
         if (rc != 0 && rc != TE_RC(TE_TESTER, TE_ENOENT))
@@ -2903,6 +2916,8 @@ run_item_free(run_item *run)
         return;
 
     free(run->name);
+    free(run->objective);
+    free(run->page);
     switch (run->type)
     {
         case RUN_ITEM_NONE:

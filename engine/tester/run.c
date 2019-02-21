@@ -856,6 +856,7 @@ log_test_start(unsigned int flags,
     const char             *name =
         (ctx->flags & TESTER_LOG_IGNORE_RUN_NAME) ? test_get_name(ri)
                                                   : run_item_name(ri);
+    const char             *objective;
 
     char   *params_str = NULL;
     char   *authors = NULL;
@@ -869,15 +870,21 @@ log_test_start(unsigned int flags,
     switch (ri->type)
     {
         case RUN_ITEM_SCRIPT:
+            objective = ri->objective != NULL ?
+                ri->objective : ri->u.script.objective;
+
             if (tin != TE_TIN_INVALID)
             {
-                if (ri->u.script.page == NULL)
+                const char *page_name =
+                    ri->page != NULL ? ri->page : ri->u.script.page;
+
+                if (page_name == NULL)
                 {
                     TESTER_CONTROL_LOG(
                                 parent, test,
                                 "TEST %s \"%s\" TIN %u HASH %s ARGs%s",
                                 name,
-                                PRINT_STRING(ri->u.script.objective),
+                                PRINT_STRING(objective),
                                 tin, PRINT_STRING(hash_str),
                                 PRINT_STRING(params_str));
                 }
@@ -887,8 +894,9 @@ log_test_start(unsigned int flags,
                                 parent, test,
                                 "TEST %s \"%s\" TIN %u PAGE %s HASH %s "
                                 "ARGs%s", name,
-                                PRINT_STRING(ri->u.script.objective),
-                                tin, ri->u.script.page,
+                                PRINT_STRING(objective),
+                                tin,
+                                page_name,
                                 PRINT_STRING(hash_str),
                                 PRINT_STRING(params_str));
                     if (flags & TESTER_CFG_WALK_OUTPUT_PARAMS)
@@ -903,13 +911,16 @@ log_test_start(unsigned int flags,
             }
             else
             {
-                if (ri->u.script.page == NULL)
+                const char *page_name =
+                    ri->page != NULL ? ri->page : ri->u.script.page;
+
+                if (page_name == NULL)
                 {
                     TESTER_CONTROL_LOG(
                                 parent, test,
                                 "TEST %s \"%s\" HASH %s ARGs%s",
                                 name,
-                                PRINT_STRING(ri->u.script.objective),
+                                PRINT_STRING(objective),
                                 PRINT_STRING(hash_str),
                                 PRINT_STRING(params_str));
                 }
@@ -919,8 +930,8 @@ log_test_start(unsigned int flags,
                                 parent, test,
                                 "TEST %s \"%s\" PAGE %s HASH %s ARGs%s",
                                 name,
-                                PRINT_STRING(ri->u.script.objective),
-                                ri->u.script.page,
+                                PRINT_STRING(objective),
+                                page_name,
                                 PRINT_STRING(hash_str),
                                 PRINT_STRING(params_str));
                 }
