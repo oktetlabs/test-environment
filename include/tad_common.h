@@ -115,20 +115,19 @@ typedef enum {
  * complement sum of all 16 bit words.
  * Function works correctly with length less then 64k.
  *
- * @param data    pointer to the data which checksum should be calculated
- * @param length  length of the data
+ * @param checksum  start checksum calculating from this value
+ * @param data      pointer to the data which checksum should be calculated
+ * @param length    length of the data
  *
  * @return calculated checksum.
  */
 static inline uint16_t
-calculate_checksum(const void *data, size_t length)
+ip_csum_part(uint32_t checksum, const void *data, size_t length)
 {
-    uint32_t  checksum;
     uint16_t *ch_p;
 
-    for (ch_p = (uint16_t *)data, checksum = 0;
-         length >= 2;
-         length -= 2, checksum += *(ch_p++));
+    for (ch_p = (uint16_t *)data; length >= 2; length -= 2)
+        checksum += *(ch_p++);
 
     if (length == 1)
     {
@@ -140,6 +139,22 @@ calculate_checksum(const void *data, size_t length)
 
     checksum = (checksum & 0xffff) + (checksum >> 16);
     return checksum + (checksum >> 16);
+}
+
+/**
+ * Calculate 16-bit checksum: 16-bit one's complement of the one's
+ * complement sum of all 16 bit words.
+ * Function works correctly with length less then 64k.
+ *
+ * @param data      pointer to the data which checksum should be calculated
+ * @param length    length of the data
+ *
+ * @return calculated checksum.
+ */
+static inline uint16_t
+calculate_checksum(const void *data, size_t length)
+{
+    return ip_csum_part(0, data, length);
 }
 
 /**
