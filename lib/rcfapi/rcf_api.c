@@ -716,66 +716,6 @@ del_ta_executive(const char *name)
 }
 
 /**
- * Synchronize just added Test Agent with Configurator.
- *
- * @param name          Test Agent name
- *
- * @return Error code
- */
-static te_errno
-sync_ta(char const *ta)
-{
-    /** IPC client to interact with Configurator */
-    ipc_client        *cfgl_ipc_client = NULL;
-    char               cfgl_msg_buf[4096];
-    cfg_sync_msg      *msg;
-    size_t             len;
-    te_errno           rc;
-
-    static pthread_mutex_t cfgl_lock = PTHREAD_MUTEX_INITIALIZER;
-
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_lock(&cfgl_lock);
-#endif
-    if ((rc = ipc_init_client("RCF API: rcf_add_ta()",
-                              CONFIGURATOR_IPC,
-                              &cfgl_ipc_client)) != 0)
-    {
-#ifdef HAVE_PTHREAD_H
-        pthread_mutex_unlock(&cfgl_lock);
-#endif
-        ERROR("Failed to initialize CONFIGURATOR_IPC client");
-        return rc;
-    }
-
-    msg = (cfg_sync_msg *)cfgl_msg_buf;
-    msg->type = CFG_SYNC;
-    msg->subtree = TRUE;
-
-    strcat(cfgl_msg_buf, ta);
-    strcpy(msg->oid, "/agent:");
-    strcat(msg->oid, ta);
-    msg->len = sizeof(cfg_sync_msg) + strlen(msg->oid);
-    len = sizeof(cfgl_msg_buf);
-
-    if ((rc = ipc_send_message_with_answer(cfgl_ipc_client,
-                                           CONFIGURATOR_SERVER,
-                                           msg, msg->len, msg,
-                                           &len)) == 0)
-    {
-        rc = msg->rc;
-    }
-
-    if (ipc_close_client(cfgl_ipc_client) != 0)
-        WARN("Failed to close IPC clienti");
-#ifdef HAVE_PTHREAD_H
-    pthread_mutex_unlock(&cfgl_lock);
-#endif
-
-    return rc;
-}
-
-/**
  * Add a new Test Agent to RCF.
  *
  * @param name          Test Agent name
@@ -891,10 +831,6 @@ extern te_errno rcf_add_ta(const char *name, const char *type,
                   "to invoke logger TA handler: %r", rc);
             del_ta_executive(name); /** Rollback */
         }
-
-        /* Enforce TA synchronization in Configurator */
-        if (rc == 0 && (rc = sync_ta(name)) != 0)
-            del_ta_executive(name); /** Rollback */
     }
 
     return rc;
@@ -969,12 +905,7 @@ extern te_errno rcf_add_ta_unix(const char *name, const char *type,
  */
 extern te_errno rcf_del_ta(const char *name)
 {
-    te_errno rc = del_ta_executive(name);
-
-    if (rc == 0)
-        sync_ta(name); /** Enforce TA synchronization in Configurator */
-
-    return rc;
+    return del_ta_executive(name);
 }
 
 /**
