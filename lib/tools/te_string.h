@@ -106,12 +106,12 @@ extern te_errno te_string_append_va(te_string  *str,
  * to avoid expansion and variable substitution.
  *
  * @param str           TE string
- * @param ...           Arguments terminated by @c NULL
+ * @param ...           String arguments terminated by @c NULL
  *
  * @return Status code.
  */
-extern te_errno __attribute__((sentinel))
-    te_string_append_shell_args_as_is(te_string *str, ...);
+extern te_errno te_string_append_shell_args_as_is(te_string *str, ...)
+                    __attribute__((sentinel));
 
 /**
  * Return a char * that is a result of sprintf into allocated memory.
