@@ -24,9 +24,167 @@
 
 #include "tad_ipstack_impl.h"
 
+#ifndef IP4_HDR_LEN
+#define IP4_HDR_LEN 20
+#endif
+
+#ifndef IP4_ADDR_LEN
+#define IP4_ADDR_LEN 4
+#endif
+
+#ifndef IP6_HDR_LEN
+#define IP6_HDR_LEN 40
+#endif
+
+#ifndef ICMP_HDR_LEN
+#define ICMP_HDR_LEN 8
+#endif
+
+#ifndef IPV6_MTU_MIN_VAL
+#define IPV6_MTU_MIN_VAL 1280
+#endif
+
+#ifndef DEFAULT_TTL
+#define DEFAULT_TTL 64
+#endif
 
 /**
- * Function for make ICMP error by IP packet, catched by '*.ip4.eth'
+ * Copy _len bytes from _src to _dst and increment after _dst pointer
+ *
+ * @param   _dst    Destination (uint8_t *)
+ * @param   _src    Source (uint8_t *)
+ * @param   _len    Count of bytes to copy
+ *
+ */
+#define COPY_DATA_INCR(_dst, _src, _len)    \
+    do {                                    \
+        memcpy(_dst, _src, _len);           \
+        _dst += _len;                       \
+    } while (0)
+
+/**
+ * Write data to ICMP header (without checksum).
+ *
+ * @param   ptr         Start of ICMP header
+ * @param   type        ICMP type
+ * @param   code        ICMP code
+ * @param   rest_hdr    Rest of Header value
+ * @param   csum_ptr    After return csum_ptr will contains address
+ *                      of ICMP checksum
+ *
+ * @return  pointer to the next header
+ */
+static uint8_t *
+tad_icmp_build_icmp_hdr(uint8_t *ptr, const uint8_t type, const uint8_t code,
+                        const uint32_t rest_hdr, uint16_t **csum_ptr)
+{
+    /* common ICMP header */
+    *ptr++ = type;
+    *ptr++ = code;
+
+    /* initialize checksum as 0 and leave place for header checksum */
+    *(uint16_t *)ptr = 0;
+    *csum_ptr = (uint16_t *)ptr;
+    ptr += sizeof(uint16_t);
+
+    *(uint32_t *)ptr = htonl(rest_hdr);
+    ptr += sizeof(uint32_t);
+
+    return ptr;
+}
+
+/**
+ * Build IPv4 header for ICMP response from original (received) packet
+ *
+ * @param   ptr         Start of IPv4 header
+ * @param   orig_pkt    Source packet
+ * @param   ip_msg_len  Full length with ICMP and payload
+ *
+ * @return  pointer to the next header
+ */
+static uint8_t *
+tad_icmp_build_ipv4_hdr(uint8_t *ptr, const uint8_t *orig_pkt, size_t ip_msg_len)
+{
+    uint8_t    *ptr_hdr;
+    uint16_t   *csum_ptr;
+
+    ptr_hdr = ptr;
+    /* vers, hlen */
+    *ptr++ = (IP4_VERSION << IP_HDR_VERSION_SHIFT) +
+             (uint8_t)(IP4_HDR_LEN / sizeof(uint32_t));
+
+    /* tos */
+    COPY_DATA_INCR(ptr, orig_pkt + sizeof(uint8_t), sizeof(uint8_t));
+
+    /* ip len */
+    *(uint16_t *)ptr = htons(ip_msg_len);
+    ptr += sizeof(uint16_t);
+
+    /* ip ident */
+    *(uint16_t *)ptr = (uint16_t)rand();
+    ptr += sizeof(uint16_t);
+
+    /* flags & offset */
+    *(uint16_t *)ptr = 0;
+    ptr += sizeof(uint16_t);
+
+    /* TTL */
+    *ptr++ = DEFAULT_TTL;
+
+    *ptr++ = IPPROTO_ICMP;
+
+    /* initialize checksum as 0 and leave place for header checksum */
+    *(uint16_t *)ptr = 0;
+    csum_ptr = (uint16_t *)ptr;
+    ptr += sizeof(uint16_t);
+
+    /* dst and srt ipv4 adresses */
+    COPY_DATA_INCR(ptr, orig_pkt + sizeof(uint32_t) * IP4_HDR_DST_OFFSET,
+                   IP4_ADDR_LEN);
+    COPY_DATA_INCR(ptr, orig_pkt + sizeof(uint32_t) * IP4_HDR_SRC_OFFSET,
+                   IP4_ADDR_LEN);
+
+    /* set header checksum */
+    *csum_ptr = ~calculate_checksum(ptr_hdr, IP4_HDR_LEN);
+
+    return ptr;
+}
+
+/**
+ * Build IPv6 header for ICMP response from original (received) packet
+ *
+ * @param   ptr         Start of IPv6 header
+ * @param   orig_pkt    Source packet
+ * @param   payload_len Length of payload data
+ *
+ * @return  pointer to the next header
+ */
+static uint8_t *
+tad_icmp_build_ipv6_hdr(uint8_t *ptr, const uint8_t *orig_pkt,
+                        size_t payload_len)
+{
+    /* vers, traffic class, flow label */
+    COPY_DATA_INCR(ptr, orig_pkt, sizeof(uint32_t));
+
+    /* payload len */
+    *(uint16_t *)ptr = htons(ICMP_HDR_LEN + payload_len);
+    ptr += sizeof(uint16_t);
+
+    *ptr++ = IPPROTO_ICMPV6;
+
+    /* hope limit */
+    *ptr++ = DEFAULT_TTL;
+
+    /* src and dst ipv6 adresses */
+    COPY_DATA_INCR(ptr, orig_pkt + sizeof(uint32_t) * IP6_HDR_DST_OFFSET,
+                   IP6_ADDR_LEN);
+    COPY_DATA_INCR(ptr, orig_pkt + sizeof(uint32_t) * IP6_HDR_SRC_OFFSET,
+                   IP6_ADDR_LEN);
+    return ptr;
+}
+
+/**
+ * Function for make ICMP error by IP packet, catched by '*.ip{4,6}.eth'
  * raw CSAP.
  * Prototype made according with 'tad_processing_pkt_method' function type.
  * This method uses write_cb callback of passed 'eth' CSAP for send reply.
@@ -52,18 +210,23 @@ tad_icmp_error(csap_p csap, const char *usr_param,
 
     tad_pkt    *pkt;
 
-    uint8_t type,
-            code;
-    int     rc = 0;
-    char   *endptr;
-    size_t  msg_len;
+    uint8_t     type,
+                code;
+    int         rc = 0;
+    char       *endptr;
+    size_t      msg_len;
 
-    uint8_t *msg, *p;
-    uint32_t unused = 0;
-    int      rate = 1;
+    uint8_t    *msg, *p;
+    uint16_t   *csum_ptr;
+    uint32_t    unused = 0;
+    int         rate = 1;
+    uint16_t    eth_type;
+    uint8_t     ip_version;
 
-    if (csap == NULL || usr_param == NULL ||
-        orig_pkt == NULL || pkt_len == 0)
+    uint16_t    payload_len;
+
+    if (csap == NULL || usr_param == NULL || orig_pkt == NULL ||
+        pkt_len < ETHER_HDR_LEN)
         return TE_EWRONGPTR;
 
     type = strtol(usr_param, &endptr, 10);
@@ -121,8 +284,56 @@ tad_icmp_error(csap_p csap, const char *usr_param,
  * any options (Solaris requires to have full TCP header in ICMP error).
  */
 #define ICMP_PLD_SIZE 32
-    msg_len = 14 /* eth */ + 20 /* IP */ + 8 /* ICMP */
-            + MIN(ICMP_PLD_SIZE, pkt_len - 14);
+
+    eth_type = ntohs(*(uint16_t *)(orig_pkt + 2 * ETHER_ADDR_LEN));
+
+    /* FIXME: VLANs is not supported */
+    if (eth_type != ETHERTYPE_IP && eth_type != ETHERTYPE_IPV6)
+    {
+        ERROR("%s(): unsupported ethernet type received:0x%x", __FUNCTION__,
+              eth_type);
+        return TE_EPROTONOSUPPORT;
+    }
+
+    /* Detect IP version */
+    if (pkt_len < ETHER_HDR_LEN + 1)
+    {
+        return TE_EWRONGPTR;
+    }
+    else
+    {
+        ip_version = orig_pkt[ETHER_HDR_LEN] >> IP_HDR_VERSION_SHIFT;
+    }
+
+    if (ip_version == IP4_VERSION && eth_type == ETHERTYPE_IP)
+    {
+        if (pkt_len < (ETHER_HDR_LEN + IP4_HDR_LEN))
+            return TE_EWRONGPTR;
+
+        payload_len = MIN(ICMP_PLD_SIZE, pkt_len - ETHER_HDR_LEN);
+
+        /* ICMP response will send without IPv4 options */
+        msg_len = ETHER_HDR_LEN + IP4_HDR_LEN + ICMP_HDR_LEN + payload_len;
+    }
+    else if (ip_version == IP6_VERSION && eth_type == ETHERTYPE_IPV6)
+    {
+        if (pkt_len < (ETHER_HDR_LEN + IP6_HDR_LEN))
+            return TE_EWRONGPTR;
+
+        payload_len = pkt_len - ETHER_HDR_LEN;
+
+        /* Response length should be less or equal of minimum IPv6 MTU value */
+        if (payload_len > IPV6_MTU_MIN_VAL)
+            payload_len = IPV6_MTU_MIN_VAL;
+
+        msg_len = ETHER_HDR_LEN + IP6_HDR_LEN + ICMP_HDR_LEN + payload_len;
+    }
+    else
+    {
+        ERROR("%s(): wrong IP:%u and/or ethertype:0x%x version!", __FUNCTION__,
+              ip_version, eth_type);
+        return TE_EPROTONOSUPPORT;
+    }
 
     pkt = tad_pkt_alloc(1, msg_len);
     if (pkt == NULL)
@@ -135,44 +346,62 @@ tad_icmp_error(csap_p csap, const char *usr_param,
     /* Ethernet header */
     memcpy(p, orig_pkt + ETHER_ADDR_LEN, ETHER_ADDR_LEN);
     memcpy(p + ETHER_ADDR_LEN, orig_pkt, ETHER_ADDR_LEN);
-    memcpy(p + 2 * ETHER_ADDR_LEN, orig_pkt + 2 * ETHER_ADDR_LEN, 2);
-    p += 14; orig_pkt += 14; pkt_len -= 14;
+    memcpy(p + 2 * ETHER_ADDR_LEN, orig_pkt + 2 * ETHER_ADDR_LEN,
+           sizeof(uint16_t));
+    p += ETHER_HDR_LEN;
+    orig_pkt += ETHER_HDR_LEN;
+    pkt_len -= ETHER_HDR_LEN;
 
-    /* IP header, now leave orig_pkt unchanged */
-    memcpy(p, orig_pkt, 2); /* vers, hlen, tos */
-    p += 2;
-    *(uint16_t *)p = htons(msg_len - 14); /* ip len */
-    p += 2;
-    *(uint16_t *)p = (uint16_t)rand(); /* ip ident */
-    p += 2;
-    *(uint16_t *)p = 0; /* flags & offset */
-    p += 2;
-    *p++ = 64; /* TTL */
-    *p++ = IPPROTO_ICMP;
-    *(uint16_t *)p = 0; /* initialize checksum as 0 */
-    p += 2; /* leave place for header checksum */
-    memcpy(p, orig_pkt + 16, 4);
-    p += 4;
-    memcpy(p, orig_pkt + 12, 4);
-    p += 4;
+    if (ip_version == IP4_VERSION)
+    {
+        /* IPv4 header, now leave orig_pkt unchanged */
+        p = tad_icmp_build_ipv4_hdr(p, orig_pkt, msg_len - ETHER_HDR_LEN);
 
-    /* set header checksum */
-    *(uint16_t *)(msg + 14 + 10) = ~calculate_checksum(msg + 14, 20);
+        p = tad_icmp_build_icmp_hdr(p, type, code, unused, &csum_ptr);
 
-    /* ICMP header */
+        /* set ICMPv4 checksum */
+        memcpy(p, orig_pkt, MIN(ICMP_PLD_SIZE, pkt_len));
+        *csum_ptr = ~calculate_checksum(msg + ETHER_HDR_LEN + IP4_HDR_LEN,
+                                        ICMP_HDR_LEN + ICMP_PLD_SIZE);
+    }
+    else
+    {
+        uint16_t    csum;
+        uint8_t     ipv6_pseudo_header_part[6];
 
-    *p++ = type;
-    *p++ = code;
-    *(uint16_t *)p = 0; /* initialize checksum as 0 */
-    p += 2; /* leave place for ICMP checksum */
-    *(uint32_t *)p = htonl(unused);
-    p += 4;
+        /* IPv6 header, now leave orig_pkt unchanged */
+        p = tad_icmp_build_ipv6_hdr(p, orig_pkt, payload_len);
 
-    memcpy(p, orig_pkt, MIN(ICMP_PLD_SIZE, pkt_len));
+        p = tad_icmp_build_icmp_hdr(p, type, code, unused, &csum_ptr);
+        memcpy(p, orig_pkt, payload_len);
 
-    /* set ICMP checksum */
-    *(uint16_t *)(msg + 14 + 20 + 2) =
-        ~calculate_checksum(msg + 14 + 20, ICMP_PLD_SIZE + 8);
+        /* IP pseudo header will not built, checksum is calculated
+         * from a most of the data based on 'orig_pkt'. Remaining part is
+         * filled in 'ipv6_pseudo_header_part' and after this, the final
+         * checksum is calculated from three parts
+         */
+
+        /* calculate payload checksum */
+        csum = ip_csum_part(0, orig_pkt, payload_len);
+
+        /* calculate IPv6 addresses checksum */
+        csum = ip_csum_part(csum,
+                            orig_pkt + sizeof(uint32_t) * IP6_HDR_SRC_OFFSET,
+                            2 * IP6_ADDR_LEN);
+
+        /* prepare last part of data to be calculated */
+        p = (uint8_t *)&ipv6_pseudo_header_part;
+        *(uint16_t *)p = htons(ICMP_HDR_LEN + payload_len);
+        p += sizeof(uint16_t);
+        *p++ = 0;
+        *p++ = IPPROTO_ICMPV6;
+        *p++ = type;
+        *p++ = code;
+
+        /* calculate checksum for last part of data and set ICMPv6 checksum */
+        *csum_ptr = ~(ip_csum_part(csum, &ipv6_pseudo_header_part,
+                                   sizeof(ipv6_pseudo_header_part)));
+    }
 
     rc = rw_layer_cbs->write_cb(csap, pkt);
     tad_pkt_free(pkt);

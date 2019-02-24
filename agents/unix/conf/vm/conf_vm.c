@@ -210,7 +210,7 @@ vm_list(unsigned int gid, const char *oid, const char *sub_id, char **list)
     UNUSED(sub_id);
 
     SLIST_FOREACH(vm, &vms, links)
-        len = strlen(vm->name) + 1;
+        len += strlen(vm->name) + 1;
 
     if (len == 0)
     {

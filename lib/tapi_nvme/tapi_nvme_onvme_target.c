@@ -89,6 +89,12 @@ onvme_build_cmd(te_string *cmd, tapi_nvme_target *target)
     if (proc->opts.is_nullblock)
         CHECK_RC(te_string_append(cmd, "--use-null --no-nvme "));
 
+    if (proc->opts.max_worker_conn != 0)
+    {
+        CHECK_RC(te_string_append(cmd, "--max-worker-connections %d ",
+                                  proc->opts.max_worker_conn));
+    }
+
     return 0;
 }
 

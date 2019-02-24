@@ -69,8 +69,14 @@ extern "C" {
 /** The length of IP header field 'version' is 4 bits */
 #define IP_HDR_VERSION_LEN 4
 
+/** The shift of IP header field 'version' is 4 bits */
+#define IP_HDR_VERSION_SHIFT 4
+
 /** IPv4 version number */
 #define IP4_VERSION 4
+
+/** IPv6 version number */
+#define IP6_VERSION 6
 
 /** The offset (the number of 32-bit words) to the IPv4 source address */
 #define IP4_HDR_SRC_OFFSET 3

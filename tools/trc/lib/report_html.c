@@ -191,6 +191,7 @@ static const char * const trc_html_doc_start =
 "        background-color: #ffffe0;\n"
 "        border: 1px solid #000000;\n"
 "        padding: 10px;\n"
+"        z-index: 3;\n"
 "    }\n"
 #if TRC_USE_LOG_URLS
 "    #TestLog {\n"
@@ -205,10 +206,12 @@ static const char * const trc_html_doc_start =
 "        background-color: #ffffe0;\n"
 "        border: 1px solid #000000;\n"
 "        padding: 10px;\n"
+"        z-index: 2;\n"
 "    }\n"
 #endif
 "    #close {\n"
 "        float: right;\n"
+"        z-index: 2;\n"
 "    }\n"
 #endif
 "  </style>\n"

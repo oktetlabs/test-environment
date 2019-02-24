@@ -46,8 +46,7 @@ function process(str)
     if (sub(/@page/, str)) {
         if (in_page) {
             if (run_found) {
-                print ""
-                printf("@run_name %s\n", run_name);
+                printf("\n@run_name %s\n", run_name);
             }
             print "*/";
         }
@@ -143,8 +142,7 @@ in_run && /<\/run>/ {
 END {
     if (in_page) {
         if (run_found) {
-            print ""
-            printf("@run_name %s\n", run_name);
+            printf("\n@run_name %s\n", run_name);
         }
     }
     print "*/";
