@@ -168,7 +168,7 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
         }
 
         if ((rt_info->prefix != route->dstlen) ||
-            (((rt_info->metric & TA_RT_INFO_FLG_METRIC) != 0) &&
+            (((rt_info->flags & TA_RT_INFO_FLG_METRIC) != 0) &&
              (rt_info->metric != (uint32_t)route->metric)) ||
             (rt_info->tos != route->tos)||
             (rt_info->table != route->table))
