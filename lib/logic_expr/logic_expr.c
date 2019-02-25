@@ -1139,15 +1139,19 @@ logic_expr_to_str_gen(logic_expr *expr, logic_expr *parent)
         case LOGIC_EXPR_GT:
             if (format == NULL)
                 format = "%s>%s";
+            /*@fallthrough@*/
         case LOGIC_EXPR_GE:
             if (format == NULL)
                 format = "%s>=%s";
+            /*@fallthrough@*/
         case LOGIC_EXPR_LT:
             if (format == NULL)
                 format = "%s<%s";
+            /*@fallthrough@*/
         case LOGIC_EXPR_LE:
             if (format == NULL)
                 format = "%s<=%s";
+            /*@fallthrough@*/
         case LOGIC_EXPR_EQ:
             if (format == NULL)
                 format = "%s=%s";
