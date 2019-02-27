@@ -94,6 +94,11 @@ onvme_build_cmd(te_string *cmd, tapi_nvme_target *target)
         CHECK_RC(te_string_append(cmd, "--max-worker-connections %d ",
                                   proc->opts.max_worker_conn));
     }
+    if (proc->opts.log_level >= 0 && proc->opts.log_level <= 4)
+    {
+        CHECK_RC(te_string_append(cmd, "--log-level %d ",
+                                  proc->opts.log_level));
+    }
 
     return 0;
 }

@@ -27,6 +27,7 @@ typedef struct tapi_nvme_onvme_target_opts {
     te_string cores;            /**< Target will use the specified cpu */
     unsigned max_worker_conn;   /**< Maximum number of connections to accept
                                      per worker */
+    int log_level;              /**< Log level of ONVMe proccess */
 } tapi_nvme_onvme_target_opts;
 
 /** ONVMe target opts defaults */
@@ -34,6 +35,7 @@ typedef struct tapi_nvme_onvme_target_opts {
     .is_nullblock = FALSE,                                                   \
     .cores = TE_STRING_INIT,                                                 \
     .max_worker_conn = 0,                                                    \
+    .log_level = -1,                                                         \
 }
 
 /** ONVMe target context */
