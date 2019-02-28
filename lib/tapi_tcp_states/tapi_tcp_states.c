@@ -914,13 +914,21 @@ tsa_repair_tst_iut_conn(tsa_session *ss)
 
     if (ss->state.tst_type == TSA_TST_SOCKET ||
         ss->state.tst_type == TSA_TST_GW_CSAP)
-        rc = tapi_cfg_del_neigh_entry(ss->config.pco_tst->ta,
-                                      ss->config.tst_if->if_name,
-                                      ss->config.gw_tst_addr);
+    {
+        rc = tapi_update_arp(ss->config.pco_tst->ta,
+                             ss->config.tst_if->if_name,
+                             ss->config.pco_gw->ta,
+                             ss->config.gw_tst_if->if_name,
+                             ss->config.gw_tst_addr, NULL, FALSE);
+    }
     else
-        rc = tapi_cfg_del_neigh_entry(ss->config.pco_tst->ta,
-                                      ss->config.tst_if->if_name,
-                                      ss->config.iut_addr);
+    {
+        rc = tapi_update_arp(ss->config.pco_tst->ta,
+                             ss->config.tst_if->if_name,
+                             ss->config.pco_iut->ta,
+                             ss->config.iut_if->if_name,
+                             ss->config.iut_addr, NULL, FALSE);
+    }
 
     if (rc != 0)
         return rc;
@@ -944,13 +952,21 @@ tsa_repair_iut_tst_conn(tsa_session *ss)
 
     if (ss->state.tst_type == TSA_TST_SOCKET ||
         ss->state.tst_type == TSA_TST_GW_CSAP)
-        rc = tapi_cfg_del_neigh_entry(ss->config.pco_gw->ta,
-                                      ss->config.gw_tst_if->if_name,
-                                      ss->config.tst_addr);
+    {
+        rc = tapi_update_arp(ss->config.pco_gw->ta,
+                             ss->config.gw_tst_if->if_name,
+                             ss->config.pco_tst->ta,
+                             ss->config.tst_if->if_name,
+                             ss->config.tst_addr, NULL, FALSE);
+    }
     else
-        rc = tapi_cfg_del_neigh_entry(ss->config.pco_iut->ta,
-                                      ss->config.iut_if->if_name,
-                                      ss->config.tst_addr);
+    {
+        rc = tapi_update_arp(ss->config.pco_iut->ta,
+                             ss->config.iut_if->if_name,
+                             ss->config.pco_tst->ta,
+                             ss->config.tst_if->if_name,
+                             ss->config.tst_addr, NULL, FALSE);
+    }
 
     if (rc != 0)
         return rc;
