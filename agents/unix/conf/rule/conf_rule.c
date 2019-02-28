@@ -220,26 +220,27 @@ ta_unix_conf_rule_init(void)
     return rcf_pch_add_node("/agent", &node_rule);
 }
 
-/* See the description in conf_rule.h */
-te_errno
-ta_unix_conf_rule_list(char **list)
+/**
+ * Append to list names of all routing policy rules for a given
+ * address family.
+ *
+ * @param str     TE string where list is stored.
+ * @param af      Address family.
+ *
+ * @return Status code.
+ */
+static te_errno
+append_rules_for_family(te_string *str, int af)
 {
     te_errno            rc = 0;
-    te_string           str = TE_STRING_INIT;
     char               *data;
     netconf_list       *nlist;
     netconf_node       *current;
 
-    if (list == NULL)
+    if ((nlist = netconf_rule_dump(nh, af)) == NULL)
     {
-        ERROR("%s(): Invalid value for 'list' argument", __FUNCTION__);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
-
-    /* Get IPv4 rules */
-    if ((nlist = netconf_rule_dump(nh, AF_INET)) == NULL)
-    {
-        ERROR("%s(): Cannot get list of rules", __FUNCTION__);
+        ERROR("%s(): Cannot get list of rules for address family %d",
+              __FUNCTION__, af);
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
@@ -247,7 +248,7 @@ ta_unix_conf_rule_list(char **list)
     {
         const netconf_rule *rule = &(current->data.rule);
 
-        if (rule->family != AF_INET)
+        if (rule->family != af)
         {
             assert(0);
             continue;
@@ -255,7 +256,7 @@ ta_unix_conf_rule_list(char **list)
 
         /* Append this rule to the list */
 
-        if (str.ptr && (rc = te_string_append(&str, " ")) != 0)
+        if (str->ptr && (rc = te_string_append(str, " ")) != 0)
         {
             ERROR("%s(): Cannot add space to string", __FUNCTION__);
             break;
@@ -268,7 +269,7 @@ ta_unix_conf_rule_list(char **list)
                   __FUNCTION__);
             break;
         }
-        rc = te_string_append(&str, "%s", data);
+        rc = te_string_append(str, "%s", data);
         free(data);
 
         if (rc != 0)
@@ -279,6 +280,25 @@ ta_unix_conf_rule_list(char **list)
     }
 
     netconf_list_free(nlist);
+    return rc;
+}
+
+/* See the description in conf_rule.h */
+te_errno
+ta_unix_conf_rule_list(char **list)
+{
+    te_errno            rc = 0;
+    te_string           str = TE_STRING_INIT;
+
+    if (list == NULL)
+    {
+        ERROR("%s(): Invalid value for 'list' argument", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    rc = append_rules_for_family(&str, AF_INET);
+    if (rc == 0)
+        rc = append_rules_for_family(&str, AF_INET6);
 
     if (rc)
     {
