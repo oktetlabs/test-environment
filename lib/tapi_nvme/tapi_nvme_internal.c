@@ -6,10 +6,11 @@
  * @author Nikita Somenkov <Nikita.Somenkov@oktetlabs.ru>
  */
 
+#define TE_LGR_USER "NVME TAPI"
+
 #include "tapi_rpc_unistd.h"
 #include "tapi_rpc_dirent.h"
 #include "tapi_nvme_internal.h"
-
 
 #define NVME_TE_STRING_INIT_STATIC(_size) \
     TE_STRING_BUF_INIT((char[_size]){'\0'})
