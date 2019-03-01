@@ -63,7 +63,7 @@ onvme_output_print(tapi_nvme_target *target)
         rpc_read_fd2te_string(target->rpcs, err_fd, TE_SEC2MS(1), 0, &err);
 
     RING("stdout:\n%s\n"
-         "stdout:\n%s\n", out.ptr, err.ptr);
+         "stderr:\n%s\n", out.ptr, err.ptr);
 
     te_string_free(&out);
     te_string_free(&err);
