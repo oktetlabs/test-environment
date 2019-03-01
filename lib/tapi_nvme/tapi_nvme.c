@@ -541,10 +541,63 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl,
         }                                                     \
     } while(0)
 
+typedef enum nvme_connect_type {
+    NVME_CONNECT,
+} nvme_connect_type;
+
+static const char *
+nvme_connect_type_str(nvme_connect_type type)
+{
+    static const char *nvme_connect_types[] = {
+        [NVME_CONNECT] = "nvme connect",
+    };
+
+    if (type < 0 || type > TE_ARRAY_LEN(nvme_connect_types))
+        return NULL;
+
+    return nvme_connect_types[type];
+}
+
+typedef struct nvme_connect_generic_opts {
+    nvme_connect_type type;
+    const tapi_nvme_connect_opts *tapi_opts;
+} nvme_connect_generic_opts;
+
+static te_errno
+nvme_connect_build_opts(te_string *str_opts,
+                        const tapi_nvme_target *target,
+                        nvme_connect_generic_opts opts)
+{
+    const tapi_nvme_connect_opts *tapi_opts = opts.tapi_opts;
+    const char *nvme_base_cmd = nvme_connect_type_str(opts.type);
+
+    assert(nvme_base_cmd);
+    NVME_ADD_OPT(str_opts, "%s ", nvme_base_cmd);
+    NVME_ADD_OPT(str_opts, "--traddr=%s ", te_sockaddr_get_ipstr(target->addr));
+    NVME_ADD_OPT(str_opts, "--trsvcid=%d ",
+                 ntohs(te_sockaddr_get_port(target->addr)));
+    NVME_ADD_OPT(str_opts, "--transport=%s ",
+                 tapi_nvme_transport_str(target->transport));
+
+    if (opts.type == NVME_CONNECT)
+        NVME_ADD_OPT(str_opts, "--nqn=%s ",  target->subnqn);
+
+    if (tapi_opts != NULL)
+    {
+        if (tapi_opts->hdr_digest == TRUE)
+            NVME_ADD_OPT(str_opts, "--hdr_digest ");
+
+        if (tapi_opts->data_digest == TRUE)
+            NVME_ADD_OPT(str_opts, "--data_digest ");
+    }
+
+    return 0;
+}
+
 static te_errno
 nvme_initiator_connect_generic(tapi_nvme_host_ctrl *host_ctrl,
                                const tapi_nvme_target *target,
-                               const char *extra_opts)
+                               nvme_connect_generic_opts opts)
 {
     int i, rc;
     te_string str_stdout = TE_STRING_INIT;
@@ -564,15 +617,8 @@ nvme_initiator_connect_generic(tapi_nvme_host_ctrl *host_ctrl,
     assert(target->subnqn);
     assert(target->device);
 
-    NVME_ADD_OPT(&cmd, "nvme connect ");
-    NVME_ADD_OPT(&cmd, "--traddr=%s ", te_sockaddr_get_ipstr(target->addr));
-    NVME_ADD_OPT(&cmd, "--trsvcid=%d ",
-                 ntohs(te_sockaddr_get_port(target->addr)));
-    NVME_ADD_OPT(&cmd, "--transport=%s ",
-                 tapi_nvme_transport_str(target->transport));
-    NVME_ADD_OPT(&cmd, "--nqn=%s ",  target->subnqn);
-    if (extra_opts != NULL)
-        NVME_ADD_OPT(&cmd, "%s",  extra_opts);
+    if ((rc = nvme_connect_build_opts(&cmd, target, opts)) != 0)
+        return rc;
 
     if ((rc = run_command(host_ctrl->rpcs, run_opts, "%s", cmd.ptr)) != 0)
     {
@@ -614,19 +660,12 @@ te_errno
 tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
                             const tapi_nvme_target *target)
 {
-    return nvme_initiator_connect_generic(host_ctrl, target, NULL);
-}
+    nvme_connect_generic_opts generic_opts = {
+        .type = NVME_CONNECT,
+        .tapi_opts = NULL,
+    };
 
-static te_errno
-nvme_connect_build_opts(te_string *str_opts,  const tapi_nvme_connect_opts *opts)
-{
-    if (opts->hdr_digest == TRUE)
-        NVME_ADD_OPT(str_opts, "--hdr_digest ");
-
-    if (opts->data_digest == TRUE)
-        NVME_ADD_OPT(str_opts, "--data_digest ");
-
-    return 0;
+    return nvme_initiator_connect_generic(host_ctrl, target, generic_opts);
 }
 
 /* See description in tapi_nvme.h */
@@ -635,17 +674,12 @@ tapi_nvme_initiator_connect_opts(tapi_nvme_host_ctrl *host_ctrl,
                                  const tapi_nvme_target *target,
                                  const tapi_nvme_connect_opts *opts)
 {
-    te_errno rc;
-    te_string str_opts = TE_STRING_INIT_STATIC(RPC_SHELL_CMDLINE_MAX);
+    nvme_connect_generic_opts generic_opts = {
+        .type = NVME_CONNECT,
+        .tapi_opts = opts,
+    };
 
-    assert(opts);
-    if ((rc = nvme_connect_build_opts(&str_opts, opts)) != 0)
-        return rc;
-    rc = nvme_initiator_connect_generic(host_ctrl, target, str_opts.ptr);
-
-    te_string_free(&str_opts);
-
-    return rc;
+    return nvme_initiator_connect_generic(host_ctrl, target, generic_opts);
 }
 
 /* See description in tapi_nvme.h */
