@@ -186,6 +186,35 @@ tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
 }
 
 /**
+ * Do nvme connect-all to target host with additional options
+ *
+ * @param host_ctrl     handle of host_ctrl
+ * @param target        handle of target
+ * @param opts          additional opts for nvme connect
+ *
+ * @return TE error code
+ */
+extern te_errno tapi_nvme_initiator_connect_all_opts(
+    tapi_nvme_host_ctrl *host_ctrl,
+    const tapi_nvme_target *target,
+    const tapi_nvme_connect_opts *opts);
+
+/**
+ * Connect initiator host to target host.
+ *
+ * @param host_ctrl     handle of host_ctrl
+ * @param target        handle of target
+ *
+ * @return TE error code
+ */
+static inline te_errno
+tapi_nvme_initiator_connect_all(tapi_nvme_host_ctrl *host_ctrl,
+                                const tapi_nvme_target *target)
+{
+    return tapi_nvme_initiator_connect_all_opts(host_ctrl, target, NULL);
+}
+
+/**
  * Disconnect host_ctrl form connected target.
  *
  * @param host_ctrl     handle of host_ctrl

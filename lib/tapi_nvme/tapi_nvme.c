@@ -543,6 +543,7 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl,
 
 typedef enum nvme_connect_type {
     NVME_CONNECT,
+    NVME_CONNECT_ALL,
 } nvme_connect_type;
 
 static const char *
@@ -550,6 +551,7 @@ nvme_connect_type_str(nvme_connect_type type)
 {
     static const char *nvme_connect_types[] = {
         [NVME_CONNECT] = "nvme connect",
+        [NVME_CONNECT_ALL] = "nvme connect-all",
     };
 
     if (type < 0 || type > TE_ARRAY_LEN(nvme_connect_types))
@@ -663,6 +665,19 @@ tapi_nvme_initiator_connect_opts(tapi_nvme_host_ctrl *host_ctrl,
 {
     nvme_connect_generic_opts generic_opts = {
         .type = NVME_CONNECT,
+        .tapi_opts = opts,
+    };
+
+    return nvme_initiator_connect_generic(host_ctrl, target, generic_opts);
+}
+
+te_errno
+tapi_nvme_initiator_connect_all_opts(tapi_nvme_host_ctrl *host_ctrl,
+                                     const tapi_nvme_target *target,
+                                     const tapi_nvme_connect_opts *opts)
+{
+    nvme_connect_generic_opts generic_opts = {
+        .type = NVME_CONNECT_ALL,
         .tapi_opts = opts,
     };
 
