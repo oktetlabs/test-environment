@@ -657,19 +657,6 @@ nvme_initiator_connect_generic(tapi_nvme_host_ctrl *host_ctrl,
 
 /* See description in tapi_nvme.h */
 te_errno
-tapi_nvme_initiator_connect(tapi_nvme_host_ctrl *host_ctrl,
-                            const tapi_nvme_target *target)
-{
-    nvme_connect_generic_opts generic_opts = {
-        .type = NVME_CONNECT,
-        .tapi_opts = NULL,
-    };
-
-    return nvme_initiator_connect_generic(host_ctrl, target, generic_opts);
-}
-
-/* See description in tapi_nvme.h */
-te_errno
 tapi_nvme_initiator_connect_opts(tapi_nvme_host_ctrl *host_ctrl,
                                  const tapi_nvme_target *target,
                                  const tapi_nvme_connect_opts *opts)
