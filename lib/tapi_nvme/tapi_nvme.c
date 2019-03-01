@@ -739,7 +739,7 @@ tapi_nvme_initiator_show_regs(tapi_nvme_host_ctrl *host_ctrl)
     assert(host_ctrl->rpcs);
     assert(host_ctrl->device);
 
-    return run_command_dump_output_rc(host_ctrl->rpcs, RUN_COMMAND_DEF_TIMEOUT,
+    return run_command_dump_output_rc(host_ctrl->rpcs, TE_SEC2MS(10),
                                       "nvme show-regs %s", host_ctrl->device);
 }
 
