@@ -24,6 +24,7 @@
 
 #define ONVME_PROC_SIGINT_TIMEOUT     (5)
 #define ONVME_PROC_INIT_TIMEOUT       (15)
+#define ONVME_PROC_FINI_TIMEOUT       (2)
 
 /* See description in tapi_nvme_onvme_target.h */
 te_errno
@@ -190,6 +191,7 @@ tapi_nvme_onvme_target_cleanup(tapi_nvme_target *target)
         (void)bind_nvme(target, BIND_NVME_KERNEL);
     }
 
+    te_motivated_sleep(ONVME_PROC_FINI_TIMEOUT, "Waiting for device unbinding");
     onvme_output_print(target);
 
     if (proc->stderr_fd >= 0)
