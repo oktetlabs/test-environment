@@ -657,6 +657,7 @@ extern const struct if_nameindex * tapi_env_get_ph(tapi_env *env,
  * @param env           Environment
  * @param net           Environment net
  * @param host          Environment host
+ * @param af            Address family of requested address
  * @param assigned      Information about assigned addresses
  * @param addr          Location for address pointer (OUT)
  * @param addrlen       Address length (OUT)
@@ -666,6 +667,7 @@ extern const struct if_nameindex * tapi_env_get_ph(tapi_env *env,
 extern te_errno tapi_env_get_net_host_addr(const tapi_env          *env,
                                            const tapi_env_net      *net,
                                            const tapi_env_host     *host,
+                                           sa_family_t              af,
                                            tapi_cfg_net_assigned   *assigned,
                                            struct sockaddr        **addr,
                                            socklen_t               *addrlen);

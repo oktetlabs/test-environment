@@ -2465,6 +2465,7 @@ te_errno
 tapi_env_get_net_host_addr(const tapi_env          *env,
                            const tapi_env_net      *net,
                            const tapi_env_host     *host,
+                           sa_family_t              af,
                            tapi_cfg_net_assigned   *assigned,
                            struct sockaddr        **addr,
                            socklen_t               *addrlen)
@@ -2478,6 +2479,12 @@ tapi_env_get_net_host_addr(const tapi_env          *env,
     if (net == NULL || host == NULL || assigned == NULL || addr == NULL)
     {
         ERROR("%s(): Invalid parameter", __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    if (af != AF_INET && af != AF_INET6)
+    {
+        ERROR("%s(): Unsupported address family", __FUNCTION__);
         return TE_EINVAL;
     }
 
@@ -2502,15 +2509,16 @@ tapi_env_get_net_host_addr(const tapi_env          *env,
         return rc;
     }
 
-    /* Get IPv4 subnet address */
+    /* Get IPv4/IPv6 subnet address */
     val_type = CVT_ADDRESS;
     rc = cfg_get_instance_fmt(&val_type, addr,
-                              "%s/ip4_address:%u", node_oid,
+                              "%s/ip%d_address:%u", node_oid,
+                              af == AF_INET6 ? 6 : 4,
                               assigned->entries[iface->i_node]);
     if (rc != 0)
     {
-        ERROR("Failed to get IPv4 address assigned to the node '%s' "
-              "with handle 0x%x: %r", node_oid,
+        ERROR("Failed to get IPv%d address assigned to the node '%s' "
+              "with handle 0x%x: %r", af == AF_INET6 ? 6 : 4, node_oid,
               assigned->entries[iface->i_node], rc);
         free(node_oid);
         return rc;
