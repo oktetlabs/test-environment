@@ -54,6 +54,10 @@
  * The following constants could be found in linux/icmpv6.h
  * but in order to minimize dependencies we define there constants here.
  */
+#define ICMPV6_TYPE_DEST_UNREACH            1
+#define ICMPV6_TYPE_PACKET_TOO_BIG          2
+#define ICMPV6_TYPE_TIME_EXCEEDED           3
+#define ICMPV6_TYPE_PARAM_PROB              4
 #define ICMPV6_TYPE_ECHO_REQUEST            128
 #define ICMPV6_TYPE_ECHO_REPLY              129
 #define ICMPV6_TYPE_MLD_QUERY               130
@@ -79,6 +83,10 @@ typedef struct tad_icmp6_proto_data {
      *
      * Supported are:
      */
+    tad_bps_pkt_frag_def    dest_unreach_body; /* Destination unreachable */
+    tad_bps_pkt_frag_def    packet_too_big_body; /* Packet too big */
+    tad_bps_pkt_frag_def    time_exceeded_body; /* Time exceeded */
+    tad_bps_pkt_frag_def    param_prob_body; /* Parameter problem */
     tad_bps_pkt_frag_def    echo_body; /* Echo request/reply */
     tad_bps_pkt_frag_def    mld_body; /* MLD message */
     tad_bps_pkt_frag_def    router_sol_body; /* Router solicitation */
@@ -142,6 +150,62 @@ static const tad_bps_pkt_frag tad_icmp6_bps_hdr [] =
         BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_CHECKSUM, 0),
         TAD_DU_I32,
         TRUE
+    },
+};
+
+/**
+ * Definition of destination unreachable message subheader
+ */
+static const tad_bps_pkt_frag tad_icmp6_dest_unreach_bps_hdr [] =
+{
+    {
+        "unused",
+        32,
+        BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_DEST_UNREACH_UNUSED, 0),
+        TAD_DU_I32,
+        FALSE
+    },
+};
+
+/**
+ * Definition of packet too big message subheader
+ */
+static const tad_bps_pkt_frag tad_icmp6_packet_too_big_bps_hdr [] =
+{
+    {
+        "mtu",
+        32,
+        BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_PACKET_TOO_BIG_MTU, 0),
+        TAD_DU_I32,
+        FALSE
+    },
+};
+
+/**
+ * Definition of time exceeded message subheader
+ */
+static const tad_bps_pkt_frag tad_icmp6_time_exceeded_bps_hdr [] =
+{
+    {
+        "unused",
+        32,
+        BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_TIME_EXCEEDED_UNUSED, 0),
+        TAD_DU_I32,
+        FALSE
+    },
+};
+
+/**
+ * Definition of parameter problem message subheader
+ */
+static const tad_bps_pkt_frag tad_icmp6_param_prob_bps_hdr [] =
+{
+    {
+        "pointer",
+        32,
+        BPS_FLD_CONST_DEF(NDN_TAG_ICMP6_PARAM_PROB_PTR, 0),
+        TAD_DU_I32,
+        FALSE
     },
 };
 
@@ -397,6 +461,26 @@ tad_icmp6_init_cb(csap_p csap, unsigned int layer)
                                    NULL /*layer_nds*/, &proto_data->hdr);
 
     if (rc == 0)
+        rc = tad_bps_pkt_frag_init(tad_icmp6_dest_unreach_bps_hdr,
+                                   TE_ARRAY_LEN(tad_icmp6_dest_unreach_bps_hdr),
+                                   NULL, &proto_data->dest_unreach_body);
+
+    if (rc == 0)
+        rc = tad_bps_pkt_frag_init(tad_icmp6_packet_too_big_bps_hdr,
+                                   TE_ARRAY_LEN(tad_icmp6_packet_too_big_bps_hdr),
+                                   NULL, &proto_data->packet_too_big_body);
+
+    if (rc == 0)
+        rc = tad_bps_pkt_frag_init(tad_icmp6_time_exceeded_bps_hdr,
+                                   TE_ARRAY_LEN(tad_icmp6_time_exceeded_bps_hdr),
+                                   NULL, &proto_data->time_exceeded_body);
+
+    if (rc == 0)
+        rc = tad_bps_pkt_frag_init(tad_icmp6_param_prob_bps_hdr,
+                                   TE_ARRAY_LEN(tad_icmp6_param_prob_bps_hdr),
+                                   NULL, &proto_data->param_prob_body);
+
+    if (rc == 0)
         rc = tad_bps_pkt_frag_init(tad_icmp6_echo_bps_hdr,
                                    TE_ARRAY_LEN(tad_icmp6_echo_bps_hdr),
                                    NULL, &proto_data->echo_body);
@@ -455,6 +539,10 @@ tad_icmp6_destroy_cb(csap_p csap, unsigned int layer)
     csap_set_proto_spec_data(csap, layer, NULL);
 
     tad_bps_pkt_frag_free(&proto_data->hdr);
+    tad_bps_pkt_frag_free(&proto_data->dest_unreach_body);
+    tad_bps_pkt_frag_free(&proto_data->packet_too_big_body);
+    tad_bps_pkt_frag_free(&proto_data->time_exceeded_body);
+    tad_bps_pkt_frag_free(&proto_data->param_prob_body);
     tad_bps_pkt_frag_free(&proto_data->echo_body);
     tad_bps_pkt_frag_free(&proto_data->mld_body);
     tad_bps_pkt_frag_free(&proto_data->router_sol_body);
@@ -543,6 +631,22 @@ tad_icmp6_nds_to_data_prepare(tad_icmp6_proto_data *proto_data,
 
     switch (pdu_data->type)
     {
+        case ICMPV6_TYPE_DEST_UNREACH:
+            pdu_data->body_def = &proto_data->dest_unreach_body;
+            break;
+
+        case ICMPV6_TYPE_PACKET_TOO_BIG:
+            pdu_data->body_def = &proto_data->packet_too_big_body;
+            break;
+
+        case ICMPV6_TYPE_TIME_EXCEEDED:
+            pdu_data->body_def = &proto_data->time_exceeded_body;
+            break;
+
+        case ICMPV6_TYPE_PARAM_PROB:
+            pdu_data->body_def = &proto_data->param_prob_body;
+            break;
+
         case ICMPV6_TYPE_ECHO_REQUEST:
         case ICMPV6_TYPE_ECHO_REPLY:
             pdu_data->body_def = &proto_data->echo_body;
@@ -638,6 +742,10 @@ pdu_data_type2str(int type)
 {
     switch (type)
     {
+        case ICMPV6_TYPE_DEST_UNREACH: return "dest-unreach";
+        case ICMPV6_TYPE_PACKET_TOO_BIG: return "packet-too-big";
+        case ICMPV6_TYPE_TIME_EXCEEDED: return "time-exceeded";
+        case ICMPV6_TYPE_PARAM_PROB: return "param-prob";
         case ICMPV6_TYPE_ECHO_REQUEST:
         case ICMPV6_TYPE_ECHO_REPLY: return "echo";
         case ICMPV6_TYPE_MLD_QUERY:

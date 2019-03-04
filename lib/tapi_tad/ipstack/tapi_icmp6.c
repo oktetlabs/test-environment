@@ -105,7 +105,31 @@ tapi_icmp6_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
 
     if (body != NULL)
     {
-        if (body->msg_type == ICMP6_ROUTER_SOL)
+        if (body->msg_type == ICMP6_DEST_UNREACH)
+        {
+            CHECK_RC(asn_write_int32(tmp_pdu,
+                                     body->msg_body.dunr_unused,
+                                     "body.#dest-unreach.unused.#plain"));
+        }
+        else if (body->msg_type == ICMP6_PACKET_TOO_BIG)
+        {
+            CHECK_RC(asn_write_int32(tmp_pdu,
+                                     body->msg_body.packet_too_big_mtu,
+                                     "body.#packet-too-big.mtu.#plain"));
+        }
+        else if (body->msg_type == ICMP6_TIME_EXCEEDED)
+        {
+            CHECK_RC(asn_write_int32(tmp_pdu,
+                                     body->msg_body.time_exceeded_unused,
+                                     "body.#time-exceeded.unused.#plain"));
+        }
+        else if (body->msg_type == ICMP6_PARAM_PROB)
+        {
+            CHECK_RC(asn_write_int32(tmp_pdu,
+                                     body->msg_body.param_prob_ptr,
+                                     "body.#param-prob.pointer.#plain"));
+        }
+        else if (body->msg_type == ICMP6_ROUTER_SOL)
         {
             CHECK_RC(asn_write_int32(tmp_pdu,
                                      body->msg_body.rsol_reserved,

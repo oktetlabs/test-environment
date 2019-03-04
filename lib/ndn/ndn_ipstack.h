@@ -116,6 +116,10 @@ typedef enum {
     /*
      * Message variants
      */
+    NDN_TAG_ICMP6_DEST_UNREACH,
+    NDN_TAG_ICMP6_PACKET_TOO_BIG,
+    NDN_TAG_ICMP6_TIME_EXCEEDED,
+    NDN_TAG_ICMP6_PARAM_PROB,
     NDN_TAG_ICMP6_ROUTER_SOL,
     NDN_TAG_ICMP6_ROUTER_ADV,
     NDN_TAG_ICMP6_NEIGHBOR_SOL,
@@ -125,8 +129,16 @@ typedef enum {
     /*
      * Message body layout
      *
-     * Router solicitation
+     * Destination unreachable
      */
+    NDN_TAG_ICMP6_DEST_UNREACH_UNUSED,
+    /* Packet too big */
+    NDN_TAG_ICMP6_PACKET_TOO_BIG_MTU,
+    /* Time exceeded */
+    NDN_TAG_ICMP6_TIME_EXCEEDED_UNUSED,
+    /* Parameter problem message */
+    NDN_TAG_ICMP6_PARAM_PROB_PTR,
+    /* Router solicitation */
     NDN_TAG_ICMP6_ROUTER_SOL_RESERVED,
     /* Router advertisement */
     NDN_TAG_ICMP6_ROUTER_ADV_CUR_HOP_LIMIT,
@@ -246,6 +258,10 @@ extern const asn_type * const ndn_ip6_ext_header_destination;
 extern const asn_type * const ndn_ip6_ext_header;
 extern const asn_type * const ndn_ip6_ext_headers_seq;
 
+extern const asn_type * const ndn_icmp6_dest_unreach;
+extern const asn_type * const ndn_icmp6_packet_too_big;
+extern const asn_type * const ndn_icmp6_time_exceeded;
+extern const asn_type * const ndn_icmp6_param_prob;
 extern const asn_type * const ndn_icmp6_router_sol;
 extern const asn_type * const ndn_icmp6_router_adv;
 extern const asn_type * const ndn_icmp6_neighbor_sol;

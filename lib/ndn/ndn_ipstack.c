@@ -544,10 +544,94 @@ asn_type ndn_icmp6_mld_s = {
 const asn_type * const ndn_icmp6_mld = &ndn_icmp6_mld_s;
 
 /*
+ * 7) 'Destination unreachable' message
+ */
+static asn_named_entry_t _ndn_icmp6_dest_unreach_ne_array [] = {
+    {"unused",
+        &ndn_data_unit_int32_s,
+            {PRIVATE, NDN_TAG_ICMP6_DEST_UNREACH_UNUSED}},
+};
+
+asn_type ndn_icmp6_dest_unreach_s = {
+    "ICMPv6-Destination-Unreachable-Message",
+    {PRIVATE, NDN_TAG_ICMP6_DEST_UNREACH}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_icmp6_dest_unreach_ne_array),
+    {_ndn_icmp6_dest_unreach_ne_array}
+};
+
+const asn_type * const ndn_icmp6_dest_unreach = &ndn_icmp6_dest_unreach_s;
+
+/*
+ * 8) 'Packet too big' message
+ */
+static asn_named_entry_t _ndn_icmp6_packet_too_big_ne_array [] = {
+    {"mtu",
+        &ndn_data_unit_int32_s,
+            {PRIVATE, NDN_TAG_ICMP6_PACKET_TOO_BIG_MTU}},
+};
+
+asn_type ndn_icmp6_packet_too_big_s = {
+    "ICMPv6-Packet-Too-Big-Message",
+    {PRIVATE, NDN_TAG_ICMP6_PACKET_TOO_BIG}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_icmp6_packet_too_big_ne_array),
+    {_ndn_icmp6_packet_too_big_ne_array}
+};
+
+const asn_type * const ndn_icmp6_packet_too_big = &ndn_icmp6_packet_too_big_s;
+
+/*
+ * 9) 'Time exceeded' message
+ */
+static asn_named_entry_t _ndn_icmp6_time_exceeded_ne_array [] = {
+    {"unused",
+        &ndn_data_unit_int32_s,
+            {PRIVATE, NDN_TAG_ICMP6_TIME_EXCEEDED_UNUSED}},
+};
+
+asn_type ndn_icmp6_time_exceeded_s = {
+    "ICMPv6-Time-Exceeded-Message",
+    {PRIVATE, NDN_TAG_ICMP6_TIME_EXCEEDED}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_icmp6_time_exceeded_ne_array),
+    {_ndn_icmp6_time_exceeded_ne_array}
+};
+
+const asn_type * const ndn_icmp6_time_exceeded = &ndn_icmp6_time_exceeded_s;
+
+/*
+ * 10) 'Parameter problem' message
+ */
+static asn_named_entry_t _ndn_icmp6_param_prob_ne_array [] = {
+    {"pointer",
+        &ndn_data_unit_int32_s,
+            {PRIVATE, NDN_TAG_ICMP6_PARAM_PROB_PTR}},
+};
+
+asn_type ndn_icmp6_param_prob_s = {
+    "ICMPv6-Parameter-Problem-Message",
+    {PRIVATE, NDN_TAG_ICMP6_PARAM_PROB}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_icmp6_param_prob_ne_array),
+    {_ndn_icmp6_param_prob_ne_array}
+};
+
+const asn_type * const ndn_icmp6_param_prob = &ndn_icmp6_param_prob_s;
+
+/*
  * Message body
  * CHOICE: supported variants
  */
 static asn_named_entry_t _ndn_icmp6_body_ne_array [] = {
+    {"dest-unreach",
+        &ndn_icmp6_dest_unreach_s,
+            {PRIVATE, NDN_TAG_ICMP6_DEST_UNREACH}},
+    {"packet-too-big",
+        &ndn_icmp6_packet_too_big_s,
+            {PRIVATE, NDN_TAG_ICMP6_PACKET_TOO_BIG}},
+    {"time-exceeded",
+        &ndn_icmp6_time_exceeded_s,
+            {PRIVATE, NDN_TAG_ICMP6_TIME_EXCEEDED}},
+    {"param-prob",
+        &ndn_icmp6_param_prob_s,
+            {PRIVATE, NDN_TAG_ICMP6_PARAM_PROB}},
     {"router-sol",
         &ndn_icmp6_router_sol_s,
             {PRIVATE, NDN_TAG_ICMP6_ROUTER_SOL}},

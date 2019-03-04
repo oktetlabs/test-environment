@@ -42,6 +42,10 @@ extern "C" {
  * ICMPv6 message type enumeration
  */
 typedef enum {
+    ICMP6_DEST_UNREACH = 1,
+    ICMP6_PACKET_TOO_BIG,
+    ICMP6_TIME_EXCEEDED,
+    ICMP6_PARAM_PROB,
     ICMP6_ECHO_REQUEST = 128,
     ICMP6_ECHO_REPLY,
     ICMP6_MLD_QUERY,
@@ -103,6 +107,10 @@ struct echo_body {
 typedef struct icmp6_msg_body {
     icmp6_msg_type  msg_type;
     union {
+        uint32_t            dunr_unused;
+        uint32_t            packet_too_big_mtu;
+        uint32_t            time_exceeded_unused;
+        uint32_t            param_prob_ptr;
         uint32_t            rsol_reserved;
         struct radv_body    radv;
         struct nsol_body    nsol;
