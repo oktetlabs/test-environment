@@ -294,6 +294,13 @@ te_netaddr_get_size(int af)
 
 /* See the description in te_sockaddr.h */
 size_t
+te_netaddr_get_bitsize(int af)
+{
+    return te_netaddr_get_size(af) * 8;
+}
+
+/* See the description in te_sockaddr.h */
+size_t
 te_sockaddr_get_size_by_af(int af)
 {
     switch (af)

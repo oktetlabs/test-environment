@@ -405,12 +405,23 @@ extern te_errno te_sockaddr_str2h(const char *string, struct sockaddr *sa);
 
 /**
  * Returns the size of network address from a particular family
+ * (in bytes).
  *
  * @param af  Address family
  *
  * @return Number of bytes used under network address
  */
 extern size_t te_netaddr_get_size(int af);
+
+/**
+ * Returns the size of network address from a particular family
+ * (in bits).
+ *
+ * @param af  Address family
+ *
+ * @return Number of bits required to store network address.
+ */
+extern size_t te_netaddr_get_bitsize(int af);
 
 /**
  * Set multicast address part of XXX_mreq(n) structure
