@@ -123,6 +123,9 @@ te_sockaddr_set_port(struct sockaddr *addr, uint16_t port)
 void *
 te_sockaddr_get_netaddr(const struct sockaddr *addr)
 {
+    if (addr == NULL)
+        return NULL;
+
     switch (addr->sa_family)
     {
         case AF_INET:

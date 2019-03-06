@@ -155,11 +155,13 @@ extern void te_sockaddr_set_port(struct sockaddr *addr, uint16_t port);
 
 /**
  * Returns pointer to network address part of sockaddr structure according
- * to 'sa_family' field of the structure
+ * to 'sa_family' field of the structure.
+ *
+ * @note If @p addr is @c NULL, this function simply returns @c NULL.
  *
  * @param addr  Generic address structure
  *
- * @return Pointer to corresponding network address
+ * @return Pointer to corresponding network address or @c NULL.
  */
 extern void *te_sockaddr_get_netaddr(const struct sockaddr *addr);
 
