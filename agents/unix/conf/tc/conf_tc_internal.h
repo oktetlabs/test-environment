@@ -35,22 +35,6 @@ extern void conf_tc_internal_fini(void);
 extern struct nl_sock *conf_tc_internal_get_sock(void);
 
 /**
- * Get interface index by interface name
- *
- * @param if_name   interface name
- * @return interface index
- */
-extern int conf_tc_internal_if_index_by_name(const char *if_name);
-
-/**
- * Get interface name by interface index
- *
- * @param if_index  interface index
- * @return interface name
- */
-extern const char * conf_tc_internal_if_name_by_index(int if_index);
-
-/**
  * Get qdisc binded with interface name
  * @note must be given back with rtnl_qdisc_put() after usage
  *
@@ -78,7 +62,6 @@ extern struct rtnl_qdisc *conf_tc_internal_get_qdisc(const char *if_name);
  * @retval TE_EUNKNOWN if conversation no success
  */
 extern te_errno conf_tc_internal_nl_error2te_errno(int nl_error);
-
 
 /**
  * Enable qdisc for interface

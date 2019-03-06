@@ -16,16 +16,14 @@
 #include "logger_api.h"
 
 #include <netlink/errno.h>
-#include <netlink/cache.h>
 #include <netlink/route/link.h>
 #include <netlink/route/qdisc.h>
 #include <netlink/socket.h>
 
 #include "conf_tc_internal.h"
+#include "conf_net_if_wrapper.h"
 
 static struct nl_sock *netlink_socket = NULL;
-
-static struct nl_cache *cache = NULL;
 
 static struct nl_cache *qdisc_cache = NULL;
 
@@ -60,22 +58,6 @@ netlink_socket_fini(void)
 }
 
 static te_errno
-netlink_cache_init(void)
-{
-    int rc;
-    struct nl_sock *sock = conf_tc_internal_get_sock();
-
-    rc = rtnl_link_alloc_cache(sock, AF_UNSPEC, &cache);
-    return conf_tc_internal_nl_error2te_errno(rc);
-}
-
-static void
-netlink_cache_fini(void)
-{
-    nl_cache_free(cache);
-}
-
-static te_errno
 netlink_qdisc_cache_init(void)
 {
     int rc;
@@ -102,9 +84,6 @@ conf_tc_internal_init(void)
     if ((rc = netlink_socket_init()) != 0)
         return rc;
 
-    if ((rc = netlink_cache_init()) != 0)
-        return rc;
-
     if ((rc = netlink_qdisc_cache_init()) != 0)
         return rc;
 
@@ -118,7 +97,6 @@ conf_tc_internal_fini(void)
     qdisc_context_node *qdisc_cxt, *tqdisc_cxt;
 
     netlink_socket_fini();
-    netlink_cache_fini();
     netlink_qdisc_cache_fini();
 
     SLIST_FOREACH_SAFE(qdisc_cxt, &qdiscs, links, tqdisc_cxt) {
@@ -135,28 +113,11 @@ conf_tc_internal_get_sock(void)
 }
 
 /* See the description in conf_tc_internal.h */
-int
-conf_tc_internal_if_index_by_name(const char *if_name)
-{
-    return rtnl_link_name2i(cache, if_name);
-}
-
-/* See the description in conf_tc_internal.h */
-const char *
-conf_tc_internal_if_name_by_index(int if_index)
-{
-    static char if_name[IFNAMSIZ];
-
-    return rtnl_link_i2name(cache, if_index, if_name,
-                            sizeof(if_name));
-}
-
-/* See the description in conf_tc_internal.h */
 struct rtnl_qdisc *
 conf_tc_internal_try_get_qdisc(const char *if_name)
 {
     struct rtnl_qdisc *qdisc = NULL;
-    int if_index = conf_tc_internal_if_index_by_name(if_name);
+    int if_index = conf_net_if_wrapper_if_nametoindex(if_name);
 
     qdisc = rtnl_qdisc_get_by_parent(qdisc_cache, if_index, TC_H_ROOT);
 
@@ -186,7 +147,7 @@ new_qdisc(const char *if_name)
         return NULL;
 
     rtnl_tc_set_ifindex(TC_CAST(qdisc),
-                        conf_tc_internal_if_index_by_name(if_name));
+                        conf_net_if_wrapper_if_nametoindex(if_name));
     return qdisc;
 }
 
@@ -217,7 +178,7 @@ static struct rtnl_qdisc *
 find_qdisc(const char *if_name)
 {
     int qdisc_if_index;
-    int if_index = conf_tc_internal_if_index_by_name(if_name);
+    int if_index = conf_net_if_wrapper_if_nametoindex(if_name);
     qdisc_context_node *qdisc_ctx = NULL;
 
     SLIST_FOREACH(qdisc_ctx, &qdiscs, links)
