@@ -397,7 +397,7 @@ parser_set_enable(unsigned int gid, const char *oid, char *value,
     if (en == TRUE)
     {
         rc = pthread_create(&parser->thread, NULL,
-                            (void *)&te_serial_parser, parser);
+                            (void *)&te_serial_parser_connect, parser);
         if (rc != 0)
         {
             ERROR("Couldn't to start the parser thread %s, oid %s",

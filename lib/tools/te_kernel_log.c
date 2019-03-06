@@ -65,6 +65,7 @@
 #include "logger_api.h"
 #include "rcf_common.h"
 #include "te_serial_parser.h"
+#include "te_sleep.h"
 
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
@@ -75,6 +76,9 @@
 
 /** Maximum length of accumulated log */
 #define LOG_SERIAL_MAX_LEN          2047
+
+/** Number of attempts to reconnect */
+#define LOG_SERIAL_NUM_ATTEMPT      4
 
 /** Conserver escape sequences */
 #define CONSERVER_ESCAPE    "\05c"
@@ -592,7 +596,8 @@ te_serial_parser(serial_parser_t *parser)
     char * volatile fence;
     volatile int    current_timeout = LOG_SERIAL_ALIVE_TIMEOUT;
     volatile int    incomp_str_count = 0;
-
+    volatile int     rc = TE_RC(TE_TA_UNIX, TE_EAGAIN);
+    
     char           *newline;
     int             interval;
     int             len;
@@ -780,7 +785,7 @@ do {                                                            \
             else if (len == 0)
             {
                 MAYBE_DO_LOG;
-                ERROR("Terminal is closed");
+                WARN("Terminal is closed");
                 break;
             }
             current += len;
@@ -807,6 +812,7 @@ do {                                                            \
         {
             MAYBE_DO_LOG;
             RING("Terminal hung up");
+            rc = 0;
             break;
         }
         else
@@ -816,6 +822,30 @@ do {                                                            \
         }
     }
     pthread_cleanup_pop(1); /* free buffer */
-    return 0;
+    return rc;
 #undef MAYBE_DO_LOG
+}
+
+/* See description in the te_serial_parser.h */
+int
+te_serial_parser_connect(serial_parser_t *parser)
+{
+    int rc = 0;
+    int i = 0;
+
+    while (i != LOG_SERIAL_NUM_ATTEMPT)
+    {
+        rc = te_serial_parser(parser);
+
+        if (rc == TE_EAGAIN || rc == TE_EIO)
+            i = 0;
+
+        if (rc == 0)
+            break;
+
+        te_motivated_sleep(LOG_SERIAL_ALIVE_TIMEOUT / 1000,
+                           "Sleep before next try to reconnect to conserver");
+        i++;
+    }
+    return rc;
 }
