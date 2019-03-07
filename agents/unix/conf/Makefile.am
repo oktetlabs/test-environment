@@ -25,6 +25,7 @@ noinst_HEADERS = \
 	rule/conf_rule.h \
 	util/conf_dlpi.h \
 	util/te_cmd_monitor.h \
+	util/conf_getmsg.h \
 	vm/conf_vm.h
         
 noinst_LIBRARIES=libconf.a

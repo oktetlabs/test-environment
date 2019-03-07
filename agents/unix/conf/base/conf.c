@@ -182,6 +182,7 @@ typedef struct pam_message const pam_message_t;
 #include "conf_route.h"
 #include "conf_rule.h"
 #include "conf_vm.h"
+#include "conf_getmsg.h"
 #include "conf_common.h"
 #include "te_shell_cmd.h"
 
@@ -6764,19 +6765,21 @@ ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
 
     return 0;
 }
-#elif !HAVE_INET_MIB2_H
+#else
 static te_errno
 ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
                         char **list)
 {
     UNUSED(ifname);
     UNUSED(is_static);
+
+#if HAVE_INET_MIB2_H
+    return ta_unix_conf_neigh_list_getmsg(ifname, is_static, list);
+#else
     *list = NULL;
+#endif
     return 0;
 }
-#else /* defined as external in util/conf_getmsg.c */
-te_errno
-ta_unix_conf_neigh_list(const char *iface, te_bool is_static, char **list);
 #endif
 
 /**
