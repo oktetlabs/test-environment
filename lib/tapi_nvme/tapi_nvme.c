@@ -922,6 +922,16 @@ tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl)
 }
 
 /* See description in tapi_nvme.h */
+te_errno
+tapi_nvme_initiator_disconnect_all(rcf_rpc_server *rpcs)
+{
+    assert(rpcs);
+
+    return run_command_dump_output_rc(rpcs, TE_SEC2MS(5),
+                                      "nvme disconnect-all");
+}
+
+/* See description in tapi_nvme.h */
 const char *
 tapi_nvme_transport_str(tapi_nvme_transport transport) {
     static const char *transports[] = {

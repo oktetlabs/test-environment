@@ -224,6 +224,15 @@ tapi_nvme_initiator_connect_all(tapi_nvme_host_ctrl *host_ctrl,
 extern te_errno tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl);
 
 /**
+ * Disconnect from all connected NVMeoF subsystems
+ *
+ * @param rpc_host_ctrl RPC server
+ *
+ * @return TE error code
+ */
+extern te_errno tapi_nvme_initiator_disconnect_all(rcf_rpc_server *rpcs);
+
+/**
  * Call 'nvme list' on the initiator side.
  *
  * @param host_ctrl     handle of host_ctrl
