@@ -224,6 +224,17 @@ tapi_nvme_initiator_connect_all(tapi_nvme_host_ctrl *host_ctrl,
 extern te_errno tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl);
 
 /**
+ * Disconnect all devices matched by regexp
+ *
+ * @param rpc_host_ctrl RPC server
+ * @param regexp        Regular expression
+ *
+ * @return TE error code
+ */
+extern te_errno tapi_nvme_initiator_disconnect_match(rcf_rpc_server *rpcs,
+                                                     const char *regexp);
+
+/**
  * Disconnect from all connected NVMeoF subsystems
  *
  * @param rpc_host_ctrl RPC server

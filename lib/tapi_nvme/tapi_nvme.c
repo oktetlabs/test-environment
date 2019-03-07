@@ -923,6 +923,17 @@ tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl)
 
 /* See description in tapi_nvme.h */
 te_errno
+tapi_nvme_initiator_disconnect_match(rcf_rpc_server *rpcs,
+                                     const char *regexp)
+{
+    if (regexp == NULL)
+        return tapi_nvme_initiator_disconnect_all(rpcs);
+
+    return TE_EOPNOTSUPP;
+}
+
+/* See description in tapi_nvme.h */
+te_errno
 tapi_nvme_initiator_disconnect_all(rcf_rpc_server *rpcs)
 {
     assert(rpcs);
