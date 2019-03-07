@@ -1200,7 +1200,7 @@ TARPC_FUNC(accept4,
 
 /*-------------- socket_connect_close() -----------------------*/
 int
-socket_connect_close(const struct sockaddr *addr,
+socket_connect_close(int domain, const struct sockaddr *addr,
                      socklen_t addrlen, uint32_t time2run)
 {
     int     s;
@@ -1223,7 +1223,7 @@ socket_connect_close(const struct sockaddr *addr,
     while ((unsigned int)(now - start) <= time2run)
     {
         now = time(NULL);
-        s = socket_func(AF_INET, SOCK_STREAM, 0);
+        s = socket_func(domain, SOCK_STREAM, 0);
         rc = connect_func(s, addr, addrlen);
         if( rc != 0  && errno != ECONNREFUSED && errno != ECONNABORTED )
             return -1;
@@ -1235,14 +1235,14 @@ socket_connect_close(const struct sockaddr *addr,
 TARPC_FUNC(socket_connect_close, {},
 {
     PREPARE_ADDR(serv_addr, in->addr, 0);
-    MAKE_CALL(out->retval = func_ptr(serv_addr, serv_addrlen,
-                                     in->time2run));
+    MAKE_CALL(out->retval = func_ptr(domain_rpc2h(in->domain), serv_addr,
+                                     serv_addrlen, in->time2run));
 }
 )
 
 /*-------------- socket_listen_close() -----------------------*/
 int
-socket_listen_close(const struct sockaddr *addr,
+socket_listen_close(int domain, const struct sockaddr *addr,
                     socklen_t addrlen, uint32_t time2run)
 {
     int     s;
@@ -1268,7 +1268,7 @@ socket_listen_close(const struct sockaddr *addr,
     while ((unsigned int)(now - start) <= time2run)
     {
         now = time(NULL);
-        s = socket_func(AF_INET, SOCK_STREAM, 0);
+        s = socket_func(domain, SOCK_STREAM, 0);
         rc = bind_func(s, addr, addrlen);
         if( rc != 0 )
         {
@@ -1289,8 +1289,8 @@ socket_listen_close(const struct sockaddr *addr,
 TARPC_FUNC(socket_listen_close, {},
 {
     PREPARE_ADDR(serv_addr, in->addr, 0);
-    MAKE_CALL(out->retval = func_ptr(serv_addr, serv_addrlen,
-                                     in->time2run));
+    MAKE_CALL(out->retval = func_ptr(domain_rpc2h(in->domain), serv_addr,
+                                     serv_addrlen, in->time2run));
 }
 )
 
