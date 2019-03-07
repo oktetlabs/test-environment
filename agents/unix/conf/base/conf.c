@@ -610,23 +610,6 @@ static te_errno neigh_list(unsigned int, const char *,
                            const char *, char **,
                            const char *);
 
-/*
- * This is a bit of hack - there are same handlers for static and dynamic
- * branches, handler discovers dynamic subtree by presence of
- * "dynamic" in OID. But list method does not contain the last subid.
- *
- * FIXME: now there is an argument for last sub_id.
- */
-static te_errno
-neigh_dynamic_list(unsigned int gid, const char *oid,
-                   const char *sub_id, char **list,
-                   const char *ifname)
-{
-    UNUSED(oid);
-
-    return neigh_list(gid, "dynamic", sub_id, list, ifname);
-}
-
 static te_errno agent_platform_get(unsigned int, const char *, char *,
                                    const char *, ...);
 
@@ -809,7 +792,7 @@ static rcf_pch_cfg_object node_neigh_dynamic =
     { "neigh_dynamic", 0, &node_neigh_state, NULL,
       (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)neigh_set,
       (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
-      (rcf_ch_cfg_list)neigh_dynamic_list, NULL, NULL};
+      (rcf_ch_cfg_list)neigh_list, NULL, NULL};
 
 static rcf_pch_cfg_object node_neigh_static =
     { "neigh_static", 0, NULL, &node_neigh_dynamic,
@@ -6801,7 +6784,7 @@ ta_unix_conf_neigh_list(const char *iface, te_bool is_static, char **list);
  *
  * @param gid           group identifier (unused)
  * @param oid           full parent object instance identifier
- * @param sub_id        ID of the object to be listed (unused)
+ * @param sub_id        ID of the object to be listed
  * @param list          location for the list pointer
  * @param ifname        interface name
  *
@@ -6812,11 +6795,11 @@ neigh_list(unsigned int gid, const char *oid,
            const char *sub_id, char **list,
            const char *ifname)
 {
+    UNUSED(oid);
     UNUSED(gid);
-    UNUSED(sub_id);
 
     return ta_unix_conf_neigh_list(ifname,
-                                   strstr(oid, "dynamic") == NULL,
+                                   strstr(sub_id, "dynamic") == NULL,
                                    list);
 }
 
