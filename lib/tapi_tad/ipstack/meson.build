@@ -5,6 +5,7 @@ headers += files(
     'tapi_ip6.h',
     'tapi_icmp4.h',
     'tapi_icmp6.h',
+    'tapi_icmp.h',
     'tapi_udp.h',
     'tapi_tcp.h',
     'tapi_socket.h',
@@ -13,6 +14,7 @@ headers += files(
 sources += files(
     'tapi_icmp4.c',
     'tapi_icmp6.c',
+    'tapi_icmp.c',
     'tapi_ip4.c',
     'tapi_ip6.c',
     'tapi_socket.c',
