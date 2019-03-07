@@ -1268,6 +1268,12 @@
          Name: empty -->
     <object oid="/agent/sys/net/ipv4/route" access="read_only" type="none"/>
 
+    <!-- System settings from /proc/sys/net/ipv6/conf/.
+         Name: name of a directory under */conf/ -->
+    <object oid="/agent/sys/net/ipv6/conf" access="read_only" type="none">
+      <depends oid="/agent/rsrc"/>
+    </object>
+
     <!-- Resource limits data root.
          Name: empty
          -->
