@@ -37,6 +37,7 @@ headers += files(
     'te_tools.h',
     'te_units.h',
     'tq_string.h',
+    'te_vector.h',
 )
 sources += files(
     'te_alloc.c',
@@ -59,5 +60,6 @@ sources += files(
     'te_toeplitz.c',
     'te_units.c',
     'tq_string.c',
+    'te_vector.c',
 )
 deps = [ cc.find_library('m') ]
