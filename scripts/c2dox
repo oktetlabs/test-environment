@@ -60,8 +60,8 @@ in_dox_log_comment {
     $0 = gensub(/\\"/, "\"", "g");
 }
 
-in_dox_log_comment && /);/ {
-    sub(/);/, "");
+in_dox_log_comment && /);\s*$/ {
+    sub(/);\s*$/, "");
     print $0;
     in_dox_log_comment = 0;
     next;
