@@ -257,3 +257,92 @@ tapi_icmp6_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
 
     return 0;
 }
+
+/* See the description in tapi_icmp6.h */
+te_errno
+tapi_icmp6_add_csap_layer(asn_value **csap_spec)
+{
+    return tapi_tad_csap_add_layer(csap_spec, ndn_icmp6_csap, "#icmp6",
+                                   NULL);
+}
+
+/* See the description in tapi_icmp6.h */
+te_errno
+tapi_udp_ip6_icmp_ip6_eth_csap_create(
+                            const char                 *ta_name,
+                            int                         sid,
+                            const char                 *eth_dev,
+                            unsigned int                receive_mode,
+                            const uint8_t              *loc_eth,
+                            const uint8_t              *rem_eth,
+                            const uint8_t              *loc_addr,
+                            const uint8_t              *rem_addr,
+                            const struct sockaddr_in6  *msg_loc_saddr,
+                            const struct sockaddr_in6  *msg_rem_saddr,
+                            csap_handle_t              *udp_csap)
+{
+    te_errno    rc;
+    asn_value  *csap_spec = NULL;
+
+    rc = tapi_udp_add_csap_layer(&csap_spec,
+                                 msg_loc_saddr == NULL ?
+                                    -1 : msg_loc_saddr->sin6_port,
+                                 msg_rem_saddr == NULL ?
+                                    -1 : msg_rem_saddr->sin6_port);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add UDP csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = tapi_ip6_add_csap_layer(&csap_spec,
+                                 msg_loc_saddr == NULL ?
+                                    NULL : msg_loc_saddr->sin6_addr.s6_addr,
+                                 msg_rem_saddr == NULL ?
+                                    NULL : msg_rem_saddr->sin6_addr.s6_addr,
+                                 IPPROTO_UDP);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add outer IP6 csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = tapi_icmp6_add_csap_layer(&csap_spec);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add ICMP6 csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = tapi_ip6_add_csap_layer(&csap_spec, loc_addr, rem_addr,
+                                 IPPROTO_ICMPV6);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add inner IP6 csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = tapi_eth_add_csap_layer(&csap_spec, eth_dev, receive_mode,
+                                 rem_eth, loc_eth,
+                                 NULL /* automatic length/type */,
+                                 TE_BOOL3_ANY /* untagged/tagged */,
+                                 TE_BOOL3_ANY /* Ethernet2/LLC+SNAP */);
+    if (rc != 0)
+    {
+        asn_free_value(csap_spec);
+        WARN("%s(): add ETH csap layer failed %r", __FUNCTION__, rc);
+        return rc;
+    }
+
+
+    rc = tapi_tad_csap_create(ta_name, sid, "udp.ip6.icmp6.ip6.eth",
+                              csap_spec, udp_csap);
+
+    asn_free_value(csap_spec);
+
+    return TE_RC(TE_TAPI, rc);
+}

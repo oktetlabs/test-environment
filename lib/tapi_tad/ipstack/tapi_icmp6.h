@@ -192,6 +192,50 @@ extern te_errno tapi_icmp6_add_pdu(asn_value **tmpl_or_ptrn,
                                    icmp6_msg_body *body,
                                    icmp6_msg_option *optlist);
 
+/**
+ * Add ICMPv6 layer in CSAP specification.
+ *
+ * @param csap_spec     Location of CSAP specification pointer.
+ *
+ * @retval Status code.
+ */
+extern te_errno tapi_icmp6_add_csap_layer(asn_value **csap_spec);
+
+
+/**
+ * Create 'udp.ip6.icmp.ip6.eth' CSAP on the specified Agent
+ *
+ * @param ta_name           Test Agent name
+ * @param sid               RCF SID
+ * @param eth_dev           Name of Ethernet interface
+ * @param receive_mode      Bitmask with receive mode, see 'enum
+ *                          tad_eth_recv_mode' in tad_common.h.
+ *                          Use TAD_ETH_RECV_DEF by default.
+ * @param loc_eth           Local MAC address (or NULL)
+ * @param rem_eth           Remote MAC address (or NULL)
+ * @param loc_addr          Local IPv6 address (or NULL)
+ * @param rem_addr          Remote IPv6 address (or NULL)
+ * @param msg_loc_saddr     Local IPv6 address/port of ICMP Error message
+ *                          (or NULL)
+ * @param msg_rem_saddr     Remote IPv6 address/port of ICMP Error message
+ *                          (or NULL)
+ * @param udp_csap          Location for the CSAP handle (OUT)
+ *
+ * @return Zero on success or error code
+ */
+extern te_errno tapi_udp_ip6_icmp_ip6_eth_csap_create(
+                            const char                 *ta_name,
+                            int                         sid,
+                            const char                 *eth_dev,
+                            unsigned int                receive_mode,
+                            const uint8_t              *loc_eth,
+                            const uint8_t              *rem_eth,
+                            const uint8_t              *loc_addr,
+                            const uint8_t              *rem_addr,
+                            const struct sockaddr_in6  *msg_loc_saddr,
+                            const struct sockaddr_in6  *msg_rem_saddr,
+                            csap_handle_t              *udp_csap);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

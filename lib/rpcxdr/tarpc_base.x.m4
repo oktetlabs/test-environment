@@ -5353,6 +5353,7 @@ typedef struct tarpc_int_retval_out tarpc_ta_dlclose_out;
 struct tarpc_socket_connect_close_in {
     struct tarpc_in_arg common;
 
+    tarpc_int           domain;
     struct tarpc_sa     addr;
     tarpc_socklen_t     len;
     uint32_t            time2run;
@@ -5363,6 +5364,7 @@ typedef struct tarpc_int_retval_out tarpc_socket_connect_close_out;
 struct tarpc_socket_listen_close_in {
     struct tarpc_in_arg common;
 
+    tarpc_int           domain;
     struct tarpc_sa     addr;
     tarpc_socklen_t     len;
     uint32_t            time2run;

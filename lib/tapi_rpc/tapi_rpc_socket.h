@@ -1179,10 +1179,12 @@ extern int rpc_sendmmsg_alt(rcf_rpc_server *rpcs, int fd,
                             rpc_send_recv_flags flags);
 
 extern int rpc_socket_connect_close(rcf_rpc_server *rpcs,
+                                    rpc_socket_domain domain,
                                     const struct sockaddr *addr,
                                     uint32_t time2run);
 
 extern int rpc_socket_listen_close(rcf_rpc_server *rpcs,
+                                   rpc_socket_domain domain,
                                    const struct sockaddr *addr,
                                    uint32_t time2run);
 
