@@ -14,6 +14,8 @@
 
 #define TE_LGR_USER "TAPI ICMP"
 
+#include "te_config.h"
+
 #include "tapi_icmp4.h"
 #include "tapi_icmp6.h"
 
