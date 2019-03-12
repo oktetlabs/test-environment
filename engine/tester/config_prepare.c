@@ -166,6 +166,15 @@ inherit_executable(run_item **child_exec, unsigned int *child_flags,
 
     if (*child_exec != NULL)
     {
+        /*
+         * If the current session (referred to as "child" here) already has
+         * a given executable set, we should update executable and its
+         * inheritance flags in the current processing context. It will
+         * allow descendant sessions to inherit it later from descendant
+         * contexts (see also config_prepare_new_ctx()), if handdown
+         * property of executable says that it should be inherited.
+         */
+
         *inherit_flags &= ~inherit_do;
         *inherit_exec = NULL;
         switch ((*child_exec)->handdown)
@@ -187,9 +196,24 @@ inherit_executable(run_item **child_exec, unsigned int *child_flags,
     }
     else
     {
+        /*
+         * If the current session does not have a given executable set,
+         * we should set it to a value stored in the current processing
+         * context (which may have got it via the previous contexts from
+         * some higher level session, see comments above).
+         */
+
         /* Set flag even in the case of NULL executable - it is harmless */
         *child_flags |= inherit_done;
         *child_exec = *inherit_exec;
+
+        /*
+         * If context flags do not say that all descendants (not just
+         * direct children) should inherit this executable, set it to
+         * NULL in the current processing context, so that nothing will
+         * be inherited from it by descendant contexts and therefore by
+         * descendant sessions.
+         */
         if (~(*inherit_flags) & inherit_do)
             *inherit_exec = NULL;
     }
