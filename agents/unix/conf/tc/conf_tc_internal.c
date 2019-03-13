@@ -17,9 +17,9 @@
 
 #include <netlink/errno.h>
 #include <netlink/cache.h>
-#include <netlink/socket.h>
 #include <netlink/route/link.h>
 #include <netlink/route/qdisc.h>
+#include <netlink/socket.h>
 
 #include "conf_tc_internal.h"
 
