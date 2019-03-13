@@ -767,14 +767,14 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
         else
         {
             sprintf(cmd, "%s%skill %d%s " RCFUNIX_REDIRECT,
-                    ta->cmd_prefix, ta->sudo ? "sudo -n" : "", ta->pid,
+                    ta->cmd_prefix, ta->sudo ? "sudo -n " : "", ta->pid,
                     ta->cmd_suffix);
             rc = system_with_timeout(cmd, ta->kill_timeout);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
 
             sprintf(cmd, "%s%skill -9 %d%s " RCFUNIX_REDIRECT,
-                    ta->cmd_prefix, ta->sudo ? "sudo -n" : "", ta->pid,
+                    ta->cmd_prefix, ta->sudo ? "sudo -n " : "", ta->pid,
                     ta->cmd_suffix);
             rc = system_with_timeout(cmd, ta->kill_timeout);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
