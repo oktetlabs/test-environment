@@ -351,6 +351,15 @@ system_with_timeout(const char *cmd, int timeout)
 }
 
 /**
+ * Sudo command prefix if required.
+ */
+static const char *
+rcfunix_ta_sudo(unix_ta *ta)
+{
+    return ta->sudo ? "sudo -n " : "";
+}
+
+/**
  * Start the Test Agent. Note that it's not necessary
  * to restart the proxy Test Agents after rebooting of
  * the NUT, which it serves.
@@ -658,19 +667,19 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 #if defined RCF_UNIX_SOLARIS
     if (rc == 0)
         rc = te_string_append(&cmd,
-                "sudo /usr/bin/coreadm -g /tmp/core.%n-%p-%t -e global; ");
+                "%s/usr/bin/coreadm -g /tmp/core.%n-%p-%t -e global; ",
+                rcfunix_ta_sudo(ta));
 #else
     if (rc == 0)
         rc = te_string_append(&cmd,
-                "sudo sysctl -w kernel.core_pattern=\"core.%h-%p-%t\"; ");
+                "%ssysctl -w kernel.core_pattern=\"core.%h-%p-%t\"; ",
+                rcfunix_ta_sudo(ta));
 #endif
     if (rc == 0)
-    {
-        if (ta->sudo)
-            rc = te_string_append(&cmd, "sudo ");
-        else if (ta->su)
-            rc = te_string_append(&cmd, "su -c ");
-    }
+        rc = te_string_append(&cmd, "%s",
+                                   rcfunix_ta_sudo(ta));
+    if (rc == 0 && ta->su)
+        rc = te_string_append(&cmd, "su -c ");
 
     /*
      * Add directory with agent to the PATH
@@ -702,16 +711,18 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 #if defined RCF_UNIX_SOLARIS
     if (rc == 0)
         rc = te_string_append(&cmd,
-                "; sudo /usr/bin/coreadm -g /tmp/core -e global ");
+                "; %s/usr/bin/coreadm -g /tmp/core -e global ",
+                rcfunix_ta_sudo(ta));
 #else
     /* Enquote command in double quotes for non-local agent */
     if (rc == 0)
         rc = te_string_append(&cmd,
-                "; sudo sysctl -w kernel.core_pattern=\"core\" ");
+                "; %ssysctl -w kernel.core_pattern=\"core\" ",
+                rcfunix_ta_sudo(ta));
 #endif
     if (rc == 0)
         rc = te_string_append(&cmd,
-                "; sudo mv /tmp/core* /var/tmp ");
+                "; %smv /tmp/core* /var/tmp ", rcfunix_ta_sudo(ta));
     if (rc == 0)
         rc = te_string_append(&cmd,
                 "%s 2>&1 | te_tee %s %s 10 >ta.%s ",
@@ -805,14 +816,14 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
         else
         {
             sprintf(cmd, "%s%skill %d%s " RCFUNIX_REDIRECT,
-                    ta->cmd_prefix, ta->sudo ? "sudo -n " : "", ta->pid,
+                    ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->pid,
                     ta->cmd_suffix);
             rc = system_with_timeout(cmd, ta->kill_timeout);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
 
             sprintf(cmd, "%s%skill -9 %d%s " RCFUNIX_REDIRECT,
-                    ta->cmd_prefix, ta->sudo ? "sudo -n " : "", ta->pid,
+                    ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->pid,
                     ta->cmd_suffix);
             rc = system_with_timeout(cmd, ta->kill_timeout);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
@@ -821,14 +832,14 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
 
         sprintf(cmd,
                 "%s%skillall /tmp/%s%s/ta%s " RCFUNIX_REDIRECT,
-                ta->cmd_prefix, ta->sudo ? "sudo " : "" , ta->ta_type,
+                ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->ta_type,
                 ta->postfix, ta->cmd_suffix);
         rc = system_with_timeout(cmd, ta->kill_timeout);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
 
         sprintf(cmd, "%s%skillall -9 /tmp/%s%s/ta%s " RCFUNIX_REDIRECT,
-                ta->cmd_prefix, ta->sudo ? "sudo -n " : "" ,
+                ta->cmd_prefix, rcfunix_ta_sudo(ta),
                 ta->ta_type, ta->postfix, ta->cmd_suffix);
         rc = system_with_timeout(cmd, ta->kill_timeout);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
