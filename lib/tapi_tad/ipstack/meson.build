@@ -1,6 +1,7 @@
 # Copyright (C) 2018 OKTET Labs. All rights reserved.
 
 headers += files(
+    'tapi_ip_common.h',
     'tapi_ip4.h',
     'tapi_ip6.h',
     'tapi_icmp4.h',
@@ -12,6 +13,7 @@ headers += files(
 )
 
 sources += files(
+    'tapi_ip_common.c',
     'tapi_icmp4.c',
     'tapi_icmp6.c',
     'tapi_icmp.c',

@@ -90,6 +90,7 @@ endif
 IPSTACK_HDRS = \
 	ipstack/tapi_ip4.h \
 	ipstack/tapi_ip6.h \
+	ipstack/tapi_ip_common.h \
 	ipstack/tapi_icmp4.h \
 	ipstack/tapi_icmp6.h \
 	ipstack/tapi_icmp.h \
@@ -99,6 +100,7 @@ IPSTACK_HDRS = \
 IPSTACK_SRCS = \
 	ipstack/tapi_ip4.c \
 	ipstack/tapi_ip6.c \
+	ipstack/tapi_ip_common.c \
 	ipstack/tapi_icmp4.c \
 	ipstack/tapi_icmp6.c \
 	ipstack/tapi_icmp.c \
