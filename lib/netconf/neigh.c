@@ -12,6 +12,62 @@
 #include "netconf_internal.h"
 
 /**
+ * Convert TE neighbor entry flags to native neighbor entry flags.
+ *
+ * @param flags     Flags to convert.
+ *
+ * @return Converted flags.
+ */
+static unsigned int
+neigh_flags_te2h(unsigned int flags)
+{
+    unsigned int result = 0;
+
+    if (flags & NETCONF_NTF_USE)
+        result = result | NTF_USE;
+    if (flags & NETCONF_NTF_SELF)
+        result = result | NTF_SELF;
+    if (flags & NETCONF_NTF_MASTER)
+        result = result | NTF_MASTER;
+    if (flags & NETCONF_NTF_PROXY)
+        result = result | NTF_PROXY;
+    if (flags & NETCONF_NTF_EXT_LEARNED)
+        result = result | NTF_EXT_LEARNED;
+    if (flags & NETCONF_NTF_ROUTER)
+        result = result | NTF_ROUTER;
+
+    return result;
+}
+
+/**
+ * Convert native neighbor entry flags to TE neighbor entry flags.
+ *
+ * @param flags     Flags to convert.
+ *
+ * @return Converted flags.
+ */
+static unsigned int
+neigh_flags_h2te(unsigned int flags)
+{
+    unsigned int result = 0;
+
+    if (flags & NTF_USE)
+        result = result | NETCONF_NTF_USE;
+    if (flags & NTF_SELF)
+        result = result | NETCONF_NTF_SELF;
+    if (flags & NTF_MASTER)
+        result = result | NETCONF_NTF_MASTER;
+    if (flags & NTF_PROXY)
+        result = result | NETCONF_NTF_PROXY;
+    if (flags & NTF_EXT_LEARNED)
+        result = result | NETCONF_NTF_EXT_LEARNED;
+    if (flags & NTF_ROUTER)
+        result = result | NETCONF_NTF_ROUTER;
+
+    return result;
+}
+
+/**
  * Callback of neighbours dump.
  *
  * @param h             Message header
@@ -35,6 +91,7 @@ neigh_list_cb(struct nlmsghdr *h, netconf_list *list)
     neigh->family = ndm->ndm_family;
     neigh->ifindex = ndm->ndm_ifindex;
     neigh->state = ndm->ndm_state;
+    neigh->flags = neigh_flags_h2te(ndm->ndm_flags);
 
     rta = (struct rtattr *)((char *)h +
                             NLMSG_SPACE(sizeof(struct ndmsg)));
@@ -130,6 +187,8 @@ netconf_neigh_modify(netconf_handle nh, netconf_cmd cmd,
 
     ndm->ndm_state = (neigh->state == NETCONF_NUD_UNSPEC) ?
                      NUD_PERMANENT : neigh->state;
+
+    ndm->ndm_flags = neigh_flags_te2h(neigh->flags);
 
     NETCONF_ASSERT((neigh->family == AF_INET) ||
                    (neigh->family == AF_INET6));

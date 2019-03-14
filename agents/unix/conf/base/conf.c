@@ -801,12 +801,17 @@ static rcf_pch_cfg_object node_neigh_static =
       (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
       (rcf_ch_cfg_list)neigh_list, NULL, NULL};
 
+static rcf_pch_cfg_object node_neigh_proxy =
+    { "neigh_proxy", 0, NULL, &node_neigh_static,
+      (rcf_ch_cfg_get)neigh_get, (rcf_ch_cfg_set)NULL,
+      (rcf_ch_cfg_add)neigh_add, (rcf_ch_cfg_del)neigh_del,
+      (rcf_ch_cfg_list)neigh_list, NULL, NULL};
 
 RCF_PCH_CFG_NODE_RW(node_broadcast, "broadcast", NULL, NULL,
                     broadcast_get, broadcast_set);
 
 static rcf_pch_cfg_object node_net_addr =
-    { "net_addr", 0, &node_broadcast, &node_neigh_static,
+    { "net_addr", 0, &node_broadcast, &node_neigh_proxy,
       (rcf_ch_cfg_get)prefix_get, (rcf_ch_cfg_set)prefix_set,
       (rcf_ch_cfg_add)net_addr_add, (rcf_ch_cfg_del)net_addr_del,
       (rcf_ch_cfg_list)net_addr_list, NULL, NULL };
@@ -6433,6 +6438,8 @@ static te_errno
 neigh_add(unsigned int gid, const char *oid, const char *value,
           const char *ifname, const char *addr)
 {
+    te_bool             proxy = (strstr(oid, "proxy") != NULL);
+
 #if defined(USE_LIBNETCONF)
     te_errno            rc;
     te_bool             dynamic;
@@ -6474,7 +6481,11 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
 
     neigh.dst = (uint8_t *)&ip_addr;
 
-    if (value != NULL)
+    if (proxy)
+    {
+        neigh.flags |= NETCONF_NTF_PROXY;
+    }
+    else if (value != NULL)
     {
         if (link_addr_a2n(raw_addr, sizeof(raw_addr),
                           value) != ETHER_ADDR_LEN)
@@ -6503,6 +6514,13 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
     int           res;
 
     UNUSED(gid);
+
+    if (proxy)
+    {
+        ERROR("%s(): adding of neighbor proxy is not implemented via "
+              "SIOCSARP", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
 
     res = sscanf(value, "%2x:%2x:%2x:%2x:%2x:%2x%*s",
                  int_addr, int_addr + 1, int_addr + 2, int_addr + 3,
@@ -6563,6 +6581,8 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
           const char *addr)
 {
     te_errno      rc;
+    te_bool       proxy = (strstr(oid, "proxy") != NULL);
+
     UNUSED(gid);
 
     if ((rc = neigh_find(oid, ifname, addr, NULL, NULL)) != 0)
@@ -6606,6 +6626,8 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
         neigh.family = family;
         neigh.ifindex = ifindex;
         neigh.dst = (uint8_t *)&ip_addr;
+        if (proxy)
+            neigh.flags = NETCONF_NTF_PROXY;
 
         if (netconf_neigh_modify(nh, NETCONF_CMD_DEL, &neigh) < 0)
         {
@@ -6621,6 +6643,13 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
     {
         struct arpreq arp_req;
         sa_family_t   family;
+
+        if (proxy)
+        {
+            ERROR("%s(): removal of neighbor proxy is not implemented via "
+                  "SIOCDARP", __FUNCTION__);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
 
         memset(&arp_req, 0, sizeof(arp_req));
         family = str_addr_family(addr);
@@ -6658,7 +6687,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
 #if defined(USE_LIBNETCONF)
 static te_errno
 ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
-                        char **list)
+                        te_bool is_proxy, char **list)
 {
     te_errno            rc;
     unsigned int        ifindex;
@@ -6730,9 +6759,15 @@ ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
         if ((unsigned int)(neigh->ifindex) != ifindex)
             continue;
 
-        if (((neigh->state & NETCONF_NUD_UNSPEC) != 0) ||
-            ((neigh->state & NETCONF_NUD_INCOMPLETE) != 0) ||
-            (is_static == !(neigh->state & NETCONF_NUD_PERMANENT)))
+        if (is_proxy)
+        {
+            if (!(neigh->flags & NETCONF_NTF_PROXY))
+                continue;
+        }
+        else if (((neigh->state & NETCONF_NUD_UNSPEC) != 0) ||
+                 ((neigh->state & NETCONF_NUD_INCOMPLETE) != 0) ||
+                 (is_static == !(neigh->state & NETCONF_NUD_PERMANENT)) ||
+                 (neigh->flags & NETCONF_NTF_PROXY))
         {
             continue;
         }
@@ -6768,15 +6803,18 @@ ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
 #else
 static te_errno
 ta_unix_conf_neigh_list(const char *ifname, te_bool is_static,
-                        char **list)
+                        te_bool is_proxy, char **list)
 {
     UNUSED(ifname);
     UNUSED(is_static);
 
-#if HAVE_INET_MIB2_H
-    return ta_unix_conf_neigh_list_getmsg(ifname, is_static, list);
-#else
     *list = NULL;
+
+#if HAVE_INET_MIB2_H
+    if (!is_proxy)
+    {
+        return ta_unix_conf_neigh_list_getmsg(ifname, is_static, list);
+    }
 #endif
     return 0;
 }
@@ -6803,6 +6841,7 @@ neigh_list(unsigned int gid, const char *oid,
 
     return ta_unix_conf_neigh_list(ifname,
                                    strstr(sub_id, "dynamic") == NULL,
+                                   strstr(sub_id, "proxy") != NULL,
                                    list);
 }
 

@@ -138,6 +138,14 @@
     <object oid="/agent/interface/neigh_dynamic/state" access="read_only" 
             type="integer" volatile="true"/>
 
+    <!-- Neighbour proxy entries.
+         Name:  IPv4/IPv6 address in human-readable form -->
+    <object oid="/agent/interface/neigh_proxy" access="read_create"
+            type="none">
+      <depends oid="/agent/interface"/>
+      <depends oid="/agent/interface/status"/>
+    </object>
+
     <!-- Interface statistics.
          Name:  Interface statistics -->
     <object oid="/agent/interface/stats" access="read_only" 

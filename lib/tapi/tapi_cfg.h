@@ -563,6 +563,22 @@ extern te_errno tapi_cfg_del_neigh_entry(const char *ta,
  */
 extern te_errno tapi_cfg_del_neigh_dynamic(const char *ta,
                                            const char *ifname);
+
+/**
+ * Add neighbor proxy entry for a given interface.
+ *
+ * @param ta        Test Agent name.
+ * @param ifname    Interface name.
+ * @param net_addr  Network address to proxy.
+ * @param p_handle  Where to save pointer to configuration handle
+ *                  (may be @c NULL).
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_add_neigh_proxy(const char *ta, const char *ifname,
+                                         const struct sockaddr *net_addr,
+                                         cfg_handle *p_handle);
+
 /**@} <!-- END tapi_conf_neigh --> */
 
 /**

@@ -927,6 +927,28 @@ tapi_cfg_add_neigh_entry(const char *ta, const char *ifname,
 
 /* See the description in tapi_cfg.h */
 te_errno
+tapi_cfg_add_neigh_proxy(const char *ta, const char *ifname,
+                         const struct sockaddr *net_addr,
+                         cfg_handle *p_handle)
+{
+    char    net_addr_str[INET6_ADDRSTRLEN];
+
+    if (inet_ntop(net_addr->sa_family,
+                  te_sockaddr_get_netaddr(net_addr),
+                  net_addr_str, sizeof(net_addr_str)) == NULL)
+    {
+        ERROR("%s(): failed to convert network address "
+              "into a character string", __FUNCTION__);
+        return TE_OS_RC(TE_TAPI, te_rc_os2te(errno));
+    }
+
+    return cfg_add_instance_fmt(p_handle, CFG_VAL(NONE, NULL),
+                                "/agent:%s/interface:%s/neigh_proxy:%s",
+                                ta, ifname, net_addr_str);
+}
+
+/* See the description in tapi_cfg.h */
+te_errno
 tapi_cfg_del_neigh_entry(const char *ta, const char *ifname,
                          const struct sockaddr *net_addr)
 {

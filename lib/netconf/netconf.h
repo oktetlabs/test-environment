@@ -107,6 +107,16 @@ typedef enum netconf_neigh_state {
     NETCONF_NUD_PERMANENT       = 0x80
 } netconf_neigh_state;
 
+/** Neighbor entry flags */
+typedef enum netconf_neigh_flags {
+    NETCONF_NTF_USE           = 0x01,
+    NETCONF_NTF_SELF          = 0x02,
+    NETCONF_NTF_MASTER        = 0x04,
+    NETCONF_NTF_PROXY         = 0x08,
+    NETCONF_NTF_EXT_LEARNED   = 0x10,
+    NETCONF_NTF_ROUTER        = 0x20,
+} netconf_neigh_flags;
+
 #define NETCONF_RTM_F_CLONED RTM_F_CLONED
 
 /** Network device */
@@ -182,6 +192,9 @@ typedef struct netconf_neigh {
     unsigned char        family;        /**< Address family of entry */
     int                  ifindex;       /**< Interface index */
     uint16_t             state;         /**< State of neighbour entry */
+    uint8_t              flags;         /**< Neighbor entry flags
+                                             (see @ref netconf_neigh_flags)
+                                             */
     uint8_t             *dst;           /**< Protocol address of
                                              the neighbour */
     unsigned int         addrlen;       /**< Length of harware address
