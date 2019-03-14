@@ -8,6 +8,8 @@
  * @author Nikita Somenkov <Nikita.Somenkov@oktetlabs.ru>
  */
 
+#include "te_config.h"
+
 #include "te_vector.h"
 
 /* See the description in te_vector.h */
