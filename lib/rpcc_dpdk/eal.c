@@ -1001,5 +1001,5 @@ rpc_rte_epoll_wait(rcf_rpc_server *rpcs,
     te_log_buf_free(tlbp);
     free(in.events.events_val);
 
-    RETVAL_ZERO_INT(rte_epoll_wait, out.retval);
+    RETVAL_INT(rte_epoll_wait, out.retval);
 }

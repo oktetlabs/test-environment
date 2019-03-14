@@ -27,7 +27,7 @@ noinst_HEADERS = \
 	util/te_cmd_monitor.h \
 	util/conf_getmsg.h \
 	vm/conf_vm.h
-        
+
 noinst_LIBRARIES=libconf.a
 
 libconf_a_SOURCES = \
@@ -59,8 +59,8 @@ CLEANFILES=
 
 if ISCSI_TARGET_USE
 
-AM_CPPFLAGS += -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include/iscsi_unh_target 
-libconf_a_SOURCES += conf_iscsi_target.c 
+AM_CPPFLAGS += -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include/iscsi_unh_target
+libconf_a_SOURCES += conf_iscsi_target.c
 
 endif
 
@@ -69,11 +69,11 @@ libconf_a_SOURCES += base/conf_pci.c
 endif
 
 if CFG_VCM
-libconf_a_SOURCES += base/conf_vcm.c 
+libconf_a_SOURCES += base/conf_vcm.c
 endif
 
 if CFG_TR069
-libconf_a_SOURCES += base/conf_acse.c 
+libconf_a_SOURCES += base/conf_acse.c
 endif
 
 if CFG_IPTABLES_SUPPORT
@@ -90,11 +90,11 @@ libconf_a_SOURCES += util/conf_serial_parser.c
 endif
 
 if CFG_SFPTPD_SUPPORT
-libconf_a_SOURCES += daemons/sfptpd.c 
+libconf_a_SOURCES += daemons/sfptpd.c
 endif
 
 if CFG_NTPD_SUPPORT
-libconf_a_SOURCES += daemons/ntpd.c 
+libconf_a_SOURCES += daemons/ntpd.c
 endif
 
 if CFG_UNIX_8021X
@@ -106,7 +106,7 @@ if CFG_UNIX_DAEMONS
 AM_CPPFLAGS += @DAEMONS_CFLAGS@
 
 libconf_a_SOURCES += daemons/conf_daemons.c daemons/ldap/ldap.c
-noinst_HEADERS += daemons/conf_daemons.h 
+noinst_HEADERS += daemons/conf_daemons.h
 
 if CFG_UNIX_DAEMONS_RADVD
 
@@ -117,8 +117,8 @@ endif
 
 if CFG_UNIX_DAEMONS_ISC_DHCP_SERVER
 
-libconf_a_SOURCES += daemons/dhcp/dhcp_server.c 
-noinst_HEADERS += daemons/dhcp/dhcp_server.h 
+libconf_a_SOURCES += daemons/dhcp/dhcp_server.c
+noinst_HEADERS += daemons/dhcp/dhcp_server.h
 
 endif
 
@@ -129,11 +129,11 @@ libconf_a_SOURCES += daemons/openvpn/openvpn.c
 endif
 
 if CFG_UNIX_DAEMONS_PPPOE_SERVER
-libconf_a_SOURCES += daemons/pppoe/pppoe_server.c 
+libconf_a_SOURCES += daemons/pppoe/pppoe_server.c
 endif
 
 if CFG_UNIX_DAEMONS_PPPOE_CLIENT
-libconf_a_SOURCES += daemons/pppoe/pppoe_client.c 
+libconf_a_SOURCES += daemons/pppoe/pppoe_client.c
 endif
 
 if CFG_UNIX_DAEMONS_NAMED
@@ -166,7 +166,7 @@ endif
 
 
 if CFG_UNIX_AGGR
-libconf_a_SOURCES += base/conf_aggr.c 
+libconf_a_SOURCES += base/conf_aggr.c
 endif
 
 if ISCSI_TARGET_USE
@@ -179,8 +179,10 @@ libconf_a_SOURCES += tc/conf_tc.c
 libconf_a_SOURCES += tc/conf_qdisc.c
 libconf_a_SOURCES += tc/conf_netem.c
 libconf_a_SOURCES += tc/conf_tc_internal.c
+libconf_a_SOURCES += tc/conf_net_if_wrapper.c
 noinst_HEADERS += tc/conf_tc.h
 noinst_HEADERS += tc/conf_qdisc.h
 noinst_HEADERS += tc/conf_netem.h
 noinst_HEADERS += tc/conf_tc_internal.h
+libconf_a_SOURCES += tc/conf_net_if_wrapper.h
 endif

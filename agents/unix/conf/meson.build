@@ -106,6 +106,7 @@ if conf.contains('tc')
         'tc/conf_qdisc.c',
         'tc/conf_netem.c',
         'tc/conf_tc_internal.c',
+        'tc/conf_net_if_wrapper.c',
     )
     # In theory link_whole could be used, but it is indended for
     # internal static libraries build inside the project.

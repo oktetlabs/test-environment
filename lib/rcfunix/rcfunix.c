@@ -177,6 +177,7 @@
 #include "te_errno.h"
 #include "te_shell_cmd.h"
 #include "te_sleep.h"
+#include "te_string.h"
 #include "rcf_api.h"
 #include "rcf_methods.h"
 
@@ -349,6 +350,14 @@ system_with_timeout(const char *cmd, int timeout)
     /* Unreachable */
 }
 
+/**
+ * Sudo command prefix if required.
+ */
+static const char *
+rcfunix_ta_sudo(unix_ta *ta)
+{
+    return ta->sudo ? "sudo -n " : "";
+}
 
 /**
  * Start the Test Agent. Note that it's not necessary
@@ -375,7 +384,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     unix_ta    *ta;
     char       *token;
     char        path[RCF_MAX_PATH];
-    char        cmd[RCFUNIX_SHELL_CMD_MAX];
+    te_string   cmd = TE_STRING_INIT;
     char       *installdir;
     char       *tmp;
     char       *conf_str_dup;
@@ -601,12 +610,14 @@ rcfunix_start(const char *ta_name, const char *ta_type,
      */
     if (ta->notcopy)
     {
-        sprintf(cmd, "%sln -s %s /tmp/%s%s%s", ta->cmd_prefix,
+        rc = te_string_append(&cmd,
+                "%sln -s %s /tmp/%s%s%s", ta->cmd_prefix,
                 path, ta_type, ta->postfix, ta->cmd_suffix);
     }
     else if (ta->is_local)
     {
-        sprintf(cmd, "%scp -a %s /tmp/%s%s%s", ta->cmd_prefix,
+        rc = te_string_append(&cmd,
+                "%scp -a %s /tmp/%s%s%s", ta->cmd_prefix,
                 path, ta_type, ta->postfix, ta->cmd_suffix);
     }
     else
@@ -622,85 +633,123 @@ rcfunix_start(const char *ta_name, const char *ta_type,
          * Be quite, but DO NOT suppress command output in order
          * to have to see possible problems.
          */
-        sprintf(cmd,
+        rc = te_string_append(&cmd,
                 "scp -rBpq %s %s %s %s %s %s%s:/tmp/%s%s >/dev/null 2>&1",
                 ta->ssh_port != 0 ? "-P" : "", ssh_port_str,
                 *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
                 ta->key, path, ta->user, ta->host, ta_type, ta->postfix);
     }
+    if (rc != 0)
+    {
+        ERROR("Failed to compose TA copy command: %r\n%s", rc, cmd.ptr);
+        te_string_free(&cmd);
+        free(conf_str_dup);
+        return rc;
+    }
 
-    RING("CMD to copy: %s", cmd);
+    RING("CMD to copy: %s", cmd.ptr);
     if (!(*flags & TA_FAKE) &&
-        ((rc = system_with_timeout(cmd, ta->copy_timeout)) != 0))
+        ((rc = system_with_timeout(cmd.ptr, ta->copy_timeout)) != 0))
     {
         ERROR("Failed to copy TA images/data %s to the %s:/tmp: %r",
               ta_type, ta->host, rc);
-        ERROR("Failed cmd: %s", cmd);
+        ERROR("Failed cmd: %s", cmd.ptr);
+        te_string_free(&cmd);
         free(conf_str_dup);
         return rc;
     }
 
     /* Clean up command string */
-    cmd[0] = '\0';
+    te_string_reset(&cmd);
 
-    sprintf(cmd, "%s", ta->cmd_prefix);
+    rc = te_string_append(&cmd, "%s", ta->cmd_prefix);
 
 #if defined RCF_UNIX_SOLARIS
-    strcat(cmd, "sudo /usr/bin/coreadm -g /tmp/core.%n-%p-%t -e global; ");
+    if (rc == 0)
+        rc = te_string_append(&cmd,
+                "%s/usr/bin/coreadm -g /tmp/core.%n-%p-%t -e global; ",
+                rcfunix_ta_sudo(ta));
 #else
-    strcat(cmd, "sudo sysctl -w kernel.core_pattern=\"core.%h-%p-%t\"; ");
+    if (rc == 0)
+        rc = te_string_append(&cmd,
+                "%ssysctl -w kernel.core_pattern=\"core.%h-%p-%t\"; ",
+                rcfunix_ta_sudo(ta));
 #endif
-    if (ta->sudo)
-        strcat(cmd, "sudo ");
-    else if (ta->su)
-        strcat(cmd, "su -c '");
+    if (rc == 0)
+        rc = te_string_append(&cmd, "%s",
+                                   rcfunix_ta_sudo(ta));
+    if (rc == 0 && ta->su)
+        rc = te_string_append(&cmd, "su -c ");
 
     /*
      * Add directory with agent to the PATH
      */
-    sprintf(cmd + strlen(cmd), "PATH=%s$PATH:/tmp/%s%s ",
-            ta->is_local ? "" : "\\", ta_type, ta->postfix);
+    if (rc == 0)
+        rc = te_string_append(&cmd,
+                "PATH=%s$PATH:/tmp/%s%s ",
+                ta->is_local ? "" : "\\", ta_type, ta->postfix);
 
-    if ((shell != NULL) && (strlen(shell) > 0))
+    if (rc == 0 && (shell != NULL) && (strlen(shell) > 0))
     {
         VERB("Using '%s' as shell for TA '%s'", shell, ta->ta_name);
-        strcat(cmd, shell);
-        strcat(cmd, " ");
+        rc = te_string_append(&cmd, "%s ", shell);
     }
 
     /*
      * Test Agent is always running in background, therefore it's
      * necessary to redirect its stdout and stderr to a file.
      */
-    sprintf(cmd + strlen(cmd), "/tmp/%s%s/ta %s %s %s",
-            ta_type, ta->postfix, ta->ta_name, ta->port,
-            (conf_str == NULL) ? "" : conf_str);
+    if (rc == 0)
+        rc = te_string_append(&cmd,
+                "/tmp/%s%s/ta %s %s %s",
+                ta_type, ta->postfix, ta->ta_name, ta->port,
+                (conf_str == NULL) ? "" : conf_str);
 
-    if (ta->su)
-        sprintf(cmd + strlen(cmd), "'");
+    if (rc == 0 && ta->su)
+        rc = te_string_append(&cmd, "'");
 
 #if defined RCF_UNIX_SOLARIS
-    strcat(cmd, "; sudo /usr/bin/coreadm -g /tmp/core -e global ");
+    if (rc == 0)
+        rc = te_string_append(&cmd,
+                "; %s/usr/bin/coreadm -g /tmp/core -e global ",
+                rcfunix_ta_sudo(ta));
 #else
     /* Enquote command in double quotes for non-local agent */
-    strcat(cmd, "; sudo sysctl -w kernel.core_pattern=\"core\" ");
+    if (rc == 0)
+        rc = te_string_append(&cmd,
+                "; %ssysctl -w kernel.core_pattern=\"core\" ",
+                rcfunix_ta_sudo(ta));
 #endif
-    strcat(cmd, "; sudo mv /tmp/core* /var/tmp ");
-    sprintf(cmd + strlen(cmd), "%s 2>&1 | te_tee %s %s 10 >ta.%s ",
-            ta->cmd_suffix, TE_LGR_ENTITY, ta->ta_name, ta->ta_name);
+    if (rc == 0)
+        rc = te_string_append(&cmd,
+                "; %smv /tmp/core* /var/tmp ", rcfunix_ta_sudo(ta));
+    if (rc == 0)
+        rc = te_string_append(&cmd,
+                "%s 2>&1 | te_tee %s %s 10 >ta.%s ",
+                ta->cmd_suffix, TE_LGR_ENTITY, ta->ta_name, ta->ta_name);
 
     free(conf_str_dup);
 
-    RING("Command to start TA: %s", cmd);
+    if (rc != 0)
+    {
+        ERROR("Failed to compose TA start command: %r\n%s", rc, cmd.ptr);
+        te_string_free(&cmd);
+        return rc;
+    }
+
+    RING("Command to start TA: %s", cmd.ptr);
     if (!(*flags & TA_FAKE) &&
         ((ta->start_pid =
-          te_shell_cmd_inline(cmd, -1, NULL, NULL, NULL)) <= 0))
+          te_shell_cmd_inline(cmd.ptr, -1, NULL, NULL, NULL)) <= 0))
     {
         rc = TE_OS_RC(TE_RCF_UNIX, errno);
         ERROR("Failed to start TA %s: %r", ta_name, rc);
-        ERROR("Failed cmd: %s", cmd);
+        ERROR("Failed cmd: %s", cmd.ptr);
+        te_string_free(&cmd);
         return rc;
     }
+
+    te_string_free(&cmd);
 
     *handle = (rcf_talib_handle)ta;
 
@@ -767,14 +816,14 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
         else
         {
             sprintf(cmd, "%s%skill %d%s " RCFUNIX_REDIRECT,
-                    ta->cmd_prefix, ta->sudo ? "sudo -n" : "", ta->pid,
+                    ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->pid,
                     ta->cmd_suffix);
             rc = system_with_timeout(cmd, ta->kill_timeout);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
 
             sprintf(cmd, "%s%skill -9 %d%s " RCFUNIX_REDIRECT,
-                    ta->cmd_prefix, ta->sudo ? "sudo -n" : "", ta->pid,
+                    ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->pid,
                     ta->cmd_suffix);
             rc = system_with_timeout(cmd, ta->kill_timeout);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
@@ -783,14 +832,14 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
 
         sprintf(cmd,
                 "%s%skillall /tmp/%s%s/ta%s " RCFUNIX_REDIRECT,
-                ta->cmd_prefix, ta->sudo ? "sudo " : "" , ta->ta_type,
+                ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->ta_type,
                 ta->postfix, ta->cmd_suffix);
         rc = system_with_timeout(cmd, ta->kill_timeout);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
 
         sprintf(cmd, "%s%skillall -9 /tmp/%s%s/ta%s " RCFUNIX_REDIRECT,
-                ta->cmd_prefix, ta->sudo ? "sudo -n " : "" ,
+                ta->cmd_prefix, rcfunix_ta_sudo(ta),
                 ta->ta_type, ta->postfix, ta->cmd_suffix);
         rc = system_with_timeout(cmd, ta->kill_timeout);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
