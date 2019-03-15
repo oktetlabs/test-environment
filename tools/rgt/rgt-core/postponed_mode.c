@@ -105,7 +105,7 @@ print_ts(FILE *fd, uint32_t *ts)
 #endif
 
     assert(res > 0);
-    fprintf(fd, "%s %u ms", time_buf, ts[1] / 1000);
+    fprintf(fd, "%s.%u", time_buf, ts[1] / 1000);
 
 #undef TIME_BUF_LEN
 }
@@ -128,7 +128,7 @@ print_ts_info(node_info_t *node)
      */
     fprintf(rgt_ctx.out_fd, "<duration>");
     TIMESTAMP_SUB(duration, node->end_ts, node->start_ts);
-    fprintf(rgt_ctx.out_fd, "%u:%u:%u %u ms",
+    fprintf(rgt_ctx.out_fd, "%u:%u:%u.%u",
             duration[0] / (60 * 60),
             (duration[0] % (60 * 60)) / 60,
             (duration[0] % (60 * 60)) % 60,
