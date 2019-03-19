@@ -67,6 +67,45 @@ extern te_errno tapi_icmp4_add_pdu(asn_value **tmpl_or_ptrn,
                                    int         code);
 
 /**
+ * Create '{udp,tcp}.ip4.icmp.ip4.eth' CSAP on the specified Agent
+ *
+ * @param ta_name           Test Agent name
+ * @param sid               RCF SID
+ * @param eth_dev           Name of Ethernet interface
+ * @param receive_mode      Bitmask with receive mode, see 'enum
+ *                          tad_eth_recv_mode' in tad_common.h.
+ *                          Use TAD_ETH_RECV_DEF by default.
+ * @param src_mac           Local MAC address (or NULL)
+ * @param dst_mac           Remote MAC address (or NULL)
+ * @param src_addr          Local IP address in network byte order (or NULL)
+ * @param dst_addr          Remote IP address in network byte order (or NULL)
+ * @param msg_src_addr      Source IPv4 Address of ICMP Error message
+ * @param msg_dst_addr      Destination IPv4 Address of ICMP Error message
+ * @param msg_src_port      Source UDP port in network byte order or -1
+ * @param msg_dst_port      Destination UDP port in network byte order or -1
+ * @param ip_proto          @c IPPROTO_UDP or @c IPPROTO_TCP
+ * @param ip_proto_csap     Location for the CSAP handle (OUT)
+ *
+ * @return Statuc code
+ */
+extern te_errno tapi_ipproto_ip4_icmp_ip4_eth_csap_create(
+                    const char    *ta_name,
+                    int            sid,
+                    const char    *eth_dev,
+                    unsigned int   receive_mode,
+                    const uint8_t *eth_src,
+                    const uint8_t *eth_dst,
+                    in_addr_t      src_addr,
+                    in_addr_t      dst_addr,
+                    in_addr_t      msg_src_addr,
+                    in_addr_t      msg_dst_addr,
+                    int            msg_src_port,
+                    int            msg_dst_port,
+                    int            ip_proto,
+                    csap_handle_t *ip_proto_csap);
+
+
+/**
  * Create 'tcp.ip4.icmp.ip4.eth' CSAP on the specified Agent
  *
  * @param ta_name       Test Agent name
@@ -93,7 +132,7 @@ extern te_errno tapi_tcp_ip4_icmp_ip4_eth_csap_create(
                     const char    *eth_dev,
                     unsigned int   receive_mode,
                     const uint8_t *eth_src,
-                    const uint8_t *eth_dst, 
+                    const uint8_t *eth_dst,
                     in_addr_t      src_addr,
                     in_addr_t      dst_addr,
                     in_addr_t      msg_src_addr,
@@ -130,7 +169,7 @@ extern te_errno tapi_udp_ip4_icmp_ip4_eth_csap_create(
                     const char    *eth_dev,
                     unsigned int   receive_mode,
                     const uint8_t *eth_src,
-                    const uint8_t *eth_dst, 
+                    const uint8_t *eth_dst,
                     in_addr_t      src_addr,
                     in_addr_t      dst_addr,
                     in_addr_t      msg_src_addr,
