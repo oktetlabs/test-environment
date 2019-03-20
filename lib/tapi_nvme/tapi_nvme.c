@@ -666,11 +666,33 @@ nvme_connect_build_opts(te_string *str_opts,
 }
 
 static te_errno
+nvme_initiator_wait(tapi_nvme_host_ctrl *host_ctrl, te_vec *before)
+{
+    size_t i;
+
+    for (i = 0; i < DEVICE_WAIT_ATTEMPTS; i++)
+    {
+        if (get_new_device(host_ctrl, before) == 0)
+            return 0;
+
+        te_motivated_sleep(1, "Waiting device...");
+    }
+
+    if (get_new_device(host_ctrl, before) != 0)
+    {
+        ERROR("Connected device not found");
+        return TE_ENOENT;
+    }
+
+    return 0;
+}
+
+static te_errno
 nvme_initiator_connect_generic(tapi_nvme_host_ctrl *host_ctrl,
                                const tapi_nvme_target *target,
                                nvme_connect_generic_opts opts)
 {
-    int i, rc;
+    te_errno rc;
     te_string str_stdout = TE_STRING_INIT;
     te_string str_stderr = TE_STRING_INIT;
     te_vec devs = TE_VEC_INIT(initiator_dev);
@@ -703,40 +725,23 @@ nvme_initiator_connect_generic(tapi_nvme_host_ctrl *host_ctrl,
         ERROR("nvme-cli output\n"
               "stdout:\n%s\n"
               "stderr:\n%s", str_stdout.ptr, str_stderr.ptr);
-        te_vec_free(&devs);
-        te_string_free(&str_stdout);
-        te_string_free(&str_stderr);
-        return TE_EFAIL;
+        rc = TE_EFAIL;
+    }
+    else
+    {
+        host_ctrl->connected_target = target;
+        RING("Success connection to target");
+
+        (void)tapi_nvme_initiator_list(host_ctrl);
+
+        rc = nvme_initiator_wait(host_ctrl, &devs);
     }
 
     te_string_free(&str_stdout);
     te_string_free(&str_stderr);
-
-    host_ctrl->connected_target = target;
-    RING("Success connection to target");
-
-    (void)tapi_nvme_initiator_list(host_ctrl);
-
-    for (i = 0; i < DEVICE_WAIT_ATTEMPTS; i++)
-    {
-        if ((rc = get_new_device(host_ctrl, &devs)) == 0)
-        {
-            te_vec_free(&devs);
-            return rc;
-        }
-
-        te_motivated_sleep(1, "Waiting device...");
-    }
-
-    if (get_new_device(host_ctrl, target) != 0)
-    {
-        ERROR("Connected device not found");
-        te_vec_free(&devs);
-        return TE_ENOENT;
-    }
-
     te_vec_free(&devs);
-    return 0;
+
+    return rc;
 }
 
 /* See description in tapi_nvme.h */
