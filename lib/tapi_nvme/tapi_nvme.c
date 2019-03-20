@@ -250,34 +250,37 @@ read_nvme_fabric_info_namespaces(rcf_rpc_server *rpcs,
                                  nvme_fabric_info *info,
                                  const char *filepath)
 {
-    int i, count;
-    tapi_nvme_internal_dirinfo names[MAX_NAMESPACES];
+    te_errno rc;
+    size_t i, count;
+    te_vec names = TE_VEC_INIT(tapi_nvme_internal_dirinfo);
+    tapi_nvme_internal_dirinfo *dirinfo;
 
-    count = tapi_nvme_internal_filterdir(rpcs, filepath, "nvme", names,
-                                         TE_ARRAY_LEN(names));
-    if (count < 0)
+    rc = tapi_nvme_internal_filterdir(rpcs, filepath, "nvme", &names);
+    if (rc != 0)
+    {
+        ERROR("Error during reading fabric info from %s (%r)", filepath, rc);
         return READ_ERROR;
+    }
 
-    /* NOTE Bug 9752
-     *
-     * It is not an error if this particular controller does not have
-     * a corresponding namespace. It is a stalled NVMe connection from
-     * the previous test and it should not affect current test at all.
-     */
-    if (count == 0)
-        return READ_CONTINUE;
+    count = te_vec_size(&names);
+    if (count > TE_ARRAY_LEN(info->namespaces))
+    {
+        count = TE_ARRAY_LEN(info->namespaces);
+        WARN("Too many devices found, we will cut %d -> %d", count,
+             TE_ARRAY_LEN(info->namespaces));
+    }
 
     info->namespaces_count = 0;
     for (i = 0; i < count; i++)
     {
-        te_errno rc;
-
-        rc = parse_namespace_info(names[i].name, info->namespaces + i);
+        rc = parse_namespace_info(dirinfo->name, info->namespaces + i);
         if (rc != 0)
-            WARN("Cannot parse namespace '%s'", names[i].name);
+            WARN("Cannot parse namespace '%s'", dirinfo->name);
         else
             info->namespaces_count++;
     }
+
+    te_vec_free(&names);
 
     if (info->namespaces_count == 0)
         return READ_CONTINUE;
@@ -480,27 +483,35 @@ static te_errno
 get_new_device(tapi_nvme_host_ctrl *host_ctrl,
                const tapi_nvme_target *target)
 {
-    int i, count;
-    read_result rc;
-    te_string device_str = TE_STRING_INIT_STATIC(BUFFER_SIZE);
+    te_errno rc;
+    te_vec names = TE_VEC_INIT(tapi_nvme_internal_dirinfo);
+    tapi_nvme_internal_dirinfo *dirinfo;
 
-    nvme_fabric_info info;
-    tapi_nvme_internal_dirinfo names[MAX_ADMIN_DEVICES];
-
-    count = tapi_nvme_internal_filterdir(host_ctrl->rpcs, BASE_NVME_FABRICS,
-                                         "nvme", names, TE_ARRAY_LEN(names));
-
-    for (i = 0; i < count; i++)
+    rc = tapi_nvme_internal_filterdir(host_ctrl->rpcs, BASE_NVME_FABRICS,
+                                    "nvme", &names);
+    if (rc != 0)
     {
-        rc = read_nvme_fabric_info(host_ctrl->rpcs, &info, names[i].name);
-        if (rc == READ_ERROR)
-            return TE_ENODATA;
-        else if (rc == READ_CONTINUE)
-            continue;
-        if (is_target_eq(target, &info, names[i].name) == TRUE)
-        {
-            te_errno error;
+        te_vec_free(&names);
+        return rc;
+    }
 
+    TE_VEC_FOREACH(&names, dirinfo)
+    {
+        read_result rr;
+        nvme_fabric_info info;
+        te_string device_str = TE_STRING_INIT_STATIC(BUFFER_SIZE);
+
+        rr = read_nvme_fabric_info(host_ctrl->rpcs, &info, dirinfo->name);
+        if (rr == READ_ERROR)
+        {
+            rc = TE_ENODATA;
+            break;
+        }
+        else if (rr == READ_CONTINUE)
+            continue;
+
+        if (is_target_eq(target, &info, dirinfo->name) == TRUE)
+        {
             /* Currently we are configuring only 1 namespace per subsystem
              * while using kernel targets. We have no control over onvme
              * namespace configuration right now, but it also doing in the
@@ -515,20 +526,22 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl,
                           info.namespaces_count, host_ctrl->admin_dev);
             }
 
-            host_ctrl->admin_dev = tapi_strdup(names[i].name);
+            host_ctrl->admin_dev = tapi_strdup(dirinfo->name);
             host_ctrl->device = tapi_malloc(NAME_MAX);
 
-            error = nvme_fabric_namespace_info_string(&info.namespaces[0],
-                                                      &device_str);
-            if (error != 0)
-                return error;
+            rc = nvme_fabric_namespace_info_string(&info.namespaces[0],
+                                                   &device_str);
+            if (rc != 0)
+                break;
 
             snprintf(host_ctrl->device, NAME_MAX, "/dev/%s", device_str.ptr);
-            return 0;
+            rc = 0;
+            break;
         }
     }
 
-    return TE_ENODATA;
+    te_vec_free(&names);
+    return rc;
 }
 
 #define NVME_ADD_OPT(_te_str, args...)                        \
