@@ -11,6 +11,7 @@
 
 #include "te_defs.h"
 #include "rcf_rpc.h"
+#include "te_vector.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -90,21 +91,20 @@ typedef struct tapi_nvme_internal_dirinfo {
 } tapi_nvme_internal_dirinfo;
 
 /**
- * Search all files in path which begin with @p start_from
+ * Search all directories of file in @p path begin @p start_from
  *
  * @param rpcs          RPC server
  * @param path          Path for search
  * @param start_from    Pattern for search
- * @param dir_names     Place to store the result
- * @param count_names   Count of storage
+ * @param result        Found directories or files
+ *                      te_vector have type tapi_nvme_internal_dirinfo
  *
- * @return  Count of found files
+ * @return Status code
  */
-extern int tapi_nvme_internal_filterdir(rcf_rpc_server *rpcs,
-                                        const char *path,
-                                        const char *start_from,
-                                        tapi_nvme_internal_dirinfo *dir_names,
-                                        int count_names);
+extern te_errno tapi_nvme_internal_filterdir(rcf_rpc_server *rpcs,
+                                             const char *path,
+                                             const char *start_from,
+                                             te_vec *result);
 
 #ifdef __cplusplus
 } /* extern "C" */
