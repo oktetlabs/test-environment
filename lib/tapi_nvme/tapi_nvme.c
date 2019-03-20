@@ -732,8 +732,6 @@ nvme_initiator_connect_generic(tapi_nvme_host_ctrl *host_ctrl,
         host_ctrl->connected_target = target;
         RING("Success connection to target");
 
-        (void)tapi_nvme_initiator_list(host_ctrl);
-
         rc = nvme_initiator_wait(host_ctrl, &devs);
     }
 
