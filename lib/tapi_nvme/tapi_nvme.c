@@ -174,6 +174,36 @@ nvme_fabric_namespace_info_string(nvme_fabric_namespace_info *info,
                             info->namespace_index);
 }
 
+static const char *
+nvme_fabric_namespace_info_admin_str(const nvme_fabric_namespace_info *dev)
+{
+    static char admin_str[NAME_MAX];
+
+    TE_SPRINTF(admin_str, "nvme%d", dev->admin_device_index);
+
+    return admin_str;
+}
+
+static const char *
+nvme_fabric_namespace_info_ns_str(const nvme_fabric_namespace_info *dev)
+{
+    static char ns_str[NAME_MAX];
+
+    if (dev->controller_index == -1)
+    {
+        TE_SPRINTF(ns_str, "nvme%dn%d", dev->admin_device_index,
+                                        dev->namespace_index);
+    }
+    else
+    {
+        TE_SPRINTF(ns_str,  "nvme%dc%dn%d", dev->admin_device_index,
+                                            dev->controller_index,
+                                            dev->namespace_index);
+    }
+
+    return ns_str;
+}
+
 typedef struct nvme_fabric_info {
     struct sockaddr_in addr;
     tapi_nvme_transport transport;
@@ -454,6 +484,59 @@ read_nvme_fabric_info(rcf_rpc_server *rpcs,
     }
 
     return READ_SUCCESS;
+}
+
+static te_errno
+initiator_dev_admin_list(rcf_rpc_server *rpcs, const char *admin,
+                         te_vec *devs)
+{
+    te_errno rc;
+    te_string path = TE_STRING_INIT_STATIC(NAME_MAX);
+    te_vec names = TE_VEC_INIT(tapi_nvme_internal_dirinfo);
+    tapi_nvme_internal_dirinfo *dirinfo;
+
+    if ((rc = te_string_append(&path, "%s/%s", BASE_NVME_FABRICS, admin)) != 0)
+        return rc;
+
+    rc = tapi_nvme_internal_filterdir(rpcs, path.ptr, "nvme", &names);
+    if (rc != 0)
+    {
+        ERROR("Error during reading fabric info from %s (%r)", path.ptr, rc);
+        return rc;
+    }
+
+    TE_VEC_FOREACH(&names, dirinfo)
+    {
+        nvme_fabric_namespace_info dev = NVME_FABRIC_NAMESPACE_INFO_DEFAULTS;
+        if ((rc = parse_namespace_info(dirinfo->name, &dev)) != 0)
+            break;
+        if ((rc = TE_VEC_APPEND(devs, dev)) != 0)
+            break;
+    }
+
+    te_vec_free(&names);
+    return rc;
+}
+
+static te_errno
+initiator_dev_list(rcf_rpc_server *rpcs, te_vec *devs)
+{
+    te_errno rc;
+    te_vec names = TE_VEC_INIT(tapi_nvme_internal_dirinfo);
+    tapi_nvme_internal_dirinfo *dirinfo;
+
+    rc = tapi_nvme_internal_filterdir(rpcs, BASE_NVME_FABRICS, "nvme", &names);
+    if (rc != 0)
+        return rc;
+
+    TE_VEC_FOREACH(&names, dirinfo)
+    {
+        if ((rc = initiator_dev_admin_list(rpcs, dirinfo->name, devs)) != 0)
+            break;
+    }
+
+    te_vec_free(&names);
+    return rc;
 }
 
 static te_bool
