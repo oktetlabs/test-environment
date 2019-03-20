@@ -521,35 +521,31 @@ initiator_dev_list_diff(const te_vec *first, const te_vec *second, te_vec *diff)
     return 0;
 }
 
-static te_bool
-is_target_eq(const tapi_nvme_target *target, const initiator_dev_info *info,
-             const initiator_dev *dev)
+static void
+nvme_target2initiator_dev_info(const tapi_nvme_target *target,
+                               initiator_dev_info *info)
 {
-    const struct sockaddr_in *addr1 = SIN(target->addr);
-    const struct sockaddr_in *addr2 = SIN(&info->addr);
-    te_bool subnqn_eq;
-    te_bool addr_eq;
-    te_bool transport_eq;
+    info->addr = *SIN(target->addr);
+    info->transport = target->transport;
+    strncpy(info->subnqn, target->subnqn, sizeof(info->subnqn));
+}
 
-    RING("Searching for connected device, comparing expected "
-         "'%s' with '%s' from %s",
-         te_sockaddr2str(SA(addr1)), te_sockaddr2str(SA(addr2)),
-         initiator_dev_admin_str(dev));
-
-    transport_eq = target->transport == info->transport;
-    subnqn_eq = strcmp(target->subnqn, info->subnqn) == 0;
-    addr_eq = te_sockaddrcmp(SA(addr1), sizeof(*addr1),
-                             SA(addr2), sizeof(*addr2)) == 0;
-
-    return transport_eq && subnqn_eq && addr_eq;
+static te_bool
+initiator_dev_info_equal(initiator_dev_info *first, initiator_dev_info *second)
+{
+    return first->transport == second->transport &&
+           strncmp(first->subnqn, second->subnqn, sizeof(first->subnqn)) &&
+           te_sockaddrcmp(SA(&first->addr), sizeof(first->addr),
+                          SA(&second->addr), sizeof(second->addr)) == 0;
 }
 
 static te_errno
-get_new_device(tapi_nvme_host_ctrl *host_ctrl,
-               const tapi_nvme_target *target)
+get_new_device(tapi_nvme_host_ctrl *host_ctrl, const te_vec *before)
 {
     te_errno rc;
     te_vec devs = TE_VEC_INIT(initiator_dev);
+    te_vec diff = TE_VEC_INIT(initiator_dev);
+    initiator_dev_info target;
     initiator_dev *dev;
 
     if ((rc = initiator_dev_list(host_ctrl->rpcs, &devs)) != 0)
@@ -558,25 +554,40 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl,
         return rc;
     }
 
-    TE_VEC_FOREACH(&devs, dev)
+    if ((rc = initiator_dev_list_diff(before, &devs, &diff)) != 0)
     {
-        initiator_dev_info info;
+        te_vec_free(&devs);
+        te_vec_free(&diff);
+        return rc;
+    }
 
-        if ((rc = initiator_dev_info_get(host_ctrl->rpcs, dev, &info)) != 0)
+    nvme_target2initiator_dev_info(host_ctrl->connected_target, &target);
+
+    TE_VEC_FOREACH(&diff, dev)
+    {
+        initiator_dev_info curinfo;
+
+        if ((rc = initiator_dev_info_get(host_ctrl->rpcs, dev, &curinfo)) != 0)
             break;
 
-        if (is_target_eq(target, &info, dev) == TRUE)
+        RING("Searching for connected device, comparing expected "
+             "'%s' with '%s' from %s", te_sockaddr2str(SA(&curinfo.addr)),
+             te_sockaddr2str(SA(&target.addr)), initiator_dev_admin_str(dev));
+
+        if (initiator_dev_info_equal(&curinfo, &target) == 0)
         {
             host_ctrl->admin_dev = tapi_strdup(initiator_dev_admin_str(dev));
             host_ctrl->device = tapi_malloc(NAME_MAX);
 
             snprintf(host_ctrl->device, NAME_MAX, "/dev/%s",
                      initiator_dev_ns_str(dev));
+
             break;
         }
     }
 
     te_vec_free(&devs);
+    te_vec_free(&diff);
     return rc;
 }
 
@@ -662,6 +673,7 @@ nvme_initiator_connect_generic(tapi_nvme_host_ctrl *host_ctrl,
     int i, rc;
     te_string str_stdout = TE_STRING_INIT;
     te_string str_stderr = TE_STRING_INIT;
+    te_vec devs = TE_VEC_INIT(initiator_dev);
     te_string cmd = TE_STRING_INIT_STATIC(RPC_SHELL_CMDLINE_MAX);
     opts_t run_opts = {
         .str_stdout = &str_stdout,
@@ -680,11 +692,18 @@ nvme_initiator_connect_generic(tapi_nvme_host_ctrl *host_ctrl,
     if ((rc = nvme_connect_build_opts(&cmd, target, opts)) != 0)
         return rc;
 
+    if ((rc = initiator_dev_list(host_ctrl->rpcs, &devs)) != 0)
+    {
+        te_vec_free(&devs);
+        return rc;
+    }
+
     if ((rc = run_command(host_ctrl->rpcs, run_opts, "%s", cmd.ptr)) != 0)
     {
         ERROR("nvme-cli output\n"
               "stdout:\n%s\n"
               "stderr:\n%s", str_stdout.ptr, str_stderr.ptr);
+        te_vec_free(&devs);
         te_string_free(&str_stdout);
         te_string_free(&str_stderr);
         return TE_EFAIL;
@@ -700,8 +719,11 @@ nvme_initiator_connect_generic(tapi_nvme_host_ctrl *host_ctrl,
 
     for (i = 0; i < DEVICE_WAIT_ATTEMPTS; i++)
     {
-        if (get_new_device(host_ctrl, target) == 0)
-            return 0;
+        if ((rc = get_new_device(host_ctrl, &devs)) == 0)
+        {
+            te_vec_free(&devs);
+            return rc;
+        }
 
         te_motivated_sleep(1, "Waiting device...");
     }
@@ -709,9 +731,11 @@ nvme_initiator_connect_generic(tapi_nvme_host_ctrl *host_ctrl,
     if (get_new_device(host_ctrl, target) != 0)
     {
         ERROR("Connected device not found");
+        te_vec_free(&devs);
         return TE_ENOENT;
     }
 
+    te_vec_free(&devs);
     return 0;
 }
 
