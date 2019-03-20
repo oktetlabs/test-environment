@@ -164,6 +164,12 @@ typedef struct initiator_dev {
     .namespace_index = -1,                     \
 }
 
+typedef struct initiator_dev_info {
+    struct sockaddr_in addr;
+    tapi_nvme_transport transport;
+    char subnqn[NAME_MAX];
+} initiator_dev_info;
+
 static const char *
 initiator_dev_admin_str(const initiator_dev *dev)
 {
@@ -193,12 +199,6 @@ initiator_dev_ns_str(const initiator_dev *dev)
 
     return ns_str;
 }
-
-typedef struct nvme_fabric_info {
-    struct sockaddr_in addr;
-    tapi_nvme_transport transport;
-    char subnqn[NAME_MAX];
-} nvme_fabric_info;
 
 static te_bool
 parse_with_prefix(const char *prefix, const char **str, int *result,
@@ -305,8 +305,8 @@ parse_endpoint(char *str, char *address, unsigned short *port)
 }
 
 static te_errno
-read_nvme_fabric_info_addr(rcf_rpc_server *rpcs,
-                           nvme_fabric_info *info,
+read_initiator_dev_info_addr(rcf_rpc_server *rpcs,
+                           initiator_dev_info *info,
                            const char *filepath)
 {
     te_errno rc;
@@ -343,8 +343,8 @@ typedef struct string_map {
 } string_map;
 
 static te_errno
-read_nvme_fabric_info_transport(rcf_rpc_server *rpcs,
-                                nvme_fabric_info *info,
+read_initiator_dev_info_transport(rcf_rpc_server *rpcs,
+                                initiator_dev_info *info,
                                 const char *filepath)
 {
     size_t i;
@@ -374,8 +374,8 @@ read_nvme_fabric_info_transport(rcf_rpc_server *rpcs,
 }
 
 static te_errno
-read_nvme_fabric_info_subnqn(rcf_rpc_server *rpcs,
-                             nvme_fabric_info *info,
+read_initiator_dev_info_subnqn(rcf_rpc_server *rpcs,
+                             initiator_dev_info *info,
                              const char *filepath)
 {
     if (tapi_nvme_internal_file_read(rpcs,
@@ -446,7 +446,7 @@ initiator_dev_list(rcf_rpc_server *rpcs, te_vec *devs)
 
 static te_errno
 initiator_dev_info_get(rcf_rpc_server *rpcs, const initiator_dev *dev,
-                       nvme_fabric_info *info)
+                       initiator_dev_info *info)
 {
 #define READ(_func, _file, _admin)                                          \
     do {                                                                    \
@@ -465,16 +465,16 @@ initiator_dev_info_get(rcf_rpc_server *rpcs, const initiator_dev *dev,
 
     const char *admin_str = initiator_dev_admin_str(dev);
 
-    READ(read_nvme_fabric_info_addr, "address", admin_str);
-    READ(read_nvme_fabric_info_subnqn, "subsysnqn", admin_str);
-    READ(read_nvme_fabric_info_transport, "transport", admin_str);
+    READ(read_initiator_dev_info_addr, "address", admin_str);
+    READ(read_initiator_dev_info_subnqn, "subsysnqn", admin_str);
+    READ(read_initiator_dev_info_transport, "transport", admin_str);
 
 #undef READ
     return 0;
 }
 
 static te_bool
-is_target_eq(const tapi_nvme_target *target, const nvme_fabric_info *info,
+is_target_eq(const tapi_nvme_target *target, const initiator_dev_info *info,
              const initiator_dev *dev)
 {
     const struct sockaddr_in *addr1 = SIN(target->addr);
@@ -512,7 +512,7 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl,
 
     TE_VEC_FOREACH(&devs, dev)
     {
-        nvme_fabric_info info;
+        initiator_dev_info info;
 
         if ((rc = initiator_dev_info_get(host_ctrl->rpcs, dev, &info)) != 0)
             break;
