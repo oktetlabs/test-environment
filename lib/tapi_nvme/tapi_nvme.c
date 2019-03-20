@@ -539,6 +539,35 @@ initiator_dev_list(rcf_rpc_server *rpcs, te_vec *devs)
     return rc;
 }
 
+static te_errno
+initiator_dev_info_get(rcf_rpc_server *rpcs, const nvme_fabric_namespace_info *dev,
+                       nvme_fabric_info *info)
+{
+#define READ(_func, _file, _admin)                                          \
+    do {                                                                    \
+        te_errno _rc;                                                       \
+        te_string _path = TE_STRING_INIT_STATIC(NAME_MAX);                  \
+                                                                            \
+        _rc = te_string_append(&_path, "%s/%s/%s",                          \
+                               BASE_NVME_FABRICS, _admin, _file);           \
+                                                                            \
+        if (_rc != 0)                                                       \
+            return _rc;                                                     \
+                                                                            \
+        if (_func(rpcs, info, _path.ptr) == READ_ERROR)                     \
+            return TE_EFAIL;                                                \
+    } while(0)
+
+    const char *admin_str = nvme_fabric_namespace_info_admin_str(dev);
+
+    READ(read_nvme_fabric_info_addr, "address", admin_str);
+    READ(read_nvme_fabric_info_subnqn, "subsysnqn", admin_str);
+    READ(read_nvme_fabric_info_transport, "transport", admin_str);
+
+#undef READ
+    return 0;
+}
+
 static te_bool
 is_target_eq(const tapi_nvme_target *target, const nvme_fabric_info *info,
              const char *admin_dev)
