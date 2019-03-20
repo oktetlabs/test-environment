@@ -151,20 +151,21 @@ run_command_dump_output_rc(rcf_rpc_server *rpcs, unsigned int timeout,
     return rc;
 }
 
-typedef struct nvme_fabric_namespace_info {
+typedef struct initiator_dev {
     int admin_device_index;
     int controller_index;
     int namespace_index;
-} nvme_fabric_namespace_info;
+} initiator_dev;
 
-#define NVME_FABRIC_NAMESPACE_INFO_DEFAULTS (nvme_fabric_namespace_info) {  \
-        .admin_device_index = -1,                                           \
-        .controller_index = -1,                                             \
-        .namespace_index = -1,                                              \
-    }
+#define INITIATOR_DEV_DEFAULTS (initiator_dev) \
+{                                              \
+    .admin_device_index = -1,                  \
+    .controller_index = -1,                    \
+    .namespace_index = -1,                     \
+}
 
 static const char *
-nvme_fabric_namespace_info_admin_str(const nvme_fabric_namespace_info *dev)
+initiator_dev_admin_str(const initiator_dev *dev)
 {
     static char admin_str[NAME_MAX];
 
@@ -174,7 +175,7 @@ nvme_fabric_namespace_info_admin_str(const nvme_fabric_namespace_info *dev)
 }
 
 static const char *
-nvme_fabric_namespace_info_ns_str(const nvme_fabric_namespace_info *dev)
+initiator_dev_ns_str(const initiator_dev *dev)
 {
     static char ns_str[NAME_MAX];
 
@@ -226,9 +227,9 @@ parse_with_prefix(const char *prefix, const char **str, int *result,
 
 static te_errno
 parse_namespace_info(const char *str,
-                     nvme_fabric_namespace_info *namespace_info)
+                     initiator_dev *namespace_info)
 {
-    nvme_fabric_namespace_info result = NVME_FABRIC_NAMESPACE_INFO_DEFAULTS;
+    initiator_dev result = INITIATOR_DEV_DEFAULTS;
 
     if (str == NULL || namespace_info == NULL)
         return TE_EINVAL;
@@ -411,7 +412,7 @@ initiator_dev_admin_list(rcf_rpc_server *rpcs, const char *admin,
 
     TE_VEC_FOREACH(&names, dirinfo)
     {
-        nvme_fabric_namespace_info dev = NVME_FABRIC_NAMESPACE_INFO_DEFAULTS;
+        initiator_dev dev = INITIATOR_DEV_DEFAULTS;
         if ((rc = parse_namespace_info(dirinfo->name, &dev)) != 0)
             break;
         if ((rc = TE_VEC_APPEND(devs, dev)) != 0)
@@ -444,7 +445,7 @@ initiator_dev_list(rcf_rpc_server *rpcs, te_vec *devs)
 }
 
 static te_errno
-initiator_dev_info_get(rcf_rpc_server *rpcs, const nvme_fabric_namespace_info *dev,
+initiator_dev_info_get(rcf_rpc_server *rpcs, const initiator_dev *dev,
                        nvme_fabric_info *info)
 {
 #define READ(_func, _file, _admin)                                          \
@@ -462,7 +463,7 @@ initiator_dev_info_get(rcf_rpc_server *rpcs, const nvme_fabric_namespace_info *d
             return _rc;                                                     \
     } while(0)
 
-    const char *admin_str = nvme_fabric_namespace_info_admin_str(dev);
+    const char *admin_str = initiator_dev_admin_str(dev);
 
     READ(read_nvme_fabric_info_addr, "address", admin_str);
     READ(read_nvme_fabric_info_subnqn, "subsysnqn", admin_str);
@@ -474,7 +475,7 @@ initiator_dev_info_get(rcf_rpc_server *rpcs, const nvme_fabric_namespace_info *d
 
 static te_bool
 is_target_eq(const tapi_nvme_target *target, const nvme_fabric_info *info,
-             const nvme_fabric_namespace_info *dev)
+             const initiator_dev *dev)
 {
     const struct sockaddr_in *addr1 = SIN(target->addr);
     const struct sockaddr_in *addr2 = SIN(&info->addr);
@@ -485,7 +486,7 @@ is_target_eq(const tapi_nvme_target *target, const nvme_fabric_info *info,
     RING("Searching for connected device, comparing expected "
          "'%s' with '%s' from %s",
          te_sockaddr2str(SA(addr1)), te_sockaddr2str(SA(addr2)),
-         nvme_fabric_namespace_info_admin_str(dev));
+         initiator_dev_admin_str(dev));
 
     transport_eq = target->transport == info->transport;
     subnqn_eq = strcmp(target->subnqn, info->subnqn) == 0;
@@ -500,8 +501,8 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl,
                const tapi_nvme_target *target)
 {
     te_errno rc;
-    te_vec devs = TE_VEC_INIT(nvme_fabric_namespace_info);
-    nvme_fabric_namespace_info *dev;
+    te_vec devs = TE_VEC_INIT(initiator_dev);
+    initiator_dev *dev;
 
     if ((rc = initiator_dev_list(host_ctrl->rpcs, &devs)) != 0)
     {
@@ -518,12 +519,11 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl,
 
         if (is_target_eq(target, &info, dev) == TRUE)
         {
-            host_ctrl->admin_dev = tapi_strdup(
-                nvme_fabric_namespace_info_admin_str(dev));
+            host_ctrl->admin_dev = tapi_strdup(initiator_dev_admin_str(dev));
             host_ctrl->device = tapi_malloc(NAME_MAX);
 
             snprintf(host_ctrl->device, NAME_MAX, "/dev/%s",
-                     nvme_fabric_namespace_info_ns_str(dev));
+                     initiator_dev_ns_str(dev));
             break;
         }
     }
