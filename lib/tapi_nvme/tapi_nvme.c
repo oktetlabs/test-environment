@@ -152,14 +152,14 @@ run_command_dump_output_rc(rcf_rpc_server *rpcs, unsigned int timeout,
 }
 
 typedef struct initiator_dev {
-    int admin_device_index;
+    int admin_index;
     int controller_index;
     int namespace_index;
 } initiator_dev;
 
 #define INITIATOR_DEV_DEFAULTS (initiator_dev) \
 {                                              \
-    .admin_device_index = -1,                  \
+    .admin_index = -1,                         \
     .controller_index = -1,                    \
     .namespace_index = -1,                     \
 }
@@ -169,7 +169,7 @@ initiator_dev_admin_str(const initiator_dev *dev)
 {
     static char admin_str[NAME_MAX];
 
-    TE_SPRINTF(admin_str, "nvme%d", dev->admin_device_index);
+    TE_SPRINTF(admin_str, "nvme%d", dev->admin_index);
 
     return admin_str;
 }
@@ -181,12 +181,12 @@ initiator_dev_ns_str(const initiator_dev *dev)
 
     if (dev->controller_index == -1)
     {
-        TE_SPRINTF(ns_str, "nvme%dn%d", dev->admin_device_index,
+        TE_SPRINTF(ns_str, "nvme%dn%d", dev->admin_index,
                                         dev->namespace_index);
     }
     else
     {
-        TE_SPRINTF(ns_str,  "nvme%dc%dn%d", dev->admin_device_index,
+        TE_SPRINTF(ns_str,  "nvme%dc%dn%d", dev->admin_index,
                                             dev->controller_index,
                                             dev->namespace_index);
     }
@@ -240,7 +240,7 @@ parse_namespace_info(const char *str,
             return TE_EINVAL;                                           \
     } while (0)
 
-    PARSE("nvme", result.admin_device_index, FALSE);
+    PARSE("nvme", result.admin_index, FALSE);
     PARSE("c", result.controller_index, TRUE);
     PARSE("n", result.namespace_index, FALSE);
 
