@@ -307,11 +307,12 @@ parse_endpoint(char *str, char *address, unsigned short *port)
     return 0;
 }
 
-static read_result
+static te_errno
 read_nvme_fabric_info_addr(rcf_rpc_server *rpcs,
                            nvme_fabric_info *info,
                            const char *filepath)
 {
+    te_errno rc;
     char buffer[ADDRESS_INFO_SIZE];
     unsigned short port;
     char address[INET_ADDRSTRLEN];
@@ -322,21 +323,21 @@ read_nvme_fabric_info_addr(rcf_rpc_server *rpcs,
     if (size < 0)
     {
         ERROR("Cannot read address info");
-        return READ_ERROR;
+        return RPC_ERRNO(rpcs);
     }
 
     if (parse_endpoint(buffer, address, &port) != 0)
     {
         ERROR("Cannot parse address info: %s", buffer);
-        return READ_ERROR;
+        return RPC_ERRNO(rpcs);
     }
 
     memset(&info->addr, 0, sizeof(info->addr));
-    if (te_sockaddr_str2h(address, SA(&info->addr)) != 0)
-        return READ_ERROR;
-    te_sockaddr_set_port(SA(&info->addr), htons(port));
+    if ((rc = te_sockaddr_str2h(address, SA(&info->addr))) != 0)
+        return rc;
 
-    return READ_SUCCESS;
+    te_sockaddr_set_port(SA(&info->addr), htons(port));
+    return 0;
 }
 
 typedef struct string_map {
@@ -344,7 +345,7 @@ typedef struct string_map {
     tapi_nvme_transport transport;
 } string_map;
 
-static read_result
+static te_errno
 read_nvme_fabric_info_transport(rcf_rpc_server *rpcs,
                                 nvme_fabric_info *info,
                                 const char *filepath)
@@ -359,7 +360,7 @@ read_nvme_fabric_info_transport(rcf_rpc_server *rpcs,
                                      filepath) < 0)
     {
         ERROR("Cannot read transport");
-        return READ_ERROR;
+        return RPC_ERRNO(rpcs);
     }
 
     for (i = 0; i < TE_ARRAY_LEN(map); i++)
@@ -367,15 +368,15 @@ read_nvme_fabric_info_transport(rcf_rpc_server *rpcs,
         if (strncmp(map[i].string, buffer, strlen(map[i].string)) == 0)
         {
             info->transport = map[i].transport;
-            return READ_SUCCESS;
+            return 0;
         }
     }
 
     ERROR("Unsupported transport");
-    return READ_ERROR;
+    return TE_EOPNOTSUPP;
 }
 
-static read_result
+static te_errno
 read_nvme_fabric_info_subnqn(rcf_rpc_server *rpcs,
                              nvme_fabric_info *info,
                              const char *filepath)
@@ -384,13 +385,13 @@ read_nvme_fabric_info_subnqn(rcf_rpc_server *rpcs,
         info->subnqn, TE_ARRAY_LEN(info->subnqn), filepath) == -1)
     {
         ERROR("Cannot read subnqn");
-        return READ_ERROR;
+        return RPC_ERRNO(rpcs);
     }
 
     /* After read file subnqn store with \n, remove it */
     strtok(info->subnqn, "\n");
 
-    return READ_SUCCESS;
+    return 0;
 }
 
 static te_errno
@@ -461,8 +462,8 @@ initiator_dev_info_get(rcf_rpc_server *rpcs, const nvme_fabric_namespace_info *d
         if (_rc != 0)                                                       \
             return _rc;                                                     \
                                                                             \
-        if (_func(rpcs, info, _path.ptr) == READ_ERROR)                     \
-            return TE_EFAIL;                                                \
+        if ((_rc = _func(rpcs, info, _path.ptr)) != 0)                      \
+            return _rc;                                                     \
     } while(0)
 
     const char *admin_str = nvme_fabric_namespace_info_admin_str(dev);
