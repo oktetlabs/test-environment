@@ -27,8 +27,6 @@
 
 #define BASE_NVME_FABRICS       "/sys/class/nvme-fabrics/ctl"
 
-#define MAX_NAMESPACES          (32)
-#define MAX_ADMIN_DEVICES       (32)
 #define TRANPORT_SIZE           (16)
 #define ADDRESS_INFO_SIZE       (128)
 #define BUFFER_SIZE             (128)
@@ -199,8 +197,6 @@ typedef struct nvme_fabric_info {
     struct sockaddr_in addr;
     tapi_nvme_transport transport;
     char subnqn[NAME_MAX];
-    nvme_fabric_namespace_info namespaces[MAX_NAMESPACES];
-    int namespaces_count;
 } nvme_fabric_info;
 
 static te_bool
