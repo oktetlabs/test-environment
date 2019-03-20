@@ -566,11 +566,29 @@ typedef struct nvme_connect_generic_opts {
 } nvme_connect_generic_opts;
 
 static te_errno
+nvme_connect_build_specific_opts(te_string *str_opts,
+                                 const tapi_nvme_connect_opts *opts)
+{
+    if (opts == NULL)
+        return 0;
+
+    if (opts->hdr_digest == TRUE)
+        NVME_ADD_OPT(str_opts, "--hdr_digest ");
+
+    if (opts->data_digest == TRUE)
+        NVME_ADD_OPT(str_opts, "--data_digest ");
+
+    if (opts->duplicate_connection == TRUE)
+        NVME_ADD_OPT(str_opts, "--duplicate_connect ");
+
+    return 0;
+}
+
+static te_errno
 nvme_connect_build_opts(te_string *str_opts,
                         const tapi_nvme_target *target,
                         nvme_connect_generic_opts opts)
 {
-    const tapi_nvme_connect_opts *tapi_opts = opts.tapi_opts;
     const char *nvme_base_cmd = nvme_connect_type_str(opts.type);
 
     assert(nvme_base_cmd);
@@ -584,16 +602,7 @@ nvme_connect_build_opts(te_string *str_opts,
     if (opts.type == NVME_CONNECT)
         NVME_ADD_OPT(str_opts, "--nqn=%s ",  target->subnqn);
 
-    if (tapi_opts != NULL)
-    {
-        if (tapi_opts->hdr_digest == TRUE)
-            NVME_ADD_OPT(str_opts, "--hdr_digest ");
-
-        if (tapi_opts->data_digest == TRUE)
-            NVME_ADD_OPT(str_opts, "--data_digest ");
-    }
-
-    return 0;
+    return nvme_connect_build_specific_opts(str_opts, opts.tapi_opts);
 }
 
 static te_errno

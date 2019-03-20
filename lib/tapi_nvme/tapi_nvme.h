@@ -152,9 +152,17 @@ extern const char * tapi_nvme_transport_str(tapi_nvme_transport transport);
 
 /* Additional opts for nvme connect */
 typedef struct tapi_nvme_connect_opts {
-    te_bool hdr_digest;         /* Enable transport protocol header */
-    te_bool data_digest;        /* Enable transport protocol data */
+    te_bool hdr_digest;             /**< Enable transport protocol header */
+    te_bool data_digest;            /**< Enable transport protocol data */
+    te_bool duplicate_connection;   /**< Allow duplicate connection */
 } tapi_nvme_connect_opts;
+
+/* Defaults for nvme connect options */
+#define TAPI_NVME_CONNECT_OPTS_DEFAULTS (tapi_nvme_connect_opts) {  \
+    .hdr_digest = FALSE,                                            \
+    .data_digest = FALSE,                                           \
+    .duplicate_connection = FALSE,                                  \
+}
 
 /**
  * Connect initiator host to target host with additional options
