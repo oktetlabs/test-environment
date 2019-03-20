@@ -570,7 +570,7 @@ initiator_dev_info_get(rcf_rpc_server *rpcs, const nvme_fabric_namespace_info *d
 
 static te_bool
 is_target_eq(const tapi_nvme_target *target, const nvme_fabric_info *info,
-             const char *admin_dev)
+             const nvme_fabric_namespace_info *dev)
 {
     const struct sockaddr_in *addr1 = SIN(target->addr);
     const struct sockaddr_in *addr2 = SIN(&info->addr);
@@ -581,7 +581,7 @@ is_target_eq(const tapi_nvme_target *target, const nvme_fabric_info *info,
     RING("Searching for connected device, comparing expected "
          "'%s' with '%s' from %s",
          te_sockaddr2str(SA(addr1)), te_sockaddr2str(SA(addr2)),
-         admin_dev);
+         nvme_fabric_namespace_info_admin_str(dev));
 
     transport_eq = target->transport == info->transport;
     subnqn_eq = strcmp(target->subnqn, info->subnqn) == 0;
@@ -596,63 +596,35 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl,
                const tapi_nvme_target *target)
 {
     te_errno rc;
-    te_vec names = TE_VEC_INIT(tapi_nvme_internal_dirinfo);
-    tapi_nvme_internal_dirinfo *dirinfo;
+    te_vec devs = TE_VEC_INIT(nvme_fabric_namespace_info);
+    nvme_fabric_namespace_info *dev;
 
-    rc = tapi_nvme_internal_filterdir(host_ctrl->rpcs, BASE_NVME_FABRICS,
-                                    "nvme", &names);
-    if (rc != 0)
+    if ((rc = initiator_dev_list(host_ctrl->rpcs, &devs)) != 0)
     {
-        te_vec_free(&names);
+        te_vec_free(&devs);
         return rc;
     }
 
-    TE_VEC_FOREACH(&names, dirinfo)
+    TE_VEC_FOREACH(&devs, dev)
     {
-        read_result rr;
         nvme_fabric_info info;
-        te_string device_str = TE_STRING_INIT_STATIC(BUFFER_SIZE);
 
-        rr = read_nvme_fabric_info(host_ctrl->rpcs, &info, dirinfo->name);
-        if (rr == READ_ERROR)
-        {
-            rc = TE_ENODATA;
+        if ((rc = initiator_dev_info_get(host_ctrl->rpcs, dev, &info)) != 0)
             break;
-        }
-        else if (rr == READ_CONTINUE)
-            continue;
 
-        if (is_target_eq(target, &info, dirinfo->name) == TRUE)
+        if (is_target_eq(target, &info, dev) == TRUE)
         {
-            /* Currently we are configuring only 1 namespace per subsystem
-             * while using kernel targets. We have no control over onvme
-             * namespace configuration right now, but it also doing in the
-             * same way. So appearance of more than 1 namespace per NVMoF
-             * device would be very suspicious and highly likely a bug.
-             * Fail the entire test for further investigation.
-             */
-            if (info.namespaces_count > 1)
-            {
-                TEST_FAIL("We found %d namespaces for %s device, "
-                          "but only one was expected",
-                          info.namespaces_count, host_ctrl->admin_dev);
-            }
-
-            host_ctrl->admin_dev = tapi_strdup(dirinfo->name);
+            host_ctrl->admin_dev = tapi_strdup(
+                nvme_fabric_namespace_info_admin_str(dev));
             host_ctrl->device = tapi_malloc(NAME_MAX);
 
-            rc = nvme_fabric_namespace_info_string(&info.namespaces[0],
-                                                   &device_str);
-            if (rc != 0)
-                break;
-
-            snprintf(host_ctrl->device, NAME_MAX, "/dev/%s", device_str.ptr);
-            rc = 0;
+            snprintf(host_ctrl->device, NAME_MAX, "/dev/%s",
+                     nvme_fabric_namespace_info_ns_str(dev));
             break;
         }
     }
 
-    te_vec_free(&names);
+    te_vec_free(&devs);
     return rc;
 }
 
