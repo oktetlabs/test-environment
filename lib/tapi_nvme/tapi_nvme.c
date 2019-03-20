@@ -226,8 +226,7 @@ parse_with_prefix(const char *prefix, const char **str, int *result,
 }
 
 static te_errno
-parse_namespace_info(const char *str,
-                     initiator_dev *namespace_info)
+initiator_dev_from_string(const char *str, initiator_dev *namespace_info)
 {
     initiator_dev result = INITIATOR_DEV_DEFAULTS;
 
@@ -305,7 +304,7 @@ parse_endpoint(char *str, char *address, unsigned short *port)
 }
 
 static te_errno
-read_initiator_dev_info_addr(rcf_rpc_server *rpcs,
+initiator_dev_info_addr_read(rcf_rpc_server *rpcs,
                            initiator_dev_info *info,
                            const char *filepath)
 {
@@ -343,7 +342,7 @@ typedef struct string_map {
 } string_map;
 
 static te_errno
-read_initiator_dev_info_transport(rcf_rpc_server *rpcs,
+initiator_dev_info_transport_read(rcf_rpc_server *rpcs,
                                 initiator_dev_info *info,
                                 const char *filepath)
 {
@@ -374,7 +373,7 @@ read_initiator_dev_info_transport(rcf_rpc_server *rpcs,
 }
 
 static te_errno
-read_initiator_dev_info_subnqn(rcf_rpc_server *rpcs,
+initiator_dev_info_subnqn_read(rcf_rpc_server *rpcs,
                              initiator_dev_info *info,
                              const char *filepath)
 {
@@ -413,7 +412,7 @@ initiator_dev_admin_list(rcf_rpc_server *rpcs, const char *admin,
     TE_VEC_FOREACH(&names, dirinfo)
     {
         initiator_dev dev = INITIATOR_DEV_DEFAULTS;
-        if ((rc = parse_namespace_info(dirinfo->name, &dev)) != 0)
+        if ((rc = initiator_dev_from_string(dirinfo->name, &dev)) != 0)
             break;
         if ((rc = TE_VEC_APPEND(devs, dev)) != 0)
             break;
@@ -465,9 +464,9 @@ initiator_dev_info_get(rcf_rpc_server *rpcs, const initiator_dev *dev,
 
     const char *admin_str = initiator_dev_admin_str(dev);
 
-    READ(read_initiator_dev_info_addr, "address", admin_str);
-    READ(read_initiator_dev_info_subnqn, "subsysnqn", admin_str);
-    READ(read_initiator_dev_info_transport, "transport", admin_str);
+    READ(initiator_dev_info_addr_read, "address", admin_str);
+    READ(initiator_dev_info_subnqn_read, "subsysnqn", admin_str);
+    READ(initiator_dev_info_transport_read, "transport", admin_str);
 
 #undef READ
     return 0;
