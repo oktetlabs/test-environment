@@ -20,6 +20,8 @@ extern "C" {
 #define TAPI_NVME_INTERNAL_MODE \
     (RPC_S_IRWXU | RPC_S_IRGRP | RPC_S_IXGRP | RPC_S_IROTH | RPC_S_IXOTH)
 
+#define TAPI_NVME_INTERNAL_DEF_TIMEOUT  (0)
+
 /**
  * Analog of echo 'string' >> path
  *
@@ -31,8 +33,8 @@ extern "C" {
  * @return Status code
  */
 extern te_errno tapi_nvme_internal_file_append(rcf_rpc_server *rpcs,
-    const char *string, const char *fmt, ...)
-    __attribute__((format(printf, 3, 4)));
+    unsigned int timeout_sec, const char *string, const char *fmt, ...)
+    __attribute__((format(printf, 4, 5)));
 
 /**
  * Read file in buffer

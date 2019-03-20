@@ -17,7 +17,7 @@
 
 /* See description in tapi_nvme_internal.h */
 te_errno
-tapi_nvme_internal_file_append(rcf_rpc_server *rpcs,
+tapi_nvme_internal_file_append(rcf_rpc_server *rpcs, unsigned int timeout_sec,
                                const char *string, const char *fmt, ...)
 {
     int fd;
@@ -41,6 +41,8 @@ tapi_nvme_internal_file_append(rcf_rpc_server *rpcs,
     }
 
     RPC_AWAIT_IUT_ERROR(rpcs);
+    if (timeout_sec != 0)
+        rpcs->timeout = TE_SEC2MS(timeout_sec);
     if (rpc_write(rpcs, fd, string, strlen(string)) == -1)
         return rpcs->_errno;
 

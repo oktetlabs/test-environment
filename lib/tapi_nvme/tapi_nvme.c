@@ -943,41 +943,12 @@ is_disconnected(rcf_rpc_server *rpcs, const char *admin_dev)
     return !tapi_nvme_internal_isdir_exist(rpcs, path);
 }
 
-static te_errno
-wait_device_disapperance(rcf_rpc_server *rpcs, const char *admin_dev)
-{
-    char why_message[BUFFER_SIZE];
-    unsigned int wait_sec = DEVICE_WAIT_TIMEOUT_S;
-    unsigned int i;
-
-    if (is_disconnected(rpcs, admin_dev))
-        return 0;
-
-    for (i = 1; i <= DEVICE_WAIT_ATTEMPTS; i++)
-    {
-        TE_SPRINTF(why_message,
-                   "[%d/%d] Waiting for disconnecting device '%s'...",
-                   i, DEVICE_WAIT_ATTEMPTS, admin_dev);
-
-        te_motivated_sleep(wait_sec, why_message);
-
-        if (is_disconnected(rpcs, admin_dev))
-            return 0;
-
-        /* If NVMoF TCP kernel initiator driver will not free the device
-         * withing a few seconds interval, then it will hang up for a long
-         * time, thus there are no point in high frequency polling. */
-        wait_sec += DEVICE_WAIT_TIMEOUT_S;
-    }
-
-    return TE_RC(TE_TAPI, TE_ETIMEDOUT);
-}
-
 /* See description in tapi_nvme.h */
 te_errno
 tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl)
 {
     te_errno rc;
+    const unsigned int timeout_sec = 2 * 60;
 
     if (host_ctrl == NULL ||
         host_ctrl->rpcs == NULL ||
@@ -988,14 +959,11 @@ tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl)
 
     RING("Device '%s' tries to disconnect", host_ctrl->admin_dev);
 
-    rc = tapi_nvme_internal_file_append(host_ctrl->rpcs, "1",
+    rc = tapi_nvme_internal_file_append(host_ctrl->rpcs, timeout_sec, "1",
         BASE_NVME_FABRICS"/%s/delete_controller", host_ctrl->admin_dev);
-    if (rc == 0)
-        rc = wait_device_disapperance(host_ctrl->rpcs, host_ctrl->admin_dev);
-    if (rc == 0)
-        RING("Device '%s' disconnected successfully", host_ctrl->admin_dev);
-    else
-        ERROR("Disconnection for device '%s' failed", host_ctrl->admin_dev);
+
+    if (rc == 0 && !is_disconnected(host_ctrl->rpcs, host_ctrl->admin_dev))
+        rc = TE_EFAIL;
 
     free(host_ctrl->device);
     free(host_ctrl->admin_dev);

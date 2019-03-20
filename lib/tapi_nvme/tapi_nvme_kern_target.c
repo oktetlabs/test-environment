@@ -68,7 +68,8 @@ write_config(rcf_rpc_server *rpcs, tapi_nvme_transport transport,
 #define APPEND(_value, _fmt, _args...)                          \
     do {                                                        \
         int rc;                                                 \
-        rc = tapi_nvme_internal_file_append(rpcs, _value,       \
+        rc = tapi_nvme_internal_file_append(                    \
+            rpcs, TAPI_NVME_INTERNAL_DEF_TIMEOUT, _value,       \
             BASE_NVMET_CONFIG _fmt, _args);                     \
         if (rc != 0)                                            \
             return rc;                                          \
