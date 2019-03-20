@@ -31,10 +31,6 @@ RCF_PCH_CFG_NODE_RW_COLLECTION(node_qdisc_param, "param", NULL, NULL,
                                conf_netem_param_del,
                                conf_netem_param_list, NULL);
 
-/* TODO: add classid support */
-RCF_PCH_CFG_NODE_RW(node_qdisc_classid, "classid", NULL,
-                    NULL, NULL, NULL);
-
 /* TODO: add handle support */
 RCF_PCH_CFG_NODE_RW(node_qdisc_handle, "handle", NULL,
                     &node_qdisc_param, conf_qdisc_handle_get, NULL);

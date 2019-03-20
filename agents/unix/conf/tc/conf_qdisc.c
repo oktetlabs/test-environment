@@ -11,9 +11,9 @@
 #include "te_defs.h"
 #include "rcf_common.h"
 
-#include <netlink/route/qdisc.h>
-
 #include "conf_tc_internal.h"
+
+#include <netlink/route/qdisc.h>
 
 #define ROOT            "root"
 #define DEFAULT_HANDLE  "1:0"
