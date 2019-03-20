@@ -473,6 +473,55 @@ initiator_dev_info_get(rcf_rpc_server *rpcs, const initiator_dev *dev,
 }
 
 static te_bool
+initiator_dev_equal(initiator_dev *first, initiator_dev *second)
+{
+    return first->admin_index == second->admin_index &&
+           first->controller_index == second->controller_index &&
+           first->namespace_index == second->namespace_index;
+}
+
+static te_bool
+initiator_dev_contains(const te_vec *devs, initiator_dev *dev)
+{
+    initiator_dev *current_dev;
+
+    TE_VEC_FOREACH((te_vec *)devs, current_dev)
+    {
+        if (initiator_dev_equal(current_dev, dev))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+static te_errno
+initiator_dev_list_diff(const te_vec *first, const te_vec *second, te_vec *diff)
+{
+    te_errno rc;
+    initiator_dev *dev;
+
+    TE_VEC_FOREACH((te_vec *)first, dev)
+    {
+        if (initiator_dev_contains(second, dev))
+            continue;
+
+        if ((rc = TE_VEC_APPEND(diff, *dev)) != 0)
+            return rc;
+    }
+
+    TE_VEC_FOREACH((te_vec *)second, dev)
+    {
+        if (initiator_dev_contains(first, dev))
+            continue;
+
+        if ((rc = TE_VEC_APPEND(diff, *dev)) != 0)
+            return rc;
+    }
+
+    return 0;
+}
+
+static te_bool
 is_target_eq(const tapi_nvme_target *target, const initiator_dev_info *info,
              const initiator_dev *dev)
 {
