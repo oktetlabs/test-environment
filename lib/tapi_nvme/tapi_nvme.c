@@ -165,15 +165,6 @@ typedef struct nvme_fabric_namespace_info {
         .namespace_index = -1,                                              \
     }
 
-static te_errno
-nvme_fabric_namespace_info_string(nvme_fabric_namespace_info *info,
-                                  te_string *string)
-{
-    return te_string_append(string, "nvme%dn%d",
-                            info->admin_device_index,
-                            info->namespace_index);
-}
-
 static const char *
 nvme_fabric_namespace_info_admin_str(const nvme_fabric_namespace_info *dev)
 {
@@ -211,16 +202,6 @@ typedef struct nvme_fabric_info {
     nvme_fabric_namespace_info namespaces[MAX_NAMESPACES];
     int namespaces_count;
 } nvme_fabric_info;
-
-typedef enum read_result {
-    READ_SUCCESS = 0,
-    READ_ERROR = -1,
-    READ_CONTINUE = -2
-} read_result;
-
-typedef read_result (*read_info)(rcf_rpc_server *rpcs,
-                                 nvme_fabric_info *info,
-                                 const char *filepath);
 
 static te_bool
 parse_with_prefix(const char *prefix, const char **str, int *result,
@@ -273,49 +254,6 @@ parse_namespace_info(const char *str,
 
     *namespace_info = result;
     return 0;
-}
-
-static read_result
-read_nvme_fabric_info_namespaces(rcf_rpc_server *rpcs,
-                                 nvme_fabric_info *info,
-                                 const char *filepath)
-{
-    te_errno rc;
-    size_t i, count;
-    te_vec names = TE_VEC_INIT(tapi_nvme_internal_dirinfo);
-    tapi_nvme_internal_dirinfo *dirinfo;
-
-    rc = tapi_nvme_internal_filterdir(rpcs, filepath, "nvme", &names);
-    if (rc != 0)
-    {
-        ERROR("Error during reading fabric info from %s (%r)", filepath, rc);
-        return READ_ERROR;
-    }
-
-    count = te_vec_size(&names);
-    if (count > TE_ARRAY_LEN(info->namespaces))
-    {
-        count = TE_ARRAY_LEN(info->namespaces);
-        WARN("Too many devices found, we will cut %d -> %d", count,
-             TE_ARRAY_LEN(info->namespaces));
-    }
-
-    info->namespaces_count = 0;
-    for (i = 0; i < count; i++)
-    {
-        rc = parse_namespace_info(dirinfo->name, info->namespaces + i);
-        if (rc != 0)
-            WARN("Cannot parse namespace '%s'", dirinfo->name);
-        else
-            info->namespaces_count++;
-    }
-
-    te_vec_free(&names);
-
-    if (info->namespaces_count == 0)
-        return READ_CONTINUE;
-
-    return READ_SUCCESS;
 }
 
 /**
@@ -451,37 +389,6 @@ read_nvme_fabric_info_subnqn(rcf_rpc_server *rpcs,
 
     /* After read file subnqn store with \n, remove it */
     strtok(info->subnqn, "\n");
-
-    return READ_SUCCESS;
-}
-
-typedef struct read_nvme_fabric_read_action {
-    read_info function;
-    const char *file;
-} read_nvme_fabric_read_action;
-
-static read_result
-read_nvme_fabric_info(rcf_rpc_server *rpcs,
-                      nvme_fabric_info *info,
-                      const char *admin_dev)
-{
-    size_t i;
-    read_result rc;
-    char path[RCF_MAX_PATH];
-    read_nvme_fabric_read_action actions[] = {
-        { read_nvme_fabric_info_namespaces, "" },
-        { read_nvme_fabric_info_addr, "address" },
-        { read_nvme_fabric_info_subnqn, "subsysnqn" },
-        { read_nvme_fabric_info_transport, "transport" }
-    };
-
-    for (i = 0; i < TE_ARRAY_LEN(actions); i++)
-    {
-        TE_SPRINTF(path, BASE_NVME_FABRICS "/%s/%s",
-                   admin_dev, actions[i].file);
-        if ((rc = actions[i].function(rpcs, info, path)) != READ_SUCCESS)
-            return rc;
-    }
 
     return READ_SUCCESS;
 }
