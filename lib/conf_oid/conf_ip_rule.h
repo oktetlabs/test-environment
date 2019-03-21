@@ -38,8 +38,10 @@ typedef struct te_conf_ip_rule {
                                              ip rule not ... ). */
     uint8_t         srclen;             /**< Prefix length of source */
     uint8_t         dstlen;             /**< Prefix length of destination */
-    struct sockaddr src;                /**< Source prefix */
-    struct sockaddr dst;                /**< Destination prefix */
+
+    struct sockaddr_storage   src;      /**< Source address */
+    struct sockaddr_storage   dst;      /**< Destination address */
+
     char            iifname[IFNAMSIZ];  /**< Incoming device */
     char            oifname[IFNAMSIZ];  /**< Outgoing device */
     uint32_t        goto_index;         /**< Index of rule for jumping */
