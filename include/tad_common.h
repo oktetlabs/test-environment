@@ -201,4 +201,21 @@ enum tad_eth_recv_mode {
 /** Length of UDP header */
 #define TAD_UDP_HDR_LEN     8
 
+/**
+ * Convert sockaddr structures to address/port arguments passed
+ * to CSAP creation functions.
+ *
+ * @param _loc        Local address.
+ * @param _rem        Remote address.
+ */
+#define TAD_SA2ARGS(_loc, _rem) \
+    te_sockaddr_get_netaddr(_loc),    \
+    te_sockaddr_get_netaddr(_rem),    \
+    (_loc == NULL ?                   \
+        -1 :                          \
+        te_sockaddr_get_port(_loc)),  \
+    (_rem == NULL ?                   \
+        -1 :                          \
+        te_sockaddr_get_port(_rem))
+
 #endif /* !__TE_TAD_COMMON_H__ */
