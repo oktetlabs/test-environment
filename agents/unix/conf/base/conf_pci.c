@@ -24,6 +24,10 @@
 #include <stdarg.h>
 #endif
 
+#if HAVE_STRING_H
+#include <string.h>
+#endif
+
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -184,7 +188,11 @@ read_pci_hex_attr(const char *name, const char *attr)
              attr, name, rc);
         return 0;
     }
-    fscanf(f, "%x", &result);
+    if (fscanf(f, "%x", &result) != 1)
+    {
+        ERROR("Cannot parse PCI '%s' hex attribute '%s' value: %s",
+              name, attr, strerror(errno));
+    }
     fclose(f);
     return result;
 }
