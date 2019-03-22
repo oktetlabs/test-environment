@@ -1291,9 +1291,7 @@ extern te_errno tapi_tcp_set_ts_opt(asn_value *val,
 extern int tapi_tcp_compare_seqn(uint32_t seqn1, uint32_t seqn2);
 
 /**
- * Create tcp eth CSAP for given ip address family
- * For creating csap for anyaddr (0.0.0.0 or ::) pass @c NULL as @p loc_addr or
- * @p rem_addr.
+ * Create TCP CSAP for given IP address family on Ethernet.
  *
  * @param      ta_name       Test Agent name
  * @param      sid           RCF SID
@@ -1303,24 +1301,30 @@ extern int tapi_tcp_compare_seqn(uint32_t seqn1, uint32_t seqn2);
  *                           by default.
  * @param      loc_mac       Local MAC address (or NULL)
  * @param      rem_mac       Remote MAC address (or NULL)
- * @param      loc_addr      Local IP sockaddr (or NULL)
- * @param      rem_addr      Remote IP sockaddr (or NULL)
- * @param[out] tcp_csap      Location for the IP CSAP handle
- * @param      ip_family     Address family of created csap
- *                           (AF_INET or AF_INET6)
+ * @param      ip_family     Address family of created CSAP
+ *                           (@c AF_INET or @c AF_INET6)
+ * @param      loc_addr      Local IP address in network byte order
+ *                           (or @c NULL)
+ * @param      rem_addr      Remote IP address in network byte order
+ *                           (or @c NULL)
+ * @param      loc_port      Local TCP port in network byte order or @c -1
+ * @param      rem_port      Remote TCP port in network byte order or @c -1
+ * @param[out] tcp_csap      Location for the TCP CSAP handle
  *
  * @return Status code.
  */
-extern te_errno tapi_tcp_ip_eth_csap_create(const char            *ta_name,
-                                            int                    sid,
-                                            const char            *eth_dev,
-                                            unsigned int           receive_mode,
-                                            const uint8_t         *loc_mac,
-                                            const uint8_t         *rem_mac,
-                                            const struct sockaddr *loc_addr,
-                                            const struct sockaddr *rem_addr,
-                                            csap_handle_t         *tcp_csap,
-                                            int                    ip_family);
+extern te_errno tapi_tcp_ip_eth_csap_create(const char        *ta_name,
+                                            int                sid,
+                                            const char        *eth_dev,
+                                            unsigned int       receive_mode,
+                                            const uint8_t     *loc_mac,
+                                            const uint8_t     *rem_mac,
+                                            int                ip_family,
+                                            const void        *loc_addr,
+                                            const void        *rem_addr,
+                                            int                loc_port,
+                                            int                rem_port,
+                                            csap_handle_t     *tcp_csap);
 
 #endif /* !__TE_TAPI_TCP_H__ */
 
