@@ -1032,6 +1032,7 @@ tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
 
                 if (csap->state & CSAP_STATE_RECV_SEQ_MATCH)
                     ptrn_data->cur_unit++;
+                /*@fallthrough@*/
 
             case TE_ETADLESSDATA:
                 F_VERB(CSAP_LOG_FMT "Match packet with unit #%u - %r",
