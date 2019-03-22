@@ -268,6 +268,28 @@ rpc_job_receive(rcf_rpc_server *rpcs, unsigned int n_filters,
 }
 
 int
+rpc_job_send(rcf_rpc_server *rpcs, unsigned int channel,
+             const void *buf, size_t count)
+{
+    tarpc_job_send_in  in;
+    tarpc_job_send_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.buf.buf_val = (uint8_t *)buf;
+    in.buf.buf_len = count;
+    in.channel = channel;
+
+    rcf_rpc_call(rpcs, "job_send", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, job_send, "%u, %lu", "%r", in.channel,
+                 in.buf.buf_len, out.retval);
+
+    RETVAL_INT(job_send, out.retval);
+}
+
+int
 rpc_job_poll(rcf_rpc_server *rpcs, unsigned int n_channels,
              unsigned int *channels, int timeout_ms)
 {

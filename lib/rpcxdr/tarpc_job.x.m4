@@ -95,6 +95,20 @@ struct tarpc_job_receive_out {
     tarpc_int retval;
 };
 
+/* job_send */
+struct tarpc_job_send_in {
+    struct tarpc_in_arg common;
+
+    tarpc_uint channel;
+    uint8_t buf<>;
+};
+
+struct tarpc_job_send_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+};
+
 /* job_poll */
 struct tarpc_job_poll_in {
     struct tarpc_in_arg common;
@@ -171,6 +185,7 @@ program job
         RPC_DEF(job_allocate_channels)
         RPC_DEF(job_attach_filter)
         RPC_DEF(job_receive)
+        RPC_DEF(job_send)
         RPC_DEF(job_poll)
         RPC_DEF(job_kill)
         RPC_DEF(job_wait)

@@ -115,6 +115,19 @@ extern int rpc_job_attach_filter(rcf_rpc_server *rpcs, const char *filter_name,
 extern int rpc_job_receive(rcf_rpc_server *rpcs, unsigned int n_filters,
                            unsigned int *filters, int timeout_ms,
                            tarpc_job_buffer *buffer);
+/**
+ * Send data to a job input channel.
+ *
+ * @param rpcs     RPC server
+ * @param channel  Input channel handle
+ * @param buf      A pointer to data buffer
+ * @param count    Size of data buffer
+ *
+ * @return          Status code
+ * @retval TE_EPERM if @p channel is not an input channel
+ */
+extern int rpc_job_send(rcf_rpc_server *rpcs, unsigned int channel,
+                        const void *buf, size_t count);
 
 /**
  * Poll the job's channels/filters for readiness.

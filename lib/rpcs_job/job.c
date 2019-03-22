@@ -86,6 +86,11 @@ typedef struct channel_t {
             filter_t *filters[MAX_FILTERS_PER_CHANNEL];
             unsigned int n_filters;
         };
+        /* Regarding input channel */
+        struct {
+            te_bool input_ready;
+            te_bool signal_on_data;
+        };
     };
 } channel_t;
 
@@ -448,6 +453,8 @@ channel_alloc(job_t *job, channel_t **channel, te_bool is_input_channel)
     result->fd = -1;
     result->closed = FALSE;
     result->is_input_channel = is_input_channel;
+    result->input_ready = FALSE;
+    result->signal_on_data = FALSE;
 
     *channel = result;
 
@@ -854,10 +861,28 @@ thread_read_selected(fd_set *rfds, channel_list *channels)
     }
 }
 
+static void
+thread_mark_selected_ready(fd_set *wfds, channel_list *channels)
+{
+    channel_t *channel;
+
+    for (channel = LIST_FIRST(channels);
+         channel != NULL; channel = LIST_NEXT(channel, next))
+    {
+        if (FD_ISSET(channel->fd, wfds))
+        {
+            channel->input_ready = TRUE;
+            if (channel->signal_on_data)
+                pthread_cond_signal(&data_cond);
+        }
+    }
+}
+
 static void *
 thread_work_loop(void *arg)
 {
     fd_set rfds;
+    fd_set wfds;
     int select_rc;
 
     UNUSED(arg);
@@ -869,6 +894,7 @@ thread_work_loop(void *arg)
         channel_t *channel;
 
         FD_ZERO(&rfds);
+        FD_ZERO(&wfds);
         FD_SET(ctrl_fd, &rfds);
 
         pthread_mutex_lock(&channels_lock);
@@ -877,19 +903,24 @@ thread_work_loop(void *arg)
         {
             if (!channel->closed && channel->fd > -1)
             {
-                if (!channel->is_input_channel)
+                if (channel->is_input_channel)
                 {
-                    if (channel->fd > max_fd)
-                        max_fd = channel->fd;
-
+                    if (!channel->input_ready)
+                        FD_SET(channel->fd, &wfds);
+                }
+                else
+                {
                     FD_SET(channel->fd, &rfds);
                 }
+
+                if (channel->fd > max_fd)
+                    max_fd = channel->fd;
             }
         }
 
         pthread_mutex_unlock(&channels_lock);
 
-        select_rc = select(max_fd + 1, &rfds, NULL, NULL, NULL);
+        select_rc = select(max_fd + 1, &rfds, &wfds, NULL, NULL);
 
         if (select_rc < 0)
         {
@@ -926,6 +957,7 @@ thread_work_loop(void *arg)
             if (channel_process_needed)
             {
                 thread_read_selected(&rfds, &all_channels);
+                thread_mark_selected_ready(&wfds, &all_channels);
             }
 
             pthread_mutex_unlock(&channels_lock);
@@ -1326,7 +1358,9 @@ switch_signal_on_data(unsigned int channel_id, te_bool on)
     filter_t *filter = NULL;
 
     get_channel_or_filter(channel_id, &channel, &filter);
-    if (filter != NULL)
+    if (channel != NULL)
+        channel->signal_on_data = on;
+    else if (filter != NULL)
         filter->signal_on_data = on;
 }
 
@@ -1339,8 +1373,22 @@ channel_or_filter_ready(unsigned int id, te_bool filter_only, te_bool *ready)
     get_channel_or_filter(id, &channel, &filter);
     if (channel != NULL)
     {
-        ERROR("Channel readiness check is not supported");
-        return TE_EOPNOTSUPP;
+        if (filter_only)
+        {
+            ERROR("Invalid id, expected only filter id");
+            return TE_EPERM;
+        }
+        if (!channel->is_input_channel)
+        {
+            ERROR("Unable to check data on out channel, in channel expected");
+            return TE_EPERM;
+        }
+        if (channel->fd < 0)
+        {
+            ERROR("Unable to check data on input channel without binded fd");
+            return TE_EPERM;
+        }
+        *ready = channel->input_ready;
     }
     else if (filter != NULL)
     {
@@ -1458,6 +1506,77 @@ job_receive(unsigned int n_filters, unsigned int *filters,
 
     ERROR("Critical job receive error");
     return TE_EIO;
+}
+
+static te_errno
+job_send_unsafe(unsigned int channel_id, size_t count, uint8_t *buf)
+{
+    channel_t *channel = get_channel(channel_id);
+    ssize_t write_rc;
+    te_errno rc;
+
+    if (channel == NULL)
+        return TE_EINVAL;
+
+    if (!channel->is_input_channel)
+    {
+        ERROR("Failed to send data to process' output channel");
+        return TE_EPERM;
+    }
+
+    if (channel->fd < 0)
+    {
+        ERROR("Channel's file descriptor is not binded to process");
+        return TE_EPERM;
+    }
+
+    if (!channel->input_ready)
+    {
+        ERROR("Channel is not ready to accept input");
+        return TE_EPERM;
+    }
+
+    if ((write_rc = write(channel->fd, buf, count)) < 0)
+    {
+        rc = te_rc_os2te(errno);
+        if (rc == TE_EPIPE)
+        {
+            WARN("Attempt to write to closed descriptor");
+            channel->closed = TRUE;
+        }
+        else
+        {
+            ERROR("write() failed");
+        }
+        return te_rc_os2te(errno);
+    }
+
+    channel->input_ready = FALSE;
+
+    if ((size_t)write_rc != count)
+    {
+        ERROR("Incomplete write");
+        return TE_EIO;
+    }
+
+    /* Wake up working thread to continue monitor the descriptor */
+    if ((rc = ctrl_pipe_send()) != 0)
+        return rc;
+
+    return 0;
+}
+
+static te_errno
+job_send(unsigned int channel_id, size_t count, uint8_t *buf)
+{
+    te_errno rc;
+    pthread_mutex_lock(&channels_lock);
+
+    rc = job_send_unsafe(channel_id, count, buf);
+
+    pthread_mutex_unlock(&channels_lock);
+
+    return rc;
 }
 
 static te_errno
@@ -1606,6 +1725,12 @@ TARPC_FUNC_STATIC(job_receive, {},
     MAKE_CALL(out->retval = func(in->filters.filters_len,
                                  in->filters.filters_val,
                                  in->timeout_ms, &out->buffer));
+})
+
+TARPC_FUNC_STATIC(job_send, {},
+{
+    MAKE_CALL(out->retval = func(in->channel, in->buf.buf_len,
+                                 in->buf.buf_val));
 })
 
 TARPC_FUNC_STATIC(job_poll, {},
