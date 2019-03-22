@@ -175,6 +175,7 @@ typedef struct tapi_fio_opts {
                                     * error */
     const char *rand_gen;        /**< Random generator type */
     const char *user;            /**< Raw string passed to fio */
+    const char *prefix;          /**< Raw string used as a prefix before fio */
 } tapi_fio_opts;
 
 /** Macro to initialize default value. */
@@ -196,6 +197,7 @@ typedef struct tapi_fio_opts {
     .exit_on_error = TRUE,                              \
     .rand_gen = NULL,                                   \
     .user = "",                                         \
+    .prefix = NULL,                                     \
 })
 
 /** FIO tool context. Based on tapi_perf_app */

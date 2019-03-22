@@ -185,6 +185,9 @@ build_command(te_string *cmd, const tapi_fio_opts *opts)
         set_opt_user,
     };
 
+    if (opts->prefix != NULL)
+        CHECK_RC(te_string_append(cmd, "%s ", opts->prefix));
+
     CHECK_RC(te_string_append(cmd, "fio"));
     for (i = 0; i < TE_ARRAY_LEN(set_opt); i++)
         set_opt[i](cmd, opts);
