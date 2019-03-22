@@ -174,7 +174,8 @@ rpc_job_allocate_channels(rcf_rpc_server *rpcs, unsigned int job_id,
 int
 rpc_job_attach_filter(rcf_rpc_server *rpcs, const char *filter_name,
                       unsigned int n_channels, unsigned int *channels,
-                      te_log_level log_level, unsigned int *filter)
+                      te_bool readable, te_log_level log_level,
+                      unsigned int *filter)
 {
     tarpc_job_attach_filter_in  in;
     tarpc_job_attach_filter_out out;
@@ -188,17 +189,19 @@ rpc_job_attach_filter(rcf_rpc_server *rpcs, const char *filter_name,
         in.filter_name = tapi_strdup(filter_name);
     in.channels.channels_val = channels;
     in.channels.channels_len = n_channels;
+    in.readable = readable;
     in.log_level = log_level;
 
     rcf_rpc_call(rpcs, "job_attach_filter", &in, &out);
 
     log_lvl_str = te_log_level2str(log_level);
     tlbp_channels = te_log_buf_alloc();
-    TAPI_RPC_LOG(rpcs, job_attach_filter, "\"%s\", %u, {%s}, %s, %u", "%r",
+    TAPI_RPC_LOG(rpcs, job_attach_filter, "\"%s\", %u, {%s}, %s, %s, %u", "%r",
                  in.filter_name, in.channels.channels_len,
                  tarpc_uint_array2log_buf(tlbp_channels,
                                           in.channels.channels_len,
                                           in.channels.channels_val),
+                 in.readable ? "readable" : "unreadable",
                  log_lvl_str == NULL ? "<NONE>" : log_lvl_str,
                  out.filter, out.retval);
     te_log_buf_free(tlbp_channels);
@@ -209,6 +212,87 @@ rpc_job_attach_filter(rcf_rpc_server *rpcs, const char *filter_name,
     free(in.filter_name);
 
     RETVAL_INT(job_attach_filter, out.retval);
+}
+
+static void
+tarpc_job_buffer_copy(const tarpc_job_buffer *from, tarpc_job_buffer *to)
+{
+    to->channel = from->channel;
+    to->filter = from->filter;
+    to->eos = from->eos;
+    to->dropped = from->dropped;
+    to->data.data_len = from->data.data_len;
+
+    if (from->data.data_len > 0)
+    {
+        to->data.data_val = tapi_memdup(from->data.data_val,
+                                        from->data.data_len);
+    }
+    else
+    {
+        to->data.data_val = NULL;
+    }
+}
+
+int
+rpc_job_receive(rcf_rpc_server *rpcs, unsigned int n_filters,
+                unsigned int *filters, int timeout_ms,
+                tarpc_job_buffer *buffer)
+{
+    tarpc_job_receive_in  in;
+    tarpc_job_receive_out out;
+    te_log_buf *tlbp_filters;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.filters.filters_val = filters;
+    in.filters.filters_len = n_filters;
+    in.timeout_ms = timeout_ms;
+
+    rcf_rpc_call(rpcs, "job_receive", &in, &out);
+
+    tlbp_filters = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, job_receive, "%u, {%s}, %d", "%r",
+                 in.filters.filters_len,
+                 tarpc_uint_array2log_buf(tlbp_filters,
+                                          in.filters.filters_len,
+                                          in.filters.filters_val),
+                 in.timeout_ms, out.retval);
+    te_log_buf_free(tlbp_filters);
+
+    if (out.retval == 0 && buffer != NULL)
+        tarpc_job_buffer_copy(&out.buffer, buffer);
+
+    RETVAL_INT(job_receive, out.retval);
+}
+
+int
+rpc_job_poll(rcf_rpc_server *rpcs, unsigned int n_channels,
+             unsigned int *channels, int timeout_ms)
+{
+    tarpc_job_poll_in  in;
+    tarpc_job_poll_out out;
+    te_log_buf *tlbp_channels;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.channels.channels_val = channels;
+    in.channels.channels_len = n_channels;
+    in.timeout_ms = timeout_ms;
+
+    rcf_rpc_call(rpcs, "job_poll", &in, &out);
+
+    tlbp_channels = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, job_poll, "%u, {%s}, %d", "%r", in.channels.channels_len,
+                 tarpc_uint_array2log_buf(tlbp_channels,
+                                          in.channels.channels_len,
+                                          in.channels.channels_val),
+                 in.timeout_ms, out.retval);
+    te_log_buf_free(tlbp_channels);
+
+    RETVAL_INT(job_poll, out.retval);
 }
 
 int

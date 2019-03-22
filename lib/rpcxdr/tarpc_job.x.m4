@@ -60,6 +60,7 @@ struct tarpc_job_attach_filter_in {
     struct tarpc_in_arg common;
 
     tarpc_uint channels<>;
+    tarpc_bool readable;
     tarpc_uint log_level;
     string filter_name<>;
 };
@@ -68,6 +69,43 @@ struct tarpc_job_attach_filter_out {
     struct tarpc_out_arg common;
 
     tarpc_uint filter;
+    tarpc_int retval;
+};
+
+/* job_receive */
+struct tarpc_job_receive_in {
+    struct tarpc_in_arg common;
+
+    tarpc_uint filters<>;
+    tarpc_int timeout_ms;
+};
+
+struct tarpc_job_buffer {
+    tarpc_uint channel;
+    tarpc_uint filter;
+    tarpc_bool eos;
+    char data<>;
+    tarpc_size_t dropped;
+};
+
+struct tarpc_job_receive_out {
+    struct tarpc_out_arg common;
+
+    tarpc_job_buffer buffer;
+    tarpc_int retval;
+};
+
+/* job_poll */
+struct tarpc_job_poll_in {
+    struct tarpc_in_arg common;
+
+    tarpc_uint channels<>;
+    tarpc_int timeout_ms;
+};
+
+struct tarpc_job_poll_out {
+    struct tarpc_out_arg common;
+
     tarpc_int retval;
 };
 
@@ -132,6 +170,8 @@ program job
         RPC_DEF(job_start)
         RPC_DEF(job_allocate_channels)
         RPC_DEF(job_attach_filter)
+        RPC_DEF(job_receive)
+        RPC_DEF(job_poll)
         RPC_DEF(job_kill)
         RPC_DEF(job_wait)
         RPC_DEF(job_destroy)

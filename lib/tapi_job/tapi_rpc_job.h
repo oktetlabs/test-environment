@@ -80,6 +80,9 @@ extern int rpc_job_allocate_channels(rcf_rpc_server *rpcs, unsigned int job_id,
  * @param filter_name   Name of the filter
  * @param n_channels    Count of @p channels
  * @param channels      Output channels to attach the filter to.
+ * @param readable      If @c TRUE, the output of the filter can be
+ *                      read with rpc_job_receive(); otherwise, it is discarded,
+ *                      possibly after being logged.
  * @param log_level     If non-zero, the output of the filter is
  *                      logged with a given log level
  * @param[out] filter   Filter channel (may be @c NULL for trivial filters)
@@ -90,7 +93,43 @@ extern int rpc_job_allocate_channels(rcf_rpc_server *rpcs, unsigned int job_id,
  */
 extern int rpc_job_attach_filter(rcf_rpc_server *rpcs, const char *filter_name,
                                  unsigned int n_channels, unsigned int *channels,
-                                 te_log_level log_level, unsigned int *filter);
+                                 te_bool readable, te_log_level log_level,
+                                 unsigned int *filter);
+
+/**
+ * Read the next message from one of the available filters.
+ *
+ * @param rpcs        RPC server
+ * @param n_filters   Count of @p filters
+ * @param filters     Set of filters to read from.
+ * @param timeout_ms  Timeout to wait (if negative, infinity)
+ * @param buffer      Data buffer pointer. If @c NULL, the message is
+ *                    silently discarded.
+ *
+ * @return            Status code
+ * @retval TE_ENODATA if there's no data available within @p timeout
+ * @retval TE_EPERM   if some of the @p filters are input channels or
+ *                    primary output channels
+ * @retval TE_EXDEV   if @p filters are on different RPC servers
+ */
+extern int rpc_job_receive(rcf_rpc_server *rpcs, unsigned int n_filters,
+                           unsigned int *filters, int timeout_ms,
+                           tarpc_job_buffer *buffer);
+
+/**
+ * Poll the job's channels/filters for readiness.
+ *
+ * @param rpcs          RPC server
+ * @param n_channels    Count of @p channels
+ * @param channels      Set of channels to wait
+ * @param timeout_ms    Timeout in ms to wait (if negative, wait forever)
+ *
+ * @return              Status code
+ * @retval TE_EPERM     if some channels from @p wait_set are neither input
+ *                      channels nor pollable output channels
+ */
+extern int rpc_job_poll(rcf_rpc_server *rpcs, unsigned int n_channels,
+                        unsigned int *channels, int timeout_ms);
 
 /**
  * Send a signal to the job

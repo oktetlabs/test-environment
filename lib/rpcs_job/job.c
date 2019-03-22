@@ -30,7 +30,27 @@
 #define MAX_INPUT_CHANNELS_PER_JOB 32
 #define MAX_FILTERS_PER_CHANNEL 32
 
+#define MAX_QUEUE_SIZE (16 * 1024 * 1024)
 #define MAX_MESSAGE_DATA_SIZE 8192
+
+typedef struct message_t {
+    STAILQ_ENTRY(message_t) next;
+
+    char *data;
+    size_t size;
+    te_bool eos;
+    unsigned int channel_id;
+    unsigned int filter_id;
+    size_t dropped;
+} message_t;
+
+typedef STAILQ_HEAD(message_list, message_t) message_list;
+
+typedef struct message_queue_t {
+    message_list messages;
+    size_t dropped;
+    size_t size;
+} message_queue_t;
 
 typedef LIST_HEAD(filter_list, filter_t) filter_list;
 
@@ -40,8 +60,11 @@ typedef struct filter_t {
     unsigned int id;
 
     int ref_count;
+    te_bool signal_on_data;
+    te_bool readable;
     te_log_level log_level;
     char *name;
+    message_queue_t queue;
 } filter_t;
 
 typedef LIST_HEAD(channel_list, channel_t) channel_list;
@@ -95,6 +118,7 @@ static channel_list all_channels = LIST_HEAD_INITIALIZER(&all_channels);
 static filter_list all_filters = LIST_HEAD_INITIALIZER(&all_filters);
 
 static pthread_mutex_t channels_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t data_cond = PTHREAD_COND_INITIALIZER;
 static int ctrl_pipe[2] = CTRL_PIPE_INITIALIZER;
 
 static int abandoned_descriptors[FD_SETSIZE];
@@ -121,8 +145,35 @@ get_##name(unsigned int id)                             \
 
 DEF_GETTER(job, job_t, &all_jobs);
 DEF_GETTER(channel, channel_t, &all_channels);
+DEF_GETTER(filter, filter_t, &all_filters);
 
 #undef DEF_GETTER
+
+static void
+get_channel_or_filter(unsigned int id, channel_t **channel, filter_t **filter)
+{
+    channel_t *c;
+    filter_t *f;
+
+    LIST_FOREACH(c, &all_channels, next)
+    {
+        if (c->id == id)
+        {
+            *channel = c;
+            return;
+        }
+    }
+
+    LIST_FOREACH(f, &all_filters, next)
+    {
+        if (f->id == id)
+        {
+            *filter = f;
+            return;
+        }
+    }
+    ERROR("Channel or filter with %d id is not found", id);
+}
 
 static te_errno
 abandoned_descriptors_add(size_t count, int *fds)
@@ -213,6 +264,114 @@ ctrl_pipe_send()
     return 0;
 }
 
+static te_errno
+init_message_queue(message_queue_t *queue)
+{
+    queue->size = 0;
+    queue->dropped = 0;
+    STAILQ_INIT(&queue->messages);
+
+    return 0;
+}
+
+static te_bool
+queue_drop_oldest(message_queue_t *queue)
+{
+    message_t *msg = STAILQ_FIRST(&queue->messages);
+
+    if (msg != NULL)
+    {
+        STAILQ_REMOVE_HEAD(&queue->messages, next);
+
+        queue->size -= (msg->size + sizeof(*msg));
+        free(msg->data);
+        free(msg);
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static te_errno
+queue_put(const char *buf, size_t size, te_bool eos, unsigned int channel_id,
+          unsigned int filter_id, message_queue_t *queue)
+{
+    message_t *msg;
+    char *msg_str;
+    size_t needed_space = size + sizeof(*msg);
+
+    /*
+     * Assert that queue size is sufficient to hold at least 1 message
+     * of maximum size
+     */
+    TE_COMPILE_TIME_ASSERT(MAX_QUEUE_SIZE >=
+                           MAX_MESSAGE_DATA_SIZE + sizeof(message_t));
+
+    while (queue->size + needed_space > MAX_QUEUE_SIZE)
+    {
+        (void)queue_drop_oldest(queue);
+        queue->dropped++;
+    }
+
+    msg = calloc(1, sizeof(*msg));
+
+    if (msg == NULL)
+    {
+        ERROR("Message allocation failed");
+        return TE_ENOMEM;
+    }
+
+    if (size != 0)
+    {
+        msg_str = calloc(1, size);
+        if (msg_str == NULL)
+        {
+            ERROR("Message databuf allocation failed");
+            free(msg);
+            return TE_ENOMEM;
+        }
+    }
+    else
+    {
+        msg_str = NULL;
+    }
+
+    memcpy(msg_str, buf, size);
+    msg->data = msg_str;
+    msg->size = size;
+    msg->channel_id = channel_id;
+    msg->filter_id = filter_id;
+    msg->eos = eos;
+
+    STAILQ_INSERT_TAIL(&queue->messages, msg, next);
+
+    queue->size += needed_space;
+
+    return 0;
+}
+
+static te_bool
+queue_has_data(message_queue_t *queue)
+{
+    return !STAILQ_EMPTY(&queue->messages);
+}
+
+static message_t *
+queue_extract(message_queue_t *queue)
+{
+    message_t *msg = STAILQ_FIRST(&queue->messages);
+
+    if (msg != NULL)
+    {
+        msg->dropped = queue->dropped;
+        queue->dropped = 0;
+        STAILQ_REMOVE_HEAD(&queue->messages, next);
+    }
+
+    return msg;
+}
+
 /* Channels and filters exist in the same handler namespace */
 static unsigned int channel_last_id = 0;
 
@@ -296,14 +455,23 @@ channel_alloc(job_t *job, channel_t **channel, te_bool is_input_channel)
 }
 
 static te_errno
-filter_alloc(const char *filter_name, te_log_level log_level, filter_t **filter)
+filter_alloc(const char *filter_name, te_bool readable, te_log_level log_level,
+             filter_t **filter)
 {
     filter_t *result = calloc(1, sizeof(*result));
+    te_errno rc;
 
     if (result == NULL)
     {
         ERROR("Filter allocation failed");
         return TE_ENOMEM;
+    }
+
+    if ((rc = init_message_queue(&result->queue)) != 0)
+    {
+        ERROR("Message queue init failure");
+        free(result);
+        return rc;
     }
 
     if (filter_name != NULL)
@@ -316,11 +484,22 @@ filter_alloc(const char *filter_name, te_log_level log_level, filter_t **filter)
         }
     }
     result->ref_count = 0;
+    result->signal_on_data = FALSE;
+    result->readable = readable;
     result->log_level = log_level;
 
     *filter = result;
 
     return 0;
+}
+
+
+static void
+queue_destroy(message_queue_t *queue)
+{
+    while (queue_drop_oldest(queue))
+        ; // Do nothing
+
 }
 
 static void
@@ -331,6 +510,8 @@ filter_destroy(filter_t *filter)
         return;
 
     LIST_REMOVE(filter, next);
+
+    queue_destroy(&filter->queue);
 
     free(filter);
 }
@@ -570,12 +751,23 @@ match_callback(filter_t *filter, unsigned int channel_id, size_t size,
                char *buf, te_bool eos)
 {
     int log_size = size > (size_t)INT_MAX ? INT_MAX : (int)size;
+    te_errno rc;
 
     if (!eos)
     {
         LOG_MSG(filter->log_level, "Filter '%s':\n%.*s",
                 filter->name == NULL ? "Unnamed" : filter->name, log_size, buf);
     }
+
+    if (filter->readable)
+    {
+        rc = queue_put(buf, size, eos, channel_id, filter->id, &filter->queue);
+        if (rc != 0)
+            return rc;
+    }
+
+    if (filter->signal_on_data)
+        pthread_cond_signal(&data_cond);
 
     return 0;
 }
@@ -1023,8 +1215,8 @@ out:
 
 static te_errno
 job_attach_filter_unsafe(const char *filter_name, unsigned int n_channels,
-                         unsigned int *channels, te_log_level log_level,
-                         unsigned int *filter_id)
+                         unsigned int *channels, te_bool readable,
+                         te_log_level log_level, unsigned int *filter_id)
 {
     filter_t *filter;
     unsigned int i;
@@ -1049,7 +1241,7 @@ job_attach_filter_unsafe(const char *filter_name, unsigned int n_channels,
         }
     }
 
-    if ((rc = filter_alloc(filter_name, log_level, &filter)) != 0)
+    if ((rc = filter_alloc(filter_name, readable, log_level, &filter)) != 0)
         return rc;
 
     if ((rc = filter_add(filter)) != 0)
@@ -1069,19 +1261,203 @@ job_attach_filter_unsafe(const char *filter_name, unsigned int n_channels,
 
 static te_errno
 job_attach_filter(const char *filter_name, unsigned int n_channels,
-                  unsigned int *channels, te_log_level log_level,
-                  unsigned int *filter_id)
+                  unsigned int *channels, te_bool readable,
+                  te_log_level log_level, unsigned int *filter_id)
 {
     te_errno rc;
 
     pthread_mutex_lock(&channels_lock);
 
     rc = job_attach_filter_unsafe(filter_name, n_channels, channels,
-                                  log_level, filter_id);
+                                  readable, log_level, filter_id);
 
     pthread_mutex_unlock(&channels_lock);
 
     return rc;
+}
+
+static void
+move_message_to_buffer(const message_t *msg,  tarpc_job_buffer *buffer)
+{
+    buffer->channel = msg->channel_id;
+    buffer->filter = msg->filter_id;
+    buffer->data.data_val = msg->data;
+    buffer->data.data_len = msg->size;
+    buffer->dropped = msg->dropped;
+    buffer->eos = msg->eos;
+}
+
+static te_errno
+filter_receive(unsigned int filter_id, tarpc_job_buffer *buffer)
+{
+    message_t *msg;
+    filter_t *filter;
+    te_errno rc = 0;
+
+    pthread_mutex_lock(&channels_lock);
+
+    if ((filter = get_filter(filter_id)) == NULL)
+    {
+        pthread_mutex_unlock(&channels_lock);
+        ERROR("Invalid filter id passed to filter receive");
+        return TE_EINVAL;
+    }
+
+    if ((msg = queue_extract(&filter->queue)) != NULL)
+    {
+        move_message_to_buffer(msg, buffer);
+        free(msg);
+    }
+    else
+    {
+        rc = TE_ENODATA;
+    }
+
+    pthread_mutex_unlock(&channels_lock);
+
+    return rc;
+}
+
+static void
+switch_signal_on_data(unsigned int channel_id, te_bool on)
+{
+
+    channel_t *channel = NULL;
+    filter_t *filter = NULL;
+
+    get_channel_or_filter(channel_id, &channel, &filter);
+    if (filter != NULL)
+        filter->signal_on_data = on;
+}
+
+static te_errno
+channel_or_filter_ready(unsigned int id, te_bool filter_only, te_bool *ready)
+{
+    channel_t *channel = NULL;
+    filter_t *filter = NULL;
+
+    get_channel_or_filter(id, &channel, &filter);
+    if (channel != NULL)
+    {
+        ERROR("Channel readiness check is not supported");
+        return TE_EOPNOTSUPP;
+    }
+    else if (filter != NULL)
+    {
+        if (!filter->readable)
+        {
+            ERROR("Failed to check data on unreadable filter");
+            return TE_EPERM;
+        }
+
+        *ready = queue_has_data(&filter->queue);
+    }
+    else
+    {
+        return TE_EINVAL;
+    }
+
+    return 0;
+}
+
+static te_errno
+job_poll(unsigned int n_channels, unsigned int *channel_ids, int timeout_ms,
+         te_bool filter_only)
+{
+    unsigned int i;
+    te_errno rc = 0;
+    int wait_rc;
+    struct timeval now;
+    struct timespec timeout;
+    uint64_t nanoseconds;
+    te_bool ready = FALSE;
+
+    pthread_mutex_lock(&channels_lock);
+
+    /* After this loop all channel ids are checked to be valid */
+    for (i = 0; i < n_channels; i++)
+    {
+        te_bool ready_tmp = FALSE;
+
+        if ((rc = channel_or_filter_ready(channel_ids[i], filter_only,
+                                          &ready_tmp)) != 0)
+        {
+            pthread_mutex_unlock(&channels_lock);
+            ERROR("Job poll failed, %r", rc);
+            return rc;
+        }
+        if (ready_tmp)
+            ready = TRUE;
+    }
+
+    if (ready)
+    {
+        pthread_mutex_unlock(&channels_lock);
+        return 0;
+    }
+
+    for (i = 0; i < n_channels; i++)
+        switch_signal_on_data(channel_ids[i], TRUE);
+
+    if (timeout_ms >= 0)
+    {
+        gettimeofday(&now, NULL);
+
+        nanoseconds = TE_SEC2NS(now.tv_sec);
+        nanoseconds += TE_US2MS(now.tv_usec);
+        nanoseconds += TE_MS2NS(timeout_ms);
+
+        TE_NS2TS(nanoseconds, &timeout);
+
+        wait_rc = pthread_cond_timedwait(&data_cond, &channels_lock, &timeout);
+    }
+    else
+    {
+        wait_rc = pthread_cond_wait(&data_cond, &channels_lock);
+    }
+
+    if (wait_rc != 0)
+    {
+        if (wait_rc != ETIMEDOUT)
+            WARN("pthread_cond_(timed)wait failed");
+        rc = te_rc_os2te(wait_rc);
+    }
+
+    for (i = 0; i < n_channels; i++)
+        switch_signal_on_data(channel_ids[i], FALSE);
+
+    pthread_mutex_unlock(&channels_lock);
+
+    return rc;
+}
+
+static te_errno
+job_receive(unsigned int n_filters, unsigned int *filters,
+            int timeout_ms, tarpc_job_buffer *buffer)
+{
+    unsigned int i;
+    te_errno rc;
+
+    if ((rc = job_poll(n_filters, filters, timeout_ms, TRUE)) != 0)
+        return rc;
+
+    for (i = 0; i < n_filters; i++)
+    {
+        rc = filter_receive(filters[i], buffer);
+        switch (rc)
+        {
+            case 0:
+                return 0;
+            case TE_ENODATA:
+                continue;
+            default:
+                ERROR("Job receive failed, %r", rc);
+                return rc;
+        }
+    }
+
+    ERROR("Critical job receive error");
+    return TE_EIO;
 }
 
 static te_errno
@@ -1217,12 +1593,26 @@ TARPC_FUNC_STATIC(job_attach_filter, {},
 {
     MAKE_CALL(out->retval = func(in->filter_name, in->channels.channels_len,
                                  in->channels.channels_val,
-                                 in->log_level, &out->filter));
+                                 in->readable, in->log_level, &out->filter));
 })
 
 TARPC_FUNC_STATIC(job_start, {},
 {
     MAKE_CALL(out->retval = func(in->job_id));
+})
+
+TARPC_FUNC_STATIC(job_receive, {},
+{
+    MAKE_CALL(out->retval = func(in->filters.filters_len,
+                                 in->filters.filters_val,
+                                 in->timeout_ms, &out->buffer));
+})
+
+TARPC_FUNC_STATIC(job_poll, {},
+{
+    MAKE_CALL(out->retval = func(in->channels.channels_len,
+                                 in->channels.channels_val,
+                                 in->timeout_ms, FALSE));
 })
 
 TARPC_FUNC_STATIC(job_kill, {},
