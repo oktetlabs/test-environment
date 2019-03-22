@@ -38,6 +38,39 @@ struct tarpc_job_start_out {
     tarpc_int retval;
 };
 
+/* job_allocate_channels */
+struct tarpc_job_allocate_channels_in {
+    struct tarpc_in_arg common;
+
+    tarpc_uint job_id;
+    tarpc_bool input_channels;
+    tarpc_uint n_channels;
+    tarpc_uint channels<>;
+};
+
+struct tarpc_job_allocate_channels_out {
+    struct tarpc_out_arg common;
+
+    tarpc_uint channels<>;
+    tarpc_int retval;
+};
+
+/* job_attach_filter */
+struct tarpc_job_attach_filter_in {
+    struct tarpc_in_arg common;
+
+    tarpc_uint channels<>;
+    tarpc_uint log_level;
+    string filter_name<>;
+};
+
+struct tarpc_job_attach_filter_out {
+    struct tarpc_out_arg common;
+
+    tarpc_uint filter;
+    tarpc_int retval;
+};
+
 /* job_kill */
 struct tarpc_job_kill_in {
     struct tarpc_in_arg common;
@@ -97,6 +130,8 @@ program job
     {
         RPC_DEF(job_create)
         RPC_DEF(job_start)
+        RPC_DEF(job_allocate_channels)
+        RPC_DEF(job_attach_filter)
         RPC_DEF(job_kill)
         RPC_DEF(job_wait)
         RPC_DEF(job_destroy)

@@ -48,6 +48,51 @@ extern int rpc_job_create(rcf_rpc_server *rpcs, const char *spawner,
 extern int rpc_job_start(rcf_rpc_server *rpcs, unsigned int job_id);
 
 /**
+ * Allocate @p n_channels channels.
+ * If the @p input_channels is @c TRUE,
+ * the first channel is expected to be connected to the job's stdin;
+ * If the @p input_channels is @c FALSE,
+ * The first channel and the second output channels are expected to be
+ * connected to stdout and stderr respectively;
+ * The wiring of not mentioned channels is spawner-dependant.
+ *
+ * @param rpcs            RPC server
+ * @param job_id          Job instace handle
+ * @param n_channels      Number of channels
+ * @param[out] channels   A vector of obtained channel handles
+ *                        (may be @c NULL if the caller is not interested
+ *                        in the handles)
+ *
+ * @return          Status code
+ */
+extern int rpc_job_allocate_channels(rcf_rpc_server *rpcs, unsigned int job_id,
+                                     te_bool input_channels,
+                                     unsigned int n_channels,
+                                     unsigned int *channels);
+
+/**
+ * Create a secondary output channel applying a filter to an existing
+ * channel.
+ *
+ * @note Filters can be attached only to primary channels
+ *
+ * @param rpcs          RPC server
+ * @param filter_name   Name of the filter
+ * @param n_channels    Count of @p channels
+ * @param channels      Output channels to attach the filter to.
+ * @param log_level     If non-zero, the output of the filter is
+ *                      logged with a given log level
+ * @param[out] filter   Filter channel (may be @c NULL for trivial filters)
+ *
+ * @return              Status code
+ * @retval TE_EPERM     Some of @p channels are input channels
+ * @retval TE_EINVAL    Some of @p channels are output filters
+ */
+extern int rpc_job_attach_filter(rcf_rpc_server *rpcs, const char *filter_name,
+                                 unsigned int n_channels, unsigned int *channels,
+                                 te_log_level log_level, unsigned int *filter);
+
+/**
  * Send a signal to the job
  *
  * @param rpcs          RPC server
