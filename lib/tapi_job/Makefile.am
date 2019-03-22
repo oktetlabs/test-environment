@@ -8,12 +8,13 @@ AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 AM_LDFLAGS = -L$(DESTDIR)/$(libdir)
 
 include_HEADERS= \
-	tapi_rpc_job.h
+	tapi_job.h
 
 lib_LIBRARIES = libtapi_job.a
 
 libtapi_job_a_SOURCES = \
-	rpc_job.c
+	rpc_job.c \
+	tapi_job.c
 
 install-exec-hook:
 	for i in ${lib_LIBRARIES} ; do \
