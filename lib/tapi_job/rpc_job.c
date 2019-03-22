@@ -214,6 +214,30 @@ rpc_job_attach_filter(rcf_rpc_server *rpcs, const char *filter_name,
     RETVAL_INT(job_attach_filter, out.retval);
 }
 
+int
+rpc_job_filter_add_regexp(rcf_rpc_server *rpcs, unsigned int filter,
+                          const char *re, unsigned int extract)
+{
+    tarpc_job_filter_add_regexp_in  in;
+    tarpc_job_filter_add_regexp_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.filter = filter;
+    if (re != NULL)
+        in.re = tapi_strdup(re);
+    in.extract = extract;
+
+    rcf_rpc_call(rpcs, "job_filter_add_regexp", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, job_filter_add_regexp, "%u, \"%s\", %u", "%r",
+                 in.filter, in.re, in.extract, out.retval);
+    free(in.re);
+
+    RETVAL_INT(job_filter_add_regexp, out.retval);
+}
+
 static void
 tarpc_job_buffer_copy(const tarpc_job_buffer *from, tarpc_job_buffer *to)
 {

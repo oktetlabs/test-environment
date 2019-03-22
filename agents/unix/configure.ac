@@ -557,6 +557,18 @@ if test "x$with_tirpc" = "xyes" ; then
     EXTRA_LDADD="$EXTRA_LDADD ${TIRPC}"
 fi
 
+AC_ARG_WITH([pcre],
+            AS_HELP_STRING([--with-pcre],
+                           [enable pcre (default is NO)]),
+            [with_pcre=yes], [with_pcre=""])
+if test "$with_pcre" = "yes" ; then
+AC_CHECK_HEADER([pcre.h], [],
+[AC_MSG_ERROR([pcre.h is not found])],
+[#include <pcre.h>])
+AC_CHECK_LIB([pcre], [pcre_exec], [EXTRA_LDADD="$EXTRA_LDADD -lpcre"],
+[AC_MSG_ERROR([PCRE library is not found])])
+fi
+
 AC_SUBST([EXTRA_CPPFLAGS])
 AC_SUBST([EXTRA_LDADD])
 

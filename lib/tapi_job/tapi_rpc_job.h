@@ -97,6 +97,20 @@ extern int rpc_job_attach_filter(rcf_rpc_server *rpcs, const char *filter_name,
                                  unsigned int *filter);
 
 /**
+ * Add a regular expression for filter
+ *
+ * @param rpcs     RPC server
+ * @param filter   Filter handle
+ * @param re       PCRE-style regular expression to match
+ * @param extract  A substring to extract as an output of the filter
+ *                 (0 meaning the whole match)
+ *
+ * @return          Status code
+ */
+extern int rpc_job_filter_add_regexp(rcf_rpc_server *rpcs, unsigned int filter,
+                                     const char *re, unsigned int extract);
+
+/**
  * Read the next message from one of the available filters.
  *
  * @param rpcs        RPC server

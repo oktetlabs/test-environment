@@ -14,6 +14,8 @@
 
 #include "te_config.h"
 
+#include <pcre.h>
+
 #include "te_shell_cmd.h"
 #include "te_sleep.h"
 #include "te_string.h"
@@ -52,6 +54,16 @@ typedef struct message_queue_t {
     size_t size;
 } message_queue_t;
 
+#define OVECCOUNT 30 /* should be a multiple of 3 */
+
+typedef struct regexp_data_t {
+    pcre *re;
+    pcre_extra *sd;
+    unsigned int extract;
+    te_bool utf8;
+    te_bool crlf_is_newline;
+} regexp_data_t;
+
 typedef LIST_HEAD(filter_list, filter_t) filter_list;
 
 typedef struct filter_t {
@@ -65,6 +77,7 @@ typedef struct filter_t {
     te_log_level log_level;
     char *name;
     message_queue_t queue;
+    regexp_data_t *regexp_data;
 } filter_t;
 
 typedef LIST_HEAD(channel_list, channel_t) channel_list;
@@ -178,6 +191,102 @@ get_channel_or_filter(unsigned int id, channel_t **channel, filter_t **filter)
         }
     }
     ERROR("Channel or filter with %d id is not found", id);
+}
+
+static void
+regexp_data_destroy(regexp_data_t *regexp_data)
+{
+    if (regexp_data != NULL)
+    {
+        pcre_free_study(regexp_data->sd);
+        pcre_free(regexp_data->re);
+    }
+
+    free(regexp_data);
+}
+
+static te_errno
+regexp_data_create(char *pattern, unsigned int extract,
+                   regexp_data_t **regexp_data)
+{
+    regexp_data_t *result = NULL;
+    unsigned int option_bits;
+    const char *error;
+    te_errno rc = 0;
+    int erroffset;
+    te_bool utf8;
+
+    if ((result = calloc(1, sizeof(*result))) == NULL)
+    {
+        ERROR("Failed to allocate regexp data");
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    result->re = pcre_compile(pattern, 0, &error, &erroffset, NULL);
+    if (result->re == NULL)
+    {
+        ERROR("PCRE compilation of pattern %s, failed at offset %d: %s",
+              pattern, erroffset, error);
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    result->sd = pcre_study(result->re, 0, &error);
+    if (error != NULL)
+    {
+        ERROR("PCRE study failed, %s", error);
+        rc = TE_EPERM;
+        goto out;
+    }
+
+    if (pcre_fullinfo(result->re, result->sd, PCRE_INFO_OPTIONS,
+                      &option_bits) != 0)
+    {
+        ERROR("PCRE fullinfo failed");
+        rc = TE_EPERM;
+        goto out;
+    }
+
+    utf8 = (option_bits & PCRE_UTF8) != 0;
+
+    option_bits &= PCRE_NEWLINE_CR | PCRE_NEWLINE_LF | PCRE_NEWLINE_CRLF |
+                   PCRE_NEWLINE_ANY | PCRE_NEWLINE_ANYCRLF;
+
+    if (option_bits == 0)
+    {
+        int d;
+
+        if (pcre_config(PCRE_CONFIG_NEWLINE, &d) != 0)
+        {
+            ERROR("PCRE config failed");
+            rc = TE_EINVAL;
+            goto out;
+        }
+        /*
+         * Values from specification. Note that these values are always
+         * the ASCII ones, even in EBCDIC environments. CR = 13, NL = 10.
+         */
+        option_bits = (d == 13) ? PCRE_NEWLINE_CR :
+                      (d == 10) ? PCRE_NEWLINE_LF :
+                      (d == 3338) ? PCRE_NEWLINE_CRLF :
+                      (d == -2) ? PCRE_NEWLINE_ANYCRLF :
+                      (d == -1) ? PCRE_NEWLINE_ANY : 0;
+    }
+
+    result->crlf_is_newline = option_bits == PCRE_NEWLINE_ANY ||
+                              option_bits == PCRE_NEWLINE_CRLF ||
+                              option_bits == PCRE_NEWLINE_ANYCRLF;
+    result->utf8 = utf8;
+    result->extract = extract;
+
+    *regexp_data = result;
+
+out:
+    if (rc != 0)
+        regexp_data_destroy(result);
+
+    return rc;
 }
 
 static te_errno
@@ -494,6 +603,7 @@ filter_alloc(const char *filter_name, te_bool readable, te_log_level log_level,
     result->signal_on_data = FALSE;
     result->readable = readable;
     result->log_level = log_level;
+    result->regexp_data = NULL;
 
     *filter = result;
 
@@ -519,6 +629,7 @@ filter_destroy(filter_t *filter)
     LIST_REMOVE(filter, next);
 
     queue_destroy(&filter->queue);
+    regexp_data_destroy(filter->regexp_data);
 
     free(filter);
 }
@@ -780,9 +891,118 @@ match_callback(filter_t *filter, unsigned int channel_id, size_t size,
 }
 
 static te_errno
+filter_regexp_exec(filter_t *filter, unsigned int channel_id,
+                   int subject_length, char *subject,
+                   te_errno (*fun_ptr)(filter_t *, unsigned int, size_t, char *, te_bool))
+{
+    int start_offset;
+    int first_exec;
+    int ovector[OVECCOUNT];
+    int rc;
+    te_errno te_rc;
+    regexp_data_t *regexp = filter->regexp_data;
+
+    for (start_offset = 0, first_exec = 1;; start_offset = ovector[1], first_exec = 0)
+    {
+        char *substring_start;
+        size_t substring_length;
+        int options = 0; /* Used to prevent infinite zero-length matches */
+
+        if (!first_exec && ovector[0] == ovector[1])
+        {
+            if (ovector[0] == subject_length)
+                break;
+            options = PCRE_NOTEMPTY_ATSTART | PCRE_ANCHORED;
+        }
+
+        rc = pcre_exec(regexp->re, regexp->sd, subject, subject_length,
+                       start_offset, options, ovector, TE_ARRAY_LEN(ovector));
+        if (rc < 0)
+        {
+            switch (rc)
+            {
+            case PCRE_ERROR_NOMATCH:
+                if (first_exec)
+                {
+                    /* No match at all */
+                    return 0;
+                }
+                else
+                {
+                    /* All matches found */
+                    if (options == 0)
+                        return 0;
+
+                    /* Advance one byte */
+                    ovector[1] = start_offset + 1;
+
+                    /* If CRLF is newline & we are at CRLF, */
+                    if (regexp->crlf_is_newline &&
+                        start_offset < subject_length - 1 &&
+                        subject[start_offset] == '\r' &&
+                        subject[start_offset + 1] == '\n')
+                    {
+                        /* Advance by one more. */
+                        ovector[1] += 1;
+                    }
+                    else if (regexp->utf8)
+                    {
+                        /* Advance whole UTF-8 character */
+                        while (ovector[1] < subject_length)
+                        {
+                            /* Break if byte is the first byte of UTF-8 character */
+                            if ((subject[ovector[1]] & 0xc0) != 0x80)
+                                break;
+
+                            ovector[1] += 1;
+                        }
+                    }
+                    continue;
+                }
+            default:
+                ERROR("Matching error %d", rc);
+                return TE_EFAULT;
+            }
+        }
+
+        /* The match succeeded, but the output vector wasn't big enough. */
+        if (rc == 0)
+        {
+            rc = TE_ARRAY_LEN(ovector) / 3;
+            WARN("ovector only has room for %d matches", rc);
+        }
+
+        if (regexp->extract >= (unsigned int)rc)
+        {
+            ERROR("There is no match with number %u", regexp->extract);
+            return TE_EPERM;
+        }
+
+        substring_start = subject + ovector[2 * regexp->extract];
+        substring_length = ovector[(2 * regexp->extract) + 1] -
+                               ovector[2 * regexp->extract];
+
+        if ((te_rc = fun_ptr(filter, channel_id, substring_length,
+                             substring_start, FALSE)) != 0)
+        {
+            return te_rc;
+        }
+    }
+
+    return 0;
+}
+
+static te_errno
 filter_exec(filter_t *filter, unsigned int channel_id, size_t size, char *buf)
 {
     te_bool eos = (size == 0);
+
+    /*
+     * Regexp can generate 0-length matches so it does not mark messages as
+     * end of stream.
+     */
+    if (filter->regexp_data != NULL && !eos)
+        return filter_regexp_exec(filter, channel_id, size, buf, match_callback);
 
     return match_callback(filter, channel_id, size, buf, eos);
 }
@@ -1308,6 +1528,41 @@ job_attach_filter(const char *filter_name, unsigned int n_channels,
     return rc;
 }
 
+static te_errno
+job_filter_add_regexp_unsafe(unsigned int filter_id, char *re, unsigned int extract)
+{
+    filter_t *filter;
+    te_errno rc;
+
+    if ((filter = get_filter(filter_id)) == NULL)
+        return TE_EINVAL;
+
+    if (filter->regexp_data != NULL)
+    {
+        ERROR("Filter already has a regexp");
+        return TE_EPERM;
+    }
+
+    if ((rc = regexp_data_create(re, extract, &filter->regexp_data)) != 0)
+        return rc;
+
+    return 0;
+}
+
+static te_errno
+job_filter_add_regexp(unsigned int filter_id, char *re, unsigned int extract)
+{
+    te_errno rc;
+
+    pthread_mutex_lock(&channels_lock);
+
+    rc = job_filter_add_regexp_unsafe(filter_id, re, extract);
+
+    pthread_mutex_unlock(&channels_lock);
+
+    return rc;
+}
+
 static void
 move_message_to_buffer(const message_t *msg,  tarpc_job_buffer *buffer)
 {
@@ -1713,6 +1968,11 @@ TARPC_FUNC_STATIC(job_attach_filter, {},
     MAKE_CALL(out->retval = func(in->filter_name, in->channels.channels_len,
                                  in->channels.channels_val,
                                  in->readable, in->log_level, &out->filter));
+})
+
+TARPC_FUNC_STATIC(job_filter_add_regexp, {},
+{
+    MAKE_CALL(out->retval = func(in->filter, in->re, in->extract));
 })
 
 TARPC_FUNC_STATIC(job_start, {},

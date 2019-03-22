@@ -72,6 +72,21 @@ struct tarpc_job_attach_filter_out {
     tarpc_int retval;
 };
 
+/* job_filter_add_regexp */
+struct tarpc_job_filter_add_regexp_in {
+    struct tarpc_in_arg common;
+
+    tarpc_uint filter;
+    string re<>;
+    tarpc_uint extract;
+};
+
+struct tarpc_job_filter_add_regexp_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+};
+
 /* job_receive */
 struct tarpc_job_receive_in {
     struct tarpc_in_arg common;
@@ -184,6 +199,7 @@ program job
         RPC_DEF(job_start)
         RPC_DEF(job_allocate_channels)
         RPC_DEF(job_attach_filter)
+        RPC_DEF(job_filter_add_regexp)
         RPC_DEF(job_receive)
         RPC_DEF(job_send)
         RPC_DEF(job_poll)

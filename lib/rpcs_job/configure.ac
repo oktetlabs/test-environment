@@ -25,6 +25,18 @@ AC_ARG_VAR([TE_BASE])
 
 TE_LIB_SET
 
+dnl Check for libpcre
+
+PCRE_LIBS=
+
+AC_CHECK_HEADER([pcre.h], [],
+[AC_MSG_ERROR([Job control RPC server requires pcre.h])],
+[#include <pcre.h>])
+AC_CHECK_LIB([pcre], [pcre_exec], [],
+[AC_MSG_ERROR([Job control RPC server requires PCRE library])])
+
+AC_SUBST([PCRE_LIBS])
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE
