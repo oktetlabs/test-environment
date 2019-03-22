@@ -322,19 +322,37 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
             F = fopen(filename, "rt");
             if (F != NULL)
             {
-                fgets(str, 100, F);
+                if (fgets(str, 100, F) == NULL)
+                {
+                    ERROR("Cannot read ifindex from file '%s'", filename);
+                    fclose(F);
+                    close(cfg_socket);
+                    return TE_RC(rc_module, TE_EIO);
+                }
                 if (str[strlen(str) - 1] == '\n')
                 {
                   str[strlen(str) - 1] = 0;
                 }
                 ifindex = atoi(str);
-                fgets(str, 100, F);
+                if (fgets(str, 100, F) == NULL)
+                {
+                    ERROR("Cannot read ifname from file '%s'", filename);
+                    fclose(F);
+                    close(cfg_socket);
+                    return TE_RC(rc_module, TE_EIO);
+                }
                 if (str[strlen(str) - 1] == '\n')
                 {
                   str[strlen(str) - 1] = 0;
                 }
                 sprintf(new_ifname, "\\Device\\NPF_%s", str);
-                fgets(str, 100, F);
+                if (fgets(str, 100, F) == NULL)
+                {
+                    ERROR("Cannot read MAC address from file '%s'", filename);
+                    fclose(F);
+                    close(cfg_socket);
+                    return TE_RC(rc_module, TE_EIO);
+                }
                 if (str[strlen(str) - 1] == '\n')
                 {
                   str[strlen(str) - 1] = 0;
