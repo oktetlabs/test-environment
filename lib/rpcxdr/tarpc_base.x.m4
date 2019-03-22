@@ -129,6 +129,10 @@ struct tarpc_out_arg {
                                   notifications */
 };
 
+/* Just to make two-dimensional array of strings */
+struct tarpc_string {
+    string  str<>;
+};
 
 /** IPv4-specific part of generic address */
 struct tarpc_sin {

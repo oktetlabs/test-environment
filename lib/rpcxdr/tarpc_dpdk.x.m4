@@ -25,11 +25,6 @@ typedef tarpc_ptr    tarpc_rte_ring;
 /** Bitmask of RSS hash protocols */
 typedef uint64_t     tarpc_rss_hash_protos_t;
 
-/* Just to make two-dimensional array of strings */
-struct tarpc_string {
-    string  str<>;
-};
-
 /* rte_eal_init() */
 struct tarpc_rte_eal_init_in {
     struct tarpc_in_arg         common;
