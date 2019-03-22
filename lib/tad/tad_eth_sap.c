@@ -237,36 +237,31 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 #ifdef USE_PF_PACKET
     unsigned int        ifindex;
 #endif
+    unsigned int        rc_module;
     te_errno            rc;
+
+#ifdef USE_PF_PACKET
+    rc_module = TE_TAD_PF_PACKET;
+#else
+    rc_module = TE_TAD_BPF;
+#endif
 
     if (ifname == NULL || sap == NULL)
     {
         ERROR("%s(): Invalid arguments", __FUNCTION__);
-#ifdef USE_PF_PACKET
-        return TE_RC(TE_TAD_PF_PACKET, TE_EFAULT);
-#else
-        return TE_RC(TE_TAD_BPF, TE_EFAULT);
-#endif
+        return TE_RC(rc_module, TE_EFAULT);
     }
     if (strlen(ifname) >= MIN(sizeof(if_req.ifr_name),
                               sizeof(sap->name)))
     {
         ERROR("%s(): Too long interface name", __FUNCTION__);
-#ifdef USE_PF_PACKET
-        return TE_RC(TE_TAD_PF_PACKET, TE_E2BIG);
-#else
-        return TE_RC(TE_TAD_BPF, TE_E2BIG);
-#endif
+        return TE_RC(rc_module, TE_E2BIG);
     }
 
     cfg_socket = socket(AF_INET, SOCK_DGRAM, 0);
     if (cfg_socket < 0)
     {
-#ifdef USE_PF_PACKET
-        rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
-#else
-        rc = TE_OS_RC(TE_TAD_BPF, errno);
-#endif
+        rc = TE_OS_RC(rc_module, errno);
         ERROR("%s(): socket(AF_INET, SOCK_DGRAM, 0) failed: %r",
               __FUNCTION__, rc);
         return rc;
@@ -363,11 +358,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 #ifndef __CYGWIN__
     if (ioctl(cfg_socket, SIOCGIFHWADDR, &if_req))
     {
-#ifdef USE_PF_PACKET
-        rc = TE_OS_RC(TE_TAD_PF_PACKET, errno);
-#else
-        rc = TE_OS_RC(TE_TAD_BPF, errno);
-#endif
+        rc = TE_OS_RC(rc_module, errno);
         ERROR("%s(): ioctl(%s, SIOCGIFHWADDR) failed: %r",
               __FUNCTION__, ifname, rc);
         close(cfg_socket);
@@ -394,11 +385,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
     assert(sap->data == NULL);
     sap->data = data = TE_ALLOC(sizeof(*data));
     if (data == NULL)
-#ifdef USE_PF_PACKET
-        return TE_RC(TE_TAD_PF_PACKET, TE_ENOMEM);
-#else
-        return TE_RC(TE_TAD_BPF, TE_ENOMEM);
-#endif
+        return TE_RC(rc_module, TE_ENOMEM);
 
 #ifdef USE_PF_PACKET
     data->ifindex = ifindex;
