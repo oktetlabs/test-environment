@@ -15,13 +15,12 @@
 #include "te_alloc.h"
 #include "logger_api.h"
 
+#include "conf_tc_internal.h"
+#include "conf_net_if_wrapper.h"
+
 #include <netlink/errno.h>
 #include <netlink/route/link.h>
 #include <netlink/route/qdisc.h>
-#include <netlink/socket.h>
-
-#include "conf_tc_internal.h"
-#include "conf_net_if_wrapper.h"
 
 static struct nl_sock *netlink_socket = NULL;
 

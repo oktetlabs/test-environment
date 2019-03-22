@@ -13,7 +13,7 @@
 
 #include "te_errno.h"
 
-#include <netlink/socket.h>
+#include <netlink/netlink.h>
 
 /**
  * Initialization of libnl socket, caches, qdisc

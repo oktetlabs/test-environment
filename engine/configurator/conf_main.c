@@ -579,8 +579,8 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         if (update_dh)
             cfg_dh_delete_last_command();
 
-        ERROR("Failed to add a new instance %s with value '%s' into TA "
-              "error=%r", oid, val_str, msg->rc);
+        WARN("Failed to add a new instance %s with value '%s' into TA "
+             "error=%r", oid, val_str, msg->rc);
         if (obj->type != CVT_NONE)
             free(val_str);
         return;
@@ -975,6 +975,13 @@ log_msg(cfg_msg *msg, te_bool before)
     {
         level = TE_LL_VERB;
         addon = " local sequence started";
+    }
+    else if (msg->rc == TE_RC(TE_RCF_PCH, TE_EPERM))
+    {
+        level = TE_LL_WARN;
+        addon = buf;
+        snprintf(buf, sizeof(buf), " failed (errno=%s-%s)",
+                 te_rc_mod2str(msg->rc), te_rc_err2str(msg->rc));
     }
     else
     {

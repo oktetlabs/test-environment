@@ -17,7 +17,7 @@
 
 /* See description in tapi_nvme_internal.h */
 te_errno
-tapi_nvme_internal_file_append(rcf_rpc_server *rpcs,
+tapi_nvme_internal_file_append(rcf_rpc_server *rpcs, unsigned int timeout_sec,
                                const char *string, const char *fmt, ...)
 {
     int fd;
@@ -41,6 +41,8 @@ tapi_nvme_internal_file_append(rcf_rpc_server *rpcs,
     }
 
     RPC_AWAIT_IUT_ERROR(rpcs);
+    if (timeout_sec != 0)
+        rpcs->timeout = TE_SEC2MS(timeout_sec);
     if (rpc_write(rpcs, fd, string, strlen(string)) == -1)
         return rpcs->_errno;
 
@@ -157,40 +159,47 @@ tapi_nvme_internal_rmdir(rcf_rpc_server *rpcs, const char *fmt, ...)
 }
 
 /* See description in tapi_nvme_internal.h */
-int
+te_errno
 tapi_nvme_internal_filterdir(rcf_rpc_server *rpcs, const char *path,
-                             const char *start_from,
-                             tapi_nvme_internal_dirinfo *directory_names,
-                             int count_names)
+                             const char *start_from, te_vec *result)
 {
-    int count = 0;
+    te_errno rc = 0;
     rpc_dir_p dir;
     rpc_dirent *dirent = NULL;
+    te_vec temp_result = TE_VEC_INIT(tapi_nvme_internal_dirinfo);
 
     RPC_AWAIT_IUT_ERROR(rpcs);
     if ((dir = rpc_opendir(rpcs, path)) == RPC_NULL)
     {
         ERROR("Cannot open directory %s", path);
-        return -1;
+        return RPC_ERRNO(rpcs);
     }
 
-    while (count < count_names) {
-        RPC_AWAIT_IUT_ERROR(rpcs);
-        if ((dirent = rpc_readdir(rpcs, dir)) == NULL)
-            break;
+    RPC_AWAIT_IUT_ERROR(rpcs);
+    while ((dirent = rpc_readdir(rpcs, dir)) != NULL)
+    {
+        tapi_nvme_internal_dirinfo dirinfo;
 
         if (strstr(dirent->d_name, start_from) == dirent->d_name)
-            strcpy(directory_names[count++].name, dirent->d_name);
-    }
+        {
+            strcpy(dirinfo.name, dirent->d_name);
+            if ((rc = TE_VEC_APPEND(&temp_result, dirinfo)) != 0)
+            {
+                te_vec_free(&temp_result);
+                return rc;
+            }
+        }
 
-    if (count >= count_names && rpc_readdir(rpcs, dir) != NULL)
-        ERROR("Too many of the directories found");
+        RPC_AWAIT_IUT_ERROR(rpcs);
+    }
 
     if (rpc_closedir(rpcs, dir) == -1)
     {
         ERROR("Cannot close directory %s", path);
-        return -1;
+        te_vec_free(&temp_result);
+        return RPC_ERRNO(rpcs);
     }
 
-    return count;
+    *result = temp_result;
+    return 0;
 }

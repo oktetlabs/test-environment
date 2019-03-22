@@ -19,20 +19,20 @@
 #include "tapi_icmp4.h"
 #include "tapi_icmp6.h"
 
-/* See description in tapi_icmp.h */
 te_errno
-tapi_udp_ip_icmp_ip_eth_csap_create(const char    *ta_name,
-                            int                    sid,
-                            const char            *eth_dev,
-                            unsigned int           receive_mode,
-                            const uint8_t         *loc_eth,
-                            const uint8_t         *rem_eth,
-                            const struct sockaddr *loc_saddr,
-                            const struct sockaddr *rem_saddr,
-                            const struct sockaddr *msg_loc_saddr,
-                            const struct sockaddr *msg_rem_saddr,
-                            int                    af,
-                            csap_handle_t         *tcp_csap)
+tapi_ipproto_ip_icmp_ip_eth_csap_create(const char    *ta_name,
+                                int                    sid,
+                                const char            *eth_dev,
+                                unsigned int           receive_mode,
+                                const uint8_t         *loc_eth,
+                                const uint8_t         *rem_eth,
+                                const struct sockaddr *loc_saddr,
+                                const struct sockaddr *rem_saddr,
+                                const struct sockaddr *msg_loc_saddr,
+                                const struct sockaddr *msg_rem_saddr,
+                                int                    af,
+                                int                    ip_proto,
+                                csap_handle_t         *ip_proto_csap)
 {
     in_addr_t           laddr4 = 0;
     in_addr_t           raddr4 = 0;
@@ -69,14 +69,14 @@ tapi_udp_ip_icmp_ip_eth_csap_create(const char    *ta_name,
                 msg_rport4 = CONST_SIN(msg_rem_saddr)->sin_port;
             }
 
-            return tapi_udp_ip4_icmp_ip4_eth_csap_create(
+            return tapi_ipproto_ip4_icmp_ip4_eth_csap_create(
                                     ta_name, sid, eth_dev,
                                     receive_mode,
                                     loc_eth, rem_eth,
                                     laddr4, raddr4,
                                     msg_laddr4, msg_raddr4,
                                     msg_lport4, msg_rport4,
-                                    tcp_csap);
+                                    ip_proto, ip_proto_csap);
         case AF_INET6:
             if (loc_saddr != NULL)
                 laddr6 = CONST_SIN6(loc_saddr)->sin6_addr;
@@ -96,15 +96,59 @@ tapi_udp_ip_icmp_ip_eth_csap_create(const char    *ta_name,
                 msg_rsaddr6.sin6_port = CONST_SIN6(msg_rem_saddr)->sin6_port;
             }
 
-            return tapi_udp_ip6_icmp_ip6_eth_csap_create(
+            return tapi_ipproto_ip6_icmp_ip6_eth_csap_create(
                                     ta_name, sid, eth_dev,
                                     receive_mode,
                                     loc_eth, rem_eth,
                                     (uint8_t *)&laddr6, (uint8_t *)&raddr6,
                                     &msg_lsaddr6, &msg_rsaddr6,
-                                    tcp_csap);
+                                    ip_proto, ip_proto_csap);
         default:
             ERROR("Invalid ip address family");
             return TE_EINVAL;
     }
+}
+
+/* See description in tapi_icmp.h */
+te_errno
+tapi_udp_ip_icmp_ip_eth_csap_create(const char    *ta_name,
+                            int                    sid,
+                            const char            *eth_dev,
+                            unsigned int           receive_mode,
+                            const uint8_t         *loc_eth,
+                            const uint8_t         *rem_eth,
+                            const struct sockaddr *loc_saddr,
+                            const struct sockaddr *rem_saddr,
+                            const struct sockaddr *msg_loc_saddr,
+                            const struct sockaddr *msg_rem_saddr,
+                            int                    af,
+                            csap_handle_t         *udp_csap)
+{
+    return tapi_ipproto_ip_icmp_ip_eth_csap_create(ta_name, sid, eth_dev,
+                                        receive_mode, loc_eth, rem_eth,
+                                        loc_saddr, rem_saddr,
+                                        msg_loc_saddr, msg_rem_saddr,
+                                        af, IPPROTO_UDP, udp_csap);
+}
+
+/* See description in tapi_icmp.h */
+te_errno
+tapi_tcp_ip_icmp_ip_eth_csap_create(const char    *ta_name,
+                            int                    sid,
+                            const char            *eth_dev,
+                            unsigned int           receive_mode,
+                            const uint8_t         *loc_eth,
+                            const uint8_t         *rem_eth,
+                            const struct sockaddr *loc_saddr,
+                            const struct sockaddr *rem_saddr,
+                            const struct sockaddr *msg_loc_saddr,
+                            const struct sockaddr *msg_rem_saddr,
+                            int                    af,
+                            csap_handle_t         *tcp_csap)
+{
+    return tapi_ipproto_ip_icmp_ip_eth_csap_create(ta_name, sid, eth_dev,
+                                        receive_mode, loc_eth, rem_eth,
+                                        loc_saddr, rem_saddr,
+                                        msg_loc_saddr, msg_rem_saddr,
+                                        af, IPPROTO_TCP, tcp_csap);
 }

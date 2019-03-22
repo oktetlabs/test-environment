@@ -1368,11 +1368,17 @@ ta_rsrc_create_lock(const char *name)
     if (rsrc_lock_path(name, fname, sizeof(fname)) == NULL)
         return TE_RC(TE_RCF_PCH, TE_ENAMETOOLONG);
 
-    rc = check_lock(fname, TRUE);
-    if (rc != 0)
+    rc = check_lock(fname, FALSE);
+    switch (TE_RC_GET_ERROR(rc))
     {
-        ERROR("Cannot grab resource %s", name);
-        return TE_RC(TE_RCF_PCH, TE_EPERM);
+        case 0:
+            break;
+        case TE_EPERM:
+            WARN("Lock of other process is found for resource %s", name);
+            return TE_RC(TE_RCF_PCH, TE_EPERM);
+        default:
+            ERROR("Cannot grab resource %s", name);
+            return rc;
     }
     
     if ((f = fopen(fname, "w")) == NULL)
@@ -1394,7 +1400,7 @@ ta_rsrc_create_lock(const char *name)
     if (rc != 0)
     {
         ERROR("Failed to create resource lock %s: %r", fname, rc);
-        return TE_RC(TE_RCF_PCH, TE_EPERM);
+        return rc;
     }
     
     return 0;

@@ -268,7 +268,7 @@ tapi_icmp6_add_csap_layer(asn_value **csap_spec)
 
 /* See the description in tapi_icmp6.h */
 te_errno
-tapi_udp_ip6_icmp_ip6_eth_csap_create(
+tapi_ipproto_ip6_icmp_ip6_eth_csap_create(
                             const char                 *ta_name,
                             int                         sid,
                             const char                 *eth_dev,
@@ -279,20 +279,40 @@ tapi_udp_ip6_icmp_ip6_eth_csap_create(
                             const uint8_t              *rem_addr,
                             const struct sockaddr_in6  *msg_loc_saddr,
                             const struct sockaddr_in6  *msg_rem_saddr,
-                            csap_handle_t              *udp_csap)
+                            int                         ip_proto,
+                            csap_handle_t              *ip_proto_csap)
 {
     te_errno    rc;
     asn_value  *csap_spec = NULL;
 
-    rc = tapi_udp_add_csap_layer(&csap_spec,
-                                 msg_loc_saddr == NULL ?
-                                    -1 : msg_loc_saddr->sin6_port,
-                                 msg_rem_saddr == NULL ?
-                                    -1 : msg_rem_saddr->sin6_port);
+    if (ip_proto == IPPROTO_UDP)
+    {
+        rc = tapi_udp_add_csap_layer(&csap_spec,
+                                     msg_loc_saddr == NULL ?
+                                        -1 : msg_loc_saddr->sin6_port,
+                                     msg_rem_saddr == NULL ?
+                                        -1 : msg_rem_saddr->sin6_port);
+    }
+    else if (ip_proto == IPPROTO_TCP)
+    {
+        rc = tapi_tcp_add_csap_layer(&csap_spec,
+                                     msg_loc_saddr == NULL ?
+                                        -1 : msg_loc_saddr->sin6_port,
+                                     msg_rem_saddr == NULL ?
+                                        -1 : msg_rem_saddr->sin6_port);
+    }
+    else
+    {
+        ERROR("%s(): IP protocol %d is not supported",
+                  __FUNCTION__, ip_proto);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
     if (rc != 0)
     {
         asn_free_value(csap_spec);
-        WARN("%s(): add UDP csap layer failed %r", __FUNCTION__, rc);
+        WARN("%s(): add %s csap layer failed %r", __FUNCTION__,
+             ip_proto == IPPROTO_UDP ? "UDP" : "TCP", rc);
         return rc;
     }
 
@@ -301,7 +321,7 @@ tapi_udp_ip6_icmp_ip6_eth_csap_create(
                                     NULL : msg_loc_saddr->sin6_addr.s6_addr,
                                  msg_rem_saddr == NULL ?
                                     NULL : msg_rem_saddr->sin6_addr.s6_addr,
-                                 IPPROTO_UDP);
+                                 ip_proto);
     if (rc != 0)
     {
         asn_free_value(csap_spec);
@@ -339,10 +359,56 @@ tapi_udp_ip6_icmp_ip6_eth_csap_create(
     }
 
 
-    rc = tapi_tad_csap_create(ta_name, sid, "udp.ip6.icmp6.ip6.eth",
-                              csap_spec, udp_csap);
+    rc = tapi_tad_csap_create(ta_name, sid,
+                              ip_proto == IPPROTO_UDP ? "udp.ip6.icmp6.ip6.eth"
+                                                      : "tcp.ip6.icmp6.ip6.eth",
+                              csap_spec, ip_proto_csap);
 
     asn_free_value(csap_spec);
-
     return TE_RC(TE_TAPI, rc);
 }
+
+/* See the description in tapi_icmp6.h */
+te_errno
+tapi_udp_ip6_icmp_ip6_eth_csap_create(
+                            const char                 *ta_name,
+                            int                         sid,
+                            const char                 *eth_dev,
+                            unsigned int                receive_mode,
+                            const uint8_t              *loc_eth,
+                            const uint8_t              *rem_eth,
+                            const uint8_t              *loc_addr,
+                            const uint8_t              *rem_addr,
+                            const struct sockaddr_in6  *msg_loc_saddr,
+                            const struct sockaddr_in6  *msg_rem_saddr,
+                            csap_handle_t              *udp_csap)
+{
+    return tapi_ipproto_ip6_icmp_ip6_eth_csap_create(ta_name, sid, eth_dev,
+                                    receive_mode, loc_eth, rem_eth,
+                                    loc_addr, rem_addr,
+                                    msg_loc_saddr, msg_rem_saddr,
+                                    IPPROTO_UDP, udp_csap);
+}
+
+/* See the description in tapi_icmp6.h */
+te_errno
+tapi_tcp_ip6_icmp_ip6_eth_csap_create(
+                            const char                 *ta_name,
+                            int                         sid,
+                            const char                 *eth_dev,
+                            unsigned int                receive_mode,
+                            const uint8_t              *loc_eth,
+                            const uint8_t              *rem_eth,
+                            const uint8_t              *loc_addr,
+                            const uint8_t              *rem_addr,
+                            const struct sockaddr_in6  *msg_loc_saddr,
+                            const struct sockaddr_in6  *msg_rem_saddr,
+                            csap_handle_t              *tcp_csap)
+{
+    return tapi_ipproto_ip6_icmp_ip6_eth_csap_create(ta_name, sid, eth_dev,
+                                    receive_mode, loc_eth, rem_eth,
+                                    loc_addr, rem_addr,
+                                    msg_loc_saddr, msg_rem_saddr,
+                                    IPPROTO_TCP, tcp_csap);
+}
+

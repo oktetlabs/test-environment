@@ -71,6 +71,14 @@ tapi_network_setup(te_bool ipv6_supp)
                   rc);
     }
 
+    rc = tapi_cfg_net_delete_all_ip6_addresses();
+    if (rc != 0)
+    {
+        TEST_FAIL("Failed to delete all IPv6 addresses from all "
+                  "interfaces mentioned in networks configuration: %r",
+                  rc);
+    }
+
     /* Get default value for 'use_static_arp' */
     val_type = CVT_INTEGER;
     rc = cfg_get_instance_fmt(&val_type, &use_static_arp_def,

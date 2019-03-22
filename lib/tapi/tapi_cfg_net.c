@@ -1202,24 +1202,28 @@ error:
 }
 
 
-static tapi_cfg_net_node_cb tapi_cfg_net_node_delete_all_ip4_addresses;
+static tapi_cfg_net_node_cb tapi_cfg_net_node_delete_all_ip_addresses;
 static te_errno
-tapi_cfg_net_node_delete_all_ip4_addresses(cfg_net_t *net, cfg_net_node_t *node,
-                                           const char *oid_str, cfg_oid *oid,
-                                           void *cookie)
+tapi_cfg_net_node_delete_all_ip_addresses(cfg_net_t *net, cfg_net_node_t *node,
+                                          const char *oid_str, cfg_oid *oid,
+                                          void *cookie)
 {
     int                 rc;
     cfg_val_type        type;
     char                ta_type[RCF_MAX_NAME];
     char               *def_route_if;
-    struct sockaddr_in  dummy_ip4;
+    te_bool             ipv6 = FALSE;
+
+    struct sockaddr_storage   dummy_addr;
 
     UNUSED(net);
     UNUSED(node);
-    UNUSED(cookie);
 
-    memset(&dummy_ip4, 0, sizeof(dummy_ip4));
-    dummy_ip4.sin_family = AF_INET;
+    if (cookie != NULL && *(te_bool *)cookie)
+        ipv6 = TRUE;
+
+    memset(&dummy_addr, 0, sizeof(dummy_addr));
+    dummy_addr.ss_family = (ipv6 ? AF_INET6 : AF_INET);
 
     /* Do not delete addresses from Win32 hosts */
     rc = rcf_ta_name2type(CFG_OID_GET_INST_NAME(oid, 1), ta_type);
@@ -1237,43 +1241,56 @@ tapi_cfg_net_node_delete_all_ip4_addresses(cfg_net_t *net, cfg_net_node_t *node,
         return 0;
     }
 
-    /*
-     * Do not delete addresses from interfaces used by default
-     * route.
-     */
-    type = CVT_STRING;
-    rc = cfg_get_instance_fmt(&type, &def_route_if,
-                              "/agent:%s/ip4_rt_default_if:",
-                              CFG_OID_GET_INST_NAME(oid, 1));
-    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+    if (!ipv6)
     {
-        def_route_if = NULL;
-    }
-    else if (rc != 0)
-    {
-        ERROR("Failed to get /agent:%s/ip4_rt_default_if: %r",
-              CFG_OID_GET_INST_NAME(oid, 1), rc);
-        return rc;
-    }
+        /*
+         * Do not delete IPv4 addresses from interfaces used by default
+         * route.
+         */
+        type = CVT_STRING;
+        rc = cfg_get_instance_fmt(&type, &def_route_if,
+                                  "/agent:%s/ip4_rt_default_if:",
+                                  CFG_OID_GET_INST_NAME(oid, 1));
+        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+        {
+            def_route_if = NULL;
+        }
+        else if (rc != 0)
+        {
+            ERROR("Failed to get /agent:%s/ip4_rt_default_if: %r",
+                  CFG_OID_GET_INST_NAME(oid, 1), rc);
+            return rc;
+        }
 
-    if ((def_route_if != NULL) &&
-        strcmp(def_route_if, CFG_OID_GET_INST_NAME(oid, 2)) == 0)
-    {
-        WARN("Do not remove any IPv4 addresses from %s, since "
-             "the interface is used by default route", oid_str);
+        if ((def_route_if != NULL) &&
+            strcmp(def_route_if, CFG_OID_GET_INST_NAME(oid, 2)) == 0)
+        {
+            WARN("Do not remove any IPv4 addresses from %s, since "
+                 "the interface is used by default route", oid_str);
+            free(def_route_if);
+            return 0;
+        }
         free(def_route_if);
-        return 0;
     }
-    free(def_route_if);
 
-    rc = tapi_cfg_del_if_ip4_addresses(
-              CFG_OID_GET_INST_NAME(oid, 1),
-              CFG_OID_GET_INST_NAME(oid, 2),
-              SA(&dummy_ip4));
+    if (ipv6)
+    {
+        rc = tapi_cfg_del_if_ip6_addresses(
+                  CFG_OID_GET_INST_NAME(oid, 1),
+                  CFG_OID_GET_INST_NAME(oid, 2),
+                  SA(&dummy_addr));
+    }
+    else
+    {
+        rc = tapi_cfg_del_if_ip4_addresses(
+                  CFG_OID_GET_INST_NAME(oid, 1),
+                  CFG_OID_GET_INST_NAME(oid, 2),
+                  SA(&dummy_addr));
+    }
     if (rc != 0)
     {
-        ERROR("Failed to delete IPv4 addresses from %s: %r",
-              oid_str, rc);
+        ERROR("Failed to delete %s addresses from %s: %r",
+              (ipv6 ? "IPv6" : "IPv4"), oid_str, rc);
         return rc;
     }
 
@@ -1284,8 +1301,22 @@ tapi_cfg_net_node_delete_all_ip4_addresses(cfg_net_t *net, cfg_net_node_t *node,
 te_errno
 tapi_cfg_net_delete_all_ip4_addresses(void)
 {
-    return tapi_cfg_net_foreach_node(tapi_cfg_net_node_delete_all_ip4_addresses,
-                                     NULL);
+    te_bool ipv6 = FALSE;
+
+    return tapi_cfg_net_foreach_node(
+                                tapi_cfg_net_node_delete_all_ip_addresses,
+                                &ipv6);
+}
+
+/* See description in tapi_cfg_net.h */
+te_errno
+tapi_cfg_net_delete_all_ip6_addresses(void)
+{
+    te_bool ipv6 = TRUE;
+
+    return tapi_cfg_net_foreach_node(
+                                tapi_cfg_net_node_delete_all_ip_addresses,
+                                &ipv6);
 }
 
 /* See description in tapi_cfg_net.h */

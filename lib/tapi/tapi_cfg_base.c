@@ -645,6 +645,16 @@ tapi_cfg_save_del_if_addresses(const char *ta,
         if (addr.ss_family != addr_fam)
             continue;
 
+        /*
+         * Do not remove IPv6 link-local addresses, IPv6
+         * requires them always to be present.
+         */
+        if (addr.ss_family == AF_INET6 &&
+            IN6_IS_ADDR_LINKLOCAL(&SIN6(&addr)->sin6_addr))
+        {
+            continue;
+        }
+
         if (addr_to_save == NULL && save_first)
         {
             /* Just to mark that one address is saved */

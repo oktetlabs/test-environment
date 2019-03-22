@@ -247,20 +247,20 @@ rule_modify(netconf_handle nh, netconf_cmd cmd, const netconf_rule *rule,
     }
 
     if ((rule->mask & TE_IP_RULE_FLAG_DST) != 0 &&
-        rule->family != rule->dst.sa_family)
+        rule->family != rule->dst.ss_family)
     {
         ERROR("Failed to modify rule, "
               "incorrect family value in dst field (%d != %d)",
-              rule->family, rule->dst.sa_family);
+              rule->family, rule->dst.ss_family);
         return TE_EINVAL;
     }
 
     if ((rule->mask & TE_IP_RULE_FLAG_SRC) != 0 &&
-        rule->family != rule->src.sa_family)
+        rule->family != rule->src.ss_family)
     {
         ERROR("Failed to modify rule, "
               "incorrect family value in src field (%d != %d)",
-              rule->family, rule->src.sa_family);
+              rule->family, rule->src.ss_family);
         return TE_EINVAL;
     }
 

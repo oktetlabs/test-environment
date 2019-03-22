@@ -27,8 +27,6 @@
 
 #define BASE_NVME_FABRICS       "/sys/class/nvme-fabrics/ctl"
 
-#define MAX_NAMESPACES          (32)
-#define MAX_ADMIN_DEVICES       (32)
 #define TRANPORT_SIZE           (16)
 #define ADDRESS_INFO_SIZE       (128)
 #define BUFFER_SIZE             (128)
@@ -153,44 +151,54 @@ run_command_dump_output_rc(rcf_rpc_server *rpcs, unsigned int timeout,
     return rc;
 }
 
-typedef struct nvme_fabric_namespace_info {
-    int admin_device_index;
+typedef struct initiator_dev {
+    int admin_index;
     int controller_index;
     int namespace_index;
-} nvme_fabric_namespace_info;
+} initiator_dev;
 
-#define NVME_FABRIC_NAMESPACE_INFO_DEFAULTS (nvme_fabric_namespace_info) {  \
-        .admin_device_index = -1,                                           \
-        .controller_index = -1,                                             \
-        .namespace_index = -1,                                              \
-    }
-
-static te_errno
-nvme_fabric_namespace_info_string(nvme_fabric_namespace_info *info,
-                                  te_string *string)
-{
-    return te_string_append(string, "nvme%dn%d",
-                            info->admin_device_index,
-                            info->namespace_index);
+#define INITIATOR_DEV_DEFAULTS (initiator_dev) \
+{                                              \
+    .admin_index = -1,                         \
+    .controller_index = -1,                    \
+    .namespace_index = -1,                     \
 }
 
-typedef struct nvme_fabric_info {
+typedef struct initiator_dev_info {
     struct sockaddr_in addr;
     tapi_nvme_transport transport;
     char subnqn[NAME_MAX];
-    nvme_fabric_namespace_info namespaces[MAX_NAMESPACES];
-    int namespaces_count;
-} nvme_fabric_info;
+} initiator_dev_info;
 
-typedef enum read_result {
-    READ_SUCCESS = 0,
-    READ_ERROR = -1,
-    READ_CONTINUE = -2
-} read_result;
+static const char *
+initiator_dev_admin_str(const initiator_dev *dev)
+{
+    static char admin_str[NAME_MAX];
 
-typedef read_result (*read_info)(rcf_rpc_server *rpcs,
-                                 nvme_fabric_info *info,
-                                 const char *filepath);
+    TE_SPRINTF(admin_str, "nvme%d", dev->admin_index);
+
+    return admin_str;
+}
+
+static const char *
+initiator_dev_ns_str(const initiator_dev *dev)
+{
+    static char ns_str[NAME_MAX];
+
+    if (dev->controller_index == -1)
+    {
+        TE_SPRINTF(ns_str, "nvme%dn%d", dev->admin_index,
+                                        dev->namespace_index);
+    }
+    else
+    {
+        TE_SPRINTF(ns_str,  "nvme%dc%dn%d", dev->admin_index,
+                                            dev->controller_index,
+                                            dev->namespace_index);
+    }
+
+    return ns_str;
+}
 
 static te_bool
 parse_with_prefix(const char *prefix, const char **str, int *result,
@@ -218,10 +226,9 @@ parse_with_prefix(const char *prefix, const char **str, int *result,
 }
 
 static te_errno
-parse_namespace_info(const char *str,
-                     nvme_fabric_namespace_info *namespace_info)
+initiator_dev_from_string(const char *str, initiator_dev *namespace_info)
 {
-    nvme_fabric_namespace_info result = NVME_FABRIC_NAMESPACE_INFO_DEFAULTS;
+    initiator_dev result = INITIATOR_DEV_DEFAULTS;
 
     if (str == NULL || namespace_info == NULL)
         return TE_EINVAL;
@@ -232,7 +239,7 @@ parse_namespace_info(const char *str,
             return TE_EINVAL;                                           \
     } while (0)
 
-    PARSE("nvme", result.admin_device_index, FALSE);
+    PARSE("nvme", result.admin_index, FALSE);
     PARSE("c", result.controller_index, TRUE);
     PARSE("n", result.namespace_index, FALSE);
 
@@ -243,46 +250,6 @@ parse_namespace_info(const char *str,
 
     *namespace_info = result;
     return 0;
-}
-
-static read_result
-read_nvme_fabric_info_namespaces(rcf_rpc_server *rpcs,
-                                 nvme_fabric_info *info,
-                                 const char *filepath)
-{
-    int i, count;
-    tapi_nvme_internal_dirinfo names[MAX_NAMESPACES];
-
-    count = tapi_nvme_internal_filterdir(rpcs, filepath, "nvme", names,
-                                         TE_ARRAY_LEN(names));
-    if (count < 0)
-        return READ_ERROR;
-
-    /* NOTE Bug 9752
-     *
-     * It is not an error if this particular controller does not have
-     * a corresponding namespace. It is a stalled NVMe connection from
-     * the previous test and it should not affect current test at all.
-     */
-    if (count == 0)
-        return READ_CONTINUE;
-
-    info->namespaces_count = 0;
-    for (i = 0; i < count; i++)
-    {
-        te_errno rc;
-
-        rc = parse_namespace_info(names[i].name, info->namespaces + i);
-        if (rc != 0)
-            WARN("Cannot parse namespace '%s'", names[i].name);
-        else
-            info->namespaces_count++;
-    }
-
-    if (info->namespaces_count == 0)
-        return READ_CONTINUE;
-
-    return READ_SUCCESS;
 }
 
 /**
@@ -336,11 +303,12 @@ parse_endpoint(char *str, char *address, unsigned short *port)
     return 0;
 }
 
-static read_result
-read_nvme_fabric_info_addr(rcf_rpc_server *rpcs,
-                           nvme_fabric_info *info,
+static te_errno
+initiator_dev_info_addr_read(rcf_rpc_server *rpcs,
+                           initiator_dev_info *info,
                            const char *filepath)
 {
+    te_errno rc;
     char buffer[ADDRESS_INFO_SIZE];
     unsigned short port;
     char address[INET_ADDRSTRLEN];
@@ -351,21 +319,21 @@ read_nvme_fabric_info_addr(rcf_rpc_server *rpcs,
     if (size < 0)
     {
         ERROR("Cannot read address info");
-        return READ_ERROR;
+        return RPC_ERRNO(rpcs);
     }
 
     if (parse_endpoint(buffer, address, &port) != 0)
     {
         ERROR("Cannot parse address info: %s", buffer);
-        return READ_ERROR;
+        return RPC_ERRNO(rpcs);
     }
 
     memset(&info->addr, 0, sizeof(info->addr));
-    if (te_sockaddr_str2h(address, SA(&info->addr)) != 0)
-        return READ_ERROR;
-    te_sockaddr_set_port(SA(&info->addr), htons(port));
+    if ((rc = te_sockaddr_str2h(address, SA(&info->addr))) != 0)
+        return rc;
 
-    return READ_SUCCESS;
+    te_sockaddr_set_port(SA(&info->addr), htons(port));
+    return 0;
 }
 
 typedef struct string_map {
@@ -373,9 +341,9 @@ typedef struct string_map {
     tapi_nvme_transport transport;
 } string_map;
 
-static read_result
-read_nvme_fabric_info_transport(rcf_rpc_server *rpcs,
-                                nvme_fabric_info *info,
+static te_errno
+initiator_dev_info_transport_read(rcf_rpc_server *rpcs,
+                                initiator_dev_info *info,
                                 const char *filepath)
 {
     size_t i;
@@ -388,7 +356,7 @@ read_nvme_fabric_info_transport(rcf_rpc_server *rpcs,
                                      filepath) < 0)
     {
         ERROR("Cannot read transport");
-        return READ_ERROR;
+        return RPC_ERRNO(rpcs);
     }
 
     for (i = 0; i < TE_ARRAY_LEN(map); i++)
@@ -396,139 +364,231 @@ read_nvme_fabric_info_transport(rcf_rpc_server *rpcs,
         if (strncmp(map[i].string, buffer, strlen(map[i].string)) == 0)
         {
             info->transport = map[i].transport;
-            return READ_SUCCESS;
+            return 0;
         }
     }
 
     ERROR("Unsupported transport");
-    return READ_ERROR;
+    return TE_EOPNOTSUPP;
 }
 
-static read_result
-read_nvme_fabric_info_subnqn(rcf_rpc_server *rpcs,
-                             nvme_fabric_info *info,
+static te_errno
+initiator_dev_info_subnqn_read(rcf_rpc_server *rpcs,
+                             initiator_dev_info *info,
                              const char *filepath)
 {
     if (tapi_nvme_internal_file_read(rpcs,
         info->subnqn, TE_ARRAY_LEN(info->subnqn), filepath) == -1)
     {
         ERROR("Cannot read subnqn");
-        return READ_ERROR;
+        return RPC_ERRNO(rpcs);
     }
 
     /* After read file subnqn store with \n, remove it */
     strtok(info->subnqn, "\n");
 
-    return READ_SUCCESS;
-}
-
-typedef struct read_nvme_fabric_read_action {
-    read_info function;
-    const char *file;
-} read_nvme_fabric_read_action;
-
-static read_result
-read_nvme_fabric_info(rcf_rpc_server *rpcs,
-                      nvme_fabric_info *info,
-                      const char *admin_dev)
-{
-    size_t i;
-    read_result rc;
-    char path[RCF_MAX_PATH];
-    read_nvme_fabric_read_action actions[] = {
-        { read_nvme_fabric_info_namespaces, "" },
-        { read_nvme_fabric_info_addr, "address" },
-        { read_nvme_fabric_info_subnqn, "subsysnqn" },
-        { read_nvme_fabric_info_transport, "transport" }
-    };
-
-    for (i = 0; i < TE_ARRAY_LEN(actions); i++)
-    {
-        TE_SPRINTF(path, BASE_NVME_FABRICS "/%s/%s",
-                   admin_dev, actions[i].file);
-        if ((rc = actions[i].function(rpcs, info, path)) != READ_SUCCESS)
-            return rc;
-    }
-
-    return READ_SUCCESS;
-}
-
-static te_bool
-is_target_eq(const tapi_nvme_target *target, const nvme_fabric_info *info,
-             const char *admin_dev)
-{
-    const struct sockaddr_in *addr1 = SIN(target->addr);
-    const struct sockaddr_in *addr2 = SIN(&info->addr);
-    te_bool subnqn_eq;
-    te_bool addr_eq;
-    te_bool transport_eq;
-
-    RING("Searching for connected device, comparing expected "
-         "'%s' with '%s' from %s",
-         te_sockaddr2str(SA(addr1)), te_sockaddr2str(SA(addr2)),
-         admin_dev);
-
-    transport_eq = target->transport == info->transport;
-    subnqn_eq = strcmp(target->subnqn, info->subnqn) == 0;
-    addr_eq = te_sockaddrcmp(SA(addr1), sizeof(*addr1),
-                             SA(addr2), sizeof(*addr2)) == 0;
-
-    return transport_eq && subnqn_eq && addr_eq;
+    return 0;
 }
 
 static te_errno
-get_new_device(tapi_nvme_host_ctrl *host_ctrl,
-               const tapi_nvme_target *target)
+initiator_dev_admin_list(rcf_rpc_server *rpcs, const char *admin,
+                         te_vec *devs)
 {
-    int i, count;
-    read_result rc;
-    te_string device_str = TE_STRING_INIT_STATIC(BUFFER_SIZE);
+    te_errno rc;
+    te_string path = TE_STRING_INIT_STATIC(NAME_MAX);
+    te_vec names = TE_VEC_INIT(tapi_nvme_internal_dirinfo);
+    tapi_nvme_internal_dirinfo *dirinfo;
 
-    nvme_fabric_info info;
-    tapi_nvme_internal_dirinfo names[MAX_ADMIN_DEVICES];
+    if ((rc = te_string_append(&path, "%s/%s", BASE_NVME_FABRICS, admin)) != 0)
+        return rc;
 
-    count = tapi_nvme_internal_filterdir(host_ctrl->rpcs, BASE_NVME_FABRICS,
-                                         "nvme", names, TE_ARRAY_LEN(names));
-
-    for (i = 0; i < count; i++)
+    rc = tapi_nvme_internal_filterdir(rpcs, path.ptr, "nvme", &names);
+    if (rc != 0)
     {
-        rc = read_nvme_fabric_info(host_ctrl->rpcs, &info, names[i].name);
-        if (rc == READ_ERROR)
-            return TE_ENODATA;
-        else if (rc == READ_CONTINUE)
+        ERROR("Error during reading fabric info from %s (%r)", path.ptr, rc);
+        return rc;
+    }
+
+    TE_VEC_FOREACH(&names, dirinfo)
+    {
+        initiator_dev dev = INITIATOR_DEV_DEFAULTS;
+        if ((rc = initiator_dev_from_string(dirinfo->name, &dev)) != 0)
+            break;
+        if ((rc = TE_VEC_APPEND(devs, dev)) != 0)
+            break;
+    }
+
+    te_vec_free(&names);
+    return rc;
+}
+
+static te_errno
+initiator_dev_list(rcf_rpc_server *rpcs, te_vec *devs)
+{
+    te_errno rc;
+    te_vec names = TE_VEC_INIT(tapi_nvme_internal_dirinfo);
+    tapi_nvme_internal_dirinfo *dirinfo;
+
+    rc = tapi_nvme_internal_filterdir(rpcs, BASE_NVME_FABRICS, "nvme", &names);
+    if (rc != 0)
+        return rc;
+
+    TE_VEC_FOREACH(&names, dirinfo)
+    {
+        if ((rc = initiator_dev_admin_list(rpcs, dirinfo->name, devs)) != 0)
+            break;
+    }
+
+    te_vec_free(&names);
+    return rc;
+}
+
+static te_errno
+initiator_dev_info_get(rcf_rpc_server *rpcs, const initiator_dev *dev,
+                       initiator_dev_info *info)
+{
+#define READ(_func, _file, _admin)                                          \
+    do {                                                                    \
+        te_errno _rc;                                                       \
+        te_string _path = TE_STRING_INIT_STATIC(NAME_MAX);                  \
+                                                                            \
+        _rc = te_string_append(&_path, "%s/%s/%s",                          \
+                               BASE_NVME_FABRICS, _admin, _file);           \
+                                                                            \
+        if (_rc != 0)                                                       \
+            return _rc;                                                     \
+                                                                            \
+        if ((_rc = _func(rpcs, info, _path.ptr)) != 0)                      \
+            return _rc;                                                     \
+    } while(0)
+
+    const char *admin_str = initiator_dev_admin_str(dev);
+
+    READ(initiator_dev_info_addr_read, "address", admin_str);
+    READ(initiator_dev_info_subnqn_read, "subsysnqn", admin_str);
+    READ(initiator_dev_info_transport_read, "transport", admin_str);
+
+#undef READ
+    return 0;
+}
+
+static te_bool
+initiator_dev_equal(initiator_dev *first, initiator_dev *second)
+{
+    return first->admin_index == second->admin_index &&
+           first->controller_index == second->controller_index &&
+           first->namespace_index == second->namespace_index;
+}
+
+static te_bool
+initiator_dev_contains(const te_vec *devs, initiator_dev *dev)
+{
+    initiator_dev *current_dev;
+
+    TE_VEC_FOREACH((te_vec *)devs, current_dev)
+    {
+        if (initiator_dev_equal(current_dev, dev))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+static te_errno
+initiator_dev_list_diff(const te_vec *first, const te_vec *second, te_vec *diff)
+{
+    te_errno rc;
+    initiator_dev *dev;
+
+    TE_VEC_FOREACH((te_vec *)first, dev)
+    {
+        if (initiator_dev_contains(second, dev))
             continue;
-        if (is_target_eq(target, &info, names[i].name) == TRUE)
+
+        if ((rc = TE_VEC_APPEND(diff, *dev)) != 0)
+            return rc;
+    }
+
+    TE_VEC_FOREACH((te_vec *)second, dev)
+    {
+        if (initiator_dev_contains(first, dev))
+            continue;
+
+        if ((rc = TE_VEC_APPEND(diff, *dev)) != 0)
+            return rc;
+    }
+
+    return 0;
+}
+
+static void
+nvme_target2initiator_dev_info(const tapi_nvme_target *target,
+                               initiator_dev_info *info)
+{
+    info->addr = *SIN(target->addr);
+    info->transport = target->transport;
+    strncpy(info->subnqn, target->subnqn, sizeof(info->subnqn));
+}
+
+static te_bool
+initiator_dev_info_equal(initiator_dev_info *first, initiator_dev_info *second)
+{
+    return first->transport == second->transport &&
+           strncmp(first->subnqn, second->subnqn, sizeof(first->subnqn)) &&
+           te_sockaddrcmp(SA(&first->addr), sizeof(first->addr),
+                          SA(&second->addr), sizeof(second->addr)) == 0;
+}
+
+static te_errno
+get_new_device(tapi_nvme_host_ctrl *host_ctrl, const te_vec *before)
+{
+    te_errno rc;
+    te_vec devs = TE_VEC_INIT(initiator_dev);
+    te_vec diff = TE_VEC_INIT(initiator_dev);
+    initiator_dev_info target;
+    initiator_dev *dev;
+
+    if ((rc = initiator_dev_list(host_ctrl->rpcs, &devs)) != 0)
+    {
+        te_vec_free(&devs);
+        return rc;
+    }
+
+    if ((rc = initiator_dev_list_diff(before, &devs, &diff)) != 0)
+    {
+        te_vec_free(&devs);
+        te_vec_free(&diff);
+        return rc;
+    }
+
+    nvme_target2initiator_dev_info(host_ctrl->connected_target, &target);
+
+    TE_VEC_FOREACH(&diff, dev)
+    {
+        initiator_dev_info curinfo;
+
+        if ((rc = initiator_dev_info_get(host_ctrl->rpcs, dev, &curinfo)) != 0)
+            break;
+
+        RING("Searching for connected device, comparing expected "
+             "'%s' with '%s' from %s", te_sockaddr2str(SA(&curinfo.addr)),
+             te_sockaddr2str(SA(&target.addr)), initiator_dev_admin_str(dev));
+
+        if (initiator_dev_info_equal(&curinfo, &target) == 0)
         {
-            te_errno error;
-
-            /* Currently we are configuring only 1 namespace per subsystem
-             * while using kernel targets. We have no control over onvme
-             * namespace configuration right now, but it also doing in the
-             * same way. So appearance of more than 1 namespace per NVMoF
-             * device would be very suspicious and highly likely a bug.
-             * Fail the entire test for further investigation.
-             */
-            if (info.namespaces_count > 1)
-            {
-                TEST_FAIL("We found %d namespaces for %s device, "
-                          "but only one was expected",
-                          info.namespaces_count, host_ctrl->admin_dev);
-            }
-
-            host_ctrl->admin_dev = tapi_strdup(names[i].name);
+            host_ctrl->admin_dev = tapi_strdup(initiator_dev_admin_str(dev));
             host_ctrl->device = tapi_malloc(NAME_MAX);
 
-            error = nvme_fabric_namespace_info_string(&info.namespaces[0],
-                                                      &device_str);
-            if (error != 0)
-                return error;
+            snprintf(host_ctrl->device, NAME_MAX, "/dev/%s",
+                     initiator_dev_ns_str(dev));
 
-            snprintf(host_ctrl->device, NAME_MAX, "/dev/%s", device_str.ptr);
-            return 0;
+            break;
         }
     }
 
-    return TE_ENODATA;
+    te_vec_free(&devs);
+    te_vec_free(&diff);
+    return rc;
 }
 
 #define NVME_ADD_OPT(_te_str, args...)                        \
@@ -566,11 +626,29 @@ typedef struct nvme_connect_generic_opts {
 } nvme_connect_generic_opts;
 
 static te_errno
+nvme_connect_build_specific_opts(te_string *str_opts,
+                                 const tapi_nvme_connect_opts *opts)
+{
+    if (opts == NULL)
+        return 0;
+
+    if (opts->hdr_digest == TRUE)
+        NVME_ADD_OPT(str_opts, "--hdr_digest ");
+
+    if (opts->data_digest == TRUE)
+        NVME_ADD_OPT(str_opts, "--data_digest ");
+
+    if (opts->duplicate_connection == TRUE)
+        NVME_ADD_OPT(str_opts, "--duplicate_connect ");
+
+    return 0;
+}
+
+static te_errno
 nvme_connect_build_opts(te_string *str_opts,
                         const tapi_nvme_target *target,
                         nvme_connect_generic_opts opts)
 {
-    const tapi_nvme_connect_opts *tapi_opts = opts.tapi_opts;
     const char *nvme_base_cmd = nvme_connect_type_str(opts.type);
 
     assert(nvme_base_cmd);
@@ -584,13 +662,26 @@ nvme_connect_build_opts(te_string *str_opts,
     if (opts.type == NVME_CONNECT)
         NVME_ADD_OPT(str_opts, "--nqn=%s ",  target->subnqn);
 
-    if (tapi_opts != NULL)
-    {
-        if (tapi_opts->hdr_digest == TRUE)
-            NVME_ADD_OPT(str_opts, "--hdr_digest ");
+    return nvme_connect_build_specific_opts(str_opts, opts.tapi_opts);
+}
 
-        if (tapi_opts->data_digest == TRUE)
-            NVME_ADD_OPT(str_opts, "--data_digest ");
+static te_errno
+nvme_initiator_wait(tapi_nvme_host_ctrl *host_ctrl, te_vec *before)
+{
+    size_t i;
+
+    for (i = 0; i < DEVICE_WAIT_ATTEMPTS; i++)
+    {
+        if (get_new_device(host_ctrl, before) == 0)
+            return 0;
+
+        te_motivated_sleep(1, "Waiting device...");
+    }
+
+    if (get_new_device(host_ctrl, before) != 0)
+    {
+        ERROR("Connected device not found");
+        return TE_ENOENT;
     }
 
     return 0;
@@ -601,9 +692,10 @@ nvme_initiator_connect_generic(tapi_nvme_host_ctrl *host_ctrl,
                                const tapi_nvme_target *target,
                                nvme_connect_generic_opts opts)
 {
-    int i, rc;
+    te_errno rc;
     te_string str_stdout = TE_STRING_INIT;
     te_string str_stderr = TE_STRING_INIT;
+    te_vec devs = TE_VEC_INIT(initiator_dev);
     te_string cmd = TE_STRING_INIT_STATIC(RPC_SHELL_CMDLINE_MAX);
     opts_t run_opts = {
         .str_stdout = &str_stdout,
@@ -622,39 +714,32 @@ nvme_initiator_connect_generic(tapi_nvme_host_ctrl *host_ctrl,
     if ((rc = nvme_connect_build_opts(&cmd, target, opts)) != 0)
         return rc;
 
+    if ((rc = initiator_dev_list(host_ctrl->rpcs, &devs)) != 0)
+    {
+        te_vec_free(&devs);
+        return rc;
+    }
+
     if ((rc = run_command(host_ctrl->rpcs, run_opts, "%s", cmd.ptr)) != 0)
     {
         ERROR("nvme-cli output\n"
               "stdout:\n%s\n"
               "stderr:\n%s", str_stdout.ptr, str_stderr.ptr);
-        te_string_free(&str_stdout);
-        te_string_free(&str_stderr);
-        return TE_EFAIL;
+        rc = TE_EFAIL;
+    }
+    else
+    {
+        host_ctrl->connected_target = target;
+        RING("Success connection to target");
+
+        rc = nvme_initiator_wait(host_ctrl, &devs);
     }
 
     te_string_free(&str_stdout);
     te_string_free(&str_stderr);
+    te_vec_free(&devs);
 
-    host_ctrl->connected_target = target;
-    RING("Success connection to target");
-
-    (void)tapi_nvme_initiator_list(host_ctrl);
-
-    for (i = 0; i < DEVICE_WAIT_ATTEMPTS; i++)
-    {
-        if (get_new_device(host_ctrl, target) == 0)
-            return 0;
-
-        te_motivated_sleep(1, "Waiting device...");
-    }
-
-    if (get_new_device(host_ctrl, target) != 0)
-    {
-        ERROR("Connected device not found");
-        return TE_ENOENT;
-    }
-
-    return 0;
+    return rc;
 }
 
 /* See description in tapi_nvme.h */
@@ -858,41 +943,12 @@ is_disconnected(rcf_rpc_server *rpcs, const char *admin_dev)
     return !tapi_nvme_internal_isdir_exist(rpcs, path);
 }
 
-static te_errno
-wait_device_disapperance(rcf_rpc_server *rpcs, const char *admin_dev)
-{
-    char why_message[BUFFER_SIZE];
-    unsigned int wait_sec = DEVICE_WAIT_TIMEOUT_S;
-    unsigned int i;
-
-    if (is_disconnected(rpcs, admin_dev))
-        return 0;
-
-    for (i = 1; i <= DEVICE_WAIT_ATTEMPTS; i++)
-    {
-        TE_SPRINTF(why_message,
-                   "[%d/%d] Waiting for disconnecting device '%s'...",
-                   i, DEVICE_WAIT_ATTEMPTS, admin_dev);
-
-        te_motivated_sleep(wait_sec, why_message);
-
-        if (is_disconnected(rpcs, admin_dev))
-            return 0;
-
-        /* If NVMoF TCP kernel initiator driver will not free the device
-         * withing a few seconds interval, then it will hang up for a long
-         * time, thus there are no point in high frequency polling. */
-        wait_sec += DEVICE_WAIT_TIMEOUT_S;
-    }
-
-    return TE_RC(TE_TAPI, TE_ETIMEDOUT);
-}
-
 /* See description in tapi_nvme.h */
 te_errno
 tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl)
 {
     te_errno rc;
+    const unsigned int timeout_sec = 2 * 60;
 
     if (host_ctrl == NULL ||
         host_ctrl->rpcs == NULL ||
@@ -903,14 +959,11 @@ tapi_nvme_initiator_disconnect(tapi_nvme_host_ctrl *host_ctrl)
 
     RING("Device '%s' tries to disconnect", host_ctrl->admin_dev);
 
-    rc = tapi_nvme_internal_file_append(host_ctrl->rpcs, "1",
+    rc = tapi_nvme_internal_file_append(host_ctrl->rpcs, timeout_sec, "1",
         BASE_NVME_FABRICS"/%s/delete_controller", host_ctrl->admin_dev);
-    if (rc == 0)
-        rc = wait_device_disapperance(host_ctrl->rpcs, host_ctrl->admin_dev);
-    if (rc == 0)
-        RING("Device '%s' disconnected successfully", host_ctrl->admin_dev);
-    else
-        ERROR("Disconnection for device '%s' failed", host_ctrl->admin_dev);
+
+    if (rc == 0 && !is_disconnected(host_ctrl->rpcs, host_ctrl->admin_dev))
+        rc = TE_EFAIL;
 
     free(host_ctrl->device);
     free(host_ctrl->admin_dev);

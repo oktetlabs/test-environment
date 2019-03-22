@@ -8,6 +8,7 @@
  * @author Nikita Somenkov <Nikita.Somenkov@oktetlabs.ru>
  */
 
+#include "te_config.h"
 #include "conf_net_if_wrapper.h"
 
 #ifdef HAVE_NET_IF_H
