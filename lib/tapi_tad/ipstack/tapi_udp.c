@@ -597,3 +597,49 @@ tapi_udp_ip6_eth_csap_create(const char    *ta_name,
 
     return TE_RC(TE_TAPI, rc);
 }
+
+/* See description in tapi_udp.h */
+te_errno
+tapi_udp_ip_eth_csap_create(const char    *ta_name,
+                            int            sid,
+                            const char    *eth_dev,
+                            unsigned int   receive_mode,
+                            const uint8_t *loc_mac,
+                            const uint8_t *rem_mac,
+                            int            ip_family,
+                            const void    *loc_addr,
+                            const void    *rem_addr,
+                            int            loc_port,
+                            int            rem_port,
+                            csap_handle_t *udp_csap)
+{
+    if (ip_family == AF_INET)
+    {
+        in_addr_t loc_ipv4 = htonl(INADDR_ANY);
+        in_addr_t rem_ipv4 = htonl(INADDR_ANY);
+
+        if (loc_addr != NULL)
+            loc_ipv4 = ((struct in_addr *)loc_addr)->s_addr;
+        if (rem_addr != NULL)
+            rem_ipv4 = ((struct in_addr *)rem_addr)->s_addr;
+
+        return tapi_udp_ip4_eth_csap_create(ta_name, sid, eth_dev,
+                                            receive_mode,
+                                            loc_mac, rem_mac,
+                                            loc_ipv4, rem_ipv4,
+                                            loc_port, rem_port,
+                                            udp_csap);
+    }
+    else if (ip_family == AF_INET6)
+    {
+        return tapi_udp_ip6_eth_csap_create(ta_name, sid, eth_dev,
+                                            receive_mode,
+                                            loc_mac, rem_mac,
+                                            loc_addr, rem_addr,
+                                            loc_port, rem_port,
+                                            udp_csap);
+    }
+
+    ERROR("%s(): not supported address family %d", __FUNCTION__, ip_family);
+    return TE_RC(TE_TAPI, TE_EINVAL);
+}

@@ -224,6 +224,38 @@ extern te_errno tapi_udp_ip6_eth_csap_create(const char    *ta_name,
                                              int            rem_port,
                                              csap_handle_t *udp_csap);
 
+/**
+ * Create UDP CSAP for IPv4 or IPv6 on Ethernet.
+ *
+ * @param ta_name       Test Agent name
+ * @param sid           RCF SID
+ * @param eth_dev       Name of Ethernet interface
+ * @param receive_mode  Bitmask with receive mode, see 'enum
+ *                      tad_eth_recv_mode' in tad_common.h
+ * @param loc_mac       Local MAC address (or @c NULL)
+ * @param rem_mac       Remote MAC address (or @c NULL)
+ * @param ip_family     Address family
+ * @param loc_addr      Local IP address in network byte order (or @c NULL)
+ * @param rem_addr      Remote IP address in network byte order (or @c NULL)
+ * @param loc_port      Local UDP port in network byte order or @c -1
+ * @param rem_port      Remote UDP port in network byte order or @c -1
+ * @param udp_csap      Location for the CSAP handle (OUT)
+ *
+ * @return Zero on success or error code
+ */
+extern te_errno tapi_udp_ip_eth_csap_create(const char    *ta_name,
+                                            int            sid,
+                                            const char    *eth_dev,
+                                            unsigned int   receive_mode,
+                                            const uint8_t *loc_mac,
+                                            const uint8_t *rem_mac,
+                                            int            ip_family,
+                                            const void    *loc_addr,
+                                            const void    *rem_addr,
+                                            int            loc_port,
+                                            int            rem_port,
+                                            csap_handle_t *udp_csap);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
