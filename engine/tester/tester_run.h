@@ -27,6 +27,7 @@
 #include "tq_string.h"
 
 #include "tester_reqs.h"
+#include "tester_flags.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,11 +49,11 @@ typedef struct test_iter_arg {
 typedef struct testing_act {
     TAILQ_ENTRY(testing_act)    links;  /**< Linked list links */
 
-    unsigned int first; /**< Number of the first item */
-    unsigned int last;  /**< Number of the last item */
+    unsigned int   first; /**< Number of the first item */
+    unsigned int   last;  /**< Number of the last item */
 
-    unsigned int flags; /**< Flags (tester_flags) for the act */
-    const char  *hash;  /**< Test iteration hash (optional) */
+    tester_flags   flags; /**< Flags (tester_flags) for the act */
+    const char    *hash;  /**< Test iteration hash (optional) */
 
 } testing_act;
 
@@ -86,7 +87,7 @@ extern void scenario_free(testing_scenario *scenario);
  */
 extern testing_act *scenario_new_act(const unsigned int first,
                                      const unsigned int last,
-                                     const unsigned int flags);
+                                     const tester_flags flags);
 
 /**
  * Add new act in testing scenario.
@@ -102,7 +103,7 @@ extern testing_act *scenario_new_act(const unsigned int first,
 extern te_errno scenario_add_act(testing_scenario *scenario,
                                  const unsigned int first,
                                  const unsigned int last,
-                                 const unsigned int flags,
+                                 const tester_flags flags,
                                  const char *hash);
 
 /**
@@ -187,7 +188,7 @@ extern void scenario_apply_from(testing_scenario *scenario,
  * @param flags         Flags to add
  */
 extern void scenario_add_flags(testing_scenario *scenario,
-                               const unsigned int flags);
+                               const tester_flags flags);
 
 /**
  * Remove acts which have all specified flags (if @a flags is not @c 0)
@@ -197,7 +198,7 @@ extern void scenario_add_flags(testing_scenario *scenario,
  * @param flags         Flags to remove acts
  */
 extern void scenario_cleanup(testing_scenario *scenario,
-                             const unsigned int flags);
+                             const tester_flags flags);
 
 /**
  * Glue testing scenario acts with equal flags.
@@ -217,7 +218,7 @@ extern void scenario_glue(testing_scenario *scenario);
  */
 extern te_errno scenario_exclude(testing_scenario *scenario,
                                  testing_scenario *exclude,
-                                 unsigned int      flags);
+                                 tester_flags      flags);
 
 /**
  * Merge one testing scenario description into another.
@@ -230,7 +231,7 @@ extern te_errno scenario_exclude(testing_scenario *scenario,
  */
 extern te_errno scenario_merge(testing_scenario *scenario,
                                testing_scenario *add,
-                               unsigned int      flags);
+                               tester_flags      flags);
 
 /**
  * Apply flags from scenario @a flags to testing scenario.
@@ -296,7 +297,7 @@ extern te_errno tester_run(testing_scenario         *scenario,
                            struct test_paths        *paths,
                            const te_trc_db          *trc_db,
                            const tqh_strings        *trc_tags,
-                           const unsigned int        flags);
+                           const tester_flags        flags);
 
 
 #ifdef __cplusplus

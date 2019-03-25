@@ -21,6 +21,7 @@
 #include "tester_result.h"
 
 #include "tester_defs.h"
+#include "tester_flags.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,7 +37,7 @@ extern "C" {
  * @param parent    Parent ID
  * @param self      Self ID of the test
  */
-extern void tester_term_out_start(unsigned int flags,
+extern void tester_term_out_start(tester_flags flags,
                                   run_item_type type, const char *name,
                                   unsigned int tin,
                                   test_id parent, test_id self);
@@ -53,7 +54,7 @@ extern void tester_term_out_start(unsigned int flags,
  * @param status    Test status 
  * @param trcv      TRC result
  */
-extern void tester_term_out_done(unsigned int flags,
+extern void tester_term_out_done(tester_flags flags,
                                  run_item_type type, const char *name,
                                  unsigned int tin,
                                  test_id parent, test_id self,

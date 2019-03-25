@@ -35,7 +35,7 @@ extern "C" {
 /** Tester global context */
 typedef struct tester_global {
     unsigned int        rand_seed;  /**< Random seed */
-    unsigned int        flags;      /**< Flags (enum tester_flags) */
+    tester_flags        flags;      /**< Flags (see tester_flags.h) */
     tester_cfgs         cfgs;       /**< Configuration files */
     test_suites_info    suites;     /**< Information about test suites */
     test_paths          paths;      /**< Paths specified by caller */

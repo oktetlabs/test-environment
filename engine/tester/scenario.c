@@ -349,7 +349,7 @@ scenario_free(testing_scenario *scenario)
 /* See the description in tester_run.h */
 testing_act *
 scenario_new_act(const unsigned int first, const unsigned int last,
-                 const unsigned int flags)
+                 const tester_flags flags)
 {
     testing_act *act = malloc(sizeof(*act));
 
@@ -369,7 +369,7 @@ te_errno
 scenario_add_act(testing_scenario *scenario,
                  const unsigned int first,
                  const unsigned int last,
-                 const unsigned int flags,
+                 const tester_flags flags,
                  const char *hash)
 {
     testing_act *act = scenario_new_act(first, last, flags);
@@ -381,7 +381,8 @@ scenario_add_act(testing_scenario *scenario,
 
     TAILQ_INSERT_TAIL(scenario, act, links);
 
-    VERB("New testing scenario %p act: (%u,%u,0x%x)", scenario,
+    VERB("New testing scenario %p act: (%u,%u,0x%"
+         TE_PRINTF_TESTER_FLAGS "x)", scenario,
          act->first, act->last, act->flags);
 
     return 0;
@@ -545,7 +546,7 @@ scenario_apply_from(testing_scenario *scenario, unsigned int to)
 
 /* See the description in tester_run.h */
 void
-scenario_add_flags(testing_scenario *scenario, const unsigned int flags)
+scenario_add_flags(testing_scenario *scenario, const tester_flags flags)
 {
     testing_act *act;
 
@@ -557,7 +558,7 @@ scenario_add_flags(testing_scenario *scenario, const unsigned int flags)
 
 /* See the description in tester_run.h */
 void
-scenario_cleanup(testing_scenario *scenario, const unsigned int flags)
+scenario_cleanup(testing_scenario *scenario, const tester_flags flags)
 {
     testing_act *cur, *nxt;
 
@@ -595,7 +596,7 @@ scenario_glue(testing_scenario *scenario)
 /* See the description in tester_run.h */
 te_errno
 scenario_exclude(testing_scenario *scenario, testing_scenario *exclude,
-                 unsigned int flags)
+                 tester_flags flags)
 {
     te_errno    rc;
 
@@ -612,7 +613,7 @@ scenario_exclude(testing_scenario *scenario, testing_scenario *exclude,
 /* See the description in tester_run.h */
 te_errno
 scenario_merge(testing_scenario *scenario, testing_scenario *add,
-               unsigned int flags)
+               tester_flags flags)
 {
     scenario_add_flags(add, flags);
 
@@ -761,7 +762,8 @@ scenario_to_str(const testing_scenario *scenario)
     TAILQ_FOREACH(act, scenario, links)
     {
         snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
-                 "(%u,%u,0x%x)-", act->first, act->last, act->flags);
+                 "(%u,%u,0x%" TE_PRINTF_TESTER_FLAGS "x)-",
+                 act->first, act->last, act->flags);
     }
     return buf;
 }

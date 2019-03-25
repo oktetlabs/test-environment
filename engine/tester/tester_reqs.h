@@ -21,6 +21,7 @@
 #include "te_queue.h"
 #include "te_errno.h"
 #include "logic_expr.h"
+#include "tester_flags.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -97,7 +98,7 @@ extern te_bool tester_is_run_required(
                    const test_requirements    *sticky_reqs,
                    const struct run_item      *test,
                    const struct test_iter_arg *args,
-                   unsigned int                flags,
+                   tester_flags                flags,
                    te_bool                     quiet);
 
 /**

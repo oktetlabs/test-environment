@@ -262,7 +262,7 @@ colored_verdict(const colored_verdict_data *what)
 
 /* See description in tester_term.h */
 void
-tester_term_out_start(unsigned int flags, run_item_type type,
+tester_term_out_start(tester_flags flags, run_item_type type,
                       const char *name, unsigned int tin,
                       test_id parent, test_id self)
 {
@@ -332,7 +332,7 @@ tester_term_out_start(unsigned int flags, run_item_type type,
 
 /* See description in tester_term.h */
 void
-tester_term_out_done(unsigned int flags,
+tester_term_out_done(tester_flags flags,
                      run_item_type type, const char *name,
                      unsigned int tin, test_id parent, test_id self,
                      tester_test_status status, trc_verdict trcv)

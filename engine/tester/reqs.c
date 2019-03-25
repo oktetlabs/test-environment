@@ -527,7 +527,7 @@ tester_is_run_required(const logic_expr        *targets,
                        const test_requirements *sticky_reqs,
                        const run_item          *test,
                        const test_iter_arg     *args,
-                       unsigned int             flags,
+                       tester_flags             flags,
                        te_bool                  quiet)
 {
     te_bool                     result;

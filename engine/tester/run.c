@@ -83,6 +83,20 @@
     LGR_MESSAGE(TE_LL_RING | TE_LL_CONTROL, TE_LOG_CMSG_USER, \
                 TESTER_CONTROL_MSG_PREFIX _fmt, _parent_id, _id, _args)
 
+/**
+ * Log entry in a Tester configuration walking handler.
+ *
+ * @param _cfg_id_off         Configuration offset.
+ * @param _gctx               Pointer to global context.
+ */
+#define LOG_WALK_ENTRY(_cfg_id_off, _gctx) \
+    ENTRY("cfg_id_off=%u act=(%d,%d,0x%" TE_PRINTF_TESTER_FLAGS "x) "   \
+          "act_id=%u", _cfg_id_off,                                     \
+          _gctx->act != NULL ? (int)_gctx->act->first : -1,             \
+          _gctx->act != NULL ? (int)_gctx->act->last : -1,              \
+          _gctx->act != NULL ? _gctx->act->flags : 0,                   \
+          _gctx->act_id)
+
 /** Size of the Tester shell command buffer */
 #define TESTER_CMD_BUF_SZ           32768
 
@@ -105,7 +119,7 @@ extern unsigned int te_test_id;
 typedef struct tester_ctx {
     SLIST_ENTRY(tester_ctx) links;  /**< List links */
 
-    unsigned int        flags;          /**< Flags (enum tester_flags) */
+    tester_flags        flags;          /**< Flags */
 
     tester_test_result  group_result;   /**< Result for the group of test
                                              executed in this context */
@@ -147,7 +161,7 @@ typedef struct tester_ctx {
  * Opaque data for all configuration traverse callbacks.
  */
 typedef struct tester_run_data {
-    unsigned int                flags;      /**< Flags */
+    tester_flags                flags;      /**< Flags */
     const tester_cfgs          *cfgs;       /**< Tester configurations */
     test_paths                 *paths;      /**< Testing paths */
     testing_scenario           *scenario;   /**< Testing scenario */
@@ -223,7 +237,7 @@ tester_run_free_ctx(tester_ctx *ctx)
  * @return Allocated context.
  */
 static tester_ctx *
-tester_run_new_ctx(unsigned int flags, const logic_expr *targets)
+tester_run_new_ctx(tester_flags flags, const logic_expr *targets)
 {
     tester_ctx *new_ctx = TE_ALLOC(sizeof(*new_ctx));
     
@@ -354,9 +368,10 @@ tester_run_destroy_ctx(tester_run_data *data)
         }
     }
 
-    VERB("Tester context %p deleted: flags=0x%x parent_id=%u child_id=%u "
-         "status=%r", curr, curr->flags, curr->group_result.id,
-         curr->current_result.id, curr->current_result.status);
+    VERB("Tester context %p deleted: flags=0x%" TE_PRINTF_TESTER_FLAGS "x "
+         "parent_id=%u child_id=%u status=%r",
+         curr, curr->flags, curr->group_result.id, curr->current_result.id,
+         curr->current_result.status);
 
     SLIST_REMOVE(&data->ctxs, curr, tester_ctx, links);
 
@@ -403,8 +418,8 @@ tester_run_first_ctx(tester_run_data *data)
     assert(SLIST_EMPTY(&data->ctxs));
     SLIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
 
-    VERB("Initial context: flags=0x%x group_id=%u",
-         new_ctx->flags, new_ctx->group_result.id);
+    VERB("Initial context: flags=0x%" TE_PRINTF_TESTER_FLAGS "x "
+         "group_id=%u", new_ctx->flags, new_ctx->group_result.id);
 
     return new_ctx;
 }
@@ -433,8 +448,8 @@ tester_run_more_ctx(tester_run_data *data, te_bool new_group)
     
     SLIST_INSERT_HEAD(&data->ctxs, new_ctx, links);
 
-    VERB("Tester context %p clonned %p: flags=0x%x group_id=%u "
-         "current_id=%u", SLIST_NEXT(new_ctx, links), new_ctx,
+    VERB("Tester context %p clonned %p: flags=0x%" TE_PRINTF_TESTER_FLAGS
+         "x group_id=%u current_id=%u", SLIST_NEXT(new_ctx, links), new_ctx,
          new_ctx->flags, new_ctx->group_result.id,
          new_ctx->current_result.id);
 
@@ -1158,7 +1173,7 @@ tester_test_status_to_te_test_result(tester_test_status status,
 static te_errno
 run_test_script(test_script *script, const char *run_name, test_id exec_id,
                 const unsigned int n_args, const test_iter_arg *args,
-                const unsigned int flags, tester_test_status *status)
+                const tester_flags flags, tester_test_status *status)
 {
     int         ret;
     char       *params_str = NULL;
@@ -1172,7 +1187,8 @@ run_test_script(test_script *script, const char *run_name, test_id exec_id,
 
     assert(status != NULL);
 
-    ENTRY("name=%s exec_id=%u n_args=%u arg=%p flags=0x%x",
+    ENTRY("name=%s exec_id=%u n_args=%u arg=%p flags=0x%"
+          TE_PRINTF_TESTER_FLAGS "x",
           script->name, exec_id, n_args, args, flags);
 
     if (te_asprintf(&params_str,
@@ -1452,13 +1468,14 @@ run_script(run_item *ri, test_script *script,
     tester_run_data        *gctx = opaque;
     tester_ctx             *ctx;
     tester_cfg_walk_ctl     ctl;
-    unsigned int            def_flags = (gctx->flags & TESTER_FAKE) ?
+    tester_flags            def_flags = (gctx->flags & TESTER_FAKE) ?
                                             TESTER_FAKE : 0;
 
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u script=%s", cfg_id_off,
+    ENTRY("cfg_id_off=%u act=(%d,%d,0x%" TE_PRINTF_TESTER_FLAGS "x) "
+          "act_id=%u script=%s", cfg_id_off,
           gctx->act != NULL ? (int)gctx->act->first : -1,
           gctx->act != NULL ? (int)gctx->act->last : -1,
           gctx->act != NULL ? (gctx->act->flags | def_flags) : def_flags,
@@ -1640,11 +1657,7 @@ run_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     if (gctx->act_id >= cfg_id_off + cfg->total_iters)
     {
@@ -1708,11 +1721,7 @@ run_cfg_end(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
     UNUSED(cfg);
 
     assert(gctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     tester_run_destroy_ctx(gctx);
 
@@ -1760,11 +1769,7 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
 #if WITH_TRC
     ctx->do_trc_walker = FALSE;
@@ -1852,11 +1857,7 @@ run_item_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     if (!(gctx->flags & TESTER_FAKE))
         stop_cmd_monitors(&ri->cmd_monitors);
@@ -1893,11 +1894,7 @@ run_pkg_start(run_item *ri, test_package *pkg,
     UNUSED(ri);
 
     assert(gctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     ctx = tester_run_more_ctx(gctx, TRUE);
     if (ctx == NULL)
@@ -1932,11 +1929,7 @@ run_session_start(run_item *ri, test_session *session,
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    ENTRY("cfg_id_off=%u, (%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     /* 
      * If it is a standalone session (not a primary session of a test
@@ -1976,11 +1969,7 @@ run_session_end(run_item *ri, test_session *session,
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     tester_run_destroy_ctx(gctx);
 
@@ -1999,11 +1988,7 @@ run_prologue_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     if (ctx->flags & TESTER_NO_LOGUES)
     {
@@ -2037,11 +2022,7 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     assert(ctx->flags & TESTER_INLOGUE);
     status = ctx->group_result.status;
@@ -2127,11 +2108,7 @@ run_epilogue_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     if (ctx->flags & TESTER_NO_LOGUES)
     {
@@ -2163,11 +2140,7 @@ run_epilogue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     assert(ctx->flags & TESTER_INLOGUE);
     status = ctx->current_result.status;
@@ -2199,11 +2172,7 @@ run_keepalive_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     if (ctx->keepalive_ctx == NULL)
     {
@@ -2242,11 +2211,7 @@ run_keepalive_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     /* Release configuration backup, since it may differ the next time */
     if (run_release_cfg_backup(ctx) != 0)
@@ -2287,11 +2252,7 @@ run_exception_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     tester_ctx         *ctx;
 
     assert(gctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     /* Exceptin handler is always run in a new context */
     ctx = tester_run_more_ctx(gctx, FALSE);
@@ -2323,11 +2284,7 @@ run_exception_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     /* Release configuration backup, since it may differ the next time */
     if (run_release_cfg_backup(ctx) != 0)
@@ -2626,11 +2583,7 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         assert(parent_ctx != NULL);
         parent_ctx = SLIST_NEXT(parent_ctx, links);
     }
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
 #if WITH_TRC
     ctx->do_trc_walker = FALSE;
@@ -2740,11 +2693,7 @@ run_iter_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
 #if WITH_TRC
     if (ctx->do_trc_walker && test_get_name(ri) != NULL)
@@ -2777,11 +2726,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     if (ri->type == RUN_ITEM_SCRIPT && gctx->act != NULL &&
         gctx->act->hash != NULL && ~ctx->flags & TESTER_INLOGUE)
@@ -2915,11 +2860,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    ENTRY("cfg_id_off=%u act=(%d,%d,0x%x) act_id=%u", cfg_id_off,
-          gctx->act != NULL ? (int)gctx->act->first : -1,
-          gctx->act != NULL ? (int)gctx->act->last : -1,
-          gctx->act != NULL ? gctx->act->flags : 0,
-          gctx->act_id);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     if (ctx->current_result.status != TESTER_TEST_INCOMPLETE)
     {
@@ -3155,7 +3096,7 @@ tester_run(testing_scenario   *scenario,
            test_paths         *paths,
            const te_trc_db    *trc_db,
            const tqh_strings  *trc_tags,
-           const unsigned int  flags)
+           const tester_flags  flags)
 {
     te_errno                rc, rc2;
     tester_run_data         data;
