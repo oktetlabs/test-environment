@@ -26,7 +26,7 @@
 /**
  * A function type for getting value by name from given data.
  */
-typedef char *(*te_param_value_getter)(const char *, void *);
+typedef const char *(*te_param_value_getter)(const char *, void *);
 
 /**
  * Expands parameters in a string.
@@ -52,7 +52,7 @@ typedef char *(*te_param_value_getter)(const char *, void *);
  * @retval ENOBUFS The variable name is longer than @c TE_EXPAND_PARAM_NAME_LEN
  * @retval EINVAL Unmatched ${ found
  */
-extern int te_expand_parameters(const char *src, char **posargs,
+extern int te_expand_parameters(const char *src, const char **posargs,
                                 te_param_value_getter get_param_value,
                                 void *params_ctx, char **retval);
 
@@ -77,7 +77,7 @@ extern int te_expand_parameters(const char *src, char **posargs,
  * @retval ENOBUFS The variable name is longer than @c TE_EXPAND_PARAM_NAME_LEN
  * @retval EINVAL Unmatched ${ found
  */
-extern int te_expand_env_vars(const char *src, char **posargs,
+extern int te_expand_env_vars(const char *src, const char **posargs,
                               char **retval);
 
 /**
@@ -102,7 +102,7 @@ extern int te_expand_env_vars(const char *src, char **posargs,
  * @retval ENOBUFS The variable name is longer than @c TE_EXPAND_PARAM_NAME_LEN
  * @retval EINVAL Unmatched ${ found
  */
-extern int te_expand_kvpairs(const char *src, char **posargs,
+extern int te_expand_kvpairs(const char *src, const char **posargs,
                              te_kvpair_h *head, char **retval);
 
 
