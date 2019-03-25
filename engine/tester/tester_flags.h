@@ -96,6 +96,19 @@ typedef uint64_t tester_flags;
 /** Break test session on Ctrl-C */
 #define TESTER_BREAK_SESSION          (1LLU << 30)
 
+/**
+ * Run only prologues/epilogues under which at least a single
+ * test is run according to requirements passed in command line.
+ * This may not work well in case when prologues can add their
+ * own requirements at run time via /local:/reqs:.
+ */
+#define TESTER_ONLY_REQ_LOGUES        (1LLU << 31)
+/**
+ * Flag which is set for preparatory walk over testing configuration
+ * tree
+ */
+#define TESTER_PRERUN                 (1LLU << 32)
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

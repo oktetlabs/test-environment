@@ -165,6 +165,8 @@ typedef struct tester_run_data {
     const tester_cfgs          *cfgs;       /**< Tester configurations */
     test_paths                 *paths;      /**< Testing paths */
     testing_scenario           *scenario;   /**< Testing scenario */
+    testing_scenario            fixed_scen; /**< Testing scenario created by
+                                                 a preparatory walk */
     const logic_expr           *targets;    /**< Target requirements
                                                  expression specified
                                                  in command line */
@@ -398,7 +400,8 @@ tester_run_first_ctx(tester_run_data *data)
     if (new_ctx == NULL)
         return NULL;
 
-    new_ctx->group_result.id = tester_get_id();
+    if (~data->flags & TESTER_PRERUN)
+        new_ctx->group_result.id = tester_get_id();
 
 #if WITH_TRC
     if (~new_ctx->flags & TESTER_NO_TRC)
@@ -1481,6 +1484,12 @@ run_script(run_item *ri, test_script *script,
           gctx->act != NULL ? (gctx->act->flags | def_flags) : def_flags,
           gctx->act_id, script->name);
 
+    if (ctx->flags & TESTER_PRERUN)
+    {
+        EXIT("CONT");
+        return TESTER_CFG_WALK_CONT;
+    }
+
     assert(ri != NULL);
     assert(ri->n_args == ctx->n_args);
     if (run_test_script(script, ri->name, ctx->current_result.id,
@@ -1665,14 +1674,17 @@ run_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
         return TESTER_CFG_WALK_SKIP;
     }
 
-    maintainers = persons_info_to_string(&cfg->maintainers);
-    RING("Running configuration:\n"
-         "File:        %s\n"
-         "Maintainers:%s\n"
-         "Description: %s",
-         cfg->filename, maintainers,
-         cfg->descr != NULL ? cfg->descr : "(no description)");
-    free(maintainers);
+    if (~ctx->flags & TESTER_PRERUN)
+    {
+        maintainers = persons_info_to_string(&cfg->maintainers);
+        RING("Running configuration:\n"
+             "File:        %s\n"
+             "Maintainers:%s\n"
+             "Description: %s",
+             cfg->filename, maintainers,
+             cfg->descr != NULL ? cfg->descr : "(no description)");
+        free(maintainers);
+    }
 
     /*
      * Process options. Put options in appropriate context.
@@ -1807,7 +1819,7 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
     }
 
-    if (!(gctx->flags & TESTER_FAKE))
+    if (!(gctx->flags & (TESTER_FAKE | TESTER_PRERUN)))
         start_cmd_monitors(&ri->cmd_monitors);
 
     if (~flags & TESTER_CFG_WALK_SERVICE)
@@ -1859,7 +1871,7 @@ run_item_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     assert(ctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
-    if (!(gctx->flags & TESTER_FAKE))
+    if (!(gctx->flags & (TESTER_FAKE | TESTER_PRERUN)))
         stop_cmd_monitors(&ri->cmd_monitors);
 
 #if WITH_TRC
@@ -1996,6 +2008,11 @@ run_prologue_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
         EXIT("SKIP");
         return TESTER_CFG_WALK_SKIP;
     }
+    if (ctx->flags & TESTER_PRERUN)
+    {
+        EXIT("SKIP");
+        return TESTER_CFG_WALK_SKIP;
+    }
 
     ctx = tester_run_more_ctx(gctx, FALSE);
     if (ctx == NULL)
@@ -2023,6 +2040,12 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
+
+    if (ctx->flags & TESTER_PRERUN)
+    {
+        EXIT("CONT");
+        return TESTER_CFG_WALK_CONT;
+    }
 
     assert(ctx->flags & TESTER_INLOGUE);
     status = ctx->group_result.status;
@@ -2117,6 +2140,12 @@ run_epilogue_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
         return TESTER_CFG_WALK_SKIP;
     }
 
+    if (ctx->flags & TESTER_PRERUN)
+    {
+        EXIT("SKIP");
+        return TESTER_CFG_WALK_SKIP;
+    }
+
     ctx = tester_run_more_ctx(gctx, FALSE);
     if (ctx == NULL)
         return TESTER_CFG_WALK_FAULT;
@@ -2141,6 +2170,12 @@ run_epilogue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
+
+    if (ctx->flags & TESTER_PRERUN)
+    {
+        EXIT("CONT");
+        return TESTER_CFG_WALK_CONT;
+    }
 
     assert(ctx->flags & TESTER_INLOGUE);
     status = ctx->current_result.status;
@@ -2174,6 +2209,12 @@ run_keepalive_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(ctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
+    if (ctx->flags & TESTER_PRERUN)
+    {
+        EXIT("CONT");
+        return TESTER_CFG_WALK_CONT;
+    }
+
     if (ctx->keepalive_ctx == NULL)
     {
         ctx->keepalive_ctx = tester_run_clone_ctx(ctx, FALSE);
@@ -2184,7 +2225,7 @@ run_keepalive_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
         }
     }
     ctx = ctx->keepalive_ctx;
-    
+
     if (run_create_cfg_backup(ctx, test_get_attrs(ri)->track_conf) != 0)
     {
         EXIT("FAULT");
@@ -2212,6 +2253,12 @@ run_keepalive_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
+
+    if (ctx->flags & TESTER_PRERUN)
+    {
+        EXIT("CONT");
+        return TESTER_CFG_WALK_CONT;
+    }
 
     /* Release configuration backup, since it may differ the next time */
     if (run_release_cfg_backup(ctx) != 0)
@@ -2254,6 +2301,12 @@ run_exception_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(gctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
+    if (gctx->flags & TESTER_PRERUN)
+    {
+        EXIT("CONT");
+        return TESTER_CFG_WALK_CONT;
+    }
+
     /* Exceptin handler is always run in a new context */
     ctx = tester_run_more_ctx(gctx, FALSE);
     if (ctx == NULL)
@@ -2282,9 +2335,16 @@ run_exception_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     UNUSED(ri);
 
     assert(gctx != NULL);
+    LOG_WALK_ENTRY(cfg_id_off, gctx);
+
+    if (gctx->flags & TESTER_PRERUN)
+    {
+        EXIT("CONT");
+        return TESTER_CFG_WALK_CONT;
+    }
+
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
-    LOG_WALK_ENTRY(cfg_id_off, gctx);
 
     /* Release configuration backup, since it may differ the next time */
     if (run_release_cfg_backup(ctx) != 0)
@@ -2744,6 +2804,33 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         free(hash_str);
     }
 
+    if (ctx->flags & TESTER_PRERUN)
+    {
+        if (ri->type == RUN_ITEM_SCRIPT)
+        {
+            te_bool include_act = TRUE;
+
+            if (ctx->flags & TESTER_ONLY_REQ_LOGUES)
+            {
+                if (!tester_is_run_required(ctx->targets, &ctx->reqs,
+                                            ri, ctx->args, ctx->flags,
+                                            TRUE))
+                {
+                    include_act = FALSE;
+                }
+            }
+
+            if (include_act)
+            {
+                scenario_add_act(&gctx->fixed_scen, cfg_id_off, cfg_id_off,
+                                 gctx->act->flags, gctx->act->hash);
+            }
+        }
+
+        EXIT("CONT");
+        return TESTER_CFG_WALK_CONT;
+    }
+
     /* FIXME: Optimize */
     /* verb overwrites quiet */
     if ((~ctx->flags & TESTER_VERB_SKIP) &&
@@ -2862,7 +2949,8 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     assert(ctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
-    if (ctx->current_result.status != TESTER_TEST_INCOMPLETE)
+    if ((~ctx->flags & TESTER_PRERUN) &&
+        ctx->current_result.status != TESTER_TEST_INCOMPLETE)
     {
         unsigned int    tin;
 
@@ -3087,6 +3175,42 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     }
 }
 
+/**
+ * Check whether preparatory walk over testing configuration
+ * tree can help to improve scenario.
+ *
+ * @param scenario            Testing scenario.
+ * @param targets             Target requirements expression.
+ * @param flags               Testing flags.
+ *
+ * @return @c TRUE if preparatory walk is helpful, @c FALSE otherwise.
+ */
+static te_bool
+is_prerun_helpful(testing_scenario *scenario,
+                  const logic_expr *targets,
+                  tester_flags flags)
+{
+    testing_act *act = NULL;
+
+    /*
+     * If hash is specified for some scenario acts, preparatory walk
+     * will exclude iterations which do not match that hash.
+     */
+    TAILQ_FOREACH(act, scenario, links)
+    {
+        if (act->hash != NULL)
+            return TRUE;
+    }
+
+    /*
+     * If requirements are specified, preparatory walk will exclude
+     * those iterations which do not match them.
+     */
+    if ((flags & TESTER_ONLY_REQ_LOGUES) && targets != NULL)
+        return TRUE;
+
+    return FALSE;
+}
 
 /* See the description in tester_run.h */
 te_errno
@@ -3125,8 +3249,9 @@ tester_run(testing_scenario   *scenario,
         run_script,
     };
 
-    testing_act *act;
-    te_bool      all_faked = TRUE;
+    testing_act   *act;
+    te_bool        all_faked = TRUE;
+    tester_flags   orig_flags;
 
     TAILQ_FOREACH(act, scenario, links)
     {
@@ -3145,6 +3270,7 @@ tester_run(testing_scenario   *scenario,
     data.cfgs = cfgs;
     data.paths = paths;
     data.scenario = scenario;
+    TAILQ_INIT(&data.fixed_scen);
     data.targets = targets;
     data.act = TAILQ_FIRST(scenario);
     data.act_id = (data.act != NULL) ? data.act->first : 0;
@@ -3158,16 +3284,6 @@ tester_run(testing_scenario   *scenario,
     rc = tester_test_results_init(&data.results);
     if (rc != 0)
         return rc;
-
-    rc = tester_test_msg_listener_start(&data.vl, &data.results);
-    if (rc != 0)
-    {
-        ERROR("Failed to start test messages listener: %r", rc);
-        return rc;
-    }
-
-    if (tester_run_first_ctx(&data) == NULL)
-        return TE_RC(TE_TESTER, TE_ENOMEM);
 
     while (TAILQ_EMPTY(data.scenario) &&
            (data.flags & TESTER_INTERACTIVE))
@@ -3192,6 +3308,56 @@ tester_run(testing_scenario   *scenario,
     {
         WARN("Testing scenario is empty");
         return TE_RC(TE_TESTER, TE_ENOENT);
+    }
+
+    if ((~flags & TESTER_INTERACTIVE) &&
+        is_prerun_helpful(data.scenario, data.targets, data.flags))
+    {
+        /*
+         * Do preparatory walk over testing configuration tree.
+         * In this walk improved scenario is created which includes only
+         * tests which are going to be run taking into account hashes and
+         * (if --only-req-logues option was passed) requirements passed
+         * in command line.
+         * This allows to avoid running unnecessary prologues/epilogues
+         * in case when test iterations are specified by hash or
+         * requirements rather than by full path with parameter values.
+         */
+
+        orig_flags = data.flags;
+        data.flags |= TESTER_PRERUN | TESTER_NO_TRC | TESTER_NO_CS |
+                      TESTER_NO_CFG_TRACK;
+        if (tester_run_first_ctx(&data) == NULL)
+            return TE_RC(TE_TESTER, TE_ENOMEM);
+
+        ctl = tester_configs_walk(cfgs, &cbs, 0, &data);
+        if (ctl != TESTER_CFG_WALK_FIN)
+        {
+            ERROR("Preparatory tree walk returned unexpected result %u",
+                  ctl);
+            return TE_RC(TE_TESTER, TE_EFAULT);
+        }
+
+        data.flags = orig_flags;
+        data.act = TAILQ_FIRST(&data.fixed_scen);
+        data.act_id = (data.act != NULL) ? data.act->first : 0;
+        tester_run_destroy_ctx(&data);
+
+        if (TAILQ_EMPTY(&data.fixed_scen))
+        {
+            WARN("Testing scenario is empty");
+            return TE_RC(TE_TESTER, TE_ENOENT);
+        }
+    }
+
+    if (tester_run_first_ctx(&data) == NULL)
+        return TE_RC(TE_TESTER, TE_ENOMEM);
+
+    rc = tester_test_msg_listener_start(&data.vl, &data.results);
+    if (rc != 0)
+    {
+        ERROR("Failed to start test messages listener: %r", rc);
+        return rc;
     }
 
     ctl = tester_configs_walk(cfgs, &cbs,
@@ -3234,6 +3400,7 @@ tester_run(testing_scenario   *scenario,
     }
 
     tester_run_destroy_ctx(&data);
+    scenario_free(&data.fixed_scen);
 
     rc2 = tester_test_msg_listener_stop(&data.vl);
     if (rc2 != 0)

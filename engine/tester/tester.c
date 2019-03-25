@@ -178,6 +178,7 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         TESTER_OPT_NO_CFG_TRACK,
         TESTER_OPT_NO_LOGUES,
         TESTER_OPT_NO_SIMULT,
+        TESTER_OPT_ONLY_REQ_LOGUES,
 
         TESTER_OPT_REQ,
         TESTER_OPT_NO_REQS,
@@ -242,6 +243,13 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
         { "no-logues", '\0', POPT_ARG_NONE, NULL, TESTER_OPT_NO_LOGUES,
           "Disable prologues and epilogues globally.", NULL },
+
+        { "only-req-logues", '\0', POPT_ARG_NONE, NULL,
+          TESTER_OPT_ONLY_REQ_LOGUES,
+          "Run only prologues/epilogues under which at least one "
+          "test will be run according to requirements passed in "
+          "command line. This may not work well if your prologues "
+          "can add requirements on their own in /local:/reqs:", NULL },
 
 #if 0
         { "no-simultaneous", '\0', POPT_ARG_NONE, NULL,
@@ -405,6 +413,10 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         {
             case TESTER_OPT_NO_LOGUES:
                 global->flags |= TESTER_NO_LOGUES;
+                break;
+
+            case TESTER_OPT_ONLY_REQ_LOGUES:
+                global->flags |= TESTER_ONLY_REQ_LOGUES;
                 break;
 
             case TESTER_OPT_NO_SIMULT:
