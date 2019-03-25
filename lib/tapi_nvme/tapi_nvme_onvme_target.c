@@ -76,7 +76,7 @@ onvme_build_cmd(te_string *cmd, tapi_nvme_target *target)
     tapi_nvme_onvme_target_proc *proc =
         (tapi_nvme_onvme_target_proc*)target->impl;
 
-    CHECK_RC(te_string_append(cmd, "onvme-target-start "));
+    CHECK_RC(te_string_append(cmd, "onvme-target-start --use-null "));
 
     CHECK_RC(te_string_append(cmd, "--port %hu ",
                               ntohs(te_sockaddr_get_port(target->addr))));
@@ -88,7 +88,7 @@ onvme_build_cmd(te_string *cmd, tapi_nvme_target *target)
     }
 
     if (proc->opts.is_nullblock)
-        CHECK_RC(te_string_append(cmd, "--use-null --no-nvme "));
+        CHECK_RC(te_string_append(cmd, "--no-nvme "));
 
     if (proc->opts.max_worker_conn != 0)
     {
