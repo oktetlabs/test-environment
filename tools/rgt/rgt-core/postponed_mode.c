@@ -443,7 +443,7 @@ postponed_process_regular_msg(log_msg *msg)
         logs_closed = 0;
     }
     fprintf(rgt_ctx.out_fd,
-            "<msg level=\"%s\" entity=\"%s\" user=\"%s\" ts_val=\"%u.%u\" "
+            "<msg level=\"%s\" entity=\"%s\" user=\"%s\" ts_val=\"%u.%06u\" "
             "ts=\"", msg->level_str, msg->entity, msg->user,
             msg->timestamp[0], msg->timestamp[1]);
     print_ts(rgt_ctx.out_fd, msg->timestamp);
