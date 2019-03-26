@@ -1,0 +1,11 @@
+To run this test suite do the following steps:
+
+1. export TE_BASE=<TE root directory>
+
+2. in ${TE_BASE}/suites/tdd_tapi_cache/suite run: autoreconf --install --force
+
+3. export TS_BASE=${TE_BASE}/suites/tdd_tapi_cache
+
+4. export TE_BUILD=${TS_BASE}/build
+
+5. Build TE and run TS: ${TE_BASE}/dispatcher.sh --conf-dir=${TS_BASE}/conf
