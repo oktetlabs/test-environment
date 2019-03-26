@@ -1,11 +1,10 @@
 #
-# Builder configuration file to build TE logs processing and report 
+# Builder configuration file to build TE logs processing and report
 # generation tools only.
 #
 
 TE_PLATFORM([], [], [-D_GNU_SOURCE], [], [],
-            [tools rpc_types conf_oid rpcxdr loggerta logic_expr \
-             trc rpctransport agentlib rcfpch])
+            [tools logic_expr trc])
 
 TE_APP([])
 
