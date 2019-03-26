@@ -113,6 +113,17 @@
 extern "C" {
 #endif
 
+/** Cache area configurator root object */
+#define TAPI_CACHE_ROOT_OID     "/volatile/cache"
+/** Cache area configurator root instance */
+#define TAPI_CACHE_ROOT_INST    "/volatile:/cache:"
+/**
+ * Cache instance pointing to all cache data (cache root). Useful if you need
+ * to actualize all cache instances at once
+ */
+#define TAPI_CACHE_ALL          ""
+
+
 /**
  * Type of callback function which can be called by tapi_cache_actualize()
  * and registered by tapi_cache_register()
@@ -145,17 +156,30 @@ extern te_errno tapi_cache_register(const char *method, const char *area,
  * the cache area with particular @p method
  *
  * @note It invalidates the area instances of certain @p method before
- * actualization
+ * actualization. Also it is possible to call the function on parent instance
+ * which does not have registered callback but whose children have ones.
+ * Caution: keep in mind in this case it can call different callbacks with the
+ * same opaque.
+ * For instance, if we had the following areas with registered callbacks:
+ * @conf_path{foo/bar}, @conf_path{foo/bar/baz}, @conf_path{qux},
+ * the function on area instance @ref TAPI_CACHE_ALL would invoke callbacks
+ * of @conf_path{foo/bar} and @conf_path{qux}
+ *
  *
  * @param method        Method
  * @param opaque        Opaque argument to pass to the callback function
  *                      registered with tapi_cache_register()
  * @param area_ptrn     Format string of area instance, can contain wildcards
  *                      to actualize several instances of area.
- *                      For example, "foo:*", or "foo:FOO"
+ *                      For example, "foo:*", "foo:FOO", or @ref TAPI_CACHE_ALL
  * @param ...           Format string arguments
  *
  * @return Status code
+ * @retval 0            Instance has been actualized completely
+ * @retval TE_ECHILD    Some of subareas have not been actualized due to they
+ *                      do not have actualization callbacks
+ * @retval TE_ENOENT    Instance has not been actualized completely
+ * @retval Any other    Another errors which should be handled as critical
  *
  * @sa tapi_cache_invalidate, tapi_cache_invalidate_all
  */
@@ -182,7 +206,8 @@ extern te_errno tapi_cache_invalidate(const char *method,
                                       __attribute__((format(printf, 2, 3)));
 
 /**
- * Add a new instance to cache area
+ * Add a new instance to cache area, add parent instances (with value
+ * CFG_VAL(NONE, NULL)) as needed
  *
  * @note It is important for proper work of acrialize and invalidate actions
  * to follow agreement that leaf is a method
@@ -249,6 +274,10 @@ extern te_errno tapi_cache_add_addr(const struct sockaddr *addr,
 
 /**
  * Delete instance(s) of cache area by pattern
+ *
+ * @note Prefer tapi_cache_invalidate() to this function since this one
+ * knows nothing about methods and, hence, ignores them. It simply removes
+ * area instances of all methods.
  *
  * @param area_ptrn     Format string of area instance, can contain wildcards
  *                      to delete several instances of area.
