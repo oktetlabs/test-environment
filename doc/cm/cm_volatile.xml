@@ -22,4 +22,9 @@
          Value: readable library name -->
     <object oid="/volatile/ta_sockets" access="read_create" type="string"/>
 
+    <!-- Root node for cached data
+         Name: empty
+         Value: none -->
+    <object oid="/volatile/cache" access="read_create" type="none"/>
+
 </backup>
