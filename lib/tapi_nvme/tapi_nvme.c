@@ -563,6 +563,7 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl, const te_vec *before)
 
     nvme_target2initiator_dev_info(host_ctrl->connected_target, &target);
 
+    rc = TE_EAGAIN;
     TE_VEC_FOREACH(&diff, dev)
     {
         initiator_dev_info curinfo;
@@ -582,8 +583,11 @@ get_new_device(tapi_nvme_host_ctrl *host_ctrl, const te_vec *before)
             snprintf(host_ctrl->device, NAME_MAX, "/dev/%s",
                      initiator_dev_ns_str(dev));
 
+            rc = 0;
             break;
         }
+
+        rc = TE_EAGAIN;
     }
 
     te_vec_free(&devs);
@@ -669,22 +673,23 @@ static te_errno
 nvme_initiator_wait(tapi_nvme_host_ctrl *host_ctrl, te_vec *before)
 {
     size_t i;
+    te_errno rc;
 
     for (i = 0; i < DEVICE_WAIT_ATTEMPTS; i++)
     {
-        if (get_new_device(host_ctrl, before) == 0)
-            return 0;
+        if ((rc = get_new_device(host_ctrl, before)) != TE_EAGAIN)
+            return rc;
 
         te_motivated_sleep(1, "Waiting device...");
     }
 
-    if (get_new_device(host_ctrl, before) != 0)
+    if ((rc = get_new_device(host_ctrl, before)) == TE_EAGAIN)
     {
         ERROR("Connected device not found");
         return TE_ENOENT;
     }
 
-    return 0;
+    return rc;
 }
 
 static te_errno
