@@ -90,7 +90,7 @@
  */
 #define _CFG_HANDLE_BY_FMT                      \
     va_list    ap;                              \
-    int        rc;                              \
+    te_errno   rc;                              \
     cfg_handle handle;                          \
                                                 \
     va_start(ap, oid_fmt);                      \
@@ -104,7 +104,7 @@
  * It assumes and provides some variables.
  */
 #define _CFG_HANDLE_BY_STR                      \
-    int        rc;                              \
+    te_errno   rc;                              \
     cfg_handle handle;                          \
                                                 \
     rc = cfg_find_str(oid, &handle);            \
@@ -122,11 +122,11 @@ static ipc_client *cfgl_ipc_client = NULL;
 static char cfgl_msg_buf[CFG_MSG_MAX] = {0,};
 
 
-static int cfg_get_family_member(cfg_handle handle,
-                                 uint8_t who,
-                                 cfg_handle *member);
-static int kill_all(cfg_handle handle, te_bool local);
-static int kill(cfg_handle handle, te_bool local);
+static te_errno cfg_get_family_member(cfg_handle handle,
+                                      uint8_t who,
+                                      cfg_handle *member);
+static te_errno kill_all(cfg_handle handle, te_bool local);
+static te_errno kill(cfg_handle handle, te_bool local);
 
 
 /* See description in conf_api.h */
@@ -856,12 +856,14 @@ cfg_find_pattern_iter_fmt(cfg_handle_cb_func cb_func, void *opaque,
 /**
  * Get handle of the family member of the object or object instance.
  *
- * @param handle    handle of the object or object instance
- * @param member    location for family member's handle
+ * @param[in]  handle   handle of the object or object instance
+ * @param[in]  who      family member, one of @ref CFG_FATHER, @ref CFG_BROTHER,
+ *                      and @ref CFG_SON.
+ * @param[out] member   location for family member's handle
  *
- * @returns family member's handle or CFG_HANDLE_INVALID
+ * @return Status code
  */
-static int
+static te_errno
 cfg_get_family_member(cfg_handle handle, uint8_t who, cfg_handle *member)
 {
     cfg_family_msg *msg;
@@ -910,7 +912,7 @@ cfg_get_family_member(cfg_handle handle, uint8_t who, cfg_handle *member)
 te_errno
 cfg_get_son(cfg_handle handle, cfg_handle *son)
 {
-    int ret_val;
+    te_errno ret_val;
     cfg_handle out;
 
     ret_val = cfg_get_family_member(handle, CFG_SON, &out);
@@ -925,7 +927,7 @@ cfg_get_son(cfg_handle handle, cfg_handle *son)
 te_errno
 cfg_get_brother(cfg_handle handle, cfg_handle *brother)
 {
-    int ret_val;
+    te_errno ret_val;
     cfg_handle out;
 
     ret_val = cfg_get_family_member(handle, CFG_BROTHER, &out);
@@ -940,7 +942,7 @@ cfg_get_brother(cfg_handle handle, cfg_handle *brother)
 te_errno
 cfg_get_father(cfg_handle handle, cfg_handle *father)
 {
-    int ret_val;
+    te_errno ret_val;
     cfg_handle out;
 
     ret_val = cfg_get_family_member(handle, CFG_FATHER, &out);
@@ -965,7 +967,7 @@ cfg_get_father(cfg_handle handle, cfg_handle *father)
  *
  * @return status code (see te_errno.h)
  */
-static int
+static te_errno
 cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
                      cfg_val_type type, va_list list)
 {
@@ -1061,7 +1063,7 @@ cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
                  cfg_val_type type, ...)
 {
     char    *oid2str = NULL;
-    int      ret_val = 0;
+    te_errno ret_val = 0;
     va_list  list;
 
     if (oid == NULL)
@@ -1084,7 +1086,7 @@ te_errno
 cfg_add_instance_str(const char *oid, cfg_handle *handle,
                      cfg_val_type type, ...)
 {
-    int     ret_val = 0;
+    te_errno ret_val = 0;
     va_list list;
 
     va_start(list, type);
@@ -1413,7 +1415,7 @@ cfg_del_instance_local_fmt(te_bool with_children, const char *oid_fmt, ...)
  *
  * @return status code (see te_errno.h)
  */
-static int
+static te_errno
 cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
                      va_list list)
 {
@@ -1501,7 +1503,7 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
 te_errno
 cfg_set_instance(cfg_handle handle, cfg_val_type type, ...)
 {
-    int     ret_val;
+    te_errno ret_val;
     va_list list;
 
     va_start(list, type);
@@ -1533,7 +1535,7 @@ cfg_set_instance_str(cfg_val_type type, const void *val,
 te_errno
 cfg_set_instance_local(cfg_handle handle, cfg_val_type type, ...)
 {
-    int     ret_val;
+    te_errno ret_val;
     va_list list;
 
     va_start(list, type);
@@ -2112,7 +2114,7 @@ cfg_create_backup(char **name)
  *
  * @return status code (see te_errno.h)
  */
-static int
+static te_errno
 cfg_backup(const char *name, uint8_t op)
 {
     cfg_backup_msg *msg;
@@ -2169,7 +2171,7 @@ cfg_verify_backup(const char *name)
 te_errno
 cfg_release_backup(char **name)
 {
-    int rc;
+    te_errno rc;
 
     if (name == NULL)
         return TE_RC(TE_CONF_API, TE_EINVAL);
