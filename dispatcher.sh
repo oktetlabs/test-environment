@@ -128,6 +128,11 @@ Generic options:
   --tester-no-cs                Don't interact with Configurator.
   --tester-no-cfg-track         Don't track configuration changes.
   --tester-no-logues            Disable prologues and epilogues globally.
+  --tester-only-req-logues      Run only prologues/epilogues under which
+                                at least one test will be run according to
+                                requirements passed in command line. This
+                                may not work well if your prologues can add
+                                requirements on their own in /local:/reqs:.
   --tester-req=<reqs-expr>      Requirements to be tested (logical expression).
   --tester-no-reqs              Ignore requirements, run all possible
                                 iterations.
