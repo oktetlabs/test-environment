@@ -21,7 +21,7 @@ download and build part.
 Test Environment sources can be obtained from
 
 <pre>
-https://svn.oktetlabs.ru/svnroot/prj/oktetlabs/test-environment/src/trunk
+https://oktetlabs.ru/hg/oktetlabs/test-environment
 </pre>
 
 You will need OKTET Labs account and appropriate permissions, contact
