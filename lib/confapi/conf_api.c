@@ -129,15 +129,7 @@ static int kill_all(cfg_handle handle, te_bool local);
 static int kill(cfg_handle handle, te_bool local);
 
 
-/**
- * Register a new object using string object identifiers.
- *
- * @param oid       object identifier in string representation
- * @param descr     object properties description
- * @param handle    location for registred object handle
- *
- * @return status code (see te_errno.h)
- */
+/* See description in conf_api.h */
 te_errno
 cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
                         cfg_handle *handle)
@@ -205,15 +197,7 @@ cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
     return TE_RC(TE_CONF_API, ret_val);
 }
 
-/**
- * Register new object using array object identifiers.
- *
- * @param oid       object identifier
- * @param descr     object properties description
- * @param handle    location for registred object handle
- *
- * @return status code (see te_errno.h)
- */
+/* See description in conf_api.h */
 te_errno
 cfg_register_object(const cfg_oid *oid, cfg_obj_descr *descr,
                     cfg_handle *handle)
@@ -254,14 +238,7 @@ cfg_register_object_fmt(cfg_obj_descr *descr, cfg_handle *handle,
     return cfg_register_object_str(oid, descr, handle);
 }
 
-/**
- * Obtain parameters configured for the object.
- *
- * @param handle        object handle
- * @param descr         OUT: location for the object properties description
- *
- * @return status code (see te_errno.h)
- */
+/* See description in conf_api.h */
 te_errno
 cfg_get_object_descr(cfg_handle handle, cfg_obj_descr *descr)
 {
@@ -330,15 +307,7 @@ cfg_get_object_descr(cfg_handle handle, cfg_obj_descr *descr)
     return ret_val;
 }
 
-/**
- * Obtain identifier of object or object instance by its handle.
- *
- * @param handle        handle of object or object instance
- * @param oid           OUT: location for the oid pointer (memory for the
- *                      string is allocated by the routine using malloc()
- *
- * @return 0 or TE_EINVAL if invalid handle is provided
- */
+/* See description in conf_api.h */
 te_errno
 cfg_get_oid_str(cfg_handle handle, char **oid)
 {
@@ -399,15 +368,7 @@ cfg_get_oid_str(cfg_handle handle, char **oid)
     return TE_RC(TE_CONF_API, ret_val);
 }
 
-/**
- * Obtain identifier of object or object instance by its handle.
- *
- * @param handle        handle of object or object instance
- * @param oid           OUT: location for the oid pointer (memory for the
- *                      array is allocated by the routine using malloc()
- *
- * @return 0 or TE_EINVAL if invalid handle is provided
- */
+/* See description in conf_api.h */
 te_errno
 cfg_get_oid(cfg_handle handle, cfg_oid **oid)
 {
@@ -434,15 +395,7 @@ cfg_get_oid(cfg_handle handle, cfg_oid **oid)
     return 0;
 }
 
-/**
- * Obtain sub-identifier of object by its handle.
- *
- * @param handle        handle of object
- * @param subid         OUT: location for the sub-identifier (should be
- *                      at least CFG_SUBID_MAX length)
- *
- * @return 0 or TE_EINVAL if invalid handle is provided
- */
+/* See description in conf_api.h */
 te_errno
 cfg_get_subid(cfg_handle handle, char **subid)
 {
@@ -501,14 +454,7 @@ cfg_get_subid(cfg_handle handle, char **subid)
     return TE_RC(TE_CONF_API, ret_val);
 }
 
-/**
- * Obtain name of object instance by its handle.
- *
- * @param handle        handle of object instance
- * @param name          OUT: location for the name
- *
- * @return 0 or TE_EINVAL if invalid handle is provided
- */
+/* See description in conf_api.h */
 te_errno
 cfg_get_inst_name(cfg_handle handle, char **name)
 {
@@ -620,16 +566,7 @@ cfg_get_ith_inst_name(const char *str_oid, unsigned int i, char **name)
 
 }
 
-
-/**
- * Find the object or object instance by its object identifier.
- * Root object identifier is "/"; root object instance identifier is "/:".
- *
- * @param oid           object identifier in string representation
- * @param handle        location for object or instance handle
- *
- * @return      status code
- */
+/* See description in conf_api.h */
 te_errno
 cfg_find_str(const char *oid, cfg_handle *handle)
 {
@@ -694,14 +631,7 @@ cfg_find_fmt(cfg_handle *p_handle, const char *oid_fmt, ...)
     return rc;
 }
 
-/**
- * Find the object or object instance by its object identifier.
- *
- * @param oid           object identifier
- * @param handle        location for object or instance handle
- *
- * @return      status code
- */
+/* See description in conf_api.h */
 te_errno
 cfg_find(const cfg_oid *oid, cfg_handle *handle)
 {
@@ -724,14 +654,7 @@ cfg_find(const cfg_oid *oid, cfg_handle *handle)
     return TE_RC(TE_CONF_API, ret_val);
 }
 
-/*
- * Find object of the given instance.
- *
- * @param    instance    instance handle
- * @param    object    OUT: localtion for object handle
- *
- * @return    status code.
- */
+/* See description in conf_api.h */
 te_errno
 cfg_find_object_by_instance(cfg_handle instance, cfg_handle *object)
 {
@@ -783,18 +706,7 @@ cfg_find_object_by_instance(cfg_handle instance, cfg_handle *object)
     return TE_RC(TE_CONF_API, ret_val);
 }
 
-/**
- * Find all objects or object instances matching a pattern.
- *
- * @param pattern       string object identifier possibly containing '*'
- *                      (see Configurator documentation for details)
- * @param num           OUT: number of found objects or object instances
- * @param set           OUT: array of object/object instances handles;
- *                      memory for the array is allocated using malloc()
- *
- * @return 0 or TE_EINVAL if pattern format is incorrect some argument is
- *         NULL
- */
+/* See description in conf_api.h */
 te_errno
 cfg_find_pattern(const char *pattern, unsigned int *num, cfg_handle **set)
 {
@@ -994,14 +906,7 @@ cfg_get_family_member(cfg_handle handle, uint8_t who, cfg_handle *member)
 }
 
 
-/**
- * Get handle of the oldest son of the object or object instance.
- *
- * @param handle    handle of the object or object instance
- * @param son       location for son's handle
- *
- * @returns sun's handle or CFG_HANDLE_INVALID
- */
+/* See description in conf_api.h */
 te_errno
 cfg_get_son(cfg_handle handle, cfg_handle *son)
 {
@@ -1016,14 +921,7 @@ cfg_get_son(cfg_handle handle, cfg_handle *son)
     return TE_RC(TE_CONF_API, ret_val);
 }
 
-/**
- * Get handle of the brother of the object or object instance.
- *
- * @param handle    handle of the object or object instance
- * @param brother   location for brother's handle
- *
- * @returns brother's handle or CFG_HANDLE_INVALID
- */
+/* See description in conf_api.h */
 te_errno
 cfg_get_brother(cfg_handle handle, cfg_handle *brother)
 {
@@ -1038,14 +936,7 @@ cfg_get_brother(cfg_handle handle, cfg_handle *brother)
     return TE_RC(TE_CONF_API, ret_val);
 }
 
-/**
- * Get handle of the father of the object or object instance.
- *
- * @param handle    handle of the object or object instance
- * @param father    location for father's handle
- *
- * @returns father's handle or CFG_HANDLE_INVALID
- */
+/* See description in conf_api.h */
 te_errno
 cfg_get_father(cfg_handle handle, cfg_handle *father)
 {
@@ -1164,19 +1055,7 @@ cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
     return TE_RC(TE_CONF_API, ret_val);
 }
 
-/**
- * Create an object instance.
- *
- * @param  oid        object identifier of the new instance
- * @param  handle     location for handle of the new instance
- * @param  type       value type (necessary for fast processing)
- * @param  ...        value to be assigned to the new instance or NULL;
- *                    for integer values: int
- *                    for strings: char *
- *                    for addreses: struct sockaddr *
- *
- * @return status code (see te_errno.h)
- */
+/* See description in conf_api.h */
 te_errno
 cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
                  cfg_val_type type, ...)
@@ -1200,20 +1079,7 @@ cfg_add_instance(const cfg_oid *oid, cfg_handle *handle,
     return TE_RC(TE_CONF_API, ret_val);
 }
 
-/**
- * Create an object instance.
- *
- * @param  oid        object identifier of the new instance
- *                    (string representation)
- * @param  handle     location for handle of the new instance
- * @param  type       value type (necessary for fast processing)
- * @param  ...        value to be assigned to the new instance or NULL;
- *                    for integer values: int
- *                    for strings: char *
- *                    for addreses: struct sockaddr *
- *
- * @return status code (see te_errno.h)
- */
+/* See description in conf_api.h */
 te_errno
 cfg_add_instance_str(const char *oid, cfg_handle *handle,
                      cfg_val_type type, ...)
@@ -1243,6 +1109,7 @@ cfg_add_instance_fmt(cfg_handle *p_handle, cfg_val_type type,
     return cfg_add_instance_str(oid, p_handle, type, val);
 }
 
+/* See description in conf_api.h */
 te_errno
 cfg_add_instance_local(const cfg_oid *oid, cfg_handle *handle,
                        cfg_val_type type, ...)
@@ -1266,6 +1133,7 @@ cfg_add_instance_local(const cfg_oid *oid, cfg_handle *handle,
     return TE_RC(TE_CONF_API, ret_val);
 }
 
+/* See description in conf_api.h */
 te_errno
 cfg_add_instance_local_str(const char *oid, cfg_handle *handle,
                            cfg_val_type type, ...)
@@ -1744,23 +1612,7 @@ cfg_commit_fmt(const char *oid_fmt, ...)
     return cfg_commit(oid);
 }
 
-/**
- * Obtain value of the object instance. Memory for strings and
- * addresses is allocated by the routine using malloc().
- *
- * If the object value type is @c CVT_NONE, no value will be
- * placed at the given location; @c CVT_NONE will be written
- * at the given type location to indicate this.
- *
- * @param handle      object instance handle
- * @param type        location for value type, may be NULL
- * @param  ...        OUT: location for the value
- *                    for integer values: int *
- *                    for strings: char **
- *                    for addreses: struct sockaddr **
- *
- * @return status code (see te_errno.h)
- */
+/* See description in conf_api.h */
 te_errno
 cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
 {
@@ -1889,20 +1741,7 @@ cfg_get_instance_str(cfg_val_type *p_type, void *val,
     return cfg_get_instance(handle, p_type, val);
 }
 
-/**
- * Obtain value of the object instance with synchronization with
- * the managed object. Memory for strings and
- * addresses is allocated by the routine using malloc().
- *
- * @param handle      object instance handle
- * @param type        location for value type, may be NULL
- * @param  ...        OUT: location for the value
- *                    for integer values: int *
- *                    for strings: char **
- *                    for addreses: struct sockaddr **
- *
- * @return status code (see te_errno.h)
- */
+/* See description in conf_api.h */
 te_errno
 cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
 {
@@ -2013,15 +1852,7 @@ cfg_get_instance_sync_fmt(cfg_val_type *type, void *val,
     return cfg_get_instance_sync(handle, type, val);
 }
 
-/**
- * Synchronize Configurator database with managed objects.
- *
- * @param oid           object identifier of the object instance or subtree
- * @param subtree       1 if the subtree of the specified node should
- *                      be synchronized
- *
- * @return status code (see te_errno.h)
- */
+/* See description in conf_api.h */
 te_errno
 cfg_synchronize(const char *oid, te_bool subtree)
 {
@@ -2081,16 +1912,7 @@ cfg_synchronize_fmt(te_bool subtree, const char *oid_fmt, ...)
     return cfg_synchronize(oid, subtree);
 }
 
-/**
- * Enumerate all instances of the object (enumeration is stopped if
- * callback returns non-zero).
- *
- * @param handle        object handle
- * @param callback      the function to be called for each object instance
- * @param user_data     opaque user data
- *
- * @return status code (see te_errno.h)
- */
+/* See description in conf_api.h */
 te_errno
 cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
               void *user_data)
@@ -2184,14 +2006,7 @@ cfg_enumerate(cfg_handle handle, cfg_inst_handler callback,
 }
 
 
-/**
- * Reboot the Test Agent.
- *
- * @param ta_name   name of the Test Agent
- * @param restore   if TRUE, restore the current configuration
- *
- * @return status code (see te_errno.h)
- */
+/* See description in conf_api.h */
 te_errno
 cfg_reboot_ta(const char *ta_name, te_bool restore)
 {
@@ -2239,13 +2054,7 @@ cfg_reboot_ta(const char *ta_name, te_bool restore)
 }
 
 
-/**
- * Create a backup.
- *
- * @param name      OUT: location for backup file name
- *
- * @return status code (see te_errno.h)
- */
+/* See description in conf_api.h */
 te_errno
 cfg_create_backup(char **name)
 {
@@ -2349,26 +2158,14 @@ cfg_backup(const char *name, uint8_t op)
     return TE_RC(TE_CONF_API, ret_val);
 }
 
-/**
- * Verify the backup.
- *
- * @param name      name returned by cfg_create_backup
- *
- * @return status code (see te_errno.h)
- */
+/* See description in conf_api.h */
 te_errno
 cfg_verify_backup(const char *name)
 {
     return cfg_backup(name, CFG_BACKUP_VERIFY);
 }
 
-/**
- * Ask Configurator to forget about the backup, if known.
- *
- * @param name      name returned by cfg_create_backup
- *
- * @return status code (see te_errno.h)
- */
+/* See description in conf_api.h */
 te_errno
 cfg_release_backup(char **name)
 {
@@ -2387,26 +2184,14 @@ cfg_release_backup(char **name)
     return rc;
 }
 
-/**
- * Restore the backup.
- *
- * @param name      name returned by cfg_create_backup
- *
- * @return status code (see te_errno.h)
- */
+/* See description in conf_api.h */
 te_errno
 cfg_restore_backup(const char *name)
 {
     return cfg_backup(name, CFG_BACKUP_RESTORE);
 }
 
-/**
- * Restore the backup w/o processing the history
- *
- * @param name      name returned by cfg_create_backup
- *
- * @return status code (see te_errno.h)
- */
+/* See description in conf_api.h */
 te_errno
 cfg_restore_backup_nohistory(const char *name)
 {
@@ -2414,15 +2199,7 @@ cfg_restore_backup_nohistory(const char *name)
 }
 
 
-/**
- * Create a configuration file.
- *
- * @param name      configuration file name
- * @param history   if TRUE "history" configuration file is created;
- *                  otherwise "backup" configuration file is created
- *
- * @return status code (see te_errno.h)
- */
+/* See description in conf_api.h */
 te_errno
 cfg_create_config(const char *name, te_bool history)
 {
@@ -2484,17 +2261,8 @@ cfg_api_cleanup(void)
     }
 }
 
-/**
- * Wait for Configuration changes propagation.
- *
- * Required delays are configured using /conf_delay subtree.
- * Time to sleep is calculated as the maximum of required delays for
- * configuration changes done after the previous wait (regardless how
- * long time ago the changes are done).
- *
- * @return Status code (see te_errno.h)
- */
-te_errno 
+/* See description in conf_api.h */
+te_errno
 cfg_wait_changes(void)
 {
     cfg_msg *msg;
@@ -2531,17 +2299,8 @@ cfg_wait_changes(void)
     return TE_RC(TE_CONF_API, ret_val);
 }
 
-/**
- * Notify the Configurator that instances matching OID template are
- * touched by non-CS means (necesary for subsequent correct 
- * cfg_wait_changes() processing).
- *
- * @param oid_tmpl      instance identifier format string (may contain
- *                      '*' symbols)
- *
- * @return Status code (see te_errno.h)
- */
-te_errno 
+/* See description in conf_api.h */
+te_errno
 cfg_touch_instance(const char *oid_tmpl, ...)
 {
     cfg_conf_touch_msg *msg;
@@ -2585,17 +2344,7 @@ cfg_touch_instance(const char *oid_tmpl, ...)
 }
 
 
-/**
- * Starting from a given prefix, print a tree of objects or instances
- * into a file and(or) log.
- *
- * @param filename          output filename (NULL to skip)
- * @param log_lvl           TE log level (0 to skip)
- * @param id_fmt            a format string for the id of the root
- *                          from which we print.
- *
- * @return                  Status code.
- */
+/* See description in conf_api.h */
 te_errno
 cfg_tree_print(const char *filename,
                const unsigned int log_lvl,
@@ -2664,14 +2413,7 @@ cfg_tree_print(const char *filename,
 }
 
 
-/**
- * Request Configurator to remove an object with a given id from
- * the data base of objects.
- *
- * @param id_fmt            a format string for the object id.
- *
- * @return                  Status code.
- */
+/* See description in conf_api.h */
 te_errno
 cfg_unregister_object_str(const char *id_fmt, ...)
 {

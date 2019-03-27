@@ -49,15 +49,7 @@
 #include "conf_oid.h"
 
 
-/**
- * Allocate memory for object identifier or object instance identifier.
- *
- * @param length        number of identifier elements
- * @param inst          if TRUE - object instance identifier should be
- *                      allocated
- *
- * @return newly allocated structure pointer or NULL
- */
+/* See description in conf_oid.h */
 cfg_oid *
 cfg_allocate_oid(int length, te_bool inst)
 {
@@ -85,15 +77,7 @@ cfg_allocate_oid(int length, te_bool inst)
     return oid;
 }
 
-/**
- * Convert object identifier or object instance identifier in
- * string representation to cfg_oid structure. We hope that OID string
- * representation and we do not check overflow and etc.
- *
- * @param str OID in string representation.
- *
- * @return newly allocated structure pointer or NULL
- */
+/* See description in conf_oid.h */
 cfg_oid *
 cfg_convert_oid_str(const char *str)
 {
@@ -182,15 +166,7 @@ cfg_convert_oid_str(const char *str)
     return oid;
 }
 
-/**
- * Convert object identifier or object instance identifier in
- * structure representation to string (memory is allocated by the
- * routine using malloc()).
- *
- *  @param oid   OID in structure representation
- *
- * @return newly allocated string or NULL
- */
+/* See description in conf_oid.h */
 char *
 cfg_convert_oid(const cfg_oid *oid)
 {
@@ -238,11 +214,7 @@ cfg_convert_oid(const cfg_oid *oid)
     return str;
 }
 
-/**
- * Free memory allocated for OID stucture.
- *
- * @param oid   oid structure
- */
+/* See description in conf_oid.h */
 void
 cfg_free_oid(cfg_oid *oid)
 {
