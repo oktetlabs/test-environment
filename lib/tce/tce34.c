@@ -266,7 +266,10 @@ gcov_rewrite (void)
 static inline void
 gcov_truncate (void)
 {
-  ftruncate (fileno (gcov_var.file), 0L);
+    int rc __attribute__((unused));
+
+    /* we ignore rc to keep old behaviour and get rid of the warning */
+    rc = ftruncate (fileno (gcov_var.file), 0L);
 }
 
 static void gcov_write_block (unsigned);
