@@ -2172,7 +2172,7 @@ send_cmd(ta *agent, usrreq *req)
             if (msg->intparm == RCF_STRING)
                 write_str(msg->value, RCF_MAX_VAL);
             else
-                PUT(msg->value);
+                PUT("%s", msg->value);
             req->timeout = RCF_CMD_TIMEOUT;
             break;
 
