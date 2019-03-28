@@ -426,7 +426,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         VERB("FATAL ERROR: TE_INSTALL is not exported");
         return TE_ENOENT;
     }
-    sprintf(path, "%s/agents/%s/", installdir, ta_type);
+    snprintf(path, sizeof(path), "%s/agents/%s/", installdir, ta_type);
 
     if ((ta = *(unix_ta **)(handle)) == NULL &&
         (ta = (unix_ta *)calloc(1, sizeof(unix_ta))) == NULL)
@@ -448,8 +448,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     ta->flags = flags;
     tmp = getenv("LOGNAME");
-    sprintf(ta->postfix, "_%s_%u_%u",
-            (tmp == NULL) ? "" : tmp, (unsigned int)time(NULL), seqno++);
+    snprintf(ta->postfix, sizeof(ta->postfix), "_%s_%u_%u",
+             (tmp == NULL) ? "" : tmp, (unsigned int)time(NULL), seqno++);
 
     VERB("Unique postfix '%s'", ta->postfix);
 
@@ -466,7 +466,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     {
         ta->is_local = TRUE;
         *flags |= TA_LOCAL;
-        sprintf(ta->host, "127.0.0.1");
+        snprintf(ta->host, sizeof(ta->host), "127.0.0.1");
     }
     else
     {
@@ -488,7 +488,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         char *user = token + strlen("user=");
 
         if (strlen(user) > 0)
-            sprintf(ta->user, "%s@", user);
+            snprintf(ta->user, sizeof(ta->user), "%s@", user);
 
         GET_TOKEN;
     }
@@ -497,7 +497,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         char *key = token + strlen("key=");
 
         if (strlen(key) > 0)
-            sprintf(ta->key, "-i %s %s", key,
+            snprintf(ta->key, sizeof(ta->key), "-i %s %s", key,
                     " -o UserKnownHostsFile=/dev/null "
                     "-o StrictHostKeyChecking=no");
 
@@ -587,7 +587,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     if (ta->is_local)
     {
-        sprintf(ta->cmd_prefix, "(");
+        snprintf(ta->cmd_prefix, sizeof(ta->cmd_prefix), "(");
         ta->cmd_suffix = ")";
     }
     else
@@ -597,10 +597,11 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         if (ta->ssh_port != 0)
             snprintf(ssh_port_str, sizeof(ssh_port_str), "%u", ta->ssh_port);
 
-        sprintf(ta->cmd_prefix, RCFUNIX_SSH "%s %s %s %s %s%s \"",
-                *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "", ta->key,
-                ta->ssh_port != 0 ? "-p" : "", ssh_port_str,
-                ta->user, ta->host);
+        snprintf(ta->cmd_prefix, sizeof(ta->cmd_prefix),
+                 RCFUNIX_SSH "%s %s %s %s %s%s \"",
+                 *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "", ta->key,
+                 ta->ssh_port != 0 ? "-p" : "", ssh_port_str,
+                 ta->user, ta->host);
         ta->cmd_suffix = "\"";
     }
 
@@ -791,7 +792,8 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
 {
     unix_ta    *ta = (unix_ta *)handle;
     te_errno    rc;
-    char        cmd[RCFUNIX_SHELL_CMD_MAX];
+    char        cmd[3 * RCFUNIX_SHELL_CMD_MAX];
+    size_t      out_len;
 
     (void)parms;
 
@@ -815,39 +817,47 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
         }
         else
         {
-            sprintf(cmd, "%s%skill %d%s " RCFUNIX_REDIRECT,
-                    ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->pid,
-                    ta->cmd_suffix);
+            snprintf(cmd, sizeof(cmd),
+                     "%s%skill %d%s " RCFUNIX_REDIRECT,
+                     ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->pid,
+                     ta->cmd_suffix);
             rc = system_with_timeout(cmd, ta->kill_timeout);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
 
-            sprintf(cmd, "%s%skill -9 %d%s " RCFUNIX_REDIRECT,
-                    ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->pid,
-                    ta->cmd_suffix);
+            snprintf(cmd, sizeof(cmd),
+                     "%s%skill -9 %d%s " RCFUNIX_REDIRECT,
+                     ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->pid,
+                     ta->cmd_suffix);
             rc = system_with_timeout(cmd, ta->kill_timeout);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
         }
 
-        sprintf(cmd,
-                "%s%skillall /tmp/%s%s/ta%s " RCFUNIX_REDIRECT,
-                ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->ta_type,
-                ta->postfix, ta->cmd_suffix);
+        snprintf(cmd, sizeof(cmd),
+                 "%s%skillall /tmp/%s%s/ta%s " RCFUNIX_REDIRECT,
+                 ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->ta_type,
+                 ta->postfix, ta->cmd_suffix);
         rc = system_with_timeout(cmd, ta->kill_timeout);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
 
-        sprintf(cmd, "%s%skillall -9 /tmp/%s%s/ta%s " RCFUNIX_REDIRECT,
-                ta->cmd_prefix, rcfunix_ta_sudo(ta),
-                ta->ta_type, ta->postfix, ta->cmd_suffix);
+        snprintf(cmd, sizeof(cmd),
+                 "%s%skillall -9 /tmp/%s%s/ta%s " RCFUNIX_REDIRECT,
+                 ta->cmd_prefix, rcfunix_ta_sudo(ta),
+                 ta->ta_type, ta->postfix, ta->cmd_suffix);
         rc = system_with_timeout(cmd, ta->kill_timeout);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
     }
 
-    sprintf(cmd, "%srm -rf /tmp/%s%s%s",
-            ta->cmd_prefix, ta->ta_type, ta->postfix, ta->cmd_suffix);
+    out_len = snprintf(cmd, sizeof(cmd), "%srm -rf /tmp/%s%s%s",
+                       ta->cmd_prefix, ta->ta_type, ta->postfix,
+                       ta->cmd_suffix);
+    /* we want to be careful with what we remove */
+    if (out_len < strlen("rm -rf /tmp/"))
+        return TE_RC(TE_RCF_UNIX, TE_ENOMEM);
+
     RING("CMD to remove: %s", cmd);
     rc = system_with_timeout(cmd, ta->kill_timeout);
     if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
