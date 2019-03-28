@@ -133,6 +133,8 @@ main (int argc, char *argv[])
     
     for (;;)
     {
+        int rc;
+
         poller.fd = STDIN_FILENO;
         poller.revents = 0;
         poller.events = POLLIN;
@@ -144,14 +146,26 @@ main (int argc, char *argv[])
             len = read(poller.fd, current, fence - current);
             if (len <= 0)
             {
-                int rc = errno;
-                
                 MAYBE_DO_LOG;
                 if (len < 0)
-                    ERROR("Error reading from stdin: %d", rc);
+                    ERROR("Error reading from stdin: %s", strerror(errno));
                 break;
             }
-            write(STDOUT_FILENO, current, len);
+
+            /*
+             * if the output tells us that it can't take that much data - ok,
+             * it can happen, what else can we realistically do?
+             *
+             * if we actually see an error - something is wrong and we should
+             * try to stop doing whatever we're doing.
+             */
+            rc = write(STDOUT_FILENO, current, len);
+            if (rc < 0)
+            {
+                ERROR("Failed to write date stdout: %s", strerror(errno));
+                break;
+            }
+
             current += len;
             if (current == fence)
             {
