@@ -924,7 +924,7 @@ rpc_sigaction(rcf_rpc_server *rpcs, rpc_signum signum,
     {
         struct tarpc_sigaction *out_oldact = out.oldact.oldact_val;
 
-        TE_SPRINTF(oldact->mm_handler, out_oldact->handler);
+        TE_SPRINTF(oldact->mm_handler, "%s", out_oldact->handler);
         oldact->mm_restorer = out_oldact->restorer;
         oldact->mm_mask = (rpc_sigset_p)out_oldact->mask;
         oldact->mm_flags = out_oldact->flags;
