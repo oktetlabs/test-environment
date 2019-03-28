@@ -738,7 +738,9 @@ dhcpserver_init(void)
                                                                             \
         if ((p = getpwnam("dhcpd")) != NULL)                                \
         {                                                                   \
-            (void)chown(_leases_filename, p->pw_uid, p->pw_gid);            \
+            int sysrc __attribute__((unused));                              \
+                                                                            \
+            sysrc = chown(_leases_filename, p->pw_uid, p->pw_gid);          \
         }                                                                   \
     } while (0)
     OPEN_LEASES_FILE(dhcp_server_leases);
