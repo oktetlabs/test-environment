@@ -272,6 +272,7 @@ trunk_list(aggregation *aggr, char **member_list)
 {
     FILE *f;
     char *c;
+    int   sysrc;
 
     if (snprintf(buf, sizeof(buf), "/sys/class/net/%s/bonding/slaves",
                  aggr->ifname) <= 0)
@@ -286,7 +287,13 @@ trunk_list(aggregation *aggr, char **member_list)
     }
 
     memset(buf, 0, sizeof(buf));
-    fread(buf, sizeof(buf), 1, f);
+    sysrc = fread(buf, 1, sizeof(buf), f);
+    if (sysrc < 0)
+    {
+        ERROR("Failed to read data from file \"%s\"", buf);
+        fclose(f);
+        return TE_RC(TE_TA_UNIX, errno);
+    }
     fclose(f);
 
     if ((c = strchr(buf, '\n')) != NULL)
@@ -389,6 +396,7 @@ team_list(aggregation *aggr, char **member_list)
     FILE       *f = NULL;
     te_errno    rc = 0;
     int         status;
+    int         sysrc;
 
     TE_SPRINTF(buf,
                "/usr/bin/teamnl %s ports | sed s/[0-9]*:\\ *// "
@@ -410,7 +418,13 @@ team_list(aggregation *aggr, char **member_list)
     }
 
     memset(buf, 0, sizeof(buf));
-    fread(buf, sizeof(buf), 1, f);
+    sysrc = fread(buf, 1, sizeof(buf), f);
+    if (sysrc < 0)
+    {
+        ERROR("Failed to read data from the file with command output");
+        rc = TE_OS_RC(TE_TA_UNIX, te_rc_os2te(errno));
+        goto cleanup;
+    }
 
     if ((*member_list = te_str_strip_spaces(buf)) == NULL)
         rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
