@@ -86,7 +86,9 @@ tester_interactive_open_prompt(const tester_cfgs *cfgs,
         }
         else if(user_choice[0] == '!')
         {
-            system(user_choice + 1);
+            rc = system(user_choice + 1);
+            if (rc != 0)
+                INFO("Execution failed");
             continue;
         }
         else if(strcmp(argv[0], "run") == 0)
