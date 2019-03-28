@@ -611,6 +611,7 @@ ndn_match_data_units(const asn_value *pattern, asn_value *pkt_pdu,
     {
         case SYNTAX_UNDEFINED:
             ERROR("error getting syntax\n");
+            break;
         case INTEGER:
         case UINTEGER:
         case ENUMERATED:
