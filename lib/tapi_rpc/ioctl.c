@@ -949,7 +949,7 @@ rpc_ioctl(rcf_rpc_server *rpcs,
                 case RPC_SIOCGARP:
                 case RPC_SIOCSARP:
                 {
-                    static char flags[32];
+                    char flags[32];
                     int arp_flags = ((struct arpreq *)arg)->arp_flags;
 
                     snprintf(arpreq_buf + strlen(arpreq_buf),
