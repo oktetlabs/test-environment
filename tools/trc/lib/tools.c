@@ -54,7 +54,7 @@ trc_tools_filter_db(te_trc_db *db,
         {
             case TRC_DB_WALKER_SON:
                 is_iter = !is_iter;
-                /*@fallthrou@*/
+                /*@fallthrough@*/
 
             case TRC_DB_WALKER_BROTHER:
                 if (is_iter)
@@ -146,7 +146,7 @@ trc_tools_cut_db(te_trc_db *db, unsigned int db_uid,
         {
             case TRC_DB_WALKER_SON:
                 is_iter = !is_iter;
-                /*@fallthrou@*/
+                /*@fallthrough@*/
 
             case TRC_DB_WALKER_BROTHER:
                 if (is_iter)
@@ -230,7 +230,7 @@ trc_tools_merge_db(te_trc_db *db, int dst_uid, int src_uid1, int src_uid2)
         {
             case TRC_DB_WALKER_SON:
                 is_iter = !is_iter;
-                /*@fallthrou@*/
+                /*@fallthrough@*/
 
             case TRC_DB_WALKER_BROTHER:
                 /*

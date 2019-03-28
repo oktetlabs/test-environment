@@ -125,7 +125,7 @@ trc_report_collect_stats(trc_report_ctx *ctx)
             case TRC_DB_WALKER_SON:
                 is_iter = !is_iter;
                 sum = add;
-                /*@fallthrou@*/
+                /*@fallthrough@*/
 
             case TRC_DB_WALKER_BROTHER:
                 if (is_iter)
