@@ -46,7 +46,7 @@ typedef LIST_HEAD(, trc_user_data)  trc_users_data;
 
 
 /** List of expected results */
-typedef SLIST_HEAD(trc_exp_results, trc_exp_result) trc_exp_results;
+typedef STAILQ_HEAD(trc_exp_results, trc_exp_result) trc_exp_results;
 
 /** Item of queue of included files */
 typedef struct trc_file {

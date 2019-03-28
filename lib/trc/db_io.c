@@ -213,9 +213,9 @@ exp_defaults_free(void)
     {
         trc_exp_result *p;
 
-        while ((p = SLIST_FIRST(&exp_defaults)) != NULL)
+        while ((p = STAILQ_FIRST(&exp_defaults)) != NULL)
         {
-            SLIST_REMOVE(&exp_defaults, p, trc_exp_result, links);
+            STAILQ_REMOVE(&exp_defaults, p, trc_exp_result, links);
             assert(TAILQ_FIRST(&p->results) != NULL);
             assert(TAILQ_NEXT(TAILQ_FIRST(&p->results), links) == NULL);
             assert(TAILQ_FIRST(
@@ -237,7 +237,7 @@ exp_defaults_init(void)
 {
     if (!exp_defaults_inited)
     {
-        SLIST_INIT(&exp_defaults);
+        STAILQ_INIT(&exp_defaults);
         atexit(exp_defaults_free);
         exp_defaults_inited = TRUE;
     }
@@ -252,7 +252,7 @@ exp_defaults_get(te_test_status status)
 
     exp_defaults_init();
 
-    SLIST_FOREACH(p, &exp_defaults, links)
+    STAILQ_FOREACH(p, &exp_defaults, links)
     {
         assert(TAILQ_FIRST(&p->results) != NULL);
         assert(TAILQ_NEXT(TAILQ_FIRST(&p->results), links) == NULL);
@@ -277,7 +277,7 @@ exp_defaults_get(te_test_status status)
     entry->result.status = status;
     TAILQ_INSERT_HEAD(&p->results, entry, links);
     
-    SLIST_INSERT_HEAD(&exp_defaults, p, links);
+    STAILQ_INSERT_TAIL(&exp_defaults, p, links);
 
     return p;
 }
@@ -705,7 +705,7 @@ get_expected_results(xmlNodePtr *node, trc_exp_results *results)
         if (result == NULL)
             return TE_ENOMEM;
         TAILQ_INIT(&result->results);
-        SLIST_INSERT_HEAD(results, result, links);
+        STAILQ_INSERT_TAIL(results, result, links);
         get_expected_result(*node, result, FALSE);
         *node = xmlNodeNext(*node); 
     }
@@ -1607,24 +1607,13 @@ trc_exp_results_to_xml(trc_exp_results *exp_results, xmlNodePtr node,
     xmlNodePtr               results_node;
     xmlNodePtr               prev_node;
     trc_exp_result          *result;
-    trc_exp_result          *tvar;
-
-    trc_exp_results          results_rev;
 
     if (exp_results == NULL)
         return 0;
-   
-    SLIST_INIT(&results_rev);
-    SLIST_FOREACH_SAFE(result, exp_results, links,
-                       tvar)
-    {
-        SLIST_REMOVE_HEAD(exp_results, links);
-        SLIST_INSERT_HEAD(&results_rev, result, links);
-    }
 
     prev_node = node;
 
-    SLIST_FOREACH_SAFE(result, &results_rev, links, tvar)
+    STAILQ_FOREACH(result, exp_results, links)
     {
         results_node = xmlNewNode(NULL, BAD_CAST "results");
 
@@ -1637,9 +1626,6 @@ trc_exp_results_to_xml(trc_exp_results *exp_results, xmlNodePtr node,
             xmlAddChild(node, results_node);
         
         trc_exp_result_to_xml(result, results_node, FALSE);
-
-        SLIST_REMOVE_HEAD(&results_rev, links);
-        SLIST_INSERT_HEAD(exp_results, result, links);
     }
 
     return 0;
@@ -1808,7 +1794,7 @@ trc_update_iters(trc_test_iters *iters, int flags, int uid,
                 prev_node = node;
 
                 if ((flags & TRC_SAVE_RESULTS) &&
-                    !SLIST_EMPTY(&p->exp_results))
+                    !STAILQ_EMPTY(&p->exp_results))
                     trc_exp_results_to_xml(&p->exp_results,
                                            prev_node,
                                            TRUE);

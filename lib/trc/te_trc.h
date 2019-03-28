@@ -83,7 +83,7 @@ typedef TAILQ_HEAD(trc_exp_result_entry_head, trc_exp_result_entry)
  * Expected test result.
  */
 typedef struct trc_exp_result {
-    SLIST_ENTRY(trc_exp_result) links;  /**< List links */
+    STAILQ_ENTRY(trc_exp_result) links; /**< List links */
 
     char        *tags_str;   /**< String representation of tags logical
                                  expression */

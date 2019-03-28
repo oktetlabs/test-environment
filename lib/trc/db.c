@@ -177,25 +177,18 @@ trc_exp_results_dup(trc_exp_results *results)
 {
     trc_exp_result  *result = NULL;
     trc_exp_result  *dup_result = NULL;
-    trc_exp_result  *prev = NULL;
     trc_exp_results *dup = NULL;
 
     if (results == NULL)
         return NULL;
 
     dup = TE_ALLOC(sizeof(*dup));
-    SLIST_INIT(dup);
+    STAILQ_INIT(dup);
 
-    SLIST_FOREACH(result, results, links)
+    STAILQ_FOREACH(result, results, links)
     {
         dup_result = trc_exp_result_dup(result);
-
-        if (prev == NULL)
-            SLIST_INSERT_HEAD(dup, dup_result, links);
-        else
-            SLIST_INSERT_AFTER(prev, dup_result, links);
-
-        prev = dup_result;
+        STAILQ_INSERT_TAIL(dup, dup_result, links);
     }
 
     return dup;
@@ -210,9 +203,9 @@ trc_exp_results_free(trc_exp_results *results)
     if (results == NULL)
         return;
 
-    while ((p = SLIST_FIRST(results)) != NULL)
+    while ((p = STAILQ_FIRST(results)) != NULL)
     {
-        SLIST_REMOVE(results, p, trc_exp_result, links);
+        STAILQ_REMOVE(results, p, trc_exp_result, links);
         trc_exp_result_free(p);
         free(p);
     }
@@ -512,7 +505,7 @@ trc_db_new_test_iter(trc_test *test, unsigned int n_args,
     if (p != NULL)
     {
         TAILQ_INIT(&p->args.head);
-        SLIST_INIT(&p->exp_results);
+        STAILQ_INIT(&p->exp_results);
         TAILQ_INIT(&p->tests.head);
         LIST_INIT(&p->users);
         p->parent = test;
@@ -535,20 +528,14 @@ trc_exp_results_cpy(trc_exp_results *dest, trc_exp_results *src)
 {
     trc_exp_result  *exp_r;
     trc_exp_result  *exp_r_dup;
-    trc_exp_result  *exp_r_prev = NULL;
 
     if (dest == NULL || src == NULL)
         return;
 
-    SLIST_FOREACH(exp_r, src, links)
+    STAILQ_FOREACH(exp_r, src, links)
     {
         exp_r_dup = trc_exp_result_dup(exp_r);
-        if (exp_r_prev == NULL)
-            SLIST_INSERT_HEAD(dest, exp_r_dup, links);
-        else
-            SLIST_INSERT_AFTER(exp_r_prev, exp_r_dup, links);
-
-        exp_r_prev = exp_r_dup;
+        STAILQ_INSERT_TAIL(dest, exp_r_dup, links);
     }
 }
 
@@ -584,7 +571,7 @@ trc_db_test_iter_res_split(trc_test_iter *itr)
     int               i;
     int               rc;
 
-    SLIST_FOREACH(exp_r, &itr->exp_results, links)
+    STAILQ_FOREACH(exp_r, &itr->exp_results, links)
         last_r = exp_r;
 
     if (last_r == NULL)
@@ -592,7 +579,7 @@ trc_db_test_iter_res_split(trc_test_iter *itr)
 
     exp_r_prev = last_r;
 
-    SLIST_FOREACH_SAFE(exp_r, &itr->exp_results, links, tvar)
+    STAILQ_FOREACH_SAFE(exp_r, &itr->exp_results, links, tvar)
     {
         logic_expr_dnf(&exp_r->tags_expr, NULL);
         rc =  logic_expr_dnf_split(exp_r->tags_expr, &le_arr,
@@ -612,14 +599,14 @@ trc_db_test_iter_res_split(trc_test_iter *itr)
             split_r->tags_expr = le_arr[i];
             split_r->tags_str = logic_expr_to_str(split_r->tags_expr);
 
-            SLIST_INSERT_AFTER(exp_r_prev, split_r, links);
+            STAILQ_INSERT_AFTER(&itr->exp_results, exp_r_prev, split_r, links);
 
             exp_r_prev = split_r;
         }
 
         free(le_arr);
 
-        SLIST_REMOVE_HEAD(&itr->exp_results, links);
+        STAILQ_REMOVE_HEAD(&itr->exp_results, links);
         trc_exp_result_free(exp_r);
         if (exp_r == last_r)
             break;
@@ -972,7 +959,7 @@ trc_db_iter_get_exp_result(const trc_test_iter    *iter,
 
     /* Do we have a tag with expected SKIPPED result? */
     result = NULL;
-    SLIST_FOREACH(p, &iter->exp_results, links)
+    STAILQ_FOREACH(p, &iter->exp_results, links)
     {
         VERB("%s: matching start", __FUNCTION__);
         res = logic_expr_match(p->tags_expr, tags);

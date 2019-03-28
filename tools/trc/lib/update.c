@@ -87,8 +87,8 @@ void
 trc_update_init_test_iter_data(trc_update_test_iter_data *data)
 {
     memset(data, 0, sizeof(*data));
-    SLIST_INIT(&data->new_results);
-    SLIST_INIT(&data->df_results);
+    STAILQ_INIT(&data->new_results);
+    STAILQ_INIT(&data->df_results);
     SLIST_INIT(&data->all_wilds);
     data->rule = NULL;
     data->args = NULL;
@@ -109,15 +109,15 @@ trc_update_free_test_iter_data(trc_update_test_iter_data *data)
     if (data == NULL)
         return;
 
-    SLIST_FOREACH_SAFE(q, &data->new_results, links, q_tvar)
+    STAILQ_FOREACH_SAFE(q, &data->new_results, links, q_tvar)
     {
-        SLIST_REMOVE_HEAD(&data->new_results, links);
+        STAILQ_REMOVE_HEAD(&data->new_results, links);
         trc_exp_result_free(q);
     }
 
-    SLIST_FOREACH_SAFE(q, &data->df_results, links, q_tvar)
+    STAILQ_FOREACH_SAFE(q, &data->df_results, links, q_tvar)
     {
-        SLIST_REMOVE_HEAD(&data->df_results, links);
+        STAILQ_REMOVE_HEAD(&data->df_results, links);
         trc_exp_result_free(q);
     }
 
@@ -616,8 +616,8 @@ trc_update_results_cmp(trc_exp_results *p, trc_exp_results *q)
     int                  rc;
     trc_exp_result      *p_r;
     trc_exp_result      *q_r;
-    te_bool              p_is_void = (p == NULL || SLIST_EMPTY(p));
-    te_bool              q_is_void = (q == NULL || SLIST_EMPTY(q));
+    te_bool              p_is_void = (p == NULL || STAILQ_EMPTY(p));
+    te_bool              q_is_void = (q == NULL || STAILQ_EMPTY(q));
 
     if (p_is_void && q_is_void)
         return 0;
@@ -626,8 +626,8 @@ trc_update_results_cmp(trc_exp_results *p, trc_exp_results *q)
     else if (p_is_void && !q_is_void)
         return -1;
 
-    p_r = SLIST_FIRST(p);
-    q_r = SLIST_FIRST(q);
+    p_r = STAILQ_FIRST(p);
+    q_r = STAILQ_FIRST(q);
 
     while (p_r != NULL && q_r != NULL)
     {
@@ -635,8 +635,8 @@ trc_update_results_cmp(trc_exp_results *p, trc_exp_results *q)
         if (rc != 0)
             return rc;
 
-        p_r = SLIST_NEXT(p_r, links);
-        q_r = SLIST_NEXT(q_r, links);
+        p_r = STAILQ_NEXT(p_r, links);
+        q_r = STAILQ_NEXT(q_r, links);
     }
 
     if (p_r == NULL && q_r == NULL)
@@ -1200,7 +1200,7 @@ is_skip_only(trc_exp_results *results)
     trc_exp_result              *result;
     trc_exp_result_entry        *rentry;
 
-    SLIST_FOREACH(result, results, links)
+    STAILQ_FOREACH(result, results, links)
     {
         TAILQ_FOREACH(rentry, &result->results, links)
             if (rentry->result.status != TE_TEST_SKIPPED)
@@ -1229,7 +1229,7 @@ is_exp_only(trc_exp_results *results)
     trc_exp_result              *result;
     trc_exp_result_entry        *rentry;
 
-    SLIST_FOREACH(result, results, links)
+    STAILQ_FOREACH(result, results, links)
     {
         TAILQ_FOREACH(rentry, &result->results, links)
             if (!rentry->is_expected)
@@ -1290,7 +1290,7 @@ trc_exp_results_remove_expected(trc_exp_results *results)
     trc_exp_result_entry *entry;
     trc_exp_result_entry *entry_aux;
 
-    SLIST_FOREACH_SAFE(result, results, links, result_aux)
+    STAILQ_FOREACH_SAFE(result, results, links, result_aux)
     {
         TAILQ_FOREACH_SAFE(entry, &result->results, links, entry_aux)
         {
@@ -1298,7 +1298,7 @@ trc_exp_results_remove_expected(trc_exp_results *results)
                 TAILQ_REMOVE(&result->results, entry, links);
         }
         if (TAILQ_EMPTY(&result->results)) /* Not efficient!!! */
-            SLIST_REMOVE(results, result, trc_exp_result, links);
+            STAILQ_REMOVE(results, result, trc_exp_result, links);
     }
 }
 
@@ -1327,7 +1327,6 @@ trc_update_iters_cond_res_op(trc_update_ctx *ctx,
     trc_test_iter               *iter;
     int                          rc;
     trc_exp_result              *q;
-    trc_exp_result              *prev;
     trc_exp_result              *q_tvar;
     te_bool                      my_all_empty = TRUE;
     te_bool                      all_empty_aux = TRUE;
@@ -1367,21 +1366,13 @@ trc_update_iters_cond_res_op(trc_update_ctx *ctx,
                         case RESULT_OP_DF_REPLACE:
                             trc_exp_results_free(&user_data->new_results);
 
-                            prev = NULL;
-                            SLIST_FOREACH_SAFE(q, &user_data->df_results,
-                                               links, q_tvar)
+                            STAILQ_FOREACH_SAFE(q, &user_data->df_results,
+                                                links, q_tvar)
                             {
-                                SLIST_REMOVE_HEAD(&user_data->df_results,
-                                                  links);
-
-                                if (prev != NULL)
-                                    SLIST_INSERT_AFTER(prev, q, links);
-                                else
-                                    SLIST_INSERT_HEAD(
-                                                &user_data->new_results,
-                                                q, links);
-
-                                prev = q;
+                                STAILQ_REMOVE_HEAD(&user_data->df_results,
+                                                   links);
+                                STAILQ_INSERT_TAIL(&user_data->new_results,
+                                                   q, links);
                             }
 
                             break;
@@ -1391,12 +1382,12 @@ trc_update_iters_cond_res_op(trc_update_ctx *ctx,
                     }
                 }
 
-                if (!SLIST_EMPTY(&user_data->new_results) ||
-                    (!SLIST_EMPTY(&iter->exp_results) &&
+                if (!STAILQ_EMPTY(&user_data->new_results) ||
+                    (!STAILQ_EMPTY(&iter->exp_results) &&
                      op == RESULT_OP_EXCL_EXP_EMPTY))
                     my_all_empty = FALSE;
 
-                if (SLIST_EMPTY(&iter->exp_results) &&
+                if (STAILQ_EMPTY(&iter->exp_results) &&
                     op == RESULT_OP_EXCL_EXP_EMPTY)
                     user_data->to_save = FALSE;
             }
@@ -1595,7 +1586,7 @@ trc_update_rule_to_xml(trc_update_rule *rule, xmlNodePtr node)
             trc_exp_results_to_xml(rule->confl_res, confl_res, FALSE);
     }
 
-    if ((rule->new_res != NULL && !SLIST_EMPTY(rule->new_res) &&
+    if ((rule->new_res != NULL && !STAILQ_EMPTY(rule->new_res) &&
          (rule->type == TRC_UPDATE_RULE_RESULTS ||
           rule->type == TRC_UPDATE_RULE_RESULT)) ||
         (rule->new_re != NULL && rule->type == TRC_UPDATE_RULE_ENTRY) ||
@@ -1798,9 +1789,9 @@ trc_update_find_result(trc_exp_result *find_result,
     *entry_found = FALSE;
     *result = NULL;
 
-    if (!SLIST_EMPTY(results))
+    if (!STAILQ_EMPTY(results))
     {
-        SLIST_FOREACH(p, results, links)
+        STAILQ_FOREACH(p, results, links)
         {
             tags_fit = 
                 (p->tags_str == NULL && find_result->tags_str == NULL) ||
@@ -2034,10 +2025,9 @@ trc_update_iter_data_merge_result(trc_update_ctx *ctx,
     if (!result_found)
     {
         if (res != NULL)
-            SLIST_INSERT_AFTER(res, merge_result, links);
+            STAILQ_INSERT_AFTER(results_list, res, merge_result, links);
         else
-            SLIST_INSERT_HEAD(results_list,
-                              merge_result, links);
+            STAILQ_INSERT_TAIL(results_list, merge_result, links);
     }
     else if (result_found && !entry_found)
     {
@@ -2167,7 +2157,7 @@ simplify_log_exprs(trc_exp_results *results,
 
     n_args = 0;
 
-    SLIST_FOREACH(p, results, links)
+    STAILQ_FOREACH(p, results, links)
     {
         expr_p = logic_expr_dup(p->tags_expr);
         logic_expr_dnf(&expr_p, NULL);
@@ -2224,7 +2214,7 @@ simplify_log_exprs(trc_exp_results *results,
     /*
      * Generate fake test iterations.
      */
-    SLIST_FOREACH(p, results, links)
+    STAILQ_FOREACH(p, results, links)
     {
         expr_p = logic_expr_dup(p->tags_expr);
         logic_expr_dnf(&expr_p, NULL);
@@ -2282,7 +2272,7 @@ simplify_log_exprs(trc_exp_results *results,
                 {
                     entry_p = TAILQ_FIRST(&p->results);
                     TAILQ_FOREACH(entry_q,
-                                  &SLIST_FIRST(
+                                  &STAILQ_FIRST(
                                         &iter->exp_results)->results,
                                   links)
                         if (trc_update_rentry_cmp(entry_q, entry_p) == 0)
@@ -2292,7 +2282,7 @@ simplify_log_exprs(trc_exp_results *results,
                     {
                         entry_q = trc_exp_result_entry_dup(entry_p);
                         TAILQ_INSERT_TAIL(
-                                &SLIST_FIRST(
+                                &STAILQ_FIRST(
                                     &iter->exp_results)->results,
                                 entry_q,
                                 links);
@@ -2306,7 +2296,7 @@ simplify_log_exprs(trc_exp_results *results,
                 iter = TE_ALLOC(sizeof(*iter));
                 TAILQ_INIT(&iter->args.head);
                 LIST_INIT(&iter->users);
-                SLIST_INIT(&iter->exp_results);
+                STAILQ_INIT(&iter->exp_results);
                 iter_data = TE_ALLOC(sizeof(*iter_data));
                 trc_update_init_test_iter_data(iter_data);
                 iter_data->args =
@@ -2332,7 +2322,7 @@ simplify_log_exprs(trc_exp_results *results,
                 q = trc_exp_result_dup(p);
                 q->tags_str = strdup("unspecified");
                 logic_expr_parse(q->tags_str, &q->tags_expr);
-                SLIST_INSERT_HEAD(&iter->exp_results, q, links);
+                STAILQ_INSERT_TAIL(&iter->exp_results, q, links);
 
                 trc_db_set_user_data(iter, TRUE, 0, iter_data);
                 TAILQ_INSERT_TAIL(&test->iters.head, iter, links);
@@ -2370,7 +2360,7 @@ simplify_log_exprs(trc_exp_results *results,
          * In case of this fake test there is only one
          * expected result in fake iteration.
          */
-        p = SLIST_FIRST(&iter->exp_results);
+        p = STAILQ_FIRST(&iter->exp_results);
 
         memset(&te_str, 0, sizeof(te_str));
         te_str.ptr = NULL;
@@ -2385,7 +2375,7 @@ simplify_log_exprs(trc_exp_results *results,
             if (r != NULL)
             {
                 logic_expr_parse(r->tags_str, &r->tags_expr);
-                SLIST_INSERT_HEAD(results, r, links);
+                STAILQ_INSERT_TAIL(results, r, links);
             }
 
             r = trc_exp_result_dup(p);
@@ -2424,7 +2414,7 @@ simplify_log_exprs(trc_exp_results *results,
         if (TAILQ_NEXT(iter, links) == NULL)
         {
             logic_expr_parse(r->tags_str, &r->tags_expr);
-            SLIST_INSERT_HEAD(results, r, links);
+            STAILQ_INSERT_TAIL(results, r, links);
         }
 
         q = p;
@@ -2534,10 +2524,10 @@ trc_update_simplify_results(unsigned int db_uid,
                 if (flags & TRC_UPDATE_SIMPL_TAGS)
                     simplify_log_exprs(new_results, flags);
 
-                SLIST_FOREACH(p, new_results, links)
+                STAILQ_FOREACH(p, new_results, links)
                 {
-                    for (q = SLIST_NEXT(p, links);
-                         q != NULL && (tvar = SLIST_NEXT(q, links), 1);
+                    for (q = STAILQ_NEXT(p, links);
+                         q != NULL && (tvar = STAILQ_NEXT(q, links), 1);
                          q = tvar)
                         
                     {
@@ -2577,8 +2567,7 @@ trc_update_simplify_results(unsigned int db_uid,
                             else
                                 p->tags_str = logic_expr_to_str(
                                                         p->tags_expr);
-                            SLIST_REMOVE(new_results, q, trc_exp_result,
-                                         links);
+                            STAILQ_REMOVE(new_results, q, trc_exp_result, links);
                             trc_exp_result_free(q);
                         }
                     }
@@ -2652,7 +2641,7 @@ trc_update_apply_rverdict(trc_test_iter *iter,
         rule->old_v == NULL || !rule->apply)
         return 0;
 
-    SLIST_FOREACH(iter_result, &iter->exp_results, links)
+    STAILQ_FOREACH(iter_result, &iter->exp_results, links)
     {
         TAILQ_FOREACH(iter_rentry, &iter_result->results, links)
         {
@@ -2724,7 +2713,7 @@ trc_update_apply_rrentry(trc_test_iter *iter,
         rule->old_re == NULL || !rule->apply)
         return 0;
 
-    SLIST_FOREACH(iter_result, &iter->exp_results, links)
+    STAILQ_FOREACH(iter_result, &iter->exp_results, links)
     {
         TAILQ_FOREACH(iter_rentry, &iter_result->results, links)
         {
@@ -2787,29 +2776,29 @@ trc_update_apply_rresult(trc_test_iter *iter,
     UNUSED(flags);
 
     if (rule->old_res != NULL)
-        old_result = SLIST_FIRST(rule->old_res);
+        old_result = STAILQ_FIRST(rule->old_res);
     if (rule->new_res != NULL)
-        new_result = SLIST_FIRST(rule->new_res);
+        new_result = STAILQ_FIRST(rule->new_res);
 
     if (trc_update_result_cmp(old_result, new_result) == 0 ||
         old_result == NULL || !rule->apply)
         return 0;
 
-    SLIST_FOREACH(iter_result, &iter->exp_results, links)
+    STAILQ_FOREACH(iter_result, &iter->exp_results, links)
     {
         if (trc_update_result_cmp(iter_result, old_result) == 0)
         {
             if (new_result != NULL)
             {
                 dup_result = trc_exp_result_dup(new_result);
-                SLIST_INSERT_AFTER(iter_result, dup_result,
-                                   links);
+                STAILQ_INSERT_AFTER(&iter->exp_results, iter_result,
+                                    dup_result, links);
             }
             else
-                dup_result = SLIST_NEXT(iter_result, links);
+                dup_result = STAILQ_NEXT(iter_result, links);
 
-            SLIST_REMOVE(&iter->exp_results, iter_result,
-                         trc_exp_result, links);
+            STAILQ_REMOVE(&iter->exp_results, iter_result,
+                          trc_exp_result, links);
             trc_exp_result_free(iter_result);
             free(iter_result);
 
@@ -2872,7 +2861,7 @@ trc_update_apply_rresults(trc_test_iter *iter,
         results_dup = trc_exp_results_dup(rule->new_res);
 
         if ((flags & TRC_UPDATE_RULES_CONFL) &&
-            !SLIST_EMPTY(&iter->exp_results))
+            !STAILQ_EMPTY(&iter->exp_results))
         {
             trc_exp_results_free(&iter_data->new_results);
             if (results_dup != NULL)
@@ -3093,10 +3082,10 @@ trc_update_rule_match_iter(trc_update_rule *rule,
             break;
 
         case TRC_UPDATE_RULE_RESULT:
-            rule_result = SLIST_FIRST(rule->old_res);
+            rule_result = STAILQ_FIRST(rule->old_res);
             if (rule_result == NULL)
                 return TRUE;
-            SLIST_FOREACH(iter_result, &iter->exp_results, links)
+            STAILQ_FOREACH(iter_result, &iter->exp_results, links)
                 if (trc_update_result_cmp(iter_result, rule_result) == 0)
                     return TRUE;
           break;
@@ -3104,7 +3093,7 @@ trc_update_rule_match_iter(trc_update_rule *rule,
         case TRC_UPDATE_RULE_ENTRY:
             if (rule->old_re == NULL)
                 return TRUE;
-            SLIST_FOREACH(iter_result, &iter->exp_results, links)
+            STAILQ_FOREACH(iter_result, &iter->exp_results, links)
                 TAILQ_FOREACH(iter_rentry, &iter_result->results, links)
                     if (trc_update_rentry_cmp(iter_rentry,
                                               rule->old_re) == 0)
@@ -3112,7 +3101,7 @@ trc_update_rule_match_iter(trc_update_rule *rule,
           break;
 
         case TRC_UPDATE_RULE_VERDICT:
-            SLIST_FOREACH(iter_result, &iter->exp_results, links)
+            STAILQ_FOREACH(iter_result, &iter->exp_results, links)
                 TAILQ_FOREACH(iter_rentry, &iter_result->results, links)
                     TAILQ_FOREACH(iter_verdict,
                                   &iter_rentry->result.verdicts,
@@ -3239,7 +3228,7 @@ trc_update_load_rule(xmlNodePtr rule_node, trc_update_rule *rule)
         {                                                       \
             rule->result_ ## _res =                             \
                         TE_ALLOC(sizeof(trc_exp_results));      \
-            SLIST_INIT(rule->result_ ## _res);                  \
+            STAILQ_INIT(rule->result_ ## _res);                 \
             get_expected_results(&first_child_node,             \
                                  rule->result_ ## _res);        \
             rtype_ = TRC_UPDATE_RULE_RESULTS;                   \
@@ -3679,7 +3668,7 @@ trc_update_gen_rverdict(trc_test_iter *iter,
     trc_update_rule             *rule;
     int                          rc;
 
-    SLIST_FOREACH(result, &iter->exp_results, links)
+    STAILQ_FOREACH(result, &iter->exp_results, links)
     {
         TAILQ_FOREACH(rentry, &result->results, links)
         {
@@ -3721,7 +3710,7 @@ trc_update_gen_rrentry(trc_test_iter *iter,
     trc_update_rule             *rule;
     int                          rc;
 
-    SLIST_FOREACH(result, &iter->exp_results, links)
+    STAILQ_FOREACH(result, &iter->exp_results, links)
     {
         TAILQ_FOREACH(rentry, &result->results, links)
         {
@@ -3761,15 +3750,15 @@ trc_update_gen_rresult(trc_test_iter *iter,
     trc_update_rule             *rule;
     int                          rc;
 
-    SLIST_FOREACH(result, &iter->exp_results, links)
+    STAILQ_FOREACH(result, &iter->exp_results, links)
     {
         rule = TE_ALLOC(sizeof(*rule));
         rule->type = TRC_UPDATE_RULE_RESULT;
         rule->apply = FALSE;
         rule->old_res = TE_ALLOC(sizeof(trc_exp_results));
-        SLIST_INIT(rule->old_res);
+        STAILQ_INIT(rule->old_res);
         res_dup = trc_exp_result_dup(result);
-        SLIST_INSERT_HEAD(rule->old_res, res_dup, links);
+        STAILQ_INSERT_TAIL(rule->old_res, res_dup, links);
 
         if (flags & TRC_UPDATE_COPY_OLD)
             rule->new_res =
@@ -3814,13 +3803,13 @@ trc_update_gen_rresults(trc_test_iter *iter,
         trc_exp_results_dup(&iter->exp_results);
     rule->confl_res = trc_exp_results_dup(
                                 &iter_data->new_results);
-    if (!SLIST_EMPTY(rule->confl_res))
+    if (!STAILQ_EMPTY(rule->confl_res))
         rule->apply = TRUE;
     else
         rule->apply = FALSE;
 
     rule->new_res = TE_ALLOC(sizeof(*(rule->new_res)));
-    SLIST_INIT(rule->new_res);
+    STAILQ_INIT(rule->new_res);
 
     set_confls = FALSE;
 
@@ -3830,17 +3819,17 @@ trc_update_gen_rresults(trc_test_iter *iter,
          (flags & TRC_UPDATE_COPY_BOTH)) ||
          (!(flags & TRC_UPDATE_COPY_BOTH) &&
           !(flags & TRC_UPDATE_COPY_OLD_FIRST)) ||
-         SLIST_EMPTY(&iter->exp_results) ||
+         STAILQ_EMPTY(&iter->exp_results) ||
          !(flags & TRC_UPDATE_COPY_OLD)) &&
         (flags & TRC_UPDATE_COPY_CONFLS))
     {
         /* Do not forget about reverse order
          * of expected results in memory */
         set_confls = TRUE;
-        p = SLIST_FIRST(&iter_data->new_results);
+        p = STAILQ_FIRST(&iter_data->new_results);
     }
     else if (flags & TRC_UPDATE_COPY_OLD)
-        p = SLIST_FIRST(&iter->exp_results); 
+        p = STAILQ_FIRST(&iter->exp_results);
 
     q = NULL;
     prev = NULL;
@@ -3850,16 +3839,16 @@ trc_update_gen_rresults(trc_test_iter *iter,
     {
         if (p == NULL && !was_changed)
         {
-            if (SLIST_EMPTY(rule->new_res) ||
+            if (STAILQ_EMPTY(rule->new_res) ||
                 (flags & TRC_UPDATE_COPY_BOTH))
             {
                 if (!set_confls &&
                     (flags & TRC_UPDATE_COPY_CONFLS)) 
-                    p = SLIST_FIRST(
+                    p = STAILQ_FIRST(
                                 &iter_data->new_results);
                 else if (set_confls &&
                          (flags & TRC_UPDATE_COPY_OLD))
-                    p = SLIST_FIRST(&iter->exp_results);
+                    p = STAILQ_FIRST(&iter->exp_results);
             }
 
             set_confls = !set_confls;
@@ -3871,16 +3860,16 @@ trc_update_gen_rresults(trc_test_iter *iter,
 
         q = trc_exp_result_dup(p);
         if (prev == NULL || (set_confls && !was_changed))
-            SLIST_INSERT_HEAD(rule->new_res, q, links);
+            STAILQ_INSERT_TAIL(rule->new_res, q, links);
         else
-            SLIST_INSERT_AFTER(prev, q, links);
+            STAILQ_INSERT_AFTER(rule->new_res, prev, q, links);
 
         /* Taking into account the fact that expected
          * results are loaded/saved in reverse order */
         if (!set_confls || (set_confls && prev == NULL &&
                             !was_changed))
             prev = q;
-        p = SLIST_NEXT(p, links);
+        p = STAILQ_NEXT(p, links);
     }
 
     rule->type = TRC_UPDATE_RULE_RESULTS;
@@ -3936,7 +3925,7 @@ trc_update_gen_rules(unsigned int db_uid,
                 if (iter_data1 == NULL || iter_data1->to_save == FALSE)
                     continue;
 
-                if ((!SLIST_EMPTY(&iter_data1->new_results) ||
+                if ((!STAILQ_EMPTY(&iter_data1->new_results) ||
                      flags & TRC_UPDATE_RULES_ALL))
                 {
                     if (flags & TRC_UPDATE_RVERDICT)
