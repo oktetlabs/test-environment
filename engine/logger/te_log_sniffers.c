@@ -730,6 +730,8 @@ sniffer_check_capture_space(snif_id_l *snif, const char *fname,
 
     if ((snifp_sets.fsize > 0) && (total > snifp_sets.fsize))
     {
+        int sysrc;
+
         snif->cap_file_ind++;
         SNIFFER_MALLOC(f, sizeof(file_list_s));
         res = sniffer_make_file_name(agent, snif);
@@ -745,7 +747,14 @@ sniffer_check_capture_space(snif_id_l *snif, const char *fname,
             ERROR("Couldn't open/creat file for capture logs.");
             return FALSE;
         }
-        write(fd_n, pcap_hbuf, SNIF_PCAP_HSIZE);
+        sysrc = write(fd_n, pcap_hbuf, SNIF_PCAP_HSIZE);
+        if (sysrc != SNIF_PCAP_HSIZE)
+        {
+            ERROR("Couldn't not write %u bytes (pcap header): %s",
+                  SNIF_PCAP_HSIZE, strerror(errno));
+            close(fd_n);
+            return FALSE;
+        }
         sniffer_save_info(agent, snif, fd_n);
         close(fd_n);
 
