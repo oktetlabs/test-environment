@@ -55,7 +55,7 @@
         assert(0);
 
 #define SNIF_MIN_LIST_SIZE 1024
-#define SNIF_MAX_PATH_LENGTH 256
+#define SNIF_MAX_PATH_LENGTH RCF_MAX_PATH
 
 /* The PCAP file header. */
 static const char pcap_hbuf[SNIF_PCAP_HSIZE];
