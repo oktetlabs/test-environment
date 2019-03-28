@@ -2677,8 +2677,8 @@ convert_wsa_ioctl_result(rpc_ioctl_code code,
             memcpy(qos->provider_specific_buf,
                    rqos->provider_specific_buf.provider_specific_buf_val,
                    qos->provider_specific_buf_len);
+            break;
         }
-        
         default:
             *(int *)buf = res->wsa_ioctl_request_u.req_int;
             break;
