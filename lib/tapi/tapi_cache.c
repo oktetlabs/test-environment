@@ -823,7 +823,7 @@ tapi_cache_add_int(int value, const char *area_inst, ...)
     va_list  ap;
 
     va_start(ap, area_inst);
-    rc = tapi_cache_add_va(type, value, area_inst, ap);
+    rc = tapi_cache_add_va(type, (const void *)(long)value, area_inst, ap);
     va_end(ap);
 
     return rc;
