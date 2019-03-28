@@ -997,7 +997,7 @@ fi
 AC_DEFUN([AC_LIBTOOL_OBJDIR],
 [AC_CACHE_CHECK([for objdir], [lt_cv_objdir],
 [rm -f .libs 2>/dev/null
-mkdir .libs 2>/dev/null
+mkdir -p .libs
 if test -d .libs; then
   lt_cv_objdir=.libs
 else
