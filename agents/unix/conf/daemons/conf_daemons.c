@@ -2847,6 +2847,7 @@ ds_vncpasswd_get(unsigned int gid, const char *oid, char *value)
 {
     FILE *f;
     int   rc;
+    int   sysrc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -2859,9 +2860,15 @@ ds_vncpasswd_get(unsigned int gid, const char *oid, char *value)
     }
     
     memset(value, 0, RCF_MAX_VAL);
-    fread(value, 1, RCF_MAX_VAL - 1, f);
+    sysrc = fread(value, 1, RCF_MAX_VAL - 1, f);
+    if (sysrc < 0)
+    {
+        ERROR("Failed to read data from file \"%s\"", "/tmp/.vnc/passwd");
+        fclose(f);
+        return TE_RC(TE_TA_UNIX, errno);
+    }
     fclose(f);
-    
+
     return 0;
 }
 
