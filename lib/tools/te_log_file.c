@@ -99,6 +99,7 @@ te_log_msg_raw_arg_to_file(te_log_msg_out      *out,
 {
     FILE   *f = TE_LOG_MSG_OUT_AS_FILE(out);
     int     fd = ((te_log_msg_fmt_to_file *)(out))->fd;
+    int     sysrc __attribute__((unused));
 
     switch (arg_type)
     {
@@ -115,7 +116,13 @@ te_log_msg_raw_arg_to_file(te_log_msg_out      *out,
                 {
                     te_errno err = *(const te_errno *)arg_addr;
 
-                    write(fd, fmt, strchr(fmt, '%') - fmt);
+                    sysrc = write(fd, fmt, strchr(fmt, '%') - fmt);
+                    if (sysrc < 0)
+                    {
+                        fprintf(stderr, "Write to fd=%d failed, errno=%s",
+                                fd, strerror(errno));
+                        break;
+                    }
                     if (TE_RC_GET_MODULE(err) == 0)
                         fputs(te_rc_err2str(err), f);
                     else
@@ -139,7 +146,13 @@ te_log_msg_raw_arg_to_file(te_log_msg_out      *out,
             int         in = -1;
             struct stat stat_buf;
 
-            write(fd, fmt, strchr(fmt, '%') - fmt);
+            sysrc = write(fd, fmt, strchr(fmt, '%') - fmt);
+            if (sysrc < 0)
+            {
+                fprintf(stderr, "Write to fd=%d failed, errno=%s",
+                        fd, strerror(errno));
+                break;
+            }
             if (arg_addr == NULL)
             {
                 fputs("(NULL file name)", f);
@@ -179,7 +192,7 @@ te_log_msg_raw_arg_to_file(te_log_msg_out      *out,
                     const uint8_t  *p = arg_addr;
                     size_t          i;
 
-                    write(fd, fmt, strchr(fmt, '%') - fmt);
+                    sysrc = write(fd, fmt, strchr(fmt, '%') - fmt);
                     fputc('\n', f);
                     for (i = 0; i < arg_len; i++)
                     {
