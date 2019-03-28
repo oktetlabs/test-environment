@@ -865,7 +865,7 @@ sniffer_cleanup_dir(const char *dirname)
 {
     DIR             *dir;
     struct dirent   *ent;
-    char             fname[SNIF_MAX_PATH_LENGTH];
+    char             fname[SNIF_MAX_PATH_LENGTH + 1];
     char            *tmp;
 
     dir = opendir(dirname);
@@ -878,7 +878,7 @@ sniffer_cleanup_dir(const char *dirname)
             strcmp(ent->d_name, "..") == 0)
             continue;
 
-        snprintf(fname, SNIF_MAX_PATH_LENGTH, "%s/%s", dirname,
+        snprintf(fname, SNIF_MAX_PATH_LENGTH + 1, "%s/%s", dirname,
                  ent->d_name);
         if (ent->d_type == DT_DIR)
             sniffer_cleanup_dir(fname);
