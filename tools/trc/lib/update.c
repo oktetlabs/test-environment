@@ -2065,7 +2065,8 @@ trc_update_merge_result(trc_update_ctx *ctx,
     if (ctx->fake_filt_log != NULL && !upd_iter_data->filtered)
         return 0;
 
-    p = (trc_exp_result *) trc_db_iter_get_exp_result(iter, &ctx->tags);
+    p = (trc_exp_result *) trc_db_iter_get_exp_result(iter, &ctx->tags,
+                                                      ctx->db->last_match);
     if (p != NULL)
         is_expected =
             (trc_is_result_expected(p, test_result) != NULL);

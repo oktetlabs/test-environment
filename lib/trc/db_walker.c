@@ -842,5 +842,5 @@ trc_db_walker_get_exp_result(const te_trc_db_walker *walker,
         return NULL;
     }
 
-    return trc_db_iter_get_exp_result(walker->iter, tags);
+    return trc_db_iter_get_exp_result(walker->iter, tags, walker->db->last_match);
 }

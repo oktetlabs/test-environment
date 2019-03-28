@@ -947,7 +947,8 @@ trc_db_get_test_by_path(te_trc_db *db, char *path)
 /* See the description in trc_db.h */
 const trc_exp_result *
 trc_db_iter_get_exp_result(const trc_test_iter    *iter,
-                           const tqh_strings      *tags)
+                           const tqh_strings      *tags,
+                           te_bool                 last_match)
 {
     const trc_exp_result       *result;
     const trc_exp_result       *p;
@@ -978,7 +979,7 @@ trc_db_iter_get_exp_result(const trc_test_iter    *iter,
             if (q != NULL)
                 break;
 
-            if (result == NULL)
+            if (result == NULL || last_match)
                 result = p;
         }
     }

@@ -1441,6 +1441,15 @@ trc_db_open_ext(const char *location, te_trc_db **db, int flags)
     }
     else
     {
+        const char *last_match;
+
+        last_match = XML2CHAR(xmlGetProp(node, CONST_CHAR2XML("last_match")));
+        if (last_match != NULL &&
+            (strcmp(last_match, "true") == 0 || strcmp(last_match, "1") == 0))
+        {
+            (*db)->last_match = TRUE;
+        }
+
         (*db)->version = XML2CHAR(xmlGetProp(node,
                                           CONST_CHAR2XML("version")));
         if ((*db)->version == NULL)

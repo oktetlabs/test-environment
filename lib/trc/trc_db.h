@@ -172,6 +172,7 @@ struct te_trc_db {
     trc_tests       tests;      /**< Tree of tests */
     unsigned int    user_id;    /**< ID of the next user */
     trc_globals     globals;
+    te_bool         last_match; /**< Choose the last match expectation */
 };
 
 /** Kinds of matching of iteration TRC with iteration from XML log */
@@ -656,6 +657,7 @@ extern int test_iter_args_match(const trc_test_iter_args  *db_args,
  *
  * @param iter          Test iteration
  * @param tags          Tags which identify IUT
+ * @param last_match    Choose the last match expectation
  *
  * @return Expected result.
  * @return NULL             The test/iteration is unknown for
@@ -663,7 +665,8 @@ extern int test_iter_args_match(const trc_test_iter_args  *db_args,
  */
 extern const trc_exp_result *trc_db_iter_get_exp_result(
                                  const trc_test_iter    *iter,
-                                 const tqh_strings      *tags);
+                                 const tqh_strings      *tags,
+                                 te_bool                 last_match);
 
 #ifdef __cplusplus
 } /* extern "C" */

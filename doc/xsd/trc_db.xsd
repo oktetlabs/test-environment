@@ -210,6 +210,14 @@
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:attribute>
+            <xsd:attribute name="last_match" type="xsd:boolean">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Should the first (false) or the last (true) matching
+                        expectation be used.
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:attribute>
         </xsd:complexType>
     </xsd:element>
 
