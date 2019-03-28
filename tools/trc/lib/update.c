@@ -4941,7 +4941,7 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
                               trc_update_args_groups *wildcards,
                               uint64_t flags)
 {
-    int          ids_count;
+    size_t       ids_count;
     int          res_id;
     int          i = 0;
     int          j = 0;
@@ -4976,7 +4976,7 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
 
     gettimeofday(&tv_before_gen_fss, NULL);
 
-    for (res_id = 1; res_id <= ids_count; res_id++)
+    for (res_id = 1; res_id <= (int)ids_count; res_id++)
     {
         memset(&args_groups, 0, sizeof(args_groups));
         SLIST_INIT(&args_groups);
@@ -5010,7 +5010,7 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
 
     wild_prbs = calloc(ids_count, sizeof(*wild_prbs));
 
-    for (res_id = 1; res_id <= ids_count; res_id++)
+    for (res_id = 1; res_id <= (int)ids_count; res_id++)
     {
         p_id = res_id - 1;
         wild_prbs[p_id].set_max = 10;
@@ -5083,7 +5083,7 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
 
     if (flags & TRC_UPDATE_EXT_WILDS)
     {
-        for (i = 0; i < ids_count; i++)
+        for (i = 0; i < (int)ids_count; i++)
         {
             for (j = 0; j < wild_prbs[i].sol_num; j++)
             {
@@ -5125,7 +5125,7 @@ trc_update_gen_test_wilds_fss(unsigned int db_uid,
     }
 
     /* Insert generated wildcards in TRC DB */
-    for (i = 0; i < ids_count; i++)
+    for (i = 0; i < (int)ids_count; i++)
     {
         for (j = 0; j < wild_prbs[i].sol_num; j++)
         {
