@@ -285,7 +285,7 @@ append_to_frag(int node_id, fragment_type frag_type,
         cur_block_length = length;
         cur_block_frag_offset = ftello(f_frag);
         snprintf(cur_block_frag_name, sizeof(cur_block_frag_name),
-                 frag_name.ptr);
+                 "%s", frag_name.ptr);
     }
     else
     {
@@ -313,7 +313,7 @@ append_to_frag(int node_id, fragment_type frag_type,
                 cur_block_length = length;
                 cur_block_frag_offset = ftello(f_frag);
                 snprintf(cur_block_frag_name, sizeof(cur_block_frag_name),
-                         frag_name.ptr);
+                         "%s", frag_name.ptr);
             }
         }
     }
@@ -363,7 +363,15 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
 
     while (!feof(f_index))
     {
-        fgets(str, sizeof(str), f_index);
+        if (fgets(str, sizeof(str), f_index) == NULL)
+        {
+            if (feof(f_index))
+                break;
+            fprintf(stderr, "fgets() returned NULL unexpectedly at "
+                    "line %ld\n", line);
+            exit(EXIT_FAILURE);
+        }
+
         rc = sscanf(str, "%u.%u %" PRId64 " %d %d %s %u %s %" PRId64,
                     &timestamp[0], &timestamp[1],
                     &offset, &parent_id, &node_id,
