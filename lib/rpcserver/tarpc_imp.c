@@ -10955,7 +10955,11 @@ TARPC_SYSCALL_WRAPPER(dup2, int, (int a, int b), a, b)
 TARPC_SYSCALL_WRAPPER(dup3, int, (int a, int b, int c), a, b, c)
 #endif
 
-#ifdef SYS_vfork
+/**
+ * NOTE: vfork() does not work properly when called via libc syscall().
+ * See https://bugzilla.oktetlabs.ru/show_bug.cgi?id=9976
+ */
+#if 0
 TARPC_SYSCALL_WRAPPER(vfork, pid_t, (void))
 #endif
 
