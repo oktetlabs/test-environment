@@ -28,9 +28,6 @@
 /* Time to wait till data is ready to read from stdout */
 #define TAPI_PACKETDRILL_TIMEOUT_MS 1000
 
-/* Time to wait for process to stop */
-#define TAPI_PACKETDRILL_STOP_TIMEOUT_S 10
-
 /* See description in tapi_packetdrill.h */
 struct tapi_packetdrill_app {
     tapi_packetdrill_opts    opts;        /**< Tool's options */
@@ -378,8 +375,7 @@ tapi_packetdrill_app_stop(tapi_packetdrill_app *app)
 {
     if (app->pid >= 0)
     {
-        rpc_ta_kill_and_wait(app->rpcs, app->pid, RPC_SIGTERM,
-                             TAPI_PACKETDRILL_STOP_TIMEOUT_S);
+        rpc_ta_kill_death(app->rpcs, app->pid);
         app->pid = -1;
     }
 
