@@ -493,13 +493,36 @@ tapi_packetdrill_app_wait(tapi_packetdrill_app *app, int timeout_s)
 {
     rpc_wait_status stat;
     tarpc_pid_t     pid;
+    unsigned        num_attempts;
+    const unsigned  delay_ms = 1000;
+    unsigned        i;
 
-    app->rpcs->timeout = TE_SEC2MS(timeout_s);
-    RPC_AWAIT_ERROR(app->rpcs);
-    pid = rpc_waitpid(app->rpcs, app->pid, &stat, 0);
+    num_attempts = TE_SEC2MS(timeout_s) / delay_ms;
+
+    /* Ensure that will be at least one iteration */
+    if (num_attempts == 0)
+        num_attempts = 1;
+
+    for (i = 0; i < num_attempts; i++)
+    {
+        RPC_AWAIT_ERROR(app->rpcs);
+        pid = rpc_waitpid(app->rpcs, app->pid, &stat, RPC_WNOHANG);
+        if (app->pid == pid)
+        {
+            break;
+        }
+        else if (pid != 0)
+        {
+            ERROR("Failed to wait for pid %d: %r", pid, RPC_ERRNO(app->rpcs));
+            return RPC_ERRNO(app->rpcs);
+        }
+        if (i < num_attempts - 1)
+            te_msleep(delay_ms);
+    }
+
     if (pid != app->pid)
     {
-        ERROR("waitpid() failed with errno %r", RPC_ERRNO(app->rpcs));
+        ERROR("Failed to wait for finishing packetdrill work");
         tapi_packetdrill_app_stop(app);
         return TE_RC(TE_TAPI, TE_EFAIL);
     }
