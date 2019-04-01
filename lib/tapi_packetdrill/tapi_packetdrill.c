@@ -523,7 +523,6 @@ tapi_packetdrill_app_wait(tapi_packetdrill_app *app, int timeout_s)
     if (pid != app->pid)
     {
         ERROR("Failed to wait for finishing packetdrill work");
-        tapi_packetdrill_app_stop(app);
         return TE_RC(TE_TAPI, TE_EFAIL);
     }
     app->pid = -1;
