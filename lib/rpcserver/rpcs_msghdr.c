@@ -251,9 +251,18 @@ rpcs_msghdr_h2tarpc(const struct msghdr *msg,
         }
     }
 
-    if (helper->orig_controllen != msg->msg_controllen ||
-        memcmp(helper->orig_control, msg->msg_control,
-               msg->msg_controllen) != 0)
+    if (msg->msg_control == NULL)
+    {
+        free(tarpc_msg->msg_control.msg_control_val);
+        tarpc_msg->msg_control.msg_control_val = NULL;
+        tarpc_msg->msg_control.msg_control_len = 0;
+        free(tarpc_msg->msg_control_tail.msg_control_tail_val);
+        tarpc_msg->msg_control_tail.msg_control_tail_val = NULL;
+        tarpc_msg->msg_control_tail.msg_control_tail_len = 0;
+    }
+    else if (helper->orig_controllen != msg->msg_controllen ||
+             memcmp(helper->orig_control, msg->msg_control,
+                    msg->msg_controllen) != 0)
     {
         rc = msg_control_h2rpc(msg->msg_control,
                                msg->msg_controllen,
