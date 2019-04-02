@@ -25,6 +25,7 @@
 #include "te_str.h"
 #ifndef WINDOWS
 #include "te_shell_cmd.h"
+#include "te_exec_child.h"
 #include "te_sleep.h"
 #endif
 

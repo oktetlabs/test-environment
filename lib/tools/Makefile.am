@@ -13,6 +13,7 @@ include_HEADERS = \
 	te_alloc.h \
 	te_sockaddr.h \
 	te_shell_cmd.h \
+	te_exec_child.h \
 	te_log_fmt.h \
 	logger_file.h \
 	te_kernel_log.h \
@@ -54,7 +55,7 @@ install-exec-hook:
 
 EXTRA_DIST = te_shell_cmd.c te_log_fmt.c te_log_file.c log_bufs.c \
              tq_string.c te_string.c logger_file.c te_log_kernel.c \
-             te_toeplitz.c
+             te_toeplitz.c te_exec_child.c
 
 else
 
@@ -65,6 +66,7 @@ libtools_la_SOURCES = \
 	te_alloc.c \
 	te_sockaddr.c \
 	te_shell_cmd.c \
+	te_exec_child.c \
 	te_log_fmt.c \
 	te_log_file.c \
 	te_kernel_log.c \

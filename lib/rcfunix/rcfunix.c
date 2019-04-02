@@ -281,7 +281,7 @@ system_with_timeout(const char *cmd, int timeout)
     int             status;
     unsigned int    waitpid_tries = 0;
 
-    pid = te_shell_cmd_inline(cmd, -1, NULL, &fd, NULL);
+    pid = te_shell_cmd(cmd, -1, NULL, &fd, NULL);
     if (pid < 0 || fd < 0)
     {
         rc = TE_OS_RC(TE_RCF_UNIX, errno);
@@ -741,7 +741,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     RING("Command to start TA: %s", cmd.ptr);
     if (!(*flags & TA_FAKE) &&
         ((ta->start_pid =
-          te_shell_cmd_inline(cmd.ptr, -1, NULL, NULL, NULL)) <= 0))
+          te_shell_cmd(cmd.ptr, -1, NULL, NULL, NULL)) <= 0))
     {
         rc = TE_OS_RC(TE_RCF_UNIX, errno);
         ERROR("Failed to start TA %s: %r", ta_name, rc);

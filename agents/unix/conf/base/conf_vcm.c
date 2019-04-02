@@ -75,8 +75,7 @@ vcm_swversion_get(unsigned int gid, const char *oid,
              "%s --getBoxDetails %s %s", 
              java_command_base, vcm_address, box_name);
 
-    java_cmd_pid = te_shell_cmd_inline(java_command, -1,
-                                       NULL, &out_fd, &err_fd);
+    java_cmd_pid = te_shell_cmd(java_command, -1, NULL, &out_fd, &err_fd);
     if (java_cmd_pid < 0)
     {
         return TE_OS_RC(TE_TA_UNIX, errno);
@@ -126,8 +125,7 @@ vcm_swversion_set(unsigned int gid, const char *oid,
              java_command_base, vcm_address, box_name, value);
 
     RING("%s: prepared java comand: <%s>",  __FUNCTION__, java_command);
-    java_cmd_pid = te_shell_cmd_inline(java_command, -1,
-                                       NULL, &out_fd, &err_fd);
+    java_cmd_pid = te_shell_cmd(java_command, -1, NULL, &out_fd, &err_fd);
     if (java_cmd_pid < 0)
     {
         return TE_OS_RC(TE_TA_UNIX, errno);
@@ -196,8 +194,7 @@ vcm_parameter_set(unsigned int gid, const char *oid,
              java_command_base, vcm_address, box_name, value);
 
     RING("%s: prepared java comand: <%s>",  __FUNCTION__, java_command);
-    java_cmd_pid = te_shell_cmd_inline(java_command, -1,
-                                       NULL, &out_fd, &err_fd);
+    java_cmd_pid = te_shell_cmd(java_command, -1, NULL, &out_fd, &err_fd);
     if (java_cmd_pid < 0)
     {
         return TE_OS_RC(TE_TA_UNIX, errno);
