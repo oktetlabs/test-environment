@@ -54,7 +54,8 @@ include_HEADERS = \
 	tapi_host_ns.h \
 	tapi_cfg_modules.h \
 	tapi_cfg_qdisc.h \
-	tapi_cfg_netem.h
+	tapi_cfg_netem.h \
+	tapi_cfg_cpu.h
 
 lib_LTLIBRARIES = libtapi.la
 
@@ -103,7 +104,8 @@ libtapi_la_SOURCES = \
 	tapi_host_ns.c \
 	tapi_cfg_modules.c \
 	tapi_cfg_qdisc.c \
-	tapi_cfg_netem.c
+	tapi_cfg_netem.c \
+	tapi_cfg_cpu.c
 
 install-exec-hook:
 	touch -c -r libtapi.la $(DESTDIR)/$(libdir)/libtapi.*
