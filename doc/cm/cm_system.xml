@@ -53,6 +53,12 @@
          rather than a linear list of logical CPU so that it be possible to use node/package/core OIDs
          for resource grabbing.
 
+         The tree is always visible because the current implementation consists only of
+         read-only nodes and the tests should have the ability to choose a CPU with
+         needed properties before grabbing. If any read-write nodes are implemented
+         in the future, the subtrees with that nodes should be made invisible until
+         the parent tree is grabbed as a resource.
+
          Currently all nodes are assumed to have the same architecture, but
          true heterogenous systems may eventually be supported.
          The arch value must be from a controlled vocabulary, not raw uname -m string
@@ -144,7 +150,7 @@
 
     <!-- CPU core
 
-         Name: # of a core inside its package
+         Name: system-wide # of a core
          Value: none -->
     <object oid="/agent/hardware/node/cpu/core" access="read_only" type="none" />
 
@@ -154,9 +160,15 @@
                which virtually means nothing. CPU identity strings may be used to deduce
                nominal clock frequency
 
-         Name: # of a thread in the core
+         Name: system-wide # of a thread
          Value: # of a logical CPU -->
     <object oid="/agent/hardware/node/cpu/core/thread" access="read_only" type="integer" />
+
+    <!-- CPU isolation
+
+         Name: none
+         Value: 1 - logical CPU is isolated; 0 - logical CPU is not isolated -->
+    <object oid="/agent/hardware/node/cpu/core/thread/isolated" access="read_only" type="integer" />
 
     <!-- Interrupt affinity to a CPU
 

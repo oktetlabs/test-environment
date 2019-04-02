@@ -39,6 +39,7 @@ libconf_a_SOURCES = \
 	base/conf_phy.c \
 	base/conf_netconsole.c \
 	base/conf_configfs.c \
+	base/conf_cpu.c \
 	base/conf_macvlan.c \
 	base/conf_module.c \
 	base/conf_ns_net.c \

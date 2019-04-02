@@ -289,6 +289,8 @@ extern te_errno ta_unix_conf_aggr_init();
 extern te_errno ta_unix_conf_pci_init();
 #endif
 
+extern te_errno ta_unix_conf_cpu_init();
+
 #ifdef WITH_SOCKS
 extern te_errno ta_unix_conf_socks_init();
 #endif
@@ -1162,6 +1164,10 @@ rcf_ch_conf_init()
         if (ta_unix_conf_pci_init() != 0)
             goto fail;
 #endif
+
+        if (ta_unix_conf_cpu_init() != 0)
+            goto fail;
+
 #ifdef ENABLE_VCM_SUPPORT
         if (ta_unix_conf_vcm_init() != 0)
             goto fail;
