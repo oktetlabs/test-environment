@@ -16,7 +16,7 @@
 
 #include <pcre.h>
 
-#include "te_shell_cmd.h"
+#include "te_exec_child.h"
 #include "te_sleep.h"
 #include "te_string.h"
 
@@ -124,7 +124,6 @@ typedef struct job_t {
     char *tool;
     char **argv;
     char **env;
-    char *cmd;
 } job_t;
 
 #define CTRL_PIPE_INITIALIZER {-1, -1}
@@ -669,40 +668,12 @@ job_add(job_t *job)
     return 0;
 }
 
-static te_errno
-build_command(const char *tool, char **argv, char **command)
-{
-    te_string result = TE_STRING_INIT;
-    unsigned int i;
-    te_errno rc;
-
-    if ((rc = te_string_append(&result, "%s ", tool)) != 0)
-    {
-        te_string_free(&result);
-        return rc;
-    }
-
-    for (i = 0; argv[i] != NULL; i++)
-    {
-        if ((rc = te_string_append(&result, "%s ", argv[i])) != 0)
-        {
-            te_string_free(&result);
-            return rc;
-        }
-    }
-
-    *command = result.ptr;
-
-    return 0;
-}
-
 /* Note: argv and env MUST remain valid after a successful call */
 static te_errno
 job_alloc(const char *spawner, const char *tool, char **argv,
           char **env, job_t **job)
 {
     job_t *result = calloc(1, sizeof(*result));
-    te_errno rc;
 
     if (result == NULL)
     {
@@ -738,14 +709,6 @@ job_alloc(const char *spawner, const char *tool, char **argv,
         return TE_ENOMEM;
     }
 
-    if ((rc = build_command(tool, argv, &result->cmd)) != 0)
-    {
-        ERROR("Failed to build command-line string");
-        free(result->tool);
-        free(result->spawner);
-        free(result);
-        return rc;
-    }
     result->pid = (pid_t)-1;
     result->argv = argv;
     result->env = env;
@@ -772,7 +735,6 @@ job_dealloc(job_t *job)
 
     free(job->spawner);
     free(job->tool);
-    free(job->cmd);
     free(job);
 }
 
@@ -1265,17 +1227,17 @@ job_start(unsigned int id)
     }
 
     if (job->n_out_channels < 2)
-        stderr_fd_p = NULL;
+        stderr_fd_p = TE_EXEC_CHILD_DEV_NULL_FD;
     if (job->n_out_channels < 1)
-        stdout_fd_p = NULL;
+        stdout_fd_p = TE_EXEC_CHILD_DEV_NULL_FD;
     if (job->n_in_channels < 1)
-        stdin_fd_p = NULL;
+        stdin_fd_p = TE_EXEC_CHILD_DEV_NULL_FD;
 
     // TODO: use spawner method
-    if ((pid = te_shell_cmd(job->cmd, -1, stdin_fd_p, stdout_fd_p,
-                            stderr_fd_p)) < 0)
+    if ((pid = te_exec_child(job->tool, job->argv, job->env, -1, stdin_fd_p,
+                             stdout_fd_p, stderr_fd_p)) < 0)
     {
-        ERROR("Shell cmd failure\n");
+        ERROR("Exec child failure\n");
         return te_rc_os2te(errno);
     }
 
