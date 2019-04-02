@@ -37,6 +37,35 @@ maybe_open_dev_null(const int *fd_arg, te_bool input, int *dev_null_fd)
     }
 }
 
+/**
+ * Create a pipe, set close-on-exec flag on a descriptor that will
+ * be used (meaning will remain opened after the call) by parent process
+ * (write end of input pipe or read end of output pipe).
+ */
+static int
+pipe_cloexec_parent_end(int pipe_fd[2], te_bool input)
+{
+    int rc;
+    int result[2];
+    int parent_end;
+
+    if ((rc = pipe(result)) != 0)
+        return rc;
+
+    parent_end = input ? result[1] : result[0];
+
+    if ((rc = fcntl(parent_end, F_SETFD, FD_CLOEXEC)) < 0)
+    {
+        close(result[0]);
+        close(result[1]);
+    }
+
+    pipe_fd[0] = result[0];
+    pipe_fd[1] = result[1];
+
+    return 0;
+}
+
 pid_t
 te_exec_child(const char *file, char *const argv[],
               char *const envp[], uid_t uid, int *in_fd,
@@ -50,9 +79,9 @@ te_exec_child(const char *file, char *const argv[],
         errno = EINVAL;
         return -1;
     }
-    if (VALID_FD_PTR(in_fd) && pipe(in_pipe) != 0)
+    if (VALID_FD_PTR(in_fd) && pipe_cloexec_parent_end(in_pipe, TRUE) != 0)
         return -1;
-    if (VALID_FD_PTR(out_fd) && pipe(out_pipe) != 0)
+    if (VALID_FD_PTR(out_fd) && pipe_cloexec_parent_end(out_pipe, FALSE) != 0)
     {
         if (VALID_FD_PTR(in_fd))
         {
@@ -61,7 +90,7 @@ te_exec_child(const char *file, char *const argv[],
         }
         return -1;
     }
-    if (VALID_FD_PTR(err_fd) && pipe(err_pipe) != 0)
+    if (VALID_FD_PTR(err_fd) && pipe_cloexec_parent_end(err_pipe, FALSE) != 0)
     {
         if (VALID_FD_PTR(in_fd))
         {
