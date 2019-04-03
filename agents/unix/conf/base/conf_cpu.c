@@ -359,8 +359,9 @@ get_node(const char *cpu_name, unsigned long *node_id)
     switch (n_nodes)
     {
         case 0:
-            ERROR("Could not find CPU NUMA node");
-            rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+            WARN("Could not find CPU NUMA node for '%s', fallback to node 0",
+                 cpu_name);
+            *node_id = 0;
             break;
         case 1:
             if ((rc = get_suffix_index(names[0]->d_name, node_id)) != 0)
