@@ -359,7 +359,7 @@ get_node(const char *cpu_name, unsigned long *node_id)
     switch (n_nodes)
     {
         case 0:
-            WARN("Could not find CPU NUMA node for '%s', fallback to node 0",
+            INFO("Could not find CPU NUMA node for '%s', fallback to node 0",
                  cpu_name);
             *node_id = 0;
             break;
