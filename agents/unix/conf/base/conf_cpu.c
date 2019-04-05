@@ -196,7 +196,15 @@ open_system_file(const char *path, FILE **result)
     *result = fopen(buf.ptr, "r");
     if (*result == NULL)
     {
-        ERROR("Failed to open sysfs file '%s'", path);
+        if (errno == ENOENT)
+        {
+            INFO("Sysfs file '%s' does not exist", path);
+        }
+        else
+        {
+            ERROR("Failed to open sysfs file '%s', error: %s",
+                  path, strerror(errno));
+        }
         rc = TE_OS_RC(TE_TA_UNIX, errno);
     }
     te_string_free(&buf);
@@ -237,12 +245,9 @@ read_cpu_topology_dec_attr(const char *name, const char *attr,
 static te_errno
 read_isolated(char **isolated)
 {
-    FILE *f;
+    FILE *f = NULL;
     char *result = NULL;
     te_errno rc = 0;
-
-    if ((rc = open_system_file("cpu/isolated", &f)) != 0)
-        goto out;
 
     result = TE_ALLOC(RCF_MAX_VAL);
     if (result == NULL)
@@ -250,6 +255,20 @@ read_isolated(char **isolated)
         ERROR("Out of memory");
         rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
         goto out;
+    }
+
+    rc = open_system_file("cpu/isolated", &f);
+    switch (TE_RC_GET_ERROR(rc))
+    {
+        case 0:
+            break;
+        case TE_ENOENT:
+            INFO("Could not open sysfs CPUs isolated file, fallback to empty");
+            *isolated = result;
+            rc = 0;
+            goto out;
+        default:
+            goto out;
     }
 
     if (fgets(result, RCF_MAX_VAL, f) == NULL)
@@ -265,7 +284,8 @@ read_isolated(char **isolated)
     *isolated = result;
 
 out:
-    fclose(f);
+    if (f != NULL)
+        fclose(f);
     if (rc != 0)
         free(result);
 
