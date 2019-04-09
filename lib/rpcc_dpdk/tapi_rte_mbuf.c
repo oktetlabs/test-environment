@@ -324,10 +324,8 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
     rpc_rte_mbuf_p    *mbufs = NULL;
     unsigned int       n_mbufs;
     asn_value         *pattern_by_template;
-    asn_child_desc_t  *pdus_ip4 = NULL;
-    unsigned int       nb_pdus_ip4;
-    asn_child_desc_t  *pdus_ip6 = NULL;
-    unsigned int       nb_pdus_ip6;
+    asn_value         *pdus_o = NULL;
+    asn_value         *pdus_i = NULL;
     asn_value        **packets_prepared = NULL;
     unsigned int       n_packets_prepared = 0;
     asn_value         *pattern;
@@ -344,45 +342,31 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
 
     if (transform != NULL)
     {
-        asn_value        *pdus;
-        te_bool           ip4_inner = FALSE;
-        te_bool           ip4_outer = FALSE;
-        asn_value        *pdu_tcp;
-        asn_value        *pdu_udp;
+        asn_value *pdus;
+        asn_value *pdu_ip4_o;
+        asn_value *pdu_ip4_i;
+        asn_value *pdu_udp_i;
+        asn_value *pdu_tcp;
 
-        err = asn_get_subvalue(template, &pdus, "pdus");
+        err = tapi_tad_tmpl_relist_outer_inner_pdus(template,
+                                                    &pdus_o, &pdus_i);
         if (err != 0)
             goto out;
 
-        err = asn_find_child_choice_values(pdus, TE_PROTO_IP4,
-                                           &pdus_ip4, &nb_pdus_ip4);
-        if (err != 0)
-            goto out;
-
-        err = asn_find_child_choice_values(pdus, TE_PROTO_IP6,
-                                           &pdus_ip6, &nb_pdus_ip6);
-        if (err != 0)
-            goto out;
-
-        if (nb_pdus_ip4 + nb_pdus_ip6 > TMPL_NB_IP_PDUS_MAX)
+        if (pdus_i != NULL)
         {
-            err = TE_EINVAL;
-            goto out;
-        }
-
-        if ((nb_pdus_ip4 == 1) && (nb_pdus_ip6 == 1))
-        {
-            ip4_inner = (pdus_ip4[0].index < pdus_ip6[0].index);
-            ip4_outer = !ip4_inner;
+            pdu_ip4_o = asn_find_child_choice_value(pdus_o, TE_PROTO_IP4);
+            pdus = pdus_i;
         }
         else
         {
-            ip4_inner = (nb_pdus_ip4 > 0);
-            ip4_outer = (nb_pdus_ip4 > 1);
+            pdu_ip4_o = NULL;
+            pdus = pdus_o;
         }
 
+        pdu_ip4_i = asn_find_child_choice_value(pdus, TE_PROTO_IP4);
+        pdu_udp_i = asn_find_child_choice_value(pdus, TE_PROTO_UDP);
         pdu_tcp = asn_find_child_choice_value(pdus, TE_PROTO_TCP);
-        pdu_udp = asn_find_child_choice_value(pdus, TE_PROTO_UDP);
 
         for (i = 0; i < n_mbufs; ++i)
         {
@@ -400,12 +384,12 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
                                              transform->vlan_tci);
             }
 
-            if (ip4_inner &&
+            if (pdu_ip4_i != NULL &&
                 (transform->hw_flags & SEND_COND_HW_OFFL_IP_CKSUM) ==
                 SEND_COND_HW_OFFL_IP_CKSUM)
                     ol_flags |= (1UL << TARPC_PKT_TX_IP_CKSUM);
 
-            if (ip4_outer &&
+            if (pdu_ip4_o != NULL &&
                 (transform->hw_flags & SEND_COND_HW_OFFL_OUTER_IP_CKSUM) ==
                 SEND_COND_HW_OFFL_OUTER_IP_CKSUM)
                     ol_flags |= (1UL << TARPC_PKT_TX_OUTER_IP_CKSUM);
@@ -416,7 +400,7 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
                 if (pdu_tcp != NULL)
                     ol_flags |= (1UL << TARPC_PKT_TX_TCP_CKSUM);
 
-                if (pdu_udp != NULL)
+                if (pdu_udp_i != NULL)
                     ol_flags |= (1UL << TARPC_PKT_TX_UDP_CKSUM);
             }
             else
@@ -472,8 +456,23 @@ skip_pattern:
 
 out:
     asn_free_value(pattern_by_template);
-    free(pdus_ip4);
-    free(pdus_ip6);
+
+    if (pdus_o != NULL)
+    {
+        pdus_o->len = 0;
+        free(pdus_o->data.array);
+        pdus_o->data.array = NULL;
+    }
+
+    if (pdus_i != NULL)
+    {
+        pdus_i->len = 0;
+        free(pdus_i->data.array);
+        pdus_i->data.array = NULL;
+    }
+
+    asn_free_value(pdus_o);
+    asn_free_value(pdus_i);
 
     if ((err != 0) && (mbufs != NULL))
     {
