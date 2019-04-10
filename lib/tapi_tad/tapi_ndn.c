@@ -804,19 +804,24 @@ tapi_tad_request_correct_cksums(uint32_t   hw_flags,
     if (err != 0)
         goto out;
 
-    if ((hw_flags & SEND_COND_HW_OFFL_OUTER_IP_CKSUM) ==
-        SEND_COND_HW_OFFL_OUTER_IP_CKSUM)
+    if (pdus_i != NULL)
     {
-        asn_value *pdu_ip4_outer = NULL;
         asn_value *pdu_udp_outer = NULL;
 
-        pdu_ip4_outer = asn_find_child_choice_value(pdus_o, TE_PROTO_IP4);
-        if (pdu_ip4_outer != NULL)
+        if ((hw_flags & SEND_COND_HW_OFFL_OUTER_IP_CKSUM) ==
+            SEND_COND_HW_OFFL_OUTER_IP_CKSUM)
         {
-            err = tapi_tad_set_cksum_script_correct(pdu_ip4_outer, "h-checksum",
-                                                    FALSE);
-            if (err != 0)
-                goto out;
+            asn_value *pdu_ip4_outer = NULL;
+
+            pdu_ip4_outer = asn_find_child_choice_value(pdus_o, TE_PROTO_IP4);
+            if (pdu_ip4_outer != NULL)
+            {
+                err = tapi_tad_set_cksum_script_correct(pdu_ip4_outer,
+                                                        "h-checksum",
+                                                        FALSE);
+                if (err != 0)
+                    goto out;
+            }
         }
 
         pdu_udp_outer = asn_find_child_choice_value(pdus_o, TE_PROTO_UDP);
