@@ -2082,6 +2082,9 @@ tad_du_get_cksum_str_code(tad_data_unit_t *du)
         if (strcmp(du->val_data.char_str,
                    TAD_CKSUM_STR_VAL_CORRECT) == 0)
             return TAD_CKSUM_STR_CODE_CORRECT;
+        else if (strcmp(du->val_data.char_str,
+                        TAD_CKSUM_STR_VAL_CORRECT_OR_ZERO) == 0)
+            return TAD_CKSUM_STR_CODE_CORRECT_OR_ZERO;
         else
             return TAD_CKSUM_STR_CODE_INCORRECT;
     }

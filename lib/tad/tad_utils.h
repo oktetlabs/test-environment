@@ -54,6 +54,12 @@ extern "C" {
 /** 'string' choice value to denote that correct checksums will match only */
 #define TAD_CKSUM_STR_VAL_CORRECT   "correct"
 
+/**
+ * 'string' choice value to denote that either correct or zero
+ * checksums match only
+ */
+#define TAD_CKSUM_STR_VAL_CORRECT_OR_ZERO "correct-or-zero"
+
 /** 'string' choice value to denote that incorrect checksums will match only */
 #define TAD_CKSUM_STR_VAL_INCORRECT "incorrect"
 
@@ -61,6 +67,7 @@ extern "C" {
 typedef enum {
     TAD_CKSUM_STR_CODE_NONE = 0,
     TAD_CKSUM_STR_CODE_CORRECT,
+    TAD_CKSUM_STR_CODE_CORRECT_OR_ZERO,
     TAD_CKSUM_STR_CODE_INCORRECT,
 } tad_cksum_str_code;
 

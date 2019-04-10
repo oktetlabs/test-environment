@@ -60,7 +60,8 @@ tad_does_cksum_match(csap_p              csap,
 {
     te_errno rc;
 
-    rc = ((cksum_str_code == TAD_CKSUM_STR_CODE_CORRECT) ==
+    rc = ((cksum_str_code == TAD_CKSUM_STR_CODE_CORRECT ||
+           cksum_str_code == TAD_CKSUM_STR_CODE_CORRECT_OR_ZERO) ==
           (cksum == CKSUM_CMP_CORRECT)) ?
          0 : TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
     if (rc != 0)
@@ -68,7 +69,10 @@ tad_does_cksum_match(csap_p              csap,
                "(the pattern unit expected the checksum to be %s)",
                CSAP_LOG_ARGS(csap), layer, rc,
                (cksum_str_code == TAD_CKSUM_STR_CODE_CORRECT) ?
-               TAD_CKSUM_STR_VAL_CORRECT : TAD_CKSUM_STR_VAL_INCORRECT);
+               TAD_CKSUM_STR_VAL_CORRECT :
+               (cksum_str_code == TAD_CKSUM_STR_CODE_CORRECT_OR_ZERO) ?
+               TAD_CKSUM_STR_VAL_CORRECT_OR_ZERO :
+               TAD_CKSUM_STR_VAL_INCORRECT);
 
     return rc;
 }
@@ -90,6 +94,19 @@ tad_l4_match_cksum_advanced(csap_p              csap,
     struct sockaddr_storage ip_dst_addr;
     struct sockaddr_storage ip_src_addr;
     uint16_t                cksum;
+
+    if (cksum_str_code == TAD_CKSUM_STR_CODE_CORRECT_OR_ZERO)
+    {
+        size_t cksum_off = 6;
+
+        if (l4_proto != 17)
+            return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
+
+        tad_pkt_read_bits(pdu, BITS_PER_BYTE * cksum_off,
+                          BITS_PER_BYTE * sizeof(cksum), (uint8_t *)&cksum);
+        if (cksum == 0)
+            return 0;
+    }
 
     /* Re-create the datagram */
 
