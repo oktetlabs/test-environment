@@ -725,7 +725,8 @@ out:
 
 static te_errno
 tapi_tad_set_cksum_script_correct(asn_value  *proto_pdu,
-                                  char       *du_cksum_label)
+                                  char       *du_cksum_label,
+                                  te_bool     accept_zero_cksum)
 {
     te_errno    err = 0;
     int         du_cksum_index = -1;
@@ -774,7 +775,10 @@ tapi_tad_set_cksum_script_correct(asn_value  *proto_pdu,
         goto out;
     }
 
-    err = asn_write_string(proto_pdu, "correct", du_cksum_label_choice);
+    err = (accept_zero_cksum) ?
+          asn_write_string(proto_pdu, "correct-or-zero",
+                           du_cksum_label_choice) :
+          asn_write_string(proto_pdu, "correct", du_cksum_label_choice);
     if (err != 0)
         goto out;
 
@@ -809,7 +813,8 @@ tapi_tad_request_correct_cksums(uint32_t   hw_flags,
         pdu_ip4_outer = asn_find_child_choice_value(pdus_o, TE_PROTO_IP4);
         if (pdu_ip4_outer != NULL)
         {
-            err = tapi_tad_set_cksum_script_correct(pdu_ip4_outer, "h-checksum");
+            err = tapi_tad_set_cksum_script_correct(pdu_ip4_outer, "h-checksum",
+                                                    FALSE);
             if (err != 0)
                 goto out;
         }
@@ -817,7 +822,8 @@ tapi_tad_request_correct_cksums(uint32_t   hw_flags,
         pdu_udp_outer = asn_find_child_choice_value(pdus_o, TE_PROTO_UDP);
         if (pdu_udp_outer != NULL)
         {
-            err = tapi_tad_set_cksum_script_correct(pdu_udp_outer, "checksum");
+            err = tapi_tad_set_cksum_script_correct(pdu_udp_outer, "checksum",
+                                                    TRUE);
             if (err != 0)
                 goto out;
         }
@@ -836,7 +842,7 @@ tapi_tad_request_correct_cksums(uint32_t   hw_flags,
     if (((hw_flags & SEND_COND_HW_OFFL_IP_CKSUM) ==
          SEND_COND_HW_OFFL_IP_CKSUM) && (pdu_ip4 != NULL))
     {
-        err = tapi_tad_set_cksum_script_correct(pdu_ip4, "h-checksum");
+        err = tapi_tad_set_cksum_script_correct(pdu_ip4, "h-checksum", FALSE);
         if (err != 0)
             goto out;
     }
@@ -846,14 +852,14 @@ tapi_tad_request_correct_cksums(uint32_t   hw_flags,
     {
         if (pdu_tcp != NULL)
         {
-            err = tapi_tad_set_cksum_script_correct(pdu_tcp, "checksum");
+            err = tapi_tad_set_cksum_script_correct(pdu_tcp, "checksum", FALSE);
             if (err != 0)
                 goto out;
         }
 
         if (pdu_udp != NULL)
         {
-            err = tapi_tad_set_cksum_script_correct(pdu_udp, "checksum");
+            err = tapi_tad_set_cksum_script_correct(pdu_udp, "checksum", FALSE);
             if (err != 0)
                 goto out;
         }
