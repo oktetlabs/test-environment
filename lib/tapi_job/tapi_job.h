@@ -72,6 +72,79 @@ extern te_errno tapi_job_rpc_create(rcf_rpc_server *rpcs,
                                     const char **argv,
                                     const char **env,
                                     tapi_job_t **job);
+/**
+ * A simplified description of an output filter.
+ * The caller is expected to fill the fields one is
+ * interested in and leave others @c NULL or @c 0.
+ */
+typedef struct tapi_job_simple_filter_t {
+    /** Attach to the job's stdout */
+    te_bool use_stdout;
+    /** Attach to the job's stderr */
+    te_bool use_stderr;
+    /** Filter name (default if @c NULL) */
+    const char *filter_name;
+    /** Whether the filter is readable by the test */
+    te_bool readable;
+    /** Log level (if 0, output is not logged) */
+    te_log_level log_level;
+    /** Regexp to match */
+    const char *re;
+    /** Index of matched substring (0 means whole match) */
+    unsigned extract;
+    /** Location of a variable to hold the filter handle */
+    tapi_job_channel_t **filter_var;
+} tapi_job_simple_filter_t;
+
+/**
+ * A simplified description of a job.
+ * The caller is expected to fill the fields one is
+ * interested in and leave others @c NULL.
+ */
+typedef struct tapi_job_simple_desc_t {
+    /** Spawner type */
+    const char *spawner;
+    /** Program path */
+    const char *program;
+    /** Program argument vector */
+    const char **argv;
+    /** Program environment */
+    const char **env;
+    /** Location for a job handle var */
+    tapi_job_t **job_loc;
+    /** Location for a channel handle connected to stdin */
+    tapi_job_channel_t **stdin_loc;
+    /** Location for a channel handle connected to stdout */
+    tapi_job_channel_t **stdout_loc;
+    /** Location for a channel handle connected to stderr */
+    tapi_job_channel_t **stderr_loc;
+    /** Vector of filters.
+     * If not @c NULL, the last element should have
+     * @a use_stdout and @a use_stderr set to @c FALSE
+     */
+    tapi_job_simple_filter_t *filters;
+} tapi_job_simple_desc_t;
+
+/**
+ * A helper to create vectors of job simple filter descriptions
+ */
+#define TAPI_JOB_SIMPLE_FILTERS(...)                \
+    ((tapi_job_simple_filter_t [])                  \
+    {__VA_ARGS__,                                   \
+        {.use_stdout = FALSE, .use_stderr = FALSE}  \
+    })
+
+/**
+ * Create a job on a given RPC served based on a description
+ *
+ * @param rpcs   RPC server
+ * @param desc   Job description
+ *
+ * @return       Status code
+ * @retval TE_EALREADY A job associated with @p desc already created
+ */
+extern te_errno tapi_job_rpc_simple_create(rcf_rpc_server *rpcs,
+                                           tapi_job_simple_desc_t *desc);
 
 /**
  * Start a job
@@ -189,6 +262,20 @@ extern te_errno tapi_job_attach_filter(tapi_job_channel_set_t channels,
                                        te_log_level log_level,
                                        tapi_job_channel_t **filter);
 
+/**
+ * Attach a simple filter to a job created by tapi_job_simple_rpc_create()
+ *
+ * @param desc   Job description (it must have @a job_loc, @a stdin_loc and
+ *               @a stderr_loc filled in)
+ * @param filter Filter to attach
+ *
+ * @return       Status code
+ * @retval TE_ENOTCONN tapi_job_simple_rpc_create() has not been called on
+ *                     @p desc
+ */
+extern te_errno tapi_job_attach_simple_filter(const tapi_job_simple_desc_t *desc,
+                                              tapi_job_simple_filter_t *filter);
+
 
 /**
  * Add a regular expression for filter
@@ -217,6 +304,19 @@ extern te_errno tapi_job_send(tapi_job_channel_t *channel,
                               const te_string *str);
 
 /**
+ * The same as tapi_job_send(), but fails the test if an error
+ * happens, instead of returning an error
+ *
+ * @param channel   Input channel handle
+ * @param str      A pointer to string buffer
+ *
+ * @exception TEST_FAIL
+ */
+extern void tapi_job_simple_send(tapi_job_channel_t *channel,
+                                 const te_string *str);
+
+
+/**
  * Poll the job's channels/filters for readiness.
  * from @p wait_set
  *
@@ -231,6 +331,17 @@ extern te_errno tapi_job_send(tapi_job_channel_t *channel,
  */
 extern te_errno tapi_job_poll(const tapi_job_channel_set_t wait_set,
                               int timeout_ms);
+/**
+ * The same as tapi_job_poll(), but fails the test if an error
+ * happens, instead of returning an error.
+ *
+ * @param wait_set Set of channels to wait
+ * @param timeout_ms Timeout in ms to wait (if negative, wait forever)
+ *
+ * @exception TEST_FAIL
+ */
+extern void tapi_job_simple_poll(const tapi_job_channel_set_t wait_set,
+                                 int timeout_ms);
 
 /**
  * A structure to store messages read by tapi_job_receive()
@@ -271,6 +382,21 @@ extern te_errno tapi_job_receive(const tapi_job_channel_set_t filters,
                                  int timeout_ms,
                                  tapi_job_buffer_t *buffer);
 
+/**
+ * The same as tapi_job_receive() but fails the test if an error
+ * happens. Also, unlike tapi_job_receive(), the function resets the
+ * @p buffer contents.
+ *
+ * @param filters     Set of filters to read from.
+ * @param timeout_ms  Timeout to wait (if negative, infinity)
+ * @param buffer      Data buffer pointer. If @c NULL, the message is
+ *                    silently discarded.
+ *
+ * @exception TEST_FAIL
+ */
+extern void tapi_job_simple_receive(const tapi_job_channel_set_t filters,
+                                    int timeout_ms,
+                                    tapi_job_buffer_t *buffer);
 
 /**
  * Destroy the job instance. If the job has started, it is terminated
