@@ -26,6 +26,10 @@
 #include "agentlib.h"
 
 #define PROC_WAIT_US 1000
+/*
+ * The amount of time needed for a process to terminate after receiving
+ * a signal (that is meant to terminate the process) with default handler
+ */
 #define KILL_TIMEOUT_MS 10
 
 #define MAX_OUTPUT_CHANNELS_PER_JOB 32
@@ -814,16 +818,33 @@ proc_wait(pid_t pid, int timeout_ms, tarpc_job_status *status)
 }
 
 static void
-proc_kill(pid_t pid)
+proc_kill(pid_t pid, int term_timeout_ms)
 {
     tarpc_job_status dummy;
+    int timeout = term_timeout_ms >= 0 ? term_timeout_ms : KILL_TIMEOUT_MS;
 
     /* Don't consider kill() failure if the call failed with ESRCH */
     if (kill(pid, SIGTERM) < 0 && errno != ESRCH)
         WARN("Process kill(%d, SIGTERM) failed: %s", pid, strerror(errno));
 
-    if (proc_wait(pid, KILL_TIMEOUT_MS, &dummy) != 0)
-        ERROR("Failed to wait for killed process");
+    /*
+     * Wait for process for requested amount of time (or default)
+     * before killing the process with SIGKILL
+     */
+    if (proc_wait(pid, timeout, &dummy) != 0)
+    {
+        WARN("Failed to wait for killed process");
+
+        if (kill(pid, SIGKILL) < 0 && errno != ESRCH)
+            WARN("Process kill(%d, SIGKILL) failed: %s", pid, strerror(errno));
+
+        /*
+         * Since SIGKILL cannot be intercepted, wait for process for
+         * default amout of time
+         */
+        if (proc_wait(pid, KILL_TIMEOUT_MS, &dummy) != 0)
+            ERROR("Failed to wait for killed process");
+    }
 }
 
 static te_errno
@@ -1150,10 +1171,10 @@ thread_work_loop(void *arg)
 }
 
 static void
-job_stop(job_t *job, te_bool kill_process)
+job_stop(job_t *job, te_bool kill_process, int term_timeout_ms)
 {
     if (kill_process)
-        proc_kill(job->pid);
+        proc_kill(job->pid, term_timeout_ms);
 
     job->pid = (pid_t)-1;
 }
@@ -1248,7 +1269,7 @@ job_start(unsigned int id)
         close_valid(stdout_fd);
         close_valid(stderr_fd);
         close_valid(stdin_fd);
-        job_stop(job, TRUE);
+        job_stop(job, TRUE, -1);
         return TE_EMFILE;
     }
 
@@ -1260,7 +1281,7 @@ job_start(unsigned int id)
         close_valid(stdout_fd);
         close_valid(stderr_fd);
         close_valid(stdin_fd);
-        job_stop(job, TRUE);
+        job_stop(job, TRUE, -1);
         return rc;
     }
 
@@ -1284,7 +1305,7 @@ job_start(unsigned int id)
             close_valid(stdout_fd);
             close_valid(stderr_fd);
             close_valid(stdin_fd);
-            job_stop(job, TRUE);
+            job_stop(job, TRUE, -1);
             return rc;
         }
     }
@@ -1837,13 +1858,13 @@ job_wait(unsigned int job_id, int timeout_ms, tarpc_job_status *status)
     }
 
     if ((rc = proc_wait(job->pid, timeout_ms, status)) == 0)
-        job_stop(job, FALSE);
+        job_stop(job, FALSE, -1);
 
     return rc;
 }
 
 static te_errno
-job_destroy(unsigned int job_id)
+job_destroy(unsigned int job_id, int term_timeout_ms)
 {
     unsigned int i;
     job_t *job;
@@ -1853,7 +1874,7 @@ job_destroy(unsigned int job_id)
         return TE_EINVAL;
 
     if (job->pid != (pid_t)-1)
-        job_stop(job, TRUE);
+        job_stop(job, TRUE, term_timeout_ms);
 
     LIST_REMOVE(job, next);
 
@@ -1974,5 +1995,5 @@ TARPC_FUNC_STATIC(job_wait, {},
 
 TARPC_FUNC_STATIC(job_destroy, {},
 {
-    MAKE_CALL(out->retval = func(in->job_id));
+    MAKE_CALL(out->retval = func(in->job_id, in->term_timeout_ms));
 })

@@ -132,6 +132,87 @@ tapi_job_rpc_create(rcf_rpc_server *rpcs, const char *spawner,
     return 0;
 }
 
+static te_errno
+tapi_job_simple_alloc_channels(tapi_job_t *job, tapi_job_simple_desc_t *desc)
+{
+    tapi_job_channel_t *out_channels[2] = {NULL, NULL};
+    tapi_job_channel_t *in_channel = NULL;
+    int n_out_channels = 0;
+    te_errno rc;
+
+    if (desc->stdout_loc != NULL)
+        n_out_channels = 1;
+    if (desc->stderr_loc != NULL)
+        n_out_channels = 2;
+
+    if (n_out_channels > 0)
+    {
+        rc = tapi_job_alloc_output_channels(job, n_out_channels, out_channels);
+        if (rc != 0)
+            return rc;
+
+        if (desc->stdout_loc != NULL)
+            *desc->stdout_loc = out_channels[0];
+
+        if (desc->stderr_loc != NULL)
+            *desc->stderr_loc = out_channels[1];
+    }
+
+    if (desc->stdin_loc != NULL)
+    {
+        rc = tapi_job_alloc_input_channels(job, 1, &in_channel);
+        if (rc != 0)
+            return rc;
+
+        *desc->stdin_loc = in_channel;
+    }
+
+    return 0;
+}
+
+te_errno
+tapi_job_rpc_simple_create(rcf_rpc_server *rpcs, tapi_job_simple_desc_t *desc)
+{
+    te_errno rc;
+    tapi_job_simple_filter_t *filter;
+
+    if (*desc->job_loc != NULL)
+    {
+        ERROR("TAPI Job simple description is already associated with a job");
+        return TE_EALREADY;
+    }
+
+    rc = tapi_job_rpc_create(rpcs, desc->spawner, desc->program, desc->argv,
+                             desc->env, desc->job_loc);
+    if (rc != 0)
+        return rc;
+
+    if ((rc = tapi_job_simple_alloc_channels(*desc->job_loc, desc)) != 0)
+    {
+        tapi_job_destroy(*desc->job_loc, -1);
+        *desc->job_loc = NULL;
+        return rc;
+    }
+
+    if (desc->filters == NULL)
+        return 0;
+
+    /* Last element should have use_stdout and  use_stderr set to FALSE */
+    for (filter = desc->filters;
+         filter->use_stdout || filter->use_stderr;
+         filter++)
+    {
+        if ((rc = tapi_job_attach_simple_filter(desc, filter)) != 0)
+        {
+            tapi_job_destroy(*desc->job_loc, -1);
+            *desc->job_loc = NULL;
+            return rc;
+        }
+    }
+
+    return 0;
+}
+
 /* See description in tapi_job.h */
 te_errno
 tapi_job_start(tapi_job_t *job)
@@ -373,6 +454,54 @@ tapi_job_attach_filter(tapi_job_channel_set_t channels, const char *filter_name,
     return 0;
 }
 
+te_errno
+tapi_job_attach_simple_filter(const tapi_job_simple_desc_t *desc,
+                              tapi_job_simple_filter_t *filter)
+{
+    tapi_job_channel_t *channels[3] = {NULL};
+    tapi_job_channel_t *result = NULL;
+    unsigned int n_channels = 0;
+    te_errno rc;
+
+    if (*desc->job_loc == NULL)
+    {
+        ERROR("Attach simple filter failed: simple description is not associated with a job");
+        return TE_ENOTCONN;
+    }
+    if (filter->use_stdout && desc->stdout_loc == NULL)
+    {
+        ERROR("Attach simple filter on stdout failed: no stdout channel");
+        return TE_RC(TE_TAPI, TE_EPERM);
+    }
+    if (filter->use_stderr && desc->stderr_loc == NULL)
+    {
+        ERROR("Attach simple filter on stderr failed: no stderr channel");
+        return TE_RC(TE_TAPI, TE_EPERM);
+    }
+
+    if (filter->use_stdout)
+        channels[n_channels++] = *desc->stdout_loc;
+    if (filter->use_stderr)
+        channels[n_channels++] = *desc->stderr_loc;
+
+    rc = tapi_job_attach_filter(channels, filter->filter_name,
+                                filter->readable, filter->log_level, &result);
+    if (rc != 0)
+        return rc;
+
+    if (filter->re != NULL)
+    {
+        rc = tapi_job_filter_add_regexp(result, filter->re, filter->extract);
+        if (rc != 0)
+            return rc;
+    }
+
+    if (filter->filter_var != NULL)
+        *filter->filter_var = result;
+
+    return 0;
+}
+
 /* See description in tapi_job.h */
 te_errno
 tapi_job_filter_add_regexp(tapi_job_channel_t *filter, const char *re,
@@ -387,6 +516,16 @@ te_errno
 tapi_job_send(tapi_job_channel_t *channel, const te_string *str)
 {
     return rpc_job_send(channel->rpcs, channel->id, str->ptr, str->size);
+}
+
+void
+tapi_job_simple_send(tapi_job_channel_t *channel, const te_string *str)
+{
+    if (tapi_job_send(channel, str) != 0)
+    {
+        TEST_FAIL("Job simple send failed to send '%s' to channel with id %u",
+                  str->ptr, channel->id);
+    }
 }
 
 /* See description in tapi_job.h */
@@ -408,6 +547,13 @@ tapi_job_poll(const tapi_job_channel_set_t wait_set, int timeout_ms)
     free(channel_ids);
 
     return rc;
+}
+
+void
+tapi_job_simple_poll(const tapi_job_channel_set_t wait_set, int timeout_ms)
+{
+    if (tapi_job_poll(wait_set, timeout_ms) != 0)
+        TEST_FAIL("Job simple poll failed");
 }
 
 static void
@@ -463,9 +609,19 @@ tapi_job_receive(const tapi_job_channel_set_t filters, int timeout_ms,
     return 0;
 }
 
+void
+tapi_job_simple_receive(const tapi_job_channel_set_t filters, int timeout_ms,
+                        tapi_job_buffer_t *buffer)
+{
+    te_string_reset(&buffer->data);
+
+    if (tapi_job_receive(filters, timeout_ms, buffer) != 0)
+        TEST_FAIL("Job simple receive failed");
+}
+
 /* See description in tapi_job.h */
 te_errno
-tapi_job_destroy(tapi_job_t *job)
+tapi_job_destroy(tapi_job_t *job, int term_timeout_ms)
 {
     te_errno rc;
     channel_entry *entry;
@@ -474,7 +630,7 @@ tapi_job_destroy(tapi_job_t *job)
     if (job == NULL)
         return 0;
 
-    rc = rpc_job_destroy(job->rpcs, job->id);
+    rc = rpc_job_destroy(job->rpcs, job->id, term_timeout_ms);
     if (rc != 0)
         return rc;
 

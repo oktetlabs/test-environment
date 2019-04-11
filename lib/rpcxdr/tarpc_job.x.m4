@@ -183,6 +183,7 @@ struct tarpc_job_destroy_in {
     struct tarpc_in_arg common;
 
     tarpc_uint job_id;
+    tarpc_int term_timeout_ms;
 };
 
 struct tarpc_job_destroy_out {

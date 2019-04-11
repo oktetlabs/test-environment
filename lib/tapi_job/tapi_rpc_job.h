@@ -188,12 +188,17 @@ extern int rpc_job_wait(rcf_rpc_server *rpcs, unsigned int job_id,
  * as gracefully as possible. All resources of the instance are freed;
  * all unread data on all filters are lost.
  *
- * @param rpcs          RPC server
- * @param job_id        Job instance handle
+ * @param rpcs              RPC server
+ * @param job_id            Job instance handle
+ * @param term_timeout_ms   The timeout of graceful termination of a job,
+ *                          if it has been running. After the timeout expiration
+ *                          the job will be killed with SIGKILL. (negative means
+ *                          default timeout)
  *
  * @return              Status code
  */
-extern int rpc_job_destroy(rcf_rpc_server *rpcs, unsigned int job_id);
+extern int rpc_job_destroy(rcf_rpc_server *rpcs, unsigned int job_id,
+                           int term_timeout_ms);
 
 #ifdef __cplusplus
 } /* extern "C" */
