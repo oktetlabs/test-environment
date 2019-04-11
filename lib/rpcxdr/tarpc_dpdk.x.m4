@@ -1019,7 +1019,7 @@ struct tarpc_rte_intr_conf {
 };
 
 struct tarpc_rte_eth_conf {
-    uint16_t                            link_speeds;
+    uint32_t                            link_speeds;
     struct tarpc_rte_eth_rxmode         rxmode;
     struct tarpc_rte_eth_txmode         txmode;
     uint32_t                            lpbk_mode;
