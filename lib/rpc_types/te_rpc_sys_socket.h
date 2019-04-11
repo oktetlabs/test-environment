@@ -710,7 +710,9 @@ typedef enum rpc_sockopt {
     
     RPC_IPV6_RECVHOPLIMIT,  /**< Deliver the hop count of the packet */
     RPC_IPV6_HOPLIMIT,      /**< Set delivery of control messages */
- 
+    RPC_IPV6_TCLASS,        /**< Set IPv6 traffic class (similar to
+                                 IPv4 TOS) */
+
     RPC_TCP_MAXSEG,         /**< Set/get the maximum segment size for
                                  outgoing TCP packets */
     RPC_TCP_NODELAY,        /**< Enable/disable the Nagle algorithm */
