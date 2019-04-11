@@ -215,6 +215,32 @@ tapi_cfg_cpu_grab_by_id(const char *ta, const tapi_cpu_index_t *cpu_id)
     return rc;
 }
 
+te_errno
+tapi_cfg_cpu_release_by_id(const char *ta, const tapi_cpu_index_t *cpu_id)
+{
+    char cpu_rsrc_oid[CFG_OID_MAX] = {0};
+    te_errno rc = 0;
+
+    rc = format_cpu_rsrc_oid(ta, cpu_id, sizeof(cpu_rsrc_oid), cpu_rsrc_oid);
+    if (rc != 0)
+        return rc;
+
+    /* Check that the CPU is grabbed by this process */
+    rc = cfg_get_instance_str(NULL, NULL, cpu_rsrc_oid);
+
+    switch (TE_RC_GET_ERROR(rc))
+    {
+        case TE_ENOENT:
+            return 0;
+        case 0:
+            break;
+        default:
+            return rc;
+    }
+
+    return cfg_del_instance_fmt(FALSE, "%s", cpu_rsrc_oid);
+}
+
 static te_errno
 get_all_threads(const char *ta,  size_t *size, tapi_cpu_index_t **indices)
 {
