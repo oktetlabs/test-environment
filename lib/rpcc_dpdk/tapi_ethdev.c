@@ -54,6 +54,52 @@ static const tapi_rpc_rte_tx_offload_t tapi_rpc_rte_tx_offloads[] = {
 };
 
 /**
+ * Get default link speeds from Configurator if any.
+ *
+ * @param link_speeds   Location of the link speeds field; cannot be @c NULL
+ *
+ * @return Status code.
+ */
+static te_errno
+tapi_rpc_rte_eth_conf_get_link_speeds(const char *ta, uint32_t *link_speeds)
+{
+    te_errno      rc;
+    cfg_val_type  val_type = CVT_STRING;
+    char         *val;
+
+    rc = cfg_get_instance_fmt(&val_type, &val,
+                              "/local:%s/dpdk:/link_speeds:", ta);
+    if (rc == TE_RC(TE_CS, TE_ENOENT))
+        return 0;
+    if (rc != 0)
+        return rc;
+
+    if (strlen(val) > 0)
+    {
+        char *sp = NULL;
+        char *token;
+
+        for (token = strtok_r(val, ",", &sp);
+             token != NULL;
+             token = strtok_r(NULL, ",", &sp))
+        {
+            uint32_t mask = tapi_rpc_rte_eth_link_speeds_str2val(token);
+
+            if (mask == 0)
+            {
+                ERROR("Unknown link speed value '%s'", token);
+                rc = TE_RC(TE_TAPI, TE_EINVAL);
+                break;
+            }
+            *link_speeds |= mask;
+        }
+    }
+
+    free(val);
+    return rc;
+}
+
+/**
  * Discover fixed Tx offloads on device level from Configurator
  * and set appropriate flags to enable them.
  *
@@ -118,6 +164,11 @@ tapi_rpc_rte_eth_make_eth_conf(rcf_rpc_server *rpcs, uint16_t port_id,
     UNUSED(port_id);
 
     memset(eth_conf, 0, sizeof(*eth_conf));
+
+    rc = tapi_rpc_rte_eth_conf_get_link_speeds(rpcs->ta,
+                                               &eth_conf->link_speeds);
+    if (rc != 0)
+        return NULL;
 
     rc = tapi_rpc_rte_eth_conf_set_fixed_dev_tx_offloads(offloadsp);
     if (rc != 0)
