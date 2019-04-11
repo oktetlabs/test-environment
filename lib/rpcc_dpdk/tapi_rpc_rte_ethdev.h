@@ -39,6 +39,15 @@ extern "C" {
 #define RPC_RTE_EPOLL_PER_THREAD -1
 
 /**
+ * Map link speed string to bitmask value.
+ *
+ * @param str       Link speed as string
+ *
+ * @return Link speed bitmask value or 0.
+ */
+extern uint32_t tapi_rpc_rte_eth_link_speeds_str2val(const char *str);
+
+/**
  * rte_eth_dev_info() RPC.
  *
  * Caller must free memory allocated for driver_name using free().

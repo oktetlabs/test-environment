@@ -258,10 +258,7 @@ tarpc_rte_eth_dev_desc_lim2str(te_log_buf *tlbp,
     return te_log_buf_get(tlbp);
 }
 
-static const char *
-tarpc_rte_eth_speeds2str(te_log_buf *tlbp, uint32_t speeds)
-{
-    const struct te_log_buf_bit2str speeds2str[] = {
+static const struct te_log_buf_bit2str tapi_rpc_rte_eth_speeds2str[] = {
 #define TARPC_RTE_ETH_LINK_SPEED_BIT2STR(_bit) \
         { TARPC_RTE_ETH_LINK_SPEED_##_bit, #_bit }
         TARPC_RTE_ETH_LINK_SPEED_BIT2STR(FIXED),
@@ -283,7 +280,22 @@ tarpc_rte_eth_speeds2str(te_log_buf *tlbp, uint32_t speeds)
         { 0, NULL }
     };
 
-    return te_bit_mask2log_buf(tlbp, speeds, speeds2str);
+uint32_t
+tapi_rpc_rte_eth_link_speeds_str2val(const char *str)
+{
+    size_t i = 0;
+
+    for (i = 0; tapi_rpc_rte_eth_speeds2str[i].str != NULL; ++i)
+        if (strcmp(str, tapi_rpc_rte_eth_speeds2str[i].str) == 0)
+            return 1u << tapi_rpc_rte_eth_speeds2str[i].bit;
+
+    return 0;
+}
+
+static const char *
+tarpc_rte_eth_speeds2str(te_log_buf *tlbp, uint32_t speeds)
+{
+    return te_bit_mask2log_buf(tlbp, speeds, tapi_rpc_rte_eth_speeds2str);
 }
 
 static const char *
