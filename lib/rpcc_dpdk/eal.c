@@ -611,15 +611,15 @@ tapi_eal_get_vdev_port_ids(rcf_rpc_server  *rpcs,
 }
 
 te_errno
-tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
-                  int argc, const char **argv)
+tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
+                       int argc, const char **argv,
+                       int *out_argc, char ***out_argv)
 {
-    te_errno                rc;
+    te_errno                rc = 0;
     const tapi_env_pco     *pco;
     char                  **my_argv = NULL;
     int                     my_argc = 0;
     const tapi_env_ps_if   *ps_if;
-    int                     ret;
     int                     i;
     cfg_val_type            val_type;
     char                   *dev_args = NULL;
@@ -627,8 +627,6 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     int                     mem_amount = 0;
     char                   *app_prefix = NULL;
     char                   *extra_eal_args = NULL;
-    te_bool                 need_init = TRUE;
-    char                   *eal_args_new = NULL;
 
     if (env == NULL || rpcs == NULL)
         return TE_EINVAL;
@@ -744,7 +742,78 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
 
     /* Append arguments provided by caller */
     for (i = 0; i < argc; ++i)
-        append_arg(&my_argc, &my_argv, "%s", argv[i]);
+    {
+        if (argv[i] == NULL)
+        {
+            my_argv = realloc(my_argv, (my_argc + 1) * sizeof(*my_argv));
+            my_argv[my_argc] = NULL;
+            my_argc++;
+        }
+        else
+        {
+            append_arg(&my_argc, &my_argv, "%s", argv[i]);
+        }
+    }
+
+    *out_argc = my_argc;
+    *out_argv = my_argv;
+
+cleanup:
+    if (rc != 0)
+    {
+        for (i = 0; i < my_argc; ++i)
+            free(my_argv[i]);
+        free(my_argv);
+    }
+
+    free(dev_args);
+
+    return rc;
+}
+
+te_errno
+tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
+                  int argc, const char **argv)
+{
+    te_errno                rc;
+    const tapi_env_pco     *pco;
+    char                  **my_argv = NULL;
+    int                     my_argc = 0;
+    cfg_val_type            val_type;
+    int                     ret;
+    int                     i;
+    char                   *dev_args = NULL;
+    te_bool                 need_init = TRUE;
+    char                   *eal_args_new = NULL;
+
+    if (env == NULL || rpcs == NULL)
+        return TE_EINVAL;
+
+    pco = tapi_env_rpcs2pco(env, rpcs);
+    if (pco == NULL)
+        return TE_EINVAL;
+
+    rc = tapi_rte_make_eal_args(env, rpcs, argc, argv, &my_argc, &my_argv);
+    if (rc != 0)
+        return rc;
+
+    /* Get device arguments to be specified in whitelist option */
+    val_type = CVT_STRING;
+    rc = cfg_get_instance_fmt(&val_type, &dev_args,
+                              "/local:%s/dpdk:/dev_args:", rpcs->ta);
+    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+    {
+        dev_args = NULL;
+    }
+    else if (rc != 0)
+    {
+        goto cleanup;
+    }
+    else if (dev_args[0] == '\0')
+    {
+        free(dev_args);
+        dev_args = NULL;
+    }
 
     if (dpdk_reuse_rpcs())
     {
