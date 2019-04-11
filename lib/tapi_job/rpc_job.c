@@ -386,7 +386,7 @@ rpc_job_wait(rcf_rpc_server *rpcs, unsigned int job_id, int timeout_ms,
 }
 
 int
-rpc_job_destroy(rcf_rpc_server *rpcs, unsigned int job_id)
+rpc_job_destroy(rcf_rpc_server *rpcs, unsigned int job_id, int term_timeout_ms)
 {
     tarpc_job_destroy_in  in;
     tarpc_job_destroy_out out;
@@ -395,6 +395,7 @@ rpc_job_destroy(rcf_rpc_server *rpcs, unsigned int job_id)
     memset(&out, 0, sizeof(out));
 
     in.job_id = job_id;
+    in.term_timeout_ms = term_timeout_ms;
 
     rcf_rpc_call(rpcs, "job_destroy", &in, &out);
 

@@ -465,7 +465,7 @@ tapi_job_receive(const tapi_job_channel_set_t filters, int timeout_ms,
 
 /* See description in tapi_job.h */
 te_errno
-tapi_job_destroy(tapi_job_t *job)
+tapi_job_destroy(tapi_job_t *job, int term_timeout_ms)
 {
     te_errno rc;
     channel_entry *entry;
@@ -474,7 +474,7 @@ tapi_job_destroy(tapi_job_t *job)
     if (job == NULL)
         return 0;
 
-    rc = rpc_job_destroy(job->rpcs, job->id);
+    rc = rpc_job_destroy(job->rpcs, job->id, term_timeout_ms);
     if (rc != 0)
         return rc;
 

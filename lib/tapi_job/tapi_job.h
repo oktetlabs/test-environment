@@ -277,11 +277,15 @@ extern te_errno tapi_job_receive(const tapi_job_channel_set_t filters,
  * as gracefully as possible. All resources of the instance are freed;
  * all unread data on all filters are lost.
  *
- * @param job     Job instance handle
+ * @param job               Job instance handle
+ * @param term_timeout_ms   The timeout of graceful termination of a job,
+ *                          if it has been running. After the timeout expiration
+ *                          the job will be killed with SIGKILL. (negative means
+ *                          defult timeout)
  *
  * @return        Status code
  */
-extern te_errno tapi_job_destroy(tapi_job_t *job);
+extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
 
 /**
  * @page tapi-job-scenarios Job TAPI usage scenarios
