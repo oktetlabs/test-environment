@@ -65,28 +65,30 @@ parse_config_yaml_cond_exp(const char *text,
     }
 
     var_str = getenv(var_name);
-    if (var_str == NULL)
-    {
-        rc = TE_EINVAL;
-        goto out;
-    }
 
     if (strcmp(op_str, "==") == 0)
     {
+        var_str = (var_str == NULL) ? "" : var_str;
+
         *condp = (strcmp(var_str, cmp_str) == 0) ? TRUE : FALSE;
     }
     else if (strcmp(op_str, "!=") == 0)
     {
+        var_str = (var_str == NULL) ? "" : var_str;
+
         *condp = (strcmp(var_str, cmp_str) != 0) ? TRUE : FALSE;
     }
     else
     {
-        long int var;
+        long int var = 0;
         long int cmp;
 
-        rc = te_strtol(var_str, 0, &var);
-        if (rc != 0)
-            goto out;
+        if (var_str != NULL)
+        {
+            rc = te_strtol(var_str, 0, &var);
+            if (rc != 0)
+                goto out;
+        }
 
         rc = te_strtol(cmp_str, 0, &cmp);
         if (rc != 0)
