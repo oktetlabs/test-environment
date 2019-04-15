@@ -989,6 +989,26 @@ do { \
     return rc;
 }
 
+/* See description in 'tapi_cfg_base.h' */
+te_errno
+tapi_cfg_base_if_set_mtu_leastwise(const char   *ta,
+                                   const char   *ifname,
+                                   unsigned int  mtu)
+{
+    int      old_mtu;
+    te_errno rc;
+
+    rc = tapi_cfg_base_if_get_mtu_u(ta, ifname, &old_mtu);
+    if (rc != 0)
+        return rc;
+
+    assert(old_mtu >= 0);
+    if ((unsigned int)old_mtu < mtu)
+        rc = tapi_cfg_base_if_set_mtu(ta, ifname, mtu, NULL);
+
+    return rc;
+}
+
 /* See description in tapi_cfg_base.h */
 te_errno
 tapi_cfg_base_if_add_rsrc(const char *ta, const char *ifname)

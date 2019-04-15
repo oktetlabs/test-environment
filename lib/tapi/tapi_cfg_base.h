@@ -816,6 +816,8 @@ extern te_errno tapi_cfg_base_if_get_mtu_u(const char *agent,
  * @param old_mtu   Location for old MTU value or @c NULL
  * @param fast      Don't sleep long time after interface restart if @c TRUE
  *
+ * @note Consider using @c tapi_cfg_base_if_set_mtu_leastwise() instead.
+ *
  * @return Status code
  */
 extern te_errno tapi_cfg_base_if_set_mtu_ext(const char *agent,
@@ -830,6 +832,8 @@ extern te_errno tapi_cfg_base_if_set_mtu_ext(const char *agent,
  * @param mtu       MTU value
  * @param old_mtu   Location for old MTU value or @c NULL
  *
+ * @note Consider using @c tapi_cfg_base_if_set_mtu_leastwise() instead.
+ *
  * @return Status code
  */
 static inline te_errno
@@ -839,6 +843,21 @@ tapi_cfg_base_if_set_mtu(const char *agent, const char *interface, int mtu,
     return tapi_cfg_base_if_set_mtu_ext(agent, interface, mtu, old_mtu,
                                         FALSE);
 }
+
+/**
+ * Ensure that interface @a ifname on the host running TA @a ta
+ * can receive frames up to MTU @a mtu . It increases the
+ * interface MTU if required, but never decreases.
+ *
+ * @param ta     Agent name
+ * @param ifname Interface name
+ * @param mtu    MTU value
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_base_if_set_mtu_leastwise(const char   *ta,
+                                                   const char   *ifname,
+                                                   unsigned int  mtu);
 
 /**
  * Down up interface.
