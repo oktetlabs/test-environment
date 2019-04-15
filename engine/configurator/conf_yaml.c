@@ -464,7 +464,12 @@ parse_config_yaml_cmd_add(yaml_document_t *d,
             const char  *k_label = (const char *)k->data.scalar.value;
 
             if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0)
-                continue;
+            {
+                ERROR(CS_YAML_ERR_PREFIX "found the node nested in the "
+                      "add command to be badly formatted");
+                rc = TE_EINVAL;
+                goto out;
+            }
 
             if (parse_config_yaml_node_get_attribute_type(k) ==
                 CS_YAML_NODE_ATTRIBUTE_CONDITION)
@@ -489,11 +494,21 @@ parse_config_yaml_cmd_add(yaml_document_t *d,
                 if (rc != 0)
                     goto out;
             }
+            else
+            {
+                ERROR(CS_YAML_ERR_PREFIX "failed to recognise add "
+                      "command's child");
+                rc = TE_EINVAL;
+                goto out;
+            }
         } while (++pair < n->data.mapping.pairs.top);
     }
     else
     {
-        cond = FALSE;
+        ERROR(CS_YAML_ERR_PREFIX "found the add command node to be "
+              "badly formatted");
+        rc = TE_EINVAL;
+        goto out;
     }
 
     if (cond == TRUE && xn_add->children != NULL)
@@ -537,13 +552,22 @@ parse_config_yaml_cmd(yaml_document_t *d,
         yaml_node_t *v = yaml_document_get_node(d, pair->value);
 
         if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0)
-            continue;
+        {
+            ERROR(CS_YAML_ERR_PREFIX "found the command node to be "
+                  "badly formatted");
+            return TE_EINVAL;
+        }
 
         if (strcmp((const char *)k->data.scalar.value, "add") == 0)
         {
             rc = parse_config_yaml_cmd_add(d, v, xn_history);
             if (rc != 0)
                 return rc;
+        }
+        else
+        {
+            ERROR(CS_YAML_ERR_PREFIX "failed to recognise the command");
+            return TE_EINVAL;
         }
     } while (++pair < root->data.mapping.pairs.top);
 
