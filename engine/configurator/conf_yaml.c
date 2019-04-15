@@ -183,6 +183,7 @@ parse_config_yaml_cond(yaml_document_t *d,
 
 typedef enum cs_yaml_node_attribute_type_e {
     CS_YAML_NODE_ATTRIBUTE_CONDITION = 0,
+    CS_YAML_NODE_ATTRIBUTE_OID,
     CS_YAML_NODE_ATTRIBUTE_UNKNOWN,
 } cs_yaml_node_attribute_type_t;
 
@@ -192,6 +193,7 @@ static struct {
     cs_yaml_node_attribute_type_t  type;
 } const cs_yaml_node_attributes[] = {
     { "cond", "c", CS_YAML_NODE_ATTRIBUTE_CONDITION },
+    { "oid",  "o", CS_YAML_NODE_ATTRIBUTE_OID },
 };
 
 static cs_yaml_node_attribute_type_t
@@ -257,8 +259,23 @@ parse_config_yaml_cmd_add_instance_attribute(yaml_document_t            *d,
                  c->check_cond = FALSE;
             break;
 
+        case CS_YAML_NODE_ATTRIBUTE_OID:
+            if (c->oid != NULL)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "detected multiple OID specifiers "
+                      "of the instance: only one can be present");
+                return TE_EINVAL;
+            }
+
+            c->oid = (const xmlChar *)v->data.scalar.value;
+            break;
+
         default:
-            if (v->type == YAML_SCALAR_NODE && v->data.scalar.length != 0)
+            if (v->type == YAML_SCALAR_NODE && v->data.scalar.length == 0)
+            {
+                c->oid = (const xmlChar *)k->data.scalar.value;
+            }
+            else
             {
                 ERROR(CS_YAML_ERR_PREFIX "failed to recognise the "
                       "attribute type in the instance");
@@ -307,16 +324,6 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
     else if (n->type == YAML_MAPPING_NODE)
     {
         yaml_node_pair_t *pair = n->data.mapping.pairs.start;
-        yaml_node_t      *k_first = yaml_document_get_node(d, pair->key);
-
-        if (k_first->type != YAML_SCALAR_NODE ||
-            k_first->data.scalar.length == 0)
-        {
-            rc = TE_EINVAL;
-            goto out;
-        }
-
-        c.oid = (const xmlChar *)k_first->data.scalar.value;
 
         do {
             yaml_node_t *k = yaml_document_get_node(d, pair->key);
@@ -336,6 +343,13 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
     {
         ERROR(CS_YAML_ERR_PREFIX "found the instance node to be "
               "badly formatted");
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    if (c.oid == NULL)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "failed to find instance OID specifier");
         rc = TE_EINVAL;
         goto out;
     }
