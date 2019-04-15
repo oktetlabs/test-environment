@@ -236,6 +236,9 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
         cond = FALSE;
     }
 
+    if (!cond)
+        goto out;
+
     xa_oid = xmlNewProp(xn_instance, prop_name, n_label);
     if (xa_oid == NULL)
     {
@@ -243,13 +246,10 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
         goto out;
     }
 
-    if (cond)
-    {
-        if (xmlAddChild(xn_add, xn_instance) == xn_instance)
-            return 0;
-        else
-            rc = TE_EINVAL;
-    }
+    if (xmlAddChild(xn_add, xn_instance) == xn_instance)
+        return 0;
+    else
+        rc = TE_EINVAL;
 
 out:
     xmlFreeNode(xn_instance);
