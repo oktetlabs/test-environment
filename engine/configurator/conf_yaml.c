@@ -184,6 +184,7 @@ parse_config_yaml_cond(yaml_document_t *d,
 typedef enum cs_yaml_node_attribute_type_e {
     CS_YAML_NODE_ATTRIBUTE_CONDITION = 0,
     CS_YAML_NODE_ATTRIBUTE_OID,
+    CS_YAML_NODE_ATTRIBUTE_VALUE,
     CS_YAML_NODE_ATTRIBUTE_UNKNOWN,
 } cs_yaml_node_attribute_type_t;
 
@@ -192,8 +193,9 @@ static struct {
     const char                    *short_label;
     cs_yaml_node_attribute_type_t  type;
 } const cs_yaml_node_attributes[] = {
-    { "cond", "c", CS_YAML_NODE_ATTRIBUTE_CONDITION },
-    { "oid",  "o", CS_YAML_NODE_ATTRIBUTE_OID },
+    { "cond",  "c", CS_YAML_NODE_ATTRIBUTE_CONDITION },
+    { "oid",   "o", CS_YAML_NODE_ATTRIBUTE_OID },
+    { "value", "v", CS_YAML_NODE_ATTRIBUTE_VALUE },
 };
 
 static cs_yaml_node_attribute_type_t
@@ -214,6 +216,7 @@ parse_config_yaml_node_get_attribute_type(yaml_node_t *k)
 
 typedef struct cs_yaml_instance_context_s {
     const xmlChar *oid;
+    const xmlChar *value;
     te_bool        check_cond;
     te_bool        cond;
 } cs_yaml_instance_context_t;
@@ -270,6 +273,17 @@ parse_config_yaml_cmd_add_instance_attribute(yaml_document_t            *d,
             c->oid = (const xmlChar *)v->data.scalar.value;
             break;
 
+        case CS_YAML_NODE_ATTRIBUTE_VALUE:
+            if (c->value != NULL)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "detected multiple value specifiers "
+                      "of the instance: only one can be present");
+                return TE_EINVAL;
+            }
+
+            c->value = (const xmlChar *)v->data.scalar.value;
+            break;
+
         default:
             if (v->type == YAML_SCALAR_NODE && v->data.scalar.length == 0)
             {
@@ -302,9 +316,9 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
                                    xmlNodePtr       xn_add)
 {
     xmlNodePtr                  xn_instance = NULL;
-    xmlAttrPtr                  xa_oid = NULL;
-    cs_yaml_instance_context_t  c = { NULL, TRUE, TRUE };
-    const xmlChar              *prop_name = (const xmlChar *)"oid";
+    cs_yaml_instance_context_t  c = { NULL, NULL, TRUE, TRUE };
+    const xmlChar              *prop_name_oid = (const xmlChar *)"oid";
+    const xmlChar              *prop_name_value = (const xmlChar *)"value";
     te_errno                    rc = 0;
 
     xn_instance = xmlNewNode(NULL, BAD_CAST "instance");
@@ -357,9 +371,17 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
     if (!c.cond)
         goto out;
 
-    xa_oid = xmlNewProp(xn_instance, prop_name, c.oid);
-    if (xa_oid == NULL)
+    if (xmlNewProp(xn_instance, prop_name_oid, c.oid) == NULL)
     {
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    if (c.value != NULL &&
+        xmlNewProp(xn_instance, prop_name_value, c.value) == NULL)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "failed to embed the instance value "
+              "attribute in XML output");
         rc = TE_ENOMEM;
         goto out;
     }
