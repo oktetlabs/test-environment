@@ -135,7 +135,11 @@ parse_config_yaml_cond(yaml_document_t *d,
         str = (const char *)n->data.scalar.value;
 
         if (n->data.scalar.length == 0)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "found the condition node to be "
+                  "badly formatted");
             return TE_EINVAL;
+        }
 
         rc = parse_config_yaml_cond_exp(str, &cond);
         if (rc != 0)
@@ -155,14 +159,28 @@ parse_config_yaml_cond(yaml_document_t *d,
             yaml_node_t *in = yaml_document_get_node(d, *item);
             te_bool      item_cond;
 
-            if (in->type != YAML_SCALAR_NODE || in->data.scalar.length == 0)
-                return TE_EINVAL;
-
             str = (const char *)in->data.scalar.value;
 
-            rc = parse_config_yaml_cond_exp(str, &item_cond);
+            if (in->type != YAML_SCALAR_NODE || in->data.scalar.length == 0)
+            {
+                 ERROR(CS_YAML_ERR_PREFIX "found the condition node to be "
+                      "badly formatted");
+                 rc = TE_EINVAL;
+            }
+            else if ((rc = parse_config_yaml_cond_exp(str, &item_cond)) != 0)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "failed to evaluate the expression "
+                      "contained in the condition node");
+                rc = TE_EINVAL;
+            }
+
             if (rc != 0)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in the "
+                      "condition node at line %lu column %lu",
+                      in->start_mark.line, in->start_mark.column);
                 return rc;
+            }
 
             /*
              * Once set to FALSE, cond will never become TRUE (AND behaviour).
@@ -174,6 +192,8 @@ parse_config_yaml_cond(yaml_document_t *d,
     }
     else
     {
+        ERROR(CS_YAML_ERR_PREFIX "found the condition node to be "
+              "badly formatted");
         return TE_EINVAL;
     }
 
@@ -325,12 +345,18 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
 
     xn_instance = xmlNewNode(NULL, BAD_CAST "instance");
     if (xn_instance == NULL)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "failed to allocate instance "
+              "node for XML output");
         return TE_ENOMEM;
+    }
 
     if (n->type == YAML_SCALAR_NODE)
     {
         if (n->data.scalar.length == 0)
         {
+            ERROR(CS_YAML_ERR_PREFIX "found the instance node to be "
+                  "badly formatted");
             rc = TE_EINVAL;
             goto out;
         }
@@ -375,6 +401,8 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
 
     if (xmlNewProp(xn_instance, prop_name_oid, c.oid) == NULL)
     {
+        ERROR(CS_YAML_ERR_PREFIX "failed to set OID for the instance "
+              "node in XML output");
         rc = TE_ENOMEM;
         goto out;
     }
@@ -389,9 +417,15 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
     }
 
     if (xmlAddChild(xn_add, xn_instance) == xn_instance)
+    {
         return 0;
+    }
     else
+    {
+        ERROR(CS_YAML_ERR_PREFIX "failed to embed the instance in "
+              "XML output");
         rc = TE_EINVAL;
+    }
 
 out:
     xmlFreeNode(xn_instance);
@@ -417,7 +451,11 @@ parse_config_yaml_cmd_add_instances(yaml_document_t *d,
     yaml_node_item_t *item = n->data.sequence.items.start;
 
     if (n->type != YAML_SEQUENCE_NODE)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "found the add command's list of instances "
+              "to be badly formatted");
         return TE_EINVAL;
+    }
 
     do {
         yaml_node_t *in = yaml_document_get_node(d, *item);
@@ -425,7 +463,12 @@ parse_config_yaml_cmd_add_instances(yaml_document_t *d,
 
         rc = parse_config_yaml_cmd_add_instance(d, in, xn_add);
         if (rc != 0)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "failed to process the instance in the "
+                  "add command's list at line %lu column %lu",
+                  in->start_mark.line, in->start_mark.column);
             return rc;
+        }
     } while (++item < n->data.sequence.items.top);
 
     return 0;
@@ -452,7 +495,11 @@ parse_config_yaml_cmd_add(yaml_document_t *d,
 
     xn_add = xmlNewNode(NULL, BAD_CAST "add");
     if (xn_add == NULL)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "failed to allocate add command "
+              "node for XML output");
         return TE_ENOMEM;
+    }
 
     if (n->type == YAML_MAPPING_NODE)
     {
@@ -468,15 +515,11 @@ parse_config_yaml_cmd_add(yaml_document_t *d,
                 ERROR(CS_YAML_ERR_PREFIX "found the node nested in the "
                       "add command to be badly formatted");
                 rc = TE_EINVAL;
-                goto out;
             }
-
-            if (parse_config_yaml_node_get_attribute_type(k) ==
-                CS_YAML_NODE_ATTRIBUTE_CONDITION)
+            else if (parse_config_yaml_node_get_attribute_type(k) ==
+                     CS_YAML_NODE_ATTRIBUTE_CONDITION)
             {
                 rc = parse_config_yaml_cond(d, v, (check_cond) ? &cond : NULL);
-                if (rc != 0)
-                    goto out;
 
                 /*
                  * Once at least one conditional node (which itself may contain
@@ -485,20 +528,28 @@ parse_config_yaml_cmd_add(yaml_document_t *d,
                  * nodes of the current add command (OR behaviour).
                  * Still, the rest of the nodes will be parsed.
                  */
-                if (cond == TRUE)
-                    check_cond = FALSE;
+                if (rc == 0)
+                {
+                    if (cond == TRUE)
+                        check_cond = FALSE;
+                }
             }
             else if (strcmp(k_label, "instances") == 0)
             {
                 rc = parse_config_yaml_cmd_add_instances(d, v, xn_add);
-                if (rc != 0)
-                    goto out;
             }
             else
             {
                 ERROR(CS_YAML_ERR_PREFIX "failed to recognise add "
                       "command's child");
                 rc = TE_EINVAL;
+            }
+
+            if (rc != 0)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in the add "
+                      "command's nested node at line %lu column %lu",
+                      k->start_mark.line, k->start_mark.column);
                 goto out;
             }
         } while (++pair < n->data.mapping.pairs.top);
@@ -514,9 +565,15 @@ parse_config_yaml_cmd_add(yaml_document_t *d,
     if (cond == TRUE && xn_add->children != NULL)
     {
         if (xmlAddChild(xn_history, xn_add) == xn_add)
+        {
             return 0;
+        }
         else
+        {
+            ERROR(CS_YAML_ERR_PREFIX "failed to embed add command "
+                  "to XML output");
             rc = TE_EINVAL;
+        }
     }
 
 out:
@@ -544,7 +601,10 @@ parse_config_yaml_cmd(yaml_document_t *d,
 
     root = yaml_document_get_root_node(d);
     if (root == NULL)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "failed to get the root node");
         return TE_EINVAL;
+    }
 
     pair = root->data.mapping.pairs.start;
     do {
@@ -555,23 +615,28 @@ parse_config_yaml_cmd(yaml_document_t *d,
         {
             ERROR(CS_YAML_ERR_PREFIX "found the command node to be "
                   "badly formatted");
-            return TE_EINVAL;
+            rc = TE_EINVAL;
         }
-
-        if (strcmp((const char *)k->data.scalar.value, "add") == 0)
+        else if (strcmp((const char *)k->data.scalar.value, "add") == 0)
         {
             rc = parse_config_yaml_cmd_add(d, v, xn_history);
-            if (rc != 0)
-                return rc;
         }
         else
         {
             ERROR(CS_YAML_ERR_PREFIX "failed to recognise the command");
-            return TE_EINVAL;
+            rc = TE_EINVAL;
+        }
+
+        if (rc != 0)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in "
+                  "the command node at line %lu column %lu",
+                  k->start_mark.line, k->start_mark.column);
+            break;
         }
     } while (++pair < root->data.mapping.pairs.top);
 
-    return 0;
+    return rc;
 }
 
 /* See description in 'conf_yaml.h' */
@@ -586,7 +651,10 @@ parse_config_yaml(const char *filename)
 
     f = fopen(filename, "rb");
     if (f == NULL)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "failed to open the target file");
         return TE_OS_RC(TE_CS, errno);
+    }
 
     yaml_parser_initialize(&parser);
     yaml_parser_set_input_file(&parser, f);
@@ -596,13 +664,18 @@ parse_config_yaml(const char *filename)
     xn_history = xmlNewNode(NULL, BAD_CAST "history");
     if (xn_history == NULL)
     {
+        ERROR(CS_YAML_ERR_PREFIX "failed to allocate "
+              "main history node for XML output");
         rc = TE_ENOMEM;
         goto out;
     }
 
     rc = parse_config_yaml_cmd(&dy, xn_history);
     if (rc != 0)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "encountered some error(s)");
         goto out;
+    }
 
     if (xn_history->children != NULL)
     {
