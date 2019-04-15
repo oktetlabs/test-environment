@@ -17,6 +17,8 @@
 #include <libxml/xinclude.h>
 #include <yaml.h>
 
+#define CS_YAML_ERR_PREFIX "YAML configuration file parser "
+
 /**
  * Evaluate logical expression.
  *
@@ -233,7 +235,10 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
     }
     else
     {
-        cond = FALSE;
+        ERROR(CS_YAML_ERR_PREFIX "found the instance node to be "
+              "badly formatted");
+        rc = TE_EINVAL;
+        goto out;
     }
 
     if (!cond)
