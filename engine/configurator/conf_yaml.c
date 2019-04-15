@@ -184,9 +184,6 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
     te_bool        cond = TRUE;
     te_errno       rc = 0;
 
-    if (n->data.scalar.length == 0)
-        return TE_EINVAL;
-
     xn_instance = xmlNewNode(NULL, BAD_CAST "instance");
     if (xn_instance == NULL)
         return TE_ENOMEM;
@@ -206,7 +203,8 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
         yaml_node_pair_t *pair = n->data.mapping.pairs.start;
         yaml_node_t      *k_first = yaml_document_get_node(d, pair->key);
 
-        if (k_first->data.scalar.length == 0)
+        if (k_first->type != YAML_SCALAR_NODE ||
+            k_first->data.scalar.length == 0)
         {
             rc = TE_EINVAL;
             goto out;
@@ -219,7 +217,7 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
             yaml_node_t *v = yaml_document_get_node(d, pair->value);
             const char  *k_label = (const char *)k->data.scalar.value;
 
-            if (k->data.scalar.length == 0)
+            if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0)
                 continue;
 
             if (strcmp(k_label, "cond") == 0 && check_cond == TRUE)
@@ -323,7 +321,7 @@ parse_config_yaml_cmd_add(yaml_document_t *d,
             yaml_node_t *v = yaml_document_get_node(d, pair->value);
             const char  *k_label = (const char *)k->data.scalar.value;
 
-            if (k->data.scalar.length == 0)
+            if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0)
                 continue;
 
             if (strcmp(k_label, "cond") == 0 && check_cond == TRUE)
@@ -389,7 +387,7 @@ parse_config_yaml_cmd(yaml_document_t *d,
         yaml_node_t *k = yaml_document_get_node(d, pair->key);
         yaml_node_t *v = yaml_document_get_node(d, pair->value);
 
-        if (k->data.scalar.length == 0)
+        if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0)
             continue;
 
         if (strcmp((const char *)k->data.scalar.value, "add") == 0)
