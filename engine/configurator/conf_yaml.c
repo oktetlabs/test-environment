@@ -181,6 +181,95 @@ parse_config_yaml_cond(yaml_document_t *d,
     return 0;
 }
 
+typedef enum cs_yaml_node_attribute_type_e {
+    CS_YAML_NODE_ATTRIBUTE_CONDITION = 0,
+    CS_YAML_NODE_ATTRIBUTE_UNKNOWN,
+} cs_yaml_node_attribute_type_t;
+
+static struct {
+    const char                    *long_label;
+    const char                    *short_label;
+    cs_yaml_node_attribute_type_t  type;
+} const cs_yaml_node_attributes[] = {
+    { "cond", "c", CS_YAML_NODE_ATTRIBUTE_CONDITION },
+};
+
+static cs_yaml_node_attribute_type_t
+parse_config_yaml_node_get_attribute_type(yaml_node_t *k)
+{
+    const char   *k_label = (const char *)k->data.scalar.value;
+    unsigned int  i;
+
+    for (i = 0; i < TE_ARRAY_LEN(cs_yaml_node_attributes); ++i)
+    {
+        if (strcasecmp(k_label, cs_yaml_node_attributes[i].long_label) == 0 ||
+            strcasecmp(k_label, cs_yaml_node_attributes[i].short_label) == 0)
+            return cs_yaml_node_attributes[i].type;
+    }
+
+    return CS_YAML_NODE_ATTRIBUTE_UNKNOWN;
+}
+
+typedef struct cs_yaml_instance_context_s {
+    const xmlChar *oid;
+    te_bool        check_cond;
+    te_bool        cond;
+} cs_yaml_instance_context_t;
+
+static te_errno
+parse_config_yaml_cmd_add_instance_attribute(yaml_document_t            *d,
+                                             yaml_node_t                *k,
+                                             yaml_node_t                *v,
+                                             cs_yaml_instance_context_t *c)
+{
+    cs_yaml_node_attribute_type_t attribute_type;
+    te_errno                      rc = 0;
+
+    if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0 ||
+        (v->type != YAML_SCALAR_NODE && v->type != YAML_SEQUENCE_NODE))
+    {
+        ERROR(CS_YAML_ERR_PREFIX "found the instance attribute node to be "
+              "badly formatted");
+        return TE_EINVAL;
+    }
+
+    attribute_type = parse_config_yaml_node_get_attribute_type(k);
+    switch (attribute_type)
+    {
+        case CS_YAML_NODE_ATTRIBUTE_CONDITION:
+            rc = parse_config_yaml_cond(d, v,
+                                        (c->check_cond) ? &c->cond : NULL);
+            if (rc != 0)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "failed to process the condition "
+                      "attribute node of the instance");
+                return rc;
+            }
+
+            /*
+             * Once at least one conditional node (which itself may contain
+             * multiple statements) is found to yield TRUE, this result
+             * will never be overridden by the rest of conditional
+             * nodes of the instance in question (OR behaviour).
+             * Still, the rest of the nodes will be parsed.
+             */
+             if (c->cond == TRUE)
+                 c->check_cond = FALSE;
+            break;
+
+        default:
+            if (v->type == YAML_SCALAR_NODE && v->data.scalar.length != 0)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "failed to recognise the "
+                      "attribute type in the instance");
+                return TE_EINVAL;
+            }
+            break;
+    }
+
+    return 0;
+}
+
 /**
  * Process the given object instance node in the given YAML document.
  *
@@ -195,13 +284,11 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
                                    yaml_node_t     *n,
                                    xmlNodePtr       xn_add)
 {
-    xmlNodePtr     xn_instance = NULL;
-    xmlAttrPtr     xa_oid = NULL;
-    const xmlChar *n_label = NULL;
-    const xmlChar *prop_name = (const xmlChar *)"oid";
-    te_bool        check_cond = TRUE;
-    te_bool        cond = TRUE;
-    te_errno       rc = 0;
+    xmlNodePtr                  xn_instance = NULL;
+    xmlAttrPtr                  xa_oid = NULL;
+    cs_yaml_instance_context_t  c = { NULL, TRUE, TRUE };
+    const xmlChar              *prop_name = (const xmlChar *)"oid";
+    te_errno                    rc = 0;
 
     xn_instance = xmlNewNode(NULL, BAD_CAST "instance");
     if (xn_instance == NULL)
@@ -215,7 +302,7 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
             goto out;
         }
 
-        n_label = (const xmlChar *)n->data.scalar.value;
+        c.oid = (const xmlChar *)n->data.scalar.value;
     }
     else if (n->type == YAML_MAPPING_NODE)
     {
@@ -229,31 +316,19 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
             goto out;
         }
 
-        n_label = (const xmlChar *)k_first->data.scalar.value;
+        c.oid = (const xmlChar *)k_first->data.scalar.value;
 
         do {
             yaml_node_t *k = yaml_document_get_node(d, pair->key);
             yaml_node_t *v = yaml_document_get_node(d, pair->value);
-            const char  *k_label = (const char *)k->data.scalar.value;
 
-            if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0)
-                continue;
-
-            if (strcmp(k_label, "cond") == 0)
+            rc = parse_config_yaml_cmd_add_instance_attribute(d, k, v, &c);
+            if (rc != 0)
             {
-                rc = parse_config_yaml_cond(d, v, (check_cond) ? &cond : NULL);
-                if (rc != 0)
-                    goto out;
-
-                /*
-                 * Once at least one conditional node (which itself may contain
-                 * multiple statements) is found to yield TRUE, this result
-                 * will never be overridden by the rest of conditional
-                 * nodes of the instance in question (OR behaviour).
-                 * Still, the rest of the nodes will be parsed.
-                 */
-                if (cond == TRUE)
-                    check_cond = FALSE;
+                ERROR(CS_YAML_ERR_PREFIX "failed to process instance "
+                      "attribute at line %lu column %lu",
+                      k->start_mark.line, k->start_mark.column);
+                goto out;
             }
         } while (++pair < n->data.mapping.pairs.top);
     }
@@ -265,10 +340,10 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
         goto out;
     }
 
-    if (!cond)
+    if (!c.cond)
         goto out;
 
-    xa_oid = xmlNewProp(xn_instance, prop_name, n_label);
+    xa_oid = xmlNewProp(xn_instance, prop_name, c.oid);
     if (xa_oid == NULL)
     {
         rc = TE_ENOMEM;
@@ -353,7 +428,8 @@ parse_config_yaml_cmd_add(yaml_document_t *d,
             if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0)
                 continue;
 
-            if (strcmp(k_label, "cond") == 0)
+            if (parse_config_yaml_node_get_attribute_type(k) ==
+                CS_YAML_NODE_ATTRIBUTE_CONDITION)
             {
                 rc = parse_config_yaml_cond(d, v, (check_cond) ? &cond : NULL);
                 if (rc != 0)
@@ -369,8 +445,7 @@ parse_config_yaml_cmd_add(yaml_document_t *d,
                 if (cond == TRUE)
                     check_cond = FALSE;
             }
-
-            if (strcmp(k_label, "instances") == 0)
+            else if (strcmp(k_label, "instances") == 0)
             {
                 rc = parse_config_yaml_cmd_add_instances(d, v, xn_add);
                 if (rc != 0)
