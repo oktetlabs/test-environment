@@ -115,7 +115,7 @@ out:
  *
  * @param d     YAML document handle
  * @param n     Handle of the parent node in the given document
- * @param condp Location for the result
+ * @param condp Location for the result or @c NULL
  *
  * @return Status code.
  */
@@ -125,6 +125,7 @@ parse_config_yaml_cond(yaml_document_t *d,
                        te_bool         *condp)
 {
     const char *str = NULL;
+    te_bool     cond;
     te_errno    rc = 0;
 
     if (n->type == YAML_SCALAR_NODE)
@@ -134,32 +135,48 @@ parse_config_yaml_cond(yaml_document_t *d,
         if (n->data.scalar.length == 0)
             return TE_EINVAL;
 
-        return parse_config_yaml_cond_exp(str, condp);
+        rc = parse_config_yaml_cond_exp(str, &cond);
+        if (rc != 0)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "failed to evaluate the expression "
+                  "contained in the condition node");
+            return rc;
+        }
     }
     else if (n->type == YAML_SEQUENCE_NODE)
     {
         yaml_node_item_t *item = n->data.sequence.items.start;
 
+        cond = TRUE;
+
         do {
             yaml_node_t *in = yaml_document_get_node(d, *item);
+            te_bool      item_cond;
 
             if (in->type != YAML_SCALAR_NODE || in->data.scalar.length == 0)
                 return TE_EINVAL;
 
             str = (const char *)in->data.scalar.value;
 
-            rc = parse_config_yaml_cond_exp(str, condp);
+            rc = parse_config_yaml_cond_exp(str, &item_cond);
             if (rc != 0)
                 return rc;
 
-            if (*condp == FALSE)
-                return 0;
+            /*
+             * Once set to FALSE, cond will never become TRUE (AND behaviour).
+             * Still, the rest of conditional expressions will be parsed
+             * in order to rule out configuration file syntax errors.
+             */
+            cond = (item_cond) ? cond : FALSE;
         } while (++item < n->data.sequence.items.top);
     }
     else
     {
         return TE_EINVAL;
     }
+
+    if (condp != NULL)
+        *condp = cond;
 
     return 0;
 }
@@ -222,12 +239,19 @@ parse_config_yaml_cmd_add_instance(yaml_document_t *d,
             if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0)
                 continue;
 
-            if (strcmp(k_label, "cond") == 0 && check_cond == TRUE)
+            if (strcmp(k_label, "cond") == 0)
             {
-                rc = parse_config_yaml_cond(d, v, &cond);
+                rc = parse_config_yaml_cond(d, v, (check_cond) ? &cond : NULL);
                 if (rc != 0)
                     goto out;
 
+                /*
+                 * Once at least one conditional node (which itself may contain
+                 * multiple statements) is found to yield TRUE, this result
+                 * will never be overridden by the rest of conditional
+                 * nodes of the instance in question (OR behaviour).
+                 * Still, the rest of the nodes will be parsed.
+                 */
                 if (cond == TRUE)
                     check_cond = FALSE;
             }
@@ -329,12 +353,19 @@ parse_config_yaml_cmd_add(yaml_document_t *d,
             if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0)
                 continue;
 
-            if (strcmp(k_label, "cond") == 0 && check_cond == TRUE)
+            if (strcmp(k_label, "cond") == 0)
             {
-                rc = parse_config_yaml_cond(d, v, &cond);
+                rc = parse_config_yaml_cond(d, v, (check_cond) ? &cond : NULL);
                 if (rc != 0)
                     goto out;
 
+                /*
+                 * Once at least one conditional node (which itself may contain
+                 * multiple statements) is found to yield TRUE, this result
+                 * will never be overridden by the rest of conditional
+                 * nodes of the current add command (OR behaviour).
+                 * Still, the rest of the nodes will be parsed.
+                 */
                 if (cond == TRUE)
                     check_cond = FALSE;
             }
