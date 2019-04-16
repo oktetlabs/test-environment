@@ -288,6 +288,19 @@
         </restriction>
     </simpleType>
 
+    <simpleType name="PropertyHanddownType">
+        <annotation>
+            <documentation>
+                Types of inheritance.
+            </documentation>
+        </annotation>
+        <restriction base="token">
+            <enumeration value="none"/>
+            <enumeration value="children"/>
+            <enumeration value="descendants"/>
+        </restriction>
+    </simpleType>
+
     <attributeGroup name="RunItemAttributes">
         <annotation>
             <documentation>
@@ -309,6 +322,14 @@
                     default. May be disabled by corresponging option.
                     Automatically disabled for all descendants of the
                     simultaneous session.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="track_conf_handdown" type="PropertyHanddownType"
+                                              default="children">
+            <annotation>
+                <documentation>
+                    Type of inheritance.
                 </documentation>
             </annotation>
         </attribute>
@@ -393,19 +414,6 @@
         <group ref="Executable"/>
     </complexType>
 
-    <simpleType name="PropertyHanddownType">
-        <annotation>
-            <documentation>
-                Types of inheritance.
-            </documentation>
-        </annotation>
-        <restriction base="token">
-            <enumeration value="none"/>
-            <enumeration value="children"/>
-            <enumeration value="descendants"/>
-        </restriction>
-    </simpleType>
-
     <complexType name="InheritableExecutable">
         <annotation>
             <documentation>
@@ -420,7 +428,7 @@
             </annotation>
         </group>
         <attribute name="handdown" type="PropertyHanddownType"
-                                   default="none">
+                                   default="descendants">
             <annotation>
                 <documentation>
                     Type of inheritance.
