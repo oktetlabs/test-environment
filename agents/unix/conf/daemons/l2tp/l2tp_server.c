@@ -3692,7 +3692,7 @@ l2tp_grab(const char *name)
 
     if (access(L2TP_SERVER_EXEC, X_OK) != 0)
     {
-        ERROR("No L2TP server executable was not found");
+        ERROR("L2TP server executable is missing");
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
