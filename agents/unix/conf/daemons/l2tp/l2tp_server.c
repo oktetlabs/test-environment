@@ -881,6 +881,7 @@ l2tp_server_stop(te_l2tp_server *l2tp)
     }
 
     l2tp_remove_file(l2tp->conf_file);  /* We are not interested in error */
+    l2tp_remove_file(l2tp->pid_file);   /* We are not interested in error */
 
     return 0;
 }
