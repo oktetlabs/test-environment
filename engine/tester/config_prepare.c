@@ -404,21 +404,47 @@ prepare_session_start(run_item *ri, test_session *session,
                        &ctx->inherit_flags, PREPARE_INHERIT_KEEPALIVE_ALL);
 
     /* 'track_conf' attribute inheritance */
-    if (~ctx->inherit_flags & PREPARE_INHERIT_TRACK_CONF_ALL)
-        ctx->inherit_flags &= ~PREPARE_INHERIT_TRACK_CONF;
-    if (session->attrs.track_conf_hd != TESTER_HANDDOWN_NONE)
+
+    if (session->attrs.track_conf != TESTER_TRACK_CONF_UNSPEC)
     {
+        /*
+         * If track_conf attribute was specified for the current
+         * session, reset inheritance settings.
+         */
         ctx->track_conf = session->attrs.track_conf;
-        ctx->inherit_flags |= PREPARE_INHERIT_TRACK_CONF;
-        if (session->attrs.track_conf_hd == TESTER_HANDDOWN_DESCENDANTS)
-            ctx->inherit_flags |= PREPARE_INHERIT_TRACK_CONF_ALL;
+        if (session->attrs.track_conf_hd != TESTER_HANDDOWN_NONE)
+        {
+            ctx->inherit_flags |= PREPARE_INHERIT_TRACK_CONF;
+            if (session->attrs.track_conf_hd == TESTER_HANDDOWN_DESCENDANTS)
+                ctx->inherit_flags |= PREPARE_INHERIT_TRACK_CONF_ALL;
+            else
+                ctx->inherit_flags &= ~PREPARE_INHERIT_TRACK_CONF_ALL;
+        }
         else
+        {
+            ctx->inherit_flags &= ~PREPARE_INHERIT_TRACK_CONF;
             ctx->inherit_flags &= ~PREPARE_INHERIT_TRACK_CONF_ALL;
+        }
     }
     else
     {
-        ctx->inherit_flags &= ~PREPARE_INHERIT_TRACK_CONF;
-        ctx->inherit_flags &= ~PREPARE_INHERIT_TRACK_CONF_ALL;
+        /*
+         * Inherit track_conf attribute from parent if it is not specified
+         * in the current session and if inheritance settings allow.
+         */
+
+        if (ctx->inherit_flags & PREPARE_INHERIT_TRACK_CONF)
+            session->attrs.track_conf = ctx->track_conf;
+        else
+            session->attrs.track_conf = TESTER_TRACK_CONF_DEF;
+
+        /*
+         * If track_conf_handdown was not set to "descendants" when
+         * setting currently inherited track_conf value, disable
+         * passing inherited value to children.
+         */
+        if (~ctx->inherit_flags & PREPARE_INHERIT_TRACK_CONF_ALL)
+            ctx->inherit_flags &= ~PREPARE_INHERIT_TRACK_CONF;
     }
 
     return TESTER_CFG_WALK_CONT;
@@ -461,8 +487,18 @@ prepare_test_start(run_item *ri, unsigned int cfg_id_off,
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
-    /* 'track_conf' attribute inheritance */
-    if (attrs->track_conf == TESTER_TRACK_CONF_UNSPEC)
+    /*
+     * 'track_conf' attribute inheritance.
+     * Note: this handler is actually run_start(), so it is called for
+     * every <run>, including <run> enclosing <session>. However <run>
+     * does not have its own attributes - attrs will point to those
+     * of <session> in such case. As session attributes inheritance is
+     * handled in prepare_session_start(), here we should only process
+     * scripts (for a package attrs would point to main <session>).
+     */
+
+    if (ri->type == RUN_ITEM_SCRIPT &&
+        attrs->track_conf == TESTER_TRACK_CONF_UNSPEC)
     {
         if (ctx->inherit_flags & PREPARE_INHERIT_TRACK_CONF)
             attrs->track_conf = ctx->track_conf;

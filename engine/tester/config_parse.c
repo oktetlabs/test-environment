@@ -689,17 +689,19 @@ get_uint_prop(xmlNodePtr node, const char *name, unsigned int *value)
  * @param node      Node with requested property
  * @param name      Name of the property to get
  * @param value     Location for value
+ * @param def       Default value (used if inheritance
+ *                  attribute is not specified)
  *
  * @return Status code.
  */
 static te_errno
 get_handdown_attr(xmlNodePtr node, const char *name,
-                  tester_handdown *value)
+                  tester_handdown *value, tester_handdown def)
 {
     xmlChar *s;
 
     /* 'handdown' is optional */
-    *value = TESTER_HANDDOWN_DEF;
+    *value = def;
     s = xmlGetProp(node, CONST_CHAR2XML(name));
     if (s != NULL)
     {
@@ -911,8 +913,14 @@ get_test_attrs(xmlNodePtr node, test_attrs *attrs)
         }
         xmlFree(s);
 
+        /*
+         * Default value is TESTER_HANDDOWN_CHILDREN here because
+         * it worked this way before fixing bug 10047 by default,
+         * even though default was TESTER_HANDDOWN_DESCENDANTS.
+         */
         rc = get_handdown_attr(node, "track_conf_handdown",
-                               &attrs->track_conf_hd);
+                               &attrs->track_conf_hd,
+                               TESTER_HANDDOWN_CHILDREN);
         if (rc != 0)
             return rc;
     }
@@ -1977,7 +1985,8 @@ alloc_and_get_run_item(xmlNodePtr node, tester_cfg *cfg, unsigned int opts,
 
     if (opts & TESTER_RUN_ITEM_INHERITABLE)
     {
-        rc = get_handdown_attr(node, "handdown", &p->handdown);
+        rc = get_handdown_attr(node, "handdown", &p->handdown,
+                               TESTER_HANDDOWN_DEF);
         if (rc != 0)
             return rc;
     }
