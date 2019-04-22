@@ -462,6 +462,39 @@ tapi_cfg_del_route_via_gw(const char *ta, int addr_family,
 }
 
 /**
+ * Add a new simple route to destination network or host address
+ *
+ * @note Added route can be removed with tapi_cfg_del_route_simple()
+ *
+ * @param ta           Test agent name
+ * @param target       Destination network or host address
+ * @param prefixlen    Prefix length of destination address
+ * @param gw           Gateway address to route packets via a gateway,
+ *                     may be @c NULL for direct route
+ * @param dev          Interface name, force the route to be associated with
+ *                     the specified device. May be @c NULL if @p gw is defined
+ *
+ * @return Status code
+ *
+ * @sa tapi_cfg_add_route_via_gw, tapi_cfg_add_route
+ */
+extern te_errno tapi_cfg_add_route_simple(const char *ta,
+                                          const struct sockaddr *target,
+                                          int prefixlen,
+                                          const struct sockaddr *gw,
+                                          const char *dev);
+
+/**
+ * Delete a route added with tapi_cfg_add_route_simple(), use the same argument
+ * values
+ */
+extern te_errno tapi_cfg_del_route_simple(const char *ta,
+                                          const struct sockaddr *target,
+                                          int prefixlen,
+                                          const struct sockaddr *gw,
+                                          const char *dev);
+
+/**
  * Add a new route.
  *
  * @param ta        Test Agent name.

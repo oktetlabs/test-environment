@@ -906,6 +906,34 @@ tapi_cfg_del_route(cfg_handle *rt_hndl)
 
 /* See the description in tapi_cfg.h */
 te_errno
+tapi_cfg_add_route_simple(const char *ta, const struct sockaddr *target,
+                          int prefixlen, const struct sockaddr *gw,
+                          const char *dev)
+{
+    assert(target != NULL && (gw != NULL || dev != NULL));
+
+    return tapi_cfg_add_route(ta, target->sa_family,
+                              te_sockaddr_get_netaddr(target), prefixlen,
+                              te_sockaddr_get_netaddr(gw), dev,
+                              NULL, 0, 0, 0, 0, 0, 0, NULL);
+}
+
+/* See the description in tapi_cfg.h */
+te_errno
+tapi_cfg_del_route_simple(const char *ta, const struct sockaddr *target,
+                          int prefixlen, const struct sockaddr *gw,
+                          const char *dev)
+{
+    assert(target != NULL && (gw != NULL || dev != NULL));
+
+    return tapi_cfg_del_route_tmp(ta, target->sa_family,
+                                  te_sockaddr_get_netaddr(target), prefixlen,
+                                  te_sockaddr_get_netaddr(gw), dev,
+                                  NULL, 0, 0, 0, 0, 0, 0);
+}
+
+/* See the description in tapi_cfg.h */
+te_errno
 tapi_cfg_get_neigh_entry(const char *ta, const char *ifname,
                          const struct sockaddr *net_addr,
                          void *ret_addr, te_bool *is_static,
