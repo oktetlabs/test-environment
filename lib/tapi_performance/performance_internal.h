@@ -64,7 +64,9 @@ extern te_errno perf_app_start(rcf_rpc_server *rpcs, char *cmd,
 extern te_errno perf_app_stop(tapi_perf_app *app);
 
 /**
- * Wait while application finishes his work.
+ * Wait until application finished its work. If @p timeout is longer than or
+ * equal to test duration it will wait (sleep) for duration time first and only
+ * then will examine application with waitpid()
  *
  * @param app           Application context.
  * @param timeout       Time to wait for application results (seconds).

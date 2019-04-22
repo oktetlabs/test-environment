@@ -115,28 +115,46 @@ perf_app_stop(tapi_perf_app *app)
 te_errno
 perf_app_wait(tapi_perf_app *app, int16_t timeout)
 {
-    rpc_wait_status stat;
     tarpc_pid_t pid;
+    const unsigned int delay_s = 1;
+    unsigned int num_attempts;
+    unsigned int i;
+
+    assert(timeout >= 0 || timeout == TAPI_PERF_TIMEOUT_DEFAULT);
 
     if (timeout == TAPI_PERF_TIMEOUT_DEFAULT)
         timeout = get_default_timeout(&app->opts);
-    app->rpcs->timeout = TE_SEC2MS(timeout);
-    RPC_AWAIT_ERROR(app->rpcs);
-    pid = rpc_waitpid(app->rpcs, app->pid, &stat, 0);
-    if (pid == -1)
-    {
-        ERROR("waitpid() failed with errno %r", RPC_ERRNO(app->rpcs));
-        return RPC_ERRNO(app->rpcs);
-    }
-    else if (pid != app->pid)
-    {
-        ERROR("waitpid() has returned %d: process with pid %d has not exited",
-              pid, app->pid);
-        return TE_RC(TE_TAPI, TE_EFAIL);
-    }
-    app->pid = -1;
 
-    return 0;
+    if (timeout >= app->opts.duration_sec)
+    {
+        /* Just to avoid bloating logs by pointless waitpid() output */
+        VSLEEP(app->opts.duration_sec, "wait until performance test finished");
+        timeout -= app->opts.duration_sec;
+    }
+    num_attempts = timeout == 0 ? 1 : timeout / delay_s;
+
+    for (i = 0; i < num_attempts; i++)
+    {
+        if (i > 0)
+            VSLEEP(delay_s, "delay before retrying waitpid()");
+
+        RPC_AWAIT_ERROR(app->rpcs);
+        pid = rpc_waitpid(app->rpcs, app->pid, NULL, RPC_WNOHANG);
+        if (pid == app->pid)
+        {
+            app->pid = -1;
+            return 0;
+        }
+        else if (pid != 0)
+        {
+            ERROR("waitpid() failed with errno %r", RPC_ERRNO(app->rpcs));
+            return RPC_ERRNO(app->rpcs);
+        }
+    }
+
+    ERROR("waitpid() has returned %d: process with pid %d has not exited",
+          pid, app->pid);
+    return TE_RC(TE_TAPI, TE_ETIMEDOUT);
 }
 
 /* See description in performance_internal.h */
