@@ -152,6 +152,9 @@ typedef struct tapi_rt_entry {
 /** Default table for normal rules */
 #define TAPI_RT_TABLE_MAIN 254
 
+/** Local table maintained by kernel */
+#define TAPI_RT_TABLE_LOCAL 255
+
 /**
  * Gets routing table on the specified Test Agent
  *
