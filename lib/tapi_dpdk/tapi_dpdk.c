@@ -336,6 +336,9 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
                                     }
                                  )
                           });
+    if (rc != 0)
+        goto out;
+
     testpmd_job->cmdline_file = cmdline_file;
     testpmd_job->cmdline_buf = cmdline_buf;
     testpmd_job->ta = tapi_strdup(rpcs->ta);
