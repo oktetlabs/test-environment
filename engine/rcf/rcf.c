@@ -2116,7 +2116,7 @@ send_cmd(ta *agent, usrreq *req)
         case RCFOP_CONFSET:
             PUT(TE_PROTO_CONFSET " %s", msg->id);
             write_str(msg->value, RCF_MAX_VAL);
-            req->timeout = RCF_CMD_TIMEOUT;
+            req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 
         case RCFOP_CONFGRP_START:
