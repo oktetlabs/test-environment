@@ -164,6 +164,16 @@ extern te_errno tapi_job_start(tapi_job_t *job);
 extern te_errno tapi_job_kill(tapi_job_t *job, int signo);
 
 /**
+ * Send a signal to the proccess group
+ *
+ * @param job Job instance handle
+ * @param signo Signal number
+ *
+ * @return          Status code
+ */
+extern te_errno tapi_job_killpg(tapi_job_t *job, int signo);
+
+/**
  * Cause of a job's completion
  */
 typedef enum {

@@ -1842,6 +1842,30 @@ job_kill(unsigned int job_id, int signo)
 }
 
 static te_errno
+job_killpg(unsigned int job_id, int signo)
+{
+    job_t *job;
+
+    job = get_job(job_id);
+    if (job == NULL)
+        return TE_EINVAL;
+
+    if (job->pid < 0)
+    {
+        ERROR("Job is not running");
+        return TE_EPERM;
+    }
+
+    if (killpg(job->pid, signo) < 0)
+    {
+        ERROR("killpg() failed");
+        return te_rc_os2te(errno);
+    }
+
+    return 0;
+}
+
+static te_errno
 job_wait(unsigned int job_id, int timeout_ms, tarpc_job_status *status)
 {
     job_t *job;
@@ -1984,6 +2008,11 @@ TARPC_FUNC_STATIC(job_poll, {},
 })
 
 TARPC_FUNC_STATIC(job_kill, {},
+{
+    MAKE_CALL(out->retval = func(in->job_id, signum_rpc2h(in->signo)));
+})
+
+TARPC_FUNC_STATIC(job_killpg, {},
 {
     MAKE_CALL(out->retval = func(in->job_id, signum_rpc2h(in->signo)));
 })

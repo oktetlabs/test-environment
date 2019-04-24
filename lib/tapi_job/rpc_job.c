@@ -386,6 +386,27 @@ rpc_job_kill(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo)
 }
 
 int
+rpc_job_killpg(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo)
+{
+    tarpc_job_killpg_in  in;
+    tarpc_job_killpg_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.job_id = job_id;
+    in.signo = signo;
+
+    rcf_rpc_call(rpcs, "job_killpg", &in, &out);
+    CHECK_RPC_ERRNO_UNCHANGED(job_create, out.retval);
+
+    TAPI_RPC_LOG(rpcs, job_killpg, "%u, %s", "%r", in.job_id,
+                 signum_rpc2str(in.signo), out.retval);
+
+    RETVAL_INT(job_killpg, out.retval);
+}
+
+int
 rpc_job_wait(rcf_rpc_server *rpcs, unsigned int job_id, int timeout_ms,
              tarpc_job_status *status)
 {

@@ -227,6 +227,13 @@ tapi_job_kill(tapi_job_t *job, int signo)
     return rpc_job_kill(job->rpcs, job->id, signum_h2rpc(signo));
 }
 
+/* See description in tapi_job.h */
+te_errno
+tapi_job_killpg(tapi_job_t *job, int signo)
+{
+    return rpc_job_killpg(job->rpcs, job->id, signum_h2rpc(signo));
+}
+
 static te_errno
 tarpc_job_status2tapi_job_status(const tarpc_job_status *from,
                                  tapi_job_status_t *to)

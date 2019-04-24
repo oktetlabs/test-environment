@@ -152,6 +152,20 @@ struct tarpc_job_kill_out {
     tarpc_int retval;
 };
 
+/* job_killpg */
+struct tarpc_job_killpg_in {
+    struct tarpc_in_arg common;
+
+    tarpc_uint job_id;
+    tarpc_signum signo;
+};
+
+struct tarpc_job_killpg_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+};
+
 /* job_wait */
 struct tarpc_job_wait_in {
     struct tarpc_in_arg common;
@@ -205,6 +219,7 @@ program job
         RPC_DEF(job_send)
         RPC_DEF(job_poll)
         RPC_DEF(job_kill)
+        RPC_DEF(job_killpg)
         RPC_DEF(job_wait)
         RPC_DEF(job_destroy)
     } = 1;

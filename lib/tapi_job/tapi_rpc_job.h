@@ -171,6 +171,18 @@ extern int rpc_job_kill(rcf_rpc_server *rpcs, unsigned int job_id,
                         rpc_signum signo);
 
 /**
+ * Send a signal to the proccess group
+ *
+ * @param rpcs          RPC server
+ * @param job_id        Job instance handle
+ * @param signo         Signal number
+ *
+ * @return              Status code
+ */
+extern int rpc_job_killpg(rcf_rpc_server *rpcs, unsigned int job_id,
+                          rpc_signum signo);
+
+/**
  * Wait for the job completion (or check its status if @p timeout is zero)
  *
  * @param rpcs          RPC server
