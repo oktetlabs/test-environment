@@ -34,6 +34,8 @@
 #define TCP_PSH_FLAG    0x08
 #define TCP_ACK_FLAG    0x10
 #define TCP_URG_FLAG    0x20
+#define TCP_ECE_FLAG    0x40
+#define TCP_CWR_FLAG    0x80
 
 /**
  * Type for SEQ and ACK numbers (host byte order).
