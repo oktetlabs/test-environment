@@ -902,8 +902,11 @@ tad_ip4_match_post_cb(csap_p              csap,
     if (rc != 0)
         return rc;
 
-    rc = tad_bps_pkt_frag_match_post(&proto_data->opts, &pkt_data->opts,
-                                     pkt, &bitoff, meta_pkt_layer->nds);
+    if (pkt_data->opts.dus->val_data.len > 0)
+    {
+        rc = tad_bps_pkt_frag_match_post(&proto_data->opts, &pkt_data->opts,
+                                         pkt, &bitoff, meta_pkt_layer->nds);
+    }
 
     return rc;
 }
