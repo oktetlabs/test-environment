@@ -668,9 +668,8 @@ tad_tcp_match_bin_cb(csap_p           csap,
         goto cleanup;
     data ++;
 
-    tmp8 = (*data) & 0x3f;
     rc = ndn_match_data_units(ptrn_pdu, tcp_header_pdu,
-                              &tmp8, 1, "flags");
+                              data, 1, "flags");
     if (rc)
         goto cleanup;
     data++;

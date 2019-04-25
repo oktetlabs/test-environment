@@ -1015,7 +1015,7 @@ TCP-Header ::= SEQUENCE {
     seqn      [2] DATA-UNIT{INTEGER } OPTIONAL,
     acqn      [3] DATA-UNIT{INTEGER } OPTIONAL,
     hlen      [4] DATA-UNIT{INTEGER (0..15)} OPTIONAL,
-    flags     [5] DATA-UNIT{INTEGER (0..63)} OPTIONAL,
+    flags     [5] DATA-UNIT{INTEGER (0..255)} OPTIONAL,
     win-size  [6] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
     checksum  [7] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
     urg-p     [8] DATA-UNIT{INTEGER (0..65535)} OPTIONAL,
