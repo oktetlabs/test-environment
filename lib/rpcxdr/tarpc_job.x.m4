@@ -8,14 +8,18 @@
  * @author Igor Romanov <Igor.Romanov@oktetlabs.ru>
  */
 
+struct tarpc_char_array {
+    char str<>;
+};
+
 /* job_create() */
 struct tarpc_job_create_in {
     struct tarpc_in_arg common;
 
     string spawner<>;
     string tool<>;
-    tarpc_string argv<>;
-    tarpc_string env<>;
+    tarpc_char_array argv<>;
+    tarpc_char_array env<>;
 };
 
 struct tarpc_job_create_out {

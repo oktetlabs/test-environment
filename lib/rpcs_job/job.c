@@ -1922,26 +1922,32 @@ TARPC_FUNC_STATIC(job_create, {},
     char **env = NULL;
     unsigned int i;
 
-    argv = calloc(in->argv.argv_len + 1, sizeof(*argv));
-    if (argv == NULL)
-        goto err;
-
-    for (i = 0; i < in->argv.argv_len; ++i)
+    if (in->argv.argv_len != 0)
     {
-        argv[i] = strdup(in->argv.argv_val[i].str);
-        if (argv[i] == NULL)
+        argv = calloc(in->argv.argv_len, sizeof(*argv));
+        if (argv == NULL)
             goto err;
+
+        for (i = 0; i < in->argv.argv_len - 1; ++i)
+        {
+            argv[i] = strdup(in->argv.argv_val[i].str.str_val);
+            if (argv[i] == NULL)
+                goto err;
+        }
     }
 
-    env = calloc(in->env.env_len + 1, sizeof(*env));
-    if (env == NULL)
-        goto err;
-
-    for (i = 0; i < in->env.env_len; ++i)
+    if (in->env.env_len != 0)
     {
-        env[i] = strdup(in->env.env_val[i].str);
-        if (env[i] == NULL)
+        env = calloc(in->env.env_len, sizeof(*env));
+        if (env == NULL)
             goto err;
+
+        for (i = 0; i < in->env.env_len - 1; ++i)
+        {
+            env[i] = strdup(in->env.env_val[i].str.str_val);
+            if (env[i] == NULL)
+                goto err;
+        }
     }
 
     MAKE_CALL(out->retval = func(in->spawner, in->tool, argv, env,

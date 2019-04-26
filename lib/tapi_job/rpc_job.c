@@ -50,28 +50,34 @@ rpc_job_create(rcf_rpc_server *rpcs, const char *spawner,
 
     if (argv != NULL)
     {
-        len = 0;
+        len = 1;
         for (i = 0; argv[i] != NULL; i++)
             len++;
 
         in.argv.argv_len = len;
         in.argv.argv_val = tapi_calloc(len, sizeof(*in.argv.argv_val));
 
-        for (i = 0; i < len; i++)
-            in.argv.argv_val[i].str = tapi_strdup(argv[i]);
+        for (i = 0; i < len - 1; i++)
+        {
+            in.argv.argv_val[i].str.str_val = tapi_strdup(argv[i]);
+            in.argv.argv_val[i].str.str_len = strlen(argv[i]);
+        }
     }
 
     if (env != NULL)
     {
-        len = 0;
+        len = 1;
         for (i = 0; env[i] != NULL; i++)
             len++;
 
         in.env.env_len = len;
         in.env.env_val = tapi_calloc(len, sizeof(*in.env.env_val));
 
-        for (i = 0; i < len; i++)
-            in.env.env_val[i].str = tapi_strdup(env[i]);
+        for (i = 0; i < len - 1; i++)
+        {
+            in.env.env_val[i].str.str_val = tapi_strdup(env[i]);
+            in.env.env_val[i].str.str_len = strlen(env[i]);
+        }
     }
 
     if (spawner != NULL)
@@ -87,10 +93,10 @@ rpc_job_create(rcf_rpc_server *rpcs, const char *spawner,
     tlbp_env = te_log_buf_alloc();
     TAPI_RPC_LOG(rpcs, job_create, "%s, %s, {%s}, {%s}", "%r",
                  in.spawner, in.tool,
-                 te_args2log_buf(tlbp_argv, in.argv.argv_len,
-                                 (const char **)in.argv.argv_val),
-                 te_args2log_buf(tlbp_env, in.env.env_len,
-                                 (const char **)in.env.env_val),
+                 te_args2log_buf(tlbp_argv, in.argv.argv_len - 1,
+                                 (const char **)argv),
+                 te_args2log_buf(tlbp_env, in.env.env_len - 1,
+                                 (const char **)env),
                  out.retval);
     te_log_buf_free(tlbp_argv);
     te_log_buf_free(tlbp_env);
@@ -98,13 +104,13 @@ rpc_job_create(rcf_rpc_server *rpcs, const char *spawner,
     if (in.argv.argv_val != NULL)
     {
         for (i = 0; i < in.argv.argv_len; i++)
-            free(in.argv.argv_val[i].str);
+            free(in.argv.argv_val[i].str.str_val);
         free(in.argv.argv_val);
     }
     if (in.env.env_val != NULL)
     {
         for (i = 0; i < in.env.env_len; i++)
-            free(in.env.env_val[i].str);
+            free(in.env.env_val[i].str.str_val);
         free(in.env.env_val);
     }
     free(in.spawner);
