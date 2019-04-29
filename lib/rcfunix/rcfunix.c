@@ -668,7 +668,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 #if defined RCF_UNIX_SOLARIS
     if (rc == 0)
         rc = te_string_append(&cmd,
-                "%s/usr/bin/coreadm -g /tmp/core.%n-%p-%t -e global; ",
+                "%s/usr/bin/coreadm -g /tmp/core.%%n-%%p-%%t -e global; ",
                 rcfunix_ta_sudo(ta));
 #else
     if (rc == 0)
