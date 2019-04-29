@@ -673,7 +673,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 #else
     if (rc == 0)
         rc = te_string_append(&cmd,
-                "%ssysctl -w kernel.core_pattern=\"core.%h-%p-%t\"; ",
+                "%ssysctl -w kernel.core_pattern=\"core.%%h-%%p-%%t\"; ",
                 rcfunix_ta_sudo(ta));
 #endif
     if (rc == 0)
