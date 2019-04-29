@@ -1,13 +1,50 @@
 /** @file
  * @brief Queuing Discipline configuration
  *
- * @defgroup tapi_conf_tc Queuing Discipline configuration
+ * @defgroup tapi_conf_qdisc Queuing Discipline configuration
  * @ingroup tapi_conf
  * @{
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
  * @author Nikita Somenkov <Nikita.Somenkov@oktetlabs.ru>
+ *
+ * @section tapi_cfg_qdisc_example Example of usage
+ *
+ * Usage of TAPI for control NetEm
+ *
+ * At first add ./cs.conf.inc.qdisc from ts_conf in your cs.conf
+ *
+ * Setup Agent Agt_A analog of command line:
+ *
+ * @cmd{tc qdisc add dev eth1 root netem delay 200ms}
+ * @code
+ * #include "tapi_cfg_netem.h"
+ * #include "tapi_cfg_qdisc.h"
+ * ...
+ * const char *agent = "Agt_A";
+ * const char *ifname = "eth1";
+ *
+ * CHECK_RC(tapi_cfg_qdisc_set_kind(agent, ifname, TAPI_CFG_QDISC_KIND_NETEM));
+ * CHECK_RC(tapi_cfg_netem_set_delay(agent, ifname, TE_MS2US(200)));
+ * CHECK_RC(tapi_cfg_qdisc_enable(agent, ifname));
+ * @endcode
+ *
+ * @cmd{tc qdisc change dev eth1 root netem delay 100ms 10ms 25%}
+ * @code
+ * CHECK_RC(tapi_cfg_qdisc_set_kind(agent, ifname, TAPI_CFG_QDISC_KIND_NETEM));
+ * CHECK_RC(tapi_cfg_netem_set_delay(agent, ifname, TE_MS2US(100)));
+ * CHECK_RC(tapi_cfg_netem_set_jitter(agent, ifname, TE_MS2US(10)));
+ * CHECK_RC(tapi_cfg_netem_set_delay_correlation(agent, ifname, 25.0));
+ * CHECK_RC(tapi_cfg_qdisc_enable(agent, ifname));
+ * @endcode
+ *
+ * @cmd{tc qdisc add dev eth1 root netem loss 10%}
+ * @code
+ * CHECK_RC(tapi_cfg_qdisc_set_kind(agent, ifname, TAPI_CFG_QDISC_KIND_NETEM));
+ * CHECK_RC(tapi_cfg_netem_set_loss(agent, ifname, TE_MS2US(100)));
+ * CHECK_RC(tapi_cfg_qdisc_enable(agent, ifname));
+ * @endcode
  */
 
 #ifndef __TE_TAPI_CFG_QDISC_H__
