@@ -659,9 +659,12 @@ typedef enum rpc_sockopt {
     
     RPC_IPV6_ADDRFORM,      /**< Turn AF_INET6 socket to AF_INET family */
 
-    RPC_IPV6_RECVPKTINFO,   /**< Whether to receive control messages
-                                 on incoming datagrams */
-    
+    RPC_IPV6_RECVPKTINFO,   /**< Whether to receive IPV6_PKTINFO control
+                                 messages on incoming datagrams */
+
+    RPC_IPV6_PKTINFO,       /**< Type of control message which
+                                 IPV6_RECVPKTINFO enables */
+
     RPC_IPV6_PKTOPTIONS,    /**< Specify packet options */
     
     RPC_IPV6_CHECKSUM,      /**< Offset of checksum for raw sockets */

@@ -4,7 +4,7 @@
  * RPC analogues of definitions from sys/socket.h.
  * Socket IOCTL requests are defined here as well.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -921,6 +921,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_IPV6_MULTICAST_IF:
         case RPC_IPV6_ADDRFORM:
         case RPC_IPV6_RECVPKTINFO:
+        case RPC_IPV6_PKTINFO:
         case RPC_IPV6_PKTOPTIONS:
         case RPC_IPV6_CHECKSUM:
         case RPC_IPV6_RTHDR:
@@ -1066,6 +1067,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(IPV6_MULTICAST_IF);
         RPC2STR(IPV6_ADDRFORM);
         RPC2STR(IPV6_RECVPKTINFO);
+        RPC2STR(IPV6_PKTINFO);
         RPC2STR(IPV6_PKTOPTIONS);
         RPC2STR(IPV6_CHECKSUM);
         RPC2STR(IPV6_RTHDR);
@@ -1210,6 +1212,7 @@ sockopt_rpc2h(rpc_sockopt opt)
 
         RPC2H_CHECK(IPV6_ADDRFORM);
         RPC2H_CHECK(IPV6_RECVPKTINFO);
+        RPC2H_CHECK(IPV6_PKTINFO);
         RPC2H_CHECK(IPV6_HOPOPTS);
         RPC2H_CHECK(IPV6_DSTOPTS);
         RPC2H_CHECK(IPV6_RTHDR);
@@ -1402,6 +1405,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(IPV6_MULTICAST_IF);
                 H2RPC_CHECK(IPV6_ADDRFORM);
                 H2RPC_CHECK(IPV6_RECVPKTINFO);
+                H2RPC_CHECK(IPV6_PKTINFO);
                 H2RPC_CHECK(IPV6_PKTOPTIONS);
                 H2RPC_CHECK(IPV6_CHECKSUM);
                 H2RPC_CHECK(IPV6_RTHDR);
@@ -1518,6 +1522,7 @@ sockopt_is_boolean(rpc_sockopt opt)
         case RPC_IP_HDRINCL:
 
         case RPC_IPV6_RECVPKTINFO:
+        case RPC_IPV6_PKTINFO:
         case RPC_IPV6_PKTOPTIONS:
         case RPC_IPV6_CHECKSUM:
         case RPC_IPV6_MULTICAST_LOOP:
@@ -3620,7 +3625,43 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                     }
 #endif
                     break;
+            }
 
+            break;
+
+        case RPC_SOL_IPV6:
+
+            switch(rpc_type)
+            {
+                case RPC_IPV6_PKTINFO:
+#ifdef HAVE_STRUCT_IN6_PKTINFO
+                    {
+                        struct in6_pktinfo          *pktinfo;
+                        tarpc_in6_pktinfo           *tarpc_pktinfo;
+
+                        if (len < (int)sizeof(struct in6_pktinfo))
+                        {
+                            ERROR("%s(): incorrect data len for "
+                                  "IPV6_PKTINFO value", __FUNCTION__);
+                            break;
+                        }
+
+                        rpc_cmsg->data_aux.type =
+                                            TARPC_CMSG_DATA_PKTINFO6;
+                        pktinfo = (struct in6_pktinfo *)data;
+                        tarpc_pktinfo =
+                            &rpc_cmsg->data_aux.tarpc_cmsg_data_u.pktinfo6;
+
+                        assert(sizeof(tarpc_pktinfo->ipi6_addr) ==
+                               sizeof(pktinfo->ipi6_addr.s6_addr));
+                        memcpy(tarpc_pktinfo->ipi6_addr,
+                               pktinfo->ipi6_addr.s6_addr,
+                               sizeof(tarpc_pktinfo->ipi6_addr));
+                        tarpc_pktinfo->ipi6_ifindex = pktinfo->ipi6_ifindex;
+                        processed = TRUE;
+                    }
+#endif
+                    break;
             }
 
             break;
@@ -3806,6 +3847,11 @@ tarpc_cmsg_data_len(tarpc_cmsghdr *rpc_cmsg)
 #ifdef HAVE_STRUCT_IN_PKTINFO
         case TARPC_CMSG_DATA_PKTINFO:
             return sizeof(struct in_pktinfo);
+#endif
+
+#ifdef HAVE_STRUCT_IN6_PKTINFO
+        case TARPC_CMSG_DATA_PKTINFO6:
+            return sizeof(struct in6_pktinfo);
 #endif
 
         default:
@@ -4061,6 +4107,36 @@ cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
                                 htonl(tarpc_pktinfo->ipi_spec_dst);
                 pktinfo->ipi_addr.s_addr = htonl(tarpc_pktinfo->ipi_addr);
                 pktinfo->ipi_ifindex = tarpc_pktinfo->ipi_ifindex;
+
+                *len = sizeof(*pktinfo);
+                return 0;
+            }
+#endif
+            break;
+
+        case TARPC_CMSG_DATA_PKTINFO6:
+#ifdef HAVE_STRUCT_IN6_PKTINFO
+            {
+                struct in6_pktinfo          *pktinfo;
+                tarpc_in6_pktinfo           *tarpc_pktinfo;
+
+                if (*len < (int)sizeof(*pktinfo))
+                {
+                    ERROR("%s(): not enough memory for "
+                          "native IPV6_PKTINFO value", __FUNCTION__);
+                    return TE_ENOMEM;
+                }
+
+                pktinfo = (struct in6_pktinfo *)data;
+                tarpc_pktinfo =
+                    &rpc_cmsg->data_aux.tarpc_cmsg_data_u.pktinfo6;
+
+                assert(sizeof(tarpc_pktinfo->ipi6_addr) ==
+                       sizeof(pktinfo->ipi6_addr.s6_addr));
+                memcpy(pktinfo->ipi6_addr.s6_addr,
+                       tarpc_pktinfo->ipi6_addr,
+                       sizeof(tarpc_pktinfo->ipi6_addr));
+                pktinfo->ipi6_ifindex = tarpc_pktinfo->ipi6_ifindex;
 
                 *len = sizeof(*pktinfo);
                 return 0;

@@ -1243,10 +1243,11 @@ enum tarpc_cmsg_data_type {
     TARPC_CMSG_DATA_INT = 2,            /* int */
     TARPC_CMSG_DATA_SOCK_EXT_ERR = 3,   /* struct sock_extended_err */
     TARPC_CMSG_DATA_PKTINFO = 4,        /* struct in_pktinfo */
-    TARPC_CMSG_DATA_TV = 5,             /* struct timeval */
-    TARPC_CMSG_DATA_TS = 6,             /* struct timespec */
-    TARPC_CMSG_DATA_TSTAMP = 7,         /* struct scm_timestamping */
-    TARPC_CMSG_DATA_TSTAMP_STREAM = 8   /* struct onload_scm_timestamping_stream */
+    TARPC_CMSG_DATA_PKTINFO6 = 5,       /* struct in6_pktinfo */
+    TARPC_CMSG_DATA_TV = 6,             /* struct timeval */
+    TARPC_CMSG_DATA_TS = 7,             /* struct timespec */
+    TARPC_CMSG_DATA_TSTAMP = 8,         /* struct scm_timestamping */
+    TARPC_CMSG_DATA_TSTAMP_STREAM = 9   /* struct onload_scm_timestamping_stream */
 };
 
 /* struct sock_extended_err */
@@ -1269,6 +1270,12 @@ struct tarpc_in_pktinfo {
     tarpc_int               ipi_ifindex;
 };
 
+/* struct in6_pktinfo */
+struct tarpc_in6_pktinfo {
+    uint8_t                 ipi6_addr[16];  /**< Network address */
+    tarpc_int               ipi6_ifindex;   /**< Interface index */
+};
+
 /* Data in control message */
 union tarpc_cmsg_data switch (tarpc_cmsg_data_type type) {
     case TARPC_CMSG_DATA_RAW:   void;
@@ -1276,9 +1283,12 @@ union tarpc_cmsg_data switch (tarpc_cmsg_data_type type) {
     case TARPC_CMSG_DATA_BYTE:  uint8_t   byte_data;  /**< Byte value */
 
     case TARPC_CMSG_DATA_SOCK_EXT_ERR:
-                tarpc_sock_extended_err       ext_err; /**< IP_RECVERR */
+                tarpc_sock_extended_err     ext_err;  /**< IP_RECVERR */
     case TARPC_CMSG_DATA_PKTINFO:
-                tarpc_in_pktinfo              pktinfo; /**< IP_PKTINFO */
+                tarpc_in_pktinfo            pktinfo;  /**< IP_PKTINFO */
+    case TARPC_CMSG_DATA_PKTINFO6:
+                tarpc_in6_pktinfo           pktinfo6; /**< IPV6_PKTINFO */
+
     case TARPC_CMSG_DATA_TV:
                 struct tarpc_timeval          tv;    /**< SO_TIMESTAMP */
     case TARPC_CMSG_DATA_TS:
