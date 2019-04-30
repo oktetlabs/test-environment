@@ -41,8 +41,8 @@ RCF_PCH_CFG_NODE_RW(node_qdisc_parent, "parent", NULL,
 
 RCF_PCH_CFG_NODE_RW(node_qdisc_kind, "kind", NULL,
                     &node_qdisc_parent,
-                    conf_qdics_kind_get,
-                    conf_qdics_kind_set);
+                    conf_qdisc_kind_get,
+                    conf_qdisc_kind_set);
 
 RCF_PCH_CFG_NODE_RW(node_qdisc_enabled, "enabled", NULL,
                     &node_qdisc_kind,

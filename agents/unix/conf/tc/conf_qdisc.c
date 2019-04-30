@@ -80,7 +80,7 @@ conf_qdisc_handle_get(unsigned int gid, const char *oid, char *value)
 
 /* See the description in conf_qdisc.h */
 te_errno
-conf_qdics_kind_get(unsigned int gid, const char *oid, char *value,
+conf_qdisc_kind_get(unsigned int gid, const char *oid, char *value,
                     const char *if_name)
 {
     const char *kind;
@@ -100,7 +100,7 @@ conf_qdics_kind_get(unsigned int gid, const char *oid, char *value,
 
 /* See the description in conf_qdisc.h */
 te_errno
-conf_qdics_kind_set(unsigned int gid, const char *oid,
+conf_qdisc_kind_set(unsigned int gid, const char *oid,
                     const char *value, const char *if_name)
 {
     int rc;

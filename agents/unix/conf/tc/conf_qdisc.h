@@ -73,7 +73,7 @@ extern te_errno conf_qdisc_enabled_get(unsigned int gid, const char *oid,
  *
  * @return Status code
  */
-extern te_errno conf_qdics_kind_get(unsigned int gid, const char *oid,
+extern te_errno conf_qdisc_kind_get(unsigned int gid, const char *oid,
                                     char *value, const char *if_name);
 
 /**
@@ -86,7 +86,7 @@ extern te_errno conf_qdics_kind_get(unsigned int gid, const char *oid,
  *
  * @return Status code
  */
-extern te_errno conf_qdics_kind_set(unsigned int gid, const char *oid,
+extern te_errno conf_qdisc_kind_set(unsigned int gid, const char *oid,
                                     const char *value, const char *if_name);
 
 #endif /* __TE_AGENTS_UNIX_CONF_CONF_QDISC_H_ */
