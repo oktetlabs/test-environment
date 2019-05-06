@@ -231,6 +231,37 @@ te_sockaddr_set_loopback(struct sockaddr *addr)
 }
 
 /* See the description in te_sockaddr.h */
+void
+te_sockaddr_set_multicast(struct sockaddr *addr)
+{
+    unsigned int i;
+
+    switch (addr->sa_family)
+    {
+        case AF_INET:
+            SIN(addr)->sin_addr.s_addr =
+                htonl(rand_range(0xe0000100, 0xefffffff));
+            break;
+
+        case AF_INET6:
+            SIN6(addr)->sin6_addr.s6_addr[0] = 0xff;
+            SIN6(addr)->sin6_addr.s6_addr[1] = 0x0e;
+
+            for (i = 2; i < sizeof(SIN6(addr)->sin6_addr.s6_addr); i++)
+            {
+                SIN6(addr)->sin6_addr.s6_addr[i] = rand_range(0x00, 0xff);
+            }
+
+            break;
+
+        default:
+            ERROR("%s(): Address family %d is not supported, "
+                  "operation has no effect", __FUNCTION__, addr->sa_family);
+            break;
+    }
+}
+
+/* See the description in te_sockaddr.h */
 te_bool
 te_sockaddr_is_wildcard(const struct sockaddr *addr)
 {

@@ -232,6 +232,17 @@ extern void te_sockaddr_set_wildcard(struct sockaddr *addr);
 extern void te_sockaddr_set_loopback(struct sockaddr *addr);
 
 /**
+ * Set "network address" part of corresponding struct sockaddr to randomly
+ * chosen multicast address.
+ *
+ * @param addr  Generic address structure
+ *
+ * @note The function is not very safe because it does not get the length
+ * of the structure assuming that there is enough space for an address.
+ */
+extern void te_sockaddr_set_multicast(struct sockaddr *addr);
+
+/**
  * Check if "network address" part of corresponding struct sockaddr is
  * wildcard
  *

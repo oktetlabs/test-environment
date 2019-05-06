@@ -1286,8 +1286,7 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             }
             else if (env_addr->type == TAPI_ENV_ADDR_MULTICAST)
             {
-                SIN(env_addr->addr)->sin_addr.s_addr =
-                    htonl(rand_range(0xe0000100, 0xefffffff));
+                te_sockaddr_set_multicast(env_addr->addr);
             }
             else if (env_addr->type == TAPI_ENV_ADDR_MCAST_ALL_HOSTS)
             {
@@ -1388,14 +1387,7 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
             }
             else if (env_addr->type == TAPI_ENV_ADDR_MULTICAST)
             {
-                int i;
-                uint8_t mcast_addr[IPV6_ADDR_LEN] = {0xff, 0x0e};
-
-                for (i = 2; i < IPV6_ADDR_LEN; i++)
-                {
-                    mcast_addr[i] = rand_range(0x00, UINT8_MAX);
-                }
-                memcpy(SIN6(env_addr->addr)->sin6_addr.s6_addr, mcast_addr, IPV6_ADDR_LEN);
+                te_sockaddr_set_multicast(env_addr->addr);
             }
             else if ((env_addr->type == TAPI_ENV_ADDR_BROADCAST) ||
                      (env_addr->type == TAPI_ENV_ADDR_MCAST_ALL_HOSTS))
