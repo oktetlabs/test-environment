@@ -85,6 +85,21 @@
 #error Unable to print socklen_t integers
 #endif
 
+/*
+ * Generic format string for 48bit MAC address.
+ *
+ * @note It should be used with @b TE_PRINTF_MAC_VAL().
+ */
+#define TE_PRINTF_MAC_FMT "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx"
+
+/*
+ * Arguments for @b TE_PRINTF_MAC_FMT.
+ *
+ * @param _mac      Buffer containing 48bit MAC address.
+ */
+#define TE_PRINTF_MAC_VAL(_mac) \
+      (_mac)[0], (_mac)[1], (_mac)[2], (_mac)[3], (_mac)[4], (_mac)[5]
+
 #if defined (__QNX__) || !defined(_GNU_SOURCE)
 #define TE_USE_SPECIFIC_ASPRINTF 1
 #endif /* __QNX__ */
