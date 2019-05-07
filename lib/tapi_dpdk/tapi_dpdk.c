@@ -283,8 +283,7 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     if ((rc = grab_cpus_nonstrict_prop(rpcs->ta, n_cpus, prop, cpu_ids)) != 0)
         goto out;
 
-    rc = cfg_get_instance_fmt(NULL, &working_dir, "/agent:%s/dir:",
-                              rpcs->ta);
+    rc = cfg_get_instance_fmt(NULL, &working_dir, "/agent:%s/dir:", rpcs->ta);
     if (rc != 0)
     {
         ERROR("Failed to get working directory");
