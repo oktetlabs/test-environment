@@ -191,11 +191,17 @@ typedef struct tapi_job_status_t {
     int value;
 } tapi_job_status_t;
 
+/*
+ * Get timeout of tapi_job function that is set when negative timeout
+ * is passed to the function
+ */
+extern unsigned int tapi_job_get_timeout(void);
+
 /**
  * Wait for the job completion (or check its status if @p timeout is zero)
  *
  * @param job Job instance handle
- * @param timeout_ms Timeout in ms (negative means infinity)
+ * @param timeout_ms Timeout in ms (negative means tapi_job_get_timeout())
  * @param[out] status Exit statu
  *
  * @return                  Status code
@@ -331,7 +337,8 @@ extern void tapi_job_simple_send(tapi_job_channel_t *channel,
  * from @p wait_set
  *
  * @param wait_set      Set of channels to wait
- * @param timeout_ms    Timeout in ms to wait (if negative, wait forever)
+ * @param timeout_ms    Timeout in ms to wait (negative means
+ *                      tapi_job_get_timeout())
  *
  * @return          Status code
  * @retval TE_EPERM if some channels from @p wait_set are neither input
@@ -346,7 +353,8 @@ extern te_errno tapi_job_poll(const tapi_job_channel_set_t wait_set,
  * happens, instead of returning an error.
  *
  * @param wait_set Set of channels to wait
- * @param timeout_ms Timeout in ms to wait (if negative, wait forever)
+ * @param timeout_ms Timeout in ms to wait (negative means
+ *                   tapi_job_get_timeout())
  *
  * @exception TEST_FAIL
  */
@@ -376,7 +384,7 @@ typedef struct tapi_job_buffer_t {
  * At most one message is read.
  *
  * @param filters     Set of filters to read from.
- * @param timeout_ms  Timeout to wait (if negative, infinity)
+ * @param timeout_ms  Timeout to wait (negative means tapi_job_get_timeout())
  * @param buffer      Data buffer pointer. If @c NULL, the message is
  *                    silently discarded.
  *
@@ -398,7 +406,7 @@ extern te_errno tapi_job_receive(const tapi_job_channel_set_t filters,
  * @p buffer contents.
  *
  * @param filters     Set of filters to read from.
- * @param timeout_ms  Timeout to wait (if negative, infinity)
+ * @param timeout_ms  Timeout to wait (negative means tapi_job_get_timeout())
  * @param buffer      Data buffer pointer. If @c NULL, the message is
  *                    silently discarded.
  *

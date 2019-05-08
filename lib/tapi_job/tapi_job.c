@@ -258,6 +258,12 @@ tarpc_job_status2tapi_job_status(const tarpc_job_status *from,
     return 0;
 }
 
+unsigned int
+tapi_job_get_timeout(void)
+{
+    return TAPI_RPC_JOB_BIG_TIMEOUT_MS;
+}
+
 /* See description in tapi_job.h */
 te_errno
 tapi_job_wait(tapi_job_t *job, int timeout_ms, tapi_job_status_t *status)

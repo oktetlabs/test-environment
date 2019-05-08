@@ -20,6 +20,8 @@
 extern "C" {
 #endif
 
+#define TAPI_RPC_JOB_BIG_TIMEOUT_MS 600000
+
 /**
  * Create a job controlled by the RPC server @p rcps.
  * The job will be managed by @p spawner plugin.
@@ -116,7 +118,8 @@ extern int rpc_job_filter_add_regexp(rcf_rpc_server *rpcs, unsigned int filter,
  * @param rpcs        RPC server
  * @param n_filters   Count of @p filters
  * @param filters     Set of filters to read from.
- * @param timeout_ms  Timeout to wait (if negative, infinity)
+ * @param timeout_ms  Timeout to wait (negative means
+ *                    #TAPI_RPC_JOB_BIG_TIMEOUT_MS)
  * @param buffer      Data buffer pointer. If @c NULL, the message is
  *                    silently discarded.
  *
@@ -149,7 +152,8 @@ extern int rpc_job_send(rcf_rpc_server *rpcs, unsigned int channel,
  * @param rpcs          RPC server
  * @param n_channels    Count of @p channels
  * @param channels      Set of channels to wait
- * @param timeout_ms    Timeout in ms to wait (if negative, wait forever)
+ * @param timeout_ms    Timeout in ms to wait (negative means
+ *                      #TAPI_RPC_JOB_BIG_TIMEOUT_MS)
  *
  * @return              Status code
  * @retval TE_EPERM     if some channels from @p wait_set are neither input
@@ -187,7 +191,8 @@ extern int rpc_job_killpg(rcf_rpc_server *rpcs, unsigned int job_id,
  *
  * @param rpcs          RPC server
  * @param job_id        Job instance handle
- * @param timeout_ms    Timeout in ms (negative means infinity)
+ * @param timeout_ms    Timeout in ms (negative means
+ *                      #TAPI_RPC_JOB_BIG_TIMEOUT_MS)
  * @param[out] status   Exit status
  *
  * @return          Status code

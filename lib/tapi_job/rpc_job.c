@@ -32,6 +32,18 @@
     CHECK_RETVAL_VAR_ERR_COND(_func, _var, FALSE, TE_RC(TE_TAPI, TE_ECORRUPTED), \
                               FALSE);
 
+static void
+rpc_job_set_rpcs_timeout(rcf_rpc_server *rpcs, int timeout_ms,
+                         int timeout_for_negative_ms)
+{
+    if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+    {
+        if (timeout_ms < 0)
+            rpcs->timeout = timeout_for_negative_ms;
+        else
+            rpcs->timeout = timeout_ms + TE_SEC2MS(TAPI_RPC_TIMEOUT_EXTRA_SEC);
+    }
+}
 
 int
 rpc_job_create(rcf_rpc_server *rpcs, const char *spawner,
@@ -300,6 +312,7 @@ rpc_job_receive(rcf_rpc_server *rpcs, unsigned int n_filters,
     in.filters.filters_len = n_filters;
     in.timeout_ms = timeout_ms;
 
+    rpc_job_set_rpcs_timeout(rpcs, timeout_ms, TAPI_RPC_JOB_BIG_TIMEOUT_MS);
     rcf_rpc_call(rpcs, "job_receive", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_create, out.retval);
 
@@ -356,6 +369,7 @@ rpc_job_poll(rcf_rpc_server *rpcs, unsigned int n_channels,
     in.channels.channels_len = n_channels;
     in.timeout_ms = timeout_ms;
 
+    rpc_job_set_rpcs_timeout(rpcs, timeout_ms, TAPI_RPC_JOB_BIG_TIMEOUT_MS);
     rcf_rpc_call(rpcs, "job_poll", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_create, out.retval);
 
@@ -425,6 +439,7 @@ rpc_job_wait(rcf_rpc_server *rpcs, unsigned int job_id, int timeout_ms,
     in.job_id = job_id;
     in.timeout_ms = timeout_ms;
 
+    rpc_job_set_rpcs_timeout(rpcs, timeout_ms, TAPI_RPC_JOB_BIG_TIMEOUT_MS);
     rcf_rpc_call(rpcs, "job_wait", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_create, out.retval);
 
@@ -449,6 +464,7 @@ rpc_job_destroy(rcf_rpc_server *rpcs, unsigned int job_id, int term_timeout_ms)
     in.job_id = job_id;
     in.term_timeout_ms = term_timeout_ms;
 
+    rpc_job_set_rpcs_timeout(rpcs, term_timeout_ms, RCF_RPC_DEFAULT_TIMEOUT);
     rcf_rpc_call(rpcs, "job_destroy", &in, &out);
     CHECK_RPC_ERRNO_UNCHANGED(job_create, out.retval);
 
