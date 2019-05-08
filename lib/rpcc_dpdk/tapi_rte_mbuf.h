@@ -229,6 +229,14 @@ extern uint8_t *tapi_rte_get_mbuf_data(rcf_rpc_server *rpcs,
  * Produce mbuf(s) from template, set offloads and provide
  * a pattern to capture resulting packets on the peer side
  *
+ * @deprecated This API is not well-thought, and the
+ *             implementation is mind-boggling.
+ *
+ *             Please consider using simpler helper:
+ *             @c tapi_rte_mk_mbufs_by_tmpl_get_pkts() .
+ *
+ *             Consider removing this API and all connected helpers.
+ *
  * @param mp        RTE mempool pointer
  * @param template  ASN.1 traffic template
  * @param transform A set of parameters describing certain trasformations
@@ -265,6 +273,26 @@ extern void tapi_rte_pktmbuf_random_redist(rcf_rpc_server    *rpcs,
                                            unsigned int       mp_multi_nb_items,
                                            rpc_rte_mbuf_p    *packets,
                                            unsigned int       nb_packets);
+
+/**
+ * Given a traffic template, produce mbufs and also provide
+ * ASN.1 raw packets, representing the mbufs, to the caller.
+ *
+ * @param rpcs     RPC server handle
+ * @param tmpl     The traffic template
+ * @param mp       A handle of the mempool to allocate mbufs from
+ * @param mbufs    Location for the resulting array of mbuf handles
+ * @param nb_mbufs The number of mbuf handles in the array
+ * @param pkts     Location for the resulting array of ASN.1 raw packets
+ * @param nb_pkts  Location for the number of packets in the array
+ */
+extern void tapi_rte_mk_mbufs_by_tmpl_get_pkts(rcf_rpc_server      *rpcs,
+                                               const asn_value     *tmpl,
+                                               rpc_rte_mempool_p    mp,
+                                               rpc_rte_mbuf_p     **mbufs,
+                                               unsigned int        *nb_mbufs,
+                                               asn_value         ***pkts,
+                                               unsigned int        *nb_pkts);
 
 #ifdef __cplusplus
 } /* extern "C" */

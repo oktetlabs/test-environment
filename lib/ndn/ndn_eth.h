@@ -21,6 +21,10 @@
 #include "ndn.h"
 
 
+#define NDN_ETH_VLAN_TCI_MASK_PRIO 0xe000
+#define NDN_ETH_VLAN_TCI_MASK_CFI 0x1000
+#define NDN_ETH_VLAN_TCI_MASK_ID 0xfff
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -536,3 +536,35 @@ out:
 
     TAPI_JMP_POP;
 }
+
+/* See the description in 'tapi_rte_mbuf.h' */
+void
+tapi_rte_mk_mbufs_by_tmpl_get_pkts(rcf_rpc_server      *rpcs,
+                                   const asn_value     *tmpl,
+                                   rpc_rte_mempool_p    mp,
+                                   rpc_rte_mbuf_p     **mbufs,
+                                   unsigned int        *nb_mbufs,
+                                   asn_value         ***pkts,
+                                   unsigned int        *nb_pkts)
+{
+    assert(rpcs != NULL);
+    assert(tmpl != NULL);
+    assert(mbufs != NULL);
+    assert(nb_mbufs != NULL);
+
+    CHECK_RC(rpc_rte_mk_mbuf_from_template(rpcs, tmpl, mp, mbufs, nb_mbufs));
+
+    if (pkts != NULL && nb_pkts != NULL)
+    {
+        asn_value *ptrn_by_tmpl;
+
+        ptrn_by_tmpl = tapi_tad_mk_pattern_from_template((asn_value *)tmpl);
+        CHECK_NOT_NULL(ptrn_by_tmpl);
+
+        CHECK_RC(rpc_rte_mbuf_match_pattern(rpcs, ptrn_by_tmpl, *mbufs,
+                                            *nb_mbufs, pkts, nb_pkts));
+
+        asn_free_value(ptrn_by_tmpl);
+    }
+}
+

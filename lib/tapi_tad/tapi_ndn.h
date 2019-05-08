@@ -215,6 +215,26 @@ extern asn_value *tapi_tad_mk_pattern_from_template(asn_value *template);
  * if the initial 'ndn_raw_packet'-s are sent and (possibly)
  * undergo some transformations (eg, HW offloads are active)
  *
+ * @deprecated This API is not well-thought, and the
+ *             implementation is mind-boggling.
+ *
+ *             Please consider using better, granular helpers
+ *             to do varios editing, namely:
+ *
+ *             - @c tapi_ndn_pkt_demand_correct_ip_cksum()
+ *             - @c tapi_ndn_pkt_demand_correct_udp_cksum()
+ *             - @c tapi_ndn_pkt_demand_correct_tcp_cksum()
+ *             - @c tapi_ndn_superframe_gso()
+ *             - @c tapi_ndn_tso_pkts_edit()
+ *             - @c tapi_ndn_gso_pkts_ip_len_edit()
+ *             - @c tapi_ndn_gso_pkts_ip_id_edit()
+ *             - @c tapi_ndn_gso_pkts_udp_len_edit() .
+ *
+ *             Please use @c tapi_ndn_pkts_to_ptrn()
+ *             for the actual conversion.
+ *
+ *             Consider removing this API and all connected helpers.
+ *
  * @note The given set of possible transformations is only
  *       considered with respect to all 'ndn_raw_packet'-s
  *       in the array, i.e., some individual peculiarities
@@ -285,6 +305,237 @@ struct tapi_env;
  */
 extern te_errno tapi_ndn_subst_env(asn_value *value, te_kvpair_h *params,
                                    struct tapi_env *env);
+
+typedef enum tapi_ndn_level_e {
+    TAPI_NDN_OUTER_L3 = 0,
+    TAPI_NDN_OUTER_L4,
+    TAPI_NDN_TUNNEL,
+    TAPI_NDN_INNER_L3,
+    TAPI_NDN_INNER_L4,
+    TAPI_NDN_NLEVELS,
+} tapi_ndn_level_t;
+
+/**
+ * Given a traffic template, inspect its PDUs and fill
+ * out the output array of header types to provide the
+ * caller with details about protocols in use.
+ *
+ * @note The API will indicate missing PDUs by @c TE_PROTO_INVALID .
+ *
+ * @param tmpl The traffic template
+ * @param hdrs Array of size @c TAPI_NDN_NLEVELS to store the results in
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ndn_tmpl_classify(
+                            const asn_value    *tmpl,
+                            te_tad_protocols_t  hdrs[TAPI_NDN_NLEVELS]);
+
+/**
+ * Given a traffic template, set its IPv4 checksum plain value.
+ *
+ * @param tmpl  The traffic template
+ * @param cksum The checksum value to be set (host byte order)
+ * @param level @c TAPI_NDN_OUTER_L3 or @c TAPI_NDN_INNER_L3
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ndn_tmpl_set_ip_cksum(asn_value        *tmpl,
+                                           uint16_t          cksum,
+                                           tapi_ndn_level_t  level);
+
+/**
+ * Given a traffic template, set its UDP checksum plain value.
+ *
+ * @param tmpl  The traffic template
+ * @param cksum The checksum value to be set (host byte order)
+ * @param level @c TAPI_NDN_OUTER_L4 or @c TAPI_NDN_INNER_L4
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ndn_tmpl_set_udp_cksum(asn_value        *tmpl,
+                                            uint16_t          cksum,
+                                            tapi_ndn_level_t  level);
+
+/**
+ * Given a traffic template, set its TCP checksum plain value.
+ *
+ * @param tmpl  The traffic template
+ * @param cksum The checksum value to be set (host byte order)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ndn_tmpl_set_tcp_cksum(asn_value *tmpl,
+                                            uint16_t   cksum);
+
+/**
+ * Given a traffic template, set its TCP flags plain value.
+ *
+ * @param tmpl  The traffic template
+ * @param flags The flags value to be set
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ndn_tmpl_set_tcp_flags(asn_value *tmpl,
+                                            uint8_t    flags);
+
+/**
+ * Given a traffic template, set its payload length.
+ * This function doesn't set the payload data since
+ * random payload will be provided later by Tx CSAP.
+ *
+ * @param tmpl        The traffic template
+ * @param payload_len Payload length value
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ndn_tmpl_set_payload_len(asn_value    *tmpl,
+                                              unsigned int  payload_len);
+
+/**
+ * Given an ASN.1 raw packet and VLAN TCI, inject a VLAN tag to
+ * the outer Ethernet PDU thus simulating a VLAN tag HW offload.
+ *
+ * @param pkt      The ASN.1 raw packet to be edited
+ * @param vlan_tci VLAN TCI (host byte order) to be injected
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ndn_pkt_inject_vlan_tag(asn_value *pkt,
+                                             uint16_t   vlan_tci);
+
+/**
+ * Take an ASN.1 raw packet which is going to be transformed to
+ * a pattern and override IPv4 checksum field to require correct
+ * checksum in the packet which is about to be received on peer.
+ *
+ * @param pkt   The ASN.1 raw packet to be edited
+ * @param level @c TAPI_NDN_OUTER_L3 or @c TAPI_NDN_INNER_L3
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ndn_pkt_demand_correct_ip_cksum(asn_value        *pkt,
+                                                     tapi_ndn_level_t  level);
+
+/**
+ * Take an ASN.1 raw packet which is going to be transformed to
+ * a pattern and override UDP checksum field to require correct
+ * checksum in the packet which is about to be received on peer.
+ *
+ * @param pkt         The ASN.1 raw packet to be edited
+ * @param can_be_zero If @c TRUE, allow for zero checksum value
+ * @param level       @c TAPI_NDN_OUTER_L4 or @c TAPI_NDN_INNER_L4
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ndn_pkt_demand_correct_udp_cksum(
+                                                asn_value        *pkt,
+                                                te_bool           can_be_zero,
+                                                tapi_ndn_level_t  level);
+
+/**
+ * Take an ASN.1 raw packet which is going to be transformed to
+ * a pattern and override TCP checksum field to require correct
+ * checksum in the packet which is about to be received on peer.
+ *
+ * @param pkt The ASN.1 raw packet to be edited
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ndn_pkt_demand_correct_tcp_cksum(asn_value *pkt);
+
+/**
+ * Take an ASN.1 raw packet containing a superframe and conduct
+ * GSO slicing to produce a burst of ASN.1 raw packets each one
+ * containing unchanged PDUs from the original superframe and a
+ * properly sized chunk of payload read out from the same frame.
+ *
+ * @param superframe      The superframe to undergo GSO slicing
+ * @param seg_payload_len The desired length of a payload chunk
+ * @param pkts_out        Location for the resulting packets
+ * @param nb_pkts_out     Location for the number of the packets
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ndn_superframe_gso(asn_value      *superframe,
+                                        size_t          seg_payload_len,
+                                        asn_value    ***pkts_out,
+                                        unsigned int   *nb_pkts_out);
+
+/**
+ * Given a bunch of ASN.1 raw packets originating from some GSO
+ * transaction, conduct a very minimal TSO edit across TCP PDUs.
+ * Line up TCP sequence numbers as per GSO segment payload size
+ * and amend TCP flags so that all the packets but the last one
+ * have FIN and PSH bits cleared whilst CWR bit (if present) is
+ * retained intact solely in the very first packet of the array.
+ *
+ * @param pkts    The array of ASN.1 raw packets
+ * @param nb_pkts The number of ASN.1 raw packets
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ndn_tso_pkts_edit(asn_value    **pkts,
+                                       unsigned int   nb_pkts);
+
+/**
+ * Given a bunch of ASN.1 raw packets originating from some GSO
+ * transaction, fix IP inner / outer length field in each frame.
+ *
+ * @param pkts        The array of ASN.1 raw packets
+ * @param nb_pkts     The number of ASN.1 raw packets
+ * @param ip_te_proto @c TE_PROTO_IP4 or @c TE_PROTO_IP6
+ * @param level       @c TAPI_NDN_OUTER_L3 or @c TAPI_NDN_INNER_L3
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ndn_gso_pkts_ip_len_edit(asn_value          **pkts,
+                                              unsigned int         nb_pkts,
+                                              te_tad_protocols_t   ip_te_proto,
+                                              tapi_ndn_level_t     level);
+
+/**
+ * Given a bunch of ASN.1 raw packets originating from some GSO
+ * transaction, line up IPv4 ID field values across the packets.
+ *
+ * @param pkts      The array of ASN.1 raw packets
+ * @param nb_pkts   The number of ASN.1 raw packets
+ * @param inc_mod15 IPv4 ID increment MOD16 --> MOD15 toggle
+ * @param level     @c TAPI_NDN_OUTER_L3 or @c TAPI_NDN_INNER_L3
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ndn_gso_pkts_ip_id_edit(asn_value        **pkts,
+                                             unsigned int       nb_pkts,
+                                             te_bool            inc_mod15,
+                                             tapi_ndn_level_t   level);
+
+/**
+ * Given a bunch of ASN.1 raw packets originating from some GSO
+ * transaction, fix UDP inner / outer length field in each frame.
+ *
+ * @param pkts    The array of ASN.1 raw packets
+ * @param nb_pkts The number of ASN.1 raw packets
+ * @param level   @c TAPI_NDN_OUTER_L4 or @c TAPI_NDN_INNER_L4
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ndn_gso_pkts_udp_len_edit(asn_value        **pkts,
+                                               unsigned int       nb_pkts,
+                                               tapi_ndn_level_t   level);
+
+/**
+ * Convert ASN.1 raw packets to a multi-unit traffic pattern.
+ *
+ * @param pkts     The array of ASN.1 raw packets
+ * @param nb_pkts  The number of ASN.1 raw packets
+ * @param ptrn_out Location for the resulting pattern
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ndn_pkts_to_ptrn(asn_value    **pkts,
+                                      unsigned int   nb_pkts,
+                                      asn_value    **ptrn_out);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -33,10 +33,12 @@
 #endif
 
 #include "te_stdint.h"
+#include "te_string.h"
 #include "te_errno.h"
 #include "logger_api.h"
 #include "asn_impl.h"
 #include "ndn.h"
+#include "ndn_eth.h"
 #include "ndn_ipstack.h"
 
 #include "tad_common.h"
@@ -1331,4 +1333,872 @@ out:
         asn_free_value(agg);
 
     return TE_RC(TE_TAPI, err);
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_ndn_tmpl_classify(const asn_value    *tmpl,
+                       te_tad_protocols_t  hdrs[TAPI_NDN_NLEVELS])
+{
+    int                 nb_pdus;
+    te_tad_protocols_t *l3_proto = &hdrs[TAPI_NDN_INNER_L3];
+    te_tad_protocols_t *l4_proto = &hdrs[TAPI_NDN_INNER_L4];
+    te_errno            rc;
+    int                 i;
+
+    assert(tmpl != NULL);
+    assert(hdrs != NULL);
+
+    for (i = 0; i < TAPI_NDN_NLEVELS; ++i)
+        hdrs[i] = TE_PROTO_INVALID;
+
+    nb_pdus = asn_get_length(tmpl, "pdus");
+    if (nb_pdus < 1)
+    {
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    for (i = 0; i < nb_pdus; ++i)
+    {
+        asn_value     *pdu_elt;
+        asn_tag_value  pdu_choice_tag;
+
+        rc = asn_get_indexed(tmpl, &pdu_elt, i, "pdus");
+        if (rc != 0)
+            goto out;
+
+        rc = asn_get_choice_value(pdu_elt, NULL, NULL, &pdu_choice_tag);
+        if (rc != 0)
+            goto out;
+
+        switch (pdu_choice_tag)
+        {
+            case TE_PROTO_IP4:
+                /*@fallthrough@*/
+            case TE_PROTO_IP6:
+                *l3_proto = pdu_choice_tag;
+                break;
+
+            case TE_PROTO_TCP:
+                /*@fallthrough@*/
+            case TE_PROTO_UDP:
+                *l4_proto = pdu_choice_tag;
+                break;
+
+            case TE_PROTO_VXLAN:
+                /*@fallthrough@*/
+            case TE_PROTO_GENEVE:
+                /*@fallthrough@*/
+            case TE_PROTO_GRE:
+                hdrs[TAPI_NDN_TUNNEL] = pdu_choice_tag;
+                l3_proto = &hdrs[TAPI_NDN_OUTER_L3];
+                l4_proto = &hdrs[TAPI_NDN_OUTER_L4];
+                break;
+
+            case TE_PROTO_ETH:
+                break;
+
+            default:
+                rc = TE_EINVAL;
+                goto out;
+        }
+    }
+
+out:
+    return TE_RC(TE_TAPI, rc);
+}
+
+static te_errno
+tapi_ndn_pdu_idx_by_proto(asn_value          *container_of_pdus,
+                          te_bool             outer,
+                          te_tad_protocols_t  proto,
+                          int                *idx)
+{
+    int      nb_pdus;
+    int      pdu_idx;
+    int      pdu_idx_inc;
+    int      pdu_idx_found = -1;
+    te_errno rc;
+
+    nb_pdus = asn_get_length(container_of_pdus, "pdus");
+    if (nb_pdus < 1)
+        return TE_EINVAL;
+
+    pdu_idx = (outer) ? nb_pdus - 1 : 0;
+    pdu_idx_inc = (outer) ? -1 : 1;
+
+    while (nb_pdus-- > 0)
+    {
+        asn_value     *pdu_i;
+        asn_tag_value  pdu_i_choice_tag;
+
+        rc = asn_get_indexed(container_of_pdus, &pdu_i, pdu_idx, "pdus");
+        if (rc != 0)
+            return rc;
+
+        rc = asn_get_choice_value(pdu_i, NULL, NULL, &pdu_i_choice_tag);
+        if (rc != 0)
+            return rc;
+
+        if (pdu_i_choice_tag == proto)
+        {
+            pdu_idx_found = pdu_idx;
+            break;
+        }
+
+        pdu_idx += pdu_idx_inc;
+    }
+
+    if (pdu_idx_found != -1)
+    {
+        *idx = pdu_idx_found;
+        return 0;
+    }
+
+    return TE_ENOENT;
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_ndn_tmpl_set_ip_cksum(asn_value        *tmpl,
+                           uint16_t          cksum,
+                           tapi_ndn_level_t  level)
+{
+    int      pdu_idx;
+    te_errno rc;
+
+    assert(tmpl != NULL);
+    assert(level == TAPI_NDN_OUTER_L3 || level == TAPI_NDN_INNER_L3);
+
+    rc = tapi_ndn_pdu_idx_by_proto(tmpl, level == TAPI_NDN_OUTER_L3,
+                                   TE_PROTO_IP4, &pdu_idx);
+    if (rc != 0)
+        goto out;
+
+    rc = asn_write_value_field_fmt(tmpl, &cksum, sizeof(cksum),
+                                   "pdus.%d.#ip4.h-checksum.#plain", pdu_idx);
+
+out:
+    return TE_RC(TE_TAPI, rc);
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_ndn_tmpl_set_udp_cksum(asn_value        *tmpl,
+                            uint16_t          cksum,
+                            tapi_ndn_level_t  level)
+{
+    int      pdu_idx;
+    te_errno rc;
+
+    assert(tmpl != NULL);
+    assert(level == TAPI_NDN_OUTER_L4 || level == TAPI_NDN_INNER_L4);
+
+    rc = tapi_ndn_pdu_idx_by_proto(tmpl, level == TAPI_NDN_OUTER_L4,
+                                   TE_PROTO_UDP, &pdu_idx);
+    if (rc != 0)
+        goto out;
+
+    rc = asn_write_value_field_fmt(tmpl, &cksum, sizeof(cksum),
+                                   "pdus.%d.#udp.checksum.#plain", pdu_idx);
+
+out:
+    return TE_RC(TE_TAPI, rc);
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_ndn_tmpl_set_tcp_cksum(asn_value *tmpl,
+                            uint16_t   cksum)
+{
+    int      pdu_idx;
+    te_errno rc;
+
+    assert(tmpl != NULL);
+
+    rc = tapi_ndn_pdu_idx_by_proto(tmpl, FALSE, TE_PROTO_TCP, &pdu_idx);
+    if (rc != 0)
+        goto out;
+
+    rc = asn_write_value_field_fmt(tmpl, &cksum, sizeof(cksum),
+                                   "pdus.%d.#tcp.checksum.#plain", pdu_idx);
+
+out:
+    return TE_RC(TE_TAPI, rc);
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_ndn_tmpl_set_tcp_flags(asn_value *tmpl,
+                            uint8_t    flags)
+{
+    int      pdu_idx;
+    te_errno rc;
+
+    assert(tmpl != NULL);
+
+    rc = tapi_ndn_pdu_idx_by_proto(tmpl, FALSE, TE_PROTO_TCP, &pdu_idx);
+    if (rc != 0)
+        goto out;
+
+    rc = asn_write_value_field_fmt(tmpl, &flags, sizeof(flags),
+                                   "pdus.%d.#tcp.flags.#plain", pdu_idx);
+
+out:
+    return rc;
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_ndn_tmpl_set_payload_len(asn_value    *tmpl,
+                              unsigned int  payload_len)
+{
+    te_errno rc;
+
+    assert(tmpl != NULL);
+
+    rc = asn_write_value_field(tmpl, &payload_len, sizeof(payload_len),
+                               "payload.#length");
+
+    return TE_RC(TE_TAPI, rc);
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_ndn_pkt_inject_vlan_tag(asn_value *pkt,
+                             uint16_t   vlan_tci)
+{
+    uint16_t   v;
+    asn_value *provisional_du = NULL;
+    int        nb_pdus;
+    asn_value *du;
+    te_errno   rc;
+
+    provisional_du = asn_init_value(ndn_vlan_tag_header);
+    if (provisional_du == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    v = vlan_tci & NDN_ETH_VLAN_TCI_MASK_PRIO;
+    rc = asn_write_value_field(provisional_du, &v, sizeof(v),
+                               "priority.#plain");
+    if (rc != 0)
+        goto out;
+
+    v = vlan_tci & NDN_ETH_VLAN_TCI_MASK_CFI;
+    rc = asn_write_value_field(provisional_du, &v, sizeof(v), "cfi.#plain");
+    if (rc != 0)
+        goto out;
+
+    v = vlan_tci & NDN_ETH_VLAN_TCI_MASK_ID;
+    rc = asn_write_value_field(provisional_du, &v, sizeof(v),
+                               "vlan-id.#plain");
+    if (rc != 0)
+        goto out;
+
+    assert(pkt != NULL);
+
+    nb_pdus = asn_get_length(pkt, "pdus");
+    if (nb_pdus < 1)
+    {
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    du = asn_retrieve_descendant(pkt, NULL, "pdus.%d.#eth.tagged.#tagged",
+                                 nb_pdus - 1);
+    if (du == NULL)
+    {
+        rc = TE_EFAULT;
+        goto out;
+    }
+
+    rc = asn_assign_value(du, provisional_du);
+
+out:
+    if (provisional_du != NULL)
+        asn_free_value(provisional_du);
+
+    return TE_RC(TE_TAPI, rc);
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_ndn_pkt_demand_correct_ip_cksum(asn_value        *pkt,
+                                     tapi_ndn_level_t  level)
+{
+    int        pdu_idx;
+    asn_value *du;
+    te_errno   rc;
+
+    assert(pkt != NULL);
+    assert(level == TAPI_NDN_OUTER_L3 || level == TAPI_NDN_INNER_L3);
+
+    rc = tapi_ndn_pdu_idx_by_proto(pkt, level == TAPI_NDN_OUTER_L3,
+                                   TE_PROTO_IP4, &pdu_idx);
+    if (rc != 0)
+       goto out;
+
+    du = asn_find_descendant(pkt, NULL, "pdus.%d.#ip4.h-checksum", pdu_idx);
+    if (du == NULL)
+    {
+        rc = TE_EFAULT;
+        goto out;
+    }
+
+    rc = asn_free_subvalue(du, "#plain");
+    if (rc != 0)
+        goto out;
+
+    rc = asn_write_string(du, "correct", "#script");
+
+out:
+    return TE_RC(TE_TAPI, rc);
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_ndn_pkt_demand_correct_udp_cksum(asn_value        *pkt,
+                                      te_bool           can_be_zero,
+                                      tapi_ndn_level_t  level)
+{
+    int        pdu_idx;
+    asn_value *du;
+    te_errno   rc;
+
+    assert(pkt != NULL);
+    assert(level == TAPI_NDN_OUTER_L4 || level == TAPI_NDN_INNER_L4);
+
+    rc = tapi_ndn_pdu_idx_by_proto(pkt, level == TAPI_NDN_OUTER_L4,
+                                   TE_PROTO_UDP, &pdu_idx);
+    if (rc != 0)
+       goto out;
+
+    du = asn_find_descendant(pkt, NULL, "pdus.%d.#udp.checksum", pdu_idx);
+    if (du == NULL)
+    {
+        rc = TE_EFAULT;
+        goto out;
+    }
+
+    rc = asn_free_subvalue(du, "#plain");
+    if (rc != 0)
+        goto out;
+
+    rc = (can_be_zero) ? asn_write_string(du, "correct-or-zero", "#script") :
+                         asn_write_string(du, "correct", "#script");
+
+out:
+    return TE_RC(TE_TAPI, rc);
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_ndn_pkt_demand_correct_tcp_cksum(asn_value *pkt)
+{
+    int        pdu_idx;
+    const char script[] = "correct";
+    te_errno   rc;
+
+    assert(pkt != NULL);
+
+    rc = tapi_ndn_pdu_idx_by_proto(pkt, FALSE, TE_PROTO_TCP, &pdu_idx);
+    if (rc != 0)
+       goto out;
+
+    rc = asn_free_subvalue_fmt(pkt, "pdus.%d.#tcp.checksum.#plain", pdu_idx);
+    if (rc != 0)
+        goto out;
+
+    rc = asn_write_value_field_fmt(pkt, script, sizeof(script),
+                                   "pdus.%d.#tcp.checksum.#script", pdu_idx);
+
+out:
+    return TE_RC(TE_TAPI, rc);
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_ndn_superframe_gso(asn_value      *superframe,
+                        size_t          seg_payload_len,
+                        asn_value    ***pkts_out,
+                        unsigned int   *nb_pkts_out)
+{
+    int            superframe_payload_len;
+    unsigned int   nb_pkts = 0;
+    asn_value     *provisional_frame = NULL;
+    asn_value     *provisional_frame_payload = NULL;
+    char          *payload_buf = NULL;
+    size_t         payload_buf_len;
+    asn_value    **pkts = NULL;
+    te_errno       rc;
+    unsigned int   i;
+
+    assert(superframe != NULL);
+    assert(seg_payload_len != 0);
+    assert(pkts_out != NULL);
+    assert(nb_pkts_out != NULL);
+
+    superframe_payload_len = asn_get_length(superframe, "payload.#bytes");
+    if (superframe_payload_len <= 0)
+    {
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    nb_pkts = (size_t)superframe_payload_len / seg_payload_len;
+    nb_pkts += ((size_t)superframe_payload_len % seg_payload_len) ? 1 : 0;
+
+    provisional_frame = asn_copy_value(superframe);
+    if (provisional_frame == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    rc = asn_get_subvalue(provisional_frame, &provisional_frame_payload,
+                          "payload");
+    if (rc != 0)
+        goto out;
+
+    payload_buf_len = superframe_payload_len;
+    payload_buf = TE_ALLOC(payload_buf_len);
+    if (payload_buf == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    rc = asn_read_value_field(provisional_frame_payload, payload_buf,
+                              &payload_buf_len, "");
+    if (rc != 0)
+        goto out;
+
+    pkts = TE_ALLOC(nb_pkts * sizeof(*pkts));
+    if (pkts == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    for (i = 0; i < nb_pkts; ++i)
+    {
+        size_t payload_len_remaining = payload_buf_len - i * seg_payload_len;
+
+        pkts[i] = asn_init_value(ndn_raw_packet);
+        if (pkts[i] == NULL)
+        {
+            rc = TE_ENOMEM;
+            goto out;
+        }
+
+        rc = asn_free_subvalue(provisional_frame_payload, "#bytes");
+        if (rc != 0)
+            goto out;
+
+        rc = asn_write_value_field(provisional_frame_payload,
+                                   payload_buf + i * seg_payload_len,
+                                   MIN(payload_len_remaining, seg_payload_len),
+                                   "#bytes");
+        if (rc != 0)
+            goto out;
+
+        rc = asn_assign_value(pkts[i], provisional_frame);
+        if (rc != 0)
+            goto out;
+    }
+
+    *pkts_out = pkts;
+    *nb_pkts_out = nb_pkts;
+
+out:
+    if (rc != 0 && pkts != NULL)
+    {
+        for (i = 0; i < nb_pkts; ++i)
+        {
+            if (pkts[i] != NULL)
+                asn_free_value(pkts[i]);
+        }
+
+        free(pkts);
+    }
+
+    free(payload_buf);
+
+    if (provisional_frame != NULL)
+        asn_free_value(provisional_frame);
+
+    return rc;
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_ndn_tso_pkts_edit(asn_value    **pkts,
+                       unsigned int   nb_pkts)
+{
+    int          pdu_idx;
+    uint32_t     superframe_seqn;
+    size_t       superframe_seqn_size = sizeof(superframe_seqn);
+    uint8_t      superframe_flags;
+    size_t       superframe_flags_size = sizeof(superframe_flags);
+    int          seg_payload_size;
+    te_errno     rc = 0;
+    unsigned int i;
+
+    assert(pkts != NULL);
+    assert(nb_pkts != 0);
+    assert(pkts[0] != NULL);
+
+    rc = tapi_ndn_pdu_idx_by_proto(pkts[0], FALSE, TE_PROTO_TCP, &pdu_idx);
+    if (rc != 0)
+        goto out;
+
+    rc = asn_read_value_field_fmt(pkts[0], &superframe_seqn,
+                                  &superframe_seqn_size,
+                                  "pdus.%d.#tcp.seqn.#plain", pdu_idx);
+    if (rc != 0)
+        goto out;
+
+    assert(superframe_seqn_size == sizeof(superframe_seqn));
+
+    rc = asn_read_value_field_fmt(pkts[0], &superframe_flags,
+                                  &superframe_flags_size,
+                                  "pdus.%d.#tcp.flags.#plain", pdu_idx);
+    if (rc != 0)
+        goto out;
+
+    assert(superframe_flags_size == sizeof(superframe_flags));
+
+    seg_payload_size = asn_get_length(pkts[0], "payload.#bytes");
+    if (seg_payload_size <= 0)
+    {
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    for (i = 0; i < nb_pkts; ++i)
+    {
+        uint32_t provisional_seqn = superframe_seqn;
+        uint8_t  provisional_flags = superframe_flags;
+
+        assert(pkts[i] != NULL);
+
+        provisional_seqn += i * seg_payload_size;
+        rc = asn_write_value_field_fmt(pkts[i], &provisional_seqn,
+                                       sizeof(provisional_seqn),
+                                       "pdus.%d.#tcp.seqn.#plain", pdu_idx);
+        if (rc != 0)
+            goto out;
+
+        if (i != 0)
+            provisional_flags &= ~TCP_CWR_FLAG;
+
+        if (i + 1 != nb_pkts)
+            provisional_flags &= ~(TCP_FIN_FLAG | TCP_PSH_FLAG);
+
+        rc = asn_write_value_field_fmt(pkts[i], &provisional_flags,
+                                       sizeof(provisional_flags),
+                                       "pdus.%d.#tcp.flags.#plain", pdu_idx);
+        if (rc != 0)
+            goto out;
+    }
+
+out:
+    return TE_RC(TE_TAPI, rc);
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_ndn_gso_pkts_ip_len_edit(asn_value          **pkts,
+                              unsigned int         nb_pkts,
+                              te_tad_protocols_t   ip_te_proto,
+                              tapi_ndn_level_t     level)
+{
+    int           pdu_idx = 1;
+    uint16_t      superframe_ip_len;
+    size_t        superframe_ip_len_size = sizeof(superframe_ip_len);
+    size_t        superframe_payload_len;
+    te_errno      rc = 0;
+    unsigned int  i;
+
+    assert(pkts != NULL);
+    assert(nb_pkts != 0);
+    assert(ip_te_proto == TE_PROTO_IP4 || ip_te_proto == TE_PROTO_IP6);
+    assert(pkts[0] != NULL);
+    assert(level == TAPI_NDN_OUTER_L3 || level == TAPI_NDN_INNER_L3);
+
+    rc = tapi_ndn_pdu_idx_by_proto(pkts[0], level == TAPI_NDN_OUTER_L3,
+                                   ip_te_proto, &pdu_idx);
+    if (rc != 0)
+        goto out;
+
+    rc = asn_read_value_field_fmt(pkts[0], &superframe_ip_len,
+                                  &superframe_ip_len_size,
+                                  "pdus.%d.#ip%d.%s.#plain", pdu_idx,
+                                  (ip_te_proto == TE_PROTO_IP4) ? 4 : 6,
+                                  (ip_te_proto == TE_PROTO_IP4) ?
+                                  "total-length" : "payload-length");
+    if (rc != 0)
+        goto out;
+
+    assert(superframe_ip_len_size == sizeof(superframe_ip_len));
+
+    superframe_payload_len = 0;
+
+    for (i = 0; i < nb_pkts; ++i)
+    {
+        int seg_payload_len;
+
+        assert(pkts[i] != NULL);
+
+        seg_payload_len = asn_get_length(pkts[i], "payload.#bytes");
+        if (seg_payload_len <= 0)
+        {
+            rc = TE_EINVAL;
+            goto out;
+        }
+
+        superframe_payload_len += seg_payload_len;
+    }
+
+    for (i = 0; i < nb_pkts; ++i)
+    {
+        int      seg_payload_len;
+        uint16_t provisional_ip_len;
+
+        seg_payload_len = asn_get_length(pkts[i], "payload.#bytes");
+        if (seg_payload_len <= 0)
+        {
+            rc = TE_EINVAL;
+            goto out;
+        }
+
+        provisional_ip_len = superframe_ip_len - superframe_payload_len +
+                             seg_payload_len;
+
+        rc = asn_write_value_field_fmt(pkts[i], &provisional_ip_len,
+                                       sizeof(provisional_ip_len),
+                                       "pdus.%d.#ip%d.%s.#plain", pdu_idx,
+                                       (ip_te_proto == TE_PROTO_IP4) ? 4 : 6,
+                                       (ip_te_proto == TE_PROTO_IP4) ?
+                                       "total-length" : "payload-length");
+        if (rc != 0)
+            goto out;
+    }
+
+out:
+    return TE_RC(TE_TAPI, rc);
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_ndn_gso_pkts_ip_id_edit(asn_value        **pkts,
+                             unsigned int       nb_pkts,
+                             te_bool            inc_mod15,
+                             tapi_ndn_level_t   level)
+{
+    int           pdu_idx;
+    uint16_t      superframe_ip_id;
+    size_t        superframe_ip_id_size = sizeof(superframe_ip_id);
+    te_errno      rc = 0;
+    unsigned int  i;
+
+    assert(pkts != NULL);
+    assert(nb_pkts != 0);
+    assert(pkts[0] != NULL);
+    assert(level == TAPI_NDN_OUTER_L3 || level == TAPI_NDN_INNER_L3);
+
+    rc = tapi_ndn_pdu_idx_by_proto(pkts[0], level == TAPI_NDN_OUTER_L3,
+                                   TE_PROTO_IP4, &pdu_idx);
+    if (rc != 0)
+        goto out;
+
+    rc = asn_read_value_field_fmt(pkts[0], &superframe_ip_id,
+                                  &superframe_ip_id_size,
+                                  "pdus.%d.#ip4.ip-ident.#plain", pdu_idx);
+    if (rc != 0)
+        goto out;
+
+    assert(superframe_ip_id_size == sizeof(superframe_ip_id));
+
+    for (i = 0; i < nb_pkts; ++i)
+    {
+        uint16_t provisional_ip_id;
+
+        if (inc_mod15)
+        {
+            provisional_ip_id = (superframe_ip_id & 0x8000) |
+                                ((superframe_ip_id + i) & 0x7fff);
+        }
+        else
+        {
+            provisional_ip_id = superframe_ip_id + i;
+        }
+
+        assert(pkts[i] != NULL);
+
+        rc = asn_write_value_field_fmt(pkts[i], &provisional_ip_id,
+                                       sizeof(provisional_ip_id),
+                                       "pdus.%d.#ip4.ip-ident.#plain",
+                                       pdu_idx);
+        if (rc != 0)
+            goto out;
+    }
+
+out:
+    return TE_RC(TE_TAPI, rc);
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_ndn_gso_pkts_udp_len_edit(asn_value        **pkts,
+                               unsigned int       nb_pkts,
+                               tapi_ndn_level_t   level)
+{
+    int           pdu_idx;
+    uint16_t      superframe_udp_len;
+    size_t        superframe_udp_len_size = sizeof(superframe_udp_len);
+    te_errno      rc = 0;
+    unsigned int  i;
+
+    assert(pkts != NULL);
+    assert(nb_pkts != 0);
+    assert(pkts[0] != NULL);
+    assert(level == TAPI_NDN_OUTER_L4 || level == TAPI_NDN_INNER_L4);
+
+    rc = tapi_ndn_pdu_idx_by_proto(pkts[0], level == TAPI_NDN_OUTER_L4,
+                                   TE_PROTO_UDP, &pdu_idx);
+    if (rc != 0)
+        goto out;
+
+    rc = asn_read_value_field_fmt(pkts[0], &superframe_udp_len,
+                                  &superframe_udp_len_size,
+                                  "pdus.%d.#udp.length.#plain", pdu_idx);
+    if (rc != 0)
+        goto out;
+
+    assert(superframe_udp_len_size == sizeof(superframe_udp_len));
+
+    for (i = 0; i < nb_pkts; ++i)
+    {
+        int      seg_payload_len;
+        uint16_t provisional_udp_len;
+
+        assert(pkts[i] != NULL);
+
+        seg_payload_len = asn_get_length(pkts[i], "payload.#bytes");
+        if (seg_payload_len <= 0)
+        {
+            rc = TE_EINVAL;
+            goto out;
+        }
+
+        provisional_udp_len = TAD_UDP_HDR_LEN + seg_payload_len;
+
+        rc = asn_write_value_field_fmt(pkts[i], &provisional_udp_len,
+                                       sizeof(provisional_udp_len),
+                                       "pdus.%d.#udp.length.#plain", pdu_idx);
+        if (rc != 0)
+            goto out;
+    }
+
+out:
+    return TE_RC(TE_TAPI, rc);
+}
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_ndn_pkts_to_ptrn(asn_value    **pkts,
+                      unsigned int   nb_pkts,
+                      asn_value    **ptrn_out)
+{
+    asn_value    *ptrn;
+    te_errno      rc = 0;
+    unsigned int  i;
+
+    assert(pkts != NULL);
+    assert(nb_pkts != 0);
+    assert(ptrn_out != NULL);
+
+    ptrn = asn_init_value(ndn_traffic_pattern);
+    if (ptrn == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    for (i = 0; i < nb_pkts; ++i)
+    {
+        asn_value *ptrn_unit;
+        asn_value *pdus;
+        asn_value *payload;
+        asn_value *pdus_copy;
+        asn_value *payload_copy;
+
+        ptrn_unit = asn_init_value(ndn_traffic_pattern_unit);
+        if (ptrn_unit == NULL)
+        {
+             rc = TE_ENOMEM;
+             goto out;
+        }
+
+        rc = asn_insert_indexed(ptrn, ptrn_unit, -1, "");
+        if (rc != 0)
+        {
+            asn_free_value(ptrn_unit);
+            goto out;
+        }
+
+        assert(pkts[i] != NULL);
+
+        rc = asn_get_subvalue(pkts[i], &pdus, "pdus");
+        if (rc != 0)
+            goto out;
+
+        rc = asn_get_subvalue(pkts[i], &payload, "payload");
+        if (rc != 0)
+            goto out;
+
+        pdus_copy = asn_copy_value(pdus);
+        if (pdus_copy == NULL)
+        {
+            rc = TE_ENOMEM;
+            goto out;
+        }
+
+        payload_copy = asn_copy_value(payload);
+        if (payload_copy == NULL)
+        {
+            asn_free_value(pdus_copy);
+            rc = TE_ENOMEM;
+            goto out;
+        }
+
+        rc = asn_put_child_value_by_label(ptrn_unit, pdus_copy, "pdus");
+        if (rc != 0)
+        {
+            asn_free_value(pdus_copy);
+            asn_free_value(payload_copy);
+            goto out;
+        }
+
+        rc = asn_put_child_value_by_label(ptrn_unit, payload_copy,
+                                          "payload");
+        if (rc != 0)
+        {
+            asn_free_value(payload_copy);
+            goto out;
+        }
+    }
+
+    *ptrn_out = ptrn;
+
+out:
+    if (rc != 0 && ptrn != NULL)
+        asn_free_value(ptrn);
+
+    return TE_RC(TE_TAPI, rc);
 }
