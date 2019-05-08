@@ -28,8 +28,8 @@ extern "C" {
 
 #define TAPI_DPDK_TESTPMD_ARG_PREFIX "testpmd_arg_"
 #define TAPI_DPDK_TESTPMD_COMMAND_PREFIX "testpmd_command_"
-#define TAPI_DPDK_TESTPMD_TERM_TIMEOUT_MS 5000
-#define TAPI_DPDK_TESTPMD_RECEIVE_TIMEOUT_MS 5000
+#define TAPI_DPDK_TESTPMD_TERM_TIMEOUT_MS 60000
+#define TAPI_DPDK_TESTPMD_RECEIVE_TIMEOUT_MS 60000
 
 typedef struct tapi_dpdk_testpmd_job_t {
     char *ta;
