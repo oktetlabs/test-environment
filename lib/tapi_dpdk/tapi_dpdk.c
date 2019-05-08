@@ -20,6 +20,140 @@
 #include "tapi_file.h"
 
 #define COMMANDS_FILE_NAME "testpmd_commands"
+#define TESTPMD_MAX_PARAM_LEN 64
+#define MAKE_TESTPMD_CMD(_cmd) (TAPI_DPDK_TESTPMD_COMMAND_PREFIX _cmd)
+#define MAKE_TESTPMD_ARG(_arg) (TAPI_DPDK_TESTPMD_ARG_PREFIX _arg)
+#define TESTPMD_CMD_PRE_SETUP "port stop all\n"
+#define TESTPMD_CMD_POST_SETUP "port start all\n"
+#define TESTPMD_TOTAL_MBUFS_MIN 2048
+#define MBUF_OVERHEAD 256
+#define ETHER_MIN_MTU 68
+
+typedef enum testpmd_param_type {
+    TESTPMD_PARAM_TYPE_UINT64,
+    TESTPMD_PARAM_TYPE_STRING
+} testpmd_param_type;
+
+typedef struct testpmd_param {
+    const char *key;
+    testpmd_param_type type;
+    union {
+        uint64_t val;
+        char str_val[TESTPMD_MAX_PARAM_LEN];
+    };
+} testpmd_param;
+
+typedef enum testpmd_param_enum {
+    TESTPMD_PARAM_MBUF_SIZE,
+    TESTPMD_PARAM_MBUF_COUNT,
+    TESTPMD_PARAM_TXPKTS,
+    TESTPMD_PARAM_TXQ,
+    TESTPMD_PARAM_RXQ,
+    TESTPMD_PARAM_TXD,
+    TESTPMD_PARAM_RXD,
+    TESTPMD_PARAM_MTU,
+    TESTPMD_PARAM_LPBK_MODE,
+    TESTPMD_PARAM_START_TX_FIRST,
+    TESTPMD_PARAM_START,
+} testpmd_param_enum;
+
+/*
+ * The default values of testpmd parameters.
+ * Note that the numbers of descriptors are set to 512 to be able
+ * to calculate required total number of mbufs, though they might
+ * be different.
+ */
+static const testpmd_param default_testpmd_params[] = {
+    [TESTPMD_PARAM_MBUF_SIZE] = {
+        .key = MAKE_TESTPMD_ARG("mbuf_size"),
+        .type = TESTPMD_PARAM_TYPE_UINT64, .val = 2176},
+    [TESTPMD_PARAM_MBUF_COUNT] = {
+        .key = MAKE_TESTPMD_ARG("total_num_mbufs"),
+        .type = TESTPMD_PARAM_TYPE_UINT64, .val = 0},
+    [TESTPMD_PARAM_TXPKTS] = {
+        .key = MAKE_TESTPMD_ARG("txpkts"),
+        .type = TESTPMD_PARAM_TYPE_STRING, .str_val = "64"},
+    [TESTPMD_PARAM_TXQ] = { .key = MAKE_TESTPMD_ARG("txq"),
+        .type = TESTPMD_PARAM_TYPE_UINT64, .val = 1},
+    [TESTPMD_PARAM_RXQ] = { .key = MAKE_TESTPMD_ARG("rxq"),
+        .type = TESTPMD_PARAM_TYPE_UINT64, .val = 1},
+    [TESTPMD_PARAM_TXD] = { .key = MAKE_TESTPMD_ARG("txd"),
+        .type = TESTPMD_PARAM_TYPE_UINT64, .val = 512},
+    [TESTPMD_PARAM_RXD] = { .key = MAKE_TESTPMD_ARG("rxd"),
+        .type = TESTPMD_PARAM_TYPE_UINT64, .val = 512},
+    [TESTPMD_PARAM_MTU] = { .key = MAKE_TESTPMD_CMD("mtu"),
+        .type = TESTPMD_PARAM_TYPE_UINT64, .val = 0},
+    [TESTPMD_PARAM_LPBK_MODE] = {
+        .key = MAKE_TESTPMD_CMD("loopback_mode"),
+        .type = TESTPMD_PARAM_TYPE_UINT64, .val = 0},
+    [TESTPMD_PARAM_START_TX_FIRST] = {
+        .key = MAKE_TESTPMD_CMD("start_tx_first"),
+        .type = TESTPMD_PARAM_TYPE_UINT64, .val = 0},
+    [TESTPMD_PARAM_START] = {
+        .key = MAKE_TESTPMD_CMD("start"),
+        .type = TESTPMD_PARAM_TYPE_STRING, .str_val = "FALSE"},
+};
+
+static size_t
+copy_default_testpmd_params(testpmd_param **param)
+{
+    testpmd_param *result;
+    unsigned int i;
+
+    result = tapi_malloc(sizeof(default_testpmd_params));
+    for (i = 0; i < TE_ARRAY_LEN(default_testpmd_params); i++)
+        result[i] = default_testpmd_params[i];
+
+    *param = result;
+
+    return TE_ARRAY_LEN(default_testpmd_params);
+}
+
+static te_errno
+get_txpkts_size(const char *txpkts, uint64_t *txpkts_size)
+{
+    uint64_t result = 0;
+    uint64_t value;
+    char **str_array = NULL;
+    te_errno rc = 0;
+    int i;
+    int param_len = test_split_param_list(txpkts, ',', &str_array);
+
+    if (param_len == 0)
+    {
+        ERROR("Failed to parse txpkts parameter");
+        rc = TE_RC(TE_TAPI, TE_EINVAL);
+        goto out;
+    }
+
+    for (i = 0; i < param_len; i++)
+    {
+        if ((rc = te_strtoul(str_array[i], 0, &value)) != 0)
+        {
+            ERROR("Failed to get txpkts length");
+            rc = TE_RC(TE_TAPI, TE_EINVAL);
+            goto out;
+        }
+        result += value;
+    }
+
+    *txpkts_size = result;
+
+out:
+    if (str_array != NULL)
+    {
+        free(str_array[0]);
+        free(str_array);
+    }
+
+    return rc;
+}
+
+static const char *
+empty_string_if_null(const char *string)
+{
+    return string == NULL ? "" : string;
+}
 
 static char *
 test_arg2testpmd_arg(const char *test_arg)
@@ -129,9 +263,9 @@ append_corelist_eal_arg(size_t n_cores, tapi_cpu_index_t *cpu_ids,
 }
 
 static te_errno
-build_testpmd_arguments(rcf_rpc_server *rpcs, tapi_env *env, size_t n_cpus,
-                        tapi_cpu_index_t *cpu_ids, const char *cmdline_file,
-                        te_kvpair_h *test_args, int *argc_out, char ***argv_out)
+build_eal_testpmd_arguments(rcf_rpc_server *rpcs, tapi_env *env, size_t n_cpus,
+                            tapi_cpu_index_t *cpu_ids, int *argc_out,
+                            char ***argv_out)
 {
     int extra_argc = 0;
     char **extra_argv = NULL;
@@ -139,15 +273,6 @@ build_testpmd_arguments(rcf_rpc_server *rpcs, tapi_env *env, size_t n_cpus,
     int i;
 
     append_corelist_eal_arg(n_cpus, cpu_ids, &extra_argc, &extra_argv);
-    append_argument("--", &extra_argc, &extra_argv);
-    append_testpmd_arguments_from_test_args(test_args, &extra_argc,
-                                            &extra_argv);
-    if (cmdline_file != NULL)
-    {
-        append_argument("--cmdline-file", &extra_argc, &extra_argv);
-        append_argument(cmdline_file, &extra_argc, &extra_argv);
-    }
-    append_argument(NULL, &extra_argc, &extra_argv);
 
     rc = tapi_rte_make_eal_args(env, rpcs, extra_argc,
                                 (const char **)extra_argv,
@@ -162,23 +287,152 @@ build_testpmd_arguments(rcf_rpc_server *rpcs, tapi_env *env, size_t n_cpus,
     return rc;
 }
 
+/*
+ * Adjust the testpmd parameters. It is performed in two steps:
+ *
+ * 1) Get parameters from the test, if a parameter is not set, get it from
+ *    defaults (default_testpmd_params).
+ *
+ * 2) Modify parameters that are not set by the test, but must be modified
+ *    in order to run testpmd packet forwarding, based on parameters that were
+ *    obtained in the first step.
+ */
+static te_errno
+adjust_testpmd_defaults(te_kvpair_h *test_args, te_string *cmdline_setup,
+                        int *argc_out, char ***argv_out)
+{
+    const te_kvpair *pair;
+    testpmd_param *params;
+    te_bool *param_is_set;
+    uint64_t txpkts_size;
+    size_t params_len;
+    te_errno rc;
+    size_t i;
+
+    params_len = copy_default_testpmd_params(&params);
+    param_is_set = tapi_calloc(params_len, sizeof(*param_is_set));
+
+    TAILQ_FOREACH(pair, test_args, links)
+    {
+        for (i = 0; i < params_len; i++)
+        {
+            if (strcmp(pair->key, params[i].key) == 0)
+            {
+                if (params[i].type == TESTPMD_PARAM_TYPE_STRING)
+                {
+                    if (strlen(pair->value) + 1 > TESTPMD_MAX_PARAM_LEN)
+                    {
+                        free(params);
+                        free(param_is_set);
+                        return rc;
+                    }
+                    strcpy(params[i].str_val, pair->value);
+                    param_is_set[i] = TRUE;
+                    break;
+                }
+                else if (params[i].type == TESTPMD_PARAM_TYPE_UINT64)
+                {
+                    if ((rc = te_strtoul(pair->value, 0, &params[i].val)) != 0)
+                    {
+                        free(params);
+                        free(param_is_set);
+                        return rc;
+                    }
+                    param_is_set[i] = TRUE;
+
+                    break;
+                }
+                else
+                {
+                    ERROR("Unknown testpmd parameter type %d", params[i].type);
+                    return TE_RC(TE_TAPI, TE_EINVAL);
+                }
+            }
+        }
+    }
+
+    if ((rc = get_txpkts_size(params[TESTPMD_PARAM_TXPKTS].str_val,
+                              &txpkts_size)) != 0)
+    {
+        free(params);
+        free(param_is_set);
+        return rc;
+    }
+
+    if (!param_is_set[TESTPMD_PARAM_MBUF_COUNT])
+    {
+        uint64_t needed_mbuf_count = (params[TESTPMD_PARAM_TXQ].val *
+                                      params[TESTPMD_PARAM_TXD].val) +
+                                     (params[TESTPMD_PARAM_RXQ].val *
+                                      params[TESTPMD_PARAM_RXD].val);
+
+        char *value;
+
+        if (needed_mbuf_count < TESTPMD_TOTAL_MBUFS_MIN)
+            needed_mbuf_count = TESTPMD_TOTAL_MBUFS_MIN;
+
+        if (te_asprintf(&value, "%lu", needed_mbuf_count) < 0)
+            TEST_FAIL("Failed to build total-num-mbufs testpmd parameter");
+
+        append_argument("--total-num-mbufs", argc_out, argv_out);
+        append_argument(value, argc_out, argv_out);
+        free(value);
+    }
+    if (!param_is_set[TESTPMD_PARAM_MBUF_SIZE] &&
+        (txpkts_size + MBUF_OVERHEAD) > params[TESTPMD_PARAM_MBUF_SIZE].val)
+    {
+        char *value;
+
+        if (te_asprintf(&value, "%lu", (txpkts_size + MBUF_OVERHEAD)) < 0)
+            TEST_FAIL("Failed to build mbuf-size testpmd parameter");
+
+        append_argument("--mbuf-size", argc_out, argv_out);
+        append_argument(value, argc_out, argv_out);
+        free(value);
+    }
+    if (!param_is_set[TESTPMD_PARAM_MTU] && txpkts_size >= ETHER_MIN_MTU)
+    {
+        WARN("MTU is set for 0 port only for testpmd");
+        rc = te_string_append(cmdline_setup, "port config mtu 0 %lu\n",
+                              txpkts_size);
+        if (rc != 0)
+            TEST_FAIL("Failed to build MTU testpmd parameter");
+    }
+
+    free(params);
+    free(param_is_set);
+
+    return 0;
+}
+
 static void
-append_testpmd_command(const te_kvpair *cmd_pair, te_string *buf)
+append_testpmd_command(const te_kvpair *cmd_pair, te_string *setup_cmd,
+                       te_string *start_cmd)
 {
     te_errno rc = 0;
 
-    if (strcmp(cmd_pair->key, "testpmd_command_loopback_mode") == 0)
+    if (strcmp(cmd_pair->key,
+               default_testpmd_params[TESTPMD_PARAM_LPBK_MODE].key) == 0)
     {
-        rc = te_string_append(buf, "port stop all\nport config all loopback %s\n"
-                             "port start all\n", cmd_pair->value);
+        rc = te_string_append(setup_cmd, "port config all loopback %s\n",
+                              cmd_pair->value);
     }
-    else if (strcmp(cmd_pair->key, "testpmd_command_start_tx_first") == 0)
+    else if (strcmp(cmd_pair->key,
+                    default_testpmd_params[TESTPMD_PARAM_MTU].key) == 0)
     {
-        rc = te_string_append(buf, "start tx_first %s\n", cmd_pair->value);
+        WARN("MTU is set for 0 port only for testpmd");
+        rc = te_string_append(setup_cmd, "port config mtu 0 %s\n",
+                              cmd_pair->value);
     }
-    else if (strcmp(cmd_pair->key, "testpmd_command_start") == 0)
+    else if (strcmp(cmd_pair->key,
+                    default_testpmd_params[TESTPMD_PARAM_START_TX_FIRST].key) == 0)
     {
-        rc = te_string_append(buf, "start\n");
+        rc = te_string_append(start_cmd, "start tx_first %s\n", cmd_pair->value);
+    }
+    else if (strcmp(cmd_pair->key,
+                    default_testpmd_params[TESTPMD_PARAM_START].key) == 0)
+    {
+        rc = te_string_append(start_cmd, "start\n");
     }
 
     if (rc != 0)
@@ -186,26 +440,9 @@ append_testpmd_command(const te_kvpair *cmd_pair, te_string *buf)
 }
 
 static void
-create_cmdline_file(te_kvpair_h *test_args, const char *dir,
-                    char **cmdline_file, char **cmdline_buf)
+generate_cmdline_filename(const char *dir, char **cmdline_filename)
 {
-    te_string buf = TE_STRING_INIT;
-    const te_kvpair *pair;
     char *path;
-
-    TAILQ_FOREACH(pair, test_args, links)
-    {
-        if (is_testpmd_command(pair->key) && strcmp(pair->value, "FALSE") != 0)
-            append_testpmd_command(pair, &buf);
-    }
-
-    if (buf.len == 0)
-    {
-        te_string_free(&buf);
-        *cmdline_file = NULL;
-        *cmdline_buf = NULL;
-        return;
-    }
 
     if (te_asprintf(&path, "%s/%s_%s", dir, tapi_file_generate_name(),
                     COMMANDS_FILE_NAME) < 0)
@@ -213,10 +450,21 @@ create_cmdline_file(te_kvpair_h *test_args, const char *dir,
         TEST_FAIL("Failed to create testpmd commands file name");
     }
 
-    *cmdline_file = path;
-    *cmdline_buf = buf.ptr;
+    *cmdline_filename = path;
+}
 
-    return;
+static void
+append_testpmd_cmdline_from_args(te_kvpair_h *test_args,
+                                 te_string *cmdline_setup,
+                                 te_string *cmdline_start)
+{
+    const te_kvpair *pair;
+
+    TAILQ_FOREACH(pair, test_args, links)
+    {
+        if (is_testpmd_command(pair->key) && strcmp(pair->value, "FALSE") != 0)
+            append_testpmd_command(pair, cmdline_setup, cmdline_start);
+    }
 }
 
 static te_errno
@@ -274,7 +522,8 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     int testpmd_argc = 0;
     char **testpmd_argv = NULL;
     char *cmdline_file = NULL;
-    char *cmdline_buf = NULL;
+    te_string cmdline_setup = TE_STRING_INIT;
+    te_string cmdline_start = TE_STRING_INIT;
     char *working_dir = NULL;
     te_errno rc = 0;
     int i;
@@ -290,12 +539,29 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
         goto out;
     }
 
-    create_cmdline_file(test_args, working_dir, &cmdline_file, &cmdline_buf);
-
-    rc = build_testpmd_arguments(rpcs, env, n_cpus, cpu_ids, cmdline_file,
-                                 test_args, &testpmd_argc, &testpmd_argv);
+    rc = build_eal_testpmd_arguments(rpcs, env, n_cpus, cpu_ids,
+                                     &testpmd_argc, &testpmd_argv);
     if (rc != 0)
         goto out;
+
+    /* Separate EAL arguments from testpmd arguments */
+    append_argument("--", &testpmd_argc, &testpmd_argv);
+
+    rc = adjust_testpmd_defaults(test_args, &cmdline_setup, &testpmd_argc,
+                                 &testpmd_argv);
+    if (rc != 0)
+        goto out;
+
+    generate_cmdline_filename(working_dir, &cmdline_file);
+    append_testpmd_cmdline_from_args(test_args, &cmdline_setup, &cmdline_start);
+    append_argument("--cmdline-file", &testpmd_argc, &testpmd_argv);
+    append_argument(cmdline_file, &testpmd_argc, &testpmd_argv);
+
+    append_testpmd_arguments_from_test_args(test_args, &testpmd_argc,
+                                            &testpmd_argv);
+
+    /* Terminate argv with NULL */
+    append_argument(NULL, &testpmd_argc, &testpmd_argv);
 
     if (te_string_append(&testpmd_path, "%sdpdk-testpmd", working_dir) != 0)
         TEST_FAIL("Failed to append testpmd path");
@@ -339,14 +605,16 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
         goto out;
 
     testpmd_job->cmdline_file = cmdline_file;
-    testpmd_job->cmdline_buf = cmdline_buf;
+    testpmd_job->cmdline_setup = cmdline_setup;
+    testpmd_job->cmdline_start = cmdline_start;
     testpmd_job->ta = tapi_strdup(rpcs->ta);
 
 out:
     if (rc != 0)
     {
         free(cmdline_file);
-        free(cmdline_buf);
+        te_string_free(&cmdline_setup);
+        te_string_free(&cmdline_start);
     }
     free(cpu_ids);
     free(working_dir);
@@ -365,13 +633,19 @@ tapi_dpdk_testpmd_start(tapi_dpdk_testpmd_job_t *testpmd_job)
     if (testpmd_job->cmdline_file != NULL)
     {
         if (tapi_file_create_ta(testpmd_job->ta, testpmd_job->cmdline_file,
-                                "%s", testpmd_job->cmdline_buf) != 0)
+                "%s%s%s%s", TESTPMD_CMD_PRE_SETUP,
+                empty_string_if_null(testpmd_job->cmdline_setup.ptr),
+                TESTPMD_CMD_POST_SETUP,
+                empty_string_if_null(testpmd_job->cmdline_start.ptr)) != 0)
         {
             ERROR("Failed to create comand file on TA for testpmd");
             return TE_RC(TE_TAPI, TE_EFAIL);
         }
 
-        RING("testpmd cmdline-file content:\n%s", testpmd_job->cmdline_buf);
+        RING("testpmd cmdline-file content:\n%s%s%s%s", TESTPMD_CMD_PRE_SETUP,
+             empty_string_if_null(testpmd_job->cmdline_setup.ptr),
+             TESTPMD_CMD_POST_SETUP,
+             empty_string_if_null(testpmd_job->cmdline_start.ptr));
     }
 
     return tapi_job_start(testpmd_job->job);
@@ -391,7 +665,8 @@ tapi_dpdk_testpmd_destroy(tapi_dpdk_testpmd_job_t *testpmd_job)
 
     free(testpmd_job->ta);
     free(testpmd_job->cmdline_file);
-    free(testpmd_job->cmdline_buf);
+    te_string_free(&testpmd_job->cmdline_setup);
+    te_string_free(&testpmd_job->cmdline_start);
 
     return 0;
 }

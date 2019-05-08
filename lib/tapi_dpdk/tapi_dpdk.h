@@ -32,10 +32,11 @@ extern "C" {
 #define TAPI_DPDK_TESTPMD_RECEIVE_TIMEOUT_MS 5000
 
 typedef struct tapi_dpdk_testpmd_job_t {
-    tapi_job_t *job;
     char *ta;
     char *cmdline_file;
-    char *cmdline_buf;
+    te_string cmdline_setup;
+    te_string cmdline_start;
+    tapi_job_t *job;
     tapi_job_channel_t *in_channel;
     tapi_job_channel_t *out_channels[2];
     tapi_job_channel_t *err_filter;
