@@ -817,6 +817,14 @@ asn_check_value_contains(asn_value *container, asn_value *value);
 extern te_errno asn_free_subvalue(asn_value *value, const char *labels);
 
 /**
+ * Variadic version of @c asn_free_subvalue().
+ */
+extern te_errno asn_free_subvalue_fmt(asn_value  *container,
+                                      const char *labels_fmt,
+                                      ...)
+                                      __attribute__((format(printf, 2, 3)));
+
+/**
  * Free one-level subvalue of constraint ASN value instance by tag.
  * For CHOICE syntax value tag is ignored.
  *
@@ -890,6 +898,16 @@ extern te_errno asn_write_value_field(asn_value *container,
                                       const char *labels);
 
 /**
+ * Variadic version of @c asn_write_value_field().
+ */
+extern te_errno asn_write_value_field_fmt(asn_value  *container,
+                                          const void *data,
+                                          size_t      len,
+                                          const char *labels_fmt,
+                                          ...)
+                                          __attribute__((format(printf, 4, 5)));
+
+/**
  * Read data from primitive syntax leaf in specified ASN value.
  *
  * @param container     pointer to ASN value which leaf field is interested
@@ -907,6 +925,15 @@ extern te_errno asn_read_value_field(const asn_value *container,
                                      void *data, size_t *d_len,
                                      const char *labels);
 
+/**
+ * Variadic version of @c asn_read_value_field().
+ */
+extern te_errno asn_read_value_field_fmt(const asn_value  *container,
+                                         void             *data,
+                                         size_t           *len,
+                                         const char       *labels_fmt,
+                                         ...)
+                                         __attribute__((format(printf, 4, 5)));
 
 /**
  * Get primitive value of enumeration type from ASN value.

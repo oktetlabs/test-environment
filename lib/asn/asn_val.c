@@ -23,6 +23,7 @@
 
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_printf.h"
 #include "logger_api.h"
 #include "asn_impl.h"
 
@@ -636,6 +637,31 @@ te_errno
 asn_free_subvalue(asn_value *value, const char* labels)
 {
     return asn_free_descendant(value, labels);
+}
+
+/* See the description in 'asn_usr.h' */
+te_errno
+asn_free_subvalue_fmt(asn_value  *container,
+                      const char *labels_fmt,
+                      ...)
+{
+    va_list   list;
+    char     *labels = NULL;
+    te_errno  rc;
+
+    assert(labels_fmt != NULL);
+    assert(labels_fmt[0] != '\0');
+
+    va_start(list, labels_fmt);
+    if (te_vasprintf(&labels, labels_fmt, list) == -1)
+        rc = TE_ENOMEM;
+    else
+        rc = asn_free_subvalue(container, labels);
+
+    va_end(list);
+    free(labels);
+
+    return rc;
 }
 
 /* see description in asn_usr.h */
@@ -1688,6 +1714,32 @@ asn_write_value_field(asn_value *container, const void *data, size_t d_len,
     return rc;
 }
 
+/* See the description in 'asn_usr.h' */
+te_errno
+asn_write_value_field_fmt(asn_value  *container,
+                          const void *data,
+                          size_t      len,
+                          const char *labels_fmt,
+                          ...)
+{
+    va_list   list;
+    char     *labels = NULL;
+    te_errno  rc;
+
+    assert(labels_fmt != NULL);
+    assert(labels_fmt[0] != '\0');
+
+    va_start(list, labels_fmt);
+    if (te_vasprintf(&labels, labels_fmt, list) == -1)
+        rc = TE_ENOMEM;
+    else
+        rc = asn_write_value_field(container, data, len, labels);
+
+    va_end(list);
+    free(labels);
+
+    return rc;
+}
 
 #if !AVOID_STRSEP
 /**
@@ -1918,6 +1970,33 @@ asn_read_value_field(const asn_value *container, void *data, size_t *d_len,
                                             field_labels_int_copy);
 
     free(field_labels_int_copy);
+
+    return rc;
+}
+
+/* See the description in 'asn_usr.h' */
+te_errno
+asn_read_value_field_fmt(const asn_value  *container,
+                         void             *data,
+                         size_t           *len,
+                         const char       *labels_fmt,
+                         ...)
+{
+    va_list   list;
+    char     *labels = NULL;
+    te_errno  rc;
+
+    assert(labels_fmt != NULL);
+    assert(labels_fmt[0] != '\0');
+
+    va_start(list, labels_fmt);
+    if (te_vasprintf(&labels, labels_fmt, list) == -1)
+        rc = TE_ENOMEM;
+    else
+        rc = asn_read_value_field(container, data, len, labels);
+
+    va_end(list);
+    free(labels);
 
     return rc;
 }
