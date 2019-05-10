@@ -1579,6 +1579,12 @@ pci_driver_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
+static int
+filter_virtio(const struct dirent *de)
+{
+    return (strcmp_start("virtio", de->d_name) == 0);
+}
+
 static te_errno
 pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
              char **list, const char *unused1, const char *unused2,
@@ -1588,6 +1594,9 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
     const pci_device *dev;
     char *result = NULL;
     te_errno rc;
+    char driver_name[PATH_MAX];
+    struct dirent **namelist;
+    int n;
 
     UNUSED(sub_id);
     UNUSED(gid);
@@ -1599,12 +1608,42 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
     if (rc != 0)
         return rc;
 
-    rc = format_sysfs_device_name(&buf, dev, "/net");
+    rc = get_driver_name(dev, driver_name, sizeof(driver_name));
+    if (rc != 0)
+        return rc;
+
+    rc = format_sysfs_device_name(&buf, dev, "/");
     if (rc != 0)
     {
         te_string_free(&buf);
         return rc;
     }
+
+    if (strcmp_start("virtio-pci", driver_name) == 0)
+    {
+        n = scandir(buf.ptr, &namelist, filter_virtio, alphasort);
+        if (n <= 0)
+	{
+            ERROR("Cannot find virtio dir");
+	    if (n == 0)
+                return TE_OS_RC(TE_TA_UNIX, TE_EOK);
+
+	    return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+	rc = te_string_append(&buf, "%s", namelist[0]->d_name);
+	if (rc != 0)
+            return rc;
+
+	while (n--)
+	    free(namelist[n]);
+
+        free(namelist);
+    }
+
+    rc = te_string_append(&buf, "%s", "/net");
+    if (rc != 0)
+        return rc;
 
     result = calloc(1, RCF_MAX_VAL);
     if (result == NULL)
