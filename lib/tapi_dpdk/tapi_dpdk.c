@@ -298,8 +298,9 @@ build_eal_testpmd_arguments(rcf_rpc_server *rpcs, tapi_env *env, size_t n_cpus,
  *    obtained in the first step.
  */
 static te_errno
-adjust_testpmd_defaults(te_kvpair_h *test_args, te_string *cmdline_setup,
-                        int *argc_out, char ***argv_out)
+adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
+                        te_string *cmdline_setup, int *argc_out,
+                        char ***argv_out)
 {
     const te_kvpair *pair;
     testpmd_param *params;
@@ -392,9 +393,8 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, te_string *cmdline_setup,
     }
     if (!param_is_set[TESTPMD_PARAM_MTU] && txpkts_size >= ETHER_MIN_MTU)
     {
-        WARN("MTU is set for 0 port only for testpmd");
-        rc = te_string_append(cmdline_setup, "port config mtu 0 %lu\n",
-                              txpkts_size);
+        rc = te_string_append(cmdline_setup, "port config mtu %u %lu\n",
+                              port_number, txpkts_size);
         if (rc != 0)
             TEST_FAIL("Failed to build MTU testpmd parameter");
     }
@@ -511,6 +511,50 @@ grab_cpus_nonstrict_prop(const char *ta, size_t n_cpus,
     return grab_cpus(ta, n_cpus, &fallback_prop, cpu_ids);
 }
 
+const char *
+get_vdev_eal_argument(int eal_argc, char **eal_argv)
+{
+    int i;
+
+    for (i = 0; i < eal_argc; i++)
+    {
+        if (strcmp(eal_argv[i], "--vdev") == 0 && i + 1 < eal_argc)
+        {
+            return eal_argv[i + 1];
+        }
+    }
+
+    return NULL;
+}
+
+te_errno
+get_vdev_port_number(const char *vdev, unsigned int *port_number)
+{
+    unsigned int dev_count = 0;
+    const char *tmp = vdev;
+
+    if (vdev == NULL)
+    {
+        ERROR("Failed to parse NULL vdev argument");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    while ((tmp = strstr(tmp, "dev(")) != NULL)
+    {
+       dev_count++;
+       tmp++;
+    }
+
+    /*
+     * Hack: assume that port number of vdev is right after all slave
+     * devices. It might fail if --vdev and --pci-whitelist have
+     * different devices specified.
+     */
+    *port_number = dev_count;
+
+    return 0;
+}
+
 te_errno
 tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
                              size_t n_cpus, const tapi_cpu_prop_t *prop,
@@ -525,6 +569,8 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     te_string cmdline_setup = TE_STRING_INIT;
     te_string cmdline_start = TE_STRING_INIT;
     char *working_dir = NULL;
+    const char *vdev_arg = NULL;
+    unsigned int port_number = 0;
     te_errno rc = 0;
     int i;
 
@@ -544,11 +590,18 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     if (rc != 0)
         goto out;
 
+    vdev_arg = get_vdev_eal_argument(testpmd_argc, testpmd_argv);
+    if (vdev_arg != NULL)
+    {
+        if ((rc = get_vdev_port_number(vdev_arg, &port_number)) != 0)
+            goto out;
+    }
+
     /* Separate EAL arguments from testpmd arguments */
     append_argument("--", &testpmd_argc, &testpmd_argv);
 
-    rc = adjust_testpmd_defaults(test_args, &cmdline_setup, &testpmd_argc,
-                                 &testpmd_argv);
+    rc = adjust_testpmd_defaults(test_args, port_number, &cmdline_setup,
+                                 &testpmd_argc, &testpmd_argv);
     if (rc != 0)
         goto out;
 
@@ -608,6 +661,7 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     testpmd_job->cmdline_setup = cmdline_setup;
     testpmd_job->cmdline_start = cmdline_start;
     testpmd_job->ta = tapi_strdup(rpcs->ta);
+    testpmd_job->port_number = port_number;
 
 out:
     if (rc != 0)

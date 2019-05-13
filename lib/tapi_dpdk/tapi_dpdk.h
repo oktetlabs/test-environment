@@ -36,6 +36,7 @@ typedef struct tapi_dpdk_testpmd_job_t {
     char *cmdline_file;
     te_string cmdline_setup;
     te_string cmdline_start;
+    unsigned int port_number;
     tapi_job_t *job;
     tapi_job_channel_t *in_channel;
     tapi_job_channel_t *out_channels[2];
