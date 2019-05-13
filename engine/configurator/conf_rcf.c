@@ -13,6 +13,7 @@
 #include "te_string.h"
 #include "rcf_api.h"
 #include "conf_db.h"
+#include "conf_ta.h"
 
 /**
  * Find son with specified subid and optional name.
@@ -119,6 +120,19 @@ cfg_rcfunix_make_confstr(te_string *confstr, cfg_instance *ta)
 }
 
 static te_errno
+cfg_rcf_ta_sync(const char *ta_name)
+{
+    char oid[CFG_INST_NAME_MAX + strlen("/agent:")];
+    int ret;
+
+    ret = snprintf(oid, sizeof(oid), "/agent:%s", ta_name);
+    if (ret >= (int)sizeof(oid))
+        return TE_RC(TE_CS, TE_ESMALLBUF);
+
+    return cfg_ta_sync(oid, TRUE);
+}
+
+static te_errno
 cfg_rcf_add_ta(cfg_instance *ta)
 {
     te_errno rc;
@@ -159,6 +173,20 @@ cfg_rcf_add_ta(cfg_instance *ta)
 
     rc = rcf_add_ta(ta->name, ta->val.val_str, rcflib->val.val_str,
                     confstr.ptr, flags);
+    if (rc == 0)
+    {
+        rc = cfg_rcf_ta_sync(ta->name);
+        if (rc != 0)
+        {
+            te_errno rc2;
+
+            ERROR("Added test agent '%s' configuration sync failed: %r - "
+                  "delete it", ta->name, rc);
+            if ((rc2 = rcf_del_ta(ta->name)) != 0)
+                ERROR("Cannot delete just created test agent '%s': %r",
+                      ta->name, rc2);
+        }
+    }
 
     te_string_free(&confstr);
 
@@ -168,7 +196,24 @@ cfg_rcf_add_ta(cfg_instance *ta)
 static te_errno
 cfg_rcf_del_ta(cfg_instance *ta)
 {
-    return rcf_del_ta(ta->name);
+    te_errno rc;
+    te_errno rc_sync;
+
+    rc = rcf_del_ta(ta->name);
+    if (rc != 0)
+        ERROR("Cannot delete test agent '%s': %r", ta->name, rc);
+
+    rc_sync = cfg_rcf_ta_sync(ta->name);
+    if (rc_sync != 0)
+        ERROR("Deleted test agent '%s' configuration sync failed: %r",
+              ta->name, rc_sync);
+
+    /*
+     * We do not want to rollback deletion back because of sync failure.
+     * So, we should ignore sync failure return code (except logging
+     * done above).
+     */
+    return rc;
 }
 
 /**
