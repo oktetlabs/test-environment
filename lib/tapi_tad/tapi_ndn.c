@@ -2061,6 +2061,7 @@ tapi_ndn_gso_pkts_udp_len_edit(asn_value        **pkts,
     int           pdu_idx;
     uint16_t      superframe_udp_len;
     size_t        superframe_udp_len_size = sizeof(superframe_udp_len);
+    size_t        superframe_payload_len;
     te_errno      rc = 0;
     unsigned int  i;
 
@@ -2082,10 +2083,11 @@ tapi_ndn_gso_pkts_udp_len_edit(asn_value        **pkts,
 
     assert(superframe_udp_len_size == sizeof(superframe_udp_len));
 
+    superframe_payload_len = 0;
+
     for (i = 0; i < nb_pkts; ++i)
     {
-        int      seg_payload_len;
-        uint16_t provisional_udp_len;
+        int seg_payload_len;
 
         assert(pkts[i] != NULL);
 
@@ -2096,7 +2098,23 @@ tapi_ndn_gso_pkts_udp_len_edit(asn_value        **pkts,
             goto out;
         }
 
-        provisional_udp_len = TAD_UDP_HDR_LEN + seg_payload_len;
+        superframe_payload_len += seg_payload_len;
+    }
+
+    for (i = 0; i < nb_pkts; ++i)
+    {
+        int      seg_payload_len;
+        uint16_t provisional_udp_len;
+
+        seg_payload_len = asn_get_length(pkts[i], "payload.#bytes");
+        if (seg_payload_len <= 0)
+        {
+            rc = TE_EINVAL;
+            goto out;
+        }
+
+        provisional_udp_len = superframe_udp_len - superframe_payload_len +
+                              seg_payload_len;
 
         rc = asn_write_value_field_fmt(pkts[i], &provisional_udp_len,
                                        sizeof(provisional_udp_len),
