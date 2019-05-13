@@ -72,7 +72,7 @@ rpc_job_create(rcf_rpc_server *rpcs, const char *spawner,
         for (i = 0; i < len - 1; i++)
         {
             in.argv.argv_val[i].str.str_val = tapi_strdup(argv[i]);
-            in.argv.argv_val[i].str.str_len = strlen(argv[i]);
+            in.argv.argv_val[i].str.str_len = strlen(argv[i]) + 1;
         }
     }
 
@@ -88,7 +88,7 @@ rpc_job_create(rcf_rpc_server *rpcs, const char *spawner,
         for (i = 0; i < len - 1; i++)
         {
             in.env.env_val[i].str.str_val = tapi_strdup(env[i]);
-            in.env.env_val[i].str.str_len = strlen(env[i]);
+            in.env.env_val[i].str.str_len = strlen(env[i]) + 1;
         }
     }
 
