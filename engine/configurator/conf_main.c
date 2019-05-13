@@ -19,6 +19,7 @@
 #if WITH_CONF_YAML
 #include "conf_yaml.h"
 #endif /* WITH_CONF_YAML */
+#include "conf_rcf.h"
 
 #include <libxml/xinclude.h>
 
@@ -524,8 +525,16 @@ process_add(cfg_add_msg *msg, te_bool update_dh)
         return;
     }
 
-    if (strcmp_start(CFG_TA_PREFIX, oid) != 0) /* Success */
+    if (strcmp_start(CFG_TA_PREFIX, oid) != 0)
     {
+        if (strcmp_start(CFG_RCF_PREFIX, inst->oid) == 0 &&
+            (msg->rc = cfg_rcf_add(inst)) != 0)
+        {
+            if (update_dh)
+                cfg_dh_delete_last_command();
+            cfg_db_del(handle);
+            return;
+        }
         /*
          * Instance is not from agent subtree, but we set 'added'
          * to TRUE to avoid possible problems with this instance.
@@ -707,8 +716,16 @@ process_set(cfg_set_msg *msg, te_bool update_dh)
         return;
     }
 
-    if (strcmp_start(CFG_TA_PREFIX, inst->oid) != 0) /* Success */
+    if (strcmp_start(CFG_TA_PREFIX, inst->oid) != 0)
     {
+        if (strcmp_start(CFG_RCF_PREFIX, inst->oid) == 0 &&
+            (msg->rc = cfg_rcf_set(inst)) != 0)
+        {
+            if (update_dh)
+                cfg_dh_delete_last_command();
+            cfg_db_set(handle, old_val);
+            cfg_wipe_cmd_error(CFG_SET, CFG_HANDLE_INVALID);
+        }
         cfg_types[obj->type].free(val);
         cfg_types[obj->type].free(old_val);
         return;
@@ -819,6 +836,15 @@ process_del(cfg_del_msg *msg, te_bool update_dh)
     {
         ERROR("%s: Failed to add into DH errno %r",
               __FUNCTION__, msg->rc);
+        cfg_wipe_cmd_error(CFG_DEL, CFG_HANDLE_INVALID);
+        return;
+    }
+
+    if (strcmp_start(CFG_RCF_PREFIX, inst->oid) == 0 &&
+        (msg->rc = cfg_rcf_del(inst)) != 0)
+    {
+        if (update_dh)
+            cfg_dh_delete_last_command();
         cfg_wipe_cmd_error(CFG_DEL, CFG_HANDLE_INVALID);
         return;
     }

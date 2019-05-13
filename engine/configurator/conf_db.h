@@ -116,6 +116,7 @@ extern int cfg_all_inst_size;
 extern uint16_t cfg_inst_seq_num;
 
 #define CFG_TA_PREFIX   "/agent:"
+#define CFG_RCF_PREFIX  "/rcf:"
 
 /**
  * Check if instance is /agent:*

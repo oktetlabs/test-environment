@@ -28,6 +28,7 @@ noinst_HEADERS = conf_backup.h  \
                  conf_defs.h    \
                  conf_dh.h      \
                  conf_ta.h      \
+                 conf_rcf.h     \
                  $(CONF_YAML_H)
 
 te_cs_SOURCES = conf_backup.c  \
@@ -36,6 +37,7 @@ te_cs_SOURCES = conf_backup.c  \
                 conf_main.c    \
                 conf_print.c   \
                 conf_ta.c      \
+                conf_rcf.c     \
                 $(CONF_YAML_S)
 
 te_cs_shutdown_SOURCES = conf_shutdown.c

@@ -12,6 +12,7 @@ sources = [
     'conf_dh.c',
     'conf_main.c',
     'conf_backup.c',
+    'conf_rcf.c',
     'conf_ta.c',
     'conf_print.c'
 ]
