@@ -391,7 +391,14 @@ tapi_env_free(tapi_env *env)
             {
                 ERROR("%s(): cfg_del_instance() failed: %r",
                       __FUNCTION__, rc);
-                TE_RC_UPDATE(result, rc);
+
+                /*
+                 * Let's not fail the test if the address disappeared
+                 * (for instance, it may happen with IPv6 addresses
+                 * when interface is set down).
+                 */
+                if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+                    TE_RC_UPDATE(result, rc);
             }
         }
         CIRCLEQ_REMOVE(&env->addrs, addr, links);
