@@ -106,6 +106,8 @@ enum trc_report_flags {
                                               iterations */
     TRC_REPORT_NO_EXPECTED      = 0x80,  /**< Hide all expected
                                               iterations */
+    TRC_REPORT_KEEP_ARTIFACTS   = 0x40000,  /**< Keep entries with artifacts
+                                                 regardless hiding options */
     TRC_REPORT_NO_STATS_NOT_RUN = 0x100, /**< Hide entries with
                                               unexpected not run
                                               statistic */
