@@ -64,6 +64,7 @@ enum {
     TRC_OPT_NO_SKIPPED,
     TRC_OPT_NO_EXP_PASSED,
     TRC_OPT_NO_EXPECTED,
+    TRC_OPT_KEEP_ARTIFACTS,
     TRC_OPT_NO_STATS_NOT_RUN,
     TRC_OPT_NO_KEYS,
     TRC_OPT_KEYS_ONLY,
@@ -218,6 +219,10 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
 
         { "no-exp-passed", '\0', POPT_ARG_NONE, NULL, TRC_OPT_NO_EXP_PASSED,
           "Do not include scripts with passed as expected results.",
+          NULL },
+
+        { "keep-artifacts", '\0', POPT_ARG_NONE, NULL, TRC_OPT_KEEP_ARTIFACTS,
+          "Keep entries with artifacts regardless hiding options.",
           NULL },
 
         { "no-stats-not-run", '\0', POPT_ARG_NONE, NULL,
@@ -498,6 +503,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
             TRC_OPT_FLAG(NO_SKIPPED);
             TRC_OPT_FLAG(NO_EXP_PASSED);
             TRC_OPT_FLAG(NO_EXPECTED);
+            TRC_OPT_FLAG(KEEP_ARTIFACTS);
             TRC_OPT_FLAG(NO_STATS_NOT_RUN);
             TRC_OPT_FLAG(NO_KEYS);
             TRC_OPT_FLAG(KEYS_ONLY);

@@ -2281,8 +2281,8 @@ trc_report_test_iter_entry_output(
     te_test_status status =
         (iter == NULL) ? TE_TEST_UNSPEC : iter->result.status;
 
-    return (/* NO_SCRIPTS is clear or it is NOT a script */
-            (~flags & TRC_REPORT_NO_SCRIPTS) ||
+    return ((/* NO_SCRIPTS is clear or it is NOT a script */
+             (~flags & TRC_REPORT_NO_SCRIPTS) ||
              (test->type != TRC_TEST_SCRIPT)) &&
             (/* NO_UNSPEC is clear or obtained result is not UNSPEC */
              (~flags & TRC_REPORT_NO_UNSPEC) ||
@@ -2300,7 +2300,10 @@ trc_report_test_iter_entry_output(
               * NO_EXPECTED is clear or obtained result is equal
               * to expected
               */
-             (~flags & TRC_REPORT_NO_EXPECTED) || (!is_exp));
+             (~flags & TRC_REPORT_NO_EXPECTED) || (!is_exp))) ||
+           ((flags & TRC_REPORT_KEEP_ARTIFACTS) &&
+            (iter != NULL) &&
+            !TAILQ_EMPTY(&iter->result.artifacts));
 }
 
 /**
