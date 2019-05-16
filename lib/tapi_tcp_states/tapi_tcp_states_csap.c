@@ -203,6 +203,25 @@ tst_ack_csap_handler(tsa_session *ss)
 
                 return rc;
             }
+            else
+            {
+                if (ss->state.close_listener)
+                {
+                    RPC_AWAIT_ERROR(ss->config.pco_iut);
+                    if (rpc_close(ss->config.pco_iut,
+                                  ss->state.iut_s_aux) < 0)
+                    {
+                        ERROR("%s(): failed to close listener socket after "
+                              "accepting connection, errno %r",
+                              __FUNCTION__, RPC_ERRNO(ss->config.pco_iut));
+                        return RPC_ERRNO(ss->config.pco_iut);
+                    }
+                    else
+                    {
+                        ss->state.iut_s_aux = -1;
+                    }
+                }
+            }
         }
         else
         {
