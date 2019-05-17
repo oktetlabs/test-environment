@@ -8,12 +8,14 @@ AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 AM_LDFLAGS = -L$(DESTDIR)/$(libdir)
 
 include_HEADERS= \
-	tapi_dpdk.h
+	tapi_dpdk.h \
+	tapi_dpdk_stats.h
 
 lib_LIBRARIES = libtapi_dpdk.a
 
 libtapi_dpdk_a_SOURCES = \
-	tapi_dpdk.c
+	tapi_dpdk.c \
+	tapi_dpdk_stats.c
 
 install-exec-hook:
 	for i in ${lib_LIBRARIES} ; do \
