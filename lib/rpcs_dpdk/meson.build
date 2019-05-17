@@ -103,4 +103,5 @@ deps += [
     dep_lib_asn,
     dep_lib_ndn,
     dep_lib_tad,
+    dep_lib_rpc_dpdk,
 ]

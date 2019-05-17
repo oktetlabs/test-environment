@@ -24,6 +24,7 @@
 #include "tapi_rpc_rte_ethdev.h"
 #include "tapi_rpc_rte_mbuf.h"
 #include "rpcc_dpdk.h"
+#include "rpc_dpdk_offloads.h"
 
 
 static const char *
@@ -75,65 +76,57 @@ rpc_rte_eth_stats_get(rcf_rpc_server             *rpcs,
 static const char *
 tarpc_rte_eth_rx_offloads2str(te_log_buf *tlbp, uint64_t rx_offloads)
 {
-    const struct te_log_buf_bit2str rx_offloads2str[] = {
-#define TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(_bit) \
-        { TARPC_RTE_DEV_RX_OFFLOAD_##_bit##_BIT, #_bit }
-        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(VLAN_STRIP),
-        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(IPV4_CKSUM),
-        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(UDP_CKSUM),
-        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(TCP_CKSUM),
-        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(TCP_LRO),
-        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(QINQ_STRIP),
-        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(OUTER_IPV4_CKSUM),
-        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(MACSEC_STRIP),
-        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(HEADER_SPLIT),
-        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(VLAN_FILTER),
-        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(VLAN_EXTEND),
-        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(JUMBO_FRAME),
-        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(CRC_STRIP),
-        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(SCATTER),
-        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(TIMESTAMP),
-        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(SECURITY),
+    struct te_log_buf_bit2str *rx_offloads2str;
+    const char *result;
+    unsigned int i;
 
-        TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR(_UNSUPPORTED),
-#undef TARPC_RTE_DEV_RX_OFFLOAD_BIT2STR
-        { 0, NULL }
-    };
+    /* Two more for unsupported and NULL */
+    rx_offloads2str = tapi_calloc(rpc_dpdk_rx_offloads_num + 2,
+                                  sizeof(*rx_offloads2str));
 
-    return te_bit_mask2log_buf(tlbp, rx_offloads, rx_offloads2str);
+    for (i = 0; i < rpc_dpdk_rx_offloads_num; i++)
+    {
+        rx_offloads2str[i].bit = rpc_dpdk_rx_offloads[i].bit;
+        rx_offloads2str[i].str = rpc_dpdk_rx_offloads[i].name;
+    }
+
+    rx_offloads2str[rpc_dpdk_rx_offloads_num].bit =
+            TARPC_RTE_DEV_RX_OFFLOAD__UNSUPPORTED_BIT;
+    rx_offloads2str[rpc_dpdk_rx_offloads_num].str = "_UNSUPPORTED";
+
+    result = te_bit_mask2log_buf(tlbp, rx_offloads, rx_offloads2str);
+
+    free(rx_offloads2str);
+
+    return result;
 }
 
 static const char *
 tarpc_rte_eth_tx_offloads2str(te_log_buf *tlbp, uint64_t tx_offloads)
 {
-    const struct te_log_buf_bit2str tx_offloads2str[] = {
-#define TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(_bit) \
-        { TARPC_RTE_DEV_TX_OFFLOAD_##_bit##_BIT, #_bit }
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(VLAN_INSERT),
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(IPV4_CKSUM),
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(UDP_CKSUM),
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(TCP_CKSUM),
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(SCTP_CKSUM),
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(TCP_TSO),
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(UDP_TSO),
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(OUTER_IPV4_CKSUM),
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(QINQ_INSERT),
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(VXLAN_TNL_TSO),
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(GRE_TNL_TSO),
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(IPIP_TNL_TSO),
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(GENEVE_TNL_TSO),
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(MACSEC_INSERT),
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(MT_LOCKFREE),
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(MULTI_SEGS),
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(MBUF_FAST_FREE),
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(SECURITY),
+    struct te_log_buf_bit2str *tx_offloads2str;
+    const char *result;
+    unsigned int i;
 
-        TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR(_UNSUPPORTED),
-#undef TARPC_RTE_DEV_TX_OFFLOAD_BIT2STR
-        { 0, NULL }
-    };
+    /* Two more for unsupported and NULL */
+    tx_offloads2str = tapi_calloc(rpc_dpdk_tx_offloads_num + 2,
+                                  sizeof(*tx_offloads2str));
 
-    return te_bit_mask2log_buf(tlbp, tx_offloads, tx_offloads2str);
+    for (i = 0; i < rpc_dpdk_tx_offloads_num; i++)
+    {
+        tx_offloads2str[i].bit = rpc_dpdk_tx_offloads[i].bit;
+        tx_offloads2str[i].str = rpc_dpdk_tx_offloads[i].name;
+    }
+
+    tx_offloads2str[rpc_dpdk_tx_offloads_num].bit =
+            TARPC_RTE_DEV_TX_OFFLOAD__UNSUPPORTED_BIT;
+    tx_offloads2str[rpc_dpdk_tx_offloads_num].str = "_UNSUPPORTED";
+
+    result = te_bit_mask2log_buf(tlbp, tx_offloads, tx_offloads2str);
+
+    free(tx_offloads2str);
+
+    return result;
 }
 
 static const char *

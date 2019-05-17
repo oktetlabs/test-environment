@@ -30,6 +30,7 @@ librpcs_dpdk_a_SOURCES = \
 	rte_flow_ndn.c \
 	eal.c
 
+librpcs_dpdk_a_DEPENDENCIES = $(DESTDIR)/$(libdir)/librpc_dpdk.la
 
 install-exec-hook:
 	for i in ${lib_LIBRARIES} ; do \

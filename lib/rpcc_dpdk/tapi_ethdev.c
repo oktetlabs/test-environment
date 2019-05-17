@@ -22,36 +22,7 @@
 #include "tarpc.h"
 
 #include "tapi_rpc_rte_ethdev.h"
-
-/* Mapping between RTE Tx offload flags and their names */
-typedef struct tapi_rpc_rte_tx_offload_s {
-    const char     *name;
-    const uint64_t  flag;
-} tapi_rpc_rte_tx_offload_t;
-
-#define TAPI_RPC_RTE_TX_OFFLOAD(_name) \
-        { #_name, 1ULL << TARPC_RTE_DEV_TX_OFFLOAD_##_name##_BIT }
-
-static const tapi_rpc_rte_tx_offload_t tapi_rpc_rte_tx_offloads[] = {
-    TAPI_RPC_RTE_TX_OFFLOAD(VLAN_INSERT),
-    TAPI_RPC_RTE_TX_OFFLOAD(IPV4_CKSUM),
-    TAPI_RPC_RTE_TX_OFFLOAD(UDP_CKSUM),
-    TAPI_RPC_RTE_TX_OFFLOAD(TCP_CKSUM),
-    TAPI_RPC_RTE_TX_OFFLOAD(SCTP_CKSUM),
-    TAPI_RPC_RTE_TX_OFFLOAD(TCP_TSO),
-    TAPI_RPC_RTE_TX_OFFLOAD(UDP_TSO),
-    TAPI_RPC_RTE_TX_OFFLOAD(OUTER_IPV4_CKSUM),
-    TAPI_RPC_RTE_TX_OFFLOAD(QINQ_INSERT),
-    TAPI_RPC_RTE_TX_OFFLOAD(VXLAN_TNL_TSO),
-    TAPI_RPC_RTE_TX_OFFLOAD(GRE_TNL_TSO),
-    TAPI_RPC_RTE_TX_OFFLOAD(IPIP_TNL_TSO),
-    TAPI_RPC_RTE_TX_OFFLOAD(GENEVE_TNL_TSO),
-    TAPI_RPC_RTE_TX_OFFLOAD(MACSEC_INSERT),
-    TAPI_RPC_RTE_TX_OFFLOAD(MT_LOCKFREE),
-    TAPI_RPC_RTE_TX_OFFLOAD(MULTI_SEGS),
-    TAPI_RPC_RTE_TX_OFFLOAD(MBUF_FAST_FREE),
-    TAPI_RPC_RTE_TX_OFFLOAD(SECURITY)
-};
+#include "rpc_dpdk_offloads.h"
 
 /**
  * Get default link speeds from Configurator if any.
@@ -133,10 +104,10 @@ tapi_rpc_rte_eth_conf_set_fixed_dev_tx_offloads(uint64_t *offloadsp)
 
         name = CFG_OID_GET_INST_NAME(oid, 6);
 
-        for (j = 0; j < TE_ARRAY_LEN(tapi_rpc_rte_tx_offloads); ++j)
+        for (j = 0; j < rpc_dpdk_tx_offloads_num; ++j)
         {
-            if (strcmp(name, tapi_rpc_rte_tx_offloads[j].name) == 0)
-                offloads |= tapi_rpc_rte_tx_offloads[j].flag;
+            if (strcmp(name, rpc_dpdk_tx_offloads[j].name) == 0)
+                offloads |= (1ULL << rpc_dpdk_tx_offloads[j].bit);
         }
 
         free(oid);

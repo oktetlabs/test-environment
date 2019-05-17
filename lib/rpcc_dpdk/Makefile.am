@@ -33,6 +33,8 @@ librpcc_dpdk_la_SOURCES = \
 	rte_flow_ndn.c \
 	eal.c
 
+librpcc_dpdk_la_DEPENDENCIES = $(DESTDIR)/$(libdir)/librpc_dpdk.la
+
 
 install-exec-hook:
 	touch -c -r librpcc_dpdk.la $(DESTDIR)/$(libdir)/librpcc_dpdk.*

@@ -30,4 +30,5 @@ deps += [
     dep_lib_tapi,
     dep_lib_tapi_env,
     dep_lib_tapi_tad,
+    dep_lib_dpdk_rpc,
 ]
