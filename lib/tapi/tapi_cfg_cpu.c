@@ -280,11 +280,15 @@ tapi_cfg_cpu_grab_by_prop(const char *ta, const tapi_cpu_prop_t *prop,
 
     for (i = 0; i < thread_count; i++)
     {
-        if ((rc = check_thread(ta, &indices[i], prop, &suitable)) != 0)
-            goto out;
+        /* Don't check thread suitability if prop is not specified */
+        if (prop != NULL)
+        {
+            if ((rc = check_thread(ta, &indices[i], prop, &suitable)) != 0)
+                goto out;
 
-        if (!suitable)
-            continue;
+            if (!suitable)
+                continue;
+        }
 
         rc = tapi_cfg_cpu_grab_by_id(ta, &indices[i]);
         if (rc == 0) /* Approptiate CPU is grabbed */

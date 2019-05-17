@@ -61,11 +61,12 @@ te_errno tapi_cfg_cpu_release_by_id(const char *ta,
                                     const tapi_cpu_index_t *cpu_id);
 
 /**
- * Grab a CPU on a test agent with requested properties as a resource and
- * retrieve its index.
+ * Grab a CPU on a test agent with requested properties (if specified)
+ * as a resource and retrieve its index.
  *
  * @param[in]  ta               Test Agent
- * @param[in]  prop             CPU properties
+ * @param[in]  prop             CPU properties. May be @c NULL to grab
+ *                              any available CPU
  * @param[out] cpu_id           Index of grabbed CPU
  *
  * @return Status code.
