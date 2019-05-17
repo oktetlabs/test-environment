@@ -1,0 +1,316 @@
+# Process this file with autoconf to produce a configure script.
+
+# Test Environment
+#
+# Root configure
+#
+# Copyright (C) 2003-2018 OKTET Labs.
+# 
+# Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
+
+AC_PREREQ([2.59])
+
+AC_INIT([test_environment],[0.9],[Elena.Vengerova@oktetlabs.ru])
+
+AC_CONFIG_AUX_DIR([auxdir])
+
+AM_INIT_AUTOMAKE([1.9.1 foreign -Wall dist-bzip2 tar-pax])
+TE_SETUP_AR
+
+AC_PROG_INSTALL
+
+CONFIGURE="$(which "$0")"
+TE_BASE_DIR="$(dirname "$CONFIGURE")"
+pushd "$TE_BASE_DIR" >/dev/null
+export TE_BASE="$(pwd)"
+AC_SUBST(TE_BASE)
+popd >/dev/null
+
+. ${TE_BASE}/common_vars.sh
+export TE_BUILD="$(pwd)"
+
+
+if test "$prefix" = "NONE" ; then
+    prefix=/usr/local
+fi    
+
+TE_INSTALL="$prefix"
+export TE_EXT_LIBS_FILE="${TE_BUILD}/te_ext_libs_files"
+AC_SUBST(TE_EXT_LIBS_FILE)
+echo "\\" >${TE_EXT_LIBS_FILE}
+
+if test -z "${TE_PATH}" ; then
+    TE_PATH="${TE_INSTALL}/default"
+    export TE_PATH
+    export PATH="${TE_PATH}/bin:$PATH"
+fi
+
+# Put initial values to control variables
+
+# List of all platforms
+TE_BS_PLATFORMS=
+
+# TE_BS_TOOLS - what tools should be built by "make all" command.
+TE_BS_TOOLS=rgt
+
+# List of TEN applications
+TE_BS_APPS="builder rcf logger tester configurator"
+
+# List of Test Agents
+TE_BS_TA=
+
+# List of suites
+TE_BS_SUITES=
+
+if test -z "${TE_INSTALL_NUT}" ; then 
+    TE_INSTALL_NUT="${TE_INSTALL}/nuts"
+fi
+
+if test -z "$TE_INSTALL_SUITE" ; then
+    TE_INSTALL_SUITE="${TE_INSTALL}/suites"
+fi
+
+# Parse configuration file
+echo TE_BASE=$TE_BASE > ${TE_BUILD}/builder.conf.processed.new
+echo TE_BUILD=$TE_BUILD >> ${TE_BUILD}/builder.conf.processed.new
+echo TE_INSTALL=$TE_INSTALL >> ${TE_BUILD}/builder.conf.processed.new
+echo TE_INSTALL_NUT=$TE_INSTALL_NUT >> ${TE_BUILD}/builder.conf.processed.new
+echo TE_INSTALL_SUITE=$TE_INSTALL_SUITE >> ${TE_BUILD}/builder.conf.processed.new
+
+AC_ARG_VAR(with_config)
+
+if test -z "$with_config" -a -e "${srcdir}/conf/builder.conf" ; then
+    # Called from make distcheck
+    with_config="${srcdir}/conf/builder.conf"
+fi    
+
+AC_SUBST([TE_CONF_DIR], [$(dirname "$with_config")])
+TE_BUILDER_CONF="$with_config"
+AC_SUBST([TE_BUILDER_CONF])
+
+AC_SUBST([BUILD_MAKEFLAGS])
+
+if test -n "$with_config" ; then
+    if test ! -e "${with_config}" ; then
+        AC_MSG_ERROR([Cannot find $with_config])
+    fi
+    cat "${TE_BASE}/engine/builder/builder.m4" "$with_config" | \
+        m4 -I${TE_CONF_DIR} >> "${TE_BUILD}/builder.conf.processed.new"
+else        
+    # Fill default configuration
+    echo TE_BS_PLATFORMS=default >> ${TE_BUILD}/builder.conf.processed.new
+    eval ${HOST}_LIBS="ipc bsapi loggerten rpcxdr rcfapi conf_oid confapi tad"
+    echo ${HOST}_LIBS=\"ipc bsapi loggerten rpcxdr rcfapi conf_oid confapi tad\" >> ${TE_BUILD}/builder.conf.processed.new
+    echo TE_BS_APPS=\"$TE_BS_APPS\" >> ${TE_BUILD}/builder.conf.processed.new
+    echo TE_HOST=default >> ${TE_BUILD}/builder.conf.processed.new
+fi
+echo 'TE_PATH=${TE_INSTALL}/${TE_HOST}/bin' >> ${TE_BUILD}/builder.conf.processed.new
+
+if test -e "${TE_BUILD}/builder.conf.processed" ; then
+    if ! diff -q "${TE_BUILD}/builder.conf.processed" \
+                 "${TE_BUILD}/builder.conf.processed.new" > /dev/null ; then 
+        cd "${TE_BUILD}"
+        rm -rf `ls | grep -v builder.conf`
+        cd "$OLDPWD"
+        no_create=""
+    fi
+fi    
+
+mv ${TE_BUILD}/builder.conf.processed.new ${TE_BUILD}/builder.conf.processed
+
+# Dummy loop to avoid breaking in the case of error
+while test 1 ; do
+    . ${TE_BUILD}/builder.conf.processed
+    break
+done
+if test -n "$TE_BS_CONF_ERR" ; then
+    AC_MSG_ERROR([$TE_BS_CONF_ERR])
+fi
+
+# Checks for host programs.
+for i in $TE_BS_HOST_EXEC ; do 
+    TMP=`which $i 2>/dev/null` ;
+    if test -z "$TMP"  ; then
+        AC_MSG_ERROR([No host tool $i])
+    fi
+done ;
+
+WORK_DIR="$(pwd)"
+cd "${TE_BASE}/doc"
+if test ! -e configure ; then
+    echo "Calling aclocal/autoheader/autoconf/automake in `pwd`"
+    aclocal -I "${TE_BASE}/auxdir" || exit 1 ;
+    autoconf || exit 1 ;
+    automake --add-missing || exit 1 ;
+fi
+cd "${WORK_DIR}"
+AC_CONFIG_SUBDIRS(doc)
+
+mkdir -p include
+mkdir -p lib
+mkdir -p engine
+mkdir -p tools
+mkdir -p agents
+
+DUMMY=
+
+export PREFIX_HOST="${prefix}/${TE_HOST}"
+AC_SUBST(PREFIX_HOST)
+
+# Process libraries
+LIB_SUBDIRS=
+LIB_DIST_SUBDIRS=
+for p in ${TE_BS_PLATFORMS} ; do
+    test $p != ${TE_HOST} && continue
+
+    mkdir -p platforms/${p} && \
+    rm -rf platforms/${p}/include && \
+    rm -rf platforms/${p}/lib && \
+    ln -s ${TE_BUILD}/include platforms/${p}/include && \
+    ln -s ${TE_BUILD}/lib platforms/${p}/lib || exit 1
+
+    "${TE_BASE}/engine/builder/te_build_ext_helper" --prefix="$prefix" \
+                                                    --platform="${p}" \
+                                                    --mode=lib || exit 1
+
+    "${TE_BASE}/engine/builder/te_configure_package" INCLUDE include \
+            include platforms/${p}/include ${TE_HOST} \
+            "${TE_BASE}/include" "$prefix" || exit 1
+
+    #
+    # Doing this the second time looks crazy and crazy it is, however
+    # it is done due to crazy behaviour of tar on some hosts where it
+    # refuses to place files in directories pointed by symlinks but
+    # deletes those symlinks and creates its own directories (even if
+    # you tell it --no-overwrite-dir).
+    #
+    if !(test -h platforms/${p}/include) ; then
+        cp -r platforms/${p}/include/* ${TE_BUILD}/include/ && \
+        rm -rf platforms/${p}/include && \
+        ln -s ${TE_BUILD}/include platforms/${p}/include || exit 1
+    fi
+    if !(test -h platforms/${p}/lib) ; then
+        cp -r platforms/${p}/lib/* ${TE_BUILD}/lib/ && \
+        rm -rf platforms/${p}/lib && \
+        ln -s ${TE_BUILD}/lib platforms/${p}/lib || exit 1
+    fi
+
+    LIBS=`eval echo '$'${p}'_LIBS'`
+    echo LIBS=$LIBS
+
+    for package in $LIBS ; do
+        PKGNAME=${p}_$package
+        PKGSRC=`eval echo '$TE_BS_LIB_'${PKGNAME}'_SOURCES'`
+        if test -z "$PKGSRC" ; then 
+            PKGSRC="${TE_BASE}/lib/$package"
+        fi
+        
+        PKGBUILDDIR=platforms/${p}/lib/$package
+        mkdir -p "${PKGBUILDDIR}"
+        NAME="$(basename "$PKGSRC")"
+
+        if test -z "$no_create" ; then
+            "${TE_BASE}/engine/builder/te_configure_package" LIB \
+                 $package $PKGNAME ${PKGBUILDDIR} ${TE_HOST} \
+                 "$PKGSRC" "$prefix"
+
+            if test $? -ne 0 ; then
+                exit 1
+            fi
+            pushd "${PKGBUILDDIR}" >/dev/null
+            make install-data || exit 1
+            popd >/dev/null
+        fi
+        LIB_SUBDIRS="$LIB_SUBDIRS $package"
+        LIB_DIST_SUBDIRS="$LIB_DIST_SUBDIRS $package"
+    done
+done
+
+AC_SUBST([LIB_SUBDIRS])
+AC_SUBST([LIB_DIST_SUBDIRS])
+
+# Configure TEN applications
+if test -z "$no_create" ; then
+    for package in $DUMMY $TE_BS_APPS ; do
+        "${TE_BASE}/engine/builder/te_configure_package" APP $package \
+            $package $package ${TE_HOST} "${TE_BASE}/engine/$package" \
+            "$prefix" || exit 1
+    done
+fi    
+APP_SUBDIRS="$TE_BS_APPS"
+AC_SUBST([APP_SUBDIRS])
+
+# Configure tools
+if test -z "$no_create" ; then
+    for package in $DUMMY ${TE_BS_TOOLS} ; do
+        "${TE_BASE}/engine/builder/te_configure_package" TOOL $package \
+            $package $package ${TE_HOST} "${TE_BASE}/tools/$package" \
+            "$prefix" || exit 1
+    done
+fi    
+TOOLS_SUBDIRS="${TE_BS_TOOLS}" 
+AC_SUBST([TOOLS_SUBDIRS])
+
+# Configure Test Agents
+TA_SUBDIRS=
+TA_DIST_SUBDIRS=
+for package in $DUMMY $TE_BS_TA ; do
+    PLATFORM=`eval echo '$TE_BS_TA_'${package}'_PLATFORM'`
+    PKGSRC=`eval echo '$TE_BS_TA_'${package}'_SOURCES'`
+    if test -z "$PKGSRC" ; then 
+        PKGSRC="${TE_BASE}/agents/$package" 
+    fi
+    
+    cd agents
+    test -L $package && rm $package
+    mkdir -p $package
+    NAME=`basename $PKGSRC`
+    TA_DIST_SUBDIRS="$TA_DIST_SUBDIRS $NAME"
+    if ! test -e $NAME ; then
+        ln -s $package $NAME
+        TA_DIST_SUBDIRS="$TA_DIST_SUBDIRS $NAME"
+    fi
+    cd ..
+
+    if test "$PLATFORM" != ${TE_HOST} ; then continue ; fi
+    
+    if test -z "$no_create" ; then
+        "${TE_BASE}/engine/builder/te_configure_package" TA $package \
+            $package $package ${TE_HOST} "$PKGSRC" "$prefix" || exit 1
+    fi
+    TA_SUBDIRS="$TA_SUBDIRS $package"
+done
+
+# Remove duplicated elements from TA_DIST_SUBDIRS
+TMP=`echo $TA_DIST_SUBDIRS | sed s/\ /\\\\n/g | sort | uniq`
+TA_DIST_SUBDIRS=
+for i in $TMP ; do TA_DIST_SUBDIRS="$TA_DIST_SUBDIRS $i" ; done
+
+AC_SUBST([TA_SUBDIRS])
+AC_SUBST([TA_DIST_SUBDIRS])
+
+AM_CONDITIONAL(SUITE_SCRIPTS_PROVIDED, test -n "$SUITE_SCRIPTS")
+SUITE_SCRIPTS_EXTRA_DIST=
+for i in ${SUITE_SCRIPTS} ; do
+    SUITE_SCRIPTS_EXTRA_DIST="${SUITE_SCRIPTS_EXTRA_DIST} `basename $i`"
+done
+AC_SUBST([SUITE_SCRIPTS_EXTRA_DIST])
+AC_SUBST([SUITE_SCRIPTS])
+
+if test -z "$no_create" ; then
+    mkdir -p "${TE_BUILD}/suites"
+    if test -e "${TE_BASE}/suites/Makefile.suites" ; then
+        cp "${TE_BASE}/suites/Makefile.suites" \
+           "${TE_BUILD}/suites/Makefile.suites"
+    else
+        echo "TE_BS_SUITES=$TE_BS_SUITES" \
+            >"${TE_BUILD}/suites/Makefile.suites"
+    fi
+fi    
+
+AC_SUBST(TE_HOST)
+
+AC_CONFIG_FILES(Makefile lib/Makefile engine/Makefile tools/Makefile
+                agents/Makefile suites/Makefile)
+
+AC_OUTPUT
