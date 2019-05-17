@@ -130,8 +130,8 @@ route_find(unsigned int gid, const char *route, ta_rt_info_t **rt_info)
 /**
  * Obtain ifname from IPv4 default route record.
  *
- * @param gid          group identifier (unused)
- * @param oid          full object instence identifier (unused)
+ * @param gid          group identifier
+ * @param oid          full object instance identifier (unused)
  * @param ifname       default route ifname
  *
  * @return             Status code
@@ -139,63 +139,19 @@ route_find(unsigned int gid, const char *route, ta_rt_info_t **rt_info)
 static te_errno
 ip4_rt_default_if_get(unsigned int gid, const char *oid, char *ifname)
 {
-
     ta_rt_info_t *attr;
     te_errno      rc;
     char         *route_name = "0.0.0.0|0";
-    char          value[INET_ADDRSTRLEN];
-    const char   *ret_val = NULL;
 
     UNUSED(oid);
 
-    if ((rc = route_find(gid, route_name, &attr)) != 0)
-    {
-        ERROR("Route %s cannot be found", route_name);
-        return rc;
-    }
+    assert(RCF_MAX_VAL >= IF_NAMESIZE);
 
-    switch (attr->dst.ss_family)
-    {
-        case AF_INET:
-        {
-            ret_val = inet_ntop(AF_INET, &SIN(&attr->gw)->sin_addr,
-                                value, INET_ADDRSTRLEN);
-            if (ret_val == NULL)
-            {
-                ERROR("Convertaion failure of the address of family: %d",
-                      attr->dst.ss_family);
-                return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
-            }
+    rc = route_find(gid, route_name, &attr);
+    if (rc == 0)
+        strncpy(ifname, attr->ifname, IF_NAMESIZE);
 
-            strncpy(ifname, attr->ifname, IF_NAMESIZE);
-            break;
-        }
-
-        case AF_INET6:
-        {
-            ret_val = inet_ntop(AF_INET6, &SIN6(&attr->gw)->sin6_addr,
-                                value, INET6_ADDRSTRLEN);
-            if (ret_val == NULL)
-            {
-                ERROR("Convertaion failure of the address of family: %d",
-                      attr->dst.ss_family);
-                return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
-            }
-
-            RING("Default route for AF_INET6 is found");
-            return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
-            break;
-        }
-
-        default:
-        {
-            ERROR("Unexpected destination address family: %d",
-                  attr->dst.ss_family);
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
-        }
-    }
-
-    return 0;
+    return rc;
 }
 
 
