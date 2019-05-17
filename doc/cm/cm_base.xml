@@ -696,6 +696,14 @@
       <depends oid="/agent/route"/>
     </object>
 
+    <!-- Name of the interface on which default IPv6 route is configured.
+         Name:  empty
+         Value: interface name -->
+    <object oid="/agent/ip6_rt_default_if" access="read_only" type="string"
+            volatile="true">
+      <depends oid="/agent/route"/>
+    </object>
+
     <!-- Routing policy database entry
          Name: contains all fields of rule with delimiter ",".
          List of available fields: priority, family, type, dstlen, src,

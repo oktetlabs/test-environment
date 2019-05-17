@@ -126,34 +126,70 @@ route_find(unsigned int gid, const char *route, ta_rt_info_t **rt_info)
     return 0;
 }
 
-
 /**
- * Obtain ifname from IPv4 default route record.
+ * Obtain interface name associated with a given route.
  *
- * @param gid          group identifier
- * @param oid          full object instance identifier (unused)
- * @param ifname       default route ifname
+ * @param gid          Group identifier
+ * @param route_name   Route node name
+ * @param ifname       Where to save interface name
+ * @param len          Number of bytes in ifname
+ *
+ * @return Status code
+ */
+static te_errno
+rt_if_get(unsigned int gid, const char *route_name, char *ifname,
+          size_t len)
+{
+    ta_rt_info_t *attr;
+    te_errno      rc;
+
+    if (len < IF_NAMESIZE)
+    {
+        ERROR("%s(): too short buffer for interface name",
+              __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_ENOBUFS);
+    }
+
+    rc = route_find(gid, route_name, &attr);
+    if (rc == 0)
+        strncpy(ifname, attr->ifname, len);
+
+    return rc;
+}
+ 
+/**
+ * Obtain interface name from IPv4 default route record.
+ *
+ * @param gid          Group identifier
+ * @param oid          Full object instance identifier (unused)
+ * @param ifname       Where to save interface name
  *
  * @return             Status code
  */
 static te_errno
 ip4_rt_default_if_get(unsigned int gid, const char *oid, char *ifname)
 {
-    ta_rt_info_t *attr;
-    te_errno      rc;
-    char         *route_name = "0.0.0.0|0";
-
+    UNUSED(oid);
+ 
+    return rt_if_get(gid, "0.0.0.0|0", ifname, RCF_MAX_VAL);
+}
+ 
+/**
+ * Obtain interface name from IPv6 default route record.
+ *
+ * @param gid          Group identifier
+ * @param oid          Full object instance identifier (unused)
+ * @param ifname       Where to save interface name
+ *
+ * @return             Status code
+ */
+static te_errno
+ip6_rt_default_if_get(unsigned int gid, const char *oid, char *ifname)
+{
     UNUSED(oid);
 
-    assert(RCF_MAX_VAL >= IF_NAMESIZE);
-
-    rc = route_find(gid, route_name, &attr);
-    if (rc == 0)
-        strncpy(ifname, attr->ifname, IF_NAMESIZE);
-
-    return rc;
+    return rt_if_get(gid, "::|0", ifname, RCF_MAX_VAL);
 }
-
 
 /**
  * Get route value.
@@ -1132,11 +1168,14 @@ route_nexthop_weight_set(unsigned int gid, const char *oid,
  * Unix Test Agent routing configuration tree.
  */
 
-RCF_PCH_CFG_NODE_RO(node_rt_default_if, "ip4_rt_default_if",
+RCF_PCH_CFG_NODE_RO(node_ip4_rt_default_if, "ip4_rt_default_if",
                     NULL, NULL, ip4_rt_default_if_get);
 
+RCF_PCH_CFG_NODE_RO(node_ip6_rt_default_if, "ip6_rt_default_if",
+                    NULL, &node_ip4_rt_default_if, ip6_rt_default_if_get);
+
 RCF_PCH_CFG_NODE_COLLECTION(node_blackhole, "blackhole",
-                            NULL, &node_rt_default_if,
+                            NULL, &node_ip6_rt_default_if,
                             blackhole_add, blackhole_del,
                             blackhole_list, NULL);
 
