@@ -499,16 +499,12 @@ static te_errno
 grab_cpus_nonstrict_prop(const char *ta, size_t n_cpus,
                          const tapi_cpu_prop_t *prop, tapi_cpu_index_t *cpu_ids)
 {
-    tapi_cpu_prop_t fallback_prop;
-
     if (grab_cpus(ta, n_cpus, prop, cpu_ids) == 0)
         return 0;
 
-    WARN("Fallback to grab not isolated CPUs");
-    fallback_prop = *prop;
-    fallback_prop.isolated = FALSE;
+    WARN("Fallback to grab any available CPUs");
 
-    return grab_cpus(ta, n_cpus, &fallback_prop, cpu_ids);
+    return grab_cpus(ta, n_cpus, NULL, cpu_ids);
 }
 
 const char *
