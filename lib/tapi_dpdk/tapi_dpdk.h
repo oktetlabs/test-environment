@@ -43,6 +43,7 @@ typedef struct tapi_dpdk_testpmd_job_t {
     tapi_job_channel_t *err_filter;
     tapi_job_channel_t *tx_pps_filter;
     tapi_job_channel_t *rx_pps_filter;
+    tapi_job_channel_t *link_speed_filter;
 } tapi_dpdk_testpmd_job_t;
 
 typedef struct tapi_dpdk_testpmd_stats_t {
@@ -83,6 +84,17 @@ extern te_errno tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs,
  */
 extern te_errno tapi_dpdk_testpmd_start(tapi_dpdk_testpmd_job_t *testpmd_job);
 
+/**
+ * Get link speed from running test-pmd job.
+ *
+ * @param testpmd_job       Handle of test-pmd job
+ * @param[out] link_speed   Link speed in Mbps
+ *
+ * @return          Status code
+ */
+extern te_errno tapi_dpdk_testpmd_get_link_speed(
+                                    tapi_dpdk_testpmd_job_t *testpmd_job,
+                                    unsigned int *link_speed);
 /**
  * Get performance statistics from running test-pmd job.
  *
