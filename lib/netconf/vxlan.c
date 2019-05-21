@@ -15,11 +15,33 @@
 #include "logger_api.h"
 #include "netconf.h"
 #include "netconf_internal.h"
-#include "te_config.h"
-#include "te_alloc.h"
 
 /* VXLAN link kind to pass in IFLA_INFO_KIND. */
 #define NETCONF_LINK_KIND_VXLAN "vxlan"
+
+/**
+ * Initialize @p hdr.
+ *
+ * @param req           Request buffer
+ * @param nh            Netconf session handle
+ * @param nlmsg_type    Netlink message type
+ * @param nlmsg_flags   Netlink message flags
+ * @param hdr           Pointer to the netlink message header
+ */
+static void
+vxlan_init_nlmsghdr(char *req, netconf_handle nh, uint16_t nlmsg_type,
+                   uint16_t nlmsg_flags, struct nlmsghdr **hdr)
+{
+    struct nlmsghdr *h;
+
+    h = (struct nlmsghdr *)req;
+    h->nlmsg_len = NLMSG_LENGTH(sizeof(struct ifinfomsg));
+    h->nlmsg_type = nlmsg_type;
+    h->nlmsg_flags = nlmsg_flags;
+    h->nlmsg_seq = ++nh->seq;
+
+    *hdr = h;
+}
 
 /**
  * Parse the general link attribute.
@@ -87,9 +109,7 @@ vxlan_link_gen_cb(struct nlmsghdr *h, netconf_list *list)
 
     vxlan.ifname = netconf_dup_rta(linkgen[IFLA_IFNAME]);
     if (vxlan.ifname == NULL)
-    {
         return -1;
-    }
 
     if (netconf_list_extend(list, NETCONF_NODE_VXLAN) != 0)
     {
@@ -114,6 +134,69 @@ static int
 vxlan_list_cb(struct nlmsghdr *h, netconf_list *list)
 {
     return vxlan_link_gen_cb(h, list);
+}
+
+/* See netconf_internal.h */
+void
+netconf_vxlan_node_free(netconf_node *node)
+{
+    NETCONF_ASSERT(node != NULL);
+
+    free(node->data.vxlan.ifname);
+    free(node);
+}
+
+/* See netconf.h */
+te_errno
+netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan)
+{
+    char                req[NETCONF_MAX_REQ_LEN];
+    struct nlmsghdr    *h;
+    struct rtattr      *linkinfo;
+    struct rtattr      *data;
+
+    memset(req, 0, sizeof(req));
+    vxlan_init_nlmsghdr(req, nh, RTM_NEWLINK,
+                        NLM_F_REQUEST | NLM_F_ACK | NLM_F_CREATE | NLM_F_EXCL,
+                        &h);
+
+    netconf_append_rta(h, vxlan->ifname, strlen(vxlan->ifname) + 1,
+                       IFLA_IFNAME);
+    netconf_append_rta_nested(h, IFLA_LINKINFO, &linkinfo);
+    netconf_append_rta(h, NETCONF_LINK_KIND_VXLAN,
+                       strlen(NETCONF_LINK_KIND_VXLAN) + 1, IFLA_INFO_KIND);
+    netconf_append_rta_nested(h, IFLA_INFO_DATA, &data);
+
+    netconf_append_rta(h, &(vxlan->vni), sizeof(vxlan->vni), IFLA_VXLAN_ID);
+    netconf_append_rta(h, vxlan->remote, vxlan->remote_len, IFLA_VXLAN_GROUP);
+    netconf_append_rta(h, vxlan->local, vxlan->local_len, IFLA_VXLAN_LOCAL);
+
+    netconf_append_rta_nested_end(h, data);
+    netconf_append_rta_nested_end(h, linkinfo);
+
+    if (netconf_talk(nh, req, sizeof(req), NULL, NULL) != 0) {
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    return 0;
+}
+
+/* See netconf.h */
+te_errno
+netconf_vxlan_del(netconf_handle nh, const char *ifname)
+{
+    char                req[NETCONF_MAX_REQ_LEN];
+    struct nlmsghdr    *h;
+
+    memset(req, 0, sizeof(req));
+    vxlan_init_nlmsghdr(req, nh, RTM_DELLINK, NLM_F_REQUEST | NLM_F_ACK, &h);
+
+    netconf_append_rta(h, ifname, strlen(ifname) + 1, IFLA_IFNAME);
+
+    if (netconf_talk(nh, req, sizeof(req), NULL, NULL) != 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    return 0;
 }
 
 /* See netconf.h */

@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <linux/rtnetlink.h>
+#include <netinet/in.h>
 
 #include "conf_ip_rule.h"
 #include "te_queue.h"
@@ -227,7 +228,12 @@ typedef struct netconf_veth {
 
 /** VXLAN network interface */
 typedef struct netconf_vxlan {
-    char *ifname;       /**< Interface name */
+    char       *ifname;                         /**< Interface name */
+    uint32_t    vni;                            /**< VXLAN ID */
+    uint8_t     remote[sizeof(struct in_addr)]; /**< Remote address */
+    uint8_t     local[sizeof(struct in_addr)];  /**< Local address */
+    size_t      remote_len;                     /**< Remote address length */
+    size_t      local_len;                      /**< Local address length */
 } netconf_vxlan;
 
 /** Type of nodes in the list */
@@ -672,6 +678,26 @@ typedef te_bool (*netconf_veth_list_filter_func)(const char *ifname,
 extern te_errno netconf_veth_list(netconf_handle nh,
                                   netconf_veth_list_filter_func filter_cb,
                                   void *filter_opaque, char **list);
+
+/**
+ * Add new VXLAN interface.
+ *
+ * @param nh        Netconf session handle
+ * @param ifname    The interface name
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan);
+
+/**
+ * Delete a VXLAN interface.
+ *
+ * @param nh        Netconf session handle
+ * @param ifname    The interface name
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_vxlan_del(netconf_handle nh, const char *ifname);
 
 /**
  * Type of callback function to pass to netconf_vxlan_list(). It is used to
