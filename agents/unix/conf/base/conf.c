@@ -1024,8 +1024,7 @@ static int vlans_buffer[MAX_VLANS];
 te_bool
 ta_interface_is_mine(const char *ifname)
 {
-    if (INTERFACE_IS_LOOPBACK(ifname) ||
-        rcf_pch_rsrc_accessible("/agent:%s/interface:%s",
+    if (rcf_pch_rsrc_accessible("/agent:%s/interface:%s",
                                 ta_name, ifname))
         return TRUE;
 
