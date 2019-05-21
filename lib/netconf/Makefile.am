@@ -16,7 +16,8 @@ libnetconf_a_SOURCES = netconf.c \
 	route.c \
 	neigh.c \
 	rule.c \
-	veth.c
+	veth.c \
+	vxlan.c
 
 install-exec-hook:
 	touch -c -r libnetconf.a $(DESTDIR)/$(libdir)/libnetconf.a

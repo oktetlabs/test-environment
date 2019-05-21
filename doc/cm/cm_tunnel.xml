@@ -16,8 +16,8 @@
 
     <!-- VXLAN interface.
          Name: interface name
-         Value: true (created) or false -->
-    <object oid="/agent/tunnel/vxlan" access="read_create" type="boolean">
+         Value: 1 (created) or 0 -->
+    <object oid="/agent/tunnel/vxlan" access="read_create" type="integer">
       <depends oid="/agent/rsrc"/>
     </object>
 

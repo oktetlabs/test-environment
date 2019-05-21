@@ -14,6 +14,7 @@ sources += files(
     'rule.c',
     'veth.c',
     'vlan.c',
+    'vxlan.c',
 )
 deps += [
     dep_lib_conf_oid,

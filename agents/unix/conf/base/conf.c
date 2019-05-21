@@ -266,6 +266,7 @@ extern te_errno ta_unix_conf_macvlan_init();
 extern te_errno ta_unix_conf_module_init(void);
 extern te_errno ta_unix_conf_ns_net_init(void);
 extern te_errno ta_unix_conf_veth_init(void);
+extern te_errno ta_unix_conf_vxlan_init(void);
 extern te_errno ta_unix_conf_block_dev_init(void);
 
 #ifdef WITH_OPENVPN
@@ -1268,6 +1269,12 @@ rcf_ch_conf_init()
         if (ta_unix_conf_veth_init() != 0)
         {
             ERROR("Failed to add veth interfaces configuration subtree");
+            goto fail;
+        }
+
+        if (ta_unix_conf_vxlan_init() != 0)
+        {
+            ERROR("Failed to add vxlan interfaces configuration subtree");
             goto fail;
         }
 
