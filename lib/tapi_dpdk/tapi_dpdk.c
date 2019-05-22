@@ -23,7 +23,7 @@
 #define TESTPMD_MAX_PARAM_LEN 64
 #define MAKE_TESTPMD_CMD(_cmd) (TAPI_DPDK_TESTPMD_COMMAND_PREFIX _cmd)
 #define MAKE_TESTPMD_ARG(_arg) (TAPI_DPDK_TESTPMD_ARG_PREFIX _arg)
-#define TESTPMD_CMD_PRE_SETUP "port stop all\n"
+#define TESTPMD_CMD_PRE_SETUP "show port info all\nport stop all\n"
 #define TESTPMD_CMD_POST_SETUP "port start all\n"
 #define TESTPMD_TOTAL_MBUFS_MIN 2048
 #define MBUF_OVERHEAD 256
@@ -637,6 +637,12 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
                                      .extract = 1,
                                      .filter_var = &testpmd_job->rx_pps_filter,
                                     },
+                                    {.use_stdout = TRUE,
+                                     .readable = TRUE,
+                                     .re = "(?m)^Link speed: ([0-9]+) Mbps$",
+                                     .extract = 1,
+                                     .filter_var = &testpmd_job->link_speed_filter,
+                                    },
                                     {.use_stderr = TRUE,
                                      .log_level = TE_LL_ERROR,
                                      .readable = TRUE,
@@ -717,6 +723,42 @@ tapi_dpdk_testpmd_destroy(tapi_dpdk_testpmd_job_t *testpmd_job)
     free(testpmd_job->cmdline_file);
     te_string_free(&testpmd_job->cmdline_setup);
     te_string_free(&testpmd_job->cmdline_start);
+
+    return 0;
+}
+
+te_errno
+tapi_dpdk_testpmd_get_link_speed(tapi_dpdk_testpmd_job_t *testpmd_job,
+                                 unsigned int *link_speed)
+{
+    tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
+    te_errno rc = 0;
+
+    rc = tapi_job_receive(TAPI_JOB_CHANNEL_SET(testpmd_job->link_speed_filter),
+                          TAPI_DPDK_TESTPMD_RECEIVE_TIMEOUT_MS, &buf);
+
+    if (rc != 0)
+    {
+        ERROR("Failed to get link speed from testpmd job");
+        return rc;
+    }
+
+    if (buf.eos)
+    {
+        ERROR("End of stream before link speed message");
+        te_string_free(&buf.data);
+        return TE_RC(TE_TAPI, TE_EFAIL);
+    }
+
+    if (buf.dropped > 0)
+        WARN("Dropped messages count: %lu", buf.dropped);
+
+    if ((rc = te_strtoui(buf.data.ptr, 0, link_speed)) != 0)
+    {
+        ERROR("Failed to parse link speed");
+        te_string_free(&buf.data);
+        return TE_RC(TE_TAPI, TE_EFAIL);
+    }
 
     return 0;
 }

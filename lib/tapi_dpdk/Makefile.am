@@ -11,14 +11,14 @@ include_HEADERS= \
 	tapi_dpdk.h \
 	tapi_dpdk_stats.h
 
-lib_LIBRARIES = libtapi_dpdk.a
+lib_LTLIBRARIES = libtapi_dpdk.la
 
-libtapi_dpdk_a_SOURCES = \
+libtapi_dpdk_la_SOURCES = \
 	tapi_dpdk.c \
 	tapi_dpdk_stats.c
 
 install-exec-hook:
-	for i in ${lib_LIBRARIES} ; do \
+	for i in ${lib_LTLIBRARIES} ; do \
 	    touch -c -r $$i $(DESTDIR)/$(prefix)/lib/$$i ; \
 	done
 

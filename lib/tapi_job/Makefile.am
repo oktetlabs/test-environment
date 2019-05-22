@@ -10,14 +10,14 @@ AM_LDFLAGS = -L$(DESTDIR)/$(libdir)
 include_HEADERS= \
 	tapi_job.h
 
-lib_LIBRARIES = libtapi_job.a
+lib_LTLIBRARIES = libtapi_job.la
 
-libtapi_job_a_SOURCES = \
+libtapi_job_la_SOURCES = \
 	rpc_job.c \
 	tapi_job.c
 
 install-exec-hook:
-	for i in ${lib_LIBRARIES} ; do \
+	for i in ${lib_LTLIBRARIES} ; do \
 	    touch -c -r $$i $(DESTDIR)/$(prefix)/lib/$$i ; \
 	done
 
