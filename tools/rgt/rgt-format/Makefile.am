@@ -54,7 +54,7 @@ dist-hook:
 $(RGT_SUBDIRS:%=%.h): $(RGT_SUBDIRS:%=%/tmpls/Makefile) Makefile
 	util=`echo $@ | sed 's,\.h$$,,'` ; \
 	echo -E "enum {" > $@; \
-	for i in `ls $(srcdir)/$${util}/tmpls/*.tmpl`; do \
+	for i in `find $(srcdir)/$${util}/tmpls/*.tmpl`; do \
 		basename $${i} | sed 's,\.tmpl$$,,' | \
 			tr [:lower:] [:upper:] | \
 			awk '{ printf "%s", $$1 }' >> $@; \
