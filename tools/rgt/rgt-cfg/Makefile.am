@@ -37,7 +37,7 @@ dist-hook:
 rgt-filter-xml2tcl.h: tmpls/Makefile Makefile
 	for util in rgt-filter-xml2tcl; do \
 	    echo -E "enum {" > $${util}.h; \
-	    for i in `ls $(srcdir)/tmpls/*.tmpl`; do \
+	    for i in `find $(srcdir)/tmpls/*.tmpl`; do \
 	        basename $${i} | sed 's,\.tmpl,,' | \
 	            tr [:lower:] [:upper:] | \
 	            awk '{ printf "%s,\n", $$1 }' >> $${util}.h; \
