@@ -28,6 +28,7 @@
 #define TESTPMD_TOTAL_MBUFS_MIN 2048
 #define MBUF_OVERHEAD 256
 #define ETHER_MIN_MTU 68
+#define TESTPMD_MIN_N_CORES 2
 
 typedef enum testpmd_param_type {
     TESTPMD_PARAM_TYPE_UINT64,
@@ -468,20 +469,29 @@ append_testpmd_cmdline_from_args(te_kvpair_h *test_args,
 }
 
 static te_errno
-grab_cpus(const char *ta, size_t n_cpus, const tapi_cpu_prop_t *prop,
+grab_cpus(const char *ta, size_t n_cpus_preferred, size_t n_cpus_required,
+          const tapi_cpu_prop_t *prop, size_t *n_cpus_grabbed,
           tapi_cpu_index_t *cpu_ids)
 {
     te_errno rc;
     size_t i;
 
-    for (i = 0; i < n_cpus; i++)
+    for (i = 0; i < n_cpus_preferred; i++)
     {
         rc = tapi_cfg_cpu_grab_by_prop(ta, prop, &cpu_ids[i]);
         if (rc != 0)
         {
             size_t j;
 
-            WARN("Could not grab required CPUs, error: %s", te_rc_err2str(rc));
+            WARN("Could not grab preferred quantity of CPUs, error: %s",
+                 te_rc_err2str(rc));
+            if (TE_RC_GET_ERROR(rc) == TE_ENOENT && i >= n_cpus_required)
+            {
+                WARN_ARTIFACT("Only %lu CPUs were grabbed", i);
+                *n_cpus_grabbed = i;
+                return 0;
+            }
+
             for (j = 0; j < i; j++)
             {
                 if (tapi_cfg_cpu_release_by_id(ta, &cpu_ids[j]) != 0)
@@ -492,19 +502,29 @@ grab_cpus(const char *ta, size_t n_cpus, const tapi_cpu_prop_t *prop,
         }
     }
 
+    *n_cpus_grabbed = n_cpus_preferred;
     return 0;
 }
 
 static te_errno
-grab_cpus_nonstrict_prop(const char *ta, size_t n_cpus,
-                         const tapi_cpu_prop_t *prop, tapi_cpu_index_t *cpu_ids)
+grab_cpus_nonstrict_prop(const char *ta, size_t n_cpus_preferred,
+                         size_t n_cpus_required, const tapi_cpu_prop_t *prop,
+                         size_t *n_cpus_grabbed, tapi_cpu_index_t *cpu_ids)
 {
-    if (grab_cpus(ta, n_cpus, prop, cpu_ids) == 0)
+    /*
+     * When grabbing CPUs with required property, set also a strict
+     * constraint on CPUs quantity (n_cpus_required is set to n_cpus_preferred)
+     */
+    if (grab_cpus(ta, n_cpus_preferred, n_cpus_preferred, prop,
+                  n_cpus_grabbed, cpu_ids) == 0)
+    {
         return 0;
+    }
 
     WARN("Fallback to grab any available CPUs");
 
-    return grab_cpus(ta, n_cpus, NULL, cpu_ids);
+    return grab_cpus(ta, n_cpus_preferred, n_cpus_required, NULL,
+                     n_cpus_grabbed, cpu_ids);
 }
 
 const char *
@@ -585,6 +605,7 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     te_errno rc = 0;
     /* The first CPU is reserved by testpmd for command-line processing */
     size_t n_cpus = n_fwd_cpus + 1;
+    size_t n_cpus_grabbed;
     int i;
 
     if (n_fwd_cpus == 0)
@@ -595,8 +616,11 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     }
 
     cpu_ids = tapi_calloc(n_cpus, sizeof(*cpu_ids));
-    if ((rc = grab_cpus_nonstrict_prop(rpcs->ta, n_cpus, prop, cpu_ids)) != 0)
+    if ((rc = grab_cpus_nonstrict_prop(rpcs->ta, n_cpus, TESTPMD_MIN_N_CORES,
+                                       prop, &n_cpus_grabbed, cpu_ids)) != 0)
+    {
         goto out;
+    }
 
     rc = cfg_get_instance_fmt(NULL, &working_dir, "/agent:%s/dir:", rpcs->ta);
     if (rc != 0)
@@ -605,7 +629,7 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
         goto out;
     }
 
-    rc = build_eal_testpmd_arguments(rpcs, env, n_cpus, cpu_ids,
+    rc = build_eal_testpmd_arguments(rpcs, env, n_cpus_grabbed, cpu_ids,
                                      &testpmd_argc, &testpmd_argv);
     if (rc != 0)
         goto out;
@@ -627,7 +651,7 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
 
     generate_cmdline_filename(working_dir, &cmdline_file);
     append_testpmd_cmdline_from_args(test_args, &cmdline_setup, &cmdline_start);
-    append_testpmd_nb_cores_arg(n_fwd_cpus, &testpmd_argc, &testpmd_argv);
+    append_testpmd_nb_cores_arg(n_cpus_grabbed - 1, &testpmd_argc, &testpmd_argv);
     append_argument("--cmdline-file", &testpmd_argc, &testpmd_argv);
     append_argument(cmdline_file, &testpmd_argc, &testpmd_argv);
 
