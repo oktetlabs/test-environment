@@ -739,6 +739,7 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
     {
         goto cleanup;
     }
+    rc = 0;
 
     /* Append arguments provided by caller */
     for (i = 0; i < argc; ++i)
