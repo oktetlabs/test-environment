@@ -10,6 +10,7 @@
 
 #include "te_config.h"
 
+#include "te_ethernet.h"
 #include "tapi_dpdk_stats.h"
 #include "tapi_test_log.h"
 
@@ -27,6 +28,9 @@ tapi_dpdk_stats_calculate_l1_bitrate(uint64_t pps, unsigned int packet_size)
      * per packet. IPG could be different, but the information is not present.
      */
     unsigned int overhead_size = 24;
+
+    /* Packet is padded to the min ethernet frame not including CRC */
+    packet_size = MAX(packet_size, ETHER_MIN_LEN - ETHER_CRC_LEN);
 
     return (packet_size + overhead_size) * 8U * pps;
 }
