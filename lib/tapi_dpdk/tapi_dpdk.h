@@ -61,7 +61,7 @@ typedef struct tapi_dpdk_testpmd_stats_t {
  *
  * @param rpcs              RPC server to run test-pmd on
  * @param env               Test environment
- * @param n_cpus            Number of CPUs to grab for test-pmd to execute on
+ * @param n_fwd_cpus        Number of test-pmd forwarding CPUs
  * @param prop              Advisory properties of CPUs
  * @param test_args         Test arguments
  * @param[out] testpmd_job  Handle of test-pmd job
@@ -70,7 +70,7 @@ typedef struct tapi_dpdk_testpmd_stats_t {
  */
 extern te_errno tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs,
                                          tapi_env *env,
-                                         size_t n_cpus,
+                                         size_t n_fwd_cpus,
                                          const tapi_cpu_prop_t *prop,
                                          te_kvpair_h *test_args,
                                          tapi_dpdk_testpmd_job_t *testpmd_job);

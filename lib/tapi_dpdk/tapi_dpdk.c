@@ -551,9 +551,24 @@ get_vdev_port_number(const char *vdev, unsigned int *port_number)
     return 0;
 }
 
+void
+append_testpmd_nb_cores_arg(size_t n_fwd_cpus, int *argc_out, char ***argv_out)
+{
+    te_string nb_cores = TE_STRING_INIT;
+
+    append_argument("--nb-cores", argc_out, argv_out);
+
+    if (te_string_append(&nb_cores, "%lu", n_fwd_cpus) != 0)
+        TEST_FAIL("Failed to append testpmd number of cores argument");
+
+    append_argument(nb_cores.ptr, argc_out, argv_out);
+
+    te_string_free(&nb_cores);
+}
+
 te_errno
 tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
-                             size_t n_cpus, const tapi_cpu_prop_t *prop,
+                             size_t n_fwd_cpus, const tapi_cpu_prop_t *prop,
                              te_kvpair_h *test_args,
                              tapi_dpdk_testpmd_job_t *testpmd_job)
 {
@@ -568,7 +583,16 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     const char *vdev_arg = NULL;
     unsigned int port_number = 0;
     te_errno rc = 0;
+    /* The first CPU is reserved by testpmd for command-line processing */
+    size_t n_cpus = n_fwd_cpus + 1;
     int i;
+
+    if (n_fwd_cpus == 0)
+    {
+        ERROR("Testpmd cannot be run with 0 forwarding cores");
+        rc = TE_RC(TE_TAPI, TE_EINVAL);
+        goto out;
+    }
 
     cpu_ids = tapi_calloc(n_cpus, sizeof(*cpu_ids));
     if ((rc = grab_cpus_nonstrict_prop(rpcs->ta, n_cpus, prop, cpu_ids)) != 0)
@@ -603,6 +627,7 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
 
     generate_cmdline_filename(working_dir, &cmdline_file);
     append_testpmd_cmdline_from_args(test_args, &cmdline_setup, &cmdline_start);
+    append_testpmd_nb_cores_arg(n_fwd_cpus, &testpmd_argc, &testpmd_argv);
     append_argument("--cmdline-file", &testpmd_argc, &testpmd_argv);
     append_argument(cmdline_file, &testpmd_argc, &testpmd_argv);
 
