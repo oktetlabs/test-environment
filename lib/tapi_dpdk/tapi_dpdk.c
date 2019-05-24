@@ -484,7 +484,7 @@ grab_cpus(const char *ta, size_t n_cpus, const tapi_cpu_prop_t *prop,
             WARN("Could not grab required CPUs, error: %s", te_rc_err2str(rc));
             for (j = 0; j < i; j++)
             {
-                if (tapi_cfg_cpu_release_by_id(ta, &cpu_ids[i]) != 0)
+                if (tapi_cfg_cpu_release_by_id(ta, &cpu_ids[j]) != 0)
                     WARN("Failed to release grabbed CPUs");
             }
 
