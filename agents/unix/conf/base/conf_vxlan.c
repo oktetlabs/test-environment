@@ -145,7 +145,7 @@ vxlan_add(unsigned int gid, const char *oid, const char *value,
     rc = te_strtoui(value, 0, &uint_value);
     if (rc != 0)
         return rc;
-    if (uint_value < 0 || uint_value > 1)
+    if (uint_value > 1)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     vxlan_e = TE_ALLOC(sizeof(vxlan_entry));
