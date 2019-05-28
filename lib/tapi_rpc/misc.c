@@ -786,6 +786,7 @@ rpc_pattern_sender(rcf_rpc_server *rpcs, int s,
     in.delay_min = args->delay.min;
     in.delay_max = args->delay.max;
     in.delay_rnd_once = args->delay.once;
+    in.total_size = args->total_size;
     in.time2run = args->duration_sec;
     in.ignore_err = args->ignore_err;
 
@@ -882,6 +883,7 @@ rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
         memcpy(&in.gen_arg, args->gen_arg_ptr, sizeof(in.gen_arg));
     in.iomux = args->iomux;
     in.time2run = args->duration_sec;
+    in.exp_received = args->exp_received;
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
         rpcs->timeout = TE_SEC2MS(args->duration_sec +
                                   TAPI_RPC_TIMEOUT_EXTRA_SEC);

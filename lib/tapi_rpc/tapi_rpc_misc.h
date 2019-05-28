@@ -108,6 +108,13 @@ typedef struct tapi_pat_sender {
     tapi_rand_gen       size;             /**< Size of the message*/
     tapi_rand_gen       delay;            /**< Delay between messages*/
     int                 duration_sec;     /**< How long to run (in seconds)*/
+    uint64_t            total_size;       /**< How many bytes to send before
+                                               stopping (ignored if @c 0).
+                                               It may send less if
+                                               @p duration_sec expired.
+                                               Check @p sent on return if
+                                               you need to be sure that all
+                                               was sent. */
     tarpc_bool          ignore_err;       /**< Ignore errors while run */
 
     /* out */
@@ -148,6 +155,11 @@ typedef struct tapi_pat_receiver {
     iomux_func          iomux;          /**< Iomux function to be used */
     int                 duration_sec;   /**< How long to run (in seconds)*/
     /* out */
+    uint64_t            exp_received;   /**< Number of bytes expected to
+                                             be received (ignored if @c 0;
+                                             if > @c 0, stop after
+                                             receiving this number of
+                                             bytes) */
     uint64_t            received;       /**< Number of received bytes */
     te_bool             recv_failed;    /**< @c TRUE if @b recv() call
                                              was failed */

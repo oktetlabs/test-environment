@@ -4269,6 +4269,9 @@ struct tarpc_pattern_sender_in {
                                      delay is calculated for each
                                      message */
     uint32_t    time2run;       /**< How long run (in seconds) */
+    uint64_t    total_size;     /**< How many bytes to send (ignored
+                                     if @c 0) */
+
     tarpc_bool  ignore_err;     /**< Ignore errors while run */
 
     tarpc_pat_gen_arg gen_arg;  /**< Pattern generator function
@@ -4294,6 +4297,10 @@ struct tarpc_pattern_receiver_in {
     tarpc_int   s;              /**< Socket to be used */
     char        fname<>;        /**< Pattern generating function */
     iomux_func  iomux;          /**< Iomux function to be used **/
+    uint64_t    exp_received;   /**< How many bytes should be received
+                                     (ignored if @c 0; if > @c 0, receiving
+                                      will be stopped after reading this
+                                      number of bytes) */
     uint32_t    time2run;       /**< Receiving duration (in seconds) */
 
     tarpc_pat_gen_arg gen_arg;  /**< Pattern generator function

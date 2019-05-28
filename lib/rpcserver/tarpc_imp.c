@@ -7125,6 +7125,18 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
         if (!in->size_rnd_once && bytes_rest == 0)
             size = rand_range(in->size_min, in->size_max);
 
+        if (in->total_size > 0)
+        {
+            uint64_t max_size;
+
+            if (out->bytes >= in->total_size)
+                break;
+
+            max_size = in->total_size - out->bytes;
+            if ((uint64_t)size > max_size)
+                size = max_size;
+        }
+
         if (!in->delay_rnd_once)
             delay = rand_range(in->delay_min, in->delay_max);
 
@@ -7500,6 +7512,12 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
             }
         }
         out->bytes += len;
+
+        if (in->exp_received > 0)
+        {
+            if (out->bytes >= in->exp_received)
+                break;
+        }
     }
 #undef PTRN_RECV_ERROR
 #undef MSEC_DIFF
