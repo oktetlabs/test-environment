@@ -37,6 +37,30 @@
 #include "te_defs.h"
 #include "tad_common.h"
 
+/*
+ * RTE_ETHER_ADDR_LEN from rte_ethdev.h has name
+ * ETHER_ADDR_LEN in outdated RTE releases.
+ */
+#ifndef RTE_ETHER_ADDR_LEN
+#define RTE_ETHER_ADDR_LEN ETHER_ADDR_LEN
+#endif /* ! RTE_ETHER_ADDR_LEN */
+
+/*
+ * RTE_ETHER_TYPE_ARP from rte_ethdev.h has name
+ * ETHER_TYPE_ARP in outdated RTE releases.
+ */
+#ifndef RTE_ETHER_TYPE_ARP
+#define RTE_ETHER_TYPE_ARP ETHER_TYPE_ARP
+#endif /* ! RTE_ETHER_TYPE_ARP */
+
+/*
+ * rte_is_zero_ether_addr() from rte_ethdev.h has name
+ * is_zero_ether_addr() in outdated RTE releases.
+ */
+#ifndef HAVE_RTE_IS_ZERO_ETHER_ADDR
+#define rte_is_zero_ether_addr(_addr) is_zero_ether_addr(_addr)
+#endif /* ! HAVE_RTE_IS_ZERO_ETHER_ADDR */
+
 #define RTE_FLOW_BOOL_FILEDS_LEN 1
 #define RTE_FLOW_VLAN_VID_FILED_LEN 12
 #define RTE_FLOW_VLAN_PCP_FILED_LEN 3
@@ -370,13 +394,13 @@ rte_flow_item_eth_from_pdu(const asn_value *eth_pdu,
  * item's field remains NULL
  */
 #define FILL_FLOW_ITEM_ETH(_field) \
-    do {                                            \
-        if (!is_zero_ether_addr(&_field->dst) ||    \
-            !is_zero_ether_addr(&_field->src) ||    \
-            _field->type != 0)                      \
-            item->_field = _field;                  \
-        else                                        \
-            free(_field);                           \
+    do {                                             \
+        if (!rte_is_zero_ether_addr(&_field->dst) || \
+            !rte_is_zero_ether_addr(&_field->src) || \
+            _field->type != 0)                       \
+            item->_field = _field;                   \
+        else                                         \
+            free(_field);                            \
     } while(0)
 
     rc = rte_alloc_mem_for_flow_item((void **)&spec,
@@ -386,8 +410,10 @@ rte_flow_item_eth_from_pdu(const asn_value *eth_pdu,
     if (rc != 0)
         return rc;
 
-    ASN_READ_ADDR_RANGE_FIELD(eth_pdu, src-addr, src.addr_bytes, ETHER_ADDR_LEN);
-    ASN_READ_ADDR_RANGE_FIELD(eth_pdu, dst-addr, dst.addr_bytes, ETHER_ADDR_LEN);
+    ASN_READ_ADDR_RANGE_FIELD(eth_pdu, src-addr, src.addr_bytes,
+                              RTE_ETHER_ADDR_LEN);
+    ASN_READ_ADDR_RANGE_FIELD(eth_pdu, dst-addr, dst.addr_bytes,
+                              RTE_ETHER_ADDR_LEN);
     ASN_READ_INT_RANGE_FIELD(eth_pdu, length-type, type, sizeof(spec->type));
 
     item->type = RTE_FLOW_ITEM_TYPE_ETH;
@@ -1314,7 +1340,7 @@ rte_flow_check_test_items(asn_tag_value tag,
             rc = rte_flow_check_item(eth, sizeof(struct rte_flow_item_eth));
             if (rc != 0)
                 return rc;
-            ethertype = rte_cpu_to_be_16(ETHER_TYPE_ARP);
+            ethertype = rte_cpu_to_be_16(RTE_ETHER_TYPE_ARP);
             break;
 
         case TE_PROTO_PPPOE:

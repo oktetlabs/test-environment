@@ -27,6 +27,10 @@
 #include "rpcs_dpdk.h"
 
 
+#ifndef HAVE_STRUCT_RTE_ETHER_ADDR
+#define rte_ether_addr ether_addr
+#endif /* ! HAVE_STRUCT_RTE_ETHER_ADDR */
+
 #define CASE_TARPC2RTE(_rte) \
     case TARPC_##_rte: *rte = (_rte); break
 
@@ -1497,8 +1501,8 @@ TARPC_FUNC(rte_eth_macaddr_get,
     COPY_ARG(mac_addr);
 },
 {
-    struct ether_addr mac_addr;
-    struct ether_addr *mac_addr_p = &mac_addr;
+    struct rte_ether_addr mac_addr;
+    struct rte_ether_addr *mac_addr_p = &mac_addr;
 
     if (out->mac_addr.mac_addr_len == 0)
         mac_addr_p = NULL;
@@ -1553,8 +1557,8 @@ TARPC_FUNC(rte_eth_dev_get_vlan_offload, {},
 
 TARPC_FUNC(rte_eth_dev_default_mac_addr_set, {},
 {
-    struct ether_addr mac_addr;
-    struct ether_addr *mac_addr_p = &mac_addr;
+    struct rte_ether_addr mac_addr;
+    struct rte_ether_addr *mac_addr_p = &mac_addr;
 
     if (in->mac_addr.mac_addr_len == 0)
         mac_addr_p = NULL;
@@ -2623,13 +2627,13 @@ done:
 
 TARPC_FUNC(rte_eth_dev_set_mc_addr_list, {},
 {
-    struct ether_addr *mc_addr_set = NULL;
+    struct rte_ether_addr *mc_addr_set = NULL;
     unsigned int i;
 
     if (in->mc_addr_set.mc_addr_set_len != 0)
     {
         mc_addr_set = TE_ALLOC(in->mc_addr_set.mc_addr_set_len *
-                               sizeof(struct ether_addr));
+                               sizeof(*mc_addr_set));
         if (mc_addr_set == NULL)
         {
             out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);

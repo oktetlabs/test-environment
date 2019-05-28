@@ -34,6 +34,11 @@ if cc.compiles(code_ring_dequeue_bulk, args: prj_args,
     c_args += [ '-DHAVE_RTE_RING_DEQUEUE_BULK_ARG_AVAILABLE' ]
 endif
 
+t = 'struct rte_ether_addr'
+if cc.has_type(t, prefix: '#include "rte_ethdev.h"')
+    c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
+endif
+
 code_prefix_flow_api_driver = '''
 #include "rte_config.h"
 #include "rte_flow.h"
@@ -84,6 +89,11 @@ if cc.has_member('struct rte_flow_item_vlan', 'tpid', args: prj_args,
 endif
 
 f = 'rte_pktmbuf_pool_create_by_ops'
+if cc.has_function(f, args: prj_args)
+    c_args += [ '-DHAVE_' + f.to_upper() ]
+endif
+
+f = 'rte_is_zero_ether_addr'
 if cc.has_function(f, args: prj_args)
     c_args += [ '-DHAVE_' + f.to_upper() ]
 endif

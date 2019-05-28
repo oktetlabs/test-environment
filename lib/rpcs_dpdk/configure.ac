@@ -65,6 +65,20 @@ enum rte_flow_item_type type;
 [[type = RTE_FLOW_ITEM_TYPE_GENEVE;]]
 )], [AC_DEFINE([HAVE_RTE_FLOW_GENEVE], 1, [ ])], [])
 
+AC_CHECK_TYPES([struct rte_ether_addr], [], [],
+[[
+#include "rte_config.h"
+#include "rte_ethdev.h"
+]])
+
+AC_LINK_IFELSE([
+AC_LANG_PROGRAM(
+[[
+#include "rte_config.h"
+#include "rte_ethdev.h"
+]],
+[[(void)rte_is_zero_ether_addr(NULL);]]
+)], [AC_DEFINE([HAVE_RTE_IS_ZERO_ETHER_ADDR], 1, [ ])], [])
 
 AC_CHECK_MEMBERS([struct rte_eth_dev_info.rx_queue_offload_capa],
 [], [],
