@@ -119,6 +119,30 @@ extern te_errno tapi_dpdk_testpmd_get_stats(tapi_dpdk_testpmd_job_t *testpmd_job
  */
 extern te_errno tapi_dpdk_testpmd_destroy(tapi_dpdk_testpmd_job_t *testpmd_job);
 
+/**
+ * Calculate required MTU by given packet size and decide whether the MTU
+ * should be specified explicitly in the parameters.
+ *
+ * @param packet_size   Size of a packet
+ * @param mtu[out]      Required mtu (set when the function returns @c TRUE)
+ *
+ * @return          @c TRUE - MTU should be set, @c FALSE - should not be
+ */
+extern te_bool tapi_dpdk_mtu_by_pkt_size(unsigned int packet_size,
+                                         unsigned int *mtu);
+
+/**
+ * Calculate required mbuf size by given packet size and decide whether the
+ * mbuf size should be specified explicitly in the parameters.
+ *
+ * @param packet_size       Size of a packet
+ * @param mbuf_size[out]    Required mbuf size (set when the function
+ *                          returns @c TRUE)
+ *
+ * @return          @c TRUE - mbuf size should be set, @c FALSE - should not be
+ */
+extern te_bool tapi_dpdk_mbuf_size_by_pkt_size(unsigned int packet_size,
+                                               unsigned int *mbuf_size);
 
 #ifdef __cplusplus
 } /* extern "C" */

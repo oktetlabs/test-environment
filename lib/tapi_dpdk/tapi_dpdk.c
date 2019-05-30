@@ -18,6 +18,7 @@
 #include "tapi_test.h"
 #include "tapi_rpc_rte_eal.h"
 #include "tapi_file.h"
+#include "te_ethernet.h"
 
 #define COMMANDS_FILE_NAME "testpmd_commands"
 #define TESTPMD_MAX_PARAM_LEN 64
@@ -27,7 +28,6 @@
 #define TESTPMD_CMD_POST_SETUP "port start all\n"
 #define TESTPMD_TOTAL_MBUFS_MIN 2048
 #define MBUF_OVERHEAD 256
-#define ETHER_MIN_MTU 68
 #define TESTPMD_MIN_N_CORES 2
 
 typedef enum testpmd_param_type {
@@ -363,6 +363,8 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
     testpmd_param *params;
     te_bool *param_is_set;
     uint64_t txpkts_size;
+    unsigned int mbuf_size;
+    unsigned int mtu;
     size_t params_len;
     te_errno rc;
     size_t i;
@@ -437,21 +439,22 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
         free(value);
     }
     if (!param_is_set[TESTPMD_PARAM_MBUF_SIZE] &&
-        (txpkts_size + MBUF_OVERHEAD) > params[TESTPMD_PARAM_MBUF_SIZE].val)
+        tapi_dpdk_mbuf_size_by_pkt_size(txpkts_size, &mbuf_size))
     {
         char *value;
 
-        if (te_asprintf(&value, "%lu", (txpkts_size + MBUF_OVERHEAD)) < 0)
+        if (te_asprintf(&value, "%u", mbuf_size) < 0)
             TEST_FAIL("Failed to build mbuf-size testpmd parameter");
 
         append_argument("--mbuf-size", argc_out, argv_out);
         append_argument(value, argc_out, argv_out);
         free(value);
     }
-    if (!param_is_set[TESTPMD_PARAM_MTU] && txpkts_size >= ETHER_MIN_MTU)
+    if (!param_is_set[TESTPMD_PARAM_MTU] &&
+        tapi_dpdk_mtu_by_pkt_size(txpkts_size, &mtu))
     {
         append_testpmd_command(port_number, cmdline_setup, cmdline_start,
-                               TESTPMD_PARAM_MTU, "%lu", txpkts_size);
+                               TESTPMD_PARAM_MTU, "%u", mtu);
     }
 
     free(params);
@@ -901,4 +904,35 @@ out:
     te_string_free(&buf.data);
 
     return rc;
+}
+
+te_bool
+tapi_dpdk_mtu_by_pkt_size(unsigned int packet_size, unsigned int *mtu)
+{
+    unsigned int sufficient_mtu = packet_size -
+                                  MIN(ETHER_HDR_LEN, packet_size);
+
+    if (sufficient_mtu <= ETHER_DATA_LEN)
+        return FALSE;
+
+    *mtu = sufficient_mtu;
+
+    return TRUE;
+}
+
+te_bool
+tapi_dpdk_mbuf_size_by_pkt_size(unsigned int packet_size,
+                                unsigned int *mbuf_size)
+{
+    unsigned int minimal_mbuf_size = packet_size + MBUF_OVERHEAD;
+
+    if (minimal_mbuf_size <=
+        default_testpmd_params[TESTPMD_PARAM_MBUF_SIZE].val)
+    {
+        return FALSE;
+    }
+
+    *mbuf_size = minimal_mbuf_size;
+
+    return TRUE;
 }
