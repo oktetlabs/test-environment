@@ -163,12 +163,9 @@ test_arg2testpmd_arg(const char *test_arg)
     const char testpmd_arg_prefix[] = "--";
     size_t i;
 
-    if (te_string_append(&result, "%s%s", testpmd_arg_prefix,
-                         test_arg +
-                         (sizeof(TAPI_DPDK_TESTPMD_ARG_PREFIX) - 1)) != 0)
-    {
-        TEST_FAIL("Failed to build testpmd cli argument");
-    }
+    CHECK_RC(te_string_append(&result, "%s%s", testpmd_arg_prefix,
+                              test_arg +
+                              (sizeof(TAPI_DPDK_TESTPMD_ARG_PREFIX) - 1)));
 
     for (i = 0; i < result.len; i++)
     {
@@ -251,11 +248,8 @@ append_corelist_eal_arg(size_t n_cores, tapi_cpu_index_t *cpu_ids,
 
     for (i = 0; i < n_cores; i++)
     {
-        if (te_string_append(&corelist, i == 0 ? "%lu" : ",%lu",
-                             cpu_ids[i].thread_id) != 0)
-        {
-            TEST_FAIL("Failed to append corelist argument");
-        }
+        CHECK_RC(te_string_append(&corelist, i == 0 ? "%lu" : ",%lu",
+                                  cpu_ids[i].thread_id));
     }
 
     append_argument("-l", argc_out, argv_out);
@@ -394,10 +388,8 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
     }
     if (!param_is_set[TESTPMD_PARAM_MTU] && txpkts_size >= ETHER_MIN_MTU)
     {
-        rc = te_string_append(cmdline_setup, "port config mtu %u %lu\n",
-                              port_number, txpkts_size);
-        if (rc != 0)
-            TEST_FAIL("Failed to build MTU testpmd parameter");
+        CHECK_RC(te_string_append(cmdline_setup, "port config mtu %u %lu\n",
+                                  port_number, txpkts_size));
     }
 
     free(params);
@@ -410,34 +402,30 @@ static void
 append_testpmd_command(const te_kvpair *cmd_pair, te_string *setup_cmd,
                        te_string *start_cmd)
 {
-    te_errno rc = 0;
-
     if (strcmp(cmd_pair->key,
                default_testpmd_params[TESTPMD_PARAM_LPBK_MODE].key) == 0)
     {
-        rc = te_string_append(setup_cmd, "port config all loopback %s\n",
-                              cmd_pair->value);
+        CHECK_RC(te_string_append(setup_cmd, "port config all loopback %s\n",
+                                  cmd_pair->value));
     }
     else if (strcmp(cmd_pair->key,
                     default_testpmd_params[TESTPMD_PARAM_MTU].key) == 0)
     {
         WARN("MTU is set for 0 port only for testpmd");
-        rc = te_string_append(setup_cmd, "port config mtu 0 %s\n",
-                              cmd_pair->value);
+        CHECK_RC(te_string_append(setup_cmd, "port config mtu 0 %s\n",
+                                  cmd_pair->value));
     }
     else if (strcmp(cmd_pair->key,
                     default_testpmd_params[TESTPMD_PARAM_START_TX_FIRST].key) == 0)
     {
-        rc = te_string_append(start_cmd, "start tx_first %s\n", cmd_pair->value);
+        CHECK_RC(te_string_append(start_cmd, "start tx_first %s\n",
+                                  cmd_pair->value));
     }
     else if (strcmp(cmd_pair->key,
                     default_testpmd_params[TESTPMD_PARAM_START].key) == 0)
     {
-        rc = te_string_append(start_cmd, "start\n");
+        CHECK_RC(te_string_append(start_cmd, "start\n"));
     }
-
-    if (rc != 0)
-        TEST_FAIL("Failed to append testpmd command");
 }
 
 static void
@@ -578,8 +566,7 @@ append_testpmd_nb_cores_arg(size_t n_fwd_cpus, int *argc_out, char ***argv_out)
 
     append_argument("--nb-cores", argc_out, argv_out);
 
-    if (te_string_append(&nb_cores, "%lu", n_fwd_cpus) != 0)
-        TEST_FAIL("Failed to append testpmd number of cores argument");
+    CHECK_RC(te_string_append(&nb_cores, "%lu", n_fwd_cpus));
 
     append_argument(nb_cores.ptr, argc_out, argv_out);
 
@@ -661,9 +648,7 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     /* Terminate argv with NULL */
     append_argument(NULL, &testpmd_argc, &testpmd_argv);
 
-    if (te_string_append(&testpmd_path, "%sdpdk-testpmd", working_dir) != 0)
-        TEST_FAIL("Failed to append testpmd path");
-
+    CHECK_RC(te_string_append(&testpmd_path, "%sdpdk-testpmd", working_dir));
 
     rc = tapi_job_rpc_simple_create(rpcs,
                           &(tapi_job_simple_desc_t){
