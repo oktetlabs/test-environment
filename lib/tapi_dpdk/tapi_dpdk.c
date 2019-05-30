@@ -210,9 +210,23 @@ is_testpmd_arg(const char *arg)
 }
 
 static te_bool
-is_testpmd_command(const char *arg)
+is_testpmd_command(const char *arg, testpmd_param_enum *param)
 {
-    return is_prefixed(arg, TAPI_DPDK_TESTPMD_COMMAND_PREFIX);
+    testpmd_param_enum i;
+
+    if (!is_prefixed(arg, TAPI_DPDK_TESTPMD_COMMAND_PREFIX))
+        return FALSE;
+
+    for (i = 0; i < TE_ARRAY_LEN(default_testpmd_params); i++)
+    {
+        if (strcmp(arg, default_testpmd_params[i].key) == 0)
+        {
+            *param = i;
+            return TRUE;
+        }
+    }
+
+    return FALSE;
 }
 
 static void
@@ -282,6 +296,54 @@ build_eal_testpmd_arguments(rcf_rpc_server *rpcs, tapi_env *env, size_t n_cpus,
     return rc;
 }
 
+static void
+append_testpmd_command(unsigned int port_number, te_string *setup_cmd,
+                       te_string *start_cmd, testpmd_param_enum param,
+                       const char *cmd_val_fmt, ...)
+{
+    va_list  ap;
+    te_bool start = FALSE;
+    te_bool setup = FALSE;
+
+    switch (param)
+    {
+        case TESTPMD_PARAM_LPBK_MODE:
+            CHECK_RC(te_string_append(setup_cmd, "port config all loopback "));
+            setup = TRUE;
+            break;
+
+        case TESTPMD_PARAM_MTU:
+            CHECK_RC(te_string_append(setup_cmd, "port config mtu %u ", port_number));
+            setup = TRUE;
+            break;
+
+        case TESTPMD_PARAM_START_TX_FIRST:
+            CHECK_RC(te_string_append(start_cmd, "start tx_first "));
+            start = TRUE;
+            break;
+
+        case TESTPMD_PARAM_START:
+            CHECK_RC(te_string_append(start_cmd, "start\n"));
+            break;
+
+        default:
+            return;
+    }
+
+    va_start(ap, cmd_val_fmt);
+    if (setup)
+    {
+        CHECK_RC(te_string_append_va(setup_cmd, cmd_val_fmt, ap));
+        CHECK_RC(te_string_append(setup_cmd, "\n"));
+    }
+    else if (start)
+    {
+        CHECK_RC(te_string_append_va(start_cmd, cmd_val_fmt, ap));
+        CHECK_RC(te_string_append(start_cmd, "\n"));
+    }
+    va_end(ap);
+}
+
 /*
  * Adjust the testpmd parameters. It is performed in two steps:
  *
@@ -294,8 +356,8 @@ build_eal_testpmd_arguments(rcf_rpc_server *rpcs, tapi_env *env, size_t n_cpus,
  */
 static te_errno
 adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
-                        te_string *cmdline_setup, int *argc_out,
-                        char ***argv_out)
+                        te_string *cmdline_setup, te_string *cmdline_start,
+                        int *argc_out, char ***argv_out)
 {
     const te_kvpair *pair;
     testpmd_param *params;
@@ -388,44 +450,14 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
     }
     if (!param_is_set[TESTPMD_PARAM_MTU] && txpkts_size >= ETHER_MIN_MTU)
     {
-        CHECK_RC(te_string_append(cmdline_setup, "port config mtu %u %lu\n",
-                                  port_number, txpkts_size));
+        append_testpmd_command(port_number, cmdline_setup, cmdline_start,
+                               TESTPMD_PARAM_MTU, "%lu", txpkts_size);
     }
 
     free(params);
     free(param_is_set);
 
     return 0;
-}
-
-static void
-append_testpmd_command(const te_kvpair *cmd_pair, te_string *setup_cmd,
-                       te_string *start_cmd)
-{
-    if (strcmp(cmd_pair->key,
-               default_testpmd_params[TESTPMD_PARAM_LPBK_MODE].key) == 0)
-    {
-        CHECK_RC(te_string_append(setup_cmd, "port config all loopback %s\n",
-                                  cmd_pair->value));
-    }
-    else if (strcmp(cmd_pair->key,
-                    default_testpmd_params[TESTPMD_PARAM_MTU].key) == 0)
-    {
-        WARN("MTU is set for 0 port only for testpmd");
-        CHECK_RC(te_string_append(setup_cmd, "port config mtu 0 %s\n",
-                                  cmd_pair->value));
-    }
-    else if (strcmp(cmd_pair->key,
-                    default_testpmd_params[TESTPMD_PARAM_START_TX_FIRST].key) == 0)
-    {
-        CHECK_RC(te_string_append(start_cmd, "start tx_first %s\n",
-                                  cmd_pair->value));
-    }
-    else if (strcmp(cmd_pair->key,
-                    default_testpmd_params[TESTPMD_PARAM_START].key) == 0)
-    {
-        CHECK_RC(te_string_append(start_cmd, "start\n"));
-    }
 }
 
 static void
@@ -444,15 +476,21 @@ generate_cmdline_filename(const char *dir, char **cmdline_filename)
 
 static void
 append_testpmd_cmdline_from_args(te_kvpair_h *test_args,
+                                 unsigned int port_number,
                                  te_string *cmdline_setup,
                                  te_string *cmdline_start)
 {
     const te_kvpair *pair;
+    testpmd_param_enum param;
 
     TAILQ_FOREACH(pair, test_args, links)
     {
-        if (is_testpmd_command(pair->key) && strcmp(pair->value, "FALSE") != 0)
-            append_testpmd_command(pair, cmdline_setup, cmdline_start);
+        if (is_testpmd_command(pair->key, &param) &&
+            strcmp(pair->value, "FALSE") != 0)
+        {
+            append_testpmd_command(port_number, cmdline_setup, cmdline_start,
+                                   param, "%s", pair->value);
+        }
     }
 }
 
@@ -632,12 +670,13 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     append_argument("--", &testpmd_argc, &testpmd_argv);
 
     rc = adjust_testpmd_defaults(test_args, port_number, &cmdline_setup,
-                                 &testpmd_argc, &testpmd_argv);
+                                 &cmdline_start, &testpmd_argc, &testpmd_argv);
     if (rc != 0)
         goto out;
 
     generate_cmdline_filename(working_dir, &cmdline_file);
-    append_testpmd_cmdline_from_args(test_args, &cmdline_setup, &cmdline_start);
+    append_testpmd_cmdline_from_args(test_args, port_number, &cmdline_setup,
+                                     &cmdline_start);
     append_testpmd_nb_cores_arg(n_cpus_grabbed - 1, &testpmd_argc, &testpmd_argv);
     append_argument("--cmdline-file", &testpmd_argc, &testpmd_argv);
     append_argument(cmdline_file, &testpmd_argc, &testpmd_argv);
