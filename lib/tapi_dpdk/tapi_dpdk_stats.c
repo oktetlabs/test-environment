@@ -14,10 +14,16 @@
 #include "tapi_dpdk_stats.h"
 #include "tapi_test_log.h"
 
-void
-tapi_dpdk_stats_pps_artifact(uint64_t pps)
+static const char *
+empty_string_if_null(const char *string)
 {
-    TEST_ARTIFACT("PPS: %lu", pps);
+    return string == NULL ? "" : string;
+}
+
+void
+tapi_dpdk_stats_pps_artifact(uint64_t pps, const char *prefix)
+{
+    TEST_ARTIFACT("%sPPS: %lu", empty_string_if_null(prefix), pps);
 }
 
 uint64_t
@@ -36,9 +42,10 @@ tapi_dpdk_stats_calculate_l1_bitrate(uint64_t pps, unsigned int packet_size)
 }
 
 void
-tapi_dpdk_stats_l1_bitrate_artifact(uint64_t l1_bitrate)
+tapi_dpdk_stats_l1_bitrate_artifact(uint64_t l1_bitrate, const char *prefix)
 {
-    TEST_ARTIFACT("L1 bit rate: %lu bit/s", l1_bitrate);
+    TEST_ARTIFACT("%sL1 bit rate: %lu bit/s", empty_string_if_null(prefix),
+                  l1_bitrate);
 }
 
 te_errno
@@ -59,25 +66,27 @@ tapi_dpdk_stats_calculate_l1_link_usage(uint64_t l1_bitrate,
 }
 
 void
-tapi_dpdk_stats_l1_link_usage_artifact(double l1_link_usage)
+tapi_dpdk_stats_l1_link_usage_artifact(double l1_link_usage, const char *prefix)
 {
-    TEST_ARTIFACT("L1 rate percent: %.3f", l1_link_usage * 100.0);
+    TEST_ARTIFACT("%sL1 rate percent: %.3f", empty_string_if_null(prefix),
+                  l1_link_usage * 100.0);
 }
 
 void
 tapi_dpdk_stats_log_rates(uint64_t pps, unsigned int packet_size,
-                          unsigned int link_speed)
+                          unsigned int link_speed, const char *prefix)
 {
     uint64_t l1_bitrate;
 
     l1_bitrate = tapi_dpdk_stats_calculate_l1_bitrate(pps, packet_size);
 
-    tapi_dpdk_stats_pps_artifact(pps);
-    tapi_dpdk_stats_l1_bitrate_artifact(l1_bitrate);
+    tapi_dpdk_stats_pps_artifact(pps, prefix);
+    tapi_dpdk_stats_l1_bitrate_artifact(l1_bitrate, prefix);
 
     if (link_speed == 0)
     {
-        WARN_VERDICT("Link speed is zero: link usage report is skipped");
+        WARN_VERDICT("%sLink speed is zero: link usage report is skipped",
+                     empty_string_if_null(prefix));
     }
     else
     {
@@ -85,6 +94,6 @@ tapi_dpdk_stats_log_rates(uint64_t pps, unsigned int packet_size,
 
         tapi_dpdk_stats_calculate_l1_link_usage(l1_bitrate, link_speed,
                                                 &l1_link_usage);
-        tapi_dpdk_stats_l1_link_usage_artifact(l1_link_usage);
+        tapi_dpdk_stats_l1_link_usage_artifact(l1_link_usage, prefix);
     }
 }

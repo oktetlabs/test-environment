@@ -26,9 +26,10 @@ extern "C" {
 /**
  * Report packet per second statistics as a test artifact.
  *
- * @param pps  Packets per second
+ * @param pps       Packets per second
+ * @param prefix    Prefix of the artifact message (may be @c NULL)
  */
-void tapi_dpdk_stats_pps_artifact(uint64_t pps);
+void tapi_dpdk_stats_pps_artifact(uint64_t pps, const char *prefix);
 
 /**
  * Calculate layer 1 bits per second from PPS and packet size.
@@ -58,15 +59,19 @@ te_errno tapi_dpdk_stats_calculate_l1_link_usage(uint64_t l1_bitrate,
  * Report packet per second statistics as a test artifact.
  *
  * @param l1_bitrate    Layer 1 bits per second
+ * @param prefix        Prefix of the artifact message (may be @c NULL)
  */
-void tapi_dpdk_stats_l1_bitrate_artifact(uint64_t l1_bitrate);
+void tapi_dpdk_stats_l1_bitrate_artifact(uint64_t l1_bitrate,
+                                         const char *prefix);
 
 /**
  * Report layer 1 link usage statistics as a test artifact.
  *
  * @param l1_link_usage    Layer 1 link usage ratio
+ * @param prefix           Prefix of the artifact message (may be @c NULL)
  */
-void tapi_dpdk_stats_l1_link_usage_artifact(double l1_link_usage);
+void tapi_dpdk_stats_l1_link_usage_artifact(double l1_link_usage,
+                                            const char *prefix);
 
 /**
  * Report rates corresponding to PPS, packet_size and link speed
@@ -75,9 +80,10 @@ void tapi_dpdk_stats_l1_link_usage_artifact(double l1_link_usage);
  * @param pps          Packets per second
  * @param packet_size  Packet size in bytes (without l1 and FCS)
  * @param link_speed   Link speed in Mbps
+ * @param prefix       Prefix of artifact messages (may be @c NULL)
  */
 void tapi_dpdk_stats_log_rates(uint64_t pps, unsigned int packet_size,
-                               unsigned int link_speed);
+                               unsigned int link_speed, const char *prefix);
 
 #ifdef __cplusplus
 } /* extern "C" */
