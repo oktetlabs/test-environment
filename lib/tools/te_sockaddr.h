@@ -481,6 +481,18 @@ extern te_errno te_sockaddr_netaddr_from_string(const char      *addr_str,
                                                 struct sockaddr *addr);
 
 /**
+ * Convert network address to its string representation. It returns statically
+ * allocated string using te_sockaddr_get_ipstr()
+ *
+ * @param af            Address family
+ * @param net_addr      Network address in form acceptable to
+ *                      te_sockaddr_set_netaddr()
+ *
+ * @return Network address string representation, or @c NULL in case of error
+ */
+extern const char *te_sockaddr_netaddr_to_string(int af, const void *net_addr);
+
+/**
  * Convert IPv4 address to IPv4-mapped IPv6 one.
  *
  * @param addr         Sockaddr structure containing address.

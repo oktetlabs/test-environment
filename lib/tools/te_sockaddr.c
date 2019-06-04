@@ -946,6 +946,20 @@ te_sockaddr_netaddr_from_string(const char      *addr_str,
 }
 
 /* See description in te_sockaddr.h */
+const char *
+te_sockaddr_netaddr_to_string(int af, const void *net_addr)
+{
+    struct sockaddr_storage addr;
+
+    addr.ss_family = af;
+    if (te_sockaddr_set_netaddr(SA(&addr), net_addr) == 0)
+        return te_sockaddr_get_ipstr(SA(&addr));
+
+    ERROR("%s(): Failed to convert network address to sockaddr", __FUNCTION__);
+    return NULL;
+}
+
+/* See description in te_sockaddr.h */
 te_errno
 te_sockaddr_ip4_to_ip6_mapped(struct sockaddr *addr)
 {
