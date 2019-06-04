@@ -2806,29 +2806,27 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
     if (ctx->flags & TESTER_PRERUN)
     {
-        if (ri->type == RUN_ITEM_SCRIPT)
+        if (!(ctx->flags & TESTER_ONLY_REQ_LOGUES) ||
+            tester_is_run_required(ctx->targets, &ctx->reqs,
+                                   ri, ctx->args, ctx->flags,
+                                   TRUE))
         {
-            te_bool include_act = TRUE;
-
-            if (ctx->flags & TESTER_ONLY_REQ_LOGUES)
-            {
-                if (!tester_is_run_required(ctx->targets, &ctx->reqs,
-                                            ri, ctx->args, ctx->flags,
-                                            TRUE))
-                {
-                    include_act = FALSE;
-                }
-            }
-
-            if (include_act)
+            if (ri->type == RUN_ITEM_SCRIPT)
             {
                 scenario_add_act(&gctx->fixed_scen, cfg_id_off, cfg_id_off,
                                  gctx->act->flags, gctx->act->hash);
             }
-        }
 
-        EXIT("CONT");
-        return TESTER_CFG_WALK_CONT;
+            EXIT("CONT");
+            return TESTER_CFG_WALK_CONT;
+        }
+        else
+        {
+            ctx->current_result.status = TESTER_TEST_INCOMPLETE;
+            ctx->group_step = TRUE;
+            EXIT("SKIP");
+            return TESTER_CFG_WALK_SKIP;
+        }
     }
 
     /* FIXME: Optimize */
