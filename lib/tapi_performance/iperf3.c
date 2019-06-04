@@ -30,6 +30,10 @@
 /* Time to wait till data is ready to read from stdout */
 #define IPERF3_TIMEOUT_MS                   (500)
 
+#if JANSSON_VERSION_HEX < 0x020700
+#define json_boolean_value      json_is_true
+#endif /* JANSSON_VERSION_HEX */
+
 /* Prototype of function to set option in iperf3 tool format */
 typedef void (*set_opt_t)(te_string *, const tapi_perf_opts *);
 
