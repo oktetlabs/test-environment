@@ -256,13 +256,14 @@ typedef enum testing_direction {
  *
  * @param act           Location of the current testing act
  * @param act_id        Location of the current action ID
- * @param step          Step
+ * @param next_id       Next iteration ID to which Tester is
+ *                      going to move
  *
  * @return Testing scenario movement direction.
  */
 extern testing_direction scenario_step(const testing_act **act,
                                        unsigned int       *act_id,
-                                       unsigned int        step);
+                                       unsigned int        next_id);
 
 /**
  * String representation of testing scenario.

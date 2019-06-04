@@ -174,6 +174,10 @@ typedef struct tester_run_data {
     const testing_act          *act;        /**< Current testing act */
     unsigned int                act_id;     /**< Configuration ID of
                                                  the current test to run */
+    testing_direction           direction;  /**< Current direction of
+                                                 tree walk (last result
+                                                 returned from
+                                                 run_this_item() */
 
     tester_test_results         results;    /**< Global storage of
                                                  results for tests
@@ -1795,8 +1799,9 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
             return TESTER_CFG_WALK_STOP;
         }
 
-        switch (run_this_item(cfg_id_off, gctx->act_id,
-                              ri->weight, ri->n_iters))
+        gctx->direction = run_this_item(cfg_id_off, gctx->act_id,
+                                        ri->weight, ri->n_iters);
+        switch (gctx->direction)
         {
             case TESTING_FORWARD:
                 EXIT("SKIP");
@@ -2657,8 +2662,9 @@ run_iter_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
             return TESTER_CFG_WALK_STOP;
         }
 
-        switch (run_this_item(cfg_id_off, gctx->act_id,
-                              ri->weight, 1))
+        gctx->direction = run_this_item(cfg_id_off, gctx->act_id,
+                                        ri->weight, 1);
+        switch (gctx->direction)
         {
             case TESTING_FORWARD:
                 EXIT("SKIP");
@@ -3113,41 +3119,45 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
             step = 0;
         }
 
-        while (scenario_step(&gctx->act, &gctx->act_id, step) ==
-                   TESTING_STOP)
+        if (gctx->direction != TESTING_BACKWARD)
         {
-            if (gctx->flags & TESTER_INTERACTIVE)
+            while (scenario_step(&gctx->act, &gctx->act_id,
+                                 cfg_id_off + step) == TESTING_STOP)
             {
-                switch (tester_run_interactive(gctx))
+                if (gctx->flags & TESTER_INTERACTIVE)
                 {
-                    case TESTER_INTERACTIVE_RUN:
-                        step = 0;
-                        break;
+                    switch (tester_run_interactive(gctx))
+                    {
+                        case TESTER_INTERACTIVE_RUN:
+                            step = 0;
+                            break;
 
-                    case TESTER_INTERACTIVE_RESUME:
-                    case TESTER_INTERACTIVE_STOP:
-                        /* Just try to continue */
-                        break;
+                        case TESTER_INTERACTIVE_RESUME:
+                        case TESTER_INTERACTIVE_STOP:
+                            /* Just try to continue */
+                            break;
 
-                    default:
-                        assert(FALSE);
-                        /*@fallthrou@*/
+                        default:
+                            assert(FALSE);
+                            /*@fallthrou@*/
 
-                    case TESTER_INTERACTIVE_ERROR:
-                        EXIT("FAULT");
-                        return TESTER_CFG_WALK_FAULT;
+                        case TESTER_INTERACTIVE_ERROR:
+                            EXIT("FAULT");
+                            return TESTER_CFG_WALK_FAULT;
+                    }
                 }
-            }
-            else
-            {
-                /* End of testing scenario */
-                EXIT("FIN");
-                return TESTER_CFG_WALK_FIN;
+                else
+                {
+                    /* End of testing scenario */
+                    EXIT("FIN");
+                    return TESTER_CFG_WALK_FIN;
+                }
             }
         }
 
-        switch (run_this_item(cfg_id_off, gctx->act_id,
-                              ri->weight, 1))
+        gctx->direction = run_this_item(cfg_id_off, gctx->act_id,
+                                        ri->weight, 1);
+        switch (gctx->direction)
         {
             case TESTING_STOP:
                 EXIT("CONT");
@@ -3272,6 +3282,7 @@ tester_run(testing_scenario   *scenario,
     data.targets = targets;
     data.act = TAILQ_FIRST(scenario);
     data.act_id = (data.act != NULL) ? data.act->first : 0;
+    data.direction = TESTING_FORWARD;
 #if WITH_TRC
     data.trc_db = trc_db;
     data.trc_tags = trc_tags;
@@ -3339,6 +3350,7 @@ tester_run(testing_scenario   *scenario,
         data.flags = orig_flags;
         data.act = TAILQ_FIRST(&data.fixed_scen);
         data.act_id = (data.act != NULL) ? data.act->first : 0;
+        data.direction = TESTING_FORWARD;
         tester_run_destroy_ctx(&data);
 
         if (TAILQ_EMPTY(&data.fixed_scen))

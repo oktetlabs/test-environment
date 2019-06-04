@@ -693,60 +693,72 @@ scenario_apply_flags(testing_scenario *scenario,
 /* See the description in tester_run.h */
 testing_direction
 scenario_step(const testing_act **act, unsigned int *act_id,
-              unsigned int step)
+              unsigned int next_id)
 {
-    unsigned int    next_id;
-
     assert(act != NULL);
     if (*act == NULL)
     {
-        VERB("step=%u -> STOP (nowhere)", *act, step);
+        VERB("next_id=%u -> STOP (nowhere)", next_id);
         return TESTING_STOP;
     }
 
     assert(act_id != NULL);
     assert((*act_id >= (*act)->first) && (*act_id <= (*act)->last));
 
-    next_id = *act_id + step;
-    if (next_id <= (*act)->last)
+    if (next_id < *act_id)
     {
+        /* next_id is before the current act */
+        VERB("next_id=%u -> FORWARD", next_id);
+        return TESTING_FORWARD;
+    }
+    else if (next_id >= (*act)->first &&
+             next_id <= (*act)->last)
+    {
+        /* next_id is within current act */
         *act_id = next_id;
-        VERB("step=%u -> FORWARD", step);
+        VERB("next_id=%u -> FORWARD", next_id);
         return TESTING_FORWARD;
     }
 
-    while ((*act = TAILQ_NEXT(*act, links)) != NULL)
+    /*
+     * next_id is after the current scenario act, so
+     * move to the next act.
+     */
+
+    *act = TAILQ_NEXT(*act, links);
+    if (*act == NULL)
     {
-        if ((*act)->first <= *act_id)
-        {
-            /* Move backward */
-            *act_id = (*act)->first;
-            VERB("step=%u -> BACKWARD", step);
-            return TESTING_BACKWARD;
-        }
-        else if ((*act)->first >= next_id)
-        {
-            /* First ID of the action is greater or equal to next ID */
-            *act_id = (*act)->first;
-            VERB("step=%u -> FORWARD", step);
-            return TESTING_FORWARD;
-        }
-        else if ((*act)->last >= next_id)
-        {
-            /* Next ID is in the middle of this action */
-            *act_id = next_id;
-            VERB("step=%u -> FORWARD", step);
-            return TESTING_FORWARD;
-        }
-        else
-        {
-            /* All this action should be skipped */
-            continue;
-        }
+        VERB("next_id=%u -> STOP", next_id);
+        return TESTING_STOP;
+    }
+    else if (next_id < (*act)->first)
+    {
+        /*
+         * The next act is after next_id - continue
+         * walking forward.
+         */
+        *act_id = (*act)->first;
+        VERB("next_id=%u -> FORWARD", next_id);
+        return TESTING_FORWARD;
+    }
+    else if (next_id > (*act)->last)
+    {
+        /*
+         * The next act is before next_id - move
+         * backward in testing configuration.
+         * This function should not be called
+         * again before testing moved to <= *act_id,
+         * see run_this_item() usage.
+         */
+        *act_id = (*act)->first;
+        VERB("next_id=%u -> BACKWARD", next_id);
+        return TESTING_BACKWARD;
     }
 
-    VERB("step=%u -> STOP (end-of-scenario)", step);
-    return TESTING_STOP;
+    /* The only remaining variant - next_id is inside the next act */
+    *act_id = next_id;
+    VERB("next_id=%u -> FORWARD", next_id);
+    return TESTING_FORWARD;
 }
 
 
