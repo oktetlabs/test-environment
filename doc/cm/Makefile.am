@@ -13,6 +13,7 @@ EXTRA_DIST = \
 	cm_8021x.xml \
 	cm_acse.xml \
 	cm_base.xml \
+	cm_bpf.xml \
 	cm_ch.xml \
 	cm_cmd_monitor.xml \
 	cm_crypt.xml \

@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!-- This configuration model is intended for describing of
+         configuration information related to eBPF programs -->
+
+    <!--
+        Copyright (C) 2019 OKTET Labs.
+
+        Author: Damir Mansurov E-mail: dnman@oktetlabs.ru
+    -->
+
+    <!-- BPF object
+         Name: unique object ID (index of BPF object file) -->
+    <object oid="/agent/bpf" access="read_create" type="none"/>
+
+    <!-- BPF filepath
+         Name:  empty
+         Value: file path of object on the agent -->
+    <object oid="/agent/bpf/filepath" access="read_write" type="string"/>
+
+    <!-- Type of the BPF program
+         Name:  empty
+         Value: string representation of program type:
+                unspec, socket_filter, kprobe, sched_cls, sched_act,
+                tracepoint, xdp, perf_event -->
+    <object oid="/agent/bpf/type" access="read_only" type="string"/>
+
+    <!-- BPF state
+         Name:  empty
+         Value: unloaded, loaded -->
+    <object oid="/agent/bpf/state" access="read_write" type="string"/>
+
+    <!-- *********** Maps *************** -->
+    <!-- List of BPF maps
+         Name:  map name -->
+    <object oid="/agent/bpf/map" access="read_only" type="none"/>
+
+    <!-- The next four entries: type, key_size, value_size and max_entries
+         are readed from object file (according to /agent/bpf/filepath) -->
+
+    <!-- The type of map
+         Name:  empty
+         Value: string representation of map type:
+                unspec, hash, array, prog_array, perf_event_array,
+                percpu_hash, percpu_array, stack_trace, cgroup_array -->
+    <object oid="/agent/bpf/map/type" access="read_only" type="string"/>
+
+    <!-- Size of map key
+         Name:  empty
+         Value: size of key in bytes -->
+    <object oid="/agent/bpf/map/key_size" access="read_only" type="integer"/>
+
+    <!-- Size of map value
+         Name:  empty
+         Value: size of value in bytes -->
+    <object oid="/agent/bpf/map/value_size" access="read_only" type="integer"/>
+
+    <!-- Max entries of key/map values
+         Name:  empty
+         Value: maximum number of entries in a map -->
+    <object oid="/agent/bpf/map/max_entries" access="read_only" type="integer"/>
+
+    <!-- We have two views on the map:
+         - read_only: RO for Configurator: all maps always have read_only view
+                      to read key/value pairs from them.
+         - writable:  RW for Configurator and that should be
+                      accessed only via Configurator so that rollback
+                      happens properly;
+         All maps from BPF object file have only read_only view by default. And
+         then writable view can be added, but after that BPF program should not
+         write anything to the map. -->
+
+    <!-- The read_only view of the map
+         Name: none -->
+    <object oid="/agent/bpf/map/read_only" access="read_only" type="none"/>
+
+    <!-- Entries of key/value pairs
+         Name:  hex-string
+         Value: hex-string -->
+    <object oid="/agent/bpf/map/read_only/key" access="read_only"
+            type="string" volatile="true"/>
+
+    <!-- The writable view of the map
+         Name: none -->
+    <object oid="/agent/bpf/map/writable" access="read_create" type="none"/>
+
+    <!-- Entries of key/value pairs
+         Name:  hex-string
+         Value: hex-string -->
+    <object oid="/agent/bpf/map/writable/key" access="read_create"
+            type="string"/>
+
+    <!-- ******************* Programs ******************* -->
+    <!-- List of BPF programs
+         Name:  program name -->
+    <object oid="/agent/bpf/program" access="read_only" type="none"/>
+
+    <!-- ************* Linkage to interface ************* -->
+    <!-- Link to XDP program which attached to interface
+         Name:  empty
+         Value: an OID of the program instance,
+                such as /agent:Agt_A/bpf:0/program:foo
+
+         Note: only one XDP program can be attached to network interface -->
+    <object oid="/agent/interface/xdp" access="read_create" type="string"/>
+
+</backup>
