@@ -333,7 +333,8 @@ rpc_rte_pktmbuf_pool_create(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_RPC_PTR(rte_pktmbuf_pool_create, out.retval);
 
     TAPI_RPC_LOG(rpcs, rte_pktmbuf_pool_create,
-                 "%s, %u, %u, %hu, %hu, %d", RPC_PTR_FMT,
+                 "name=%s, n=%u, cache_size=%u, priv_size=%hu, "
+                 "data_room_size=%hu, socket_id=%d", RPC_PTR_FMT,
                  in.name, in.n, in.cache_size, in.priv_size, in.data_room_size,
                  in.socket_id, RPC_PTR_VAL(out.retval));
 
@@ -367,7 +368,8 @@ rpc_rte_pktmbuf_pool_create_by_ops(rcf_rpc_server *rpcs,
     CHECK_RETVAL_VAR_RPC_PTR(rte_pktmbuf_pool_create_by_ops, out.retval);
 
     TAPI_RPC_LOG(rpcs, rte_pktmbuf_pool_create_by_ops,
-                 "%s, %u, %u, %hu, %hu, %d, %s", RPC_PTR_FMT,
+                 "name=%s, n=%u, cache_size=%u, priv_size=%hu, "
+                 "data_room_size=%hu, socket_id=%d, ops_name=%s", RPC_PTR_FMT,
                  in.name, in.n, in.cache_size, in.priv_size, in.data_room_size,
                  in.socket_id, in.ops_name, RPC_PTR_VAL(out.retval));
 
