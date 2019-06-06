@@ -1497,116 +1497,6 @@ struct tarpc_rte_eth_dev_flow_ctrl_set_in {
 
 typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_flow_ctrl_set_out;
 
-enum tarpc_rte_filter_type {
-    TARPC_RTE_ETH_FILTER_NONE = 0,
-    TARPC_RTE_ETH_FILTER_MACVLAN,
-    TARPC_RTE_ETH_FILTER_ETHERTYPE,
-    TARPC_RTE_ETH_FILTER_FLEXIBLE,
-    TARPC_RTE_ETH_FILTER_SYN,
-    TARPC_RTE_ETH_FILTER_NTUPLE,
-    TARPC_RTE_ETH_FILTER_TUNNEL,
-    TARPC_RTE_ETH_FILTER_FDIR,
-    TARPC_RTE_ETH_FILTER_HASH,
-    TARPC_RTE_ETH_FILTER_L2_TUNNEL,
-    TARPC_RTE_ETH_FILTER_MAX,
-
-    TARPC_RTE_ETH_FILTER__UNKNOWN
-};
-
-/** rte_eth_dev_filter_supported() */
-struct tarpc_rte_eth_dev_filter_supported_in {
-    struct tarpc_in_arg         common;
-    uint16_t                    port_id;
-    enum tarpc_rte_filter_type  filter_type;
-};
-
-typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_filter_supported_out;
-
-
-/**
- * Generic operations on filters
- */
-enum tarpc_rte_filter_op {
-    /** used to check whether the type filter is supported */
-    TARPC_RTE_ETH_FILTER_NOP = 0,
-    TARPC_RTE_ETH_FILTER_ADD,
-    TARPC_RTE_ETH_FILTER_UPDATE,
-    TARPC_RTE_ETH_FILTER_DELETE,
-    TARPC_RTE_ETH_FILTER_FLUSH,
-    TARPC_RTE_ETH_FILTER_GET,
-    TARPC_RTE_ETH_FILTER_SET,
-    TARPC_RTE_ETH_FILTER_INFO,
-    TARPC_RTE_ETH_FILTER_STATS,
-    TARPC_RTE_ETH_FILTER_OP_MAX,
-
-    TARPC_RTE_ETH_FILTER_OP__UNKNOWN
-};
-
-enum tarpc_rte_ethtype_flags {
-    TARPC_RTE_ETHTYPE_FLAGS_MAC_BIT = 0,
-    TARPC_RTE_ETHTYPE_FLAGS_DROP_BIT,
-
-    TARPC_RTE_ETHTYPE_FLAGS__UNKNOWN_BIT
-};
-
-struct tarpc_rte_eth_ethertype_filter {
-    struct tarpc_ether_addr mac_addr;
-    uint16_t                ether_type;
-    uint16_t                flags;
-    uint16_t                queue;
-};
-
-enum tarpc_rte_ntuple_flags {
-    TARPC_RTE_NTUPLE_FLAGS_DST_IP_BIT = 0,
-    TARPC_RTE_NTUPLE_FLAGS_SRC_IP_BIT,
-    TARPC_RTE_NTUPLE_FLAGS_DST_PORT_BIT,
-    TARPC_RTE_NTUPLE_FLAGS_SRC_PORT_BIT,
-    TARPC_RTE_NTUPLE_FLAGS_PROTO_BIT,
-    TARPC_RTE_NTUPLE_FLAGS_TCP_FLAG_BIT,
-
-    TARPC_RTE_NTUPLE_FLAGS__UNKNOWN_BIT
-};
-
-enum tarpc_rte_tcp_flags {
-    TARPC_RTE_TCP_URG_FLAG_BIT = 0,
-    TARPC_RTE_TCP_ACK_FLAG_BIT,
-    TARPC_RTE_TCP_PSH_FLAG_BIT,
-    TARPC_RTE_TCP_RST_FLAG_BIT,
-    TARPC_RTE_TCP_SYN_FLAG_BIT,
-    TARPC_RTE_TCP_FIN_FLAG_BIT,
-    TARPC_RTE_TCP_FLAG_ALL_BIT,
-
-    TARPC_RTE_TCP__UNKNOWN_BIT
-};
-
-struct tarpc_rte_eth_ntuple_filter {
-    uint16_t flags;
-    uint32_t dst_ip;
-    uint32_t dst_ip_mask;
-    uint32_t src_ip;
-    uint32_t src_ip_mask;
-    uint16_t dst_port;
-    uint16_t dst_port_mask;
-    uint16_t src_port;
-    uint16_t src_port_mask;
-    uint8_t  proto;
-    uint8_t  proto_mask;
-    uint8_t  tcp_flags;
-    uint16_t priority;
-    uint16_t queue;
-};
-
-/** rte_eth_dev_filter_ctrl */
-struct tarpc_rte_eth_dev_filter_ctrl_in {
-    struct tarpc_in_arg         common;
-    uint16_t                    port_id;
-    enum tarpc_rte_filter_type  filter_type;
-    enum tarpc_rte_filter_op    filter_op;
-    uint8_t                     arg<>;
-};
-
-typedef struct tarpc_int_retval_out tarpc_rte_eth_dev_filter_ctrl_out;
-
 /** rte_eth_dev_rss_hash_update() */
 struct tarpc_rte_eth_dev_rss_hash_update_in {
     struct tarpc_in_arg                   common;
@@ -2112,8 +2002,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_rss_hash_conf_get)
         RPC_DEF(rte_eth_dev_flow_ctrl_get)
         RPC_DEF(rte_eth_dev_flow_ctrl_set)
-        RPC_DEF(rte_eth_dev_filter_supported)
-        RPC_DEF(rte_eth_dev_filter_ctrl)
         RPC_DEF(rte_eth_dev_rss_hash_update)
         RPC_DEF(rte_eth_dev_rss_reta_update)
         RPC_DEF(rte_eth_dev_get_supported_ptypes)

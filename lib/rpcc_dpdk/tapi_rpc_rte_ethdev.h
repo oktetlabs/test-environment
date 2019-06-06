@@ -538,21 +538,6 @@ extern int rpc_rte_eth_dev_flow_ctrl_set(rcf_rpc_server *rpcs, uint16_t port_id,
                                          struct tarpc_rte_eth_fc_conf *fc_conf);
 
 /**
- * Convert filter type to string.
- */
-extern const char * tapi_rpc_rte_filter_type2str(
-                        enum tarpc_rte_filter_type filter_type);
-
-/**
- * @b rte_eth_dev_filter_supported() RPC.
- *
- * If failure is not expected, the function jumps out in the case of non-zero
- * or negative return value.
- */
-extern int rpc_rte_eth_dev_filter_supported(rcf_rpc_server *rpcs, uint16_t port_id,
-                                            enum tarpc_rte_filter_type filter_type);
-
-/**
  * Add ethdev MAC address to test parameters kvpairs
  *
  * @param rpcs        RPC server handle.
@@ -567,17 +552,6 @@ extern te_errno tapi_rpc_add_mac_as_octstring2kvpair(rcf_rpc_server *rpcs,
                                                      uint16_t port_id,
                                                      te_kvpair_h *head,
                                                      const char *name);
-
-/**
- * @b rte_eth_dev_filter_ctrl() RPC.
- *
- * If failure is not expected, the function jumps out in the case of non-zero
- * or negative return value.
- */
-extern int rpc_rte_eth_dev_filter_ctrl(rcf_rpc_server *rpcs, uint16_t port_id,
-                                      enum tarpc_rte_filter_type filter_type,
-                                      enum tarpc_rte_filter_op filter_op,
-                                      void *arg);
 
 /**
  * @b rte_eth_dev_rss_hash_update() RPC.
