@@ -370,7 +370,7 @@ rpc_rte_eth_dev_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
 {
     tarpc_rte_eth_dev_info_get_in   in;
     tarpc_rte_eth_dev_info_get_out  out;
-    te_log_buf                     *tlbp;
+    te_log_buf                     *tlbp = NULL;
 
     if (dev_info == NULL)
         TEST_FAIL("Invalid %s() dev_info argument", __func__);
@@ -382,12 +382,19 @@ rpc_rte_eth_dev_info_get(rcf_rpc_server *rpcs, uint16_t port_id,
 
     rcf_rpc_call(rpcs, "rte_eth_dev_info_get", &in, &out);
 
-    *dev_info = out.dev_info;
-    dev_info->driver_name = tapi_strdup(dev_info->driver_name);
+    if (RPC_IS_CALL_OK(rpcs))
+    {
+        *dev_info = out.dev_info;
+        dev_info->driver_name = tapi_strdup(dev_info->driver_name);
 
-    tlbp = te_log_buf_alloc();
+        tlbp = te_log_buf_alloc();
+    }
+
     TAPI_RPC_LOG(rpcs, rte_eth_dev_info_get, "%u", "dev_info=%s",
-                 in.port_id, tarpc_rte_eth_dev_info2str(tlbp, dev_info));
+                 in.port_id,
+                 RPC_IS_CALL_OK(rpcs) ?
+                    tarpc_rte_eth_dev_info2str(tlbp, dev_info) : "N/A");
+
     te_log_buf_free(tlbp);
 
     RETVAL_VOID(rte_eth_dev_info_get);
