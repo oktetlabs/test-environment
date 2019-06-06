@@ -612,6 +612,7 @@ tapi_eal_get_vdev_port_ids(rcf_rpc_server  *rpcs,
 
 te_errno
 tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
+                       const char *program_name,
                        int argc, const char **argv,
                        int *out_argc, char ***out_argv)
 {
@@ -635,8 +636,9 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
     if (pco == NULL)
         return TE_EINVAL;
 
-    /* Use RPC server name as a program name */
-    append_arg(&my_argc, &my_argv, "%s", rpcs->name);
+    /* Use RPC server name as a program name if it is not provided */
+    append_arg(&my_argc, &my_argv, "%s",
+               program_name == NULL ? rpcs->name : program_name);
 
     /* Get device arguments to be specified in whitelist option */
     val_type = CVT_STRING;
@@ -794,7 +796,7 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     if (pco == NULL)
         return TE_EINVAL;
 
-    rc = tapi_rte_make_eal_args(env, rpcs, argc, argv, &my_argc, &my_argv);
+    rc = tapi_rte_make_eal_args(env, rpcs, NULL, argc, argv, &my_argc, &my_argv);
     if (rc != 0)
         return rc;
 

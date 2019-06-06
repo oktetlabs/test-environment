@@ -46,12 +46,14 @@ extern int rpc_rte_eal_init(rcf_rpc_server *rpcs,
  *
  * @param env       Environment binding
  * @param rpcs      RPC server handle
+ * @param program_name  Name of a program (@c NULL means use RPC server name)
  * @param argc      Number of additional EAL arguments
  * @param argv      Additional EAL arguments
  *
  * @return Status code.
  */
 extern te_errno tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
+                                       const char *program_name,
                                        int argc, const char **argv,
                                        int *out_argc, char ***out_argv);
 
