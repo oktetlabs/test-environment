@@ -273,8 +273,8 @@ append_corelist_eal_arg(size_t n_cores, tapi_cpu_index_t *cpu_ids,
 
 static te_errno
 build_eal_testpmd_arguments(rcf_rpc_server *rpcs, tapi_env *env, size_t n_cpus,
-                            tapi_cpu_index_t *cpu_ids, int *argc_out,
-                            char ***argv_out)
+                            tapi_cpu_index_t *cpu_ids, const char *program_name,
+                            int *argc_out, char ***argv_out)
 {
     int extra_argc = 0;
     char **extra_argv = NULL;
@@ -283,7 +283,7 @@ build_eal_testpmd_arguments(rcf_rpc_server *rpcs, tapi_env *env, size_t n_cpus,
 
     append_corelist_eal_arg(n_cpus, cpu_ids, &extra_argc, &extra_argv);
 
-    rc = tapi_rte_make_eal_args(env, rpcs, extra_argc,
+    rc = tapi_rte_make_eal_args(env, rpcs, program_name, extra_argc,
                                 (const char **)extra_argv,
                                 argc_out, argv_out);
     if (rc != 0)
@@ -657,8 +657,11 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
         goto out;
     }
 
+    CHECK_RC(te_string_append(&testpmd_path, "%sdpdk-testpmd", working_dir));
+
     rc = build_eal_testpmd_arguments(rpcs, env, n_cpus_grabbed, cpu_ids,
-                                     &testpmd_argc, &testpmd_argv);
+                                     testpmd_path.ptr, &testpmd_argc,
+                                     &testpmd_argv);
     if (rc != 0)
         goto out;
 
@@ -689,8 +692,6 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
 
     /* Terminate argv with NULL */
     append_argument(NULL, &testpmd_argc, &testpmd_argv);
-
-    CHECK_RC(te_string_append(&testpmd_path, "%sdpdk-testpmd", working_dir));
 
     rc = tapi_job_rpc_simple_create(rpcs,
                           &(tapi_job_simple_desc_t){
