@@ -635,11 +635,14 @@ rcfunix_start(const char *ta_name, const char *ta_type,
          * to have to see possible problems.
          */
         rc = te_string_append(&cmd,
-                "scp -rBpq %s %s %s %s %s %s%s:/tmp/%s%s >/dev/null 2>&1",
+                "scp -rBpq %s %s %s %s %s %s%s:/tmp/%s%s",
                 ta->ssh_port != 0 ? "-P" : "", ssh_port_str,
                 *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
                 ta->key, path, ta->user, ta->host, ta_type, ta->postfix);
     }
+    if (rc == 0)
+        rc = te_string_append(&cmd, " 2>&1 | te_tee %s %s 10 >ta.%s",
+                              TE_LGR_ENTITY, ta->ta_name, ta->ta_name);
     if (rc != 0)
     {
         ERROR("Failed to compose TA copy command: %r\n%s", rc, cmd.ptr);
@@ -726,7 +729,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
                 "; %smv /tmp/core* /var/tmp ", rcfunix_ta_sudo(ta));
     if (rc == 0)
         rc = te_string_append(&cmd,
-                "%s 2>&1 | te_tee %s %s 10 >ta.%s ",
+                "%s 2>&1 | te_tee %s %s 10 >>ta.%s ",
                 ta->cmd_suffix, TE_LGR_ENTITY, ta->ta_name, ta->ta_name);
 
     free(conf_str_dup);
