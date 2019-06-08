@@ -687,7 +687,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
      */
     if (rc == 0)
         rc = te_string_append(&cmd,
-                "PATH=%s$PATH:/tmp/%s%s ",
+                "PATH=%s${PATH}:/tmp/%s%s ",
                 ta->is_local ? "" : "\\", ta_type, ta->postfix);
 
     if (rc == 0 && (shell != NULL) && (strlen(shell) > 0))
