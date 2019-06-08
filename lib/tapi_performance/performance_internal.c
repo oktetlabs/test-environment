@@ -135,11 +135,13 @@ perf_app_wait(tapi_perf_app *app, int16_t timeout)
 
     for (i = 0; i < num_attempts; i++)
     {
+        rpc_wait_status stat;
+
         if (i > 0)
             VSLEEP(delay_s, "delay before retrying waitpid()");
 
         RPC_AWAIT_ERROR(app->rpcs);
-        pid = rpc_waitpid(app->rpcs, app->pid, NULL, RPC_WNOHANG);
+        pid = rpc_waitpid(app->rpcs, app->pid, &stat, RPC_WNOHANG);
         if (pid == app->pid)
         {
             app->pid = -1;
