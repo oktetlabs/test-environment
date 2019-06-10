@@ -383,7 +383,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     te_errno    rc;
     unix_ta    *ta;
     char       *token;
-    char        path[RCF_MAX_PATH];
+    char        ta_type_dir[RCF_MAX_PATH];
     te_string   cmd = TE_STRING_INIT;
     char       *installdir;
     char       *tmp;
@@ -426,7 +426,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         VERB("FATAL ERROR: TE_INSTALL is not exported");
         return TE_ENOENT;
     }
-    snprintf(path, sizeof(path), "%s/agents/%s/", installdir, ta_type);
+    snprintf(ta_type_dir, sizeof(ta_type_dir),
+             "%s/agents/%s/", installdir, ta_type);
 
     if ((ta = *(unix_ta **)(handle)) == NULL &&
         (ta = (unix_ta *)calloc(1, sizeof(unix_ta))) == NULL)
@@ -613,13 +614,13 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     {
         rc = te_string_append(&cmd,
                 "%sln -s %s /tmp/%s%s%s", ta->cmd_prefix,
-                path, ta_type, ta->postfix, ta->cmd_suffix);
+                ta_type_dir, ta_type, ta->postfix, ta->cmd_suffix);
     }
     else if (ta->is_local)
     {
         rc = te_string_append(&cmd,
                 "%scp -a %s /tmp/%s%s%s", ta->cmd_prefix,
-                path, ta_type, ta->postfix, ta->cmd_suffix);
+                ta_type_dir, ta_type, ta->postfix, ta->cmd_suffix);
     }
     else
     {
@@ -638,7 +639,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
                 "scp -rBpq %s %s %s %s %s %s%s:/tmp/%s%s",
                 ta->ssh_port != 0 ? "-P" : "", ssh_port_str,
                 *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
-                ta->key, path, ta->user, ta->host, ta_type, ta->postfix);
+                ta->key, ta_type_dir, ta->user, ta->host, ta_type, ta->postfix);
     }
     if (rc == 0)
         rc = te_string_append(&cmd, " 2>&1 | te_tee %s %s 10 >ta.%s",
