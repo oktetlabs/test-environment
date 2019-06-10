@@ -455,13 +455,13 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     if (logname == NULL)
         logname = "";
     timestamp = (unsigned int)time(NULL);
-    if (snprintf(ta->run_dir, sizeof(ta->run_dir), "/tmp/%s_%s_%u_%u",
-                 ta_type, logname, timestamp, ++seqno) >=
+    if (snprintf(ta->run_dir, sizeof(ta->run_dir), "/tmp/%s_%s_%u_%u_%u",
+                 ta_type, logname, (unsigned int)getpid(), timestamp, ++seqno) >=
         (int)sizeof(ta->run_dir))
     {
-        ERROR("Failed to compose TA run directory '/tmp/%s_%s_%u_%u' - "
+        ERROR("Failed to compose TA run directory '/tmp/%s_%s_%u_%u_%u' - "
               "provided buffer too small",
-              ta_type, logname, timestamp, seqno);
+              ta_type, logname, (unsigned int)getpid(), timestamp, seqno);
         return TE_ESMALLBUF;
     }
 
