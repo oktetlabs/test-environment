@@ -386,6 +386,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     char        ta_type_dir[RCF_MAX_PATH];
     te_string   cmd = TE_STRING_INIT;
     char       *installdir;
+    const char *logname;
     char       *tmp;
     char       *conf_str_dup;
     char       *dup;
@@ -448,9 +449,11 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         *flags |= TA_PROXY;
 
     ta->flags = flags;
-    tmp = getenv("LOGNAME");
+    logname = getenv("LOGNAME");
+    if (logname == NULL)
+        logname = "";
     snprintf(ta->postfix, sizeof(ta->postfix), "_%s_%u_%u",
-             (tmp == NULL) ? "" : tmp, (unsigned int)time(NULL), seqno++);
+             logname, (unsigned int)time(NULL), seqno++);
 
     VERB("Unique postfix '%s'", ta->postfix);
 
