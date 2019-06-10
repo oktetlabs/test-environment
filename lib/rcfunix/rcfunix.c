@@ -145,6 +145,9 @@
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#if HAVE_STDARG_H
+#include <stdarg.h>
+#endif
 #if HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -265,15 +268,18 @@ typedef struct unix_ta {
 /**
  * Execute the command without forever blocking.
  *
- * @param cmd           command to be executed
  * @param timeout       timeout in seconds
+ * @param fmt           format string of the command to be executed
  *
  * @return Status code.
  * @return TE_ETIMEDOUT    Command timed out
  */
 static te_errno
-system_with_timeout(const char *cmd, int timeout)
+__attribute__((format(printf, 2, 3)))
+system_with_timeout(int timeout, const char *fmt, ...)
 {
+    va_list         ap;
+    char           *cmd;
     pid_t           pid;
     int             fd = -1;
     char            buf[64] = { 0, };
@@ -281,11 +287,21 @@ system_with_timeout(const char *cmd, int timeout)
     int             status;
     unsigned int    waitpid_tries = 0;
 
+    va_start(ap, fmt);
+    cmd = te_string_fmt_va(fmt, ap);
+    va_end(ap);
+    if (cmd == NULL)
+    {
+        ERROR("Failed to make string with command to run");
+        return TE_RC(TE_RCF_UNIX, TE_ENOMEM);
+    }
+
     pid = te_shell_cmd(cmd, -1, NULL, &fd, NULL);
     if (pid < 0 || fd < 0)
     {
         rc = TE_OS_RC(TE_RCF_UNIX, errno);
         ERROR("te_shell_cmd() for the command <%s> failed", cmd);
+        free(cmd);
         return rc;
     }
 
@@ -312,6 +328,7 @@ system_with_timeout(const char *cmd, int timeout)
             te_msleep(100);
             if (killpg(getpgid(pid), SIGKILL) == 0)
                 RING("Process of the shell command killed by SIGKILL");
+            free(cmd);
             return TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT);
         }
 
@@ -331,6 +348,7 @@ system_with_timeout(const char *cmd, int timeout)
                 rc = TE_OS_RC(TE_RCF_UNIX, errno);
                 ERROR("Waiting of the shell command <%s> pid %d "
                       "error: %r", cmd, (int)pid, rc);
+                free(cmd);
                 return rc;
             }
             else if (rc == 0)
@@ -340,9 +358,11 @@ system_with_timeout(const char *cmd, int timeout)
             }
             else if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
             {
+                free(cmd);
                 return TE_RC(TE_RCF_UNIX, TE_ESHCMD);
             }
 
+            free(cmd);
             return 0;
         }
     }
@@ -666,7 +686,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     RING("CMD to copy: %s", cmd.ptr);
     if (!(*flags & TA_FAKE) &&
-        ((rc = system_with_timeout(cmd.ptr, ta->copy_timeout)) != 0))
+        ((rc = system_with_timeout(ta->copy_timeout, "%s", cmd.ptr)) != 0))
     {
         ERROR("Failed to copy TA images/data %s to the %s:/tmp: %r",
               ta_type, ta->host, rc);
@@ -806,9 +826,8 @@ static te_errno
 rcfunix_finish(rcf_talib_handle handle, const char *parms)
 {
     unix_ta    *ta = (unix_ta *)handle;
+    te_string   cmd = TE_STRING_INIT;
     te_errno    rc;
-    char        cmd[3 * RCFUNIX_SHELL_CMD_MAX];
-    size_t      out_len;
 
     (void)parms;
 
@@ -832,50 +851,54 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
         }
         else
         {
-            snprintf(cmd, sizeof(cmd),
+            rc = system_with_timeout(ta->kill_timeout,
                      "%s%skill %d%s " RCFUNIX_REDIRECT,
                      ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->pid,
                      ta->cmd_suffix);
-            rc = system_with_timeout(cmd, ta->kill_timeout);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
 
-            snprintf(cmd, sizeof(cmd),
+            rc = system_with_timeout(ta->kill_timeout,
                      "%s%skill -9 %d%s " RCFUNIX_REDIRECT,
                      ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->pid,
                      ta->cmd_suffix);
-            rc = system_with_timeout(cmd, ta->kill_timeout);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
         }
 
-        snprintf(cmd, sizeof(cmd),
+        rc = system_with_timeout(ta->kill_timeout,
                  "%s%skillall %s/ta%s " RCFUNIX_REDIRECT,
                  ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->run_dir,
                  ta->cmd_suffix);
-        rc = system_with_timeout(cmd, ta->kill_timeout);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
 
-        snprintf(cmd, sizeof(cmd),
+        rc = system_with_timeout(ta->kill_timeout,
                  "%s%skillall -9 %s/ta%s " RCFUNIX_REDIRECT,
                  ta->cmd_prefix, rcfunix_ta_sudo(ta),
                  ta->run_dir, ta->cmd_suffix);
-        rc = system_with_timeout(cmd, ta->kill_timeout);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
     }
 
-    out_len = snprintf(cmd, sizeof(cmd), "%srm -rf %s%s",
+    rc = te_string_append(&cmd, "%srm -rf %s%s",
                        ta->cmd_prefix, ta->run_dir, ta->cmd_suffix);
+    if (rc != 0)
+    {
+        ERROR("Failed to make rm command: %r", rc);
+        goto done;
+    }
     /* we want to be careful with what we remove */
-    if (out_len < strlen("rm -rf /tmp/"))
-        return TE_RC(TE_RCF_UNIX, TE_ENOMEM);
+    if (cmd.len < strlen("rm -rf /tmp/"))
+    {
+        rc = TE_RC(TE_RCF_UNIX, TE_ENOMEM);
+        goto done;
+    }
 
-    RING("CMD to remove: %s", cmd);
-    rc = system_with_timeout(cmd, ta->kill_timeout);
+    RING("CMD to remove: %s", cmd.ptr);
+    rc = system_with_timeout(ta->kill_timeout, "%s", cmd.ptr);
     if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
-        return rc;
+        goto done;
 
     if (ta->start_pid > 0)
     {
@@ -883,7 +906,9 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
         killpg(getpgid(ta->start_pid), SIGKILL);
     }
 
-    return 0;
+done:
+    te_string_free(&cmd);
+    return rc;
 }
 
 /**
