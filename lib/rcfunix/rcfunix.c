@@ -380,6 +380,31 @@ rcfunix_ta_sudo(unix_ta *ta)
 }
 
 /**
+ * Get length of the TA type prefix which should be used in TA run
+ * directory name.
+ *
+ * Use up to the second underscore (e.g. linux_ta).
+ *
+ * @param ta_type       Test agent type
+ *
+ * @return Prefix length to be used.
+ */
+static unsigned int
+rcfunix_ta_type_prefix_len(const char *ta_type)
+{
+    char *s = strchr(ta_type, '_');
+
+    if (s != NULL)
+    {
+        s = strchr(s + 1, '_');
+        if (s != NULL)
+            return s - ta_type;
+    }
+
+    return strlen(ta_type);
+}
+
+/**
  * Start the Test Agent. Note that it's not necessary
  * to restart the proxy Test Agents after rebooting of
  * the NUT, which it serves.
@@ -475,8 +500,9 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     if (logname == NULL)
         logname = "";
     timestamp = (unsigned int)time(NULL);
-    if (snprintf(ta->run_dir, sizeof(ta->run_dir), "/tmp/%s_%s_%u_%u_%u",
-                 ta_type, logname, (unsigned int)getpid(), timestamp, ++seqno) >=
+    if (snprintf(ta->run_dir, sizeof(ta->run_dir), "/tmp/%.*s_%s_%u_%u_%u",
+                 rcfunix_ta_type_prefix_len(ta_type), ta_type, logname,
+                 (unsigned int)getpid(), timestamp, ++seqno) >=
         (int)sizeof(ta->run_dir))
     {
         ERROR("Failed to compose TA run directory '/tmp/%s_%s_%u_%u_%u' - "
