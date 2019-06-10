@@ -237,7 +237,7 @@ typedef struct unix_ta {
     char    connect[RCF_MAX_NAME];  /**< Test Agent address or hostname to
                                          connect */
     char    port[RCF_MAX_NAME];     /**< TCP port */
-    char    postfix[RCF_MAX_PATH];  /**< Postfix appended to TA directory */
+    char    run_dir[RCF_MAX_PATH];  /**< TA run directory */
     char    key[RCF_MAX_PATH];      /**< Private ssh key file */
     char    user[RCF_MAX_PATH];     /**< User to be used (with @) */
 
@@ -393,6 +393,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     char       *shell;
     char       *ta_list_file;
 
+    unsigned int timestamp;
+
     RING("Starting TA '%s' type '%s' conf_str '%s'",
          ta_name, ta_type, conf_str);
 
@@ -452,10 +454,18 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     logname = getenv("LOGNAME");
     if (logname == NULL)
         logname = "";
-    snprintf(ta->postfix, sizeof(ta->postfix), "_%s_%u_%u",
-             logname, (unsigned int)time(NULL), seqno++);
+    timestamp = (unsigned int)time(NULL);
+    if (snprintf(ta->run_dir, sizeof(ta->run_dir), "/tmp/%s_%s_%u_%u",
+                 ta_type, logname, timestamp, ++seqno) >=
+        (int)sizeof(ta->run_dir))
+    {
+        ERROR("Failed to compose TA run directory '/tmp/%s_%s_%u_%u' - "
+              "provided buffer too small",
+              ta_type, logname, timestamp, seqno);
+        return TE_ESMALLBUF;
+    }
 
-    VERB("Unique postfix '%s'", ta->postfix);
+    VERB("Run directory '%s'", ta->run_dir);
 
     if ((dup = conf_str_dup = strdup(conf_str)) == NULL)
     {
@@ -616,14 +626,14 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     if (ta->notcopy)
     {
         rc = te_string_append(&cmd,
-                "%sln -s %s /tmp/%s%s%s", ta->cmd_prefix,
-                ta_type_dir, ta_type, ta->postfix, ta->cmd_suffix);
+                "%sln -s %s %s%s", ta->cmd_prefix,
+                ta_type_dir, ta->run_dir, ta->cmd_suffix);
     }
     else if (ta->is_local)
     {
         rc = te_string_append(&cmd,
-                "%scp -a %s /tmp/%s%s%s", ta->cmd_prefix,
-                ta_type_dir, ta_type, ta->postfix, ta->cmd_suffix);
+                "%scp -a %s %s%s", ta->cmd_prefix,
+                ta_type_dir, ta->run_dir, ta->cmd_suffix);
     }
     else
     {
@@ -639,10 +649,10 @@ rcfunix_start(const char *ta_name, const char *ta_type,
          * to have to see possible problems.
          */
         rc = te_string_append(&cmd,
-                "scp -rBpq %s %s %s %s %s %s%s:/tmp/%s%s",
+                "scp -rBpq %s %s %s %s %s %s%s:%s",
                 ta->ssh_port != 0 ? "-P" : "", ssh_port_str,
                 *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
-                ta->key, ta_type_dir, ta->user, ta->host, ta_type, ta->postfix);
+                ta->key, ta_type_dir, ta->user, ta->host, ta->run_dir);
     }
     if (rc == 0)
         rc = te_string_append(&cmd, " 2>&1 | te_tee %s %s 10 >ta.%s",
@@ -694,8 +704,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
      */
     if (rc == 0)
         rc = te_string_append(&cmd,
-                "PATH=%s${PATH}:/tmp/%s%s ",
-                ta->is_local ? "" : "\\", ta_type, ta->postfix);
+                "PATH=%s${PATH}:%s ",
+                ta->is_local ? "" : "\\", ta->run_dir);
 
     if (rc == 0 && (shell != NULL) && (strlen(shell) > 0))
     {
@@ -709,8 +719,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
      */
     if (rc == 0)
         rc = te_string_append(&cmd,
-                "/tmp/%s%s/ta %s %s %s",
-                ta_type, ta->postfix, ta->ta_name, ta->port,
+                "%s/ta %s %s %s",
+                ta->run_dir, ta->ta_name, ta->port,
                 (conf_str == NULL) ? "" : conf_str);
 
     if (rc == 0 && ta->su)
@@ -766,9 +776,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         FILE *f = fopen(ta_list_file, "a");
         if (f != NULL)
         {
-            fprintf(f, "%s\t\t%s\t\t%s\t\t/tmp/%s%s",
-                    ta->ta_name, ta->host, ta->ta_type,
-                    ta->ta_type, ta->postfix);
+            fprintf(f, "%s\t\t%s\t\t%s\t\t%s",
+                    ta->ta_name, ta->host, ta->ta_type, ta->run_dir);
             fclose(f);
         }
         else
@@ -842,25 +851,24 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
         }
 
         snprintf(cmd, sizeof(cmd),
-                 "%s%skillall /tmp/%s%s/ta%s " RCFUNIX_REDIRECT,
-                 ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->ta_type,
-                 ta->postfix, ta->cmd_suffix);
+                 "%s%skillall %s/ta%s " RCFUNIX_REDIRECT,
+                 ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->run_dir,
+                 ta->cmd_suffix);
         rc = system_with_timeout(cmd, ta->kill_timeout);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
 
         snprintf(cmd, sizeof(cmd),
-                 "%s%skillall -9 /tmp/%s%s/ta%s " RCFUNIX_REDIRECT,
+                 "%s%skillall -9 %s/ta%s " RCFUNIX_REDIRECT,
                  ta->cmd_prefix, rcfunix_ta_sudo(ta),
-                 ta->ta_type, ta->postfix, ta->cmd_suffix);
+                 ta->run_dir, ta->cmd_suffix);
         rc = system_with_timeout(cmd, ta->kill_timeout);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
     }
 
-    out_len = snprintf(cmd, sizeof(cmd), "%srm -rf /tmp/%s%s%s",
-                       ta->cmd_prefix, ta->ta_type, ta->postfix,
-                       ta->cmd_suffix);
+    out_len = snprintf(cmd, sizeof(cmd), "%srm -rf %s%s",
+                       ta->cmd_prefix, ta->run_dir, ta->cmd_suffix);
     /* we want to be careful with what we remove */
     if (out_len < strlen("rm -rf /tmp/"))
         return TE_RC(TE_RCF_UNIX, TE_ENOMEM);
