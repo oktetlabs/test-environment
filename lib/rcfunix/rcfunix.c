@@ -606,16 +606,15 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     }
     else
     {
-        char ssh_port_str[6] = "";
+        char ssh_port_str[10] = "";
 
         if (ta->ssh_port != 0)
-            snprintf(ssh_port_str, sizeof(ssh_port_str), "%u", ta->ssh_port);
+            snprintf(ssh_port_str, sizeof(ssh_port_str), "-p %u", ta->ssh_port);
 
         snprintf(ta->cmd_prefix, sizeof(ta->cmd_prefix),
-                 RCFUNIX_SSH "%s %s %s %s %s%s \"",
+                 RCFUNIX_SSH "%s %s %s %s%s \"",
                  *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "", ta->key,
-                 ta->ssh_port != 0 ? "-p" : "", ssh_port_str,
-                 ta->user, ta->host);
+                 ssh_port_str, ta->user, ta->host);
         ta->cmd_suffix = "\"";
     }
 
@@ -637,10 +636,10 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     }
     else
     {
-        char ssh_port_str[6] = "";
+        char ssh_port_str[10] = "";
 
         if (ta->ssh_port != 0)
-            snprintf(ssh_port_str, sizeof(ssh_port_str), "%u", ta->ssh_port);
+            snprintf(ssh_port_str, sizeof(ssh_port_str), "-P %u", ta->ssh_port);
 
         /*
          * Preserves modification times, access times, and modes.
@@ -649,8 +648,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
          * to have to see possible problems.
          */
         rc = te_string_append(&cmd,
-                "scp -rBpq %s %s %s %s %s %s%s:%s",
-                ta->ssh_port != 0 ? "-P" : "", ssh_port_str,
+                "scp -rBpq %s %s %s %s %s%s:%s",
+                ssh_port_str,
                 *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
                 ta->key, ta_type_dir, ta->user, ta->host, ta->run_dir);
     }
