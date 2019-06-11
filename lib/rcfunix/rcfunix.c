@@ -704,11 +704,11 @@ rcfunix_start(const char *ta_name, const char *ta_type,
          * exists yet and fail otherwise.
          */
         rc = te_string_append(&cmd,
-                "%smkdir %s%s && scp -rBpq %s %s %s %s/{*,.[!.]*} %s%s:%s",
+                "%smkdir %s%s && echo put %s/. %s | sftp -rpq %s %s %s %s%s",
                 ta->cmd_prefix, ta->run_dir, ta->cmd_suffix,
-                ssh_port_str,
-                *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
-                ta->key, ta_type_dir, ta->user, ta->host, ta->run_dir);
+                ta_type_dir, ta->run_dir,
+                ssh_port_str, *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
+                ta->key, ta->user, ta->host);
     }
     if (rc != 0)
     {
