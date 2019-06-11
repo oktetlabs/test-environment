@@ -150,6 +150,12 @@ static te_errno console_loglevel_set(unsigned int, const char *,
 static te_errno console_loglevel_get(unsigned int, const char *,
                                      char *);
 
+static te_errno core_pattern_set(unsigned int, const char *,
+                                     const char *);
+
+static te_errno core_pattern_get(unsigned int, const char *,
+                                     char *);
+
 
 #define SYSTEM_WIDE_PARAM(_name, _next) \
     RCF_PCH_CFG_NODE_RW(node_##_name,               \
@@ -167,7 +173,8 @@ RCF_PCH_CFG_NODE_RW(node_udp_rcvbuf_def,
                     NULL, NULL,
                     udp_rcvbuf_def_get, udp_rcvbuf_def_set);
 SYSTEM_WIDE_PARAM(console_loglevel, udp_rcvbuf_def);
-SYSTEM_WIDE_PARAM(udp_rcvbuf_max, console_loglevel);
+SYSTEM_WIDE_PARAM(core_pattern, console_loglevel);
+SYSTEM_WIDE_PARAM(udp_rcvbuf_max, core_pattern);
 SYSTEM_WIDE_PARAM(udp_sndbuf_def, udp_rcvbuf_max);
 SYSTEM_WIDE_PARAM(udp_sndbuf_max, udp_sndbuf_def);
 SYSTEM_WIDE_PARAM(tcp_rcvbuf_def, udp_sndbuf_max);
@@ -1567,3 +1574,120 @@ udp_rcvbuf_def_get(unsigned int gid, const char *oid,
 #endif
     return rc;
 }
+
+/**
+ * Set core pattern used when dumpling a core (because of segmentation
+ * fault or something alike).
+ *
+ * @param gid          Group identifier (unused)
+ * @param oid          Full object instance identifier (unused)
+ * @param value        The pattern
+ *
+ * @return Status code
+ * @retval 0        Success
+ */
+static te_errno
+core_pattern_set(unsigned int gid, const char *oid, const char *value)
+{
+#ifdef __linux__
+    size_t rc = 0;
+    int error;
+    FILE *f;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (value == NULL)
+    {
+        ERROR("A value to set is not provided");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+#ifdef __linux__
+    f = fopen("/proc/sys/kernel/core_pattern", "w");
+    if (f == NULL)
+    {
+        ERROR("fopen failed: %s", strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    rc = fwrite(value, strlen(value) + 1, 1, f);
+    error = ferror(f);
+    fclose(f);
+    if (rc != 1)
+    {
+        ERROR("fwrite failed to write %d bytes: rc=%d %s",
+              strlen(value) + 1, rc, strerror(error));
+        if (error)
+            return TE_OS_RC(TE_TA_UNIX, error);
+        else
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    return 0;
+#else
+    /*
+     * In case of Solaris it must be something like
+     * /usr/bin/coreadm -g %(pattern)s -e global
+     * Other systems were never supported.
+     */
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
+/**
+ * Set core pattern used when dumpling a core (because of segmentation
+ * fault or something alike).
+ *
+ * @param gid          Group identifier (unused)
+ * @param oid          Full object instance identifier (unused)
+ * @param value        The pattern
+ *
+ * @return Status code
+ * @retval 0        Success
+ */
+static te_errno
+core_pattern_get(unsigned int gid, const char *oid, char *value)
+{
+#ifdef __linux__
+    int  rc = 0;
+    int error;
+    FILE *f;
+    size_t len;
+#endif
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (value == NULL)
+    {
+        ERROR("A value to set is not provided");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+#ifdef __linux__
+    f = fopen("/proc/sys/kernel/core_pattern", "r");
+    if (f == NULL)
+    {
+        ERROR("fopen failed: rc=%d %s", rc, strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    rc = fread(trash, sizeof(trash), 1, f);
+    error = ferror(f);
+    fclose(f);
+    if (error != 0)
+    {
+        ERROR("fread failed: %s", strerror(error));
+        if (error)
+            return TE_OS_RC(TE_TA_UNIX, error);
+        else
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    len = strnlen(trash, RCF_MAX_VAL);
+    if (trash[len - 1] == '\n')
+        trash[len - 1] = '\0';
+    strncat(value, trash, len);
+    return 0;
+#else
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
+#endif
+}
+
