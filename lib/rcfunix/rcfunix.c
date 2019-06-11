@@ -678,9 +678,15 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     }
     else if (ta->is_local)
     {
+        /*
+         * Do mkdir without -p to be sure that the directory does not
+         * exists yet and fail otherwise.
+         * Use dot at the end of cp source path to copy the directory
+         * content including hidden files to destination.
+         */
         rc = te_string_append(&cmd,
-                "%scp -a %s %s%s", ta->cmd_prefix,
-                ta_type_dir, ta->run_dir, ta->cmd_suffix);
+                "%smkdir %s && cp -a %s/. %s%s", ta->cmd_prefix,
+                ta->run_dir, ta_type_dir, ta->run_dir, ta->cmd_suffix);
     }
     else
     {
@@ -694,9 +700,12 @@ rcfunix_start(const char *ta_name, const char *ta_type,
          * Disables the progress meter.
          * Be quite, but DO NOT suppress command output in order
          * to have to see possible problems.
+         * Do mkdir without -p to be sure that the directory does not
+         * exists yet and fail otherwise.
          */
         rc = te_string_append(&cmd,
-                "scp -rBpq %s %s %s %s %s%s:%s",
+                "%smkdir %s%s && scp -rBpq %s %s %s %s/{*,.[!.]*} %s%s:%s",
+                ta->cmd_prefix, ta->run_dir, ta->cmd_suffix,
                 ssh_port_str,
                 *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
                 ta->key, ta_type_dir, ta->user, ta->host, ta->run_dir);
