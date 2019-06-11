@@ -726,17 +726,6 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     rc = te_string_append(&cmd, "%s", ta->cmd_prefix);
 
-#if defined RCF_UNIX_SOLARIS
-    if (rc == 0)
-        rc = te_string_append(&cmd,
-                "%s/usr/bin/coreadm -g /tmp/core.%%n-%%p-%%t -e global; ",
-                rcfunix_ta_sudo(ta));
-#else
-    if (rc == 0)
-        rc = te_string_append(&cmd,
-                "%ssysctl -w kernel.core_pattern=\"core.%%h-%%p-%%t\"; ",
-                rcfunix_ta_sudo(ta));
-#endif
     if (rc == 0)
         rc = te_string_append(&cmd, "%s",
                                    rcfunix_ta_sudo(ta));
@@ -770,18 +759,6 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     if (rc == 0 && ta->su)
         rc = te_string_append(&cmd, "'");
 
-#if defined RCF_UNIX_SOLARIS
-    if (rc == 0)
-        rc = te_string_append(&cmd,
-                "; %s/usr/bin/coreadm -g /tmp/core -e global ",
-                rcfunix_ta_sudo(ta));
-#else
-    /* Enquote command in double quotes for non-local agent */
-    if (rc == 0)
-        rc = te_string_append(&cmd,
-                "; %ssysctl -w kernel.core_pattern=\"core\" ",
-                rcfunix_ta_sudo(ta));
-#endif
     if (rc == 0)
         rc = te_string_append(&cmd,
                 "; %smv /tmp/core* /var/tmp ", rcfunix_ta_sudo(ta));
