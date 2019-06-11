@@ -761,9 +761,6 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     if (rc == 0)
         rc = te_string_append(&cmd,
-                "; %smv /tmp/core* /var/tmp ", rcfunix_ta_sudo(ta));
-    if (rc == 0)
-        rc = te_string_append(&cmd,
                 "%s 2>&1 | te_tee %s %s 10 >ta.%s ",
                 ta->cmd_suffix, TE_LGR_ENTITY, ta->ta_name, ta->ta_name);
 
