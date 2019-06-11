@@ -667,6 +667,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     /*
      * DO NOT suppress command output in order to have a chance
      * to see possible problems.
+     * DO NOT redirect output to te_tee to see it in logs, since
+     * pipeline breaks coping return status.
      */
     if (ta->notcopy)
     {
@@ -699,9 +701,6 @@ rcfunix_start(const char *ta_name, const char *ta_type,
                 *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
                 ta->key, ta_type_dir, ta->user, ta->host, ta->run_dir);
     }
-    if (rc == 0)
-        rc = te_string_append(&cmd, " 2>&1 | te_tee %s %s 10 >ta.%s",
-                              TE_LGR_ENTITY, ta->ta_name, ta->ta_name);
     if (rc != 0)
     {
         ERROR("Failed to compose TA copy command: %r\n%s", rc, cmd.ptr);
@@ -788,7 +787,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
                 "; %smv /tmp/core* /var/tmp ", rcfunix_ta_sudo(ta));
     if (rc == 0)
         rc = te_string_append(&cmd,
-                "%s 2>&1 | te_tee %s %s 10 >>ta.%s ",
+                "%s 2>&1 | te_tee %s %s 10 >ta.%s ",
                 ta->cmd_suffix, TE_LGR_ENTITY, ta->ta_name, ta->ta_name);
 
     free(conf_str_dup);
