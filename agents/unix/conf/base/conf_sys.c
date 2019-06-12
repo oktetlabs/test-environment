@@ -1635,7 +1635,7 @@ core_pattern_set(unsigned int gid, const char *oid, const char *value)
 }
 
 /**
- * Set core pattern used when dumpling a core (because of segmentation
+ * Get core pattern used when dumpling a core (because of segmentation
  * fault or something alike).
  *
  * @param gid          Group identifier (unused)
@@ -1670,21 +1670,19 @@ core_pattern_get(unsigned int gid, const char *oid, char *value)
         ERROR("fopen failed: rc=%d %s", rc, strerror(errno));
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
-    rc = fread(trash, sizeof(trash), 1, f);
+    rc = fread(trash, 1, sizeof(trash) - 1, f);
     error = ferror(f);
     fclose(f);
     if (error != 0)
     {
         ERROR("fread failed: %s", strerror(error));
-        if (error)
-            return TE_OS_RC(TE_TA_UNIX, error);
-        else
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return TE_OS_RC(TE_TA_UNIX, error);
     }
-    len = strnlen(trash, RCF_MAX_VAL);
-    if (trash[len - 1] == '\n')
+    len = strnlen(trash, rc);
+    if (trash[len - 1] == '\n' || len == rc)
         trash[len - 1] = '\0';
-    strncat(value, trash, len);
+    assert(len < RCF_MAX_VAL);
+    memcpy(value, trash, len + 1);
     return 0;
 #else
     return TE_RC(TE_TA_UNIX, TE_ENOSYS);
