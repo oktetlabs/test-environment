@@ -5,7 +5,7 @@
          information common for all Test Agents -->
 
     <!--
-        Copyright (C) 2003-2018 OKTET Labs.
+        Copyright (C) 2003-2019 OKTET Labs.
         
         Author: Elena Vengerova E-mail: Elena.Vengerova@oktetlabs.ru
     -->
@@ -233,6 +233,13 @@
                 empty string - don't specify explicitly (default vepa) -->
     <object oid="/agent/interface/macvlan" access="read_create" type="string"/>
 
+    <!-- Virtual IP VLAN interface
+         Name: ipvlan interface name
+         Value: format 'mode:flag', where is:
+                IP VLAN modes: l2, l3 (default), l3s
+                IP VLAN flags: bridge (default), private, vepa -->
+    <object oid="/agent/interface/ipvlan" access="read_create" type="string"/>
+
     <!-- Virtual Ethernet (veth) interface
          Name: interface name
          Value: peer interface name -->
@@ -245,7 +252,7 @@
          Value: Name of the parent interface -->
     <object oid="/agent/interface/parent" access="read_only" type="string"/>
 
-    <!-- Kind of an interface ("vlan", "macvlan", etc.; may be empty)
+    <!-- Kind of an interface ("vlan", "macvlan", "ipvlan", etc.; may be empty)
          Name: empty
          Value: Kind of an interface -->
     <object oid="/agent/interface/kind" access="read_only" type="string"/>
