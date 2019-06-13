@@ -4,7 +4,7 @@
  * Unix TA configuring support
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
  *
  * 
  *
@@ -263,6 +263,7 @@ extern te_errno ta_unix_conf_sys_tree_fini(void);
 extern te_errno ta_unix_conf_phy_init();
 extern te_errno ta_unix_conf_eth_init(void);
 extern te_errno ta_unix_conf_macvlan_init();
+extern te_errno ta_unix_conf_ipvlan_init();
 extern te_errno ta_unix_conf_module_init(void);
 extern te_errno ta_unix_conf_ns_net_init(void);
 extern te_errno ta_unix_conf_veth_init(void);
@@ -1253,6 +1254,14 @@ rcf_ch_conf_init()
             ERROR("Failed to add macvlan interface configuration subtree");
             goto fail;
         }
+
+#ifdef IFLA_IPVLAN_MAX
+        if (ta_unix_conf_ipvlan_init() != 0)
+        {
+            ERROR("Failed to add ipvlan interface configuration subtree");
+            goto fail;
+        }
+#endif /* IFLA_IPVLAN_MAX */
 
         if (ta_unix_conf_module_init() != 0)
         {
@@ -3086,7 +3095,7 @@ link_addr_n2a(const uint8_t *addr, size_t alen,
 typedef enum {
     IF_PROP_PARENT = 0, /**< Parent interface. */
     IF_PROP_BCAST_ADDR, /**< Broadcast address. */
-    IF_PROP_KIND,       /**< Interface kind (vlan, macvlan, etc). */
+    IF_PROP_KIND,       /**< Interface kind (vlan, macvlan, ipvlan, etc). */
 } if_property;
 
 /**
@@ -3216,7 +3225,7 @@ iface_get_property_netconf(const char *ifname,
 /**
  * Get name of an interface on which the given interface is based.
  * If the given interface is not based on anything else (it is not VLAN,
- * MAC VLAN, etc), then empty string is returned.
+ * MAC VLAN, IP VLAN etc), then empty string is returned.
  *
  * @param gid           Group identifier (unused).
  * @param oid           Full object instance identifier (unused).
@@ -3245,7 +3254,7 @@ iface_parent_get(unsigned int gid, const char *oid, char *value,
 }
 
 /**
- * Get kind of an interface (whether it is vlan, macvlan, etc).
+ * Get kind of an interface (whether it is vlan, macvlan, ipvlan, etc).
  *
  * @param gid           Group identifier (unused).
  * @param oid           Full object instance identifier (unused).

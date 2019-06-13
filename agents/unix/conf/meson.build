@@ -15,6 +15,7 @@ sources += files(
     'base/conf_configfs.c',
     'base/conf_cpu.c',
     'base/conf_eth.c',
+    'base/conf_ipvlan.c',
     'base/conf_macvlan.c',
     'base/conf_module.c',
     'base/conf_netconsole.c',
