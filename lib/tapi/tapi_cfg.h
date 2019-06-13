@@ -4,7 +4,7 @@
  * Definition of API.
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
  *
  * 
  *
@@ -704,6 +704,7 @@ typedef enum {
                                      interface. */
     TE_INTERFACE_KIND_VLAN,     /**< VLAN */
     TE_INTERFACE_KIND_MACVLAN,  /**< MAC VLAN */
+    TE_INTERFACE_KIND_IPVLAN,   /**< IP VLAN */
     TE_INTERFACE_KIND_VETH,     /**< VETH */
     TE_INTERFACE_KIND_BOND,     /**< Bonding interface */
     TE_INTERFACE_KIND_TEAM,     /**< BOND and TEAM are different linux

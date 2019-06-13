@@ -4,7 +4,7 @@
  * TAPI for auxilury remote socket calls implementation
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
  *
  * 
  *
@@ -2668,7 +2668,7 @@ save_descendant_cb(const char *ta, const char *ifname, void *opaque)
 
 /**
  * Save current MTU values for all interfaces based
- * on the given one (VLANs, MACVLANs).
+ * on the given one (VLANs, MACVLANs, IPVLANs).
  *
  * @param ta            Test agent name
  * @param if_name       Interface name.

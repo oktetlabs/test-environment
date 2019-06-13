@@ -5,7 +5,7 @@
  * (@path{storage/cm/cm_base.xml}).
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
  *
  * 
  *
@@ -54,6 +54,30 @@ extern "C" {
 
 /** MAC VLAN interface mode: take over the underlying device. */
 #define TAPI_CFG_MACVLAN_MODE_PASSTHRU  "passthru"
+
+/** IP VLAN interface mode l2 */
+#define TAPI_CFG_IPVLAN_MODE_L2   "l2"
+
+/** IP VLAN interface mode l3 */
+#define TAPI_CFG_IPVLAN_MODE_L3   "l3"
+
+/** IP VLAN interface mode l3s */
+#define TAPI_CFG_IPVLAN_MODE_L3S   "l3s"
+
+/** IP VLAN default mode value */
+#define TAPI_CFG_IPVLAN_MODE_DEFAULT    TAPI_CFG_IPVLAN_MODE_L2
+
+/** IP VLAN interface flag bridge */
+#define TAPI_CFG_IPVLAN_FLAG_BRIDGE   "bridge"
+
+/** IP VLAN interface flag private */
+#define TAPI_CFG_IPVLAN_FLAG_PRIVATE   "private"
+
+/** IP VLAN interface flag vepa */
+#define TAPI_CFG_IPVLAN_FLAG_VEPA   "vepa"
+
+/** IP VLAN default flag value */
+#define TAPI_CFG_IPVLAN_FLAG_DEFAULT    TAPI_CFG_IPVLAN_FLAG_BRIDGE
 
 /**
  * Enable/disable IPv4 forwarding on a Test Agent.
@@ -758,6 +782,76 @@ extern te_errno tapi_cfg_base_if_set_macvlan_mode(const char *ta,
                                                   const char *link,
                                                   const char *ifname,
                                                   const char *mode);
+/**
+ * Add IP VLAN interface.
+ *
+ * @param ta        Test Agent name
+ * @param link      Parent (link) interface name
+ * @param ifname    IP VLAN interface name
+ * @param mode      IP VLAN mode or @c NULL to use default mode value
+ *                  @ref TAPI_CFG_IPVLAN_MODE_DEFAULT
+ * @param flag      IP VLAN flag or @c NULL to use default flag value
+ *                  @ref TAPI_CFG_IPVLAN_FLAG_DEFAULT
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_add_ipvlan(const char *ta,
+                                            const char *link,
+                                            const char *ifname,
+                                            const char *mode,
+                                            const char *flag);
+
+/**
+ * Delete IP VLAN interface.
+ *
+ * @param ta        Test Agent name
+ * @param link      Parent (link) interface name
+ * @param ifname    IP VLAN interface name
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_del_ipvlan(const char *ta,
+                                            const char *link,
+                                            const char *ifname);
+
+/**
+ * Get IP VLAN interface.
+ *
+ * @param[in] ta        Test Agent name
+ * @param[in] link      Parent (link) interface name
+ * @param[in] ifname    IP VLAN interface name
+ * @param[out] mode     IP VLAN mode location
+ * @param[out] flag     IP VLAN flag location
+ *
+ * @note: values @p mode and @p flag are allocated by this
+ *        function and should be freed by user
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_get_ipvlan_mode(const char *ta,
+                                                 const char *link,
+                                                 const char *ifname,
+                                                 char **mode,
+                                                 char **flag);
+
+/**
+ * Set IP VLAN interface.
+ *
+ * @param ta        Test Agent name
+ * @param link      Parent (link) interface name
+ * @param ifname    IP VLAN interface name
+ * @param mode      IP VLAN mode or @c NULL to use default mode value
+ *                  @ref TAPI_CFG_IPVLAN_MODE_DEFAULT
+ * @param flag      IP VLAN flag or @c NULL to use default flag value
+ *                  @ref TAPI_CFG_IPVLAN_FLAG_DEFAULT
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_base_if_set_ipvlan_mode(const char *ta,
+                                                 const char *link,
+                                                 const char *ifname,
+                                                 const char *mode,
+                                                 const char *flag);
 
 /**
  * Add veth interfaces pair.

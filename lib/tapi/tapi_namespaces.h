@@ -9,7 +9,7 @@
  * (@path{doc/cm/cm_namespace.xml}).
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
  *
  * 
  *
@@ -151,6 +151,42 @@ extern te_errno tapi_netns_destroy_ns_with_macvlan(const char *ta,
                                                    const char *ns_name,
                                                    const char *ctl_if,
                                                    const char *macvlan_if);
+
+/**
+ * Create network namespace and configure control network channel using
+ * auxiliary ipvlan interface. IP address is obtained using @b dhclient.
+ *
+ * @param ta            Test agent name
+ * @param ns_name       The network namespace name
+ * @param ctl_if        Control interface name on the test agent
+ * @param ipvlan_if     IP VLAN interface name
+ * @param addr          Obtained IP address
+ * @param addr_len      Length of the buffer @p addr
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_netns_create_ns_with_ipvlan(const char *ta,
+                                                 const char *ns_name,
+                                                 const char *ctl_if,
+                                                 const char *ipvlan_if,
+                                                 char *addr,
+                                                 size_t addr_len);
+
+/**
+ * Destroy network namespace and undo other configurations applied by
+ * function tapi_netns_create_ns_with_ipvlan().
+ *
+ * @param ta            Test agent name
+ * @param ns_name       The network namespace name
+ * @param ctl_if        Control interface name on the test agent
+ * @param ipvlan_if     IP VLAN interface name
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_netns_destroy_ns_with_ipvlan(const char *ta,
+                                                  const char *ns_name,
+                                                  const char *ctl_if,
+                                                  const char *ipvlan_if);
 
 /**@} <!-- END tapi_namespaces --> */
 

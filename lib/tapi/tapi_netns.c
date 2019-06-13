@@ -4,7 +4,7 @@
  * Implementation of test API for network namespaces configuration.
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
  *
  * 
  *
@@ -514,6 +514,113 @@ tapi_netns_destroy_ns_with_macvlan(const char *ta, const char *ns_name,
         rc = rc2;
 
     rc2 = add_del_macvlan(ta, ctl_if, macvlan_if, FALSE);
+    if (rc == 0)
+        rc = rc2;
+
+    return rc;
+}
+
+/**
+ * Add or delete IP vlan on @p ctl_if.
+ *
+ * @param ta            Test agent name
+ * @param ctl_if        Control interface name on the test agent
+ * @param ipvlan_if     IP VLAN interface name
+ * @param add           Add if @c TRUE, else - remove the ipvlan interface
+ *
+ * @return Status code
+ */
+static te_errno
+add_del_ipvlan(const char *ta, const char *ctl_if, const char *ipvlan_if,
+               te_bool add)
+{
+    cfg_val_type val_type = CVT_STRING;
+    te_errno     rc = 0;
+    te_errno     rc2 = 0;
+    te_bool      grabbed = FALSE;
+
+    if (cfg_get_instance_fmt(&val_type, NULL, "/agent:%s/rsrc:%s",
+                             ta, ctl_if) == 0)
+    {
+        grabbed = TRUE;
+    }
+
+    if (!grabbed)
+    {
+        rc = tapi_cfg_base_if_add_rsrc(ta, ctl_if);
+        if (rc != 0)
+            return rc;
+    }
+
+    if (add)
+    {
+        rc = tapi_cfg_base_if_add_ipvlan(ta, ctl_if, ipvlan_if, NULL, NULL);
+
+        /* Do not keep it in the configuration tree. */
+        if (rc == 0 && tapi_host_ns_enabled())
+        {
+            rc = tapi_host_ns_if_del(ta, ipvlan_if, TRUE);
+            if (rc != 0)
+            {
+                ERROR("Failed to remove interface %s/%s from /local/host: %r",
+                      ta, ipvlan_if, rc);
+            }
+        }
+    }
+    else
+    {
+        rc = tapi_cfg_base_if_del_ipvlan(ta, ctl_if, ipvlan_if);
+    }
+
+    if (!grabbed)
+    {
+        rc2 = tapi_cfg_base_if_del_rsrc(ta, ctl_if);
+        if (rc == 0)
+            rc = rc2;
+    }
+
+    return rc;
+}
+
+/* See description in tapi_namespaces.h */
+te_errno
+tapi_netns_create_ns_with_ipvlan(const char *ta, const char *ns_name,
+                                 const char *ctl_if, const char *ipvlan_if,
+                                 char *addr, size_t addr_len)
+{
+    te_errno rc = 0;
+
+    rc = tapi_netns_add(ta, ns_name);
+    if (rc != 0)
+        return rc;
+
+    rc = add_del_ipvlan(ta, ctl_if, ipvlan_if, TRUE);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_netns_if_set(ta, ns_name, ipvlan_if);
+    if (rc != 0)
+        return rc;
+
+    return configure_netns_network_dhclient(ta, ns_name, ipvlan_if, addr,
+                                            addr_len);
+}
+
+/* See description in tapi_namespaces.h */
+te_errno
+tapi_netns_destroy_ns_with_ipvlan(const char *ta, const char *ns_name,
+                                  const char *ctl_if, const char *ipvlan_if)
+{
+    te_errno rc;
+    te_errno rc2;
+
+    rc = stop_dhclient(ta, ns_name);
+
+    rc2 = tapi_netns_del(ta, ns_name);
+    if (rc == 0)
+        rc = rc2;
+
+    rc2 = add_del_ipvlan(ta, ctl_if, ipvlan_if, FALSE);
     if (rc == 0)
         rc = rc2;
 

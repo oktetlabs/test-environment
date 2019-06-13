@@ -5,7 +5,7 @@
  * (storage/cm/cm_base.xml).
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
  *
  * 
  *
@@ -1108,6 +1108,126 @@ tapi_cfg_base_if_set_macvlan_mode(const char *ta, const char *link,
 {
     return cfg_set_instance_fmt(CFG_VAL(STRING, mode),
                                 "/agent:%s/interface:%s/macvlan:%s",
+                                ta, link, ifname);
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_add_ipvlan(const char *ta, const char *link,
+                            const char *ifname, const char *mode,
+                            const char *flag)
+{
+    int         rc;
+    te_string   mode_flag = TE_STRING_INIT_STATIC(64); /* i.e. 'l3s:private' */
+
+    if ((rc = te_string_append(&mode_flag, "%s:%s",
+                           mode != NULL ? mode : TAPI_CFG_IPVLAN_MODE_DEFAULT,
+                           flag != NULL ? flag : TAPI_CFG_IPVLAN_FLAG_DEFAULT
+                           )) != 0)
+    {
+        return rc;
+    }
+
+    rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, mode_flag.ptr),
+                              "/agent:%s/interface:%s/ipvlan:%s",
+                              ta, link, ifname);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_base_if_add_rsrc(ta, ifname);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_base_if_up(ta, ifname);
+
+    if (rc == 0 && tapi_host_ns_enabled())
+        rc = tapi_host_ns_if_add(ta, ifname, link);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_del_ipvlan(const char *ta, const char *link,
+                            const char *ifname)
+{
+    int rc;
+    rc = cfg_del_instance_fmt(FALSE, "/agent:%s/interface:%s/ipvlan:%s",
+                              ta, link, ifname);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_base_if_del_rsrc(ta, ifname);
+    if (rc == TE_RC(TE_CS, TE_ENOENT))
+        rc = 0;
+
+    if (tapi_host_ns_enabled())
+    {
+        te_errno rc2;
+        rc2 = tapi_host_ns_if_del(ta, ifname, TRUE);
+        if (rc == 0)
+            rc = rc2;
+    }
+
+    return rc;
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_get_ipvlan_mode(const char *ta, const char *link,
+                                 const char *ifname, char **mode,
+                                 char **flag)
+{
+    char           *mode_flag = NULL;
+    cfg_val_type    val_type = CVT_STRING;
+    char           *val = NULL;
+    int             rc;
+
+    if ((rc = cfg_get_instance_fmt(&val_type, &mode_flag,
+                                   "/agent:%s/interface:%s/ipvlan:%s",
+                                   ta, link, ifname)) != 0)
+    {
+        return rc;
+    }
+
+    if ((val = strtok(mode_flag, ":")) == NULL)
+    {
+        ERROR("%s(): unexpected ipvlan mode", __FUNCTION__);
+        free(mode_flag);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if ((val = strtok(NULL, ":")) == NULL)
+    {
+        ERROR("%s(): unexpected ipvlan flag", __FUNCTION__);
+        free(mode_flag);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    *mode = mode_flag;
+    *flag = tapi_strdup(val);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_base.h */
+te_errno
+tapi_cfg_base_if_set_ipvlan_mode(const char *ta, const char *link,
+                                 const char *ifname, const char *mode,
+                                 const char *flag)
+{
+    int         rc;
+    te_string   mode_flag = TE_STRING_INIT_STATIC(64); /* i.e. 'l3s:private' */
+
+    if ((rc = te_string_append(&mode_flag, "%s:%s",
+                           mode != NULL ? mode : TAPI_CFG_IPVLAN_MODE_DEFAULT,
+                           flag != NULL ? flag : TAPI_CFG_IPVLAN_FLAG_DEFAULT
+                           )) != 0)
+    {
+        return rc;
+    }
+    return cfg_set_instance_fmt(CFG_VAL(STRING, mode_flag.ptr),
+                                "/agent:%s/interface:%s/ipvlan:%s",
                                 ta, link, ifname);
 }
 

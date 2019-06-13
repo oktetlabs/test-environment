@@ -4,7 +4,7 @@
  * Implementation
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
  *
  * 
  *
@@ -1927,6 +1927,7 @@ static const char *te_interface_kinds[TE_INTERFACE_KIND_END] =
         [TE_INTERFACE_KIND_NONE] = "",
         [TE_INTERFACE_KIND_VLAN] = "vlan",
         [TE_INTERFACE_KIND_MACVLAN] = "macvlan",
+        [TE_INTERFACE_KIND_IPVLAN] = "ipvlan",
         [TE_INTERFACE_KIND_VETH] = "veth",
         [TE_INTERFACE_KIND_BOND] = "bond",
         [TE_INTERFACE_KIND_TEAM] = "team",
