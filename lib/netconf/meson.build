@@ -1,10 +1,11 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2019 OKTET Labs. All rights reserved.
 
 headers += files(
     'netconf.h',
     'netconf_internal.h',
 )
 sources += files(
+    'ipvlan.c',
     'link.c',
     'macvlan.c',
     'neigh.c',

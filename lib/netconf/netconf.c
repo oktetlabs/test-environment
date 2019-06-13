@@ -1,7 +1,7 @@
 /** @file
  * @brief General functions of netconf library
  *
- * Copyright (C) 2003-2018 OKTET Labs, St.-Petersburg, Russia
+ * Copyright (C) 2003-2019 OKTET Labs, St.-Petersburg, Russia
  *
  * @author Maxim Alyutov <Maxim.Alyutov@oktetlabs.ru>
  *
@@ -314,6 +314,10 @@ netconf_node_free(netconf_node *node)
 
         case NETCONF_NODE_MACVLAN:
             netconf_macvlan_node_free(node);
+            break;
+
+        case NETCONF_NODE_IPVLAN:
+            netconf_ipvlan_node_free(node);
             break;
 
         case NETCONF_NODE_VLAN:

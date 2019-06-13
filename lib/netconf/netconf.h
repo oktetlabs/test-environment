@@ -7,7 +7,7 @@
  * information is covered: network devices, IP addresses, neighbour
  * tables, routing tables.
  *
- * Copyright (C) 2008 OKTET Labs, St.-Petersburg, Russia
+ * Copyright (C) 2008-2019 OKTET Labs, St.-Petersburg, Russia
  *
  * @author Maxim Alyutov <Maxim.Alyutov@oktetlabs.ru>
  *
@@ -212,6 +212,15 @@ typedef struct netconf_macvlan {
     char       *ifname;    /**< Interface name */
 } netconf_macvlan;
 
+/** IP VLAN network interface */
+typedef struct netconf_ipvlan {
+    int         link;      /**< Parent (link) interface index */
+    int         ifindex;   /**< IP VLAN interface index */
+    uint32_t    mode;      /**< IP VLAN mode */
+    uint32_t    flag;      /**< IP VLAN flag */
+    char       *ifname;    /**< Interface name */
+} netconf_ipvlan;
+
 /** VLAN network interface */
 typedef struct netconf_vlan {
     int         link;      /**< Parent (link) interface index */
@@ -246,6 +255,7 @@ typedef enum netconf_node_type {
     NETCONF_NODE_RULE,                  /**< Rule entry in the routing
                                              policy database */
     NETCONF_NODE_MACVLAN,               /**< MAC VLAN interface */
+    NETCONF_NODE_IPVLAN,                /**< IP VLAN interface */
     NETCONF_NODE_VLAN,                  /**< VLAN interface */
     NETCONF_NODE_VETH,                  /**< Virtual Ethernet interface */
     NETCONF_NODE_VXLAN,                 /**< VXLAN interface */
@@ -263,6 +273,7 @@ typedef struct netconf_node {
         netconf_neigh     neigh;
         netconf_rule      rule;
         netconf_macvlan   macvlan;
+        netconf_ipvlan    ipvlan;
         netconf_vlan      vlan;
         netconf_veth      veth;
         netconf_vxlan     vxlan;
@@ -574,6 +585,47 @@ extern te_errno netconf_macvlan_list(netconf_handle nh, const char *link,
 extern te_errno netconf_macvlan_get_mode(netconf_handle nh,
                                          const char *ifname,
                                          const char **mode_str);
+
+/**
+ * Add or delete IP VLAN interface or change mode of existing interface.
+ *
+ * @param nh        Netconf session handle
+ * @param cmd       Action to do
+ * @param link      Link (main) interface name
+ * @param ifname    IP VLAN interface name
+ * @param mode      IP VLAN mode
+ * @param flag      IP VLAN flag
+ *
+ * @return Status code
+ */
+extern te_errno netconf_ipvlan_modify(netconf_handle nh, netconf_cmd cmd,
+                                      const char *link, const char *ifname,
+                                      uint32_t mode, uint32_t flag);
+
+/**
+ * Get IP VLAN interfaces list on @p link.
+ *
+ * @param nh        Netconf session handle
+ * @param link      Link (main) interface name
+ * @param list      Space separated list of IP VLAN interfaces names
+ *
+ * @return Status code
+ */
+extern te_errno netconf_ipvlan_list(netconf_handle nh, const char *link,
+                                    char **list);
+
+/**
+ * Get IP VLAN interface mode.
+ *
+ * @param[in] nh        Netconf session handle
+ * @param[in] ifname    IP VLAN interface name
+ * @param[out] mode     Pointer to the IP VLAN mode
+ * @param[out] flag     Pointer to the IP VLAN flag
+ *
+ * @return Status code
+ */
+extern te_errno netconf_ipvlan_get_mode(netconf_handle nh, const char *ifname,
+                                        uint32_t *mode, uint32_t *flag);
 
 /**
  * Add or delete VLAN interface.

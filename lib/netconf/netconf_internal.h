@@ -1,7 +1,7 @@
 /** @file
  * @brief Support functions for netconf library
  *
- * Copyright (C) 2003-2018 OKTET Labs, St.-Petersburg, Russia
+ * Copyright (C) 2003-2019 OKTET Labs, St.-Petersburg, Russia
  *
  * @author Maxim Alyutov <Maxim.Alyutov@oktetlabs.ru>
  *
@@ -217,6 +217,13 @@ void netconf_rule_node_free(netconf_node *node);
  * @param node  Node to free
  */
 extern void netconf_macvlan_node_free(netconf_node *node);
+
+/**
+ * Free memory used by node of IP VLAN type.
+ *
+ * @param node  Node to free
+ */
+extern void netconf_ipvlan_node_free(netconf_node *node);
 
 /**
  * Free memory used by node of VLAN type.
