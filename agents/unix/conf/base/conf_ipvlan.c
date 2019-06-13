@@ -45,7 +45,10 @@ static ipvlan_mode_map ipvlan_modes[] =
 {
     {IPVLAN_MODE_L2, "l2"},
     {IPVLAN_MODE_L3, "l3"},
+/* Linux > 4.8 */
+#ifdef IPVLAN_MODE_L3S
     {IPVLAN_MODE_L3S, "l3s"}
+#endif
 };
 
 /* bridge is default value for ipvlan */
