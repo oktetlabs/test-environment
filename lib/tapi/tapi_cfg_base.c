@@ -54,6 +54,7 @@
 #include "tapi_cfg_sys.h"
 #include "tapi_sockaddr.h"
 #include "tapi_host_ns.h"
+#include "tapi_mem.h"
 
 /* See the description in tapi_cfg_base.h */
 te_errno
