@@ -19,7 +19,7 @@ case "$1" in
     *.da)     gcov=${TE_GCOV_OLD:-gcov-3.3} ;;
     *) echo "Strange data file $1" >&2; exit 1 ;;
 esac
-if ! which $gcov >/dev/null; then
+if ! which $gcov >/dev/null 2>&1 ; then
     gcov=gcov
 fi
 exec $gcov -l -c -b `basename $1` >/dev/null
