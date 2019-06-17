@@ -1491,6 +1491,7 @@ run_script(run_item *ri, test_script *script,
     if (ctx->flags & TESTER_PRERUN)
     {
         EXIT("CONT");
+        ctx->current_result.status = TESTER_TEST_PASSED;
         return TESTER_CFG_WALK_CONT;
     }
 
@@ -2013,11 +2014,6 @@ run_prologue_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
         EXIT("SKIP");
         return TESTER_CFG_WALK_SKIP;
     }
-    if (ctx->flags & TESTER_PRERUN)
-    {
-        EXIT("SKIP");
-        return TESTER_CFG_WALK_SKIP;
-    }
 
     ctx = tester_run_more_ctx(gctx, FALSE);
     if (ctx == NULL)
@@ -2046,12 +2042,6 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(ctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
-    if (ctx->flags & TESTER_PRERUN)
-    {
-        EXIT("CONT");
-        return TESTER_CFG_WALK_CONT;
-    }
-
     assert(ctx->flags & TESTER_INLOGUE);
     status = ctx->group_result.status;
     id = ctx->current_result.id;
@@ -2062,43 +2052,46 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
 
     if (status == TESTER_TEST_PASSED)
     {
-        cfg_val_type    type = CVT_STRING; 
-        char           *reqs = NULL;
-
-        rc = cfg_get_instance_fmt(&type, &reqs, "/local:/reqs:%u", id);
-
-        if (rc == 0)
+        if (~ctx->flags & TESTER_PRERUN)
         {
-            rc = logic_expr_parse(reqs, &ctx->dyn_targets);
-            if (rc != 0)
+            cfg_val_type    type = CVT_STRING; 
+            char           *reqs = NULL;
+
+            rc = cfg_get_instance_fmt(&type, &reqs, "/local:/reqs:%u", id);
+
+            if (rc == 0)
             {
-                ERROR("Failed to parse target requirements expression "
-                      "populated by test with ID=%u: %r", id, rc);
-                ctx->group_result.status = TESTER_TEST_PROLOG;
-                assert(SLIST_NEXT(ctx, links) != NULL);
-                SLIST_NEXT(ctx, links)->group_step = TRUE;
-                EXIT("SKIP");
-                return TESTER_CFG_WALK_SKIP;
+                rc = logic_expr_parse(reqs, &ctx->dyn_targets);
+                if (rc != 0)
+                {
+                    ERROR("Failed to parse target requirements expression "
+                          "populated by test with ID=%u: %r", id, rc);
+                    ctx->group_result.status = TESTER_TEST_PROLOG;
+                    assert(SLIST_NEXT(ctx, links) != NULL);
+                    SLIST_NEXT(ctx, links)->group_step = TRUE;
+                    EXIT("SKIP");
+                    return TESTER_CFG_WALK_SKIP;
+                }
+                ctx->targets = logic_expr_binary(LOGIC_EXPR_AND,
+                                                 (logic_expr *)ctx->targets,
+                                                 ctx->dyn_targets);
+                if (ctx->targets == NULL)
+                {
+                    tester_run_destroy_ctx(gctx);
+                    ctx->group_result.status = TESTER_TEST_ERROR;
+                    EXIT("FAULT");
+                    return TESTER_CFG_WALK_FAULT;
+                }
+                ctx->targets_free = TRUE;
             }
-            ctx->targets = logic_expr_binary(LOGIC_EXPR_AND,
-                                             (logic_expr *)ctx->targets,
-                                             ctx->dyn_targets);
-            if (ctx->targets == NULL)
+            else if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
             {
-                tester_run_destroy_ctx(gctx);
+                ERROR("Get of /local:/reqs:%u failed unexpectedly: %r",
+                      id, rc);
                 ctx->group_result.status = TESTER_TEST_ERROR;
                 EXIT("FAULT");
                 return TESTER_CFG_WALK_FAULT;
             }
-            ctx->targets_free = TRUE;
-        }
-        else if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
-        {
-            ERROR("Get of /local:/reqs:%u failed unexpectedly: %r",
-                  id, rc);
-            ctx->group_result.status = TESTER_TEST_ERROR;
-            EXIT("FAULT");
-            return TESTER_CFG_WALK_FAULT;
         }
     }
     else if (status != TESTER_TEST_FAKED)
@@ -2817,7 +2810,8 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                                    ri, ctx->args, ctx->flags,
                                    TRUE))
         {
-            if (ri->type == RUN_ITEM_SCRIPT)
+            if (ri->type == RUN_ITEM_SCRIPT &&
+                (~flags & TESTER_CFG_WALK_SERVICE))
             {
                 scenario_add_act(&gctx->fixed_scen, cfg_id_off, cfg_id_off,
                                  gctx->act->flags, gctx->act->hash);
@@ -2953,8 +2947,11 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     assert(ctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
-    if ((~ctx->flags & TESTER_PRERUN) &&
-        ctx->current_result.status != TESTER_TEST_INCOMPLETE)
+    if (ctx->current_result.status == TESTER_TEST_INCOMPLETE)
+    {
+        ctx->current_result.status = TESTER_TEST_EMPTY;
+    }
+    else if (~ctx->flags & TESTER_PRERUN)
     {
         unsigned int    tin;
 
@@ -3082,10 +3079,6 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                              );
 
         te_test_result_clean(&ctx->current_result.result);
-    }
-    else
-    {
-        ctx->current_result.status = TESTER_TEST_EMPTY;
     }
 
     /* Update result of the group */
