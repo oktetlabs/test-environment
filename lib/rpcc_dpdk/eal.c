@@ -124,20 +124,21 @@ tapi_eal_close_bond_slave_pci_devices(tapi_env             *env,
             RPC_AWAIT_ERROR(rpcs);
             rc = rpc_rte_eth_dev_get_port_by_name(rpcs, slaves[i], &port_id);
             if (rc == 0)
-            {
                 rpc_rte_eth_dev_close(rpcs, port_id);
-                rc = rpc_rte_eal_hotplug_remove(rpcs, "pci", slaves[i]);
-                if (rc != 0)
-                    goto out;
-
-                rc = rpc_rte_eal_hotplug_add(rpcs, "pci", slaves[i], da);
-                if (rc != 0)
-                    goto out;
-            }
             else if (rc != -TE_RC(TE_RPC, TE_ENODEV))
-            {
                 goto out;
-            }
+
+            /* If ethdev is removed, its PCI device can still be plugged in. */
+            RPC_AWAIT_ERROR(rpcs);
+            rc = rpc_rte_eal_hotplug_remove(rpcs, "pci", slaves[i]);
+            if (rc != 0 && rc != -TE_RC(TE_RPC, TE_ENODEV) &&
+                /* -EINVAL is returned in the case of no PCI device */
+                rc != -TE_RC(TE_RPC, TE_EINVAL))
+                goto out;
+
+            rc = rpc_rte_eal_hotplug_add(rpcs, "pci", slaves[i], da);
+            if (rc != 0)
+                goto out;
         }
     }
 
@@ -244,16 +245,17 @@ tapi_reuse_eal(tapi_env         *env,
         RPC_AWAIT_ERROR(rpcs);
         rc = rpc_rte_eth_dev_get_port_by_name(rpcs, dev_name, &port_id);
         if (rc == 0)
-        {
             rpc_rte_eth_dev_close(rpcs, port_id);
-            rc = rpc_rte_eal_hotplug_remove(rpcs, bus_name, dev_name);
-            if (rc != 0)
-                goto out;
-        }
         else if (rc != -TE_RC(TE_RPC, TE_ENODEV))
-        {
             goto out;
-        }
+
+        /* If ethdev is removed, its PCI device can still be plugged in. */
+        RPC_AWAIT_ERROR(rpcs);
+        rc = rpc_rte_eal_hotplug_remove(rpcs, bus_name, dev_name);
+        if (rc != 0 && rc != -TE_RC(TE_RPC, TE_ENODEV) &&
+            /* -EINVAL is returned in the case of no PCI device */
+            rc != -TE_RC(TE_RPC, TE_EINVAL))
+            goto out;
 
         if (strncmp(dev_name, net_bonding_prefix,
                     strlen(net_bonding_prefix)) == 0)
