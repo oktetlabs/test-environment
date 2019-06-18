@@ -909,6 +909,12 @@ struct tarpc_rte_eth_desc_lim {
     uint16_t                        nb_align;
 };
 
+struct tarpc_rte_eth_dev_portconf {
+    uint16_t                        burst_size;
+    uint16_t                        ring_size;
+    uint16_t                        nb_queues;
+};
+
 struct tarpc_rte_eth_dev_info {
     string                          driver_name<>;
     unsigned int                    if_index;
@@ -936,6 +942,8 @@ struct tarpc_rte_eth_dev_info {
     struct tarpc_rte_eth_desc_lim   tx_desc_lim;
     uint32_t                        speed_capa;
     uint64_t                        dev_capa;
+    tarpc_rte_eth_dev_portconf      default_rxportconf;
+    tarpc_rte_eth_dev_portconf      default_txportconf;
 };
 
 /** rte_eth_dev_info_get() */

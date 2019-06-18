@@ -70,6 +70,10 @@ if cc.has_member('struct rte_eth_dev_info', 'dev_capa',
                  args: prj_args, prefix: code_prefix_ethdev)
     c_args += [ '-DHAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA' ]
 endif
+t = 'struct rte_eth_dev_portconf'
+if cc.has_type(t, prefix: code_prefix_ethdev)
+    c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
+endif
 
 code_prefix_flow_api = '''
 #include "rte_config.h"

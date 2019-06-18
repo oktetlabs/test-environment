@@ -548,6 +548,17 @@ tarpc_rte_eth_link_speeds2rpc(uint32_t rte)
     return rpc;
 }
 
+#ifdef HAVE_STRUCT_RTE_ETH_DEV_PORTCONF
+static void
+tarpc_rte_eth_dev_portconf2rpc(const struct rte_eth_dev_portconf *rte,
+                               struct tarpc_rte_eth_dev_portconf *rpc)
+{
+    rpc->burst_size = rte->burst_size;
+    rpc->ring_size = rte->ring_size;
+    rpc->nb_queues = rte->nb_queues;
+}
+#endif /* HAVE_STRUCT_RTE_ETH_DEV_PORTCONF */
+
 TARPC_FUNC(rte_eth_dev_info_get, {},
 {
     struct rte_eth_dev_info dev_info;
@@ -607,6 +618,17 @@ TARPC_FUNC(rte_eth_dev_info_get, {},
     out->dev_info.dev_capa =
         (1ULL << TARPC_RTE_ETH_DEV_CAPA__UNSUPPORTED_BIT);
 #endif /* HAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA */
+#ifdef HAVE_STRUCT_RTE_ETH_DEV_PORTCONF
+    tarpc_rte_eth_dev_portconf2rpc(&dev_info.default_rxportconf,
+                                   &out->dev_info.default_rxportconf);
+    tarpc_rte_eth_dev_portconf2rpc(&dev_info.default_txportconf,
+                                   &out->dev_info.default_txportconf);
+#else /* !HAVE_STRUCT_RTE_ETH_DEV_PORTCONF */
+    memset(&out->dev_info.default_rxportconf, 0,
+           sizeof(out->dev_info.default_rxportconf));
+    memset(&out->dev_info.default_txportconf, 0,
+           sizeof(out->dev_info.default_txportconf));
+#endif /* HAVE_STRUCT_RTE_ETH_DEV_PORTCONF */
 })
 
 static te_bool

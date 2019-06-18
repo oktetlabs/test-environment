@@ -101,6 +101,12 @@ AC_CHECK_MEMBERS([struct rte_eth_dev_info.dev_capa],
 #include "rte_ethdev.h"
 ]])
 
+AC_CHECK_TYPES([struct rte_eth_dev_portconf], [], [],
+[[
+#include "rte_config.h"
+#include "rte_ethdev.h"
+]])
+
 AC_CHECK_MEMBERS([struct rte_flow_action_rss.rss_conf],
 [], [],
 [[

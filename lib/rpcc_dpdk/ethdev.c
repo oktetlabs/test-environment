@@ -292,6 +292,23 @@ tarpc_rte_eth_speeds2str(te_log_buf *tlbp, uint32_t speeds)
 }
 
 static const char *
+tarpc_rte_eth_dev_portconf2str(te_log_buf *tlbp,
+                               const struct tarpc_rte_eth_dev_portconf *portconf)
+{
+    if (portconf == NULL)
+    {
+        te_log_buf_append(tlbp, "(null)");
+        return te_log_buf_get(tlbp);
+    }
+
+    te_log_buf_append(tlbp, "{ burst_size=%u, ring_size=%u, nb_queues=%u }",
+                      portconf->burst_size, portconf->ring_size,
+                      portconf->nb_queues);
+
+    return te_log_buf_get(tlbp);
+}
+
+static const char *
 tarpc_rte_eth_dev_capa2str(te_log_buf *tlbp, uint64_t capa)
 {
     const struct te_log_buf_bit2str capa2str[] = {
@@ -356,6 +373,11 @@ tarpc_rte_eth_dev_info2str(te_log_buf *tlbp,
 
     te_log_buf_append(tlbp, ", speed_capa=");
     tarpc_rte_eth_speeds2str(tlbp, dev_info->speed_capa);
+
+    te_log_buf_append(tlbp, ", default_rxportconf=");
+    tarpc_rte_eth_dev_portconf2str(tlbp, &dev_info->default_rxportconf);
+    te_log_buf_append(tlbp, ", default_txportconf=");
+    tarpc_rte_eth_dev_portconf2str(tlbp, &dev_info->default_txportconf);
 
     te_log_buf_append(tlbp, ", dev_capa=");
     tarpc_rte_eth_dev_capa2str(tlbp, dev_info->dev_capa);
