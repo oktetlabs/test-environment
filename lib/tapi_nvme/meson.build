@@ -14,4 +14,5 @@ sources += files(
 deps += [
     dep_lib_rpcxdr,
     dep_lib_tapi_rpc,
+    dep_lib_tapi_job,
 ]

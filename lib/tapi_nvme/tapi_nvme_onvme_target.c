@@ -19,6 +19,7 @@
 #include "tapi_rpc_signal.h"
 #include "tapi_rpc_misc.h"
 #include "tapi_test.h"
+#include "te_vector.h"
 
 #include "tapi_nvme_onvme_target.h"
 
@@ -46,61 +47,68 @@ tapi_nvme_onvme_target_init(struct tapi_nvme_target *target, void *opts)
 }
 
 static void
-onvme_output_print(tapi_nvme_target *target)
+onvme_args_free(te_vec *onvme_args)
 {
-    te_string out = TE_STRING_INIT;
-    te_string err = TE_STRING_INIT;
-    tapi_nvme_onvme_target_proc *proc =
-        (tapi_nvme_onvme_target_proc*)target->impl;
-    int out_fd = proc->stdout_fd;
-    int err_fd = proc->stderr_fd;
+    char **arg;
 
-    if (proc->pid == -1)
-        return;
-
-    if (out_fd != 0)
-        rpc_read_fd2te_string(target->rpcs, out_fd, TE_SEC2MS(1), 0, &out);
-    if (err_fd != 0)
-        rpc_read_fd2te_string(target->rpcs, err_fd, TE_SEC2MS(1), 0, &err);
-
-    RING("stdout:\n%s\n"
-         "stderr:\n%s\n", out.ptr, err.ptr);
-
-    te_string_free(&out);
-    te_string_free(&err);
+    TE_VEC_FOREACH(onvme_args, arg)
+        free(*arg);
+    te_vec_free(onvme_args);
 }
 
 static te_errno
-onvme_build_cmd(te_string *cmd, tapi_nvme_target *target)
+onvme_build_args(te_vec *args, tapi_nvme_target *target)
 {
+    te_errno rc;
+    te_vec result = TE_VEC_INIT(const char *);
     tapi_nvme_onvme_target_proc *proc =
         (tapi_nvme_onvme_target_proc*)target->impl;
+    const char *end_arg = NULL;
 
-    CHECK_RC(te_string_append(cmd, "onvme-target-start --use-null "));
+#define ADD_ARG(cmd_fmt...)                                             \
+    do {                                                                \
+        te_string buf = TE_STRING_INIT;                                 \
+                                                                        \
+        rc = te_string_append(&buf, cmd_fmt);                           \
+                                                                        \
+        if (rc != 0 || (rc = TE_VEC_APPEND(&result, buf.ptr)) != 0)     \
+        {                                                               \
+            te_string_free(&buf);                                       \
+            onvme_args_free(&result);                                   \
+            return rc;                                                  \
+        }                                                               \
+    } while(0)
 
-    CHECK_RC(te_string_append(cmd, "--port %hu ",
-                              ntohs(te_sockaddr_get_port(target->addr))));
-
+    ADD_ARG("--use-null");
+    ADD_ARG("--port");
+    ADD_ARG("%hu", ntohs(te_sockaddr_get_port(target->addr)));
     if (proc->opts.cores.ptr != NULL)
     {
-        CHECK_RC(te_string_append(cmd, "--cores %s ",
-                                  proc->opts.cores.ptr));
+        ADD_ARG("--cores");
+        ADD_ARG("%s", proc->opts.cores.ptr);
     }
-
     if (proc->opts.is_nullblock)
-        CHECK_RC(te_string_append(cmd, "--no-nvme "));
-
+        ADD_ARG("--no-nvme");
     if (proc->opts.max_worker_conn != 0)
     {
-        CHECK_RC(te_string_append(cmd, "--max-worker-connections %d ",
-                                  proc->opts.max_worker_conn));
+        ADD_ARG("--max-worker-connections");
+        ADD_ARG("%d", proc->opts.max_worker_conn);
     }
     if (proc->opts.log_level >= 0 && proc->opts.log_level <= 4)
     {
-        CHECK_RC(te_string_append(cmd, "--log-level %d ",
-                                  proc->opts.log_level));
+        ADD_ARG("--log-level");
+        ADD_ARG("%d", proc->opts.log_level);
     }
 
+#undef ADD_ARG
+
+    if ((rc = TE_VEC_APPEND(&result, end_arg)) != 0)
+    {
+        onvme_args_free(&result);
+        return rc;
+    }
+
+    *args = result;
     return 0;
 }
 
@@ -109,105 +117,60 @@ te_errno
 tapi_nvme_onvme_target_setup(tapi_nvme_target *target)
 {
     te_errno rc;
-    tarpc_pid_t pid;
-    te_string command = TE_STRING_INIT;
+    te_vec onvme_args;
     tapi_nvme_onvme_target_proc *proc =
         (tapi_nvme_onvme_target_proc *)target->impl;
-    int stdout_fd, stderr_fd;
 
     if (proc == NULL)
         return TE_EINVAL;
 
     te_log_stack_push("ONVMe target setup start");
 
-    if ((rc = onvme_build_cmd(&command, target)) != 0)
+    if ((rc = onvme_build_args(&onvme_args, target)) != 0)
         return rc;
 
-    RING("Run %s", command.ptr);
-    pid = rpc_te_shell_cmd(target->rpcs, command.ptr, -1,
-                           NULL, &stdout_fd, &stderr_fd);
+    rc = tapi_job_rpc_create(target->rpcs, NULL, "onvme-target-start",
+                             (const char **)onvme_args.data.ptr,
+                             NULL, &proc->onvme_job);
 
-    te_string_free(&command);
+    onvme_args_free(&onvme_args);
 
-    if (pid == -1) {
-        return TE_ENOTCONN;
-    }
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_job_alloc_output_channels(proc->onvme_job, 2, proc->out_chs);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_job_attach_filter(
+        TAPI_JOB_CHANNEL_SET(proc->out_chs[0], proc->out_chs[1]),
+        "ONVMe", FALSE, TE_LL_WARN, NULL);
+    if (rc != 0)
+        return rc;
+
+    if ((rc = tapi_job_start(proc->onvme_job)) != 0)
+        return rc;
 
     te_motivated_sleep(ONVME_PROC_INIT_TIMEOUT, "Give target a while to start");
 
-    proc->pid = pid;
-    proc->stdout_fd = stdout_fd;
-    proc->stderr_fd = stderr_fd;
-
-    onvme_output_print(target);
-
     return 0;
-}
-
-typedef enum bind_nvme_type {
-    BIND_NVME_KERNEL,
-    BIND_NVME_USER,
-} bind_nvme_type;
-
-static te_errno
-bind_nvme(tapi_nvme_target *target, bind_nvme_type btype)
-{
-    tarpc_pid_t pid;
-    static const char *btype_str[] = {
-        [BIND_NVME_KERNEL] = "kernel",
-        [BIND_NVME_USER] = "user",
-    };
-
-    assert(btype >= 0 && btype < TE_ARRAY_LEN(btype_str));
-
-    pid = rpc_te_shell_cmd(target->rpcs, "bind-nvme.sh %s", -1,
-                           NULL, NULL, NULL, btype_str[btype]);
-
-    return pid == -1 ? TE_EFAIL : 0;
 }
 
 /* See description in tapi_nvme_onvme_target.h */
 void
 tapi_nvme_onvme_target_cleanup(tapi_nvme_target *target)
 {
-    int rc;
-    tapi_nvme_onvme_target_proc *proc = (tapi_nvme_onvme_target_proc *)target->impl;
-    tapi_nvme_onvme_target_opts old_opts;
+    tapi_nvme_onvme_target_proc *proc =
+        (tapi_nvme_onvme_target_proc *)target->impl;
+    te_errno rc;
 
-    if (proc == NULL || proc->pid == -1)
-        return;
+    if ((rc = tapi_job_killpg(proc->onvme_job, SIGINT)) != 0)
+        ERROR("Cannot killpg for ONVMe process, rc=%r", rc);
 
-    te_log_stack_push("ONVMe target cleanup start");
+    te_motivated_sleep(ONVME_PROC_SIGINT_TIMEOUT, "Waiting for target stop");
 
-    RPC_AWAIT_IUT_ERROR(target->rpcs);
-    rc = rpc_ta_kill_and_wait(target->rpcs, proc->pid, RPC_SIGINT,
-                              ONVME_PROC_SIGINT_TIMEOUT);
-
-    /* timeout of rpc_ta_kill_and_wait */
-    if (rc == -2)
-    {
-        RPC_AWAIT_IUT_ERROR(target->rpcs);
-        rc = rpc_ta_kill_death(target->rpcs, proc->pid);
-        (void)bind_nvme(target, BIND_NVME_KERNEL);
-    }
-
-    te_motivated_sleep(ONVME_PROC_FINI_TIMEOUT, "Waiting for device unbinding");
-    onvme_output_print(target);
-
-    if (proc->stderr_fd >= 0)
-        rpc_close(target->rpcs, proc->stderr_fd);
-    if (proc->stdout_fd >= 0)
-        rpc_close(target->rpcs, proc->stdout_fd);
-
-    if (rc == -1)
-    {
-        ERROR("Cannot kill proccess with pid=%d on %s, rc=%r", proc->pid,
-              target->rpcs->ta, RPC_ERRNO(target->rpcs));
-    }
-
-    old_opts = proc->opts;
-    *proc = TAPI_NVME_ONVME_TARGET_PROC_DEFAULTS;
-    proc->opts = old_opts;
+    if ((rc = tapi_job_destroy(proc->onvme_job, ONVME_PROC_FINI_TIMEOUT)) != 0)
+        ERROR("Cannot tapi_job_destroy for ONVMe process, rc=%r", rc);
 }
 
 /* See description in tapi_nvme_onvme_target.h */

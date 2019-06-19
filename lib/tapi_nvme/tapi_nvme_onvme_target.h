@@ -20,6 +20,7 @@ extern "C" {
 #endif
 
 #include "tapi_nvme.h"
+#include "tapi_job.h"
 
 /** ONVMe target opts */
 typedef struct tapi_nvme_onvme_target_opts {
@@ -40,17 +41,15 @@ typedef struct tapi_nvme_onvme_target_opts {
 
 /** ONVMe target context */
 typedef struct tapi_nvme_onvme_target_proc {
-    tarpc_pid_t pid;                    /**< PID of ONVMe target process */
-    int stdout_fd;                      /**< FD to read from stdout stream */
-    int stderr_fd;                      /**< FD to read from stderr stream */
+    tapi_job_t *onvme_job;              /**< ONVMe proccess of target */
+    tapi_job_channel_t *out_chs[2];     /**< stdout/sterr channels */
     tapi_nvme_onvme_target_opts opts;   /**< Options for ONVMe target process */
 } tapi_nvme_onvme_target_proc;
 
 /** Default options for ONVMe target process */
 #define TAPI_NVME_ONVME_TARGET_PROC_DEFAULTS (tapi_nvme_onvme_target_proc) {  \
-    .pid = -1,                                                                \
-    .stdout_fd = -1,                                                          \
-    .stderr_fd = -1,                                                          \
+    .onvme_job = NULL,                                                        \
+    .out_chs = {},                                                            \
     .opts = TAPI_NVME_ONVME_TARGET_OPTS_DEFAULTS,                             \
 }
 
