@@ -1679,7 +1679,7 @@ core_pattern_get(unsigned int gid, const char *oid, char *value)
         return TE_OS_RC(TE_TA_UNIX, error);
     }
     len = strnlen(trash, rc);
-    if (trash[len - 1] == '\n' || len == rc)
+    if (trash[len - 1] == '\n' || (int)len == rc)
         trash[len - 1] = '\0';
     assert(len < RCF_MAX_VAL);
     memcpy(value, trash, len + 1);
