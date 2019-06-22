@@ -92,6 +92,10 @@ if CFG_SERIALPARSE_SUPPORT
 libconf_a_SOURCES += util/conf_serial_parser.c
 endif
 
+if CFG_SERIAL_SUPPORT
+libconf_a_SOURCES += util/conf_serial.c
+endif
+
 if CFG_SFPTPD_SUPPORT
 libconf_a_SOURCES += daemons/sfptpd.c
 endif

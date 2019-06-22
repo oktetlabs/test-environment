@@ -255,6 +255,11 @@ extern te_errno ta_unix_serial_parser_init();
 extern te_errno ta_unix_serial_parser_cleanup();
 #endif
 
+#ifdef WITH_SERIAL
+extern te_errno ta_unix_serial_console_init();
+extern te_errno ta_unix_serial_console_cleanup();
+#endif
+
 extern te_errno ta_unix_conf_configfs_init();
 extern te_errno ta_unix_conf_netconsole_init();
 extern te_errno ta_unix_conf_sys_init(void);
@@ -1226,6 +1231,9 @@ rcf_ch_conf_init()
 #ifdef WITH_SERIALPARSE
         ta_unix_serial_parser_init();
 #endif
+#ifdef WITH_SERIAL
+        ta_unix_serial_console_init();
+#endif
 #ifdef WITH_SNIFFERS
         if (ta_unix_conf_sniffer_init() != 0)
             ERROR("Failed to add sniffer configuration tree");
@@ -1353,6 +1361,9 @@ rcf_ch_conf_fini()
 {
 #ifdef WITH_SERIALPARSE
     ta_unix_serial_parser_cleanup();
+#endif
+#ifdef WITH_SERIAL
+    ta_unix_serial_console_cleanup();
 #endif
 #ifdef WITH_SNIFFERS
     ta_unix_conf_sniffer_cleanup();

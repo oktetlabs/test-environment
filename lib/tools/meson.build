@@ -26,6 +26,8 @@ headers += files(
     'te_log_fmt.h',
     'te_expand.h',
     'te_log_stack.h',
+    'te_serial_common.h',
+    'te_serial.h',
     'te_serial_parser.h',
     'te_shell_cmd.h',
     'te_sigmap.h',

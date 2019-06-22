@@ -26,4 +26,10 @@
     <object oid="/agent/parser/logging" access="read_write" type="integer"/>
     <object oid="/agent/parser/logging/level" access="read_write" type="string"/>
   </register>
+  <register>
+    <object oid="/agent/console" access="read_create" type="string"/>
+    <object oid="/agent/console/port" access="read_write" type="integer"/>
+    <object oid="/agent/console/user" access="read_write" type="string"/>
+    <object oid="/agent/console/address" access="read_write" type="address"/>
+  </register>
 </history>

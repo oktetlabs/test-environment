@@ -502,6 +502,15 @@ if test "$with_serialparse" = "yes" ; then
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_SERIALPARSE"
 fi
 
+AC_ARG_WITH([serial],
+            AS_HELP_STRING([--with-serial],
+                           [enable serial console (default is NO)]),
+            [with_serial=yes], [with_serial=""])
+
+AM_CONDITIONAL(CFG_SERIAL_SUPPORT, test "$with_serial" = "yes")
+if test "$with_serial" = "yes" ; then
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_SERIAL"
+fi
 
 dnl
 dnl UPnP Control Point

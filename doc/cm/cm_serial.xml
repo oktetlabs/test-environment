@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!-- This configuration model is intended for describing of
+         configuration information related to serial console reader/writer -->
+
+    <!--
+        Copyright (C) 2003-2019 OKTET Labs.
+
+        Author: Svetlana Menshikova E-mail: Svetlana.Menshikova@oktetlabs.ru
+    -->
+
+    <!-- Tha serial console subtree
+         Name:  A human-readable console name
+         Value: Name of the serial console on the conserver or tty name -->
+    <object oid="/agent/console" access="read_create" type="string"/>
+
+    <!-- The port number for connection to the conserver
+         Name:  empty
+         Value: Port number -->
+    <object oid="/agent/console/port" access="read_write" type="integer"/>
+
+    <!-- User to use when connecting to conserver
+         Name:  empty
+         Value: User name -->
+    <object oid="/agent/console/user" access="read_write" type="string"/>
+
+    <!-- The address for connection to the conserver
+         Name:  empty
+         Value: IP address -->
+    <object oid="/agent/parser/address" access="read_write" type="address"/>
+</backup>
+

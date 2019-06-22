@@ -29,6 +29,7 @@ EXTRA_DIST = \
 	cm_pppoe_client.xml \
 	cm_pppoe_server.xml \
 	cm_radius.xml \
+	cm_serial.xml \
 	cm_serial_parse.xml \
 	cm_sniffer.xml \
 	cm_socks.xml \

@@ -24,28 +24,15 @@
 extern "C" {
 #endif
 
+#include "te_serial_common.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_queue.h"
 
-/* Max length of the parser name */
-#define TE_SERIAL_MAX_NAME  63
-/* Max pattern length */
-#define TE_SERIAL_MAX_PATT  255
 /* Base size of the buffer for lists */
 #define PARSER_LIST_SIZE    512
 /* Default value of polling interval */
 #define TE_SERIAL_INTERVAL  100
-/* Default conserver port */
-#define TE_SERIAL_PORT      3109
-/* Default user name */
-#define TE_SERIAL_USER      "tester"
-/* Default log level */
-#define TE_SERIAL_LLEVEL    "WARN"
-
-#define TE_SERIAL_MALLOC(ptr, size)       \
-    if ((ptr = malloc(size)) == NULL)   \
-        assert(0);
 
 /** List of the parser events */
 typedef struct serial_pattern_t {

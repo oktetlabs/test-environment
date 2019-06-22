@@ -82,6 +82,10 @@ if conf.contains('serial-parser')
     c_args += [ '-DWITH_SERIALPARSE' ]
     sources += files('util/conf_serial_parser.c')
 endif
+if conf.contains('serial')
+    c_args += [ '-DWITH_SERIAL' ]
+    sources += files('util/conf_serial.c')
+endif
 if conf.contains('sfptpd')
     c_args += [ '-DWITH_SFPTPD' ]
     sources += files('daemons/sfptpd.c')
