@@ -19,7 +19,6 @@
 
 #include "logger_api.h"
 #include "rpc_server.h"
-#include "tapi_cfg.h"
 #include "tarpc.h"
 #include "te_dbuf.h"
 #include "te_errno.h"
