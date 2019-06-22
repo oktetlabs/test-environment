@@ -261,19 +261,10 @@ connect_conserver(struct sockaddr_storage *srv_addr, const char *user,
 #undef EXPECT_OK
 }
 
+static char* conserver_str = NULL;
 
-/**
- * Connects to conserver listening on a given port at localhost and
- * authenticates to it.
- *
- * @return connected socket (or -1 if failed)
- *
- * @param conserver  A colon-separated string of the form:
- *                   [(IP address or host name):]port:user:console
- *                   (parenthesises are necessary only for IPv6 address)
- */
-static int
-open_conserver(const char *conserver)
+int
+te_open_conserver(const char *conserver)
 {
     in_port_t   port;
     int         sock;
@@ -290,11 +281,25 @@ open_conserver(const char *conserver)
 
     struct sockaddr_storage srv_addr;
 
-    if (strlen(conserver) == 0)
+    if (!conserver && !conserver_str)
+    {
+        ERROR("conserver thread has not been started");
+        return -1;
+    }
+    else if (!conserver && conserver_str)
+    {
+        conserver = conserver_str;
+    }
+    else if (strlen(conserver) == 0)
     {
         ERROR("Conserver configuration is void string");
         return -1;
     }
+    else if (conserver && !conserver_str)
+    {
+        conserver_str = strdup(conserver);
+    }
+
     dup_arg = strdup(conserver);
     tmp = dup_arg;
     point = strchr(tmp, '.');
@@ -702,7 +707,7 @@ do {                                                            \
         else
             strncpy(tmp, parser->c_name, RCF_MAX_PATH);
         pthread_mutex_unlock(&parser->mutex);
-        if ((poller.fd = open_conserver(tmp)) < 0)
+        if ((poller.fd = te_open_conserver(tmp)) < 0)
             return TE_OS_RC(TE_TA_UNIX, errno);
     }
     else

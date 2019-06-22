@@ -53,6 +53,7 @@ engine_libs = [
     'tapi_env',
     'tapi_fio',
     'tapi_job',
+    'tapi_serial',
     'tapi_nvme',
     'tapi_tad',
     'tapi_tcp_states',
@@ -74,6 +75,7 @@ agent_libs = [
     'tad',
     'rpcs_dpdk',
     'rpcs_job',
+    'rpcs_serial',
 ]
 
 all_libs = common_libs + engine_libs + agent_libs

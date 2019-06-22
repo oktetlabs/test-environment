@@ -81,6 +81,18 @@ extern int log_serial(void *ready, int argc, char *argv[]);
  */
 extern void te_kernel_log_set_system_func(void *p);
 
+/**
+ * Connect to conserver listening on a given port at localhost and
+ * authenticate to it.
+ *
+ * @param conserver  A colon-separated string of the form:
+ *                   [(IP address or host name):]port:user:console
+ *                   (parenthesises are necessary only for IPv6 address)
+ *
+ * @return Connected socket (or -1 if failed)
+ */
+extern int te_open_conserver(const char *conserver);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
