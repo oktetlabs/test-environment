@@ -499,7 +499,13 @@ test_iter_args_match(const trc_test_iter_args  *db_args,
                 }
             }
             if (g == NULL)
+            {
+                ERROR("In TRC DB there is no <global> corresponding to "
+                      "'%s'. Iterations using this variable cannot be "
+                      "matched to anything in database.",
+                      args[i].value);
                 return ITER_NO_MATCH;
+            }
 
             /*
              * we found a variable, but in TRC it can be either var name or
