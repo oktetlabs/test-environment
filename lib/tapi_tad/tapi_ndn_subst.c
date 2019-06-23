@@ -20,6 +20,7 @@
 #include "te_errno.h"
 #include "logger_api.h"
 #include "te_sockaddr.h"
+#include "tapi_sockaddr.h"
 #include "tapi_ndn.h"
 #include "asn_impl.h"
 #include "ndn.h"
@@ -87,6 +88,15 @@ tapi_ndn_subst_tapi_env(asn_value *container, char *tapi_env_ref,
             return TE_EINVAL;
         }
 
+        if (ntohs(te_sockaddr_get_port(addr)) == 0)
+        {
+            rc = tapi_allocate_set_port(NULL, addr);
+            if (rc != 0)
+            {
+                ERROR("Failed to allocate port for address: %r", rc);
+                return rc;
+            }
+        }
         rc = asn_write_int32(container, ntohs(te_sockaddr_get_port(addr)),
                              "#plain");
         if (rc != 0)
