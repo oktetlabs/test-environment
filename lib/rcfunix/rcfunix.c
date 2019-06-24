@@ -749,6 +749,14 @@ rcfunix_start(const char *ta_name, const char *ta_type,
                 "PATH=%s${PATH}:%s ",
                 ta->is_local ? "" : "\\", ta->run_dir);
 
+    /*
+     * Add agent working directory to the LD_LIBRARY_PATH
+     */
+    if (rc == 0)
+        rc = te_string_append(&cmd,
+               "LD_LIBRARY_PATH=%s${LD_LIBRARY_PATH}%s${LD_LIBRARY_PATH:+:}%s ",
+               ta->is_local ? "" : "\\", ta->is_local ? "" : "\\", ta->run_dir);
+
     if (rc == 0 && (shell != NULL) && (strlen(shell) > 0))
     {
         VERB("Using '%s' as shell for TA '%s'", shell, ta->ta_name);
