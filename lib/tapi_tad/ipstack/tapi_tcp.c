@@ -219,13 +219,22 @@ tapi_tcp_ip4_csap_create(const char *ta_name, int sid,
 }
 
 /**
- * data for tcp callback 
+ * data for tcp/ip4 callback
  */
 typedef struct {
     tcp4_message   *msg;
     void           *user_data;
     tcp4_callback   callback;
 } tcp4_cb_data_t;
+
+/**
+ * data for tcp callback
+ */
+typedef struct {
+    tcp_message_t  *msg;
+    void           *user_data;
+    tcp_callback    callback;
+} tcp_cb_data_t;
 
 /**
  * Convert TCP packet ASN value to plain C structure
@@ -515,7 +524,29 @@ tcp4_asn_pkt_handler(asn_value *pkt, void *user_param)
     asn_free_value(pkt);
 }
 
-/* See description in tapi_udp.h */
+static void
+tcp_asn_pkt_handler(asn_value *pkt, void *user_param)
+{
+    tcp_cb_data_t  *cb_data = (tcp_cb_data_t *)user_param;
+    te_errno        rc;
+
+    rc = ndn_tcp_message_to_plain(pkt, &cb_data->msg);
+    if (rc != 0)
+    {
+        ERROR("ndn_tcp_message_to_plain fails, rc = %r", rc);
+        return;
+    }
+    if (cb_data->callback != NULL)
+    {
+        cb_data->callback(cb_data->msg, cb_data->user_data);
+        free(cb_data->msg->payload);
+        free(cb_data->msg);
+        cb_data->msg = NULL;
+    }
+    asn_free_value(pkt);
+}
+
+/* See description in tapi_tcp.h */
 tapi_tad_trrecv_cb_data *
 tapi_tcp_ip4_eth_trrecv_cb_data(tcp4_callback callback, void *user_data)
 {
@@ -538,7 +569,28 @@ tapi_tcp_ip4_eth_trrecv_cb_data(tcp4_callback callback, void *user_data)
     return res;
 }
 
+/* See description in tapi_tcp.h */
+tapi_tad_trrecv_cb_data *
+tapi_tcp_ip_eth_trrecv_cb_data(tcp_callback callback, void *user_data)
+{
+    tcp_cb_data_t              *cb_data;
+    tapi_tad_trrecv_cb_data    *res;
 
+    cb_data = (tcp_cb_data_t *)TE_ALLOC(sizeof(tcp_cb_data_t));
+    if (cb_data == NULL)
+    {
+        ERROR("%s(): failed to allocate memory", __FUNCTION__);
+        return NULL;
+    }
+    cb_data->callback = callback;
+    cb_data->user_data = user_data;
+
+    res = tapi_tad_trrecv_make_cb_data(tcp_asn_pkt_handler, cb_data);
+    if (res == NULL)
+        free(cb_data);
+
+    return res;
+}
 
 /* See description in tapi_tcp.h */
 te_errno

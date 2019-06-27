@@ -252,6 +252,19 @@ extern te_errno ndn_tcp_message_to_plain(asn_value *pkt,
                                          struct tcp_message_t **tcp_msg);
 
 /**
+ * Prepare callback data to be passed in tapi_tad_trrecv_{wait,stop,get}
+ * to process received TCP packet.
+ *
+ * @param callback        Callback for TCP packets handling
+ * @param user_data       User-supplied data to be passed to @a callback
+ *
+ * @return Pointer to allocated callback data or NULL.
+ */
+extern tapi_tad_trrecv_cb_data *tapi_tcp_ip_eth_trrecv_cb_data(
+                                    tcp_callback   callback,
+                                    void          *user_data);
+
+/**
  * Correct fill TCP header by specified parameter values.
  *
  * @param src_port      source port in network byte order
