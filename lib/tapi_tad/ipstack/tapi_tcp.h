@@ -180,11 +180,12 @@ extern te_errno tapi_tcp_ip4_pattern_unit(in_addr_t   src_addr,
 
 
 typedef struct tcp_message_t {
-    struct      sockaddr_storage source_sa;
-    struct      sockaddr_storage dest_sa;
+    struct      sockaddr_storage source_sa; /**< source address */
+    struct      sockaddr_storage dest_sa;   /**< destination address */
 
-    uint8_t    *payload;
-    size_t      pld_len;
+    uint8_t     flags;                      /**< TCP checksum */
+    uint8_t    *payload;                    /**< TCP payload */
+    size_t      pld_len;                    /**< payload length */
 } tcp_message_t;
 
 typedef struct tcp4_message {
@@ -235,6 +236,20 @@ extern tapi_tad_trrecv_cb_data *tapi_tcp_ip4_eth_trrecv_cb_data(
                                     tcp4_callback  callback,
                                     void          *user_data);
 
+/**
+ * Convert TCP.IPv4 or TCP.IPv6 datagram ASN.1 value to plain C structure.
+ *
+ * @param pkt           ASN.1 value of type Raw-Packet.
+ * @param tcp_msg       converted structure (OUT).
+ *
+ * @return zero on success or error code.
+ *
+ * @note Function allocates memory for tcp payload data. It should be freed
+ * with tcp_message_t structure
+ *
+ */
+extern te_errno ndn_tcp_message_to_plain(asn_value *pkt,
+                                         struct tcp_message_t **tcp_msg);
 
 /**
  * Correct fill TCP header by specified parameter values.

@@ -336,6 +336,162 @@ cleanup:
     return TE_RC(TE_TAPI, rc);
 }
 
+/* See description in tapi_tcp.h */
+te_errno
+ndn_tcp_message_to_plain(asn_value *pkt, tcp_message_t **tcp_msg)
+{
+    int         rc = 0;
+    asn_value  *pdu;
+    int32_t     hdr_field;
+    uint8_t     ip_version;
+    size_t      ip_pld_len;
+    size_t      tcp_hdr_len;
+    size_t      payload_len;
+    uint16_t    src_port;
+    uint16_t    dst_port;
+    size_t      len;
+
+    *tcp_msg = (tcp_message_t *)TE_ALLOC(sizeof(tcp_message_t));
+    if (*tcp_msg == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
+    pdu = asn_read_indexed(pkt, 0, "pdus"); /* this should be TCP PDU */
+    if (pdu == NULL)
+        ERROR_CLEANUP(rc, TE_EASNINCOMPLVAL, "failed to get TCP PDU");
+
+    rc = ndn_du_read_plain_int(pdu, NDN_TAG_TCP_FLAGS, &hdr_field);
+    CHECK_ERROR_CLEANUP(rc, "failed to get TCP flags");
+    (*tcp_msg)->flags = hdr_field;
+
+    rc = ndn_du_read_plain_int(pdu, NDN_TAG_TCP_HLEN, &hdr_field);
+    CHECK_ERROR_CLEANUP(rc, "failed to get TCP header length");
+    tcp_hdr_len = hdr_field * sizeof(uint32_t);
+
+    rc = ndn_du_read_plain_int(pdu, NDN_TAG_TCP_SRC_PORT, &hdr_field);
+    CHECK_ERROR_CLEANUP(rc, "failed to get TCP src port");
+    src_port = hdr_field;
+
+    rc = ndn_du_read_plain_int(pdu, NDN_TAG_TCP_DST_PORT, &hdr_field);
+    CHECK_ERROR_CLEANUP(rc, "failed to get TCP dst port");
+    dst_port = hdr_field;
+
+    pdu = asn_read_indexed(pkt, 1, "pdus"); /* this should be IP PDU */
+    if (pdu == NULL)
+        ERROR_CLEANUP(rc, TE_EASNINCOMPLVAL, "failed to get IP PDU");
+
+    len = sizeof(ip_version);
+    rc = asn_read_value_field(pdu, &ip_version, &len, "version");
+    CHECK_ERROR_CLEANUP(rc, "failed to get IP version");
+
+    switch (ip_version)
+    {
+        case 4:
+            len = sizeof(SIN(&((*tcp_msg)->source_sa))->sin_addr);
+            rc = asn_read_value_field(
+                 pdu,
+                 &(SIN(&((*tcp_msg)->source_sa))->sin_addr),
+                 &len,
+                 "src-addr");
+            CHECK_ERROR_CLEANUP(rc, "failed to get IP src addr");
+
+            rc = asn_read_value_field(
+                 pdu,
+                 &(SIN(&((*tcp_msg)->dest_sa))->sin_addr),
+                 &len,
+                 "dst-addr");
+            CHECK_ERROR_CLEANUP(rc, "failed to get IP dst addr");
+
+            SIN(&((*tcp_msg)->source_sa))->sin_port = src_port;
+            SIN(&((*tcp_msg)->dest_sa))->sin_port = dst_port;
+
+            rc = tapi_ip4_get_payload_len(pdu, &ip_pld_len);
+            CHECK_ERROR_CLEANUP(rc, "tapi_ip4_get_payload_len() fails");
+
+            break;
+
+        case 6:
+            len = sizeof(SIN6(&((*tcp_msg)->source_sa))->sin6_addr);
+            rc = asn_read_value_field(
+                 pdu,
+                 &(SIN6(&((*tcp_msg)->source_sa))->sin6_addr),
+                 &len,
+                 "src-addr");
+            CHECK_ERROR_CLEANUP(rc, "failed to get IP src addr");
+
+            rc = asn_read_value_field(
+                 pdu,
+                 &(SIN6(&((*tcp_msg)->dest_sa))->sin6_addr),
+                 &len,
+                 "dst-addr");
+            CHECK_ERROR_CLEANUP(rc, "failed to get IP dst addr");
+
+            SIN6(&((*tcp_msg)->source_sa))->sin6_port = src_port;
+            SIN6(&((*tcp_msg)->dest_sa))->sin6_port = dst_port;
+
+            rc = tapi_ip6_get_payload_len(pdu, &ip_pld_len);
+            CHECK_ERROR_CLEANUP(rc, "tapi_ip6_get_payload_len() fails");
+
+            break;
+
+        default:
+            ERROR_CLEANUP(rc, TE_EINVAL, "Unknown IP version: %i", ip_version);
+    }
+
+    if (ip_pld_len < tcp_hdr_len)
+    {
+        ERROR_CLEANUP(rc, TE_EINVAL,
+                      "IP payload length is less than TCP header length");
+    }
+
+    payload_len = ip_pld_len - tcp_hdr_len;
+
+    rc = asn_get_length(pkt, "payload");
+    if (rc < 0)
+    {
+        WARN("%s(): failed to get payload length, assuming there was none",
+             __FUNCTION__);
+        len = 0;
+    }
+    else
+    {
+        len = rc;
+    }
+    rc = 0;
+
+    if (len < payload_len)
+    {
+        ERROR_CLEANUP(rc, TE_EINVAL,
+                      "obtained payload length is less than specified by "
+                      "length fields in IP and TCP headers");
+    }
+
+    if (len > 0)
+    {
+        (*tcp_msg)->pld_len = payload_len;
+        (*tcp_msg)->payload = TE_ALLOC(len);
+
+        if ((*tcp_msg)->payload == NULL)
+            ERROR_CLEANUP(rc, TE_ENOMEM, "Fail to allocate memory for TCP "
+                                         "payload");
+
+        rc = asn_read_value_field(pkt, (*tcp_msg)->payload,
+                                  &len, "payload");
+        CHECK_ERROR_CLEANUP(rc, "failed to read payload");
+    }
+
+cleanup:
+    if (rc != 0)
+    {
+        if ((*tcp_msg)->payload != NULL)
+            free((*tcp_msg)->payload);
+
+        free(*tcp_msg);
+        *tcp_msg = NULL;
+    }
+
+    return TE_RC(TE_TAPI, rc);
+}
+
 static void
 tcp4_asn_pkt_handler(asn_value *pkt, void *user_param)
 {
