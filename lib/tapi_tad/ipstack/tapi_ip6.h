@@ -5,7 +5,7 @@
  * @ingroup tapi_tad_ipstack
  * @{
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
  *
  * 
  *
@@ -113,6 +113,16 @@ extern te_errno tapi_ip6_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
                                  const uint8_t *src_addr,
                                  const uint8_t *dst_addr,
                                  int next_header, int hop_limit);
+
+/**
+ * Compute IPv6 packet payload length from IP header length fields.
+ *
+ * @param[in]  pdu         IPv6 PDU.
+ * @param[out] len         Where to save computed length.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ip6_get_payload_len(asn_value *pdu, size_t *len);
 
 #ifdef __cplusplus
 } /* extern "C" */

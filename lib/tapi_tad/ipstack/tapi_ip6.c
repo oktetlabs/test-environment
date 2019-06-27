@@ -271,3 +271,94 @@ tapi_ip6_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
 
     return 0;
 }
+
+static uint16_t
+ip6_ext_headers_length(asn_value *pdu, uint16_t *ext_hdrs_len)
+{
+    te_errno          rc = 0;
+    uint32_t          num_hdrs;
+    asn_value        *ext_hdrs;
+    asn_child_desc_t *ext_hdrs_list;
+    int32_t           hdr_field;
+    int               i;
+
+    ext_hdrs_len = 0;
+
+    ext_hdrs = asn_find_child_choice_value(pdu, NDN_TAG_IP6_EXT_HEADERS);
+
+    if (ext_hdrs == NULL)
+        return rc;
+
+    rc = asn_find_child_choice_values(
+         ext_hdrs,
+         NDN_TAG_IP6_EXT_HEADERS,
+         &ext_hdrs_list,
+         &num_hdrs);
+
+    if (rc != 0)
+    {
+        ERROR("%s(): asn_find_child_choice_values(NDN_TAG_IP6_EXT_HEADERS) "
+              "failed, rc=%r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    for (i = 0; i < num_hdrs; i++)
+    {
+        rc = ndn_du_read_plain_int(
+             ext_hdrs_list[i].value,
+             NDN_TAG_IP6_EXT_HEADER_LEN,
+             &hdr_field);
+        if (rc != 0)
+        {
+            ERROR("%s(): ndn_du_read_plain_int(NDN_TAG_IP6_EXT_HEADER_LEN) "
+                  "failed, rc=%r", __FUNCTION__, rc);
+            free(ext_hdrs_list);
+            return rc;
+        }
+
+        /* Extension header length is defined in 8-octet units (8 * 8 bits)
+         * and doesn't include first 8 octets of extension header */
+        ext_hdrs_len += hdr_field * 8 + 8;
+    }
+    free(ext_hdrs_list);
+
+    return rc;
+}
+
+/* See the description in tapi_ip6.h */
+te_errno
+tapi_ip6_get_payload_len(asn_value *pdu, size_t *len)
+{
+    uint16_t          ip6_len;
+    uint16_t          ext_hdrs_len = 0;
+    int32_t           hdr_field;
+    te_errno          rc = 0;
+
+    rc = ip6_ext_headers_length(pdu, &ext_hdrs_len);
+    if (rc != 0)
+    {
+        ERROR("%s(): ip6_ext_headers_length() failed, rc=%r", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = ndn_du_read_plain_int(pdu, NDN_TAG_IP6_LEN, &hdr_field);
+    if (rc != 0)
+    {
+        ERROR("%s(): ndn_du_read_plain_int(NDN_TAG_IP6_LEN) failed, rc=%r",
+              __FUNCTION__, rc);
+        return rc;
+    }
+    ip6_len = hdr_field;
+
+    if (ip6_len < ext_hdrs_len)
+    {
+        ERROR("%s(): IPv6 extention headers length %" TE_PRINTF_SIZE_T
+              "u is greater than IPv6 length %" TE_PRINTF_SIZE_T "u",
+              __FUNCTION__, ext_hdrs_len, ip6_len);
+        return TE_EINVAL;
+    }
+
+    *len = ip6_len - ext_hdrs_len;
+
+    return rc;
+}
