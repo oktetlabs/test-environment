@@ -66,7 +66,9 @@ function generate_sphinx_doc()
     )
 
     ${DOXYREST_BIN} "${DOXYREST_OPTS[@]}" > /dev/null || exit 1
+    [ -d "doc/generated/html" ] || mkdir -p doc/generated/html
     find doc/generated/xml -name "*.png" -exec cp {} doc/generated/rst \;
+    find doc/generated/xml -name "*.png" -exec cp {} doc/generated/html \;
 
     SPHINX_BUILD_OPTS=(
       -j auto             # use cpu count
