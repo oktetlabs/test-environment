@@ -20,7 +20,8 @@
 #include <ctype.h>
 #endif
 #include "logger_api.h"
-
+#include "te_string.h"
+#include "te_str.h"
 
 /* See description in te_str.h */
 char *
@@ -262,4 +263,118 @@ te_strtol_bool(const char *input, te_bool *bresult)
     *bresult = (res == 0) ? FALSE : TRUE;
 
     return 0;
+}
+
+/* See description in te_str.h */
+te_errno
+te_str_hex_raw2str(const uint8_t *data, size_t data_len, te_string *str)
+{
+    const char     *hex = "0123456789ABCDEF";
+    const uint8_t  *p_data;
+    char           *p_buf;
+    size_t          i;
+    size_t          need_size;
+
+    assert(data != NULL);
+    assert(str != NULL);
+
+    need_size = data_len * 3;
+
+    if (str->ext_buf && str->size < need_size)
+    {
+        ERROR("%s(): buffer size is too small, needed %u, but provided %u",
+               __FUNCTION__, need_size, str->size);
+        return TE_EINVAL;
+    }
+
+    if (str->size < need_size)
+    {
+        char *new_ptr;
+
+        /* Extend buffer */
+        new_ptr = realloc(str->ptr, need_size);
+        if (new_ptr == NULL)
+        {
+            ERROR("%s(): Memory allocation failure", __FUNCTION__);
+            return TE_ENOMEM;
+        }
+        str->size = need_size;
+        str->ptr = new_ptr;
+    }
+
+    p_data = data;
+    p_buf = str->ptr;
+    for(i = 0; i < data_len; i++)
+    {
+        if (i > 0)
+            *p_buf++ = TE_STR_HEX_DELIMITER;
+        *p_buf++ = hex[(*p_data >> 4) & 0xF];
+        *p_buf++ = hex[(*p_data++) & 0xF];
+    }
+    *p_buf = '\0';
+
+    str->len = need_size;
+    return 0;
+}
+
+/* See description in te_str.h */
+te_errno te_str_hex_str2raw(const char *str, uint8_t *data, size_t data_len)
+{
+    const char *hex = str;
+    uint32_t    val = 0;
+    size_t      i = 0;
+
+    while (*hex)
+    {
+        uint8_t byte = *hex++;
+
+        if (byte >= '0' && byte <= '9')
+        {
+            byte = byte - '0';
+        }
+        else if (byte >= 'A' && byte <= 'F')
+        {
+            byte = byte - 'A' + 10;
+        }
+        else if (byte >= 'a' && byte <= 'f')
+        {
+            byte = byte - 'a' + 10;
+        }
+        else
+        {
+            ERROR("%s(): %d-st symbol is wrong in %s", __FUNCTION__,
+                  (hex - str), str);
+            return TE_EINVAL;
+        }
+
+        val = (val << 4) | (byte & 0xF);
+
+        /* Check that val it not greater than the maximum byte size */
+        if (val > 0xFF)
+        {
+            ERROR("%s(): %X is greater than 0xFF", __FUNCTION__, val);
+            return TE_EOVERFLOW;
+        }
+
+        if (*hex == '\0' || *hex == TE_STR_HEX_DELIMITER)
+        {
+            if (i >= data_len)
+            {
+                ERROR("%s(): hex string too long", __FUNCTION__);
+                return TE_EOVERFLOW;
+            }
+            if (*hex == TE_STR_HEX_DELIMITER)
+                hex++;
+
+            data[i] = (uint8_t)val;
+            i++;
+            val = 0;
+        }
+    }
+
+    if (i == data_len)
+        return 0;
+
+    ERROR("%s(): hex string is too small.", __FUNCTION__);
+    return TE_EINVAL;
 }

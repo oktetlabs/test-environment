@@ -21,10 +21,14 @@
 
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_string.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* Delimiter for hex-string representaion, i.e. "00:01:02:04" */
+#define TE_STR_HEX_DELIMITER ':'
 
 /**
  * Check for empty string.
@@ -176,6 +180,29 @@ extern te_errno te_strtol(const char *input, int base, long int* result);
  */
 extern te_errno te_strtol_bool(const char *input, te_bool *bresult);
 
+/**
+ * Convert raw data to hex-string representation
+ *
+ * @param data          Raw data to be converted
+ * @param data_len      Length of the @p data
+ * @param str           Pointer to @b te_string
+ *
+ * @return              Status code
+ */
+extern te_errno te_str_hex_raw2str(const uint8_t *data, size_t data_len,
+                                   te_string *str);
+
+/**
+ * Convert hex-string to raw data
+ *
+ * @param str           Null-terminated hex-string
+ * @param data          Storage to raw data
+ * @param data_len      The length of the @p data
+ *
+ * @return              Status code
+ */
+extern te_errno te_str_hex_str2raw(const char *str, uint8_t *data,
+                                   size_t data_len);
 
 #ifdef __cplusplus
 } /* extern "C" */
