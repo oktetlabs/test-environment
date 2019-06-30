@@ -693,7 +693,8 @@ scenario_apply_flags(testing_scenario *scenario,
 /* See the description in tester_run.h */
 testing_direction
 scenario_step(const testing_act **act, unsigned int *act_id,
-              unsigned int next_id)
+              unsigned int start_id, unsigned int next_id,
+              te_bool skip)
 {
     assert(act != NULL);
     if (*act == NULL)
@@ -725,7 +726,24 @@ scenario_step(const testing_act **act, unsigned int *act_id,
      * move to the next act.
      */
 
-    *act = TAILQ_NEXT(*act, links);
+    /*
+     * If requested, this loop skips all the next
+     * acts within [start_id, next_id), until act
+     * outside of this interval is encountered.
+     * It allows to skip all the acts from the
+     * skipped session instead of trying to rerun
+     * it for each of them.
+     */
+    while ((*act = TAILQ_NEXT(*act, links)) != NULL)
+    {
+        if (!skip)
+            break;
+
+        if ((*act)->first < start_id ||
+            (*act)->last >= next_id)
+            break;
+    }
+
     if (*act == NULL)
     {
         VERB("next_id=%u -> STOP", next_id);

@@ -256,14 +256,21 @@ typedef enum testing_direction {
  *
  * @param act           Location of the current testing act
  * @param act_id        Location of the current action ID
+ * @param start_id      Start iteration ID of the current
+ *                      run item
  * @param next_id       Next iteration ID to which Tester is
  *                      going to move
+ * @param skip          If @c TRUE, all the next acts which
+ *                      are within [start_id, next_id) should
+ *                      be skipped
  *
  * @return Testing scenario movement direction.
  */
 extern testing_direction scenario_step(const testing_act **act,
                                        unsigned int       *act_id,
-                                       unsigned int        next_id);
+                                       unsigned int        start_id,
+                                       unsigned int        next_id,
+                                       te_bool             skip);
 
 /**
  * String representation of testing scenario.

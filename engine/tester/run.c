@@ -3114,8 +3114,18 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
         if (gctx->direction != TESTING_BACKWARD)
         {
-            while (scenario_step(&gctx->act, &gctx->act_id,
-                                 cfg_id_off + step) == TESTING_STOP)
+            te_bool skip_tests = FALSE;
+
+            if (ctx->current_result.status == TESTER_TEST_EMPTY ||
+                ctx->current_result.status == TESTER_TEST_PROLOG)
+            {
+                skip_tests = TRUE;
+            }
+
+            while (scenario_step(
+                      &gctx->act, &gctx->act_id,
+                      cfg_id_off, cfg_id_off + step,
+                      skip_tests) == TESTING_STOP)
             {
                 if (gctx->flags & TESTER_INTERACTIVE)
                 {
