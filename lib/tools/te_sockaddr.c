@@ -491,9 +491,14 @@ te_sockaddrcmp(const struct sockaddr *a1, socklen_t a1len,
                     return -2;
                 }
 
+                /** All fields of struct sockaddr_in6 should be compared
+                 * except sin6_flowinfo, because it changes during
+                 * sequence: bind(), connect(), getsockname().
+                 */
                 if ((SIN6(a1)->sin6_port == SIN6(a2)->sin6_port) &&
                     (memcmp(&(SIN6(a1)->sin6_addr), &(SIN6(a2)->sin6_addr),
-                            sizeof(SIN6(a1)->sin6_addr)) == 0))
+                            sizeof(SIN6(a1)->sin6_addr)) == 0) &&
+                    (SIN6(a1)->sin6_scope_id == SIN6(a2)->sin6_scope_id))
                 {
                     return 0;
                 }
