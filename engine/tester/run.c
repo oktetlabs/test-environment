@@ -3116,11 +3116,24 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         {
             te_bool skip_tests = FALSE;
 
-            if (ctx->current_result.status == TESTER_TEST_EMPTY ||
-                ctx->current_result.status == TESTER_TEST_PROLOG)
-            {
+            /*
+             * By this time, all the acts which are within the current
+             * session should have been run until an act (partly)
+             * outside of it was encountered. This is ensured when
+             * calling run_repeat_end() for session's children which
+             * can result in going back to earlier children if necessary.
+             * If the next act(s) are still within the current session,
+             * they should be skipped because it means that the session
+             * was skipped due to requirements or some failure prevented
+             * it from running normally (like failed prologue).
+             * In case of script, there may be multiple acts with the
+             * same ID in a row if it was requested to run the same
+             * iteration multiple times. After each rerun this
+             * run_repeat_end() is called and nothing should be skipped
+             * in it.
+             */
+            if (ri->type != RUN_ITEM_SCRIPT)
                 skip_tests = TRUE;
-            }
 
             while (scenario_step(
                       &gctx->act, &gctx->act_id,
