@@ -44,6 +44,9 @@
 #ifdef HAVE_NETINET_IP_ICMP_H
 #include <netinet/ip_icmp.h>
 #endif
+#ifdef HAVE_NETINET_ICMP6_H
+#include <netinet/icmp6.h>
+#endif
 #ifdef HAVE_NET_IF_H
 #include <net/if.h>
 #else
@@ -2353,10 +2356,19 @@ rpc_setsockopt_check_int(rcf_rpc_server *rpcs,
     return rc;
 }
 
-/* See description in the tapi_rpc_socket.h */
-void
-tapi_rpc_provoke_arp_resolution(struct rcf_rpc_server *rpcs,
-                                const struct sockaddr *addr)
+
+/**
+ * Send ICMPv4 ECHO request packet to @p addr to provoke ARP resolution from
+ * both sides.
+ *
+ * @note The function jumps to @b cleanup in case of failure.
+ *
+ * @param rpcs  RPC server handle.
+ * @param addr  Destination address, should be IPv4 family
+ */
+static void
+tapi_rpc_send_icmp4_echo(struct rcf_rpc_server *rpcs,
+                         const struct sockaddr *addr)
 {
 #ifdef HAVE_NETINET_IP_ICMP_H
     struct icmphdr *icp;
@@ -2391,4 +2403,61 @@ tapi_rpc_provoke_arp_resolution(struct rcf_rpc_server *rpcs,
     UNUSED(addr);
     TEST_FAIL("Cannot create ICMP message due to lack of netinet/ip_icmp.h");
 #endif
+}
+
+/**
+ * Send ICMPv6 ECHO request packet to @p addr to provoke ARP resolution from
+ * both sides.
+ *
+ * @note The function jumps to @b cleanup in case of failure.
+ *
+ * @param rpcs  RPC server handle.
+ * @param addr  Destination address, should be IPv6 family
+ */
+static void
+tapi_rpc_send_icmp6_echo(struct rcf_rpc_server *rpcs,
+                    const struct sockaddr *addr)
+{
+#ifdef HAVE_NETINET_ICMP6_H
+    struct icmp6_hdr        icp = {0};
+    rpc_msghdr              msg = {0};
+    rpc_iovec               iov = {0};
+    int                     sock;
+    struct sockaddr_storage ping_addr;
+
+    sock = rpc_socket(rpcs, RPC_PF_INET6, RPC_SOCK_RAW, RPC_IPPROTO_ICMPV6);
+
+    tapi_sockaddr_clone_exact(addr, &ping_addr);
+    te_sockaddr_set_port(SA(&ping_addr), 0);
+
+    icp.icmp6_type = ICMP6_ECHO_REQUEST;
+    icp.icmp6_code = 0;
+
+    iov.iov_base = &icp;
+    iov.iov_len = iov.iov_rlen = sizeof(icp);
+    msg.msg_name = SA(&ping_addr);
+    msg.msg_namelen = te_sockaddr_get_size(SA(&ping_addr));
+    msg.msg_iov = &iov;
+    msg.msg_iovlen = msg.msg_riovlen = 1;
+
+    rpc_sendmsg(rpcs, sock, &msg, 0);
+    rpc_close(rpcs, sock);
+#else
+    UNUSED(rpcs);
+    UNUSED(addr);
+    TEST_FAIL("Cannot create ICMPv6 message due to lack of netinet/icmp6.h");
+#endif
+}
+
+/* See description in the tapi_rpc_socket.h */
+void
+tapi_rpc_provoke_arp_resolution(struct rcf_rpc_server *rpcs,
+                                const struct sockaddr *addr)
+{
+    if (addr->sa_family == AF_INET)
+        tapi_rpc_send_icmp4_echo(rpcs, addr);
+    else if (addr->sa_family == AF_INET6)
+        tapi_rpc_send_icmp6_echo(rpcs, addr);
+    else
+        TEST_FAIL("Address family %d is not supported", addr->sa_family);
 }

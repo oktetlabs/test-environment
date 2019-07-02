@@ -142,6 +142,7 @@ netinet/in_systm.h \
 netinet/in.h \
 netinet/ip.h \
 netinet/ip_icmp.h \
+netinet/icmp6.h \
 netinet/udp.h \
 netinet/tcp.h \
 netpacket/packet.h \

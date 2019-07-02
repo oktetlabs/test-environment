@@ -1189,8 +1189,9 @@ extern int rpc_socket_listen_close(rcf_rpc_server *rpcs,
                                    uint32_t time2run);
 
 /**
- * Send ICMP ECHO request packet to @p addr to provoke ARP resolution from
- * both sides.
+ * Send ICMPv4 or ICMPv6 ECHO request packet to @p addr to provoke ARP
+ * resolution (for IPv4) or neigbour discovery (for IPv6) from both sides.
+ * ICMP version depends on the @p addr family.
  *
  * @note The function jumps to @b cleanup in case of failure.
  *
