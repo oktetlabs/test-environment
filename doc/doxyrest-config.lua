@@ -2,6 +2,9 @@
 OUTPUT_FILE = "doc/generated/rst/index.rst"
 INPUT_FILE = "doc/generated/xml/index.xml"
 
+-- Specific title
+INDEX_TITLE = "Test Environment documetation"
+
 -- If your documentation uses \verbatim directives for code snippets
 -- you can convert those to reStructuredText C++ code-blocks:
 VERBATIM_TO_CODE_BLOCK = "c"
