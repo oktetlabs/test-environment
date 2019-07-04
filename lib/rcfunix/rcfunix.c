@@ -25,6 +25,7 @@
  * [:@attr_name{key}=@attr_val{<ssh_private_key_file>}]
  * [:@attr_name{ssh_port}=@attr_val{<port>}]
  * [:@attr_name{copy_timeout}=@attr_val{<timeout>}]
+ * [:@attr_name{copy_tries}=@attr_val{<number_of_tries>}]
  * [:@attr_name{kill_timeout}=@attr_val{<timeout>}][:@attr_val{notcopy}]
  * [:@attr_val{sudo|su}][:@attr_val{<shell>}][:@attr_val{<parameters>}]
  * </pre>
@@ -47,7 +48,13 @@
  *   unspecified or 0 to use standard SSH port 22;
  * - @attr_name{copy_timeout} - specifies the maximum time duration
  *   (in seconds) that is allowed for image copy operation. If image copy
- *   takes more than this timeout, Test Agent start-up procedure fails;
+ *   takes more than this timeout, Test Agent start-up procedure fails,
+ *   provided that the copy operation was the last try (see copy_tries);
+ * - @attr_name{copy_tries} - specifies the number of tries to perform
+ *   image copy operation. The time to wait between tries is doubled from
+ *   RCFUNIX_COPY_RETRY_SLEEP_FIRST_SEC to RCFUNIX_COPY_RETRY_SLEEP_MAX_SEC
+ *   with every next try. If all copy tries fail, Test Agent
+ *   start-up procedure fails;
  * - @attr_name{kill_timeout} - specifies the maximum time duration
  *   (in seconds) that is allowed for Test Agent termination procedure;
  * - @attr_val{notcopy} may be used to create symbolic link instead copying
@@ -215,6 +222,9 @@
 
 #define RCFUNIX_KILL_TIMEOUT    15
 #define RCFUNIX_COPY_TIMEOUT    30
+#define RCFUNIX_COPY_TRIES      1
+#define RCFUNIX_COPY_RETRY_SLEEP_FIRST_SEC  1
+#define RCFUNIX_COPY_RETRY_SLEEP_MAX_SEC    10
 
 /** Maximum sleep between reconnect attempts */
 #define RCFUNIX_RECONNECT_SLEEP_MAX 5
@@ -246,6 +256,8 @@ typedef struct unix_ta {
 
     unsigned int    ssh_port;       /**< 0 or special SSH port to use */
     unsigned int    copy_timeout;   /**< TA image copy timeout */
+    unsigned int    copy_tries;     /**< Number of times to try to
+                                         copy TA image */
     unsigned int    kill_timeout;   /**< TA kill timeout */
 
     te_bool sudo;       /**< Manipulate process using sudo */
@@ -490,6 +502,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     /* Set default timeouts */
     ta->copy_timeout = RCFUNIX_COPY_TIMEOUT;
+    ta->copy_tries = RCFUNIX_COPY_TRIES;
     ta->kill_timeout = RCFUNIX_KILL_TIMEOUT;
 
     if (strcmp(ta_type + strlen(ta_type) - strlen("ctl"), "ctl") == 0)
@@ -582,6 +595,19 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         if (strlen(value) > 0)
         {
             ta->copy_timeout = strtoul(value, &tmp, 0);
+            if (tmp == value || *tmp != 0)
+                goto bad_confstr;
+        }
+
+        GET_TOKEN;
+    }
+    if (token != NULL && strcmp_start("copy_tries=", token) == 0)
+    {
+        char *value = token + strlen("copy_tries=");
+
+        if (strlen(value) > 0)
+        {
+            ta->copy_tries = strtoul(value, &tmp, 0);
             if (tmp == value || *tmp != 0)
                 goto bad_confstr;
         }
@@ -719,15 +745,29 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     }
 
     RING("CMD to copy: %s", cmd.ptr);
-    if (!(*flags & TA_FAKE) &&
-        ((rc = system_with_timeout(ta->copy_timeout, "%s", cmd.ptr)) != 0))
+    if (!(*flags & TA_FAKE))
     {
-        ERROR("Failed to copy TA images/data %s to the %s:/tmp: %r",
-              ta_type, ta->host, rc);
-        ERROR("Failed cmd: %s", cmd.ptr);
-        te_string_free(&cmd);
-        free(conf_str_dup);
-        return rc;
+        unsigned int sleep_sec = RCFUNIX_COPY_RETRY_SLEEP_FIRST_SEC;
+        unsigned int i;
+
+        for (rc = TE_RC(TE_RCF_UNIX, TE_EFAIL), i = 0; i < ta->copy_tries; i++)
+        {
+            rc = system_with_timeout(ta->copy_timeout, "%s", cmd.ptr);
+            if (rc == 0)
+                break;
+            te_sleep(sleep_sec);
+
+            sleep_sec = MAX(RCFUNIX_COPY_RETRY_SLEEP_MAX_SEC, sleep_sec * 2);
+        }
+        if (rc != 0)
+        {
+            ERROR("Failed to copy TA images/data %s to the %s:/tmp: %r",
+                  ta_type, ta->host, rc);
+            ERROR("Failed cmd: %s", cmd.ptr);
+            te_string_free(&cmd);
+            free(conf_str_dup);
+            return rc;
+        }
     }
 
     /* Clean up command string */

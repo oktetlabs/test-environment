@@ -54,6 +54,7 @@ cfg_rcfunix_make_confstr(te_string *confstr, cfg_instance *ta)
         { "key",          FALSE,  TRUE,   TRUE  },
         { "ssh_port",     FALSE,  TRUE,   TRUE  },
         { "copy_timeout", FALSE,  TRUE,   TRUE  },
+        { "copy_tries",   FALSE,  TRUE,   TRUE  },
         { "kill_timeout", FALSE,  TRUE,   TRUE  },
         { "notcopy",      FALSE,  TRUE,   FALSE },
         { "sudo",         FALSE,  TRUE,   FALSE },
