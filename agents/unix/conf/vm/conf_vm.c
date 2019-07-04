@@ -29,6 +29,7 @@
 #include "te_alloc.h"
 #include "te_string.h"
 #include "te_shell_cmd.h"
+#include "te_str.h"
 #include "rcf_pch.h"
 #include "agentlib.h"
 #include "conf_vm.h"
@@ -55,6 +56,7 @@ struct vm_entry {
     uint16_t                host_ssh_port;
     uint16_t                guest_ssh_port;
     uint16_t                rcf_port;
+    unsigned int            mem_size;
     te_string               cmd;
     pid_t                   pid;
     vm_net_list_t           nets;
@@ -274,6 +276,27 @@ vm_start(struct vm_entry *vm)
     {
         ERROR("Cannot compose VM start command line (line %u)", __LINE__);
         goto exit;
+    }
+
+    if (vm->mem_size != 0)
+    {
+        te_string mem_size_str = TE_STRING_INIT;
+
+        rc = te_string_append(&mem_size_str, "%uM", vm->mem_size);
+        if (rc != 0)
+        {
+            ERROR("Cannot compose VM mem_size argument (line %u)", __LINE__);
+            goto exit;
+        }
+
+        rc = te_string_append_shell_args_as_is(&vm->cmd,
+                                               "-m", mem_size_str.ptr, NULL);
+        te_string_free(&mem_size_str);
+        if (rc != 0)
+        {
+            ERROR("Cannot compose VM mem_size command line (line %u)", __LINE__);
+            goto exit;
+        }
     }
 
     rc = te_string_append_shell_args_as_is(&vm->cmd,
@@ -659,6 +682,46 @@ vm_kvm_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
+vm_mem_size_get(unsigned int gid, const char *oid, char *value,
+                const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%u", vm->mem_size);
+
+    return 0;
+}
+
+static te_errno
+vm_mem_size_set(unsigned int gid, const char *oid, const char *value,
+                const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    if (te_strtoui(value, 0, &vm->mem_size) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    return 0;
+}
+
+static te_errno
 vm_net_add(unsigned int gid, const char *oid, const char *value,
            const char *vm_name, const char *net_name)
 {
@@ -845,7 +908,12 @@ RCF_PCH_CFG_NODE_RW(node_vm_net_type, "type", NULL, &node_vm_net_type_spec,
 RCF_PCH_CFG_NODE_COLLECTION(node_vm_net, "net", &node_vm_net_type, NULL,
                             vm_net_add, vm_net_del, vm_net_list, NULL);
 
-RCF_PCH_CFG_NODE_RW(node_vm_kvm, "kvm", NULL, &node_vm_net,
+RCF_PCH_CFG_NODE_RW(node_vm_mem_size, "size", NULL, NULL,
+                    vm_mem_size_get, vm_mem_size_set);
+
+RCF_PCH_CFG_NODE_NA(node_vm_mem, "mem", &node_vm_mem_size, &node_vm_net);
+
+RCF_PCH_CFG_NODE_RW(node_vm_kvm, "kvm", NULL, &node_vm_mem,
                     vm_kvm_get, vm_kvm_set);
 
 RCF_PCH_CFG_NODE_RW(node_vm_rcf_port, "rcf_port", NULL, &node_vm_kvm,
