@@ -314,6 +314,68 @@ jsonvalue2double(const json_t *jobj, double *value)
 }
 
 /*
+ * Extract minimal bits_per_second among streams
+ *
+ * @param jend The 'end' element of iperf3 report.
+ *
+ * @return Minimal bits_per_second among streams
+ */
+static double
+get_min_stream_bps(const json_t *jrpt, tapi_perf_report_kind kind, double *bps)
+{
+    te_errno    rc = TE_ENOENT;
+    size_t      i;
+    te_bool     found_any = FALSE;
+    json_t     *jend;
+    json_t     *jnode;
+
+    if (!json_is_object(jrpt))
+        goto end;
+
+    jend = json_object_get(jrpt, "end");
+    if (!json_is_object(jend))
+        goto end;
+
+    jnode = json_object_get(jend, "streams");
+    if (!json_is_array(jnode))
+        goto end;
+
+    /* For each stream */
+    for (i = 0; i < json_array_size(jnode); ++i)
+    {
+        double  tmp_bps;
+        json_t *cur;
+
+        cur = json_array_get(jnode, i);
+        if (!json_is_object(cur))
+        {
+            rc = TE_EFAIL;
+            break;
+        }
+
+        /* Take sender/receiver report, sender is default */
+        cur = json_object_get(cur,
+            kind == TAPI_PERF_REPORT_KIND_RECEIVER ? "receiver" : "sender");
+        if (!json_is_object(cur))
+            continue;
+
+        if (jsonvalue2double(json_object_get(cur, "bits_per_second"),
+                             &tmp_bps) != 0)
+            continue;
+
+        if (rc == TE_ENOENT)
+            *bps = tmp_bps;
+        else
+            *bps = (*bps < tmp_bps) ? *bps : tmp_bps;
+
+        rc = 0;
+    }
+
+end:
+    return rc;
+}
+
+/*
  * Extract report from JSON object.
  *
  * @param[in]  jrpt         JSON object contains report data.
@@ -448,6 +510,10 @@ get_report(const json_t *jrpt, tapi_perf_report_kind kind,
         WARN("%s: the retrieved interval of %.1f duration might be "
              "unrepresentative", __FUNCTION__, total_seconds);
     }
+
+    /* Estimate minimal per-thread bps */
+    if (get_min_stream_bps(jrpt, kind, &tmp_report.min_bps_per_stream) != 0)
+        GET_REPORT_ERROR("object \"end.streams\"");
 
     tmp_report.bytes = total_bytes;
     tmp_report.bits_per_second = total_bits_per_second;

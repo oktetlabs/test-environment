@@ -159,6 +159,8 @@ typedef struct tapi_perf_report {
     double seconds;         /**< Number of seconds was expired during test */
     double bits_per_second; /**< Throughput */
     size_t zero_intervals;  /**< Number of zero intervals */
+    double min_bps_per_stream;  /**< Minimal rate observed for any stream at the
+                                     end of report */
     uint32_t errors[TAPI_PERF_ERROR_MAX];  /**< Errors counters. */
 } tapi_perf_report;
 
