@@ -97,4 +97,10 @@
          Value: any valid string -->
     <object oid="/agent/socks/user/password"
         access="read_write" type="string"/>
+
+    <!-- Process ID of the running SOCKS daemon
+         Name: any
+         Value: process ID of running daemon, or -1 -->
+    <object oid="/agent/socks/process_id"
+        access="read_only" type="integer" volatile="true"/>
 </backup>

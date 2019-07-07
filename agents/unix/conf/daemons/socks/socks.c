@@ -671,6 +671,29 @@ cleanup:
     return rc;
 }
 
+/*
+ * Read process id from pid file
+ *
+ * @param pid_path Path to PID file
+ *
+ * @return Process ID
+ */
+static int
+read_pid(const char *pid_path)
+{
+    int         pid = -1;
+    FILE       *f;
+
+    if (pid_path == NULL)
+        return -1;
+
+    f = fopen(pid_path, "r");
+    if (f != NULL && (fscanf(f, "%d", &pid) != 1 || fclose(f) == EOF))
+        return -1;
+
+    return pid;
+}
+
 /**
  * Send signal to the socks process.
  *
@@ -683,29 +706,18 @@ static te_errno
 socks_server_send_signal(te_socks_server *instance,
                          int sig)
 {
-    int         pid = -1;
-    FILE       *f;
+    int pid = read_pid(instance->pid_path);
 
-    /* Might be nothing to stop */
-    f = fopen(instance->pid_path, "r");
-    if (f != NULL)
+    if (pid == -1)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (kill(pid, sig) != 0)
     {
-        if (fscanf(f, "%d", &pid) != 1 || fclose(f) == EOF)
-            return TE_OS_RC(TE_TA_UNIX, errno);
-
-        if (pid == -1)
-            return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-        if (kill(pid, sig) != 0)
-        {
-            ERROR("Couldn't send signal %d to Socks daemon (pid %d)", sig, pid);
-            return te_rc_os2te(errno);
-        }
-
-        return 0;
+        ERROR("Couldn't send signal %d to Socks daemon (pid %d)", sig, pid);
+        return te_rc_os2te(errno);
     }
 
-    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    return 0;
 }
 
 /**
@@ -780,6 +792,25 @@ socks_getifaddrs(const char *ifname, int family, char *ip, int ip_size)
     freeifaddrs(ifaddr);
 
     return rc;
+}
+
+/** Obtain process ID of running SOCKS daemon, or @c -1 */
+static te_errno
+socks_process_id_get(unsigned int gid, const char *oid,
+                     char *value, const char *instN, ...)
+{
+    te_socks_server *instance = socks_get_server(instN);
+    int pid;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    SOCKS_CHECK(instance);
+
+    pid = read_pid(instance->pid_path);
+    sprintf(value, "%d", pid);
+
+    return 0;
 }
 
 /** Get actual Socks daemon status */
@@ -1932,9 +1963,13 @@ RCF_PCH_CFG_NODE_RW(node_socks_user_next_hop, "next_hop",
                     socks_user_next_hop_get,
                     socks_user_next_hop_set);
 
+RCF_PCH_CFG_NODE_RO(node_socks_process_id, "process_id",
+                    NULL, NULL,
+                    socks_process_id_get);
+
 RCF_PCH_CFG_NODE_COLLECTION(node_socks_user, "user",
                             &node_socks_user_next_hop,
-                            NULL,
+                            &node_socks_process_id,
                             socks_user_add, socks_user_del,
                             socks_user_list, NULL);
 RCF_PCH_CFG_NODE_RW(node_socks_auth, "auth",
