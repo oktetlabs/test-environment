@@ -7,6 +7,7 @@ sources += files(
     'iperf.c',
     'iperf3.c',
     'performance_internal.c',
+    'tapi_performance.c',
 )
 deps += [
     dep_lib_tapi,
