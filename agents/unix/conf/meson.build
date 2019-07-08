@@ -54,6 +54,7 @@ if conf.contains('pam')
     endif
 endif
 if conf.contains('pci')
+    c_args += [ '-DENABLE_PCI_SUPPORT' ]
     sources += files('base/conf_pci.c')
 endif
 if conf.contains('vcm')
