@@ -450,6 +450,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     const char *shell;
     const char *val;
     char       *ta_list_file;
+    char       *ld_preload = NULL;
 
     unsigned int timestamp;
 
@@ -736,6 +737,16 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         rc = te_string_append(&cmd,
                "LD_LIBRARY_PATH=%s${LD_LIBRARY_PATH}%s${LD_LIBRARY_PATH:+:}%s ",
                ta->is_local ? "" : "\\", ta->is_local ? "" : "\\", ta->run_dir);
+
+    /*
+     * Update LD_PRELOAD variable, existing LD_PRELOAD variable
+     * will be overwritten because:
+     * - in many cases 2 LD_PRELOADs do not work nicely together;
+     * - we do not know any conditions when LD_PRELOAD is non-empty initially.
+     */
+    ld_preload = te_kvpairs_get(conf, "ld_preload");
+    if (rc == 0 && !te_str_is_null_or_empty(ld_preload))
+        rc = te_string_append(&cmd, "LD_PRELOAD=%s ", ld_preload);
 
     if (rc == 0 && (shell != NULL) && (strlen(shell) > 0))
     {
