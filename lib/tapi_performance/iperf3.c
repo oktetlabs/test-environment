@@ -353,11 +353,16 @@ get_min_stream_bps(const json_t *jrpt, tapi_perf_report_kind kind, double *bps)
             break;
         }
 
-        /* Take sender/receiver report, sender is default */
-        cur = json_object_get(cur,
-            kind == TAPI_PERF_REPORT_KIND_RECEIVER ? "receiver" : "sender");
+        /* Try to get udp object if available. It is the only one */
+        cur = json_object_get(cur, "udp");
         if (!json_is_object(cur))
-            continue;
+        {
+            /* Take sender/receiver report, sender is default */
+            cur = json_object_get(cur,
+                kind == TAPI_PERF_REPORT_KIND_RECEIVER ? "receiver" : "sender");
+            if (!json_is_object(cur))
+                continue;
+        }
 
         if (jsonvalue2double(json_object_get(cur, "bits_per_second"),
                              &tmp_bps) != 0)
