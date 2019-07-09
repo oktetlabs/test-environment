@@ -307,24 +307,11 @@ str2addr(char *val_str, cfg_inst_val *val)
         return TE_EINVAL;
     }
 
-    if (strchr(val_str, '.') != NULL)
-    {
-        /* Probably IPv4 address */
-        struct sockaddr_in *addr;
-        
-        addr = (struct sockaddr_in *)calloc(1, sizeof(*addr));
-        if (addr == NULL)
-            return TE_ENOMEM;
-        
-        if (inet_pton(AF_INET, val_str, &(addr->sin_addr)) <= 0)
-        {
-            free(addr);
-            return TE_EINVAL;
-        }
-        addr->sin_family = AF_INET;
-        val->val_addr = (struct sockaddr *)addr;
-    }
-    else if (strstr(val_str, ":") != NULL)
+    /*
+     * We should check for ':' first - IPv6 address
+     * can too contain '.' if it is IPv6-mapped IPv4 address.
+     */
+    if (strchr(val_str, ':') != NULL)
     {
         struct sockaddr_in6 *addr6;
         struct sockaddr     *addr;
@@ -373,8 +360,27 @@ str2addr(char *val_str, cfg_inst_val *val)
         addr->sa_family = AF_LOCAL;
         val->val_addr = (struct sockaddr *)addr;
     }
-    else 
+    else if (strchr(val_str, '.') != NULL)
+    {
+        /* Probably IPv4 address */
+        struct sockaddr_in *addr;
+
+        addr = (struct sockaddr_in *)calloc(1, sizeof(*addr));
+        if (addr == NULL)
+            return TE_ENOMEM;
+
+        if (inet_pton(AF_INET, val_str, &(addr->sin_addr)) <= 0)
+        {
+            free(addr);
+            return TE_EINVAL;
+        }
+        addr->sin_family = AF_INET;
+        val->val_addr = (struct sockaddr *)addr;
+    }
+    else
+    {
         return TE_EINVAL;
+    }
 
     return 0;
 }
