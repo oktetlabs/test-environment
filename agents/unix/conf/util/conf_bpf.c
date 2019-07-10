@@ -709,10 +709,457 @@ bpf_set_state(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
+/**
+ * Searching for the BPF map by object id and map name.
+ *
+ * @param bpf_id        The BPF object id.
+ * @param bpf_id        The map name.
+ *
+ * @return The BPF map unit or NULL.
+ */
+static bpf_map_entry *
+bpf_find_map(const char *bpf_id, const char *map_name)
+{
+    unsigned int i;
+    struct bpf_entry *bpf;
+
+    bpf = bpf_find(bpf_id);
+    if (bpf == NULL)
+        return NULL;
+
+    for (i = 0; i < bpf->map_number; i++)
+    {
+        if (strcmp(map_name, bpf->maps[i].name) == 0)
+            return &bpf->maps[i];
+    }
+
+    return NULL;
+}
+
+/* String representations of BPF map types */
+static const char* bpf_map_types_str[] = {
+    [BPF_MAP_TYPE_UNSPEC] = "UNSPEC",
+    [BPF_MAP_TYPE_HASH] = "HASH",
+    [BPF_MAP_TYPE_ARRAY] = "ARRAY",
+};
+
+/**
+ * Common get function for the BPF map parameters.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier.
+ * @param[out] value    Obtained value.
+ * @param bpf_id        BPF object id.
+ * @param map_name      Map name.
+ *
+ * @return Status code.
+ */
+static te_errno
+bpf_get_map_params(unsigned int gid, const char *oid, char *value,
+                   const char *bpf_id, const char *map_name)
+{
+    struct bpf_map_entry *map;
+
+    UNUSED(gid);
+
+    map = bpf_find_map(bpf_id, map_name);
+    if (map == NULL)
+    {
+        ERROR("Map %s isn't found.", map_name);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (strstr(oid, "/type:") != NULL)
+        snprintf(value, RCF_MAX_VAL, "%s", bpf_map_types_str[map->type]);
+    else if ((strstr(oid, "/key_size:") != NULL))
+        snprintf(value, RCF_MAX_VAL, "%u", map->key_size);
+    else if ((strstr(oid, "/value_size:") != NULL))
+        snprintf(value, RCF_MAX_VAL, "%u", map->value_size);
+    else if ((strstr(oid, "/max_entries:") != NULL))
+        snprintf(value, RCF_MAX_VAL, "%u", map->max_entries);
+    else if ((strstr(oid, "/writable:") != NULL))
+        snprintf(value, RCF_MAX_VAL, "%d", map->writable ? 1 : 0);
+
+    return 0;
+}
+
+/**
+ * Get the value by key from BPF map.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier.
+ * @param[out] value    Obtained value.
+ * @param bpf_id        BPF object id.
+ * @param map_name      Map name.
+ * @param view          View of the map (unused).
+ * @param key_str       Key from the map.
+ *
+ * @return Status code.
+ */
+static te_errno
+bpf_get_map_kv_pair(unsigned int gid, const char *oid, char *value_str,
+                    const char *bpf_id, const char *map_name, const char *view,
+                    const char *key_str)
+{
+    struct bpf_map_entry *map;
+    unsigned char *key, *value;
+    te_string value_buf = { value_str, RCF_MAX_VAL, 0, TRUE };
+    te_errno rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(view);
+
+    map = bpf_find_map(bpf_id, map_name);
+    if (map == NULL)
+    {
+        ERROR("Map isn't found.");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    key = TE_ALLOC(map->key_size);
+    if (key == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    value = TE_ALLOC(map->value_size);
+    if (value == NULL)
+    {
+        rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        goto fail_free_key;
+    }
+
+    rc = te_str_hex_str2raw(key_str, key, map->key_size);
+    if (rc != 0)
+        goto fail_free_key_value;
+
+    if (bpf_map_lookup_elem(map->fd, key, value) != 0)
+    {
+        ERROR("Failed to lookup element.");
+        rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+        goto fail_free_key_value;
+    }
+
+    rc = te_str_hex_raw2str(value, map->value_size, &value_buf);
+
+fail_free_key_value:
+    free(value);
+
+fail_free_key:
+    free(key);
+    return rc;
+}
+
+/**
+ * Get list of keys from BPF map.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full identifier of the father instance.
+ * @param sub_id        ID of the object to be listed (unused).
+ * @param list          Location for the list pointer.
+ * @param bpf_id        BPF object id.
+ * @param map_name      Map name.
+ *
+ * @return      Status code
+ */
+static te_errno
+bpf_list_map_kv_pair(unsigned int gid, const char *oid, const char *sub_id,
+                     char **list, const char *bpf_id, const char *map_name)
+{
+    te_string result = TE_STRING_INIT;
+    te_bool first = TRUE;
+    struct bpf_map_entry *map;
+    void *key;
+    void *prev_key = NULL;
+    te_errno rc = 0;
+    unsigned int i;
+
+    UNUSED(gid);
+    UNUSED(sub_id);
+
+    map = bpf_find_map(bpf_id, map_name);
+    if (map == NULL)
+    {
+        ERROR("Map isn't found.");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if ((strstr(oid, "/writable:") != NULL) && !map->writable)
+    {
+        *list = result.ptr;
+        return 0;
+    }
+
+    key = TE_ALLOC(map->key_size);
+    if (key == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    prev_key = TE_ALLOC(map->key_size);
+    if (prev_key == NULL)
+    {
+        rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        goto fail;
+    }
+
+    i = 0;
+    while (bpf_map_get_next_key(map->fd, (i == 0) ? NULL : prev_key, key) != -1)
+    {
+        te_string buf_str = TE_STRING_INIT_STATIC(RCF_MAX_VAL);
+
+        rc = te_str_hex_raw2str((unsigned char *)key, map->key_size, &buf_str);
+        if (rc != 0)
+            goto fail;
+
+        rc = te_string_append(&result, "%s%s", first ? "" : " ", buf_str.ptr);
+        first = FALSE;
+        if (rc != 0)
+            goto fail;
+
+        memcpy(prev_key, key, map->key_size);
+
+        if (++i > map->max_entries)
+        {
+            rc = TE_RC(TE_TA_UNIX, TE_EOVERFLOW);
+            goto fail;
+        }
+    }
+
+    free(key);
+    free(prev_key);
+    *list = result.ptr;
+    return 0;
+
+fail:
+    te_string_free(&result);
+    free(key);
+    free(prev_key);
+    return rc;
+}
+
+/**
+ * Set the writable map view. If writable map view is enabled then the map can
+ * be modified by user but it must not be modified by BPF program.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier (unused).
+ * @param value         New value.
+ * @param bpf_id        BPF object id.
+ * @param map_name      Map name.
+ *
+ * @return Status code.
+ */
+static te_errno
+bpf_set_map_writable(unsigned int gid, const char *oid, const char *value,
+                     const char *bpf_id, const char *map_name)
+{
+    struct bpf_map_entry *map;
+    unsigned int state;
+    te_errno rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    map = bpf_find_map(bpf_id, map_name);
+    if (map == NULL)
+    {
+        ERROR("Map isn't found.");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    rc = te_strtoui(value, 0, &state);
+    if (rc != 0)
+        return rc;
+
+    map->writable = state;
+
+    return 0;
+}
+
+/**
+ * Delete key/value pair from the BPF map. For ARRAY map it removes only value
+ * because keys are just indexes and can not be added or deleted.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier (unused).
+ * @param bpf_id        BPF object id.
+ * @param map_name      Map name.
+ * @param view          View of the map (unused).
+ * @param key_str       Key from the map.
+ *
+ * @return Status code.
+ */
+static te_errno
+bpf_del_map_writable_kv_pair(unsigned int gid, const char *oid,
+                             const char *bpf_id, const char *map_name,
+                             const char *view, const char *key_str)
+{
+    struct bpf_map_entry *map;
+    unsigned char *key;
+    te_errno rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(view);
+
+    map = bpf_find_map(bpf_id, map_name);
+    if (map == NULL)
+    {
+        ERROR("Map isn't found.");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    key = TE_ALLOC(map->key_size);
+    if (key == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    rc = te_str_hex_str2raw(key_str, key, map->key_size);
+    if (rc != 0)
+        goto free_key;
+
+    if (map->type == BPF_MAP_TYPE_ARRAY)
+    {
+        unsigned char *value;
+
+        value = TE_ALLOC(map->value_size);
+        if (value == NULL)
+            rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+        memset(value, 0, map->value_size);
+
+        if (bpf_map_update_elem(map->fd, key, value, BPF_ANY) != 0)
+        {
+            ERROR("Failed to delete element of ARRAY map.");
+            rc = TE_RC(TE_TA_UNIX, TE_ENXIO);
+        }
+
+        free(value);
+        goto free_key;
+    }
+
+    if (bpf_map_delete_elem(map->fd, key) != 0)
+    {
+        ERROR("Failed to delete element.");
+        rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+free_key:
+    free(key);
+    return rc;
+}
+
+/**
+ * Update existing key/value pair in the BPF map or add new one.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier (unused).
+ * @param value_str     New value.
+ * @param bpf_id        BPF object id.
+ * @param map_name      Map name.
+ * @param view          View of the map (unused).
+ * @param key_str       Key.
+ *
+ * @return Status code.
+ */
+static te_errno
+bpf_update_map_writable_kv_pair(unsigned int gid, const char *oid,
+                                const char *value_str, const char *bpf_id,
+                                const char *map_name, const char *view,
+                                const char *key_str)
+{
+    struct bpf_map_entry *map;
+    unsigned char *key, *value;
+    unsigned int update_flags = BPF_ANY;
+    te_errno rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(view);
+
+    if (value_str == NULL)
+    {
+        ERROR("Value should be specified to update key/value pair in the map.");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    map = bpf_find_map(bpf_id, map_name);
+    if (map == NULL)
+    {
+        ERROR("Map isn't found.");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (!map->writable)
+    {
+        ERROR("Key/value pair can be added only to writable map.");
+        return TE_RC(TE_TA_UNIX, TE_EACCES);
+    }
+
+    key = TE_ALLOC(map->key_size);
+    if (key == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    rc = te_str_hex_str2raw(key_str, key, map->key_size);
+    if (rc != 0)
+        goto fail_free_key;
+
+    value = TE_ALLOC(map->value_size);
+    if (value == NULL)
+    {
+        rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        goto fail_free_key;
+    }
+
+    rc = te_str_hex_str2raw(value_str, value, map->value_size);
+    if (rc != 0)
+        goto fail_free_key_value;
+
+    if (bpf_map_update_elem(map->fd, key, value, update_flags) != 0)
+    {
+        ERROR("Failed to update element.");
+        rc = TE_RC(TE_TA_UNIX, TE_ENXIO);
+        goto fail_free_key_value;
+    }
+
+fail_free_key_value:
+    free(value);
+
+fail_free_key:
+    free(key);
+    return rc;
+}
+
 /*
  * Test Agent /bpf configuration subtree.
  */
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_bpf_map, "map", NULL,
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_bpf_map_writable_key, "key", NULL,
+                               NULL, bpf_get_map_kv_pair,
+                               bpf_update_map_writable_kv_pair,
+                               bpf_update_map_writable_kv_pair,
+                               bpf_del_map_writable_kv_pair,
+                               bpf_list_map_kv_pair, NULL);
+
+RCF_PCH_CFG_NODE_RW(node_bpf_map_writable, "writable",
+                    &node_bpf_map_writable_key, NULL, bpf_get_map_params,
+                    bpf_set_map_writable);
+
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_bpf_map_ro_key, "key", NULL,
+                               NULL, bpf_get_map_kv_pair, bpf_list_map_kv_pair);
+
+RCF_PCH_CFG_NODE_NA(node_bpf_map_ro, "read_only", &node_bpf_map_ro_key,
+                    &node_bpf_map_writable);
+
+RCF_PCH_CFG_NODE_RO(node_bpf_map_max_entries, "max_entries", NULL,
+                    &node_bpf_map_ro, bpf_get_map_params);
+
+RCF_PCH_CFG_NODE_RO(node_bpf_map_value_size, "value_size", NULL,
+                    &node_bpf_map_max_entries, bpf_get_map_params);
+
+RCF_PCH_CFG_NODE_RO(node_bpf_map_key_size, "key_size", NULL,
+                    &node_bpf_map_value_size, bpf_get_map_params);
+
+RCF_PCH_CFG_NODE_RO(node_bpf_map_type, "type", NULL,
+                    &node_bpf_map_key_size, bpf_get_map_params);
+
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_bpf_map, "map", &node_bpf_map_type,
                                NULL, NULL, bpf_prog_map_list);
 
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_bpf_prog, "program", NULL,
