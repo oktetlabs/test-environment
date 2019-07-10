@@ -2,12 +2,12 @@
 <backup>
 
     <!-- This configuration model is intended for describing of
-         configuration information related to eBPF programs -->
+         configuration information related to BPF programs -->
 
     <!--
         Copyright (C) 2019 OKTET Labs.
 
-        Author: Damir Mansurov E-mail: dnman@oktetlabs.ru
+        Author: Roman Zhukov E-mail: Roman.Zhukov@oktetlabs.ru
     -->
 
     <!-- BPF object
@@ -22,9 +22,9 @@
     <!-- Type of the BPF program
          Name:  empty
          Value: string representation of program type:
-                unspec, socket_filter, kprobe, sched_cls, sched_act,
-                tracepoint, xdp, perf_event -->
-    <object oid="/agent/bpf/type" access="read_only" type="string"/>
+                UNSPEC, SOCKET_FILTER, KPROBE, SCHED_CLS, SCHED_ACT,
+                TRACEPOINT, XDP, PERF_EVENT -->
+    <object oid="/agent/bpf/type" access="read_write" type="string"/>
 
     <!-- BPF state
          Name:  empty
@@ -34,32 +34,37 @@
     <!-- *********** Maps *************** -->
     <!-- List of BPF maps
          Name:  map name -->
-    <object oid="/agent/bpf/map" access="read_only" type="none"/>
+    <object oid="/agent/bpf/map" access="read_only" type="none">
+      <depends oid="/agent/bpf/state"/>
+    </object>
 
     <!-- The next four entries: type, key_size, value_size and max_entries
-         are readed from object file (according to /agent/bpf/filepath) -->
+         are readed from BPF object when it is loaded. -->
 
     <!-- The type of map
          Name:  empty
          Value: string representation of map type:
-                unspec, hash, array, prog_array, perf_event_array,
-                percpu_hash, percpu_array, stack_trace, cgroup_array -->
-    <object oid="/agent/bpf/map/type" access="read_only" type="string"/>
+                UNSPEC, HASH, ARRAY -->
+    <object oid="/agent/bpf/map/type" access="read_only"
+            type="string"/>
 
     <!-- Size of map key
          Name:  empty
          Value: size of key in bytes -->
-    <object oid="/agent/bpf/map/key_size" access="read_only" type="integer"/>
+    <object oid="/agent/bpf/map/key_size" access="read_only"
+            type="integer"/>
 
     <!-- Size of map value
          Name:  empty
          Value: size of value in bytes -->
-    <object oid="/agent/bpf/map/value_size" access="read_only" type="integer"/>
+    <object oid="/agent/bpf/map/value_size" access="read_only"
+            type="integer"/>
 
     <!-- Max entries of key/map values
          Name:  empty
          Value: maximum number of entries in a map -->
-    <object oid="/agent/bpf/map/max_entries" access="read_only" type="integer"/>
+    <object oid="/agent/bpf/map/max_entries" access="read_only"
+            type="integer"/>
 
     <!-- We have two views on the map:
          - read_only: RO for Configurator: all maps always have read_only view
@@ -68,7 +73,7 @@
                       accessed only via Configurator so that rollback
                       happens properly;
          All maps from BPF object file have only read_only view by default. And
-         then writable view can be added, but after that BPF program should not
+         then writable view can be enabled, but after that BPF program should not
          write anything to the map. -->
 
     <!-- The read_only view of the map
@@ -81,9 +86,11 @@
     <object oid="/agent/bpf/map/read_only/key" access="read_only"
             type="string" volatile="true"/>
 
-    <!-- The writable view of the map
-         Name: none -->
-    <object oid="/agent/bpf/map/writable" access="read_create" type="none"/>
+    <!-- The writable view of the map enabling/disabling
+         Name: none
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1 -->
+    <object oid="/agent/bpf/map/writable" access="read_write" type="integer"/>
 
     <!-- Entries of key/value pairs
          Name:  hex-string
@@ -92,17 +99,18 @@
             type="string"/>
 
     <!-- ******************* Programs ******************* -->
-    <!-- List of BPF programs
+    <!-- List of BPF programs. Programs are available when BPF object is loaded.
          Name:  program name -->
     <object oid="/agent/bpf/program" access="read_only" type="none"/>
+      <depends oid="/agent/bpf/state"/>
+    </object>
 
     <!-- ************* Linkage to interface ************* -->
-    <!-- Link to XDP program which attached to interface
+    <!-- Link to XDP program which attached to interface. Only one XDP program
+         can be linked to interface.
          Name:  empty
          Value: an OID of the program instance,
-                such as /agent:Agt_A/bpf:0/program:foo
-
-         Note: only one XDP program can be attached to network interface -->
-    <object oid="/agent/interface/xdp" access="read_create" type="string"/>
+                such as /agent:Agt_A/bpf:0/program:foo -->
+    <object oid="/agent/interface/xdp" access="read_write" type="string"/>
 
 </backup>
