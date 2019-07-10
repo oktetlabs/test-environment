@@ -272,17 +272,16 @@ tapi_ip6_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
     return 0;
 }
 
-static uint16_t
-ip6_ext_headers_length(asn_value *pdu, uint16_t *ext_hdrs_len)
+static te_errno
+ip6_ext_headers_length_get(asn_value *pdu, uint16_t *len)
 {
     te_errno          rc = 0;
     uint32_t          num_hdrs;
     asn_value        *ext_hdrs;
     asn_child_desc_t *ext_hdrs_list;
     int32_t           hdr_field;
-    int               i;
-
-    ext_hdrs_len = 0;
+    uint32_t          i;
+    uint16_t          ext_hdrs_len = 0;
 
     ext_hdrs = asn_find_child_choice_value(pdu, NDN_TAG_IP6_EXT_HEADERS);
 
@@ -322,6 +321,9 @@ ip6_ext_headers_length(asn_value *pdu, uint16_t *ext_hdrs_len)
     }
     free(ext_hdrs_list);
 
+    if (len != NULL)
+        *len = ext_hdrs_len;
+
     return rc;
 }
 
@@ -334,10 +336,11 @@ tapi_ip6_get_payload_len(asn_value *pdu, size_t *len)
     int32_t           hdr_field;
     te_errno          rc = 0;
 
-    rc = ip6_ext_headers_length(pdu, &ext_hdrs_len);
+    rc = ip6_ext_headers_length_get(pdu, &ext_hdrs_len);
     if (rc != 0)
     {
-        ERROR("%s(): ip6_ext_headers_length() failed, rc=%r", __FUNCTION__, rc);
+        ERROR("%s(): ip6_ext_headers_length_get() failed, rc=%r",
+              __FUNCTION__, rc);
         return rc;
     }
 
