@@ -83,6 +83,10 @@ if CFG_IPTABLES_SUPPORT
 libconf_a_SOURCES += base/conf_iptables.c
 endif
 
+if CFG_BPF_SUPPORT
+libconf_a_SOURCES += util/conf_bpf.c
+endif
+
 if CFG_SNIFFERS_SUPPORT
 libconf_a_SOURCES += util/conf_sniffer.c
 libconf_a_SOURCES += util/te_sniffer_proc.c

@@ -312,6 +312,11 @@ extern te_errno ta_unix_conf_cmd_monitor_cleanup(void);
 
 extern te_errno ta_unix_conf_rlimits_init(void);
 
+#ifdef WITH_BPF
+extern te_errno ta_unix_conf_bpf_init(void);
+extern te_errno ta_unix_conf_bpf_cleanup(void);
+#endif
+
 #ifdef WITH_UPNP_CP
 # include "conf_upnp_cp.h"
 #endif /* WITH_UPNP_CP */
@@ -1323,6 +1328,11 @@ rcf_ch_conf_init()
             goto fail;
         }
 
+#ifdef WITH_BPF
+        if (ta_unix_conf_bpf_init() != 0)
+            goto fail;
+#endif
+
         init = TRUE;
 
     }
@@ -1377,6 +1387,9 @@ rcf_ch_conf_fini()
 #ifdef WITH_UPNP_CP
     ta_unix_conf_upnp_cp_release();
 #endif /* WITH_UPNP_CP */
+#ifdef WITH_BPF
+    ta_unix_conf_bpf_cleanup();
+#endif
 
    (void)ta_unix_conf_sys_tree_fini();
 

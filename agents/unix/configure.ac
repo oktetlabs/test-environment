@@ -598,6 +598,19 @@ if test "${with_static_libc}" = "no" ; then
     DYNAMIC_LIBS="${DYNAMIC_LIBS} -lutil -lrt"
 fi
 
+AC_ARG_WITH([bpf],
+            AS_HELP_STRING([--with-bpf],
+                           [enable bpf (default is NO)]),
+            [with_bpf=yes],
+            [with_bpf=""])
+
+AM_CONDITIONAL(CFG_BPF_SUPPORT, test -n "$with_bpf")
+if test -n "$with_bpf"; then
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_BPF"
+    LIBS="$LIBS -lelf -lbpf"
+    DYNAMIC_LIBS="${DYNAMIC_LIBS} -lelf -lbpf"
+fi
+
 #if ! test "$cross_compiling" = "yes" ; then
 case "$host" in
    sparc*linux*) TE_CPPFLAGS="$TE_CPPFLAGS -DNO_DL" ;;
