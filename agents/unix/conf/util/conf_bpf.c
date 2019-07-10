@@ -1210,3 +1210,270 @@ ta_unix_conf_bpf_cleanup(void)
 
     return 0;
 }
+
+/** Structure for the linkage information of XDP programs */
+typedef struct xdp_entry {
+    LIST_ENTRY(xdp_entry) next;
+
+    unsigned int            ifindex;
+    unsigned int            bpf_id;
+    char                    prog[BPF_OBJ_NAME_LEN + 1];
+} xdp_entry;
+
+/**< Head of the XDP programs list */
+static LIST_HEAD(, xdp_entry) xdp_list_h = LIST_HEAD_INITIALIZER(xdp_list_h);
+
+/** Structure of BPF program OID: /agent:Agt_A/bpf:0/program:foo */
+/* Number of levels in BPF program OID */
+#define BPF_PROG_OID_LEVELS 4
+/* Level of BPF object ID in program OID */
+#define BPF_PROG_OID_LEVEL_OBJ_ID 2
+/* Level of BPF program name in OID */
+#define BPF_PROG_OID_LEVEL_NAME 3
+
+/**
+ * Searching for the XDP program linkage information by interface index.
+ *
+ * @param ifindex       Interface index.
+ *
+ * @return The XDP program linkage information unit or NULL.
+ */
+static struct xdp_entry *
+xdp_find(unsigned int ifindex)
+{
+    struct xdp_entry *p;
+
+    LIST_FOREACH(p, &xdp_list_h, next)
+    {
+        if (ifindex == p->ifindex)
+            return p;
+    }
+
+    return NULL;
+}
+
+/**
+ * Get oid of the XDP program that is linked to the interface.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier (unused).
+ * @param[out] value    Obtained value.
+ * @param ifname        Interface name.
+ *
+ * @return Status code.
+ */
+static te_errno
+bpf_get_if_xdp(unsigned int gid, const char *oid, char *value,
+               const char *ifname)
+{
+    struct xdp_entry *xdp;
+    unsigned int ifindex = if_nametoindex(ifname);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    xdp = xdp_find(ifindex);
+    if (xdp == NULL)
+    {
+        *value = '\0';
+        return 0;
+    }
+
+    snprintf(value, RCF_MAX_VAL, "/agent:%s/bpf:%u/program:%s", ta_name, xdp->bpf_id,
+             xdp->prog);
+    return 0;
+}
+
+/**
+ * Searching for the BPF program by object id and program name.
+ *
+ * @param bpf_id        The BPF object id.
+ * @param prog_name     The program name.
+ *
+ * @return The BPF program unit or NULL.
+ */
+static bpf_prog_entry *
+bpf_find_prog(const char *bpf_id, const char *prog_name)
+{
+    unsigned int i;
+    struct bpf_entry *bpf;
+
+    bpf = bpf_find(bpf_id);
+    if (bpf == NULL)
+        return NULL;
+
+    for (i = 0; i < bpf->prog_number; i++)
+    {
+        if (strcmp(prog_name, bpf->progs[i].name) == 0)
+            return &bpf->progs[i];
+    }
+
+    return NULL;
+}
+
+/**
+ * Add new xdp entry to list and link XDP program to interface.
+ *
+ * @param oid           OID of XDP program.
+ * @param ifindex       Interface index.
+ * @param xdp_flags     XDP flags for link.
+ *
+ * @return Status code.
+ */
+static te_errno
+bpf_add_and_link_xdp(cfg_oid *prog_oid, unsigned int ifindex,
+                     unsigned int xdp_flags)
+{
+    struct bpf_entry *bpf;
+    struct bpf_prog_entry *prog;
+    char *bpf_id_str;
+    struct xdp_entry *xdp;
+    te_errno rc = 0;
+
+    if (prog_oid == NULL || !prog_oid->inst ||
+        prog_oid->len != BPF_PROG_OID_LEVELS)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    bpf_id_str = CFG_OID_GET_INST_NAME(prog_oid, BPF_PROG_OID_LEVEL_OBJ_ID);
+
+    bpf = bpf_find(bpf_id_str);
+    if (bpf == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (bpf->prog_type != BPF_PROG_TYPE_XDP)
+    {
+        ERROR("Only XDP programs can be linked to interface.");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    xdp = TE_ALLOC(sizeof(*xdp));
+    if (xdp == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    xdp->ifindex = ifindex;
+    rc = te_strtoui(bpf_id_str, 0, &xdp->bpf_id);
+    if (rc != 0)
+        goto fail;
+    strncpy(xdp->prog, CFG_OID_GET_INST_NAME(prog_oid, BPF_PROG_OID_LEVEL_NAME),
+            sizeof(xdp->prog) - 1);
+    xdp->prog[sizeof(xdp->prog) - 1] = '\0';
+
+
+    prog = bpf_find_prog(bpf_id_str, xdp->prog);
+    if (prog == NULL)
+    {
+        rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+        goto fail;
+    }
+
+    if (bpf_set_link_xdp_fd(ifindex, prog->fd, xdp_flags) != 0)
+    {
+        ERROR("Failed to link XDP program.");
+        rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+        goto fail;
+    }
+
+    LIST_INSERT_HEAD(&xdp_list_h, xdp, next);
+    return 0;
+
+fail:
+    free(xdp);
+    return rc;
+}
+
+/**
+ * Set oid of the XDP program that should be linked to the interface. Calls to
+ * link/unlink XDP programs.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier (unused).
+ * @param value         New value.
+ * @param ifname        Interface name.
+ *
+ * @return Status code.
+ */
+static te_errno
+bpf_set_if_xdp(unsigned int gid, const char *oid, const char *value,
+               const char *ifname)
+{
+    struct xdp_entry *xdp_old = NULL;
+    unsigned int ifindex = if_nametoindex(ifname);
+    unsigned int xdp_flags = XDP_FLAGS_UPDATE_IF_NOEXIST;
+    te_errno rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (!rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname))
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+
+    xdp_old = xdp_find(ifindex);
+
+    if (*value == '\0')
+    {
+        if (bpf_set_link_xdp_fd(ifindex, -1, xdp_flags) != 0)
+        {
+            ERROR("Failed to unlink XDP program.");
+            return TE_RC(TE_TA_UNIX, TE_EFAIL);
+        }
+    }
+    else
+    {
+        rc = bpf_add_and_link_xdp(cfg_convert_oid_str(value), ifindex,
+                                  xdp_flags);
+        if (rc != 0)
+            return rc;
+    }
+
+    if (xdp_old != NULL)
+    {
+        LIST_REMOVE(xdp_old, next);
+        free(xdp_old);
+    }
+
+    return 0;
+}
+
+/*
+ * Test Agent /xdp configuration subtree.
+ */
+RCF_PCH_CFG_NODE_RW(node_if_xdp, "xdp", NULL,
+                    NULL, bpf_get_if_xdp, bpf_set_if_xdp);
+
+/**
+ * Initialization of the XDP configuration subtrees.
+ *
+ * @return Status code.
+ */
+te_errno
+ta_unix_conf_if_xdp_init(void)
+{
+    return rcf_pch_add_node("/agent/interface/", &node_if_xdp);
+}
+
+/**
+ * Cleanup XDP function. Unlink all XDP programs from interfaces.
+ *
+ * @return Status code.
+ */
+te_errno
+ta_unix_conf_if_xdp_cleanup(void)
+{
+    struct xdp_entry *xdp;
+    struct xdp_entry *tmp;
+
+    LIST_FOREACH_SAFE(xdp, &xdp_list_h, next, tmp)
+    {
+        if (bpf_set_link_xdp_fd(xdp->ifindex, -1,
+                                XDP_FLAGS_UPDATE_IF_NOEXIST) != 0)
+        {
+            ERROR("Failed to unlink XDP program.");
+            return TE_RC(TE_TA_UNIX, TE_EFAIL);
+        }
+
+        LIST_REMOVE(xdp, next);
+        free(xdp);
+    }
+
+    return 0;
+}

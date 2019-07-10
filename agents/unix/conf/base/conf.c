@@ -314,7 +314,9 @@ extern te_errno ta_unix_conf_rlimits_init(void);
 
 #ifdef WITH_BPF
 extern te_errno ta_unix_conf_bpf_init(void);
+extern te_errno ta_unix_conf_if_xdp_init(void);
 extern te_errno ta_unix_conf_bpf_cleanup(void);
+extern te_errno ta_unix_conf_if_xdp_cleanup(void);
 #endif
 
 #ifdef WITH_UPNP_CP
@@ -1331,6 +1333,9 @@ rcf_ch_conf_init()
 #ifdef WITH_BPF
         if (ta_unix_conf_bpf_init() != 0)
             goto fail;
+
+        if (ta_unix_conf_if_xdp_init() != 0)
+            goto fail;
 #endif
 
         init = TRUE;
@@ -1388,6 +1393,7 @@ rcf_ch_conf_fini()
     ta_unix_conf_upnp_cp_release();
 #endif /* WITH_UPNP_CP */
 #ifdef WITH_BPF
+    ta_unix_conf_if_xdp_cleanup();
     ta_unix_conf_bpf_cleanup();
 #endif
 
