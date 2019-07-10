@@ -324,24 +324,31 @@ te_handler(void)
                     continue;
                 }
 
+                add_inst(inst);
+
+                /*
+                 * This should be done before starting the thread,
+                 * for values from configuration file (like polling)
+                 * to take effect immediately.
+                 */
+                INFO("Logger configuration file parsing\n");
+                if (configParser(cfg_file) != 0)
+                    WARN("Logger configuration file failure\n");
+
                 if (pthread_create(&inst->thread, NULL,
                                    (void *)&ta_handler,
                                    (void *)inst) != 0)
                 {
                     ERROR("Logger(client): pthread_create() failed: %s",
                           strerror(errno));
+                    remove_inst(inst);
                     free(inst);
                     continue;
                 }
 
                 inst->thread_run = TRUE;
-                add_inst(inst);
 
                 RING("Logger '%s' TA handler has been added", inst->agent);
-                INFO("Logger configuration file parsing\n");
-
-                if (configParser(cfg_file) != 0)
-                    WARN("Logger configuration file failure\n");
             }
             /* Check whether insert sniffer mark invocation is needed */
             else if (ml + sizeof(te_log_nfl) == len &&
