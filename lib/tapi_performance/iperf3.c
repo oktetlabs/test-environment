@@ -320,7 +320,7 @@ jsonvalue2double(const json_t *jobj, double *value)
  *
  * @return Minimal bits_per_second among streams
  */
-static double
+static te_errno
 get_min_stream_bps(const json_t *jrpt, tapi_perf_report_kind kind, double *bps)
 {
     te_errno    rc = TE_ENOENT;
@@ -344,21 +344,22 @@ get_min_stream_bps(const json_t *jrpt, tapi_perf_report_kind kind, double *bps)
     for (i = 0; i < json_array_size(jnode); ++i)
     {
         double  tmp_bps;
+        json_t *elem;
         json_t *cur;
 
-        cur = json_array_get(jnode, i);
-        if (!json_is_object(cur))
+        elem = json_array_get(jnode, i);
+        if (!json_is_object(elem))
         {
             rc = TE_EFAIL;
             break;
         }
 
         /* Try to get udp object if available. It is the only one */
-        cur = json_object_get(cur, "udp");
+        cur = json_object_get(elem, "udp");
         if (!json_is_object(cur))
         {
             /* Take sender/receiver report, sender is default */
-            cur = json_object_get(cur,
+            cur = json_object_get(elem,
                 kind == TAPI_PERF_REPORT_KIND_RECEIVER ? "receiver" : "sender");
             if (!json_is_object(cur))
                 continue;
