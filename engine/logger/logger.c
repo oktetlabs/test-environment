@@ -515,20 +515,23 @@ ta_handler(void *ta)
             }
 
             /*
-             * Calculate delay of waiting we should wait
+             * Calculate period of time we should wait
              * before next get log.
              */
-            if (poll_ts.tv_sec > now.tv_sec)
+            if (poll_ts.tv_sec >= now.tv_sec)
+            {
                 delay.tv_sec = poll_ts.tv_sec - now.tv_sec;
 
-            if (poll_ts.tv_usec >= now.tv_usec)
-            {
-                delay.tv_usec = poll_ts.tv_usec - now.tv_usec;
-            }
-            else if (delay.tv_sec > 0) 
-            {
-                delay.tv_sec--;
-                delay.tv_usec = (poll_ts.tv_usec + 1000000) - now.tv_usec;
+                if (poll_ts.tv_usec >= now.tv_usec)
+                {
+                    delay.tv_usec = poll_ts.tv_usec - now.tv_usec;
+                }
+                else if (delay.tv_sec > 0)
+                {
+                    delay.tv_sec--;
+                    delay.tv_usec = (poll_ts.tv_usec + 1000000) -
+                                                        now.tv_usec;
+                }
             }
 
             FD_ZERO(&rfds);

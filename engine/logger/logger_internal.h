@@ -67,8 +67,8 @@ extern "C" {
 #include "te_log_sniffers.h"
 
 
-/** Default TA polling timeout */
-#define LGR_TA_POLL_DEF         1000000     /* 1 second */
+/** Default TA polling timeout in milliseconds */
+#define LGR_TA_POLL_DEF         1000     /* 1 second */
 
 /** 
  * Maximum number of messages to be get during flush.
@@ -119,7 +119,8 @@ typedef struct ta_inst {
                                               NULL */
     uint32_t        sequence;            /**< Incoming message sequence
                                               nmbr */
-    int             polling;             /**< Polling parameter value */
+    int             polling;             /**< Polling parameter value
+                                              (in milliseconds) */
     te_bool         thread_run;          /**< Is thread running? */
     pthread_t       thread;              /**< Thread identifier */
     int             flush_log;           /**< 0 - normal processing;
