@@ -378,3 +378,25 @@ te_errno te_str_hex_str2raw(const char *str, uint8_t *data, size_t data_len)
     ERROR("%s(): hex string is too small.", __FUNCTION__);
     return TE_EINVAL;
 }
+
+/* See description in te_str.h */
+te_errno
+te_str_find_index(const char *str, const char **str_array,
+                  unsigned int str_array_len, unsigned int *index)
+{
+    unsigned int i;
+
+    if (str == NULL || *str == '\0')
+        return TE_EINVAL;
+
+    for (i = 0; i < str_array_len; i++)
+    {
+        if (strcmp(str, str_array[i]) == 0)
+        {
+            *index = i;
+            return 0;
+        }
+    }
+
+    return TE_EINVAL;
+}

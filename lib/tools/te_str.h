@@ -204,6 +204,20 @@ extern te_errno te_str_hex_raw2str(const uint8_t *data, size_t data_len,
 extern te_errno te_str_hex_str2raw(const char *str, uint8_t *data,
                                    size_t data_len);
 
+/**
+ * Find index of the string in the array of strings.
+ *
+ * @param str           Null-terminated string
+ * @param str_array     Array of strings
+ * @param str_array_len The length of the @p str_array
+ * @param[out] index    The index of the @p srt in the @p str_array
+ *
+ * @return              Status code
+ */
+extern te_errno te_str_find_index(const char *str, const char **str_array,
+                                  unsigned int str_array_len,
+                                  unsigned int *index);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
