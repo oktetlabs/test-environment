@@ -382,11 +382,14 @@ end:
 }
 
 /*
- * Extract report from JSON object.
+ * Extract statistics report from JSON object.
  *
- * @param[in]  jrpt         JSON object contains report data.
- * @param[in]  kind         Report kind.
- * @param[out] report       Report.
+ * @param[in]    jrpt       JSON object contains report data.
+ * @param[in]    kind       Report kind.
+ * @param[inout] report     Report.
+ *
+ * @note    Only statistics fields of @p report are updated
+ *          if the function succeeds.
  *
  * @return Status code.
  */
@@ -395,7 +398,7 @@ get_report(const json_t *jrpt, tapi_perf_report_kind kind,
            tapi_perf_report *report)
 {
     json_t *jend, *jsum, *jval, *jint;
-    tapi_perf_report tmp_report;
+    tapi_perf_report tmp_report = *report;
     size_t   i;
     double   total_seconds = 0.0;
     uint64_t total_bytes = 0;
