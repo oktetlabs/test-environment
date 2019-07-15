@@ -33,7 +33,7 @@
 #define TE_TOEPLITZ_CACHE_SIZE (TE_TOEPLITZ_IN_MAX * (UINT8_MAX + 1))
 
 struct te_toeplitz_hash_cache {
-        unsigned char cache[TE_TOEPLITZ_CACHE_SIZE * sizeof(unsigned int)];
+        unsigned int cache[TE_TOEPLITZ_CACHE_SIZE];
 };
 
 /* See description in te_toeplitz.h */
