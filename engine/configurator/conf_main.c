@@ -45,11 +45,6 @@ static const char *cs_cfg_file[16] =  {NULL, };
 static const char *cs_sniff_cfg_file = NULL;  /**< Configuration file name
                                                    for sniffer framework */
 
-#if WITH_CONF_YAML
-/** Configuration file in YAML */
-static const char *cs_conf_yaml = NULL;
-#endif /* WITH_CONF_YAML */
-
 /** @name Configurator global options */
 #define CS_PRINT_TREES  0x1     /**< Print objects and object instances
                                      trees after initialization */
@@ -1661,11 +1656,6 @@ process_cmd_line_opts(int argc, char **argv)
         { "sniff-conf", '\0', POPT_ARG_STRING, &cs_sniff_cfg_file, 0,
           "Auxiliary conf file for the sniffer framework.", NULL },
 
-#if WITH_CONF_YAML
-        { "conf-yaml", '\0', POPT_ARG_STRING, &cs_conf_yaml, 0,
-          "Configuration file in YAML", NULL },
-#endif /* WITH_CONF_YAML */
-
         POPT_AUTOHELP
         POPT_TABLEEND
     };
@@ -1724,6 +1714,62 @@ cfg_sigpipe_handler(int signum)
 {
     UNUSED(signum);
     WARN("SIGPIPE received");
+}
+
+/**
+ * Figure out configuration file type (XML or YAML)
+ * and proceed with parsing.
+ *
+ * @param fname Name of the configuration file
+ *
+ * @return Status code.
+ */
+static te_errno
+handle_cfg_file_by_its_type(const char *fname)
+{
+    FILE *f;
+    int   ret;
+    char  str[6];
+
+    f = fopen(fname, "r");
+    if (f == NULL)
+    {
+        ERROR("Failed to open configuration file '%s'", fname);
+        return TE_OS_RC(TE_CS, errno);
+    }
+
+    if (fseek(f, 0, SEEK_SET) < 0)
+    {
+        ERROR("Failed to set position in configuration file '%s'", fname);
+        fclose(f);
+        return TE_OS_RC(TE_CS, errno);
+    }
+
+    ret = fscanf(f, " %5s", str);
+    if (ret == EOF)
+    {
+	int error_code_set = ferror(f);
+
+        ERROR("Failed to read the first non-whitespace characters "
+              "from configuration file '%s'", fname);
+        fclose(f);
+        if (error_code_set != 0)
+                return TE_OS_RC(TE_CS, errno);
+        else
+                return TE_OS_RC(TE_CS, TE_ENODATA);
+    }
+
+    fclose(f);
+
+    if (strcmp(str, "<?xml") == 0)
+        return parse_config(fname, FALSE);
+#if WITH_CONF_YAML
+    else if (strcmp(str, "---") == 0)
+        return parse_config_yaml(fname);
+#endif /* !WITH_CONF_YAML */
+
+    ERROR("Failed to recognise the format of configuration file '%s'", fname);
+    return TE_RC(TE_CS, TE_EOPNOTSUPP);
 }
 
 /**
@@ -1795,14 +1841,14 @@ main(int argc, char **argv)
          cs_cfg_file[cfg_file_id] != NULL && cfg_file_id < MAX_CFG_FILES;
          cfg_file_id++)
     {
-      INFO("-> %s", cs_cfg_file[cfg_file_id]);
-      if ((rc = parse_config(cs_cfg_file[cfg_file_id], FALSE)) != 0)
-      {
-        ERROR("Fatal error during configuration file parsing: %d - %s",
-              cfg_file_id,
-              cs_cfg_file[cfg_file_id]);
-        goto exit;
-      }
+        INFO("-> %s", cs_cfg_file[cfg_file_id]);
+        rc = handle_cfg_file_by_its_type(cs_cfg_file[cfg_file_id]);
+        if (rc != 0)
+        {
+            ERROR("Fatal error during configuration file parsing: %d - %s",
+                  cfg_file_id, cs_cfg_file[cfg_file_id]);
+            goto exit;
+        }
     }
 
     if (cs_sniff_cfg_file != NULL &&
@@ -1811,19 +1857,6 @@ main(int argc, char **argv)
         ERROR("Fatal error during sniffer configuration file parsing");
         goto exit;
     }
-
-#if WITH_CONF_YAML
-    if (cs_conf_yaml != NULL)
-    {
-        INFO("-> %s", cs_conf_yaml);
-        rc = parse_config_yaml(cs_conf_yaml);
-        if (rc != 0)
-        {
-            ERROR("Failed to parse configuration file in YAML");
-            goto exit;
-        }
-    }
-#endif /* WITH_CONF_YAML */
 
     if (cs_flags & CS_PRINT_TREES)
     {
