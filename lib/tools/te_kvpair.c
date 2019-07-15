@@ -57,7 +57,7 @@ te_kvpair_fini(te_kvpair_h *head)
 
 /* See the description in te_kvpair.h */
 const char *
-te_kvpairs_get(te_kvpair_h *head, const char *key)
+te_kvpairs_get(const te_kvpair_h *head, const char *key)
 {
     te_kvpair *p;
 

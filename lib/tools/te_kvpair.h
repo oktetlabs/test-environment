@@ -82,7 +82,7 @@ extern te_errno te_kvpair_add(te_kvpair_h *head, const char *key,
  *
  * @retval       Requested @p key value or @c NULL if there is no such key
  */
-extern const char *te_kvpairs_get(te_kvpair_h *head, const char *key);
+extern const char *te_kvpairs_get(const te_kvpair_h *head, const char *key);
 
 /**
  * Convert list of kv_pairs to string representation (i.e. key1=val1:key2=val2)
