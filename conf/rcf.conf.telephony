@@ -1,6 +1,10 @@
 <?xml version="1.0"?>
 <rcf>
-  <ta name="Agt_A" type="linux" fake="no" synch_time="no" rebootable="no"
-      rcflib="rcfunix" confstr="anor:18001:sudo:"/>
+    <ta name="Agt_A" type="linux" fake="no" synch_time="no" rebootable="no"
+        rcflib="rcfunix">
+        <conf name="host">anor</conf>
+        <conf name="port">18001</conf>
+        <conf name="sudo"/>
+    </ta>
 </rcf>
 
