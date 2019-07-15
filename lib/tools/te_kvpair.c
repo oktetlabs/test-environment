@@ -28,6 +28,7 @@
 
 #include "te_alloc.h"
 #include "te_kvpair.h"
+#include "logger_api.h"
 
 /* See the description in te_kvpair.h */
 void
@@ -112,5 +113,70 @@ te_kvpair_add(te_kvpair_h *head, const char *key,
 
     TAILQ_INSERT_TAIL(head, p, links);
 
+    return 0;
+}
+
+/* See the description in te_kvpair.h */
+te_errno
+te_kvpair_to_str(const te_kvpair_h *head, te_string *str)
+{
+    te_kvpair *p;
+    te_errno   rc;
+    te_bool    first = TRUE;
+
+    assert(head != NULL);
+    assert(str != NULL);
+
+    TAILQ_FOREACH(p, head, links)
+    {
+        rc = te_string_append(str, "%s%s=%s", first ? "" : ":",
+                              p->key, p->value);
+        if (rc != 0)
+            return rc;
+
+        first = FALSE;
+    }
+    return 0;
+}
+
+/* See the description in te_kvpair.h */
+te_errno
+te_kvpair_from_str(const char *str, te_kvpair_h *head)
+{
+    char       *dup;
+    char       *token;
+    char       *saveptr1;
+    te_errno    rc;
+
+    assert(str != NULL);
+    assert(head != NULL);
+
+    if ((dup = strdup(str)) == NULL)
+        return TE_ENOMEM;
+
+    for (token = strtok_r(dup, TE_KVPAIR_STR_DELIMITER, &saveptr1);
+         token != NULL;
+         token = strtok_r(NULL, TE_KVPAIR_STR_DELIMITER, &saveptr1))
+    {
+        char   *key;
+        char   *val;
+
+        if (*token == '=')
+        {
+            ERROR("Wrong token '%s': empty key is not allowed", token);
+            free(dup);
+            te_kvpair_fini(head);
+            return TE_EINVAL;
+        }
+
+        key = strtok_r(token, "=", &val);
+        if ((rc = te_kvpair_add(head, key, val)) != 0)
+        {
+            free(dup);
+            te_kvpair_fini(head);
+            return rc;
+        }
+    }
+    free(dup);
     return 0;
 }

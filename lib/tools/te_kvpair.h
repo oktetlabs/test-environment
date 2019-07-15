@@ -23,6 +23,7 @@
 
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_string.h"
 
 #if HAVE_SYS_QUEUE_H
 #include <sys/queue.h>
@@ -34,6 +35,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define TE_KVPAIR_STR_DELIMITER ":"
 
 /** Element of the list of key-value pair */
 typedef struct te_kvpair {
@@ -81,6 +84,27 @@ extern te_errno te_kvpair_add(te_kvpair_h *head, const char *key,
  */
 extern const char *te_kvpairs_get(te_kvpair_h *head, const char *key);
 
+/**
+ * Convert list of kv_pairs to string representation (i.e. key1=val1:key2=val2)
+ * @sa TE_KVPAIR_STR_DELIMITER
+ *
+ * @param[in] head  Head of the list
+ * @param[out] str  Pointer to string
+ *
+ * @retval          Status code
+ */
+extern te_errno te_kvpair_to_str(const te_kvpair_h *head, te_string *str);
+
+/**
+ * Convert string to list of kv_pairs,
+ * @sa TE_KVPAIR_STR_DELIMITER
+ *
+ * @param[in] str   Pointer to string
+ * @param[out] head Head of the kv_pair list
+ *
+ * @retval          Status code
+ */
+extern te_errno te_kvpair_from_str(const char *str, te_kvpair_h *head);
 
 #ifdef __cplusplus
 } /* extern "C" */
