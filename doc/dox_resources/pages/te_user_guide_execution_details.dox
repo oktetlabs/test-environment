@@ -44,8 +44,16 @@ In this scenario @ref te_engine_rcf configuration file would look like:
 @code
 <?xml version="1.0"?>
 <rcf>
-  <ta name="Agt_A" type="bsd" rcflib="rcfunix" confstr="gollum:5000:sudo:"/>
-  <ta name="Agt_B" type="win" rcflib="rcfunix" confstr="aule:5000:sudo:"/>
+    <ta name="Agt_A" type="bsd" rcflib="rcfunix">
+        <conf name="host">gollum</conf>
+        <conf name="port">5000</conf>
+        <conf name="sudo"/>
+    </ta>
+    <ta name="Agt_B" type="win" rcflib="rcfunix">
+        <conf name="host">aule</conf>
+        <conf name="port">5000</conf>
+        <conf name="sudo"/>
+    </ta>
 </rcf>
 @endcode
 
@@ -61,8 +69,15 @@ In this scenario @ref te_engine_rcf configuration file would look like:
 @code
 <?xml version="1.0"?>
 <rcf>
-  <ta name="Agt_A" type="bsd" rcflib="rcfunix" confstr="gollum:5000:sudo:"/>
-  <ta name="Agt_B" type="linux" rcflib="rcfunix" confstr=":5000:sudo:"/>
+    <ta name="Agt_A" type="bsd" rcflib="rcfunix">
+        <conf name="host">gollum</conf>
+        <conf name="port">5000</conf>
+        <conf name="sudo"/>
+    </ta>
+    <ta name="Agt_B" type="linux" rcflib="rcfunix">
+        <conf name="port">5000</conf>
+        <conf name="sudo"/>
+    </ta>
 </rcf>
 @endcode
 

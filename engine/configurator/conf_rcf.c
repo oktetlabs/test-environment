@@ -48,8 +48,8 @@ static te_errno
 cfg_rcfunix_make_confstr(te_string *confstr, cfg_instance *ta)
 {
     static const struct cfg_rcfunix_conf_param params[] = {
-        { "host",         FALSE,  FALSE,  TRUE  },
-        { "port",         TRUE,   FALSE,  TRUE  },
+        { "host",         FALSE,  TRUE,   TRUE  },
+        { "port",         TRUE,   TRUE,   TRUE  },
         { "user",         FALSE,  TRUE,   TRUE  },
         { "key",          FALSE,  TRUE,   TRUE  },
         { "ssh_port",     FALSE,  TRUE,   TRUE  },
@@ -60,7 +60,7 @@ cfg_rcfunix_make_confstr(te_string *confstr, cfg_instance *ta)
         { "sudo",         FALSE,  TRUE,   FALSE },
         { "su",           FALSE,  TRUE,   FALSE },
         { "connect",      FALSE,  TRUE,   TRUE  },
-        { "opaque",       FALSE,  FALSE,  TRUE  },
+        { "opaque",       FALSE,  TRUE,   TRUE  },
         { NULL,           FALSE,  FALSE,  FALSE },
     };
     const struct cfg_rcfunix_conf_param *p;

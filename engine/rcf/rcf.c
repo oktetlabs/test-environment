@@ -178,7 +178,7 @@ typedef struct ta {
     char               *name;               /**< Test Agent name */
     char               *type;               /**< Test Agent type */
     te_bool             enable_synch_time;  /**< Enable synchronize time */
-    char               *conf;               /**< Configuration string */
+    te_kvpair_h         conf;               /**< Configurations list of kv_pairs */
     usrreq              sent;               /**< User requests sent
                                                  to the TA */
     usrreq              waiting;            /**< User requests waiting
@@ -277,7 +277,7 @@ free_ta_list()
 
         free(agent->name);
         free(agent->type);
-        free(agent->conf);
+        te_kvpair_fini(&agent->conf);
 
         for (task = agent->initial_tasks; task != NULL; task = nexttask)
         {
@@ -410,6 +410,7 @@ static te_errno
 parse_config_ta(xmlNodePtr ta_node)
 {
     xmlNodePtr          arg;
+    xmlNodePtr          cfg;
     xmlNodePtr          task;
     char               *attr;
     ta                 *agent;
@@ -472,12 +473,6 @@ parse_config_ta(xmlNodePtr ta_node)
     agent->enable_synch_time =
             attribute_contains_yes(ta_node, "synch_time");
 
-    attr = xmlGetProp_exp(ta_node, (const xmlChar *)"confstr");
-    if (attr != NULL)
-        agent->conf = attr;
-    else
-        agent->conf = strdup("");
-
     if (attribute_contains_yes(ta_node, "rebootable"))
         agent->flags |= TA_REBOOTABLE;
 
@@ -499,6 +494,124 @@ parse_config_ta(xmlNodePtr ta_node)
     /* TA is already running under gdb */
     if (attribute_contains_yes(ta_node, "fake"))
         agent->flags |= TA_FAKE;
+
+    te_kvpair_init(&agent->conf);
+
+    attr = xmlGetProp_exp(ta_node, (const xmlChar *)"confstr");
+    if (attr != NULL)
+    {
+        /* Process old-style confstr */
+        char       *token;
+        char       *saveptr1;
+        int         token_nbr = 0;
+        size_t      attr_len = strlen(attr);
+
+        for (token = strtok_r(attr, ":", &saveptr1);
+             token != NULL;
+             token = strtok_r(NULL, ":", &saveptr1), token_nbr++)
+        {
+            char     *key;
+            char     *val;
+            te_errno  rc;
+
+            if ((key = strtok_r(token, "=", &val)) == '\0')
+                continue;
+
+            if (token_nbr == 0)
+            {
+                val = key;
+                key = "host";
+            }
+            else if (token_nbr == 1)
+            {
+                val = key;
+                key = "port";
+            }
+            else if ((attr + attr_len) == val)
+            {
+                /* shell is the last item in confstr */
+                val = key;
+                key = "shell";
+            }
+
+            if ((rc = te_kvpair_add(&agent->conf, key, val)) != 0)
+            {
+                free(attr);
+                te_kvpair_fini(&agent->conf);
+                return TE_RC(TE_RCF, rc);
+            }
+        }
+    }
+    free(attr);
+
+    /* Process new-style configuration */
+    for (cfg = ta_node->xmlChildrenNode; cfg != NULL; cfg = cfg->next)
+    {
+        char       *key = NULL;
+        char       *val = NULL;
+        char       *cond = NULL;
+        te_errno    rc;
+
+        if (xmlStrcmp(cfg->name, (const xmlChar *)"conf") != 0)
+            continue;
+
+        key  = xmlGetProp_exp(cfg, (const xmlChar *)"name");
+        if (key == NULL || *key == '\0')
+        {
+            free(key);
+            continue;
+        }
+
+        cond = xmlGetProp_exp(cfg, (const xmlChar *)"cond");
+        if (cond != NULL && (*cond == '\0' || strcmp(cond, "false") == 0))
+        {
+            free(key);
+            free(cond);
+            continue;
+        }
+        free(cond);
+
+        if (cfg->children != NULL)
+        {
+            if (cfg->children != cfg->last)
+            {
+                ERROR("Attribute name:%s for agent %s MUST contain only "
+                      "ONE subitem", key, agent->name);
+                free(key);
+                return TE_RC(TE_RCF, TE_EINVAL);
+            }
+
+            if (cfg->children->content != NULL)
+            {
+                if (xmlStrcmp(cfg->children->name,
+                              (const xmlChar *)("text")) != 0)
+                {
+                    ERROR("Unexpected children name in conf name:%s for "
+                          "agent %s, expected 'text', but given '%s'",
+                          key, agent->name, cfg->children->name);
+                    free(key);
+                    return TE_RC(TE_RCF, TE_EINVAL);
+                }
+
+                if ((rc = te_expand_env_vars((const char *)cfg->children->content,
+                                        NULL, &val)) != 0)
+                {
+                    ERROR("Error substituting variables in conf %s '%s': %s",
+                          key, cfg->children->content, strerror(rc));
+                    free(key);
+                    return TE_RC(TE_RCF, rc);
+                }
+            }
+        }
+
+        rc = te_kvpair_add(&agent->conf, key, val != NULL ? val : "");
+
+        free(key);
+        free(val);
+
+        if (rc != 0)
+            return TE_RC(TE_RCF, rc);
+    }
 
     for (task = ta_node->xmlChildrenNode; task != NULL; task = task->next)
     {
@@ -1009,11 +1122,20 @@ set_ta_unrecoverable(ta *agent)
 static int
 init_agent(ta *agent)
 {
-    int rc;
-    te_bool is_reboot = ((agent->flags & TA_REBOOTING) != 0);
+    int       rc;
+    te_bool   is_reboot = ((agent->flags & TA_REBOOTING) != 0);
+    te_string str = TE_STRING_INIT;
+
+    if ((rc = te_kvpair_to_str(&agent->conf, &str)) != 0)
+    {
+        te_string_free(&str);
+        return rc;
+    }
 
     INFO("Start TA '%s' type=%s confstr='%s'",
-         agent->name, agent->type, agent->conf);
+         agent->name, agent->type, str.ptr);
+    te_string_free(&str);
+
     agent->restart_timestamp = time(NULL);
     if (agent->flags & TA_FAKE)
         RING("TA '%s' has been already started", agent->name);
@@ -1022,7 +1144,7 @@ init_agent(ta *agent)
     agent->flags |= TA_DEAD;
 
     if ((rc = (agent->m.start)(agent->name, agent->type,
-                               agent->conf, &(agent->handle),
+                               &agent->conf, &(agent->handle),
                                &(agent->flags))) != 0)
     {
         if (!is_reboot)
@@ -2637,14 +2759,15 @@ process_user_request(usrreq *req)
 
                 agent->sid = RCF_SID_UNUSED;
 
+                te_kvpair_init(&agent->conf);
                 if ((agent->name = strdup(msg->ta)) == NULL ||
                     (agent->type = strdup(msg->id)) == NULL ||
-                    (agent->conf = strdup(msg->value)) == NULL)
+                    (te_kvpair_from_str(msg->value, &agent->conf)) !=0)
                 {
                     /* Suppose that calloc provided all NULLs */
                     free(agent->name);
                     free(agent->type);
-                    free(agent->conf);
+                    te_kvpair_fini(&agent->conf);
 
                     free(agent);
                     msg->error = TE_RC(TE_RCF, TE_ENOMEM);
@@ -2656,7 +2779,7 @@ process_user_request(usrreq *req)
                     /* Suppose that calloc provided all NULLs */
                     free(agent->name);
                     free(agent->type);
-                    free(agent->conf);
+                    te_kvpair_fini(&agent->conf);
 
                     free(agent);
                     msg->error = rc;
@@ -2806,7 +2929,7 @@ process_user_request(usrreq *req)
                     /* Free agent */
                     free(agt->name);
                     free(agt->type);
-                    free(agt->conf);
+                    te_kvpair_fini(&agt->conf);
                     free(agt);
 
                     /* Remove agent from linked list */

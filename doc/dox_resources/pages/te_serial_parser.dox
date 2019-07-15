@@ -84,13 +84,16 @@ tapi_serial_id_cleanup(pars);
 <?xml version="1.0"?>
 <rcf>
 <ta name="Agt_A" type="linux" fake="no" synch_time="no" rebootable="no"
-    rcflib="rcfunix" confstr="bilbo:18001:sudo:">
-     <thread name="serial_console_log" when="rcfuser">
-          <arg value="rcfuser"/>
-          <arg value="WARN"/>
-          <arg value="100"/>
-          <arg value="3105:user:console_name"/>
-     </thread>
+    rcflib="rcfunix">
+    <conf name="host">bilbo</conf>
+    <conf name="port">18001</conf>
+    <conf name="sudo"/>
+    <thread name="serial_console_log" when="rcfuser">
+        <arg value="rcfuser"/>
+        <arg value="WARN"/>
+        <arg value="100"/>
+        <arg value="3105:user:console_name"/>
+    </thread>
 </ta>
 </rcf>
 @endcode

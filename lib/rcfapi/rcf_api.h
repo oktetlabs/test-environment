@@ -117,7 +117,7 @@ enum rcf_ta_flags {
  * @param type          Test Agent type
  * @param rcflib        Name of RCF TA-specific shared library to be
  *                      used to control Test Agent
- * @param confstr       TA-specific configuration string
+ * @param confstr       TA-specific configuration string (kvpairs)
  * @param flags         Test Agent control flags (see ::rcf_ta_flags)
  *
  * @return Error code

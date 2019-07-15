@@ -58,7 +58,7 @@ main(int argc, char *argv[])
 
     SLEEP(2);
 
-    confstr = te_string_fmt("%s:%d:user=root:key=%s:ssh_port=%u:",
+    confstr = te_string_fmt("host=%s:port=%d:user=root:key=%s:ssh_port=%u:",
                             "127.0.0.1", rcf_port, key, ssh_port);
 
     CHECK_RC(rcf_add_ta(ta_vm, "linux", "rcfunix", confstr,

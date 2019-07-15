@@ -39,14 +39,145 @@
             </xsd:annotation>
         </xsd:attribute>     
     </xsd:complexType>
-    
+
+    <xsd:simpleType name="conf_name">
+        <xsd:restriction base="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation>
+                    The name of test Agent's parameter
+                </xsd:documentation>
+            </xsd:annotation>
+            <xsd:enumeration value="host">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        IP address or hostname
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="port">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        TCP port to bind TCP server on the Test Agent
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="user">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        User name to log in to host
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="key">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        SSH private key file
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="ssh_port">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        TCP port to be used by SSH
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="copy_timeout">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Maximum time duration in seconds,
+                        that is allowed for image copy operation
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="copy_tries">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Number of tries to perform image copy operation
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="kill_timeout">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Maximum time duration in seconds, that is allowed
+                        for Test Agent termination procedure
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="notcopy">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Used to create symbolic link instead
+                        copying of the image
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="sudo">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Option used when we need to run agent under sudo
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="su">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Option used when we need to run agent under su
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="shell">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Used to run the Test Agent under valgrind tool with
+                        a set of options
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="ld_preload">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        LD_PRELOAD value (path to shared libraries)
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:complexType name="conf_param">
+        <xsd:annotation>
+            <xsd:documentation>
+                Test agent configuration parameter
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:simpleContent>
+            <xsd:extension base="xsd:string">
+                <xsd:attribute name="name" type="conf_name" use="required">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            Name of parameter
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="cond" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            Use condition
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+            </xsd:extension>
+        </xsd:simpleContent>
+    </xsd:complexType>
+
     <xsd:element name="rcf">
         <xsd:annotation>
             <xsd:documentation>
                 Test Environment
                 XML schema for RCF configuration file
                 
-                Copyright (C) 2003-2018 OKTET Labs.
+                Copyright (C) 2003-2019 OKTET Labs.
 
                 Author: Elena Vengerova &lt;Elena.Vengerova@oktetlabs.ru&gt;
             </xsd:documentation>
@@ -64,8 +195,17 @@
 
                     <xsd:complexType>
                         <xsd:sequence>
+                            <xsd:element name="conf"
+                                type="conf_param"
+                                minOccurs="0" maxOccurs="unbounded">
+                                <xsd:annotation>
+                                    <xsd:documentation>
+                                        Test agent configuration parameter
+                                    </xsd:documentation>
+                                </xsd:annotation>
+                            </xsd:element>
                             <xsd:choice>
-                                <xsd:element name="function" 
+                                <xsd:element name="function"
                                     type="function_call" 
                                     minOccurs="0" maxOccurs="unbounded">
                                     <xsd:annotation>
@@ -118,16 +258,6 @@
                                 <xsd:documentation>
                                     Name of the shared RCF TA-specific
                                     library for the Test Agent.
-                                </xsd:documentation>
-                            </xsd:annotation>
-                        </xsd:attribute>
-
-                        <xsd:attribute name="confstr" type="xsd:string"
-                            use="required">
-                            <xsd:annotation>
-                                <xsd:documentation>
-                                    Test Agent specific configuration
-                                    parameters.
                                 </xsd:documentation>
                             </xsd:annotation>
                         </xsd:attribute>

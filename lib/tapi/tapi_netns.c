@@ -255,7 +255,7 @@ tapi_netns_add_ta(const char *host, const char *ns_name, const char *ta_name,
     te_errno rc;
 
     res = snprintf(confstr, sizeof(confstr),
-                   "%s:%d:sudo:connect=%s:"IP_TOOL" netns exec %s:",
+                   "host=%s:port=%d:sudo:connect=%s:shell="IP_TOOL" netns exec %s:",
                    host, rcfport, ta_conn == NULL ? "" : ta_conn, ns_name);
     if (res >= (int)sizeof(confstr))
         return TE_RC(TE_TAPI, TE_ESMALLBUF);

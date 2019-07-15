@@ -198,7 +198,11 @@ Simple configuration file looks like the following:
 @code
 <?xml version="1.0"?>
 <rcf>
-  <ta name="Agt_B" type="linux_snmp" rcflib="rcfunix" confstr="olwe:5012:sudo:"/>
+    <ta name="Agt_B" type="linux_snmp" rcflib="rcfunix">
+        <conf name="host">olwe</conf>
+        <conf name="port">5012</conf>
+        <conf name="sudo"/>
+    </ta>
 </rcf>
 @endcode
 
@@ -230,8 +234,7 @@ TE_TA_TYPE([linux_wifi_prism54], [], [unix],
 @code
 <?xml version="1.0"?>
 <rcf>
-    <ta name="Agt_A" type="linux_wifi_prism54" rcflib="rcfunix"
-        confstr="marcus:5012:sudo:"/>
+    <ta name="Agt_A" type="linux_wifi_prism54" rcflib="rcfunix"/>
 </rcf>
 @endcode
 
@@ -240,9 +243,20 @@ TE_TA_TYPE([linux_wifi_prism54], [], [unix],
   Test Agent. @attr_val{rcfunix} corresponds to a library located
   under @path{${TE_BASE}/lib/rcfunix} directory.
 
-- @attr_name{confstr} - Test Agent configuration parameter that is passed
-  to communication library (to a library specified via @attr_name{rcflib}
-  attribute). See @ref te_engine_rcf_comm_lib.
+The Test Agent configuration parameters that are passed to communication
+library (to a library specified via @attr_name{rcflib} attribute) should be
+written in separated subitems "attr:name" (see @ref te_engine_rcf_comm_lib),
+like this:
+@code
+<?xml version="1.0"?>
+<rcf>
+    <ta name="Agt_A" type="linux_wifi_prism54" rcflib="rcfunix">
+        <conf name="host">marcus</conf>
+        <conf name="port">5012</conf>
+        <conf name="sudo"/>
+    </ta>
+</rcf>
+@endcode
 .
 
 Other attributes that you can specify for a Test Agent are:
@@ -262,8 +276,12 @@ Other attributes that you can specify for a Test Agent are:
   variables. For example:
 @code
   <ta name="Agt_A" type="${TE_TST_TA_TYPE:-linux}" disabled="${TE_TST:-yes}" rcflib="rcfunix"
-      rebootable="${TE_TST_REBOOTABLE}"
-      confstr="${TE_TST}:${TE_TST_PORT:-${TE_RCF_PORT:-50000}}:${TE_TST_SUDO:-sudo:}${TE_TST_VG}"/>
+      rebootable="${TE_TST_REBOOTABLE}">
+      <conf name="host">${TE_TST}</conf>
+      <conf name="port">${TE_TST_PORT:-${TE_RCF_PORT:-50000}}</conf>
+      <conf name="sudo" cond="${TE_TST_SUDO:-true}"/>
+      <conf name="shell">${TE_TST_VG}</conf>
+  </ta>
 @endcode
   This is an example of tunable RCF configuration. Regarding our
   @attr_name{disabled} attribute we can skip running Test Agent
@@ -279,11 +297,15 @@ Other attributes that you can specify for a Test Agent are:
 @code
 <?xml version="1.0"?>
 <rcf>
-  <ta name="Agt_A" type="bsd" rcflib="rcfunix"
-      confstr="192.168.1.2:5050:sudo:"
-      cold_reboot="Agt_Power:5"/>
-  <ta name="Agt_Power" type="power_ctl" rcflib="rcfunix"
-      confstr=":${TE_POWER_PORT:-${TE_RCF_PORT:-50000}}::192.168.1.120"/>
+    <ta name="Agt_A" type="bsd" rcflib="rcfunix" cold_reboot="Agt_Power:5">
+        <conf name="host">192.168.1.2</conf>
+        <conf name="port">5050</conf>
+        <conf name="sudo"/>
+    </ta>
+    <ta name="Agt_Power" type="power_ctl" rcflib="rcfunix">
+        <conf name="host">192.168.1.120</conf>
+        <conf name="port">${TE_POWER_PORT:-${TE_RCF_PORT:-50000}}</conf>
+    </ta>
 </rcf>
 @endcode
 .
@@ -303,18 +325,21 @@ RCF mechanisms that can be done from test scenarios with calls to:
 @code
 <?xml version="1.0"?>
 <rcf>
-  <ta name="Agt_C" type="linux" rcflib="rcfunix" confstr="olwe:5000:sudo:">
-    <thread name="log_serial">
-      <arg value="${TE_TST2_LOG_SERIAL}"/>
-      <arg value="WARN"/>
-      <arg value="10"/>
-      <arg value="3109:${TE_LOG_SERIAL_USER:-tester}:${TE_TST2_LOG_SERIAL}"/>
-    </thread>
-    <task name="temp_init" when="${TE_TST_TEMP_TASK}"/>
-    <function name="usb_init">
-      <arg value="ehci"/>
-    </function>
-  </ta>
+    <ta name="Agt_C" type="linux" rcflib="rcfunix">
+        <conf name="host">olwe</conf>
+        <conf name="port">5000</conf>
+        <conf name="sudo"/>
+        <thread name="log_serial">
+            <arg value="${TE_TST2_LOG_SERIAL}"/>
+            <arg value="WARN"/>
+            <arg value="10"/>
+            <arg value="3109:${TE_LOG_SERIAL_USER:-tester}:${TE_TST2_LOG_SERIAL}"/>
+        </thread>
+        <task name="temp_init" when="${TE_TST_TEMP_TASK}"/>
+        <function name="usb_init">
+            <arg value="ehci"/>
+        </function>
+    </ta>
 </rcf>
 @endcode
 

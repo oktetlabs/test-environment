@@ -722,7 +722,7 @@ del_ta_executive(const char *name)
  * @param type          Test Agent type
  * @param rcflib        Name of RCF TA-specific shared library to be
  *                      used to control Test Agent
- * @param confstr       TA-specific configuration string
+ * @param confstr       TA-specific configuration string (kvpairs)
  * @param flags         Test Agent control flags (see ::rcf_ta_flags)
  *
  * @return Error code
@@ -872,7 +872,7 @@ extern te_errno rcf_add_ta_unix(const char *name, const char *type,
                  copy_timeout ? "copy_timeout=%u:" : "", copy_timeout) ||
         SNPRINTF(kill_timeout_str,
                  kill_timeout ? "kill_timeout=%u:" : "", kill_timeout) ||
-        SNPRINTF(confstr, "%s:%u:%s%s%s", host, port,
+        SNPRINTF(confstr, "host=%s:port=%u:%s%s%s", host, port,
                  copy_timeout_str, kill_timeout_str,
                  flags & RCF_TA_UNIX_SUDO ? "sudo:" : ""))
 #undef SNPRINTF

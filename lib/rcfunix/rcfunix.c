@@ -188,6 +188,8 @@
 #include "te_shell_cmd.h"
 #include "te_sleep.h"
 #include "te_string.h"
+#include "te_str.h"
+#include "te_kvpair.h"
 #include "rcf_api.h"
 #include "rcf_methods.h"
 
@@ -424,7 +426,7 @@ rcfunix_ta_type_prefix_len(const char *ta_type)
  * @param ta_name       Test Agent name
  * @param ta_type       Test Agent type (Test Agent executable is equal
  *                      to ta_type and is located in TE_INSTALL/agents/bin)
- * @param conf_str      TA-specific configuration string
+ * @param conf          TA-specific configurations list of kvpairs
  * @param handle        location for TA handle
  * @param flags         location for TA flags
  *
@@ -432,58 +434,45 @@ rcfunix_ta_type_prefix_len(const char *ta_type)
  */
 static te_errno
 rcfunix_start(const char *ta_name, const char *ta_type,
-              const char *conf_str, rcf_talib_handle *handle,
+              const te_kvpair_h *conf, rcf_talib_handle *handle,
               unsigned int *flags)
 {
     static unsigned int seqno = 0;
 
     te_errno    rc;
     unix_ta    *ta;
-    char       *token;
     char        ta_type_dir[RCF_MAX_PATH];
     te_string   cmd = TE_STRING_INIT;
+    te_string   cfg_str = TE_STRING_INIT;
     char       *installdir;
     const char *logname;
     char       *tmp;
-    char       *conf_str_dup;
-    char       *dup;
-    char       *shell;
+    const char *shell;
+    const char *val;
     char       *ta_list_file;
 
     unsigned int timestamp;
 
-    RING("Starting TA '%s' type '%s' conf_str '%s'",
-         ta_name, ta_type, conf_str);
-
-/** Get the next token from configuration string */
-#define GET_TOKEN \
-    do {                            \
-        token = dup;                \
-        if (dup != NULL)            \
-        {                           \
-            tmp = index(dup, ':');  \
-            if (tmp == NULL)        \
-                dup = NULL;         \
-            else                    \
-            {                       \
-                *tmp = 0;           \
-                dup = tmp + 1;      \
-            }                       \
-        }                           \
-    } while (FALSE)
-
-
     if (ta_name == NULL || ta_type == NULL ||
         strlen(ta_name) >= RCF_MAX_NAME ||
         strlen(ta_type) >= RCF_MAX_NAME ||
-        conf_str == NULL || flags == NULL)
+        conf == NULL || flags == NULL)
     {
         return TE_EINVAL;
     }
+    if ((rc = te_kvpair_to_str(conf, &cfg_str)) != 0)
+    {
+        te_string_free(&cfg_str);
+        return rc;
+    }
+
+    RING("Starting TA '%s' type '%s' conf_str '%s'",
+         ta_name, ta_type, cfg_str.ptr);
 
     if ((installdir = getenv("TE_INSTALL")) == NULL)
     {
         VERB("FATAL ERROR: TE_INSTALL is not exported");
+        te_string_free(&cfg_str);
         return TE_ENOENT;
     }
     snprintf(ta_type_dir, sizeof(ta_type_dir),
@@ -494,6 +483,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     {
         ERROR("Memory allocation failure: %u bytes",
                   sizeof(unix_ta));
+        te_string_free(&cfg_str);
         return TE_ENOMEM;
     }
 
@@ -521,21 +511,13 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         ERROR("Failed to compose TA run directory '/tmp/%s_%s_%u_%u_%u' - "
               "provided buffer too small",
               ta_type, logname, (unsigned int)getpid(), timestamp, seqno);
+        te_string_free(&cfg_str);
         return TE_ESMALLBUF;
     }
 
     VERB("Run directory '%s'", ta->run_dir);
 
-    if ((dup = conf_str_dup = strdup(conf_str)) == NULL)
-    {
-        ERROR("Failed to duplicate string '%s'", conf_str);
-        return TE_ENOMEM;
-    }
-
-    GET_TOKEN;
-    if (token == NULL)
-        goto bad_confstr;
-    if (strlen(token) == 0)
+    if (te_str_is_null_or_empty(val = te_kvpairs_get(conf, "host")))
     {
         ta->is_local = TRUE;
         *flags |= TA_LOCAL;
@@ -544,127 +526,85 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     else
     {
         ta->is_local = FALSE;
-        strncpy(ta->host, token, RCF_MAX_NAME);
+        strncpy(ta->host, val, RCF_MAX_NAME);
     }
     VERB("Test Agent host %s", ta->host);
 
-    GET_TOKEN;
-    if (token == NULL || strlen(token) == 0 ||
-        (strtol(token, &tmp, 0), (tmp == token || *tmp != 0)))
-        goto bad_confstr;
-
-    strncpy(ta->port, token, RCF_MAX_NAME);
-
-    GET_TOKEN;
-    if (token != NULL && strcmp_start("user=", token) == 0)
+    val = te_kvpairs_get(conf, "port");
+    if (te_str_is_null_or_empty(val) ||
+        (strtol(val, &tmp, 0), (tmp == val || *tmp != 0)))
     {
-        char *user = token + strlen("user=");
-
-        if (strlen(user) > 0)
-            snprintf(ta->user, sizeof(ta->user), "%s@", user);
-
-        GET_TOKEN;
+        goto bad_conf;
     }
-    if (token != NULL && strcmp_start("key=", token) == 0)
+    strncpy(ta->port, val, RCF_MAX_NAME);
+
+    if (!te_str_is_null_or_empty(val = te_kvpairs_get(conf, "user")))
+        snprintf(ta->user, sizeof(ta->user), "%s@", val);
+
+    if (!te_str_is_null_or_empty(val = te_kvpairs_get(conf, "key")))
     {
-        char *key = token + strlen("key=");
-
-        if (strlen(key) > 0)
-            snprintf(ta->key, sizeof(ta->key), "-i %s %s", key,
-                    " -o UserKnownHostsFile=/dev/null "
-                    "-o StrictHostKeyChecking=no");
-
-        GET_TOKEN;
+        snprintf(ta->key, sizeof(ta->key), "-i %s %s", val,
+                " -o UserKnownHostsFile=/dev/null "
+                "-o StrictHostKeyChecking=no");
     }
-    if (token != NULL && strcmp_start("ssh_port=", token) == 0)
-    {
-        char *value = token + strlen("ssh_port=");
 
-        if (strlen(value) > 0)
-        {
-            ta->ssh_port = strtoul(value, &tmp, 0);
-            if (tmp == value || *tmp != 0 || ta->ssh_port > UINT16_MAX)
-                goto bad_confstr;
-        }
-        GET_TOKEN;
+    if (!te_str_is_null_or_empty(val = te_kvpairs_get(conf, "ssh_port")))
+    {
+        ta->ssh_port = strtoul(val, &tmp, 0);
+        if (tmp == val || *tmp != 0 || ta->ssh_port > UINT16_MAX)
+            goto bad_conf;
     }
-    if (token != NULL && strcmp_start("copy_timeout=", token) == 0)
+
+    if (!te_str_is_null_or_empty(val = te_kvpairs_get(conf, "copy_timeout")))
     {
-        char *value = token + strlen("copy_timeout=");
-
-        if (strlen(value) > 0)
-        {
-            ta->copy_timeout = strtoul(value, &tmp, 0);
-            if (tmp == value || *tmp != 0)
-                goto bad_confstr;
-        }
-
-        GET_TOKEN;
+        ta->copy_timeout = strtoul(val, &tmp, 0);
+        if (tmp == val || *tmp != 0)
+            goto bad_conf;
     }
-    if (token != NULL && strcmp_start("copy_tries=", token) == 0)
+
+    if (!te_str_is_null_or_empty(val = te_kvpairs_get(conf, "copy_tries")))
     {
-        char *value = token + strlen("copy_tries=");
-
-        if (strlen(value) > 0)
-        {
-            ta->copy_tries = strtoul(value, &tmp, 0);
-            if (tmp == value || *tmp != 0)
-                goto bad_confstr;
-        }
-
-        GET_TOKEN;
+        ta->copy_tries = strtoul(val, &tmp, 0);
+        if (tmp == val || *tmp != 0)
+            goto bad_conf;
     }
-    if (token != NULL && strcmp_start("kill_timeout=", token) == 0)
+
+    if (!te_str_is_null_or_empty(val = te_kvpairs_get(conf, "kill_timeout")))
     {
-        char *value = token + strlen("kill_timeout=");
-
-        if (strlen(value) > 0)
-        {
-            ta->kill_timeout = strtoul(value, &tmp, 0);
-            if (tmp == value || *tmp != 0)
-                goto bad_confstr;
-        }
-
-        GET_TOKEN;
+        ta->kill_timeout = strtoul(val, &tmp, 0);
+        if (tmp == val || *tmp != 0)
+            goto bad_conf;
     }
-    if (token != NULL && strcmp(token, "notcopy") == 0)
-    {
+
+    if ((val = te_kvpairs_get(conf, "notcopy")) != NULL)
         ta->notcopy = TRUE;
-        GET_TOKEN;
-    }
     else
         ta->notcopy = FALSE;
-    if (token != NULL && strcmp(token, "sudo") == 0)
+
+    if ((val = te_kvpairs_get(conf, "sudo")) != NULL)
     {
         ta->sudo = TRUE;
-        GET_TOKEN;
     }
     else
     {
         ta->sudo = FALSE;
-        if (token != NULL && strcmp(token, "su") == 0)
-        {
+        if ((val = te_kvpairs_get(conf, "su")) != NULL)
             ta->su = TRUE;
-            GET_TOKEN;
-        }
         else
             ta->su = FALSE;
     }
-    if (token != NULL && strcmp_start("connect=", token) == 0)
+
+    if (!te_str_is_null_or_empty(val = te_kvpairs_get(conf, "connect")))
     {
-        char *value = token + strlen("connect=");
-
-        if (strlen(value) >= sizeof(ta->connect))
+        if (strlen(val) >= sizeof(ta->connect))
         {
-            ERROR("Too long value in connect= token: %s", value);
-            goto bad_confstr;
+            ERROR("Too long value in connect parameter: %s", val);
+            goto bad_conf;
         }
-        strcpy(ta->connect, value);
-
-        GET_TOKEN;
+        strcpy(ta->connect, val);
     }
 
-    shell = token;
+    shell = te_kvpairs_get(conf, "shell");
 
     /*
      * It's assumed that the rest of configuration string should be
@@ -739,8 +679,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     if (rc != 0)
     {
         ERROR("Failed to compose TA copy command: %r\n%s", rc, cmd.ptr);
+        te_string_free(&cfg_str);
         te_string_free(&cmd);
-        free(conf_str_dup);
         return rc;
     }
 
@@ -764,8 +704,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
             ERROR("Failed to copy TA images/data %s to the %s:/tmp: %r",
                   ta_type, ta->host, rc);
             ERROR("Failed cmd: %s", cmd.ptr);
+            te_string_free(&cfg_str);
             te_string_free(&cmd);
-            free(conf_str_dup);
             return rc;
         }
     }
@@ -811,7 +751,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         rc = te_string_append(&cmd,
                 "%s/ta %s %s %s",
                 ta->run_dir, ta->ta_name, ta->port,
-                (conf_str == NULL) ? "" : conf_str);
+                (cfg_str.ptr == NULL) ? "" : cfg_str.ptr);
 
     if (rc == 0 && ta->su)
         rc = te_string_append(&cmd, "'");
@@ -821,11 +761,10 @@ rcfunix_start(const char *ta_name, const char *ta_type,
                 "%s 2>&1 | te_tee %s %s 10 >ta.%s ",
                 ta->cmd_suffix, TE_LGR_ENTITY, ta->ta_name, ta->ta_name);
 
-    free(conf_str_dup);
-
     if (rc != 0)
     {
         ERROR("Failed to compose TA start command: %r\n%s", rc, cmd.ptr);
+        te_string_free(&cfg_str);
         te_string_free(&cmd);
         return rc;
     }
@@ -838,10 +777,12 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         rc = TE_OS_RC(TE_RCF_UNIX, errno);
         ERROR("Failed to start TA %s: %r", ta_name, rc);
         ERROR("Failed cmd: %s", cmd.ptr);
+        te_string_free(&cfg_str);
         te_string_free(&cmd);
         return rc;
     }
 
+    te_string_free(&cfg_str);
     te_string_free(&cmd);
 
     *handle = (rcf_talib_handle)ta;
@@ -861,9 +802,9 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     return 0;
 
-bad_confstr:
-    free(conf_str_dup);
-    RING("Bad configuration string for TA '%s'", ta_name);
+bad_conf:
+    RING("Bad configuration for TA '%s'", ta_name);
+    te_string_free(&cfg_str);
     return TE_RC(TE_RCF_UNIX, TE_EINVAL);
 }
 
