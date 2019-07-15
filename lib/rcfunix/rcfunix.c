@@ -450,7 +450,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     const char *shell;
     const char *val;
     char       *ta_list_file;
-    char       *ld_preload = NULL;
+    const char *ld_preload = NULL;
 
     unsigned int timestamp;
 
