@@ -40,7 +40,6 @@ cfg_db_find_son(cfg_instance *father, const char *subid, const char *name)
 struct cfg_rcfunix_conf_param {
     const char *name;       /**< Parameter name */
     te_bool required;       /**< Is parameter required? */
-    te_bool name_it;        /**< Use the parameter name in configuration string */
     te_bool has_value;      /**< Does it have a value? */
 };
 
@@ -48,20 +47,20 @@ static te_errno
 cfg_rcfunix_make_confstr(te_string *confstr, cfg_instance *ta)
 {
     static const struct cfg_rcfunix_conf_param params[] = {
-        { "host",         FALSE,  TRUE,   TRUE  },
-        { "port",         TRUE,   TRUE,   TRUE  },
-        { "user",         FALSE,  TRUE,   TRUE  },
-        { "key",          FALSE,  TRUE,   TRUE  },
-        { "ssh_port",     FALSE,  TRUE,   TRUE  },
-        { "copy_timeout", FALSE,  TRUE,   TRUE  },
-        { "copy_tries",   FALSE,  TRUE,   TRUE  },
-        { "kill_timeout", FALSE,  TRUE,   TRUE  },
-        { "notcopy",      FALSE,  TRUE,   FALSE },
-        { "sudo",         FALSE,  TRUE,   FALSE },
-        { "su",           FALSE,  TRUE,   FALSE },
-        { "connect",      FALSE,  TRUE,   TRUE  },
-        { "opaque",       FALSE,  TRUE,   TRUE  },
-        { NULL,           FALSE,  FALSE,  FALSE },
+        { "host",         FALSE,  TRUE  },
+        { "port",         TRUE,   TRUE  },
+        { "user",         FALSE,  TRUE  },
+        { "key",          FALSE,  TRUE  },
+        { "ssh_port",     FALSE,  TRUE  },
+        { "copy_timeout", FALSE,  TRUE  },
+        { "copy_tries",   FALSE,  TRUE  },
+        { "kill_timeout", FALSE,  TRUE  },
+        { "notcopy",      FALSE,  FALSE },
+        { "sudo",         FALSE,  FALSE },
+        { "su",           FALSE,  FALSE },
+        { "connect",      FALSE,  TRUE  },
+        { "opaque",       FALSE,  TRUE  },
+        { NULL,           FALSE,  FALSE },
     };
     const struct cfg_rcfunix_conf_param *p;
     cfg_instance *inst;
@@ -107,8 +106,8 @@ cfg_rcfunix_make_confstr(te_string *confstr, cfg_instance *ta)
             continue;
 
         rc = te_string_append(confstr, "%s%s%s:",
-                              p->name_it ? p->name : "",
-                              (p->name_it && p->has_value) ? "=" : "",
+                              p->name,
+                              p->has_value ? "=" : "",
                               p->has_value ? inst->val.val_str : "");
         if (rc != 0)
             break;
