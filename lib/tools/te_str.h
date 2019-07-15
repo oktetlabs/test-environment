@@ -218,6 +218,14 @@ extern te_errno te_str_find_index(const char *str, const char **str_array,
                                   unsigned int str_array_len,
                                   unsigned int *index);
 
+/**
+ * Free array of strings
+ *
+ * @param str   The array of strings with @c NULL item at the end
+ */
+extern void te_str_free_array(char **str);
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

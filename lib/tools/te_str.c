@@ -266,6 +266,21 @@ te_strtol_bool(const char *input, te_bool *bresult)
 }
 
 /* See description in te_str.h */
+void
+te_str_free_array(char **str)
+{
+    char **it;
+
+    if (str == NULL)
+        return;
+
+    for (it = str; *it != NULL; it++)
+        free(*it);
+
+    free(str);
+}
+
+/* See description in te_str.h */
 te_errno
 te_str_hex_raw2str(const uint8_t *data, size_t data_len, te_string *str)
 {
