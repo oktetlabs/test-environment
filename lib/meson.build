@@ -49,6 +49,7 @@ engine_libs = [
     'rcfrpc',
     'tapi_rpc',
     'tapi',
+    'tapi_bpf',
     'tapi_dpdk',
     'tapi_env',
     'tapi_fio',
