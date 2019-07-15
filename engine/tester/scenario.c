@@ -749,17 +749,18 @@ scenario_step(const testing_act **act, unsigned int *act_id,
         VERB("next_id=%u -> STOP", next_id);
         return TESTING_STOP;
     }
-    else if (next_id < (*act)->first)
+
+    *act_id = (*act)->first;
+    if (next_id <= *act_id)
     {
         /*
-         * The next act is after next_id - continue
+         * The next act is at or after next_id - continue
          * walking forward.
          */
-        *act_id = (*act)->first;
         VERB("next_id=%u -> FORWARD", next_id);
         return TESTING_FORWARD;
     }
-    else if (next_id > (*act)->last)
+    else if (next_id > *act_id)
     {
         /*
          * The next act is before next_id - move
@@ -768,15 +769,13 @@ scenario_step(const testing_act **act, unsigned int *act_id,
          * again before testing moved to <= *act_id,
          * see run_this_item() usage.
          */
-        *act_id = (*act)->first;
         VERB("next_id=%u -> BACKWARD", next_id);
         return TESTING_BACKWARD;
     }
 
-    /* The only remaining variant - next_id is inside the next act */
-    *act_id = next_id;
-    VERB("next_id=%u -> FORWARD", next_id);
-    return TESTING_FORWARD;
+    /* Execution should not reach here */
+    assert(0);
+    return TESTING_STOP;
 }
 
 
