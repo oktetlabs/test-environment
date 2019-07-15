@@ -46,6 +46,8 @@ app_init(tapi_perf_app *app, const tapi_perf_opts *options)
         app->opts = *options;
         if (options->host != NULL)
             app->opts.host = tapi_strdup(options->host);
+        if (options->src_host != NULL)
+            app->opts.src_host = tapi_strdup(options->src_host);
     }
 }
 
@@ -62,6 +64,7 @@ app_fini(tapi_perf_app *app)
     te_string_free(&app->stdout);
     te_string_free(&app->stderr);
     free(app->opts.host);
+    free(app->opts.src_host);
 }
 
 
@@ -70,6 +73,7 @@ void
 tapi_perf_opts_init(tapi_perf_opts *opts)
 {
     opts->host = NULL;
+    opts->src_host = NULL;
     opts->port = -1;
     opts->ipversion = RPC_IPPROTO_IP;
     opts->protocol = RPC_IPPROTO_UDP;

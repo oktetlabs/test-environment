@@ -98,6 +98,19 @@ set_opt_protocol(te_string *cmd, const tapi_perf_opts *options)
 }
 
 /*
+ * Set option of source host to originate traffic from for iperf tool.
+ *
+ * @param cmd           Buffer contains a command to add option to.
+ * @param options       iperf tool options.
+ */
+static void
+set_opt_src_host(te_string *cmd, const tapi_perf_opts *options)
+{
+    if (options->src_host != NULL && options->src_host[0] != '\0')
+        CHECK_RC(te_string_append(cmd, " -B%s", options->src_host));
+}
+
+/*
  * Set option of server port to listen on/connect to in iperf tool format.
  *
  * @param cmd           Buffer contains a command to add option to.
@@ -236,6 +249,7 @@ static void
 build_client_cmd(te_string *cmd, const tapi_perf_opts *options)
 {
     set_opt_t set_opt[] = {
+        set_opt_src_host,
         set_opt_port,
         set_opt_ipversion,
         set_opt_protocol,

@@ -289,6 +289,7 @@ typedef struct tapi_perf_client_methods {
  */
 typedef struct tapi_perf_opts {
     char *host;             /**< Destination host (server) */
+    char *src_host;         /**< Source host (client) */
     int port;               /**< Port to listen on/connect to */
     rpc_socket_proto ipversion;     /**< IP version */
     rpc_socket_proto protocol;      /**< Transport protocol */
