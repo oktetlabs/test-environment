@@ -53,6 +53,17 @@ typedef enum tapi_bpf_map_type {
 } tapi_bpf_map_type;
 
 /**
+ * BPF XDP actions
+ */
+typedef enum tapi_bpf_xdp_action {
+    TAPI_BPF_XDP_ABORTED = 0,
+    TAPI_BPF_XDP_DROP,
+    TAPI_BPF_XDP_PASS,
+    TAPI_BPF_XDP_TX,
+    TAPI_BPF_XDP_REDIRECT
+} tapi_bpf_xdp_action;
+
+/**
  * Add BPF object
  *
  * @param[in]  ta       Test Agent name
