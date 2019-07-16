@@ -1342,6 +1342,24 @@
       <depends oid="/agent/rlimits/nofile/cur"/>
     </object>
 
+    <!-- RLIMIT_MEMLOCK resource limit values.
+         Name: empty -->
+    <object oid="/agent/rlimits/memlock" access="read_only" type="none"/>
+
+    <!-- Current value of RLIMIT_MEMLOCK. Note: if more than maximum value
+         is set, maximum is adjusted too.
+         Name: empty -->
+    <object oid="/agent/rlimits/memlock/cur" access="read_write" type="integer">
+      <depends oid="/agent/rlimits/memlock/max"/>
+    </object>
+
+    <!-- Maximum value of RLIMIT_MEMLOCK. Note: if less than current value
+         is set, current value is adjusted too.
+         Name: empty -->
+    <object oid="/agent/rlimits/memlock/max" access="read_write" type="integer">
+      <depends oid="/agent/rlimits/memlock/cur"/>
+    </object>
+
     <!-- Block devices list.
          Name: Name of the block device -->
     <object oid="/agent/block" access="read_only" type="none">

@@ -210,6 +210,88 @@ rlimit_nofile_max_set(unsigned int gid, const char *oid, const char *value)
     return rlimit_set(value, RLIMIT_NOFILE, FALSE);
 }
 
+
+/**
+ * Obtain current value of RLIMIT_MEMLOCK resource limit.
+ *
+ * @param gid           Group identifier (unused)
+ * @param oid           Full object instance identifier (unused)
+ * @param value         Value location
+ *
+ * @return              Status code.
+ */
+static te_errno
+rlimit_memlock_cur_get(unsigned int gid, const char *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return rlimit_get(value, RLIMIT_MEMLOCK, TRUE);
+}
+
+/**
+ * Set current value of RLIMIT_MEMLOCK resource limit.
+ *
+ * @param gid           Group identifier (unused)
+ * @param oid           Full object instance identifier (unused)
+ * @param value         Value location
+ *
+ * @return              Status code.
+ */
+static te_errno
+rlimit_memlock_cur_set(unsigned int gid, const char *oid, const char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return rlimit_set(value, RLIMIT_MEMLOCK, TRUE);
+}
+
+/**
+ * Obtain maximum value of RLIMIT_MEMLOCK resource limit.
+ *
+ * @param gid           Group identifier (unused)
+ * @param oid           Full object instance identifier (unused)
+ * @param value         Value location
+ *
+ * @return              Status code.
+ */
+static te_errno
+rlimit_memlock_max_get(unsigned int gid, const char *oid, char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return rlimit_get(value, RLIMIT_MEMLOCK, FALSE);
+}
+
+/**
+ * Set maximum value of RLIMIT_MEMLOCK resource limit.
+ *
+ * @param gid           Group identifier (unused)
+ * @param oid           Full object instance identifier (unused)
+ * @param value         Value location
+ *
+ * @return              Status code.
+ */
+static te_errno
+rlimit_memlock_max_set(unsigned int gid, const char *oid, const char *value)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+
+    return rlimit_set(value, RLIMIT_MEMLOCK, FALSE);
+}
+
+RCF_PCH_CFG_NODE_RW(node_rlimit_memlock_max, "max",
+                    NULL, NULL,
+                    rlimit_memlock_max_get, rlimit_memlock_max_set);
+RCF_PCH_CFG_NODE_RW(node_rlimit_memlock_cur, "cur",
+                    NULL, &node_rlimit_memlock_max,
+                    rlimit_memlock_cur_get, rlimit_memlock_cur_set);
+RCF_PCH_CFG_NODE_NA(node_rlimit_memlock, "memlock",
+                    &node_rlimit_memlock_cur, NULL);
+
 RCF_PCH_CFG_NODE_RW(node_rlimit_nofile_max, "max",
                     NULL, NULL,
                     rlimit_nofile_max_get, rlimit_nofile_max_set);
@@ -218,7 +300,7 @@ RCF_PCH_CFG_NODE_RW(node_rlimit_nofile_cur, "cur",
                     rlimit_nofile_cur_get, rlimit_nofile_cur_set);
 
 RCF_PCH_CFG_NODE_NA(node_rlimit_nofile, "nofile",
-                    &node_rlimit_nofile_cur, NULL);
+                    &node_rlimit_nofile_cur, &node_rlimit_memlock);
 RCF_PCH_CFG_NODE_NA(node_rlimits, "rlimits", &node_rlimit_nofile,
                     NULL);
 
