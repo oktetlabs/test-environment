@@ -4,7 +4,7 @@
  * Unix TA resource limits configuration
  *
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
  *
  * 
  *
@@ -36,17 +36,24 @@
 #include "rcf_pch.h"
 
 /**
+ * RLIMIT value selector
+ */
+typedef enum rlimit_val_sel {
+    RLIMIT_VAL_CUR, /**< Use current value */
+    RLIMIT_VAL_MAX  /**< Use maximum value */
+} rlimit_val_sel;
+
+/**
  * Get value of a resource limit (as reported by getrlimit()).
  *
  * @param value     Where to save value
  * @param resource  Which resource limit to get
- * @param current   If @c TRUE, get current value, otherwise
- *                  get maximum value
+ * @param val_sel   Which value to get (@ref rlimit_val_sel)
  *
  * @return Status code.
  */
 static te_errno
-rlimit_get(char *value, int resource, te_bool current)
+rlimit_get(char *value, int resource, rlimit_val_sel val_sel)
 {
     struct rlimit       rlim = { 0 };
     te_errno            rc;
@@ -60,7 +67,7 @@ rlimit_get(char *value, int resource, te_bool current)
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
 
-    if (current)
+    if (val_sel == RLIMIT_VAL_CUR)
         lim = rlim.rlim_cur;
     else
         lim = rlim.rlim_max;
@@ -86,13 +93,12 @@ rlimit_get(char *value, int resource, te_bool current)
  *
  * @param value     Value to set
  * @param resource  Which resource limit to set
- * @param current   If @c TRUE, set current value, otherwise
- *                  set maximum value
+ * @param val_sel   Which value to set (@ref rlimit_val_sel)
  *
  * @return Status code.
  */
 static te_errno
-rlimit_set(const char *value, int resource, te_bool current)
+rlimit_set(const char *value, int resource, rlimit_val_sel val_sel)
 {
     struct rlimit        rlim = { 0 };
     long unsigned int    num_value;
@@ -112,12 +118,12 @@ rlimit_set(const char *value, int resource, te_bool current)
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
 
-    if (current)
+    if (val_sel == RLIMIT_VAL_CUR)
         rlim.rlim_cur = num_value;
     else
         rlim.rlim_max = num_value;
 
-    if (current)
+    if (val_sel == RLIMIT_VAL_CUR)
     {
         if (rlim.rlim_max < rlim.rlim_cur)
             rlim.rlim_max = rlim.rlim_cur;
@@ -153,7 +159,7 @@ rlimit_nofile_cur_get(unsigned int gid, const char *oid, char *value)
     UNUSED(gid);
     UNUSED(oid);
 
-    return rlimit_get(value, RLIMIT_NOFILE, TRUE);
+    return rlimit_get(value, RLIMIT_NOFILE, RLIMIT_VAL_CUR);
 }
 
 /**
@@ -171,7 +177,7 @@ rlimit_nofile_cur_set(unsigned int gid, const char *oid, const char *value)
     UNUSED(gid);
     UNUSED(oid);
 
-    return rlimit_set(value, RLIMIT_NOFILE, TRUE);
+    return rlimit_set(value, RLIMIT_NOFILE, RLIMIT_VAL_CUR);
 }
 
 /**
@@ -189,7 +195,7 @@ rlimit_nofile_max_get(unsigned int gid, const char *oid, char *value)
     UNUSED(gid);
     UNUSED(oid);
 
-    return rlimit_get(value, RLIMIT_NOFILE, FALSE);
+    return rlimit_get(value, RLIMIT_NOFILE, RLIMIT_VAL_MAX);
 }
 
 /**
@@ -207,7 +213,7 @@ rlimit_nofile_max_set(unsigned int gid, const char *oid, const char *value)
     UNUSED(gid);
     UNUSED(oid);
 
-    return rlimit_set(value, RLIMIT_NOFILE, FALSE);
+    return rlimit_set(value, RLIMIT_NOFILE, RLIMIT_VAL_MAX);
 }
 
 
@@ -226,7 +232,7 @@ rlimit_memlock_cur_get(unsigned int gid, const char *oid, char *value)
     UNUSED(gid);
     UNUSED(oid);
 
-    return rlimit_get(value, RLIMIT_MEMLOCK, TRUE);
+    return rlimit_get(value, RLIMIT_MEMLOCK, RLIMIT_VAL_CUR);
 }
 
 /**
@@ -244,7 +250,7 @@ rlimit_memlock_cur_set(unsigned int gid, const char *oid, const char *value)
     UNUSED(gid);
     UNUSED(oid);
 
-    return rlimit_set(value, RLIMIT_MEMLOCK, TRUE);
+    return rlimit_set(value, RLIMIT_MEMLOCK, RLIMIT_VAL_CUR);
 }
 
 /**
@@ -262,7 +268,7 @@ rlimit_memlock_max_get(unsigned int gid, const char *oid, char *value)
     UNUSED(gid);
     UNUSED(oid);
 
-    return rlimit_get(value, RLIMIT_MEMLOCK, FALSE);
+    return rlimit_get(value, RLIMIT_MEMLOCK, RLIMIT_VAL_MAX);
 }
 
 /**
@@ -280,7 +286,7 @@ rlimit_memlock_max_set(unsigned int gid, const char *oid, const char *value)
     UNUSED(gid);
     UNUSED(oid);
 
-    return rlimit_set(value, RLIMIT_MEMLOCK, FALSE);
+    return rlimit_set(value, RLIMIT_MEMLOCK, RLIMIT_VAL_MAX);
 }
 
 RCF_PCH_CFG_NODE_RW(node_rlimit_memlock_max, "max",
