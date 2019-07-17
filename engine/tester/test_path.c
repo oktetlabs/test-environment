@@ -1033,7 +1033,7 @@ merge_test_paths(test_paths *paths, const unsigned int total_iters,
             goto exit;
 
         /* Remove all acts with SHUTDOWN flag set */
-        scenario_cleanup(scenario, TESTER_SHUTDOWN);
+        scenario_del_acts_by_flags(scenario, TESTER_SHUTDOWN);
     }
 
 exit:

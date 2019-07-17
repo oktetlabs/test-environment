@@ -191,14 +191,20 @@ extern void scenario_add_flags(testing_scenario *scenario,
                                const tester_flags flags);
 
 /**
- * Remove acts which have all specified flags (if @a flags is not @c 0)
- * or empty flags (if @a flags is @c 0).
+ * Remove acts which have all specified flags.
  *
  * @param scenario      A testing scenario
- * @param flags         Flags to remove acts
+ * @param flags         Flags of removed acts
  */
-extern void scenario_cleanup(testing_scenario *scenario,
-                             const tester_flags flags);
+extern void scenario_del_acts_by_flags(testing_scenario *scenario,
+                                       tester_flags flags);
+
+/**
+ * Remove acts which do not have any flags
+ *
+ * @param scenario      A testing scenario
+ */
+extern void scenario_del_acts_with_no_flags(testing_scenario *scenario);
 
 /**
  * Glue testing scenario acts with equal flags.

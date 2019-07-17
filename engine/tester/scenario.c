@@ -558,14 +558,34 @@ scenario_add_flags(testing_scenario *scenario, const tester_flags flags)
 
 /* See the description in tester_run.h */
 void
-scenario_cleanup(testing_scenario *scenario, const tester_flags flags)
+scenario_del_acts_by_flags(testing_scenario *scenario, tester_flags flags)
 {
-    testing_act *cur, *nxt;
+    testing_act *cur;
+    testing_act *nxt;
+
+    if (flags == 0)
+        return;
 
     TAILQ_FOREACH_SAFE(cur, scenario, links, nxt)
     {
-        if ((flags == 0 && cur->flags == 0) ||
-            (cur->flags & flags) == flags)
+        if ((cur->flags & flags) == flags)
+        {
+            TAILQ_REMOVE(scenario, cur, links);
+            scenario_act_free(cur);
+        }
+    }
+}
+
+/* See the description in tester_run.h */
+void
+scenario_del_acts_with_no_flags(testing_scenario *scenario)
+{
+    testing_act *cur;
+    testing_act *nxt;
+
+    TAILQ_FOREACH_SAFE(cur, scenario, links, nxt)
+    {
+        if (cur->flags == 0)
         {
             TAILQ_REMOVE(scenario, cur, links);
             scenario_act_free(cur);
@@ -605,7 +625,7 @@ scenario_exclude(testing_scenario *scenario, testing_scenario *exclude,
     rc = testing_scenarios_op(scenario, exclude, scenario,
                               TESTING_ACT_SUBTRACT);
     if (rc == 0)
-        scenario_cleanup(scenario, 0);
+        scenario_del_acts_with_no_flags(scenario);
 
     return rc;
 }
