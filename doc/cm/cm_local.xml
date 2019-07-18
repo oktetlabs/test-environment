@@ -42,6 +42,20 @@
     <object oid="/local/no_reuse_pco" access="read_write" type="integer"
             volatile="true"/>
 
+    <!-- Name of a generic PCI driver compatible with DPDK. Used in
+         tapi_net_cfg in driver bind functions.
+
+         Name: none
+         Value: name of a DPDK driver -->
+    <object oid="/local/dpdk_driver" access="read_create" type="string"/>
+
+    <!-- Name of a kernel net PCI driver. Used in tapi_net_cfg in driver
+         bind functions.
+
+         Name: none
+         Value: name of a net driver -->
+    <object oid="/local/net_driver" access="read_create" type="string"/>
+
     <!-- This configurator subtree describes relations between agents,
          namespaces and network interfaces on a host.
 

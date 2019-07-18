@@ -70,6 +70,11 @@ typedef struct cfg_nets_t {
     cfg_net_t      *nets;       /**< Array with nets */
 } cfg_nets_t;
 
+enum tapi_cfg_driver_type {
+    NET_DRIVER_TYPE_NET = 0,
+    NET_DRIVER_TYPE_DPDK,
+};
+
 /**
  * Get type of the network node resource.
  *
@@ -256,6 +261,26 @@ typedef te_errno tapi_cfg_net_node_cb(cfg_net_t *net, cfg_net_node_t *node,
  */
 extern te_errno tapi_cfg_net_foreach_node(tapi_cfg_net_node_cb *cb,
                                           void *cookie);
+
+/**
+ * Bind a driver (with specified type) on a PCI function referenced by
+ * every net node matching @p node_type. The driver names for specific
+ * types are discovered from "/local" configurator tree
+ * (e.g. "/local/net_driver").
+ *
+ * @param node_type     Node type of nets on which bind is performed
+ * @param driver        Driver type to bind
+ *
+ * @note    Net nodes are expected to reference PCI functions,
+ *          in case when a node references net interface:
+ *          - if @c NET_DRIVER_TYPE_NET is passed, the function succeeds
+ *          without performing bind,
+ *          - if passed @p driver is not @c NET_DRIVER_TYPE_NET bind fails
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_net_bind_driver_by_node(enum net_node_type node_type,
+                                            enum tapi_cfg_driver_type driver);
 
 /**
  * Reserve resources for all interfaces mentioned in networks

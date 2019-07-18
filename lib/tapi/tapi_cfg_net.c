@@ -993,6 +993,267 @@ tapi_cfg_net_foreach_node(tapi_cfg_net_node_cb *cb, void *cookie)
     return rc;
 }
 
+static te_errno
+tapi_cfg_net_pci_fn_by_dpdk_vdev_ref(const char *vdev_str, size_t *n_pci_fns,
+                                     char ***pci_fns)
+{
+    unsigned int n_vdev_slaves;
+    cfg_handle *vdev_slaves;
+    char **result = NULL;
+    unsigned int i;
+    te_errno rc = 0;
+
+    rc = cfg_find_pattern_fmt(&n_vdev_slaves, &vdev_slaves, "%s/slave:*",
+                              vdev_str);
+    if (rc != 0)
+    {
+        ERROR("Failed to get DPDK vdev slaves by DPDK vdev reference");
+        goto out;
+    }
+
+    result = TE_ALLOC(sizeof(*result) * n_vdev_slaves);
+    if (result == NULL)
+    {
+        rc = TE_RC(TE_CONF_API, TE_ENOMEM);
+        goto out;
+    }
+
+    for (i = 0; i < n_vdev_slaves; i++)
+    {
+        cfg_oid *vdev_slave_oid;
+        char *vdev_slave_str;
+        char *pci_inst_name;
+
+        rc = cfg_get_oid(vdev_slaves[i], &vdev_slave_oid);
+        if (rc != 0)
+        {
+            ERROR("Failed to get DPDK vdev slave oid by handle");
+            goto out;
+        }
+
+        vdev_slave_str = cfg_convert_oid(vdev_slave_oid);
+        cfg_free_oid(vdev_slave_oid);
+        if (vdev_slave_str == NULL)
+        {
+            ERROR("Failed to get DPDK vdev name by oid");
+            rc = TE_RC(TE_CONF_API, TE_ENOMEM);
+            goto out;
+        }
+
+        rc = cfg_get_instance_str(NULL, &pci_inst_name, vdev_slave_str);
+        free(vdev_slave_str);
+        if (rc != 0)
+        {
+            ERROR("Failed to get PCI instance name by DPDK vdev slave");
+            goto out;
+        }
+
+        rc = cfg_get_instance_str(NULL, &result[i], pci_inst_name);
+        free(pci_inst_name);
+        if (rc != 0)
+        {
+            ERROR("Failed to get PCI function by PCI instance");
+            goto out;
+        }
+    }
+
+    *pci_fns = result;
+    *n_pci_fns = n_vdev_slaves;
+
+out:
+    if (rc != 0)
+    {
+        if (result != NULL)
+        {
+            for (i = 0; i < n_vdev_slaves; i++)
+                free(result[i]);
+        }
+        free(result);
+    }
+
+    return rc;
+}
+
+static te_errno
+tapi_cfg_net_bind_driver_on_pci_fn(const char *ta,
+                                   enum tapi_cfg_driver_type driver,
+                                   size_t n_pci_fns, char **pci_fns)
+{
+    const char *driver_prefix = "";
+    char *driver_name = NULL;
+    te_errno rc = 0;
+    size_t i;
+
+    switch (driver)
+    {
+        case NET_DRIVER_TYPE_NET:
+            driver_prefix = "net";
+            break;
+        case NET_DRIVER_TYPE_DPDK:
+            driver_prefix = "dpdk";
+            break;
+        default:
+            ERROR("Invalid net driver type passed to driver bind");
+            rc = TE_RC(TE_CONF_API, TE_EINVAL);
+            goto out;
+    }
+
+    rc = cfg_get_instance_fmt(NULL, &driver_name, "/local:%s/%s_driver:",
+                              ta, driver_prefix);
+    if (rc != 0 || driver_name == NULL || *driver_name == '\0')
+    {
+        WARN("Driver is not set on agent %s, do not perform bind", ta);
+        rc = 0;
+        goto out;
+    }
+
+    for (i = 0; i < n_pci_fns; i++)
+    {
+        char *driver_old = NULL;
+        int cmp_rc;
+
+        rc = cfg_get_instance_fmt(NULL, &driver_old, "%s/driver:", pci_fns[i]);
+        if (rc != 0)
+        {
+            ERROR("Failed to get current driver of agent %s", ta);
+            goto out;
+        }
+
+        cmp_rc = strcmp(driver_old, driver_name);
+        free(driver_old);
+        if (cmp_rc != 0)
+        {
+            rc = cfg_set_instance_fmt(CFG_VAL(STRING, driver_name),
+                                      "%s/driver:", pci_fns[i]);
+            if (rc != 0)
+            {
+                ERROR("Failed to bind driver %s on agent %s", driver_name, ta);
+                goto out;
+            }
+        }
+    }
+
+out:
+    free(driver_name);
+
+    return rc;
+}
+
+struct bind_cfg_t {
+    enum net_node_type node_type;
+    enum tapi_cfg_driver_type driver;
+};
+
+static tapi_cfg_net_node_cb tapi_cfg_net_node_bind_driver;
+static te_errno
+tapi_cfg_net_node_bind_driver(cfg_net_t *net, cfg_net_node_t *node,
+                              const char *oid_str, cfg_oid *oid, void *cookie)
+{
+    struct bind_cfg_t *cfg;
+    char **pci_fns = NULL;
+    size_t n_pci_fns;
+    const char *agent;
+    te_errno rc = 0;
+    size_t i;
+
+    UNUSED(net);
+
+    if (cookie == NULL)
+    {
+        ERROR("Invalid cookie passed to bind driver");
+        rc = TE_RC(TE_CONF_API, TE_EINVAL);
+        goto out;
+    }
+    cfg = (struct bind_cfg_t *)cookie;
+
+    if (cfg->node_type != node->type)
+        goto out;
+
+    if (strcmp(cfg_oid_inst_subid(oid, 1), "agent") == 0)
+    {
+        if (strcmp(cfg_oid_inst_subid(oid, 2), "interface") == 0)
+        {
+            if (cfg->driver == NET_DRIVER_TYPE_NET)
+            {
+                WARN("Net node is linked to a net interface, do not bind net driver");
+                goto out;
+            }
+            else
+            {
+                ERROR("Cannot bind non 'kernel net driver' "
+                      "for a net node linked to a net interface");
+                rc = TE_RC(TE_CONF_API, TE_EINVAL);
+                goto out;
+            }
+        }
+        else if (strcmp(cfg_oid_inst_subid(oid, 2), "hardware") == 0)
+        {
+            n_pci_fns = 1;
+            pci_fns = TE_ALLOC(sizeof(*pci_fns));
+            if (pci_fns == NULL)
+            {
+                rc = TE_RC(TE_CONF_API, TE_ENOMEM);
+                goto out;
+            }
+
+            rc = cfg_get_instance_str(NULL, &pci_fns[0], oid_str);
+            if (rc != 0)
+            {
+                ERROR("Failed to get PCI device path of an agent");
+                goto out;
+            }
+        }
+        else
+        {
+            ERROR("Invalid agent reference in a network node");
+            rc = TE_RC(TE_CONF_API, TE_EINVAL);
+            goto out;
+        }
+    }
+    else if (strcmp(cfg_oid_inst_subid(oid, 1), "local") == 0)
+    {
+        rc = tapi_cfg_net_pci_fn_by_dpdk_vdev_ref(oid_str, &n_pci_fns,
+                                                  &pci_fns);
+        if (rc != 0)
+            goto out;
+    }
+    else
+    {
+        ERROR("Net node is linked to neither a test agent nor DPDK vdev");
+        rc = TE_RC(TE_CONF_API, TE_EINVAL);
+        goto out;
+    }
+
+    agent = CFG_OID_GET_INST_NAME(oid, 1);
+
+    rc = tapi_cfg_net_bind_driver_on_pci_fn(agent, cfg->driver,
+                                            n_pci_fns, pci_fns);
+    if (rc != 0)
+        goto out;
+
+out:
+    if (pci_fns != NULL)
+    {
+        for (i = 0; i < n_pci_fns; i++)
+            free(pci_fns[i]);
+    }
+    free(pci_fns);
+
+    return rc;
+}
+
+te_errno
+tapi_cfg_net_bind_driver_by_node(enum net_node_type node_type,
+                                 enum tapi_cfg_driver_type driver)
+{
+    struct bind_cfg_t cfg = {
+        .node_type = node_type,
+        .driver = driver
+    };
+
+    return tapi_cfg_net_foreach_node(tapi_cfg_net_node_bind_driver, &cfg);
+}
+
 static tapi_cfg_net_node_cb tapi_cfg_net_node_reserve;
 
 static te_errno
