@@ -2,7 +2,6 @@
 
 project('test-environment', 'c',
     default_options: ['default_library=static'],
-    meson_version: '>= 0.44.0'
 )
 
 te_cflags = get_option('cflags').split()
