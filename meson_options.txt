@@ -22,7 +22,7 @@ option('trc', type: 'boolean', value: true,
 option('tr069', type: 'boolean', value: false,
        description: 'TR-069 support')
 
-option('rpcdefs', type: 'string', value: '',
+option('rpcdefs', type: 'array', value: '[]',
        description: 'List of extra RPC definitions')
 
 option('rpc-transport-local', type: 'boolean', value: true,
