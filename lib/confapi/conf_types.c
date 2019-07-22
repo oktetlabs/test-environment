@@ -377,6 +377,18 @@ str2addr(char *val_str, cfg_inst_val *val)
         addr->sin_family = AF_INET;
         val->val_addr = (struct sockaddr *)addr;
     }
+    else if (strlen(val_str) == 0)
+    {
+        struct sockaddr    *addr;
+
+        /* Unspecified address */
+        addr = (struct sockaddr *)calloc(1, sizeof(*addr));
+        if (addr == NULL)
+            return TE_ENOMEM;
+
+        addr->sa_family = AF_UNSPEC;
+        val->val_addr = addr;
+    }
     else
     {
         return TE_EINVAL;
@@ -436,6 +448,11 @@ addr2str(cfg_inst_val val, char **val_str)
             }               
             break;                           
         }    
+        case AF_UNSPEC:
+        {
+            val_buf[0] = '\0';
+            break;
+        }
         default:
         {
             return TE_EINVAL;
@@ -503,6 +520,7 @@ addr_copy(cfg_inst_val src, cfg_inst_val *dst)
             break;
         }
         case AF_LOCAL:
+        case AF_UNSPEC:
         {
             CP_ADDR(,);
             break;
@@ -557,6 +575,7 @@ addr_get(cfg_msg *msg, cfg_inst_val *val)
             break;
         }
         case AF_LOCAL:
+        case AF_UNSPEC:
         {
             CP_ADDR(,);
             break;
@@ -605,6 +624,7 @@ addr_put(cfg_inst_val val, cfg_msg *msg)
             break;
         }
         case AF_LOCAL:
+        case AF_UNSPEC:
         {
             CP_ADDR(,);
             break;
@@ -646,6 +666,7 @@ addr_equal(cfg_inst_val first, cfg_inst_val second)
             break;
         }
         case AF_LOCAL:
+        case AF_UNSPEC:
         {
             CMP_ADDR(,);
             break;
