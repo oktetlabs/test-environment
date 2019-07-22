@@ -3,7 +3,11 @@
 conf = configuration_data()
 
 rpcdefs = files('tarpc_base.x.m4')
-rpcdefs += files(get_option('rpcdefs').split(','))
+
+extra_rpcdefs = get_option('rpcdefs')
+if extra_rpcdefs != ''
+    rpcdefs += files(extra_rpcdefs.split(','))
+endif
 
 if cc.has_header('expat.h')
     have = 'HAVE_EXPAT_H'
