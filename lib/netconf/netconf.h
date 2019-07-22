@@ -237,12 +237,12 @@ typedef struct netconf_veth {
 
 /** VXLAN network interface */
 typedef struct netconf_vxlan {
-    char       *ifname;                         /**< Interface name */
-    uint32_t    vni;                            /**< VXLAN ID */
-    uint8_t     remote[sizeof(struct in_addr)]; /**< Remote address */
-    uint8_t     local[sizeof(struct in_addr)];  /**< Local address */
-    size_t      remote_len;                     /**< Remote address length */
-    size_t      local_len;                      /**< Local address length */
+    char       *ifname;                           /**< Interface name */
+    uint32_t    vni;                              /**< VXLAN ID */
+    uint8_t     remote[sizeof(struct in6_addr)];  /**< Remote address */
+    uint8_t     local[sizeof(struct in6_addr)];   /**< Local address */
+    size_t      remote_len;                       /**< Remote address length */
+    size_t      local_len;                        /**< Local address length */
 } netconf_vxlan;
 
 /** Type of nodes in the list */

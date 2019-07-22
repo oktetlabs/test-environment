@@ -168,8 +168,44 @@ netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan)
     netconf_append_rta_nested(h, IFLA_INFO_DATA, &data);
 
     netconf_append_rta(h, &(vxlan->vni), sizeof(vxlan->vni), IFLA_VXLAN_ID);
-    netconf_append_rta(h, vxlan->remote, vxlan->remote_len, IFLA_VXLAN_GROUP);
-    netconf_append_rta(h, vxlan->local, vxlan->local_len, IFLA_VXLAN_LOCAL);
+
+    switch (vxlan->remote_len)
+    {
+        case sizeof(struct in_addr):
+            netconf_append_rta(h, vxlan->remote, vxlan->remote_len,
+                               IFLA_VXLAN_GROUP);
+            break;
+
+        case sizeof(struct in6_addr):
+            netconf_append_rta(h, vxlan->remote, vxlan->remote_len,
+                               IFLA_VXLAN_GROUP6);
+            break;
+
+        case 0:
+            break;
+
+        default:
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    switch (vxlan->local_len)
+    {
+        case sizeof(struct in_addr):
+            netconf_append_rta(h, vxlan->local, vxlan->local_len,
+                               IFLA_VXLAN_LOCAL);
+            break;
+
+        case sizeof(struct in6_addr):
+            netconf_append_rta(h, vxlan->local, vxlan->local_len,
+                               IFLA_VXLAN_LOCAL6);
+            break;
+
+        case 0:
+            break;
+
+        default:
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
 
     netconf_append_rta_nested_end(h, data);
     netconf_append_rta_nested_end(h, linkinfo);

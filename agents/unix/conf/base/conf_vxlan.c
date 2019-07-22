@@ -160,6 +160,9 @@ vxlan_add(unsigned int gid, const char *oid, const char *value,
     if (vxlan_e->vxlan->ifname == NULL)
         goto fail_strdup_ifname;
 
+    vxlan_e->vxlan->remote_len = 0;
+    vxlan_e->vxlan->local_len = 0;
+
     vxlan_e->enabled = (uint_value == 1);
     vxlan_e->added = FALSE;
     vxlan_e->to_be_deleted = FALSE;
@@ -321,15 +324,27 @@ vxlan_vni_set(unsigned int gid, const char *oid, char *value,
 }
 
 static te_errno
-vxlan_get_addr(char *value, const uint8_t *addr)
+vxlan_get_addr(char *value, const uint8_t *addr, size_t addr_len)
 {
-    const char  *ret_val = NULL;
+    const char *ret_val = NULL;
 
-    ret_val = inet_ntop(AF_INET, addr, value, INET_ADDRSTRLEN);
-    if (ret_val == NULL)
-        return TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT);
+    switch (addr_len)
+    {
+        case sizeof(struct in_addr):
+            ret_val = inet_ntop(AF_INET, addr, value, INET_ADDRSTRLEN);
+            return (ret_val == NULL) ? TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT) : 0;
 
-    return 0;
+        case sizeof(struct in6_addr):
+            ret_val = inet_ntop(AF_INET6, addr, value, INET6_ADDRSTRLEN);
+            return (ret_val == NULL) ? TE_RC(TE_TA_UNIX, TE_EAFNOSUPPORT) : 0;
+
+        case 0:
+            value[0] = '\0';
+            return 0;
+
+        default:
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
 }
 
 static te_errno
@@ -337,11 +352,22 @@ vxlan_set_addr(const char *value, uint8_t *addr, size_t *addr_size)
 {
     te_errno    rc;
 
-    rc = inet_pton(AF_INET, value, addr);
-    if (rc <= 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    *addr_size = sizeof(struct in_addr);
+    if (strlen(value) == 0)
+        *addr_size = 0;
+    else
+    {
+        rc = inet_pton(AF_INET, value, addr);
+        if (rc <= 0)
+        {
+            rc = inet_pton(AF_INET6, value, addr);
+            if (rc <= 0)
+                return TE_RC(TE_TA_UNIX, TE_EINVAL);
+            else
+                *addr_size = sizeof(struct in6_addr);
+        } else {
+            *addr_size = sizeof(struct in_addr);
+        }
+    }
 
     return 0;
 }
@@ -362,7 +388,8 @@ vxlan_remote_get(unsigned int gid, const char *oid, char *value,
     if (!vxlan_entry_valid(vxlan_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    return vxlan_get_addr(value, vxlan_e->vxlan->remote);
+    return vxlan_get_addr(value, vxlan_e->vxlan->remote,
+                          vxlan_e->vxlan->remote_len);
 }
 
 static te_errno
@@ -400,7 +427,8 @@ vxlan_local_get(unsigned int gid, const char *oid, char *value,
     if (!vxlan_entry_valid(vxlan_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    return vxlan_get_addr(value, vxlan_e->vxlan->local);
+    return vxlan_get_addr(value, vxlan_e->vxlan->local,
+                          vxlan_e->vxlan->local_len);
 }
 
 static te_errno
