@@ -96,11 +96,12 @@ neigh_flags_h2te(unsigned int flags)
  *
  * @param h             Message header
  * @param list          List of info to store
+ * @param cookie        Extra parameters (unused)
  *
  * @return 0 on success, -1 on error (check errno for details).
  */
 static int
-neigh_list_cb(struct nlmsghdr *h, netconf_list *list)
+neigh_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
     struct ndmsg       *ndm = NLMSG_DATA(h);
     struct rtattr      *rta;
@@ -144,7 +145,7 @@ neigh_list_cb(struct nlmsghdr *h, netconf_list *list)
 netconf_list *
 netconf_neigh_dump(netconf_handle nh, unsigned char family)
 {
-    return netconf_dump_request(nh, RTM_GETNEIGH, family, neigh_list_cb);
+    return netconf_dump_request(nh, RTM_GETNEIGH, family, neigh_list_cb, NULL);
 }
 
 void
@@ -230,5 +231,5 @@ netconf_neigh_modify(netconf_handle nh, netconf_cmd cmd,
         netconf_append_rta(h, neigh->lladdr, hwaddrlen, NDA_LLADDR);
 
     /* Send request and receive ACK */
-    return netconf_talk(nh, &req, sizeof(req), NULL, NULL);
+    return netconf_talk(nh, &req, sizeof(req), NULL, NULL, NULL);
 }

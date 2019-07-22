@@ -200,11 +200,12 @@ rule_list_cb_internal(struct nlmsghdr *h, netconf_list *list)
  *
  * @param [in] h        Message header
  * @param [out]list     List of info to store
+ * @param cookie        Extra parameters (unused)
  *
  * @return @c 0 on success, @c -1 on error (check @b errno for details).
  */
 static int
-rule_list_cb(struct nlmsghdr *h, netconf_list *list)
+rule_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
     te_errno result = rule_list_cb_internal(h, list);
 
@@ -428,7 +429,7 @@ netconf_rule_node_free(netconf_node *node)
 netconf_list *
 netconf_rule_dump(netconf_handle nh, unsigned char family)
 {
-    return netconf_dump_request(nh, RTM_GETRULE, family, rule_list_cb);
+    return netconf_dump_request(nh, RTM_GETRULE, family, rule_list_cb, NULL);
 }
 
 /* See the description in netconf.h */
@@ -443,7 +444,7 @@ netconf_rule_modify(netconf_handle nh, netconf_cmd cmd,
     if (rc != 0)
         return rc;
 
-    if (netconf_talk(nh, req, sizeof(req), NULL, NULL) < 0)
+    if (netconf_talk(nh, req, sizeof(req), NULL, NULL, NULL) < 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
     return 0;

@@ -127,11 +127,12 @@ vxlan_link_gen_cb(struct nlmsghdr *h, netconf_list *list)
  *
  * @param h         The netlink message header
  * @param list      Netconf list to keep the data
+ * @param cookie    Extra parameters (unused)
  *
  * @return @c 0 on success, @c -1 on error (check @b errno for details).
  */
 static int
-vxlan_list_cb(struct nlmsghdr *h, netconf_list *list)
+vxlan_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
     return vxlan_link_gen_cb(h, list);
 }
@@ -225,7 +226,7 @@ netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan)
     netconf_append_rta_nested_end(h, data);
     netconf_append_rta_nested_end(h, linkinfo);
 
-    if (netconf_talk(nh, req, sizeof(req), NULL, NULL) != 0) {
+    if (netconf_talk(nh, req, sizeof(req), NULL, NULL, NULL) != 0) {
         return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
@@ -244,7 +245,7 @@ netconf_vxlan_del(netconf_handle nh, const char *ifname)
 
     netconf_append_rta(h, ifname, strlen(ifname) + 1, IFLA_IFNAME);
 
-    if (netconf_talk(nh, req, sizeof(req), NULL, NULL) != 0)
+    if (netconf_talk(nh, req, sizeof(req), NULL, NULL, NULL) != 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
     return 0;
@@ -260,7 +261,8 @@ netconf_vxlan_list(netconf_handle nh, netconf_vxlan_list_filter_func filter_cb,
     te_string       str = TE_STRING_INIT;
     te_errno        rc = 0;
 
-    nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC, vxlan_list_cb);
+    nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC,
+                                 vxlan_list_cb, NULL);
     if (nlist == NULL)
     {
         ERROR("Failed to get vxlan interfaces list");

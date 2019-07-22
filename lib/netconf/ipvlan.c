@@ -86,7 +86,7 @@ netconf_ipvlan_modify(netconf_handle nh, netconf_cmd cmd,
     netconf_append_rta_nested_end(h, data);
     netconf_append_rta_nested_end(h, linkinfo);
 
-    if (netconf_talk(nh, &req, sizeof(req), NULL, NULL) < 0)
+    if (netconf_talk(nh, &req, sizeof(req), NULL, NULL, NULL) < 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
     return 0;
@@ -97,11 +97,12 @@ netconf_ipvlan_modify(netconf_handle nh, netconf_cmd cmd,
  *
  * @param h             Message header
  * @param list          List of info to store
+ * @param cookie        Extra parameters (unused)
  *
  * @return @c 0 on success, @c -1 on error (check errno for details).
  */
 static int
-ipvlan_list_cb(struct nlmsghdr *h, netconf_list *list)
+ipvlan_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
     struct ifinfomsg   *ifla = NLMSG_DATA(h);
     netconf_ipvlan      ipvlan;
@@ -178,7 +179,7 @@ netconf_ipvlan_list(netconf_handle nh, const char *link, char **list)
     IFNAME_TO_INDEX(link, index);
 
     nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC,
-                                 ipvlan_list_cb);
+                                 ipvlan_list_cb, NULL);
     if (nlist == NULL)
     {
         ERROR("Failed to get IP VLAN intefaces list");
@@ -216,7 +217,7 @@ netconf_ipvlan_get_mode(netconf_handle nh, const char *ifname,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC,
-                                 ipvlan_list_cb);
+                                 ipvlan_list_cb, NULL);
     if (nlist == NULL)
     {
         ERROR("Failed to get IP VLAN intefaces list");

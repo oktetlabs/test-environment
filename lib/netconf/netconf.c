@@ -153,7 +153,8 @@ netconf_cmd_to_flags(netconf_cmd cmd)
 netconf_list *
 netconf_dump_request(netconf_handle nh, uint16_t type,
                      unsigned char family,
-                     netconf_recv_cb_t recv_cb)
+                     netconf_recv_cb_t recv_cb,
+                     void *cookie)
 {
     char                req[NLMSG_SPACE(sizeof(struct rtgenmsg))];
     struct nlmsghdr    *h;
@@ -187,7 +188,7 @@ netconf_dump_request(netconf_handle nh, uint16_t type,
 
     memset(list, 0, sizeof(netconf_list));
 
-    if (netconf_talk(nh, &req, sizeof(req), recv_cb, list) != 0)
+    if (netconf_talk(nh, &req, sizeof(req), recv_cb, cookie, list) != 0)
     {
         int err = errno;
 
@@ -360,7 +361,7 @@ netconf_list_free(netconf_list *list)
 
 int
 netconf_talk(netconf_handle nh, void *req, int len,
-             netconf_recv_cb_t recv_cb, netconf_list *list)
+             netconf_recv_cb_t recv_cb, void *cookie, netconf_list *list)
 {
     struct msghdr       msg;
     char                buf[NETCONF_RCV_BUF_LEN];
@@ -469,7 +470,7 @@ netconf_talk(netconf_handle nh, void *req, int len,
                 default:
                     if (recv_cb != NULL)
                     {
-                        if (recv_cb(h, list) != 0)
+                        if (recv_cb(h, list, cookie) != 0)
                             return -1;
                     }
                     else

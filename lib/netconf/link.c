@@ -16,11 +16,12 @@
  *
  * @param h             Message header
  * @param list          List of info to store
+ * @param cookie        Extra parameters (unused)
  *
  * @return 0 on success, -1 on error (check errno for details).
  */
 static int
-link_list_cb(struct nlmsghdr *h, netconf_list *list)
+link_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
     struct ifinfomsg   *ifla = NLMSG_DATA(h);
     struct rtattr      *rta;
@@ -90,7 +91,7 @@ netconf_list *
 netconf_link_dump(netconf_handle nh)
 {
     return netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC,
-                                link_list_cb);
+                                link_list_cb, NULL);
 }
 
 void
@@ -128,7 +129,7 @@ netconf_link_set_ns(netconf_handle nh, const char *ifname,
     else
         netconf_append_rta(h, &pid, sizeof(pid), IFLA_NET_NS_PID);
 
-    if (netconf_talk(nh, &req, sizeof(req), NULL, NULL) < 0)
+    if (netconf_talk(nh, &req, sizeof(req), NULL, NULL, NULL) < 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
     return 0;

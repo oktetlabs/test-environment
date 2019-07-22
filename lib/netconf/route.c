@@ -17,11 +17,12 @@
  *
  * @param h             Message header
  * @param list          List of info to store
+ * @param cookie        Extra parameters (unused)
  *
  * @return 0 on success, -1 on error (check errno for details).
  */
 static int
-route_list_cb(struct nlmsghdr *h, netconf_list *list)
+route_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
     struct rtmsg       *rtm = NLMSG_DATA(h);
     struct rtattr      *rta;
@@ -174,7 +175,7 @@ netconf_list *
 netconf_route_dump(netconf_handle nh, unsigned char family)
 {
     return netconf_dump_request(nh, RTM_GETROUTE, family,
-                                route_list_cb);
+                                route_list_cb, NULL);
 }
 
 /* See description in netconf.h */
@@ -492,5 +493,5 @@ netconf_route_modify(netconf_handle nh, netconf_cmd cmd,
     }
 
     /* Send request and receive ACK */
-    return netconf_talk(nh, &req, sizeof(req), NULL, NULL);
+    return netconf_talk(nh, &req, sizeof(req), NULL, NULL, NULL);
 }

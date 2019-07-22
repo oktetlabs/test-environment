@@ -72,7 +72,8 @@ struct netconf_handle_s {
 };
 
 /** Callback in dump requests */
-typedef int (*netconf_recv_cb_t)(struct nlmsghdr *h, netconf_list *list);
+typedef int (*netconf_recv_cb_t)(struct nlmsghdr *h, netconf_list *list,
+                                 void* cookie);
 
 /**
  * Get nlmsghdr flags to set depending on command.
@@ -90,12 +91,14 @@ uint16_t netconf_cmd_to_flags(netconf_cmd cmd);
  * @param type          Type of dump as in nlmsg_type field
  * @param family        Address family to dump
  * @param recv_cb       Handler of one responce entity
+ * @param cookie        Parameters for recv_cb
  *
  * @return List of information nodes, or NULL in case of error.
  */
 netconf_list *netconf_dump_request(netconf_handle nh, uint16_t type,
                                    unsigned char family,
-                                   netconf_recv_cb_t recv_cb);
+                                   netconf_recv_cb_t recv_cb,
+                                   void *cookie);
 
 /**
  * Extend list by one node. The node data is filled with zeroes.
@@ -253,10 +256,11 @@ extern void netconf_vxlan_node_free(netconf_node *node);
  * @param req           Request data
  * @param len           Request length
  * @param recv_cb       Handler of one responce entity
+ * @param cookie        Parameters for recv_cb
  * @param list          Argument of callback
  */
 int netconf_talk(netconf_handle nh, void *req, int len,
-                 netconf_recv_cb_t recv_cb, netconf_list *list);
+                 netconf_recv_cb_t recv_cb, void *cookie, netconf_list *list);
 
 /**
  * Get interface index by its name. Return error if it cannot be done.

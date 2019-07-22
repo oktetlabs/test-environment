@@ -199,7 +199,7 @@ veth_link_gen_cb(struct nlmsghdr *h, netconf_list *list, te_bool get_peer)
  * @return @c 0 on success, @c -1 on error (check @b errno for details).
  */
 static int
-veth_peer_cb(struct nlmsghdr *h, netconf_list *list)
+veth_peer_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
     return veth_link_gen_cb(h, list, TRUE);
 }
@@ -209,11 +209,12 @@ veth_peer_cb(struct nlmsghdr *h, netconf_list *list)
  *
  * @param h         The netlink message header
  * @param list      Netconf list to keep the data
+ * @param cookie    Extra parameters (unused)
  *
  * @return @c 0 on success, @c -1 on error (check @b errno for details).
  */
 static int
-veth_list_cb(struct nlmsghdr *h, netconf_list *list)
+veth_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
     return veth_link_gen_cb(h, list, FALSE);
 }
@@ -261,7 +262,7 @@ netconf_veth_add(netconf_handle nh, const char *ifname, const char *peer)
     netconf_append_rta_nested_end(h, data);
     netconf_append_rta_nested_end(h, linkinfo);
 
-    if (netconf_talk(nh, req, sizeof(req), NULL, NULL) != 0)
+    if (netconf_talk(nh, req, sizeof(req), NULL, NULL, NULL) != 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
     return 0;
@@ -279,7 +280,7 @@ netconf_veth_del(netconf_handle nh, const char *ifname)
 
     netconf_append_rta(h, ifname, strlen(ifname) + 1, IFLA_IFNAME);
 
-    if (netconf_talk(nh, req, sizeof(req), NULL, NULL) != 0)
+    if (netconf_talk(nh, req, sizeof(req), NULL, NULL, NULL) != 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
     return 0;
@@ -304,7 +305,7 @@ netconf_veth_get_peer(netconf_handle nh, const char *ifname, char *peer,
     if (list == NULL)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
-    rc = netconf_talk(nh, req, sizeof(req), veth_peer_cb, list);
+    rc = netconf_talk(nh, req, sizeof(req), veth_peer_cb, NULL, list);
     if (rc != 0)
     {
         netconf_list_free(list);
@@ -339,7 +340,8 @@ netconf_veth_list(netconf_handle nh, netconf_veth_list_filter_func filter_cb,
     te_string     str = TE_STRING_INIT;
     te_errno      rc = 0;
 
-    nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC, veth_list_cb);
+    nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC,
+                                 veth_list_cb, NULL);
     if (nlist == NULL)
     {
         ERROR("Failed to get veth interfaces list");

@@ -16,11 +16,12 @@
  *
  * @param h             Message header
  * @param list          List of info to store
+ * @param cookie        Extra parameters (unused)
  *
  * @return 0 on success, -1 on error (check errno for details).
  */
 static int
-net_addr_list_cb(struct nlmsghdr *h, netconf_list *list)
+net_addr_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
     struct ifaddrmsg   *ifa = NLMSG_DATA(h);
     struct rtattr      *rta;
@@ -88,7 +89,7 @@ netconf_list *
 netconf_net_addr_dump(netconf_handle nh, unsigned char family)
 {
     return netconf_dump_request(nh, RTM_GETADDR, family,
-                                net_addr_list_cb);
+                                net_addr_list_cb, NULL);
 }
 
 /**
@@ -249,5 +250,5 @@ netconf_net_addr_modify(netconf_handle nh, netconf_cmd cmd,
     }
 
     /* Send request and receive ACK */
-    return netconf_talk(nh, &req, sizeof(req), NULL, NULL);
+    return netconf_talk(nh, &req, sizeof(req), NULL, NULL, NULL);
 }

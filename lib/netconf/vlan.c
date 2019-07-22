@@ -107,7 +107,7 @@ netconf_vlan_modify(netconf_handle nh, netconf_cmd cmd,
     netconf_append_rta_nested_end(h, data);
     netconf_append_rta_nested_end(h, linkinfo);
 
-    if (netconf_talk(nh, &req, sizeof(req), NULL, NULL) < 0)
+    if (netconf_talk(nh, &req, sizeof(req), NULL, NULL, NULL) < 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
     return 0;
@@ -128,11 +128,12 @@ netconf_vlan_node_free(netconf_node *node)
  *
  * @param h             Message header
  * @param list          Where to store interfaces data
+ * @param cookie        Extra parameters (unused)
  *
  * @return @c 0 on success, @c -1 on error.
  */
 static int
-vlan_list_cb(struct nlmsghdr *h, netconf_list *list)
+vlan_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
     struct ifinfomsg   *ifla = NLMSG_DATA(h);
     netconf_vlan        vlan;
@@ -204,7 +205,7 @@ netconf_vlan_list(netconf_handle nh, const char *link, char **list)
     IFNAME_TO_INDEX(link, index);
 
     nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC,
-                                 vlan_list_cb);
+                                 vlan_list_cb, NULL);
     if (nlist == NULL)
     {
         ERROR("Failed to get VLAN interfaces list");
@@ -241,7 +242,7 @@ netconf_vlan_get_ifname(netconf_handle nh, const char *link, unsigned int vid,
     IFNAME_TO_INDEX(link, index);
 
     nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC,
-                                 vlan_list_cb);
+                                 vlan_list_cb, NULL);
     if (nlist == NULL)
     {
         ERROR("Failed to get VLAN interfaces list");
