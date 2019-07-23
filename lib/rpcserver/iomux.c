@@ -43,7 +43,7 @@
 
 /* See description in iomux.h */
 int
-iomux_find_func(te_bool use_libc, iomux_func *iomux, iomux_funcs *funcs)
+iomux_find_func(tarpc_lib_flags lib_flags, iomux_func *iomux, iomux_funcs *funcs)
 {
     int rc = 0;
 
@@ -53,34 +53,34 @@ iomux_find_func(te_bool use_libc, iomux_func *iomux, iomux_funcs *funcs)
     switch (*iomux)
     {
         case FUNC_SELECT:
-            rc = tarpc_find_func(use_libc, "select", &funcs->select);
+            rc = tarpc_find_func(lib_flags, "select", &funcs->select);
             break;
         case FUNC_PSELECT:
-            rc = tarpc_find_func(use_libc, "pselect", &funcs->select);
+            rc = tarpc_find_func(lib_flags, "pselect", &funcs->select);
             break;
         case FUNC_POLL:
-            rc = tarpc_find_func(use_libc, "poll",
+            rc = tarpc_find_func(lib_flags, "poll",
                                  (api_func *)&funcs->poll);
             break;
         case FUNC_PPOLL:
-            rc = tarpc_find_func(use_libc, "ppoll",
+            rc = tarpc_find_func(lib_flags, "ppoll",
                                  (api_func *)&funcs->poll);
             break;
 #if HAVE_STRUCT_EPOLL_EVENT
         case FUNC_EPOLL:
         case FUNC_EPOLL_PWAIT:
             if (*iomux == FUNC_EPOLL)
-                rc = tarpc_find_func(use_libc, "epoll_wait",
+                rc = tarpc_find_func(lib_flags, "epoll_wait",
                                      &funcs->epoll.wait);
             else
-                rc = tarpc_find_func(use_libc, "epoll_pwait",
+                rc = tarpc_find_func(lib_flags, "epoll_pwait",
                                      &funcs->epoll.wait);
             rc = rc ||
-                 tarpc_find_func(use_libc, "epoll_ctl",
+                 tarpc_find_func(lib_flags, "epoll_ctl",
                                  &funcs->epoll.ctl)  ||
-                 tarpc_find_func(use_libc, "epoll_create",
+                 tarpc_find_func(lib_flags, "epoll_create",
                                  &funcs->epoll.create);
-                 tarpc_find_func(use_libc, "close", &funcs->epoll.close);
+                 tarpc_find_func(lib_flags, "close", &funcs->epoll.close);
             break;
 #endif
         case FUNC_NO_IOMUX:

@@ -167,13 +167,13 @@ extern int iomux_wait(iomux_func iomux, iomux_funcs *funcs,
  * Resolve all functions used by particular iomux and store them into
  * iomux_funcs.
  *
- * @param use_libc  Use libc flag.
+ * @param lib_flags Flag to use.
  * @param iomux     Multiplexer function type.
  * @param funcs     Pointer to the multiplexer functions.
  *
  * @return @c 0 on success or @c -1 in the case of failure.
  */
-extern int iomux_find_func(te_bool use_libc, iomux_func *iomux,
+extern int iomux_find_func(tarpc_lib_flags lib_flags, iomux_func *iomux,
                            iomux_funcs *funcs);
 
 /**
