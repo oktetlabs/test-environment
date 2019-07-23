@@ -586,7 +586,7 @@ te_sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
         {                                                               \
             RING("No one byte of '" field_name_ "' field can be "       \
                  "compared");                                           \
-            return 0;                                                   \
+            break;                                                      \
         }                                                               \
         for (i = ((uint8_t *)(field_addr_) - (uint8_t *)a1);            \
              i < (socklen_t)(((uint8_t *)(field_addr_) -                \
@@ -599,8 +599,6 @@ te_sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
                 return -1;                                              \
             }                                                           \
         }                                                               \
-        if (i == min_len)                                               \
-            return 0;                                                   \
     } while (0)
 
     CMP_FIELD("sa_family", &(a1->sa_family), sizeof(a1->sa_family));
@@ -614,28 +612,15 @@ te_sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
             /*
              * AF_INET address contains port and IPv4 address
              */
-            if ((size_t)&(in_a1->sin_port) < (size_t)&(in_a1->sin_addr))
-            {
-                /* Compare port first */
-                CMP_FIELD("sin_port", &(in_a1->sin_port),
-                          sizeof(in_a1->sin_port));
-                CMP_FIELD("sin_addr", &(in_a1->sin_addr),
-                          sizeof(in_a1->sin_addr));
-            }
-            else
-            {
-                /* Compare address first */
-                CMP_FIELD("sin_addr", &(in_a1->sin_addr),
-                          sizeof(in_a1->sin_addr));
-                CMP_FIELD("sin_port", &(in_a1->sin_port),
-                          sizeof(in_a1->sin_port));
-            }
+
+            CMP_FIELD("sin_port", &(in_a1->sin_port),
+                      sizeof(in_a1->sin_port));
+            CMP_FIELD("sin_addr", &(in_a1->sin_addr),
+                      sizeof(in_a1->sin_addr));
 
             /* We do not compare padding field ('sin_zero') */
 
             return 0;
-
-            break;
         }
 
         case AF_INET6:
@@ -653,6 +638,8 @@ te_sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
                   "family %d", a1->sa_family);
             return -2;
     }
+
+#undef CMP_FIELD
 
     return -1;
 }
