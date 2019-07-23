@@ -625,12 +625,23 @@ te_sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
 
         case AF_INET6:
         {
+            struct sockaddr_in6 *in_a1 = SIN6(a1);
+
             /*
              * AF_INET6 address contains port, flowinfo,
              * IPv6 address and scope_id
              */
 
-            /* Pass through: Not supported yet */
+            CMP_FIELD("sin6_port", &(in_a1->sin6_port),
+                      sizeof(in_a1->sin6_port));
+            CMP_FIELD("sin6_flowinfo", &(in_a1->sin6_flowinfo),
+                      sizeof(in_a1->sin6_flowinfo));
+            CMP_FIELD("sin6_addr", &(in_a1->sin6_addr),
+                      sizeof(in_a1->sin6_addr));
+            CMP_FIELD("sin6_scope_id", &(in_a1->sin6_scope_id),
+                      sizeof(in_a1->sin6_scope_id));
+
+            return 0;
         }
 
         default:
