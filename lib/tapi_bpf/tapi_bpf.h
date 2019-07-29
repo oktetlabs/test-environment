@@ -49,6 +49,24 @@ typedef enum tapi_bpf_map_type {
     TAPI_BPF_MAP_TYPE_UNSPEC = 0,
     TAPI_BPF_MAP_TYPE_HASH,
     TAPI_BPF_MAP_TYPE_ARRAY,
+    TAPI_BPF_MAP_TYPE_PROG_ARRAY,
+    TAPI_BPF_MAP_TYPE_PERF_EVENT_ARRAY,
+    TAPI_BPF_MAP_TYPE_PERCPU_HASH,
+    TAPI_BPF_MAP_TYPE_PERCPU_ARRAY,
+    TAPI_BPF_MAP_TYPE_STACK_TRACE,
+    TAPI_BPF_MAP_TYPE_CGROUP_ARRAY,
+    TAPI_BPF_MAP_TYPE_LRU_HASH,
+    TAPI_BPF_MAP_TYPE_LRU_PERCPU_HASH,
+    TAPI_BPF_MAP_TYPE_LPM_TRIE,
+    TAPI_BPF_MAP_TYPE_ARRAY_OF_MAPS,
+    TAPI_BPF_MAP_TYPE_HASH_OF_MAPS,
+    TAPI_BPF_MAP_TYPE_DEVMAP,
+    TAPI_BPF_MAP_TYPE_SOCKMAP,
+    TAPI_BPF_MAP_TYPE_CPUMAP,
+    TAPI_BPF_MAP_TYPE_XSKMAP,
+    TAPI_BPF_MAP_TYPE_SOCKHASH,
+    TAPI_BPF_MAP_TYPE_CGROUP_STORAGE,
+    TAPI_BPF_MAP_TYPE_REUSEPORT_SOCKARRAY,
     TAPI_BPF_MAP_TYPE_UNKNOWN
 } tapi_bpf_map_type;
 
@@ -62,6 +80,15 @@ typedef enum tapi_bpf_xdp_action {
     TAPI_BPF_XDP_TX,
     TAPI_BPF_XDP_REDIRECT
 } tapi_bpf_xdp_action;
+
+/** Key of a @ref TAPI_BPF_MAP_TYPE_LPM_TRIE map entry */
+typedef struct tapi_bpf_lpm_trie_key {
+    unsigned int    prefixlen;  /**<
+                                 * Address prefix length,
+                                 * up to 32 for AF_INET, 128 for AF_INET6
+                                 */
+    unsigned char   data[16];   /**< Buffer for address */
+} tapi_bpf_lpm_trie_key;
 
 /**
  * Add BPF object

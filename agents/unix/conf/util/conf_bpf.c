@@ -108,7 +108,9 @@ static LIST_HEAD(, bpf_entry) bpf_list_h = LIST_HEAD_INITIALIZER(bpf_list_h);
 static te_bool
 bpf_map_supported(enum bpf_map_type type)
 {
-    return (type == BPF_MAP_TYPE_ARRAY || type == BPF_MAP_TYPE_HASH);
+    return (type == BPF_MAP_TYPE_ARRAY ||
+            type == BPF_MAP_TYPE_HASH  ||
+            type == BPF_MAP_TYPE_LPM_TRIE);
 }
 
 /**
@@ -741,6 +743,7 @@ static const char* bpf_map_types_str[] = {
     [BPF_MAP_TYPE_UNSPEC] = "UNSPEC",
     [BPF_MAP_TYPE_HASH] = "HASH",
     [BPF_MAP_TYPE_ARRAY] = "ARRAY",
+    [BPF_MAP_TYPE_LPM_TRIE] = "LPM_TRIE",
 };
 
 /**

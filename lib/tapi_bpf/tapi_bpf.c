@@ -42,6 +42,7 @@ static const char *tapi_bpf_map_types[] =
     [TAPI_BPF_MAP_TYPE_UNSPEC] =         "UNSPEC",
     [TAPI_BPF_MAP_TYPE_HASH] =           "HASH",
     [TAPI_BPF_MAP_TYPE_ARRAY] =          "ARRAY",
+    [TAPI_BPF_MAP_TYPE_LPM_TRIE] =       "LPM_TRIE",
     [TAPI_BPF_MAP_TYPE_UNKNOWN] =        "<UNKNOWN>"
 };
 
