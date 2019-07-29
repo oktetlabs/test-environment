@@ -668,9 +668,33 @@ tapi_bpf_map_update_kvpair(const char *ta, unsigned int bpf_id,
     if ((rc = te_str_hex_raw2str(val, val_size, &val_str)) != 0)
         return rc;
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, val_str.ptr),
-                                   "/agent:%s/bpf:%u/map:%s/writable:/key:%s",
-                                   ta, bpf_id, map, key_str.ptr)) != 0)
+    /*
+     * Some types of XDP maps (e.g. hash and lpm_trie) have no elements
+     * on creation. Hence there is no key instances in configurator DB.
+     * In these cases we need to add a new instance for specified key-value.
+     */
+    rc = cfg_find_fmt(NULL, "/agent:%s/bpf:%u/map:%s/writable:/key:%s",
+                            ta, bpf_id, map, key_str.ptr);
+    if (rc == 0)
+    {
+        rc = cfg_set_instance_fmt(CFG_VAL(STRING, val_str.ptr),
+                                  "/agent:%s/bpf:%u/map:%s/writable:/key:%s",
+                                  ta, bpf_id, map, key_str.ptr);
+    }
+    else if (rc == TE_RC(TE_CS, TE_ENOENT))
+    {
+        rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, val_str.ptr),
+                                  "/agent:%s/bpf:%u/map:%s/writable:/key:%s",
+                                  ta, bpf_id, map, key_str.ptr);
+    }
+    else
+    {
+        ERROR("%s(): cfg_find_fmt() returned unexpected result: %r",
+                  __FUNCTION__, rc);
+        return rc;
+    }
+
+    if (rc != 0)
     {
         ERROR("%s(): Failed to set value %s to "
               "/agent:%s/bpf:%u/map:%s/writable/key:%s: %r",
