@@ -20,6 +20,13 @@ AC_PROG_INSTALL
 
 TE_LIB_SET
 
+dnl
+dnl Check for VXLAN IPv6 address attribute support
+dnl
+AC_CHECK_DECLS([IFLA_VXLAN_GROUP6, IFLA_VXLAN_LOCAL6], [], [], [
+#include <linux/if_link.h>
+])
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE
