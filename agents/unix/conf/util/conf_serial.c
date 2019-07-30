@@ -226,7 +226,7 @@ static te_errno
 console_common_set(unsigned int gid, const char *oid, const char *value,
                    const char *inst_name)
 {
-    te_errno          rc;
+    te_errno          rc = 0;
     serial_console_t *console;
 
     UNUSED(gid);
