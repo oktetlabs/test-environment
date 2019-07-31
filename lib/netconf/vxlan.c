@@ -176,7 +176,7 @@ netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan)
                                IFLA_VXLAN_GROUP);
             break;
 
-#ifdef HAVE_DECL_IFLA_VXLAN_GROUP6
+#if HAVE_DECL_IFLA_VXLAN_GROUP6
         case sizeof(struct in6_addr):
             netconf_append_rta(h, vxlan->remote, vxlan->remote_len,
                                IFLA_VXLAN_GROUP6);
@@ -197,7 +197,7 @@ netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan)
                                IFLA_VXLAN_LOCAL);
             break;
 
-#ifdef HAVE_DECL_IFLA_VXLAN_LOCAL6
+#if HAVE_DECL_IFLA_VXLAN_LOCAL6
         case sizeof(struct in6_addr):
             netconf_append_rta(h, vxlan->local, vxlan->local_len,
                                IFLA_VXLAN_LOCAL6);
