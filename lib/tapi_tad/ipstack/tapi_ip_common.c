@@ -23,6 +23,8 @@
 #include "logger_api.h"
 #include "tapi_ip4.h"
 #include "tapi_ip6.h"
+#include "tapi_tcp.h"
+#include "tapi_udp.h"
 #include "tapi_ip_common.h"
 
 /* See description in tapi_ip_common.h */
@@ -69,3 +71,42 @@ tapi_ip_eth_csap_create(const char *ta_name, int sid,
           __FUNCTION__, af);
     return TE_RC(TE_TAPI, TE_EINVAL);
 }
+
+/* See description in tapi_ip_common.h */
+te_errno
+tapi_tcp_udp_ip_eth_csap_create(
+                        const char *ta_name, int sid,
+                        const char *eth_dev, unsigned int receive_mode,
+                        const uint8_t *loc_mac_addr,
+                        const uint8_t *rem_mac_addr,
+                        int af,
+                        int ip_proto,
+                        const void *loc_ip_addr,
+                        const void *rem_ip_addr,
+                        int loc_port,
+                        int rem_port,
+                        csap_handle_t *csap)
+{
+    switch (ip_proto)
+    {
+        case IPPROTO_TCP:
+            return tapi_tcp_ip_eth_csap_create(
+                            ta_name, sid, eth_dev, receive_mode,
+                            loc_mac_addr, rem_mac_addr,
+                            af, loc_ip_addr, rem_ip_addr,
+                            loc_port, rem_port, csap);
+
+        case IPPROTO_UDP:
+            return tapi_udp_ip_eth_csap_create(
+                            ta_name, sid, eth_dev, receive_mode,
+                            loc_mac_addr, rem_mac_addr,
+                            af, loc_ip_addr, rem_ip_addr,
+                            loc_port, rem_port, csap);
+
+        default:
+            ERROR("%s(): not supported protocol %d",
+                  __FUNCTION__, ip_proto);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+}
+
