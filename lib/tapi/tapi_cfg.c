@@ -2129,6 +2129,22 @@ tapi_cfg_free_entry(cfg_handle *entry)
     return rc;
 }
 
+/* See the description in tapi_cfg.h */
+te_errno
+tapi_cfg_alloc_net(int af, cfg_handle *entry)
+{
+    switch (af)
+    {
+        case AF_INET:
+            return tapi_cfg_alloc_entry("/net_pool:ip4", entry);
+
+        case AF_INET6:
+            return tapi_cfg_alloc_entry("/net_pool:ip6", entry);
+    }
+
+    ERROR("%s(): not supported address family %d", __FUNCTION__, af);
+    return TE_RC(TE_TAPI, TE_EINVAL);
+}
 
 /* See the description in tapi_cfg.h */
 te_errno

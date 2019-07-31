@@ -834,6 +834,17 @@ tapi_cfg_alloc_ip6_net(cfg_handle *entry)
     return tapi_cfg_alloc_entry("/net_pool:ip6", entry);
 }
 
+/**
+ * Allocate entry in IPv4 or IPv6 subnets pool.
+ *
+ * @param af            @c AF_INET or @c AF_INET6
+ * @param entry         Location for Configurator handle
+ *
+ * @return Status code.
+ *
+ * @note Use tapi_cfg_free_entry() function to free allocated entry.
+ */
+extern te_errno tapi_cfg_alloc_net(int af, cfg_handle *entry);
 
 /**
  * Add entry to IPv4 or IPv6 subnets pool.
