@@ -551,12 +551,18 @@ te_sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
 {
     socklen_t min_len = ((a1len < a2len) ? a1len : a2len);
 
-    if (a1 == NULL && a1len != 0)
+    if (min_len == 0)
+    {
+        RING("%s(): Addresses length to compare is 0");
+        return 0;
+    }
+
+    if (a1 == NULL)
     {
         ERROR("%s(): The first address is NULL, but its length is not zero",
               __FUNCTION__);
     }
-    if (a2 == NULL && a2len != 0)
+    if (a2 == NULL)
     {
         ERROR("%s(): The second address is NULL, but its length is not "
               "zero", __FUNCTION__);
