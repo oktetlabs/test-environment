@@ -24,6 +24,7 @@ EXTRA_DIST = \
 	cm_namespace.xml \
 	cm_net.xml \
 	cm_openvpn.xml \
+	cm_ovs.xml \
 	cm_pci.xml \
 	cm_poesw.xml \
 	cm_pppoe_client.xml \
