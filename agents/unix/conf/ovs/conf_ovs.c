@@ -29,6 +29,7 @@
 #include "te_alloc.h"
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_ethernet.h"
 #include "te_shell_cmd.h"
 #include "te_sleep.h"
 #include "te_string.h"
@@ -54,6 +55,9 @@ typedef struct interface_entry {
     char                         *type;
     te_bool                       temporary;
     te_bool                       active;
+
+    te_bool                       mac_requested;
+    char                         *mac_request;
 } interface_entry;
 
 typedef SLIST_HEAD(interface_list_t, interface_entry) interface_list_t;
@@ -122,6 +126,81 @@ ovs_value_is_valid(const char **supported_values,
     }
 
     return FALSE;
+}
+
+static te_bool
+ovs_value_is_valid_mac(const char *value)
+{
+    unsigned int x[ETHER_ADDR_LEN];
+    char         c;
+    int          n;
+
+    n = sscanf(value, "%02x:%02x:%02x:%02x:%02x:%02x%c",
+               &x[0], &x[1], &x[2], &x[3], &x[4], &x[5], &c);
+
+    return (n == ETHER_ADDR_LEN) ? TRUE : FALSE;
+}
+
+static te_errno
+ovs_value_get_effective(ovs_ctx_t   *ctx,
+                        const char  *facility_name,
+                        const char  *instance_name,
+                        const char  *property_name,
+                        char       **bufp)
+{
+    te_string  cmd = TE_STRING_INIT;
+    int        out_fd = -1;
+    FILE      *f = NULL;
+    int        ret;
+    te_errno   rc;
+
+    INFO("Querying the effective '%s' property value of the %s '%s'",
+         property_name, facility_name, instance_name);
+
+    rc = te_string_append(&cmd, "%s ovs-vsctl get %s %s %s", ctx->env.ptr,
+                          facility_name, instance_name, property_name);
+    if (rc != 0)
+    {
+        ERROR("Failed to construct ovs-vsctl invocation command line");
+        return rc;
+    }
+
+    ret = te_shell_cmd(cmd.ptr, -1, NULL, &out_fd, NULL);
+    if (ret == -1)
+    {
+        ERROR("Failed to invoke ovs-vsctl");
+        rc = TE_ECHILD;
+        goto out;
+    }
+
+    f = fdopen(out_fd, "r");
+    if (f == NULL)
+    {
+        ERROR("Failed to access ovs-vsctl output");
+        rc = TE_EBADF;
+        goto out;
+    }
+
+    if (fscanf(f, "%m[^\n]", bufp) == EOF)
+    {
+        int error_code_set = ferror(f);
+
+        ERROR("Failed to read out ovs-vsctl output");
+        rc = (error_code_set != 0) ? te_rc_os2te(errno) : TE_ENODATA;
+    }
+
+out:
+    if (f != NULL)
+        fclose(f);
+    else if (out_fd != -1)
+        close(out_fd);
+
+    if (ret != -1)
+        ta_waitpid(ret, NULL, 0);
+
+    te_string_free(&cmd);
+
+    return rc;
 }
 
 static te_errno
@@ -307,6 +386,14 @@ ovs_interface_alloc(const char *name,
         goto fail;
     }
 
+    interface->mac_requested = FALSE;
+    interface->mac_request = strdup("");
+    if (interface->mac_request == NULL)
+    {
+        ERROR("Failed to allocate the interface MAC address empty request");
+        goto fail;
+    }
+
     interface->temporary = temporary;
     interface->active = FALSE;
 
@@ -325,6 +412,7 @@ ovs_interface_free(interface_entry *interface)
 {
     INFO("Freeing the interface list entry for '%s'", interface->name);
 
+    free(interface->mac_request);
     free(interface->type);
     free(interface->name);
     free(interface);
@@ -1018,6 +1106,132 @@ ovs_interface_pick(const char       *ovs,
 }
 
 static te_errno
+ovs_interface_mac_get_effective(ovs_ctx_t       *ctx,
+                                interface_entry *interface,
+                                char            *buf)
+{
+    char     *resp;
+    te_errno  rc;
+
+    INFO("Querying effective MAC of the interface '%s'", interface->name);
+
+    rc = ovs_value_get_effective(ctx, "interface", interface->name,
+                                 "mac_in_use", &resp);
+    if (rc != 0)
+    {
+        ERROR("Failed to perform the query");
+        return rc;
+    }
+
+    if (strlen(resp) > RCF_MAX_VAL + 1)
+    {
+        ERROR("The response does not fit in the available buffer");
+        rc = TE_ENOBUFS;
+        goto out;
+    }
+
+    if (sscanf(resp, "\"%[^\"]", buf) != 1)
+    {
+        ERROR("Failed to parse the response");
+        rc = TE_ENODATA;
+    }
+
+out:
+    free(resp);
+
+    return rc;
+}
+
+static te_errno
+ovs_interface_mac_get(unsigned int  gid,
+                      const char   *oid,
+                      char         *value,
+                      const char   *ovs,
+                      const char   *interface_name)
+{
+    interface_entry *interface;
+    ovs_ctx_t       *ctx;
+    te_errno         rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    INFO("Querying (requested) MAC of the interface '%s'", interface_name);
+
+    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the interface entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if (interface->active)
+    {
+        te_errno rc;
+
+        rc = ovs_interface_mac_get_effective(ctx, interface, value);
+        if (rc != 0)
+        {
+            ERROR("Failed to query effective MAC for the interface");
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+    }
+    else
+    {
+        strncpy(value, interface->mac_request, RCF_MAX_VAL);
+    }
+
+    value[RCF_MAX_VAL - 1] = '\0';
+
+    return 0;
+}
+
+static te_errno
+ovs_interface_mac_set(unsigned int  gid,
+                      const char   *oid,
+                      const char   *value,
+                      const char   *ovs,
+                      const char   *interface_name)
+{
+    te_bool          mac_requested = FALSE;
+    interface_entry *interface;
+    te_errno         rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ovs);
+
+    INFO("Requesting the custom MAC '%s' for the interface '%s'",
+         value, interface_name);
+
+    rc = ovs_interface_pick(ovs, interface_name, TRUE, NULL, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the interface entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if (value[0] != '\0')
+    {
+        if (!ovs_value_is_valid_mac(value))
+        {
+            ERROR("The value is not a valid MAC");
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        mac_requested = TRUE;
+    }
+
+    rc = ovs_value_replace(&interface->mac_request, value);
+    if (rc != 0)
+        ERROR("Failed to store the new interface custom MAC value");
+    else
+        interface->mac_requested = mac_requested;
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+static te_errno
 ovs_interface_add(unsigned int  gid,
                   const char   *oid,
                   const char   *value,
@@ -1223,8 +1437,12 @@ out:
     return TE_RC(TE_TA_UNIX, rc);
 }
 
+RCF_PCH_CFG_NODE_RW(node_ovs_interface_mac, "mac",
+                    NULL, NULL,
+                    ovs_interface_mac_get, ovs_interface_mac_set);
+
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_interface, "interface",
-                               NULL, NULL,
+                               &node_ovs_interface_mac, NULL,
                                ovs_interface_get, ovs_interface_set,
                                ovs_interface_add, ovs_interface_del,
                                ovs_interface_list, NULL);
