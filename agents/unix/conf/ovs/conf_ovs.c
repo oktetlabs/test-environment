@@ -1132,6 +1132,62 @@ ovs_interface_pick(const char       *ovs,
 }
 
 static te_errno
+ovs_interface_link_state_get(unsigned int  gid,
+                             const char   *oid,
+                             char         *value,
+                             const char   *ovs,
+                             const char   *interface_name)
+{
+    interface_entry *interface;
+    ovs_ctx_t       *ctx;
+    te_errno         rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    INFO("Querying (requested) link state of the interface '%s'",
+         interface_name);
+
+    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the interface entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if (interface->active)
+    {
+        char     *resp;
+        te_errno  rc;
+
+        rc = ovs_value_get_effective(ctx, "interface", interface->name,
+                                     "link_state", &resp);
+        if (rc != 0)
+        {
+            ERROR("Failed to query the effective value");
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+
+        if (strcmp(resp, "down") == 0)
+            value[0] = '0';
+        else if (strcmp(resp, "up") == 0)
+            value[0] = '1';
+        else
+            assert(FALSE);
+
+        free(resp);
+    }
+    else
+    {
+        value[0] = '0';
+    }
+
+    value[1] = '\0';
+
+    return 0;
+}
+
+static te_errno
 ovs_interface_mtu_get(unsigned int  gid,
                       const char   *oid,
                       char         *value,
@@ -1646,8 +1702,12 @@ out:
     return TE_RC(TE_TA_UNIX, rc);
 }
 
-RCF_PCH_CFG_NODE_RW(node_ovs_interface_mtu, "mtu",
+RCF_PCH_CFG_NODE_RW(node_ovs_interface_link_state, "link_state",
                     NULL, NULL,
+                    ovs_interface_link_state_get, NULL);
+
+RCF_PCH_CFG_NODE_RW(node_ovs_interface_mtu, "mtu",
+                    NULL, &node_ovs_interface_link_state,
                     ovs_interface_mtu_get, ovs_interface_mtu_set);
 
 RCF_PCH_CFG_NODE_RW(node_ovs_interface_ofport, "ofport",
