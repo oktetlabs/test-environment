@@ -58,6 +58,9 @@ typedef struct interface_entry {
 
     te_bool                       mac_requested;
     char                         *mac_request;
+
+    te_bool                       ofport_requested;
+    char                         *ofport_request;
 } interface_entry;
 
 typedef SLIST_HEAD(interface_list_t, interface_entry) interface_list_t;
@@ -394,12 +397,21 @@ ovs_interface_alloc(const char *name,
         goto fail;
     }
 
+    interface->ofport_requested = FALSE;
+    interface->ofport_request = strdup("0");
+    if (interface->ofport_request == NULL)
+    {
+        ERROR("Failed to allocate the interface ofport empty request");
+        goto fail;
+    }
+
     interface->temporary = temporary;
     interface->active = FALSE;
 
     return interface;
 
 fail:
+    free(interface->mac_request);
     free(interface->type);
     free(interface->name);
     free(interface);
@@ -412,6 +424,7 @@ ovs_interface_free(interface_entry *interface)
 {
     INFO("Freeing the interface list entry for '%s'", interface->name);
 
+    free(interface->ofport_request);
     free(interface->mac_request);
     free(interface->type);
     free(interface->name);
@@ -1106,6 +1119,101 @@ ovs_interface_pick(const char       *ovs,
 }
 
 static te_errno
+ovs_interface_ofport_get(unsigned int  gid,
+                         const char   *oid,
+                         char         *value,
+                         const char   *ovs,
+                         const char   *interface_name)
+{
+    interface_entry *interface;
+    ovs_ctx_t       *ctx;
+    te_errno         rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    INFO("Querying (requested) ofport of the interface '%s'", interface_name);
+
+    ctx = ovs_ctx_get(ovs);
+    if (ctx == NULL)
+    {
+        ERROR("Failed to find the facility context");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the interface entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if (interface->active)
+    {
+        char     *resp;
+        te_errno  rc;
+
+        rc = ovs_value_get_effective(ctx, "interface", interface->name,
+                                     "ofport", &resp);
+        if (rc != 0)
+        {
+            ERROR("Failed to query the effective value");
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+
+        strncpy(value, resp, RCF_MAX_VAL);
+        free(resp);
+    }
+    else
+    {
+        strncpy(value, interface->ofport_request, RCF_MAX_VAL);
+    }
+
+    value[RCF_MAX_VAL - 1] = '\0';
+
+    return 0;
+}
+
+static te_errno
+ovs_interface_ofport_set(unsigned int  gid,
+                         const char   *oid,
+                         const char   *value,
+                         const char   *ovs,
+                         const char   *interface_name)
+{
+    interface_entry *interface;
+    int              test;
+    te_errno         rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    INFO("Requesting the custom ofport '%s' for the interface '%s'",
+         value, interface_name);
+
+    rc = ovs_interface_pick(ovs, interface_name, TRUE, NULL, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the interface entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if (sscanf(value, "%d", &test) != 1 || test < 0 || test > UINT16_MAX)
+    {
+        ERROR("The value is not a valid ofport");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    rc = ovs_value_replace(&interface->ofport_request, value);
+    if (rc != 0)
+        ERROR("Failed to store the new interface custom ofport value");
+    else
+        interface->ofport_requested = (test != 0) ? TRUE : FALSE;
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+static te_errno
 ovs_interface_mac_get_effective(ovs_ctx_t       *ctx,
                                 interface_entry *interface,
                                 char            *buf)
@@ -1437,8 +1545,12 @@ out:
     return TE_RC(TE_TA_UNIX, rc);
 }
 
-RCF_PCH_CFG_NODE_RW(node_ovs_interface_mac, "mac",
+RCF_PCH_CFG_NODE_RW(node_ovs_interface_ofport, "ofport",
                     NULL, NULL,
+                    ovs_interface_ofport_get, ovs_interface_ofport_set);
+
+RCF_PCH_CFG_NODE_RW(node_ovs_interface_mac, "mac",
+                    NULL, &node_ovs_interface_ofport,
                     ovs_interface_mac_get, ovs_interface_mac_set);
 
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_interface, "interface",
