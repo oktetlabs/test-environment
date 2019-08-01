@@ -26,6 +26,7 @@
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
+#include "te_alloc.h"
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_shell_cmd.h"
@@ -42,6 +43,11 @@
 
 #define OVS_SLEEP_MS_MAX 256
 
+typedef struct log_module_s {
+    char *name;
+    char *level;
+} log_module_t;
+
 typedef struct ovs_ctx_s {
     te_string         root_path;
     te_string         conf_db_lock_path;
@@ -51,9 +57,13 @@ typedef struct ovs_ctx_s {
     te_string         dbtool_cmd;
     te_string         dbserver_cmd;
     te_string         vswitchd_cmd;
+    te_string         vlog_list_cmd;
 
     pid_t             dbserver_pid;
     pid_t             vswitchd_pid;
+
+    unsigned int      nb_log_modules;
+    log_module_t     *log_modules;
 } ovs_ctx_t;
 
 static ovs_ctx_t ovs_ctx = {
@@ -65,15 +75,189 @@ static ovs_ctx_t ovs_ctx = {
     .dbtool_cmd = TE_STRING_INIT,
     .dbserver_cmd = TE_STRING_INIT,
     .vswitchd_cmd = TE_STRING_INIT,
+    .vlog_list_cmd = TE_STRING_INIT,
 
     .dbserver_pid = -1,
     .vswitchd_pid = -1,
+
+    .nb_log_modules = 0,
+    .log_modules = NULL,
 };
+
+static const char *log_levels[] = { "EMER", "ERR", "WARN",
+                                    "INFO", "DBG", NULL };
 
 static ovs_ctx_t *
 ovs_ctx_get(const char *ovs)
 {
     return (ovs[0] == '\0') ? &ovs_ctx : NULL;
+}
+
+static te_bool
+ovs_value_is_valid(const char **supported_values,
+                   const char  *test_value)
+{
+    char **valuep = (char **)supported_values;
+
+    for (; *valuep != NULL; ++valuep)
+    {
+        if (strcmp(test_value, *valuep) == 0)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+static te_errno
+ovs_log_get_nb_modules(ovs_ctx_t    *ctx,
+                       unsigned int *nb_modules_out)
+{
+    unsigned int  nb_modules = 0;
+    int           out_fd;
+    te_errno      rc = 0;
+    int           ret;
+    FILE         *f;
+
+    INFO("Querying the number of log modules");
+
+    ret = te_shell_cmd(ctx->vlog_list_cmd.ptr, -1, NULL, &out_fd, NULL);
+    if (ret == -1)
+    {
+        ERROR("Failed to invoke ovs-appctl");
+        return TE_ECHILD;
+    }
+
+    f = fdopen(out_fd, "r");
+    if (f == NULL)
+    {
+        ERROR("Failed to access ovs-appctl output");
+        rc = TE_EBADF;
+        goto out;
+    }
+
+    while (fscanf(f, "%*[^\n]\n") != EOF)
+        ++nb_modules;
+
+    *nb_modules_out = nb_modules;
+
+out:
+    if (f != NULL)
+        fclose(f);
+    else
+        close(out_fd);
+
+    ta_waitpid(ret, NULL, 0);
+
+    return rc;
+}
+
+static te_errno
+ovs_log_init_modules(ovs_ctx_t *ctx)
+{
+    unsigned int  nb_modules = 0;
+    log_module_t *modules = NULL;
+    unsigned int  entry_idx = 0;
+    int           out_fd = -1;
+    FILE         *f = NULL;
+    int           ret;
+    te_errno      rc;
+
+    INFO("Constructing log module context");
+
+    assert(ctx->nb_log_modules == 0);
+    assert(ctx->log_modules == NULL);
+
+    rc = ovs_log_get_nb_modules(ctx, &nb_modules);
+    if (rc != 0)
+    {
+        ERROR("Failed to query the number of log modules");
+        return rc;
+    }
+
+    modules = TE_ALLOC(nb_modules * sizeof(*modules));
+    if (modules == NULL)
+    {
+        ERROR("Failed to allocate log module context storage");
+        return TE_ENOMEM;
+    }
+
+    ret = te_shell_cmd(ctx->vlog_list_cmd.ptr, -1, NULL, &out_fd, NULL);
+    if (ret == -1)
+    {
+        ERROR("Failed to invoke ovs-appctl");
+        rc = TE_ECHILD;
+        goto out;
+    }
+
+    f = fdopen(out_fd, "r");
+    if (f == NULL)
+    {
+        ERROR("Failed to access ovs-appctl output");
+        rc = TE_EBADF;
+        goto out;
+    }
+
+    while (entry_idx < nb_modules)
+    {
+        if (fscanf(f, "%ms %ms %*[^\n]\n", &modules[entry_idx].name,
+                   &modules[entry_idx].level) == EOF)
+        {
+            int error_code_set = ferror(f);
+
+            ERROR("Failed to read entry no. %u from ovs-appctl output",
+                  entry_idx);
+            rc = (error_code_set != 0) ? te_rc_os2te(errno) : TE_ENODATA;
+            goto out;
+        }
+
+        ++entry_idx;
+    }
+
+    ctx->nb_log_modules = nb_modules;
+    ctx->log_modules = modules;
+
+out:
+    if (rc != 0)
+    {
+        unsigned int i;
+
+        for (i = 0; i < entry_idx; ++i)
+        {
+            free(modules[i].level);
+            free(modules[i].name);
+        }
+    }
+
+    if (f != NULL)
+        fclose(f);
+    else if (out_fd != -1)
+        close(out_fd);
+
+    if (ret != -1)
+        ta_waitpid(ret, NULL, 0);
+
+    if (rc != 0)
+        free(modules);
+
+    return rc;
+}
+
+static void
+ovs_log_fini_modules(ovs_ctx_t *ctx)
+{
+    unsigned int i;
+
+    INFO("Dismantling log module context");
+
+    for (i = 0; i < ctx->nb_log_modules; ++i)
+    {
+        free(ctx->log_modules[i].level);
+        free(ctx->log_modules[i].name);
+    }
+
+    free(ctx->log_modules);
+    ctx->log_modules = NULL;
+    ctx->nb_log_modules = 0;
 }
 
 static void
@@ -303,6 +487,15 @@ ovs_start(ovs_ctx_t *ctx)
         return rc;
     }
 
+    rc = ovs_log_init_modules(ctx);
+    if (rc != 0)
+    {
+        ERROR("Failed to construct log module context");
+        ovs_vswitchd_stop(ctx);
+        ovs_dbserver_stop(ctx);
+        return rc;
+    }
+
     return 0;
 }
 
@@ -311,6 +504,7 @@ ovs_stop(ovs_ctx_t *ctx)
 {
     INFO("Stopping the facility");
 
+    ovs_log_fini_modules(ctx);
     ovs_vswitchd_stop(ctx);
     ovs_dbserver_stop(ctx);
 
@@ -406,8 +600,206 @@ out:
     return TE_RC(TE_TA_UNIX, rc);
 }
 
+static log_module_t *
+ovs_log_module_find(ovs_ctx_t  *ctx,
+                    const char *name)
+{
+    unsigned int i;
+
+    for (i = 0; i < ctx->nb_log_modules; ++i)
+    {
+        if (strcmp(name, ctx->log_modules[i].name) == 0)
+            return &ctx->log_modules[i];
+    }
+
+    return NULL;
+}
+
+static te_errno
+ovs_log_get(unsigned int  gid,
+            const char   *oid,
+            char         *value,
+            const char   *ovs,
+            const char   *name)
+{
+    log_module_t *module;
+    ovs_ctx_t    *ctx;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    INFO("Querying log level word for the module '%s'", name);
+
+    ctx = ovs_ctx_get(ovs);
+    if (ctx == NULL)
+    {
+        ERROR("Failed to find the facility context");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (ovs_is_running(ctx) == 0)
+    {
+        ERROR("The facility is not running");
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    module = ovs_log_module_find(ctx, name);
+    if (module == NULL)
+    {
+        ERROR("The log module does not exist");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    strncpy(value, module->level, RCF_MAX_VAL);
+    value[RCF_MAX_VAL - 1] = '\0';
+
+    return 0;
+}
+
+static te_errno
+ovs_log_set(unsigned int  gid,
+            const char   *oid,
+            const char   *value,
+            const char   *ovs,
+            const char   *name)
+{
+    te_string     cmd = TE_STRING_INIT;
+    log_module_t *module;
+    char         *level;
+    ovs_ctx_t    *ctx;
+    int           ret;
+    te_errno      rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    INFO("Setting log level word '%s' for the module '%s'", value, name);
+
+    ctx = ovs_ctx_get(ovs);
+    if (ctx == NULL)
+    {
+        ERROR("Failed to find the facility context");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (ovs_is_running(ctx) == 0)
+    {
+        ERROR("The facility is not running");
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    module = ovs_log_module_find(ctx, name);
+    if (module == NULL)
+    {
+        ERROR("The log module does not exist");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (!ovs_value_is_valid(log_levels, value))
+    {
+        ERROR("The log level word is illicit");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    level = strdup(value);
+    if (level == NULL)
+    {
+        ERROR("Failed to copy the log level word");
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    rc = te_string_append(&cmd, "%s ovs-appctl -t ovs-vswitchd vlog/set %s:%s",
+                          ctx->env.ptr, module->name, level);
+    if (rc != 0)
+    {
+        ERROR("Failed to construct ovs-appctl invocation command line");
+        goto out;
+    }
+
+    ret = te_shell_cmd(cmd.ptr, -1, NULL, NULL, NULL);
+    if (ret == -1)
+    {
+        ERROR("Failed to invoke ovs-appctl");
+        rc = TE_ECHILD;
+        goto out;
+    }
+
+    ta_waitpid(ret, NULL, 0);
+
+    free(module->level);
+    module->level = level;
+
+out:
+    te_string_free(&cmd);
+
+    if (rc != 0)
+        free(level);
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+static te_errno
+ovs_log_list(unsigned int   gid,
+             const char    *oid_str,
+             const char    *sub_id,
+             char         **list)
+{
+    te_string    list_container = TE_STRING_INIT;
+    te_errno     rc = 0;
+    cfg_oid     *oid;
+    const char  *ovs;
+    ovs_ctx_t   *ctx;
+    unsigned int i;
+
+    UNUSED(gid);
+    UNUSED(sub_id);
+
+    INFO("Constructing the list of log modules");
+
+    oid = cfg_convert_oid_str(oid_str);
+    if (oid == NULL)
+    {
+        ERROR("Failed to convert the OID string to native OID handle");
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    ovs = CFG_OID_GET_INST_NAME(oid, 2);
+
+    ctx = ovs_ctx_get(ovs);
+    if (ctx == NULL)
+    {
+        ERROR("Failed to find the facility context");
+        rc = TE_ENOENT;
+        goto out;
+    }
+
+    for (i = 0; i < ctx->nb_log_modules; ++i)
+    {
+        rc = te_string_append(&list_container, "%s ", ctx->log_modules[i].name);
+        if (rc != 0)
+        {
+            ERROR("Failed to construct the list");
+            te_string_free(&list_container);
+            goto out;
+        }
+    }
+
+    *list = list_container.ptr;
+
+out:
+    free(oid);
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+static rcf_pch_cfg_object node_ovs_log = {
+    "log", 0, NULL, NULL,
+    (rcf_ch_cfg_get)ovs_log_get, (rcf_ch_cfg_set)ovs_log_set,
+    NULL, NULL, (rcf_ch_cfg_list)ovs_log_list, NULL, NULL
+};
+
 RCF_PCH_CFG_NODE_RW(node_ovs_status, "status",
-                    NULL, NULL, ovs_status_get, ovs_status_set);
+                    NULL, &node_ovs_log, ovs_status_get, ovs_status_set);
 
 RCF_PCH_CFG_NODE_NA(node_ovs, "ovs", &node_ovs_status, NULL);
 
@@ -416,6 +808,7 @@ ovs_cleanup_static_ctx(void)
 {
     INFO("Clearing the facility static context");
 
+    te_string_free(&ovs_ctx.vlog_list_cmd);
     te_string_free(&ovs_ctx.vswitchd_cmd);
     te_string_free(&ovs_ctx.dbserver_cmd);
     te_string_free(&ovs_ctx.dbtool_cmd);
@@ -463,6 +856,12 @@ ta_unix_conf_ovs_init(void)
 
     rc = te_string_append(&ovs_ctx.vswitchd_cmd,
                           "%s ovs-vswitchd --pidfile", ovs_ctx.env.ptr);
+    if (rc != 0)
+        goto fail;
+
+    rc = te_string_append(&ovs_ctx.vlog_list_cmd,
+                          "%s ovs-appctl -t ovs-vswitchd "
+                          "vlog/list | tail -n +3", ovs_ctx.env.ptr);
 
     if (rc == 0)
         return rcf_pch_add_node("/agent", &node_ovs);
