@@ -48,6 +48,16 @@ typedef struct log_module_s {
     char *level;
 } log_module_t;
 
+typedef struct interface_entry {
+    SLIST_ENTRY(interface_entry)  links;
+    char                         *name;
+    char                         *type;
+    te_bool                       temporary;
+    te_bool                       active;
+} interface_entry;
+
+typedef SLIST_HEAD(interface_list_t, interface_entry) interface_list_t;
+
 typedef struct ovs_ctx_s {
     te_string         root_path;
     te_string         conf_db_lock_path;
@@ -64,6 +74,8 @@ typedef struct ovs_ctx_s {
 
     unsigned int      nb_log_modules;
     log_module_t     *log_modules;
+
+    interface_list_t  interfaces;
 } ovs_ctx_t;
 
 static ovs_ctx_t ovs_ctx = {
@@ -82,10 +94,14 @@ static ovs_ctx_t ovs_ctx = {
 
     .nb_log_modules = 0,
     .log_modules = NULL,
+
+    .interfaces = SLIST_HEAD_INITIALIZER(interfaces),
 };
 
 static const char *log_levels[] = { "EMER", "ERR", "WARN",
                                     "INFO", "DBG", NULL };
+
+static const char *interface_types[] = { "system", "internal", NULL };
 
 static ovs_ctx_t *
 ovs_ctx_get(const char *ovs)
@@ -258,6 +274,151 @@ ovs_log_fini_modules(ovs_ctx_t *ctx)
     free(ctx->log_modules);
     ctx->log_modules = NULL;
     ctx->nb_log_modules = 0;
+}
+
+static interface_entry *
+ovs_interface_alloc(const char *name,
+                    const char *type,
+                    te_bool     temporary)
+{
+    interface_entry *interface;
+
+    INFO("Allocating the interface list entry for '%s'", name);
+
+    interface = TE_ALLOC(sizeof(*interface));
+    if (interface == NULL)
+    {
+        ERROR("Failed to allocate memory for the interface context");
+        return NULL;
+    }
+
+    interface->name = strdup(name);
+    if (interface->name == NULL)
+    {
+        ERROR("Failed to allocate memory for the interface name");
+        goto fail;
+    }
+
+    interface->type = (type != NULL && type[0] != '\0') ? strdup(type) :
+                                                          strdup("system");
+    if (interface->type == NULL)
+    {
+        ERROR("Failed to allocate memory for the interface type");
+        goto fail;
+    }
+
+    interface->temporary = temporary;
+    interface->active = FALSE;
+
+    return interface;
+
+fail:
+    free(interface->type);
+    free(interface->name);
+    free(interface);
+
+    return NULL;
+}
+
+static void
+ovs_interface_free(interface_entry *interface)
+{
+    INFO("Freeing the interface list entry for '%s'", interface->name);
+
+    free(interface->type);
+    free(interface->name);
+    free(interface);
+}
+
+static interface_entry *
+ovs_interface_find(ovs_ctx_t  *ctx,
+                   const char *name)
+{
+    interface_entry *interface;
+
+    SLIST_FOREACH(interface, &ctx->interfaces, links)
+    {
+        if (strcmp(name, interface->name) == 0)
+            return interface;
+    }
+
+    return NULL;
+}
+
+static te_errno
+ovs_interface_init(ovs_ctx_t        *ctx,
+                   const char       *name,
+                   const char       *type,
+                   te_bool           activate,
+                   interface_entry **interface_out)
+{
+    interface_entry *interface = NULL;
+
+    INFO("Initialising the interface list entry for '%s'", name);
+
+    if (activate)
+        interface = ovs_interface_find(ctx, name);
+
+    if (!activate || interface == NULL)
+    {
+        interface = ovs_interface_alloc(name, type, activate);
+        if (interface == NULL)
+        {
+            ERROR("Failed to allocate the interface list entry");
+            return TE_ENOMEM;
+        }
+
+        SLIST_INSERT_HEAD(&ctx->interfaces, interface, links);
+    }
+
+    if (interface->active)
+    {
+        ERROR("The interface is already in use");
+        return TE_EBUSY;
+    }
+
+    interface->active = activate;
+
+    if (interface_out != NULL)
+        *interface_out = interface;
+
+    return 0;
+}
+
+static void
+ovs_interface_fini(ovs_ctx_t       *ctx,
+                   interface_entry *interface)
+{
+    INFO("Finalising the interface list entry for '%s'", interface->name);
+
+    if (interface->temporary == interface->active)
+    {
+        SLIST_REMOVE(&ctx->interfaces, interface, interface_entry, links);
+        ovs_interface_free(interface);
+    }
+    else if (interface->active)
+    {
+        interface->active = FALSE;
+    }
+    else
+    {
+        assert(FALSE);
+    }
+}
+
+static void
+ovs_interface_fini_all(ovs_ctx_t *ctx)
+{
+    interface_entry *interface_tmp;
+    interface_entry *interface;
+
+    INFO("Finalising the interface list entries");
+
+    SLIST_FOREACH_SAFE(interface, &ctx->interfaces, links, interface_tmp)
+    {
+        assert(!interface->active);
+        ovs_interface_fini(ctx, interface);
+    }
 }
 
 static void
@@ -504,6 +665,7 @@ ovs_stop(ovs_ctx_t *ctx)
 {
     INFO("Stopping the facility");
 
+    ovs_interface_fini_all(ctx);
     ovs_log_fini_modules(ctx);
     ovs_vswitchd_stop(ctx);
     ovs_dbserver_stop(ctx);
@@ -792,8 +954,283 @@ out:
     return TE_RC(TE_TA_UNIX, rc);
 }
 
+static te_errno
+ovs_value_replace(char       **dst,
+                  const char  *src)
+{
+    char *value = strdup(src);
+
+    if (value == NULL)
+    {
+        ERROR("Failed to copy the value '%s'", src);
+        return TE_ENOMEM;
+    }
+
+    free(*dst);
+    *dst = value;
+
+    return 0;
+}
+
+static te_errno
+ovs_interface_pick(const char       *ovs,
+                   const char       *interface_name,
+                   te_bool           writable,
+                   ovs_ctx_t       **ctx_out,
+                   interface_entry **interface_out)
+{
+    ovs_ctx_t       *ctx;
+    interface_entry *interface;
+
+    ctx = ovs_ctx_get(ovs);
+    if (ctx == NULL)
+    {
+        ERROR("Failed to find the facility context");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (ovs_is_running(ctx) == 0)
+    {
+        ERROR("The facility is not running");
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    interface = ovs_interface_find(ctx, interface_name);
+    if (interface == NULL)
+    {
+        ERROR("The interface does not exist");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (writable && interface->active)
+    {
+        ERROR("The interface is in use");
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
+    }
+
+    if (ctx_out != NULL)
+        *ctx_out = ctx;
+
+    if (interface_out != NULL)
+        *interface_out = interface;
+
+    return 0;
+}
+
+static te_errno
+ovs_interface_add(unsigned int  gid,
+                  const char   *oid,
+                  const char   *value,
+                  const char   *ovs,
+                  const char   *name)
+{
+    interface_entry *interface;
+    ovs_ctx_t       *ctx;
+    te_errno         rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ovs);
+
+    INFO("Adding the interface '%s'", name);
+
+    ctx = ovs_ctx_get(ovs);
+    if (ctx == NULL)
+    {
+        ERROR("Failed to find the facility context");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (ovs_is_running(ctx) == 0)
+    {
+        ERROR("The facility is not running");
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    if (name[0] == '\0')
+    {
+        ERROR("The interface name is empty");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    interface = ovs_interface_find(ctx, name);
+    if (interface != NULL)
+    {
+        ERROR("The interface already exists");
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+    }
+
+    if (value[0] != '\0')
+    {
+        if (!ovs_value_is_valid(interface_types, value))
+        {
+            ERROR("The interface type is unsupported");
+            return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+        }
+    }
+
+    rc = ovs_interface_init(ctx, name, value, FALSE, NULL);
+    if (rc != 0)
+        ERROR("Failed to initialise the interface list entry");
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+static te_errno
+ovs_interface_del(unsigned int  gid,
+                  const char   *oid,
+                  const char   *ovs,
+                  const char   *name)
+{
+    interface_entry *interface;
+    ovs_ctx_t       *ctx;
+    te_errno         rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ovs);
+
+    INFO("Removing the interface '%s'", name);
+
+    rc = ovs_interface_pick(ovs, name, TRUE, &ctx, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the interface entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    ovs_interface_fini(ctx, interface);
+
+    return 0;
+}
+
+static te_errno
+ovs_interface_get(unsigned int  gid,
+                  const char   *oid,
+                  char         *value,
+                  const char   *ovs,
+                  const char   *name)
+{
+    interface_entry *interface;
+    te_errno         rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ovs);
+
+    INFO("Querying the type of the interface '%s'", name);
+
+    rc = ovs_interface_pick(ovs, name, FALSE, NULL, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the interface entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    strncpy(value, interface->type, RCF_MAX_VAL);
+    value[RCF_MAX_VAL - 1] = '\0';
+
+    return 0;
+}
+
+static te_errno
+ovs_interface_set(unsigned int  gid,
+                  const char   *oid,
+                  const char   *value,
+                  const char   *ovs,
+                  const char   *name)
+{
+    interface_entry *interface;
+    te_errno         rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ovs);
+
+    INFO("Setting the type '%s' for the interface '%s'", value, name);
+
+    rc = ovs_interface_pick(ovs, name, TRUE, NULL, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the interface entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if (!ovs_value_is_valid(interface_types, value))
+    {
+        ERROR("The interface type is unsupported");
+        return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+    }
+
+    rc = ovs_value_replace(&interface->type, value);
+    if (rc != 0)
+        ERROR("Failed to store the new interface type value");
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+static te_errno
+ovs_interface_list(unsigned int   gid,
+                   const char    *oid_str,
+                   const char    *sub_id,
+                   char         **list)
+{
+    te_string        list_container = TE_STRING_INIT;
+    interface_entry *interface;
+    te_errno         rc = 0;
+    cfg_oid         *oid;
+    const char      *ovs;
+    ovs_ctx_t       *ctx;
+
+    UNUSED(gid);
+    UNUSED(sub_id);
+
+    INFO("Constructing the list of interfaces");
+
+    oid = cfg_convert_oid_str(oid_str);
+    if (oid == NULL)
+    {
+        ERROR("Failed to convert the OID string to native OID handle");
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    ovs = CFG_OID_GET_INST_NAME(oid, 2);
+
+    ctx = ovs_ctx_get(ovs);
+    if (ctx == NULL)
+    {
+        ERROR("Failed to find the facility context");
+        rc = TE_ENOENT;
+        goto out;
+    }
+
+    SLIST_FOREACH(interface, &ctx->interfaces, links)
+    {
+        rc = te_string_append(&list_container, "%s ", interface->name);
+        if (rc != 0)
+        {
+            ERROR("Failed to construct the list");
+            te_string_free(&list_container);
+            goto out;
+        }
+    }
+
+    *list = list_container.ptr;
+
+out:
+    free(oid);
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_interface, "interface",
+                               NULL, NULL,
+                               ovs_interface_get, ovs_interface_set,
+                               ovs_interface_add, ovs_interface_del,
+                               ovs_interface_list, NULL);
+
 static rcf_pch_cfg_object node_ovs_log = {
-    "log", 0, NULL, NULL,
+    "log", 0, NULL, &node_ovs_interface,
     (rcf_ch_cfg_get)ovs_log_get, (rcf_ch_cfg_set)ovs_log_set,
     NULL, NULL, (rcf_ch_cfg_list)ovs_log_list, NULL, NULL
 };
