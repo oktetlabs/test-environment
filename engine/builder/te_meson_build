@@ -143,6 +143,8 @@ process_agent_unix_parms() {
                 ;;
             --with-ntpd)
                 conf="${conf} ntpd" ;;
+            --with-ovs)
+                conf="${conf} ovs" ;;
             --enable-pci)
                 conf="${conf} pci" ;;
             --with-rcf-rpc)

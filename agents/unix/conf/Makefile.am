@@ -3,7 +3,7 @@ ACLOCAL_AMFLAGS = -I $(TE_M4)
 
 AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include $(TE_CPPFLAGS) \
               -I$(srcdir)/.. -I$(srcdir)/base -I$(srcdir)/util -I$(srcdir)/vm \
-              -I$(srcdir)/route -I$(srcdir)/rule -I$(srcdir)/daemons -I. \
+              -I$(srcdir)/ovs -I$(srcdir)/route -I$(srcdir)/rule -I$(srcdir)/daemons -I. \
               @EXTRA_CPPFLAGS@ $(TE_CPPFLAGS_VAR)
 
 AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS) $(TE_CFLAGS_VAR)
@@ -21,6 +21,7 @@ EXTRA_DIST=daemons/ldap/slapd.conf daemons/ldap/slapd_run.sh
 noinst_HEADERS = \
 	base/conf_netconf.h \
 	base/conf_common.h \
+	ovs/conf_ovs.h \
 	route/conf_route.h \
 	rule/conf_rule.h \
 	util/conf_dlpi.h \
@@ -183,6 +184,10 @@ endif
 if ISCSI_TARGET_USE
 libconf_a_DEPENDENCIES = \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libiscsi_initiator_conf.a
+endif
+
+if CFG_UNIX_OVS
+libconf_a_SOURCES += ovs/conf_ovs.c
 endif
 
 if CFG_UNIX_TC

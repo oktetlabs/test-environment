@@ -179,6 +179,7 @@ typedef struct pam_message const pam_message_t;
 #include "logger_api.h"
 #include "unix_internal.h"
 #include "conf_dlpi.h"
+#include "conf_ovs.h"
 #include "conf_route.h"
 #include "conf_rule.h"
 #include "conf_vm.h"
@@ -1148,6 +1149,11 @@ rcf_ch_conf_init()
 
         if (ta_unix_conf_vm_init() != 0)
             goto fail;
+
+#ifdef WITH_OVS
+        if (ta_unix_conf_ovs_init() != 0)
+            goto fail;
+#endif /* WITH_OVS */
 
 #ifdef RCF_RPC
         /* Link RPC nodes */

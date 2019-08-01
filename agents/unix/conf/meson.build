@@ -4,6 +4,7 @@ install_data([ 'daemons/ldap/slapd_run.sh', 'daemons/ldap/slapd.conf' ],
              install_dir: tadir)
 
 includes += include_directories('base')
+includes += include_directories('ovs')
 includes += include_directories('route')
 includes += include_directories('rule')
 includes += include_directories('util')
@@ -128,6 +129,11 @@ if conf.contains('tc')
     # include directories, but partial_dependency() method is supported
     # since 0.46.0 version only.
     deps += dependency('libnl-3.0')
+endif
+
+if conf.contains('ovs')
+    c_args += [ '-DWITH_OVS' ]
+    sources += files('ovs/conf_ovs.c')
 endif
 
 unix_daemons = get_option('agent-unix-daemons').split()

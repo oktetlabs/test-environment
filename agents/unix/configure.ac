@@ -255,6 +255,17 @@ if test x"$ac_cv_with_tc" != xno; then
     EXTRA_LDADD="$EXTRA_LDADD -Wl,-whole-archive ${NL_LIBS} -Wl,-no-whole-archive"
 fi
 
+AC_ARG_WITH([ovs],
+            [AS_HELP_STRING([--with-ovs],
+                            [Build Open vSwitch deployment stuff (default is NO)])],
+            [ac_cv_with_ovs=yes], [ac_cv_with_ovs=no])
+
+AM_CONDITIONAL([CFG_UNIX_OVS], test x"$ac_cv_with_ovs" != xno)
+
+if test x"$ac_cv_with_ovs" != xno; then
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_OVS"
+fi
+
 DS_SOURCES=
 if test -n "$with_cfg_unix_daemons" ; then
   DAEMONS_CFLAGS=-DCFG_UNIX_DAEMONS
