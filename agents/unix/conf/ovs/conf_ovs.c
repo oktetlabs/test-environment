@@ -68,10 +68,22 @@ typedef struct interface_entry {
 
 typedef SLIST_HEAD(interface_list_t, interface_entry) interface_list_t;
 
+typedef struct port_entry {
+    SLIST_ENTRY(port_entry)  links;
+    char                    *name;
+    char                    *value;
+    interface_list_t         interfaces;
+    te_bool                  bridge_local;
+    const char              *parent_bridge_name;
+} port_entry;
+
+typedef SLIST_HEAD(port_list_t, port_entry) port_list_t;
+
 typedef struct bridge_entry {
     SLIST_ENTRY(bridge_entry)  links;
     char                      *datapath_type;
     interface_entry           *interface;
+    port_list_t                ports;
 } bridge_entry;
 
 typedef SLIST_HEAD(bridge_list_t, bridge_entry) bridge_list_t;
@@ -471,6 +483,21 @@ ovs_interface_find(ovs_ctx_t  *ctx,
     return NULL;
 }
 
+static port_entry *
+ovs_bridge_port_find(bridge_entry *bridge,
+                     const char   *port_name)
+{
+    port_entry *port;
+
+    SLIST_FOREACH(port, &bridge->ports, links)
+    {
+        if (strcmp(port_name, port->name) == 0)
+            return port;
+    }
+
+    return NULL;
+}
+
 static te_errno
 ovs_interface_init(ovs_ctx_t        *ctx,
                    const char       *name,
@@ -658,11 +685,286 @@ ovs_cmd_vsctl_append_interface_arguments(interface_entry *interface,
     return 0;
 }
 
+static port_entry *
+ovs_bridge_port_alloc(const char       *parent_bridge_name,
+                      const char       *name,
+                      const char       *value,
+                      te_bool           bridge_local,
+                      interface_entry **interfaces,
+                      unsigned int      nb_interfaces)
+{
+    port_entry   *port;
+    unsigned int  i;
+
+    INFO("Allocating the port '%s' list entry", name);
+
+    port = TE_ALLOC(sizeof(*port));
+    if (port == NULL)
+    {
+        ERROR("Failed to allocate memory for the port context");
+        return NULL;
+    }
+
+    port->name = strdup(name);
+    if (port->name == NULL)
+    {
+        ERROR("Failed to allocate memory for the port name");
+        goto fail;
+    }
+
+    port->value = strdup(value);
+    if (port->value == NULL)
+    {
+        ERROR("Failed to allocate memory for the port value");
+        goto fail;
+    }
+
+    SLIST_INIT(&port->interfaces);
+
+    for (i = 0; i < nb_interfaces; ++i)
+        SLIST_INSERT_HEAD(&port->interfaces, interfaces[i], links);
+
+    port->bridge_local = bridge_local;
+    port->parent_bridge_name = parent_bridge_name;
+
+    return port;
+
+fail:
+    free(port->name);
+    free(port);
+
+    return NULL;
+}
+
+static void
+ovs_bridge_port_free(port_entry *port)
+{
+    interface_entry *interface_tmp;
+    interface_entry *interface;
+
+    INFO("Freeing the port '%s' list entry", port->name);
+
+    SLIST_FOREACH_SAFE(interface, &port->interfaces, links, interface_tmp)
+        SLIST_REMOVE(&port->interfaces, interface, interface_entry, links);
+
+    free(port->value);
+    free(port->name);
+    free(port);
+}
+
+static te_errno
+ovs_bridge_port_activate(ovs_ctx_t  *ctx,
+                         port_entry *port)
+{
+    te_string        cmd = TE_STRING_INIT;
+    interface_entry *interface;
+    int              ret;
+    te_errno         rc;
+
+    INFO("Activating the port '%s'", port->name);
+
+    rc = te_string_append(&cmd, "%s ovs-vsctl add-port %s %s",
+                          ctx->env.ptr, port->parent_bridge_name, port->name);
+    if (rc != 0)
+    {
+        ERROR("Failed to construct ovs-vsctl invocation command line");
+        goto out;
+    }
+
+    SLIST_FOREACH(interface, &port->interfaces, links)
+    {
+        rc = ovs_cmd_vsctl_append_interface_arguments(interface, &cmd);
+        if (rc != 0)
+        {
+            ERROR("Failed to append interface-specific arguments to "
+                  "ovs-vsctl invocation command line");
+            goto out;
+        }
+    }
+
+    ret = te_shell_cmd(cmd.ptr, -1, NULL, NULL, NULL);
+    if (ret == -1)
+    {
+        ERROR("Failed to invoke ovs-vsctl");
+        rc = TE_ECHILD;
+    }
+    else
+    {
+        ta_waitpid(ret, NULL, 0);
+    }
+
+out:
+    te_string_free(&cmd);
+
+    return rc;
+}
+
+static void
+ovs_bridge_port_deactivate(ovs_ctx_t  *ctx,
+                           port_entry *port)
+{
+    te_string cmd = TE_STRING_INIT;
+    int       ret;
+
+    INFO("Deactivating the port '%s'", port->name);
+
+    if (te_string_append(&cmd, "%s ovs-vsctl del-port %s %s", ctx->env.ptr,
+                         port->parent_bridge_name, port->name) != 0)
+    {
+        ERROR("Failed to construct ovs-vsctl invocation command line");
+        goto out;
+    }
+
+    ret = te_shell_cmd(cmd.ptr, -1, NULL, NULL, NULL);
+    if (ret == -1)
+    {
+        ERROR("Failed to invoke ovs-vsctl");
+        goto out;
+    }
+
+    ta_waitpid(ret, NULL, 0);
+
+out:
+    te_string_free(&cmd);
+}
+
+static te_errno
+ovs_bridge_port_init_bonded(ovs_ctx_t    *ctx,
+                            bridge_entry *bridge,
+                            const char   *port_name,
+                            const char   *interface_list)
+{
+#if 0
+    INFO("Initialising the bonded port '%s' comprising the interfaces '%s'",
+         port_name, interface_list);
+
+    /*
+     * TODO: Pay attention to require that the port name
+     *       doesn't coincide with that of any interface.
+     */
+#else
+    UNUSED(ctx);
+    UNUSED(bridge);
+    UNUSED(port_name);
+    UNUSED(interface_list);
+
+    ERROR("There is no support for bonded ports as of now");
+    return TE_EOPNOTSUPP;
+#endif
+}
+
+static te_errno
+ovs_bridge_port_init_regular(ovs_ctx_t    *ctx,
+                             bridge_entry *bridge,
+                             const char   *port_name)
+{
+    char            *error_message;
+    te_bool          error_set;
+    interface_entry *interface;
+    port_entry      *port;
+    te_errno         rc;
+
+    INFO("Initialising the regular port '%s'", port_name);
+
+    rc = ovs_interface_init(ctx, port_name, "system", TRUE, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to initialise the port interface list entry");
+        goto fail_interface_init;
+    }
+
+    port = ovs_bridge_port_alloc(bridge->interface->name, port_name, "",
+                                 FALSE, &interface, 1);
+    if (port == NULL)
+    {
+        ERROR("Failed to allocate the port list entry");
+        rc = TE_ENOMEM;
+        goto fail_bridge_port_alloc;
+    }
+
+    rc = ovs_bridge_port_activate(ctx, port);
+    if (rc != 0)
+    {
+        ERROR("Failed to activate the port");
+        goto fail_bridge_port_activate;
+    }
+
+    rc = ovs_interface_check_error(ctx, interface, &error_set, &error_message);
+    if (rc != 0)
+    {
+        ERROR("Failed to check the port interface for errors");
+        goto fail_interface_check_error;
+    }
+
+    if (error_set)
+    {
+        ERROR("Failed to configure the port interface: '%s'", error_message);
+        free(error_message);
+        rc = TE_EFAULT;
+        goto fail_interface_check_error;
+    }
+
+    SLIST_INSERT_HEAD(&bridge->ports, port, links);
+
+    return 0;
+
+fail_interface_check_error:
+    ovs_bridge_port_deactivate(ctx, port);
+
+fail_bridge_port_activate:
+    ovs_bridge_port_free(port);
+
+fail_bridge_port_alloc:
+    ovs_interface_fini(ctx, interface);
+
+fail_interface_init:
+
+    return rc;
+}
+
+static void
+ovs_bridge_port_fini(ovs_ctx_t    *ctx,
+                     bridge_entry *bridge,
+                     port_entry   *port)
+{
+    interface_entry *interface;
+    interface_entry *interface_tmp;
+
+    INFO("Finalising the port '%s'", port->name);
+
+    assert(!port->bridge_local);
+
+    SLIST_FOREACH_SAFE(interface, &port->interfaces, links, interface_tmp)
+        ovs_interface_fini(ctx, interface);
+
+    SLIST_REMOVE(&bridge->ports, port, port_entry, links);
+    ovs_bridge_port_deactivate(ctx, port);
+    ovs_bridge_port_free(port);
+}
+
+static void
+ovs_bridge_port_fini_all(ovs_ctx_t    *ctx,
+                         bridge_entry *bridge)
+{
+    port_entry *port;
+    port_entry *port_tmp;
+
+    INFO("Finalising all ports but the local one at the bridge '%s'",
+         bridge->interface->name);
+
+    SLIST_FOREACH_SAFE(port, &bridge->ports, links, port_tmp)
+    {
+        if (!port->bridge_local)
+            ovs_bridge_port_fini(ctx, bridge, port);
+    }
+}
+
 static bridge_entry *
 ovs_bridge_alloc(const char      *datapath_type,
                  interface_entry *interface)
 {
     bridge_entry *bridge;
+    port_entry   *port;
 
     INFO("Allocating the bridge list entry for '%s'", interface->name);
 
@@ -684,9 +986,22 @@ ovs_bridge_alloc(const char      *datapath_type,
 
     bridge->interface = interface;
 
+    SLIST_INIT(&bridge->ports);
+
+    port = ovs_bridge_port_alloc(interface->name, interface->name,
+                                 "", TRUE, NULL, 0);
+    if (port == NULL)
+    {
+        ERROR("Failed to initialise the bridge local port list entry");
+        goto fail;
+    }
+
+    SLIST_INSERT_HEAD(&bridge->ports, port, links);
+
     return bridge;
 
 fail:
+    free(bridge->datapath_type);
     free(bridge);
 
     return NULL;
@@ -695,8 +1010,13 @@ fail:
 static void
 ovs_bridge_free(bridge_entry *bridge)
 {
+    port_entry *port = SLIST_FIRST(&bridge->ports);
+
     INFO("Freeing the bridge list entry for '%s'", bridge->interface->name);
 
+    assert(port->bridge_local);
+    SLIST_REMOVE(&bridge->ports, port, port_entry, links);
+    ovs_bridge_port_free(port);
     free(bridge->datapath_type);
     free(bridge);
 }
@@ -852,6 +1172,7 @@ ovs_bridge_fini(ovs_ctx_t    *ctx,
 
     INFO("Finalising the bridge '%s'", interface->name);
 
+    ovs_bridge_port_fini_all(ctx, bridge);
     ovs_bridge_deactivate(ctx, bridge);
     SLIST_REMOVE(&ctx->bridges, bridge, bridge_entry, links);
     ovs_bridge_free(bridge);
@@ -2244,8 +2565,215 @@ out:
     return TE_RC(TE_TA_UNIX, rc);
 }
 
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_bridge, "bridge",
+static te_errno
+ovs_bridge_port_pick(const char    *ovs,
+                     const char    *bridge_name,
+                     const char    *port_name,
+                     ovs_ctx_t    **ctx_out,
+                     bridge_entry **bridge_out,
+                     port_entry   **port_out)
+{
+    ovs_ctx_t    *ctx;
+    bridge_entry *bridge;
+    port_entry   *port;
+    te_errno      rc;
+
+    rc = ovs_bridge_pick(ovs, bridge_name, &ctx, &bridge);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the bridge entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    port = ovs_bridge_port_find(bridge, port_name);
+    if (port == NULL)
+    {
+        ERROR("The port does not exist");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (ctx_out != NULL)
+        *ctx_out = ctx;
+
+    if (bridge_out != NULL)
+        *bridge_out = bridge;
+
+    if (port_out != NULL)
+        *port_out = port;
+
+    return 0;
+}
+
+static te_errno
+ovs_bridge_port_add(unsigned int  gid,
+                    const char   *oid,
+                    const char   *value,
+                    const char   *ovs,
+                    const char   *bridge_name,
+                    const char   *port_name)
+{
+    bridge_entry *bridge;
+    port_entry   *port;
+    ovs_ctx_t    *ctx;
+    te_errno      rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    INFO("Adding the port '%s' to the bridge '%s'", port_name, bridge_name);
+
+    rc = ovs_bridge_pick(ovs, bridge_name, &ctx, &bridge);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the bridge entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if (port_name[0] == '\0')
+    {
+        ERROR("The port name is empty");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    port = ovs_bridge_port_find(bridge, port_name);
+    if (port != NULL)
+    {
+        ERROR("The port already exists");
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+    }
+
+    rc = (value[0] == '\0') ?
+         ovs_bridge_port_init_regular(ctx, bridge, port_name) :
+         ovs_bridge_port_init_bonded(ctx, bridge, port_name, value);
+    if (rc != 0)
+        ERROR("Failed to initialise the port");
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+static te_errno
+ovs_bridge_port_del(unsigned int  gid,
+                    const char   *oid,
+                    const char   *ovs,
+                    const char   *bridge_name,
+                    const char   *port_name)
+{
+    bridge_entry *bridge;
+    port_entry   *port;
+    ovs_ctx_t    *ctx;
+    te_errno      rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    INFO("Freeing the bridge '%s' port '%s'", bridge_name, port_name);
+
+    rc = ovs_bridge_port_pick(ovs, bridge_name, port_name,
+                              &ctx, &bridge, &port);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the port entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if (!port->bridge_local)
+        ovs_bridge_port_fini(ctx, bridge, port);
+
+    return 0;
+}
+
+static te_errno
+ovs_bridge_port_get(unsigned int  gid,
+                    const char   *oid,
+                    char         *value,
+                    const char   *ovs,
+                    const char   *bridge_name,
+                    const char   *port_name)
+{
+    port_entry *port;
+    te_errno    rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    INFO("Querying the bridge '%s' port '%s' value", bridge_name, port_name);
+
+    rc = ovs_bridge_port_pick(ovs, bridge_name, port_name, NULL, NULL, &port);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the port entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    strncpy(value, port->value, RCF_MAX_VAL);
+    value[RCF_MAX_VAL - 1] = '\0';
+
+    return 0;
+}
+
+static te_errno
+ovs_bridge_port_list(unsigned int   gid,
+                     const char    *oid_str,
+                     const char    *sub_id,
+                     char         **list)
+{
+    te_string     list_container = TE_STRING_INIT;
+    const char   *bridge_name;
+    bridge_entry *bridge;
+    port_entry   *port;
+    cfg_oid      *oid;
+    const char   *ovs;
+    te_errno      rc;
+
+    UNUSED(gid);
+    UNUSED(sub_id);
+
+    INFO("Constructing the port list of the bridge by the OID '%s'", oid_str);
+
+    oid = cfg_convert_oid_str(oid_str);
+    if (oid == NULL)
+    {
+        ERROR("Failed to convert the OID string to native OID handle");
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    ovs = CFG_OID_GET_INST_NAME(oid, 2);
+    bridge_name = CFG_OID_GET_INST_NAME(oid, 3);
+
+    rc = ovs_bridge_pick(ovs, bridge_name, NULL, &bridge);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the bridge entry");
+        goto out;
+    }
+
+    SLIST_FOREACH(port, &bridge->ports, links)
+    {
+        rc = te_string_append(&list_container, "%s ", port->name);
+        if (rc != 0)
+        {
+            ERROR("Failed to construct the port list");
+            te_string_free(&list_container);
+            goto out;
+        }
+    }
+
+    *list = list_container.ptr;
+
+out:
+    free(oid);
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_bridge_port, "port",
                                NULL, NULL,
+                               ovs_bridge_port_get, NULL,
+                               ovs_bridge_port_add, ovs_bridge_port_del,
+                               ovs_bridge_port_list, NULL);
+
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_bridge, "bridge",
+                               &node_ovs_bridge_port, NULL,
                                ovs_bridge_get, NULL,
                                ovs_bridge_add, ovs_bridge_del,
                                ovs_bridge_list, NULL);
