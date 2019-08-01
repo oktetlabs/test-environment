@@ -68,6 +68,14 @@ typedef struct interface_entry {
 
 typedef SLIST_HEAD(interface_list_t, interface_entry) interface_list_t;
 
+typedef struct bridge_entry {
+    SLIST_ENTRY(bridge_entry)  links;
+    char                      *datapath_type;
+    interface_entry           *interface;
+} bridge_entry;
+
+typedef SLIST_HEAD(bridge_list_t, bridge_entry) bridge_list_t;
+
 typedef struct ovs_ctx_s {
     te_string         root_path;
     te_string         conf_db_lock_path;
@@ -86,6 +94,7 @@ typedef struct ovs_ctx_s {
     log_module_t     *log_modules;
 
     interface_list_t  interfaces;
+    bridge_list_t     bridges;
 } ovs_ctx_t;
 
 static ovs_ctx_t ovs_ctx = {
@@ -106,12 +115,15 @@ static ovs_ctx_t ovs_ctx = {
     .log_modules = NULL,
 
     .interfaces = SLIST_HEAD_INITIALIZER(interfaces),
+    .bridges = SLIST_HEAD_INITIALIZER(bridges),
 };
 
 static const char *log_levels[] = { "EMER", "ERR", "WARN",
                                     "INFO", "DBG", NULL };
 
 static const char *interface_types[] = { "system", "internal", NULL };
+
+static const char *bridge_datapath_types[] = { "system", "netdev", NULL };
 
 static ovs_ctx_t *
 ovs_ctx_get(const char *ovs)
@@ -535,6 +547,330 @@ ovs_interface_fini_all(ovs_ctx_t *ctx)
     }
 }
 
+static bridge_entry *
+ovs_bridge_find(ovs_ctx_t  *ctx,
+                const char *name)
+{
+    bridge_entry *bridge;
+
+    SLIST_FOREACH(bridge, &ctx->bridges, links)
+    {
+        if (strcmp(name, bridge->interface->name) == 0)
+            return bridge;
+    }
+
+    return NULL;
+}
+
+static te_errno
+ovs_interface_check_error(ovs_ctx_t        *ctx,
+                          interface_entry  *interface,
+                          te_bool          *error_setp,
+                          char            **error_bufp)
+{
+    char     *buf = NULL;
+    int       ret;
+    te_errno  rc;
+
+    INFO("Checking the interface '%s' for errors", interface->name);
+
+    rc = ovs_value_get_effective(ctx, "interface", interface->name,
+                                 "error", &buf);
+    if (rc != 0)
+    {
+        ERROR("Failed to query the error property");
+        return rc;
+    }
+
+    ret = sscanf(buf, "\"%m[^\"]", error_bufp);
+    switch (ret)
+    {
+        case 0:
+            *error_setp = FALSE;
+            break;
+
+        case 1:
+            *error_setp = TRUE;
+            break;
+
+        default:
+            ERROR("Failed to parse the response");
+            rc = TE_ENODATA;
+            break;
+    }
+
+    free(buf);
+
+    return rc;
+}
+
+static te_errno
+ovs_cmd_vsctl_append_interface_arguments(interface_entry *interface,
+                                         te_string       *cmdp)
+{
+    te_errno rc;
+
+    INFO("Appending ovs-vsctl arguments for the interface '%s'",
+         interface->name);
+
+    rc = te_string_append(cmdp, " -- set interface %s type=%s",
+                          interface->name, interface->type);
+    if (rc != 0)
+    {
+        ERROR("Failed to append the type argument");
+        return rc;
+    }
+
+    if (interface->temporary)
+        return 0;
+
+    if (interface->mac_requested)
+    {
+        rc = te_string_append(cmdp, " mac=\\\"%s\\\"", interface->mac_request);
+        if (rc != 0)
+        {
+            ERROR("Failed to append the MAC request argument");
+            return rc;
+        }
+    }
+
+    if (interface->ofport_requested)
+    {
+        rc = te_string_append(cmdp, " ofport_request=%s",
+                              interface->ofport_request);
+        if (rc != 0)
+        {
+            ERROR("Failed to append the ofport request argument");
+            return rc;
+        }
+    }
+
+    if (interface->mtu_requested)
+    {
+        rc = te_string_append(cmdp, " mtu_request=%s", interface->mtu_request);
+        if (rc != 0)
+        {
+            ERROR("Failed to append the MTU request argument");
+            return rc;
+        }
+    }
+
+    return 0;
+}
+
+static bridge_entry *
+ovs_bridge_alloc(const char      *datapath_type,
+                 interface_entry *interface)
+{
+    bridge_entry *bridge;
+
+    INFO("Allocating the bridge list entry for '%s'", interface->name);
+
+    bridge = TE_ALLOC(sizeof(*bridge));
+    if (bridge == NULL)
+    {
+        ERROR("Failed to allocate memory for the bridge context");
+        return NULL;
+    }
+
+    bridge->datapath_type = (datapath_type != NULL &&
+                             datapath_type[0] != '\0') ?
+                            strdup(datapath_type) : strdup("system");
+    if (bridge->datapath_type == NULL)
+    {
+        ERROR("Failed to allocate memory for the bridge datapath type");
+        goto fail;
+    }
+
+    bridge->interface = interface;
+
+    return bridge;
+
+fail:
+    free(bridge);
+
+    return NULL;
+}
+
+static void
+ovs_bridge_free(bridge_entry *bridge)
+{
+    INFO("Freeing the bridge list entry for '%s'", bridge->interface->name);
+
+    free(bridge->datapath_type);
+    free(bridge);
+}
+
+static te_errno
+ovs_bridge_activate(ovs_ctx_t    *ctx,
+                    bridge_entry *bridge)
+{
+    te_string cmd = TE_STRING_INIT;
+    int       ret;
+    te_errno  rc;
+
+    INFO("Activating the bridge '%s'", bridge->interface->name);
+
+    rc = te_string_append(&cmd, "%s ovs-vsctl add-br %s -- set bridge %s "
+                          "datapath_type=%s", ctx->env.ptr,
+                          bridge->interface->name, bridge->interface->name,
+                          bridge->datapath_type);
+    if (rc != 0)
+    {
+        ERROR("Failed to construct ovs-vsctl invocation command line");
+        goto out;
+    }
+
+    rc = ovs_cmd_vsctl_append_interface_arguments(bridge->interface, &cmd);
+    if (rc != 0)
+    {
+        ERROR("Failed to append interface-specific arguments to "
+              "ovs-vsctl invocation command line");
+        goto out;
+    }
+
+    ret = te_shell_cmd(cmd.ptr, -1, NULL, NULL, NULL);
+    if (ret == -1)
+    {
+        ERROR("Failed to invoke ovs-vsctl");
+        rc = TE_ECHILD;
+    }
+    else
+    {
+        ta_waitpid(ret, NULL, 0);
+    }
+
+out:
+    te_string_free(&cmd);
+
+    return rc;
+}
+
+static void
+ovs_bridge_deactivate(ovs_ctx_t    *ctx,
+                      bridge_entry *bridge)
+{
+    te_string cmd = TE_STRING_INIT;
+    int       ret;
+
+    INFO("Deactivating the bridge '%s'", bridge->interface->name);
+
+    if (te_string_append(&cmd, "%s ovs-vsctl del-br %s",
+                         ctx->env.ptr, bridge->interface->name) != 0)
+    {
+        ERROR("Failed to construct ovs-vsctl invocation command line");
+        goto out;
+    }
+
+    ret = te_shell_cmd(cmd.ptr, -1, NULL, NULL, NULL);
+    if (ret == -1)
+    {
+        ERROR("Failed to invoke ovs-vsctl");
+        goto out;
+    }
+
+    ta_waitpid(ret, NULL, 0);
+
+out:
+    te_string_free(&cmd);
+}
+
+static te_errno
+ovs_bridge_init(ovs_ctx_t  *ctx,
+                const char *name,
+                const char *datapath_type)
+{
+    interface_entry *interface = NULL;
+    char            *error_message;
+    te_bool          error_set;
+    bridge_entry    *bridge;
+    te_errno         rc;
+
+    INFO("Initialising the bridge '%s'", name);
+
+    rc = ovs_interface_init(ctx, name, "internal", TRUE, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to initialise the bridge local interface list entry");
+        goto fail_interface_init;
+    }
+
+    bridge = ovs_bridge_alloc(datapath_type, interface);
+    if (bridge == NULL)
+    {
+        ERROR("Failed to allocate the bridge list entry");
+        rc = TE_ENOMEM;
+        goto fail_bridge_alloc;
+    }
+
+    rc = ovs_bridge_activate(ctx, bridge);
+    if (rc != 0)
+    {
+        ERROR("Failed to activate the bridge");
+        goto fail_bridge_activate;
+    }
+
+    rc = ovs_interface_check_error(ctx, interface, &error_set, &error_message);
+    if (rc != 0)
+    {
+        ERROR("Failed to check the bridge local interface for errors");
+        goto fail_interface_check_error;
+    }
+
+    if (error_set)
+    {
+        ERROR("Failed to configure the bridge local interface: '%s'",
+              error_message);
+        free(error_message);
+        rc = TE_EFAULT;
+        goto fail_interface_check_error;
+    }
+
+    SLIST_INSERT_HEAD(&ctx->bridges, bridge, links);
+
+    return 0;
+
+fail_interface_check_error:
+    ovs_bridge_deactivate(ctx, bridge);
+
+fail_bridge_activate:
+    ovs_bridge_free(bridge);
+
+fail_bridge_alloc:
+    ovs_interface_fini(ctx, interface);
+
+fail_interface_init:
+
+    return rc;
+}
+
+static void
+ovs_bridge_fini(ovs_ctx_t    *ctx,
+                bridge_entry *bridge)
+{
+    interface_entry *interface = bridge->interface;
+
+    INFO("Finalising the bridge '%s'", interface->name);
+
+    ovs_bridge_deactivate(ctx, bridge);
+    SLIST_REMOVE(&ctx->bridges, bridge, bridge_entry, links);
+    ovs_bridge_free(bridge);
+    ovs_interface_fini(ctx, interface);
+}
+
+static void
+ovs_bridge_fini_all(ovs_ctx_t *ctx)
+{
+    bridge_entry *bridge_tmp;
+    bridge_entry *bridge;
+
+    INFO("Finalising the bridge(s)");
+
+    SLIST_FOREACH_SAFE(bridge, &ctx->bridges, links, bridge_tmp)
+        ovs_bridge_fini(ctx, bridge);
+}
+
+
 static void
 ovs_daemon_stop(ovs_ctx_t  *ctx,
                 const char *name)
@@ -779,6 +1115,7 @@ ovs_stop(ovs_ctx_t *ctx)
 {
     INFO("Stopping the facility");
 
+    ovs_bridge_fini_all(ctx);
     ovs_interface_fini_all(ctx);
     ovs_log_fini_modules(ctx);
     ovs_vswitchd_stop(ctx);
@@ -1702,6 +2039,217 @@ out:
     return TE_RC(TE_TA_UNIX, rc);
 }
 
+static te_errno
+ovs_bridge_pick(const char    *ovs,
+                const char    *bridge_name,
+                ovs_ctx_t    **ctx_out,
+                bridge_entry **bridge_out)
+{
+    ovs_ctx_t    *ctx;
+    bridge_entry *bridge;
+
+    ctx = ovs_ctx_get(ovs);
+    if (ctx == NULL)
+    {
+        ERROR("Failed to find the facility context");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (ovs_is_running(ctx) == 0)
+    {
+        ERROR("The facility is not running");
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    bridge = ovs_bridge_find(ctx, bridge_name);
+    if (bridge == NULL)
+    {
+        ERROR("The interface does not exist");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (ctx_out != NULL)
+        *ctx_out = ctx;
+
+    if (bridge_out != NULL)
+        *bridge_out = bridge;
+
+    return 0;
+}
+
+static te_errno
+ovs_bridge_add(unsigned int  gid,
+               const char   *oid,
+               const char   *value,
+               const char   *ovs,
+               const char   *name)
+{
+    bridge_entry *bridge;
+    ovs_ctx_t    *ctx;
+    te_errno      rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    INFO("Adding the bridge '%s'", name);
+
+    ctx = ovs_ctx_get(ovs);
+    if (ctx == NULL)
+    {
+        ERROR("Failed to find the facility context");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (ovs_is_running(ctx) == 0)
+    {
+        ERROR("The facility is not running");
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    if (name[0] == '\0')
+    {
+        ERROR("The bridge name is empty");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    bridge = ovs_bridge_find(ctx, name);
+    if (bridge != NULL)
+    {
+        ERROR("The bridge already exists");
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+    }
+
+    if (value[0] != '\0')
+    {
+        if (!ovs_value_is_valid(bridge_datapath_types, value))
+        {
+            ERROR("The bridge datapath type is unsupported");
+            return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+        }
+    }
+
+    rc = ovs_bridge_init(ctx, name, value);
+    if (rc != 0)
+        ERROR("Failed to initialise the bridge");
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+static te_errno
+ovs_bridge_del(unsigned int  gid,
+               const char   *oid,
+               const char   *ovs,
+               const char   *name)
+{
+    bridge_entry *bridge;
+    ovs_ctx_t    *ctx;
+    te_errno      rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    INFO("Removing the bridge '%s'", name);
+
+    rc = ovs_bridge_pick(ovs, name, &ctx, &bridge);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the bridge entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    ovs_bridge_fini(ctx, bridge);
+
+    return 0;
+}
+
+static te_errno
+ovs_bridge_get(unsigned int  gid,
+               const char   *oid,
+               char         *value,
+               const char   *ovs,
+               const char   *name)
+{
+    bridge_entry *bridge;
+    te_errno      rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    INFO("Querying the datapath type of the bridge '%s'", name);
+
+    rc = ovs_bridge_pick(ovs, name, NULL, &bridge);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the bridge entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    strncpy(value, bridge->datapath_type, RCF_MAX_VAL);
+    value[RCF_MAX_VAL - 1] = '\0';
+
+    return 0;
+}
+
+static te_errno
+ovs_bridge_list(unsigned int   gid,
+                const char    *oid_str,
+                const char    *sub_id,
+                char         **list)
+{
+    te_string     list_container = TE_STRING_INIT;
+    bridge_entry *bridge;
+    te_errno      rc = 0;
+    cfg_oid      *oid;
+    const char   *ovs;
+    ovs_ctx_t    *ctx;
+
+    UNUSED(gid);
+    UNUSED(sub_id);
+
+    INFO("Constructing the list of bridges");
+
+    oid = cfg_convert_oid_str(oid_str);
+    if (oid == NULL)
+    {
+        ERROR("Failed to convert the OID string to native OID handle");
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    ovs = CFG_OID_GET_INST_NAME(oid, 2);
+
+    ctx = ovs_ctx_get(ovs);
+    if (ctx == NULL)
+    {
+        ERROR("Failed to find the facility context");
+        rc = TE_ENOENT;
+        goto out;
+    }
+
+    SLIST_FOREACH(bridge, &ctx->bridges, links)
+    {
+        rc = te_string_append(&list_container, "%s ", bridge->interface->name);
+        if (rc != 0)
+        {
+            ERROR("Failed to construct the list of bridges");
+            te_string_free(&list_container);
+            goto out;
+        }
+    }
+
+    *list = list_container.ptr;
+
+out:
+    free(oid);
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_bridge, "bridge",
+                               NULL, NULL,
+                               ovs_bridge_get, NULL,
+                               ovs_bridge_add, ovs_bridge_del,
+                               ovs_bridge_list, NULL);
+
 RCF_PCH_CFG_NODE_RW(node_ovs_interface_link_state, "link_state",
                     NULL, NULL,
                     ovs_interface_link_state_get, NULL);
@@ -1719,7 +2267,7 @@ RCF_PCH_CFG_NODE_RW(node_ovs_interface_mac, "mac",
                     ovs_interface_mac_get, ovs_interface_mac_set);
 
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_interface, "interface",
-                               &node_ovs_interface_mac, NULL,
+                               &node_ovs_interface_mac, &node_ovs_bridge,
                                ovs_interface_get, ovs_interface_set,
                                ovs_interface_add, ovs_interface_del,
                                ovs_interface_list, NULL);
