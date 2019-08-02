@@ -29,10 +29,21 @@ extern "C" {
 #endif
 
 /** Initial length of the dynamically allocated string */
-#define TE_STRING_INIT_LEN  1
+#define TE_STRING_INIT_LEN      (16)
 
-/** Additional length when dynamically allocated string is reallocated */
-#define TE_STRING_EXTRA_LEN 0
+/** String grow factor which is used during reallocation */
+#define TE_STRING_GROW_FACTOR   (2)
+
+/**
+ * The grow factor exponent limit during a single relocation.
+ * If a good size is not found in a range [size,
+ * TE_STRING_GROW_FACTOR ^ TE_STRING_GROW_FACTOR_EXP_LIMIT], the fallback to
+ * addendum-based grow is performed.
+ *
+ * Empirically, current grow factor exponent limit is enough for running
+ * long tests without too frequent reallocation.
+ */
+#define TE_STRING_GROW_FACTOR_EXP_LIMIT (4)
 
 /**
  * TE string type.
@@ -47,7 +58,14 @@ typedef struct te_string {
 } te_string;
 
 /** On-stack te_string initializer */
-#define TE_STRING_INIT  { NULL, 0, 0, FALSE }
+#define TE_STRING_INIT TE_STRING_INIT_RESERVE(TE_STRING_INIT_LEN)
+
+/**
+ * On-stack te_string initializer with a defined reserve
+ */
+#define TE_STRING_INIT_RESERVE(reserved_size_) \
+    { NULL, (reserved_size_), 0, FALSE }
+
 
 /**
  * Initialize TE string assigning buffer to it.
@@ -76,6 +94,18 @@ te_string_reset(te_string *str)
         *str->ptr = '\0';
 }
 
+/**
+ * Reserve space for at least @p size elements in @p str string
+ *
+ * @param str           TE string.
+ * @param size          Number of elements to to have a room for in a string
+ *
+ * @return Status code
+ *
+ * @remark If there is a room already for the number of elements specified
+ *         by @p size, no action would be performed.
+ */
+extern te_errno te_string_reserve(te_string *str, size_t size);
 
 /**
  * Append to the string results of the sprintf(fmt, ...);

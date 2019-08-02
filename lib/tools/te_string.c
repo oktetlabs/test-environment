@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #endif
 
 #include "logger_api.h"
@@ -61,9 +62,75 @@ te_string_append(te_string *str, const char *fmt, ...)
     return rc;
 }
 
+/* See description in te_string.h */
+te_errno
+te_string_reserve(te_string *str, size_t size)
+{
+    size_t          pagesize = getpagesize();
+    size_t          adj_size;
+    size_t          malloc_header_size = 4 * sizeof(void *);
+    char           *ptr;
+    size_t          grow_factor = 1;
+    size_t          grow = 0;
+
+    /*
+     * Here we don't reinvent the wheel, we comply to the GCC C++ library
+     * https://github.com/gcc-mirror/gcc/blob/master/libstdc++-v3/include/
+     *  bits/basic_string.tcc
+     * with the exception of grow factor exponent used.
+     */
+    if (size < str->size)
+        return 0;
+
+    /*
+     * Apply grow factor ^ exp until predefined limit, and if size < newsize <
+     * (factor ^ exp) * size, then use (factor ^ exp) * size as a resulting
+     * size.
+     *
+     * Using factor ^ exp might be costly in terms of RAM used, so we fall back
+     * to a regular addend-based expansion if we can't find it even after
+     * applying @c TE_STRING_GROW_FACTOR_EXP_LIMIT exponent
+     */
+    for (grow = 0; grow < TE_STRING_GROW_FACTOR_EXP_LIMIT; ++grow)
+    {
+        grow_factor *= TE_STRING_GROW_FACTOR;
+        if (size > str->size && size < grow_factor * str->size)
+        {
+            size = grow_factor * str->size;
+            break;
+        }
+    }
+
+    /*
+     * Apply correction taking malloc overhead into account, it works for
+     * allocations over page size. Based on GCC C++ basic_string implementation.
+     */
+    adj_size = size + malloc_header_size;
+    if (adj_size > pagesize && size > str->size)
+    {
+        size_t extra;
+
+        extra = pagesize - adj_size % pagesize;
+        size += extra;
+    }
+
+    /* Actually reallocate data */
+    ptr = realloc(str->ptr, size);
+    if (ptr == NULL)
+    {
+        ERROR("%s(): Memory allocation failure", __FUNCTION__);
+        return TE_ENOMEM;
+    }
+
+    str->ptr = ptr;
+    str->size = size;
+    return 0;
+}
+
 te_errno
 te_string_append_va(te_string *str, const char *fmt, va_list ap)
 {
+    te_errno rc;
     char    *s;
     size_t   rest;
     int      printed;
@@ -72,14 +139,19 @@ te_string_append_va(te_string *str, const char *fmt, va_list ap)
 
     if (str->ptr == NULL)
     {
+        size_t new_size;
+
         assert(!str->ext_buf);
-        str->ptr = malloc(TE_STRING_INIT_LEN);
+
+        new_size = str->size != 0 ? str->size : TE_STRING_INIT_LEN;
+        str->ptr = malloc(new_size);
         if (str->ptr == NULL)
         {
             ERROR("%s(): Memory allocation failure", __FUNCTION__);
             return TE_ENOMEM;
         }
-        str->size = TE_STRING_INIT_LEN;
+
+        str->size = new_size;
         str->len = 0;
     }
 
@@ -104,17 +176,11 @@ te_string_append_va(te_string *str, const char *fmt, va_list ap)
             }
             else
             {
-                char *new_ptr;
-                /* We are going to extend buffer */
-                rest = printed + 1 /* '\0' */ + TE_STRING_EXTRA_LEN;
-                new_ptr = realloc(str->ptr, str->size + rest);
-                if (new_ptr == NULL)
-                {
-                    ERROR("%s(): Memory allocation failure", __FUNCTION__);
-                    return TE_ENOMEM;
-                }
-                str->size = str->len + rest;
-                str->ptr = new_ptr;
+                rc = te_string_reserve(str, str->len + printed + 1 /* '\0' */);
+                if (rc != 0)
+                    return rc;
+
+                rest = str->size - str->len;
                 /* Print again */
                 again = TRUE;
             }
