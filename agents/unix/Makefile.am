@@ -33,7 +33,16 @@ taexecdir=$(prefix)/@with_name@
 
 noinst_HEADERS = unix_internal.h
 
-taexec_PROGRAMS = ta
+taexec_PROGRAMS = ta ta_rcf_listener
+
+ta_rcf_listener_SOURCES = ta_rcf_listener.c
+
+ta_rcf_listener_LDADD = -lcomm_net_agent -llogger_file -ltools $(TE_LDADD)
+ta_rcf_listener_DEPENDENCIES = @TE_DEPENDENCIES@  \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libcomm_net_agent.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_file.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
+    Makefile
 
 ta_SOURCES = main.c log_remote.c
 if GENERATE_SYMTBL
