@@ -167,8 +167,6 @@ te_log_buf_get(te_log_buf *buf)
 
     if (buf->str.len == 0)
     {
-        te_string_free(&buf->str);
-        buf->str = (te_string)TE_STRING_INIT_RESERVE(LOG_BUF_LEN);
         assert(te_string_append(&buf->str, "") == 0);
     }
 
