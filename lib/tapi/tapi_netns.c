@@ -248,15 +248,21 @@ tapi_netns_create_cleanup:
 /* See description in tapi_namespaces.h */
 te_errno
 tapi_netns_add_ta(const char *host, const char *ns_name, const char *ta_name,
-                  const char *ta_type, int rcfport, const char *ta_conn)
+                  const char *ta_type, int rcfport, const char *ta_conn,
+                  te_bool ext_rcf_listener)
 {
     char     confstr[CONFSTR_LEN];
     int      res;
     te_errno rc;
 
+    const char *ext_rcf_listener_str = (ext_rcf_listener ?
+                                        "ext_rcf_listener:" : "");
+
     res = snprintf(confstr, sizeof(confstr),
-                   "host=%s:port=%d:sudo:connect=%s:shell="IP_TOOL" netns exec %s:",
-                   host, rcfport, ta_conn == NULL ? "" : ta_conn, ns_name);
+                   "host=%s:port=%d:sudo:connect=%s:%sshell="
+                   IP_TOOL" netns exec %s:",
+                   host, rcfport, ta_conn == NULL ? "" : ta_conn,
+                   ext_rcf_listener_str, ns_name);
     if (res >= (int)sizeof(confstr))
         return TE_RC(TE_TAPI, TE_ESMALLBUF);
 

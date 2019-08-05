@@ -103,18 +103,26 @@ extern te_errno tapi_netns_create_ns_with_net_channel(const char *ta,
 /**
  * Add new test agent located in the specified network namespace @p ns_name.
  *
- * @param host      The target hostname
- * @param ns_name   The network namespace name
- * @param ta_name   The test agent name
- * @param ta_type   The test agent type
- * @param rcfport   Port number to communicate with RCF
- * @param ta_conn   Connection hostname or address or @c NULL
+ * @param host              The target hostname
+ * @param ns_name           The network namespace name
+ * @param ta_name           The test agent name
+ * @param ta_type           The test agent type
+ * @param rcfport           Port number to communicate with RCF
+ * @param ta_conn           Connection hostname or address or @c NULL
+ * @param ext_rcf_listener  If @c TRUE, create listener socket for
+ *                          accepting RCF connection before exec(ta).
+ *                          Such socket will be able to accept
+ *                          connections via interfaces from default
+ *                          network namespace, no additional routes
+ *                          or interfaces in the new namespace will
+ *                          be required.
  *
  * @return Status code.
  */
 extern te_errno tapi_netns_add_ta(const char *host, const char *ns_name,
                                   const char *ta_name, const char *ta_type,
-                                  int rcfport, const char *ta_conn);
+                                  int rcfport, const char *ta_conn,
+                                  te_bool ext_rcf_listener);
 
 /**
  * Create network namespace and configure control network channel using
