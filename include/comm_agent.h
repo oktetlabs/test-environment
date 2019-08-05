@@ -17,11 +17,26 @@
 #ifndef __TE_COMM_AGENT_H__
 #define __TE_COMM_AGENT_H__
 
+#include "te_errno.h"
 
 /** This structure is used to store some context for each connection. */
 struct rcf_comm_connection;
 typedef struct rcf_comm_connection rcf_comm_connection;
 
+/**
+ * Create a listener for accepting connection from RCF in TA.
+ *
+ * @note Normally this function is called from rcf_comm_agent_init().
+ *       It is used outside of it only when it is required to
+ *       create listener before starting TA, see
+ *       agents/unix/ta_rcf_listener.c
+ *
+ * @param port      Local port to which the listener should be bound.
+ * @param listener  Where to save socket FD.
+ *
+ * @return Status code.
+ */
+extern te_errno rcf_comm_agent_create_listener(int port, int *listener);
 
 /**
  * Wait for incoming connection from the Test Engine side of the

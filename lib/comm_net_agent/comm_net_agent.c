@@ -27,6 +27,9 @@
 #if HAVE_STRINGS_H
 #include <strings.h>
 #endif
+#if HAVE_LIMITS_H
+#include <limits.h>
+#endif
 #if HAVE_CTYPE_H
 #include <ctype.h>
 #endif
@@ -83,6 +86,59 @@ struct rcf_comm_connection {
 static int find_attach(char *buf, size_t len);
 static int read_socket(int socket, void *buffer, size_t len);
 
+/* See description in comm_agent.h */
+te_errno
+rcf_comm_agent_create_listener(int port, int *listener)
+{
+    struct sockaddr_in addr;
+    int                optval = 1;
+    int                s;
+    int                rc;
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr.sin_port = htons(port);
+
+    s = socket(AF_INET, SOCK_STREAM, 0);
+    if (s < 0)
+    {
+        ERROR("%s(): failed to create a socket, errno=%d ('%s')",
+              __FUNCTION__, errno, strerror(errno));
+        return TE_OS_RC(TE_COMM, errno);
+    }
+
+    rc = setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
+                    &optval, sizeof(optval));
+    if (rc < 0)
+    {
+        ERROR("%s(): setsockopt(SO_REUSEADDR) failed, errno=%d ('%s')",
+              __FUNCTION__, errno, strerror(errno));
+        close(s);
+        return TE_OS_RC(TE_COMM, errno);
+    }
+
+    rc = bind(s, (struct sockaddr *)&addr, sizeof(addr));
+    if (rc < 0)
+    {
+        ERROR("%s(): failed to bind a socket, errno=%d ('%s')",
+              __FUNCTION__, errno, strerror(errno));
+        close(s);
+        return TE_OS_RC(TE_COMM, errno);
+    }
+
+    rc = listen(s, 5);
+    if (rc < 0)
+    {
+        ERROR("%s(): failed to listen(), errno=%d ('%s')",
+              __FUNCTION__, errno, strerror(errno));
+        close(s);
+        return TE_OS_RC(TE_COMM, errno);
+    }
+
+    *listener = s;
+    return 0;
+}
 
 /**
  * Wait for incoming connection from the Test Engine side of the
@@ -100,48 +156,40 @@ int
 rcf_comm_agent_init(const char *config_str,
                     struct rcf_comm_connection **p_rcc)
 {
-    struct sockaddr_in addr;
-    int                 s, s1;
+    int                 s = -1;
+    int                 s1 = -1;
     te_errno            rc;
     int                 optval = 1;
 
-    *p_rcc = NULL;
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(atoi(config_str));
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    char               *env_val = NULL;
+    char               *endptr = NULL;
+    long int            env_num;
 
-    s = socket(AF_INET, SOCK_STREAM, 0);
+    /*
+     * Listener socket may be created before exec(ta).
+     * This is useful when TA is run in a different network namespace
+     * to which RCF cannot connect directly.
+     */
+    env_val = getenv("TE_TA_RCF_LISTENER");
+    if (env_val != NULL)
+    {
+        env_num = strtol(env_val, &endptr, 10);
+        if (*endptr != '\0' || env_num < 0 || env_num > INT_MAX)
+        {
+            ERROR("Failed to convert TE_TA_RCF_LISTENER='%s' into "
+                  "correct socket descriptor", env_val);
+            return TE_OS_RC(TE_COMM, TE_EINVAL);
+        }
+        s = env_num;
+    }
+
+    *p_rcc = NULL;
+
     if (s < 0)
     {
-        rc = TE_OS_RC(TE_COMM, errno);
-        ERROR("socket() error: errno=%d\n", errno);
-        return rc;
-    }
-
-    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
-                   &optval, sizeof(optval)) != 0)
-    {
-        rc = TE_OS_RC(TE_COMM, errno);
-        ERROR("setsockopt(SOL_SOCKET, SO_REUSEADDR, enabled): errno=%d\n",
-              errno);
-        (void)close(s);
-        return rc;
-    }
-
-    if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) != 0)
-    {
-        rc = TE_OS_RC(TE_COMM, errno);
-        ERROR("bind() error: errno=%d\n", errno);
-        (void)close(s);
-        return rc;
-    }
-
-    if (listen(s, 5) != 0)
-    {
-        rc = TE_OS_RC(TE_COMM, errno);
-        ERROR("listen() error: errno=%d\n", errno);
-        (void)close(s);
-        return rc;
+        rc = rcf_comm_agent_create_listener(atoi(config_str), &s);
+        if (rc != 0)
+            return rc;
     }
 
     s1 = accept(s, NULL, NULL);
