@@ -214,11 +214,19 @@ foreach (@ARGV)
     }
     elsif ($_ =~ m/^--test-name=(.*)$/)
     {
+        my $test_path = $1;
+        if ($test_path =~ /[:%]/)
+        {
+            print STDERR "WARNING: Specifying parameters or hash in test ".
+                         "path is not supported\n";
+            $test_path =~ s/[:%].*$//;
+        }
+        $test_path = escape_str($test_path);
         $test_fake_run_aux = $test_fake_run_aux." --tester-fake=\"".
-                             escape_str($1)."\"";
+                             $test_path."\"";
         $test_fake_run_aux = $test_fake_run_aux." --tester-run=\"".
-                             escape_str($1)."\"";
-        $opts = $opts." --test-name=\"".escape_str($1)."\"";
+                             $test_path."\"";
+        $opts = $opts." --test-name=\"".$test_path."\"";
         $test_specified = 1;
     }
     elsif ($_ =~ m/^--tester-run=(.*)$/)
