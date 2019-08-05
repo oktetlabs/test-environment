@@ -267,6 +267,13 @@ typedef struct unix_ta {
     te_bool notcopy;    /**< Do not copy TA image to remote host */
     te_bool is_local;   /**< TA is started on the local PC */
 
+    te_bool ext_rcf_listener;  /**< Listener socket used to accept RCF
+                                    connection is created before
+                                    exec(ta). This is useful when TA
+                                    is created in another network
+                                    namespace to which RCF cannot
+                                    connect. */
+
     char        cmd_prefix[RCFUNIX_SHELL_CMD_MAX];  /**< Command prefix */
     const char *cmd_suffix;                         /**< Command suffix
                                                          before redirection */
@@ -605,6 +612,11 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         strcpy(ta->connect, val);
     }
 
+    if ((val = te_kvpairs_get(conf, "ext_rcf_listener")) != NULL)
+    {
+        ta->ext_rcf_listener = TRUE;
+    }
+
     shell = te_kvpairs_get(conf, "shell");
 
     /*
@@ -747,6 +759,12 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     ld_preload = te_kvpairs_get(conf, "ld_preload");
     if (rc == 0 && !te_str_is_null_or_empty(ld_preload))
         rc = te_string_append(&cmd, "LD_PRELOAD=%s ", ld_preload);
+
+    if (rc == 0 && ta->ext_rcf_listener)
+    {
+        rc = te_string_append(&cmd, "%s/ta_rcf_listener %s ", ta->run_dir,
+                              ta->port);
+    }
 
     if (rc == 0 && (shell != NULL) && (strlen(shell) > 0))
     {
