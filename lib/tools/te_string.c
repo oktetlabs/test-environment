@@ -283,7 +283,7 @@ te_string_cut(te_string *str, size_t len)
 
 /* See description in te_string.h */
 te_errno
-te_string_from_te_dbuf(te_string *testr, const te_dbuf *dbuf)
+te_string_from_te_dbuf(te_string *testr, const struct te_dbuf *dbuf)
 {
     te_string_reset(testr);
 

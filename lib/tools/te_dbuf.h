@@ -53,7 +53,6 @@ extern "C" {
 
 /* Forward declarations to avoic cyclic dependencies */
 struct te_string;
-typedef struct te_string te_string;
 
 /**
  * Dynamically allocated buffer.
@@ -152,7 +151,8 @@ extern void te_dbuf_print(const te_dbuf *dbuf);
  * @remark The target dynamic buffer must be freed before calling this function,
  *         otherwise it may leak.
  */
-extern te_errno te_dbuf_from_te_string(te_dbuf *dbuf, const te_string *testr);
+extern te_errno te_dbuf_from_te_string(te_dbuf *dbuf,
+    const struct te_string *testr);
 
 #ifdef __cplusplus
 } /* extern "C" */

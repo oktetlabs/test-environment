@@ -115,7 +115,7 @@ te_dbuf_print(const te_dbuf *dbuf)
 
 /* See description in te_dbuf.h */
 te_errno
-te_dbuf_from_te_string(te_dbuf *dbuf, const te_string *testr)
+te_dbuf_from_te_string(te_dbuf *dbuf, const struct te_string *testr)
 {
     *dbuf = (te_dbuf)TE_DBUF_INIT(100);
     dbuf->ptr = (uint8_t *)testr->ptr;

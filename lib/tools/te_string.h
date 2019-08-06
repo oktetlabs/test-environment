@@ -30,7 +30,6 @@ extern "C" {
 
 /* Forward declarations to avoic cyclic dependencies */
 struct te_dbuf;
-typedef struct te_dbuf te_dbuf;
 
 /** Initial length of the dynamically allocated string */
 #define TE_STRING_INIT_LEN      (16)
@@ -262,7 +261,8 @@ char *raw2string(uint8_t *data, int size)
  *
  * @return Status code.
  */
-extern te_errno te_string_from_te_dbuf(te_string *testr, const te_dbuf *dbuf);
+extern te_errno te_string_from_te_dbuf(te_string *testr,
+    const struct te_dbuf *dbuf);
 
 #ifdef __cplusplus
 } /* extern "C" */
