@@ -945,6 +945,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_IPV6_LEAVE_ANYCAST:
         case RPC_IPV6_IPSEC_POLICY:
         case RPC_IPV6_XFRM_POLICY:
+        case RPC_IPV6_AUTOFLOWLABEL:
             return RPC_SOL_IPV6;
 
         case RPC_TCP_MAXSEG:
@@ -1091,6 +1092,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(IPV6_LEAVE_ANYCAST);
         RPC2STR(IPV6_IPSEC_POLICY);
         RPC2STR(IPV6_XFRM_POLICY);
+        RPC2STR(IPV6_AUTOFLOWLABEL);
 
         RPC2STR(TCP_MAXSEG);
         RPC2STR(TCP_NODELAY);
@@ -1238,6 +1240,7 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(IPV6_LEAVE_ANYCAST);
         RPC2H_CHECK(IPV6_IPSEC_POLICY);
         RPC2H_CHECK(IPV6_XFRM_POLICY);
+        RPC2H_CHECK(IPV6_AUTOFLOWLABEL);
 
         RPC2H_CHECK(TCP_MAXSEG);
         RPC2H_CHECK(TCP_NODELAY);
@@ -1429,6 +1432,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(IPV6_IPSEC_POLICY);
                 H2RPC_CHECK(IPV6_XFRM_POLICY);
                 H2RPC_CHECK(IPV6_ROUTER_ALERT);
+                H2RPC_CHECK(IPV6_AUTOFLOWLABEL);
                 default: return RPC_SOCKOPT_UNKNOWN;
             }
             break;
@@ -1535,6 +1539,7 @@ sockopt_is_boolean(rpc_sockopt opt)
         case RPC_IPV6_DSTOPTS:
         case RPC_IPV6_HOPOPTS:
         case RPC_IPV6_RTHDR:
+        case RPC_IPV6_AUTOFLOWLABEL:
 
         case RPC_TCP_NODELAY:
         case RPC_TCP_CORK:

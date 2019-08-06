@@ -715,6 +715,8 @@ typedef enum rpc_sockopt {
     RPC_IPV6_HOPLIMIT,      /**< Set delivery of control messages */
     RPC_IPV6_TCLASS,        /**< Set IPv6 traffic class (similar to
                                  IPv4 TOS) */
+    RPC_IPV6_AUTOFLOWLABEL, /**< Enable/disable IPv6 automatic flow
+                                 labels */
 
     RPC_TCP_MAXSEG,         /**< Set/get the maximum segment size for
                                  outgoing TCP packets */
