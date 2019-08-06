@@ -79,6 +79,7 @@ onvme_build_args(te_vec *args, tapi_nvme_target *target)
         }                                                               \
     } while(0)
 
+    ADD_ARG("onvme-target-start");
     ADD_ARG("--use-null");
     ADD_ARG("--port");
     ADD_ARG("%hu", ntohs(te_sockaddr_get_port(target->addr)));
