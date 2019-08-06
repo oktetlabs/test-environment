@@ -17,7 +17,7 @@
 #include "te_config.h"
 #include "logger_api.h"
 #include "te_dbuf.h"
-#include "te_string.h"
+
 
 /* See description in te_dbuf.h. */
 te_errno
@@ -111,24 +111,4 @@ te_dbuf_print(const te_dbuf *dbuf)
     if (i % VALUES_IN_LINE != 0)
         VERB(str);
 #undef VALUES_IN_LINE
-}
-
-/* See description in te_dbuf.h */
-te_errno
-te_dbuf_from_te_string(te_dbuf *dbuf, const struct te_string *testr)
-{
-    *dbuf = (te_dbuf)TE_DBUF_INIT(100);
-    dbuf->ptr = (uint8_t *)testr->ptr;
-    dbuf->size = testr->size;
-    dbuf->len = testr->len;
-
-    /* TE string might have null buffer yet reserved size, but te_dbuf can't */
-    if (dbuf->ptr == NULL && dbuf->size != 0)
-    {
-        dbuf->ptr = malloc(sizeof(uint8_t) * dbuf->size);
-        if (dbuf->ptr != NULL)
-            return TE_ENOMEM;
-    }
-
-    return 0;
 }

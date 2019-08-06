@@ -26,7 +26,6 @@
 
 #include "te_string.h"
 #include "te_defs.h"
-#include "te_dbuf.h"
 
 void
 te_string_free(te_string *str)
@@ -279,20 +278,4 @@ te_string_cut(te_string *str, size_t len)
     str->len -= len;
     if (str->ptr != NULL)
         str->ptr[str->len] = '\0';
-}
-
-/* See description in te_string.h */
-te_errno
-te_string_from_te_dbuf(te_string *testr, const struct te_dbuf *dbuf)
-{
-    te_string_reset(testr);
-
-    testr->ptr = (char *)dbuf->ptr;
-    testr->size = dbuf->size;
-    testr->len = dbuf->len;
-    /* Ignore null terminator */
-    if (dbuf->len > 0)
-        testr->len--;
-
-    return 0;
 }

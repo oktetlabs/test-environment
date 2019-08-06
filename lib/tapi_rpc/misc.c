@@ -3328,8 +3328,9 @@ rpc_read_fd2te_string_append(rcf_rpc_server *rpcs, int fd, int time2wait,
     te_bool awaiting_error;
     int rc;
 
-    if (te_dbuf_from_te_string(&dbuf, testr) != 0)
-        return -1;
+    dbuf.ptr = (uint8_t *)testr->ptr;
+    dbuf.size = testr->size;
+    dbuf.len = testr->len;
 
     awaiting_error = RPC_AWAITING_ERROR(rpcs);
     rc = rpc_read_fd2te_dbuf_append(rpcs, fd, time2wait, amount, &dbuf);
@@ -3343,16 +3344,12 @@ rpc_read_fd2te_string_append(rcf_rpc_server *rpcs, int fd, int time2wait,
         }
     }
 
-    /*
-     * Actually there is no reason for it to happen, so memory leak is highly
-     * unlikely
-     */
-    if (te_string_from_te_dbuf(testr, &dbuf) != 0)
-    {
-        ERROR("Failed to convert dynamic buffer to a string, a memory leak is "
-              "possible");
-        return -1;
-    }
+    testr->ptr = (char *)dbuf.ptr;
+    testr->size = dbuf.size;
+    if (dbuf.len > 0 && rc == 0)
+        testr->len = dbuf.len - 1;  /* Ignore null terminator */
+    else
+        testr->len = dbuf.len;
 
     return rc;
 }
