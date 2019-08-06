@@ -877,6 +877,7 @@ trc_log_parse_start_element(void *user_data,
 
         case TRC_LOG_PARSE_VERDICT:
         case TRC_LOG_PARSE_ARTIFACT:
+        case TRC_LOG_PARSE_OBJECTIVE:
             if (strcmp(tag, "br") == 0)
             {
                 trc_log_parse_characters(user_data,
@@ -885,8 +886,8 @@ trc_log_parse_start_element(void *user_data,
             }
             else
             {
-                ERROR("Unexpected element '%s' in 'verdict' or 'artifact'",
-                      tag);
+                ERROR("Unexpected element '%s' in 'verdict', 'artifact' or "
+                      "'objective'", tag);
                 ctx->rc = TE_EFMT;
             }
             break;
@@ -1171,6 +1172,9 @@ trc_log_parse_end_element(void *user_data, const xmlChar *name)
         }
 
         case TRC_LOG_PARSE_OBJECTIVE:
+            /* Handle multi-line objectives */
+            if (strcmp(tag, "br") == 0)
+                break;
             assert(strcmp(tag, "objective") == 0);
             if (ctx->str != NULL)
             {
