@@ -267,10 +267,16 @@ rgt_log_end_element(void *user_data, const rgt_xmlChar *xml_tag)
             break;
 
         case RGT_XML2HTML_STATE_OBJECTIVE:
-            assert(strcmp(tag, "objective") == 0);
             assert(ctx->depth >= 1);
-            proc_meta_objective_end(ctx, depth_ctx, NULL);
-            ctx->state = RGT_XML2HTML_STATE_META;
+            if (strcmp(tag, "objective") == 0)
+            {
+                proc_meta_objective_end(ctx, depth_ctx, NULL);
+                ctx->state = RGT_XML2HTML_STATE_META;
+            }
+            else
+            {
+                assert(strcmp(tag, "br") == 0);
+            }
             break;
 
         case RGT_XML2HTML_STATE_PAGE:
