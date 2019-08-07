@@ -3326,30 +3326,35 @@ rpc_read_fd2te_string_append(rcf_rpc_server *rpcs, int fd, int time2wait,
 {
     te_dbuf dbuf = TE_DBUF_INIT(0);
     te_bool awaiting_error;
-    int rc;
-
-    dbuf.ptr = (uint8_t *)testr->ptr;
-    dbuf.size = testr->size;
-    dbuf.len = testr->len;
+    int rc = -1;
 
     awaiting_error = RPC_AWAITING_ERROR(rpcs);
+
+    if (te_dbuf_from_te_string(&dbuf, testr) != 0)
+        goto out;
+
     rc = rpc_read_fd2te_dbuf_append(rpcs, fd, time2wait, amount, &dbuf);
-    if (rc == 0)
+    if (rc != 0)
+        goto out;
+
+    if (te_string_from_te_dbuf(testr, &dbuf) != 0)
     {
-        if (te_dbuf_append(&dbuf, "", 1) != 0)  /* Add null-terminator */
-        {
-            rc = -1;
-            if (!awaiting_error)
-                TAPI_JMP_DO(TE_EFAIL);
-        }
+        ERROR("Failed to convert dynamic buffer to a string");
+        /*
+         * Cast is to avoid warning:
+         * comparison of distinct pointer types lacks a cast
+         */
+        if ((void *)dbuf.ptr != (void *)testr->ptr)
+            te_dbuf_free(&dbuf);
+        rc = -1;
     }
 
-    testr->ptr = (char *)dbuf.ptr;
-    testr->size = dbuf.size;
-    if (dbuf.len > 0 && rc == 0)
-        testr->len = dbuf.len - 1;  /* Ignore null terminator */
-    else
-        testr->len = dbuf.len;
+out:
+    if (rc != 0)
+    {
+        if (!awaiting_error)
+            TAPI_JMP_DO(TE_EFAIL);
+    }
 
     return rc;
 }

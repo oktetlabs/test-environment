@@ -51,6 +51,8 @@
 extern "C" {
 #endif
 
+/* Forward declarations to avoid cyclic dependencies */
+struct te_string;
 
 /**
  * Dynamically allocated buffer.
@@ -135,6 +137,23 @@ extern void te_dbuf_free(te_dbuf *dbuf);
  * @param dbuf      Dynamic buffer.
  */
 extern void te_dbuf_print(const te_dbuf *dbuf);
+
+/**
+ * Transfer @p testr TE string memory ownership to @p dbuf TE dynamic buffer.
+ * The actual conversion happens without reallocation of data structures,
+ * meaning that @p testr becomes empty after the operation.
+ *
+ * @param dbuf      Destination dynamic buffer.
+ * @param testr     Source TE string.
+ *
+ * @return Status code.
+ *
+ * @remark The target dynamic buffer must be freed before calling this function,
+ *         otherwise it may leak.
+ * @remark Strings made of static buffers are not supported, an error would be
+ *         returned.
+ */
+extern te_errno te_dbuf_from_te_string(te_dbuf *dbuf, struct te_string *testr);
 
 #ifdef __cplusplus
 } /* extern "C" */
