@@ -21,6 +21,7 @@
 #include "tapi_env.h"
 #include "tapi_cfg_cpu.h"
 #include "te_kvpair.h"
+#include "te_meas_stats.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,11 +46,6 @@ typedef struct tapi_dpdk_testpmd_job_t {
     tapi_job_channel_t *rx_pps_filter;
     tapi_job_channel_t *link_speed_filter;
 } tapi_dpdk_testpmd_job_t;
-
-typedef struct tapi_dpdk_testpmd_stats_t {
-    uint64_t tx_pps;
-    uint64_t rx_pps;
-} tapi_dpdk_testpmd_stats_t;
 
 
 /**
@@ -101,14 +97,15 @@ extern te_errno tapi_dpdk_testpmd_get_link_speed(
  * @note The @p testpmd_job must be started.
  *
  * @param testpmd_job   Handle of running test-pmd job
- * @param n_stats       Number of times to get statistics from test-pmd
- * @param[out] stats    Evaluated statistics
+ * @param tx            Evaluated Tx statistics
+ * @param rx            Evaluated Rx statistics
  *
  * @return          Status code
  */
-extern te_errno tapi_dpdk_testpmd_get_stats(tapi_dpdk_testpmd_job_t *testpmd_job,
-                                            unsigned int n_stats,
-                                            tapi_dpdk_testpmd_stats_t *stats);
+extern te_errno tapi_dpdk_testpmd_get_stats(
+                                    tapi_dpdk_testpmd_job_t *testpmd_job,
+                                    te_meas_stats_t *tx,
+                                    te_meas_stats_t *rx);
 
 /**
  * Destroy test-pmd job

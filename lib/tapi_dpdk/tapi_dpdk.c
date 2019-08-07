@@ -842,18 +842,15 @@ tapi_dpdk_testpmd_get_link_speed(tapi_dpdk_testpmd_job_t *testpmd_job,
 
 te_errno
 tapi_dpdk_testpmd_get_stats(tapi_dpdk_testpmd_job_t *testpmd_job,
-                            unsigned int n_stats,
-                            tapi_dpdk_testpmd_stats_t *stats)
+                            te_meas_stats_t *tx,
+                            te_meas_stats_t *rx)
 {
     tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
-    unsigned int tx_pps_received = 0;
-    unsigned int rx_pps_received = 0;
     unsigned long tx_pps = 0;
     unsigned long rx_pps = 0;
     te_errno rc = 0;
 
-    while (tx_pps_received < n_stats || rx_pps_received < n_stats)
-    {
+    do {
         rc = tapi_job_receive(TAPI_JOB_CHANNEL_SET(testpmd_job->tx_pps_filter,
                                                    testpmd_job->rx_pps_filter,
                                                    testpmd_job->err_filter),
@@ -868,13 +865,27 @@ tapi_dpdk_testpmd_get_stats(tapi_dpdk_testpmd_job_t *testpmd_job,
         {
             if ((rc = te_strtoul(buf.data.ptr, 0, &tx_pps)) != 0)
                 goto out;
-            tx_pps_received++;
+
+            if (tx != NULL &&
+                te_meas_stats_update(tx, (double)tx_pps) ==
+                TE_MEAS_STATS_UPDATE_NOMEM)
+            {
+                rc = TE_ENOMEM;
+                goto out;
+            }
         }
         else if (buf.filter == testpmd_job->rx_pps_filter)
         {
             if ((rc = te_strtoul(buf.data.ptr, 0, &rx_pps)) != 0)
                 goto out;
-            rx_pps_received++;
+
+            if (rx != NULL &&
+                te_meas_stats_update(rx, (double)rx_pps) ==
+                TE_MEAS_STATS_UPDATE_NOMEM)
+            {
+                rc = TE_ENOMEM;
+                goto out;
+            }
         }
         else if (buf.filter == testpmd_job->err_filter)
         {
@@ -889,17 +900,16 @@ tapi_dpdk_testpmd_get_stats(tapi_dpdk_testpmd_job_t *testpmd_job,
             WARN("Dropped messages count: %lu", buf.dropped);
 
         te_string_reset(&buf.data);
-    }
+    } while (TE_MEAS_STATS_CONTINUE(tx) ||
+             TE_MEAS_STATS_CONTINUE(rx));
 
-    if (tx_pps_received < n_stats || rx_pps_received < n_stats)
+    if (TE_MEAS_STATS_CONTINUE(tx) ||
+        TE_MEAS_STATS_CONTINUE(rx))
     {
         ERROR("Channel had been closed before required number of stats were received");
         rc = TE_RC(TE_TAPI, TE_EFAIL);
         goto out;
     }
-
-    stats->tx_pps = tx_pps;
-    stats->rx_pps = rx_pps;
 
 out:
     te_string_free(&buf.data);

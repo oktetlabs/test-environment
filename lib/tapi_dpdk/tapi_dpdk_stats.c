@@ -73,15 +73,139 @@ tapi_dpdk_stats_l1_link_usage_artifact(double l1_link_usage, const char *prefix)
 }
 
 void
-tapi_dpdk_stats_log_rates(uint64_t pps, unsigned int packet_size,
-                          unsigned int link_speed, const char *prefix)
+tapi_dpdk_stats_cv_artifact(double cv, const char *prefix)
+{
+    TEST_ARTIFACT("%sCV: %.3f%%", empty_string_if_null(prefix), cv * 100);
+}
+
+te_errno
+tapi_dpdk_stats_summary_artifact(const te_meas_stats_t *meas_stats,
+                                 const char *prefix)
+{
+    const te_meas_stats_data_t *data;
+    const te_meas_stats_summary_t *summary;
+    unsigned int freq_size;
+    unsigned int bin_edges_num;
+    te_string str = TE_STRING_INIT;
+    int gather_rc = 0;
+    unsigned int i;
+    unsigned int j;
+    char *fmt_str;
+
+    data = &meas_stats->data;
+    summary = &meas_stats->summary;
+
+    gather_rc = te_string_append(&str, "%s%s",
+                                empty_string_if_null(prefix),
+                                "Datapoints and ratios of theirs devations "
+                                "from prefixed subsample mean to subsample "
+                                "deviation\n");
+    if (gather_rc != 0)
+        goto out;
+
+    for (i = 0; i < data->num_datapoints; i++)
+    {
+        gather_rc = te_string_append(&str, "%u. %.0f\n{ ",
+                                     i + 1, data->sample[i]);
+        if (gather_rc != 0)
+            goto out;
+
+        for (j = 0; j < data->num_datapoints - i; j++)
+        {
+            fmt_str = "%u: %.2f, ";
+            if (j == data->num_datapoints - i - 1)
+                fmt_str = "%u: %.3f }\n";
+
+            gather_rc = te_string_append(&str, fmt_str,
+                                         j + i + 1,
+                                         summary->sample_deviation[i][j + i]);
+            if (gather_rc != 0)
+                goto out;
+        }
+    }
+
+    RING("%s", str.ptr);
+
+    freq_size = summary->freq_size;
+    bin_edges_num = summary->bin_edges_num;
+
+    if (freq_size == bin_edges_num)
+    {
+        TAPI_DPDK_STATS_GATHERED_RING("Histogram",
+                                      bin_edges_num,
+                                      "%.f(%.3f%%) : %.3f%%\n",
+                                      summary->bin_edges[index],
+                                      te_meas_stats_value_deviation(
+                                            summary->bin_edges[index],
+                                            data->mean),
+                                      summary->freq[index] * 100);
+        if (gather_rc != 0)
+            goto out;
+    }
+    else
+    {
+        TAPI_DPDK_STATS_GATHERED_RING("Histogram",
+                                      bin_edges_num - 1,
+                                      "%.f(%.3f%%) - %.f(%.3f%%) : %.3f%%\n",
+                                      summary->bin_edges[index],
+                                      te_meas_stats_value_deviation(
+                                               summary->bin_edges[index],
+                                               data->mean),
+                                      summary->bin_edges[index + 1],
+                                      te_meas_stats_value_deviation(
+                                               summary->bin_edges[index + 1],
+                                               data->mean),
+                                      summary->freq[index] * 100);
+        if (gather_rc != 0)
+            goto out;
+    }
+
+out:
+    te_string_free(&str);
+
+    return gather_rc;
+}
+
+void
+tapi_dpdk_stats_stab_artifact(const te_meas_stats_t *meas_stats,
+                              const char *prefix)
+{
+    if (te_meas_stats_stab_is_stable(&meas_stats->stab,
+                                     &meas_stats->data))
+        TEST_ARTIFACT(
+            "%sStabilization reached on datapoint (+ leading zero datapoints): %d (+ %d)",
+            empty_string_if_null(prefix),
+            meas_stats->data.num_datapoints,
+            meas_stats->num_zeros);
+    else
+        TEST_ARTIFACT("%sStabilization not reached",
+                      empty_string_if_null(prefix));
+}
+
+te_errno
+tapi_dpdk_stats_log_rates(const te_meas_stats_t *meas_stats,
+                          unsigned int packet_size, unsigned int link_speed,
+                          const char *prefix)
 {
     uint64_t l1_bitrate;
+    uint64_t pps;
+    double cv;
+    te_errno rc;
+
+    pps = meas_stats->stab_required ?
+          meas_stats->stab.correct_data.mean :
+          meas_stats->data.mean;
 
     l1_bitrate = tapi_dpdk_stats_calculate_l1_bitrate(pps, packet_size);
 
     tapi_dpdk_stats_pps_artifact(pps, prefix);
     tapi_dpdk_stats_l1_bitrate_artifact(l1_bitrate, prefix);
+
+    cv = meas_stats->stab_required ?
+         meas_stats->stab.correct_data.cv :
+         meas_stats->data.cv;
+
+    tapi_dpdk_stats_cv_artifact(cv, prefix);
 
     if (link_speed == 0)
     {
@@ -96,4 +220,15 @@ tapi_dpdk_stats_log_rates(uint64_t pps, unsigned int packet_size,
                                                 &l1_link_usage);
         tapi_dpdk_stats_l1_link_usage_artifact(l1_link_usage, prefix);
     }
+
+    if (meas_stats->summary_required)
+    {
+        if ((rc = tapi_dpdk_stats_summary_artifact(meas_stats, prefix)) != 0)
+            return rc;
+    }
+
+    if (meas_stats->stab_required)
+        tapi_dpdk_stats_stab_artifact(meas_stats, prefix);
+
+    return 0;
 }

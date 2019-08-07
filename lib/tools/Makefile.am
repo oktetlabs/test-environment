@@ -35,7 +35,8 @@ include_HEADERS = \
 	te_time.h \
 	te_units.h \
 	te_log_stack.h \
-	te_vector.h
+	te_vector.h \
+	te_meas_stats.h
 
 if WINDOWS
 
@@ -86,7 +87,8 @@ libtools_la_SOURCES = \
 	te_time.c \
 	te_units.c \
 	te_log_stack.c \
-	te_vector.c
+	te_vector.c \
+	te_meas_stats.c
 
 liblog_bufs_la_SOURCES = log_bufs.c
 
