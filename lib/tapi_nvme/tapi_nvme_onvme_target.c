@@ -165,6 +165,9 @@ tapi_nvme_onvme_target_cleanup(tapi_nvme_target *target)
         (tapi_nvme_onvme_target_proc *)target->impl;
     te_errno rc;
 
+    if (proc == NULL)
+        return;
+
     if ((rc = tapi_job_killpg(proc->onvme_job, SIGINT)) != 0)
         ERROR("Cannot killpg for ONVMe process, rc=%r", rc);
 
