@@ -193,9 +193,11 @@ typedef struct tapi_job_status_t {
     int value;
 } tapi_job_status_t;
 
-/*
+/**
  * Get timeout of tapi_job function that is set when negative timeout
  * is passed to the function
+ *
+ * @return Timeout in millisecond
  */
 extern unsigned int tapi_job_get_timeout(void);
 
