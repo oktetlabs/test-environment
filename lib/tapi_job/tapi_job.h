@@ -54,6 +54,8 @@ typedef tapi_job_channel_t *tapi_job_channel_set_t[];
  * intact, if the mechanism is ever changed.
  * @note The created job is *not* started automatically,
  *       use tapi_job_start() to actually run it.
+ * @note The first element of @p args, by convention of exec family functions,
+ *       should point to the filename associated with the file being executed.
  *
  * @param rpcs      RPC server
  * @param spawner   Spawner plugin name
