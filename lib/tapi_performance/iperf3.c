@@ -339,7 +339,6 @@ get_min_stream_bps(const json_t *jrpt, tapi_perf_report_kind kind, double *bps)
 {
     te_errno    rc = TE_ENOENT;
     size_t      i;
-    te_bool     found_any = FALSE;
     json_t     *jend;
     json_t     *jnode;
 
