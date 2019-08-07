@@ -179,9 +179,9 @@ extern te_errno tapi_cache_register(const char *method, const char *area,
  * @retval TE_ECHILD    Some of subareas have not been actualized due to they
  *                      do not have actualization callbacks
  * @retval TE_ENOENT    Instance has not been actualized completely
- * @retval Any other    Another errors which should be handled as critical
+ * @retval Any-other    Other errors which should be handled as critical
  *
- * @sa tapi_cache_invalidate, tapi_cache_invalidate_all
+ * @sa tapi_cache_invalidate
  */
 extern te_errno tapi_cache_actualize(const char *method, void *opaque,
                                      const char *area_ptrn, ...)
