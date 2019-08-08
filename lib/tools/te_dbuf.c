@@ -123,7 +123,7 @@ te_dbuf_from_te_string(te_dbuf *dbuf, struct te_string *testr)
         return TE_EINVAL;
     }
 
-    dbuf->ptr = testr->ptr;
+    dbuf->ptr = (uint8_t *)testr->ptr;
     dbuf->size = testr->size;
     dbuf->len = testr->len;
 

@@ -292,7 +292,7 @@ te_string_from_te_dbuf(te_string *testr, struct te_dbuf *dbuf)
         return rc;
 
     testr->ext_buf = FALSE;
-    testr->ptr = dbuf->ptr;
+    testr->ptr = (char *)dbuf->ptr;
     testr->size = dbuf->size;
     testr->len = dbuf->len - 1; /* -1 is for ignoring null terminator */
 
