@@ -192,7 +192,7 @@ extern te_errno tapi_add_static_arp(const char *ta_src,
 
 
 /**
- * Update ARP table to set fake or actual MAC address.
+ * Update entry in the neighbour table.
  *
  * @param ta_src            Source TA.
  * @param ifname_src        Source interface name.
@@ -203,14 +203,29 @@ extern te_errno tapi_add_static_arp(const char *ta_src,
  * @param is_static         If the new ARP row should be static.
  *
  * @return Status code.
+ *
+ * @sa tapi_add_static_arp, tapi_add_dynmaic_arp
  */
-extern te_errno tapi_update_arp(const char *ta_src,
-                                const char *ifname_src,
-                                const char *ta_dest,
-                                const char *ifname_dest,
-                                const struct sockaddr *addr_dest,
-                                const struct sockaddr *link_addr_dest,
-                                te_bool is_static);
+static inline te_errno tapi_update_arp(const char *ta_src,
+                                       const char *ifname_src,
+                                       const char *ta_dest,
+                                       const char *ifname_dest,
+                                       const struct sockaddr *addr_dest,
+                                       const struct sockaddr *link_addr_dest,
+                                       te_bool is_static)
+{
+    if (is_static)
+    {
+        return tapi_add_static_arp(ta_src, ifname_src, ta_dest, ifname_dest,
+                                   addr_dest, link_addr_dest);
+    }
+    else
+    {
+        return tapi_add_dynamic_arp(ta_src, ifname_src, ta_dest, ifname_dest,
+                                    addr_dest, link_addr_dest);
+    }
+
+}
 
 /**
  * Remove existing ARP table entry, wait for a while, check that it

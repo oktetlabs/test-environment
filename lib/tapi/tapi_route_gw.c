@@ -174,56 +174,6 @@ tapi_add_static_arp(const char *ta_src,
 
 /* See description in tapi_route_gw.h */
 te_errno
-tapi_update_arp(const char *ta_src,
-                const char *ifname_src,
-                const char *ta_dest,
-                const char *ifname_dest,
-                const struct sockaddr *addr_dest,
-                const struct sockaddr *link_addr_dest,
-                te_bool is_static)
-{
-    const unsigned int      max_attempts = 10;
-    unsigned int            i;
-    static struct sockaddr  link_addr;
-    te_errno                rc;
-
-    if (link_addr_dest != NULL)
-    {
-        memcpy(&link_addr, link_addr_dest, sizeof(link_addr));
-    }
-    else if (ta_dest != NULL && ifname_dest != NULL)
-    {
-        RETURN_ON_ERROR(tapi_cfg_base_if_get_link_addr(
-                                            ta_dest,
-                                            ifname_dest,
-                                            &link_addr));
-    }
-    else
-    {
-        ERROR("Wrong options combination to change arp table");
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-
-    for (i = 0; i < max_attempts; i++)
-    {
-        RETURN_ON_ERROR(tapi_cfg_del_neigh_entry(
-                                  ta_src, ifname_src,
-                                  addr_dest));
-
-        rc = tapi_cfg_add_neigh_entry(ta_src, ifname_src,
-                                      addr_dest, link_addr.sa_data,
-                                      is_static);
-        if (rc == 0)
-            break;
-        else if (rc != TE_RC(TE_CS, TE_EEXIST))
-            return rc;
-    }
-
-    return rc;
-}
-
-/* See description in tapi_route_gw.h */
-te_errno
 tapi_remove_arp(const char *ta,
                 const char *if_name,
                 const struct sockaddr *net_addr)
