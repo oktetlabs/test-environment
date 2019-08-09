@@ -478,7 +478,7 @@ te_meas_stats_update(te_meas_stats_t *meas_stats, double new_datapoint)
 
     if (meas_stats->summary_required &&
         (code1 == TE_MEAS_STATS_UPDATE_STABLE ||
-         meas_stats->data.num_datapoints ==
+         (meas_stats->data.num_datapoints + meas_stats->num_zeros) ==
          meas_stats->data.max_num_datapoints))
     {
         code2  = te_meas_stats_fill_summary(&meas_stats->summary,

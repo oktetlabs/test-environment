@@ -94,6 +94,8 @@ tapi_dpdk_stats_summary_artifact(const te_meas_stats_t *meas_stats,
 
     data = &meas_stats->data;
     summary = &meas_stats->summary;
+    if (summary->sample_deviation == NULL)
+        return TE_EFAULT;
 
     gather_rc = te_string_append(&str, "%s%s",
                                 empty_string_if_null(prefix),
