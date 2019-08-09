@@ -143,6 +143,33 @@ typedef struct tapi_route_gateway {
                             gw_iut_addr, gw_tst_addr, alien_link_addr))
 
 /**
+ * Add dynamic entry to neighbour table.
+ *
+ * @param ta_src            Source TA.
+ * @param ifname_src        Source interface name.
+ * @param ta_dest           Destination TA.
+ * @param ifname_dest       Destination interface name.
+ * @param addr_dest         Destination address.
+ * @param link_addr_dest    New destination MAC or @c NULL.
+ *                          If @c NULL link address of @p ta_dest
+ *                          interface will be used.
+ *
+ * @note Netlink does not allow to make address resolution
+ *       at a reasonable time if it does not know where to send
+ *       the request.
+ *       Therefore the dst MAC address is required.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_add_dynamic_arp(const char *ta_src,
+                                     const char *ifname_src,
+                                     const char *ta_dest,
+                                     const char *ifname_dest,
+                                     const struct sockaddr *addr_dest,
+                                     const struct sockaddr *link_addr_dest);
+
+
+/**
  * Update ARP table to set fake or actual MAC address.
  *
  * @param ta_src            Source TA.
