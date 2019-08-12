@@ -14,6 +14,7 @@
 
 #include "rcf_rpc.h"
 #include "tapi_gw.h"
+#include "te_cwmp.h"
 
 struct cpe_id_s;
 typedef struct cpe_id_s cpe_id_t;
@@ -276,25 +277,25 @@ extern te_errno cpe_internal_set_param(cpe_id_t *cpe,
                 const char *name, char *value);
 
 /**
- * Get datamodel on CPE.
+ * Get TR-069 Data Model set on CPE.
  *
- * @param[in]   cpe           ID of CPE.
- * @param[out]  datamodel     Location to store datamodel name.
- * @param[in]   bufsize       Size of location buffer.
+ * @param[in]  cpe          ID of CPE.
+ * @param[out] datamodel    Location to store Data Model in.
  *
  * @return Status code.
  */
-extern te_errno cpe_get_datamodel(cpe_id_t *cpe, char *datamodel,
-                                  size_t bufsize);
+extern te_errno cpe_get_datamodel(cpe_id_t *cpe,
+                                  te_cwmp_datamodel_t *datamodel);
 
 /**
- * Set datamodel on CPE.
+ * Set TR-069 Data Model on CPE.
  *
- * @param cpe           ID of CPE.
- * @param datamodel     Datamodel name.
+ * @param cpe               ID of CPE.
+ * @param datamodel         Data Model to be set.
  *
  * @return Status code.
  */
-extern te_errno cpe_set_datamodel(cpe_id_t *cpe, const char *datamodel);
+extern te_errno cpe_set_datamodel(cpe_id_t *cpe,
+                                  te_cwmp_datamodel_t datamodel);
 
 #endif /* __CPE_BACKDOOR__H__ */

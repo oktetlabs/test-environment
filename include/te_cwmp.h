@@ -348,6 +348,14 @@ typedef enum {
     CWMP_NOTIF_ACTIVE = 2
 } cwmp_notification_t;
 
+/**
+ * Data Model for TR-069
+ */
+typedef enum {
+    TE_CWMP_DM_TR098,   /**< Internet Gateway Device Data Model */
+    TE_CWMP_DM_TR181,   /**< Device Data Model */
+} te_cwmp_datamodel_t;
+
 /** Default timeout for CWMP in seconds */
 enum {
     CWMP_TIMEOUT = 30,
