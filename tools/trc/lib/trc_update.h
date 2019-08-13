@@ -70,36 +70,39 @@ enum trc_update_log_parse_flags {
                                                  section of updating
                                                  rule */
     TRC_UPDATE_COPY_CONFLS  = (1LLU << 9),  /**< Copy conflicting results
-                                                 from logs in <news>
+                                                 from logs in <new>
                                                  section of updating
                                                  rule */
     TRC_UPDATE_COPY_OLD_FIRST
-                            = (1LLU << 10), /**< If both COPY_CONFLS and
-                                                 COPY_OLD are specified,
-                                                 copy expected results
-                                                 from current TRC DB in
-                                                 <new> section of
-                                                 updating rule; if there
-                                                 is no such results -
-                                                 copy conlficting
-                                                 results from logs to
-                                                 the same place */
-    TRC_UPDATE_CONFLS_ALL   = (1LLU << 11), /**< Treat all results from
+                            = (1LLU << 10), /**< This flag is useful
+                                                 only if both
+                                                 TRC_UDPATE_COPY_OLD and
+                                                 TRC_UPDATE_COPY_CONFLS
+                                                 are specified.
+                                                 If this flag is set,
+                                                 then when copying results
+                                                 to <new> section, firstly
+                                                 results from current TRC DB
+                                                 should be processed;
+                                                 otherwise firstly
+                                                 conflicting results
+                                                 should be processed */
+    TRC_UPDATE_COPY_BOTH    = (1LLU << 11), /**< This flag is useful
+                                                 only if both
+                                                 TRC_UDPATE_COPY_OLD and
+                                                 TRC_UPDATE_COPY_CONFLS
+                                                 are specified. If this
+                                                 flag is set, then both
+                                                 types of results are
+                                                 copied to <new>, in
+                                                 order specified by
+                                                 TRC_UPDATE_COPY_OLD_FIRST
+                                                 flag. If it is not
+                                                 set, then only the
+                                                 first type is copied */
+    TRC_UPDATE_CONFLS_ALL   = (1LLU << 12), /**< Treat all results from
                                                  logs as unexpected
                                                  ones */
-    TRC_UPDATE_COPY_BOTH    = (1LLU << 12), /**< If both COPY_CONFLS and
-                                                 COPY_BOTH are specified,
-                                                 copy both results from
-                                                 existing TRC and
-                                                 conflicting results from
-                                                 logs in <new> section
-                                                 of updating rule. If
-                                                 COPY_OLD_FIRST
-                                                 is specified too, copy
-                                                 results from existing
-                                                 TRC firstly, otherwise
-                                                 firstly copy results
-                                                 from logs */
     TRC_UPDATE_TAGS_STR     = (1LLU << 13), /**< Do not change string
                                                  representation of
                                                  tags */

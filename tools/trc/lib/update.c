@@ -3790,13 +3790,16 @@ trc_update_gen_rresults(trc_test_iter *iter,
 {
     trc_exp_result              *p;
     trc_exp_result              *q;
-    trc_exp_result              *prev;
-    te_bool                      was_changed;
-    te_bool                      set_confls;
     trc_update_rule             *rule;
     int                          rc;
 
+    trc_exp_results *results[2];
+    unsigned int     i;
+
     rule = TE_ALLOC(sizeof(*rule));
+    if (rule == NULL)
+        goto err_cleanup;
+
     rule->def_res =
         trc_exp_result_dup((struct trc_exp_result *)
                                       iter->exp_default);
@@ -3804,85 +3807,73 @@ trc_update_gen_rresults(trc_test_iter *iter,
         trc_exp_results_dup(&iter->exp_results);
     rule->confl_res = trc_exp_results_dup(
                                 &iter_data->new_results);
+
+    if (rule->def_res == NULL ||
+        rule->old_res == NULL ||
+        rule->confl_res == NULL)
+        goto err_cleanup;
+
     if (!STAILQ_EMPTY(rule->confl_res))
         rule->apply = TRUE;
     else
         rule->apply = FALSE;
 
     rule->new_res = TE_ALLOC(sizeof(*(rule->new_res)));
+    if (rule->new_res == NULL)
+        goto err_cleanup;
     STAILQ_INIT(rule->new_res);
 
-    set_confls = FALSE;
+    if (flags & TRC_UPDATE_COPY_CONFLS)
+        results[0] = &iter_data->new_results;
+    else
+        results[0] = NULL;
 
-    p = NULL;
+    if (flags & TRC_UPDATE_COPY_OLD)
+        results[1] = &iter->exp_results;
+    else
+        results[1] = NULL;
 
-    if ((((flags & TRC_UPDATE_COPY_OLD_FIRST) &&
-         (flags & TRC_UPDATE_COPY_BOTH)) ||
-         (!(flags & TRC_UPDATE_COPY_BOTH) &&
-          !(flags & TRC_UPDATE_COPY_OLD_FIRST)) ||
-         STAILQ_EMPTY(&iter->exp_results) ||
-         !(flags & TRC_UPDATE_COPY_OLD)) &&
-        (flags & TRC_UPDATE_COPY_CONFLS))
+    if (flags & TRC_UPDATE_COPY_OLD_FIRST)
     {
-        /* Do not forget about reverse order
-         * of expected results in memory */
-        set_confls = TRUE;
-        p = STAILQ_FIRST(&iter_data->new_results);
+        trc_exp_results *aux;
+
+        aux = results[0];
+        results[0] = results[1];
+        results[1] = aux;
     }
-    else if (flags & TRC_UPDATE_COPY_OLD)
-        p = STAILQ_FIRST(&iter->exp_results);
 
-    q = NULL;
-    prev = NULL;
-    was_changed = FALSE;
-
-    while (TRUE)
+    if (!(flags & TRC_UPDATE_COPY_BOTH) &&
+        results[0] != NULL && !STAILQ_EMPTY(results[0]))
     {
-        if (p == NULL && !was_changed)
+        results[1] = NULL;
+    }
+
+    for (i = 0; i < TE_ARRAY_LEN(results); i++)
+    {
+        if (results[i] == NULL)
+            continue;
+
+        STAILQ_FOREACH(p, results[i], links)
         {
-            if (STAILQ_EMPTY(rule->new_res) ||
-                (flags & TRC_UPDATE_COPY_BOTH))
-            {
-                if (!set_confls &&
-                    (flags & TRC_UPDATE_COPY_CONFLS)) 
-                    p = STAILQ_FIRST(
-                                &iter_data->new_results);
-                else if (set_confls &&
-                         (flags & TRC_UPDATE_COPY_OLD))
-                    p = STAILQ_FIRST(&iter->exp_results);
-            }
+            q = trc_exp_result_dup(p);
+            if (q == NULL)
+                goto err_cleanup;
 
-            set_confls = !set_confls;
-            was_changed = TRUE;
-        }
-
-        if (p == NULL)
-            break;
-
-        q = trc_exp_result_dup(p);
-        if (prev == NULL || (set_confls && !was_changed))
             STAILQ_INSERT_TAIL(rule->new_res, q, links);
-        else
-            STAILQ_INSERT_AFTER(rule->new_res, prev, q, links);
-
-        /* Taking into account the fact that expected
-         * results are loaded/saved in reverse order */
-        if (!set_confls || (set_confls && prev == NULL &&
-                            !was_changed))
-            prev = q;
-        p = STAILQ_NEXT(p, links);
+        }
     }
 
     rule->type = TRC_UPDATE_RULE_RESULTS;
     rc = trc_update_ins_rule(rule, rules, &trc_update_rules_cmp);
-    
     if (rc != 0)
-    {
-        trc_update_rule_free(rule);
-        return NULL;
-    }
+        goto err_cleanup;
 
     return rule;
+
+err_cleanup:
+
+    trc_update_rule_free(rule);
+    return NULL;
 }
 
 /**
