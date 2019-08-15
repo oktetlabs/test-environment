@@ -143,6 +143,7 @@ netconf_vxlan_node_free(netconf_node *node)
     NETCONF_ASSERT(node != NULL);
 
     free(node->data.vxlan.ifname);
+    free(node->data.vxlan.dev);
     free(node);
 }
 
@@ -151,6 +152,7 @@ te_errno
 netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan)
 {
     char                req[NETCONF_MAX_REQ_LEN];
+    uint32_t            index;
     struct nlmsghdr    *h;
     struct rtattr      *linkinfo;
     struct rtattr      *data;
@@ -209,6 +211,12 @@ netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan)
 
         default:
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    if (vxlan->dev != NULL && strlen(vxlan->dev) != 0)
+    {
+        IFNAME_TO_INDEX(vxlan->dev, index);
+        netconf_append_rta(h, &index, sizeof(index), IFLA_VXLAN_LINK);
     }
 
     netconf_append_rta_nested_end(h, data);

@@ -105,6 +105,7 @@ vxlan_commit(unsigned int gid, const cfg_oid *p_oid)
         SLIST_REMOVE(&vxlans, vxlan_e, vxlan_entry, links);
 
         free(vxlan_e->vxlan->ifname);
+        free(vxlan_e->vxlan->dev);
         free(vxlan_e->vxlan);
         free(vxlan_e);
 
@@ -162,6 +163,7 @@ vxlan_add(unsigned int gid, const char *oid, const char *value,
 
     vxlan_e->vxlan->remote_len = 0;
     vxlan_e->vxlan->local_len = 0;
+    vxlan_e->vxlan->dev = NULL;
 
     vxlan_e->enabled = (uint_value == 1);
     vxlan_e->added = FALSE;
@@ -451,6 +453,81 @@ vxlan_local_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
+vxlan_dev_get(unsigned int gid, const char *oid, char *value,
+              const char *tunnel, const char *ifname)
+{
+    struct vxlan_entry *vxlan_e;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(tunnel);
+
+    ENTRY("%s", ifname);
+
+    vxlan_e = vxlan_find(ifname);
+    if (!vxlan_entry_valid(vxlan_e))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vxlan_e->vxlan->dev == NULL)
+        *value = '\0';
+    else
+        snprintf(value, RCF_MAX_VAL, "/agent:%s/interface:%s", ta_name,
+                 vxlan_e->vxlan->dev);
+
+    return 0;
+}
+
+static te_errno
+vxlan_dev_set(unsigned int gid, const char *oid, const char *value,
+              const char *tunnel, const char *ifname)
+{
+    struct vxlan_entry *vxlan_e;
+    cfg_oid            *oid_value;
+    char               *tmp_dev;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(tunnel);
+
+    ENTRY("%s", ifname);
+
+    vxlan_e = vxlan_find(ifname);
+    if (!vxlan_entry_valid(vxlan_e))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (*value == '\0')
+    {
+        free(vxlan_e->vxlan->dev);
+        vxlan_e->vxlan->dev = NULL;
+        return 0;
+    }
+
+    if (!rcf_pch_rsrc_accessible(value))
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    oid_value = cfg_convert_oid_str(value);
+    if (oid_value == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    if (!oid_value->inst || oid_value->len != 2 ||
+        strcmp(CFG_OID_GET_INST_NAME(oid_value, 0), ta_name) != 0)
+    {
+        cfg_free_oid(oid_value);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    tmp_dev = strdup(CFG_OID_GET_INST_NAME(oid_value, 1));
+    cfg_free_oid(oid_value);
+    if (tmp_dev == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    free(vxlan_e->vxlan->dev);
+    vxlan_e->vxlan->dev = tmp_dev;
+
+    return 0;
+}
+
+static te_errno
 vxlan_get(unsigned int gid, const char *oid, char *value,
           const char *tunnel, const char *ifname)
 {
@@ -509,7 +586,10 @@ RCF_PCH_CFG_NODE_RW(node_vxlan_remote, "remote", NULL, &node_vxlan_vni,
 RCF_PCH_CFG_NODE_RW(node_vxlan_local, "local", NULL, &node_vxlan_remote,
                     vxlan_local_get, vxlan_local_set);
 
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_vxlan, "vxlan", &node_vxlan_local, NULL, vxlan_get, vxlan_set,
+RCF_PCH_CFG_NODE_RW(node_vxlan_dev, "dev", NULL, &node_vxlan_local,
+                    vxlan_dev_get, vxlan_dev_set);
+
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_vxlan, "vxlan", &node_vxlan_dev, NULL, vxlan_get, vxlan_set,
                                vxlan_add, vxlan_del, vxlan_list, vxlan_commit);
 
 RCF_PCH_CFG_NODE_NA(node_tunnel, "tunnel", &node_vxlan, NULL);
