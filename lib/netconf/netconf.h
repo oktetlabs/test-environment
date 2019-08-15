@@ -243,6 +243,7 @@ typedef struct netconf_vxlan {
     uint8_t     local[sizeof(struct in6_addr)];   /**< Local address */
     size_t      remote_len;                       /**< Remote address length */
     size_t      local_len;                        /**< Local address length */
+    uint16_t    port;                             /**< Destination port */
     char       *dev;                              /**< Device name */
 } netconf_vxlan;
 

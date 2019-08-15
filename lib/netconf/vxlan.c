@@ -213,6 +213,9 @@ netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
+    netconf_append_rta(h, &(vxlan->port), sizeof(vxlan->port),
+                       IFLA_VXLAN_PORT);
+
     if (vxlan->dev != NULL && strlen(vxlan->dev) != 0)
     {
         IFNAME_TO_INDEX(vxlan->dev, index);

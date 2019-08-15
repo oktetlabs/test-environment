@@ -132,6 +132,7 @@ vxlan_add(unsigned int gid, const char *oid, const char *value,
 {
     struct vxlan_entry *vxlan_e;
     unsigned int        uint_value;
+    uint16_t            default_port = 4789;
     te_errno            rc = 0;
 
     UNUSED(gid);
@@ -163,6 +164,7 @@ vxlan_add(unsigned int gid, const char *oid, const char *value,
 
     vxlan_e->vxlan->remote_len = 0;
     vxlan_e->vxlan->local_len = 0;
+    vxlan_e->vxlan->port = default_port;
     vxlan_e->vxlan->dev = NULL;
 
     vxlan_e->enabled = (uint_value == 1);
@@ -453,6 +455,56 @@ vxlan_local_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
+vxlan_port_get(unsigned int gid, const char *oid, char *value,
+               const char *tunnel, const char *ifname)
+{
+    struct vxlan_entry *vxlan_e;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(tunnel);
+
+    ENTRY("%s", ifname);
+
+    vxlan_e = vxlan_find(ifname);
+    if (!vxlan_entry_valid(vxlan_e))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    sprintf(value, "%u", vxlan_e->vxlan->port);
+
+    return 0;
+}
+
+static te_errno
+vxlan_port_set(unsigned int gid, const char *oid, const char *value,
+               const char *tunnel, const char *ifname)
+{
+    struct vxlan_entry *vxlan_e;
+    unsigned int        port;
+    te_errno            rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(tunnel);
+
+    ENTRY("%s", ifname);
+
+    vxlan_e = vxlan_find(ifname);
+    if (!vxlan_entry_valid(vxlan_e))
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    rc = te_strtoui(value, 0, &port);
+    if (rc != 0)
+        return rc;
+    if (port >= UINT16_MAX)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    vxlan_e->vxlan->port = port;
+
+    return 0;
+}
+
+static te_errno
 vxlan_dev_get(unsigned int gid, const char *oid, char *value,
               const char *tunnel, const char *ifname)
 {
@@ -586,7 +638,10 @@ RCF_PCH_CFG_NODE_RW(node_vxlan_remote, "remote", NULL, &node_vxlan_vni,
 RCF_PCH_CFG_NODE_RW(node_vxlan_local, "local", NULL, &node_vxlan_remote,
                     vxlan_local_get, vxlan_local_set);
 
-RCF_PCH_CFG_NODE_RW(node_vxlan_dev, "dev", NULL, &node_vxlan_local,
+RCF_PCH_CFG_NODE_RW(node_vxlan_port, "port", NULL, &node_vxlan_local,
+                    vxlan_port_get, vxlan_port_set);
+
+RCF_PCH_CFG_NODE_RW(node_vxlan_dev, "dev", NULL, &node_vxlan_port,
                     vxlan_dev_get, vxlan_dev_set);
 
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_vxlan, "vxlan", &node_vxlan_dev, NULL, vxlan_get, vxlan_set,
