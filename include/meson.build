@@ -153,8 +153,27 @@ check_headers_prefix = '''
 #endif
 '''
 
+# tirpc headers lie in a different subfolder. The problem with it is
+# that dependencies are deeply broken (mostly due to expectation that
+# cc.find_library() returns entirely self-containing dependency, while it only
+# contains linker flags) and real header location is never added to target
+# include directories.
+# dependency() uses pkg-config at the back end and is therefore self-containing.
+#
+# The line below would produce empty dependencies on systems having no tirpc, so
+# it is not a problem
+dep_libtirpc = dependency('libtirpc', required: false)
+if dep_libtirpc.found()
+    chk_header_deps = [ dep_libtirpc ]
+else
+    chk_header_deps = [  ]
+endif
+
+# rpc/ headers here require tirpc on some distros, so we add
+# the corresponding dependency
 foreach h : check_headers
-    if cc.has_header(h, args: c_args, prefix: check_headers_prefix)
+    if cc.has_header(h, args: c_args, prefix: check_headers_prefix,
+                     dependencies: chk_header_deps)
         have = 'HAVE_' + h.to_upper().underscorify()
         conf.set(have, 1)
         c_args += [ '-D' + have ]

@@ -303,11 +303,6 @@ foreach f : svc_funcs
     endif
 endforeach
 
-t = 'SVCXPRT'
-if cc.has_header_symbol('rpc/rpc.h', t)
-    conf.set('HAVE_' + t.to_upper().underscorify(), 1)
-endif
-
 #
 # First we need to define which library we should use in our
 # environment. This macro updates LIBS variable, which is used
@@ -327,7 +322,9 @@ if not cc.has_function('xdr_bytes', args: te_cflags)
            cc.has_function('xdr_bytes', args: te_cflags, dependencies: dep_nsl)
             deps += [ dep_nsl ]
         else
-            dep_tirpc = cc.find_library('tirpc', required: false)
+            # Please refer to a tirpc problem description in include/meson.build
+            # to understand why it is dependency() and not cc.find_library()
+            dep_tirpc = dependency('libtirpc', required: false)
             if dep_tirpc.found() and cc.has_function('xdr_bytes',
                                                      args: te_cflags,
                                                      dependencies: dep_tirpc)
@@ -337,6 +334,12 @@ if not cc.has_function('xdr_bytes', args: te_cflags)
             endif
         endif
     endif
+endif
+
+# This symbol must be checked with a full dependeny set
+t = 'SVCXPRT'
+if cc.has_header_symbol('rpc/rpc.h', t, dependencies: deps)
+    conf.set('HAVE_' + t.to_upper().underscorify(), 1)
 endif
 
 rpc_headers = '''
@@ -350,7 +353,7 @@ rpc_headers = '''
 '''
 if cc.has_member('struct xdr_ops', 'x_putint32', args: c_args,
                  include_directories: includes,
-                 prefix: rpc_headers)
+                 prefix: rpc_headers, dependencies: deps)
     conf.set('x_int32_arg_t', 'int32_t')
 else
     conf.set('x_putint32', 'x_putlong')

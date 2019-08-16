@@ -15,17 +15,6 @@ if cc.has_header('expat.h')
     c_args += [ '-D' + have ]
 endif
 
-if cc.has_header('rpc/types.h')
-    have = 'HAVE_RPC_TYPES_H'
-    conf.set(have, 1)
-    c_args += [ '-D' + have ]
-endif
-if cc.has_header('rpc/xdr.h')
-    have = 'HAVE_RPC_XDR_H'
-    conf.set(have, 1)
-    c_args += [ '-D' + have ]
-endif
-
 #
 # First we need to define which library we should use in our
 # environment. This macro updates LIBS variable, which is used
@@ -45,7 +34,9 @@ if not cc.has_function('xdr_bytes', args: te_cflags)
            cc.has_function('xdr_bytes', dependencies: dep_nsl)
             deps += [ dep_nsl ]
         else
-            dep_tirpc = cc.find_library('tirpc', required: false)
+            # Please refer to a tirpc problem description in include/meson.build
+            # to understand why it is dependency() and not cc.find_library()
+            dep_tirpc = dependency('libtirpc', required: false)
             if dep_tirpc.found() and cc.has_function('xdr_bytes',
                                                      args: te_cflags,
                                                      dependencies: dep_tirpc)
@@ -55,6 +46,19 @@ if not cc.has_function('xdr_bytes', args: te_cflags)
             endif
         endif
     endif
+endif
+
+# These headers are present in corresponding dependencies, but not globally, so
+# it makes more sense to check for them with full dependency set
+if cc.has_header('rpc/types.h', dependencies: deps)
+    have = 'HAVE_RPC_TYPES_H'
+    conf.set(have, 1)
+    c_args += [ '-D' + have ]
+endif
+if cc.has_header('rpc/xdr.h', dependencies: deps)
+    have = 'HAVE_RPC_XDR_H'
+    conf.set(have, 1)
+    c_args += [ '-D' + have ]
 endif
 
 rpc_headers = '''
