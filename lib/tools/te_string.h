@@ -61,7 +61,7 @@ typedef struct te_string {
 } te_string;
 
 /** On-stack te_string initializer */
-#define TE_STRING_INIT TE_STRING_INIT_RESERVE(TE_STRING_INIT_LEN)
+#define TE_STRING_INIT TE_STRING_INIT_RESERVE(0)
 
 /**
  * On-stack te_string initializer with a defined reserve
