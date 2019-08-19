@@ -110,6 +110,65 @@ extern char *te_strncpy(const char *id, char *dst, size_t size, const char *src)
     te_strncpy(__func__, _dst, _size, _src)
 
 /**
+ * The function is equivalent to the function te_snprintf(), except that
+ * it just prints error messages instead of returning error code
+ *
+ * @param id        Prefix for error message, usually __func__
+ * @param dst       Pointer to destination buffer
+ * @param size      Size of destination buffer
+ * @param fmt       Format string
+ * @param ...       Format string arguments
+ *
+ * @return A pointer to the destination string @p dst
+ */
+extern char *te_snprintf_verbose(const char *id, char *dst, size_t size,
+                                 const char *fmt, ...)
+                                    __attribute__((format(printf, 4, 5)));
+
+/**
+ * Fill a destination buffer according to a format string. It is a wrapper
+ * for te_snprintf_verbose()
+ *
+ * @param _dst      Pointer to destination buffer
+ * @param _size     Size of destination buffer
+ * @param _fmt      Format string with arguments
+ *
+ * @sa TE_SPRINTF
+ */
+#define TE_SNPRINTF(_dst, _size, _fmt...) \
+    te_snprintf_verbose(__func__, _dst, _size, _fmt)
+
+/**
+ * Write at most @p size bytes (including the terminating null byte ('\0')) to
+ * the buffer pointed to by @p dst according to a format string.
+ *
+ * @note The function does not call the va_end macro. Because it invokes
+ *       the va_arg macro, the value of ap is undefined after the call
+ *
+ * @param dst       Pointer to destination buffer
+ * @param size      Size of destination buffer
+ * @param fmt       Format string
+ * @param ap        List of arguments
+ *
+ * @return Status code
+ * @retval TE_ESMALLBUF     Size of destination buffer is not big enough
+ *                          to store the whole source string.
+ *                          If @p size = @c 0, @p dst is not modified
+ * @retval errno            An output error is encountered
+ *
+ * @sa te_snprintf, te_strnprintf
+ */
+extern te_errno te_vsnprintf(char *dst, size_t size,
+                             const char *fmt, va_list ap);
+
+/**
+ * The function is equivalent to the function te_vsnprintf(), except that
+ * it is called with a variable number of arguments instead of a va_list
+ */
+extern te_errno te_snprintf(char *dst, size_t size, const char *fmt, ...)
+                                    __attribute__((format(printf, 3, 4)));
+
+/**
  * Take off heading and trailing spaces (all the symbols " \f\n\r\t\v").
  *
  * @param str   String to strip spaces.

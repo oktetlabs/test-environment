@@ -110,6 +110,54 @@ te_strncpy(const char *id, char *dst, size_t size, const char *src)
 }
 
 /* See description in te_str.h */
+te_errno
+te_vsnprintf(char *dst, size_t size, const char *fmt, va_list ap)
+{
+    int n = vsnprintf(dst, size, fmt, ap);
+
+    if (n < 0)
+        return te_rc_os2te(errno);
+    else if ((size_t)n >= size)
+        return TE_ESMALLBUF;
+
+    return 0;
+}
+
+/* See description in te_str.h */
+te_errno
+te_snprintf(char *dst, size_t size, const char *fmt, ...)
+{
+    te_errno rc;
+    va_list ap;
+
+    va_start(ap, fmt);
+    rc = te_vsnprintf(dst, size, fmt, ap);
+    va_end(ap);
+
+    return rc;
+}
+
+/* See description in te_str.h */
+char *
+te_snprintf_verbose(const char *id, char *dst, size_t size,
+                    const char *fmt, ...)
+{
+    te_errno rc;
+    va_list ap;
+
+    va_start(ap, fmt);
+    rc = te_vsnprintf(dst, size, fmt, ap);
+    va_end(ap);
+
+    if (rc == TE_ESMALLBUF)
+        ERROR("%s: string \"%s\" is truncated by snprintf()", id, dst);
+    else if (rc != 0)
+        ERROR("%s: output error is encountered: %r", id, rc);
+
+    return dst;
+}
+
+/* See description in te_str.h */
 char *
 te_str_strip_spaces(const char *str)
 {
