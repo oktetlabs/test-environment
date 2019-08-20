@@ -47,6 +47,7 @@ libconf_a_SOURCES = \
 	base/conf_ns_net.c \
 	base/conf_veth.c \
 	base/conf_vxlan.c \
+	base/conf_bridge.c \
 	base/conf_rlimits.c \
 	base/conf_block.c \
 	route/conf_route.c \

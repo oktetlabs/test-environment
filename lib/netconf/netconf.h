@@ -247,6 +247,11 @@ typedef struct netconf_vxlan {
     char       *dev;                              /**< Device name */
 } netconf_vxlan;
 
+/** Bridge network interface */
+typedef struct netconf_bridge {
+    char   *ifname;     /**< Interface name */
+} netconf_bridge;
+
 /** Type of nodes in the list */
 typedef enum netconf_node_type {
     NETCONF_NODE_UNSPEC,                /**< Unspecified */
@@ -261,6 +266,7 @@ typedef enum netconf_node_type {
     NETCONF_NODE_VLAN,                  /**< VLAN interface */
     NETCONF_NODE_VETH,                  /**< Virtual Ethernet interface */
     NETCONF_NODE_VXLAN,                 /**< VXLAN interface */
+    NETCONF_NODE_BRIDGE,                /**< Bridge interface */
 } netconf_node_type;
 
 typedef te_conf_ip_rule netconf_rule;
@@ -279,6 +285,7 @@ typedef struct netconf_node {
         netconf_vlan      vlan;
         netconf_veth      veth;
         netconf_vxlan     vxlan;
+        netconf_bridge    bridge;
     } data;                             /**< Network data */
     struct netconf_node  *next;         /**< Next node of the list */
     struct netconf_node  *prev;         /**< Previous node of the list */
@@ -778,6 +785,52 @@ typedef te_bool (*netconf_vxlan_list_filter_func)(const char *ifname,
 extern te_errno netconf_vxlan_list(netconf_handle nh,
                                    netconf_vxlan_list_filter_func filter_cb,
                                    void *filter_opaque, char **list);
+
+/**
+ * Add new bridge interface.
+ *
+ * @param nh        Netconf session handle
+ * @param ifname    The interface name
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_bridge_add(netconf_handle nh, const char *ifname);
+
+/**
+ * Delete a bridge interface.
+ *
+ * @param nh        Netconf session handle
+ * @param ifname    The interface name
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_bridge_del(netconf_handle nh, const char *ifname);
+
+/**
+ * Type of callback function to pass to netconf_bridge_list(). It is used to
+ * decide if the interface should be included to the list.
+ *
+ * @param ifname    The interface name
+ * @param data      Opaque data
+ *
+ * @return @c TRUE to include interface to the list.
+ */
+typedef te_bool (*netconf_bridge_list_filter_func)(const char *ifname,
+                                                   void *data);
+
+/**
+ * Get bridge interfaces list.
+ *
+ * @param nh            Netconf session handle
+ * @param filter_cb     Filtering callback function or @c NULL
+ * @param filter_opaque Opaque data to pass to the filtering function
+ * @param list          Space-separated interfaces list (allocated from the heap)
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_bridge_list(netconf_handle nh,
+                                    netconf_bridge_list_filter_func filter_cb,
+                                    void *filter_opaque, char **list);
 
 #ifdef __cplusplus
 }

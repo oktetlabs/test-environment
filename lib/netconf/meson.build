@@ -32,6 +32,7 @@ headers += files(
     'netconf_internal.h',
 )
 sources += files(
+    'bridge.c',
     'ipvlan.c',
     'link.c',
     'macvlan.c',
