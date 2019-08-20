@@ -99,9 +99,63 @@ port_get(unsigned int gid, char *oid, char *if_oid, char *brname, char *ifname)
     }
     return 0;
 }
+
+/**
+ * Add a new bridge port interface.
+ *
+ * @param gid       Group identifier (unused)
+ * @param oid       Full object instance identifier (unused)
+ * @paran data      Unused
+ * @param brname    The bridge inteface name
+ * @param ifname    The interface name
+ *
+ * @return      Status code
+ */
+static te_errno
+port_add(unsigned int gid, const char *oid, const char *data, const char *brname, const char *ifname)
+{
+    char if_oid[RCF_MAX_VAL];
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(data);
+
+    snprintf(if_oid, sizeof(if_oid), "/agent:%s/ interface:%s", ta_name, ifname);
+    if (strcmp(data, if_oid) != 0)
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    if (!rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname))
+        return TE_RC(TE_TA_UNIX, TE_EACCES);
+
+    return netconf_port_add(nh, brname, ifname);
+}
+
+/**
+ * Delete a bridge interface.
+ *
+ * @param gid       Group identifier (unused)
+ * @param oid       Full object instance identifier (unused)
+ * @param brname    The bridge interface name (unused)
+ * @param ifname    The interface name
+ *
+ * @return      Status code
+ */
+static te_errno
+port_del(unsigned int gid, const char *oid,
+         const char *brname, const char *ifname)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(brname);
+
+    if (!rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname))
+        return TE_RC(TE_TA_UNIX, TE_EACCES);
+
+    return netconf_port_del(nh, ifname);
+}
+
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_port, "port", NULL, NULL,
                                port_get, NULL,
-                               NULL, NULL, port_list,
+                               port_add, port_del, port_list,
                                NULL);
 
 /**

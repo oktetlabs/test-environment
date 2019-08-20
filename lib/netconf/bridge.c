@@ -20,6 +20,30 @@
 #define NETCONF_LINK_KIND_BRIDGE "bridge"
 
 /**
+ * Initialize @p hdr.
+ *
+ * @param req           Request buffer
+ * @param nh            Netconf session handle
+ * @param nlmsg_type    Netlink message type
+ * @param nlmsg_flags   Netlink message flags
+ * @param hdr           Pointer to the netlink message header
+ */
+static void
+port_init_nlmsghdr(char *req, netconf_handle nh, uint16_t nlmsg_type,
+                   uint16_t nlmsg_flags, struct nlmsghdr **hdr)
+{
+    struct nlmsghdr *h;
+
+    h = (struct nlmsghdr *)req;
+    h->nlmsg_len = NLMSG_LENGTH(sizeof(struct ifinfomsg));
+    h->nlmsg_type = nlmsg_type;
+    h->nlmsg_flags = nlmsg_flags;
+    h->nlmsg_seq = ++nh->seq;
+
+    *hdr = h;
+}
+
+/**
  * Parse the general link attribute.
  *
  * @param nh        Netconf session handle
@@ -115,6 +139,49 @@ netconf_port_node_free(netconf_node *node)
 
     free(node->data.bridge_port.name);
     free(node);
+}
+
+/* See netconf.h */
+te_errno
+netconf_port_add(netconf_handle nh, const char *brname, const char *ifname)
+{
+    char                req[NETCONF_MAX_REQ_LEN];
+    struct nlmsghdr    *h;
+    uint32_t            br_ifind;
+
+    memset(req, 0, sizeof(req));
+    IFNAME_TO_INDEX(brname, br_ifind);
+    port_init_nlmsghdr(req, nh, RTM_SETLINK,
+                       NLM_F_REQUEST | NLM_F_ACK | NLM_F_CREATE | NLM_F_EXCL,
+                       &h);
+
+    netconf_append_rta(h, ifname, strlen(ifname) + 1, IFLA_IFNAME);
+    netconf_append_rta(h, &br_ifind, sizeof(uint32_t), IFLA_MASTER);
+
+    if (netconf_talk(nh, req, sizeof(req), NULL, NULL, NULL) != 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    return 0;
+}
+
+/* See netconf.h */
+te_errno
+netconf_port_del(netconf_handle nh, const char *ifname)
+{
+    char                req[NETCONF_MAX_REQ_LEN];
+    struct nlmsghdr    *h;
+    uint32_t            zero_ind = 0;
+
+    memset(req, 0, sizeof(req));
+    port_init_nlmsghdr(req, nh, RTM_SETLINK, NLM_F_REQUEST | NLM_F_ACK, &h);
+
+    netconf_append_rta(h, ifname, strlen(ifname) + 1, IFLA_IFNAME);
+    netconf_append_rta(h, &zero_ind, sizeof(uint32_t), IFLA_MASTER);
+
+    if (netconf_talk(nh, req, sizeof(req), NULL, NULL, NULL) != 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    return 0;
 }
 
 /* See netconf.h */

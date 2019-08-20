@@ -866,6 +866,28 @@ extern te_errno netconf_port_list(netconf_handle nh, const char *brname,
                                   netconf_port_list_filter_func filter_cb,
                                   void *filter_opaque, char **list);
 
+/**
+ * Add new bridge port interface.
+ *
+ * @param nh        Netconf session handle
+ * @param brname    The bridge interface name
+ * @param ifname    The interface name
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_port_add(netconf_handle nh, const char *brname,
+                                   const char *ifname);
+
+/**
+ * Delete a bridge port interface.
+ *
+ * @param nh        Netconf session handle
+ * @param ifname    The interface name
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_port_del(netconf_handle nh, const char *ifname);
+
 #ifdef __cplusplus
 }
 #endif
