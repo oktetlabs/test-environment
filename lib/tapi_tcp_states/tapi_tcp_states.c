@@ -848,17 +848,19 @@ tsa_break_tst_iut_conn(tsa_session *ss)
 
     if (ss->state.tst_type == TSA_TST_SOCKET ||
         ss->state.tst_type == TSA_TST_GW_CSAP)
-        rc = tapi_cfg_add_neigh_entry(ss->config.pco_tst->ta,
-                                      ss->config.tst_if->if_name,
-                                      ss->config.gw_tst_addr,
-                                      ss->config.alien_link_addr,
-                                      TRUE);
+    {
+        rc = tapi_update_arp(ss->config.pco_tst->ta,
+                             ss->config.tst_if->if_name,
+                             NULL, NULL, ss->config.gw_tst_addr,
+                             ss->config.alien_link_addr, TRUE);
+    }
     else
-        rc = tapi_cfg_add_neigh_entry(ss->config.pco_tst->ta,
-                                      ss->config.tst_if->if_name,
-                                      ss->config.iut_addr,
-                                      ss->config.alien_link_addr,
-                                      TRUE);
+    {
+        rc = tapi_update_arp(ss->config.pco_tst->ta,
+                             ss->config.tst_if->if_name,
+                             NULL, NULL, ss->config.iut_addr,
+                             ss->config.alien_link_addr, TRUE);
+    }
 
     if (rc != 0)
         return rc;
@@ -881,17 +883,19 @@ tsa_break_iut_tst_conn(tsa_session *ss)
 
     if (ss->state.tst_type == TSA_TST_SOCKET ||
         ss->state.tst_type == TSA_TST_GW_CSAP)
-        rc = tapi_cfg_add_neigh_entry(ss->config.pco_gw->ta,
-                                      ss->config.gw_tst_if->if_name,
-                                      ss->config.tst_addr,
-                                      ss->config.alien_link_addr,
-                                      TRUE);
+    {
+        rc = tapi_update_arp(ss->config.pco_gw->ta,
+                             ss->config.gw_tst_if->if_name,
+                             NULL, NULL, ss->config.tst_addr,
+                             ss->config.alien_link_addr, TRUE);
+    }
     else
-        rc = tapi_cfg_add_neigh_entry(ss->config.pco_iut->ta,
-                                      ss->config.iut_if->if_name,
-                                      ss->config.tst_addr,
-                                      ss->config.alien_link_addr,
-                                      TRUE);
+    {
+        rc = tapi_update_arp(ss->config.pco_iut->ta,
+                             ss->config.iut_if->if_name,
+                             NULL, NULL, ss->config.tst_addr,
+                             ss->config.alien_link_addr, TRUE);
+    }
 
     if (rc != 0)
         return rc;

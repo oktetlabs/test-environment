@@ -568,6 +568,29 @@ extern te_errno tapi_cfg_add_neigh_entry(const char *ta,
                                          te_bool is_static);
 
 /**
+ * Set a new value for neighbour entry.
+ *
+ * @param ta            Test Agent name
+ * @param ifname        Interface name
+ * @param net_addr      IP address
+ * @param link_addr     IEEE 802.3 Link layer address
+ * @param is_static     Whether static or dynamic entry should be set
+ *
+ * @return Status code
+ *
+ * @retval 0  - on success
+ *
+ * @note Currently the function supports only (IP -> IEEE 802.3 ethernet)
+ * entries. In the future it might be extended with an additional parameter
+ * hw_type to support different classes of link layer addresses.
+ */
+extern te_errno tapi_cfg_set_neigh_entry(const char *ta,
+                                         const char *ifname,
+                                         const struct sockaddr *net_addr,
+                                         const void *link_addr,
+                                         te_bool is_static);
+
+/**
  * Delete a neighbour entry.
  *
  * @param ta           Test Agent name

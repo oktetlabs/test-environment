@@ -172,6 +172,51 @@ tapi_add_static_arp(const char *ta_src,
     return 0;
 }
 
+
+te_errno
+tapi_update_arp(const char *ta_src, const char *ifname_src,
+                const char *ta_dest, const char *ifname_dest,
+                const struct sockaddr *addr_dest,
+                const void *link_addr_dest,
+                te_bool is_static)
+{
+    te_errno           rc = 0;
+    struct sockaddr    link_addr;
+
+    if (link_addr_dest != NULL)
+    {
+        memcpy(link_addr.sa_data, link_addr_dest,
+               sizeof(link_addr.sa_data));
+    }
+    else if (ta_dest != NULL && ifname_dest != NULL)
+    {
+        RETURN_ON_ERROR(tapi_cfg_base_if_get_link_addr(
+                            ta_dest, ifname_dest, &link_addr));
+    }
+    else
+    {
+        ERROR("Wrong options combination to change arp table");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = cfg_synchronize_fmt(TRUE, "/agent:%s/interface:%s",
+                             ta_src, ifname_src);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_add_neigh_entry(ta_src, ifname_src,
+                                  addr_dest,
+                                  link_addr.sa_data,
+                                  is_static);
+    if (rc != TE_RC(TE_CS, TE_EEXIST))
+        return rc;
+
+    rc = tapi_cfg_set_neigh_entry(ta_src, ifname_src, addr_dest,
+                                  link_addr.sa_data, is_static);
+
+    return rc;
+}
+
 /* See description in tapi_route_gw.h */
 te_errno
 tapi_remove_arp(const char *ta,

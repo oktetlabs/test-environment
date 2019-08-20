@@ -945,6 +945,17 @@ tapi_cfg_get_neigh_entry(const char *ta, const char *ifname,
 
 /* See the description in tapi_cfg.h */
 te_errno
+tapi_cfg_set_neigh_entry(const char *ta, const char *ifname,
+                         const struct sockaddr *net_addr,
+                         const void *link_addr, te_bool is_static)
+{
+    return tapi_cfg_neigh_op(OP_MODIFY, ta, ifname, net_addr, link_addr, NULL,
+                             &is_static, NULL);
+}
+
+
+/* See the description in tapi_cfg.h */
+te_errno
 tapi_cfg_add_neigh_entry(const char *ta, const char *ifname,
                          const struct sockaddr *net_addr,
                          const void *link_addr, te_bool is_static)
@@ -1642,6 +1653,27 @@ tapi_cfg_neigh_op(enum tapi_cfg_oper op, const char *ta,
                       "entry %s on interface %s of TA %s with error %r",
                       __FUNCTION__, net_addr_str, ifname, ta, rc);
             }
+            break;
+        }
+
+        case OP_MODIFY:
+        {
+            struct sockaddr lnk_addr;
+
+            if (link_addr == NULL || is_static == NULL)
+                return TE_RC(TE_TAPI, TE_EINVAL);
+
+            memset(&lnk_addr, 0, sizeof(lnk_addr));
+            lnk_addr.sa_family = AF_LOCAL;
+            memcpy(&(lnk_addr.sa_data), link_addr, IFHWADDRLEN);
+
+            rc = cfg_set_instance_fmt(CFG_VAL(ADDRESS, &lnk_addr),
+                                      "/agent:%s/interface:%s/neigh_%s:%s",
+                                      ta, ifname,
+                                      (*is_static) ? "static" :
+                                                     "dynamic",
+                                      net_addr_str);
+            /* Error is logged by CS */
             break;
         }
 
