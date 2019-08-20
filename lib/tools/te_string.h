@@ -76,6 +76,11 @@ typedef struct te_string {
 #define TE_STRING_BUF_INIT(buf_)  { buf_, sizeof(buf_), 0, TRUE }
 
 /**
+ * Initialize TE string assigning buffer and size to it.
+ */
+#define TE_STRING_EXT_BUF_INIT(buf_, size_)  { buf_, size_, 0, TRUE }
+
+/**
  * Initialize TE string assigning statically allocated memory
  * to it. Dynamic memory allocation will not be used for such
  * string, so there will be no need in calling te_string_free().
