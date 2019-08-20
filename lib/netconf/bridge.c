@@ -20,6 +20,149 @@
 #define NETCONF_LINK_KIND_BRIDGE "bridge"
 
 /**
+ * Parse the general link attribute.
+ *
+ * @param nh        Netconf session handle
+ * @param rta_arr   Sorted attributes pointers array
+ * @param max       Maximum index of the array
+ */
+static void
+port_parse_link(struct nlmsghdr *h, struct rtattr **rta_arr, int max)
+{
+    struct rtattr   *rta_link;
+    int              len;
+
+    rta_link = (struct rtattr *)((char *)h + NLMSG_SPACE(sizeof(struct ifinfomsg)));
+    len = h->nlmsg_len - NLMSG_SPACE(sizeof(struct ifinfomsg));
+    netconf_parse_rtattr(rta_link, len, rta_arr, max);
+}
+
+/**
+ * Check if link is port.
+ *
+ * @param linkgen   The general link attributes array
+ * @param cookie    Pointer to the bridge interface index
+ * @return @c TRUE if link is port.
+ */
+static te_bool
+port_link_is_bridge_port(struct rtattr **linkgen, void *cookie)
+{
+    if (linkgen[IFLA_MASTER] == NULL ||
+        *(uint32_t *)RTA_DATA(linkgen[IFLA_MASTER]) != *(uint32_t *)cookie)
+        return FALSE;
+    return TRUE;
+}
+
+/**
+ * Decode bridge link data from a netlink message.
+ *
+ * @param h         The netlink message header
+ * @param list      Netconf list to keep the data
+ * @param cookie    Pointer to the bridge interface index
+ *
+ * @return @c 0 on success, @c -1 on error (check @b errno for details).
+ */
+static int
+port_link_gen_cb(struct nlmsghdr *h, netconf_list *list,
+                 void *cookie)
+{
+    netconf_bridge_port      port;
+    struct rtattr           *linkgen[IFLA_MAX + 1];
+
+    memset(&port, 0, sizeof(port));
+
+    port_parse_link(h, linkgen, IFLA_MAX);
+
+    if (linkgen[IFLA_IFNAME] == NULL ||
+        port_link_is_bridge_port(linkgen, cookie) == FALSE)
+        return 0;
+
+    port.name = netconf_dup_rta(linkgen[IFLA_IFNAME]);
+    if (port.name == NULL)
+        return -1;
+
+    if (netconf_list_extend(list, NETCONF_NODE_BRIDGE_PORT) != 0)
+    {
+        free(port.name);
+        return -1;
+    }
+
+    memcpy(&list->tail->data.bridge_port, &port, sizeof(port));
+
+    return 0;
+}
+
+/**
+ * Callback function to decode bridge port link data.
+ *
+ * @param h         The netlink message header
+ * @param list      Netconf list to keep the data
+ * @param cookie    Pointer to the bridge interface index
+ *
+ * @return @c 0 on success, @c -1 on error (check @b errno for details).
+ */
+static int
+port_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
+{
+    return port_link_gen_cb(h, list, cookie);
+}
+
+/* See netconf_internal.h */
+void
+netconf_port_node_free(netconf_node *node)
+{
+    NETCONF_ASSERT(node != NULL);
+
+    free(node->data.bridge_port.name);
+    free(node);
+}
+
+/* See netconf.h */
+te_errno
+netconf_port_list(netconf_handle nh, const char *brname,
+                  netconf_port_list_filter_func filter_cb,
+                  void *filter_opaque, char **list)
+{
+    netconf_list *nlist;
+    netconf_node *node;
+    te_string     str = TE_STRING_INIT;
+    te_errno      rc = 0;
+    uint32_t      br_ifind;
+
+    IFNAME_TO_INDEX(brname, br_ifind);
+    nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC,
+                                 port_list_cb, &br_ifind);
+    if (nlist == NULL)
+    {
+        ERROR("Failed to get bridge port interfaces list");
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+    for (node = nlist->head; node != NULL; node = node->next)
+    {
+        if (node->data.bridge_port.name != NULL)
+        {
+            if (filter_cb != NULL &&
+                filter_cb(node->data.bridge_port.name, filter_opaque) == TRUE)
+                continue;
+            rc = te_string_append(&str, "%s ", node->data.bridge_port.name);
+            if (rc != 0)
+            {
+                te_string_free(&str);
+                rc = TE_RC(TE_TA_UNIX, rc);
+                break;
+            }
+        }
+    }
+
+    netconf_list_free(nlist);
+
+    if (rc == 0)
+        *list = str.ptr;
+
+    return rc;
+}
+
+/**
  * Initialize @p hdr.
  *
  * @param req           Request buffer

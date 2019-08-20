@@ -337,6 +337,10 @@ netconf_node_free(netconf_node *node)
             netconf_bridge_node_free(node);
             break;
 
+        case NETCONF_NODE_BRIDGE_PORT:
+            netconf_port_node_free(node);
+            break;
+
         default:
             NETCONF_ASSERT(0);
             free(node);

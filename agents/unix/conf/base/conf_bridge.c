@@ -25,6 +25,86 @@
 #include "netconf.h"
 
 /**
+ * Check whether a given interface is grabbed by TA when creating a list of
+ * port interfaces.
+ *
+ * @param ifname    The interface name.
+ * @param brname    The bridge name
+ * @param data      Unused.
+ *
+ * @return @c TRUE if the interface is grabbed, @c FALSE otherwise.
+ */
+static te_bool
+port_list_include_cb(const char *ifname, const char *brname, void *data)
+{
+    UNUSED(ifname);
+    UNUSED(brname);
+    UNUSED(data);
+
+    return 0;
+}
+
+
+/**
+ * Get port interfaces list.
+ *
+ * @param gid     Group identifier (unused)
+ * @param oid     Full identifier of the father instance (unused)
+ * @param sub_id  ID of the object to be listed (unused)
+ * @param list    Location for the list pointer
+ *
+ * @return      Status code
+ */
+static te_errno
+port_list(unsigned int gid, const char *oid,
+          const char *sub_id, char **list)
+{
+    const char *brname;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+    brname = CFG_OID_GET_INST_NAME(cfg_convert_oid_str(oid), 2);
+    return netconf_port_list(nh, brname, port_list_include_cb, NULL, list);
+}
+
+/**
+ * Get port interface OID.
+ *
+ * @param gid       Group identifier (unused)
+ * @param oid       Full object instance identifier (unused)
+ * @param if_oid    Buffer for port interface OID
+ * @param brname    The bridge name (unused)
+ * @param ifname    The inteface name
+ *
+ * @return      Status code
+ */
+static te_errno
+port_get(unsigned int gid, char *oid, char *if_oid, char *brname, char *ifname)
+{
+    int rc;
+    te_string str = TE_STRING_EXT_BUF_INIT(if_oid, RCF_MAX_VAL);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname))
+    {
+        rc = te_string_append(&str, "/agent:%s/interface:%s", ta_name, ifname);
+        if (rc != 0)
+        {
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+    }
+    return 0;
+}
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_port, "port", NULL, NULL,
+                               port_get, NULL,
+                               NULL, NULL, port_list,
+                               NULL);
+
+/**
  * Add a new bridge interface.
  *
  * @param gid       Group identifier (unused)
@@ -99,7 +179,7 @@ bridge_list(unsigned int gid, const char *oid,
     return netconf_bridge_list(nh, bridge_list_include_cb, NULL, list);
 }
 
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_bridge, "bridge", NULL, NULL,
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_bridge, "bridge", &node_port, NULL,
                               NULL, NULL,
                               bridge_add, bridge_del, bridge_list,
                               NULL);

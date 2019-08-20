@@ -252,6 +252,11 @@ typedef struct netconf_bridge {
     char   *ifname;     /**< Interface name */
 } netconf_bridge;
 
+/** Bridge port network interface */
+typedef struct netconf_bridge_port {
+    char   *name;       /**< Interface name */
+} netconf_bridge_port;
+
 /** Type of nodes in the list */
 typedef enum netconf_node_type {
     NETCONF_NODE_UNSPEC,                /**< Unspecified */
@@ -267,6 +272,7 @@ typedef enum netconf_node_type {
     NETCONF_NODE_VETH,                  /**< Virtual Ethernet interface */
     NETCONF_NODE_VXLAN,                 /**< VXLAN interface */
     NETCONF_NODE_BRIDGE,                /**< Bridge interface */
+    NETCONF_NODE_BRIDGE_PORT,           /**< Bridge port interface */
 } netconf_node_type;
 
 typedef te_conf_ip_rule netconf_rule;
@@ -275,17 +281,18 @@ typedef te_conf_ip_rule netconf_rule;
 typedef struct netconf_node {
     netconf_node_type     type;         /**< Type of node */
     union {
-        netconf_link      link;
-        netconf_net_addr  net_addr;
-        netconf_route     route;
-        netconf_neigh     neigh;
-        netconf_rule      rule;
-        netconf_macvlan   macvlan;
-        netconf_ipvlan    ipvlan;
-        netconf_vlan      vlan;
-        netconf_veth      veth;
-        netconf_vxlan     vxlan;
-        netconf_bridge    bridge;
+        netconf_link             link;
+        netconf_net_addr         net_addr;
+        netconf_route            route;
+        netconf_neigh            neigh;
+        netconf_rule             rule;
+        netconf_macvlan          macvlan;
+        netconf_ipvlan           ipvlan;
+        netconf_vlan             vlan;
+        netconf_veth             veth;
+        netconf_vxlan            vxlan;
+        netconf_bridge           bridge;
+        netconf_bridge_port      bridge_port;
     } data;                             /**< Network data */
     struct netconf_node  *next;         /**< Next node of the list */
     struct netconf_node  *prev;         /**< Previous node of the list */
@@ -831,6 +838,33 @@ typedef te_bool (*netconf_bridge_list_filter_func)(const char *ifname,
 extern te_errno netconf_bridge_list(netconf_handle nh,
                                     netconf_bridge_list_filter_func filter_cb,
                                     void *filter_opaque, char **list);
+
+/**
+ * Type of callback function to pass to netconf_port_list(). It is used to
+ * decide if the interface should be included to the list.
+ *
+ * @param ifname    The interface name
+ * @param data      Opaque data
+ *
+ * @return @c TRUE to include interface to the list.
+ */
+typedef te_bool (*netconf_port_list_filter_func)(const char *ifname,
+                                                 void *data);
+
+/**
+ * Get port interfaces list.
+ *
+ * @param nh            Netconf session handle
+ * @param brname        The bridge name
+ * @param filter_cb     Filtering callback function or @c NULL
+ * @param filter_opaque Opaque data to pass to the filtering function
+ * @param list          Space-separated interfaces list (allocated from the heap)
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_port_list(netconf_handle nh, const char *brname,
+                                  netconf_port_list_filter_func filter_cb,
+                                  void *filter_opaque, char **list);
 
 #ifdef __cplusplus
 }
