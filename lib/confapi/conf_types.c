@@ -472,7 +472,7 @@ addr2str(cfg_inst_val val, char **val_str)
 static int 
 addr_def_val(cfg_inst_val *val)
 {
-    return str2addr("0.0.0.0", val);
+    return str2addr("", val);
 }
 
 static void
