@@ -52,6 +52,7 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "logger_ten.h"
 #include "rcf_api.h"

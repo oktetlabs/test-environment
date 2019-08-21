@@ -18,6 +18,7 @@
 #endif
 
 #include "te_defs.h"
+#include "te_str.h"
 #include "logger_api.h"
 
 #include "te_rpc_defs.h"

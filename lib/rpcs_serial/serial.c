@@ -25,6 +25,7 @@
 #include "te_kernel_log.h"
 #include "te_queue.h"
 #include "te_sockaddr.h"
+#include "te_str.h"
 
 #define CONSERVER_MAX_BUFLEN (RCF_MAX_PATH + 16)
 

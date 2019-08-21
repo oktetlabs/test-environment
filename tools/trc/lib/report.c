@@ -24,6 +24,7 @@
 
 #include "te_alloc.h"
 #include "te_queue.h"
+#include "te_str.h"
 #include "trc_report.h"
 
 

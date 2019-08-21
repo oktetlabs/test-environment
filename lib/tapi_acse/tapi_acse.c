@@ -27,6 +27,7 @@
 #include "cwmp_data.h"
 
 #include "te_sockaddr.h"
+#include "te_str.h"
 
 
 /**

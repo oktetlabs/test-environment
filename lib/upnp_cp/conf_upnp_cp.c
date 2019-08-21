@@ -37,6 +37,7 @@
 
 #include "conf_upnp_cp.h"
 #include "te_defs.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "rcf_common.h"
 #include "rcf_ch_api.h"
