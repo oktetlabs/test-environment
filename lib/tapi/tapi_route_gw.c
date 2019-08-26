@@ -358,7 +358,7 @@ te_errno
 tapi_route_gateway_break_gw_iut(tapi_route_gateway *gw)
 {
     return tapi_update_arp(gw->gw_ta, gw->gw_iut_if->if_name, NULL, NULL,
-                           gw->iut_addr, gw->alien_link_addr, TRUE);
+                           gw->iut_addr, gw->alien_link_addr->sa_data, TRUE);
 }
 
 /* See description in tapi_route_gw.h */
@@ -375,7 +375,7 @@ te_errno
 tapi_route_gateway_break_gw_tst(tapi_route_gateway *gw)
 {
     return tapi_update_arp(gw->gw_ta, gw->gw_tst_if->if_name, NULL, NULL,
-                           gw->tst_addr, gw->alien_link_addr, TRUE);
+                           gw->tst_addr, gw->alien_link_addr->sa_data, TRUE);
 }
 
 /* See description in tapi_route_gw.h */
@@ -392,7 +392,7 @@ te_errno
 tapi_route_gateway_break_iut_gw(tapi_route_gateway *gw)
 {
     return tapi_update_arp(gw->iut_ta, gw->iut_if->if_name, NULL, NULL,
-                           gw->gw_iut_addr, gw->alien_link_addr, TRUE);
+                           gw->gw_iut_addr, gw->alien_link_addr->sa_data, TRUE);
 }
 
 /* See description in tapi_route_gw.h */
@@ -409,7 +409,7 @@ te_errno
 tapi_route_gateway_break_tst_gw(tapi_route_gateway *gw)
 {
     return tapi_update_arp(gw->tst_ta, gw->tst_if->if_name, NULL, NULL,
-                           gw->gw_tst_addr, gw->alien_link_addr, TRUE);
+                           gw->gw_tst_addr, gw->alien_link_addr->sa_data, TRUE);
 }
 
 /* See description in tapi_route_gw.h */
