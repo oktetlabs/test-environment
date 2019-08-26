@@ -147,7 +147,7 @@ main(int argc, char *argv[])
      * packets sent to it.
      */
     CHECK_RC(tapi_update_arp(pco_iut->ta, iut_if, NULL, NULL,
-                             tst_addr, alien_link_addr, TRUE));
+                             tst_addr, alien_link_addr->sa_data, TRUE));
 
     /*
      * Create TCP socket emulation on Tester for passive connection
