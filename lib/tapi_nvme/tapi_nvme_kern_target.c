@@ -13,6 +13,7 @@
 #include "te_defs.h"
 #include "te_log_stack.h"
 #include "te_sockaddr.h"
+#include "te_str.h"
 
 #include "tapi_rpc_unistd.h"
 #include "tapi_nvme_internal.h"

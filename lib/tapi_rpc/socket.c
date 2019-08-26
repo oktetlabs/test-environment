@@ -54,6 +54,7 @@
 #endif
 
 #include "te_printf.h"
+#include "te_str.h"
 #include "log_bufs.h"
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"

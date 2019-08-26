@@ -397,23 +397,6 @@ te_make_tmp_file(char *tmp_name)
 }
 #endif
 
-/** Macro to make safe sprintf to character array */
-#define TE_SPRINTF(_buf, _msg...)                           \
-    do {                                                    \
-        int _n = snprintf(_buf, sizeof(_buf), _msg);        \
-                                                            \
-        if (_n < 0)                                         \
-        {                                                   \
-            ERROR("%s: output error is encountered: %s",    \
-                  __func__, strerror(errno));               \
-        }                                                   \
-        else if ((size_t)_n >= sizeof(_buf))                \
-        {                                                   \
-            ERROR("%s: string \"%s\" is cut by snprintf()", \
-                  __func__, _buf);                          \
-        }                                                   \
-    } while (0)
-
 /**
  * Check if a pointer is @c NULL. It's to avoid warnings in macroses.
  *

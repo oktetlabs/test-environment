@@ -41,6 +41,7 @@
 #endif
 
 #include "te_sockaddr.h"
+#include "te_str.h"
 #include "rcf_pch.h"
 
 #include "agentlib.h"

@@ -37,6 +37,7 @@
 #endif /* STDC_HEADERS */
 
 #include "te_defs.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "tapi_sockaddr.h"
 #include "tapi_cfg_base.h"

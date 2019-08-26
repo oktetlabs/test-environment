@@ -139,6 +139,15 @@ extern char *te_snprintf_verbose(const char *id, char *dst, size_t size,
     te_snprintf_verbose(__func__, _dst, _size, _fmt)
 
 /**
+ * Fill a destination buffer according to a format string. It should only
+ * be used if the buffer is a real array, not a pointer
+ *
+ * @sa TE_SNPRINTF
+ */
+#define TE_SPRINTF(_buf, _fmt...) \
+    TE_SNPRINTF(_buf, sizeof(_buf), _fmt)
+
+/**
  * Write at most @p size bytes (including the terminating null byte ('\0')) to
  * the buffer pointed to by @p dst according to a format string.
  *

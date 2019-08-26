@@ -17,6 +17,7 @@
 #include "tapi_cfg_aggr.h"
 #include "conf_api.h"
 #include "te_sockaddr.h"
+#include "te_str.h"
 #include "tapi_mem.h"
 
 

@@ -27,6 +27,7 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_shell_cmd.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "tq_string.h"
 

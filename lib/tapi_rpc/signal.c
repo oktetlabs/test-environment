@@ -34,6 +34,7 @@
 #endif
 
 #include "log_bufs.h"
+#include "te_str.h"
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_signal.h"
 #include "tapi_rpc_misc.h"
