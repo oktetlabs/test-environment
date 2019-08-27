@@ -32,7 +32,7 @@ netconf_vlan_modify(netconf_handle nh, netconf_cmd cmd,
     struct rtattr      *linkinfo;
     struct rtattr      *data;
     char                vlan_ifname[IFNAMSIZ];
-    uint32_t            vid_attr;
+    uint16_t            vid_attr;
     int                 rc;
 
     if (ifname == NULL || ifname[0] == '\0')
