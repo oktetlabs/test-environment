@@ -252,7 +252,7 @@ netconf_ipvlan_get_mode(netconf_handle nh, const char *ifname,
 te_errno
 netconf_ipvlan_modify(netconf_handle nh, netconf_cmd cmd,
                       const char *link, const char *ifname,
-                      uint32_t mode, uint32_t flag)
+                      uint16_t mode, uint16_t flag)
 {
     UNUSED(nh);
     UNUSED(cmd);
