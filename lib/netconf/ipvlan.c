@@ -28,7 +28,7 @@
 te_errno
 netconf_ipvlan_modify(netconf_handle nh, netconf_cmd cmd,
                       const char *link, const char *ifname,
-                      uint32_t mode, uint32_t flag)
+                      uint16_t mode, uint16_t flag)
 {
     char                req[NETCONF_MAX_REQ_LEN];
     struct nlmsghdr    *h;

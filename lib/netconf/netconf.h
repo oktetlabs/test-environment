@@ -616,7 +616,7 @@ extern te_errno netconf_macvlan_get_mode(netconf_handle nh,
  */
 extern te_errno netconf_ipvlan_modify(netconf_handle nh, netconf_cmd cmd,
                                       const char *link, const char *ifname,
-                                      uint32_t mode, uint32_t flag);
+                                      uint16_t mode, uint16_t flag);
 
 /**
  * Get IP VLAN interfaces list on @p link.
