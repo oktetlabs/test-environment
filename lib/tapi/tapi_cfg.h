@@ -738,6 +738,41 @@ typedef enum {
                                      enum element. */
 } te_interface_kind;
 
+/** Mapping list for TEST_GET_ENUM_PARAM */
+#define TE_INTERFACE_KIND_MAPPING_LIST \
+    { "none",       TE_INTERFACE_KIND_NONE },       \
+    { "vlan",       TE_INTERFACE_KIND_VLAN },       \
+    { "macvlan",    TE_INTERFACE_KIND_MACVLAN },    \
+    { "ipvlan",     TE_INTERFACE_KIND_IPVLAN },     \
+    { "veth",       TE_INTERFACE_KIND_VETH },       \
+    { "bond",       TE_INTERFACE_KIND_BOND },       \
+    { "team",       TE_INTERFACE_KIND_TEAM },       \
+    { "bridge",     TE_INTERFACE_KIND_BRIDGE }
+
+/**
+ * Get value of a test parameter of type @ref te_interface_kind.
+ * Should be used like
+ *    te_interface_kind var;
+ *    var = TEST_TE_INTERFACE_KIND_PARAM(if_kind)
+ *
+ * @param _name     Parameter name
+ */
+#define TEST_TE_INTERFACE_KIND_PARAM(_name) \
+    TEST_ENUM_PARAM(_name, TE_INTERFACE_KIND_MAPPING_LIST)
+
+/**
+ * Get value of a test parameter of type @ref te_interface_kind.
+ * Should be used like
+ *    te_interface_kind if_kind;
+ *    TEST_GET_TE_INTERFACE_KIND_PARAM(if_kind);
+ *
+ * @param _var_name     Parameter name (should be the same as
+ *                      name of the variable in which obtained
+ *                      value is stored).
+ */
+#define TEST_GET_TE_INTERFACE_KIND_PARAM(_var_name) \
+    TEST_GET_ENUM_PARAM(_var_name, TE_INTERFACE_KIND_MAPPING_LIST)
+
 /**
  * Get kind of an interface.
  *
