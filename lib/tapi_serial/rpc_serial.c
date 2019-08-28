@@ -48,12 +48,12 @@ rpc_serial_open(rcf_rpc_server *rpcs, tapi_serial_handle *p_handle,
     in.console = (char *)console;
     if (address == NULL)
     {
-        if (te_sockaddr_str2h("127.0.0.1", &tmp) != 0)
+        if (te_sockaddr_str2h("127.0.0.1", SA(&tmp)) != 0)
             RETVAL_INT(serial_open, -1);
 
-        te_sockaddr_set_port(&tmp, CONSERVER_DEFAULT_PORT);
+        te_sockaddr_set_port(SA(&tmp), CONSERVER_DEFAULT_PORT);
 
-        sockaddr_input_h2rpc(&tmp, &in.sa);
+        sockaddr_input_h2rpc(SA(&tmp), &in.sa);
     }
     else
     {
@@ -84,8 +84,8 @@ rpc_serial_open(rcf_rpc_server *rpcs, tapi_serial_handle *p_handle,
     }
 
     TAPI_RPC_LOG(rpcs, serial_open, "%s, %s, %s:%d", "%d",
-                 in.user, in.console, te_sockaddr_get_ipstr(&tmp),
-                 te_sockaddr_get_port(&tmp), out.sock);
+                 in.user, in.console, te_sockaddr_get_ipstr(SA(&tmp)),
+                 te_sockaddr_get_port(SA(&tmp)), out.sock);
     RETVAL_INT(serial_open, out.retval);
 }
 
