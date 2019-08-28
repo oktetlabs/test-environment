@@ -1035,10 +1035,10 @@ RCF_PCH_CFG_NODE_RW(node_ds_supp_scan_ssid, "scan_ssid",
                     ds_supp_scan_ssid_get,
                     ds_supp_scan_ssid_set);
 
-static rcf_pch_cfg_object node_ds_supplicant = {
-                    "supplicant", 0, &node_ds_supp_scan_ssid, NULL,
-                    ds_supplicant_get, ds_supplicant_set,
-                    NULL, NULL, NULL, ds_supplicant_commit, NULL };
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_ds_supplicant, "supplicant",
+                               &node_ds_supp_scan_ssid, NULL,
+                               ds_supplicant_get, ds_supplicant_set,
+                               NULL, NULL, NULL, ds_supplicant_commit);
 
 te_errno
 ta_unix_conf_supplicant_init()

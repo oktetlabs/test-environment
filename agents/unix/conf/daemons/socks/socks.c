@@ -1976,20 +1976,11 @@ RCF_PCH_CFG_NODE_RW(node_socks_auth, "auth",
                     NULL, &node_socks_user,
                     socks_auth_get, socks_auth_set);
 
-static rcf_pch_cfg_object node_socks_cipher =
-{
-    "cipher",
-    0,
-    NULL,
-    &node_socks_auth,
-    (rcf_ch_cfg_get)socks_cipher_get,
-    (rcf_ch_cfg_set)socks_cipher_set,
-    (rcf_ch_cfg_add)socks_cipher_add,
-    (rcf_ch_cfg_del)socks_cipher_del,
-    (rcf_ch_cfg_list)socks_cipher_list,
-    NULL,
-    NULL
-};
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_socks_cipher, "cipher",
+                               NULL, &node_socks_auth,
+                               socks_cipher_get, socks_cipher_set,
+                               socks_cipher_add, socks_cipher_del,
+                               socks_cipher_list, NULL);
 
 RCF_PCH_CFG_NODE_RW(node_socks_outbound_interface, "outbound_interface",
                     NULL, &node_socks_cipher,
@@ -2005,35 +1996,18 @@ RCF_PCH_CFG_NODE_RW(node_socks_interface_port, "port",
                     socks_interface_port_get,
                     socks_interface_port_set);
 
-static rcf_pch_cfg_object node_socks_interface =
-{
-    "interface",
-    0,
-    &node_socks_interface_port,
-    &node_socks_outbound_interface,
-    (rcf_ch_cfg_get)socks_interface_get,
-    (rcf_ch_cfg_set)socks_interface_set,
-    (rcf_ch_cfg_add)socks_interface_add,
-    (rcf_ch_cfg_del)socks_interface_del,
-    (rcf_ch_cfg_list)socks_interface_list,
-    NULL,
-    NULL
-};
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_socks_interface, "interface",
+                               &node_socks_interface_port,
+                               &node_socks_outbound_interface,
+                               socks_interface_get, socks_interface_set,
+                               socks_interface_add, socks_interface_del,
+                               socks_interface_list, NULL);
 
-static rcf_pch_cfg_object node_socks_proto =
-{
-    "proto",
-    0,
-    NULL,
-    &node_socks_interface,
-    (rcf_ch_cfg_get)socks_proto_get,
-    (rcf_ch_cfg_set)socks_proto_set,
-    (rcf_ch_cfg_add)socks_proto_add,
-    (rcf_ch_cfg_del)socks_proto_del,
-    (rcf_ch_cfg_list)socks_proto_list,
-    NULL,
-    NULL
-};
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_socks_proto, "proto",
+                               NULL, &node_socks_interface,
+                               socks_proto_get, socks_proto_set,
+                               socks_proto_add, socks_proto_del,
+                               socks_proto_list, NULL);
 
 RCF_PCH_CFG_NODE_RW(node_socks_impl, "impl",
                     NULL, &node_socks_proto,
@@ -2046,14 +2020,7 @@ RCF_PCH_CFG_NODE_RW(node_socks_status, "status",
                     socks_status_set);
 
 /* Configuration subtree root /agent/socks */
-static rcf_pch_cfg_object node_socks =
-{
-    "socks", 0,
-    &node_socks_status, NULL,
-    socks_status_get,
-    socks_status_set,
-    (rcf_ch_cfg_add)socks_add,
-    (rcf_ch_cfg_del)socks_del,
-    (rcf_ch_cfg_list)socks_list,
-    NULL, NULL
-};
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_socks, "socks",
+                               &node_socks_status, NULL,
+                               socks_status_get, socks_status_set,
+                               socks_add, socks_del, socks_list, NULL);

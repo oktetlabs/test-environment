@@ -3290,13 +3290,7 @@ RCF_PCH_CFG_NODE_RO(node_openvpn_ifname, "ifname",
                     openvpn_ifname_get);
 
 /* Configuration subtree root /agent/openvpn */
-static rcf_pch_cfg_object node_openvpn =
-    { "openvpn", 0,
-      &node_openvpn_ifname, NULL,
-      openvpn_status_get,
-      openvpn_status_set,
-      (rcf_ch_cfg_add)openvpn_add,
-      (rcf_ch_cfg_del)openvpn_del,
-      (rcf_ch_cfg_list)openvpn_list,
-      NULL, NULL };
-
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_openvpn, "openvpn",
+                               &node_openvpn_ifname, NULL,
+                               openvpn_status_get, openvpn_status_set,
+                               openvpn_add, openvpn_del, openvpn_list, NULL);
