@@ -721,6 +721,13 @@ extern te_errno tapi_cfg_set_hwaddr(const char *ta, const char *ifname,
  * Network interface kinds.
  * This list is mostly Linux-specific, but other OSes may add other kinds or
  * re-use existing Linux kinds.
+ *
+ * Note: this list enumerates not all possible types of interfaces, but
+ * all possible values of interface:/kind: in configuration tree, which
+ * gets its value from @c IFLA_INFO_KIND netlink attribute. It seems netlink
+ * reports only types of interfaces here which it can manipulate
+ * (create, destroy), so for physical interfaces and loopback empty string
+ * (@c TE_INTERFACE_KIND_NONE) is returned.
  */
 typedef enum {
     TE_INTERFACE_KIND_NONE,     /**< Kind is not specified - a usual network

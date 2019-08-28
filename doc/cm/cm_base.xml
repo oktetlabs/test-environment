@@ -253,6 +253,10 @@
     <object oid="/agent/interface/parent" access="read_only" type="string"/>
 
     <!-- Kind of an interface ("vlan", "macvlan", "ipvlan", etc.; may be empty)
+         Note: this property currently takes its value from IFLA_INFO_KIND
+               netlink attribute on Linux. It seems netlink reports non-empty
+               string here only for types of interfaces it can manipulate;
+               for physical interfaces and loopback empty string is returned.
          Name: empty
          Value: Kind of an interface -->
     <object oid="/agent/interface/kind" access="read_only" type="string"/>
