@@ -61,6 +61,10 @@
 #include "bpf.h"
 #include "libbpf.h"
 
+#ifndef XDP_FLAGS_UPDATE_IF_NOEXIST
+#define XDP_FLAGS_UPDATE_IF_NOEXIST (1U << 0)
+#endif
+
 /* Max number of programs or maps in BPF object file */
 #define BPF_MAX_ENTRIES 128
 
