@@ -279,6 +279,16 @@ pppoe_server_build_cmd(te_pppoe_server *pppoe, te_string *cmd)
     te_pppoe_if *iface;
     te_errno     rc;
 
+    if (SLIST_EMPTY(&pppoe->ifs))
+    {
+        /*
+         * Disable starting pppoe server on default interface.
+         * Under Linux, it is typically eth0 or eth1
+         */
+        ERROR("%s(): there are no interfaces to be used", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
     te_string_reset(cmd);
 
     rc = te_string_append(cmd, "%s -O %s",
