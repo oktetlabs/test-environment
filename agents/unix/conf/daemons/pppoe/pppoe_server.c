@@ -891,6 +891,11 @@ pppoe_server_ifs_del(unsigned int gid, const char *oid,
     }
 
     SLIST_REMOVE(&pppoe->ifs, iface, te_pppoe_if, list);
+    if (SLIST_EMPTY(&pppoe->ifs))
+    {
+        /* Stop server forcedly if there are no interfaces to run on */
+        pppoe->started = FALSE;
+    }
     pppoe->changed = TRUE;
 
     EXIT("pppoe server interface '%s' has been deleted", ifname);
