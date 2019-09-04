@@ -553,7 +553,7 @@ te_sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
 
     if (min_len == 0)
     {
-        RING("%s(): Addresses length to compare is 0");
+        RING("%s(): Addresses length to compare is 0", __FUNCTION__);
         return 0;
     }
 
