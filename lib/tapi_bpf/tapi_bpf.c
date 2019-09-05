@@ -16,6 +16,7 @@
 #include "rcf_common.h"
 #include "logger_api.h"
 #include "conf_api.h"
+#include "tapi_mem.h"
 #include "tapi_bpf.h"
 
 static const char *tapi_bpf_states[] =
@@ -39,11 +40,12 @@ static const char *tapi_bpf_prog_types[] =
 
 static const char *tapi_bpf_map_types[] =
 {
-    [TAPI_BPF_MAP_TYPE_UNSPEC] =         "UNSPEC",
-    [TAPI_BPF_MAP_TYPE_HASH] =           "HASH",
-    [TAPI_BPF_MAP_TYPE_ARRAY] =          "ARRAY",
-    [TAPI_BPF_MAP_TYPE_LPM_TRIE] =       "LPM_TRIE",
-    [TAPI_BPF_MAP_TYPE_UNKNOWN] =        "<UNKNOWN>"
+    [TAPI_BPF_MAP_TYPE_UNSPEC] =            "UNSPEC",
+    [TAPI_BPF_MAP_TYPE_HASH] =              "HASH",
+    [TAPI_BPF_MAP_TYPE_ARRAY] =             "ARRAY",
+    [TAPI_BPF_MAP_TYPE_PERF_EVENT_ARRAY] =  "PERF_EVENT_ARRAY",
+    [TAPI_BPF_MAP_TYPE_LPM_TRIE] =          "LPM_TRIE",
+    [TAPI_BPF_MAP_TYPE_UNKNOWN] =           "<UNKNOWN>"
 };
 
 /**
@@ -874,6 +876,163 @@ cleanup:
     return rc;
 }
 
+/* See description in tapi_bpf.h */
+te_errno
+tapi_bpf_perf_event_init(const char *ta, unsigned int bpf_id,
+                         const char *map, unsigned int event_size)
+{
+    te_errno        rc = 0;
+    cfg_val_type    val_type = CVT_INTEGER;
+    int             val;
+
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, event_size),
+                                   "/agent:%s/bpf:%u/perf_map:%s/event_size:",
+                                   ta, bpf_id, map)) != 0)
+    {
+        ERROR("%s(): Failed to set event size %u to "
+              "/agent:%s/bpf:%u/perf_map:%s (%r)",
+              __FUNCTION__, event_size, ta, bpf_id, map, rc);
+        return rc;
+    }
+
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+                                  "/agent:%s/bpf:%u/perf_map:%s"
+                                  "/events_enable:",
+                                  ta, bpf_id, map)) != 0)
+    {
+        ERROR("%s(): Failed to enable events "
+              "/agent:%s/bpf:%u/perf_map:%s (%r)",
+              __FUNCTION__, ta, bpf_id, map, rc);
+        return rc;
+    }
+
+    if ((rc = cfg_get_instance_sync_fmt(&val_type, &val,
+                                        "/agent:%s/bpf:%u/perf_map:%s"
+                                        "/events_enable:",
+                                        ta, bpf_id, map)) != 0)
+    {
+        ERROR("%s(): Failed to get instance /agent:%s/bpf:%u/perf_map:%s"
+              "/events_enable: (%r)",
+              __FUNCTION__, ta, bpf_id, map, rc);
+        return rc;
+    }
+
+    if (val == 0)
+    {
+        ERROR("%s(): Initialization of perf event map failed.", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EFAIL);
+    }
+
+    return 0;
+}
+
+/* See description in tapi_bpf.h */
+te_errno
+tapi_bpf_perf_event_deinit(const char *ta, unsigned int bpf_id,
+                           const char *map)
+{
+    te_errno rc = 0;
+
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
+                                  "/agent:%s/bpf:%u/perf_map:%s"
+                                  "/events_enable:",
+                                  ta, bpf_id, map)) != 0)
+    {
+        ERROR("%s(): Failed to disable events "
+              "/agent:%s/bpf:%u/perf_map:%s (%r)",
+              __FUNCTION__, ta, bpf_id, map, rc);
+    }
+
+    return rc;
+}
+
+te_errno
+tapi_bpf_perf_get_events(const char *ta, unsigned int bpf_id, const char *map,
+                         unsigned int *num, uint8_t **data)
+{
+    cfg_val_type    val_type = CVT_INTEGER;
+    te_errno        rc = 0;
+    unsigned int    num_events = 0;
+    unsigned int    event_data_size = 0;
+    unsigned int    event_id_num = 0;
+    cfg_handle     *event_id_hdls = NULL;
+    unsigned int    i = 0;
+
+    if (data == NULL || num == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    if ((rc = cfg_get_instance_fmt(&val_type, &event_data_size,
+                              "/agent:%s/bpf:%u/perf_map:%s/event_size:",
+                              ta, bpf_id, map)) != 0)
+    {
+        ERROR("%s(): Failed to get event size from "
+              "/agent:%s/bpf:%u/perf_map:%s (%r)",
+              __FUNCTION__, ta, bpf_id, map, rc);
+        return rc;
+    }
+
+    if ((rc = cfg_get_instance_fmt(&val_type, &num_events,
+                              "/agent:%s/bpf:%u/perf_map:%s/num_events:",
+                              ta, bpf_id, map)) != 0)
+    {
+        ERROR("%s(): Failed to get number of events from "
+              "/agent:%s/bpf:%u/perf_map:%s (%r)",
+              __FUNCTION__, ta, bpf_id, map, rc);
+        return rc;
+    }
+
+    if ((rc = cfg_find_pattern_fmt(&event_id_num, &event_id_hdls,
+                                   "/agent:%s/bpf:%u/perf_map:%s/id:*",
+                                   ta, bpf_id, map)) != 0)
+    {
+        ERROR("%s(): Failed to get event data list from "
+              "/agent:%s/bpf:%u/perf_map:%s (%r)",
+              __FUNCTION__, ta, bpf_id, map, rc);
+        return rc;
+    }
+
+    if (num_events != event_id_num)
+    {
+        ERROR("%s(): Number of events in id list is invalid", __FUNCTION__);
+        free(event_id_hdls);
+        return TE_RC(TE_TAPI, TE_EFAIL);
+    }
+
+    *data = tapi_calloc(event_id_num, event_data_size);
+
+    val_type = CVT_STRING;
+    for (i = 0; i < event_id_num; ++i)
+    {
+        char    *val_str = NULL;
+        uint8_t *data_ptr = *data + i * event_data_size;
+
+        if ((rc = cfg_get_instance(event_id_hdls[i],
+                                   &val_type,
+                                   &val_str)) != 0)
+        {
+            ERROR("%s(): Failed to get event data instance", __FUNCTION__);
+            free(event_id_hdls);
+            return rc;
+        }
+
+        if ((rc = te_str_hex_str2raw(val_str, data_ptr, event_data_size)) != 0)
+        {
+            ERROR("%s(): Failed to convert hex-string to raw data",
+                  __FUNCTION__);
+            free(val_str);
+            free(event_id_hdls);
+            return rc;
+        }
+
+        free(val_str);
+    }
+
+    *num = event_id_num;
+    free(event_id_hdls);
+
+    return 0;
+}
+
 /************** Auxiliary functions  ****************/
 
 /* See description in tapi_bpf.h */
@@ -967,8 +1126,9 @@ tapi_bpf_prog_name_check(const char *ta, unsigned int bpf_id,
 
 /* See description in tapi_bpf.h */
 te_errno
-tapi_bpf_map_name_check(const char *ta, unsigned int bpf_id,
-                        const char *map_name)
+tapi_bpf_map_type_name_check(const char *ta, unsigned int bpf_id,
+                             const char *map_name,
+                             tapi_bpf_map_type map_type)
 {
     te_string   str = TE_STRING_INIT_STATIC(RCF_MAX_ID);
     te_errno    rc = 0;
@@ -976,8 +1136,11 @@ tapi_bpf_map_name_check(const char *ta, unsigned int bpf_id,
     assert(ta != NULL);
     assert(map_name != NULL);
 
-    if ((rc = te_string_append(&str, "/agent:%s/bpf:%u/map:%s",
-                               ta, bpf_id, map_name)) != 0)
+    if ((rc = te_string_append(&str, "/agent:%s/bpf:%u/%s:%s",
+                               ta, bpf_id,
+                               map_type == TAPI_BPF_MAP_TYPE_PERF_EVENT_ARRAY ?
+                               "perf_map" : "map",
+                               map_name)) != 0)
     {
         return rc;
     }

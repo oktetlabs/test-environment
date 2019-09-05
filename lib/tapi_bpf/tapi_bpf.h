@@ -411,6 +411,51 @@ extern te_errno tapi_bpf_map_get_key_list(const char *ta,
                                           uint8_t  ***key,
                                           unsigned int *count);
 
+/**
+ * Initialize perf_event XDP map. Set size of event data and
+ * enable event processing.
+ *
+ * @param ta            Test Agent name
+ * @param bpf_id        Bpf ID
+ * @param map           Map name
+ * @param event_size    Size of data passed via an event
+ *
+ * @return                  Status code
+ */
+extern te_errno
+tapi_bpf_perf_event_init(const char *ta, unsigned int bpf_id,
+                         const char *map, unsigned int event_size);
+
+/**
+ * Disable event processing for specified perf_event map.
+ *
+ * @param ta            Test Agent name
+ * @param bpf_id        Bpf ID
+ * @param map           Map name
+ *
+ * @return                  Status code
+ */
+extern te_errno
+tapi_bpf_perf_event_deinit(const char *ta, unsigned int bpf_id,
+                           const char *map);
+
+/**
+ * Get data from all processed events.
+ *
+ * @param[in] ta            Test Agent name
+ * @param[in] bpf_id        Bpf ID
+ * @param[in] map           Map name
+ * @param[out] num          Number of events
+ * @param[out] data         Pointer to location for writing events data,
+ *                          memory for the data is allocated by the function
+ *                          using malloc().
+ *
+ * @return                  Status code
+ */
+extern te_errno
+tapi_bpf_perf_get_events(const char *ta, unsigned int bpf_id, const char *map,
+                         unsigned int *num, uint8_t **data);
+
 /************************** Auxiliary functions  *****************************/
 
 /**
@@ -456,6 +501,21 @@ extern te_errno tapi_bpf_prog_name_check(const char *ta, unsigned int bpf_id,
                                          const char *prog_name);
 
 /**
+ * Check that map name is in list of loaded maps assuming its type.
+ *
+ * @param ta        Test Agent name
+ * @param bpf_id    Id of BPF object
+ * @param map_name  The name of map to search
+ * @param map_type  Type of the checked map
+ *
+ * @return          Status code
+ */
+extern te_errno
+tapi_bpf_map_type_name_check(const char *ta, unsigned int bpf_id,
+                             const char *map_name,
+                             tapi_bpf_map_type map_type);
+
+/**
  * Check that map name is in list of loaded maps
  *
  * @param ta        Test Agent name
@@ -464,8 +524,13 @@ extern te_errno tapi_bpf_prog_name_check(const char *ta, unsigned int bpf_id,
  *
  * @return              Status code
  */
-extern te_errno tapi_bpf_map_name_check(const char *ta, unsigned int bpf_id,
-                                        const char *map_name);
+static inline te_errno
+tapi_bpf_map_name_check(const char *ta, unsigned int bpf_id,
+                        const char *map_name)
+{
+    return tapi_bpf_map_type_name_check(ta, bpf_id, map_name,
+                                        TAPI_BPF_MAP_TYPE_UNSPEC);
+}
 
 /**@} <!-- END tapi_bpf --> */
 
