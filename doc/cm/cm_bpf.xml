@@ -98,6 +98,41 @@
     <object oid="/agent/bpf/map/writable/key" access="read_create"
             type="string"/>
 
+    <!-- List of BPF perf_event maps
+         Name:  map name -->
+    <object oid="/agent/bpf/perf_map" access="read_only" type="none">
+      <depends oid="/agent/bpf/state"/>
+    </object>
+
+    <!-- Size of user data that is passed via an event. This value
+         must be set before events monitoring is enabled.
+         Name:  empty
+         Value: size of data in bytes -->
+    <object oid="/agent/bpf/perf_map/event_size" access="read_write"
+            type="integer"/>
+
+    <!-- Enable/disable events monitoring.
+         Name: empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1 -->
+    <object oid="/agent/bpf/perf_map/events_enable" access="read_write"
+            type="integer"/>
+
+    <!-- Number of pending events with data. Reading this field causes events
+         polling and data entries updating (perf_map/events/id field).
+         Name:  empty
+         Value: Number of events -->
+    <object oid="/agent/bpf/perf_map/num_events" access="read_only"
+            type="integer" volatile="true"/>
+
+    <!-- Collection of entries with ready to read user data.
+         Name:  Event ID
+         Value: hex-string -->
+    <object oid="/agent/bpf/perf_map/id" access="read_only"
+            type="string" volatile="true">
+      <depends oid="/agent/bpf/perf_map/num_events"/>
+    </object>
+
     <!-- ******************* Programs ******************* -->
     <!-- List of BPF programs. Programs are available when BPF object is loaded.
          Name:  program name -->
