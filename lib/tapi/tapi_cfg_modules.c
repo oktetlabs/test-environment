@@ -10,6 +10,7 @@
 
 #include "te_config.h"
 #include "te_defs.h"
+#include "te_string.h"
 #include "logger_api.h"
 #include "te_log_stack.h"
 #include "conf_api.h"
@@ -138,4 +139,85 @@ tapi_cfg_module_int_params_add(const char *ta_name, const char *mod_name,
     va_end(ap);
 
     return rc;
+}
+
+/* See description in 'tapi_cfg_modules.h' */
+te_errno
+tapi_cfg_module_add_from_ta_dir(const char *ta_name,
+                                const char *module_name,
+                                te_bool     load_dependencies)
+{
+    te_string     module_path = TE_STRING_INIT;
+    char         *module_name_underscorified;
+    cfg_val_type  cvt = CVT_STRING;
+    cfg_handle    module_handle;
+    char         *ta_dir;
+    te_errno      rc;
+    char         *cp;
+
+    module_name_underscorified = strdup(module_name);
+    if (module_name_underscorified == NULL)
+    {
+        ERROR("Failed to copy the module name");
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+    }
+
+    for (cp = module_name_underscorified; *cp != '\0'; ++cp)
+        *cp = (*cp == '-') ? '_' : *cp;
+
+    rc = cfg_get_instance_fmt(&cvt, &ta_dir, "/agent:%s/dir:", ta_name);
+    if (rc != 0)
+    {
+        ERROR("Failed to get TA directory path");
+        goto out;
+    }
+
+    rc = te_string_append(&module_path, "%s/%s.ko", ta_dir, module_name);
+    if (rc != 0)
+    {
+        ERROR("Failed to construct the module path");
+        goto out;
+    }
+
+    rc = cfg_add_instance_fmt(&module_handle, CVT_INTEGER, 0,
+                              "/agent:%s/module:%s", ta_name,
+                              module_name_underscorified);
+    if (rc != 0)
+    {
+        ERROR("Failed to add the module instance");
+        goto out;
+    }
+
+    rc = cfg_set_instance_fmt(CFG_VAL(STRING, module_path.ptr),
+                              "/agent:%s/module:%s/filename:",
+                              ta_name, module_name_underscorified);
+    if (rc != 0)
+    {
+        ERROR("Failed to set the module path");
+        goto out;
+    }
+
+    if (load_dependencies)
+    {
+        rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+                                  "/agent:%s/module:%s/filename:"
+                                  "/load_dependencies:", ta_name,
+                                  module_name_underscorified);
+        if (rc != 0)
+        {
+            ERROR("Failed to arrange loading the module dependencies");
+            goto out;
+        }
+    }
+
+    rc = tapi_cfg_module_load(ta_name, module_name_underscorified);
+    if (rc != 0)
+        ERROR("Failed to request the module insertion");
+
+out:
+    te_string_free(&module_path);
+    free(ta_dir);
+    free(module_name_underscorified);
+
+    return TE_RC(TE_TAPI, rc);
 }

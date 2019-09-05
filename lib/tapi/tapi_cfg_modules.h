@@ -119,6 +119,19 @@ te_errno tapi_cfg_module_params_add(const char *ta_name,
 te_errno tapi_cfg_module_int_params_add(const char *ta_name,
                                         const char *mod_name, ...);
 
+/**
+ * Given a module file in a TA directory, insert the former.
+ * Take care of the module dependencies if required.
+ *
+ * @param  ta_name           The TA name
+ * @param  module_name       The filename without ".ko" extension
+ * @param  load_dependencies Take care of dependencies
+ *
+ * @retval Status code.
+ */
+extern te_errno tapi_cfg_module_add_from_ta_dir(const char *ta_name,
+                                                const char *module_name,
+                                                te_bool     load_dependencies);
 
 #ifdef __cplusplus
 } /* extern "C" */
