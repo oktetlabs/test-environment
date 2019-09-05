@@ -30,26 +30,6 @@ extern "C" {
  * @{
  */
 
-#define POWER_SW_CMD2_STR(_cmd)                                 \
-(_cmd == CMD_TURN_ON) ?                                         \
-    CMD_STR_TURN_ON :                                           \
-        (_cmd == CMD_TURN_OFF) ?                                \
-            CMD_STR_TURN_OFF :                                  \
-                (_cmd == CMD_RESTART) ?                         \
-                    CMD_STR_RESTART :                           \
-                        (_cmd == CMD_UNSPEC) ?                  \
-                            CMD_STR_UNSPEC :                    \
-                                CMD_STR_INVAL
-
-#define POWER_SW_DEV_TYPE2_STR(_type)                           \
-(_type == DEV_TYPE_PARPORT) ?                                   \
-    DEV_TYPE_STR_PARPORT :                                      \
-        (_type == DEV_TYPE_TTY) ?                               \
-            DEV_TYPE_STR_TTY :                                  \
-                (_type == DEV_TYPE_UNSPEC) ?                    \
-                    DEV_TYPE_STR_UNSPEC :                       \
-                                DEV_TYPE_STR_INVAL
-
 #define POWER_SW_STR2_CMD(_cmd_str)                                 \
 (_cmd_str == NULL) ?                                                \
     CMD_UNSPEC :                                                    \
