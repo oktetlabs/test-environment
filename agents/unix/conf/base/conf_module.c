@@ -71,6 +71,10 @@ typedef struct te_kernel_module {
     char  name[TE_MODULE_NAME_LEN]; /*< Name of the module */
     char *filename; /*< Should be set only for modules that we add before
                      *  enabling */
+    te_bool filename_load_dependencies; /**< Demands that dependencies be
+                                         *   loaded prior loading the module
+                                         *   by its filename
+                                         */
     te_bool loaded; /*< Is the module loaded into the system */
 
     LIST_HEAD(te_kernel_module_params, te_kernel_module_param) params;
@@ -97,6 +101,16 @@ static te_errno module_filename_set(unsigned int gid, const char *oid,
 static te_errno module_filename_get(unsigned int gid, const char *oid,
                                     char *value, const char *mod_name,...);
 
+static te_errno module_filename_load_dependencies_get(unsigned int  gid,
+                                                      const char   *oid,
+                                                      char         *value,
+                                                      const char   *mod_name);
+
+static te_errno module_filename_load_dependencies_set(unsigned int  gid,
+                                                      const char   *oid,
+                                                      const char   *value,
+                                                      const char   *mod_name);
+
 static te_errno module_param_list(unsigned int, const char *,
                                   const char *, char **,
                                   const char *);
@@ -112,9 +126,14 @@ static te_errno module_param_del(unsigned int gid, const char *oid,
                                  const char *param_name,
                                  const char *mod_name,...);
 
-RCF_PCH_CFG_NODE_RW(node_filename, "filename", NULL,
-                    NULL, module_filename_get,
-                    module_filename_set);
+RCF_PCH_CFG_NODE_RW(node_filename_load_dependencies,
+                    "load_dependencies", NULL, NULL,
+                    module_filename_load_dependencies_get,
+                    module_filename_load_dependencies_set);
+
+RCF_PCH_CFG_NODE_RW(node_filename, "filename",
+                    &node_filename_load_dependencies, NULL,
+                    module_filename_get, module_filename_set);
 
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_module_param, "parameter",
                                NULL, &node_filename,
@@ -151,6 +170,28 @@ mod_loaded(const char *mod_name)
     snprintf(buf, sizeof(buf), SYS_MODULE "/%s", mod_name);
 
     return stat(buf, &st) == 0;
+}
+
+static te_errno
+mod_filename_modprobe_try_load_dependencies(te_kernel_module *module)
+{
+    te_string cmd = TE_STRING_INIT;
+    te_errno  rc;
+
+    if (!module->filename_load_dependencies)
+        return 0;
+
+    rc = te_string_append(&cmd,
+                          "modinfo --field=depends %s | "
+                          "xargs -d ',' -n1 | sed '$d' | "
+                          "xargs -n1 modprobe",
+                          module->filename);
+    if (rc != 0)
+        return rc;
+
+    rc = ta_system(cmd.ptr);
+    te_string_free(&cmd);
+    return rc;
 }
 
 static int
@@ -496,7 +537,52 @@ module_param_del(unsigned int gid, const char *oid,
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
+static te_errno
+module_filename_load_dependencies_get(unsigned int  gid,
+                                      const char   *oid,
+                                      char         *value,
+                                      const char   *mod_name)
+{
+    te_kernel_module *module;
 
+    UNUSED(gid);
+    UNUSED(oid);
+
+    module = mod_find(mod_name);
+    if (module == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    value[0] = (module->filename_load_dependencies) ? '1' : '0';
+    value[1] = '\0';
+
+    return 0;
+}
+
+static te_errno
+module_filename_load_dependencies_set(unsigned int  gid,
+                                      const char   *oid,
+                                      const char   *value,
+                                      const char   *mod_name)
+{
+    te_kernel_module *module;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    module = mod_find(mod_name);
+    if (module == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (module->filename == NULL)
+        return TE_RC(TE_TA_UNIX, TE_EBADF);
+
+    if ((value[0] != '0' && value[0] != '1') || value[1] != '\0')
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    module->filename_load_dependencies = (value[0] == '1');
+
+    return 0;
+}
 
 static te_errno
 module_filename_set(unsigned int gid, const char *oid,
@@ -556,6 +642,7 @@ module_add(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     snprintf(module->name, sizeof(module->name), "%s", mod_name);
     module->filename = NULL;
+    module->filename_load_dependencies = FALSE;
     module->loaded = FALSE;
     LIST_INIT(&module->params);
 
@@ -630,9 +717,14 @@ module_set(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     if (load)
-        rc = mod_modprobe(module);
+    {
+        rc = mod_filename_modprobe_try_load_dependencies(module);
+        rc = (rc == 0) ? mod_modprobe(module) : rc;
+    }
     else
+    {
         rc = mod_rmmod(mod_name);
+    }
 
     if (rc == 0 && module != NULL)
         module->loaded = load;

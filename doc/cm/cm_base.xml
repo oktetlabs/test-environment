@@ -1259,6 +1259,19 @@
          Value: path in the file system -->
     <object oid="/agent/module/filename" access="read_write" type="string"/>
 
+    <!-- A means to demand that dependencies be queried and
+         resolved for the given module prior calling insmod.
+
+         @note The internal implementation calls modinfo on
+               the module file after changing /agent/module
+               value to 1 and then calls modprobe for every
+               dependency discovered. Then insmod is called.
+
+         Name:  none
+         Value: 0, 1
+         -->
+    <object oid="/agent/module/filename/load_dependencies" access="read_write" type="integer"/>
+
     <!-- Parameter of a system module.
          Name: Name of the parameter
          Value: Value of the parameter -->
