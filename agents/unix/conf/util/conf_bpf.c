@@ -44,6 +44,12 @@
 #endif
 
 #include <linux/if_link.h>
+#include <linux/perf_event.h>
+#include <sys/mman.h>
+#include <sys/ioctl.h>
+#include <asm/unistd.h>
+#include <sys/epoll.h>
+#include <sys/sysinfo.h>
 
 #include "te_stdint.h"
 #include "te_errno.h"
@@ -51,6 +57,7 @@
 #include "te_string.h"
 #include "te_str.h"
 #include "te_alloc.h"
+#include "te_vector.h"
 #include "cs_common.h"
 #include "logger_api.h"
 #include "comm_agent.h"
@@ -68,6 +75,12 @@
 /* Max number of programs or maps in BPF object file */
 #define BPF_MAX_ENTRIES 128
 
+/* Default number of pages for maping perf event data. */
+#define BPF_PERF_EVENT_DEF_PAGE_CNT 8
+
+/* Default timeout in ms for polling perf events. */
+#define BPF_PERF_EVENT_DEF_POLL_TIMEOUT 100
+
 /** Structure for the BPF program description */
 typedef struct bpf_prog_entry {
     int fd;
@@ -84,6 +97,53 @@ typedef struct bpf_map_entry {
     unsigned int max_entries;
     te_bool writable;
 } bpf_map_entry;
+
+/** Structure describing perf event data entry. */
+typedef struct bpf_perf_map_event {
+    int      cpu;       /**< CPU ID which event occurred on. */
+    void    *data;      /**< Buffer for storing data from XDP program. */
+} bpf_perf_map_event;
+
+/*
+ * Forward declaration of bpf_perf_map_entry to get access to it from
+ * bpf_xdp_perf_cpu_buf structure.
+ */
+typedef struct bpf_perf_map_entry bpf_perf_map_entry;
+
+/**
+ * Structure describing perf event attributes per CPU.
+ */
+typedef struct bpf_xdp_perf_cpu_buf {
+    bpf_perf_map_entry *map;        /**< The map reference. */
+    void               *mmap_base;  /**< mmap()'ed memory. */
+    int                 perf_fd;    /**< perf_event_open() descriptor. */
+    int                 cpu;        /**< CPU id. */
+} bpf_xdp_perf_cpu_buf;
+
+/** Type declaration for perf event handling callback function */
+typedef enum bpf_perf_event_ret
+(*perf_event_handler_t)(void *ctx, int cpu, void *data, uint32_t size);
+
+/** Structure for the BPF perf map description */
+typedef struct bpf_perf_map_entry {
+    int fd;                         /**< Map descriptor */
+    char name[BPF_OBJ_NAME_LEN + 1];/**< Map name */
+    unsigned int num_events;        /**< Number of pending events */
+    unsigned int event_size;        /**< Size of data passing via an event */
+    te_bool events_enabled;         /**< Flag to enable/disable events
+                                         processing */
+    te_vec events;                  /**< Array of event data */
+    int poll_timeout;               /**< Polling timeout in ms */
+    int page_cnt;                   /**< Number of pages to allocate
+                                         when reading event data */
+    bpf_xdp_perf_cpu_buf *cpu_bufs; /**< Array for per-CPU data */
+    int epoll_fd;                   /**< Epoll descriptor */
+    struct epoll_event *epoll_evts; /**< Events array passed to epoll_wait() */
+    size_t page_size;               /**< Size of one mmap() page */
+    size_t mmap_size;               /**< Total mmap()'ed size */
+    int cpus_num;                   /**< Total number of CPUs in the system */
+    perf_event_handler_t ev_hdl;    /**< Event handler pointer */
+} bpf_perf_map_entry;
 
 enum bpf_object_state {
     BPF_STATE_UNLOADED = 0,     /**< BPF object isn't loaded into the kernel */
@@ -103,7 +163,13 @@ typedef struct bpf_entry {
     struct bpf_prog_entry   progs[BPF_MAX_ENTRIES];
     unsigned int            map_number;
     struct bpf_map_entry    maps[BPF_MAX_ENTRIES];
+    unsigned int            perf_map_number;
+    bpf_perf_map_entry      perf_maps[BPF_MAX_ENTRIES];
 } bpf_entry;
+
+/** Declaration of perf event handler */
+static enum bpf_perf_event_ret
+bpf_xdp_perf_event_handler(void *ctx, int cpu, void *data, uint32_t size);
 
 /**< Head of the BPF objects list */
 static LIST_HEAD(, bpf_entry) bpf_list_h = LIST_HEAD_INITIALIZER(bpf_list_h);
@@ -114,6 +180,7 @@ bpf_map_supported(enum bpf_map_type type)
 {
     return (type == BPF_MAP_TYPE_ARRAY ||
             type == BPF_MAP_TYPE_HASH  ||
+            type == BPF_MAP_TYPE_PERF_EVENT_ARRAY ||
             type == BPF_MAP_TYPE_LPM_TRIE);
 }
 
@@ -218,15 +285,16 @@ bpf_init_prog_info(struct bpf_program *prog, struct bpf_prog_entry *prog_info)
  * Initialize information of the loaded BPF map.
  *
  * @param map           The BPF map.
+ * @param def           The BPF map definition.
  * @param[out] map_info The BPF map info.
  *
  * @return Status code.
  */
 static te_errno
-bpf_init_map_info(struct bpf_map *map, struct bpf_map_entry *map_info)
+bpf_init_map_info(struct bpf_map *map, const struct bpf_map_def *def,
+                  struct bpf_map_entry *map_info)
 {
     int fd;
-    const struct bpf_map_def *def;
 
     fd = bpf_map__fd(map);
     if (fd <= 0)
@@ -235,21 +303,57 @@ bpf_init_map_info(struct bpf_map *map, struct bpf_map_entry *map_info)
         return TE_RC(TE_TA_UNIX, TE_ENODEV);
     }
 
-    def = bpf_map__def(map);
-    if (!bpf_map_supported(def->type))
-    {
-        ERROR("Loaded BPF map isn't supported.");
-        return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
-    }
-
     map_info->fd = fd;
     map_info->type = def->type;
+    strncpy(map_info->name, bpf_map__name(map), sizeof(map_info->name) - 1);
+    map_info->name[sizeof(map_info->name) - 1] = '\0';
+
     map_info->key_size = def->key_size;
     map_info->value_size = def->value_size;
     map_info->max_entries = def->max_entries;
+    map_info->writable = FALSE;
+
+    return 0;
+}
+
+/**
+ * Initialize information of the loaded BPF perf map.
+ *
+ * @param[in]  map          The BPF map.
+ * @param[out] map_info     The BPF map info.
+ *
+ * @return Status code.
+ */
+static te_errno
+bpf_init_perf_map_info(struct bpf_map *map,
+                       struct bpf_perf_map_entry *map_info)
+{
+    int     fd;
+
+    fd = bpf_map__fd(map);
+    if (fd <= 0)
+    {
+        ERROR("Failed to get fd of loaded BPF map.");
+        return TE_RC(TE_TA_UNIX, TE_ENODEV);
+    }
+
+    map_info->fd = fd;
     strncpy(map_info->name, bpf_map__name(map), sizeof(map_info->name) - 1);
     map_info->name[sizeof(map_info->name) - 1] = '\0';
-    map_info->writable = FALSE;
+
+    map_info->events_enabled = FALSE;
+    map_info->num_events = 0;
+    map_info->event_size = 0;
+    map_info->events = TE_VEC_INIT(bpf_perf_map_event);
+    map_info->poll_timeout = BPF_PERF_EVENT_DEF_POLL_TIMEOUT;
+    map_info->page_cnt = BPF_PERF_EVENT_DEF_PAGE_CNT;
+    map_info->cpu_bufs = NULL;
+    map_info->epoll_fd = -1;
+    map_info->epoll_evts = NULL;
+    map_info->page_size = getpagesize();
+    map_info->mmap_size = map_info->page_size * map_info->page_cnt;
+    map_info->cpus_num = get_nprocs();
+    map_info->ev_hdl = bpf_xdp_perf_event_handler;
 
     return 0;
 }
@@ -270,6 +374,7 @@ bpf_load(struct bpf_entry *bpf)
     struct bpf_map *map;
     unsigned int prog_number = 0;
     unsigned int map_number = 0;
+    unsigned int perf_map_number = 0;
     int rc = 0;
 
     if (bpf->state == BPF_STATE_LOADED)
@@ -299,21 +404,40 @@ bpf_load(struct bpf_entry *bpf)
 
     bpf_object__for_each_map(map, bpf->obj)
     {
-        if (map_number == BPF_MAX_ENTRIES)
+        const struct bpf_map_def *def;
+
+        if (map_number == BPF_MAX_ENTRIES ||
+            perf_map_number == BPF_MAX_ENTRIES)
         {
             ERROR("Number of BPF maps in object file is too big.");
             return TE_RC(TE_TA_UNIX, TE_EFBIG);
         }
 
-        rc = bpf_init_map_info(map, &bpf->maps[map_number]);
+        def = bpf_map__def(map);
+        if (!bpf_map_supported(def->type))
+        {
+            ERROR("Loaded BPF map isn't supported.");
+            return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+        }
+
+        if (def->type == BPF_MAP_TYPE_PERF_EVENT_ARRAY)
+        {
+            rc = bpf_init_perf_map_info(map, &bpf->perf_maps[perf_map_number]);
+            perf_map_number++;
+        }
+        else
+        {
+            rc = bpf_init_map_info(map, def, &bpf->maps[map_number]);
+            map_number++;
+        }
+
         if (rc != 0)
             return rc;
-
-        map_number++;
     }
 
     bpf->prog_number = prog_number;
     bpf->map_number = map_number;
+    bpf->perf_map_number = perf_map_number;
     bpf->state = BPF_STATE_LOADED;
     return 0;
 }
@@ -455,6 +579,7 @@ bpf_prog_map_list(unsigned int gid, const char *oid, const char *sub_id,
     te_string result = TE_STRING_INIT;
     te_bool first = TRUE;
     te_bool is_map = FALSE;
+    te_bool is_perf_map = FALSE;
     bpf_entry *bpf;
     unsigned int i;
     unsigned int entries_nb = 0;
@@ -479,11 +604,24 @@ bpf_prog_map_list(unsigned int gid, const char *oid, const char *sub_id,
         is_map = TRUE;
         entries_nb = bpf->map_number;
     }
+    else if (strcmp(sub_id, "perf_map") == 0)
+    {
+        is_perf_map = TRUE;
+        entries_nb = bpf->perf_map_number;
+    }
 
     for (i = 0; i < entries_nb; i++)
     {
-        rc = te_string_append(&result, "%s%s", first ? "" : " ",
-                              is_map ? bpf->maps[i].name : bpf->progs[i].name);
+        const char *name;
+
+        if (is_perf_map)
+            name = bpf->perf_maps[i].name;
+        else if (is_map)
+            name = bpf->maps[i].name;
+        else
+            name = bpf->progs[i].name;
+
+        rc = te_string_append(&result, "%s%s", first ? "" : " ", name);
         first = FALSE;
         if (rc != 0)
         {
@@ -742,11 +880,39 @@ bpf_find_map(const char *bpf_id, const char *map_name)
     return NULL;
 }
 
+/**
+ * Searching for the BPF perf map by object id and map name.
+ *
+ * @param bpf_id        The BPF object id.
+ * @param map_name      The map name.
+ *
+ * @return The BPF map unit or NULL.
+ */
+static bpf_perf_map_entry *
+bpf_find_perf_map(const char *bpf_id, const char *map_name)
+{
+    unsigned int        i;
+    struct bpf_entry   *bpf;
+
+    bpf = bpf_find(bpf_id);
+    if (bpf == NULL)
+        return NULL;
+
+    for (i = 0; i < bpf->perf_map_number; i++)
+    {
+        if (strcmp(map_name, bpf->perf_maps[i].name) == 0)
+            return &bpf->perf_maps[i];
+    }
+
+    return NULL;
+}
+
 /* String representations of BPF map types */
 static const char* bpf_map_types_str[] = {
     [BPF_MAP_TYPE_UNSPEC] = "UNSPEC",
     [BPF_MAP_TYPE_HASH] = "HASH",
     [BPF_MAP_TYPE_ARRAY] = "ARRAY",
+    [BPF_MAP_TYPE_PERF_EVENT_ARRAY] = "PERF_EVENT_ARRAY",
     [BPF_MAP_TYPE_LPM_TRIE] = "LPM_TRIE",
 };
 
@@ -1134,6 +1300,521 @@ fail_free_key:
     return rc;
 }
 
+/**
+ * Callback function which is called by libbpf.
+ * The function makes a generic processing of an event and calls
+ * user defined handler.
+ *
+ * @param e     Perf event data header
+ * @param ctx   User data (pointer to @ref bpf_xdp_perf_cpu_buf)
+ *
+ * @return libbpf status code
+ */
+static enum bpf_perf_event_ret
+perf_event_process(struct perf_event_header *e, void *ctx)
+{
+    bpf_xdp_perf_cpu_buf       *cpu_buf = ctx;
+    enum bpf_perf_event_ret     rc = LIBBPF_PERF_EVENT_CONT;
+
+    switch (e->type)
+    {
+        case PERF_RECORD_SAMPLE:
+        {
+            struct perf_event_sample {
+                struct perf_event_header header;
+                uint32_t size;
+                char data[];
+            } *sample = (void *) e;
+            if (cpu_buf->map->ev_hdl != NULL)
+            {
+                rc = cpu_buf->map->ev_hdl(cpu_buf->map, cpu_buf->cpu,
+                                          sample->data, sample->size);
+            }
+            break;
+        }
+        case PERF_RECORD_LOST:
+        {
+            struct {
+                struct perf_event_header header;
+                uint64_t id;
+                uint64_t lost;
+            } *lost = (void *) e;
+            WARN("%s(): Lost %lld events", __FUNCTION__, lost->lost);
+            break;
+        }
+        default:
+            WARN("%s(): Unknown perf sample type %d\n", __FUNCTION__, e->type);
+            rc = LIBBPF_PERF_EVENT_ERROR;
+            break;
+    }
+
+    return rc;
+}
+
+/**
+ * Return number of pending perf events.
+ * The function polls perf events via epoll_wait() and calls
+ * @ref perf_event_process function using libbpf API.
+ * @note Before calling epoll_wait() the function resets
+ * event data array @ref events and sets to zero the number of events.
+ *
+ * @param map   Pointer to map
+ *
+ * @return Number of events
+ */
+static unsigned int
+bpf_perf_events_num(bpf_perf_map_entry *map)
+{
+    int                 cnt = -1;
+    int                 i = 0;
+    bpf_perf_map_event *event;
+
+    if (!map->events_enabled)
+        return 0;
+
+    map->num_events = 0;
+    TE_VEC_FOREACH(&map->events, event)
+        free(event->data);
+    te_vec_reset(&map->events);
+
+    cnt = epoll_wait(map->epoll_fd,
+                     map->epoll_evts,
+                     map->cpus_num,
+                     map->poll_timeout);
+    for (i = 0; i < cnt; ++i)
+    {
+        void       *buf = NULL;
+        size_t      len = 0;
+
+        /*
+         * Every epoll event contains a pointer to the specific cpu
+         * @ref bpf_xdp_perf_cpu_buf structure instance. This allows us
+         * to use proper mmap()'ed memory base and to pass proper data
+         * to the handler.
+         */
+        bpf_xdp_perf_cpu_buf *cpu_buf = map->epoll_evts[i].data.ptr;
+
+        bpf_perf_event_read_simple(cpu_buf->mmap_base,
+                                   map->mmap_size,
+                                   map->page_size,
+                                   buf, &len,
+                                   perf_event_process, cpu_buf);
+        free(buf);
+    }
+
+    return map->num_events;
+}
+
+/**
+ * Common getter function for the BPF perf_event map parameters.
+ *
+ * @param[in] gid       Group identifier (unused).
+ * @param[in] oid       Full object instance identifier.
+ * @param[out] value    Obtained value.
+ * @param[in] bpf_id    BPF object id.
+ * @param[in] map_name  Map name.
+ *
+ * @return Status code.
+ */
+static te_errno
+bpf_get_perf_map_params(unsigned int gid, const char *oid, char *value,
+                        const char *bpf_id, const char *map_name)
+{
+    struct bpf_perf_map_entry *map;
+
+    UNUSED(gid);
+
+    map = bpf_find_perf_map(bpf_id, map_name);
+    if (map == NULL)
+    {
+        ERROR("%s(): Map %s isn't found.", __FUNCTION__, map_name);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (strstr(oid, "/num_events:") != NULL)
+        snprintf(value, RCF_MAX_VAL, "%u", bpf_perf_events_num(map));
+    else if ((strstr(oid, "/event_size:") != NULL))
+        snprintf(value, RCF_MAX_VAL, "%u", map->event_size);
+    else if ((strstr(oid, "/events_enable:") != NULL))
+        snprintf(value, RCF_MAX_VAL, "%u", map->events_enabled ? 1 : 0);
+
+    return 0;
+}
+
+/**
+ * Callback function, which is called on every event.
+ * The function appends new data from the XDP program to the
+ * event data vector.
+ *
+ * @param ctx   User internal data (pointer to a @ref bpf_perf_map_entry)
+ * @param cpu   Index of cpu
+ * @param data  XDP program data
+ * @param size  Data size
+ *
+ * @return libbpf status code
+ */
+static enum bpf_perf_event_ret
+bpf_xdp_perf_event_handler(void *ctx, int cpu, void *data, uint32_t size)
+{
+    bpf_perf_map_event  event_data;
+    bpf_perf_map_entry *map = ctx;
+
+    if (map->event_size != size)
+    {
+        WARN("Specified event size does not match the actual size");
+        return LIBBPF_PERF_EVENT_ERROR;
+    }
+
+    event_data.cpu = cpu;
+    event_data.data = TE_ALLOC(size);
+    if (event_data.data == NULL)
+        return LIBBPF_PERF_EVENT_ERROR;
+    memcpy(event_data.data, data, size);
+
+    if (TE_VEC_APPEND(&map->events, event_data) != 0)
+    {
+        free(event_data.data);
+        return LIBBPF_PERF_EVENT_ERROR;
+    }
+
+    ++map->num_events;
+    return LIBBPF_PERF_EVENT_CONT;
+}
+
+/**
+ * Enable perf events for a single CPU.
+ *
+ * @param map   Pointer to map.
+ * @param cpu   CPU id.
+ *
+ * @return Status code
+ */
+static te_errno
+bpf_xdp_perf_cpu_buf_init(bpf_perf_map_entry *map, int cpu)
+{
+    bpf_xdp_perf_cpu_buf    *cpu_buf = &map->cpu_bufs[cpu];
+    struct perf_event_attr   attr = {
+        .sample_type = PERF_SAMPLE_RAW,
+        .type = PERF_TYPE_SOFTWARE,
+        .config = PERF_COUNT_SW_BPF_OUTPUT,
+        .wakeup_events = 1,
+    };
+
+    cpu_buf->perf_fd = syscall(__NR_perf_event_open, &attr, -1,
+                               cpu, -1, PERF_FLAG_FD_CLOEXEC);
+    if (cpu_buf->perf_fd < 0)
+    {
+        ERROR("%s(): cpu #%d: Failed to open perf event (%s)",
+              __FUNCTION__, cpu, strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    cpu_buf->mmap_base = mmap(NULL, map->mmap_size + map->page_size,
+                              PROT_READ | PROT_WRITE, MAP_SHARED,
+                              cpu_buf->perf_fd, 0);
+    if (cpu_buf->mmap_base == MAP_FAILED)
+    {
+        ERROR("%s(): cpu #%d: Failed to mmap perf buffer (%s)",
+              __FUNCTION__, cpu, strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    if (ioctl(cpu_buf->perf_fd, PERF_EVENT_IOC_ENABLE, 0) < 0)
+    {
+        ERROR("%s(): cpu #%d: Failed to enable perf event (%s)",
+              __FUNCTION__, cpu, strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    return 0;
+}
+
+/**
+ * Enable perf events processing on a specified perf map.
+ *
+ * @param map   Pointer to map.
+ *
+ * @return Status code
+ */
+static te_errno
+bpf_xdp_perf_buf_init(bpf_perf_map_entry *map)
+{
+    int         i;
+    int         cpus_num = map->cpus_num;
+    te_errno    rc = 0;
+
+    map->epoll_fd = epoll_create1(EPOLL_CLOEXEC);
+    if (map->epoll_fd < 0)
+    {
+        ERROR("%s(): Failed to create epoll instance (%s)",
+              __FUNCTION__, strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    map->cpu_bufs = TE_ALLOC(sizeof(*map->cpu_bufs) * cpus_num);
+    if (map->cpu_bufs == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    map->epoll_evts = TE_ALLOC(sizeof(*map->epoll_evts) * cpus_num);
+    if (map->epoll_evts == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    /*
+     * We need this loop to initialize perf_fd field to -1 value
+     * in all the bpf_xdp_perf_cpu_buf instances. It helps the
+     * function bpf_xdp_perf_buf_free() to understand which
+     * descriptors have not been opened yet and close them
+     * properly.
+     */
+    for (i = 0; i < cpus_num; ++i)
+        map->cpu_bufs[i].perf_fd = -1;
+
+    for (i = 0; i < cpus_num; ++i)
+    {
+        int perf_fd;
+
+        map->cpu_bufs[i].map = map;
+        map->cpu_bufs[i].cpu = i;
+
+        if ((rc = bpf_xdp_perf_cpu_buf_init(map, i)) != 0)
+            return rc;
+
+        perf_fd = map->cpu_bufs[i].perf_fd;
+
+        if (bpf_map_update_elem(map->fd, &i, &perf_fd, 0) != 0)
+        {
+            ERROR("%s(): Failed to set key %d to perf fd %d (%s)",
+                   __FUNCTION__, i, perf_fd, strerror(errno));
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        map->epoll_evts[i].events = EPOLLIN;
+        map->epoll_evts[i].data.ptr = &map->cpu_bufs[i];
+        if (epoll_ctl(map->epoll_fd, EPOLL_CTL_ADD,
+                      perf_fd, &map->epoll_evts[i]) < 0)
+        {
+            ERROR("%s(): Failed to epoll_ctl perf fd %d (%s)",
+                  __FUNCTION__, perf_fd, strerror(errno));
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Cleanup function for proper disabling events processing.
+ *
+ * @param map   Pointer to map.
+ */
+static void
+bpf_xdp_perf_buf_free(bpf_perf_map_entry *map)
+{
+    bpf_perf_map_event *event;
+
+    TE_VEC_FOREACH(&map->events, event)
+        free(event->data);
+    te_vec_free(&map->events);
+
+    if (map->cpu_bufs != NULL)
+    {
+        int i;
+
+        for (i = 0; i < map->cpus_num; ++i)
+        {
+            bpf_map_delete_elem(map->fd, &i);
+
+            if (map->cpu_bufs[i].mmap_base != NULL)
+            {
+                munmap(map->cpu_bufs[i].mmap_base,
+                       map->mmap_size + map->page_size);
+            }
+
+            if (map->cpu_bufs[i].perf_fd >= 0)
+            {
+                ioctl(map->cpu_bufs[i].perf_fd, PERF_EVENT_IOC_DISABLE, 0);
+                close(map->cpu_bufs[i].perf_fd);
+            }
+        }
+
+        free(map->cpu_bufs);
+    }
+
+    if (map->epoll_fd >= 0)
+        close(map->epoll_fd);
+    free(map->epoll_evts);
+}
+
+/**
+ * Enable/disable perf events processing.
+ *
+ * @param map       Pointer to a perf_event map
+ * @param enable    Enable/disable events processing
+ *
+ * @return Status code
+ */
+static te_errno
+bpf_xdp_perf_map_enable(bpf_perf_map_entry *map, te_bool enable)
+{
+    te_errno rc = 0;
+
+    if (map->events_enabled == enable)
+        return 0;
+
+    if (enable)
+    {
+        if (map->event_size == 0)
+        {
+            ERROR("%s(): Event size is not initialized.", __FUNCTION__);
+            return TE_RC(TE_TA_UNIX, TE_EFAIL);
+        }
+
+        if ((rc = bpf_xdp_perf_buf_init(map)) != 0)
+        {
+            bpf_xdp_perf_buf_free(map);
+            return rc;
+        }
+
+        map->events_enabled = TRUE;
+    }
+    else
+    {
+        bpf_xdp_perf_buf_free(map);
+        map->events_enabled = FALSE;
+        map->num_events = 0;
+    }
+
+    return 0;
+}
+
+/**
+ * Common setter function for the BPF perf_event map parameters.
+ *
+ * @param gid           Group identifier (unused).
+ * @param oid           Full object instance identifier.
+ * @param value         Set value.
+ * @param bpf_id        BPF object id.
+ * @param map_name      Map name.
+ *
+ * @return Status code.
+ */
+static te_errno
+bpf_set_perf_map_params(unsigned int gid, const char *oid, char *value,
+                        const char *bpf_id, const char *map_name)
+{
+    struct bpf_perf_map_entry  *map;
+    unsigned int                param;
+    te_errno                    rc = 0;
+
+    UNUSED(gid);
+
+    map = bpf_find_perf_map(bpf_id, map_name);
+    if (map == NULL)
+    {
+        ERROR("%s(): Map %s isn't found.", __FUNCTION__, map_name);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    rc = te_strtoui(value, 0, &param);
+    if (rc != 0)
+        return rc;
+
+    if ((strstr(oid, "/event_size:") != NULL))
+        map->event_size = param;
+    else if ((strstr(oid, "/events_enable:") != NULL))
+        rc = bpf_xdp_perf_map_enable(map, param != 0 ? TRUE : FALSE);
+
+    return rc;
+}
+
+/**
+ * Get data from the event that matches @p id_str ID.
+ *
+ * @param[in] gid           Group identifier (unused).
+ * @param[in] oid           Full object instance identifier (unused).
+ * @param[out] value_str    Obtained value.
+ * @param[in] bpf_id        BPF object id.
+ * @param[in] map_name      Map name.
+ * @param[in] id_str        Event ID.
+ *
+ * @return Status code.
+ */
+static te_errno
+bpf_get_perf_map_event(unsigned int gid, const char *oid, char *value_str,
+                       const char *bpf_id, const char *map_name,
+                       const char *id_str)
+{
+    struct bpf_perf_map_entry  *map;
+    te_string                   value_buf = {value_str, RCF_MAX_VAL, 0, TRUE};
+    te_errno                    rc = 0;
+    unsigned int                id = 0;
+    bpf_perf_map_event          event;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    map = bpf_find_perf_map(bpf_id, map_name);
+    if (map == NULL)
+    {
+        ERROR("%s(): Map isn't found.", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (!map->events_enabled)
+    {
+        ERROR("%s(): Events processing is not enabled.", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+    }
+
+    rc = te_strtoui(id_str, 0, &id);
+    if (rc != 0)
+    {
+        ERROR("%s(): Failed to convert event id from %s",
+              __FUNCTION__, id_str);
+        return rc;
+    }
+
+    event = TE_VEC_GET(bpf_perf_map_event, &map->events, id);
+    rc = te_str_hex_raw2str(event.data, map->event_size, &value_buf);
+
+    return rc;
+}
+
+static te_errno
+bpf_list_perf_map_event(unsigned int gid, const char *oid, const char *sub_id,
+                        char **list, const char *bpf_id, const char *map_name)
+{
+    te_string                   result = TE_STRING_INIT;
+    struct bpf_perf_map_entry  *map = NULL;
+    te_errno                    rc = 0;
+    unsigned int                i = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+    map = bpf_find_perf_map(bpf_id, map_name);
+    if (map == NULL)
+    {
+        ERROR("%s(): Map isn't found.", __FUNCTION__);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    for (i = 0; i < map->num_events; ++i)
+    {
+        rc = te_string_append(&result, "%s%u", i == 0 ? "" : " ", i);
+        if (rc != 0)
+        {
+            ERROR("%s(): te_string_append() failed", __FUNCTION__);
+            te_string_free(&result);
+            return rc;
+        }
+    }
+
+    *list = result.ptr;
+    return 0;
+}
+
 /*
  * Test Agent /bpf configuration subtree.
  */
@@ -1169,8 +1850,32 @@ RCF_PCH_CFG_NODE_RO(node_bpf_map_type, "type", NULL,
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_bpf_map, "map", &node_bpf_map_type,
                                NULL, NULL, bpf_prog_map_list);
 
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_bpf_perf_map_events_id, "id",
+                    NULL, NULL,
+                    bpf_get_perf_map_event,
+                    bpf_list_perf_map_event);
+
+RCF_PCH_CFG_NODE_RO(node_bpf_perf_map_num_events, "num_events",
+                    NULL, &node_bpf_perf_map_events_id,
+                    bpf_get_perf_map_params);
+
+RCF_PCH_CFG_NODE_RW(node_bpf_perf_map_events, "events_enable",
+                    NULL, &node_bpf_perf_map_num_events,
+                    bpf_get_perf_map_params,
+                    bpf_set_perf_map_params);
+
+RCF_PCH_CFG_NODE_RW(node_bpf_perf_map_event_size, "event_size",
+                    NULL, &node_bpf_perf_map_events,
+                    bpf_get_perf_map_params,
+                    bpf_set_perf_map_params);
+
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_bpf_perf_map, "perf_map",
+                               &node_bpf_perf_map_event_size,
+                               &node_bpf_map,
+                               NULL, bpf_prog_map_list);
+
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_bpf_prog, "program", NULL,
-                               &node_bpf_map, NULL, bpf_prog_map_list);
+                               &node_bpf_perf_map, NULL, bpf_prog_map_list);
 
 RCF_PCH_CFG_NODE_RW(node_bpf_state, "state", NULL,
                     &node_bpf_prog, bpf_get_params, bpf_set_state);
