@@ -109,6 +109,7 @@ extern te_errno tapi_netns_create_ns_with_net_channel(const char *ta,
  * @param ta_type           The test agent type
  * @param rcfport           Port number to communicate with RCF
  * @param ta_conn           Connection hostname or address or @c NULL
+ * @param ld_preload        The @c LD_PRELOAD variable or @c NULL
  * @param ext_rcf_listener  If @c TRUE, create listener socket for
  *                          accepting RCF connection before exec(ta).
  *                          Such socket will be able to accept
@@ -119,9 +120,13 @@ extern te_errno tapi_netns_create_ns_with_net_channel(const char *ta,
  *
  * @return Status code.
  */
-extern te_errno tapi_netns_add_ta(const char *host, const char *ns_name,
-                                  const char *ta_name, const char *ta_type,
-                                  int rcfport, const char *ta_conn,
+extern te_errno tapi_netns_add_ta(const char *host,
+                                  const char *ns_name,
+                                  const char *ta_name,
+                                  const char *ta_type,
+                                  int rcfport,
+                                  const char *ta_conn,
+                                  const char *ld_preload,
                                   te_bool ext_rcf_listener);
 
 /**

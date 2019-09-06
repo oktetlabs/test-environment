@@ -22,6 +22,7 @@
 #include "conf_api.h"
 #include "rcf_api.h"
 #include "rcf_rpc.h"
+#include "te_str.h"
 #include "tapi_namespaces.h"
 #include "tapi_cfg_base.h"
 #include "tapi_cfg.h"
@@ -249,20 +250,28 @@ tapi_netns_create_cleanup:
 te_errno
 tapi_netns_add_ta(const char *host, const char *ns_name, const char *ta_name,
                   const char *ta_type, int rcfport, const char *ta_conn,
-                  te_bool ext_rcf_listener)
+                  const char *ld_preload, te_bool ext_rcf_listener)
 {
-    char     confstr[CONFSTR_LEN];
-    int      res;
-    te_errno rc;
+    char        confstr[CONFSTR_LEN];
+    int         res;
+    te_errno    rc;
+    te_string   preload = TE_STRING_INIT_STATIC(CONFSTR_LEN);
 
     const char *ext_rcf_listener_str = (ext_rcf_listener ?
                                         "ext_rcf_listener:" : "");
 
+    if (!te_str_is_null_or_empty(ld_preload))
+    {
+        rc = te_string_append(&preload, "ld_preload=%s:", ld_preload);
+        if (rc != 0)
+            return TE_RC(TE_TAPI, rc);
+    }
+
     res = snprintf(confstr, sizeof(confstr),
-                   "host=%s:port=%d:sudo:connect=%s:%sshell="
+                   "host=%s:port=%d:sudo:connect=%s:%s%sshell="
                    IP_TOOL" netns exec %s:",
                    host, rcfport, ta_conn == NULL ? "" : ta_conn,
-                   ext_rcf_listener_str, ns_name);
+                   ext_rcf_listener_str, preload.ptr, ns_name);
     if (res >= (int)sizeof(confstr))
         return TE_RC(TE_TAPI, TE_ESMALLBUF);
 
