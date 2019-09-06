@@ -30,26 +30,6 @@ extern "C" {
  * @{
  */
 
-#define POWER_SW_STR2_CMD(_cmd_str)                                 \
-(_cmd_str == NULL) ?                                                \
-    CMD_UNSPEC :                                                    \
-        (strcmp(_cmd_str, CMD_STR_TURN_ON) == 0) ?                  \
-            CMD_TURN_ON :                                           \
-                (strcmp(_cmd_str, CMD_STR_TURN_OFF) == 0) ?         \
-                    CMD_TURN_OFF :                                  \
-                        (strcmp(_cmd_str, CMD_STR_RESTART) == 0) ?  \
-                            CMD_RESTART :\
-                                CMD_INVAL
-
-#define POWER_SW_STR2_DEV_TYPE(_type_str)                           \
-(_type_str == NULL) ?                                               \
-    DEV_TYPE_UNSPEC :                                               \
-        (strcmp(_type_str, DEV_TYPE_STR_PARPORT) == 0) ?            \
-            DEV_TYPE_PARPORT :                                      \
-                (strcmp(_type_str, DEV_TYPE_STR_TTY) == 0) ?        \
-                    DEV_TYPE_TTY :                                  \
-                        DEV_TYPE_INVAL
-
 /**
  * Call power switch command on/off/rst for given
  * power switch lines
