@@ -224,6 +224,162 @@ check_dev_params(int fd)
 }
 
 /**
+ * Process power switch command for parport power switch
+ *
+ * @param dev       power switch device name
+ * @param mask      power lines bitmask
+ * @param cmd       power switch command turn ON, turn OFF or restart
+ *
+ * @return          0, otherwise -1
+ */
+static int
+process_parport_cmd(const char *dev, int mask, int cmd)
+{
+    int             fd;
+    unsigned char   mode = 0;
+
+    mask &= PARPORT_DEV_BITMASK;
+
+    if ((fd = open(dev, O_RDWR)) < 0)
+    {
+        ERROR("Failed to open parport device %s.", dev);
+        return -1;
+    }
+
+    /*
+     * FIXME To prevent race condition when different
+     * processes do IOCTLs on parport device.
+     */
+    if (flock(fd, LOCK_EX) < 0)
+    {
+        ERROR("Failed to lock parport device file %s.", dev);
+        close(fd);
+        return -1;
+    }
+
+    if (ioctl(fd, PPCLAIM) < 0)
+    {
+        ERROR("ioctl(PPCLAIM) failed.");
+        close(fd);
+        return -1;
+    }
+
+    /* get current per port mode */
+    if (ioctl(fd, PPRDATA, &mode) < 0)
+    {
+        ERROR("ioctl(PPRDATA) failed - mode 'off'.");
+        close(fd);
+        return -1;
+    }
+
+    /* set per port on/off/rst mode */
+    if (cmd == CMD_TURN_OFF)
+    {
+        mode &= ~mask;
+        if (ioctl(fd, PPWDATA, &mode) < 0)
+            ERROR("ioctl(PPWDATA) failed - mode 'off'.");
+    }
+    else if (cmd == CMD_TURN_ON)
+    {
+        mode |= mask;
+        if (ioctl(fd, PPWDATA, &mode) < 0)
+            ERROR("ioctl(PPWDATA) failed - mode 'on'.");
+    }
+    else
+    {
+        /* command 'restart' */
+        /* first turn off */
+        mode &= ~mask;
+        if (ioctl(fd, PPWDATA, &mode) < 0)
+            ERROR("ioctl(PPWDATA) failed - mode 'rst-off'.");
+        sleep(REBOOT_SLEEP_TIME);
+        /* then turn on after sleep */
+        mode |= mask;
+        if (ioctl(fd, PPWDATA, &mode) < 0)
+            ERROR("ioctl(PPWDATA) failed - mode 'rst-on'.");
+    }
+
+    if (ioctl(fd, PPRELEASE) < 0)
+        ERROR("ioctl(PPRELEASE) failed.");
+
+    close(fd);
+
+    return 0;
+}
+
+/**
+ * Process power switch command for tty power switch
+ *
+ * @param dev       power switch device name
+ * @param mask      power lines bitmask
+ * @param cmd       power switch command turn ON, turn OFF or restart
+ *
+ * @return          0, otherwise -1
+ */
+static int
+process_tty_cmd(const char *dev, int mask, int cmd)
+{
+    int fd;
+    int is_rebootable = 0;
+    int sockets_num = 0;
+    int rc;
+
+    /* prepare list of power sockets */
+    mask &= TTY_DEV_BITMASK;
+
+    if ((fd = open(dev, O_RDWR)) < 0)
+    {
+        ERROR("Failed to open TTY device %s.", dev);
+        return -1;
+    }
+
+    if (check_dev_params(fd) < 0)
+    {
+        ERROR("Error while checking parameters "
+              "of TTY device %s.", dev);
+        close(fd);
+        return -1;
+    }
+
+    if (!recognize_power_switch(fd, &is_rebootable, &sockets_num))
+    {
+        ERROR("Power switch was not "
+              "recognized on TTY device %s.", dev);
+        close(fd);
+        return -1;
+    }
+
+    if (cmd == CMD_RESTART)
+    {
+        if (is_rebootable == 1)
+        {
+            rc = turn_on_off(fd, mask, sockets_num, RESET);
+        }
+        else
+        {
+            if ((rc = turn_on_off(fd, mask, sockets_num,
+                                  TURN_OFF)) == 0)
+            {
+                sleep(REBOOT_SLEEP_TIME);
+                rc = turn_on_off(fd, mask, sockets_num, TURN_ON);
+            }
+        }
+    }
+    else
+    {
+        rc = turn_on_off(fd, mask, sockets_num,
+                    (cmd == CMD_TURN_ON) ? TURN_ON : TURN_OFF);
+    }
+
+    close(fd);
+
+    if (rc != 0)
+        return -1;
+
+    return 0;
+}
+
+/**
  * Turn ON, turn OFF or restart power lines specified by mask
  *
  * @param type      power switch device type tty/parport
@@ -236,152 +392,26 @@ check_dev_params(int fd)
 int
 power_sw(int type, const char *dev, int mask, int cmd)
 {
-    unsigned char   mode;
-    int             fd;
-    int             is_rebootable = 0;
-    int             sockets_num = 0;
-    int             rc;
-
-    if (type == DEV_TYPE_UNSPEC)
-        type = DEV_TYPE_DFLT;
-
-    if (dev == NULL || strcmp(dev, "unspec") == 0)
-    {
-        dev = (type == DEV_TYPE_PARPORT) ?
-                            parport_dev_dflt :
-                                        tty_dev_dflt;
-    }
-
     if (cmd == CMD_UNSPEC)
         return 0;
 
+    /* Substitute default device type if not specified */
+    if (type == DEV_TYPE_UNSPEC)
+        type = DEV_TYPE_DFLT;
+
+    /* Substitute default device name if not specified */
+    if (dev == NULL || strcmp(dev, "unspec") == 0)
+    {
+        if (type == DEV_TYPE_PARPORT)
+            dev = parport_dev_dflt;
+        else
+            dev = tty_dev_dflt;
+    }
+
     if (type == DEV_TYPE_PARPORT)
-    {
-        /* parport-like device */
-        mask &= PARPORT_DEV_BITMASK;
-        mode = 0;
-
-        if ((fd = open(dev, O_RDWR)) < 0)
-        {
-            ERROR("Failed to open parport device %s.", dev);
-            return -1;
-        }
-
-        /*
-         * FIXME To prevent race condition when different
-         * processes do IOCTLs on parport device.
-         */
-        if (flock(fd, LOCK_EX) < 0)
-        {
-            ERROR("Failed to lock parport device file %s.", dev);
-            close(fd);
-            return -1;
-        }
-
-        if (ioctl(fd, PPCLAIM) < 0)
-        {
-            ERROR("ioctl(PPCLAIM) failed.");
-            close(fd);
-            return -1;
-        }
-
-        /* get current per port mode */
-        if (ioctl(fd, PPRDATA, &mode) < 0)
-        {
-            ERROR("ioctl(PPRDATA) failed - mode 'off'.");
-            close(fd);
-            return -1;
-        }
-
-        /* set per port on/off/rst mode */
-        if (cmd == CMD_TURN_OFF)
-        {
-            mode &= ~mask;
-            if (ioctl(fd, PPWDATA, &mode) < 0)
-                ERROR("ioctl(PPWDATA) failed - mode 'off'.");
-        }
-        else if (cmd == CMD_TURN_ON)
-        {
-            mode |= mask;
-            if (ioctl(fd, PPWDATA, &mode) < 0)
-                ERROR("ioctl(PPWDATA) failed - mode 'on'.");
-        }
-        else
-        {
-            /* command 'restart' */
-            /* first turn off */
-            mode &= ~mask;
-            if (ioctl(fd, PPWDATA, &mode) < 0)
-                ERROR("ioctl(PPWDATA) failed - mode 'rst-off'.");
-            sleep(REBOOT_SLEEP_TIME);
-            /* then turn on after sleep */
-            mode |= mask;
-            if (ioctl(fd, PPWDATA, &mode) < 0)
-                ERROR("ioctl(PPWDATA) failed - mode 'rst-on'.");
-        }
-
-        if (ioctl(fd, PPRELEASE) < 0)
-            ERROR("ioctl(PPRELEASE) failed.");
-
-        close(fd);
-    }
+        return process_parport_cmd(dev, mask, cmd);
     else
-    {
-        /* tty device */
-        /* prepare list of power sockets */
-        mask &= TTY_DEV_BITMASK;
-
-        if ((fd = open(dev, O_RDWR)) < 0)
-        {
-            ERROR("Failed to open TTY device %s.", dev);
-            return -1;
-        }
-
-        if (check_dev_params(fd) < 0)
-        {
-            ERROR("Error while checking parameters "
-                  "of TTY device %s.", dev);
-            close(fd);
-            return -1;
-        }
-
-        if (!recognize_power_switch(fd, &is_rebootable, &sockets_num))
-        {
-            ERROR("Power switch was not "
-                  "recognized on TTY device %s.", dev);
-            close(fd);
-            return -1;
-        }
-
-        if (cmd == CMD_RESTART)
-        {
-            if (is_rebootable == 1)
-            {
-                rc = turn_on_off(fd, mask, sockets_num, RESET);
-            }
-            else
-            {
-                if ((rc = turn_on_off(fd, mask, sockets_num,
-                                      TURN_OFF)) == 0)
-                {
-                    sleep(REBOOT_SLEEP_TIME);
-                    rc = turn_on_off(fd, mask, sockets_num, TURN_ON);
-                }
-            }
-        }
-        else
-        {
-            rc = turn_on_off(fd, mask, sockets_num,
-                        (cmd == CMD_TURN_ON) ? TURN_ON : TURN_OFF);
-        }
-
-        close(fd);
-
-        if (rc != 0)
-            return -1;
-    }
-
-    return 0;
+        return process_tty_cmd(dev, mask, cmd);
 }
 
 #endif /* ENABLE_POWER_SW */
