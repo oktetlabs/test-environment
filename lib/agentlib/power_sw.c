@@ -186,7 +186,7 @@ recognize_power_switch(int fd, int *rebootable, int *sockets_num)
  *
  * @return      0 - success, -1 fail.
  */
-int
+static int
 check_dev_params(int fd)
 {
     struct termios term;
