@@ -35,14 +35,17 @@ extern "C" {
  * power switch lines
  *
  * @param rpcs      RPC server handle
- * @param type      Power switch device type tty/parport,
- *                  parport on default
- * @param dev       Power switch device name,
- *                  default parport device - /dev/parport0
- *                  default tty device - /dev/ttyS0
- * @param mask      Power lines bitmask, position of each
- *                  nonzero bit in mask denotes number of power
- *                  line to apply specified command
+ * @param type      Power switch device type
+ *                  Device type 'parport' is default
+ * @param dev       Power switch device name
+ *                  Device name used to contact device. Default value is
+ *                  used if not specified. Device /dev/parport0 is  used
+ *                  for parport switch, /dev/ttyUSB0 for tty,
+ *                  /dev/ttyACM0 for digispark.
+ * @param mask      Power lines bitmask for type 'parport' or 'tty',
+ *                  position of each nonzero bit in mask denotes number
+ *                  of power line to apply specified command
+ *                  Power socket number for type 'digispark'
  * @param cmd       Power switch command on/off/rst to be applied
  *                  to power lines specified in bitmask
  *

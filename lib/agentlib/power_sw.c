@@ -48,6 +48,7 @@
 #define DEV_TYPE_DFLT           DEV_TYPE_PARPORT
 #define PARPORT_DEV_DFLT        "/dev/parport0"
 #define TTY_DEV_DFLT            "/dev/ttyS0"
+#define DIGISPARK_DEV_DFLT      "/dev/ttyACM0"
 #define PARPORT_DEV_BITMASK     0xff /* parport, up to 8 lines */
 #define TTY_DEV_BITMASK         0xffff /* TTY device, up to 16 lines */
 #define REBOOT_SLEEP_TIME       2 /* seconds */
@@ -55,9 +56,6 @@
 #define TURN_ON                 1
 #define RESET                   2
 #define TTY_DEV_BAUDRATE        B115200
-
-static const char   parport_dev_dflt[] = PARPORT_DEV_DFLT;
-static const char   tty_dev_dflt[] = TTY_DEV_DFLT;
 
 /**
  * Turn ON or turn OFF power lines by bitmask.
@@ -380,6 +378,56 @@ process_tty_cmd(const char *dev, int mask, int cmd)
 }
 
 /**
+ * Process power switch command for digispark power switch
+ *
+ * @param dev       power switch device name
+ * @param socket_id power socket id
+ * @param cmd       power switch command turn ON, turn OFF or restart
+ *
+ * @return          status code
+ */
+static int
+process_digispark_cmd(const char *dev, int socket_id, int cmd)
+{
+    int     fd;
+    int     rc;
+    char    command[2] = {0, '\r'};
+
+    /* Check socket id. Should be integer 1-4 */
+    if (socket_id == 0 || socket_id > 4)
+        return -1;
+
+    if (cmd == CMD_RESTART)
+        command[0] = 0x50 | (socket_id - 1);
+    else if (cmd == CMD_TURN_ON)
+        command[0] = 0x60 | (socket_id - 1);
+    else if (cmd == CMD_TURN_RST)
+        command[0] = 0x40 | (socket_id - 1);
+    else
+        return -1;
+
+    if ((fd = open(dev, O_WRONLY)) < 0)
+    {
+        ERROR("Failed to open device %s to write.", dev);
+        return -1;
+    }
+
+    rc = write(fd, command, sizeof(command));
+
+    close(fd);
+
+    if (rc == sizeof(command))
+    {
+        return 0;
+    }
+    else
+    {
+        ERROR("Failed to send command to %s device", dev);
+        return -1;
+    }
+}
+
+/**
  * Turn ON, turn OFF or restart power lines specified by mask
  *
  * @param type      power switch device type tty/parport
@@ -403,15 +451,19 @@ power_sw(int type, const char *dev, int mask, int cmd)
     if (dev == NULL || strcmp(dev, "unspec") == 0)
     {
         if (type == DEV_TYPE_PARPORT)
-            dev = parport_dev_dflt;
+            dev = PARPORT_DEV_DFLT;
+        else if (type == DEV_TYPE_TTY)
+            dev = TTY_DEV_DFLT;
         else
-            dev = tty_dev_dflt;
+            dev = DIGISPARK_DEV_DFLT;
     }
 
     if (type == DEV_TYPE_PARPORT)
         return process_parport_cmd(dev, mask, cmd);
-    else
+    else if (type == DEV_TYPE_TTY)
         return process_tty_cmd(dev, mask, cmd);
+    else
+        return process_digispark_cmd(dev, mask, cmd);
 }
 
 #endif /* ENABLE_POWER_SW */

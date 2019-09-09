@@ -42,6 +42,8 @@ power_sw_str2dev(const char *dev_str)
         return DEV_TYPE_PARPORT;
     else if (strcmp(dev_str, DEV_TYPE_STR_TTY) == 0)
         return DEV_TYPE_TTY;
+    else if (strcmp(dev_str, DEV_TYPE_STR_DIGISPARK) == 0)
+        return DEV_TYPE_DIGISPARK;
     else
         return DEV_TYPE_INVAL;
 }

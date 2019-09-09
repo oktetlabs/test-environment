@@ -23,6 +23,7 @@ extern "C" {
 
 #define DEV_TYPE_STR_PARPORT    "parport"
 #define DEV_TYPE_STR_TTY        "tty"
+#define DEV_TYPE_STR_DIGISPARK  "digispark"
 #define DEV_TYPE_STR_UNSPEC     "unspec"
 #define DEV_TYPE_STR_INVAL      "inval"
 #define CMD_STR_TURN_ON         "on"
@@ -35,6 +36,7 @@ typedef enum {
     DEV_TYPE_UNSPEC,
     DEV_TYPE_PARPORT,
     DEV_TYPE_TTY,
+    DEV_TYPE_DIGISPARK,
     DEV_TYPE_INVAL
 } power_sw_dev_type;
 
