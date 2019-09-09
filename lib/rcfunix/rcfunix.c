@@ -1043,7 +1043,9 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
                 break;
             }
         }
-        WARN("Connecting to TA failed (%r) - connect again after delay\n", rc);
+        WARN("Connecting to TA %s %s:%s failed (%r) - "
+             "connect again after delay\n",
+             ta->ta_name, host, ta->port, rc);
         te_sleep(sleep_sec);
 
         if (sleep_sec < RCFUNIX_RECONNECT_SLEEP_MAX)
