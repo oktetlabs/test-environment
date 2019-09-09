@@ -272,6 +272,8 @@ typedef struct unix_ta {
                                     namespace to which RCF cannot
                                     connect. */
 
+    te_string   ssh_opts;     /**< SSH options common for ssh and sftp */
+
     te_string   cmd_prefix;     /**< Command prefix */
     const char *cmd_suffix;     /**< Command suffix before redirection */
 
@@ -492,6 +494,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         return TE_ENOMEM;
     }
 
+    ta->ssh_opts = (te_string)TE_STRING_INIT;
     ta->cmd_prefix = (te_string)TE_STRING_INIT;
 
     strcpy(ta->ta_name, ta_name);
@@ -630,16 +633,19 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     }
     else
     {
-        rc = te_string_append(&ta->cmd_prefix, "%s", RCFUNIX_SSH);
-        if (rc == 0 && (*flags & TA_NO_HKEY_CHK))
-            rc = te_string_append(&ta->cmd_prefix, " %s", NO_HKEY_CHK);
+        if ((*flags & TA_NO_HKEY_CHK))
+            rc = te_string_append(&ta->ssh_opts, " %s", NO_HKEY_CHK);
         if (rc == 0 && ta->key[0] != '\0')
-            rc = te_string_append(&ta->cmd_prefix, " %s", ta->key);
+            rc = te_string_append(&ta->ssh_opts, " %s", ta->key);
+        if (rc == 0)
+            rc = te_string_append(&ta->ssh_opts, " %s%s", ta->user, ta->host);
+
+        rc = te_string_append(&ta->cmd_prefix, "%s", RCFUNIX_SSH);
         if (rc == 0 && ta->ssh_port != 0)
             rc = te_string_append(&ta->cmd_prefix, " -p %u", ta->ssh_port);
         if (rc == 0)
-            rc = te_string_append(&ta->cmd_prefix, " %s%s \"",
-                                  ta->user, ta->host);
+            rc = te_string_append(&ta->cmd_prefix, "%s \"",
+                                  ta->ssh_opts.ptr);
 
         ta->cmd_suffix = "\"";
     }
@@ -691,11 +697,9 @@ rcfunix_start(const char *ta_name, const char *ta_type,
          * exists yet and fail otherwise.
          */
         rc = te_string_append(&cmd,
-                "%smkdir %s%s && echo put %s/. %s | sftp -rpq %s %s %s %s%s",
+                "%smkdir %s%s && echo put %s/. %s | sftp -rpq %s%s",
                 ta->cmd_prefix.ptr, ta->run_dir, ta->cmd_suffix,
-                ta_type_dir, ta->run_dir,
-                ssh_port_str, *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
-                ta->key, ta->user, ta->host);
+                ta_type_dir, ta->run_dir, ssh_port_str, ta->ssh_opts.ptr);
     }
     if (rc != 0)
     {
