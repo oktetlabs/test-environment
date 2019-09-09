@@ -24,6 +24,7 @@
  * [[@attr_val{user}@]@attr_val{<IP_address_or_hostname>}]:@attr_val{<port>}
  * [:@attr_name{key}=@attr_val{<ssh_private_key_file>}]
  * [:@attr_name{ssh_port}=@attr_val{<port>}]
+ * [:@attr_name{ssh_proxy}=@attr_val{<ssh-proxy>}]
  * [:@attr_name{copy_timeout}=@attr_val{<timeout>}]
  * [:@attr_name{copy_tries}=@attr_val{<number_of_tries>}]
  * [:@attr_name{kill_timeout}=@attr_val{<timeout>}][:@attr_val{notcopy}]
@@ -46,6 +47,8 @@
  *   for RSA or DSA authentication is read;
  * - @attr_name{ssh_port} - specifies TCP port to be used by SSH. May be
  *   unspecified or 0 to use standard SSH port 22;
+ * - @attr_name{ssh_proxy} - specifies SSH proxy to be used, it may
+ *   include SSH options and must include proxy host name or IP address;
  * - @attr_name{copy_timeout} - specifies the maximum time duration
  *   (in seconds) that is allowed for image copy operation. If image copy
  *   takes more than this timeout, Test Agent start-up procedure fails,
@@ -201,8 +204,9 @@
  * Configuration string for UNIX TA should have format:
  *
  * [[user@]<IP address or hostname>]:<port>
- *     [:key=<ssh private key file>][:ssh_port=<port>][:copy_timeout=<timeout>]
- *     [:kill_timeout=<timeout>][:notcopy][:sudo|su][:<shell>][:parameters]
+ *     [:key=<ssh private key file>][:ssh_port=<port>][:ssh_proxy=<hostname>]
+ *     [:copy_timeout=<timeout>][:kill_timeout=<timeout>]
+ *     [:notcopy][:sudo|su][:<shell>][:parameters]
  *
  * If host is not specified, the Test Agent is started on the local
  * host.  It is assumed that user starting Dispatcher may use ssh/scp
@@ -253,6 +257,7 @@ typedef struct unix_ta {
     char    run_dir[RCF_MAX_PATH];  /**< TA run directory */
     char    key[RCF_MAX_PATH];      /**< Private ssh key file */
     char    user[RCF_MAX_PATH];     /**< User to be used (with @) */
+    char    ssh_proxy[RCF_MAX_NAME];/**< SSH proxy host */
 
     unsigned int    ssh_port;       /**< 0 or special SSH port to use */
     unsigned int    copy_timeout;   /**< TA image copy timeout */
@@ -275,6 +280,7 @@ typedef struct unix_ta {
     te_string   ssh_opts;     /**< SSH options common for ssh and sftp */
 
     te_string   cmd_prefix;     /**< Command prefix */
+    te_string   start_prefix;   /**< TA start command prefix */
     const char *cmd_suffix;     /**< Command suffix before redirection */
 
     uint32_t        pid;        /**< TA pid */
@@ -425,6 +431,34 @@ rcfunix_ta_type_prefix_len(const char *ta_type)
 }
 
 /**
+ * Get hostname to connect to taking host and connect attributes
+ * into account.
+ *
+ * When test agent is started, the function is used to get real
+ * host to connect to to setup port forwarding and SSH proxy
+ * settings should be ignored.
+ *
+ * @param ta            Test agent configuration
+ * @param ignore_proxy  If SSH proxy should be used
+ *
+ * @return String with host or IP address to connect to.
+ */
+static const char *
+rcfunix_connect_to(const unix_ta *ta, te_bool ignore_proxy)
+{
+    const char *host;
+
+    if (!ignore_proxy && ta->ssh_proxy[0] != '\0')
+        host = "localhost";
+    else if (ta->connect[0] != '\0')
+        host = ta->connect;
+    else
+        host = ta->host;
+
+    return host;
+}
+
+/**
  * Start the Test Agent. Note that it's not necessary
  * to restart the proxy Test Agents after rebooting of
  * the NUT, which it serves.
@@ -496,6 +530,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     ta->ssh_opts = (te_string)TE_STRING_INIT;
     ta->cmd_prefix = (te_string)TE_STRING_INIT;
+    ta->start_prefix = (te_string)TE_STRING_INIT;
 
     strcpy(ta->ta_name, ta_name);
     strcpy(ta->ta_type, ta_type);
@@ -565,6 +600,9 @@ rcfunix_start(const char *ta_name, const char *ta_type,
             goto bad_conf;
     }
 
+    if (!te_str_is_null_or_empty(val = te_kvpairs_get(conf, "ssh_proxy")))
+        strncpy(ta->ssh_proxy, val, sizeof(ta->ssh_proxy));
+
     if (!te_str_is_null_or_empty(val = te_kvpairs_get(conf, "copy_timeout")))
     {
         ta->copy_timeout = strtoul(val, &tmp, 0);
@@ -633,7 +671,11 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     }
     else
     {
-        if ((*flags & TA_NO_HKEY_CHK))
+        if (ta->ssh_proxy[0] != '\0')
+            rc = te_string_append(&ta->ssh_opts,
+                                  " -o ProxyCommand='%s -W %%h:%%p %s'",
+                                  RCFUNIX_SSH, ta->ssh_proxy);
+        if (rc == 0 && (*flags & TA_NO_HKEY_CHK))
             rc = te_string_append(&ta->ssh_opts, " %s", NO_HKEY_CHK);
         if (rc == 0 && ta->key[0] != '\0')
             rc = te_string_append(&ta->ssh_opts, " %s", ta->key);
@@ -643,8 +685,24 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         rc = te_string_append(&ta->cmd_prefix, "%s", RCFUNIX_SSH);
         if (rc == 0 && ta->ssh_port != 0)
             rc = te_string_append(&ta->cmd_prefix, " -p %u", ta->ssh_port);
+
+        /*
+         * If SSH proxy is used, TA start command should forward RCF port
+         * since it is assumed that target host is not directly reachable.
+         */
+        if (rc == 0)
+            rc = te_string_append(&ta->start_prefix, "%s", ta->cmd_prefix.ptr);
+        if (rc == 0 && ta->ssh_proxy[0] != '\0')
+            rc = te_string_append(&ta->start_prefix, " -L %s:%s:%s",
+                                  ta->port, rcfunix_connect_to(ta, TRUE),
+                                  ta->port);
+
+        /* Add common SSH options including host to connect to */
         if (rc == 0)
             rc = te_string_append(&ta->cmd_prefix, "%s \"",
+                                  ta->ssh_opts.ptr);
+        if (rc == 0)
+            rc = te_string_append(&ta->start_prefix, "%s \"",
                                   ta->ssh_opts.ptr);
 
         ta->cmd_suffix = "\"";
@@ -738,7 +796,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     /* Clean up command string */
     te_string_reset(&cmd);
 
-    rc = te_string_append(&cmd, "%s", ta->cmd_prefix.ptr);
+    rc = te_string_append(&cmd, "%s", ta->start_prefix.ptr);
 
     if (rc == 0)
         rc = te_string_append(&cmd, "%s",
@@ -991,7 +1049,7 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
     char        buf[16];
     char       *tmp;
     size_t      len = 16;
-    char       *host;
+    const char *host;
     int         tries = 3;
     int         sleep_sec = 1;
 
@@ -1028,10 +1086,7 @@ rcfunix_connect(rcf_talib_handle handle, fd_set *select_set,
             tries = rc;
     }
 
-    if (ta->connect[0] != '\0')
-        host = ta->connect;
-    else
-        host = ta->host;
+    host = rcfunix_connect_to(ta, FALSE);
 
     tmp = strchr(host, '@');
     if (tmp != NULL)
