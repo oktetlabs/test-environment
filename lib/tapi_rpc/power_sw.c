@@ -18,25 +18,33 @@
 #include "tapi_rpc_power_sw.h"
 #include "tapi_rpc_internal.h"
 
-#define POWER_SW_STR2_CMD(_cmd_str)                                 \
-(_cmd_str == NULL) ?                                                \
-    CMD_UNSPEC :                                                    \
-        (strcmp(_cmd_str, CMD_STR_TURN_ON) == 0) ?                  \
-            CMD_TURN_ON :                                           \
-                (strcmp(_cmd_str, CMD_STR_TURN_OFF) == 0) ?         \
-                    CMD_TURN_OFF :                                  \
-                        (strcmp(_cmd_str, CMD_STR_RESTART) == 0) ?  \
-                            CMD_RESTART :\
-                                CMD_INVAL
+static power_sw_cmd
+power_sw_str2cmd(const char *cmd_str)
+{
+    if (cmd_str == NULL)
+        return CMD_UNSPEC;
+    else if (strcmp(cmd_str, CMD_STR_TURN_ON) == 0)
+        return CMD_TURN_ON;
+    else if (strcmp(cmd_str, CMD_STR_TURN_OFF) == 0)
+        return CMD_TURN_OFF;
+    else if (strcmp(cmd_str, CMD_STR_RESTART) == 0)
+        return CMD_RESTART;
+    else
+        return CMD_INVAL;
+}
 
-#define POWER_SW_STR2_DEV_TYPE(_type_str)                           \
-(_type_str == NULL) ?                                               \
-    DEV_TYPE_UNSPEC :                                               \
-        (strcmp(_type_str, DEV_TYPE_STR_PARPORT) == 0) ?            \
-            DEV_TYPE_PARPORT :                                      \
-                (strcmp(_type_str, DEV_TYPE_STR_TTY) == 0) ?        \
-                    DEV_TYPE_TTY :                                  \
-                        DEV_TYPE_INVAL
+static power_sw_dev_type
+power_sw_str2dev(const char *dev_str)
+{
+    if (dev_str == NULL)
+        return DEV_TYPE_UNSPEC;
+    else if (strcmp(dev_str, DEV_TYPE_STR_PARPORT) == 0)
+        return DEV_TYPE_PARPORT;
+    else if (strcmp(dev_str, DEV_TYPE_STR_TTY) == 0)
+        return DEV_TYPE_TTY;
+    else
+        return DEV_TYPE_INVAL;
+}
 
 int
 rpc_power_sw(rcf_rpc_server *rpcs, const char *type,
@@ -54,9 +62,9 @@ rpc_power_sw(rcf_rpc_server *rpcs, const char *type,
         RETVAL_INT(power_sw, -1);
     }
 
-    in.type = POWER_SW_STR2_DEV_TYPE(type);
+    in.type = power_sw_str2dev(type);
     in.mask = mask;
-    in.cmd = POWER_SW_STR2_CMD(cmd);
+    in.cmd = power_sw_str2cmd(cmd);
 
     if (in.type == DEV_TYPE_INVAL)
     {
