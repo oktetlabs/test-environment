@@ -401,7 +401,7 @@ process_digispark_cmd(const char *dev, int socket_id, int cmd)
         command[0] = 0x50 | (socket_id - 1);
     else if (cmd == CMD_TURN_ON)
         command[0] = 0x60 | (socket_id - 1);
-    else if (cmd == CMD_TURN_RST)
+    else if (cmd == CMD_TURN_OFF)
         command[0] = 0x40 | (socket_id - 1);
     else
         return -1;
