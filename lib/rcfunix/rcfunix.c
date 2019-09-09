@@ -218,7 +218,7 @@
  * second one is a TCP port.
  */
 
-#define RCFUNIX_SSH         "ssh -qxTn -o BatchMode=yes "
+#define RCFUNIX_SSH         "ssh -qxTn -o BatchMode=yes"
 #define NO_HKEY_CHK         "-o StrictHostKeyChecking=no"
 #define RCFUNIX_REDIRECT    ">/dev/null 2>&1"
 
@@ -230,8 +230,6 @@
 
 /** Maximum sleep between reconnect attempts */
 #define RCFUNIX_RECONNECT_SLEEP_MAX 5
-
-#define RCFUNIX_SHELL_CMD_MAX   2048
 
 #define RCFUNIX_WAITPID_N_MAX       100
 #define RCFUNIX_WAITPID_SLEEP_US    10000
@@ -274,9 +272,8 @@ typedef struct unix_ta {
                                     namespace to which RCF cannot
                                     connect. */
 
-    char        cmd_prefix[RCFUNIX_SHELL_CMD_MAX];  /**< Command prefix */
-    const char *cmd_suffix;                         /**< Command suffix
-                                                         before redirection */
+    te_string   cmd_prefix;     /**< Command prefix */
+    const char *cmd_suffix;     /**< Command suffix before redirection */
 
     uint32_t        pid;        /**< TA pid */
     unsigned int   *flags;      /**< Flags */
@@ -495,6 +492,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         return TE_ENOMEM;
     }
 
+    ta->cmd_prefix = (te_string)TE_STRING_INIT;
+
     strcpy(ta->ta_name, ta_name);
     strcpy(ta->ta_type, ta_type);
 
@@ -626,21 +625,30 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 
     if (ta->is_local)
     {
-        snprintf(ta->cmd_prefix, sizeof(ta->cmd_prefix), "(");
+        rc = te_string_append(&ta->cmd_prefix, "(");
         ta->cmd_suffix = ")";
     }
     else
     {
-        char ssh_port_str[10] = "";
+        rc = te_string_append(&ta->cmd_prefix, "%s", RCFUNIX_SSH);
+        if (rc == 0 && (*flags & TA_NO_HKEY_CHK))
+            rc = te_string_append(&ta->cmd_prefix, " %s", NO_HKEY_CHK);
+        if (rc == 0 && ta->key[0] != '\0')
+            rc = te_string_append(&ta->cmd_prefix, " %s", ta->key);
+        if (rc == 0 && ta->ssh_port != 0)
+            rc = te_string_append(&ta->cmd_prefix, " -p %u", ta->ssh_port);
+        if (rc == 0)
+            rc = te_string_append(&ta->cmd_prefix, " %s%s \"",
+                                  ta->user, ta->host);
 
-        if (ta->ssh_port != 0)
-            snprintf(ssh_port_str, sizeof(ssh_port_str), "-p %u", ta->ssh_port);
-
-        snprintf(ta->cmd_prefix, sizeof(ta->cmd_prefix),
-                 RCFUNIX_SSH "%s %s %s %s%s \"",
-                 *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "", ta->key,
-                 ssh_port_str, ta->user, ta->host);
         ta->cmd_suffix = "\"";
+    }
+    if (rc != 0)
+    {
+        ERROR("Failed to compose TA command prefix: %r", rc);
+        te_string_free(&cfg_str);
+        te_string_free(&cmd);
+        return rc;
     }
 
     /*
@@ -652,7 +660,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     if (ta->notcopy)
     {
         rc = te_string_append(&cmd,
-                "%sln -s %s %s%s", ta->cmd_prefix,
+                "%sln -s %s %s%s", ta->cmd_prefix.ptr,
                 ta_type_dir, ta->run_dir, ta->cmd_suffix);
     }
     else if (ta->is_local)
@@ -664,7 +672,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
          * content including hidden files to destination.
          */
         rc = te_string_append(&cmd,
-                "%smkdir %s && cp -a %s/. %s%s", ta->cmd_prefix,
+                "%smkdir %s && cp -a %s/. %s%s", ta->cmd_prefix.ptr,
                 ta->run_dir, ta_type_dir, ta->run_dir, ta->cmd_suffix);
     }
     else
@@ -684,7 +692,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
          */
         rc = te_string_append(&cmd,
                 "%smkdir %s%s && echo put %s/. %s | sftp -rpq %s %s %s %s%s",
-                ta->cmd_prefix, ta->run_dir, ta->cmd_suffix,
+                ta->cmd_prefix.ptr, ta->run_dir, ta->cmd_suffix,
                 ta_type_dir, ta->run_dir,
                 ssh_port_str, *flags & TA_NO_HKEY_CHK ? NO_HKEY_CHK : "",
                 ta->key, ta->user, ta->host);
@@ -726,7 +734,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     /* Clean up command string */
     te_string_reset(&cmd);
 
-    rc = te_string_append(&cmd, "%s", ta->cmd_prefix);
+    rc = te_string_append(&cmd, "%s", ta->cmd_prefix.ptr);
 
     if (rc == 0)
         rc = te_string_append(&cmd, "%s",
@@ -879,14 +887,14 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
         {
             rc = system_with_timeout(ta->kill_timeout,
                      "%s%skill %d%s " RCFUNIX_REDIRECT,
-                     ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->pid,
+                     ta->cmd_prefix.ptr, rcfunix_ta_sudo(ta), ta->pid,
                      ta->cmd_suffix);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
 
             rc = system_with_timeout(ta->kill_timeout,
                      "%s%skill -9 %d%s " RCFUNIX_REDIRECT,
-                     ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->pid,
+                     ta->cmd_prefix.ptr, rcfunix_ta_sudo(ta), ta->pid,
                      ta->cmd_suffix);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
                 return rc;
@@ -894,21 +902,21 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
 
         rc = system_with_timeout(ta->kill_timeout,
                  "%s%skillall %s/ta%s " RCFUNIX_REDIRECT,
-                 ta->cmd_prefix, rcfunix_ta_sudo(ta), ta->run_dir,
+                 ta->cmd_prefix.ptr, rcfunix_ta_sudo(ta), ta->run_dir,
                  ta->cmd_suffix);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
 
         rc = system_with_timeout(ta->kill_timeout,
                  "%s%skillall -9 %s/ta%s " RCFUNIX_REDIRECT,
-                 ta->cmd_prefix, rcfunix_ta_sudo(ta),
+                 ta->cmd_prefix.ptr, rcfunix_ta_sudo(ta),
                  ta->run_dir, ta->cmd_suffix);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
             return rc;
     }
 
     rc = te_string_append(&cmd, "%srm -rf %s%s",
-                       ta->cmd_prefix, ta->run_dir, ta->cmd_suffix);
+                       ta->cmd_prefix.ptr, ta->run_dir, ta->cmd_suffix);
     if (rc != 0)
     {
         ERROR("Failed to make rm command: %r", rc);
