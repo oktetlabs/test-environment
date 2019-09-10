@@ -27,6 +27,9 @@
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#if HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
 
 #if HAVE_FCNTL_H
 #include <fcntl.h>
@@ -1576,6 +1579,30 @@ udp_rcvbuf_def_get(unsigned int gid, const char *oid,
 }
 
 /**
+ * Try to open a file for reading and writing to check
+ * whether it is accessible.
+ *
+ * @param pn        File pathname.
+ *
+ * @return @c 0 - file is accessible for read/write;
+ *         @c -1 - failed to open a file.
+ */
+static int
+try_open_file_rw(const char *pn)
+{
+    int fd;
+
+    fd = open(pn, O_RDWR);
+    if (fd >= 0)
+    {
+        close(fd);
+        return 0;
+    }
+
+    return -1;
+}
+
+/**
  * Set core pattern used when dumpling a core (because of segmentation
  * fault or something alike).
  *
@@ -1605,6 +1632,19 @@ core_pattern_set(unsigned int gid, const char *oid, const char *value)
     }
 
 #ifdef __linux__
+
+    /*
+     * We do not want this node to be available if agent is not
+     * run under root. See bug 10419.
+     */
+    if (try_open_file_rw("/proc/sys/kernel/core_pattern") < 0)
+    {
+        if (errno == EACCES)
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        else
+            return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
     f = fopen("/proc/sys/kernel/core_pattern", "w");
     if (f == NULL)
     {
@@ -1664,6 +1704,19 @@ core_pattern_get(unsigned int gid, const char *oid, char *value)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 #ifdef __linux__
+
+    /*
+     * We do not want this node to be available if agent is not
+     * run under root. See bug 10419.
+     */
+    if (try_open_file_rw("/proc/sys/kernel/core_pattern") < 0)
+    {
+        if (errno == EACCES)
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);
+        else
+            return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
     f = fopen("/proc/sys/kernel/core_pattern", "r");
     if (f == NULL)
     {
