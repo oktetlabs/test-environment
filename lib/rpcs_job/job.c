@@ -25,6 +25,9 @@
 
 #include "agentlib.h"
 
+/* The maximum size of log user entry (in bytes) for filter logging. */
+#define MAX_LOG_USER_SIZE 128
+
 #define PROC_WAIT_US 1000
 /*
  * The amount of time needed for a process to terminate after receiving
@@ -848,16 +851,25 @@ proc_kill(pid_t pid, int term_timeout_ms)
 }
 
 static te_errno
-match_callback(filter_t *filter, unsigned int channel_id, size_t size,
-               char *buf, te_bool eos)
+match_callback(filter_t *filter, unsigned int channel_id, pid_t pid,
+               size_t size, char *buf, te_bool eos)
 {
     int log_size = size > (size_t)INT_MAX ? INT_MAX : (int)size;
     te_errno rc;
 
     if (!eos)
     {
-        LOG_MSG(filter->log_level, "Filter '%s':\n%.*s",
-                filter->name == NULL ? "Unnamed" : filter->name, log_size, buf);
+        char log_user[MAX_LOG_USER_SIZE];
+
+        rc = snprintf(log_user, sizeof(log_user), "%ld.%s", (long)pid,
+                      filter->name == NULL ? "Unnamed" : filter->name);
+        if (rc < 0 || (size_t)rc >= sizeof(log_user))
+        {
+            ERROR("Failed to create log user for logging a job's message");
+            return TE_EINVAL;
+        }
+
+        LGR_MESSAGE(filter->log_level, log_user, "%.*s", log_size, buf);
     }
 
     if (filter->readable)
@@ -874,9 +886,9 @@ match_callback(filter_t *filter, unsigned int channel_id, size_t size,
 }
 
 static te_errno
-filter_regexp_exec(filter_t *filter, unsigned int channel_id,
+filter_regexp_exec(filter_t *filter, unsigned int channel_id, pid_t pid,
                    int subject_length, char *subject,
-                   te_errno (*fun_ptr)(filter_t *, unsigned int, size_t, char *, te_bool))
+                   te_errno (*fun_ptr)(filter_t *, unsigned int, pid_t, size_t, char *, te_bool))
 {
     int start_offset;
     int first_exec;
@@ -965,7 +977,7 @@ filter_regexp_exec(filter_t *filter, unsigned int channel_id,
         substring_length = ovector[(2 * regexp->extract) + 1] -
                                ovector[2 * regexp->extract];
 
-        if ((te_rc = fun_ptr(filter, channel_id, substring_length,
+        if ((te_rc = fun_ptr(filter, channel_id, pid, substring_length,
                              substring_start, FALSE)) != 0)
         {
             return te_rc;
@@ -976,7 +988,8 @@ filter_regexp_exec(filter_t *filter, unsigned int channel_id,
 }
 
 static te_errno
-filter_exec(filter_t *filter, unsigned int channel_id, size_t size, char *buf)
+filter_exec(filter_t *filter, unsigned int channel_id, pid_t pid,
+            size_t size, char *buf)
 {
     te_bool eos = (size == 0);
 
@@ -985,9 +998,12 @@ filter_exec(filter_t *filter, unsigned int channel_id, size_t size, char *buf)
      * end of stream.
      */
     if (filter->regexp_data != NULL && !eos)
-        return filter_regexp_exec(filter, channel_id, size, buf, match_callback);
+    {
+        return filter_regexp_exec(filter, channel_id, pid, size,
+                                  buf, match_callback);
+    }
 
-    return match_callback(filter, channel_id, size, buf, eos);
+    return match_callback(filter, channel_id, pid, size, buf, eos);
 }
 
 static te_errno
@@ -1005,7 +1021,7 @@ channel_read(channel_t *channel)
     for (i = 0; i < channel->n_filters; i++)
     {
         if ((rc = filter_exec(channel->filters[i], channel->id,
-                              read_c, buf)) != 0)
+                              channel->job->pid, read_c, buf)) != 0)
             return rc;
     }
 
