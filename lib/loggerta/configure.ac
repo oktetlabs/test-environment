@@ -18,9 +18,9 @@ m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_INSTALL
 if test x$host != x${host%windows} ; then
     RANLIB=touch
-else    
+else
     AC_PROG_RANLIB
-fi    
+fi
 
 AM_CONDITIONAL(WINDOWS, test x$host != x${host%windows})
 

@@ -1,18 +1,18 @@
 /** @file
- * @brief Logger subsystem API - TA side 
+ * @brief Logger subsystem API - TA side
  *
  * TA side Logger functionality for
  * forked TA processes and newly created threads, internal definitions.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
- * 
+ *
+ *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Mamadou Ngom <Mamadou.Ngom@oktetlabs.ru>
  *
  * $Id$
- */ 
+ */
 
 #ifndef __TE_LIB_LOGFORK_INT_H__
 #define __TE_LIB_LOGFORK_INT_H__
@@ -61,11 +61,11 @@ typedef struct logfork_msg {
 #define __log_usec   msg.log.usec
 #define __log_level  msg.log.level
 #define __lgr_user   msg.log.user
-#define __log_msg    msg.log.msg 
+#define __log_msg    msg.log.msg
 #define __name       msg.notify.name
 #define __to_delete  msg.notify.to_delete
 
 #ifdef __cplusplus
 }  /* extern "C" */
-#endif  
+#endif
 #endif /* !__TE_LIB_LOGFORK_INT_H__ */

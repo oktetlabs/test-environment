@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
  * @author Mamadou Ngom <Mamadou.Ngom@oktetlabs.ru>
@@ -32,10 +32,10 @@
 #endif
 #if HAVE_STRING_H
 #include <string.h>
-#endif 
+#endif
 #if HAVE_STRINGS_H
 #include <strings.h>
-#endif 
+#endif
 #if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -70,7 +70,7 @@ static void *logfork_clnt_sockd_lock = NULL;
 
 
 /**
- * Open client socket. 
+ * Open client socket.
  *
  * @retval 0    Success
  * @retval -1   Failure
@@ -82,7 +82,7 @@ open_sock(void)
 {
     char *port;
     int   sock;
-    
+
     struct sockaddr_in addr;
 
     if ((port = getenv("TE_LOG_PORT")) == NULL)
@@ -96,12 +96,12 @@ open_sock(void)
     sock = socket(PF_INET, SOCK_DGRAM, 0);
     if (sock < 0)
     {
-        fprintf(stderr, 
+        fprintf(stderr,
                 "Failed to register logfork user: socket() failed\n");
         fflush(stderr);
         return -1;
     }
-    
+
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
@@ -110,10 +110,10 @@ open_sock(void)
 #ifndef WINDOWS
     fcntl(sock, F_SETFD, FD_CLOEXEC);
 #endif
-    
+
     if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
     {
-        fprintf(stderr, 
+        fprintf(stderr,
                 "Failed to register logfork user: - connect() failed\n");
         fflush(stderr);
         close(sock);
@@ -143,17 +143,17 @@ int
 logfork_register_user(const char *name)
 {
     logfork_msg msg;
-    
+
     memset(&msg, 0, sizeof(msg));
     strncpy(msg.__name, name, sizeof(msg.__name) - 1);
     msg.pid = getpid();
     msg.tid = thread_self();
     msg.is_notif = TRUE;
     msg.__to_delete = FALSE;
-    
+
     if (logfork_clnt_sockd_lock == NULL)
         logfork_clnt_sockd_lock = thread_mutex_create();
-    
+
     if (logfork_clnt_sockd == -1 && open_sock() != 0)
     {
         return -1;
@@ -167,7 +167,7 @@ logfork_register_user(const char *name)
         fflush(stderr);
         return -1;
     }
-    
+
     return 0;
 }
 
@@ -176,16 +176,16 @@ int
 logfork_delete_user(pid_t pid, uint32_t tid)
 {
     logfork_msg msg;
-    
+
     memset(&msg, 0, sizeof(msg));
     msg.pid = pid;
     msg.tid = tid;
     msg.is_notif = TRUE;
     msg.__to_delete = TRUE;
-    
+
     if (logfork_clnt_sockd_lock == NULL)
         logfork_clnt_sockd_lock = thread_mutex_create();
-    
+
     if (logfork_clnt_sockd == -1 && open_sock() != 0)
     {
         return -1;
@@ -199,22 +199,22 @@ logfork_delete_user(pid_t pid, uint32_t tid)
         fflush(stderr);
         return -1;
     }
-    
+
     return 0;
 }
-/** 
+/**
  * Function for logging to be used by forked processes.
  *
  * This function complies with te_log_message_f prototype.
  */
-void 
+void
 logfork_log_message(const char *file, unsigned int line,
                     te_log_ts_sec sec, te_log_ts_usec usec,
                     unsigned int level, const char *entity,
-                    const char *user, const char *fmt, va_list ap) 
+                    const char *user, const char *fmt, va_list ap)
 {
     logfork_msg msg;
-    
+
     static te_bool init = FALSE;
 
     struct te_log_out_params cm =
@@ -235,7 +235,7 @@ logfork_log_message(const char *file, unsigned int line,
     msg.__log_sec = sec;
     msg.__log_usec = usec;
     msg.__log_level = level;
-    
+
     if (!init && logfork_clnt_sockd == -1)
         open_sock();
 
@@ -250,7 +250,7 @@ logfork_log_message(const char *file, unsigned int line,
 
     if (send(logfork_clnt_sockd, (char *)&msg, sizeof(msg), 0) !=
             (ssize_t)sizeof(msg))
-    {       
+    {
         fprintf(stderr, "%s(): sendto() failed: %s\n",
                 __FUNCTION__, strerror(errno));
     }

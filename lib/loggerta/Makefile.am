@@ -15,9 +15,9 @@ if WINDOWS
 
 libloggerta_a_SOURCES = logfork_server.c logfork_client.c
 
-EXTRA_DIST = logger_ta.c 
+EXTRA_DIST = logger_ta.c
 
-libloggerta.a: $(libloggerta_a_SOURCES) 
+libloggerta.a: $(libloggerta_a_SOURCES)
 	TE_INSTALL=$(DESTDIR)/$(prefix)/.. \
         PATH="$${PATH}:$(TE_BASE)/engine/builder:$(TE_PATH)" \
         te_build_win_lib $(TE_PLATFORM) $@ $(DESTDIR)/$(prefix) $^

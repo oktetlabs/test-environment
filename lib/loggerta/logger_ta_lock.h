@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -199,7 +199,7 @@ ta_log_trylock(ta_log_lock_key *key)
 #else
 
 #error "We have no any locks"
-#define LGR_LOCK(lock)    lock = 1  
+#define LGR_LOCK(lock)    lock = 1
 #define LGR_UNLOCK(lock)  lock = 0
 
 #endif

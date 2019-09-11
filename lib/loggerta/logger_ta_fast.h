@@ -11,7 +11,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -40,8 +40,8 @@
         {                                                           \
             ta_log_message_fast(_lvl, _lgruser, _fs, LARG12(_args));\
         }                                                           \
-    } while (0) 
-    
+    } while (0)
+
 /** @name Logging abnormal/unexpected situations */
 #define LOGF_ERROR(_us, _fs...)  LGRF_MESSAGE(TE_LL_ERROR, _us, _fs)
 #define F_ERROR(_fs...)          LOGF_ERROR(TE_LGR_USER, _fs)
@@ -54,8 +54,8 @@
 #define LOGF_WARN(_us, _fs...)  LGRF_MESSAGE(TE_LL_WARN, _us, _fs)
 #define F_WARN(_fs...)          LOGF_WARN(TE_LGR_USER, _fs)
 /*@}*/
-  
-/** @name Logging very important event in TE and tests */ 
+
+/** @name Logging very important event in TE and tests */
 #define LOGF_RING(_us, _fs...)  LGRF_MESSAGE(TE_LL_RING, _us, _fs)
 #define F_RING(_fs...)          LOGF_RING(TE_LGR_USER, _fs)
 /*@}*/
@@ -64,15 +64,15 @@
 #define LOGF_INFO(_us, _fs...)  LGRF_MESSAGE(TE_LL_INFO, _us, _fs)
 #define F_INFO(_fs...)          LOGF_INFO(TE_LGR_USER, _fs)
 /*@}*/
-   
+
 /** @name Logging additional events for detalization of processing */
 #define LOGF_VERB(_us, _fs...)  LGRF_MESSAGE(TE_LL_VERB, _us, _fs)
 #define F_VERB(_fs...)          LOGF_VERB(TE_LGR_USER, _fs)
 /*@}*/
 
 
-    
-/**< Logging of entry to and exit from function */    
+
+/**< Logging of entry to and exit from function */
 #define LOGF_SUPENTRY(_us, _fs, _args...) \
     do {                                                 \
         ta_log_message_fast(TE_LL_ENTRY_EXIT, _us,       \
@@ -95,9 +95,9 @@
                                     LARG11());                  \
         }                                                       \
     } while (0)
-    
-#define F_ENTRY(_fs...)  LOGF_ENTRY(TE_LGR_USER, _fs)    
-    
+
+#define F_ENTRY(_fs...)  LOGF_ENTRY(TE_LGR_USER, _fs)
+
 #define LOGF_SUPEXIT(_us, _fs, _args...) \
     do {                                                        \
         ta_log_message_fast(TE_LL_ENTRY_EXIT, _us,              \
@@ -106,7 +106,7 @@
                             1, (ta_log_arg)__FUNCTION__,        \
                             LARG10(_args));                     \
     } while (0)
-  
+
 #define LOGF_EXIT(_us, _fs...)                                  \
     do {                                                        \
         if (TE_LOG_LEVEL & TE_LL_ENTRY_EXIT)                    \
@@ -122,8 +122,8 @@
         }                                                       \
     } while (0)
 
-                
-#define F_EXIT(_fs...)  LOGF_EXIT(TE_LGR_USER, _fs)     
+
+#define F_EXIT(_fs...)  LOGF_EXIT(TE_LGR_USER, _fs)
 
 
 /*

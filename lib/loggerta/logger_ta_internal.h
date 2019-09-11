@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -55,7 +55,7 @@ extern "C" {
 #define TA_LOG_ARGS_MAX     12
 
 #ifndef TA_LOG_FORCE_NEW
-/* 
+/*
  * Drop a new or the oldest message, if no enough space:
  * 0 - drop a new message, !0 - drop the oldest message.
  */
@@ -155,7 +155,7 @@ typedef struct lgr_mess_header {
 
     te_log_ts_sec   sec;            /**< Seconds of the timestamp */
     te_log_ts_usec  usec;           /**< Microseconds of the timestamp */
-    te_log_level    level;          /**< Log level mask to be passed 
+    te_log_level    level;          /**< Log level mask to be passed
                                          in raw log*/
     const char     *user;           /**< User_name string location */
     const char     *fmt;            /**< Format string location */
@@ -250,7 +250,7 @@ lgr_rb_view_head(struct lgr_rb *ring_buffer, uint32_t position)
 {
     printf("unused:%d, head:%d, tail:%d elements:%d, mark:%d, "
            "sequence:%d\n",
-           (int)LGR_RB_UNUSED(ring_buffer), 
+           (int)LGR_RB_UNUSED(ring_buffer),
            (int)LGR_RB_HEAD(ring_buffer),
            (int)LGR_RB_TAIL(ring_buffer),
            (int)LGR_GET_ELEMENTS_FIELD(ring_buffer, position),
@@ -441,7 +441,7 @@ lgr_rb_get_elements(struct lgr_rb *ring_buffer, uint32_t position,
 
         destination += length_aux;
 
-        length_aux = (pos_aux - LGR_TOTAL_RB_EL) * LGR_RB_ELEMENT_LEN; 
+        length_aux = (pos_aux - LGR_TOTAL_RB_EL) * LGR_RB_ELEMENT_LEN;
 
         memcpy(destination, start_aux, length_aux);
    }
@@ -452,7 +452,7 @@ extern void logfork_log_message(const char *file, unsigned int line,
                                 te_log_ts_sec sec, te_log_ts_usec usec,
                                 unsigned int level,
                                 const char *entity, const char *user,
-                                const char *fmt, va_list ap); 
+                                const char *fmt, va_list ap);
 
 #ifdef __cplusplus
 } /* extern "C" */
