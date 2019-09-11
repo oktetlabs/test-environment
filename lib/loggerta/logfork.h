@@ -26,6 +26,8 @@ extern "C" {
  * possible to know from which process or thread message
  * has been sent.
  *
+ * If the process is already registered, change its name.
+ *
  * @param name  process or thread name
  *
  * @retval  0 success

@@ -145,11 +145,10 @@ logfork_register_user(const char *name)
     logfork_msg msg;
 
     memset(&msg, 0, sizeof(msg));
-    strncpy(msg.__name, name, sizeof(msg.__name) - 1);
+    strncpy(msg.__add_name, name, sizeof(msg.__add_name) - 1);
     msg.pid = getpid();
     msg.tid = thread_self();
-    msg.is_notif = TRUE;
-    msg.__to_delete = FALSE;
+    msg.type = LOGFORK_MSG_ADD_USER;
 
     if (logfork_clnt_sockd_lock == NULL)
         logfork_clnt_sockd_lock = thread_mutex_create();
@@ -180,8 +179,7 @@ logfork_delete_user(pid_t pid, uint32_t tid)
     memset(&msg, 0, sizeof(msg));
     msg.pid = pid;
     msg.tid = tid;
-    msg.is_notif = TRUE;
-    msg.__to_delete = TRUE;
+    msg.type = LOGFORK_MSG_DEL_USER;
 
     if (logfork_clnt_sockd_lock == NULL)
         logfork_clnt_sockd_lock = thread_mutex_create();
@@ -230,7 +228,7 @@ logfork_log_message(const char *file, unsigned int line,
 
     msg.pid = getpid();
     msg.tid = thread_self();
-    msg.is_notif = FALSE;
+    msg.type = LOGFORK_MSG_LOG;
     strncpy(msg.__lgr_user, user, sizeof(msg.__lgr_user) - 1);
     msg.__log_sec = sec;
     msg.__log_usec = usec;

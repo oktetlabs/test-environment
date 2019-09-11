@@ -308,53 +308,61 @@ logfork_entry(void)
             }
 
             /* If udp message */
-            if (!msg.is_notif)
+            switch (msg.type)
             {
-                if (logfork_find_name_by_pid(&data.proc_list, &name,
-                                             msg.pid, msg.tid) != 0)
-                {
-                    name = "Unnamed";
-                }
-                TE_SPRINTF(name_pid, "%s.%u.%u",
-                           name, (unsigned)msg.pid, (unsigned)msg.tid);
+                case LOGFORK_MSG_LOG:
+                    if (logfork_find_name_by_pid(&data.proc_list, &name,
+                                                 msg.pid, msg.tid) != 0)
+                    {
+                        name = "Unnamed";
+                    }
+                    TE_SPRINTF(name_pid, "%s.%u.%u",
+                               name, (unsigned)msg.pid, (unsigned)msg.tid);
 
-                te_log_message_ts(__FILE__, __LINE__,
-                                  msg.__log_sec, msg.__log_usec,
-                                  msg.__log_level, TE_LGR_ENTITY,
-                                  msg.__lgr_user,
-                                  "%s: %s", name_pid, msg.__log_msg);
-            }
-            else if (!msg.__to_delete)
-            {
-                if (logfork_find_name_by_pid(&data.proc_list, &name,
-                                             msg.pid, msg.tid) == 0)
-                {
-                    snprintf(name, LOGFORK_MAXUSER, "%s", msg.__name);
-                    continue;
-                }
+                    te_log_message_ts(__FILE__, __LINE__,
+                                      msg.__log_sec, msg.__log_usec,
+                                      msg.__log_level, TE_LGR_ENTITY,
+                                      msg.__lgr_user,
+                                      "%s: %s", name_pid, msg.__log_msg);
+                    break;
 
-                if (logfork_list_add(&data.proc_list, msg.__name,
-                                     msg.pid, msg.tid) != 0)
-                {
-                    ERROR("logfork_entry(): out of Memory");
+                case LOGFORK_MSG_ADD_USER:
+                    if (logfork_find_name_by_pid(&data.proc_list, &name,
+                                                 msg.pid, msg.tid) == 0)
+                    {
+                        snprintf(name, LOGFORK_MAXUSER, "%s", msg.__add_name);
+                        break;
+                    }
+
+                    if (logfork_list_add(&data.proc_list, msg.__add_name,
+                                         msg.pid, msg.tid) != 0)
+                    {
+                        ERROR("logfork_entry(): out of Memory");
+                        goto cleanup;
+                    }
                     break;
-                }
-            }
-            else
-            {
-                if (logfork_list_del(&data.proc_list,
-                                     msg.pid, msg.tid) != 0)
-                {
-                    ERROR("logfork_entry(): failed to delete a "
-                          "entry %s from processes/threads list",
-                          msg.__name);
+
+                case LOGFORK_MSG_DEL_USER:
+                    if (logfork_list_del(&data.proc_list,
+                                         msg.pid, msg.tid) != 0)
+                    {
+                        ERROR("logfork_entry(): failed to delete a "
+                              "entry %s from processes/threads list",
+                              msg.__add_name);
+                        goto cleanup;
+                    }
                     break;
-                }
+
+                default:
+                    ERROR("logfork_entry(): invalid message type");
+                    goto cleanup;
             }
 
         } /* while(1) */
 
     } while (0);
+
+cleanup:
 
 #if HAVE_PTHREAD_H
     pthread_cleanup_pop(!0);

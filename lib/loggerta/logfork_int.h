@@ -34,18 +34,22 @@ extern "C" {
 /** Maximum length of the Logger user name or logfork user name */
 #define LOGFORK_MAXUSER  32
 
+/** Type of a logfork message */
+typedef enum logfork_msg_type {
+    LOGFORK_MSG_ADD_USER,     /**< Process registration or process name change */
+    LOGFORK_MSG_DEL_USER,     /**< Process removal */
+    LOGFORK_MSG_LOG,        /**< Log message */
+} logfork_msg_type;
+
 /** Common information in the message */
 typedef struct logfork_msg {
-    te_bool  is_notif;
+    logfork_msg_type type;
     pid_t    pid;
     uint32_t tid;
     union {
         struct {
             char        name[LOGFORK_MAXUSER]; /** Logfork user name */
-            te_bool     to_delete;             /** Delete a record with
-                                                   corresponding pid
-                                                   and tid */
-        } notify;
+        } add;
         struct {
             te_log_ts_sec   sec;                  /**< Seconds */
             te_log_ts_usec  usec;                 /**< Microseconds */
@@ -62,8 +66,7 @@ typedef struct logfork_msg {
 #define __log_level  msg.log.level
 #define __lgr_user   msg.log.user
 #define __log_msg    msg.log.msg
-#define __name       msg.notify.name
-#define __to_delete  msg.notify.to_delete
+#define __add_name   msg.add.name
 
 #ifdef __cplusplus
 }  /* extern "C" */
