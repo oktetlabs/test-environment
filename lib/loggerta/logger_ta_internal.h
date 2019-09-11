@@ -364,7 +364,7 @@ lgr_rb_allocate_head(struct lgr_rb *ring_buffer,
  */
 static inline uint32_t
 lgr_rb_allocate_and_copy(struct lgr_rb *ring_buffer,
-                         void *start, uint32_t length,
+                         const void *start, uint32_t length,
                          uint8_t **arg_addr)
 {
     uint32_t start_pos = 0;
@@ -392,7 +392,7 @@ lgr_rb_allocate_and_copy(struct lgr_rb *ring_buffer,
     else
     {
         uint32_t  length_aux;
-        uint8_t  *start_aux = start;
+        const uint8_t *start_aux = start;
 
         length_aux = (LGR_TOTAL_RB_EL - start_pos) * LGR_RB_ELEMENT_LEN;
         memcpy(*arg_addr, start_aux, length_aux);
