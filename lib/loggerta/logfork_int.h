@@ -49,7 +49,7 @@ typedef struct logfork_msg {
     uint32_t tid;
     union {
         struct {
-            char        name[LOGFORK_MAXUSER]; /** Logfork user name */
+            char        name[LOGFORK_MAXUSER]; /**< Logfork user name */
         } add;
         struct {
             te_bool     enabled;    /**< @c TRUE - enable, @c FALSE - disable
