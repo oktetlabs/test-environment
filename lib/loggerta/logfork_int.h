@@ -39,6 +39,7 @@ typedef enum logfork_msg_type {
     LOGFORK_MSG_ADD_USER,     /**< Process registration or process name change */
     LOGFORK_MSG_DEL_USER,     /**< Process removal */
     LOGFORK_MSG_LOG,        /**< Log message */
+    LOGFORK_MSG_SET_ID_LOGGING, /**< Enable or disable id logging in messages */
 } logfork_msg_type;
 
 /** Common information in the message */
@@ -50,6 +51,10 @@ typedef struct logfork_msg {
         struct {
             char        name[LOGFORK_MAXUSER]; /** Logfork user name */
         } add;
+        struct {
+            te_bool     enabled;    /**< @c TRUE - enable, @c FALSE - disable
+                                         logging of name and pid in messages */
+        } set_id_logging;
         struct {
             te_log_ts_sec   sec;                  /**< Seconds */
             te_log_ts_usec  usec;                 /**< Microseconds */

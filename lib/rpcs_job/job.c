@@ -1090,6 +1090,9 @@ thread_work_loop(void *arg)
 
     UNUSED(arg);
 
+    logfork_register_user("JOB CONTROL");
+    logfork_set_id_logging(FALSE);
+
     while (1)
     {
         int ctrl_fd = ctrl_pipe_get_read_fd();

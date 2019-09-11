@@ -170,6 +170,37 @@ logfork_register_user(const char *name)
     return 0;
 }
 
+int
+logfork_set_id_logging(te_bool enabled)
+{
+    logfork_msg msg;
+
+    memset(&msg, 0, sizeof(msg));
+    msg.pid = getpid();
+    msg.tid = thread_self();
+    msg.type = LOGFORK_MSG_SET_ID_LOGGING;
+    msg.msg.set_id_logging.enabled = enabled;
+
+    if (logfork_clnt_sockd_lock == NULL)
+        logfork_clnt_sockd_lock = thread_mutex_create();
+
+    if (logfork_clnt_sockd == -1 && open_sock() != 0)
+    {
+        return -1;
+    }
+
+    if (send(logfork_clnt_sockd, (char *)&msg, sizeof(msg), 0) !=
+            (ssize_t)sizeof(msg))
+    {
+        fprintf(stderr, "%s() - cannot send update message: %s\n",
+                __FUNCTION__, strerror(errno));
+        fflush(stderr);
+        return -1;
+    }
+
+    return 0;
+}
+
 /* See description in logfork.h */
 int
 logfork_delete_user(pid_t pid, uint32_t tid)

@@ -47,6 +47,17 @@ extern int logfork_register_user(const char *name);
 extern int logfork_delete_user(pid_t pid, uint32_t tid);
 
 /**
+ * Enable or disable logging of process name and id in messages
+ * (enabled by default)
+ *
+ * @param enabled  @c TRUE - enable, @c FALSE - disable
+ *
+ * @retval  0 success
+ * @retval -1 failure
+ */
+extern int logfork_set_id_logging(te_bool enabled);
+
+/**
  * Entry point for log gathering.
  */
 extern void logfork_entry(void);

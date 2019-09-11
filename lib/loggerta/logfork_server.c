@@ -70,6 +70,7 @@ typedef struct list {
     char     name[LOGFORK_MAXLEN];
     pid_t    pid;
     uint32_t tid;
+    te_bool  disable_id_logging;
 } list;
 
 /** LogFork server data */
@@ -80,18 +81,18 @@ typedef struct logfork_data {
 
 
 /**
- * Find process name by its pid and tid in the internal list of
+ * Find process by its pid and tid in the internal list of
  * processes
  *
  * @param pid   process or thread identifier
  * @param tid   thread identifier
- * @param name  pointer to process or thread name
+ * @param proc  pointer to process or thread
  *
  * @retval  0      found
  * @retval -1      not found
  */
 static int
-logfork_find_name_by_pid(list **proc_list, char **name, int pid,
+logfork_find_proc_by_pid(list **proc_list, list **proc, int pid,
                          uint32_t tid)
 {
     list *tmp = *proc_list;
@@ -100,7 +101,7 @@ logfork_find_name_by_pid(list **proc_list, char **name, int pid,
     {
         if (tmp->pid == pid && tmp->tid == tid)
         {
-            *name = tmp->name;
+            *proc = tmp;
             return 0;
         }
     }
@@ -132,6 +133,7 @@ logfork_list_add(list **proc_list, char *name,
     strcpy(item->name, name);
     item->pid = pid;
     item->tid = tid;
+    item->disable_id_logging = FALSE;
     if (*proc_list == NULL)
     {
         *proc_list = item;
@@ -233,6 +235,7 @@ logfork_entry(void)
     struct sockaddr_in  servaddr;
     socklen_t           addrlen;
 
+    list *proc;
     char *name;
     char  name_pid[LOGFORK_MAXLEN];
     char  port[16];
@@ -311,8 +314,16 @@ logfork_entry(void)
             switch (msg.type)
             {
                 case LOGFORK_MSG_LOG:
-                    if (logfork_find_name_by_pid(&data.proc_list, &name,
-                                                 msg.pid, msg.tid) != 0)
+                {
+                    te_bool disable_id_logging = FALSE;
+
+                    if (logfork_find_proc_by_pid(&data.proc_list, &proc,
+                                                 msg.pid, msg.tid) == 0)
+                    {
+                        name = proc->name;
+                        disable_id_logging = proc->disable_id_logging;
+                    }
+                    else
                     {
                         name = "Unnamed";
                     }
@@ -322,15 +333,18 @@ logfork_entry(void)
                     te_log_message_ts(__FILE__, __LINE__,
                                       msg.__log_sec, msg.__log_usec,
                                       msg.__log_level, TE_LGR_ENTITY,
-                                      msg.__lgr_user,
-                                      "%s: %s", name_pid, msg.__log_msg);
+                                      msg.__lgr_user, "%s%s%s",
+                                      disable_id_logging ? "" : name_pid,
+                                      disable_id_logging ? "" : ": ",
+                                      msg.__log_msg);
                     break;
+                }
 
                 case LOGFORK_MSG_ADD_USER:
-                    if (logfork_find_name_by_pid(&data.proc_list, &name,
+                    if (logfork_find_proc_by_pid(&data.proc_list, &proc,
                                                  msg.pid, msg.tid) == 0)
                     {
-                        snprintf(name, LOGFORK_MAXUSER, "%s", msg.__add_name);
+                        snprintf(proc->name, LOGFORK_MAXUSER, "%s", msg.__add_name);
                         break;
                     }
 
@@ -351,6 +365,16 @@ logfork_entry(void)
                               msg.__add_name);
                         goto cleanup;
                     }
+                    break;
+
+                case LOGFORK_MSG_SET_ID_LOGGING:
+                    if (logfork_find_proc_by_pid(&data.proc_list, &proc,
+                                                 msg.pid, msg.tid) != 0)
+                    {
+                        ERROR("logfork_entry(): failed to update an entry");
+                        goto cleanup;
+                    }
+                    proc->disable_id_logging = !msg.msg.set_id_logging.enabled;
                     break;
 
                 default:
