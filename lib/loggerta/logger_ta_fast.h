@@ -212,6 +212,7 @@ ta_log_message_fast(unsigned int level, const char *user, const char *fmt,
     ta_log_timestamp(&msg->sec, &msg->usec);
     msg->level  = level;
     msg->user   = user;
+    msg->user_in_first_arg = FALSE;
     msg->fmt    = fmt;
     msg->n_args = argl1 + argl2 + argl3 + argl4  + argl5  + argl6 +
                   argl7 + argl8 + argl9 + argl10 + argl11 + argl12 +

@@ -56,6 +56,25 @@ extern te_errno ta_log_init(void);
 extern te_errno ta_log_shutdown(void);
 
 /**
+ * Register a log message in the raw log with log user stored as an argument
+ * (slow mode).
+ *
+ * Log user string is usually stored in the raw log as a pointer to a
+ * string in static memory region to avoid copying/memory allocation.
+ * But in some cases log user has to be dynamic, and the function copies
+ * the log user into raw log argument to support that.
+ *
+ * @param sec   Timestamp seconds
+ * @param usec  Timestamp microseconds
+ * @param level Log level
+ * @param user  Pointer to log user (copied into raw log)
+ * @param msg   Pointer to the log message.
+ */
+extern void ta_log_dynamic_user_ts(te_log_ts_sec sec, te_log_ts_usec usec,
+                                   unsigned int level, const char *user,
+                                   const char *msg);
+
+/**
  * Request the log messages accumulated in the Test Agent local log
  * buffer. Passed messages will be deleted from local log.
  *

@@ -94,9 +94,77 @@ te_log_message_f te_log_message_va = logfork_log_message;
 static const char  *skip_flags = "#-+ 0";
 static const char  *skip_width = "*0123456789";
 
+static te_errno
+ta_log_add_ptr_argument(struct lgr_rb *ring_buffer, uint32_t position,
+                        const void *start, uint32_t length,
+                        ta_log_arg *arg_location)
+{
+    uint32_t val;
+    uint8_t *arg_addr;
+    int res;
+
+    res = lgr_rb_allocate_and_copy(ring_buffer, start, length, &arg_addr);
+    if (res == 0)
+    {
+        return TE_ENOBUFS;
+    }
+
+    *arg_location = (ta_log_arg)arg_addr;
+    val = LGR_GET_ELEMENTS_FIELD(ring_buffer, position);
+    val += res;
+    LGR_SET_ELEMENTS_FIELD(ring_buffer, position, val);
+
+    return 0;
+}
+
+extern void
+ta_log_dynamic_user_ts(te_log_ts_sec sec, te_log_ts_usec usec,
+                       unsigned int level, const char *user, const char *msg)
+{
+    const char *args[] = { user, msg };
+    lgr_mess_header *hdr_addr = NULL;
+    lgr_mess_header header;
+    ta_log_lock_key key;
+    uint32_t position;
+    unsigned int i;
+    int res;
+
+    lgr_rb_init_header(&header, level, NULL, "%s", TRUE, sec, usec);
+
+    if (ta_log_lock(&key) != 0)
+        return;
+
+    res = lgr_rb_allocate_head(&log_buffer, TA_LOG_FORCE_NEW, &position);
+    if (res == 0)
+    {
+        (void)ta_log_unlock(&key);
+        goto resume;
+    }
+
+    hdr_addr = (struct lgr_mess_header *)(log_buffer.rb) + position;
+    lgr_rb_fill_allocated_header(hdr_addr, &header);
+
+    for (i = 0; i < TE_ARRAY_LEN(args); i++)
+    {
+        if (ta_log_add_ptr_argument(&log_buffer, position,
+                                    args[i], strlen(args[i]) + 1,
+                                    hdr_addr->args + i) != 0)
+        {
+            (void)ta_log_unlock(&key);
+            goto resume;
+        }
+    }
+
+    (void)ta_log_unlock(&key);
+
+resume:
+    ;
+}
 
 /**
  * Register message in the raw log (slow mode).
+ *
+ * @note    @p user is expected to be pointer to a static memory region
  *
  * This function complies with te_log_message_f prototype.
  */
@@ -123,10 +191,8 @@ ta_log_message(const char *file, unsigned int line,
     UNUSED(line);
     UNUSED(entity);
 
-    memset(&header, 0, sizeof(struct lgr_mess_header));
-    header.level = level;
-    header.user = (user != NULL) ? user : null_str;
-    header.fmt = (fmt != NULL) ? fmt : null_str;
+    lgr_rb_init_header(&header, level, (user != NULL) ? user : null_str,
+                       (fmt != NULL) ? fmt : null_str, FALSE, sec, usec);
     for (p_str = header.fmt; *p_str; p_str++)
     {
         if (*p_str != '%')
@@ -219,39 +285,23 @@ ta_log_message(const char *file, unsigned int line,
         (void)ta_log_unlock(&key);
         goto resume;
     }
+
     hdr_addr = (struct lgr_mess_header *)(log_buffer.rb) + position;
-
-    header.elements = hdr_addr->elements;
-    header.sequence = hdr_addr->sequence;
-    header.mark = hdr_addr->mark;
-
-    header.sec = sec;
-    header.usec = usec;
-
-    *hdr_addr = header;
-
+    lgr_rb_fill_allocated_header(hdr_addr, &header);
 
     tmp_list = cp_list.next;
     while (tmp_list != &cp_list)
     {
-        uint32_t    val;
-        uint8_t    *arg_addr;
-        ta_log_arg *arg_location = hdr_addr->args + tmp_list->narg;
-
-        res = lgr_rb_allocate_and_copy(&log_buffer, tmp_list->addr,
-                                       tmp_list->length, &arg_addr);
-        if (res == 0)
+        if (ta_log_add_ptr_argument(&log_buffer, position,
+                                    tmp_list->addr, tmp_list->length,
+                                    hdr_addr->args + tmp_list->narg) != 0)
         {
             (void)ta_log_unlock(&key);
             goto resume;
         }
 
-        *arg_location = (ta_log_arg)arg_addr;
-        val = LGR_GET_ELEMENTS_FIELD(&log_buffer, position);
-        val += res;
-        LGR_SET_ELEMENTS_FIELD(&log_buffer, position, val);
         tmp_list = tmp_list->next;
-    };
+    }
     (void)ta_log_unlock(&key);
 
 resume:
@@ -362,7 +412,10 @@ log_get_message(uint32_t length, uint8_t *buffer)
     tmp_buf += sizeof(te_log_level);
 
     /* Write user name and corresponding (NFL) next field length */
-    fs = header.user;
+    if (header.user_in_first_arg)
+        fs = (char *)LGR_GET_ARG(header, argn++);
+    else
+        fs = header.user;
     tmp_length = strlen(fs);
     LGR_CHECK_LENGTH(sizeof(te_log_nfl) + tmp_length);
     *((te_log_nfl *)tmp_buf) = log_nfl_hton(tmp_length);

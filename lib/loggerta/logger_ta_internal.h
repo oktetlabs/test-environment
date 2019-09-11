@@ -147,6 +147,8 @@ typedef long ta_log_arg;
  * the number of consequent ring buffer elements.
  */
 typedef struct lgr_mess_header {
+    te_bool         user_in_first_arg;  /**< User_name is in the first string
+                                             argument */
     uint32_t        elements;       /**< Number of consequent ring buffer
                                          elements in message */
     uint32_t        sequence;       /**< Sequence number for this message */
@@ -157,7 +159,8 @@ typedef struct lgr_mess_header {
     te_log_ts_usec  usec;           /**< Microseconds of the timestamp */
     te_log_level    level;          /**< Log level mask to be passed
                                          in raw log*/
-    const char     *user;           /**< User_name string location */
+    const char     *user;           /**< User_name string location (if
+                                         user_in_first_arg is @c FALSE) */
     const char     *fmt;            /**< Format string location */
 
     unsigned int    n_args;                 /**< Number of arguments */
@@ -349,6 +352,35 @@ lgr_rb_allocate_head(struct lgr_rb *ring_buffer,
 
     return 1;
 }
+
+static inline void
+lgr_rb_init_header(lgr_mess_header *header, unsigned int level,
+                   const char *user, const char *fmt, te_bool user_in_first_arg,
+                   te_log_ts_sec sec, te_log_ts_usec usec)
+{
+    memset(header, 0, sizeof(*header));
+    header->level = level;
+    header->user = user;
+    header->fmt = fmt;
+    header->user_in_first_arg = user_in_first_arg;
+    header->sec = sec;
+    header->usec = usec;
+}
+
+static inline void
+lgr_rb_fill_allocated_header(lgr_mess_header *allocated,
+                             const lgr_mess_header *from)
+{
+    lgr_mess_header header;
+
+    header = *from;
+    header.elements = allocated->elements;
+    header.sequence = allocated->sequence;
+    header.mark = allocated->mark;
+
+    *allocated = header;
+}
+
 
 /**
  * Allocate ring buffer space and copy length bytes from start address.

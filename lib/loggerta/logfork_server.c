@@ -58,6 +58,7 @@
 #include "logger_api.h"
 #include "te_tools.h"
 #include "ta_common.h"
+#include "logger_ta.h"
 
 #include "logfork.h"
 #include "logfork_int.h"
@@ -237,7 +238,8 @@ logfork_entry(void)
 
     list *proc;
     char *name;
-    char  name_pid[LOGFORK_MAXLEN];
+    char  name_pid[64];
+    char  msg_body[LOGFORK_MAXLEN];
     char  port[16];
 
     logfork_msg msg;
@@ -330,13 +332,14 @@ logfork_entry(void)
                     TE_SPRINTF(name_pid, "%s.%u.%u",
                                name, (unsigned)msg.pid, (unsigned)msg.tid);
 
-                    te_log_message_ts(__FILE__, __LINE__,
-                                      msg.__log_sec, msg.__log_usec,
-                                      msg.__log_level, TE_LGR_ENTITY,
-                                      msg.__lgr_user, "%s%s%s",
-                                      disable_id_logging ? "" : name_pid,
-                                      disable_id_logging ? "" : ": ",
-                                      msg.__log_msg);
+                    TE_SPRINTF(msg_body, "%s%s%s",
+                               disable_id_logging ? "" : name_pid,
+                               disable_id_logging ? "" : ": ",
+                               msg.__log_msg);
+
+                    ta_log_dynamic_user_ts(msg.__log_sec, msg.__log_usec,
+                                           msg.__log_level, msg.__lgr_user,
+                                           msg_body);
                     break;
                 }
 
