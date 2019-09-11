@@ -667,6 +667,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     if (ta->is_local)
     {
         rc = te_string_append(&ta->cmd_prefix, "(");
+        if (rc == 0)
+            rc = te_string_append(&ta->start_prefix, "%s", ta->cmd_prefix.ptr);
         ta->cmd_suffix = ")";
     }
     else
