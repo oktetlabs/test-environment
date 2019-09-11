@@ -130,7 +130,7 @@ logfork_list_add(list **proc_list, char *name,
         return -1;
     }
 
-    strcpy(item->name, name);
+    TE_STRNCPY(item->name, sizeof(item->name), name);
     item->pid = pid;
     item->tid = tid;
     item->disable_id_logging = FALSE;
