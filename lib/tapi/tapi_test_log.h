@@ -258,7 +258,7 @@ extern "C" {
  * @param fmt  the content of the artifact as format string with arguments
  */
 #define ERROR_ARTIFACT(_fmt...) \
-    REGISTER_ARTIFACT(TE_LL_ERRRO, _fmt)
+    REGISTER_ARTIFACT(TE_LL_ERROR, _fmt)
 
 /**
  * Print test artifact to log. Artifact is a string describing
