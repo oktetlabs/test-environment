@@ -122,6 +122,7 @@ ta_log_dynamic_user_ts(te_log_ts_sec sec, te_log_ts_usec usec,
                        unsigned int level, const char *user, const char *msg)
 {
     const char *args[] = { user, msg };
+    struct lgr_rb lgr_rb_old;
     lgr_mess_header *hdr_addr = NULL;
     lgr_mess_header header;
     ta_log_lock_key key;
@@ -134,9 +135,12 @@ ta_log_dynamic_user_ts(te_log_ts_sec sec, te_log_ts_usec usec,
     if (ta_log_lock(&key) != 0)
         return;
 
+    lgr_rb_old = log_buffer;
+
     res = lgr_rb_allocate_head(&log_buffer, TA_LOG_FORCE_NEW, &position);
     if (res == 0)
     {
+        log_buffer = lgr_rb_old;
         (void)ta_log_unlock(&key);
         goto resume;
     }
@@ -150,6 +154,7 @@ ta_log_dynamic_user_ts(te_log_ts_sec sec, te_log_ts_usec usec,
                                     args[i], strlen(args[i]) + 1,
                                     hdr_addr->args + i) != 0)
         {
+            log_buffer = lgr_rb_old;
             (void)ta_log_unlock(&key);
             goto resume;
         }
@@ -181,6 +186,7 @@ ta_log_message(const char *file, unsigned int line,
     md_list             cp_list = {&cp_list, &cp_list, 0, NULL, 0};
     md_list            *tmp_list = NULL;
     uint32_t            narg = 0;
+    struct lgr_rb       lgr_rb_old;
 
     lgr_mess_header header;
     lgr_mess_header *hdr_addr = NULL;
@@ -279,9 +285,12 @@ ta_log_message(const char *file, unsigned int line,
     if (ta_log_lock(&key) != 0)
         return;
 
+    lgr_rb_old = log_buffer;
+
     res = lgr_rb_allocate_head(&log_buffer, TA_LOG_FORCE_NEW, &position);
     if (res == 0)
     {
+        log_buffer = lgr_rb_old;
         (void)ta_log_unlock(&key);
         goto resume;
     }
@@ -296,6 +305,7 @@ ta_log_message(const char *file, unsigned int line,
                                     tmp_list->addr, tmp_list->length,
                                     hdr_addr->args + tmp_list->narg) != 0)
         {
+            log_buffer = lgr_rb_old;
             (void)ta_log_unlock(&key);
             goto resume;
         }

@@ -195,13 +195,17 @@ ta_log_message_fast(unsigned int level, const char *user, const char *fmt,
     int                 res;
 
     struct lgr_mess_header *msg;
+    struct lgr_rb lgr_rb_old;
 
     if (ta_log_lock(&key) != 0)
         return;
 
+    lgr_rb_old = log_buffer;
+
     res = lgr_rb_allocate_head(&log_buffer, TA_LOG_FORCE_NEW, &position);
     if (res == 0)
     {
+        log_buffer = lgr_rb_old;
         (void)ta_log_unlock(&key);
         return;
     }
