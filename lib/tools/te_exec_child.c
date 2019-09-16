@@ -224,7 +224,8 @@ te_exec_child(const char *file, char *const argv[],
             execvpe(file, argv, envp);
 
         /* Terminate child process in case of exec failure */
-        _exit(0);
+        ERROR("%s: execvp[e](%s) failed: %s", __func__, file, strerror(errno));
+        _exit(EXIT_FAILURE);
     }
 
     if (VALID_FD_PTR(in_fd))
