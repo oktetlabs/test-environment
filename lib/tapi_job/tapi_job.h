@@ -149,6 +149,17 @@ extern te_errno tapi_job_rpc_simple_create(rcf_rpc_server *rpcs,
                                            tapi_job_simple_desc_t *desc);
 
 /**
+ * Set the path in Job TAPI environment to /agent:/env:PATH
+ *
+ * @note Job TAPI does not automatically inherit the environment from /agent:env
+ *
+ * @param rpcs   RPC server
+ *
+ * @return       Status code
+ */
+extern te_errno tapi_job_set_path(rcf_rpc_server *rpcs);
+
+/**
  * Start a job
  *
  * @param job Job instance handle

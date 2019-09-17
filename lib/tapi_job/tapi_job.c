@@ -215,6 +215,30 @@ tapi_job_rpc_simple_create(rcf_rpc_server *rpcs, tapi_job_simple_desc_t *desc)
 
 /* See description in tapi_job.h */
 te_errno
+tapi_job_set_path(rcf_rpc_server *rpcs)
+{
+    te_errno rc;
+    char *ta_path = NULL;
+    cfg_val_type type = CVT_STRING;
+    te_bool awaiting_error = RPC_AWAITING_ERROR(rpcs);
+
+    rc = cfg_get_instance_fmt(&type, &ta_path, "/agent:%s/env:PATH", rpcs->ta);
+    if (rc != 0)
+        return rc;
+
+    RPC_AWAIT_IUT_ERROR(rpcs);
+    if (rpc_setenv(rpcs, "PATH", ta_path, TRUE) != 0)
+        rc = RPC_ERRNO(rpcs);
+
+    if (awaiting_error)
+        RPC_AWAIT_IUT_ERROR(rpcs);
+
+    free(ta_path);
+    return rc;
+}
+
+/* See description in tapi_job.h */
+te_errno
 tapi_job_start(tapi_job_t *job)
 {
     return rpc_job_start(job->rpcs, job->id);
