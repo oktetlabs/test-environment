@@ -67,6 +67,7 @@
 #include "unix_internal.h"
 #include "bpf.h"
 #include "libbpf.h"
+#include "conf_bpf.h"
 
 #ifndef XDP_FLAGS_UPDATE_IF_NOEXIST
 #define XDP_FLAGS_UPDATE_IF_NOEXIST (1U << 0)
@@ -258,7 +259,7 @@ static te_errno
 bpf_init_prog_info(struct bpf_program *prog, struct bpf_prog_entry *prog_info)
 {
     int fd;
-    struct bpf_prog_info info = {};
+    bpf_prog_info_t info;
     unsigned int info_len = sizeof(info);
 
     fd = bpf_program__fd(prog);
@@ -268,6 +269,12 @@ bpf_init_prog_info(struct bpf_program *prog, struct bpf_prog_entry *prog_info)
         return TE_RC(TE_TA_UNIX, TE_ENODEV);
     }
 
+#ifndef HAVE_STRUCT_BPF_PROG_INFO_JITED_FUNC_LENS
+    WARN("Requried version of struct bpf_prog_info isn't supported by kernel, "
+         "TE version of this struct is used.");
+#endif
+
+    memset(&info, 0, info_len);
     if (bpf_obj_get_info_by_fd(fd, &info, &info_len) != 0)
     {
         ERROR("Failed to get info about loaded BPF program.");
