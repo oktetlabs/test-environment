@@ -57,6 +57,14 @@ function process(str)
         run_found = 0;
     }
 
+    if (sub(/@endpage/, str)) {
+        if (in_page) {
+            print "*/";
+        }
+        in_page = 0;
+        run_found = 0;
+    }
+
     if (in_dox_comment) {
         objective_handle(str, 1)
     }

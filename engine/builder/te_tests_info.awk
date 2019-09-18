@@ -80,6 +80,11 @@ function dump() {
     has_page = 1;
 }
 
+/@endpage/ {
+    in_test = 0;
+    has_page = 0;
+}
+
 /@run_name/ {
     if ($1 == "*" || $1 == "**")
         test_name = $3
