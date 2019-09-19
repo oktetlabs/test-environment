@@ -274,6 +274,7 @@ route_load_attrs(ta_cfg_obj_t *obj)
     ROUTE_LOAD_ATTR(MTU, mtu);
     ROUTE_LOAD_ATTR(WIN, win);
     ROUTE_LOAD_ATTR(IRTT, irtt);
+    ROUTE_LOAD_ATTR(HOPLIMIT, hoplimit);
 
     switch (rt_info->dst.ss_family)
     {
@@ -409,6 +410,8 @@ DEF_ROUTE_GET_FUNC(win);
 DEF_ROUTE_SET_FUNC(win);
 DEF_ROUTE_GET_FUNC(irtt);
 DEF_ROUTE_SET_FUNC(irtt);
+DEF_ROUTE_GET_FUNC(hoplimit);
+DEF_ROUTE_SET_FUNC(hoplimit);
 
 static te_errno
 route_src_get(unsigned int gid, const char *oid,
@@ -1184,7 +1187,15 @@ static rcf_pch_cfg_object node_route;
 RCF_PCH_CFG_NODE_RWC(node_route_type, "type", NULL, NULL,
                      route_type_get, route_type_set, &node_route);
 
-RCF_PCH_CFG_NODE_RWC(node_route_irtt, "irtt", NULL, &node_route_type,
+/*
+ * This attribute influences both IPv4 Time To Live and IPv6 Hop Limit
+ * header fields.
+ */
+RCF_PCH_CFG_NODE_RWC(node_route_hoplimit, "hoplimit", NULL,
+                     &node_route_type,
+                     route_hoplimit_get, route_hoplimit_set, &node_route);
+
+RCF_PCH_CFG_NODE_RWC(node_route_irtt, "irtt", NULL, &node_route_hoplimit,
                      route_irtt_get, route_irtt_set, &node_route);
 
 RCF_PCH_CFG_NODE_RWC(node_route_win, "win", NULL, &node_route_irtt,

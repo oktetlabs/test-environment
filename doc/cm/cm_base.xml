@@ -675,7 +675,13 @@
          Name:  empty
          Value: irtt value for the route -->
     <object oid="/agent/route/irtt" access="read_write" type="integer"/>
-    
+
+    <!-- Route Hop Limit value. It influences both IPv4 TTL and IPv6 Hop
+         Limit header fields.
+         Name:  empty
+         Value: Hop Limit value for the route -->
+    <object oid="/agent/route/hoplimit" access="read_write" type="integer"/>
+
     <!-- Nexthop of a multipath route.
          Name:  index in array of nexthops -->
     <object oid="/agent/route/nexthop" access="read_create" type="none"/>

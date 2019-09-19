@@ -287,6 +287,12 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
             rt_info->irtt = route->irtt;
         }
 
+        if (route->hoplimit != 0)
+        {
+            rt_info->flags |= TA_RT_INFO_FLG_HOPLIMIT;
+            rt_info->hoplimit = route->hoplimit;
+        }
+
         if (route->table != NETCONF_RT_TABLE_MAIN)
         {
             rt_info->flags |= TA_RT_INFO_FLG_TABLE;
@@ -501,6 +507,9 @@ ta_unix_conf_route_change(ta_cfg_obj_action_e  action,
 
     if ((rt_info->flags & TA_RT_INFO_FLG_IRTT) != 0)
         route.irtt = rt_info->irtt;
+
+    if ((rt_info->flags & TA_RT_INFO_FLG_HOPLIMIT) != 0)
+        route.hoplimit = rt_info->hoplimit;
 
     if ((rt_info->flags & TA_RT_INFO_FLG_TABLE) != 0)
         route.table = rt_info->table;

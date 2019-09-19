@@ -539,6 +539,16 @@ ta_rt_parse_inst_value(const char *value, ta_rt_info_t *rt_info)
 int
 ta_rt_parse_attrs(ta_cfg_obj_attr_t *attrs, ta_rt_info_t *rt_info)
 {
+#define PARSE_UINT_ATTR \
+    if (*(attr->value) == '\0' || *(attr->value) == '-' ||    \
+        (int_val = strtol(attr->value, &end_ptr, 10),         \
+         *end_ptr != '\0'))                                   \
+    {                                                         \
+        ERROR("Incorrect '%s' attribute value in route",      \
+              attr->name);                                    \
+        return TE_EINVAL;                                     \
+    }
+
     ta_cfg_obj_attr_t *attr;
     char              *end_ptr;
     int                int_val;
@@ -561,41 +571,29 @@ ta_rt_parse_attrs(ta_cfg_obj_attr_t *attrs, ta_rt_info_t *rt_info)
         }
         else if (strcmp(attr->name, "mtu") == 0)
         {
-            if (*(attr->value) == '\0' || *(attr->value) == '-' ||
-                (int_val = strtol(attr->value, &end_ptr, 10),
-                 *end_ptr != '\0'))
-            {
-                ERROR("Incorrect 'route mtu' value in route");
-                return TE_EINVAL;
-            }
-    
+            PARSE_UINT_ATTR;
+
             /* Don't be confused the structure does not have mtu field */
             rt_info->mtu = int_val;
             rt_info->flags |= TA_RT_INFO_FLG_MTU;
         }
         else if (strcmp(attr->name, "win") == 0)
         {
-            if (*(attr->value) == '\0' || *(attr->value) == '-' ||
-                (int_val = strtol(attr->value, &end_ptr, 10),
-                 *end_ptr != '\0'))
-            {
-                ERROR("Incorrect 'route window' value in route");
-                return TE_EINVAL;
-            }
+            PARSE_UINT_ATTR;
             rt_info->win = int_val;
             rt_info->flags |= TA_RT_INFO_FLG_WIN;
         }
         else if (strcmp(attr->name, "irtt") == 0)
         {
-            if (*(attr->value) == '\0' || *(attr->value) == '-' ||
-                (int_val = strtol(attr->value, &end_ptr, 10),
-                 *end_ptr != '\0'))
-            {
-                ERROR("Incorrect 'route irtt' value in route");
-                return TE_EINVAL;
-            }
+            PARSE_UINT_ATTR;
             rt_info->irtt = int_val;
             rt_info->flags |= TA_RT_INFO_FLG_IRTT;
+        }
+        else if (strcmp(attr->name, "hoplimit") == 0)
+        {
+            PARSE_UINT_ATTR;
+            rt_info->hoplimit = int_val;
+            rt_info->flags |= TA_RT_INFO_FLG_HOPLIMIT;
         }
         else if (strcmp(attr->name, "type") == 0)
         {
@@ -630,6 +628,7 @@ ta_rt_parse_attrs(ta_cfg_obj_attr_t *attrs, ta_rt_info_t *rt_info)
         }
     }
     return 0;
+#undef PARSE_UINT_ATTR
 }
 
 /* See the description in rcf_pch_ta_cfg.h */

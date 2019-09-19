@@ -182,6 +182,9 @@ typedef struct netconf_route {
     uint32_t            mtu;            /**< Route MTU */
     uint32_t            win;            /**< Route window size */
     uint32_t            irtt;           /**< Route transfer time */
+    uint32_t            hoplimit;       /**< Route hoplimit (influences both
+                                             IPv4 TTL and IPv6 Hop Limit
+                                             header fields) */
     int32_t             expires;        /**< Route expiration time */
 
     netconf_route_nexthops   hops;      /**< Nexthops of a multipath

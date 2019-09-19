@@ -8,6 +8,9 @@
  * $Id: $
  */
 
+#include "te_config.h"
+#include "te_defs.h"
+#include "logger_api.h"
 #include "netconf.h"
 #include "netconf_internal.h"
 #include "te_sockaddr.h"
@@ -94,6 +97,11 @@ route_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 
                             case RTAX_RTT:
                                 route->irtt =
+                                    *((uint32_t *)RTA_DATA(mxrta));
+                                break;
+
+                            case RTAX_HOPLIMIT:
+                                route->hoplimit =
                                     *((uint32_t *)RTA_DATA(mxrta));
                                 break;
                         }
@@ -300,6 +308,42 @@ fill_nexthops(struct nlmsghdr *h,
     return 0;
 }
 
+/**
+ * Append route attribute to buffer storing array of route metrics.
+ *
+ * @param buf         Buffer to which to append.
+ * @param cur_len     Current length of data in the buffer (will be
+ *                    updated by this function on success).
+ * @param max_len     Maximum length of data in the buffer.
+ * @param type        Type of route attribute.
+ * @param val         Pointer to value of attribute.
+ * @param val_len     Length of the value in bytes.
+ *
+ * @return @c 0 on success, @c -1 on failure (errno is set in case
+ *         of failure).
+ */
+static int
+append_rtax(char *buf, size_t *cur_len, size_t max_len,
+            int type, const void *val, size_t val_len)
+{
+    struct rtattr  *subrta = (struct rtattr *)(buf + *cur_len);
+
+    if (*cur_len + RTA_SPACE(val_len) > max_len)
+    {
+        ERROR("%s(): not enough space for route metric %d",
+              __FUNCTION__, type);
+        errno = ENOBUFS;
+        return -1;
+    }
+
+    subrta->rta_type = type;
+    subrta->rta_len = RTA_LENGTH(val_len);
+
+    memcpy(RTA_DATA(subrta), val, val_len);
+    *cur_len += RTA_SPACE(val_len);
+    return 0;
+}
+
 int
 netconf_route_modify(netconf_handle nh, netconf_cmd cmd,
                      const netconf_route *route)
@@ -308,7 +352,7 @@ netconf_route_modify(netconf_handle nh, netconf_cmd cmd,
     char                mxbuf[NETCONF_MAX_MXBUF_LEN];
     struct nlmsghdr    *h;
     struct rtmsg       *rtm;
-    unsigned int        mxbuflen;
+    size_t              mxbuflen;
     unsigned int        addrlen;
 
     /* Check required fields */
@@ -448,38 +492,30 @@ netconf_route_modify(netconf_handle nh, netconf_cmd cmd,
 
     if (route->mtu != 0)
     {
-        struct rtattr  *subrta = (struct rtattr *)(mxbuf + mxbuflen);
-        unsigned int    len = sizeof(route->mtu);
-
-        subrta->rta_type = RTAX_MTU;
-        subrta->rta_len = RTA_LENGTH(len);
-
-        memcpy(RTA_DATA(subrta), &(route->mtu), len);
-        mxbuflen += RTA_SPACE(len);
+        if (append_rtax(mxbuf, &mxbuflen, sizeof(mxbuf), RTAX_MTU,
+                        &(route->mtu), sizeof(route->mtu)) < 0)
+            return -1;
     }
 
     if (route->win != 0)
     {
-        struct rtattr  *subrta = (struct rtattr *)(mxbuf + mxbuflen);
-        unsigned int    len = sizeof(route->win);
-
-        subrta->rta_type = RTAX_WINDOW;
-        subrta->rta_len = RTA_LENGTH(len);
-
-        memcpy(RTA_DATA(subrta), &(route->win), len);
-        mxbuflen += RTA_SPACE(len);
+        if (append_rtax(mxbuf, &mxbuflen, sizeof(mxbuf), RTAX_WINDOW,
+                        &(route->win), sizeof(route->win)) < 0)
+            return -1;
     }
 
     if (route->irtt != 0)
     {
-        struct rtattr  *subrta = (struct rtattr *)(mxbuf + mxbuflen);
-        unsigned int    len = sizeof(route->irtt);
+        if (append_rtax(mxbuf, &mxbuflen, sizeof(mxbuf), RTAX_RTT,
+                        &(route->irtt), sizeof(route->irtt)) < 0)
+            return -1;
+    }
 
-        subrta->rta_type = RTAX_RTT;
-        subrta->rta_len = RTA_LENGTH(len);
-
-        memcpy(RTA_DATA(subrta), &(route->irtt), len);
-        mxbuflen += RTA_SPACE(len);
+    if (route->hoplimit != 0)
+    {
+        if (append_rtax(mxbuf, &mxbuflen, sizeof(mxbuf), RTAX_HOPLIMIT,
+                        &(route->hoplimit), sizeof(route->hoplimit)) < 0)
+            return -1;
     }
 
     if (mxbuflen > RTA_LENGTH(0))

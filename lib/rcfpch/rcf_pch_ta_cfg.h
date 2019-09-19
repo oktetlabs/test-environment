@@ -339,14 +339,15 @@ typedef struct ta_rt_info_t {
 
     /** Interface name - for direct routes */
     char                    ifname[IF_NAMESIZE];
-    uint16_t                flags;  /**< Route flags */
-    uint32_t                metric; /**< Route metric */
-    uint32_t                mtu;    /**< Route MTU */
-    uint32_t                win;    /**< Route window size */
-    uint32_t                irtt;   /**< Route transfer time */
-    uint32_t                tos;    /**< Route type of service */
-    ta_route_type           type;   /**< Route type (e.g. unicast) */
-    uint32_t                table;  /**< Route table id */
+    uint16_t                flags;      /**< Route flags */
+    uint32_t                metric;     /**< Route metric */
+    uint32_t                mtu;        /**< Route MTU */
+    uint32_t                win;        /**< Route window size */
+    uint32_t                irtt;       /**< Route transfer time */
+    uint32_t                hoplimit;   /**< Route hoplimit */
+    uint32_t                tos;        /**< Route type of service */
+    ta_route_type           type;       /**< Route type (e.g. unicast) */
+    uint32_t                table;      /**< Route table id */
 } ta_rt_info_t;
 
 /**
@@ -377,6 +378,8 @@ extern void ta_rt_info_clean(ta_rt_info_t *rt_info);
 #define TA_RT_INFO_FLG_TABLE  0x0100
 /** Route is multipath */
 #define TA_RT_INFO_FLG_MULTIPATH  0x0200
+/** hoplimit is specified for the route */
+#define TA_RT_INFO_FLG_HOPLIMIT   0x0400
 
 /**
  * Initialize ta_rt_info_t data structure.
