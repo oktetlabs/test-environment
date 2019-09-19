@@ -199,6 +199,7 @@ typedef struct tapi_cfg_rt_params {
     int                        irtt;        /**< Initial round trip time
                                                  for TCP connections
                                                  (in milliseconds). */
+    int                        hoplimit;    /**< Hop limit. */
     int                        table;       /**< Route table. */
 
     tapi_cfg_rt_nexthop       *hops;        /**< Nexthops of a multipath

@@ -1216,6 +1216,7 @@ cfg_route_op(enum tapi_cfg_oper op, const char *ta,
     int                   mtu = params->mtu;
     int                   win = params->win;
     int                   irtt = params->irtt;
+    int                   hoplimit = params->hoplimit;
     int                   table = params->table;
     tapi_cfg_rt_nexthop  *hops = params->hops;
     unsigned int          hops_num = params->hops_num;
@@ -1418,6 +1419,7 @@ cfg_route_op(enum tapi_cfg_oper op, const char *ta,
                 CFG_RT_SET_LOCAL(win);
                 CFG_RT_SET_LOCAL(mtu);
                 CFG_RT_SET_LOCAL(irtt);
+                CFG_RT_SET_LOCAL(hoplimit);
             } while (FALSE);
 
 #undef CFG_RT_SET_LOCAL
@@ -1504,6 +1506,7 @@ cfg_route_op(enum tapi_cfg_oper op, const char *ta,
                 CFG_RT_SET_LOCAL(win);
                 CFG_RT_SET_LOCAL(mtu);
                 CFG_RT_SET_LOCAL(irtt);
+                CFG_RT_SET_LOCAL(hoplimit);
             } while (FALSE);
 
             if (rc == 0)
