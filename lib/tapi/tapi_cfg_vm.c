@@ -101,3 +101,49 @@ tapi_cfg_vm_stop(const char *ta, const char *vm_name)
 
     return rc;
 }
+
+/* See descriptions in tapi_cfg_vm.h */
+te_errno
+tapi_cfg_vm_add_drive(const char *ta, const char *vm_name,
+                      const char *drive_name, const char *file,
+                      te_bool snapshot)
+{
+    te_errno rc = 0;
+
+    rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL, TE_CFG_TA_VM "/drive:%s",
+                              ta, vm_name, drive_name);
+    if (rc != 0)
+    {
+        ERROR("Cannot add drive %s (VM %s, TA %s): %r", drive_name,
+              vm_name, ta, rc);
+        return rc;
+    }
+
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, snapshot),
+                               TE_CFG_TA_VM "/drive:%s/snapshot:",
+                               ta, vm_name, drive_name);
+    if (rc != 0)
+    {
+        ERROR("Cannot add snapshot for drive %s (VM %s, TA %s): %r",
+              drive_name, vm_name, ta, rc);
+        goto fail_vm_add_drive;
+    }
+
+    rc = cfg_set_instance_fmt(CFG_VAL(STRING, file),
+                              TE_CFG_TA_VM "/drive:%s/file:",
+                              ta, vm_name, drive_name);
+    if (rc != 0)
+    {
+        ERROR("Cannot add file for drive %s (VM %s, TA %s): %r",
+              drive_name, vm_name, ta, rc);
+        goto fail_vm_add_drive;
+    }
+
+    return 0;
+
+fail_vm_add_drive:
+    (void)cfg_del_instance_fmt(TRUE, TE_CFG_TA_VM "/drive:%s",
+                               ta, vm_name, drive_name);
+
+    return rc;
+}

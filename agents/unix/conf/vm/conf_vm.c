@@ -39,6 +39,13 @@
 /** KVM device to check */
 #define DEV_KVM     "/dev/kvm"
 
+struct vm_drive_entry {
+    SLIST_ENTRY(vm_drive_entry)     links;
+    char                           *name;
+    te_string                       file;
+    te_bool                         snapshot;
+};
+
 struct vm_net_entry {
     SLIST_ENTRY(vm_net_entry)   links;
     char                       *name;
@@ -48,6 +55,7 @@ struct vm_net_entry {
 };
 
 typedef SLIST_HEAD(vm_net_list_t, vm_net_entry) vm_net_list_t;
+typedef SLIST_HEAD(vm_drive_list_t, vm_drive_entry) vm_drive_list_t;
 
 struct vm_entry {
     SLIST_ENTRY(vm_entry)   links;
@@ -60,6 +68,7 @@ struct vm_entry {
     te_string               cmd;
     pid_t                   pid;
     vm_net_list_t           nets;
+    vm_drive_list_t         drives;
 };
 
 
@@ -210,6 +219,41 @@ exit:
 }
 
 static te_errno
+vm_append_drive_cmd(te_string *cmd, vm_drive_list_t *drives)
+{
+    te_string drive_args = TE_STRING_INIT;
+    struct vm_drive_entry *drive;
+    te_errno rc = 0;
+
+    SLIST_FOREACH(drive, drives, links)
+    {
+        rc = te_string_append(&drive_args, "file=%s,snapshot=%s",
+                              drive->file.ptr,
+                              drive->snapshot ? "on" : "off");
+        if (rc != 0)
+        {
+            ERROR("Cannot compose VM drive command line (line %u)", __LINE__);
+            goto exit;
+        }
+
+        rc = te_string_append_shell_args_as_is(cmd, "-drive",
+                                               drive_args.ptr, NULL);
+        if (rc != 0)
+        {
+            ERROR("Cannot compose VM drive command line (line %u)", __LINE__);
+            goto exit;
+        }
+
+        te_string_reset(&drive_args);
+    }
+
+exit:
+    te_string_free(&drive_args);
+
+    return rc;
+}
+
+static te_errno
 vm_start(struct vm_entry *vm)
 {
     in_addr_t local_ip = htonl(INADDR_LOOPBACK);
@@ -233,10 +277,10 @@ vm_start(struct vm_entry *vm)
     }
 
     rc = te_string_append(&net_mgmt_str,
-             "user,id=mgmt,restrict=on,hostfwd=tcp:%s:%hu-:%hu,"
-             "hostfwd=tcp:%s:%hu-:%hu",
-             local_ip_str, vm->host_ssh_port, vm->guest_ssh_port,
-             local_ip_str, vm->rcf_port, vm->rcf_port);
+	     "user,id=mgmt,restrict=on,hostfwd=tcp:%s:%hu-:%hu,"
+	     "hostfwd=tcp:%s:%hu-:%hu",
+	     local_ip_str, vm->host_ssh_port, vm->guest_ssh_port,
+	     local_ip_str, vm->rcf_port, vm->rcf_port);
     if (rc != 0)
     {
         ERROR("Cannot compose management network config");
@@ -300,7 +344,6 @@ vm_start(struct vm_entry *vm)
     }
 
     rc = te_string_append_shell_args_as_is(&vm->cmd,
-             "-drive", "file=/srv/virtual/testvm.qcow2,snapshot=on",
              "-netdev", net_mgmt_str.ptr,
              "-device", "virtio-net-pci,netdev=mgmt,romfile=,bus=pci.0,addr=0x3",
              NULL);
@@ -311,6 +354,10 @@ vm_start(struct vm_entry *vm)
     }
 
     rc = vm_append_net_interfaces_cmd(&vm->cmd, &vm->nets);
+    if (rc != 0)
+        goto exit;
+
+    rc = vm_append_drive_cmd(&vm->cmd, &vm->drives);
     if (rc != 0)
         goto exit;
 
@@ -368,6 +415,31 @@ vm_net_find(const struct vm_entry *vm, const char *name)
         return NULL;
 
     SLIST_FOREACH(p, &vm->nets, links)
+    {
+        if (strcmp(name, p->name) == 0)
+            return p;
+    }
+
+    return NULL;
+}
+
+static void
+vm_drive_free(struct vm_drive_entry *drive)
+{
+    free(drive->name);
+    te_string_free(&drive->file);
+    free(drive);
+}
+
+static struct vm_drive_entry *
+vm_drive_find(const struct vm_entry *vm, const char *name)
+{
+    struct vm_drive_entry *p;
+
+    if (vm == NULL)
+        return NULL;
+
+    SLIST_FOREACH(p, &vm->drives, links)
     {
         if (strcmp(name, p->name) == 0)
             return p;
@@ -895,6 +967,202 @@ vm_net_property_set(unsigned int gid, const char *oid, const char *value,
     return vm_string_replace(value, property);
 }
 
+static te_errno
+vm_drive_add(unsigned int gid, const char *oid, const char *value,
+             const char *vm_name, const char *drive_name)
+{
+    struct vm_entry *vm;
+    struct vm_drive_entry *drive;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+    if ((vm = vm_find(vm_name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    if (vm_drive_find(vm, drive_name) != NULL)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+
+    drive = TE_ALLOC(sizeof(*drive));
+    if (drive == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    drive->name = strdup(drive_name);
+    if (drive->name == NULL)
+    {
+        free(drive);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    SLIST_INSERT_HEAD(&vm->drives, drive, links);
+
+    return 0;
+}
+
+static te_errno
+vm_drive_del(unsigned int gid, const char *oid,
+             const char *vm_name, const char *drive_name)
+{
+    struct vm_entry *vm;
+    struct vm_drive_entry *drive;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    drive = vm_drive_find(vm, drive_name);
+    if (drive == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    SLIST_REMOVE(&vm->drives, drive, vm_drive_entry, links);
+
+    vm_drive_free(drive);
+
+    return 0;
+}
+
+static te_errno
+vm_drive_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
+              const char *vm_name)
+{
+    te_string result = TE_STRING_INIT;
+    struct vm_entry *vm;
+    struct vm_drive_entry *drive;
+    te_bool first = TRUE;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    SLIST_FOREACH(drive, &vm->drives, links)
+    {
+        rc = te_string_append(&result, "%s%s", first ? "" : " ", drive->name);
+        first = FALSE;
+        if (rc != 0)
+        {
+            te_string_free(&result);
+            return rc;
+        }
+    }
+
+    *list = result.ptr;
+    return 0;
+}
+
+static te_errno
+vm_file_get(unsigned int gid, const char *oid, char *value,
+            const char *vm_name, const char *drive_name)
+{
+    struct vm_drive_entry *drive;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    drive = vm_drive_find(vm_find(vm_name), drive_name);
+    if (drive == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", drive->file.ptr);
+
+    return 0;
+}
+
+static te_errno
+vm_file_set(unsigned int gid, const char *oid, char *value,
+            const char *vm_name, const char *drive_name)
+{
+    struct vm_entry *vm;
+    struct vm_drive_entry *drive;
+    int rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    drive = vm_drive_find(vm, drive_name);
+    if (drive == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    te_string_free(&drive->file);
+    rc = te_string_append(&drive->file, "%s",  value);
+
+    return rc;
+}
+
+static te_errno
+vm_snapshot_get(unsigned int gid, const char *oid, char *value,
+                const char *vm_name, const char *drive_name)
+{
+    struct vm_drive_entry *drive;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    drive = vm_drive_find(vm_find(vm_name), drive_name);
+    if (drive == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%d", drive->snapshot);
+
+    return 0;
+}
+
+static te_errno
+vm_snapshot_set(unsigned int gid, const char *oid, char *value,
+                const char *vm_name, const char *drive_name)
+{
+    struct vm_entry *vm;
+    struct vm_drive_entry *drive;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    drive = vm_drive_find(vm, drive_name);
+    if (drive == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    drive->snapshot = (atoi(value) != 0);
+
+    return 0;
+}
+
+RCF_PCH_CFG_NODE_RW(node_vm_snapshot, "snapshot", NULL, NULL,
+                    vm_snapshot_get, vm_snapshot_set);
+
+RCF_PCH_CFG_NODE_RW(node_vm_file, "file", NULL, &node_vm_snapshot,
+                    vm_file_get, vm_file_set);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_vm_drive, "drive", &node_vm_file, NULL,
+                            vm_drive_add, vm_drive_del, vm_drive_list, NULL);
+
 RCF_PCH_CFG_NODE_RW(node_vm_net_mac_addr, "mac_addr", NULL, NULL,
                     vm_net_property_get, vm_net_property_set);
 
@@ -905,8 +1173,9 @@ RCF_PCH_CFG_NODE_RW(node_vm_net_type_spec, "type_spec", NULL,
 RCF_PCH_CFG_NODE_RW(node_vm_net_type, "type", NULL, &node_vm_net_type_spec,
                     vm_net_property_get, vm_net_property_set);
 
-RCF_PCH_CFG_NODE_COLLECTION(node_vm_net, "net", &node_vm_net_type, NULL,
-                            vm_net_add, vm_net_del, vm_net_list, NULL);
+RCF_PCH_CFG_NODE_COLLECTION(node_vm_net, "net", &node_vm_net_type,
+                            &node_vm_drive, vm_net_add, vm_net_del,
+                            vm_net_list, NULL);
 
 RCF_PCH_CFG_NODE_RW(node_vm_mem_size, "size", NULL, NULL,
                     vm_mem_size_get, vm_mem_size_set);

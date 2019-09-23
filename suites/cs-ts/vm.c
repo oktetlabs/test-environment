@@ -26,6 +26,7 @@
 #include "conf_api.h"
 #include "rcf_api.h"
 #include "te_string.h"
+#include "tapi_cfg_vm.h"
 
 int
 main(int argc, char *argv[])
@@ -33,7 +34,7 @@ main(int argc, char *argv[])
     const char     *ta = "Agt_A";
     char           *vm_name = "testvm";
     const char     *ta_vm = "Agt_VM";
-    const char     *key = "/home/arybchik/testvm.id_rsa";
+    const char     *key = "/srv/virtual/testvm.id_rsa";
     cfg_val_type    val_type = CVT_INTEGER;
     int             ssh_port;
     int             rcf_port;
@@ -43,6 +44,10 @@ main(int argc, char *argv[])
 
     TEST_STEP("Add a virtual machine");
     CHECK_RC(tapi_cfg_vm_add(ta, vm_name, NULL, FALSE));
+
+    TEST_STEP("Add drive");
+    CHECK_RC(tapi_cfg_vm_add_drive(ta, vm_name, "drivename",
+                                   "/srv/virtual/deb10.qcow2", FALSE));
 
     CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/vm:%s", ta, vm_name));
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/vm:%s", ta, vm_name));

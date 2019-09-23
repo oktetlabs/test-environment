@@ -65,6 +65,20 @@ extern te_errno tapi_cfg_vm_start(const char *ta, const char *vm_name);
  */
 extern te_errno tapi_cfg_vm_stop(const char *ta, const char *vm_name);
 
+/**
+ * Add drive subtree.
+ *
+ * @param ta            Test Agent.
+ * @param vm_name       Virtual machine name.
+ * @param drive_name    Drive name.
+ * @param file          File option.
+ * @param snapshot      Snapshot option.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_vm_add_drive(const char *ta, const char *vm_name,
+                                      const char *drive_name, const char *file,
+                                      te_bool snapshot);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
