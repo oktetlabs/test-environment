@@ -574,6 +574,8 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
                 val_p = &tbl[i].win;
             else if (strcmp(name, "irtt") == 0)
                 val_p = &tbl[i].irtt;
+            else if (strcmp(name, "hoplimit") == 0)
+                val_p = &tbl[i].hoplimit;
             else if (strcmp(name, "type") == 0)
             {
                 val_p = &type_val;

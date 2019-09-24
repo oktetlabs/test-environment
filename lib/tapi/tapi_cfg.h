@@ -127,6 +127,8 @@ typedef struct tapi_rt_entry {
     uint32_t mtu; /**< Route MTU value (for TCP) */
     uint32_t win; /**< Route Window value (for TCP) */
     uint32_t irtt; /**< Route IRTT value (for TCP) */
+    uint32_t hoplimit; /**< Route Hop Limit value (influences IPv6
+                            Hop Limit and IPv4 Time To Live) */
     char     type[TYPE_NAMESIZE]; /**< Route Type value (for TCP) */
 
     uint32_t table; /**< Route Table ID value (for TCP) */
