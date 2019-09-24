@@ -468,6 +468,8 @@ extern rpc_mtu_discover_arg mtu_discover_arg_h2rpc(int arg);
 
 /**
  * TA-independent names of socket options.
+ * After updating this list, please update SOCKOPT_MAPPING_LIST in the
+ * same way.
  */
 typedef enum rpc_sockopt {
     RPC_SO_ACCEPTCONN,      /**< Whether the socket is in listening
