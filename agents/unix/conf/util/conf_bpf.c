@@ -175,16 +175,6 @@ bpf_xdp_perf_event_handler(void *ctx, int cpu, void *data, uint32_t size);
 /**< Head of the BPF objects list */
 static LIST_HEAD(, bpf_entry) bpf_list_h = LIST_HEAD_INITIALIZER(bpf_list_h);
 
-/** Check that BPF map type is supported */
-static te_bool
-bpf_map_supported(enum bpf_map_type type)
-{
-    return (type == BPF_MAP_TYPE_ARRAY ||
-            type == BPF_MAP_TYPE_HASH  ||
-            type == BPF_MAP_TYPE_PERF_EVENT_ARRAY ||
-            type == BPF_MAP_TYPE_LPM_TRIE);
-}
-
 /**
  * Searching for the BPF object by object id.
  *
@@ -421,11 +411,6 @@ bpf_load(struct bpf_entry *bpf)
         }
 
         def = bpf_map__def(map);
-        if (!bpf_map_supported(def->type))
-        {
-            ERROR("Loaded BPF map isn't supported.");
-            return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
-        }
 
         if (def->type == BPF_MAP_TYPE_PERF_EVENT_ARRAY)
         {
