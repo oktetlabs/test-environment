@@ -63,6 +63,7 @@ engine_libs = [
     'tce',
     'trc',
     'rpcc_dpdk',
+    'tapi_gtest',
 ]
 
 # Test Agent libraries
