@@ -38,10 +38,15 @@ in_dox_comment { print $0; next }
 
 # Fetch scenario from the logging steps
 
-/TEST_STEP/ {
+/TEST_STEP\(|TEST_STEP_PUSH\(/ {
   in_dox_log_comment = 1;
   was_comment = 1;
   printf "   -# ";
+}
+
+/TEST_STEP_POP/ {
+  in_dox_log_comment = 0;
+  was_comment = 0;
 }
 
 /TEST_SUBSTEP/ {
@@ -53,6 +58,8 @@ in_dox_comment { print $0; next }
 in_dox_log_comment {
     sub(/ *TEST_STEP\("/, "");
     sub(/ *TEST_SUBSTEP\("/, "");
+    sub(/ *TEST_STEP_PUSH\("/, "");
+    sub(/ *TEST_STEP_POP\("/, "");
 
     $0 = gensub(/([^\\])"/, "\\1", "g");
     sub(/^"/, "");
