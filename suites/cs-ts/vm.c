@@ -43,11 +43,7 @@ main(int argc, char *argv[])
     TEST_START;
 
     TEST_STEP("Add a virtual machine");
-    CHECK_RC(tapi_cfg_vm_add(ta, vm_name, NULL, FALSE));
-
-    TEST_STEP("Add drive");
-    CHECK_RC(tapi_cfg_vm_add_drive(ta, vm_name, "drivename",
-                                   "/srv/virtual/deb10.qcow2", FALSE));
+    CHECK_RC(tapi_cfg_vm_add(ta, vm_name, "/local:/vm:testvm", FALSE));
 
     CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/vm:%s", ta, vm_name));
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/vm:%s", ta, vm_name));

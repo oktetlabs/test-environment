@@ -18,12 +18,30 @@
 #include "te_errno.h"
 #include "logger_ten.h"
 #include "conf_api.h"
+#include "te_string.h"
 
 #include "tapi_cfg_vm.h"
 
 
 #define TE_CFG_TA_VM    "/agent:%s/vm:%s"
 
+static te_errno
+tapi_cfg_vm_copy_local(const char *ta, const char *vm_name, const char *tmpl)
+{
+    te_errno rc;
+    te_string agent = TE_STRING_INIT;
+
+    rc = te_string_append(&agent, "/agent:%s/vm:%s", ta, vm_name);
+    if (rc != 0)
+        goto out;
+
+    rc = cfg_copy_subtree_fmt(agent.ptr, "%s", tmpl);
+
+out:
+    te_string_free(&agent);
+
+    return rc;
+}
 
 /* See descriptions in tapi_cfg_vm.h */
 te_errno
@@ -32,17 +50,21 @@ tapi_cfg_vm_add(const char *ta, const char *vm_name,
 {
     te_errno rc;
 
-    if (tmpl != NULL)
-    {
-        ERROR("Virtual machine template is not supported yet");
-        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
-    }
-
     rc = cfg_add_instance_fmt(NULL, CVT_NONE, NULL, TE_CFG_TA_VM, ta, vm_name);
     if (rc != 0)
     {
         ERROR("Cannot add VM %s to TA %s: %r", vm_name, ta, rc);
         goto fail_vm_add;
+    }
+
+    if (tmpl != NULL)
+    {
+        rc = tapi_cfg_vm_copy_local(ta, vm_name, tmpl);
+        if (rc != 0)
+        {
+            ERROR("Failed to apply template %s", tmpl);
+            goto fail_vm_tmpl;
+        }
     }
 
     if (start)
@@ -55,6 +77,7 @@ tapi_cfg_vm_add(const char *ta, const char *vm_name,
     return 0;
 
 fail_vm_start:
+fail_vm_tmpl:
     (void)cfg_del_instance_fmt(FALSE, TE_CFG_TA_VM, ta, vm_name);
 
 fail_vm_add:
