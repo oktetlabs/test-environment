@@ -277,10 +277,10 @@ vm_start(struct vm_entry *vm)
     }
 
     rc = te_string_append(&net_mgmt_str,
-	     "user,id=mgmt,restrict=on,hostfwd=tcp:%s:%hu-:%hu,"
-	     "hostfwd=tcp:%s:%hu-:%hu",
-	     local_ip_str, vm->host_ssh_port, vm->guest_ssh_port,
-	     local_ip_str, vm->rcf_port, vm->rcf_port);
+            "user,id=mgmt,restrict=on,hostfwd=tcp:%s:%hu-:%hu,"
+            "hostfwd=tcp:%s:%hu-:%hu",
+            local_ip_str, vm->host_ssh_port, vm->guest_ssh_port,
+            local_ip_str, vm->rcf_port, vm->rcf_port);
     if (rc != 0)
     {
         ERROR("Cannot compose management network config");
