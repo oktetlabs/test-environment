@@ -52,6 +52,7 @@ cfg_rcfunix_make_confstr(te_string *confstr, cfg_instance *ta)
         { "user",         FALSE,  TRUE  },
         { "key",          FALSE,  TRUE  },
         { "ssh_port",     FALSE,  TRUE  },
+        { "ssh_proxy",    FALSE,  TRUE  },
         { "copy_timeout", FALSE,  TRUE  },
         { "copy_tries",   FALSE,  TRUE  },
         { "kill_timeout", FALSE,  TRUE  },
