@@ -782,7 +782,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
                 break;
             te_sleep(sleep_sec);
 
-            sleep_sec = MAX(RCFUNIX_COPY_RETRY_SLEEP_MAX_SEC, sleep_sec * 2);
+            sleep_sec = MIN(RCFUNIX_COPY_RETRY_SLEEP_MAX_SEC, sleep_sec * 2);
         }
         if (rc != 0)
         {
