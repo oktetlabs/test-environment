@@ -133,10 +133,11 @@ vm_append_tap_interface_cmd(te_string *cmd, struct vm_net_entry *net,
     te_string device = TE_STRING_INIT;
     te_errno rc = 0;
 
-    rc = te_string_append(&netdev, "tap,id=netdev%u%s%s%s", interface_id,
-                          vhost ? ",vhost=on" : "",
-                          net->type_spec == NULL ? "" : ",ifname=",
-                          net->type_spec == NULL ? "" : net->type_spec);
+    rc = te_string_append(&netdev,
+            "tap,script=no,downscript=no,id=netdev%u%s%s%s",
+            interface_id, vhost ? ",vhost=on" : "",
+            net->type_spec == NULL ? "" : ",ifname=",
+            net->type_spec == NULL ? "" : net->type_spec);
     if (rc != 0)
     {
         ERROR("Cannot compose VM netdev argument (line %u)", __LINE__);
