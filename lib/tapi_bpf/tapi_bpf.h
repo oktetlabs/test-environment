@@ -188,7 +188,7 @@ extern te_errno tapi_bpf_obj_set_type(const char *ta,
  * @param[in] ta            Test Agent name
  * @param[in] bpf_id        Bpf ID
  * @param[out] prog         Array of program names, should be freed by user,
- *                          see @ref tapi_bpf_free_array
+ *                          see @ref te_str_free_array
  * @param[out] prog_count   Pointer to store number of programs in @par prog,
  *                          unused if @c NULL
  *
@@ -237,7 +237,7 @@ extern te_errno tapi_bpf_prog_unlink(const char *ta,
  * @param[in] ta            Test Agent name
  * @param[in] bpf_id        Bpf ID
  * @param[out] map          Array of map names, should be freed by user,
- *                          see @ref tapi_bpf_free_array
+ *                          see @ref te_str_free_array
  * @param[out] prog_count   Pointer to store number of maps in @par map,
  *                          unused if @c NULL
  *
