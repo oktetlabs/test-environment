@@ -120,7 +120,7 @@ port_add(unsigned int gid, const char *oid, const char *data, const char *brname
     UNUSED(oid);
     UNUSED(data);
 
-    snprintf(if_oid, sizeof(if_oid), "/agent:%s/ interface:%s", ta_name, ifname);
+    snprintf(if_oid, sizeof(if_oid), "/agent:%s/interface:%s", ta_name, ifname);
     if (strcmp(data, if_oid) != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     if (!rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname))
