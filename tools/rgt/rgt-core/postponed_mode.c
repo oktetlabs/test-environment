@@ -136,6 +136,24 @@ print_ts_info(node_info_t *node)
     fprintf(rgt_ctx.out_fd, "</duration>\n");
 }
 
+/**
+ * Append XML attribute, escaping symbols in its value when
+ * necessary.
+ *
+ * @note Space is inserted before attribute name, but not
+ *       after its value.
+ *
+ * @param name      Name of the attribute.
+ * @param value     Value of the attribute.
+ */
+static void
+append_attr(const char *name, const char *value)
+{
+    fprintf(rgt_ctx.out_fd, " %s=\"", name);
+    write_xml_string(NULL, value, TRUE);
+    fprintf(rgt_ctx.out_fd, "\"");
+}
+
 int
 postponed_process_open()
 {
@@ -176,10 +194,10 @@ print_params(node_info_t *node)
         fprintf(rgt_ctx.out_fd, "<params>\n");
         while (prm != NULL)
         {
-            fprintf(rgt_ctx.out_fd, "<param name=\"%s\" value=\"",
-                    prm->name);
-            write_xml_string(NULL, prm->val, TRUE);
-            fprintf(rgt_ctx.out_fd, "\"/>\n");
+            fprintf(rgt_ctx.out_fd, "<param");
+            append_attr("name", prm->name);
+            append_attr("value", prm->val);
+            fprintf(rgt_ctx.out_fd, "/>\n");
             prm = prm->next;
         }
         fprintf(rgt_ctx.out_fd, "</params>\n");
@@ -243,9 +261,9 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
         fprintf(rgt_ctx.out_fd, " tin=\"%u\"", node->descr.tin);
     fprintf(rgt_ctx.out_fd, " test_id=\"%d\"", node->node_id);
     if (node->descr.name)
-        fprintf(rgt_ctx.out_fd, " name=\"%s\"", node->descr.name);
+        append_attr("name", node->descr.name);
     if (node->descr.hash != NULL)
-        fprintf(rgt_ctx.out_fd, " hash=\"%s\"", node->descr.hash);
+        append_attr("hash", node->descr.hash);
 
     switch (node->result.status)
     {
@@ -269,9 +287,8 @@ postponed_process_start_event(node_info_t *node, const char *node_name,
     }
 
     if (node->result.err)
-    {
-        fprintf(rgt_ctx.out_fd, " err=\"%s\"", node->result.err);
-    }
+        append_attr("err", node->result.err);
+
     fprintf(rgt_ctx.out_fd, ">\n");
 
     if (node->descr.n_branches > 1)
@@ -442,9 +459,12 @@ postponed_process_regular_msg(log_msg *msg)
         logs_opened = 1;
         logs_closed = 0;
     }
-    fprintf(rgt_ctx.out_fd,
-            "<msg level=\"%s\" entity=\"%s\" user=\"%s\" ts_val=\"%u.%06u\" "
-            "ts=\"", msg->level_str, msg->entity, msg->user,
+
+    fprintf(rgt_ctx.out_fd, "<msg level=\"%s\"",
+            msg->level_str);
+    append_attr("entity", msg->entity);
+    append_attr("user", msg->user);
+    fprintf(rgt_ctx.out_fd, " ts_val=\"%u.%06u\" ts=\"",
             msg->timestamp[0], msg->timestamp[1]);
     print_ts(rgt_ctx.out_fd, msg->timestamp);
     fprintf(rgt_ctx.out_fd, "\" nl=\"%d\">", msg->nest_lvl);
