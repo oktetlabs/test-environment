@@ -82,6 +82,8 @@
 /* Default timeout in ms for polling perf events. */
 #define BPF_PERF_EVENT_DEF_POLL_TIMEOUT 100
 
+#define SYSFS_CPU_POSSIBLE "/sys/devices/system/cpu/possible"
+
 /** Structure for the BPF program description */
 typedef struct bpf_prog_entry {
     int fd;
@@ -97,6 +99,7 @@ typedef struct bpf_map_entry {
     unsigned int value_size;
     unsigned int max_entries;
     te_bool writable;
+    unsigned int n_values;
 } bpf_map_entry;
 
 /** Structure describing perf event data entry. */
@@ -174,6 +177,55 @@ bpf_xdp_perf_event_handler(void *ctx, int cpu, void *data, uint32_t size);
 
 /**< Head of the BPF objects list */
 static LIST_HEAD(, bpf_entry) bpf_list_h = LIST_HEAD_INITIALIZER(bpf_list_h);
+
+/**
+ * Get the number of possible CPUs.
+ *
+ * @param[out] n_values Number of possible CPUs.
+ *
+ * @return Status code.
+ */
+static te_errno
+bpf_num_possible_cpu(unsigned int *n_values)
+{
+    unsigned int start, end, possible_cpus = 0;
+    char buff[128];
+    FILE *fp;
+    int n, i = 0;
+
+    fp = fopen(SYSFS_CPU_POSSIBLE, "r");
+    if (fp == NULL)
+    {
+        ERROR("Failed to open %s", SYSFS_CPU_POSSIBLE);
+        return TE_RC(TE_TA_UNIX, errno);
+    }
+
+    if (fgets(buff, sizeof(buff), fp) == NULL)
+    {
+        ERROR("Failed to read %s", SYSFS_CPU_POSSIBLE);
+        fclose(fp);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    n = sscanf(buff, "%u-%u", &start, &end);
+    if (n <= 0)
+    {
+        ERROR("Failed to retrieve possible CPUs");
+        fclose(fp);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    else if (n == 1)
+    {
+        end = start;
+    }
+    possible_cpus = end - start + 1;
+
+    *n_values = possible_cpus;
+
+    fclose(fp);
+
+    return 0;
+}
 
 /**
  * Searching for the BPF object by object id.
@@ -291,7 +343,8 @@ static te_errno
 bpf_init_map_info(struct bpf_map *map, const struct bpf_map_def *def,
                   struct bpf_map_entry *map_info)
 {
-    int fd;
+    int      fd;
+    te_errno rc = 0;
 
     fd = bpf_map__fd(map);
     if (fd <= 0)
@@ -307,6 +360,20 @@ bpf_init_map_info(struct bpf_map *map, const struct bpf_map_def *def,
 
     map_info->key_size = def->key_size;
     map_info->value_size = def->value_size;
+    /*
+     * In case BPF_MAP_TYPE_PERCPU_ARRAY the array cell stores values
+     * for each CPU, so need allocated (value_size * number of CPU) memory.
+     */
+    if (def->type == BPF_MAP_TYPE_PERCPU_ARRAY)
+    {
+        rc = bpf_num_possible_cpu(&(map_info->n_values));
+        if (rc != 0)
+            return rc;
+    }
+    else
+    {
+        map_info->n_values = 1;
+    }
     map_info->max_entries = def->max_entries;
     map_info->writable = FALSE;
 
@@ -986,7 +1053,7 @@ bpf_get_map_kv_pair(unsigned int gid, const char *oid, char *value_str,
     if (key == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
-    value = TE_ALLOC(map->value_size);
+    value = TE_ALLOC(map->value_size * map->n_values);
     if (value == NULL)
     {
         rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
@@ -1004,7 +1071,7 @@ bpf_get_map_kv_pair(unsigned int gid, const char *oid, char *value_str,
         goto fail_free_key_value;
     }
 
-    rc = te_str_hex_raw2str(value, map->value_size, &value_buf);
+    rc = te_str_hex_raw2str(value, map->value_size * map->n_values, &value_buf);
 
 fail_free_key_value:
     free(value);
@@ -1184,11 +1251,11 @@ bpf_del_map_writable_kv_pair(unsigned int gid, const char *oid,
     {
         unsigned char *value;
 
-        value = TE_ALLOC(map->value_size);
+        value = TE_ALLOC(map->value_size * map->n_values);
         if (value == NULL)
             rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
-        memset(value, 0, map->value_size);
+        memset(value, 0, map->value_size * map->n_values);
 
         if (bpf_map_update_elem(map->fd, key, value, BPF_ANY) != 0)
         {
@@ -1266,14 +1333,14 @@ bpf_update_map_writable_kv_pair(unsigned int gid, const char *oid,
     if (rc != 0)
         goto fail_free_key;
 
-    value = TE_ALLOC(map->value_size);
+    value = TE_ALLOC(map->value_size * map->n_values);
     if (value == NULL)
     {
         rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
         goto fail_free_key;
     }
 
-    rc = te_str_hex_str2raw(value_str, value, map->value_size);
+    rc = te_str_hex_str2raw(value_str, value, map->value_size * map->n_values);
     if (rc != 0)
         goto fail_free_key_value;
 
