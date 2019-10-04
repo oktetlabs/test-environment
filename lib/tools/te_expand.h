@@ -108,8 +108,54 @@ extern int te_expand_kvpairs(const char *src, const char **posargs,
 
 #ifdef TE_EXPAND_XML
 /**
- * A wrapper around xmlGetProp that expands environment variable
+ * A wrapper around xmlGetProp that expands custom parameters from
+ * list of key-value pairs if given. Otherwise it expands environment variable
  * references.
+ *
+ * @param node          XML node
+ * @param name          XML attribute name
+ * @param expand_vars   List of key-value pairs for expansion in file
+ *
+ * @return The expanded attribute value or NULL if no attribute
+ * or an error occured while expanding.
+ *
+ * @sa cfg_expand_env_vars
+ */
+static inline char *
+xmlGetProp_exp_vars_or_env(xmlNodePtr node, const xmlChar *name,
+                           const te_kvpair_h *kvpairs)
+{
+    xmlChar *value = xmlGetProp(node, name);
+
+    if (value)
+    {
+        char *result = NULL;
+        int   rc;
+
+        if (kvpairs == NULL)
+            rc = te_expand_env_vars((const char *)value, NULL, &result);
+        else
+            rc = te_expand_kvpairs((const char *)value, NULL, kvpairs, &result);
+
+        if (rc == 0)
+        {
+            xmlFree(value);
+            value = (xmlChar *)result;
+        }
+        else
+{
+            ERROR("Error substituting variables in %s '%s': %s",
+                  name, value, strerror(rc));
+            xmlFree(value);
+            value = NULL;
+        }
+    }
+    return (char *)value;
+}
+
+/**
+ * Case of xmlGetProp_exp_vars_or_env that expands only environment
+ * variables reference.
  *
  * @param node    XML node
  * @param name    XML attribute name
@@ -122,28 +168,7 @@ extern int te_expand_kvpairs(const char *src, const char **posargs,
 static inline char *
 xmlGetProp_exp(xmlNodePtr node, const xmlChar *name)
 {
-    xmlChar *value = xmlGetProp(node, name);
-
-    if (value)
-    {
-        char *result = NULL;
-        int   rc;
-
-        rc = te_expand_env_vars((const char *)value, NULL, &result);
-        if (rc == 0)
-        {
-            xmlFree(value);
-            value = (xmlChar *)result;
-        }
-        else
-        {
-            ERROR("Error substituting variables in %s '%s': %s",
-                  name, value, strerror(rc));
-            xmlFree(value);
-            value = NULL;
-        }
-    }
-    return (char *)value;
+    return xmlGetProp_exp_vars_or_env(node, name, NULL);
 }
 #endif /* TE_EXPAND_XML */
 

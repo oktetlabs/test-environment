@@ -78,9 +78,11 @@ cfg_instance_volatile(cfg_instance *inst)
  * synchronise resulting database with Test Agents.
  *
  * @param root_node Root node of the input document
+ * @param expand_vars List of key-value pairs for expansion in file
  *
  * @return Status code.
  */
-extern te_errno parse_config_dh_sync(xmlNodePtr root_node);
+extern te_errno parse_config_dh_sync(xmlNodePtr root_node,
+                                     const te_kvpair_h *expand_vars);
 
 #endif /* !__TE_CONF_DEFS_H__ */

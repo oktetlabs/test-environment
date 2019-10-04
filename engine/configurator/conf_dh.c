@@ -158,12 +158,13 @@ xmlNodeCond(xmlNodePtr node)
 /**
  * Process 'add' command.
  *
- * @param node      XML node with add command  children
+ * @param node          XML node with add command children
+ * @param expand_vars   List of key-value pairs for expansion in file
  *
  * @return Status code.
  */
 static int
-cfg_dh_process_add(xmlNodePtr node)
+cfg_dh_process_add(xmlNodePtr node, const te_kvpair_h *expand_vars)
 {
     int          rc;
     size_t       len;
@@ -179,8 +180,9 @@ cfg_dh_process_add(xmlNodePtr node)
         if (!xmlNodeCond(node))
             goto next;
 
-        if ((oid = (xmlChar *)xmlGetProp_exp(node,
-                   (const xmlChar *)"oid")) == NULL)
+        oid = (xmlChar *)xmlGetProp_exp_vars_or_env(node,
+              (const xmlChar *)"oid", expand_vars);
+        if (oid == NULL)
             RETERR(TE_EINVAL, "Incorrect add command format");
 
         if ((obj = cfg_get_object((char *)oid)) == NULL)
@@ -196,7 +198,8 @@ cfg_dh_process_add(xmlNodePtr node)
         msg->val_type = obj->type;
         msg->rc = 0;
 
-        val_s = (xmlChar *)xmlGetProp_exp(node, (const xmlChar *)"value");
+        val_s = (xmlChar *)xmlGetProp_exp_vars_or_env(node,
+                (const xmlChar *)"value", expand_vars);
         if (val_s != NULL && strlen((char *)val_s) >= CFG_MAX_INST_VALUE)
             RETERR(TE_ENOMEM, "Too long value");
 
@@ -245,13 +248,15 @@ next:
  * and add them to dynamic history.
  * Note: this routine does not reboot Test Agents.
  *
- * @param node      <history> node pointer
- * @param postsync  is processing performed after sync with TA
+ * @param node          <history> node pointer
+ * @param expand_vars   List of key-value pairs for expansion in file
+ * @param postsync      is processing performed after sync with TA
  *
  * @return status code (errno.h)
  */
 int
-cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
+cfg_dh_process_file(xmlNodePtr node, const te_kvpair_h *expand_vars,
+                    te_bool postsync)
 {
     xmlNodePtr cmd;
     int        len;
@@ -275,7 +280,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
 
         if (xmlStrcmp(cmd->name, (const xmlChar *)"history") == 0)
         {
-            rc = cfg_dh_process_file(cmd, postsync);
+            rc = cfg_dh_process_file(cmd, expand_vars, postsync);
             if (rc != 0)
             {
                 ERROR("Processing of embedded history failed %r", rc);
@@ -337,7 +342,9 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
             {
                 const xmlChar *parent_dep;
 
-                if ((attr = xmlGetProp_exp(tmp, (xmlChar *)"cond")) != NULL)
+                attr = xmlGetProp_exp_vars_or_env(tmp,
+                      (xmlChar *)"cond", expand_vars);
+                if (attr != NULL)
                 {
                     /* in case add condition is specified */
                     if (strcmp(attr, "false") == 0 || strcmp(attr, "") == 0)
@@ -349,8 +356,9 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                     xmlFree((xmlChar *)attr);
                 }
 
-                if ((oid = (xmlChar *)xmlGetProp_exp(tmp, (xmlChar *)"oid"))
-                        == NULL)
+                oid = (xmlChar *)xmlGetProp_exp_vars_or_env(tmp,
+                      (xmlChar *)"oid", expand_vars);
+                if (oid == NULL)
                     RETERR(TE_EINVAL, "Incorrect %s command format",
                            cmd->name);
 
@@ -470,8 +478,9 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                            "Unexpected node '%s' in 'unregister' command",
                            tmp->name);
 
-                if ((oid = (xmlChar *)xmlGetProp_exp(tmp, (xmlChar *)"oid"))
-                        == NULL)
+                oid = (xmlChar *)xmlGetProp_exp_vars_or_env(tmp,
+                      (xmlChar *)"oid", expand_vars);
+                if (oid == NULL)
                     RETERR(TE_EINVAL, "Incorrect %s command format",
                            cmd->name);
 
@@ -493,7 +502,7 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
             if (!postsync)
                 continue;
 
-            rc = cfg_dh_process_add(tmp);
+            rc = cfg_dh_process_add(tmp, expand_vars);
             if (rc != 0)
             {
                 ERROR("Failed to process add command");
@@ -519,8 +528,9 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                     continue;
                 }
 
-                if ((oid = (xmlChar *)xmlGetProp_exp(tmp, (xmlChar *)"oid"))
-                        == NULL)
+                oid = (xmlChar *)xmlGetProp_exp_vars_or_env(tmp,
+                      (xmlChar *)"oid", expand_vars);
+                if (oid == NULL)
                     RETERR(TE_EINVAL, "Incorrect %s command format",
                            cmd->name);
 
@@ -544,8 +554,8 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
                 if (obj->type == CVT_NONE)
                     RETERR(TE_EINVAL, "Cannot perform set for %s", oid);
 
-                val_s = (xmlChar *)xmlGetProp_exp(tmp,
-                                                  (const xmlChar *)"value");
+                val_s = (xmlChar *)xmlGetProp_exp_vars_or_env(tmp,
+                        (const xmlChar *)"value", expand_vars);
                 if (val_s == NULL)
                     RETERR(TE_EINVAL, "Value is required for %s", oid);
 
@@ -584,8 +594,9 @@ cfg_dh_process_file(xmlNodePtr node, te_bool postsync)
             while (tmp != NULL &&
                    xmlStrcmp(tmp->name, (const xmlChar *)"instance") == 0)
             {
-                if ((oid = (xmlChar *)xmlGetProp_exp(tmp, (xmlChar *)"oid"))
-                       == NULL)
+                oid = (xmlChar *)xmlGetProp_exp_vars_or_env(tmp,
+                       (xmlChar *)"oid", expand_vars);
+                if (oid == NULL)
                     RETERR(TE_EINVAL, "Incorrect %s command format",
                            cmd->name);
 

@@ -22,6 +22,7 @@
 #include "conf_rcf.h"
 
 #include <libxml/xinclude.h>
+#include "te_kvpair.h"
 
 #if HAVE_SIGNAL_H
 #include <signal.h>
@@ -59,6 +60,40 @@ static unsigned int cs_flags = 0;
 
 static void process_backup(cfg_backup_msg *msg);
 static te_errno create_backup(char **bkp_filename);
+
+/**
+ * Parse list of key-value pairs from history message
+ *
+ * @param msg           History message
+ * @param expand_vars   List of key-value pairs for expansion in file
+ *
+ * @param return        Zero if parsing successful, errno otherwise.
+ */
+static te_errno
+parse_kvpair(cfg_process_history_msg *msg, te_kvpair_h *expand_vars)
+{
+    int len;
+    char *key;
+    char *value;
+    te_errno rc;
+
+    len = sizeof(cfg_config_msg) + strlen(msg->filename) + 1;
+
+    while (len < msg->len)
+    {
+        key = (char *) ((char*) msg + len);
+        len += strlen(key) + 1;
+        value = (char *) ((char*) msg + len);
+        len += strlen(value) + 1;
+
+        rc = te_kvpair_add(expand_vars, key, "%s", value);
+        if (rc != 0)
+            return rc;
+
+    }
+
+    return 0;
+}
 
 /**
  * This function should be called before processing ADD, DEL and SET
@@ -265,7 +300,7 @@ print_otree(cfg_object *obj, int indent)
 
 /* See description in 'conf_defs.h' */
 te_errno
-parse_config_dh_sync(xmlNodePtr root_node)
+parse_config_dh_sync(xmlNodePtr root_node, const te_kvpair_h *expand_vars)
 {
     te_errno rc = 0;
     char *backup;
@@ -275,13 +310,13 @@ parse_config_dh_sync(xmlNodePtr root_node)
         ERROR("Failed to create a backup");
         return rc;
     }
-    rc = cfg_dh_process_file(root_node, FALSE);
+    rc = cfg_dh_process_file(root_node, expand_vars, FALSE);
     if (rc == 0 && (rc = cfg_ta_sync("/:", TRUE)) != 0)
     {
         ERROR("Cannot synchronise database with Test Agents");
         cfg_dh_restore_backup(backup, FALSE);
     }
-    if (rc == 0 && (rc = cfg_dh_process_file(root_node, TRUE)) != 0)
+    if (rc == 0 && (rc = cfg_dh_process_file(root_node, expand_vars, TRUE)) != 0)
     {
         ERROR("Failed to modify database after synchronisation: %r", rc);
         cfg_dh_restore_backup(backup, FALSE);
@@ -296,19 +331,21 @@ parse_config_dh_sync(xmlNodePtr root_node)
 /**
  * Parse and execute the configuration file.
  *
- * @param file    path name of the file
- * @param restore if TRUE, the configuration should be restored after
- *                unsuccessful dynamic history restoring
+ * @param file          path name of the file
+ * @param expand_vars   List of key-value pairs for expansion in file
+ * @param restore       if TRUE, the configuration should be restored after
+ *                      unsuccessful dynamic history restoring
  *
  * @return status code (see te_errno.h)
  */
 static int
-parse_config(const char *file, te_bool restore)
+parse_config(const char *file, te_kvpair_h *expand_vars, te_bool restore)
 {
     xmlDocPtr   doc;
     xmlNodePtr  root;
     int         rc;
     int         subst;
+    te_kvpair  *p;
 
     RING("Parsing %s", filename);
 
@@ -359,7 +396,7 @@ parse_config(const char *file, te_bool restore)
         rc = cfg_backup_process_file(root, restore);
     else if (xmlStrcmp(root->name, (const xmlChar *)"history") == 0)
     {
-        rc = parse_config_dh_sync(root);
+        rc = parse_config_dh_sync(root, expand_vars);
     }
     else
     {
@@ -1387,7 +1424,7 @@ process_backup(cfg_backup_msg *msg)
                 cfg_ta_sync("/:", TRUE);
             }
 
-            msg->rc = parse_config(msg->filename, TRUE);
+            msg->rc = parse_config(msg->filename, NULL,  TRUE);
             rcf_log_cfg_changes(FALSE);
             cfg_dh_release_after(msg->filename);
 
@@ -1610,9 +1647,19 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             break;
 
         case CFG_PROCESS_HISTORY:
-            (*msg)->rc = parse_config(
-                ((cfg_process_history_msg *)(*msg))->filename, TRUE);
-            break;
+            {
+                te_kvpair_h expand_vars;
+
+                te_kvpair_init(&expand_vars);
+                (*msg)->rc = parse_kvpair((cfg_process_history_msg *) (*msg), &expand_vars);
+                if ((*msg)->rc == 0)
+                    (*msg)->rc = parse_config(
+                        ((cfg_process_history_msg *)(*msg))->filename,
+                        &expand_vars, TRUE);
+
+                te_kvpair_fini(&expand_vars);
+                break;
+            }
 
         case CFG_CONF_DELAY:
             cfg_conf_delay_reset();
@@ -1809,7 +1856,7 @@ handle_cfg_file_by_its_type(const char *fname)
     fclose(f);
 
     if (strcmp(str, "<?xml") == 0)
-        return parse_config(fname, FALSE);
+        return parse_config(fname, NULL, FALSE);
 #if WITH_CONF_YAML
     else if (strcmp(str, "---") == 0)
         return parse_config_yaml(fname);
@@ -1899,7 +1946,7 @@ main(int argc, char **argv)
     }
 
     if (cs_sniff_cfg_file != NULL &&
-        (rc = parse_config(cs_sniff_cfg_file, FALSE)) != 0)
+        (rc = parse_config(cs_sniff_cfg_file, NULL, FALSE)) != 0)
     {
         ERROR("Fatal error during sniffer configuration file parsing");
         goto exit;

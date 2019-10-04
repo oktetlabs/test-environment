@@ -46,6 +46,7 @@
 #include "conf_types.h"
 #include "cs_common.h"
 #include "conf_oid.h"
+#include "te_kvpair.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -795,11 +796,13 @@ extern te_errno cfg_create_config(const char *name, te_bool history);
 /**
  * Process a history configuration file.
  *
- * @param filename  history configuratin file name
+ * @param filename      history configuratin file name
+ * @param expand_vars   List of key-value pairs for expansion in file
  *
  * @return Status code (see te_errno.h)
  */
-extern te_errno cfg_process_history(const char *filename);
+extern te_errno cfg_process_history(const char *filename,
+                                    const te_kvpair_h *expand_vars);
 
 /**@}*/
 
