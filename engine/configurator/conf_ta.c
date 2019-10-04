@@ -31,7 +31,7 @@ static int cfg_get_buf_len = TA_BUF_SIZE;
 
 te_bool local_cmd_seq = FALSE;
 char max_commit_subtree[CFG_INST_NAME_MAX] = {};
-char local_cmd_bkp[1024];
+char *local_cmd_bkp;
 
 /**
  * Get list of Test Agents.
@@ -948,6 +948,8 @@ cfg_tas_commit(const char *oid)
                  "the first local ADD/DEL/SET commands restored with "
                  "code %r", ret);
         }
+        free(local_cmd_bkp);
+        local_cmd_bkp = NULL;
     }
 
     EXIT("%r", rc);

@@ -53,7 +53,7 @@ extern char max_commit_subtree[CFG_INST_NAME_MAX];
  * Backup file name which reflects situation before local SET/ADD/DEL
  * command.
  */
-extern char local_cmd_bkp[1024];
+extern char *local_cmd_bkp;
 
 /**
  * Reboot all Test Agents (before re-initializing of the Configurator).

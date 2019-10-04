@@ -58,6 +58,7 @@ static const char *cs_sniff_cfg_file = NULL;  /**< Configuration file name
 static unsigned int cs_flags = 0;
 
 static void process_backup(cfg_backup_msg *msg);
+static te_errno create_backup(char **bkp_filename);
 
 /**
  * This function should be called before processing ADD, DEL and SET
@@ -144,32 +145,9 @@ cfg_avoid_local_cmd_problem(const char *cmd, const char *oid,
 
     if (!local_cmd_seq && msg_local)
     {
-        cfg_backup_msg *bkp_msg =
-            (cfg_backup_msg *)calloc(sizeof(cfg_backup_msg) +
-                                     sizeof(max_commit_subtree), 1);
-
-        if (bkp_msg == NULL)
-        {
-            msg->rc = TE_ENOMEM;
+        if ((msg->rc = create_backup(&local_cmd_bkp)) != 0)
             return msg->rc;
-        }
-
-        bkp_msg->type = CFG_BACKUP;
-        bkp_msg->op = CFG_BACKUP_CREATE;
-        bkp_msg->len = sizeof(cfg_backup_msg);
-
-        /* Create backup and save current instance name */
-        process_backup(bkp_msg);
-        if ((msg->rc = bkp_msg->rc) != 0)
-        {
-            ERROR("%s() Failed to create backup %r", __FUNCTION__, msg->rc);
-            free(bkp_msg);
-            return msg->rc;
-        }
         local_cmd_seq = TRUE;
-
-        strcpy(local_cmd_bkp, bkp_msg->filename);
-        free(bkp_msg);
 
         snprintf(max_commit_subtree, sizeof(max_commit_subtree), "%s", oid);
 
@@ -1423,6 +1401,50 @@ process_backup(cfg_backup_msg *msg)
             break;
         }
     }
+}
+
+/**
+ * Create backup.
+ *
+ * @param bkp_filename          backup filename pointer
+ */
+static te_errno
+create_backup(char **bkp_filename)
+{
+    te_errno rc = 0;
+    cfg_backup_msg *bkp_msg =
+            (cfg_backup_msg *)calloc(sizeof(cfg_backup_msg) +
+                                     sizeof(max_commit_subtree), 1);
+    if (bkp_msg == NULL)
+    {
+        return TE_ENOMEM;
+    }
+
+    if (*bkp_filename != NULL)
+        cfg_dh_release_backup(*bkp_filename);
+
+    bkp_msg->type = CFG_BACKUP;
+    bkp_msg->op = CFG_BACKUP_CREATE;
+    bkp_msg->len = sizeof(cfg_backup_msg);
+
+    process_backup(bkp_msg);
+    if ((rc = bkp_msg->rc) != 0)
+    {
+        ERROR("%s() Failed to create backup %r", __FUNCTION__, rc);
+        free(bkp_msg);
+        return rc;
+    }
+
+    *bkp_filename = strdup(bkp_msg->filename);
+    if (bkp_filename == NULL)
+    {
+        cfg_dh_release_backup(bkp_msg->filename);
+        rc = TE_ENOMEM;
+    }
+
+    free(bkp_msg);
+
+    return rc;
 }
 
 /**
