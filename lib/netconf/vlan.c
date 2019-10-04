@@ -141,6 +141,8 @@ vlan_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
     struct rtattr      *rta;
     int                 len;
 
+    UNUSED(cookie);
+
     memset(&vlan, 0, sizeof(vlan));
 
     rta = (struct rtattr *)((char *)h + NLMSG_SPACE(sizeof(*ifla)));

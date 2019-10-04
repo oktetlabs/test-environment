@@ -134,6 +134,8 @@ vxlan_link_gen_cb(struct nlmsghdr *h, netconf_list *list)
 static int
 vxlan_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
+    UNUSED(cookie);
+
     return vxlan_link_gen_cb(h, list);
 }
 

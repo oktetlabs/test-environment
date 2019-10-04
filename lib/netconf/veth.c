@@ -201,6 +201,8 @@ veth_link_gen_cb(struct nlmsghdr *h, netconf_list *list, te_bool get_peer)
 static int
 veth_peer_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
+    UNUSED(cookie);
+
     return veth_link_gen_cb(h, list, TRUE);
 }
 

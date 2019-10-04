@@ -29,16 +29,14 @@
  * port interfaces.
  *
  * @param ifname    The interface name.
- * @param brname    The bridge name
  * @param data      Unused.
  *
  * @return @c TRUE if the interface is grabbed, @c FALSE otherwise.
  */
 static te_bool
-port_list_include_cb(const char *ifname, const char *brname, void *data)
+port_list_include_cb(const char *ifname, void *data)
 {
     UNUSED(ifname);
-    UNUSED(brname);
     UNUSED(data);
 
     return 0;
@@ -88,6 +86,7 @@ port_get(unsigned int gid, char *oid, char *if_oid, char *brname, char *ifname)
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(brname);
 
     if (rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname))
     {
@@ -163,6 +162,7 @@ RCF_PCH_CFG_NODE_RW_COLLECTION(node_port, "port", NULL, NULL,
  *
  * @param gid       Group identifier (unused)
  * @param oid       Full object instance identifier (unused)
+ * @param data      Unused
  * @param ifname    The inteface name
  *
  * @return      Status code
@@ -172,6 +172,7 @@ bridge_add(unsigned int gid, const char *oid, const char *data, const char *ifna
 {
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(data);
 
     return netconf_bridge_add(nh, ifname);
 }

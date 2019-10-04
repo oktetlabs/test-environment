@@ -28,6 +28,8 @@ link_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
     int                 len;
     netconf_link       *link;
 
+    UNUSED(cookie);
+
     if (netconf_list_extend(list, NETCONF_NODE_LINK) != 0)
         return -1;
 

@@ -29,6 +29,8 @@ net_addr_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
     netconf_net_addr   *net_addr;
     uint8_t            *local = NULL;
 
+    UNUSED(cookie);
+
     if (netconf_list_extend(list, NETCONF_NODE_NET_ADDR) != 0)
         return -1;
 

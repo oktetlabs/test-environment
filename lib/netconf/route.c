@@ -32,6 +32,8 @@ route_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
     int                 len;
     netconf_route      *route;
 
+    UNUSED(cookie);
+
     if (netconf_list_extend(list, NETCONF_NODE_ROUTE) != 0)
         return -1;
 

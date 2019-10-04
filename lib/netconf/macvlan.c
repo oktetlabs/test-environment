@@ -168,6 +168,8 @@ macvlan_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
     struct rtattr      *rta;
     int                 len;
 
+    UNUSED(cookie);
+
     memset(&macvlan, 0, sizeof(macvlan));
 
     rta = (struct rtattr *)((char *)h + NLMSG_SPACE(sizeof(*ifla)));

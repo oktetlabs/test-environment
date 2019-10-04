@@ -207,6 +207,8 @@ rule_list_cb_internal(struct nlmsghdr *h, netconf_list *list)
 static int
 rule_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
+    UNUSED(cookie);
+
     te_errno result = rule_list_cb_internal(h, list);
 
     if (result == 0)
