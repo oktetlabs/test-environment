@@ -680,7 +680,7 @@ parse_config_yaml(const char *filename)
     if (xn_history->children != NULL)
     {
         rcf_log_cfg_changes(TRUE);
-        rc = parse_config_dh_sync(xn_history);
+        rc = parse_config_dh_sync(xn_history, NULL);
         rcf_log_cfg_changes(FALSE);
     }
 
