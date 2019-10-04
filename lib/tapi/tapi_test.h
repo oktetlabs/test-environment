@@ -95,9 +95,22 @@ extern "C" {
  */
 #define TEST_ON_JMP_DO \
     do {                                                             \
-        if (result == EXIT_SUCCESS || result == EXIT_FAILURE) \
-            result = (TE_RC_GET_ERROR(jmp_rc) == TE_EOK) ? EXIT_SUCCESS  \
-                                                     : EXIT_FAILURE; \
+        if (result == EXIT_SUCCESS || result == EXIT_FAILURE)        \
+        {                                                            \
+            switch (TE_RC_GET_ERROR(jmp_rc))                         \
+            {                                                        \
+                case TE_EOK:                                         \
+                    result = EXIT_SUCCESS;                           \
+                    break;                                           \
+                case TE_ESKIP:                                       \
+                    result = TE_EXIT_SKIP;                           \
+                    break;                                           \
+                case TE_EFAIL:                                       \
+                default:                                             \
+                    result = EXIT_FAILURE;                           \
+                    break;                                           \
+            }                                                        \
+        }                                                            \
         if (result == EXIT_SUCCESS)                                  \
             TEST_ON_JMP_DO_IF_SUCCESS;                               \
         else if (result == EXIT_FAILURE)                             \
@@ -248,20 +261,6 @@ cleanup_specific:                                                   \
         result = EXIT_FAILURE;                                      \
     }                                                               \
     return result
-
-/**
- * Terminate a test with skip status, reporting the reason.
- *
- * @param fmt       reason message format string with parameters
- */
-#define TEST_SKIP(fmt...) \
-    do {                                                \
-        result = TE_EXIT_SKIP;                          \
-        RING("Test Skipped in %s, line %d, %s()",       \
-             __FILE__, __LINE__, __FUNCTION__);         \
-        RING_VERDICT(fmt);                              \
-        TEST_STOP;                                      \
-    } while (0)
 
 /**
  * @defgroup te_ts_tapi_test_misc Test misc

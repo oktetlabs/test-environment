@@ -200,6 +200,7 @@ typedef enum {
     TE_EOK = TE_MIN_ERRNO + 500,
                   /**< Success when 0 can't be used */
     TE_EFAIL,     /**< Generic failure */
+    TE_ESKIP,     /**< Test should be skipped */
     TE_ESMALLBUF, /**< Too small buffer is provided */
     TE_EPENDING,  /**< Pending data retain on connection */
     TE_EIPC,      /**< Could not interact with RCF */
@@ -616,6 +617,7 @@ te_rc_err2str(te_errno err)
 
         ERR2STR(EOK);
         ERR2STR(EFAIL);
+        ERR2STR(ESKIP);
         ERR2STR(ESMALLBUF);
         ERR2STR(EPENDING);
         ERR2STR(EIPC);

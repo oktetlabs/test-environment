@@ -131,6 +131,19 @@ extern "C" {
 #define TEST_STOP       (TAPI_JMP_DO(TE_EFAIL))
 
 /**
+ * Terminate a test with skip status, reporting the reason.
+ *
+ * @param fmt       reason message format string with parameters
+ */
+#define TEST_SKIP(fmt...) \
+    do {                                                \
+        RING("Test Skipped in %s, line %d, %s()",       \
+             __FILE__, __LINE__, __FUNCTION__);         \
+        RING_VERDICT(fmt);                              \
+        TAPI_JMP_DO(TE_ESKIP);                          \
+    } while (0)
+
+/**
  * Terminate a test with failure status, report an error.
  *
  * @param fmt       error message format string with parameters
