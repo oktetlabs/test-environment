@@ -139,7 +139,8 @@ extern "C" {
     do {                                                \
         RING("Test Skipped in %s, line %d, %s()",       \
              __FILE__, __LINE__, __FUNCTION__);         \
-        RING_VERDICT(fmt);                              \
+        if (fmt[0] != '\0')                             \
+            RING_VERDICT(fmt);                          \
         TAPI_JMP_DO(TE_ESKIP);                          \
     } while (0)
 
