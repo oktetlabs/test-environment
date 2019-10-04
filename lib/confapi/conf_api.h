@@ -791,6 +791,16 @@ extern te_errno cfg_release_backup(char **name);
  * @return Status code (see te_errno.h)
  */
 extern te_errno cfg_create_config(const char *name, te_bool history);
+
+/**
+ * Process a history configuration file.
+ *
+ * @param filename  history configuratin file name
+ *
+ * @return Status code (see te_errno.h)
+ */
+extern te_errno cfg_process_history(const char *filename);
+
 /**@}*/
 
 /** 

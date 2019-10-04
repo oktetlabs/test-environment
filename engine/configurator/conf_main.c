@@ -268,12 +268,27 @@ te_errno
 parse_config_dh_sync(xmlNodePtr root_node)
 {
     te_errno rc = 0;
+    char *backup;
 
+    if ((rc = create_backup(&backup)) != 0)
+    {
+        ERROR("Failed to create a backup");
+        return rc;
+    }
     rc = cfg_dh_process_file(root_node, FALSE);
     if (rc == 0 && (rc = cfg_ta_sync("/:", TRUE)) != 0)
+    {
         ERROR("Cannot synchronise database with Test Agents");
+        cfg_dh_restore_backup(backup, FALSE);
+    }
     if (rc == 0 && (rc = cfg_dh_process_file(root_node, TRUE)) != 0)
+    {
         ERROR("Failed to modify database after synchronisation: %r", rc);
+        cfg_dh_restore_backup(backup, FALSE);
+    }
+    if (rc == 0)
+        cfg_dh_release_backup(backup);
+    free(backup);
 
     return rc;
 }
@@ -1235,6 +1250,11 @@ log_msg(cfg_msg *msg, te_bool before)
                     "history" : "backup", addon);
             break;
 
+        case CFG_PROCESS_HISTORY:
+            LOG_MSG(level, "Process history configuration file %s",
+                    ((cfg_process_history_msg *)msg)->filename);
+            break;
+
         case CFG_CONF_DELAY:
             LOG_MSG(level, "Wait configuration changes");
             break;
@@ -1587,6 +1607,11 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
                 (*msg)->rc = cfg_backup_create_file(
                                  ((cfg_config_msg *)(*msg))->filename);
             }
+            break;
+
+        case CFG_PROCESS_HISTORY:
+            (*msg)->rc = parse_config(
+                ((cfg_process_history_msg *)(*msg))->filename, TRUE);
             break;
 
         case CFG_CONF_DELAY:

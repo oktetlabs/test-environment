@@ -2251,6 +2251,52 @@ cfg_create_config(const char *name, te_bool history)
 
 
 /* See description in conf_api.h */
+te_errno
+cfg_process_history(const char *filename)
+{
+    cfg_process_history_msg *msg;
+
+    size_t  len;
+    int     ret_val = 0;
+
+    if (filename == NULL)
+        return TE_RC(TE_CONF_API, TE_EINVAL);
+
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_lock(&cfgl_lock);
+#endif
+
+    INIT_IPC;
+    if (cfgl_ipc_client == NULL)
+    {
+        ret_val = TE_EIPC;
+        goto done;
+    }
+
+    msg = (cfg_process_history_msg *)cfgl_msg_buf;
+    msg->type = CFG_PROCESS_HISTORY;
+
+    len = strlen(filename) + 1;
+    memcpy(msg->filename, filename, len);
+
+    msg->len = sizeof(cfg_process_history_msg) + len;
+    len = CFG_MSG_MAX;
+
+    ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
+                                           CONFIGURATOR_SERVER,
+                                           msg, msg->len, msg, &len);
+    if (ret_val == 0)
+        ret_val = msg->rc;
+
+done:
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_unlock(&cfgl_lock);
+#endif
+    return TE_RC(TE_CONF_API, ret_val);
+}
+
+
+/* See description in conf_api.h */
 void
 cfg_api_cleanup(void)
 {

@@ -73,7 +73,9 @@ enum {
     CFG_CONF_DELAY,/**< Sleep conf_delay */                        
     CFG_SHUTDOWN,  /**< Shutdown the Configurator */
     CFG_ADD_DEPENDENCY, /**< Add a dependency */
-    CFG_TREE_PRINT /**< Print a tree of obj|ins from a prefix */
+    CFG_TREE_PRINT,/**< Print a tree of obj|ins from a prefix */
+    CFG_PROCESS_HISTORY,/**< Process history configuration file
+                             IN: file name, key-value pairs to substitute */
 };
 
 /* Set of generic fields of the Configurator message */
@@ -282,6 +284,12 @@ typedef struct cfg_tree_print_msg {
     size_t        flname_len;/**< IN: output filename length */
     char          buf[1];   /**< IN:  id + filename */
 } cfg_tree_print_msg;
+
+/** CFG_PROCESS_HISTORY message content */
+typedef struct cfg_process_history_msg {
+    CFG_MSG_FIELDS
+    char    filename[0]; /**< IN: file name */
+} cfg_process_history_msg;
 
 #ifdef __cplusplus
 extern "C" {
