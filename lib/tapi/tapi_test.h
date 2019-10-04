@@ -259,7 +259,7 @@ cleanup_specific:                                                   \
         result = TE_EXIT_SKIP;                          \
         RING("Test Skipped in %s, line %d, %s()",       \
              __FILE__, __LINE__, __FUNCTION__);         \
-        RING(fmt);                                      \
+        RING_VERDICT(fmt);                              \
         TEST_STOP;                                      \
     } while (0)
 
