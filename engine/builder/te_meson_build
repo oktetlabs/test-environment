@@ -486,7 +486,9 @@ make_workspace() {
 
     # Workspace directory
     if test ! -f "${ws_file}" ; then
-        te_eval_or_ssh "${p}" "mktemp -d -u" >"${ws_file}"
+        local ws_dir="${TE_WORKSPACE_DIR:+${TE_WORKSPACE_DIR}/tmp_ws_XXXXXX}"
+        local cmd="mktemp ${ws_dir} -d -u"
+        te_eval_or_ssh "${p}" "${cmd}" >"${ws_file}"
     fi
     ws="$(cat "${ws_file}")"
     warning Platform $p workspace is $ws
