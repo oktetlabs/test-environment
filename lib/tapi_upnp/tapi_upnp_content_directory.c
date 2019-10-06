@@ -27,6 +27,7 @@
 #endif
 
 #include <libgupnp-av/gupnp-av.h>
+#include "te_queue.h"
 #include "tapi_upnp_content_directory.h"
 
 #include "te_string.h"

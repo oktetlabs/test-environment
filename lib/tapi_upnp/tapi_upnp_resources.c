@@ -18,6 +18,7 @@
 #define TE_LGR_USER     "TAPI UPnP Content Directory Resources"
 
 #include "te_config.h"
+#include "te_queue.h"
 #include "tapi_upnp_resources.h"
 
 

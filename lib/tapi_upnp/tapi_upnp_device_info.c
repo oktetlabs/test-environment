@@ -20,6 +20,7 @@
 
 #include <jansson.h>
 #include "logger_api.h"
+#include "te_queue.h"
 #include "tapi_upnp_cp.h"
 #include "tapi_upnp_device_info.h"
 #include "te_string.h"
