@@ -1049,6 +1049,18 @@ tapi_bpf_perf_get_events(const char *ta, unsigned int bpf_id, const char *map,
     return 0;
 }
 
+/* See description in tapi_bpf.h */
+te_errno
+tapi_bpf_perf_map_get_list(const char *ta, unsigned int bpf_id,
+                           char ***map, unsigned int *map_count)
+{
+    assert(ta != NULL);
+    assert(map != NULL);
+
+    return tapi_bpf_get_inst_list_fmt(map, map_count, "/agent:%s/bpf:%u/perf_map:*",
+                                      ta, bpf_id);
+}
+
 /************** Auxiliary functions  ****************/
 
 /* See description in tapi_bpf.h */

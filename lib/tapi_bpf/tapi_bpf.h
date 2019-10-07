@@ -456,6 +456,23 @@ extern te_errno
 tapi_bpf_perf_get_events(const char *ta, unsigned int bpf_id, const char *map,
                          unsigned int *num, uint8_t **data);
 
+/**
+ * Get list of loaded perf_event maps from BPF object
+ *
+ * @param[in] ta            Test Agent name
+ * @param[in] bpf_id        Bpf ID
+ * @param[out] map          Array of map names, should be freed by user,
+ *                          see @ref te_str_free_array
+ * @param[out] map_count    Pointer to store number of maps in @par map,
+ *                          unused if @c NULL
+ *
+ * @return                  Status code
+ */
+extern te_errno tapi_bpf_perf_map_get_list(const char *ta,
+                                           unsigned int bpf_id,
+                                           char ***map,
+                                           unsigned int *map_count);
+
 /************************** Auxiliary functions  *****************************/
 
 /**
