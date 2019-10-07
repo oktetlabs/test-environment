@@ -40,12 +40,28 @@ static const char *tapi_bpf_prog_types[] =
 
 static const char *tapi_bpf_map_types[] =
 {
-    [TAPI_BPF_MAP_TYPE_UNSPEC] =            "UNSPEC",
-    [TAPI_BPF_MAP_TYPE_HASH] =              "HASH",
-    [TAPI_BPF_MAP_TYPE_ARRAY] =             "ARRAY",
-    [TAPI_BPF_MAP_TYPE_PERF_EVENT_ARRAY] =  "PERF_EVENT_ARRAY",
-    [TAPI_BPF_MAP_TYPE_LPM_TRIE] =          "LPM_TRIE",
-    [TAPI_BPF_MAP_TYPE_UNKNOWN] =           "<UNKNOWN>"
+    [TAPI_BPF_MAP_TYPE_UNSPEC] =              "UNSPEC",
+    [TAPI_BPF_MAP_TYPE_HASH] =                "HASH",
+    [TAPI_BPF_MAP_TYPE_ARRAY] =               "ARRAY",
+    [TAPI_BPF_MAP_TYPE_PROG_ARRAY] =          "PROG_ARRAY",
+    [TAPI_BPF_MAP_TYPE_PERF_EVENT_ARRAY] =    "PERF_EVENT_ARRAY",
+    [TAPI_BPF_MAP_TYPE_PERCPU_HASH] =         "PERCPU_HASH",
+    [TAPI_BPF_MAP_TYPE_PERCPU_ARRAY] =        "PERCPU_ARRAY",
+    [TAPI_BPF_MAP_TYPE_STACK_TRACE] =         "STACK_TRACE",
+    [TAPI_BPF_MAP_TYPE_CGROUP_ARRAY] =        "CGROUP_ARRAY",
+    [TAPI_BPF_MAP_TYPE_LRU_HASH] =            "LRU_HASH",
+    [TAPI_BPF_MAP_TYPE_LRU_PERCPU_HASH] =     "LRU_PERCPU_HASH",
+    [TAPI_BPF_MAP_TYPE_LPM_TRIE] =            "LPM_TRIE",
+    [TAPI_BPF_MAP_TYPE_ARRAY_OF_MAPS] =       "ARRAY_OF_MAPS",
+    [TAPI_BPF_MAP_TYPE_HASH_OF_MAPS] =        "HASH_OF_MAPS",
+    [TAPI_BPF_MAP_TYPE_DEVMAP] =              "DEVMAP",
+    [TAPI_BPF_MAP_TYPE_SOCKMAP] =             "SOCKMAP",
+    [TAPI_BPF_MAP_TYPE_CPUMAP] =              "CPUMAP",
+    [TAPI_BPF_MAP_TYPE_XSKMAP] =              "XSKMAP",
+    [TAPI_BPF_MAP_TYPE_SOCKHASH] =            "SOCKHASH",
+    [TAPI_BPF_MAP_TYPE_CGROUP_STORAGE] =      "CGROUP_STORAGE",
+    [TAPI_BPF_MAP_TYPE_REUSEPORT_SOCKARRAY] = "REUSEPORT_SOCKARRAY",
+    [TAPI_BPF_MAP_TYPE_UNKNOWN] =             "<UNKNOWN>"
 };
 
 /**

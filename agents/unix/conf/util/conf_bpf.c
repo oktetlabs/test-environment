@@ -968,11 +968,27 @@ bpf_find_perf_map(const char *bpf_id, const char *map_name)
 
 /* String representations of BPF map types */
 static const char* bpf_map_types_str[] = {
-    [BPF_MAP_TYPE_UNSPEC] = "UNSPEC",
-    [BPF_MAP_TYPE_HASH] = "HASH",
-    [BPF_MAP_TYPE_ARRAY] = "ARRAY",
-    [BPF_MAP_TYPE_PERF_EVENT_ARRAY] = "PERF_EVENT_ARRAY",
-    [BPF_MAP_TYPE_LPM_TRIE] = "LPM_TRIE",
+    [BPF_MAP_TYPE_UNSPEC] =              "UNSPEC",
+    [BPF_MAP_TYPE_HASH] =                "HASH",
+    [BPF_MAP_TYPE_ARRAY] =               "ARRAY",
+    [BPF_MAP_TYPE_PROG_ARRAY] =          "PROG_ARRAY",
+    [BPF_MAP_TYPE_PERF_EVENT_ARRAY] =    "PERF_EVENT_ARRAY",
+    [BPF_MAP_TYPE_PERCPU_HASH] =         "PERCPU_HASH",
+    [BPF_MAP_TYPE_PERCPU_ARRAY] =        "PERCPU_ARRAY",
+    [BPF_MAP_TYPE_STACK_TRACE] =         "STACK_TRACE",
+    [BPF_MAP_TYPE_CGROUP_ARRAY] =        "CGROUP_ARRAY",
+    [BPF_MAP_TYPE_LRU_HASH] =            "LRU_HASH",
+    [BPF_MAP_TYPE_LRU_PERCPU_HASH] =     "LRU_PERCPU_HASH",
+    [BPF_MAP_TYPE_LPM_TRIE] =            "LPM_TRIE",
+    [BPF_MAP_TYPE_ARRAY_OF_MAPS] =       "ARRAY_OF_MAPS",
+    [BPF_MAP_TYPE_HASH_OF_MAPS] =        "HASH_OF_MAPS",
+    [BPF_MAP_TYPE_DEVMAP] =              "DEVMAP",
+    [BPF_MAP_TYPE_SOCKMAP] =             "SOCKMAP",
+    [BPF_MAP_TYPE_CPUMAP] =              "CPUMAP",
+    [BPF_MAP_TYPE_XSKMAP] =              "XSKMAP",
+    [BPF_MAP_TYPE_SOCKHASH] =            "SOCKHASH",
+    [BPF_MAP_TYPE_CGROUP_STORAGE] =      "CGROUP_STORAGE",
+    [BPF_MAP_TYPE_REUSEPORT_SOCKARRAY] = "REUSEPORT_SOCKARRAY",
 };
 
 /**
