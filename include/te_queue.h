@@ -5,6 +5,10 @@
  * exact copy of sys/queue.h, since it is widely used in TE sources,
  * but does not present on some platforms.
  *
+ * UPDATE: this file had to be modified because sys/queue.h sometimes
+ * does not contain macros like TAILQ_FOREACH_SAFE(); in this case
+ * such macros may be defined using remaining ones.
+ *
  * The latest copy is obtained from FreeBSD CVS ToT. Mention of
  * _KERNEL is removed. Own defition of a list is made iff sys/queue.h
  * does not present or it does not provide corresponding list.
@@ -19,6 +23,9 @@
 
 #if HAVE_SYS_CDEFS_H
 #include <sys/cdefs.h>
+#endif
+#if HAVE_SYS_QUEUE_H
+#include <sys/queue.h>
 #endif
 
 /*-
@@ -185,16 +192,6 @@ struct {                                \
         (var);                            \
         (var) = SLIST_NEXT((var), field))
 
-#define    SLIST_FOREACH_SAFE(var, head, field, tvar)            \
-    for ((var) = SLIST_FIRST((head));                \
-        (var) && ((tvar) = SLIST_NEXT((var), field), 1);        \
-        (var) = (tvar))
-
-#define    SLIST_FOREACH_PREVPTR(var, varp, head, field)            \
-    for ((varp) = &SLIST_FIRST((head));                \
-        ((var) = *(varp)) != NULL;                    \
-        (varp) = &SLIST_NEXT((var), field))
-
 #define    SLIST_INIT(head) do {                        \
     SLIST_FIRST((head)) = NULL;                    \
 } while (0)
@@ -230,6 +227,20 @@ struct {                                \
 } while (0)
 
 #endif /* !SLIST_HEAD */
+
+#ifndef SLIST_FOREACH_SAFE
+#define SLIST_FOREACH_SAFE(var, head, field, tvar) \
+    for ((var) = SLIST_FIRST((head));                           \
+        (var) && ((tvar) = SLIST_NEXT((var), field), 1);        \
+        (var) = (tvar))
+#endif
+
+#ifndef SLIST_FOREACH_PREVPTR
+#define SLIST_FOREACH_PREVPTR(var, varp, head, field) \
+    for ((varp) = &SLIST_FIRST((head));                         \
+        ((var) = *(varp)) != NULL;                              \
+        (varp) = &SLIST_NEXT((var), field))
+#endif
 
 
 #ifndef STAILQ_HEAD
@@ -272,11 +283,6 @@ struct {                                \
        (var) = STAILQ_NEXT((var), field))
 
 
-#define    STAILQ_FOREACH_SAFE(var, head, field, tvar)            \
-    for ((var) = STAILQ_FIRST((head));                \
-        (var) && ((tvar) = STAILQ_NEXT((var), field), 1);        \
-        (var) = (tvar))
-
 #define    STAILQ_INIT(head) do {                        \
     STAILQ_FIRST((head)) = NULL;                    \
     (head)->stqh_last = &STAILQ_FIRST((head));            \
@@ -300,6 +306,10 @@ struct {                                \
     (head)->stqh_last = &STAILQ_NEXT((elm), field);            \
 } while (0)
 
+/*
+ * Avoid using this macro - it may be missing in <sys/queue.h> and it
+ * cannot be redefined via other marcos.
+ */
 #define    STAILQ_LAST(head, type, field)                    \
     (STAILQ_EMPTY((head)) ?                        \
         NULL :                            \
@@ -330,6 +340,13 @@ struct {                                \
 } while (0)
 
 #endif /* !STAILQ_HEAD */
+
+#ifndef STAILQ_FOREACH_SAFE
+#define STAILQ_FOREACH_SAFE(var, head, field, tvar) \
+    for ((var) = STAILQ_FIRST((head));                            \
+        (var) && ((tvar) = STAILQ_NEXT((var), field), 1);         \
+        (var) = (tvar))
+#endif
 
 
 #ifndef LIST_HEAD
@@ -389,11 +406,6 @@ struct {                                \
         (var);                            \
         (var) = LIST_NEXT((var), field))
 
-#define    LIST_FOREACH_SAFE(var, head, field, tvar)            \
-    for ((var) = LIST_FIRST((head));                \
-        (var) && ((tvar) = LIST_NEXT((var), field), 1);        \
-        (var) = (tvar))
-
 #define    LIST_INIT(head) do {                        \
     LIST_FIRST((head)) = NULL;                    \
 } while (0)
@@ -437,6 +449,13 @@ struct {                                \
 } while (0)
 
 #endif /* !LIST_HEAD */
+
+#ifndef LIST_FOREACH_SAFE
+#define LIST_FOREACH_SAFE(var, head, field, tvar) \
+    for ((var) = LIST_FIRST((head));                            \
+        (var) && ((tvar) = LIST_NEXT((var), field), 1);         \
+        (var) = (tvar))
+#endif
 
 
 #ifndef TAILQ_HEAD
@@ -515,20 +534,10 @@ struct {                                \
         (var);                            \
         (var) = TAILQ_NEXT((var), field))
 
-#define    TAILQ_FOREACH_SAFE(var, head, field, tvar)            \
-    for ((var) = TAILQ_FIRST((head));                \
-        (var) && ((tvar) = TAILQ_NEXT((var), field), 1);        \
-        (var) = (tvar))
-
 #define    TAILQ_FOREACH_REVERSE(var, head, headname, field)        \
     for ((var) = TAILQ_LAST((head), headname);            \
         (var);                            \
         (var) = TAILQ_PREV((var), headname, field))
-
-#define    TAILQ_FOREACH_REVERSE_SAFE(var, head, headname, field, tvar)    \
-    for ((var) = TAILQ_LAST((head), headname);            \
-        (var) && ((tvar) = TAILQ_PREV((var), headname, field), 1);    \
-        (var) = (tvar))
 
 #define    TAILQ_INIT(head) do {                        \
     TAILQ_FIRST((head)) = NULL;                    \
@@ -609,6 +618,20 @@ struct {                                \
 } while (0)
 
 #endif /* !TAILQ_HEAD */
+
+#ifndef TAILQ_FOREACH_SAFE
+#define TAILQ_FOREACH_SAFE(var, head, field, tvar) \
+    for ((var) = TAILQ_FIRST((head));                           \
+        (var) && ((tvar) = TAILQ_NEXT((var), field), 1);        \
+        (var) = (tvar))
+#endif
+
+#ifndef TAILQ_FOREACH_REVERSE_SAFE
+#define TAILQ_FOREACH_REVERSE_SAFE(var, head, headname, field, tvar) \
+    for ((var) = TAILQ_LAST((head), headname);                            \
+        (var) && ((tvar) = TAILQ_PREV((var), headname, field), 1);        \
+        (var) = (tvar))
+#endif
 
 
 #ifndef CIRCLEQ_HEAD
@@ -727,5 +750,13 @@ struct {                                                                \
 } while (0)
 
 #endif /* !CIRCLEQ_HEAD */
+
+#ifndef CIRCLEQ_REPLACE
+#define CIRCLEQ_REPLACE(head, elm, elm2, field) \
+    do {                                                  \
+        CIRCLEQ_INSERT_AFTER(head, elm, elm2, field);     \
+        CIRCLEQ_REMOVE(head, elm, field);                 \
+    } while (0)
+#endif
 
 #endif /* !__TE_QUEUE_H__ */
