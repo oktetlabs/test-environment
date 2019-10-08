@@ -1175,3 +1175,29 @@ tapi_bpf_map_type_name_check(const char *ta, unsigned int bpf_id,
 
     return tapi_bpf_check_name_exists(str.ptr);
 }
+
+/* See description in tapi_bpf.h */
+te_errno
+tapi_bpf_map_check_type(const char *ta,
+                        unsigned int bpf_id,
+                        const char *map_name,
+                        tapi_bpf_map_type exp_map_type)
+{
+    tapi_bpf_map_type type;
+    te_errno          rc = 0;
+
+    assert(ta != NULL);
+    assert(map_name != NULL);
+
+    if ((rc = tapi_bpf_map_get_type(ta, bpf_id, map_name, &type)) != 0)
+        return rc;
+
+    if (exp_map_type != type)
+    {
+        ERROR("%s(): The specified type %s does not match the expected type %s",
+              __FUNCTION__, tapi_bpf_map_types[type], tapi_bpf_map_types[exp_map_type]);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    return 0;
+}

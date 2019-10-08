@@ -549,6 +549,22 @@ tapi_bpf_map_name_check(const char *ta, unsigned int bpf_id,
                                         TAPI_BPF_MAP_TYPE_UNSPEC);
 }
 
+/*
+ * Check that expected map type match with real type
+ *
+ * @param ta            Test Agent name
+ * @param bpf_id        Id of BPF object
+ * @param map_name      The name of map to search
+ * @param exp_map_type  Expected map type
+ *
+ * @return              Status code
+ */
+extern te_errno
+tapi_bpf_map_check_type(const char *ta,
+                        unsigned int bpf_id,
+                        const char *map_name,
+                        tapi_bpf_map_type exp_map_type);
+
 /**@} <!-- END tapi_bpf --> */
 
 #ifdef __cplusplus
