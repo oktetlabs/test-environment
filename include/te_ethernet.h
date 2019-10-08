@@ -25,7 +25,7 @@
 #endif
 #if HAVE_NET_IF_ETHER_H
 #if defined(__NetBSD__) /* FIXME */
-#include <sys/queue.h>
+#include "te_queue.h"
 #include <net/if.h>
 #endif
 #include <net/if_ether.h>

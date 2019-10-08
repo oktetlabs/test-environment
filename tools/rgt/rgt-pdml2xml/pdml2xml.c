@@ -15,12 +15,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <sys/queue.h>
 #include <stdbool.h>
 #include <unistd.h>
 
 #include <libxml/parserInternals.h>
 #include "te_defs.h"
+#include "te_queue.h"
 
 /** Base size of a memory block to contain a packet */
 #define RGT_BASE_PACKET_SIZE 1024

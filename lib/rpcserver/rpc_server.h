@@ -142,16 +142,13 @@
 #include <sys/syscall.h>
 #endif
 
-#ifdef HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif
-
 #define TE_ERRNO_LOG_UNKNOWN_OS_ERRNO
 
 #include <stddef.h>
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_queue.h"
 #include "te_string.h"
 #include "logger_api.h"
 #include "logfork.h"

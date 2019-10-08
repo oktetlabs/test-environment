@@ -17,13 +17,13 @@
 
 #include "te_errno.h"
 #include "te_defs.h"
+#include "te_queue.h"
 #include "te_sniffer_proc.h"
 #include "te_sniffers.h"
 
 #include <pcap/pcap.h>
 #include <signal.h>
 #include <fcntl.h>
-#include <sys/queue.h>
 #include <sys/stat.h>
 
 #define MAXIMUM_SNAPLEN 65535

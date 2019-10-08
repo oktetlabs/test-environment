@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <sys/queue.h>
 #include <stdbool.h>
 #include <sys/sendfile.h>
 #include <sys/types.h>
@@ -26,6 +25,7 @@
 
 #include <libxml/parserInternals.h>
 #include "te_defs.h"
+#include "te_queue.h"
 
 /** Size of a block chars that should be read from a file for each call */
 #define BL_SIZE 4

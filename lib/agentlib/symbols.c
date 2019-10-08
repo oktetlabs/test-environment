@@ -24,15 +24,10 @@
 #include <dlfcn.h>
 #endif
 
-#if defined(HAVE_SYS_QUEUE_H)
-#include <sys/queue.h>
-#else
-#include "te_queue.h"
-#endif
-
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_alloc.h"
+#include "te_queue.h"
 #include "logger_api.h"
 
 typedef struct symbol_table_list {

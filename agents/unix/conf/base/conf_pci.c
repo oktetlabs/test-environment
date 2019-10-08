@@ -40,10 +40,6 @@
 #include <dirent.h>
 #endif
 
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif
-
 #if HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif
@@ -55,6 +51,7 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
+#include "te_queue.h"
 #include "te_string.h"
 #include "logger_api.h"
 #include "comm_agent.h"

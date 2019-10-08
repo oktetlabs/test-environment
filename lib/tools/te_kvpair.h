@@ -23,14 +23,8 @@
 
 #include "te_defs.h"
 #include "te_errno.h"
-#include "te_string.h"
-
-#if HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#else
 #include "te_queue.h"
-#endif
-
+#include "te_string.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -44,11 +44,6 @@
 #if defined (__QNX__)
 #include <spawn.h>
 #endif
-#ifdef _SYS_QUEUE_H_
-#include <sys/queue.h>
-#else
-#include "te_queue.h"
-#endif
 
 #ifdef __linux__
 #include <elf.h>
@@ -61,6 +56,7 @@
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_queue.h"
 #include "te_shell_cmd.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"

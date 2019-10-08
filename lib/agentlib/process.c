@@ -41,15 +41,10 @@
 #include <sys/wait.h>
 #endif
 
-#ifdef HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#else
-#include "te_queue.h"
-#endif
-
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_alloc.h"
+#include "te_queue.h"
 #include "te_shell_cmd.h"
 #include "te_sleep.h"
 #include "logger_api.h"

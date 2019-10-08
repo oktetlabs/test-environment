@@ -19,6 +19,7 @@
 #define __TE_TAPI_TAD_FLOW_H__
 
 #include "te_defs.h"
+#include "te_queue.h"
 #include "te_stdint.h"
 #include "asn_usr.h"
 #include "asn_impl.h"
@@ -27,12 +28,6 @@
 #include "ndn_flow.h"
 #include "tapi_tad.h"
 #include "logger_api.h"
-
-#ifdef _SYS_QUEUE_H_
-#include <sys/queue.h>
-#else
-#include "te_queue.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
