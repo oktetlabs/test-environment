@@ -466,6 +466,18 @@ typedef void (*te_void_func)(void);
 #define TE_FUNC_CAST(_func_type, _func_ptr) \
     ((_func_type)(te_void_func)(_func_ptr))
 
+/**
+ * Round-towards-zero to nearest multiple.
+ *
+ * @param n      Number to be rounded.
+ * @param m      Number to multiple of which to round.
+ */
+static inline unsigned int
+te_round_to_zero(unsigned int n, unsigned int m)
+{
+    return (n / m) * m;
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
