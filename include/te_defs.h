@@ -112,6 +112,29 @@ typedef enum te_bool3 {
 
 #define TE_CONCAT(_a, _b) __CONCAT(_a, _b)
 
+
+/**
+ * Helper to get the first (mandatory) argument of the variadic macro.
+ *
+ * For example:
+ * @code{.c}
+ * #define MY_VA_MACRO(...) \
+ *     do {                                                 \
+ *         if (TE_VA_HEAD(__VA_ARGS__)[0] != '\0')          \
+ *              // do something format string is not empty  \
+ *     while (0)
+ * @endcode
+ */
+#define TE_VA_HEAD(first, ...)  first
+
+/**
+ * Helper to get all arguments of the variadic macro except the first one.
+ *
+ * If there is no arguments except the first one, nothing is substututed.
+ */
+#define TE_VA_TAIL(first, ...)  __VA_ARGS__
+
+
 /**
  * Determines minimum from two arguments. If arguments are equal,
  * preference is given to the first one.
