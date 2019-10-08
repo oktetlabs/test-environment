@@ -933,6 +933,7 @@ rpc_sockopt2level(rpc_sockopt opt)
         case RPC_IPV6_HOPLIMIT:
         case RPC_IPV6_NEXTHOP:
         case RPC_IPV6_TCLASS:
+        case RPC_IPV6_RECVTCLASS:
         case RPC_IPV6_MULTICAST_LOOP:
         case RPC_IPV6_ADD_MEMBERSHIP:
         case RPC_IPV6_DROP_MEMBERSHIP:
@@ -1080,6 +1081,7 @@ sockopt_rpc2str(rpc_sockopt opt)
         RPC2STR(IPV6_HOPLIMIT);
         RPC2STR(IPV6_NEXTHOP);
         RPC2STR(IPV6_TCLASS);
+        RPC2STR(IPV6_RECVTCLASS);
         RPC2STR(IPV6_MULTICAST_LOOP);
         RPC2STR(IPV6_ADD_MEMBERSHIP);
         RPC2STR(IPV6_DROP_MEMBERSHIP);
@@ -1224,6 +1226,7 @@ sockopt_rpc2h(rpc_sockopt opt)
         RPC2H_CHECK(IPV6_HOPLIMIT);
         RPC2H_CHECK(IPV6_NEXTHOP);
         RPC2H_CHECK(IPV6_TCLASS);
+        RPC2H_CHECK(IPV6_RECVTCLASS);
         RPC2H_CHECK(IPV6_AUTHHDR);
         RPC2H_CHECK(IPV6_UNICAST_HOPS);
         RPC2H_CHECK(IPV6_MULTICAST_IF);
@@ -1420,6 +1423,7 @@ sockopt_h2rpc(int opt_type, int opt)
                 H2RPC_CHECK(IPV6_HOPLIMIT);
                 H2RPC_CHECK(IPV6_NEXTHOP);
                 H2RPC_CHECK(IPV6_TCLASS);
+                H2RPC_CHECK(IPV6_RECVTCLASS);
                 H2RPC_CHECK(IPV6_MULTICAST_LOOP);
                 H2RPC_CHECK(IPV6_ADD_MEMBERSHIP);
                 H2RPC_CHECK(IPV6_DROP_MEMBERSHIP);
@@ -1536,6 +1540,7 @@ sockopt_is_boolean(rpc_sockopt opt)
         case RPC_IPV6_V6ONLY:
         case RPC_IPV6_HOPLIMIT:
         case RPC_IPV6_TCLASS:
+        case RPC_IPV6_RECVTCLASS:
         case RPC_IPV6_DSTOPTS:
         case RPC_IPV6_HOPOPTS:
         case RPC_IPV6_RTHDR:
@@ -3666,6 +3671,20 @@ cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                         processed = TRUE;
                     }
 #endif
+                    break;
+
+                case RPC_IPV6_TCLASS:
+
+                    if (len != (int)sizeof(int32_t))
+                    {
+                        ERROR("%s(): incorrect data len for IPV6_TCLASS "
+                              "value", __FUNCTION__);
+                        break;
+                    }
+                    rpc_cmsg->data_aux.type = TARPC_CMSG_DATA_INT;
+                    rpc_cmsg->data_aux.tarpc_cmsg_data_u.int_data =
+                                                        *(int32_t *)data;
+                    processed = TRUE;
                     break;
             }
 
