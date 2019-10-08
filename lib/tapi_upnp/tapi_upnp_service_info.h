@@ -21,6 +21,7 @@
 #ifndef __TAPI_UPNP_SERVICE_INFO_H__
 #define __TAPI_UPNP_SERVICE_INFO_H__
 
+#include "te_queue.h"
 #include "rcf_rpc.h"
 #include "tapi_upnp_device_info.h"
 

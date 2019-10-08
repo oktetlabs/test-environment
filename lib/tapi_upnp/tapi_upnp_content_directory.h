@@ -21,6 +21,7 @@
 #ifndef __TAPI_UPNP_CONTENT_DIRECTORY_H__
 #define __TAPI_UPNP_CONTENT_DIRECTORY_H__
 
+#include "te_queue.h"
 #include "rcf_rpc.h"
 #include "tapi_upnp_device_info.h"
 #include "tapi_upnp_service_info.h"

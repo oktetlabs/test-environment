@@ -22,6 +22,7 @@
 #ifndef __TAPI_UPNP_RESOURCES_H__
 #define __TAPI_UPNP_RESOURCES_H__
 
+#include "te_queue.h"
 #include "rcf_rpc.h"
 #include "tapi_upnp_content_directory.h"
 
