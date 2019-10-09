@@ -162,7 +162,17 @@ typedef struct tapi_pat_receiver {
                                              name */
     tarpc_pat_gen_arg   gen_arg;        /**< Pattern generator arguments*/
     iomux_func          iomux;          /**< Iomux function to be used */
-    int                 duration_sec;   /**< How long to run (in seconds)*/
+    int                 duration_sec;   /**< How long to run (in seconds;
+                                             if @b time2wait is positive,
+                                             the function can finish
+                                             earlier) */
+    unsigned int        time2wait;      /**< Maximum time to wait for
+                                             readability before stopping
+                                             receiving, in milliseconds
+                                             (if @c 0, the function will
+                                              wait until @b duration_sec
+                                              expires) */
+
     /* out */
     uint64_t            exp_received;   /**< Number of bytes expected to
                                              be received (ignored if @c 0;

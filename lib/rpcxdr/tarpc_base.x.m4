@@ -4308,7 +4308,14 @@ struct tarpc_pattern_receiver_in {
                                      (ignored if @c 0; if > @c 0, receiving
                                       will be stopped after reading this
                                       number of bytes) */
-    uint32_t    time2run;       /**< Receiving duration (in seconds) */
+    uint32_t    time2run;       /**< How long to run (in seconds;
+                                     the function can finish earlier
+                                     if @b time2wait is positive) */
+    uint32_t    time2wait;      /**< Maximum time to wait for readability
+                                     before stopping receiving (in
+                                     milliseconds; if @c 0, the
+                                     function will wait until @b time2run
+                                     expires) */
 
     tarpc_pat_gen_arg gen_arg;  /**< Pattern generator function
                                      arguments */

@@ -885,6 +885,7 @@ rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
     if(args->gen_arg_ptr != NULL)
         memcpy(&in.gen_arg, args->gen_arg_ptr, sizeof(in.gen_arg));
     in.iomux = args->iomux;
+    in.time2wait = args->time2wait;
     in.time2run = args->duration_sec;
     in.exp_received = args->exp_received;
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
@@ -912,9 +913,10 @@ rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
 
     TAPI_RPC_LOG(rpcs, pattern_receiver, "fd=%d, gen_func='%s', "
                  "gen_arg=[" TARPC_PAT_GEN_ARG_FMT "], iomux='%s', "
-                 "duration_sec=%d", "%d received=%u",
+                 "time2wait=%u, duration_sec=%d", "%d received=%u",
                  s, args->gen_func, TARPC_PAT_GEN_ARG_VAL(in.gen_arg),
-                 iomux2str(args->iomux), args->duration_sec,
+                 iomux2str(args->iomux), args->time2wait,
+                 args->duration_sec,
                  out.retval, (unsigned long)out.bytes);
     RETVAL_INT(pattern_receiver, out.retval);
 }

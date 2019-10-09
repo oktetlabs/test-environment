@@ -7428,9 +7428,17 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
         int len = 0;
         uint32_t offset = in->gen_arg.offset;
 
+        /* Wait for readability until time2run expires. */
         iomux_timeout = (int)TE_SEC2MS(in->time2run) - MSEC_DIFF;
         if (iomux_timeout <= 0)
             break;
+
+        /*
+         * However if time2wait is positive, wait no more than
+         * time2wait before terminating.
+         */
+        if (in->time2wait > 0)
+            iomux_timeout = MIN((unsigned int)iomux_timeout, in->time2wait);
 
         if (iomux == FUNC_NO_IOMUX)
         {
