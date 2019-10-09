@@ -1469,13 +1469,10 @@ static te_errno
 create_backup(char **bkp_filename)
 {
     te_errno rc = 0;
-    cfg_backup_msg *bkp_msg =
-            (cfg_backup_msg *)calloc(sizeof(cfg_backup_msg) +
+    cfg_backup_msg *bkp_msg = calloc(sizeof(cfg_backup_msg) +
                                      sizeof(max_commit_subtree), 1);
     if (bkp_msg == NULL)
-    {
         return TE_ENOMEM;
-    }
 
     if (*bkp_filename != NULL)
         cfg_dh_release_backup(*bkp_filename);
@@ -1485,7 +1482,8 @@ create_backup(char **bkp_filename)
     bkp_msg->len = sizeof(cfg_backup_msg);
 
     process_backup(bkp_msg);
-    if ((rc = bkp_msg->rc) != 0)
+    rc = bkp_msg->rc;
+    if (rc != 0)
     {
         ERROR("%s() Failed to create backup %r", __FUNCTION__, rc);
         free(bkp_msg);
