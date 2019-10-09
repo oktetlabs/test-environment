@@ -43,6 +43,7 @@ typedef struct cfg_dh_entry {
 
 static cfg_dh_entry *first = NULL;
 static cfg_dh_entry *last = NULL;
+static cfg_backup   *begin_backup = NULL;
 
 /** Release memory allocated for backup list */
 static inline void
@@ -783,9 +784,6 @@ cfg_dh_attach_backup(char *filename)
 {
     cfg_backup *tmp;
 
-    if (last == NULL)
-        return 0;
-
     if ((tmp = (cfg_backup *)malloc(sizeof(*tmp))) == NULL)
         return TE_ENOMEM;
 
@@ -794,11 +792,27 @@ cfg_dh_attach_backup(char *filename)
         free(tmp);
         return TE_ENOMEM;
     }
+    if (last == NULL)
+    {
+        if (begin_backup == NULL)
+        {
+            begin_backup = tmp;
+        }
+        else
+        {
+            tmp->next = begin_backup;
+            begin_backup = tmp;
+        }
 
-    tmp->next = last->backup;
-    last->backup = tmp;
+        VERB("Attach backup %s to the beginning", filename);
+    }
+    else
+    {
+        tmp->next = last->backup;
+        last->backup = tmp;
 
-    VERB("Attach backup %s to command %d", filename, last->seq);
+        VERB("Attach backup %s to command %d", filename, last->seq);
+    }
 
     return 0;
 }
@@ -839,6 +853,7 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
 {
     cfg_dh_entry *limit = NULL;
     cfg_dh_entry *tmp;
+    cfg_backup   *tmp_bkp;
     cfg_dh_entry *prev;
     char         *id;
 
@@ -852,18 +867,34 @@ cfg_dh_restore_backup(char *filename, te_bool hard_check)
     if (filename != NULL)
     {
         for (limit = first; limit != NULL; limit = limit->next)
+        {
             if (limit->backup != NULL && has_backup(limit, filename))
                 break;
+        }
 
         if (limit == NULL)
+        {
+            for (tmp_bkp = begin_backup; tmp_bkp != NULL; tmp_bkp = tmp_bkp->next)
+            {
+                if (strcmp(tmp_bkp->filename, filename) == 0)
+                    break;
+            }
+        }
+
+        if (limit == NULL && tmp_bkp == NULL)
         {
             ERROR("Position of the backup in dynamic history is not found");
             return TE_ENOENT;
         }
     }
 
-    if (filename != NULL && limit != NULL)
-        VERB("Restore backup %s up to command %d", filename, limit->seq);
+    if (filename != NULL)
+    {
+        if (limit != NULL)
+            VERB("Restore backup %s up to command %d", filename, limit->seq);
+        else
+            VERB("Restore backup %s up to beginning", filename);
+    }
 
     /* If reversing the start up history, sweep warnings under the rug: */
     if (filename == NULL)
