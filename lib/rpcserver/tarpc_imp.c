@@ -7145,9 +7145,18 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
 
         usleep(delay);
         gettimeofday(&tv_now, NULL);
+
+        /* Wait for writability until time2run expires. */
         iomux_timeout = (int)TE_SEC2MS(in->time2run) - MSEC_DIFF;
         if (iomux_timeout <= 0)
             break;
+
+        /*
+         * However if time2wait is positive, wait no more than
+         * time2wait before terminating.
+         */
+        if (in->time2wait > 0)
+            iomux_timeout = MIN((unsigned int)iomux_timeout, in->time2wait);
 
         rc = iomux_wait(iomux, &iomux_f, &iomux_st, &iomux_ret,
                         iomux_timeout);

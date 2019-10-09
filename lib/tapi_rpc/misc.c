@@ -787,6 +787,7 @@ rpc_pattern_sender(rcf_rpc_server *rpcs, int s,
     in.delay_max = args->delay.max;
     in.delay_rnd_once = args->delay.once;
     in.total_size = args->total_size;
+    in.time2wait = args->time2wait;
     in.time2run = args->duration_sec;
     in.ignore_err = args->ignore_err;
 
@@ -817,13 +818,15 @@ rpc_pattern_sender(rcf_rpc_server *rpcs, int s,
                  "snd_wrapper='%s', snd_wrapper_ctx=" RPC_PTR_FMT ", "
                  "iomux='%s', size_min=%d, size_max=%d, size_once=%d, "
                  "delay_min=%d, delay_max=%d, delay_once=%d, "
-                 "duration_sec=%d, ignore_err=%d", "%d sent=%u",
+                 "time2wait=%u, duration_sec=%d, ignore_err=%d",
+                 "%d sent=%u",
                  s, args->gen_func, TARPC_PAT_GEN_ARG_VAL(in.gen_arg),
                  args->snd_wrapper, RPC_PTR_VAL(args->snd_wrapper_ctx),
                  iomux2str(args->iomux),
                  args->size.min, args->size.max, args->size.once,
                  args->delay.min, args->delay.max, args->delay.once,
-                 args->duration_sec, args->ignore_err, out.retval,
+                 args->time2wait, args->duration_sec,
+                 args->ignore_err, out.retval,
                  (unsigned int)out.bytes);
     RETVAL_INT(pattern_sender, out.retval);
 }

@@ -107,7 +107,16 @@ typedef struct tapi_pat_sender {
     iomux_func          iomux;            /**< Iomux function to be used */
     tapi_rand_gen       size;             /**< Size of the message*/
     tapi_rand_gen       delay;            /**< Delay between messages*/
-    int                 duration_sec;     /**< How long to run (in seconds)*/
+    int                 duration_sec;     /**< How long to run (in seconds;
+                                               if @b time2wait is positive,
+                                               the function can finish
+                                               earlier) */
+    unsigned int        time2wait;        /**< Maximum time to wait for
+                                               writability before stopping
+                                               sending, in milliseconds
+                                               (if @c 0, the function will
+                                                wait until @b duration_sec
+                                                expires) */
     uint64_t            total_size;       /**< How many bytes to send before
                                                stopping (ignored if @c 0).
                                                It may send less if

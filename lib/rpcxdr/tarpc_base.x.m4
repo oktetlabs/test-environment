@@ -4268,7 +4268,14 @@ struct tarpc_pattern_sender_in {
                                      all messages; if false, random
                                      delay is calculated for each
                                      message */
-    uint32_t    time2run;       /**< How long run (in seconds) */
+    uint32_t    time2run;       /**< How long to run (in seconds;
+                                     the function can finish earlier
+                                     if @b time2wait is positive) */
+    uint32_t    time2wait;      /**< Maximum time to wait for writability
+                                     before stopping sending (in
+                                     milliseconds; if @c 0, the
+                                     function will wait until @b time2run
+                                     expires) */
     uint64_t    total_size;     /**< How many bytes to send (ignored
                                      if @c 0) */
 
