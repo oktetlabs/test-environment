@@ -93,7 +93,7 @@ class TestGenerator(Generator):
             return TestGenerator._steps(step.sub, current_level+1)
 
         for step in steps:
-            yield [(current_level, step.step)]
+            yield (current_level, step.step)
             for x in _sub(step):
                 yield x
 
@@ -103,10 +103,9 @@ class TestGenerator(Generator):
         if hasattr(self.test, 'steps'):
             old_level = self.level
             self.level = 0
-            for items in self._steps(self.test.steps):
-                with self.short_comment() as c:
-                    for level, step in items:
-                        c.paragraph(level, step)
+            s = self.step()
+            for level, step in self._steps(self.test.steps):
+                s.paragraph(level, step)
             self.level = old_level
             self.write('')
         self.write('TEST_SUCCESS;', '')
