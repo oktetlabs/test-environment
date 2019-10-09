@@ -57,11 +57,6 @@ arguments = {
             'dest': 'existing',
             'help': 'Existing request ID to update',
         }),
-    '--scenario-in-test': (None, {
-            'dest': 'scenario_in_test', 'default': 0, 'type': int,
-            'help': 'Declare the splitting level of a scenario in a code '\
-                    '(0 - create a scenario in the file header; default=0)',
-        }),
     '--scenario': ('-s', {
             'dest': 'scenario',
             'help': 'The name of file which contains '\
@@ -97,7 +92,6 @@ def postreview():
     add_argument(group, '--scenario')
     add_argument(parser, '--test-suite', required=True)
     add_argument(parser, '--author')
-    add_argument(parser, '--scenario-in-test')
     group = parser.add_mutually_exclusive_group(required=True)
     add_argument(group, '--output')
     add_argument(group, '--repository')
@@ -112,8 +106,7 @@ def postreview():
             stdout=subprocess.PIPE)
         data = p.stdout.read().decode('utf-8')
 
-    patch = create_patch(args.test_suite, data=data, author=args.author,
-            scenario_in_test=args.scenario_in_test)
+    patch = create_patch(args.test_suite, data=data, author=args.author)
     if args.output:
         open(args.output, 'w').write(patch)
         print('Patch saved in the file: ' + args.output)
@@ -145,7 +138,6 @@ def implement():
     add_argument(parser, '--test-suite', required=True)
     add_argument(parser, '--reference',  required=True)
     add_argument(parser, '--author')
-    add_argument(parser, '--scenario-in-test')
     add_argument(parser, '--force')
     args = parser.parse_args()
 
@@ -182,7 +174,7 @@ def implement():
             print('The test already exists: %s' % filename)
             sys.exit(-1)
         open(filename, 'w').write(TestGenerator.generate(
-                test, args.author, args.scenario_in_test))
+                test, args.author))
 
         test.cut()
         open(args.scenario, 'w').write(reader.dump_full())

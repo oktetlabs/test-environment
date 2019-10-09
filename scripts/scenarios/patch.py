@@ -27,7 +27,7 @@ def diff_change(filename_in, filename_out, data_in, data_out):
         print(diff)
 
 @stdout2str
-def patch(reader, author=None, scenario_in_test=0):
+def patch(reader, author=None):
     diff_new('scenarios.yaml', reader.dump_short())
     for key, test in sorted(reader.tests.items()):
         if hasattr(test.test, 'steps'):
@@ -36,10 +36,9 @@ def patch(reader, author=None, scenario_in_test=0):
 #                args.test_suite, filename)), \
 #                'Test already exists: %s' % filename
             diff_new(filename, TestGenerator.generate(
-                    test, author, scenario_in_test))
+                    test, author))
 
-def create_patch(test_suite, data=None, filename=None, author=None,
-        scenario_in_test=0):
+def create_patch(test_suite, data=None, filename=None, author=None):
     reader = TestReader()
     assert data or filename, 'Please define data or filename'
     if data:
@@ -47,4 +46,4 @@ def create_patch(test_suite, data=None, filename=None, author=None,
     else:
         reader.load_file(filename)
     reader.fill_objective(test_suite)
-    return patch(reader, author, scenario_in_test)
+    return patch(reader, author)
