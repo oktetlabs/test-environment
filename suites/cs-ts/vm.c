@@ -39,11 +39,38 @@ main(int argc, char *argv[])
     int             ssh_port;
     int             rcf_port;
     char           *confstr;
+    char           *vendor_str;
+    char           *device_str;
+    char           *instance_str;
+    unsigned long   device;
+    unsigned long   vendor;
+    unsigned long   instance;
 
     TEST_START;
 
     TEST_STEP("Add a virtual machine");
     CHECK_RC(tapi_cfg_vm_add(ta, vm_name, "/local:/vm:testvm", FALSE));
+
+    vendor_str = getenv("TE_VM_PCI_PT_VENDOR");
+    if (vendor_str != NULL)
+    {
+        TEST_STEP("Pass PCI");
+        device_str = getenv("TE_VM_PCI_PT_DEVICE");
+        instance_str = getenv("TE_VM_PCI_PT_INSTANCE");
+        if (device_str == NULL || instance_str == NULL)
+            TEST_FAIL("PCI address is not specified");
+
+        if ((te_strtoul(vendor_str, 16, &vendor) != 0) || vendor > UINT16_MAX ||
+            (te_strtoul(device_str, 16, &device) != 0) || device > UINT16_MAX ||
+            (te_strtoul(instance_str, 0, &instance) != 0))
+        {
+            TEST_FAIL("PCI address is incorrect %s:%s %s",
+                      vendor_str, device_str, instance_str);
+        }
+
+        CHECK_RC(tapi_cfg_vm_pass_pci(ta, vm_name, "vm_pci",
+                                      vendor, device, instance));
+    }
 
     CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/vm:%s", ta, vm_name));
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/vm:%s", ta, vm_name));

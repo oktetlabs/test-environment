@@ -79,6 +79,24 @@ extern te_errno tapi_cfg_vm_stop(const char *ta, const char *vm_name);
 extern te_errno tapi_cfg_vm_add_drive(const char *ta, const char *vm_name,
                                       const char *drive_name, const char *file,
                                       te_bool snapshot);
+
+/**
+ * Pass PCI function to virtual machine.
+ *
+ * @param ta            Test Agent.
+ * @param vm_name       Virtual machine name.
+ * @param pci_pt_name   PCI function name.
+ * @param vendor        Vendor component of PCI address.
+ * @param device        Device component of PCI address.
+ * @param instance      Instance component of PCI address.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_vm_pass_pci(const char *ta, const char *vm_name,
+                                     const char *pci_pt_name,
+                                     unsigned long vendor, unsigned long device,
+                                     unsigned long instance);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -104,4 +104,10 @@
          Name: None -->
     <object oid="/agent/vm/net/mac_addr" access="read_write" type="string"/>
 
+    <!-- Pass-through PCI function into the virtual machine.
+         The PCI function resource must be grabbed.
+         Name: human-readable name
+         Value: canonical instance OID of the host PCI function to pass-through, e.g.
+         /agent:Agt/hardware:/pci:/device:0000:01:00.0 -->
+    <object oid="/agent/vm/pci_pt" access="read_create" type="string"/>
 </backup>

@@ -54,8 +54,15 @@ struct vm_net_entry {
     char                       *mac_addr;
 };
 
+struct vm_pci_pt_entry {
+    SLIST_ENTRY(vm_pci_pt_entry)    links;
+    char                           *name;
+    te_string                       pci_addr;
+};
+
 typedef SLIST_HEAD(vm_net_list_t, vm_net_entry) vm_net_list_t;
 typedef SLIST_HEAD(vm_drive_list_t, vm_drive_entry) vm_drive_list_t;
+typedef SLIST_HEAD(vm_pci_pt_list_t, vm_pci_pt_entry) vm_pci_pt_list_t;
 
 struct vm_entry {
     SLIST_ENTRY(vm_entry)   links;
@@ -69,6 +76,7 @@ struct vm_entry {
     pid_t                   pid;
     vm_net_list_t           nets;
     vm_drive_list_t         drives;
+    vm_pci_pt_list_t        pci_pts;
 };
 
 
@@ -255,6 +263,39 @@ exit:
 }
 
 static te_errno
+vm_append_pci_pt_cmd(te_string *cmd, vm_pci_pt_list_t *pt_list)
+{
+    te_string args = TE_STRING_INIT;
+    struct vm_pci_pt_entry *pt = NULL;
+    te_errno rc = 0;
+
+    SLIST_FOREACH(pt, pt_list, links)
+    {
+        rc = te_string_append(&args, "vfio-pci,host=%s", pt->pci_addr.ptr);
+        if (rc != 0)
+        {
+            ERROR("Cannot compose PCI function pass-through command line (line %u): %r", __LINE__, rc);
+            goto exit;
+        }
+
+        rc = te_string_append_shell_args_as_is(cmd, "-device",
+                                               args.ptr, NULL);
+        if (rc != 0)
+        {
+            ERROR("Cannot compose PCI function pass-through command line (line %u): %r", __LINE__, rc);
+            goto exit;
+        }
+
+        te_string_reset(&args);
+    }
+
+exit:
+    te_string_free(&args);
+
+    return rc;
+}
+
+static te_errno
 vm_start(struct vm_entry *vm)
 {
     in_addr_t local_ip = htonl(INADDR_LOOPBACK);
@@ -362,6 +403,10 @@ vm_start(struct vm_entry *vm)
     if (rc != 0)
         goto exit;
 
+    rc = vm_append_pci_pt_cmd(&vm->cmd, &vm->pci_pts);
+    if (rc != 0)
+        goto exit;
+
     INFO("VM %s command-line: %s", vm->name, vm->cmd.ptr);
 
     vm->pid = te_shell_cmd(vm->cmd.ptr, -1, NULL, NULL, NULL);
@@ -432,6 +477,14 @@ vm_drive_free(struct vm_drive_entry *drive)
     free(drive);
 }
 
+static void
+vm_pci_pt_free(struct vm_pci_pt_entry *pt)
+{
+    free(pt->name);
+    te_string_free(&pt->pci_addr);
+    free(pt);
+}
+
 static struct vm_drive_entry *
 vm_drive_find(const struct vm_entry *vm, const char *name)
 {
@@ -441,6 +494,23 @@ vm_drive_find(const struct vm_entry *vm, const char *name)
         return NULL;
 
     SLIST_FOREACH(p, &vm->drives, links)
+    {
+        if (strcmp(name, p->name) == 0)
+            return p;
+    }
+
+    return NULL;
+}
+
+static struct vm_pci_pt_entry *
+vm_pci_pt_find(const struct vm_entry *vm, const char *name)
+{
+    struct vm_pci_pt_entry *p;
+
+    if (vm == NULL)
+        return NULL;
+
+    SLIST_FOREACH(p, &vm->pci_pts, links)
     {
         if (strcmp(name, p->name) == 0)
             return p;
@@ -1155,14 +1225,150 @@ vm_snapshot_set(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
+static te_errno
+vm_pci_pt_get(unsigned int gid, const char *oid, char *value,
+              const char *vm_name, const char *pci_pt_name)
+{
+    struct vm_entry *vm;
+    struct vm_pci_pt_entry *pt = NULL;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((vm = vm_find(vm_name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    SLIST_FOREACH(pt, &vm->pci_pts, links)
+    {
+        if (strcmp(pci_pt_name, pt->name) == 0)
+            break;
+    }
+
+    if (pt == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", pt->pci_addr.ptr);
+
+    return 0;
+}
+
+static te_errno
+vm_pci_pt_add(unsigned int gid, const char *oid, char *value,
+              const char *vm_name, const char *pci_pt_name)
+{
+    struct vm_entry *vm;
+    struct vm_pci_pt_entry *pt = NULL;
+    int rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (rcf_pch_rsrc_accessible("%s", value))
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    pt = TE_ALLOC(sizeof(*pt));
+    if (pt == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    pt->name = strdup(pci_pt_name);
+    if (pt->name == NULL)
+    {
+        free(pt);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    if ((rc = te_string_append(&pt->pci_addr, "%s",  value)) != 0)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    SLIST_INSERT_HEAD(&vm->pci_pts, pt, links);
+
+    return rc;
+}
+
+static te_errno
+vm_pci_pt_del(unsigned int gid, const char *oid,
+              const char *vm_name, const char *pci_pt_name)
+{
+    struct vm_entry *vm;
+    struct vm_pci_pt_entry *pt;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    pt = vm_pci_pt_find(vm, pci_pt_name);
+    if (pt == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    SLIST_REMOVE(&vm->pci_pts, pt, vm_pci_pt_entry, links);
+
+    vm_pci_pt_free(pt);
+
+    return 0;
+}
+
+static te_errno
+vm_pci_pt_list(unsigned int gid, const char *oid, const char *sub_id,
+               char **list, const char *vm_name)
+{
+    te_string result = TE_STRING_INIT;
+    struct vm_entry *vm;
+    struct vm_pci_pt_entry *pt;
+    te_bool first = TRUE;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    SLIST_FOREACH(pt, &vm->pci_pts, links)
+    {
+        rc = te_string_append(&result, "%s%s", first ? "" : " ", pt->name);
+        first = FALSE;
+        if (rc != 0)
+        {
+            te_string_free(&result);
+            return rc;
+        }
+    }
+
+    *list = result.ptr;
+    return 0;
+}
+
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_vm_pci_pt, "pci_pt", NULL, NULL,
+                               vm_pci_pt_get, NULL, vm_pci_pt_add,
+                               vm_pci_pt_del, vm_pci_pt_list, NULL);
+
 RCF_PCH_CFG_NODE_RW(node_vm_snapshot, "snapshot", NULL, NULL,
                     vm_snapshot_get, vm_snapshot_set);
 
 RCF_PCH_CFG_NODE_RW(node_vm_file, "file", NULL, &node_vm_snapshot,
                     vm_file_get, vm_file_set);
 
-RCF_PCH_CFG_NODE_COLLECTION(node_vm_drive, "drive", &node_vm_file, NULL,
-                            vm_drive_add, vm_drive_del, vm_drive_list, NULL);
+RCF_PCH_CFG_NODE_COLLECTION(node_vm_drive, "drive", &node_vm_file,
+                            &node_vm_pci_pt, vm_drive_add, vm_drive_del,
+                            vm_drive_list, NULL);
 
 RCF_PCH_CFG_NODE_RW(node_vm_net_mac_addr, "mac_addr", NULL, NULL,
                     vm_net_property_get, vm_net_property_set);

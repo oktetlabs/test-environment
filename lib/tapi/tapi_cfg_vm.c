@@ -43,6 +43,57 @@ out:
     return rc;
 }
 
+te_errno
+tapi_cfg_vm_pass_pci(const char *ta, const char *vm_name,
+                     const char *pci_pt_name, unsigned long vendor,
+                     unsigned long device, unsigned long instance)
+{
+    te_errno rc;
+    te_string pci_addr_by_vendor = TE_STRING_INIT;
+    const char *pci_addr_by_device = NULL;
+    cfg_val_type val_type = CVT_STRING;
+    cfg_oid *oid;
+
+    rc = te_string_append(&pci_addr_by_vendor,
+                    "/agent:%s/hardware:/pci:/vendor:%04lx/device:%04lx/instance:%lu",
+                    ta, vendor, device, instance);
+    if (rc != 0)
+        goto exit;
+
+    rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, pci_addr_by_vendor.ptr),
+                              "/agent:%s/rsrc:%s", ta, pci_pt_name);
+    if (rc != 0)
+    {
+        ERROR("Failed to grab PCI resource for VM %s on TA %s", vm_name, ta);
+        goto exit;
+    }
+
+    rc = cfg_get_instance_fmt(&val_type, &pci_addr_by_device,
+                              "%s", pci_addr_by_vendor.ptr);
+    if (rc != 0)
+    {
+        ERROR("Failed to get PCI address for VM %s on TA %s", vm_name, ta);
+        goto exit;
+    }
+
+    oid = cfg_convert_oid_str(pci_addr_by_device);
+    pci_addr_by_device = CFG_OID_GET_INST_NAME(oid, 4);
+
+    rc = cfg_add_instance_fmt(NULL, CVT_STRING, pci_addr_by_device,
+                              TE_CFG_TA_VM "/pci_pt:%s",
+                              ta, vm_name, pci_pt_name);
+    if (rc != 0)
+    {
+        ERROR("Failed to pass PCI function to VM %s on TA %s", vm_name, ta);
+        goto exit;
+    }
+
+exit:
+    te_string_free(&pci_addr_by_vendor);
+
+    return rc;
+}
+
 /* See descriptions in tapi_cfg_vm.h */
 te_errno
 tapi_cfg_vm_add(const char *ta, const char *vm_name,
