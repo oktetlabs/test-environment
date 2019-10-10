@@ -345,7 +345,6 @@ parse_config(const char *file, te_kvpair_h *expand_vars, te_bool restore)
     xmlNodePtr  root;
     int         rc;
     int         subst;
-    te_kvpair  *p;
 
     RING("Parsing %s", filename);
 
