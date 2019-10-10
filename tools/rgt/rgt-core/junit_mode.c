@@ -151,6 +151,60 @@ junit_process_pkg_start(node_info_t *node, ctrl_msg_data *data)
     return 0;
 }
 
+/**
+ * Callback for printing all verdicts in single attribute.
+ *
+ * @param data        Pointer to log_msg_ptr.
+ * @param user_data   Pointer to boolean value which should be
+ *                    set to @c TRUE initially.
+ */
+static void
+print_verdicts_in_attr_cb(gpointer data, gpointer user_data)
+{
+    log_msg_ptr *msg_ptr = (log_msg_ptr *)data;
+    log_msg     *msg = NULL;
+
+    te_bool     *first = (te_bool *)user_data;
+
+    msg = log_msg_read(msg_ptr);
+    rgt_expand_log_msg(msg);
+    if (!*first)
+        fputs("; ", rgt_ctx.out_fd);
+    write_xml_string(NULL, msg->txt_msg, TRUE);
+    free_log_msg(msg);
+
+    *first = FALSE;
+}
+
+/**
+ * Log <skipped> node.
+ *
+ * @param data        Control message data.
+ */
+static void
+process_skipped(ctrl_msg_data *data)
+{
+    if (!msg_queue_is_empty(&data->verdicts))
+    {
+        te_bool first = TRUE;
+
+        fputs("<skipped message=\"", rgt_ctx.out_fd);
+        msg_queue_foreach(&data->verdicts, print_verdicts_in_attr_cb,
+                          &first);
+        fputs("\"/>\n", rgt_ctx.out_fd);
+    }
+    else
+    {
+        fputs("<skipped/>\n", rgt_ctx.out_fd);
+    }
+}
+
+/** Check whether string is empty. */
+static te_bool string_empty(const char *str)
+{
+    return (str == NULL || str[0] == '\0');
+}
+
 /** Process "package ended" control message. */
 static int
 junit_process_pkg_end(node_info_t *node, ctrl_msg_data *data)
@@ -159,6 +213,10 @@ junit_process_pkg_end(node_info_t *node, ctrl_msg_data *data)
 
     UNUSED(node);
     UNUSED(data);
+
+    if (string_empty(node->result.err) &&
+        node->result.status == RES_STATUS_SKIPPED)
+        process_skipped(data);
 
     fputs("</testsuite>\n", rgt_ctx.out_fd);
 
@@ -185,12 +243,6 @@ process_result_cb(gpointer data, gpointer user_data)
     write_xml_string(NULL, msg->txt_msg, FALSE);
     fputs("\n", rgt_ctx.out_fd);
     free_log_msg(msg);
-}
-
-/** Check whether string is empty. */
-static te_bool string_empty(const char *str)
-{
-    return (str == NULL || str[0] == '\0');
 }
 
 /** Process "test started" control message. */
@@ -292,6 +344,8 @@ junit_process_test_end(node_info_t *node, ctrl_msg_data *data)
 {
     if (!string_empty(node->result.err))
         process_failure(node, data);
+    else if (node->result.status == RES_STATUS_SKIPPED)
+        process_skipped(data);
 
     fputs("</testcase>\n", rgt_ctx.out_fd);
 
