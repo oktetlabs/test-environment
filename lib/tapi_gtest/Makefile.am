@@ -13,7 +13,7 @@ include_HEADERS= \
     tapi_gtest.h
 
 libtapi_gtest_la_SOURCES= \
-    tapi_gtest.c \
+    tapi_gtest.c
 
 install-exec-hook:
 	touch -c -r libtapi_gtest.la $(DESTDIR)/$(libdir)/libtapi_gtest.*
