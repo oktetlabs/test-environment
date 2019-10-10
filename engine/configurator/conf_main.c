@@ -72,7 +72,7 @@ static te_errno create_backup(char **bkp_filename);
 static te_errno
 parse_kvpair(cfg_process_history_msg *msg, te_kvpair_h *expand_vars)
 {
-    int len;
+    unsigned int len;
     char *key;
     char *value;
     te_errno rc;
