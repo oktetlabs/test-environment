@@ -3,14 +3,14 @@
   xml:lang="en"
   xmlns:xs="http://www.w3.org/2001/XMLSchema"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-    
+
     <xs:annotation>
         <xs:documentation>
             Test Environment
             XML schema for configuration file of Configurator subsystem
-        
+
             Copyright (C) 2003-2018 OKTET Labs.
-            
+
             Author: Elena Vengerova &lt;Elena.Vengerova@oktetlabs.ru&gt;
 
         </xs:documentation>
@@ -18,14 +18,14 @@
 
     <xs:annotation>
         <xs:documentation>
-        
+
             Configuration file may be either "backup" - list
             of objects and object instances or "history" - list
             of register, add, set and delete commands.
 
         </xs:documentation>
     </xs:annotation>
-  
+
     <xs:simpleType name="yes_no">
         <xs:annotation>
             <xs:documentation>
@@ -46,7 +46,7 @@
         </xs:annotation>
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="depends" 
+                <xs:element name="depends"
                             minOccurs="0" maxOccurs="unbounded">
                     <xs:annotation>
                         <xs:documentation>
@@ -54,7 +54,7 @@
                         </xs:documentation>
                     </xs:annotation>
                     <xs:complexType>
-                        <xs:attribute name="oid" 
+                        <xs:attribute name="oid"
                                       type="xs:string" use="required"/>
                         <xs:attribute name="scope" default="instance">
                             <xs:simpleType>
@@ -131,8 +131,8 @@
     <xs:element name="add">
         <xs:annotation>
             <xs:documentation>
-                Add object instance command (attribute value of 
-                the instance element is required for objects with integer, 
+                Add object instance command (attribute value of
+                the instance element is required for objects with integer,
                 string or address types).
             </xs:documentation>
         </xs:annotation>
@@ -163,7 +163,7 @@
     <xs:element name="delete">
         <xs:annotation>
             <xs:documentation>
-                Delete object instance (attribute value of the instance 
+                Delete object instance (attribute value of the instance
                 element is ignored, if specified).
             </xs:documentation>
         </xs:annotation>
