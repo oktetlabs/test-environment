@@ -73,17 +73,17 @@ static te_errno
 parse_kvpair(cfg_process_history_msg *msg, te_kvpair_h *expand_vars)
 {
     unsigned int len;
-    char *key;
-    char *value;
+    const char *key;
+    const char *value;
     te_errno rc;
 
     len = sizeof(cfg_config_msg) + strlen(msg->filename) + 1;
 
     while (len < msg->len)
     {
-        key = (char *) ((char*) msg + len);
+        key = (const char *)msg + len;
         len += strlen(key) + 1;
-        value = (char *) ((char*) msg + len);
+        value = (const char *)msg + len;
         len += strlen(value) + 1;
 
         rc = te_kvpair_add(expand_vars, key, "%s", value);
