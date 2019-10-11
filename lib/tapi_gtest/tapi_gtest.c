@@ -162,13 +162,19 @@ tapi_gtest_wait(tapi_gtest *gtest, int timeout_ms)
     return TE_EFAIL;
 }
 
+static te_errno
+gtest_stop(tapi_gtest *gtest)
+{
+    return tapi_job_kill(gtest->impl.job, SIGINT);
+}
+
 te_errno
 tapi_gtest_stop(tapi_gtest *gtest)
 {
     assert(gtest != NULL);
     assert(gtest->impl.job != NULL);
 
-    return tapi_job_kill(gtest->impl.job, SIGINT);
+    return gtest_stop(gtest);
 }
 
 /* See description in tapi_gtest.h */
@@ -178,10 +184,10 @@ tapi_gtest_fini(tapi_gtest *gtest)
     te_errno rc;
     const int term_timeout_ms = -1;
 
-    if (gtest == NULL)
+    if (gtest == NULL || gtest->impl.job == NULL)
         return 0;
 
-    if ((rc = tapi_gtest_stop(gtest)) != 0)
+    if ((rc = gtest_stop(gtest)) != 0)
         return rc;
 
     return tapi_job_destroy(gtest->impl.job, term_timeout_ms);
