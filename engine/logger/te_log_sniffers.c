@@ -58,7 +58,7 @@
 #define SNIF_MAX_PATH_LENGTH RCF_MAX_PATH
 
 /* The PCAP file header. */
-static const char pcap_hbuf[SNIF_PCAP_HSIZE];
+static char pcap_hbuf[SNIF_PCAP_HSIZE];
 
 static unsigned long long filled_space = 0;
 
@@ -573,7 +573,7 @@ sniffer_capture_file_proc(const char *fname, snif_id_l *snif,
     off_t           cur_size;
     int             res;
     snif_mark_l    *mark;
-    int             rc        = 0;
+    te_errno        rc = 0;
 
     errno = 0;
     fd_o = open(snif->res_fname, O_WRONLY);
@@ -595,7 +595,23 @@ sniffer_capture_file_proc(const char *fname, snif_id_l *snif,
                 ERROR("Couldn't open received file: %s", fname);
                 goto cleanup_snif_fproc;
             }
+
             res = read(fd_n, (void *)pcap_hbuf, SNIF_PCAP_HSIZE);
+            if (res < 0)
+            {
+                rc = TE_OS_RC(TE_LOGGER, errno);
+                ERROR("%s(): failed to read PCAP header, errno=%r",
+                      __FUNCTION__, rc);
+                goto cleanup_snif_fproc;
+            }
+            else if (res != SNIF_PCAP_HSIZE)
+            {
+                rc = TE_OS_RC(TE_LOGGER, TE_ENODATA);
+                ERROR("%s(): %d bytes instead of %d were read for "
+                      "PCAP header", __FUNCTION__, res, SNIF_PCAP_HSIZE);
+                goto cleanup_snif_fproc;
+            }
+
             close(fd_n);
         }
 
@@ -615,8 +631,8 @@ sniffer_capture_file_proc(const char *fname, snif_id_l *snif,
         close(fd_o);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
-    rc = lseek(fd_o, 0, SEEK_END);
-    if (rc == -1)
+    res = lseek(fd_o, 0, SEEK_END);
+    if (res == -1)
     {
         WARN("Couldn't read the old capture log file: %s", snif->res_fname);
         rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
