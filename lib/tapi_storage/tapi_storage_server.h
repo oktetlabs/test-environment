@@ -217,8 +217,15 @@ tapi_storage_server_disable(tapi_storage_server *server)
 static inline te_bool
 tapi_storage_server_is_enabled(tapi_storage_server *server)
 {
-    return (server->methods != NULL && server->methods->is_enabled != NULL
-            ? server->methods->is_enabled(server) : TE_EOPNOTSUPP);
+    if (server->methods != NULL && server->methods->is_enabled != NULL)
+    {
+        return server->methods->is_enabled(server);
+    }
+    else
+    {
+        ERROR("%s(): Method is not implemented", __FUNCTION__);
+        return FALSE;
+    }
 }
 
 /**
