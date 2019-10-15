@@ -60,6 +60,7 @@ engine_libs = [
     'tapi_tcp_states',
     'tapi_packetdrill',
     'tapi_performance',
+    'tapi_tool',
     'tce',
     'trc',
     'rpcc_dpdk',
