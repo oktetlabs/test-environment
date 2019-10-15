@@ -122,27 +122,21 @@ te_unit_from_string(const char *str, te_unit *value)
 {
     double          val;
     te_unit_prefix  prefix;
-    int             saved_errno = errno;
-    int             new_errno = 0;
-    char   *end;
+    const char *prefix_str;
     size_t  i;
     size_t  count;
+    te_errno rc;
 
-    errno = 0;
-    val = strtod(str, &end);
-    new_errno = errno;
-    errno = saved_errno;
-    if (new_errno != 0)
-        return te_rc_os2te(new_errno);
-    else if (end == NULL || end == str)
-        return TE_EINVAL;
+    rc = te_unit_parse_unit(str, &val, &prefix_str);
+    if (rc != 0)
+        return rc;
 
     count = te_unit_count();
     for (i = 0; i < count; ++i)
     {
         te_unit_prefix pfx = te_unit_prefix_get_by_index(i);
 
-        if (strcmp(end, te_unit_prefix2str(pfx)) == 0)
+        if (strcmp(prefix_str, te_unit_prefix2str(pfx)) == 0)
         {
             prefix = pfx;
             break;
@@ -151,7 +145,7 @@ te_unit_from_string(const char *str, te_unit *value)
 
     if (i == count)
     {
-        ERROR("Unknown unit prefix: %s", end);
+        ERROR("Unknown unit prefix: %s", prefix_str);
         return TE_EINVAL;
     }
 
