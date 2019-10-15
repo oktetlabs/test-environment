@@ -124,7 +124,7 @@ extern int rpc_job_filter_add_regexp(rcf_rpc_server *rpcs, unsigned int filter,
  *                    silently discarded.
  *
  * @return            Status code
- * @retval TE_ENODATA if there's no data available within @p timeout
+ * @retval TE_ETIMEDOUT     if there's no data available within @p timeout
  * @retval TE_EPERM   if some of the @p filters are input channels or
  *                    primary output channels
  * @retval TE_EXDEV   if @p filters are on different RPC servers
