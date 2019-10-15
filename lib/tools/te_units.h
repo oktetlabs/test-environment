@@ -124,6 +124,45 @@ extern double te_unit_bin_unpack(te_unit value);
  */
 extern te_errno te_unit_from_string(const char *str, te_unit *value);
 
+/** Customizable unit type */
+typedef struct te_unit_list {
+    /** Scale of each unit comparing to previous */
+    unsigned int scale;
+    /**
+     * To which power the scale is raised for the first unit name.
+     * It can be negative in case when a unit names list starts
+     * from a name that represent fraction. e.g. if the list is:
+     * \code{.c}
+     * te_unit_list units = {
+     *     .scale = 1000,
+     *     .start_pow = -1,
+     *     .units = (const char * const[]){ "mHz", "Hz", "kHz", NULL },
+     * };
+     * \endcode
+     * Then @c "300mHz" converts into @c 0.3 double value.
+     */
+    int start_pow;
+    /** NULL-terminated list of unit names */
+    const char *const *units;
+} te_unit_list;
+
+/**
+ * Read value from the string and convert it to double using given unit list
+ *
+ * @param str[in]           String representation of value
+ * @param type[in]          Unit type
+ * @param value[out]        Value to store result in
+ *
+ * @note    The API is independent and if the returned value is used
+ *          in te_unit_*pack calls, the resulting `te_unit` will not be
+ *          consistent with @p type.
+ *
+ * @return Status code.
+ */
+extern te_errno te_unit_list_value_from_string(const char *str,
+                                               const te_unit_list *type,
+                                               double *value);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

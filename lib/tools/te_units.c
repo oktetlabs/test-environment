@@ -93,6 +93,29 @@ te_unit_prefix2str(te_unit_prefix unit)
     return prefixes[unit];
 }
 
+static te_errno
+te_unit_parse_unit(const char *str, double *value, const char **prefix)
+{
+    int saved_errno = errno;
+    int new_errno = 0;
+    double val;
+    char *end;
+
+    errno = 0;
+    val = strtod(str, &end);
+    new_errno = errno;
+    errno = saved_errno;
+    if (new_errno != 0)
+        return te_rc_os2te(new_errno);
+    else if (end == NULL || end == str)
+        return TE_EINVAL;
+
+    *value = val;
+    *prefix = (const char *)end;
+
+    return 0;
+}
+
 /* See description in te_units.h */
 te_errno
 te_unit_from_string(const char *str, te_unit *value)
@@ -163,4 +186,34 @@ double
 te_unit_bin_unpack(te_unit value)
 {
     return unpack(value, 1024.);
+}
+
+/* See description in te_units.h */
+te_errno
+te_unit_list_value_from_string(const char *str, const te_unit_list *type,
+                               double *value)
+{
+    double val;
+    const char *prefix_str;
+    size_t i;
+    int power;
+    te_errno rc;
+
+    rc = te_unit_parse_unit(str, &val, &prefix_str);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0, power = type->start_pow; type->units[i] != NULL; i++, power++)
+    {
+        if (strcmp(prefix_str, type->units[i]) == 0)
+        {
+            *value = val * pow(type->scale, power);
+
+            return 0;
+        }
+    }
+
+    ERROR("Failed to parse unit prefix %s from string: %s", prefix_str, str);
+
+    return TE_EINVAL;
 }
