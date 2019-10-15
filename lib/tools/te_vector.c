@@ -74,3 +74,17 @@ te_vec_free(te_vec *vec)
     if (vec != NULL)
         te_dbuf_free(&vec->data);
 }
+
+/* See the description in te_vector.h */
+void
+te_vec_deep_free(te_vec *args)
+{
+    void **arg;
+
+    TE_VEC_FOREACH(args, arg)
+    {
+        free(*arg);
+    }
+
+    te_vec_free(args);
+}

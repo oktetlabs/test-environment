@@ -252,6 +252,16 @@ extern void te_vec_reset(te_vec *vec);
  */
 extern void te_vec_free(te_vec *vec);
 
+/**
+ * Free the dynamic array along with its elements which must be pointers
+ * deallocatable by free()
+ *
+ * @param vec        Dynamic vector of pointers
+ *
+ * @return Status code
+ */
+extern void te_vec_deep_free(te_vec *vec);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
