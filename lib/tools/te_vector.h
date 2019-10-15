@@ -208,6 +208,18 @@ extern te_errno te_vec_append_array(te_vec *vec, const void *elements,
                                     size_t count);
 
 /**
+ * Append a formatted C-string to the dynamic array
+ *
+ * @param vec        Dynamic vector of C-strings
+ * @param fmt        Format string
+ * @param ...        Format string arguments
+ *
+ * @return Status code
+ */
+extern te_errno te_vec_append_str_fmt(te_vec *vec, const char *fmt, ...)
+                                      __attribute__((format(printf, 2, 3)));
+
+/**
  * Safe version of @ref te_vec_append_array
  *
  * @param vec               Dymanic vector

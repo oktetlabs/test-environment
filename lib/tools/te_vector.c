@@ -11,6 +11,7 @@
 #include "te_config.h"
 
 #include "te_vector.h"
+#include "te_string.h"
 
 /* See the description in te_vector.h */
 te_errno
@@ -35,6 +36,27 @@ te_vec_append_array(te_vec *vec, const void *elements, size_t count)
 {
     assert(vec != NULL);
     return te_dbuf_append(&vec->data, elements, vec->element_size * count);
+}
+
+/* See the description in te_vector.h */
+te_errno
+te_vec_append_str_fmt(te_vec *vec, const char *fmt, ...)
+{
+    te_string opt = TE_STRING_INIT;
+    va_list  ap;
+    te_errno rc;
+
+    va_start(ap, fmt);
+    rc = te_string_append_va(&opt, fmt, ap);
+    va_end(ap);
+
+    if (rc == 0)
+        rc = TE_VEC_APPEND(vec, opt.ptr);
+
+    if (rc != 0)
+        te_string_free(&opt);
+
+    return rc;
 }
 
 /* See the description in te_vector.h */
