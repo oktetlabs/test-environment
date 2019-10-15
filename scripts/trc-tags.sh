@@ -74,21 +74,13 @@ done
 
 tags="${host} ${tags}"
 
-if test "x$(echo ${tags} | grep [.]el7[.])" != "x" -o \
-        "x$(echo ${tags} | grep [.]el7rt[.])" != "x" -o \
-        "x$(echo ${tags} | grep '[.]el7\>')" != "x" ; then
-    tags="${tags} el:7";
+# Red Hat Linux kernel detection
+el="$(echo ${krel} | sed 's/.*\.\(el[0-9]\+\)\(\.\|_\|rt\|\>\).*/\1/')"
+if test "x$(echo ${el} | grep '^el[0-9]\+$')" != "x" ; then
+    el="$(echo ${el} | sed 's/^el/el:/')"
+    tags="${tags} ${el}"
 fi
-if test "x$(echo ${tags} | grep [.]el6[.])" != "x" -o \
-        "x$(echo ${tags} | grep [.]el6rt[.])" != "x" -o \
-        "x$(echo ${tags} | grep '[.]el6\>')" != "x" ; then
-    tags="${tags} el:6";
-fi
-if test "x$(echo ${tags} | grep [.]el5[.])" != "x" -o \
-        "x$(echo ${tags} | grep [.]el5rt[.])" != "x" -o \
-        "x$(echo ${tags} | grep '[.]el5\>')" != "x" ; then
-    tags="${tags} el:5";
-fi
+
 if test $(${ssh} uname -a | grep -c "Ubuntu") -ne 0 ; then
     tags="${tags} ubu";
 fi
