@@ -818,16 +818,17 @@ rpc_pattern_sender(rcf_rpc_server *rpcs, int s,
                  "snd_wrapper='%s', snd_wrapper_ctx=" RPC_PTR_FMT ", "
                  "iomux='%s', size_min=%d, size_max=%d, size_once=%d, "
                  "delay_min=%d, delay_max=%d, delay_once=%d, "
-                 "time2wait=%u, duration_sec=%d, ignore_err=%d",
-                 "%d sent=%u",
+                 "time2wait=%u, duration_sec=%d, "
+                 "total_size=%" TE_PRINTF_64 "u, ignore_err=%d",
+                 "%d sent=%" TE_PRINTF_64 "u",
                  s, args->gen_func, TARPC_PAT_GEN_ARG_VAL(in.gen_arg),
                  args->snd_wrapper, RPC_PTR_VAL(args->snd_wrapper_ctx),
                  iomux2str(args->iomux),
                  args->size.min, args->size.max, args->size.once,
                  args->delay.min, args->delay.max, args->delay.once,
-                 args->time2wait, args->duration_sec,
+                 args->time2wait, args->duration_sec, args->total_size,
                  args->ignore_err, out.retval,
-                 (unsigned int)out.bytes);
+                 out.bytes);
     RETVAL_INT(pattern_sender, out.retval);
 }
 
@@ -913,11 +914,12 @@ rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
 
     TAPI_RPC_LOG(rpcs, pattern_receiver, "fd=%d, gen_func='%s', "
                  "gen_arg=[" TARPC_PAT_GEN_ARG_FMT "], iomux='%s', "
-                 "time2wait=%u, duration_sec=%d", "%d received=%u",
+                 "time2wait=%u, duration_sec=%d", "%d received=%"
+                 TE_PRINTF_64 "u",
                  s, args->gen_func, TARPC_PAT_GEN_ARG_VAL(in.gen_arg),
                  iomux2str(args->iomux), args->time2wait,
                  args->duration_sec,
-                 out.retval, (unsigned long)out.bytes);
+                 out.retval, out.bytes);
     RETVAL_INT(pattern_receiver, out.retval);
 }
 
