@@ -37,6 +37,8 @@ tapi_job_opt_create_string(const void *value, te_vec *args)
 te_errno
 tapi_job_opt_create_bool(const void *value, te_vec *args)
 {
+    UNUSED(args);
+
     return (*(const te_bool *)value) ? 0 : TE_ENOENT;
 }
 
