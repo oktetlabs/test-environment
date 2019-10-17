@@ -38,7 +38,6 @@ check_headers = [
     'linux/if_packet.h',
     'linux/net_tstamp.h',
     'linux/udp.h',
-    'linux/ipv6.h',
     'math.h',
     'net/ethernet.h',
     'net/if_arp.h',

@@ -96,8 +96,6 @@ AC_CHECK_HEADERS([netinet/in.h], [], [], [
 #endif
 ])
 
-AC_CHECK_HEADERS([linux/ipv6.h])
-
 AH_TEMPLATE([in_port_t], [check if in_port_t data type is defined])
 AC_CHECK_TYPES([in_port_t], [],
                [AC_DEFINE(in_port_t, unsigned short int)], [
