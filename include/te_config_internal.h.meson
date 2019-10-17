@@ -200,6 +200,15 @@
 /* Define to 1 if you have the <stropts.h> header file. */
 #mesondefine HAVE_STROPTS_H
 
+/* Define to 1 if you have the <bsd/string.h> header file. */
+#mesondefine HAVE_BSD_STRING_H
+
+/* Define to 1 if `strlcpy()' is available. */
+#mesondefine HAVE_STRLCPY
+
+/* Define to 1 if `strlcat()' is available. */
+#mesondefine HAVE_STRLCAT
+
 /* Define to 1 if `sa_len' is a member of `struct sockaddr'. */
 #mesondefine HAVE_STRUCT_SOCKADDR_SA_LEN
 

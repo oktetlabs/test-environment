@@ -19,6 +19,9 @@
 
 #include "te_config.h"
 
+#ifdef HAVE_STDIO_H
+#include <stdio.h>
+#endif
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #include <stdbool.h>
@@ -389,6 +392,50 @@ static inline int strcmp_null(const char *s1, const char *s2)
 
     return strcmp(s1, s2);
 }
+
+#endif
+
+/*
+ * Ensure that we have strlcpy() and strlcat() one or another way as
+ * well as te_bsd_strlcpy() and te_bsd_strlcat().
+ */
+
+#ifdef HAVE_BSD_STRING_H
+#include <bsd/string.h>
+#endif
+
+#ifdef HAVE_STRLCPY
+
+#define te_bsd_strlcpy(dst, src, size)  strlcpy(dst, src, size)
+
+#else
+
+static inline size_t
+te_bsd_strlcpy(char *dst, const char *src, size_t size)
+{
+    return (size_t)snprintf(dst, size, "%s", src);
+}
+#define strlcpy(dst, src, size)         te_bsd_strlcpy(dst, src, size)
+
+#endif
+
+#ifdef HAVE_STRLCAT
+
+#define te_strlcat(dst, src, size)      strlcat(dst, src, size)
+
+#else
+
+static inline size_t
+te_bsd_strlcat(char *dst, const char *src, size_t size)
+{
+    size_t len = strnlen(dst, size);
+
+    if (len < size)
+        return len + te_bsd_strlcpy(dst + len, src, size - len);
+    else
+        return len + strlen(src);
+}
+#define strlcat(dst, src, size)         te_bsd_strlcat(dst, src, size)
 
 #endif
 
