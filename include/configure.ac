@@ -114,7 +114,6 @@ AC_CHECK_HEADERS([\
 aio.h \
 arpa/inet.h \
 assert.h \
-bsd/string.h \
 ctype.h \
 dirent.h \
 dlfcn.h \
@@ -280,12 +279,6 @@ net-snmp/session_api.h \
 #include <net-snmp/net-snmp-config.h>
 #endif
 ])
-
-dnl
-dnl Check for BSD string functions.
-dnl
-AC_CHECK_FUNCS([strlcpy strlcat])
-
 
 AC_CHECK_SIZEOF([void *])
 AC_CHECK_SIZEOF([char])

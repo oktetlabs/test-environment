@@ -237,25 +237,6 @@ if cc.has_header('net-snmp/net-snmp-config.h')
 endif
 
 #
-# Check for BSD string functions
-#
-bsd_funcs_prefix = ''
-h = 'bsd/string.h'
-if cc.has_header(h, args: c_args)
-    conf.set('HAVE_' + h.to_upper().underscorify(), 1)
-    bsd_funcs_prefix = '#include <bsd/string.h>'
-endif
-bsd_funcs = [
-    'strlcpy',
-    'strlcat',
-]
-foreach f : bsd_funcs
-    if cc.has_function(f, args: c_args, prefix: bsd_funcs_prefix)
-        conf.set('HAVE_' + f.to_upper(), 1)
-    endif
-endforeach
-
-#
 # Check for 'sa_len'-like members in 'struct sockaddr'-like structures.
 #
 sockaddr_sa_len_prefix = '''
