@@ -29,6 +29,9 @@ extern const char *inet_ntop(int af, const void *src, char *dst,
                              socklen_t cnt);
 #else
 
+#if HAVE_LINUX_IPV6_H
+#include <linux/ipv6.h>
+#endif
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
