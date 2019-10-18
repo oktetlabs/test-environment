@@ -20,7 +20,7 @@
 #define CS_YAML_ERR_PREFIX "YAML configuration file parser "
 
 #define YAML_TARGET_CONTEXT_INIT \
-    { NULL, NULL, TRUE, TRUE };
+    { NULL, NULL, NULL, NULL, NULL, TRUE, TRUE };
 
 typedef struct config_yaml_target_s {
     const char *command_name;
@@ -32,6 +32,8 @@ static const config_yaml_target_t config_yaml_targets[] = {
     { "add", "instance", "instances" },
     { "set", "instance", "instances" },
     { "delete", "instance", "instances" },
+    { "register", "object", "objects" },
+    { "unregister", "object", "objects" },
     { NULL, NULL, NULL }
 };
 
@@ -251,6 +253,9 @@ typedef enum cs_yaml_node_attribute_type_e {
     CS_YAML_NODE_ATTRIBUTE_CONDITION = 0,
     CS_YAML_NODE_ATTRIBUTE_OID,
     CS_YAML_NODE_ATTRIBUTE_VALUE,
+    CS_YAML_NODE_ATTRIBUTE_ACCESS,
+    CS_YAML_NODE_ATTRIBUTE_TYPE,
+    CS_YAML_NODE_ATTRIBUTE_VOLATILE,
     CS_YAML_NODE_ATTRIBUTE_UNKNOWN,
 } cs_yaml_node_attribute_type_t;
 
@@ -259,9 +264,12 @@ static struct {
     const char                    *short_label;
     cs_yaml_node_attribute_type_t  type;
 } const cs_yaml_node_attributes[] = {
-    { "cond",  "c", CS_YAML_NODE_ATTRIBUTE_CONDITION },
-    { "oid",   "o", CS_YAML_NODE_ATTRIBUTE_OID },
-    { "value", "v", CS_YAML_NODE_ATTRIBUTE_VALUE },
+    { "cond",     "c",   CS_YAML_NODE_ATTRIBUTE_CONDITION },
+    { "oid",      "o",   CS_YAML_NODE_ATTRIBUTE_OID },
+    { "value",    "v",   CS_YAML_NODE_ATTRIBUTE_VALUE },
+    { "access",   "a",   CS_YAML_NODE_ATTRIBUTE_ACCESS },
+    { "type",     "t",   CS_YAML_NODE_ATTRIBUTE_TYPE },
+    { "volatile", "vol", CS_YAML_NODE_ATTRIBUTE_VOLATILE },
 };
 
 static cs_yaml_node_attribute_type_t
@@ -283,6 +291,9 @@ parse_config_yaml_node_get_attribute_type(yaml_node_t *k)
 typedef struct cs_yaml_target_context_s {
     const xmlChar *oid;
     const xmlChar *value;
+    const xmlChar *access;
+    const xmlChar *type;
+    const xmlChar *xmlvolatile;
     te_bool        check_cond;
     te_bool        cond;
 } cs_yaml_target_context_t;
@@ -350,6 +361,39 @@ parse_config_yaml_cmd_add_target_attribute(yaml_document_t            *d,
             c->value = (const xmlChar *)v->data.scalar.value;
             break;
 
+        case CS_YAML_NODE_ATTRIBUTE_ACCESS:
+            if (c->access != NULL)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "detected multiple access specifiers "
+                      "of the target: only one can be present");
+                return TE_EINVAL;
+            }
+
+            c->access = (const xmlChar *)v->data.scalar.value;
+            break;
+
+        case CS_YAML_NODE_ATTRIBUTE_TYPE:
+            if (c->type != NULL)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "detected multiple type specifiers "
+                      "of the target: only one can be present");
+                return TE_EINVAL;
+            }
+
+            c->type = (const xmlChar *)v->data.scalar.value;
+            break;
+
+        case CS_YAML_NODE_ATTRIBUTE_VOLATILE:
+            if (c->xmlvolatile != NULL)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "detected multiple volatile specifiers "
+                      "of the target: only one can be present");
+                return TE_EINVAL;
+            }
+
+            c->xmlvolatile = (const xmlChar *)v->data.scalar.value;
+            break;
+
         default:
             if (v->type == YAML_SCALAR_NODE && v->data.scalar.length == 0)
             {
@@ -373,6 +417,8 @@ embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
 {
     const xmlChar *prop_name_oid = (const xmlChar *)"oid";
     const xmlChar *prop_name_value = (const xmlChar *)"value";
+    const xmlChar *prop_name_access = (const xmlChar *)"access";
+    const xmlChar *prop_name_type = (const xmlChar *)"type";
 
     if (c->oid == NULL)
     {
@@ -394,6 +440,30 @@ embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
         xmlNewProp(xn_target, prop_name_value, c->value) == NULL)
     {
         ERROR(CS_YAML_ERR_PREFIX "failed to embed the target value "
+              "attribute in XML output");
+        return TE_ENOMEM;
+    }
+
+    if (c->access != NULL &&
+        xmlNewProp(xn_target, prop_name_access, c->access) == NULL)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "failed to embed the target access"
+              "attribute in XML output");
+        return TE_ENOMEM;
+    }
+
+    if (c->type != NULL &&
+        xmlNewProp(xn_target, prop_name_type, c->type) == NULL)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "failed to embed the target type "
+              "attribute in XML output");
+        return TE_ENOMEM;
+    }
+
+    if (c->xmlvolatile != NULL &&
+        xmlNewProp(xn_target, prop_name_type, c->xmlvolatile) == NULL)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "failed to embed the target volatile "
               "attribute in XML output");
         return TE_ENOMEM;
     }
@@ -689,6 +759,8 @@ parse_config_yaml_cmd(yaml_document_t *d,
         }
         else if ((strcmp((const char *)k->data.scalar.value, "add") == 0) ||
                  (strcmp((const char *)k->data.scalar.value, "set") == 0) ||
+                 (strcmp((const char *)k->data.scalar.value, "register") == 0) ||
+                 (strcmp((const char *)k->data.scalar.value, "unregister") == 0) ||
                  (strcmp((const char *)k->data.scalar.value, "delete") == 0))
         {
             rc = parse_config_yaml_specified_cmd(d, v, xn_history,
