@@ -20,7 +20,7 @@
 #define CS_YAML_ERR_PREFIX "YAML configuration file parser "
 
 #define YAML_TARGET_CONTEXT_INIT \
-    { NULL, NULL, NULL, NULL, NULL, TRUE, TRUE };
+    { NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRUE, TRUE };
 
 typedef struct config_yaml_target_s {
     const char *command_name;
@@ -256,6 +256,8 @@ typedef enum cs_yaml_node_attribute_type_e {
     CS_YAML_NODE_ATTRIBUTE_ACCESS,
     CS_YAML_NODE_ATTRIBUTE_TYPE,
     CS_YAML_NODE_ATTRIBUTE_VOLATILE,
+    CS_YAML_NODE_ATTRIBUTE_DEPENDENCE,
+    CS_YAML_NODE_ATTRIBUTE_SCOPE,
     CS_YAML_NODE_ATTRIBUTE_UNKNOWN,
 } cs_yaml_node_attribute_type_t;
 
@@ -270,6 +272,8 @@ static struct {
     { "access",   "a",   CS_YAML_NODE_ATTRIBUTE_ACCESS },
     { "type",     "t",   CS_YAML_NODE_ATTRIBUTE_TYPE },
     { "volatile", "vol", CS_YAML_NODE_ATTRIBUTE_VOLATILE },
+    { "depends",  "d",   CS_YAML_NODE_ATTRIBUTE_DEPENDENCE },
+    { "scope",    "s",   CS_YAML_NODE_ATTRIBUTE_SCOPE }
 };
 
 static cs_yaml_node_attribute_type_t
@@ -294,9 +298,135 @@ typedef struct cs_yaml_target_context_s {
     const xmlChar *access;
     const xmlChar *type;
     const xmlChar *xmlvolatile;
+    const xmlChar *dependence_oid;
+    const xmlChar *scope;
     te_bool        check_cond;
     te_bool        cond;
 } cs_yaml_target_context_t;
+
+static te_errno
+parse_config_yaml_cmd_add_dependence_attribute(yaml_node_t                *k,
+                                               yaml_node_t                *v,
+                                               cs_yaml_target_context_t   *c)
+{
+    cs_yaml_node_attribute_type_t attribute_type;
+
+    if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0 ||
+        (v->type != YAML_SCALAR_NODE && v->type != YAML_SEQUENCE_NODE))
+    {
+        ERROR(CS_YAML_ERR_PREFIX "found the dependce attribute node to be "
+              "badly formatted");
+        return TE_EINVAL;
+    }
+
+    attribute_type = parse_config_yaml_node_get_attribute_type(k);
+    switch (attribute_type)
+    {
+        case CS_YAML_NODE_ATTRIBUTE_OID:
+            if (c->dependence_oid != NULL)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "detected multiple OID specifiers "
+                      "of the dependce node: only one can be present");
+                return TE_EINVAL;
+            }
+
+            c->dependence_oid  = (const xmlChar *)v->data.scalar.value;
+            break;
+
+        case CS_YAML_NODE_ATTRIBUTE_SCOPE:
+            if (c->scope != NULL)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "detected multiple scope specifiers "
+                      "of the dependce node: only one can be present");
+                return TE_EINVAL;
+            }
+
+            c->scope = (const xmlChar *)v->data.scalar.value;
+            break;
+
+        default:
+            if (v->type == YAML_SCALAR_NODE && v->data.scalar.length == 0)
+            {
+                c->dependence_oid = (const xmlChar *)k->data.scalar.value;
+            }
+            else
+            {
+                ERROR(CS_YAML_ERR_PREFIX "failed to recognise the "
+                      "attribute type in the target");
+                return TE_EINVAL;
+            }
+            break;
+    }
+
+    return 0;
+}
+
+/**
+ * Process a dependence node of the given parent node.
+ *
+ * @param d     YAML document handle
+ * @param n     Handle of the parent node in the given document
+ * @param c     Location for the result
+ *
+ * @return Status code.
+ */
+static te_errno
+parse_config_yaml_dependence(yaml_document_t            *d,
+                             yaml_node_t                *n,
+                             cs_yaml_target_context_t   *c)
+{
+    te_errno rc;
+
+    if (n->type == YAML_SCALAR_NODE)
+    {
+        if (n->data.scalar.length == 0)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "found the dependence node to be "
+                  "badly formatted");
+            return TE_EINVAL;
+        }
+
+        c->dependence_oid = (const xmlChar *)n->data.scalar.value;
+    }
+    else if (n->type == YAML_SEQUENCE_NODE)
+    {
+        yaml_node_item_t *item = n->data.sequence.items.start;
+        yaml_node_t *in = yaml_document_get_node(d, *item);
+
+        if (in->type == YAML_MAPPING_NODE)
+        {
+            yaml_node_pair_t *pair = in->data.mapping.pairs.start;
+
+            do {
+                yaml_node_t *k = yaml_document_get_node(d, pair->key);
+                yaml_node_t *v = yaml_document_get_node(d, pair->value);
+
+                rc = parse_config_yaml_cmd_add_dependence_attribute(k, v, c);
+                if (rc != 0)
+                {
+                    ERROR(CS_YAML_ERR_PREFIX "failed to process "
+                          "attribute at line %lu column %lu",
+                          k->start_mark.line, k->start_mark.column);
+                    return TE_EINVAL;
+                }
+            } while (++pair < in->data.mapping.pairs.top);
+        }
+        else
+        {
+            ERROR(CS_YAML_ERR_PREFIX "found the dependence node to be "
+                  "badly formatted");
+            return TE_EINVAL;
+        }
+    }
+    else
+    {
+        ERROR(CS_YAML_ERR_PREFIX "found the dependce node to be "
+              "badly formatted");
+        return TE_EINVAL;
+    }
+
+    return 0;
+}
 
 static te_errno
 parse_config_yaml_cmd_add_target_attribute(yaml_document_t            *d,
@@ -383,6 +513,16 @@ parse_config_yaml_cmd_add_target_attribute(yaml_document_t            *d,
             c->type = (const xmlChar *)v->data.scalar.value;
             break;
 
+        case CS_YAML_NODE_ATTRIBUTE_DEPENDENCE:
+            rc = parse_config_yaml_dependence(d, v, c);
+            if (rc != 0)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "failed to process the dependce "
+                      "node of the object");
+                return rc;
+            }
+            break;
+
         case CS_YAML_NODE_ATTRIBUTE_VOLATILE:
             if (c->xmlvolatile != NULL)
             {
@@ -419,6 +559,8 @@ embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
     const xmlChar *prop_name_value = (const xmlChar *)"value";
     const xmlChar *prop_name_access = (const xmlChar *)"access";
     const xmlChar *prop_name_type = (const xmlChar *)"type";
+    const xmlChar *prop_name_scope = (const xmlChar *)"scope";
+    xmlNodePtr     dependence_node;
 
     if (c->oid == NULL)
     {
@@ -466,6 +608,40 @@ embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
         ERROR(CS_YAML_ERR_PREFIX "failed to embed the target volatile "
               "attribute in XML output");
         return TE_ENOMEM;
+    }
+
+    if (c->dependence_oid != NULL)
+    {
+        dependence_node = xmlNewNode(NULL, BAD_CAST "depends");
+        if (dependence_node == NULL)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "failed to allocate dependence "
+                  "node for XML output");
+            return TE_ENOMEM;
+        }
+
+        if (xmlNewProp(dependence_node, prop_name_oid, c->dependence_oid) ==
+            NULL)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "failed to set OID for the dependence "
+                  "node in XML output");
+            return TE_ENOMEM;
+        }
+
+        if (c->scope != NULL &&
+            xmlNewProp(dependence_node, prop_name_scope, c->scope) == NULL)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "failed to embed the target scope "
+                  "attribute in XML output");
+            return TE_ENOMEM;
+        }
+
+        if (xmlAddChild(xn_target, dependence_node) != dependence_node)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "failed to embed dependence node in "
+                  "XML output");
+            return TE_EINVAL;
+        }
     }
 
     if (xmlAddChild(xn_cmd, xn_target) == xn_target)
