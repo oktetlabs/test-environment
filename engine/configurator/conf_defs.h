@@ -77,8 +77,10 @@ cfg_instance_volatile(cfg_instance *inst)
  * Process XML document containing dynamic history and
  * synchronise resulting database with Test Agents.
  *
- * @param root_node Root node of the input document
- * @param expand_vars List of key-value pairs for expansion in file
+ * @param root_node     Root node of the input document
+ * @param expand_vars   List of key-value pairs for expansion in file,
+ *                      @c NULL if environment variables are used for
+ *                      substitutions
  *
  * @return Status code.
  */

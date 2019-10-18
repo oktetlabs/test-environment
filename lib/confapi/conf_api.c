@@ -2252,7 +2252,7 @@ cfg_create_config(const char *name, te_bool history)
 
 /* See description in conf_api.h */
 te_errno
-cfg_process_history(const char *filename, const te_kvpair_h *head)
+cfg_process_history(const char *filename, const te_kvpair_h *expand_vars)
 {
     cfg_process_history_msg *msg;
 
@@ -2281,7 +2281,7 @@ cfg_process_history(const char *filename, const te_kvpair_h *head)
     memcpy(msg->filename, filename, len);
 
     msg->len = sizeof(cfg_config_msg) + len;
-    TAILQ_FOREACH(p, head, links)
+    TAILQ_FOREACH(p, expand_vars, links)
     {
         if (msg->len + strlen(p->key) + 1 > CFG_MSG_MAX)
         {

@@ -332,7 +332,9 @@ parse_config_dh_sync(xmlNodePtr root_node, const te_kvpair_h *expand_vars)
  * Parse and execute the configuration file.
  *
  * @param file          path name of the file
- * @param expand_vars   List of key-value pairs for expansion in file
+ * @param expand_vars   List of key-value pairs for expansion in file,
+ *                      @c NULL if environment variables are used for
+ *                      substitutions
  * @param restore       if TRUE, the configuration should be restored after
  *                      unsuccessful dynamic history restoring
  *

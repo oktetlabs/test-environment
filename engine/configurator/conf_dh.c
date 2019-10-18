@@ -160,7 +160,9 @@ xmlNodeCond(xmlNodePtr node)
  * Process 'add' command.
  *
  * @param node          XML node with add command children
- * @param expand_vars   List of key-value pairs for expansion in file
+ * @param expand_vars   List of key-value pairs for expansion in file,
+ *                      @c NULL if environment variables are used for
+ *                      substitutions
  *
  * @return Status code.
  */
@@ -250,7 +252,9 @@ next:
  * Note: this routine does not reboot Test Agents.
  *
  * @param node          <history> node pointer
- * @param expand_vars   List of key-value pairs for expansion in file
+ * @param expand_vars   List of key-value pairs for expansion in file,
+ *                      @c NULL if environment variables are used for
+ *                      substitutions
  * @param postsync      is processing performed after sync with TA
  *
  * @return status code (errno.h)

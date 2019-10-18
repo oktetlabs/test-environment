@@ -114,7 +114,9 @@ extern int te_expand_kvpairs(const char *src, const char **posargs,
  *
  * @param node          XML node
  * @param name          XML attribute name
- * @param expand_vars   List of key-value pairs for expansion in file
+ * @param expand_vars   List of key-value pairs for expansion in file,
+ *                      @c NULL if environment variables are used for
+ *                      substitutions
  *
  * @return The expanded attribute value or NULL if no attribute
  * or an error occured while expanding.

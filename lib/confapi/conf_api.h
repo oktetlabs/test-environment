@@ -797,7 +797,9 @@ extern te_errno cfg_create_config(const char *name, te_bool history);
  * Process a history configuration file.
  *
  * @param filename      history configuratin file name
- * @param expand_vars   List of key-value pairs for expansion in file
+ * @param expand_vars   List of key-value pairs for expansion in file,
+ *                      @c NULL if environment variables are used for
+ *                      substitutions
  *
  * @return Status code (see te_errno.h)
  */
