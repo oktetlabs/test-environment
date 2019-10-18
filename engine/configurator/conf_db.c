@@ -1150,7 +1150,7 @@ cfg_db_find_pattern(const char *pattern,
 }   /* cfg_db_find_pattern() */
 
 /**
- * Add instance children if they are read/write.
+ * Add instance children if they are not read/create
  *
  * @param inst   pointer on the instance.
  *
@@ -1169,7 +1169,7 @@ cfg_db_add_children(cfg_instance *inst)
     obj1 = obj1->son;
     while (obj1)
     {
-        if (obj1->access != CFG_READ_WRITE)
+        if (obj1->access == CFG_READ_CREATE)
         {
             obj1 = obj1->brother;
             continue;
