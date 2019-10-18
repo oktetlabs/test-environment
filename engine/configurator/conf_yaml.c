@@ -30,6 +30,8 @@ typedef struct config_yaml_target_s {
 
 static const config_yaml_target_t config_yaml_targets[] = {
     { "add", "instance", "instances" },
+    { "set", "instance", "instances" },
+    { "delete", "instance", "instances" },
     { NULL, NULL, NULL }
 };
 
@@ -685,7 +687,9 @@ parse_config_yaml_cmd(yaml_document_t *d,
                   "badly formatted");
             rc = TE_EINVAL;
         }
-        else if (strcmp((const char *)k->data.scalar.value, "add") == 0)
+        else if ((strcmp((const char *)k->data.scalar.value, "add") == 0) ||
+                 (strcmp((const char *)k->data.scalar.value, "set") == 0) ||
+                 (strcmp((const char *)k->data.scalar.value, "delete") == 0))
         {
             rc = parse_config_yaml_specified_cmd(d, v, xn_history,
                                            (const char *)k->data.scalar.value);
