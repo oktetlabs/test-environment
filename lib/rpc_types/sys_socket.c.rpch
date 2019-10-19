@@ -113,6 +113,22 @@ extern const char *inet_ntop(int af, const void *src, char *dst,
 #define SIOCGHWTSTAMP 0x89b1
 #endif
 
+/*
+ * Some options may be not defined in <netinet/in.h> yet, even though
+ * Linux kernel already supports them.
+ * In relation to IPV6_AUTOFLOWLABEL it was observed on a host with
+ * kernel 4.9.0-11-amd64, Debian 4.9.189-3+deb9u1, glibc 2.24-11+deb9u4
+ * and on a host with kernel 4.15.0-60, Ubuntu 16.04.6 LTS,
+ * glibc 2.23-0ubuntu11.
+ */
+#ifdef __linux__
+
+#ifndef IPV6_AUTOFLOWLABEL
+#define IPV6_AUTOFLOWLABEL 70
+#endif
+
+#endif
+
 /**
  * Solarflare Onload specific socket option to retrieve TX TCP timestamps.
  */
