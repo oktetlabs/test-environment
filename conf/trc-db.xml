@@ -1859,25 +1859,4 @@
       </test>
     </iter>
   </test>
-  <test name="cs-ts" type="package">
-    <objective>Tests on Configurator functionality.</objective>
-    <notes/>
-    <iter result="PASSED">
-      <notes/>
-      <test name="vlans" type="script">
-        <objective/>
-        <notes/>
-        <iter result="PASSED">
-          <notes/>
-        </iter>
-      </test>
-      <test name="phy" type="script">
-        <objective/>
-        <notes/>
-        <iter result="PASSED">
-          <notes/>
-        </iter>
-      </test>
-    </iter>
-  </test>
 </trc_db>
