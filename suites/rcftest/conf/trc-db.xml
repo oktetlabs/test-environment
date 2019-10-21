@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<trc_db>
+  <test name="rcftest" type="package">
+    <objective>Tests on RCF functionality.</objective>
+    <notes/>
+    <iter result="PASSED">
+      <notes/>
+      <test name="tareboot" type="script">
+        <objective/>
+        <notes/>
+        <iter result="PASSED">
+          <notes/>
+        </iter>
+      </test>
+    </iter>
+  </test>
+</trc_db>
