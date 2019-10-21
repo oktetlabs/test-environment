@@ -13,13 +13,17 @@
 #
 
 bin_sh=`ls -l /bin/sh | sed "s/^.*-> //g"`
-if (test x$bin_sh != x"/bin/bash") && (test x$bin_sh != x"bash") ; then
-    echo "#############################################"
-    echo "#### /bin/sh is not bash on your system. ####"
-    echo "#### This can make TE build and usage    ####"
-    echo "#### impossible.                         ####"
-    echo "#############################################"
-fi
+case "$bin_sh" in
+    *bash|*dash)
+        ;;
+    *)
+        echo "###########################################"
+        echo "#### /bin/sh is neither bash, nor dash ####"
+        echo "#### on your system. This can make TE  ####"
+        echo "#### build and usage impossible.       ####"
+        echo "###########################################"
+        ;;
+esac
 
 TE_RUN_DIR="${PWD}"
 
