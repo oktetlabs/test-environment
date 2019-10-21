@@ -1,59 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <trc_db>
-  <test name="telephony" type="package">
-    <objective>Tests on telephony functionality.</objective>
-    <notes/>
-    <iter result="PASSED">
-      <notes/>
-      <test name="check_dial_tone" type="script">
-        <objective/>
-        <notes/>
-        <iter result="PASSED">
-          <arg name="port">1</arg>
-          <arg name="plan">0</arg>
-          <notes/>
-        </iter>
-        <iter result="PASSED">
-          <arg name="port">2</arg>
-          <arg name="plan">0</arg>
-          <notes/>
-        </iter>
-        <iter result="PASSED">
-          <arg name="port">1</arg>
-          <arg name="plan"></arg>
-          <notes/>
-        </iter>
-        <iter result="PASSED">
-          <arg name="port">2</arg>
-          <arg name="plan">1</arg>
-          <notes/>
-        </iter>
-      </test>
-      <test name="make_call" type="script">
-        <objective/>
-        <notes/>
-        <iter result="PASSED">
-          <arg name="port_src">1</arg>
-          <arg name="port_dst">2</arg>
-          <arg name="number">11#</arg>
-          <arg name="timeout">3000</arg>
-          <notes/>
-        </iter>
-        <iter result="PASSED">
-          <arg name="port_dst">2</arg>
-          <arg name="port_src">1</arg>
-          <arg name="number">10#</arg>
-          <arg name="timeout">3000</arg>
-          <notes/>
-          <results tags="linux">
-            <result value="FAILED">
-              <verdict>Internal call have been maked but not catched</verdict>
-            </result>
-          </results>
-        </iter>
-      </test>
-    </iter>
-  </test>
   <test name="rcftest" type="package">
     <objective>Tests on RCF functionality.</objective>
     <notes/>
