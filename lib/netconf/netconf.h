@@ -758,6 +758,45 @@ extern te_errno netconf_veth_list(netconf_handle nh,
                                   void *filter_opaque, char **list);
 
 /**
+ * Type of callback function to pass to netconf_udp_tunnel_list(). It is used to
+ * decide if the interface should be included to the list.
+ *
+ * @param ifname    The interface name
+ * @param data      Opaque data
+ *
+ * @return @c TRUE to include interface to the list.
+ */
+typedef te_bool (*netconf_udp_tunnel_list_filter_func)(const char *ifname,
+                                                       void *data);
+
+/**
+ * Get UDP Tunnel interfaces list.
+ *
+ * @param nh            Netconf session handle
+ * @param filter_cb     Filtering callback function or @c NULL
+ * @param filter_opaque Opaque data to pass to the filtering function
+ * @param list          Space-separated interfaces list (allocated from the heap)
+ * @param link_kind     Link kind name to specify behavior
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_udp_tunnel_list(netconf_handle nh,
+                                        netconf_udp_tunnel_list_filter_func
+                                            filter_cb,
+                                        void *filter_opaque, char **list,
+                                        char *link_kind);
+
+/**
+ * Callback function to decode VXLAN link data.
+ *
+ * @param h         The netlink message header
+ * @param list      Netconf list to keep the data
+ *
+ * @return @c 0 on success, @c -1 on error (check @b errno for details).
+ */
+extern int vxlan_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie);
+
+/**
  * Add new VXLAN interface.
  *
  * @param nh        Netconf session handle
@@ -778,18 +817,6 @@ extern te_errno netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan)
 extern te_errno netconf_vxlan_del(netconf_handle nh, const char *ifname);
 
 /**
- * Type of callback function to pass to netconf_vxlan_list(). It is used to
- * decide if the interface should be included to the list.
- *
- * @param ifname    The interface name
- * @param data      Opaque data
- *
- * @return @c TRUE to include interface to the list.
- */
-typedef te_bool (*netconf_vxlan_list_filter_func)(const char *ifname,
-                                                  void *data);
-
-/**
  * Get VXLAN interfaces list.
  *
  * @param nh            Netconf session handle
@@ -800,7 +827,8 @@ typedef te_bool (*netconf_vxlan_list_filter_func)(const char *ifname,
  * @return Status code.
  */
 extern te_errno netconf_vxlan_list(netconf_handle nh,
-                                   netconf_vxlan_list_filter_func filter_cb,
+                                   netconf_udp_tunnel_list_filter_func
+                                       filter_cb,
                                    void *filter_opaque, char **list);
 
 /**

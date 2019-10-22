@@ -122,16 +122,8 @@ vxlan_link_gen_cb(struct nlmsghdr *h, netconf_list *list)
     return 0;
 }
 
-/**
- * Callback function to decode VXLAN link data.
- *
- * @param h         The netlink message header
- * @param list      Netconf list to keep the data
- * @param cookie    Extra parameters (unused)
- *
- * @return @c 0 on success, @c -1 on error (check @b errno for details).
- */
-static int
+/* See netconf.h */
+int
 vxlan_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
     UNUSED(cookie);
@@ -145,7 +137,8 @@ netconf_vxlan_node_free(netconf_node *node)
 {
     NETCONF_ASSERT(node != NULL);
 
-    free(node->data.vxlan.generic.ifname);
+    netconf_udp_tunnel_free(&(node->data.vxlan.generic));
+
     free(node->data.vxlan.dev);
     free(node);
 }
@@ -255,46 +248,10 @@ netconf_vxlan_del(netconf_handle nh, const char *ifname)
 
 /* See netconf.h */
 te_errno
-netconf_vxlan_list(netconf_handle nh, netconf_vxlan_list_filter_func filter_cb,
+netconf_vxlan_list(netconf_handle nh,
+                   netconf_udp_tunnel_list_filter_func filter_cb,
 		   void *filter_opaque, char **list)
 {
-    netconf_list   *nlist;
-    netconf_node   *node;
-    te_string       str = TE_STRING_INIT;
-    te_errno        rc = 0;
-
-    nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC,
-                                 vxlan_list_cb, NULL);
-    if (nlist == NULL)
-    {
-        ERROR("Failed to get vxlan interfaces list");
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-
-    for (node = nlist->head; node != NULL; node = node->next)
-    {
-        if (node->data.vxlan.generic.ifname != NULL)
-        {
-            if (filter_cb != NULL &&
-                filter_cb(node->data.vxlan.generic.ifname, filter_opaque) ==
-                          FALSE)
-                continue;
-
-            rc = te_string_append(&str, "%s ",
-                                  node->data.vxlan.generic.ifname);
-            if (rc != 0)
-            {
-                te_string_free(&str);
-                rc = TE_RC(TE_TA_UNIX, rc);
-                break;
-            }
-        }
-    }
-
-    netconf_list_free(nlist);
-
-    if (rc == 0)
-        *list = str.ptr;
-
-    return rc;
+    return netconf_udp_tunnel_list(nh, filter_cb, filter_opaque, list,
+                                   NETCONF_LINK_KIND_VXLAN);
 }

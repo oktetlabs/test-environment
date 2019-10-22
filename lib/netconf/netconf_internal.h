@@ -243,6 +243,13 @@ extern void netconf_vlan_node_free(netconf_node *node);
 extern void netconf_veth_node_free(netconf_node *node);
 
 /**
+ * Free memory used by a generic UDP Tunnel struct.
+ *
+ * @param node  Struct to free
+ */
+extern void netconf_udp_tunnel_free(netconf_udp_tunnel *udp_tunnel);
+
+/**
  * Free memory used by a VXLAN node.
  *
  * @param node  Node to free
