@@ -411,8 +411,15 @@ udp_tunnel_list(char **list, udp_tunnel_entry_type type)
         SLIST_FOREACH(p, &udp_tunnels, links)
         {
             if (p->type == type && !p->added)
-                te_string_append(&str, "%s ",
-                                 udp_tunnel_get_generic(p)->ifname);
+            {
+                rc = te_string_append(&str, "%s ",
+                                      udp_tunnel_get_generic(p)->ifname);
+                if (rc != 0)
+                {
+                    te_string_free(&str);
+                    return rc;
+                }
+            }
         }
         *list = str.ptr;
     }
