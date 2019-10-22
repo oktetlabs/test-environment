@@ -84,7 +84,7 @@ vxlan_commit(unsigned int gid, const cfg_oid *p_oid)
     {
         if (vxlan_e->added)
         {
-            rc = netconf_vxlan_del(nh, vxlan_e->vxlan->generic.ifname);
+            rc = netconf_udp_tunnel_del(nh, vxlan_e->vxlan->generic.ifname);
             if (rc == 0)
             {
                 rc = netconf_vxlan_add(nh, vxlan_e->vxlan);
@@ -101,7 +101,7 @@ vxlan_commit(unsigned int gid, const cfg_oid *p_oid)
     }
     else if (vxlan_e->added)
     {
-        rc = netconf_vxlan_del(nh, vxlan_e->vxlan->generic.ifname);
+        rc = netconf_udp_tunnel_del(nh, vxlan_e->vxlan->generic.ifname);
         if (rc == 0)
             vxlan_e->added = FALSE;
     }

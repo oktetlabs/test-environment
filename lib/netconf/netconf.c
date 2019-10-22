@@ -540,3 +540,31 @@ netconf_get_rta_u32(struct rtattr *rta)
 {
     return *(uint32_t *)RTA_DATA(rta);
 }
+
+void
+netconf_init_nlmsghdr(char *req, netconf_handle nh, uint16_t nlmsg_type,
+                      uint16_t nlmsg_flags, struct nlmsghdr **hdr)
+{
+    struct nlmsghdr *h;
+
+    h = (struct nlmsghdr *)req;
+    h->nlmsg_len = NLMSG_LENGTH(sizeof(struct ifinfomsg));
+    h->nlmsg_type = nlmsg_type;
+    h->nlmsg_flags = nlmsg_flags;
+    h->nlmsg_seq = ++nh->seq;
+
+    *hdr = h;
+}
+
+void
+netconf_parse_link(struct nlmsghdr *h, struct rtattr **rta_arr, int max)
+{
+    struct rtattr      *rta_link;
+    int                 len;
+
+    rta_link = (struct rtattr *)((char *)h +
+                                 NLMSG_SPACE(sizeof(struct ifinfomsg)));
+    len = h->nlmsg_len - NLMSG_SPACE(sizeof(struct ifinfomsg));
+    netconf_parse_rtattr(rta_link, len, rta_arr, max);
+}
+

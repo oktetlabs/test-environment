@@ -776,6 +776,16 @@ typedef te_bool (*netconf_udp_tunnel_list_filter_func)(const char *ifname,
                                                        void *data);
 
 /**
+ * Delete a UDP Tunnel interface.
+ *
+ * @param nh        Netconf session handle
+ * @param ifname    The interface name
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_udp_tunnel_del(netconf_handle nh, const char *ifname);
+
+/**
  * Get UDP Tunnel interfaces list.
  *
  * @param nh            Netconf session handle
@@ -836,16 +846,6 @@ extern int vxlan_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie);
  * @return Status code.
  */
 extern te_errno netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan);
-
-/**
- * Delete a VXLAN interface.
- *
- * @param nh        Netconf session handle
- * @param ifname    The interface name
- *
- * @return Status code.
- */
-extern te_errno netconf_vxlan_del(netconf_handle nh, const char *ifname);
 
 /**
  * Get VXLAN interfaces list.

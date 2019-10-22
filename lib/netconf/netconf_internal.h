@@ -291,6 +291,29 @@ int netconf_talk(netconf_handle nh, void *req, int len,
                  netconf_recv_cb_t recv_cb, void *cookie, netconf_list *list);
 
 /**
+ * Initialize @p hdr.
+ *
+ * @param req           Request buffer
+ * @param nh            Netconf session handle
+ * @param nlmsg_type    Netlink message type
+ * @param nlmsg_flags   Netlink message flags
+ * @param hdr           Pointer to the netlink message header
+ */
+extern void netconf_init_nlmsghdr(char *req, netconf_handle nh,
+                                  uint16_t nlmsg_type, uint16_t nlmsg_flags,
+                                  struct nlmsghdr **hdr);
+
+/**
+ * Parse the general link attribute.
+ *
+ * @param nh        Netconf session handle
+ * @param rta_arr   Sorted attributes pointers array
+ * @param max       Maximum index of the array
+ */
+extern void netconf_parse_link(struct nlmsghdr *h, struct rtattr **rta_arr,
+                               int max);
+
+/**
  * Get interface index by its name. Return error if it cannot be done.
  *
  * @param _name     Name of the interface.

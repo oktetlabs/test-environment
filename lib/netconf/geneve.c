@@ -19,32 +19,6 @@
 /* Geneve link kind to pass in IFLA_INFO_KIND. */
 #define NETCONF_LINK_KIND_GENEVE "geneve"
 
-/**
- * Parse the general link attribute.
- *
- * @param nh        Netconf session handle
- * @param rta_arr   Sorted attributes pointers array
- * @param max       Maximum index of the array
- */
-static void
-geneve_parse_link(struct nlmsghdr *h, struct rtattr **rta_arr, int max)
-{
-    struct rtattr      *rta_link;
-    int                 len;
-
-    rta_link = (struct rtattr *)((char *)h +
-                                 NLMSG_SPACE(sizeof(struct ifinfomsg)));
-    len = h->nlmsg_len - NLMSG_SPACE(sizeof(struct ifinfomsg));
-    netconf_parse_rtattr(rta_link, len, rta_arr, max);
-}
-
-/**
- * Check whether link is Geneve.
- *
- * @param linkgen   The general link attributes array
- *
- * @return @c TRUE if link is Geneve.
- */
 static te_bool
 geneve_link_is_geneve(struct rtattr **linkgen)
 {
@@ -74,7 +48,7 @@ geneve_link_gen_cb(struct nlmsghdr *h, netconf_list *list)
 
     memset(&geneve, 0, sizeof(geneve));
 
-    geneve_parse_link(h, linkgen, IFLA_MAX);
+    netconf_parse_link(h, linkgen, IFLA_MAX);
 
     if (linkgen[IFLA_LINKINFO] == NULL || linkgen[IFLA_IFNAME] == NULL ||
         geneve_link_is_geneve(linkgen) == FALSE)

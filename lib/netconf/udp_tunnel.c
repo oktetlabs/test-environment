@@ -27,6 +27,25 @@ netconf_udp_tunnel_free(netconf_udp_tunnel *udp_tunnel)
 
 /* See netconf.h */
 te_errno
+netconf_udp_tunnel_del(netconf_handle nh, const char *ifname)
+{
+    char                req[NETCONF_MAX_REQ_LEN];
+    struct nlmsghdr    *h;
+
+    memset(req, 0, sizeof(req));
+    netconf_init_nlmsghdr(req, nh, RTM_DELLINK, NLM_F_REQUEST | NLM_F_ACK,
+                          &h);
+
+    netconf_append_rta(h, ifname, strlen(ifname) + 1, IFLA_IFNAME);
+
+    if (netconf_talk(nh, req, sizeof(req), NULL, NULL, NULL) != 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    return 0;
+}
+
+/* See netconf.h */
+te_errno
 netconf_udp_tunnel_list(netconf_handle nh,
                         netconf_udp_tunnel_list_filter_func filter_cb,
 		        void *filter_opaque, char **list, char *link_kind)
