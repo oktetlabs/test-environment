@@ -1,6 +1,6 @@
 #! /bin/bash
 #
-# Test Environment: Dispatcher 
+# Test Environment: Dispatcher
 #
 # Script to build and start Test Environment.
 #
@@ -41,7 +41,7 @@ cat <<EOF
 Usage: dispatcher.sh [<generic options>] [[<test options> tests ]...
 Generic options:
   -q                            Suppress part of output messages
-  --force                       Never prompt                                
+  --force                       Never prompt
 
   --daemon[=<PID>]              Run/use TE engine daemons
   --shutdown[=<PID>]            Shut down TE engine daemons on exit
@@ -102,7 +102,7 @@ Generic options:
 
   --build-only                  Build TE, do not run RCF and Configurator,
                                 build but do not run Test Suites
-                            
+
   --build=path                  Build package specified in the path.
   --build-log=path              Build package with log level 0xFFFF.
   --build-nolog=path            Build package with undefined log level.
@@ -205,7 +205,7 @@ Generic options:
   --trc-quiet                   Do not output total statistics to stdout
   --trc-comparison=<method>     Specify the method to match parameter values in TRC
                                 - exact (the default)
-                                - casefold 
+                                - casefold
                                 - normalised (XML-style space normalization)
                                 - tokens (the values are split into tokens which are
                                 either sequences of XML name characters or single characters;
@@ -445,7 +445,7 @@ process_opts()
 {
     while test -n "$1" ; do
         opt="$1"
-        case "$1" in 
+        case "$1" in
             --help ) usage ; exit 0 ;;
 
             --daemon=* )    DAEMON="${1#--daemon=}" ; SHUTDOWN= ;;
@@ -500,7 +500,7 @@ process_opts()
                          VG_CS=yes
                          VG_LOGGER=yes
                          VG_TESTER=yes ;;
-        
+
             --no-builder) BUILDER= ; BUILD_TA= ; BUILD_TA_FOR= ;;
             --no-nuts-build) BUILD_NUTS= ;;
             --no-tester) TESTER= ;;
@@ -508,13 +508,13 @@ process_opts()
             --no-rcf) RCF= ;;
             --no-run) RCF= ; CS= ; TESTER= ; LOGGER= ;;
             --no-autotool) TE_NO_AUTOTOOL=yes ;;
-            
+
             --conf-dir=*) CONF_DIRS="${1#--conf-dir=}" ;;
             --conf-dirs=*)
                 # Do not append to default CONF_DIRS
                 ${CONF_DIRS_DEFAULT} && CONF_DIRS= && CONF_DIRS_DEFAULT=false
                 CONF_DIRS="${CONF_DIRS}${CONF_DIRS:+:}${1#--conf-dirs=}" ;;
-            
+
             --conf-builder=*) CONF_BUILDER_SET=1; CONF_BUILDER="${1#--conf-builder=}" ;;
             --conf-logger=*) CONF_LOGGER_SET=1; CONF_LOGGER="${1#--conf-logger=}" ;;
             --conf-tester=*) CONF_TESTER_SET=1; CONF_TESTER="${1#--conf-tester=}" ;;
@@ -549,7 +549,7 @@ process_opts()
                 TE_SNIFF_NOT_FEED_CONF=1;;
             --sniff=*) TE_SNIFF_IDX=${#TE_SNIFF_LOC[*]}
                 TE_SNIFF_LOC[${TE_SNIFF_IDX}]="${1#--sniff=}";;
-            --sniff-name=*) 
+            --sniff-name=*)
                 TE_SNIFF_NAME[${TE_SNIFF_IDX}]="${1#--sniff-name=}";;
             --sniff-filter=*)
                 TE_SNIFF_FILTER[${TE_SNIFF_IDX}]="${1#--sniff-filter=}" ;;
@@ -583,17 +583,17 @@ process_opts()
                 ;;
 
             --trc-log=*) TRC_LOG="${1#--trc-log=}" ;;
-            --trc-db=*) 
+            --trc-db=*)
                 TRC_DB="${1#--trc-db=}"
                 TRC_DB="$(resolve_conf_file_path "${TRC_DB}")"
                 TRC_OPTS="${TRC_OPTS} --db=${TRC_DB}"
                 TESTER_OPTS="${TESTER_OPTS} --trc-db=${TRC_DB}"
                 ;;
-            --trc-comparison=*) 
+            --trc-comparison=*)
                 TRC_OPTS="${TRC_OPTS} --comparison=${1#--trc-comparison=}"
                 TESTER_OPTS="${TESTER_OPTS} $1"
                 ;;
-            --trc-key2html=*) 
+            --trc-key2html=*)
                 TRC_KEY2HTML="${1#--trc-key2html=}"
                 TRC_KEY2HTML="$(resolve_conf_file_path "${TRC_KEY2HTML}")"
                 TRC_OPTS="${TRC_OPTS} --key2html=${TRC_KEY2HTML}"
@@ -606,14 +606,14 @@ process_opts()
 
             --rgt-xml2html-multi-*)
                 RGT_X2HM_OPTS="${RGT_X2HM_OPTS} --${1#--rgt-xml2html-multi-}" ;;
-    
+
             --cs-*) CS_OPTS="${CS_OPTS} --${1#--cs-}" ;;
 
             --build-autotools)  BUILD=autotools ;;
             --build-meson)      BUILD=meson ;;
 
             --build-only) RCF= ; CS=
-                          TESTER_OPTS="${TESTER_OPTS} --no-run --no-cs" ;; 
+                          TESTER_OPTS="${TESTER_OPTS} --no-run --no-cs" ;;
 
             --build-parallel*)
                 num=${1##--build-parallel=}
@@ -621,12 +621,12 @@ process_opts()
                 BUILD_MAKEFLAGS="-j${num}"
                 ;;
 
-            --build-log=*) 
+            --build-log=*)
                 BUILDER_OPTS="${BUILDER_OPTS} --pathlog=${1#--build-log=}"
                 BUILDER=
                 ;;
 
-            --build-nolog=*) 
+            --build-nolog=*)
                 BUILDER_OPTS="${BUILDER_OPTS} --pathnolog=${1#--build-nolog=}"
                 BUILDER=
                 ;;
@@ -637,12 +637,12 @@ process_opts()
             --build-ta-rm-lock) BUILD_TA_RM=yes ;;
             --build-ta-for=*)   BUILD_TA_FOR="${BUILD_TA_FOR} ${1#--build-ta-for=}" ;;
 
-            --build-*) 
-                BUILDER_OPTS="${BUILDER_OPTS} --${1#--build-}" 
+            --build-*)
+                BUILDER_OPTS="${BUILDER_OPTS} --${1#--build-}"
                 BUILDER=
                 ;;
 
-            --build=*) 
+            --build=*)
                 BUILDER_OPTS="${BUILDER_OPTS} --path=${1#--build=}"
                 BUILDER=
                 ;;
@@ -710,7 +710,7 @@ sniffer_make_conf()
     if test ! -w "${TE_SNIFF_CSCONF}" ; then
         echo "Couldn't create the sniffer conf file: ${TE_SNIFF_CSCONF}" >&2
         return 1
-    fi 
+    fi
 
     echo "<history>" >> "${TE_SNIFF_CSCONF}"
 
@@ -851,12 +851,12 @@ for i in BUILDER LOGGER TESTER CS RCF RGT NUT ; do
                          "${CONF_FILE} path"
                     exit 1;
                 fi
-                
+
                 # Set Conf file path to empty string.
                 eval CONF_$i=
             fi
         fi
-        CONF_FILES_POST="${CONF_FILES_POST}${CONF_FILES_POST:+ }$CONF_FILE"                
+        CONF_FILES_POST="${CONF_FILES_POST}${CONF_FILES_POST:+ }$CONF_FILE"
     done
     eval CONF_$i=\$CONF_FILES_POST
 done
@@ -1123,7 +1123,7 @@ if test -n "${CONF_NUT_SET}" -a -n "${BUILD_NUTS}" ; then
         TE_BUILD_NUTS_LOG="${TE_RUN_DIR}/build_nuts.log"
         $PROFILE_BUILD te_build_nuts "${CONF_NUT}" >"${TE_BUILD_NUTS_LOG}" || exit_with_log
     fi
-fi    
+fi
 
 
 rm -f valgrind.* vg.*
@@ -1264,7 +1264,7 @@ if test -n "${LOGGER_OK}" -a -n "${RCF_OK}" ; then
     te_log_flush
 fi
 
-shutdown_daemon RCF 
+shutdown_daemon RCF
 
 shutdown_daemon LOGGER
 
@@ -1305,7 +1305,7 @@ if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
             break
         fi
 
-        # Construct command to merge all capture logs 
+        # Construct command to merge all capture logs
         merge_comm="${merge_comm} ${xlogs[${idx}]}"
         let "idx += 1"
     done
