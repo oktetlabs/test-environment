@@ -14,6 +14,7 @@ EXTRA_DIST = \
 	cm_acse.xml \
 	cm_base.xml \
 	cm_bpf.xml \
+	cm_bridge.xml \
 	cm_ch.xml \
 	cm_cmd_monitor.xml \
 	cm_crypt.xml \
@@ -30,13 +31,16 @@ EXTRA_DIST = \
 	cm_pppoe_client.xml \
 	cm_pppoe_server.xml \
 	cm_radius.xml \
+	cm_rcf.xml \
 	cm_serial.xml \
 	cm_serial_parse.xml \
 	cm_sniffer.xml \
 	cm_socks.xml \
 	cm_system.xml \
 	cm_tc.xml \
+	cm_tunnel.xml \
 	cm_upnp_cp.xml \
+	cm_vm.xml \
 	cm_volatile.xml \
 	cm_vtun.xml \
 	cm_xen.xml
