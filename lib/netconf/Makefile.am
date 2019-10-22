@@ -19,6 +19,7 @@ libnetconf_a_SOURCES = netconf.c \
 	rule.c \
 	veth.c \
 	udp_tunnel.c \
+        geneve.c \
 	vxlan.c \
 	bridge.c
 

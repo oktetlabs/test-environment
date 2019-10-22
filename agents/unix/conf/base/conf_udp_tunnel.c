@@ -1,8 +1,9 @@
 /** @file
- * @brief UDP Tunnel (Virtual eXtensible Local Area Network (VXLAN)) interface
+ * @brief UDP Tunnel (Virtual eXtensible Local Area Network (VXLAN) and
+ * GEneric NEtwork Virtualization Encapsulation (Geneve)) interface
  * configuration support
  *
- * Implementation of configuration nodes of VXLAN interfaces.
+ * Implementation of configuration nodes of VXLAN and Geneve interfaces.
  *
  * Copyright (C) 2019 OKTET Labs. All rights reserved.
  *
@@ -29,6 +30,7 @@
 #include "logger_api.h"
 
 typedef enum udp_tunnel_entry_type {
+    UDP_TUNNEL_ENTRY_GENEVE,
     UDP_TUNNEL_ENTRY_VXLAN,
 } udp_tunnel_entry_type;
 
@@ -244,6 +246,9 @@ udp_tunnel_list(char **list, udp_tunnel_entry_type type)
 
     switch (type)
     {
+        case UDP_TUNNEL_ENTRY_GENEVE:
+            return netconf_geneve_list(nh, udp_tunnel_list_include_cb, NULL, list);
+
         case UDP_TUNNEL_ENTRY_VXLAN:
             rc = netconf_vxlan_list(nh, udp_tunnel_list_include_cb, NULL, list);
             break;
@@ -271,6 +276,27 @@ udp_tunnel_list(char **list, udp_tunnel_entry_type type)
 
     VERB("%s: rc=%r list=%s", __func__, rc, rc == 0 ? *list : "");
     return rc;
+}
+
+/**
+ * Get Geneve interfaces list.
+ *
+ * @param gid     Group identifier (unused)
+ * @param oid     Full identifier of the father instance (unused)
+ * @param sub_id  ID of the object to be listed (unused)
+ * @param list    Location for the list pointer
+ *
+ * @return      Status code
+ */
+static te_errno
+geneve_list(unsigned int gid, const char *oid,
+            const char *sub_id, char **list)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+    return udp_tunnel_list(list, UDP_TUNNEL_ENTRY_GENEVE);
 }
 
 /**
@@ -637,6 +663,9 @@ vxlan_set(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_geneve, "geneve", NULL, NULL, NULL,
+                               geneve_list);
+
 RCF_PCH_CFG_NODE_RW(node_vxlan_vni, "vni", NULL, NULL,
                     vxlan_vni_get, vxlan_vni_set);
 
@@ -653,7 +682,7 @@ RCF_PCH_CFG_NODE_RW(node_vxlan_dev, "dev", NULL, &node_vxlan_port,
                     vxlan_dev_get, vxlan_dev_set);
 
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_vxlan, "vxlan", &node_vxlan_dev,
-                               NULL, vxlan_get, vxlan_set, vxlan_add,
+                               &node_geneve, vxlan_get, vxlan_set, vxlan_add,
                                vxlan_del, vxlan_list, vxlan_commit);
 
 RCF_PCH_CFG_NODE_NA(node_tunnel, "tunnel", &node_vxlan, NULL);

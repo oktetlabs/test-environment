@@ -243,6 +243,11 @@ typedef struct netconf_udp_tunnel {
     char   *ifname; /**< Interface name */
 } netconf_udp_tunnel;
 
+/** Geneve network interface */
+typedef struct netconf_geneve {
+    netconf_udp_tunnel  generic;    /**< Generic fields of UDP Tunnel */
+} netconf_geneve;
+
 /** VXLAN network interface */
 typedef struct netconf_vxlan {
     netconf_udp_tunnel  generic;    /**< Generic fields of UDP Tunnel */
@@ -280,6 +285,7 @@ typedef enum netconf_node_type {
     NETCONF_NODE_IPVLAN,                /**< IP VLAN interface */
     NETCONF_NODE_VLAN,                  /**< VLAN interface */
     NETCONF_NODE_VETH,                  /**< Virtual Ethernet interface */
+    NETCONF_NODE_GENEVE,                /**< Geneve interface */
     NETCONF_NODE_VXLAN,                 /**< VXLAN interface */
     NETCONF_NODE_BRIDGE,                /**< Bridge interface */
     NETCONF_NODE_BRIDGE_PORT,           /**< Bridge port interface */
@@ -300,6 +306,7 @@ typedef struct netconf_node {
         netconf_ipvlan           ipvlan;
         netconf_vlan             vlan;
         netconf_veth             veth;
+        netconf_geneve           geneve;
         netconf_vxlan            vxlan;
         netconf_bridge           bridge;
         netconf_bridge_port      bridge_port;
@@ -785,6 +792,31 @@ extern te_errno netconf_udp_tunnel_list(netconf_handle nh,
                                             filter_cb,
                                         void *filter_opaque, char **list,
                                         char *link_kind);
+
+/**
+ * Callback function to decode Geneve link data.
+ *
+ * @param h         The netlink message header
+ * @param list      Netconf list to keep the data
+ *
+ * @return @c 0 on success, @c -1 on error (check @b errno for details).
+ */
+extern int geneve_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie);
+
+/**
+ * Get Geneve interfaces list.
+ *
+ * @param nh            Netconf session handle
+ * @param filter_cb     Filtering callback function or @c NULL
+ * @param filter_opaque Opaque data to pass to the filtering function
+ * @param list          Space-separated interfaces list (allocated from the heap)
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_geneve_list(netconf_handle nh,
+                                    netconf_udp_tunnel_list_filter_func
+                                        filter_cb,
+                                    void *filter_opaque, char **list);
 
 /**
  * Callback function to decode VXLAN link data.

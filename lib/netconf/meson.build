@@ -44,6 +44,7 @@ sources += files(
     'veth.c',
     'vlan.c',
     'udp_tunnel.c',
+    'geneve.c',
     'vxlan.c',
 )
 deps += [

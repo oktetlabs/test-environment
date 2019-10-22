@@ -329,6 +329,10 @@ netconf_node_free(netconf_node *node)
             netconf_veth_node_free(node);
             break;
 
+        case NETCONF_NODE_GENEVE:
+            netconf_geneve_node_free(node);
+            break;
+
         case NETCONF_NODE_VXLAN:
             netconf_vxlan_node_free(node);
             break;

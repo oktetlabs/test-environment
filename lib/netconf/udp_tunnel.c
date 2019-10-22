@@ -1,5 +1,5 @@
 /** @file
- * @brief Generic UDP Tunnel (VXLAN)
+ * @brief Generic UDP Tunnel (VXLAN and Geneve)
  * interfaces management using netconf library
  *
  * Implementation of UDP Tunnel interfaces configuration commands.
@@ -37,7 +37,10 @@ netconf_udp_tunnel_list(netconf_handle nh,
     char           *ifname;
     te_errno        rc = 0;
 
-    if (strcmp(link_kind, "vxlan") == 0)
+    if (strcmp(link_kind, "geneve") == 0)
+        nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC,
+                                     geneve_list_cb, NULL);
+    else if (strcmp(link_kind, "vxlan") == 0)
         nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC,
                                      vxlan_list_cb, NULL);
     else
@@ -51,7 +54,10 @@ netconf_udp_tunnel_list(netconf_handle nh,
 
     for (node = nlist->head; node != NULL; node = node->next)
     {
-        ifname = node->data.vxlan.generic.ifname;
+        if (strcmp(link_kind, "geneve") == 0)
+            ifname = node->data.geneve.generic.ifname;
+        else if (strcmp(link_kind, "vxlan") == 0)
+            ifname = node->data.vxlan.generic.ifname;
 
         if (ifname != NULL)
         {

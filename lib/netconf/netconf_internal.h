@@ -250,6 +250,13 @@ extern void netconf_veth_node_free(netconf_node *node);
 extern void netconf_udp_tunnel_free(netconf_udp_tunnel *udp_tunnel);
 
 /**
+ * Free memory used by a Geneve node.
+ *
+ * @param node  Node to free
+ */
+extern void netconf_geneve_node_free(netconf_node *node);
+
+/**
  * Free memory used by a VXLAN node.
  *
  * @param node  Node to free
