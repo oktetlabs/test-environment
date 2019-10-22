@@ -240,7 +240,11 @@ typedef struct netconf_veth {
 
 /** Generic UDP Tunnel interface */
 typedef struct netconf_udp_tunnel {
-    char   *ifname; /**< Interface name */
+    char       *ifname;     /**< Interface name */
+    uint32_t    vni;        /**< Virtual Network Identifier */
+    uint8_t     remote[sizeof(struct in6_addr)];    /*<< Remote address */
+    size_t      remote_len; /**< Remote address length */
+    uint16_t    port;       /**< Destination port */
 } netconf_udp_tunnel;
 
 /** Geneve network interface */
@@ -251,14 +255,9 @@ typedef struct netconf_geneve {
 /** VXLAN network interface */
 typedef struct netconf_vxlan {
     netconf_udp_tunnel  generic;    /**< Generic fields of UDP Tunnel */
-    uint32_t            vni;        /**< VXLAN ID */
-    uint8_t             remote[sizeof(struct in6_addr)];    /**< Remote
-                                                                 address */
     uint8_t             local[sizeof(struct in6_addr)];     /**< Local
                                                                  address */
-    size_t              remote_len; /**< Remote address length */
     size_t              local_len;  /**< Local address length */
-    uint16_t            port;       /**< Destination port */
     char               *dev;        /**< Device name */
 } netconf_vxlan;
 

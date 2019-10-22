@@ -168,9 +168,9 @@ vxlan_add(unsigned int gid, const char *oid, const char *value,
     if (vxlan_e->vxlan->generic.ifname == NULL)
         goto fail_strdup_ifname;
 
-    vxlan_e->vxlan->remote_len = 0;
+    vxlan_e->vxlan->generic.remote_len = 0;
     vxlan_e->vxlan->local_len = 0;
-    vxlan_e->vxlan->port = default_port;
+    vxlan_e->vxlan->generic.port = default_port;
     vxlan_e->vxlan->dev = NULL;
 
     vxlan_e->enabled = (uint_value == 1);
@@ -336,7 +336,7 @@ vxlan_vni_get(unsigned int gid, const char *oid, char *value,
     if (!vxlan_entry_valid(vxlan_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    sprintf(value, "%u", vxlan_e->vxlan->vni);
+    sprintf(value, "%u", vxlan_e->vxlan->generic.vni);
 
     return 0;
 }
@@ -365,7 +365,7 @@ vxlan_vni_set(unsigned int gid, const char *oid, char *value,
     if (vni >= (1U << 24))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    vxlan_e->vxlan->vni = vni;
+    vxlan_e->vxlan->generic.vni = vni;
 
     return 0;
 }
@@ -435,8 +435,8 @@ vxlan_remote_get(unsigned int gid, const char *oid, char *value,
     if (!vxlan_entry_valid(vxlan_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    return vxlan_get_addr(value, vxlan_e->vxlan->remote,
-                          vxlan_e->vxlan->remote_len);
+    return vxlan_get_addr(value, vxlan_e->vxlan->generic.remote,
+                          vxlan_e->vxlan->generic.remote_len);
 }
 
 static te_errno
@@ -455,8 +455,8 @@ vxlan_remote_set(unsigned int gid, const char *oid, const char *value,
     if (!vxlan_entry_valid(vxlan_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    return vxlan_set_addr(value, vxlan_e->vxlan->remote,
-                          &(vxlan_e->vxlan->remote_len));
+    return vxlan_set_addr(value, vxlan_e->vxlan->generic.remote,
+                          &(vxlan_e->vxlan->generic.remote_len));
 }
 
 static te_errno
@@ -515,7 +515,7 @@ vxlan_port_get(unsigned int gid, const char *oid, char *value,
     if (!vxlan_entry_valid(vxlan_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    sprintf(value, "%u", vxlan_e->vxlan->port);
+    sprintf(value, "%u", vxlan_e->vxlan->generic.port);
 
     return 0;
 }
@@ -544,7 +544,7 @@ vxlan_port_set(unsigned int gid, const char *oid, const char *value,
     if (port >= (1U << 16))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    vxlan_e->vxlan->port = port;
+    vxlan_e->vxlan->generic.port = port;
 
     return 0;
 }

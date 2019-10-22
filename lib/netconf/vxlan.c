@@ -165,19 +165,20 @@ netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan)
                        strlen(NETCONF_LINK_KIND_VXLAN) + 1, IFLA_INFO_KIND);
     netconf_append_rta_nested(h, IFLA_INFO_DATA, &data);
 
-    netconf_append_rta(h, &(vxlan->vni), sizeof(vxlan->vni), IFLA_VXLAN_ID);
+    netconf_append_rta(h, &(vxlan->generic.vni), sizeof(vxlan->generic.vni),
+                       IFLA_VXLAN_ID);
 
-    switch (vxlan->remote_len)
+    switch (vxlan->generic.remote_len)
     {
         case sizeof(struct in_addr):
-            netconf_append_rta(h, vxlan->remote, vxlan->remote_len,
-                               IFLA_VXLAN_GROUP);
+            netconf_append_rta(h, vxlan->generic.remote,
+                               vxlan->generic.remote_len, IFLA_VXLAN_GROUP);
             break;
 
 #if HAVE_DECL_IFLA_VXLAN_GROUP6
         case sizeof(struct in6_addr):
-            netconf_append_rta(h, vxlan->remote, vxlan->remote_len,
-                               IFLA_VXLAN_GROUP6);
+            netconf_append_rta(h, vxlan->generic.remote,
+                               vxlan->generic.remote_len, IFLA_VXLAN_GROUP6);
             break;
 #endif
 
@@ -209,7 +210,7 @@ netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    netconf_append_rta(h, &(vxlan->port), sizeof(vxlan->port),
+    netconf_append_rta(h, &(vxlan->generic.port), sizeof(vxlan->generic.port),
                        IFLA_VXLAN_PORT);
 
     if (vxlan->dev != NULL && strlen(vxlan->dev) != 0)
