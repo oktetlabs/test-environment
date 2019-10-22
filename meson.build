@@ -64,6 +64,7 @@ if get_option('engine')
     endif
 endif
 
+subdir('doc')
 subdir('include')
 subdir('lib')
 if get_option('engine')

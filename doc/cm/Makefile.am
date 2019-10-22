@@ -9,7 +9,9 @@
 #
 # Author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
 
-EXTRA_DIST = \
+pkgdatadir = $(datadir)/$(subdir)
+
+dist_pkgdata_DATA = \
 	cm_8021x.xml \
 	cm_acse.xml \
 	cm_base.xml \
