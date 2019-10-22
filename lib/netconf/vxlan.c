@@ -107,13 +107,13 @@ vxlan_link_gen_cb(struct nlmsghdr *h, netconf_list *list)
         vxlan_link_is_vxlan(linkgen) == FALSE)
         return 0;
 
-    vxlan.ifname = netconf_dup_rta(linkgen[IFLA_IFNAME]);
-    if (vxlan.ifname == NULL)
+    vxlan.generic.ifname = netconf_dup_rta(linkgen[IFLA_IFNAME]);
+    if (vxlan.generic.ifname == NULL)
         return -1;
 
     if (netconf_list_extend(list, NETCONF_NODE_VXLAN) != 0)
     {
-        free(vxlan.ifname);
+        free(vxlan.generic.ifname);
         return -1;
     }
 
@@ -145,7 +145,7 @@ netconf_vxlan_node_free(netconf_node *node)
 {
     NETCONF_ASSERT(node != NULL);
 
-    free(node->data.vxlan.ifname);
+    free(node->data.vxlan.generic.ifname);
     free(node->data.vxlan.dev);
     free(node);
 }
@@ -165,8 +165,8 @@ netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan)
                         NLM_F_REQUEST | NLM_F_ACK | NLM_F_CREATE | NLM_F_EXCL,
                         &h);
 
-    netconf_append_rta(h, vxlan->ifname, strlen(vxlan->ifname) + 1,
-                       IFLA_IFNAME);
+    netconf_append_rta(h, vxlan->generic.ifname,
+                       strlen(vxlan->generic.ifname) + 1, IFLA_IFNAME);
     netconf_append_rta_nested(h, IFLA_LINKINFO, &linkinfo);
     netconf_append_rta(h, NETCONF_LINK_KIND_VXLAN,
                        strlen(NETCONF_LINK_KIND_VXLAN) + 1, IFLA_INFO_KIND);
@@ -273,13 +273,15 @@ netconf_vxlan_list(netconf_handle nh, netconf_vxlan_list_filter_func filter_cb,
 
     for (node = nlist->head; node != NULL; node = node->next)
     {
-        if (node->data.vxlan.ifname != NULL)
+        if (node->data.vxlan.generic.ifname != NULL)
         {
             if (filter_cb != NULL &&
-                filter_cb(node->data.vxlan.ifname, filter_opaque) == FALSE)
+                filter_cb(node->data.vxlan.generic.ifname, filter_opaque) ==
+                          FALSE)
                 continue;
 
-            rc = te_string_append(&str, "%s ", node->data.vxlan.ifname);
+            rc = te_string_append(&str, "%s ",
+                                  node->data.vxlan.generic.ifname);
             if (rc != 0)
             {
                 te_string_free(&str);

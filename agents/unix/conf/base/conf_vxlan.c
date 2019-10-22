@@ -45,7 +45,7 @@ vxlan_find(const char *ifname)
 
     SLIST_FOREACH(p, &vxlans, links)
     {
-        if (strcmp(ifname, p->vxlan->ifname) == 0)
+        if (strcmp(ifname, p->vxlan->generic.ifname) == 0)
             return p;
     }
 
@@ -78,7 +78,7 @@ vxlan_commit(unsigned int gid, const cfg_oid *p_oid)
     {
         if (vxlan_e->added)
         {
-            rc = netconf_vxlan_del(nh, vxlan_e->vxlan->ifname);
+            rc = netconf_vxlan_del(nh, vxlan_e->vxlan->generic.ifname);
             if (rc == 0)
             {
                 rc = netconf_vxlan_add(nh, vxlan_e->vxlan);
@@ -95,7 +95,7 @@ vxlan_commit(unsigned int gid, const cfg_oid *p_oid)
     }
     else if (vxlan_e->added)
     {
-        rc = netconf_vxlan_del(nh, vxlan_e->vxlan->ifname);
+        rc = netconf_vxlan_del(nh, vxlan_e->vxlan->generic.ifname);
         if (rc == 0)
             vxlan_e->added = FALSE;
     }
@@ -104,7 +104,7 @@ vxlan_commit(unsigned int gid, const cfg_oid *p_oid)
     {
         SLIST_REMOVE(&vxlans, vxlan_e, vxlan_entry, links);
 
-        free(vxlan_e->vxlan->ifname);
+        free(vxlan_e->vxlan->generic.ifname);
         free(vxlan_e->vxlan->dev);
         free(vxlan_e->vxlan);
         free(vxlan_e);
@@ -113,7 +113,7 @@ vxlan_commit(unsigned int gid, const cfg_oid *p_oid)
     }
 
     VERB("%s: ifname=%s enabled=%u added=%u rc=%r", __func__,
-         vxlan_e->vxlan->ifname, vxlan_e->enabled, vxlan_e->added, rc);
+         vxlan_e->vxlan->generic.ifname, vxlan_e->enabled, vxlan_e->added, rc);
     return rc;
 }
 
@@ -158,8 +158,8 @@ vxlan_add(unsigned int gid, const char *oid, const char *value,
     if (vxlan_e->vxlan == NULL)
         goto fail_alloc_vxlan;
 
-    vxlan_e->vxlan->ifname = strdup(ifname);
-    if (vxlan_e->vxlan->ifname == NULL)
+    vxlan_e->vxlan->generic.ifname = strdup(ifname);
+    if (vxlan_e->vxlan->generic.ifname == NULL)
         goto fail_strdup_ifname;
 
     vxlan_e->vxlan->remote_len = 0;
@@ -268,7 +268,7 @@ vxlan_list(unsigned int gid, const char *oid,
         SLIST_FOREACH(p, &vxlans, links)
         {
             if (!p->added)
-                te_string_append(&str, "%s ", p->vxlan->ifname);
+                te_string_append(&str, "%s ", p->vxlan->generic.ifname);
         }
         *list = str.ptr;
     }
