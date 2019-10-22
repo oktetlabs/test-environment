@@ -28,7 +28,7 @@ sources += files(
     'base/conf_sys.c',
     'base/conf_sys_tree.c',
     'base/conf_veth.c',
-    'base/conf_vxlan.c',
+    'base/conf_udp_tunnel.c',
     'route/conf_route.c',
     'route/conf_route_libnetconf.c',
     'route/conf_route_socket.c',

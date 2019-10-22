@@ -1,15 +1,15 @@
 /** @file
- * @brief Virtual eXtensible Local Area Network (vxlan)
- * interface configuration support
+ * @brief UDP Tunnel (Virtual eXtensible Local Area Network (VXLAN)) interface
+ * configuration support
  *
- * Implementation of configuration nodes VXLAN interfaces.
+ * Implementation of configuration nodes of VXLAN interfaces.
  *
  * Copyright (C) 2019 OKTET Labs. All rights reserved.
  *
  * @author Ian Dolzhansky <Ian.Dolzhansky@oktetlabs.ru>
  */
 
-#define TE_LGR_USER     "Unix Conf VXLAN"
+#define TE_LGR_USER     "Unix Conf UDP Tunnel"
 
 #include "te_config.h"
 #if HAVE_CONFIG_H
@@ -27,6 +27,10 @@
 #include "netconf.h"
 
 #include "logger_api.h"
+
+typedef enum udp_tunnel_entry_type {
+    UDP_TUNNEL_ENTRY_VXLAN,
+} udp_tunnel_entry_type;
 
 typedef struct vxlan_entry {
     SLIST_ENTRY(vxlan_entry)    links;
@@ -118,7 +122,7 @@ vxlan_commit(unsigned int gid, const cfg_oid *p_oid)
 }
 
 /**
- * Add a new vxlan interface.
+ * Add a new VXLAN interface.
  *
  * @param gid       Group identifier (unused)
  * @param oid       Full object instance identifier (unused)
@@ -185,7 +189,7 @@ fail_alloc_vxlan_entry:
 }
 
 /**
- * Delete a vxlan interface.
+ * Delete a VXLAN interface.
  *
  * @param gid       Group identifier (unused)
  * @param oid       Full object instance identifier (unused)
@@ -217,7 +221,7 @@ vxlan_del(unsigned int gid, const char *oid, const char *tunnelname,
 
 /**
  * Check whether a given interface is grabbed by TA when creating a list of
- * vxlan interfaces.
+ * UDP Tunnel interfaces.
  *
  * @param ifname    The interface name.
  * @param data      Unused.
@@ -225,15 +229,52 @@ vxlan_del(unsigned int gid, const char *oid, const char *tunnelname,
  * @return @c TRUE if the interface is grabbed, @c FALSE otherwise.
  */
 static te_bool
-vxlan_list_include_cb(const char *ifname, void *data)
+udp_tunnel_list_include_cb(const char *ifname, void *data)
 {
     UNUSED(data);
 
     return rcf_pch_rsrc_accessible("/agent:%s/interface:%s", ta_name, ifname);
 }
 
+static te_errno
+udp_tunnel_list(char **list, udp_tunnel_entry_type type)
+{
+    te_errno        rc;
+    ENTRY();
+
+    switch (type)
+    {
+        case UDP_TUNNEL_ENTRY_VXLAN:
+            rc = netconf_vxlan_list(nh, udp_tunnel_list_include_cb, NULL, list);
+            break;
+
+        default:
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    if (rc == 0)
+    {
+        struct vxlan_entry *p;
+        te_string           str;
+
+        memset(&str, 0, sizeof(str));
+        str.ptr = *list;
+        str.len = (*list == NULL) ? 0 : strlen(*list);
+        str.size = str.len + 1;
+        SLIST_FOREACH(p, &vxlans, links)
+        {
+            if (!p->added)
+                te_string_append(&str, "%s ", p->vxlan->generic.ifname);
+        }
+        *list = str.ptr;
+    }
+
+    VERB("%s: rc=%r list=%s", __func__, rc, rc == 0 ? *list : "");
+    return rc;
+}
+
 /**
- * Get vxlan interfaces list.
+ * Get VXLAN interfaces list.
  *
  * @param gid     Group identifier (unused)
  * @param oid     Full identifier of the father instance (unused)
@@ -246,35 +287,11 @@ static te_errno
 vxlan_list(unsigned int gid, const char *oid,
            const char *sub_id, char **list)
 {
-    te_errno    rc;
-
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(sub_id);
 
-    ENTRY();
-
-    rc = netconf_vxlan_list(nh, vxlan_list_include_cb, NULL, list);
-
-    if (rc == 0)
-    {
-        struct vxlan_entry *p;
-        te_string           str;
-
-        memset(&str, 0, sizeof(str));
-        str.ptr = *list;
-        str.len = (*list == NULL) ? 0 : strlen(*list);
-        str.size = str.len;
-        SLIST_FOREACH(p, &vxlans, links)
-        {
-            if (!p->added)
-                te_string_append(&str, "%s ", p->vxlan->generic.ifname);
-        }
-        *list = str.ptr;
-    }
-
-    VERB("%s: rc=%r list=%s", __func__, rc, rc == 0 ? *list : "");
-    return rc;
+    return udp_tunnel_list(list, UDP_TUNNEL_ENTRY_VXLAN);
 }
 
 static te_errno
@@ -412,7 +429,8 @@ vxlan_remote_set(unsigned int gid, const char *oid, const char *value,
     if (!vxlan_entry_valid(vxlan_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    return vxlan_set_addr(value, vxlan_e->vxlan->remote, &(vxlan_e->vxlan->remote_len));
+    return vxlan_set_addr(value, vxlan_e->vxlan->remote,
+                          &(vxlan_e->vxlan->remote_len));
 }
 
 static te_errno
@@ -451,7 +469,8 @@ vxlan_local_set(unsigned int gid, const char *oid, const char *value,
     if (!vxlan_entry_valid(vxlan_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    return vxlan_set_addr(value, vxlan_e->vxlan->local, &(vxlan_e->vxlan->local_len));
+    return vxlan_set_addr(value, vxlan_e->vxlan->local,
+                          &(vxlan_e->vxlan->local_len));
 }
 
 static te_errno
@@ -496,7 +515,7 @@ vxlan_port_set(unsigned int gid, const char *oid, const char *value,
     rc = te_strtoui(value, 0, &port);
     if (rc != 0)
         return rc;
-    if (port >= UINT16_MAX)
+    if (port >= (1U << 16))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     vxlan_e->vxlan->port = port;
@@ -520,11 +539,8 @@ vxlan_dev_get(unsigned int gid, const char *oid, char *value,
     if (!vxlan_entry_valid(vxlan_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (vxlan_e->vxlan->dev == NULL)
-        *value = '\0';
-    else
-        snprintf(value, RCF_MAX_VAL, "/agent:%s/interface:%s", ta_name,
-                 vxlan_e->vxlan->dev);
+    snprintf(value, RCF_MAX_VAL, "/agent:%s/interface:%s", ta_name,
+             vxlan_e->vxlan->dev);
 
     return 0;
 }
@@ -534,7 +550,7 @@ vxlan_dev_set(unsigned int gid, const char *oid, const char *value,
               const char *tunnel, const char *ifname)
 {
     struct vxlan_entry *vxlan_e;
-    cfg_oid            *oid_value;
+    cfg_oid            *tmp_oid;
     char               *tmp_dev;
 
     UNUSED(gid);
@@ -546,30 +562,22 @@ vxlan_dev_set(unsigned int gid, const char *oid, const char *value,
     vxlan_e = vxlan_find(ifname);
     if (!vxlan_entry_valid(vxlan_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-
-    if (*value == '\0')
-    {
-        free(vxlan_e->vxlan->dev);
-        vxlan_e->vxlan->dev = NULL;
-        return 0;
-    }
-
     if (!rcf_pch_rsrc_accessible(value))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    oid_value = cfg_convert_oid_str(value);
-    if (oid_value == NULL)
+    tmp_oid = cfg_convert_oid_str(value);
+    if (tmp_oid == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    if (!oid_value->inst || oid_value->len != 2 ||
-        strcmp(CFG_OID_GET_INST_NAME(oid_value, 0), ta_name) != 0)
+    if (!tmp_oid->inst || tmp_oid->len != 2 ||
+        strcmp(CFG_OID_GET_INST_NAME(tmp_oid, 0), ta_name) != 0)
     {
-        cfg_free_oid(oid_value);
+        cfg_free_oid(tmp_oid);
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    tmp_dev = strdup(CFG_OID_GET_INST_NAME(oid_value, 1));
-    cfg_free_oid(oid_value);
+    tmp_dev = strdup(CFG_OID_GET_INST_NAME(tmp_oid, 1));
+    cfg_free_oid(tmp_oid);
     if (tmp_dev == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
@@ -644,23 +652,24 @@ RCF_PCH_CFG_NODE_RW(node_vxlan_port, "port", NULL, &node_vxlan_local,
 RCF_PCH_CFG_NODE_RW(node_vxlan_dev, "dev", NULL, &node_vxlan_port,
                     vxlan_dev_get, vxlan_dev_set);
 
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_vxlan, "vxlan", &node_vxlan_dev, NULL, vxlan_get, vxlan_set,
-                               vxlan_add, vxlan_del, vxlan_list, vxlan_commit);
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_vxlan, "vxlan", &node_vxlan_dev,
+                               NULL, vxlan_get, vxlan_set, vxlan_add,
+                               vxlan_del, vxlan_list, vxlan_commit);
 
 RCF_PCH_CFG_NODE_NA(node_tunnel, "tunnel", &node_vxlan, NULL);
 
 /* See the description in conf_rule.h */
 te_errno
-ta_unix_conf_vxlan_init(void)
+ta_unix_conf_udp_tunnel_init(void)
 {
     return rcf_pch_add_node("/agent", &node_tunnel);
 }
 
 #else /* USE_LIBNETCONF */
 te_errno
-ta_unix_conf_vxlan_init(void)
+ta_unix_conf_udp_tunnel_init(void)
 {
-    INFO("VXLAN interface configuration is not supported");
+    INFO("UDP Tunnel interfaces configuration is not supported");
     return 0;
 }
 #endif /* !USE_LIBNETCONF */
