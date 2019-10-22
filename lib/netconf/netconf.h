@@ -813,6 +813,16 @@ extern te_errno netconf_udp_tunnel_list(netconf_handle nh,
 extern int geneve_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie);
 
 /**
+ * Add new Geneve interface.
+ *
+ * @param nh        Netconf session handle
+ * @param ifname    The interface name
+ *
+ * @return Status code.
+ */
+extern te_errno netconf_geneve_add(netconf_handle nh, const netconf_geneve *geneve);
+
+/**
  * Get Geneve interfaces list.
  *
  * @param nh            Netconf session handle

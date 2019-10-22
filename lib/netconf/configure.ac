@@ -27,6 +27,13 @@ AC_CHECK_DECLS([IFLA_VXLAN_GROUP6, IFLA_VXLAN_LOCAL6], [], [], [
 #include <linux/if_link.h>
 ])
 
+dnl
+dnl Check for Geneve IPv6 address attribute support
+dnl
+AC_CHECK_DECL([IFLA_GENEVE_REMOTE6], [], [], [
+#include <linux/if_link.h>
+])
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE

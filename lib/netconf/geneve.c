@@ -89,6 +89,64 @@ netconf_geneve_node_free(netconf_node *node)
 
 /* See netconf.h */
 te_errno
+netconf_geneve_add(netconf_handle nh, const netconf_geneve *geneve)
+{
+    char                req[NETCONF_MAX_REQ_LEN];
+    struct nlmsghdr    *h;
+    struct rtattr      *linkinfo;
+    struct rtattr      *data;
+
+    memset(req, 0, sizeof(req));
+    netconf_init_nlmsghdr(req, nh, RTM_NEWLINK, NLM_F_REQUEST | NLM_F_ACK |
+                          NLM_F_CREATE | NLM_F_EXCL, &h);
+
+    netconf_append_rta(h, geneve->generic.ifname,
+                       strlen(geneve->generic.ifname) + 1, IFLA_IFNAME);
+    netconf_append_rta_nested(h, IFLA_LINKINFO, &linkinfo);
+    netconf_append_rta(h, NETCONF_LINK_KIND_GENEVE,
+                       strlen(NETCONF_LINK_KIND_GENEVE) + 1, IFLA_INFO_KIND);
+    netconf_append_rta_nested(h, IFLA_INFO_DATA, &data);
+
+    netconf_append_rta(h, &(geneve->generic.vni), sizeof(geneve->generic.vni),
+                       IFLA_GENEVE_ID);
+
+    switch (geneve->generic.remote_len)
+    {
+        case sizeof(struct in_addr):
+            netconf_append_rta(h, geneve->generic.remote,
+                               geneve->generic.remote_len, IFLA_GENEVE_REMOTE);
+            break;
+
+#if HAVE_DECL_IFLA_GENEVE_REMOTE6
+        case sizeof(struct in6_addr):
+            netconf_append_rta(h, geneve->generic.remote,
+                               geneve->generic.remote_len,
+                               IFLA_GENEVE_REMOTE6);
+            break;
+#endif
+
+        case 0:
+            break;
+
+        default:
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    netconf_append_rta(h, &(geneve->generic.port),
+                       sizeof(geneve->generic.port), IFLA_GENEVE_PORT);
+
+    netconf_append_rta_nested_end(h, data);
+    netconf_append_rta_nested_end(h, linkinfo);
+
+    if (netconf_talk(nh, req, sizeof(req), NULL, NULL, NULL) != 0) {
+        return TE_OS_RC(TE_TA_UNIX, errno);
+    }
+
+    return 0;
+}
+
+/* See netconf.h */
+te_errno
 netconf_geneve_list(netconf_handle nh,
                     netconf_udp_tunnel_list_filter_func filter_cb,
                     void *filter_opaque, char **list)
@@ -96,4 +154,5 @@ netconf_geneve_list(netconf_handle nh,
     return netconf_udp_tunnel_list(nh, filter_cb, filter_opaque, list,
                                    NETCONF_LINK_KIND_GENEVE);
 }
+
 

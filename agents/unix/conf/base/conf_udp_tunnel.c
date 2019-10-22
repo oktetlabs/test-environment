@@ -42,6 +42,7 @@ typedef struct udp_tunnel_entry {
     te_bool                         to_be_deleted;
     udp_tunnel_entry_type           type;
     union {
+        netconf_geneve             *geneve;
         netconf_vxlan              *vxlan;
     } data;
 } udp_tunnel_entry;
@@ -54,6 +55,9 @@ udp_tunnel_get_generic(const udp_tunnel_entry *udp_tunnel_e)
 {
     switch (udp_tunnel_e->type)
     {
+        case UDP_TUNNEL_ENTRY_GENEVE:
+            return &(udp_tunnel_e->data.geneve->generic);
+
         case UDP_TUNNEL_ENTRY_VXLAN:
             return &(udp_tunnel_e->data.vxlan->generic);
 
@@ -72,6 +76,8 @@ udp_tunnel_discover_type(const char *oid)
     if (p_oid != NULL && p_oid->len >= index + 1)
     {
         subid = ((cfg_inst_subid *)(p_oid->ids))[index].subid;
+        if (strcmp(subid, "geneve") == 0)
+            return UDP_TUNNEL_ENTRY_GENEVE;
         if (strcmp(subid, "vxlan") == 0)
             return UDP_TUNNEL_ENTRY_VXLAN;
     }
@@ -124,6 +130,10 @@ udp_tunnel_commit(unsigned int gid, const cfg_oid *p_oid)
 
     switch (type)
     {
+        case UDP_TUNNEL_ENTRY_GENEVE:
+            tunnel = "geneve";
+            break;
+
         case UDP_TUNNEL_ENTRY_VXLAN:
             tunnel = "vxlan";
             break;
@@ -140,27 +150,34 @@ udp_tunnel_commit(unsigned int gid, const cfg_oid *p_oid)
     {
         if (udp_tunnel_e->added)
         {
-            switch (udp_tunnel_e->type)
+            rc = netconf_udp_tunnel_del(nh, ifname);
+            if (rc == 0)
             {
-                case UDP_TUNNEL_ENTRY_VXLAN:
-                    rc = netconf_udp_tunnel_del(nh,
-                            udp_tunnel_e->data.vxlan->generic.ifname);
-                    if (rc == 0)
-                    {
-                        rc = netconf_vxlan_add(nh, udp_tunnel_e->data.vxlan);
-                        if (rc != 0)
-                            udp_tunnel_e->added = FALSE;
-                    }
-                    break;
+                switch (udp_tunnel_e->type)
+                {
+                    case UDP_TUNNEL_ENTRY_GENEVE:
+                        rc = netconf_geneve_add(nh, udp_tunnel_e->data.geneve);
+                        break;
 
-                default:
-                    return TE_RC(TE_TA_UNIX, TE_EINVAL);
+                    case UDP_TUNNEL_ENTRY_VXLAN:
+                        rc = netconf_vxlan_add(nh, udp_tunnel_e->data.vxlan);
+                        break;
+
+                    default:
+                        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+                }
+                if (rc != 0)
+                    udp_tunnel_e->added = FALSE;
             }
         }
         else
         {
             switch (udp_tunnel_e->type)
             {
+                case UDP_TUNNEL_ENTRY_GENEVE:
+                    rc = netconf_geneve_add(nh, udp_tunnel_e->data.geneve);
+                    break;
+
                 case UDP_TUNNEL_ENTRY_VXLAN:
                     rc = netconf_vxlan_add(nh, udp_tunnel_e->data.vxlan);
                     break;
@@ -185,6 +202,10 @@ udp_tunnel_commit(unsigned int gid, const cfg_oid *p_oid)
 
         switch (udp_tunnel_e->type)
         {
+            case UDP_TUNNEL_ENTRY_GENEVE:
+                target_data = udp_tunnel_e->data.geneve;
+                break;
+
             case UDP_TUNNEL_ENTRY_VXLAN:
                 free(udp_tunnel_e->data.vxlan->dev);
                 target_data = udp_tunnel_e->data.vxlan;
@@ -259,6 +280,19 @@ udp_tunnel_add(unsigned int gid, const char *oid, const char *value,
 
     switch (type)
     {
+        case UDP_TUNNEL_ENTRY_GENEVE:
+            default_port = 6081;
+            target_data = udp_tunnel_e->data.geneve;
+            udp_tunnel_e->data.geneve = TE_ALLOC(sizeof(netconf_geneve));
+            if (udp_tunnel_e->data.geneve == NULL)
+                goto fail_alloc_data;
+
+            if (udp_tunnel_generic_init(&(udp_tunnel_e->data.geneve->generic),
+                                        ifname, default_port) != 0)
+                goto fail_strdup_ifname;
+
+            break;
+
         case UDP_TUNNEL_ENTRY_VXLAN:
             default_port = 4789;
             target_data = udp_tunnel_e->data.vxlan;
@@ -354,7 +388,8 @@ udp_tunnel_list(char **list, udp_tunnel_entry_type type)
     switch (type)
     {
         case UDP_TUNNEL_ENTRY_GENEVE:
-            return netconf_geneve_list(nh, udp_tunnel_list_include_cb, NULL, list);
+            rc = netconf_geneve_list(nh, udp_tunnel_list_include_cb, NULL, list);
+            break;
 
         case UDP_TUNNEL_ENTRY_VXLAN:
             rc = netconf_vxlan_list(nh, udp_tunnel_list_include_cb, NULL, list);
@@ -781,8 +816,18 @@ udp_tunnel_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_geneve, "geneve", NULL, NULL, NULL,
-                               geneve_list);
+RCF_PCH_CFG_NODE_RW(node_geneve_vni, "vni", NULL, NULL,
+                    udp_tunnel_vni_get, udp_tunnel_vni_set);
+
+RCF_PCH_CFG_NODE_RW(node_geneve_remote, "remote", NULL, &node_geneve_vni,
+                    udp_tunnel_remote_get, udp_tunnel_remote_set);
+
+RCF_PCH_CFG_NODE_RW(node_geneve_port, "port", NULL, &node_geneve_remote,
+                    udp_tunnel_port_get, udp_tunnel_port_set);
+
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_geneve, "geneve", &node_geneve_port, NULL,
+                               udp_tunnel_get, udp_tunnel_set, udp_tunnel_add,
+                               udp_tunnel_del, geneve_list, udp_tunnel_commit);
 
 RCF_PCH_CFG_NODE_RW(node_vxlan_vni, "vni", NULL, NULL,
                     udp_tunnel_vni_get, udp_tunnel_vni_set);

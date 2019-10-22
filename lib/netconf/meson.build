@@ -27,6 +27,19 @@ if cc.compiles(code_vxlan_group6, args: prj_args,
     c_args += ['-DHAVE_DECL_IFLA_VXLAN_GROUP6']
 endif
 
+# Check if IPv6 address type Geneve attributes supported
+code_geneve_remote6 = '''
+#include <linux/if_link.h>
+
+int main(void) {
+    return IFLA_GENEVE_REMOTE6;
+}
+'''
+if cc.compiles(code_geneve_remote6, args: prj_args,
+               name: 'IFLA_GENEVE_REMOTE6 available')
+    c_args += ['-DHAVE_DECL_IFLA_GENEVE_REMOTE6']
+endif
+
 headers += files(
     'netconf.h',
     'netconf_internal.h',
