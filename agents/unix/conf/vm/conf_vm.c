@@ -39,6 +39,11 @@
 /** KVM device to check */
 #define DEV_KVM     "/dev/kvm"
 
+typedef struct vm_cpu {
+    te_string       model;
+    unsigned int    num;
+} vm_cpu;
+
 struct vm_drive_entry {
     SLIST_ENTRY(vm_drive_entry)     links;
     char                           *name;
@@ -60,6 +65,7 @@ struct vm_pci_pt_entry {
     te_string                       pci_addr;
 };
 
+
 typedef SLIST_HEAD(vm_net_list_t, vm_net_entry) vm_net_list_t;
 typedef SLIST_HEAD(vm_drive_list_t, vm_drive_entry) vm_drive_list_t;
 typedef SLIST_HEAD(vm_pci_pt_list_t, vm_pci_pt_entry) vm_pci_pt_list_t;
@@ -71,6 +77,7 @@ struct vm_entry {
     uint16_t                host_ssh_port;
     uint16_t                guest_ssh_port;
     uint16_t                rcf_port;
+    vm_cpu                  cpu;
     unsigned int            mem_size;
     te_string               cmd;
     pid_t                   pid;
@@ -296,6 +303,42 @@ exit:
 }
 
 static te_errno
+vm_append_cpu_cmd(te_string *cmd, struct vm_entry *vm)
+{
+    te_string num_arg = TE_STRING_INIT;
+    te_errno rc;
+
+    rc = te_string_append_shell_args_as_is(cmd, "-cpu", vm->cpu.model.ptr, NULL);
+    if (rc != 0)
+    {
+        ERROR("Cannot compose CPU command line (line %u): %r",
+              __LINE__, rc);
+        goto exit;
+    }
+
+    rc = te_string_append(&num_arg, "%u", vm->cpu.num);
+    if (rc != 0)
+    {
+        ERROR("Cannot compose CPU command line (line %u): %r",
+              __LINE__, rc);
+        goto exit;
+    }
+
+    rc = te_string_append_shell_args_as_is(cmd, "-smp", num_arg.ptr, NULL);
+    if (rc != 0)
+    {
+        ERROR("Cannot compose CPU command line (line %u): %r",
+              __LINE__, rc);
+        goto exit;
+    }
+
+exit:
+    te_string_free(&num_arg);
+
+    return rc;
+}
+
+static te_errno
 vm_start(struct vm_entry *vm)
 {
     in_addr_t local_ip = htonl(INADDR_LOOPBACK);
@@ -347,7 +390,6 @@ vm_start(struct vm_entry *vm)
     {
         rc = te_string_append_shell_args_as_is(&vm->cmd,
                  "-enable-kvm",
-                 "-cpu", "host",
                  "-machine",
                  "pc-i440fx-2.8,accel=kvm,usb=off,vmport=off,dump-guest-core=off",
                  NULL);
@@ -363,6 +405,10 @@ vm_start(struct vm_entry *vm)
         ERROR("Cannot compose VM start command line (line %u)", __LINE__);
         goto exit;
     }
+
+    rc = vm_append_cpu_cmd(&vm->cmd, vm);
+    if (rc != 0)
+        goto exit;
 
     if (vm->mem_size != 0)
     {
@@ -576,6 +622,7 @@ vm_add(unsigned int gid, const char *oid, const char *value,
        const char *vm_name)
 {
     struct vm_entry *vm;
+    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -596,6 +643,15 @@ vm_add(unsigned int gid, const char *oid, const char *value,
         free(vm);
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
+
+    rc = te_string_append(&vm->cpu.model, "host");
+    if (rc != 0)
+    {
+        free(vm->name);
+        free(vm);
+        return rc;
+    }
+    vm->cpu.num = 1;
 
     vm->kvm = kvm_supported;
     vm->host_ssh_port = vm_alloc_tcp_port();
@@ -1356,9 +1412,112 @@ vm_pci_pt_list(unsigned int gid, const char *oid, const char *sub_id,
     return 0;
 }
 
+static te_errno
+vm_cpu_model_get(unsigned int gid, const char *oid, char *value,
+               const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", vm->cpu.model.ptr);
+
+    return 0;
+}
+
+static te_errno
+vm_cpu_model_set(unsigned int gid, const char *oid, const char *value,
+                const char *vm_name)
+{
+    struct vm_entry *vm;
+    te_errno rc;
+    te_string save = TE_STRING_INIT;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    rc = te_string_append(&save, "%s", vm->cpu.model.ptr);
+    if (rc != 0)
+        return rc;
+
+    te_string_free(&vm->cpu.model);
+    rc = te_string_append(&vm->cpu.model, "%s",  value);
+    if (rc == 0)
+        te_string_free(&save);
+    else
+        vm->cpu.model = save;
+
+    return rc;
+}
+
+static te_errno
+vm_cpu_num_get(unsigned int gid, const char *oid, char *value,
+               const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%u", vm->cpu.num);
+
+    return 0;
+}
+
+static te_errno
+vm_cpu_num_set(unsigned int gid, const char *oid, const char *value,
+               const char *vm_name)
+{
+    struct vm_entry *vm;
+    unsigned int save;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    save = vm->cpu.num;
+    if (te_strtoui(value, 0, &vm->cpu.num) != 0)
+    {
+        vm->cpu.num = save;
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    return 0;
+}
+
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_vm_pci_pt, "pci_pt", NULL, NULL,
                                vm_pci_pt_get, NULL, vm_pci_pt_add,
                                vm_pci_pt_del, vm_pci_pt_list, NULL);
+
+RCF_PCH_CFG_NODE_RW(node_vm_cpu_num, "num", NULL, NULL,
+                    vm_cpu_num_get, vm_cpu_num_set);
+
+RCF_PCH_CFG_NODE_RW(node_vm_cpu_model, "model", NULL, &node_vm_cpu_num,
+                    vm_cpu_model_get, vm_cpu_model_set);
+
+RCF_PCH_CFG_NODE_NA(node_vm_cpu, "cpu", &node_vm_cpu_model, &node_vm_pci_pt);
 
 RCF_PCH_CFG_NODE_RW(node_vm_snapshot, "snapshot", NULL, NULL,
                     vm_snapshot_get, vm_snapshot_set);
@@ -1367,7 +1526,7 @@ RCF_PCH_CFG_NODE_RW(node_vm_file, "file", NULL, &node_vm_snapshot,
                     vm_file_get, vm_file_set);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_vm_drive, "drive", &node_vm_file,
-                            &node_vm_pci_pt, vm_drive_add, vm_drive_del,
+                            &node_vm_cpu, vm_drive_add, vm_drive_del,
                             vm_drive_list, NULL);
 
 RCF_PCH_CFG_NODE_RW(node_vm_net_mac_addr, "mac_addr", NULL, NULL,
