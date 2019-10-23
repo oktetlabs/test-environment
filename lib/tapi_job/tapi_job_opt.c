@@ -31,6 +31,9 @@ tapi_job_opt_create_string(const void *value, te_vec *args)
 {
     const char *str = *(const char *const *)value;
 
+    if (str == NULL)
+        return TE_ENOENT;
+
     return te_vec_append_str_fmt(args, "%s", str);
 }
 
