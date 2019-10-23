@@ -234,7 +234,7 @@ and libraries.
 If you do not specify @var{TE_BUILD} environment variable, @ref
 te_engine_builder calls @prog{configure} scripts and calls @prog{make} under
 @path{${PRJ_ROOT}} directory (i.e. a directory where you run
-@prog{dispatcher.sh}.
+@prog{dispatcher.sh}).
 
 @section te_user_run TE Exectuion
 

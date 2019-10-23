@@ -383,7 +383,7 @@ is executed manually.
 Building is performed as follows:
 -# The root @prog{configure} script analyses @ref te_engine_builder
    configuration file. It creates directories for all packages to be built
-   and call @prog{configure} script for all host packages. If configure
+   and calls @prog{configure} script for all host packages. If configure
    script or @path{Makefile.in} file are missing in the package source
    directory, autotools are used to generate them;
 -# @prog{make} is called. It builds and installs libraries,

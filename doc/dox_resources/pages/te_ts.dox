@@ -118,7 +118,7 @@ The structure of minimal project is:
 </pre>
 
 @ref te_engine_tester configuration file (@path{tester.conf}) refers to
-suite sources and add this suite for @ref te_engine_tester run:
+suite sources and adds this suite for @ref te_engine_tester run:
 @code
 @USER_EXPAND{INCLUDE_FILE} suites/minimal/conf/tester.conf
 @endcode
@@ -215,7 +215,7 @@ Each test scenario shall have:
    @endcode
 -# Inclusion of @path{te_config.h} file. This file defines macros generated
    by TE @prog{configure} script after verification of header files,
-   structure fields, strucure sizes (i.e. it has definitions of
+   structure fields, structure sizes (i.e. it has definitions of
    @c HAVE_xxx_H, @c SIZEOF_xxx macros).
    @code
    #include "te_config.h"

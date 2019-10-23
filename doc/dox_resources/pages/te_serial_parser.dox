@@ -177,7 +177,9 @@ An <b>external</b> handler is an executable program. It can to perform any actio
    - 2 : stop both handlers and test execution
    - 3 : stop handlers execution, kill the test and stop tests sequence execution.
 
-The end user, specifying full path, can use any handler programs or scripts, that are located anywhere. But if is used a short name, the handler is searched in the default handlers directory.
+The end user, specifying full path, can use any handler programs or scripts,
+that are located anywhere. But if a short name is used, the handler is searched
+in the default handlers directory.
 
 @note By default the handlers directory is <b>RUN_DIR/handlers</b>. The directory of handlers can be changed by user. 
 
