@@ -40,6 +40,10 @@
          Name: None -->
     <object oid="/agent/vm/rcf_port" access="read_write" type="integer"/>
 
+    <!-- Enable/disable KVM mode.
+         Name: None -->
+    <object oid="/agent/vm/kvm" access="read_write" type="integer"/>
+
     <!-- CPU configuration subtree.
          Name: None -->
     <object oid="/agent/vm/cpu" access="read_only" type="none"/>
