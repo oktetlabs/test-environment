@@ -54,6 +54,10 @@
 #include <expect.h>
 #elif defined(HAVE_TCL8_4_EXPECT_H)
 #include <tcl8.4/expect.h>
+#elif defined(HAVE_TCL8_5_EXPECT_H)
+#include <tcl8.5/expect.h>
+#elif defined(HAVE_TCL8_6_EXPECT_H)
+#include <tcl8.6/expect.h>
 #else
 #error There is no expect headers in the system.
 #endif

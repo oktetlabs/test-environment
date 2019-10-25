@@ -28,6 +28,12 @@ if build_subdirs.contains('cli')
         c_args += '-DHAVE_EXPECT_H'
     elif cc.has_header('tcl8.4/expect.h')
         c_args += '-DHAVE_TCL8_4_EXPECT_H'
+    elif cc.has_header('tcl8.5/expect.h')
+        c_args += '-DHAVE_TCL8_5_EXPECT_H'
+        deps += [ cc.find_library('tcl8.5') ]
+    elif cc.has_header('tcl8.6/expect.h')
+        c_args += '-DHAVE_TCL8_6_EXPECT_H'
+        deps += [ cc.find_library('tcl8.6') ]
     endif
     # FIXME In practice expect is sufficient for me, but it is tested
     # on a couple of OS versions only. So, keep below deps commented
