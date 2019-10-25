@@ -27,8 +27,6 @@ TE_PLATFORM([], [], [-D_GNU_SOURCE], [], [],
              ipc bsapi loggerten rcfapi confapi comm_net_engine rcfunix \
              tapi rcfrpc tapi_rpc tapi_env tapi_tad tapi_radius trc netconf])
 
-TE_APP_PARMS([rcf], [--enable-ltdl-install])
-
 TE_LIB_PARMS([tad], [], [],
              [--with-pcap --with-atm --with-eth --with-bridge \
               --with-arp --with-ipstack --with-dhcp --with-iscsi \
