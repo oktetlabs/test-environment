@@ -1233,7 +1233,7 @@ force_reboot(ta *agent, usrreq *req)
                                 req->message->data : NULL);
     if (rc != 0)
     {
-        ERROR("Cannot reboot TA %s", agent->name);
+        ERROR("Cannot reboot TA '%s': finish failed %r", agent->name, rc);
         agent->handle = NULL;
         set_ta_unrecoverable(agent);
         return rc;
@@ -3033,7 +3033,8 @@ process_user_request(usrreq *req)
                                        req->message->data : NULL);
                 if (rc != 0)
                 {
-                    ERROR("Cannot reboot TA '%s'", agent->name);
+                    ERROR("Cannot reboot TA '%s' on request: finish failed %r",
+                          agent->name, rc);
                     msg->error = TE_RC(TE_RCF, rc);
                     answer_user_request(req);
                     return;
