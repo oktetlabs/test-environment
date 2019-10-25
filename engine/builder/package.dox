@@ -274,7 +274,7 @@ For example:
 
 @code
 TE_APP_PARMS([rcf], [--enable-ltdl-install])
-TE_APP_PARMS([tester], [--with-trc])
+TE_APP_PARMS([tester], [--without-trc])
 @endcode
 
 Please note that we specify the values only for the first two parameters
