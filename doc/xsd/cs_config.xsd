@@ -160,6 +160,22 @@
         </xs:complexType>
     </xs:element>
 
+    <xs:element name="get">
+        <xs:annotation>
+            <xs:documentation>
+                Get value from object instance and store it in either
+                environmental variable or add kvpair entry for further
+                substitutions in conf files.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="instance" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="cond" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+
     <xs:element name="delete">
         <xs:annotation>
             <xs:documentation>

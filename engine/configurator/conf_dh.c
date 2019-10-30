@@ -13,6 +13,7 @@
  * $Id$
  */
 
+#include "te_alloc.h"
 #include "conf_defs.h"
 #define TE_EXPAND_XML 1
 #include "te_expand.h"
@@ -217,6 +218,146 @@ cleanup:
 }
 
 /**
+ * Get value from instance and store it in either list of kvpairs or
+ * environmental variable.
+ *
+ * @param node          XML node with get command children
+ * @param expand_vars   List of key-value pairs for expansion in file
+ *                      NULL if environmental variables used for
+ *                      substitutions
+ *
+ * @return Status code.
+ */
+static te_errno
+cfg_dh_get_value_from_instance(xmlNodePtr node, const te_kvpair_h *expand_vars)
+{
+    te_errno     rc;
+    int          ret;
+    size_t       len;
+    char        *oid = NULL;
+    char        *var_name = NULL;
+    char        *get_val_s = NULL;
+    cfg_get_msg *msg = NULL;
+    cfg_inst_val get_val;
+    cfg_handle   handle;
+    cfg_object  *obj;
+
+
+    rc = cfg_dh_get_instance_info(node, &handle, &oid,
+                                   &obj, expand_vars);
+    if (rc != 0)
+        return rc;
+
+    var_name = xmlGetProp_exp_vars_or_env(node,
+            (const xmlChar *)"value", expand_vars);
+    if (var_name == NULL)
+    {
+        ERROR("Value is required for %s", oid);
+        rc = TE_EINVAL;
+        goto cleanup;
+    }
+
+    len = sizeof(cfg_get_msg) + CFG_MAX_INST_VALUE;
+    if ((msg = TE_ALLOC(len)) == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto cleanup;
+    }
+
+    msg->handle = handle;
+    msg->type = CFG_GET;
+    msg->len = sizeof(cfg_get_msg);
+    msg->val_type = obj->type;
+
+    cfg_process_msg((cfg_msg **)&msg, TRUE);
+
+    if (msg->rc != 0)
+    {
+        ERROR("Failed to execute the get command for instance %s", oid);
+        rc = msg->rc;
+        goto cleanup;
+    }
+
+    rc = cfg_types[msg->val_type].get_from_msg((cfg_msg *)msg, &get_val);
+    if (rc != 0)
+    {
+        ERROR("Cannot extract value from message for %s", oid);
+        goto cleanup;
+    }
+    rc = cfg_types[msg->val_type].val2str(get_val, &get_val_s);
+    cfg_types[obj->type].free(get_val);
+    if (rc != 0)
+    {
+        ERROR("Cannot convert value to string for %s", oid);
+        goto cleanup;
+    }
+
+    if (expand_vars != NULL)
+    {
+        rc = te_kvpair_add(expand_vars, var_name, get_val_s);
+        if (rc != 0)
+        {
+            ERROR("Failed to add new entry in list of kvpairs: %r", rc);
+            goto cleanup;
+        }
+    }
+    else
+    {
+        ret = setenv(var_name, get_val_s, 1);
+        if (ret != 0)
+        {
+            ERROR("Failed to put value in environmental variable");
+            rc = TE_OS_RC(TE_CS, errno);
+            goto cleanup;
+        }
+    }
+
+cleanup:
+    free(var_name);
+    free(get_val_s);
+    free(msg);
+    free(oid);
+
+    return rc;
+}
+
+/**
+ * Process 'get' command.
+ *
+ * @param node          XML node with get command children
+ * @param expand_vars   List of key-value pairs for expansion in file
+ *                      NULL if environmental variables used for
+ *                      substitutions
+ *
+ * @return Status code.
+ */
+static te_errno
+cfg_dh_process_get(xmlNodePtr node, const te_kvpair_h *expand_vars)
+{
+    te_errno rc = 0;
+
+    while (node != NULL &&
+           xmlStrcmp(node->name , (const xmlChar *)"instance") == 0)
+    {
+        if (xmlNodeCond(node))
+        {
+            rc = cfg_dh_get_value_from_instance(node, expand_vars);
+            if (rc != 0)
+                return rc;
+        }
+        node = xmlNodeNext(node);
+    }
+
+    if (node != NULL)
+    {
+        rc = TE_EINVAL;
+        ERROR("Incorrect get command format");
+    }
+
+    return rc;
+}
+
+/**
  * Process 'add' command.
  *
  * @param node          XML node with add command children
@@ -389,6 +530,7 @@ cfg_dh_process_file(xmlNodePtr node, const te_kvpair_h *expand_vars,
             xmlStrcmp(cmd->name , (const xmlChar *)"unregister") != 0 &&
             xmlStrcmp(cmd->name , (const xmlChar *)"add") != 0 &&
             xmlStrcmp(cmd->name , (const xmlChar *)"set") != 0 &&
+            xmlStrcmp(cmd->name , (const xmlChar *)"get") != 0 &&
             xmlStrcmp(cmd->name , (const xmlChar *)"delete") != 0)
         {
             ERROR("Unknown command %s", cmd->name);
@@ -571,6 +713,18 @@ cfg_dh_process_file(xmlNodePtr node, const te_kvpair_h *expand_vars,
             if (rc != 0)
             {
                 ERROR("Failed to process add command");
+                return rc;
+            }
+        }
+        else if (xmlStrcmp(cmd->name , (const xmlChar *)"get") == 0)
+        {
+            if (!postsync)
+                continue;
+
+            rc = cfg_dh_process_get(tmp, expand_vars);
+            if (rc != 0)
+            {
+                ERROR("Failed to process get command");
                 return rc;
             }
         }
