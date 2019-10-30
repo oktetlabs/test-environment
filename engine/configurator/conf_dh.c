@@ -157,6 +157,66 @@ xmlNodeCond(xmlNodePtr node)
     } while (0)
 
 /**
+ * Parse handle, oid and object of instance
+ * and check that object instance has value
+ *
+ * @param node          XML node
+ * @param handle        instance handle
+ * @oaram oid           instance OID
+ * @param obj           object of instance
+ * @param expand_vars   List of key-value pairs for expansion in file,
+ *                      @c NULL if environment variables are used for
+ *                      substitutions
+ *
+ * @return  Status code
+ */
+static te_errno
+cfg_dh_get_instance_info(xmlNodePtr node, cfg_handle *handle,
+                          char **oid, cfg_object **obj,
+                          const te_kvpair_h *expand_vars)
+{
+    te_errno rc = 0;
+
+    *oid = xmlGetProp_exp_vars_or_env(node,
+          (xmlChar *)"oid", expand_vars);
+    if (*oid == NULL)
+    {
+        ERROR("Incorrect command format");
+        rc = TE_EINVAL;
+        goto cleanup;
+    }
+    if (cfg_db_find(*oid, handle) != 0)
+    {
+        ERROR("Cannot find instance %s", *oid);
+        rc = TE_ENOENT;
+        goto cleanup;
+    }
+
+    if (!CFG_IS_INST(*handle))
+    {
+        ERROR("OID %s is not instance", *oid);
+        rc = TE_EINVAL;
+        goto cleanup;
+    }
+
+    *obj = CFG_GET_INST(*handle)->obj;
+    if ((*obj)->type == CVT_NONE)
+    {
+        ERROR("Object instance has no value");
+        rc = TE_EINVAL;
+        goto cleanup;
+    }
+
+    return 0;
+
+cleanup:
+    free(*oid);
+    *oid = NULL;
+
+    return rc;
+}
+
+/**
  * Process 'add' command.
  *
  * @param node          XML node with add command children
@@ -533,17 +593,10 @@ cfg_dh_process_file(xmlNodePtr node, const te_kvpair_h *expand_vars,
                     continue;
                 }
 
-                oid = (xmlChar *)xmlGetProp_exp_vars_or_env(tmp,
-                      (xmlChar *)"oid", expand_vars);
-                if (oid == NULL)
-                    RETERR(TE_EINVAL, "Incorrect %s command format",
-                           cmd->name);
-
-                if ((rc = cfg_db_find((char *)oid, &handle)) != 0)
-                    RETERR(TE_ENOENT, "Cannot find instance %s", oid);
-
-                if (!CFG_IS_INST(handle))
-                    RETERR(TE_EINVAL,"OID %s is not instance", oid);
+                rc = cfg_dh_get_instance_info(tmp, &handle, &oid,
+                                               &obj, expand_vars);
+                if (rc != 0)
+                    return rc;
 
                 len = sizeof(cfg_set_msg) + CFG_MAX_INST_VALUE;
                 if ((msg = (cfg_set_msg *)calloc(1, len)) == NULL)
@@ -553,11 +606,7 @@ cfg_dh_process_file(xmlNodePtr node, const te_kvpair_h *expand_vars,
                 msg->type = CFG_SET;
                 msg->len = sizeof(cfg_set_msg);
                 msg->rc = 0;
-                obj = CFG_GET_INST(handle)->obj;
                 msg->val_type = obj->type;
-
-                if (obj->type == CVT_NONE)
-                    RETERR(TE_EINVAL, "Cannot perform set for %s", oid);
 
                 val_s = (xmlChar *)xmlGetProp_exp_vars_or_env(tmp,
                         (const xmlChar *)"value", expand_vars);
