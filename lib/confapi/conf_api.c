@@ -2281,23 +2281,26 @@ cfg_process_history(const char *filename, const te_kvpair_h *expand_vars)
     memcpy(msg->filename, filename, len);
 
     msg->len = sizeof(cfg_config_msg) + len;
-    TAILQ_FOREACH(p, expand_vars, links)
+    if (expand_vars != NULL)
     {
-        if (msg->len + strlen(p->key) + 1 > CFG_MSG_MAX)
+        TAILQ_FOREACH(p, expand_vars, links)
         {
-            ret_val = TE_ESMALLBUF;
-            goto done;
-        }
-        memcpy((char *)msg + msg->len, p->key, strlen(p->key) + 1);
-        msg->len += strlen(p->key) + 1;
+            if (msg->len + strlen(p->key) + 1 > CFG_MSG_MAX)
+            {
+                ret_val = TE_ESMALLBUF;
+                goto done;
+            }
+            memcpy((char *)msg + msg->len, p->key, strlen(p->key) + 1);
+            msg->len += strlen(p->key) + 1;
 
-        if (msg->len + strlen(p->value) + 1 > CFG_MSG_MAX)
-        {
-            ret_val = TE_ESMALLBUF;
-            goto done;
+            if (msg->len + strlen(p->value) + 1 > CFG_MSG_MAX)
+            {
+                ret_val = TE_ESMALLBUF;
+                goto done;
+            }
+            memcpy((char *)msg + msg->len, p->value, strlen(p->value) + 1);
+            msg->len += strlen(p->value) + 1;
         }
-        memcpy((char *)msg + msg->len, p->value, strlen(p->value) + 1);
-        msg->len += strlen(p->value) + 1;
     }
     len = CFG_MSG_MAX;
 
