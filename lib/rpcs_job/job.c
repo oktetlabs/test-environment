@@ -1491,7 +1491,7 @@ job_attach_filter_unsafe(const char *filter_name, unsigned int n_channels,
         if (channel->n_filters == MAX_FILTERS_PER_CHANNEL)
         {
             ERROR("Failed to attach filter to a channel, limit exceeded");
-            return TE_EPERM;
+            return TE_ENOBUFS;
         }
     }
 
@@ -1643,7 +1643,7 @@ channel_or_filter_ready(unsigned int id, te_bool filter_only, te_bool *ready)
         if (channel->fd < 0)
         {
             ERROR("Unable to check data on input channel without binded fd");
-            return TE_EPERM;
+            return TE_EBADF;
         }
         *ready = channel->input_ready;
     }
@@ -1784,13 +1784,13 @@ job_send_unsafe(unsigned int channel_id, size_t count, uint8_t *buf)
     if (channel->fd < 0)
     {
         ERROR("Channel's file descriptor is not binded to process");
-        return TE_EPERM;
+        return TE_EBADFD;
     }
 
     if (!channel->input_ready)
     {
         ERROR("Channel is not ready to accept input");
-        return TE_EPERM;
+        return TE_EAGAIN;
     }
 
     if ((write_rc = write(channel->fd, buf, count)) < 0)
@@ -1848,7 +1848,7 @@ job_kill(unsigned int job_id, int signo)
     if (job->pid < 0)
     {
         ERROR("Job is not running");
-        return TE_EPERM;
+        return TE_ESRCH;
     }
 
     if (kill(job->pid, signo) < 0)
@@ -1872,7 +1872,7 @@ job_killpg(unsigned int job_id, int signo)
     if (job->pid < 0)
     {
         ERROR("Job is not running");
-        return TE_EPERM;
+        return TE_ESRCH;
     }
 
     if (killpg(job->pid, signo) < 0)
@@ -1897,7 +1897,7 @@ job_wait(unsigned int job_id, int timeout_ms, tarpc_job_status *status)
     if (job->pid < 0)
     {
         ERROR("Job is not running");
-        return TE_EPERM;
+        return TE_ECHILD;
     }
 
     if ((rc = proc_wait(job->pid, timeout_ms, status)) == 0)
