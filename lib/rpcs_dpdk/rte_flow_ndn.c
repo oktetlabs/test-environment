@@ -2360,7 +2360,106 @@ TARPC_FUNC(rte_flow_destroy, {},
     }
 
     tarpc_rte_error2tarpc(&out->error, &error);
-})TARPC_FUNC(rte_flow_flush, {},
+})
+
+typedef union flow_query_data {
+    struct rte_flow_query_count count;
+} flow_query_data;
+
+static void
+tarpc_rte_flow_query_count2tarpc(const struct rte_flow_query_count *rte,
+                                 struct tarpc_rte_flow_query_count *rpc)
+{
+    rpc->reset = rte->reset;
+    rpc->hits_set = rte->hits_set;
+    rpc->bytes_set = rte->bytes_set;
+    rpc->hits = rte->hits;
+    rpc->bytes = rte->bytes;
+}
+
+static void
+tarpc_rte_flow_query_count2rte(const struct tarpc_rte_flow_query_count *rpc,
+                               struct rte_flow_query_count *rte)
+{
+    rte->reset = rpc->reset ? 1 : 0;
+    rte->hits_set = rpc->hits_set ? 1 : 0;
+    rte->bytes_set = rpc->bytes_set ? 1 : 0;
+    rte->hits = rpc->hits;
+    rte->bytes = rpc->bytes;
+}
+
+static void
+tarpc_rte_flow_query_data2tarpc(const flow_query_data *rte,
+                                enum tarpc_rte_flow_query_data_types type,
+                                struct tarpc_rte_flow_query_data *rpc)
+{
+    switch (type)
+    {
+        case TARPC_RTE_FLOW_QUERY_DATA_COUNT:
+            tarpc_rte_flow_query_count2tarpc(&rte->count,
+                    &rpc->tarpc_rte_flow_query_data_u.count);
+            rpc->type = type;
+            break;
+        default:
+            rpc->type = TARPC_RTE_FLOW_QUERY_DATA__UNKNOWN;
+            break;
+    }
+}
+
+static int
+tarpc_rte_flow_query_data2rte(const struct tarpc_rte_flow_query_data *rpc,
+                              flow_query_data *rte)
+{
+    switch (rpc->type)
+    {
+        case TARPC_RTE_FLOW_QUERY_DATA_COUNT:
+            tarpc_rte_flow_query_count2rte(&rpc->tarpc_rte_flow_query_data_u.count,
+                                           &rte->count);
+            break;
+        default:
+            ERROR("Invalid flow query data type");
+            return EINVAL;
+    }
+
+    return 0;
+}
+
+TARPC_FUNC(rte_flow_query, {},
+{
+    struct rte_flow *flow = NULL;
+    struct rte_flow_action *action = NULL;
+    struct rte_flow_error error;
+    flow_query_data data;
+    int rc;
+
+    memset(&error, 0, sizeof(error));
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        flow = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->flow, ns);
+        action = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->action, ns);
+    });
+
+    rc = tarpc_rte_flow_query_data2rte(&in->data, &data);
+    if (rc != 0)
+    {
+        out->retval = rc;
+        goto exit;
+    }
+
+    MAKE_CALL(out->retval = func(in->port_id, flow, action, &data, &error));
+    if (out->retval == 0)
+    {
+        out->data.type = TARPC_RTE_FLOW_QUERY_DATA_COUNT;
+        tarpc_rte_flow_query_data2tarpc(&data, in->data.type, &out->data);
+    }
+
+    tarpc_rte_error2tarpc(&out->error, &error);
+
+exit:
+    neg_errno_h2rpc(&out->retval);
+})
+
+TARPC_FUNC(rte_flow_flush, {},
 {
     struct rte_flow_error error;
 

@@ -81,6 +81,24 @@ extern int rpc_rte_flow_destroy(rcf_rpc_server *rpcs,
                                 tarpc_rte_flow_error *error);
 
 /**
+ * rte_flow_query() RPC.
+ *
+ * @param[in]  port_id     Port number
+ * @param[in]  flow        RTE flow pointer
+ * @param[in]  action      Action definition as defined in original flow rule
+ * @param[inout] data      Pointer to storage for the associated query data type
+ * @param[out] error       Perform verbose error reporting if not @c NULL
+ *
+ * @return @c 0 on success; jumps out in case of failure
+ */
+extern int rpc_rte_flow_query(rcf_rpc_server *rpcs,
+                              uint16_t port_id,
+                              rpc_rte_flow_p flow,
+                              rpc_rte_flow_action_p action,
+                              tarpc_rte_flow_query_data *data,
+                              tarpc_rte_flow_error *error);
+
+/**
  * rte_flow_flush() RPC.
  *
  * @param[in]  rpcs        RPC server handle

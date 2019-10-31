@@ -1847,6 +1847,40 @@ struct tarpc_rte_flow_destroy_in {
 
 typedef struct tarpc_rte_flow_validate_out tarpc_rte_flow_destroy_out;
 
+/** rte_flow_query() */
+enum tarpc_rte_flow_query_data_types {
+    TARPC_RTE_FLOW_QUERY_DATA_COUNT,
+
+    TARPC_RTE_FLOW_QUERY_DATA__UNKNOWN
+};
+
+struct tarpc_rte_flow_query_count {
+    tarpc_bool                      reset;
+    tarpc_bool                      hits_set;
+    tarpc_bool                      bytes_set;
+    uint64_t                        hits;
+    uint64_t                        bytes;
+};
+
+union tarpc_rte_flow_query_data switch (tarpc_rte_flow_query_data_types type) {
+    case TARPC_RTE_FLOW_QUERY_DATA_COUNT: tarpc_rte_flow_query_count count;
+};
+
+struct tarpc_rte_flow_query_in {
+    struct tarpc_in_arg             common;
+    uint16_t                        port_id;
+    tarpc_rte_flow                  flow;
+    tarpc_rte_flow_action           action;
+    tarpc_rte_flow_query_data       data;
+};
+
+struct tarpc_rte_flow_query_out {
+    struct tarpc_out_arg            common;
+    tarpc_rte_flow_query_data       data;
+    tarpc_int                       retval;
+    struct tarpc_rte_flow_error     error;
+};
+
 /** rte_flow_flush() */
 struct tarpc_rte_flow_flush_in {
     struct tarpc_in_arg             common;
@@ -2029,6 +2063,7 @@ program dpdk
         RPC_DEF(rte_flow_validate)
         RPC_DEF(rte_flow_create)
         RPC_DEF(rte_flow_destroy)
+        RPC_DEF(rte_flow_query)
         RPC_DEF(rte_flow_flush)
         RPC_DEF(rte_flow_isolate)
 

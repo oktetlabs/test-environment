@@ -280,6 +280,67 @@ rpc_rte_flow_destroy(rcf_rpc_server *rpcs,
     RETVAL_ZERO_INT(rte_flow_destroy, out.retval);
 }
 
+static const char *
+tarpc_rte_flow_query_data2str(te_log_buf *tlbp, const struct tarpc_rte_flow_query_data *data)
+{
+    switch (data->type)
+    {
+        case TARPC_RTE_FLOW_QUERY_DATA_COUNT:
+            te_log_buf_append(tlbp,
+                              "{ hits_set: %u, hits: %u, bytes_set: %u, bytes: %u }",
+                              data->tarpc_rte_flow_query_data_u.count.hits_set,
+                              data->tarpc_rte_flow_query_data_u.count.hits,
+                              data->tarpc_rte_flow_query_data_u.count.bytes_set,
+                              data->tarpc_rte_flow_query_data_u.count.bytes);
+            break;
+        default:
+            te_log_buf_append(tlbp, "Unknown type");
+            break;
+    }
+
+    return te_log_buf_get(tlbp);
+}
+
+int
+rpc_rte_flow_query(rcf_rpc_server *rpcs, uint16_t port_id,
+                   rpc_rte_flow_p flow, rpc_rte_flow_action_p action,
+                   tarpc_rte_flow_query_data *data, tarpc_rte_flow_error *error)
+{
+    tarpc_rte_flow_query_in in;
+    tarpc_rte_flow_query_out out;
+    te_log_buf *tlbp_err;
+    te_log_buf *tlbp_data;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.port_id = port_id;
+    in.flow = (tarpc_rte_flow)flow;
+    in.action = (tarpc_rte_flow_action)action;
+    in.data = *data;
+
+    rcf_rpc_call(rpcs, "rte_flow_query", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_flow_query, out.retval);
+
+    tlbp_err = te_log_buf_alloc();
+    tlbp_data = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_flow_query, "%hu, "RPC_PTR_FMT", "RPC_PTR_FMT", %s",
+                 NEG_ERRNO_FMT "%s", in.port_id, RPC_PTR_VAL(in.flow),
+                 RPC_PTR_VAL(in.action),
+                 tarpc_rte_flow_query_data2str(tlbp_data, &out.data),
+                 NEG_ERRNO_ARGS(out.retval), (out.retval != 0) ?
+                 tarpc_rte_flow_error2str(tlbp_err, &out.error) : "");
+    te_log_buf_free(tlbp_data);
+    te_log_buf_free(tlbp_err);
+
+    tarpc_rte_flow_error_copy(error, &out.error);
+    *data = out.data;
+
+    RETVAL_ZERO_INT(rte_flow_query, out.retval);
+}
+
+
 int
 rpc_rte_flow_flush(rcf_rpc_server *rpcs,
                    uint16_t port_id,
