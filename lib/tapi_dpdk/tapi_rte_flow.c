@@ -111,3 +111,25 @@ tapi_rte_flow_validate_and_create_rule(rcf_rpc_server *rpcs, uint16_t port_id,
 
     return flow;
 }
+
+void
+tapi_rte_flow_make_attr(rcf_rpc_server *rpcs, uint32_t group, uint32_t priority,
+                        te_bool ingress, te_bool egress, te_bool transfer,
+                        rpc_rte_flow_attr_p *attr)
+{
+    asn_value *attr_pdu;
+
+    attr_pdu = asn_init_value(ndn_rte_flow_attr);
+    if (attr_pdu == NULL)
+        TEST_FAIL("Failed to init ASN.1 value");
+
+    CHECK_RC(asn_write_uint32(attr_pdu, group, "group"));
+    CHECK_RC(asn_write_uint32(attr_pdu, priority, "priority"));
+    CHECK_RC(asn_write_int32(attr_pdu, !!egress, "egress"));
+    CHECK_RC(asn_write_int32(attr_pdu, !!ingress, "ingress"));
+    CHECK_RC(asn_write_int32(attr_pdu, !!transfer, "transfer"));
+
+    CHECK_RC(rpc_rte_mk_flow_rule_components(rpcs, attr_pdu, attr, NULL, NULL));
+
+    asn_free_value(attr_pdu);
+}

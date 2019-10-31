@@ -94,6 +94,25 @@ extern rpc_rte_flow_p tapi_rte_flow_validate_and_create_rule(
                                               rpc_rte_flow_item_p pattern,
                                               rpc_rte_flow_action_p actions);
 
+/**
+ * Make RTE flow rule attributes
+ *
+ * @param[in]   rpcs        RPC server handle
+ * @param[in]   group       Rule priority group
+ * @param[in]   priority    Rule priority level within group
+ * @param[in]   ingress     Rule applies to ingress traffic
+ * @param[in]   egress      Rule applies to egress traffic
+ * @param[in]   transfer    Transfer the rule to the lowest possible level
+ *                          of any device endpoints found in the pattern
+ * @param[out]  attr        RTE flow attr pointer
+ *
+ * @exception   TEST_FAIL
+ */
+extern void tapi_rte_flow_make_attr(rcf_rpc_server *rpcs, uint32_t group,
+                                    uint32_t priority, te_bool ingress,
+                                    te_bool egress, te_bool transfer,
+                                    rpc_rte_flow_attr_p *attr);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
