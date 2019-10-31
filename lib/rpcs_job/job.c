@@ -127,6 +127,9 @@ typedef struct job_t {
     unsigned int n_in_channels;
 
     pid_t pid;
+    /* A job has started once */
+    te_bool has_started;
+    tarpc_job_status last_status;
     char *spawner;
     char *tool;
     char **argv;
@@ -716,6 +719,7 @@ job_alloc(const char *spawner, const char *tool, char **argv,
         return TE_ENOMEM;
     }
 
+    result->has_started = FALSE;
     result->pid = (pid_t)-1;
     result->argv = argv;
     result->env = env;
@@ -1189,15 +1193,6 @@ thread_work_loop(void *arg)
     return NULL;
 }
 
-static void
-job_stop(job_t *job, te_bool kill_process, int term_timeout_ms)
-{
-    if (kill_process)
-        proc_kill(job->pid, term_timeout_ms);
-
-    job->pid = (pid_t)-1;
-}
-
 static te_errno
 thread_start()
 {
@@ -1288,7 +1283,7 @@ job_start(unsigned int id)
         close_valid(stdout_fd);
         close_valid(stderr_fd);
         close_valid(stdin_fd);
-        job_stop(job, TRUE, -1);
+        proc_kill(pid, -1);
         return TE_EMFILE;
     }
 
@@ -1300,7 +1295,7 @@ job_start(unsigned int id)
         close_valid(stdout_fd);
         close_valid(stderr_fd);
         close_valid(stdin_fd);
-        job_stop(job, TRUE, -1);
+        proc_kill(pid, -1);
         return rc;
     }
 
@@ -1324,7 +1319,7 @@ job_start(unsigned int id)
             close_valid(stdout_fd);
             close_valid(stderr_fd);
             close_valid(stdin_fd);
-            job_stop(job, TRUE, -1);
+            proc_kill(pid, -1);
             return rc;
         }
     }
@@ -1347,7 +1342,7 @@ job_start(unsigned int id)
 
     pthread_mutex_unlock(&channels_lock);
 
-
+    job->has_started = TRUE;
     job->pid = pid;
 
     return 0;
@@ -1889,6 +1884,7 @@ job_wait(unsigned int job_id, int timeout_ms, tarpc_job_status *status)
 {
     job_t *job;
     te_errno rc;
+    tarpc_job_status job_status;
 
     job = get_job(job_id);
     if (job == NULL)
@@ -1896,12 +1892,20 @@ job_wait(unsigned int job_id, int timeout_ms, tarpc_job_status *status)
 
     if (job->pid < 0)
     {
-        ERROR("Job is not running");
-        return TE_ECHILD;
+        if (!job->has_started)
+            return TE_ECHILD;
+
+        *status = job->last_status;
+
+        return 0;
     }
 
-    if ((rc = proc_wait(job->pid, timeout_ms, status)) == 0)
-        job_stop(job, FALSE, -1);
+    if ((rc = proc_wait(job->pid, timeout_ms, &job_status)) == 0)
+    {
+        job->pid = -1;
+        job->last_status = job_status;
+        *status = job_status;
+    }
 
     return rc;
 }
@@ -1917,7 +1921,7 @@ job_destroy(unsigned int job_id, int term_timeout_ms)
         return TE_EINVAL;
 
     if (job->pid != (pid_t)-1)
-        job_stop(job, TRUE, term_timeout_ms);
+        proc_kill(job->pid, term_timeout_ms);
 
     LIST_REMOVE(job, next);
 

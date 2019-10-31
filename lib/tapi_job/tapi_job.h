@@ -221,6 +221,7 @@ extern unsigned int tapi_job_get_timeout(void);
  *
  * @return                  Status code
  * @retval TE_EINPROGRESS   Job is still running
+ * @retval TE_ECHILD        Job was never started
  */
 extern te_errno tapi_job_wait(tapi_job_t *job, int timeout_ms,
                               tapi_job_status_t *status);

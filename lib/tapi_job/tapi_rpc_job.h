@@ -196,6 +196,8 @@ extern int rpc_job_killpg(rcf_rpc_server *rpcs, unsigned int job_id,
  * @param[out] status   Exit status
  *
  * @return          Status code
+ * @retval TE_EINPROGRESS   Job is still running
+ * @retval TE_ECHILD        Job was never started
  */
 extern int rpc_job_wait(rcf_rpc_server *rpcs, unsigned int job_id,
                         int timeout_ms, tarpc_job_status *status);
