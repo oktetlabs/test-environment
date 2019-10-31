@@ -11,8 +11,10 @@
 #include "te_config.h"
 
 #include "tapi_test.h"
+#include "tapi_test_log.h"
 #include "rte_flow_ndn.h"
 #include "tapi_rte_flow.h"
+#include "tapi_rpc_rte_flow.h"
 
 void
 tapi_rte_flow_add_ndn_action_queue(asn_value *ndn_actions, int action_index,
@@ -58,4 +60,31 @@ tapi_rte_flow_add_ndn_action_count(asn_value *ndn_actions, int action_index,
     CHECK_RC(asn_write_bool(count_action, shared, "conf.#count.shared"));
 
     CHECK_RC(asn_insert_indexed(ndn_actions, count_action, action_index, ""));
+}
+
+rpc_rte_flow_p
+tapi_rte_flow_validate_and_create_rule(rcf_rpc_server *rpcs, uint16_t port_id,
+                                       rpc_rte_flow_attr_p attr,
+                                       rpc_rte_flow_item_p pattern,
+                                       rpc_rte_flow_action_p actions)
+{
+    tarpc_rte_flow_error error;
+    rpc_rte_flow_p flow;
+    te_errno rc;
+
+    RPC_AWAIT_IUT_ERROR(rpcs);
+    rc = rpc_rte_flow_validate(rpcs, port_id, attr, pattern, actions, &error);
+    if (rc == -TE_RC(TE_RPC, TE_ENOSYS))
+        TEST_SKIP("Flow validate operation failed: %s", error.message);
+    if (rc != 0)
+        TEST_VERDICT("'rte_flow_validate' operation failed: %s", error.message);
+
+    flow = rpc_rte_flow_create(rpcs, port_id, attr, pattern, actions, &error);
+    if (flow == RPC_NULL)
+    {
+        TEST_VERDICT("'rpc_rte_flow_create' operation failed: %s",
+                     error.message);
+    }
+
+    return flow;
 }

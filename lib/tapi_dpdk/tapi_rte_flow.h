@@ -19,6 +19,10 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "asn_usr.h"
+#include "rcf_rpc.h"
+#include "te_rpc_types.h"
+#include "tapi_rpc_rte.h"
+#include "tapi_ndn.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,6 +60,25 @@ extern void tapi_rte_flow_add_ndn_action_count(asn_value *ndn_actions,
                                                int action_index,
                                                uint32_t counter_id,
                                                te_bool shared);
+
+/**
+ * Convert an ASN value representing a flow rule pattern into
+ * RTE flow rule pattern and a template that matches the pattern.
+ *
+ * @param[in]     rpcs      RPC server handle
+ * @param[in]     port_id   The port identifier of the device
+ * @param[in]     attr      RTE flow attr pointer
+ * @param[in]     pattern   RTE flow item pointer to the array of items
+ * @param[in]     actions   RTE flow action pointer to the array of actions
+ *
+ * @return RTE flow pointer on success; jumps out on failure
+ */
+extern rpc_rte_flow_p tapi_rte_flow_validate_and_create_rule(
+                                              rcf_rpc_server *rpcs,
+                                              uint16_t port_id,
+                                              rpc_rte_flow_attr_p attr,
+                                              rpc_rte_flow_item_p pattern,
+                                              rpc_rte_flow_action_p actions);
 
 #ifdef __cplusplus
 } /* extern "C" */
