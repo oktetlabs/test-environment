@@ -44,6 +44,19 @@ extern void tapi_rte_flow_add_ndn_action_queue(asn_value *ndn_actions,
 extern void tapi_rte_flow_add_ndn_action_drop(asn_value *ndn_actions,
                                               int action_index);
 
+/**
+ * Add a COUNT action to an action list at specified index.
+ *
+ * @param[inout]  ndn_actions   Action list
+ * @param[in]     action_index  Index at which DROP action is put to list
+ * @param[in]     counter_id    Counter index
+ * @param[in]     shared        Shared counter if @c TRUE
+ */
+extern void tapi_rte_flow_add_ndn_action_count(asn_value *ndn_actions,
+                                               int action_index,
+                                               uint32_t counter_id,
+                                               te_bool shared);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
