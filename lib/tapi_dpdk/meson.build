@@ -3,9 +3,11 @@
 headers += files(
     'tapi_dpdk.h',
     'tapi_dpdk_stats.h',
+    'tapi_rte_flow.h',
 )
 sources += files(
     'tapi_dpdk.c',
     'tapi_dpdk_stats.c'
+    'tapi_rte_flow.c',
 )
 deps += [ dep_lib_tapi ]
