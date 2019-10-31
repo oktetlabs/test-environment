@@ -334,6 +334,19 @@ extern te_errno tapi_bpf_map_set_writable(const char *ta,
                                           const char *map);
 
 /**
+ * Disable writable view for the map
+ *
+ * @param ta        Test Agent name
+ * @param bpf_id    Bpf ID
+ * @param map       Map name
+ *
+ * @return          Status code
+ */
+extern te_errno tapi_bpf_map_unset_writable(const char *ta,
+                                            unsigned int bpf_id,
+                                            const char *map);
+
+/**
  * Update value for given key in the map
  *
  * @param ta        Test Agent name

@@ -652,6 +652,27 @@ tapi_bpf_map_set_writable(const char *ta, unsigned int bpf_id, const char *map)
 
 /* See description in tapi_bpf.h */
 te_errno
+tapi_bpf_map_unset_writable(const char *ta, unsigned int bpf_id, const char *map)
+{
+    const int   value = 0;
+    te_errno    rc;
+
+    assert(ta != NULL);
+    assert(map != NULL);
+
+    if ((rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, value),
+                                   "/agent:%s/bpf:%u/map:%s/writable:",
+                                   ta, bpf_id, map)) != 0)
+    {
+        ERROR("%s(): Failed to unset value %d to "
+              "/agent:%s/bpf:%u/map:%s/writable: %r",
+              __FUNCTION__, value, ta, bpf_id, map, rc);
+    }
+    return rc;
+}
+
+/* See description in tapi_bpf.h */
+te_errno
 tapi_bpf_map_update_kvpair(const char *ta, unsigned int bpf_id,
                            const char *map,
                            const uint8_t *key, unsigned int key_size,
