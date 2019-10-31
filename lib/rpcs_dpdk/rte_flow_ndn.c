@@ -1946,6 +1946,45 @@ rte_flow_action_count_from_pdu(const asn_value *conf_pdu,
 }
 
 static te_errno
+rte_flow_action_vxlan_encap_from_pdu(const asn_value *conf_pdu,
+                                     struct rte_flow_action *action)
+{
+    struct rte_flow_action_vxlan_encap *conf = NULL;
+    asn_tag_value conf_pdu_choice_tag;
+    struct rte_flow_item *pattern;
+    asn_value *encap_hdr;
+    unsigned int len;
+    int rc;
+
+    if (action == NULL || conf_pdu == NULL)
+        return TE_EINVAL;
+
+    rc = asn_get_choice_value(conf_pdu, &encap_hdr,
+                              NULL, &conf_pdu_choice_tag);
+    if (rc != 0)
+        return rc;
+    else if (conf_pdu_choice_tag != NDN_FLOW_ACTION_ENCAP_HDR)
+        return TE_EINVAL;
+
+    rc = rte_flow_pattern_from_ndn(encap_hdr, &pattern, &len);
+    if (rc != 0)
+        return rc;
+
+    conf = TE_ALLOC(sizeof(*conf));
+    if (conf == NULL)
+    {
+        rte_flow_free_pattern(pattern, len);
+        return TE_ENOMEM;
+    }
+
+    conf->definition = pattern;
+    action->conf = conf;
+    action->type = RTE_FLOW_ACTION_TYPE_VXLAN_ENCAP;
+
+    return 0;
+}
+
+static te_errno
 rte_flow_action_end(struct rte_flow_action *action)
 {
     if (action == NULL)
@@ -1983,6 +2022,7 @@ static const struct rte_flow_action_types_mapping {
     { NDN_FLOW_ACTION_TYPE_FLAG,    rte_flow_action_flag_from_pdu },
     { NDN_FLOW_ACTION_TYPE_MARK,    rte_flow_action_mark_from_pdu },
     { NDN_FLOW_ACTION_TYPE_COUNT,   rte_flow_action_count_from_pdu },
+    { NDN_FLOW_ACTION_TYPE_VXLAN_ENCAP, rte_flow_action_vxlan_encap_from_pdu },
 };
 
 static te_errno

@@ -53,6 +53,7 @@ asn_enum_entry_t _ndn_rte_flow_action_type_enum_entries[] = {
     {"flag", NDN_FLOW_ACTION_TYPE_FLAG},
     {"mark", NDN_FLOW_ACTION_TYPE_MARK},
     {"count", NDN_FLOW_ACTION_TYPE_COUNT},
+    {"vxlan-encap", NDN_FLOW_ACTION_TYPE_VXLAN_ENCAP},
 };
 
 asn_type ndn_rte_flow_action_type_s = {
@@ -192,6 +193,8 @@ static asn_named_entry_t _ndn_rte_flow_action_conf_ne_array[] = {
         {PRIVATE, NDN_FLOW_ACTION_MARK_ID} },
     { "count", &ndn_rte_flow_action_conf_count_s,
         {PRIVATE, NDN_FLOW_ACTION_CONF_COUNT} },
+    { "encap-hdr", &ndn_generic_pdu_sequence_s,
+        {PRIVATE, NDN_FLOW_ACTION_ENCAP_HDR} },
 };
 
 asn_type ndn_rte_flow_action_conf_s = {

@@ -45,6 +45,7 @@ typedef enum {
     NDN_FLOW_ACTION_TYPE_FLAG,
     NDN_FLOW_ACTION_TYPE_MARK,
     NDN_FLOW_ACTION_TYPE_COUNT,
+    NDN_FLOW_ACTION_TYPE_VXLAN_ENCAP,
 } ndn_rte_flow_action_type_t;
 
 typedef enum {
@@ -88,6 +89,7 @@ typedef enum {
     NDN_FLOW_ACTION_CONF,
     NDN_FLOW_ACTION_QID,
     NDN_FLOW_ACTION_MARK_ID,
+    NDN_FLOW_ACTION_ENCAP_HDR,
 } ndn_rte_flow_action_t;
 
 typedef enum {
