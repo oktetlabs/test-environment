@@ -35,6 +35,7 @@ typedef enum {
     NDN_FLOW_ATTR_PRIORITY,
     NDN_FLOW_ATTR_INGRESS,
     NDN_FLOW_ATTR_EGRESS,
+    NDN_FLOW_ATTR_TRANSFER,
 } ndn_rte_flow_attr_t;
 
 typedef enum {

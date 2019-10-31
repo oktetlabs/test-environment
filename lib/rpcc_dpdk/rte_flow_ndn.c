@@ -143,6 +143,7 @@ tarpc_rte_flow_error2str(te_log_buf *tlbp, struct tarpc_rte_flow_error *error)
         CASE_ERROR_TYPE2STR(ATTR_PRIORITY, "priority field");
         CASE_ERROR_TYPE2STR(ATTR_INGRESS, "ingress field");
         CASE_ERROR_TYPE2STR(ATTR_EGRESS, "egress field");
+        CASE_ERROR_TYPE2STR(ATTR_TRANSFER, "transfer field");
         CASE_ERROR_TYPE2STR(ATTR, "attributes structure");
         CASE_ERROR_TYPE2STR(ITEM_NUM, "pattern length");
         CASE_ERROR_TYPE2STR(ITEM, "specific pattern item");

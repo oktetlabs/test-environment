@@ -124,6 +124,7 @@ rte_flow_attr_from_ndn(const asn_value *ndn_flow,
     ASN_READ_ATTR_FIELD(ndn_attr, priority, attr->priority, sizeof(attr->priority));
     ASN_READ_ATTR_FIELD(ndn_attr, ingress, attr->ingress, RTE_FLOW_BOOL_FILEDS_LEN);
     ASN_READ_ATTR_FIELD(ndn_attr, egress, attr->egress, RTE_FLOW_BOOL_FILEDS_LEN);
+    ASN_READ_ATTR_FIELD(ndn_attr, transfer, attr->transfer, RTE_FLOW_BOOL_FILEDS_LEN);
 #undef ASN_READ_ATTR_FIELD
 
     *attr_out = attr;
@@ -2146,6 +2147,7 @@ tarpc_rte_error_type2tarpc(const enum rte_flow_error_type rte,
         CASE_RTE2TARPC(RTE_FLOW_ERROR_TYPE_ATTR_PRIORITY);
         CASE_RTE2TARPC(RTE_FLOW_ERROR_TYPE_ATTR_INGRESS);
         CASE_RTE2TARPC(RTE_FLOW_ERROR_TYPE_ATTR_EGRESS);
+        CASE_RTE2TARPC(RTE_FLOW_ERROR_TYPE_ATTR_TRANSFER);
         CASE_RTE2TARPC(RTE_FLOW_ERROR_TYPE_ATTR);
         CASE_RTE2TARPC(RTE_FLOW_ERROR_TYPE_ITEM_NUM);
         CASE_RTE2TARPC(RTE_FLOW_ERROR_TYPE_ITEM);

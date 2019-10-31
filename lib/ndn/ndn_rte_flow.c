@@ -35,6 +35,8 @@ static asn_named_entry_t _ndn_rte_flow_attr_ne_array[] = {
         {PRIVATE, NDN_FLOW_ATTR_INGRESS} },
     { "egress", &asn_base_int1_s,
         {PRIVATE, NDN_FLOW_ATTR_EGRESS} },
+    { "transfer", &asn_base_int1_s,
+        {PRIVATE, NDN_FLOW_ATTR_TRANSFER} },
 };
 
 asn_type ndn_rte_flow_attr_s = {
