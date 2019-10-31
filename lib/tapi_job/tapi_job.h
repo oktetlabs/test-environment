@@ -227,6 +227,16 @@ extern te_errno tapi_job_wait(tapi_job_t *job, int timeout_ms,
                               tapi_job_status_t *status);
 
 /**
+ * Check whether a job is running
+ *
+ * @param      job        Job instace handle
+ *
+ * @return                @c TRUE if @p job is running
+ * @exception TEST_FAIL
+ */
+extern te_bool tapi_job_is_running(tapi_job_t *job);
+
+/**
  * Allocate @p n_channels input channels.
  * The first channel is expected to be connected to the job's stdin;
  * the wiring of others is spawner-dependant.

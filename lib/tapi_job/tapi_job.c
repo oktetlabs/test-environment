@@ -307,6 +307,25 @@ tapi_job_wait(tapi_job_t *job, int timeout_ms, tapi_job_status_t *status)
     return 0;
 }
 
+te_bool
+tapi_job_is_running(tapi_job_t *job)
+{
+    te_errno rc;
+
+    rc = rpc_job_wait(job->rpcs, job->id, 0, NULL);
+    switch (rc)
+    {
+        case 0:
+        case TE_ECHILD:
+            return FALSE;
+        case TE_EINPROGRESS:
+            return TRUE;
+        default:
+            TEST_FAIL("Failed to check if a job is running");
+            return FALSE;
+    }
+}
+
 static void
 add_channel_to_entry_list(tapi_job_channel_t *channel, channel_entry_list *list)
 {
