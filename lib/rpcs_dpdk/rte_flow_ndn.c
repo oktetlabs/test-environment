@@ -1873,6 +1873,79 @@ rte_flow_action_mark_from_pdu(const asn_value *conf_pdu,
 }
 
 static te_errno
+rte_flow_action_count_from_pdu(const asn_value *conf_pdu,
+                               struct rte_flow_action *action)
+{
+    struct rte_flow_action_count *conf = NULL;
+    asn_tag_value conf_pdu_choice_tag;
+    asn_value *conf_pdu_choice;
+    asn_value *counter_id;
+    asn_value *shared_asn;
+    te_bool shared;
+    uint32_t id;
+    size_t len;
+    int rc;
+
+    if (action == NULL)
+        return TE_EINVAL;
+
+    action->type = RTE_FLOW_ACTION_TYPE_COUNT;
+
+    if (conf_pdu == NULL)
+        return 0;
+
+    rc = asn_get_choice_value(conf_pdu, &conf_pdu_choice,
+                              NULL, &conf_pdu_choice_tag);
+    if (rc != 0)
+        return rc;
+    else if (conf_pdu_choice_tag != NDN_FLOW_ACTION_CONF_COUNT)
+        return TE_EINVAL;
+
+    rc = asn_get_subvalue(conf_pdu_choice, &counter_id, "counter-id");
+    if (rc == TE_EASNINCOMPLVAL)
+    {
+        id = 0;
+    }
+    else if (rc != 0)
+    {
+        return rc;
+    }
+    else
+    {
+        len = sizeof(conf->id);
+        rc = asn_read_value_field(counter_id, &id, &len, "");
+        if (rc != 0)
+            return rc;
+    }
+
+    rc = asn_get_subvalue(conf_pdu_choice, &shared_asn, "shared");
+    if (rc == TE_EASNINCOMPLVAL)
+    {
+        shared = FALSE;
+    }
+    else if (rc != 0)
+    {
+        return rc;
+    }
+    else
+    {
+        rc = asn_read_bool(shared_asn, &shared, "");
+        if (rc != 0)
+            return rc;
+    }
+
+    conf = calloc(1, sizeof(*conf));
+    if (conf == NULL)
+        return TE_ENOMEM;
+
+    conf->id = id;
+    conf->shared = (shared ? 1 : 0);
+    action->conf = conf;
+
+    return 0;
+}
+
+static te_errno
 rte_flow_action_end(struct rte_flow_action *action)
 {
     if (action == NULL)
@@ -1909,6 +1982,7 @@ static const struct rte_flow_action_types_mapping {
     { NDN_FLOW_ACTION_TYPE_DROP,    rte_flow_action_drop_from_pdu },
     { NDN_FLOW_ACTION_TYPE_FLAG,    rte_flow_action_flag_from_pdu },
     { NDN_FLOW_ACTION_TYPE_MARK,    rte_flow_action_mark_from_pdu },
+    { NDN_FLOW_ACTION_TYPE_COUNT,   rte_flow_action_count_from_pdu },
 };
 
 static te_errno

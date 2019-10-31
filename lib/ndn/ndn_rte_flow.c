@@ -52,6 +52,7 @@ asn_enum_entry_t _ndn_rte_flow_action_type_enum_entries[] = {
     {"drop", NDN_FLOW_ACTION_TYPE_DROP},
     {"flag", NDN_FLOW_ACTION_TYPE_FLAG},
     {"mark", NDN_FLOW_ACTION_TYPE_MARK},
+    {"count", NDN_FLOW_ACTION_TYPE_COUNT},
 };
 
 asn_type ndn_rte_flow_action_type_s = {
@@ -166,6 +167,22 @@ asn_type ndn_rte_flow_action_conf_rss_s = {
 const asn_type * const ndn_rte_flow_action_conf_rss =
     &ndn_rte_flow_action_conf_rss_s;
 
+static asn_named_entry_t _ndn_rte_flow_action_conf_count_ne_array[] = {
+    { "counter-id", &asn_base_uint32_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_COUNT_ID } },
+    { "shared", &asn_base_boolean_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_COUNT_SHARED } },
+};
+
+asn_type ndn_rte_flow_action_conf_count_s = {
+    "Action-Conf-COUNT", { PRIVATE, NDN_FLOW_ACTION_CONF_COUNT }, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_rte_flow_action_conf_count_ne_array),
+    {_ndn_rte_flow_action_conf_count_ne_array}
+};
+
+const asn_type * const ndn_rte_flow_action_conf_count =
+    &ndn_rte_flow_action_conf_count_s;
+
 static asn_named_entry_t _ndn_rte_flow_action_conf_ne_array[] = {
     { "index", &asn_base_int16_s,
         {PRIVATE, NDN_FLOW_ACTION_QID} },
@@ -173,6 +190,8 @@ static asn_named_entry_t _ndn_rte_flow_action_conf_ne_array[] = {
         {PRIVATE, NDN_FLOW_ACTION_CONF_RSS} },
     { "id", &asn_base_int32_s,
         {PRIVATE, NDN_FLOW_ACTION_MARK_ID} },
+    { "count", &ndn_rte_flow_action_conf_count_s,
+        {PRIVATE, NDN_FLOW_ACTION_CONF_COUNT} },
 };
 
 asn_type ndn_rte_flow_action_conf_s = {
