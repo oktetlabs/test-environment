@@ -27,9 +27,9 @@
 #include "ndn_rte_flow.h"
 
 static asn_named_entry_t _ndn_rte_flow_attr_ne_array[] = {
-    { "group", &asn_base_int32_s,
+    { "group", &asn_base_uint32_s,
         {PRIVATE, NDN_FLOW_ATTR_GROUP} },
-    { "priority", &asn_base_int32_s,
+    { "priority", &asn_base_uint32_s,
         {PRIVATE, NDN_FLOW_ATTR_PRIORITY} },
     { "ingress", &asn_base_int1_s,
         {PRIVATE, NDN_FLOW_ATTR_INGRESS} },
