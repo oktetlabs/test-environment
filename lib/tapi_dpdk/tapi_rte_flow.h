@@ -62,6 +62,20 @@ extern void tapi_rte_flow_add_ndn_action_count(asn_value *ndn_actions,
                                                te_bool shared);
 
 /**
+ * Add a encap action to an action list at specified index.
+ *
+ * @param[inout]  ndn_actions       Action list
+ * @param[in]     action_index      Index at which DROP action is put to list
+ * @paran[in]     type              Type of the encapsulation
+ * @param[in]     encap_hdr         Flow rule pattern that is used as a
+ *                                  encapsulated packet's header definition
+ */
+extern void tapi_rte_flow_add_ndn_action_encap(asn_value *ndn_actions,
+                                               int action_index,
+                                               tarpc_rte_eth_tunnel_type type,
+                                               const asn_value *encap_hdr);
+
+/**
  * Convert an ASN value representing a flow rule pattern into
  * RTE flow rule pattern and a template that matches the pattern.
  *
