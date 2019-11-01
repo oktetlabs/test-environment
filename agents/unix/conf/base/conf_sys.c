@@ -472,16 +472,19 @@ proc_sys_set_value(const char *path, const char *value)
 {
     char       *tmp;
     int         bmem = 0;
+    int         rc;
 
-    if (tcp_mem_get(path, &bmem, 1) != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    rc = tcp_mem_get(path, &bmem, 1);
+    if (rc != 0)
+        return rc;
 
     bmem = strtol(value, &tmp, 10);
     if (tmp == value || *tmp != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    if (tcp_mem_set(path, &bmem, 1) != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    rc = tcp_mem_set(path, &bmem, 1);
+    if (rc != 0)
+        return rc;
 
     return 0;
 }
@@ -499,9 +502,12 @@ static te_errno
 proc_sys_get_value(const char *path, char *value)
 {
     int bmem = 0;
+    int rc;
 
-    if (tcp_mem_get(path, &bmem, 1) != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    rc = tcp_mem_get(path, &bmem, 1);
+    if (rc != 0)
+        return rc;
+
     sprintf(value, "%d", bmem);
 
     return 0;
@@ -540,7 +546,7 @@ tcp_sndbuf_max_set(unsigned int gid, const char *oid,
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 
     bmem[2] = strtol(value, &tmp, 10);
     if (tmp == value || *tmp != 0)
@@ -548,7 +554,7 @@ tcp_sndbuf_max_set(unsigned int gid, const char *oid,
 
     rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 #elif defined(__sun)
     rc = sun_ioctl("tcp", "tcp_max_buf", ND_SET, (char *)value);
 #else
@@ -587,7 +593,7 @@ tcp_sndbuf_max_get(unsigned int gid, const char *oid,
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 
     sprintf(value,"%d", bmem[2]);
 #elif defined(__sun)
@@ -629,7 +635,7 @@ tcp_sndbuf_def_set(unsigned int gid, const char *oid,
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 
     bmem[1] = strtol(value, &tmp, 10);
     if (tmp == value || *tmp != 0)
@@ -637,7 +643,7 @@ tcp_sndbuf_def_set(unsigned int gid, const char *oid,
 
     rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 #elif defined(__sun)
     rc = sun_ioctl("tcp", "tcp_xmit_hiwat", ND_SET, (char *)value);
 #else
@@ -676,7 +682,7 @@ tcp_sndbuf_def_get(unsigned int gid, const char *oid,
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_wmem", bmem, 3);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 
     sprintf(value,"%d", bmem[1]);
 #elif defined(__sun)
@@ -717,7 +723,7 @@ tcp_rcvbuf_max_set(unsigned int gid, const char *oid,
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 
     bmem[2] = strtol(value, &tmp, 10);
     if (tmp == value || *tmp != 0)
@@ -725,7 +731,7 @@ tcp_rcvbuf_max_set(unsigned int gid, const char *oid,
 
     rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 #elif defined(__sun)
     rc = sun_ioctl("tcp", "tcp_max_buf", ND_SET, (char *)value);
 #else
@@ -763,7 +769,7 @@ tcp_rcvbuf_max_get(unsigned int gid, const char *oid,
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 
     sprintf(value,"%d", bmem[2]);
 
@@ -804,7 +810,7 @@ tcp_rcvbuf_def_set(unsigned int gid, const char *oid,
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 
     bmem[1] = strtol(value, &tmp, 10);
     if (tmp == value || *tmp != 0)
@@ -812,7 +818,7 @@ tcp_rcvbuf_def_set(unsigned int gid, const char *oid,
 
     rc = tcp_mem_set("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 #elif defined(__sun)
     rc = sun_ioctl("tcp", "tcp_recv_hiwat", ND_SET, (char *)value);
 #else
@@ -850,7 +856,7 @@ tcp_rcvbuf_def_get(unsigned int gid, const char *oid,
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/ipv4/tcp_rmem", bmem, 3);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 
     sprintf(value,"%d", bmem[1]);
 #elif defined(__sun)
@@ -1018,7 +1024,7 @@ sndbuf_max_set(unsigned int gid, const char *oid,
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/core/wmem_max", &bmem, 1);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 
     bmem = strtol(value, &tmp, 10);
     if (tmp == value || *tmp != 0)
@@ -1026,7 +1032,7 @@ sndbuf_max_set(unsigned int gid, const char *oid,
 
     rc = tcp_mem_set("/proc/sys/net/core/wmem_max", &bmem, 1);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -1062,7 +1068,7 @@ sndbuf_max_get(unsigned int gid, const char *oid,
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/core/wmem_max", &bmem, 1);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 
     sprintf(value, "%d", bmem);
 #else
@@ -1101,7 +1107,7 @@ sndbuf_def_set(unsigned int gid, const char *oid,
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/core/wmem_default", &bmem, 1);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 
     bmem = strtol(value, &tmp, 10);
     if (tmp == value || *tmp != 0)
@@ -1109,7 +1115,7 @@ sndbuf_def_set(unsigned int gid, const char *oid,
 
     rc = tcp_mem_set("/proc/sys/net/core/wmem_default", &bmem, 1);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -1144,7 +1150,7 @@ sndbuf_def_get(unsigned int gid, const char *oid,
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/core/wmem_default", &bmem, 1);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 
     sprintf(value, "%d", bmem);
 #else
@@ -1182,7 +1188,7 @@ rcvbuf_max_set(unsigned int gid, const char *oid,
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/core/rmem_max", &bmem, 1);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 
     bmem = strtol(value, &tmp, 10);
     if (tmp == value || *tmp != 0)
@@ -1190,7 +1196,7 @@ rcvbuf_max_set(unsigned int gid, const char *oid,
 
     rc = tcp_mem_set("/proc/sys/net/core/rmem_max", &bmem, 1);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -1225,7 +1231,7 @@ rcvbuf_max_get(unsigned int gid, const char *oid,
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/core/rmem_max", &bmem, 1);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 
     sprintf(value, "%d", bmem);
 #else
@@ -1264,7 +1270,7 @@ rcvbuf_def_set(unsigned int gid, const char *oid,
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/core/rmem_default", &bmem, 1);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 
     bmem = strtol(value, &tmp, 10);
     if (tmp == value || *tmp != 0)
@@ -1272,7 +1278,7 @@ rcvbuf_def_set(unsigned int gid, const char *oid,
 
     rc = tcp_mem_set("/proc/sys/net/core/rmem_default", &bmem, 1);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 #else
     rc = TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
@@ -1307,7 +1313,7 @@ rcvbuf_def_get(unsigned int gid, const char *oid,
 #if __linux__
     rc = tcp_mem_get("/proc/sys/net/core/rmem_default", &bmem, 1);
     if (rc != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return rc;
 
     sprintf(value, "%d", bmem);
 #else
