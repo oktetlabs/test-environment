@@ -452,27 +452,24 @@ tcp_mem_set(const char *proc_file, int *par_array, int len)
  * /proc/sys/net/ipv4/tcp_timestamps
  * 
  * @param path      Full path with file name
- * @param offset    Offset from the first number
  * @param value     String with value
  * 
  * return Status code
  */
 static te_errno
-proc_sys_set_value(const char *path, int offset, const char *value)
+proc_sys_set_value(const char *path, const char *value)
 {
     char       *tmp;
-    int         bmem[offset + 1];
+    int         bmem = 0;
 
-    memset(bmem, 0, sizeof(*bmem) * (offset + 1));
-
-    if (tcp_mem_get(path, bmem, offset + 1) != 0)
+    if (tcp_mem_get(path, &bmem, 1) != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    bmem[offset] = strtol(value, &tmp, 10);
+    bmem = strtol(value, &tmp, 10);
     if (tmp == value || *tmp != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    if (tcp_mem_set(path, bmem, offset + 1) != 0)
+    if (tcp_mem_set(path, bmem, 1) != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     return 0;
@@ -483,21 +480,18 @@ proc_sys_set_value(const char *path, int offset, const char *value)
  * /proc/sys/net/ipv4/tcp_timestamps
  * 
  * @param path      Full path with file name
- * @param offset    Offset from the first number
  * @param value     Buffer for string with value
  * 
  * return Status code
  */
 static te_errno
-proc_sys_get_value(const char *path, int offset, char *value)
+proc_sys_get_value(const char *path, char *value)
 {
-    int bmem[offset + 1];
+    int bmem = 0;
 
-    memset(bmem, 0, sizeof(*bmem) * (offset + 1));
-
-    if (tcp_mem_get(path, bmem, offset + 1) != 0)
+    if (tcp_mem_get(path, &bmem, 1) != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    sprintf(value, "%d", bmem[offset]);
+    sprintf(value, "%d", bmem);
 
     return 0;
 }
@@ -885,22 +879,22 @@ proc_sys_common_set(unsigned int gid, const char *oid,
 #if __linux__
 #define ELSE_IF_IPV4_FIELD(_field) \
     else if (strstr(oid, "/" #_field ":") != NULL) \
-        return proc_sys_set_value("/proc/sys/net/ipv4/" #_field, 0, value);
+        return proc_sys_set_value("/proc/sys/net/ipv4/" #_field, value);
 
     if (strstr(oid, "/tcp_timestamps:") != NULL)
         return proc_sys_set_value("/proc/sys/net/ipv4/tcp_timestamps",
-                                  0, value);
+                                  value);
     else if (strstr(oid, "/somaxconn:") != NULL)
-        return proc_sys_set_value("/proc/sys/net/core/somaxconn", 0,
+        return proc_sys_set_value("/proc/sys/net/core/somaxconn",
                                   value);
     else if (strstr(oid, "/optmem_max:") != NULL)
-        return proc_sys_set_value("/proc/sys/net/core/optmem_max", 0,
+        return proc_sys_set_value("/proc/sys/net/core/optmem_max",
                                   value);
     else if (strstr(oid, "/neigh_gc_thresh3:") != NULL)
         return proc_sys_set_value("/proc/sys/net/ipv4/neigh/default/"
-                                  "gc_thresh3", 0, value);
+                                  "gc_thresh3", value);
     else if (strstr(oid, "/route_mtu_expires:") != NULL)
-        return proc_sys_set_value("/proc/sys/net/ipv4/route/mtu_expires", 0,
+        return proc_sys_set_value("/proc/sys/net/ipv4/route/mtu_expires",
                                   value);
     ELSE_IF_IPV4_FIELD(tcp_syncookies)
     ELSE_IF_IPV4_FIELD(tcp_keepalive_time)
@@ -950,22 +944,21 @@ proc_sys_common_get(unsigned int gid, const char *oid,
 #if __linux__
 #define ELSE_IF_IPV4_FIELD(_field) \
     else if (strstr(oid, "/" #_field ":") != NULL) \
-        return proc_sys_get_value("/proc/sys/net/ipv4/" #_field, 0, value);
+        return proc_sys_get_value("/proc/sys/net/ipv4/" #_field, value);
 
     if (strstr(oid, "/tcp_timestamps:") != NULL)
-        return proc_sys_get_value("/proc/sys/net/ipv4/tcp_timestamps", 0,
+        return proc_sys_get_value("/proc/sys/net/ipv4/tcp_timestamps",
                                   value);
     else if (strstr(oid, "/somaxconn:") != NULL)
-        return proc_sys_get_value("/proc/sys/net/core/somaxconn", 0,
-                                  value);
+        return proc_sys_get_value("/proc/sys/net/core/somaxconn", value);
     else if (strstr(oid, "/optmem_max:") != NULL)
-        return proc_sys_get_value("/proc/sys/net/core/optmem_max", 0,
+        return proc_sys_get_value("/proc/sys/net/core/optmem_max",
                                   value);
     else if (strstr(oid, "/neigh_gc_thresh3:") != NULL)
         return proc_sys_get_value("/proc/sys/net/ipv4/neigh/default/"
-                                  "gc_thresh3", 0, value);
+                                  "gc_thresh3", value);
     else if (strstr(oid, "/route_mtu_expires:") != NULL)
-        return proc_sys_get_value("/proc/sys/net/ipv4/route/mtu_expires", 0,
+        return proc_sys_get_value("/proc/sys/net/ipv4/route/mtu_expires",
                                   value);
     ELSE_IF_IPV4_FIELD(tcp_syncookies)
     ELSE_IF_IPV4_FIELD(tcp_keepalive_time)
