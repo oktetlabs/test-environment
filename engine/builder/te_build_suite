@@ -65,6 +65,30 @@ fi
 
 mkdir -p ${TE_INSTALL_SUITE}
 
+# Helper function to split ninja output into stdout and stderr
+function ninja_status_filter () {
+    local l n
+    while read -r l; do
+        n=${l#\[ninja\]}
+        test "$l" != "$n" && printf "%s\n" "$n" || printf "%s\n" "$l" >&2
+    done
+}
+
+# Helper function to run ninja taking ninja-build vs ninja difference
+# on various distos into account and split stdout and stderr streams
+function run_ninja () {
+    local ninja_exec
+
+    which ninja-build >/dev/null 2>&1 &&
+        ninja_exec=ninja-build ||
+        ninja_exec=ninja
+    # Run ninja in subshell to avoid pipefail option setting inheritance
+    (
+        set -o pipefail
+        NINJA_STATUS="[ninja][%f/%t] " ${ninja_exec} "$@" | ninja_status_filter
+    )
+}
+
 if ${MESON_BUILD} ; then
     ADD_CPPFLAGS="`eval echo '$'${TE_HOST}'_CPPFLAGS'` \
                   `eval echo '$TE_BS_SUITE_'$SUITE_NAME'_CPPFLAGS'`"
@@ -93,9 +117,8 @@ if ${MESON_BUILD} ; then
         eval meson configure ${meson_args} || exit 1
         echo "${meson_args}" >meson.args
     fi
-    # always installed as a dependency and checked by meson above
-    which ninja >/dev/null 2>&1 && NINJA=ninja || NINJA=ninja-build
-    $NINJA install || exit 1
+    # ninja is always installed as a dependency and checked by meson above
+    run_ninja install || exit 1
 
     exit 0
 fi
