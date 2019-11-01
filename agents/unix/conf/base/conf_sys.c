@@ -263,30 +263,32 @@ static te_errno
 console_loglevel_get(unsigned int gid, const char *oid, char *value)
 {
     int     level = 0;
-    char    str[] = {0, 0};
-    FILE   *f;
-    int     res;
+    int     fd;
+    ssize_t res;
+    int     error;
 
     UNUSED(gid);
     UNUSED(oid);
 
-    f = fopen("/proc/sys/kernel/printk", "r");
-    if (f == NULL)
+    fd = open("/proc/sys/kernel/printk", O_RDONLY);
+    if (fd < 0)
     {
-        ERROR("fopen failed: %s", strerror(errno));
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        int error = errno;
+        ERROR("open failed: %s", strerror(error));
+        return TE_OS_RC(TE_TA_UNIX, error);
     }
 
-    res = fread(str, 1, 1, f);
-    if (res != 1)
+    res = read(fd, trash, sizeof(trash) - 1);
+    error = errno;
+    close(fd);
+    if (res < 0)
     {
-        ERROR("fread failed: %s", strerror(errno));
-        fclose(f);
-        return TE_RC(TE_TA_UNIX, TE_EIO);
+        ERROR("read failed: %s", strerror(error));
+        return TE_OS_RC(TE_TA_UNIX, error);
     }
 
-    level = atoi(str);
-    fclose(f);
+    trash[sizeof(trash) - 1] = '\0';
+    level = atoi(trash);
 
     snprintf(value, RCF_MAX_VAL, "%d", level);
     return 0;
@@ -365,85 +367,94 @@ cleanup:
 #endif
 
 #if __linux__
-static int
+static te_errno
 tcp_mem_get(const char *proc_file, int *par_array, int len)
 {
-    FILE     *f;
+    int       fd;
     int       i = 0;
     char     *tmp;
     char     *next_token;
     char     *save_ptr;
+    int       res;
+    int       error;
 
-    if ((f = fopen(proc_file, "r")) == NULL)
+    if ((fd = open(proc_file, O_RDONLY)) < 0)
     {
-        ERROR("%s(): Failed to open file %s; errno %d",
-               __FUNCTION__, proc_file, errno);
-        return -1;
+        ERROR("%s(): Failed to open file %s: %s",
+               __FUNCTION__, proc_file, strerror(errno));
+        return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    while (fgets(trash, sizeof(trash), f) != NULL)
+    res = read(fd, trash, sizeof(trash) - 1);
+    error = errno;
+    close(fd);
+    if (res < 0)
     {
-        if (i == len)
-        {
-            ERROR("%s(): %s unexpected format", __FUNCTION__, proc_file);
-            fclose(f);
-            return -1;
-        }
-        next_token = strtok_r(trash, "\t", &save_ptr);
-        do {
-            par_array[i] = strtol(next_token, &tmp, 10);
-            if ((tmp == next_token) && (par_array[i] == 0))
-            {
-                ERROR("%s(%d:%s): strtol convertation failure",
-                      __FUNCTION__, i, next_token);
-                fclose(f);
-                return -1;
-            }
-            i++;
-            next_token = strtok_r(NULL, "\t", &save_ptr);
-        } while ((i != len) || (next_token != NULL));
-        if (i != len)
-        {
-            ERROR("%s(): %s format failure", __FUNCTION__, proc_file);
-            fclose(f);
-            return -1;
-        }
+        ERROR("%s(): Failed to read file %s: %s",
+              __FUNCTION__, proc_file, strerror(error));
+        return TE_OS_RC(TE_TA_UNIX, error);
     }
-    fclose(f);
-    return 0;
+    trash[sizeof(trash) - 1] = '\0';
+
+    next_token = strtok_r(trash, "\t", &save_ptr);
+    do {
+        par_array[i] = strtol(next_token, &tmp, 10);
+        if ((tmp == next_token) && (par_array[i] == 0))
+        {
+            ERROR("%s(%d:%s): strtol convertation failure",
+                  __FUNCTION__, i, next_token);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+        i++;
+        next_token = strtok_r(NULL, "\t", &save_ptr);
+    } while ((i != len) || (next_token != NULL));
+    if (i != len)
+    {
+        ERROR("%s(): %s format failure", __FUNCTION__, proc_file);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    return TE_RC(TE_TA_UNIX, TE_EINVAL);
 }
 
 static int
 tcp_mem_set(const char *proc_file, int *par_array, int len)
 {
-    FILE     *f;
-    char      tmp[128];
+    int       fd;
+    int       error;
+    int       res = 0;
 
-    if ((f = fopen(proc_file, "w")) == NULL)
+    if ((fd = open(proc_file, O_WRONLY)) < 0)
     {
-        ERROR("%s(): Failed to open file %s; errno %d",
-               __FUNCTION__, proc_file, errno);
+        ERROR("%s(): Failed to open file %s: %s",
+               __FUNCTION__, proc_file, strerror(errno));
         return -1;
     }
     if (len == 3)
     {
-        snprintf(tmp, 128, "%d\t%d\t%d",
-                 par_array[0], par_array[1], par_array[2]);
+        res = snprintf(trash, sizeof(trash), "%d\t%d\t%d",
+                       par_array[0], par_array[1], par_array[2]);
     }
     else if(len == 1)
     {
-        snprintf(tmp, 128, "%d", par_array[0]);
+        res = snprintf(trash, sizeof(trash), "%d", par_array[0]);
     }
     else
     {
         ERROR("%s(): %s format failure", __FUNCTION__, proc_file);
-        fclose(f);
-        return -1;
+        close(fd);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    fputs(tmp, f);
+    res = write(fd, trash, MIN(res + 1, (int)sizeof(trash)));
+    if (res < 0)
+    {
+        error = errno;
+        ERROR("%s(): Failed to write file %s with \"%s\": %s",
+              __FUNCTION__, proc_file, trash, strerror(error));
+        return TE_OS_RC(TE_TA_UNIX, error);
+    }
 
-    fclose(f);
+    close(fd);
     return 0;
 }
 
@@ -469,7 +480,7 @@ proc_sys_set_value(const char *path, const char *value)
     if (tmp == value || *tmp != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    if (tcp_mem_set(path, bmem, 1) != 0)
+    if (tcp_mem_set(path, &bmem, 1) != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     return 0;
@@ -1610,9 +1621,9 @@ static te_errno
 core_pattern_set(unsigned int gid, const char *oid, const char *value)
 {
 #ifdef __linux__
-    size_t rc = 0;
+    int rc = 0;
     int error;
-    FILE *f;
+    int fd;
 #endif
 
     UNUSED(gid);
@@ -1638,23 +1649,21 @@ core_pattern_set(unsigned int gid, const char *oid, const char *value)
             return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    f = fopen("/proc/sys/kernel/core_pattern", "w");
-    if (f == NULL)
+    fd = open("/proc/sys/kernel/core_pattern", O_WRONLY);
+    if (fd < 0)
     {
-        ERROR("fopen failed: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_UNIX, errno);
+        error = errno;
+        ERROR("open(/proc/sys/kernel/core_pattern) failed: %s", strerror(error));
+        return TE_OS_RC(TE_TA_UNIX, error);
     }
-    rc = fwrite(value, strlen(value) + 1, 1, f);
-    error = ferror(f);
-    fclose(f);
-    if (rc != 1)
+    rc = write(fd, value, strlen(value) + 1);
+    error = errno;
+    close(fd);
+    if (rc < 0)
     {
-        ERROR("fwrite failed to write %d bytes: rc=%d %s",
+        ERROR("write failed to write %d bytes: rc=%d %s",
               strlen(value) + 1, rc, strerror(error));
-        if (error)
-            return TE_OS_RC(TE_TA_UNIX, error);
-        else
-            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        return TE_OS_RC(TE_TA_UNIX, error);
     }
     return 0;
 #else
@@ -1683,8 +1692,8 @@ core_pattern_get(unsigned int gid, const char *oid, char *value)
 {
 #ifdef __linux__
     int  rc = 0;
-    int error;
-    FILE *f;
+    int  error;
+    int  fd;
     size_t len;
 #endif
 
@@ -1710,20 +1719,23 @@ core_pattern_get(unsigned int gid, const char *oid, char *value)
             return TE_OS_RC(TE_TA_UNIX, errno);
     }
 
-    f = fopen("/proc/sys/kernel/core_pattern", "r");
-    if (f == NULL)
+    fd = open("/proc/sys/kernel/core_pattern", O_RDONLY);
+    if (fd < 0)
     {
-        ERROR("fopen failed: rc=%d %s", rc, strerror(errno));
-        return TE_OS_RC(TE_TA_UNIX, errno);
-    }
-    rc = fread(trash, 1, sizeof(trash) - 1, f);
-    error = ferror(f);
-    fclose(f);
-    if (error != 0)
-    {
-        ERROR("fread failed: %s", strerror(error));
+        error = errno;
+        ERROR("open(/proc/sys/kernel/core_pattern) failed: %s",
+              strerror(error));
         return TE_OS_RC(TE_TA_UNIX, error);
     }
+    rc = read(fd, trash, sizeof(trash) - 1);
+    error = errno;
+    close(fd);
+    if (rc < 0)
+    {
+        ERROR("read failed: %s", strerror(error));
+        return TE_OS_RC(TE_TA_UNIX, error);
+    }
+    trash[sizeof(trash) - 1] = '\0';
     len = strnlen(trash, rc);
     if (trash[len - 1] == '\n' || (int)len == rc)
         trash[len - 1] = '\0';
