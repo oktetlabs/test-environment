@@ -73,7 +73,7 @@ struct netconf_handle_s {
 
 /** Callback in dump requests */
 typedef int (*netconf_recv_cb_t)(struct nlmsghdr *h, netconf_list *list,
-                                 void* cookie);
+                                 void *cookie);
 
 /**
  * Get nlmsghdr flags to set depending on command.
