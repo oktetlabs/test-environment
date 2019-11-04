@@ -453,7 +453,7 @@ vm_start(struct vm_entry *vm)
     if (rc != 0)
         goto exit;
 
-    INFO("VM %s command-line: %s", vm->name, vm->cmd.ptr);
+    RING("VM %s command-line: %s", vm->name, vm->cmd.ptr);
 
     vm->pid = te_shell_cmd(vm->cmd.ptr, -1, NULL, NULL, NULL);
     if (vm->pid == -1)
