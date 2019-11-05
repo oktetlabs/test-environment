@@ -230,23 +230,30 @@ ta_unix_conf_sys_init(void)
 static te_errno
 console_loglevel_set(unsigned int gid, const char *oid, const char *value)
 {
-#ifdef HAVE_SYS_KLOG_H
-    int level = atoi(value);
-#endif
+    int     fd;
+    int     rc;
+    int     error;
 
     UNUSED(gid);
     UNUSED(oid);
 
-#ifdef HAVE_SYS_KLOG_H
-    if (klogctl(8, NULL, level) < 0)
+    fd = open("/proc/sys/kernel/printk", O_WRONLY);
+    if (fd < 0)
     {
-        ERROR("klogctl: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_UNIX, errno);
+        error = errno;
+        ERROR("open failed: %s", strerror(error));
+        return TE_OS_RC(TE_TA_UNIX, error);
+    }
+    rc = write(fd, value, strlen(value));
+    error = errno;
+    close(fd);
+    if (rc < 0)
+    {
+        ERROR("write failed to write %d bytes: rc=%d %s",
+              strlen(value), rc, strerror(error));
+        return TE_OS_RC(TE_TA_UNIX, error);
     }
     return 0;
-#else
-    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
-#endif
 }
 
 /**
