@@ -32,19 +32,14 @@ geneve_link_is_geneve(struct rtattr **linkgen)
                    NETCONF_LINK_KIND_GENEVE) == 0);
 }
 
-/**
- * Decode Geneve link data from a netlink message.
- *
- * @param h         The netlink message header
- * @param list      Netconf list to keep the data
- *
- * @return @c 0 on success, @c -1 on error (check @b errno for details).
- */
-static int
-geneve_link_gen_cb(struct nlmsghdr *h, netconf_list *list)
+/* See netconf_internal.h */
+int
+geneve_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
     netconf_geneve      geneve;
     struct rtattr      *linkgen[IFLA_MAX + 1];
+
+    UNUSED(cookie);
 
     memset(&geneve, 0, sizeof(geneve));
 
@@ -67,13 +62,6 @@ geneve_link_gen_cb(struct nlmsghdr *h, netconf_list *list)
     memcpy(&list->tail->data.geneve, &geneve, sizeof(geneve));
 
     return 0;
-}
-
-/* See netconf_internal.h */
-int
-geneve_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
-{
-    return geneve_link_gen_cb(h, list);
 }
 
 /* See netconf_internal.h */
