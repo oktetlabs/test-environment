@@ -41,6 +41,7 @@ sources = files(
 )
 includes += include_directories('../tapi')
 deps += [
+    dep_lib_log_bufs,
     dep_lib_conf_oid,
     dep_lib_asn,
     dep_lib_rpcxdr,
