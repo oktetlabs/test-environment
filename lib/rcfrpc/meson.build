@@ -5,4 +5,5 @@ sources += files('rcf_rpc.c')
 deps += [
     dep_lib_rcfapi,
     dep_lib_rpc_types,
+    dep_lib_confapi,
 ]
