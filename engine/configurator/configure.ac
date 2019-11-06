@@ -30,7 +30,7 @@ AC_CONFIG_FILES([Makefile])
 
 TE_CS_CPPFLAGS=
 
-AC_ARG_WITH([conf_yaml], [], [], [with_conf_yaml=no])
+AC_ARG_WITH([conf_yaml], [], [], [with_conf_yaml=yes])
 AS_IF([test "x${with_conf_yaml}" = xyes],
     [AC_SEARCH_LIBS([yaml_parser_load], [yaml])
      TE_CS_CPPFLAGS="-DWITH_CONF_YAML"])

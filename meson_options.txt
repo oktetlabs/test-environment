@@ -87,5 +87,5 @@ option('trc-hidden-stats', type: 'boolean', value: false,
 option('trc-ext-scripts', type: 'array', value: [],
        description: 'Install external scripts with TRC')
 
-option('cs-conf-yaml', type: 'boolean', value: false,
+option('cs-conf-yaml', type: 'boolean', value: true,
        description: 'Enable support for YAML configuration file processing')
