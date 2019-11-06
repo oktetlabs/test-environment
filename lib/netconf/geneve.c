@@ -15,6 +15,7 @@
 #include "logger_api.h"
 #include "netconf.h"
 #include "netconf_internal.h"
+#include "te_alloc.h"
 
 /* Geneve link kind to pass in IFLA_INFO_KIND. */
 #define NETCONF_LINK_KIND_GENEVE "geneve"
@@ -79,6 +80,7 @@ netconf_geneve_node_free(netconf_node *node)
 te_errno
 netconf_geneve_add(netconf_handle nh, const netconf_geneve *geneve)
 {
+#if HAVE_DECL_IFLA_GENEVE_ID
     char                req[NETCONF_MAX_REQ_LEN];
     struct nlmsghdr    *h;
     struct rtattr      *linkinfo;
@@ -131,6 +133,11 @@ netconf_geneve_add(netconf_handle nh, const netconf_geneve *geneve)
     }
 
     return 0;
+#else
+    UNUSED(nh);
+    UNUSED(geneve);
+    return TE_OS_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+#endif
 }
 
 /* See netconf.h */
@@ -139,8 +146,21 @@ netconf_geneve_list(netconf_handle nh,
                     netconf_udp_tunnel_list_filter_func filter_cb,
                     void *filter_opaque, char **list)
 {
+#if HAVE_DECL_IFLA_GENEVE_ID
     return netconf_udp_tunnel_list(nh, filter_cb, filter_opaque, list,
                                    NETCONF_LINK_KIND_GENEVE);
+#else
+    UNUSED(nh);
+    UNUSED(filter_cb);
+    UNUSED(filter_opaque);
+
+    *list = TE_ALLOC(sizeof(char));
+    if (*list == NULL)
+        return TE_OS_RC(TE_TA_UNIX, TE_ENOMEM);
+    **list = '\0';
+
+    return 0;
+#endif
 }
 
 

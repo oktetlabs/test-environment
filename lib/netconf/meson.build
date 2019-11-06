@@ -2,6 +2,19 @@
 
 prj_args = get_option('cflags').split()
 
+# Check if Geneve is supported
+code_geneve = '''
+#include <linux/if_link.h>
+
+int main(void) {
+    return IFLA_GENEVE_ID;
+}
+'''
+if cc.compiles(code_geneve, args: prj_args,
+               name: 'IFLA_GENEVE_ID available')
+    c_args += ['-DHAVE_DECL_IFLA_GENEVE_ID']
+endif
+
 # Check if IPv6 address type VXLAN attributes supported
 code_vxlan_local6 = '''
 #include <linux/if_link.h>

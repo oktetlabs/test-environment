@@ -21,6 +21,13 @@ AC_PROG_INSTALL
 TE_LIB_SET
 
 dnl
+dnl Check for Geneve support
+dnl
+AC_CHECK_DECL([IFLA_GENEVE_ID], [], [], [
+#include <linux/if_link.h>
+])
+
+dnl
 dnl Check for VXLAN IPv6 address attribute support
 dnl
 AC_CHECK_DECLS([IFLA_VXLAN_GROUP6, IFLA_VXLAN_LOCAL6], [], [], [
