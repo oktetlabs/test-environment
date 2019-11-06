@@ -78,14 +78,10 @@ static struct ipc_client *lgr_client = NULL;
 static te_log_msg_raw_data lgr_out;
 
 
-static void ten_log_message(const char *file, unsigned int line,
-                            te_log_ts_sec sec, te_log_ts_usec usec,
-                            unsigned int level,
-                            const char *entity, const char *user,
-                            const char *fmt, va_list ap); 
+static te_log_message_f ten_log_message;
 
 /** Logging backend */
-te_log_message_f te_log_message_va = ten_log_message;
+te_log_message_f *te_log_message_va = ten_log_message;
 
 
 /**

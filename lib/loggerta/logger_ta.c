@@ -89,7 +89,7 @@ sem_t           ta_log_sem;
 #endif
 
 /** Logging backend */
-te_log_message_f te_log_message_va = logfork_log_message;
+te_log_message_f *te_log_message_va = logfork_log_message;
 
 static const char  *skip_flags = "#-+ 0";
 static const char  *skip_width = "*0123456789";
@@ -170,9 +170,8 @@ resume:
  * Register message in the raw log (slow mode).
  *
  * @note    @p user is expected to be pointer to a static memory region
- *
- * This function complies with te_log_message_f prototype.
  */
+static te_log_message_f ta_log_message;
 static void
 ta_log_message(const char *file, unsigned int line,
                te_log_ts_sec sec, te_log_ts_usec usec,

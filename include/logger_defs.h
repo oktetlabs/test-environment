@@ -229,18 +229,18 @@ te_log_level2str(te_log_level level)
  * @param ap        Arguments passed into the function according
  *                  to log message format string
  */
-typedef void (* te_log_message_f)(const char       *file,
-                                  unsigned int      line,
-                                  te_log_ts_sec     sec,
-                                  te_log_ts_usec    usec,
-                                  unsigned int      level,
-                                  const char       *entity,
-                                  const char       *user,
-                                  const char       *fmt,
-                                  va_list           ap);
+typedef void (te_log_message_f)(const char       *file,
+                                unsigned int      line,
+                                te_log_ts_sec     sec,
+                                te_log_ts_usec    usec,
+                                unsigned int      level,
+                                const char       *entity,
+                                const char       *user,
+                                const char       *fmt,
+                                va_list           ap);
 
 /** Logging backend */
-extern te_log_message_f te_log_message_va;
+extern te_log_message_f *te_log_message_va;
 
 /**
  * Wrapper for te_log_message_va().

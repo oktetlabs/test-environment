@@ -34,16 +34,8 @@ extern "C" {
 /** File stream to write log messages. */
 extern FILE *te_log_message_file_out;
 
-/**
- * Log message to the file stream @e te_log_message_file_out.
- *
- * This function complies with te_log_message_f prototype.
- */
-extern void te_log_message_file(const char *file, unsigned int line,
-                                te_log_ts_sec sec, te_log_ts_usec usec,
-                                unsigned int level,
-                                const char *entity, const char *user,
-                                const char *fmt, va_list ap);
+/** Log message to the file stream @e te_log_message_file_out. */
+extern te_log_message_f te_log_message_file;
 
 #ifdef __cplusplus
 } /* extern "C" */

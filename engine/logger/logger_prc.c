@@ -49,11 +49,8 @@ static pthread_mutex_t  lgr_lock = PTHREAD_MUTEX_INITIALIZER;
 static te_log_msg_raw_data lgr_out;
 
 
-/** 
- * Create message and register it in the raw log file.
- *
- * This function complies with te_log_message_f prototype.
- */
+/** Create message and register it in the raw log file. */
+static te_log_message_f lgr_log_message;
 static void
 lgr_log_message(const char *file, unsigned int line,
                 te_log_ts_sec sec, te_log_ts_usec usec,
@@ -80,4 +77,4 @@ lgr_log_message(const char *file, unsigned int line,
 }
 
 /** Logging backend */
-te_log_message_f te_log_message_va = lgr_log_message;
+te_log_message_f *te_log_message_va = lgr_log_message;
