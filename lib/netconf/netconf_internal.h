@@ -76,6 +76,17 @@ typedef int (netconf_recv_cb_t)(struct nlmsghdr *h, netconf_list *list,
                                 void *cookie);
 
 /**
+ * Callback function to decode Geneve link data.
+ */
+extern netconf_recv_cb_t geneve_list_cb;
+
+/**
+ * Callback function to decode VXLAN link data.
+ */
+extern netconf_recv_cb_t vxlan_list_cb;
+
+
+/**
  * Get nlmsghdr flags to set depending on command.
  *
  * @param cmd           Action to do

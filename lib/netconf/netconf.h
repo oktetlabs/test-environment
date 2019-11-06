@@ -803,11 +803,6 @@ extern te_errno netconf_udp_tunnel_list(netconf_handle nh,
                                         char *link_kind);
 
 /**
- * Callback function to decode Geneve link data.
- */
-extern netconf_recv_cb_t geneve_list_cb;
-
-/**
  * Add new Geneve interface.
  *
  * @param nh        Netconf session handle
@@ -831,11 +826,6 @@ extern te_errno netconf_geneve_list(netconf_handle nh,
                                     netconf_udp_tunnel_list_filter_func
                                         filter_cb,
                                     void *filter_opaque, char **list);
-
-/**
- * Callback function to decode VXLAN link data.
- */
-extern netconf_recv_cb_t vxlan_list_cb;
 
 /**
  * Add new VXLAN interface.
