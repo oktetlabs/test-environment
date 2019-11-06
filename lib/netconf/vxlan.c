@@ -42,19 +42,14 @@ vxlan_link_is_vxlan(struct rtattr **linkgen)
     return TRUE;
 }
 
-/**
- * Decode VXLAN link data from a netlink message.
- *
- * @param h         The netlink message header
- * @param list      Netconf list to keep the data
- *
- * @return @c 0 on success, @c -1 on error (check @b errno for details).
- */
-static int
-vxlan_link_gen_cb(struct nlmsghdr *h, netconf_list *list)
+/* See netconf.h */
+int
+vxlan_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
     netconf_vxlan       vxlan;
     struct rtattr      *linkgen[IFLA_MAX + 1];
+
+    UNUSED(cookie);
 
     memset(&vxlan, 0, sizeof(vxlan));
 
@@ -77,15 +72,6 @@ vxlan_link_gen_cb(struct nlmsghdr *h, netconf_list *list)
     memcpy(&list->tail->data.vxlan, &vxlan, sizeof(vxlan));
 
     return 0;
-}
-
-/* See netconf.h */
-int
-vxlan_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
-{
-    UNUSED(cookie);
-
-    return vxlan_link_gen_cb(h, list);
 }
 
 /* See netconf_internal.h */
