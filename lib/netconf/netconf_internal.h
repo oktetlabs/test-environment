@@ -72,8 +72,8 @@ struct netconf_handle_s {
 };
 
 /** Callback in dump requests */
-typedef int (*netconf_recv_cb_t)(struct nlmsghdr *h, netconf_list *list,
-                                 void *cookie);
+typedef int (netconf_recv_cb_t)(struct nlmsghdr *h, netconf_list *list,
+                                void *cookie);
 
 /**
  * Get nlmsghdr flags to set depending on command.
@@ -97,7 +97,7 @@ uint16_t netconf_cmd_to_flags(netconf_cmd cmd);
  */
 netconf_list *netconf_dump_request(netconf_handle nh, uint16_t type,
                                    unsigned char family,
-                                   netconf_recv_cb_t recv_cb,
+                                   netconf_recv_cb_t *recv_cb,
                                    void *cookie);
 
 /**
@@ -288,7 +288,7 @@ extern void netconf_port_node_free(netconf_node *node);
  * @param list          Argument of callback
  */
 int netconf_talk(netconf_handle nh, void *req, int len,
-                 netconf_recv_cb_t recv_cb, void *cookie, netconf_list *list);
+                 netconf_recv_cb_t *recv_cb, void *cookie, netconf_list *list);
 
 /**
  * Initialize @p hdr.

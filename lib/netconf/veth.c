@@ -215,6 +215,7 @@ veth_peer_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
  *
  * @return @c 0 on success, @c -1 on error (check @b errno for details).
  */
+static netconf_recv_cb_t veth_list_cb;
 static int
 veth_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {

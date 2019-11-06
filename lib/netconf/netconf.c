@@ -153,7 +153,7 @@ netconf_cmd_to_flags(netconf_cmd cmd)
 netconf_list *
 netconf_dump_request(netconf_handle nh, uint16_t type,
                      unsigned char family,
-                     netconf_recv_cb_t recv_cb,
+                     netconf_recv_cb_t *recv_cb,
                      void *cookie)
 {
     char                req[NLMSG_SPACE(sizeof(struct rtgenmsg))];
@@ -373,7 +373,7 @@ netconf_list_free(netconf_list *list)
 
 int
 netconf_talk(netconf_handle nh, void *req, int len,
-             netconf_recv_cb_t recv_cb, void *cookie, netconf_list *list)
+             netconf_recv_cb_t *recv_cb, void *cookie, netconf_list *list)
 {
     struct msghdr       msg;
     char                buf[NETCONF_RCV_BUF_LEN];

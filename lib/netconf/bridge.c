@@ -125,6 +125,7 @@ port_link_gen_cb(struct nlmsghdr *h, netconf_list *list,
  *
  * @return @c 0 on success, @c -1 on error (check @b errno for details).
  */
+static netconf_recv_cb_t port_list_cb;
 static int
 port_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
@@ -352,6 +353,7 @@ bridge_link_gen_cb(struct nlmsghdr *h, netconf_list *list)
  *
  * @return @c 0 on success, @c -1 on error (check @b errno for details).
  */
+static netconf_recv_cb_t bridge_list_cb;
 static int
 bridge_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {

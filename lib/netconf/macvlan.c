@@ -159,6 +159,7 @@ netconf_macvlan_modify(netconf_handle nh, netconf_cmd cmd,
  *
  * @return 0 on success, -1 on error (check errno for details).
  */
+static netconf_recv_cb_t macvlan_list_cb;
 static int
 macvlan_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {

@@ -804,13 +804,8 @@ extern te_errno netconf_udp_tunnel_list(netconf_handle nh,
 
 /**
  * Callback function to decode Geneve link data.
- *
- * @param h         The netlink message header
- * @param list      Netconf list to keep the data
- *
- * @return @c 0 on success, @c -1 on error (check @b errno for details).
  */
-extern int geneve_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie);
+extern netconf_recv_cb_t geneve_list_cb;
 
 /**
  * Add new Geneve interface.
@@ -839,13 +834,8 @@ extern te_errno netconf_geneve_list(netconf_handle nh,
 
 /**
  * Callback function to decode VXLAN link data.
- *
- * @param h         The netlink message header
- * @param list      Netconf list to keep the data
- *
- * @return @c 0 on success, @c -1 on error (check @b errno for details).
  */
-extern int vxlan_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie);
+extern netconf_recv_cb_t vxlan_list_cb;
 
 /**
  * Add new VXLAN interface.

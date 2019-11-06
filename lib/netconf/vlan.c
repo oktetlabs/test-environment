@@ -132,6 +132,7 @@ netconf_vlan_node_free(netconf_node *node)
  *
  * @return @c 0 on success, @c -1 on error.
  */
+static netconf_recv_cb_t vlan_list_cb;
 static int
 vlan_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {

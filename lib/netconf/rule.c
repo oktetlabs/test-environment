@@ -204,6 +204,7 @@ rule_list_cb_internal(struct nlmsghdr *h, netconf_list *list)
  *
  * @return @c 0 on success, @c -1 on error (check @b errno for details).
  */
+static netconf_recv_cb_t rule_list_cb;
 static int
 rule_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
