@@ -30,13 +30,10 @@ AC_CONFIG_FILES([Makefile])
 
 TE_CS_CPPFLAGS=
 
-AC_ARG_WITH([conf_yaml],,
-[if test "${withval}" = yes; then
-   AC_SEARCH_LIBS([yaml_parser_load], [yaml])
-   TE_CS_CPPFLAGS="-DWITH_CONF_YAML"
-   with_conf_yaml=yes
- fi],
-[with_conf_yaml=no])
+AC_ARG_WITH([conf_yaml], [], [], [with_conf_yaml=no])
+AS_IF([test "x${with_conf_yaml}" = xyes],
+    [AC_SEARCH_LIBS([yaml_parser_load], [yaml])
+     TE_CS_CPPFLAGS="-DWITH_CONF_YAML"])
 
 AC_SUBST([TE_CS_CPPFLAGS])
 AM_CONDITIONAL(WITH_CONF_YAML, test "$with_conf_yaml" = "yes")
