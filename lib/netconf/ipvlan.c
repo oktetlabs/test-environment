@@ -112,6 +112,8 @@ ipvlan_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
     struct rtattr      *ipvlan_data[IFLA_IPVLAN_MAX + 1];
     int                 len;
 
+    UNUSED(cookie);
+
     memset(&ipvlan, 0, sizeof(ipvlan));
 
     rta = (struct rtattr *)((char *)h + NLMSG_SPACE(sizeof(*ifla)));

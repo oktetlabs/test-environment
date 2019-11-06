@@ -218,6 +218,8 @@ veth_peer_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 static int
 veth_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
+    UNUSED(cookie);
+
     return veth_link_gen_cb(h, list, FALSE);
 }
 
