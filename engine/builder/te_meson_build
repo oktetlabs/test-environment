@@ -277,6 +277,18 @@ process_platform() {
         meson_args="${meson_args} -Dagents=\"${build_agents}\""
 }
 
+process_engine_configurator() {
+    local param="$1"; shift
+    case "${param}" in
+        --with-conf-yaml|--with-conf-yaml=yes)
+            meson_args="${meson_args} -Dcs-conf-yaml=true" ;;
+        --without-conf-yaml|--with-conf-yaml=no)
+            meson_args="${meson_args} -Dcs-conf-yaml=false" ;;
+        *) return 1 ;;
+    esac
+    return 0
+}
+
 process_engine_app() {
     local a="$1"; shift
     local pfx="TE_BS_APP_${a}_"
@@ -289,6 +301,8 @@ process_engine_app() {
         test "${a}" = logger -a "${p}" = "--with-large-logs" &&
             continue
         test "${a}" = rcf -a "${p}" = "--enable-ltdl-install" &&
+            continue
+        test "${a}" = configurator && process_engine_configurator "${p}" &&
             continue
         test "${a}" = tester -a "${p}" = "--with-trc" && {
             meson_args="${meson_args} -Dtrc=true"
