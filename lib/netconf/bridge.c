@@ -78,7 +78,7 @@ port_link_is_bridge_port(struct rtattr **linkgen, void *cookie)
 }
 
 /**
- * Decode bridge link data from a netlink message.
+ * Callback function to decode bridge port link data.
  *
  * @param h         The netlink message header
  * @param list      Netconf list to keep the data
@@ -86,9 +86,9 @@ port_link_is_bridge_port(struct rtattr **linkgen, void *cookie)
  *
  * @return @c 0 on success, @c -1 on error (check @b errno for details).
  */
+static netconf_recv_cb_t port_list_cb;
 static int
-port_link_gen_cb(struct nlmsghdr *h, netconf_list *list,
-                 void *cookie)
+port_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
     netconf_bridge_port      port;
     struct rtattr           *linkgen[IFLA_MAX + 1];
@@ -114,22 +114,6 @@ port_link_gen_cb(struct nlmsghdr *h, netconf_list *list,
     memcpy(&list->tail->data.bridge_port, &port, sizeof(port));
 
     return 0;
-}
-
-/**
- * Callback function to decode bridge port link data.
- *
- * @param h         The netlink message header
- * @param list      Netconf list to keep the data
- * @param cookie    Pointer to the bridge interface index
- *
- * @return @c 0 on success, @c -1 on error (check @b errno for details).
- */
-static netconf_recv_cb_t port_list_cb;
-static int
-port_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
-{
-    return port_link_gen_cb(h, list, cookie);
 }
 
 /* See netconf_internal.h */
@@ -306,18 +290,22 @@ bridge_link_is_bridge(struct rtattr **linkgen)
 }
 
 /**
- * Decode bridge link data from a netlink message.
+ * Callback function to decode bridge link data.
  *
  * @param h         The netlink message header
  * @param list      Netconf list to keep the data
+ * @param cookie    Extra parameters (unused)
  *
  * @return @c 0 on success, @c -1 on error (check @b errno for details).
  */
+static netconf_recv_cb_t bridge_list_cb;
 static int
-bridge_link_gen_cb(struct nlmsghdr *h, netconf_list *list)
+bridge_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
 {
     netconf_bridge      bridge;
     struct rtattr      *linkgen[IFLA_MAX + 1];
+
+    UNUSED(cookie);
 
     memset(&bridge, 0, sizeof(bridge));
 
@@ -342,24 +330,6 @@ bridge_link_gen_cb(struct nlmsghdr *h, netconf_list *list)
     memcpy(&list->tail->data.bridge, &bridge, sizeof(bridge));
 
     return 0;
-}
-
-/**
- * Callback function to decode bridge link data.
- *
- * @param h         The netlink message header
- * @param list      Netconf list to keep the data
- * @param cookie    Extra parameters (unused)
- *
- * @return @c 0 on success, @c -1 on error (check @b errno for details).
- */
-static netconf_recv_cb_t bridge_list_cb;
-static int
-bridge_list_cb(struct nlmsghdr *h, netconf_list *list, void *cookie)
-{
-    UNUSED(cookie);
-
-    return bridge_link_gen_cb(h, list);
 }
 
 te_errno
