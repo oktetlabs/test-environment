@@ -18,3 +18,4 @@ sources += files(
 deps += [ dep_lib_tools ]
 deps += [ dep_lib_logic_expr ]
 deps += [ dep_libxml2 ]
+deps += [ dependency('libcrypto') ]
