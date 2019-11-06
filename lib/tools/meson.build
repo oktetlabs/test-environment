@@ -68,4 +68,4 @@ sources += files(
     'te_vector.c',
     'tq_string.c',
 )
-deps = [ cc.find_library('m') ]
+deps = [ cc.find_library('m'), dep_threads ]
