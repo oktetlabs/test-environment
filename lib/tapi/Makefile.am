@@ -14,7 +14,6 @@ include_HEADERS = \
 	tapi_jmp.h \
 	tapi_test_run_status.h \
 	tapi_sockaddr.h \
-	tapi_sockets.h \
 	tapi_cache.h \
 	tapi_cfg.h \
 	tapi_cfg_base.h \
@@ -65,7 +64,6 @@ libtapi_la_SOURCES = \
 	tapi_jmp.c \
 	tapi_test_run_status.c \
 	tapi_sockaddr.c \
-	tapi_sockets.c \
 	tapi_test_behaviour.c \
 	tapi_cache.c \
 	tapi_cfg.c \
