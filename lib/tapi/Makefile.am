@@ -44,7 +44,6 @@ include_HEADERS = \
 	tapi_cfg_openvpn.h \
 	tapi_cfg_l2tp.h \
 	tapi_cfg_socks.h \
-	tapi_network.h \
 	tapi_namespaces.h \
 	tapi_cfg_sys.h \
 	tapi_cfg_local.h \
@@ -92,7 +91,6 @@ libtapi_la_SOURCES = \
 	tapi_cfg_l2tp.c \
 	tapi_cfg_socks.c \
 	tapi_route_gw.c \
-	tapi_network.c \
 	tapi_netns.c \
 	tapi_cfg_sys.c \
 	tapi_host_ns.c \

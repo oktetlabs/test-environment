@@ -2,6 +2,7 @@
 
 headers += files(
     'tapi_iomux.h',
+    'tapi_network.h',
     'tapi_rpc.h',
     'tapi_rpc_aio.h',
     'tapi_rpc_client_server.h',
@@ -39,6 +40,7 @@ sources = files(
     'stdio.c',
     'tapi_iomux.c',
     'tapi_netns.c',
+    'tapi_network.c',
     'tapi_rpc_internal.c',
     'tapi_sockaddr.c',
     'tapi_sockets.c',
