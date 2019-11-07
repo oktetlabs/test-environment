@@ -2,8 +2,8 @@
  *
  * @brief generic tool options TAPI
  *
- * @defgroup tapi_job_opt helper functions for handling options
- * @ingroup te_ts_tapi
+ * @defgroup tapi_job_opt Helper functions for handling options
+ * @ingroup tapi_job
  * @{
  *
  * TAPI to handle tool options.
