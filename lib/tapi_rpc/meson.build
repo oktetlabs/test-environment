@@ -37,6 +37,7 @@ sources = files(
     'socket.c',
     'stdio.c',
     'tapi_iomux.c',
+    'tapi_netns.c',
     'tapi_rpc_internal.c',
     'tapi_sockets.c',
     'telephony.c',

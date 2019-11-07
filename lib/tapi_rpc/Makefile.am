@@ -48,6 +48,7 @@ libtapi_rpc_la_SOURCES= \
     pipe.c \
     dirent.c \
     tapi_iomux.c \
+    tapi_netns.c \
     tapi_sockets.c \
     tapi_rpc_internal.c
 
