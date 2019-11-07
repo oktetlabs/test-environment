@@ -215,4 +215,12 @@ if unix_daemons.length() != 0
         c_args += [ '-DWITH_SOCKS' ]
         sources += files('daemons/socks/socks.c')
     endif
+    if unix_daemons.contains('nginx')
+        c_args += [ '-DWITH_NGINX' ]
+        includes += include_directories('daemons/nginx')
+        sources += files(
+            'daemons/nginx/conf_nginx.c',
+            'daemons/nginx/conf_nginx_http.c'
+        )
+    endif
 endif

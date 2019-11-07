@@ -87,6 +87,7 @@ get_ds_name(const char *oid)
 {
     return
 #if defined __linux__
+         (strstr(oid, "nginx") != NULL) ? "nginx" :
          (strstr(oid, "l2tp") != NULL) ? "l2tp" :
          (strstr(oid, "openvpn") != NULL) ? "openvpn" :
          (strstr(oid, "socks") != NULL) ? "socks" :

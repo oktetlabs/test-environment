@@ -175,6 +175,13 @@ if CFG_UNIX_DAEMONS_SOCKS
 libconf_a_SOURCES += daemons/socks/socks.c
 endif
 
+if CFG_UNIX_DAEMONS_NGINX
+libconf_a_SOURCES += \
+	daemons/nginx/conf_nginx.c \
+	daemons/nginx/conf_nginx_http.c
+noinst_HEADERS += daemons/nginx/conf_nginx.h
+endif
+
 endif
 
 

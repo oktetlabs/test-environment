@@ -321,6 +321,10 @@ extern te_errno ta_unix_conf_bpf_cleanup(void);
 extern te_errno ta_unix_conf_if_xdp_cleanup(void);
 #endif
 
+#ifdef WITH_NGINX
+extern te_errno ta_unix_conf_nginx_init(void);
+#endif
+
 #ifdef WITH_UPNP_CP
 # include "conf_upnp_cp.h"
 #endif /* WITH_UPNP_CP */
@@ -1348,6 +1352,11 @@ rcf_ch_conf_init()
             goto fail;
 
         if (ta_unix_conf_if_xdp_init() != 0)
+            goto fail;
+#endif
+
+#ifdef WITH_NGINX
+        if (ta_unix_conf_nginx_init() != 0)
             goto fail;
 #endif
 

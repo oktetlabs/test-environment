@@ -344,6 +344,9 @@ if test -n "$with_cfg_unix_daemons" ; then
         socks)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_SOCKS" ;;
 
+        nginx)
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_NGINX" ;;
+
         *) ;;
     esac
   done
@@ -371,6 +374,8 @@ AM_CONDITIONAL([CFG_UNIX_DAEMONS_L2TP],
     [expr "$with_cfg_unix_daemons" : ".*l2tp" >/dev/null])
 AM_CONDITIONAL([CFG_UNIX_DAEMONS_SOCKS],
     [expr "$with_cfg_unix_daemons" : ".*socks" >/dev/null])
+AM_CONDITIONAL([CFG_UNIX_DAEMONS_NGINX],
+    [expr "$with_cfg_unix_daemons" : ".*nginx" >/dev/null])
 
 AC_ARG_WITH([libnetconf],
             AS_HELP_STRING([--with-libnetconf],
