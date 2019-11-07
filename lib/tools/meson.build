@@ -1,7 +1,8 @@
 # Copyright (C) 2018 OKTET Labs. All rights reserved.
 
-te_lib_log_bufs = library('log_bufs', 'log_bufs.c', install: install_lib,
-                          include_directories: includes)
+te_lib_log_bufs = static_library('log_bufs', 'log_bufs.c',
+                                 install: install_lib,
+                                 include_directories: includes)
 dep_lib_log_bufs = declare_dependency(link_with: te_lib_log_bufs,
                                      include_directories: includes)
 
