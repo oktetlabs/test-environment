@@ -15,6 +15,7 @@
 #include "te_defs.h"
 #include "logger_api.h"
 #include "te_sleep.h"
+#include "te_sockaddr.h"
 #include "tapi_test.h"
 #include "tapi_rpc_socket.h"
 #include "tapi_rpc_unistd.h"
