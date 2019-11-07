@@ -41,6 +41,7 @@ sources = files(
     'tapi_iomux.c',
     'tapi_netns.c',
     'tapi_network.c',
+    'tapi_proc.c',
     'tapi_rpc_internal.c',
     'tapi_sockaddr.c',
     'tapi_sockets.c',
