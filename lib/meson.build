@@ -33,6 +33,7 @@ common_libs = [
     'asn',
     'ndn',
     'rpcxdr',
+    'rpc_dpdk',
     'rpc_types',
 ]
 
