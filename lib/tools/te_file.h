@@ -18,6 +18,9 @@
 #ifdef HAVE_STDIO_H
 #include "stdio.h"
 #endif
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,6 +81,15 @@ extern int te_file_create_unique_fd(char **filename, const char *prefix_format,
 extern char *te_file_create_unique(const char *prefix_format,
                                    const char *suffix, ...)
                                         __attribute__((format(printf, 1, 3)));
+
+/**
+ * Read process identifier from PID file
+ *
+ * @param pid_path Path to PID file
+ *
+ * @return Process ID or @c -1 in case of error
+ */
+extern pid_t te_file_read_pid(const char *pid_path);
 
 #ifdef __cplusplus
 } /* extern "C" */

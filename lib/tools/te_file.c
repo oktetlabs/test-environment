@@ -94,3 +94,28 @@ te_file_create_unique(const char *prefix_format, const char *suffix, ...)
 
     return filename;
 }
+
+/* See description in te_file.h */
+pid_t
+te_file_read_pid(const char *pid_path)
+{
+    pid_t       pid = -1;
+    FILE       *f;
+
+    assert(pid_path != NULL);
+
+    f = fopen(pid_path, "r");
+    if (f == NULL)
+        return -1;
+
+    if (fscanf(f, "%d", &pid) != 1)
+    {
+        fclose(f);
+        return -1;
+    }
+
+    fclose(f);
+
+    return pid;
+}
+
