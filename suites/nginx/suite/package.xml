@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<package version="1.0">
+
+    <description>Nginx demo test suite</description>
+
+    <author mailto="Marina.Maslova@oktetlabs.ru"/>
+
+    <session track_conf="silent">
+
+        <run>
+            <script name="start"/>
+        </run>
+
+        <run>
+            <script name="prefix"/>
+        </run>
+
+        <run>
+            <script name="conf_change"/>
+        </run>
+
+        <run>
+            <script name="http_get"/>
+        </run>
+
+        <run>
+            <script name="server_proxy"/>
+            <arg name="upstreams_num" list="">
+                <value>2</value>
+                <value>40</value>
+            </arg>
+            <arg name="payload_size" list="">
+                <value>400</value>
+                <value>32768</value>
+            </arg>
+            <arg name="conns_num" list="">
+                <value>4</value>
+                <value>1000</value>
+            </arg>
+             <arg name="threads_num" list="">
+                <value>1</value>
+                <value>12</value>
+            </arg>
+            <arg name="duration" list="">
+                <value>2</value>
+                <value>30</value>
+            </arg>
+        </run>
+
+        <run>
+            <script name="ssl"/>
+        </run>
+
+    </session>
+</package>
