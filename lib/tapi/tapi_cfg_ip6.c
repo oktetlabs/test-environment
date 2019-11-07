@@ -38,7 +38,6 @@
 #include "conf_api.h"
 #include "rcf_api.h"
 
-#include "tapi_sockaddr.h"
 #include "tapi_cfg_ip6.h"
 
 

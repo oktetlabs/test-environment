@@ -23,7 +23,6 @@
 
 #include "logger_api.h"
 #include "tapi_cfg_base.h"
-#include "tapi_sockaddr.h"
 #include "tapi_host_ns.h"
 #include "tapi_namespaces.h"
 

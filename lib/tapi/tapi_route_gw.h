@@ -61,7 +61,6 @@
 #include "logger_api.h"
 #include "rcf_api.h"
 
-#include "tapi_sockaddr.h"
 #include "tapi_cfg_base.h"
 #include "tapi_cfg.h"
 

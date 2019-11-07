@@ -8,6 +8,7 @@ AM_LDFLAGS = -L$(DESTDIR)/$(libdir)
 
 include_HEADERS= \
     tapi_iomux.h \
+    tapi_sockaddr.h \
     tapi_sockets.h \
     tapi_rpc.h \
     tapi_rpc_aio.h \
@@ -49,6 +50,7 @@ libtapi_rpc_la_SOURCES= \
     dirent.c \
     tapi_iomux.c \
     tapi_netns.c \
+    tapi_sockaddr.c \
     tapi_sockets.c \
     tapi_rpc_internal.c
 

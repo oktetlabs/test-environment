@@ -20,6 +20,7 @@ headers += files(
     'tapi_rpc_unistd.h',
     'tapi_rpc_winsock2.h',
     'tapi_rpcsock_macros.h',
+    'tapi_sockaddr.h',
     'tapi_sockets.h',
 )
 sources = files(
@@ -39,6 +40,7 @@ sources = files(
     'tapi_iomux.c',
     'tapi_netns.c',
     'tapi_rpc_internal.c',
+    'tapi_sockaddr.c',
     'tapi_sockets.c',
     'telephony.c',
     'unistd.c',

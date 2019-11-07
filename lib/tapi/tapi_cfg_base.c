@@ -49,10 +49,10 @@
 #include "te_alloc.h"
 #include "logger_api.h"
 #include "conf_api.h"
+#include "te_sockaddr.h"
 
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_sys.h"
-#include "tapi_sockaddr.h"
 #include "tapi_host_ns.h"
 #include "tapi_mem.h"
 
