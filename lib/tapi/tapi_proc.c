@@ -54,65 +54,65 @@ tapi_cfg_net_route_flush(rcf_rpc_server *rpcs)
 
 /* See description in tapi_proc.h */
 te_errno
-tapi_cfg_if_rp_filter_get(rcf_rpc_server *rpcs, const char *ifname,
+tapi_cfg_if_rp_filter_get(const char *ta, const char *ifname,
                           int *rp_filter)
 {
     return tapi_cfg_get_int_fmt(rp_filter,
                                 "/agent:%s/interface:%s/rp_filter:",
-                                rpcs->ta, ifname);
+                                ta, ifname);
 }
 
 /* See description in tapi_proc.h */
 te_errno
-tapi_cfg_if_rp_filter_set(rcf_rpc_server *rpcs, const char *ifname,
+tapi_cfg_if_rp_filter_set(const char *ta, const char *ifname,
                           int rp_filter, int *old_value)
 {
 
     return tapi_cfg_set_int_fmt(rp_filter, old_value,
                                 "/agent:%s/interface:%s/rp_filter:",
-                                rpcs->ta, ifname);
+                                ta, ifname);
 }
 
 /* See description in tapi_proc.h */
 te_errno
-tapi_cfg_if_arp_ignore_get(rcf_rpc_server *rpcs, const char *ifname,
+tapi_cfg_if_arp_ignore_get(const char *ta, const char *ifname,
                           int *arp_ignore)
 {
     return tapi_cfg_get_int_fmt(arp_ignore,
                                 "/agent:%s/interface:%s/arp_ignore:",
-                                rpcs->ta, ifname);
+                                ta, ifname);
 }
 
 /* See description in tapi_proc.h */
 te_errno
-tapi_cfg_if_arp_ignore_set(rcf_rpc_server *rpcs, const char *ifname,
+tapi_cfg_if_arp_ignore_set(const char *ta, const char *ifname,
                           int arp_ignore, int *old_value)
 {
 
     return tapi_cfg_set_int_fmt(arp_ignore, old_value,
                                 "/agent:%s/interface:%s/arp_ignore:",
-                                rpcs->ta, ifname);
+                                ta, ifname);
 }
 
 /* See description in tapi_proc.h */
 te_errno
-tapi_cfg_if_iface_ip4_fw_get(rcf_rpc_server *rpcs, const char *ifname,
+tapi_cfg_if_iface_ip4_fw_get(const char *ta, const char *ifname,
                              int *iface_ip4_fw)
 {
     return tapi_cfg_get_int_fmt(iface_ip4_fw,
                                 "/agent:%s/interface:%s/iface_ip4_fw:",
-                                rpcs->ta, ifname);
+                                ta, ifname);
 }
 
 /* See description in tapi_proc.h */
 te_errno
-tapi_cfg_if_iface_ip4_fw_set(rcf_rpc_server *rpcs, const char *ifname,
+tapi_cfg_if_iface_ip4_fw_set(const char *ta, const char *ifname,
                              int iface_ip4_fw, int *old_value)
 {
 
     return tapi_cfg_set_int_fmt(iface_ip4_fw, old_value,
                                 "/agent:%s/interface:%s/iface_ip4_fw:",
-                                rpcs->ta, ifname);
+                                ta, ifname);
 }
 
 /**
@@ -124,15 +124,15 @@ tapi_cfg_if_iface_ip4_fw_set(rcf_rpc_server *rpcs, const char *ifname,
  */
 #define DEFINE_API_FUNC_TA_ONLY(_name, _path) \
 te_errno                                                                \
-tapi_cfg_##_name##_set(rcf_rpc_server *rpcs, int value, int *old_value) \
+tapi_cfg_##_name##_set(const char *ta, int value, int *old_value)       \
 {                                                                       \
-    return tapi_cfg_set_int_fmt(value, old_value, _path, rpcs->ta);     \
+    return tapi_cfg_set_int_fmt(value, old_value, _path, ta);           \
 }                                                                       \
                                                                         \
 te_errno                                                                \
-tapi_cfg_##_name##_get(rcf_rpc_server *rpcs, int *value)                \
+tapi_cfg_##_name##_get(const char *ta, int *value)                      \
 {                                                                       \
-    return tapi_cfg_get_int_fmt(value, _path, rpcs->ta);                \
+    return tapi_cfg_get_int_fmt(value, _path, ta);                      \
 }
 
 DEFINE_API_FUNC_TA_ONLY(tcp_syncookies, "/agent:%s/sys:/tcp_syncookies:")
