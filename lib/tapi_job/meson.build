@@ -9,4 +9,7 @@ sources += files(
     'tapi_job.c',
     'tapi_job_opt.c',
 )
-deps += [ dep_lib_tapi ]
+deps += [
+    dep_lib_tapi,
+    dep_lib_tapi_rpc,
+]

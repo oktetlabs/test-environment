@@ -98,6 +98,5 @@ deps += [
     dep_lib_ndn,
     dep_lib_rcfapi,
     dep_lib_rcfrpc,
-    dep_lib_tapi_rpc,
     dep_lib_tools,
 ]
