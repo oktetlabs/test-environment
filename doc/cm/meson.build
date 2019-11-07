@@ -15,6 +15,7 @@ cm_files = files(
     'cm_local.xml',
     'cm_namespace.xml',
     'cm_net.xml',
+    'cm_nginx.xml',
     'cm_openvpn.xml',
     'cm_ovs.xml',
     'cm_pci.xml',

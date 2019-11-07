@@ -1,0 +1,509 @@
+<?xml version="1.0"?>
+<backup>
+
+    <!--
+        This configuration model describes nginx server configuration and
+        control.
+
+        Copyright (C) 2019 OKTET Labs.
+
+        Author: Marina Maslova E-mail: Marina.Maslova@oktetlabs.ru
+    -->
+
+    <!-- nginx server instance.
+         Name: any -->
+    <object oid="/agent/nginx" access="read_create" type="none"/>
+
+    <!-- Status of the nginx server. Is it running or not?
+         Name: empty
+         Value: 0 (disabled), 1 (enabled) -->
+    <object oid="/agent/nginx/status" access="read_write" type="integer"/>
+
+    <!-- Prefix to nginx command line. Allows to use wrapper scripts.
+         Name: empty -->
+    <object oid="/agent/nginx/cmd_prefix" access="read_write" type="string"/>
+
+    <!-- Nginx server configuration file path.
+         Name: empty -->
+    <object oid="/agent/nginx/config_path" access="read_only" type="string"/>
+
+    <!-- Nginx server error logging.
+         Name: empty
+         Value: 0 (disabled), 1 (enabled) -->
+    <object oid="/agent/nginx/error_log" access="read_write" type="integer"/>
+
+    <!-- Nginx server error log file path.
+         Name: empty -->
+    <object oid="/agent/nginx/error_log/path" access="read_write"
+            type="string"/>
+
+    <!-- Worker settings.
+         Name: empty -->
+    <object oid="/agent/nginx/worker" access="read_only" type="none"/>
+
+    <!-- Number of worker processes.
+         Name: empty
+         Value: positive number or zero (auto)
+         Default: 1 -->
+    <object oid="/agent/nginx/worker/processes" access="read_write"
+            type="integer"/>
+
+    <!-- Worker processes cpu affinity.
+         Name: empty -->
+    <object oid="/agent/nginx/worker/cpu_affinity" access="read_only"
+            type="none"/>
+
+    <!-- Worker processes cpu affinity mode.
+         Name: empty
+         Value: 0 (not bound), 1 (auto), 2 (manual)
+         Default: 0 (not bound) -->
+    <object oid="/agent/nginx/worker/cpu_affinity/mode" access="read_write"
+            type="integer"/>
+
+    <!-- Worker processes cpu affinity mask.
+         Name: empty
+         Value:
+            In manual mode should be specified for all workers using space
+            separator.
+            In auto mode optional, allows to limit cpu which can be used for
+            automatic binding.
+
+         Example:
+            processes 4
+            mode 2 (manual)
+            mask 0001 0010 0100 1000
+
+            processes 4
+            mode 1 (auto)
+            mask 01010101
+
+        Default: empty -->
+    <object oid="/agent/nginx/worker/cpu_affinity/mask" access="read_write"
+            type="string"/>
+
+    <!-- Limit on the maximum number of open files for worker processes.
+         Name: empty -->
+    <object oid="/agent/nginx/worker/rlimit_nofile" access="read_write"
+            type="integer"/>
+
+    <!-- Events subtree. Configures connections processing.
+         Name: empty -->
+    <object oid="/agent/nginx/events" access="read_only" type="none"/>
+
+    <!-- Number of worker connections.
+         Name: empty
+         Default: 512 -->
+    <object oid="/agent/nginx/events/worker_connections" access="read_write"
+            type="integer"/>
+
+    <!-- Method of connection processing.
+         Name: empty
+         Value: empty (select the most efficient method automatically),
+                "select", "epoll", etc
+         Default: empty -->
+    <object oid="/agent/nginx/events/method" access="read_write"
+            type="string"/>
+
+    <!-- Whether one worker can accept multiple connections at a time.
+         Name: empty
+         Value: 0 (off), 1 (on)
+         Default: 0 -->
+    <object oid="/agent/nginx/events/multi_accept" access="read_write"
+            type="integer"/>
+
+    <!-- Whether worker processes will accept new connections by turn.
+         Otherwise, all worker processes will be notified about new connections.
+         Name: empty
+         Value: 0 (off), 1 (on)
+         Default: 0 -->
+    <object oid="/agent/nginx/events/accept_mutex" access="read_write"
+            type="integer"/>
+
+    <!-- HTTP server settings.
+         Name: empty -->
+    <object oid="/agent/nginx/http" access="read_only" type="none"/>
+
+    <!-- Virtual HTTP servers.
+         Name: any -->
+    <object oid="/agent/nginx/http/server" access="read_create" type="none"/>
+
+    <!-- Nginx HTTP server access logging.
+         Name: empty
+         Value: 0 (disabled), 1 (enabled)
+         Default: 0 -->
+    <object oid="/agent/nginx/http/server/access_log" access="read_write"
+            type="integer"/>
+
+    <!-- Nginx HTTP server access log file path.
+         Name: empty
+         Default: empty -->
+    <object oid="/agent/nginx/http/server/access_log/path" access="read_only"
+            type="string"/>
+
+    <!-- Listening sockets.
+         Name: any
+         Value: address specification
+            - IP-address[:port]
+            - hostname[:port]
+            - port
+            - unix domain socket path with "unix:" prefix
+    -->
+    <object oid="/agent/nginx/http/server/listen" access="read_create"
+            value="string"/>
+
+    <!-- Create an individual listening socket for each worker.
+         Name: empty
+         Value: 0 (false), 1 (true)
+         Default: 0 -->
+    <object oid="/agent/nginx/http/server/listen/reuseport" access="read_write"
+            type="integer"/>
+
+    <!-- Use SSL.
+         Name: empty
+         Value: 0 (false), 1 (true)
+         Default: 0 -->
+    <object oid="/agent/nginx/http/server/listen/ssl" access="read_write"
+            type="integer"/>
+
+    <!-- Virtual server hostname.
+         Name: empty
+         Default: empty -->
+    <object oid="/agent/nginx/http/server/hostname" access="read_write"
+            type="string"/>
+
+    <!-- MIME type settings.
+         Name: empty -->
+    <object oid="/agent/nginx/http/server/mime_type" access="read_only"
+            type="none"/>
+
+    <!-- Default MIME type of a response.
+         Name: empty
+         Default: "text/plain" -->
+    <object oid="/agent/nginx/http/server/mime_type/default"
+            access="read_write" type="string"/>
+
+    <!-- Server proxy settings.
+         Name: empty -->
+    <object oid="/agent/nginx/http/server/proxy" access="read_only"
+            type="none"/>
+
+    <!-- Timeout in seconds for establishing a connection with a proxied
+         server.
+         Name: empty
+         Default: 60 -->
+    <object oid="/agent/nginx/http/server/proxy/connect_timeout"
+            access="read_write" type="integer"/>
+
+    <!-- Proxy buffering.
+         Name: empty
+         Value: 0 (off) or 1 (on)
+         Default: 0 -->
+    <object oid="/agent/nginx/http/server/proxy/buffering"
+            access="read_write" type="integer"/>
+
+    <!-- Proxy buffers number.
+         Name: empty -->
+    <object oid="/agent/nginx/http/server/proxy/buffering/num"
+            access="read_write" type="integer"/>
+
+    <!-- Default proxy buffers size in kilobytes.
+         Name: empty -->
+    <object oid="/agent/nginx/http/server/proxy/buffering/def_size"
+            access="read_write" type="integer"/>
+
+    <!-- Proxy buffer size in kilobytes used for the first part of response.
+         Name: empty -->
+    <object oid="/agent/nginx/http/server/proxy/buffering/init_size"
+            access="read_write" type="integer"/>
+
+    <!-- Cache for files information. Cache stores open file descriptors,
+         their sizes and modification times; information on existence of
+         directories and optionally file lookup errors.
+         Name: empty
+         Value: 0 (off) or 1 (on)
+         Default: 0 -->
+    <object oid="/agent/nginx/http/server/open_file_cache"
+            access="read_write" type="integer"/>
+
+    <!-- Maximum number of elements in the cache.
+         Name: empty -->
+    <object oid="/agent/nginx/http/server/open_file_cache/max"
+            access="read_write" type="integer"/>
+
+    <!-- Time in seconds after which element will be removed from the cache
+         if it has not been accessed during this time.
+         Name: empty
+         Default: 60 -->
+    <object oid="/agent/nginx/http/server/open_file_cache/inactive"
+            access="read_write" type="integer"/>
+
+    <!-- Time in seconds after which cache elements should be validated.
+         Name: empty
+         Default: 60 -->
+    <object oid="/agent/nginx/http/server/open_file_cache/valid"
+            access="read_write" type="integer"/>
+
+    <!-- Do caching of file lookup errors.
+         Name: empty
+         Value: 0 (off) or 1 (on)
+         Default: 0 -->
+    <object oid="/agent/nginx/http/server/open_file_cache/errors"
+            access="read_write" type="integer"/>
+
+    <!-- Client settings.
+         Name: empty -->
+    <object oid="/agent/nginx/http/server/client" access="read_only"
+            type="none"/>
+
+    <!-- Timeout in seconds for reading client request body.
+         Name: empty
+         Default: 60 -->
+    <object oid="/agent/nginx/http/server/client/body_timeout"
+            access="read_write" type="integer"/>
+
+    <!-- Maximum allowed size in kilobytes of the client request body.
+         Name: empty
+         Default: 1024 -->
+    <object oid="/agent/nginx/http/server/client/max_body_size"
+            access="read_write" type="integer"/>
+
+    <!-- Timeout for reading client request header.
+         Name: empty
+         Default: 60 -->
+    <object oid="/agent/nginx/http/server/client/header_timeout"
+            access="read_write" type="integer"/>
+
+    <!-- Buffer size for reading client request header.
+         Name: empty
+         Default: 1 -->
+    <object oid="/agent/nginx/http/server/client/header_buffer_size"
+            access="read_write" type="integer"/>
+
+    <!-- Buffer settings used for reading large client request header.
+         Name: empty -->
+    <object oid="/agent/nginx/http/server/client/large_header_buffer"
+            access="read_only" type="none"/>
+
+    <!-- Maximum number of buffers.
+         Name: empty
+         Default: 4 -->
+    <object oid="/agent/nginx/http/server/client/large_header_buffer/num"
+            access="read_write" type="integer"/>
+
+    <!-- Maximum allowed size of buffers in kilobytes.
+         Name: empty
+         Default: 8 -->
+    <object oid="/agent/nginx/http/server/client/large_header_buffer/size"
+            access="read_write" type="integer"/>
+
+    <!-- Whether the entire request body should be read from the client before
+         sending the request to a proxied server.
+         Name: empty
+         Value: 0 (off) or 1 (on)
+         Default: 0 -->
+    <object oid="/agent/nginx/http/server/client/proxy_request_buffering"
+            access="read_write" type="integer"/>
+
+    <!-- Whether sendfile() should be used.
+         Name: empty
+         Value: 0 (off) or 1 (on)
+         Default: 0 -->
+    <object oid="/agent/nginx/http/server/sendfile" access="read_write"
+            type="integer"/>
+
+    <!-- Whether TCP_NOPUSH/TCP_CORK socket option should be used.
+         Name: empty
+         Value: 0 (off) or 1 (on)
+         Default: 0 -->
+    <object oid="/agent/nginx/http/server/tcp_nopush" access="read_write"
+            type="integer"/>
+
+    <!-- Whether TCP_NODELAY socket option should be used.
+         Name: empty
+         Value: 0 (off) or 1 (on)
+         Default: 1 -->
+    <object oid="/agent/nginx/http/server/tcp_nodelay" access="read_write"
+            type="integer"/>
+
+    <!-- Timeout for transmitting a response to the client.
+         Name: empty -->
+    <object oid="/agent/nginx/http/server/send_timeout" access="read_write"
+            type="integer"/>
+
+    <!-- Whether timed out connections should be reset.
+         Name: empty
+         Value: 0 (off) or 1 (on)
+         Default: 0 -->
+    <object oid="/agent/nginx/http/server/reset_timedout_connection"
+            access="read_write" type="integer"/>
+
+    <!-- Timeout in seconds during which a keep-alive client connection
+         will stay open on the server side.
+         Name: empty -->
+    <object oid="/agent/nginx/http/server/keepalive_timeout"
+            access="read_write" type="integer"/>
+
+    <!-- Maximum number of requests that can be served through one keep-alive
+         connection.
+         Name: empty -->
+    <object oid="/agent/nginx/http/server/keepalive_requests"
+            access="read_write" type="integer"/>
+
+    <!-- Server presentation on error pages and in the "Server" response
+         header field.
+         Name: empty
+         Value: 0 (off), 1 (on), 2 (build)
+            Special "build" option means emitting a build name along with
+            nginx version.
+         Default: 1 -->
+    <object oid="/agent/nginx/http/server/tokens" access="read_write"
+            type="integer"/>
+
+    <!-- SSL settings /agent/nginx/ssl object instance name.
+         Name: empty
+         Default: empty -->
+    <object oid="/agent/nginx/http/server/ssl_link"
+            access="read_write" type="string"/>
+
+    <!-- HTTP locations.
+         Name: any -->
+    <object oid="/agent/nginx/http/server/location" access="read_create"
+            type="none"/>
+
+    <!-- Location URI pattern.
+         Name: empty
+         Default: "/" -->
+    <object oid="/agent/nginx/http/server/location/uri" access="read_write"
+            type="string"/>
+
+    <!-- Location return directive.
+         Name: empty
+         Value: code [text] | code URL | URL
+         Default: empty -->
+    <object oid="/agent/nginx/http/server/location/return" access="read_write"
+            type="string"/>
+
+    <!-- Location index filename.
+         Name: empty
+         Default: empty -->
+    <object oid="/agent/nginx/http/server/location/index" access="read_write"
+            type="string"/>
+
+    <!-- Location root path.
+         Name: empty
+         Default: empty -->
+    <object oid="/agent/nginx/http/server/location/root" access="read_write"
+            type="string"/>
+
+    <!-- SSL settings /agent/nginx/ssl object instance name.
+         Name: empty
+         Default: empty -->
+    <object oid="/agent/nginx/http/server/location/ssl_name"
+            access="read_write" type="string"/>
+
+    <!-- Location proxy settings.
+         Name: empty -->
+    <object oid="/agent/nginx/http/server/location/proxy" access="read_only"
+            type="none"/>
+
+    <!-- SSL settings /agent/nginx/ssl object instance name.
+         Name: empty
+         Default: empty -->
+    <object oid="/agent/nginx/http/server/location/proxy/ssl_name"
+            access="read_write" type="string"/>
+
+    <!-- Proxy pass URL. Default is empty.
+         Name: empty -->
+    <object oid="/agent/nginx/http/server/location/proxy/pass_url"
+            access="read_write" type="string"/>
+
+    <!-- Proxy HTTP protocol version.
+         Name: empty -->
+    <object oid="/agent/nginx/http/server/location/proxy/http_version"
+            access="read_write" type="string"/>
+
+    <!-- Proxy HTTP header fields to overwrite/append.
+         Name: HTTP header field name -->
+    <object oid="/agent/nginx/http/server/location/proxy/set_header"
+            access="read_create" type="string"/>
+
+    <!-- Proxy HTTP header field value.
+         Name: empty -->
+    <object oid="/agent/nginx/http/server/location/proxy/set_header/value"
+            access="read_write" type="string"/>
+
+    <!-- Groups of servers that can be referenced by special nginx directives.
+         Name: any -->
+    <object oid="/agent/nginx/http/upstream" access="read_create" type="none"/>
+
+    <!-- Upstream group servers.
+         Name: any
+         Value: server address specification
+            - IP-address[:port]
+            - hostname[:port]
+            - unix domain socket path with "unix:" prefix
+    -->
+    <object oid="/agent/nginx/http/upstream/server" access="read_create"
+            type="string"/>
+
+    <!-- Upstream server weight.
+         Name: empty
+         Default: 1 -->
+    <object oid="/agent/nginx/http/upstream/server/weight" access="read_write"
+            type="integer"/>
+
+    <!-- Maximum number of idle keepalive connections that are preserved
+         in the cache of each worker process.
+         Name: empty -->
+    <object oid="/agent/nginx/http/upstream/keepalive" access="read_write"
+            type="integer"/>
+
+    <!-- Groups of SSL settings to be referenced in server/location
+         section.
+         Name: any -->
+    <object oid="/agent/nginx/ssl" access="read_create" type="none"/>
+
+    <!-- File path to certificate in the PEM format.
+         Name: empty -->
+    <object oid="/agent/nginx/ssl/cert" access="read_write"
+            type="string"/>
+
+    <!-- File path to certificate secret key in the PEM format.
+         Name: empty -->
+    <object oid="/agent/nginx/ssl/key" access="read_write"
+            type="string"/>
+
+    <!-- SSL ciphers in OpenSSL library format.
+         Name: empty
+         Example: ALL:!aNULL:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP
+    -->
+    <object oid="/agent/nginx/ssl/ciphers" access="read_write"
+            type="string"/>
+
+    <!-- SSL protocols list (space-separated).
+         Name: empty
+         Example: TLSv1 TLSv1.1 TLSv1.2
+    -->
+    <object oid="/agent/nginx/ssl/protocols" access="read_write"
+            type="string"/>
+
+    <!-- SSL sessions parameters.
+         Name: empty -->
+    <object oid="/agent/nginx/ssl/session" access="read_only"
+            type="none"/>
+
+    <!-- SSL sessions cache.
+         Name: empty
+         Value: off | none | [builtin[:size]] [shared:name:size]
+    -->
+    <object oid="/agent/nginx/ssl/session/cache" access="read_write"
+            type="string"/>
+
+    <!-- Timeout in seconds during which a client may reuse the session
+         parameters.
+         Name: empty
+         Default: 300 -->
+    <object oid="/agent/nginx/ssl/session/timeout"
+            access="read_write" type="integer"/>
+
+</backup>
