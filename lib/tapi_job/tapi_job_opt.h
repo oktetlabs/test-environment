@@ -96,13 +96,6 @@ extern te_errno tapi_job_opt_build_args(const char *path,
                                          const void *opt, te_vec *tool_args);
 
 /**
- * Release a vector with command line arguments.
- *
- * @param args      Vector with command line arguments
- */
-extern void tapi_job_opt_args_free(te_vec *args);
-
-/**
  * @defgroup tapi_job_opt_formatting functions for argument formatting
  * @{
  *
