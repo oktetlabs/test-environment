@@ -26,6 +26,7 @@
 #include "te_defs.h"
 #include "logger_api.h"
 #include "te_sleep.h"
+#include "te_sockaddr.h"
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_vtund.h"
 
