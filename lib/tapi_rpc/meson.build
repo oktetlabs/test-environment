@@ -1,6 +1,7 @@
 # Copyright (C) 2018 OKTET Labs. All rights reserved.
 
 headers += files(
+    'tapi_iomux.h',
     'tapi_rpc.h',
     'tapi_rpc_aio.h',
     'tapi_rpc_client_server.h',
@@ -34,6 +35,7 @@ sources = files(
     'signal.c',
     'socket.c',
     'stdio.c',
+    'tapi_iomux.c',
     'tapi_rpc_internal.c',
     'telephony.c',
     'unistd.c',
