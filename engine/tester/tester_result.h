@@ -35,6 +35,11 @@
 
 /**
  * Statuses of test execution inside Tester.
+ *
+ * @note Order of values is not arbitrary here, bigger values
+ *       are considered as having higher priority when determining
+ *       test group's result, see tester_group_status(),
+ *       run_verify_cfg_backup().
  */
 typedef enum tester_test_status {
     TESTER_TEST_INCOMPLETE = 0, /**< Test execution has not been finished */
