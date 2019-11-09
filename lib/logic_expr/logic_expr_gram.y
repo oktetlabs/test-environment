@@ -46,7 +46,7 @@ logic_expr_int_error(const char *str)
 %}
 
 %pure-parser
-%define api.prefix {logic_expr_int_}
+%name-prefix "logic_expr_int_"
 
 %union {
     char       *str;
