@@ -14,6 +14,7 @@
 #include "te_queue.h"
 #include "tapi_job.h"
 #include "tapi_mem.h"
+#include "tapi_rpc_stdio.h"
 #include "tapi_rpc_job.h"
 #include "tapi_test.h"
 
