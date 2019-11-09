@@ -32,7 +32,7 @@ extern "C" {
  *
  * @return status code (errno.h)
  */
-extern int cfg_dh_process_file(xmlNodePtr node, const te_kvpair_h *expand_vars,
+extern int cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                                te_bool postsync);
 
 /**

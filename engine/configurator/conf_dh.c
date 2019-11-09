@@ -229,7 +229,7 @@ cleanup:
  * @return Status code.
  */
 static te_errno
-cfg_dh_get_value_from_instance(xmlNodePtr node, const te_kvpair_h *expand_vars)
+cfg_dh_get_value_from_instance(xmlNodePtr node, te_kvpair_h *expand_vars)
 {
     te_errno     rc;
     int          ret;
@@ -332,7 +332,7 @@ cleanup:
  * @return Status code.
  */
 static te_errno
-cfg_dh_process_get(xmlNodePtr node, const te_kvpair_h *expand_vars)
+cfg_dh_process_get(xmlNodePtr node, te_kvpair_h *expand_vars)
 {
     te_errno rc = 0;
 
@@ -461,7 +461,7 @@ next:
  * @return status code (errno.h)
  */
 int
-cfg_dh_process_file(xmlNodePtr node, const te_kvpair_h *expand_vars,
+cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
                     te_bool postsync)
 {
     xmlNodePtr cmd;

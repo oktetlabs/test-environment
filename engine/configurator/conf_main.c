@@ -300,7 +300,7 @@ print_otree(cfg_object *obj, int indent)
 
 /* See description in 'conf_defs.h' */
 te_errno
-parse_config_dh_sync(xmlNodePtr root_node, const te_kvpair_h *expand_vars)
+parse_config_dh_sync(xmlNodePtr root_node, te_kvpair_h *expand_vars)
 {
     te_errno rc = 0;
     char *backup;

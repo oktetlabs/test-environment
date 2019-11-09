@@ -85,6 +85,6 @@ cfg_instance_volatile(cfg_instance *inst)
  * @return Status code.
  */
 extern te_errno parse_config_dh_sync(xmlNodePtr root_node,
-                                     const te_kvpair_h *expand_vars);
+                                     te_kvpair_h *expand_vars);
 
 #endif /* !__TE_CONF_DEFS_H__ */
