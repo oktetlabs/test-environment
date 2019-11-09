@@ -55,7 +55,7 @@ te_get_kvpairs_value(const char *param_name, const void *params_ctx)
 int
 te_expand_parameters(const char *src, const char **posargs,
                      te_param_value_getter get_param_value,
-                     void *params_ctx, char **retval)
+                     const void *params_ctx, char **retval)
 {
     const char *next = NULL;
     char       *result = NULL;

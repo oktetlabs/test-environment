@@ -54,7 +54,7 @@ typedef const char *(*te_param_value_getter)(const char *, const void *);
  */
 extern int te_expand_parameters(const char *src, const char **posargs,
                                 te_param_value_getter get_param_value,
-                                void *params_ctx, char **retval);
+                                const void *params_ctx, char **retval);
 
 /**
  * Expands environment variables in a string.
