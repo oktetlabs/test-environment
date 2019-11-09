@@ -747,7 +747,7 @@ cfg_dh_process_file(xmlNodePtr node, const te_kvpair_h *expand_vars,
                     continue;
                 }
 
-                rc = cfg_dh_get_instance_info(tmp, &handle, &oid,
+                rc = cfg_dh_get_instance_info(tmp, &handle, (char **)&oid,
                                                &obj, expand_vars);
                 if (rc != 0)
                     return rc;
