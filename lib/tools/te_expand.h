@@ -26,7 +26,7 @@
 /**
  * A function type for getting value by name from given data.
  */
-typedef const char *(*te_param_value_getter)(const char *, void *);
+typedef const char *(*te_param_value_getter)(const char *, const void *);
 
 /**
  * Expands parameters in a string.
@@ -103,7 +103,7 @@ extern int te_expand_env_vars(const char *src, const char **posargs,
  * @retval EINVAL Unmatched ${ found
  */
 extern int te_expand_kvpairs(const char *src, const char **posargs,
-                             te_kvpair_h *head, char **retval);
+                             const te_kvpair_h *head, char **retval);
 
 
 #ifdef TE_EXPAND_XML

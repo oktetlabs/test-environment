@@ -30,7 +30,7 @@
  * @retval   Requested @p param_name value if found, otherwise @c NULL
  */
 static const char *
-te_get_env_value(const char *param_name, void *params_ctx)
+te_get_env_value(const char *param_name, const void *params_ctx)
 {
     UNUSED(params_ctx);
 
@@ -46,9 +46,9 @@ te_get_env_value(const char *param_name, void *params_ctx)
  * @retval   Requested @p param_name value if found, otherwise @c NULL
  */
 static const char *
-te_get_kvpairs_value(const char *param_name, void *params_ctx)
+te_get_kvpairs_value(const char *param_name, const void *params_ctx)
 {
-    return te_kvpairs_get((te_kvpair_h *)params_ctx, param_name);
+    return te_kvpairs_get((const te_kvpair_h *)params_ctx, param_name);
 }
 
 /* See description in te_expand.h */
@@ -183,7 +183,7 @@ te_expand_env_vars(const char *src, const char **posargs, char **retval)
 
 /* See description in te_expand.h */
 int
-te_expand_kvpairs(const char *src, const char **posargs, te_kvpair_h *head,
+te_expand_kvpairs(const char *src, const char **posargs, const te_kvpair_h *head,
                   char **retval)
 {
     return te_expand_parameters(src, posargs, &te_get_kvpairs_value,
