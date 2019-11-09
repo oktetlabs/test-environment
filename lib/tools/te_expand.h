@@ -95,7 +95,7 @@ extern int te_expand_env_vars(const char *src, const char **posargs,
  * @param src     Source string
  * @param posargs Positional parameters (expandable via ${[0-9]})
  *                (may be NULL)
- * @param head    Head of queue of key-value pairs
+ * @param kvpairs Head of queue of key-value pairs
  * @param retval  Resulting string (OUT)
  *
  * @return 0 if success, an error code otherwise
@@ -103,7 +103,7 @@ extern int te_expand_env_vars(const char *src, const char **posargs,
  * @retval EINVAL Unmatched ${ found
  */
 extern int te_expand_kvpairs(const char *src, const char **posargs,
-                             const te_kvpair_h *head, char **retval);
+                             const te_kvpair_h *kvpairs, char **retval);
 
 
 #ifdef TE_EXPAND_XML

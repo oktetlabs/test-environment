@@ -183,9 +183,9 @@ te_expand_env_vars(const char *src, const char **posargs, char **retval)
 
 /* See description in te_expand.h */
 int
-te_expand_kvpairs(const char *src, const char **posargs, const te_kvpair_h *head,
+te_expand_kvpairs(const char *src, const char **posargs, const te_kvpair_h *kvpairs,
                   char **retval)
 {
     return te_expand_parameters(src, posargs, &te_get_kvpairs_value,
-                                head, retval);
+                                kvpairs, retval);
 }
