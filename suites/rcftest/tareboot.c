@@ -22,8 +22,6 @@
 #include "rcf_api.h"
 #include "logger_api.h"
 
-DEFINE_LGR_ENTITY("tareboot");
-
 int
 main()
 {
@@ -34,6 +32,8 @@ main()
     int retval;
     size_t list_len;
     
+    te_log_init("tareboot");
+
     list_len = sizeof(ta_list);
     retval = rcf_get_ta_list(ta_list, &list_len);
     if (retval != 0)

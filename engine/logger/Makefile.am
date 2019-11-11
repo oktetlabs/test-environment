@@ -14,9 +14,10 @@ te_log_get_path_SOURCE = te_log_get_path.c
 te_log_get_path_LDADD = @XML2_LIBS@
 
 te_logger_SOURCES = logger.c logger_cnf.c logger_prc.c te_log_sniffers.c
-te_logger_LDADD = @TE_LDADD@ -lipcserver -lrcfapi -lipc -ltools \
+te_logger_LDADD = @TE_LDADD@ -lipcserver -lrcfapi -lipc -ltools -llogger_core \
                   @XML2_LIBS@ -lpopt -lexpat -lpthread
 te_logger_DEPENDENCIES = @TE_DEPENDENCIES@ \
+                         $(DESTDIR)/$(libdir)/liblogger_core.a \
                          $(DESTDIR)/$(libdir)/libipc.a \
                          $(DESTDIR)/$(libdir)/libipcserver.a \
                          $(DESTDIR)/$(libdir)/librcfapi.a \
@@ -25,21 +26,22 @@ te_logger_DEPENDENCIES = @TE_DEPENDENCIES@ \
 te_log_shutdown_SOURCES = te_log_shutdown.c
 te_log_shutdown_LDADD = @TE_LDADD@ -lipc -lpthread
 te_log_shutdown_DEPENDENCIES = @TE_DEPENDENCIES@ \
-                               $(DESTDIR)/$(libdir)/libipc.a \
-                               $(DESTDIR)/$(libdir)/liblogger_ten.a
+                               $(DESTDIR)/$(libdir)/libipc.a
 
 te_log_flush_SOURCES = te_log_flush.c
-te_log_flush_LDADD = @TE_LDADD@ -lrcfapi -llogger_ten -lipc -ltools \
+te_log_flush_LDADD = @TE_LDADD@ -lrcfapi -llogger_ten -lipc -ltools -llogger_core \
                      -lpthread -lexpat 
 te_log_flush_DEPENDENCIES = @TE_DEPENDENCIES@ \
                             $(DESTDIR)/$(libdir)/libipc.a \
+                            $(DESTDIR)/$(libdir)/liblogger_core.a \
                             $(DESTDIR)/$(libdir)/liblogger_ten.a \
                             $(DESTDIR)/$(libdir)/librcfapi.a \
                             $(DESTDIR)/$(libdir)/libtools.a
 
 te_tee_SOURCES = te_tee.c
-te_tee_LDADD = -llogger_ten -lipc -ltools @TE_LDADD@ -lpthread 
+te_tee_LDADD = -llogger_ten -lipc -ltools -llogger_core @TE_LDADD@ -lpthread
 te_tee_DEPENDENCIES = @TE_DEPENDENCIES@ \
+                      $(DESTDIR)/$(libdir)/liblogger_core.a \
                       $(DESTDIR)/$(libdir)/liblogger_ten.a \
                       $(DESTDIR)/$(libdir)/libipc.a \
                       $(DESTDIR)/$(libdir)/libtools.a

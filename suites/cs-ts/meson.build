@@ -26,6 +26,7 @@ te_libs = [
     'rcfapi',
     'rpcxdr',
     'rpc_types',
+    'logger_core',
     'logger_ten',
     'ipc',
     'log_bufs',

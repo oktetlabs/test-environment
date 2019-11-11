@@ -63,8 +63,6 @@
 /** Where to print detailed logs. */
 #define TRC_UPDATE_LOG_FILE "trc_update_log.txt"
 
-DEFINE_LGR_ENTITY("TRC UPD");
-
 /** TRC update tool command line options */
 enum {
     TRC_UPDATE_OPT_VERSION = 1,     /**< Display version information */
@@ -1561,6 +1559,8 @@ main(int argc, char **argv, char **envp)
 #else
     UNUSED(envp);
 #endif
+
+    te_log_init("TRC UPD");
 
     log_f = fopen(TRC_UPDATE_LOG_FILE, "w");
     if (log_f == NULL)

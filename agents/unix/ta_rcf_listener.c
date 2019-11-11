@@ -43,8 +43,6 @@
 #include "te_string.h"
 #include "comm_agent.h"
 
-DEFINE_LGR_ENTITY("ta_rcf_listener");
-
 int
 main(int argc, char *argv[])
 {
@@ -58,6 +56,8 @@ main(int argc, char *argv[])
     char       *new_args[4];
     int         i;
     te_string   cmd_str = TE_STRING_INIT_STATIC(4096);
+
+    te_log_init("ta_rcf_listener");
 
     if (argc < 3)
     {

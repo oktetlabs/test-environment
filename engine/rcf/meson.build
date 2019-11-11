@@ -12,6 +12,7 @@ common_deps = [
     dep_lib_logger_ten,
     dep_lib_ipc,
     dep_lib_tools,
+    dep_lib_logger_core,
 ]
 
 dep_dl = cc.find_library('dl', required: false)

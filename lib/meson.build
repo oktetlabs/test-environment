@@ -28,6 +28,7 @@ tad_protocols = [
 
 # Common libraries
 common_libs = [
+    'logger_core',
     'tools',
     'conf_oid',
     'asn',
@@ -124,6 +125,10 @@ foreach l : all_libs
         deps = []
         # List of dependencies in TE library name format
         te_libs = []
+        # logger_core is required dependency for everything else
+        if l != 'logger_core'
+            te_libs += [ 'logger_core' ]
+        endif
 
         subdir(l)
 

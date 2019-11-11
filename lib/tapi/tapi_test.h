@@ -192,8 +192,8 @@ extern "C" {
     argc--;                                                         \
     argv++;                                                         \
                                                                     \
-    /* Initialize te_lgr_entity variable */                         \
-    te_lgr_entity = TE_TEST_NAME;                                   \
+    te_log_init(TE_TEST_NAME);                                      \
+                                                                    \
     /*                                                              \
      * Install SIGINT signal handler to exit() with failure status, \
      * if test is terminated by user by Ctrl-C.                     \

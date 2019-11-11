@@ -617,17 +617,9 @@ log_atfork_child(void)
     te_log_message_va = logfork_log_message;
 }
 
-/**
- * Initialize Logger resources on the Test Agent side (log buffer,
- * log file and so on).
- *
- * @return  Operation status.
- *
- * @retval  0  Success.
- * @retval -1  Failure.
- */
+/* See the description in logger_ta.h */
 te_errno
-ta_log_init(void)
+ta_log_init(const char *lgr_entity)
 {
 #if HAVE_PTHREAD_H
     if (pthread_atfork(NULL, NULL, log_atfork_child) != 0)
@@ -640,6 +632,7 @@ ta_log_init(void)
     if (lgr_rb_init(&log_buffer) != 0)
         return -1;
 
+    te_log_init(lgr_entity);
     te_log_message_va = ta_log_message;
 
     return 0;

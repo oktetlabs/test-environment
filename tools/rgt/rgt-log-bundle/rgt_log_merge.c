@@ -22,8 +22,6 @@
 #include "te_string.h"
 #include "rgt_log_bundle_common.h"
 
-DEFINE_LGR_ENTITY("RGT LOG MERGE");
-
 /** If @c TRUE, find log messages to be merged by TIN */
 static te_bool use_tin = FALSE;
 /** If @c TRUE, find log messages to be merged by test ID */
@@ -252,6 +250,8 @@ main(int argc, char **argv)
     FILE *f_result;
 
     te_string path = TE_STRING_INIT;
+
+    te_log_init("RGT LOG MERGE");
 
     process_cmd_line_opts(argc, argv);
 

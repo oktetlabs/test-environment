@@ -5,8 +5,6 @@
 #include "asn_impl.h"
 #include "logger_api.h"
 
-DEFINE_LGR_ENTITY("val_set03");
-
 
 asn_named_entry_t my_entry_array [] = {
     { "number", &asn_base_integer_s,    {0,0} },
@@ -88,6 +86,8 @@ main (void)
     asn_value *compl_seq = asn_init_value(&complex_sequence);
     int b = 1234;
 #endif
+
+    te_log_init("val_set03");
 
     r = asn_write_value_field(seq_val, &a, sizeof(a), "number");
     if (r) 

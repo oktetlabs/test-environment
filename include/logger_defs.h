@@ -40,16 +40,6 @@ extern "C" {
 #endif
 
 /**
- * Every TE process (engine application, test, test agent) must call
- * this macro in its main C file to define 'te_lgr_entity' global
- * variable with specified initial value.
- *
- * @name name       Logger entity name (e.g. RCF)
- */
-#define DEFINE_LGR_ENTITY(name) \
-const char *te_lgr_entity = name
-
-/**
  * Global variable with name of the Logger entity to be used from
  * libraries to log from this process context.
  *
@@ -63,8 +53,7 @@ extern const char *te_lgr_entity;
  *     #undef   TE_LGR_ENTITY
  *     #define  TE_LGR_ENTITY <"SOMEENTITY">
  *
- * @attention It's highly not recommended to use/define it.
- *            Use DEFINE_LGR_ENTITY().
+ * @attention It's highly not recommended to use/define it. Use te_log_init().
  */
 #ifndef TE_LGR_ENTITY
 /** Default entity name */
@@ -241,6 +230,17 @@ typedef void (te_log_message_f)(const char       *file,
 
 /** Logging backend */
 extern te_log_message_f *te_log_message_va;
+
+
+/**
+ * Every TE process (engine application, test, test agent) must call
+ * this function in its main to set 'te_lgr_entity' global variable
+ * with specified initial value.
+ *
+ * @param lgr_entity    Logger entity name (e.g. RCF)
+ */
+extern void te_log_init(const char *lgr_entity);
+
 
 /**
  * Wrapper for te_log_message_va().

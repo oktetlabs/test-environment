@@ -20,7 +20,8 @@ ta_DEPENDENCIES=$(TE_DEPENDENCIES) symtbl.o \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libcomm_net_agent.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libloggerta.a \
-    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_core.a
 
 CLEANFILES=symtbl.c
 
@@ -33,8 +34,8 @@ if CFG_RCF_RPC
 
 LDADD=symtbl.o \
 -lrcfpch -lrpc_types -lrpcxdrta -l$(TAD) $(TE_LDADD) -lconf_oid -lloggerta \
--lpthread -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools -lcygwin \
--lexpat -lpcap -lole32 -loleaut32
+-lpthread -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools -llogger_core \
+-lcygwin -lexpat -lpcap -lole32 -loleaut32
 
 AM_CPPFLAGS+=-DRCF_RPC -I.
 ta_SOURCES+=tarpc_server.c 
@@ -65,6 +66,7 @@ rpcserver_DEPENDENCIES=\
     rpcserver_symtbl.o $(TE_DEPENDENCIES) \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfpch.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libloggerta.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_core.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpc_types.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpcxdrta.a 
@@ -76,7 +78,7 @@ rpcserver32_SOURCES=
 rpcserver64_SOURCES=
 
 rpcserver_LDADD=rpcserver_symtbl.o $(TE_LDADD) -lrpcxdrta \
-                -lrpc_types -lrcfpch -lloggerta -ltools -lrpc \
+                -lrpc_types -lrcfpch -lloggerta -ltools -llogger_core -lrpc \
                 -lws2_32 -lmswsock -lwsock32 -liphlpapi 
 
 rpcserver_symtbl.c: tarpc_server.o common.o $(RPCSERVER_SYMTBL_ADD)
@@ -86,7 +88,7 @@ rpcserver_symtbl.c: tarpc_server.o common.o $(RPCSERVER_SYMTBL_ADD)
 # Native build
 
 RPCSERVER_LIBS="librcfpch.a libloggerta.a libtools.a librpc_types.a \
-                $(RPCSERVER_LIBS_ADD) librpcxdrta.a librpc.a  \
+                $(RPCSERVER_LIBS_ADD) librpcxdrta.a liblogger_core.a librpc.a  \
                 ws2_32.lib mswsock.lib wsock32.lib \
                 iphlpapi.lib user32.lib"
 
@@ -143,7 +145,7 @@ ta_PROGRAMS=ta
 
 LDADD=symtbl.o \
 -lrcfpch -lrpcxdr -lrpc_types -l$(TAD) $(TE_LDADD) -lconf_oid -lloggerta \
--lpthread -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools \
+-lpthread -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools -llogger_core \
 -lcygwin -lexpat -lpcap -lole32 -loleaut32
 
 endif

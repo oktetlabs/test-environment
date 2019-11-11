@@ -31,8 +31,6 @@
 #include "conf_messages.h"
 
 
-DEFINE_LGR_ENTITY("Configurator Shutdown");
-
 
 /**
  * SIGINT handler.
@@ -64,6 +62,8 @@ main(void)
     size_t              anslen = sizeof(msg);
     int                 result = EXIT_SUCCESS;
     int                 rc;
+
+    te_log_init("Configurator Shutdown");
 
     sprintf(name, "cs_shut_%d", getpid());
 

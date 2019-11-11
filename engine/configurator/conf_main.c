@@ -31,8 +31,6 @@
 /** Format for backup file name */
 #define CONF_BACKUP_NAME         "%s/te_cfg_backup_%d_%llu.xml"
 
-DEFINE_LGR_ENTITY("Configurator");
-
 static char  buf[CFG_BUF_LEN];
 static char  tmp_buf[1024];
 static char *tmp_dir = NULL;
@@ -1882,6 +1880,8 @@ main(int argc, char **argv)
     int rc;
     int cfg_file_id;
 
+
+    te_log_init("Configurator");
 
     if (atexit(free_resources) != 0)
     {

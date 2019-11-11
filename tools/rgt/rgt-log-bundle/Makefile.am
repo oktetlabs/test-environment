@@ -18,6 +18,7 @@ bin_PROGRAMS = rgt-log-split rgt-log-merge rgt-log-recover
 RGT_LOG_ARCHIVE_COMMON_SRC = rgt_log_bundle_common.h rgt_log_bundle_common.c
 RGT_LOG_ARCHIVE_COMMON_LIB = $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_file.a \
                            $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
+                           $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_core.a \
                            -lpopt
 
 rgt_log_split_SOURCES = rgt_log_split.c $(RGT_LOG_ARCHIVE_COMMON_SRC)

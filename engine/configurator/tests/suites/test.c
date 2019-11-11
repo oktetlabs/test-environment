@@ -17,8 +17,6 @@
 #include "test.h"
 #include "../paths.c"
 
-DEFINE_LGR_ENTITY("test");
-
 #define RC(expr_) \
     do {                                                \
         int rc_ = 0;                                    \
@@ -38,6 +36,8 @@ main(void)
     int                     conf;
     cfg_obj_descr           descr = {CVT_STRING, CFG_READ_WRITE};
     
+    te_log_init("test");
+
     /* 
      * Exporting environment variables which are necessary
      * for correct work of the testing network.

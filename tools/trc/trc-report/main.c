@@ -39,9 +39,6 @@
 #include "re_subst.h"
 
 
-DEFINE_LGR_ENTITY("TRC RG");
-
-
 /** TRC tool command line options */
 enum {
     TRC_OPT_VERSION = 1,
@@ -606,6 +603,8 @@ main(int argc, char *argv[])
     trc_report_html    *report;
     tqe_string         *merge_fn;
     tqe_string         *cut_path;
+
+    te_log_init("TRC RG");
 
     TAILQ_INIT(&reports);
 

@@ -11,11 +11,12 @@ bin_PROGRAMS = te-trc-diff
 te_trc_diff_SOURCES = main.c
 
 te_trc_diff_LDADD = -ltrc_diff -ltrc -llogic_expr -llogger_file -lpthread \
-                    -ltools -lpopt -lcrypto @XML2_LIBS@ @TE_LDADD@
+                    -ltools -llogger_core -lpopt -lcrypto @XML2_LIBS@ @TE_LDADD@
 
 te_trc_diff_DEPENDENCIES = @TE_DEPENDENCIES@ \
 	$(top_builddir)/lib/libtrc_diff.a \
 	$(DESTDIR)/$(libdir)/libtrc.a \
 	$(DESTDIR)/$(libdir)/liblogic_expr.a \
+	$(DESTDIR)/$(libdir)/liblogger_core.a \
 	$(DESTDIR)/$(libdir)/liblogger_file.a \
 	$(DESTDIR)/$(libdir)/libtools.a

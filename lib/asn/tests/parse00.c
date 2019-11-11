@@ -6,9 +6,6 @@
 #include "ndn.h"
 #include "logger_api.h"
 
-DEFINE_LGR_ENTITY("parse00");
-
-
 char buffer [10000];
 
 int 
@@ -19,6 +16,9 @@ main (int argc, char *argv[])
     size_t oid_len = sizeof(oid_vals)/sizeof(oid_vals[0]);
     int s_parsed;
     asn_value *new_val; 
+
+    te_log_init("parse00");
+
     if (argc < 2)
         return 0;
 

@@ -21,8 +21,6 @@
 #include "rcf_api.h"
 #include "logger_api.h"
 
-DEFINE_LGR_ENTITY("rcftest");
-
 int
 main()
 {
@@ -30,6 +28,8 @@ main()
     size_t len = sizeof(ta);
     int  sid;
     
+    te_log_init("rcftest");
+
     printf("Starting test\n");
     if (rcf_get_ta_list(ta, &len) != 0)
     {

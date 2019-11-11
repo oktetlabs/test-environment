@@ -43,9 +43,11 @@ extern "C" {
  * Initialize Logger resources on the Test Agent side (log buffer,
  * log file and so on).
  *
+ * @param lgr_entity    Logger entity name to use
+ *
  * @return Status code (see te_errno.h)
  */
-extern te_errno ta_log_init(void);
+extern te_errno ta_log_init(const char *lgr_entity);
 
 /**
  * Finish Logger activity on the Test Agent side (fluhes buffers

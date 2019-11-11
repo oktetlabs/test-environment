@@ -2,7 +2,7 @@
 
 common_sources = ['rgt_log_bundle_common.c', 'rgt_log_bundle_common.h']
 common_libs = declare_dependency(
-    dependencies: [dep_lib_tools, dep_lib_logger_file],
+    dependencies: [dep_lib_tools, dep_lib_logger_file, dep_lib_logger_core],
 )
 
 rgt_log_bundle = [

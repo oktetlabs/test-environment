@@ -24,8 +24,6 @@
 #include "logger_api.h"
 #include "logger_file.h"
 
-DEFINE_LGR_ENTITY("ACSE");
-
 #ifdef TE_LGR_USER
 #undef TE_LGR_USER
 #endif
@@ -78,6 +76,8 @@ main(int argc, char **argv)
     cpe_t   *cpe;
 
     te_errno rc;
+
+    te_log_init("ACSE");
 
     soap_ssl_init(); /* init OpenSSL (just once) */
 

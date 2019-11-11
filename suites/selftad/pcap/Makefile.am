@@ -13,4 +13,4 @@ tetest_PROGRAMS = tapi_pcap_test
 
 
 LDADD = -ltapi -ltapi_pcap -lndn -lasn -lrcfapi -lrpcxdr -lconfapi \
-        -lconf_oid -llogger_ten -lipc -ltools -lpthread
+        -lconf_oid -llogger_ten -lipc -ltools -llogger_core -lpthread

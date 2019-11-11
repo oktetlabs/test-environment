@@ -39,9 +39,6 @@
 #include "re_subst.h"
 
 
-DEFINE_LGR_ENTITY("TRC DIFF");
-
-
 /** TRC tool command line options */
 enum {
     TRC_DIFF_OPT_VERSION = 1,
@@ -686,6 +683,8 @@ main(int argc, char *argv[])
     int             result = EXIT_FAILURE;
     trc_diff_ctx   *ctx;
     trc_diff_set   *diff_set;
+
+    te_log_init("TRC DIFF");
 
     /* Initialize diff context */
     ctx = trc_diff_ctx_new();

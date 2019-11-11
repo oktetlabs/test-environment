@@ -14,7 +14,8 @@ bin_PROGRAMS = taswitch-ctl
 # -ltad_ch with names used in -lrcfpch.
 #
 taswitch_ctl_LDADD = symtbl.o -lrcfpch -l@TAD@ @TE_LDADD@ -lconf_oid \
-                     -lcomm_net_agent -lloggerta -ltools -lpthread -lstdc++
+                     -lcomm_net_agent -lloggerta -ltools -llogger_core \
+                     -lpthread -lstdc++
 
 taswitch_ctl_SOURCES = main.c conf.c
 
@@ -24,7 +25,8 @@ taswitch_ctl_DEPENDENCIES = @TE_DEPENDENCIES@ symtbl.o \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libcomm_net_agent.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libloggerta.a \
-    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_core.a
 
 if CFG_SNIFFERS_DUMMY
 taswitch_ctl_LDADD+= -lrcf_sniffers_dummy

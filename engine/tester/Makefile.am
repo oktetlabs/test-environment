@@ -82,13 +82,14 @@ test_path_lex.h: test_path_lex.c
 
 te_tester_LDADD = @TE_LDADD@ -lbsapi -lconfapi -lconf_oid $(TRC_LDADD) \
                   -llogger_ten -lipc -lipcserver -llogic_expr \
-                  -llog_bufs -ltools $(MD5_LDADD) \
+                  -llog_bufs -ltools -llogger_core $(MD5_LDADD) \
                   @XML2_LIBS@ -lpopt -lpthread 
 
 te_tester_DEPENDENCIES = @TE_DEPENDENCIES@ $(TRC_DEPS) \
 	$(DESTDIR)/$(libdir)/libbsapi.a \
 	$(DESTDIR)/$(libdir)/libconfapi.a \
 	$(DESTDIR)/$(libdir)/libconf_oid.a \
+	$(DESTDIR)/$(libdir)/liblogger_core.a \
 	$(DESTDIR)/$(libdir)/liblogger_ten.a \
 	$(DESTDIR)/$(libdir)/libipc.a \
 	$(DESTDIR)/$(libdir)/libipcserver.a \

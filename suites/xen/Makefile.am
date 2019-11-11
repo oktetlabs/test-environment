@@ -9,7 +9,7 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 MY_LDADD = -ltapi_rpc -lrpc_types -ltapi_env -ltapi -lrcfrpc \
            -lconfapi -lconf_oid -lrcfapi -lrpcxdr -llogger_ten -lipc \
-           -llog_bufs -ltools -lpthread -ltapi_tad -lndn -lasn
+           -llog_bufs -ltools -lpthread -ltapi_tad -lndn -lasn -llogger_core
 
 MY_DEPS = \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtapi_rpc.a \
@@ -21,6 +21,7 @@ MY_DEPS = \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfapi.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpcxdr.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_core.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_ten.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libipc.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblog_bufs.a \

@@ -59,9 +59,6 @@
 #define LGR_TANAMES_LEN 1024
 
 
-DEFINE_LGR_ENTITY("Log Flush");
-
-
 /**
  * SIGINT handler.
  *
@@ -88,6 +85,8 @@ main(void)
     unsigned int    scale = 0;
     size_t          str_len = 0;
     int             res;
+
+    te_log_init("Log Flush");
 
     signal(SIGINT, sigint_handler);
 

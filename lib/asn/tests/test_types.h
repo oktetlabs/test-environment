@@ -18,8 +18,6 @@
 #include "asn_impl.h"
 #include "logger_api.h"
 
-DEFINE_LGR_ENTITY("(test)");
-
 enum {
     SEQ_NUMBER_TAG,
     SEQ_STRING_TAG,

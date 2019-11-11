@@ -38,9 +38,6 @@
 #include "ipc_client.h"
 
 
-DEFINE_LGR_ENTITY("RCF ShutDown");
-
-
 int
 main(void)
 {
@@ -51,6 +48,8 @@ main(void)
     int     result = EXIT_SUCCESS;
 
     struct ipc_client *handle = NULL;
+
+    te_log_init("RCF ShutDown");
 
     sprintf(name, "rcf_shut_%d", getpid());
 

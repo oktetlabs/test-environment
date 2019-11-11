@@ -19,7 +19,8 @@ rgt_core = executable(
     'rgt-core',
     rgt_core_sources,
     include_directories: inc,
-    dependencies: [dep_glib, dep_popt, dep_libxml2, dep_tcl, dep_lib_tools],
+    dependencies: [dep_glib, dep_popt, dep_libxml2, dep_tcl, dep_lib_tools,
+                   dep_lib_logger_core],
     install: true,
     c_args: c_args,
 )

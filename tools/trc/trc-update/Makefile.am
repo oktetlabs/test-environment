@@ -11,12 +11,13 @@ bin_PROGRAMS = te-trc-update
 te_trc_update_SOURCES = main.c
 
 te_trc_update_LDADD = -ltrc_report -ltrc -llogic_expr -llogger_file \
-                      -lpthread -ltools -lpopt -lcrypto @XML2_LIBS@ \
+                      -lpthread -ltools -llogger_core -lpopt -lcrypto @XML2_LIBS@ \
                       @TE_LDADD@ @PERL_LDADD@
 
 te_trc_update_DEPENDENCIES = @TE_DEPENDENCIES@ \
 	$(top_builddir)/lib/libtrc_report.a \
 	$(DESTDIR)/$(libdir)/libtrc.a \
 	$(DESTDIR)/$(libdir)/liblogic_expr.a \
+	$(DESTDIR)/$(libdir)/liblogger_core.a \
 	$(DESTDIR)/$(libdir)/liblogger_file.a \
 	$(DESTDIR)/$(libdir)/libtools.a

@@ -477,10 +477,11 @@ main(int argc, char **argv)
     if (argc != 4)
         return -1;
 
-    if ((rc = ta_log_init()) != 0)
+    ta_name = argv[1];
+
+    if ((rc = ta_log_init(ta_name)) != 0)
         return rc;
         
-    ta_name = argv[1];
     devname = argv[3];
     VERB("started\n");
     return rcf_pch_start_pch(argv[2]);

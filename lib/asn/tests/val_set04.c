@@ -5,8 +5,6 @@
 #include "asn_impl.h"
 #include "logger_api.h"
 
-DEFINE_LGR_ENTITY("val_set04");
-
 
 asn_type my_sequence_of = {
     "MySeqOf",
@@ -54,6 +52,8 @@ main(void)
     int l;
 
     char nm[] = "my great array!";
+
+    te_log_init("val_set04");
 
     r = asn_write_value_field(for_ins, &a, sizeof(a), "");
     if (r) { fprintf(stderr, "write_field error code: %6x\n", r); return r; }

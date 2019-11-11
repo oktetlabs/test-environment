@@ -32,6 +32,7 @@ te_libs = [
     'rpc_types',
     'conf_oid',
     'loggerta',
+    'logger_core',
 ]
 
 foreach extra_lib : get_option('agent-unix-libs').split()

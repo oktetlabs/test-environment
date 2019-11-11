@@ -24,5 +24,5 @@ tetest_PROGRAMS = \
 
 LDADD = -ltapi -ltapi_tad -lndn -lasn -ltapi_rpc -lrpc_types -lrcfrpc \
         -lrcfapi -lrpcxdr -lconfapi -lconf_oid -llogger_ten -lipc \
-        -llog_bufs -ltools -lpthread @NET_SNMP_LIBS@
+        -llog_bufs -ltools -llogger_core -lpthread @NET_SNMP_LIBS@
  

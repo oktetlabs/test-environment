@@ -33,8 +33,6 @@
 #include "cli_utils.h"
 #include "cwmp_utils.h"
 
-DEFINE_LGR_ENTITY("ACSE");
-
 #ifdef TE_LGR_USER
 #undef TE_LGR_USER
 #endif
@@ -1062,8 +1060,7 @@ main(int argc, const char **argv)
         acse_main_pid = fork();
         if (acse_main_pid == 0)
         {
-
-            te_lgr_entity = "ACSE daemon";
+            te_log_init("ACSE daemon");
             if (acse_logfile != NULL)
             {
                 FILE   *log_fd = fopen(acse_logfile, "a");

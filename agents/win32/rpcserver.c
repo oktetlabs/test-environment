@@ -16,8 +16,6 @@
 #include "tarpc_server.h"
 #include "rpc_xdr.h"
 
-DEFINE_LGR_ENTITY("(win32_rpcserver)");
-
 /* FIXME: Include header */
 extern te_log_message_f logfork_log_message;
 
@@ -80,6 +78,8 @@ main(int argc, char **argv)
 {
     WSADATA data;
     
+    te_log_init("(win32_rpcserver)");
+
     if (win32_process_exec(argc, argv) != 0)
         return 1;
     

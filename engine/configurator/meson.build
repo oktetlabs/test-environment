@@ -21,7 +21,7 @@ te_cs_deps = [ dep_libxml2, dep_popt, dep_threads,
                dep_lib_rcfapi, dep_lib_ipcserver,
                dep_lib_conf_types, dep_lib_conf_oid,
                dep_lib_confapi, dep_lib_logger_ten,
-               dep_lib_ipc, dep_lib_tools ]
+               dep_lib_ipc, dep_lib_tools, dep_lib_logger_core ]
 
 if get_option('cs-conf-yaml')
     te_cs_deps += dependency('yaml-0.1')
@@ -36,4 +36,4 @@ executable('te_cs', sources, install: true,
 executable('te_cs_shutdown', 'conf_shutdown.c', install: true,
            c_args: c_args,
            dependencies: [ dep_lib_confapi, dep_lib_logger_ten,
-                           dep_lib_ipc, dep_lib_tools ])
+                           dep_lib_ipc, dep_lib_tools, dep_lib_logger_core ])

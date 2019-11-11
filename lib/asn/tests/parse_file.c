@@ -5,8 +5,6 @@
 #include "ndn.h"
 #include "logger_api.h"
 
-DEFINE_LGR_ENTITY("parse_file");
-
 
 int 
 main (int argc, char *argv[])
@@ -22,6 +20,8 @@ main (int argc, char *argv[])
 #if 0
     asn_value *eth_header, *snmp_message;
 #endif
+
+    te_log_init("parse_file");
 
     if (argc < 2)
     {

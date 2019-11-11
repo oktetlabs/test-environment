@@ -15,8 +15,6 @@
 #include "logger_api.h"
 #include "tester_run.h"
 
-DEFINE_LGR_ENTITY("scen_op_test");
-
 #define SCEN_OP_BUF_SIZE        4096
 #define FLAGS_BUF_SIZE          256
 #define FLAG_NAMES_TABLE_SIZE   32
@@ -597,6 +595,8 @@ main(void)
     testing_scenario ts_result = TAILQ_HEAD_INITIALIZER(ts_result);
     int              op;
     te_errno         err;
+
+    te_log_init("scen_op_test");
 
     fgets(scen_buf, SCEN_OP_BUF_SIZE, stdin);
     if (parse_input(scen_buf, &ts1, &ts2, &ts_expected, &op) < 0)

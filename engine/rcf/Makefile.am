@@ -13,20 +13,22 @@ te_rcf_SOURCES = rcf.c
 
 te_rcf_LDFLAGS = $(AM_LDFLAGS) -rdynamic -export-dynamic 
 
-te_rcf_LDADD = @TE_LDADD@ -lipcserver -llogger_ten -lipc -ltools \
+te_rcf_LDADD = @TE_LDADD@ -lipcserver -llogger_ten -lipc -ltools -llogger_core \
                @XML2_LIBS@ -ldl -lexpat -lpopt -lpthread 
 
 te_rcf_DEPENDENCIES = @TE_DEPENDENCIES@ \
                       $(DESTDIR)/$(libdir)/liblogger_ten.a \
+                      $(DESTDIR)/$(libdir)/liblogger_core.a \
                       $(DESTDIR)/$(libdir)/libipcserver.a \
                       $(DESTDIR)/$(libdir)/libipc.a \
                       $(DESTDIR)/$(libdir)/libtools.a
 
 te_rcf_shutdown_SOURCES = rcf_shutdown.c
 
-te_rcf_shutdown_LDADD = -llogger_ten -lipc -ltools -lpthread
+te_rcf_shutdown_LDADD = -llogger_ten -lipc -ltools -llogger_core -lpthread
 
 te_rcf_shutdown_DEPENDENCIES = $(DESTDIR)/$(libdir)/liblogger_ten.a \
+                               $(DESTDIR)/$(libdir)/liblogger_core.a \
                                $(DESTDIR)/$(libdir)/libipc.a \
                                $(DESTDIR)/$(libdir)/libtools.a
 
@@ -36,9 +38,10 @@ te_rcf_tadead_SOURCES = rcf_tadead.c
 # Use static linkage for tool to be used by human
 te_rcf_tadead_LDFLAGS = $(AM_LDFLAGS) -static
 
-te_rcf_tadead_LDADD = -llogger_ten -lipc -ltools -lpthread
+te_rcf_tadead_LDADD = -llogger_ten -lipc -ltools -llogger_core -lpthread
 
 te_rcf_tadead_DEPENDENCIES = $(DESTDIR)/$(libdir)/liblogger_ten.a \
+                             $(DESTDIR)/$(libdir)/liblogger_core.a \
                              $(DESTDIR)/$(libdir)/libipc.a \
                              $(DESTDIR)/$(libdir)/libtools.a
 

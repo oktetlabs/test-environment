@@ -37,11 +37,12 @@ taexec_PROGRAMS = ta ta_rcf_listener
 
 ta_rcf_listener_SOURCES = ta_rcf_listener.c
 
-ta_rcf_listener_LDADD = -lcomm_net_agent -llogger_file -ltools $(TE_LDADD)
+ta_rcf_listener_LDADD = -lcomm_net_agent -llogger_file -ltools -llogger_core $(TE_LDADD)
 ta_rcf_listener_DEPENDENCIES = @TE_DEPENDENCIES@  \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libcomm_net_agent.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_file.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_core.a \
     Makefile
 
 ta_SOURCES = main.c log_remote.c
@@ -58,7 +59,7 @@ ta_LDADD = conf/libconf.a -lrpcserver -lrcfpch \
            -lrpcxdrta -lrpc_types -lloggerta -lrpctransport \
 		   -ltools -lagentlib \
            $(EXTRA_LDADD) \
-           -lconf_oid
+           -lconf_oid -llogger_core
 
 SYMTBL_OBJECTS = main.o log_remote.o
 SYMTBL_LIBS = $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
@@ -93,6 +94,7 @@ ta_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpc_types.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libloggerta.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_core.a \
     Makefile
 
 if CFG_TR069

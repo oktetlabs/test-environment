@@ -40,11 +40,12 @@ AC_ARG_VAR([TE_PLATFORM])
 
 TS_LIBS=" -ltapi_rpc -lrcfrpc -ltapi -lconfapi \
 -lconf_oid -lrcfapi -lrpcxdr -lrpc_types -llogger_ten \
--lipc -llog_bufs -ltools -lpthread -lm"
+-lipc -llog_bufs -ltools -llogger_core -lpthread -lm"
 
 TS_DEPS="\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libtools.a \
 \$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/liblog_bufs.a \
 \$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libipc.a \
+\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/liblogger_core.a \
 \$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/liblogger_ten.a \
 \$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/librpc_types.a \
 \$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/librpcxdr.a \

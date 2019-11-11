@@ -40,7 +40,7 @@ AC_ARG_VAR([TE_PLATFORM])
 
 TS_TE_LIBS="-ltapi_env -lrcfrpc -ltapi -ltapi_rpc -lasn -lndn \
 -lconfapi -lconf_oid -lrcfapi -llogger_ten -lrpcxdr -lrpc_types -lipc \
--llog_bufs -lpthread -ltools"
+-llog_bufs -lpthread -ltools -llogger_core"
 
 TS_TE_DEPS="\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libipc.a \
 \$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/librcfapi.a \

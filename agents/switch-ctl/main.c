@@ -39,8 +39,6 @@ extern void *rcf_ch_symbol_addr_auto(const char *name, te_bool is_func);
 extern char *rcf_ch_symbol_name_auto(const void *addr);
 
 
-DEFINE_LGR_ENTITY("(switch-ctl)");
-
 char *ta_name = "(switch-ctl)";
 
 
@@ -320,7 +318,6 @@ main(int argc, char **argv)
     
     char buf[16];
 
-
     if (argc != 5)
     {
         fprintf(stderr, "Usage: taswitch-ctl <ta_name> "
@@ -329,13 +326,13 @@ main(int argc, char **argv)
         return -1;
     }
 
-    if ((rc = ta_log_init()) != 0)
+    ta_name = argv[1];
+
+    if ((rc = ta_log_init(ta_name)) != 0)
     {
         fprintf(stderr, "ta_log_init() failed: error=%d\n", rc);
         return rc;
     }
-
-    te_lgr_entity = ta_name = argv[1];
 
     VERB("Started");
 

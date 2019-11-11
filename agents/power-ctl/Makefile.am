@@ -17,7 +17,7 @@ taexec_PROGRAMS = ta
 ta_SOURCES = main.c ta_snmp.c
 
 ta_LDADD = -lrcfpch -l@TAD@ @TE_LDADD@ -lrpcxdr -lconf_oid \
-           -lloggerta -ltools
+           -lloggerta -ltools -llogger_core
 
 if CFG_SNIFFERS_DUMMY
 ta_LDADD+= -lrcf_sniffers_dummy
@@ -28,5 +28,6 @@ ta_DEPENDENCIES = @TE_DEPENDENCIES@ \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/lib@TAD@.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libloggerta.a \
-    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_core.a
 

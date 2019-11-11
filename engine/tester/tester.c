@@ -50,9 +50,6 @@
 
 #include "tester_serial_thread.h"
 
-/** Logging entity name of the Tester subsystem */
-DEFINE_LGR_ENTITY("Tester");
-
 /** User environment */
 extern char **environ;
 
@@ -839,6 +836,8 @@ main(int argc, char *argv[])
 {
     int             result = EXIT_FAILURE;
     te_errno        rc;
+
+    te_log_init("Tester");
 
 #if HAVE_SIGNAL_H
     (void)signal(SIGINT, tester_sigint_handler);

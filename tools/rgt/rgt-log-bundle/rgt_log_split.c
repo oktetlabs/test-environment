@@ -27,8 +27,6 @@
 #include "te_raw_log.h"
 #include "rgt_log_bundle_common.h"
 
-DEFINE_LGR_ENTITY("RGT LOG SPLIT");
-
 /** Raw log fragment type  */
 typedef enum fragment_type {
     FRAG_START,   /**< Starting fragment of log/package/session/test */
@@ -691,6 +689,8 @@ main(int argc, char **argv)
     FILE *f_raw_gist = NULL;
 
     te_string path_aux = TE_STRING_INIT;
+
+    te_log_init("RGT LOG SPLIT");
 
     process_cmd_line_opts(argc, argv);
 

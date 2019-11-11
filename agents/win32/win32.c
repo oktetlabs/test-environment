@@ -53,8 +53,6 @@
         return _rc;                                                     \
     } while (FALSE)
 
-DEFINE_LGR_ENTITY("(win32)");
-
 char *ta_name = "(win32)";
 
 static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -654,6 +652,8 @@ main(int argc, char **argv)
 
     pthread_t tid;
     
+    te_log_init("(win32)");
+
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
     
@@ -671,13 +671,12 @@ main(int argc, char **argv)
     }
 #endif
 
-    if ((rc = ta_log_init()) != 0)
+    if ((rc = ta_log_init(ta_name)) != 0)
     {
         fprintf(stderr, "ta_log_init() failed: error=%d\n", rc);
         return rc;
     }
 
-    te_lgr_entity = ta_name;
     VERB("Started\n");
 
     sprintf(buf, "PID %u", getpid());

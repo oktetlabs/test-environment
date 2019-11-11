@@ -54,8 +54,6 @@
 /* Raw log file length checking period */
 #define RAW_FILE_CHECK_PERIOD 100
 
-DEFINE_LGR_ENTITY("Logger");
-
 /* TA single linked list */
 ta_inst *ta_list = NULL;
 
@@ -959,6 +957,8 @@ main(int argc, const char *argv[])
     int         scale = 0;
     pthread_t   te_thread;
     ta_inst    *ta_el;
+
+    te_log_init("Logger");
 
     if (process_cmd_line_opts(argc, argv) != EXIT_SUCCESS)
     {

@@ -24,23 +24,25 @@ executable('te_logger', logger_sources, install: true,
            c_args: c_args,
            dependencies: [ dep_libxml2, dep_popt, dep_threads,
                            dep_lib_ipcserver, dep_lib_rcfapi, dep_lib_ipc,
-                           dep_lib_tools ])
+                           dep_lib_tools, dep_lib_logger_core ])
 
 executable('te_log_shutdown', 'te_log_shutdown.c', install: true,
            include_directories: te_include,
            c_args: c_args,
-           dependencies: [ dep_libxml2, dep_lib_ipc, dep_lib_rcfapi ])
+           dependencies: [ dep_libxml2, dep_lib_ipc, dep_lib_rcfapi,
+                           dep_lib_logger_core ])
 
 executable('te_log_flush', 'te_log_flush.c', install: true,
            include_directories: te_include,
            c_args: c_args,
            dependencies: [ dep_lib_rcfapi, dep_lib_logger_ten, dep_lib_ipc,
-                           dep_lib_tools ])
+                           dep_lib_tools, dep_lib_logger_core ])
 
 executable('te_tee', 'te_tee.c', install: true,
            include_directories: te_include,
            c_args: c_args,
-           dependencies: [ dep_lib_logger_ten, dep_lib_ipc, dep_lib_tools ])
+           dependencies: [ dep_lib_logger_ten, dep_lib_ipc, dep_lib_tools,
+                           dep_lib_logger_core ])
 
 executable('te_log_get_path', 'te_log_get_path.c', install: true,
            include_directories: te_include,

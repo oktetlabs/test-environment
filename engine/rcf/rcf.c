@@ -210,9 +210,6 @@ typedef struct ta {
 } ta;
 
 
-DEFINE_LGR_ENTITY("RCF");
-
-
 /**
  * TA check initiator data.
  */
@@ -3234,6 +3231,8 @@ main(int argc, const char *argv[])
     int     result = EXIT_FAILURE;
     int     rc;
     char   *ta_list_file;
+
+    te_log_init("RCF");
 
     if ((rc = process_cmd_line_opts(argc, argv)) != EXIT_SUCCESS)
     {

@@ -100,9 +100,6 @@
 /** User environment */
 extern char **environ;
 
-/** Logger entity name */
-DEFINE_LGR_ENTITY("(unix)");
-
 /** Test Agent executable name */
 /**
  * This is done to avoid possible problems
@@ -1556,6 +1553,8 @@ main(int argc, char **argv)
 #endif /* AT_SYSINFO */
 #endif
 
+    te_log_init("(unix)");
+
     te_kernel_log_set_system_func(&ta_system);
 
     /*
@@ -1662,14 +1661,13 @@ main(int argc, char **argv)
         return 0;
     }
 
-    if ((rc = ta_log_init()) != 0)
+    ta_name = argv[1];
+
+    if ((rc = ta_log_init(ta_name)) != 0)
     {
         fprintf(stderr, "ta_log_init() failed: error=%d\n", rc);
         return rc;
     }
-    
-    /* Is it required for logfork to used by exec'ed */
-    te_lgr_entity = ta_name = argv[1];
 
     RING("Starting");
 

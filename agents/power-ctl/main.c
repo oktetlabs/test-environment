@@ -32,8 +32,6 @@
 #include "ta_common.h"
 #include "ta_snmp.h"
 
-DEFINE_LGR_ENTITY("(power-ctl)");
-
 const char *ta_name = "(power-ctl)";
 
 static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -595,10 +593,10 @@ main(int argc, char **argv)
         return -1;
     }
 
-    if ((rc = ta_log_init()) != 0)
-        return rc;
-
     ta_name = argv[1];
+
+    if ((rc = ta_log_init(ta_name)) != 0)
+        return rc;
 
     if ((unit_netaddr_str = strrchr(argv[argc - 1], ':')) != NULL)
         unit_netaddr_str++;

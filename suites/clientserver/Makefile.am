@@ -19,7 +19,7 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 MY_LDADD=-ltapi -ltapi_rpc -lrpc_types -ltapi_env -ltapi -lasn -lndn -lrcfrpc \
          -lconfapi -lconf_oid -lrcfapi -lrpcxdr -llogger_ten -lipc \
-         -llog_bufs -ltools -lexpat -lpthread -lm
+         -llog_bufs -ltools -llogger_core -lexpat -lpthread -lm
 
 tetest_PROGRAMS = clientserver
        
@@ -27,6 +27,7 @@ clientserver_SOURCES = clientserver.c
 clientserver_LDADD = $(MY_LDADD)
 clientserver_DEPENDENCIES = \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfapi.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_core.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_ten.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libipc.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtapi.a \

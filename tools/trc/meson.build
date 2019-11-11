@@ -21,6 +21,7 @@ dep_common = declare_dependency(
         dep_lib_tools,
         dep_lib_logic_expr,
         dep_lib_logger_file,
+        dep_lib_logger_core,
     ],
     include_directories: [inc, te_include]
 )

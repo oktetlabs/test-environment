@@ -27,7 +27,7 @@ main(void)
     int result = EXIT_FAILURE;
 
     signal(SIGINT, te_test_sig_handler);
-    te_lgr_entity = TE_TEST_NAME;
+    te_log_init(TE_TEST_NAME);
     TAPI_ON_JMP(TEST_ON_JMP_DO);
 
     CHECK_RC(tapi_cfg_net_all_assign_ip(AF_INET));

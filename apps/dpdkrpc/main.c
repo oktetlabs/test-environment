@@ -25,8 +25,6 @@
 #include <ta_common.h>
 #include <rpc_server.h>
 
-DEFINE_LGR_ENTITY("DPDK/RPC");
-
 /* FIXME: that is a strictly temporary hack to make linker happy */
 static char ta_execname_storage[RCF_MAX_PATH];
 const char *ta_execname = ta_execname_storage;
@@ -183,6 +181,8 @@ int
 main(int argc, char **argv)
 {
 	char *sep;
+
+	te_log_init("DPDK/RPC");
 
 	strcpy(ta_execname_storage, argv[0]);
 	strcpy(ta_dir, ta_execname_storage);

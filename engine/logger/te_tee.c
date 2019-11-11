@@ -66,9 +66,6 @@
 #include "te_raw_log.h"
 
 
-DEFINE_LGR_ENTITY("(Tee)");
-
-
 int
 main (int argc, char *argv[])
 {
@@ -83,6 +80,8 @@ main (int argc, char *argv[])
     struct pollfd  poller;
     static char    buffer1[TE_LOG_FIELD_MAX + 1];
     static char    buffer2[TE_LOG_FIELD_MAX + 1];
+
+    te_log_init("(Tee)");
 
 #define MAYBE_DO_LOG \
     do {                                                       \
@@ -116,7 +115,7 @@ main (int argc, char *argv[])
         ERROR("Usage: te_tee lgr-entity lgr-user msg-interval");
         return EXIT_FAILURE;
     }
-    te_lgr_entity = argv[1];
+    te_log_init(argv[1]);
 
     interval = strtol(argv[3], NULL, 10);
     if (interval <= 0)

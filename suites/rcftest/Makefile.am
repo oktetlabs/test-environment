@@ -16,17 +16,19 @@ tetest_PROGRAMS = rcftest tareboot
 
 
 rcftest_SOURCES = rcftest.c
-rcftest_LDADD = -lrcfapi -llogger_ten -lipc -ltools -lpthread
+rcftest_LDADD = -lrcfapi -llogger_ten -lipc -ltools -llogger_core -lpthread
 rcftest_DEPENDENCIES = \
         $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfapi.a \
+        $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_core.a \
         $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_ten.a \
         $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libipc.a \
         $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a
 
 tareboot_SOURCES = tareboot.c
-tareboot_LDADD = -lrcfapi -llogger_ten -lipc -ltools -lpthread
+tareboot_LDADD = -lrcfapi -llogger_ten -lipc -ltools -llogger_core -lpthread
 tareboot_DEPENDENCIES = \
         $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librcfapi.a \
+        $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_core.a \
         $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_ten.a \
         $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libipc.a \
         $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a

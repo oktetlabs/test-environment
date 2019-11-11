@@ -29,8 +29,6 @@
 
 #include "te_string.h"
 
-DEFINE_LGR_ENTITY("RGT LOG RECOVER");
-
 /** Where to find raw log fragments and recover_list file */
 static char *split_log_path = NULL;
 /** Where to store recovered raw log */
@@ -104,6 +102,8 @@ main(int argc, char **argv)
     uint64_t  raw_offset;
     uint64_t  raw_length;
     uint64_t  frag_offset;
+
+    te_log_init("RGT LOG RECOVER");
 
     process_cmd_line_opts(argc, argv);
 

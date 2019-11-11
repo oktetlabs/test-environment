@@ -50,10 +50,6 @@
 #include "ndn_base.h"
 
 
-/** Global variable with entity name for logging */
-DEFINE_LGR_ENTITY("(unknown)");
-
-
 /* See description in tapi_test.h */
 void
 te_test_sig_handler(int signum)

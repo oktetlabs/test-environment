@@ -14,6 +14,7 @@ te_libs = [
     'ipc',
     'ipcserver',
     'log_bufs',
+    'logger_core',
     'logger_ten',
     'logic_expr',
     'tapi',
