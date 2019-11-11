@@ -39,6 +39,9 @@
 extern "C" {
 #endif
 
+/** Logging backend for processed forked from Test Agents */
+extern te_log_message_f logfork_log_message;
+
 /**
  * Initialize Logger resources on the Test Agent side (log buffer,
  * log file and so on).

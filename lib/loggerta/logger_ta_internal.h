@@ -479,9 +479,6 @@ lgr_rb_get_elements(struct lgr_rb *ring_buffer, uint32_t position,
    }
 }
 
-
-extern te_log_message_f logfork_log_message;
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -24,6 +24,8 @@
 
 #include <ta_common.h>
 #include <rpc_server.h>
+#include "logger_defs.h"
+#include "logger_ta.h"
 
 /* FIXME: that is a strictly temporary hack to make linker happy */
 static char ta_execname_storage[RCF_MAX_PATH];
