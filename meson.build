@@ -1,7 +1,7 @@
 # Copyright (C) 2018 OKTET Labs. All rights reserved.
 
 project('test-environment', 'c',
-    default_options: ['default_library=static'],
+    default_options: ['default_library=shared'],
     meson_version: '>= 0.44.1'
 )
 
