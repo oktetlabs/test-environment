@@ -189,13 +189,15 @@ c_args += [
 deps += [ rpc_h_dep ]
 
 # Build server-side rpcxdr library here
-te_lib_rpcxdrta = library('rpcxdrta', sources, rpc_stub, install: install_lib,
-                          include_directories: includes,
-                          c_args: [ '-DTE_DUMMY', c_args ],
-                          dependencies: deps)
+te_lib_rpcxdrta = static_library('rpcxdrta', sources, rpc_stub,
+                                 install: install_lib,
+                                 include_directories: includes,
+                                 c_args: [ '-DTE_DUMMY', c_args ],
+                                 dependencies: deps)
 dep_lib_rpcxdrta = declare_dependency(link_with: te_lib_rpcxdrta,
                                       include_directories: includes,
                                       dependencies: deps)
+dep_lib_static_rpcxdrta = dep_lib_rpcxdrta
 
 # Add flags required for client-side rpcxdr library build
 c_args += [ '-DTE_RPC_CLIENT' ]

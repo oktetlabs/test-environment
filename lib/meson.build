@@ -100,6 +100,11 @@ endforeach
 # Iterate over all libraries in order to follow build order
 foreach l : all_libs
     if libs.contains(l)
+        if agent_libs.contains(l) or common_libs.contains(l)
+            build_lib = 'static'
+        else
+            build_lib = 'default'
+        endif
         if common_libs.contains(l) or engine_libs.contains(l)
             install_lib = install_dev
         else
@@ -130,14 +135,26 @@ foreach l : all_libs
         if sources.length() != 0
             # Automatically add the library itself to search for headers
             includes += include_directories(l)
+            if build_lib == 'static'
+                dep_lib_prefix = 'dep_lib_static_'
+            else
+                dep_lib_prefix = 'dep_lib_'
+            endif
             foreach te_lib : te_libs
-                deps += [ get_variable('dep_lib_' + te_lib) ]
+                deps += [ get_variable(dep_lib_prefix + te_lib) ]
             endforeach
 
-            lib = library(libname, sources, install: install_lib,
-                          include_directories: includes,
-                          implicit_include_directories: false,
-                          c_args: c_args, dependencies: deps)
+            if build_lib == 'static'
+                lib = static_library(libname, sources, install: install_lib,
+                                     include_directories: includes,
+                                     implicit_include_directories: false,
+                                     c_args: c_args, dependencies: deps)
+            else
+                lib = library(libname, sources, install: install_lib,
+                              include_directories: includes,
+                              implicit_include_directories: false,
+                              c_args: c_args, dependencies: deps)
+            endif
             # Populate meson variable with the library build target object
             set_variable('te_lib_' + libname, lib)
 
@@ -146,6 +163,9 @@ foreach l : all_libs
                                      dependencies: deps)
             # Populate meson variable with the library as dependency object
             set_variable('dep_lib_' + libname, dep)
+            if build_lib == 'static'
+                set_variable('dep_lib_static_' + libname, dep)
+            endif
         endif
     endif
 endforeach

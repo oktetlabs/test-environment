@@ -205,7 +205,7 @@ endif
 te_libs += symtbl_libs
 
 foreach l : te_libs
-    deps += [ get_variable('dep_lib_' + l) ]
+    deps += [ get_variable('dep_lib_static_' + l) ]
 endforeach
 
 generated_sources = []

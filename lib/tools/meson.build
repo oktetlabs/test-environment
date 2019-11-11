@@ -11,6 +11,7 @@ te_lib_logger_file = static_library('logger_file', 'logger_file.c',
                                     include_directories: includes)
 dep_lib_logger_file = declare_dependency(link_with: te_lib_logger_file,
                                         include_directories: includes)
+dep_lib_static_logger_file = dep_lib_logger_file
 
 headers += files(
     'log_bufs.h',
