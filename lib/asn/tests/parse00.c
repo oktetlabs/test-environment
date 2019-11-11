@@ -17,7 +17,7 @@ main (int argc, char *argv[])
     int s_parsed;
     asn_value *new_val; 
 
-    te_log_init("parse00");
+    te_log_init("parse00", te_log_message_file);
 
     if (argc < 2)
         return 0;

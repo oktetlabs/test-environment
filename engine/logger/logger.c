@@ -958,7 +958,7 @@ main(int argc, const char *argv[])
     pthread_t   te_thread;
     ta_inst    *ta_el;
 
-    te_log_init("Logger");
+    te_log_init("Logger", lgr_log_message);
 
     if (process_cmd_line_opts(argc, argv) != EXIT_SUCCESS)
     {

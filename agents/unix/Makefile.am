@@ -56,7 +56,7 @@ endif
 
 ta_LDADD = conf/libconf.a -lrpcserver -lrcfpch \
            -l$(TAD) $(TE_LDADD) \
-           -lrpcxdrta -lrpc_types -lloggerta -lrpctransport \
+           -lrpcxdrta -lrpc_types -lloggerta -llogger_file -lrpctransport \
 		   -ltools -lagentlib \
            $(EXTRA_LDADD) \
            -lconf_oid -llogger_core
@@ -94,6 +94,7 @@ ta_DEPENDENCIES = @TE_DEPENDENCIES@ $(SYMTBL_LIBS) \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/librpc_types.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libloggerta.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_file.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_core.a \
     Makefile
 

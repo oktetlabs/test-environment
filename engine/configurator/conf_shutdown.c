@@ -27,6 +27,7 @@
 
 #include "ipc_client.h"
 #include "logger_api.h"
+#include "logger_ten.h"
 
 #include "conf_messages.h"
 
@@ -63,7 +64,7 @@ main(void)
     int                 result = EXIT_SUCCESS;
     int                 rc;
 
-    te_log_init("Configurator Shutdown");
+    te_log_init("Configurator Shutdown", ten_log_message);
 
     sprintf(name, "cs_shut_%d", getpid());
 

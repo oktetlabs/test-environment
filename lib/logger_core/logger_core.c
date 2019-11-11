@@ -20,14 +20,6 @@
 /* See logger_api.h for the description */
 const char *te_lgr_entity = "UNSPECIFIED";
 
-/* See logger_api.h for the description */
-void
-te_log_init(const char *lgr_entity)
-{
-    te_lgr_entity = lgr_entity;
-}
-
-
 /**
  * Default logging backed to avoid bad crashes if the backend is unset.
  */
@@ -54,3 +46,13 @@ te_log_message_def(const char      *file,
 
 /* See logger_api.h for the description */
 te_log_message_f *te_log_message_va = te_log_message_def;
+
+/* See logger_api.h for the description */
+void
+te_log_init(const char *lgr_entity, te_log_message_f *log_message)
+{
+    if (lgr_entity != NULL)
+        te_lgr_entity = lgr_entity;
+    if (log_message != NULL)
+        te_log_message_va = log_message;
+}

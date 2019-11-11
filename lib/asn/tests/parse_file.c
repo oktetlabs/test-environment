@@ -21,7 +21,7 @@ main (int argc, char *argv[])
     asn_value *eth_header, *snmp_message;
 #endif
 
-    te_log_init("parse_file");
+    te_log_init("parse_file", te_log_message_file);
 
     if (argc < 2)
     {

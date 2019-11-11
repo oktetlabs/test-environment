@@ -73,7 +73,7 @@ main(int argc, char **argv)
 {
     WSADATA data;
     
-    te_log_init("(win32_rpcserver)");
+    te_log_init("(win32_rpcserver)", logfork_log_message);
 
     if (win32_process_exec(argc, argv) != 0)
         return 1;

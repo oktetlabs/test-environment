@@ -23,6 +23,7 @@
 #include "te_config.h"
 #include "te_defs.h"
 #include "logger_api.h"
+#include "logger_file.h"
 #include "te_string.h"
 #include "te_raw_log.h"
 #include "rgt_log_bundle_common.h"
@@ -690,7 +691,7 @@ main(int argc, char **argv)
 
     te_string path_aux = TE_STRING_INIT;
 
-    te_log_init("RGT LOG SPLIT");
+    te_log_init("RGT LOG SPLIT", te_log_message_file);
 
     process_cmd_line_opts(argc, argv);
 

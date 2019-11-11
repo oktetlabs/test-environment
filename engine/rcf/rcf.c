@@ -3232,7 +3232,7 @@ main(int argc, const char *argv[])
     int     rc;
     char   *ta_list_file;
 
-    te_log_init("RCF");
+    te_log_init("RCF", ten_log_message);
 
     if ((rc = process_cmd_line_opts(argc, argv)) != EXIT_SUCCESS)
     {

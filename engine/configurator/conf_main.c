@@ -1881,7 +1881,7 @@ main(int argc, char **argv)
     int cfg_file_id;
 
 
-    te_log_init("Configurator");
+    te_log_init("Configurator", ten_log_message);
 
     if (atexit(free_resources) != 0)
     {

@@ -32,6 +32,7 @@ te_libs = [
     'rpc_types',
     'conf_oid',
     'loggerta',
+    'logger_file',
     'logger_core',
 ]
 

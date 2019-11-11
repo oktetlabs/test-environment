@@ -237,9 +237,10 @@ extern te_log_message_f *te_log_message_va;
  * this function in its main to set 'te_lgr_entity' global variable
  * with specified initial value.
  *
- * @param lgr_entity    Logger entity name (e.g. RCF)
+ * @param lgr_entity    Logger entity name (e.g. RCF) or @c NULL
+ * @param log_message   Log message backend function or @c NULL
  */
-extern void te_log_init(const char *lgr_entity);
+extern void te_log_init(const char *lgr_entity, te_log_message_f *log_message);
 
 
 /**

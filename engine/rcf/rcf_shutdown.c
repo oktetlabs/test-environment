@@ -49,7 +49,7 @@ main(void)
 
     struct ipc_client *handle = NULL;
 
-    te_log_init("RCF ShutDown");
+    te_log_init("RCF ShutDown", ten_log_message);
 
     sprintf(name, "rcf_shut_%d", getpid());
 

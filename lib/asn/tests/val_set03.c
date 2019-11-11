@@ -87,7 +87,7 @@ main (void)
     int b = 1234;
 #endif
 
-    te_log_init("val_set03");
+    te_log_init("val_set03", te_log_message_file);
 
     r = asn_write_value_field(seq_val, &a, sizeof(a), "number");
     if (r) 

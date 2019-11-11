@@ -182,7 +182,7 @@ main(int argc, char **argv)
 {
 	char *sep;
 
-	te_log_init("DPDK/RPC");
+	te_log_init("DPDK/RPC", logfork_log_message);
 
 	strcpy(ta_execname_storage, argv[0]);
 	strcpy(ta_dir, ta_execname_storage);

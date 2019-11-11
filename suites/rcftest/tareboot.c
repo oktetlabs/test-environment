@@ -32,7 +32,7 @@ main()
     int retval;
     size_t list_len;
     
-    te_log_init("tareboot");
+    te_log_init("tareboot", ten_log_message);
 
     list_len = sizeof(ta_list);
     retval = rcf_get_ta_list(ta_list, &list_len);

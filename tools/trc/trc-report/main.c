@@ -32,6 +32,7 @@
 #include "te_queue.h"
 #include "te_alloc.h"
 #include "logger_api.h"
+#include "logger_file.h"
 #include "te_trc.h"
 #include "trc_report.h"
 #include "log_parse.h"
@@ -604,7 +605,7 @@ main(int argc, char *argv[])
     tqe_string         *merge_fn;
     tqe_string         *cut_path;
 
-    te_log_init("TRC RG");
+    te_log_init("TRC RG", te_log_message_file);
 
     TAILQ_INIT(&reports);
 

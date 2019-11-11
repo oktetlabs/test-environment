@@ -86,7 +86,7 @@ main(void)
     size_t          str_len = 0;
     int             res;
 
-    te_log_init("Log Flush");
+    te_log_init("Log Flush", ten_log_message);
 
     signal(SIGINT, sigint_handler);
 

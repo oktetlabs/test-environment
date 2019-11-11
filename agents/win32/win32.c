@@ -652,7 +652,7 @@ main(int argc, char **argv)
 
     pthread_t tid;
     
-    te_log_init("(win32)");
+    te_log_init("(win32)", te_log_message_file);
 
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);

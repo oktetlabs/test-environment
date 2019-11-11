@@ -28,6 +28,11 @@
 extern "C" {
 #endif
 
+
+/** Compose log message and send it to TE Logger. */
+extern te_log_message_f ten_log_message;
+
+
 /** Discover name of the Logger IPC server */
 static inline const char *
 logger_server_name()

@@ -100,7 +100,8 @@ log_message_ipc(const void *msg, size_t len)
  *
  * This function complies with te_log_message_f prototype.
  */
-static void
+/* See the description in logger_ten.h */
+void
 ten_log_message(const char *file, unsigned int line,
                 te_log_ts_sec sec, te_log_ts_usec usec,
                 unsigned int level,
@@ -237,11 +238,4 @@ log_flush_ten(const char *ta_name)
     }
 
     return 0;
-}
-
-__attribute__((constructor))
-static void
-logger_ten_init(void)
-{
-    te_log_message_va = ten_log_message;
 }

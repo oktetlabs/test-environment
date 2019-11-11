@@ -28,7 +28,7 @@ main()
     size_t len = sizeof(ta);
     int  sid;
     
-    te_log_init("rcftest");
+    te_log_init("rcftest", ten_log_message);
 
     printf("Starting test\n");
     if (rcf_get_ta_list(ta, &len) != 0)

@@ -7,7 +7,7 @@ te_lib_log_bufs = static_library('log_bufs', 'log_bufs.c',
 dep_lib_log_bufs = declare_dependency(link_with: te_lib_log_bufs,
                                      include_directories: includes)
 
-te_lib_logger_file = static_library('logger_file', 'logger_file.c',
+te_lib_logger_file = static_library('logger_file', 'te_log_file.c',
                                     install: install_lib,
                                     include_directories: includes,
                                     dependencies: dep_lib_logger_core)
@@ -59,7 +59,6 @@ sources += files(
     'te_ipstack.c',
     'te_kernel_log.c',
     'te_kvpair.c',
-    'te_log_file.c',
     'te_log_fmt.c',
     'te_log_stack.c',
     'te_meas_stats.c',

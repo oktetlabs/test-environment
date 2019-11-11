@@ -77,7 +77,7 @@ main(int argc, char **argv)
 
     te_errno rc;
 
-    te_log_init("ACSE");
+    te_log_init("ACSE", logfork_log_message);
 
     soap_ssl_init(); /* init OpenSSL (just once) */
 

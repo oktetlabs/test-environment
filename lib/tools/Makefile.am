@@ -57,7 +57,7 @@ install-exec-hook:
         fi
 
 EXTRA_DIST = te_shell_cmd.c te_log_fmt.c te_log_file.c log_bufs.c \
-             tq_string.c te_string.c logger_file.c te_log_kernel.c \
+             tq_string.c te_string.c te_log_kernel.c \
              te_toeplitz.c te_exec_child.c
 
 else
@@ -71,7 +71,6 @@ libtools_la_SOURCES = \
 	te_shell_cmd.c \
 	te_exec_child.c \
 	te_log_fmt.c \
-	te_log_file.c \
 	te_kernel_log.c \
 	te_file.c \
 	te_format.c \
@@ -92,7 +91,7 @@ libtools_la_SOURCES = \
 
 liblog_bufs_la_SOURCES = log_bufs.c
 
-liblogger_file_la_SOURCES = logger_file.c
+liblogger_file_la_SOURCES = te_log_file.c
 
 install-exec-hook:
 	for i in $(lib_LTLIBRARIES) ; do \

@@ -62,6 +62,7 @@
 #include "rcf_ch_api.h"
 #include "rcf_pch.h"
 #include "logger_api.h"
+#include "logger_file.h"
 #include "logger_ta.h"
 #include "logger_ta_lock.h"
 #include "logfork.h"
@@ -1553,7 +1554,7 @@ main(int argc, char **argv)
 #endif /* AT_SYSINFO */
 #endif
 
-    te_log_init("(unix)");
+    te_log_init("(unix)", te_log_message_file);
 
     te_kernel_log_set_system_func(&ta_system);
 

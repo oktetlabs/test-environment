@@ -81,7 +81,7 @@ main (int argc, char *argv[])
     static char    buffer1[TE_LOG_FIELD_MAX + 1];
     static char    buffer2[TE_LOG_FIELD_MAX + 1];
 
-    te_log_init("(Tee)");
+    te_log_init("(Tee)", ten_log_message);
 
 #define MAYBE_DO_LOG \
     do {                                                       \
@@ -115,7 +115,7 @@ main (int argc, char *argv[])
         ERROR("Usage: te_tee lgr-entity lgr-user msg-interval");
         return EXIT_FAILURE;
     }
-    te_log_init(argv[1]);
+    te_log_init(argv[1], NULL);
 
     interval = strtol(argv[3], NULL, 10);
     if (interval <= 0)

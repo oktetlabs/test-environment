@@ -1560,7 +1560,7 @@ main(int argc, char **argv, char **envp)
     UNUSED(envp);
 #endif
 
-    te_log_init("TRC UPD");
+    te_log_init("TRC UPD", te_log_message_file);
 
     log_f = fopen(TRC_UPDATE_LOG_FILE, "w");
     if (log_f == NULL)

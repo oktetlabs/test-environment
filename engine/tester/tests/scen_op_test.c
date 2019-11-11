@@ -596,7 +596,7 @@ main(void)
     int              op;
     te_errno         err;
 
-    te_log_init("scen_op_test");
+    te_log_init("scen_op_test", te_log_message_file);
 
     fgets(scen_buf, SCEN_OP_BUF_SIZE, stdin);
     if (parse_input(scen_buf, &ts1, &ts2, &ts_expected, &op) < 0)

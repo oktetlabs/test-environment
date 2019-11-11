@@ -25,6 +25,7 @@
 #include "te_config.h"
 #include "te_defs.h"
 #include "logger_api.h"
+#include "logger_file.h"
 #include "rgt_log_bundle_common.h"
 
 #include "te_string.h"
@@ -103,7 +104,7 @@ main(int argc, char **argv)
     uint64_t  raw_length;
     uint64_t  frag_offset;
 
-    te_log_init("RGT LOG RECOVER");
+    te_log_init("RGT LOG RECOVER", te_log_message_file);
 
     process_cmd_line_opts(argc, argv);
 

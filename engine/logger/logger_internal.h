@@ -128,6 +128,10 @@ typedef struct ta_inst {
 } ta_inst;
 
 
+/** Create message and register it in the raw log file. */
+extern te_log_message_f lgr_log_message;
+
+
 /**
  * Parse logger configuration file.
  *

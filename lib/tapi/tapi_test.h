@@ -192,7 +192,7 @@ extern "C" {
     argc--;                                                         \
     argv++;                                                         \
                                                                     \
-    te_log_init(TE_TEST_NAME);                                      \
+    te_log_init(TE_TEST_NAME, ten_log_message);                     \
                                                                     \
     /*                                                              \
      * Install SIGINT signal handler to exit() with failure status, \

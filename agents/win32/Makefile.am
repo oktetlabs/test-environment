@@ -20,6 +20,7 @@ ta_DEPENDENCIES=$(TE_DEPENDENCIES) symtbl.o \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libconf_oid.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libcomm_net_agent.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libloggerta.a \
+    $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_file.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/libtools.a \
     $(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/lib/liblogger_core.a
 
@@ -34,8 +35,8 @@ if CFG_RCF_RPC
 
 LDADD=symtbl.o \
 -lrcfpch -lrpc_types -lrpcxdrta -l$(TAD) $(TE_LDADD) -lconf_oid -lloggerta \
--lpthread -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools -llogger_core \
--lcygwin -lexpat -lpcap -lole32 -loleaut32
+-lpthread -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -llogger_file -ltools \
+-llogger_core -lcygwin -lexpat -lpcap -lole32 -loleaut32
 
 AM_CPPFLAGS+=-DRCF_RPC -I.
 ta_SOURCES+=tarpc_server.c 
@@ -145,8 +146,8 @@ ta_PROGRAMS=ta
 
 LDADD=symtbl.o \
 -lrcfpch -lrpcxdr -lrpc_types -l$(TAD) $(TE_LDADD) -lconf_oid -lloggerta \
--lpthread -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -ltools -llogger_core \
--lcygwin -lexpat -lpcap -lole32 -loleaut32
+-lpthread -lws2_32 -lmswsock -lwsock32 -liphlpapi -lrpc -llogger_file -ltools \
+-llogger_core -lcygwin -lexpat -lpcap -lole32 -loleaut32
 
 endif
 

@@ -36,7 +36,7 @@ main(void)
     int                     conf;
     cfg_obj_descr           descr = {CVT_STRING, CFG_READ_WRITE};
     
-    te_log_init("test");
+    te_log_init("test", te_log_message_file);
 
     /* 
      * Exporting environment variables which are necessary

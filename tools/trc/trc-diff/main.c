@@ -33,6 +33,7 @@
 #include "tq_string.h"
 #include "te_alloc.h"
 #include "logger_api.h"
+#include "logger_file.h"
 #include "te_trc.h"
 
 #include "trc_diff.h"
@@ -684,7 +685,7 @@ main(int argc, char *argv[])
     trc_diff_ctx   *ctx;
     trc_diff_set   *diff_set;
 
-    te_log_init("TRC DIFF");
+    te_log_init("TRC DIFF", te_log_message_file);
 
     /* Initialize diff context */
     ctx = trc_diff_ctx_new();

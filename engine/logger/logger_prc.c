@@ -49,9 +49,7 @@ static pthread_mutex_t  lgr_lock = PTHREAD_MUTEX_INITIALIZER;
 static te_log_msg_raw_data lgr_out;
 
 
-/** Create message and register it in the raw log file. */
-static te_log_message_f lgr_log_message;
-static void
+void
 lgr_log_message(const char *file, unsigned int line,
                 te_log_ts_sec sec, te_log_ts_usec usec,
                 unsigned int level, const char *entity, 
@@ -74,11 +72,4 @@ lgr_log_message(const char *file, unsigned int line,
                    fmt, ap);
 
     pthread_mutex_unlock(&lgr_lock);
-}
-
-__attribute__((constructor))
-static void
-logger_ta_init(void)
-{
-    te_log_message_va = lgr_log_message;
 }

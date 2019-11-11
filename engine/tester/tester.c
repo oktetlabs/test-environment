@@ -837,7 +837,7 @@ main(int argc, char *argv[])
     int             result = EXIT_FAILURE;
     te_errno        rc;
 
-    te_log_init("Tester");
+    te_log_init("Tester", ten_log_message);
 
 #if HAVE_SIGNAL_H
     (void)signal(SIGINT, tester_sigint_handler);

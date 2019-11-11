@@ -39,6 +39,7 @@
 
 #include "te_defs.h"
 #include "logger_api.h"
+#include "logger_file.h"
 #include "te_errno.h"
 #include "te_string.h"
 #include "comm_agent.h"
@@ -57,7 +58,7 @@ main(int argc, char *argv[])
     int         i;
     te_string   cmd_str = TE_STRING_INIT_STATIC(4096);
 
-    te_log_init("ta_rcf_listener");
+    te_log_init("ta_rcf_listener", te_log_message_file);
 
     if (argc < 3)
     {

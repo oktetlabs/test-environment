@@ -605,20 +605,13 @@ log_get_message(uint32_t length, uint8_t *buffer)
     return mess_length;
 }
 
-__attribute__((constructor))
-static void
-logger_ta_init(void)
-{
-    te_log_message_va = logfork_log_message;
-}
-
 /**
  * Function to be called in fork-child.
  */
 static void
 log_atfork_child(void)
 {
-    te_log_message_va = logfork_log_message;
+    te_log_init(NULL, logfork_log_message);
 }
 
 /* See the description in logger_ta.h */
@@ -636,8 +629,7 @@ ta_log_init(const char *lgr_entity)
     if (lgr_rb_init(&log_buffer) != 0)
         return -1;
 
-    te_log_init(lgr_entity);
-    te_log_message_va = ta_log_message;
+    te_log_init(lgr_entity, ta_log_message);
 
     return 0;
 }

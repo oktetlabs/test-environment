@@ -53,7 +53,7 @@ main(void)
 
     char nm[] = "my great array!";
 
-    te_log_init("val_set04");
+    te_log_init("val_set04", te_log_message_file);
 
     r = asn_write_value_field(for_ins, &a, sizeof(a), "");
     if (r) { fprintf(stderr, "write_field error code: %6x\n", r); return r; }

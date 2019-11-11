@@ -1060,7 +1060,7 @@ main(int argc, const char **argv)
         acse_main_pid = fork();
         if (acse_main_pid == 0)
         {
-            te_log_init("ACSE daemon");
+            te_log_init("ACSE daemon", logfork_log_message);
             if (acse_logfile != NULL)
             {
                 FILE   *log_fd = fopen(acse_logfile, "a");
