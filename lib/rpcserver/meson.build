@@ -439,9 +439,9 @@ sources += files(
     'rpcs_msghdr.c',
     'tarpc_imp.c',
 )
-deps += [
-    dep_lib_loggerta,
-    dep_lib_rpc_types,
-    dep_lib_agentlib,
-    dep_lib_rpctransport,
+te_libs += [
+    'loggerta',
+    'rpc_types',
+    'agentlib',
+    'rpctransport',
 ]

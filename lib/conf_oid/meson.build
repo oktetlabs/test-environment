@@ -1,4 +1,4 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2019 OKTET Labs. All rights reserved.
 
 headers += files(
     'conf_oid.h',
@@ -11,4 +11,4 @@ sources += files(
     'conf_object.c',
     'conf_ip_rule.c',
 )
-deps += [ dep_lib_tools ]
+te_libs += [ 'tools' ]

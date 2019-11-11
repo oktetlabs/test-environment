@@ -52,7 +52,7 @@ foreach rpch : rpch_sources
     sources += gen_c_rpch_c.process(rpch)
 endforeach
 
-deps += [
-    dep_lib_tools,
-    dep_lib_rpcxdr,
+te_libs += [
+    'tools',
+    'rpcxdr',
 ]

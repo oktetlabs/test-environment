@@ -73,6 +73,6 @@ sources += files(
     'geneve.c',
     'vxlan.c',
 )
-deps += [
-    dep_lib_conf_oid,
+te_libs += [
+    'conf_oid',
 ]

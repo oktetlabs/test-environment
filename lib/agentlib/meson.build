@@ -1,4 +1,4 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2019 OKTET Labs. All rights reserved.
 
 if not cc.has_function('pthread_atfork', dependencies: dep_threads)
     error('pthread_atfork is not supported')
@@ -48,7 +48,7 @@ sources += files(
     'symbols.c',
     'telephony.c',
 )
-deps += [
-    dep_lib_tools,
-    dep_lib_loggerta,
+te_libs += [
+    'tools',
+    'loggerta',
 ]

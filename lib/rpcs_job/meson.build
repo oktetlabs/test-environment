@@ -7,6 +7,8 @@ sources += files(
 dep_pcre = dependency('libpcre')
 
 deps += [
-    dep_lib_rpcserver,
     dep_pcre,
+]
+te_libs += [
+    'rpcserver',
 ]

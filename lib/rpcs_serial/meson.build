@@ -4,6 +4,6 @@ sources += files(
     'serial.c',
 )
 
-deps += [
-    dep_lib_rpcserver,
+te_libs += [
+    'rpcserver',
 ]

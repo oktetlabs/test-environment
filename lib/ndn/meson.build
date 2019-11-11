@@ -1,4 +1,4 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2019 OKTET Labs. All rights reserved.
 
 headers += files(
     'ndn.h',
@@ -60,4 +60,4 @@ if cc.has_header('net-snmp/definitions.h') or cc.has_header('ucd-snmp/snmp_impl.
     c_args += [ '-DHAS_SNMP', '-DCMU_COMPATIBLE', '-DUCD_COMPATIBLE' ]
 endif
 
-deps += [ dep_lib_asn ]
+te_libs += [ 'asn' ]

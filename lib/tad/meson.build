@@ -1,4 +1,4 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2019 OKTET Labs. All rights reserved.
 
 req_protocols = get_option('tad-protocols').split()
 
@@ -112,9 +112,9 @@ if get_option('tad-packet_mmap_rx_ring')
     c_args += [ '-DWITH_PACKET_MMAP_RX_RING' ]
 endif
 
-deps += [
-    dep_lib_loggerta,
-    dep_lib_asn,
-    dep_lib_ndn,
-    dep_lib_rcfpch,
+te_libs += [
+    'loggerta',
+    'asn',
+    'ndn',
+    'rcfpch',
 ]

@@ -6,6 +6,6 @@ headers += files(
 sources += files(
     'rpc_dpdk_offloads.c',
 )
-deps += [
-    dep_lib_rpcxdr,
+te_libs += [
+    'rpcxdr',
 ]

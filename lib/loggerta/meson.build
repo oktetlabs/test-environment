@@ -1,4 +1,4 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2019 OKTET Labs. All rights reserved.
 
 headers += files(
     'logfork.h',
@@ -12,4 +12,4 @@ sources += files(
     'logfork_server.c',
     'logger_ta.c',
 )
-deps += [ dep_lib_tools ]
+te_libs += [ 'tools' ]

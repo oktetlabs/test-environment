@@ -1,11 +1,10 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2019 OKTET Labs. All rights reserved.
 
-deps += [ dep_lib_conf_oid ]
 rcf_sniffers_dummy = library('rcf_sniffers_dummy',
                              'rcf_sniffers_dummy.c', install: install_lib,
-                             dependencies: deps)
+                             dependencies: dep_lib_conf_oid)
 dep_lib_rcf_sniffers_dummy = declare_dependency(link_with: rcf_sniffers_dummy,
-                                                dependencies: deps)
+                                                dependencies: dep_lib_conf_oid)
 
 f = 'pthread_atfork'
 if dep_threads.found() and cc.has_function(f, dependencies: dep_threads)
@@ -26,9 +25,10 @@ sources += files(
     'rcf_pch_ta_cfg.c',
     'rcf_pch_var.c',
 )
-deps += [
-    dep_lib_loggerta,
-    dep_lib_rpcxdr,
-    dep_lib_rpctransport,
-    dep_lib_agentlib,
+te_libs += [
+    'conf_oid',
+    'loggerta',
+    'rpcxdr',
+    'rpctransport',
+    'agentlib',
 ]

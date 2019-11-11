@@ -1,4 +1,4 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2018-2019 OKTET Labs. All rights reserved.
 
 prj_args = get_option('cflags').split()
 
@@ -111,11 +111,11 @@ sources += files(
     'rte_flow_ndn.c',
     'rte_mbuf_ndn.c',
 )
-deps += [
-    dep_lib_tools,
-    dep_lib_rpcserver,
-    dep_lib_asn,
-    dep_lib_ndn,
-    dep_lib_tad,
-    dep_lib_rpc_dpdk,
+te_libs += [
+    'tools',
+    'rpcserver',
+    'asn',
+    'ndn',
+    'tad',
+    'rpc_dpdk',
 ]
