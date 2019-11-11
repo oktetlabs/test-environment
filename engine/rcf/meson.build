@@ -27,8 +27,6 @@ executable('te_rcf', 'rcf.c', rcf_consistency_checks, install: true,
 executable('te_rcf_shutdown', 'rcf_shutdown.c', install: true,
            dependencies: common_deps)
 
-# Use static linkage for tool to be used by human
 executable('te_rcf_tadead', 'rcf_tadead.c', install: true,
            c_args: c_args,
-           link_args: [ '-static' ],
            dependencies: common_deps)
