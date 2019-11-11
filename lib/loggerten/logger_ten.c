@@ -78,12 +78,6 @@ static struct ipc_client *lgr_client = NULL;
 static te_log_msg_raw_data lgr_out;
 
 
-static te_log_message_f ten_log_message;
-
-/** Logging backend */
-te_log_message_f *te_log_message_va = ten_log_message;
-
-
 /**
  * Log message via IPC.
  *
@@ -243,4 +237,11 @@ log_flush_ten(const char *ta_name)
     }
 
     return 0;
+}
+
+__attribute__((constructor))
+static void
+logger_ten_init(void)
+{
+    te_log_message_va = ten_log_message;
 }

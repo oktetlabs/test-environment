@@ -22,6 +22,12 @@
 
 #include "logger_file.h"
 
-
-/* Logging backend for standalone TE off-line applications */
-te_log_message_f *te_log_message_va = te_log_message_file;
+/**
+ * Initialize logging backend for standalone TE off-line applications.
+ */
+__attribute__((constructor))
+static void
+logger_file_init(void)
+{
+    te_log_message_va = te_log_message_file;
+}

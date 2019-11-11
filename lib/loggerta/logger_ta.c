@@ -88,9 +88,6 @@ pthread_mutex_t ta_log_mutex;
 sem_t           ta_log_sem;
 #endif
 
-/** Logging backend */
-te_log_message_f *te_log_message_va = logfork_log_message;
-
 static const char  *skip_flags = "#-+ 0";
 static const char  *skip_width = "*0123456789";
 
@@ -606,6 +603,13 @@ log_get_message(uint32_t length, uint8_t *buffer)
     (void)ta_log_unlock(&key);
 
     return mess_length;
+}
+
+__attribute__((constructor))
+static void
+logger_ta_init(void)
+{
+    te_log_message_va = logfork_log_message;
 }
 
 /**

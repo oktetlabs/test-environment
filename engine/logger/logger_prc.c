@@ -76,5 +76,9 @@ lgr_log_message(const char *file, unsigned int line,
     pthread_mutex_unlock(&lgr_lock);
 }
 
-/** Logging backend */
-te_log_message_f *te_log_message_va = lgr_log_message;
+__attribute__((constructor))
+static void
+logger_ta_init(void)
+{
+    te_log_message_va = lgr_log_message;
+}

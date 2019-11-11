@@ -26,3 +26,31 @@ te_log_init(const char *lgr_entity)
 {
     te_lgr_entity = lgr_entity;
 }
+
+
+/**
+ * Default logging backed to avoid bad crashes if the backend is unset.
+ */
+static void
+te_log_message_def(const char      *file,
+                   unsigned int     line,
+                   te_log_ts_sec    sec,
+                   te_log_ts_usec   usec,
+                   unsigned int     level,
+                   const char      *entity,
+                   const char      *user,
+                   const char      *fmt,
+                   va_list          ap)
+{
+    UNUSED(sec);
+    UNUSED(usec);
+    UNUSED(level);
+    UNUSED(ap);
+
+    fprintf(stderr,
+            "BUG: Logging backend is unset at %s:%u by %s:%s for '%s'\n",
+            file, line, entity, user, fmt);
+}
+
+/* See logger_api.h for the description */
+te_log_message_f *te_log_message_va = te_log_message_def;

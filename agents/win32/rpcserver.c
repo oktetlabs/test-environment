@@ -16,11 +16,6 @@
 #include "tarpc_server.h"
 #include "rpc_xdr.h"
 
-/* FIXME: Include header */
-extern te_log_message_f logfork_log_message;
-
-te_log_message_f *te_log_message_va = logfork_log_message;
-
 #ifdef WINDOWS
 
 /**
