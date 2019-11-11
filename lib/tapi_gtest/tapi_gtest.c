@@ -165,7 +165,10 @@ tapi_gtest_wait(tapi_gtest *gtest, int timeout_ms)
 static te_errno
 gtest_stop(tapi_gtest *gtest)
 {
-    return tapi_job_kill(gtest->impl.job, SIGINT);
+    if (tapi_job_is_running(gtest->impl.job))
+        return tapi_job_kill(gtest->impl.job, SIGINT);
+
+    return 0;
 }
 
 te_errno
