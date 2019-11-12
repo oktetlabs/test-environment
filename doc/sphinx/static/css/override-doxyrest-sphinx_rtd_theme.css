@@ -1,0 +1,6 @@
+/* This file use in override_css plugin (doc/sphinx/override_css.py)
+   If you want override other attributes of doxyrest css you should
+   use with "!important" option */
+pre.doxyrest-title-code-block {
+    font-size: small !important
+}

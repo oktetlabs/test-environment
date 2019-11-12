@@ -13,6 +13,9 @@ doxyrest_prefix = os.environ["DOXYREST_PREFIX"]
 doxyrest_ext_path = os.path.join(doxyrest_prefix, "share", "doxyrest", "sphinx")
 sys.path.append(doxyrest_ext_path)
 
+this_dir = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(this_dir)
+
 # -- Project information -----------------------------------------------------
 project = 'Test Environment'
 copyright = '2019, OKTET Labs'
@@ -28,6 +31,7 @@ release = '1.0'
 extensions = [
     'doxyrest',
     'cpplexer',
+    'override_css',
 ]
 
 # The suffix(es) of source filenames.
