@@ -32,8 +32,8 @@ extern "C" {
  * Add a QUEUE action to an action list at specified index.
  *
  * @param[inout]  ndn_actions   Action list
- * @param[in]     action_index  Index at which QUEUE action is put to list
- * @param[in]     queue         Queue index of QUEUE action
+ * @param[in]     action_index  Index at which the action is put to list
+ * @param[in]     queue         Queue index of the action
  */
 extern void tapi_rte_flow_add_ndn_action_queue(asn_value *ndn_actions,
                                                int action_index,
@@ -43,7 +43,7 @@ extern void tapi_rte_flow_add_ndn_action_queue(asn_value *ndn_actions,
  * Add a DROP action to an action list at specified index.
  *
  * @param[inout]  ndn_actions   Action list
- * @param[in]     action_index  Index at which DROP action is put to list
+ * @param[in]     action_index  Index at which the action is put to list
  */
 extern void tapi_rte_flow_add_ndn_action_drop(asn_value *ndn_actions,
                                               int action_index);
@@ -52,7 +52,7 @@ extern void tapi_rte_flow_add_ndn_action_drop(asn_value *ndn_actions,
  * Add a COUNT action to an action list at specified index.
  *
  * @param[inout]  ndn_actions   Action list
- * @param[in]     action_index  Index at which DROP action is put to list
+ * @param[in]     action_index  Index at which the action is put to list
  * @param[in]     counter_id    Counter index
  * @param[in]     shared        Shared counter if @c TRUE
  */
@@ -65,7 +65,7 @@ extern void tapi_rte_flow_add_ndn_action_count(asn_value *ndn_actions,
  * Add a encap action to an action list at specified index.
  *
  * @param[inout]  ndn_actions       Action list
- * @param[in]     action_index      Index at which DROP action is put to list
+ * @param[in]     action_index      Index at which the action is put to list
  * @paran[in]     type              Type of the encapsulation
  * @param[in]     encap_hdr         Flow rule pattern that is used as a
  *                                  encapsulated packet's header definition
