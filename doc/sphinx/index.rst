@@ -60,4 +60,5 @@ create a new continue with :ref:`Test Suite <doxid-group__te__ts>`.
     generated/group_te_engine
     generated/group_te_ts
     generated/group_te_tools
+    pages/add_doc
     generated/global
