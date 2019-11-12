@@ -76,6 +76,17 @@ extern void tapi_rte_flow_add_ndn_action_encap(asn_value *ndn_actions,
                                                const asn_value *encap_hdr);
 
 /**
+ * Add a decap action to an action list at specified index.
+ *
+ * @param[inout]  ndn_actions       Action list
+ * @param[in]     action_index      Index at which the action is put to list
+ * @paran[in]     type              Type of the encapsulation
+ */
+extern void tapi_rte_flow_add_ndn_action_decap(asn_value *ndn_actions,
+                                               int action_index,
+                                               tarpc_rte_eth_tunnel_type type);
+
+/**
  * Convert an ASN value representing a flow rule pattern into
  * RTE flow rule pattern and a template that matches the pattern.
  *

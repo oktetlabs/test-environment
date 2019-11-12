@@ -85,6 +85,24 @@ tapi_rte_flow_add_ndn_action_encap(asn_value *ndn_actions,
     CHECK_RC(asn_insert_indexed(ndn_actions, action, action_index, ""));
 }
 
+void
+tapi_rte_flow_add_ndn_action_decap(asn_value *ndn_actions,
+                                   int action_index,
+                                   tarpc_rte_eth_tunnel_type type)
+{
+    asn_value *action;
+
+    if (type != TARPC_RTE_TUNNEL_TYPE_VXLAN)
+        TEST_FAIL("Invalid tunnel type");
+
+    action = asn_init_value(ndn_rte_flow_action);
+    CHECK_NOT_NULL(action);
+
+    CHECK_RC(asn_write_int32(action, NDN_FLOW_ACTION_TYPE_VXLAN_DECAP, "type"));
+
+    CHECK_RC(asn_insert_indexed(ndn_actions, action, action_index, ""));
+}
+
 rpc_rte_flow_p
 tapi_rte_flow_validate_and_create_rule(rcf_rpc_server *rpcs, uint16_t port_id,
                                        rpc_rte_flow_attr_p attr,
