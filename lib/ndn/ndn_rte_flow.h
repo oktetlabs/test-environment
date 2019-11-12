@@ -47,6 +47,7 @@ typedef enum {
     NDN_FLOW_ACTION_TYPE_MARK,
     NDN_FLOW_ACTION_TYPE_COUNT,
     NDN_FLOW_ACTION_TYPE_VXLAN_ENCAP,
+    NDN_FLOW_ACTION_TYPE_VXLAN_DECAP,
 } ndn_rte_flow_action_type_t;
 
 typedef enum {

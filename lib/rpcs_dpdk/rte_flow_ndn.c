@@ -1986,6 +1986,20 @@ rte_flow_action_vxlan_encap_from_pdu(const asn_value *conf_pdu,
 }
 
 static te_errno
+rte_flow_action_vxlan_decap_from_pdu(const asn_value *conf_pdu,
+                                     struct rte_flow_action *action)
+{
+    UNUSED(conf_pdu);
+
+    if (action == NULL)
+        return TE_EINVAL;
+
+    action->type = RTE_FLOW_ACTION_TYPE_VXLAN_DECAP;
+
+    return 0;
+}
+
+static te_errno
 rte_flow_action_end(struct rte_flow_action *action)
 {
     if (action == NULL)
@@ -2024,6 +2038,7 @@ static const struct rte_flow_action_types_mapping {
     { NDN_FLOW_ACTION_TYPE_MARK,    rte_flow_action_mark_from_pdu },
     { NDN_FLOW_ACTION_TYPE_COUNT,   rte_flow_action_count_from_pdu },
     { NDN_FLOW_ACTION_TYPE_VXLAN_ENCAP, rte_flow_action_vxlan_encap_from_pdu },
+    { NDN_FLOW_ACTION_TYPE_VXLAN_DECAP, rte_flow_action_vxlan_decap_from_pdu },
 };
 
 static te_errno

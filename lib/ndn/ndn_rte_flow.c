@@ -56,6 +56,7 @@ asn_enum_entry_t _ndn_rte_flow_action_type_enum_entries[] = {
     {"mark", NDN_FLOW_ACTION_TYPE_MARK},
     {"count", NDN_FLOW_ACTION_TYPE_COUNT},
     {"vxlan-encap", NDN_FLOW_ACTION_TYPE_VXLAN_ENCAP},
+    {"vxlan-decap", NDN_FLOW_ACTION_TYPE_VXLAN_DECAP},
 };
 
 asn_type ndn_rte_flow_action_type_s = {
