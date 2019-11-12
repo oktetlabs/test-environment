@@ -70,13 +70,13 @@ function generate_sphinx_doc()
     SPHINX_BUILD_OPTS=(
       -j auto             # use cpu count
       -q                  # be quite: warn and error only
-      -c doc              # where store conf.py
-      doc/generated/rst   # input
+      doc/sphinx          # input
       doc/generated/html  # output
     )
 
     ${SPHINX_BUILD_BIN} "${SPHINX_BUILD_OPTS[@]}"
-    find doc/dox_resources/images -name "*.png" -exec cp {} doc/generated/html \;
+    mkdir -p doc/generated/html/generated/generated
+    find doc/dox_resources/images -name "*.png" -exec cp {} doc/generated/html/generated/generated \;
 }
 
 case $DOC_TYPE in
