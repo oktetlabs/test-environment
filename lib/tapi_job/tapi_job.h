@@ -477,7 +477,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * - Log all stdout and stderr via the Logger
  * - Wait for the program termination
  *
- * \code{.c}
+ * @code{.c}
  * tapi_job_t *job = NULL
  * tapi_job_channel_t *out_channels[2];
  *
@@ -494,7 +494,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * if (status.type != TAPI_JOB_STATUS_EXITED || status.value != 0)
  *    TEST_FAIL("Tool failed");
  * CHECK_RC(tapi_job_destroy(job));
- * \endcode
+ * @endcode
  *
  * Run and read
  * ------------
@@ -502,7 +502,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * - Read all the stdout while logging all the stderr
  * - When all the data are read, the program is assumed to terminate
  *
- * \code{.c}
+ * @code{.c}
  * tapi_job_t *job = NULL;
  * tapi_job_buffer buf = TAPI_JOB_BUFFER_INIT;
  * tapi_job_channel_t *out_channels[2];
@@ -527,7 +527,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * if (status.type != TAPI_JOB_STATUS_EXITED || status.value != 0)
  *    TEST_FAIL("Tool failed");
  * CHECK_RC(tapi_job_destroy(job));
- * \endcode
+ * @endcode
  *
  *
  * Run and wait for
@@ -536,7 +536,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * - Log the stderr line matching `ERROR` as TE errors
  * - Wait for the string `Completed` at the stdout
  *
- * \code{.c}
+ * @code{.c}
  * tapi_job_t *job = NULL;
  * tapi_job_channel_t *out_channels[2];
  * tapi_job_channel_t *out_filters[2];
@@ -562,7 +562,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * if (status.type != TAPI_JOB_STATUS_EXITED || status.value != 0)
  *    TEST_FAIL("Tool failed");
  * CHECK_RC(tapi_job_destroy(job));
- * \endcode
+ * @endcode
  *
  * Run an interactive program
  * --------------------------
@@ -572,7 +572,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * - Send an command
  * - Repeat the previous steps, logging all the output until the program
  *   terminates
- * \code{.c}
+ * @code{.c}
  * tapi_job_t *job = NULL;
  * tapi_job_channel_t *in_channel;
  * tapi_job_channel_t *out_channel;
@@ -600,12 +600,12 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * if (status.type != TAPI_JOB_STATUS_EXITED || status.value != 0)
  *    TEST_FAIL("Tool failed");
  * CHECK_RC(tapi_job_destroy(job));
- * \endcode
+ * @endcode
  *
  * Terminate a job and if it hangs, forcedly kill it
  * -------------------------------------------------
  *
- * \code{.c}
+ * @code{.c}
  * ...
  * CHECK_RC(tapi_job_kill(job, SIGTERM));
  * if (tapi_job_wait(job, TIMEOUT, &status) == TE_INPROGRESS)
@@ -614,7 +614,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  *     CHECK_RC(tapi_job_wait(job, 0, &status));
  * }
  * ...
- * \endcode
+ * @endcode
  */
 #ifdef __cplusplus
 } /* extern "C" */
