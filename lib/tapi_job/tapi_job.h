@@ -458,6 +458,17 @@ extern void tapi_job_simple_receive(const tapi_job_channel_set_t filters,
 extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
 
 /**
+ * @page tapi-job-build Building tapi_job
+ *
+ * tarpc_job.x.m4 must be added to the list of rpcdefs
+ * (along with other required rpcdefs) using
+ * TE_LIB_PARAMS directive in builder configuration file:
+ *
+ * @code{.c}
+ * TE_LIB_PARMS([rpcxdr], [], [],
+ *              [--with-rpcdefs=tarpc_job.x.m4,someother.x.m4])
+ * @endcode
+ *
  * @page tapi-job-scenarios Job TAPI usage scenarios
  *
  * Run and wait
