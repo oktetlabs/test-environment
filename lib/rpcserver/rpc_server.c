@@ -116,33 +116,70 @@ wait_start(uint64_t msec_start)
 
 #ifdef TE_THREAD_LOCAL
 /** Thread-local variable for storing RPC error information. */
-static TE_THREAD_LOCAL te_rpc_error_data te_rpc_err = { 0, "" };
+static TE_THREAD_LOCAL te_rpc_error_data te_rpc_err = { NULL, 0, "" };
 #endif
+
+/* See description in rpc_server.h */
+void
+te_rpc_error_set_target(tarpc_out_arg *out_common)
+{
+#ifdef TE_THREAD_LOCAL
+    te_rpc_err.out_common = out_common;
+    te_rpc_err.err = 0;
+    te_rpc_err.str[0] = '\0';
+#endif
+}
 
 /* See description in rpc_server.h */
 void
 te_rpc_error_set(te_errno err, const char *msg, ...)
 {
 #ifdef TE_THREAD_LOCAL
-    te_string str = TE_STRING_BUF_INIT(te_rpc_err.str);
-    va_list   ap;
-    te_errno  ret;
-
-    te_rpc_err.err = err;
-
-    va_start(ap, msg);
-    ret = te_string_append_va(&str, msg, ap);
-    va_end(ap);
-    if (ret != 0)
+    if (te_rpc_err.out_common == NULL)
     {
-        ERROR("te_string_append() failed to write error "
-              "message, rc = %r", ret);
-        te_rpc_err.str[0] = '\0';
+        ERROR("te_rpc_error_set() seems to be called outside of "
+              "TARPC_FUNC_COMMON()");
     }
-    else if (str.len > 0)
+    else
     {
-        ERROR("%s", str.ptr);
+        te_string   str = TE_STRING_BUF_INIT(te_rpc_err.str);
+        char       *s;
+        va_list     ap;
+        te_errno    ret;
+
+        tarpc_out_arg *out_common = te_rpc_err.out_common;
+
+        te_rpc_err.err = err;
+        out_common->_errno = err;
+        out_common->errno_changed = TRUE;
+
+        va_start(ap, msg);
+        ret = te_string_append_va(&str, msg, ap);
+        va_end(ap);
+        if (ret != 0)
+        {
+            ERROR("te_string_append() failed to write error "
+                  "message, rc = %r", ret);
+            te_rpc_err.str[0] = '\0';
+        }
+        else if (str.len > 0)
+        {
+            ERROR("%s", str.ptr);
+        }
+
+        s = strdup(te_rpc_err.str);
+        if (s != NULL)
+        {
+            free(out_common->err_str.err_str_val);
+            out_common->err_str.err_str_val = s;
+            out_common->err_str.err_str_len = strlen(s);
+        }
+        else
+        {
+            ERROR("Out of memory when trying to copy RPC error string");
+        }
     }
+
 #else
     ERROR("te_rpc_error_set() cannot be used since there is no "
           "thread-local specifier support");
@@ -165,11 +202,6 @@ void tarpc_before_call(struct rpc_call_data *call, const char *id)
     tarpc_in_arg *in_common = (tarpc_in_arg *)((uint8_t *)call->in +
                                                call->info->in_common_offset);
 
-#ifdef TE_THREAD_LOCAL
-    te_rpc_err.err = 0;
-    te_rpc_err.str[0] = '\0';
-#endif
-
     call->saved_errno = errno;
     wait_start(in_common->start);
     VERB("Calling: %s" , id);
@@ -184,32 +216,14 @@ void tarpc_after_call(struct rpc_call_data *call)
     struct timeval finish;
     int rc;
 
-    out_common->errno_changed = (call->saved_errno != errno);
-
 #ifndef TE_THREAD_LOCAL
     out_common->_errno = RPC_ERRNO;
+    out_common->errno_changed = (call->saved_errno != errno);
 #else
     if (te_rpc_err.err == 0)
     {
         out_common->_errno = RPC_ERRNO;
-    }
-    else
-    {
-        char *s;
-
-        out_common->_errno = te_rpc_err.err;
-        out_common->errno_changed = TRUE;
-
-        s = strdup(te_rpc_err.str);
-        if (s != NULL)
-        {
-            out_common->err_str.err_str_val = s;
-            out_common->err_str.err_str_len = strlen(s);
-        }
-        else
-        {
-            ERROR("Out of memory when trying to copy RPC error string");
-        }
+        out_common->errno_changed = (call->saved_errno != errno);
     }
 #endif
 

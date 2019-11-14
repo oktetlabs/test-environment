@@ -491,9 +491,27 @@ struct rpc_call_data;
 
 /** Structure for storing data about error occurred during RPC call. */
 typedef struct te_rpc_error_data {
-    te_errno    err;                     /**< Error number. */
-    char        str[RPC_ERROR_MAX_LEN];  /**< String describing error. */
+    tarpc_out_arg   *out_common;      /**< Where error number and message
+                                           should be set to be reported
+                                           to RPC caller */
+    te_errno  err;                    /**< Error number */
+    char      str[RPC_ERROR_MAX_LEN]; /**< String describing error */
+
 } te_rpc_error_data;
+
+/**
+ * Set location where to update error number and message when
+ * te_rpc_error_set() is called. This function also clears
+ * other fields of @b te_rpc_err.
+ *
+ * @param out_common        Where to set error number and message
+ *                          so that they will be reported to RPC
+ *                          caller.
+ *                          If @c NULL is passed, then the following
+ *                          calls of te_rpc_error_set() will print
+ *                          error message instead of doing anything.
+ */
+extern void te_rpc_error_set_target(tarpc_out_arg *out_common);
 
 /**
  * Save information about error occurred during RPC call which will
@@ -757,7 +775,9 @@ extern void tarpc_generic_service(deferred_call_list *list,
         TARPC_FUNC_UNUSED_##_safe                                       \
         UNUSED(arglist);                                                \
                                                                         \
+        te_rpc_error_set_target(&out->common);                          \
         { _actions }                                                    \
+        te_rpc_error_set_target(NULL);                                  \
     }                                                                   \
                                                                         \
     static rpc_copy_func _func##_docopy;                                \
@@ -800,7 +820,9 @@ extern void tarpc_generic_service(deferred_call_list *list,
             .checked_args = STAILQ_HEAD_INITIALIZER(_call.checked_args) \
         };                                                              \
                                                                         \
+        te_rpc_error_set_target(&_out->common);                         \
         tarpc_generic_service((void *)_rqstp->rq_xprt->xp_p1, &_call);  \
+        te_rpc_error_set_target(NULL);                                  \
         return TRUE;                                                    \
     }
 
