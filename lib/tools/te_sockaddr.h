@@ -86,6 +86,11 @@ extern "C" {
 #define PREFIX2MASK(prefix) \
     (prefix == 0 ? 0U : (~0U) << (unsigned)(32 - (prefix)))
 
+/**
+ * Number of bytes which should be enough for string representation
+ * of sockaddr structure
+ */
+#define TE_SOCKADDR_STR_LEN 300
 
 /**
  * Is address family is supported by this TAPI?
@@ -362,7 +367,21 @@ extern int te_sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
                            const struct sockaddr *a2, socklen_t a2len);
 
 /**
- * Convert 'struct sockaddr' to string.
+ * Convert 'struct sockaddr' to string (it prints not only address
+ * but also port and other fields).
+ *
+ * @param sa      Pointer to 'struct sockaddr'.
+ * @param buf     Where to save string.
+ * @param len     Length of the buffer.
+ *
+ * @return Status code.
+ */
+extern te_errno te_sockaddr2str_buf(const struct sockaddr *sa,
+                                    char *buf, size_t len);
+
+/**
+ * Convert 'struct sockaddr' to string (it prints not only address
+ * but also port and other fields).
  *
  * @note Static buffer is used for return value.
  *

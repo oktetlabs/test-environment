@@ -56,6 +56,8 @@ extern const char *inet_ntop (int, const void *, char *, size_t);
 #include "logger_api.h"
 #include "te_sockaddr.h"
 #include "te_ethernet.h"
+#include "te_string.h"
+#include "te_errno.h"
 
 
 /* See the description in te_sockaddr.h */
@@ -661,67 +663,54 @@ te_sockaddrncmp(const struct sockaddr *a1, socklen_t a1len,
     return -1;
 }
 
-/* See description in tapi_sockaaddr.h */
-const char *
-te_sockaddr2str(const struct sockaddr *sa)
+/* See description in tapi_sockaddr.h */
+te_errno
+te_sockaddr2str_buf(const struct sockaddr *sa,
+                    char *buf, size_t len)
 {
-
-#define SOCKADDR2STR_ADDRSTRLEN 128
-/* Number of buffers used in the function */
-#define N_BUFS 10
-
-    static char  buf[N_BUFS][SOCKADDR2STR_ADDRSTRLEN];
-    static char  (*cur_buf)[SOCKADDR2STR_ADDRSTRLEN] =
-                                (char (*)[SOCKADDR2STR_ADDRSTRLEN])buf[0];
-
-    char       *ptr;
     const void *addr_ptr;
     char        addr_buf[INET6_ADDRSTRLEN];
     uint16_t    port;
+    te_errno    rc;
 
-    /*
-     * Firt time the function is called we start from the second buffer,
-     * but then after a turn we'll use all N_BUFS buffer.
-     */
-    if (cur_buf == (char (*)[SOCKADDR2STR_ADDRSTRLEN])buf[N_BUFS - 1])
-        cur_buf = (char (*)[SOCKADDR2STR_ADDRSTRLEN])buf[0];
-    else
-        cur_buf++;
-
-    ptr = *cur_buf;
+    te_string   str = TE_STRING_EXT_BUF_INIT(buf, len);
 
     if (sa == NULL)
     {
-        snprintf(ptr, SOCKADDR2STR_ADDRSTRLEN, "(nil)");
-        return ptr;
+        CHECK_NZ_RETURN(te_string_append(&str, "(nil)"));
+        return 0;
     }
 
     if (!te_sockaddr_is_af_supported(sa->sa_family))
     {
         if (sa->sa_family == AF_UNSPEC)
         {
-            int offt = 0;
             int i;
 
-            offt += snprintf(ptr, SOCKADDR2STR_ADDRSTRLEN,
-                             "<Address family is AF_UNSPEC raw value=");
+            CHECK_NZ_RETURN(te_string_append(
+                              &str,
+                              "<Address family is AF_UNSPEC raw value="));
             for (i = 0; i < (int)sizeof(*sa); i++)
-                offt += snprintf(ptr + offt,
-                                 SOCKADDR2STR_ADDRSTRLEN - offt, "%2.2x",
-                                 *((uint8_t *)sa + i));
-            snprintf(ptr + offt, SOCKADDR2STR_ADDRSTRLEN - offt, ">");
+            {
+                CHECK_NZ_RETURN(te_string_append(
+                                    &str, "%2.2x",
+                                    *((uint8_t *)sa + i)));
+            }
+            CHECK_NZ_RETURN(te_string_append(&str, ">"));
 
-            return ptr;
+            return 0;
         }
         else
-            return "<Not supported address family>";
+        {
+            return TE_RC(TE_TOOL_EXT, TE_EAFNOSUPPORT);
+        }
     }
 
 #ifdef AF_LOCAL
     if (sa->sa_family == AF_LOCAL)
     {
-        snprintf(ptr, SOCKADDR2STR_ADDRSTRLEN, "%s", SUN(sa)->sun_path);
-        return ptr;
+        CHECK_NZ_RETURN(te_string_append(&str, "%s", SUN(sa)->sun_path));
+        return 0;
     }
 #endif
 
@@ -733,22 +722,47 @@ te_sockaddr2str(const struct sockaddr *sa)
     if (inet_ntop(sa->sa_family, addr_ptr,
                   addr_buf, sizeof(addr_buf)) == NULL)
     {
-        return "<Cannot convert network address>";
+        return TE_OS_RC(TE_TOOL_EXT, errno);
     }
-    snprintf(ptr, SOCKADDR2STR_ADDRSTRLEN, "%s:%hu", addr_buf, ntohs(port));
+    CHECK_NZ_RETURN(te_string_append(&str, "%s:%hu",
+                                     addr_buf, ntohs(port)));
+
     if (sa->sa_family == AF_INET6 &&
         IN6_IS_ADDR_LINKLOCAL(&SIN6(sa)->sin6_addr))
     {
-        size_t len = strlen(ptr);
 
-        snprintf(ptr + len, SOCKADDR2STR_ADDRSTRLEN - len,
-                 "<%u>", (unsigned)(SIN6(sa)->sin6_scope_id));
+        CHECK_NZ_RETURN(te_string_append(
+                            &str, "<%u>",
+                            (unsigned)(SIN6(sa)->sin6_scope_id)));
     }
 
-#undef N_BUFS
-#undef SOCKADDR2STR_ADDRSTRLEN
+    return 0;
+}
 
-    return ptr;
+/* See description in tapi_sockaddr.h */
+const char *
+te_sockaddr2str(const struct sockaddr *sa)
+{
+/* Number of buffers used in the function */
+#define N_BUFS 10
+
+    static char  buf[N_BUFS][TE_SOCKADDR_STR_LEN];
+    static int   i = -1;
+    te_errno     rc;
+
+    i++;
+    if (i >= N_BUFS)
+        i = 0;
+
+    rc = te_sockaddr2str_buf(sa, buf[i], TE_SOCKADDR_STR_LEN);
+    if (rc != 0)
+    {
+        ERROR("%s(): te_sockaddr2str_buf() returned %r", rc);
+        return "<Failed to convert address to string>";
+    }
+
+    return buf[i];
+#undef N_BUFS
 }
 
 /* See the description in te_sockaddr.h */
