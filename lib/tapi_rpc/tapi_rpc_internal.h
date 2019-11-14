@@ -85,10 +85,10 @@ do {                                                                    \
         }                                                               \
         LOG_MSG(rpcs->err_log ? TE_LL_ERROR : TE_LL_RING,               \
                 "RPC (%s,%s)%s%s: " #func "(" in_format ") -> "         \
-                out_format " (%s)",                                     \
+                out_format " (" RPC_ERROR_FMT ")",                      \
                 rpcs->ta, rpcs->name, rpcop2str(rpcs->last_op),         \
                 (rpcs->last_use_libc || rpcs->use_libc) ? " libc" : "", \
-                _x, errno_rpc2str(RPC_ERRNO(rpcs)));                    \
+                _x, RPC_ERROR_ARGS(rpcs));                              \
         rpcs->err_log = FALSE;                                          \
     }                                                                   \
     rpcs->silent = rpcs->silent_default;                                \
