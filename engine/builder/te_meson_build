@@ -53,6 +53,7 @@ process_library_rpcxdr() {
     local pfx="$1"; shift
     local parms_var="${pfx}PARMS"
     local parms=
+    local p
 
     for p in ${!parms_var} ; do
         case ${p} in
@@ -69,6 +70,7 @@ process_library_tad() {
     local pfx="$1"; shift
     local parms_var="${pfx}PARMS"
     local parms=
+    local p
 
     for p in ${!parms_var} ; do
         case ${p} in
@@ -95,6 +97,7 @@ process_library_tapi_tad() {
     local pfx="$1"; shift
     local parms_var="${pfx}PARMS"
     local parms=
+    local p
 
     for p in ${!parms_var} ; do
         case ${p} in
@@ -293,6 +296,7 @@ process_engine_app() {
     local a="$1"; shift
     local pfx="TE_BS_APP_${a}_"
     local msg="Engine application ${a}"
+    local p
 
     local parms_var="${pfx}PARMS"
     local parms=
@@ -327,6 +331,7 @@ process_engine_tool() {
     local t="$1"; shift
     local pfx="TE_BS_TOOL_${t}_"
     local msg="Engine tool ${t}"
+    local p
 
     local parms_var="${pfx}PARMS"
     local parms=
