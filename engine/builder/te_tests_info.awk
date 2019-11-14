@@ -15,14 +15,14 @@ function dump() {
         else
             page_name = "";
 
-        gsub(/ [ ]+/, " ", objective);
-        gsub(/^ +/, "", objective);
-        gsub(" *[\n]+$", "", objective);
         gsub("@a", "", objective);
         gsub("@b", "", objective);
         gsub("@c", "", objective);
         gsub("@e", "", objective);
         gsub("@p", "", objective);
+        gsub(/ [ ]+/, " ", objective);
+        gsub(/^ +/, "", objective);
+        gsub(" *[\n]+$", "", objective);
 
         gsub("<", "\\&lt;", objective);
         gsub(">", "\\&gt;", objective);
