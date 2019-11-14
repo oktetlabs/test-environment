@@ -274,6 +274,14 @@ extern "C" {
     REGISTER_ARTIFACT(TE_LL_ERROR, _fmt)
 
 /**
+ * Macro should be used to output artifact with MI log level from tests.
+ *
+ * @param fmt  the content of the artifact as format string with arguments
+ */
+#define MI_ARTIFACT(_fmt...) \
+    REGISTER_ARTIFACT(TE_LL_MI, _fmt)
+
+/**
  * Print test artifact to log. Artifact is a string describing
  * test results like a verdict. But it is not taken into account
  * when matching obtained results to TRC database.

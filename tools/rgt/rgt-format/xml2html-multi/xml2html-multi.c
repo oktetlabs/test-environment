@@ -1436,6 +1436,7 @@ te_log_level_str2h(const char *ll)
         MAP_ENTRY(VERB),
         MAP_ENTRY(ENTRY_EXIT),
         MAP_ENTRY(PACKET),
+        MAP_ENTRY(MI),
 
 #undef MAP_ENTRY
     };
