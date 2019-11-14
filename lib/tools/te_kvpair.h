@@ -70,6 +70,19 @@ extern te_errno te_kvpair_add(te_kvpair_h *head, const char *key,
                               const char *value_fmt, ...);
 
 /**
+ * Add key-value pair using variadic list.
+ *
+ * @param head          Head of the list
+ * @param key           Key of value
+ * @param value_fmt     Format (*printf-like) string for value string
+ * @param ap            List of arguments
+ *
+ * @retval TE_EEXIST    The key already exists
+ */
+extern te_errno te_kvpair_add_va(te_kvpair_h *head, const char *key,
+                                 const char *value_fmt, va_list ap);
+
+/**
  * Get value associated with the @p key
  *
  * @param key    Key of required value

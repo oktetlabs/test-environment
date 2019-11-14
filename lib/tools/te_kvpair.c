@@ -75,11 +75,10 @@ te_kvpairs_get(const te_kvpair_h *head, const char *key)
 
 /* See the description in te_kvpair.h */
 te_errno
-te_kvpair_add(te_kvpair_h *head, const char *key,
-              const char *value_fmt, ...)
+te_kvpair_add_va(te_kvpair_h *head, const char *key,
+                 const char *value_fmt, va_list ap)
 {
     te_kvpair  *p;
-    va_list     ap;
     te_errno    rc;
 
     assert(head != NULL);
@@ -99,10 +98,7 @@ te_kvpair_add(te_kvpair_h *head, const char *key,
         return TE_ENOMEM;
     }
 
-    va_start(ap, value_fmt);
     rc = te_vasprintf(&p->value, value_fmt, ap);
-    va_end(ap);
-
     if (rc < 0)
     {
         free(p->key);
@@ -114,6 +110,21 @@ te_kvpair_add(te_kvpair_h *head, const char *key,
     TAILQ_INSERT_TAIL(head, p, links);
 
     return 0;
+}
+
+/* See the description in te_kvpair.h */
+te_errno
+te_kvpair_add(te_kvpair_h *head, const char *key,
+              const char *value_fmt, ...)
+{
+    va_list  ap;
+    te_errno rc;
+
+    va_start(ap, value_fmt);
+    rc = te_kvpair_add_va(head, key, value_fmt, ap);
+    va_end(ap);
+
+    return rc;
 }
 
 /* See the description in te_kvpair.h */
