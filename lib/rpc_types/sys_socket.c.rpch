@@ -2611,11 +2611,11 @@ af_packet_addr_tarpc2str(const tarpc_sa *rpc_sa,
 
 /** See the description in ta_rpc_sys_socket.h */
 const char *
-sockaddr_h2str(const struct sockaddr *addr)
+sockaddr_h2str_buf(const struct sockaddr *addr,
+                   char *buf, size_t len)
 {
-    static char  buf[1000];
-
-    te_string str = TE_STRING_BUF_INIT(buf);
+    te_string str = TE_STRING_EXT_BUF_INIT(buf, len);
+    te_errno  rc;
 
     const tarpc_sa *rpc_sa;
 
@@ -2633,7 +2633,11 @@ sockaddr_h2str(const struct sockaddr *addr)
         else
 #endif
         {
-            return te_sockaddr2str(addr);
+            rc = te_sockaddr2str_buf(addr, buf, len);
+            if (rc != 0)
+                return "<Failed to convert address to string>";
+
+            return buf;
         }
     }
 
@@ -2719,6 +2723,15 @@ sockaddr_h2str(const struct sockaddr *addr)
         te_string_append(&str, " len=%u", (unsigned)rpc_sa->len);
 
     return buf;
+}
+
+/** See the description in ta_rpc_sys_socket.h */
+const char *
+sockaddr_h2str(const struct sockaddr *addr)
+{
+    static char  buf[TE_SOCKADDR_STR_LEN];
+
+    return sockaddr_h2str_buf(addr, buf, sizeof(buf));
 }
 
 /** Convert RPC address family to corresponding structure name */

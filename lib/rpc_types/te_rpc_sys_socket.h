@@ -1133,6 +1133,32 @@ extern te_errno sockaddr_rpc2h(const tarpc_sa *rpc,
  */
 extern const char * sockaddr_h2str(const struct sockaddr *addr);
 
+/**
+ * String representation of sockaddr structure including processing
+ * of special case for @c TE_AF_TARPC_SA address family.
+ * The same as sockaddr_h2str() but uses supplied buffer to store
+ * string.
+ *
+ * @param addr    Pointer to sockaddr structure.
+ * @param buf     Where to save string representation.
+ * @param len     Length of the buffer.
+ *
+ * @return Pointer to buffer with string (may be string constant).
+ */
+extern const char *sockaddr_h2str_buf(const struct sockaddr *addr,
+                                      char *buf, size_t len);
+
+/**
+ * Macro simplifying use of sockaddr_h2str_buf() with statically
+ * allocated buffer.
+ *
+ * @param _addr     Address.
+ * @param _buf      Buffer where to save string.
+ *
+ * @return Pointer to buffer with string (may be string constant).
+ */
+#define SOCKADDR_H2STR_SBUF(_addr, _buf) \
+    sockaddr_h2str_buf((_addr), (_buf), sizeof(_buf))
 
 /**
  * Convert RPC address family to corresponding structure name.
