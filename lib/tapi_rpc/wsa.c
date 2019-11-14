@@ -352,6 +352,9 @@ rpc_get_accept_addr_gen(rcf_rpc_server *rpcs,
     tarpc_get_accept_addr_in  in;
     tarpc_get_accept_addr_out out;
 
+    char loc_buf[TE_SOCKADDR_STR_LEN];
+    char rem_buf[TE_SOCKADDR_STR_LEN];
+
     memset(&in, 0, sizeof(in));
     memset(&out, 0, sizeof(out));
 
@@ -395,8 +398,10 @@ rpc_get_accept_addr_gen(rcf_rpc_server *rpcs,
                  "%d, %u, %d, %d, %d, %p, %p, %p, %p", "laddr=%s raddr=%s",
                  s, buf, len, laddr_len, raddr_len, 
                  laddr, l_sa_len, raddr, r_sa_len, 
-                 laddr == NULL ? "NULL" : sockaddr_h2str(laddr),
-                 raddr == NULL ? "NULL" : sockaddr_h2str(raddr));
+                 laddr == NULL ? "NULL" :
+                                 SOCKADDR_H2STR_SBUF(laddr, loc_buf),
+                 raddr == NULL ? "NULL" :
+                                 SOCKADDR_H2STR_SBUF(raddr, rem_buf));
     RETVAL_VOID(get_accept_addr);
 }
 
