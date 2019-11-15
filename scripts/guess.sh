@@ -59,15 +59,5 @@ elif test -d "${MYDIR}/../conf" ; then
     export CONFDIR="${MYDIR}/../conf"
 fi
 
-if test -z "$TRC_DB" ; then
-    if test -e "sockapi-ts" ; then
-        TRC_DB="trc-sockapi-ts.xml"
-    elif test -e "iscsi-ts" ; then
-        TRC_DB="trc-iscsi-ts.xml"
-    elif test -e "layer2-ts" ; then
-        TRC_DB="trc-layer2-ts.xml"
-    fi
-fi
-
 export PATH="$PATH:${TE_INSTALL}/${PLATFORM}/bin"
 export LD_LIBRARY_PATH="${TE_INSTALL}/${PLATFORM}/lib:${LD_LIBRARY_PATH}"
