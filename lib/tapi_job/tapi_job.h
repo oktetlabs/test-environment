@@ -493,7 +493,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * CHECK_RC(tapi_job_wait(job, -1, &status));
  * if (status.type != TAPI_JOB_STATUS_EXITED || status.value != 0)
  *    TEST_FAIL("Tool failed");
- * CHECK_RC(tapi_job_destroy(job));
+ * CHECK_RC(tapi_job_destroy(job, -1));
  * @endcode
  *
  * Run and read
@@ -526,7 +526,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * CHECK_RC(tapi_job_wait(job, 0, &status));
  * if (status.type != TAPI_JOB_STATUS_EXITED || status.value != 0)
  *    TEST_FAIL("Tool failed");
- * CHECK_RC(tapi_job_destroy(job));
+ * CHECK_RC(tapi_job_destroy(job, -1));
  * @endcode
  *
  *
@@ -561,7 +561,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * CHECK_RC(tapi_job_wait(job, 0, &status));
  * if (status.type != TAPI_JOB_STATUS_EXITED || status.value != 0)
  *    TEST_FAIL("Tool failed");
- * CHECK_RC(tapi_job_destroy(job));
+ * CHECK_RC(tapi_job_destroy(job, -1));
  * @endcode
  *
  * Run an interactive program
@@ -599,7 +599,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  *
  * if (status.type != TAPI_JOB_STATUS_EXITED || status.value != 0)
  *    TEST_FAIL("Tool failed");
- * CHECK_RC(tapi_job_destroy(job));
+ * CHECK_RC(tapi_job_destroy(job, -1));
  * @endcode
  *
  * Terminate a job and if it hangs, forcedly kill it
