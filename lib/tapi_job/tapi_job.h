@@ -483,7 +483,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  *
  * CHECK_RC(tapi_job_rpc_create(pco, NULL, "/usr/bin/tool",
  *                              (const char *[]){"tool", "arg1", "arg2",
- *                              NULL}, &job));
+ *                              NULL}, NULL, &job));
  * CHECK_RC(tapi_job_alloc_output_channels(job, 2, NULL));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channels[0],
  *                                                      out_channels[1]),
@@ -510,7 +510,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  *
  * CHECK_RC(tapi_job_rpc_create(pco, NULL, "/usr/bin/tool",
  *                              (const char *[]){"tool", "arg1", "arg2",
- *                              NULL}, &job));
+ *                              NULL}, NULL, &job));
  * CHECK_RC(tapi_job_alloc_output_channels(job, 2, out_channels));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channels[0]),
  *                                 "Out filter", TRUE, 0, &out_filter));
@@ -543,7 +543,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  *
  * CHECK_RC(tapi_job_rpc_create(pco, NULL, "/usr/bin/tool",
  *                              (const char *[]){"tool", "arg1", "arg2",
- *                              NULL}, &job));
+ *                              NULL}, NULL, &job));
  * CHECK_RC(tapi_job_alloc_output_channels(job, 2, out_channels));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channels[0]),
  *                                 "Out filter", TRUE, 0, &out_filters[0]));
@@ -580,7 +580,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  *
  * CHECK_RC(tapi_job_rpc_create(pco, "pty_spawner", "/usr/bin/tool",
  *                              (const char *[]){"tool", "arg1", "arg2",
- *                              NULL}, &job));
+ *                              NULL}, NULL, &job));
  * CHECK_RC(tapi_job_alloc_output_channels(job, 1, &out_channel));
  * CHECK_RC(tapi_job_alloc_output_channels(job, 1, &in_channel));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channel),
