@@ -49,13 +49,13 @@ typedef struct te_mi_meas_impl {
 
 typedef TAILQ_HEAD(te_mi_meas_impl_h, te_mi_meas_impl) te_mi_meas_impl_h;
 
-typedef struct te_mi_logger {
+struct te_mi_logger {
     te_mi_type type;
     unsigned int version;
     te_mi_meas_impl_h meas_q;
     te_kvpair_h meas_keys;
     te_kvpair_h comments;
-} te_mi_logger;
+};
 
 static const char *mi_type_names[] = {
    [TE_MI_TYPE_MEASUREMENT] = "measurement",
