@@ -671,7 +671,6 @@ te_sockaddr2str_buf(const struct sockaddr *sa,
     const void *addr_ptr;
     char        addr_buf[INET6_ADDRSTRLEN];
     uint16_t    port;
-    te_errno    rc;
 
     te_string   str = TE_STRING_EXT_BUF_INIT(buf, len);
 
