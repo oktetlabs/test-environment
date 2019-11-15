@@ -89,7 +89,7 @@ libtools_la_SOURCES = \
 	te_log_stack.c \
 	te_vector.c \
 	te_meas_stats.c \
-	te_mi_log.h
+	te_mi_log.c
 
 liblog_bufs_la_SOURCES = log_bufs.c
 
