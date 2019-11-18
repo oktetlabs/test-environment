@@ -528,7 +528,7 @@ te_mi_log_meas(const te_mi_meas *measurements, const te_mi_log_kvpair *keys,
 
     for (k = keys; k != NULL && k->key != NULL; k++)
     {
-        rc = te_mi_logger_add_meas_key(logger, k->key,
+        rc = te_mi_logger_add_meas_key(logger, k->key, "%s",
                                        (k->value == NULL) ? "" : k->value);
         if (rc != 0)
             goto out;
@@ -536,7 +536,7 @@ te_mi_log_meas(const te_mi_meas *measurements, const te_mi_log_kvpair *keys,
 
     for (c = comments; c != NULL && c->key != NULL; c++)
     {
-        rc = te_mi_logger_add_comment(logger, c->key,
+        rc = te_mi_logger_add_comment(logger, c->key, "%s",
                                       (c->value == NULL) ? "" : c->value);
         if (rc != 0)
             goto out;
