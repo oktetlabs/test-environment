@@ -287,10 +287,16 @@ typedef enum rpc_socket_type {
     RPC_SOCK_RDM,       /**< SOCK_RDM in BSD */
 } rpc_socket_type;
 
-/** Convert RPC socket type to string */
+/**
+ * Convert RPC socket type to string
+ * (including flags @c SOCK_CLOEXEC and @c SOCK_NONBLOCK)
+ */
 extern const char * socktype_rpc2str(rpc_socket_type type);
 
-/** Convert RPC socket type to native socket type */
+/**
+ * Convert RPC socket type to native socket type
+ * (including @c RPC_SOCK_NONBLOCK and @c RPC_SOCK_CLOEXEC flags)
+ */
 extern int socktype_rpc2h(rpc_socket_type type);
 
 /** Convert native socket type to RPC socket type */
@@ -836,6 +842,10 @@ extern const char *tcp_state_rpc2str(rpc_tcp_state st);
 /**
  * Convert string representation of TCP socket state
  * to RPC constant
+ *
+ * @param s     String representation of rpc_tcp_state value
+ *
+ * @return RPC constant corresponding to a given string
  */
 extern rpc_tcp_state tcp_state_str2rpc(const char *s);
 

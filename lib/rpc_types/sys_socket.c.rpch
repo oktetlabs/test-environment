@@ -223,14 +223,15 @@ typedef struct tarpc_sa tarpc_sa;
 #include "te_rpc_defs.h"
 #include "te_rpc_sys_socket.h"
 
-/** TCP_USER_TIMEOUT is defined in lunix/tcp.h, but lunix/tcp.h has
+/*
+ * TCP_USER_TIMEOUT is defined in lunix/tcp.h, but lunix/tcp.h has
  * conflicts with netinet/tcp.h
  */
 #ifndef TCP_USER_TIMEOUT
 #define TCP_USER_TIMEOUT 18
 #endif
 
-/** Convert RPC domain to string */
+/* See description in te_rpc_sys_socket.h */
 const char *
 domain_rpc2str(rpc_socket_domain domain)
 {
@@ -253,7 +254,7 @@ domain_rpc2str(rpc_socket_domain domain)
     }
 }
 
-/** Convert RPC domain to native domain */
+/* See description in te_rpc_sys_socket.h */
 int
 domain_rpc2h(rpc_socket_domain domain)
 {
@@ -273,7 +274,7 @@ domain_rpc2h(rpc_socket_domain domain)
     }
 }
 
-/** Convert native domain to RPC domain */
+/* See description in te_rpc_sys_socket.h */
 rpc_socket_domain
 domain_h2rpc(int domain)
 {
@@ -288,7 +289,7 @@ domain_h2rpc(int domain)
     }
 }
 
-/** Convert RPC address family to string */
+/* See description in te_rpc_sys_socket.h */
 const char *
 addr_family_rpc2str(rpc_socket_addr_family addr_family)
 {
@@ -311,7 +312,7 @@ addr_family_rpc2str(rpc_socket_addr_family addr_family)
     }
 }
 
-/** Convert RPC address family to native address family */
+/* See description in te_rpc_sys_socket.h */
 int
 addr_family_rpc2h(rpc_socket_addr_family addr_family)
 {
@@ -338,7 +339,7 @@ addr_family_rpc2h(rpc_socket_addr_family addr_family)
     }
 }
 
-/** Convert native address family to RPC address family */
+/* See description in te_rpc_sys_socket.h */
 rpc_socket_addr_family
 addr_family_h2rpc(int addr_family)
 {
@@ -383,10 +384,7 @@ socktype_rpc2str_aux(rpc_socket_type type)
     }
 }
 
-/**
- * Convert RPC socket type to string 
- * (including flags SOCK_CLOEXEC and SOCK_NONBLOCK)
- */
+/* See description in te_rpc_sys_socket.h */
 const char *
 socktype_rpc2str(rpc_socket_type type)
 {
@@ -465,7 +463,7 @@ socktype_rpc2h_aux(rpc_socket_type type)
     }
 }
 
-/** 
+/*
  * FIXME: include headers of proper linux kernel version when building TE
  */
 #ifndef SOCK_NONBLOCK
@@ -480,10 +478,7 @@ socktype_rpc2h_aux(rpc_socket_type type)
 #define SOCK_MAX_FLAG 0xFFFFFF00
 #endif
 
-/** 
- * Convert RPC socket type to native socket type 
- * (including RPC_SOCK_NONBLOCK and RPC_SOCK_CLOEXEC flags)
- */
+/* See description in te_rpc_sys_socket.h */
 int
 socktype_rpc2h(rpc_socket_type type)
 {
@@ -504,7 +499,7 @@ socktype_rpc2h(rpc_socket_type type)
     return socktype_rpc2h_aux(type) | flags;
 }
 
-/** Convert native socket type to RPC socket type */
+/* See description in te_rpc_sys_socket.h */
 rpc_socket_type
 socktype_h2rpc(int type)
 {
@@ -520,7 +515,7 @@ socktype_h2rpc(int type)
     }
 }
 
-/** Convert RPC socket type to native socket type */
+/* See description in te_rpc_sys_socket.h */
 int
 socket_flags_rpc2h(rpc_socket_flags flags)
 {
@@ -542,7 +537,7 @@ socket_flags_rpc2h(rpc_socket_flags flags)
     return r;
 }
 
-/** Convert native socket type to RPC socket type */
+/* See description in te_rpc_sys_socket.h */
 rpc_socket_flags
 socket_flags_h2rpc(int flags)
 {   
@@ -566,7 +561,7 @@ socket_flags_h2rpc(int flags)
     return r;
 }
 
-/** Convert RPC protocol to string */
+/* See description in te_rpc_sys_socket.h */
 const char *
 proto_rpc2str(rpc_socket_proto proto)
 {
@@ -585,7 +580,7 @@ proto_rpc2str(rpc_socket_proto proto)
     }
 }
 
-/** Convert RPC IP protocol to native IP protocol constants */
+/* See description in te_rpc_sys_socket.h */
 int
 proto_rpc2h(rpc_socket_proto proto)
 {
@@ -606,7 +601,7 @@ proto_rpc2h(rpc_socket_proto proto)
     }
 }
 
-/** Convert native IP protocol to RPC IP protocol constants */
+/* See description in te_rpc_sys_socket.h */
 rpc_socket_proto
 proto_h2rpc(int proto)
 {
@@ -625,7 +620,7 @@ proto_h2rpc(int proto)
 
 
 
-/** Convert RPC protocol to string */
+/* See description in te_rpc_sys_socket.h */
 const char *
 shut_how_rpc2str(rpc_shut_how how)
 {
@@ -735,7 +730,7 @@ shut_how_rpc2str(rpc_shut_how how)
             WARN("Unsupported flag " #_f " is specified in the mask");  \
     } while (0)
 
-/** Convert RPC send/receive flags to native flags */
+/* See description in te_rpc_sys_socket.h */
 unsigned int
 send_recv_flags_rpc2h(unsigned int flags)
 {
@@ -768,7 +763,7 @@ send_recv_flags_rpc2h(unsigned int flags)
            (!!(flags & ~RPC_MSG_ALL) * MSG_MAX);
 }
 
-/** Convert native send/receive flags to RPC flags */
+/* See description in te_rpc_sys_socket.h */
 unsigned int
 send_recv_flags_h2rpc(unsigned int flags)
 {
@@ -793,7 +788,7 @@ send_recv_flags_h2rpc(unsigned int flags)
 }
 
 
-/** Convert RPC path MTU discovery argument to string */
+/* See description in te_rpc_sys_socket.h */
 extern const char *
 mtu_discover_arg_rpc2str(rpc_mtu_discover_arg arg)
 {
@@ -809,6 +804,7 @@ mtu_discover_arg_rpc2str(rpc_mtu_discover_arg arg)
     }
 }
 
+/* See description in te_rpc_sys_socket.h */
 int
 mtu_discover_arg_rpc2h(rpc_mtu_discover_arg arg)
 {
@@ -826,7 +822,7 @@ mtu_discover_arg_rpc2h(rpc_mtu_discover_arg arg)
     }
 }
 
-/** Convert native path MTU discovery argument to RPC one */
+/* See description in te_rpc_sys_socket.h */
 rpc_mtu_discover_arg
 mtu_discover_arg_h2rpc(int arg)
 {
@@ -842,7 +838,7 @@ mtu_discover_arg_h2rpc(int arg)
     }
 }
 
-/** Convert RPC socket option constant to its level. */
+/* See description in te_rpc_sys_socket.h */
 rpc_socklevel
 rpc_sockopt2level(rpc_sockopt opt)
 {
@@ -993,7 +989,7 @@ rpc_sockopt2level(rpc_sockopt opt)
     }
 }
 
-/** Convert RPC socket option to string */
+/* See description in te_rpc_sys_socket.h */
 const char *
 sockopt_rpc2str(rpc_sockopt opt)
 {
@@ -1144,7 +1140,7 @@ sockopt_rpc2str(rpc_sockopt opt)
 #define IP_MTU  MY_IP_MTU
 #endif
 
-/** Convert RPC socket option constants to native ones */
+/* See description in te_rpc_sys_socket.h */
 int
 sockopt_rpc2h(rpc_sockopt opt)
 {
@@ -1303,7 +1299,7 @@ sockopt_rpc2h(rpc_sockopt opt)
 #define SOL_UDP         IPPROTO_UDP
 #endif
 
-/** Convert native socket options to RPC one */
+/* See description in te_rpc_sys_socket.h */
 rpc_sockopt
 sockopt_h2rpc(int opt_type, int opt)
 {
@@ -1502,7 +1498,7 @@ cmsg_type_h2rpc(int level, int type)
     }
 }
 
-/** Has socket option boolean semantic? */
+/* See description in te_rpc_sys_socket.h */
 te_bool
 sockopt_is_boolean(rpc_sockopt opt)
 {
@@ -1577,7 +1573,7 @@ sockopt_is_boolean(rpc_sockopt opt)
 }
 
 
-/** Convert RPC socket option constants to string */
+/* See description in te_rpc_sys_socket.h */
 const char *
 socklevel_rpc2str(rpc_socklevel level)
 {
@@ -1598,7 +1594,7 @@ socklevel_rpc2str(rpc_socklevel level)
 #define SOL_MAX 0xFFFFFFFF
 #endif
 
-/** Convert RPC socket option constants to native ones */
+/* See description in te_rpc_sys_socket.h */
 int
 socklevel_rpc2h(rpc_socklevel level)
 {
@@ -1616,7 +1612,7 @@ socklevel_rpc2h(rpc_socklevel level)
     }
 }
 
-/** Convert native socket option constants to RPC ones */
+/* See description in te_rpc_sys_socket.h */
 rpc_socklevel
 socklevel_h2rpc(int level)
 {
@@ -1636,7 +1632,7 @@ socklevel_h2rpc(int level)
 #define TCP_MAX_STATES 0xFFFFFFFF
 #endif
 
-/** Convert RPC TCP socket state to string */
+/* See description in te_rpc_sys_socket.h */
 const char *
 tcp_state_rpc2str(rpc_tcp_state st)
 {
@@ -1659,15 +1655,7 @@ tcp_state_rpc2str(rpc_tcp_state st)
     }
 }
 
-/**
- * Convert string representation of TCP socket state
- * to RPC constant
- *
- * @param s     String representation of rpc_tcp_state value
- *
- * @return
- *      RPC constant corresponding to a given string
- */
+/* See description in te_rpc_sys_socket.h */
 rpc_tcp_state
 tcp_state_str2rpc(const char *s)
 {
@@ -1689,7 +1677,7 @@ tcp_state_str2rpc(const char *s)
 #undef TCP_STATE_STR_LEN
 }
 
-/** Convert RPC TCP socket state constants to native ones */
+/* See description in te_rpc_sys_socket.h */
 int tcp_state_rpc2h(rpc_tcp_state st)
 {
     switch (st)
@@ -1712,7 +1700,7 @@ int tcp_state_rpc2h(rpc_tcp_state st)
     }
 }
 
-/** Convert native TCP socket states to RPC one */
+/* See description in te_rpc_sys_socket.h */
 rpc_tcp_state tcp_state_h2rpc(int st)
 {
     switch (st)
@@ -1733,7 +1721,7 @@ rpc_tcp_state tcp_state_h2rpc(int st)
     }
 }
 
-/** Convert RPC TCP options in tcp_info structure to native ones */
+/* See description in te_rpc_sys_socket.h */
 unsigned int
 tcpi_options_rpc2h(unsigned int flags)
 {
@@ -1752,7 +1740,7 @@ tcpi_options_rpc2h(unsigned int flags)
      TCPI_OPT_ECN_SEEN)
 
 
-/** Convert native TCP options in tcp_info structure to RPC ones */
+/* See description in te_rpc_sys_socket.h */
 unsigned int
 tcpi_options_h2rpc(unsigned int flags)
 {
@@ -1769,7 +1757,7 @@ tcpi_options_h2rpc(unsigned int flags)
 #define TCP_CA_MAX_STATES 0xFFFFFFFF
 #endif
 
-/** Convert RPC TCP socket congestion state to string */
+/* See description in te_rpc_sys_socket.h */
 const char *
 tcp_ca_state_rpc2str(rpc_tcp_ca_state st)
 {
@@ -1785,7 +1773,7 @@ tcp_ca_state_rpc2str(rpc_tcp_ca_state st)
     }
 }
 
-/** Convert RPC TCP socket congestion state constants to native ones */
+/* See description in te_rpc_sys_socket.h */
 int tcp_ca_state_rpc2h(rpc_tcp_ca_state st)
 {
     switch (st)
@@ -1802,7 +1790,7 @@ int tcp_ca_state_rpc2h(rpc_tcp_ca_state st)
     }
 }
 
-/** Convert native TCP socket congestion states to RPC one */
+/* See description in te_rpc_sys_socket.h */
 rpc_tcp_ca_state tcp_ca_state_h2rpc(int st)
 {
     switch (st)
@@ -1817,7 +1805,7 @@ rpc_tcp_ca_state tcp_ca_state_h2rpc(int st)
     }
 }
 
-/** Convert RPC ioctl requests to string */
+/* See description in te_rpc_sys_socket.h */
 const char *
 ioctl_rpc2str(rpc_ioctl_code code)
 {
@@ -1900,6 +1888,7 @@ ioctl_rpc2str(rpc_ioctl_code code)
 #define IOCTL_MAX 0x7FFFFFFF
 #endif
 
+/* See description in te_rpc_sys_socket.h */
 int
 ioctl_rpc2h(rpc_ioctl_code code)
 {
@@ -1978,7 +1967,7 @@ ioctl_rpc2h(rpc_ioctl_code code)
 }
 
 
-/** See the description in ta_rpc_sys_socket.h */
+/* See the description in te_rpc_sys_socket.h */
 struct sockaddr *
 sockaddr_to_te_af(const struct sockaddr *addr, tarpc_sa **rpc_sa)
 {
@@ -1998,7 +1987,7 @@ sockaddr_to_te_af(const struct sockaddr *addr, tarpc_sa **rpc_sa)
     return res;
 }
 
-/** See the description in ta_rpc_sys_socket.h */
+/* See the description in te_rpc_sys_socket.h */
 void
 sockaddr_raw2rpc(const void *buf, socklen_t len, tarpc_sa *rpc)
 {
@@ -2046,7 +2035,7 @@ af_packet_addr_h2rpc(const struct sockaddr *sa, tarpc_sa *rpc)
     memcpy(ll->sll_addr, sll->sll_addr, sizeof(sll->sll_addr));
 }
 
-/** See the description in ta_rpc_sys_socket.h */
+/* See the description in te_rpc_sys_socket.h */
 void
 sockaddr_input_h2rpc(const struct sockaddr *sa, tarpc_sa *rpc)
 {
@@ -2139,7 +2128,7 @@ sockaddr_input_h2rpc(const struct sockaddr *sa, tarpc_sa *rpc)
     }
 }
 
-/** See the description in ta_rpc_sys_socket.h */
+/* See the description in te_rpc_sys_socket.h */
 void
 sockaddr_output_h2rpc(const struct sockaddr *sa, socklen_t rlen,
                       socklen_t len, tarpc_sa *rpc)
@@ -2373,7 +2362,7 @@ af_packet_addr_rpc2h(const tarpc_sa *rpc, struct sockaddr *sa)
     }
 }
 
-/** See the description in ta_rpc_sys_socket.h */
+/* See the description in te_rpc_sys_socket.h */
 te_errno
 sockaddr_rpc2h(const tarpc_sa *rpc,
                struct sockaddr *sa, socklen_t salen,
@@ -2609,7 +2598,7 @@ af_packet_addr_tarpc2str(const tarpc_sa *rpc_sa,
                   str);
 }
 
-/** See the description in ta_rpc_sys_socket.h */
+/* See the description in te_rpc_sys_socket.h */
 const char *
 sockaddr_h2str_buf(const struct sockaddr *addr,
                    char *buf, size_t len)
@@ -2725,7 +2714,7 @@ sockaddr_h2str_buf(const struct sockaddr *addr,
     return buf;
 }
 
-/** See the description in ta_rpc_sys_socket.h */
+/* See the description in te_rpc_sys_socket.h */
 const char *
 sockaddr_h2str(const struct sockaddr *addr)
 {
@@ -2734,7 +2723,7 @@ sockaddr_h2str(const struct sockaddr *addr)
     return sockaddr_h2str_buf(addr, buf, sizeof(buf));
 }
 
-/** Convert RPC address family to corresponding structure name */
+/* See the description in te_rpc_sys_socket.h */
 const char *
 addr_family_sockaddr_str(rpc_socket_addr_family addr_family)
 {
@@ -2749,6 +2738,7 @@ addr_family_sockaddr_str(rpc_socket_addr_family addr_family)
     }
 }
 
+/* See the description in te_rpc_sys_socket.h */
 const char *
 ethtool_reset_flags_rpc2str(uint32_t flags)
 {
@@ -2783,7 +2773,7 @@ ethtool_reset_flags_rpc2str(uint32_t flags)
 #undef STR_LEN
 }
 
-/** Convert ethtool flags from RPC to native representation */
+/* See the description in te_rpc_sys_socket.h */
 uint32_t
 ethtool_flags_rpc2h(uint32_t flags)
 {
@@ -2808,7 +2798,7 @@ ethtool_flags_rpc2h(uint32_t flags)
         0;
 }
 
-/** Convert ethtool flags from native representation to RPC one */
+/* See the description in te_rpc_sys_socket.h */
 uint32_t ethtool_flags_h2rpc(uint32_t flags)
 {
     UNUSED(flags);
@@ -2832,7 +2822,7 @@ uint32_t ethtool_flags_h2rpc(uint32_t flags)
         0;
 }
 
-/** Convert ethtool reset flags from RPC to native representation */
+/* See the description in te_rpc_sys_socket.h */
 extern uint32_t
 ethtool_reset_flags_rpc2h(uint32_t flags)
 {
@@ -2905,7 +2895,7 @@ ethtool_reset_flags_rpc2h(uint32_t flags)
     return (x | (y << 16));
 }
 
-/** Convert ethtool reset flags from native representation to RPC one */
+/* See the description in te_rpc_sys_socket.h */
 extern uint32_t
 ethtool_reset_flags_h2rpc(uint32_t flags)
 {
@@ -2979,7 +2969,7 @@ ethtool_reset_flags_h2rpc(uint32_t flags)
     return (x | y);
 }
 
-/** Convert RPC ethtool command to string */
+/* See the description in te_rpc_sys_socket.h */
 const char *
 ethtool_cmd_rpc2str(rpc_ethtool_cmd ethtool_cmd)
 {
@@ -3046,7 +3036,7 @@ ethtool_cmd_rpc2str(rpc_ethtool_cmd ethtool_cmd)
     }
 }
 
-/** Convert RPC ethtool command to native one */
+/* See the description in te_rpc_sys_socket.h */
 int
 ethtool_cmd_rpc2h(rpc_ethtool_cmd ethtool_cmd)
 {
@@ -3112,7 +3102,7 @@ ethtool_cmd_rpc2h(rpc_ethtool_cmd ethtool_cmd)
     }
 }
 
-/** Convert native ethtool command to RPC one */
+/* See the description in te_rpc_sys_socket.h */
 rpc_ethtool_cmd
 ethtool_cmd_h2rpc(int ethtool_cmd)
 {
@@ -3175,7 +3165,7 @@ ethtool_cmd_h2rpc(int ethtool_cmd)
     }
 }
 
-/** Convert ethtool command to TARPC_ETHTOOL_* types of its data */
+/* See the description in te_rpc_sys_socket.h */
 tarpc_ethtool_type
 ethtool_cmd2type(rpc_ethtool_cmd cmd)
 {
@@ -3221,14 +3211,7 @@ ethtool_cmd2type(rpc_ethtool_cmd cmd)
 #define COPY_FIELD(to, from, fname) \
     (to)->fname = (from)->fname;
 #if HAVE_LINUX_ETHTOOL_H
-/**
- * Copy ethtool data from RPC data structure to host. 
- *
- * @param rpc_edata RPC ethtool data structure
- * @param edata_p   pointer to return host ethtool structure;
- *                  this structure is allocated if the pointer is
- *                  initialised to NULL
- */
+/* See the description in te_rpc_sys_socket.h */
 void 
 ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
 {
@@ -3343,12 +3326,7 @@ ethtool_data_rpc2h(tarpc_ethtool *rpc_edata, caddr_t *edata_p)
                            ethtool_cmd_rpc2h(rpc_edata->command);
 }
 
-/**
- * Copy ethtool data from the host data structure to RPC. 
- *
- * @param edata     ethtool command structure
- * @param rpc_edata RPC ethtool data structure
- */
+/* See the description in te_rpc_sys_socket.h */
 void 
 ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
 {
@@ -3449,14 +3427,7 @@ ethtool_data_h2rpc(tarpc_ethtool *rpc_edata, caddr_t edata)
 
 #if HAVE_LINUX_NET_TSTAMP_H
 
-/**
- * Copy hwtstamp_config data from RPC data structure to host. 
- *
- * @param rpc_hwdata RPC hwtstamp_config data structure
- * @param hwdata_p   pointer to return host hwtstamp_config structure;
- *                   this structure is allocated if the pointer is
- *                   initialised to NULL
- */
+/* See the description in te_rpc_sys_socket.h */
 void
 hwtstamp_config_data_rpc2h(tarpc_hwtstamp_config *rpc_hwdata,
                            caddr_t *hwdata_p)
@@ -3475,12 +3446,7 @@ hwtstamp_config_data_rpc2h(tarpc_hwtstamp_config *rpc_hwdata,
     COPY_FIELD(hw_cfg, rpc_hwdata, rx_filter);
 }
 
-/**
- * Copy hwtstamp_config data from the host data structure to RPC. 
- *
- * @param hwdata     hwtstamp_config structure
- * @param rpc_hwdata RPC hwtstamp_config data structure
- */
+/* See the description in te_rpc_sys_socket.h */
 void
 hwtstamp_config_data_h2rpc(tarpc_hwtstamp_config *rpc_hwdata,
                            caddr_t hwdata)
@@ -3521,9 +3487,7 @@ timespec_rpc2h(struct timespec *dst, tarpc_timespec *src)
     dst->tv_nsec = src->tv_nsec;
 }
 
-/**
- * Described in te_rpc_sys_socket.h
- */
+/* See the description in te_rpc_sys_socket.h */
 te_errno
 cmsg_data_h2rpc(int level, int type, uint8_t *data, int len,
                 tarpc_cmsghdr *rpc_cmsg)
@@ -3929,9 +3893,7 @@ tarpc_cmsg_total_len(tarpc_cmsghdr *rpc_cmsg, unsigned int num)
     return total_size;
 }
 
-/**
- * Described in te_rpc_sys_socket.h
- */
+/* See description in te_rpc_sys_socket.h */
 te_errno
 cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
                 uint8_t *data, int *len)
@@ -4220,9 +4182,7 @@ cmsg_data_rpc2h(tarpc_cmsghdr *rpc_cmsg,
     return 0;
 }
 
-/**
- * Described in te_rpc_sys_socket.h
- */
+/* See description in te_rpc_sys_socket.h */
 te_errno
 msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
                   tarpc_cmsghdr **rpc_cmsg,
@@ -4423,9 +4383,7 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
     return 0;
 }
 
-/**
- * Described in te_rpc_sys_socket.h
- */
+/* See description in te_rpc_sys_socket.h */
 te_errno
 msg_control_rpc2h(tarpc_cmsghdr *rpc_cmsg,
                   unsigned int rpc_cmsg_count,
@@ -4568,7 +4526,7 @@ msg_control_rpc2h(tarpc_cmsghdr *rpc_cmsg,
     return 0;
 }
 
-/* Described in te_rpc_sys_socket.h */
+/* See description in te_rpc_sys_socket.h */
 const char *
 scm_tstamp_rpc2str(rpc_scm_tstamp type)
 {
@@ -4583,7 +4541,7 @@ scm_tstamp_rpc2str(rpc_scm_tstamp type)
     }
 }
 
-/** Convert RPC Ethernet protocol to string */
+/* See the description in te_rpc_sys_socket.h */
 const char *
 eth_proto_rpc2str(rpc_eth_proto proto)
 {
@@ -4601,7 +4559,7 @@ eth_proto_rpc2str(rpc_eth_proto proto)
     }
 }
 
-/** Convert RPC ethernet protocol to native value */
+/* See the description in te_rpc_sys_socket.h */
 int
 eth_proto_rpc2h(rpc_eth_proto proto)
 {
@@ -4618,7 +4576,7 @@ eth_proto_rpc2h(rpc_eth_proto proto)
     }
 }
 
-/** Convert native ethernet protocol to RPC value */
+/* See the description in te_rpc_sys_socket.h */
 rpc_eth_proto
 eth_proto_h2rpc(unsigned int proto)
 {
@@ -4632,7 +4590,7 @@ eth_proto_h2rpc(unsigned int proto)
     }
 }
 
-/** Convert RPC ARP hardware identifier to string */
+/* See the description in te_rpc_sys_socket.h */
 const char *
 arp_hardware_rpc2str(rpc_arp_hardware hardware)
 {
@@ -4650,7 +4608,7 @@ arp_hardware_rpc2str(rpc_arp_hardware hardware)
     }
 }
 
-/** Convert RPC ARP hardware identifier to native value */
+/* See the description in te_rpc_sys_socket.h */
 unsigned int
 arp_hardware_rpc2h(rpc_arp_hardware hardware)
 {
@@ -4671,7 +4629,7 @@ arp_hardware_rpc2h(rpc_arp_hardware hardware)
 #endif
 }
 
-/** Convert native ARP hardware identifier to RPC value */
+/* See the description in te_rpc_sys_socket.h */
 rpc_arp_hardware
 arp_hardware_h2rpc(unsigned int hardware)
 {
@@ -4685,7 +4643,7 @@ arp_hardware_h2rpc(unsigned int hardware)
     }
 }
 
-/** Convert RPC packet type to string */
+/* See the description in te_rpc_sys_socket.h */
 const char *
 packet_type_rpc2str(rpc_packet_type type)
 {
@@ -4707,7 +4665,7 @@ packet_type_rpc2str(rpc_packet_type type)
     }
 }
 
-/** Convert RPC packet type to native value */
+/* See the description in te_rpc_sys_socket.h */
 unsigned int
 packet_type_rpc2h(rpc_packet_type type)
 {
@@ -4729,7 +4687,7 @@ packet_type_rpc2h(rpc_packet_type type)
     }
 }
 
-/** Convert native packet type to RPC value */
+/* See the description in te_rpc_sys_socket.h */
 rpc_packet_type
 packet_type_h2rpc(unsigned int type)
 {
