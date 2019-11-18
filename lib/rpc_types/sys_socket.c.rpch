@@ -442,6 +442,7 @@ socktype_rpc2str(rpc_socket_type type)
 
 /** Value corresponding to RPC_SOCK_UNKNOWN */ 
 #define SOCK_MAX    0xFFFFFFFF  
+/** Value corresponding to RPC_SOCK_UNSPEC */
 #define SOCK_UNSPEC 0
 
 /** Convert RPC socket type to native socket type */
