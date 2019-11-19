@@ -1505,7 +1505,7 @@ rpc_epoll_pwait_gen(rcf_rpc_server *rpcs, int epfd,
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(epoll_pwait, out.retval);
     TAPI_RPC_LOG(rpcs, epoll_pwait, "%d, %p, %d, %d, 0x%x", "%d %s",
                  epfd, events, maxevents, timeout, (unsigned)sigmask,
-                 out.retval, errno_rpc2str(RPC_ERRNO(rpcs)), str_buf_1);
+                 out.retval, str_buf_1);
     RETVAL_INT(epoll_pwait, out.retval);
 }
 
