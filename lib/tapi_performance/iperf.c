@@ -107,7 +107,7 @@ static void
 set_opt_src_host(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->src_host != NULL && options->src_host[0] != '\0')
-        CHECK_RC(te_string_append(cmd, " -B%s", options->src_host));
+        CHECK_RC(te_string_append(cmd, "-B%s", options->src_host));
 }
 
 /*
@@ -120,7 +120,7 @@ static void
 set_opt_port(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->port >= 0)
-        CHECK_RC(te_string_append(cmd, " -p%u", options->port));
+        CHECK_RC(te_string_append(cmd, "-p%u", options->port));
 }
 
 /*
@@ -133,7 +133,7 @@ static void
 set_opt_bandwidth(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->bandwidth_bits >= 0)
-        CHECK_RC(te_string_append(cmd, " -b%"PRId64, options->bandwidth_bits));
+        CHECK_RC(te_string_append(cmd, "-b%"PRId64, options->bandwidth_bits));
 }
 
 /*
@@ -146,7 +146,7 @@ static void
 set_opt_bytes(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->num_bytes >= 0)
-        CHECK_RC(te_string_append(cmd, " -n%"PRId64, options->num_bytes));
+        CHECK_RC(te_string_append(cmd, "-n%"PRId64, options->num_bytes));
 }
 
 /*
@@ -159,7 +159,7 @@ static void
 set_opt_time(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->duration_sec >= 0)
-        CHECK_RC(te_string_append(cmd, " -t%"PRId32, options->duration_sec));
+        CHECK_RC(te_string_append(cmd, "-t%"PRId32, options->duration_sec));
 }
 
 /*
@@ -173,7 +173,7 @@ static void
 set_opt_interval(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->interval_sec >= 0)
-        CHECK_RC(te_string_append(cmd, " -i%"PRId32, options->interval_sec));
+        CHECK_RC(te_string_append(cmd, "-i%"PRId32, options->interval_sec));
 }
 
 /*
@@ -186,7 +186,7 @@ static void
 set_opt_length(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->length >= 0)
-        CHECK_RC(te_string_append(cmd, " -l%"PRId32, options->length));
+        CHECK_RC(te_string_append(cmd, "-l%"PRId32, options->length));
 }
 
 /*
@@ -199,7 +199,7 @@ static void
 set_opt_streams(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->streams >= 0)
-        CHECK_RC(te_string_append(cmd, " -P%"PRId16, options->streams));
+        CHECK_RC(te_string_append(cmd, "-P%"PRId16, options->streams));
 }
 
 /*
@@ -212,7 +212,17 @@ static void
 set_opt_dual(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->dual)
-        CHECK_RC(te_string_append(cmd, " -d"));
+        CHECK_RC(te_string_append(cmd, "-d"));
+}
+
+static char *
+get_option(set_opt_t *set_opt, const size_t index,
+           const tapi_perf_opts *options)
+{
+    te_string opt = TE_STRING_INIT;
+
+    set_opt[index](&opt, options);
+    return opt.ptr;
 }
 
 /*
@@ -235,8 +245,15 @@ build_server_cmd(te_string *cmd, const tapi_perf_opts *options)
 
     ENTRY("Build command to run iperf server");
     CHECK_RC(te_string_append(cmd, "iperf -s"));
+
     for (i = 0; i < TE_ARRAY_LEN(set_opt); i++)
-        set_opt[i](cmd, options);
+    {
+        char *opt = get_option(set_opt, i, options);
+
+        if (opt != NULL)
+            CHECK_RC(te_string_append(cmd, " %s", opt));
+        free(opt);
+    }
 }
 
 /*
@@ -269,8 +286,15 @@ build_client_cmd(te_string *cmd, const tapi_perf_opts *options)
         TEST_FAIL("Host to connect to is unspecified");
 
     CHECK_RC(te_string_append(cmd, "iperf -c %s", options->host));
+
     for (i = 0; i < TE_ARRAY_LEN(set_opt); i++)
-        set_opt[i](cmd, options);
+    {
+        char *opt = get_option(set_opt, i, options);
+
+        if (opt != NULL)
+            CHECK_RC(te_string_append(cmd, " %s", opt));
+        free(opt);
+    }
 }
 
 /*
