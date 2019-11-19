@@ -88,3 +88,29 @@ te_vec_deep_free(te_vec *args)
 
     te_vec_free(args);
 }
+
+/* See the description in te_vector.h */
+te_errno
+te_vec_append_strarray(te_vec *vec, const char **elements)
+{
+    te_errno rc = 0;
+    size_t   i;
+
+    assert(vec != NULL);
+    assert(vec->element_size == sizeof(char *));
+    for (i = 0; elements[i] != NULL; i++)
+    {
+        char *tmp = strdup(elements[i]);
+
+        if (tmp == NULL)
+            return TE_ENOMEM;
+
+        rc = TE_VEC_APPEND(vec, tmp);
+        if (rc != 0)
+        {
+            free(tmp);
+            break;
+        }
+    }
+    return rc;
+}

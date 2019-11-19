@@ -262,6 +262,16 @@ extern void te_vec_free(te_vec *vec);
  */
 extern void te_vec_deep_free(te_vec *vec);
 
+/**
+ * Append to a dynamic array of strings
+ *
+ * @param vec           Dynamic vector to append the array of strings to
+ * @param elements      @c NULL terminated array of strings
+ *
+ * @return Status code
+ */
+extern te_errno te_vec_append_strarray(te_vec *vec, const char **elements);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
