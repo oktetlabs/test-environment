@@ -502,8 +502,12 @@ tsa_sock_create(tsa_session *ss, int rpc_selector)
             return RPC_ERRNO(pco);
     }
 
-    if (ss->config.flags & TSA_TST_USE_LINGER)
+    if (rpc_selector == TSA_TST)
     {
+        /*
+         * Always set zero linger on Tester socket to
+         * allow to generate RST from it if required.
+         */
         ling_optval.l_onoff = 1;
         ling_optval.l_linger = 0;
         RPC_AWAIT_ERROR(pco);

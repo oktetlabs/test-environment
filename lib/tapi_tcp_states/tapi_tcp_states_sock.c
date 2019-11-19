@@ -461,11 +461,11 @@ tst_rst_sock_handler(tsa_session *ss)
         if (rc != 0)
             return rc;
 
-        /* If we have tst_s socket with SO_LINGER set to 0,
-         * close() on it will not try to finish TCP connection
-         * in a standard way but merely send RST to peer.
-         * This doesn't not work if you didn't specify using of
-         * SO_LINGER option for tst_s socket.
+        /*
+         * We have tst_s socket with SO_LINGER set to 0
+         * (see tsa_sock_create()), so that close() on it will
+         * not try to finish TCP connection in a standard way,
+         * sending RST to peer instead.
          */
 
          RING("Closing TESTER socket or restarting TESTER RPC: "

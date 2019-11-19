@@ -51,34 +51,32 @@ typedef enum tsa_tst_type {
 
 /** Flags used by various functions in library  */
 typedef enum tsa_flags {
-    TSA_TST_USE_LINGER = 0x1,         /**< Set SO_LINGER option on
+    TSA_TST_USE_REUSEADDR = 0x1,      /**< Set SO_REUSEADDR option on
                                            TESTER socket */
-    TSA_TST_USE_REUSEADDR = 0x2,      /**< Set SO_REUSEADDR option on
-                                           TESTER socket */
-    TSA_NO_CONNECTIVITY_CHANGE = 0x4, /**< Do not use breaking/repairing
+    TSA_NO_CONNECTIVITY_CHANGE = 0x2, /**< Do not use breaking/repairing
                                            connection to control
                                            transmission of TCP packets */
-    TSA_ACT_TIMEOUT = 0x8,            /**< Use time waiting to move from
+    TSA_ACT_TIMEOUT = 0x4,            /**< Use time waiting to move from
                                            one TCP state to another if
                                            possible */
-    TSA_ACT_RST = 0x10,               /**< Use sending RST to move from
+    TSA_ACT_RST = 0x8,                /**< Use sending RST to move from
                                            one TCP state to another if
                                            possible */
-    TSA_MOVE_IGNORE_ERR = 0x20,       /**< Ignore errors of achieving not
+    TSA_MOVE_IGNORE_ERR = 0x10,       /**< Ignore errors of achieving not
                                            expected TCP state when
                                            performing TCP states transition
                                            (it is useful when we don't use
                                            beaking/repairing connection in
                                            TSA_TST_SOCKET mode and do not
                                            see states like TCP_LAST_ACK) */
-    TSA_MOVE_IGNORE_START_ERR = 0x40, /**< It has the same effect as
+    TSA_MOVE_IGNORE_START_ERR = 0x20, /**< It has the same effect as
                                            TSA_MOVE_IGNORE_ERR but
                                            only in tsa_do_moves_str()
                                            when it's required to
                                            move to some starting
                                            state before performing
                                            transition specified. */
-    TSA_ESTABLISH_PASSIVE = 0x80,     /**< Use passive opening of TCP
+    TSA_ESTABLISH_PASSIVE = 0x40,     /**< Use passive opening of TCP
                                            connection to obtain
                                            TCP_ESTABLISHED state */
 } tsa_flags;
