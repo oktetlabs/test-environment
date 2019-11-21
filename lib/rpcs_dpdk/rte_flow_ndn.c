@@ -2038,6 +2038,44 @@ rte_flow_action_of_push_vlan_from_pdu(const asn_value *conf_pdu,
 }
 
 static te_errno
+rte_flow_action_of_set_vlan_vid_from_pdu(const asn_value *conf_pdu,
+                                         struct rte_flow_action *action)
+{
+    struct rte_flow_action_of_set_vlan_vid *conf = NULL;
+    asn_tag_value tag;
+    uint16_t val;
+    size_t len;
+    int rc;
+
+    if (action == NULL || conf_pdu == NULL)
+        return TE_EINVAL;
+
+    rc = asn_get_choice_value(conf_pdu, NULL, NULL, &tag);
+    if (rc != 0)
+        return rc;
+    else if (tag != NDN_FLOW_ACTION_OF_SET_VLAN_VID)
+        return TE_EINVAL;
+
+    conf = TE_ALLOC(sizeof(*conf));
+    if (conf == NULL)
+        return TE_ENOMEM;
+
+    len = sizeof(conf->vlan_vid);
+    rc = asn_read_value_field(conf_pdu, &val, &len, "#vlan-id");
+    if (rc != 0)
+    {
+        free(conf);
+        return rc;
+    }
+
+    conf->vlan_vid = htons(val);
+    action->conf = conf;
+    action->type = RTE_FLOW_ACTION_TYPE_OF_SET_VLAN_VID;
+
+    return 0;
+}
+
+static te_errno
 rte_flow_action_end(struct rte_flow_action *action)
 {
     if (action == NULL)
@@ -2079,6 +2117,8 @@ static const struct rte_flow_action_types_mapping {
     { NDN_FLOW_ACTION_TYPE_VXLAN_DECAP, rte_flow_action_vxlan_decap_from_pdu },
     { NDN_FLOW_ACTION_TYPE_OF_PUSH_VLAN,
       rte_flow_action_of_push_vlan_from_pdu },
+    { NDN_FLOW_ACTION_TYPE_OF_SET_VLAN_VID,
+      rte_flow_action_of_set_vlan_vid_from_pdu },
 };
 
 static te_errno

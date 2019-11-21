@@ -49,6 +49,7 @@ typedef enum {
     NDN_FLOW_ACTION_TYPE_VXLAN_ENCAP,
     NDN_FLOW_ACTION_TYPE_VXLAN_DECAP,
     NDN_FLOW_ACTION_TYPE_OF_PUSH_VLAN,
+    NDN_FLOW_ACTION_TYPE_OF_SET_VLAN_VID,
 } ndn_rte_flow_action_type_t;
 
 typedef enum {
@@ -94,6 +95,7 @@ typedef enum {
     NDN_FLOW_ACTION_MARK_ID,
     NDN_FLOW_ACTION_ENCAP_HDR,
     NDN_FLOW_ACTION_OF_PUSH_VLAN_ETHERTYPE,
+    NDN_FLOW_ACTION_OF_SET_VLAN_VID,
 } ndn_rte_flow_action_t;
 
 typedef enum {
