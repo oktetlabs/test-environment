@@ -48,7 +48,7 @@ netconf_udp_tunnel_del(netconf_handle nh, const char *ifname)
 te_errno
 netconf_udp_tunnel_list(netconf_handle nh,
                         netconf_udp_tunnel_list_filter_func filter_cb,
-		        void *filter_opaque, char **list, char *link_kind)
+                        void *filter_opaque, char **list, char *link_kind)
 {
     netconf_list   *nlist;
     netconf_node   *node;
