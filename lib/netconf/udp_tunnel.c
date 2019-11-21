@@ -77,6 +77,8 @@ netconf_udp_tunnel_list(netconf_handle nh,
             ifname = node->data.geneve.generic.ifname;
         else if (strcmp(link_kind, "vxlan") == 0)
             ifname = node->data.vxlan.generic.ifname;
+        else
+            ifname = NULL;
 
         if (ifname != NULL)
         {
