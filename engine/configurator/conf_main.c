@@ -60,6 +60,41 @@ static void process_backup(cfg_backup_msg *msg);
 static te_errno create_backup(char **bkp_filename);
 
 /**
+ Put environment variables in list for expansion in file
+ *
+ * @param expand_vars   List of key-value pairs for expansion in file
+ *
+ * @param return        Status code
+ */
+static te_errno
+put_env_vars_in_list(te_kvpair_h *expand_vars)
+{
+    char  *key;
+    char  *value;
+    char  *env_var;
+    char **env;
+    int    rc;
+
+    for (env = environ; *env != NULL; env++)
+    {
+        env_var = strdup(*env);
+        key = strtok(env_var, "=");
+        value = strtok(NULL, "");
+
+        if (value != NULL)
+        {
+            rc = te_kvpair_add(expand_vars, key, value);
+            if (rc != 0)
+                return rc;
+        }
+
+        free(env_var);
+    }
+
+    return 0;
+}
+
+/**
  * Parse list of key-value pairs from history message
  *
  * @param msg           History message
@@ -1646,13 +1681,24 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
         case CFG_PROCESS_HISTORY:
             {
                 te_kvpair_h expand_vars;
+                cfg_process_history_msg *history_msg;
 
+                history_msg = (cfg_process_history_msg *) (*msg);
                 te_kvpair_init(&expand_vars);
-                (*msg)->rc = parse_kvpair((cfg_process_history_msg *) (*msg), &expand_vars);
+
+                if (history_msg->len == sizeof(cfg_config_msg) +
+                                        strlen(history_msg->filename) + 1)
+                {
+                    (*msg)->rc = put_env_vars_in_list(&expand_vars);
+                }
+                else
+                {
+                    (*msg)->rc = parse_kvpair((cfg_process_history_msg *) (*msg), &expand_vars);
+                }
+
                 if ((*msg)->rc == 0)
-                    (*msg)->rc = parse_config(
-                        ((cfg_process_history_msg *)(*msg))->filename,
-                        &expand_vars, TRUE);
+                    (*msg)->rc = parse_config(history_msg->filename,
+                                                &expand_vars, TRUE);
 
                 te_kvpair_fini(&expand_vars);
                 break;
