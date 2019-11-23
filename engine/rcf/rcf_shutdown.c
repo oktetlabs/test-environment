@@ -32,6 +32,7 @@
 
 #include "te_stdint.h"
 #include "te_errno.h"
+#include "te_str.h"
 #include "logger_ten.h"
 #include "rcf_api.h"
 #include "rcf_internal.h"
@@ -51,7 +52,7 @@ main(void)
 
     te_log_init("RCF ShutDown", ten_log_message);
 
-    sprintf(name, "rcf_shut_%d", getpid());
+    TE_SPRINTF(name, "rcf_shut_%d", getpid());
 
     if ((rc = ipc_init_client(name, RCF_IPC, &handle)) != 0)
     {
