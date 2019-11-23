@@ -512,7 +512,7 @@ parse_config_ta(xmlNodePtr ta_node)
             char     *val;
             te_errno  rc;
 
-            if ((key = strtok_r(token, "=", &val)) == '\0')
+            if ((key = strtok_r(token, "=", &val)) == NULL)
                 continue;
 
             if (token_nbr == 0)
