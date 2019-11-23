@@ -36,6 +36,7 @@
 #error popt library (development version) is required for Logger
 #endif
 
+#include "te_str.h"
 #include "te_raw_log.h"
 #include "logger_int.h"
 #include "logger_internal.h"
@@ -461,7 +462,7 @@ ta_handler(void *ta)
 
 
     /* Register IPC Server for the TA */
-    sprintf(srv_name, "%s%s", LGR_SRV_FOR_TA_PREFIX, inst->agent);
+    TE_SPRINTF(srv_name, "%s%s", LGR_SRV_FOR_TA_PREFIX, inst->agent);
     rc = ipc_register_server(srv_name, LOGGER_IPC, &srv);
     if (rc != 0)
     {
