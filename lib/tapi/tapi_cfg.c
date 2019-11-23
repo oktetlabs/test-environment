@@ -51,6 +51,7 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_stdint.h"
+#include "te_str.h"
 #include "conf_api.h"
 #include "logger_api.h"
 #include "rcf_api.h"
@@ -200,7 +201,7 @@ tapi_cfg_switch_add_vlan(const char *ta_name, uint16_t vid)
 
     ENTRY("ta_name=%s vid=%u", ta_name, vid);
     /* Prepare OID */
-    sprintf(oid, cfg_oid_ta_vlan_fmt, ta_name, vid);
+    TE_SPRINTF(oid, cfg_oid_ta_vlan_fmt, ta_name, vid);
 
     rc = cfg_find_str(oid, &handle);
     if (rc == 0)
@@ -264,7 +265,7 @@ tapi_cfg_switch_del_vlan(const char *ta_name, uint16_t vid)
 
 
     /* Prepare OID */
-    sprintf(oid, cfg_oid_ta_vlan_fmt, ta_name, vid);
+    TE_SPRINTF(oid, cfg_oid_ta_vlan_fmt, ta_name, vid);
 
     rc = cfg_find_str(oid, &handle);
     if (rc == 0)
@@ -309,7 +310,7 @@ tapi_cfg_switch_vlan_add_port(const char *ta_name, uint16_t vid,
 
 
     /* Prepare OID */
-    sprintf(oid, cfg_oid_ta_vlan_port_fmt, ta_name, vid, port);
+    TE_SPRINTF(oid, cfg_oid_ta_vlan_port_fmt, ta_name, vid, port);
 
     rc = cfg_find_str(oid, &handle);
     if (rc == 0)
@@ -354,7 +355,7 @@ tapi_cfg_switch_vlan_del_port(const char *ta_name, uint16_t vid,
 
 
     /* Prepare OID */
-    sprintf(oid, cfg_oid_ta_vlan_port_fmt, ta_name, vid, port);
+    TE_SPRINTF(oid, cfg_oid_ta_vlan_port_fmt, ta_name, vid, port);
 
     rc = cfg_find_str(oid, &handle);
     if (rc == 0)

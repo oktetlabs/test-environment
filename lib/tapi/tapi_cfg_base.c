@@ -47,6 +47,7 @@
 #include "te_errno.h"
 #include "te_stdint.h"
 #include "te_alloc.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "conf_api.h"
 #include "te_sockaddr.h"
@@ -165,7 +166,7 @@ tapi_cfg_base_if_get_mac(const char *oid, uint8_t *mac)
     cfg_val_type        type = CVT_ADDRESS;
     struct sockaddr    *addr = NULL;
 
-    sprintf(buf, "%s/link_addr:", oid);
+    TE_SPRINTF(buf, "%s/link_addr:", oid);
     rc = cfg_find_str(buf, &handle);
     if (rc != 0)
     {
@@ -199,7 +200,7 @@ tapi_cfg_base_if_set_mac(const char *oid, const uint8_t *mac)
 
     memset(&addr, 0, sizeof(struct sockaddr));
     addr.sa_family = AF_LOCAL;
-    sprintf(buf, "%s/link_addr:", oid);
+    TE_SPRINTF(buf, "%s/link_addr:", oid);
     rc = cfg_find_str(buf, &handle);
     if (rc != 0)
     {
@@ -231,7 +232,7 @@ tapi_cfg_base_if_get_bcast_mac(const char *oid, uint8_t *bcast_mac)
     cfg_val_type        type = CVT_ADDRESS;
     struct sockaddr    *addr = NULL;
 
-    sprintf(buf, "%s/bcast_link_addr:", oid);
+    TE_SPRINTF(buf, "%s/bcast_link_addr:", oid);
     rc = cfg_find_str(buf, &handle);
     if (rc != 0)
     {
@@ -267,7 +268,7 @@ tapi_cfg_base_if_set_bcast_mac(const char *oid,
 
     memset(&addr, 0, sizeof(struct sockaddr));
     addr.sa_family = AF_LOCAL;
-    sprintf(buf, "%s/bcast_link_addr:", oid);
+    TE_SPRINTF(buf, "%s/bcast_link_addr:", oid);
     rc = cfg_find_str(buf, &handle);
     if (rc != 0)
     {
@@ -376,7 +377,7 @@ tapi_cfg_base_if_get_mtu(const char *oid, unsigned int *p_mtu)
     cfg_val_type        type = CVT_INTEGER;
     int                 mtu;
 
-    sprintf(buf, "%s/mtu:", oid);
+    TE_SPRINTF(buf, "%s/mtu:", oid);
     rc = cfg_find_str(buf, &handle);
     if (rc != 0)
     {
