@@ -954,6 +954,7 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
             break;
         }
         free(ip_net_oid);
+        free(net_oid);
     }
 
     return rc;
