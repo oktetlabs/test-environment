@@ -100,6 +100,20 @@ expr:
         p->u.value = $2;
         logic_expr_int_root = $$ = p;
     }
+    | DOUBLE_QUOTE DOUBLE_QUOTE
+    {
+        logic_expr *p = calloc(1, sizeof(*p));
+
+        if (p == NULL)
+        {
+            ERROR("%s(): calloc(1, %"TE_PRINTF_SIZE_T"u) failed",
+                  __FUNCTION__, sizeof(*p));
+            return -1;
+        }
+        p->type = LOGIC_EXPR_VALUE;
+        p->u.value = strdup("");
+        logic_expr_int_root = $$ = p;
+    }
     | OPEN expr CLOSE
     {
         logic_expr_int_root = $$ = $2;
