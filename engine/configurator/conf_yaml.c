@@ -143,6 +143,41 @@ out:
     return rc;
 }
 
+static te_errno
+parse_config_if_expr(yaml_node_t *n, te_bool *if_expr)
+{
+    const char *str = NULL;
+    te_errno    rc = 0;
+
+    if (n->type == YAML_SCALAR_NODE)
+    {
+        str = (const char *)n->data.scalar.value;
+
+        if (n->data.scalar.length == 0)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "found the if-expression node to be "
+                  "badly formatted");
+            return TE_EINVAL;
+        }
+
+        rc = parse_config_yaml_cond_exp(str, if_expr);
+        if (rc != 0)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "failed to evaluate the expression "
+                  "contained in the condition node");
+            return rc;
+        }
+    }
+    else
+    {
+        ERROR(CS_YAML_ERR_PREFIX "found the if-expression node to be "
+              "badly formatted");
+        return TE_EINVAL;
+    }
+
+    return rc;
+}
+
 /**
  * Process a condition property of the given parent node.
  *
@@ -766,6 +801,10 @@ parse_config_yaml_cmd_process_targets(yaml_document_t *d,
     return 0;
 }
 
+static te_errno parse_config_yaml_cmd(yaml_document_t *d,
+                                      xmlNodePtr       xn_history,
+                                      yaml_node_t     *parent);
+
 /**
  * Process dynamic history specified command in the given YAML document.
  *
@@ -784,6 +823,7 @@ parse_config_yaml_specified_cmd(yaml_document_t *d,
 {
     xmlNodePtr  xn_cmd = NULL;
     te_errno    rc = 0;
+    te_bool     cond = FALSE;
 
     xn_cmd = xmlNewNode(NULL, BAD_CAST cmd);
     if (xn_cmd == NULL)
@@ -795,6 +835,14 @@ parse_config_yaml_specified_cmd(yaml_document_t *d,
 
     if (n->type == YAML_SEQUENCE_NODE)
     {
+        if (strcmp(cmd, "cond") == 0)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "found the %s command node to be "
+                  "badly formatted", cmd);
+            rc = TE_EINVAL;
+            goto out;
+        }
+
         rc = parse_config_yaml_cmd_process_targets(d, n, xn_cmd, cmd);
         if (rc != 0)
         {
@@ -803,6 +851,52 @@ parse_config_yaml_specified_cmd(yaml_document_t *d,
                   cmd, n->start_mark.line, n->start_mark.column);
             goto out;
         }
+    }
+    else if (n->type == YAML_MAPPING_NODE)
+    {
+        if (strcmp(cmd, "cond") != 0)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "found the %s command node to be "
+                  "badly formatted", cmd);
+            rc = TE_EINVAL;
+            goto out;
+        }
+
+        yaml_node_pair_t *pair = n->data.mapping.pairs.start;
+        do {
+            yaml_node_t *k = yaml_document_get_node(d, pair->key);
+            yaml_node_t *v = yaml_document_get_node(d, pair->value);
+            const char  *k_label = (const char *)k->data.scalar.value;
+
+            if (strcmp(k_label, "if") == 0)
+            {
+                rc = parse_config_if_expr(v, &cond);
+            }
+            else if (strcmp(k_label, "then") == 0)
+            {
+                if (cond)
+                    rc = parse_config_yaml_cmd(d, xn_history, v);
+            }
+            else if (strcmp(k_label, "else") == 0)
+            {
+                if (!cond)
+                    rc = parse_config_yaml_cmd(d, xn_history, v);
+            }
+            else
+            {
+                ERROR(CS_YAML_ERR_PREFIX "failed to recognise %s "
+                      "command's child", cmd);
+                rc = TE_EINVAL;
+            }
+
+            if (rc != 0)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in the %s "
+                      "command's nested node at line %lu column %lu",
+                      cmd, k->start_mark.line, k->start_mark.column);
+                goto out;
+            }
+        } while (++pair < n->data.mapping.pairs.top);
     }
     else
     {
@@ -846,7 +940,8 @@ parse_config_root_commands(yaml_document_t *d,
         (strcmp((const char *)k->data.scalar.value, "set") == 0) ||
         (strcmp((const char *)k->data.scalar.value, "register") == 0) ||
         (strcmp((const char *)k->data.scalar.value, "unregister") == 0) ||
-        (strcmp((const char *)k->data.scalar.value, "delete") == 0))
+        (strcmp((const char *)k->data.scalar.value, "delete") == 0) ||
+        (strcmp((const char *)k->data.scalar.value, "cond") == 0))
     {
         rc = parse_config_yaml_specified_cmd(d, v, xn_history,
                                        (const char *)k->data.scalar.value);
