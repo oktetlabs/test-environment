@@ -898,6 +898,42 @@ out:
 
     return rc;
 }
+
+static te_errno
+parse_config_root_commands(yaml_document_t *d,
+                           xmlNodePtr       xn_history,
+                           yaml_node_t     *n)
+{
+    yaml_node_pair_t *pair = n->data.mapping.pairs.start;
+    yaml_node_t *k = yaml_document_get_node(d, pair->key);
+    yaml_node_t *v = yaml_document_get_node(d, pair->value);
+    te_errno rc = 0;
+
+    if ((strcmp((const char *)k->data.scalar.value, "add") == 0) ||
+        (strcmp((const char *)k->data.scalar.value, "set") == 0) ||
+        (strcmp((const char *)k->data.scalar.value, "register") == 0) ||
+        (strcmp((const char *)k->data.scalar.value, "unregister") == 0) ||
+        (strcmp((const char *)k->data.scalar.value, "delete") == 0))
+    {
+        rc = parse_config_yaml_specified_cmd(d, v, xn_history,
+                                       (const char *)k->data.scalar.value);
+    }
+    else
+    {
+        ERROR(CS_YAML_ERR_PREFIX "failed to recognise the command");
+        rc = TE_EINVAL;
+    }
+
+    if (rc != 0)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in "
+              "the command node at line %lu column %lu",
+              k->start_mark.line, k->start_mark.column);
+    }
+
+    return rc;
+}
+
 /**
  * Explore keys and values in the root node of the given YAML
  * document to detect and process dynamic history commands.
@@ -912,7 +948,7 @@ parse_config_yaml_cmd(yaml_document_t *d,
                       xmlNodePtr       xn_history)
 {
     yaml_node_t      *root = NULL;
-    yaml_node_pair_t *pair = NULL;
+    yaml_node_item_t *item = NULL;
     te_errno          rc = 0;
 
     root = yaml_document_get_root_node(d);
@@ -922,40 +958,21 @@ parse_config_yaml_cmd(yaml_document_t *d,
         return TE_EINVAL;
     }
 
-    pair = root->data.mapping.pairs.start;
+    item = root->data.sequence.items.start;
     do {
-        yaml_node_t *k = yaml_document_get_node(d, pair->key);
-        yaml_node_t *v = yaml_document_get_node(d, pair->value);
+        yaml_node_t *n = yaml_document_get_node(d, *item);
 
-        if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0)
+        if (n->type != YAML_MAPPING_NODE)
         {
             ERROR(CS_YAML_ERR_PREFIX "found the command node to be "
                   "badly formatted");
             rc = TE_EINVAL;
         }
-        else if ((strcmp((const char *)k->data.scalar.value, "add") == 0) ||
-                 (strcmp((const char *)k->data.scalar.value, "set") == 0) ||
-                 (strcmp((const char *)k->data.scalar.value, "register") == 0) ||
-                 (strcmp((const char *)k->data.scalar.value, "unregister") == 0) ||
-                 (strcmp((const char *)k->data.scalar.value, "delete") == 0))
-        {
-            rc = parse_config_yaml_specified_cmd(d, v, xn_history,
-                                           (const char *)k->data.scalar.value);
-        }
-        else
-        {
-            ERROR(CS_YAML_ERR_PREFIX "failed to recognise the command");
-            rc = TE_EINVAL;
-        }
 
+        rc = parse_config_root_commands(d, xn_history, n);
         if (rc != 0)
-        {
-            ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in "
-                  "the command node at line %lu column %lu",
-                  k->start_mark.line, k->start_mark.column);
             break;
-        }
-    } while (++pair < root->data.mapping.pairs.top);
+    } while (++item < root->data.sequence.items.top);
 
     return rc;
 }
