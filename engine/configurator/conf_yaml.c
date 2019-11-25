@@ -935,30 +935,24 @@ parse_config_root_commands(yaml_document_t *d,
 }
 
 /**
- * Explore keys and values in the root node of the given YAML
+ * Explore sequence of commands of the given parent node in the given YAML
  * document to detect and process dynamic history commands.
  *
  * @param d          YAML document handle
  * @param xn_history Handle of "history" node in the document being created
+ * @param parent     Parent node of sequence of commands
  *
  * @return Status code.
  */
 static te_errno
 parse_config_yaml_cmd(yaml_document_t *d,
-                      xmlNodePtr       xn_history)
+                      xmlNodePtr       xn_history,
+                      yaml_node_t     *parent)
 {
-    yaml_node_t      *root = NULL;
     yaml_node_item_t *item = NULL;
     te_errno          rc = 0;
 
-    root = yaml_document_get_root_node(d);
-    if (root == NULL)
-    {
-        ERROR(CS_YAML_ERR_PREFIX "failed to get the root node");
-        return TE_EINVAL;
-    }
-
-    item = root->data.sequence.items.start;
+    item = parent->data.sequence.items.start;
     do {
         yaml_node_t *n = yaml_document_get_node(d, *item);
 
@@ -972,7 +966,7 @@ parse_config_yaml_cmd(yaml_document_t *d,
         rc = parse_config_root_commands(d, xn_history, n);
         if (rc != 0)
             break;
-    } while (++item < root->data.sequence.items.top);
+    } while (++item < parent->data.sequence.items.top);
 
     return rc;
 }
@@ -985,6 +979,7 @@ parse_config_yaml(const char *filename)
     yaml_parser_t    parser;
     yaml_document_t  dy;
     xmlNodePtr       xn_history = NULL;
+    yaml_node_t     *root = NULL;
     te_errno         rc = 0;
 
     f = fopen(filename, "rb");
@@ -1008,7 +1003,13 @@ parse_config_yaml(const char *filename)
         goto out;
     }
 
-    rc = parse_config_yaml_cmd(&dy, xn_history);
+    root = yaml_document_get_root_node(&dy);
+    if (root == NULL)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "failed to get the root node");
+        return TE_EINVAL;
+    }
+    rc = parse_config_yaml_cmd(&dy, xn_history, root);
     if (rc != 0)
     {
         ERROR(CS_YAML_ERR_PREFIX "encountered some error(s)");
