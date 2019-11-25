@@ -1902,7 +1902,7 @@ handle_cfg_file_by_its_type(const char *fname)
         return parse_config(fname, NULL, FALSE);
 #if WITH_CONF_YAML
     else if (strcmp(str, "---") == 0)
-        return parse_config_yaml(fname);
+        return parse_config_yaml(fname, NULL);
 #endif /* !WITH_CONF_YAML */
 
     ERROR("Failed to recognise the format of configuration file '%s'", fname);
