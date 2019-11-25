@@ -13,7 +13,11 @@
 #include "conf_ta.h"
 #include "conf_yaml.h"
 #include "te_str.h"
+#include "logic_expr.h"
+#include "te_alloc.h"
+#include "te_expand.h"
 
+#include <ctype.h>
 #include <libxml/xinclude.h>
 #include <yaml.h>
 
@@ -50,95 +54,70 @@ get_yaml_cmd_target(const char *cmd)
     return target->target_name;
 }
 
+static te_errno
+get_val(const logic_expr *parsed, void *cookie, logic_expr_res *res)
+{
+    te_errno rc;
+    int rc_errno;
+
+    UNUSED(cookie);
+
+    rc_errno = te_expand_env_vars(parsed->u.value, NULL, &res->value.simple);
+    if (rc_errno != 0)
+    {
+        rc = te_rc_os2te(rc_errno);
+        goto out;
+    }
+    else
+    {
+        rc = 0;
+    }
+    res->res_type = LOGIC_EXPR_RES_SIMPLE;
+
+out:
+    return rc;
+}
+
 /**
  * Evaluate logical expression.
  *
- * @param text  String representation of the expression
- * @param condp Location for the result
+ * @param str   String representation of the expression
+ * @param res   Location for the result
  *
  * @return Status code.
  */
 static te_errno
-parse_config_yaml_cond_exp(const char *text,
-                           te_bool    *condp)
+parse_logic_expr_str(const char *str, te_bool *res)
 {
-    char     *text_copy = NULL;
-    char     *sp = NULL;
-    char     *var_name;
-    char     *op_str;
-    char     *cmp_str;
-    char     *var_str;
-    te_errno  rc = 0;
+    logic_expr *parsed;
+    logic_expr_res parsed_res;
+    te_errno rc;
 
-    text_copy = strdup(text);
-    if (text_copy == NULL)
-        return TE_ENOMEM;
-
-    var_name = strtok_r(text_copy, " ", &sp);
-    if (var_name == NULL)
+    rc = logic_expr_parse(str, &parsed);
+    if (rc != 0)
     {
-        rc = TE_EINVAL;
+        ERROR("Failed to parse expression '%s'", str);
         goto out;
     }
 
-    op_str = strtok_r(NULL, " ", &sp);
-    if (op_str == NULL)
+    rc = logic_expr_eval(parsed, get_val, NULL, &parsed_res);
+    if (rc != 0)
     {
-        rc = TE_EINVAL;
+        ERROR("Failed to evaluate expression '%s'", str);
         goto out;
     }
 
-    cmp_str = strtok_r(NULL, " ", &sp);
-    if (cmp_str == NULL)
+    if (parsed_res.res_type != LOGIC_EXPR_RES_BOOLEAN)
     {
         rc = TE_EINVAL;
+        logic_expr_free_res(&parsed_res);
         goto out;
     }
 
-    var_str = getenv(var_name);
-
-    if (strcmp(op_str, "==") == 0)
-    {
-        var_str = (var_str == NULL) ? "" : var_str;
-
-        *condp = (strcmp(var_str, cmp_str) == 0) ? TRUE : FALSE;
-    }
-    else if (strcmp(op_str, "!=") == 0)
-    {
-        var_str = (var_str == NULL) ? "" : var_str;
-
-        *condp = (strcmp(var_str, cmp_str) != 0) ? TRUE : FALSE;
-    }
-    else
-    {
-        long int var = 0;
-        long int cmp;
-
-        if (var_str != NULL)
-        {
-            rc = te_strtol(var_str, 0, &var);
-            if (rc != 0)
-                goto out;
-        }
-
-        rc = te_strtol(cmp_str, 0, &cmp);
-        if (rc != 0)
-            goto out;
-
-        if (strcmp(op_str, ">") == 0)
-            *condp = (var > cmp) ? TRUE : FALSE;
-        else if (strcmp(op_str, ">=") == 0)
-            *condp = (var >= cmp) ? TRUE : FALSE;
-        else if (strcmp(op_str, "<") == 0)
-            *condp = (var < cmp) ? TRUE : FALSE;
-        else if (strcmp(op_str, "<=") == 0)
-            *condp = (var <= cmp) ? TRUE : FALSE;
-        else
-            rc = TE_EINVAL;
-    }
+    *res = parsed_res.value.boolean;
 
 out:
-    free(text_copy);
+    logic_expr_free(parsed);
 
     return rc;
 }
@@ -160,7 +139,7 @@ parse_config_if_expr(yaml_node_t *n, te_bool *if_expr)
             return TE_EINVAL;
         }
 
-        rc = parse_config_yaml_cond_exp(str, if_expr);
+        rc = parse_logic_expr_str(str, if_expr);
         if (rc != 0)
         {
             ERROR(CS_YAML_ERR_PREFIX "failed to evaluate the expression "

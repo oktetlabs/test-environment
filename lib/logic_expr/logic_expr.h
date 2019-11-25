@@ -23,6 +23,7 @@
 extern "C" {
 #endif
 
+#define LOGIC_EXPR_RES_INIT { .res_type = LOGIC_EXPR_RES_UNSPEC }
 
 /** Types of expression elements, */
 typedef enum logic_expr_type {
@@ -50,7 +51,50 @@ typedef struct logic_expr {
     } u;    /**< Type specific data */
 } logic_expr;
 
+typedef enum logic_expr_res_type {
+    LOGIC_EXPR_RES_UNSPEC,
+    LOGIC_EXPR_RES_SIMPLE,      /**< Simple value  */
+    LOGIC_EXPR_RES_BOOLEAN      /**< Boolean value */
+} logic_expr_res_type;
 
+typedef struct logic_expr_res {
+    logic_expr_res_type res_type;
+    union {
+        char       *simple;
+        te_bool     boolean;
+    } value;
+} logic_expr_res;
+
+/**
+ * Evaluate simple value node of logical expression.
+ *
+ * @param parsed        Simple value node
+ * @param cookie        Callback opaque data
+ * @param res           Result
+ *
+ * @return  Status code
+ */
+typedef te_errno (logic_expr_get_val)(const logic_expr *parsed,
+                                      void *cookie,
+                                      logic_expr_res *res);
+
+/**
+ * Evaluate logical expression tree.
+ *
+ * @param parsed        Logical expression tree
+ * @param get_val       Function to evaluate simple value nodes
+ * @param cookie        Callback opaque data
+ * @param res           Result
+ *
+ * @return  Status code
+ *
+ * @note Evaluation is not lazy.
+ *
+ */
+extern te_errno logic_expr_eval(const logic_expr *parsed,
+                                logic_expr_get_val *get_val,
+                                void *cookie,
+                                logic_expr_res *res);
 /**
  * Parse string-based logical expression.
  *
@@ -60,6 +104,13 @@ typedef struct logic_expr {
  * @return Status code.
  */
 extern te_errno logic_expr_parse(const char *str, logic_expr **expr);
+
+/**
+ * Free logical expression result.
+ *
+ * @param res      Logical expression result
+ */
+extern void logic_expr_free_res(logic_expr_res *res);
 
 /**
  * Create binary logical expression.
