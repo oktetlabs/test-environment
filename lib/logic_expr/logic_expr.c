@@ -1248,6 +1248,7 @@ logic_expr_parse_comparison_oper(const logic_expr *parsed,
     long int l_val;
     long int r_val;
     te_errno rc;
+    te_bool both_are_numbers;
     long int cmp_res;
     logic_expr_res res_l = LOGIC_EXPR_RES_INIT;
     logic_expr_res res_r = LOGIC_EXPR_RES_INIT;
@@ -1278,11 +1279,13 @@ logic_expr_parse_comparison_oper(const logic_expr *parsed,
         goto out;
     }
 
-    rc = te_strtol(res_l.value.simple, 0, &l_val);
-    if (rc != te_strtol(res_r.value.simple, 0, &r_val))
-        goto out;
+    if (te_strtol(res_l.value.simple, 0, &l_val) == 0 &&
+        te_strtol(res_r.value.simple, 0, &r_val) == 0)
+        both_are_numbers = TRUE;
+    else
+        both_are_numbers = FALSE;
 
-    if (rc == 0)
+    if (both_are_numbers)
         cmp_res = l_val - r_val;
     else
         cmp_res = strcmp(res_l.value.simple, res_r.value.simple);
