@@ -64,6 +64,7 @@ logic_expr_int_error(const char *str)
 
 %token OPEN CLOSE
 %token <str> TOKEN
+%token DOUBLE_QUOTE
 %token NOMATCH
 
 
@@ -83,6 +84,20 @@ expr:
         }
         p->type = LOGIC_EXPR_VALUE;
         p->u.value = $1;
+        logic_expr_int_root = $$ = p;
+    }
+    | DOUBLE_QUOTE TOKEN DOUBLE_QUOTE
+    {
+        logic_expr *p = calloc(1, sizeof(*p));
+
+        if ((p == NULL) || ($2 == NULL))
+        {
+            ERROR("%s(): calloc(1, %"TE_PRINTF_SIZE_T"u) failed",
+                  __FUNCTION__, sizeof(*p));
+            return -1;
+        }
+        p->type = LOGIC_EXPR_VALUE;
+        p->u.value = $2;
         logic_expr_int_root = $$ = p;
     }
     | OPEN expr CLOSE
