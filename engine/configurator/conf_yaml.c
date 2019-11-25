@@ -20,7 +20,7 @@
 #define CS_YAML_ERR_PREFIX "YAML configuration file parser "
 
 #define YAML_TARGET_CONTEXT_INIT \
-    { NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRUE, TRUE };
+    { NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRUE };
 
 typedef struct config_yaml_target_s {
     const char *command_name;
@@ -178,97 +178,6 @@ parse_config_if_expr(yaml_node_t *n, te_bool *if_expr)
     return rc;
 }
 
-/**
- * Process a condition property of the given parent node.
- *
- * @param d     YAML document handle
- * @param n     Handle of the parent node in the given document
- * @param condp Location for the result or @c NULL
- *
- * @return Status code.
- */
-static te_errno
-parse_config_yaml_cond(yaml_document_t *d,
-                       yaml_node_t     *n,
-                       te_bool         *condp)
-{
-    const char *str = NULL;
-    te_bool     cond;
-    te_errno    rc = 0;
-
-    if (n->type == YAML_SCALAR_NODE)
-    {
-        str = (const char *)n->data.scalar.value;
-
-        if (n->data.scalar.length == 0)
-        {
-            ERROR(CS_YAML_ERR_PREFIX "found the condition node to be "
-                  "badly formatted");
-            return TE_EINVAL;
-        }
-
-        rc = parse_config_yaml_cond_exp(str, &cond);
-        if (rc != 0)
-        {
-            ERROR(CS_YAML_ERR_PREFIX "failed to evaluate the expression "
-                  "contained in the condition node");
-            return rc;
-        }
-    }
-    else if (n->type == YAML_SEQUENCE_NODE)
-    {
-        yaml_node_item_t *item = n->data.sequence.items.start;
-
-        cond = TRUE;
-
-        do {
-            yaml_node_t *in = yaml_document_get_node(d, *item);
-            te_bool      item_cond;
-
-            str = (const char *)in->data.scalar.value;
-
-            if (in->type != YAML_SCALAR_NODE || in->data.scalar.length == 0)
-            {
-                 ERROR(CS_YAML_ERR_PREFIX "found the condition node to be "
-                      "badly formatted");
-                 rc = TE_EINVAL;
-            }
-            else if ((rc = parse_config_yaml_cond_exp(str, &item_cond)) != 0)
-            {
-                ERROR(CS_YAML_ERR_PREFIX "failed to evaluate the expression "
-                      "contained in the condition node");
-                rc = TE_EINVAL;
-            }
-
-            if (rc != 0)
-            {
-                ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in the "
-                      "condition node at line %lu column %lu",
-                      in->start_mark.line, in->start_mark.column);
-                return rc;
-            }
-
-            /*
-             * Once set to FALSE, cond will never become TRUE (AND behaviour).
-             * Still, the rest of conditional expressions will be parsed
-             * in order to rule out configuration file syntax errors.
-             */
-            cond = (item_cond) ? cond : FALSE;
-        } while (++item < n->data.sequence.items.top);
-    }
-    else
-    {
-        ERROR(CS_YAML_ERR_PREFIX "found the condition node to be "
-              "badly formatted");
-        return TE_EINVAL;
-    }
-
-    if (condp != NULL)
-        *condp = cond;
-
-    return 0;
-}
-
 typedef enum cs_yaml_node_attribute_type_e {
     CS_YAML_NODE_ATTRIBUTE_CONDITION = 0,
     CS_YAML_NODE_ATTRIBUTE_OID,
@@ -286,7 +195,7 @@ static struct {
     const char                    *short_label;
     cs_yaml_node_attribute_type_t  type;
 } const cs_yaml_node_attributes[] = {
-    { "cond",     "c",   CS_YAML_NODE_ATTRIBUTE_CONDITION },
+    { "if",       "if",  CS_YAML_NODE_ATTRIBUTE_CONDITION },
     { "oid",      "o",   CS_YAML_NODE_ATTRIBUTE_OID },
     { "value",    "v",   CS_YAML_NODE_ATTRIBUTE_VALUE },
     { "access",   "a",   CS_YAML_NODE_ATTRIBUTE_ACCESS },
@@ -320,7 +229,6 @@ typedef struct cs_yaml_target_context_s {
     const xmlChar *xmlvolatile;
     const xmlChar *dependence_oid;
     const xmlChar *scope;
-    te_bool        check_cond;
     te_bool        cond;
 } cs_yaml_target_context_t;
 
@@ -469,24 +377,13 @@ parse_config_yaml_cmd_add_target_attribute(yaml_document_t            *d,
     switch (attribute_type)
     {
         case CS_YAML_NODE_ATTRIBUTE_CONDITION:
-            rc = parse_config_yaml_cond(d, v,
-                                        (c->check_cond) ? &c->cond : NULL);
+            rc = parse_config_if_expr(v, &c->cond);
             if (rc != 0)
             {
-                ERROR(CS_YAML_ERR_PREFIX "failed to process the condition "
-                      "attribute node of the target");
-                return rc;
+              ERROR(CS_YAML_ERR_PREFIX "failed to process the condition "
+                    "attribute node of the target");
+              return rc;
             }
-
-            /*
-             * Once at least one conditional node (which itself may contain
-             * multiple statements) is found to yield TRUE, this result
-             * will never be overridden by the rest of conditional
-             * nodes of the instance in question (OR behaviour).
-             * Still, the rest of the nodes will be parsed.
-             */
-             if (c->cond == TRUE)
-                 c->check_cond = FALSE;
             break;
 
         case CS_YAML_NODE_ATTRIBUTE_OID:
