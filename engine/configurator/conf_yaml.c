@@ -24,32 +24,17 @@
 
 typedef struct config_yaml_target_s {
     const char *command_name;
-    const char *target_name_singular;
-    const char *target_name_plural;
+    const char *target_name;
 } config_yaml_target_t;
 
 static const config_yaml_target_t config_yaml_targets[] = {
-    { "add", "instance", "instances" },
-    { "set", "instance", "instances" },
-    { "delete", "instance", "instances" },
-    { "register", "object", "objects" },
-    { "unregister", "object", "objects" },
-    { NULL, NULL, NULL }
+    { "add", "instance" },
+    { "set", "instance" },
+    { "delete", "instance" },
+    { "register", "object" },
+    { "unregister", "object" },
+    { NULL, NULL}
 };
-
-static const char *
-get_yaml_cmd_targets(const char *cmd)
-{
-    const config_yaml_target_t *target = config_yaml_targets;
-
-    for (; target->command_name != NULL; ++target)
-    {
-        if (strcmp(cmd, target->command_name) == 0)
-            break;
-    }
-
-    return target->target_name_plural;
-}
 
 static const char *
 get_yaml_cmd_target(const char *cmd)
@@ -62,7 +47,7 @@ get_yaml_cmd_target(const char *cmd)
             break;
     }
 
-    return target->target_name_singular;
+    return target->target_name;
 }
 
 /**
@@ -798,10 +783,7 @@ parse_config_yaml_specified_cmd(yaml_document_t *d,
                                 const char      *cmd)
 {
     xmlNodePtr  xn_cmd = NULL;
-    te_bool     check_cond = TRUE;
-    te_bool     cond = TRUE;
     te_errno    rc = 0;
-    const char *targets;
 
     xn_cmd = xmlNewNode(NULL, BAD_CAST cmd);
     if (xn_cmd == NULL)
@@ -811,65 +793,16 @@ parse_config_yaml_specified_cmd(yaml_document_t *d,
         return TE_ENOMEM;
     }
 
-    targets = get_yaml_cmd_targets(cmd);
-    if (targets == NULL)
+    if (n->type == YAML_SEQUENCE_NODE)
     {
-        ERROR(CS_YAML_ERR_PREFIX "failed to determine %s command target", cmd);
-        return TE_EINVAL;
-    }
-
-    if (n->type == YAML_MAPPING_NODE)
-    {
-        yaml_node_pair_t *pair = n->data.mapping.pairs.start;
-
-        do {
-            yaml_node_t *k = yaml_document_get_node(d, pair->key);
-            yaml_node_t *v = yaml_document_get_node(d, pair->value);
-            const char  *k_label = (const char *)k->data.scalar.value;
-
-            if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0)
-            {
-                ERROR(CS_YAML_ERR_PREFIX "found the node nested in the "
-                      "%s command to be badly formatted", cmd);
-                rc = TE_EINVAL;
-            }
-            else if (parse_config_yaml_node_get_attribute_type(k) ==
-                     CS_YAML_NODE_ATTRIBUTE_CONDITION)
-            {
-                rc = parse_config_yaml_cond(d, v, (check_cond) ? &cond : NULL);
-
-                /*
-                 * Once at least one conditional node (which itself may contain
-                 * multiple statements) is found to yield TRUE, this result
-                 * will never be overridden by the rest of conditional
-                 * nodes of the current add command (OR behaviour).
-                 * Still, the rest of the nodes will be parsed.
-                 */
-                if (rc == 0)
-                {
-                    if (cond == TRUE)
-                        check_cond = FALSE;
-                }
-            }
-            else if (strcmp(k_label, targets) == 0)
-            {
-                rc = parse_config_yaml_cmd_process_targets(d, v, xn_cmd, cmd);
-            }
-            else
-            {
-                ERROR(CS_YAML_ERR_PREFIX "failed to recognise %s "
-                      "command's child", cmd);
-                rc = TE_EINVAL;
-            }
-
-            if (rc != 0)
-            {
-                ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in the %s "
-                      "command's nested node at line %lu column %lu",
-                      cmd, k->start_mark.line, k->start_mark.column);
-                goto out;
-            }
-        } while (++pair < n->data.mapping.pairs.top);
+        rc = parse_config_yaml_cmd_process_targets(d, n, xn_cmd, cmd);
+        if (rc != 0)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in the %s "
+                  "command's nested node at line %lu column %lu",
+                  cmd, n->start_mark.line, n->start_mark.column);
+            goto out;
+        }
     }
     else
     {
@@ -879,7 +812,7 @@ parse_config_yaml_specified_cmd(yaml_document_t *d,
         goto out;
     }
 
-    if (cond == TRUE && xn_cmd->children != NULL)
+    if (xn_cmd->children != NULL)
     {
         if (xmlAddChild(xn_history, xn_cmd) == xn_cmd)
         {
