@@ -1885,7 +1885,7 @@ handle_cfg_file_by_its_type(const char *fname)
     ret = fscanf(f, " %5s", str);
     if (ret == EOF)
     {
-	int error_code_set = ferror(f);
+        int error_code_set = ferror(f);
 
         ERROR("Failed to read the first non-whitespace characters "
               "from configuration file '%s'", fname);
