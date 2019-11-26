@@ -74,6 +74,9 @@ typedef struct tad_ip6_proto_data {
     /** DEfault values for Router Alert option */
     tad_bps_pkt_frag_def    opt_ra;
 
+    /** Default values for IPv6 Fragment header fields */
+    tad_bps_pkt_frag_def    frag_hdr;
+
     /**
      * The value for the last "next-header" field in the list
      * of extension headers.
@@ -190,6 +193,31 @@ static const tad_bps_pkt_frag tad_ip6_ra_option[] =
       TAD_DU_I32, FALSE },
 };
 
+/** IPv6 Fragment extension header */
+static const tad_bps_pkt_frag tad_ip6_ext_hdr_fragment_bps_hdr[] =
+{
+    { "next-header", 8, BPS_FLD_NO_DEF(NDN_TAG_IP6_NEXT_HEADER),
+      TAD_DU_I32, FALSE },
+    { "res1", 8,
+      BPS_FLD_CONST_DEF(NDN_TAG_IP6_EXT_HEADER_FRAGMENT_RES1, 0),
+      TAD_DU_I32, FALSE },
+    { "offset", 13,
+      BPS_FLD_CONST_DEF(NDN_TAG_IP6_EXT_HEADER_FRAGMENT_OFFSET, 0),
+      TAD_DU_I32, FALSE },
+    { "res2", 2,
+      BPS_FLD_CONST_DEF(NDN_TAG_IP6_EXT_HEADER_FRAGMENT_RES2, 0),
+      TAD_DU_I32, FALSE },
+    { "m-flag", 1,
+      BPS_FLD_CONST_DEF(NDN_TAG_IP6_EXT_HEADER_FRAGMENT_M_FLAG, 0),
+      TAD_DU_I32, FALSE },
+    { "id", 32,
+      BPS_FLD_CONST_DEF(NDN_TAG_IP6_EXT_HEADER_FRAGMENT_ID, 0),
+      TAD_DU_I32, FALSE },
+};
+
+/** Length of IPv6 Fragment Extension header in bytes */
+#define IP6_FRAG_EXT_HDR_LEN 8
+
 static te_errno
 tad_bps_pkt_frag_data_get_oct_str(tad_bps_pkt_frag_def *def,
                                   tad_bps_pkt_frag_data *data,
@@ -303,6 +331,11 @@ tad_ip6_init_cb(csap_p csap, unsigned int layer)
                                TE_ARRAY_LEN(tad_ip6_ra_option),
                                NULL, &proto_data->opt_ra));
 
+    IF_RC_RETURN(tad_bps_pkt_frag_init(
+                            tad_ip6_ext_hdr_fragment_bps_hdr,
+                            TE_ARRAY_LEN(tad_ip6_ext_hdr_fragment_bps_hdr),
+                            NULL, &proto_data->frag_hdr));
+
     if (asn_read_int32(layer_nds, &val, "next-header") == 0 &&
         (val == IPPROTO_TCP || val == IPPROTO_UDP || val == IPPROTO_ICMPV6 ||
          val == IPPROTO_GRE))
@@ -339,6 +372,7 @@ tad_ip6_destroy_cb(csap_p csap, unsigned int layer)
     tad_bps_pkt_frag_free(&proto_data->opt_tlv);
     tad_bps_pkt_frag_free(&proto_data->opt_pad1);
     tad_bps_pkt_frag_free(&proto_data->opt_ra);
+    tad_bps_pkt_frag_free(&proto_data->frag_hdr);
 
     free(proto_data);
     return 0;
@@ -495,6 +529,8 @@ next_hdr_tag2bin(asn_tag_value tag)
             return IPPROTO_HOPOPTS;
         case NDN_TAG_IP6_EXT_HEADER_DESTINATION:
             return IPPROTO_DSTOPTS;
+        case NDN_TAG_IP6_EXT_HEADER_FRAGMENT:
+            return IPPROTO_FRAGMENT;
         default:
             ERROR("%s() Unsupported TAG %d specified", tag);
             return 0xff;
@@ -525,6 +561,185 @@ fill_tmpl_addr(asn_value *tmpl,
     return rc;
 }
 
+/**
+ * Check whether IPv6 fragmentation is specified in a template.
+ * If it is specified but IPv6 Fragment extension header is missing,
+ * insert it in a proper place (see "Extension Header Order" in RFC 8200).
+ *
+ * @param layer_pdu           IPv6 template to check and fix.
+ *
+ * @return Status code.
+ */
+static te_errno
+tad_ip6_check_insert_fragment_hdr(asn_value *layer_pdu)
+{
+    asn_value     *frags_seq = NULL;
+    asn_value     *hdrs = NULL;
+    asn_value     *frag_hdr = NULL;
+    asn_value     *ext_hdr = NULL;
+    asn_value     *hdr;
+    asn_tag_class  t_cl;
+    asn_tag_value  t_val;
+    int            hdrs_num;
+    int            i;
+    int            insert_index = 0;
+    te_errno       rc;
+
+    rc = asn_get_child_value(layer_pdu, (const asn_value **)&frags_seq,
+                             PRIVATE, NDN_TAG_IP6_FRAGMENTS);
+    if (rc != 0)
+    {
+        /* It's fine if there is no fragments specification. */
+        if (rc == TE_EASNINCOMPLVAL)
+            return 0;
+
+        ERROR("%s(): asn_get_child_value() returned %r when trying to "
+              "get IPv6 fragments specification", __FUNCTION__, rc);
+        return rc;
+    }
+
+    rc = asn_get_child_value(layer_pdu, (const asn_value **)&hdrs,
+                             PRIVATE, NDN_TAG_IP6_EXT_HEADERS);
+    if (rc == 0)
+    {
+        /*
+         * Extension Headers are specified in template. Check whether
+         * Fragment extension header is already specified and if not,
+         * find out where to insert it.
+         */
+
+        hdrs_num = asn_get_length(hdrs, "");
+        if (hdrs_num < 0)
+        {
+            ERROR("%s(): Failed to get length of 'ext-headers' in IPv6 "
+                  "PDU: %r", __FUNCTION__, rc);
+            return rc;
+        }
+
+        for (i = 0; i < hdrs_num; i++)
+        {
+            rc = asn_get_indexed(hdrs, &hdr, i, "");
+            if (rc != 0)
+            {
+                ERROR("%s(): Failed to get extension header %d in IPv6 "
+                      "PDU: %r", __FUNCTION__, i, rc);
+                return rc;
+            }
+
+            rc = asn_get_choice_value(hdr, &hdr, &t_cl, &t_val);
+            if (rc != 0)
+            {
+                ERROR("%s(): asn_get_choice_value() failed for %d "
+                      "extension header in IPv6 PDU: %r",
+                      __FUNCTION__, i, rc);
+                return rc;
+            }
+
+            if (t_val == NDN_TAG_IP6_EXT_HEADER_HOP_BY_HOP)
+            {
+                insert_index = i + 1;
+                /*
+                 * TODO: when support for Routing extension header will be
+                 * added, here it should be taken into account too, i.e.
+                 * Fragment header must be after both Routing and
+                 * Hop-by-hop Options headers, leaving them in
+                 * non-fragmentable part of the packet.
+                 */
+            }
+            else if (t_val == NDN_TAG_IP6_EXT_HEADER_FRAGMENT)
+            {
+                /*
+                 * Position of Fragment extension header is specified
+                 * explicitly in the template, no need to add it.
+                 */
+                insert_index = -1;
+                break;
+            }
+        }
+    }
+    else
+    {
+        if (rc != TE_EASNINCOMPLVAL)
+        {
+            ERROR("%s(): asn_get_child_value() returned unexpected error "
+                  "when trying to obtain extension headers from IPv6 "
+                  "PDU: %r", __FUNCTION__, rc);
+            return rc;
+        }
+
+        /*
+         * Extension headers are not specified, add empty specification
+         * for them in template, so that Fragment header can be inserted
+         * into it.
+         */
+
+        rc = ndn_init_asn_value(&hdrs, ndn_ip6_ext_headers_seq);
+        if (rc != 0)
+        {
+            ERROR("%s(): ndn_init_asn_value() failed when creating "
+                  "sequence of IPv6 extension headers: %r",
+                  __FUNCTION__, rc);
+            return rc;
+        }
+
+        rc = asn_put_child_value(layer_pdu, hdrs,
+                                 PRIVATE, NDN_TAG_IP6_EXT_HEADERS);
+        if (rc != 0)
+        {
+            ERROR("%s(): Failed to put 'ext-headers' in IPv6 PDU: %r",
+                  __FUNCTION__, rc);
+            asn_free_value(hdrs);
+            return rc;
+        }
+
+        insert_index = 0;
+    }
+
+    if (insert_index >= 0)
+    {
+        rc = ndn_init_asn_value(&ext_hdr, ndn_ip6_ext_header);
+        if (rc != 0)
+        {
+            ERROR("%s(): ndn_init_asn_value() with ndn_ip6_ext_header "
+                  "failed: %r", __FUNCTION__, rc);
+            return rc;
+        }
+
+        rc = ndn_init_asn_value(&frag_hdr,
+                                ndn_ip6_ext_header_fragment);
+        if (rc != 0)
+        {
+            ERROR("%s(): ndn_init_asn_value() with "
+                  "ndn_ip6_ext_header_fragment failed: %r",
+                  __FUNCTION__, rc);
+            asn_free_value(ext_hdr);
+            return rc;
+        }
+
+        rc = asn_put_child_value(ext_hdr, frag_hdr,
+                                 PRIVATE, NDN_TAG_IP6_EXT_HEADER_FRAGMENT);
+        if (rc != 0)
+        {
+            ERROR("%s(): Failed to put Fragment extension header "
+                  "in IPv6 extension headers: %r", __FUNCTION__, rc);
+            asn_free_value(ext_hdr);
+            asn_free_value(frag_hdr);
+            return rc;
+        }
+
+        rc = asn_insert_indexed(hdrs, ext_hdr, insert_index, "");
+        if (rc != 0)
+        {
+            ERROR("%s(): Failed to put Fragment extension header "
+                  "in IPv6 PDU: %r", __FUNCTION__, rc);
+            asn_free_value(ext_hdr);
+            return rc;
+        }
+    }
+
+    return 0;
+}
+
 /* See description in tad_ipstack_impl.h */
 te_errno
 tad_ip6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
@@ -539,6 +754,10 @@ tad_ip6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
     void                   *tmp_ptr;
     int                     val;
     te_errno                rc;
+
+    rc = tad_ip6_check_insert_fragment_hdr(layer_pdu);
+    if (rc != 0)
+        return rc;
 
     proto_data = csap_get_proto_spec_data(csap, layer);
 
@@ -654,6 +873,14 @@ tad_ip6_confirm_tmpl_cb(csap_p csap, unsigned int layer,
                         ext_hdr_id = i;
                         break;
 
+                    case NDN_TAG_IP6_EXT_HEADER_FRAGMENT:
+                        tmpl_data->ext_hdrs_len += IP6_FRAG_EXT_HDR_LEN;
+                        tmpl_data->ext_hdrs[i].hdr_def =
+                                    &proto_data->frag_hdr;
+                        ext_hdr_def = &proto_data->frag_hdr;
+                        ext_hdr_id = i;
+                        break;
+
                     default:
                         ERROR("Not supported IPv6 Extension header");
                         return TE_RC(TE_TAD_CSAP, TE_ETADCSAPSTATE);
@@ -746,43 +973,195 @@ ext_hdr_end:
 }
 
 typedef struct tad_ip6_gen_bin_cb_per_sdu_data {
-    uint8_t    *hdr;
+    tad_pkts         *pdus;       /**< Where to save IPv6 PDUs */
+    const asn_value  *tmpl_pdu;   /**< Traffic template */
+
+    uint8_t    *hdr;              /**< IPv6 header (with extension
+                                       headers) */
+    uint32_t    hdr_len;          /**< Length of IPv6 header */
+    uint32_t    frag_hdr_off;     /**< Offset of IPv6 Fragment extension
+                                       header in hdr, if it is present */
+
     te_bool     use_phdr;
     uint32_t    init_checksum;
     int         upper_checksum_offset;
 } tad_ip6_gen_bin_cb_per_sdu_data;
 
 /**
- * Callback to set up the correct value of Payload-Length
- * field in IPv6 Header.
- *
+ * Callback to generate binary data per SDU.
  * This function complies with tad_pkt_enum_cb prototype.
+ *
+ * @param sdu       SDU (service data unit, packet generated
+ *                  by previous levels which should now be encapsulated
+ *                  in IPv6)
+ * @param opaque    Pointer to tad_ip6_gen_bin_cb_per_sdu_data
+ *
+ * @return Status code.
  */
 static te_errno
 tad_ip6_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
 {
-    size_t                              len = tad_pkt_len(sdu);
-    uint16_t                            tmp;
-    tad_pkt_seg                        *seg = tad_pkt_first_seg(sdu);
-    tad_ip6_gen_bin_cb_per_sdu_data    *data = opaque;
+#define ASN_READ_FRAG_SPEC(_type, _fld, _var) \
+    do {                                                            \
+        rc = asn_read_##_type(frag_spec, _var, _fld);               \
+        if (rc != 0)                                                \
+        {                                                           \
+            ERROR("%s(): asn_read_%s(%s) failed: %r", __FUNCTION__, \
+                  #_type, _fld, rc);                                \
+            return TE_RC(TE_TAD_CSAP, rc);                          \
+        }                                                           \
+    } while (0)
 
-    if (len > 0xffff)
+    tad_ip6_gen_bin_cb_per_sdu_data    *data = opaque;
+    tad_pkt_seg                        *seg = tad_pkt_first_seg(sdu);
+
+    size_t              sdu_len = tad_pkt_len(sdu);
+    const asn_value    *frags_seq;
+    int                 frags_num;
+    tad_pkts            frags;
+    tad_pkt            *frag;
+    int                 frags_i;
+    int                 nfrag_len;
+    te_errno            rc;
+
+    rc = asn_get_child_value(data->tmpl_pdu, &frags_seq,
+                             PRIVATE, NDN_TAG_IP6_FRAGMENTS);
+
+    if (rc == TE_EASNINCOMPLVAL)
     {
-        ERROR("PDU is too big to be IP6 PDU");
-        return TE_RC(TE_TAD_CSAP, TE_E2BIG);
+        /* No fragmentation is specified, put all in the single packet */
+        frags_seq = NULL;
+        frags_num = 1;
+    }
+    else if (rc == 0)
+    {
+        frags_num = asn_get_length(frags_seq, "");
+        if (frags_num < 0)
+        {
+            ERROR("%s(): failed to obtain number of fragments",
+                  __FUNCTION__);
+            return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+        }
+    }
+    else
+    {
+        ERROR("%s(): asn_get_child_value() returned unexpected error "
+              "when trying to get IPv6 fragments specification: %r",
+              __FUNCTION__, rc);
+        return rc;
     }
 
     assert(seg->data_ptr != NULL);
     assert(seg->data_len >= IP6_HDR_LEN);
 
-    /* Copy IPv6 Header with extension headers */
+    /*
+     * Copy IPv6 header with extension headers to the first
+     * segment which was allocated for this purpose by
+     * tad_ip6_gen_bin_cb().
+     */
     memcpy(seg->data_ptr, data->hdr, seg->data_len);
 
-    /* Set correct Payload-Length in the header template */
-    tmp = htons(len - IP6_HDR_LEN);
-    memcpy(seg->data_ptr + IP6_HDR_PLEN_OFFSET, &tmp, sizeof(tmp));
+    tad_pkts_init(&frags);
+
+    /*
+     * Compute length of non-fragmentable part in case
+     * fragmentation is requested.
+     */
+    if (frags_seq != NULL)
+        nfrag_len = data->frag_hdr_off + IP6_FRAG_EXT_HDR_LEN;
+    else
+        nfrag_len = data->hdr_len;
+
+    rc = tad_pkts_alloc(&frags, frags_num, 1, nfrag_len);
+    if (rc != 0)
+        return rc;
+
+    for (frags_i = 0, frag = tad_pkts_first_pkt(&frags);
+         frags_i < frags_num;
+         frags_i++, frag = frag->links.cqe_next)
+    {
+        uint8_t    *frag_hdr = tad_pkt_first_seg(frag)->data_ptr;
+        asn_value  *frag_spec = NULL;
+        uint32_t    real_len = 0;
+        uint32_t    hdr_len = 0;
+        uint32_t    real_offset = 0;
+        uint32_t    hdr_offset = 0;
+        te_bool     more_frags = FALSE;
+        uint16_t   *pld_len = NULL;
+        uint8_t    *p = NULL;
+
+        memcpy(frag_hdr, data->hdr, nfrag_len);
+
+        if (frags_seq == NULL)
+        {
+            real_len = hdr_len = sdu_len - IP6_HDR_LEN;
+        }
+        else
+        {
+            rc = asn_get_indexed(frags_seq, &frag_spec, frags_i, NULL);
+            if (rc != 0)
+            {
+                ERROR("%s(): Failed to get %d fragment specification "
+                      "in array of %d fragments from IPv6 PDU template: %r",
+                      __FUNCTION__, frags_i, frags_num, rc);
+                return TE_RC(TE_TAD_CSAP, rc);
+            }
+            assert(frag_spec != NULL);
+
+            ASN_READ_FRAG_SPEC(uint32, "real-length", &real_len);
+            ASN_READ_FRAG_SPEC(uint32, "hdr-length", &hdr_len);
+            ASN_READ_FRAG_SPEC(uint32, "real-offset", &real_offset);
+            ASN_READ_FRAG_SPEC(uint32, "hdr-offset", &hdr_offset);
+            ASN_READ_FRAG_SPEC(bool, "more-frags", &more_frags);
+
+            if (hdr_offset % 8 != 0)
+            {
+                ERROR("%s(): 'hdr-offset' in fragment specification has to "
+                      "be multiple of 8", __FUNCTION__);
+                return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+            }
+            else if (hdr_offset >= (1 << 16))
+            {
+                ERROR("%s(): 'hdr-offset' %u in fragment specification is "
+                      "too big", __FUNCTION__, hdr_offset);
+                return TE_RC(TE_TAD_CSAP, TE_EINVAL);
+            }
+            /* Fragment offset in header is in 8-octet units */
+            hdr_offset = (hdr_offset >> 3);
+
+            p = frag_hdr + data->frag_hdr_off + 2;
+            /* Filling 13bit fragment offset field */
+            *p = (hdr_offset >> 5);
+            *(p + 1) |= ((hdr_offset & 0x1f) << 3);
+            /* Setting More Fragments flag */
+            if (more_frags)
+                *(p + 1) |= 1;
+            else
+                *(p + 1) &= ~1;
+        }
+
+        pld_len = (uint16_t *)(frag_hdr + IP6_HDR_PLEN_OFFSET);
+        *pld_len = htons(hdr_len);
+
+        rc = tad_pkt_get_frag(frag, sdu,
+                              real_offset + nfrag_len,
+                              real_len,
+                              TAD_PKT_GET_FRAG_RAND);
+        if (rc != 0)
+        {
+            ERROR("%s(): Failed to get fragment [offset=%u length=%u] "
+                  "from payload: %r",
+                  __FUNCTION__, (unsigned int)real_offset,
+                  (unsigned int)real_len, rc);
+            return rc;
+        }
+    }
+
+    /* Move all fragments to IPv6 PDUs */
+    tad_pkts_move(data->pdus, &frags);
 
     return 0;
+#undef ASN_READ_FRAG_SPEC
 }
 
 typedef struct tad_ip6_upper_checksum_seg_cb_data {
@@ -913,9 +1292,14 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
 
     hdrlen = (((bitlen >> 3) + 3) >> 2) << 2;
 
+    memset(&cb_data, 0, sizeof(cb_data));
+
     /* Allocate memory for binary template of the header */
     if ((cb_data.hdr = TE_ALLOC(hdrlen)) == NULL)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
+
+    cb_data.hdr_len = hdrlen;
+    cb_data.tmpl_pdu = tmpl_pdu;
 
     bitoff = 0;
     if ((rc = tad_bps_pkt_frag_gen_bin(&proto_data->hdr, &tmpl_data->hdr,
@@ -952,11 +1336,21 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
     {
         prev_bitoff = bitoff;
 
+        if (next_header == IPPROTO_FRAGMENT)
+        {
+            assert(bitoff % 8 == 0);
+            cb_data.frag_hdr_off = (bitoff >> 3);
+        }
+
         if ((rc = tad_bps_pkt_frag_gen_bin(tmpl_data->ext_hdrs[i].hdr_def,
                                       &tmpl_data->ext_hdrs[i].hdr,
                                       args, arg_num, cb_data.hdr,
                                       &bitoff, bitlen)) != 0)
+        {
+            ERROR("%s(): tad_bps_pkt_frag_gen_bin() failed for extension "
+                  "header %d: %r", __FUNCTION__, i, rc);
             goto cleanup;
+        }
 
         for (j = 0; j < tmpl_data->ext_hdrs[i].opts_num; j++)
         {
@@ -965,7 +1359,12 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
                             &tmpl_data->ext_hdrs[i].opts[j].opt,
                             args, arg_num, cb_data.hdr,
                             &bitoff, bitlen)) != 0)
+            {
+                ERROR("%s(): tad_bps_pkt_frag_gen_bin() failed for option "
+                      "%d in extension header %d: %r",
+                      __FUNCTION__, j, i, rc);
                 goto cleanup;
+            }
         }
 
         /*
@@ -1121,13 +1520,11 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
         goto cleanup;
 
     /*
-     * Per-PDU processing - set correct Payload
-     * Length value of IPv6 Header
+     * Process sdus, encapsulating them in IPv6 and fragmenting
+     * them if requested. Place processed packets in pdus.
      */
+    cb_data.pdus = pdus;
     rc = tad_pkt_enumerate(sdus, tad_ip6_gen_bin_cb_per_sdu, &cb_data);
-
-    /* Move all fragments to IPv6 PDUs */
-    tad_pkts_move(pdus, sdus);
 
 cleanup:
     free(cb_data.hdr);
