@@ -336,7 +336,7 @@ te_errno
 parse_config_dh_sync(xmlNodePtr root_node, te_kvpair_h *expand_vars)
 {
     te_errno rc = 0;
-    char *backup;
+    char *backup = NULL;
 
     if ((rc = create_backup(&backup)) != 0)
     {

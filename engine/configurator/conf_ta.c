@@ -31,7 +31,7 @@ static int cfg_get_buf_len = TA_BUF_SIZE;
 
 te_bool local_cmd_seq = FALSE;
 char max_commit_subtree[CFG_INST_NAME_MAX] = {};
-char *local_cmd_bkp;
+char *local_cmd_bkp = NULL;
 
 /**
  * Get list of Test Agents.
