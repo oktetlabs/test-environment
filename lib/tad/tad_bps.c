@@ -375,6 +375,7 @@ tad_bps_pkt_frag_gen_bin(const tad_bps_pkt_frag_def *def,
 
     if (def == NULL || bin == NULL)
     {
+        ERROR("%s(): Invalid arguments", __FUNCTION__);
         return TE_RC(TE_TAD_BPS, TE_EWRONGPTR);
     }
     if ((*bitoff & 7) != 0 || (max_bitlen & 7) != 0)
@@ -456,6 +457,7 @@ tad_bps_pkt_frag_match_pre(const tad_bps_pkt_frag_def *def,
 
     if (def == NULL || pkt_data == NULL)
     {
+        ERROR("%s(): Invalid arguments", __FUNCTION__);
         return TE_RC(TE_TAD_BPS, TE_EWRONGPTR);
     }
 
@@ -590,6 +592,7 @@ tad_bps_pkt_frag_match_do(const tad_bps_pkt_frag_def *def,
     if (def == NULL || ptrn == NULL || pkt_data == NULL ||
         pkt == NULL || bitoff == NULL)
     {
+        ERROR("%s(): Invalid arguments", __FUNCTION__);
         return TE_RC(TE_TAD_BPS, TE_EWRONGPTR);
     }
 
@@ -685,6 +688,7 @@ tad_bps_pkt_frag_match_post(const tad_bps_pkt_frag_def *def,
 
     if (def == NULL || pkt_data == NULL || pkt == NULL || bitoff == NULL)
     {
+        ERROR("%s(): Invalid arguments", __FUNCTION__);
         return TE_RC(TE_TAD_BPS, TE_EWRONGPTR);
     }
 
