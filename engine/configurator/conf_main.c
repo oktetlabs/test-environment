@@ -368,13 +368,16 @@ parse_config_dh_sync(xmlNodePtr root_node, te_kvpair_h *expand_vars)
  * @param expand_vars   List of key-value pairs for expansion in file,
  *                      @c NULL if environment variables are used for
  *                      substitutions
+ * @param history       if TRUE, the configuration file must be a history,
+ *                      otherwise, it must be a backup
  * @param restore       if TRUE, the configuration should be restored after
  *                      unsuccessful dynamic history restoring
  *
  * @return status code (see te_errno.h)
  */
 static int
-parse_config_xml(const char *file, te_kvpair_h *expand_vars, te_bool restore)
+parse_config_xml(const char *file, te_kvpair_h *expand_vars, te_bool history,
+                 te_bool restore)
 {
     xmlDocPtr   doc;
     xmlNodePtr  root;
@@ -427,10 +430,28 @@ parse_config_xml(const char *file, te_kvpair_h *expand_vars, te_bool restore)
 
     rcf_log_cfg_changes(TRUE);
     if (xmlStrcmp(root->name, (const xmlChar *)"backup") == 0)
-        rc = cfg_backup_process_file(root, restore);
+    {
+        if (history)
+        {
+            ERROR("File '%s' is a backup, not history as expected", file);
+            rc = TE_RC(TE_CS, TE_EINVAL);
+        }
+        else
+        {
+            rc = cfg_backup_process_file(root, restore);
+        }
+    }
     else if (xmlStrcmp(root->name, (const xmlChar *)"history") == 0)
     {
-        rc = parse_config_dh_sync(root, expand_vars);
+        if (!history)
+        {
+            ERROR("File '%s' is a history, not backup as expected", file);
+            rc = TE_RC(TE_CS, TE_EINVAL);
+        }
+        else
+        {
+            rc = parse_config_dh_sync(root, expand_vars);
+        }
     }
     else
     {
@@ -1458,7 +1479,7 @@ process_backup(cfg_backup_msg *msg)
                 cfg_ta_sync("/:", TRUE);
             }
 
-            msg->rc = parse_config_xml(msg->filename, NULL,  TRUE);
+            msg->rc = parse_config_xml(msg->filename, NULL, FALSE, TRUE);
             rcf_log_cfg_changes(FALSE);
             cfg_dh_release_after(msg->filename);
 
@@ -1698,7 +1719,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
 
                 if ((*msg)->rc == 0)
                     (*msg)->rc = parse_config_xml(history_msg->filename,
-                                                  &expand_vars, TRUE);
+                                                  &expand_vars, TRUE, FALSE);
 
                 te_kvpair_fini(&expand_vars);
                 break;
@@ -1899,7 +1920,7 @@ parse_config(const char *fname)
     fclose(f);
 
     if (strcmp(str, "<?xml") == 0)
-        return parse_config_xml(fname, NULL, FALSE);
+        return parse_config_xml(fname, NULL, TRUE, FALSE);
 #if WITH_CONF_YAML
     else if (strcmp(str, "---") == 0)
         return parse_config_yaml(fname, NULL);
@@ -1991,7 +2012,7 @@ main(int argc, char **argv)
     }
 
     if (cs_sniff_cfg_file != NULL &&
-        (rc = parse_config_xml(cs_sniff_cfg_file, NULL, FALSE)) != 0)
+        (rc = parse_config_xml(cs_sniff_cfg_file, NULL, TRUE, FALSE)) != 0)
     {
         ERROR("Fatal error during sniffer configuration file parsing");
         goto exit;
