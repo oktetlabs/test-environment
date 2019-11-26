@@ -374,7 +374,7 @@ parse_config_dh_sync(xmlNodePtr root_node, te_kvpair_h *expand_vars)
  * @return status code (see te_errno.h)
  */
 static int
-parse_config(const char *file, te_kvpair_h *expand_vars, te_bool restore)
+parse_config_xml(const char *file, te_kvpair_h *expand_vars, te_bool restore)
 {
     xmlDocPtr   doc;
     xmlNodePtr  root;
@@ -1458,7 +1458,7 @@ process_backup(cfg_backup_msg *msg)
                 cfg_ta_sync("/:", TRUE);
             }
 
-            msg->rc = parse_config(msg->filename, NULL,  TRUE);
+            msg->rc = parse_config_xml(msg->filename, NULL,  TRUE);
             rcf_log_cfg_changes(FALSE);
             cfg_dh_release_after(msg->filename);
 
@@ -1697,8 +1697,8 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
                 }
 
                 if ((*msg)->rc == 0)
-                    (*msg)->rc = parse_config(history_msg->filename,
-                                                &expand_vars, TRUE);
+                    (*msg)->rc = parse_config_xml(history_msg->filename,
+                                                  &expand_vars, TRUE);
 
                 te_kvpair_fini(&expand_vars);
                 break;
@@ -1899,7 +1899,7 @@ handle_cfg_file_by_its_type(const char *fname)
     fclose(f);
 
     if (strcmp(str, "<?xml") == 0)
-        return parse_config(fname, NULL, FALSE);
+        return parse_config_xml(fname, NULL, FALSE);
 #if WITH_CONF_YAML
     else if (strcmp(str, "---") == 0)
         return parse_config_yaml(fname, NULL);
@@ -1991,7 +1991,7 @@ main(int argc, char **argv)
     }
 
     if (cs_sniff_cfg_file != NULL &&
-        (rc = parse_config(cs_sniff_cfg_file, NULL, FALSE)) != 0)
+        (rc = parse_config_xml(cs_sniff_cfg_file, NULL, FALSE)) != 0)
     {
         ERROR("Fatal error during sniffer configuration file parsing");
         goto exit;
