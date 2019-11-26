@@ -20,6 +20,8 @@
 #ifndef __TE_LOGGER_TEN_H__
 #define __TE_LOGGER_TEN_H__
 
+#include <stdio.h>
+
 #include "te_defs.h"
 #include "logger_api.h"
 
@@ -65,7 +67,7 @@ logger_ta_prefix()
     
     if (!init)
     {
-        sprintf(prefix, "%s-ta-", LGR_SRV_NAME);
+        snprintf(prefix, sizeof(prefix), "%s-ta-", LGR_SRV_NAME);
         init = TRUE;
     }
     
@@ -84,7 +86,7 @@ logger_flush_name()
     
     if (!init)
     {
-        sprintf(name, "%s-flush", LGR_SRV_NAME);
+        snprintf(name, sizeof(name), "%s-flush", LGR_SRV_NAME);
         init = TRUE;
     }
     
