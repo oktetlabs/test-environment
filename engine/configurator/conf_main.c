@@ -1862,7 +1862,7 @@ cfg_sigpipe_handler(int signum)
  * @return Status code.
  */
 static te_errno
-handle_cfg_file_by_its_type(const char *fname)
+parse_config(const char *fname)
 {
     FILE *f;
     int   ret;
@@ -1981,7 +1981,7 @@ main(int argc, char **argv)
          cfg_file_id++)
     {
         INFO("-> %s", cs_cfg_file[cfg_file_id]);
-        rc = handle_cfg_file_by_its_type(cs_cfg_file[cfg_file_id]);
+        rc = parse_config(cs_cfg_file[cfg_file_id]);
         if (rc != 0)
         {
             ERROR("Fatal error during configuration file parsing: %d - %s",
