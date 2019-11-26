@@ -745,12 +745,12 @@ ext_hdr_end:
     return rc;
 }
 
-typedef struct tad_ip6_gen_bin_cb_per_pdu_data {
+typedef struct tad_ip6_gen_bin_cb_per_sdu_data {
     uint8_t    *hdr;
     te_bool     use_phdr;
     uint32_t    init_checksum;
     int         upper_checksum_offset;
-} tad_ip6_gen_bin_cb_per_pdu_data;
+} tad_ip6_gen_bin_cb_per_sdu_data;
 
 /**
  * Callback to set up the correct value of Payload-Length
@@ -759,12 +759,12 @@ typedef struct tad_ip6_gen_bin_cb_per_pdu_data {
  * This function complies with tad_pkt_enum_cb prototype.
  */
 static te_errno
-tad_ip6_gen_bin_cb_per_pdu(tad_pkt *pdu, void *opaque)
+tad_ip6_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
 {
-    size_t                              len = tad_pkt_len(pdu);
+    size_t                              len = tad_pkt_len(sdu);
     uint16_t                            tmp;
-    tad_pkt_seg                        *seg = tad_pkt_first_seg(pdu);
-    tad_ip6_gen_bin_cb_per_pdu_data    *data = opaque;
+    tad_pkt_seg                        *seg = tad_pkt_first_seg(sdu);
+    tad_ip6_gen_bin_cb_per_sdu_data    *data = opaque;
 
     if (len > 0xffff)
     {
@@ -804,11 +804,11 @@ tad_ip6_upper_checksum_seg_cb(const tad_pkt *pkt, tad_pkt_seg *seg,
 }
 
 static te_errno
-tad_ip6_upper_checksum_cb(tad_pkt *pdu, void *opaque)
+tad_ip6_upper_checksum_cb(tad_pkt *sdu, void *opaque)
 {
-    tad_ip6_gen_bin_cb_per_pdu_data    *data = opaque;
-    tad_pkt_seg                        *seg = tad_pkt_first_seg(pdu);
-    size_t                              len = tad_pkt_len(pdu);
+    tad_ip6_gen_bin_cb_per_sdu_data    *data = opaque;
+    tad_pkt_seg                        *seg = tad_pkt_first_seg(sdu);
+    size_t                              len = tad_pkt_len(sdu);
     uint16_t                            tmp;
     tad_ip6_upper_checksum_seg_cb_data  seg_data;
     uint16_t                            csum;
@@ -851,7 +851,7 @@ tad_ip6_upper_checksum_cb(tad_pkt *pdu, void *opaque)
     if (ntohs(csum) != TE_IP6_UPPER_LAYER_CSUM_ZERO)
     {
         /* Upper layer data checksum */
-        (void)tad_pkt_enumerate_seg(pdu,
+        (void)tad_pkt_enumerate_seg(sdu,
                                     tad_ip6_upper_checksum_seg_cb,
                                     &seg_data);
 
@@ -880,7 +880,7 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
 {
     tad_ip6_proto_data                 *proto_data;
     tad_ip6_proto_pdu_data             *tmpl_data = opaque;
-    tad_ip6_gen_bin_cb_per_pdu_data     cb_data;
+    tad_ip6_gen_bin_cb_per_sdu_data     cb_data;
     uint32_t                            hdrlen;
     te_errno                            rc;
     size_t                              bitlen;
@@ -997,9 +997,6 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
 
     assert(bitoff == bitlen);
 
-    /* Move all fragments to IPv6 PDUs */
-    tad_pkts_move(pdus, sdus);
-
     /* Calculate upper layer checksum */
     tmp = htons((uint16_t)(proto_data->upper_protocol));
     cb_data.init_checksum = calculate_checksum(&tmp, sizeof(tmp));
@@ -1111,7 +1108,7 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
                                             IP6_ADDRLEN);
         }
 
-        tad_pkt_enumerate(pdus, tad_ip6_upper_checksum_cb,
+        tad_pkt_enumerate(sdus, tad_ip6_upper_checksum_cb,
                           &cb_data);
     }
 
@@ -1119,7 +1116,7 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
      * Prepend each packet with space necessary for
      * IPv6 Header together with all extension headers.
     */
-    rc = tad_pkts_add_new_seg(pdus, TRUE, NULL, hdrlen, NULL);
+    rc = tad_pkts_add_new_seg(sdus, TRUE, NULL, hdrlen, NULL);
     if (rc != 0)
         goto cleanup;
 
@@ -1127,7 +1124,10 @@ tad_ip6_gen_bin_cb(csap_p csap, unsigned int layer,
      * Per-PDU processing - set correct Payload
      * Length value of IPv6 Header
      */
-    rc = tad_pkt_enumerate(pdus, tad_ip6_gen_bin_cb_per_pdu, &cb_data);
+    rc = tad_pkt_enumerate(sdus, tad_ip6_gen_bin_cb_per_sdu, &cb_data);
+
+    /* Move all fragments to IPv6 PDUs */
+    tad_pkts_move(pdus, sdus);
 
 cleanup:
     free(cb_data.hdr);
