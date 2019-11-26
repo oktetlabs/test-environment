@@ -958,7 +958,7 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars)
     if (xn_history->children != NULL)
     {
         rcf_log_cfg_changes(TRUE);
-        rc = parse_config_dh_sync(xn_history, NULL);
+        rc = parse_config_dh_sync(xn_history, expand_vars);
         rcf_log_cfg_changes(FALSE);
     }
 
