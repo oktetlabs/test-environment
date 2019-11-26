@@ -26,22 +26,13 @@
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "tad_common.h"
+#include "tapi_ip_common.h"
 #include "asn_usr.h"
 #include "tapi_tad.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef struct tapi_ip_frag_spec {
-    uint32_t    hdr_offset;     /**< value for "offset" in IP header */
-    uint32_t    real_offset;    /**< begin of frag data in real payload */
-    size_t      hdr_length;     /**< vlaue for "length" in IP header */
-    size_t      real_length;    /**< length of frag data in real payload */
-    te_bool     more_frags;     /**< value for "more frags" flag */
-    te_bool     dont_frag;      /**< value for "dont frag" flag */
-} tapi_ip_frag_spec;
-
 
 typedef struct tapi_ip4_packet_t {
     in_addr_t   src_addr;
@@ -119,11 +110,13 @@ extern te_errno tapi_ip4_add_pdu(asn_value **tmpl_or_ptrn,
 /**
  * Add fragments specification to IPv4 PDU.
  *
- * @param tmpl          NULL or location of ASN.1 value with traffic
- *                      template to add a new IPv4 PDU
- * @param pdu           NULL or location of the ASN.1 value with
- *                      IPv4 PDU to be created (if tmpl is not NULL) or
- *                      existing
+ * @param tmpl          @c NULL or location of ASN.1 value with traffic
+ *                      template where IPv4 PDU should be added
+ * @param pdu           If @p tmpl is @c NULL, this parameter must
+ *                      point to IPv4 PDU where to add fragments
+ *                      specification; on return, if this parameter is
+ *                      not @c NULL, pointer to IPv4 PDU will be saved
+ *                      in it
  * @param fragments     Array with IP fragments specifictaions
  * @param num_frags     Number of IP fragments (if 0, nothing is done)
  *

@@ -24,6 +24,16 @@
 extern "C" {
 #endif
 
+/** Specification of IPv4 or IPv6 fragment */
+typedef struct tapi_ip_frag_spec {
+    uint32_t    hdr_offset;     /**< Value for "offset" in IP header */
+    uint32_t    real_offset;    /**< Begin of frag data in real payload */
+    size_t      hdr_length;     /**< Value for "length" in IP header */
+    size_t      real_length;    /**< Length of frag data in real payload */
+    te_bool     more_frags;     /**< Value for "more frags" flag */
+    te_bool     dont_frag;      /**< Value for "don't frag" flag */
+} tapi_ip_frag_spec;
+
 /**
  * Create CSAP for IPv4 or IPv6 traffic.
  *
@@ -83,6 +93,29 @@ extern te_errno tapi_tcp_udp_ip_eth_csap_create(
                         int loc_port,
                         int rem_port,
                         csap_handle_t *csap);
+
+/**
+ * Add fragments specification to IPv4 or IPv6 PDU.
+ *
+ * @param tmpl          @c NULL or location of ASN.1 value with traffic
+ *                      template where IP PDU should be added
+ * @param pdu           If @p tmpl is @c NULL, this parameter must
+ *                      point to IP PDU where to add fragments
+ *                      specification; on return, if this parameter is
+ *                      not @c NULL, pointer to IP PDU will be saved
+ *                      in it
+ * @param ipv4          If @c TRUE, IPv4 PDU is processed, otherwise
+ *                      IPv6 PDU
+ * @param fragments     Array with IP fragments specifications
+ * @param num_frags     Number of IP fragments
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ip_pdu_tmpl_fragments(asn_value **tmpl,
+                                           asn_value **pdu,
+                                           te_bool ipv4,
+                                           tapi_ip_frag_spec *fragments,
+                                           unsigned int num_frags);
 
 #ifdef __cplusplus
 } /* extern "C" */
