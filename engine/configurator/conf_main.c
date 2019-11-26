@@ -58,6 +58,7 @@ static unsigned int cs_flags = 0;
 
 static void process_backup(cfg_backup_msg *msg);
 static te_errno create_backup(char **bkp_filename);
+static te_errno parse_config(const char *fname, te_kvpair_h *expand_vars);
 
 /**
  Put environment variables in list for expansion in file
@@ -1715,8 +1716,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
                 }
 
                 if ((*msg)->rc == 0)
-                    (*msg)->rc = parse_config_xml(history_msg->filename,
-                                                  &expand_vars, TRUE);
+                    (*msg)->rc = parse_config(history_msg->filename, &expand_vars);
 
                 te_kvpair_fini(&expand_vars);
                 break;
@@ -1875,12 +1875,13 @@ cfg_sigpipe_handler(int signum)
  * Figure out configuration file type (XML or YAML)
  * and proceed with parsing.
  *
- * @param fname Name of the configuration file
+ * @param fname         Name of the configuration file
+ * @param expand_vars   List of key-value pairs for expansion in file
  *
  * @return Status code.
  */
 static te_errno
-parse_config(const char *fname)
+parse_config(const char *fname, te_kvpair_h *expand_vars)
 {
     FILE *f;
     int   ret;
@@ -1917,10 +1918,10 @@ parse_config(const char *fname)
     fclose(f);
 
     if (strcmp(str, "<?xml") == 0)
-        return parse_config_xml(fname, NULL, TRUE);
+        return parse_config_xml(fname, expand_vars, TRUE);
 #if WITH_CONF_YAML
     else if (strcmp(str, "---") == 0)
-        return parse_config_yaml(fname, NULL);
+        return parse_config_yaml(fname, expand_vars);
 #endif /* !WITH_CONF_YAML */
 
     ERROR("Failed to recognise the format of configuration file '%s'", fname);
@@ -1999,7 +2000,7 @@ main(int argc, char **argv)
          cfg_file_id++)
     {
         INFO("-> %s", cs_cfg_file[cfg_file_id]);
-        rc = parse_config(cs_cfg_file[cfg_file_id]);
+        rc = parse_config(cs_cfg_file[cfg_file_id], NULL);
         if (rc != 0)
         {
             ERROR("Fatal error during configuration file parsing: %d - %s",
