@@ -1625,6 +1625,217 @@ out:
     return TE_RC(TE_TAPI, rc);
 }
 
+te_errno
+tapi_ndn_pdus_inject_vlan_tags(asn_value *pdus, const uint16_t *vlan_tci,
+                               size_t n_tags)
+{
+    te_bool has_vlan = FALSE;
+    asn_value *new_vlan;
+    uint16_t old_vid[2] = {0};
+    uint16_t old_pri[2] = {0};
+    uint16_t old_cfi[2] = {0};
+    size_t n_old_tags;
+    asn_value *eth;
+    te_errno rc;
+    int n_pdus;
+
+    if (n_tags > 2)
+    {
+        ERROR("Failed to insert more than 2 VLAN tags");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (n_tags == 0)
+        return 0;
+
+    n_pdus = asn_get_length(pdus, "");
+    if (n_pdus < 1)
+    {
+        ERROR("Failed to get PDU sequence length");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = asn_get_indexed(pdus, &eth, n_pdus - 1, "");
+    if (rc != 0)
+    {
+        ERROR("Failed to get eth PDU");
+        return rc;
+    }
+
+    n_old_tags = TE_ARRAY_LEN(old_vid);
+    rc = tapi_ndn_eth_read_vlan_tci(eth, &n_old_tags, old_vid, old_pri, old_cfi);
+    if (rc == 0)
+    {
+        has_vlan = (n_old_tags > 0);
+
+        if (has_vlan && n_tags == 2)
+        {
+            ERROR("Failed to inject 2 VLAN tags in tagged PDU sequence");
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+        if (n_old_tags == 2)
+        {
+            ERROR("Failed to inject VLAN tags in double-tagged PDU sequence");
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+    }
+    else if (rc != 0)
+        return rc;
+
+    new_vlan = asn_init_value(ndn_vlan_tagged);
+    if (new_vlan == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
+    rc = 0;
+    if (has_vlan || n_tags == 2)
+    {
+        unsigned int i;
+        struct val_label {
+            uint16_t val;
+            const char *label;
+        } map[] = {
+            { has_vlan ? old_vid[0] : vlan_tci[0] & NDN_ETH_VLAN_TCI_MASK_ID,
+              "#double-tagged.inner.vid.#plain"},
+            { (has_vlan ? vlan_tci[0] : vlan_tci[1]) & NDN_ETH_VLAN_TCI_MASK_ID,
+              "#double-tagged.outer.vid.#plain"},
+            { has_vlan ? old_pri[0] : vlan_tci[0] & NDN_ETH_VLAN_TCI_MASK_PRIO,
+              "#double-tagged.inner.pcp.#plain"},
+            { (has_vlan ? vlan_tci[0] : vlan_tci[1]) & NDN_ETH_VLAN_TCI_MASK_PRIO,
+              "#double-tagged.outer.pcp.#plain"},
+            { has_vlan ? old_cfi[0] : vlan_tci[0] & NDN_ETH_VLAN_TCI_MASK_CFI,
+              "#double-tagged.inner.dei.#plain"},
+            { (has_vlan ? vlan_tci[0] : vlan_tci[1]) & NDN_ETH_VLAN_TCI_MASK_CFI,
+              "#double-tagged.outer.dei.#plain"}};
+
+        for (i = 0; i < TE_ARRAY_LEN(map); i++)
+        {
+            if (rc == 0)
+                rc = asn_write_value_field(new_vlan, &map[i].val,
+                                           sizeof(map[i].val), map[i].label);
+        }
+    }
+    else
+    {
+        unsigned int i;
+        struct val_label {
+            uint16_t val;
+            const char *label;
+        } map[] = {
+            { vlan_tci[0] & NDN_ETH_VLAN_TCI_MASK_ID, "#tagged.vlan-id.#plain"},
+            { vlan_tci[0] & NDN_ETH_VLAN_TCI_MASK_PRIO, "#tagged.priority.#plain"},
+            { vlan_tci[0] & NDN_ETH_VLAN_TCI_MASK_CFI, "#tagged.cfi.#plain"}};
+
+        for (i = 0; i < TE_ARRAY_LEN(map); i++)
+        {
+            if (rc == 0)
+            {
+                rc = asn_write_value_field(new_vlan, &map[i].val,
+                                           sizeof(map[i].val), map[i].label);
+            }
+        }
+    }
+
+    if (rc == 0)
+        rc = asn_put_descendent(eth, new_vlan, "#eth.tagged");
+
+    if (rc != 0)
+    {
+        ERROR("Failed to modify PDU sequence");
+        asn_free_value(new_vlan);
+        return rc;
+    }
+
+    return 0;
+}
+
+te_errno
+tapi_ndn_eth_read_vlan_tci(const asn_value *eth, size_t *n_tags,
+                           uint16_t *vid, uint16_t *prio, uint16_t *cfi)
+{
+    asn_value *vlan_header;
+    uint16_t vid_out[2] = {0};
+    uint16_t prio_out[2] = {0};
+    uint16_t cfi_out[2] = {0};
+    size_t size = sizeof(vid_out[0]);
+    size_t tags_count;
+    te_errno rc;
+
+    vlan_header = asn_find_descendant(eth, &rc, "tagged.#tagged");
+    if (rc == 0)
+    {
+        rc = asn_read_value_field(vlan_header, &vid_out[0], &size, "vlan-id");
+        if (rc == 0 || rc == TE_EASNINCOMPLVAL)
+        {
+            rc = asn_read_value_field(vlan_header, &prio_out[0], &size,
+                                      "priority");
+        }
+        if (rc == 0 || rc == TE_EASNINCOMPLVAL)
+        {
+            rc = asn_read_value_field(vlan_header, &cfi_out[0], &size, "cfi");
+        }
+        if (rc != 0 && rc != TE_EASNINCOMPLVAL)
+        {
+            ERROR("Failed to read existing VLAN tag tci");
+            return rc;
+        }
+
+        tags_count = 1;
+    }
+    else if (rc == TE_EASNOTHERCHOICE)
+    {
+        unsigned int i;
+        struct ptr_label {
+            uint16_t *ptr;
+            const char *label;
+        } map[] = {
+            { &vid_out[0], "tagged.#double-tagged.inner.vid.#plain"},
+            { &vid_out[1], "tagged.#double-tagged.outer.vid.#plain"},
+            { &cfi_out[0], "tagged.#double-tagged.inner.dei.#plain"},
+            { &cfi_out[1], "tagged.#double-tagged.outer.dei.#plain"},
+            { &prio_out[0], "tagged.#double-tagged.inner.pcp.#plain"},
+            { &prio_out[1], "tagged.#double-tagged.outer.pcp.#plain"}};
+
+        rc = 0;
+
+        for (i = 0; i < TE_ARRAY_LEN(map); i++)
+        {
+            if (rc == 0 || rc == TE_EASNINCOMPLVAL)
+                rc = asn_read_value_field(eth, map[i].ptr, &size, map[i].label);
+        }
+        if (rc != 0 && rc != TE_EASNINCOMPLVAL)
+        {
+            ERROR("Failed to read existing double VLAN tag tci");
+            return rc;
+        }
+
+        tags_count = 2;
+    }
+    else if (rc == TE_EASNINCOMPLVAL)
+    {
+        *n_tags = 0;
+
+        return 0;
+    }
+    else
+    {
+        ERROR("Error occured during VLAN tag get");
+        return rc;
+    }
+
+    if (*n_tags < tags_count)
+    {
+        ERROR("Not enough space to place read VLAN tags");
+        return TE_RC(TE_TAPI, TE_ENOBUFS);
+    }
+
+    *n_tags = tags_count;
+    memcpy(vid, vid_out, sizeof(*vid) * tags_count);
+    memcpy(prio, prio_out, sizeof(*prio) * tags_count);
+    memcpy(cfi, cfi_out, sizeof(*cfi) * tags_count);
+
+    return 0;
+}
+
 /* See the description in 'tapi_ndn.h' */
 te_errno
 tapi_ndn_pkt_demand_correct_ip_cksum(asn_value        *pkt,
