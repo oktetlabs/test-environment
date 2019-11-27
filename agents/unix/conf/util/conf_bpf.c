@@ -191,7 +191,7 @@ bpf_num_possible_cpu(unsigned int *n_values)
     unsigned int start, end, possible_cpus = 0;
     char buff[128];
     FILE *fp;
-    int n, i = 0;
+    int n;
 
     fp = fopen(SYSFS_CPU_POSSIBLE, "r");
     if (fp == NULL)
