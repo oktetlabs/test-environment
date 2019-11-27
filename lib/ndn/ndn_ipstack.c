@@ -34,6 +34,8 @@ static asn_named_entry_t _ndn_ip4_frag_spec_ne_array [] = {
         {PRIVATE, NDN_TAG_IP4_FR_MF} },
     { "dont-frag",         &asn_base_boolean_s,
         {PRIVATE, NDN_TAG_IP4_FR_DF} },
+    { "id",                &asn_base_uint32_s,
+        {PRIVATE, NDN_TAG_IP4_FR_ID} },
 };
 
 asn_type ndn_ip4_frag_spec_s = {
@@ -341,6 +343,8 @@ static asn_named_entry_t _ndn_ip6_frag_spec_ne_array [] = {
       {PRIVATE, NDN_TAG_IP6_FR_RL} },
     { "more-frags", &asn_base_boolean_s,
       {PRIVATE, NDN_TAG_IP6_FR_MF} },
+    { "id", &asn_base_uint32_s,
+      {PRIVATE, NDN_TAG_IP6_FR_ID} },
 };
 
 /** IPv6 Fragment specification in packet template */

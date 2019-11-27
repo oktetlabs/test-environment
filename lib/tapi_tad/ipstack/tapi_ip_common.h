@@ -32,7 +32,18 @@ typedef struct tapi_ip_frag_spec {
     size_t      real_length;    /**< Length of frag data in real payload */
     te_bool     more_frags;     /**< Value for "more frags" flag */
     te_bool     dont_frag;      /**< Value for "don't frag" flag */
+    int64_t     id;             /**< Value for ID field; ignored if
+                                     negative */
 } tapi_ip_frag_spec;
+
+/**
+ * Initialize array of IP fragment specifications.
+ *
+ * @param frags       Pointer to array.
+ * @param num         Number of fragment specifications.
+ */
+extern void tapi_ip_frag_specs_init(tapi_ip_frag_spec *frags,
+                                    unsigned int num);
 
 /**
  * Create CSAP for IPv4 or IPv6 traffic.

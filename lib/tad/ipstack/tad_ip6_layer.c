@@ -1087,6 +1087,8 @@ tad_ip6_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
         uint32_t    real_offset = 0;
         uint32_t    hdr_offset = 0;
         te_bool     more_frags = FALSE;
+        uint32_t    id = 0;
+        te_bool     set_id = FALSE;
         uint16_t   *pld_len = NULL;
         uint8_t    *p = NULL;
 
@@ -1114,6 +1116,10 @@ tad_ip6_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
             ASN_READ_FRAG_SPEC(uint32, "hdr-offset", &hdr_offset);
             ASN_READ_FRAG_SPEC(bool, "more-frags", &more_frags);
 
+            rc = asn_read_uint32(frag_spec, &id, "id");
+            if (rc == 0)
+                set_id = TRUE;
+
             if (hdr_offset % 8 != 0)
             {
                 ERROR("%s(): 'hdr-offset' in fragment specification has to "
@@ -1138,6 +1144,9 @@ tad_ip6_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
                 *(p + 1) |= 1;
             else
                 *(p + 1) &= ~1;
+
+            if (set_id)
+                *(uint32_t *)(p + 2) = htonl(id);
         }
 
         pld_len = (uint16_t *)(frag_hdr + IP6_HDR_PLEN_OFFSET);

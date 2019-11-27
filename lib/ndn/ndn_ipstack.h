@@ -44,6 +44,7 @@ typedef enum {
     NDN_TAG_IP4_FR_RL, /**< "real" fragment length */
     NDN_TAG_IP4_FR_MF, /**< value for "more fragments" flag in fragment */
     NDN_TAG_IP4_FR_DF, /**< value for "don't fragment" flag in fragment */
+    NDN_TAG_IP4_FR_ID, /**< value for ID field in fragment */
     NDN_TAG_IP4_PLD_CHECKSUM,
     NDN_TAG_IP4_PLD_CH_OFFSET,
     NDN_TAG_IP4_PLD_CH_DISABLE,
@@ -101,6 +102,7 @@ typedef enum {
     NDN_TAG_IP6_FR_HL,     /**< Fragment length: value for IPv6 header */
     NDN_TAG_IP6_FR_RL,     /**< "Real" fragment length */
     NDN_TAG_IP6_FR_MF,     /**< Value for "more fragments" flag */
+    NDN_TAG_IP6_FR_ID,     /**< Value for ID field */
 
     NDN_TAG_IP6_LOCAL_ADDR,
     NDN_TAG_IP6_REMOTE_ADDR,

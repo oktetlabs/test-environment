@@ -224,6 +224,12 @@ tapi_ip_pdu_tmpl_fragments(asn_value **tmpl, asn_value **pdu,
                                             "dont-frag"));
             }
 
+            if (frag->id >= 0)
+            {
+                CHECK_ASN_RC(asn_write_uint32(frag_val,
+                                              (uint32_t)(frag->id), "id"));
+            }
+
             CHECK_ASN_RC(asn_insert_indexed(frag_seq, frag_val, i, ""));
         }
 #undef CHECK_ASN_RC
@@ -233,4 +239,16 @@ tapi_ip_pdu_tmpl_fragments(asn_value **tmpl, asn_value **pdu,
         *pdu = tmp_pdu;
 
     return 0;
+}
+
+/* See the description in tapi_ip_common.h */
+void
+tapi_ip_frag_specs_init(tapi_ip_frag_spec *frags,
+                        unsigned int num)
+{
+    unsigned int i;
+
+    memset(frags, 0, sizeof(*frags) * num);
+    for (i = 0; i < num; i++)
+        frags[i].id = -1;
 }
