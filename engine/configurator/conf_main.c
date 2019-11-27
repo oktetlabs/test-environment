@@ -1544,7 +1544,7 @@ create_backup(char **bkp_filename)
     }
 
     *bkp_filename = strdup(bkp_msg->filename);
-    if (bkp_filename == NULL)
+    if (*bkp_filename == NULL)
     {
         cfg_dh_release_backup(bkp_msg->filename);
         rc = TE_ENOMEM;
