@@ -1271,7 +1271,7 @@ get_driver_name(const pci_device *dev, char *name, size_t namesize)
 {
     te_errno rc;
     te_string buf = TE_STRING_INIT;
-    char link[PATH_MAX];
+    char link[PATH_MAX] = "";
     char *base;
 
     rc = format_sysfs_device_name(&buf, dev, "/driver");
@@ -1281,7 +1281,7 @@ get_driver_name(const pci_device *dev, char *name, size_t namesize)
         return rc;
     }
 
-    if (readlink(buf.ptr, link, sizeof(link)) < 0)
+    if (readlink(buf.ptr, link, sizeof(link) - 1) < 0)
     {
         int rc = errno;
         te_string_free(&buf);
