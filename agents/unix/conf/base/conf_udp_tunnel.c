@@ -731,8 +731,15 @@ vxlan_dev_get(unsigned int gid, const char *oid, char *value,
     if (!udp_tunnel_entry_valid(udp_tunnel_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "/agent:%s/interface:%s", ta_name,
-             udp_tunnel_e->data.vxlan->dev);
+    if (udp_tunnel_e->data.vxlan->dev != NULL)
+    {
+        snprintf(value, RCF_MAX_VAL, "/agent:%s/interface:%s", ta_name,
+                 udp_tunnel_e->data.vxlan->dev);
+    }
+    else
+    {
+        value[0] = '\0';
+    }
     return 0;
 }
 
@@ -756,21 +763,28 @@ vxlan_dev_set(unsigned int gid, const char *oid, const char *value,
     if (!rcf_pch_rsrc_accessible(value))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    tmp_oid = cfg_convert_oid_str(value);
-    if (tmp_oid == NULL)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-
-    if (!tmp_oid->inst || tmp_oid->len != 2 ||
-        strcmp(CFG_OID_GET_INST_NAME(tmp_oid, 0), ta_name) != 0)
+    if (value[0] != '\0')
     {
-        cfg_free_oid(tmp_oid);
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
-    }
+        tmp_oid = cfg_convert_oid_str(value);
+        if (tmp_oid == NULL)
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    tmp_dev = strdup(CFG_OID_GET_INST_NAME(tmp_oid, 1));
-    cfg_free_oid(tmp_oid);
-    if (tmp_dev == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        if (!tmp_oid->inst || tmp_oid->len != 2 ||
+            strcmp(CFG_OID_GET_INST_NAME(tmp_oid, 0), ta_name) != 0)
+        {
+            cfg_free_oid(tmp_oid);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        tmp_dev = strdup(CFG_OID_GET_INST_NAME(tmp_oid, 1));
+        cfg_free_oid(tmp_oid);
+        if (tmp_dev == NULL)
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+    else
+    {
+        tmp_dev = NULL;
+    }
 
     free(udp_tunnel_e->data.vxlan->dev);
     udp_tunnel_e->data.vxlan->dev = tmp_dev;
