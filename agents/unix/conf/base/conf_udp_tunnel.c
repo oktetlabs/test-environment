@@ -769,14 +769,14 @@ vxlan_dev_set(unsigned int gid, const char *oid, const char *value,
         if (tmp_oid == NULL)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-        if (!tmp_oid->inst || tmp_oid->len != 2 ||
-            strcmp(CFG_OID_GET_INST_NAME(tmp_oid, 0), ta_name) != 0)
+        if (!tmp_oid->inst || tmp_oid->len != 3 ||
+            strcmp(CFG_OID_GET_INST_NAME(tmp_oid, 1), ta_name) != 0)
         {
             cfg_free_oid(tmp_oid);
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
         }
 
-        tmp_dev = strdup(CFG_OID_GET_INST_NAME(tmp_oid, 1));
+        tmp_dev = strdup(CFG_OID_GET_INST_NAME(tmp_oid, 2));
         cfg_free_oid(tmp_oid);
         if (tmp_dev == NULL)
             return TE_RC(TE_TA_UNIX, TE_ENOMEM);
