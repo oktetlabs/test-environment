@@ -41,7 +41,7 @@
     <!-- Type of the network node.
          Name: none
          Value: 0 (agent), 1(nut), others... -->
-    <object oid="/net/node/type" access="read_create" type="integer"/>
+    <object oid="/net/node/type" access="read_write" type="integer"/>
 
 
     <!-- Root object of network pool

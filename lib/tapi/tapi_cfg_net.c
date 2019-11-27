@@ -286,7 +286,7 @@ tapi_cfg_net_register_net(const char *name, cfg_net_t *net, ...)
             ERROR("Failed to add node!");
             break;
         }
-        rc = cfg_add_instance_fmt(NULL, CFG_VAL(INTEGER, node->type),
+        rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, node->type),
                                   "/net:%s/node:%d/type:", name, node_num);
         if (rc != 0)
             break;
