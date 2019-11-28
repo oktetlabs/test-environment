@@ -891,6 +891,12 @@ parse_config_yaml_cmd(yaml_document_t *d,
     yaml_node_item_t *item = NULL;
     te_errno          rc = 0;
 
+    if (parent->type != YAML_SEQUENCE_NODE)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "expected sequence node");
+        return TE_EFMT;
+    }
+
     item = parent->data.sequence.items.start;
     do {
         yaml_node_t *n = yaml_document_get_node(d, *item);
