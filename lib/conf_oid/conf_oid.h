@@ -68,9 +68,9 @@ typedef struct cfg_oid {
  *
  * @return Instance name allocated from heap or @c NULL.
  *
- * @sa cfg_oid_get_inst_name()
+ * @sa cfg_oid_str_get_inst_name()
  */
-extern char * cfg_oid_str_get_inst_name(const cfg_oid *oid, int idx);
+extern char *cfg_oid_get_inst_name(const cfg_oid *oid, int idx);
 
 /**
  * Get specified instance name from OID in string format.
@@ -83,7 +83,7 @@ extern char * cfg_oid_str_get_inst_name(const cfg_oid *oid, int idx);
  *
  * @sa cfg_oid_get_inst_name()
  */
-extern char * cfg_oid_str_get_inst_name(const char *oid_str, int idx);
+extern char *cfg_oid_str_get_inst_name(const char *oid_str, int idx);
 
 /**
  * Get sub-ID from object OID.
