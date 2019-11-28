@@ -954,6 +954,15 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars)
         ERROR(CS_YAML_ERR_PREFIX "failed to get the root node");
         return TE_EINVAL;
     }
+
+    if (root->type == YAML_SCALAR_NODE &&
+        strcmp(root->data.scalar.value, "") == 0)
+    {
+        INFO(CS_YAML_ERR_PREFIX "empty");
+        rc = 0;
+        goto out;
+    }
+
     rc = parse_config_yaml_cmd(&dy, xn_history, root, expand_vars);
     if (rc != 0)
     {
