@@ -59,6 +59,7 @@ typedef struct cfg_net_node_t {
 
 /** Net description structure */
 typedef struct cfg_net_t {
+    char           *name;       /**< Network instance name */
     cfg_handle      handle;     /**< Cfg instance handle */
     unsigned int    n_nodes;    /**< Number of nodes in the net */
     cfg_net_node_t *nodes;      /**< Array with net nodes */
