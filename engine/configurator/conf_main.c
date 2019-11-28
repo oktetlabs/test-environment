@@ -79,6 +79,12 @@ put_env_vars_in_list(te_kvpair_h *expand_vars)
     for (env = environ; *env != NULL; env++)
     {
         env_var = strdup(*env);
+        if (env_var == NULL)
+        {
+            ERROR("%s(): strdup(%s) failed", __func__, *env);
+            return TE_RC(TE_CS, TE_ENOMEM);
+        }
+
         key = strtok(env_var, "=");
         value = strtok(NULL, "");
 
