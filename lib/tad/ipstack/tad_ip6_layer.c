@@ -1021,7 +1021,7 @@ tad_ip6_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
     tad_pkts            frags;
     tad_pkt            *frag;
     int                 frags_i;
-    int                 nfrag_len;
+    uint32_t            nfrag_len;
     te_errno            rc;
 
     rc = asn_get_child_value(data->tmpl_pdu, &frags_seq,
@@ -1068,11 +1068,16 @@ tad_ip6_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
      * fragmentation is requested.
      */
     if (frags_seq != NULL)
+    {
         nfrag_len = data->frag_hdr_off + IP6_FRAG_EXT_HDR_LEN;
+        rc = tad_pkts_alloc(&frags, frags_num, 1, nfrag_len);
+    }
     else
-        nfrag_len = data->hdr_len;
+    {
+        nfrag_len = 0;
+        rc = tad_pkts_alloc(&frags, frags_num, 0, 0);
+    }
 
-    rc = tad_pkts_alloc(&frags, frags_num, 1, nfrag_len);
     if (rc != 0)
         return rc;
 
@@ -1080,7 +1085,7 @@ tad_ip6_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
          frags_i < frags_num;
          frags_i++, frag = frag->links.cqe_next)
     {
-        uint8_t    *frag_hdr = tad_pkt_first_seg(frag)->data_ptr;
+        uint8_t    *frag_hdr = NULL;
         asn_value  *frag_spec = NULL;
         uint32_t    real_len = 0;
         uint32_t    hdr_len = 0;
@@ -1092,11 +1097,10 @@ tad_ip6_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
         uint16_t   *pld_len = NULL;
         uint8_t    *p = NULL;
 
-        memcpy(frag_hdr, data->hdr, nfrag_len);
-
         if (frags_seq == NULL)
         {
-            real_len = hdr_len = sdu_len - IP6_HDR_LEN;
+            real_len = sdu_len;
+            hdr_len = sdu_len - IP6_HDR_LEN;
         }
         else
         {
@@ -1132,6 +1136,36 @@ tad_ip6_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
                       "too big", __FUNCTION__, hdr_offset);
                 return TE_RC(TE_TAD_CSAP, TE_EINVAL);
             }
+        }
+
+        /*
+         * Note: in case of no fragmentation this will get all
+         * the SDU segments preserving their layer tags, see
+         * tad_pkt_get_frag() for more details. Some users may
+         * rely on it.
+         */
+        rc = tad_pkt_get_frag(frag, sdu,
+                              real_offset + nfrag_len,
+                              real_len,
+                              TAD_PKT_GET_FRAG_RAND);
+        if (rc != 0)
+        {
+            ERROR("%s(): Failed to get fragment [offset=%u length=%u] "
+                  "from payload: %r",
+                  __FUNCTION__, (unsigned int)real_offset,
+                  (unsigned int)real_len, rc);
+            return rc;
+        }
+
+        frag_hdr = tad_pkt_first_seg(frag)->data_ptr;
+        memcpy(frag_hdr, data->hdr,
+               (frags_seq == NULL ? data->hdr_len : nfrag_len));
+
+        pld_len = (uint16_t *)(frag_hdr + IP6_HDR_PLEN_OFFSET);
+        *pld_len = htons(hdr_len);
+
+        if (frags_seq != NULL)
+        {
             /* Fragment offset in header is in 8-octet units */
             hdr_offset = (hdr_offset >> 3);
 
@@ -1147,22 +1181,6 @@ tad_ip6_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
 
             if (set_id)
                 *(uint32_t *)(p + 2) = htonl(id);
-        }
-
-        pld_len = (uint16_t *)(frag_hdr + IP6_HDR_PLEN_OFFSET);
-        *pld_len = htons(hdr_len);
-
-        rc = tad_pkt_get_frag(frag, sdu,
-                              real_offset + nfrag_len,
-                              real_len,
-                              TAD_PKT_GET_FRAG_RAND);
-        if (rc != 0)
-        {
-            ERROR("%s(): Failed to get fragment [offset=%u length=%u] "
-                  "from payload: %r",
-                  __FUNCTION__, (unsigned int)real_offset,
-                  (unsigned int)real_len, rc);
-            return rc;
         }
     }
 
