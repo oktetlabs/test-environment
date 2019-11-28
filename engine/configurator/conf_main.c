@@ -84,7 +84,7 @@ put_env_vars_in_list(te_kvpair_h *expand_vars)
 
         if (value != NULL)
         {
-            rc = te_kvpair_add(expand_vars, key, value);
+            rc = te_kvpair_add(expand_vars, key, "%s", value);
             if (rc != 0)
                 return rc;
         }
