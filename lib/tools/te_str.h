@@ -224,7 +224,7 @@ extern te_errno te_strtoui(const char   *str,
  * @return 0 or error
  */
 extern te_errno te_strtol_raw(const char *input, char **endptr, int base,
-			      long int *result);
+                              long int *result);
 
 /**
  * Convert string to long int. Should be used to avoid
