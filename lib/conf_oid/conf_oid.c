@@ -323,3 +323,58 @@ cfg_oid_common_root(const cfg_oid *oid1, const cfg_oid *oid2)
     return result;
 #undef GET_SUBID
 }
+
+/* See the description in conf_oid.h */
+char *
+cfg_oid_get_inst_name(const cfg_oid *oid, int idx)
+{
+    const char *inst_name;
+    char *copy;
+
+    if (!oid->inst)
+    {
+        ERROR("%s(): oid is not an instance", __func__);
+        return NULL;
+    }
+
+    if (idx >= (int)oid->len)
+    {
+        ERROR("%s(): too big instance %d is requested from OID with %u length",
+              __func__, idx, oid->len);
+        return NULL;
+    }
+
+    if (idx < 0 && -idx > (int)oid->len)
+    {
+        ERROR("%s(): too small instance %d is requested from OID with %u length",
+              __func__, idx, oid->len);
+        return NULL;
+    }
+
+    inst_name = idx >= 0 ? CFG_OID_GET_INST_NAME(oid, idx) :
+                           CFG_OID_GET_INST_NAME(oid, (int)oid->len + idx);
+
+    copy = strdup(inst_name);
+    if (copy == NULL)
+        ERROR("strdup(%s) failed", inst_name);
+
+    return copy;
+}
+
+/* See the description in conf_oid.h */
+char *
+cfg_oid_str_get_inst_name(const char *oid_str, int idx)
+{
+    cfg_oid *oid;
+    char *result;
+
+    oid = cfg_convert_oid_str(oid_str);
+    if (oid == NULL)
+        return NULL;
+
+    result = cfg_oid_get_inst_name(oid, idx);
+
+    cfg_free_oid(oid);
+
+    return result;
+}
