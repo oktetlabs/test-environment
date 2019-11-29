@@ -1143,9 +1143,6 @@ asn_snprint_enum(char *buffer, size_t buf_len, const asn_value *value)
     unsigned int i, need;
     const char  *val_label = NULL;
 
-    if ((value == NULL) || (buffer == NULL) || (buf_len == 0))
-        return 0;
-
     if (value->syntax != ENUMERATED)
         return -1;
 
@@ -1190,9 +1187,6 @@ asn_snprint_charstring(char *buffer, size_t buf_len, const asn_value *value)
     char *quote_place;
     char *buf_place;
     size_t total_syms = 0, interval = 0;
-
-    if ((value == NULL) || (buffer == NULL) || (buf_len == 0))
-        return 0;
 
     if (value->syntax != CHAR_STRING)
         return -1;
@@ -1273,9 +1267,6 @@ asn_snprint_octstring(char *buffer, size_t buf_len, const asn_value *value)
                                  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', };
     uint8_t     *cur_byte;
 
-    if ((value == NULL) || (buffer == NULL) || (buf_len == 0))
-        return 0;
-
     if (value->syntax != OCT_STRING)
         return -1;
 
@@ -1323,9 +1314,6 @@ asn_snprint_tagged(char *buffer, size_t buf_len, const asn_value *value,
 
     asn_value *v_el;
 
-    if ((value == NULL) || (buffer == NULL) || (buf_len == 0))
-        return 0;
-
     /* codes of syntaxes which processed in this method
      * may have arbitrary last two bits*/
     if (value->syntax != TAGGED)
@@ -1370,9 +1358,6 @@ asn_snprint_choice(char *buffer, size_t buf_len, const asn_value *value,
          *name_p;
 
     asn_value *v_el;
-
-    if ((value == NULL) || (buffer == NULL) || (buf_len == 0))
-        return 0;
 
     if (value->syntax != CHOICE)
         return -1;
@@ -1419,9 +1404,6 @@ asn_snprint_objid(char *buffer, size_t buf_len, const asn_value *value)
 
     unsigned int all_used = 0, used;
     int *subid;
-
-    if ((value == NULL) || (buffer == NULL) || (buf_len == 0))
-        return 0;
 
     if (value->syntax != OID)
         return -1;
@@ -1476,9 +1458,6 @@ asn_snprint_array_fields(char *buffer, size_t buf_len, const asn_value *value,
     int was_element = 0;
 
     char *last = buffer + buf_len - 1;
-
-    if ((value == NULL) || (buffer == NULL) || (buf_len == 0))
-        return 0;
 
     if ((value->syntax & ASN_SYN_ARRAY) == 0 ||
         (value->syntax & COMPOUND) == 0)
