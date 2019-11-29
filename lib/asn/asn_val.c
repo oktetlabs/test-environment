@@ -1,7 +1,7 @@
 /** @file
  * @brief ASN.1 library
  *
- * Implementation of method to dynamic ASN value processing.
+ * Implementation of method to dynamic ASN.1 value processing.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
@@ -116,7 +116,7 @@ asn_impl_fall_down_to_tree_writable(asn_value *container,
 
 
 /**
- * Compare two ASN tags.
+ * Compare two ASN.1 tags.
  *
  * @param l  first argument;
  * @param r  second argument;
@@ -133,9 +133,9 @@ asn_tag_equal(asn_tag_t l, asn_tag_t r)
 
 
 /**
- * Init empty ASN value of specified type.
+ * Init empty ASN.1 value of specified type.
  *
- * @param type       ASN type to which value should belong.
+ * @param type       ASN.1 type to which value should belong.
  *
  * @return pointer to new ASN_value instance or NULL if error occurred.
  */
@@ -191,11 +191,11 @@ asn_init_value(const asn_type * type)
 }
 
 /**
- * Init empty ASN value of specified type with certain ASN tag.
+ * Init empty ASN.1 value of specified type with certain ASN.1 tag.
  *
- * @param type       ASN type to which value should belong.
- * @param tc         ASN tag class, see enum definition and ASN.1 standard.
- * @param tag        ASN tag value, may be arbitrary non-negative integer.
+ * @param type       ASN.1 type to which value should belong.
+ * @param tc         ASN.1 tag class, see enum definition and ASN.1 standard.
+ * @param tag        ASN.1 tag value, may be arbitrary non-negative integer.
  *
  * @return pointer to new ASN_value instance or NULL if error occurred.
  */
@@ -314,9 +314,9 @@ asn_assign_value(asn_value *dst, const asn_value *src)
 
 
 /**
- * Make a copy of ASN value instance.
+ * Make a copy of ASN.1 value instance.
  *
- * @param value       ASN value to be copied.
+ * @param value       ASN.1 value to be copied.
  *
  * @return pointer to new ASN_value instance or NULL if error occurred.
  */
@@ -426,9 +426,9 @@ asn_copy_value(const asn_value *value)
 }
 
 /**
- * Free memory allocalted by ASN value instance.
+ * Free memory allocalted by ASN.1 value instance.
  *
- * @param value       ASN value to be destroyed.
+ * @param value       ASN.1 value to be destroyed.
  *
  * @return nothing
  */
@@ -674,9 +674,9 @@ asn_free_child_value(asn_value *value,
 
 
 /**
- * Obtain ASN type to which specified value belongs.
+ * Obtain ASN.1 type to which specified value belongs.
  *
- * @param value       ASN value which type is interested.
+ * @param value       ASN.1 value which type is interested.
  *
  * @return pointer to asn_type instance or NULL if error occurred.
  */
@@ -740,7 +740,7 @@ asn_child_tag_index(const asn_type *type, asn_tag_class tag_class,
 
     /*
      * TODO: make something more efficient, then linear search,
-     * leafs in ASN type specification should be sorted by tag value.
+     * leafs in ASN.1 type specification should be sorted by tag value.
      */
     for (i = 0; i < type->len; i++, n_en++)
         if(n_en->tag.cl == tag_class && n_en->tag.val == tag_val)
@@ -1419,7 +1419,7 @@ asn_get_indexed(const asn_value *container, asn_value **subval,
 /**
  * Read primitive syntax value.
  *
- * @param[in]    value      ASN value with primitive syntax.
+ * @param[in]    value      ASN.1 value with primitive syntax.
  * @param[out]   data       Pointer to buffer for read data
  * @param[inout] d_len      Length of available buffer / read data; measured in
  *                          octets for all types except OID and BIT_STRING;
@@ -1743,10 +1743,10 @@ asn_write_value_field_fmt(asn_value  *container,
 
 #if !AVOID_STRSEP
 /**
- * Write data into primitive syntax leaf in specified ASN value, internal
+ * Write data into primitive syntax leaf in specified ASN.1 value, internal
  * implemetation of this functionality.
  *
- * @param container     pointer to ASN value which leaf field is interested;
+ * @param container     pointer to ASN.1 value which leaf field is interested;
  * @param data          data to be written, should be in nature C format for
  *                      data type respective to leaf syntax;
  * @param d_len         length of data;
@@ -1754,7 +1754,7 @@ asn_write_value_field_fmt(asn_value  *container,
  *                      BIT_STRING; for OID measured in sizeof(int),
  *                      for BIT_STRING measured in bits
  * @param field_labels  string with dot-separated sequence of textual field
- *                      labels, specifying primitive-syntax leaf in ASN value
+ *                      labels, specifying primitive-syntax leaf in ASN.1 value
  *                      tree with 'container' as a root. Label for
  *                      'SEQUENCE OF' and 'SET OF' subvalues is decimal
  *                      notation of its integer index in array.
@@ -1948,14 +1948,14 @@ asn_impl_write_value_field(asn_value *container,
 #endif
 
 /**
- * Read data from primitive syntax leaf in specified ASN value.
+ * Read data from primitive syntax leaf in specified ASN.1 value.
  *
- * @param container     pointer to ASN value which leaf field is interested.
+ * @param container     pointer to ASN.1 value which leaf field is interested.
  * @param data          pointer to buffer for read data.
  * @param d_len         length of available buffer / read data (IN/OUT).
  * @param field_labels  string with dot-separated sequence of textual field
  *                      labels, specifying primitive-syntax leaf in
- *                      ASN value tree with 'container' as a root.
+ *                      ASN.1 value tree with 'container' as a root.
  *                      Label for 'SEQUENCE OF' and 'SET OF' subvalues
  *                      is decimalnotation of its integer index in array.
  *
@@ -2002,10 +2002,10 @@ asn_read_value_field_fmt(const asn_value  *container,
 }
 
 /**
- * Read data into primitive syntax leaf in specified ASN value, internal
+ * Read data into primitive syntax leaf in specified ASN.1 value, internal
  * implemetation of this functionality.
  *
- * @param container     pointer to ASN value which leaf field is interested
+ * @param container     pointer to ASN.1 value which leaf field is interested
  * @param data          pointer to buffer for read data (OUT)
  * @param d_len         length of available buffer / read data (IN/OUT);
  *                      measured in octets for all types except OID and
@@ -2013,7 +2013,7 @@ asn_read_value_field_fmt(const asn_value  *container,
  *                      for BIT_STRING measured in bits
  * @param field_labels  string with dot-separated sequence of textual field
  *                      labels, specifying primitive-syntax leaf in
- *                      ASN value tree with 'container' as a root.
+ *                      ASN.1 value tree with 'container' as a root.
  *                      Label for 'SEQUENCE OF' and 'SET OF' subvalues
  *                      is decimalnotation of its integer index in array.
  *
@@ -2139,13 +2139,13 @@ asn_read_string(const asn_value *container, char **value,
 
 
 /**
- * Write component of COMPOUND subvalue in ASN value tree.
+ * Write component of COMPOUND subvalue in ASN.1 value tree.
  *
- * @param container     Root of ASN value tree which subvalue to be changed.
- * @param elem_value    ASN value to be placed into the tree at place,
+ * @param container     Root of ASN.1 value tree which subvalue to be changed.
+ * @param elem_value    ASN.1 value to be placed into the tree at place,
  *                      specified by subval_labels.
  * @param subval_labels string with dot-separated sequence of textual field
- *                      labels, specifying subvalue in ASN value
+ *                      labels, specifying subvalue in ASN.1 value
  *                      tree with 'container' as a root. Label for
  *                      'SEQUENCE OF' and 'SET OF' subvalues is decimal
  *                      notation of its integer index in array.
@@ -2179,15 +2179,15 @@ asn_write_component_value(asn_value *container,
 
 #if !AVOID_STRSEP
 /**
- * Write component of COMPOUND subvalue in ASN value tree,
+ * Write component of COMPOUND subvalue in ASN.1 value tree,
  * internal implementation.
  *
  *
- * @param container     Root of ASN value tree which subvalue to be changed.
- * @param elem_value    ASN value to be placed into the tree at place,
+ * @param container     Root of ASN.1 value tree which subvalue to be changed.
+ * @param elem_value    ASN.1 value to be placed into the tree at place,
  *                      specified by subval_labels.
  * @param subval_labels string with dot-separated sequence of textual field
- *                      labels, specifying subvalue in ASN value
+ *                      labels, specifying subvalue in ASN.1 value
  *                      tree with 'container' as a root. Label for
  *                      'SEQUENCE OF' and 'SET OF' subvalues is decimal
  *                      notation of its integer index in array.
@@ -2510,10 +2510,10 @@ asn_read_component_value (const asn_value *container,
 
 /**
  * Replace array element in indexed ('SEQUENCE OF' or 'SET OF') subvalue
- * of root ASN value container.
+ * of root ASN.1 value container.
  *
- * @param container     Root of ASN value tree which subvalue is interested.
- * @param elem_value    ASN value to be placed into the array, specified
+ * @param container     Root of ASN.1 value tree which subvalue is interested.
+ * @param elem_value    ASN.1 value to be placed into the array, specified
  *                      by subval_labels at place, specified by index.
  * @param index         Array index of element to be replaced.
  * @param subval_labels string with dot-separated sequence of textual field
@@ -2559,9 +2559,9 @@ asn_write_indexed(asn_value *container, const asn_value *elem_value,
 
 /**
  * Read array element in indexed ('SEQUENCE OF' or 'SET OF') subvalue
- * of root ASN value 'container'.
+ * of root ASN.1 value 'container'.
  *
- * @param container     Root of ASN value tree which subvalue is interested.
+ * @param container     Root of ASN.1 value tree which subvalue is interested.
  * @param index         Array index of element to be read
  * @param subval_labels string with dot-separated sequence of textual field
  *                      labels, specifying indexed syntax subvalue in ASN
@@ -2665,9 +2665,9 @@ asn_insert_indexed(asn_value *container, asn_value *elem_value,
 
 /**
  * Remove array element from indexed syntax (i.e. 'SEQUENCE OF' or 'SET OF')
- * subvalue of root ASN value container.
+ * subvalue of root ASN.1 value container.
  *
- * @param container     Root of ASN value tree which subvalue is interested.
+ * @param container     Root of ASN.1 value tree which subvalue is interested.
  * @param index         Array index of element to be removed.
  * @param subval_labels string with dot-separated sequence of textual field
  *                      labels, specifying indexed syntax subvalue in ASN
@@ -2725,9 +2725,9 @@ asn_remove_indexed(asn_value * container, int index, const char *subval_labels)
 }
 
 /**
- * Get length of subvalue of root ASN value container.
+ * Get length of subvalue of root ASN.1 value container.
  *
- * @param container     Root of ASN value tree which subvalue is interested.
+ * @param container     Root of ASN.1 value tree which subvalue is interested.
  * @param subval_labels string with dot-separated sequence of textual field
  *                      labels, specifying indexed syntax subvalue in ASN
  *                      value tree with 'container' as a root.
@@ -2757,7 +2757,7 @@ asn_get_length(const asn_value *container, const char *subval_labels)
 /**
  * Fall down in tree according passed field labels.
  *
- * @param container     pointer to ASN value which leaf field is interested;
+ * @param container     pointer to ASN.1 value which leaf field is interested;
  * @param field_labels  textual field label, specifying subvalue of
  *                      'container'. Label for 'SEQUENCE OF' and 'SET OF'
  *                      subvalues is decimal notation of its integer
@@ -2819,10 +2819,10 @@ asn_impl_fall_down_to_tree_nc(const asn_value *container, char *field_labels,
 
 
 /**
- * Find one-depth subvalue in ASN value tree by its label.
+ * Find one-depth subvalue in ASN.1 value tree by its label.
  * This method is applicable only to values with COMPOUND syntax.
  *
- * @param container  pointer to ASN value which leaf field is interested;
+ * @param container  pointer to ASN.1 value which leaf field is interested;
  * @param label      textual field label, specifying subvalue of 'container'.
  *                   Label for 'SEQUENCE OF' and 'SET OF' subvalue
  *                   is decimal notation of its integer index in array.
@@ -2941,14 +2941,14 @@ asn_get_choice_ptr(const asn_value *container)
 
 
 /**
- * Get choice in subvalue of root ASN value container.
+ * Get choice in subvalue of root ASN.1 value container.
  *
- * @param container     Root of ASN value tree which subvalue is interested.
+ * @param container     Root of ASN.1 value tree which subvalue is interested.
  * @param subval_labels string with dot-separated sequence of textual field
- *                      labels, specifying interested subvalue in ASN value
+ *                      labels, specifying interested subvalue in ASN.1 value
  *                      tree with 'container' as a root.
- *                      Subvalue should have ASN syntax CHOICE.
- * @param choice_label  string with label of choice in ASN value (OUT).
+ *                      Subvalue should have ASN.1 syntax CHOICE.
+ * @param choice_label  string with label of choice in ASN.1 value (OUT).
  * @param ch_lb_len     length of available buffer in choice_label.
  *
  * @return zero or error code.
@@ -3020,9 +3020,9 @@ asn_get_tag(const asn_value *container)
 }
 
 /**
- * Obtain ASN syntax type;
+ * Obtain ASN.1 syntax type;
  *
- * @param type          ASN value which leaf syntax is interested.
+ * @param type          ASN.1 value which leaf syntax is interested.
  *
  * @return syntax of specified leaf in value.
  */
@@ -3036,11 +3036,11 @@ asn_get_syntax_of_type(const asn_type *type)
 }
 
 /**
- * Obtain ASN syntax of specified field in value.
+ * Obtain ASN.1 syntax of specified field in value.
  *
- * @param value          ASN value which leaf syntax is interested.
+ * @param value          ASN.1 value which leaf syntax is interested.
  * @param subval_labels string with dot-separated sequence of textual field
- *                      labels, specifying interested subvalue in ASN value
+ *                      labels, specifying interested subvalue in ASN.1 value
  *                      tree with 'value' as a root.
  *
  * @return syntax of specified leaf in value.
@@ -3082,10 +3082,10 @@ asn_get_syntax(const asn_value *value, const char *subval_labels)
 
 
 /**
- * Get constant pointer to subtype of some ASN type.
+ * Get constant pointer to subtype of some ASN.1 type.
  *
- * @param container     ASN type.
- * @param found_subtype Location for pointer to ASN sub-type (OUT).
+ * @param container     ASN.1 type.
+ * @param found_subtype Location for pointer to ASN.1 sub-type (OUT).
  * @param labels        String with dot-separated sequence of textual field
  *                      labels, specifying interested sub-type.
  *
@@ -3182,12 +3182,12 @@ asn_get_mark(const asn_value *value, int *mark)
 }
 
 /**
- * Get ASN path of value relative to container. This function must be used
+ * Get ASN.1 path of value relative to container. This function must be used
  * only from inside callbacks of asn_walk_depth function.
  *
- * @param   value   ASN value
+ * @param   value   ASN.1 value
  *
- * @return  ASN path
+ * @return  ASN.1 path
  */
 static const char*
 asn_get_value_path(asn_value *value)
@@ -3200,7 +3200,7 @@ asn_get_value_path(asn_value *value)
 /**
  * Get label of a field by its index
  *
- * @param value      Root ASN value
+ * @param value      Root ASN.1 value
  * @param index      Index of field
  * @param label      Buffer for name (OUT)
  * @param label_len  Length of buffer
@@ -3264,10 +3264,10 @@ asn_impl_get_label_by_index(asn_value *value, unsigned int index,
 }
 
 /**
- * Walks through ASN tree and calls func on each item
+ * Walks through ASN.1 tree and calls func on each item
  *
  * See params description in asn_walk_depth function. Additional parameter
- * (path) contains ASN path to current value from the root node (container)
+ * (path) contains ASN.1 path to current value from the root node (container)
  * and could be obtained in the 'func' using asn_get_value_path function.
  */
 static te_errno
@@ -3363,11 +3363,11 @@ asn_walk_breadth(asn_value *container, te_bool only_leafs,
 }
 
 /**
- * Converts extended path search expression to ASN value
+ * Converts extended path search expression to ASN.1 value
  *
  * @param search_str    Search expression ([<label>:<value>{,<lbl>:<val>}])
- * @param search_type   ASN type of value to be parsed
- * @param search_value  Pointer to parsed ASN value
+ * @param search_type   ASN.1 type of value to be parsed
+ * @param search_value  Pointer to parsed ASN.1 value
  *
  * @return Status code
  */
@@ -3376,7 +3376,7 @@ asn_search_to_asn_value(const char *search_str,
                         const asn_type *search_type,
                         asn_value **search_value)
 {
-    char       *asn_text_val = NULL; /* Valid ASN text value */
+    char       *asn_text_val = NULL; /* Valid ASN.1 text value */
     char       *label = NULL;
     te_errno    rc;
     const char *p;
@@ -3395,7 +3395,7 @@ asn_search_to_asn_value(const char *search_str,
     asn_text_val = malloc(2 * search_len);
     if (asn_text_val == NULL)
     {
-        ERROR("%s(): Failed to allocate memory for ASN text value",
+        ERROR("%s(): Failed to allocate memory for ASN.1 text value",
               __FUNCTION__);
         return TE_ENOMEM;
     }
@@ -3403,7 +3403,7 @@ asn_search_to_asn_value(const char *search_str,
     if (label == NULL)
     {
         free(asn_text_val);
-        ERROR("%s(): Failed to allocate memory for ASN value label",
+        ERROR("%s(): Failed to allocate memory for ASN.1 value label",
               __FUNCTION__);
         return TE_ENOMEM;
     }
@@ -3454,7 +3454,7 @@ asn_search_to_asn_value(const char *search_str,
                 }
                 if (i == search_type->len)
                 {
-                    ERROR("%s(): Failed to find label '%s' in the ASN type "
+                    ERROR("%s(): Failed to find label '%s' in the ASN.1 type "
                           "'%s'", __FUNCTION__, label, search_type->name);
                     state = SRCHASN_ERROR;
                     break;
@@ -3507,14 +3507,14 @@ asn_search_to_asn_value(const char *search_str,
     }
 
 #if 0
-    RING("%s(): ASN search value text: '%s'",
+    RING("%s(): ASN.1 search value text: '%s'",
          __FUNCTION__, asn_text_val);
 #endif
     rc = asn_parse_value_text(asn_text_val, search_type, search_value,
                               &parsed_syms);
     if (rc != 0)
     {
-        ERROR("%s(): Failed to parse ASN search value '%s', rc=%r",
+        ERROR("%s(): Failed to parse ASN.1 search value '%s', rc=%r",
               __FUNCTION__, asn_text_val, rc);
     }
 
@@ -3540,7 +3540,7 @@ asn_path_from_extended(asn_value *node, const char *ext_path,
 
     int prefix_len = 0; /* Length of path prefix (before '[') */
     te_errno rc;
-    char *buf = NULL; /* Temporary buffer for ASN value */
+    char *buf = NULL; /* Temporary buffer for ASN.1 value */
     char *path = NULL; /* Temporary path */
     unsigned int i;
     char *temp_asn_path = NULL;
@@ -3565,7 +3565,7 @@ asn_path_from_extended(asn_value *node, const char *ext_path,
         return 0;
     }
 
-    /* Get ASN node which contents are to be searched */
+    /* Get ASN.1 node which contents are to be searched */
     if (search_start == ext_path)
     {
         container = node;
@@ -3586,7 +3586,7 @@ asn_path_from_extended(asn_value *node, const char *ext_path,
         char err_buf[512];
         asn_sprint_value(node, err_buf, 512, 0);
         ERROR("%s(%s): Failed to get container to be searched, rc=%r."
-              "ASN value='%s'",
+              "ASN.1 value='%s'",
               __FUNCTION__, ext_path, rc, err_buf);
         return rc;
     }
@@ -3612,7 +3612,7 @@ asn_path_from_extended(asn_value *node, const char *ext_path,
         return TE_EASNWRONGTYPE;
     }
 
-    /* Convert search expression to ASN value */
+    /* Convert search expression to ASN.1 value */
     search_end = strchr(search_start, ']');
     if (search_end == NULL)
     {
@@ -3695,7 +3695,7 @@ asn_path_from_extended(asn_value *node, const char *ext_path,
         {
             char err_buf[512];
             asn_sprint_value(node, err_buf, 512, 0);
-            RING("%s(): Call again with ASN value '%s' and path '%s",
+            RING("%s(): Call again with ASN.1 value '%s' and path '%s",
                  __FUNCTION__, err_buf, ext_path);
         }
 #endif
@@ -3705,7 +3705,7 @@ asn_path_from_extended(asn_value *node, const char *ext_path,
     }
 
     /*
-     * Calculate necessary buffer length for ASN path and check
+     * Calculate necessary buffer length for ASN.1 path and check
      * asn_path_len
      */
     path = malloc(20 * sizeof(char));
@@ -3822,12 +3822,12 @@ asn_insert_value_extended_path(asn_value *root_node,
         *index = strtol(p, NULL, 10);
     }
 
-    /* Get the last autoinserted ASN value */
+    /* Get the last autoinserted ASN.1 value */
     rc = asn_get_descendent(root_node, &dst, expanded_path);
     free(expanded_path);
     if (rc != 0)
     {
-        ERROR("%s(): Failed to get target ASN value, rc=%r",
+        ERROR("%s(): Failed to get target ASN.1 value, rc=%r",
               __FUNCTION__, rc);
         return rc;
     }
@@ -3838,7 +3838,7 @@ asn_insert_value_extended_path(asn_value *root_node,
     temp_dst = asn_copy_value(dst);
     if (temp_dst == NULL)
     {
-        ERROR("%s(): Failed to create copy of target ASN value",
+        ERROR("%s(): Failed to create copy of target ASN.1 value",
               __FUNCTION__);
         return TE_ENOMEM;
     }
@@ -3867,7 +3867,7 @@ asn_insert_value_extended_path(asn_value *root_node,
             dst->data.array[i] = asn_copy_value(src_elem);
             if (dst->data.array[i] == NULL)
             {
-                ERROR("%s(): Failed to copy item #%d of ASN value "
+                ERROR("%s(): Failed to copy item #%d of ASN.1 value "
                       "to target, no memory?", __FUNCTION__, i);
                 rc = TE_ENOMEM;
                 goto cleanup;
@@ -3891,7 +3891,7 @@ struct check_contains_s
 };
 
 /**
- * Compares two ASN values by comparing their textual representation
+ * Compares two ASN.1 values by comparing their textual representation
  *
  * TODO: Write more accurate comparison (consider order of items in
  * SEQUENCE_OF and don't consider it in SET_OF)
@@ -3975,7 +3975,7 @@ asn_impl_compare_values(asn_value *a, asn_value *b)
 /**
  * Callback for use with asn_walk_depth in asn_check_value_contains
  *
- * @param leaf      ASN value for leaf currently processed
+ * @param leaf      ASN.1 value for leaf currently processed
  * @param user_ptr  Pointer to user-defined data
  *
  * @return  Status code

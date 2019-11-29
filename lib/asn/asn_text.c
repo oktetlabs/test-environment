@@ -1,7 +1,7 @@
 /** @file
  * @brief ASN.1 library
  *
- * Implementation of method to convert to/from textual ASN value notation.
+ * Implementation of method to convert to/from textual ASN.1 value notation.
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
@@ -105,8 +105,8 @@ asn_impl_pt_label(const char *text, char *label, int *syms)
  * create new instance of asn_value type with its internal presentation.
  *
  * @param text          text to be parsed;
- * @param type          ASN type of value to be parsed;
- * @param parsed        parsed ASN value (OUT);
+ * @param type          ASN.1 type of value to be parsed;
+ * @param parsed        parsed ASN.1 value (OUT);
  * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
  *
  * @return zero on success, otherwise error code.
@@ -181,8 +181,8 @@ asn_impl_pt_charstring(const char *text, const asn_type *type,
  * create new instance of asn_value type with its internal presentation.
  *
  * @param text          text to be parsed;
- * @param type          ASN type of value to be parsed;
- * @param parsed        parsed ASN value (OUT);
+ * @param type          ASN.1 type of value to be parsed;
+ * @param parsed        parsed ASN.1 value (OUT);
  * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
  *
  * @return zero on success, otherwise error code.
@@ -286,8 +286,8 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
  * create new instance of asn_value type with its internal presentation.
  *
  * @param text          text to be parsed;
- * @param type          ASN type of value to be parsed;
- * @param parsed        parsed ASN value (OUT);
+ * @param type          ASN.1 type of value to be parsed;
+ * @param parsed        parsed ASN.1 value (OUT);
  * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
  *
  * @return zero on success, otherwise error code.
@@ -326,8 +326,8 @@ asn_impl_pt_integer(const char *text, const asn_type *type,
  * create new instance of asn_value type with its internal presentation.
  *
  * @param text          text to be parsed;
- * @param type          ASN type of value to be parsed;
- * @param parsed        parsed ASN value (OUT);
+ * @param type          ASN.1 type of value to be parsed;
+ * @param parsed        parsed ASN.1 value (OUT);
  * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
  *
  * @return zero on success, otherwise error code.
@@ -364,8 +364,8 @@ asn_impl_pt_uinteger(const char *text, const asn_type *type,
  * create new instance of asn_value type with its internal presentation.
  *
  * @param text          text to be parsed;
- * @param type          ASN type of value to be parsed;
- * @param parsed        parsed ASN value (OUT);
+ * @param type          ASN.1 type of value to be parsed;
+ * @param parsed        parsed ASN.1 value (OUT);
  * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
  *
  * @return zero on success, otherwise error code.
@@ -400,8 +400,8 @@ asn_impl_pt_bool(const char*text, const asn_type *type,
  * create new instance of asn_value type with its internal presentation.
  *
  * @param text          text to be parsed;
- * @param type          ASN type of value to be parsed;
- * @param parsed        parsed ASN value (OUT);
+ * @param type          ASN.1 type of value to be parsed;
+ * @param parsed        parsed ASN.1 value (OUT);
  * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
  *
  * @return zero on success, otherwise error code.
@@ -433,8 +433,8 @@ asn_impl_pt_null(const char *text, const asn_type *type,
  * create new instance of asn_value type with its internal presentation.
  *
  * @param text          text to be parsed;
- * @param type          ASN enum type specification;
- * @param parsed        parsed ASN value (OUT);
+ * @param type          ASN.1 enum type specification;
+ * @param parsed        parsed ASN.1 value (OUT);
  * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
  *
  * @return zero on success, otherwise error code.
@@ -496,8 +496,8 @@ asn_impl_pt_enum(const char*text, const asn_type *type,
  * Parse textual presentation of single ASN.1 value OID type.
  *
  * @param text          text to be parsed;
- * @param type          ASN type of value to be parsed;
- * @param parsed        parsed ASN value (OUT);
+ * @param type          ASN.1 type of value to be parsed;
+ * @param parsed        parsed ASN.1 value (OUT);
  * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
  *
  * @return zero on success, otherwise error code.
@@ -596,7 +596,7 @@ asn_impl_pt_objid(const char *text, const asn_type *type,
  *
  * @param text          text to be parsed;
  * @param type          expected type of value;
- * @param parsed        parsed ASN value (OUT);
+ * @param parsed        parsed ASN.1 value (OUT);
  * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
  *
  * @return zero on success, otherwise error code.
@@ -696,7 +696,7 @@ asn_impl_pt_named_array(const char *text, const asn_type *type,
  *
  * @param text          text to be parsed;
  * @param type          expected type of value;
- * @param parsed        parsed ASN value (OUT);
+ * @param parsed        parsed ASN.1 value (OUT);
  * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
  *
  * @return zero on success, otherwise error code.
@@ -769,7 +769,7 @@ asn_impl_pt_indexed_array(const char*text, const asn_type * type,
  *
  * @param text          text to be parsed;
  * @param type          expected type of value;
- * @param parsed        parsed ASN value (OUT);
+ * @param parsed        parsed ASN.1 value (OUT);
  * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
  *
  * @return zero on success, otherwise error code.
@@ -855,7 +855,7 @@ asn_impl_pt_choice(const char *txt, const asn_type *type,
  *
  * @param text          text to be parsed;
  * @param type          expected type of value;
- * @param parsed        parsed ASN value (OUT);
+ * @param parsed        parsed ASN.1 value (OUT);
  * @param syms_parsed   quantity of parsed symbols in 'text' (OUT);
  *
  * @return zero on success, otherwise error code.
@@ -955,7 +955,7 @@ number_of_digits_unsigned(unsigned int value)
  * Count required length of string for textual presentation
  * of specified value.
  *
- * @param value         ASN value.
+ * @param value         ASN.1 value.
  *
  * @return length of requiered string.
  */
@@ -1004,7 +1004,7 @@ static char t_class[4][30] = {"UNIVERSAL ", "APPLICATION ", "", "PRIVATE "};
  * Count required length of string for textual presentation
  * of specified value.
  *
- * @param value         ASN value.
+ * @param value         ASN.1 value.
  * @param indent        current indent
  *
  * @return length of requiered string.
@@ -1045,7 +1045,7 @@ asn_count_len_tagged(const asn_value *value, unsigned int indent)
  * Count required length of string for textual presentation of specified
  * value.
  *
- * @param value         ASN value.
+ * @param value         ASN.1 value.
  * @param indent        current indent
  *
  * @return length of requiered string.
@@ -1087,7 +1087,7 @@ asn_count_len_choice(const asn_value *value, unsigned int indent)
  * Count required length of string for textual presentation
  * of specified value.
  *
- * @param value         ASN value.
+ * @param value         ASN.1 value.
  *
  * @return length of requiered string.
  */
@@ -1130,9 +1130,9 @@ asn_count_len_objid(const asn_value *value)
  * Prepare textual ASN.1 presentation of passed value ENUMERATED
  * and put it into specified buffer.
  *
- * @param buffer        buffer for ASN text.
+ * @param buffer        buffer for ASN.1 text.
  * @param buf_len       length of buffer.
- * @param value         ASN value to print, should have ENUMERATED type.
+ * @param value         ASN.1 value to print, should have ENUMERATED type.
  *
  * @return number characters written to buffer or -1 if error occured.
  */
@@ -1177,9 +1177,9 @@ asn_snprint_enum(char *buffer, size_t buf_len, const asn_value *value)
  * NOTE: see description for asn_sprint_value(), this function is very
  * similar, just syntax-specific.
  *
- * @param buffer        buffer for ASN text.
+ * @param buffer        buffer for ASN.1 text.
  * @param buf_len       length of buffer.
- * @param value         ASN value to be printed, should have INTEGER type.
+ * @param value         ASN.1 value to be printed, should have INTEGER type.
  *
  * @return number characters written to buffer or -1 if error occured.
  */
@@ -1257,9 +1257,9 @@ finish:
  * Prepare textual ASN.1 presentation of passed value OCTET STRING
  * and put it into specified buffer.
  *
- * @param buffer        buffer for ASN text.
+ * @param buffer        buffer for ASN.1 text.
  * @param buf_len       length of buffer.
- * @param value         ASN value to be printed, should have INTEGER type.
+ * @param value         ASN.1 value to be printed, should have INTEGER type.
  *
  * @return number characters written to buffer or -1 if error occured.
  */
@@ -1308,9 +1308,9 @@ finish:
  * Prepare textual ASN.1 presentation of passed value of complex type with
  * TAGGED syntax and put it into specified buffer.
  *
- * @param buffer        buffer for ASN text.
+ * @param buffer        buffer for ASN.1 text.
  * @param buf_len       length of buffer.
- * @param value         ASN value to be printed, should have INTEGER type.
+ * @param value         ASN.1 value to be printed, should have INTEGER type.
  * @param indent        current indent
  *
  * @return number characters written to buffer or -1 if error occured.
@@ -1353,9 +1353,9 @@ asn_snprint_tagged(char *buffer, size_t buf_len, const asn_value *value,
  * Prepare textual ASN.1 presentation of passed value of complex type with
  * CHOICE syntax and put it into specified buffer.
  *
- * @param buffer        buffer for ASN text.
+ * @param buffer        buffer for ASN.1 text.
  * @param buf_len       length of buffer.
- * @param value         ASN value to be printed, should have INTEGER type.
+ * @param value         ASN.1 value to be printed, should have INTEGER type.
  * @param indent        current indent
  *
  * @return number characters written to buffer or -1 if error occured.
@@ -1405,9 +1405,9 @@ asn_snprint_choice(char *buffer, size_t buf_len, const asn_value *value,
  * Prepare textual ASN.1 presentation of passed value of OID type and
  * put it into specified buffer.
  *
- * @param buffer        buffer for ASN text.
+ * @param buffer        buffer for ASN.1 text.
  * @param buf_len       length of buffer.
- * @param value         ASN value to be printed, should have INTEGER type.
+ * @param value         ASN.1 value to be printed, should have INTEGER type.
  *
  * @return number characters written to buffer or -1 if error occured.
  */
@@ -1460,8 +1460,8 @@ error:
  * type with many subvalues (i.e. 'SEQUENCE[_OF]' and 'SET[_OF]')
  * and put it into specified buffer.
  *
- * @param value         ASN value to be printed, should have INTEGER type.
- * @param buffer        buffer for ASN text.
+ * @param value         ASN.1 value to be printed, should have INTEGER type.
+ * @param buffer        buffer for ASN.1 text.
  * @param buf_len       length of buffer.
  * @param indent        current indent
  *
@@ -1551,8 +1551,8 @@ error:
  * Prepare textual ASN.1 presentation of passed value and put it into
  * specified buffer.
  *
- * @param value         ASN value to be printed.
- * @param buffer        buffer for ASN text.
+ * @param value         ASN.1 value to be printed.
+ * @param buffer        buffer for ASN.1 text.
  * @param buf_len       length of buffer.
  * @param indent        current indent
  *
@@ -1618,7 +1618,7 @@ asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len,
  * Count required length of string for textual presentation of
  * specified value.
  *
- * @param value         ASN value.
+ * @param value         ASN.1 value.
  * @param indent        current indent
  *
  * @return length of requiered string.
@@ -1686,7 +1686,7 @@ asn_count_txt_len(const asn_value *value, unsigned int indent)
  * Count required length of string for textual presentation
  * of specified value.
  *
- * @param value         ASN value.
+ * @param value         ASN.1 value.
  * @param indent        current indent
  *
  * @return length of requiered string.
@@ -1744,7 +1744,7 @@ asn_count_len_array_fields(const asn_value *value, unsigned int indent)
  * to file with specified name.
  * If file already exists, it will be overwritten.
  *
- * @param value         ASN value to be saved.
+ * @param value         ASN.1 value to be saved.
  * @param filename      name of file
  *
  * @return zero on success, otherwise error code.
@@ -1799,7 +1799,7 @@ file_len(const char *filename, size_t *len)
 }
 
 /**
- * Read ASN.1 text file, parse DefinedValue of specified ASN type
+ * Read ASN.1 text file, parse DefinedValue of specified ASN.1 type
  *
  * @param filename      name of file to be parsed;
  * @param type          expected type of value

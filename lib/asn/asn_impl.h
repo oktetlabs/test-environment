@@ -40,7 +40,7 @@ typedef enum {
 } asn_tagging_type;
 
 /**
- * Compare two ASN tags.
+ * Compare two ASN.1 tags.
  *
  * @param l  first argument;
  * @param r  second argument;
@@ -52,12 +52,12 @@ typedef enum {
 extern int asn_tag_equal(asn_tag_t l, asn_tag_t r);
 
 /**
- * Element of array, specifying named subvalue in complex ASN value.
+ * Element of array, specifying named subvalue in complex ASN.1 value.
  */
 typedef struct asn_named_entry_t
 {
     char           *const name; /**< Text label of subvalue */
-    const asn_type *const type; /**< ASN type of subvalue */
+    const asn_type *const type; /**< ASN.1 type of subvalue */
     asn_tag_t             tag;  /**< Tag of subvalue */
 } asn_named_entry_t;
 
@@ -71,7 +71,7 @@ typedef struct asn_enum_entry_t
 } asn_enum_entry_t;
 
 /**
- * ASN type internal presentation
+ * ASN.1 type internal presentation
  */
 struct asn_type {
     const char  *name;   /**< ASN.1 name of type, if any assigned. */
@@ -104,7 +104,7 @@ struct asn_type {
 };
 
 /**
- * ASN Value internal presentation
+ * ASN.1 Value internal presentation
  */
 struct asn_value
 {
@@ -163,14 +163,14 @@ struct asn_child_desc {
 
 
 /**
- * Find one-depth sub-type for passed ASN type tree by its label.
- * This function is applicable only for ASN types with COMPOUND syntax.
+ * Find one-depth sub-type for passed ASN.1 type tree by its label.
+ * This function is applicable only for ASN.1 types with COMPOUND syntax.
  *
- * @param type       pointer to ASN value which leaf field is interested;
+ * @param type       pointer to ASN.1 value which leaf field is interested;
  * @param label      textual field label, specifying subvalue of 'type',
  *                   for syntaxes "*_OF" and "TAGGED" this parameter
  *                   is ignored.
- * @param found_type pointer to found ASN type (OUT).
+ * @param found_type pointer to found ASN.1 type (OUT).
  *
  * @return zero on success, otherwise error code.
  */
@@ -179,10 +179,10 @@ extern te_errno asn_impl_find_subtype(const asn_type * type,
                                       const asn_type ** found_type);
 
 /**
- * Find one-depth subvalue in ASN value tree by its label.
+ * Find one-depth subvalue in ASN.1 value tree by its label.
  * This method is applicable only to values with COMPOUND syntax.
  *
- * @param container  pointer to ASN value which leaf field is interested;
+ * @param container  pointer to ASN.1 value which leaf field is interested;
  * @param label      textual field label, specifying subvalue of
  *                   'container'.
  *                   Label for 'SEQUENCE OF' and 'SET OF' subvalues
@@ -196,15 +196,15 @@ extern te_errno asn_impl_find_subvalue(const asn_value *container,
                                        asn_value const **found_val);
 
 /**
- * Find numeric index of subvalue in ASN type specification by
+ * Find numeric index of subvalue in ASN.1 type specification by
  * symbolic label.
  *
  * If type syntax in CHOICE, 'labels' may start from
  * CHOICE field label with leading '#'.
- * For CHOICE  got index is offset of child specification in ASN type
- * definition, but not in ASN value instance.
+ * For CHOICE  got index is offset of child specification in ASN.1 type
+ * definition, but not in ASN.1 value instance.
  *
- * @param type          ASN type.
+ * @param type          ASN.1 type.
  * @param labels        Labels string.
  * @param index         Location for found index (OUT).
  * @param rest_labels   Location for pointer to rest labels (OUT).
@@ -221,9 +221,9 @@ extern te_errno asn_child_named_index(const asn_type *type,
  * This method is applicable only to values with COMPOUND syntax with
  * named components: 'SEQUENCE', 'SET' and 'CHOICE'.
  *
- * @param type       ASN type which subvalue is interested.
- * @param tag_class  class of ASN tag
- * @param tag_val    value of ASN tag
+ * @param type       ASN.1 type which subvalue is interested.
+ * @param tag_class  class of ASN.1 tag
+ * @param tag_val    value of ASN.1 tag
  * @param index      found index, unchanged if error occurred (OUT).
  *
  * @return zero on success, otherwise error code.
@@ -237,14 +237,14 @@ extern te_errno asn_child_tag_index(const asn_type *type,
 /**
  * Internal method for insert child by its index in container
  * type named-array. For CHOICE syntax index used for check
- * that new_value has respective type as specified in ASN type.
+ * that new_value has respective type as specified in ASN.1 type.
  *
  * This method does not check that incoming pointers are not NULL,
  * so be carefull, when call it directly.
  *
- * @param container     ASN value which child should be updated,
+ * @param container     ASN.1 value which child should be updated,
  *                      have to be of syntax SEQUENCE, SET, or CHOICE
- * @param child         New ASN value for child, may be NULL.
+ * @param child         New ASN.1 value for child, may be NULL.
  * @param index         Index of child.
  *
  * @return zero on success, otherwise error code.
@@ -257,12 +257,12 @@ extern te_errno asn_put_child_by_index(asn_value *container,
  * Internal method for get child by its index in container
  * type named-array. For CHOICE syntax index used for check
  * that really contained subvalue has respective type and choice name
- * as specified in ASN type.
+ * as specified in ASN.1 type.
  *
  * This method does not check that incoming pointers are not NULL,
  * so be carefull, when call it directly.
  *
- * @param container     ASN value which child should be updated,
+ * @param container     ASN.1 value which child should be updated,
  *                      have to be of syntax SEQUENCE, SET, or CHOICE
  * @param child         Location for pointer to the child (OUT).
  * @param index         Index of child.
