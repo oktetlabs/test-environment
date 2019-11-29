@@ -33,6 +33,7 @@
 
 #include "te_stdint.h"
 #include "te_raw_log.h"
+#include "te_str.h"
 #include "logger_int.h"
 #include "ipc_client.h"
 #include "logger_ten.h"
@@ -190,9 +191,9 @@ tapi_sniffer_add(const char *ta, const char *iface, const char *name,
         return NULL;
     }
 
-    strncpy(newsnid->ta, ta, CFG_SUBID_MAX);
-    strncpy(newsnid->snifname, snifname, CFG_SUBID_MAX);
-    strncpy(newsnid->ifname, iface, CFG_SUBID_MAX);
+    te_strlcpy(newsnid->ta, ta, CFG_SUBID_MAX);
+    te_strlcpy(newsnid->snifname, snifname, CFG_SUBID_MAX);
+    te_strlcpy(newsnid->ifname, iface, CFG_SUBID_MAX);
     if (strlen(newsnid->snifname) == 0 || strlen(newsnid->ifname) == 0 ||
         strlen(newsnid->ta) == 0)
     {
