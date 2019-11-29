@@ -956,7 +956,7 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars)
     }
 
     if (root->type == YAML_SCALAR_NODE &&
-        strcmp(root->data.scalar.value, "") == 0)
+        root->data.scalar.value[0] == '\0')
     {
         INFO(CS_YAML_ERR_PREFIX "empty");
         rc = 0;
