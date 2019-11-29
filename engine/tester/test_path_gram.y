@@ -47,6 +47,9 @@ const char *test_path_str;
 /** Current position in test path string */
 int test_path_str_pos;
 
+/** Jump buffer to jump out from test path parser in the case of failure */
+jmp_buf test_path_jmp_buf;
+
 
 /**
  * Parser error reporting.
@@ -376,7 +379,7 @@ tester_test_path_parse(test_path *path_location)
     test_path_str_pos = 0;
     path = path_location;
 
-    if (test_path_parse() != 0)
+    if (setjmp(test_path_jmp_buf) != 0 || test_path_parse() != 0)
     {
         ERROR("Failed to parse test path string '%s'",
               path_location->str);

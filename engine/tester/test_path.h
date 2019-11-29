@@ -17,6 +17,12 @@
 #ifndef __TE_TESTER_TEST_PATH_H__
 #define __TE_TESTER_TEST_PATH_H__
 
+#if HAVE_SETJMP_H
+#include <setjmp.h>
+#else
+#error "Required setjmp.h not found"
+#endif
+
 #include "te_queue.h"
 #include "te_errno.h"
 
@@ -100,6 +106,10 @@ typedef struct test_path {
 
 /** List of test paths */
 typedef TAILQ_HEAD(test_paths, test_path) test_paths;
+
+
+/** Jump buffer to jump out from test path parser in the case of failure */
+extern jmp_buf test_path_jmp_buf;
 
 
 /**
