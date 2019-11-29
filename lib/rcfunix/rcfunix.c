@@ -571,7 +571,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     else
     {
         ta->is_local = FALSE;
-        strncpy(ta->host, val, RCF_MAX_NAME);
+        te_strlcpy(ta->host, val, RCF_MAX_NAME);
     }
     VERB("Test Agent host %s", ta->host);
 
@@ -581,7 +581,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     {
         goto bad_conf;
     }
-    strncpy(ta->port, val, RCF_MAX_NAME);
+    te_strlcpy(ta->port, val, RCF_MAX_NAME);
 
     if (!te_str_is_null_or_empty(val = te_kvpairs_get(conf, "user")))
         snprintf(ta->user, sizeof(ta->user), "%s@", val);
@@ -601,7 +601,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     }
 
     if (!te_str_is_null_or_empty(val = te_kvpairs_get(conf, "ssh_proxy")))
-        strncpy(ta->ssh_proxy, val, sizeof(ta->ssh_proxy));
+        te_strlcpy(ta->ssh_proxy, val, sizeof(ta->ssh_proxy));
 
     if (!te_str_is_null_or_empty(val = te_kvpairs_get(conf, "copy_timeout")))
     {
