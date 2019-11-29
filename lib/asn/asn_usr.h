@@ -390,23 +390,6 @@ extern te_errno asn_parse_value_assign_text(const char *string,
                                             asn_value **value);
 
 /**
- * Read ASN.1 text file, parse value assignments in it while they refer to
- * ASN types which are known to the module, and add all parsed values
- * to internal Value hash.
- * Name of value is stored in field 'name' of asn_value structure.
- *
- * This function is not implemented.
- *
- * @param filename      name of file to be parsed
- * @param found_names   names of parsed ASN values (OUT)
- * @param found_len     length of array found_names[] (IN/OUT)
- *
- * @return zero on success, otherwise error code.
- */
-extern te_errno asn_parse_file(const char *filename, char **found_names,
-                               int *found_len);
-
-/**
  * Read ASN.1 text file, parse DefinedValue of specified ASN type
  *
  * @param filename      name of file to be parsed

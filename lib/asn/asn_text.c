@@ -923,27 +923,6 @@ asn_parse_value_assign_text(const char *string, asn_value **value)
 }
 
 /**
- * Read ASN.1 text file, parse value assignments in it while they refer to
- * ASN types which are known to the module, and add all parsed values
- * to internal Value hash. Names of
- *
- * @param filename      name of file to be parsed;
- * @param found_names   names of parsed ASN values (OUT);
- * @param found_len     length of array found_names[] (IN/OUT);
- *
- * @return zero on success, otherwise error code.
- */
-te_errno
-asn_parse_file(const char *filename, char **found_names, int *found_len)
-{
-    UNUSED(filename);
-    UNUSED(found_names);
-    UNUSED(found_len);
-
-    return TE_EOPNOTSUPP;
-}
-
-/**
  * Count number of symbols required to deciamal notation of integer/
  *
  * @param value         integer number
