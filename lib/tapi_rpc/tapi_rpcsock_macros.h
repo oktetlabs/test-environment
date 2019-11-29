@@ -434,8 +434,8 @@
         char  path_name[RCF_MAX_PATH] = "/tmp/";                        \
                                                                         \
         position = path_name + strlen(path_name);                       \
-        position = strncpy(position, file_name_,                        \
-                           sizeof(path_name) - strlen(path_name));      \
+        position = te_strlcpy(position, file_name_,                     \
+                              sizeof(path_name) - strlen(path_name));   \
         (recv_) = rpc_socket_to_file((rpcs_), (sockd_),                 \
                                       path_name, (timeout_));           \
     } while (0)
