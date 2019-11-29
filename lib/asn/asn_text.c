@@ -43,46 +43,6 @@ size_t number_of_digits_unsigned(unsigned int value);
 size_t asn_count_len_array_fields(const asn_value *value,
                                   unsigned int indent);
 
-te_errno asn_impl_pt_label(const char*text, char *label, int *parsed_syms);
-
-
-te_errno asn_impl_pt_charstring(const char *text, const asn_type *type,
-                           asn_value **parsed, int *parsed_syms);
-
-te_errno asn_impl_pt_bool(const char *text, const asn_type *type,
-                     asn_value **parsed, int *parsed_syms);
-
-te_errno asn_impl_pt_integer(const char *text, const asn_type *type,
-                        asn_value **parsed, int *parsed_syms);
-te_errno asn_impl_pt_uinteger(const char *text, const asn_type *type,
-                        asn_value **parsed, int *parsed_syms);
-
-te_errno asn_impl_pt_null(const char*text, const asn_type *type,
-                     asn_value **parsed, int *parsed_syms);
-
-te_errno asn_impl_pt_objid(const char*text, const asn_type *type,
-                      asn_value **parsed, int *parsed_syms);
-
-
-te_errno asn_impl_pt_octstring(const char *text, const asn_type *type,
-                          asn_value **parsed, int *parsed_syms);
-
-te_errno asn_impl_pt_enum(const char*text, const asn_type *type,
-                     asn_value **parsed, int *parsed_syms);
-
-te_errno asn_impl_pt_named_array(const char*text, const asn_type *type,
-                            asn_value **parsed, int *parsed_syms);
-
-te_errno asn_impl_pt_indexed_array(const char*text, const asn_type *type,
-                              asn_value **parsed, int *parsed_syms);
-
-te_errno asn_impl_pt_choice(const char *txt, const asn_type *type,
-                       asn_value **parsed, int *parsed_syms);
-
-te_errno asn_parse_value_text(const char*text, const asn_type *type,
-                         asn_value **parsed, int *parsed_syms);
-
-
 #define PARSE_BUF 0x1000
 
 /**
@@ -96,7 +56,7 @@ te_errno asn_parse_value_text(const char*text, const asn_type *type,
  *
  * @return zero on success, otherwise error code.
  */
-te_errno
+static te_errno
 asn_impl_pt_label(const char *text, char *label, int *syms)
 {
     int         l = 0;
@@ -151,7 +111,7 @@ asn_impl_pt_label(const char *text, char *label, int *syms)
  *
  * @return zero on success, otherwise error code.
  */
-te_errno
+static te_errno
 asn_impl_pt_charstring(const char *text, const asn_type *type,
                        asn_value **parsed, int *syms_parsed)
 {
@@ -227,7 +187,7 @@ asn_impl_pt_charstring(const char *text, const asn_type *type,
  *
  * @return zero on success, otherwise error code.
  */
-te_errno
+static te_errno
 asn_impl_pt_octstring(const char *text, const asn_type *type,
                       asn_value **parsed, int *syms_parsed)
 {
@@ -332,7 +292,7 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
  *
  * @return zero on success, otherwise error code.
  */
-te_errno
+static te_errno
 asn_impl_pt_integer(const char *text, const asn_type *type,
                     asn_value **parsed, int *syms_parsed)
 {
@@ -372,7 +332,7 @@ asn_impl_pt_integer(const char *text, const asn_type *type,
  *
  * @return zero on success, otherwise error code.
  */
-te_errno
+static te_errno
 asn_impl_pt_uinteger(const char *text, const asn_type *type,
                      asn_value **parsed, int *syms_parsed)
 {
@@ -410,7 +370,7 @@ asn_impl_pt_uinteger(const char *text, const asn_type *type,
  *
  * @return zero on success, otherwise error code.
  */
-te_errno
+static te_errno
 asn_impl_pt_bool(const char*text, const asn_type *type,
                  asn_value **parsed, int *syms_parsed)
 {
@@ -446,7 +406,7 @@ asn_impl_pt_bool(const char*text, const asn_type *type,
  *
  * @return zero on success, otherwise error code.
  */
-te_errno
+static te_errno
 asn_impl_pt_null(const char *text, const asn_type *type,
                  asn_value **parsed, int *syms_parsed)
 {
@@ -480,7 +440,7 @@ asn_impl_pt_null(const char *text, const asn_type *type,
  * @return zero on success, otherwise error code.
  *
  */
-te_errno
+static te_errno
 asn_impl_pt_enum(const char*text, const asn_type *type,
                  asn_value **parsed, int *syms_parsed)
 {
@@ -544,7 +504,7 @@ asn_impl_pt_enum(const char*text, const asn_type *type,
  *
  * @todo parse of symbolic labels
  */
-te_errno
+static te_errno
 asn_impl_pt_objid(const char *text, const asn_type *type,
                   asn_value **parsed, int *parsed_syms)
 {
@@ -644,7 +604,7 @@ asn_impl_pt_objid(const char *text, const asn_type *type,
  * @todo        check for the order of elements in SEQUENCE and presence
  *              of non-OPTIONAL fields should be done.
  */
-te_errno
+static te_errno
 asn_impl_pt_named_array(const char *text, const asn_type *type,
                         asn_value **parsed, int *parsed_syms)
 {
@@ -741,7 +701,7 @@ asn_impl_pt_named_array(const char *text, const asn_type *type,
  *
  * @return zero on success, otherwise error code.
  */
-te_errno
+static te_errno
 asn_impl_pt_indexed_array(const char*text, const asn_type * type,
                           asn_value **parsed, int *parsed_syms)
 {
@@ -814,7 +774,7 @@ asn_impl_pt_indexed_array(const char*text, const asn_type * type,
  *
  * @return zero on success, otherwise error code.
  */
-te_errno
+static te_errno
 asn_impl_pt_choice(const char *txt, const asn_type *type,
                    asn_value **parsed, int *parsed_syms)
 {
@@ -1161,7 +1121,7 @@ asn_count_len_choice(const asn_value *value, unsigned int indent)
  *
  * @return length of requiered string.
  */
-size_t
+static size_t
 asn_count_len_objid(const asn_value *value)
 {
     int *txt_len_p;
@@ -1206,7 +1166,7 @@ asn_count_len_objid(const asn_value *value)
  *
  * @return number characters written to buffer or -1 if error occured.
  */
-int
+static int
 asn_sprint_enum(const asn_value *value, char *buffer, size_t buf_len)
 {
     int          used;
@@ -1253,7 +1213,7 @@ asn_sprint_enum(const asn_value *value, char *buffer, size_t buf_len)
  *
  * @return number characters written to buffer or -1 if error occured.
  */
-int
+static int
 asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
 {
     char *string;
@@ -1333,7 +1293,7 @@ finish:
  *
  * @return number characters written to buffer or -1 if error occured.
  */
-int
+static int
 asn_sprint_octstring(const asn_value *value, char *buffer, size_t buf_len)
 {
     char        *pb = buffer;
@@ -1385,7 +1345,7 @@ finish:
  *
  * @return number characters written to buffer or -1 if error occured.
  */
-int
+static int
 asn_sprint_tagged(const asn_value *value, char *buffer, size_t buf_len,
         unsigned int indent)
 {
@@ -1430,7 +1390,7 @@ asn_sprint_tagged(const asn_value *value, char *buffer, size_t buf_len,
  *
  * @return number characters written to buffer or -1 if error occured.
  */
-int
+static int
 asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
                   unsigned int indent)
 {
@@ -1481,7 +1441,7 @@ asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
  *
  * @return number characters written to buffer or -1 if error occured.
  */
-int
+static int
 asn_sprint_objid(const asn_value *value, char *buffer, size_t buf_len)
 {
     unsigned int i;
@@ -1537,7 +1497,7 @@ error:
  *
  * @return number characters written to buffer or -1 if error occured.
  */
-int
+static int
 asn_sprint_array_fields(const asn_value *value, char *buffer,
                         size_t buf_len, unsigned int indent)
 {
