@@ -373,23 +373,6 @@ extern te_errno asn_parse_value_text(const char *string,
                                      int *parsed_syms);
 
 /**
- * Parse ASN.1 text with "Value assignment" (see ASN.1 specification)
- * and create a new ASN value instance with internal presentation
- * of this value. If type of ASN value in 'string' is not known
- * for module, string will not parsed and NULL will be returned.
- * Name of value is stored in field 'name' of asn_value structure.
- *
- * This function is not implemented.
- *
- * @param string        text to be parsed
- * @param value         location for pointer to new parsed value
- *
- * @return zero on success, otherwise error code.
- */
-extern te_errno asn_parse_value_assign_text(const char *string,
-                                            asn_value **value);
-
-/**
  * Read ASN.1 text file, parse DefinedValue of specified ASN type
  *
  * @param filename      name of file to be parsed

@@ -913,15 +913,6 @@ asn_parse_value_text(const char *text, const asn_type *type,
     }
 }
 
-/* See description in asn_usr.h */
-te_errno
-asn_parse_value_assign_text(const char *string, asn_value **value)
-{
-    UNUSED(string);
-    UNUSED(value);
-    return TE_EOPNOTSUPP;
-}
-
 /**
  * Count number of symbols required to deciamal notation of integer/
  *
