@@ -741,8 +741,7 @@ iptables_rules_set(unsigned int  gid, const char *oid,
 
     /* Fill the table */
     fprintf(fp, "*%s\n", table);
-    do
-    {
+    do {
         int len;
 
         p = strchr(value, '\n');
