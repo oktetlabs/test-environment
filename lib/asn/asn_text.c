@@ -1130,14 +1130,14 @@ asn_count_len_objid(const asn_value *value)
  * Prepare textual ASN.1 presentation of passed value ENUMERATED
  * and put it into specified buffer.
  *
- * @param value         ASN value to print, should have ENUMERATED type.
  * @param buffer        buffer for ASN text.
  * @param buf_len       length of buffer.
+ * @param value         ASN value to print, should have ENUMERATED type.
  *
  * @return number characters written to buffer or -1 if error occured.
  */
 static int
-asn_sprint_enum(const asn_value *value, char *buffer, size_t buf_len)
+asn_snprint_enum(char *buffer, size_t buf_len, const asn_value *value)
 {
     int          used;
     unsigned int i, need;
@@ -1177,14 +1177,14 @@ asn_sprint_enum(const asn_value *value, char *buffer, size_t buf_len)
  * NOTE: see description for asn_sprint_value(), this function is very
  * similar, just syntax-specific.
  *
- * @param value         ASN value to be printed, should have INTEGER type.
  * @param buffer        buffer for ASN text.
  * @param buf_len       length of buffer.
+ * @param value         ASN value to be printed, should have INTEGER type.
  *
  * @return number characters written to buffer or -1 if error occured.
  */
 static int
-asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
+asn_snprint_charstring(char *buffer, size_t buf_len, const asn_value *value)
 {
     char *string;
     char *quote_place;
@@ -1257,14 +1257,14 @@ finish:
  * Prepare textual ASN.1 presentation of passed value OCTET STRING
  * and put it into specified buffer.
  *
- * @param value         ASN value to be printed, should have INTEGER type.
  * @param buffer        buffer for ASN text.
  * @param buf_len       length of buffer.
+ * @param value         ASN value to be printed, should have INTEGER type.
  *
  * @return number characters written to buffer or -1 if error occured.
  */
 static int
-asn_sprint_octstring(const asn_value *value, char *buffer, size_t buf_len)
+asn_snprint_octstring(char *buffer, size_t buf_len, const asn_value *value)
 {
     char        *pb = buffer;
     char        *last_b = buffer + buf_len - 1;
@@ -1308,16 +1308,16 @@ finish:
  * Prepare textual ASN.1 presentation of passed value of complex type with
  * TAGGED syntax and put it into specified buffer.
  *
- * @param value         ASN value to be printed, should have INTEGER type.
  * @param buffer        buffer for ASN text.
  * @param buf_len       length of buffer.
+ * @param value         ASN value to be printed, should have INTEGER type.
  * @param indent        current indent
  *
  * @return number characters written to buffer or -1 if error occured.
  */
 static int
-asn_sprint_tagged(const asn_value *value, char *buffer, size_t buf_len,
-        unsigned int indent)
+asn_snprint_tagged(char *buffer, size_t buf_len, const asn_value *value,
+                   unsigned int indent)
 {
     unsigned int all_used = 0, used;
 
@@ -1353,16 +1353,16 @@ asn_sprint_tagged(const asn_value *value, char *buffer, size_t buf_len,
  * Prepare textual ASN.1 presentation of passed value of complex type with
  * CHOICE syntax and put it into specified buffer.
  *
- * @param value         ASN value to be printed, should have INTEGER type.
  * @param buffer        buffer for ASN text.
  * @param buf_len       length of buffer.
+ * @param value         ASN value to be printed, should have INTEGER type.
  * @param indent        current indent
  *
  * @return number characters written to buffer or -1 if error occured.
  */
 static int
-asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
-                  unsigned int indent)
+asn_snprint_choice(char *buffer, size_t buf_len, const asn_value *value,
+                   unsigned int indent)
 {
     int   used;
     char *p = buffer,
@@ -1405,14 +1405,14 @@ asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
  * Prepare textual ASN.1 presentation of passed value of OID type and
  * put it into specified buffer.
  *
- * @param value         ASN value to be printed, should have INTEGER type.
  * @param buffer        buffer for ASN text.
  * @param buf_len       length of buffer.
+ * @param value         ASN value to be printed, should have INTEGER type.
  *
  * @return number characters written to buffer or -1 if error occured.
  */
 static int
-asn_sprint_objid(const asn_value *value, char *buffer, size_t buf_len)
+asn_snprint_objid(char *buffer, size_t buf_len, const asn_value *value)
 {
     unsigned int i;
     char *last = buffer + buf_len - 1;
@@ -1468,8 +1468,8 @@ error:
  * @return number characters written to buffer or -1 if error occured.
  */
 static int
-asn_sprint_array_fields(const asn_value *value, char *buffer,
-                        size_t buf_len, unsigned int indent)
+asn_snprint_array_fields(char *buffer, size_t buf_len, const asn_value *value,
+                         unsigned int indent)
 {
     unsigned int i, j;
     unsigned int all_used = 0, used;
@@ -1577,16 +1577,16 @@ asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len,
             return snprintf(buffer, buf_len, "%d", value->data.integer);
 
         case ENUMERATED:
-            return asn_sprint_enum(value, buffer, buf_len);
+            return asn_snprint_enum(buffer, buf_len, value);
 
         case UINTEGER:
             return snprintf(buffer, buf_len, "%u", value->data.integer);
 
         case CHAR_STRING:
-            return asn_sprint_charstring(value, buffer, buf_len);
+            return asn_snprint_charstring(buffer, buf_len, value);
 
         case OCT_STRING:
-            return asn_sprint_octstring(value, buffer, buf_len);
+            return asn_snprint_octstring(buffer, buf_len, value);
 
         case PR_ASN_NULL:
             return snprintf(buffer, buf_len, "NULL");
@@ -1596,18 +1596,18 @@ asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len,
         case REAL:
             return 0; /* not implemented yet.*/
         case OID:
-            return asn_sprint_objid(value, buffer, buf_len);
+            return asn_snprint_objid(buffer, buf_len, value);
         case CHOICE:
-            return asn_sprint_choice(value, buffer, buf_len, indent);
+            return asn_snprint_choice(buffer, buf_len, value, indent);
 
         case TAGGED:
-            return asn_sprint_tagged(value, buffer, buf_len, indent);
+            return asn_snprint_tagged(buffer, buf_len, value, indent);
 
         case SEQUENCE:
         case SEQUENCE_OF:
         case SET:
         case SET_OF:
-            return asn_sprint_array_fields(value, buffer, buf_len, indent);
+            return asn_snprint_array_fields(buffer, buf_len, value, indent);
 
         default:
             return 0; /* nothing to do. */
