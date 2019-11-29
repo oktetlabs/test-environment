@@ -130,7 +130,7 @@ asn_impl_pt_label(const char *text, char *label, int *syms)
     }
 
     memcpy (label, l_begin, l);
-    label[l] = 0;
+    label[l] = '\0';
     *syms = pt - text;
 
     EXIT("label=%s *syms=%d", label, *syms);
@@ -239,7 +239,7 @@ asn_impl_pt_octstring(const char *text, const asn_type *type,
     int  b_num = 0;
     te_errno  rc;
 
-    txt_buf[2] = 0;
+    txt_buf[2] = '\0';
 
     if (!text || !parsed || !syms_parsed)
         return TE_EWRONGPTR;
@@ -1317,7 +1317,7 @@ asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
 #undef PUT_PIECE
 
 finish:
-    buffer[buf_len - 1] = 0;
+    buffer[buf_len - 1] = '\0';
     return value->txt_len; /* assume, that for character string 'txt_len'
                               is allways correct - it is updated when
                               value is changed */
