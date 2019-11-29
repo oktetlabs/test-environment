@@ -1067,7 +1067,7 @@ log_msg(cfg_msg *msg, te_bool before)
 {
     uint16_t    level;
     const char *addon;
-    char        buf[64];
+    char        buf[128];
     char       *s1;
     char       *s2;
 
