@@ -26,6 +26,7 @@
 
 #include "te_defs.h"
 #include "te_alloc.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "trc_db.h"
 #include "trc_tags.h"
@@ -2752,9 +2753,8 @@ trc_report_exp_got_to_html(FILE             *f,
                 (iter_entry != NULL) &&
                 (id[0] != '\0'))
             {
-                sprintf(iter_id, "iter_%s", id);
-                sprintf(id_iter_id, "id=\"%s\"",
-                        iter_id);
+                TE_SPRINTF(iter_id, "iter_%s", id);
+                TE_SPRINTF(id_iter_id, "id=\"%s\"", iter_id);
             }
 
             escaped_path = escape_test_path(test_path);
