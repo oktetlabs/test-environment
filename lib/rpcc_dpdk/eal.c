@@ -176,7 +176,7 @@ tapi_reuse_eal(tapi_env         *env,
 
     for (i = 0, eal_args_len = 1;
          i < (unsigned int)argc;
-         eal_args_len += strlen(argv[i++]));
+         eal_args_len += strlen(argv[i++]) + 1);
 
     eal_args = TE_ALLOC(eal_args_len);
     if (eal_args == NULL)
@@ -190,8 +190,9 @@ tapi_reuse_eal(tapi_env         *env,
     {
         size_t len = strlen(argv[i]);
 
-        memcpy(eal_args_pos, argv[i], len);
-        eal_args_pos += len;
+        eal_args_pos[0] = ' ';
+        memcpy(eal_args_pos + 1, argv[i], len);
+        eal_args_pos += len + 1;
     }
     /* Buffer is filled in with zeros anyway, but anyway */
     eal_args_pos[0] = '\0';
