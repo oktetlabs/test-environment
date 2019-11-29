@@ -1292,7 +1292,7 @@ asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
     string = value->data.other;
     while (string != NULL && string[0] != '\0')
     {
-        char quote[] = "\\\"";
+        const char quote[] = "\\\"";
 
         quote_place = index(string, '"');
         if (quote_place == NULL)
