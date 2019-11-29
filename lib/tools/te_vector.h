@@ -116,6 +116,17 @@ typedef struct te_vec {
     (te_vec_append_array_safe(_te_vec, &(_val), 1, sizeof(_val)))
 
 /**
+ * Add element to the vector's tail
+ * @param _te_vec   Dynamic vector
+ * @param _type     Element type
+ * @param _val      New element
+ *
+ * @return Status code
+ */
+#define TE_VEC_APPEND_RVALUE(_te_vec, _type, _val) \
+    (te_vec_append_array_safe(_te_vec, (_type[]){_val}, 1, sizeof(_type)))
+
+/**
  * Append elements from C-like array to the dynamic array (safe version)
  *
  * @param _te_vec        Dymanic vector
