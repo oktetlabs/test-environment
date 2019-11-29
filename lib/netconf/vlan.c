@@ -12,11 +12,11 @@
 
 #define TE_LGR_USER "Netconf VLAN"
 
+#include "te_config.h"
 #include "conf_ip_rule.h"
 #include "logger_api.h"
 #include "netconf.h"
 #include "netconf_internal.h"
-#include "te_config.h"
 
 #define NETCONF_LINK_KIND_VLAN "vlan"
 
