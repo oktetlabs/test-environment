@@ -51,6 +51,7 @@
 #include "te_errno.h"
 #include "te_defs.h"
 #include "te_stdint.h"
+#include "te_str.h"
 #include "rcf_common.h"
 #include "rcf_internal.h"
 #include "comm_agent.h"
@@ -307,7 +308,7 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
             return TE_RC(TE_RCF_PCH, TE_EBUSY);
     }
     rpcs->last_rpc_op = in_arg->op;
-    strncpy(rpcs->last_rpc_name, name, RCF_MAX_NAME);
+    te_strlcpy(rpcs->last_rpc_name, name, RCF_MAX_NAME);
 
     if ((rc = rpc_xdr_encode_call(name, buf, &len, in)) != 0)
     {
@@ -960,7 +961,7 @@ rpcprovider_set(unsigned int gid, const char *oid, const char *value,
 
     if (*value == '/')
     {
-        strncpy(checkpath, value, sizeof(checkpath) - 1);
+        te_strlcpy(checkpath, value, sizeof(checkpath));
     }
     else
     {
@@ -1736,7 +1737,7 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
         }
 
         rpcs->last_rpc_op = common_arg.op;
-        strncpy(rpcs->last_rpc_name, rpc_name, RCF_MAX_NAME);
+        te_strlcpy(rpcs->last_rpc_name, rpc_name, RCF_MAX_NAME);
     }
 
     rpcs->sent = time(NULL);
