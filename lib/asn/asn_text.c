@@ -138,8 +138,8 @@ asn_impl_pt_label(const char *text, char *label, int *syms)
     return 0;
 }
 
-
 #define TEXT_BLOCK 0x400
+
 /**
  * Parse textual presentation of single ASN.1 value of UniversalString type,
  * create new instance of asn_value type with its internal presentation.
@@ -215,8 +215,6 @@ asn_impl_pt_charstring(const char *text, const asn_type *type,
 
     return rc;
 }
-
-
 
 /**
  * Parse textual presentation of single ASN.1 value of OCTET STRING type,
@@ -401,7 +399,6 @@ asn_impl_pt_uinteger(const char *text, const asn_type *type,
     return 0;
 }
 
-
 /**
  * Parse textual presentation of single ASN.1 value of BOOL type,
  * create new instance of asn_value type with its internal presentation.
@@ -438,7 +435,6 @@ asn_impl_pt_bool(const char*text, const asn_type *type,
     return 0;
 }
 
-
 /**
  * Parse textual presentation of single ASN.1 value of NULL type,
  * create new instance of asn_value type with its internal presentation.
@@ -471,7 +467,6 @@ asn_impl_pt_null(const char *text, const asn_type *type,
 
     return 0;
 }
-
 
 /**
  * Parse textual presentation of single ASN.1 value of ENUMERATED type,
@@ -536,7 +531,6 @@ asn_impl_pt_enum(const char*text, const asn_type *type,
 
     return 0;
 }
-
 
 /**
  * Parse textual presentation of single ASN.1 value OID type.
@@ -631,7 +625,6 @@ asn_impl_pt_objid(const char *text, const asn_type *type,
 
     return rc;
 }
-
 
 /**
  * Parse textual presentation of single ASN.1 value of specified type and
@@ -732,7 +725,6 @@ asn_impl_pt_named_array(const char *text, const asn_type *type,
     *parsed_syms = pt - text;
     return 0;
 }
-
 
 /**
  * Parse textual presentation of single ASN.1 value of specified type and
@@ -894,7 +886,6 @@ asn_impl_pt_choice(const char *txt, const asn_type *type,
     return 0;
 }
 
-
 /**
  * Parse textual presentation of single ASN.1 value of specified type and
  * create new instance of asn_value type with its internal presentation.
@@ -992,7 +983,6 @@ asn_parse_file(const char *filename, char **found_names, int *found_len)
     return TE_EOPNOTSUPP;
 }
 
-
 /**
  * Count number of symbols required to deciamal notation of integer/
  *
@@ -1076,7 +1066,6 @@ asn_count_len_enum(const asn_value *value)
     }
     return value->txt_len;
 }
-
 
 
 static char t_class[4][30] = {"UNIVERSAL ", "APPLICATION ", "", "PRIVATE "};
@@ -1164,7 +1153,6 @@ asn_count_len_choice(const asn_value *value, unsigned int indent)
     return value->txt_len;
 }
 
-
 /**
  * Count required length of string for textual presentation
  * of specified value.
@@ -1207,10 +1195,6 @@ asn_count_len_objid(const asn_value *value)
 
     return value->txt_len;
 }
-
-
-
-
 
 /**
  * Prepare textual ASN.1 presentation of passed value ENUMERATED
@@ -1256,10 +1240,6 @@ asn_sprint_enum(const asn_value *value, char *buffer, size_t buf_len)
 
     return used;
 }
-
-
-
-
 
 /**
  * Prepare textual ASN.1 presentation of passed value Character String
@@ -1340,7 +1320,6 @@ finish:
                               is allways correct - it is updated when
                               value is changed */
 }
-
 
 /**
  * Prepare textual ASN.1 presentation of passed value OCTET STRING
@@ -1489,7 +1468,6 @@ asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
 
     return used;
 }
-
 
 /**
  * Prepare textual ASN.1 presentation of passed value of OID type and
@@ -1704,7 +1682,6 @@ asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len,
     }
 }
 
-
 /**
  * Count required length of string for textual presentation of
  * specified value.
@@ -1773,7 +1750,6 @@ asn_count_txt_len(const asn_value *value, unsigned int indent)
     }
 }
 
-
 /**
  * Count required length of string for textual presentation
  * of specified value.
@@ -1831,7 +1807,6 @@ asn_count_len_array_fields(const asn_value *value, unsigned int indent)
     return value->txt_len;
 }
 
-
 /**
  * Prepare textual ASN.1 presentation of passed value and save this string
  * to file with specified name.
@@ -1875,7 +1850,6 @@ asn_save_to_file(const asn_value *value, const char *filename)
 
     return 0;
 }
-
 
 static te_errno
 file_len(const char *filename, size_t *len)
@@ -1941,8 +1915,6 @@ asn_parse_dvalue_in_file(const char *filename, const asn_type *type,
     return rc;
 }
 
-
-
 te_bool
 asn_clean_count(asn_value *value)
 {
@@ -1975,4 +1947,3 @@ asn_clean_count(asn_value *value)
         value->txt_len = -1;
     return need;
 }
-
