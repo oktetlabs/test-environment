@@ -32,6 +32,7 @@
 
 #include "logger_api.h"
 #include "te_alloc.h"
+#include "te_str.h"
 #include "te_test_result.h"
 #include "logic_expr.h"
 
@@ -1345,7 +1346,7 @@ trc_xinclude_process(xmlDocPtr doc, const char *location)
     char trc_dir[PATH_MAX];
     int  i;
 
-    strncpy(trc_dir, location, PATH_MAX);
+    te_strlcpy(trc_dir, location, PATH_MAX);
     for (i = strlen(trc_dir); i >= 0; i--)
     {
         if (trc_dir[i] == '/')
