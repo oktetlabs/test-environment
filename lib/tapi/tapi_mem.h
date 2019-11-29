@@ -71,6 +71,17 @@ extern void *tapi_memdup(const void *ptr, size_t size);
  */
 extern char *tapi_strdup(const char *s);
 
+/**
+ * @b strndup() wrapper which performs duplication status check internally
+ *
+ * @param s             Pointer to a source string to be duplicated
+ * @param size          Counts of bytes to copy from a source string
+ *
+ * @return Pointer to a string copy (never returns @c NULL)
+ */
+extern char *tapi_strndup(const char *s, size_t size);
+
+
 /**@} <!-- END tapi_mem --> */
 
 #ifdef __cplusplus
