@@ -1183,40 +1183,33 @@ asn_snprint_enum(char *buffer, size_t buf_len, const asn_value *value)
 static int
 asn_snprint_charstring(char *buffer, size_t buf_len, const asn_value *value)
 {
+    const char quote[] = "\"";
     char *string;
-    char *quote_place;
-    char *buf_place;
+    char *buf_place = buffer;
     size_t total_syms = 0;
 
     if (value->syntax != CHAR_STRING)
         return -1;
 
-    if (buf_len == 1)
-        goto finish;
-
-    buf_place = buffer;
-    strcpy(buf_place, "\"");
-    total_syms++;
-    buf_place++;
-
 #define PUT_PIECE(_src, _len) \
-    do {                                                \
-        size_t loc_len = (_len);                        \
-        size_t buf_left = buf_len - total_syms;         \
-                                                        \
-        strncpy(buf_place, (_src),                      \
-                (buf_left > loc_len) ?                  \
-                            loc_len : buf_left);        \
-        if (buf_left <= loc_len)                        \
-            goto finish;                                \
-        total_syms += loc_len;                          \
-        buf_place += loc_len;                           \
+    do {                                                    \
+        size_t loc_len = (_len);                            \
+        size_t buf_left = buf_len - total_syms;             \
+                                                            \
+        memcpy(buf_place, (_src), MIN(buf_left, loc_len));  \
+        if (buf_left <= loc_len)                            \
+            goto finish;                                    \
+        total_syms += loc_len;                              \
+        buf_place += loc_len;                               \
     } while (0)
+
+    PUT_PIECE(quote, strlen(quote));
 
     string = value->data.other;
     while (string != NULL && string[0] != '\0')
     {
-        const char quote[] = "\\\"";
+        const char escaped_quote[] = "\\\"";
+        char *quote_place;
 
         quote_place = index(string, '"');
         if (quote_place == NULL)
@@ -1224,19 +1217,20 @@ asn_snprint_charstring(char *buffer, size_t buf_len, const asn_value *value)
 
         PUT_PIECE(string, quote_place - string);
 
-        PUT_PIECE(quote, strlen(quote));
+        PUT_PIECE(escaped_quote, strlen(escaped_quote));
 
         string = quote_place + 1;
     }
 
+    /* Put rest of the string to buffer */
     if (string != NULL && string[0] != '\0')
         PUT_PIECE(string, strlen(string));
 
-    if (total_syms + 1 >= buf_len)
-        goto finish;
+    /* Put close double quote */
+    PUT_PIECE(quote, strlen(quote));
 
-    strcpy(buf_place, "\"");
-    total_syms++;
+    /* PUT_PIECE jumps to finish if there is no space for terminating NUL */
+    buf_place[0] = '\0';
 
 #undef PUT_PIECE
 
