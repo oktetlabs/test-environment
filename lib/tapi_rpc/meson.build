@@ -56,4 +56,5 @@ deps += [
     dep_lib_rpcxdr,
     dep_lib_rcfrpc,
     dep_lib_tapi,
+    dep_lib_tools,
 ]

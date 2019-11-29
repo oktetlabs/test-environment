@@ -44,6 +44,7 @@ typedef enum {
     NDN_TAG_IP4_FR_RL, /**< "real" fragment length */
     NDN_TAG_IP4_FR_MF, /**< value for "more fragments" flag in fragment */
     NDN_TAG_IP4_FR_DF, /**< value for "don't fragment" flag in fragment */
+    NDN_TAG_IP4_FR_ID, /**< value for ID field in fragment */
     NDN_TAG_IP4_PLD_CHECKSUM,
     NDN_TAG_IP4_PLD_CH_OFFSET,
     NDN_TAG_IP4_PLD_CH_DISABLE,
@@ -72,6 +73,18 @@ typedef enum {
     NDN_TAG_IP6_EXT_HEADER_HOP_BY_HOP,
     NDN_TAG_IP6_EXT_HEADER_DESTINATION,
 
+    /* IPv6 Fragment extension header and its fields */
+    NDN_TAG_IP6_EXT_HEADER_FRAGMENT,        /**< IPv6 Fragment extension
+                                                 header */
+    NDN_TAG_IP6_EXT_HEADER_FRAGMENT_RES1,   /**< The first reserved field
+                                                 in IPv6 Fragment header */
+    NDN_TAG_IP6_EXT_HEADER_FRAGMENT_OFFSET, /**< IPv6 Fragment offset */
+    NDN_TAG_IP6_EXT_HEADER_FRAGMENT_RES2,   /**< The second reserved field
+                                                 in IPv6 Fragment header */
+    NDN_TAG_IP6_EXT_HEADER_FRAGMENT_M_FLAG, /**< IPv6 Fragment M flag */
+    NDN_TAG_IP6_EXT_HEADER_FRAGMENT_ID,     /**< IPv6 Fragment
+                                                 Identification */
+
     NDN_TAG_IP6_VERSION,
     NDN_TAG_IP6_TCL,
     NDN_TAG_IP6_FLAB,
@@ -81,6 +94,15 @@ typedef enum {
     NDN_TAG_IP6_SRC_ADDR,
     NDN_TAG_IP6_DST_ADDR,
     NDN_TAG_IP6_EXT_HEADERS,
+
+    NDN_TAG_IP6_FRAGMENTS, /**< IPv6 Fragments specification in
+                                packet template */
+    NDN_TAG_IP6_FR_HO,     /**< Fragment offset: value for IPv6 header */
+    NDN_TAG_IP6_FR_RO,     /**< "Real" fragment offset */
+    NDN_TAG_IP6_FR_HL,     /**< Fragment length: value for IPv6 header */
+    NDN_TAG_IP6_FR_RL,     /**< "Real" fragment length */
+    NDN_TAG_IP6_FR_MF,     /**< Value for "more fragments" flag */
+    NDN_TAG_IP6_FR_ID,     /**< Value for ID field */
 
     NDN_TAG_IP6_LOCAL_ADDR,
     NDN_TAG_IP6_REMOTE_ADDR,
@@ -257,6 +279,9 @@ extern const asn_type * const ndn_ip6_ext_header_hop_by_hop;
 extern const asn_type * const ndn_ip6_ext_header_destination;
 extern const asn_type * const ndn_ip6_ext_header;
 extern const asn_type * const ndn_ip6_ext_headers_seq;
+extern const asn_type * const ndn_ip6_ext_header_fragment;
+extern const asn_type * const ndn_ip6_frag_spec;
+extern const asn_type * const ndn_ip6_frag_seq;
 
 extern const asn_type * const ndn_icmp6_dest_unreach;
 extern const asn_type * const ndn_icmp6_packet_too_big;

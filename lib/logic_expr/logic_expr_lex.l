@@ -50,9 +50,10 @@ extern int logic_expr_int_str_pos;
 "<="                            { return LE; }
 "!"                             { return NOT; }
 "="                             { return EQ; }
-[-_[:alnum:].]+                 {
+[-_[:alnum:].${}]+              {
                                     yylval->str = strdup(yytext);
                                     return TOKEN;
                                 }
+"\""                            { return DOUBLE_QUOTE; }
 .                               { return NOMATCH; }
 %%

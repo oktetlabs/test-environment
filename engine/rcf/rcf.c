@@ -66,6 +66,7 @@
 
 #include "te_stdint.h"
 #include "te_printf.h"
+#include "te_str.h"
 #include "te_errno.h"
 #include "te_defs.h"
 #include "ipc_server.h"
@@ -348,7 +349,7 @@ resolve_ta_methods(ta *agent, char *libname)
     char                      name[RCF_MAX_NAME];
     void                     *handle;
 
-    sprintf(name, "lib%s.so", libname);
+    TE_SPRINTF(name, "lib%s.so", libname);
     if ((handle = dlopen(name, RTLD_LAZY)) == NULL)
     {
         ERROR("FATAL ERROR: Cannot load shared library %s errno %s", 
@@ -511,7 +512,7 @@ parse_config_ta(xmlNodePtr ta_node)
             char     *val;
             te_errno  rc;
 
-            if ((key = strtok_r(token, "=", &val)) == '\0')
+            if ((key = strtok_r(token, "=", &val)) == NULL)
                 continue;
 
             if (token_nbr == 0)
@@ -887,7 +888,7 @@ synchronize_time(ta *agent)
 
     gettimeofday(&tv, NULL);
 
-    sprintf(cmd, "%s time string %u:%u", TE_PROTO_VWRITE,
+    TE_SPRINTF(cmd, "%s time string %u:%u", TE_PROTO_VWRITE,
                   (unsigned)tv.tv_sec, (unsigned)tv.tv_usec);
     if ((rc = (agent->m.transmit)(agent->handle,
                                   cmd, strlen(cmd) + 1)) != 0)
@@ -1017,10 +1018,10 @@ startup_tasks(ta *agent)
     
     for (task = agent->initial_tasks; task; task = task->next)
     {
-        sprintf(cmd,  "SID 0 " TE_PROTO_EXECUTE " %s %s",
-                task->mode == RCF_FUNC ? TE_PROTO_FUNC :
-                task->mode == RCF_THREAD ? TE_PROTO_THREAD 
-                : TE_PROTO_PROCESS, task->entry);
+        TE_SPRINTF(cmd, "SID 0 " TE_PROTO_EXECUTE " %s %s",
+                   task->mode == RCF_FUNC ? TE_PROTO_FUNC :
+                   task->mode == RCF_THREAD ? TE_PROTO_THREAD :
+                   TE_PROTO_PROCESS, task->entry);
         args = cmd + strlen(cmd);
         if (task->argc > 0)
             strcat(cmd, " argv ");
@@ -1398,8 +1399,9 @@ save_attachment(ta *agent, rcf_msg *msg, size_t cmdlen, char *ba)
 
     if (strlen(msg->file) == 0)
     {
-        sprintf(msg->file, "%s/rcf_%s_%u_%u", tmp_dir, agent->name,
-                (unsigned int)time(NULL), unique_mark++);
+        TE_SPRINTF(msg->file, "%s/rcf_%s_%u_%u",
+                   tmp_dir, agent->name,
+                   (unsigned int)time(NULL), unique_mark++);
     }
 
     assert((ba - cmd) >= 0);
@@ -1993,7 +1995,8 @@ transmit_cmd(ta *agent, usrreq *req)
             return -1;
         }
 
-        sprintf(cmd + strlen(cmd), " attach %u", (unsigned int)st.st_size);
+        TE_SNPRINTF(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd),
+                    " attach %u", (unsigned int)st.st_size);
     }
 
     VERB("Transmit command \"%s\" to TA '%s'", cmd, agent->name);
@@ -2867,8 +2870,8 @@ process_user_request(usrreq *req)
 
                     if (!(agt->flags & TA_DEAD)) /** If TA is NOT DEAD */
                     {
-                        sprintf(cmd, "SID %d %s",
-                                ++agt->sid, TE_PROTO_SHUTDOWN);
+                        TE_SPRINTF(cmd, "SID %d %s",
+                                   ++agt->sid, TE_PROTO_SHUTDOWN);
                         (agt->m.transmit)(agt->handle,
                                           cmd, strlen(cmd) + 1);
                         answer_all_requests(&(agt->sent), TE_EIO);
@@ -2894,7 +2897,7 @@ process_user_request(usrreq *req)
                                     continue;
                                 }
 
-                                sprintf(answer, "SID %d 0", agt->sid);
+                                TE_SPRINTF(answer, "SID %d 0", agt->sid);
 
                                 if (strcmp(cmd, answer) != 0)
                                     continue;
@@ -3089,7 +3092,7 @@ rcf_shutdown()
         if (agent->flags & TA_DEAD)
             continue;
 
-        sprintf(cmd, "SID %d %s", ++agent->sid, TE_PROTO_SHUTDOWN);
+        TE_SPRINTF(cmd, "SID %d %s", ++agent->sid, TE_PROTO_SHUTDOWN);
         (agent->m.transmit)(agent->handle, cmd, strlen(cmd) + 1);
         answer_all_requests(&(agent->sent), TE_EIO);
         answer_all_requests(&(agent->pending), TE_EIO);        
@@ -3115,7 +3118,7 @@ rcf_shutdown()
                 if ((agent->m.receive)(agent->handle, cmd, &len, &ba) != 0)
                     continue;
                     
-                sprintf(answer, "SID %d 0", agent->sid);
+                TE_SPRINTF(answer, "SID %d 0", agent->sid);
 
                 if (strcmp(cmd, answer) != 0)
                     continue;

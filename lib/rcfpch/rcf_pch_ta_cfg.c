@@ -57,6 +57,7 @@ extern int inet_pton(int af, const char *src, void *dst);
 
 #include "te_errno.h"
 #include "te_defs.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "rcf_pch_ta_cfg.h"
 
@@ -373,7 +374,7 @@ ta_rt_parse_inst_name(const char *name, ta_rt_info_t *rt_info)
 
     memset(rt_info, 0, sizeof(*rt_info));
 
-    strncpy(inst_copy, name, sizeof(inst_copy));
+    te_strlcpy(inst_copy, name, sizeof(inst_copy));
     inst_copy[sizeof(inst_copy) - 1] = '\0';
 
     if ((tmp = strchr(inst_copy, '|')) == NULL)

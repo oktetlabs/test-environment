@@ -23,6 +23,7 @@
 #include "rcf_common.h"
 #include <pthread.h>
 #include <semaphore.h>
+#include "te_str.h"
 #include "te_kernel_log.h"
 
 /* TA single linked list */
@@ -155,11 +156,11 @@ startElementLGR(void           *ctx,
     }
     else if (!strcmp(name, "snif_fname"))
     {
-        strncpy(snifp_sets.name, atts[1], RCF_MAX_PATH);
+        te_strlcpy(snifp_sets.name, atts[1], RCF_MAX_PATH);
     }
     else if (!strcmp(name, "snif_path"))
     {
-        strncpy(snifp_sets.dir, atts[1], RCF_MAX_PATH);
+        te_strlcpy(snifp_sets.dir, atts[1], RCF_MAX_PATH);
     }
     else if (!strcmp(name, "snif_max_fsize"))
     {

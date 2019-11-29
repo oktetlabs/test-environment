@@ -59,6 +59,33 @@ typedef struct cfg_oid {
     (((cfg_inst_subid *)(_p->ids))[(_i)].name)
 
 /**
+ * Get specified instance name from OID.
+ *
+ * @param oid           OID
+ * @param idx           Instance index with negative values support to
+ *                      count from the last subidentifier
+ *                      (e.g. @c -1 to get the last instance name)
+ *
+ * @return Instance name allocated from heap or @c NULL.
+ *
+ * @sa cfg_oid_str_get_inst_name()
+ */
+extern char *cfg_oid_get_inst_name(const cfg_oid *oid, int idx);
+
+/**
+ * Get specified instance name from OID in string format.
+ *
+ * @param oid_str       OID in string format
+ * @param idx           Instance index with negative values support
+ *                      (@c -1 to get the last instance name)
+ *
+ * @return Instance name allocated from heap or @c NULL.
+ *
+ * @sa cfg_oid_get_inst_name()
+ */
+extern char *cfg_oid_str_get_inst_name(const char *oid_str, int idx);
+
+/**
  * Get sub-ID from object OID.
  */
 static inline char *

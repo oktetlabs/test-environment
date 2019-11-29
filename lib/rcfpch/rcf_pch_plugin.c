@@ -22,6 +22,7 @@
 #include "te_errno.h"
 #include "te_queue.h"
 #include "te_alloc.h"
+#include "te_str.h"
 #include "rcf_rpc_defs.h"
 #include "tarpc.h"
 
@@ -326,7 +327,7 @@ rpcserver_plugin_ ## _field ## _set(                    \
         return TE_RC(TE_RCF_PCH, TE_ENOENT);            \
     }                                                   \
                                                         \
-    strncpy(plugin->_field, value, RCF_MAX_ID);         \
+    te_strlcpy(plugin->_field, value, RCF_MAX_ID);      \
     pthread_mutex_unlock(lock);                         \
     return 0;                                           \
 }

@@ -25,6 +25,7 @@
 #include "te_stdint.h"
 #include "te_defs.h"
 #include "tad_common.h"
+#include "tapi_ip_common.h"
 #include "asn_usr.h"
 #include "tapi_tad.h"
 
@@ -123,6 +124,26 @@ extern te_errno tapi_ip6_add_pdu(asn_value **tmpl_or_ptrn, asn_value **pdu,
  * @return Status code.
  */
 extern te_errno tapi_ip6_get_payload_len(asn_value *pdu, size_t *len);
+
+/**
+ * Add fragments specification to IPv6 PDU.
+ *
+ * @param tmpl          @c NULL or location of ASN.1 value with traffic
+ *                      template where IPv6 PDU should be added
+ * @param pdu           If @p tmpl is @c NULL, this parameter must
+ *                      point to IPv6 PDU where to add fragments
+ *                      specification; on return, if this parameter is
+ *                      not @c NULL, pointer to IPv6 PDU will be saved
+ *                      in it
+ * @param fragments     Array with IP fragments specifications
+ * @param num_frags     Number of IP fragments
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_ip6_pdu_tmpl_fragments(asn_value **tmpl,
+                                            asn_value **pdu,
+                                            tapi_ip_frag_spec *fragments,
+                                            unsigned int num_frags);
 
 #ifdef __cplusplus
 } /* extern "C" */

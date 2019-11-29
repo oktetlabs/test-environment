@@ -255,7 +255,7 @@ print_octet_string(const uint8_t *oct_string, size_t len)
 
     if (oct_string == NULL || len == 0)
     {
-        strncpy(buf, "<null octet string>", sizeof(buf));
+        te_strlcpy(buf, "<null octet string>", sizeof(buf));
         return buf;
     }
 

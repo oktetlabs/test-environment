@@ -57,6 +57,7 @@
 #include "te_errno.h"
 #include "logger_api.h"
 #include "te_tools.h"
+#include "te_str.h"
 #include "ta_common.h"
 
 #include "logfork.h"
@@ -145,7 +146,7 @@ logfork_register_user(const char *name)
     logfork_msg msg;
 
     memset(&msg, 0, sizeof(msg));
-    strncpy(msg.__add_name, name, sizeof(msg.__add_name) - 1);
+    te_strlcpy(msg.__add_name, name, sizeof(msg.__add_name));
     msg.pid = getpid();
     msg.tid = thread_self();
     msg.type = LOGFORK_MSG_ADD_USER;
@@ -260,7 +261,7 @@ logfork_log_message(const char *file, unsigned int line,
     msg.pid = getpid();
     msg.tid = thread_self();
     msg.type = LOGFORK_MSG_LOG;
-    strncpy(msg.__lgr_user, user, sizeof(msg.__lgr_user) - 1);
+    te_strlcpy(msg.__lgr_user, user, sizeof(msg.__lgr_user));
     msg.__log_sec = sec;
     msg.__log_usec = usec;
     msg.__log_level = level;

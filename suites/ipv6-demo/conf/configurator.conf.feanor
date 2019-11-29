@@ -6,13 +6,13 @@
 
   <add>
     <instance oid="/net:net1"/>
-    <instance oid="/net:net1/type:" value="1"/>
-
     <instance oid="/net:net1/node:A" value="/agent:Agt_A/interface:eth1"/>
-    <instance oid="/net:net1/node:A/type:" value="1"/>
-
     <instance oid="/net:net1/node:B" value="/agent:Agt_B/interface:eth2"/>
-    <instance oid="/net:net1/node:B/type:" value="0"/>
   </add>
+  <set>
+    <instance oid="/net:net1/type:" value="1"/>
+    <instance oid="/net:net1/node:A/type:" value="1"/>
+    <instance oid="/net:net1/node:B/type:" value="0"/>
+  </set>
 
 </history>

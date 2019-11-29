@@ -99,7 +99,7 @@ For our sample configuration we would add the following lines in
     <register>
       <object oid="/net" access="read_create" type="none"/>
       <object oid="/net/node" access="read_create" type="string"/>
-      <object oid="/net/node/type" access="read_create" type="integer"/>
+      <object oid="/net/node/type" access="read_write" type="integer"/>
     </register>
   @endcode
 - Add set-up specific instances:
@@ -108,19 +108,25 @@ For our sample configuration we would add the following lines in
       <instance oid="/net:net1"/>
       <instance oid="/net:net1/node:A"
                 value="/agent:Agt_A/interface:eth1"/>
-      <instance oid="/net:net1/node:A/type:" value="0"/>
       <instance oid="/net:net1/node:B"
               value="/agent:Agt_C/interface:hme2"/>
-      <instance oid="/net:net1/node:B/type:" value="1"/>
-
-      <instance oid="/net:net1"/>
-      <instance oid="/net:net1/node:A"
-                value="/agent:Agt_B/interface:eth2"/>
-      <instance oid="/net:net1/node:A/type:" value="0"/>
-      <instance oid="/net:net1/node:B"
-              value="/agent:Agt_C/interface:hme1"/>
-      <instance oid="/net:net1/node:B/type:" value="1"/>
     </add>
+    <set>
+      <instance oid="/net:net1/node:A/type:" value="0"/>
+      <instance oid="/net:net1/node:B/type:" value="1"/>
+    </set>
+
+    <add>
+      <instance oid="/net:net2"/>
+      <instance oid="/net:net2/node:A"
+                value="/agent:Agt_B/interface:eth2"/>
+      <instance oid="/net:net2/node:B"
+              value="/agent:Agt_C/interface:hme1"/>
+    </add>
+    <set>
+      <instance oid="/net:net2/node:A/type:" value="0"/>
+      <instance oid="/net:net2/node:B/type:" value="1"/>
+    </set>
   @endcode
 .
 
@@ -138,19 +144,25 @@ Assuming we have only @attr_val{Agt_A} that exports instances of
     <instance oid="/net:net1"/>
     <instance oid="/net:net1/node:A"
               value="/agent:Agt_A/interface:eth1"/>
-    <instance oid="/net:net1/node:A/type:" value="0"/>
     <instance oid="/net:net1/node:B"
             value="/agent:Agt_C/interface:hme2"/>
-    <instance oid="/net:net1/node:B/type:" value="1"/>
-
-    <instance oid="/net:net1"/>
-    <instance oid="/net:net1/node:A"
-              value="/agent:Agt_A/interface:eth2"/>
-    <instance oid="/net:net1/node:A/type:" value="0"/>
-    <instance oid="/net:net1/node:B"
-            value="/agent:Agt_C/interface:hme1"/>
-    <instance oid="/net:net1/node:B/type:" value="1"/>
   </add>
+  <set>
+    <instance oid="/net:net1/node:A/type:" value="0"/>
+    <instance oid="/net:net1/node:B/type:" value="1"/>
+  </set>
+
+  <add>
+    <instance oid="/net:net2"/>
+    <instance oid="/net:net2/node:A"
+              value="/agent:Agt_A/interface:eth2"/>
+    <instance oid="/net:net2/node:B"
+            value="/agent:Agt_C/interface:hme1"/>
+  </add>
+  <set>
+    <instance oid="/net:net2/node:A/type:" value="0"/>
+    <instance oid="/net:net2/node:B/type:" value="1"/>
+  </set>
 @endcode
 
 @section te_lib_tapi_conf_net_addr_cfg_tree Network addresses configuration tree nodes
@@ -204,7 +216,7 @@ in our @ref te_engine_conf_file
   <object oid="/net/ip4_subnet" access="read_create" type="address"/>
   <object oid="/net/ip6_subnet" access="read_create" type="address"/>
   <object oid="/net/node" access="read_create" type="string"/>
-  <object oid="/net/node/type" access="read_create" type="integer"/>
+  <object oid="/net/node/type" access="read_write" type="integer"/>
   <object oid="/net/node/ip4_address" access="read_create" type="address"/>
   <object oid="/net/node/ip6_address" access="read_create" type="address"/>
 </register>

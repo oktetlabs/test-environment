@@ -365,3 +365,13 @@ tapi_ip6_get_payload_len(asn_value *pdu, size_t *len)
 
     return rc;
 }
+
+/* See the description in tapi_ip6.h */
+te_errno
+tapi_ip6_pdu_tmpl_fragments(asn_value **tmpl, asn_value **pdu,
+                            tapi_ip_frag_spec *fragments,
+                            unsigned int num_frags)
+{
+    return tapi_ip_pdu_tmpl_fragments(tmpl, pdu, FALSE,
+                                      fragments, num_frags);
+}

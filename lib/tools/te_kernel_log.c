@@ -66,6 +66,7 @@
 #include "rcf_common.h"
 #include "te_serial_parser.h"
 #include "te_sleep.h"
+#include "te_str.h"
 
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
@@ -541,7 +542,7 @@ log_serial(void *ready, int argc, char *argv[])
 
     memset(&parser, 0, sizeof(parser));
 
-    strncpy(parser.user, argv[0], TE_SERIAL_MAX_NAME);
+    te_strlcpy(parser.user, argv[0], TE_SERIAL_MAX_NAME);
     parser.level = map_name_to_level(argv[1]);
     if (parser.level == 0)
     {
@@ -558,9 +559,9 @@ log_serial(void *ready, int argc, char *argv[])
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    strncpy(parser.c_name, argv[3], TE_SERIAL_MAX_NAME);
+    te_strlcpy(parser.c_name, argv[3], TE_SERIAL_MAX_NAME);
     if (argc == 5)
-        strncpy(parser.mode, argv[4], TE_SERIAL_MAX_NAME);
+        te_strlcpy(parser.mode, argv[4], TE_SERIAL_MAX_NAME);
     sem_post(ready);
 
     parser.rcf = TRUE;
@@ -674,7 +675,7 @@ do {                                                            \
      * (e.g. conserver:port:user:console) as "log user name".
      */
     puser = strrchr(parser->c_name, ':');
-    strncpy(user, puser != NULL ? puser + 1 : parser->c_name, sizeof(user));
+    te_strlcpy(user, puser != NULL ? puser + 1 : parser->c_name, sizeof(user));
 
     if (strncmp(parser->c_name, NETCONSOLE_PREF,
                 strlen(NETCONSOLE_PREF)) == 0)
@@ -706,7 +707,7 @@ do {                                                            \
             snprintf(tmp, RCF_MAX_PATH, "%d:%s:%s", parser->port,
                      parser->user, parser->c_name);
         else
-            strncpy(tmp, parser->c_name, RCF_MAX_PATH);
+            te_strlcpy(tmp, parser->c_name, RCF_MAX_PATH);
         pthread_mutex_unlock(&parser->mutex);
         if ((poller.fd = te_open_conserver(tmp)) < 0)
             return TE_OS_RC(TE_TA_UNIX, errno);

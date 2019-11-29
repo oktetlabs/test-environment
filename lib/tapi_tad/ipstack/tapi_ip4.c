@@ -124,84 +124,9 @@ tapi_ip4_pdu_tmpl_fragments(asn_value **tmpl, asn_value **pdu,
                             tapi_ip_frag_spec *fragments,
                             unsigned int num_frags)
 {
-    asn_value         *tmp_pdu;
-    te_errno           rc;
-    unsigned int       i;
-    tapi_ip_frag_spec *frag;
-    asn_value         *frag_seq = NULL;
-
-    if (tmpl != NULL)
-    {
-        CHECK_RC(tapi_tad_tmpl_ptrn_add_layer(tmpl,
-                                              FALSE /* template */,
-                                              ndn_ip4_header, "#ip4",
-                                              &tmp_pdu));
-    }
-    else if (pdu == NULL)
-    {
-        ERROR("%s(): Neither template nor PDU location is specified",
-              __FUNCTION__);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-    else if (*pdu == NULL)
-    {
-        ERROR("%s(): PDU location has to have some PDU when parent "
-              "template is not specified", __FUNCTION__);
-        return TE_RC(TE_TAPI, TE_EINVAL);
-    }
-    else
-    {
-        tmp_pdu = *pdu;
-    }
-
-    if (num_frags == 0)
-    {
-        /* Nothing to do */
-    }
-    else if (fragments == NULL)
-    {
-        ERROR("%s(): Fragements specification pointer is NULL, but "
-              "number of fragments is positive", __FUNCTION__);
-        return TE_RC(TE_TAPI, TE_EWRONGPTR);
-    }
-    else
-    {
-        rc = tapi_tad_init_asn_value(&frag_seq, ndn_ip4_frag_seq);
-        if (rc != 0)
-            return rc;
-
-        rc = asn_put_child_value(tmp_pdu, frag_seq,
-                                 PRIVATE, NDN_TAG_IP4_FRAGMENTS);
-        if (rc != 0)
-        {
-            ERROR("%s(): Failed to put 'fragment-spec' in IPv4 PDU: %r",
-                  __FUNCTION__, rc);
-            asn_free_value(frag_seq);
-            return rc;
-        }
-
-        /* FIXME: Check returns code below */
-        for (i = 0, frag = fragments; i < num_frags; i++, frag++)
-        {
-            asn_value *frag_val = asn_init_value(ndn_ip4_frag_spec);
-
-            asn_write_int32(frag_val, frag->hdr_offset,  "hdr-offset");
-            asn_write_int32(frag_val, frag->real_offset, "real-offset");
-            asn_write_int32(frag_val, frag->hdr_length,  "hdr-length");
-            asn_write_int32(frag_val, frag->real_length, "real-length");
-            asn_write_bool(frag_val,  frag->more_frags,  "more-frags");
-            asn_write_bool(frag_val,  frag->dont_frag,   "dont-frag");
-
-            asn_insert_indexed(frag_seq, frag_val, i, "");
-        }
-    }
-
-    if (pdu != NULL)
-        *pdu = tmp_pdu;
-
-    return 0;
+    return tapi_ip_pdu_tmpl_fragments(tmpl, pdu, TRUE,
+                                      fragments, num_frags);
 }
-
 
 /* See the description in tapi_ip4.h */
 te_errno

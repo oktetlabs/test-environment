@@ -13,6 +13,7 @@
  * $Id$
  */
 
+#include "te_str.h"
 #include "conf_defs.h"
 #include "rcf_api.h"
 
@@ -31,7 +32,7 @@ static int cfg_get_buf_len = TA_BUF_SIZE;
 
 te_bool local_cmd_seq = FALSE;
 char max_commit_subtree[CFG_INST_NAME_MAX] = {};
-char *local_cmd_bkp;
+char *local_cmd_bkp = NULL;
 
 /**
  * Get list of Test Agents.
@@ -324,7 +325,7 @@ insert_entry(char *oid, olist **list)
     if ((tmp = malloc(sizeof(olist))) == NULL)
         return TE_ENOMEM;
 
-    strncpy(tmp->oid, oid, CFG_OID_MAX);
+    te_strlcpy(tmp->oid, oid, CFG_OID_MAX);
 
     for (prev = NULL, cur = *list;
          cur != NULL && strcmp(cur->oid, oid) < 0;

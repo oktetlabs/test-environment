@@ -5,7 +5,7 @@ AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
 AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR) -Wno-sign-compare
 AM_LDFLAGS = @TE_LDFLAGS@ 
 AM_LFLAGS = --header-file=$(ABS_BUILDDIR)/$*.h -o $(LEX_OUTPUT_ROOT).c
-AM_YFLAGS = -d
+AM_YFLAGS = -d -Wno-yacc -Wno-deprecated
 
 
 include_HEADERS = \

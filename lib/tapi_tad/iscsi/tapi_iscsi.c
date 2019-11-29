@@ -40,6 +40,7 @@
 #include <unistd.h>
 #include <signal.h>
 
+#include "te_str.h"
 #include "rcf_api.h"
 #include "rcf_common.h"
 #include "conf_api.h"
@@ -3033,7 +3034,7 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
         return TE_OS_RC(TE_TAPI, errno);
     }
 
-    strncpy((*ioh)->agent, ta, sizeof((*ioh)->agent) - 1);
+    te_strlcpy((*ioh)->agent, ta, sizeof((*ioh)->agent));
     sprintf((*ioh)->mountpoint,
             "/tmp/te_iscsi_fs_%s.%u", ta, id);
     dev = get_host_device(ta, id);
@@ -3046,7 +3047,7 @@ tapi_iscsi_io_prepare(const char *ta, iscsi_target_id id,
         return TE_RC(TE_TAPI, TE_ENODEV);
     }
     RING("The device detected is %s", dev);
-    strncpy((*ioh)->device, dev, sizeof((*ioh)->device) - 1);
+    te_strlcpy((*ioh)->device, dev, sizeof((*ioh)->device));
     free(dev);
 
     (*ioh)->use_signal     = use_signal;

@@ -40,7 +40,7 @@
 #define YY_FATAL_ERROR(msg) \
     do {                                \
         ERROR("Flex error: %s", msg);   \
-        yyterminate();                  \
+        longjmp(test_path_jmp_buf, 1);  \
         /* Unreachable */               \
         yy_fatal_error(msg);            \
     } while (0)

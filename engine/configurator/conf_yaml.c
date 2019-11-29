@@ -13,43 +13,32 @@
 #include "conf_ta.h"
 #include "conf_yaml.h"
 #include "te_str.h"
+#include "logic_expr.h"
+#include "te_alloc.h"
+#include "te_expand.h"
 
+#include <ctype.h>
 #include <libxml/xinclude.h>
 #include <yaml.h>
 
 #define CS_YAML_ERR_PREFIX "YAML configuration file parser "
 
 #define YAML_TARGET_CONTEXT_INIT \
-    { NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRUE, TRUE };
+    { NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRUE };
 
 typedef struct config_yaml_target_s {
     const char *command_name;
-    const char *target_name_singular;
-    const char *target_name_plural;
+    const char *target_name;
 } config_yaml_target_t;
 
 static const config_yaml_target_t config_yaml_targets[] = {
-    { "add", "instance", "instances" },
-    { "set", "instance", "instances" },
-    { "delete", "instance", "instances" },
-    { "register", "object", "objects" },
-    { "unregister", "object", "objects" },
-    { NULL, NULL, NULL }
+    { "add", "instance" },
+    { "set", "instance" },
+    { "delete", "instance" },
+    { "register", "object" },
+    { "unregister", "object" },
+    { NULL, NULL}
 };
-
-static const char *
-get_yaml_cmd_targets(const char *cmd)
-{
-    const config_yaml_target_t *target = config_yaml_targets;
-
-    for (; target->command_name != NULL; ++target)
-    {
-        if (strcmp(cmd, target->command_name) == 0)
-            break;
-    }
-
-    return target->target_name_plural;
-}
 
 static const char *
 get_yaml_cmd_target(const char *cmd)
@@ -62,118 +51,88 @@ get_yaml_cmd_target(const char *cmd)
             break;
     }
 
-    return target->target_name_singular;
+    return target->target_name;
+}
+
+static te_errno
+get_val(const logic_expr *parsed, void *expand_vars, logic_expr_res *res)
+{
+    te_errno rc;
+    int rc_errno;
+
+    if (expand_vars != NULL)
+        rc_errno = te_expand_kvpairs(parsed->u.value, NULL,
+                                     (te_kvpair_h *)expand_vars,
+                                     &res->value.simple);
+    else
+        rc_errno = te_expand_env_vars(parsed->u.value, NULL,
+                                      &res->value.simple);
+    if (rc_errno != 0)
+    {
+        rc = te_rc_os2te(rc_errno);
+        goto out;
+    }
+    else
+    {
+        rc = 0;
+    }
+    res->res_type = LOGIC_EXPR_RES_SIMPLE;
+
+out:
+    return rc;
 }
 
 /**
  * Evaluate logical expression.
  *
- * @param text  String representation of the expression
- * @param condp Location for the result
+ * @param str               String representation of the expression
+ * @param res               Location for the result
+ * @param expand_vars       List of key-value pairs for expansion in file,
+ *                          @c NULL if environment variables are used for
+ *                          substitutions
  *
  * @return Status code.
  */
 static te_errno
-parse_config_yaml_cond_exp(const char *text,
-                           te_bool    *condp)
+parse_logic_expr_str(const char *str, te_bool *res, te_kvpair_h *expand_vars)
 {
-    char     *text_copy = NULL;
-    char     *sp = NULL;
-    char     *var_name;
-    char     *op_str;
-    char     *cmp_str;
-    char     *var_str;
-    te_errno  rc = 0;
+    logic_expr *parsed;
+    logic_expr_res parsed_res;
+    te_errno rc;
 
-    text_copy = strdup(text);
-    if (text_copy == NULL)
-        return TE_ENOMEM;
-
-    var_name = strtok_r(text_copy, " ", &sp);
-    if (var_name == NULL)
+    rc = logic_expr_parse(str, &parsed);
+    if (rc != 0)
     {
-        rc = TE_EINVAL;
+        ERROR("Failed to parse expression '%s'", str);
         goto out;
     }
 
-    op_str = strtok_r(NULL, " ", &sp);
-    if (op_str == NULL)
+    rc = logic_expr_eval(parsed, get_val, expand_vars, &parsed_res);
+    if (rc != 0)
     {
-        rc = TE_EINVAL;
+        ERROR("Failed to evaluate expression '%s'", str);
         goto out;
     }
 
-    cmp_str = strtok_r(NULL, " ", &sp);
-    if (cmp_str == NULL)
+    if (parsed_res.res_type != LOGIC_EXPR_RES_BOOLEAN)
     {
         rc = TE_EINVAL;
+        logic_expr_free_res(&parsed_res);
         goto out;
     }
 
-    var_str = getenv(var_name);
-
-    if (strcmp(op_str, "==") == 0)
-    {
-        var_str = (var_str == NULL) ? "" : var_str;
-
-        *condp = (strcmp(var_str, cmp_str) == 0) ? TRUE : FALSE;
-    }
-    else if (strcmp(op_str, "!=") == 0)
-    {
-        var_str = (var_str == NULL) ? "" : var_str;
-
-        *condp = (strcmp(var_str, cmp_str) != 0) ? TRUE : FALSE;
-    }
-    else
-    {
-        long int var = 0;
-        long int cmp;
-
-        if (var_str != NULL)
-        {
-            rc = te_strtol(var_str, 0, &var);
-            if (rc != 0)
-                goto out;
-        }
-
-        rc = te_strtol(cmp_str, 0, &cmp);
-        if (rc != 0)
-            goto out;
-
-        if (strcmp(op_str, ">") == 0)
-            *condp = (var > cmp) ? TRUE : FALSE;
-        else if (strcmp(op_str, ">=") == 0)
-            *condp = (var >= cmp) ? TRUE : FALSE;
-        else if (strcmp(op_str, "<") == 0)
-            *condp = (var < cmp) ? TRUE : FALSE;
-        else if (strcmp(op_str, "<=") == 0)
-            *condp = (var <= cmp) ? TRUE : FALSE;
-        else
-            rc = TE_EINVAL;
-    }
+    *res = parsed_res.value.boolean;
 
 out:
-    free(text_copy);
+    logic_expr_free(parsed);
 
     return rc;
 }
 
-/**
- * Process a condition property of the given parent node.
- *
- * @param d     YAML document handle
- * @param n     Handle of the parent node in the given document
- * @param condp Location for the result or @c NULL
- *
- * @return Status code.
- */
 static te_errno
-parse_config_yaml_cond(yaml_document_t *d,
-                       yaml_node_t     *n,
-                       te_bool         *condp)
+parse_config_if_expr(yaml_node_t *n, te_bool *if_expr, te_kvpair_h *expand_vars)
 {
     const char *str = NULL;
-    te_bool     cond;
     te_errno    rc = 0;
 
     if (n->type == YAML_SCALAR_NODE)
@@ -182,12 +141,12 @@ parse_config_yaml_cond(yaml_document_t *d,
 
         if (n->data.scalar.length == 0)
         {
-            ERROR(CS_YAML_ERR_PREFIX "found the condition node to be "
+            ERROR(CS_YAML_ERR_PREFIX "found the if-expression node to be "
                   "badly formatted");
             return TE_EINVAL;
         }
 
-        rc = parse_config_yaml_cond_exp(str, &cond);
+        rc = parse_logic_expr_str(str, if_expr, expand_vars);
         if (rc != 0)
         {
             ERROR(CS_YAML_ERR_PREFIX "failed to evaluate the expression "
@@ -195,58 +154,14 @@ parse_config_yaml_cond(yaml_document_t *d,
             return rc;
         }
     }
-    else if (n->type == YAML_SEQUENCE_NODE)
-    {
-        yaml_node_item_t *item = n->data.sequence.items.start;
-
-        cond = TRUE;
-
-        do {
-            yaml_node_t *in = yaml_document_get_node(d, *item);
-            te_bool      item_cond;
-
-            str = (const char *)in->data.scalar.value;
-
-            if (in->type != YAML_SCALAR_NODE || in->data.scalar.length == 0)
-            {
-                 ERROR(CS_YAML_ERR_PREFIX "found the condition node to be "
-                      "badly formatted");
-                 rc = TE_EINVAL;
-            }
-            else if ((rc = parse_config_yaml_cond_exp(str, &item_cond)) != 0)
-            {
-                ERROR(CS_YAML_ERR_PREFIX "failed to evaluate the expression "
-                      "contained in the condition node");
-                rc = TE_EINVAL;
-            }
-
-            if (rc != 0)
-            {
-                ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in the "
-                      "condition node at line %lu column %lu",
-                      in->start_mark.line, in->start_mark.column);
-                return rc;
-            }
-
-            /*
-             * Once set to FALSE, cond will never become TRUE (AND behaviour).
-             * Still, the rest of conditional expressions will be parsed
-             * in order to rule out configuration file syntax errors.
-             */
-            cond = (item_cond) ? cond : FALSE;
-        } while (++item < n->data.sequence.items.top);
-    }
     else
     {
-        ERROR(CS_YAML_ERR_PREFIX "found the condition node to be "
+        ERROR(CS_YAML_ERR_PREFIX "found the if-expression node to be "
               "badly formatted");
         return TE_EINVAL;
     }
 
-    if (condp != NULL)
-        *condp = cond;
-
-    return 0;
+    return rc;
 }
 
 typedef enum cs_yaml_node_attribute_type_e {
@@ -266,7 +181,7 @@ static struct {
     const char                    *short_label;
     cs_yaml_node_attribute_type_t  type;
 } const cs_yaml_node_attributes[] = {
-    { "cond",     "c",   CS_YAML_NODE_ATTRIBUTE_CONDITION },
+    { "if",       "if",  CS_YAML_NODE_ATTRIBUTE_CONDITION },
     { "oid",      "o",   CS_YAML_NODE_ATTRIBUTE_OID },
     { "value",    "v",   CS_YAML_NODE_ATTRIBUTE_VALUE },
     { "access",   "a",   CS_YAML_NODE_ATTRIBUTE_ACCESS },
@@ -300,7 +215,6 @@ typedef struct cs_yaml_target_context_s {
     const xmlChar *xmlvolatile;
     const xmlChar *dependence_oid;
     const xmlChar *scope;
-    te_bool        check_cond;
     te_bool        cond;
 } cs_yaml_target_context_t;
 
@@ -429,10 +343,11 @@ parse_config_yaml_dependence(yaml_document_t            *d,
 }
 
 static te_errno
-parse_config_yaml_cmd_add_target_attribute(yaml_document_t            *d,
-                                           yaml_node_t                *k,
-                                           yaml_node_t                *v,
-                                           cs_yaml_target_context_t   *c)
+parse_config_yaml_cmd_add_target_attribute(yaml_document_t        *d,
+                                       yaml_node_t                *k,
+                                       yaml_node_t                *v,
+                                       cs_yaml_target_context_t   *c,
+                                       te_kvpair_h                *expand_vars)
 {
     cs_yaml_node_attribute_type_t attribute_type;
     te_errno                      rc = 0;
@@ -449,24 +364,13 @@ parse_config_yaml_cmd_add_target_attribute(yaml_document_t            *d,
     switch (attribute_type)
     {
         case CS_YAML_NODE_ATTRIBUTE_CONDITION:
-            rc = parse_config_yaml_cond(d, v,
-                                        (c->check_cond) ? &c->cond : NULL);
+            rc = parse_config_if_expr(v, &c->cond, expand_vars);
             if (rc != 0)
             {
-                ERROR(CS_YAML_ERR_PREFIX "failed to process the condition "
-                      "attribute node of the target");
-                return rc;
+              ERROR(CS_YAML_ERR_PREFIX "failed to process the condition "
+                    "attribute node of the target");
+              return rc;
             }
-
-            /*
-             * Once at least one conditional node (which itself may contain
-             * multiple statements) is found to yield TRUE, this result
-             * will never be overridden by the rest of conditional
-             * nodes of the instance in question (OR behaviour).
-             * Still, the rest of the nodes will be parsed.
-             */
-             if (c->cond == TRUE)
-                 c->check_cond = FALSE;
             break;
 
         case CS_YAML_NODE_ATTRIBUTE_OID:
@@ -659,10 +563,14 @@ embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
 /**
  * Process the given target node in the given YAML document.
  *
- * @param d      YAML document handle
- * @param n      Handle of the target node in the given YAML document
- * @param xn_cmd Handle of command node in the XML document being created
- * @param cmd    String representation of command
+ * @param d                 YAML document handle
+ * @param n                 Handle of the target node in the given YAML document
+ * @param xn_cmd            Handle of command node in the XML document being
+ *                          created
+ * @param cmd               String representation of command
+ * @param expand_vars       List of key-value pairs for expansion in file,
+ *                          @c NULL if environment variables are used for
+ *                          substitutions
  *
  * @return Status code.
  */
@@ -670,7 +578,8 @@ static te_errno
 parse_config_yaml_cmd_process_target(yaml_document_t *d,
                                      yaml_node_t     *n,
                                      xmlNodePtr       xn_cmd,
-                                     const char      *cmd)
+                                     const char      *cmd,
+                                     te_kvpair_h     *expand_vars)
 {
     xmlNodePtr                  xn_target = NULL;
     cs_yaml_target_context_t    c = YAML_TARGET_CONTEXT_INIT;
@@ -709,7 +618,8 @@ parse_config_yaml_cmd_process_target(yaml_document_t *d,
             yaml_node_t *k = yaml_document_get_node(d, pair->key);
             yaml_node_t *v = yaml_document_get_node(d, pair->value);
 
-            rc = parse_config_yaml_cmd_add_target_attribute(d, k, v, &c);
+            rc = parse_config_yaml_cmd_add_target_attribute(d, k, v, &c,
+                                                            expand_vars);
             if (rc != 0)
             {
                 ERROR(CS_YAML_ERR_PREFIX "failed to process %s"
@@ -742,10 +652,15 @@ out:
  * Process the sequence of target nodes for the specified
  * command in the given YAML document.
  *
- * @param d      YAML document handle
- * @param n      Handle of the target sequence in the given YAML document
- * @param xn_cmd Handle of command node in the XML document being created
- * @param cmd    String representation of command
+ * @param d                 YAML document handle
+ * @param n                 Handle of the target sequence in the given YAML
+ *                          document
+ * @param xn_cmd            Handle of command node in the XML document being
+ *                          created
+ * @param cmd               String representation of command
+ * @param expand_vars       List of key-value pairs for expansion in file,
+ *                          @c NULL if environment variables are used for
+ *                          substitutions
  *
  * @return Status code.
  */
@@ -753,7 +668,8 @@ static te_errno
 parse_config_yaml_cmd_process_targets(yaml_document_t *d,
                                       yaml_node_t     *n,
                                       xmlNodePtr       xn_cmd,
-                                      const char      *cmd)
+                                      const char      *cmd,
+                                      te_kvpair_h     *expand_vars)
 {
     yaml_node_item_t *item = n->data.sequence.items.start;
 
@@ -768,7 +684,8 @@ parse_config_yaml_cmd_process_targets(yaml_document_t *d,
         yaml_node_t *in = yaml_document_get_node(d, *item);
         te_errno     rc = 0;
 
-        rc = parse_config_yaml_cmd_process_target(d, in, xn_cmd, cmd);
+        rc = parse_config_yaml_cmd_process_target(d, in, xn_cmd, cmd,
+                                                  expand_vars);
         if (rc != 0)
         {
             ERROR(CS_YAML_ERR_PREFIX "failed to process the target in the "
@@ -781,13 +698,22 @@ parse_config_yaml_cmd_process_targets(yaml_document_t *d,
     return 0;
 }
 
+static te_errno parse_config_yaml_cmd(yaml_document_t *d,
+                                      xmlNodePtr       xn_history,
+                                      yaml_node_t     *parent,
+                                      te_kvpair_h     *expand_vars);
+
 /**
  * Process dynamic history specified command in the given YAML document.
  *
- * @param d          YAML document handle
- * @param n          Handle of the command node in the given YAML document
- * @param xn_history Handle of "history" node in the XML document being created
- * @param cmd        String representation of command
+ * @param d                 YAML document handle
+ * @param n                 Handle of the command node in the given YAML document
+ * @param xn_history        Handle of "history" node in the XML document being
+ *                          created
+ * @param cmd               String representation of command
+ * @param expand_vars       List of key-value pairs for expansion in file,
+ *                          @c NULL if environment variables are used for
+ *                          substitutions
  *
  * @return Status code.
  */
@@ -795,13 +721,12 @@ static te_errno
 parse_config_yaml_specified_cmd(yaml_document_t *d,
                                 yaml_node_t     *n,
                                 xmlNodePtr       xn_history,
-                                const char      *cmd)
+                                const char      *cmd,
+                                te_kvpair_h     *expand_vars)
 {
     xmlNodePtr  xn_cmd = NULL;
-    te_bool     check_cond = TRUE;
-    te_bool     cond = TRUE;
     te_errno    rc = 0;
-    const char *targets;
+    te_bool     cond = FALSE;
 
     xn_cmd = xmlNewNode(NULL, BAD_CAST cmd);
     if (xn_cmd == NULL)
@@ -811,49 +736,55 @@ parse_config_yaml_specified_cmd(yaml_document_t *d,
         return TE_ENOMEM;
     }
 
-    targets = get_yaml_cmd_targets(cmd);
-    if (targets == NULL)
+    if (n->type == YAML_SEQUENCE_NODE)
     {
-        ERROR(CS_YAML_ERR_PREFIX "failed to determine %s command target", cmd);
-        return TE_EINVAL;
+        if (strcmp(cmd, "cond") == 0)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "found the %s command node to be "
+                  "badly formatted", cmd);
+            rc = TE_EINVAL;
+            goto out;
+        }
+
+        rc = parse_config_yaml_cmd_process_targets(d, n, xn_cmd, cmd,
+                                                   expand_vars);
+        if (rc != 0)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in the %s "
+                  "command's nested node at line %lu column %lu",
+                  cmd, n->start_mark.line, n->start_mark.column);
+            goto out;
+        }
     }
-
-    if (n->type == YAML_MAPPING_NODE)
+    else if (n->type == YAML_MAPPING_NODE)
     {
-        yaml_node_pair_t *pair = n->data.mapping.pairs.start;
+        if (strcmp(cmd, "cond") != 0)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "found the %s command node to be "
+                  "badly formatted", cmd);
+            rc = TE_EINVAL;
+            goto out;
+        }
 
+        yaml_node_pair_t *pair = n->data.mapping.pairs.start;
         do {
             yaml_node_t *k = yaml_document_get_node(d, pair->key);
             yaml_node_t *v = yaml_document_get_node(d, pair->value);
             const char  *k_label = (const char *)k->data.scalar.value;
 
-            if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0)
+            if (strcmp(k_label, "if") == 0)
             {
-                ERROR(CS_YAML_ERR_PREFIX "found the node nested in the "
-                      "%s command to be badly formatted", cmd);
-                rc = TE_EINVAL;
+                rc = parse_config_if_expr(v, &cond, expand_vars);
             }
-            else if (parse_config_yaml_node_get_attribute_type(k) ==
-                     CS_YAML_NODE_ATTRIBUTE_CONDITION)
+            else if (strcmp(k_label, "then") == 0)
             {
-                rc = parse_config_yaml_cond(d, v, (check_cond) ? &cond : NULL);
-
-                /*
-                 * Once at least one conditional node (which itself may contain
-                 * multiple statements) is found to yield TRUE, this result
-                 * will never be overridden by the rest of conditional
-                 * nodes of the current add command (OR behaviour).
-                 * Still, the rest of the nodes will be parsed.
-                 */
-                if (rc == 0)
-                {
-                    if (cond == TRUE)
-                        check_cond = FALSE;
-                }
+                if (cond)
+                    rc = parse_config_yaml_cmd(d, xn_history, v, expand_vars);
             }
-            else if (strcmp(k_label, targets) == 0)
+            else if (strcmp(k_label, "else") == 0)
             {
-                rc = parse_config_yaml_cmd_process_targets(d, v, xn_cmd, cmd);
+                if (!cond)
+                    rc = parse_config_yaml_cmd(d, xn_history, v, expand_vars);
             }
             else
             {
@@ -879,7 +810,7 @@ parse_config_yaml_specified_cmd(yaml_document_t *d,
         goto out;
     }
 
-    if (cond == TRUE && xn_cmd->children != NULL)
+    if (xn_cmd->children != NULL)
     {
         if (xmlAddChild(xn_history, xn_cmd) == xn_cmd)
         {
@@ -898,76 +829,102 @@ out:
 
     return rc;
 }
+
+static te_errno
+parse_config_root_commands(yaml_document_t *d,
+                           xmlNodePtr       xn_history,
+                           yaml_node_t     *n,
+                           te_kvpair_h     *expand_vars)
+{
+    yaml_node_pair_t *pair = n->data.mapping.pairs.start;
+    yaml_node_t *k = yaml_document_get_node(d, pair->key);
+    yaml_node_t *v = yaml_document_get_node(d, pair->value);
+    te_errno rc = 0;
+
+    if ((strcmp((const char *)k->data.scalar.value, "add") == 0) ||
+        (strcmp((const char *)k->data.scalar.value, "set") == 0) ||
+        (strcmp((const char *)k->data.scalar.value, "register") == 0) ||
+        (strcmp((const char *)k->data.scalar.value, "unregister") == 0) ||
+        (strcmp((const char *)k->data.scalar.value, "delete") == 0) ||
+        (strcmp((const char *)k->data.scalar.value, "cond") == 0))
+    {
+        rc = parse_config_yaml_specified_cmd(d, v, xn_history,
+                                       (const char *)k->data.scalar.value,
+                                       expand_vars);
+    }
+    else
+    {
+        ERROR(CS_YAML_ERR_PREFIX "failed to recognise the command");
+        rc = TE_EINVAL;
+    }
+
+    if (rc != 0)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in "
+              "the command node at line %lu column %lu",
+              k->start_mark.line, k->start_mark.column);
+    }
+
+    return rc;
+}
+
 /**
- * Explore keys and values in the root node of the given YAML
+ * Explore sequence of commands of the given parent node in the given YAML
  * document to detect and process dynamic history commands.
  *
- * @param d          YAML document handle
- * @param xn_history Handle of "history" node in the document being created
+ * @param d                 YAML document handle
+ * @param xn_history        Handle of "history" node in the document being
+ *                          created
+ * @param parent            Parent node of sequence of commands
+ * @param expand_vars       List of key-value pairs for expansion in file,
+ *                          @c NULL if environment variables are used for
+ *                          substitutions
  *
  * @return Status code.
  */
 static te_errno
 parse_config_yaml_cmd(yaml_document_t *d,
-                      xmlNodePtr       xn_history)
+                      xmlNodePtr       xn_history,
+                      yaml_node_t     *parent,
+                      te_kvpair_h     *expand_vars)
 {
-    yaml_node_t      *root = NULL;
-    yaml_node_pair_t *pair = NULL;
+    yaml_node_item_t *item = NULL;
     te_errno          rc = 0;
 
-    root = yaml_document_get_root_node(d);
-    if (root == NULL)
+    if (parent->type != YAML_SEQUENCE_NODE)
     {
-        ERROR(CS_YAML_ERR_PREFIX "failed to get the root node");
-        return TE_EINVAL;
+        ERROR(CS_YAML_ERR_PREFIX "expected sequence node");
+        return TE_EFMT;
     }
 
-    pair = root->data.mapping.pairs.start;
+    item = parent->data.sequence.items.start;
     do {
-        yaml_node_t *k = yaml_document_get_node(d, pair->key);
-        yaml_node_t *v = yaml_document_get_node(d, pair->value);
+        yaml_node_t *n = yaml_document_get_node(d, *item);
 
-        if (k->type != YAML_SCALAR_NODE || k->data.scalar.length == 0)
+        if (n->type != YAML_MAPPING_NODE)
         {
             ERROR(CS_YAML_ERR_PREFIX "found the command node to be "
                   "badly formatted");
             rc = TE_EINVAL;
         }
-        else if ((strcmp((const char *)k->data.scalar.value, "add") == 0) ||
-                 (strcmp((const char *)k->data.scalar.value, "set") == 0) ||
-                 (strcmp((const char *)k->data.scalar.value, "register") == 0) ||
-                 (strcmp((const char *)k->data.scalar.value, "unregister") == 0) ||
-                 (strcmp((const char *)k->data.scalar.value, "delete") == 0))
-        {
-            rc = parse_config_yaml_specified_cmd(d, v, xn_history,
-                                           (const char *)k->data.scalar.value);
-        }
-        else
-        {
-            ERROR(CS_YAML_ERR_PREFIX "failed to recognise the command");
-            rc = TE_EINVAL;
-        }
 
+        rc = parse_config_root_commands(d, xn_history, n, expand_vars);
         if (rc != 0)
-        {
-            ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in "
-                  "the command node at line %lu column %lu",
-                  k->start_mark.line, k->start_mark.column);
             break;
-        }
-    } while (++pair < root->data.mapping.pairs.top);
+    } while (++item < parent->data.sequence.items.top);
 
     return rc;
 }
 
 /* See description in 'conf_yaml.h' */
 te_errno
-parse_config_yaml(const char *filename)
+parse_config_yaml(const char *filename, te_kvpair_h *expand_vars)
 {
     FILE            *f = NULL;
     yaml_parser_t    parser;
     yaml_document_t  dy;
     xmlNodePtr       xn_history = NULL;
+    yaml_node_t     *root = NULL;
     te_errno         rc = 0;
 
     f = fopen(filename, "rb");
@@ -991,7 +948,22 @@ parse_config_yaml(const char *filename)
         goto out;
     }
 
-    rc = parse_config_yaml_cmd(&dy, xn_history);
+    root = yaml_document_get_root_node(&dy);
+    if (root == NULL)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "failed to get the root node");
+        return TE_EINVAL;
+    }
+
+    if (root->type == YAML_SCALAR_NODE &&
+        root->data.scalar.value[0] == '\0')
+    {
+        INFO(CS_YAML_ERR_PREFIX "empty");
+        rc = 0;
+        goto out;
+    }
+
+    rc = parse_config_yaml_cmd(&dy, xn_history, root, expand_vars);
     if (rc != 0)
     {
         ERROR(CS_YAML_ERR_PREFIX "encountered some error(s)");
@@ -1001,7 +973,7 @@ parse_config_yaml(const char *filename)
     if (xn_history->children != NULL)
     {
         rcf_log_cfg_changes(TRUE);
-        rc = parse_config_dh_sync(xn_history, NULL);
+        rc = parse_config_dh_sync(xn_history, expand_vars);
         rcf_log_cfg_changes(FALSE);
     }
 

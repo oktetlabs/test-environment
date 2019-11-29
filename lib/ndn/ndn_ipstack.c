@@ -34,6 +34,8 @@ static asn_named_entry_t _ndn_ip4_frag_spec_ne_array [] = {
         {PRIVATE, NDN_TAG_IP4_FR_MF} },
     { "dont-frag",         &asn_base_boolean_s,
         {PRIVATE, NDN_TAG_IP4_FR_DF} },
+    { "id",                &asn_base_uint32_s,
+        {PRIVATE, NDN_TAG_IP4_FR_ID} },
 };
 
 asn_type ndn_ip4_frag_spec_s = {
@@ -277,11 +279,40 @@ asn_type ndn_ip6_ext_header_destination_s = {
 const asn_type * const ndn_ip6_ext_header_destination =
                                 &ndn_ip6_ext_header_destination_s;
 
+/** Fields of IPv6 Fragment extension header */
+static asn_named_entry_t _ndn_ip6_ext_header_fragment_hdr_ne_array [] = {
+    { "next-header",  &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_NEXT_HEADER } },
+    { "res1",  &ndn_data_unit_int8_s,
+      { PRIVATE, NDN_TAG_IP6_EXT_HEADER_FRAGMENT_RES1 } },
+    { "offset",  &ndn_data_unit_int16_s,
+      { PRIVATE, NDN_TAG_IP6_EXT_HEADER_FRAGMENT_OFFSET } },
+    { "res2",  &ndn_data_unit_int2_s,
+      { PRIVATE, NDN_TAG_IP6_EXT_HEADER_FRAGMENT_RES2 } },
+    { "m-flag",  &ndn_data_unit_int1_s,
+      { PRIVATE, NDN_TAG_IP6_EXT_HEADER_FRAGMENT_M_FLAG } },
+    { "id",  &ndn_data_unit_uint32_s,
+      { PRIVATE, NDN_TAG_IP6_EXT_HEADER_FRAGMENT_ID } },
+};
+
+/** IPv6 Fragment extension header */
+asn_type ndn_ip6_ext_header_fragment_s = {
+    "IP6-Extension-Header-Fragment",
+    {PRIVATE, NDN_TAG_IP6_EXT_HEADER_FRAGMENT}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_ip6_ext_header_fragment_hdr_ne_array),
+    {_ndn_ip6_ext_header_fragment_hdr_ne_array}
+};
+
+const asn_type * const ndn_ip6_ext_header_fragment =
+                                &ndn_ip6_ext_header_fragment_s;
+
 static asn_named_entry_t _ndn_ip6_ext_header_ne_array [] = {
     { "hop-by-hop", &ndn_ip6_ext_header_hop_by_hop_s,
                     {PRIVATE, NDN_TAG_IP6_EXT_HEADER_HOP_BY_HOP} },
     { "destination", &ndn_ip6_ext_header_destination_s,
                     {PRIVATE, NDN_TAG_IP6_EXT_HEADER_DESTINATION} },
+    { "fragment", &ndn_ip6_ext_header_fragment_s,
+                  {PRIVATE, NDN_TAG_IP6_EXT_HEADER_FRAGMENT} },
 };
 
 asn_type ndn_ip6_ext_header_s = {
@@ -299,6 +330,39 @@ asn_type ndn_ip6_ext_headers_seq_s = {
 };
 
 const asn_type * const ndn_ip6_ext_headers_seq = &ndn_ip6_ext_headers_seq_s;
+
+/** Fields of IPv6 Fragment specification in packet template */
+static asn_named_entry_t _ndn_ip6_frag_spec_ne_array [] = {
+    { "hdr-offset", &asn_base_integer_s,
+      {PRIVATE, NDN_TAG_IP6_FR_HO} },
+    { "real-offset", &asn_base_integer_s,
+      {PRIVATE, NDN_TAG_IP6_FR_RO} },
+    { "hdr-length", &asn_base_integer_s,
+      {PRIVATE, NDN_TAG_IP6_FR_HL} },
+    { "real-length", &asn_base_integer_s,
+      {PRIVATE, NDN_TAG_IP6_FR_RL} },
+    { "more-frags", &asn_base_boolean_s,
+      {PRIVATE, NDN_TAG_IP6_FR_MF} },
+    { "id", &asn_base_uint32_s,
+      {PRIVATE, NDN_TAG_IP6_FR_ID} },
+};
+
+/** IPv6 Fragment specification in packet template */
+asn_type ndn_ip6_frag_spec_s = {
+    "IPv6-Fragment", {PRIVATE, NDN_TAG_IP6_FRAGMENTS}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_ip6_frag_spec_ne_array),
+    {_ndn_ip6_frag_spec_ne_array}
+};
+
+const asn_type * const ndn_ip6_frag_spec = &ndn_ip6_frag_spec_s;
+
+/** Specification of IPv6 fragmentation in packet template */
+asn_type ndn_ip6_frag_seq_s = {
+    "IPv6-Fragments", {PRIVATE, NDN_TAG_IP6_FRAGMENTS}, SEQUENCE_OF, 0,
+    {subtype: &ndn_ip6_frag_spec_s}
+};
+
+const asn_type * const ndn_ip6_frag_seq = &ndn_ip6_frag_seq_s;
 
 static asn_named_entry_t _ndn_ip6_header_ne_array [] = {
     { "version",         &ndn_data_unit_int4_s,
@@ -320,6 +384,9 @@ static asn_named_entry_t _ndn_ip6_header_ne_array [] = {
 
     { "ext-headers",     &ndn_ip6_ext_headers_seq_s,
       { PRIVATE, NDN_TAG_IP6_EXT_HEADERS } } ,
+
+    { "fragment-spec",   &ndn_ip6_frag_seq_s,
+      { PRIVATE, NDN_TAG_IP6_FRAGMENTS } },
 
     { "pld-checksum",    &ndn_ip6_pld_chksm_s,
       { PRIVATE, NDN_TAG_IP6_PLD_CHECKSUM } },

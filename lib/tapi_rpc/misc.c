@@ -2169,7 +2169,7 @@ rpc_ioctl_ethtool(rcf_rpc_server *rpcs, int fd,
     struct ifreq    ifreq;
 
     memset(&ifreq, 0, sizeof(ifreq));
-    strncpy(ifreq.ifr_name, ifname, sizeof(ifreq.ifr_name));
+    te_strlcpy(ifreq.ifr_name, ifname, sizeof(ifreq.ifr_name));
     ifreq.ifr_data = (caddr_t)edata;
     return rpc_ioctl(rpcs, fd, RPC_SIOCETHTOOL, &ifreq);
 }
@@ -2535,11 +2535,11 @@ tapi_str2saved_mtus(const char *str, te_saved_mtus *mtus)
 
             if (str[p] == '=')
             {
-                strncpy(if_name, buf, IFNAMSIZ);
+                te_strlcpy(if_name, buf, IFNAMSIZ);
             }
             else if (str[p] == '/')
             {
-                strncpy(ta, buf, RCF_MAX_NAME);
+                te_strlcpy(ta, buf, RCF_MAX_NAME);
             }
             else
             {
@@ -2554,8 +2554,8 @@ tapi_str2saved_mtus(const char *str, te_saved_mtus *mtus)
                 }
 
                 saved_mtu->mtu = mtu;
-                strncpy(saved_mtu->if_name, if_name, IFNAMSIZ);
-                strncpy(saved_mtu->ta, ta, RCF_MAX_NAME);
+                te_strlcpy(saved_mtu->if_name, if_name, IFNAMSIZ);
+                te_strlcpy(saved_mtu->ta, ta, RCF_MAX_NAME);
 
                 LIST_INSERT_HEAD(mtus, saved_mtu, links);
             }
@@ -2638,8 +2638,8 @@ te_saved_mtus_put(te_saved_mtus *mtus,
     if (saved_mtu == NULL)
         return TE_RC(TE_TAPI, TE_ENOMEM);
 
-    strncpy(saved_mtu->ta, ta, RCF_MAX_NAME);
-    strncpy(saved_mtu->if_name, if_name, IFNAMSIZ);
+    te_strlcpy(saved_mtu->ta, ta, RCF_MAX_NAME);
+    te_strlcpy(saved_mtu->if_name, if_name, IFNAMSIZ);
     saved_mtu->mtu = mtu;
     LIST_INSERT_HEAD(mtus, saved_mtu, links);
 

@@ -40,6 +40,7 @@
 #endif
 
 #include "te_defs.h"
+#include "te_str.h"
 #include "tq_string.h"
 
 #include "tester.h"
@@ -769,7 +770,7 @@ tester_log_global(void)
             char e[TESTER_ENV_VAL_SIZE];
 
             /* need to convert __ back to . */
-            strncpy(e, environ[i], sizeof(e));
+            te_strlcpy(e, environ[i], sizeof(e));
             eq = strchr(e, '='); /* separator */
 
             p = e + strlen(TEST_ARG_ENV_PREFIX);

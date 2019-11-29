@@ -95,6 +95,7 @@ netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan)
     struct nlmsghdr    *h;
     struct rtattr      *linkinfo;
     struct rtattr      *data;
+    uint16_t            port = htons(vxlan->generic.port);
 
     memset(req, 0, sizeof(req));
     netconf_init_nlmsghdr(req, nh, RTM_NEWLINK, NLM_F_REQUEST | NLM_F_ACK |
@@ -152,8 +153,7 @@ netconf_vxlan_add(netconf_handle nh, const netconf_vxlan *vxlan)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    netconf_append_rta(h, &(vxlan->generic.port), sizeof(vxlan->generic.port),
-                       IFLA_VXLAN_PORT);
+    netconf_append_rta(h, &port, sizeof(port), IFLA_VXLAN_PORT);
 
     if (vxlan->dev != NULL && strlen(vxlan->dev) != 0)
     {

@@ -47,6 +47,7 @@
 #include "te_printf.h"
 #include "te_bufs.h"
 #include "te_dbuf.h"
+#include "te_str.h"
 
 
 /** @name String buffers for snprintf() operations */
@@ -1976,10 +1977,10 @@ rpc_uname(rcf_rpc_server *rpcs, struct utsname *buf)
     if (RPC_IS_CALL_OK(rpcs))
     {
         memset(buf, 0, sizeof(*buf));
-#define GET_STR(_dst, _field)                               \
-        do {                                                \
-            strncpy(buf->_dst, out.buf._field._field##_val, \
-                    sizeof(buf->_dst));                     \
+#define GET_STR(_dst, _field)                                   \
+        do {                                                    \
+            te_strlcpy(buf->_dst, out.buf._field._field##_val,  \
+                       sizeof(buf->_dst));                      \
         } while(0)
 
         GET_STR(sysname, sysname);

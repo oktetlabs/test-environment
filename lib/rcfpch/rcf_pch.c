@@ -49,6 +49,7 @@
 #include "te_errno.h"
 #include "te_defs.h"
 #include "te_stdint.h"
+#include "te_str.h"
 #include "rcf_common.h"
 #include "rcf_internal.h"
 #include "comm_agent.h"
@@ -90,7 +91,7 @@ void
 rcf_pch_get_id(char *id)
 {
     if (id != NULL)
-        strncpy(id, rcf_pch_id, RCF_PCH_MAX_ID_LEN);
+        te_strlcpy(id, rcf_pch_id, RCF_PCH_MAX_ID_LEN);
 }
 
 /**

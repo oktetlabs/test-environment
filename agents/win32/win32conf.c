@@ -2312,7 +2312,7 @@ mtu_set(unsigned int gid, const char *oid, const char *value,
     }
     else
     {
-      snprintf(szCommand, sizeof(szCommand) - 1,
+      snprintf(szCommand, sizeof(szCommand),
           "./sish_client.exe "
           "--server=127.0.0.1 "
           "--command=\`cygpath -w \$PWD\`\\\\windows_layer2_manage.exe "
@@ -5016,7 +5016,7 @@ set_vlan_reg(const char *ifname, int vlan_id)
     else if (vlan_id & TAG_VLAN_ONLY)
         vlan_mode = 2;
     
-    snprintf(buffer, sizeof(buffer) - 1,
+    snprintf(buffer, sizeof(buffer),
              "./sish_client.exe "
              "--server=127.0.0.1 "
              "--command=\`cygpath -w \$PWD\`\\\\windows_layer2_manage.exe "
@@ -5041,7 +5041,7 @@ remove_vlan_reg(const char *ifname, int vlan_id)
       ERROR("Wrong interface name %s, only ef1 is appropriate", ifname);
       return -1;
     }
-    snprintf(buffer, sizeof(buffer) - 1,
+    snprintf(buffer, sizeof(buffer),
              "./sish_client.exe "
              "--server=127.0.0.1 "
              "--command=\`cygpath -w \$PWD\`\\\\windows_layer2_manage.exe "

@@ -16,9 +16,11 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 if WITH_CONF_YAML
 CONF_YAML_H = conf_yaml.h
 CONF_YAML_S = conf_yaml.c
+CONF_YAML_LIBS = -llogic_expr
 else
 CONF_YAML_H =
 CONF_YAML_S =
+CONF_YAML_LIBS =
 endif
 
 bin_PROGRAMS = te_cs te_cs_shutdown 
@@ -43,8 +45,8 @@ te_cs_SOURCES = conf_backup.c  \
 te_cs_shutdown_SOURCES = conf_shutdown.c
 
 te_cs_LDADD = @TE_LDADD@ -lrcfapi -lconf_types -lconf_oid \
-              -llogger_ten -lipcserver -lipc -ltools -llogger_core @XML2_LIBS@ \
-              -lpthread -lpopt -lexpat 
+              -llogger_ten -lipcserver -lipc $(CONF_YAML_LIBS) -ltools \
+              -llogger_core @XML2_LIBS@ -lpthread -lpopt -lexpat
 
 te_cs_shutdown_LDADD = @TE_LDADD@ -llogger_ten -lipc -ltools -llogger_core -lpthread
 

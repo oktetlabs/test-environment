@@ -127,7 +127,7 @@ tce_retrieve_data(rcf_rpc_server *rpcs)
 
     for (;;)
     {
-        snprintf(buf, sizeof(buf) - 1, SYS_TCE_PREFIX "%d", progno);
+        snprintf(buf, sizeof(buf), SYS_TCE_PREFIX "%d", progno);
         RPC_AWAIT_IUT_ERROR(rpcs);
         if (rpc_access(rpcs, buf, 0))
             break;

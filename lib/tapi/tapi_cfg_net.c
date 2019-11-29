@@ -117,6 +117,13 @@ tapi_cfg_net_get_net(cfg_handle net_handle, cfg_net_t *net)
         return rc;
     }
 
+    net->name = cfg_oid_str_get_inst_name(net_oid, -1);
+    if (net->name == NULL)
+    {
+        ERROR("Failed to get the last instance name from OID '%s'", net_oid);
+        return TE_RC(TE_TAPI, TE_EFAULT);
+    }
+
     /* Find all nodes in this net */
     rc = cfg_find_pattern_fmt(&n_nodes, &node_handles,
                               "%s/node:*", net_oid);
@@ -124,6 +131,8 @@ tapi_cfg_net_get_net(cfg_handle net_handle, cfg_net_t *net)
     if (rc != 0)
     {
         ERROR("cfg_find_pattern() failed %r", rc);
+        free(net->name);
+        net->name = NULL;
         return rc;
     }
 
@@ -139,6 +148,8 @@ tapi_cfg_net_get_net(cfg_handle net_handle, cfg_net_t *net)
         if (net->nodes == NULL)
         {
             ERROR("Memory allocation failure");
+            free(net->name);
+            net->name = NULL;
             return rc;
         }
     }
@@ -232,6 +243,7 @@ tapi_cfg_net_free_net(cfg_net_t *net)
 {
     if (net != NULL)
     {
+        free(net->name);
         free(net->nodes);
     }
 }
@@ -286,7 +298,7 @@ tapi_cfg_net_register_net(const char *name, cfg_net_t *net, ...)
             ERROR("Failed to add node!");
             break;
         }
-        rc = cfg_add_instance_fmt(NULL, CFG_VAL(INTEGER, node->type),
+        rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, node->type),
                                   "/net:%s/node:%d/type:", name, node_num);
         if (rc != 0)
             break;

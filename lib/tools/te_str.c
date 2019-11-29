@@ -19,6 +19,10 @@
 #ifdef HAVE_CTYPE_H
 #include <ctype.h>
 #endif
+#ifdef HAVE_BSD_STRING_H
+#include <bsd/string.h>
+#endif
+
 #include "logger_api.h"
 #include "te_string.h"
 #include "te_str.h"
@@ -84,6 +88,45 @@ te_str_concat(const char *first, const char *second)
     str[len1 + len2] = '\0';
 
     return str;
+}
+
+/* See the description in te_str.h */
+size_t
+te_strlcpy(char *dst, const char *src, size_t size)
+{
+#ifdef HAVE_STRLCPY
+    return strlcpy(dst, src, size);
+#else
+    size_t len = strlen(src);
+
+    if (len < size)
+    {
+        memcpy(dst, src, len + 1);
+    }
+    else
+    {
+        memcpy(dst, src, size - 1);
+        dst[size - 1] = '\0';
+    }
+
+    return len;
+#endif
+}
+
+/* See the description in te_str.h */
+size_t
+te_strlcat(char *dst, const char *src, size_t size)
+{
+#ifdef HAVE_STRLCAT
+    return strlcat(dst, src, size);
+#else
+    size_t len = strnlen(dst, size);
+
+    if (len < size)
+        return len + te_strlcpy(dst + len, src, size - len);
+    else
+        return len + strlen(src);
+#endif
 }
 
 /* See description in te_str.h */

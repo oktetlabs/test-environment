@@ -458,6 +458,7 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
         te_bool     bool_tmp;
         size_t      ip4_pld_real_len;
         int32_t     frag_offset;
+        uint32_t    id;
 
         /* Copy template of the header */
         memcpy(hdr, data->hdr, data->hlen);
@@ -514,9 +515,7 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
         }
         memcpy(hdr + 2, &i16_tmp, 2);
 
-        /* Identification is kept unchanged */
-
-        /* Flags + Fragment Offset */
+        /* Flags + Fragment Offset + ID */
         if (frag_spec != NULL)
         {
             ASN_READ_FRAG_SPEC(int32, "hdr-offset", &i32_tmp);
@@ -532,6 +531,7 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
                       "big");
                 return TE_RC(TE_TAD_CSAP, TE_E2BIG);
             }
+
             i16_tmp = (i32_tmp >> 3);
             ASN_READ_FRAG_SPEC(bool, "more-frags", &bool_tmp);
             i16_tmp |= !!(bool_tmp) << 13;
@@ -540,6 +540,18 @@ tad_ip4_gen_bin_cb_per_sdu(tad_pkt *sdu, void *opaque)
 
             i16_tmp = htons(i16_tmp);
             memcpy(hdr + 6, &i16_tmp, 2);
+
+            rc = asn_read_uint32(frag_spec, &id, "id");
+            if (rc == 0)
+            {
+                if (id > 0xffff)
+                {
+                    ERROR("'id' in fragment specification is too "
+                          "big");
+                    return TE_RC(TE_TAD_CSAP, TE_E2BIG);
+                }
+                *(uint16_t *)(hdr + 4) = htons(id);
+            }
         }
 
         /* TTL and protocol are kept unchanged */
