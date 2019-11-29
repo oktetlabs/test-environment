@@ -1229,7 +1229,7 @@ asn_sprint_enum(const asn_value *value, char *buffer, size_t buf_len)
     unsigned int i, need;
     const char  *val_label = NULL;
 
-    if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
+    if ((value == NULL) || (buffer == NULL) || (buf_len == 0))
         return 0;
 
     if (value->syntax != ENUMERATED)
@@ -1281,7 +1281,7 @@ asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
     char *buf_place;
     size_t total_syms = 0, interval = 0;
 
-    if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
+    if ((value == NULL) || (buffer == NULL) || (buf_len == 0))
         return 0;
 
     if (value->syntax != CHAR_STRING)
@@ -1362,7 +1362,7 @@ asn_sprint_octstring(const asn_value *value, char *buffer, size_t buf_len)
                                  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', };
     uint8_t     *cur_byte;
 
-    if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
+    if ((value == NULL) || (buffer == NULL) || (buf_len == 0))
         return 0;
 
     if (value->syntax != OCT_STRING)
@@ -1412,7 +1412,7 @@ asn_sprint_tagged(const asn_value *value, char *buffer, size_t buf_len,
 
     asn_value *v_el;
 
-    if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
+    if ((value == NULL) || (buffer == NULL) || (buf_len == 0))
         return 0;
 
     /* codes of syntaxes which processed in this method
@@ -1460,7 +1460,7 @@ asn_sprint_choice(const asn_value *value, char *buffer, size_t buf_len,
 
     asn_value *v_el;
 
-    if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
+    if ((value == NULL) || (buffer == NULL) || (buf_len == 0))
         return 0;
 
     if (value->syntax != CHOICE)
@@ -1510,7 +1510,7 @@ asn_sprint_objid(const asn_value *value, char *buffer, size_t buf_len)
     unsigned int all_used = 0, used;
     int *subid;
 
-    if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
+    if ((value == NULL) || (buffer == NULL) || (buf_len == 0))
         return 0;
 
     if (value->syntax != OID)
@@ -1567,7 +1567,7 @@ asn_sprint_array_fields(const asn_value *value, char *buffer,
 
     char *last = buffer + buf_len - 1;
 
-    if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
+    if ((value == NULL) || (buffer == NULL) || (buf_len == 0))
         return 0;
 
     if ((value->syntax & ASN_SYN_ARRAY) == 0 ||
@@ -1652,7 +1652,7 @@ int
 asn_sprint_value(const asn_value *value, char *buffer, size_t buf_len,
                  unsigned int indent)
 {
-    if ((value == NULL) || (buffer == NULL) || (buf_len == 0) )
+    if ((value == NULL) || (buffer == NULL) || (buf_len == 0))
         return 0;
 
     switch (value->syntax)
