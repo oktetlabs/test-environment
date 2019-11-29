@@ -3155,7 +3155,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
                         default:
                             assert(FALSE);
-                            /*@fallthrou@*/
+                            /*@fallthrough@*/
 
                         case TESTER_INTERACTIVE_ERROR:
                             EXIT("FAULT");
@@ -3322,7 +3322,7 @@ tester_run(testing_scenario   *scenario,
 
             default:
                 assert(FALSE);
-                /*@fallthrou@*/
+                /*@fallthrough@*/
 
             case TESTER_INTERACTIVE_ERROR:
                 return TE_RC(TE_TESTER, TE_EFAULT);
@@ -3477,7 +3477,7 @@ tester_run_interactive(tester_run_data *gctx)
 
         default:
             assert(FALSE);
-            /*@fallthrou@*/
+            /*@fallthrough@*/
 
         case TESTER_INTERACTIVE_ERROR:
             break;

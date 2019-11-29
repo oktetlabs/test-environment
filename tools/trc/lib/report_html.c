@@ -3345,7 +3345,7 @@ trc_report_html_table(FILE    *f, trc_report_ctx *ctx,
                             break;
                     }
                 }
-                /*@fallthrou@*/
+                /*@fallthrough@*/
 
             case TRC_DB_WALKER_BROTHER:
                 if ((level & 1) == 1)
