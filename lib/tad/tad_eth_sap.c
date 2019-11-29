@@ -75,6 +75,7 @@
 
 #include "te_errno.h"
 #include "te_alloc.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 
@@ -345,7 +346,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
                 {
                   str[strlen(str) - 1] = 0;
                 }
-                sprintf(new_ifname, "\\Device\\NPF_%s", str);
+                TE_SPRINTF(new_ifname, "\\Device\\NPF_%s", str);
                 if (fgets(str, 100, F) == NULL)
                 {
                     ERROR("Cannot read MAC address from file '%s'", filename);
