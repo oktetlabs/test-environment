@@ -1186,7 +1186,7 @@ asn_snprint_charstring(char *buffer, size_t buf_len, const asn_value *value)
     char *string;
     char *quote_place;
     char *buf_place;
-    size_t total_syms = 0, interval = 0;
+    size_t total_syms = 0;
 
     if (value->syntax != CHAR_STRING)
         return -1;
@@ -1202,12 +1202,12 @@ asn_snprint_charstring(char *buffer, size_t buf_len, const asn_value *value)
 #define PUT_PIECE(_src, _len) \
     do {                                                \
         size_t loc_len = (_len);                        \
+        size_t buf_left = buf_len - total_syms;         \
                                                         \
-        interval = (buf_len - total_syms);              \
         strncpy(buf_place, (_src),                      \
-                (interval > loc_len) ?                  \
-                            loc_len : interval);        \
-        if (interval <= loc_len)                        \
+                (buf_left > loc_len) ?                  \
+                            loc_len : buf_left);        \
+        if (buf_left <= loc_len)                        \
             goto finish;                                \
         total_syms += loc_len;                          \
         buf_place += loc_len;                           \
