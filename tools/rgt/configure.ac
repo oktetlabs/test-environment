@@ -135,7 +135,7 @@ AC_ARG_WITH([expat],
             ])
 
 if test "x$xml_lib" = "x"; then
-    AC_MSG_WARN("[no XML parser library specified, libxml will be used]")
+    AC_MSG_NOTICE("[no XML parser library specified, libxml will be used]")
     xml_lib=libxml
 fi
 
