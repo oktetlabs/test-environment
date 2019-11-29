@@ -3231,7 +3231,7 @@ asn_impl_get_label_by_index(asn_value *value, unsigned int index,
             {
                 return -1;
             }
-            snprintf(label, label_len - 1, "#%s", child_value->name);
+            snprintf(label, label_len, "#%s", child_value->name);
         }
         else
         {
@@ -3250,7 +3250,7 @@ asn_impl_get_label_by_index(asn_value *value, unsigned int index,
         {
             return -1;
         }
-        snprintf(name, BUF_SIZE - 1, "%d", index);
+        snprintf(name, BUF_SIZE, "%d", index);
         if (strlen(name) >= label_len)
         {
             return -1;
@@ -3301,11 +3301,11 @@ asn_impl_walk_depth(asn_value *container, te_bool only_leafs, char *path,
                                             valuename, PATH_SIZE);
                 if (strlen(path) == 0)
                 {
-                    snprintf(subpath, PATH_SIZE - 1, "%s", valuename);
+                    snprintf(subpath, PATH_SIZE, "%s", valuename);
                 }
                 else
                 {
-                    snprintf(subpath, PATH_SIZE - 1,
+                    snprintf(subpath, PATH_SIZE,
                              "%s.%s", path, valuename);
                 }
                 rc = asn_impl_walk_depth(sv, only_leafs, subpath,

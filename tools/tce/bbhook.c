@@ -273,7 +273,7 @@ write_tce_info(int objno, const char *functr, int functrno, int arcno,
     if (fd >= 0)
     {
         int len;
-        len = vsnprintf(buffer, sizeof(buffer) - 1, fmt, args);
+        len = vsnprintf(buffer, sizeof(buffer), fmt, args);
         if (len > 0)
         {
             write(fd, buffer, len > (int)sizeof(buffer) - 1 ? 
