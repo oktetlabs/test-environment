@@ -1323,8 +1323,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     else if (strcmp_start("fork_register_", value) == 0)
     {
         father_name = value + strlen("fork_register_");
-        snprintf(new_val, RCF_RPC_NAME_LEN, "fork_%s",
-                 father_name);
+        snprintf(new_val, sizeof(new_val), "fork_%s", father_name);
         value = (const char *)new_val;
         registration = TRUE;
     }
@@ -1333,8 +1332,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     else if (strcmp_start("forkexec_register_", value) == 0)
     {
         father_name = value + strlen("forkexec_register_");
-        snprintf(new_val, RCF_RPC_NAME_LEN, "forkexec_%s",
-                 father_name);
+        snprintf(new_val, sizeof(new_val), "forkexec_%s", father_name);
         value = (const char *)new_val;
         registration = TRUE;
     }
@@ -1377,8 +1375,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         {
             /* All the threads should be linked to the initial one" */
             father = father->father;
-            snprintf(new_val, RCF_RPC_NAME_LEN, "thread_%s",
-                     father->name);
+            snprintf(new_val, sizeof(new_val), "thread_%s", father->name);
             value = (const char *)new_val;
             father_name = value + strlen("thread_");
         }
