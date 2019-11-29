@@ -191,6 +191,8 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
 #define MAX_INT_VALUE_LEN           10
     while (segment_data_index < segment_data_len)
     {
+        size_t key_len;
+
         if ((rc = asn_get_indexed(segment_data, &key_pair,
                                   segment_data_index++, NULL)) != 0)
         {
@@ -205,15 +207,20 @@ asn2bin_data(asn_value *segment_data, uint8_t *data, uint32_t *data_len)
             return rc;
         }
 
-        if (tail_len < strlen(key))
+        key_len = strlen(key);
+        if (tail_len <= key_len)
         {
             ERROR("%s, %d: unsufficient buffer length",
                   __FUNCTION__, __LINE__);
             return TE_ENOBUFS;
         }
-        strncpy(current, key, strlen(key));
-        current += strlen(key);
-        write_data_len += strlen(key);
+        /*
+         * We checked above that we have sufficient space and use plain
+         * memcpy() here to copy together with terminating NUL.
+         */
+        memcpy(current, key, key_len + 1);
+        current += key_len;
+        write_data_len += key_len;
 
         if (tail_len < 1)
         {
