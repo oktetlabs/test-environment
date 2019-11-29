@@ -85,6 +85,29 @@ extern char *te_str_lower(const char *src);
 extern char *te_str_concat(const char *first, const char *second);
 
 /**
+ * Copy a string to provided buffer with NUL-terminated result guarantee.
+ *
+ * @param dst       Destination buffer
+ * @param src       String to copy
+ * @param size      Size of destination buffer
+ *
+ * @return Total length even if it is larger than buffer size.
+ */
+extern size_t te_strlcpy(char *dst, const char *src, size_t size);
+
+/**
+ * Concatenate with NUL-terminated result guarantee a string to provided
+ * string which is located in buffer of specified size.
+ *
+ * @param dst       Buffer with a string to concatenate to
+ * @param src       String to append
+ * @param size      Size of destination buffer
+ *
+ * @return Total length even if it is larger than buffer size.
+ */
+extern size_t te_strlcat(char *dst, const char *src, size_t size);
+
+/**
  * Copy at most @p size bytes of the string pointed to by @p src to the buffer
  * pointed to by @p dst. It prints an error message if the @p size of destination
  * buffer is not big enough to store the whole source string, and terminates the
