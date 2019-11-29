@@ -897,7 +897,7 @@ sniffer_polling_sets_cli_init(void)
     /* Get environment variable value for capture logs directory. */
     tmp = getenv("TE_SNIFF_LOG_DIR");
     if (tmp != NULL)
-        strncpy(snifp_sets.dir, tmp, RCF_MAX_PATH);
+        te_strlcpy(snifp_sets.dir, tmp, RCF_MAX_PATH);
     if (strlen(snifp_sets.dir) == 0)
     {
         snifp_sets.errors = TRUE;
@@ -909,7 +909,7 @@ sniffer_polling_sets_cli_init(void)
 
     tmp = getenv("TE_SNIFF_LOG_NAME");
     if (tmp != NULL)
-        strncpy(snifp_sets.name, tmp, RCF_MAX_PATH);
+        te_strlcpy(snifp_sets.name, tmp, RCF_MAX_PATH);
 
     tmp = getenv("TE_SNIFF_LOG_OSIZE");
     if (tmp != NULL)

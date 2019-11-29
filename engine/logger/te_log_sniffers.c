@@ -45,6 +45,7 @@
 #include <sys/sendfile.h>
 
 #include "te_raw_log.h"
+#include "te_str.h"
 #include "logger_int.h"
 #include "logger_internal.h"
 #include "logger_ten.h"
@@ -280,7 +281,7 @@ sniffer_make_file_name(const char *agent, snif_id_l *snif)
     while ((ptr = strchr(templ + offt_templ, '\%')) != NULL)
     {
         len = ptr - (templ + offt_templ);
-        if (len < 0 || (unsigned)len > RCF_MAX_PATH - offt_buf)
+        if (len < 0 || (unsigned)len >= RCF_MAX_PATH - offt_buf)
             return TE_RC(TE_LOGGER, TE_EINVAL);
         strncpy(snif->res_fname + offt_buf, templ + offt_templ, len);
         offt_templ += len + 1;
@@ -334,9 +335,10 @@ sniffer_make_file_name(const char *agent, snif_id_l *snif)
     if (offt_templ < strlen(templ))
     {
         len = strlen(templ + offt_templ);
-        if ((unsigned)len > RCF_MAX_PATH - offt_buf)
+        if ((unsigned)len >= RCF_MAX_PATH - offt_buf)
             return TE_RC(TE_LOGGER, TE_EINVAL);
-        strncpy(snif->res_fname + offt_buf, templ + offt_templ, len);
+        te_strlcpy(snif->res_fname + offt_buf, templ + offt_templ,
+                RCF_MAX_PATH - offt_buf);
         offt_buf += len;
     }
     if (snif->cap_file_ind > 0)
@@ -1000,7 +1002,7 @@ sniffer_add_new_mark(char *ta_name, snif_id_l *sniff, char *message,
         return TE_RC(TE_LOGGER, TE_ENOMEM);
     mark->id.ssn = sniff->id.ssn;
     mark->id.abs_offset = sniff->id.abs_offset;
-    strncpy(mark->agent, ta_name, RCF_MAX_NAME);
+    te_strlcpy(mark->agent, ta_name, RCF_MAX_NAME);
     SLIST_INSERT_HEAD(&snif_mrk_h, mark, ent_l_m);
     return 0;
 }
@@ -1050,10 +1052,9 @@ sniffer_ins_mark_all(char *mark_data)
     if (ptr == NULL)
         return;
     len = ptr - mark_data;
-    if ((len + 1 > RCF_MAX_NAME) || (len < 0))
+    if ((len >= RCF_MAX_NAME) || (len < 0))
         return;
-    strncpy(ta_name, mark_data, len);
-    ta_name[len] = '\0';
+    te_strlcpy(ta_name, mark_data, RCF_MAX_NAME);
 
     if ((snif_ta = sniffer_get_ta_by_name(ta_name)) == NULL)
     {
@@ -1122,20 +1123,18 @@ sniffer_mark_handler(char *mark_data_in)
     if (ptr == NULL)
         goto snif_mark_cleanup;
     len = ptr - mark_data;
-    if ((len + 1 > RCF_MAX_NAME) || (len < 0))
+    if ((len >= RCF_MAX_NAME) || (len < 0))
         goto snif_mark_cleanup;
-    strncpy(mark->agent, mark_data, len);
-    mark->agent[len] = '\0';
+    te_strlcpy(mark->agent, mark_data, RCF_MAX_NAME);
     /* Skip space. */
     ptr++;
     len++;
 
     rc = sniffer_parse_id_str(ptr, &mark->id);
-    if ((rc <= 0) || (rc > RCF_MAX_ID - 1))
+    if ((rc <= 0) || (rc >= RCF_MAX_ID))
         goto snif_mark_cleanup;
 
-    strncpy(snif_id_str, ptr, rc);
-    snif_id_str[rc] = '\0';
+    te_strlcpy(snif_id_str, ptr, RCF_MAX_ID);
     len += rc + 1;
     if ((unsigned)len > strlen(mark_data))
         goto snif_mark_cleanup;
@@ -1214,7 +1213,7 @@ sniffers_handler(char *agent)
 
     SNIFFER_MALLOC(snif_ta, sizeof(snif_ta_l));
 
-    strncpy(snif_ta->agent, agent, RCF_MAX_NAME);
+    te_strlcpy(snif_ta->agent, agent, RCF_MAX_NAME);
     SLIST_INIT(&snif_ta->snif_hl);
     pthread_mutex_lock(&te_log_sniffer_mutex);
     SLIST_INSERT_HEAD(&snif_ta_h, snif_ta, ent_l_ta);
