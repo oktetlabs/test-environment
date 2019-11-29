@@ -245,8 +245,8 @@ te_log_vprintf_old(struct te_log_out_params *param,
 #define CASE_SPEC_CPY(mod_, spec_) \
     case mod_:                      \
     {                               \
-        strncpy(s, spec_, 2);       \
         spec_size = strlen(spec_);  \
+        memcpy(s, spec_, spec_size);\
         s[spec_size] = s[2];        \
         break;                      \
     }
