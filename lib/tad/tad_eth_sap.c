@@ -943,7 +943,7 @@ tad_eth_sap_pkt_rx_ring_recv(tad_eth_sap        *sap,
      * segment, so it is reasonable to re-allocate the entire packet
      */
     tad_pkt_free_segs(pkt);
-    seg = tad_pkt_alloc_seg(seg_data, seg_len, (tad_pkt_seg_free)free);
+    seg = tad_pkt_alloc_seg(seg_data, seg_len, tad_pkt_seg_data_free);
     if (seg == NULL)
     {
         free(seg_data);
@@ -1179,7 +1179,7 @@ tad_eth_sap_parse_ancillary_data(int msg_flags, tad_pkt *pkt, size_t *pkt_len,
 
         tad_pkt_put_seg_data(pkt, cur_seg, new_seg_data,
                              cur_seg->data_len + TAD_VLAN_TAG_LEN,
-                             (tad_pkt_seg_free)free);
+                             tad_pkt_seg_data_free);
 
         *pkt_len += TAD_VLAN_TAG_LEN;
     }
