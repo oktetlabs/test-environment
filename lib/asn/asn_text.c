@@ -1278,6 +1278,7 @@ asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
 #define PUT_PIECE(_src, _len) \
     do {                                                \
         size_t loc_len = (_len);                        \
+                                                        \
         interval = (buf_len - total_syms);              \
         strncpy(buf_place, (_src),                      \
                 (interval > loc_len) ?                  \
@@ -1292,6 +1293,7 @@ asn_sprint_charstring(const asn_value *value, char *buffer, size_t buf_len)
     while (string != NULL && string[0] != '\0')
     {
         char quote[] = "\\\"";
+
         quote_place = index(string, '"');
         if (quote_place == NULL)
             break;
