@@ -212,11 +212,9 @@ parser_add(unsigned int gid, const char *oid, char *cname,
     parser->logging     = TRUE;
     parser->level       = map_name_to_level(TE_SERIAL_LLEVEL);
 
-    parser->name[TE_SERIAL_MAX_NAME]    = '\0';
-    parser->c_name[TE_SERIAL_MAX_NAME]  = '\0';
-    strncpy(parser->name, pname, TE_SERIAL_MAX_NAME);
-    strncpy(parser->c_name, cname, TE_SERIAL_MAX_NAME);
-    strncpy(parser->user, TE_SERIAL_USER, TE_SERIAL_MAX_NAME);
+    te_strlcpy(parser->name, pname, sizeof(parser->name));
+    te_strlcpy(parser->c_name, cname, sizeof(parser->c_name));
+    te_strlcpy(parser->user, TE_SERIAL_USER, sizeof(parser->user));
     memset(parser->mode, 0, TE_SERIAL_MAX_NAME + 1);
 
     rc = pthread_mutex_init(&parser->mutex, NULL);
@@ -289,7 +287,7 @@ parser_set(unsigned int gid, const char *oid, char *cname,
     if (parser == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    strncpy(parser->c_name, cname, TE_SERIAL_MAX_NAME - 1);
+    te_strlcpy(parser->c_name, cname, sizeof(parser->c_name));
 
     return 0;
 }
@@ -318,7 +316,7 @@ parser_get(unsigned int gid, const char *oid, char *cname,
     if (parser == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    strncpy(cname, parser->c_name, TE_SERIAL_MAX_NAME - 1);
+    te_strlcpy(cname, parser->c_name, RCF_MAX_VAL);
 
     return 0;
 }
@@ -652,11 +650,9 @@ parser_event_add(unsigned int gid, const char *oid, char *t_name,
 
     event->count                      = 0;
     event->status                     = FALSE;
-    event->name[TE_SERIAL_MAX_NAME]   = '\0';
-    event->t_name[TE_SERIAL_MAX_NAME] = '\0';
 
-    strncpy(event->name, ename, TE_SERIAL_MAX_NAME);
-    strncpy(event->t_name, t_name, TE_SERIAL_MAX_NAME);
+    te_strlcpy(event->name, ename, sizeof(event->name));
+    te_strlcpy(event->t_name, t_name, sizeof(event->t_name));
 
     SLIST_INIT(&event->patterns);
 
@@ -730,7 +726,7 @@ parser_event_get(unsigned int gid, const char *oid, char *value,
     if (event == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    strncpy(value, event->t_name, RCF_MAX_VAL);
+    te_strlcpy(value, event->t_name, RCF_MAX_VAL);
 
     return 0;
 }
@@ -762,7 +758,7 @@ parser_event_set(unsigned int gid, const char *oid, char *value,
     if (event == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    strncpy(event->t_name, value, TE_SERIAL_MAX_NAME);
+    te_strlcpy(event->t_name, value, sizeof(event->t_name));
 
     return 0;
 }
@@ -856,11 +852,8 @@ parser_pattern_add(unsigned int gid, const char *oid, const char *pattern,
 
     TE_SERIAL_MALLOC(pat, sizeof(serial_pattern_t));
 
-    pat->name[TE_SERIAL_MAX_NAME]   = '\0';
-    pat->v[TE_SERIAL_MAX_PATT]      = '\0';
-
-    strncpy(pat->name, name, TE_SERIAL_MAX_NAME);
-    strncpy(pat->v, pattern, TE_SERIAL_MAX_PATT);
+    te_strlcpy(pat->name, name, sizeof(pat->name));
+    te_strlcpy(pat->v, pattern, sizeof(pat->v));
 
     TE_SERIAL_CHECK_LOCK(pthread_mutex_lock(&parser->mutex));
     SLIST_INSERT_HEAD(&event->patterns, pat, ent_pat_l);
@@ -936,7 +929,7 @@ parser_pattern_get(unsigned int gid, const char *oid, char *value,
     if (pat == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    strncpy(value, pat->v, RCF_MAX_VAL);
+    te_strlcpy(value, pat->v, RCF_MAX_VAL);
 
     return 0;
 }
@@ -972,7 +965,7 @@ parser_pattern_set(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     TE_SERIAL_CHECK_LOCK(pthread_mutex_lock(&parser->mutex));
-    strncpy(pat->v, value, TE_SERIAL_MAX_PATT);
+    te_strlcpy(pat->v, value, sizeof(pat->v));
     TE_SERIAL_CHECK_LOCK(pthread_mutex_unlock(&parser->mutex));
 
     return 0;

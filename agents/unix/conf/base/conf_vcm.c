@@ -28,6 +28,7 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
@@ -112,7 +113,7 @@ vcm_swversion_set(unsigned int gid, const char *oid,
 
     p = strstr(oid, "box:");
     p += 4;
-    strncpy(box_name, p, sizeof(box_name));
+    te_strlcpy(box_name, p, sizeof(box_name));
 
     p = strchr(box_name, '/');
     *p = 0;
@@ -181,7 +182,7 @@ vcm_parameter_set(unsigned int gid, const char *oid,
 
     p = strstr(oid, "box:");
     p += 4;
-    strncpy(box_name, p, sizeof(box_name));
+    te_strlcpy(box_name, p, sizeof(box_name));
 
     p = strchr(box_name, '/');
     *p = 0;
@@ -258,7 +259,7 @@ vcm_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
     UNUSED(vcm_name);
 
-    strncpy(vcm_address, value, sizeof(vcm_address));
+    te_strlcpy(vcm_address, value, sizeof(vcm_address));
 
     return 0;
 }
@@ -285,7 +286,7 @@ vcmconn_path_set(unsigned int gid, const char *oid,
     UNUSED(gid);
     UNUSED(vcm_name);
 
-    strncpy(vcmconn_path, value, sizeof(vcmconn_path));
+    te_strlcpy(vcmconn_path, value, sizeof(vcmconn_path));
 
     return 0;
 }

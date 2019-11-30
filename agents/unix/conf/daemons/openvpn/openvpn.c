@@ -14,6 +14,7 @@
 #endif
 
 #include "conf_daemons.h"
+#include "te_str.h"
 #include "te_string.h"
 #include "te_sockaddr.h"
 #include "rcf_pch.h"
@@ -1122,7 +1123,7 @@ openvpn_server_user_certificate_set(unsigned int gid,
             if (i != (size - 1))
                 strcat(digest, ":");
         }
-        strncpy(user->fingerprint, digest, sizeof(user->fingerprint));
+        te_strlcpy(user->fingerprint, digest, sizeof(user->fingerprint));
     }
 
     openvpn_server_restart(instance);
@@ -1325,7 +1326,7 @@ openvpn_getifaddrs(const char *ifname, int family, char *ip, int ip_size)
         s = te_ip2str(ifa->ifa_addr);
         if (s == NULL)
             continue;
-        strncpy(ip, s, ip_size);
+        te_strlcpy(ip, s, ip_size);
         free(s);
 
         rc = 0;
@@ -1447,7 +1448,8 @@ openvpn_write_config(te_openvpn_server *instance)
             rc = TE_RC(TE_TA_UNIX, TE_EOVERFLOW);
             goto cleanup;
         }
-        strncpy(instance->tls_key, instance->tls_key_path, AUX_BUF_LEN);
+        te_strlcpy(instance->tls_key, instance->tls_key_path,
+                   sizeof(instance->tls_key));
     }
     chmod(instance->tls_key,
           S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
@@ -1468,7 +1470,7 @@ openvpn_write_config(te_openvpn_server *instance)
             rc = TE_RC(TE_TA_UNIX, TE_EOVERFLOW);
             goto cleanup;
         }
-        strncpy(instance->dh, instance->dh_path, AUX_BUF_LEN);
+        te_strlcpy(instance->dh, instance->dh_path, sizeof(instance->dh));
     }
     chmod(instance->dh,
           S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
@@ -1724,7 +1726,7 @@ openvpn_mode_set(unsigned int gid, const char *oid,
     if (strcmp(value, "tun") != 0 && strcmp(value, "tap") != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    strncpy(instance->mode, value, AUX_BUF_LEN);
+    te_strlcpy(instance->mode, value, sizeof(instance->mode));
     openvpn_server_restart(instance);
 
     return 0;
@@ -1764,7 +1766,7 @@ openvpn_key_direction_set(unsigned int gid, const char *oid,
         strcmp(value, "bidirectional") != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    strncpy(instance->key_direction, value, AUX_BUF_LEN);
+    te_strlcpy(instance->key_direction, value, sizeof(instance->key_direction));
     openvpn_server_restart(instance);
 
     return 0;
@@ -1804,7 +1806,7 @@ openvpn_cipher_set(unsigned int gid, const char *oid,
 
     /* TODO: set only ciphers supported by OpenVPN daemon. */
 
-    strncpy(instance->cipher, value, AUX_BUF_LEN);
+    te_strlcpy(instance->cipher, value, sizeof(instance->cipher));
     openvpn_server_restart(instance);
 
     return 0;
@@ -1842,7 +1844,7 @@ openvpn_digest_set(unsigned int gid, const char *oid,
     if (strlen(value) >= AUX_BUF_LEN)
         return TE_RC(TE_TA_UNIX, TE_EOVERFLOW);
 
-    strncpy(instance->digest, value, AUX_BUF_LEN);
+    te_strlcpy(instance->digest, value, sizeof(instance->digest));
     openvpn_server_restart(instance);
 
     return 0;
@@ -1884,7 +1886,7 @@ openvpn_tls_key_set(unsigned int gid, const char *oid,
     if (strlen(value) > 0 && access(value, R_OK) != 0)
         return TE_RC(TE_TA_UNIX, TE_EACCES);
 
-    strncpy(instance->tls_key, value, AUX_BUF_LEN);
+    te_strlcpy(instance->tls_key, value, sizeof(instance->tls_key));
     openvpn_server_restart(instance);
 
     return 0;
@@ -1926,7 +1928,7 @@ openvpn_ca_set(unsigned int gid, const char *oid,
     if (strlen(value) > 0 && access(value, R_OK) != 0)
         return TE_RC(TE_TA_UNIX, TE_EACCES);
 
-    strncpy(instance->ca, value, AUX_BUF_LEN);
+    te_strlcpy(instance->ca, value, sizeof(instance->ca));
     openvpn_server_restart(instance);
 
     return 0;
@@ -1968,7 +1970,7 @@ openvpn_cert_set(unsigned int gid, const char *oid,
     if (strlen(value) > 0 && access(value, R_OK) != 0)
         return TE_RC(TE_TA_UNIX, TE_EACCES);
 
-    strncpy(instance->cert, value, AUX_BUF_LEN);
+    te_strlcpy(instance->cert, value, sizeof(instance->cert));
     openvpn_server_restart(instance);
 
     return 0;
@@ -2010,7 +2012,7 @@ openvpn_key_set(unsigned int gid, const char *oid,
     if (strlen(value) > 0 && access(value, R_OK) != 0)
         return TE_RC(TE_TA_UNIX, TE_EACCES);
 
-    strncpy(instance->key, value, AUX_BUF_LEN);
+    te_strlcpy(instance->key, value, sizeof(instance->key));
     openvpn_server_restart(instance);
 
     return 0;
@@ -2048,7 +2050,7 @@ openvpn_proto_set(unsigned int gid, const char *oid,
     if (strcmp(value, "udp") != 0 && strcmp(value, "tcp") != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    strncpy(instance->proto, value, AUX_BUF_LEN);
+    te_strlcpy(instance->proto, value, sizeof(instance->proto));
     openvpn_server_restart(instance);
 
     return 0;
@@ -2126,7 +2128,8 @@ openvpn_interface_behind_set(unsigned int gid, const char *oid,
     if (strlen(value) >= AUX_BUF_LEN)
         return TE_RC(TE_TA_UNIX, TE_EOVERFLOW);
 
-    strncpy(instance->interface_behind, value, AUX_BUF_LEN);
+    te_strlcpy(instance->interface_behind, value,
+               sizeof(instance->interface_behind));
     openvpn_server_restart(instance);
 
     return 0;
@@ -2163,7 +2166,7 @@ openvpn_ip_facility_set(unsigned int gid, const char *oid,
     if (strcmp(value, "internal") != 0 && strcmp(value, "external") != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    strncpy(instance->ip_facility, value, AUX_BUF_LEN);
+    te_strlcpy(instance->ip_facility, value, sizeof(instance->ip_facility));
     openvpn_server_restart(instance);
 
     return 0;
@@ -2202,7 +2205,7 @@ openvpn_server_ip_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EOVERFLOW);
 
     /* TODO: check IP for validity */
-    strncpy(instance->ip, value, AUX_BUF_LEN);
+    te_strlcpy(instance->ip, value, sizeof(instance->ip));
     openvpn_server_restart(instance);
 
     return 0;
@@ -2241,7 +2244,7 @@ openvpn_server_subnet_mask_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EOVERFLOW);
 
     /* TODO: check IP for validity */
-    strncpy(instance->subnet_mask, value, AUX_BUF_LEN);
+    te_strlcpy(instance->subnet_mask, value, sizeof(instance->subnet_mask));
     openvpn_server_restart(instance);
 
     return 0;
@@ -2283,7 +2286,7 @@ openvpn_server_dh_set(unsigned int gid, const char *oid,
     if (strlen(value) > 0 && access(value, R_OK) != 0)
         return TE_RC(TE_TA_UNIX, TE_EACCES);
 
-    strncpy(instance->dh, value, AUX_BUF_LEN);
+    te_strlcpy(instance->dh, value, sizeof(instance->dh));
     openvpn_server_restart(instance);
 
     return 0;
@@ -2363,7 +2366,7 @@ openvpn_server_pool_start_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EOVERFLOW);
 
     /* TODO: check IP for validity */
-    strncpy(instance->pool_start, value, AUX_BUF_LEN);
+    te_strlcpy(instance->pool_start, value, sizeof(instance->pool_start));
     openvpn_server_restart(instance);
 
     return 0;
@@ -2402,7 +2405,7 @@ openvpn_server_pool_end_set(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_EOVERFLOW);
 
     /* TODO: check IP for validity */
-    strncpy(instance->pool_end, value, AUX_BUF_LEN);
+    te_strlcpy(instance->pool_end, value, sizeof(instance->pool_end));
     openvpn_server_restart(instance);
 
     return 0;
@@ -2515,7 +2518,8 @@ openvpn_client_username_set(unsigned int gid, const char *oid,
     if (strlen(value) >= AUX_BUF_LEN)
         return TE_RC(TE_TA_UNIX, TE_EOVERFLOW);
 
-    strncpy(instance->client_username, value, AUX_BUF_LEN);
+    te_strlcpy(instance->client_username, value,
+               sizeof(instance->client_username));
     openvpn_server_restart(instance);
 
     return 0;
@@ -2553,7 +2557,8 @@ openvpn_client_password_set(unsigned int gid, const char *oid,
     if (strlen(value) >= AUX_BUF_LEN)
         return TE_RC(TE_TA_UNIX, TE_EOVERFLOW);
 
-    strncpy(instance->client_password, value, AUX_BUF_LEN);
+    te_strlcpy(instance->client_password, value,
+               sizeof(instance->client_password));
     openvpn_server_restart(instance);
 
     return 0;

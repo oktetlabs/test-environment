@@ -53,6 +53,7 @@
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_string.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
@@ -1301,7 +1302,7 @@ get_driver_name(const pci_device *dev, char *name, size_t namesize)
     else
         base++;
 
-    strncpy(name, base, namesize - 1);
+    te_strlcpy(name, base, namesize);
     return 0;
 }
 

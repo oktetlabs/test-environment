@@ -152,7 +152,7 @@ rt_if_get(unsigned int gid, const char *route_name, char *ifname,
 
     rc = route_find(gid, route_name, &attr);
     if (rc == 0)
-        strncpy(ifname, attr->ifname, len);
+        te_strlcpy(ifname, attr->ifname, len);
 
     return rc;
 }

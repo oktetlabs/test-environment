@@ -22,6 +22,7 @@
 #include "te_stdint.h"
 #include "te_errno.h"
 #include "te_defs.h"
+#include "te_str.h"
 #include "rcf_common.h"
 #include "logger_api.h"
 #include "unix_internal.h"
@@ -111,8 +112,8 @@ configfs_add(unsigned int gid, const char *oid, char *value,
         return TE_EUNKNOWN;
     }
     
-    strncpy(configfs_mount_point, tmp, RCF_MAX_PATH);
-    strncpy(configfs_name, name, RCF_MAX_NAME);
+    te_strlcpy(configfs_mount_point, tmp, sizeof(configfs_mount_point));
+    te_strlcpy(configfs_name, name, sizeof(configfs_name));
 
     return 0;
 #else
@@ -166,8 +167,8 @@ configfs_del(unsigned int gid, const char *oid, const char *name)
         return TE_EUNKNOWN;
     }
 
-    strncpy(configfs_mount_point, "", 2);
-    strncpy(configfs_name, "", 2);
+    configfs_mount_point[0] = '\0';
+    configfs_name[0] = '\0';
 
     return 0;
 }
@@ -190,8 +191,7 @@ configfs_get(unsigned int gid, const char *oid, char *value,
     UNUSED(oid);
     UNUSED(name);
 
-    strncpy(value, configfs_mount_point, 
-            RCF_MAX_VAL);
+    te_strlcpy(value, configfs_mount_point, RCF_MAX_VAL);
 
     return 0;
 }

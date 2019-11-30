@@ -55,6 +55,7 @@
 #include "te_errno.h"
 #include "te_defs.h"
 #include "te_sockaddr.h"
+#include "te_str.h"
 #include "cs_common.h"
 #include "logger_api.h"
 #include "comm_agent.h"
@@ -447,7 +448,7 @@ sniffer_set_params(unsigned int gid, const char *oid, const char *value)
     }
     else if (strstr(oid, "/path:") != NULL)
     {
-        strncpy(snif_sets.path, value, RCF_MAX_PATH);
+        te_strlcpy(snif_sets.path, value, sizeof(snif_sets.path));
     }
     else if (strstr(oid, "/filter_exp_str:") != NULL)
     {

@@ -324,8 +324,7 @@ bpf_init_prog_info(struct bpf_program *prog, struct bpf_prog_entry *prog_info)
     }
 
     prog_info->fd = fd;
-    strncpy(prog_info->name, info.name, sizeof(prog_info->name) - 1);
-    prog_info->name[sizeof(prog_info->name) - 1] = '\0';
+    te_strlcpy(prog_info->name, info.name, sizeof(prog_info->name));
 
     return 0;
 }
@@ -355,8 +354,7 @@ bpf_init_map_info(struct bpf_map *map, const struct bpf_map_def *def,
 
     map_info->fd = fd;
     map_info->type = def->type;
-    strncpy(map_info->name, bpf_map__name(map), sizeof(map_info->name) - 1);
-    map_info->name[sizeof(map_info->name) - 1] = '\0';
+    te_strlcpy(map_info->name, bpf_map__name(map), sizeof(map_info->name));
 
     map_info->key_size = def->key_size;
     map_info->value_size = def->value_size;
@@ -402,8 +400,7 @@ bpf_init_perf_map_info(struct bpf_map *map,
     }
 
     map_info->fd = fd;
-    strncpy(map_info->name, bpf_map__name(map), sizeof(map_info->name) - 1);
-    map_info->name[sizeof(map_info->name) - 1] = '\0';
+    te_strlcpy(map_info->name, bpf_map__name(map), sizeof(map_info->name));
 
     map_info->events_enabled = FALSE;
     map_info->num_events = 0;
@@ -827,7 +824,7 @@ bpf_set_filepath(unsigned int gid, const char *oid, const char *value,
         ERROR("BPF object file doesn't exist.");
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
-    strncpy(bpf->filepath, value, sizeof(bpf->filepath));
+    te_strlcpy(bpf->filepath, value, sizeof(bpf->filepath));
 
     return 0;
 }
@@ -2141,9 +2138,8 @@ bpf_add_and_link_xdp(cfg_oid *prog_oid, unsigned int ifindex,
     rc = te_strtoui(bpf_id_str, 0, &xdp->bpf_id);
     if (rc != 0)
         goto fail;
-    strncpy(xdp->prog, CFG_OID_GET_INST_NAME(prog_oid, BPF_PROG_OID_LEVEL_NAME),
-            sizeof(xdp->prog) - 1);
-    xdp->prog[sizeof(xdp->prog) - 1] = '\0';
+    te_strlcpy(xdp->prog, CFG_OID_GET_INST_NAME(prog_oid, BPF_PROG_OID_LEVEL_NAME),
+               sizeof(xdp->prog));
 
 
     prog = bpf_find_prog(bpf_id_str, xdp->prog);

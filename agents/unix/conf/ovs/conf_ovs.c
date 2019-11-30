@@ -32,6 +32,7 @@
 #include "te_ethernet.h"
 #include "te_shell_cmd.h"
 #include "te_sleep.h"
+#include "te_str.h"
 #include "te_string.h"
 
 #include "agentlib.h"
@@ -1584,8 +1585,7 @@ ovs_log_get(unsigned int  gid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
-    strncpy(value, module->level, RCF_MAX_VAL);
-    value[RCF_MAX_VAL - 1] = '\0';
+    te_strlcpy(value, module->level, RCF_MAX_VAL);
 
     return 0;
 }
@@ -1881,15 +1881,13 @@ ovs_interface_mtu_get(unsigned int  gid,
             return TE_RC(TE_TA_UNIX, rc);
         }
 
-        strncpy(value, resp, RCF_MAX_VAL);
+        te_strlcpy(value, resp, RCF_MAX_VAL);
         free(resp);
     }
     else
     {
-        strncpy(value, interface->mtu_request, RCF_MAX_VAL);
+        te_strlcpy(value, interface->mtu_request, RCF_MAX_VAL);
     }
-
-    value[RCF_MAX_VAL - 1] = '\0';
 
     return 0;
 }
@@ -1976,15 +1974,13 @@ ovs_interface_ofport_get(unsigned int  gid,
             return TE_RC(TE_TA_UNIX, rc);
         }
 
-        strncpy(value, resp, RCF_MAX_VAL);
+        te_strlcpy(value, resp, RCF_MAX_VAL);
         free(resp);
     }
     else
     {
-        strncpy(value, interface->ofport_request, RCF_MAX_VAL);
+        te_strlcpy(value, interface->ofport_request, RCF_MAX_VAL);
     }
-
-    value[RCF_MAX_VAL - 1] = '\0';
 
     return 0;
 }
@@ -2101,10 +2097,8 @@ ovs_interface_mac_get(unsigned int  gid,
     }
     else
     {
-        strncpy(value, interface->mac_request, RCF_MAX_VAL);
+        te_strlcpy(value, interface->mac_request, RCF_MAX_VAL);
     }
-
-    value[RCF_MAX_VAL - 1] = '\0';
 
     return 0;
 }
@@ -2264,8 +2258,7 @@ ovs_interface_get(unsigned int  gid,
         return TE_RC(TE_TA_UNIX, rc);
     }
 
-    strncpy(value, interface->type, RCF_MAX_VAL);
-    value[RCF_MAX_VAL - 1] = '\0';
+    te_strlcpy(value, interface->type, RCF_MAX_VAL);
 
     return 0;
 }
@@ -2505,8 +2498,7 @@ ovs_bridge_get(unsigned int  gid,
         return TE_RC(TE_TA_UNIX, rc);
     }
 
-    strncpy(value, bridge->datapath_type, RCF_MAX_VAL);
-    value[RCF_MAX_VAL - 1] = '\0';
+    te_strlcpy(value, bridge->datapath_type, RCF_MAX_VAL);
 
     return 0;
 }
@@ -2705,8 +2697,7 @@ ovs_bridge_port_get(unsigned int  gid,
         return TE_RC(TE_TA_UNIX, rc);
     }
 
-    strncpy(value, port->value, RCF_MAX_VAL);
-    value[RCF_MAX_VAL - 1] = '\0';
+    te_strlcpy(value, port->value, RCF_MAX_VAL);
 
     return 0;
 }

@@ -73,11 +73,9 @@ console_add(unsigned int gid, const char *oid, const char *cname,
 
     TE_SERIAL_MALLOC(console, sizeof(serial_console_t));
     console->port                           = TE_SERIAL_PORT;
-    console->inst_name[TE_SERIAL_MAX_NAME]  = '\0';
-    console->name[TE_SERIAL_MAX_NAME]       = '\0';
-    strncpy(console->inst_name, inst_name, TE_SERIAL_MAX_NAME);
-    strncpy(console->name, cname, TE_SERIAL_MAX_NAME);
-    strncpy(console->user, TE_SERIAL_USER, TE_SERIAL_MAX_NAME);
+    te_strlcpy(console->inst_name, inst_name, sizeof(console->inst_name));
+    te_strlcpy(console->name, cname, sizeof(console->name));
+    te_strlcpy(console->user, TE_SERIAL_USER, sizeof(console->user));
     memset(&console->address, 0, sizeof(console->address));
     SIN(&console->address)->sin_family = AF_INET;
     SIN(&console->address)->sin_port = 0;
@@ -138,7 +136,7 @@ console_set(unsigned int gid, const char *oid, const char *cname,
     if (console == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    strncpy(console->name, cname, TE_SERIAL_MAX_NAME - 1);
+    te_strlcpy(console->name, cname, sizeof(console->name));
 
     return 0;
 }
@@ -167,7 +165,7 @@ console_get(unsigned int gid, const char *oid, char *cname,
     if (console == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    strncpy(cname, console->name, TE_SERIAL_MAX_NAME - 1);
+    te_strlcpy(cname, console->name, RCF_MAX_VAL);
 
     return 0;
 }
