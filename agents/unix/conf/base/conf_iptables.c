@@ -30,6 +30,7 @@
 #include "te_errno.h"
 #include "logger_api.h"
 #include "te_defs.h"
+#include "te_str.h"
 #include "rcf_pch.h"
 #include "unix_internal.h"
 #include "te_shell_cmd.h"
@@ -200,11 +201,11 @@ iptables_perif_chain_is_enabled(const char *ifname, const char *table,
 
     INFO("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);
 
-    snprintf(buf, IPTABLES_CMD_BUF_SIZE,
-             IPTABLES_TOOL " %s -t %s -S %s | grep '^-A %s -%c %s -j %s_%s'",
-             iptables_tool_options, table, chain, chain,
-             iptables_is_chain_output(chain) ? 'o' : 'i',
-             ifname, chain, ifname);
+    TE_SPRINTF(buf,
+        IPTABLES_TOOL " %s -t %s -S %s | grep '^-A %s -%c %s -j %s_%s'",
+        iptables_tool_options, table, chain, chain,
+        iptables_is_chain_output(chain) ? 'o' : 'i',
+        ifname, chain, ifname);
     VERB("Invoke: %s", buf);
     if ((pid = te_shell_cmd(buf, -1, NULL, &out_fd, NULL)) < 0)
     {
@@ -257,11 +258,14 @@ iptables_perif_chain_set(const char *ifname,
         return 0;
 
     /* Add rule to jump to new chain */
-    snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE,
-             IPTABLES_TOOL " %s -t %s -%c %s -%c %s -j %s_%s",
-             iptables_tool_options, table, (enable ? 'I' : 'D'), chain,
-             iptables_is_chain_output(chain) ? 'o' : 'i',
-             ifname, chain, ifname);
+    rc = te_snprintf(cmd_buf, sizeof(cmd_buf),
+                     IPTABLES_TOOL " %s -t %s -%c %s -%c %s -j %s_%s",
+                     iptables_tool_options, table, (enable ? 'I' : 'D'), chain,
+                     iptables_is_chain_output(chain) ? 'o' : 'i',
+                     ifname, chain, ifname);
+    if (rc != 0)
+        return rc;
+
     VERB("Invoke: %s", cmd_buf);
     rc = ta_system(cmd_buf);
     if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
@@ -302,9 +306,12 @@ iptables_chain_add(unsigned int  gid, const char *oid,
     INFO("%s(%s, %s, %s) started", __FUNCTION__, ifname, table, chain);
 
     /* Create new chain first */
-    snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE,
-             IPTABLES_TOOL " %s -t %s -N %s_%s",
-             iptables_tool_options, table, chain, ifname);
+    rc = te_snprintf(cmd_buf, sizeof(cmd_buf),
+                     IPTABLES_TOOL " %s -t %s -N %s_%s",
+                     iptables_tool_options, table, chain, ifname);
+    if (rc != 0)
+        return rc;
+
     VERB("Invoke: %s", cmd_buf);
     rc = ta_system(cmd_buf);
     if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
@@ -367,9 +374,12 @@ iptables_chain_del(unsigned int  gid, const char *oid,
     }
 
     /* Flush chain */
-    snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE,
-             IPTABLES_TOOL " %s -t %s -F %s_%s",
-             iptables_tool_options, table, chain, ifname);
+    rc = te_snprintf(cmd_buf, sizeof(cmd_buf),
+                     IPTABLES_TOOL " %s -t %s -F %s_%s",
+                     iptables_tool_options, table, chain, ifname);
+    if (rc != 0)
+        return rc;
+
     VERB("Invoke: %s", cmd_buf);
     rc = ta_system(cmd_buf);
     if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
@@ -379,11 +389,13 @@ iptables_chain_del(unsigned int  gid, const char *oid,
     }
 
     /* Remove all rules which refer to the current chain */
-    snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE,
-             IPTABLES_SAVE_TOOL " | "
-             "grep -v -- '-j %s_%s' | "
-             IPTABLES_RESTORE_TOOL,
-             chain, ifname);
+    rc = te_snprintf(cmd_buf, sizeof(cmd_buf),
+                     IPTABLES_SAVE_TOOL " | grep -v -- '-j %s_%s' | "
+                     IPTABLES_RESTORE_TOOL,
+                     chain, ifname);
+    if (rc != 0)
+        return rc;
+
     rc = ta_system(cmd_buf);
     if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
     {
@@ -393,9 +405,12 @@ iptables_chain_del(unsigned int  gid, const char *oid,
     }
 
     /* Delete chain */
-    snprintf(cmd_buf, IPTABLES_CMD_BUF_SIZE,
-             IPTABLES_TOOL " %s -t %s -X %s_%s",
-             iptables_tool_options, table, chain, ifname);
+    rc = te_snprintf(cmd_buf, sizeof(cmd_buf),
+                     IPTABLES_TOOL " %s -t %s -X %s_%s",
+                     iptables_tool_options, table, chain, ifname);
+    if (rc != 0)
+        return rc;
+
     VERB("Invoke: %s", cmd_buf);
     rc = ta_system(cmd_buf);
     if (rc < 0 || !WIFEXITED(rc) || WEXITSTATUS(rc) != 0)
@@ -456,18 +471,20 @@ iptables_chain_get(unsigned int  gid, const char *oid,
                    const char *dummy, const char   *table,
                    const char *chain)
 {
+    te_errno rc;
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(dummy);
 
-    sprintf(value, iptables_perif_chain_is_enabled(ifname, table,
-                                                   chain) ? "1" : "0");
-
+    rc = te_snprintf(value, RCF_MAX_VAL,
+                     iptables_perif_chain_is_enabled(ifname, table, chain) ?
+                     "1" : "0");
 
     INFO("%s(): dummy %p, table %p chain %p", __FUNCTION__,
          dummy, table, chain);
 
-    return 0;
+    return rc;
 }
 
 /**
@@ -526,10 +543,13 @@ iptables_chain_list(unsigned int  gid, const char *oid,
 
     *list = NULL;
 
-    snprintf(buf, IPTABLES_CMD_BUF_SIZE,
-             IPTABLES_TOOL " %s -t %s -S | grep '^-N .*_%s' | "
-             "sed -e 's/^-N //g' | sed -e 's/_%s$//g'",
-             iptables_tool_options, table, ifname, ifname);
+    rc = te_snprintf(buf, sizeof(buf),
+                     IPTABLES_TOOL " %s -t %s -S | grep '^-N .*_%s' | "
+                     "sed -e 's/^-N //g' | sed -e 's/_%s$//g'",
+                     iptables_tool_options, table, ifname, ifname);
+    if (rc != 0)
+        return rc;
+
     VERB("Invoke: %s", buf);
     if ((pid = te_shell_cmd(buf, -1, NULL, &out_fd, NULL)) < 0)
     {
@@ -632,12 +652,15 @@ iptables_rules_get(unsigned int  gid, const char *oid,
 
     *value = '\0';
 
-    snprintf(buf, IPTABLES_CMD_BUF_SIZE,
-             IPTABLES_TOOL " %s -t %s -S %s_%s | "
-             "grep '^-A %s_%s ' | "
-             "sed -e 's/^-A %s_%s //g'",
-             iptables_tool_options,
-             table, chain, ifname, chain, ifname, chain, ifname);
+    rc = te_snprintf(buf, sizeof(buf),
+                     IPTABLES_TOOL " %s -t %s -S %s_%s | "
+                     "grep '^-A %s_%s ' | "
+                     "sed -e 's/^-A %s_%s //g'",
+                     iptables_tool_options,
+                     table, chain, ifname, chain, ifname, chain, ifname);
+    if (rc != 0)
+        return rc;
+
     VERB("Invoke: %s", buf);
     if ((pid = te_shell_cmd(buf, -1, NULL, &out_fd, NULL)) < 0)
     {
@@ -716,15 +739,21 @@ iptables_rules_set(unsigned int  gid, const char *oid,
     INFO("%s started, ifname=%s, table=%s", __FUNCTION__, ifname, table);
 
     /* Flush the chain */
-    snprintf(buf, IPTABLES_CMD_BUF_SIZE,
-             IPTABLES_TOOL " %s -t %s -F %s_%s",
-             iptables_tool_options, table, chain, ifname);
+    rc = te_snprintf(buf, sizeof(buf),
+                     IPTABLES_TOOL " %s -t %s -F %s_%s",
+                     iptables_tool_options, table, chain, ifname);
+    if (rc != 0)
+        return rc;
+
     VERB("Invoke: %s", buf);
     ta_system(buf);
 
     /* Open iptables-restore session, do not flush all chains */
-    snprintf(buf, IPTABLES_CMD_BUF_SIZE,
-             IPTABLES_RESTORE_TOOL " -n");
+    rc = te_snprintf(buf, sizeof(buf),
+                     IPTABLES_RESTORE_TOOL " -n");
+    if (rc != 0)
+        return rc;
+
     if ((pid = te_shell_cmd(buf, -1, &in_fd, NULL, NULL)) < 0)
     {
         ERROR("failed to execute command line while getting: %s: "
