@@ -99,7 +99,7 @@ typedef struct te_vec {
  */
 #define TE_VEC_FOREACH(_te_vec, _elem)                                        \
     for ((_elem) = te_vec_size(_te_vec) != 0 ?                                \
-            te_vec_get_safe(_te_vec, 0, sizeof(*(_elem))) : (_elem);          \
+            te_vec_get_safe(_te_vec, 0, sizeof(*(_elem))) : NULL;             \
          te_vec_size(_te_vec) != 0 &&                                         \
          ((void *)(_elem)) <= te_vec_get(_te_vec, te_vec_size(_te_vec) - 1);  \
          (_elem)++)
