@@ -33,6 +33,7 @@ check_headers = [
     'inet/mib2.h',
     'inet/nd.h',
     'inttypes.h',
+    'libgen.h',
     'limits.h',
     'linux/if_ether.h',
     'linux/if_packet.h',
