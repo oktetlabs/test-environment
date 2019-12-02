@@ -283,7 +283,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
         unsigned int mac_bytes[ETHER_ADDR_LEN];
         int i;
 
-        strcpy(new_ifname, ifname);
+        te_strlcpy(new_ifname, ifname, sizeof(new_ifname));
         if (strncmp(ifname, "ef", 2) == 0)
         {
           if (strstr(ifname, ".") == NULL)
@@ -367,12 +367,12 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
                 memcpy(sap->addr, mac, ETHER_ADDR_LEN);
             }
         }
-        strncpy(if_req.ifr_name, new_ifname, sizeof(if_req.ifr_name));
-        strcpy(sap->name, new_ifname);
+        te_strlcpy(if_req.ifr_name, new_ifname, sizeof(if_req.ifr_name));
+        te_strlcpy(sap->name, new_ifname, sizeof(sap->name));
     }
     else
     {
-        strncpy(if_req.ifr_name, ifname, sizeof(if_req.ifr_name));
+        te_strlcpy(if_req.ifr_name, ifname, sizeof(if_req.ifr_name));
     }
 #ifndef __CYGWIN__
     if (ioctl(cfg_socket, SIOCGIFHWADDR, &if_req))
@@ -414,7 +414,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 #endif
 
 #ifndef __CYGWIN__
-    strcpy(sap->name, ifname);
+    te_strlcpy(sap->name, ifname, sizeof(sap->name));
 #endif
 
     return 0;
