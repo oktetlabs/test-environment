@@ -33,6 +33,7 @@ typedef struct config_yaml_target_s {
 
 static const config_yaml_target_t config_yaml_targets[] = {
     { "add", "instance" },
+    { "get", "instance" },
     { "set", "instance" },
     { "delete", "instance" },
     { "register", "object" },
@@ -842,6 +843,7 @@ parse_config_root_commands(yaml_document_t *d,
     te_errno rc = 0;
 
     if ((strcmp((const char *)k->data.scalar.value, "add") == 0) ||
+        (strcmp((const char *)k->data.scalar.value, "get") == 0) ||
         (strcmp((const char *)k->data.scalar.value, "set") == 0) ||
         (strcmp((const char *)k->data.scalar.value, "register") == 0) ||
         (strcmp((const char *)k->data.scalar.value, "unregister") == 0) ||
