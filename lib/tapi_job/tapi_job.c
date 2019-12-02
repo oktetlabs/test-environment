@@ -302,6 +302,9 @@ tapi_job_wait(tapi_job_t *job, int timeout_ms, tapi_job_status_t *status)
     if (rc != 0)
         return rc;
 
+    if (status == NULL)
+        return 0;
+
     if ((rc = tarpc_job_status2tapi_job_status(&tarpc_status, status)) != 0)
         return rc;
 

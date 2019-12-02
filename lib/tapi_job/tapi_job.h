@@ -217,7 +217,7 @@ extern unsigned int tapi_job_get_timeout(void);
  *
  * @param job Job instance handle
  * @param timeout_ms Timeout in ms (negative means tapi_job_get_timeout())
- * @param[out] status Exit statu
+ * @param[out] status Exit status (may be @c NULL)
  *
  * @return                  Status code
  * @retval TE_EINPROGRESS   Job is still running
