@@ -39,6 +39,7 @@
 #include "te_errno.h"
 #include "te_stdint.h"
 #include "te_alloc.h"
+#include "te_str.h"
 #include "rcf_api.h"
 #include "logger_api.h"
 #include "conf_api.h"
@@ -1265,6 +1266,152 @@ tapi_cfg_net_bind_driver_by_node(enum net_node_type node_type,
 
     return tapi_cfg_net_foreach_node(tapi_cfg_net_node_bind_driver, &cfg);
 }
+
+
+/**
+ * Callback to switch network node specified using PCI function to
+ * network interface.
+ */
+static tapi_cfg_net_node_cb switch_agent_pci_fn_to_interface;
+static te_errno
+switch_agent_pci_fn_to_interface(cfg_net_t *net, cfg_net_node_t *node,
+                                 const char *oid_str, cfg_oid *oid,
+                                 void *cookie)
+{
+    cfg_handle *interface_handles = NULL;
+    char interface_path[RCF_MAX_PATH];
+    unsigned int n_interfaces;
+    char *interface = NULL;
+    const char *agent;
+    char *pci_path = NULL;
+    te_errno rc;
+
+    UNUSED(cookie);
+    UNUSED(net);
+
+    if (strcmp(cfg_oid_inst_subid(oid, 1), "agent") != 0 ||
+        strcmp(cfg_oid_inst_subid(oid, 2), "hardware") != 0)
+    {
+        INFO("Network node '%s' is not a PCI function", oid_str);
+        rc = 0;
+        goto out;
+    }
+
+    rc = cfg_get_instance_str(NULL, &pci_path, oid_str);
+    if (rc != 0)
+    {
+        ERROR("Failed to get PCI device path: %r", rc);
+        goto out;
+    }
+
+    rc = cfg_find_pattern_fmt(&n_interfaces, &interface_handles, "%s/net:*",
+                              pci_path);
+    if (rc != 0)
+    {
+        ERROR("Failed to get network interface from the PCI device: %r", rc);
+        goto out;
+    }
+    if (n_interfaces == 0)
+    {
+        ERROR("No network interfaces provided by PCI function '%s'", pci_path);
+        rc = TE_EFAIL;
+        goto out;
+    }
+    if (n_interfaces > 1)
+    {
+        ERROR("PCI devices which provide many network interfaces not supported");
+        rc = TE_EFAIL;
+        goto out;
+    }
+
+    rc = cfg_get_inst_name(interface_handles[0], &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to extract interface name from interface handle: %r", rc);
+        goto out;
+    }
+
+    agent = CFG_OID_GET_INST_NAME(oid, 1);
+    rc = tapi_cfg_base_if_add_rsrc(agent, interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to reserve network interface '%s' resource on TA '%s': %r",
+              interface, agent, rc);
+        goto out;
+    }
+
+    rc = te_snprintf(interface_path, sizeof(interface_path),
+                     "/agent:%s/interface:%s", agent, interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to make interface OID in provided buffer: %r", rc);
+        goto out;
+    }
+
+    rc = cfg_set_instance(node->handle, CFG_VAL(STRING, interface_path));
+    if (rc != 0)
+        ERROR("Failed to assign network node to interface");
+
+out:
+    free(interface);
+    free(interface_handles);
+    free(pci_path);
+
+    return TE_RC(TE_TAPI, rc);
+}
+
+/* See the description in tapi_cfg_net.h */
+te_errno
+tapi_cfg_net_nodes_update_pci_fn_to_interface(void)
+{
+    te_errno rc;
+
+    rc = tapi_cfg_net_foreach_node(switch_agent_pci_fn_to_interface, NULL);
+    if (rc != 0)
+    {
+        ERROR("Failed to configure interfaces mentioned in networks "
+              "configuration: %r", rc);
+    }
+
+    return rc;
+}
+
+/* See the description in tapi_cfg_net.h */
+te_errno
+tapi_cfg_net_nodes_switch_pci_fn_to_interface(void)
+{
+    te_errno rc;
+
+    rc = tapi_cfg_net_bind_driver_by_node(NET_NODE_TYPE_AGENT,
+                                          NET_DRIVER_TYPE_NET);
+    if (rc != 0)
+    {
+        ERROR("Failed to bind net driver on agent nodes: %r", rc);
+        return rc;
+    }
+
+    rc = tapi_cfg_net_bind_driver_by_node(NET_NODE_TYPE_NUT,
+                                          NET_DRIVER_TYPE_NET);
+    if (rc != 0)
+    {
+        ERROR("Failed to bind net driver on NUT nodes: %r", rc);
+        return rc;
+    }
+
+    /*
+     * If a net driver was rebound, synchronize configuration tree to discover
+     * network interfaces that are associated with that driver.
+     */
+    rc = cfg_synchronize("/:", TRUE);
+    if (rc != 0)
+    {
+        ERROR("Configurator synchronize failed after interfaces bind: %r", rc);
+        return rc;
+    }
+
+    return tapi_cfg_net_nodes_update_pci_fn_to_interface();
+}
+
 
 static tapi_cfg_net_node_cb tapi_cfg_net_node_reserve;
 

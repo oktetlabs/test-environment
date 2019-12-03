@@ -284,6 +284,31 @@ extern te_errno tapi_cfg_net_bind_driver_by_node(enum net_node_type node_type,
                                             enum tapi_cfg_driver_type driver);
 
 /**
+ * Update network nodes specified in terms of PCI function and bound to
+ * network driver to refer to corresponding network interfaces.
+ *
+ * The interface is reserved as a resource.
+ *
+ * @sa tapi_cfg_net_bind_driver_by_node()
+ * @sa tapi_cfg_net_nodes_switch_pci_fn_to_interface()
+ *
+ * @return Status code.
+ *
+ * @note Partially done changes are not rolled back in the case of failure.
+ */
+extern te_errno tapi_cfg_net_nodes_update_pci_fn_to_interface(void);
+
+/**
+ * Switch network nodes specified in terms of PCI function to network
+ * interfaces incluing rebind the PCI function to network driver.
+ *
+ * @return Status code.
+ *
+ * @note Partially done changes are not rolled back in the case of failure.
+ */
+extern te_errno tapi_cfg_net_nodes_switch_pci_fn_to_interface(void);
+
+/**
  * Reserve resources for all interfaces mentioned in networks
  * configuration.
  *
