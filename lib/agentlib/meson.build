@@ -47,6 +47,7 @@ sources += files(
     'process.c',
     'symbols.c',
     'telephony.c',
+    'unistd.c',
 )
 te_libs += [
     'tools',

@@ -1574,6 +1574,20 @@ TARPC_FUNC(mkdir, {},
 }
 )
 
+/*-------------- mkdirp() --------------------------------*/
+TARPC_FUNC(mkdirp, {},
+{
+    te_errno rc;
+
+    TARPC_ENSURE_NOT_NULL(path);
+    MAKE_CALL(rc = func_ptr(in->path.path_val,
+                            file_mode_flags_rpc2h(in->mode)));
+    if (rc != 0)
+        out->common._errno = TE_RC(TE_RPC, TE_RC_GET_ERROR(rc));
+    out->retval = (rc == 0 ? 0 : -1);
+}
+)
+
 /*-------------- rmdir() --------------------------------*/
 TARPC_FUNC(rmdir, {},
 {

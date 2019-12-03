@@ -784,6 +784,10 @@ struct tarpc_mkdir_out {
     tarpc_int            retval;
 };
 
+/* mkdirp() */
+typedef struct tarpc_mkdir_in tarpc_mkdirp_in;
+typedef struct tarpc_mkdir_out tarpc_mkdirp_out;
+
 /* rmdir() */
 struct tarpc_rmdir_in {
     struct tarpc_in_arg common;
@@ -5573,6 +5577,7 @@ program tarpc
         RPC_DEF(unlink)
         RPC_DEF(rename)
         RPC_DEF(mkdir)
+        RPC_DEF(mkdirp)
         RPC_DEF(rmdir)
         RPC_DEF(fstatvfs)
         RPC_DEF(statvfs)

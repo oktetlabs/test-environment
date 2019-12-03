@@ -143,6 +143,17 @@ extern int ta_kill_death(pid_t pid);
  */
 extern int ta_kill_and_wait(pid_t pid, int sig, unsigned int timeout_s);
 
+/**
+ * Create the directory(ies), if they do not already exist
+ *
+ * @param path      Path of the directory to be created
+ * @param mode      The permission bits to assign to a new directory(ies)
+ *
+ * @return Status code
+ * @retval @c 0     The directory has been created successfully or existing
+ */
+extern te_errno mkdirp(const char *path, int mode);
+
 #if defined(ENABLE_TELEPHONY)
 #include "telephony.h"
 #endif /* ENABLE_TELEPHONY */
