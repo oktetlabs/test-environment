@@ -36,6 +36,7 @@ typedef enum logic_expr_type {
     LOGIC_EXPR_LT,      /**< Less */
     LOGIC_EXPR_LE,      /**< Less or equal */
     LOGIC_EXPR_EQ,      /**< Equal */
+    LOGIC_EXPR_NEQ,     /**< Not equal */
 } logic_expr_type;
 
 /** Element of the requirements expression */

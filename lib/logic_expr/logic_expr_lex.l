@@ -48,6 +48,7 @@ extern int logic_expr_int_str_pos;
 ">="                            { return GE; }
 "<"                             { return LT; }
 "<="                            { return LE; }
+"!="                            { return NEQ; }
 "!"                             { return NOT; }
 "="                             { return EQ; }
 [-_[:alnum:].${}]+              {

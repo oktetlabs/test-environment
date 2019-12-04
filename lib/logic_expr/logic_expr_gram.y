@@ -60,6 +60,7 @@ logic_expr_int_error(const char *str)
 %right LT
 %right LE
 %right EQ
+%right NEQ
 %nonassoc NOT
 
 %token OPEN CLOSE
@@ -184,6 +185,14 @@ expr:
     | expr EQ expr
     {
         logic_expr_int_root = $$ = logic_expr_binary(LOGIC_EXPR_EQ, $1, $3);
+        if (logic_expr_int_root == NULL)
+        {
+            return -1;
+        }
+    }
+    | expr NEQ expr
+    {
+        logic_expr_int_root = $$ = logic_expr_binary(LOGIC_EXPR_NEQ, $1, $3);
         if (logic_expr_int_root == NULL)
         {
             return -1;

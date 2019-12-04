@@ -72,6 +72,7 @@ logic_expr_free(logic_expr *expr)
         case LOGIC_EXPR_LE:
         case LOGIC_EXPR_LT:
         case LOGIC_EXPR_EQ:
+        case LOGIC_EXPR_NEQ:
             logic_expr_free(expr->u.binary.lhv);
             logic_expr_free(expr->u.binary.rhv);
             break;
@@ -113,6 +114,7 @@ logic_expr_dup(logic_expr *expr)
         case LOGIC_EXPR_LE:
         case LOGIC_EXPR_LT:
         case LOGIC_EXPR_EQ:
+        case LOGIC_EXPR_NEQ:
             dup->u.binary.lhv = logic_expr_dup(expr->u.binary.lhv);
             dup->u.binary.rhv = logic_expr_dup(expr->u.binary.rhv);
             break;
@@ -138,6 +140,7 @@ logic_expr_binary(logic_expr_type type, logic_expr *lhv, logic_expr *rhv)
            type == LOGIC_EXPR_GE ||
            type == LOGIC_EXPR_LT ||
            type == LOGIC_EXPR_EQ ||
+           type == LOGIC_EXPR_NEQ ||
            type == LOGIC_EXPR_LE);
     assert(lhv != NULL);
     assert(rhv != NULL);
@@ -325,6 +328,20 @@ logic_expr_match(const logic_expr *re, const tqh_strings *set)
                  result);
             break;
         }
+        case LOGIC_EXPR_NEQ:
+        {
+            int lhr = logic_expr_match(re->u.binary.lhv, set);
+            int rhr = logic_expr_match(re->u.binary.rhv, set);
+
+            if (lhr != rhr && lhr != -1)
+                result = 1;
+            else
+                result = -1;
+            VERB("%s(): %d == %d -> %d", __FUNCTION__,
+                 lhr, rhr,
+                 result);
+            break;
+        }
 
 
         default:
@@ -396,6 +413,7 @@ logic_expr_not_prop(logic_expr **expr)
         case LOGIC_EXPR_LT:
         case LOGIC_EXPR_LE:
         case LOGIC_EXPR_EQ:
+        case LOGIC_EXPR_NEQ:
             break;
 
         default:
@@ -1157,6 +1175,10 @@ logic_expr_to_str_gen(logic_expr *expr, logic_expr *parent)
         case LOGIC_EXPR_EQ:
             if (format == NULL)
                 format = "%s=%s";
+            /*@fallthrough@*/
+        case LOGIC_EXPR_NEQ:
+            if (format == NULL)
+                format = "%s!=%s";
 
             l_str = logic_expr_to_str_gen(expr->u.binary.lhv,
                                           expr),
@@ -1312,6 +1334,10 @@ logic_expr_parse_comparison_oper(const logic_expr *parsed,
             res->value.boolean = (cmp_res == 0);
             break;
 
+        case LOGIC_EXPR_NEQ:
+            res->value.boolean = (cmp_res != 0);
+            break;
+
         default:
             rc = TE_EINVAL;
             goto out;
@@ -1363,6 +1389,7 @@ logic_expr_eval(const logic_expr *parsed,
         case LOGIC_EXPR_LT:
         case LOGIC_EXPR_LE:
         case LOGIC_EXPR_EQ:
+        case LOGIC_EXPR_NEQ:
             rc = logic_expr_parse_comparison_oper(parsed, get_val, cookie, res);
             break;
 
