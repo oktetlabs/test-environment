@@ -211,7 +211,7 @@ static inline te_bool
 te_meas_stats_is_datapoint_correct(double datapoint, double mean,
                                    double deviation, double deviation_coeff)
 {
-    return abs(mean - datapoint) < deviation_coeff * deviation;
+    return fabs(mean - datapoint) < deviation_coeff * deviation;
 }
 
 /**
