@@ -16,6 +16,9 @@ cc = meson.get_compiler('c')
 test_deps = [ ]
 
 te_libs = [
+    'tools',
+    'tapi',
+    'logger_ten',
 ]
 
 foreach lib : te_libs
@@ -23,6 +26,7 @@ foreach lib : te_libs
 endforeach
 
 tests = [
+    'prologue',
 ]
 
 package_dir = 'ts'

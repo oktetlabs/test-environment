@@ -2,4 +2,11 @@
 <package version="1.0">
     <description>TE Self Tests</description>
     <author mailto="Nikita.Somenkov@oktetlabs.ru"/>
+
+    <session track_conf="silent">
+        <run>
+            <script name="prologue"/>
+        </run>
+    </session>
+
 </package>
