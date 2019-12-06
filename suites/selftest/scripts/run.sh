@@ -4,7 +4,8 @@ export TS_TOPDIR="$(cd "$(dirname "$(which "$0")")"; pwd -P)"
 if [ "$(basename ${TS_TOPDIR})" == "scripts" ]; then
     export TS_TOPDIR=$(dirname ${TS_TOPDIR})
 fi
-export TE_TS_DIR=$TS_TOPDIR/ts
+. ${TS_TOPDIR}/scripts/guess.sh
+[ -n "$TE_BASE" ] || exit 1
 
 TS_OPTS=
 for opt ; do
