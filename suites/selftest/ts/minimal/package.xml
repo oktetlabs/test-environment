@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    <description>Package for demonstrating minimal tests</description>
+    <author mailto="Nikita.Somenkov@oktetlabs.ru"/>
+
+    <session>
+        <run>
+            <script name="helloworld"/>
+        </run>
+    </session>
+</package>

@@ -7,6 +7,10 @@
         <run>
             <script name="prologue"/>
         </run>
+
+        <run>
+            <package name="minimal"/>
+        </run>
     </session>
 
 </package>

@@ -41,3 +41,14 @@ foreach test : tests
 endforeach
 
 install_data([ 'package.xml' ], install_dir: package_dir)
+
+packages = [
+    'minimal',
+]
+
+mydir = package_dir
+foreach package : packages
+    package_dir = join_paths(mydir, package)
+    package_tests_c = []
+    subdir(package)
+endforeach
