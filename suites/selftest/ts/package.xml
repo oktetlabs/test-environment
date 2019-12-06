@@ -4,9 +4,9 @@
     <author mailto="Nikita.Somenkov@oktetlabs.ru"/>
 
     <session track_conf="silent">
-        <run>
+        <prologue>
             <script name="prologue"/>
-        </run>
+        </prologue>
 
         <run>
             <package name="minimal"/>
