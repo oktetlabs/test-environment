@@ -31,12 +31,6 @@ extern "C" {
  * @{
  */
 
-#define RPC_RTE_RETA_GROUP_SIZE 64
-
-#define RPC_RSS_HASH_KEY_LEN_DEF 40
-
-#define RPC_RTE_EPOLL_PER_THREAD -1
-
 /**
  * Map link speed string to bitmask value.
  *

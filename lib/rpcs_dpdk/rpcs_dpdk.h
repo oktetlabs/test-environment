@@ -33,6 +33,4 @@ neg_errno_h2rpc(int *retval)
         *retval = -errno_h2rpc(-*retval);
 }
 
-#define RPC_RSS_HASH_KEY_LEN_DEF 40
-
 #endif /* __TE_LIB_RPCS_DPDK_H__ */

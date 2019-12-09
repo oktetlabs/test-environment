@@ -17,6 +17,13 @@ extern "C" {
 
 #define RPC_RTE_ETH_NAME_MAX_LEN 64
 
+#define RPC_RTE_RETA_GROUP_SIZE 64
+
+#define RPC_RSS_HASH_KEY_LEN_DEF 40
+
+#define RPC_RTE_EPOLL_PER_THREAD -1
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
