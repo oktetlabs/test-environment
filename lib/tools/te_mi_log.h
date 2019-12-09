@@ -64,33 +64,41 @@ typedef struct te_mi_log_kvpair {
  * Add a comment to a MI logger.
  *
  * @param           logger      MI logger
+ * @param           retval      Return code. If @c NULL is passed, @p logger
+ *                              is not @c NULL and error occures, error flag
+ *                              is stored in @p logger, which will fail the
+ *                              next te_mi_logger_flush().
+ *                              TE_EEXIST means the name already exists.
  * @param[in]       name        Name of the comment
  * @param[in]       value_fmt   Format string for the value of the comment
  * @param[in]       ...         Format string arguments
- *
- * @return                      Status code
- * @retval TE_EEXIST            The name already exists
  */
-extern te_errno te_mi_logger_add_comment(te_mi_logger *logger, const char *name,
-                                         const char *value_fmt, ...)
-                                         __attribute__((format(printf, 3, 4)));
+extern void te_mi_logger_add_comment(te_mi_logger *logger, te_errno *retval,
+                                     const char *name,
+                                     const char *value_fmt, ...)
+                                     __attribute__((format(printf, 4, 5)));
 
 /**
  * Purge the logger's MI data. The data is lost completely.
+ * The flag that indicates that previously called logger manipulation functions
+ * errors were ignored is cleared.
  *
  * @param           logger      MI logger
  */
 extern void te_mi_logger_reset(te_mi_logger *logger);
 
 /**
- * Log the MI data of a logger as an ARTIFACT with deficated MI log
- * level and remove the data from the logger.
+ * - If there were any ignored logger internal failures - return an error.
+ * - Log the MI data of a logger as an ARTIFACT with deficated MI log level.
+ * - Remove the data from the logger (calls te_mi_logger_reset()).
+ *
  * If the logger does not have any MI data, nothing is logged.
  * Logger is ready to add new data after the call to the function.
  *
  * @param           logger      MI logger
  *
  * @return                      Status code
+ * @retval TE_EFAIL             There were ignored internal logger failures
  */
 extern te_errno te_mi_logger_flush(te_mi_logger *logger);
 
@@ -241,31 +249,37 @@ extern te_errno te_mi_log_meas(const char *tool,
  * @p type - @p name pair are allowed.
  *
  * @param           logger      MI logger
+ * @param           retval      Return code. If @c NULL is passed, @p logger
+ *                              is not @c NULL and error occures, error flag
+ *                              is stored in @p logger, which will fail the
+ *                              next te_mi_logger_flush().
  * @param[in]       type        The type of the measurement result
  * @param[in]       name        The name of the measurement result used to
  *                              identify measurements in logs, may be @c NULL
  * @param[in]       aggr        Aggregation type of the measurement
  * @param[in]       val         Value of the measurement
  * @param[in]       units       Units of the measurement value
- *
- * @return                      Status code
  */
-extern te_errno te_mi_logger_add_meas(te_mi_logger *logger,
-                                      te_mi_meas_type type, const char *name,
-                                      te_mi_meas_aggr aggr, double val,
-                                      te_mi_meas_units units);
+extern void te_mi_logger_add_meas(te_mi_logger *logger, te_errno *retval,
+                                  te_mi_meas_type type, const char *name,
+                                  te_mi_meas_aggr aggr, double val,
+                                  te_mi_meas_units units);
 
 /**
  * Variation of te_mi_logger_add_result() function that accepts
  * measurement as a struct.
  *
  * @param           logger      MI logger
+ * @param           retval      Return code. If @c NULL is passed, @p logger
+ *                              is not @c NULL and error occures, error flag
+ *                              is stored in @p logger, which will fail the
+ *                              next te_mi_logger_flush().
  * @param[in]       meas        Measurement
  *
  * @return                      Status code
  */
-extern te_errno te_mi_logger_add_meas_obj(te_mi_logger *logger,
-                                          const te_mi_meas *meas);
+extern void te_mi_logger_add_meas_obj(te_mi_logger *logger, te_errno *retval,
+                                      const te_mi_meas *meas);
 
 /**
  * Add an vector of measurements to a MI logger.
@@ -273,30 +287,36 @@ extern te_errno te_mi_logger_add_meas_obj(te_mi_logger *logger,
  * added and the successful insertions persist in logger).
  *
  * @param           logger          MI logger
+ * @param           retval          Return code. If @c NULL is passed, @p logger
+ *                                  is not @c NULL and error occures, error flag
+ *                                  is stored in @p logger, which will fail the
+ *                                  next te_mi_logger_flush().
  * @param[in]       measurements    Measurements vector. The last element must
  *                                  have type @c TE_MI_MEAS_END.
  *
  * @return                      Status code
  */
-extern te_errno te_mi_logger_add_meas_vec(te_mi_logger *logger,
-                                          const te_mi_meas *measurements);
+extern void te_mi_logger_add_meas_vec(te_mi_logger *logger, te_errno *retval,
+                                      const te_mi_meas *measurements);
 
 /**
  * Add a measurement key to a MI logger. Measurement key is a key-value pair
  * that represents extra measurement information.
  *
  * @param           logger      MI logger
+ * @param           retval      Return code. If @c NULL is passed, @p logger
+ *                              is not @c NULL and error occures, error flag
+ *                              is stored in @p logger, which will fail the
+ *                              next te_mi_logger_flush().
  * @param[in]       key         Measurement key
  * @param[in]       value_fmt   Format string for the value of the
  *                              measurement key
  * @param[in]       ...         Format string arguments
- *
- * @return                      Status code
- * @retval TE_EEXIST            The key already exists
  */
-extern te_errno te_mi_logger_add_meas_key(te_mi_logger *logger, const char *key,
-                                          const char *value_fmt, ...)
-                                         __attribute__((format(printf, 3, 4)));
+extern void te_mi_logger_add_meas_key(te_mi_logger *logger, te_errno *retval,
+                                      const char *key,
+                                      const char *value_fmt, ...)
+                                      __attribute__((format(printf, 4, 5)));
 /**
  * @page te_tools_te_mi_log_scenarios Usage scenarios
  *
@@ -317,14 +337,13 @@ extern te_errno te_mi_logger_add_meas_key(te_mi_logger *logger, const char *key,
  *    sleep(1);
  *    pps = tool_get_pps();
  *    tool_reset_pps();
- *    CHECK_RC(te_mi_logger_add_meas(logger, TE_MI_MEAS_PPS, "pps",
- *                                   TE_MI_MEAS_AGGR_SINGLE, pps,
- *                                   TE_MI_MEAS_UNITS_PLAIN));
+ *    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_PPS, "pps",
+ *                          TE_MI_MEAS_AGGR_SINGLE, pps,
+ *                          TE_MI_MEAS_UNITS_PLAIN));
  * }
  *
- * CHECK_RC(te_mi_logger_add_meas_key(logger, "ver", "%s",
- *                                    tool_get_version_str()));
- * CHECK_RC(te_mi_logger_add_comment(logger, "fake", "true"));
+ * te_mi_logger_add_meas_key(logger, NULL, "ver", "%s", tool_get_version_str());
+ * te_mi_logger_add_comment(logger, NULL, "fake", "true");
  *
  * CHECK_RC(te_mi_logger_flush(logger));
  *
