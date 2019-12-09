@@ -11,6 +11,10 @@
         <run>
             <package name="minimal"/>
         </run>
+
+        <run>
+            <package name="cs"/>
+        </run>
     </session>
 
 </package>

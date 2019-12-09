@@ -18,6 +18,11 @@ cc = meson.get_compiler('c')
 test_deps = [ ]
 
 te_libs = [
+    'rcfapi',
+    'confapi',
+    'tapi_rpc',
+    'tapi_tad',
+    'tapi_env',
     'tools',
     'tapi',
     'logger_ten',
@@ -46,6 +51,7 @@ install_data([ 'package.xml' ], install_dir: package_dir)
 
 packages = [
     'minimal',
+    'cs',
 ]
 
 mydir = package_dir
