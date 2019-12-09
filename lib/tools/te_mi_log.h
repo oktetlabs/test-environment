@@ -268,6 +268,20 @@ extern te_errno te_mi_logger_add_meas_obj(te_mi_logger *logger,
                                           const te_mi_meas *meas);
 
 /**
+ * Add an vector of measurements to a MI logger.
+ * Insertion stops on the first error (the rest of the measurements are not
+ * added and the successful insertions persist in logger).
+ *
+ * @param           logger          MI logger
+ * @param[in]       measurements    Measurements vector. The last element must
+ *                                  have type @c TE_MI_MEAS_END.
+ *
+ * @return                      Status code
+ */
+extern te_errno te_mi_logger_add_meas_vec(te_mi_logger *logger,
+                                          const te_mi_meas *measurements);
+
+/**
  * Add a measurement key to a MI logger. Measurement key is a key-value pair
  * that represents extra measurement information.
  *

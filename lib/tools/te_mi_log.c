@@ -514,7 +514,6 @@ te_mi_log_meas(const char *tool, const te_mi_meas *measurements,
     te_mi_logger *logger = NULL;
     const te_mi_log_kvpair *c;
     const te_mi_log_kvpair *k;
-    const te_mi_meas *m;
     te_errno rc;
 
     if (measurements == NULL)
@@ -528,12 +527,9 @@ te_mi_log_meas(const char *tool, const te_mi_meas *measurements,
     if (rc != 0)
         goto out;
 
-    for (m = measurements; m->type != TE_MI_MEAS_END; m++)
-    {
-        rc = te_mi_logger_add_meas_obj(logger, m);
-        if (rc != 0)
-            goto out;
-    }
+    rc = te_mi_logger_add_meas_vec(logger, measurements);
+    if (rc != 0)
+        goto out;
 
     for (k = keys; k != NULL && k->key != NULL; k++)
     {
@@ -625,6 +621,22 @@ te_mi_logger_add_meas_obj(te_mi_logger *logger, const te_mi_meas *meas)
 
     return te_mi_logger_add_meas(logger, meas->type, meas->name,
                                  meas->aggr, meas->val, meas->units);
+}
+
+te_errno
+te_mi_logger_add_meas_vec(te_mi_logger *logger, const te_mi_meas *measurements)
+{
+    const te_mi_meas *m;
+    te_errno rc;
+
+    for (m = measurements; m != NULL && m->type != TE_MI_MEAS_END; m++)
+    {
+        rc = te_mi_logger_add_meas_obj(logger, m);
+        if (rc != 0)
+            return rc;
+    }
+
+    return 0;
 }
 
 te_errno
