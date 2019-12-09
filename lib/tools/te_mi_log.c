@@ -50,6 +50,7 @@ typedef struct te_mi_meas_impl {
 typedef TAILQ_HEAD(te_mi_meas_impl_h, te_mi_meas_impl) te_mi_meas_impl_h;
 
 struct te_mi_logger {
+    char *tool;
     te_mi_type type;
     unsigned int version;
     te_mi_meas_impl_h meas_q;
@@ -91,12 +92,6 @@ static const char *meas_unit_names[] = {
     [TE_MI_MEAS_UNITS_GIGA] = "giga",
     [TE_MI_MEAS_UNITS_GIBI] = "gibi",
 };
-
-static te_bool
-te_mi_type_valid(te_mi_type type)
-{
-    return type >= 0 && type < TE_MI_TYPE_END;
-}
 
 static te_bool
 te_mi_meas_aggr_valid(te_mi_meas_aggr aggr)
@@ -269,6 +264,9 @@ te_mi_logger_data2str(const te_mi_logger *logger)
         rc = te_string_append(&str, "\"version\":%u,", logger->version);
 
     if (rc == 0)
+        rc = te_string_append(&str, "\"tool\":"TE_MI_STR_FMT",", logger->tool);
+
+    if (rc == 0)
         rc = te_mi_meas_q_str_append(&logger->meas_q, &str);
 
     if (rc == 0)
@@ -382,38 +380,6 @@ te_mi_logger_is_empty(const te_mi_logger *logger)
 }
 
 te_errno
-te_mi_logger_create(te_mi_type type, te_mi_logger **logger)
-{
-    te_mi_logger *result;
-
-    if (logger == NULL)
-    {
-        ERROR("Failed to create logger: invalid logger pointer location");
-        return TE_EINVAL;
-    }
-
-    if (!te_mi_type_valid(type))
-    {
-        ERROR("Failed to create logger: invalid logger type");
-        return TE_EINVAL;
-    }
-
-    result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-        return TE_ENOMEM;
-
-    TAILQ_INIT(&result->meas_q);
-    te_kvpair_init(&result->meas_keys);
-    te_kvpair_init(&result->comments);
-    result->version = TE_MI_LOG_VERSION;
-    result->type = type;
-
-    *logger = result;
-
-    return 0;
-}
-
-te_errno
 te_mi_logger_add_comment(te_mi_logger *logger, const char *name,
                          const char *value_fmt, ...)
 {
@@ -498,12 +464,52 @@ te_mi_logger_destroy(te_mi_logger *logger)
         te_mi_logger_reset(logger);
     }
 
+    free(logger->tool);
     free(logger);
 }
 
 te_errno
-te_mi_log_meas(const te_mi_meas *measurements, const te_mi_log_kvpair *keys,
-               const te_mi_log_kvpair *comments)
+te_mi_logger_meas_create(const char *tool, te_mi_logger **logger)
+{
+    te_mi_logger *result;
+
+    if (logger == NULL)
+    {
+        ERROR("Failed to create logger: invalid logger pointer location");
+        return TE_EINVAL;
+    }
+
+    if (tool == NULL)
+    {
+        ERROR("Failed to create logger: tool is not specified");
+        return TE_EINVAL;
+    }
+
+    result = TE_ALLOC(sizeof(*result));
+    if (result == NULL)
+        return TE_ENOMEM;
+
+    result->tool = strdup(tool);
+    if (result->tool == NULL)
+    {
+        free(result);
+        return TE_ENOMEM;
+    }
+
+    TAILQ_INIT(&result->meas_q);
+    te_kvpair_init(&result->meas_keys);
+    te_kvpair_init(&result->comments);
+    result->version = TE_MI_LOG_VERSION;
+    result->type = TE_MI_TYPE_MEASUREMENT;
+
+    *logger = result;
+
+    return 0;
+}
+
+te_errno
+te_mi_log_meas(const char *tool, const te_mi_meas *measurements,
+               const te_mi_log_kvpair *keys, const te_mi_log_kvpair *comments)
 {
     te_mi_logger *logger = NULL;
     const te_mi_log_kvpair *c;
@@ -518,7 +524,7 @@ te_mi_log_meas(const te_mi_meas *measurements, const te_mi_log_kvpair *keys,
         goto out;
     }
 
-    rc = te_mi_logger_create(TE_MI_TYPE_MEASUREMENT, &logger);
+    rc = te_mi_logger_meas_create(tool, &logger);
     if (rc != 0)
         goto out;
 

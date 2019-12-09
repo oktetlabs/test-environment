@@ -61,16 +61,6 @@ typedef struct te_mi_log_kvpair {
 #define TE_MI_COMMENTS(...) TE_MI_LOG_KVPAIRS(__VA_ARGS__)
 
 /**
- * Create a MI logger entity.
- *
- * @param[in]  type     The type of the logger
- * @param[out] logger   Created logger
- *
- * @return              Status code
- */
-extern te_errno te_mi_logger_create(te_mi_type type, te_mi_logger **logger);
-
-/**
  * Add a comment to a MI logger.
  *
  * @param           logger      MI logger
@@ -184,6 +174,17 @@ typedef struct te_mi_meas {
     te_mi_meas_units units;
 } te_mi_meas;
 
+/**
+ * Create a MI measurements logger entity.
+ *
+ * @param[in]  tool     Tool that was used for gathering measurements.
+ * @param[out] logger   Created logger
+ *
+ * @return              Status code
+ */
+extern te_errno te_mi_logger_meas_create(const char *tool,
+                                         te_mi_logger **logger);
+
 /** Convenience te_mi_meas constructor */
 #define TE_MI_MEAS(_type, _name, _aggr, _val, _units)   \
     (te_mi_meas){ TE_MI_MEAS_ ## _type, (_name),        \
@@ -206,7 +207,8 @@ typedef struct te_mi_meas {
  *
  * usage example:
  * @code{.c}
- * te_mi_log_meas(TE_MI_MEAS_V(TE_MI_MEAS(PPS, "pps", MIN, 42.4, PLAIN),
+ * te_mi_log_meas("mytool",
+ *                TE_MI_MEAS_V(TE_MI_MEAS(PPS, "pps", MIN, 42.4, PLAIN),
  *                             TE_MI_MEAS(PPS, "pps", MEAN, 300, PLAIN),
  *                             TE_MI_MEAS(PPS, "pps", CV, 10, PLAIN),
  *                             TE_MI_MEAS(PPS, "pps", MAX, 5.4, KILO),
@@ -216,6 +218,7 @@ typedef struct te_mi_meas {
  *                TE_MI_COMMENTS({"comment", "comment_value"}));
  * @endcode
  *
+ * @param[in]  tool             Tool that was used for gathering measurements.
  * @param[in]  measurements     Measurements vector. The last element must have
  *                              type @c TE_MI_MEAS_END.
  * @param[in]  keys             Measurement keys vector. The last element must
@@ -227,7 +230,8 @@ typedef struct te_mi_meas {
  *
  * @return                      Status code
  */
-extern te_errno te_mi_log_meas(const te_mi_meas *measurements,
+extern te_errno te_mi_log_meas(const char *tool,
+                               const te_mi_meas *measurements,
                                const te_mi_log_kvpair *keys,
                                const te_mi_log_kvpair *comments);
 
@@ -291,7 +295,7 @@ extern te_errno te_mi_logger_add_meas_key(te_mi_logger *logger, const char *key,
  * @code{.c}
  * te_mi_logger *logger;
  *
- * CHECK_RC(te_mi_logger_create(TE_MI_TYPE_MEASUREMENT, &logger));
+ * CHECK_RC(te_mi_logger_meas_create("mytool", &logger));
  * for (i = 0; i < 10; i++)
  * {
  *    double pps;
