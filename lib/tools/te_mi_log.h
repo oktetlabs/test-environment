@@ -95,6 +95,65 @@ extern void te_mi_logger_reset(te_mi_logger *logger);
  * If the logger does not have any MI data, nothing is logged.
  * Logger is ready to add new data after the call to the function.
  *
+ * @note    The format of the MI log is JSON RFC 8259. The API passes
+ *          the JSON string to logger without indentation.
+ *
+ * JSON-schema: see doc/drafts/mi-schema.json
+ *
+ * Example of a valid JSON:
+ * {
+ *   "type":"measurement",
+ *   "version":1,
+ *   "tool":"testpmd",
+ *   "results":[
+ *     {
+ *       "type":"pps",
+ *       "entries":[
+ *         {
+ *           "aggr":"mean",
+ *           "value":7040400.000,
+ *           "base_units":"pps",
+ *           "multiplier":"1"
+ *         },
+ *         {
+ *           "aggr":"cv",
+ *           "value":0.000,
+ *           "base_units":"",
+ *           "multiplier":"1"
+ *         }
+ *       ]
+ *     },
+ *     {
+ *       "type":"throughput",
+ *       "entries":[
+ *         {
+ *           "aggr":"mean",
+ *           "value":4731.149,
+ *           "base_units":"bps",
+ *           "multiplier":"1e+6"
+ *         }
+ *       ]
+ *     },
+ *     {
+ *       "type":"bandwidth-usage",
+ *       "entries":[
+ *         {
+ *           "aggr":"mean",
+ *           "value":0.473,
+ *           "base_units":"",
+ *           "multiplier":"1"
+ *         }
+ *       ]
+ *     }
+ *   ],
+ *   "keys":{
+ *     "Side":"Rx"
+ *   },
+ *   "comments":{
+ *     "Stabilizaton":"reached on datapoint (+ leading zero datapoints): 10 (+ 1)"
+ *   }
+ * }
+ *
  * @param           logger      MI logger
  *
  * @return                      Status code

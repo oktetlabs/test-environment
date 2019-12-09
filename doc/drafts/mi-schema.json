@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "A representation of a measurement",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "measurement"
+      ]
+    },
+    "version": {
+      "description": "Log format version",
+      "type": "integer",
+      "enum": [1]
+    },
+    "tool": {
+      "description": "Tool used for statistics gathering",
+      "type": "string"
+    },
+    "results": {
+      "description": "Measurement results",
+      "type": "array",
+      "items": { "$ref": "#/definitions/measurements" }
+    },
+    "keys": {
+      "description": "Measurement keys",
+      "$ref": "#/definitions/dictionary"
+    },
+    "comments": {
+      "description": "Measurement comments",
+      "$ref": "#/definitions/dictionary"
+    }
+  },
+  "required": ["type", "version", "tool", "results"],
+  "additionalProperties": false,
+  "definitions": {
+    "dictionary": {
+      "description": "A dictionary - key-value pair set of strings",
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "measurements": {
+      "description": "Measurements that have the same type and name",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "Measurement type, see 'meas_type_names'",
+          "type": "string",
+          "enum": [
+            "pps",
+            "latency",
+            "throughput",
+            "bandwidth-usage",
+            "temperature",
+            "rps"
+          ]
+        },
+        "name": {
+          "description": "Extra measurement identification - measurement name",
+          "type": "string"
+        },
+        "entries": {
+          "description": "Measurement values",
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/measurementEntries" }
+        }
+      },
+      "required": ["type", "entries"],
+      "additionalProperties": false
+    },
+    "measurementEntries": {
+      "description": "Measured value",
+      "type": "object",
+      "properties": {
+        "aggr": {
+          "description": "Statistical aggregation (except single), see 'meas_aggr_names'",
+          "type": "string",
+          "enum": [
+            "single",
+            "min",
+            "max",
+            "mean",
+            "cv",
+            "stdev"
+          ]
+        },
+        "value": {
+          "description": "Value",
+          "type": "number"
+        },
+        "base_units": {
+          "description": "Base units of the measurement - see 'meas_base_unit_names'",
+          "type": "string",
+          "enum": [
+            "",
+            "pps",
+            "second",
+            "bps",
+            "degrees celsius",
+            "rps"
+          ]
+        },
+        "multiplier": {
+          "description": "Multiplier of the value - see 'meas_multiplier_names'",
+          "type": "string",
+          "enum": [
+            "1e-9",
+            "1e-6",
+            "1e-3",
+            "1",
+            "1e+3",
+            "0x1p10",
+            "1e+6",
+            "0x1p20",
+            "1e+9",
+            "0x1p30"
+          ]
+        }
+      },
+      "required": ["aggr", "value", "base_units", "multiplier"],
+      "additionalProperties": false
+    }
+  }
+}
