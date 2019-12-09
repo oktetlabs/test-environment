@@ -145,6 +145,7 @@ typedef enum te_mi_meas_type {
     TE_MI_MEAS_PPS = 0, /**< Packets per second */
     TE_MI_MEAS_LATENCY, /**< Latency in seconds */
     TE_MI_MEAS_THROUGHPUT, /**< Throughput in bits per second */
+    TE_MI_MEAS_BANDWIDTH_USAGE, /**< Bandwidth usage ratio */
     TE_MI_MEAS_TEMP, /**< Temperature in degrees Celsius */
     TE_MI_MEAS_RPS, /**< Requests per second */
 

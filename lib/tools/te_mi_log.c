@@ -74,6 +74,7 @@ static const char *meas_type_names[] = {
     [TE_MI_MEAS_PPS] = "pps",
     [TE_MI_MEAS_LATENCY] = "latency",
     [TE_MI_MEAS_THROUGHPUT] = "throughput",
+    [TE_MI_MEAS_BANDWIDTH_USAGE] = "bandwidth-usage",
     [TE_MI_MEAS_TEMP] = "temperature",
     [TE_MI_MEAS_RPS] = "rps",
 };
