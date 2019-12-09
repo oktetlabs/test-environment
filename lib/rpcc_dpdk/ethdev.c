@@ -25,6 +25,7 @@
 #include "tapi_rpc_rte_mbuf.h"
 #include "rpcc_dpdk.h"
 #include "rpc_dpdk_offloads.h"
+#include "te_str.h"
 
 
 static const char *
@@ -3184,7 +3185,7 @@ rpc_rte_eth_dev_get_name_by_port(rcf_rpc_server *rpcs,
                  NEG_ERRNO_ARGS(out.retval));
 
     if (out.retval == 0 && name != NULL && out.name != NULL)
-        memcpy(name, out.name, RPC_RTE_ETH_NAME_MAX_LEN);
+        te_strlcpy(name, out.name, RPC_RTE_ETH_NAME_MAX_LEN);
 
     RETVAL_ZERO_INT(rte_eth_dev_get_name_by_port, out.retval);
 }
