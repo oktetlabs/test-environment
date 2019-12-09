@@ -2,6 +2,19 @@
  * @brief Minimal prologue
  *
  * Copyright (C) 2019 OKTET Labs. All rights reserved.
+ */
+
+/** @page ts_prologue Prologue
+ *
+ * @objective Demo of minimal prologue of test suite
+ *
+ * Prologue is test that will be run before the package is run.
+ * It is typically used to configure agents before running tests in a package.
+ *
+ * @note @p TEST_STEP() is required. This need to generate
+ * documetation of test steps.
+ *
+ * @par Test sequence:
  *
  * @author Nikita Somenkov <Nikita.Somenkov@oktetlabs.ru>
  */

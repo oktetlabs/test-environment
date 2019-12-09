@@ -4,6 +4,16 @@
  * Minial test scenario.
  *
  * Copyright (C) 2019 OKTET Labs. All rights reserved.
+ */
+
+/** @page minimal_helloworld Hello World test
+ *
+ * @objective Demo of minima Hello World test
+ *
+ * For each test @p TEST_STEP() is required. This need to generate
+ * documetation of test steps.
+ *
+ * @par Test sequence:
  *
  * @author Nikita Somenkov <Nikita.Somenkov@oktetlabs.ru>
  */
