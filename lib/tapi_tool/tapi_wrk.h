@@ -95,6 +95,8 @@ typedef struct tapi_wrk_report {
     double req_per_sec;
     /** Bytes per second */
     double bps;
+    /** Wrk arguments used */
+    char *arguments;
 } tapi_wrk_report;
 
 /** Information of a wrk tool */
@@ -113,6 +115,8 @@ typedef struct tapi_wrk_app {
     tapi_job_channel_t *req_filter;
     /** Latency distribution filter */
     tapi_job_channel_t *lat_distr_filter;
+    /** Arguents that are used when running the tool */
+    te_vec wrk_args;
 } tapi_wrk_app;
 
 /**
@@ -148,6 +152,9 @@ extern te_errno tapi_wrk_wait(tapi_wrk_app *app, int timeout_ms);
 
 /**
  * Get wrk report.
+ *
+ * @note    Field 'arguments' in the @p report points to a new allocated string
+ *          that should be freed by user.
  *
  * @param[in]  app          wrk app handle.
  * @param[out] report       wrk statistics report.
