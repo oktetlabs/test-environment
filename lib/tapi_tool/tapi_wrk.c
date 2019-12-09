@@ -485,3 +485,30 @@ tapi_wrk_get_report(tapi_wrk_app *app, tapi_wrk_report *report)
 
     return 0;
 }
+
+void
+tapi_wrk_report_mi_log(te_mi_logger *logger, const tapi_wrk_report *report)
+{
+    const char *pt = "per-thread";
+
+    te_mi_logger_add_meas_vec(logger, NULL, TE_MI_MEAS_V(
+            TE_MI_MEAS(THROUGHPUT, NULL, MEAN,
+                       TE_UNITS_DEC_U2M(report->bps * 8.0), MEGA),
+            TE_MI_MEAS(RPS, NULL, MEAN, report->req_per_sec, PLAIN),
+            TE_MI_MEAS(LATENCY, pt, MEAN, report->thread_latency.mean / 1000.,
+                       MILLI),
+            TE_MI_MEAS(LATENCY, pt, MAX, report->thread_latency.max / 1000.,
+                       MILLI),
+            TE_MI_MEAS(LATENCY, pt, STDEV, report->thread_latency.stdev / 1000.,
+                       MILLI),
+            TE_MI_MEAS(RPS, pt, MEAN, report->thread_req_per_sec.mean, PLAIN),
+            TE_MI_MEAS(RPS, pt, MAX, report->thread_req_per_sec.max, PLAIN),
+            TE_MI_MEAS(RPS, pt, STDEV, report->thread_req_per_sec.stdev, PLAIN)));
+
+    /*
+     * Since the first argument contains the executable file name, string with
+     * all arguments will represent the command that was used to run the tool.
+     */
+    te_mi_logger_add_comment(logger, NULL, "command", "%s",
+                             report->arguments);
+}
