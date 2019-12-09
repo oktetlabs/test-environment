@@ -67,6 +67,7 @@ static const char *meas_aggr_names[] = {
     [TE_MI_MEAS_AGGR_MAX] = "max",
     [TE_MI_MEAS_AGGR_MEAN] = "mean",
     [TE_MI_MEAS_AGGR_CV] = "cv",
+    [TE_MI_MEAS_AGGR_STDEV] = "stdev",
 };
 
 static const char *meas_type_names[] = {
@@ -74,6 +75,7 @@ static const char *meas_type_names[] = {
     [TE_MI_MEAS_LATENCY] = "latency",
     [TE_MI_MEAS_THROUGHPUT] = "throughput",
     [TE_MI_MEAS_TEMP] = "temperature",
+    [TE_MI_MEAS_RPS] = "rps",
 };
 
 static const char *meas_unit_names[] = {

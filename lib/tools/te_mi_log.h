@@ -133,6 +133,8 @@ typedef enum te_mi_meas_aggr {
     TE_MI_MEAS_AGGR_MEAN,
     /** Coefficient of Variation of measurements */
     TE_MI_MEAS_AGGR_CV,
+    /** Standard deviation of measurements */
+    TE_MI_MEAS_AGGR_STDEV,
 
     /** One past last valid measurement aggregation type */
     TE_MI_MEAS_AGGR_END,
@@ -144,6 +146,7 @@ typedef enum te_mi_meas_type {
     TE_MI_MEAS_LATENCY, /**< Latency in seconds */
     TE_MI_MEAS_THROUGHPUT, /**< Throughput in bits per second */
     TE_MI_MEAS_TEMP, /**< Temperature in degrees Celsius */
+    TE_MI_MEAS_RPS, /**< Requests per second */
 
     TE_MI_MEAS_END, /**< End marker for a measurement vector.
                          Also is one past last valid type */
