@@ -217,7 +217,7 @@ extern unsigned int tapi_job_get_timeout(void);
  *
  * @param job Job instance handle
  * @param timeout_ms Timeout in ms (negative means tapi_job_get_timeout())
- * @param[out] status Exit statu
+ * @param[out] status Exit status (may be @c NULL)
  *
  * @return                  Status code
  * @retval TE_EINPROGRESS   Job is still running
@@ -484,7 +484,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * CHECK_RC(tapi_job_rpc_create(pco, NULL, "/usr/bin/tool",
  *                              (const char *[]){"tool", "arg1", "arg2",
  *                              NULL}, NULL, &job));
- * CHECK_RC(tapi_job_alloc_output_channels(job, 2, NULL));
+ * CHECK_RC(tapi_job_alloc_output_channels(job, 2, out_channels));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channels[0],
  *                                                      out_channels[1]),
  *                                 "Filter", FALSE, TE_LL_INFO, NULL));
@@ -551,7 +551,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channels[1]),
  *                                 "Error filter", FALSE, TE_LL_ERROR,
  *                                 &out_filters[1]));
- * CHECK_RC(tapi_job_filrer_add_regexp(out_filters[1],
+ * CHECK_RC(tapi_job_filter_add_regexp(out_filters[1],
  *                                    "^ERROR:(.*)$", 1);
  *
  * CHECK_RC(tapi_job_start(job));
@@ -569,7 +569,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  *
  * - Run an interactive program via a pseudo-terminal
  * - Wait for the prompt
- * - Send an command
+ * - Send a command
  * - Repeat the previous steps, logging all the output until the program
  *   terminates
  * @code{.c}
@@ -582,7 +582,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  *                              (const char *[]){"tool", "arg1", "arg2",
  *                              NULL}, NULL, &job));
  * CHECK_RC(tapi_job_alloc_output_channels(job, 1, &out_channel));
- * CHECK_RC(tapi_job_alloc_output_channels(job, 1, &in_channel));
+ * CHECK_RC(tapi_job_alloc_input_channels(job, 1, &in_channel));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channel),
  *                                 "Readable filter", TRUE, 0, &prompt_filter));
  * CHECK_RC(tapi_job_filter_add_regexp(prompt_filter, "^\\$ ", 0));

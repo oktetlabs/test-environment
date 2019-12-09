@@ -35,7 +35,7 @@ typedef struct te_mi_meas_value {
     TAILQ_ENTRY(te_mi_meas_value) next;
     te_mi_meas_aggr aggr;
     double val;
-    te_mi_meas_units units;
+    te_mi_meas_multiplier multiplier;
 } te_mi_meas_value;
 
 typedef TAILQ_HEAD(te_mi_meas_value_h, te_mi_meas_value) te_mi_meas_value_h;
@@ -50,11 +50,40 @@ typedef struct te_mi_meas_impl {
 typedef TAILQ_HEAD(te_mi_meas_impl_h, te_mi_meas_impl) te_mi_meas_impl_h;
 
 struct te_mi_logger {
+    char *tool;
     te_mi_type type;
     unsigned int version;
     te_mi_meas_impl_h meas_q;
     te_kvpair_h meas_keys;
     te_kvpair_h comments;
+    te_bool error_ignored;
+};
+
+typedef enum te_mi_meas_base_unit_type {
+    TE_MI_MEAS_BASE_UNITLESS, /**< Unitless value represented as a ratio */
+    TE_MI_MEAS_BASE_UNIT_PPS, /**< Packets per second */
+    TE_MI_MEAS_BASE_UNIT_SECOND, /**< Seconds */
+    TE_MI_MEAS_BASE_UNIT_BPS, /**< Bits per second */
+    TE_MI_MEAS_BASE_UNIT_CELSIUS, /**< Degrees of celsius */
+    TE_MI_MEAS_BASE_UNIT_RPS, /**< Requests per second */
+} te_mi_meas_base_unit_type;
+
+static te_mi_meas_base_unit_type meas_base_unit_by_type_map[] = {
+    [TE_MI_MEAS_PPS] = TE_MI_MEAS_BASE_UNIT_PPS,
+    [TE_MI_MEAS_LATENCY] = TE_MI_MEAS_BASE_UNIT_SECOND,
+    [TE_MI_MEAS_THROUGHPUT] = TE_MI_MEAS_BASE_UNIT_BPS,
+    [TE_MI_MEAS_BANDWIDTH_USAGE] = TE_MI_MEAS_BASE_UNITLESS,
+    [TE_MI_MEAS_TEMP] = TE_MI_MEAS_BASE_UNIT_CELSIUS,
+    [TE_MI_MEAS_RPS] = TE_MI_MEAS_BASE_UNIT_RPS,
+};
+
+static const char *meas_base_unit_names[] = {
+    [TE_MI_MEAS_BASE_UNITLESS] = "",
+    [TE_MI_MEAS_BASE_UNIT_PPS] = "pps",
+    [TE_MI_MEAS_BASE_UNIT_SECOND] = "second",
+    [TE_MI_MEAS_BASE_UNIT_BPS] =  "bps",
+    [TE_MI_MEAS_BASE_UNIT_CELSIUS] = "degrees celsius",
+    [TE_MI_MEAS_BASE_UNIT_RPS] = "rps",
 };
 
 static const char *mi_type_names[] = {
@@ -67,32 +96,42 @@ static const char *meas_aggr_names[] = {
     [TE_MI_MEAS_AGGR_MAX] = "max",
     [TE_MI_MEAS_AGGR_MEAN] = "mean",
     [TE_MI_MEAS_AGGR_CV] = "cv",
+    [TE_MI_MEAS_AGGR_STDEV] = "stdev",
 };
 
 static const char *meas_type_names[] = {
     [TE_MI_MEAS_PPS] = "pps",
     [TE_MI_MEAS_LATENCY] = "latency",
     [TE_MI_MEAS_THROUGHPUT] = "throughput",
+    [TE_MI_MEAS_BANDWIDTH_USAGE] = "bandwidth-usage",
     [TE_MI_MEAS_TEMP] = "temperature",
+    [TE_MI_MEAS_RPS] = "rps",
 };
 
-static const char *meas_unit_names[] = {
-    [TE_MI_MEAS_UNITS_NANO] = "nano",
-    [TE_MI_MEAS_UNITS_MICRO] = "micro",
-    [TE_MI_MEAS_UNITS_MILLI] = "milli",
-    [TE_MI_MEAS_UNITS_PLAIN] = "plain",
-    [TE_MI_MEAS_UNITS_KILO] = "kilo",
-    [TE_MI_MEAS_UNITS_KIBI] = "kibi",
-    [TE_MI_MEAS_UNITS_MEGA] = "mega",
-    [TE_MI_MEAS_UNITS_MEBI] = "mebi",
-    [TE_MI_MEAS_UNITS_GIGA] = "giga",
-    [TE_MI_MEAS_UNITS_GIBI] = "gibi",
+static const char *meas_multiplier_names[] = {
+    [TE_MI_MEAS_MULTIPLIER_NANO] = "1e-9",
+    [TE_MI_MEAS_MULTIPLIER_MICRO] = "1e-6",
+    [TE_MI_MEAS_MULTIPLIER_MILLI] = "1e-3",
+    [TE_MI_MEAS_MULTIPLIER_PLAIN] = "1",
+    [TE_MI_MEAS_MULTIPLIER_KILO] = "1e+3",
+    [TE_MI_MEAS_MULTIPLIER_KIBI] = "0x1p10",
+    [TE_MI_MEAS_MULTIPLIER_MEGA] = "1e+6",
+    [TE_MI_MEAS_MULTIPLIER_MEBI] = "0x1p20",
+    [TE_MI_MEAS_MULTIPLIER_GIGA] = "1e+9",
+    [TE_MI_MEAS_MULTIPLIER_GIBI] = "0x1p30",
 };
 
-static te_bool
-te_mi_type_valid(te_mi_type type)
+static const char *
+te_mi_meas_get_base_unit_str(te_mi_meas_type type, te_mi_meas_aggr aggr)
 {
-    return type >= 0 && type < TE_MI_TYPE_END;
+    te_mi_meas_base_unit_type base;
+
+    if (aggr == TE_MI_MEAS_AGGR_CV)
+        base = TE_MI_MEAS_BASE_UNITLESS;
+    else
+        base = meas_base_unit_by_type_map[type];
+
+    return meas_base_unit_names[base];
 }
 
 static te_bool
@@ -108,9 +147,9 @@ te_mi_meas_type_valid(te_mi_meas_type type)
 }
 
 static te_bool
-te_mi_meas_units_valid(te_mi_meas_units units)
+te_mi_meas_multiplier_valid(te_mi_meas_multiplier multiplier)
 {
-    return units >= 0 && units < TE_MI_MEAS_UNITS_END;
+    return multiplier >= 0 && multiplier < TE_MI_MEAS_MULTIPLIER_END;
 }
 
 static const char *
@@ -132,20 +171,38 @@ te_mi_meas_type2str(te_mi_meas_type meas_type)
 }
 
 static const char *
-te_mi_meas_units2str(te_mi_meas_units units)
+te_mi_meas_multiplier2str(te_mi_meas_multiplier multiplier)
 {
-    return meas_unit_names[units];
+    return meas_multiplier_names[multiplier];
+}
+
+static void
+te_mi_set_logger_error(te_mi_logger *logger, te_errno *retval, te_errno val)
+{
+    if (retval != NULL)
+        *retval = val;
+
+    if (val != 0 && logger != NULL && retval == NULL)
+        logger->error_ignored = TRUE;
 }
 
 static te_errno
-te_mi_meas_value_str_append(const te_mi_meas_value *value, te_string *str)
+te_mi_meas_value_str_append(const te_mi_meas_value *value, te_mi_meas_type type,
+                            te_string *str)
 {
     te_errno rc;
 
     rc = te_string_append(str,
-            "{\"aggr\":"TE_MI_STR_FMT",\"value\":%.3f,\"units\":"TE_MI_STR_FMT"},",
-            te_mi_meas_aggr2str(value->aggr), value->val,
-            te_mi_meas_units2str(value->units));
+            "{\"aggr\":"TE_MI_STR_FMT",\"value\":%.3f,",
+            te_mi_meas_aggr2str(value->aggr), value->val);
+
+    if (rc == 0)
+    {
+        rc = te_string_append(str,
+            "\"base_units\":"TE_MI_STR_FMT",\"multiplier\":"TE_MI_STR_FMT"},",
+            te_mi_meas_get_base_unit_str(type, value->aggr),
+            te_mi_meas_multiplier2str(value->multiplier));
+    }
 
     if (rc != 0)
         ERROR("Failed to append measurement value");
@@ -154,7 +211,8 @@ te_mi_meas_value_str_append(const te_mi_meas_value *value, te_string *str)
 }
 
 static te_errno
-te_mi_meas_values_str_append(const te_mi_meas_value_h *values, te_string *str)
+te_mi_meas_values_str_append(const te_mi_meas_value_h *values,
+                             te_mi_meas_type type, te_string *str)
 {
     const te_mi_meas_value *value;
     te_errno rc;
@@ -164,7 +222,7 @@ te_mi_meas_values_str_append(const te_mi_meas_value_h *values, te_string *str)
     TAILQ_FOREACH(value, values, next)
     {
         if (rc == 0)
-            rc = te_mi_meas_value_str_append(value, str);
+            rc = te_mi_meas_value_str_append(value, type, str);
     }
 
     if (!TAILQ_EMPTY(values))
@@ -190,7 +248,7 @@ te_mi_meas_str_append(const te_mi_meas_impl *meas, te_string *str)
         rc = te_string_append(str, "\"name\":"TE_MI_STR_FMT",", meas->name);
 
     if (rc == 0)
-        rc = te_mi_meas_values_str_append(&meas->values, str);
+        rc = te_mi_meas_values_str_append(&meas->values, meas->type, str);
 
     if (rc == 0)
         rc = te_string_append(str, "},");
@@ -233,6 +291,9 @@ te_mi_kvpairs_str_append(const te_kvpair_h *pairs, const char *dict_name,
     const te_kvpair *pair;
     te_errno rc;
 
+    if (TAILQ_EMPTY(pairs))
+        return 0;
+
     rc = te_string_append(str, TE_MI_STR_FMT":{", dict_name);
 
     TAILQ_FOREACH(pair, pairs, links)
@@ -241,8 +302,8 @@ te_mi_kvpairs_str_append(const te_kvpair_h *pairs, const char *dict_name,
             rc = te_string_append(str, TE_MI_STR_FMT":"TE_MI_STR_FMT",",
                                   pair->key, pair->value);
     }
-    if (!TAILQ_EMPTY(pairs))
-        te_string_cut(str, 1);
+
+    te_string_cut(str, 1);
 
     if (rc == 0)
         rc = te_string_append(str, "},");
@@ -264,6 +325,9 @@ te_mi_logger_data2str(const te_mi_logger *logger)
 
     if (rc == 0)
         rc = te_string_append(&str, "\"version\":%u,", logger->version);
+
+    if (rc == 0)
+        rc = te_string_append(&str, "\"tool\":"TE_MI_STR_FMT",", logger->tool);
 
     if (rc == 0)
         rc = te_mi_meas_q_str_append(&logger->meas_q, &str);
@@ -292,7 +356,7 @@ te_mi_logger_data2str(const te_mi_logger *logger)
 
 static te_mi_meas_value *
 te_mi_meas_value_add(te_mi_meas_value_h *values, te_mi_meas_aggr aggr,
-                     double val, te_mi_meas_units units)
+                     double val, te_mi_meas_multiplier multiplier)
 {
     te_mi_meas_value *result;
 
@@ -302,7 +366,7 @@ te_mi_meas_value_add(te_mi_meas_value_h *values, te_mi_meas_aggr aggr,
 
     result->aggr = aggr;
     result->val = val;
-    result->units = units;
+    result->multiplier = multiplier;
     TAILQ_INSERT_TAIL(values, result, next);
 
     return result;
@@ -378,41 +442,9 @@ te_mi_logger_is_empty(const te_mi_logger *logger)
            TAILQ_EMPTY(&logger->meas_keys);
 }
 
-te_errno
-te_mi_logger_create(te_mi_type type, te_mi_logger **logger)
-{
-    te_mi_logger *result;
-
-    if (logger == NULL)
-    {
-        ERROR("Failed to create logger: invalid logger pointer location");
-        return TE_EINVAL;
-    }
-
-    if (!te_mi_type_valid(type))
-    {
-        ERROR("Failed to create logger: invalid logger type");
-        return TE_EINVAL;
-    }
-
-    result = TE_ALLOC(sizeof(*result));
-    if (result == NULL)
-        return TE_ENOMEM;
-
-    TAILQ_INIT(&result->meas_q);
-    te_kvpair_init(&result->meas_keys);
-    te_kvpair_init(&result->comments);
-    result->version = TE_MI_LOG_VERSION;
-    result->type = type;
-
-    *logger = result;
-
-    return 0;
-}
-
-te_errno
-te_mi_logger_add_comment(te_mi_logger *logger, const char *name,
-                         const char *value_fmt, ...)
+void
+te_mi_logger_add_comment(te_mi_logger *logger, te_errno *retval,
+                         const char *name, const char *value_fmt, ...)
 {
     va_list  ap;
     te_errno rc;
@@ -420,14 +452,19 @@ te_mi_logger_add_comment(te_mi_logger *logger, const char *name,
     if (logger == NULL || name == NULL || value_fmt == NULL)
     {
         ERROR("Failed to add comment with invalid args");
-        return TE_EINVAL;
+        rc = TE_EINVAL;
+        goto out;
     }
 
     va_start(ap, value_fmt);
     rc = te_kvpair_add_va(&logger->comments, name, value_fmt, ap);
     va_end(ap);
 
-    return rc;
+    if (rc != 0 && retval == NULL)
+        ERROR("Failed to add a comment to MI logger: %r", rc);
+
+out:
+    te_mi_set_logger_error(logger, retval, rc);
 }
 
 void
@@ -441,6 +478,7 @@ te_mi_logger_reset(te_mi_logger *logger)
 
     te_kvpair_fini(&logger->comments);
     te_kvpair_fini(&logger->meas_keys);
+    logger->error_ignored = FALSE;
 
     while ((meas = TAILQ_FIRST(&logger->meas_q)) != NULL)
     {
@@ -463,6 +501,12 @@ te_mi_logger_flush(te_mi_logger *logger)
     {
         ERROR("Failed to flush a NULL logger");
         return TE_EINVAL;
+    }
+
+    if (logger->error_ignored)
+    {
+        ERROR("Previous failures in MI logger were ignored, flush is aborted");
+        return TE_EFAIL;
     }
 
     if (te_mi_logger_is_empty(logger))
@@ -495,17 +539,57 @@ te_mi_logger_destroy(te_mi_logger *logger)
         te_mi_logger_reset(logger);
     }
 
+    free(logger->tool);
     free(logger);
 }
 
 te_errno
-te_mi_log_meas(const te_mi_meas *measurements, const te_mi_log_kvpair *keys,
-               const te_mi_log_kvpair *comments)
+te_mi_logger_meas_create(const char *tool, te_mi_logger **logger)
+{
+    te_mi_logger *result;
+
+    if (logger == NULL)
+    {
+        ERROR("Failed to create logger: invalid logger pointer location");
+        return TE_EINVAL;
+    }
+
+    if (tool == NULL)
+    {
+        ERROR("Failed to create logger: tool is not specified");
+        return TE_EINVAL;
+    }
+
+    result = TE_ALLOC(sizeof(*result));
+    if (result == NULL)
+        return TE_ENOMEM;
+
+    result->tool = strdup(tool);
+    if (result->tool == NULL)
+    {
+        free(result);
+        return TE_ENOMEM;
+    }
+
+    TAILQ_INIT(&result->meas_q);
+    te_kvpair_init(&result->meas_keys);
+    te_kvpair_init(&result->comments);
+    result->version = TE_MI_LOG_VERSION;
+    result->type = TE_MI_TYPE_MEASUREMENT;
+    result->error_ignored = FALSE;
+
+    *logger = result;
+
+    return 0;
+}
+
+te_errno
+te_mi_log_meas(const char *tool, const te_mi_meas *measurements,
+               const te_mi_log_kvpair *keys, const te_mi_log_kvpair *comments)
 {
     te_mi_logger *logger = NULL;
     const te_mi_log_kvpair *c;
     const te_mi_log_kvpair *k;
-    const te_mi_meas *m;
     te_errno rc;
 
     if (measurements == NULL)
@@ -515,29 +599,26 @@ te_mi_log_meas(const te_mi_meas *measurements, const te_mi_log_kvpair *keys,
         goto out;
     }
 
-    rc = te_mi_logger_create(TE_MI_TYPE_MEASUREMENT, &logger);
+    rc = te_mi_logger_meas_create(tool, &logger);
     if (rc != 0)
         goto out;
 
-    for (m = measurements; m->type != TE_MI_MEAS_END; m++)
-    {
-        rc = te_mi_logger_add_meas_obj(logger, m);
-        if (rc != 0)
-            goto out;
-    }
+    te_mi_logger_add_meas_vec(logger, &rc, measurements);
+    if (rc != 0)
+        goto out;
 
     for (k = keys; k != NULL && k->key != NULL; k++)
     {
-        rc = te_mi_logger_add_meas_key(logger, k->key, "%s",
-                                       (k->value == NULL) ? "" : k->value);
+        te_mi_logger_add_meas_key(logger, &rc, k->key, "%s",
+                                  (k->value == NULL) ? "" : k->value);
         if (rc != 0)
             goto out;
     }
 
     for (c = comments; c != NULL && c->key != NULL; c++)
     {
-        rc = te_mi_logger_add_comment(logger, c->key, "%s",
-                                      (c->value == NULL) ? "" : c->value);
+        te_mi_logger_add_comment(logger, &rc, c->key, "%s",
+                                 (c->value == NULL) ? "" : c->value);
         if (rc != 0)
             goto out;
     }
@@ -554,36 +635,42 @@ out:
     return rc;
 }
 
-te_errno
-te_mi_logger_add_meas(te_mi_logger *logger, te_mi_meas_type type,
-                      const char *name, te_mi_meas_aggr aggr,
-                      double val, te_mi_meas_units units)
+void
+te_mi_logger_add_meas(te_mi_logger *logger, te_errno *retval,
+                      te_mi_meas_type type, const char *name,
+                      te_mi_meas_aggr aggr, double val,
+                      te_mi_meas_multiplier multiplier)
 {
     te_mi_meas_impl *meas_new = NULL;
     te_mi_meas_impl *meas;
+    te_errno rc = 0;
 
     if (logger == NULL)
     {
         ERROR("Failed to add measurement with invalid args");
-        return TE_EINVAL;
+        rc = TE_EINVAL;
+        goto out;
     }
 
     if (!te_mi_meas_type_valid(type))
     {
         ERROR("Invalid measurement type");
-        return TE_EINVAL;
+        rc = TE_EINVAL;
+        goto out;
     }
 
     if (!te_mi_meas_aggr_valid(aggr))
     {
         ERROR("Invalid measurement aggregation");
-        return TE_EINVAL;
+        rc = TE_EINVAL;
+        goto out;
     }
 
-    if (!te_mi_meas_units_valid(units))
+    if (!te_mi_meas_multiplier_valid(multiplier))
     {
-        ERROR("Invalid measurement units");
-        return TE_EINVAL;
+        ERROR("Invalid measurement multiplier");
+        rc = TE_EINVAL;
+        goto out;
     }
 
     meas = te_mi_meas_impl_find(&logger->meas_q, type, name);
@@ -591,36 +678,62 @@ te_mi_logger_add_meas(te_mi_logger *logger, te_mi_meas_type type,
     {
         meas_new = meas = te_mi_meas_impl_add(&logger->meas_q, type, name);
         if (meas == NULL)
-            return TE_ENOMEM;
+        {
+            rc = TE_ENOMEM;
+            goto out;
+        }
     }
 
-    if (te_mi_meas_value_add(&meas->values, aggr, val, units) == NULL)
+    if (te_mi_meas_value_add(&meas->values, aggr, val, multiplier) == NULL)
     {
         if (meas_new != NULL)
             te_mi_meas_impl_remove(&logger->meas_q, meas_new);
 
-        return TE_ENOMEM;
+        rc = TE_ENOMEM;
+        goto out;
     }
 
-    return 0;
+out:
+    te_mi_set_logger_error(logger, retval, rc);
 }
 
-te_errno
-te_mi_logger_add_meas_obj(te_mi_logger *logger, const te_mi_meas *meas)
+void
+te_mi_logger_add_meas_obj(te_mi_logger *logger, te_errno *retval,
+                          const te_mi_meas *meas)
 {
     if (logger == NULL || meas == NULL)
     {
         ERROR("Failed to add measurement object with invalid args");
-        return TE_EINVAL;
+        te_mi_set_logger_error(logger, retval, TE_EINVAL);
+
+        return;
     }
 
-    return te_mi_logger_add_meas(logger, meas->type, meas->name,
-                                 meas->aggr, meas->val, meas->units);
+   te_mi_logger_add_meas(logger, retval, meas->type, meas->name, meas->aggr,
+                          meas->val, meas->multiplier);
 }
 
-te_errno
-te_mi_logger_add_meas_key(te_mi_logger *logger, const char *key,
-                          const char *value_fmt, ...)
+void
+te_mi_logger_add_meas_vec(te_mi_logger *logger, te_errno *retval,
+                          const te_mi_meas *measurements)
+{
+    const te_mi_meas *m;
+    te_errno rc = 0;
+
+    for (m = measurements; m != NULL && m->type != TE_MI_MEAS_END; m++)
+    {
+        te_mi_logger_add_meas_obj(logger, &rc, m);
+
+        if (rc != 0)
+            break;
+    }
+
+    te_mi_set_logger_error(logger, retval, rc);
+}
+
+void
+te_mi_logger_add_meas_key(te_mi_logger *logger, te_errno *retval,
+                          const char *key, const char *value_fmt, ...)
 {
     va_list  ap;
     te_errno rc;
@@ -628,12 +741,17 @@ te_mi_logger_add_meas_key(te_mi_logger *logger, const char *key,
     if (logger == NULL || key == NULL || value_fmt == NULL)
     {
         ERROR("Failed to add measurement key with invalid args");
-        return TE_EINVAL;
+        rc = TE_EINVAL;
+        goto out;
     }
 
     va_start(ap, value_fmt);
     rc = te_kvpair_add_va(&logger->meas_keys, key, value_fmt, ap);
     va_end(ap);
 
-    return rc;
+    if (rc != 0 && retval == NULL)
+        ERROR("Failed to add a measurement key to MI logger: %r", rc);
+
+out:
+    te_mi_set_logger_error(logger, retval, rc);
 }

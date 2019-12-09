@@ -405,6 +405,37 @@ extern te_errno tapi_ndn_pkt_inject_vlan_tag(asn_value *pkt,
                                              uint16_t   vlan_tci);
 
 /**
+ * Inject VLAN tags to outer Ethernet PDU in a PDU sequence.
+ *
+ * @param[inout]  pdus          PDU sequence
+ * @param[in]     vlan_tci      VLAN tci array
+ * @param[in]     n_tags        Number of tags to be pushed, specifies
+ *                              @p vlan_tci size
+ *
+ * @return Status code
+ */
+extern te_errno tapi_ndn_pdus_inject_vlan_tags(asn_value *pdus,
+                                               const uint16_t *vlan_tci,
+                                               size_t n_tags);
+
+/**
+ * Read TCI value of VLAN tags of a Ethernet PDU.
+ *
+ * @param[in]     eth           ASN.1 value of ethernet PDU
+ * @param[inout]  n_tags        Size of the @p vid, @p prio and @p cfi arrays,
+ *                              on success contains the number of tags that
+ *                              were read (may be @c 0 if @p eth does not have
+ *                              any VLAN tags)
+ * @param[out]    vid           VLAN IDs
+ * @param[out]    prio          VLAN priority fields
+ * @param[out]    cfi           VLAN CFI fields
+ *
+ * @return Status code
+ */
+extern te_errno tapi_ndn_eth_read_vlan_tci(const asn_value *eth,
+                                           size_t *n_tags, uint16_t *vid,
+                                           uint16_t *prio, uint16_t *cfi);
+/**
  * Take an ASN.1 raw packet which is going to be transformed to
  * a pattern and override IPv4 checksum field to require correct
  * checksum in the packet which is about to be received on peer.

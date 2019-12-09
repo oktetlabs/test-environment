@@ -57,6 +57,8 @@ asn_enum_entry_t _ndn_rte_flow_action_type_enum_entries[] = {
     {"count", NDN_FLOW_ACTION_TYPE_COUNT},
     {"vxlan-encap", NDN_FLOW_ACTION_TYPE_VXLAN_ENCAP},
     {"vxlan-decap", NDN_FLOW_ACTION_TYPE_VXLAN_DECAP},
+    {"of-push-vlan", NDN_FLOW_ACTION_TYPE_OF_PUSH_VLAN},
+    {"of-set-vlan-vid", NDN_FLOW_ACTION_TYPE_OF_SET_VLAN_VID},
 };
 
 asn_type ndn_rte_flow_action_type_s = {
@@ -198,6 +200,10 @@ static asn_named_entry_t _ndn_rte_flow_action_conf_ne_array[] = {
         {PRIVATE, NDN_FLOW_ACTION_CONF_COUNT} },
     { "encap-hdr", &ndn_generic_pdu_sequence_s,
         {PRIVATE, NDN_FLOW_ACTION_ENCAP_HDR} },
+    { "ethertype", &asn_base_int16_s,
+        {PRIVATE, NDN_FLOW_ACTION_OF_PUSH_VLAN_ETHERTYPE} },
+    { "vlan-id", &asn_base_int16_s,
+        {PRIVATE, NDN_FLOW_ACTION_OF_SET_VLAN_VID} },
 };
 
 asn_type ndn_rte_flow_action_conf_s = {

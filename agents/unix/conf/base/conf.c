@@ -170,6 +170,7 @@ typedef struct pam_message const pam_message_t;
 #include "te_queue.h"
 #include "te_ethernet.h"
 #include "te_sockaddr.h"
+#include "te_str.h"
 #include "cs_common.h"
 #include "logger_api.h"
 #include "comm_agent.h"
@@ -1645,7 +1646,7 @@ ipforward_solaris(char *ipfw_str, int *p_val)
     if ((fd = open("/dev/ip", O_RDWR)) < 0)
         return TE_OS_RC(TE_TA_UNIX, errno);
 
-    strncpy(xbuf, ipfw_str, sizeof(xbuf));
+    te_strlcpy(xbuf, ipfw_str, sizeof(xbuf));
 
     si.ic_cmd = ND_GET;
     if (*p_val == 0 || *p_val == 1)
@@ -1995,7 +1996,7 @@ prefix_check(const char *value, sa_family_t family, unsigned int *prefix)
 te_errno
 ta_unix_conf_get_addr(const char *ifname, sa_family_t af, void **addr)
 {
-    strncpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
+    te_strlcpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
     CFG_IOCTL((af == AF_INET6) ? cfg6_socket : cfg_socket,
               MY_SIOCGIFADDR, &req);
     if (af == AF_INET)
@@ -2649,7 +2650,7 @@ vlans_add(unsigned int gid, const char *oid, const char *value,
          * after creating VLAN.
          */
         ifr.ifr_addr.sa_family = AF_INET;
-        strncpy(ifr.ifr_name, ifname, IFNAMSIZ - 1); 
+        te_strlcpy(ifr.ifr_name, ifname, IFNAMSIZ);
         if (ioctl(cfg_socket, SIOCGIFADDR, &ifr) != 0)
             try_restore_ip_addr = FALSE;
 
@@ -3229,7 +3230,7 @@ iface_get_property_netconf(const char *ifname,
                         length = strlen(link->info_kind) + 1;
                         if (length <= RCF_MAX_VAL)
                         {
-                            strncpy(value, link->info_kind, length);
+                            memcpy(value, link->info_kind, length);
                         }
                         else
                         {
@@ -3388,7 +3389,7 @@ mcast_link_addr_change_ioctl(const char *ifname, const char *addr, int op)
     uint8_t        *q;
 
     memset(&request, 0, sizeof(request));
-    strncpy(request.ifr_name, ifname, IFNAMSIZ);
+    te_strlcpy(request.ifr_name, ifname, IFNAMSIZ);
     /* Read MAC address */
 #ifdef HAVE_STRUCT_IFREQ_IFR_HWADDR
     q = (uint8_t *)request.ifr_hwaddr.sa_data;
@@ -3463,7 +3464,7 @@ mcast_link_addr_add(unsigned int gid, const char *oid,
     {
         q = (mma_list_el *)malloc(sizeof(mma_list_el));
         /* Against setting too long value for MAC address */
-        strncpy(q->value, addr, sizeof(q->value));
+        te_strlcpy(q->value, addr, sizeof(q->value));
 #ifdef HAVE_LIBDLPI
         /* Adding the address via DLPI */
         rc = mcast_link_addr_change_dlpi(p->fd, addr, SIOCADDMULTI);
@@ -3754,7 +3755,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
 
     if (strlen(cur) != 0)
     {
-        strncpy(req.my_ifr_name, cur, IFNAMSIZ);
+        te_strlcpy(req.my_ifr_name, cur, IFNAMSIZ);
     }
     else
     {
@@ -3766,7 +3767,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
             return TE_RC(TE_TA_UNIX, TE_EPERM);
 
         sprintf(trash, "%s:%d", ifname, n);
-        strncpy(req.my_ifr_name, trash, IFNAMSIZ);
+        te_strlcpy(req.my_ifr_name, trash, IFNAMSIZ);
     }
 
     SIN(&req.my_ifr_addr)->sin_family = AF_INET;
@@ -3791,7 +3792,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         te_bool         logical_iface = FALSE;
 
         memset(&lreq, 0, sizeof(lreq));
-        strncpy(lreq.lifr_name, ifname, sizeof(lreq.lifr_name));
+        te_strlcpy(lreq.lifr_name, ifname, sizeof(lreq.lifr_name));
         lreq.lifr_addr.ss_family = family;
 
         CFG_IOCTL(sock, SIOCGLIFADDR, &lreq);
@@ -3828,7 +3829,7 @@ net_addr_add(unsigned int gid, const char *oid, const char *value,
         struct if_laddrreq lreq;
 
         memset(&lreq, 0, sizeof(lreq));
-        strncpy(lreq.iflr_name, ifname, IFNAMSIZ);
+        te_strlcpy(lreq.iflr_name, ifname, IFNAMSIZ);
         lreq.addr.ss_family = family;
         lreq.addr.ss_len =
             (family == AF_INET) ? sizeof(struct sockaddr_in) :
@@ -4192,7 +4193,7 @@ net_addr_del(unsigned int gid, const char *oid,
         }
 
         memset(&req, 0, sizeof(req));
-        strncpy(req.my_ifr_name, name, sizeof(req.my_ifr_name));
+        te_strlcpy(req.my_ifr_name, name, sizeof(req.my_ifr_name));
 
         if (strcmp(name, ifname) == 0)
         {
@@ -4479,7 +4480,7 @@ ta_unix_conf_netaddr2ifname(const struct sockaddr *addr, char *ifname)
                    te_sockaddr_get_netaddr(CONST_SA(&p->my_ifr_addr)),
                    addrlen) == 0)
         {
-            strncpy(ifname, p->my_ifr_name, IF_NAMESIZE);
+            te_strlcpy(ifname, p->my_ifr_name, IF_NAMESIZE);
             rc = 0;
             break;
         }
@@ -4577,7 +4578,7 @@ prefix_get(unsigned int gid, const char *oid, char *value,
         }
     }
 #elif defined(USE_IOCTL)
-    strncpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
+    te_strlcpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
     if (strchr(addr, ':') == NULL)
     {
         SIN(&req.my_ifr_addr)->sin_family = AF_INET;
@@ -4605,7 +4606,7 @@ prefix_get(unsigned int gid, const char *oid, char *value,
         struct if_laddrreq lreq;
 
         memset(&lreq, 0, sizeof(lreq));
-        strncpy(lreq.iflr_name, ifname, sizeof(lreq.iflr_name));
+        te_strlcpy(lreq.iflr_name, ifname, sizeof(lreq.iflr_name));
         lreq.addr.ss_family = AF_INET6;
         lreq.addr.ss_len = 0;
         if (inet_pton(AF_INET6, addr, &SIN6(&lreq.addr)->sin6_addr) <= 0)
@@ -4864,7 +4865,7 @@ broadcast_get(unsigned int gid, const char *oid, char *value,
         }
     }
 #elif defined(USE_IOCTL)
-    strncpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
+    te_strlcpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
     if (inet_pton(AF_INET, addr, &SIN(&req.my_ifr_addr)->sin_addr) <= 0)
     {
         ERROR("inet_pton(AF_INET) failed for '%s'", addr);
@@ -5443,7 +5444,7 @@ mtu_get(unsigned int gid, const char *oid, char *value,
     {
         struct my_ifreq req;
 
-        strncpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
+        te_strlcpy(req.my_ifr_name, ifname, sizeof(req.my_ifr_name));
         CFG_IOCTL(cfg_socket, MY_SIOCGIFMTU, &req);
         sprintf(value, "%d", req.my_ifr_mtu);
     }
@@ -5592,7 +5593,7 @@ arp_set(unsigned int gid, const char *oid, const char *value,
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    strncpy(req.my_ifr_name, ifname, IFNAMSIZ);
+    te_strlcpy(req.my_ifr_name, ifname, IFNAMSIZ);
     CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
 
     if (strcmp(value, "1") == 0)
@@ -5602,7 +5603,7 @@ arp_set(unsigned int gid, const char *oid, const char *value,
     else
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    strncpy(req.my_ifr_name, ifname, IFNAMSIZ);
+    te_strlcpy(req.my_ifr_name, ifname, IFNAMSIZ);
     CFG_IOCTL(cfg_socket, MY_SIOCSIFFLAGS, &req);
 
     return 0;
@@ -5659,7 +5660,7 @@ ta_interface_status_set(const char *ifname, te_bool status)
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    strncpy(req.my_ifr_name, ifname, IFNAMSIZ);
+    te_strlcpy(req.my_ifr_name, ifname, IFNAMSIZ);
     CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
 
     if (status)
@@ -6261,7 +6262,7 @@ promisc_set(unsigned int gid, const char *oid, const char *value,
     if ((rc = CHECK_INTERFACE(ifname)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    strncpy(req.my_ifr_name, ifname, IFNAMSIZ);
+    te_strlcpy(req.my_ifr_name, ifname, IFNAMSIZ);
     CFG_IOCTL(cfg_socket, MY_SIOCGIFFLAGS, &req);
 
     if (strcmp(value, "0") == 0)
@@ -6373,7 +6374,7 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
         if (inet_pton(family, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
 #if HAVE_STRUCT_ARPREQ_ARP_DEV
-        strncpy(arp_req.arp_dev, ifname, sizeof(arp_req.arp_dev));
+        te_strlcpy(arp_req.arp_dev, ifname, sizeof(arp_req.arp_dev));
 #endif
 
 #ifdef SIOCGARP
@@ -6626,7 +6627,7 @@ neigh_add(unsigned int gid, const char *oid, const char *value,
         arp_req.arp_flags |= ATF_PERM;
     }
 #if HAVE_STRUCT_ARPREQ_ARP_DEV
-    strncpy(arp_req.arp_dev, ifname, sizeof(arp_req.arp_dev));
+    te_strlcpy(arp_req.arp_dev, ifname, sizeof(arp_req.arp_dev));
 #endif
 
 #ifdef SIOCSARP
@@ -6730,7 +6731,7 @@ neigh_del(unsigned int gid, const char *oid, const char *ifname,
         if (inet_pton(family, addr, &SIN(&(arp_req.arp_pa))->sin_addr) <= 0)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
 #if HAVE_STRUCT_ARPREQ_ARP_DEV
-        strncpy(arp_req.arp_dev, ifname, sizeof(arp_req.arp_dev));
+        te_strlcpy(arp_req.arp_dev, ifname, sizeof(arp_req.arp_dev));
 #endif
 
 #ifdef SIOCDARP

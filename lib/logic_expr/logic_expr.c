@@ -30,6 +30,8 @@
 #include "te_defs.h"
 #include "logger_api.h"
 #include "te_string.h"
+#include "te_alloc.h"
+#include "te_str.h"
 
 #include "logic_expr.h"
 
@@ -70,6 +72,7 @@ logic_expr_free(logic_expr *expr)
         case LOGIC_EXPR_LE:
         case LOGIC_EXPR_LT:
         case LOGIC_EXPR_EQ:
+        case LOGIC_EXPR_NEQ:
             logic_expr_free(expr->u.binary.lhv);
             logic_expr_free(expr->u.binary.rhv);
             break;
@@ -111,6 +114,7 @@ logic_expr_dup(logic_expr *expr)
         case LOGIC_EXPR_LE:
         case LOGIC_EXPR_LT:
         case LOGIC_EXPR_EQ:
+        case LOGIC_EXPR_NEQ:
             dup->u.binary.lhv = logic_expr_dup(expr->u.binary.lhv);
             dup->u.binary.rhv = logic_expr_dup(expr->u.binary.rhv);
             break;
@@ -136,6 +140,7 @@ logic_expr_binary(logic_expr_type type, logic_expr *lhv, logic_expr *rhv)
            type == LOGIC_EXPR_GE ||
            type == LOGIC_EXPR_LT ||
            type == LOGIC_EXPR_EQ ||
+           type == LOGIC_EXPR_NEQ ||
            type == LOGIC_EXPR_LE);
     assert(lhv != NULL);
     assert(rhv != NULL);
@@ -323,6 +328,20 @@ logic_expr_match(const logic_expr *re, const tqh_strings *set)
                  result);
             break;
         }
+        case LOGIC_EXPR_NEQ:
+        {
+            int lhr = logic_expr_match(re->u.binary.lhv, set);
+            int rhr = logic_expr_match(re->u.binary.rhv, set);
+
+            if (lhr != rhr && lhr != -1)
+                result = 1;
+            else
+                result = -1;
+            VERB("%s(): %d == %d -> %d", __FUNCTION__,
+                 lhr, rhr,
+                 result);
+            break;
+        }
 
 
         default:
@@ -394,6 +413,7 @@ logic_expr_not_prop(logic_expr **expr)
         case LOGIC_EXPR_LT:
         case LOGIC_EXPR_LE:
         case LOGIC_EXPR_EQ:
+        case LOGIC_EXPR_NEQ:
             break;
 
         default:
@@ -1155,6 +1175,10 @@ logic_expr_to_str_gen(logic_expr *expr, logic_expr *parent)
         case LOGIC_EXPR_EQ:
             if (format == NULL)
                 format = "%s=%s";
+            /*@fallthrough@*/
+        case LOGIC_EXPR_NEQ:
+            if (format == NULL)
+                format = "%s!=%s";
 
             l_str = logic_expr_to_str_gen(expr->u.binary.lhv,
                                           expr),
@@ -1178,4 +1202,201 @@ char *
 logic_expr_to_str(logic_expr *expr)
 {
     return logic_expr_to_str_gen(expr, NULL);
+}
+
+void
+logic_expr_free_res(logic_expr_res *res)
+{
+    if (res->res_type == LOGIC_EXPR_RES_SIMPLE)
+        free(res->value.simple);
+    res->res_type = LOGIC_EXPR_RES_UNSPEC;
+}
+
+static te_errno
+logic_expr_parse_binary_logic_oper(const logic_expr *parsed,
+                                   logic_expr_get_val *get_val,
+                                   void *cookie,
+                                   logic_expr_res *res)
+{
+    te_errno rc;
+    logic_expr_res res_l = LOGIC_EXPR_RES_INIT;
+    logic_expr_res res_r = LOGIC_EXPR_RES_INIT;
+
+    rc = logic_expr_eval(parsed->u.binary.lhv, get_val, cookie, &res_l);
+    if (rc != 0)
+        goto out;
+    rc = logic_expr_eval(parsed->u.binary.rhv, get_val, cookie, &res_r);
+    if (rc != 0)
+        goto out;
+
+    if (res_l.res_type != res_r.res_type)
+    {
+        rc = TE_EINVAL;
+        goto out;
+    }
+    if (res_l.res_type != LOGIC_EXPR_RES_BOOLEAN)
+    {
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    switch(parsed->type)
+    {
+        case LOGIC_EXPR_AND:
+            res->value.boolean = (res_l.value.boolean && res_r.value.boolean);
+            break;
+        case LOGIC_EXPR_OR:
+            res->value.boolean = (res_l.value.boolean || res_r.value.boolean);
+            break;
+        default:
+            rc = TE_EINVAL;
+            goto out;
+    }
+    res->res_type = LOGIC_EXPR_RES_BOOLEAN;
+
+out:
+    logic_expr_free_res(&res_l);
+    logic_expr_free_res(&res_r);
+
+    return rc;
+}
+
+static te_errno
+logic_expr_parse_comparison_oper(const logic_expr *parsed,
+                                 logic_expr_get_val *get_val,
+                                 void *cookie,
+                                 logic_expr_res *res)
+{
+    long int l_val;
+    long int r_val;
+    te_errno rc;
+    te_bool both_are_numbers;
+    long int cmp_res;
+    logic_expr_res res_l = LOGIC_EXPR_RES_INIT;
+    logic_expr_res res_r = LOGIC_EXPR_RES_INIT;
+
+    res->res_type = LOGIC_EXPR_RES_UNSPEC;
+
+    if (parsed->u.binary.lhv->type != LOGIC_EXPR_VALUE ||
+        parsed->u.binary.rhv->type != LOGIC_EXPR_VALUE)
+    {
+        return TE_EINVAL;
+    }
+
+    rc = logic_expr_eval(parsed->u.binary.lhv, get_val, cookie, &res_l);
+    if (rc != 0)
+        goto out;
+    rc = logic_expr_eval(parsed->u.binary.rhv, get_val, cookie, &res_r);
+    if (rc != 0)
+        goto out;
+
+    if (res_l.res_type != res_r.res_type)
+    {
+        rc = TE_EINVAL;
+        goto out;
+    }
+    if (res_l.res_type != LOGIC_EXPR_RES_SIMPLE)
+    {
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    if (te_strtol(res_l.value.simple, 0, &l_val) == 0 &&
+        te_strtol(res_r.value.simple, 0, &r_val) == 0)
+        both_are_numbers = TRUE;
+    else
+        both_are_numbers = FALSE;
+
+    if (both_are_numbers)
+        cmp_res = l_val - r_val;
+    else
+        cmp_res = strcmp(res_l.value.simple, res_r.value.simple);
+
+    switch(parsed->type)
+    {
+        case LOGIC_EXPR_GT:
+            res->value.boolean = (cmp_res > 0);
+            break;
+
+        case LOGIC_EXPR_GE:
+            res->value.boolean = (cmp_res >= 0);
+            break;
+
+        case LOGIC_EXPR_LT:
+            res->value.boolean = (cmp_res < 0);
+            break;
+
+        case LOGIC_EXPR_LE:
+            res->value.boolean = (cmp_res <= 0);
+            break;
+
+        case LOGIC_EXPR_EQ:
+            res->value.boolean = (cmp_res == 0);
+            break;
+
+        case LOGIC_EXPR_NEQ:
+            res->value.boolean = (cmp_res != 0);
+            break;
+
+        default:
+            rc = TE_EINVAL;
+            goto out;
+    }
+    res->res_type = LOGIC_EXPR_RES_BOOLEAN;
+    rc = 0;
+
+out:
+    logic_expr_free_res(&res_l);
+    logic_expr_free_res(&res_r);
+
+    return rc;
+}
+
+te_errno
+logic_expr_eval(const logic_expr *parsed,
+                logic_expr_get_val *get_val,
+                void *cookie,
+                logic_expr_res *res)
+{
+    te_errno rc = 0;
+    logic_expr_res res_next;
+    res->res_type = LOGIC_EXPR_RES_UNSPEC;
+
+    switch(parsed->type)
+    {
+        case LOGIC_EXPR_VALUE:
+            rc = get_val(parsed, cookie, res);
+            break;
+
+        case LOGIC_EXPR_NOT:
+            rc = logic_expr_eval(parsed->u.unary, get_val, cookie, &res_next);
+            if (rc != 0)
+                return rc;
+            if (res_next.res_type != LOGIC_EXPR_RES_BOOLEAN)
+                return TE_EINVAL;
+            res->res_type = LOGIC_EXPR_RES_BOOLEAN;
+            res->value.boolean = !res_next.value.boolean;
+            break;
+
+        case LOGIC_EXPR_AND:
+        case LOGIC_EXPR_OR:
+            rc = logic_expr_parse_binary_logic_oper(parsed, get_val,
+                                                    cookie, res);
+            break;
+
+        case LOGIC_EXPR_GT:
+        case LOGIC_EXPR_GE:
+        case LOGIC_EXPR_LT:
+        case LOGIC_EXPR_LE:
+        case LOGIC_EXPR_EQ:
+        case LOGIC_EXPR_NEQ:
+            rc = logic_expr_parse_comparison_oper(parsed, get_val, cookie, res);
+            break;
+
+        default:
+            rc = TE_EINVAL;
+            break;
+    }
+
+    return rc;
 }

@@ -167,7 +167,7 @@ mod_loaded(const char *mod_name)
 {
     struct stat st;
 
-    snprintf(buf, sizeof(buf), SYS_MODULE "/%s", mod_name);
+    TE_SPRINTF(buf, SYS_MODULE "/%s", mod_name);
 
     return stat(buf, &st) == 0;
 }
@@ -217,7 +217,7 @@ mod_modprobe(te_kernel_module *module)
 static int
 mod_rmmod(const char *mod_name)
 {
-    snprintf(buf, sizeof(buf), "rmmod %s", mod_name);
+    TE_SPRINTF(buf, "rmmod %s", mod_name);
 
     return ta_system(buf);
 }
@@ -318,23 +318,18 @@ module_param_list(unsigned int gid, const char *oid,
 
 #ifdef __linux__
     {
-        int       rc;
+        te_errno  rc;
         char      path[PATH_MAX];
         te_kernel_module *module;
 
         if (mod_loaded(module_name))
         {
-            rc = snprintf(path, PATH_MAX, SYS_MODULE "/%s/parameters/",
-                          module_name);
-            if (rc < 0)
+            rc = te_snprintf(path, PATH_MAX, SYS_MODULE "/%s/parameters/",
+                             module_name);
+            if (rc != 0)
             {
-                ERROR("%s(): snprintf() failed", __FUNCTION__);
-                return TE_OS_RC(TE_TA_UNIX, errno);
-            }
-            else if (rc >= PATH_MAX)
-            {
-                ERROR("%s(): not enough space for module path", __FUNCTION__);
-                return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
+                ERROR("%s(): te_snprintf() failed: %r", __FUNCTION__, rc);
+                return TE_RC(TE_TA_UNIX, rc);
             }
             rc = get_dir_list(path, buf, sizeof(buf), TRUE,
                               NULL, NULL);
@@ -400,8 +395,10 @@ module_param_get(unsigned int gid, const char *oid, char *value,
         {
             if (strcmp(param->name, param_name) == 0)
             {
-                sprintf(value, "%s", param->value);
-                return 0;
+                te_errno rc;
+
+                rc = te_snprintf(value, RCF_MAX_VAL, "%s", param->value);
+                return TE_RC(TE_TA_UNIX, rc);
             }
         }
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -450,7 +447,7 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
 
             LIST_FOREACH(param, &module->params, list)
                 if (strcmp(param->name, param_name) == 0)
-                    sprintf(param->value, "%s", value);
+                    TE_SPRINTF(param->value, "%s", value);
         }
     }
 
@@ -493,8 +490,8 @@ module_param_add(unsigned int gid, const char *oid,
     if (param == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
-    snprintf(param->name, sizeof(param->name), "%s", param_name);
-    snprintf(param->value, sizeof(param->value), "%s", param_value);
+    TE_SPRINTF(param->name, "%s", param_name);
+    TE_SPRINTF(param->value, "%s", param_value);
     LIST_INSERT_HEAD(&module->params, param, list);
 
     return 0;
@@ -613,15 +610,17 @@ module_filename_get(unsigned int gid, const char *oid,
                     char *value, const char *mod_name, ...)
 {
     te_kernel_module *module = mod_find(mod_name);
+    te_errno rc;
+
     UNUSED(gid);
     UNUSED(oid);
 
     if (module != NULL && module->filename != NULL)
-        sprintf(value, "%s", module->filename);
+        rc = te_snprintf(value, RCF_MAX_VAL, "%s", module->filename);
     else
-        sprintf(value, "unknown");
+        rc = te_snprintf(value, RCF_MAX_VAL, "unknown");
 
-    return 0;
+    return rc;
 }
 
 static te_errno
@@ -640,7 +639,7 @@ module_add(unsigned int gid, const char *oid,
     module = calloc(1, sizeof(te_kernel_module));
     if (module == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    snprintf(module->name, sizeof(module->name), "%s", mod_name);
+    TE_SPRINTF(module->name, "%s", mod_name);
     module->filename = NULL;
     module->filename_load_dependencies = FALSE;
     module->loaded = FALSE;
@@ -744,9 +743,7 @@ module_get(unsigned int gid, const char *oid, char *value,
 
     mod_consistentcy_check(module, loaded);
 
-    sprintf(value, "%s", loaded ? "1" : "0");
-
-    return 0;
+    return te_snprintf(value, RCF_MAX_VAL, "%s", loaded ? "1" : "0");
 }
 
 /**

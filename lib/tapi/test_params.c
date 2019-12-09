@@ -34,6 +34,9 @@
 #if HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
+#if HAVE_LIBGEN_H
+#include <libgen.h>
+#endif
 
 #include "te_defs.h"
 #include "te_param.h"
@@ -255,7 +258,7 @@ print_octet_string(const uint8_t *oct_string, size_t len)
 
     if (oct_string == NULL || len == 0)
     {
-        strncpy(buf, "<null octet string>", sizeof(buf));
+        te_strlcpy(buf, "<null octet string>", sizeof(buf));
         return buf;
     }
 
@@ -806,6 +809,38 @@ test_get_string_param(int argc, char **argv, const char *name)
     }
 
     return value;
+}
+
+/* See description in tapi_test.h */
+char *
+test_get_filename_param(int argc, char **argv, const char *name)
+{
+    /* argv[0] is skipped in TEST_START() */
+    const char *test_path = argv[-1];
+    const char *rel_path;
+    char *arg0;
+    char *fullpath;
+
+    if ((rel_path = test_get_param(argc, argv, name)) == NULL)
+        TEST_FAIL("Filename param '%s' get failed", name);
+
+    if ((rel_path[0] =='\0') || (strcmp(rel_path, " ") == 0))
+        return NULL;
+
+    if (test_path[0] != '/')
+        TEST_FAIL("Test path '%s' is not absolute", test_path);
+
+    arg0 = strdup(test_path);
+    if (arg0 == NULL)
+        TEST_FAIL("Failed to strdup(%s)", test_path);
+
+    fullpath = te_string_fmt("%s/%s", dirname(arg0), rel_path);
+    free(arg0);
+
+    if (fullpath == NULL)
+        TEST_FAIL("Failed to make full filename");
+
+    return fullpath;
 }
 
 static void

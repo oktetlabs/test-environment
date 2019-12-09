@@ -755,7 +755,7 @@ control_node_start(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     const char       *err = rgt_tmpls_xml_attrs_get(xml_attrs, "err");
     const char       *hash = rgt_tmpls_xml_attrs_get(xml_attrs, "hash");
     const char       *node_class;
-    char              fname[255] = "";
+    char              fname[500] = "";
     char              page_str[255] = "";
     rgt_attrs_t      *attrs;
     te_bool           matched = TRUE;

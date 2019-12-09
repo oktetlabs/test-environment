@@ -16,7 +16,7 @@ endif
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
 AM_CFLAGS = @TE_CFLAGS@ @XML2_CFLAGS@ $(TE_CFLAGS_VAR) $(TRC_CFLAGS)
 AM_LFLAGS = --header-file=$(ABS_BUILDDIR)/$*.h -o $(LEX_OUTPUT_ROOT).c
-AM_YFLAGS = -d
+AM_YFLAGS = -d -Wno-yacc -Wno-deprecated
 
 AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 MD5_LDADD = -lcrypto

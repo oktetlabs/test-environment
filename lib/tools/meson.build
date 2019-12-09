@@ -75,4 +75,33 @@ sources += files(
     'te_vector.c',
     'tq_string.c',
 )
-deps = [ cc.find_library('m'), dep_threads ]
+
+#
+# Check for BSD string header and functions
+#
+bsd_funcs_prefix = ''
+h = 'bsd/string.h'
+if cc.has_header(h, args: c_args)
+    c_args += [ '-DHAVE_' + h.to_upper().underscorify() ]
+    bsd_funcs_prefix = '#include <bsd/string.h>'
+endif
+
+dep_bsd = dependency('libbsd', required: false)
+bsd_funcs = [
+    'strlcpy',
+    'strlcat',
+]
+foreach f : bsd_funcs
+    if cc.has_function(f, args: c_args, prefix: bsd_funcs_prefix)
+        c_args += [ '-DHAVE_' + f.to_upper() ]
+    else
+        if dep_bsd.found() and cc.has_function(f, args: c_args,
+                                               prefix: bsd_funcs_prefix,
+                                               dependencies: dep_bsd)
+            c_args += [ '-DHAVE_' + f.to_upper() ]
+            deps += [ dep_bsd ]
+        endif
+    endif
+endforeach
+
+deps += [ cc.find_library('m'), dep_threads ]

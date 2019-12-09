@@ -210,7 +210,7 @@ trc_db_test_params_hash(unsigned int n_args, trc_report_argument *args)
             return NULL;
 
         VERB("%s %s", name, value);
-        len += snprintf(buf + len, sizeof(buf) - len - 1,
+        len += snprintf(buf + len, sizeof(buf) - len,
                         "%s%s %s", (i != 0) ? " " : "", name, value);
 
         if (i != 0)

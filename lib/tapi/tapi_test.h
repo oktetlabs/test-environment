@@ -189,6 +189,7 @@ extern "C" {
     UNUSED(rc);                                                     \
                                                                     \
     /* Shift programm name */                                       \
+    /* test_get_filename_param() relies on it */                    \
     argc--;                                                         \
     argv++;                                                         \
                                                                     \
@@ -372,6 +373,7 @@ cleanup_specific:                                                   \
  * - TEST_GET_STRING_LIST_PARAM();
  * - TEST_GET_INT_LIST_PARAM();
  * - TEST_GET_BOOL_PARAM();
+ * - TEST_GET_FILENAME_PARAM();
  * - TEST_GET_BUFF_SIZE().
  * .
  *
@@ -833,6 +835,36 @@ cleanup_specific:                                                   \
 
 
 /**
+ * The macro to return parameters of type `char *` with a full filename
+ * which is the result of test location and file name concatenation.
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ *
+ * @return full filename allocated from heap and should be freed by caller
+ * @retval @c NULL  If relative path is empty
+ */
+#define TEST_FILENAME_PARAM(var_name_) \
+    test_get_filename_param(argc, argv, #var_name_)
+
+
+/**
+ * The macro to get parameters of type `char *` with a full filename and
+ * assign it to the variable with corresponding name.
+ *
+ * Full filename is a concatation of the running test location and
+ * relative path specified in an argument with matching name.
+ *
+ * @c NULL is assigned if relative path is empty.
+ *
+ * @param var_name_  Variable whose name is the same as the name of
+ *                   parameter we get the value
+ */
+#define TEST_GET_FILENAME_PARAM(var_name_) \
+    (var_name_) = TEST_FILENAME_PARAM(var_name_)
+
+
+/**
  * Get the value of parameter that represents IPv4 address.
  *
  * @param var_name_  Name of the variable used to get the value of
@@ -1042,6 +1074,21 @@ extern int test_get_enum_param(int argc, char **argv,
  */
 extern const char * test_get_string_param(int argc, char **argv,
                                           const char *name);
+
+/**
+ * Return parameters of type `char *` with full filename which is
+ * the result of test location and file name concatenation.
+ *
+ * @param argc       Count of arguments
+ * @param argv       List of arguments
+ * @param name       Name of parameter
+ *
+ * @return String allocated from heap which should be freed by caller
+ * @retval @c NULL  If relative path is empty
+ *
+ * @sa #TEST_FILENAME_PARAM, #TEST_GET_FILENAME_PARAM
+ */
+extern char *test_get_filename_param(int argc, char **argv, const char *name);
 
 /**
  * Return parameters of type 'int'

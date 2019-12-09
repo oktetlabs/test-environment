@@ -11,7 +11,13 @@ myinclude_HEADERS=agentlib.h agentlib_config.h agentlib_defs.h telephony.h dahdi
 
 lib_LIBRARIES=lib@with_name@.a
 
-lib@with_name@_a_SOURCES=process.c ftp.c net.c telephony.c power_sw.c symbols.c
+lib@with_name@_a_SOURCES=\
+    process.c \
+    ftp.c net.c \
+    telephony.c \
+    power_sw.c \
+    symbols.c \
+    unistd.c
 
 install-exec-hook:
 	touch -c -r lib@with_name@.a $(DESTDIR)/$(libdir)/lib@with_name@.*

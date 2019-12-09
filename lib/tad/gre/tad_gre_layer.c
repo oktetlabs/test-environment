@@ -419,7 +419,7 @@ tad_gre_gen_bin_cb(csap_p                csap,
 
     tad_pkts_move(pdus, sdus);
     rc = tad_pkts_add_new_seg(pdus, TRUE, binary, binary_len,
-                              (tad_pkt_seg_free)free);
+                              tad_pkt_seg_data_free);
     if (rc != 0)
         goto fail;
 

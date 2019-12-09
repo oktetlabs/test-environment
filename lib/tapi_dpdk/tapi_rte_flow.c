@@ -103,6 +103,38 @@ tapi_rte_flow_add_ndn_action_decap(asn_value *ndn_actions,
     CHECK_RC(asn_insert_indexed(ndn_actions, action, action_index, ""));
 }
 
+void
+tapi_rte_flow_add_ndn_action_of_push_vlan(asn_value *ndn_actions,
+                                          int action_index, uint16_t ethertype)
+{
+    asn_value *action;
+
+    CHECK_NOT_NULL(action = asn_init_value(ndn_rte_flow_action));
+    CHECK_RC(asn_write_int32(action, NDN_FLOW_ACTION_TYPE_OF_PUSH_VLAN,
+                             "type"));
+    CHECK_RC(asn_write_value_field(action, &ethertype, sizeof(ethertype),
+                                   "conf.#ethertype"));
+
+    CHECK_RC(asn_insert_indexed(ndn_actions, action, action_index, ""));
+}
+
+void
+tapi_rte_flow_add_ndn_action_of_set_vlan_vid(asn_value *ndn_actions,
+                                             int action_index,
+                                             uint16_t vlan_vid)
+{
+    asn_value *action;
+
+    CHECK_NOT_NULL(action = asn_init_value(ndn_rte_flow_action));
+    CHECK_RC(asn_write_int32(action, NDN_FLOW_ACTION_TYPE_OF_SET_VLAN_VID,
+                             "type"));
+    CHECK_RC(asn_write_value_field(action, &vlan_vid, sizeof(vlan_vid),
+                                   "conf.#vlan-id"));
+
+    CHECK_RC(asn_insert_indexed(ndn_actions, action, action_index, ""));
+}
+
+
 rpc_rte_flow_p
 tapi_rte_flow_validate_and_create_rule(rcf_rpc_server *rpcs, uint16_t port_id,
                                        rpc_rte_flow_attr_p attr,

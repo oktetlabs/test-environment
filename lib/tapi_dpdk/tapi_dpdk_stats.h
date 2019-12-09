@@ -20,6 +20,7 @@
 #include "te_errno.h"
 #include "te_meas_stats.h"
 #include "te_string.h"
+#include "te_mi_log.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,8 +32,9 @@ extern "C" {
         unsigned int index;                                                   \
         te_string gather_str = TE_STRING_INIT;                                \
                                                                               \
-        gather_rc = te_string_append(&gather_str, "%s%s\n",                   \
-                                     empty_string_if_null(prefix), title);    \
+        gather_rc = te_string_append(&gather_str, "%s%s%s\n",                 \
+                                     empty_string_if_null(prefix),            \
+                                     prefix == NULL ? "" : ": ", title);      \
         if (gather_rc != 0)                                                   \
         {                                                                     \
             te_string_free(&gather_str);                                      \
@@ -55,10 +57,14 @@ extern "C" {
 /**
  * Report packet per second statistics as a test artifact.
  *
+ * @param logger    MI logger entity to add artifact into (may be @c NULL)
  * @param pps       Packets per second
  * @param prefix    Prefix of the artifact message (may be @c NULL)
+ *
+ * @return  Status code
  */
-void tapi_dpdk_stats_pps_artifact(uint64_t pps, const char *prefix);
+void tapi_dpdk_stats_pps_artifact(te_mi_logger *logger, int64_t pps,
+                                  const char *prefix);
 
 /**
  * Calculate layer 1 bits per second from PPS and packet size.
@@ -87,28 +93,41 @@ te_errno tapi_dpdk_stats_calculate_l1_link_usage(uint64_t l1_bitrate,
 /**
  * Report packet per second statistics as a test artifact.
  *
+ * @param logger        MI logger entity to add artifact into (may be @c NULL)
  * @param l1_bitrate    Layer 1 bits per second
  * @param prefix        Prefix of the artifact message (may be @c NULL)
+ *
+ * @return  Status code
  */
-void tapi_dpdk_stats_l1_bitrate_artifact(uint64_t l1_bitrate,
+void tapi_dpdk_stats_l1_bitrate_artifact(te_mi_logger *logger,
+                                         uint64_t l1_bitrate,
                                          const char *prefix);
 
 /**
  * Report layer 1 link usage statistics as a test artifact.
  *
+ * @param logger           MI logger entity to add artifact into
+ *                         (may be @c NULL)
  * @param l1_link_usage    Layer 1 link usage ratio
  * @param prefix           Prefix of the artifact message (may be @c NULL)
+ *
+ * @return  Status code
  */
-void tapi_dpdk_stats_l1_link_usage_artifact(double l1_link_usage,
+void tapi_dpdk_stats_l1_link_usage_artifact(te_mi_logger *logger,
+                                            double l1_link_usage,
                                             const char *prefix);
 
 /**
  * Report CV of packer per second statistics as a test artifact
  *
+ * @param logger    MI logger entity to add artifact into (may be @c NULL)
  * @param cv       Coefficient of variation
  * @param prefix   Prefix of the artifact message (may be @c NULL)
+ *
+ * @return  Status code
  */
-void tapi_dpdk_stats_cv_artifact(double cv, const char *prefix);
+void tapi_dpdk_stats_cv_artifact(te_mi_logger *logger, double cv,
+                                 const char *prefix);
 
 /**
  * Report statistics provided by te_meas_stats_summary_t.
@@ -124,16 +143,20 @@ te_errno tapi_dpdk_stats_summary_artifact(const te_meas_stats_t *meas_stats,
 /**
  * Report statistics provided by te_meas_stats_stab_t.
  *
+ * @param logger        MI logger entity to add artifact into (may be @c NULL)
  * @param meas_stats    Pointer to te_meas_stats_t structure
  * @param prefix        Prefix of the artifact message (may be @c NULL)
  */
-void tapi_dpdk_stats_stab_artifact(const te_meas_stats_t *meas_stats,
+void tapi_dpdk_stats_stab_artifact(te_mi_logger *logger,
+                                   const te_meas_stats_t *meas_stats,
                                    const char *prefix);
 
 /**
  * Report rates corresponding to PPS, packet_size and link speed
  * as test artifacts.
  *
+ * @param tool              Tool used for measurement gathering
+ *                          (must not be @c NULL)
  * @param meas_stats        Pointer to te_meas_stats_t structure
  * @param packet_size       Packet size in bytes (without l1 and FCS)
  * @param link_speed        Link speed in Mbps
@@ -141,7 +164,8 @@ void tapi_dpdk_stats_stab_artifact(const te_meas_stats_t *meas_stats,
  *
  * @return      0 on success
  */
-te_errno tapi_dpdk_stats_log_rates(const te_meas_stats_t *meas_stats,
+te_errno tapi_dpdk_stats_log_rates(const char *tool,
+                                   const te_meas_stats_t *meas_stats,
                                    unsigned int packet_size,
                                    unsigned int link_speed, const char *prefix);
 

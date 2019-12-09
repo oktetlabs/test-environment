@@ -26,6 +26,7 @@ sources += files(
     'rcf_pch_var.c',
 )
 te_libs += [
+    'tools',
     'conf_oid',
     'loggerta',
     'rpcxdr',

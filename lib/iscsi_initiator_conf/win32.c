@@ -734,7 +734,7 @@ iscsi_send_to_win32_iscsicli(const char *fmt, ...)
     va_start(args, fmt);
     len = strlen("iscsicli.exe ");
     memcpy(buffer, "iscsicli.exe ", len);
-    vsnprintf(buffer + len, sizeof(buffer) - 1 - len, fmt, args);
+    vsnprintf(buffer + len, sizeof(buffer) - len, fmt, args);
     va_end(args);
 
     return iscsi_win32_run_cli(buffer);

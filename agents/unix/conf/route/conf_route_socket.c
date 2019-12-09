@@ -51,6 +51,7 @@
 
 #include "te_errno.h"
 #include "te_sockaddr.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "rcf_pch_ta_cfg.h"
 #include "unix_internal.h"
@@ -537,8 +538,8 @@ rt_msghdr_to_ta_rt_info(const struct rt_msghdr *msg, ta_rt_info_t *rt_info)
                           buf, sizeof(buf)), rc);
                 RETURN_RC(rc);
             }
-            strncpy(rt_info->ifname, tmp_rt.ifname,
-                    sizeof(rt_info->ifname));
+            te_strlcpy(rt_info->ifname, tmp_rt.ifname,
+                       sizeof(rt_info->ifname));
 
             /* Route via gateway */
             rt_info->flags |= TA_RT_INFO_FLG_GW;

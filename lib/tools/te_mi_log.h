@@ -61,46 +61,103 @@ typedef struct te_mi_log_kvpair {
 #define TE_MI_COMMENTS(...) TE_MI_LOG_KVPAIRS(__VA_ARGS__)
 
 /**
- * Create a MI logger entity.
- *
- * @param[in]  type     The type of the logger
- * @param[out] logger   Created logger
- *
- * @return              Status code
- */
-extern te_errno te_mi_logger_create(te_mi_type type, te_mi_logger **logger);
-
-/**
  * Add a comment to a MI logger.
  *
  * @param           logger      MI logger
+ * @param           retval      Return code. If @c NULL is passed, @p logger
+ *                              is not @c NULL and error occures, error flag
+ *                              is stored in @p logger, which will fail the
+ *                              next te_mi_logger_flush().
+ *                              TE_EEXIST means the name already exists.
  * @param[in]       name        Name of the comment
  * @param[in]       value_fmt   Format string for the value of the comment
  * @param[in]       ...         Format string arguments
- *
- * @return                      Status code
- * @retval TE_EEXIST            The name already exists
  */
-extern te_errno te_mi_logger_add_comment(te_mi_logger *logger, const char *name,
-                                         const char *value_fmt, ...)
-                                         __attribute__((format(printf, 3, 4)));
+extern void te_mi_logger_add_comment(te_mi_logger *logger, te_errno *retval,
+                                     const char *name,
+                                     const char *value_fmt, ...)
+                                     __attribute__((format(printf, 4, 5)));
 
 /**
  * Purge the logger's MI data. The data is lost completely.
+ * The flag that indicates that previously called logger manipulation functions
+ * errors were ignored is cleared.
  *
  * @param           logger      MI logger
  */
 extern void te_mi_logger_reset(te_mi_logger *logger);
 
 /**
- * Log the MI data of a logger as an ARTIFACT with deficated MI log
- * level and remove the data from the logger.
+ * - If there were any ignored logger internal failures - return an error.
+ * - Log the MI data of a logger as an ARTIFACT with deficated MI log level.
+ * - Remove the data from the logger (calls te_mi_logger_reset()).
+ *
  * If the logger does not have any MI data, nothing is logged.
  * Logger is ready to add new data after the call to the function.
+ *
+ * @note    The format of the MI log is JSON RFC 8259. The API passes
+ *          the JSON string to logger without indentation.
+ *
+ * JSON-schema: see doc/drafts/mi-schema.json
+ *
+ * Example of a valid JSON:
+ * {
+ *   "type":"measurement",
+ *   "version":1,
+ *   "tool":"testpmd",
+ *   "results":[
+ *     {
+ *       "type":"pps",
+ *       "entries":[
+ *         {
+ *           "aggr":"mean",
+ *           "value":7040400.000,
+ *           "base_units":"pps",
+ *           "multiplier":"1"
+ *         },
+ *         {
+ *           "aggr":"cv",
+ *           "value":0.000,
+ *           "base_units":"",
+ *           "multiplier":"1"
+ *         }
+ *       ]
+ *     },
+ *     {
+ *       "type":"throughput",
+ *       "entries":[
+ *         {
+ *           "aggr":"mean",
+ *           "value":4731.149,
+ *           "base_units":"bps",
+ *           "multiplier":"1e+6"
+ *         }
+ *       ]
+ *     },
+ *     {
+ *       "type":"bandwidth-usage",
+ *       "entries":[
+ *         {
+ *           "aggr":"mean",
+ *           "value":0.473,
+ *           "base_units":"",
+ *           "multiplier":"1"
+ *         }
+ *       ]
+ *     }
+ *   ],
+ *   "keys":{
+ *     "Side":"Rx"
+ *   },
+ *   "comments":{
+ *     "Stabilizaton":"reached on datapoint (+ leading zero datapoints): 10 (+ 1)"
+ *   }
+ * }
  *
  * @param           logger      MI logger
  *
  * @return                      Status code
+ * @retval TE_EFAIL             There were ignored internal logger failures
  */
 extern te_errno te_mi_logger_flush(te_mi_logger *logger);
 
@@ -119,7 +176,10 @@ extern void te_mi_logger_destroy(te_mi_logger *logger);
  */
 
 /**
- * Type of a measurement aggregation.
+ * Type of a measurement aggregation. The units of the measurement are
+ * defined by measurement type, unless different units are specified by
+ * aggregation explicilty.
+ *
  * First enum element must have value @c 0.
  */
 typedef enum te_mi_meas_aggr {
@@ -131,8 +191,14 @@ typedef enum te_mi_meas_aggr {
     TE_MI_MEAS_AGGR_MAX,
     /** Average value of a measurement */
     TE_MI_MEAS_AGGR_MEAN,
-    /** Coefficient of Variation of measurements */
+    /**
+     * Coefficient of Variation of measurements. The aggregation is
+     * unit-independend and defined as the ratio of standard deviation to
+     * the mean.
+     */
     TE_MI_MEAS_AGGR_CV,
+    /** Standard deviation of measurements */
+    TE_MI_MEAS_AGGR_STDEV,
 
     /** One past last valid measurement aggregation type */
     TE_MI_MEAS_AGGR_END,
@@ -143,30 +209,40 @@ typedef enum te_mi_meas_type {
     TE_MI_MEAS_PPS = 0, /**< Packets per second */
     TE_MI_MEAS_LATENCY, /**< Latency in seconds */
     TE_MI_MEAS_THROUGHPUT, /**< Throughput in bits per second */
+    TE_MI_MEAS_BANDWIDTH_USAGE, /**< Bandwidth usage ratio */
     TE_MI_MEAS_TEMP, /**< Temperature in degrees Celsius */
+    TE_MI_MEAS_RPS, /**< Requests per second */
 
     TE_MI_MEAS_END, /**< End marker for a measurement vector.
                          Also is one past last valid type */
 } te_mi_meas_type;
 
-/** Scale of units of a result. First enum element must have value @c 0. */
-typedef enum te_mi_meas_units {
-    TE_MI_MEAS_UNITS_NANO = 0, /**< 10^(-9) */
-    TE_MI_MEAS_UNITS_MICRO, /**< 10^(-6) */
-    TE_MI_MEAS_UNITS_MILLI, /**< 10^(-3) */
-    TE_MI_MEAS_UNITS_PLAIN, /**< 1 */
-    TE_MI_MEAS_UNITS_KILO, /**< 10^(3) */
-    TE_MI_MEAS_UNITS_KIBI, /**< 2^(10) */
-    TE_MI_MEAS_UNITS_MEGA, /**< 10^(6) */
-    TE_MI_MEAS_UNITS_MEBI, /**< 2^(20) */
-    TE_MI_MEAS_UNITS_GIGA, /**< 10^(9) */
-    TE_MI_MEAS_UNITS_GIBI, /**< 2^(30) */
+/**
+ * Scale of a measurement result. The measurement value should be multiplied by
+ * this to get value in base units.
+ *
+ * First enum element must have value @c 0.
+ */
+typedef enum te_mi_meas_multiplier {
+    TE_MI_MEAS_MULTIPLIER_NANO = 0, /**< 10^(-9) */
+    TE_MI_MEAS_MULTIPLIER_MICRO, /**< 10^(-6) */
+    TE_MI_MEAS_MULTIPLIER_MILLI, /**< 10^(-3) */
+    TE_MI_MEAS_MULTIPLIER_PLAIN, /**< 1 */
+    TE_MI_MEAS_MULTIPLIER_KILO, /**< 10^(3) */
+    TE_MI_MEAS_MULTIPLIER_KIBI, /**< 2^(10) */
+    TE_MI_MEAS_MULTIPLIER_MEGA, /**< 10^(6) */
+    TE_MI_MEAS_MULTIPLIER_MEBI, /**< 2^(20) */
+    TE_MI_MEAS_MULTIPLIER_GIGA, /**< 10^(9) */
+    TE_MI_MEAS_MULTIPLIER_GIBI, /**< 2^(30) */
 
-    /** One past last valid unit */
-    TE_MI_MEAS_UNITS_END,
-} te_mi_meas_units;
+    /** One past last valid multiplier */
+    TE_MI_MEAS_MULTIPLIER_END,
+} te_mi_meas_multiplier;
 
-/** Measurement */
+/**
+ * Measurement. Base units of a measurement are defined by
+ * measurement type and measurement aggregation.
+ */
 typedef struct te_mi_meas {
     /** Measurement type */
     te_mi_meas_type type;
@@ -176,15 +252,26 @@ typedef struct te_mi_meas {
     te_mi_meas_aggr aggr;
     /** Measurement value */
     double val;
-    /** Units of the measurement */
-    te_mi_meas_units units;
+    /** Scale of a measurement result */
+    te_mi_meas_multiplier multiplier;
 } te_mi_meas;
 
+/**
+ * Create a MI measurements logger entity.
+ *
+ * @param[in]  tool     Tool that was used for gathering measurements.
+ * @param[out] logger   Created logger
+ *
+ * @return              Status code
+ */
+extern te_errno te_mi_logger_meas_create(const char *tool,
+                                         te_mi_logger **logger);
+
 /** Convenience te_mi_meas constructor */
-#define TE_MI_MEAS(_type, _name, _aggr, _val, _units)   \
+#define TE_MI_MEAS(_type, _name, _aggr, _val, _multiplier)   \
     (te_mi_meas){ TE_MI_MEAS_ ## _type, (_name),        \
                   TE_MI_MEAS_AGGR_ ## _aggr, (_val),    \
-                  TE_MI_MEAS_UNITS_ ## _units }
+                  TE_MI_MEAS_MULTIPLIER_ ## _multiplier }
 
 /** Convenience te_mi_meas vector constructor for te_mi_log_meas() */
 #define TE_MI_MEAS_V(...) \
@@ -202,7 +289,8 @@ typedef struct te_mi_meas {
  *
  * usage example:
  * @code{.c}
- * te_mi_log_meas(TE_MI_MEAS_V(TE_MI_MEAS(PPS, "pps", MIN, 42.4, PLAIN),
+ * te_mi_log_meas("mytool",
+ *                TE_MI_MEAS_V(TE_MI_MEAS(PPS, "pps", MIN, 42.4, PLAIN),
  *                             TE_MI_MEAS(PPS, "pps", MEAN, 300, PLAIN),
  *                             TE_MI_MEAS(PPS, "pps", CV, 10, PLAIN),
  *                             TE_MI_MEAS(PPS, "pps", MAX, 5.4, KILO),
@@ -212,6 +300,7 @@ typedef struct te_mi_meas {
  *                TE_MI_COMMENTS({"comment", "comment_value"}));
  * @endcode
  *
+ * @param[in]  tool             Tool that was used for gathering measurements.
  * @param[in]  measurements     Measurements vector. The last element must have
  *                              type @c TE_MI_MEAS_END.
  * @param[in]  keys             Measurement keys vector. The last element must
@@ -223,7 +312,8 @@ typedef struct te_mi_meas {
  *
  * @return                      Status code
  */
-extern te_errno te_mi_log_meas(const te_mi_meas *measurements,
+extern te_errno te_mi_log_meas(const char *tool,
+                               const te_mi_meas *measurements,
                                const te_mi_log_kvpair *keys,
                                const te_mi_log_kvpair *comments);
 
@@ -233,48 +323,74 @@ extern te_errno te_mi_log_meas(const te_mi_meas *measurements,
  * @p type - @p name pair are allowed.
  *
  * @param           logger      MI logger
+ * @param           retval      Return code. If @c NULL is passed, @p logger
+ *                              is not @c NULL and error occures, error flag
+ *                              is stored in @p logger, which will fail the
+ *                              next te_mi_logger_flush().
  * @param[in]       type        The type of the measurement result
  * @param[in]       name        The name of the measurement result used to
  *                              identify measurements in logs, may be @c NULL
  * @param[in]       aggr        Aggregation type of the measurement
  * @param[in]       val         Value of the measurement
- * @param[in]       units       Units of the measurement value
- *
- * @return                      Status code
+ * @param[in]       multiplier  Scale of the measurement value
  */
-extern te_errno te_mi_logger_add_meas(te_mi_logger *logger,
-                                      te_mi_meas_type type, const char *name,
-                                      te_mi_meas_aggr aggr, double val,
-                                      te_mi_meas_units units);
+extern void te_mi_logger_add_meas(te_mi_logger *logger, te_errno *retval,
+                                  te_mi_meas_type type, const char *name,
+                                  te_mi_meas_aggr aggr, double val,
+                                  te_mi_meas_multiplier multiplier);
 
 /**
  * Variation of te_mi_logger_add_result() function that accepts
  * measurement as a struct.
  *
  * @param           logger      MI logger
+ * @param           retval      Return code. If @c NULL is passed, @p logger
+ *                              is not @c NULL and error occures, error flag
+ *                              is stored in @p logger, which will fail the
+ *                              next te_mi_logger_flush().
  * @param[in]       meas        Measurement
  *
  * @return                      Status code
  */
-extern te_errno te_mi_logger_add_meas_obj(te_mi_logger *logger,
-                                          const te_mi_meas *meas);
+extern void te_mi_logger_add_meas_obj(te_mi_logger *logger, te_errno *retval,
+                                      const te_mi_meas *meas);
+
+/**
+ * Add an vector of measurements to a MI logger.
+ * Insertion stops on the first error (the rest of the measurements are not
+ * added and the successful insertions persist in logger).
+ *
+ * @param           logger          MI logger
+ * @param           retval          Return code. If @c NULL is passed, @p logger
+ *                                  is not @c NULL and error occures, error flag
+ *                                  is stored in @p logger, which will fail the
+ *                                  next te_mi_logger_flush().
+ * @param[in]       measurements    Measurements vector. The last element must
+ *                                  have type @c TE_MI_MEAS_END.
+ *
+ * @return                      Status code
+ */
+extern void te_mi_logger_add_meas_vec(te_mi_logger *logger, te_errno *retval,
+                                      const te_mi_meas *measurements);
 
 /**
  * Add a measurement key to a MI logger. Measurement key is a key-value pair
  * that represents extra measurement information.
  *
  * @param           logger      MI logger
+ * @param           retval      Return code. If @c NULL is passed, @p logger
+ *                              is not @c NULL and error occures, error flag
+ *                              is stored in @p logger, which will fail the
+ *                              next te_mi_logger_flush().
  * @param[in]       key         Measurement key
  * @param[in]       value_fmt   Format string for the value of the
  *                              measurement key
  * @param[in]       ...         Format string arguments
- *
- * @return                      Status code
- * @retval TE_EEXIST            The key already exists
  */
-extern te_errno te_mi_logger_add_meas_key(te_mi_logger *logger, const char *key,
-                                          const char *value_fmt, ...)
-                                         __attribute__((format(printf, 3, 4)));
+extern void te_mi_logger_add_meas_key(te_mi_logger *logger, te_errno *retval,
+                                      const char *key,
+                                      const char *value_fmt, ...)
+                                      __attribute__((format(printf, 4, 5)));
 /**
  * @page te_tools_te_mi_log_scenarios Usage scenarios
  *
@@ -287,7 +403,7 @@ extern te_errno te_mi_logger_add_meas_key(te_mi_logger *logger, const char *key,
  * @code{.c}
  * te_mi_logger *logger;
  *
- * CHECK_RC(te_mi_logger_create(TE_MI_TYPE_MEASUREMENT, &logger));
+ * CHECK_RC(te_mi_logger_meas_create("mytool", &logger));
  * for (i = 0; i < 10; i++)
  * {
  *    double pps;
@@ -295,14 +411,13 @@ extern te_errno te_mi_logger_add_meas_key(te_mi_logger *logger, const char *key,
  *    sleep(1);
  *    pps = tool_get_pps();
  *    tool_reset_pps();
- *    CHECK_RC(te_mi_logger_add_meas(logger, TE_MI_MEAS_PPS, "pps",
- *                                   TE_MI_MEAS_AGGR_SINGLE, pps,
- *                                   TE_MI_MEAS_UNITS_PLAIN));
+ *    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_PPS, "pps",
+ *                          TE_MI_MEAS_AGGR_SINGLE, pps,
+ *                          TE_MI_MEAS_MULTIPLIER_PLAIN));
  * }
  *
- * CHECK_RC(te_mi_logger_add_meas_key(logger, "ver", "%s",
- *                                    tool_get_version_str()));
- * CHECK_RC(te_mi_logger_add_comment(logger, "fake", "true"));
+ * te_mi_logger_add_meas_key(logger, NULL, "ver", "%s", tool_get_version_str());
+ * te_mi_logger_add_comment(logger, NULL, "fake", "true");
  *
  * CHECK_RC(te_mi_logger_flush(logger));
  *

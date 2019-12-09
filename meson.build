@@ -35,7 +35,8 @@ lex_gen = generator(lexer,
 bison = find_program('bison')
 gram_gen = generator(bison,
                      output: [ '@BASENAME@.c', '@BASENAME@.h' ],
-                     arguments: [ '-y', '@EXTRA_ARGS@',
+                     arguments: [ '-y', '-Wno-yacc', '-Wno-deprecated',
+                                  '@EXTRA_ARGS@',
                                   '--defines=@OUTPUT1@',
                                   '--output=@OUTPUT0@',
                                   '@INPUT@' ])

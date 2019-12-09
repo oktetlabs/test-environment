@@ -133,7 +133,7 @@ tad_rte_mbuf_sap_read(tad_rte_mbuf_sap   *sap,
 
     tad_pkt_put_seg_data(pkt, tad_seg, new_seg_data,
                          tad_seg->data_len + TAD_VLAN_TAG_LEN,
-                         (tad_pkt_seg_free)free);
+                         tad_pkt_seg_data_free);
 
     *pkt_len += TAD_VLAN_TAG_LEN;
 

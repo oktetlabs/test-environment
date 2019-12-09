@@ -242,20 +242,19 @@ te_log_vprintf_old(struct te_log_out_params *param,
                 modifier = *(s + 1);
                 switch (modifier)
                 {
-/* FIXME: Incorrect macro definition */
-#define SPEC_CPY(mod_, spec_)\
-case mod_:\
-{\
-    strncpy(s, spec_, 2);\
-    spec_size = strlen(spec_);\
-    s[spec_size] = s[2];\
-    break;\
-}
-                    SPEC_CPY('1', TE_PRINTF_8);
-                    SPEC_CPY('2', TE_PRINTF_16);
-                    SPEC_CPY('4', TE_PRINTF_32);
-                    SPEC_CPY('8', TE_PRINTF_64);
-#undef SPEC_CPY
+#define CASE_SPEC_CPY(mod_, spec_) \
+    case mod_:                      \
+    {                               \
+        spec_size = strlen(spec_);  \
+        memcpy(s, spec_, spec_size);\
+        s[spec_size] = s[2];        \
+        break;                      \
+    }
+                    CASE_SPEC_CPY('1', TE_PRINTF_8);
+                    CASE_SPEC_CPY('2', TE_PRINTF_16);
+                    CASE_SPEC_CPY('4', TE_PRINTF_32);
+                    CASE_SPEC_CPY('8', TE_PRINTF_64);
+#undef CASE_SPEC_CPY
                     default:
                     {
                         FLUSH(" unsupported length modifier: =%c ",

@@ -32,6 +32,7 @@
 
 #include "te_stdint.h"
 #include "te_errno.h"
+#include "te_str.h"
 #include "rcf_api.h"
 #include "rcf_internal.h"
 #include "ipc_client.h"
@@ -48,7 +49,7 @@ main(int argc, char **argv)
 
     struct ipc_client *handle = NULL;
 
-    sprintf(name, "rcf_tadead_%d", getpid());
+    TE_SPRINTF(name, "rcf_tadead_%d", getpid());
 
     if (argc != 2)
     {

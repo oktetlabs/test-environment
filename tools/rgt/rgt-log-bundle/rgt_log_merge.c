@@ -21,6 +21,7 @@
 #include "logger_api.h"
 #include "logger_file.h"
 #include "te_string.h"
+#include "te_str.h"
 #include "rgt_log_bundle_common.h"
 
 /** If @c TRUE, find log messages to be merged by TIN */
@@ -111,9 +112,9 @@ merge(const char *split_log_path,
                 if (filter_frag_num >= 0)
                     i = filter_frag_num;
 
-                snprintf(frag_path, sizeof(frag_path),
-                         "%s/%s_inner_%" PRIu64,
-                         split_log_path, frag_name, i);
+                TE_SPRINTF(frag_path,
+                           "%s/%s_inner_%" PRIu64,
+                           split_log_path, frag_name, i);
                 f = fopen(frag_path, "r");
                 if (f == NULL)
                 {

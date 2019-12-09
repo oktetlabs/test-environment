@@ -34,6 +34,7 @@
 #include "logger_api.h"
 #include "unix_internal.h"
 #include "te_alloc.h"
+#include "te_str.h"
 #include "te_string.h"
 #include "te_queue.h"
 
@@ -89,7 +90,7 @@ eth_feature_ioctl_send(const char *ifname,
     int ret;
 
     memset(&ifr, 0, sizeof(ifr));
-    strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
+    te_strlcpy(ifr.ifr_name, ifname, IFNAMSIZ);
     ifr.ifr_data = cmd;
 
     ret = ioctl(cfg_socket, SIOCETHTOOL, &ifr);
@@ -153,9 +154,9 @@ eth_feature_alloc_get_names(struct eth_if_context *if_context)
 
     for (i = 0; i < nb_features; i++)
     {
-        strncpy(features[i].name,
-                (char *)(names->data + (i * ETH_GSTRING_LEN)),
-                ETH_GSTRING_LEN - 1);
+        te_strlcpy(features[i].name,
+                   (char *)(names->data + (i * ETH_GSTRING_LEN)),
+                   ETH_GSTRING_LEN);
     }
 
     if_context->features = features;
@@ -261,7 +262,7 @@ eth_feature_iface_context_add(const char *ifname)
     if (if_context == NULL)
         return NULL;
 
-    strncpy(if_context->ifname, ifname, IFNAMSIZ - 1);
+    te_strlcpy(if_context->ifname, ifname, IFNAMSIZ);
 
     rc = eth_feature_alloc_get(if_context);
     if_context->valid = (rc == 0);
@@ -522,7 +523,7 @@ eth_reset_set(unsigned int gid, const char *oid, char *value,
     if (strcmp(value, "0") == 0)
         return 0;
 
-    strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name));
+    te_strlcpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name));
 
     if (ioctl(cfg_socket, SIOCETHTOOL, &ifr) != 0)
     {

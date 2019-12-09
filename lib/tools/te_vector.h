@@ -99,7 +99,7 @@ typedef struct te_vec {
  */
 #define TE_VEC_FOREACH(_te_vec, _elem)                                        \
     for ((_elem) = te_vec_size(_te_vec) != 0 ?                                \
-            te_vec_get_safe(_te_vec, 0, sizeof(*(_elem))) : (_elem);          \
+            te_vec_get_safe(_te_vec, 0, sizeof(*(_elem))) : NULL;             \
          te_vec_size(_te_vec) != 0 &&                                         \
          ((void *)(_elem)) <= te_vec_get(_te_vec, te_vec_size(_te_vec) - 1);  \
          (_elem)++)
@@ -114,6 +114,17 @@ typedef struct te_vec {
  */
 #define TE_VEC_APPEND(_te_vec, _val) \
     (te_vec_append_array_safe(_te_vec, &(_val), 1, sizeof(_val)))
+
+/**
+ * Add element to the vector's tail
+ * @param _te_vec   Dynamic vector
+ * @param _type     Element type
+ * @param _val      New element
+ *
+ * @return Status code
+ */
+#define TE_VEC_APPEND_RVALUE(_te_vec, _type, _val) \
+    (te_vec_append_array_safe(_te_vec, (_type[]){_val}, 1, sizeof(_type)))
 
 /**
  * Append elements from C-like array to the dynamic array (safe version)

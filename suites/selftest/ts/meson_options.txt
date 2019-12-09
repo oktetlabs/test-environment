@@ -1,0 +1,8 @@
+option('te_path', type: 'string', value: '',
+       description: 'TE directory with build tools')
+option('te_cflags', type: 'string', value: '',
+       description: 'TE CFLAGS to be used')
+option('te_ldflags', type: 'string', value: '',
+       description: 'TE LDFLAGS to be used')
+option('te_libdir', type: 'string', value: '',
+       description: 'TE libraries location')

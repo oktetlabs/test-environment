@@ -75,6 +75,7 @@
 
 #include "te_errno.h"
 #include "te_alloc.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "logger_ta_fast.h"
 
@@ -282,7 +283,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
         unsigned int mac_bytes[ETHER_ADDR_LEN];
         int i;
 
-        strcpy(new_ifname, ifname);
+        te_strlcpy(new_ifname, ifname, sizeof(new_ifname));
         if (strncmp(ifname, "ef", 2) == 0)
         {
           if (strstr(ifname, ".") == NULL)
@@ -345,7 +346,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
                 {
                   str[strlen(str) - 1] = 0;
                 }
-                sprintf(new_ifname, "\\Device\\NPF_%s", str);
+                TE_SPRINTF(new_ifname, "\\Device\\NPF_%s", str);
                 if (fgets(str, 100, F) == NULL)
                 {
                     ERROR("Cannot read MAC address from file '%s'", filename);
@@ -366,12 +367,12 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
                 memcpy(sap->addr, mac, ETHER_ADDR_LEN);
             }
         }
-        strncpy(if_req.ifr_name, new_ifname, sizeof(if_req.ifr_name));
-        strcpy(sap->name, new_ifname);
+        te_strlcpy(if_req.ifr_name, new_ifname, sizeof(if_req.ifr_name));
+        te_strlcpy(sap->name, new_ifname, sizeof(sap->name));
     }
     else
     {
-        strncpy(if_req.ifr_name, ifname, sizeof(if_req.ifr_name));
+        te_strlcpy(if_req.ifr_name, ifname, sizeof(if_req.ifr_name));
     }
 #ifndef __CYGWIN__
     if (ioctl(cfg_socket, SIOCGIFHWADDR, &if_req))
@@ -413,7 +414,7 @@ tad_eth_sap_attach(const char *ifname, tad_eth_sap *sap)
 #endif
 
 #ifndef __CYGWIN__
-    strcpy(sap->name, ifname);
+    te_strlcpy(sap->name, ifname, sizeof(sap->name));
 #endif
 
     return 0;
@@ -943,7 +944,7 @@ tad_eth_sap_pkt_rx_ring_recv(tad_eth_sap        *sap,
      * segment, so it is reasonable to re-allocate the entire packet
      */
     tad_pkt_free_segs(pkt);
-    seg = tad_pkt_alloc_seg(seg_data, seg_len, (tad_pkt_seg_free)free);
+    seg = tad_pkt_alloc_seg(seg_data, seg_len, tad_pkt_seg_data_free);
     if (seg == NULL)
     {
         free(seg_data);
@@ -1179,7 +1180,7 @@ tad_eth_sap_parse_ancillary_data(int msg_flags, tad_pkt *pkt, size_t *pkt_len,
 
         tad_pkt_put_seg_data(pkt, cur_seg, new_seg_data,
                              cur_seg->data_len + TAD_VLAN_TAG_LEN,
-                             (tad_pkt_seg_free)free);
+                             tad_pkt_seg_data_free);
 
         *pkt_len += TAD_VLAN_TAG_LEN;
     }

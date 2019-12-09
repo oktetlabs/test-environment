@@ -74,5 +74,6 @@ sources += files(
     'vxlan.c',
 )
 te_libs += [
+    'tools',
     'conf_oid',
 ]

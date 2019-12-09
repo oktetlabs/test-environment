@@ -58,6 +58,48 @@ static unsigned int cs_flags = 0;
 
 static void process_backup(cfg_backup_msg *msg);
 static te_errno create_backup(char **bkp_filename);
+static te_errno parse_config(const char *fname, te_kvpair_h *expand_vars);
+
+/**
+ Put environment variables in list for expansion in file
+ *
+ * @param expand_vars   List of key-value pairs for expansion in file
+ *
+ * @param return        Status code
+ */
+static te_errno
+put_env_vars_in_list(te_kvpair_h *expand_vars)
+{
+    char  *key;
+    char  *value;
+    char  *env_var;
+    char **env;
+    int    rc;
+
+    for (env = environ; *env != NULL; env++)
+    {
+        env_var = strdup(*env);
+        if (env_var == NULL)
+        {
+            ERROR("%s(): strdup(%s) failed", __func__, *env);
+            return TE_RC(TE_CS, TE_ENOMEM);
+        }
+
+        key = strtok(env_var, "=");
+        value = strtok(NULL, "");
+
+        if (value != NULL)
+        {
+            rc = te_kvpair_add(expand_vars, key, "%s", value);
+            if (rc != 0)
+                return rc;
+        }
+
+        free(env_var);
+    }
+
+    return 0;
+}
 
 /**
  * Parse list of key-value pairs from history message
@@ -301,7 +343,7 @@ te_errno
 parse_config_dh_sync(xmlNodePtr root_node, te_kvpair_h *expand_vars)
 {
     te_errno rc = 0;
-    char *backup;
+    char *backup = NULL;
 
     if ((rc = create_backup(&backup)) != 0)
     {
@@ -333,13 +375,13 @@ parse_config_dh_sync(xmlNodePtr root_node, te_kvpair_h *expand_vars)
  * @param expand_vars   List of key-value pairs for expansion in file,
  *                      @c NULL if environment variables are used for
  *                      substitutions
- * @param restore       if TRUE, the configuration should be restored after
- *                      unsuccessful dynamic history restoring
+ * @param history       if TRUE, the configuration file must be a history,
+ *                      otherwise, it must be a backup
  *
  * @return status code (see te_errno.h)
  */
 static int
-parse_config(const char *file, te_kvpair_h *expand_vars, te_bool restore)
+parse_config_xml(const char *file, te_kvpair_h *expand_vars, te_bool history)
 {
     xmlDocPtr   doc;
     xmlNodePtr  root;
@@ -392,10 +434,28 @@ parse_config(const char *file, te_kvpair_h *expand_vars, te_bool restore)
 
     rcf_log_cfg_changes(TRUE);
     if (xmlStrcmp(root->name, (const xmlChar *)"backup") == 0)
-        rc = cfg_backup_process_file(root, restore);
+    {
+        if (history)
+        {
+            ERROR("File '%s' is a backup, not history as expected", file);
+            rc = TE_RC(TE_CS, TE_EINVAL);
+        }
+        else
+        {
+            rc = cfg_backup_process_file(root, TRUE);
+        }
+    }
     else if (xmlStrcmp(root->name, (const xmlChar *)"history") == 0)
     {
-        rc = parse_config_dh_sync(root, expand_vars);
+        if (!history)
+        {
+            ERROR("File '%s' is a history, not backup as expected", file);
+            rc = TE_RC(TE_CS, TE_EINVAL);
+        }
+        else
+        {
+            rc = parse_config_dh_sync(root, expand_vars);
+        }
     }
     else
     {
@@ -1007,7 +1067,7 @@ log_msg(cfg_msg *msg, te_bool before)
 {
     uint16_t    level;
     const char *addon;
-    char        buf[64];
+    char        buf[128];
     char       *s1;
     char       *s2;
 
@@ -1423,7 +1483,7 @@ process_backup(cfg_backup_msg *msg)
                 cfg_ta_sync("/:", TRUE);
             }
 
-            msg->rc = parse_config(msg->filename, NULL,  TRUE);
+            msg->rc = parse_config_xml(msg->filename, NULL, FALSE);
             rcf_log_cfg_changes(FALSE);
             cfg_dh_release_after(msg->filename);
 
@@ -1490,7 +1550,7 @@ create_backup(char **bkp_filename)
     }
 
     *bkp_filename = strdup(bkp_msg->filename);
-    if (bkp_filename == NULL)
+    if (*bkp_filename == NULL)
     {
         cfg_dh_release_backup(bkp_msg->filename);
         rc = TE_ENOMEM;
@@ -1646,13 +1706,23 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
         case CFG_PROCESS_HISTORY:
             {
                 te_kvpair_h expand_vars;
+                cfg_process_history_msg *history_msg;
 
+                history_msg = (cfg_process_history_msg *) (*msg);
                 te_kvpair_init(&expand_vars);
-                (*msg)->rc = parse_kvpair((cfg_process_history_msg *) (*msg), &expand_vars);
+
+                if (history_msg->len == sizeof(cfg_config_msg) +
+                                        strlen(history_msg->filename) + 1)
+                {
+                    (*msg)->rc = put_env_vars_in_list(&expand_vars);
+                }
+                else
+                {
+                    (*msg)->rc = parse_kvpair((cfg_process_history_msg *) (*msg), &expand_vars);
+                }
+
                 if ((*msg)->rc == 0)
-                    (*msg)->rc = parse_config(
-                        ((cfg_process_history_msg *)(*msg))->filename,
-                        &expand_vars, TRUE);
+                    (*msg)->rc = parse_config(history_msg->filename, &expand_vars);
 
                 te_kvpair_fini(&expand_vars);
                 break;
@@ -1811,12 +1881,13 @@ cfg_sigpipe_handler(int signum)
  * Figure out configuration file type (XML or YAML)
  * and proceed with parsing.
  *
- * @param fname Name of the configuration file
+ * @param fname         Name of the configuration file
+ * @param expand_vars   List of key-value pairs for expansion in file
  *
  * @return Status code.
  */
 static te_errno
-handle_cfg_file_by_its_type(const char *fname)
+parse_config(const char *fname, te_kvpair_h *expand_vars)
 {
     FILE *f;
     int   ret;
@@ -1839,7 +1910,7 @@ handle_cfg_file_by_its_type(const char *fname)
     ret = fscanf(f, " %5s", str);
     if (ret == EOF)
     {
-	int error_code_set = ferror(f);
+        int error_code_set = ferror(f);
 
         ERROR("Failed to read the first non-whitespace characters "
               "from configuration file '%s'", fname);
@@ -1853,10 +1924,10 @@ handle_cfg_file_by_its_type(const char *fname)
     fclose(f);
 
     if (strcmp(str, "<?xml") == 0)
-        return parse_config(fname, NULL, FALSE);
+        return parse_config_xml(fname, expand_vars, TRUE);
 #if WITH_CONF_YAML
     else if (strcmp(str, "---") == 0)
-        return parse_config_yaml(fname);
+        return parse_config_yaml(fname, expand_vars);
 #endif /* !WITH_CONF_YAML */
 
     ERROR("Failed to recognise the format of configuration file '%s'", fname);
@@ -1935,7 +2006,7 @@ main(int argc, char **argv)
          cfg_file_id++)
     {
         INFO("-> %s", cs_cfg_file[cfg_file_id]);
-        rc = handle_cfg_file_by_its_type(cs_cfg_file[cfg_file_id]);
+        rc = parse_config(cs_cfg_file[cfg_file_id], NULL);
         if (rc != 0)
         {
             ERROR("Fatal error during configuration file parsing: %d - %s",
@@ -1945,7 +2016,7 @@ main(int argc, char **argv)
     }
 
     if (cs_sniff_cfg_file != NULL &&
-        (rc = parse_config(cs_sniff_cfg_file, NULL, FALSE)) != 0)
+        (rc = parse_config_xml(cs_sniff_cfg_file, NULL, TRUE)) != 0)
     {
         ERROR("Fatal error during sniffer configuration file parsing");
         goto exit;

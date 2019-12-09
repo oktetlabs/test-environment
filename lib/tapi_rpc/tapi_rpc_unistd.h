@@ -1137,6 +1137,18 @@ extern int rpc_mkdir(rcf_rpc_server *rpcs,
                      const char *path, rpc_file_mode_flags mode);
 
 /**
+ * Create the directory(ies), if they do not already exist
+ *
+ * @param rpcs      RPC server
+ * @param path      Path of the directory to be created
+ * @param mode      The permission bits to assign to a new directory
+ *
+ * @return @c -1 on failure, @c 0 if the directory has been created or existing
+ */
+extern int rpc_mkdirp(rcf_rpc_server *rpcs,
+                      const char *path, rpc_file_mode_flags mode);
+
+/**
  * Remove a directory.
  *
  * @param rpcs      RPC server

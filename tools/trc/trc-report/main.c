@@ -283,7 +283,7 @@ trc_report_process_cmd_line_opts(int argc, char **argv)
 
             case TRC_OPT_INIT:
                 init_db = TRUE;
-                /* Fall throught */
+                /*@fallthrough@*/
 
             case TRC_OPT_UPDATE:
                 ctx.flags |= TRC_REPORT_UPDATE_DB;

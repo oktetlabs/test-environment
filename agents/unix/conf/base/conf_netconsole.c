@@ -24,6 +24,7 @@
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_alloc.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
@@ -254,8 +255,8 @@ configure_netconsole(in_port_t local_port, const char *remote_host_name,
            sizeof(remote_ipv4_addr));
     ((struct sockaddr_in *)&remote_hwaddr_req.arp_pa)->sin_port = 0;
 #ifdef HAVE_STRUCT_ARPREQ_ARP_DEV
-    strncpy(remote_hwaddr_req.arp_dev, ifc.ifc_req[i].ifr_name,
-            sizeof(remote_hwaddr_req.arp_dev));
+    te_strlcpy(remote_hwaddr_req.arp_dev, ifc.ifc_req[i].ifr_name,
+               sizeof(remote_hwaddr_req.arp_dev));
 #endif
     ((struct sockaddr_in *)&remote_hwaddr_req.arp_ha)->sin_family =
                                                             ARPHRD_ETHER;
@@ -610,7 +611,7 @@ netconsole_get(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
-    strncpy(value, target->value, RCF_MAX_VAL);
+    te_strlcpy(value, target->value, RCF_MAX_VAL);
 
     return 0;
 }

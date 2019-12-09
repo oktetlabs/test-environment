@@ -51,6 +51,7 @@
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_stdint.h"
+#include "te_str.h"
 #include "conf_api.h"
 #include "logger_api.h"
 #include "rcf_api.h"
@@ -200,7 +201,7 @@ tapi_cfg_switch_add_vlan(const char *ta_name, uint16_t vid)
 
     ENTRY("ta_name=%s vid=%u", ta_name, vid);
     /* Prepare OID */
-    sprintf(oid, cfg_oid_ta_vlan_fmt, ta_name, vid);
+    TE_SPRINTF(oid, cfg_oid_ta_vlan_fmt, ta_name, vid);
 
     rc = cfg_find_str(oid, &handle);
     if (rc == 0)
@@ -264,7 +265,7 @@ tapi_cfg_switch_del_vlan(const char *ta_name, uint16_t vid)
 
 
     /* Prepare OID */
-    sprintf(oid, cfg_oid_ta_vlan_fmt, ta_name, vid);
+    TE_SPRINTF(oid, cfg_oid_ta_vlan_fmt, ta_name, vid);
 
     rc = cfg_find_str(oid, &handle);
     if (rc == 0)
@@ -309,7 +310,7 @@ tapi_cfg_switch_vlan_add_port(const char *ta_name, uint16_t vid,
 
 
     /* Prepare OID */
-    sprintf(oid, cfg_oid_ta_vlan_port_fmt, ta_name, vid, port);
+    TE_SPRINTF(oid, cfg_oid_ta_vlan_port_fmt, ta_name, vid, port);
 
     rc = cfg_find_str(oid, &handle);
     if (rc == 0)
@@ -354,7 +355,7 @@ tapi_cfg_switch_vlan_del_port(const char *ta_name, uint16_t vid,
 
 
     /* Prepare OID */
-    sprintf(oid, cfg_oid_ta_vlan_port_fmt, ta_name, vid, port);
+    TE_SPRINTF(oid, cfg_oid_ta_vlan_port_fmt, ta_name, vid, port);
 
     rc = cfg_find_str(oid, &handle);
     if (rc == 0)
@@ -397,7 +398,7 @@ route_parse_inst_name(const char *inst_name, tapi_rt_entry_t *rt)
     int          family = (strchr(inst_name, ':') == NULL) ?
                           AF_INET : AF_INET6;
 
-    strncpy(inst_copy, inst_name, sizeof(inst_copy));
+    te_strlcpy(inst_copy, inst_name, sizeof(inst_copy));
     inst_copy[sizeof(inst_copy) - 1] = '\0';
 
     if ((tmp = strchr(inst_copy, '|')) == NULL)
@@ -611,12 +612,12 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
             }
             else if (strcmp(name, "dev") == 0)
             {
-                strncpy(tbl[i].dev, dev_name, sizeof(tbl[i].dev) - 1);
+                te_strlcpy(tbl[i].dev, dev_name, sizeof(tbl[i].dev));
                 free(dev_name);
             }
             else if (strcmp(name, "type") == 0)
             {
-                strncpy(tbl[i].type, type_val, sizeof(tbl[i].type) - 1);
+                te_strlcpy(tbl[i].type, type_val, sizeof(tbl[i].type));
                 free(type_val);
             }
 
@@ -1952,7 +1953,7 @@ tapi_cfg_get_if_parent(const char *ta,
         return TE_RC(TE_TAPI, TE_EOVERFLOW);
     }
 
-    strncpy(parent_ifname, parent, len);
+    te_strlcpy(parent_ifname, parent, len);
     free(parent);
 
     return 0;
@@ -2020,8 +2021,7 @@ tapi_cfg_get_if_last_ancestor(const char *ta,
     if (len == 0)
         return TE_RC(TE_TAPI, TE_ESMALLBUF);
 
-    strncpy(ancestor_ifname, ifname, len);
-    if (ancestor_ifname[len - 1] != '\0')
+    if (te_strlcpy(ancestor_ifname, ifname, len) >= len)
     {
         ERROR("%s(): interface name is too long "
               "to fit into provided buffer", __FUNCTION__);
@@ -2038,8 +2038,7 @@ tapi_cfg_get_if_last_ancestor(const char *ta,
         if (parent_ifname[0] == '\0')
             break;
 
-        strncpy(ancestor_ifname, parent_ifname, len);
-        if (ancestor_ifname[len - 1] != '\0')
+        if (te_strlcpy(ancestor_ifname, parent_ifname, len) >= len)
         {
             ERROR("%s(): interface name is too long",
                   __FUNCTION__);

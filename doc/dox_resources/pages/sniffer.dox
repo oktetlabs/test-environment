@@ -239,7 +239,7 @@ If are you launch the sniffers by the command line options for an interfaces, sh
     char *te_sniff_csconf = getenv("TE_SNIFF_CSCONF");
     if (te_sniff_csconf != NULL)
     {
-        CHECK_RC(cfg_restore_backup_nohistory(te_sniff_csconf));
+        CHECK_RC(cfg_process_history(te_sniff_csconf, NULL));
     }
 @endcode
 

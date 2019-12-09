@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    <description>TE Self Tests</description>
+    <author mailto="Nikita.Somenkov@oktetlabs.ru"/>
+
+    <session track_conf="silent">
+        <prologue>
+            <script name="prologue"/>
+        </prologue>
+
+        <run>
+            <package name="minimal"/>
+        </run>
+    </session>
+
+</package>

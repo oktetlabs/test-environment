@@ -87,6 +87,28 @@ extern void tapi_rte_flow_add_ndn_action_decap(asn_value *ndn_actions,
                                                tarpc_rte_eth_tunnel_type type);
 
 /**
+ * Add a push vlan action to an action list at specified index.
+ *
+ * @param[inout]  ndn_actions       Action list
+ * @param[in]     action_index      Index at which the action is put to list
+ * @paran[in]     ethertype         VLAN EtherType
+ */
+extern void tapi_rte_flow_add_ndn_action_of_push_vlan(asn_value *ndn_actions,
+                                                      int action_index,
+                                                      uint16_t ethertype);
+
+/**
+ * Add a set vlan vid action to an action list at specified index.
+ *
+ * @param[inout]  ndn_actions       Action list
+ * @param[in]     action_index      Index at which the action is put to list
+ * @paran[in]     vlan_vid          VLAN ID
+ */
+extern void tapi_rte_flow_add_ndn_action_of_set_vlan_vid(asn_value *ndn_actions,
+                                                         int action_index,
+                                                         uint16_t vlan_vid);
+
+/**
  * Convert an ASN value representing a flow rule pattern into
  * RTE flow rule pattern and a template that matches the pattern.
  *

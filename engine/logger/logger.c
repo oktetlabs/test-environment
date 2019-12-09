@@ -36,6 +36,7 @@
 #error popt library (development version) is required for Logger
 #endif
 
+#include "te_str.h"
 #include "te_raw_log.h"
 #include "logger_int.h"
 #include "logger_internal.h"
@@ -461,7 +462,7 @@ ta_handler(void *ta)
 
 
     /* Register IPC Server for the TA */
-    sprintf(srv_name, "%s%s", LGR_SRV_FOR_TA_PREFIX, inst->agent);
+    TE_SPRINTF(srv_name, "%s%s", LGR_SRV_FOR_TA_PREFIX, inst->agent);
     rc = ipc_register_server(srv_name, LOGGER_IPC, &srv);
     if (rc != 0)
     {
@@ -896,7 +897,7 @@ sniffer_polling_sets_cli_init(void)
     /* Get environment variable value for capture logs directory. */
     tmp = getenv("TE_SNIFF_LOG_DIR");
     if (tmp != NULL)
-        strncpy(snifp_sets.dir, tmp, RCF_MAX_PATH);
+        te_strlcpy(snifp_sets.dir, tmp, RCF_MAX_PATH);
     if (strlen(snifp_sets.dir) == 0)
     {
         snifp_sets.errors = TRUE;
@@ -908,7 +909,7 @@ sniffer_polling_sets_cli_init(void)
 
     tmp = getenv("TE_SNIFF_LOG_NAME");
     if (tmp != NULL)
-        strncpy(snifp_sets.name, tmp, RCF_MAX_PATH);
+        te_strlcpy(snifp_sets.name, tmp, RCF_MAX_PATH);
 
     tmp = getenv("TE_SNIFF_LOG_OSIZE");
     if (tmp != NULL)

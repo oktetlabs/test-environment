@@ -28,6 +28,7 @@
 #endif
 
 #include "te_stdint.h"
+#include "te_str.h"
 #include "rcf_common.h"
 
 
@@ -48,7 +49,7 @@ tapi_file_generate_name(void)
     static int  num = 0;
     static char buf[RCF_MAX_PATH];
 
-    sprintf(buf, "te_tmp_%u_%u_%u", (uint32_t)time(NULL), getpid(), num++);
+    TE_SPRINTF(buf, "te_tmp_%u_%u_%u", (uint32_t)time(NULL), getpid(), num++);
 
     return buf;
 }
@@ -72,7 +73,7 @@ tapi_file_generate_pathname(void)
         return NULL;
     }
 
-    sprintf(pathname, "%s/%s", te_tmp, tapi_file_generate_name());
+    TE_SPRINTF(pathname, "%s/%s", te_tmp, tapi_file_generate_name());
 
     return pathname;
 }

@@ -25,10 +25,14 @@
  *
  * The XML document will be consumed directly by cfg_dh_process_file().
  *
- * @param filename The input file path
+ * @param filename          The input file path
+ * @param expand_vars       List of key-value pairs for expansion in file,
+ *                          @c NULL if environment variables are used for
+ *                          substitutions
  *
  * @return Status code.
  */
-extern te_errno parse_config_yaml(const char *filename);
+extern te_errno parse_config_yaml(const char *filename,
+                                  te_kvpair_h *expand_vars);
 
 #endif /* __TE_CONF_YAML_H__ */

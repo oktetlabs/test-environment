@@ -51,6 +51,7 @@
 #include "te_errno.h"
 #include "te_defs.h"
 #include "te_stdint.h"
+#include "te_str.h"
 #include "rcf_common.h"
 #include "rcf_internal.h"
 #include "comm_agent.h"
@@ -307,7 +308,7 @@ call(rpcserver *rpcs, char *name, void *in, void *out)
             return TE_RC(TE_RCF_PCH, TE_EBUSY);
     }
     rpcs->last_rpc_op = in_arg->op;
-    strncpy(rpcs->last_rpc_name, name, RCF_MAX_NAME);
+    te_strlcpy(rpcs->last_rpc_name, name, RCF_MAX_NAME);
 
     if ((rc = rpc_xdr_encode_call(name, buf, &len, in)) != 0)
     {
@@ -960,7 +961,7 @@ rpcprovider_set(unsigned int gid, const char *oid, const char *value,
 
     if (*value == '/')
     {
-        strncpy(checkpath, value, sizeof(checkpath) - 1);
+        te_strlcpy(checkpath, value, sizeof(checkpath));
     }
     else
     {
@@ -1322,8 +1323,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     else if (strcmp_start("fork_register_", value) == 0)
     {
         father_name = value + strlen("fork_register_");
-        snprintf(new_val, RCF_RPC_NAME_LEN, "fork_%s",
-                 father_name);
+        TE_SPRINTF(new_val, "fork_%s", father_name);
         value = (const char *)new_val;
         registration = TRUE;
     }
@@ -1332,8 +1332,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
     else if (strcmp_start("forkexec_register_", value) == 0)
     {
         father_name = value + strlen("forkexec_register_");
-        snprintf(new_val, RCF_RPC_NAME_LEN, "forkexec_%s",
-                 father_name);
+        TE_SPRINTF(new_val, "forkexec_%s", father_name);
         value = (const char *)new_val;
         registration = TRUE;
     }
@@ -1376,8 +1375,7 @@ rpcserver_add(unsigned int gid, const char *oid, const char *value,
         {
             /* All the threads should be linked to the initial one" */
             father = father->father;
-            snprintf(new_val, RCF_RPC_NAME_LEN, "thread_%s",
-                     father->name);
+            TE_SPRINTF(new_val, "thread_%s", father->name);
             value = (const char *)new_val;
             father_name = value + strlen("thread_");
         }
@@ -1736,7 +1734,7 @@ rcf_pch_rpc(struct rcf_comm_connection *conn, int sid,
         }
 
         rpcs->last_rpc_op = common_arg.op;
-        strncpy(rpcs->last_rpc_name, rpc_name, RCF_MAX_NAME);
+        te_strlcpy(rpcs->last_rpc_name, rpc_name, RCF_MAX_NAME);
     }
 
     rpcs->sent = time(NULL);

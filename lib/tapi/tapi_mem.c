@@ -90,3 +90,17 @@ tapi_strdup(const char *s)
 
     return dup;
 }
+
+char *
+tapi_strndup(const char *s, size_t size)
+{
+    char *dup;
+
+    dup = strndup(s, size);
+    if (dup == NULL)
+    {
+        TEST_FAIL("Failed to duplicate string");
+    }
+
+    return dup;
+}

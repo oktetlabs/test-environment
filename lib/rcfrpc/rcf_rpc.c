@@ -224,11 +224,11 @@ rcf_rpc_server_get(const char *ta, const char *name,
     if (father == NULL)
         *val = '\0';
     else if ((flags & RCF_RPC_SERVER_GET_THREAD))
-        sprintf(val, "thread_%s", father);
+        TE_SPRINTF(val, "thread_%s", father);
     else if ((flags & RCF_RPC_SERVER_GET_EXEC))
-        sprintf(val, "forkexec_%s%s", str_register, father);
+        TE_SPRINTF(val, "forkexec_%s%s", str_register, father);
     else
-        sprintf(val, "fork_%s%s", str_register, father);
+        TE_SPRINTF(val, "fork_%s%s", str_register, father);
 
     if ((rpcs = (rcf_rpc_server *)
                     calloc(1, sizeof(rcf_rpc_server))) == NULL)

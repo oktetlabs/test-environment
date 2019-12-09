@@ -954,6 +954,7 @@ prepare_nets(tapi_env_nets *nets, cfg_nets_t *cfg_nets)
             break;
         }
         free(ip_net_oid);
+        free(net_oid);
     }
 
     return rc;
@@ -2233,7 +2234,10 @@ node_unmark_used(node_indexes *used_nodes, unsigned int net, unsigned int node)
          p = SLIST_NEXT(p, links));
 
     if (p != NULL)
+    {
         SLIST_REMOVE(used_nodes, p, node_index, links);
+        free(p);
+    }
 }
 
 /**

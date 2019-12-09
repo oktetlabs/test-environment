@@ -47,6 +47,7 @@
 #include "te_printf.h"
 #include "te_bufs.h"
 #include "te_dbuf.h"
+#include "te_str.h"
 
 
 /** @name String buffers for snprintf() operations */
@@ -1976,10 +1977,10 @@ rpc_uname(rcf_rpc_server *rpcs, struct utsname *buf)
     if (RPC_IS_CALL_OK(rpcs))
     {
         memset(buf, 0, sizeof(*buf));
-#define GET_STR(_dst, _field)                               \
-        do {                                                \
-            strncpy(buf->_dst, out.buf._field._field##_val, \
-                    sizeof(buf->_dst));                     \
+#define GET_STR(_dst, _field)                                   \
+        do {                                                    \
+            te_strlcpy(buf->_dst, out.buf._field._field##_val,  \
+                       sizeof(buf->_dst));                      \
         } while(0)
 
         GET_STR(sysname, sysname);
@@ -2568,6 +2569,40 @@ rpc_mkdir(rcf_rpc_server *rpcs, const char *path, rpc_file_mode_flags mode)
     TAPI_RPC_LOG(rpcs, mkdir, "%s, %s", "%d",
                  path, file_mode_flags_rpc2str(mode), out.retval);
     RETVAL_INT(mkdir, out.retval);
+
+}
+
+int
+rpc_mkdirp(rcf_rpc_server *rpcs, const char *path, rpc_file_mode_flags mode)
+{
+    tarpc_mkdir_in  in;
+    tarpc_mkdir_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(mkdirp, -1);
+    }
+
+    if (path != NULL)
+    {
+        in.path.path_len = strlen(path) + 1;
+        in.path.path_val = strdup(path);
+    }
+    in.mode  = mode;
+
+    rcf_rpc_call(rpcs, "mkdirp", &in, &out);
+
+    if (path != NULL)
+        free(in.path.path_val);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(mkdirp, out.retval);
+    TAPI_RPC_LOG(rpcs, mkdirp, "%s, %s", "%d",
+                 path, file_mode_flags_rpc2str(mode), out.retval);
+    RETVAL_INT(mkdirp, out.retval);
 
 }
 

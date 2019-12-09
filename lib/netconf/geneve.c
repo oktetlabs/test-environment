@@ -85,6 +85,7 @@ netconf_geneve_add(netconf_handle nh, const netconf_geneve *geneve)
     struct nlmsghdr    *h;
     struct rtattr      *linkinfo;
     struct rtattr      *data;
+    uint16_t            port = htons(geneve->generic.port);
 
     memset(req, 0, sizeof(req));
     netconf_init_nlmsghdr(req, nh, RTM_NEWLINK, NLM_F_REQUEST | NLM_F_ACK |
@@ -122,8 +123,7 @@ netconf_geneve_add(netconf_handle nh, const netconf_geneve *geneve)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    netconf_append_rta(h, &(geneve->generic.port),
-                       sizeof(geneve->generic.port), IFLA_GENEVE_PORT);
+    netconf_append_rta(h, &port, sizeof(port), IFLA_GENEVE_PORT);
 
     netconf_append_rta_nested_end(h, data);
     netconf_append_rta_nested_end(h, linkinfo);

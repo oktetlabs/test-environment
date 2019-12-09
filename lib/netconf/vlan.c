@@ -12,11 +12,12 @@
 
 #define TE_LGR_USER "Netconf VLAN"
 
+#include "te_config.h"
+#include "te_str.h"
 #include "conf_ip_rule.h"
 #include "logger_api.h"
 #include "netconf.h"
 #include "netconf_internal.h"
-#include "te_config.h"
 
 #define NETCONF_LINK_KIND_VLAN "vlan"
 
@@ -257,8 +258,7 @@ netconf_vlan_get_ifname(netconf_handle nh, const char *link, unsigned int vid,
         if (node->data.vlan.link == index &&
             node->data.vlan.vid == vid)
         {
-            strncpy(ifname, node->data.vlan.ifname, len);
-            if (ifname[len - 1] != '\0')
+            if (te_strlcpy(ifname, node->data.vlan.ifname, len) >= len)
             {
                 ERROR("Interface name '%s' is too long to fit "
                       "into prodived buffer", node->data.vlan.ifname);

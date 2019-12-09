@@ -19,6 +19,7 @@
 
 #include "tapi_rpc_rte.h"
 #include "te_kvpair.h"
+#include "rpc_dpdk_defs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,14 +30,6 @@ extern "C" {
  * @ingroup te_lib_rpc_tapi
  * @{
  */
-
-#define RPC_RTE_ETH_NAME_MAX_LEN 32
-
-#define RPC_RTE_RETA_GROUP_SIZE 64
-
-#define RPC_RSS_HASH_KEY_LEN_DEF 40
-
-#define RPC_RTE_EPOLL_PER_THREAD -1
 
 /**
  * Map link speed string to bitmask value.

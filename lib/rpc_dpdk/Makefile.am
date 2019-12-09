@@ -6,6 +6,7 @@ AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 AM_LDFLAGS = -L$(DESTDIR)/$(libdir)
 
 include_HEADERS = \
+	rpc_dpdk_defs.h \
 	rpc_dpdk_offloads.h
 
 lib_LTLIBRARIES = librpc_dpdk.la

@@ -60,6 +60,34 @@ static const tapi_job_opt_bind wrk_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_STRING("--script", FALSE, tapi_wrk_opt, script_path)
 );
 
+static char *
+tapi_wrk_args2str(te_vec *vec)
+{
+    void **arg;
+    te_string str = TE_STRING_INIT;
+    te_errno rc = 0;
+    const char *separator = " ";
+
+    if (te_vec_size(vec) == 0)
+        return strdup("");
+
+    TE_VEC_FOREACH(vec, arg)
+    {
+        if (rc == 0 && *arg != NULL)
+            rc = te_string_append(&str, "%s%s", *arg, separator);
+    }
+
+    if (rc != 0)
+    {
+        te_string_free(&str);
+        return NULL;
+    }
+
+    te_string_cut(&str, strlen(separator));
+
+    return str.ptr;
+}
+
 /** Time units starting from microseconds */
 static const te_unit_list time_units_us = {
     .scale = 1000,
@@ -125,7 +153,6 @@ te_errno
 tapi_wrk_create(rcf_rpc_server *rpcs, const tapi_wrk_opt *opt,
                 tapi_wrk_app **app)
 {
-    te_vec wrk_args;
     tapi_wrk_app *result;
     te_errno rc;
     const char *path = "wrk";
@@ -161,14 +188,16 @@ tapi_wrk_create(rcf_rpc_server *rpcs, const tapi_wrk_opt *opt,
         }
     }
 
-    rc = tapi_job_opt_build_args(path, wrk_binds, &opt_effective, &wrk_args);
+    rc = tapi_job_opt_build_args(path, wrk_binds, &opt_effective,
+                                 &result->wrk_args);
     if (rc != 0)
         goto out;
+
 
     rc = tapi_job_rpc_simple_create(rpcs,
                           &(tapi_job_simple_desc_t){
                                 .program = path,
-                                .argv = (const char **)wrk_args.data.ptr,
+                                .argv = (const char **)result->wrk_args.data.ptr,
                                 .job_loc = &result->job,
                                 .stdout_loc = &result->out_chs[0],
                                 .stderr_loc = &result->out_chs[1],
@@ -215,7 +244,6 @@ tapi_wrk_create(rcf_rpc_server *rpcs, const tapi_wrk_opt *opt,
                                     }
                                  )
                           });
-    te_vec_deep_free(&wrk_args);
 
     if (rc != 0)
         goto out;
@@ -224,7 +252,10 @@ tapi_wrk_create(rcf_rpc_server *rpcs, const tapi_wrk_opt *opt,
 
 out:
     if (rc != 0)
+    {
+        te_vec_deep_free(&result->wrk_args);
         free(result);
+    }
 
     free(script_filename);
 
@@ -273,6 +304,7 @@ tapi_wrk_destroy(tapi_wrk_app *app)
     if (rc != 0)
         return rc;
 
+    te_vec_deep_free(&app->wrk_args);
     free(app);
 
     return 0;
@@ -443,9 +475,40 @@ tapi_wrk_get_report(tapi_wrk_app *app, tapi_wrk_report *report)
         te_string_reset(&buf.data);
     }
 
+    result.arguments = tapi_wrk_args2str(&app->wrk_args);
+    if (result.arguments == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
     *report = result;
 
     te_string_free(&buf.data);
 
     return 0;
+}
+
+void
+tapi_wrk_report_mi_log(te_mi_logger *logger, const tapi_wrk_report *report)
+{
+    const char *pt = "per-thread";
+
+    te_mi_logger_add_meas_vec(logger, NULL, TE_MI_MEAS_V(
+            TE_MI_MEAS(THROUGHPUT, NULL, MEAN,
+                       TE_UNITS_DEC_U2M(report->bps * 8.0), MEGA),
+            TE_MI_MEAS(RPS, NULL, MEAN, report->req_per_sec, PLAIN),
+            TE_MI_MEAS(LATENCY, pt, MEAN, report->thread_latency.mean / 1000.,
+                       MILLI),
+            TE_MI_MEAS(LATENCY, pt, MAX, report->thread_latency.max / 1000.,
+                       MILLI),
+            TE_MI_MEAS(LATENCY, pt, STDEV, report->thread_latency.stdev / 1000.,
+                       MILLI),
+            TE_MI_MEAS(RPS, pt, MEAN, report->thread_req_per_sec.mean, PLAIN),
+            TE_MI_MEAS(RPS, pt, MAX, report->thread_req_per_sec.max, PLAIN),
+            TE_MI_MEAS(RPS, pt, STDEV, report->thread_req_per_sec.stdev, PLAIN)));
+
+    /*
+     * Since the first argument contains the executable file name, string with
+     * all arguments will represent the command that was used to run the tool.
+     */
+    te_mi_logger_add_comment(logger, NULL, "command", "%s",
+                             report->arguments);
 }

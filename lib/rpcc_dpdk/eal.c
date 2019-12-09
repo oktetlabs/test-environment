@@ -160,6 +160,7 @@ tapi_reuse_eal(tapi_env         *env,
 {
     size_t                eal_args_len;
     char                 *eal_args = NULL;
+    char                 *eal_args_pos;
     char                 *eal_args_cfg = NULL;
     cfg_val_type          val_type = CVT_STRING;
     const tapi_env_ps_if *ps_if;
@@ -175,7 +176,7 @@ tapi_reuse_eal(tapi_env         *env,
 
     for (i = 0, eal_args_len = 1;
          i < (unsigned int)argc;
-         eal_args_len += strlen(argv[i++]));
+         eal_args_len += strlen(argv[i++]) + 1);
 
     eal_args = TE_ALLOC(eal_args_len);
     if (eal_args == NULL)
@@ -184,17 +185,17 @@ tapi_reuse_eal(tapi_env         *env,
         goto out;
     }
 
+    eal_args_pos = eal_args;
     for (i = 0; i < (unsigned int)argc; ++i)
     {
-        char *retp;
+        size_t len = strlen(argv[i]);
 
-        retp = strncat(eal_args, argv[i], strlen(argv[i]));
-        if (retp == NULL)
-        {
-            rc = TE_ENOBUFS;
-            goto out;
-        }
+        eal_args_pos[0] = ' ';
+        memcpy(eal_args_pos + 1, argv[i], len);
+        eal_args_pos += len + 1;
     }
+    /* Buffer is filled in with zeros anyway, but anyway */
+    eal_args_pos[0] = '\0';
 
     rc = cfg_get_instance_fmt(&val_type, &eal_args_cfg,
                               "/agent:%s/rpcserver:%s/config:",

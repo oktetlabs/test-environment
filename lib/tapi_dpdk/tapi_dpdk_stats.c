@@ -13,6 +13,7 @@
 #include "te_ethernet.h"
 #include "tapi_dpdk_stats.h"
 #include "tapi_test_log.h"
+#include "te_units.h"
 
 static const char *
 empty_string_if_null(const char *string)
@@ -21,9 +22,18 @@ empty_string_if_null(const char *string)
 }
 
 void
-tapi_dpdk_stats_pps_artifact(uint64_t pps, const char *prefix)
+tapi_dpdk_stats_pps_artifact(te_mi_logger *logger, int64_t pps,
+                             const char *prefix)
 {
-    TEST_ARTIFACT("%sPPS: %lu", empty_string_if_null(prefix), pps);
+    TEST_ARTIFACT("%s%sPPS: %lu", empty_string_if_null(prefix),
+                  prefix == NULL ? "" : ": ", pps);
+
+    if (logger != NULL)
+    {
+        te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_PPS, NULL,
+                              TE_MI_MEAS_AGGR_MEAN, pps,
+                              TE_MI_MEAS_MULTIPLIER_PLAIN);
+    }
 }
 
 uint64_t
@@ -42,10 +52,19 @@ tapi_dpdk_stats_calculate_l1_bitrate(uint64_t pps, unsigned int packet_size)
 }
 
 void
-tapi_dpdk_stats_l1_bitrate_artifact(uint64_t l1_bitrate, const char *prefix)
+tapi_dpdk_stats_l1_bitrate_artifact(te_mi_logger *logger, uint64_t l1_bitrate,
+                                    const char *prefix)
 {
-    TEST_ARTIFACT("%sL1 bit rate: %lu bit/s", empty_string_if_null(prefix),
-                  l1_bitrate);
+    TEST_ARTIFACT("%s%sL1 bit rate: %lu bit/s", empty_string_if_null(prefix),
+                  prefix == NULL ? "" : ": ", l1_bitrate);
+
+    if (logger != NULL)
+    {
+        te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_THROUGHPUT, NULL,
+                              TE_MI_MEAS_AGGR_MEAN,
+                              TE_UNITS_DEC_U2M(l1_bitrate),
+                              TE_MI_MEAS_MULTIPLIER_MEGA);
+    }
 }
 
 te_errno
@@ -66,16 +85,33 @@ tapi_dpdk_stats_calculate_l1_link_usage(uint64_t l1_bitrate,
 }
 
 void
-tapi_dpdk_stats_l1_link_usage_artifact(double l1_link_usage, const char *prefix)
+tapi_dpdk_stats_l1_link_usage_artifact(te_mi_logger *logger,
+                                       double l1_link_usage, const char *prefix)
 {
-    TEST_ARTIFACT("%sL1 rate percent: %.3f", empty_string_if_null(prefix),
-                  l1_link_usage * 100.0);
+    TEST_ARTIFACT("%s%sL1 rate percent: %.3f", empty_string_if_null(prefix),
+                  prefix == NULL ? "" : ": ", l1_link_usage * 100.0);
+
+    if (logger != NULL)
+    {
+        te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_BANDWIDTH_USAGE, NULL,
+                              TE_MI_MEAS_AGGR_MEAN, l1_link_usage,
+                              TE_MI_MEAS_MULTIPLIER_PLAIN);
+    }
 }
 
 void
-tapi_dpdk_stats_cv_artifact(double cv, const char *prefix)
+tapi_dpdk_stats_cv_artifact(te_mi_logger *logger, double cv,
+                            const char *prefix)
 {
-    TEST_ARTIFACT("%sCV: %.3f%%", empty_string_if_null(prefix), cv * 100);
+    TEST_ARTIFACT("%s%sCV: %.3f%%", empty_string_if_null(prefix),
+                  prefix == NULL ? "" : ": ", cv * 100);
+
+    if (logger != NULL)
+    {
+        te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_PPS, NULL,
+                              TE_MI_MEAS_AGGR_CV, cv,
+                              TE_MI_MEAS_MULTIPLIER_PLAIN);
+    }
 }
 
 te_errno
@@ -97,8 +133,9 @@ tapi_dpdk_stats_summary_artifact(const te_meas_stats_t *meas_stats,
     if (summary->sample_deviation == NULL)
         return TE_EFAULT;
 
-    gather_rc = te_string_append(&str, "%s%s",
+    gather_rc = te_string_append(&str, "%s%s%s",
                                 empty_string_if_null(prefix),
+                                prefix == NULL ? "" : ": ",
                                 "Datapoints and ratios of theirs devations "
                                 "from prefixed subsample mean to subsample "
                                 "deviation\n");
@@ -169,26 +206,45 @@ out:
 }
 
 void
-tapi_dpdk_stats_stab_artifact(const te_meas_stats_t *meas_stats,
+tapi_dpdk_stats_stab_artifact(te_mi_logger *logger,
+                              const te_meas_stats_t *meas_stats,
                               const char *prefix)
 {
+    const char *stab = "Stabilizaton";
+    const char *reached = "reached on datapoint (+ leading zero datapoints)";
+    const char *not_reached = "not reached";
+
     if (te_meas_stats_stab_is_stable(&meas_stats->stab,
                                      &meas_stats->data))
-        TEST_ARTIFACT(
-            "%sStabilization reached on datapoint (+ leading zero datapoints): %d (+ %d)",
-            empty_string_if_null(prefix),
-            meas_stats->data.num_datapoints,
-            meas_stats->num_zeros);
+    {
+        TEST_ARTIFACT("%s%s%s %s: %d (+ %d)",
+                      empty_string_if_null(prefix), prefix == NULL ? "" : ": ",
+                      stab, reached, meas_stats->data.num_datapoints,
+                      meas_stats->num_zeros);
+
+        if (logger != NULL)
+        {
+            te_mi_logger_add_comment(logger, NULL, stab, "%s: %d (+ %d)",
+                                     reached, meas_stats->data.num_datapoints,
+                                     meas_stats->num_zeros);
+        }
+    }
     else
-        TEST_ARTIFACT("%sStabilization not reached",
-                      empty_string_if_null(prefix));
+    {
+        TEST_ARTIFACT("%s%s%s %s", empty_string_if_null(prefix),
+                      prefix == NULL ? "" : ": ", stab, not_reached);
+
+        if (logger != NULL)
+            te_mi_logger_add_comment(logger, NULL, stab, "%s", not_reached);
+    }
 }
 
 te_errno
-tapi_dpdk_stats_log_rates(const te_meas_stats_t *meas_stats,
+tapi_dpdk_stats_log_rates(const char *tool, const te_meas_stats_t *meas_stats,
                           unsigned int packet_size, unsigned int link_speed,
                           const char *prefix)
 {
+    te_mi_logger *logger;
     uint64_t l1_bitrate;
     uint64_t pps;
     double cv;
@@ -200,14 +256,24 @@ tapi_dpdk_stats_log_rates(const te_meas_stats_t *meas_stats,
 
     l1_bitrate = tapi_dpdk_stats_calculate_l1_bitrate(pps, packet_size);
 
-    tapi_dpdk_stats_pps_artifact(pps, prefix);
-    tapi_dpdk_stats_l1_bitrate_artifact(l1_bitrate, prefix);
-
     cv = meas_stats->stab_required ?
          meas_stats->stab.correct_data.cv :
          meas_stats->data.cv;
 
-    tapi_dpdk_stats_cv_artifact(cv, prefix);
+    rc = te_mi_logger_meas_create(tool, &logger);
+    if (rc != 0)
+    {
+        WARN("Failed to create logger, skip MI logging");
+        logger = NULL;
+    }
+    else if (prefix != NULL)
+    {
+        te_mi_logger_add_meas_key(logger, NULL, "Side", "%s", prefix);
+    }
+
+    tapi_dpdk_stats_pps_artifact(logger, pps, prefix);
+    tapi_dpdk_stats_l1_bitrate_artifact(logger, l1_bitrate, prefix);
+    tapi_dpdk_stats_cv_artifact(logger, cv, prefix);
 
     if (link_speed == 0)
     {
@@ -220,17 +286,19 @@ tapi_dpdk_stats_log_rates(const te_meas_stats_t *meas_stats,
 
         tapi_dpdk_stats_calculate_l1_link_usage(l1_bitrate, link_speed,
                                                 &l1_link_usage);
-        tapi_dpdk_stats_l1_link_usage_artifact(l1_link_usage, prefix);
+        tapi_dpdk_stats_l1_link_usage_artifact(logger, l1_link_usage, prefix);
     }
+
+    if (meas_stats->stab_required)
+        tapi_dpdk_stats_stab_artifact(logger, meas_stats, prefix);
+
+    te_mi_logger_destroy(logger);
 
     if (meas_stats->summary_required)
     {
         if ((rc = tapi_dpdk_stats_summary_artifact(meas_stats, prefix)) != 0)
             return rc;
     }
-
-    if (meas_stats->stab_required)
-        tapi_dpdk_stats_stab_artifact(meas_stats, prefix);
 
     return 0;
 }

@@ -1,0 +1,70 @@
+pipeline {
+    options {
+        buildDiscarder(logRotator(numToKeepStr:'14'))
+        disableConcurrentBuilds()
+        timestamps()
+    }
+
+    agent {
+        label "te-build"
+    }
+
+    triggers {
+        cron('@daily')
+    }
+
+    environment {
+        TE_BASE = "${env.WORKSPACE}/te"
+        TE_BUILD = "${env.WORKSPACE}/te-build"
+        TE_INSTALL = "${env.WORKSPACE}/te-build/inst"
+        TS_TOPDIR = "${env.WORKSPACE}/te/suites/selftest"
+        TS_RUNDIR = "${env.WORKSPACE}/te-selftest-run"
+    }
+
+    stages {
+        stage("Build") {
+            steps {
+                script {
+                    lastStage = env.STAGE_NAME
+                }
+                dir("$TS_RUNDIR") {
+                    sh '${TS_TOPDIR}/run.sh --build-only'
+                }
+            }
+        }
+        stage("Run") {
+            steps {
+                script {
+                    lastStage = env.STAGE_NAME
+                }
+                dir ("$TS_RUNDIR") {
+                    sh 'rm -fr * || true'
+                    sh '${TS_TOPDIR}/run.sh -n --log-junit=junit.log'
+                }
+            }
+        }
+        stage("Report") {
+            steps {
+                script {
+                    lastStage = env.STAGE_NAME
+                }
+                dir ("$TS_RUNDIR") {
+                    archiveArtifacts artifacts: 'tmp_raw_log'
+                    archiveArtifacts artifacts: 'log.txt'
+                    junit 'junit.log'
+                }
+            }
+        }
+    }
+
+    post {
+        unsuccessful {
+            emailext (
+                subject: "[CI TE] ${env.JOB_NAME} job ${env.BUILD_NUMBER} unsuccessful",
+                body: "Check console output at: ${env.BUILD_URL}, failure step $lastStage",
+                to: "Nikita.Somenkov@oktetlabs.ru",
+                from: "cbs@oktetlabs.ru"
+            )
+        }
+    }
+}

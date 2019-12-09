@@ -15,6 +15,7 @@
 #include "te_config.h"
 
 #include "te_alloc.h"
+#include "te_str.h"
 
 #include "rte_config.h"
 #include "rte_ethdev.h"
@@ -1831,8 +1832,8 @@ TARPC_FUNC(rte_eth_xstats_get_names,{},
         (unsigned int)out->retval <= in->size)
     {
         for (i = 0; i < in->size; i++)
-            strncpy(out->xstats_names.xstats_names_val[i].name,
-                    xstats_names[i].name, TARPC_RTE_ETH_XSTATS_NAME_SIZE);
+            te_strlcpy(out->xstats_names.xstats_names_val[i].name,
+                       xstats_names[i].name, TARPC_RTE_ETH_XSTATS_NAME_SIZE);
     }
 
     out->xstats_names.xstats_names_len = in->size;
@@ -1949,8 +1950,8 @@ TARPC_FUNC(rte_eth_xstats_get_names_by_id, {},
 
         for (i = 0; i < out->retval; ++i)
         {
-            strncpy(out->xstat_names.xstat_names_val[i].name,
-                    xstat_names[i].name, TARPC_RTE_ETH_XSTATS_NAME_SIZE);
+            te_strlcpy(out->xstat_names.xstat_names_val[i].name,
+                       xstat_names[i].name, TARPC_RTE_ETH_XSTATS_NAME_SIZE);
         }
 
         out->xstat_names.xstat_names_len = out->retval;

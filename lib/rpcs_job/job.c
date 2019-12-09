@@ -2049,6 +2049,7 @@ TARPC_FUNC_STATIC(job_killpg, {},
 TARPC_FUNC_STATIC(job_wait, {},
 {
     MAKE_CALL(out->retval = func(in->job_id, in->timeout_ms, &out->status));
+    out->common.errno_changed = FALSE;
 })
 
 TARPC_FUNC_STATIC(job_destroy, {},

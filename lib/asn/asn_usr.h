@@ -29,7 +29,7 @@ extern "C" {
 
 
 /**
- * ASN type struct declaration
+ * ASN.1 type struct declaration
  */
 struct asn_type;
 
@@ -52,7 +52,7 @@ typedef struct asn_type asn_type;
 #define ASN_SYN_ARRAY   4
 
 /**
- * Enumerated type with ASN syntax codes. All syntax codes are divided into
+ * Enumerated type with ASN.1 syntax codes. All syntax codes are divided into
  * the following groups:
  *  - primitive syntaxes, internal presentation of which does
  *      not require memory allocation.
@@ -114,7 +114,7 @@ asn_syntax_is_a(asn_syntax syntax, int mask)
 }
 
 /**
- * Enumerated type with ASN tag class codes.
+ * Enumerated type with ASN.1 tag class codes.
  */
 typedef enum {
     UNIVERSAL,
@@ -130,25 +130,25 @@ typedef uint16_t asn_tag_value;
  * ASN.1 tag
  */
 typedef struct asn_tag_t {
-    asn_tag_class   cl; /**< ASN tag class */
-    asn_tag_value   val;/**< ASN tag value */
+    asn_tag_class   cl; /**< ASN.1 tag class */
+    asn_tag_value   val;/**< ASN.1 tag value */
 } asn_tag_t;
 
 
 
 /**
- * Obtain textual label of ASN type.
+ * Obtain textual label of ASN.1 type.
  *
- * @param type       ASN type which name is interested
+ * @param type       ASN.1 type which name is interested
  *
  * @return plain string with type name or NULL if error occurred.
  */
 extern const char *asn_get_type_name(const asn_type *type);
 
 /**
- * Obtain ASN syntax type;
+ * Obtain ASN.1 syntax type;
  *
- * @param type          ASN value which leaf syntax is interested
+ * @param type          ASN.1 value which leaf syntax is interested
  *
  * @return syntax of specified leaf in value.
  */
@@ -156,11 +156,11 @@ extern asn_syntax asn_get_syntax_of_type(const asn_type *type);
 
 
 /**
- * Get constant pointer to subtype of some ASN type.
+ * Get constant pointer to subtype of some ASN.1 type.
  *
- * @param type          ASN type
- * @param subtype       location for pointer to ASN sub-type (OUT)
- * @param labels        textual ASN labels of subvalue; see
+ * @param type          ASN.1 type
+ * @param subtype       location for pointer to ASN.1 sub-type (OUT)
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  * @param labels        string with dot-separated sequence of textual field
  *                      labels, specifying interested sub-type
@@ -173,12 +173,12 @@ extern te_errno asn_get_subtype(const asn_type *type,
 
 
 /**
- * Get ASN type of on-level child of constaint ASN type by child tag.
+ * Get ASN.1 type of on-level child of constaint ASN.1 type by child tag.
  *
- * @param type      root of ASN value tree which subvalue is interested
- * @param subtype   location for pointer to ASN sub-value (OUT)
- * @param tag_class class of ASN tag
- * @param tag_val   value of ASN tag
+ * @param type      root of ASN.1 value tree which subvalue is interested
+ * @param subtype   location for pointer to ASN.1 sub-value (OUT)
+ * @param tag_class class of ASN.1 tag
+ * @param tag_val   value of ASN.1 tag
  *
  * @return zero on success or error code.
  */
@@ -191,7 +191,7 @@ extern te_errno asn_get_child_type(const asn_type *type,
 /**
  * Find ASN.1 tag value by textual label.
  *
- * @param type          ASN type descriptor, must have SEQUENCE, SET
+ * @param type          ASN.1 type descriptor, must have SEQUENCE, SET
  *                      or CHOICE syntax
  * @param label         textual label of desired field
  * @param tag           location for ASN.1 tag (OUT)
@@ -202,7 +202,7 @@ extern te_errno asn_label_to_tag(const asn_type *type, const char *label,
                                  asn_tag_t *tag);
 
 /**
- * Declaration of structures which describes basic ASN types.
+ * Declaration of structures which describes basic ASN.1 types.
  */
 
 extern const asn_type * const asn_base_boolean;  /**< BOOLEAN    */
@@ -252,12 +252,12 @@ extern const asn_type asn_base_uint32_s; /**< UINTEGER (0..4294967295) */
 
 
 /**
- * Declaration of struct ASN value
+ * Declaration of struct ASN.1 value
  */
 struct asn_value;
 
 /**
- * C type for presentation of ASN value.
+ * C type for presentation of ASN.1 value.
  */
 typedef struct asn_value asn_value;
 
@@ -269,9 +269,9 @@ struct asn_child_desc;
 typedef struct asn_child_desc asn_child_desc_t;
 
 /**
- * Init empty ASN value of specified type.
+ * Init empty ASN.1 value of specified type.
  *
- * @param type       ASN type to which value should belong
+ * @param type       ASN.1 type to which value should belong
  *
  * @return pointer to new asn_value instance or NULL if error occurred.
  */
@@ -286,11 +286,11 @@ extern asn_value *asn_init_value(const asn_type *type);
 
 
 /**
- * Init empty ASN value of specified type with a certain ASN tag.
+ * Init empty ASN.1 value of specified type with a certain ASN.1 tag.
  *
- * @param type       ASN type to which value should belong
- * @param tc         ASN tag class, see enum definition and ASN.1 standard
- * @param tag        ASN tag value, may be an arbitrary non-negative integer
+ * @param type       ASN.1 type to which value should belong
+ * @param tc         ASN.1 tag class, see enum definition and ASN.1 standard
+ * @param tag        ASN.1 tag value, may be an arbitrary non-negative integer
  *
  * @return pointer to new asn_value instance or NULL if error occurred.
  */
@@ -299,29 +299,29 @@ extern asn_value *asn_init_value_tagged(const asn_type *type,
                                         asn_tag_value tag);
 
 /**
- * Make a copy of ASN value instance.
+ * Make a copy of ASN.1 value instance.
  *
- * @param value       ASN value to be copied
+ * @param value       ASN.1 value to be copied
  *
  * @return pointer to new asn_value instance or NULL if error occurred.
  */
 extern asn_value *asn_copy_value(const asn_value *value);
 
 /**
- * Move content of ASN value to another ASN value instance.
+ * Move content of ASN.1 value to another ASN.1 value instance.
  *
- * @param dst       ASN value, which content should be changed
+ * @param dst       ASN.1 value, which content should be changed
  *                  to be identical to 'src'.
- * @param src       ASN value to be copied.
+ * @param src       ASN.1 value to be copied.
  *
  * @return zero on success, otherwise error code.
  */
 extern te_errno asn_assign_value(asn_value *dst, const asn_value *src);
 
 /**
- * Free memory allocalted by ASN value instance.
+ * Free memory allocalted by ASN.1 value instance.
  *
- * @param value       ASN value to be destroyed
+ * @param value       ASN.1 value to be destroyed
  *
  * @return nothing
  */
@@ -329,19 +329,19 @@ extern void asn_free_value(asn_value *value);
 
 
 /**
- * Obtain ASN type to which specified value belongs.
+ * Obtain ASN.1 type to which specified value belongs.
  *
- * @param value       ASN value which type is interested
+ * @param value       ASN.1 value which type is interested
  *
  * @return pointer to asn_type instance or NULL if error occurred.
  */
 extern const asn_type *asn_get_type(const asn_value *value);
 
 /**
- * Check ASN value for particular type.
+ * Check ASN.1 value for particular type.
  *
- * @param value         ASN value.
- * @param type          ASN type.
+ * @param value         ASN.1 value.
+ * @param type          ASN.1 type.
  *
  * @return @c TRUE if @p value of type of @p type, @c FALSE otherwise.
  */
@@ -373,41 +373,7 @@ extern te_errno asn_parse_value_text(const char *string,
                                      int *parsed_syms);
 
 /**
- * Parse ASN.1 text with "Value assignment" (see ASN.1 specification)
- * and create a new ASN value instance with internal presentation
- * of this value. If type of ASN value in 'string' is not known
- * for module, string will not parsed and NULL will be returned.
- * Name of value is stored in field 'name' of asn_value structure.
- *
- * This function is not implemented.
- *
- * @param string        text to be parsed
- * @param value         location for pointer to new parsed value
- *
- * @return zero on success, otherwise error code.
- */
-extern te_errno asn_parse_value_assign_text(const char *string,
-                                            asn_value **value);
-
-/**
- * Read ASN.1 text file, parse value assignments in it while they refer to
- * ASN types which are known to the module, and add all parsed values
- * to internal Value hash.
- * Name of value is stored in field 'name' of asn_value structure.
- *
- * This function is not implemented.
- *
- * @param filename      name of file to be parsed
- * @param found_names   names of parsed ASN values (OUT)
- * @param found_len     length of array found_names[] (IN/OUT)
- *
- * @return zero on success, otherwise error code.
- */
-extern te_errno asn_parse_file(const char *filename, char **found_names,
-                               int *found_len);
-
-/**
- * Read ASN.1 text file, parse DefinedValue of specified ASN type
+ * Read ASN.1 text file, parse DefinedValue of specified ASN.1 type
  *
  * @param filename      name of file to be parsed
  * @param type          expected type of value
@@ -434,8 +400,8 @@ extern te_errno asn_parse_dvalue_in_file(const char *filename,
  * printed so match, as possible. In this case asn_sprint_value will return
  * amount of total number of bytes, which are required for this value.
  *
- * @param value         ASN value to be printed
- * @param buffer        buffer for ASN text
+ * @param value         ASN.1 value to be printed
+ * @param buffer        buffer for ASN.1 text
  * @param buf_len       length of buffer
  * @param indent        current indent, usually zero
  *
@@ -450,7 +416,7 @@ extern int asn_sprint_value(const asn_value *value, char *buffer,
  * to file with specified name. If file already exists, it will be
  * overwritten.
  *
- * @param value         ASN value to be stored
+ * @param value         ASN.1 value to be stored
  * @param filename      name of the file
  *
  * @return zero on success, otherwise error code.
@@ -469,7 +435,7 @@ extern te_errno asn_save_to_file(const asn_value *value,
 
 
 /**
- * BER encoding of passed ASN value.
+ * BER encoding of passed ASN.1 value.
  *
  * @param buf           pointer to buffer to be filled by coded data
  * @param buf_len       length of accessible buffer, function puts here
@@ -525,12 +491,12 @@ extern asn_value *asn_find_child_choice_value(const asn_value *container,
                                               asn_tag_value    tag_value);
 
 /**
- * Free one-level subvalue of constraint ASN value instance by tag.
+ * Free one-level subvalue of constraint ASN.1 value instance by tag.
  * For CHOICE syntax value tag is ignored.
  *
- * @param value       ASN value which subvalue should be destroyed
- * @param tag_class   class of ASN tag
- * @param tag_val     value of ASN tag
+ * @param value       ASN.1 value which subvalue should be destroyed
+ * @param tag_class   class of ASN.1 tag
+ * @param tag_val     value of ASN.1 tag
  *
  * @return zero on success, otherwise error code.
  */
@@ -539,12 +505,12 @@ extern te_errno asn_free_child(asn_value *value,
                                asn_tag_value tag_val);
 
 /**
- * Free subvalue of constraint ASN value instance, which may be
+ * Free subvalue of constraint ASN.1 value instance, which may be
  * very deep in value-constrain tree.
  *
- * @param value       ASN value which subvalue should be destroyed
+ * @param value       ASN.1 value which subvalue should be destroyed
  * @param labels      string with dot-separated sequence of textual field
- *                    labels, specifying subvalue in ASN value tree with
+ *                    labels, specifying subvalue in ASN.1 value tree with
  *                    'container' as a root. Label for 'SEQUENCE OF' and
  *                    'SET OF' subvalues is decimal notation of its integer
  *                    index in array. Choice labels shouls be prepended by
@@ -557,7 +523,7 @@ extern te_errno asn_free_descendant(asn_value *value, const char *labels);
 
 
 /**
- * Find descendant value in ASN value tree by textual labels specifier.
+ * Find descendant value in ASN.1 value tree by textual labels specifier.
  * This method fails and return NULL if specified subvalue does not
  * exists in 'value'.
  * Besides, if some CHOICE specifier is absent, this methods
@@ -566,7 +532,7 @@ extern te_errno asn_free_descendant(asn_value *value, const char *labels);
  * NOTE for user: do not change got subvalue, if you are not sure,
  * what are you doing. Especially - do not free it!
  *
- * @param value         Root of ASN value tree.
+ * @param value         Root of ASN.1 value tree.
  * @param status        Location of status of operation,
  *                      allways changed unless NULL (OUT).
  * @param labels_fmt    Format (*printf-like) string for labels string.
@@ -580,7 +546,7 @@ extern asn_value *asn_find_descendant(const asn_value *value,
 
 
 /**
- * Find descendant value in ASN value tree by textual labels specifier.
+ * Find descendant value in ASN.1 value tree by textual labels specifier.
  * This method creates subvalue, respective to labels, if it is absent
  * in 'value'.
  * If some CHOICE specifier is absent, but there is specific subvalue
@@ -589,7 +555,7 @@ extern asn_value *asn_find_descendant(const asn_value *value,
  * NOTE for user: do not change got subvalue, if you are not sure,
  * what are you doing. Especially - do not free it!
  *
- * @param value         Root of ASN value tree.
+ * @param value         Root of ASN.1 value tree.
  * @param status        Location of status of operation,
  *                      allways changed unless NULL (OUT).
  * @param labels_fmt    Format (*printf-like) string for labels string.
@@ -604,15 +570,15 @@ extern asn_value *asn_retrieve_descendant(asn_value *value,
 
 
 /**
- * Get descendent subvalue of some ASN value with COMPOUND syntax.
+ * Get descendent subvalue of some ASN.1 value with COMPOUND syntax.
  * Got subvalue should NOT be freed!
  *
  * This method is much faster then "asn_read_component_value' because
  * it does not make external copy of subvalue.
  *
- * @param container     root of ASN value tree which subvalue is interested
- * @param subval        location for pointer to ASN sub-value (OUT)
- * @param labels        textual ASN labels of subvalue; see
+ * @param container     root of ASN.1 value tree which subvalue is interested
+ * @param subval        location for pointer to ASN.1 sub-value (OUT)
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success or error code.
@@ -624,15 +590,15 @@ extern te_errno asn_get_descendent(const asn_value *container,
 
 
 /**
- * Put descendent subvalue to some ASN value with COMPOUND syntax.
- * Passed ASN value simply inserted into tree without copy, old
+ * Put descendent subvalue to some ASN.1 value with COMPOUND syntax.
+ * Passed ASN.1 value simply inserted into tree without copy, old
  * value on respective place is freed!
  *
- * @param container     Root of ASN value tree.
- * @param subval        ASN sub-value which should be inserted, may
+ * @param container     Root of ASN.1 value tree.
+ * @param subval        ASN.1 sub-value which should be inserted, may
  *                      be NULL, if respecive part of 'container'
  *                      just should be cleared.
- * @param labels        Textual ASN labels of subvalue; see
+ * @param labels        Textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description.
  *
  * @return zero on success or error code.
@@ -644,15 +610,15 @@ extern te_errno asn_put_descendent(asn_value *container,
 
 /**
  * Insert array element in indexed syntax (i.e. 'SEQUENCE OF' or 'SET OF')
- * subvalue of root ASN value container.
+ * subvalue of root ASN.1 value container.
  * Passed subvalue will NOT copied, do not free it after this method!
  *
- * @param container     root of ASN value tree which subvalue is interested
- * @param elem_value    ASN value to be placed into the array, specified
+ * @param container     root of ASN.1 value tree which subvalue is interested
+ * @param elem_value    ASN.1 value to be placed into the array, specified
  *                      by labels at place, specified by index
  * @param index         array index of place to which element should be
  *                      inserted
- * @param labels        textual ASN labels of subvalue; see
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success, otherwise error code.
@@ -663,11 +629,11 @@ extern te_errno asn_insert_indexed(asn_value *container,
 
 /**
  * Remove array element from indexed syntax (i.e. 'SEQUENCE OF' or 'SET OF')
- * subvalue of root ASN value container.
+ * subvalue of root ASN.1 value container.
  *
- * @param container     root of ASN value tree which subvalue is interested
+ * @param container     root of ASN.1 value tree which subvalue is interested
  * @param index         array index of element to be removed
- * @param labels        textual ASN labels of subvalue; see
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success, otherwise error code.
@@ -676,15 +642,15 @@ extern te_errno asn_remove_indexed(asn_value *container,
                                    int index, const char *labels);
 
 /**
- * Get subvalue of ASN value with indexed ('SEQUENCE OF' or 'SET OF')
+ * Get subvalue of ASN.1 value with indexed ('SEQUENCE OF' or 'SET OF')
  * syntax. Got subvalue should NOT be freed!
  *
  * This method does not make external copy of subvalue.
  *
- * @param container     root of ASN value tree which subvalue is interested
- * @param subval        location for pointer to ASN sub-value (OUT)
+ * @param container     root of ASN.1 value tree which subvalue is interested
+ * @param subval        location for pointer to ASN.1 sub-value (OUT)
  * @param index         index of subvalue
- * @param labels        textual ASN labels of subvalue; see
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success or error code.
@@ -697,7 +663,7 @@ extern te_errno asn_get_indexed(const asn_value *container,
 /**
  * Write primitive syntax value.
  *
- * @param value         ASN value with primitive syntax.
+ * @param value         ASN.1 value with primitive syntax.
  * @param data          Data to be written, should be in nature
  *                      C format for data type respective to leaf syntax.
  * @param d_len         Length of the data.
@@ -718,9 +684,9 @@ extern te_errno asn_write_primitive(asn_value *value,
  * 'container', if there is one.
  * Check that type of 'value' is one of possible choices in 'container'.
  *
- * @param value         ASN value of CHOICE syntax, which subvalue
+ * @param value         ASN.1 value of CHOICE syntax, which subvalue
  *                      should be changed.
- * @param value         ASN value to be put into 'container'.
+ * @param value         ASN.1 value to be put into 'container'.
  *
  * @return status code
  */
@@ -728,10 +694,10 @@ extern te_errno asn_put_choice(asn_value *container, asn_value *value);
 
 
 /**
- * Convert 'extended' ASN path (set of labels) to ordinary one for given
+ * Convert 'extended' ASN.1 path (set of labels) to ordinary one for given
  * asn_value.
  *
- * Extended ASN path could have search expression instead of one (or
+ * Extended ASN.1 path could have search expression instead of one (or
  * several) labels. Only index labels could be replaced (i.e. it is
  * possible only for SEQUENCE_OF and SET_OF types) and subtype has to be
  * SEQUENCE or SET. The syntax is following:
@@ -742,9 +708,9 @@ extern te_errno asn_put_choice(asn_value *container, asn_value *value);
  * search expression is replaced by index. There could be several labels in
  * the search expression, they are separated by ',' then.
  *
- * @param node          Root ASN value to start searching for labels
- * @param ext_path      Extended ASN path with search expressions
- * @param asn_path      Buffer for normal ASN path
+ * @param node          Root ASN.1 value to start searching for labels
+ * @param ext_path      Extended ASN.1 path with search expressions
+ * @param asn_path      Buffer for normal ASN.1 path
  * @param asn_path_len  asn_path buffer length
  * @param auto_insert   Insert items if search fail
  *
@@ -755,19 +721,19 @@ te_errno asn_path_from_extended(asn_value *node, const char *ext_path,
                                 te_bool auto_insert);
 
 /**
- * Inserts 'value' into root_node ASN value.
+ * Inserts 'value' into root_node ASN.1 value.
  *
  * ext_path must be of format
  *   <labels>.[<label>:<asn text value>]
  *
  * 'value' will be inserted as a subvalue of '<labels>' value, its index
  * will be stored in 'index' variable and after that <asn text value> will
- * be assigned to field named <label> of newly inserted ASN value. Several
+ * be assigned to field named <label> of newly inserted ASN.1 value. Several
  * labels could be specified in [], separate with ','.
  *
- * @param root_node  Root ASN value to start searching for labels
- * @param ext_path   Extended ASN path with search expressions
- * @param value      ASN value to be inserted
+ * @param root_node  Root ASN.1 value to start searching for labels
+ * @param ext_path   Extended ASN.1 path with search expressions
+ * @param value      ASN.1 value to be inserted
  * @param index      Index of 'value' after insertion into container (OUT)
  *
  * @return   Status code
@@ -781,8 +747,8 @@ int asn_insert_value_extended_path(asn_value *root_node,
 /**
  * Check that everything that is in the 'value' is in the 'container'.
  *
- * @param container  ASN value to be compared against
- * @param value      ASN value to be compared
+ * @param container  ASN.1 value to be compared against
+ * @param value      ASN.1 value to be compared
  *
  * @return Status code
  */
@@ -802,11 +768,11 @@ asn_check_value_contains(asn_value *container, asn_value *value);
 
 
 /**
- * Free subvalue of constraint ASN value instance.
+ * Free subvalue of constraint ASN.1 value instance.
  *
- * @param value       ASN value which subvalue should be destroyed
+ * @param value       ASN.1 value which subvalue should be destroyed
  * @param labels      string with dot-separated sequence of textual field
- *                    labels, specifying subvalue in ASN value tree with
+ *                    labels, specifying subvalue in ASN.1 value tree with
  *                    'container' as a root. Label for 'SEQUENCE OF' and
  *                    'SET OF' subvalues is decimal notation of its integer
  *                    index in array. Choice labels shouls be prepended by
@@ -825,12 +791,12 @@ extern te_errno asn_free_subvalue_fmt(asn_value  *container,
                                       __attribute__((format(printf, 2, 3)));
 
 /**
- * Free one-level subvalue of constraint ASN value instance by tag.
+ * Free one-level subvalue of constraint ASN.1 value instance by tag.
  * For CHOICE syntax value tag is ignored.
  *
- * @param value       ASN value which subvalue should be destroyed
- * @param tag_class   class of ASN tag
- * @param tag_val     value of ASN tag
+ * @param value       ASN.1 value which subvalue should be destroyed
+ * @param tag_class   class of ASN.1 tag
+ * @param tag_val     value of ASN.1 tag
  *
  * @return zero on success, otherwise error code.
  */
@@ -845,15 +811,15 @@ extern te_errno asn_free_child_value(asn_value *value,
 
 
 /**
- * Put ASN value to the named one-depth leaf to the ASN value.
+ * Put ASN.1 value to the named one-depth leaf to the ASN.1 value.
  * Free old leaf subvalue, if there was one.
- * Subvalue is not copied, but inserted into ASN tree of 'container' as is.
+ * Subvalue is not copied, but inserted into ASN.1 tree of 'container' as is.
  *
- * @param container     ASN value which child should be updated,
+ * @param container     ASN.1 value which child should be updated,
  *                      have to be of syntax SEQUENCE, SET, or CHOICE
- * @param subvalue      new ASN value for child
- * @param tag_class     class of ASN tag
- * @param tag_val       value of ASN tag
+ * @param subvalue      new ASN.1 value for child
+ * @param tag_class     class of ASN.1 tag
+ * @param tag_val       value of ASN.1 tag
  *
  * @return zero on success, otherwise error code.
  */
@@ -866,9 +832,9 @@ extern te_errno asn_put_child_value(asn_value *container,
  * The same as 'asn_put_child_value', but take as child specificator
  * its character label instead of tag.
  *
- * @param container     ASN value which child should be updated,
+ * @param container     ASN.1 value which child should be updated,
  *                      have to be of syntax SEQUENCE, SET, or CHOICE
- * @param subvalue      new ASN value for child
+ * @param subvalue      new ASN.1 value for child
  * @param label         character label of child
  *
  * @return zero on success, otherwise error code.
@@ -879,16 +845,16 @@ extern te_errno asn_put_child_value_by_label(asn_value *container,
 
 
 /**
- * Write data into primitive syntax leaf in specified ASN value.
+ * Write data into primitive syntax leaf in specified ASN.1 value.
  *
- * @param container     pointer to ASN value which leaf field is interested
+ * @param container     pointer to ASN.1 value which leaf field is interested
  * @param data          data to be written, should be in nature C format for
  *                      data type respective to leaf syntax
  * @param d_len         length of the data
  *                      Measured in octets for all types except OID and
  *                      BIT_STRING; for OID measured in sizeof(int)
  *                      for BIT_STRING measured in bits
- * @param labels        textual ASN labels of subvalue; see
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success, otherwise error code.
@@ -908,15 +874,15 @@ extern te_errno asn_write_value_field_fmt(asn_value  *container,
                                           __attribute__((format(printf, 4, 5)));
 
 /**
- * Read data from primitive syntax leaf in specified ASN value.
+ * Read data from primitive syntax leaf in specified ASN.1 value.
  *
- * @param container     pointer to ASN value which leaf field is interested
+ * @param container     pointer to ASN.1 value which leaf field is interested
  * @param data          pointer to buffer for read data (OUT)
  * @param d_len         length of available buffer / read data (IN/OUT).
  *                      Measured in octets for all types except OID and
  *                      BIT_STRING; for OID measured in sizeof(int),
  *                      for BIT_STRING measured in bits
- * @param labels        textual ASN labels of subvalue; see
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success, otherwise error code.
@@ -936,9 +902,9 @@ extern te_errno asn_read_value_field_fmt(const asn_value  *container,
                                          __attribute__((format(printf, 4, 5)));
 
 /**
- * Get primitive value of enumeration type from ASN value.
+ * Get primitive value of enumeration type from ASN.1 value.
  *
- * @param[in]  container    ASN value containing data of enumeration type.
+ * @param[in]  container    ASN.1 value containing data of enumeration type.
  * @param[out] value        Primitive value.
  *
  * @return Status code.
@@ -951,7 +917,7 @@ extern te_errno asn_get_enum(const asn_value *container, int32_t *value);
  * @note Return value must not be modified, since it points to @p container
  * internals.
  *
- * @param[in]  container    ASN value containing data of enumeration type.
+ * @param[in]  container    ASN.1 value containing data of enumeration type.
  * @param[out] name         Name of value of enumeration type.
  *
  * @return Status code.
@@ -960,11 +926,11 @@ extern te_errno asn_get_enum_name(const asn_value *container,
                                   const char **name);
 
 /**
- * Write 32-bit integer into leaf in specified ASN value.
+ * Write 32-bit integer into leaf in specified ASN.1 value.
  *
- * @param container     pointer to ASN value which leaf field is interested
+ * @param container     pointer to ASN.1 value which leaf field is interested
  * @param value         integer value to be written
- * @param labels        textual ASN labels of subvalue; see
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success, otherwise error code.
@@ -973,11 +939,11 @@ extern te_errno asn_write_int32(asn_value *container,
                                 int32_t value, const char *labels);
 
 /**
- * Read 32-bit integer from leaf in specified ASN value.
+ * Read 32-bit integer from leaf in specified ASN.1 value.
  *
- * @param container     pointer to ASN value which leaf field is interested
+ * @param container     pointer to ASN.1 value which leaf field is interested
  * @param value         place for integer value to be read (OUT)
- * @param labels        textual ASN labels of subvalue; see
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success, otherwise error code.
@@ -986,11 +952,11 @@ extern te_errno asn_read_int32(const asn_value *container,
                                int32_t *value, const char *labels);
 
 /**
- * Write 32-bit unsigned integer into leaf in specified ASN value.
+ * Write 32-bit unsigned integer into leaf in specified ASN.1 value.
  *
- * @param container     Pointer to ASN value.
+ * @param container     Pointer to ASN.1 value.
  * @param value         Value to be written.
- * @param labels        Textual ASN labels of a leaf which should be
+ * @param labels        Textual ASN.1 labels of a leaf which should be
  *                      changed; see asn_free_subvalue() method for more
  *                      information.
  *
@@ -1000,11 +966,11 @@ extern te_errno asn_write_uint32(asn_value *container,
                                  uint32_t value, const char *labels);
 
 /**
- * Read 32-bit unsigned integer from a leaf in specified ASN value.
+ * Read 32-bit unsigned integer from a leaf in specified ASN.1 value.
  *
- * @param container     Pointer to ASN value.
+ * @param container     Pointer to ASN.1 value.
  * @param value         Where to save read value.
- * @param labels        Textual ASN labels of a leaf from which to read
+ * @param labels        Textual ASN.1 labels of a leaf from which to read
  *                      value; see asn_free_subvalue() method for more
  *                      information.
  *
@@ -1014,11 +980,11 @@ extern te_errno asn_read_uint32(const asn_value *container,
                                 uint32_t *value, const char *labels);
 
 /**
- * Write boolean into leaf in specified ASN value.
+ * Write boolean into leaf in specified ASN.1 value.
  *
- * @param container     pointer to ASN value which leaf field is interested
+ * @param container     pointer to ASN.1 value which leaf field is interested
  * @param value         boolean value to be written
- * @param labels        textual ASN labels of subvalue; see
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success, otherwise error code.
@@ -1027,11 +993,11 @@ extern te_errno asn_write_bool(asn_value *container,
                                te_bool value, const char *labels);
 
 /**
- * Read boolean from leaf in specified ASN value.
+ * Read boolean from leaf in specified ASN.1 value.
  *
- * @param container     pointer to ASN value which leaf field is interested
+ * @param container     pointer to ASN.1 value which leaf field is interested
  * @param value         place for boolean value to be read (OUT)
- * @param labels        textual ASN labels of subvalue; see
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success, otherwise error code.
@@ -1040,11 +1006,11 @@ extern te_errno asn_read_bool(const asn_value *container,
                               te_bool *value, const char *labels);
 
 /**
- * Write character string into leaf in specified ASN value.
+ * Write character string into leaf in specified ASN.1 value.
  *
- * @param container     pointer to ASN value which leaf field is interested
+ * @param container     pointer to ASN.1 value which leaf field is interested
  * @param value         string to be written
- * @param labels        textual ASN labels of subvalue; see
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success, otherwise error code.
@@ -1053,12 +1019,12 @@ extern te_errno asn_write_string(asn_value *container,
                                  const char *value, const char *labels);
 
 /**
- * Read character string from leaf in specified ASN value.
+ * Read character string from leaf in specified ASN.1 value.
  * User have to free() got pointer to string.
  *
- * @param container     pointer to ASN value which leaf field is interested
+ * @param container     pointer to ASN.1 value which leaf field is interested
  * @param value         place for pointer to read string (OUT)
- * @param labels        textual ASN labels of subvalue; see
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success, otherwise error code.
@@ -1068,12 +1034,12 @@ extern te_errno asn_read_string(const asn_value *container,
 
 
 /**
- * Write component of COMPOUND subvalue in ASN value tree.
+ * Write component of COMPOUND subvalue in ASN.1 value tree.
  *
- * @param container     root of ASN value tree which subvalue to be changed
- * @param elem_value    ASN value to be placed into the tree at place,
+ * @param container     root of ASN.1 value tree which subvalue to be changed
+ * @param elem_value    ASN.1 value to be placed into the tree at place,
  *                      specified by labels
- * @param labels        textual ASN labels of subvalue; see
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success, otherwise error code.
@@ -1083,12 +1049,12 @@ extern te_errno asn_write_component_value(asn_value *container,
                                           const char *labels);
 
 /**
- * Read component of COMPOUND subvalue in ASN value tree.
+ * Read component of COMPOUND subvalue in ASN.1 value tree.
  *
- * @param container     root of ASN value tree which subvalue is interested
- * @param elem_value    read ASN value, copy of subtree specified by
+ * @param container     root of ASN.1 value tree which subvalue is interested
+ * @param elem_value    read ASN.1 value, copy of subtree specified by
  *                      labels argument (OUT)
- * @param labels        textual ASN labels of subvalue; see
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success, otherwise error code.
@@ -1100,13 +1066,13 @@ extern te_errno asn_read_component_value(const asn_value *container,
 
 /**
  * Replace array element in indexed ('SEQUENCE OF' or 'SET OF') subvalue
- * of root ASN value container.
+ * of root ASN.1 value container.
  *
- * @param container     root of ASN value tree which subvalue is interested
- * @param elem_value    ASN value to be placed into the array, specified
+ * @param container     root of ASN.1 value tree which subvalue is interested
+ * @param elem_value    ASN.1 value to be placed into the array, specified
  *                      by labels at place, specified by index
  * @param index         array index of element to be replaced
- * @param labels        textual ASN labels of subvalue; see
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success, otherwise error code.
@@ -1118,11 +1084,11 @@ extern te_errno asn_write_indexed(asn_value *container,
 
 /**
  * Read array element in indexed ('SEQUENCE OF' or 'SET OF') subvalue
- * of root ASN value 'container'.
+ * of root ASN.1 value 'container'.
  *
- * @param container     root of ASN value tree which subvalue is interested
+ * @param container     root of ASN.1 value tree which subvalue is interested
  * @param index         array index of element to be read
- * @param labels        textual ASN labels of subvalue; see
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return pointer to new asn_value instance or NULL if error occurred.
@@ -1131,8 +1097,8 @@ extern asn_value *asn_read_indexed(const asn_value *container,
                                     int index, const char *labels);
 
 /**
- * Get length of subvalue of root ASN value container.
- * Semantic of length value depends on the ASN syntax.
+ * Get length of subvalue of root ASN.1 value container.
+ * Semantic of length value depends on the ASN.1 syntax.
  *    primitive syntax:
  *        INTEGER --
  *            zero for usual native 'int' or number of bits used.
@@ -1146,8 +1112,8 @@ extern asn_value *asn_read_indexed(const asn_value *container,
  *          number of sub-values; should be one or zero (for non-complete
  *          values) for CHOICE and TAGGED syntacies.
  *
- * @param container     root of ASN value tree which subvalue is interested
- * @param labels        textual ASN labels of subvalue; see
+ * @param container     root of ASN.1 value tree which subvalue is interested
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return length subvalue, -1 if error occurred.
@@ -1155,10 +1121,10 @@ extern asn_value *asn_read_indexed(const asn_value *container,
 extern int asn_get_length(const asn_value *container, const char *labels);
 
 /**
- * Obtain ASN syntax of specified field in value.
+ * Obtain ASN.1 syntax of specified field in value.
  *
- * @param value          ASN value which leaf syntax is interested
- * @param labels        textual ASN labels of subvalue; see
+ * @param value          ASN.1 value which leaf syntax is interested
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return syntax of specified leaf in value.
@@ -1169,22 +1135,22 @@ extern asn_syntax asn_get_syntax(const asn_value *value,
 
 
 /**
- * Get choice in subvalue of root ASN value container.
+ * Get choice in subvalue of root ASN.1 value container.
  *
- * @param container     root of ASN value tree which subvalue is interested
+ * @param container     root of ASN.1 value tree which subvalue is interested
  *
  * @return pointer to label or NULL on error.
  */
 extern const char *asn_get_choice_ptr(const asn_value *container);
 
 /**
- * Get choice in subvalue of root ASN value container.
+ * Get choice in subvalue of root ASN.1 value container.
  *
- * @param container     root of ASN value tree which subvalue is interested
- * @param labels        textual ASN labels of subvalue; see
+ * @param container     root of ASN.1 value tree which subvalue is interested
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
- *                      Subvalue should have ASN syntax CHOICE
- * @param choice_label  string with label of choice in ASN value (OUT)
+ *                      Subvalue should have ASN.1 syntax CHOICE
+ * @param choice_label  string with label of choice in ASN.1 value (OUT)
  * @param ch_lb_len     length of available buffer in choice_label
  *
  * @return zero or error code.
@@ -1205,18 +1171,18 @@ extern const char *asn_get_name(const asn_value *container);
 
 
 /**
- * Get constant pointer to subvalue of some ASN value with COMPOUND
+ * Get constant pointer to subvalue of some ASN.1 value with COMPOUND
  * syntax.
  * User may to try discard 'const' qualifier of obtained subvalue only
- * if he (she) knows very well what he doing with ASN value.
+ * if he (she) knows very well what he doing with ASN.1 value.
  * In particular, got subvalue should NOT be freed!
  *
  * This method is much faster then "asn_read_component_value'
  * because it does not make external copy of subvalue.
  *
- * @param container     root of ASN value tree which subvalue is interested
- * @param subval        location for pointer to ASN sub-value (OUT)
- * @param labels        textual ASN labels of subvalue; see
+ * @param container     root of ASN.1 value tree which subvalue is interested
+ * @param subval        location for pointer to ASN.1 sub-value (OUT)
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success or error code.
@@ -1227,21 +1193,21 @@ extern te_errno asn_get_subvalue(const asn_value *container,
 
 
 /**
- * Get constant pointer to direct subvalue of ASN value with named syntax
+ * Get constant pointer to direct subvalue of ASN.1 value with named syntax
  * ('SEQUENCE' or 'SET') by its tag. If there are more then one
  * child with specified tag, method return first found.
  *
  * User may try to discard 'const' qualifier of obtained subvalue only
- * if he (she) knows very well what he doing with ASN value.
+ * if he (she) knows very well what he doing with ASN.1 value.
  * In particular, got subvalue should NOT be freed!
  *
  * This method is much faster then "asn_read_component_value' because
  * it does not make external copy of subvalue.
  *
- * @param container     root of ASN value tree which subvalue is interested
- * @param subval        location for pointer to ASN sub-value (OUT)
- * @param tag_class     class of ASN tag
- * @param tag_val       value of ASN tag
+ * @param container     root of ASN.1 value tree which subvalue is interested
+ * @param subval        location for pointer to ASN.1 sub-value (OUT)
+ * @param tag_class     class of ASN.1 tag
+ * @param tag_val       value of ASN.1 tag
  *
  * @return zero on success or error code.
  */
@@ -1252,19 +1218,19 @@ extern te_errno asn_get_child_value(const asn_value *container,
 
 
 /**
- * Get constant pointer to direct subvalue of ASN value with CHOICE syntax.
+ * Get constant pointer to direct subvalue of ASN.1 value with CHOICE syntax.
  *
  * User may try to discard 'const' qualifier of obtained subvalue only
- * if he (she) knows very well what he doing with ASN value.
+ * if he (she) knows very well what he doing with ASN.1 value.
  * In particular, got subvalue should NOT be freed!
  *
  * This method is much faster then "asn_read_component_value' because
  * it does not make external copy of subvalue.
  *
- * @param container     root of ASN value tree which subvalue is interested
- * @param subval        location for pointer to ASN sub-value (OUT)
- * @param tag_class     class of ASN tag of subvalue (OUT)
- * @param tag_val       value of ASN tag of subvalue (OUT)
+ * @param container     root of ASN.1 value tree which subvalue is interested
+ * @param subval        location for pointer to ASN.1 sub-value (OUT)
+ * @param tag_class     class of ASN.1 tag of subvalue (OUT)
+ * @param tag_val       value of ASN.1 tag of subvalue (OUT)
  *
  * @return zero on success or error code.
  */
@@ -1275,24 +1241,24 @@ extern te_errno asn_get_choice_value(const asn_value *container,
 
 /**
  * Get constant pointer to data related to leaf plain-syntax sub-value
- * of ASN value.
+ * of ASN.1 value.
  *
  * Got pointer should NOT be freed!
  *
  * Write to got memory location is acceptable in case of simple data syntax
  * (e.g. PrintableString or INTEGER) and if new data has length not greater
- * then set in ASN value leaf; user has no way to change data length except
+ * then set in ASN.1 value leaf; user has no way to change data length except
  * via 'asn_write_value_field' method.
  *
  * This method is much faster then "asn_read_value_field' because it does
  * not copy data to user location, with large octet strings or OIDs
  * it may be significant.
  *
- * @param container     root of ASN value tree which subvalue is interested
+ * @param container     root of ASN.1 value tree which subvalue is interested
  * @param data_ptr      pointer to location for plain data pointer;
  *                      usually it should be something like '&str', where
  *                      'srt' has type 'const char *' (OUT)
- * @param labels        textual ASN labels of subvalue; see
+ * @param labels        textual ASN.1 labels of subvalue; see
  *                      asn_free_subvalue method for more description
  *
  * @return zero on success or error code.
@@ -1318,7 +1284,7 @@ extern asn_tag_value asn_get_tag(const asn_value *container);
  * So, while using this method to calculate required buffer,
  * add 1 to got value.
  *
- * @param value         ASN value
+ * @param value         ASN.1 value
  * @param indent        current indent, usually should be zero
  *
  * @return length the number of bytes required for textual
@@ -1329,10 +1295,10 @@ extern size_t asn_count_txt_len(const asn_value *value,
 
 
 /**
- * Set the mark to ASN value, which is arbitrary integer, which
+ * Set the mark to ASN.1 value, which is arbitrary integer, which
  * semantic is user-free.
  *
- * @param value         Pointer to the ASN value.
+ * @param value         Pointer to the ASN.1 value.
  * @param mark          Mark to be set.
  *
  * @return status code.
@@ -1340,9 +1306,9 @@ extern size_t asn_count_txt_len(const asn_value *value,
 extern te_errno asn_put_mark(asn_value *value, int mark);
 
 /**
- * Get the mark of ASN value.
+ * Get the mark of ASN.1 value.
  *
- * @param value         Pointer to the ASN value.
+ * @param value         Pointer to the ASN.1 value.
  * @param mark          Location for the mark of value.
  *
  * @return status code.
@@ -1351,18 +1317,18 @@ extern te_errno asn_get_mark(const asn_value *value, int *mark);
 
 
 /**
- * Typedef for user method to be called during walk over ASN value
+ * Typedef for user method to be called during walk over ASN.1 value
  * tree.
  *
  */
 typedef te_errno (* walk_method)(asn_value *value, void *user_ptr);
 
 /**
- * Walk over all subvalues tree of ASN value.
+ * Walk over all subvalues tree of ASN.1 value.
  * Order of walk is depth-first. Walk stops if user callback
  * return non-zero status.
  *
- * @param container     Pointer to the ASN value which subvalues
+ * @param container     Pointer to the ASN.1 value which subvalues
  *                      should be iterated.
  * @param only_leafs    Boolean flag, if TRUE, user callback will
  *                      will be called only for the leafs, i.e.
@@ -1383,11 +1349,11 @@ extern te_errno asn_walk_depth(asn_value *container, te_bool only_leafs,
                                void *user_ptr);
 
 /**
- * Walk over all subvalues tree of ASN value.
+ * Walk over all subvalues tree of ASN.1 value.
  * Order of walk is breadth-first. Walk stops if user callback
  * return non-zero status.
  *
- * @param container     Pointer to the ASN value which subvalues
+ * @param container     Pointer to the ASN.1 value which subvalues
  *                      should be iterated.
  * @param only_leafs    Boolean flag, if TRUE, user callback will
  *                      will be called only for the leafs, i.e.
