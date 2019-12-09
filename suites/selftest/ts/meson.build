@@ -11,6 +11,8 @@ add_project_arguments(get_option('te_cflags').split(), language: 'c')
 add_project_arguments('-Werror', language : 'c')
 add_project_link_arguments(get_option('te_ldflags').split(), language: 'c')
 
+te_tests_info_sh = find_program(join_paths(te_path, 'te_tests_info.sh'))
+
 cc = meson.get_compiler('c')
 
 test_deps = [ ]
