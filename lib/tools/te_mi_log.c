@@ -291,6 +291,9 @@ te_mi_kvpairs_str_append(const te_kvpair_h *pairs, const char *dict_name,
     const te_kvpair *pair;
     te_errno rc;
 
+    if (TAILQ_EMPTY(pairs))
+        return 0;
+
     rc = te_string_append(str, TE_MI_STR_FMT":{", dict_name);
 
     TAILQ_FOREACH(pair, pairs, links)
@@ -299,8 +302,8 @@ te_mi_kvpairs_str_append(const te_kvpair_h *pairs, const char *dict_name,
             rc = te_string_append(str, TE_MI_STR_FMT":"TE_MI_STR_FMT",",
                                   pair->key, pair->value);
     }
-    if (!TAILQ_EMPTY(pairs))
-        te_string_cut(str, 1);
+
+    te_string_cut(str, 1);
 
     if (rc == 0)
         rc = te_string_append(str, "},");
