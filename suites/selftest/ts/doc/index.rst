@@ -26,4 +26,6 @@ For start you need:
 .. toctree::
 	:hidden:
 
+    rst/tests
+
 	generated/rst/global
