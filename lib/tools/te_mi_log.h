@@ -117,7 +117,10 @@ extern void te_mi_logger_destroy(te_mi_logger *logger);
  */
 
 /**
- * Type of a measurement aggregation.
+ * Type of a measurement aggregation. The units of the measurement are
+ * defined by measurement type, unless different units are specified by
+ * aggregation explicilty.
+ *
  * First enum element must have value @c 0.
  */
 typedef enum te_mi_meas_aggr {
@@ -129,7 +132,11 @@ typedef enum te_mi_meas_aggr {
     TE_MI_MEAS_AGGR_MAX,
     /** Average value of a measurement */
     TE_MI_MEAS_AGGR_MEAN,
-    /** Coefficient of Variation of measurements */
+    /**
+     * Coefficient of Variation of measurements. The aggregation is
+     * unit-independend and defined as the ratio of standard deviation to
+     * the mean.
+     */
     TE_MI_MEAS_AGGR_CV,
     /** Standard deviation of measurements */
     TE_MI_MEAS_AGGR_STDEV,
@@ -151,24 +158,32 @@ typedef enum te_mi_meas_type {
                          Also is one past last valid type */
 } te_mi_meas_type;
 
-/** Scale of units of a result. First enum element must have value @c 0. */
-typedef enum te_mi_meas_units {
-    TE_MI_MEAS_UNITS_NANO = 0, /**< 10^(-9) */
-    TE_MI_MEAS_UNITS_MICRO, /**< 10^(-6) */
-    TE_MI_MEAS_UNITS_MILLI, /**< 10^(-3) */
-    TE_MI_MEAS_UNITS_PLAIN, /**< 1 */
-    TE_MI_MEAS_UNITS_KILO, /**< 10^(3) */
-    TE_MI_MEAS_UNITS_KIBI, /**< 2^(10) */
-    TE_MI_MEAS_UNITS_MEGA, /**< 10^(6) */
-    TE_MI_MEAS_UNITS_MEBI, /**< 2^(20) */
-    TE_MI_MEAS_UNITS_GIGA, /**< 10^(9) */
-    TE_MI_MEAS_UNITS_GIBI, /**< 2^(30) */
+/**
+ * Scale of a measurement result. The measurement value should be multiplied by
+ * this to get value in base units.
+ *
+ * First enum element must have value @c 0.
+ */
+typedef enum te_mi_meas_multiplier {
+    TE_MI_MEAS_MULTIPLIER_NANO = 0, /**< 10^(-9) */
+    TE_MI_MEAS_MULTIPLIER_MICRO, /**< 10^(-6) */
+    TE_MI_MEAS_MULTIPLIER_MILLI, /**< 10^(-3) */
+    TE_MI_MEAS_MULTIPLIER_PLAIN, /**< 1 */
+    TE_MI_MEAS_MULTIPLIER_KILO, /**< 10^(3) */
+    TE_MI_MEAS_MULTIPLIER_KIBI, /**< 2^(10) */
+    TE_MI_MEAS_MULTIPLIER_MEGA, /**< 10^(6) */
+    TE_MI_MEAS_MULTIPLIER_MEBI, /**< 2^(20) */
+    TE_MI_MEAS_MULTIPLIER_GIGA, /**< 10^(9) */
+    TE_MI_MEAS_MULTIPLIER_GIBI, /**< 2^(30) */
 
-    /** One past last valid unit */
-    TE_MI_MEAS_UNITS_END,
-} te_mi_meas_units;
+    /** One past last valid multiplier */
+    TE_MI_MEAS_MULTIPLIER_END,
+} te_mi_meas_multiplier;
 
-/** Measurement */
+/**
+ * Measurement. Base units of a measurement are defined by
+ * measurement type and measurement aggregation.
+ */
 typedef struct te_mi_meas {
     /** Measurement type */
     te_mi_meas_type type;
@@ -178,8 +193,8 @@ typedef struct te_mi_meas {
     te_mi_meas_aggr aggr;
     /** Measurement value */
     double val;
-    /** Units of the measurement */
-    te_mi_meas_units units;
+    /** Scale of a measurement result */
+    te_mi_meas_multiplier multiplier;
 } te_mi_meas;
 
 /**
@@ -194,10 +209,10 @@ extern te_errno te_mi_logger_meas_create(const char *tool,
                                          te_mi_logger **logger);
 
 /** Convenience te_mi_meas constructor */
-#define TE_MI_MEAS(_type, _name, _aggr, _val, _units)   \
+#define TE_MI_MEAS(_type, _name, _aggr, _val, _multiplier)   \
     (te_mi_meas){ TE_MI_MEAS_ ## _type, (_name),        \
                   TE_MI_MEAS_AGGR_ ## _aggr, (_val),    \
-                  TE_MI_MEAS_UNITS_ ## _units }
+                  TE_MI_MEAS_MULTIPLIER_ ## _multiplier }
 
 /** Convenience te_mi_meas vector constructor for te_mi_log_meas() */
 #define TE_MI_MEAS_V(...) \
@@ -258,12 +273,12 @@ extern te_errno te_mi_log_meas(const char *tool,
  *                              identify measurements in logs, may be @c NULL
  * @param[in]       aggr        Aggregation type of the measurement
  * @param[in]       val         Value of the measurement
- * @param[in]       units       Units of the measurement value
+ * @param[in]       multiplier  Scale of the measurement value
  */
 extern void te_mi_logger_add_meas(te_mi_logger *logger, te_errno *retval,
                                   te_mi_meas_type type, const char *name,
                                   te_mi_meas_aggr aggr, double val,
-                                  te_mi_meas_units units);
+                                  te_mi_meas_multiplier multiplier);
 
 /**
  * Variation of te_mi_logger_add_result() function that accepts
@@ -339,7 +354,7 @@ extern void te_mi_logger_add_meas_key(te_mi_logger *logger, te_errno *retval,
  *    tool_reset_pps();
  *    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_PPS, "pps",
  *                          TE_MI_MEAS_AGGR_SINGLE, pps,
- *                          TE_MI_MEAS_UNITS_PLAIN));
+ *                          TE_MI_MEAS_MULTIPLIER_PLAIN));
  * }
  *
  * te_mi_logger_add_meas_key(logger, NULL, "ver", "%s", tool_get_version_str());

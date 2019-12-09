@@ -35,7 +35,7 @@ typedef struct te_mi_meas_value {
     TAILQ_ENTRY(te_mi_meas_value) next;
     te_mi_meas_aggr aggr;
     double val;
-    te_mi_meas_units units;
+    te_mi_meas_multiplier multiplier;
 } te_mi_meas_value;
 
 typedef TAILQ_HEAD(te_mi_meas_value_h, te_mi_meas_value) te_mi_meas_value_h;
@@ -57,6 +57,33 @@ struct te_mi_logger {
     te_kvpair_h meas_keys;
     te_kvpair_h comments;
     te_bool error_ignored;
+};
+
+typedef enum te_mi_meas_base_unit_type {
+    TE_MI_MEAS_BASE_UNITLESS, /**< Unitless value represented as a ratio */
+    TE_MI_MEAS_BASE_UNIT_PPS, /**< Packets per second */
+    TE_MI_MEAS_BASE_UNIT_SECOND, /**< Seconds */
+    TE_MI_MEAS_BASE_UNIT_BPS, /**< Bits per second */
+    TE_MI_MEAS_BASE_UNIT_CELSIUS, /**< Degrees of celsius */
+    TE_MI_MEAS_BASE_UNIT_RPS, /**< Requests per second */
+} te_mi_meas_base_unit_type;
+
+static te_mi_meas_base_unit_type meas_base_unit_by_type_map[] = {
+    [TE_MI_MEAS_PPS] = TE_MI_MEAS_BASE_UNIT_PPS,
+    [TE_MI_MEAS_LATENCY] = TE_MI_MEAS_BASE_UNIT_SECOND,
+    [TE_MI_MEAS_THROUGHPUT] = TE_MI_MEAS_BASE_UNIT_BPS,
+    [TE_MI_MEAS_BANDWIDTH_USAGE] = TE_MI_MEAS_BASE_UNITLESS,
+    [TE_MI_MEAS_TEMP] = TE_MI_MEAS_BASE_UNIT_CELSIUS,
+    [TE_MI_MEAS_RPS] = TE_MI_MEAS_BASE_UNIT_RPS,
+};
+
+static const char *meas_base_unit_names[] = {
+    [TE_MI_MEAS_BASE_UNITLESS] = "",
+    [TE_MI_MEAS_BASE_UNIT_PPS] = "pps",
+    [TE_MI_MEAS_BASE_UNIT_SECOND] = "second",
+    [TE_MI_MEAS_BASE_UNIT_BPS] =  "bps",
+    [TE_MI_MEAS_BASE_UNIT_CELSIUS] = "degrees celsius",
+    [TE_MI_MEAS_BASE_UNIT_RPS] = "rps",
 };
 
 static const char *mi_type_names[] = {
@@ -81,18 +108,31 @@ static const char *meas_type_names[] = {
     [TE_MI_MEAS_RPS] = "rps",
 };
 
-static const char *meas_unit_names[] = {
-    [TE_MI_MEAS_UNITS_NANO] = "nano",
-    [TE_MI_MEAS_UNITS_MICRO] = "micro",
-    [TE_MI_MEAS_UNITS_MILLI] = "milli",
-    [TE_MI_MEAS_UNITS_PLAIN] = "plain",
-    [TE_MI_MEAS_UNITS_KILO] = "kilo",
-    [TE_MI_MEAS_UNITS_KIBI] = "kibi",
-    [TE_MI_MEAS_UNITS_MEGA] = "mega",
-    [TE_MI_MEAS_UNITS_MEBI] = "mebi",
-    [TE_MI_MEAS_UNITS_GIGA] = "giga",
-    [TE_MI_MEAS_UNITS_GIBI] = "gibi",
+static const char *meas_multiplier_names[] = {
+    [TE_MI_MEAS_MULTIPLIER_NANO] = "1e-9",
+    [TE_MI_MEAS_MULTIPLIER_MICRO] = "1e-6",
+    [TE_MI_MEAS_MULTIPLIER_MILLI] = "1e-3",
+    [TE_MI_MEAS_MULTIPLIER_PLAIN] = "1",
+    [TE_MI_MEAS_MULTIPLIER_KILO] = "1e+3",
+    [TE_MI_MEAS_MULTIPLIER_KIBI] = "0x1p10",
+    [TE_MI_MEAS_MULTIPLIER_MEGA] = "1e+6",
+    [TE_MI_MEAS_MULTIPLIER_MEBI] = "0x1p20",
+    [TE_MI_MEAS_MULTIPLIER_GIGA] = "1e+9",
+    [TE_MI_MEAS_MULTIPLIER_GIBI] = "0x1p30",
 };
+
+static const char *
+te_mi_meas_get_base_unit_str(te_mi_meas_type type, te_mi_meas_aggr aggr)
+{
+    te_mi_meas_base_unit_type base;
+
+    if (aggr == TE_MI_MEAS_AGGR_CV)
+        base = TE_MI_MEAS_BASE_UNITLESS;
+    else
+        base = meas_base_unit_by_type_map[type];
+
+    return meas_base_unit_names[base];
+}
 
 static te_bool
 te_mi_meas_aggr_valid(te_mi_meas_aggr aggr)
@@ -107,9 +147,9 @@ te_mi_meas_type_valid(te_mi_meas_type type)
 }
 
 static te_bool
-te_mi_meas_units_valid(te_mi_meas_units units)
+te_mi_meas_multiplier_valid(te_mi_meas_multiplier multiplier)
 {
-    return units >= 0 && units < TE_MI_MEAS_UNITS_END;
+    return multiplier >= 0 && multiplier < TE_MI_MEAS_MULTIPLIER_END;
 }
 
 static const char *
@@ -131,9 +171,9 @@ te_mi_meas_type2str(te_mi_meas_type meas_type)
 }
 
 static const char *
-te_mi_meas_units2str(te_mi_meas_units units)
+te_mi_meas_multiplier2str(te_mi_meas_multiplier multiplier)
 {
-    return meas_unit_names[units];
+    return meas_multiplier_names[multiplier];
 }
 
 static void
@@ -147,14 +187,22 @@ te_mi_set_logger_error(te_mi_logger *logger, te_errno *retval, te_errno val)
 }
 
 static te_errno
-te_mi_meas_value_str_append(const te_mi_meas_value *value, te_string *str)
+te_mi_meas_value_str_append(const te_mi_meas_value *value, te_mi_meas_type type,
+                            te_string *str)
 {
     te_errno rc;
 
     rc = te_string_append(str,
-            "{\"aggr\":"TE_MI_STR_FMT",\"value\":%.3f,\"units\":"TE_MI_STR_FMT"},",
-            te_mi_meas_aggr2str(value->aggr), value->val,
-            te_mi_meas_units2str(value->units));
+            "{\"aggr\":"TE_MI_STR_FMT",\"value\":%.3f,",
+            te_mi_meas_aggr2str(value->aggr), value->val);
+
+    if (rc == 0)
+    {
+        rc = te_string_append(str,
+            "\"base_units\":"TE_MI_STR_FMT",\"multiplier\":"TE_MI_STR_FMT"},",
+            te_mi_meas_get_base_unit_str(type, value->aggr),
+            te_mi_meas_multiplier2str(value->multiplier));
+    }
 
     if (rc != 0)
         ERROR("Failed to append measurement value");
@@ -163,7 +211,8 @@ te_mi_meas_value_str_append(const te_mi_meas_value *value, te_string *str)
 }
 
 static te_errno
-te_mi_meas_values_str_append(const te_mi_meas_value_h *values, te_string *str)
+te_mi_meas_values_str_append(const te_mi_meas_value_h *values,
+                             te_mi_meas_type type, te_string *str)
 {
     const te_mi_meas_value *value;
     te_errno rc;
@@ -173,7 +222,7 @@ te_mi_meas_values_str_append(const te_mi_meas_value_h *values, te_string *str)
     TAILQ_FOREACH(value, values, next)
     {
         if (rc == 0)
-            rc = te_mi_meas_value_str_append(value, str);
+            rc = te_mi_meas_value_str_append(value, type, str);
     }
 
     if (!TAILQ_EMPTY(values))
@@ -199,7 +248,7 @@ te_mi_meas_str_append(const te_mi_meas_impl *meas, te_string *str)
         rc = te_string_append(str, "\"name\":"TE_MI_STR_FMT",", meas->name);
 
     if (rc == 0)
-        rc = te_mi_meas_values_str_append(&meas->values, str);
+        rc = te_mi_meas_values_str_append(&meas->values, meas->type, str);
 
     if (rc == 0)
         rc = te_string_append(str, "},");
@@ -304,7 +353,7 @@ te_mi_logger_data2str(const te_mi_logger *logger)
 
 static te_mi_meas_value *
 te_mi_meas_value_add(te_mi_meas_value_h *values, te_mi_meas_aggr aggr,
-                     double val, te_mi_meas_units units)
+                     double val, te_mi_meas_multiplier multiplier)
 {
     te_mi_meas_value *result;
 
@@ -314,7 +363,7 @@ te_mi_meas_value_add(te_mi_meas_value_h *values, te_mi_meas_aggr aggr,
 
     result->aggr = aggr;
     result->val = val;
-    result->units = units;
+    result->multiplier = multiplier;
     TAILQ_INSERT_TAIL(values, result, next);
 
     return result;
@@ -586,7 +635,8 @@ out:
 void
 te_mi_logger_add_meas(te_mi_logger *logger, te_errno *retval,
                       te_mi_meas_type type, const char *name,
-                      te_mi_meas_aggr aggr, double val, te_mi_meas_units units)
+                      te_mi_meas_aggr aggr, double val,
+                      te_mi_meas_multiplier multiplier)
 {
     te_mi_meas_impl *meas_new = NULL;
     te_mi_meas_impl *meas;
@@ -613,9 +663,9 @@ te_mi_logger_add_meas(te_mi_logger *logger, te_errno *retval,
         goto out;
     }
 
-    if (!te_mi_meas_units_valid(units))
+    if (!te_mi_meas_multiplier_valid(multiplier))
     {
-        ERROR("Invalid measurement units");
+        ERROR("Invalid measurement multiplier");
         rc = TE_EINVAL;
         goto out;
     }
@@ -631,7 +681,7 @@ te_mi_logger_add_meas(te_mi_logger *logger, te_errno *retval,
         }
     }
 
-    if (te_mi_meas_value_add(&meas->values, aggr, val, units) == NULL)
+    if (te_mi_meas_value_add(&meas->values, aggr, val, multiplier) == NULL)
     {
         if (meas_new != NULL)
             te_mi_meas_impl_remove(&logger->meas_q, meas_new);
@@ -656,8 +706,8 @@ te_mi_logger_add_meas_obj(te_mi_logger *logger, te_errno *retval,
         return;
     }
 
-    te_mi_logger_add_meas(logger, retval, meas->type, meas->name, meas->aggr,
-                          meas->val, meas->units);
+   te_mi_logger_add_meas(logger, retval, meas->type, meas->name, meas->aggr,
+                          meas->val, meas->multiplier);
 }
 
 void
