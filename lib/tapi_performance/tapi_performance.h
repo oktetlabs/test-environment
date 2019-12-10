@@ -86,6 +86,7 @@
 #include "te_errno.h"
 #include "rcf_rpc.h"
 #include "te_string.h"
+#include "tapi_job.h"
 
 
 #ifdef __cplusplus
@@ -310,15 +311,15 @@ typedef struct tapi_perf_opts {
  * Network throughput test tool context (common for both server and client)
  */
 typedef struct tapi_perf_app {
-    tapi_perf_bench bench;  /**< Tool's sort */
-    tapi_perf_opts opts;    /**< Tool's options */
-    rcf_rpc_server *rpcs;   /**< RPC server handle */
-    tarpc_pid_t pid;        /**< PID */
-    int fd_stdout;          /**< File descriptor to read from stdout stream */
-    int fd_stderr;          /**< File descriptor to read from stderr stream */
-    char *cmd;              /**< Command line string to run the application */
-    te_string stdout;       /**< Buffer to save tool's stdout message */
-    te_string stderr;       /**< Buffer to save tool's stderr message */
+    tapi_perf_bench bench;              /**< Tool's sort */
+    tapi_perf_opts opts;                /**< Tool's options */
+    rcf_rpc_server *rpcs;               /**< RPC server handle */
+    tapi_job_t *job;                    /**< Agent job control */
+    tapi_job_channel_t *out_filter;     /**< Filters of stdout message */
+    tapi_job_channel_t *err_filter;     /**< Filters of stderr message */
+    te_string stdout;                   /**< Buffer to save tool's stdout message */
+    te_string stderr;                   /**< Buffer to save tool's stderr message */
+    char *cmd;                          /**< Command line string to run the application */
 } tapi_perf_app;
 
 /**

@@ -16,6 +16,7 @@
 #define __PERFORMANCE_INTERNAL_H__
 
 #include "tapi_performance.h"
+#include "te_vector.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,30 +28,33 @@ typedef struct tapi_perf_error_map {
     const char *msg;            /**< Error message. */
 } tapi_perf_error_map;
 
-
-/**
- * Close perf application opened descriptors.
- *
- * @param app               Application context.
- */
-extern void perf_app_close_descriptors(tapi_perf_app *app);
-
 /**
  * Start perf application. Note, @b perf_app_stop should be called to stop the
  * application.
  *
  * @param[in]    rpcs       RPC server handle.
- * @param[in]    cmd        Command to execute (start) application. Note, in
- *                          case of failure @p cmd will be free, just to make
- *                          @ref client_start and @ref server_start simple.
+ * @param[in]    args       List with command and its arguments to execute
+ *                          (start) application.
  * @param[inout] app        Application context.
  *
  * @return Status code.
  *
  * @sa perf_app_stop
  */
-extern te_errno perf_app_start(rcf_rpc_server *rpcs, char *cmd,
+extern te_errno perf_app_start(rcf_rpc_server *rpcs, te_vec *args,
                                tapi_perf_app *app);
+
+
+/**
+ * Read data from filter to string.
+ *
+ * @param[in]  out_filter   Filter for reading output and error messages.
+ * @param[out] str          String with filtered messages perf tool.
+ *
+ * @return Status code.
+ */
+extern te_errno perf_app_read_output(tapi_job_channel_t *out_filter,
+                                     te_string *str);
 
 /**
  * Stop perf application.

@@ -26,7 +26,6 @@
 #include "tapi_test.h"
 #include "performance_internal.h"
 
-
 /* Time to wait till data is ready to read from stdout */
 #define IPERF_TIMEOUT_MS (500)
 
@@ -215,6 +214,7 @@ set_opt_dual(te_string *cmd, const tapi_perf_opts *options)
         CHECK_RC(te_string_append(cmd, "-d"));
 }
 
+/* Get option by index */
 static char *
 get_option(set_opt_t *set_opt, const size_t index,
            const tapi_perf_opts *options)
@@ -228,11 +228,11 @@ get_option(set_opt_t *set_opt, const size_t index,
 /*
  * Build command string to run iperf server.
  *
- * @param cmd           Buffer to put built command to.
+ * @param args          List of built commands line arguments.
  * @param options       iperf tool server options.
  */
 static void
-build_server_cmd(te_string *cmd, const tapi_perf_opts *options)
+build_server_args(te_vec *args, const tapi_perf_opts *options)
 {
     set_opt_t set_opt[] = {
         set_opt_port,
@@ -244,26 +244,27 @@ build_server_cmd(te_string *cmd, const tapi_perf_opts *options)
     size_t i;
 
     ENTRY("Build command to run iperf server");
-    CHECK_RC(te_string_append(cmd, "iperf -s"));
+    CHECK_RC(te_vec_append_strarray(args,
+                                    (const char *[]){"iperf", "-s", NULL}));
 
     for (i = 0; i < TE_ARRAY_LEN(set_opt); i++)
     {
         char *opt = get_option(set_opt, i, options);
 
         if (opt != NULL)
-            CHECK_RC(te_string_append(cmd, " %s", opt));
-        free(opt);
+            CHECK_RC(TE_VEC_APPEND(args, opt));
     }
+    CHECK_RC(TE_VEC_APPEND_RVALUE(args, char *, NULL));
 }
 
 /*
  * Build command string to run iperf client.
  *
- * @param cmd           Buffer to put built command to.
+ * @param args          List of built commands line arguments.
  * @param options       iperf tool client options.
  */
 static void
-build_client_cmd(te_string *cmd, const tapi_perf_opts *options)
+build_client_args(te_vec *args, const tapi_perf_opts *options)
 {
     set_opt_t set_opt[] = {
         set_opt_src_host,
@@ -285,16 +286,17 @@ build_client_cmd(te_string *cmd, const tapi_perf_opts *options)
     if (te_str_is_null_or_empty(options->host))
         TEST_FAIL("Host to connect to is unspecified");
 
-    CHECK_RC(te_string_append(cmd, "iperf -c %s", options->host));
-
+    CHECK_RC(te_vec_append_strarray(args,
+                                    (const char *[]){"iperf", "-c",
+                                                     options->host, NULL}));
     for (i = 0; i < TE_ARRAY_LEN(set_opt); i++)
     {
         char *opt = get_option(set_opt, i, options);
 
         if (opt != NULL)
-            CHECK_RC(te_string_append(cmd, " %s", opt));
-        free(opt);
+            CHECK_RC(TE_VEC_APPEND(args, opt));
     }
+    CHECK_RC(TE_VEC_APPEND_RVALUE(args, char *, NULL));
 }
 
 /*
@@ -333,23 +335,27 @@ tounit(double val, char unit, int factor)
  *
  * @param[in]  app          iperf tool context.
  * @param[out] report       Report context.
+ *
+ * @return Status code.
+ *
  */
-static void
+static te_errno
 app_get_error(tapi_perf_app *app, tapi_perf_report *report)
 {
     size_t i;
+    te_errno rc;
 
     if (app->stderr.ptr == NULL || app->stderr.len == 0)
     {
         /* Read tool output */
-        rpc_read_fd2te_string(app->rpcs, app->fd_stderr, IPERF_TIMEOUT_MS, 0,
-                              &app->stderr);
+        if ((rc = perf_app_read_output(app->err_filter, &app->stderr)) != 0)
+            return rc;
 
         /* Check for available data */
         if (app->stderr.ptr == NULL || app->stderr.len == 0)
         {
             VERB("There is no error message");
-            return;
+            return 0;
         }
     }
 
@@ -369,6 +375,7 @@ app_get_error(tapi_perf_app *app, tapi_perf_report *report)
             ptr += strlen(errors[i].msg);
         }
     }
+    return 0;
 }
 
 /*
@@ -391,10 +398,14 @@ app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
     char bytes_unit;
     char throughput_unit;
     int rc;
+    te_errno err;
 
     /* Get tool errors */
     memset(report->errors, 0, sizeof(report->errors));
-    app_get_error(app, report);
+
+    err = app_get_error(app, report);
+    if (err != 0)
+        return err;
 
     if (kind != TAPI_PERF_REPORT_KIND_DEFAULT)
     {
@@ -405,8 +416,9 @@ app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
     if (app->stdout.ptr == NULL || app->stdout.len == 0)
     {
         /* Read tool output */
-        rpc_read_fd2te_string(app->rpcs, app->fd_stdout, IPERF_TIMEOUT_MS, 0,
-                              &app->stdout);
+        err = perf_app_read_output(app->out_filter, &app->stdout);
+        if (err != 0)
+            return err;
 
         /* Check for available data */
         if (app->stdout.ptr == NULL || app->stdout.len == 0)
@@ -485,12 +497,17 @@ app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
 static te_errno
 server_start(tapi_perf_server *server, rcf_rpc_server *rpcs)
 {
-    te_string cmd = TE_STRING_INIT;
+    te_vec   args = TE_VEC_INIT(char *);
+    te_errno rc;
 
     ENTRY("Start iperf server on %s", RPC_NAME(rpcs));
 
-    build_server_cmd(&cmd, &server->app.opts);
-    return perf_app_start(rpcs, cmd.ptr, &server->app);
+    build_server_args(&args, &server->app.opts);
+    rc = perf_app_start(rpcs, &args, &server->app);
+
+    te_vec_deep_free(&args);
+
+    return rc;
 }
 
 /*
@@ -506,12 +523,17 @@ server_start(tapi_perf_server *server, rcf_rpc_server *rpcs)
 static te_errno
 client_start(tapi_perf_client *client, rcf_rpc_server *rpcs)
 {
-    te_string cmd = TE_STRING_INIT;
+    te_vec   args = TE_VEC_INIT(char *);
+    te_errno rc;
 
     ENTRY("Start iperf client on %s", RPC_NAME(rpcs));
 
-    build_client_cmd(&cmd, &client->app.opts);
-    return perf_app_start(rpcs, cmd.ptr, &client->app);
+    build_client_args(&args, &client->app.opts);
+    rc = perf_app_start(rpcs, &args, &client->app);
+
+    te_vec_deep_free(&args);
+
+    return rc;
 }
 
 /*
