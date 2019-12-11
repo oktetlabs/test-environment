@@ -10069,7 +10069,15 @@ vfork_pipe_exec(tarpc_vfork_pipe_exec_in *in)
 
     if (pid > 0)
     {
-        write(pipefd[1], "Test message", 12);
+        const char *test_msg = "Test message";
+        ssize_t ret;
+
+        ret = write(pipefd[1], test_msg, strlen(test_msg));
+        if (ret != (ssize_t)strlen(test_msg))
+        {
+            ERROR("Write to pipefd[1] failed, ret=%d", (int)ret);
+            return -1;
+        }
         RING("Parent process is unblocked");
         if (global_var != 2)
         {
