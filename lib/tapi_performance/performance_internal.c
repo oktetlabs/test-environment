@@ -26,6 +26,8 @@
 
 /* Timeout to wait for process to stop */
 #define TAPI_PERF_STOP_TIMEOUT_S (10)
+/* Time to wait till data is ready to read from filter */
+#define TAPI_PERF_READ_TIMEOUT_MS (500)
 
 /*
  * Get default timeout according to application options.
@@ -54,89 +56,132 @@ get_default_timeout(const tapi_perf_opts *opts)
 
 
 /* See description in performance_internal.h */
-void
-perf_app_close_descriptors(tapi_perf_app *app)
+te_errno
+perf_app_read_output(tapi_job_channel_t *filter, te_string *str)
 {
-    if (app->rpcs == NULL)
-        return;
+    tapi_job_buffer_t   buf = TAPI_JOB_BUFFER_INIT;
+    te_errno            rc = 0;
 
-    if (app->fd_stdout >= 0)
-        RPC_CLOSE(app->rpcs, app->fd_stdout);
-    if (app->fd_stderr >= 0)
-        RPC_CLOSE(app->rpcs, app->fd_stderr);
+    while (!buf.eos && rc == 0)
+    {
+        rc = tapi_job_receive(TAPI_JOB_CHANNEL_SET(filter),
+                              TAPI_PERF_READ_TIMEOUT_MS, &buf);
+        if (TE_RC_GET_ERROR(rc) == TE_ETIMEDOUT)
+        {
+            /*
+             * In this case, server keep alive at a time when the client
+             * ended work and we are getting correct data. Timeout let
+             * to detect that data was read because we can't get eos while
+             * the job isn't stopped.
+             */
+            rc = 0;
+            break;
+        }
+    }
+    if (rc == 0)
+        *str = buf.data;
+
+    return rc;
 }
 
 /* See description in performance_internal.h */
 te_errno
-perf_app_start(rcf_rpc_server *rpcs, char *cmd, tapi_perf_app *app)
+perf_app_start(rcf_rpc_server *rpcs, te_vec *args, tapi_perf_app *app)
 {
-    tarpc_pid_t pid;
-    int stdout = -1;
-    int stderr = -1;
+    tapi_job_t *job = NULL;
+    tapi_job_channel_t *out_chs[2];
+    char **cmd_args = (char **)args->data.ptr;
+    te_string cmd = TE_STRING_INIT;
+    te_errno rc;
+    char **arg;
 
-    RING("Run \"%s\"", cmd);
-    pid = rpc_te_shell_cmd(rpcs, cmd, -1, NULL, &stdout, &stderr);
-    if (pid < 0)
+    TE_VEC_FOREACH(args, arg)
     {
-        ERROR("Failed to start perf tool");
-        free(cmd);
-        return TE_RC(TE_TAPI, TE_EFAIL);
+        if (*arg == NULL)
+            break;  /* the last item is not an argument but terminator */
+
+        rc = te_string_append(&cmd, "%s ", *arg);
+        if (rc != 0)
+            goto cleanup;
+    }
+    RING("Run \"%s\"", cmd);
+
+    rc = tapi_job_rpc_create(rpcs, NULL, cmd_args[0], cmd_args, NULL, &job);
+    if (rc != 0)
+        goto cleanup;
+
+    rc = tapi_job_alloc_output_channels(job, TE_ARRAY_LEN(out_chs), out_chs);
+    if (rc != 0)
+        goto cleanup;
+
+    rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_chs[0]),
+                                "Perf_output_filter", TRUE, 0,
+                                &app->out_filter);
+    if (rc != 0)
+        goto cleanup;
+
+    rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_chs[1]),
+                                "Perf_error_filter", TRUE, 0,
+                                &app->err_filter);
+    if (rc != 0)
+        goto cleanup;
+
+    rc = tapi_job_start(job);
+    if (rc != 0)
+        goto cleanup;
+
+    app->job  = job;
+    app->rpcs = rpcs;
+    app->cmd  = cmd.ptr;
+
+cleanup:
+    if (rc != 0)
+    {
+        te_string_free(&cmd);
+        tapi_job_destroy(job, -1);
     }
 
-    te_string_free(&app->stdout);
-    te_string_free(&app->stderr);
-
-    perf_app_close_descriptors(app);
-    app->rpcs = rpcs;
-    app->pid = pid;
-    app->fd_stdout = stdout;
-    app->fd_stderr = stderr;
-    free(app->cmd);
-    app->cmd = cmd;
-
-    return 0;
+    return rc;
 }
 
 /* See description in performance_internal.h */
 te_errno
 perf_app_stop(tapi_perf_app *app)
 {
-    if (app->pid >= 0)
-    {
-        rpc_ta_kill_and_wait(app->rpcs, app->pid, RPC_SIGKILL,
-                             TAPI_PERF_STOP_TIMEOUT_S);
-        app->pid = -1;
-    }
+    tapi_job_t *job = app->job;
+    tapi_job_status_t status;
+    te_errno rc;
 
-    return 0;   /* Just to use it similarly to perf_app_start function */
+    rc = tapi_job_kill(job, SIGTERM);
+    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ESRCH)
+        return rc;
+
+    rc = tapi_job_wait(job, TAPI_PERF_STOP_TIMEOUT_S, &status);
+    if (rc == TE_EINPROGRESS)
+    {
+        rc = tapi_job_kill(job, SIGKILL);
+        if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ESRCH)
+            return rc;
+        rc = tapi_job_wait(job, 0, &status);
+    }
+    return rc;
 }
 
 /* See description in performance_internal.h */
 te_errno
 perf_app_wait(tapi_perf_app *app, int16_t timeout)
 {
-    rpc_wait_status stat;
-    tarpc_pid_t pid;
+    tapi_job_status_t status;
+    te_errno rc;
 
     if (timeout == TAPI_PERF_TIMEOUT_DEFAULT)
         timeout = get_default_timeout(&app->opts);
-    app->rpcs->timeout = TE_SEC2MS(timeout);
-    RPC_AWAIT_ERROR(app->rpcs);
-    pid = rpc_waitpid(app->rpcs, app->pid, &stat, 0);
-    if (pid == -1)
-    {
-        ERROR("waitpid() failed with errno %r", RPC_ERRNO(app->rpcs));
-        return RPC_ERRNO(app->rpcs);
-    }
-    else if (pid != app->pid)
-    {
-        ERROR("waitpid() has returned %d: process with pid %d has not exited",
-              pid, app->pid);
-        return TE_RC(TE_TAPI, TE_EFAIL);
-    }
-    app->pid = -1;
 
-    return 0;
+    rc = tapi_job_wait(app->job, TE_SEC2MS(timeout), &status);
+    if (rc == 0 && status.type == TAPI_JOB_STATUS_UNKNOWN)
+        rc = TE_EFAIL;
+
+    return rc;
 }
 
 /* See description in performance_internal.h */

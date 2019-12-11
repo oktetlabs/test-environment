@@ -31,10 +31,9 @@
 static void
 app_init(tapi_perf_app *app, const tapi_perf_opts *options)
 {
-    app->rpcs = NULL;
-    app->pid = -1;
-    app->fd_stdout = -1;
-    app->fd_stderr = -1;
+    app->job = NULL;
+    app->out_filter = NULL;
+    app->err_filter = NULL;
     app->cmd = NULL;
     app->stdout = (te_string)TE_STRING_INIT;
     app->stderr = (te_string)TE_STRING_INIT;
@@ -59,7 +58,8 @@ app_init(tapi_perf_app *app, const tapi_perf_opts *options)
 static void
 app_fini(tapi_perf_app *app)
 {
-    perf_app_close_descriptors(app);
+    /* FIXME handle tapi_job_destroy status properly */
+    tapi_job_destroy(app->job, 0);
     free(app->cmd);
     te_string_free(&app->stdout);
     te_string_free(&app->stderr);

@@ -23,7 +23,6 @@
 #include "tapi_rpc_misc.h"
 #include "tapi_test.h"
 #include "performance_internal.h"
-#include "tapi_mem.h"
 
 /* The minimal representative duration */
 #define IPERF_MIN_REPRESENTATIVE_DURATION   (1.0)
@@ -68,7 +67,7 @@ set_opt_ipversion(te_string *cmd, const tapi_perf_opts *options)
     int idx = options->ipversion;
 
     if (0 <= idx && (size_t)idx <= TE_ARRAY_LEN(opt))
-        CHECK_RC(te_string_append(cmd, " %s", opt[idx]));
+        CHECK_RC(te_string_append(cmd, "%s", opt[idx]));
     else
         TEST_FAIL("IP version value \"%s\" is not supported",
                   proto_rpc2str(options->ipversion));
@@ -91,7 +90,7 @@ set_opt_protocol(te_string *cmd, const tapi_perf_opts *options)
             break;
 
         case RPC_IPPROTO_UDP:
-            CHECK_RC(te_string_append(cmd, " -u"));
+            CHECK_RC(te_string_append(cmd, "-u"));
             break;
 
         default:
@@ -110,7 +109,7 @@ static void
 set_opt_src_host(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->src_host != NULL && options->src_host[0] != '\0')
-        CHECK_RC(te_string_append(cmd, " -B%s", options->src_host));
+        CHECK_RC(te_string_append(cmd, "-B%s", options->src_host));
 }
 
 /*
@@ -123,7 +122,7 @@ static void
 set_opt_port(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->port >= 0)
-        CHECK_RC(te_string_append(cmd, " -p%u", options->port));
+        CHECK_RC(te_string_append(cmd, "-p%u", options->port));
 }
 
 /*
@@ -136,7 +135,7 @@ static void
 set_opt_bandwidth(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->bandwidth_bits >= 0)
-        CHECK_RC(te_string_append(cmd, " -b%"PRId64, options->bandwidth_bits));
+        CHECK_RC(te_string_append(cmd, "-b%"PRId64, options->bandwidth_bits));
 }
 
 /*
@@ -149,7 +148,7 @@ static void
 set_opt_bytes(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->num_bytes >= 0)
-        CHECK_RC(te_string_append(cmd, " -n%"PRId64, options->num_bytes));
+        CHECK_RC(te_string_append(cmd, "-n%"PRId64, options->num_bytes));
 }
 
 /*
@@ -162,7 +161,7 @@ static void
 set_opt_time(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->duration_sec >= 0)
-        CHECK_RC(te_string_append(cmd, " -t%"PRId32, options->duration_sec));
+        CHECK_RC(te_string_append(cmd, "-t%"PRId32, options->duration_sec));
 }
 
 /*
@@ -181,7 +180,7 @@ set_opt_interval(te_string *cmd, const tapi_perf_opts *options)
         interval = 0;
 
     if (interval >= 0)
-        CHECK_RC(te_string_append(cmd, " -i%"PRId32, interval));
+        CHECK_RC(te_string_append(cmd, "-i%"PRId32, interval));
 }
 
 /*
@@ -194,7 +193,7 @@ static void
 set_opt_length(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->length >= 0)
-        CHECK_RC(te_string_append(cmd, " -l%"PRId32, options->length));
+        CHECK_RC(te_string_append(cmd, "-l%"PRId32, options->length));
 }
 
 /*
@@ -207,7 +206,7 @@ static void
 set_opt_streams(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->streams >= 0)
-        CHECK_RC(te_string_append(cmd, " -P%"PRId16, options->streams));
+        CHECK_RC(te_string_append(cmd, "-P%"PRId16, options->streams));
 }
 
 /*
@@ -222,7 +221,7 @@ static void
 set_opt_dual(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->dual)
-        CHECK_RC(te_string_append(cmd, " --bidir"));
+        CHECK_RC(te_string_append(cmd, "--bidir"));
 }
 
 /*
@@ -235,17 +234,28 @@ static void
 set_opt_reverse(te_string *cmd, const tapi_perf_opts *options)
 {
     if (options->reverse)
-        CHECK_RC(te_string_append(cmd, " -R"));
+        CHECK_RC(te_string_append(cmd, "-R"));
+}
+
+/* Get option by index */
+static char *
+get_option(set_opt_t *set_opt, const size_t index,
+           const tapi_perf_opts *options)
+{
+    te_string opt = TE_STRING_INIT;
+
+    set_opt[index](&opt, options);
+    return opt.ptr;
 }
 
 /*
  * Build command string to run iperf3 server.
  *
- * @param cmd           Buffer to put built command to.
+ * @param args          List of built commands line arguments.
  * @param options       iperf3 tool server options.
  */
 static void
-build_server_cmd(te_string *cmd, const tapi_perf_opts *options)
+build_server_args(te_vec *args, const tapi_perf_opts *options)
 {
     set_opt_t set_opt[] = {
         set_opt_port,
@@ -254,19 +264,27 @@ build_server_cmd(te_string *cmd, const tapi_perf_opts *options)
     size_t i;
 
     ENTRY("Build command to run iperf3 server");
-    CHECK_RC(te_string_append(cmd, "iperf3 -s -J"));
+
+    CHECK_RC(te_vec_append_strarray(args, (const char *[]){"iperf3", "-s", "-J",
+                                                           NULL}));
     for (i = 0; i < TE_ARRAY_LEN(set_opt); i++)
-        set_opt[i](cmd, options);
+    {
+        char *opt = get_option(set_opt, i, options);
+
+        if (opt != NULL)
+            CHECK_RC(TE_VEC_APPEND(args, opt));
+    }
+    CHECK_RC(TE_VEC_APPEND_RVALUE(args, char *, NULL));
 }
 
 /*
  * Build command string to run iperf3 client.
  *
- * @param cmd           Buffer to put built command to.
+ * @param args          List of built commands line arguments.
  * @param options       iperf3 tool client options.
  */
 static void
-build_client_cmd(te_string *cmd, const tapi_perf_opts *options)
+build_client_args(te_vec *args, const tapi_perf_opts *options)
 {
     set_opt_t set_opt[] = {
         set_opt_src_host,
@@ -289,9 +307,17 @@ build_client_cmd(te_string *cmd, const tapi_perf_opts *options)
     if (te_str_is_null_or_empty(options->host))
         TEST_FAIL("Host to connect to is unspecified");
 
-    CHECK_RC(te_string_append(cmd, "iperf3 -c %s -J", options->host));
+    CHECK_RC(te_vec_append_strarray(args, (const char *[]){"iperf3", "-c",
+                                                           options->host, "-J",
+                                                           NULL}));
     for (i = 0; i < TE_ARRAY_LEN(set_opt); i++)
-        set_opt[i](cmd, options);
+    {
+        char *opt = get_option(set_opt, i, options);
+
+        if (opt != NULL)
+            CHECK_RC(TE_VEC_APPEND(args, opt));
+    }
+    CHECK_RC(TE_VEC_APPEND_RVALUE(args, char *, NULL));
 }
 
 /*
@@ -608,8 +634,9 @@ app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
     if (app->stdout.ptr == NULL || app->stdout.len == 0)
     {
         /* Read tool output */
-        rpc_read_fd2te_string(app->rpcs, app->fd_stdout, IPERF3_TIMEOUT_MS, 0,
-                              &app->stdout);
+        rc = perf_app_read_output(app->out_filter, &app->stdout);
+        if (rc != 0)
+            return rc;
 
         /* Check for available data */
         if (app->stdout.ptr == NULL || app->stdout.len == 0)
@@ -656,12 +683,17 @@ app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
 static te_errno
 server_start(tapi_perf_server *server, rcf_rpc_server *rpcs)
 {
-    te_string cmd = TE_STRING_INIT;
+    te_vec   args = TE_VEC_INIT(char *);
+    te_errno rc;
 
     ENTRY("Start iperf3 server on %s", RPC_NAME(rpcs));
 
-    build_server_cmd(&cmd, &server->app.opts);
-    return perf_app_start(rpcs, cmd.ptr, &server->app);
+    build_server_args(&args, &server->app.opts);
+    rc = perf_app_start(rpcs, &args, &server->app);
+
+    te_vec_deep_free(&args);
+
+    return rc;
 }
 
 /*
@@ -677,12 +709,18 @@ server_start(tapi_perf_server *server, rcf_rpc_server *rpcs)
 static te_errno
 client_start(tapi_perf_client *client, rcf_rpc_server *rpcs)
 {
-    te_string cmd = TE_STRING_INIT;
+    te_vec   args = TE_VEC_INIT(char *);
+    te_errno rc;
+
 
     ENTRY("Start iperf3 client on %s", RPC_NAME(rpcs));
 
-    build_client_cmd(&cmd, &client->app.opts);
-    return perf_app_start(rpcs, cmd.ptr, &client->app);
+    build_client_args(&args, &client->app.opts);
+    rc = perf_app_start(rpcs, &args, &client->app);
+
+    te_vec_deep_free(&args);
+
+    return rc;
 }
 
 /*
