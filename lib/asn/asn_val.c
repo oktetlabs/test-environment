@@ -548,6 +548,29 @@ asn_find_child_choice_value(const asn_value *container,
     return value;
 }
 
+/* See description in 'asn_usr.h' */
+asn_value *
+asn_choice_array_look_up_value(unsigned int    nb_values,
+                               asn_value     **values,
+                               asn_tag_value   tag)
+{
+    unsigned int i;
+
+    for (i = 0; i < nb_values; ++i) {
+        asn_value *choice_value;
+        int        err;
+
+        err = asn_get_choice_value(values[i], &choice_value, NULL, NULL);
+        if (err != 0)
+            return NULL;
+
+        if (asn_get_tag(choice_value) == tag)
+            return choice_value;
+    }
+
+    return NULL;
+}
+
 te_errno
 asn_free_child(asn_value *value,
                asn_tag_class tag_class, asn_tag_value tag_val)

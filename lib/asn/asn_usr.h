@@ -491,6 +491,20 @@ extern asn_value *asn_find_child_choice_value(const asn_value *container,
                                               asn_tag_value    tag_value);
 
 /**
+ * Given an ASN.1 CHOICE array and a tag, look up the first element
+ * which, when unfolded, resolves to a value matching the given tag.
+ *
+ * @param nb_values The number of elements in ASN.1 CHOICE array
+ * @param values    ASN.1 CHOICE array
+ * @param tag       ASN.1 tag
+ *
+ * @return First matching ASN.1 CHOICE unfolded value or @c NULL
+ */
+extern asn_value *asn_choice_array_look_up_value(unsigned int    nb_values,
+                                                 asn_value     **values,
+                                                 asn_tag_value   tag);
+
+/**
  * Free one-level subvalue of constraint ASN.1 value instance by tag.
  * For CHOICE syntax value tag is ignored.
  *
