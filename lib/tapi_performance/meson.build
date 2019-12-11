@@ -12,5 +12,6 @@ sources += files(
 deps += [
     dep_lib_tapi,
     dep_lib_tapi_rpc,
+    dep_lib_tapi_job,
     dependency('jansson'),
 ]
