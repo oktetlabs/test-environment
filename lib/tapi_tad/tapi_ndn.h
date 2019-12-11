@@ -173,29 +173,39 @@ extern te_errno tapi_pdus_free_fields_by_du_tag(asn_value      *pdus,
                                                 asn_tag_value   du_tag);
 
 /**
- * Split outer PDUs from innner PDUs (if any)
+ * Find outer and inner PDUs in a given PDU sequence ASN.1 value
+ * and provide them back to the caller in the form of two arrays.
+ * This function does not copy the PDU ASN.1 values it discovers.
  *
- * @param pdus_orig  PDU sequence to process
- * @param pdus_o_out Location for outer PDUs
- * @param pdus_i_out Location for inner PDUs
+ * @param pdu_seq       PDU sequence ASN.1 value to process
+ * @param nb_pdus_o_out Location for the number of outer PDU ASN.1 values
+ * @param pdus_o_out    Location for outer PDU ASN.1 values
+ * @param nb_pdus_i_out Location for the number of inner PDU ASN.1 values
+ * @param pdus_i_out    Location for inner PDU ASN.1 values
  *
  * @return Status code
  */
-extern te_errno tapi_tad_pdus_relist_outer_inner(asn_value  *pdus_orig,
-                                                 asn_value **pdus_o_out,
-                                                 asn_value **pdus_i_out);
+extern te_errno tapi_tad_pdus_relist_outer_inner(asn_value      *pdu_seq,
+                                                 unsigned int   *nb_pdus_o_out,
+                                                 asn_value    ***pdus_o_out,
+                                                 unsigned int   *nb_pdus_i_out,
+                                                 asn_value    ***pdus_i_out);
 
 /**
- * Make new PDU sequence instances for outer PDUs and for
- * inner PDUs (if any) and relist the corresponding PDUs
+ * Convenient @c tapi_tad_pdus_relist_outer_inner() wrapper
+ * which assumes template ASN.1 value as its first argument.
  *
- * @param tmpl       Traffic template
- * @param pdus_o_out Location for outer PDUs
- * @param pdus_i_out Location for inner PDUs
+ * @param tmpl          Traffic template
+ * @param nb_pdus_o_out Location for the number of outer PDU ASN.1 values
+ * @param pdus_o_out    Location for outer PDU ASN.1 values
+ * @param nb_pdus_i_out Location for the number of inner PDU ASN.1 values
+ * @param pdus_i_out    Location for inner PDU ASN.1 values
  */
-extern te_errno tapi_tad_tmpl_relist_outer_inner_pdus(asn_value  *tmpl,
-                                                      asn_value **pdus_o_out,
-                                                      asn_value **pdus_i_out);
+extern te_errno tapi_tad_tmpl_relist_outer_inner_pdus(asn_value      *tmpl,
+                                                      unsigned int   *nb_pdus_o_out,
+                                                      asn_value    ***pdus_o_out,
+                                                      unsigned int   *nb_pdus_i_out,
+                                                      asn_value    ***pdus_i_out);
 
 /**
  * Convert an ASN.1 template to a pattern containing

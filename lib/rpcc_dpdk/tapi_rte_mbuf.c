@@ -324,8 +324,10 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
     rpc_rte_mbuf_p    *mbufs = NULL;
     unsigned int       n_mbufs;
     asn_value         *pattern_by_template;
-    asn_value         *pdus_o = NULL;
-    asn_value         *pdus_i = NULL;
+    unsigned int       nb_pdus_o;
+    asn_value        **pdus_o = NULL;
+    unsigned int       nb_pdus_i;
+    asn_value        **pdus_i = NULL;
     asn_value        **packets_prepared = NULL;
     unsigned int       n_packets_prepared = 0;
     asn_value         *pattern;
@@ -342,31 +344,36 @@ tapi_rte_mk_mbuf_mk_ptrn_by_tmpl(rcf_rpc_server    *rpcs,
 
     if (transform != NULL)
     {
-        asn_value *pdus;
-        asn_value *pdu_ip4_o;
-        asn_value *pdu_ip4_i;
-        asn_value *pdu_udp_i;
-        asn_value *pdu_tcp;
+        unsigned int   nb_pdus;
+        asn_value    **pdus;
+        asn_value     *pdu_ip4_o;
+        asn_value     *pdu_ip4_i;
+        asn_value     *pdu_udp_i;
+        asn_value     *pdu_tcp;
 
         err = tapi_tad_tmpl_relist_outer_inner_pdus(template,
-                                                    &pdus_o, &pdus_i);
+                                                    &nb_pdus_o, &pdus_o,
+                                                    &nb_pdus_i, &pdus_i);
         if (err != 0)
             goto out;
 
         if (pdus_i != NULL)
         {
-            pdu_ip4_o = asn_find_child_choice_value(pdus_o, TE_PROTO_IP4);
+            pdu_ip4_o = asn_choice_array_look_up_value(nb_pdus_o, pdus_o,
+                                                       TE_PROTO_IP4);
+            nb_pdus = nb_pdus_i;
             pdus = pdus_i;
         }
         else
         {
             pdu_ip4_o = NULL;
+            nb_pdus = nb_pdus_o;
             pdus = pdus_o;
         }
 
-        pdu_ip4_i = asn_find_child_choice_value(pdus, TE_PROTO_IP4);
-        pdu_udp_i = asn_find_child_choice_value(pdus, TE_PROTO_UDP);
-        pdu_tcp = asn_find_child_choice_value(pdus, TE_PROTO_TCP);
+        pdu_ip4_i = asn_choice_array_look_up_value(nb_pdus, pdus, TE_PROTO_IP4);
+        pdu_udp_i = asn_choice_array_look_up_value(nb_pdus, pdus, TE_PROTO_UDP);
+        pdu_tcp = asn_choice_array_look_up_value(nb_pdus, pdus, TE_PROTO_TCP);
 
         for (i = 0; i < n_mbufs; ++i)
         {
@@ -457,22 +464,8 @@ skip_pattern:
 out:
     asn_free_value(pattern_by_template);
 
-    if (pdus_o != NULL)
-    {
-        pdus_o->len = 0;
-        free(pdus_o->data.array);
-        pdus_o->data.array = NULL;
-    }
-
-    if (pdus_i != NULL)
-    {
-        pdus_i->len = 0;
-        free(pdus_i->data.array);
-        pdus_i->data.array = NULL;
-    }
-
-    asn_free_value(pdus_o);
-    asn_free_value(pdus_i);
+    free(pdus_i);
+    free(pdus_o);
 
     if ((err != 0) && (mbufs != NULL))
     {
