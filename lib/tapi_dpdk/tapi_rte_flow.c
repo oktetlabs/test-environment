@@ -147,9 +147,9 @@ tapi_rte_flow_validate_and_create_rule(rcf_rpc_server *rpcs, uint16_t port_id,
 
     RPC_AWAIT_IUT_ERROR(rpcs);
     rc = rpc_rte_flow_validate(rpcs, port_id, attr, pattern, actions, &error);
-    if (rc == -TE_RC(TE_RPC, TE_ENOSYS))
-        TEST_SKIP("Flow validate operation failed: %s", error.message);
-    if (rc != 0)
+    if (rc == -TE_RC(TE_RPC, TE_ENOSYS) || rc == -TE_RC(TE_RPC, TE_EOPNOTSUPP))
+        TEST_SKIP("'rte_flow_validate' operation failed: %s", error.message);
+    else if (rc != 0)
         TEST_VERDICT("'rte_flow_validate' operation failed: %s", error.message);
 
     flow = rpc_rte_flow_create(rpcs, port_id, attr, pattern, actions, &error);
