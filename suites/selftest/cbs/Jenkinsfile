@@ -44,7 +44,9 @@ pipeline {
                 }
                 dir ("$TS_RUNDIR") {
                     sh 'rm -fr * || true'
-                    sh '${TS_TOPDIR}/run.sh -n --log-junit=junit.log'
+                    sh '''${TS_TOPDIR}/run.sh -n --log-junit=junit.log \
+                              --tester-req=\\!BROKEN
+                    '''
                 }
             }
         }
