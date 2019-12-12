@@ -8,6 +8,7 @@
         <run>
             <script name="vlans">
                 <req id="CS_VLAN"/>
+                <req id="BROKEN"/>
             </script>
             <arg name="env">
                 <value>{'host_csap'{if:'csap_if'}}</value>
@@ -16,6 +17,7 @@
 
         <run>
             <script name="phy" track_conf="nohistory">
+                <req id="BROKEN"/>
             </script>
             <arg name="ta">
                 <value>Agt_A</value>
@@ -38,7 +40,9 @@
         </run>
 
         <run>
-            <script name="vm"/>
+            <script name="vm">
+                <req id="BROKEN"/>
+            </script>
         </run>
 
     </session>
