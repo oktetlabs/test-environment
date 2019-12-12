@@ -32,6 +32,11 @@ pipeline {
                 }
             }
         }
+        stage("Analyze Build") {
+            steps {
+                recordIssues tools: [gcc()]
+            }
+        }
         stage("Run") {
             steps {
                 script {
