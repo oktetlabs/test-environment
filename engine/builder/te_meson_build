@@ -150,6 +150,10 @@ process_agent_unix_parms() {
                 conf="${conf} ovs" ;;
             --enable-pci)
                 conf="${conf} pci" ;;
+            --with-pcre)
+                # may be ignored since pulled as rpcs_job dependency in
+                # the case of meson build
+                ;;
             --with-rcf-rpc)
                 # always
                 ;;
