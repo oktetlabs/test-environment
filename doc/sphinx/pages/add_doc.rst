@@ -7,7 +7,7 @@ Full pipeline you can read from `doxyrest`_ repository
 
 Requirement tools:
 
-* doxegen
+* doxygen
 * doxyrest (>=2.0)
 * sphinx (>=1.7.0)
 * sphinx_rtd_theme
