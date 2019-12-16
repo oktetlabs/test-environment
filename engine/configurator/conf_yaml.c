@@ -465,6 +465,7 @@ embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
     const xmlChar *prop_name_access = (const xmlChar *)"access";
     const xmlChar *prop_name_type = (const xmlChar *)"type";
     const xmlChar *prop_name_scope = (const xmlChar *)"scope";
+    const xmlChar *prop_name_volatile = (const xmlChar *)"volatile";
     xmlNodePtr     dependence_node;
 
     if (c->oid == NULL)
@@ -508,7 +509,7 @@ embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
     }
 
     if (c->xmlvolatile != NULL &&
-        xmlNewProp(xn_target, prop_name_type, c->xmlvolatile) == NULL)
+        xmlNewProp(xn_target, prop_name_volatile, c->xmlvolatile) == NULL)
     {
         ERROR(CS_YAML_ERR_PREFIX "failed to embed the target volatile "
               "attribute in XML output");
