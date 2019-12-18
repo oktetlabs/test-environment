@@ -152,6 +152,7 @@ tapi_rte_flow_validate_and_create_rule(rcf_rpc_server *rpcs, uint16_t port_id,
     else if (rc != 0)
         TEST_VERDICT("'rte_flow_validate' operation failed: %s", error.message);
 
+    RPC_AWAIT_IUT_ERROR(rpcs);
     flow = rpc_rte_flow_create(rpcs, port_id, attr, pattern, actions, &error);
     if (flow == RPC_NULL)
     {
