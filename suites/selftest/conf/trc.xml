@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<trc_db>
+    <test name="ts" type="package">
+        <objective>TE Seft Tests</objective>
+        <notes/>
+        <iter result="PASSED">
+            <notes/>
+
+            <test name="prologue" type="script">
+                <objective>Initial setup of testing environment</objective>
+                <notes/>
+                <iter result="PASSED">
+                    <notes/>
+                </iter>
+            </test>
+
+            <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                        href="trc/minimal.trc.xml" parse="xml"/>
+
+            <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                        href="trc/tapi.trc.xml" parse="xml"/>
+
+        </iter>
+    </test>
+</trc_db>

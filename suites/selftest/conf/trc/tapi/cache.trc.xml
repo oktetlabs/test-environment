@@ -1,0 +1,164 @@
+<test name="cache" type="package">
+    <objective>TAPI cache implementation</objective>
+    <notes/>
+    <iter result="PASSED">
+        <test name="tc_register_single_area" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="areas"/>
+                <arg name="methods"/>
+            </iter>
+        </test>
+        <test name="tc_register_many_areas" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="areas"/>
+                <arg name="methods"/>
+            </iter>
+        </test>
+        <test name="tc_invalidate_all" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="areas"/>
+                <arg name="methods"/>
+                <arg name="subinstances"/>
+                <arg name="inv_method_by_method"/>
+            </iter>
+        </test>
+        <test name="tc_invalidate_method_one" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="areas"/>
+                <arg name="methods"/>
+                <arg name="subinstances"/>
+                <arg name="inv_methods"/>
+                <arg name="inv_area"/>
+                <arg name="expected_missing"/>
+            </iter>
+        </test>
+        <test name="tc_invalidate_method_many" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="areas"/>
+                <arg name="methods"/>
+                <arg name="subinstances"/>
+                <arg name="inv_methods"/>
+                <arg name="inv_area"/>
+                <arg name="expected_missing"/>
+            </iter>
+        </test>
+        <test name="tc_actualize_unregistered" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="area"/>
+                <arg name="method"/>
+            </iter>
+        </test>
+        <test name="prologue">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+        <test name="tc_actualize_root" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="areas"/>
+                <arg name="methods"/>
+                <arg name="subinstances"/>
+            </iter>
+        </test>
+        <test name="tc_actualize_sub" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="areas"/>
+                <arg name="methods"/>
+                <arg name="subinstances"/>
+            </iter>
+        </test>
+        <test name="tc_actualize_star" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="areas"/>
+                <arg name="methods"/>
+                <arg name="instances"/>
+            </iter>
+        </test>
+        <test name="tc_actualize_indirect" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="init_inst"/>
+                <arg name="init_subinst"/>
+                <arg name="methods"/>
+                <arg name="area_regs"/>
+                <arg name="area_act"/>
+                <arg name="expected_act"/>
+                <arg name="expected_error"/>
+            </iter>
+        </test>
+        <test name="tc_operation_get" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="instance"/>
+                <arg name="method"/>
+                <arg name="expected_value"/>
+            </iter>
+        </test>
+        <test name="tc_operation_add_get" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="instance"/>
+                <arg name="type"/>
+                <arg name="value"/>
+            </iter>
+        </test>
+        <test name="tc_operation_add_get_parents" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="instance"/>
+                <arg name="type"/>
+                <arg name="value"/>
+            </iter>
+        </test>
+        <test name="tc_operation_find" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="instance"/>
+                <arg name="expected_found"/>
+            </iter>
+        </test>
+        <test name="tc_operation_del_one" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="instance"/>
+                <arg name="expected_existing"/>
+                <arg name="expected_missing"/>
+            </iter>
+        </test>
+        <test name="tc_operation_del_star" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="instance"/>
+                <arg name="expected_existing"/>
+                <arg name="expected_missing"/>
+            </iter>
+        </test>
+    </iter>
+</test>

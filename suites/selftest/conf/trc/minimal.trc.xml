@@ -1,0 +1,12 @@
+<test name="minimal" type="package">
+    <objective>Package for demonstrating minimal tests</objective>
+    <iter result="PASSED">
+        <test name="helloworld" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+    </iter>
+</test>
