@@ -89,14 +89,14 @@ int
 main(int argc, char **argv)
 {
     char **areas;
-    int    num_areas;
+    size_t num_areas;
     char **subinstances;
-    int    num_subinstances;
+    size_t num_subinstances;
     char **methods;
-    int    num_methods;
-    int    i;
-    int    j;
-    int    k;
+    size_t num_methods;
+    size_t i;
+    size_t j;
+    size_t k;
 
     TEST_START;
     TEST_GET_STRING_LIST_PARAM(areas, num_areas);

@@ -95,20 +95,20 @@ int
 main(int argc, char **argv)
 {
     char **areas;
-    int    num_areas;
+    size_t num_areas;
     char **subinstances;
-    int    num_subinstances;
+    size_t num_subinstances;
     char **methods;
-    int    num_methods;
-    int    i;
-    int    j;
+    size_t num_methods;
+    size_t i;
+    size_t j;
     opaque_t op;
 
     TEST_START;
     TEST_GET_STRING_LIST_PARAM(areas, num_areas);
     TEST_GET_STRING_LIST_PARAM(subinstances, num_subinstances);
     TEST_GET_STRING_LIST_PARAM(methods, num_methods);
-    op.subinstances = subinstances;
+    op.subinstances = (const char **)subinstances;
     op.num_subinstances = num_subinstances;
 
     TEST_STEP("Register all supported methods on area");

@@ -100,18 +100,18 @@ int
 main(int argc, char **argv)
 {
     char   **areas;
-    int      num_areas;
+    size_t   num_areas;
     char   **subinstances;
-    int      num_subinstances;
+    size_t   num_subinstances;
     char   **methods;
-    int      num_methods;
+    size_t   num_methods;
     char   **inv_methods;
-    int      num_inv_methods;
-    char    *inv_area;
+    size_t   num_inv_methods;
+    const char *inv_area;
     char   **expected_missing;
     int      num_expected_missing;
-    int      i;
-    int      j;
+    size_t   i;
+    size_t   j;
     opaque_t op;
     te_bool  test_ok = TRUE;
 
@@ -122,7 +122,7 @@ main(int argc, char **argv)
     TEST_GET_STRING_LIST_PARAM(inv_methods, num_inv_methods);
     TEST_GET_STRING_PARAM(inv_area);
     TEST_GET_STRING_LIST_PARAM(expected_missing, num_expected_missing);
-    op.subinstances = subinstances;
+    op.subinstances = (const char **)subinstances;
     op.num_subinstances = num_subinstances;
 
     TEST_STEP("Register all supported methods on area");
@@ -152,12 +152,12 @@ main(int argc, char **argv)
     {
         for (j = 0; j < num_subinstances; j++)
         {
-            int k;
+            size_t k;
 
             for (k = 0; k < num_methods; k++)
             {
-                int l;
-                te_errno expected_rc = 0;
+                size_t l;
+                unsigned expected_rc = 0;
                 te_string ar = TE_STRING_INIT_STATIC(CFG_OID_MAX);
 
                 if (strcmp(subinstances[j],"nil") == 0)

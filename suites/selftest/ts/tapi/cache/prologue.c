@@ -13,7 +13,7 @@
 #include "tapi_test.h"
 #include "tapi_cache.h"
 
-#define WORKAREA "foo"
+#define WORKAREA "foo:*"
 
 int
 main(int argc, char **argv)
@@ -22,7 +22,7 @@ main(int argc, char **argv)
 
     TEST_STEP("Invalidate all areas");
     CLEANUP_CHECK_RC(cfg_tree_print(NULL, TE_LL_RING, TAPI_CACHE_ROOT_INST));
-    CHECK_RC(tapi_cache_del(TAPI_CACHE_ALL, WORKAREA));
+    CHECK_RC(tapi_cache_del("%s", WORKAREA));
 
     TEST_SUCCESS;
 

@@ -78,7 +78,7 @@ init_test(const char **init_inst, int num_init_inst,
     int i, j;
     cfg_handle handle;
 
-    CHECK_RC(tapi_cache_del(TAPI_CACHE_ALL));
+    CHECK_RC(tapi_cache_del("%s", TAPI_CACHE_ALL));
     for (i = 0; i < num_init_inst; i++)
     {
         CHECK_RC(cfg_add_instance_fmt(&handle, CFG_VAL(NONE, NULL),
@@ -102,9 +102,9 @@ test_act(const char **init_inst, int num_init_inst,
          const char **expected_act, int num_expected_act)
 {
     te_bool  success = TRUE;
-    te_errno foo_expected = TE_ENOENT;
-    te_errno foo_bar_expected = TE_ENOENT;
-    te_errno foo1_expected = TE_ENOENT;
+    unsigned foo_expected = TE_ENOENT;
+    unsigned foo_bar_expected = TE_ENOENT;
+    unsigned foo1_expected = TE_ENOENT;
     te_errno rc;
     int i, j, k;
 
@@ -177,18 +177,18 @@ int
 main(int argc, char **argv)
 {
     char **init_inst;
-    int    num_init_inst;
+    size_t num_init_inst;
     char **init_subinst;
-    int    num_init_subinst;
+    size_t num_init_subinst;
     char **methods;
-    int    num_methods;
+    size_t num_methods;
     char **area_regs;
-    int    num_area_regs;
+    size_t num_area_regs;
     char **expected_act;
-    int    num_expected_act;
-    char  *area_act;
-    int    i, j;
-    te_errno expected_error;
+    size_t num_expected_act;
+    const char  *area_act;
+    size_t   i, j;
+    unsigned expected_error;
     te_bool  test_ok = TRUE;
 
     TEST_START;
@@ -201,7 +201,8 @@ main(int argc, char **argv)
     TEST_GET_ACT_ERROR_TYPE(expected_error);
 
     TEST_STEP("Create root instances");
-    init_test(init_inst, num_init_inst, init_subinst, num_init_subinst);
+    init_test((const char **)init_inst, num_init_inst,
+              (const char **)init_subinst, num_init_subinst);
 
     TEST_STEP("Register all supported methods on area");
     for (i = 0; i < TE_ARRAY_LEN(cbs); i++)
@@ -238,10 +239,10 @@ main(int argc, char **argv)
     }
 
     TEST_STEP("Check the actualization");
-    if (!test_act(init_inst, num_init_inst,
-                  init_subinst, num_init_subinst,
-                  methods, num_methods,
-                  expected_act, num_expected_act))
+    if (!test_act((const char **)init_inst, num_init_inst,
+                  (const char **)init_subinst, num_init_subinst,
+                  (const char **)methods, num_methods,
+                  (const char **)expected_act, num_expected_act))
     {
         TEST_FAIL("Indirect actualization works improperly");
     }

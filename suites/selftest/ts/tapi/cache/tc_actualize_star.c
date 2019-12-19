@@ -43,12 +43,12 @@ cb_common(const char *method, const char *oid, void *opaque)
     else for (i = 0; i < op->num_instances; i++)
     {
         /* It is expected "*" symbol at the oid string end */
-        rc = cfg_find_fmt(&handle, "%.*s%s", strlen(oid) - 1, oid,
+        rc = cfg_find_fmt(&handle, "%.*s%s", (int)(strlen(oid) - 1), oid,
                           op->instances[i]);
         if (rc != 0)
         {
             rc = cfg_add_instance_fmt(&handle, CFG_VAL(NONE, NULL),
-                                      "%.*s%s", strlen(oid) - 1, oid,
+                                      "%.*s%s", (int)(strlen(oid) - 1), oid,
                                       op->instances[i]);
             if (rc != 0)
                 break;
@@ -98,20 +98,20 @@ int
 main(int argc, char **argv)
 {
     char **areas;
-    int    num_areas;
+    size_t num_areas;
     char **instances;
-    int    num_instances;
+    size_t num_instances;
     char **methods;
-    int    num_methods;
-    int    i;
-    int    j;
+    size_t num_methods;
+    size_t    i;
+    size_t    j;
     opaque_t op;
 
     TEST_START;
     TEST_GET_STRING_LIST_PARAM(areas, num_areas);
     TEST_GET_STRING_LIST_PARAM(instances, num_instances);
     TEST_GET_STRING_LIST_PARAM(methods, num_methods);
-    op.instances = instances;
+    op.instances = (const char **)instances;
     op.num_instances = num_instances;
 
     TEST_STEP("Register all supported methods on area");

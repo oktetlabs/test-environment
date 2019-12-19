@@ -73,7 +73,7 @@ main(int argc, char **argv)
 
     TEST_GET_STRING_PARAM(instance);
     TEST_GET_STRING_LIST_PARAM(expected_found, num_expected_found);
-    op.expected_found = expected_found;
+    op.expected_found = (const char **)expected_found;
     op.num_expected_found = num_expected_found;
     op.found = tapi_calloc(num_expected_found, sizeof(char *));
     op.num_found = 0;

@@ -102,7 +102,7 @@ static const struct {
 /* It depends on cb_common() implementation */
 static te_bool
 test_invalidation(const char *area, const char **subs, int num_subs,
-                  const char **methods, int num_methods)
+                  const char **methods, size_t num_methods)
 {
     te_bool success = TRUE;
     te_errno rc;
@@ -132,7 +132,7 @@ test_invalidation(const char *area, const char **subs, int num_subs,
         else
         {
             const char *leafs[] = {"baz", "qux"};
-            int j, k;
+            size_t j, k;
 
             for (j = 0; j < num_methods; j++)
             {
@@ -159,14 +159,14 @@ int
 main(int argc, char **argv)
 {
     char   **areas;
-    int      num_areas;
+    size_t   num_areas;
     char   **subinstances;
-    int      num_subinstances;
+    size_t   num_subinstances;
     char   **methods;
-    int      num_methods;
+    size_t   num_methods;
     te_bool  inv_method_by_method;
-    int      i;
-    int      j;
+    size_t   i;
+    size_t   j;
     opaque_t op;
     te_bool  test_ok = TRUE;
 
@@ -175,7 +175,7 @@ main(int argc, char **argv)
     TEST_GET_STRING_LIST_PARAM(subinstances, num_subinstances);
     TEST_GET_STRING_LIST_PARAM(methods, num_methods);
     TEST_GET_BOOL_PARAM(inv_method_by_method);
-    op.subinstances = subinstances;
+    op.subinstances = (const char **)subinstances;
     op.num_subinstances = num_subinstances;
 
     TEST_STEP("Register all supported methods on area");
@@ -209,8 +209,10 @@ main(int argc, char **argv)
             CHECK_RC(tapi_cache_invalidate(NULL, "%s", areas[i]));
         }
         /* Check invalidation results */
-        test_ok = test_invalidation(areas[i], subinstances, num_subinstances,
-                                    methods, num_methods);
+        test_ok = test_invalidation((const char *)areas[i],
+                                    (const char **)subinstances,
+                                    num_subinstances,
+                                    (const char **)methods, num_methods);
     }
 
     if (!test_ok)

@@ -16,6 +16,9 @@
 te_errno
 cb_func(const char *oid, void *opaque)
 {
+    UNUSED(oid);
+    UNUSED(opaque);
+
     ERROR("Not implemented yet");
     return TE_ENOSYS;
 }
@@ -23,7 +26,7 @@ cb_func(const char *oid, void *opaque)
 int
 main(int argc, char **argv)
 {
-    const char **areas;
+    char       **areas;
     char       **methods;
     int          num_areas;
     int          num_methods;
