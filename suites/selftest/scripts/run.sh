@@ -10,11 +10,15 @@ fi
 TS_OPTS=
 for opt ; do
     case "${opt}" in
+        --cfg=*)
+            TS_CFG=${opt#--cfg=};;
         *)
             TS_OPTS+="${opt} ";;
     esac
     shift 1
 done
+
+TS_OPTS+="--opts=run/\"${TS_CFG}\" "
 
 TS_CONF_DIRS=
 TS_CONF_DIRS+="\"${TS_TOPDIR}\"/conf:"
