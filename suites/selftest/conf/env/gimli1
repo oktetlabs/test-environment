@@ -1,0 +1,5 @@
+export TE_AGT1=gimli1
+export TE_AGT1_TA_NAME="Agt_A"
+export TE_AGT1_TA_IF=enp7s0
+export TE_AGT1_KEY=${TE_AGT1_KEY:-${TE_AGT_SSH_KEY}}
+export TE_AGT1_SSH_USER=${TE_AGT1_SSH_USER:-root}
