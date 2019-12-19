@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    <description>Check TAPI implementation</description>
+    <author mailto="Nikita.Somenkov@oktetlabs.ru"/>
+
+    <session>
+        <run>
+            <package name="cache"/>
+        </run>
+    </session>
+</package>
