@@ -403,7 +403,13 @@ resolve_conf_file_path()
 
     test "${file:0:1}" = "/" && echo "${file}" && return 0
 
-    PATH="${CONF_DIRS}" type -p "${file}" || echo "${file}"
+    OLD_IFS="$IFS"
+    IFS=":"
+    for conf_dir in ${CONF_DIRS}; do
+        local resolved="${conf_dir}/${file}"
+        test -f "${resolved}" && echo "${resolved}" && break
+    done
+    IFS="$OLD_IFS"
 }
 
 process_script_opt()
