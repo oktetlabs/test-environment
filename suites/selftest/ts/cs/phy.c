@@ -61,7 +61,7 @@ int
 main(int argc, char *argv[])
 {
     const char    *ta = NULL;
-    const char    *iface_name = NULL;
+    const char    *iface_name = getenv("TE_AGT1_TA_IF");
     int      link_state = -1;
     int      autoneg = -1;
     int      duplex = -1;
@@ -77,13 +77,15 @@ main(int argc, char *argv[])
 
     /* Get test parameters */
     TEST_GET_STRING_PARAM(ta);
-    TEST_GET_STRING_PARAM(iface_name);
     TEST_GET_INT_PARAM(speed);
     TEST_GET_INT_PARAM(duplex);
     TEST_GET_INT_PARAM(speed_adver);
     TEST_GET_INT_PARAM(duplex_adver);
 
     CHECK_RC(cfg_tree_print(NULL, TE_LL_RING, "/:"));
+
+    if (iface_name == NULL)
+        TEST_FAIL("Interface name for agent '%s' is required", ta);
 
     /* Check link state */
     CHECK_RC(tapi_cfg_phy_state_get(ta, iface_name, &link_state));

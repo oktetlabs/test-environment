@@ -22,9 +22,6 @@
             <arg name="ta">
                 <value>Agt_A</value>
             </arg>
-            <arg name="iface_name">
-                <value>eth1</value>
-            </arg>
             <arg name="speed">
                 <value>10</value>
             </arg>
