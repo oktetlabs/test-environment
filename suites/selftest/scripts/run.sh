@@ -7,6 +7,13 @@ fi
 . ${TS_TOPDIR}/scripts/guess.sh
 [ -n "$TE_BASE" ] || exit 1
 
+# hg cannot save file with 600 permition but ssh require 600 permition
+# for private key for, so force changing permission before run for each
+# ssh key in TE_TS_SSH_KEY_DIR required here
+for keys in ${TE_TS_SSH_KEY_DIR}/*.id_rsa; do
+    chmod 600 $keys;
+done
+
 TS_OPTS=
 for opt ; do
     case "${opt}" in

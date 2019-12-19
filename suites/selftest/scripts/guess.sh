@@ -22,3 +22,4 @@ for loop in once ; do
     test -e "${TE_BASE}/dispatcher.sh" || echo "Cannot guess TE_BASE" >&2
 done
 export TE_TS_DIR=${TS_TOPDIR}/ts
+export TE_TS_SSH_KEY_DIR=${TS_TOPDIR}/conf/keys
