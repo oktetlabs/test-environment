@@ -22,19 +22,13 @@
 
 
 int
-main(void)
+main(int argc, char **argv)
 {
-    int result = EXIT_FAILURE;
-
-    signal(SIGINT, te_test_sig_handler);
-    te_log_init(TE_TEST_NAME, ten_log_message);
-    TAPI_ON_JMP(TEST_ON_JMP_DO);
+    TEST_START;
 
     CHECK_RC(tapi_cfg_net_all_assign_ip(AF_INET));
 
     TEST_SUCCESS;
-
 cleanup:
-
-    return result;
+    TEST_END;
 }

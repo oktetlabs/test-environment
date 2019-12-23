@@ -21,13 +21,8 @@ main(int argc, char **argv)
 {
     char ta[32];
     size_t len = sizeof(ta);
-    int  sid;
     
     rcf_rpc_server *srv1 = NULL, *srv2 = NULL, *srv3 = NULL;
-    
-    rcf_rpc_server *dup;
-    
-    cfg_handle handle;
     
     int s1, s2, s3;
 
