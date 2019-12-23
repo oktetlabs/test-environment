@@ -38,7 +38,7 @@ main(int argc, char **argv)
     char       *config_path = NULL;
     char       *config_output1 = NULL;
     char       *config_output2 = NULL;
-    int         ps_num;
+    unsigned    ps_num;
 
     TEST_START;
 
