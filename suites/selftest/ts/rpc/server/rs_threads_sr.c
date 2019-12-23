@@ -2,13 +2,13 @@
  * @brief Test Environment
  *
  * RPC servers threads send and receive each other.
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Evgeniy Vladimirovich Bobkov <kavri@oktetlabs.ru>
- * 
+ *
  * $Id$
  */
 
@@ -122,7 +122,7 @@ server_thread(void *arg)
 
     RPC_AWAIT_IUT_ERROR(rs);
     SEND_WHOLE_BUF(rs, sock, sendbuf, BUF_SIZE2);
-    
+
     retval = (void *)0;
 
     for (i = 0; i < BUF_SIZE1; i++)
@@ -131,7 +131,7 @@ server_thread(void *arg)
         {
             ERROR("ST recvbuf[%d]=%x differs from %x",
                           i, recvbuf[i], PATTERN1);
-            retval = (void *)-1;        
+            retval = (void *)-1;
         }
     }
 
@@ -166,7 +166,7 @@ client_thread(void *arg)
 
     RPC_AWAIT_IUT_ERROR(rs);
     RECV_WHOLE_BUF(rs, sock, recvbuf, BUF_SIZE2);
-    
+
     retval = (void *)0;
 
     for (i = 0; i < BUF_SIZE2; i++)
@@ -175,7 +175,7 @@ client_thread(void *arg)
         {
             ERROR("CT recvbuf[%d]=%x differs from %x",
                           i, recvbuf[i], PATTERN2);
-            retval = (void *)-1;        
+            retval = (void *)-1;
         }
     }
 
@@ -187,7 +187,7 @@ finish:
 #undef wt_arg
 }
 
-int 
+int
 main(int argc, char *argv[])
 {
     rcf_rpc_server          *pco_iut = NULL;
@@ -229,12 +229,12 @@ main(int argc, char *argv[])
             SET_FREE_PORT(pco_tst, tst_addrs[i]);
 
         /* Create the client sockets */
-        tst_s[i] = rpc_socket(pco_tst, RPC_PF_INET, RPC_SOCK_STREAM, 
+        tst_s[i] = rpc_socket(pco_tst, RPC_PF_INET, RPC_SOCK_STREAM,
                               RPC_PROTO_DEF);
         rpc_bind(pco_tst, tst_s[i], tst_addrs[i]);
     }
 
-    iut_sl = rpc_socket(pco_iut, RPC_PF_INET, RPC_SOCK_STREAM, 
+    iut_sl = rpc_socket(pco_iut, RPC_PF_INET, RPC_SOCK_STREAM,
                         RPC_PROTO_DEF);
     rpc_bind(pco_iut, iut_sl, iut_addr);
     rpc_listen(pco_iut, iut_sl, 64);
@@ -268,7 +268,7 @@ main(int argc, char *argv[])
         {
             TEST_FAIL("ST %dth rcf_rpc_server_thread_create() failed");
         }
-        
+
         /* "server" threads arguments */
         st_args[i].this_num = i;
         st_args[i].rs = pco_iut_st[i];

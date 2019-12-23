@@ -25,7 +25,7 @@
         <run>
             <script name="rpctest"/>
             <arg name="env" ref="env.peer2peer"/>
-        </run> 
+        </run>
 
         <run>
             <script name="rs_threads_sr"/>

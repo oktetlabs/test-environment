@@ -2,13 +2,13 @@
  * @brief Test Environment
  *
  * Common definitions for RPC test suite.
- * 
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Evgeniy Vladimirovich Bobkov <kavri@oktetlabs.ru>
- * 
+ *
  * $Id$
  */
 
