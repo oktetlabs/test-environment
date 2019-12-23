@@ -1,0 +1,7 @@
+<test name="rpc" type="package">
+    <objective>Tests on RCF RPC functionality</objective>
+    <iter result="PASSED">
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="rpc/server.trc.xml" parse="xml"/>
+    </iter>
+</test>
