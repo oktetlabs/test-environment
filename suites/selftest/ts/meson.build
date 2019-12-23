@@ -15,7 +15,9 @@ te_tests_info_sh = find_program(join_paths(te_path, 'te_tests_info.sh'))
 
 cc = meson.get_compiler('c')
 
-test_deps = [ ]
+test_deps = [
+    dependency('threads'),
+]
 
 te_libs = [
     'rcfapi',
@@ -26,6 +28,7 @@ te_libs = [
     'tools',
     'tapi',
     'logger_ten',
+    'rcfrpc',
 ]
 
 foreach lib : te_libs
@@ -53,6 +56,7 @@ packages = [
     'minimal',
     'cs',
     'tapi',
+    'rpc',
 ]
 
 mydir = package_dir

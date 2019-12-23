@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    <description>Check RPC implementation</description>
+    <author mailto="Nikita.Somenkov@oktetlabs.ru"/>
+
+    <session>
+        <run track_conf="silent">
+            <package name="server"/>
+        </run>
+    </session>
+</package>

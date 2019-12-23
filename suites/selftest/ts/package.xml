@@ -19,6 +19,10 @@
         <run>
             <package name="tapi"/>
         </run>
+
+        <run>
+            <package name="rpc"/>
+        </run>
     </session>
 
 </package>
