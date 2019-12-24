@@ -1,0 +1,47 @@
+<test name="nginx" type="package">
+    <objective>Tests on RCF server functionality</objective>
+    <notes/>
+    <iter result="PASSED">
+        <test name="start" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+            </iter>
+        </test>
+        <test name="prefix" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+            </iter>
+        </test>
+        <test name="conf_change" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+            </iter>
+        </test>
+        <test name="http_get" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+            </iter>
+        </test>
+        <test name="server_proxy" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="upstreams_num"/>
+                <arg name="payload_size"/>
+                <arg name="conns_num"/>
+                <arg name="threads_num"/>
+                <arg name="duration"/>
+            </iter>
+        </test>
+        <test name="ssl" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+            </iter>
+        </test>
+    </iter>
+</test>

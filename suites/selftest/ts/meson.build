@@ -29,6 +29,7 @@ te_libs = [
     'tapi',
     'logger_ten',
     'rcfrpc',
+    'tapi_tool',
 ]
 
 foreach lib : te_libs
@@ -57,6 +58,7 @@ packages = [
     'cs',
     'tapi',
     'rpc',
+    'apps',
 ]
 
 mydir = package_dir

@@ -23,6 +23,10 @@
         <run>
             <package name="rpc"/>
         </run>
+
+        <run>
+            <package name="apps"/>
+        </run>
     </session>
 
 </package>

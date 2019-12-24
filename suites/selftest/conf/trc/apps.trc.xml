@@ -1,0 +1,7 @@
+<test name="apps" type="package">
+    <objective>Check TAPI implementation</objective>
+    <iter result="PASSED">
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="apps/nginx.trc.xml" parse="xml"/>
+    </iter>
+</test>
