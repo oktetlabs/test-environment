@@ -215,6 +215,11 @@ process_agent() {
     local src_var="${pfx}SOURCES"
     local ta_src="$(basename "${!src_var}")"
 
+    local ta_apps_var="TE_BS_TA_APPS_${ta}"
+
+    test -z "${!ta_apps_var}" ||
+        error "TA applications are not supported in meson build: ${!ta_apps_var}"
+
     build_agents="${build_agents} ${ta_src}"
 
     case "${ta_src}" in
@@ -250,6 +255,10 @@ process_platform() {
         local te_ldflags="${!ldflags_var}"
         meson_args="${meson_args} -Dldflags=\"${te_ldflags}\""
     fi
+
+    local exts_var="TE_BS_EXT_${p}"
+    test -z "${!exts_var}" ||
+        error "External components are not supported in meson build: ${!exts_var}"
 
     local libs="${p}_LIBS"
     if test -n "${!libs}" ; then
