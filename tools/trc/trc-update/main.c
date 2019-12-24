@@ -388,7 +388,12 @@ get_opts_from_file(char *fname)
         return -1;
     }
 
-    fgets(s, opts_len, f);
+    if (fgets(s, opts_len, f) == NULL)
+    {
+        printf("%s(): failed to read additional options from %s\n",
+               __FUNCTION__, fname);
+        return -1;
+    }
     if (poptParseArgvString(s, &argc, (const char ***)&argv) != 0)
     {
         printf("%s(): failed to parse additional options from %s\n",
@@ -1316,7 +1321,11 @@ perl_prepare()
                 exit(1);
             }
 
-            fread(script_text, sizeof(*script_text), flen, f);
+            if (fread(script_text, sizeof(*script_text), flen, f) != flen)
+            {
+                printf("Failed to read a script from %s\n", perl_script);
+                exit(1);
+            }
 
             te_string_append(&te_str,
                              "sub get_vals"
