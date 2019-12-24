@@ -1,12 +1,9 @@
 <?xml version="1.0"?>
 <package version="1.0">
-
     <description>Nginx demo test suite</description>
-
     <author mailto="Marina.Maslova@oktetlabs.ru"/>
 
     <session track_conf="silent">
-
         <run>
             <script name="start"/>
         </run>
@@ -50,6 +47,5 @@
         <run>
             <script name="ssl"/>
         </run>
-
     </session>
 </package>
