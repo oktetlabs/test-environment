@@ -10,6 +10,7 @@
 
 #define TE_LGR_USER "TAPI GTest"
 
+#include <signal.h>
 #include "te_config.h"
 #include "tapi_test_log.h"
 #include "te_vector.h"
@@ -69,7 +70,7 @@ gtest_build_command(tapi_gtest *gtest, te_vec *args)
 
 /* See description in tapi_gtest.h */
 te_errno
-tapi_gtest_init(tapi_gtest *gtest, rcf_rpc_server *rpcs)
+tapi_gtest_init(tapi_gtest *gtest, tapi_job_factory_t *factory)
 {
     te_errno rc;
     te_vec gtest_args = TE_VEC_INIT(const char *);
@@ -103,7 +104,7 @@ tapi_gtest_init(tapi_gtest *gtest, rcf_rpc_server *rpcs)
         return rc;
 
     desc.argv = (const char **) gtest_args.data.ptr;
-    rc = tapi_job_rpc_simple_create(rpcs, &desc);
+    rc = tapi_job_simple_create(factory, &desc);
 
     gtest_args_free(&gtest_args);
     return rc;

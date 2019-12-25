@@ -27,6 +27,10 @@
  * @cmd{iperf -c 192.168.1.1 -p 60000 -u -b 200 -P 5 -t 60}
  *
  * @code
+ * #include "tapi_job.h"
+ * #include "tapi_job_factory_rpc.h"
+ * #include "tapi_performance.h"
+ *
  * int main(int argc, char *argv[])
  * {
  *     tapi_perf_server    *perf_server = NULL;
@@ -36,6 +40,8 @@
  *     tapi_perf_report     perf_client_report;
  *     rcf_rpc_server      *perf_server_rpcs;
  *     rcf_rpc_server      *perf_client_rpcs;
+ *     tapi_job_factory_t  *client_factory = NULL;
+ *     tapi_job_factory_t  *server_factory = NULL;
  *
  *     TEST_START;
  *
@@ -55,8 +61,10 @@
  *
  *     perf_server = tapi_perf_server_create(TAPI_PERF_IPERF, &perf_opts);
  *     perf_client = tapi_perf_client_create(TAPI_PERF_IPERF, &perf_opts);
- *     CHECK_RC(tapi_perf_server_start(perf_server, perf_server_rpcs));
- *     CHECK_RC(tapi_perf_client_start(perf_client, perf_client_rpcs));
+ *     CHECK_RC(tapi_job_factory_rpc_create(perf_server_rpcs, &server_factory));
+ *     CHECK_RC(tapi_job_factory_rpc_create(perf_client_rpcs, &client_factory));
+ *     CHECK_RC(tapi_perf_server_start(perf_server, server_factory));
+ *     CHECK_RC(tapi_perf_client_start(perf_client, client_factory));
  *     CHECK_RC(tapi_perf_client_wait(perf_client, TAPI_PERF_TIMEOUT_DEFAULT));
  *     // Time is relative and goes differently on different hosts.
  *     // Sometimes we need to wait for a few moments until report is ready.
@@ -75,6 +83,8 @@
  * cleanup:
  *     tapi_perf_client_destroy(perf_client);
  *     tapi_perf_server_destroy(perf_server);
+ *     tapi_job_factory_destroy(client_factory);
+ *     tapi_job_factory_destroy(server_factory);
  *     TEST_END;
  * }
  * @endcode
@@ -174,14 +184,14 @@ typedef struct tapi_perf_server tapi_perf_server;
  * Start perf server.
  *
  * @param server            Server context.
- * @param rpcs              RPC server handle.
+ * @param factory           Job factory
  *
  * @return Status code.
  *
  * @sa tapi_perf_server_stop
  */
 typedef te_errno (* tapi_perf_server_method_start)(tapi_perf_server *server,
-                                                   rcf_rpc_server *rpcs);
+                                                   tapi_job_factory_t *factory);
 
 /**
  * Stop perf server.
@@ -225,14 +235,14 @@ typedef struct tapi_perf_client tapi_perf_client;
  * Start perf client.
  *
  * @param client            Client context.
- * @param rpcs              RPC server handle.
+ * @param factory           Job factory
  *
  * @return Status code.
  *
  * @sa tapi_perf_client_stop
  */
 typedef te_errno (* tapi_perf_client_method_start)(tapi_perf_client *client,
-                                                   rcf_rpc_server *rpcs);
+                                                   tapi_job_factory_t *factory);
 
 /**
  * Stop perf client.
@@ -313,7 +323,7 @@ typedef struct tapi_perf_opts {
 typedef struct tapi_perf_app {
     tapi_perf_bench bench;              /**< Tool's sort */
     tapi_perf_opts opts;                /**< Tool's options */
-    rcf_rpc_server *rpcs;               /**< RPC server handle */
+    tapi_job_factory_t *factory;               /**< RPC server handle */
     tapi_job_t *job;                    /**< Agent job control */
     tapi_job_channel_t *out_filter;     /**< Filters of stdout message */
     tapi_job_channel_t *err_filter;     /**< Filters of stderr message */
@@ -380,14 +390,14 @@ extern void tapi_perf_server_destroy(tapi_perf_server *server);
  * tapi_perf_server_start() instead.
  *
  * @param server            Server context.
- * @param rpcs              RPC server handle.
+ * @param factory           Job factory
  *
  * @return Status code.
  *
  * @sa tapi_perf_server_start, tapi_perf_server_stop
  */
 extern te_errno tapi_perf_server_start_unreliable(tapi_perf_server *server,
-                                                  rcf_rpc_server *rpcs);
+                                                  tapi_job_factory_t *factory);
 
 /**
  * Start perf server "reliably". It calls tapi_perf_server_start_unreliable()
@@ -396,14 +406,14 @@ extern te_errno tapi_perf_server_start_unreliable(tapi_perf_server *server,
  * some time.
  *
  * @param server            Server context.
- * @param rpcs              RPC server handle.
+ * @param factory           Job factory
  *
  * @return Status code.
  *
  * @sa tapi_perf_server_start_unreliable, tapi_perf_server_stop
  */
 extern te_errno tapi_perf_server_start(tapi_perf_server *server,
-                                       rcf_rpc_server *rpcs);
+                                       tapi_job_factory_t *factory);
 
 /**
  * Stop perf server.
@@ -520,14 +530,14 @@ extern void tapi_perf_client_destroy(tapi_perf_client *client);
  * Start perf client.
  *
  * @param client            Client context.
- * @param rpcs              RPC server handle.
+ * @param factory           Job factory
  *
  * @return Status code.
  *
  * @sa tapi_perf_client_stop
  */
 extern te_errno tapi_perf_client_start(tapi_perf_client *client,
-                                       rcf_rpc_server *rpcs);
+                                       tapi_job_factory_t *factory);
 
 /**
  * Stop perf client.

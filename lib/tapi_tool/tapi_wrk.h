@@ -123,13 +123,14 @@ typedef struct tapi_wrk_app {
 /**
  * Create wrk app. All needed information to run wrk is in @p opt
  *
- * @param[in]  rpcs         RPC server to create job on.
+ * @param[in]  factory      Job factory.
  * @param[in]  opt          Options of wrk tool.
  * @param[out] app          wrk app handle.
  *
  * @return Status code.
  */
-extern te_errno tapi_wrk_create(rcf_rpc_server *rpcs, const tapi_wrk_opt *opt,
+extern te_errno tapi_wrk_create(tapi_job_factory_t *factory,
+                                const tapi_wrk_opt *opt,
                                 tapi_wrk_app **app);
 
 /**

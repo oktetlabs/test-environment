@@ -86,7 +86,7 @@ perf_app_read_output(tapi_job_channel_t *filter, te_string *str)
 
 /* See description in performance_internal.h */
 te_errno
-perf_app_start(rcf_rpc_server *rpcs, te_vec *args, tapi_perf_app *app)
+perf_app_start(tapi_job_factory_t *factory, te_vec *args, tapi_perf_app *app)
 {
     tapi_job_t *job = NULL;
     tapi_job_channel_t *out_chs[2];
@@ -106,7 +106,8 @@ perf_app_start(rcf_rpc_server *rpcs, te_vec *args, tapi_perf_app *app)
     }
     RING("Run \"%s\"", cmd);
 
-    rc = tapi_job_rpc_create(rpcs, NULL, cmd_args[0], cmd_args, NULL, &job);
+    rc = tapi_job_create(factory, NULL, cmd_args[0], (const char **)cmd_args,
+                         NULL, &job);
     if (rc != 0)
         goto cleanup;
 
@@ -131,7 +132,6 @@ perf_app_start(rcf_rpc_server *rpcs, te_vec *args, tapi_perf_app *app)
         goto cleanup;
 
     app->job  = job;
-    app->rpcs = rpcs;
     app->cmd  = cmd.ptr;
 
 cleanup:

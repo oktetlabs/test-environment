@@ -19,6 +19,7 @@
 #include "tapi_rpc_rte_eal.h"
 #include "tapi_file.h"
 #include "te_ethernet.h"
+#include "tapi_job_factory_rpc.h"
 
 #define COMMANDS_FILE_NAME "testpmd_commands"
 #define TESTPMD_MAX_PARAM_LEN 64
@@ -634,6 +635,7 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     /* The first CPU is reserved by testpmd for command-line processing */
     size_t n_cpus = n_fwd_cpus + 1;
     size_t n_cpus_grabbed;
+    tapi_job_factory_t *factory = NULL;
     int i;
 
     if (n_fwd_cpus == 0)
@@ -693,7 +695,14 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     /* Terminate argv with NULL */
     append_argument(NULL, &testpmd_argc, &testpmd_argv);
 
-    rc = tapi_job_rpc_simple_create(rpcs,
+    rc = tapi_job_factory_rpc_create(rpcs, &factory);
+    if (rc != 0)
+    {
+        ERROR("Failed to create factory for testpmd job");
+        goto out;
+    }
+
+    rc = tapi_job_simple_create(factory,
                           &(tapi_job_simple_desc_t){
                                 .program = testpmd_path.ptr,
                                 .argv = (const char **)testpmd_argv,
@@ -756,6 +765,7 @@ out:
         free(testpmd_argv[i]);
     free(testpmd_argv);
     te_string_free(&testpmd_path);
+    tapi_job_factory_destroy(factory);
 
     return rc;
 }

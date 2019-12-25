@@ -9,6 +9,7 @@ AM_LDFLAGS = -L$(DESTDIR)/$(libdir)
 
 include_HEADERS= \
 	tapi_job.h \
+	tapi_job_factory_rpc.h \
 	tapi_job_opt.h
 
 lib_LTLIBRARIES = libtapi_job.la

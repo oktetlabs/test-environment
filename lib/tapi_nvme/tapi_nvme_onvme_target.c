@@ -22,6 +22,7 @@
 #include "te_vector.h"
 
 #include "tapi_nvme_onvme_target.h"
+#include "tapi_job_factory_rpc.h"
 
 #define ONVME_PROC_SIGINT_TIMEOUT     (5)
 #define ONVME_PROC_INIT_TIMEOUT       (15)
@@ -119,6 +120,7 @@ tapi_nvme_onvme_target_setup(tapi_nvme_target *target)
 {
     te_errno rc;
     te_vec onvme_args;
+    tapi_job_factory_t *factory = NULL;
     tapi_nvme_onvme_target_proc *proc =
         (tapi_nvme_onvme_target_proc *)target->impl;
 
@@ -130,11 +132,16 @@ tapi_nvme_onvme_target_setup(tapi_nvme_target *target)
     if ((rc = onvme_build_args(&onvme_args, target)) != 0)
         return rc;
 
-    rc = tapi_job_rpc_create(target->rpcs, NULL, "onvme-target-start",
-                             (const char **)onvme_args.data.ptr,
-                             NULL, &proc->onvme_job);
+    rc = tapi_job_factory_rpc_create(target->rpcs, &factory);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_job_create(factory, NULL, "onvme-target-start",
+                         (const char **)onvme_args.data.ptr,
+                         NULL, &proc->onvme_job);
 
     onvme_args_free(&onvme_args);
+    tapi_job_factory_destroy(factory);
 
     if (rc != 0)
         return rc;

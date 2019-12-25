@@ -21,6 +21,7 @@
 #include "tapi_file.h"
 #include "te_units.h"
 #include "tapi_wrk.h"
+#include "conf_api.h"
 
 #define TAPI_WRK_UNITS_MAX 16
 #define TAPI_WRK_RECEIVE_TIMEOUT_MS 1000
@@ -150,7 +151,7 @@ generate_script_filename(const char *ta, char **file_name)
 }
 
 te_errno
-tapi_wrk_create(rcf_rpc_server *rpcs, const tapi_wrk_opt *opt,
+tapi_wrk_create(tapi_job_factory_t *factory, const tapi_wrk_opt *opt,
                 tapi_wrk_app **app)
 {
     tapi_wrk_app *result;
@@ -170,16 +171,22 @@ tapi_wrk_create(rcf_rpc_server *rpcs, const tapi_wrk_opt *opt,
 
     if (opt_effective.script_content != NULL)
     {
+        const char *ta;
+
+        ta = tapi_job_factory_ta(factory);
+        if (ta == NULL)
+            goto out;
+
         if (opt_effective.script_path == NULL)
         {
-            rc = generate_script_filename(rpcs->ta, &script_filename);
+            rc = generate_script_filename(ta, &script_filename);
             if (rc != 0)
                 goto out;
 
             opt_effective.script_path = script_filename;
         }
 
-        if (tapi_file_create_ta(rpcs->ta, opt_effective.script_path,
+        if (tapi_file_create_ta(ta, opt_effective.script_path,
                                 "%s", opt_effective.script_content) != 0)
         {
             ERROR("Failed to create script file on TA for wrk");
@@ -194,7 +201,7 @@ tapi_wrk_create(rcf_rpc_server *rpcs, const tapi_wrk_opt *opt,
         goto out;
 
 
-    rc = tapi_job_rpc_simple_create(rpcs,
+    rc = tapi_job_simple_create(factory,
                           &(tapi_job_simple_desc_t){
                                 .program = path,
                                 .argv = (const char **)result->wrk_args.data.ptr,

@@ -488,22 +488,24 @@ app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
  * Start iperf server.
  *
  * @param server            Server context.
- * @param rpcs              RPC server handle.
+ * @param factory           Job factory.
  *
  * @return Status code.
  *
  * @sa server_stop
  */
 static te_errno
-server_start(tapi_perf_server *server, rcf_rpc_server *rpcs)
+server_start(tapi_perf_server *server, tapi_job_factory_t *factory)
 {
     te_vec   args = TE_VEC_INIT(char *);
+    const char *ta;
     te_errno rc;
 
-    ENTRY("Start iperf server on %s", RPC_NAME(rpcs));
+    ta = tapi_job_factory_ta(factory);
+    ENTRY("Start iperf server on ta %s", ta != NULL ? ta : "<unknown>");
 
     build_server_args(&args, &server->app.opts);
-    rc = perf_app_start(rpcs, &args, &server->app);
+    rc = perf_app_start(factory, &args, &server->app);
 
     te_vec_deep_free(&args);
 
@@ -514,22 +516,24 @@ server_start(tapi_perf_server *server, rcf_rpc_server *rpcs)
  * Start iperf client.
  *
  * @param client            Client context.
- * @param rpcs              RPC server handle.
+ * @param factory           Job factory.
  *
  * @return Status code.
  *
  * @sa client_stop
  */
 static te_errno
-client_start(tapi_perf_client *client, rcf_rpc_server *rpcs)
+client_start(tapi_perf_client *client, tapi_job_factory_t *factory)
 {
     te_vec   args = TE_VEC_INIT(char *);
+    const char *ta;
     te_errno rc;
 
-    ENTRY("Start iperf client on %s", RPC_NAME(rpcs));
+    ta = tapi_job_factory_ta(factory);
+    ENTRY("Start iperf client on ta %s", ta != NULL ? ta : "<unknown>");
 
     build_client_args(&args, &client->app.opts);
-    rc = perf_app_start(rpcs, &args, &client->app);
+    rc = perf_app_start(factory, &args, &client->app);
 
     te_vec_deep_free(&args);
 

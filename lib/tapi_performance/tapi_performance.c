@@ -146,7 +146,7 @@ tapi_perf_server_destroy(tapi_perf_server *server)
 
 /* See description in tapi_performance.h */
 te_errno
-tapi_perf_server_start_unreliable(tapi_perf_server *server, rcf_rpc_server *rpcs)
+tapi_perf_server_start_unreliable(tapi_perf_server *server, tapi_job_factory_t *factory)
 {
     ENTRY("Start perf server unreliable");
 
@@ -155,18 +155,18 @@ tapi_perf_server_start_unreliable(tapi_perf_server *server, rcf_rpc_server *rpcs
         server->methods->start == NULL)
         return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 
-    return server->methods->start(server, rpcs);
+    return server->methods->start(server, factory);
 }
 
 /* See description in tapi_performance.h */
 te_errno
-tapi_perf_server_start(tapi_perf_server *server, rcf_rpc_server *rpcs)
+tapi_perf_server_start(tapi_perf_server *server, tapi_job_factory_t *factory)
 {
     te_errno rc;
 
     ENTRY("Start perf server");
 
-    rc = tapi_perf_server_start_unreliable(server, rpcs);
+    rc = tapi_perf_server_start_unreliable(server, factory);
     if (rc == 0)
     {
         /*
@@ -272,7 +272,7 @@ tapi_perf_client_destroy(tapi_perf_client *client)
 
 /* See description in tapi_performance.h */
 te_errno
-tapi_perf_client_start(tapi_perf_client *client, rcf_rpc_server *rpcs)
+tapi_perf_client_start(tapi_perf_client *client, tapi_job_factory_t *factory)
 {
     ENTRY("Start perf client");
 
@@ -281,7 +281,7 @@ tapi_perf_client_start(tapi_perf_client *client, rcf_rpc_server *rpcs)
         client->methods->start == NULL)
         return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 
-    return client->methods->start(client, rpcs);
+    return client->methods->start(client, factory);
 }
 
 /* See description in tapi_performance.h */

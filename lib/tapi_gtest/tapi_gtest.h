@@ -75,11 +75,11 @@ typedef struct tapi_gtest {
  * Create GTest
  *
  * @param gtest     GTest handler
- * @param rpcs      RPC Server
+ * @param factory   Job factory
  *
  * @return Status code
  */
-extern te_errno tapi_gtest_init(tapi_gtest *gtest,  rcf_rpc_server *rpcs);
+extern te_errno tapi_gtest_init(tapi_gtest *gtest, tapi_job_factory_t *factory);
 
 /**
  * Start GTest
@@ -133,11 +133,13 @@ extern te_errno tapi_gtest_fini(tapi_gtest *gtest);
  * main(int argc, char *argv[])
  * {
  *     tapi_gtest gtest;
+ *     tapi_job_factory_t *factory;
  *
  *     TEST_START;
  *     TEST_GET_GTEST_PARAM(gtest);
  *
- *     CHECK_RC(tapi_gtest_init(&gtest, rpcs));
+ *     CHECK_RC(tapi_job_factory_rpc_create(rpcs, &factory));
+ *     CHECK_RC(tapi_gtest_init(&gtest, factory));
  *     CHECK_RC(tapi_gtest_start(&gtest));
  *     CHECK_RC(tapi_gtest_wait(&gtest, TE_SEC2MS(10)));
  *
@@ -145,6 +147,7 @@ extern te_errno tapi_gtest_fini(tapi_gtest *gtest);
  *
  * cleanup:
  *     CLEANUP_CHECK_RC(tapi_gtest_fini(&gtest));
+ *     tapi_job_factory_destroy(factory);
  *     TEST_END;
  * }
  * \endcode

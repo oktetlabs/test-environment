@@ -13,6 +13,7 @@
 
 #include "te_queue.h"
 #include "tapi_job.h"
+#include "tapi_job_factory_rpc.h"
 #include "tapi_mem.h"
 #include "tapi_rpc_stdio.h"
 #include "tapi_rpc_job.h"
@@ -25,6 +26,17 @@ typedef struct channel_entry {
 
 /* List of all channels/filters belonging to a job */
 typedef SLIST_HEAD(channel_entry_list, channel_entry) channel_entry_list;
+
+typedef enum tapi_job_factory_type {
+    TAPI_JOB_FACTORY_RPC,
+} tapi_job_factory_type;
+
+struct tapi_job_factory_t {
+    tapi_job_factory_type type;
+    union {
+        rcf_rpc_server *rpcs;
+    } proto;
+};
 
 struct tapi_job_t {
     rcf_rpc_server *rpcs;
@@ -101,27 +113,90 @@ get_channel(const rcf_rpc_server *rpcs, unsigned int id)
     return NULL;
 }
 
+/* See description in tapi_job_factory_rpc.h */
+te_errno
+tapi_job_factory_rpc_create(rcf_rpc_server *rpcs,
+                            struct tapi_job_factory_t **factory)
+{
+    tapi_job_factory_t *result;
+
+    result = TE_ALLOC(sizeof(*result));
+    if (result == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
+    result->type = TAPI_JOB_FACTORY_RPC;
+    result->proto.rpcs = rpcs;
+
+    *factory = result;
+
+    return 0;
+}
+
+/* See description in tapi_job.h */
+const char *
+tapi_job_factory_ta(const tapi_job_factory_t *factory)
+{
+    if (factory == NULL)
+    {
+        ERROR("Failed to get test agent from NULL factory");
+        return NULL;
+    }
+
+    switch (factory->type)
+    {
+        case TAPI_JOB_FACTORY_RPC:
+            return factory->proto.rpcs->ta;
+
+        default:
+            ERROR("Invalid job factory type");
+            return NULL;
+    }
+}
+
+/* See description in tapi_job.h */
+void
+tapi_job_factory_destroy(tapi_job_factory_t *factory)
+{
+    if (factory == NULL)
+        return;
+
+    switch (factory->type)
+    {
+        case TAPI_JOB_FACTORY_RPC:
+            break;
+
+        default:
+            ERROR("Invalid job factory type");
+            break;
+    }
+
+    free(factory);
+}
+
 /* See description in tapi_job.h */
 te_errno
-tapi_job_rpc_create(rcf_rpc_server *rpcs, const char *spawner,
-                    const char *program, const char **argv,
-                    const char **env, tapi_job_t **job)
+tapi_job_create(tapi_job_factory_t *factory, const char *spawner,
+                const char *program, const char **argv,
+                const char **env, tapi_job_t **job)
 {
     tapi_job_t *tapi_job;
     te_errno rc;
 
-    if (rpcs == NULL)
+    if (factory == NULL)
     {
-        ERROR("RPC server is NULL");
+        ERROR("Job factory is NULL");
         return TE_RC(TE_TAPI, TE_EINVAL);
     }
 
+    if (factory->type != TAPI_JOB_FACTORY_RPC)
+        return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
+
     tapi_job = tapi_calloc(1, sizeof(*tapi_job));
 
-    tapi_job->rpcs = rpcs;
+    tapi_job->rpcs = factory->proto.rpcs;
     SLIST_INIT(&tapi_job->channel_entries);
-    rc = rpc_job_create(rpcs, spawner == NULL ? "" : spawner, program,
-                        argv, env, &tapi_job->id);
+    rc = rpc_job_create(factory->proto.rpcs, spawner == NULL ? "" : spawner,
+                        program, argv, env, &tapi_job->id);
     if (rc != 0)
     {
         free(tapi_job);
@@ -173,7 +248,8 @@ tapi_job_simple_alloc_channels(tapi_job_t *job, tapi_job_simple_desc_t *desc)
 }
 
 te_errno
-tapi_job_rpc_simple_create(rcf_rpc_server *rpcs, tapi_job_simple_desc_t *desc)
+tapi_job_simple_create(tapi_job_factory_t *factory,
+                       tapi_job_simple_desc_t *desc)
 {
     te_errno rc;
     tapi_job_simple_filter_t *filter;
@@ -184,8 +260,8 @@ tapi_job_rpc_simple_create(rcf_rpc_server *rpcs, tapi_job_simple_desc_t *desc)
         return TE_EALREADY;
     }
 
-    rc = tapi_job_rpc_create(rpcs, desc->spawner, desc->program, desc->argv,
-                             desc->env, desc->job_loc);
+    rc = tapi_job_create(factory, desc->spawner, desc->program, desc->argv,
+                         desc->env, desc->job_loc);
     if (rc != 0)
         return rc;
 
@@ -217,12 +293,22 @@ tapi_job_rpc_simple_create(rcf_rpc_server *rpcs, tapi_job_simple_desc_t *desc)
 
 /* See description in tapi_job.h */
 te_errno
-tapi_job_set_path(rcf_rpc_server *rpcs)
+tapi_job_factory_set_path(tapi_job_factory_t *factory)
 {
     te_errno rc;
     char *ta_path = NULL;
     cfg_val_type type = CVT_STRING;
-    te_bool awaiting_error = RPC_AWAITING_ERROR(rpcs);
+    te_bool awaiting_error;
+    rcf_rpc_server *rpcs;
+
+    if (factory == NULL || factory->type != TAPI_JOB_FACTORY_RPC)
+    {
+        ERROR("Invalid factory passed to set path");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rpcs = factory->proto.rpcs;
+    awaiting_error = RPC_AWAITING_ERROR(rpcs);
 
     rc = cfg_get_instance_fmt(&type, &ta_path, "/agent:%s/env:PATH", rpcs->ta);
     if (rc != 0)

@@ -17,11 +17,16 @@
 
 #include "te_errno.h"
 #include "te_string.h"
-#include "rcf_rpc.h"
+#include "logger_api.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * An opaque type to represent factory that creates job instances
+ */
+typedef struct tapi_job_factory_t tapi_job_factory_t;
 
 /**
  * An opaque type to represent job instances
@@ -45,19 +50,48 @@ typedef tapi_job_channel_t *tapi_job_channel_set_t[];
     (tapi_job_channel_set_t){__VA_ARGS__, NULL}
 
 /**
- * Create a job controlled by the RPC server @p rcps.
+ * Get name of the test agent that hosts job instances created by
+ * @p factory.
+ *
+ * @note                The returned pointer should not be used after
+ *                      factory destruction
+ *
+ * @param factory       Job factory
+ *
+ * @return              Test Agent name (or @c NULL on failure)
+ */
+extern const char * tapi_job_factory_ta(const tapi_job_factory_t *factory);
+
+/**
+ * Set path in factory's environment to /agent:/env:PATH. The environment
+ * is inherited by created job if the environment is not specified in
+ * tapi_job_create().
+ *
+ * @note Job TAPI does not automatically inherit the environment from /agent:env
+ *
+ * @param factory       Job factory
+ *
+ * @return              Status code
+ */
+extern te_errno tapi_job_factory_set_path(tapi_job_factory_t *factory);
+
+/**
+ * Destroy a job factory
+ *
+ * @param factory       Job factory
+ */
+extern void tapi_job_factory_destroy(tapi_job_factory_t *factory);
+
+/**
+ * Create a job controlled in the way specified by @p factory.
  * The job will be managed by @p spawner plugin.
  *
- * @note This is the only function in this API that depends
- * on the actual communication protocol used to control the agent
- * jobs, hence @c rpc in its name. All other functions should remain
- * intact, if the mechanism is ever changed.
  * @note The created job is *not* started automatically,
  *       use tapi_job_start() to actually run it.
  * @note The first element of @p args, by convention of exec family functions,
  *       should point to the filename associated with the file being executed.
  *
- * @param rpcs      RPC server
+ * @param factory   Job factory
  * @param spawner   Spawner plugin name
  *                 (may be @c NULL for the default plugin)
  * @param program   Program path to run
@@ -68,12 +102,12 @@ typedef tapi_job_channel_t *tapi_job_channel_set_t[];
  *
  * @return          Status code
  */
-extern te_errno tapi_job_rpc_create(rcf_rpc_server *rpcs,
-                                    const char *spawner,
-                                    const char *program,
-                                    const char **argv,
-                                    const char **env,
-                                    tapi_job_t **job);
+extern te_errno tapi_job_create(tapi_job_factory_t *factory,
+                                const char *spawner,
+                                const char *program,
+                                const char **argv,
+                                const char **env,
+                                tapi_job_t **job);
 /**
  * A simplified description of an output filter.
  * The caller is expected to fill the fields one is
@@ -137,27 +171,16 @@ typedef struct tapi_job_simple_desc_t {
     })
 
 /**
- * Create a job on a given RPC served based on a description
+ * Create a job based on a description
  *
- * @param rpcs   RPC server
- * @param desc   Job description
+ * @param factory   Job factory
+ * @param desc      Job description
  *
  * @return       Status code
  * @retval TE_EALREADY A job associated with @p desc already created
  */
-extern te_errno tapi_job_rpc_simple_create(rcf_rpc_server *rpcs,
-                                           tapi_job_simple_desc_t *desc);
-
-/**
- * Set the path in Job TAPI environment to /agent:/env:PATH
- *
- * @note Job TAPI does not automatically inherit the environment from /agent:env
- *
- * @param rpcs   RPC server
- *
- * @return       Status code
- */
-extern te_errno tapi_job_set_path(rcf_rpc_server *rpcs);
+extern te_errno tapi_job_simple_create(tapi_job_factory_t *factory,
+                                       tapi_job_simple_desc_t *desc);
 
 /**
  * Start a job
@@ -305,14 +328,14 @@ extern te_errno tapi_job_attach_filter(tapi_job_channel_set_t channels,
                                        tapi_job_channel_t **filter);
 
 /**
- * Attach a simple filter to a job created by tapi_job_simple_rpc_create()
+ * Attach a simple filter to a job created by tapi_job_simple_create()
  *
  * @param desc   Job description (it must have @a job_loc, @a stdin_loc and
  *               @a stderr_loc filled in)
  * @param filter Filter to attach
  *
  * @return       Status code
- * @retval TE_ENOTCONN tapi_job_simple_rpc_create() has not been called on
+ * @retval TE_ENOTCONN tapi_job_simple_create() has not been called on
  *                     @p desc
  */
 extern te_errno tapi_job_attach_simple_filter(const tapi_job_simple_desc_t *desc,
@@ -458,6 +481,25 @@ extern void tapi_job_simple_receive(const tapi_job_channel_set_t filters,
 extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
 
 /**
+ * @page tapi-job-factory Creating tapi_job_t instances
+ *
+ * Before a job can be created, a job factory must be initialized.
+ * It is done by using one of tapi_job_factory_* create functions
+ * (e.g. tapi_job_factory_rpc_create()). The job factory defines
+ * the methods to create and control jobs on a specific Test Agent.
+ *
+ * When factory is created by tapi_job_factory_rpc_create(), the job
+ * instances are created on the specified RPC server and are controlled
+ * by the facility that is set up on the RPC server.
+ *
+ * Job factory API allows tapi_job_create() API to be independent from
+ * a particular implementation of job control. It makes any other
+ * programming logic that is build on tapi_job functionality fully
+ * decoupled from job control backend. To achieve this, e.g. an API
+ * should not use tapi_job_factory* create, but consume already created
+ * factory to create jobs inside the API. The user of such an API will
+ * decide which job control implementation to choose.
+ *
  * @page tapi-job-build Building tapi_job
  *
  * tarpc_job.x.m4 must be added to the list of rpcdefs
@@ -478,12 +520,14 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * - Wait for the program termination
  *
  * @code{.c}
+ * tapi_job_factory_t *factory = NULL;
  * tapi_job_t *job = NULL
  * tapi_job_channel_t *out_channels[2];
  *
- * CHECK_RC(tapi_job_rpc_create(pco, NULL, "/usr/bin/tool",
- *                              (const char *[]){"tool", "arg1", "arg2",
- *                              NULL}, NULL, &job));
+ * CHECK_RC(tapi_job_factory_rpc_create(pco, &factory));
+ * CHECK_RC(tapi_job_create(factory, NULL, "/usr/bin/tool",
+ *                          (const char *[]){"tool", "arg1", "arg2",
+ *                          NULL}, NULL, &job));
  * CHECK_RC(tapi_job_alloc_output_channels(job, 2, out_channels));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channels[0],
  *                                                      out_channels[1]),
@@ -494,6 +538,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * if (status.type != TAPI_JOB_STATUS_EXITED || status.value != 0)
  *    TEST_FAIL("Tool failed");
  * CHECK_RC(tapi_job_destroy(job, -1));
+ * tapi_job_factory_destroy(factory);
  * @endcode
  *
  * Run and read
@@ -503,14 +548,16 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * - When all the data are read, the program is assumed to terminate
  *
  * @code{.c}
+ * tapi_job_factory_t *factory = NULL;
  * tapi_job_t *job = NULL;
  * tapi_job_buffer buf = TAPI_JOB_BUFFER_INIT;
  * tapi_job_channel_t *out_channels[2];
  * tapi_job_channel_t *out_filter;
  *
- * CHECK_RC(tapi_job_rpc_create(pco, NULL, "/usr/bin/tool",
- *                              (const char *[]){"tool", "arg1", "arg2",
- *                              NULL}, NULL, &job));
+ * CHECK_RC(tapi_job_factory_rpc_create(pco, &factory));
+ * CHECK_RC(tapi_job_create(factory, NULL, "/usr/bin/tool",
+ *                          (const char *[]){"tool", "arg1", "arg2",
+ *                          NULL}, NULL, &job));
  * CHECK_RC(tapi_job_alloc_output_channels(job, 2, out_channels));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channels[0]),
  *                                 "Out filter", TRUE, 0, &out_filter));
@@ -527,6 +574,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * if (status.type != TAPI_JOB_STATUS_EXITED || status.value != 0)
  *    TEST_FAIL("Tool failed");
  * CHECK_RC(tapi_job_destroy(job, -1));
+ * tapi_job_factory_destroy(factory);
  * @endcode
  *
  *
@@ -537,13 +585,15 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * - Wait for the string `Completed` at the stdout
  *
  * @code{.c}
+ * tapi_job_factory_t *factory = NULL;
  * tapi_job_t *job = NULL;
  * tapi_job_channel_t *out_channels[2];
  * tapi_job_channel_t *out_filters[2];
  *
- * CHECK_RC(tapi_job_rpc_create(pco, NULL, "/usr/bin/tool",
- *                              (const char *[]){"tool", "arg1", "arg2",
- *                              NULL}, NULL, &job));
+ * CHECK_RC(tapi_job_factory_rpc_create(pco, &factory));
+ * CHECK_RC(tapi_job_create(factory, NULL, "/usr/bin/tool",
+ *                          (const char *[]){"tool", "arg1", "arg2",
+ *                          NULL}, NULL, &job));
  * CHECK_RC(tapi_job_alloc_output_channels(job, 2, out_channels));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channels[0]),
  *                                 "Out filter", TRUE, 0, &out_filters[0]));
@@ -562,6 +612,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * if (status.type != TAPI_JOB_STATUS_EXITED || status.value != 0)
  *    TEST_FAIL("Tool failed");
  * CHECK_RC(tapi_job_destroy(job, -1));
+ * tapi_job_factory_destroy(factory);
  * @endcode
  *
  * Run an interactive program
@@ -573,14 +624,16 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * - Repeat the previous steps, logging all the output until the program
  *   terminates
  * @code{.c}
+ * tapi_job_factory_t *factory = NULL;
  * tapi_job_t *job = NULL;
  * tapi_job_channel_t *in_channel;
  * tapi_job_channel_t *out_channel;
  * tapi_job_channel_t *prompt_filter;
  *
- * CHECK_RC(tapi_job_rpc_create(pco, "pty_spawner", "/usr/bin/tool",
- *                              (const char *[]){"tool", "arg1", "arg2",
- *                              NULL}, NULL, &job));
+ * CHECK_RC(tapi_job_factory_rpc_create(pco, &factory));
+ * CHECK_RC(tapi_job_create(factory, "pty_spawner", "/usr/bin/tool",
+ *                          (const char *[]){"tool", "arg1", "arg2",
+ *                          NULL}, NULL, &job));
  * CHECK_RC(tapi_job_alloc_output_channels(job, 1, &out_channel));
  * CHECK_RC(tapi_job_alloc_input_channels(job, 1, &in_channel));
  * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channel),
@@ -600,6 +653,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * if (status.type != TAPI_JOB_STATUS_EXITED || status.value != 0)
  *    TEST_FAIL("Tool failed");
  * CHECK_RC(tapi_job_destroy(job, -1));
+ * tapi_job_factory_destroy(factory);
  * @endcode
  *
  * Terminate a job and if it hangs, forcedly kill it

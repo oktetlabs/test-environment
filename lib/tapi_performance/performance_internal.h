@@ -32,7 +32,7 @@ typedef struct tapi_perf_error_map {
  * Start perf application. Note, @b perf_app_stop should be called to stop the
  * application.
  *
- * @param[in]    rpcs       RPC server handle.
+ * @param[in]    factory    Job factory.
  * @param[in]    args       List with command and its arguments to execute
  *                          (start) application.
  * @param[inout] app        Application context.
@@ -41,7 +41,7 @@ typedef struct tapi_perf_error_map {
  *
  * @sa perf_app_stop
  */
-extern te_errno perf_app_start(rcf_rpc_server *rpcs, te_vec *args,
+extern te_errno perf_app_start(tapi_job_factory_t *factory, te_vec *args,
                                tapi_perf_app *app);
 
 

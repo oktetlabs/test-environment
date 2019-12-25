@@ -2,6 +2,7 @@
 
 headers += files(
     'tapi_job.h',
+    'tapi_job_factory_rpc.h',
     'tapi_job_opt.h',
 )
 sources += files(
