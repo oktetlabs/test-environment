@@ -21,6 +21,7 @@
 #include "tapi_test.h"
 #include "tapi_file.h"
 #include "tapi_wrk.h"
+#include "tapi_job_factory_rpc.h"
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_nginx.h"
 #include "tapi_rpc_signal.h"
@@ -197,6 +198,7 @@ main(int argc, char **argv)
     tapi_wrk_app       *app = NULL;
     tapi_wrk_opt        opt = tapi_wrk_default_opt;
     tapi_wrk_report     report;
+    tapi_job_factory_t *factory = NULL;
 
     TEST_START;
 
@@ -269,7 +271,8 @@ main(int argc, char **argv)
     opt.n_threads = threads_num;
     opt.host = "http://" PROXY_ADDR_SPEC "/" SRV_LOC_ROOT_FILENAME;
 
-    CHECK_RC(tapi_wrk_create(pco_proxy, &opt, &app));
+    CHECK_RC(tapi_job_factory_rpc_create(pco_proxy, &factory));
+    CHECK_RC(tapi_wrk_create(factory, &opt, &app));
     CHECK_RC(tapi_wrk_start(app));
     CHECK_RC(tapi_wrk_wait(app, TE_SEC2MS(duration + 1)));
     CHECK_RC(tapi_wrk_get_report(app, &report));
@@ -291,6 +294,7 @@ main(int argc, char **argv)
 
 cleanup:
     tapi_wrk_destroy(app);
+    tapi_job_factory_destroy(factory);
 
     if (pco_srv != NULL)
         share_cleanup(pco_srv);

@@ -31,6 +31,7 @@ te_libs = [
     'rcfrpc',
     'tapi_tool',
     'tapi_upnp',
+    'tapi_job',
 ]
 
 foreach lib : te_libs
