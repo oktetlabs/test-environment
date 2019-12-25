@@ -30,6 +30,7 @@ te_libs = [
     'logger_ten',
     'rcfrpc',
     'tapi_tool',
+    'tapi_upnp',
 ]
 
 foreach lib : te_libs
