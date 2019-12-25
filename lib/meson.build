@@ -67,6 +67,7 @@ engine_libs = [
     'trc',
     'rpcc_dpdk',
     'tapi_gtest',
+    'tapi_upnp',
 ]
 
 # Test Agent libraries
@@ -82,6 +83,7 @@ agent_libs = [
     'rpcs_dpdk',
     'rpcs_job',
     'rpcs_serial',
+    'upnp_cp',
 ]
 
 all_libs = common_libs + engine_libs + agent_libs
