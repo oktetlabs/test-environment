@@ -427,7 +427,7 @@ process_script_opt()
     script_file="$(resolve_conf_file_path "${script_file}")"
 
     if ! test -f "${script_file}" ; then
-        echo "File with shell script ${script_file} not found" >&2
+        echo "File with shell script ${script_req} not found" >&2
         exit 1
     fi
 }
