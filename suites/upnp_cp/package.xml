@@ -4,6 +4,8 @@
 
     <author mailto="Ivan.Melnikov@oktetlabs.ru"/>
 
+    <req id="BROKEN"/>
+
     <session track_conf="silent">
 
         <arg name="env">
