@@ -19,7 +19,6 @@
 #endif
 
 #include "te_config.h"
-#include "upnp_cp_config.h"
 
 #include "te_defs.h"
 #include "rpc_server.h"

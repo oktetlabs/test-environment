@@ -37,9 +37,6 @@ install-exec-hook:
 	touch -c -r lib@with_name@.a $(DESTDIR)/$(libdir)/lib@with_name@.a
 
 install-data-hook:
-	sed 's/#define PACKAGE/#define UPNP_CP_PACKAGE/; s/#define VERSION /#define UPNP_CP_VERSION /' \
-		$(builddir)/upnp_cp_config.h >$(DESTDIR)/$(includedir)/upnp_cp_config.h
-	touch -c -r $(builddir)/upnp_cp_config.h $(DESTDIR)/$(includedir)/upnp_cp_config.h
 	touch -c -r te-@with_name@.pc $(mybindir)/te-@with_name@.pc
 	for i in $(include_HEADERS) ; do \
 	    touch -c -r $(srcdir)/$$i $(DESTDIR)/$(includedir)/$$i ; \

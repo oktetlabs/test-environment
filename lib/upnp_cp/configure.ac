@@ -23,9 +23,6 @@ TE_LIB_SET
 AC_ARG_WITH([name],,,[with_name=$PACKAGE_NAME])
 AC_SUBST([with_name])
 
-AC_CONFIG_HEADERS([upnp_cp_config.h])
-
-
 UPNP_STATIC_LIBS=
 UPNP_DYNAMIC_LIBS=
 
