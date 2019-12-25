@@ -27,6 +27,28 @@ extern "C" {
 #endif
 
 /**
+ * Get a basename from @p pathname, and check if it is valid. Unlike system
+ * basename() it does not modify the contents of @p pathname
+ *
+ * @param pathname      File pathname
+ *
+ * @return A heap-allocated string containing an extracted file name,
+ *         or @c NULL if @p pathname is invalid, or allocation fails
+ */
+extern char *te_basename(const char *pathname);
+
+/**
+ * Get a dirname from @p pathname, and check if it is valid. Unlike system
+ * dirname() it does not modify the contents of @p pathname
+ *
+ * @param pathname      File pathname
+ *
+ * @return A heap-allocated string containing an extracted directory name,
+ *         or @c NULL if @p pathname is invalid, or allocation fails
+ */
+extern char *te_dirname(const char *pathname);
+
+/**
  * Create a file of unique name. It builds a template of file name in mkstemps
  * compatible format which has the form "prefixXXXXXXsuffix",
  * or "prefixXXXXXX" if @p suffix is @c NULL

@@ -9,12 +9,43 @@
  */
 
 #include "te_config.h"
+#include <libgen.h>
 #include "te_defs.h"
 #include "te_errno.h"
 #include "te_file.h"
 #include "te_string.h"
 #include "logger_api.h"
 
+/* See description in te_file.h */
+char *
+te_basename(const char *pathname)
+{
+    char path[(pathname == NULL ? 0 : strlen(pathname)) + 1];
+    char *name;
+
+    if (pathname == NULL)
+        return NULL;
+
+    memcpy(path, pathname, sizeof(path));
+    name = basename(path);
+    if (*name == '/' || *name == '.')
+        return NULL;
+
+    return strdup(name);
+}
+
+/* See description in te_file.h */
+char *
+te_dirname(const char *pathname)
+{
+    char path[(pathname == NULL ? 0 : strlen(pathname)) + 1];
+
+    if (pathname == NULL)
+        return NULL;
+
+    memcpy(path, pathname, sizeof(path));
+    return strdup(dirname(path));
+}
 
 /* See description in te_file.h */
 int
