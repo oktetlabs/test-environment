@@ -83,7 +83,7 @@ main(int argc, char **argv)
     CHECK_RC(tapi_upnp_cd_get_root(pco_iut, service, &content));
     CHECK_RC(tapi_upnp_cd_get_children(pco_iut, service, &content));
 #else /* GET_FULL_TREE */
-    CHECK_RC(tapi_upnp_cd_get_tree(pco_iut, service, &content));
+    CHECK_RC(tapi_upnp_cd_get_tree(pco_iut, service, NULL, &content));
 #endif /* GET_FULL_TREE */
 
 #if PRINT_OF_SERVICES_ENABLED
