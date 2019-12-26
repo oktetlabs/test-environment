@@ -1235,7 +1235,7 @@ rpc_rte_eth_promiscuous_get(rcf_rpc_server *rpcs, uint16_t port_id)
     return out.retval;
 }
 
-void
+int
 rpc_rte_eth_allmulticast_enable(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_allmulticast_enable_in   in;
@@ -1248,11 +1248,15 @@ rpc_rte_eth_allmulticast_enable(rcf_rpc_server *rpcs, uint16_t port_id)
 
     rcf_rpc_call(rpcs, "rte_eth_allmulticast_enable", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_allmulticast_enable, "%hu", "", in.port_id);
-    RETVAL_VOID(rte_eth_allmulticast_enable);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_allmulticast_enable,
+                                          out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_allmulticast_enable, "%hu", NEG_ERRNO_FMT,
+                 in.port_id, NEG_ERRNO_ARGS(out.retval));
+    RETVAL_ZERO_INT(rte_eth_allmulticast_enable, out.retval);
 }
 
-void
+int
 rpc_rte_eth_allmulticast_disable(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_allmulticast_disable_in   in;
@@ -1265,8 +1269,12 @@ rpc_rte_eth_allmulticast_disable(rcf_rpc_server *rpcs, uint16_t port_id)
 
     rcf_rpc_call(rpcs, "rte_eth_allmulticast_disable", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_allmulticast_disable, "%hu", "", in.port_id);
-    RETVAL_VOID(rte_eth_allmulticast_disable);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_allmulticast_disable,
+                                          out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_allmulticast_disable, "%hu", NEG_ERRNO_FMT,
+                 in.port_id, NEG_ERRNO_ARGS(out.retval));
+    RETVAL_ZERO_INT(rte_eth_allmulticast_disable, out.retval);
 }
 
 int

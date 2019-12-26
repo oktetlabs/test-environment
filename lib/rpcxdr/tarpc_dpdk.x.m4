@@ -1185,12 +1185,12 @@ typedef struct tarpc_int_retval_out tarpc_rte_eth_promiscuous_get_out;
 /** rte_eth_allmulticast_enable() */
 typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_allmulticast_enable_in;
 
-typedef struct tarpc_void_out tarpc_rte_eth_allmulticast_enable_out;
+typedef struct tarpc_int_retval_out tarpc_rte_eth_allmulticast_enable_out;
 
 /** rte_eth_allmulticast_disable() */
 typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_allmulticast_disable_in;
 
-typedef struct tarpc_void_out tarpc_rte_eth_allmulticast_disable_out;
+typedef struct tarpc_int_retval_out tarpc_rte_eth_allmulticast_disable_out;
 
 /** rte_eth_allmulticast_get() */
 typedef struct tarpc_rte_eth_dev_port_id_in tarpc_rte_eth_allmulticast_get_in;

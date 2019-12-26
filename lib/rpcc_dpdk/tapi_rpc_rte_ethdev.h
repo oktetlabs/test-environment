@@ -239,13 +239,13 @@ extern int rpc_rte_eth_promiscuous_get(rcf_rpc_server *rpcs, uint16_t port_id);
 /**
  * @b rte_eth_allmulticast_enable() RPC
  */
-extern void rpc_rte_eth_allmulticast_enable(rcf_rpc_server *rpcs,
+extern int rpc_rte_eth_allmulticast_enable(rcf_rpc_server *rpcs,
                                             uint16_t port_id);
 
 /**
  * @b rte_eth_allmulticast_disable() RPC
  */
-extern void rpc_rte_eth_allmulticast_disable(rcf_rpc_server *rpcs,
+extern int rpc_rte_eth_allmulticast_disable(rcf_rpc_server *rpcs,
                                              uint16_t port_id);
 
 /**

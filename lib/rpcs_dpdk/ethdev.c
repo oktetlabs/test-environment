@@ -1293,12 +1293,22 @@ TARPC_FUNC(rte_eth_promiscuous_get, {},
 
 TARPC_FUNC(rte_eth_allmulticast_enable, {},
 {
+#if HAVE_RTE_ALLMULTICAST_RETURN_VOID
     MAKE_CALL(func(in->port_id));
+#else
+    MAKE_CALL(out->retval = func(in->port_id));
+    neg_errno_h2rpc(&out->retval);
+#endif
 })
 
 TARPC_FUNC(rte_eth_allmulticast_disable, {},
 {
+#if HAVE_RTE_ALLMULTICAST_RETURN_VOID
     MAKE_CALL(func(in->port_id));
+#else
+    MAKE_CALL(out->retval = func(in->port_id));
+    neg_errno_h2rpc(&out->retval);
+#endif
 })
 
 TARPC_FUNC(rte_eth_allmulticast_get, {},
