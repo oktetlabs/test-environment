@@ -14,6 +14,7 @@ TE_SETUP_AR
 
 # Checks for programs.
 AC_PROG_CC
+AC_LANG_WERROR
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_RANLIB
 AC_PROG_INSTALL
@@ -45,6 +46,17 @@ AC_LANG_PROGRAM(
 ]],
 [[(void)rte_ring_dequeue_bulk(NULL, NULL, 0, NULL);]]
 )], [AC_DEFINE([HAVE_RTE_RING_DEQUEUE_BULK_ARG_AVAILABLE], 1, [ ])], [])
+
+AC_COMPILE_IFELSE([
+AC_LANG_PROGRAM(
+[[
+#include <stdint.h>
+#include "rte_ethdev.h"
+
+typedef void (*func)(uint16_t);
+]],
+[[func f = rte_eth_promiscuous_enable; (void)f;]]
+)], [AC_DEFINE([HAVE_RTE_PROMISCUOUS_RETURN_VOID], 1, [ ])], [])
 
 AC_CHECK_MEMBERS([struct rte_flow_ops.isolate],
 [], [],

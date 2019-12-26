@@ -1168,7 +1168,7 @@ rpc_rte_eth_dev_set_link_down(rcf_rpc_server *rpcs, uint16_t port_id)
     RETVAL_ZERO_INT(rte_eth_dev_set_link_down, out.retval);
 }
 
-void
+int
 rpc_rte_eth_promiscuous_enable(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_promiscuous_enable_in   in;
@@ -1181,11 +1181,15 @@ rpc_rte_eth_promiscuous_enable(rcf_rpc_server *rpcs, uint16_t port_id)
 
     rcf_rpc_call(rpcs, "rte_eth_promiscuous_enable", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_promiscuous_enable, "%hu", "", in.port_id);
-    RETVAL_VOID(rte_eth_promiscuous_enable);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_promiscuous_enable,
+                                          out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_promiscuous_enable, "%hu", NEG_ERRNO_FMT,
+                 in.port_id, NEG_ERRNO_ARGS(out.retval));
+    RETVAL_ZERO_INT(rte_eth_promiscuous_enable, out.retval);
 }
 
-void
+int
 rpc_rte_eth_promiscuous_disable(rcf_rpc_server *rpcs, uint16_t port_id)
 {
     tarpc_rte_eth_promiscuous_disable_in   in;
@@ -1198,8 +1202,12 @@ rpc_rte_eth_promiscuous_disable(rcf_rpc_server *rpcs, uint16_t port_id)
 
     rcf_rpc_call(rpcs, "rte_eth_promiscuous_disable", &in, &out);
 
-    TAPI_RPC_LOG(rpcs, rte_eth_promiscuous_disable, "%hu", "", in.port_id);
-    RETVAL_VOID(rte_eth_promiscuous_disable);
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eth_promiscuous_disable,
+                                          out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_eth_promiscuous_disable, "%hu", NEG_ERRNO_FMT,
+                 in.port_id, NEG_ERRNO_ARGS(out.retval));
+    RETVAL_ZERO_INT(rte_eth_promiscuous_disable, out.retval);
 }
 
 int

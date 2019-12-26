@@ -34,6 +34,23 @@ if cc.compiles(code_ring_dequeue_bulk, args: prj_args,
     c_args += [ '-DHAVE_RTE_RING_DEQUEUE_BULK_ARG_AVAILABLE' ]
 endif
 
+# Check if rte_eth_promiscuous_enable() returns value
+code_promiscuous = '''
+#include <stdint.h>
+#include "rte_ethdev.h"
+
+int main(void) {
+    typedef void (*func)(uint16_t);
+    func f = rte_eth_promiscuous_enable;
+    (void)f;
+    return 0;
+}
+'''
+if cc.compiles(code_promiscuous, args: prj_args + ['-Werror'],
+               name: 'rte_eth_promiscuous_enable() returns value ')
+    c_args += [ '-DHAVE_RTE_PROMISCUOUS_RETURN_VOID' ]
+endif
+
 t = 'struct rte_ether_addr'
 if cc.has_type(t, prefix: '#include "rte_ethdev.h"')
     c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]

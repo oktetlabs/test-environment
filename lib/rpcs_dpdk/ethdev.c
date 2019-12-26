@@ -1268,12 +1268,22 @@ TARPC_FUNC(rte_eth_dev_set_link_down, {},
 
 TARPC_FUNC(rte_eth_promiscuous_enable, {},
 {
+#if HAVE_RTE_PROMISCUOUS_RETURN_VOID
     MAKE_CALL(func(in->port_id));
+#else
+    MAKE_CALL(out->retval = func(in->port_id));
+    neg_errno_h2rpc(&out->retval);
+#endif
 })
 
 TARPC_FUNC(rte_eth_promiscuous_disable, {},
 {
+#if HAVE_RTE_PROMISCUOUS_RETURN_VOID
     MAKE_CALL(func(in->port_id));
+#else
+    MAKE_CALL(out->retval = func(in->port_id));
+    neg_errno_h2rpc(&out->retval);
+#endif
 })
 
 TARPC_FUNC(rte_eth_promiscuous_get, {},
