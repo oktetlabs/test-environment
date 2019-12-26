@@ -175,7 +175,11 @@ tapi_wrk_create(tapi_job_factory_t *factory, const tapi_wrk_opt *opt,
 
         ta = tapi_job_factory_ta(factory);
         if (ta == NULL)
+        {
+            ERROR("Failed to get test agent from job factory");
+            rc = TE_RC(TE_TAPI, TE_EFAIL);
             goto out;
+        }
 
         if (opt_effective.script_path == NULL)
         {
