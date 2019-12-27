@@ -534,6 +534,26 @@ extern void te_rpc_error_set(te_errno err, const char *msg, ...);
 extern te_errno te_rpc_error_get_num(void);
 
 /**
+ * Call pthread_mutex_lock(), report error with
+ * te_rpc_error_set() if it failed.
+ *
+ * @param mutex       Mutex to lock.
+ *
+ * @return Return value of pthread_mutex_lock().
+ */
+extern int tarpc_mutex_lock(pthread_mutex_t *mutex);
+
+/**
+ * Call pthread_mutex_unlock(), report error with
+ * te_rpc_error_set() if it failed.
+ *
+ * @param mutex       Mutex to unlock.
+ *
+ * @return Return value of pthread_mutex_unlock().
+ */
+extern int tarpc_mutex_unlock(pthread_mutex_t *mutex);
+
+/**
  * Do some preparations before passing an call to a real function:
  * - probably wait for a specific deadline
  * - record a starting timestamp

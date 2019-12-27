@@ -23,6 +23,38 @@
 #include "te_sleep.h"
 #include "te_alloc.h"
 
+/* See description in rpc_server.h */
+int
+tarpc_mutex_lock(pthread_mutex_t *mutex)
+{
+    int rc;
+
+    rc = pthread_mutex_lock(mutex);
+    if (rc != 0)
+    {
+        te_rpc_error_set(TE_OS_RC(TE_TA, rc),
+                         "pthread_mutex_lock() failed");
+    }
+
+    return rc;
+}
+
+/* See description in rpc_server.h */
+int
+tarpc_mutex_unlock(pthread_mutex_t *mutex)
+{
+    int rc;
+
+    rc = pthread_mutex_unlock(mutex);
+    if (rc != 0)
+    {
+        te_rpc_error_set(TE_OS_RC(TE_TA, rc),
+                         "pthread_mutex_unlock() failed");
+    }
+
+    return rc;
+}
+
 void
 tarpc_init_checked_arg(checked_arg_list *list, uint8_t *real_arg,
                        size_t len, size_t len_visible, const char *name)
