@@ -468,7 +468,7 @@ conn_wait_msg(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
         rc = conn_wait_packet(conn_descr, timeout, &duration);
         if (rc != 0)
         {
-            ERROR("%s(): failed to get packet", __FUNCTION__);
+            VERB("%s(): failed to get packet", __FUNCTION__);
             return rc;
         }
 
@@ -478,7 +478,7 @@ conn_wait_msg(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
 
         if (timeout <= duration)
         {
-            ERROR("%s: no new messages received", __FUNCTION__);
+            VERB("%s: no new messages received", __FUNCTION__);
             return TE_RC(TE_TAPI, TE_ETIMEDOUT);
         }
         timeout -= duration;
