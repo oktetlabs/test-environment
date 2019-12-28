@@ -353,6 +353,29 @@ rgt_tmpls_free(rgt_tmpl_t *tmpls, size_t tmpl_num)
     }
 }
 
+/**
+ * Call chdir(), report error if it occurred.
+ * This function helps to avoid compiler warning about not checked
+ * return value.
+ *
+ * @param path      Path for chdir().
+ *
+ * @return Result of chdir().
+ */
+static int
+chdir_report_error(const char *path)
+{
+    int rc = chdir(path);
+
+    if (rc < 0)
+    {
+        fprintf(stderr, "Failed to chdir() to '%s', errno=%d ('%s')\n",
+                path, errno, strerror(errno));
+    }
+
+    return rc;
+}
+
 /* The description see in rgt_tmpls_lib.h */
 int
 rgt_resource_files_prefix_get(const char *util_path, const char *argv0,
@@ -418,12 +441,12 @@ rgt_resource_files_prefix_get(const char *util_path, const char *argv0,
 
         for (i = 0; i < TE_ARRAY_LEN(chdir_steps); ++i)
         {
-            if (chdir(chdir_steps[i]) < 0)
+            if (chdir_report_error(chdir_steps[i]) < 0)
             {
                 fprintf(stderr, "%s: error accessing directory: %s "
                         "from path: %s/../%s/%s\n", __FUNCTION__,
                         chdir_steps[i], path_buf, datadir_path, util_path);
-                chdir(original_path);
+                chdir_report_error(original_path);
                 return 1;
             }
         }
@@ -431,11 +454,11 @@ rgt_resource_files_prefix_get(const char *util_path, const char *argv0,
         if (getcwd(prefix_static, sizeof(prefix_static)) == NULL)
         {
             fprintf(stderr, "%s: %s\n", __FUNCTION__, getcwd_error);
-            chdir(original_path);
+            chdir_report_error(original_path);
             return 1;
         }
 
-        if (chdir(original_path) < 0)
+        if (chdir_report_error(original_path) < 0)
         {
             fprintf(stderr, "%s: error returning to the original path: %s\n",
                     __FUNCTION__, original_path);
