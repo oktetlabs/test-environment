@@ -116,6 +116,9 @@ te_errno tapi_job_opt_create_bool(const void *value, te_vec *args);
 /** value type: `tapi_job_opt_array` */
 te_errno tapi_job_opt_create_array(const void *value, te_vec *args);
 
+/** value type: none */
+te_errno tapi_job_opt_create_dummy(const void *value, te_vec *args);
+
 /**@} <!-- END tapi_job_opt_formatting --> */
 
 /**
@@ -168,6 +171,14 @@ te_errno tapi_job_opt_create_array(const void *value, te_vec *args);
  */
 #define TAPI_JOB_OPT_ARRAY(_struct, _field) \
     { tapi_job_opt_create_array, NULL, FALSE, NULL, offsetof(_struct, _field) }
+
+/**
+ * Bind none argument.
+ *
+ * @param[in]     _prefix           Option name.
+ */
+#define TAPI_JOB_OPT_DUMMY(_prefix) \
+    { tapi_job_opt_create_dummy, _prefix, FALSE, NULL, 0 }
 
 /**@} <!-- END tapi_job_opt_bind_constructors --> */
 

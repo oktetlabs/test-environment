@@ -45,6 +45,18 @@ tapi_job_opt_create_bool(const void *value, te_vec *args)
     return (*(const te_bool *)value) ? 0 : TE_ENOENT;
 }
 
+te_errno
+tapi_job_opt_create_dummy(const void *value, te_vec *args)
+{
+    UNUSED(value);
+    UNUSED(args);
+    /*
+     * Function is just a dummy stuff which is required to
+     * handle options without arguments in tapi_job_opt_build_args().
+     */
+    return 0;
+}
+
 /**
  * Append an argument @p arg that was processed by a formatting function
  * to arguments array @p args, with suffix/prefix if present.
