@@ -316,6 +316,15 @@ extern te_errno tapi_netperf_destroy_server(tapi_netperf_app_server_t *app);
 extern te_errno tapi_netperf_destroy(tapi_netperf_app_client_t *client,
                                      tapi_netperf_app_server_t *server);
 
+/**
+ * Output netperf report via MI logger.
+ *
+ * @param[in]  report       netperf report.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_netperf_mi_report(const tapi_netperf_report *report);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -22,6 +22,7 @@
 #include "te_vector.h"
 #include "tapi_job_opt.h"
 #include "tapi_test.h"
+#include "te_mi_log.h"
 
 /** Number of tapi_job output channels (one for stdout, one for stderr) */
 #define TAPI_NETPERF_CHANNELS_STD_NUM 2
@@ -790,5 +791,40 @@ tapi_netperf_destroy(tapi_netperf_app_client_t *client,
         ERROR("Failed to destroy netperf");
         return rc;
     }
+    return 0;
+}
+
+te_errno
+tapi_netperf_mi_report(const tapi_netperf_report *report)
+{
+    te_mi_logger *logger;
+    te_errno      rc;
+
+    rc = te_mi_logger_meas_create("netperf", &logger);
+    if (rc != 0)
+        return rc;
+
+    switch (report->tst_type)
+    {
+        case TAPI_NETPERF_TYPE_RR:
+            te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_RPS, "Transactions per second",
+                                  TE_MI_MEAS_AGGR_SINGLE, report->rr.trps,
+                                  TE_MI_MEAS_MULTIPLIER_PLAIN);
+            break;
+
+        case TAPI_NETPERF_TYPE_STREAM:
+            te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_THROUGHPUT, "Sending",
+                                  TE_MI_MEAS_AGGR_SINGLE, report->stream.mbps_send,
+                                  TE_MI_MEAS_MULTIPLIER_MEGA);
+            te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_THROUGHPUT, "Receiving",
+                                  TE_MI_MEAS_AGGR_SINGLE, report->stream.mbps_recv,
+                                  TE_MI_MEAS_MULTIPLIER_MEGA);
+            break;
+
+        default:
+            ERROR("Unknown test type");
+            return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+    te_mi_logger_destroy(logger);
     return 0;
 }
