@@ -12,6 +12,7 @@
 #include "te_string.h"
 #include "logger_api.h"
 #include "tapi_job_opt.h"
+#include "te_sockaddr.h"
 
 typedef struct tapi_job_opt_array_impl {
     const tapi_job_opt_array *array;
@@ -55,6 +56,17 @@ tapi_job_opt_create_dummy(const void *value, te_vec *args)
      * handle options without arguments in tapi_job_opt_build_args().
      */
     return 0;
+}
+
+te_errno
+tapi_job_opt_create_sockaddr_ptr(const void *value, te_vec *args)
+{
+    const struct sockaddr **sa = (const struct sockaddr **)value;
+
+    if (sa == NULL)
+        return TE_ENOENT;
+
+    return te_vec_append_str_fmt(args, "%s", te_sockaddr_get_ipstr(*sa));
 }
 
 /**
