@@ -47,6 +47,7 @@ check_headers = [
     'net/route.h',
     'netdb.h',
     'netinet/ether.h',
+    'netinet/icmp6.h',
     'netinet/if_ether.h',
     'netinet/in_systm.h',
     'netinet/in.h',
