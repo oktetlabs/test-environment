@@ -51,7 +51,10 @@ typedef struct log_module_s {
 } log_module_t;
 
 typedef struct interface_entry {
+    /* Links in ovs interfaces list */
     SLIST_ENTRY(interface_entry)  links;
+    /* Links in port interfaces list */
+    SLIST_ENTRY(interface_entry)  port_links;
     char                         *name;
     char                         *type;
     te_bool                       temporary;
@@ -723,7 +726,7 @@ ovs_bridge_port_alloc(const char       *parent_bridge_name,
     SLIST_INIT(&port->interfaces);
 
     for (i = 0; i < nb_interfaces; ++i)
-        SLIST_INSERT_HEAD(&port->interfaces, interfaces[i], links);
+        SLIST_INSERT_HEAD(&port->interfaces, interfaces[i], port_links);
 
     port->bridge_local = bridge_local;
     port->parent_bridge_name = parent_bridge_name;
@@ -745,8 +748,8 @@ ovs_bridge_port_free(port_entry *port)
 
     INFO("Freeing the port '%s' list entry", port->name);
 
-    SLIST_FOREACH_SAFE(interface, &port->interfaces, links, interface_tmp)
-        SLIST_REMOVE(&port->interfaces, interface, interface_entry, links);
+    SLIST_FOREACH_SAFE(interface, &port->interfaces, port_links, interface_tmp)
+        SLIST_REMOVE(&port->interfaces, interface, interface_entry, port_links);
 
     free(port->value);
     free(port->name);
@@ -772,7 +775,7 @@ ovs_bridge_port_activate(ovs_ctx_t  *ctx,
         goto out;
     }
 
-    SLIST_FOREACH(interface, &port->interfaces, links)
+    SLIST_FOREACH(interface, &port->interfaces, port_links)
     {
         rc = ovs_cmd_vsctl_append_interface_arguments(interface, &cmd);
         if (rc != 0)
@@ -935,7 +938,7 @@ ovs_bridge_port_fini(ovs_ctx_t    *ctx,
 
     assert(!port->bridge_local);
 
-    SLIST_FOREACH_SAFE(interface, &port->interfaces, links, interface_tmp)
+    SLIST_FOREACH_SAFE(interface, &port->interfaces, port_links, interface_tmp)
         ovs_interface_fini(ctx, interface);
 
     SLIST_REMOVE(&bridge->ports, port, port_entry, links);
