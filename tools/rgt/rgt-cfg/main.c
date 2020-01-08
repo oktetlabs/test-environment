@@ -1592,7 +1592,7 @@ main(int argc, char **argv)
     }
 
     if (rc != 0)
-        fprintf(stderr, gen_ctx.err_msg);
+        fprintf(stderr, "%s", gen_ctx.err_msg);
 
     rgt_tmpls_free(xml2fmt_tmpls, xml2fmt_tmpls_num);
 
