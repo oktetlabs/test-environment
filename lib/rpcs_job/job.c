@@ -1975,6 +1975,7 @@ TARPC_FUNC_STATIC(job_create, {},
 
     MAKE_CALL(out->retval = func(in->spawner, in->tool, argv, env,
                                  &out->job_id));
+    out->common.errno_changed = FALSE;
     goto done;
 
 err:
@@ -1997,6 +1998,7 @@ TARPC_FUNC_STATIC(job_allocate_channels,
 {
     MAKE_CALL(out->retval = func(in->job_id, in->input_channels,
                                  in->n_channels, out->channels.channels_val));
+    out->common.errno_changed = FALSE;
 })
 
 TARPC_FUNC_STATIC(job_attach_filter, {},
@@ -2004,16 +2006,19 @@ TARPC_FUNC_STATIC(job_attach_filter, {},
     MAKE_CALL(out->retval = func(in->filter_name, in->channels.channels_len,
                                  in->channels.channels_val,
                                  in->readable, in->log_level, &out->filter));
+    out->common.errno_changed = FALSE;
 })
 
 TARPC_FUNC_STATIC(job_filter_add_regexp, {},
 {
     MAKE_CALL(out->retval = func(in->filter, in->re, in->extract));
+    out->common.errno_changed = FALSE;
 })
 
 TARPC_FUNC_STATIC(job_start, {},
 {
     MAKE_CALL(out->retval = func(in->job_id));
+    out->common.errno_changed = FALSE;
 })
 
 TARPC_FUNC_STATIC(job_receive, {},
@@ -2021,12 +2026,14 @@ TARPC_FUNC_STATIC(job_receive, {},
     MAKE_CALL(out->retval = func(in->filters.filters_len,
                                  in->filters.filters_val,
                                  in->timeout_ms, &out->buffer));
+    out->common.errno_changed = FALSE;
 })
 
 TARPC_FUNC_STATIC(job_send, {},
 {
     MAKE_CALL(out->retval = func(in->channel, in->buf.buf_len,
                                  in->buf.buf_val));
+    out->common.errno_changed = FALSE;
 })
 
 TARPC_FUNC_STATIC(job_poll, {},
@@ -2034,16 +2041,19 @@ TARPC_FUNC_STATIC(job_poll, {},
     MAKE_CALL(out->retval = func(in->channels.channels_len,
                                  in->channels.channels_val,
                                  in->timeout_ms, FALSE));
+    out->common.errno_changed = FALSE;
 })
 
 TARPC_FUNC_STATIC(job_kill, {},
 {
     MAKE_CALL(out->retval = func(in->job_id, signum_rpc2h(in->signo)));
+    out->common.errno_changed = FALSE;
 })
 
 TARPC_FUNC_STATIC(job_killpg, {},
 {
     MAKE_CALL(out->retval = func(in->job_id, signum_rpc2h(in->signo)));
+    out->common.errno_changed = FALSE;
 })
 
 TARPC_FUNC_STATIC(job_wait, {},
@@ -2055,4 +2065,5 @@ TARPC_FUNC_STATIC(job_wait, {},
 TARPC_FUNC_STATIC(job_destroy, {},
 {
     MAKE_CALL(out->retval = func(in->job_id, in->term_timeout_ms));
+    out->common.errno_changed = FALSE;
 })
