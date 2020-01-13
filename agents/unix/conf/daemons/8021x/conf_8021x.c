@@ -25,6 +25,7 @@
 /** Identifiers for supplicant parameters */
 typedef enum {
     SP_NETWORK,             /**< Network name, usually ESSID */
+    SP_BSSID,               /**< Basic Service Set Identifier */
     SP_METHOD,              /**< EAP method: "eap-md5", "eap-tls" etc. */
     SP_IDENTITY,            /**< EAP identity */
     SP_PROTO,               /**< Protocol: "", "WPA", "WPA2", "RSN" */
@@ -263,11 +264,17 @@ xsupplicant_write_config(FILE *f, const supplicant *supp)
         "  }\n"
         "}\n";
     const char *method = supp_get_param(supp, SP_METHOD);
+    const char *network = supp_get_param(supp, SP_NETWORK);
+
+    assert(*network != '\0');
+
+    if (*supp_get_param(supp, SP_BSSID) != '\0')
+        WARN("%s(): ignore parameter BSSID", __FUNCTION__);
 
     fprintf(f, template,
-            supp_get_param(supp, SP_NETWORK),
+            network,
             supp->ifname,
-            supp_get_param(supp, SP_NETWORK),
+            network,
             supp_get_param(supp, SP_IDENTITY),
             method[0] == '\0' ? "all" : method,
             supp_get_param(supp, SP_MD5_USERNAME),
@@ -444,11 +451,17 @@ wpa_supp_write_config(FILE *f, const supplicant *supp)
     const char *s_psk = supp_get_param(supp, SP_PSK);
     const char *s_auth_alg = supp_get_param(supp, SP_AUTH_ALG);
     const char *s_network = supp_get_param(supp, SP_NETWORK);
+    const char *s_bssid = supp_get_param(supp, SP_BSSID);
     const char *s_scan_ssid = supp_get_param(supp, SP_SCAN_SSID);
 
     fprintf(f, "ctrl_interface=/var/run/wpa_supplicant\n"
-               "network={\n"
-               "  ssid=\"%s\"\n", s_network);
+               "network={\n");
+
+    if (s_network[0] != '\0')
+        fprintf(f, "  ssid=\"%s\"\n", s_network);
+
+    if (s_bssid[0] != '\0')
+        fprintf(f, "  bssid=%s\n", s_bssid);
 
     if (s_scan_ssid[0] != '\0')
         fprintf(f, "  scan_ssid=%s\n", s_scan_ssid);
@@ -634,7 +647,7 @@ supp_create(const char *ifname)
     for (i = 0; i < SP_MAX; i++)
         ns->params[i] = NULL;
 
-    supp_set_param(ns, SP_NETWORK, "tester");
+    supp_set_param(ns, SP_NETWORK, "");
     supp_set_param(ns, SP_OPTSTR, "");
 
     ns->next = supplicant_list;
@@ -948,6 +961,10 @@ DS_SUPP_PARAM_SET(ds_supp_optstr_set, SP_OPTSTR)
 DS_SUPP_PARAM_GET(ds_supp_network_get, SP_NETWORK)
 DS_SUPP_PARAM_SET(ds_supp_network_set, SP_NETWORK)
 
+/* Basic Service Set Identifier (BSSID) */
+DS_SUPP_PARAM_GET(ds_supp_bssid_get, SP_BSSID)
+DS_SUPP_PARAM_SET(ds_supp_bssid_set, SP_BSSID)
+
 /** Parameter scan_ssid */
 DS_SUPP_PARAM_GET(ds_supp_scan_ssid_get, SP_SCAN_SSID)
 DS_SUPP_PARAM_SET(ds_supp_scan_ssid_set, SP_SCAN_SSID)
@@ -1020,8 +1037,13 @@ RCF_PCH_CFG_NODE_RW(node_ds_supp_identity, "identity",
                     ds_supp_identity_get,
                     ds_supp_identity_set);
 
-RCF_PCH_CFG_NODE_RW(node_ds_supp_network, "network",
+RCF_PCH_CFG_NODE_RW(node_ds_supp_bssid, "bssid",
                     NULL, &node_ds_supp_identity,
+                    ds_supp_bssid_get,
+                    ds_supp_bssid_set);
+
+RCF_PCH_CFG_NODE_RW(node_ds_supp_network, "network",
+                    NULL, &node_ds_supp_bssid,
                     ds_supp_network_get,
                     ds_supp_network_set);
 
