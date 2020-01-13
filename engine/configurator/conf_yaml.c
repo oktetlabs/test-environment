@@ -36,6 +36,7 @@ static const config_yaml_target_t config_yaml_targets[] = {
     { "get", "instance" },
     { "set", "instance" },
     { "delete", "instance" },
+    { "copy", "instance" },
     { "register", "object" },
     { "unregister", "object" },
     { NULL, NULL}
@@ -849,6 +850,7 @@ parse_config_root_commands(yaml_document_t *d,
         (strcmp((const char *)k->data.scalar.value, "register") == 0) ||
         (strcmp((const char *)k->data.scalar.value, "unregister") == 0) ||
         (strcmp((const char *)k->data.scalar.value, "delete") == 0) ||
+        (strcmp((const char *)k->data.scalar.value, "copy") == 0) ||
         (strcmp((const char *)k->data.scalar.value, "cond") == 0))
     {
         rc = parse_config_yaml_specified_cmd(d, v, xn_history,
