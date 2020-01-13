@@ -191,6 +191,24 @@
         </xs:complexType>
     </xs:element>
 
+    <xs:element name="copy">
+        <xs:annotation>
+            <xs:documentation>
+                Copy recursively instances from source subtree to
+                destination subtree. Copy value if instance exists
+                in destination tree and has read-create or read-write access.
+                Instances, that were exist in destination subtree
+                before copy, remain.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="instance" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="cond" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+
     <xs:element name="reboot">
         <xs:annotation>
             <xs:documentation>

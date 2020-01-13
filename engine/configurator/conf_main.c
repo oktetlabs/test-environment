@@ -540,6 +540,206 @@ rsrc_oid_to_sync(const char *ta, const char *val)
 }
 #endif
 
+/*
+ * Add instance with given OID and value from source instance
+ *
+ * @param dst_oid       Destination instance OID
+ * @param src_inst      Source instance
+ * @param dst_handle    Handle of the new instance
+ *
+ * @return Status code
+ */
+te_errno
+add_inst_with_src_val(const char *dst_oid, const cfg_instance *src_inst,
+                    cfg_handle *dst_handle)
+{
+    cfg_add_msg  *msg = NULL;
+    size_t        len;
+    te_errno      rc;
+
+    len = sizeof(cfg_add_msg) + CFG_MAX_INST_VALUE +
+          strlen(dst_oid) + 1;
+    if ((msg = calloc(1, len)) == NULL)
+    {
+        ERROR("Failed to allocate memory for conf message");
+        return TE_ENOMEM;
+    }
+
+    msg->type = CFG_ADD;
+    msg->len = sizeof(cfg_add_msg);
+    msg->val_type = src_inst->obj->type;
+
+    cfg_types[src_inst->obj->type].put_to_msg(src_inst->val, (cfg_msg *)msg);
+
+    msg->oid_offset = msg->len;
+    msg->len += strlen(dst_oid) + 1;
+    memcpy((char *)msg + msg->oid_offset, dst_oid, strlen(dst_oid) + 1);
+
+    cfg_process_msg((cfg_msg **)&msg, TRUE);
+
+    rc = msg->rc;
+    if (rc == 0)
+        *dst_handle = msg->handle;
+
+    free(msg);
+
+    return rc;
+}
+
+/*
+ * Copy value from source instance to destination instance
+ *
+ * @param dst_handle         Destination instance handle
+ * @param src_inst           Source instance
+ *
+ * @return Status code
+ */
+te_errno
+copy_value(cfg_handle dst_handle, const cfg_instance *src_inst)
+{
+    cfg_set_msg  *msg = NULL;
+    cfg_instance *dst_inst;
+    size_t        len;
+    te_errno      rc = 0;
+
+    dst_inst = CFG_GET_INST(dst_handle);
+    if (dst_inst == NULL)
+    {
+        ERROR("Failed to get destination instance");
+        return TE_ENOENT;
+    }
+
+    if (dst_inst->obj->access == CFG_READ_CREATE ||
+        dst_inst->obj->access == CFG_READ_WRITE)
+    {
+        len = sizeof(cfg_msg) + CFG_MAX_INST_VALUE;
+        if ((msg = calloc(1, len)) == NULL)
+        {
+            ERROR("Failed to allocate memory for conf message");
+            return TE_ENOMEM;
+        }
+
+        msg->type = CFG_SET;
+        msg->len = sizeof(cfg_set_msg);
+        msg->handle = dst_handle;
+        msg->val_type = dst_inst->obj->type;
+
+        cfg_types[dst_inst->obj->type].put_to_msg(src_inst->val, (cfg_msg *)msg);
+
+        cfg_process_msg((cfg_msg **)&msg, TRUE);
+
+        rc = msg->rc;
+        free(msg);
+    }
+
+    return rc;
+}
+/**
+ * Copy instance from source tree to destination tree
+ *
+ * @param dst_oid               Destination instance OID
+ * @param src_inst              Source tree instance
+ * @param dst_child_handle      Handle of the added instance
+ *
+ * @return  Status code
+ */
+static te_errno
+copy_subtree_instance(const char *dst_oid, const cfg_instance *src_inst,
+                      cfg_handle *dst_child_handle)
+{
+    cfg_handle    dst_handle;
+    int           rc = 0;
+    te_bool       exists = FALSE;
+
+    rc = cfg_db_find(dst_oid, &dst_handle);
+    if (rc == 0)
+    {
+        if (CFG_IS_INST(dst_handle))
+        {
+            exists = TRUE;
+        }
+        else
+        {
+            ERROR("Destination OID %s is not an instance", dst_oid);
+            return TE_EINVAL;
+        }
+    }
+
+    if (!exists)
+    {
+        rc = add_inst_with_src_val(dst_oid, src_inst, &dst_handle);
+    }
+    else
+    {
+        *dst_child_handle = dst_handle;
+
+        rc = copy_value(dst_handle, src_inst);
+    }
+
+    return rc;
+}
+
+/**
+ * Copy recursively source subtree to destination subtree
+ *
+ * @param top_dst_oid       Destination subtree OID
+ * @param top_src_handle    Source subtree handle
+ *
+ * @return Status code
+ */
+static te_errno
+copy_subtree_recursively(const char *top_dst_oid, cfg_handle top_src_handle)
+{
+    int rc = 0;
+    cfg_handle dst_handle;
+    const cfg_instance *src_inst;
+    cfg_instance *inst;
+    char *child_oid;
+    size_t dst_oid_len, src_oid_len, src_child_oid_len;
+
+    if (!CFG_IS_INST(top_src_handle))
+    {
+        ERROR("Source is not an instance");
+        return TE_EINVAL;
+    }
+
+    src_inst = CFG_GET_INST(top_src_handle);
+    if (src_inst == NULL)
+    {
+        ERROR("Failed to get source instance");
+        return TE_ENOENT;
+    }
+
+    rc = copy_subtree_instance(top_dst_oid, src_inst, &dst_handle);
+    if (rc != 0)
+        return rc;
+
+    dst_oid_len = strlen(top_dst_oid);
+    src_oid_len = strlen(src_inst->oid);
+    for (inst = src_inst->son; inst != NULL; inst = inst->brother)
+    {
+        src_child_oid_len = strlen(inst->oid);
+
+        child_oid = calloc(1, dst_oid_len +
+                           src_child_oid_len - src_oid_len + 1);
+        if (child_oid == NULL)
+        {
+            ERROR("Failed to allocate memory");
+            return TE_ENOMEM;
+        }
+        memcpy(child_oid, top_dst_oid, dst_oid_len);
+        memcpy(child_oid + dst_oid_len, inst->oid + src_oid_len,
+               src_child_oid_len - src_oid_len + 1);
+
+        rc = copy_subtree_recursively(child_oid, inst->handle);
+        free(child_oid);
+
+        if (rc != 0)
+            return rc;
+    }
+    return rc;
+}
+
 /**
  * Process add user request.
  *
@@ -1304,6 +1504,23 @@ log_msg(cfg_msg *msg, te_bool before)
             LOG_MSG(level, "Get %s%s%s", s1, s2, addon);
             break;
 
+        case CFG_COPY:
+        {
+            cfg_copy_msg *m = (cfg_copy_msg *)msg;
+            cfg_instance *inst = NULL;
+
+            if (CFG_IS_INST(m->src_handle))
+                inst = CFG_GET_INST(m->src_handle);
+
+            if (inst != NULL)
+                s1 = inst->oid;
+            else
+                s1 = "unknown source instance";
+
+            LOG_MSG(level, "Copy from %s to %s%s", s1, m->dst_oid, addon);
+            break;
+        }
+
         case CFG_SYNC:
             LOG_MSG(level, "Synchronize %s%s%s",
                     ((cfg_sync_msg *)msg)->oid,
@@ -1675,6 +1892,15 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
             CFG_CHECK_NO_LOCAL_SEQ_BREAK("get", *msg);
             process_get((cfg_get_msg *)(*msg));
             break;
+
+        case CFG_COPY:
+        {
+            cfg_copy_msg *m = (cfg_copy_msg *)(*msg);
+
+            (*msg)->rc = copy_subtree_recursively(m->dst_oid,
+                                                  m->src_handle);
+            break;
+        }
 
         case CFG_SYNC:
             (*msg)->rc = cfg_ta_sync(((cfg_sync_msg *)(*msg))->oid,

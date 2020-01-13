@@ -358,6 +358,128 @@ cfg_dh_process_get(xmlNodePtr node, te_kvpair_h *expand_vars)
 }
 
 /**
+ * Find instance by oid and check that this is an instance.
+ *
+ * @param oid       Instance OID
+ * @param handle    Handle for found instance
+ *
+ * @return Status code
+ */
+static te_errno
+cfg_dh_find_instance(const char *oid, cfg_handle *handle)
+{
+    if (cfg_db_find(oid, handle) != 0)
+    {
+        ERROR("Cannot find instance %s", oid);
+        return TE_ENOENT;
+    }
+
+    if (!CFG_IS_INST(*handle))
+    {
+        ERROR("OID %s is not instance", oid);
+        return TE_EINVAL;
+    }
+
+    return 0;
+}
+
+/**
+ * Process 'copy' command.
+ *
+ * @param node          XML node with get command children
+ * @param expand_vars   List of key-value pairs for expansion in file
+ *                      NULL if environmental variables used for
+ *                      substitutions
+ *
+ * @return Status code.
+ */
+static te_errno
+cfg_dh_process_copy(xmlNodePtr node, te_kvpair_h *expand_vars)
+{
+    te_errno      rc;
+    size_t        len;
+    size_t        oid_len;
+    char         *oid = NULL;
+    char         *val_s = NULL;
+    cfg_copy_msg *msg = NULL;
+    cfg_handle    src_handle;
+
+    while (node != NULL &&
+           xmlStrcmp(node->name , (const xmlChar *)"instance") == 0)
+    {
+        if (!xmlNodeCond(node))
+        {
+            node = xmlNodeNext(node);
+            continue;
+        }
+
+        oid = xmlGetProp_exp_vars_or_env(node,
+               (xmlChar *)"oid", expand_vars);
+        if (oid == NULL)
+        {
+            ERROR("Incorrect command format");
+            rc = TE_EINVAL;
+            goto cleanup;
+        }
+
+        oid_len = strlen(oid);
+
+        len = sizeof(cfg_copy_msg) + oid_len + 1;
+        if ((msg = calloc(1, len)) == NULL)
+        {
+            ERROR("Cannot allocate memory");
+            rc = TE_ENOMEM;
+            goto cleanup;
+        }
+
+        memcpy(msg->dst_oid, oid, oid_len + 1);
+        msg->type = CFG_COPY;
+        msg->len = sizeof(cfg_copy_msg) + oid_len + 1;
+
+        val_s = xmlGetProp_exp_vars_or_env(node,
+                (const xmlChar *)"value", expand_vars);
+        if (val_s == NULL)
+        {
+            ERROR("Value is required for %s to copy from", oid);
+            rc = TE_EINVAL;
+            goto cleanup;
+        }
+
+        if ((rc = cfg_dh_find_instance(val_s, &src_handle)) != 0)
+            goto cleanup;
+
+        msg->src_handle = src_handle;
+
+        cfg_process_msg((cfg_msg **)&msg, TRUE);
+        if (msg->rc != 0)
+        {
+            ERROR("Failed to execute the copy command for instance %s", oid);
+            rc = msg->rc;
+            goto cleanup;
+        }
+        free(val_s);
+        val_s = NULL;
+        free(msg);
+        msg = NULL;
+        free(oid);
+        oid = NULL;
+
+        node = xmlNodeNext(node);
+    }
+    if (node != NULL)
+    {
+        ERROR("Incorrect copy command format");
+        rc = TE_EINVAL;
+    }
+
+cleanup:
+    free(oid);
+    free(val_s);
+    free(msg);
+
+    return rc;
+}
+/**
  * Process 'add' command.
  *
  * @param node          XML node with add command children
@@ -531,7 +653,8 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
             xmlStrcmp(cmd->name , (const xmlChar *)"add") != 0 &&
             xmlStrcmp(cmd->name , (const xmlChar *)"set") != 0 &&
             xmlStrcmp(cmd->name , (const xmlChar *)"get") != 0 &&
-            xmlStrcmp(cmd->name , (const xmlChar *)"delete") != 0)
+            xmlStrcmp(cmd->name , (const xmlChar *)"delete") != 0 &&
+            xmlStrcmp(cmd->name , (const xmlChar *)"copy") != 0)
         {
             ERROR("Unknown command %s", cmd->name);
             return TE_EINVAL;
@@ -836,6 +959,18 @@ cfg_dh_process_file(xmlNodePtr node, te_kvpair_h *expand_vars,
             }
             if (tmp != NULL)
                 RETERR(TE_EINVAL, "Incorrect delete command format");
+        }
+        else if (xmlStrcmp(cmd->name , (const xmlChar *)"copy") == 0)
+        {
+            if (!postsync)
+                continue;
+
+            rc = cfg_dh_process_copy(tmp, expand_vars);
+            if (rc != 0)
+            {
+                ERROR("Failed to process copy command: %r", rc);
+                return rc;
+            }
         }
         else
         {

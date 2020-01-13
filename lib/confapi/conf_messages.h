@@ -61,6 +61,7 @@ enum {
     CFG_COMMIT,    /**< Commit Configurator database changes to Test
                         Agent(s): IN: subtree OID */
     CFG_GET,       /**< Get value: IN: handle, sync flag; OUT: value */
+    CFG_COPY,      /**< Copy subtree: IN: source handle, destination handle */
     CFG_SYNC,      /**< Synchronize: IN: OID, subtree flag */
     CFG_REBOOT,    /**< Reboot TA: IN: TA name, restore flag */
     CFG_BACKUP,    /**< Create/verify/restore backup:
@@ -211,6 +212,13 @@ typedef struct cfg_get_msg {
         int             val_int;     /**< int value */
     } val;
 } cfg_get_msg;
+
+/** CFG_COPY message content  */
+typedef struct cfg_copy_msg {
+    CFG_MSG_FIELDS
+    cfg_handle src_handle;   /**< Source handle */
+    char       dst_oid[0];   /**< Destination OID */
+} cfg_copy_msg;
 
 /** CFG_SYNC message content  */
 typedef struct cfg_sync_msg {
