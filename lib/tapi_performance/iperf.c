@@ -61,7 +61,7 @@ set_opt_ipversion(te_string *cmd, const tapi_perf_opts *options)
             break;
 
         case RPC_IPPROTO_IPV6:
-            CHECK_RC(te_string_append(cmd, " -V"));
+            CHECK_RC(te_string_append(cmd, "-V"));
             break;
 
         default:
@@ -87,7 +87,7 @@ set_opt_protocol(te_string *cmd, const tapi_perf_opts *options)
             break;
 
         case RPC_IPPROTO_UDP:
-            CHECK_RC(te_string_append(cmd, " -u"));
+            CHECK_RC(te_string_append(cmd, "-u"));
             break;
 
         default:
