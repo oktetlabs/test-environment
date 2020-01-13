@@ -1841,10 +1841,7 @@ job_kill(unsigned int job_id, int signo)
         return TE_EINVAL;
 
     if (job->pid < 0)
-    {
-        ERROR("Job is not running");
         return TE_ESRCH;
-    }
 
     if (kill(job->pid, signo) < 0)
     {
@@ -1865,10 +1862,7 @@ job_killpg(unsigned int job_id, int signo)
         return TE_EINVAL;
 
     if (job->pid < 0)
-    {
-        ERROR("Job is not running");
         return TE_ESRCH;
-    }
 
     if (killpg(job->pid, signo) < 0)
     {
