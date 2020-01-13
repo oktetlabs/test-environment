@@ -757,6 +757,14 @@
     <object oid="/agent/rpcserver/config"
             access="read_write" type="string" volatile="true"/>
 
+    <!-- RPC server session identifier storage to keep SID for interacting
+         with the RPC server. Storage is required to reuse dynamically
+         allocated session across tests.
+         Name: empty
+         Value: integer, RCF session ID -->
+    <object oid="/agent/rpcserver/sid"
+            access="read_write" type="integer" volatile="true"/>
+
     <!-- DNS server.
          Name:  empty
          Limit: 1 -->
@@ -810,12 +818,6 @@
          Limit: 1 -->
     <object oid="/agent/volatile" access="read_create" volatile="true" 
             type="none"/>
-
-    <!-- SID for interacting with RPC server.
-         Name: <ta>:<rpcserver>
-         Value: SID -->
-    <object oid="/rpcserver_sid" 
-            access="read_create" type="integer" volatile="true"/>
 
 
     <!-- ************** Daemons running on the Test Agent ************** -->

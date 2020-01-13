@@ -151,9 +151,10 @@ rcf_rpc_server_get(const char *ta, const char *name,
                    const char *father, int flags,
                    rcf_rpc_server **p_handle)
 {
-    int   sid;
-    char *val0 = NULL;
-    int   rc, rc1;
+    te_bool  save_sid = FALSE;
+    int      sid = 0;
+    char    *val0 = NULL;
+    int      rc, rc1;
 
     rcf_rpc_server *rpcs = NULL;
     cfg_handle      handle = CFG_HANDLE_INVALID;
@@ -191,24 +192,32 @@ rcf_rpc_server_get(const char *ta, const char *name,
     if (rc != 0 && (flags & RCF_RPC_SERVER_GET_EXISTING))
         return TE_RC(TE_RCF_API, TE_ENOENT);
 
-    if (cfg_get_instance_fmt(NULL, &sid,
-                             "/rpcserver_sid:%s:%s",
-                             ta, name) != 0)
+    if (rc == 0)
     {
-         /* Server is created in the cs.conf */
+        rc = cfg_get_instance_fmt(NULL, &sid,
+                                  "/agent:%s/rpcserver:%s/sid:", ta, name);
+        if (rc != 0)
+        {
+            ERROR("Failed to get existing RPC server %s:%s SID: %r",
+                  ta, name, rc);
+            return rc;
+        }
+    }
+
+    if (sid == 0)
+    {
+        /* Session is not allocated yet */
         if ((rc1 = rcf_ta_create_session(ta, &sid)) != 0)
         {
             ERROR("Cannot allocate RCF SID");
             return rc1;
         }
-
-        if ((rc1 = cfg_add_instance_fmt(&handle, CFG_VAL(INTEGER, sid),
-                                        "/rpcserver_sid:%s:%s",
-                                        ta, name)) != 0)
-        {
-            ERROR("Failed to specify SID for the RPC server %s", name);
-            return rc1;
-        }
+        /*
+         * Even in the case of failure below there is no API and
+         * no necessity to destroy sessions - it is just sequence
+         * number.
+         */
+        save_sid = TRUE;
     }
 
     /* FIXME: thread support to be done */
@@ -278,6 +287,11 @@ rcf_rpc_server_get(const char *ta, const char *name,
 
     if (rc == 0 && !(flags & RCF_RPC_SERVER_GET_REUSE))
     {
+        /*
+         * Since RPC server is deleted and added again it is required
+         * to restore SID after addition.
+         */
+        save_sid = TRUE;
         /* Restart it */
         if ((rc = cfg_del_instance_fmt(FALSE, "/agent:%s/rpcserver:%s",
                                        ta, name)) != 0)
@@ -321,6 +335,14 @@ rcf_rpc_server_get(const char *ta, const char *name,
         {
             RETERR(rc, "Cannot add RPC server instance");
         }
+    }
+
+    if (save_sid)
+    {
+        rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, sid),
+                                  "/agent:%s/rpcserver:%s/sid:", ta, name);
+        if (rc != 0)
+            RETERR(rc, "Cannot add RPC server instance");
     }
 
 #undef RETERR

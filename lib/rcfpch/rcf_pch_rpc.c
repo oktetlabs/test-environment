@@ -102,6 +102,11 @@ typedef struct rpcserver {
     char name[RCF_MAX_ID];  /**< RPC server name */
     char value[RCF_MAX_ID]; /**< RPC server father name */
 
+    int       sid;          /**< RFC SID which should be used for
+                                 RPC calls. Zero means unset since
+                                 it is the default session which
+                                 must not be used for RPC calls. */
+
     rpc_transport_handle handle; /**< Transport handle */
 
     int       ref;         /**< Number of thread children */
@@ -163,6 +168,10 @@ static te_errno rpcserver_config_get(unsigned int, const char *, char *,
                                      const char *);
 static te_errno rpcserver_config_set(unsigned int, const char *, char *,
                                      const char *);
+static te_errno rpcserver_sid_get(unsigned int, const char *, char *,
+                                  const char *);
+static te_errno rpcserver_sid_set(unsigned int, const char *, const char *,
+                                  const char *);
 
 static rcf_pch_cfg_object node_rpcprovider =
     { "rpcprovider", 0, NULL, NULL,
@@ -170,8 +179,14 @@ static rcf_pch_cfg_object node_rpcprovider =
       (rcf_ch_cfg_set)rpcprovider_set,
       NULL, NULL, NULL, NULL, NULL};
 
+static rcf_pch_cfg_object node_rpcserver_sid =
+    { "sid", 0, NULL, NULL,
+      (rcf_ch_cfg_get)rpcserver_sid_get,
+      (rcf_ch_cfg_set)rpcserver_sid_set,
+      NULL, NULL, NULL, NULL, NULL};
+
 static rcf_pch_cfg_object node_rpcserver_config =
-    { "config", 0, NULL, NULL,
+    { "config", 0, NULL, &node_rpcserver_sid,
       (rcf_ch_cfg_get)rpcserver_config_get,
       (rcf_ch_cfg_set)rpcserver_config_set,
       NULL, NULL, NULL, NULL, NULL};
@@ -1208,6 +1223,61 @@ rpcserver_config_set(unsigned int gid, const char *oid, char *value,
     pthread_mutex_unlock(&lock);
 
     return 0;
+}
+
+
+static te_errno
+rpcserver_sid_get(unsigned int gid, const char *oid, char *value,
+                  const char *name)
+{
+    rpcserver *rpcs;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    pthread_mutex_lock(&lock);
+
+    rpcs = rcf_pch_find_rpcserver(name);
+    if (rpcs == NULL)
+    {
+        pthread_mutex_unlock(&lock);
+        return TE_RC(TE_RCF_PCH, TE_ENOENT);
+    }
+
+    snprintf(value, RCF_MAX_VAL, "%u", rpcs->sid);
+
+    pthread_mutex_unlock(&lock);
+
+    return 0;
+}
+
+static te_errno
+rpcserver_sid_set(unsigned int gid, const char *oid, const char *value,
+                  const char *name)
+{
+    rpcserver *rpcs;
+    unsigned long val;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    pthread_mutex_lock(&lock);
+
+    rpcs = rcf_pch_find_rpcserver(name);
+    if (rpcs == NULL)
+    {
+        pthread_mutex_unlock(&lock);
+        return TE_RC(TE_RCF_PCH, TE_ENOENT);
+    }
+
+    rc = te_strtoul(value, 0, &val);
+    if (rc == 0)
+        rpcs->sid = val;
+
+    pthread_mutex_unlock(&lock);
+
+    return rc;
 }
 
 

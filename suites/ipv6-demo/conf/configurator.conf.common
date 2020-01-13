@@ -17,6 +17,8 @@
     <object oid="/agent/route/irtt" access="read_write" type="integer"/>
 
     <object oid="/agent/rpcserver" access="read_create" type="string"/>
+    <object oid="/agent/rpcserver/sid" access="read_write" type="integer"
+            volatile="true"/>
   </register>
 
   <register>
@@ -26,8 +28,6 @@
             volatile="true"/>
     <object oid="/volatile/ta_sockets" 
             access="read_create" type="string" volatile="true"/>
-    <object oid="/rpcserver_sid" 
-            access="read_create" type="integer" volatile="true"/>
   </register>
 
   <register>
@@ -62,11 +62,6 @@
     <object oid="/net/node/type" access="read_write" type="integer"/>
     <object oid="/net/node/ip4_address" access="read_create" type="address"/>
     <object oid="/net/node/ip6_address" access="read_create" type="address"/>
-  </register>
-
-  <register>
-    <object oid="/rpcserver_sid/counter" access="read_write" type="integer"
-            volatile="true"/>
   </register>
 
   <register>
