@@ -340,7 +340,8 @@ tounit(double val, char unit, int factor)
  *
  */
 static te_errno
-app_get_error(tapi_perf_app *app, tapi_perf_report *report)
+app_get_error(tapi_perf_app *app, tapi_perf_report *report,
+              te_bool ignore_connect_write_errors)
 {
     size_t i;
     te_errno rc;
@@ -369,6 +370,13 @@ app_get_error(tapi_perf_app *app, tapi_perf_report *report)
         if (errors[i].code == TAPI_PERF_ERROR_READ)
             continue;
 
+        if (ignore_connect_write_errors &&
+            (errors[i].code == TAPI_PERF_ERROR_CONNECT ||
+             errors[i].code == TAPI_PERF_ERROR_WRITE_CONN_RESET))
+        {
+            continue;
+        }
+
         while ((ptr = strstr(ptr, errors[i].msg)) != NULL)
         {
             report->errors[errors[i].code]++;
@@ -389,7 +397,7 @@ app_get_error(tapi_perf_app *app, tapi_perf_report *report)
  */
 static te_errno
 app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
-               tapi_perf_report *report)
+               tapi_perf_report *report, te_bool ignore_connect_write_errors)
 {
     const char *str;
     double time;
@@ -403,7 +411,7 @@ app_get_report(tapi_perf_app *app, tapi_perf_report_kind kind,
     /* Get tool errors */
     memset(report->errors, 0, sizeof(report->errors));
 
-    err = app_get_error(app, report);
+    err = app_get_error(app, report, ignore_connect_write_errors);
     if (err != 0)
         return err;
 
@@ -609,7 +617,13 @@ server_get_report(tapi_perf_server *server, tapi_perf_report_kind kind,
 {
     ENTRY("Get iperf server report");
 
-    return app_get_report(&server->app, kind, report);
+    /*
+     * There is an issue with iperf client's dual mode option. When the
+     * option is enabled, iperf server produces "Connection refused" and
+     * "Connection reset by peer" errors that seem to be not critical.
+     */
+
+    return app_get_report(&server->app, kind, report, server->app.opts.dual);
 }
 
 /*
@@ -627,7 +641,7 @@ client_get_report(tapi_perf_client *client, tapi_perf_report_kind kind,
 {
     ENTRY("Get iperf client report");
 
-    return app_get_report(&client->app, kind, report);
+    return app_get_report(&client->app, kind, report, FALSE);
 }
 
 
