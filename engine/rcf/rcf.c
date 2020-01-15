@@ -2960,8 +2960,11 @@ process_user_request(usrreq *req)
     
     if ((agent = find_ta_by_name(msg->ta)) == NULL)
     {
-        ERROR("Request '%s' to unknown TA '%s'",
-              rcf_op_to_string(msg->opcode), msg->ta);
+        LOG_MSG((msg->opcode == RCFOP_GET_LOG ||
+                 msg->opcode == RCFOP_GET_SNIFFERS) ?
+                TE_LL_INFO : TE_LL_ERROR,
+                "Request '%s' to unknown TA '%s'",
+                rcf_op_to_string(msg->opcode), msg->ta);
         msg->error = TE_RC(TE_RCF, TE_EINVAL);
         answer_user_request(req);
         return;
