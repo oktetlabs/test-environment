@@ -760,11 +760,12 @@ vxlan_dev_set(unsigned int gid, const char *oid, const char *value,
     udp_tunnel_e = udp_tunnel_find(ifname, UDP_TUNNEL_ENTRY_VXLAN);
     if (!udp_tunnel_entry_valid(udp_tunnel_e))
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
-    if (!rcf_pch_rsrc_accessible(value))
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     if (value[0] != '\0')
     {
+        if (!rcf_pch_rsrc_accessible(value))
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
         tmp_oid = cfg_convert_oid_str(value);
         if (tmp_oid == NULL)
             return TE_RC(TE_TA_UNIX, TE_EINVAL);
