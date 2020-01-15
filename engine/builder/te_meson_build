@@ -383,8 +383,6 @@ rsync_to() {
     local dst="$1"; shift
     local sshvar="${p}_SSH"
     local ssh="${!sshvar}"
-    local rsync="${RSYNC}"
-    local rsync_remote=
 
     while test -n "$1" ; do
         src="${src} \"${dst}\""
@@ -393,11 +391,10 @@ rsync_to() {
     done
 
     if test -n "${ssh}" ; then
-        rsync="${rsync} -e \"${ssh% *}\""
-        rsync_remote="${ssh##* }:"
+        ${RSYNC} -e "${ssh% *}" ${src} "${ssh##* }:${dst}"
+    else
+        ${RSYNC} ${src} "${dst}"
     fi
-
-    ${rsync} ${src} "${rsync_remote}${dst}"
 }
 
 rsync_from() {
@@ -406,15 +403,12 @@ rsync_from() {
     local dst="$1"; shift
     local sshvar="${p}_SSH"
     local ssh="${!sshvar}"
-    local rsync="${RSYNC}"
-    local rsync_remote=
 
     if test -n "${ssh}" ; then
-        rsync="${rsync} -e \"${ssh% *}\""
-        rsync_remote="${ssh##* }:"
+        ${RSYNC} -e "${ssh% *}" "${ssh##* }:${src}" "${dst}"
+    else
+        ${RSYNC} "${src}" "${dst}"
     fi
-
-    ${rsync} "${rsync_remote}${src}" "${dst}"
 }
 
 mk_platform_src() {
