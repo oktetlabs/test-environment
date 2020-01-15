@@ -49,7 +49,7 @@
 
 
 /** Default backlog of the TCP server */
-#define TAPI_RPC_CLIENT_SERVER_BACKLOG_DEF  1
+#define TAPI_RPC_CLIENT_SERVER_BACKLOG_DEF  10
 
 
 /* See the description in tapi_rpc_client_server.h */
