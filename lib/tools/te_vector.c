@@ -26,7 +26,7 @@ te_vec_append_vec(te_vec *vec, const te_vec *other)
 {
     assert(vec != NULL);
     assert(other != NULL);
-    assert(vec->element_size != other->element_size);
+    assert(vec->element_size == other->element_size);
     return te_vec_append_array(vec, other->data.ptr, te_vec_size(other));
 }
 
