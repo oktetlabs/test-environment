@@ -4201,7 +4201,7 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
     int                  i;
     uint8_t             *data;
     int                  data_len;
-    int                  rc;
+    te_errno             rc = 0;
     tarpc_cmsghdr       *rpc_cmsg_aux;
 
     if (cmsg_buf == NULL || cmsg_len == 0)
@@ -4240,7 +4240,8 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
               "supplied buffer does not contain correct control data",
               __FUNCTION__, (size_t)(c->cmsg_len),
               cmsg_len - (cmsg_buf - (uint8_t *)c));
-        return TE_EINVAL;
+        rc = TE_EINVAL;
+        goto fail;
     }
 
     if (c == NULL)
@@ -4258,11 +4259,12 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
         {
             if (c->cmsg_len < sizeof(struct cmsghdr))
             {
-                ERROR("cmsg_len=%" TE_PRINTF_SIZE_T "u which is smaller "
-                      "than sizeof(struct cmsghdr) (%"
+                ERROR("Control message %d: cmsg_len=%" TE_PRINTF_SIZE_T
+                      "u which is smaller than sizeof(struct cmsghdr) (%"
                       TE_PRINTF_SIZE_T "u)",
-                      (size_t)(c->cmsg_len), sizeof(struct cmsghdr));
-                return TE_EINVAL;
+                      i, (size_t)(c->cmsg_len), sizeof(struct cmsghdr));
+                rc = TE_EINVAL;
+                goto fail;
             }
 
             data_len = c->cmsg_len -
@@ -4291,7 +4293,8 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
                           TE_PRINTF_SIZE_T "u is bigger than supplied one %"
                           TE_PRINTF_SIZE_T "u", __FUNCTION__,
                           cmsg_len, real_len);
-                    return TE_EINVAL;
+                    rc = TE_EINVAL;
+                    goto fail;
                 }
             }
             else
@@ -4305,7 +4308,8 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
         if (i > RCF_RPC_MAX_CMSGHDR)
         {
             ERROR("%s(): too many cmsghdr structures", __FUNCTION__);
-            return TE_EILSEQ;
+            rc = TE_EILSEQ;
+            goto fail;
         }
 
         *rpc_cmsg = calloc(1, sizeof(**rpc_cmsg) * i);
@@ -4335,18 +4339,19 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
             if (data_len > 0)
             {
                 rc = cmsg_data_h2rpc(c->cmsg_level, c->cmsg_type,
-                                     CMSG_DATA(c), data_len,
-                                     rpc_cmsg_aux);
+                                      CMSG_DATA(c), data_len,
+                                      rpc_cmsg_aux);
                 if (rc != 0)
                 {
+                    ERROR("%s(): conversion of cmsghdr %d failed",
+                          __FUNCTION__, i);
+
                     for (i--, rpc_cmsg_aux--; i >= 0; i--, rpc_cmsg_aux--)
                         free(rpc_cmsg_aux->data.data_val);
                     free(*rpc_cmsg);
                     *rpc_cmsg = NULL;
                     *rpc_cmsg_count = 0;
-
-                    ERROR("%s(): conversion of cmsghdr failed", __FUNCTION__);
-                    return rc;
+                    goto fail;
                 }
             }
         }
@@ -4382,6 +4387,13 @@ msg_control_h2rpc(uint8_t *cmsg_buf, size_t cmsg_len,
     }
 
     return 0;
+
+fail:
+
+    ERROR("Failed to process control data of length %"
+          TE_PRINTF_SIZE_T"u: %Tm", cmsg_len, cmsg_buf,
+          (unsigned int)cmsg_len);
+    return rc;
 }
 
 /* See description in te_rpc_sys_socket.h */
