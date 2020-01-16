@@ -1124,6 +1124,28 @@ extern te_errno rcf_shutdown_call(void);
  */
 extern void rcf_api_cleanup(void);
 
+/**
+ * Prototype of the function to be called for each Test Agent.
+ *
+ * @param ta            Test agent
+ * @param cookie        Callback opaque data
+ *
+ * @return Status code.
+ *
+ * @note Iterator terminates if callback returns non zero.
+ */
+typedef te_errno rcf_ta_cb(const char *ta, void *cookie);
+
+/**
+ * Execute callback for each Test Agent
+ *
+ * @param cb            Callback function
+ * @param cookie        Callback opaque data
+ *
+ * @return Status code.
+ */
+extern te_errno rcf_foreach_ta(rcf_ta_cb *cb, void *cookie);
+
 /**@} <!-- END rcfapi_base --> */
 
 #ifdef __cplusplus

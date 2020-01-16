@@ -3393,3 +3393,28 @@ rcf_send_recv_msg(rcf_msg *send_buf, size_t send_size,
                                      recv_buf, recv_size, p_answer);
 }
 
+/* See description in rcf_api.h */
+te_errno
+rcf_foreach_ta(rcf_ta_cb *cb, void *cookie)
+{
+    char agents[RCF_MAX_VAL];
+    size_t len = sizeof(agents);
+    size_t i;
+    int rc;
+
+    if (cb == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
+
+    rc = rcf_get_ta_list(agents, &len);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; i < len; i += strlen(&agents[i]) + 1)
+    {
+        rc = cb(&agents[i], cookie);
+        if (rc != 0)
+            return rc;
+    }
+
+    return 0;
+}
