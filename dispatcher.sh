@@ -401,6 +401,11 @@ resolve_conf_file_path()
 {
     local file="$1"
 
+    if test -z "${file}" ; then
+        echo "Unspecified configuration file to resolve path" >&2
+        exit 1
+    fi
+
     test "${file:0:1}" = "/" && echo "${file}" && return 0
 
     OLD_IFS="$IFS"
@@ -462,12 +467,12 @@ process_opts()
                 EXT_OPTS_PROCESSED=yes
                 OPTS="${1#--opts=}"
                 OPTS="$(resolve_conf_file_path "${OPTS}")"
-                if test -f ${OPTS} ; then
-                    process_opts $(cat ${OPTS} | grep -v '^#')
+                if test -f "${OPTS}" ; then
+                    process_opts $(cat "${OPTS}" | grep -v '^#')
                     # Don't want to see the option after expansion
                     opt=
                 else
-                    echo "File with options ${OPTS} not found" >&2
+                    echo "File with options '${OPTS}' not found" >&2
                     exit 1
                 fi
                 ;;
