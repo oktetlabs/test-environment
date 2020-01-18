@@ -25,7 +25,7 @@ for opt ; do
     shift 1
 done
 
-TS_OPTS+="--opts=run/\"${TS_CFG}\" "
+test -z "${TS_CFG}" || TS_OPTS+="--opts=run/\"${TS_CFG}\" "
 
 TS_CONF_DIRS=
 TS_CONF_DIRS+="\"${TS_TOPDIR}\"/conf:"
