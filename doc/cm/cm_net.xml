@@ -2,11 +2,11 @@
 <backup>
 
     <!--
-        This configuration model is intended for describing of 
+        This configuration model is intended for describing of
         network topology.
-         
+
         Division into "networks" is pure logical and depends on
-        testing purposes. E.g. if IP router is tested, all nodes 
+        testing purposes. E.g. if IP router is tested, all nodes
         connected to router port via Ethernet hub should be considered
         as elements of the same network.
 
@@ -24,7 +24,7 @@
     <!-- Node of the network.
          Name: node name
          Value: OID of the connection point
-                
+
                 For nodes of Agent type the value is in the following format:
                 /agent:<agent name>/interface:<interface name>
                 E.g.: /agent:A/interface:eth0
@@ -32,7 +32,7 @@
                 For nodes of type bridge the value is in the following format:
                 /agent:<agent name>/port:<port id>
                 E.g.: /agent:bridge/port:20
-                Note that nodes of type bridge are identified as nodes of 
+                Note that nodes of type bridge are identified as nodes of
                 type nut.
 
                 -->

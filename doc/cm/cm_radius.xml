@@ -6,7 +6,7 @@
 
     <!--
         Copyright (C) 2003-2018 OKTET Labs.
-        
+
         Author: Artem Andreev E-mail: Artem.Andreev@oktetlabs.ru
         Author: Oleg Kravtsov E-mail: Oleg.Kravtsov@oktetlabs.ru
     -->
@@ -16,7 +16,7 @@
          Name: empty
          Value: 0 (disabled) or 1 (enabled) -->
     <object oid="/agent/radiusserver" access="read_write" type="integer"/>
-    
+
     <!-- RADIUS Authentication port number.
          Name: empty
          Value: UDP port -->
@@ -36,7 +36,7 @@
             type="address"/>
 
     <!-- RADIUS clients configuration (usually client is a NAS).
-         Name: IP address of RADIUS Client 
+         Name: IP address of RADIUS Client
          Value: none -->
     <object oid="/agent/radiusserver/client" access="read_create"
             type="none"/>
@@ -46,23 +46,23 @@
          the NAS and RADIUS Server.
          Name: empty
          Value: shared secret -->
-    <object oid="/agent/radiusserver/client/secret" access="read_write" 
+    <object oid="/agent/radiusserver/client/secret" access="read_write"
             type="string"/>
-    
+
     <!-- RADIUS users configuration.
          Name: user name
          Value: 0 (Reject this user unconditionally),
                 1 (Accept this user if authenticated) -->
     <object oid="/agent/radiusserver/user" access="read_create"
             type="integer"/>
-    
+
     <!-- A set of attributes that should be checked for this user.
          Name: empty
          Value: a list of attributes in format:
                 [AttributeName=Value[,AttributeName=Value]*] -->
     <object oid="/agent/radiusserver/user/check" access="read_write"
             type="string"/>
-    
+
     <!-- A set of attributes that should be included into
         Access-Challenge RADIUS message sent to this user.
          Name: empty
@@ -109,10 +109,10 @@
     <object oid="/agent/radiusserver/eap-tls/root_cert"
             access="read_write" type="string"/>
 
-            
+
     <!-- IEEE 802.1x Supplicant Service configuration model -->
 
-            
+
     <!-- Root object of the supplicant daemon.
          Name: interface name where this supplicant works
          Value: 0 (disabled) or 1 (enabled) -->
@@ -124,14 +124,14 @@
          Value: identity string -->
     <object oid="/agent/interface/supplicant/identity" access="read_write"
             type="string"/>
-    
+
     <!-- EAP method that is currently being used on the supplicant.
          Name: empty
          Value: eap-md5, eap-tls -->
     <object oid="/agent/interface/supplicant/cur_method" access="read_write"
             type="string"/>
 
-    
+
     <!-- Configuration subtrees for supported EAP methods. -->
 
     <!-- EAP-MD5 method parameters subtree
@@ -145,7 +145,7 @@
          Value: username for EAP-MD5 -->
     <object oid="/agent/interface/supplicant/eap-md5/username"
             access="read_write" type="string"/>
-    
+
     <!-- EAP-MD5-specific object - User password
          Name: empty
          Value: password for EAP-MD5 -->

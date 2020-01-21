@@ -6,7 +6,7 @@
 
     <!--
         Copyright (C) 2003-2018 OKTET Labs.
-        
+
         Author: Andrey Dmitrov E-mail: Andrey.Dmitrov@oktetlabs.ru
     -->
 
@@ -17,9 +17,9 @@
     <object oid="/agent/sniffer_settings" access="read_only" type="none"/>
 
     <!-- Enable lock on the common settings for the sniffers on the Agent
-         Name:  empty 
+         Name:  empty
          Value: 0 (disabled) or 1 (enabled)-->
-    <object oid="/agent/sniffer_settings/enable" 
+    <object oid="/agent/sniffer_settings/enable"
             access="read_write" type="integer"/>
 
     <!-- Default filter expression for the sniffers on the Agent

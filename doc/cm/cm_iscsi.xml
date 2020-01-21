@@ -11,7 +11,7 @@
         -->
 
         <!-- iSCSI Initiator configuring
-        Value: 
+        Value:
         up 5 - up the connection with CID 5
         down 5 - down the connection with CID 5
         -->
@@ -153,7 +153,7 @@
                                                             <object oid="/agent/iscsi/initiator_alias" access="read_write"
                                                                 type="string"/>
 
-                                                            <!-- iSCSI Target address 
+                                                            <!-- iSCSI Target address
                                                             Name: empty
                                                             Value: ip address of the target to connect to
                                                             -->
@@ -167,14 +167,14 @@
                                                             <object oid="/agent/iscsi/target_port" access="read_write"
                                                                 type="integer"/>
 
-                                                            <!-- iSCSI Target 
+                                                            <!-- iSCSI Target
                                                             Name: empty
-                                                            Value: none 
+                                                            Value: none
                                                             -->
                                                             <object oid="/agent/iscsi_target" access="read_only"
-                                                                type="none"/> 
+                                                                type="none"/>
 
-                                                            <!-- iSCSI Target CHAP stuff 
+                                                            <!-- iSCSI Target CHAP stuff
                                                             Name: empty
                                                             Value: 0 (disable)
                                                             1 (enable)
@@ -184,15 +184,15 @@
 
                                                             <!-- iSCSI target local secret
                                                             Name: none
-                                                            Value: string 
-                                                            -->    
+                                                            Value: string
+                                                            -->
                                                             <object oid="/agent/iscsi_target/chap/lx" access="read_write"
                                                                 type="string"/>
 
                                                             <!-- iSCSI Target local name
                                                             Name: none
                                                             Value: string
-                                                            -->    
+                                                            -->
                                                             <object oid="/agent/iscsi_target/chap/ln" access="read_write"
                                                                 type="string"/>
 
@@ -209,13 +209,13 @@
                                                                 1 (64-base encoding)
                                                                 -->
                                                                 <object oid="/agent/iscsi_target/chap/b" access="read_write"
-                                                                    type="integer"/>     
+                                                                    type="integer"/>
 
                                                                 <!-- iSCSI Target authentication forced
                                                                 Name: none
                                                                 Value: 0 (disabled)
                                                                 1 (enabled)
-                                                                -->     
+                                                                -->
                                                                 <object oid="/agent/iscsi_target/chap/t" access="read_write"
                                                                     type="integer"/>
 
@@ -231,6 +231,6 @@
                                                                 Value: string
                                                                 -->
                                                                 <object oid="/agent/iscsi_target/chap/t/pn" access="read_write"
-                                                                    type="string"/>     
+                                                                    type="string"/>
 
                                                             </backup>

@@ -6,13 +6,13 @@
 
     <!--
         Copyright (C) 2003-2018 OKTET Labs.
-        
+
         Author: Edward Makarov E-mail: Edward.Makarov@oktetlabs.ru
     -->
 
     <!-- Objects registered by Configurator itself -->
 
-    <!-- XEN dom0. 
+    <!-- XEN dom0.
          Name: none
          Value: Path to accessible across network storage for XEN
                 kernel, templates of XEN VBD/ramdisk images and

@@ -6,10 +6,10 @@
 
     <!--
         Copyright (C) 2003-2018 OKTET Labs.
-        
+
         Author: Oleg Kravtsov E-mail: Oleg.Kravtsov@oktetlabs.ru
     -->
-    
+
     <!-- Root object of the NUT configuration tree
          Name: NUT name -->
     <object oid="/nut" access="read_create" type="none"/>
@@ -22,17 +22,17 @@
                ...
                LANn       -  PS LAN interface with ifindex n + 2 -->
     <object oid="/nut/interface" access="read_create" type="none"/>
-    
+
     <!-- Link layer address for the interface (MAC, NSAP, E.164, VPI/VCI, DLCI).
          Name:  empty
          Limit: 1 -->
     <object oid="/nut/interface/link_addr" access="read_create" type="address"/>
 
     <!-- Network address (IPv4 or IPv6) of the interface.
-         Name:   address in human notation: 
+         Name:   address in human notation:
                      dotted notation for IPv4
                      RFC 2373 (or RFC 1924) for IPv6
-         Limit:  depends on Test Agent (may be limited to 1 for IPv4) 
+         Limit:  depends on Test Agent (may be limited to 1 for IPv4)
          Value: MUST be the same as instance name -->
     <object oid="/nut/interface/net_addr" access="read_create" type="address"/>
 
@@ -44,20 +44,20 @@
     <!-- Specifies a particular Agent
          Name:   Agent name whose parameters are specified in sub-tree -->
     <object oid="/dynamic_conf/agent" access="read_create" type="none"/>
-    
+
     <!-- Network interface on the Agent
          Name:   "eth0"-like
-         Limit:  1  - The model assumes that each agent has exactly 
+         Limit:  1  - The model assumes that each agent has exactly
                       one interface  -->
     <object oid="/dynamic_conf/agent/interface" access="read_create" type="none"/>
-    
-    <!-- Lower bound address in the pool of IPv4 addresses that can be 
+
+    <!-- Lower bound address in the pool of IPv4 addresses that can be
          potentially assigned on the interface of the Agent
          Name:   empty
          Limit:  1      -->
     <object oid="/dynamic_conf/agent/interface/ipv4_pool_start" access="read_create" type="address"/>
-    
-    <!-- Upper bound address in the pool of IPv4 addresses that can be 
+
+    <!-- Upper bound address in the pool of IPv4 addresses that can be
          potentially assigned on the interface of the Agent
          Name:   empty
          Limit:  1      -->
@@ -68,7 +68,7 @@
          Name:   empty
          Limit:  1      -->
     <object oid="/dynamic_conf/mac_pool_start" access="read_create" type="address"/>
-    
+
     <!-- Upper bound address in the pool of MAC addresses that can be
          used as addresses of virtual LAN PCs.
          Name:   empty

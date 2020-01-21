@@ -6,11 +6,11 @@
 
     <!--
         Copyright (C) 2003-2018 OKTET Labs.
-        
+
         Author: Igor Vasiliev <Igor.Vasiliev@oktetlabs.ru>
         Author: Oleg Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
     -->
-    
+
     <!-- Common Switch Configuration group -->
 
     <!-- Number of ports available on the Switch
@@ -99,11 +99,11 @@
 
 
     <!-- Switch port administrative group.
-         It consists of a set of read-write objects that provide a mechanism 
+         It consists of a set of read-write objects that provide a mechanism
          to control the way Switch ports operate.
          Name: empty -->
     <object oid="/agent/port/admin" access="read_write" type="none"/>
-    
+
     <!-- Attribute to control the operational status of the port.
          Name: empty
          Value:
@@ -115,13 +115,13 @@
     <!-- Attribute to enable/disable autonegotiation on the port:
          - Duplexity;
          - speed.
-         Name: empty 
+         Name: empty
          Value:
              to disable  - 0
              to enable   - 1
          -->
     <object oid="/agent/port/admin/auto" access="read_write" type="integer"/>
-    
+
     <!-- Attribute to control port speed value.
          Name: empty
          Value:
@@ -151,7 +151,7 @@
          Name: empty
          Value:
              to disable  - 0
-             to enable   - 1         
+             to enable   - 1
          -->
     <object oid="/agent/port/admin/bpdu" access="read_write" type="integer"/>
 
@@ -163,7 +163,7 @@
     <object oid="/agent/port/admin/mtu" access="read_write" type="integer"/>
 
 
-    <!-- Attribute to configure default VLAN - VLAN that is used for 
+    <!-- Attribute to configure default VLAN - VLAN that is used for
          untagged frames.
          Name: empty
          Value:
@@ -172,7 +172,7 @@
     <object oid="/agent/port/admin/default_vlan" access="read_write" type="integer"/>
 
     <!-- Attribute to enable/disable Ingress Filtering on the port.
-         If VLAN ID of received tagged frame is not from the set of VLANs 
+         If VLAN ID of received tagged frame is not from the set of VLANs
          handled by the port, actions that are taken for the frame depend
          on the value of Ingress Filtering attribute.
          If Ingress Filtering is enabled on the port, the frame is discarded.
@@ -190,7 +190,7 @@
     <object oid="/agent/port/admin/untagged_priority" access="read_write" type="integer"/>
 
     <!-- Switch VLAN group
-         Name: integer in the range 1..X 
+         Name: integer in the range 1..X
          Value:
              VLAN disabled (DOWN)  - 0
              VLAN enabled  (UP)    - 1   -->
@@ -213,11 +213,11 @@
 
     <!-- Entry of the ARL table
          Name: The name is an index of the entry that consists of a tuple
-               Entry type, port number, MAC address and VLAN name and 
+               Entry type, port number, MAC address and VLAN name and
                has the following format:
                <Entry type>.<Port number>.XX:XX:XX:XX:XX:XX.<VLAN name>
-               As a new entry is added instances of other objects 
-               "type", "port", "mac" and "vlan" are automatically filled in 
+               As a new entry is added instances of other objects
+               "type", "port", "mac" and "vlan" are automatically filled in
                with corresponding values.
                -->
     <object oid="/agent/arl/entry" access="read_create" type="none"/>
@@ -255,7 +255,7 @@
     <!-- Bridge Spanning Tree Protocol (STP) information group.
          It consists of a set of read-write objects that provide a way to
          manage the behaviour of STP module.
-         
+
          This branch can be used to enable/disable STP functionality.
 
          Name: empty
@@ -358,7 +358,7 @@
          -->
     <object oid="/agent/stp/hold_time" access="read_only" type="integer"/>
 
-    <!-- The time (in hundredths of a second) since the last time 
+    <!-- The time (in hundredths of a second) since the last time
          a topology change was detected by the bridge entity.
          Name: empty
          -->
@@ -428,7 +428,7 @@
          Name: empty
          Value:
              eight octets' value in hexdecimal format
-             AABBCCDDEEFFAABB         
+             AABBCCDDEEFFAABB
          -->
     <object oid="/agent/stp/port/designated_bridge" access="read_only"
             type="string"/>
