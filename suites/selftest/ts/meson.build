@@ -3,12 +3,12 @@
 project('sefltest', 'c',
     version : '1.0.0',
     meson_version: '>= 0.44.1',
+    default_options: 'werror=true',
 )
 
 te_path = get_option('te_path')
 te_libdir = get_option('te_libdir')
 add_project_arguments(get_option('te_cflags').split(), language: 'c')
-add_project_arguments('-Werror', language : 'c')
 add_project_link_arguments(get_option('te_ldflags').split(), language: 'c')
 
 te_tests_info_sh = find_program(join_paths(te_path, 'te_tests_info.sh'))
