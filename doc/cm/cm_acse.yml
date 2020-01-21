@@ -1,0 +1,247 @@
+---
+
+- comment: |
+    Copyright (C) 2003-2020 OKTET Labs.
+
+    Author: Edward Makarov <Edward.Makarov@oktetlabs.ru>
+    Author: Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
+
+- register:
+
+    - oid: "/agent/acse"
+      access: read_write
+      type: integer
+      d: |
+         ACSE object.
+         Name: none
+         Value: 0/1
+
+         Notes: When 1 is written and ACSE process has not been invoked
+                previously, it gets invoked. When 0 is written and ACSE
+                process has not been shut down previously, it gets shut
+                down.  When ACSE process is being invoked, reading of
+                the object value gets 1, otherwise it gets 0
+
+    - oid: "/agent/acse/unique_id"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Unique ID string generator.
+         Name: none
+         Value: every read operation gets Configurator invocationally
+                unique (numeric) ID (string representation of)
+
+    - oid: "/agent/acse/acs"
+      access: read_create
+      type: none
+      d: |
+         ACS object.
+         Name: unique name
+
+    - oid: "/agent/acse/acs/enabled"
+      access: read_write
+      type: integer
+      d: |
+         Enabled flag used to enable acceptance of connections on an ACS.
+         Name: none
+         Value: 0 if disabled, otherwise - enabled
+
+    - oid: "/agent/acse/acs/url"
+      access: read_write
+      type: string
+      d: |
+         ACS URL for CWMP connections from CPE.
+         Name: none
+         Value: URL
+
+    - oid: "/agent/acse/acs/http_root"
+      access: read_write
+      type: string
+      d: |
+         HTTP root dir for HTTP GET to ACS  from CPE.
+         Name: none
+         Value: URL
+
+    - oid: "/agent/acse/acs/auth_mode"
+      access: read_write
+      type: string
+      d: |
+         Authenticate algorithm used for particular ACS.
+         Name: none
+         Value: "noauth" | "basic" | "digest"
+
+    - oid: "/agent/acse/acs/port"
+      access: read_write
+      type: integer
+      d: |
+         Port value used for CWMP connections on an ACS.
+         Name: none
+         Value: port
+
+    - oid: "/agent/acse/acs/ssl"
+      access: read_write
+      type: integer
+      d: |
+         SSL flag used to enable SSL on connections on an ACS.
+         Name: none
+         Value: 0 if disabled, otherwise - enabled
+
+    - oid: "/agent/acse/acs/cert"
+      access: read_write
+      type: string
+      d: |
+         ACS SSL certificate.
+         Name: none
+         Value: certificate serialized into string representation
+
+    - oid: "/agent/acse/acs/cpe"
+      access: read_create
+      type: none
+      d: |
+         CPE object.
+         Name: unique name
+
+    - oid: "/agent/acse/acs/cpe/cr_url"
+      access: read_write
+      type: string
+      volatile: true
+      d: |
+         CPE URL for Connection Request.
+         Name: none
+         Value: URL
+
+    - oid: "/agent/acse/acs/cpe/cert"
+      access: read_write
+      type: string
+      d: |
+         CPE certificate.
+         Name: none
+         Value: certificate serialized into string representation
+
+    - oid: "/agent/acse/acs/cpe/cr_login"
+      access: read_write
+      type: string
+      d: |
+         User name used in ConnectionRequest while authenticating to a CPE.
+         Name: none
+         Value: user name
+
+    - oid: "/agent/acse/acs/cpe/cr_passwd"
+      access: read_write
+      type: string
+      d: |
+         User password used in ConnectionRequest while authenticating
+             to a CPE.
+         Name: none
+         Value: user password
+
+    - oid: "/agent/acse/acs/cpe/login"
+      access: read_write
+      type: string
+      d: |
+         User name used by CPE while authenticating to a ACS.
+         Name: none
+         Value: user name
+
+    - oid: "/agent/acse/acs/cpe/passwd"
+      access: read_write
+      type: string
+      d: |
+         User password used by CPE while authenticating to a ACS.
+         Name: none
+         Value: user password
+
+    - oid: "/agent/acse/acs/cpe/device_id"
+      access: read_only
+      type: none
+      d: |
+         CPE device ID object.
+         Name: none
+
+    - oid: "/agent/acse/acs/cpe/device_id/manufacturer"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         CPE device ID Manufacturer subobject.
+         Name: none
+         Value: Manufacturer of the device
+
+    - oid: "/agent/acse/acs/cpe/device_id/oui"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         CPE device ID Organizationally Unique Identifier subobject.
+         Name: none
+         Value: OUI of the device
+
+    - oid: "/agent/acse/acs/cpe/device_id/product_class"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         CPE device ID ProductClass subobject.
+         Name: none
+         Value: Product Class of the device
+
+    - oid: "/agent/acse/acs/cpe/device_id/serial_number"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         CPE device ID SerialNumber subobject.
+         Name: none
+         Value: Serial Number of the device
+
+    - oid: "/agent/acse/acs/cpe/cwmp_state"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Actual state of the CWMP session.
+         Name: none
+         Value: 0 - CWMP_NOP
+                1 - CWMP_WAIT_AUTH
+                2 - CWMP_SERVE
+                3 - CWMP_WAIT_RESPONSE
+                4 - CWMP_PENDING
+
+    - oid: "/agent/acse/acs/cpe/enabled"
+      access: read_write
+      type: integer
+      d: |
+         Enable (let CWMP activity go)/disable (stop CWMP activity).
+         Name: none
+         Value: 0 - disable, 1 - enable
+
+    - oid: "/agent/acse/acs/cpe/sync_mode"
+      access: read_write
+      type: integer
+      d: |
+         CWMP session syncronous mode.
+         Name: none
+         Value: 0 - automatic mode, 1 - sync mode
+
+    - oid: "/agent/acse/acs/cpe/hold_requests"
+      access: read_write
+      type: integer
+      volatile: true
+      d: |
+         Flag 'HoldRequests' value for CWMP RPC messages,
+         which will be sent to the CPE
+         Name: none
+         Value: 0 - do not hold requests, 1 - hold requests
+
+    - oid: "/agent/acse/acs/cpe/cr_state"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Actual state of the Connection Request to the CPE.
+         Name: none
+         Value: 0 - CR_NONE
+                1 - CR_WAIT_AUTH
+                2 - CR_DONE
+                3 - CR_ERROR

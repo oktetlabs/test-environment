@@ -1,0 +1,201 @@
+---
+
+- comment: |
+    Configuration information related to BPF programs.
+
+    Copyright (C) 2019-2020 OKTET Labs.
+
+    Author: Roman Zhukov E-mail: Roman.Zhukov@oktetlabs.ru
+
+- register:
+
+    - oid: "/agent/bpf"
+      access: read_create
+      type: none
+      d: |
+         BPF object
+         Name: unique object ID (index of BPF object file)
+
+    - oid: "/agent/bpf/filepath"
+      access: read_write
+      type: string
+      d: |
+         BPF filepath
+         Name:  empty
+         Value: file path of object on the agent
+
+    - oid: "/agent/bpf/type"
+      access: read_write
+      type: string
+      d: |
+         Type of the BPF program
+         Name:  empty
+         Value: string representation of program type:
+                UNSPEC, SOCKET_FILTER, KPROBE, SCHED_CLS, SCHED_ACT,
+                TRACEPOINT, XDP, PERF_EVENT
+
+    - oid: "/agent/bpf/state"
+      access: read_write
+      type: string
+      d: |
+         BPF state
+         Name:  empty
+         Value: unloaded, loaded
+
+
+    - oid: "/agent/bpf/map"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/bpf/state"
+      d: |
+         List of BPF maps
+         Name:  map name
+
+    # The next four entries: type, key_size, value_size and max_entries
+    # are readed from BPF object when it is loaded.
+
+    - oid: "/agent/bpf/map/type"
+      access: read_only
+      type: string
+      d: |
+         The type of map
+         Name:  empty
+         Value: string representation of map type:
+                UNSPEC, HASH, ARRAY
+
+    - oid: "/agent/bpf/map/key_size"
+      access: read_only
+      type: integer
+      d: |
+         Size of map key
+         Name:  empty
+         Value: size of key in bytes
+
+    - oid: "/agent/bpf/map/value_size"
+      access: read_only
+      type: integer
+      d: |
+         Size of map value
+         Name:  empty
+         Value: size of value in bytes
+
+    - oid: "/agent/bpf/map/max_entries"
+      access: read_only
+      type: integer
+      d: |
+         Max entries of key/map values
+         Name:  empty
+         Value: maximum number of entries in a map
+
+    # We have two views on the map:
+    #     - read_only: RO for Configurator: all maps always have read_only view
+    #                  to read key/value pairs from them.
+    #     - writable:  RW for Configurator and that should be
+    #                  accessed only via Configurator so that rollback
+    #                  happens properly;
+    # All maps from BPF object file have only read_only view by default. And
+    # then writable view can be enabled, but after that BPF program should not
+    # write anything to the map.
+
+    - oid: "/agent/bpf/map/read_only"
+      access: read_only
+      type: none
+      d: |
+         The read_only view of the map
+         Name: none
+
+    - oid: "/agent/bpf/map/read_only/key"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Entries of key/value pairs
+         Name:  hex-string
+         Value: hex-string
+
+    - oid: "/agent/bpf/map/writable"
+      access: read_write
+      type: integer
+      d: |
+         The writable view of the map enabling/disabling
+         Name: none
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/bpf/map/writable/key"
+      access: read_create
+      type: string
+      d: |
+         Entries of key/value pairs
+         Name:  hex-string
+         Value: hex-string
+
+    - oid: "/agent/bpf/perf_map"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/bpf/state"
+      d: |
+         List of BPF perf_event maps
+         Name:  map name
+
+    - oid: "/agent/bpf/perf_map/event_size"
+      access: read_write
+      type: integer
+      d: |
+         Size of user data that is passed via an event. This value
+         must be set before events monitoring is enabled.
+         Name:  empty
+         Value: size of data in bytes
+
+    - oid: "/agent/bpf/perf_map/events_enable"
+      access: read_write
+      type: integer
+      d: |
+         Enable/disable events monitoring.
+         Name: empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/bpf/perf_map/num_events"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Number of pending events with data. Reading this field causes events
+         polling and data entries updating (perf_map/events/id field).
+         Name:  empty
+         Value: Number of events
+
+    - oid: "/agent/bpf/perf_map/id"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+      depends:
+        - oid: "/agent/bpf/perf_map/num_events"
+         Collection of entries with ready to read user data.
+         Name:  Event ID
+         Value: hex-string
+
+
+    - oid: "/agent/bpf/program"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/bpf/state"
+      d: |
+         List of BPF programs. Programs are available when BPF object is loaded.
+         Name:  program name
+
+
+    - oid: "/agent/interface/xdp"
+      access: read_write
+      type: string
+      d: |
+         Link to XDP program which attached to interface. Only one XDP program
+         can be linked to interface.
+         Name:  empty
+         Value: an OID of the program instance,
+                such as /agent:Agt_A/bpf:0/program:foo

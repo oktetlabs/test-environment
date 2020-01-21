@@ -1,0 +1,351 @@
+a---
+
+- comment: |
+    OpenVPN client/server configuration.
+
+    Copyright (C) 2003-2020 OKTET Labs.
+
+    Author: Svetlana Fishchuk <Svetlana.Fishchuk@oktetlabs.ru>
+
+- register:
+
+    - oid: "/agent/openvpn"
+      access: read_create
+      type: none
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         OpenVPN instance array.
+         Name: user-friendly name for OpenVPN instance. Will be used for lock
+               file name generation, therefore must be unique as per the
+               host.
+
+    - oid: "/agent/openvpn/ifname"
+      access: read_only
+      type: string
+      d: |
+         System interface name which will be used for created tunnel.
+         Name: empty
+         Value: interface name, i.e. tunX, tapX
+
+    - oid: "/agent/openvpn/endpoint_ip"
+      access: read_only
+      type: address
+      d: |
+         Current endpoint IP address.
+         Name: empty
+
+    - oid: "/agent/openvpn/status"
+      access: read_write
+      type: integer
+      d: |
+         Current OpenVPN state. Setting the status triggers the start/stop of
+         a daemon, whilst getting of the status tries to get actual status.
+         Name: empty
+         Value: 0 - disabled
+                1 - client mode: connected. server mode: daemon is up and
+                waiting for incoming connections
+
+    - oid: "/agent/openvpn/is_server"
+      access: read_write
+      type: integer
+      d: |
+         Is this instance a server?
+         Name: empty
+         Value: 0 if client, 1 if server
+
+    - oid: "/agent/openvpn/mode"
+      access: read_write
+      type: string
+      d: |
+         Operation mode
+         Name: empty
+         Value: "tun" if TUN mode, "tap" if TAP mode
+
+    - oid: "/agent/openvpn/key_direction"
+      access: read_write
+      type: string
+      d: |
+         TLS Authentication direction mode, directly influences which side can
+         perform TLS handshake
+         Name: empty
+         Value: "normal" (we do TLS handshake),
+                "inverse" (the other side does TLS handshake, must be
+                complementary on client/server sides)
+                "bidirectional" (both sides do)
+
+    - oid: "/agent/openvpn/cipher"
+      access: read_write
+      type: string
+      d: |
+         Used cipher
+         Name: empty
+         Value: "AES-128-CBC", "AES-256-CBC", etc (can be checked with
+                openvpn - -show-ciphers)
+
+    - oid: "/agent/openvpn/digest"
+      access: read_write
+      type: string
+      d: |
+         Used digest
+         Name: empty
+         Value: "MD5", "SHA-256", etc (can be checked with
+                openvpn - -show-digests)
+
+    - oid: "/agent/openvpn/tls_key"
+      access: read_write
+      type: string
+      d: |
+         Filesystem path to TLS key. If not set, will be generated automatically
+         Name: empty
+         Value: Path to PEM-formatted TLS key, empty string
+
+    - oid: "/agent/openvpn/ca"
+      access: read_write
+      type: string
+      d: |
+         Filesystem path to Certification Authority certificate
+         Name: empty
+         Value: Path to PEM-formatted certificate
+
+    - oid: "/agent/openvpn/cert"
+      access: read_write
+      type: string
+      d: |
+         Filesystem path to client/server own certificate
+         Name: empty
+         Value: Path to PEM-formatted certificate
+
+    - oid: "/agent/openvpn/key"
+      access: read_write
+      type: string
+      d: |
+         Filesystem path to client/server own private key associated with 'cert'
+         Name: empty
+         Value: Path to PEM-formatted private key
+
+    - oid: "/agent/openvpn/proto"
+      access: read_write
+      type: string
+      d: |
+         Protocol used for server
+         Name: empty
+         Value: "TCP", "UDP"
+
+    - oid: "/agent/openvpn/lzo"
+      access: read_write
+      type: integer
+      d: |
+         The use of LZO compression
+         Name: empty
+         Value: 0 if disabled, 1 if enabled
+
+    - oid: "/agent/openvpn/interface_behind"
+      access: read_write
+      type: string
+      d: |
+         Interface to bind daemon to, the encrypted traffic will flow through it
+         Name: empty
+         Value: interface name (i.e. "eth1")
+
+    - oid: "/agent/openvpn/option"
+      access: read_create
+      type: none
+      d: |
+         Additional options passed to OpenVPN configuration. Duplicates are
+         possible, their handling is determined by daemon itself.
+         Name: any
+         Value: none
+
+    - oid: "/agent/openvpn/option/value"
+      access: read_write
+      type: string
+      d: |
+         Value of the option passed to OpenVPN configuration.
+         Name: empty
+         Value: any option permitted by OpenVPN daemon,
+                i.e. "sndbuf 4096"
+
+    - oid: "/agent/openvpn/port"
+      access: read_write
+      type: integer
+      d: |
+         Port to bind to
+         Name: empty
+         Value: any valid port, 1194 by default
+
+    - oid: "/agent/openvpn/ip_facility"
+      access: read_write
+      type: string
+      d: |
+         'ifname' IP assigning facility
+         Name: empty
+         Value: "internal"  - client: let the OpenVPN server suggest IP address
+                              server: use internal facility with addresses
+                              determined by 'pool' subtree
+                "external"  - no actions would be done, the IP assigning daemon
+                              must be started by caller
+
+    - oid: "/agent/openvpn/server"
+      access: read_write
+      type: none
+      d: |
+         Server node. Since instance can act as server or client
+         (controlled by is_server parameter), this node groups
+         server-only parameters
+         Name: empty
+         Value: none
+
+    - oid: "/agent/openvpn/server/ip"
+      access: read_write
+      type: string
+      d: |
+         Server's own IP (server only)
+         Name: empty
+         Value: any valid IP
+
+    - oid: "/agent/openvpn/server/subnet_mask"
+      access: read_write
+      type: string
+      d: |
+         Server's own subnet mask (server only)
+         Name: empty
+         Value: any valid subnet mask
+
+    - oid: "/agent/openvpn/server/dh"
+      access: read_write
+      type: string
+      d: |
+         File system path to Diffie-Hellman parameters (server only).
+         If not set, DH parameters will be generated automatically
+         Name: empty
+         Value: Path to PEM-formatted Diffie-Hellman parameters,
+                empty string
+
+    - oid: "/agent/openvpn/server/dh/size"
+      access: read_write
+      type: integer
+      d: |
+         Diffie-Hellman parameter size (server only)
+         Name: empty
+         Value: any power of two, preferrably >= 2048 (some SSL backends have
+                such a limitation due to crackability of keys with lower key
+                side)
+
+    - oid: "/agent/openvpn/server/pool"
+      access: read_write
+      type: none
+      d: |
+         Pool node
+         Name: empty
+         Value: none
+
+    - oid: "/agent/openvpn/server/pool/start"
+      access: read_write
+      type: string
+      d: |
+         Pool start address (server only)
+         Name: empty
+         Value: any valid and settable IP, lower or equal compared to
+                'pool/end'
+
+    - oid: "/agent/openvpn/server/pool/end"
+      access: read_write
+      type: string
+      d: |
+         Pool end address (server only)
+         Name: empty
+         Value: any valid and settable IP, bigger or equal compared to
+                'pool/start'
+
+    - oid: "/agent/openvpn/server/require_certs"
+      access: read_write
+      type: integer
+      d: |
+         Requirement of certificates (server only)
+         Name: empty
+         Value: 0 (no: raw username and password can be used),
+                1 (yes: require certificates)
+
+    - oid: "/agent/openvpn/server/user"
+      access: read_create
+      type: none
+      d: |
+         User array (server only)
+         Name: any
+         Value: none
+
+    - oid: "/agent/openvpn/server/user/username"
+      access: read_write
+      type: string
+      d: |
+         User's login (server only)
+         Name: empty
+         Value: any valid login, can be empty
+
+    - oid: "/agent/openvpn/server/user/password"
+      access: read_write
+      type: string
+      d: |
+         User's password (server only)
+         Name: empty
+         Value: any valid password, can be empty
+
+    - oid: "/agent/openvpn/server/user/certificate"
+      access: read_write
+      type: string
+      d: |
+         Filesystem path to user's certificate (server only)
+         Name: empty
+         Value: Path to PEM-formatted certificate signed by server's
+                Certification Authority
+
+    - oid: "/agent/openvpn/server/connected_users"
+      access: read_only
+      d: |
+         Number of connected users (server only)
+         Name: any
+         Value: Number of successfully connected users 
+
+
+    - oid: "/agent/openvpn/client"
+      access: read_write
+      type: none
+      d: |
+         Client node. Since instance can act as server or client
+         (controlled by is_server parameter), this node groups
+         clients-only parameters
+         Name: empty
+         Value: none
+
+    - oid: "/agent/openvpn/client/peer"
+      access: read_create
+      type: none
+      d: |
+         Peer array (client only)
+         Name: IP address of remote peer
+         Value: none
+
+    - oid: "/agent/openvpn/client/peer/port"
+      access: read_write
+      type: integer
+      d: |
+         Peer's port (client only)
+         Name: empty
+         Value: port used for that remote peer (1194 by default)
+
+    - oid: "/agent/openvpn/client/username"
+      access: read_write
+      type: string
+      d: |
+         Username (client only) which will be sent to peer for authorization.
+         Name: empty
+         Value: any valid login, can be empty
+
+    - oid: "/agent/openvpn/client/password"
+      access: read_write
+      type: string
+      d: |
+         Password (client only) which will be sent to peer for authorization.
+         Name: empty
+         Value: any valid password, can be empty

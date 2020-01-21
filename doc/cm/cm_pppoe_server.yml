@@ -1,0 +1,62 @@
+---
+
+- comment: |
+    PPPoE server on Agents.
+
+    To resolve conflicts between PPPoE servers spawned by different test
+    agents, each PPPoE server should be related to specific interface
+    resource. But to reduce the amount of pppoe-server processes, it is
+    allowed to configure PPPoE server to work with several vlan interfaces
+    over the specified master interface.
+
+    Copyright (C) 2003-2020 OKTET Labs.
+
+    Author: Alexander Kukuta E-mail: Alexander.Kukuta@oktetlabs.ru
+
+- register:
+
+    - oid: "/agent/interface/pppoe_server"
+      access: read_write
+      type: integer
+      d: |
+         Root object for the pppoe_server daemon on the specific interface
+         Name: empty
+
+    - oid: "/agent/interface/pppoe_server/local_addr"
+      access: read_write
+      type: integer
+      d: |
+         PPPoE server local address start
+         Name: empty
+
+    - oid: "/agent/interface/pppoe_server/remote_addr"
+      access: read_write
+      type: integer
+      d: |
+         PPPoE server remote address start
+         Name: empty
+
+    - oid: "/agent/interface/pppoe_server/vlans"
+      access: read_write
+      type: string
+      d: |
+         PPPoE vlan identifiers to list in pppoe-server parameters
+         Name: empty
+
+    - oid: "/agent/interface/pppd"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Status of working pppd process for the specified interface.
+         Boolean value shows if pppd is running on the certain vlan interface
+         Name: empty
+
+    - oid: "/agent/interface/pppd/ppp_if"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Name of ppp interface created other master interface or specific vlan,
+         non-empty string only if status is true
+         Name: empty

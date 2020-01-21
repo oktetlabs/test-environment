@@ -1,0 +1,29 @@
+---
+
+- comment: |
+    Ethernet bridges control.
+
+    Copyright (C) 2019-2020 OKTET Labs.
+
+    Author: Andrew Rybchenko E-mail: Andrew.Rybchenko@oktetlabs.ru
+
+- register:
+
+    - oid: "/agent/bridge"
+      access: read_create
+      type: string
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         Bridge instance.
+         More providers may be supported in the future (e.g. OpenVSwitch).
+         Name: interface name
+         Value: provider (empty for default)
+
+    - oid: "/agent/bridge/port"
+      access: read_create
+      type: string
+      d: |
+         Bridge port.
+         Name: port name (just internal)
+         Value: interface OID

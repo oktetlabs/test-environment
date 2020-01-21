@@ -1,0 +1,264 @@
+----
+
+- comment: |
+    iSCSI parameters. See RFC3720 for more information.
+
+    Copyright (C) 2003-2020 OKTET Labs.
+
+    Author: Konstantin Ushakov E-mail: <Konstantin.Ushakov@oktetlabs.ru>
+
+- register:
+
+    - oid: "/agent/iscsi_initiator"
+      access: read_create
+      type: string
+      d: |
+         iSCSI Initiator configuring
+          Value:
+           up 5 - up the connection with CID 5
+           down 5 - down the connection with CID 5
+
+
+    - oid: "/agent/iscsi/max_connections"
+      access: read_write
+      type: integet
+      d: |
+         iSCSI Initiator MaxConnections parameter
+          Name: empty
+          Value: Maximum connections between the Initiator and the Target
+                 in one session (1..65535). (Default : 1)
+
+    - oid: "/agent/iscsi/initial_r2t"
+      access: read_write
+      type: integer
+      d: |
+         iSCSI Initiator InitialR2T parameter (per target)
+          Name: empty
+          Value: boolean-value (Default : Yes)
+
+    - oid: "/agent/iscsi/header_digest"
+      access: read_write
+      type: string
+      d: |
+         iSCSI Initiator HeaderDigest parameter (per target)
+          Name: empty
+          Value: list-of-values (Default : None)
+
+    - oid: "/agent/iscsi/data_digest"
+      access: read_write
+      type: string
+      d: |
+         iSCSI Initiator DataDigest parameter (per target)
+          Name: empty
+          Value: list-of-values (Default : None)
+
+    - oid: "/agent/iscsi/immediate_data"
+      access: read_write
+      type: string
+      d: |
+         iSCSI Initiator ImmediateData parameter (per target)
+          Name: empty
+          Value: boolean-value (Default : Yes)
+
+    - oid: "/agent/iscsi/max_recv_data_segment_length"
+      access: read_write
+      type: integer
+      d: |
+         iSCSI Initiator MaxRecvDataSegmentLength parameter (per target)
+          Name: empty
+          Value: numerical-value-512-to-(2**24-1) (Default : 8192)
+
+    - oid: "/agent/iscsi/first_burst_length"
+      access: read_write
+      type: integer
+      d: |
+         iSCSI Initiator FirstBurstLength parameter (per target)
+          Name: empty
+          Value: numerical-value-512-to-(2**24-1) (Default : 64K)
+
+    - oid: "/agent/iscsi/max_burst_length"
+      access: read_write
+      type: integer
+      d: |
+         iSCSI Initiator MaxBurstLength parameter (per target)
+          Name: empty
+          Value: numerical-value-512-to-(2**24-1) (Default : 256K)
+
+    - oid: "/agent/iscsi/default_time2wait"
+      access: read_write
+      type: integer
+      d: |
+         iSCSI Initiator DefaultTime2Wait parameter (per target)
+          Name: empty
+          Value: numerical-value-0-to-3600 (Default : 2)
+
+    - oid: "/agent/iscsi/default_time2retain"
+      access: read_write
+      type: integer
+      d: |
+         iSCSI Initiator DefaultTime2Retain parameter (per target)
+          Name: empty
+          Value: numerical-value-0-to-3600 (Default : 20)
+
+    - oid: "/agent/iscsi/max_outstanding_r2t"
+      access: read_write
+      type: integer
+      d: |
+         iSCSI Initiator MaxOutstandingR2T parameter (per target)
+          Name: empty
+          Value: numerical-value-from-1-to-65535 (Default : 1)
+
+    - oid: "/agent/iscsi/data_pdu_in_order"
+      access: read_write
+      type: string
+      d: |
+         iSCSI Initiator DataPDUInOrder parameter (per target)
+          Name: empty
+          Value: boolean-value (Default : Yes)
+
+    - oid: "/agent/iscsi/data_sequence_in_order"
+      access: read_write
+      type: string
+      d: |
+         iSCSI Initiator DataSequenceInOrder parameter (per target)
+          Name: empty
+          Value: boolean-value (Default : Yes)
+
+    - oid: "/agent/iscsi/error_recovery_level"
+      access: read_write
+      type: integer
+      d: |
+         iSCSI Initiator Error Recovery Level parameter (per target)
+          Name: empty
+          Value: numerical-value-0-to-2 (Default : 0)
+
+    - oid: "/agent/iscsi/session_type"
+      access: read_write
+      type: string
+      d: |
+         iSCSI Initiator Session type parameter (per target)
+          Name: empty
+          Value: Normal or Discovery (Default : Normal)
+
+    - oid: "/agent/iscsi/auth_method"
+      access: read_write
+      type: string
+      d: |
+         iSCSI Initiator Authentication method (per target)
+          Name: empty
+          Value: CHAP or None or "CHAP,None"
+
+    - oid: "/agent/iscsi/target_name"
+      access: read_write
+      type: string
+      d: |
+         iSCSI Initiator target name (is sent in the Login Request PDU)
+          Name: empty
+          Value: iqn.2004-01.com:0 - default (iSCSI-name-value)
+
+    - oid: "/agent/iscsi/initiator_name"
+      access: read_write
+      type: string
+      d: |
+         iSCSI Initiator name which is sent in the Login Request PDU
+          Name: empty
+          Value: iSCSI-name-value
+
+    - oid: "/agent/iscsi/initiator_alias"
+      access: read_write
+      type: string
+      d: |
+         iSCSI Initiator Alias
+          Name: empty
+          Value: iSCSI-local-name-value
+
+    - oid: "/agent/iscsi/target_address"
+      access: read_write
+      type: address
+      d: |
+         iSCSI Target address
+          Name: empty
+          Value: ip address of the target to connect to
+
+    - oid: "/agent/iscsi/target_port"
+      access: read_write
+      type: integer
+      d: |
+         iSCSI Target port
+          Name: empty
+          Value: port of the target to connect to (Default : 3260)
+
+    - oid: "/agent/iscsi_target"
+      access: read_only
+      type: none
+      d: |
+         iSCSI Target
+          Name: empty
+          Value: none
+
+    - oid: "/agent/iscsi_target/chap"
+      access: read_write
+      type: integer
+      d: |
+         iSCSI Target CHAP stuff
+          Name: empty
+          Value: 0 (disable)
+    1 (enable)
+
+    - oid: "/agent/iscsi_target/chap/lx"
+      access: read_write
+      type: string
+      d: |
+         iSCSI target local secret
+          Name: none
+          Value: string
+
+    - oid: "/agent/iscsi_target/chap/ln"
+      access: read_write
+      type: string
+      d: |
+         iSCSI Target local name
+          Name: none
+          Value: string
+
+    - oid: "/agent/iscsi_target/chap/cl"
+      access: read_write
+      type: integer
+      d: |
+         iSCSI Target length of bytes in the CHAP challenge
+          Name: none
+          Value: numerical-value-256-to-1024 (Default: none)
+
+    - oid: "/agent/iscsi_target/chap/b"
+      access: read_write
+      type: integer
+      d: |
+         iSCSI Target format encoding
+          Name: none
+          Value: 0 (hex encoding - default)
+    1 (64-base encoding)
+
+    - oid: "/agent/iscsi_target/chap/t"
+      access: read_write
+      type: integer
+      d: |
+         iSCSI Target authentication forced
+          Name: none
+          Value: 0 (disabled)
+    1 (enabled)
+
+    - oid: "/agent/iscsi_target/chap/t/px"
+      access: read_write
+      type: string
+      d: |
+         iSCSI Target peer secret
+          Name: none
+          Value: string
+
+    - oid: "/agent/iscsi_target/chap/t/pn"
+      access: read_write
+      type: string
+      d: |
+         iSCSI Target peer name
+          Name: none
+          Value: string

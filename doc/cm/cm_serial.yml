@@ -1,0 +1,42 @@
+---
+
+- comment: |
+    Serial console reader/writer control.
+
+    Copyright (C) 2003-2020 OKTET Labs.
+
+    Author: Svetlana Menshikova E-mail: Svetlana.Menshikova@oktetlabs.ru
+
+- register:
+
+    - oid: "/agent/console"
+      access: read_create
+      type: string
+      d: |
+         Tha serial console subtree
+         Name:  A human-readable console name
+         Value: Name of the serial console on the conserver or tty name
+
+    - oid: "/agent/console/port"
+      access: read_write
+      type: integer
+      d: |
+         The port number for connection to the conserver
+         Name:  empty
+         Value: Port number
+
+    - oid: "/agent/console/user"
+      access: read_write
+      type: string
+      d: |
+         User to use when connecting to conserver
+         Name:  empty
+         Value: User name
+
+    - oid: "/agent/parser/address"
+      access: read_write
+      type: address
+      d: |
+         The address for connection to the conserver
+         Name:  empty
+         Value: IP address

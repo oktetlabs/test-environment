@@ -1,0 +1,181 @@
+---
+
+- comment: |
+    Virtual machines configuration and control.
+
+    Copyright (C) 2019-2020 OKTET Labs.
+
+    Author: Andrew Rybchenko E-mail: Andrew.Rybchenko@oktetlabs.ru
+
+- register:
+
+    - oid: "/agent/vm"
+      access: read_create
+      type: none
+      d: |
+         Virtual machine instance.
+         Name: VM name
+
+    - oid: "/agent/vm/status"
+      access: read_write
+      type: integer
+      d: |
+         Status of the virtual machine. Is it running or not?
+         Name: None
+
+    - oid: "/agent/vm/ssh_port"
+      access: read_only
+      type: none
+      d: |
+         SSH port information.
+         Name: None
+
+    - oid: "/agent/vm/ssh_port/host"
+      access: read_only
+      type: integer
+      d: |
+         SSH port of the local host forwarded to the virtual machine.
+         The TCP port should be used by the rcfunix to start test agent.
+         Name: None
+
+    - oid: "/agent/vm/ssh_port/guest"
+      access: read_write
+      type: integer
+      d: |
+         SSH port in the virtual machine SSH daemon is listening to.
+         Host SSH port is forwarded to the port.
+         Default is 22 (as per services database).
+         Name: None
+
+    - oid: "/agent/vm/rcf_port"
+      access: read_write
+      type: integer
+      d: |
+         RCF port of the local host forwarded to the virtual machine.
+         The TCP port should be passed to the Test Agent and used by the RCF
+         to connect to the Test Agent.
+         Default: automatically generated.
+         Name: None
+
+    - oid: "/agent/vm/kvm"
+      access: read_write
+      type: integer
+      d: |
+         Enable/disable KVM mode.
+         Name: None
+
+    - oid: "/agent/vm/cpu"
+      access: read_only
+      type: none
+      d: |
+         CPU configuration subtree.
+         Name: None
+
+    - oid: "/agent/vm/cpu/model"
+      access: read_write
+      type: string
+      d: |
+         CPU model. Default is host.
+         Name: None
+
+    - oid: "/agent/vm/cpu/num"
+      access: read_write
+      type: integer
+      d: |
+         Number of CPUs. Default is 1.
+         Name: None
+
+    - oid: "/agent/vm/mem"
+      access: read_only
+      type: none
+      d: |
+         Virtual machine RAM settings.
+         Name: None
+
+    - oid: "/agent/vm/mem/size"
+      access: read_write
+      type: integer
+      d: |
+         RAM size in megabytes. Default is 256M.
+         Name: None
+
+    - oid: "/agent/vm/drive"
+      access: read_create
+      type: none
+      d: |
+         Virtual machine drives configuration.
+         Name: drive ID
+
+    - oid: "/agent/vm/drive/file"
+      access: read_write
+      type: string
+      d: |
+         Disk image to use.
+         Name: None
+
+    - oid: "/agent/vm/drive/snapshot"
+      access: read_write
+      type: boolean
+      d: |
+         Enable/disable snapshot mode.
+         Default is true which means that no changes are stored.
+         Name: None
+
+    - oid: "/agent/vm/drive/readonly"
+      access: read_write
+      type: boolean
+      d: |
+         Enable/disable read-only mode.
+         Default is false.
+         Name: None
+
+    - oid: "/agent/vm/net"
+      access: read_create
+      type: none
+      d: |
+         Virtual machine network interfaces configuration.
+         Name: network name
+
+    - oid: "/agent/vm/net/type"
+      access: read_write
+      type: string
+      d: |
+         Type of the network interface.
+         E.g. nic, tap, vhost-user
+         Name: None
+
+    - oid: "/agent/vm/net/type_spec"
+      access: read_write
+      type: string
+      d: |
+         Type specific configuration.
+          - nic: model
+          - tap: file descriptor (if a number) or TAP interface name
+          - vhost-user: unix domain socket
+         Name: None
+
+    - oid: "/agent/vm/net/bus_addr"
+      access: read_write
+      type: string
+      d: |
+         Bus address of the device inside the virtual machine. E.g. pci.00:02.0
+         Default is automatically generated.
+         Name: None
+
+    - oid: "/agent/vm/net/mac_addr"
+      access: read_write
+      type: string
+      d: |
+         MAC address assigned to the interface.
+         Default is random (52:54:00:<TA>:<TA>:<xx>).
+         Name: None
+
+    - oid: "/agent/vm/pci_pt"
+      access: read_create
+      type: string
+      d: |
+         Pass-through PCI function into the virtual machine.
+         The PCI function resource must be grabbed.
+         Name: human-readable name
+         Value: canonical instance OID of the host PCI function to pass-through, e.g.
+         /agent:Agt/hardware:/pci:/device:0000:01:00.0

@@ -1,0 +1,41 @@
+---
+
+- comment: |
+    Shell command output monitoring.
+
+    Copyright (C) 2003-2020 OKTET Labs.
+
+    Author: Dmitry Izbitsky E-mail: Dmitry.Izbitsky@oktetlabs.ru
+
+- register:
+
+    - oid: "/agent/command_monitor"
+      access: read_create
+      type: none
+      d: |
+         Command monitor object
+         Name: a string unique for a given TA
+
+    - oid: "/agent/command_monitor/time_to_wait"
+      access: read_write
+      type: integer
+      d: |
+         Time to wait before running a shell command again
+         Name: empty
+         Value: time to wait, in milliseconds
+
+    - oid: "/agent/command_monitor/command"
+      access: read_write
+      type: string
+      d: |
+         Shell command to run
+         Name: empty
+         Value: shell command
+
+    - oid: "/agent/command_monitor/enable"
+      access: read_write
+      type: integer
+      d: |
+         Enable state for command monitor
+         Name: empty
+         Value: non-zero for enabled, 0 for disabled

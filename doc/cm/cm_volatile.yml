@@ -1,0 +1,35 @@
+---
+
+- comment: |
+    Miscellaneous volatile configurations inculding test engine and
+    test API options.
+
+    Copyright (C) 2003-2020 OKTET Labs.
+
+    Author: Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
+
+- register:
+
+    - oid: "/volatile"
+      access: read_create
+      type: none
+      volatile: true
+      d: |
+         Volatile engine data root.
+         Name: empty
+
+    - oid: "/volatile/ta_sockets"
+      access: read_create
+      type: string
+      d: |
+         Socket library ("berkeley", "winsock2").
+         Name: TA name
+         Value: readable library name
+
+    - oid: "/volatile/cache"
+      access: read_create
+      type: none
+      d: |
+         Root node for cached data
+         Name: empty
+         Value: none

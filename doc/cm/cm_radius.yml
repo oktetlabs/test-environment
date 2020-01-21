@@ -1,0 +1,237 @@
+---
+
+- comment: |
+    RADIUS Server configuration.
+
+    Copyright (C) 2003-2020 OKTET Labs.
+
+    Author: Artem Andreev E-mail: Artem.Andreev@oktetlabs.ru
+    Author: Oleg Kravtsov E-mail: Oleg.Kravtsov@oktetlabs.ru
+
+- register:
+
+    - oid: "/agent/radiusserver"
+      access: read_write
+      type: integer
+      d: |
+         Root object of RADIUS Server configuration.
+         Name: empty
+         Value: 0 (disabled) or 1 (enabled)
+
+    - oid: "/agent/radiusserver/auth_port"
+      access: read_write
+      type: integer
+      d: |
+         RADIUS Authentication port number.
+         Name: empty
+         Value: UDP port
+
+    - oid: "/agent/radiusserver/acct_port"
+      access: read_write
+      type: integer
+      d: |
+         RADIUS Accounting port number.
+         Name: empty
+         Value: UDP port
+
+    - oid: "/agent/radiusserver/net_addr"
+      access: read_write
+      type: address
+      d: |
+         Network address RADIUS server is bound to.
+         Name:  empty
+         Value: wildcard address if the Server listens on all addresses
+
+    - oid: "/agent/radiusserver/client"
+      access: read_create
+      type: none
+      d: |
+         RADIUS clients configuration (usually client is a NAS).
+         Name: IP address of RADIUS Client
+         Value: none
+
+    - oid: "/agent/radiusserver/client/secret"
+      access: read_write
+      type: string
+      d: |
+         The shared secret between the NAS and RADIUS Server,
+         which is used to "encrypt" and "sign" packets between
+         the NAS and RADIUS Server.
+         Name: empty
+         Value: shared secret
+
+    - oid: "/agent/radiusserver/user"
+      access: read_create
+      type: integer
+      d: |
+         RADIUS users configuration.
+         Name: user name
+         Value: 0 (Reject this user unconditionally),
+                1 (Accept this user if authenticated)
+
+    - oid: "/agent/radiusserver/user/check"
+      access: read_write
+      type: string
+      d: |
+         A set of attributes that should be checked for this user.
+         Name: empty
+         Value: a list of attributes in format:
+                [AttributeName=Value[,AttributeName=Value]*]
+
+    - oid: "/agent/radiusserver/user/challenge-attrs"
+      access: read_write
+      type: string
+      d: |
+         A set of attributes that should be included into
+        Access-Challenge RADIUS message sent to this user.
+         Name: empty
+         Value: a list of attributes in format:
+                [AttributeName=Value[,AttributeName=Value]*]
+
+    - oid: "/agent/radiusserver/user/accept-attrs"
+      access: read_write
+      type: string
+      d: |
+         A set of attributes that should be included into
+        Access-Accept RADIUS message sent to this user.
+         Name: empty
+         Value: a list of attributes in format:
+                [AttributeName=Value[,AttributeName=Value]*]
+
+    - oid: "/agent/radiusserver/eap-tls"
+      access: read_write
+      type: none
+      d: |
+         EAP-TLS method parameters subtree
+         Name: empty
+         Value: none
+
+    - oid: "/agent/radiusserver/eap-tls/cert"
+      access: read_write
+      type: string
+      d: |
+         EAP-TLS-specific object - Certificate file name
+         Name: empty
+         Value: path to certificate file
+
+    - oid: "/agent/radiusserver/eap-tls/key"
+      access: read_write
+      type: string
+      d: |
+         EAP-TLS-specific object - Private key file name
+         Name: empty
+         Value: path to private key file
+
+    - oid: "/agent/radiusserver/eap-tls/cert"
+      access: read_write
+      type: string
+      d: |
+         EAP-TLS-specific object - Private key password
+         Name: empty
+         Value: password for the private key file
+
+    - oid: "/agent/radiusserver/eap-tls/root_cert"
+      access: read_write
+      type: string
+      d: |
+         EAP-TLS-specific object - Root (CA) file name
+         Name: empty
+         Value: path to CA certificate file
+
+
+    - oid: "/agent/interface/supplicant"
+      access: read_write
+      type: integer
+      d: |
+         Root object of the IEEE 802.1x supplicant daemon.
+         Name: interface name where this supplicant works
+         Value: 0 (disabled) or 1 (enabled)
+
+    - oid: "/agent/interface/supplicant/identity"
+      access: read_write
+      type: string
+      d: |
+         Identity value used on this supplicant.
+         Name: empty
+         Value: identity string
+
+    - oid: "/agent/interface/supplicant/cur_method"
+      access: read_write
+      type: string
+      d: |
+         EAP method that is currently being used on the supplicant.
+         Name: empty
+         Value: eap-md5, eap-tls
+
+
+    - oid: "/agent/interface/supplicant/eap-md5"
+      access: read_write
+      type: none
+      d: |
+         EAP-MD5 method parameters subtree
+         Name: empty
+         Value: none
+
+    - oid: "/agent/interface/supplicant/eap-md5/username"
+      access: read_write
+      type: string
+      d: |
+         EAP-MD5-specific object - User name
+         Name: empty
+         Value: username for EAP-MD5
+
+    - oid: "/agent/interface/supplicant/eap-md5/passwd"
+      access: read_write
+      type: string
+      d: |
+         EAP-MD5-specific object - User password
+         Name: empty
+         Value: password for EAP-MD5
+
+    - oid: "/agent/interface/supplicant/eap-tls"
+      access: read_write
+      type: none
+      d: |
+         EAP-TLS method parameters subtree
+         Name: empty
+         Value: none
+
+    - oid: "/agent/interface/supplicant/eap-tls/cert"
+      access: read_write
+      type: string
+      d: |
+         EAP-TLS-specific object - Certificate file name
+         Name: empty
+         Value: path to certificate file
+
+    - oid: "/agent/interface/supplicant/eap-tls/key"
+      access: read_write
+      type: string
+      d: |
+         EAP-TLS-specific object - Private key file name
+         Name: empty
+         Value: path to private key file
+
+    - oid: "/agent/interface/supplicant/eap-tls/cert"
+      access: read_write
+      type: string
+      d: |
+         EAP-TLS-specific object - Private key password
+         Name: empty
+         Value: password for the private key file
+
+    - oid: "/agent/interface/supplicant/eap-tls/root_cert"
+      access: read_write
+      type: string
+      d: |
+         EAP-TLS-specific object - Root (CA) file name
+         Name: empty
+         Value: path to CA certificate file
+
+    - oid: "/agent/interface/supplicant/proto"
+      access: read_write
+      type: string
+      d: |
+         Authentication protocol
+         Name: empty
+         Value: empty (no WPA), "WPA" or "RSN"

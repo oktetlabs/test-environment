@@ -1,0 +1,187 @@
+---
+
+- comment: |
+    Certifificate Store
+
+    Copyright (C) 2003-2020 OKTET Labs.
+
+    Author: Svetlana Fishchuk <Svetlana.Fishchuk@oktetlabs.ru>
+
+- register:
+
+    - oid: "/crypt/entry"
+      access: read_create
+      type: none
+      d: |
+         Certificate store entries
+         Name: user-friendly name for store entry
+
+    - oid: "/crypt/entry/status"
+      access: read_write
+      type: integer
+      d: |
+         Entry status.
+         On read "1" means that files
+         corresponding to certificate are valid on TE and TA.
+         On 0 to 1 transition files are re-generated (or re-imported)
+         and re-propagated to TA
+         Value: 0 - entry is in "idle" state,
+                1 - entry is ready
+
+    - oid: "/crypt/entry/primary/ta_filename"
+      access: read_write
+      type: string
+      d: |
+         Primary object (usually certificate) TA filename
+         Value: TA file name
+
+    - oid: "/crypt/entry/primary/te_path"
+      access: read_write
+      type: string
+      d: |
+         Primary object (usually certificate) TE file path.
+         Empty path in primary and secondary objects is a trigger for object
+         generation on 'status' change
+         Value: path to file
+
+    - oid: "/crypt/entry/primary/password"
+      access: read_write
+      type: string
+      d: |
+         Primary object password (if needed)
+         Value: string representation of password
+
+    - oid: "/crypt/entry/secondary/ta_filename"
+      access: read_write
+      type: string
+      d: |
+         Secondary object (usually private key) TA filename
+         Value: TA file name
+
+    - oid: "/crypt/entry/secondary/te_path"
+      access: read_write
+      type: string
+      d: |
+         Secondary object (usually private key) TE file path.
+         Empty path in primary and secondary objects is a trigger for object
+         generation on 'status' change
+         Value: path to file
+
+    - oid: "/crypt/entry/secondary/password"
+      access: read_write
+      type: string
+      d: |
+         Secondary object password (if needed)
+         Value: string representation of password
+
+    - oid: "/crypt/entry/format"
+      access: read_write
+      type: string
+      d: |
+         File format.
+         Changes of parameter is prohibited after the entry is generated
+         Value: "pem"       - PEM (base64-encoded) format,
+                "der"       - DER (binary) format,
+                "pkcs12"    - PKCS12 format
+
+    - oid: "/crypt/entry/kind"
+      access: read_write
+      type: string
+      d: |
+         Kind of cryptographic entity.
+         Changes of parameter is prohibited after the entry is generated
+         Value: "dh"        - Diffie-Hellman parameters,
+                "tls"       - TLS Authentication key,
+                "x509"      - generate a new X509 certificate/key,
+                "chain"     - create a chain of certificates
+
+    - oid: "/crypt/entry/x509/subject/commonName"
+      access: read_write
+      type: string
+      d: |
+         Subject parts.
+         Changes of parameter is prohibited after the entry is generated
+         Value: certificate properties
+
+    - oid: "/crypt/entry/x509/subject/countryName"
+      access: read_write
+      type: string
+
+    - oid: "/crypt/entry/x509/subject/stateOrProvinceName"
+      access: read_write
+      type: string
+
+    - oid: "/crypt/entry/x509/subject/localityName"
+      access: read_write
+      type: string
+
+    - oid: "/crypt/entry/x509/subject/organizationName"
+      access: read_write
+      type: string
+
+    - oid: "/crypt/entry/x509/subject/organizationalUnitName"
+      access: read_write
+      type: string
+
+    - oid: "/crypt/entry/x509/subject/emailAddress"
+      access: read_write
+      type: string
+
+
+    - oid: "/crypt/entry/x509/serial"
+      access: read_write
+      type: string
+      d: |
+         Certificate serial number.
+         Must be unique and consecutive among the certificates issued by
+         Certification Authority
+         Value: any valid hex sequence delimited by ":"
+
+    - oid: "/crypt/entry/x509/valid_since"
+      access: read_write
+      type: string
+      d: |
+         Validity start date
+         Changes of parameter is prohibited after the entry is generated
+         Value: date in OpenSSL format
+
+    - oid: "/crypt/entry/x509/valid_until"
+      access: read_write
+      type: string
+      d: |
+         Validity end date.
+         Changes of parameter is prohibited after the entry is generated
+         Value: date in OpenSSL format
+
+    - oid: "/crypt/entry/x509/bitsize"
+      access: read_write
+      type: integer
+      d: |
+         Generated key size in bits.
+         Changes of parameter is prohibited after the entry is generated
+         Value: the power of 2
+
+    - oid: "/crypt/entry/x509/encryption"
+      access: read_write
+      type: string
+      d: |
+         Encryption type used in the certificate.
+         Changes of parameter is prohibited after the entry is generated
+         Value: cipher supported by OpenSSL, i.e. "des", "aes-256", ...
+
+    - oid: "/crypt/entry/x509/issuer"
+      access: read_write
+      type: string
+      d: |
+         Cryptographic entity used to sign this object.
+         Changes of parameter is prohibited after the entry is generated
+         Value: friendly name of store entry
+
+    - oid: "/crypt/entry/chained"
+      access: read_create
+      type: string
+      d: |
+         Chained certificates.
+         Changes of parameter is prohibited after the entry is generated
+         Name: index within a chain
+         Value: name of a chained certificate from /crypt/entry

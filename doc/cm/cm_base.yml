@@ -1,0 +1,2010 @@
+---
+
+- comment: |
+    Configuration information common for all Test Agents.
+
+    Copyright (C) 2003-2020 OKTET Labs.
+
+    Author: Elena Vengerova E-mail: Elena.Vengerova@oktetlabs.ru
+
+- register:
+
+    - oid: "/agent"
+      access: read_create
+      type: none
+      d: |
+         Test Agent
+         Name: TA name
+
+    - oid: "/agent/rsrc"
+      access: read_create
+      type: string
+      d: |
+         Dynamically grabbed Test Agent resource
+         Name: any
+         Value: name of the resource, e.g. "/agent:Agt_A/interface:eth0"
+                or "my_peripheral"; if value is not OID it
+                should not contain '/'
+
+    - oid: "/agent/csap"
+      access: read_create
+      type: none
+      d: |
+         CSAP (Communication Service Access Point) created on
+         the Test Agent
+         Name: CSAP ID
+
+    - oid: "/conf_delay"
+      access: read_create
+      type: string
+      d: |
+         Configuration changes accomodation delay.
+         The object is used to specify the time necessary for
+         accepting by OS changes done via Configurator on the Test Agent
+         (for example, when added route is really used).
+
+         Name: arbitrary
+         Value: OID of the object, i.g. "/agent/route"
+
+    - oid: "/conf_delay/ta"
+      access: read_create
+      type: integer
+      d: |
+         Delay for particular object and particular Test Agent.
+
+         Name:  TA name or empty for wildcard TA
+         Value: delay in milliseconds
+
+
+    - oid: "/agent/ip4_fw"
+      access: read_write
+      type: integer
+      d: |
+         IP forwarding enabling/disabling.
+         Name:  empty
+         Limit: 1
+
+    - oid: "/agent/interface"
+      access: read_only
+      type: none
+      d: |
+         Network interface
+         Name: "eth0"-like
+
+    - oid: "/agent/interface/index"
+      access: read_only
+      type: integer
+      d: |
+         Network interface index
+         Name: "eth0"-like
+
+    - oid: "/agent/interface/net_addr"
+      access: read_create
+      type: integer
+      d: |
+         Network address (IPv4 or IPv6) of the interface.
+         Name:   address in human notation:
+                     dotted notation for IPv4
+                     RFC 2373 (or RFC 1924 :) for IPv6
+         Value:  Network prefix for the address (if applicable).
+         Limit:  depends on Test Agent (may be limited to 1 for IPv4)
+
+    - oid: "/agent/interface/net_addr/broadcast"
+      access: read_write
+      type: address
+      d: |
+         Broadcast address which corresponds to this network address.
+         Name:  empty
+         Limit: 1
+
+    - oid: "/agent/interface/mcast_link_addr"
+      access: read_create
+      type: none
+      d: |
+         Multicasting MAC address.
+         Name:   MAC address in human notation (with colons)
+         Value:  None
+
+    - oid: "/agent/interface/link_addr"
+      access: read_write
+      type: address
+      d: |
+         Link layer address for the interface (MAC, NSAP, E.164, VPI/VCI, DLCI).
+         Name:  empty
+         Limit: 1
+
+    - oid: "/agent/interface/bcast_link_addr"
+      access: read_write
+      type: address
+      d: |
+         Broadcast Link layer address for the interface.
+         Name:  empty
+         Limit: 1
+
+    - oid: "/agent/interface/mtu"
+      access: read_write
+      type: integer
+      d: |
+         Maximum Transfer Unit for the interface.
+         Name:  empty
+         Limit: 1
+
+    - oid: "/agent/interface/ip4_ttl"
+      access: read_write
+      type: integer
+      d: |
+         IPv4 TTL for the interface. Note: for some agents may be the same
+         for all interfaces.
+         Name:  empty
+         Limit: 1
+
+    - oid: "/agent/interface/status"
+      access: read_write
+      type: integer
+      d: |
+         Administrative/operative status of the interface.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/interface/promisc"
+      access: read_write
+      type: integer
+      d: |
+         Check whether the interface is in promiscuous mode
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/interface/arp"
+      access: read_write
+      type: integer
+      d: |
+         Enable/disable use of ARP protocol on the interface.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/interface/neigh_static"
+      access: read_create
+      type: address
+      d: |
+         Static neighbour entries.
+         Name:  IPv4/6 address in human notation
+
+    - oid: "/agent/interface/neigh_dynamic"
+      access: read_create
+      type: address
+      volatile: true
+      d: |
+         Dynamic neighbour entries.
+         Name:  IPv4/6 address in human notation
+
+    - oid: "/agent/interface/neigh_dynamic/state"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Dynamic neighbour entry state.
+         Name:  empty
+         Value: incomplete (1)
+                reachable (2)
+                stale (3)
+                delay (4)
+                probe (5)
+                failed (6)
+
+    - oid: "/agent/interface/neigh_proxy"
+      access: read_create
+      type: none
+      depends:
+        - oid: "/agent/interface"
+        - oid: "/agent/interface/status"
+      d: |
+         Neighbour proxy entries.
+         Name:  IPv4/IPv6 address in human-readable form
+
+    - oid: "/agent/interface/stats"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Interface statistics.
+         Name:  Interface statistics
+
+    - oid: "/agent/interface/stats/in_octets"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Total amount of octets received on the interface.
+         Name:  Received octets counter
+
+    - oid: "/agent/interface/stats/in_ucast_pkts"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Total amount of unicast packets received on the interface.
+         Name:  Received unicast packets counter
+
+    - oid: "/agent/interface/stats/in_nucast_pkts"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Total amount of non-unicast packets received on the interface.
+         Name:  Received non-unicast packets counter
+
+    - oid: "/agent/interface/stats/in_discards"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Total amount of discarded packets on the interface.
+         Name:  Discarded packets counter
+
+    - oid: "/agent/interface/stats/in_errors"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Total amount of packets containing an error received
+         on the interface.
+         Name:  Erroneous packets (In) counter
+
+    - oid: "/agent/interface/stats/in_unknown_protos"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Total amount of packets with unsupported protocol received
+         on the interface.
+         Name:  Erroneous packets counter
+
+    - oid: "/agent/interface/stats/out_octets"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Total amount of octets transmitted on the interface.
+         Name:  Transmitted octets counter
+
+    - oid: "/agent/interface/stats/out_ucast_pkts"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Total amount of unicast packets transmitted on the interface.
+         Name:  Transmitted unicast packets counter
+
+    - oid: "/agent/interface/stats/out_nucast_pkts"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Total amount of non-unicast packets transmitted on the interface.
+         Name:  Transmitted non-unicast packets counter
+
+    - oid: "/agent/interface/stats/out_discards"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Total amount of packets discarded from the transmit queue of
+         the interface.
+         Name:  Discarded packets (Out) counter
+
+    - oid: "/agent/interface/stats/out_errors"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Total amount of packets dropped from the transmit queue of the
+         interface due to some errors.
+         Name:  Erroneous packets (Out) counter
+
+    - oid: "/agent/interface/vlans"
+      access: read_create
+      type: string
+      d: |
+         Network interface VLANs
+         Name: integer number, VLAN id
+         Limit:  depends on Test Agent
+         Value: interface name (used only on creation; if empty,
+                "[parent_if].[vlan_id]" will be used)
+
+    - oid: "/agent/interface/vlans/ifname"
+      access: read_only
+      type: string
+      d: |
+         Network interface VLANs
+         Name: VLAN id
+         Value: OS name of VLAN interface
+
+    - oid: "/agent/interface/macvlan"
+      access: read_create
+      type: string
+      d: |
+         Virtual interface based on link layer address (MAC)
+         Name: interface name
+         Value: MAC VLAN mode:
+                private - don't talk to other macvlans
+                vepa - talk to other ports through ext bridge
+                bridge - talk to bridge ports directly
+                passthru - take over the underlying device
+                empty string - don't specify explicitly (default vepa)
+
+    - oid: "/agent/interface/ipvlan"
+      access: read_create
+      type: string
+      d: |
+         Virtual IP VLAN interface
+         Name: ipvlan interface name
+         Value: format 'mode:flag', where is:
+                IP VLAN modes: l2, l3 (default), l3s
+                IP VLAN flags: bridge (default), private, vepa
+
+    - oid: "/agent/veth"
+      access: read_create
+      type: string
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         Virtual Ethernet (veth) interface
+         Name: interface name
+         Value: peer interface name
+
+    - oid: "/agent/interface/parent"
+      access: read_only
+      type: string
+      d: |
+         "Parent" interface (filled for VLAN, MAC VLAN, etc.)
+         Name: empty
+         Value: Name of the parent interface
+
+    - oid: "/agent/interface/kind"
+      access: read_only
+      type: string
+      d: |
+         Kind of an interface ("vlan", "macvlan", "ipvlan", etc.; may be empty)
+         Note: this property currently takes its value from IFLA_INFO_KIND
+               netlink attribute on Linux. It seems netlink reports non-empty
+               string here only for types of interfaces it can manipulate;
+               for physical interfaces and loopback empty string is returned.
+         Name: empty
+         Value: Kind of an interface
+
+    - oid: "/agent/interface/phy"
+      access: read_only
+      type: none
+      d: |
+         Network interface PHY parameters
+         Name: none
+         Value: none
+
+    - oid: "/agent/interface/phy/autoneg_admin"
+      access: read_write
+      type: integer
+      d: |
+         Network interface autonegotiation state control
+         Name: none
+         Value: -1 - Not supported
+                 0 - ON
+                 1 - OFF
+
+    - oid: "/agent/interface/phy/autoneg_oper"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Network interface autonegotiation state oper value
+         Name: none
+         Value: -1 - Not supported
+                 0 - ON
+                 1 - OFF
+
+    - oid: "/agent/interface/phy/autoneg_lp_adv"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Network interface link partner advertised autonegotiation state value
+         Name: none
+         Value:  off (0)
+                 on (1)
+                 unknown (2)
+
+    - oid: "/agent/interface/phy/pause_lp_adv"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Network interface link partner advertised pause frame use value
+         Name: none
+         Value: none (0)              - no pause frame use
+                Tx only (1)           - transmit only
+                symmetric (2)         - transmit and receive
+                symmetric Rx only (3) - transmit and receive OR receive only
+                unknown (4)           - not supported
+
+    - oid: "/agent/interface/phy/duplex_admin"
+      access: read_write
+      type: string
+      d: |
+         Network interface duplex control; set value denied when autonegotiation
+         state on
+         Name: none
+         Value: half          - half duplex
+                full          - full duplex
+                not supported - not supported
+
+    - oid: "/agent/interface/phy/duplex_oper"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Network interface duplex oper value
+         Name: none
+         Value: half          - half duplex
+                full          - full duplex
+                not supported - not supported
+
+    - oid: "/agent/interface/phy/speed_admin"
+      access: read_write
+      type: integer
+      d: |
+         Network interface speed control; set value denied when autonegotiation
+         state on
+         Name: none
+         Value: integer equal PHY speed in Mbit/sec or -1
+                if not supported
+
+    - oid: "/agent/interface/phy/speed_oper"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         Network interface speed oper value
+         Name: none
+         Value: integer equal PHY speed in Mbit/sec or -1
+                if not supported
+
+    - oid: "/agent/interface/phy/modes"
+      access: read_only
+      type: none
+      d: |
+         PHY supported mode list
+         Name: none
+
+    - oid: "/agent/interface/phy/modes/speed"
+      access: read_only
+      type: none
+      d: |
+         PHY supported mode speed
+         Name: integer equal PHY speed in Mbit/sec
+
+    - oid: "/agent/interface/phy/modes/speed/duplex"
+      access: read_write
+      type: integer
+      d: |
+         PHY supported mode duplex state
+         Name: half/full
+         Value: 0 - mode not advertised
+                1 - mode advertised
+
+    - oid: "/agent/interface/phy/state"
+      access: read_only
+      type: integer
+      d: |
+         Link state control
+         Name: none
+         Value: -1 - not supported
+                 0 - link down
+                 1 - link up
+
+    - oid: "/agent/interface/phy/reset"
+      access: read_write
+      type: integer
+      d: |
+         Link reset
+         Name: none
+         Value: any value means that link should be reseted
+
+    - oid: "/agent/interface/feature"
+      access: read_write
+      type: integer
+      d: |
+         Network interface features
+         Name:  Feature name
+         Value: 0 - disabled
+                1 - enabled
+
+    - oid: "/agent/interface/deviceinfo"
+      access: read_only
+      type: none
+      d: |
+         Network interface info
+         Name:  none
+         Value: none
+
+    - oid: "/agent/interface/deviceinfo/drivername"
+      access: read_only
+      type: string
+      d: |
+         Network interface driver name
+         Name:  none
+         Value: Driver name
+
+    - oid: "/agent/interface/deviceinfo/driverversion"
+      access: read_only
+      type: string
+      d: |
+         Network interface driver version
+         Name:  none
+         Value: Driver version
+
+    - oid: "/agent/interface/deviceinfo/firmwareversion"
+      access: read_only
+      type: string
+      d: |
+         Network interface firmware version
+         Name:  none
+         Value: Firmware version
+
+    - oid: "/agent/interface/reset"
+      access: read_write
+      type: integer
+      volatile: true
+      d: |
+         Reset an ethernet interface.
+         Name: none
+         Value: any value means that reset is requested
+
+    - oid: "/agent/stats"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Summary network statistics.
+         Name:  Agent network statistics
+
+    - oid: "/agent/stats/ipv4_in_recvs"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The total number of recieved IPv4 packets.
+         Name:  Received IPv4 packets
+
+    - oid: "/agent/stats/ipv4_in_hdr_errs"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of packets discarded due to errors in their IPv4 headers.
+         Name:  Counter of packets discarded due to IPv4 header errors
+
+    - oid: "/agent/stats/ipv4_in_addr_errs"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of packets discarded due to value of IPv4 destination.
+         Name:  Counter of packets discarded due to wrong IPv4 destination
+
+    - oid: "/agent/stats/ipv4_forw_dgrams"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of forwarded IPv4 packets.
+         Name:  Counter of forwarded packets
+
+    - oid: "/agent/stats/ipv4_in_unknown_protos"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of packets discarded due to unknown or unsupported
+         protocols.
+         Name:  Counter of packets with unknown protocol field
+
+    - oid: "/agent/stats/ipv4_in_discards"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of input IP packets for which no problems were
+         encountered to prevent their continued processing, but which
+         were discarded (e.g., for lack of buffer space).
+         Name:  Counter of packets discarded by all other reasons
+
+    - oid: "/agent/stats/ipv4_in_delivers"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The total numver of input packets successfully delivered to IPv4
+         user-protocols.
+         Name:  The total delivered packets counter
+
+    - oid: "/agent/stats/ipv4_out_requests"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The total numver of IPv4 packets which local IP user-protocols
+       * (including ICMP) supplied to IP in request for transmission.
+         Name:  Transmit requests counter
+
+    - oid: "/agent/stats/ipv4_out_discards"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The total number of output IP packets for which no problems
+         were ecountered to prevent their countinued processing, but
+         which were discarded (e.g., for lack of buffer space).
+         Name:  Discarded outgouing IP packets counter
+
+    - oid: "/agent/stats/ipv4_out_no_routes"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of IP packets discarded because there was no
+         appropriate route to their destination found.
+         Name:
+
+    - oid: "/agent/stats/ipv4_reasm_timeout"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of reassembly timeouts.
+         Name:  Reassembly timeouts counter
+
+    - oid: "/agent/stats/ipv4_reasm_reqds"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of reassembly requests.
+         Name:  Reassembly requests counter
+
+    - oid: "/agent/stats/ipv4_reasm_oks"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of successfuly reassemblied IP packets.
+         Name:  Total reassembled IP packets counter
+
+    - oid: "/agent/stats/ipv4_reasm_fails"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The total number of failures in reassembling IP packets.
+         Name:  Reassembly failures counter
+
+    - oid: "/agent/stats/ipv4_frag_oks"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of successfuly fragmented IP packets.
+         Name:  Successfuly fragmented IP packets counter
+
+    - oid: "/agent/stats/ipv4_frag_fails"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of unsuccessfuly fragmented IP packets.
+         Name:  Unuccessfuly fragmented IP packets counter
+
+    - oid: "/agent/stats/ipv4_frag_created"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The total number of fragmented IP packets.
+         Name:  All fragmented IP packets counter
+
+    - oid: "/agent/stats/icmp_in_msgs"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The total number of ICMP messages received.
+         Name:  Total ICMP messages received counter
+
+    - oid: "/agent/stats/icmp_in_errs"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The total number of ICMP error messages received.
+         Name:  Total ICMP error messages received counter
+
+    - oid: "/agent/stats/icmp_in_dest_unreachs"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The total number of ICMP error messages
+         Destination Unreachable received.
+         Name:  Total Destination Unreachable ICMP error messages
+                received counter
+
+    - oid: "/agent/stats/icmp_in_time_excds"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Time Exceeded messages received.
+         Name:  Total ICMP Time Exceeded messages received counter
+
+    - oid: "/agent/stats/ipv4_in_parm_probs"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Parameter Problem messages received.
+         Name:  Total ICMP Parameter Problem messages received counter
+
+    - oid: "/agent/stats/ipv4_in_src_quenchs"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Source Quench messages received.
+         Name:  Total ICMP Source Quench messages received counter
+
+    - oid: "/agent/stats/ipv4_in_redirects"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Redirect messages received.
+         Name:  Total ICMP Redirect messages received counter
+
+    - oid: "/agent/stats/ipv4_in_echos"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Echo (request) messages received.
+         Name:  Total ICMP Echo (request) messages received counter
+
+    - oid: "/agent/stats/ipv4_in_echo_reps"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Echo (reply) messages received.
+         Name:  Total ICMP Echo (reply) messages received counter
+
+    - oid: "/agent/stats/ipv4_in_timestamps"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Timestamp (request) messages received.
+         Name:  Total ICMP Timestamp (request) messages received counter
+
+    - oid: "/agent/stats/ipv4_in_timestamp_reps"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Timestamp (reply) messages received.
+         Name:  Total ICMP Timestamp (reply) messages received counter
+
+    - oid: "/agent/stats/ipv4_in_addr_masks"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Address Mask (request) messages received.
+         Name:  Total ICMP Address Mask (request) messages received
+                counter
+
+    - oid: "/agent/stats/ipv4_in_addr_mask_reps"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Address Mask (reply) messages received.
+         Name:  Total ICMP Address Mask (reply) messages received counter
+
+    - oid: "/agent/stats/icmp_in_msgs"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The total number of ICMP messages transmitted.
+         Name:  Total ICMP messages transmitted counter
+
+    - oid: "/agent/stats/icmp_in_errs"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The total number of ICMP error messages transmitted.
+         Name:  Total ICMP error messages transmitted counter
+
+    - oid: "/agent/stats/icmp_in_dest_unreachs"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The total number of ICMP error messages
+         Destination Unreachable transmitted.
+         Name:  Total Destination Unreachable ICMP error messages
+                transmitted counter
+
+    - oid: "/agent/stats/icmp_in_time_excds"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Time Exceeded messages transmitted.
+         Name:  Total ICMP Time Exceeded messages transmitted counter
+
+    - oid: "/agent/stats/ipv4_in_parm_probs"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Parameter Problem messages transmitted.
+         Name:  Total ICMP Parameter Problem messages transmitted counter
+
+    - oid: "/agent/stats/ipv4_in_src_quenchs"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Source Quench messages transmitted.
+         Name:  Total ICMP Source Quench messages transmitted counter
+
+    - oid: "/agent/stats/ipv4_in_redirects"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Redirect messages transmitted.
+         Name:  Total ICMP Redirect messages transmitted counter
+
+    - oid: "/agent/stats/ipv4_in_echos"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Echo (request) messages transmitted.
+         Name:  Total ICMP Echo (request) messages transmitted counter
+
+    - oid: "/agent/stats/ipv4_in_echo_reps"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Echo (reply) messages transmitted.
+         Name:  Total ICMP Echo (reply) messages transmitted counter
+
+    - oid: "/agent/stats/ipv4_in_timestamps"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Timestamp (request) messages transmitted.
+         Name:  Total ICMP Timestamp (request) messages transmitted counter
+
+    - oid: "/agent/stats/ipv4_in_timestamp_reps"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Timestamp (reply) messages transmitted.
+         Name:  Total ICMP Timestamp (reply) messages transmitted counter
+
+    - oid: "/agent/stats/ipv4_in_addr_masks"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Address Mask (request) messages transmitted.
+         Name:  Total ICMP Address Mask (request) messages transmitted
+                counter
+
+    - oid: "/agent/stats/ipv4_in_addr_mask_reps"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The number of ICMP Address Mask (reply) messages transmitted.
+         Name:  Total ICMP Address Mask (reply) messages transmitted counter
+
+    - oid: "/agent/route"
+      access: read_create
+      type: address
+      d: |
+         Routing table entry.
+         Name: (network address in human notation)'|'(prefix)[,metric:Metric][,tos:Tos];
+         e.g. "1.2.3.4|24,metric=20,tos=5"
+         Each route has a set of attributes, which are represented
+         as children of route instance.
+
+    - oid: "/agent/route/src"
+      access: read_write
+      type: address
+      d: |
+         Route source address.
+         Name: empty
+         Value: source IP address
+
+    - oid: "/agent/route/dev"
+      access: read_write
+      type: string
+      d: |
+         Route interface name.
+         Name:  empty
+         Value: Name of the interface
+
+#    - oid: "/agent/route/type"
+#     access: read_write
+#      type: string
+#      d: |
+#         This node is temporarily left off.
+#         Route type.
+#         Name:  empty
+#         Value: Type of the route (e.g. unicast, blackhole etc)
+
+    - oid: "/agent/route/mtu"
+      access: read_write
+      type: integer
+      d: |
+         Route MTU.
+         Name:  empty
+         Value: Route MTU
+
+    - oid: "/agent/route/win"
+      access: read_write
+      type: integer
+      d: |
+         Route Window Size value (TCP window size).
+         Name:  empty
+         Value: TCP window value for the route
+
+    - oid: "/agent/route/irtt"
+      access: read_write
+      type: integer
+      d: |
+         Route IRTT value (Initial Round Trip Time).
+         Name:  empty
+         Value: irtt value for the route
+
+    - oid: "/agent/route/hoplimit"
+      access: read_write
+      type: integer
+      d: |
+         Route Hop Limit value. It influences both IPv4 TTL and IPv6 Hop
+         Limit header fields.
+         Name:  empty
+         Value: Hop Limit value for the route
+
+    - oid: "/agent/route/nexthop"
+      access: read_create
+      type: none
+      d: |
+         Nexthop of a multipath route.
+         Name:  index in array of nexthops
+
+    - oid: "/agent/route/nexthop/dev"
+      access: read_write
+      type: string
+      d: |
+         Interface of a multipath route's nexthop.
+         Name:  empty
+         Value: interface name
+
+    - oid: "/agent/route/nexthop/gw"
+      access: read_write
+      type: address
+      d: |
+         Gateway of a multipath route's nexthop.
+         Name:  empty
+         Value: gateway address
+
+    - oid: "/agent/route/nexthop/weight"
+      access: read_write
+      type: integer
+      d: |
+         Weight of a multipath route's nexthop.
+         Name:  empty
+         Value: positive number
+
+    - oid: "/agent/blackhole"
+      access: read_create
+      type: none
+      d: |
+         Blackhole route
+         Name: address+prefix
+
+    - oid: "/agent/ip4_rt_default_if"
+      access: read_only
+      type: string
+      volatile: true
+      depends:
+        - oid: "/agent/route"
+      d: |
+         Name of the interface on which default IPv4 route is configured.
+         Name:  empty
+         Value: interface name
+
+    - oid: "/agent/ip6_rt_default_if"
+      access: read_only
+      type: string
+      volatile: true
+      depends:
+        - oid: "/agent/route"
+      d: |
+         Name of the interface on which default IPv6 route is configured.
+         Name:  empty
+         Value: interface name
+
+    - oid: "/agent/rule"
+      access: read_create
+      type: none
+      d: |
+         Routing policy database entry
+         Name: contains all fields of rule with delimiter ",".
+         List of available fields: priority, family, type, dstlen, src,
+         dst, goto, tos, fwmark, fwmask, table, flow, iifname, oifname.
+         e.g. "priority=32766,family=2,type=1,table=254"
+
+    - oid: "/agent/rpcserver"
+      access: read_create
+      type: string
+      d: |
+         RPC server.
+         Name: RPC server name
+         Value: name of the father
+
+    - oid: "/agent/rpcserver/dead"
+      access: read_write
+      type: integer
+      d: |
+         RPC server state. If it is set to "dead", TA shouldn't try to
+         interact with it.
+         Name: empty
+         Value: 0 (alive) or 1 (dead)
+
+    - oid: "/agent/rpcserver/finished"
+      access: read_write
+      type: integer
+      d: |
+         RPC server termination state. If it is set to 1,
+         then RPC server process (or thread) was already terminated,
+         waitpid() (or pthread_join()) was already called (if required),
+         and the only thing remained is associated data structures to be
+         freed on TA.
+         Name: empty
+         Value: 0 (not terminated) or 1 (terminated)
+
+    - oid: "/agent/rpcserver/config"
+      access: read_write
+      type: string
+      volatile: true
+      d: |
+         RPC server opaque configuration string.
+         Name: empty
+         Value: an arbitrary string
+
+    - oid: "/agent/rpcserver/sid"
+      access: read_write
+      type: integer
+      volatile: true
+      d: |
+         RPC server session identifier storage to keep SID for interacting
+         with the RPC server. Storage is required to reuse dynamically
+         allocated session across tests.
+         Name: empty
+         Value: integer, RCF session ID
+
+    - oid: "/agent/dns"
+      access: read_create
+      type: address
+      d: |
+         DNS server.
+         Name:  empty
+         Limit: 1
+
+    - oid: "/agent/rp_filter_all"
+      access: read_write
+      type: integer
+      d: |
+         The kernel variable which is responsible for source validation.
+         (/proc/sys/net/ipv4/conf/all/rp_filter)
+         Name: empty
+         Value:
+            0 - No source validation;
+            1 - Strict mode as defined in RFC3704 Strict Reverse Path
+                Each incoming packet is tested against the FIB and if the
+                interface is not the best reverse path the packet check will
+                fail.
+                By default failed packets are discarded.
+            2 - Loose mode as defined in RFC3704 Loose Reverse Path
+                Each incoming packet's source address is also tested against
+                the FIB and if the source address is not reachable via any
+                interface the packet check will fail.
+
+    - oid: "/agent/iptables"
+      access: read_create
+      type: none
+      d: |
+         IP-tables Linux firewall; for details see 'man iptables'
+         Name:  empty
+         Limit: 1
+
+    - oid: "/agent/iptables/chain"
+      access: read_create
+      type: none
+      d: |
+         IP-tables Linux firewall chain
+         Name:  chain lable: "INPUT", "OUTPUT", "FORWARD", or user-defined.
+
+    - oid: "/agent/iptables/chain/rule"
+      access: read_create
+      type: string
+      d: |
+         IP-tables Linux firewall rule in chain
+         Name: rule label in the chain, does not passed to 'iptables'
+               utility, used only as internal identifer.
+         Value: rule-speciication for 'iptables' utility;
+                e.g  "-s 192.168.0.10 -d 191.168.0.20"
+
+
+    - oid: "/agent/volatile"
+      access: read_create
+      type: none
+      volatile: true
+      d: |
+         Volatile subtree of the Test Agent.
+         It consists of the information that can be changed in run-time
+         by the Operation System and can't be predicted from Test Agent
+         point of view.
+         Name:  empty
+         Limit: 1
+
+
+    - oid: "/agent/dnsserver"
+      access: read_write
+      type: integer
+      d: |
+         DNS server enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/dnsserver/forwarder"
+      access: read_write
+      type: address
+      d: |
+         DNS server forwarder
+         Name: empty
+         Value: forwader's address
+         Limit: 1
+
+    - oid: "/agent/dnsserver/directory"
+      access: read_write
+      type: string
+      d: |
+         DNS server directory
+         Name: empty
+         Value: DNS server working directory
+         Limit: 1
+
+    - oid: "/agent/dnsserver/recursive"
+      access: read_write
+      type: integer
+      d: |
+         DNS server recursive queries
+         Name: empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/tftpserver"
+      access: read_write
+      type: integer
+      d: |
+         TFTP server enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/tftpserver/net_addr"
+      access: read_write
+      type: address
+      d: |
+         Network address TFTP server is bound to.
+         Name:  empty
+         Value: Wildcard address if the Server listens on all addresses
+         Limit: 1
+
+    - oid: "/agent/tftpserver/last_fname"
+      access: read_only
+      type: string
+      d: |
+         Name of the last file sucessfully transferred by TFTP server.
+         Name:  empty
+         Limit: 1
+
+    - oid: "/agent/tftpserver/last_time"
+      access: read_only
+      type: string
+      d: |
+         Timestamp of the last request that sucessfully completed
+         on TFTP server. Specifies the number of seconds elapsed
+         since 00:00:00 on January 1, 1970, Coordinated Universal Time (UTC)
+         Name:  empty
+         Limit: 1
+
+    - oid: "/agent/tftpserver/root_dir"
+      access: read_only
+      type: string
+      d: |
+         Root directory of TFTP server.
+         Name:  empty
+         Limit: 1
+
+    - oid: "/agent/todudpserver"
+      access: read_write
+      type: integer
+      d: |
+         TOD server over UDP enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/todudpserver/net_addr"
+      access: read_write
+      type: address
+      d: |
+         Network address ToD server is bound to.
+         Name:  empty
+         Value: Wildcard address if the Server listens on all addresses
+         Limit: 1
+
+    - oid: "/agent/echoserver"
+      access: read_write
+      type: integer
+      d: |
+         Echo server enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/echoserver/proto"
+      access: read_write
+      type: string
+      d: |
+         Echo server protocol type.
+         Name:  empty
+         Value: udp (UDP-based) or tcp (TCP-based)
+         Limit: 1
+
+    - oid: "/agent/echoserver/net_addr"
+      access: read_write
+      type: address
+      d: |
+         Network address Echo server is bound to.
+         Name:  empty
+         Value: Wildcard address if the Server listens on all addresses
+         Limit: 1
+
+    - oid: "/agent/dhcpserver"
+      access: read_write
+      type: integer
+      d: |
+         DHCP server enabling/disabling.
+
+         DHCP server operates in three term areas: its clients, which may
+         obtain some resources, resource configured for particular
+         clients and resources really distributed within clients.
+         Thus CM for DHCP server requires three kind of subtrees:
+         client-oriented, configuration-oriented (hosts & groupt)
+         and lease-oriented to make CM more convinient for particular
+         purposes.
+
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/dhcpserver/interfaces"
+      access: read_write
+      type: string
+      d: |
+         DHCP server interfaces.
+         Name: empty
+         Value: Space separated list of interfaces
+
+    - oid: "/agent/dhcpserver/allow_unknown_clients"
+      access: read_write
+      type: integer
+      d: |
+         Should DHCP server allow unknown clients?
+         Name: empty
+         Value: 0 (deny) or 1 (allow)
+
+    - oid: "/agent/dhcpserver/client"
+      access: read_only
+      d: |
+         Information associated with particular client in DHCP server
+         Name:  hardware (MAC) address of the client
+
+    - oid: "/agent/dhcpserver/client/lease"
+      access: read_only
+      d: |
+         DHCP lease associated with the client hardware address and
+         DHCP client identifier.
+         Name:  colon separated DHCP client identifier
+         Value: object instance identifier of /agent/dhcpserver/lease instance
+
+    - oid: "/agent/dhcpserver/lease"
+      access: read_only
+      d: |
+         DHCP server lease.
+         Name:  IPv4 address in dotted notation 
+
+
+    - oid: "/agent/dhcpserver/lease/state"
+      access: read_only
+      type: integer
+      d: |
+         State of DHCP server lease.
+         Name:  empty
+         Value: 1 (free)
+                2 (active)
+                3 (expired)
+                4 (released)
+                5 (abandoned)
+                6 (reset)
+                7 (backup)
+                8 (reserved)
+                9 (bootp)
+
+    - oid: "/agent/dhcpserver/lease/client-id"
+      access: read_only
+      type: string
+      d: |
+         DHCP client identifier.
+          Name:  empty
+          Value: colon separated hexadecimal octet string like AB:03:68
+          Limit: 1
+
+    - oid: "/agent/dhcpserver/lease/hostname"
+      access: read_only
+      type: string
+      d: |
+         The value sent by the client in host-name option when it acquired
+          the lease.
+          Name:  empty
+          Limit: 1
+
+    - oid: "/agent/dhcpserver/lease/host"
+      access: read_only
+      type: string
+      d: |
+         Object instance identifier of the /agent/dhcpserver/host
+          instance associated with the lease.
+          Name:  empty
+          Limit: 1
+
+    - oid: "/agent/dhcpserver/lease/chaddr"
+      access: read_only
+      type: address
+      d: |
+         The hardware address (chaddr) field sent by the client when it
+          acquired the lease.
+          Name:  empty
+          Limit: 1
+
+    - oid: "/agent/dhcpserver/lease/ends"
+      access: read_only
+      type: integer
+      d: |
+         The time when the lease's current state ends, as understood by the
+          client (GMT in seconds from Epoch).
+          Name:  empty
+          Limit: 1
+
+    - oid: "/agent/dhcpserver/lease/tstp"
+      access: read_only
+      type: integer
+      d: |
+         The time when the lease's current state ends, as understood by the
+          server (GMT in seconds from Epoch).
+          Name:  empty
+          Limit: 1
+
+    - oid: "/agent/dhcpserver/lease/cltt"
+      access: read_only
+      type: integer
+      d: |
+         The time of the last transaction with the client on this lease
+          (GMT in seconds from Epoch).
+          Name:  empty
+          Limit: 1
+
+    - oid: "/agent/dhcpserver/subnet"
+      access: read_create
+      type: integer
+      d: |
+         Subnet declaration for the DHCP server.
+         Name: IPv4 subnet
+         Value: IPv4 subnet prefix length
+
+    - oid: "/agent/dhcpserver/host"
+      access: read_create
+      d: |
+         Host declaration for the DHCP server.
+          Name:  human readable name 
+
+
+    - oid: "/agent/dhcpserver/host/group"
+      access: read_write
+      type: string
+      d: |
+         Object instance identifier of /agent/dhcpserver/group instance.
+          Name:  empty
+          Limit: 1
+          Value: empty string or group name
+
+    - oid: "/agent/dhcpserver/host/chaddr"
+      access: read_write
+      type: string
+      d: |
+         The link-layer address that will be used to match the client, if any.
+          acquired the lease.
+          Name:  empty
+          Value: String representation is required, since it is optional
+          Limit: 1
+
+    - oid: "/agent/dhcpserver/host/client-id"
+      access: read_write
+      type: string
+      d: |
+         The DHCP client identifier option that will be used to match
+          the client, if any.
+          Name:  empty
+          Value: colon separated hexadecimal octet string like AB:03:68
+          Limit: 1
+
+    - oid: "/agent/dhcpserver/host/ip-address"
+      access: read_write
+      type: string
+      d: |
+         A fixed IP address which is reserved for a DHCP client that
+          matches this host declaration. The IP address will only be assigned
+          to the client if it is valid for the network segment to which
+          the client is connected.
+          Name:  empty
+          Value: String representation is required, since it is optional
+          Limit: 1
+
+    - oid: "/agent/dhcpserver/host/next"
+      access: read_write
+      type: string
+      d: |
+         IPv4 address or name of the host (to be resolved by the DHCP server
+          in IPv4 address) to be provided to the client in siaddr field.
+          Name:  empty
+          Value: the string appropriate to be an argument for gethostbyname()
+                 or empty string
+          Limit: 1
+
+    - oid: "/agent/dhcpserver/host/file"
+      access: read_write
+      type: string
+      d: |
+         Name of the file to be provided to the client in file field.
+          Name:  empty
+          Value: path file name with the length less or equal to 128
+                 or empty string
+          Limit: 1
+
+    - oid: "/agent/dhcpserver/host/flags"
+      access: read_write
+      type: string
+      d: |
+         Flags for Solaris 'dhcp' server in order to specify
+          type of leases allocated for the host: bootp or dhcp.
+          Name:  empty
+          Value: the "9" string for bootp lease type
+                 or the "3" string for dhcp one
+          Limit: 1
+
+    - oid: "/agent/dhcpserver/host/option"
+      access: read_create
+      type: string
+      d: |
+          Value of the DHCP option to be provided to the client.
+
+          Name:  Identification of opion/suboption either using their
+                 numbers: 177.51 or their names: pop-server or fqdn.encoded.
+                 Name of the option/suboption should be the same as
+                 used in RFC describing this option. The name should
+                 not contain word "option"; words should be separated by '-'.
+                 Both upper-case and lower-case letters may be used.
+
+          Value: For integer options the value is an integer printed to the
+                 string (and may be parsed using atoi()).
+
+                 IP addresses the value is an IPv4 address in dotted notation.
+
+                 For character strings and domain names the value is a string.
+
+                 For hexadecimal data the value is a string like 03:a5:BE.
+
+                 For boolean options "on" and "true" are returned as "1" and
+                 "off" and "false" are returned as "0".
+
+                 For options, which values consist of sub-values of
+                 same of different types all sub-values are concatenated
+                 and sparated using commas: 1.2.3.4,25,45:a1:C0.
+
+          Limit: any
+
+    - oid: "/agent/dhcpserver/group"
+      access: read_create
+      d: |
+         Group declaration for the DHCP server.
+          Name:  human readable name 
+
+
+    - oid: "/agent/dhcpserver/group/next"
+      access: read_write
+      type: string
+      d: |
+         IPv4 address or name of the host (to be resolved by the DHCP server
+          in IPv4 address) to be provided to the client in siaddr field.
+          Name:  empty
+          Value: the string appropriate to be an argument for gethostbyname()
+                 or empty string
+          Limit: 1
+
+    - oid: "/agent/dhcpserver/group/file"
+      access: read_write
+      type: string
+      d: |
+         Name of the file to be provided to the client in file field.
+          Name:  empty
+          Value: path file name with the length less or equal to 128
+                 or empty string
+          Limit: 1
+
+    - oid: "/agent/dhcpserver/group/option"
+      access: read_create
+      type: string
+      d: |
+         Value of the DHCP option to be provided to the client.
+          Name & Value the same as for /agent/dhcpserver/host/option.
+          Limit: any
+
+    - oid: "/agent/ftpserver"
+      access: read_write
+      type: integer
+      d: |
+         FTP server enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/ftpserver/server"
+      access: read_write
+      type: string
+      d: |
+         FTP server standalone or via inetd
+         Name:  empty
+         Value: name of server we are testing:
+                vsftpd
+                xinetd_vsftpd
+                proftpd
+                wuftpd
+         Limit: 1
+
+    - oid: "/agent/pppoeserver"
+      access: read_write
+      type: integer
+      d: |
+         PPPoE server enabling/disabling
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/pppoeserver/interface"
+      access: read_create
+      type: none
+      d: |
+         PPPoE server interface(s)
+         Name: network interface name
+         Value: none
+
+    - oid: "/agent/pppoeserver/option"
+      access: read_create
+      type: string
+      d: |
+         PPPoE server option(s)
+         Name: name of option
+         Value: option's value, or none if option doesn't have a value
+
+    - oid: "/agent/pppoeserver/subnet"
+      access: read_write
+      type: string
+      d: |
+         PPPoE server subnet address with prefix length
+         Name: empty
+         Value: subnet IPv4 address with prefix lenght, in format: "1.2.3.0|24"
+
+    - oid: "/agent/pppoeserver/laddr"
+      access: read_only
+      type: address
+      volatile: true
+      d: |
+         PPPoE local IP address
+         Name: empty
+         Value: IP address
+
+    - oid: "/agent/pppoeserver/raddr"
+      access: read_only
+      type: address
+      volatile: true
+      d: |
+         PPPoE starting remote IP address
+         Name: empty
+         Value: IP address
+
+    - oid: "/agent/sshd"
+      access: read_create
+      type: none
+      d: |
+         SSH daemon.
+         Name:  port
+
+    - oid: "/agent/Xvfb"
+      access: read_create
+      type: none
+      d: |
+         Xvfb daemon.
+         Name: display number
+
+    - oid: "/agent/smtp"
+      access: read_create
+      type: integer
+      d: |
+         SMTP daemon.
+         Name: empty
+         Value: 0 (disabled) or 1 (enabled)
+
+    - oid: "/agent/smtp/server"
+      access: read_write
+      type: string
+      d: |
+         SMTP daemon program to be used: sendmail, exim, exim4.
+         Name: empty
+         Value: program name
+
+    - oid: "/agent/smtp/smarthost"
+      access: read_create
+      type: address
+      d: |
+         Smart host for mail forwarding.
+         Name: empty
+         Value: smart host IP address
+
+    - oid: "/agent/telnetd"
+      access: read_write
+      type: integer
+      d: |
+         TELNET daemon enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/rshd"
+      access: read_write
+      type: integer
+      d: |
+         RSH daemon enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/vncserver"
+      access: read_create
+      type: none
+      d: |
+         VNC server.
+         Name: display number
+
+    - oid: "/agent/vncpasswd"
+      access: read_only
+      type: string
+      d: |
+         VNC server password.
+         Name: empty
+
+    - oid: "/agent/slapd"
+      access: read_create
+      type: string
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         LDAP daemon
+         Name: port
+         Value: name of file with LDIF
+
+    - oid: "/agent/env"
+      access: read_create
+      type: string
+      d: |
+         Environment variables.
+         Name: variable name
+         Value: variable value
+         Limit: any
+
+    - oid: "/agent/uname"
+      access: read_only
+      type: string
+      d: |
+         uname value for the system
+         Name:  empty
+         Value: Linux, SunOS, "Microsoft Windows", etc
+
+    - oid: "/agent/user"
+      access: read_create
+      type: none
+      d: |
+         Tester user.
+         Name: te_tester_<uid>
+         Password is the same as user name.
+
+    - oid: "/agent/module"
+      access: read_create
+      type: integer
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         System module.
+         Name: Name of the system module
+         Value: 1 means loadded
+
+    - oid: "/agent/module/filename"
+      access: read_write
+      type: string
+      d: |
+         Name of the file containing the module or 'unknown'.
+         modinfo integration is not yet there.
+         Value: path in the file system
+
+    - oid: "/agent/module/filename/load_dependencies"
+      access: read_write
+      type: integer
+      d: |
+         A means to demand that dependencies be queried and
+         resolved for the given module prior calling insmod.
+
+         @note The internal implementation calls modinfo on
+               the module file after changing /agent/module
+               value to 1 and then calls modprobe for every
+               dependency discovered. Then insmod is called.
+
+         Name:  none
+         Value: 0, 1
+
+    - oid: "/agent/module/parameter"
+      access: read_create
+      type: string
+      d: |
+         Parameter of a system module.
+         Name: Name of the parameter
+         Value: Value of the parameter
+
+    - oid: "/agent/sys"
+      access: read_only
+      type: none
+      d: |
+         System settings from /proc/sys/.
+         Name: empty
+
+    - oid: "/agent/sys/console_loglevel"
+      access: read_write
+      type: integer
+      d: |
+         Console log level.
+         Name: empty
+         Value: the number of the current log level for console
+
+    - oid: "/agent/sys/core_pattern"
+      access: read_write
+      type: string
+      d: |
+         Pattern for core files.
+         Name: empty
+         Value: the pattern to be used by system when creating a core file
+                in case of segmenation fault and similar.
+
+
+    - oid: "/agent/sys/net"
+      access: read_only
+      type: none
+      d: |
+         System settings from /proc/sys/net/.
+
+         Objects corressponding to files under /proc/sys/net.
+
+         To make particular parameter from /proc/sys/net/* paths
+         available, you should also register an object named after
+         that parameter under appropriate object corresponding
+         to a directory.
+
+         Name: empty
+
+    - oid: "/agent/sys/net/core"
+      access: read_only
+      type: none
+      d: |
+         System settings from /proc/sys/net/core/.
+         Name: empty
+
+    - oid: "/agent/sys/net/ipv4"
+      access: read_only
+      type: none
+      d: |
+         System settings from /proc/sys/net/ipv4/.
+         Name: empty
+
+    - oid: "/agent/sys/net/ipv4/conf"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         System settings from /proc/sys/net/ipv4/conf/.
+         Name: name of a directory under */conf/
+
+    - oid: "/agent/sys/net/ipv4/neigh"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         System settings from /proc/sys/net/ipv4/neigh/.
+         Name: name of a directory under */neigh/
+
+    - oid: "/agent/sys/net/ipv4/route"
+      access: read_only
+      type: none
+      d: |
+         System settings from /proc/sys/net/ipv4/route/.
+         Name: empty
+
+    - oid: "/agent/sys/net/ipv6/conf"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         System settings from /proc/sys/net/ipv6/conf/.
+         Name: name of a directory under */conf/
+
+    - oid: "/agent/rlimits"
+      access: read_only
+      type: none
+      d: |
+         Resource limits data root.
+         Name: empty
+
+    - oid: "/agent/rlimits/nofile"
+      access: read_only
+      type: none
+      d: |
+         RLIMIT_NOFILE resource limit values.
+         Name: empty
+
+    - oid: "/agent/rlimits/nofile/cur"
+      access: read_write
+      type: integer
+      depends:
+        - oid: "/agent/rlimits/nofile/max"
+      d: |
+         Current value of RLIMIT_NOFILE. Note: if more than maximum value
+         is set, maximum is adjusted too.
+         Name: empty
+
+    - oid: "/agent/rlimits/nofile/max"
+      access: read_write
+      type: integer
+      depends:
+        - oid: "/agent/rlimits/nofile/cur"
+      d: |
+         Maximum value of RLIMIT_NOFILE. Note: if less than current value
+         is set, current value is adjusted too.
+
+    - oid: "/agent/rlimits/memlock"
+      access: read_only
+      type: none
+      d: |
+         RLIMIT_MEMLOCK resource limit values.
+         Name: empty
+
+    - oid: "/agent/rlimits/memlock/cur"
+      access: read_write
+      type: integer
+      depends:
+        - oid: "/agent/rlimits/memlock/max"
+      d: |
+         Current value of RLIMIT_MEMLOCK. Note: if more than maximum value
+         is set, maximum is adjusted too.
+         Name: empty
+
+    - oid: "/agent/rlimits/memlock/max"
+      access: read_write
+      type: integer
+      depends:
+        - oid: "/agent/rlimits/memlock/cur"
+      d: |
+         Maximum value of RLIMIT_MEMLOCK. Note: if less than current value
+         is set, current value is adjusted too.
+         Name: empty
+
+    - oid: "/agent/block"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         Block devices list.
+         Name: Name of the block device
+
+    - oid: "/agent/sfptpd"
+      access: read_create
+      type: none
+      d: |
+         Root object for sfptpd settings
+         Name: empty
+
+    - oid: "/agent/sfptpd/path"
+      access: read_write
+      type: string
+      d: |
+         Shell command to run sfptpd.
+         Name: empty
+         Value: full path with file name to sfptpd
+
+    - oid: "/agent/sfptpd/config"
+      access: read_write
+      type: string
+      d: |
+         Name of the configuration file of sfptpd.
+         Name: empty
+         Value: full path with file name to configuration file
+
+    - oid: "/agent/sfptpd/ifname"
+      access: read_write
+      type: string
+      d: |
+         Interface name to use with sfptpd.
+         Name: empty
+         Value: network interface name
+
+    - oid: "/agent/sfptpd/enable"
+      access: read_write
+      type: integer
+      d: |
+         Enable state for sfptpd
+         Name: empty
+         Value: 0 (disabled) or 1 (enabled)
