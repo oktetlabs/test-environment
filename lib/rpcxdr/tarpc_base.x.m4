@@ -2167,6 +2167,35 @@ struct tarpc_memalign_out {
     tarpc_ptr            retval; /**< A pointer in the TA address space */
 };
 
+struct tarpc_mmap_in {
+    struct tarpc_in_arg  common;
+
+    uint64_t             addr;
+    uint64_t             length;
+    tarpc_uint           prot;
+    tarpc_uint           flags;
+    tarpc_int            fd;
+    tarpc_off_t          offset;
+};
+
+struct tarpc_mmap_out {
+    struct tarpc_out_arg common;
+
+    tarpc_ptr            retval;
+};
+
+struct tarpc_munmap_in {
+    struct tarpc_in_arg  common;
+
+    tarpc_ptr            addr;
+    uint64_t             length;
+};
+
+struct tarpc_munmap_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int            retval;
+};
 
 /* set_buf */
 struct tarpc_set_buf_in {
@@ -5555,6 +5584,8 @@ program tarpc
         RPC_DEF(raw2integer)
         RPC_DEF(integer2raw)
         RPC_DEF(memalign)
+        RPC_DEF(mmap)
+        RPC_DEF(munmap)
         RPC_DEF(memcmp)
 
         RPC_DEF(socket)

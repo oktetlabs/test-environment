@@ -19,6 +19,7 @@ headers += files(
     'tapi_rpc_stdio.h',
     'tapi_rpc_telephony.h',
     'tapi_rpc_unistd.h',
+    'tapi_rpc_mman.h',
     'tapi_rpc_winsock2.h',
     'tapi_rpcsock_macros.h',
     'tapi_sockaddr.h',
@@ -47,6 +48,7 @@ sources = files(
     'tapi_sockets.c',
     'telephony.c',
     'unistd.c',
+    'mman.c',
     'wsa.c',
 )
 deps += [

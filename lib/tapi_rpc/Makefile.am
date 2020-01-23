@@ -21,6 +21,7 @@ include_HEADERS= \
     tapi_rpc_stdio.h \
     tapi_rpc_telephony.h \
     tapi_rpc_unistd.h \
+    tapi_rpc_mman.h \
     tapi_rpc_winsock2.h \
     tapi_rpc_client_server.h \
     tapi_rpcsock_macros.h \
@@ -44,6 +45,7 @@ libtapi_rpc_la_SOURCES= \
     stdio.c \
     telephony.c \
     unistd.c \
+    mman.c \
     wsa.c \
     power_sw.c \
     dlfcn.c \

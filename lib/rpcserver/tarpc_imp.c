@@ -44,6 +44,10 @@
 #include <sys/types.h>
 #endif
 
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+
 #if HAVE_LINUX_ETHTOOL_H
 #include "te_ethtool.h"
 #endif
@@ -9135,6 +9139,37 @@ TARPC_FUNC_DYNAMIC_UNSAFE(memalign, {},
         out->common._errno = TE_RC(TE_TA_UNIX, errno);
     else
         out->retval = rcf_pch_mem_alloc(buf);
+}
+)
+
+/*-------------- mmap() ------------------------------*/
+
+TARPC_FUNC(mmap, {},
+{
+    void *p;
+
+    MAKE_CALL(p = func_ptr_ret_ptr(
+                           (void *)(uintptr_t)(in->addr),
+                           (size_t)(in->length),
+                           prot_flags_rpc2h(in->prot),
+                           map_flags_rpc2h(in->flags),
+                           in->fd, (off_t)(in->offset)));
+
+    if (p != MAP_FAILED)
+        out->retval = rcf_pch_mem_alloc(p);
+    else
+        out->retval = RPC_NULL;
+}
+)
+
+/*-------------- munmap() ------------------------------*/
+
+TARPC_FUNC(munmap, {},
+{
+    MAKE_CALL(out->retval = func_ptr(rcf_pch_mem_get(in->addr),
+                                     (size_t)(in->length)));
+    if (out->retval >= 0)
+        rcf_pch_mem_free(in->addr);
 }
 )
 
