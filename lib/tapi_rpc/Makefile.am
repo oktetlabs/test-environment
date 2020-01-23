@@ -1,7 +1,8 @@
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
+AM_CPPFLAGS = @TE_CPPFLAGS@ $(TIRPC_CFLAGS) \
+              -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
 AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 AM_LDFLAGS = -L$(DESTDIR)/$(libdir)
 
@@ -59,6 +60,7 @@ libtapi_rpc_la_SOURCES= \
     tapi_sockets.c \
     tapi_rpc_internal.c
 
+libtapi_rpc_la_LIBADD = $(TIRPC_LIBS)
 
 install-exec-hook:
 	touch -c -r libtapi_rpc.la $(DESTDIR)/$(libdir)/libtapi_rpc.*

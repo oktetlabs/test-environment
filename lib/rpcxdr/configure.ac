@@ -58,6 +58,22 @@ AC_SUBST(RPCDEFS_DIST_FILES)
  
 if test x$host == x${host%windows} ; then
 
+LIBS=${TE_LDFLAGS}
+
+# Check libtirpc package before header checks since RPC headers are
+# located in dedicated directory in this case and require -I option
+# to be found.
+PKG_CHECK_MODULES([TIRPC], [libtirpc], [tirpc_found=yes], [tirpc_found=no])
+if test $tirpc_found = yes ; then
+    # CPPFLAGS required for header presence check
+    CPPFLAGS="${CPPFLAGS} ${TIRPC_CFLAGS}"
+    # CFLAGS required for header availability check
+    CFLAGS="${CFLAGS} ${TIRPC_CFLAGS}"
+    LIBS="${LIBS} ${TIRPC_LIBS}"
+fi
+AC_SUBST([TIRPC_CFLAGS])
+AC_SUBST([TIRPC_LIBS])
+
 AC_CHECK_HEADERS([expat.h rpc/types.h])
 AC_CHECK_HEADERS([rpc/xdr.h], [], [], [
 #if HAVE_RPC_TYPES_H
@@ -71,11 +87,12 @@ AC_CHECK_HEADERS([rpc/xdr.h], [], [], [
 # in the next checkings against in AC_CHECK_MEMBER() macro.
 # - Solaris2 (SunOS 5.11) -lnsl
 # - Modern Linux distros, such as Fedora 28, do not have RPC support
-#   in glibc; libtirpc can be used instead.
+#   in glibc; libtirpc can be used instead (checked above).
 #
-LIBS=${TE_LDFLAGS}
-AC_SEARCH_LIBS([xdr_bytes], [rpc nsl tirpc], [],
-               AC_MSG_ERROR([No RPC library found]))
+if test "$tirpc_found" = no ; then
+    AC_SEARCH_LIBS([xdr_bytes], [rpc nsl], [],
+                   AC_MSG_ERROR([No RPC library found]))
+fi
 
 AH_TEMPLATE([x_putint32], [Put 32-bit integer to the stream])
 AH_TEMPLATE([x_getint32], [Get 32-bit integer from the stream])

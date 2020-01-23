@@ -384,14 +384,26 @@ AC_CHECK_TYPES([struct mmsghdr], [], [], [
 #include <sys/socket.h>
 ])
 
+LIBS=${TE_LDFLAGS}
+
 dnl
 dnl Find library with SunRPC XDR functions.
 dnl - libnsl on Solaris2 (SunOS 5.11);
 dnl - Modern Linux distros, such as Fedora 28, do not have RPC support
 dnl   in glibc; libtirpc can be used instead.
-LIBS=${TE_LDFLAGS}
-AC_SEARCH_LIBS([xdr_bytes], [rpc nsl tirpc], [],
-                   AC_MSG_ERROR([No RPC library found]))
+PKG_CHECK_MODULES([TIRPC], [libtirpc], [tirpc_found=yes], [tirpc_found=no])
+if test $tirpc_found = yes ; then
+    # Add to variable which is substituted in Makefile.in
+    EXTRA_CPPFLAGS="${EXTRA_CPPFLAGS} ${TIRPC_CFLAGS}"
+    # CPPFLAGS required for header presence check
+    CPPFLAGS="${CPPFLAGS} ${TIRPC_CFLAGS}"
+    # CFLAGS required for header availability check
+    CFLAGS="${CFLAGS} ${TIRPC_CFLAGS}"
+    LIBS="${LIBS} ${TIRPC_LIBS}"
+else
+    AC_SEARCH_LIBS([xdr_bytes], [rpc nsl], [],
+                       AC_MSG_ERROR([No RPC library found]))
+fi
 
 AC_CHECK_HEADERS([rpc/rpc.h])
 AC_CHECK_TYPES([SVCXPRT], [], [], [

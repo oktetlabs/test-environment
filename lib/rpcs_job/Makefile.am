@@ -5,6 +5,7 @@ AM_CPPFLAGS = -I$(DESTDIR)/$(includedir) \
               -I$(TE_BASE)/agents/@TA@/ \
               -I$(TE_BASE)/agents/@TA@/rpc \
               @TE_CPPFLAGS@ \
+              $(TIRPC_CFLAGS) \
               $(TE_CPPFLAGS_VAR) \
               -D'INCLUDE(x)='
 

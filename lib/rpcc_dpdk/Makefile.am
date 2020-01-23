@@ -1,7 +1,8 @@
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
+AM_CPPFLAGS = @TE_CPPFLAGS@ $(TIRPC_CFLAGS) \
+              -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
 AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 AM_LDFLAGS = -L$(DESTDIR)/$(libdir)
 
@@ -32,6 +33,8 @@ librpcc_dpdk_la_SOURCES = \
 	tapi_rpc_rte_mbuf_ndn.c \
 	rte_flow_ndn.c \
 	eal.c
+
+librpcc_dpdk_la_LIBADD = $(TIRPC_LIBS)
 
 librpcc_dpdk_la_DEPENDENCIES = $(DESTDIR)/$(libdir)/librpc_dpdk.la
 

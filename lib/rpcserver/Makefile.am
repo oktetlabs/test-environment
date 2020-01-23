@@ -2,7 +2,7 @@ ACLOCAL_AMFLAGS = -I $(TE_M4)
 
 AM_CPPFLAGS = -I$(DESTDIR)/$(myincludedir) -I$(DESTDIR)/$(includedir)/@with_agentlib@ \
 			  -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS) \
-              $(TE_CPPFLAGS_VAR)
+              $(EXTRA_CPPFLAGS) $(TE_CPPFLAGS_VAR)
 
 AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS) $(TE_CFLAGS_VAR)
 

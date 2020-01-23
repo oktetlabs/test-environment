@@ -580,6 +580,13 @@ if test "x$with_tirpc" = "xyes" ; then
     # in glibc; libtirpc can be used instead.
     TIRPC=`${TE_BASE}/engine/builder/static_libs_check.pl "-ltirpc"`
     EXTRA_LDADD="$EXTRA_LDADD ${TIRPC}"
+else
+    # Do not use TE_EXT_LIBS here, but check libtirpc using pkg-config
+    PKG_CHECK_MODULES([TIRPC], [libtirpc], [],
+        [AC_MSG_NOTICE([libtirpc not found])])
+    EXTRA_CPPFLAGS="${EXTRA_CPPFLAGS} ${TIRPC_CFLAGS}"
+    LIBS="${LIBS} ${TIRPC_LIBS}"
+    DYNAMIC_LIBS="${DYNAMIC_LIBS} ${TIRPC_LIBS}"
 fi
 
 AC_ARG_WITH([pcre],
@@ -597,7 +604,7 @@ fi
 AC_SUBST([EXTRA_CPPFLAGS])
 AC_SUBST([EXTRA_LDADD])
 
-DYNAMIC_LIBS="-ldl -lpthread -lnsl -lsendfile -lsocket -lm"
+DYNAMIC_LIBS="${DYNAMIC_LIBS} -ldl -lpthread -lnsl -lsendfile -lsocket -lm"
 if test x${PCAP_AVAIL} = "xyes" ; then
     DYNAMIC_LIBS="${DYNAMIC_LIBS} -lpcap"
 fi

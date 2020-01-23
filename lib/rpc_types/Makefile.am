@@ -2,7 +2,7 @@
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
-AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
+AM_CFLAGS = @TE_CFLAGS@ $(TIRPC_CFLAGS) $(TE_CFLAGS_VAR)
 
 include $(top_srcdir)/../../auxdir/rpcgen.am
 
@@ -88,6 +88,8 @@ librpc_types_la_SOURCES = defs.c \
 	sysconf_name.c.rpch \
 	dlfcn.c.rpch \
 	dirent.c.rpch
+
+librpc_types_la_LIBADD = $(TIRPC_LIBS)
 
 EXTRA_librpc_types_la_DEPENDENCIES = $(RPCGEN_EXTRA_PREREQS)
 

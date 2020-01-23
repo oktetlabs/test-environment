@@ -3,7 +3,7 @@ include $(top_srcdir)/../../auxdir/rpcgen.am
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ -I. -I$(DESTDIR)/$(includedir) \
+AM_CPPFLAGS = @TE_CPPFLAGS@ $(TIRPC_CFLAGS) -I. -I$(DESTDIR)/$(includedir) \
               $(TE_CPPFLAGS_VAR)
 
 AM_CFLAGS = @TE_CFLAGS@ -Wno-unused-parameter -Wno-unused-variable \
@@ -39,6 +39,7 @@ lib_LTLIBRARIES=librpcxdr.la librpcxdrta.la
 
 librpcxdr_la_CFLAGS=-DTE_RPC_CLIENT $(AM_CFLAGS)
 librpcxdr_la_SOURCES=xml_xdr.c rpc_xdr.c
+librpcxdr_la_LIBADD = $(TIRPC_LIBS)
 
 nodist_librpcxdr_la_SOURCES=tarpc_xdr.c tarpc_rpctbl.c
 
@@ -48,6 +49,7 @@ lib_LIBRARIES=librpcxdrta.a
 
 librpcxdrta_la_CFLAGS=-DTE_DUMMY $(AM_CFLAGS)
 librpcxdrta_la_SOURCES=xml_xdr.c rpc_xdr.c
+librpcxdrta_la_LIBADD = $(TIRPC_LIBS)
 
 nodist_librpcxdrta_la_SOURCES=tarpc_xdr.c tarpc_rpctbl.c tarpc_stub.c
 

@@ -1,7 +1,8 @@
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
+AM_CPPFLAGS = @TE_CPPFLAGS@ $(TIRPC_CFLAGS) \
+              -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
 
 AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 
@@ -18,6 +19,8 @@ libtapi_job_la_SOURCES = \
 	rpc_job.c \
 	tapi_job.c \
 	tapi_job_opt.c
+
+libtapi_job_la_LIBADD = $(TIRPC_LIBS)
 
 install-exec-hook:
 	for i in ${lib_LTLIBRARIES} ; do \
