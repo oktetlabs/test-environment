@@ -52,7 +52,6 @@ engine_libs = [
     'tapi',
     'tapi_rpc',
     'tapi_bpf',
-    'tapi_dpdk',
     'tapi_env',
     'tapi_fio',
     'tapi_job',
@@ -66,6 +65,7 @@ engine_libs = [
     'tce',
     'trc',
     'rpcc_dpdk',
+    'tapi_dpdk',
     'tapi_gtest',
     'tapi_upnp',
 ]
