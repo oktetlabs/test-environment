@@ -96,6 +96,48 @@ extern unsigned int map_flags_rpc2h(unsigned int flags);
 /** Convert native memory mapping flags to RPC flags */
 extern unsigned int map_flags_h2rpc(unsigned int flags);
 
+/** Value passed to rpc_madvise() */
+typedef enum rpc_madv_value {
+    RPC_MADV_NORMAL = 1,    /**< No special treatment */
+    RPC_MADV_RANDOM,        /**< Expect page references in random order */
+    RPC_MADV_SEQUENTIAL,    /**< Expect page references in sequential
+                                 order */
+    RPC_MADV_WILLNEED,      /**< Expect access in the near future */
+    RPC_MADV_DONTNEED,      /**< Do not expect access in the near future */
+    RPC_MADV_REMOVE,        /**< Free up a given range of pages and its
+                                 associated backing store */
+    RPC_MADV_DONTFORK,      /**< Pages should not be available to a
+                                 child after fork() */
+    RPC_MADV_DOFORK,        /**< Undo effect of @c RPC_MADV_DONTFORK */
+    RPC_MADV_HWPOISON,      /**< Poison the pages (so that references
+                                 to them will be handled like a hardware
+                                 memory corruption) */
+    RPC_MADV_MERGEABLE,     /**< Enable Kernel Samepage Merging */
+    RPC_MADV_UNMERGEABLE,   /**< Undo the effect of @c RPC_MADV_MERGEABLE */
+    RPC_MADV_SOFT_OFFLINE,  /**< Soft offline the pages */
+    RPC_MADV_HUGEPAGE,      /**< Enable Transparent Huge Pages */
+    RPC_MADV_NOHUGEPAGE,    /**< Ensure that pages will not be collapsed
+                                 into huge pages */
+    RPC_MADV_DONTDUMP,      /**< Exclude pages from a core dump */
+    RPC_MADV_DODUMP,        /**< Undo the effect of @c RPC_MADV_DONTDUMP */
+    RPC_MADV_FREE,          /**< The application no longer requires these
+                                 pages, kernel can free them */
+    RPC_MADV_WIPEONFORK,    /**< After fork() a child will find these
+                                 pages zero-filled */
+    RPC_MADV_KEEPONFORK,    /**< Undo the effect of
+                                 @c RPC_MADV_WIPEONFORK */
+    RPC_MADV_UNKNOWN,       /**< Unknown value */
+} rpc_madv_value;
+
+/** Convert @ref rpc_madvise_value to string */
+extern const char *madv_value_rpc2str(rpc_madv_value value);
+
+/** Convert @ref rpc_madvise_value to native value */
+extern int madv_value_rpc2h(rpc_madv_value value);
+
+/** Convert native value to @ref rpc_madv_value */
+extern rpc_madv_value madv_value_h2rpc(int value);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

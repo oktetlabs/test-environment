@@ -107,3 +107,104 @@ map_flags_h2rpc(unsigned int flags)
 
     return res;
 }
+
+/* See description in te_rpc_sys_mman.h */
+const char *
+madv_value_rpc2str(rpc_madv_value value)
+{
+    switch (value)
+    {
+        RPC2STR(MADV_NORMAL);
+        RPC2STR(MADV_RANDOM);
+        RPC2STR(MADV_SEQUENTIAL);
+        RPC2STR(MADV_WILLNEED);
+        RPC2STR(MADV_DONTNEED);
+        RPC2STR(MADV_REMOVE);
+        RPC2STR(MADV_DONTFORK);
+        RPC2STR(MADV_DOFORK);
+        RPC2STR(MADV_HWPOISON);
+        RPC2STR(MADV_MERGEABLE);
+        RPC2STR(MADV_UNMERGEABLE);
+        RPC2STR(MADV_SOFT_OFFLINE);
+        RPC2STR(MADV_HUGEPAGE);
+        RPC2STR(MADV_NOHUGEPAGE);
+        RPC2STR(MADV_DONTDUMP);
+        RPC2STR(MADV_DODUMP);
+        RPC2STR(MADV_FREE);
+        RPC2STR(MADV_WIPEONFORK);
+        RPC2STR(MADV_KEEPONFORK);
+        RPC2STR(MADV_UNKNOWN);
+
+        /*
+         * We should never reach the code below, because all the enum values
+         * have already been checked.
+         */
+        default: return "<MADV_FATAL_ERROR>";
+    }
+}
+
+/* See description in te_rpc_sys_mman.h */
+int
+madv_value_rpc2h(rpc_madv_value value)
+{
+    switch (value)
+    {
+        RPC2H_CHECK(MADV_NORMAL);
+        RPC2H_CHECK(MADV_RANDOM);
+        RPC2H_CHECK(MADV_SEQUENTIAL);
+        RPC2H_CHECK(MADV_WILLNEED);
+        RPC2H_CHECK(MADV_DONTNEED);
+        RPC2H_CHECK(MADV_REMOVE);
+        RPC2H_CHECK(MADV_DONTFORK);
+        RPC2H_CHECK(MADV_DOFORK);
+        RPC2H_CHECK(MADV_HWPOISON);
+        RPC2H_CHECK(MADV_MERGEABLE);
+        RPC2H_CHECK(MADV_UNMERGEABLE);
+        RPC2H_CHECK(MADV_SOFT_OFFLINE);
+        RPC2H_CHECK(MADV_HUGEPAGE);
+        RPC2H_CHECK(MADV_NOHUGEPAGE);
+        RPC2H_CHECK(MADV_DONTDUMP);
+        RPC2H_CHECK(MADV_DODUMP);
+        RPC2H_CHECK(MADV_FREE);
+        RPC2H_CHECK(MADV_WIPEONFORK);
+        RPC2H_CHECK(MADV_KEEPONFORK);
+
+        default:
+            WARN("%s(): %d value is not known, converting to 0",
+                 __FUNCTION__, value);
+            return 0;
+    }
+}
+
+/* See description in te_rpc_sys_mman.h */
+rpc_madv_value
+madv_value_h2rpc(int value)
+{
+    switch (value)
+    {
+        H2RPC_CHECK(MADV_NORMAL);
+        H2RPC_CHECK(MADV_RANDOM);
+        H2RPC_CHECK(MADV_SEQUENTIAL);
+        H2RPC_CHECK(MADV_WILLNEED);
+        H2RPC_CHECK(MADV_DONTNEED);
+        H2RPC_CHECK(MADV_REMOVE);
+        H2RPC_CHECK(MADV_DONTFORK);
+        H2RPC_CHECK(MADV_DOFORK);
+        H2RPC_CHECK(MADV_HWPOISON);
+        H2RPC_CHECK(MADV_MERGEABLE);
+        H2RPC_CHECK(MADV_UNMERGEABLE);
+        H2RPC_CHECK(MADV_SOFT_OFFLINE);
+        H2RPC_CHECK(MADV_HUGEPAGE);
+        H2RPC_CHECK(MADV_NOHUGEPAGE);
+        H2RPC_CHECK(MADV_DONTDUMP);
+        H2RPC_CHECK(MADV_DODUMP);
+        H2RPC_CHECK(MADV_FREE);
+        H2RPC_CHECK(MADV_WIPEONFORK);
+        H2RPC_CHECK(MADV_KEEPONFORK);
+
+        default:
+            WARN("%s(): %d value is not known, converting to "
+                 "RPC_MADV_UNKNOWN", __FUNCTION__, value);
+            return RPC_MADV_UNKNOWN;
+    }
+}
