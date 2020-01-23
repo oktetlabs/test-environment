@@ -35,6 +35,45 @@ case `$1': return RPC_`$1';
 #line m4___line__ "m4___file__"
 (void)0')m4_dnl
 m4_dnl
+m4_dnl RPC2H_FLAG_CHECK and H2RPC_FLAG_CHECK should
+m4_dnl be used for flags conversion, like
+m4_dnl
+m4_dnl unsigned int res = 0;
+m4_dnl RPC2H_FLAG_CHECK(res, value, FLAG1);
+m4_dnl RPC2H_FLAG_CHECK(res, value, FLAG2);
+m4_dnl return res;
+m4_dnl
+m4_dnl unsigned int res = 0;
+m4_dnl H2RPC_FLAG_CHECK(res, value, FLAG1);
+m4_dnl H2RPC_FLAG_CHECK(res, value, FLAG2);
+m4_dnl if (value != 0)
+m4_dnl     res |= RPC_FLAG_UNKNOWN;
+m4_dnl return res;
+m4_dnl
+m4_dnl Note, they modify value, removing checked flag
+m4_dnl from it, so that at the end it may be checked whether
+m4_dnl some unknown flags are present.
+m4_dnl
+m4_define(`RPC2H_FLAG_CHECK',
+`
+#ifdef `$3'
+#line m4___line__ "m4___file__"
+`$1' |= ((`$2' & RPC_`$3') ? `$3' : 0);
+`$2' &= ~RPC_`$3';
+#endif
+#line m4___line__ "m4___file__"
+(void)0')m4_dnl
+m4_dnl
+m4_define(`H2RPC_FLAG_CHECK',
+`
+#ifdef `$3'
+#line m4___line__ "m4___file__"
+`$1' |= ((`$2' & `$3') ? RPC_`$3' : 0);
+`$2' &= ~`$3';
+#endif
+#line m4___line__ "m4___file__"
+(void)0')m4_dnl
+m4_dnl
 m4_dnl __SOURCE__ macro is provided at command line
 m4_dnl to specify the name of the actual source file
 #line 1 "__SOURCE__"
