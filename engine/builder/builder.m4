@@ -51,6 +51,28 @@ eval `echo ${PLATFORM}_LDFLAGS=\"$5\"`
 eval `echo ${PLATFORM}_LIBS=\"$6\"`
 ])
 
+dnl Declares a platform for and specifies platform-specific
+dnl
+dnl Parameters:
+dnl       platform name; may be empty for host platform (name "default"
+dnl           is used for it); shouldn't contain '-'
+dnl       build system to use; autotools or meson
+dnl
+define([TE_PLATFORM_BUILD],
+[
+PLATFORM=$1
+if test -z "$PLATFORM" ; then
+    PLATFORM=default
+fi
+case "$2" in
+    autotools|meson|"") ;;
+    *)
+        TE_BS_CONF_ERR="wrong build system $2 for platform $1" ;
+        break 2 ;;
+esac
+eval `echo ${PLATFORM}_BUILD=\"$2\"`
+])
+
 dnl Declares an external component for a platform.
 dnl An external component is built before the platform itself,
 dnl so that TE libraries could make use of
