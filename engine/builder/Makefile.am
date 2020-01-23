@@ -16,6 +16,7 @@ dist_mybin_SCRIPTS = \
     te_create_inst_dirs \
     te_configure_package \
     te_cross_build \
+    te_cross_build_autotools \
     te_cross_make \
     te_build_ext \
     te_fixlink \
