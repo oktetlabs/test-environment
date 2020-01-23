@@ -55,6 +55,20 @@ extern rpc_ptr rpc_mmap(rcf_rpc_server *rpcs,
 extern int rpc_munmap(rcf_rpc_server *rpcs,
                       rpc_ptr addr, uint64_t length);
 
+/**
+ * Give advise about use of memory.
+ *
+ * @param rpcs        RPC server handle.
+ * @param addr        RPC pointer to the start of a memory range.
+ * @param length      Length of the range.
+ * @param advise      Advise (see @ref rpc_madv_value).
+ *
+ * @return @c 0 on success, @c -1 on failure
+ */
+extern int rpc_madvise(rcf_rpc_server *rpcs,
+                       rpc_ptr addr, uint64_t length,
+                       rpc_madv_value advise);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

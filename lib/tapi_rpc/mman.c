@@ -81,3 +81,34 @@ rpc_munmap(rcf_rpc_server *rpcs, rpc_ptr addr, uint64_t length)
                  RPC_PTR_VAL(addr), length, out.retval);
     RETVAL_INT(munmap, out.retval);
 }
+
+/* See description in tapi_rpc_mman.h */
+int
+rpc_madvise(rcf_rpc_server *rpcs,
+            rpc_ptr addr, uint64_t length,
+            rpc_madv_value advise)
+{
+    tarpc_madvise_in     in;
+    tarpc_madvise_out    out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(madvise, -1);
+    }
+
+    in.addr = addr;
+    in.length = length;
+    in.advise = advise;
+
+    rcf_rpc_call(rpcs, "madvise", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, madvise, RPC_PTR_FMT ", "
+                 "%" TE_PRINTF_64 "u, %s", "%d",
+                 RPC_PTR_VAL(addr), length, madv_value_rpc2str(advise),
+                 out.retval);
+    RETVAL_INT(madvise, out.retval);
+}

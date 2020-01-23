@@ -2197,6 +2197,20 @@ struct tarpc_munmap_out {
     tarpc_int            retval;
 };
 
+struct tarpc_madvise_in {
+    struct tarpc_in_arg  common;
+
+    tarpc_ptr            addr;
+    uint64_t             length;
+    tarpc_int            advise;
+};
+
+struct tarpc_madvise_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int            retval;
+};
+
 /* set_buf */
 struct tarpc_set_buf_in {
     struct tarpc_in_arg  common;
@@ -5586,6 +5600,7 @@ program tarpc
         RPC_DEF(memalign)
         RPC_DEF(mmap)
         RPC_DEF(munmap)
+        RPC_DEF(madvise)
         RPC_DEF(memcmp)
 
         RPC_DEF(socket)

@@ -9173,6 +9173,16 @@ TARPC_FUNC(munmap, {},
 }
 )
 
+/*-------------- madvise() ------------------------------*/
+
+TARPC_FUNC(madvise, {},
+{
+    MAKE_CALL(out->retval = func_ptr(rcf_pch_mem_get(in->addr),
+                                     (size_t)(in->length),
+                                     madv_value_rpc2h(in->advise)));
+}
+)
+
 /*-------------- memcmp() ------------------------------*/
 
 TARPC_FUNC(memcmp, {},
