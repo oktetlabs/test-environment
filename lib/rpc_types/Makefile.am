@@ -25,6 +25,7 @@ include_HEADERS = \
 	te_rpc_sys_socket.h \
 	te_rpc_sys_stat.h \
 	te_rpc_sys_wait.h \
+	te_rpc_sys_mman.h \
 	te_rpc_wsa.h \
 	te_rpc_sysconf.h \
 	te_rpc_dlfcn.h \
@@ -82,6 +83,7 @@ librpc_types_la_SOURCES = defs.c \
 	sys_systeminfo.c.rpch \
 	sys_stat.c.rpch \
 	sys_wait.c.rpch \
+	sys_mman.c.rpch \
 	wsa.c.rpch \
 	sysconf_name.c.rpch \
 	dlfcn.c.rpch \
@@ -104,6 +106,7 @@ BUILT_SOURCES=\
 	sys_systeminfo.c \
 	sys_stat.c \
 	sys_wait.c \
+	sys_mman.c \
 	wsa.c \
 	sysconf_name.c \
 	dlfcn.c \

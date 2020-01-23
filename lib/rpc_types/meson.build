@@ -20,6 +20,7 @@ headers += files(
     'te_rpc_sys_systeminfo.h',
     'te_rpc_sys_time.h',
     'te_rpc_sys_wait.h',
+    'te_rpc_sys_mman.h',
     'te_rpc_sysconf.h',
     'te_rpc_types.h',
     'te_rpc_wsa.h',
@@ -44,6 +45,7 @@ rpch_sources = [
     'sys_stat.c.rpch',
     'sys_systeminfo.c.rpch',
     'sys_wait.c.rpch',
+    'sys_mman.c.rpch',
     'sysconf_name.c.rpch',
     'wsa.c.rpch',
 ]

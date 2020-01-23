@@ -1,0 +1,109 @@
+/** @file
+ * @brief RPC types definitions
+ *
+ * RPC analogues of definitions from sys/mman.h.
+ *
+ * Copyright (C) 2020 OKTET Labs. All rights reserved.
+ *
+ * @author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
+ */
+
+#define TE_LGR_USER     "RPC types"
+
+#include "te_config.h"
+
+#if HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+
+#include "te_defs.h"
+#include "te_errno.h"
+#include "logger_api.h"
+#include "te_rpc_sys_mman.h"
+
+/* See description in te_rpc_sys_mman.h */
+unsigned int
+prot_flags_rpc2h(unsigned int flags)
+{
+    unsigned int res = 0;
+
+    UNUSED(flags);
+
+    RPC2H_FLAG_CHECK(res, flags, PROT_READ);
+    RPC2H_FLAG_CHECK(res, flags, PROT_WRITE);
+    RPC2H_FLAG_CHECK(res, flags, PROT_EXEC);
+    RPC2H_FLAG_CHECK(res, flags, PROT_SEM);
+    RPC2H_FLAG_CHECK(res, flags, PROT_NONE);
+    RPC2H_FLAG_CHECK(res, flags, PROT_GROWSDOWN);
+    RPC2H_FLAG_CHECK(res, flags, PROT_GROWSUP);
+
+    return res;
+}
+
+/* See description in te_rpc_sys_mman.h */
+unsigned int
+prot_flags_h2rpc(unsigned int flags)
+{
+    unsigned int res = 0;
+
+    UNUSED(flags);
+
+    H2RPC_FLAG_CHECK(res, flags, PROT_READ);
+    H2RPC_FLAG_CHECK(res, flags, PROT_WRITE);
+    H2RPC_FLAG_CHECK(res, flags, PROT_EXEC);
+    H2RPC_FLAG_CHECK(res, flags, PROT_SEM);
+    H2RPC_FLAG_CHECK(res, flags, PROT_NONE);
+    H2RPC_FLAG_CHECK(res, flags, PROT_GROWSDOWN);
+    H2RPC_FLAG_CHECK(res, flags, PROT_GROWSUP);
+    if (flags != 0)
+        res = res | RPC_PROT_UNKNOWN;
+
+    return res;
+}
+
+/* See description in te_rpc_sys_mman.h */
+unsigned int
+map_flags_rpc2h(unsigned int flags)
+{
+    unsigned int res = 0;
+
+    UNUSED(flags);
+
+    RPC2H_FLAG_CHECK(res, flags, MAP_SHARED);
+    RPC2H_FLAG_CHECK(res, flags, MAP_PRIVATE);
+    RPC2H_FLAG_CHECK(res, flags, MAP_FIXED);
+    RPC2H_FLAG_CHECK(res, flags, MAP_ANONYMOUS);
+    RPC2H_FLAG_CHECK(res, flags, MAP_GROWSDOWN);
+    RPC2H_FLAG_CHECK(res, flags, MAP_LOCKED);
+    RPC2H_FLAG_CHECK(res, flags, MAP_POPULATE);
+    RPC2H_FLAG_CHECK(res, flags, MAP_NONBLOCK);
+    RPC2H_FLAG_CHECK(res, flags, MAP_STACK);
+    RPC2H_FLAG_CHECK(res, flags, MAP_HUGETLB);
+
+    return res;
+}
+
+/* See description in te_rpc_sys_mman.h */
+unsigned int
+map_flags_h2rpc(unsigned int flags)
+{
+    unsigned int res = 0;
+
+    UNUSED(flags);
+
+    H2RPC_FLAG_CHECK(res, flags, MAP_SHARED);
+    H2RPC_FLAG_CHECK(res, flags, MAP_PRIVATE);
+    H2RPC_FLAG_CHECK(res, flags, MAP_FIXED);
+    H2RPC_FLAG_CHECK(res, flags, MAP_ANONYMOUS);
+    H2RPC_FLAG_CHECK(res, flags, MAP_GROWSDOWN);
+    H2RPC_FLAG_CHECK(res, flags, MAP_LOCKED);
+    H2RPC_FLAG_CHECK(res, flags, MAP_POPULATE);
+    H2RPC_FLAG_CHECK(res, flags, MAP_NONBLOCK);
+    H2RPC_FLAG_CHECK(res, flags, MAP_STACK);
+    H2RPC_FLAG_CHECK(res, flags, MAP_HUGETLB);
+
+    if (flags != 0)
+        res = res | RPC_MAP_UNKNOWN;
+
+    return res;
+}
