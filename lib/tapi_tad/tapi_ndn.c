@@ -1066,23 +1066,26 @@ tapi_tad_packet_to_pattern_units(asn_value      *packet,
 {
     te_errno        err = 0;
     asn_value      *pdus = NULL;
-    int             payload_len;
+    size_t          payload_len;
     uint8_t        *payload_data = NULL;
     asn_value      *tcp_pdu = NULL;
     size_t          data_offset = 0;
     asn_value     **pattern_units = NULL;
     unsigned int    n_pattern_units = 0;
+    int             ret;
 
     err = asn_get_subvalue(packet, &pdus, "pdus");
     if (err != 0)
         goto out;
 
-    payload_len = asn_get_length(packet, "payload.#bytes");
-    if (payload_len < 0)
+    ret = asn_get_length(packet, "payload.#bytes");
+    if (ret < 0)
     {
         err = TE_EINVAL;
         goto out;
     }
+
+    payload_len = ret;
 
     payload_data = malloc(payload_len);
     if (payload_data == NULL)
@@ -1092,7 +1095,7 @@ tapi_tad_packet_to_pattern_units(asn_value      *packet,
     }
 
     err = asn_read_value_field(packet, (void *)payload_data,
-                               (size_t *)&payload_len, "payload.#bytes");
+                               &payload_len, "payload.#bytes");
     if (err != 0)
         goto out;
 
