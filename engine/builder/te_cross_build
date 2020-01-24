@@ -42,8 +42,8 @@ wait_progress () {
             continue
         fi
         if test "x$in_prog_msg" == "x" ; then
-            echo -n "Agent $package building is already in progress, " >&2
-            echo -n "waiting" >&2
+            echo -n "$(date +%T) Agent $package building is already " >&2
+            echo -n "in progress, waiting" >&2
             in_prog_msg="yes"
         fi
         echo -n "." >&2
@@ -65,7 +65,7 @@ print_agent_log_files() {
 }
 
 print_build_agent_start() {
-    echo "Build agent $(print_platform $1) - start"
+    echo "$(date +%T) Build agent $(print_platform $1) - start"
     echo "  location of log files: $(print_agent_log_files "$p")"
 }
 
