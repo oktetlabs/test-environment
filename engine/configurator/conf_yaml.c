@@ -26,6 +26,12 @@
 #define YAML_TARGET_CONTEXT_INIT \
     { NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRUE };
 
+typedef struct parse_config_yaml_ctx {
+    yaml_document_t *doc;
+    xmlNodePtr       xn_history;
+    te_kvpair_h     *expand_vars;
+} parse_config_yaml_ctx;
+
 typedef struct config_yaml_target_s {
     const char *command_name;
     const char *target_name;
@@ -566,24 +572,20 @@ embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
 /**
  * Process the given target node in the given YAML document.
  *
- * @param d                 YAML document handle
+ * @param ctx               Current doc context
  * @param n                 Handle of the target node in the given YAML document
  * @param xn_cmd            Handle of command node in the XML document being
  *                          created
  * @param cmd               String representation of command
- * @param expand_vars       List of key-value pairs for expansion in file,
- *                          @c NULL if environment variables are used for
- *                          substitutions
  *
  * @return Status code.
  */
 static te_errno
-parse_config_yaml_cmd_process_target(yaml_document_t *d,
-                                     yaml_node_t     *n,
-                                     xmlNodePtr       xn_cmd,
-                                     const char      *cmd,
-                                     te_kvpair_h     *expand_vars)
+parse_config_yaml_cmd_process_target(parse_config_yaml_ctx *ctx, yaml_node_t *n,
+                                     xmlNodePtr xn_cmd, const char *cmd)
 {
+    yaml_document_t            *d = ctx->doc;
+    te_kvpair_h                *expand_vars = ctx->expand_vars;
     xmlNodePtr                  xn_target = NULL;
     cs_yaml_target_context_t    c = YAML_TARGET_CONTEXT_INIT;
     const char                 *target;
@@ -655,25 +657,21 @@ out:
  * Process the sequence of target nodes for the specified
  * command in the given YAML document.
  *
- * @param d                 YAML document handle
+ * @param ctx               Current doc context
  * @param n                 Handle of the target sequence in the given YAML
  *                          document
  * @param xn_cmd            Handle of command node in the XML document being
  *                          created
  * @param cmd               String representation of command
- * @param expand_vars       List of key-value pairs for expansion in file,
- *                          @c NULL if environment variables are used for
- *                          substitutions
  *
  * @return Status code.
  */
 static te_errno
-parse_config_yaml_cmd_process_targets(yaml_document_t *d,
-                                      yaml_node_t     *n,
-                                      xmlNodePtr       xn_cmd,
-                                      const char      *cmd,
-                                      te_kvpair_h     *expand_vars)
+parse_config_yaml_cmd_process_targets(parse_config_yaml_ctx *ctx,
+                                      yaml_node_t *n, xmlNodePtr xn_cmd,
+                                      const char *cmd)
 {
+    yaml_document_t *d = ctx->doc;
     yaml_node_item_t *item = n->data.sequence.items.start;
 
     if (n->type != YAML_SEQUENCE_NODE)
@@ -687,8 +685,7 @@ parse_config_yaml_cmd_process_targets(yaml_document_t *d,
         yaml_node_t *in = yaml_document_get_node(d, *item);
         te_errno     rc = 0;
 
-        rc = parse_config_yaml_cmd_process_target(d, in, xn_cmd, cmd,
-                                                  expand_vars);
+        rc = parse_config_yaml_cmd_process_target(ctx, in, xn_cmd, cmd);
         if (rc != 0)
         {
             ERROR(CS_YAML_ERR_PREFIX "failed to process the target in the "
@@ -701,32 +698,26 @@ parse_config_yaml_cmd_process_targets(yaml_document_t *d,
     return 0;
 }
 
-static te_errno parse_config_yaml_cmd(yaml_document_t *d,
-                                      xmlNodePtr       xn_history,
-                                      yaml_node_t     *parent,
-                                      te_kvpair_h     *expand_vars);
+static te_errno parse_config_yaml_cmd(parse_config_yaml_ctx *ctx,
+                                      yaml_node_t           *parent);
 
 /**
  * Process dynamic history specified command in the given YAML document.
  *
- * @param d                 YAML document handle
+ * @param ctx               Current doc context
  * @param n                 Handle of the command node in the given YAML document
- * @param xn_history        Handle of "history" node in the XML document being
- *                          created
  * @param cmd               String representation of command
- * @param expand_vars       List of key-value pairs for expansion in file,
- *                          @c NULL if environment variables are used for
- *                          substitutions
  *
  * @return Status code.
  */
 static te_errno
-parse_config_yaml_specified_cmd(yaml_document_t *d,
-                                yaml_node_t     *n,
-                                xmlNodePtr       xn_history,
-                                const char      *cmd,
-                                te_kvpair_h     *expand_vars)
+parse_config_yaml_specified_cmd(parse_config_yaml_ctx *ctx, yaml_node_t *n,
+                                const char *cmd)
 {
+    yaml_document_t *d = ctx->doc;
+    te_kvpair_h     *expand_vars = ctx->expand_vars;
+    xmlNodePtr       xn_history = ctx->xn_history;
+
     xmlNodePtr  xn_cmd = NULL;
     te_errno    rc = 0;
     te_bool     cond = FALSE;
@@ -749,8 +740,7 @@ parse_config_yaml_specified_cmd(yaml_document_t *d,
             goto out;
         }
 
-        rc = parse_config_yaml_cmd_process_targets(d, n, xn_cmd, cmd,
-                                                   expand_vars);
+        rc = parse_config_yaml_cmd_process_targets(ctx, n, xn_cmd, cmd);
         if (rc != 0)
         {
             ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in the %s "
@@ -782,12 +772,12 @@ parse_config_yaml_specified_cmd(yaml_document_t *d,
             else if (strcmp(k_label, "then") == 0)
             {
                 if (cond)
-                    rc = parse_config_yaml_cmd(d, xn_history, v, expand_vars);
+                    rc = parse_config_yaml_cmd(ctx, v);
             }
             else if (strcmp(k_label, "else") == 0)
             {
                 if (!cond)
-                    rc = parse_config_yaml_cmd(d, xn_history, v, expand_vars);
+                    rc = parse_config_yaml_cmd(ctx, v);
             }
             else
             {
@@ -834,11 +824,10 @@ out:
 }
 
 static te_errno
-parse_config_root_commands(yaml_document_t *d,
-                           xmlNodePtr       xn_history,
-                           yaml_node_t     *n,
-                           te_kvpair_h     *expand_vars)
+parse_config_root_commands(parse_config_yaml_ctx *ctx,
+                           yaml_node_t           *n)
 {
+    yaml_document_t *d = ctx->doc;
     yaml_node_pair_t *pair = n->data.mapping.pairs.start;
     yaml_node_t *k = yaml_document_get_node(d, pair->key);
     yaml_node_t *v = yaml_document_get_node(d, pair->value);
@@ -853,9 +842,8 @@ parse_config_root_commands(yaml_document_t *d,
         (strcmp((const char *)k->data.scalar.value, "copy") == 0) ||
         (strcmp((const char *)k->data.scalar.value, "cond") == 0))
     {
-        rc = parse_config_yaml_specified_cmd(d, v, xn_history,
-                                       (const char *)k->data.scalar.value,
-                                       expand_vars);
+         rc = parse_config_yaml_specified_cmd(ctx, v,
+                                        (const char *)k->data.scalar.value);
     }
     else
     {
@@ -877,22 +865,16 @@ parse_config_root_commands(yaml_document_t *d,
  * Explore sequence of commands of the given parent node in the given YAML
  * document to detect and process dynamic history commands.
  *
- * @param d                 YAML document handle
- * @param xn_history        Handle of "history" node in the document being
- *                          created
+ * @param ctx               Current doc context
  * @param parent            Parent node of sequence of commands
- * @param expand_vars       List of key-value pairs for expansion in file,
- *                          @c NULL if environment variables are used for
- *                          substitutions
  *
  * @return Status code.
  */
 static te_errno
-parse_config_yaml_cmd(yaml_document_t *d,
-                      xmlNodePtr       xn_history,
-                      yaml_node_t     *parent,
-                      te_kvpair_h     *expand_vars)
+parse_config_yaml_cmd(parse_config_yaml_ctx *ctx,
+                      yaml_node_t           *parent)
 {
+    yaml_document_t  *d = ctx->doc;
     yaml_node_item_t *item = NULL;
     te_errno          rc = 0;
 
@@ -913,7 +895,7 @@ parse_config_yaml_cmd(yaml_document_t *d,
             rc = TE_EINVAL;
         }
 
-        rc = parse_config_root_commands(d, xn_history, n, expand_vars);
+        rc = parse_config_root_commands(ctx, n);
         if (rc != 0)
             break;
     } while (++item < parent->data.sequence.items.top);
@@ -925,12 +907,13 @@ parse_config_yaml_cmd(yaml_document_t *d,
 te_errno
 parse_config_yaml(const char *filename, te_kvpair_h *expand_vars)
 {
-    FILE            *f = NULL;
-    yaml_parser_t    parser;
-    yaml_document_t  dy;
-    xmlNodePtr       xn_history = NULL;
-    yaml_node_t     *root = NULL;
-    te_errno         rc = 0;
+    FILE                   *f = NULL;
+    yaml_parser_t           parser;
+    yaml_document_t         dy;
+    xmlNodePtr              xn_history = NULL;
+    yaml_node_t            *root = NULL;
+    te_errno                rc = 0;
+    parse_config_yaml_ctx   ctx;
 
     f = fopen(filename, "rb");
     if (f == NULL)
@@ -969,7 +952,11 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars)
         goto out;
     }
 
-    rc = parse_config_yaml_cmd(&dy, xn_history, root, expand_vars);
+    memset(&ctx, 0, sizeof(ctx));
+    ctx.doc = &dy;
+    ctx.xn_history = xn_history;
+    ctx.expand_vars = expand_vars;
+    rc = parse_config_yaml_cmd(&ctx, root);
     if (rc != 0)
     {
         ERROR(CS_YAML_ERR_PREFIX "encountered some error(s)");
