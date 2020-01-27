@@ -1065,6 +1065,9 @@ meson)
         exit_with_log
     fi
     if test -n "$BUILDER" -o -n "$BUILD_TA" -o -n "$BUILD_TA_FOR" ; then
+        export BUILD_TA=$BUILD_TA
+        export BUILD_TA_FOR=$BUILD_TA_FOR
+        export BUILD_TA_RM=$BUILD_TA_RM
         if test -n "${QUIET}" ; then
             $PROFILE_BUILD "${TE_BASE}"/engine/builder/te_meson_build \
                 "${CONF_BUILDER}" >"${TE_BUILD_LOG}" || exit_with_log
