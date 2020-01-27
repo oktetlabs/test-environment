@@ -107,10 +107,10 @@ pipeline {
     post {
         unsuccessful {
             emailext (
+                from: "cbs@oktetlabs.ru",
+                to: "Nikita.Somenkov@oktetlabs.ru",
                 subject: "[CI TE] ${env.JOB_NAME} job ${env.BUILD_NUMBER} unsuccessful",
                 body: "Check console output at: ${env.BUILD_URL}, failure step $lastStage",
-                to: "Nikita.Somenkov@oktetlabs.ru",
-                from: "cbs@oktetlabs.ru"
             )
         }
     }
