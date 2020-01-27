@@ -123,6 +123,15 @@ pipeline {
                 body: "Check console output at: ${env.BUILD_URL}",
             )
         }
+        fixed {
+            emailext (
+                from: "cbs@oktetlabs.ru",
+                to: "Nikita.Somenkov@oktetlabs.ru,Andrew.Rybchenko@oktetlabs.ru",
+                recipientProviders: [requestor(), culprits()],
+                subject: "[CI TE] ${env.JOB_NAME} job ${env.BUILD_NUMBER} fixed",
+                body: "Check console output at: ${env.BUILD_URL}",
+            )
+        }
     }
 }
 
