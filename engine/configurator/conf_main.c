@@ -2153,7 +2153,7 @@ parse_config(const char *fname, te_kvpair_h *expand_vars)
         return parse_config_xml(fname, expand_vars, TRUE);
 #if WITH_CONF_YAML
     else if (strcmp(str, "---") == 0)
-        return parse_config_yaml(fname, expand_vars);
+        return parse_config_yaml(fname, expand_vars, NULL);
 #endif /* !WITH_CONF_YAML */
 
     ERROR("Failed to recognise the format of configuration file '%s'", fname);

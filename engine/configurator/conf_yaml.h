@@ -29,10 +29,13 @@
  * @param expand_vars       List of key-value pairs for expansion in file,
  *                          @c NULL if environment variables are used for
  *                          substitutions
+ * @param xn_history_root   XML node containing translated yaml file content,
+ *                          @c NULL if yaml file is not being included
  *
  * @return Status code.
  */
 extern te_errno parse_config_yaml(const char *filename,
-                                  te_kvpair_h *expand_vars);
+                                  te_kvpair_h *expand_vars,
+                                  xmlNodePtr xn_history_root);
 
 #endif /* __TE_CONF_YAML_H__ */

@@ -19,6 +19,7 @@
 
 #include <ctype.h>
 #include <libxml/xinclude.h>
+#include <libgen.h>
 #include <yaml.h>
 
 #define CS_YAML_ERR_PREFIX "YAML configuration file parser "
@@ -27,6 +28,7 @@
     { NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRUE };
 
 typedef struct parse_config_yaml_ctx {
+    char            *file_path;
     yaml_document_t *doc;
     xmlNodePtr       xn_history;
     te_kvpair_h     *expand_vars;
@@ -569,6 +571,82 @@ embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
     }
 }
 
+static te_errno
+parse_config_yaml_include_doc(parse_config_yaml_ctx *ctx, yaml_node_t *n)
+{
+    char *file_name;
+    char *dir_name;
+    te_string file_path = TE_STRING_INIT;
+    te_errno rc = 0;
+    char *saved_current_yaml_file_path = NULL;
+    xmlNodePtr xn_history = ctx->xn_history;
+    te_kvpair_h *expand_vars = ctx->expand_vars;
+    const char *current_yaml_file_path = ctx->file_path;
+
+    if (n->data.scalar.length == 0)
+    {
+        ERROR(CS_YAML_ERR_PREFIX "found include node to be badly formatted");
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    file_name = (char *)n->data.scalar.value;
+    saved_current_yaml_file_path = strdup(current_yaml_file_path);
+    if (saved_current_yaml_file_path == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    dir_name = dirname(saved_current_yaml_file_path);
+    rc = te_string_append(&file_path, "%s/%s", dir_name, file_name);
+    if (rc != 0)
+        goto out;
+
+    if (access(file_path.ptr, F_OK) == 0)
+    {
+        rc = parse_config_yaml(file_path.ptr, expand_vars, xn_history);
+        if (rc != 0)
+            goto out;
+    }
+    else
+    {
+        te_string_free(&file_path);
+
+        dir_name = getenv("TE_INSTALL");
+        if (dir_name == NULL)
+        {
+            rc = TE_EINVAL;
+            goto out;
+        }
+
+        rc = te_string_append(&file_path, "%s/default/share/cm/%s",
+                              dir_name, file_name);
+        if (rc != 0)
+            goto out;
+
+        if (access(file_path.ptr, F_OK) == 0)
+        {
+            rc = parse_config_yaml(file_path.ptr, expand_vars, xn_history);
+            if (rc != 0)
+                goto out;
+        }
+        else
+        {
+            ERROR(CS_YAML_ERR_PREFIX "document %s specified in include node is not found",
+                  file_name);
+            rc = TE_EINVAL;
+            goto out;
+        }
+    }
+
+out:
+    te_string_free(&file_path);
+    free(saved_current_yaml_file_path);
+
+    return rc;
+}
+
 /**
  * Process the given target node in the given YAML document.
  *
@@ -590,6 +668,19 @@ parse_config_yaml_cmd_process_target(parse_config_yaml_ctx *ctx, yaml_node_t *n,
     cs_yaml_target_context_t    c = YAML_TARGET_CONTEXT_INIT;
     const char                 *target;
     te_errno                    rc = 0;
+
+    /*
+     * Case of several included files, e.g.
+     * - include:
+     *      - filename1
+     *      ...
+     *      - filenameN
+     */
+    if (strcmp(cmd, "include") == 0)
+    {
+        rc = parse_config_yaml_include_doc(ctx, n);
+        goto out;
+    }
 
     target = get_yaml_cmd_target(cmd);
     if (target == NULL)
@@ -795,6 +886,24 @@ parse_config_yaml_specified_cmd(parse_config_yaml_ctx *ctx, yaml_node_t *n,
             }
         } while (++pair < n->data.mapping.pairs.top);
     }
+    /*
+     * Case of single included file, e.g.
+     * - include: filename
+     */
+    else if (n->type == YAML_SCALAR_NODE)
+    {
+        if (strcmp(cmd, "include") != 0)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "found the %s command node to be "
+            "badly formatted", cmd);
+            rc = TE_EINVAL;
+            goto out;
+        }
+
+        rc = parse_config_yaml_include_doc(ctx, n);
+        if (rc != 0)
+            goto out;
+    }
     else
     {
         ERROR(CS_YAML_ERR_PREFIX "found the %s command node to be "
@@ -840,6 +949,7 @@ parse_config_root_commands(parse_config_yaml_ctx *ctx,
         (strcmp((const char *)k->data.scalar.value, "unregister") == 0) ||
         (strcmp((const char *)k->data.scalar.value, "delete") == 0) ||
         (strcmp((const char *)k->data.scalar.value, "copy") == 0) ||
+        (strcmp((const char *)k->data.scalar.value, "include") == 0) ||
         (strcmp((const char *)k->data.scalar.value, "cond") == 0))
     {
          rc = parse_config_yaml_specified_cmd(ctx, v,
@@ -905,7 +1015,8 @@ parse_config_yaml_cmd(parse_config_yaml_ctx *ctx,
 
 /* See description in 'conf_yaml.h' */
 te_errno
-parse_config_yaml(const char *filename, te_kvpair_h *expand_vars)
+parse_config_yaml(const char *filename, te_kvpair_h *expand_vars,
+                  xmlNodePtr xn_history_root)
 {
     FILE                   *f = NULL;
     yaml_parser_t           parser;
@@ -913,6 +1024,7 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars)
     xmlNodePtr              xn_history = NULL;
     yaml_node_t            *root = NULL;
     te_errno                rc = 0;
+    char                   *current_yaml_file_path;
     parse_config_yaml_ctx   ctx;
 
     f = fopen(filename, "rb");
@@ -927,13 +1039,27 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars)
     yaml_parser_load(&parser, &dy);
     fclose(f);
 
-    xn_history = xmlNewNode(NULL, BAD_CAST "history");
-    if (xn_history == NULL)
+    current_yaml_file_path = strdup(filename);
+    if (current_yaml_file_path == NULL)
     {
-        ERROR(CS_YAML_ERR_PREFIX "failed to allocate "
-              "main history node for XML output");
         rc = TE_ENOMEM;
         goto out;
+    }
+
+    if (xn_history_root == NULL)
+    {
+        xn_history = xmlNewNode(NULL, BAD_CAST "history");
+        if (xn_history == NULL)
+        {
+            ERROR(CS_YAML_ERR_PREFIX "failed to allocate "
+                  "main history node for XML output");
+            rc = TE_ENOMEM;
+            goto out;
+        }
+    }
+    else
+    {
+        xn_history = xn_history_root;
     }
 
     root = yaml_document_get_root_node(&dy);
@@ -953,6 +1079,7 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars)
     }
 
     memset(&ctx, 0, sizeof(ctx));
+    ctx.file_path = current_yaml_file_path;
     ctx.doc = &dy;
     ctx.xn_history = xn_history;
     ctx.expand_vars = expand_vars;
@@ -963,7 +1090,7 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars)
         goto out;
     }
 
-    if (xn_history->children != NULL)
+    if (xn_history_root == NULL && xn_history->children != NULL)
     {
         rcf_log_cfg_changes(TRUE);
         rc = parse_config_dh_sync(xn_history, expand_vars);
@@ -971,9 +1098,11 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars)
     }
 
 out:
-    xmlFreeNode(xn_history);
+    if (xn_history_root == NULL)
+        xmlFreeNode(xn_history);
     yaml_document_delete(&dy);
     yaml_parser_delete(&parser);
+    free(current_yaml_file_path);
 
     return rc;
 }
