@@ -114,6 +114,15 @@ pipeline {
                 body: "Check console output at: ${env.BUILD_URL}, failure step $lastStage",
             )
         }
+        success {
+            emailext (
+                from: "cbs@oktetlabs.ru",
+                to: "Nikita.Somenkov@oktetlabs.ru",
+                recipientProviders: [requestor()],
+                subject: "[CI TE] ${env.JOB_NAME} job ${env.BUILD_NUMBER} success",
+                body: "Check console output at: ${env.BUILD_URL}",
+            )
+        }
     }
 }
 
