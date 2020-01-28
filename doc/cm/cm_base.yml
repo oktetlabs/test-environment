@@ -1150,13 +1150,6 @@
          Limit: 1
 
 
-    - oid: "/agent/sshd"
-      access: read_create
-      type: none
-      d: |
-         SSH daemon.
-         Name:  port
-
     - oid: "/agent/Xvfb"
       access: read_create
       type: none
