@@ -2143,7 +2143,7 @@ cfg_backup(const char *name, uint8_t op)
 
     len = strlen(name) + 1;
     memcpy(msg->filename, name, len);
-    msg->len = sizeof(cfg_sync_msg) + len;
+    msg->len = sizeof(cfg_backup_msg) + len;
     len = CFG_MSG_MAX;
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
