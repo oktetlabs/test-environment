@@ -74,14 +74,44 @@ function ninja_status_filter () {
     done
 }
 
-# Helper function to split stdout and stderr streams
-function build_and_install () {
+# Helper function to run ninja taking ninja-build vs ninja difference
+# on various distos into account and split stdout and stderr streams
+function run_ninja () {
+    local ninja_exec
+
+    which ninja-build >/dev/null 2>&1 &&
+        ninja_exec=ninja-build ||
+        ninja_exec=ninja
     # Run ninja in subshell to avoid pipefail option setting inheritance
+    (
+        set -o pipefail
+        export NINJA_STATUS="[ninja][%f/%t] "
+        ${ninja_exec} "$@" | ninja_status_filter
+    )
+}
+
+# Helper function to run meson install for changed files only
+function run_meson_install () {
+    # Run meson in subshell to avoid pipefail option setting inheritance
     (
         set -o pipefail
         export NINJA_STATUS="[ninja][%f/%t] "
         meson install --only-changed | ninja_status_filter
     )
+}
+
+# Helper function for running meson/ninja install
+function build_and_install () {
+    meson install --help | grep "meson install" > /dev/null 2> /dev/null
+    supports_steps=$?
+    if test ${supports_steps} -eq 0 ; then
+        run_meson_install
+    else
+        # Not all meson versions support builtin build/install wrapper,
+        # so we run ninja instead if it is the case.
+        # Known bad versions: <=0.45
+        run_ninja install
+    fi
 }
 
 if ${MESON_BUILD} ; then
