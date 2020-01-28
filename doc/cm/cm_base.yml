@@ -1150,57 +1150,6 @@
          Limit: 1
 
 
-    - oid: "/agent/pppoeserver"
-      access: read_write
-      type: integer
-      d: |
-         PPPoE server enabling/disabling
-         Name:  empty
-         Value: 0 (disabled) or 1 (enabled)
-         Limit: 1
-
-    - oid: "/agent/pppoeserver/interface"
-      access: read_create
-      type: none
-      d: |
-         PPPoE server interface(s)
-         Name: network interface name
-         Value: none
-
-    - oid: "/agent/pppoeserver/option"
-      access: read_create
-      type: string
-      d: |
-         PPPoE server option(s)
-         Name: name of option
-         Value: option's value, or none if option doesn't have a value
-
-    - oid: "/agent/pppoeserver/subnet"
-      access: read_write
-      type: string
-      d: |
-         PPPoE server subnet address with prefix length
-         Name: empty
-         Value: subnet IPv4 address with prefix lenght, in format: "1.2.3.0|24"
-
-    - oid: "/agent/pppoeserver/laddr"
-      access: read_only
-      type: address
-      volatile: true
-      d: |
-         PPPoE local IP address
-         Name: empty
-         Value: IP address
-
-    - oid: "/agent/pppoeserver/raddr"
-      access: read_only
-      type: address
-      volatile: true
-      d: |
-         PPPoE starting remote IP address
-         Name: empty
-         Value: IP address
-
     - oid: "/agent/sshd"
       access: read_create
       type: none
