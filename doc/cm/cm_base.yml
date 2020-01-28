@@ -914,6 +914,11 @@
     - oid: "/agent/route"
       access: read_create
       type: address
+      depends:
+        - oid: "/agent/interface"
+        - oid: "/agent/interface/status"
+        - oid: "/agent/interface/net_addr"
+        - oid: "/agent/rsrc"
       d: |
          Routing table entry.
          Name: (network address in human notation)'|'(prefix)[,metric:Metric][,tos:Tos];
