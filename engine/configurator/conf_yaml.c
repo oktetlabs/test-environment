@@ -961,6 +961,10 @@ parse_config_root_commands(parse_config_yaml_ctx *ctx,
          rc = parse_config_yaml_specified_cmd(ctx, v,
                                         (const char *)k->data.scalar.value);
     }
+    else if (strcmp((const char *)k->data.scalar.value, "comment") == 0)
+    {
+        /* Ignore comments */
+    }
     else
     {
         ERROR(CS_YAML_ERR_PREFIX "failed to recognise the command '%s'",
