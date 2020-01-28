@@ -965,8 +965,8 @@ parse_config_root_commands(parse_config_yaml_ctx *ctx,
     if (rc != 0)
     {
         ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in "
-              "the command node at line %lu column %lu",
-              k->start_mark.line, k->start_mark.column);
+              "the command node at line %lu column %lu in file %s",
+              k->start_mark.line, k->start_mark.column, ctx->file_path);
     }
 
     return rc;
@@ -1031,7 +1031,8 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars,
     f = fopen(filename, "rb");
     if (f == NULL)
     {
-        ERROR(CS_YAML_ERR_PREFIX "failed to open the target file");
+        ERROR(CS_YAML_ERR_PREFIX "failed to open the target file '%s'",
+              filename);
         return TE_OS_RC(TE_CS, errno);
     }
 
@@ -1066,7 +1067,8 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars,
     root = yaml_document_get_root_node(&dy);
     if (root == NULL)
     {
-        ERROR(CS_YAML_ERR_PREFIX "failed to get the root node");
+        ERROR(CS_YAML_ERR_PREFIX "failed to get the root node in file %s'",
+              filename);
         rc = TE_EINVAL;
         goto out;
     }
@@ -1074,7 +1076,7 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars,
     if (root->type == YAML_SCALAR_NODE &&
         root->data.scalar.value[0] == '\0')
     {
-        INFO(CS_YAML_ERR_PREFIX "empty");
+        INFO(CS_YAML_ERR_PREFIX "empty file '%s'", filename);
         rc = 0;
         goto out;
     }
@@ -1087,7 +1089,9 @@ parse_config_yaml(const char *filename, te_kvpair_h *expand_vars,
     rc = parse_config_yaml_cmd(&ctx, root);
     if (rc != 0)
     {
-        ERROR(CS_YAML_ERR_PREFIX "encountered some error(s)");
+        ERROR(CS_YAML_ERR_PREFIX
+              "encountered some error(s) on file '%s' processing",
+              filename);
         goto out;
     }
 
