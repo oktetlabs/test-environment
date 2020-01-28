@@ -1767,47 +1767,6 @@
          Name: te_tester_<uid>
          Password is the same as user name.
 
-    - oid: "/agent/module"
-      access: read_create
-      type: integer
-      depends:
-        - oid: "/agent/rsrc"
-      d: |
-         System module.
-         Name: Name of the system module
-         Value: 1 means loadded
-
-    - oid: "/agent/module/filename"
-      access: read_write
-      type: string
-      d: |
-         Name of the file containing the module or 'unknown'.
-         modinfo integration is not yet there.
-         Value: path in the file system
-
-    - oid: "/agent/module/filename/load_dependencies"
-      access: read_write
-      type: integer
-      d: |
-         A means to demand that dependencies be queried and
-         resolved for the given module prior calling insmod.
-
-         @note The internal implementation calls modinfo on
-               the module file after changing /agent/module
-               value to 1 and then calls modprobe for every
-               dependency discovered. Then insmod is called.
-
-         Name:  none
-         Value: 0, 1
-
-    - oid: "/agent/module/parameter"
-      access: read_create
-      type: string
-      d: |
-         Parameter of a system module.
-         Name: Name of the parameter
-         Value: Value of the parameter
-
     - oid: "/agent/sys"
       access: read_only
       type: none
