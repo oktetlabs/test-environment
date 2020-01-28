@@ -53,6 +53,7 @@ dist_pkgdata_DATA = \
 	cm_sys.yml \
 	cm_system.yml \
 	cm_tc.yml \
+	cm_telnetd.yml \
 	cm_tftpserver.yml \
 	cm_todudpserver.yml \
 	cm_tunnel.yml \
