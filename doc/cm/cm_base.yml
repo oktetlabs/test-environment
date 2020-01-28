@@ -93,6 +93,8 @@
     - oid: "/agent/interface/mcast_link_addr"
       access: read_create
       type: none
+      depends:
+        - oid: "/agent/interface/net_addr"
       d: |
          Multicasting MAC address.
          Name:   MAC address in human notation (with colons)
@@ -161,6 +163,9 @@
     - oid: "/agent/interface/neigh_static"
       access: read_create
       type: address
+      depends:
+        - oid: "/agent/interface"
+        - oid: "/agent/interface/status"
       d: |
          Static neighbour entries.
          Name:  IPv4/6 address in human notation
@@ -169,6 +174,9 @@
       access: read_create
       type: address
       volatile: true
+      depends:
+        - oid: "/agent/interface"
+        - oid: "/agent/interface/status"
       d: |
          Dynamic neighbour entries.
          Name:  IPv4/6 address in human notation
