@@ -191,18 +191,17 @@ typedef enum cs_yaml_node_attribute_type_e {
 } cs_yaml_node_attribute_type_t;
 
 static struct {
-    const char                    *long_label;
-    const char                    *short_label;
+    const char                    *label;
     cs_yaml_node_attribute_type_t  type;
 } const cs_yaml_node_attributes[] = {
-    { "if",       "if",  CS_YAML_NODE_ATTRIBUTE_CONDITION },
-    { "oid",      "o",   CS_YAML_NODE_ATTRIBUTE_OID },
-    { "value",    "v",   CS_YAML_NODE_ATTRIBUTE_VALUE },
-    { "access",   "a",   CS_YAML_NODE_ATTRIBUTE_ACCESS },
-    { "type",     "t",   CS_YAML_NODE_ATTRIBUTE_TYPE },
-    { "volatile", "vol", CS_YAML_NODE_ATTRIBUTE_VOLATILE },
-    { "depends",  "d",   CS_YAML_NODE_ATTRIBUTE_DEPENDENCE },
-    { "scope",    "s",   CS_YAML_NODE_ATTRIBUTE_SCOPE }
+    { "if",       CS_YAML_NODE_ATTRIBUTE_CONDITION },
+    { "oid",      CS_YAML_NODE_ATTRIBUTE_OID },
+    { "value",    CS_YAML_NODE_ATTRIBUTE_VALUE },
+    { "access",   CS_YAML_NODE_ATTRIBUTE_ACCESS },
+    { "type",     CS_YAML_NODE_ATTRIBUTE_TYPE },
+    { "volatile", CS_YAML_NODE_ATTRIBUTE_VOLATILE },
+    { "depends",  CS_YAML_NODE_ATTRIBUTE_DEPENDENCE },
+    { "scope",    CS_YAML_NODE_ATTRIBUTE_SCOPE }
 };
 
 static cs_yaml_node_attribute_type_t
@@ -213,8 +212,7 @@ parse_config_yaml_node_get_attribute_type(yaml_node_t *k)
 
     for (i = 0; i < TE_ARRAY_LEN(cs_yaml_node_attributes); ++i)
     {
-        if (strcasecmp(k_label, cs_yaml_node_attributes[i].long_label) == 0 ||
-            strcasecmp(k_label, cs_yaml_node_attributes[i].short_label) == 0)
+        if (strcasecmp(k_label, cs_yaml_node_attributes[i].label) == 0)
             return cs_yaml_node_attributes[i].type;
     }
 
