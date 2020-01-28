@@ -20,6 +20,20 @@
          Root object of the network configuration tree.
          Name: network name
 
+    - oid: "/net/ip4_subnet"
+      access: read_create
+      type: address
+      d: |
+         IPv4 subnet assigned to the network.
+         Name: /net_pool:ip4/entry:X handle
+
+    - oid: "/net/ip6_subnet"
+      access: read_create
+      type: address
+      d: |
+         IPv6 subnet assigned to the network.
+         Name: /net_pool:ip6/entry:X handle
+
     - oid: "/net/node"
       access: read_create
       type: string
@@ -45,6 +59,20 @@
          Type of the network node.
          Name: none
          Value: 0 (agent), 1(nut), others...
+
+    - oid: "/net/node/ip4_address"
+      access: read_create
+      type: address
+      d: |
+         IPv4 address assigned to the network node.
+         Name: /net_pool:ip4/entry:X/pool:/entry:Y handle
+
+    - oid: "/net/node/ip6_address"
+      access: read_create
+      type: address
+      d: |
+         IPv6 address assigned to the network node.
+         Name: /net_pool:ip6/entry:X/pool:/entry:Y handle
 
     - oid: "/net_pool"
       access: read_create
