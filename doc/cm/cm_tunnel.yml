@@ -56,7 +56,7 @@
       access: read_write
       type: integer
       d: |
-         UDP destination port used to communicate to the remove endpoint.
+         UDP destination port used to communicate with the remove endpoint.
          Name: none
          Value: 0 .. 65535, default 4789
 
@@ -67,3 +67,40 @@
          The physical device to use for tunnel endpoint communication.
          Name: none
          Value: empty or physical device OID
+
+
+    - oid: "/agent/tunnel/geneve"
+      access: read_create
+      type: integer
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         Geneve interface.
+         Name: interface name
+         Value: 1 (created) or 0
+
+    - oid: "/agent/tunnel/geneve/vni"
+      access: read_write
+      type: integer
+      d: |
+         GENEVE virtual network identifier to use.
+         Name: none
+         Value: 0 .. 16777215
+
+    - oid: "/agent/tunnel/geneve/remote"
+      access: read_write
+      type: address
+      d: |
+         Unicast or multicast destination IP address to use in outgoing packets
+         when the destination link layer address is not known in the GENEVE device
+         forwarding database.
+         Name: none
+         Value: remote IPv4/IPv6 address
+
+    - oid: "/agent/tunnel/geneve/port"
+      access: read_write
+      type: integer
+      d: |
+         UDP destination port used to communicate with the remove endpoint.
+         Name: none
+         Value: 0 .. 65535, default 6081
