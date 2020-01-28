@@ -1150,33 +1150,6 @@
          Limit: 1
 
 
-    - oid: "/agent/echoserver"
-      access: read_write
-      type: integer
-      d: |
-         Echo server enabling/disabling.
-         Name:  empty
-         Value: 0 (disabled) or 1 (enabled)
-         Limit: 1
-
-    - oid: "/agent/echoserver/proto"
-      access: read_write
-      type: string
-      d: |
-         Echo server protocol type.
-         Name:  empty
-         Value: udp (UDP-based) or tcp (TCP-based)
-         Limit: 1
-
-    - oid: "/agent/echoserver/net_addr"
-      access: read_write
-      type: address
-      d: |
-         Network address Echo server is bound to.
-         Name:  empty
-         Value: Wildcard address if the Server listens on all addresses
-         Limit: 1
-
     - oid: "/agent/dhcpserver"
       access: read_write
       type: integer
