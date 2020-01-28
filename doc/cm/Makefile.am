@@ -24,6 +24,7 @@ dist_pkgdata_DATA = \
 	cm_dhcpserver.yml \
 	cm_dnsserver.yml \
 	cm_echoserver.yml \
+	cm_ftpserver.yml \
 	cm_iptables.yml \
 	cm_iptables_global.yml \
 	cm_iscsi.yml \
