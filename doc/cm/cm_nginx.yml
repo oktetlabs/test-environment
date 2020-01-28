@@ -106,7 +106,7 @@
             mode 1 (auto)
             mask 01010101
 
-        Default: empty
+         Default: empty
 
     - oid: "/agent/nginx/worker/rlimit_nofile"
       access: read_write
