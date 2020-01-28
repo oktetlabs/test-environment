@@ -280,7 +280,8 @@ parse_config_yaml_cmd_add_dependence_attribute(yaml_node_t                *k,
             else
             {
                 ERROR(CS_YAML_ERR_PREFIX "failed to recognise the "
-                      "attribute type in the target");
+                      "attribute type in the target '%s'",
+                      (const char *)k->data.scalar.value);
                 return TE_EINVAL;
             }
             break;
@@ -460,7 +461,8 @@ parse_config_yaml_cmd_add_target_attribute(yaml_document_t        *d,
             else
             {
                 ERROR(CS_YAML_ERR_PREFIX "failed to recognise the "
-                      "attribute type in the target");
+                      "attribute type in the target '%s'",
+                      (const char *)k->data.scalar.value);
                 return TE_EINVAL;
             }
             break;
