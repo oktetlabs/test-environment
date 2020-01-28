@@ -12,6 +12,8 @@
     - oid: "/agent/hardware/pci"
       access: read_only
       type: none
+      depends:
+        - oid: "/agent/rsrc"
       d: |
          The root of all PCI related information.
 
