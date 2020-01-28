@@ -942,14 +942,13 @@
          Name:  empty
          Value: Name of the interface
 
-#    - oid: "/agent/route/type"
-#     access: read_write
-#      type: string
-#      d: |
-#         This node is temporarily left off.
-#         Route type.
-#         Name:  empty
-#         Value: Type of the route (e.g. unicast, blackhole etc)
+    - oid: "/agent/route/type"
+     access: read_write
+      type: string
+      d: |
+         Route type.
+         Name:  empty
+         Value: Type of the route (e.g. unicast, blackhole etc)
 
     - oid: "/agent/route/mtu"
       access: read_write
