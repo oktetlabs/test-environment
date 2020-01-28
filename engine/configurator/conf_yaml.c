@@ -187,6 +187,7 @@ typedef enum cs_yaml_node_attribute_type_e {
     CS_YAML_NODE_ATTRIBUTE_VOLATILE,
     CS_YAML_NODE_ATTRIBUTE_DEPENDENCE,
     CS_YAML_NODE_ATTRIBUTE_SCOPE,
+    CS_YAML_NODE_ATTRIBUTE_DESCRIPTION,
     CS_YAML_NODE_ATTRIBUTE_UNKNOWN,
 } cs_yaml_node_attribute_type_t;
 
@@ -201,7 +202,8 @@ static struct {
     { "type",     CS_YAML_NODE_ATTRIBUTE_TYPE },
     { "volatile", CS_YAML_NODE_ATTRIBUTE_VOLATILE },
     { "depends",  CS_YAML_NODE_ATTRIBUTE_DEPENDENCE },
-    { "scope",    CS_YAML_NODE_ATTRIBUTE_SCOPE }
+    { "scope",    CS_YAML_NODE_ATTRIBUTE_SCOPE },
+    { "d",        CS_YAML_NODE_ATTRIBUTE_DESCRIPTION },
 };
 
 static cs_yaml_node_attribute_type_t
@@ -268,6 +270,10 @@ parse_config_yaml_cmd_add_dependence_attribute(yaml_node_t                *k,
             }
 
             c->scope = (const xmlChar *)v->data.scalar.value;
+            break;
+
+        case CS_YAML_NODE_ATTRIBUTE_DESCRIPTION:
+            /* Ignore the description */
             break;
 
         default:
@@ -449,6 +455,10 @@ parse_config_yaml_cmd_add_target_attribute(yaml_document_t        *d,
             }
 
             c->xmlvolatile = (const xmlChar *)v->data.scalar.value;
+            break;
+
+        case CS_YAML_NODE_ATTRIBUTE_DESCRIPTION:
+            /* Ignore the description */
             break;
 
         default:
