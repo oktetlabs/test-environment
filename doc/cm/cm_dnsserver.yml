@@ -1,0 +1,47 @@
+---
+
+- comment: |
+    DNS server configuration model.
+
+    Copyright (C) 2005-2020 OKTET Labs.
+
+    Author: Artem Andreev <Artem.Andreev@oktetlabs.ru>
+
+- register:
+
+    - oid: "/agent/dnsserver"
+      access: read_write
+      type: integer
+      d: |
+         DNS server enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/dnsserver/forwarder"
+      access: read_write
+      type: address
+      d: |
+         DNS server forwarder
+         Name: empty
+         Value: forwader's address
+         Limit: 1
+
+    - oid: "/agent/dnsserver/directory"
+      access: read_write
+      type: string
+      d: |
+         DNS server directory
+         Name: empty
+         Value: DNS server working directory
+         Limit: 1
+
+    - oid: "/agent/dnsserver/recursive"
+      access: read_write
+      type: integer
+      d: |
+         DNS server recursive queries
+         Name: empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
