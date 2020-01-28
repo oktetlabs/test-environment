@@ -522,7 +522,7 @@ make_workspace() {
         echo "$ws_dir" > "$ws_file"
     fi
     ws="$(cat "${ws_file}")"
-    warning Platform $p workspace is $ws
+    echo Platform $p workspace is $ws
 
     te_eval_or_ssh "${p}" "mkdir -p \"${ws}\""
 
