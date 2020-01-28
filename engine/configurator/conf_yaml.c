@@ -24,6 +24,10 @@
 
 #define CS_YAML_ERR_PREFIX "YAML configuration file parser "
 
+#define YAML_NODE_LINE_COLUMN_FMT   "line %lu column %lu"
+#define YAML_NODE_LINE_COLUMN(_n)   \
+    (_n)->start_mark.line + 1, (_n)->start_mark.column + 1
+
 #define YAML_TARGET_CONTEXT_INIT \
     { NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRUE };
 
@@ -329,8 +333,8 @@ parse_config_yaml_dependence(yaml_document_t            *d,
                 if (rc != 0)
                 {
                     ERROR(CS_YAML_ERR_PREFIX "failed to process "
-                          "attribute at line %lu column %lu",
-                          k->start_mark.line, k->start_mark.column);
+                          "attribute at " YAML_NODE_LINE_COLUMN_FMT "",
+                          YAML_NODE_LINE_COLUMN(k));
                     return TE_EINVAL;
                 }
             } while (++pair < in->data.mapping.pairs.top);
@@ -719,8 +723,8 @@ parse_config_yaml_cmd_process_target(parse_config_yaml_ctx *ctx, yaml_node_t *n,
             if (rc != 0)
             {
                 ERROR(CS_YAML_ERR_PREFIX "failed to process %s"
-                      "attribute at line %lu column %lu",
-                      target, k->start_mark.line, k->start_mark.column);
+                      "attribute at " YAML_NODE_LINE_COLUMN_FMT "",
+                      target, YAML_NODE_LINE_COLUMN(k));
                 goto out;
             }
         } while (++pair < n->data.mapping.pairs.top);
@@ -780,8 +784,8 @@ parse_config_yaml_cmd_process_targets(parse_config_yaml_ctx *ctx,
         if (rc != 0)
         {
             ERROR(CS_YAML_ERR_PREFIX "failed to process the target in the "
-                  "%s command's list at line %lu column %lu",
-                  cmd, in->start_mark.line, in->start_mark.column);
+                  "%s command's list at " YAML_NODE_LINE_COLUMN_FMT "",
+                  cmd, YAML_NODE_LINE_COLUMN(in));
             return rc;
         }
     } while (++item < n->data.sequence.items.top);
@@ -835,8 +839,8 @@ parse_config_yaml_specified_cmd(parse_config_yaml_ctx *ctx, yaml_node_t *n,
         if (rc != 0)
         {
             ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in the %s "
-                  "command's nested node at line %lu column %lu",
-                  cmd, n->start_mark.line, n->start_mark.column);
+                  "command's nested node at " YAML_NODE_LINE_COLUMN_FMT "",
+                  cmd, YAML_NODE_LINE_COLUMN(n));
             goto out;
         }
     }
@@ -880,8 +884,8 @@ parse_config_yaml_specified_cmd(parse_config_yaml_ctx *ctx, yaml_node_t *n,
             if (rc != 0)
             {
                 ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in the %s "
-                      "command's nested node at line %lu column %lu",
-                      cmd, k->start_mark.line, k->start_mark.column);
+                      "command's nested node at " YAML_NODE_LINE_COLUMN_FMT "",
+                      cmd, YAML_NODE_LINE_COLUMN(k));
                 goto out;
             }
         } while (++pair < n->data.mapping.pairs.top);
@@ -965,8 +969,8 @@ parse_config_root_commands(parse_config_yaml_ctx *ctx,
     if (rc != 0)
     {
         ERROR(CS_YAML_ERR_PREFIX "detected some error(s) in "
-              "the command node at line %lu column %lu in file %s",
-              k->start_mark.line, k->start_mark.column, ctx->file_path);
+              "the command node at " YAML_NODE_LINE_COLUMN_FMT " in file %s",
+              YAML_NODE_LINE_COLUMN(k), ctx->file_path);
     }
 
     return rc;
