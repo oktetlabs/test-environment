@@ -20,6 +20,7 @@ dist_pkgdata_DATA = \
 	cm_bridge.yml \
 	cm_ch.yml \
 	cm_cmd_monitor.yml \
+	cm_conf_delay.yml \
 	cm_crypt.yml \
 	cm_dhcpserver.yml \
 	cm_dnsserver.yml \
