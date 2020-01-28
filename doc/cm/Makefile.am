@@ -59,4 +59,5 @@ dist_pkgdata_DATA = \
 	cm_vm.yml \
 	cm_volatile.yml \
 	cm_vtun.yml \
+	cm_xvfb.yml \
 	cm_xen.yml

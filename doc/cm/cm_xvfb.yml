@@ -1,0 +1,17 @@
+---
+
+- comment: |
+    Xvfb daemon cofiguration model.
+
+    Copyright (C) 2005-2020 OKTET Labs.
+
+    Author: Elena Vengerova E-mail: Elena.Vengerova@oktetlabs.ru
+
+- register:
+
+    - oid: "/agent/Xvfb"
+      access: read_create
+      type: none
+      d: |
+         Xvfb daemon.
+         Name: display number
