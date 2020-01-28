@@ -957,7 +957,8 @@ parse_config_root_commands(parse_config_yaml_ctx *ctx,
     }
     else
     {
-        ERROR(CS_YAML_ERR_PREFIX "failed to recognise the command");
+        ERROR(CS_YAML_ERR_PREFIX "failed to recognise the command '%s'",
+              (const char *)k->data.scalar.value);
         rc = TE_EINVAL;
     }
 
