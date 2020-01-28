@@ -115,7 +115,7 @@
 
     - oid: "/agent/vm/drive/snapshot"
       access: read_write
-      type: boolean
+      type: integer
       d: |
          Enable/disable snapshot mode.
          Default is true which means that no changes are stored.
@@ -123,7 +123,7 @@
 
     - oid: "/agent/vm/drive/readonly"
       access: read_write
-      type: boolean
+      type: integer
       d: |
          Enable/disable read-only mode.
          Default is false.
