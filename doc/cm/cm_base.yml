@@ -51,6 +51,12 @@
     - oid: "/agent/interface"
       access: read_only
       type: none
+      depends:
+        - oid: "/agent/rsrc"
+        - oid: "/agent/interface/vlans"
+          scope: object
+        - oid: "/agent/bridge"
+        - oid: "/agent/ovs/bridge"
       d: |
          Network interface
          Name: "eth0"-like
