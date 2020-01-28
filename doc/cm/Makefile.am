@@ -43,6 +43,7 @@ dist_pkgdata_DATA = \
 	cm_pppoe_server_global.yml \
 	cm_radius.yml \
 	cm_rcf.yml \
+	cm_rshd.yml \
 	cm_serial.yml \
 	cm_serial_parse.yml \
 	cm_sfptpd.yml \
