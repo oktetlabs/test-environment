@@ -27,6 +27,7 @@ cm_files = files(
     'cm_rcf.yml',
     'cm_serial.yml',
     'cm_serial_parse.yml',
+    'cm_sfptpd.yml',
     'cm_sniffer.yml',
     'cm_socks.yml',
     'cm_system.yml',
