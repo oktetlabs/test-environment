@@ -1914,13 +1914,3 @@
          Maximum value of RLIMIT_MEMLOCK. Note: if less than current value
          is set, current value is adjusted too.
          Name: empty
-
-    - oid: "/agent/block"
-      access: read_only
-      type: none
-      depends:
-        - oid: "/agent/rsrc"
-      d: |
-         Block devices list.
-         Name: Name of the block device
-

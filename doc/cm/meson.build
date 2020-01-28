@@ -4,6 +4,7 @@ cm_files = files(
     'cm_8021x.yml',
     'cm_acse.yml',
     'cm_base.yml',
+    'cm_block.yml',
     'cm_bpf.yml',
     'cm_bridge.yml',
     'cm_ch.yml',

@@ -1,0 +1,19 @@
+---
+
+- comment: |
+    Block devices configuration model.
+
+    Copyright (C) 2018-2020 OKTET Labs.
+
+    Author: Konstantin Ushakov <Konstantin.Ushakov@oktetlabs.ru>
+
+- register:
+
+    - oid: "/agent/block"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/rsrc"
+      d: |
+         Block devices list.
+         Name: Name of the block device
