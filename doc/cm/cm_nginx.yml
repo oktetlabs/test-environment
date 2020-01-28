@@ -192,7 +192,7 @@
 
     - oid: "/agent/nginx/http/server/listen"
       access: read_create
-      value: string
+      type: string
       d: |
          Listening sockets.
          Name: any
