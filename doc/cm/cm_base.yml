@@ -71,6 +71,9 @@
     - oid: "/agent/interface/net_addr"
       access: read_create
       type: integer
+      depends:
+        - oid: "/agent/interface/link_addr"
+        - oid: "/agent/interface/mtu"
       d: |
          Network address (IPv4 or IPv6) of the interface.
          Name:   address in human notation:
