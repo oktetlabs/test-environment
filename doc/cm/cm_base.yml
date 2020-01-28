@@ -3,18 +3,13 @@
 - comment: |
     Configuration information common for all Test Agents.
 
+    /agent object is registered by the Configurator itself.
+
     Copyright (C) 2003-2020 OKTET Labs.
 
     Author: Elena Vengerova E-mail: Elena.Vengerova@oktetlabs.ru
 
 - register:
-
-    - oid: "/agent"
-      access: read_create
-      type: none
-      d: |
-         Test Agent
-         Name: TA name
 
     - oid: "/agent/rsrc"
       access: read_create
