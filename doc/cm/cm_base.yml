@@ -1150,20 +1150,6 @@
          Limit: 1
 
 
-    - oid: "/agent/vncserver"
-      access: read_create
-      type: none
-      d: |
-         VNC server.
-         Name: display number
-
-    - oid: "/agent/vncpasswd"
-      access: read_only
-      type: string
-      d: |
-         VNC server password.
-         Name: empty
-
     - oid: "/agent/slapd"
       access: read_create
       type: string

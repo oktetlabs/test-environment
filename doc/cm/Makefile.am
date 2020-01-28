@@ -60,6 +60,7 @@ dist_pkgdata_DATA = \
 	cm_tunnel.yml \
 	cm_upnp_cp.yml \
 	cm_vm.yml \
+	cm_vnc.yml \
 	cm_volatile.yml \
 	cm_vtun.yml \
 	cm_xvfb.yml \
