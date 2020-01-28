@@ -35,6 +35,7 @@ cm_files = files(
     'cm_serial.yml',
     'cm_serial_parse.yml',
     'cm_sfptpd.yml',
+    'cm_smtp.yml',
     'cm_sniffer.yml',
     'cm_socks.yml',
     'cm_sshd.yml',

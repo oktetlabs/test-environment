@@ -1,0 +1,34 @@
+---
+
+- comment: |
+    SMTP daemon configuration model.
+
+    Copyright (C) 2005-2020 OKTET Labs.
+
+    Author: Elena Vengerova E-mail: Elena.Vengerova@oktetlabs.ru
+
+- register:
+
+    - oid: "/agent/smtp"
+      access: read_create
+      type: integer
+      d: |
+         SMTP daemon.
+         Name: empty
+         Value: 0 (disabled) or 1 (enabled)
+
+    - oid: "/agent/smtp/server"
+      access: read_write
+      type: string
+      d: |
+         SMTP daemon program to be used: sendmail, exim, exim4.
+         Name: empty
+         Value: program name
+
+    - oid: "/agent/smtp/smarthost"
+      access: read_create
+      type: address
+      d: |
+         Smart host for mail forwarding.
+         Name: empty
+         Value: smart host IP address
