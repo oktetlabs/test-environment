@@ -1150,16 +1150,6 @@
          Limit: 1
 
 
-    - oid: "/agent/slapd"
-      access: read_create
-      type: string
-      depends:
-        - oid: "/agent/rsrc"
-      d: |
-         LDAP daemon
-         Name: port
-         Value: name of file with LDIF
-
     - oid: "/agent/env"
       access: read_create
       type: string
