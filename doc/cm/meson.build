@@ -31,6 +31,7 @@ cm_files = files(
     'cm_sfptpd.yml',
     'cm_sniffer.yml',
     'cm_socks.yml',
+    'cm_sys.yml',
     'cm_system.yml',
     'cm_tc.yml',
     'cm_tunnel.yml',
