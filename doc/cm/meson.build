@@ -37,6 +37,7 @@ cm_files = files(
     'cm_system.yml',
     'cm_tc.yml',
     'cm_tftpserver.yml',
+    'cm_todudpserver.yml',
     'cm_tunnel.yml',
     'cm_upnp_cp.yml',
     'cm_vm.yml',

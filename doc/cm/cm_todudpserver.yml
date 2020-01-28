@@ -1,0 +1,28 @@
+---
+
+- comment: |
+    Time-of-day UDP server configuration model.
+
+    Copyright (C) 2005-2020 OKTET Labs.
+
+    Author: Elena Vengerova E-mail: Elena.Vengerova@oktetlabs.ru
+
+
+    - oid: "/agent/todudpserver"
+      access: read_write
+      type: integer
+      d: |
+         TOD server over UDP enabling/disabling.
+         Name:  empty
+         Value: 0 (disabled) or 1 (enabled)
+         Limit: 1
+
+    - oid: "/agent/todudpserver/net_addr"
+      access: read_write
+      type: address
+      d: |
+         Network address ToD server is bound to.
+         Name:  empty
+         Value: Wildcard address if the Server listens on all addresses
+         Limit: 1
+
