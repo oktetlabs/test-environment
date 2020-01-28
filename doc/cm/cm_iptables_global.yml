@@ -1,0 +1,39 @@
+---
+
+- comment: |
+    Global iptables control configuration model.
+
+    Note: The better alternative is resource-aware per-interface iptables
+          configuration model.
+
+    Copyright (C) 2005-2020 OKTET Labs.
+
+    Author: Konstantin Abramenko <Konstantin.Abramenko@oktetlabs.ru>
+
+- register:
+
+    - oid: "/agent/iptables"
+      access: read_create
+      type: none
+      d: |
+         IP-tables Linux firewall; for details see 'man iptables'
+         Name:  empty
+         Limit: 1
+
+    - oid: "/agent/iptables/chain"
+      access: read_create
+      type: none
+      d: |
+         IP-tables Linux firewall chain
+         Name:  chain lable: "INPUT", "OUTPUT", "FORWARD", or user-defined.
+
+    - oid: "/agent/iptables/chain/rule"
+      access: read_create
+      type: string
+      d: |
+         IP-tables Linux firewall rule in chain
+         Name: rule label in the chain, does not passed to 'iptables'
+               utility, used only as internal identifer.
+         Value: rule-speciication for 'iptables' utility;
+                e.g  "-s 192.168.0.10 -d 191.168.0.20"
+

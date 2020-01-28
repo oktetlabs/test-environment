@@ -22,6 +22,7 @@ dist_pkgdata_DATA = \
 	cm_cmd_monitor.yml \
 	cm_crypt.yml \
 	cm_iptables.yml \
+	cm_iptables_global.yml \
 	cm_iscsi.yml \
 	cm_l2tp_server.yml \
 	cm_local.yml \
