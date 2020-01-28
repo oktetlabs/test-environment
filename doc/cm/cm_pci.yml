@@ -56,7 +56,6 @@
       access: read_only
       type: integer
 
-
     - oid: "/agent/hardware/pci/device/vendor_id"
       access: read_only
       type: string
@@ -69,7 +68,6 @@
     - oid: "/agent/hardware/pci/device/device_id"
       access: read_only
       type: string
-
 
     - oid: "/agent/hardware/pci/device/revision_id"
       access: read_only
