@@ -456,15 +456,15 @@ int
 tapi_cfg_get_route_table(const char *ta, int addr_family,
                          tapi_rt_entry_t **rt_tbl, unsigned int *n)
 {
-    int              rc;
-    cfg_handle       handle1;
-    cfg_handle       handle2;
-    cfg_handle      *handles;
-    tapi_rt_entry_t *tbl;
-    char            *rt_name = NULL;
-    unsigned int     num, rt_num = 0;
-    unsigned int     i, j;
-    struct sockaddr  *addr;
+    int                 rc;
+    cfg_handle          handle1;
+    cfg_handle          handle2;
+    cfg_handle         *handles;
+    tapi_rt_entry_t    *tbl;
+    char               *rt_name = NULL;
+    unsigned int        num, rt_num = 0;
+    unsigned int        i, j;
+    struct sockaddr    *addr;
 
     if (ta == NULL || rt_tbl == NULL || n == NULL)
         return TE_RC(TE_TAPI, TE_EINVAL);
