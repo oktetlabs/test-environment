@@ -165,6 +165,11 @@ if not cc.has_function('dlopen', args: te_cflags)
     endif
 endif
 
+f = 'setns'
+if cc.has_function(f, args: te_cflags)
+    c_args += [ '-DHAVE_' + f.to_upper() ]
+endif
+
 f = 'mkdtemp'
 if cc.has_function(f, args: te_cflags)
     c_args += [ '-DHAVE_' + f.to_upper() ]
