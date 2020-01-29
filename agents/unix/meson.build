@@ -247,3 +247,18 @@ executable('ta', sources, generated_sources,
            c_args: c_args,
            link_args: link_args,
            dependencies: deps)
+
+#
+# Build ta_rcf_listener
+#
+rcf_listener_sources = files(
+    'ta_rcf_listener.c',
+)
+
+# Just use the ta dependencies: this seems to be enough
+executable('ta_rcf_listener', rcf_listener_sources,
+           install: true, install_dir: tadir,
+           include_directories: includes,
+           c_args: c_args,
+           link_args: link_args,
+           dependencies: deps)
