@@ -696,30 +696,9 @@ tapi_netperf_get_report(tapi_netperf_app_client_t *app,
 te_errno
 tapi_netperf_kill_client(tapi_netperf_app_client_t *app, int signo)
 {
-    return tapi_job_kill(app->job, signo);
-}
-
-te_errno
-tapi_netperf_kill_server(tapi_netperf_app_server_t *app, int signo)
-{
-    return tapi_job_kill(app->job, signo);
-}
-
-te_errno
-tapi_netperf_kill(tapi_netperf_app_client_t *client,
-                  tapi_netperf_app_server_t *server,
-                  int signo)
-{
     te_errno rc;
 
-    rc = tapi_netperf_kill_server(server, signo);
-    if (rc != 0)
-    {
-        ERROR("Failed to kill netserver");
-        return rc;
-    }
-
-    rc = tapi_netperf_kill_client(client, signo);
+    rc = tapi_job_kill(app->job, signo);
     if (rc != 0)
     {
         /*
@@ -735,6 +714,22 @@ tapi_netperf_kill(tapi_netperf_app_client_t *client,
             ERROR("Failed to kill netperf");
             return rc;
         }
+    }
+
+    return 0;
+
+}
+
+te_errno
+tapi_netperf_kill_server(tapi_netperf_app_server_t *app, int signo)
+{
+    te_errno rc;
+
+    rc = tapi_job_kill(app->job, signo);
+    if (rc != 0)
+    {
+        ERROR("Failed to kill netserver");
+        return rc;
     }
 
     return 0;
