@@ -484,6 +484,8 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
 
         if (addr->sa_family == addr_family)
             rt_num++;
+
+        free(addr);
     }
 
     if (rt_num == 0)
@@ -510,7 +512,10 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
         }
 
         if (addr->sa_family != addr_family)
+        {
+            free(addr);
             continue;
+        }
 
         if ((addr->sa_family == AF_INET &&
              SIN(addr)->sin_addr.s_addr != htonl(INADDR_ANY)) ||
