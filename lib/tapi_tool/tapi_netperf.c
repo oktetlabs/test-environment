@@ -745,7 +745,10 @@ tapi_netperf_destroy_client(tapi_netperf_app_client_t *app)
 
     rc = tapi_job_destroy(app->job, TAPI_NETPERF_TERM_TIMEOUT_MS);
     if (rc != 0)
+    {
+        ERROR("Failed to destroy netperf");
         return rc;
+    }
 
     free(app);
     return 0;
@@ -761,31 +764,12 @@ tapi_netperf_destroy_server(tapi_netperf_app_server_t *app)
 
     rc = tapi_job_destroy(app->job, TAPI_NETPERF_TERM_TIMEOUT_MS);
     if (rc != 0)
-        return rc;
-
-    free(app);
-    return 0;
-}
-
-te_errno
-tapi_netperf_destroy(tapi_netperf_app_client_t *client,
-                     tapi_netperf_app_server_t *server)
-{
-    te_errno rc;
-
-    rc = tapi_netperf_destroy_server(server);
-    if (rc != 0)
     {
         ERROR("Failed to destroy netserver");
         return rc;
     }
 
-    rc = tapi_netperf_destroy_client(client);
-    if (rc != 0)
-    {
-        ERROR("Failed to destroy netperf");
-        return rc;
-    }
+    free(app);
     return 0;
 }
 

@@ -306,17 +306,6 @@ extern te_errno tapi_netperf_destroy_client(tapi_netperf_app_client_t *app);
 extern te_errno tapi_netperf_destroy_server(tapi_netperf_app_server_t *app);
 
 /**
- * Destroy netserver and netperf app.
- *
- * @param[in]  client          netperf app handle.
- * @param[in]  server          netserver app handle.
- *
- * @return Status code.
- */
-extern te_errno tapi_netperf_destroy(tapi_netperf_app_client_t *client,
-                                     tapi_netperf_app_server_t *server);
-
-/**
  * Output netperf report via MI logger.
  *
  * @param[in]  report       netperf report.
