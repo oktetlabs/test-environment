@@ -518,7 +518,7 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
              !IN6_IS_ADDR_UNSPECIFIED(&SIN6(addr)->sin6_addr)))
         {
             tbl[i].flags |= TAPI_RT_GW;
-            memcpy(&tbl[i].gw, addr, sizeof(struct sockaddr_storage));
+            memcpy(&tbl[i].gw, addr, te_sockaddr_get_size(addr));
         }
 
         free(addr);
@@ -607,7 +607,7 @@ tapi_cfg_get_route_table(const char *ta, int addr_family,
 
             if (strcmp(name, "src") == 0)
             {
-                memcpy(&tbl[i].src, addr, sizeof(struct sockaddr_storage));
+                memcpy(&tbl[i].src, addr, te_sockaddr_get_size(addr));
                 free(addr);
             }
             else if (strcmp(name, "dev") == 0)
