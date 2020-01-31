@@ -58,3 +58,39 @@ te_libs += [
     'tools',
     'rpcxdr',
 ]
+
+#
+# Check enum members from the following list and define
+# appropiate macro (if found).
+#
+check_decls_list = [
+    'TCP_ESTABLISHED',
+    'TCP_SYN_SENT',
+    'TCP_SYN_RECV',
+    'TCP_FIN_WAIT1',
+    'TCP_FIN_WAIT2',
+    'TCP_TIME_WAIT',
+    'TCP_CLOSE',
+    'TCP_CLOSE_WAIT',
+    'TCP_LAST_ACK',
+    'TCP_LISTEN',
+    'TCP_CLOSING',
+    'TCP_CA_Open',
+    'TCP_CA_Disorder',
+    'TCP_CA_CWR',
+    'TCP_CA_Recovery',
+    'TCP_CA_Loss',
+]
+
+check_decls_headers = '''
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+'''
+
+foreach d : check_decls_list
+    if cc.has_type(d, prefix: check_decls_headers)
+        c_args += '-D' + d.to_upper() + '=' + d
+    endif
+endforeach
+
