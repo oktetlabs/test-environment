@@ -60,6 +60,72 @@ te_libs += [
 ]
 
 #
+# Check headers and define appropriate macro
+#
+check_headers = [
+    'linux/errqueue.h',
+# Solaris-style sysinfo()
+    'sys/systeminfo.h',
+    'sys/epoll.h',
+    'dirent.h',
+]
+
+foreach h : check_headers
+    if cc.has_header(h)
+        c_args += [ '-DHAVE_' + h.to_upper().underscorify() ]
+    endif
+endforeach
+
+t = 'struct sock_extended_err'
+if cc.has_header_symbol('linux/errqueue.h', t)
+    c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
+endif
+
+t = 'struct in_pktinfo'
+if cc.has_header_symbol('netinet/in.h', t)
+    c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
+endif
+
+t = 'struct in6_pktinfo'
+if cc.has_header_symbol('netinet/in.h', t)
+    c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
+endif
+
+t = 'struct in6_pktinfo'
+if cc.has_header_symbol('netinet/in.h', t)
+    c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
+endif
+
+t = 'struct dirent'
+m = 'd_type'
+check_decls_headers = '''
+#include <dirent.h>
+'''
+if cc.has_member(t, m, prefix: check_decls_headers)
+    c_args += [ '-DHAVE_' + (t + '_' + m).to_upper().underscorify() ]
+endif
+
+t = 'struct sigaction'
+m = 'sa_restorer'
+check_decls_headers = '''
+#include <signal.h>
+'''
+if cc.has_member(t, m, prefix: check_decls_headers)
+    c_args += [ '-DHAVE_' + (t + '_' + m).to_upper().underscorify() ]
+endif
+
+t = 'struct sockaddr_in6'
+m = '__sin6_src_id'
+check_decls_headers = '''
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+'''
+if cc.has_member(t, m, prefix: check_decls_headers)
+    c_args += [ '-DHAVE_' + (t + '_' + m).to_upper().underscorify() ]
+endif
+
+#
 # Check enum members from the following list and define
 # appropiate macro (if found).
 #
