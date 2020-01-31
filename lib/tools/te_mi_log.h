@@ -191,6 +191,8 @@ typedef enum te_mi_meas_aggr {
     TE_MI_MEAS_AGGR_MAX,
     /** Average value of a measurement */
     TE_MI_MEAS_AGGR_MEAN,
+    /** Median value of a measurements */
+    TE_MI_MEAS_AGGR_MEDIAN,
     /**
      * Coefficient of Variation of measurements. The aggregation is
      * unit-independend and defined as the ratio of standard deviation to

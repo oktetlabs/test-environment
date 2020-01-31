@@ -95,6 +95,7 @@ static const char *meas_aggr_names[] = {
     [TE_MI_MEAS_AGGR_MIN] = "min",
     [TE_MI_MEAS_AGGR_MAX] = "max",
     [TE_MI_MEAS_AGGR_MEAN] = "mean",
+    [TE_MI_MEAS_AGGR_MEDIAN] = "median",
     [TE_MI_MEAS_AGGR_CV] = "cv",
     [TE_MI_MEAS_AGGR_STDEV] = "stdev",
 };
