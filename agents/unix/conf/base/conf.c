@@ -7010,8 +7010,8 @@ env_is_hidden(const char *name, int name_len)
 
     for (i = 0; i < sizeof(env_hidden) / sizeof(env_hidden[0]); ++i)
     {
-        if (memcmp(env_hidden[i], name,
-                   (name_len < 0) ? strlen(name) : (size_t)name_len) == 0)
+        if (strncmp(env_hidden[i], name,
+                    (name_len < 0) ? strlen(name) : (size_t)name_len) == 0)
             return TRUE;
     }
     return FALSE;
