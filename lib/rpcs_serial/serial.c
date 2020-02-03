@@ -545,13 +545,6 @@ wait_pattern(int sock, const char *pattern, int *match_offset, int timeout_ms)
     if (match_offset != NULL)
         *match_offset = -1;
 
-    if (regcomp(&regexp, pattern, REG_ICASE) != 0)
-    {
-        ERROR("Regular expression (%s) is invalid: %s", pattern,
-              strerror(errno));
-        return -1;
-    }
-
     if (gettimeofday(&start, NULL) == -1)
     {
         ERROR("Failed to get time of day: %s", strerror(errno));
@@ -560,6 +553,13 @@ wait_pattern(int sock, const char *pattern, int *match_offset, int timeout_ms)
 
     if (timeout_ms != -1 && set_sock_blocking(sock, timeout_ms) == -1)
         return -1;
+
+    if (regcomp(&regexp, pattern, REG_ICASE) != 0)
+    {
+        ERROR("Regular expression (%s) is invalid: %s", pattern,
+              strerror(errno));
+        return -1;
+    }
 
     TE_US2TV(TE_MS2US((timeout_ms != -1) ? timeout_ms : 0), &timeout);
 
@@ -642,6 +642,7 @@ wait_pattern(int sock, const char *pattern, int *match_offset, int timeout_ms)
     ret = 0;
 
 restore_opts:
+    regfree(&regexp);
     set_sock_blocking(sock, -1);
     return ret;
 }
