@@ -100,13 +100,25 @@ foreach l : libs
     endif
 endforeach
 
+# Static version of common libraries is required for agents only
+build_agents = get_option('agents').split().length() != 0
+
 # Iterate over all libraries in order to follow build order
 foreach l : all_libs
     if libs.contains(l)
-        if agent_libs.contains(l) or common_libs.contains(l)
-            build_lib = 'static'
+        if engine_libs.contains(l)
+            build_lib_shared = true
+            build_lib_static = false
+        elif common_libs.contains(l)
+            build_lib_shared = true
+            build_lib_static = build_agents
+        elif agent_libs.contains(l)
+            build_lib_shared = false
+            build_lib_static = true
         else
-            build_lib = 'default'
+            # External libraries are agent side only now
+            build_lib_shared = false
+            build_lib_static = true
         endif
         if common_libs.contains(l) or engine_libs.contains(l)
             install_lib = install_dev
@@ -142,36 +154,33 @@ foreach l : all_libs
         if sources.length() != 0
             # Automatically add the library itself to search for headers
             includes += include_directories(l)
-            if build_lib == 'static'
-                dep_lib_prefix = 'dep_lib_static_'
-            else
-                dep_lib_prefix = 'dep_lib_'
-            endif
-            foreach te_lib : te_libs
-                deps += [ get_variable(dep_lib_prefix + te_lib) ]
-            endforeach
-
-            if build_lib == 'static'
+            if build_lib_static
+                deps_static = deps
+                foreach te_lib : te_libs
+                    deps_static += [ get_variable('dep_lib_static_' + te_lib) ]
+                endforeach
                 lib = static_library(libname, sources, install: install_lib,
                                      include_directories: includes,
                                      implicit_include_directories: false,
-                                     c_args: c_args, dependencies: deps)
-            else
-                lib = library(libname, sources, install: install_lib,
-                              include_directories: includes,
-                              implicit_include_directories: false,
-                              c_args: c_args, dependencies: deps)
-            endif
-            # Populate meson variable with the library build target object
-            set_variable('te_lib_' + libname, lib)
-
-            dep = declare_dependency(link_with: lib,
-                                     include_directories: includes,
-                                     dependencies: deps)
-            # Populate meson variable with the library as dependency object
-            set_variable('dep_lib_' + libname, dep)
-            if build_lib == 'static'
+                                     c_args: c_args, dependencies: deps_static)
+                dep = declare_dependency(link_with: lib,
+                                         include_directories: includes,
+                                         dependencies: deps_static)
                 set_variable('dep_lib_static_' + libname, dep)
+            endif
+            if build_lib_shared
+                deps_shared = deps
+                foreach te_lib : te_libs
+                    deps_shared += [ get_variable('dep_lib_' + te_lib) ]
+                endforeach
+                lib = shared_library(libname, sources, install: install_lib,
+                                     include_directories: includes,
+                                     implicit_include_directories: false,
+                                     c_args: c_args, dependencies: deps_shared)
+                dep = declare_dependency(link_with: lib,
+                                         include_directories: includes,
+                                         dependencies: deps_shared)
+                set_variable('dep_lib_' + libname, dep)
             endif
         endif
     endif
