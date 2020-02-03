@@ -63,11 +63,6 @@ check_headers = [
     'pthread.h',
     'pwd.h',
     'regex.h',
-    'rpc/types.h',
-    'rpc/xdr.h',
-    'rpc/auth.h',
-    'rpc/clnt.h',
-    'rpc/pmap_clnt.h',
     'scsi/sg.h',
     'semaphore.h',
     'setjmp.h',
@@ -137,6 +132,28 @@ check_headers_prefix = '''
 /* NetBSD: netinet/ip_icmp.h */
 #include <netinet/ip.h>
 #endif
+'''
+
+foreach h : check_headers
+    if cc.has_header(h, args: c_args, prefix: check_headers_prefix)
+        have = 'HAVE_' + h.to_upper().underscorify()
+        conf.set(have, 1)
+        c_args += [ '-D' + have ]
+    endif
+endforeach
+
+#
+# Check RPC headers, start from those which used by others
+#
+check_rpc_headers = [
+    'rpc/types.h',
+    'rpc/xdr.h',
+    'rpc/auth.h',
+    'rpc/clnt.h',
+    'rpc/pmap_clnt.h',
+]
+
+check_rpc_headers_prefix = '''
 #if HAVE_RPC_TYPES_H
 /* NetBSD: rpc/pmap_clnt.h */
 #include <rpc/types.h>
@@ -165,17 +182,12 @@ check_headers_prefix = '''
 # The line below would produce empty dependencies on systems having no tirpc, so
 # it is not a problem
 dep_libtirpc = dependency('libtirpc', required: false)
-if dep_libtirpc.found()
-    chk_header_deps = [ dep_libtirpc ]
-else
-    chk_header_deps = [  ]
-endif
 
 # rpc/ headers here require tirpc on some distros, so we add
 # the corresponding dependency
-foreach h : check_headers
-    if cc.has_header(h, args: c_args, prefix: check_headers_prefix,
-                     dependencies: chk_header_deps)
+foreach h : check_rpc_headers
+    if cc.has_header(h, args: c_args, prefix: check_rpc_headers_prefix,
+                     dependencies: dep_libtirpc)
         have = 'HAVE_' + h.to_upper().underscorify()
         conf.set(have, 1)
         c_args += [ '-D' + have ]
