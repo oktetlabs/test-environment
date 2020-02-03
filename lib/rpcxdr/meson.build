@@ -15,6 +15,8 @@ if cc.has_header('expat.h')
     c_args += [ '-D' + have ]
 endif
 
+deps += [ dep_rpcs ]
+
 #
 # First we need to define which library we should use in our
 # environment. This macro updates LIBS variable, which is used
@@ -23,7 +25,7 @@ endif
 # - Modern Linux distros, such as Fedora 28, do not have RPC support
 #   in glibc; libtirpc can be used instead.
 #
-if not cc.has_function('xdr_bytes', args: te_cflags)
+if not cc.has_function('xdr_bytes', args: te_cflags, dependencies: deps)
     dep_rpc = cc.find_library('rpc', required: false)
     if dep_rpc.found() and cc.has_function('xdr_bytes', args: te_cflags,
                                            dependencies: dep_rpc)
@@ -34,16 +36,7 @@ if not cc.has_function('xdr_bytes', args: te_cflags)
            cc.has_function('xdr_bytes', dependencies: dep_nsl)
             deps += [ dep_nsl ]
         else
-            # Please refer to a tirpc problem description in include/meson.build
-            # to understand why it is dependency() and not cc.find_library()
-            dep_tirpc = dependency('libtirpc', required: false)
-            if dep_tirpc.found() and cc.has_function('xdr_bytes',
-                                                     args: te_cflags,
-                                                     dependencies: dep_tirpc)
-                deps += [ dep_tirpc ]
-            else
-                error('No RPC library found')
-            endif
+            error('No RPC library found')
         endif
     endif
 endif
@@ -70,7 +63,7 @@ rpc_headers = '''
 #endif
 '''
 if cc.has_member('struct xdr_ops', 'x_putint32', args: c_args,
-                 prefix: rpc_headers)
+                 prefix: rpc_headers, dependencies: deps)
     conf.set('x_int32_arg_t', 'int32_t')
 else
     conf.set('x_putint32', 'x_putlong')

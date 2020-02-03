@@ -181,13 +181,13 @@ check_rpc_headers_prefix = '''
 #
 # The line below would produce empty dependencies on systems having no tirpc, so
 # it is not a problem
-dep_libtirpc = dependency('libtirpc', required: false)
+dep_rpcs = dependency('libtirpc', required: false)
 
 # rpc/ headers here require tirpc on some distros, so we add
 # the corresponding dependency
 foreach h : check_rpc_headers
     if cc.has_header(h, args: c_args, prefix: check_rpc_headers_prefix,
-                     dependencies: dep_libtirpc)
+                     dependencies: dep_rpcs)
         have = 'HAVE_' + h.to_upper().underscorify()
         conf.set(have, 1)
         c_args += [ '-D' + have ]
