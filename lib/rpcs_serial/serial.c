@@ -545,7 +545,7 @@ wait_pattern(int sock, const char *pattern, int *match_offset, int timeout_ms)
     if (match_offset != NULL)
         *match_offset = -1;
 
-    if (regcomp(&regexp, pattern, REG_NOSUB | REG_ICASE) != 0)
+    if (regcomp(&regexp, pattern, REG_ICASE) != 0)
     {
         ERROR("Regular expression (%s) is invalid: %s", pattern,
               strerror(errno));
