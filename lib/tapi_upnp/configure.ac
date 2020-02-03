@@ -55,6 +55,14 @@ PKG_CHECK_MODULES([JANSSON], [jansson],
     [AC_MSG_ERROR([jansson not found])]
 )
 
+# Used here tarpc.h includes rpc/rpc.h which requires extra -I option
+# in the case of libtirpc. There is no easy way to inherit it from
+# rpcxdr findings so just repeat the check here
+PKG_CHECK_MODULES([TIRPC], [libtirpc], [],
+    [AC_MSG_NOTICE([libtirpc not found])])
+AC_SUBST([TIRPC_CFLAGS])
+AC_SUBST([TIRPC_LIBS])
+
 AC_CONFIG_FILES([Makefile])
 
 TE_LIB_RESTORE

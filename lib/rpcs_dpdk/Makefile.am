@@ -4,6 +4,7 @@ ACLOCAL_AMFLAGS = -I @TE_M4@
 AM_CPPFLAGS = -I$(DESTDIR)/$(includedir) \
               -I$(TE_BASE)/agents/@TA@/ \
               -I$(TE_BASE)/agents/@TA@/rpc \
+              $(TIRPC_CFLAGS) \
               @TE_CPPFLAGS@ \
               $(TE_CPPFLAGS_VAR) \
               -DALLOW_EXPERIMENTAL_API \

@@ -1,7 +1,8 @@
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
 
-AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
+AM_CPPFLAGS = @TE_CPPFLAGS@ $(TIRPC_CFLAGS) -I$(DESTDIR)/$(includedir) \
+              $(TE_CPPFLAGS_VAR)
 
 AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR) $(GLIB_CFLAGS) $(LIBXML_CFLAGS) \
             $(LIBSOUP_CFLAGS) $(GSSDP_CFLAGS) $(GUPNP_CFLAGS) $(GUPNPAV_CFLAGS) \
@@ -27,6 +28,8 @@ libtapi_upnp_la_SOURCES= \
 	tapi_upnp_content_directory.c \
 	tapi_upnp_resources.c \
 	tapi_upnp_cp.c
+
+libtapi_upnp_la_LIBADD = $(TIRPC_LIBS)
 
 
 install-exec-hook:
