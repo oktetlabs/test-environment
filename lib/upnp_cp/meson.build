@@ -11,10 +11,12 @@ sources += files(
     'te_upnp_cp.c',
 )
 
+te_libs += [
+    'tools',
+    'rpcxdrta',
+    'rcfpch',
+    'rpcserver',
+]
 deps += [
-    dep_lib_tools,
-    dep_lib_rpcxdrta,
-    dep_lib_rcfpch,
-    dep_lib_rpcserver,
     dependency('gupnp-1.0'),
 ]

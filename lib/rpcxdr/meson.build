@@ -187,10 +187,9 @@ te_lib_rpcxdrta = static_library('rpcxdrta', sources, rpc_stub,
                                  include_directories: includes,
                                  c_args: [ '-DTE_DUMMY', c_args ],
                                  dependencies: deps)
-dep_lib_rpcxdrta = declare_dependency(link_with: te_lib_rpcxdrta,
-                                      include_directories: includes,
-                                      dependencies: deps)
-dep_lib_static_rpcxdrta = dep_lib_rpcxdrta
+dep_lib_static_rpcxdrta = declare_dependency(link_with: te_lib_rpcxdrta,
+                                             include_directories: includes,
+                                             dependencies: deps)
 
 # Add flags required for client-side rpcxdr library build
 c_args += [ '-DTE_RPC_CLIENT' ]
