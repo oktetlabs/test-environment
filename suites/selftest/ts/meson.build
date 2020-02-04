@@ -27,6 +27,7 @@ te_libs = [
     'tapi_env',
     'tools',
     'tapi',
+    'logger_core',
     'logger_ten',
     'rcfrpc',
     'tapi_tool',
