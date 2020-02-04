@@ -1,0 +1,68 @@
+---
+
+- comment: |
+    Processes control configuration model.
+
+    It is assumed to care about processes spawned from the Test Agent via
+    the configuration tree. Other processes are not tracked/represented.
+
+    Copyright (C) 2020 OKTET Labs.
+
+    Author: Andrew Rybchenko E-mail: Andrew.Rybchenko@oktetlabs.ru
+
+- register:
+
+    - oid: "/agent/process"
+      access: read_create
+      type: none
+      d: |
+        Process instance.
+        Name: internal process name
+
+    - oid: "/agent/process/exe"
+      access: read_write
+      type: string
+      d: |
+        Executable to run with search in PATH if there is no path separators.
+
+    - oid: "/agent/process/status"
+      access: read_write
+      type: integer
+      d: |
+        Either 1 (start/running) or 0 (stop/stopped/crashed).
+        If process is running, it is not allowed to reconfigure it.
+
+    - oid: "/agent/process/long_option_value_separator"
+      access: read_write
+      type: string
+      d: |
+        Separator to be used between long option and its value.
+        Supported values are empty (default) and '='.
+        If value is empty, long option and its value are passed as different
+        arguments. If value is '=', long option and its value are passed as
+        --<long>=<value>.
+
+    - oid: "/agent/process/option"
+      access: read_create
+      type: string
+      d: |
+        Process options to be passed as -<short> <value> or --<long> <value>.
+        If value is empty string, it is assumed that the option has no value and
+        should be passed without it, i.e. --<long>.
+        Note: above makes it imposisble to have an option with really empty string
+              value, but such options could be passed using /agent/process/arg.
+        Name: option name (short if one letter, long otherwise)
+
+    - oid: "/agent/process/arg"
+      access: read_create
+      type: string
+      d: |
+        Process raw arguments to be added in specified order after options.
+        Name: order
+
+    - oid: "/agent/process/env"
+      access: read_create
+      type: string
+      d: |
+        Additional process environment variables.
+        Name: environment variable name
