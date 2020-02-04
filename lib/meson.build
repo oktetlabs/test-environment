@@ -159,10 +159,14 @@ foreach l : all_libs
                 foreach te_lib : te_libs
                     deps_static += [ get_variable('dep_lib_static_' + te_lib) ]
                 endforeach
+
                 lib = static_library(libname, sources, install: install_lib,
                                      include_directories: includes,
                                      implicit_include_directories: false,
                                      c_args: c_args, dependencies: deps_static)
+                # Libraries are used by agents build to generate symbol table
+                set_variable('te_lib_' + libname, lib)
+
                 dep = declare_dependency(link_with: lib,
                                          include_directories: includes,
                                          dependencies: deps_static)
