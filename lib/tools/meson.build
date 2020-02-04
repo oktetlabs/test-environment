@@ -104,4 +104,8 @@ foreach f : bsd_funcs
     endif
 endforeach
 
+if cc.has_function('getaddrinfo')
+    c_args += [ '-DHAVE_GETADDRINFO' ]
+endif
+
 deps += [ cc.find_library('m'), dep_threads ]
