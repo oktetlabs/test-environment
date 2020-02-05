@@ -73,6 +73,14 @@ extern void cfg_ta_reboot_all(void);
 extern int cfg_ta_sync(char *oid, te_bool subtree);
 
 /**
+ * Synchronize all instances with given object with Test Agents
+ *
+ * @param obj       object or object tree
+ * @param subtree   1 if subtree should be synchronized
+ */
+extern void cfg_ta_sync_obj(cfg_object *obj, te_bool subtree);
+
+/**
  * Add instances for all agents.
  *
  * @return status code (see te_errno.h)

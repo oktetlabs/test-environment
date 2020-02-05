@@ -586,6 +586,25 @@ cfg_ta_sync(char *oid, te_bool subtree)
 }
 
 /* see description in conf_ta.h */
+void
+cfg_ta_sync_obj(cfg_object *obj, te_bool subtree)
+{
+    int      i;
+
+    for (i = 0; i < cfg_all_inst_size && cfg_all_inst[i] != NULL; i++)
+    {
+        if (cfg_all_inst[i]->obj->handle != obj->handle)
+            continue;
+
+        /*
+         * All Test Agents should be synchronized
+         * despite synchronization errors
+         */
+        cfg_ta_sync(cfg_all_inst[i]->oid, subtree);
+    }
+}
+
+/* see description in conf_ta.h */
 te_errno
 cfg_ta_sync_dependants(cfg_instance *inst)
 {

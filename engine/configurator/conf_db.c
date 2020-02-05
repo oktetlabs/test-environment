@@ -15,6 +15,7 @@
  */
 
 #include "conf_defs.h"
+#include "te_alloc.h"
 
 #define CFG_OBJ_NUM     64      /**< Number of objects */
 #define CFG_INST_NUM    128     /**< Number of object instances */
@@ -1149,6 +1150,121 @@ cfg_db_find_pattern(const char *pattern,
 #undef RETERR
 }   /* cfg_db_find_pattern() */
 
+/*
+ * Add instance with given object and parent
+ *
+ * @param par_inst      Parent instance
+ * @param obj           Object of a new instance
+ * @param inst          Pointer for the new instance
+ *
+ * @return Status code
+ */
+static int
+cfg_add_with_obj_and_parent(cfg_instance *par_inst, cfg_object *obj,
+                            cfg_instance **inst)
+{
+    char  *oid_s;
+    size_t oid_s_len;
+    int    i;
+    int    ret;
+
+    oid_s_len = strlen(par_inst->oid) + 1 /* forward slash */ +
+                strlen(obj->subid) + 1 /* colon */;
+    oid_s = TE_ALLOC(oid_s_len);
+    if (oid_s == NULL)
+        return TE_ENOMEM;
+
+    ret = snprintf(oid_s, oid_s_len + 1, "%s/%s:", par_inst->oid, obj->subid);
+    if (ret != (int)oid_s_len)
+        return TE_ENOBUFS;
+
+    for (i = 0; i < cfg_all_inst_size && cfg_all_inst[i] != NULL; i++);
+
+    if (i == cfg_all_inst_size)
+    {
+        void *tmp = realloc(cfg_all_inst,
+            sizeof(void *) * (cfg_all_inst_size + CFG_INST_NUM));
+
+        if (tmp == NULL)
+        {
+            free(oid_s);
+            return TE_ENOMEM;
+        }
+
+        memset(tmp + sizeof(void *) * cfg_all_inst_size, 0,
+             sizeof(void *) * CFG_INST_NUM);
+
+        cfg_all_inst = (cfg_instance **)tmp;
+        cfg_all_inst_size += CFG_INST_NUM;
+    }
+
+    cfg_all_inst[i] = (cfg_instance *)calloc(sizeof(cfg_instance), 1);
+    if (cfg_all_inst[i] == NULL)
+    {
+        free(oid_s);
+        return TE_ENOMEM;
+    }
+
+    cfg_all_inst[i]->oid = oid_s;
+    if (obj->type != CVT_NONE)
+    {
+        int err;
+
+        if (obj->def_val != NULL)
+            err = cfg_types[obj->type].str2val(obj->def_val,
+                                           &(cfg_all_inst[i]->val));
+        else
+            err =
+                cfg_types[obj->type].def_val(&(cfg_all_inst[i]->val));
+
+        if (err)
+        {
+            free(cfg_all_inst[i]->oid);
+            free(cfg_all_inst[i]);
+            cfg_all_inst[i] = NULL;
+            return err;
+        }
+    }
+
+    /** Avoiding treating instance as object after overfilling */
+    if (cfg_inst_seq_num == 0)
+        cfg_inst_seq_num = 1;
+
+    cfg_all_inst[i]->handle = i | (cfg_inst_seq_num++) << 16;
+    cfg_all_inst[i]->name[0] = '\0';
+    cfg_all_inst[i]->obj = obj;
+    cfg_all_inst[i]->father = par_inst;
+    cfg_all_inst[i]->son = NULL;
+    cfg_all_inst[i]->brother = par_inst->son;
+    par_inst->son =  cfg_all_inst[i];
+    *inst = cfg_all_inst[i];
+
+    return 0;
+}
+
+/* See the description in conf_db.h */
+te_errno
+cfg_add_all_inst_by_obj(cfg_object *obj)
+{
+    int           i;
+    te_errno      rc;
+    cfg_instance *par_inst;
+    cfg_instance *inst;
+
+    for (i = 0; i < cfg_all_inst_size; i++)
+    {
+        par_inst = cfg_all_inst[i];
+        if (par_inst == NULL || par_inst->obj->handle != obj->father->handle)
+            continue;
+
+        rc = cfg_add_with_obj_and_parent(par_inst, obj, &inst);
+        if (rc != 0)
+            return rc;
+    }
+
+    return 0;
+}
+
 /**
  * Add instance children if they are not read/create
  *
@@ -1156,97 +1272,24 @@ cfg_db_find_pattern(const char *pattern,
  *
  * @return  status code.
  */
-static int
+static te_errno
 cfg_db_add_children(cfg_instance *inst)
 {
-    cfg_object     *obj1 = inst->obj;
-    char           *oid_s;
-    int             i = 0;
-    int             len;
-    int             err;
+    cfg_object     *obj = inst->obj;
+    cfg_instance   *child_inst;
+    te_errno        rc;
 
-    len = strlen(inst->oid);
-    obj1 = obj1->son;
-    while (obj1)
+    for (obj = obj->son; obj != NULL; obj = obj->brother)
     {
-        if (obj1->access == CFG_READ_CREATE)
-        {
-            obj1 = obj1->brother;
+        if (obj->access == CFG_READ_CREATE)
             continue;
-        }
 
-        /* make up instance oid string */
-        oid_s = malloc(sizeof(char)*(len + strlen(obj1->subid) + 3));
-        if (!oid_s)
-            return TE_ENOMEM;
-        sprintf(oid_s, "%s/%s:", inst->oid, obj1->subid);
-
-        /* Adding instance */
-        for (i = 0; i < cfg_all_inst_size && cfg_all_inst[i] != NULL; i++);
-
-        if (i == cfg_all_inst_size)
-        {
-            void *tmp = realloc(cfg_all_inst,
-                sizeof(void *) * (cfg_all_inst_size + CFG_INST_NUM));
-
-            if (tmp == NULL)
-            {
-                free(oid_s);
-                return TE_ENOMEM;
-            }
-
-            memset(tmp + sizeof(void *) * cfg_all_inst_size, 0,
-                 sizeof(void *) * CFG_INST_NUM);
-
-            cfg_all_inst = (cfg_instance **)tmp;
-            cfg_all_inst_size += CFG_INST_NUM;
-        }
-
-        cfg_all_inst[i] = (cfg_instance *)calloc(sizeof(cfg_instance), 1);
-        if (cfg_all_inst[i] == NULL)
-        {
-            free(oid_s);
-            return TE_ENOMEM;
-        }
-
-        /* Setting all parameters*/
-        cfg_all_inst[i]->oid = oid_s;
-        if (obj1->type != CVT_NONE)
-        {
-            int err;
-
-            if (obj1->def_val != NULL)
-                err = cfg_types[obj1->type].str2val(obj1->def_val,
-                                               &(cfg_all_inst[i]->val));
-            else
-                err =
-                    cfg_types[obj1->type].def_val(&(cfg_all_inst[i]->val));
-
-            if (err)
-            {
-                free(cfg_all_inst[i]->oid);
-                free(cfg_all_inst[i]);
-                cfg_all_inst[i] = NULL;
-                return err;
-            }
-        }
-
-        /** Avoiding treating instance as object after overfilling */
-        if (cfg_inst_seq_num == 0)
-            cfg_inst_seq_num = 1;
-
-        cfg_all_inst[i]->handle = i | (cfg_inst_seq_num++) << 16;
-        cfg_all_inst[i]->name[0] = '\0';
-        cfg_all_inst[i]->obj = obj1;
-        cfg_all_inst[i]->father = inst;
-        cfg_all_inst[i]->son = NULL;
-        cfg_all_inst[i]->brother = inst->son;
-        inst->son =  cfg_all_inst[i];
+        if ((rc = cfg_add_with_obj_and_parent(inst, obj, &child_inst)) != 0)
+            return rc;
 
         /* Adding all its children*/
-        if ( (err = cfg_db_add_children(cfg_all_inst[i])) != 0)
-            return err;
-        obj1 = obj1->brother;
+        if ((rc = cfg_db_add_children(child_inst)) != 0)
+            return rc;
     }
     return 0;
 }

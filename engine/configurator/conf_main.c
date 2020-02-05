@@ -1801,6 +1801,51 @@ process_reboot(cfg_reboot_msg *msg, te_bool update_dh)
 }
 
 /**
+ * Process register user request.
+ *
+ * @param msg           message pointer
+ * @param update_dh     if true, add the command to dynamic history
+ */
+static void
+process_register(cfg_register_msg *msg, te_bool update_dh)
+{
+    cfg_object *obj;
+
+    if (update_dh)
+    {
+        if ((msg->rc = cfg_dh_add_command((cfg_msg *)msg, FALSE)) != 0)
+            return;
+    }
+
+    cfg_process_msg_register(msg);
+
+    if (msg->rc != 0)
+    {
+        if (update_dh)
+            cfg_dh_delete_last_command();
+
+        return;
+    }
+
+    obj = CFG_GET_OBJ(msg->handle);
+    if (obj->access == CFG_READ_WRITE || obj->access == CFG_READ_ONLY)
+    {
+        if ((msg->rc = cfg_add_all_inst_by_obj(obj)) != 0)
+            return;
+    }
+
+    if (strcmp_start("/agent", obj->oid) == 0)
+    {
+        /*
+         * Since synchronization is a side effect
+         * of this function, errors will be logged,
+         * but can be ignored.
+         */
+        cfg_ta_sync_obj(obj->father, TRUE);
+    }
+}
+
+/**
  * Process message with user request.
  *
  * @param msg           location of message pointer (message may be updated
@@ -1815,14 +1860,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
     switch ((*msg)->type)
     {
         case CFG_REGISTER:
-            if (update_dh)
-            {
-                if (((*msg)->rc = cfg_dh_add_command(*msg, FALSE)) != 0)
-                    break;
-            }
-            cfg_process_msg_register((cfg_register_msg *)*msg);
-            if ((*msg)->rc != 0 && update_dh)
-                cfg_dh_delete_last_command();
+            process_register((cfg_register_msg *)(*msg), update_dh);
             break;
 
         case CFG_UNREGISTER:

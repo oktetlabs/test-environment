@@ -233,6 +233,15 @@ extern cfg_object *cfg_get_obj_by_obj_id_str(const char *obj_id_str);
  */
 extern cfg_instance *cfg_get_ins_by_ins_id_str(const char *ins_id_str);
 
+/*
+ * Add instance with given object for all existing parent instances
+ *
+ * @param obj Object
+ *
+ * @return Status code
+ */
+extern te_errno cfg_add_all_inst_by_obj(cfg_object *obj);
+
 /**
  * Add instance to the database.
  *
