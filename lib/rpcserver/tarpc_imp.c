@@ -67,6 +67,10 @@
 #include <linux/net_tstamp.h>
 #endif
 
+#ifdef HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+
 #include "te_defs.h"
 #include "te_queue.h"
 #include "te_tools.h"
@@ -102,12 +106,143 @@ extern char **environ;
 #define SOLARIS FALSE
 #endif
 
+/** Entry in a queue of FD close hooks */
+typedef struct close_fd_hook_entry {
+    TAILQ_ENTRY(close_fd_hook_entry)   links;  /**< Queue links */
+    tarpc_close_fd_hook               *hook;   /**< Hook function pointer */
+    void                              *cookie; /**< Pointer which should be
+                                                    passed to each hook
+                                                    invocation */
+} close_fd_hook_entry;
+
+/** Hooks called just before closing FD */
+static TAILQ_HEAD(close_fd_hook_entries,
+                  close_fd_hook_entry) close_fd_hooks =
+                              TAILQ_HEAD_INITIALIZER(close_fd_hooks);
+
+/** Lock protecting close_fd_hooks */
+static pthread_mutex_t      close_fd_hooks_lock = PTHREAD_MUTEX_INITIALIZER;
+
 extern sigset_t         rpcs_received_signals;
 extern tarpc_siginfo_t  last_siginfo;
 
 static te_bool   dynamic_library_set = FALSE;
 static char      dynamic_library_name[RCF_MAX_PATH];
 static void     *dynamic_library_handle = NULL;
+
+/* See description in rpc_server.h */
+void
+tarpc_close_fd_hooks_call(int fd)
+{
+    int                  res = 0;
+    close_fd_hook_entry *entry;
+
+    /*
+     * It seems safe to check this without mutex protection,
+     * and it will allow to avoid mutex locking/unlocking in case
+     * there is no hooks.
+     */
+    if (TAILQ_EMPTY(&close_fd_hooks))
+        return;
+
+    res = tarpc_mutex_lock(&close_fd_hooks_lock);
+    if (res != 0)
+        return;
+
+    TAILQ_FOREACH(entry, &close_fd_hooks, links)
+    {
+        entry->hook(fd, entry->cookie);
+    }
+
+    tarpc_mutex_unlock(&close_fd_hooks_lock);
+}
+
+/* See description in rpc_server.h */
+int
+tarpc_close_fd_hook_register(tarpc_close_fd_hook *hook, void *cookie)
+{
+    close_fd_hook_entry *entry;
+    int                  rc;
+
+    if (hook == NULL)
+    {
+        te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EINVAL),
+                         "%s(): hook cannot be NULL",
+                         __FUNCTION__);
+        return -1;
+    }
+
+    entry = calloc(1, sizeof(*entry));
+    if (entry == NULL)
+    {
+        te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOMEM),
+                         "%s(): failed to allocate memory",
+                         __FUNCTION__);
+        return -1;
+    }
+    entry->hook = hook;
+    entry->cookie = cookie;
+
+    rc = tarpc_mutex_lock(&close_fd_hooks_lock);
+    if (rc != 0)
+    {
+        free(entry);
+        return -1;
+    }
+    TAILQ_INSERT_TAIL(&close_fd_hooks, entry, links);
+    tarpc_mutex_unlock(&close_fd_hooks_lock);
+
+    return 0;
+}
+
+/* See description in rpc_server.h */
+int
+tarpc_close_fd_hook_unregister(tarpc_close_fd_hook *hook, void *cookie)
+{
+    close_fd_hook_entry *entry;
+    te_bool              found = FALSE;
+    int                  rc;
+
+    rc = tarpc_mutex_lock(&close_fd_hooks_lock);
+    if (rc != 0)
+        return -1;
+
+    /*
+     * List is walked in reverse order so that the last added hook
+     * is unregistered firstly (in case of hooks duplication).
+     */
+    TAILQ_FOREACH_REVERSE(entry, &close_fd_hooks, close_fd_hook_entries,
+                          links)
+    {
+        if (entry->hook == hook && entry->cookie == cookie)
+        {
+            found = TRUE;
+            TAILQ_REMOVE(&close_fd_hooks, entry, links);
+            free(entry);
+            break;
+        }
+    }
+
+    tarpc_mutex_unlock(&close_fd_hooks_lock);
+
+    if (!found)
+    {
+        te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOENT),
+                         "%s(): failed to find hook %p",
+                         __FUNCTION__, hook);
+        return -1;
+    }
+
+    return 0;
+}
+
+/* See description in rpc_server.h */
+int
+tarpc_call_close_with_hooks(api_func close_func, int fd)
+{
+    tarpc_close_fd_hooks_call(fd);
+    return close_func(fd);
+}
 
 /**
  * Set name of the dynamic library to be used to resolve function
@@ -1022,19 +1157,30 @@ TARPC_FUNC(dup, {}, { MAKE_CALL(out->fd = func(in->oldfd)); })
 
 /*-------------- dup2() -------------------------------*/
 
-TARPC_FUNC(dup2, {}, { MAKE_CALL(out->fd = func(in->oldfd, in->newfd)); })
+TARPC_FUNC(dup2, {},
+{
+    tarpc_close_fd_hooks_call(in->newfd);
+    MAKE_CALL(out->fd = func(in->oldfd, in->newfd));
+})
 
 /*-------------- dup3() -------------------------------*/
 
 TARPC_FUNC(dup3, {},
 {
+    tarpc_close_fd_hooks_call(in->newfd);
+
     MAKE_CALL(out->fd = func(in->oldfd, in->newfd, in->flags));
 }
 )
 
 /*-------------- close() ------------------------------*/
 
-TARPC_FUNC(close, {}, { MAKE_CALL(out->retval = func(in->fd)); })
+TARPC_FUNC(close, {},
+{
+    tarpc_close_fd_hooks_call(in->fd);
+
+    MAKE_CALL(out->retval = func(in->fd));
+})
 
 /*-------------- closesocket() ------------------------------*/
 
@@ -1048,7 +1194,8 @@ closesocket(tarpc_closesocket_in *in)
         ERROR("Failed to find function \"close\"");
         return -1;
     }
-    return close_func(in->s);
+
+    return tarpc_call_close_with_hooks(close_func, in->s);
 }
 
 TARPC_FUNC(closesocket, {}, { MAKE_CALL(out->retval = func_ptr(in)); })
@@ -1247,7 +1394,7 @@ socket_connect_close(int domain, const struct sockaddr *addr,
         rc = connect_func(s, addr, addrlen);
         if( rc != 0  && errno != ECONNREFUSED && errno != ECONNABORTED )
             return -1;
-        close_func(s);
+        tarpc_call_close_with_hooks(close_func, s);
     }
     return 0;
 }
@@ -1301,7 +1448,7 @@ socket_listen_close(int domain, const struct sockaddr *addr,
             ERROR("%s(): listen() function failed", __FUNCTION__);
             return -1;
         }
-        close_func(s);
+        tarpc_call_close_with_hooks(close_func, s);
     }
     return 0;
 }
@@ -1855,8 +2002,8 @@ read_via_splice(tarpc_read_via_splice_in *in,
         ret = -1;
     }
 read_via_splice_exit:
-    if (close_func(pipefd[0]) < 0 ||
-        close_func(pipefd[1]) < 0)
+    if (tarpc_call_close_with_hooks(close_func, pipefd[0]) < 0 ||
+        tarpc_call_close_with_hooks(close_func, pipefd[1]) < 0)
         ret = -1;
     return ret == -1 ? ret : from_pipe;
 }
@@ -1958,8 +2105,8 @@ write_via_splice(tarpc_write_via_splice_in *in)
         ret = -1;
     }
 write_via_splice_exit:
-    if (close_func(pipefd[0]) < 0 ||
-        close_func(pipefd[1]) < 0)
+    if (tarpc_call_close_with_hooks(close_func, pipefd[0]) < 0 ||
+        tarpc_call_close_with_hooks(close_func, pipefd[1]) < 0)
         ret = -1;
     return ret == -1 ? ret : from_pipe;
 }
@@ -2000,7 +2147,7 @@ _write_and_close_1_svc(tarpc_write_and_close_in *in,
 
         if (out->retval >= 0)
         {
-            rc = close_func(in->fd);
+            rc = tarpc_call_close_with_hooks(close_func, in->fd);
             if (rc < 0)
                 out->retval = rc;
         }
@@ -7748,8 +7895,8 @@ sendfile_via_splice(tarpc_sendfile_via_splice_in *in,
         ret = -1;
     }
 sendfile_via_splice_exit:
-    if (close_func(pipefd[0]) < 0 ||
-        close_func(pipefd[1]) < 0)
+    if (tarpc_call_close_with_hooks(close_func, pipefd[0]) < 0 ||
+        tarpc_call_close_with_hooks(close_func, pipefd[1]) < 0)
         ret = -1;
     return ret == -1 ? ret : from_pipe;
 }
@@ -7986,7 +8133,7 @@ local_exit:
     INFO("%s(): %s", __FUNCTION__, (rc == 0) ? "OK" : "FAILED");
 
     if (file_d != -1)
-        close_func(file_d);
+        tarpc_call_close_with_hooks(close_func, file_d);
 
     if (rc == 0)
     {

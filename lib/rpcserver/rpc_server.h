@@ -1139,5 +1139,70 @@ _rettype _name##_te_wrap_syscall_dl _args                                   \
     return (_rettype)syscall_func(SYS_##_name, ##__VA_ARGS__);              \
 }
 
+/**
+ * Type of a hook function called just before FD is closed.
+ *
+ * @note Close hooks do not return error directly and closing function
+ *       is always called, however they can set RPC error with
+ *       te_rpc_error_set() or save information about error in @p cookie.
+ *
+ * @param fd        File descriptor that is about to be closed.
+ * @param cookie    Pointer specified when registering the hook.
+ */
+typedef void (tarpc_close_fd_hook)(int fd, void *cookie);
+
+/**
+ * Call FD close hooks if they are registered.
+ *
+ * @param fd      FD to be closed.
+ */
+extern void tarpc_close_fd_hooks_call(int fd);
+
+/**
+ * Register FD close hook (which will be called just before FD
+ * is closed in implementations of RPC calls like rpc_close()).
+ *
+ * @note The same hook may be registered more than once with
+ *       the same @p cookie.
+ *       All the registered hooks are called before FD is closed.
+ *       FD should be closed even if some hook fails, unless
+ *       it is dup2()/dup3() call which will not be executed
+ *       in such case.
+ *
+ * @note Close because of exit() or CLOEXEC does not result
+ *       in calling these hooks.
+ *
+ * @param hook      FD close hook.
+ * @param cookie    Pointer to be passed to each invocation
+ *                  of the hook.
+ *
+ * @return @c 0 on success, @c -1 on failure.
+ */
+extern int tarpc_close_fd_hook_register(tarpc_close_fd_hook *hook,
+                                        void *cookie);
+
+/**
+ * Unregister FD close hook.
+ *
+ * @note If there is more than one hook matching the parameters,
+ *       the last one will be removed.
+ *
+ * @param hook      FD close hook.
+ * @param cookie    Pointer specified when registering the hook.
+ *
+ * @return @c 0 on success, @c -1 on failure.
+ */
+extern int tarpc_close_fd_hook_unregister(tarpc_close_fd_hook *hook,
+                                          void *cookie);
+
+/**
+ * Call close hooks and then closing function.
+ *
+ * @param close_func      Closing function to call.
+ * @param fd              File descriptor.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+extern int tarpc_call_close_with_hooks(api_func close_func, int fd);
 
 #endif /* __TARPC_SERVER_H__ */

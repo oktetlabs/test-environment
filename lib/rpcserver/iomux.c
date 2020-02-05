@@ -476,7 +476,10 @@ iomux_close(iomux_func iomux, iomux_funcs *funcs, iomux_state *state)
 {
 #if HAVE_STRUCT_EPOLL_EVENT
     if (iomux == FUNC_EPOLL || iomux == FUNC_EPOLL_PWAIT)
-        return funcs->epoll.close(state->epoll);
+    {
+        return tarpc_call_close_with_hooks(funcs->epoll.close,
+                                           state->epoll);
+    }
 #endif
     return 0;
 }
