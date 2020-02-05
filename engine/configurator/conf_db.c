@@ -1170,7 +1170,7 @@ cfg_add_with_obj_and_parent(cfg_instance *par_inst, cfg_object *obj,
 
     oid_s_len = strlen(par_inst->oid) + 1 /* forward slash */ +
                 strlen(obj->subid) + 1 /* colon */;
-    oid_s = TE_ALLOC(oid_s_len);
+    oid_s = TE_ALLOC(oid_s_len + 1 /* \0 */);
     if (oid_s == NULL)
         return TE_ENOMEM;
 
