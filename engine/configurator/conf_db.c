@@ -1164,17 +1164,23 @@ cfg_add_with_obj_and_parent(cfg_instance *par_inst, cfg_object *obj,
                             cfg_instance **inst)
 {
     char  *oid_s;
+    char  *par_oid;
     size_t oid_s_len;
     int    i;
     int    ret;
 
-    oid_s_len = strlen(par_inst->oid) + 1 /* forward slash */ +
+    if (strcmp(par_inst->oid, "/:") != 0)
+        par_oid = par_inst->oid;
+    else
+        par_oid = "";
+
+    oid_s_len = strlen(par_oid) + 1 /* forward slash */ +
                 strlen(obj->subid) + 1 /* colon */;
     oid_s = TE_ALLOC(oid_s_len + 1 /* \0 */);
     if (oid_s == NULL)
         return TE_ENOMEM;
 
-    ret = snprintf(oid_s, oid_s_len + 1, "%s/%s:", par_inst->oid, obj->subid);
+    ret = snprintf(oid_s, oid_s_len + 1, "%s/%s:", par_oid, obj->subid);
     if (ret != (int)oid_s_len)
         return TE_ENOBUFS;
 
