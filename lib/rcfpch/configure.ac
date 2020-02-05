@@ -37,7 +37,6 @@ AC_ARG_WITH([sniffers],
             [with_sniffers=yes],
             [with_sniffers=""])
 
-AM_CONDITIONAL(CFG_SNIFFERS_SUPPORT, test -n "$with_sniffers")
 if test -n "$with_sniffers"; then
     EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_SNIFFERS"
 fi
