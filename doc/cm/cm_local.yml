@@ -120,7 +120,7 @@
                 For example: /local:/host:h1/agent:Agt_A/interface:eth1
 
     - oid: "/local/test"
-      access: read_create
+      access: read_only
       type: none
       d: |
          Test-related data.
@@ -134,3 +134,16 @@
 
          Name: name of the behaviour/tunable
          Value: 0/1
+
+- add:
+    - oid: "/local:"
+
+- add:
+    - oid: "/local:/test:/behaviour:wait_on_fail"
+      value: "${TE_TEST_BEHAVIOUR_WAIT_ON_FAIL:-0}"
+    - oid: "/local:/test:/behaviour:wait_on_cleanup"
+      value: "${TE_TEST_BEHAVIOUR_WAIT_ON_CLEANUP:-0}"
+    - oid: "/local:/test:/behaviour:log_stack"
+      value: "${TE_TEST_BEHAVIOUR_LOG_STACK:-0}"
+    - oid: "/local:/test:/behaviour:log_test_fail_state"
+      value: "${TE_TEST_BEHAVIOUR_LOG_TEST_FAIL_STATE:-0}"
