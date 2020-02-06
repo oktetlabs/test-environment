@@ -316,6 +316,21 @@ foreach t : te_log_types
                        include_directories: te_include))
 endforeach
 
+#
+# Thread-local storage specifier
+#
+thread_specifiers = [
+    '_Thread_local',
+    '__thread',
+]
+foreach s : thread_specifiers
+    code = s + ' int x; int main() { return 0; }'
+    if cc.compiles(code, name: s + ' implementation', args: c_args)
+        conf.set('TE_THREAD_LOCAL', s)
+        break
+    endif
+endforeach
+
 te_config_internal = configure_file(input: 'te_config_internal.h.meson',
                                     output: 'te_config_internal.h',
                                     configuration: conf)

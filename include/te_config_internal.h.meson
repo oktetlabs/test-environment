@@ -371,6 +371,9 @@
 /* Define to 1 if you have the ANSI C header files. */
 #mesondefine STDC_HEADERS
 
+/* Thread-local storage specifier */
+#mesondefine TE_THREAD_LOCAL
+
 /* Version number of package */
 #mesondefine VERSION
 
