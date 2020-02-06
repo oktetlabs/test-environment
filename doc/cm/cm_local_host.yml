@@ -1,0 +1,58 @@
+---
+
+- comment: |
+    Local configurations related to namespaces support.
+
+    Copyright (C) 2017-2020 OKTET Labs.a
+
+    Author: Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
+
+- register:
+
+    - oid: "/local/host"
+      access: read_create
+      type: none
+      d: |
+         This configurator subtree describes relations between agents,
+         namespaces and network interfaces on a host.
+
+         Name: name of a host.
+         Value: none.
+
+    - oid: "/local/host/agent"
+      access: read_create
+      type: none
+      d: |
+         Test Agent subtree.
+
+         Name: name of an agent.
+         Value: none.
+
+    - oid: "/local/host/agent/netns"
+      access: read_write
+      type: string
+      d: |
+         Network namespace where the agent is run.
+
+         Name: none.
+         Value: name of a network namespace, empty string means default namespace.
+
+    - oid: "/local/host/agent/interface"
+      access: read_create
+      type: none
+      d: |
+         A network interface subtree.
+
+         Name: The interface name.
+         Value: none.
+
+    - oid: "/local/host/agent/interface/parent"
+      access: read_create
+      type: string
+      d: |
+         Link to a parent interface.
+
+         Name: increasing index counter - unique instance name.
+         Value: full instance path to the parent interface in
+                the /local/host subtree.
+                For example: /local:/host:h1/agent:Agt_A/interface:eth1
