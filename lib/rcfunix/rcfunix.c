@@ -495,8 +495,8 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     unsigned int timestamp;
 
     if (ta_name == NULL || ta_type == NULL ||
-        strlen(ta_name) >= RCF_MAX_NAME ||
-        strlen(ta_type) >= RCF_MAX_NAME ||
+        ta_name[0] == '\0' || strlen(ta_name) >= RCF_MAX_NAME ||
+        ta_type[0] == '\0' || strlen(ta_type) >= RCF_MAX_NAME ||
         conf == NULL || flags == NULL)
     {
         return TE_EINVAL;
