@@ -327,7 +327,6 @@ foreach s : thread_specifiers
     code = s + ' int x; int main() { return 0; }'
     if cc.compiles(code, name: s + ' implementation', args: c_args)
         conf.set('TE_THREAD_LOCAL', s)
-        break
     endif
 endforeach
 
