@@ -39,6 +39,9 @@
 /** KVM device to check */
 #define DEV_KVM     "/dev/kvm"
 
+/** Default QEMU system emulator to use */
+#define VM_QEMU_DEFAULT "qemu-system-x86_64"
+
 typedef struct vm_cpu {
     te_string       model;
     unsigned int    num;
@@ -73,6 +76,7 @@ typedef SLIST_HEAD(vm_pci_pt_list_t, vm_pci_pt_entry) vm_pci_pt_list_t;
 struct vm_entry {
     SLIST_ENTRY(vm_entry)   links;
     char                   *name;
+    char                   *qemu;
     te_bool                 kvm;
     uint16_t                host_ssh_port;
     uint16_t                guest_ssh_port;
@@ -373,8 +377,7 @@ vm_start(struct vm_entry *vm)
     }
 
     te_string_free(&vm->cmd);
-    rc = te_string_append_shell_args_as_is(&vm->cmd,
-             "qemu-system-x86_64",
+    rc = te_string_append_shell_args_as_is(&vm->cmd, vm->qemu,
              "-name", name_str.ptr,
              "-no-user-config",
              "-nodefaults",
@@ -644,9 +647,18 @@ vm_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
+    vm->qemu = strdup(VM_QEMU_DEFAULT);
+    if (vm->qemu == NULL)
+    {
+        free(vm->name);
+        free(vm);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
     rc = te_string_append(&vm->cpu.model, "host");
     if (rc != 0)
     {
+        free(vm->qemu);
         free(vm->name);
         free(vm);
         return rc;
@@ -699,6 +711,47 @@ vm_del(unsigned int gid, const char *oid,
     free(vm);
 
     return 0;
+}
+
+static te_errno
+vm_qemu_get(unsigned int gid, const char *oid, char *value,
+            const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", vm_name);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", vm->qemu);
+
+    return 0;
+}
+
+static te_errno
+vm_qemu_set(unsigned int gid, const char *oid, const char *value,
+            const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", vm_name);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    return vm_string_replace(value, &vm->qemu);
 }
 
 static te_errno
@@ -1566,7 +1619,10 @@ RCF_PCH_CFG_NODE_NA(node_vm_ssh_port, "ssh_port",
 RCF_PCH_CFG_NODE_RW(node_vm_status, "status", NULL, &node_vm_ssh_port,
                     vm_status_get, vm_status_set);
 
-RCF_PCH_CFG_NODE_COLLECTION(node_vm, "vm", &node_vm_status, NULL,
+RCF_PCH_CFG_NODE_RW(node_vm_qemu, "qemu", NULL, &node_vm_status,
+                    vm_qemu_get, vm_qemu_set);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_vm, "vm", &node_vm_qemu, NULL,
                             vm_add, vm_del, vm_list, NULL);
 
 

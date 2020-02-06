@@ -16,6 +16,13 @@
          Virtual machine instance.
          Name: VM name
 
+    - oid: "/agent/vm/qemu"
+      access: read_write
+      type: string
+      d: |
+         QEMU system emulator to use. qemu-system-x86_64 by default.
+         Name: None
+
     - oid: "/agent/vm/status"
       access: read_write
       type: integer
