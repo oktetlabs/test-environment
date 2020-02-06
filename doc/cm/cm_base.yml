@@ -636,7 +636,7 @@
       volatile: true
       d: |
          The total numver of IPv4 packets which local IP user-protocols
-       * (including ICMP) supplied to IP in request for transmission.
+         (including ICMP) supplied to IP in request for transmission.
          Name:  Transmit requests counter
 
     - oid: "/agent/stats/ipv4_out_discards"
@@ -960,7 +960,7 @@
          Value: Name of the interface
 
     - oid: "/agent/route/type"
-     access: read_write
+      access: read_write
       type: string
       d: |
          Route type.
