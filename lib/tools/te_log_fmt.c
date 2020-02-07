@@ -858,6 +858,7 @@ case mod_:\
             case 'L':
             case 'j':
             case 't':
+            case 'z':
                 modifier = *s++;
                 break;
 
@@ -976,6 +977,9 @@ case mod_:\
                         break;
                     case 't':
                         (void)va_arg(ap, ptrdiff_t);
+                        break;
+                    case 'z':
+                        (void)va_arg(ap, size_t);
                         break;
                     case 'L':
                         (void)va_arg(ap, long long);

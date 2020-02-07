@@ -308,6 +308,9 @@ te_log_vprintf_old(struct te_log_out_params *param,
                 s++;
                 break;
             }
+            case 'z':
+                modifier = *s++;
+                break;
             default:
             {
                 modifier = '\0';
@@ -455,6 +458,11 @@ te_log_vprintf_old(struct te_log_out_params *param,
                     case 'L':
                     {
                         (void)va_arg(ap, long long);
+                        break;
+                    }
+                    case 'z':
+                    {
+                        (void)va_arg(ap, size_t);
                         break;
                     }
                     case '8':
