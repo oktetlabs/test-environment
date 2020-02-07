@@ -308,6 +308,8 @@ te_log_vprintf_old(struct te_log_out_params *param,
                 s++;
                 break;
             }
+            case 'j':
+            case 't':
             case 'z':
                 modifier = *s++;
                 break;
@@ -450,8 +452,6 @@ te_log_vprintf_old(struct te_log_out_params *param,
             case 'u':
             case 'x':
             case 'X':
-            case 'c':
-            case 'p':
             {
                 switch(modifier)
                 {
@@ -463,6 +463,16 @@ te_log_vprintf_old(struct te_log_out_params *param,
                     case 'z':
                     {
                         (void)va_arg(ap, size_t);
+                        break;
+                    }
+                    case 't':
+                    {
+                        (void)va_arg(ap, ptrdiff_t);
+                        break;
+                    }
+                    case 'j':
+                    {
+                        (void)va_arg(ap, intmax_t);
                         break;
                     }
                     case '8':
@@ -478,6 +488,18 @@ te_log_vprintf_old(struct te_log_out_params *param,
                         (void)va_arg(ap, int);
                     }
                 }
+                modifier = '\0';
+                break;
+            }
+            case 'c':
+            {
+                (void)va_arg(ap, int);
+                modifier = '\0';
+                break;
+            }
+            case 'p':
+            {
+                (void)va_arg(ap, void *);
                 modifier = '\0';
                 break;
             }
