@@ -148,6 +148,14 @@
          Name: none
          Value: name of a net driver
 
+    - oid: "/local/mem_channels"
+      access: read_create
+      type: integer
+      d: |
+        Number of DRAM memory channels on corresponding host.
+        It is important for DPDK performance and there is no easy
+        way to auto-detect it.
+
     - oid: "/local/test"
       access: read_only
       type: none
