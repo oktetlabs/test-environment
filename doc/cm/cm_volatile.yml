@@ -18,6 +18,16 @@
          Volatile engine data root.
          Name: empty
 
+    - oid: "/volatile/alien_link_addr"
+      access: read_write
+      type: address
+      volatile: true
+      d: |
+        Link layer address (IEEE 802.3 MAC address) which do not belong to any
+        testing network node. It is incremented automatically on every allocation.
+          Name: empty
+          Value: Link layer address
+
     - oid: "/volatile/sockaddr_port"
       access: read_write
       type: integer
