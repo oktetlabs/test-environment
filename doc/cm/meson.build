@@ -20,6 +20,7 @@ cm_files = files(
     'cm_iscsi.yml',
     'cm_l2tp_server.yml',
     'cm_local.yml',
+    'cm_local_dpdk.yml',
     'cm_local_host.yml',
     'cm_module.yml',
     'cm_namespace.yml',
