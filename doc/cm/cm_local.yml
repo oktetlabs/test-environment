@@ -35,6 +35,15 @@
           Name: none
           Value: IPv6 address
 
+    - oid: "/local/socklib"
+      access: read_write
+      type: string
+      d: |
+        Dynamic library to be used on IUT RPC server to search for functions.
+        Different for different test agents specified to level instance name.
+          Name: none
+          Value: Path to dynamic library to open on corresponding host.
+
     - oid: "/local/rpcserver_force_restart"
       access: read_write
       type: integer
