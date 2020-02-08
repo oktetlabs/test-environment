@@ -1070,6 +1070,15 @@
          dst, goto, tos, fwmark, fwmask, table, flow, iifname, oifname.
          e.g. "priority=32766,family=2,type=1,table=254"
 
+    - oid: "/agent/rpcprovider"
+      access: read_write
+      type: string
+      d: |
+         RPC provider application to be used if dedicated application is
+         required (i.e. not test agent itself which is the default).
+         Name: empty
+         Value: RPC provider application
+
     - oid: "/agent/rpcserver"
       access: read_create
       type: string
