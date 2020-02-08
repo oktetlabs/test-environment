@@ -330,7 +330,7 @@ te_strtol(const char *str, int base, long int *result)
     te_errno  rc;
 
     rc = te_strtol_raw(str, &endptr, base, result);
-    if (!rc)
+    if (rc != 0)
         return rc;
 
     if (*endptr != '\0')
