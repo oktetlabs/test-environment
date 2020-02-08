@@ -44,6 +44,17 @@
           Name: none
           Value: Path to dynamic library to open on corresponding host.
 
+    - oid: "/local/env"
+      access: read_create
+      type: string
+      d: |
+        Environment variables to be set on corresponding test agents upon requst
+        (see tapi_cfg_env_local_to_agent() in lib/tapi). Typically it is done
+        from prologue. It allows to forward test engine side environment variables
+        value to test agents.
+          Name: environment variable name
+          Value: environment variable value
+
     - oid: "/local/rpcserver"
       access: read_create
       type: string
