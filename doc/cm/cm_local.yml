@@ -17,6 +17,24 @@
          Root object of the local configuration tree.
          Name: agent name or none
 
+    - oid: "/local/ip4_alien"
+      access: read_write
+      type: address
+      d: |
+        Address to be returned as alien IPv4 address when address of such type is
+        requested in environment.
+          Name: none
+          Value: IPv4 address
+
+    - oid: "/local/ip6_alien"
+      access: read_write
+      type: address
+      d: |
+        Address to be returned as alien IPv6 address when address of such type is
+        requested in environment.
+          Name: none
+          Value: IPv6 address
+
     - oid: "/local/rpcserver_force_restart"
       access: read_write
       type: integer
