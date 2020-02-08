@@ -149,7 +149,7 @@
          Value: name of a net driver
 
     - oid: "/local/mem_channels"
-      access: read_create
+      access: read_write
       type: integer
       d: |
         Number of DRAM memory channels on corresponding host.
