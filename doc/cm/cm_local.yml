@@ -17,6 +17,15 @@
          Root object of the local configuration tree.
          Name: agent name or none
 
+    - oid: "/local/reqs"
+      access: read_create
+      type: string
+      d: |
+         Requirements dynamically by prologue which, for exmaple, identifies,
+         that some functionality is not supported.
+           Name: test ID
+           Value: requirements expression
+
     - oid: "/local/ip4_alien"
       access: read_write
       type: address
