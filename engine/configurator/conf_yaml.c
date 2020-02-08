@@ -110,7 +110,7 @@ out:
 static te_errno
 parse_logic_expr_str(const char *str, te_bool *res, te_kvpair_h *expand_vars)
 {
-    logic_expr *parsed;
+    logic_expr *parsed = NULL;
     logic_expr_res parsed_res;
     te_errno rc;
 
