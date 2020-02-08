@@ -259,7 +259,7 @@ extern te_errno te_strtol_raw(const char *input, char **endptr, int base,
  *
  * @return 0 or error
  */
-extern te_errno te_strtol(const char *input, int base, long int* result);
+extern te_errno te_strtol(const char *input, int base, long int *result);
 
 /**
  * Convert string to bool meaning 0 - FALSE, not 0 - TRUE
