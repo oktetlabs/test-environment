@@ -88,6 +88,16 @@
          Name: none
          Value: 1 = disable reuse_pco mode, 0 = usual behavior
 
+    - oid: "/local/use_static_arp"
+      access: read_write
+      type: integer
+      d: |
+        Whether static ARP or neighbour cache entries should be used when
+        test network is setup.
+          Name: none
+          Value: 0 = do not use static neighbour entries
+                 not 0 = use static neighbour entries
+
     - oid: "/local/dpdk_driver"
       access: read_create
       type: string
