@@ -57,7 +57,7 @@
       access: read_create
       type: string
       d: |
-        Environment variables to be set on corresponding test agents upon requst
+        Environment variables to be set on corresponding test agents upon request
         (see tapi_cfg_env_local_to_agent() in lib/tapi). Typically it is done
         from prologue. It allows to forward test engine side environment variables
         value to test agents.
