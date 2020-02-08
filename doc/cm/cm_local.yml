@@ -44,6 +44,16 @@
           Name: none
           Value: Path to dynamic library to open on corresponding host.
 
+    - oid: "/local/rpcserver"
+      access: read_create
+      type: string
+      d: |
+        RPC servers to be created on corresponding test agents upon request
+        (see tapi_cfg_rpcs_local_to_agent() in lib/tapi). Typically it is done
+        from prologues.
+          Name: RPC server name
+          Value: RPC server value (see /agent/rpcserver)
+
     - oid: "/local/rpcserver_force_restart"
       access: read_write
       type: integer
