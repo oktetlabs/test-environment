@@ -18,6 +18,15 @@
          Volatile engine data root.
          Name: empty
 
+    - oid: "/volatile/sockaddr_port"
+      access: read_write
+      type: integer
+      volatile: true
+      d: |
+        Cache used for unique port allocation.
+          Name: empty
+          Value: transport port number
+
     - oid: "/volatile/ta_sockets"
       access: read_create
       type: string
