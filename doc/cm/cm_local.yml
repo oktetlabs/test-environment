@@ -30,6 +30,16 @@
          Name: none
          Value: 0 = report all errors, 1 = ignore errors
 
+    - oid: "/local/iut_errno_change_no_check"
+      access: read_write
+      type: integer
+      d: |
+        Do not treat errno change in the case of successful RPC call
+        on IUT RPC server as an error.
+          Name: none
+          Value: 0 = errno change is an error,
+                 not 0 = errno change is not an error
+
     - oid: "/local/saved_mtus"
       access: read_create
       type: string
