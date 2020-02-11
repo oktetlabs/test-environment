@@ -1359,8 +1359,8 @@ tapi_acse_add_object(tapi_acse_context_t *ctx,
 
     to_cpe_loc.add_object = &add_object;
 
-    strncpy(obj_name_buf, obj_name, sizeof(obj_name_buf));
-    strncpy(param_key_buf, param_key, sizeof(param_key_buf));
+    TE_STRLCPY(obj_name_buf, obj_name, sizeof(obj_name_buf));
+    TE_STRLCPY(param_key_buf, param_key, sizeof(param_key_buf));
 
     RING("Issue to CPE %s AddObject on %s",
          ctx->cpe_name, obj_name);
@@ -1413,8 +1413,8 @@ tapi_acse_delete_object(tapi_acse_context_t *ctx,
 
     to_cpe_loc.delete_object = &del_object;
 
-    strncpy(obj_name_buf, obj_name, sizeof(obj_name_buf));
-    strncpy(param_key_buf, param_key, sizeof(param_key_buf));
+    TE_STRLCPY(obj_name_buf, obj_name, sizeof(obj_name_buf));
+    TE_STRLCPY(param_key_buf, param_key, sizeof(param_key_buf));
 
     RING("Issue to CPE %s DeleteObject on %s",
          ctx->cpe_name, obj_name);
