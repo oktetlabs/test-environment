@@ -5,6 +5,7 @@ install_data([ 'daemons/ldap/slapd_run.sh', 'daemons/ldap/slapd.conf' ],
 
 includes += include_directories('base')
 includes += include_directories('ovs')
+includes += include_directories('process')
 includes += include_directories('route')
 includes += include_directories('rule')
 includes += include_directories('util')
@@ -29,6 +30,7 @@ sources += files(
     'base/conf_sys_tree.c',
     'base/conf_veth.c',
     'base/conf_udp_tunnel.c',
+    'process/conf_process.c',
     'route/conf_route.c',
     'route/conf_route_libnetconf.c',
     'route/conf_route_socket.c',

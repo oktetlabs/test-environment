@@ -2,7 +2,7 @@
 ACLOCAL_AMFLAGS = -I $(TE_M4)
 
 AM_CPPFLAGS = -I$(DESTDIR)/$(prefix)/../$(TE_PLATFORM)/include $(TE_CPPFLAGS) \
-              -I$(srcdir)/.. -I$(srcdir)/base -I$(srcdir)/util -I$(srcdir)/vm \
+              -I$(srcdir)/.. -I$(srcdir)/base -I$(srcdir)/util -I$(srcdir)/vm -I$(srcdir)/process \
               -I$(srcdir)/ovs -I$(srcdir)/route -I$(srcdir)/rule -I$(srcdir)/daemons -I. \
               @EXTRA_CPPFLAGS@ $(TE_CPPFLAGS_VAR)
 
@@ -22,6 +22,7 @@ noinst_HEADERS = \
 	base/conf_netconf.h \
 	base/conf_common.h \
 	ovs/conf_ovs.h \
+	process/conf_process.h \
 	route/conf_route.h \
 	rule/conf_rule.h \
 	util/conf_dlpi.h \
@@ -50,6 +51,7 @@ libconf_a_SOURCES = \
 	base/conf_bridge.c \
 	base/conf_rlimits.c \
 	base/conf_block.c \
+	process/conf_process.c \
 	route/conf_route.c \
 	route/conf_route_libnetconf.c \
 	route/conf_route_socket.c \
