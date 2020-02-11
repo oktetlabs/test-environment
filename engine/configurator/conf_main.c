@@ -23,6 +23,7 @@
 
 #include <libxml/xinclude.h>
 #include "te_kvpair.h"
+#include "te_alloc.h"
 
 #if HAVE_SIGNAL_H
 #include <signal.h>
@@ -58,6 +59,9 @@ static unsigned int cs_flags = 0;
 
 static void process_backup(cfg_backup_msg *msg);
 static te_errno create_backup(char **bkp_filename);
+static te_errno process_backup_op(const char *name, uint8_t op);
+static te_errno release_backup(const char *name);
+static te_errno restore_backup(const char *name);
 static te_errno parse_config(const char *fname, te_kvpair_h *expand_vars);
 
 /**
@@ -738,6 +742,36 @@ copy_subtree_recursively(const char *top_dst_oid, cfg_handle top_src_handle)
             return rc;
     }
     return rc;
+}
+
+/**
+ * Process 'copy' user request.
+ *
+ * @param msg   message
+ */
+static void
+process_copy(cfg_copy_msg *msg)
+{
+    char *backup_name;
+
+    if ((msg->rc = create_backup(&backup_name)) != 0)
+    {
+        ERROR("Failed to create a backup");
+        return;
+    }
+
+    msg->rc = copy_subtree_recursively(msg->dst_oid, msg->src_handle);
+    if (msg->rc != 0)
+    {
+        /*
+         * Since error was triggered by copying,
+         * restore_backup() return value can be ignored
+         */
+        restore_backup(backup_name);
+    }
+
+    msg->rc = release_backup(backup_name);
+    free(backup_name);
 }
 
 /**
@@ -1779,6 +1813,64 @@ create_backup(char **bkp_filename)
 }
 
 /**
+ * Verify/release/restore backup.
+ *
+ * @param name      Backup name
+ * @param op        Backup operation
+ *
+ * @return Status code
+ */
+static te_errno
+process_backup_op(const char *name, uint8_t op)
+{
+    te_errno rc = 0;
+    size_t len;
+    cfg_backup_msg *bkp_msg = TE_ALLOC(sizeof(cfg_backup_msg) +
+                                       sizeof(max_commit_subtree));
+    if (bkp_msg == NULL)
+        return TE_ENOMEM;
+
+    bkp_msg->type = CFG_BACKUP;
+    bkp_msg->op = op;
+
+    len = strlen(name) + 1;
+    memcpy(bkp_msg->filename, name, len);
+    bkp_msg->len = sizeof(cfg_backup_msg) + len;
+
+    process_backup(bkp_msg);
+    rc = bkp_msg->rc;
+
+    free(bkp_msg);
+    return rc;
+}
+
+/*
+ * Release backup
+ *
+ * @param name  Backup name
+ *
+ * @return Status code
+ */
+static te_errno
+release_backup(const char *name)
+{
+    return process_backup_op(name, CFG_BACKUP_RELEASE);
+}
+
+/*
+ * Restore backup
+ *
+ * @param name  Backup name
+ *
+ * @return Status code
+ */
+static te_errno
+restore_backup(const char *name)
+{
+    return process_backup_op(name, CFG_BACKUP_RESTORE);
+}
+
+/**
  * Process reboot user request.
  *
  * @param msg           message pointer
@@ -1933,10 +2025,7 @@ cfg_process_msg(cfg_msg **msg, te_bool update_dh)
 
         case CFG_COPY:
         {
-            cfg_copy_msg *m = (cfg_copy_msg *)(*msg);
-
-            (*msg)->rc = copy_subtree_recursively(m->dst_oid,
-                                                  m->src_handle);
+            process_copy((cfg_copy_msg *)(*msg));
             break;
         }
 
