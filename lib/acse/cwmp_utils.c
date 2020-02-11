@@ -821,7 +821,7 @@ cwmp_set_attrs_add(cwmp_set_parameter_attributes_t *request,
 static inline const char *
 soap_simple_type_string(int type)
 {
-    static char buf[10];
+    static char buf[32];
     switch (type)
     {
         case SOAP_TYPE_int:          return "SOAP_TYPE_int";
