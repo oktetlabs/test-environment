@@ -2643,16 +2643,14 @@ cfg_copy_subtree_fmt(const char *dst_oid,
                      const char *src_oid_fmt,
                      ...)
 {
-    va_list     ap;
-    char       *backup_name;
-    char        src_oid[CFG_OID_MAX];
-    size_t      src_oid_len;
-    cfg_handle  src_handle;
-    te_errno    rc = 0;
-
-    rc = cfg_create_backup(&backup_name);
-    if (rc != 0)
-        return TE_RC(TE_CONF_API, rc);
+    cfg_copy_msg   *msg;
+    va_list         ap;
+    char            src_oid[CFG_OID_MAX];
+    size_t          src_oid_len;
+    size_t          len;
+    size_t          dst_oid_len;
+    cfg_handle      src_handle;
+    te_errno        rc = 0;
 
     va_start(ap, src_oid_fmt);
     vsnprintf(src_oid, sizeof(src_oid), src_oid_fmt, ap);
@@ -2665,11 +2663,44 @@ cfg_copy_subtree_fmt(const char *dst_oid,
     if (rc != 0)
         return TE_RC(TE_CONF_API, rc);
 
-    rc = copy_subtree(dst_oid, src_oid_len, src_handle);
-    if (rc != 0)
-        (void)cfg_restore_backup(backup_name);
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_lock(&cfgl_lock);
+#endif
+    INIT_IPC;
+    if (cfgl_ipc_client == NULL)
+    {
+#ifdef HAVE_PTHREAD_H
+        pthread_mutex_unlock(&cfgl_lock);
+#endif
+        return TE_RC(TE_CONF_API, TE_EIPC);
+    }
+    msg = (cfg_copy_msg *)cfgl_msg_buf;
+    msg->type = CFG_COPY;
+    msg->src_handle = src_handle;
+    msg->len = sizeof(cfg_copy_msg);
 
-    (void)cfg_release_backup(&backup_name);
+    dst_oid_len = strlen(dst_oid);
+    if (msg->len + dst_oid_len + 1 > CFG_MSG_MAX)
+    {
+#ifdef HAVE_PTHREAD_H
+        pthread_mutex_unlock(&cfgl_lock);
+#endif
+        return TE_RC(TE_CONF_API, TE_ENOBUFS);
+    }
+    else
+    {
+        memcpy(msg->dst_oid, dst_oid, dst_oid_len + 1);
+        msg->len = sizeof(cfg_copy_msg) + dst_oid_len + 1;
+    }
+
+    len = CFG_MSG_MAX;
+    rc = ipc_send_message_with_answer(cfgl_ipc_client,
+                                      CONFIGURATOR_SERVER,
+                                      msg, msg->len, msg, &len);
+
+#ifdef HAVE_PTHREAD_H
+    pthread_mutex_unlock(&cfgl_lock);
+#endif
 
     return TE_RC(TE_CONF_API, rc);
 }
