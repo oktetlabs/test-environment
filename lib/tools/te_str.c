@@ -286,15 +286,16 @@ te_strtoui(const char   *str,
     return 0;
 }
 
-/* See description in te_str.h */
-te_errno
-te_strtol_raw(const char *str, char **endptr,  int base, long int *result)
+
+static te_errno
+te_strtol_raw_silent(const char *str, char **endptr,  int base,
+                     long int *result)
 {
     te_errno  rc = 0;
     int       saved_errno = errno;
     int       new_errno = 0;
 
-    if (str == NULL || result == NULL)
+    if (str == NULL || endptr == NULL || result == NULL)
     {
         ERROR("%s(): invalid arguments", __FUNCTION__);
         return TE_EINVAL;
@@ -314,6 +315,19 @@ te_strtol_raw(const char *str, char **endptr,  int base, long int *result)
         return rc;
     }
 
+    return 0;
+}
+
+/* See description in te_str.h */
+te_errno
+te_strtol_raw(const char *str, char **endptr,  int base, long int *result)
+{
+    te_errno rc;
+
+    rc = te_strtol_raw_silent(str, endptr, base, result);
+    if (rc != 0)
+        return rc;
+
     if (*endptr == NULL || *endptr == str)
     {
         ERROR("%s(): failed to parse '%s'", __FUNCTION__, str);
@@ -323,23 +337,41 @@ te_strtol_raw(const char *str, char **endptr,  int base, long int *result)
     return 0;
 }
 
+/* See description in te_str.h */
 te_errno
-te_strtol(const char *str, int base, long int *result)
+te_strtol_silent(const char *str, int base, long int *result)
 {
-    char      *endptr;
+    char     *endptr;
     te_errno  rc;
 
-    rc = te_strtol_raw(str, &endptr, base, result);
+    rc = te_strtol_raw_silent(str, &endptr, base, result);
     if (rc != 0)
         return rc;
 
-    if (*endptr != '\0')
-    {
-        ERROR("%s(): failed to parse '%s'", __FUNCTION__, str);
+    if (endptr == NULL || endptr == str || *endptr != '\0')
         return TE_EINVAL;
-    }
 
     return 0;
+}
+
+/* See description in te_str.h */
+te_errno
+te_strtol(const char *str, int base, long int *result)
+{
+    char     *endptr;
+    te_errno  rc;
+
+    rc = te_strtol_raw_silent(str, &endptr, base, result);
+    if (rc != 0)
+        return rc;
+
+    if (endptr == NULL || endptr == str || *endptr != '\0')
+    {
+        ERROR("%s(): failed to parse '%s'", __FUNCTION__, str);
+        rc = TE_EINVAL;
+    }
+
+    return rc;
 }
 
 te_errno

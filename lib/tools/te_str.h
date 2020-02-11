@@ -250,6 +250,19 @@ extern te_errno te_strtol_raw(const char *input, char **endptr, int base,
                               long int *result);
 
 /**
+ * Convert string to long int without error logs input is not a number.
+ *
+ * Should be used to avoid creating extra vars for 'end' parameter in the code.
+ *
+ * @param input        String to convert
+ * @param base         Base to be used
+ * @param [out]result  Storage for result
+ *
+ * @return 0 or error
+ */
+extern te_errno te_strtol_silent(const char *input, int base, long int *result);
+
+/**
  * Convert string to long int. Should be used to avoid
  * creating extra vars for 'end' parameter in the code.
  *

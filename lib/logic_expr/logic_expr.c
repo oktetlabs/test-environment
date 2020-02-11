@@ -1301,8 +1301,8 @@ logic_expr_parse_comparison_oper(const logic_expr *parsed,
         goto out;
     }
 
-    if (te_strtol(res_l.value.simple, 0, &l_val) == 0 &&
-        te_strtol(res_r.value.simple, 0, &r_val) == 0)
+    if (te_strtol_silent(res_l.value.simple, 0, &l_val) == 0 &&
+        te_strtol_silent(res_r.value.simple, 0, &r_val) == 0)
         both_are_numbers = TRUE;
     else
         both_are_numbers = FALSE;
