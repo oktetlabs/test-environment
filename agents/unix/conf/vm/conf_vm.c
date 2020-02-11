@@ -456,6 +456,13 @@ vm_start(struct vm_entry *vm)
     if (rc != 0)
         goto exit;
 
+    rc = te_string_append_shell_args_as_is(&vm->cmd, "-serial", "stdio", NULL);
+    if (rc != 0)
+    {
+        ERROR("Cannot compose VM start command line (line %u)", __LINE__);
+        goto exit;
+    }
+
     RING("VM %s command-line: %s", vm->name, vm->cmd.ptr);
 
     vm->pid = te_shell_cmd(vm->cmd.ptr, -1, NULL, NULL, NULL);
