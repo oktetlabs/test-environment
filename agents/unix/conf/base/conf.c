@@ -1624,6 +1624,22 @@ cleanup:
     return ret;
 }
 
+/* See the description in conf_common.h */
+te_errno
+string_replace(char **dst, const char *src)
+{
+    char *new_dst;
+
+    new_dst = strdup(src);
+    if (new_dst == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    free(*dst);
+    *dst = new_dst;
+
+    return 0;
+}
+
 #if SOLARIS_IP_FW
 /**
  * Set or obtain the value of IP forwarding variable on Solaris.

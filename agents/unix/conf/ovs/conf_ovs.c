@@ -41,6 +41,7 @@
 #include "rcf_pch.h"
 #include "unix_internal.h"
 
+#include "conf_common.h"
 #include "conf_ovs.h"
 
 #define OVS_SLEEP_MS_MAX 256
@@ -1730,24 +1731,6 @@ out:
 }
 
 static te_errno
-ovs_value_replace(char       **dst,
-                  const char  *src)
-{
-    char *value = strdup(src);
-
-    if (value == NULL)
-    {
-        ERROR("Failed to copy the value '%s'", src);
-        return TE_ENOMEM;
-    }
-
-    free(*dst);
-    *dst = value;
-
-    return 0;
-}
-
-static te_errno
 ovs_interface_pick(const char       *ovs,
                    const char       *interface_name,
                    te_bool           writable,
@@ -1925,7 +1908,7 @@ ovs_interface_mtu_set(unsigned int  gid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    rc = ovs_value_replace(&interface->mtu_request, value);
+    rc = string_replace(&interface->mtu_request, value);
     if (rc != 0)
         ERROR("Failed to store the new interface custom MTU value");
     else
@@ -2018,7 +2001,7 @@ ovs_interface_ofport_set(unsigned int  gid,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    rc = ovs_value_replace(&interface->ofport_request, value);
+    rc = string_replace(&interface->ofport_request, value);
     if (rc != 0)
         ERROR("Failed to store the new interface custom ofport value");
     else
@@ -2142,7 +2125,7 @@ ovs_interface_mac_set(unsigned int  gid,
         mac_requested = TRUE;
     }
 
-    rc = ovs_value_replace(&interface->mac_request, value);
+    rc = string_replace(&interface->mac_request, value);
     if (rc != 0)
         ERROR("Failed to store the new interface custom MAC value");
     else
@@ -2295,7 +2278,7 @@ ovs_interface_set(unsigned int  gid,
         return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
     }
 
-    rc = ovs_value_replace(&interface->type, value);
+    rc = string_replace(&interface->type, value);
     if (rc != 0)
         ERROR("Failed to store the new interface type value");
 

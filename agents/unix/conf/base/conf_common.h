@@ -98,6 +98,17 @@ extern te_errno get_dir_list(const char *path, char *buffer, size_t length,
                              include_callback_func include_callback,
                              void *callback_data);
 
+/**
+ * Replace the given string by another string given
+ * allocated from heap.
+ *
+ * @param dst    String to be replaced.
+ * @param src    Replacement string.
+ *
+ * @return Status code.
+ */
+extern te_errno string_replace(char **dst, const char *src);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -32,6 +32,7 @@
 #include "te_str.h"
 #include "rcf_pch.h"
 #include "agentlib.h"
+#include "conf_common.h"
 #include "conf_vm.h"
 
 #if __linux__
@@ -108,21 +109,6 @@ static te_bool
 vm_is_running(struct vm_entry *vm)
 {
     return (vm->pid == -1) ? FALSE : (ta_waitpid(vm->pid, NULL, WNOHANG) == 0);
-}
-
-static te_errno
-vm_string_replace(const char *src, char **dst)
-{
-    char *new_dst;
-
-    new_dst = strdup(src);
-    if (new_dst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-
-    free(*dst);
-    *dst = new_dst;
-
-    return 0;
 }
 
 static te_errno
@@ -758,7 +744,7 @@ vm_qemu_set(unsigned int gid, const char *oid, const char *value,
     if (vm_is_running(vm))
         return TE_RC(TE_TA_UNIX, ETXTBSY);
 
-    return vm_string_replace(value, &vm->qemu);
+    return string_replace(&vm->qemu, value);
 }
 
 static te_errno
@@ -1151,7 +1137,7 @@ vm_net_property_set(unsigned int gid, const char *oid, const char *value,
     if (property == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    return vm_string_replace(value, property);
+    return string_replace(property, value);
 }
 
 static te_errno
