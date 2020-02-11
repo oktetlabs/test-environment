@@ -264,6 +264,27 @@ te_strtoul(const char *str, int base, unsigned long int *value)
 }
 
 te_errno
+te_strtoi(const char *str, int base, int *value)
+{
+    long int value_long;
+    te_errno rc;
+
+    rc = te_strtol(str, base, &value_long);
+    if (rc != 0)
+        return rc;
+
+    if (value_long < INT_MIN || value_long > INT_MAX)
+    {
+        ERROR("%s(): the value '%s' is too big", __FUNCTION__, str);
+        return TE_EOVERFLOW;
+    }
+
+    *value = value_long;
+
+    return 0;
+}
+
+te_errno
 te_strtoui(const char   *str,
            int           base,
            unsigned int *value)

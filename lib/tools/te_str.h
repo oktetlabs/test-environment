@@ -228,6 +228,17 @@ extern te_errno te_strtoul(const char *str, int base,
                            unsigned long int *value);
 
 /**
+ * Wrapper for te_strtol() with overflow check
+ *
+ * @param str   String to convert
+ * @param base  Base of the numeral system
+ * @param value Location for the resulting value
+ *
+ * @return Status code
+ */
+extern te_errno te_strtoi(const char *str, int base, int *value);
+
+/**
  * Wrapper for te_strtoul() with overflow check.
  *
  * @param str   String to convert
