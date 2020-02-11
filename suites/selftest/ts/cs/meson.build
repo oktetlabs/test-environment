@@ -2,6 +2,7 @@
 
 tests = [
     'phy',
+    'process',
     'vlans',
     'vm',
 ]

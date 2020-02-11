@@ -42,5 +42,10 @@
             </script>
         </run>
 
+        <run>
+            <script name="process">
+            </script>
+        </run>
+
     </session>
 </package>
