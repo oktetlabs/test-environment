@@ -130,25 +130,25 @@ te_strlcat(char *dst, const char *src, size_t size)
 }
 
 /* See description in te_str.h */
-char *
-te_strncpy(const char *id, char *dst, size_t size, const char *src)
+te_errno
+te_strlcpy_safe(char *dst, const char *src, size_t size)
 {
-    size_t n;
-
     if (size == 0)
-    {
-        ERROR("%s: destination buffer has zero size", id);
-        return dst;
-    }
+        return TE_ESMALLBUF;
 
-    n = strlen(src) + 1;
-    n = n < size ? n : size;
-    memcpy(dst, src, n);
-    if (dst[n - 1] != '\0')
-    {
-        dst[n - 1] = '\0';
+    if (te_strlcpy(dst, src, size) >= size)
+        return TE_ESMALLBUF;
+
+    return 0;
+}
+
+/* See description in te_str.h */
+char *
+te_strlcpy_verbose(const char *id, char *dst, const char *src, size_t size)
+{
+    if (te_strlcpy_safe(dst, src, size) != 0)
         ERROR("%s: string \"%s\" is truncated", id, dst);
-    }
+
     return dst;
 }
 

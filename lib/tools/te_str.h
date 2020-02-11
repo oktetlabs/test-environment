@@ -108,29 +108,34 @@ extern size_t te_strlcpy(char *dst, const char *src, size_t size);
 extern size_t te_strlcat(char *dst, const char *src, size_t size);
 
 /**
- * Copy at most @p size bytes of the string pointed to by @p src to the buffer
- * pointed to by @p dst. It prints an error message if the @p size of destination
- * buffer is not big enough to store the whole source string, and terminates the
- * result string with '\0' forcibly.
- *
- * @param id        Prefix for error message, usually __func__.
- * @param dst       Pointer to destination buffer.
- * @param size      Size of destination buffer.
- * @param src       Source string buffer to copy from.
- *
- * @return A pointer to the destination string @p dst.
+ * Same as te_strlcpy() except it checks the result itself and returns
+ * a status code
  */
-extern char *te_strncpy(const char *id, char *dst, size_t size, const char *src);
+extern te_errno te_strlcpy_safe(char *dst, const char *src, size_t size);
 
 /**
- * Copy one string to another. It is a wrapper for te_strncpy().
+ * Call te_strlcpy_safe() and print an error message if there is no enough
+ * space in the buffer to allocate the whole input string.
  *
- * @param _dst      Pointer to destination buffer.
- * @param _size     Size of destination buffer.
- * @param _src      Pointer to source string buffer to copy from.
+ * @param id        Prefix for error message, usually __func__
+ * @param dst       Destination buffer
+ * @param src       String to copy
+ * @param size      Size of destination buffer
+ *
+ * @return A pointer to the destination buffer @p dst.
  */
-#define TE_STRNCPY(_dst, _size, _src) \
-    te_strncpy(__func__, _dst, _size, _src)
+extern char *te_strlcpy_verbose(const char *id, char *dst, const char *src,
+                                size_t size);
+
+/**
+ * Call te_strlcpy_verbose() with id "__func__".
+ *
+ * @param _dst      Destination buffer
+ * @param _src      String to copy
+ * @param _size     Size of destination buffer
+ */
+#define TE_STRLCPY(_dst, _src, _size) \
+    te_strlcpy_verbose(__func__, _dst, _src, _size)
 
 /**
  * The function is equivalent to the function te_snprintf(), except that

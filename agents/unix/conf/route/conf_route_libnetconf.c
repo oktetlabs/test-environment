@@ -348,7 +348,7 @@ ta_unix_conf_route_find(ta_rt_info_t *rt_info)
 
                     if (if_indextoname(nc_nh->oifindex, tmp) != NULL)
                     {
-                        TE_STRNCPY(ta_nh->ifname, IF_NAMESIZE, tmp);
+                        TE_STRLCPY(ta_nh->ifname, tmp, IF_NAMESIZE);
                         ta_nh->flags |= TA_RT_NEXTHOP_FLG_OIF;
                     }
                     else

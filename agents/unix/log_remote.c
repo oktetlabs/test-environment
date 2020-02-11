@@ -162,7 +162,7 @@ log_remote(void *ready, int argc, char *argv[])
     }
 
     /* user */
-    TE_STRNCPY(user, sizeof(user), argv[4]);
+    TE_STRLCPY(user, argv[4], sizeof(user));
 
     /* create socket and bind socket */
     s = socket(PF_INET, SOCK_DGRAM, 0);

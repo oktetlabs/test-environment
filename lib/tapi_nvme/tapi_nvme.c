@@ -297,7 +297,7 @@ parse_endpoint(char *str, char *address, unsigned short *port)
     if ((rc = te_strtol(p + strlen(trsvcid), 10, &temp_port)) != 0)
         return rc;
 
-    TE_STRNCPY(address, INET_ADDRSTRLEN, temp_address);
+    TE_STRLCPY(address, temp_address, INET_ADDRSTRLEN);
     *port = (unsigned short)temp_port;
 
     return 0;

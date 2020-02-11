@@ -731,8 +731,8 @@ rcf_rpc_call(rcf_rpc_server *rpcs, const char *proc,
 
         if (out->err_str.err_str_len > 0)
         {
-            TE_STRNCPY(rpcs->err_msg, RPC_ERROR_MAX_LEN,
-                       out->err_str.err_str_val);
+            TE_STRLCPY(rpcs->err_msg, out->err_str.err_str_val,
+		       RPC_ERROR_MAX_LEN);
         }
 
         rpcs->timed_out = FALSE;

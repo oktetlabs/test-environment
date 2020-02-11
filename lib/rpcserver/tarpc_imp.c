@@ -312,8 +312,8 @@ tarpc_setlibname(const char *libname)
         return TE_RC(TE_TA_UNIX, TE_ENOSPC);
     }
     dynamic_library_set = TRUE;
-    TE_STRNCPY(dynamic_library_name, sizeof(dynamic_library_name),
-               libname);
+    TE_STRLCPY(dynamic_library_name, libname,
+               sizeof(dynamic_library_name));
     RING("Dynamic library is set to '%s'", libname);
 
     if (tce_get_peer_function != NULL)

@@ -984,11 +984,11 @@ route_nexthop_gw_get(unsigned int gid, const char *oid,
         switch (rt_info->dst.ss_family)
         {
             case AF_INET:
-                TE_STRNCPY(value, RCF_MAX_VAL, "0.0.0.0");
+                TE_STRLCPY(value, "0.0.0.0", RCF_MAX_VAL);
                 break;
 
             case AF_INET6:
-                TE_STRNCPY(value, RCF_MAX_VAL, "::");
+                TE_STRLCPY(value, "::", RCF_MAX_VAL);
                 break;
 
             default:
@@ -1060,7 +1060,7 @@ route_nexthop_dev_get(unsigned int gid, const char *oid,
         return rc;
 
     if (rt_nh->flags & TA_RT_NEXTHOP_FLG_OIF)
-        TE_STRNCPY(value, RCF_MAX_VAL, rt_nh->ifname);
+        TE_STRLCPY(value, rt_nh->ifname, RCF_MAX_VAL);
 
     return 0;
 }

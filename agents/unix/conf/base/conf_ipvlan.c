@@ -206,7 +206,7 @@ ipvlan_modify(unsigned int gid, const char *oid, const char *values,
     if (values == NULL)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
-    TE_STRNCPY(str, sizeof(str), values);
+    TE_STRLCPY(str, values, sizeof(str));
 
     if ((val = strtok(str, ":")) == NULL)
     {
