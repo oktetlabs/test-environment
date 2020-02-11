@@ -325,7 +325,7 @@ tapi_acse_manage_vlist(const char *ta, const char *acs_name,
     char cpe_name_buf[RCF_MAX_PATH] = "";
 
     if (cpe_name != NULL)
-        snprintf(cpe_name_buf, RCF_MAX_PATH, "/cpe:%s", cpe_name);
+        TE_SPRINTF(cpe_name_buf, "/cpe:%s", cpe_name);
 
     if (ACSE_OP_ADD == opcode)
     {
@@ -347,8 +347,8 @@ tapi_acse_manage_vlist(const char *ta, const char *acs_name,
         char buf[RCF_MAX_PATH];
         te_errno rc = 0;
 
-        snprintf(buf, RCF_MAX_PATH, "/agent:%s/acse:/acs:%s%s/%s:",
-                 ta, acs_name, cpe_name_buf, name);
+        TE_SPRINTF(buf, "/agent:%s/acse:/acs:%s%s/%s:",
+                   ta, acs_name, cpe_name_buf, name);
 
         if (VA_END_LIST == name)
             break;
