@@ -363,6 +363,7 @@ vm_start(struct vm_entry *vm)
     in_addr_t local_ip = htonl(INADDR_LOOPBACK);
     char local_ip_str[INET_ADDRSTRLEN];
     te_string name_str = TE_STRING_INIT;
+    te_string machine_str = TE_STRING_INIT;
     te_string net_mgmt_str = TE_STRING_INIT;
     te_errno rc;
 
@@ -406,21 +407,28 @@ vm_start(struct vm_entry *vm)
 
     if (vm->kvm)
     {
-        rc = te_string_append_shell_args_as_is(&vm->cmd,
-                 "-enable-kvm",
-                 "-machine",
-                 "pc-i440fx-2.8,accel=kvm,usb=off,vmport=off,dump-guest-core=off",
-                 NULL);
+        rc = te_string_append_shell_args_as_is(&vm->cmd, "-enable-kvm", NULL);
+        if (rc != 0)
+        {
+            ERROR("Failed to add -enable-kvm: %r", rc);
+            goto exit;
+        }
     }
-    else
-    {
-        rc = te_string_append_shell_args_as_is(&vm->cmd,
-                 "-machine", "pc-i440fx-2.8,usb=off,vmport=off,dump-guest-core=off",
-                 NULL);
-    }
+
+    rc = te_string_append(&machine_str,
+             "pc-i440fx-2.8,usb=off,vmport=off,dump-guest-core=off%s",
+             vm->kvm ? ",accel=kvm" : "");
     if (rc != 0)
     {
-        ERROR("Cannot compose VM start command line (line %u)", __LINE__);
+        ERROR("Failed to make VM machine string: %r", rc);
+        goto exit;
+    }
+    rc = te_string_append_shell_args_as_is(&vm->cmd,
+                                           "-machine", machine_str.ptr,
+                                           NULL);
+    if (rc != 0)
+    {
+        ERROR("Failed to add -machine option: %r", rc);
         goto exit;
     }
 
@@ -495,6 +503,7 @@ vm_start(struct vm_entry *vm)
 
 exit:
     te_string_free(&name_str);
+    te_string_free(&machine_str);
     te_string_free(&net_mgmt_str);
     return rc;
 }
