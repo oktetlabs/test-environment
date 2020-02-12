@@ -137,7 +137,7 @@ vm_append_virtio_dev_cmd(te_string *cmd, const char *mac_addr,
     if (rc != 0)
     {
         ERROR("Cannot compose VM device argument (line %u)", __LINE__);
-        return rc;
+        return TE_RC(TE_TA_UNIX, rc);
     }
 
     return 0;
@@ -178,7 +178,7 @@ exit:
     te_string_free(&netdev);
     te_string_free(&device);
 
-    return rc;
+    return TE_RC(TE_TA_UNIX, rc);
 }
 
 static te_errno
@@ -234,7 +234,7 @@ vm_append_net_interfaces_cmd(te_string *cmd, vm_net_list_t *nets)
 exit:
     te_string_free(&interface_args);
 
-    return rc;
+    return TE_RC(TE_TA_UNIX, rc);
 }
 
 static te_errno
@@ -269,7 +269,7 @@ vm_append_drive_cmd(te_string *cmd, vm_drive_list_t *drives)
 exit:
     te_string_free(&drive_args);
 
-    return rc;
+    return TE_RC(TE_TA_UNIX, rc);
 }
 
 static te_errno
@@ -302,7 +302,7 @@ vm_append_pci_pt_cmd(te_string *cmd, vm_pci_pt_list_t *pt_list)
 exit:
     te_string_free(&args);
 
-    return rc;
+    return TE_RC(TE_TA_UNIX, rc);
 }
 
 static te_errno
@@ -323,7 +323,7 @@ vm_append_devices_cmd(te_string *cmd, vm_device_list_t *dev_list)
         }
     }
 
-    return rc;
+    return TE_RC(TE_TA_UNIX, rc);
 }
 
 static te_errno
@@ -359,7 +359,7 @@ vm_append_cpu_cmd(te_string *cmd, struct vm_entry *vm)
 exit:
     te_string_free(&num_arg);
 
-    return rc;
+    return TE_RC(TE_TA_UNIX, rc);
 }
 
 static te_errno
@@ -509,7 +509,7 @@ exit:
     te_string_free(&name_str);
     te_string_free(&machine_str);
     te_string_free(&net_mgmt_str);
-    return rc;
+    return TE_RC(TE_TA_UNIX, rc);
 }
 
 static te_errno
@@ -520,9 +520,9 @@ vm_stop(struct vm_entry *vm)
     if (ta_kill_death(vm->pid) == 0)
         rc = 0;
     else
-        rc = TE_RC(TE_TA_UNIX, TE_ENOENT);
+        rc = TE_ENOENT;
 
-    return rc;
+    return TE_RC(TE_TA_UNIX, rc);
 }
 
 
@@ -777,7 +777,7 @@ vm_add(unsigned int gid, const char *oid, const char *value,
     if (rc != 0)
     {
         vm_free(vm);
-        return rc;
+        return TE_RC(TE_TA_UNIX, rc);
     }
     vm->cpu.num = 1;
 
@@ -904,7 +904,7 @@ vm_status_set(unsigned int gid, const char *oid, const char *value,
     else
         rc = vm_stop(vm);
 
-    return rc;
+    return TE_RC(TE_TA_UNIX, rc);
 }
 
 static uint16_t *
@@ -1208,7 +1208,7 @@ vm_net_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
         if (rc != 0)
         {
             te_string_free(&result);
-            return rc;
+            return TE_RC(TE_TA_UNIX, rc);
         }
     }
 
@@ -1382,7 +1382,7 @@ vm_drive_list(unsigned int gid, const char *oid, const char *sub_id, char **list
         if (rc != 0)
         {
             te_string_free(&result);
-            return rc;
+            return TE_RC(TE_TA_UNIX, rc);
         }
     }
 
@@ -1433,7 +1433,7 @@ vm_file_set(unsigned int gid, const char *oid, char *value,
     te_string_free(&drive->file);
     rc = te_string_append(&drive->file, "%s",  value);
 
-    return rc;
+    return TE_RC(TE_TA_UNIX, rc);
 }
 
 static te_errno
@@ -1547,7 +1547,7 @@ vm_pci_pt_add(unsigned int gid, const char *oid, char *value,
 
     SLIST_INSERT_HEAD(&vm->pci_pts, pt, links);
 
-    return rc;
+    return 0;
 }
 
 static te_errno
@@ -1603,7 +1603,7 @@ vm_pci_pt_list(unsigned int gid, const char *oid, const char *sub_id,
         if (rc != 0)
         {
             te_string_free(&result);
-            return rc;
+            return TE_RC(TE_TA_UNIX, rc);
         }
     }
 
@@ -1777,7 +1777,7 @@ vm_cpu_model_set(unsigned int gid, const char *oid, const char *value,
 
     rc = te_string_append(&save, "%s", vm->cpu.model.ptr);
     if (rc != 0)
-        return rc;
+        return TE_RC(TE_TA_UNIX, rc);
 
     te_string_free(&vm->cpu.model);
     rc = te_string_append(&vm->cpu.model, "%s",  value);
@@ -1786,7 +1786,7 @@ vm_cpu_model_set(unsigned int gid, const char *oid, const char *value,
     else
         vm->cpu.model = save;
 
-    return rc;
+    return TE_RC(TE_TA_UNIX, rc);
 }
 
 static te_errno
