@@ -527,6 +527,40 @@ vm_pci_pt_free(struct vm_pci_pt_entry *pt)
     free(pt);
 }
 
+static void
+vm_free(struct vm_entry *vm)
+{
+    struct vm_net_entry *net;
+    struct vm_net_entry *net_tmp;
+    struct vm_drive_entry *drive;
+    struct vm_drive_entry *drive_tmp;
+    struct vm_pci_pt_entry *pci_pt;
+    struct vm_pci_pt_entry *pci_pt_tmp;
+
+    SLIST_FOREACH_SAFE(net, &vm->nets, links, net_tmp)
+    {
+        SLIST_REMOVE(&vm->nets, net, vm_net_entry, links);
+        vm_net_free(net);
+    }
+
+    SLIST_FOREACH_SAFE(drive, &vm->drives, links, drive_tmp)
+    {
+        SLIST_REMOVE(&vm->drives, drive, vm_drive_entry, links);
+        vm_drive_free(drive);
+    }
+
+    SLIST_FOREACH_SAFE(pci_pt, &vm->pci_pts, links, pci_pt_tmp)
+    {
+        SLIST_REMOVE(&vm->pci_pts, pci_pt, vm_pci_pt_entry, links);
+        vm_pci_pt_free(pci_pt);
+    }
+
+    te_string_free(&vm->cmd);
+    free(vm->qemu);
+    free(vm->name);
+    free(vm);
+}
+
 static struct vm_drive_entry *
 vm_drive_find(const struct vm_entry *vm, const char *name)
 {
@@ -633,27 +667,28 @@ vm_add(unsigned int gid, const char *oid, const char *value,
     if (vm == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
 
+    SLIST_INIT(&vm->nets);
+    SLIST_INIT(&vm->drives);
+    SLIST_INIT(&vm->pci_pts);
+
     vm->name = strdup(vm_name);
     if (vm->name == NULL)
     {
-        free(vm);
+        vm_free(vm);
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
     vm->qemu = strdup(VM_QEMU_DEFAULT);
     if (vm->qemu == NULL)
     {
-        free(vm->name);
-        free(vm);
+        vm_free(vm);
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
     rc = te_string_append(&vm->cpu.model, "host");
     if (rc != 0)
     {
-        free(vm->qemu);
-        free(vm->name);
-        free(vm);
+        vm_free(vm);
         return rc;
     }
     vm->cpu.num = 1;
@@ -665,8 +700,6 @@ vm_add(unsigned int gid, const char *oid, const char *value,
 
     vm->pid = -1;
 
-    SLIST_INIT(&vm->nets);
-
     SLIST_INSERT_HEAD(&vms, vm, links);
 
     return 0;
@@ -677,8 +710,6 @@ vm_del(unsigned int gid, const char *oid,
        const char *vm_name)
 {
     struct vm_entry *vm;
-    struct vm_net_entry *net;
-    struct vm_net_entry *net_tmp;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -694,14 +725,7 @@ vm_del(unsigned int gid, const char *oid,
     if (vm_is_running(vm))
         (void)vm_stop(vm);
 
-    SLIST_FOREACH_SAFE(net, &vm->nets, links, net_tmp)
-    {
-        vm_net_free(net);
-    }
-
-    te_string_free(&vm->cmd);
-    free(vm->name);
-    free(vm);
+    vm_free(vm);
 
     return 0;
 }
