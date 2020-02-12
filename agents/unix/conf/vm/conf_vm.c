@@ -43,6 +43,10 @@
 /** Default QEMU system emulator to use */
 #define VM_QEMU_DEFAULT "qemu-system-x86_64"
 
+/** Default QEMU emulated machine */
+#define VM_MACHINE_DEFAULT  \
+    "pc-i440fx-2.8,usb=off,vmport=off,dump-guest-core=off"
+
 typedef struct vm_cpu {
     te_string       model;
     unsigned int    num;
@@ -85,6 +89,7 @@ struct vm_entry {
     SLIST_ENTRY(vm_entry)   links;
     char                   *name;
     char                   *qemu;
+    char                   *machine;
     te_bool                 kvm;
     uint16_t                host_ssh_port;
     uint16_t                guest_ssh_port;
@@ -415,9 +420,8 @@ vm_start(struct vm_entry *vm)
         }
     }
 
-    rc = te_string_append(&machine_str,
-             "pc-i440fx-2.8,usb=off,vmport=off,dump-guest-core=off%s",
-             vm->kvm ? ",accel=kvm" : "");
+    rc = te_string_append(&machine_str, "%s%s",
+                          vm->machine, vm->kvm ? ",accel=kvm" : "");
     if (rc != 0)
     {
         ERROR("Failed to make VM machine string: %r", rc);
@@ -614,6 +618,7 @@ vm_free(struct vm_entry *vm)
     }
 
     te_string_free(&vm->cmd);
+    free(vm->machine);
     free(vm->qemu);
     free(vm->name);
     free(vm);
@@ -756,6 +761,13 @@ vm_add(unsigned int gid, const char *oid, const char *value,
 
     vm->qemu = strdup(VM_QEMU_DEFAULT);
     if (vm->qemu == NULL)
+    {
+        vm_free(vm);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    vm->machine = strdup(VM_MACHINE_DEFAULT);
+    if (vm->machine == NULL)
     {
         vm_free(vm);
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
@@ -1024,6 +1036,47 @@ vm_kvm_set(unsigned int gid, const char *oid, const char *value,
     vm->kvm = val;
 
     return 0;
+}
+
+static te_errno
+vm_machine_get(unsigned int gid, const char *oid, char *value,
+               const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", vm_name);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", vm->machine);
+
+    return 0;
+}
+
+static te_errno
+vm_machine_set(unsigned int gid, const char *oid, const char *value,
+               const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", vm_name);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    return string_replace(&vm->machine, value);
 }
 
 static te_errno
@@ -1826,7 +1879,10 @@ RCF_PCH_CFG_NODE_RW(node_vm_mem_size, "size", NULL, NULL,
 
 RCF_PCH_CFG_NODE_NA(node_vm_mem, "mem", &node_vm_mem_size, &node_vm_net);
 
-RCF_PCH_CFG_NODE_RW(node_vm_kvm, "kvm", NULL, &node_vm_mem,
+RCF_PCH_CFG_NODE_RW(node_vm_machine, "machine", NULL, &node_vm_mem,
+                    vm_machine_get, vm_machine_set);
+
+RCF_PCH_CFG_NODE_RW(node_vm_kvm, "kvm", NULL, &node_vm_machine,
                     vm_kvm_get, vm_kvm_set);
 
 RCF_PCH_CFG_NODE_RW(node_vm_rcf_port, "rcf_port", NULL, &node_vm_kvm,

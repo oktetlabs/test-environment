@@ -71,6 +71,14 @@
          Enable/disable KVM mode.
          Name: None
 
+    - oid: "/agent/vm/machine"
+      access: read_write
+      type: string
+      d: |
+         QEMU emulated machine specification. accel=kvm is added automatically
+         if KVM is enabled.
+         Name: None
+
     - oid: "/agent/vm/cpu"
       access: read_only
       type: none
