@@ -69,10 +69,17 @@ struct vm_pci_pt_entry {
     te_string                       pci_addr;
 };
 
+struct vm_device_entry {
+    SLIST_ENTRY(vm_device_entry)    links;
+    char                           *name;
+    te_string                       device;
+};
+
 
 typedef SLIST_HEAD(vm_net_list_t, vm_net_entry) vm_net_list_t;
 typedef SLIST_HEAD(vm_drive_list_t, vm_drive_entry) vm_drive_list_t;
 typedef SLIST_HEAD(vm_pci_pt_list_t, vm_pci_pt_entry) vm_pci_pt_list_t;
+typedef SLIST_HEAD(vm_device_list_t, vm_device_entry) vm_device_list_t;
 
 struct vm_entry {
     SLIST_ENTRY(vm_entry)   links;
@@ -89,6 +96,7 @@ struct vm_entry {
     vm_net_list_t           nets;
     vm_drive_list_t         drives;
     vm_pci_pt_list_t        pci_pts;
+    vm_device_list_t        devices;
 };
 
 
@@ -293,6 +301,27 @@ exit:
 }
 
 static te_errno
+vm_append_devices_cmd(te_string *cmd, vm_device_list_t *dev_list)
+{
+    struct vm_device_entry *dev;
+    te_errno rc = 0;
+
+    SLIST_FOREACH(dev, dev_list, links)
+    {
+        rc = te_string_append_shell_args_as_is(cmd, "-device",
+                                               dev->device.ptr, NULL);
+        if (rc != 0)
+        {
+            ERROR("Cannot compose -device command line (line %u): %r",
+                  __LINE__, rc);
+            break;
+        }
+    }
+
+    return rc;
+}
+
+static te_errno
 vm_append_cpu_cmd(te_string *cmd, struct vm_entry *vm)
 {
     te_string num_arg = TE_STRING_INIT;
@@ -442,6 +471,10 @@ vm_start(struct vm_entry *vm)
     if (rc != 0)
         goto exit;
 
+    rc = vm_append_devices_cmd(&vm->cmd, &vm->devices);
+    if (rc != 0)
+        goto exit;
+
     rc = te_string_append_shell_args_as_is(&vm->cmd, "-serial", "stdio", NULL);
     if (rc != 0)
     {
@@ -528,6 +561,14 @@ vm_pci_pt_free(struct vm_pci_pt_entry *pt)
 }
 
 static void
+vm_device_free(struct vm_device_entry *dev)
+{
+    free(dev->name);
+    te_string_free(&dev->device);
+    free(dev);
+}
+
+static void
 vm_free(struct vm_entry *vm)
 {
     struct vm_net_entry *net;
@@ -536,6 +577,8 @@ vm_free(struct vm_entry *vm)
     struct vm_drive_entry *drive_tmp;
     struct vm_pci_pt_entry *pci_pt;
     struct vm_pci_pt_entry *pci_pt_tmp;
+    struct vm_device_entry *device;
+    struct vm_device_entry *device_tmp;
 
     SLIST_FOREACH_SAFE(net, &vm->nets, links, net_tmp)
     {
@@ -553,6 +596,12 @@ vm_free(struct vm_entry *vm)
     {
         SLIST_REMOVE(&vm->pci_pts, pci_pt, vm_pci_pt_entry, links);
         vm_pci_pt_free(pci_pt);
+    }
+
+    SLIST_FOREACH_SAFE(device, &vm->devices, links, device_tmp)
+    {
+        SLIST_REMOVE(&vm->devices, device, vm_device_entry, links);
+        vm_device_free(device);
     }
 
     te_string_free(&vm->cmd);
@@ -587,6 +636,23 @@ vm_pci_pt_find(const struct vm_entry *vm, const char *name)
         return NULL;
 
     SLIST_FOREACH(p, &vm->pci_pts, links)
+    {
+        if (strcmp(name, p->name) == 0)
+            return p;
+    }
+
+    return NULL;
+}
+
+static struct vm_device_entry *
+vm_device_find(const struct vm_entry *vm, const char *name)
+{
+    struct vm_device_entry *p;
+
+    if (vm == NULL)
+        return NULL;
+
+    SLIST_FOREACH(p, &vm->devices, links)
     {
         if (strcmp(name, p->name) == 0)
             return p;
@@ -670,6 +736,7 @@ vm_add(unsigned int gid, const char *oid, const char *value,
     SLIST_INIT(&vm->nets);
     SLIST_INIT(&vm->drives);
     SLIST_INIT(&vm->pci_pts);
+    SLIST_INIT(&vm->devices);
 
     vm->name = strdup(vm_name);
     if (vm->name == NULL)
@@ -1482,6 +1549,134 @@ vm_pci_pt_list(unsigned int gid, const char *oid, const char *sub_id,
     return 0;
 }
 
+
+static te_errno
+vm_device_get(unsigned int gid, const char *oid, char *value,
+              const char *vm_name, const char *device_name)
+{
+    struct vm_entry *vm;
+    struct vm_device_entry *dev;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    dev = vm_device_find(vm, device_name);
+    if (dev == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", dev->device.ptr);
+
+    return 0;
+}
+
+static te_errno
+vm_device_add(unsigned int gid, const char *oid, const char *value,
+              const char *vm_name, const char *device_name)
+{
+    struct vm_entry *vm;
+    struct vm_device_entry *dev;
+    int rc = 0;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (rcf_pch_rsrc_accessible("%s", value))
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    dev = TE_ALLOC(sizeof(*dev));
+    if (dev == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    dev->name = strdup(device_name);
+    if (dev->name == NULL)
+    {
+        vm_device_free(dev);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    if ((rc = te_string_append(&dev->device, "%s",  value)) != 0)
+    {
+        vm_device_free(dev);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    SLIST_INSERT_HEAD(&vm->devices, dev, links);
+
+    return 0;
+}
+
+static te_errno
+vm_device_del(unsigned int gid, const char *oid,
+              const char *vm_name, const char *device_name)
+{
+    struct vm_entry *vm;
+    struct vm_device_entry *dev;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    dev = vm_device_find(vm, device_name);
+    if (dev == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    SLIST_REMOVE(&vm->devices, dev, vm_device_entry, links);
+
+    vm_device_free(dev);
+
+    return 0;
+}
+
+static te_errno
+vm_device_list(unsigned int gid, const char *oid, const char *sub_id,
+               char **list, const char *vm_name)
+{
+    te_string result = TE_STRING_INIT;
+    struct vm_entry *vm;
+    struct vm_device_entry *dev;
+    te_bool first = TRUE;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    SLIST_FOREACH(dev, &vm->devices, links)
+    {
+        rc = te_string_append(&result, "%s%s", first ? "" : " ", dev->name);
+        first = FALSE;
+        if (rc != 0)
+        {
+            te_string_free(&result);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+    }
+
+    *list = result.ptr;
+    return 0;
+}
+
 static te_errno
 vm_cpu_model_get(unsigned int gid, const char *oid, char *value,
                const char *vm_name)
@@ -1577,7 +1772,11 @@ vm_cpu_num_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_vm_pci_pt, "pci_pt", NULL, NULL,
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_vm_device, "device", NULL, NULL,
+                               vm_device_get, NULL, vm_device_add,
+                               vm_device_del, vm_device_list, NULL);
+
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_vm_pci_pt, "pci_pt", NULL, &node_vm_device,
                                vm_pci_pt_get, NULL, vm_pci_pt_add,
                                vm_pci_pt_del, vm_pci_pt_list, NULL);
 

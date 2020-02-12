@@ -106,6 +106,13 @@
          RAM size in megabytes. Default is 256M.
          Name: None
 
+    - oid: "/agent/vm/device"
+      access: read_create
+      type: string
+      d: |
+         Virtual machine raw devices configuration (-device option).
+         Name: arbitrary unique internal device name
+
     - oid: "/agent/vm/drive"
       access: read_create
       type: none
