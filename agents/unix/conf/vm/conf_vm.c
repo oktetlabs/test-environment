@@ -463,7 +463,7 @@ vm_start(struct vm_entry *vm)
 
     rc = te_string_append_shell_args_as_is(&vm->cmd,
              "-netdev", net_mgmt_str.ptr,
-             "-device", "virtio-net-pci,netdev=mgmt,romfile=,bus=pci.0,addr=0x3",
+             "-device", "virtio-net-pci,netdev=mgmt,romfile=,addr=0x3",
              NULL);
     if (rc != 0)
     {
