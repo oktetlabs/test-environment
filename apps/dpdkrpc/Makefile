@@ -60,7 +60,7 @@ EXTRA_CFLAGS += $(WERROR_FLAGS)
 
 EXTRA_CFLAGS += $(TE_CPPFLAGS)
 EXTRA_CFLAGS += -DALLOW_EXPERIMENTAL_API
-EXTRA_LDFLAGS  += -Bstatic -whole-archive -export-dynamic $(TE_LDFLAGS) -no-whole-archive -Bdynamic -ltirpc -lpcap -lm
+EXTRA_LDFLAGS  += -Bstatic -whole-archive -export-dynamic $(TE_LDFLAGS) -no-whole-archive -Bdynamic -ltirpc -lpcap -lm -lrt
 ifeq ($(TE_DO_TCE),1)
 EXTRA_CFLAGS  += --coverage
 EXTRA_LDFLAGS += -lgcov
