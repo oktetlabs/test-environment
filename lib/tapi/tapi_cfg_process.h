@@ -65,6 +65,20 @@ extern te_errno tapi_cfg_ps_start(const char *ta, const char *ps_name);
  */
 extern te_errno tapi_cfg_ps_stop(const char *ta, const char *ps_name);
 
+/**
+ * Add process argument.
+ *
+ * @param ta            Test Agent.
+ * @param ps_name       Process.
+ * @param order         Relative order.
+ * @param arg           Argument itself.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_ps_add_arg(const char *ta, const char *ps_name,
+                                    unsigned int order,
+                                    const char *arg);
+
 
 #ifdef __cplusplus
 } /* extern "C" */

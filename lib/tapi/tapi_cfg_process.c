@@ -90,3 +90,21 @@ tapi_cfg_ps_stop(const char *ta, const char *ps_name)
 
     return rc;
 }
+
+te_errno
+tapi_cfg_ps_add_arg(const char *ta, const char *ps_name,
+                    unsigned int order, const char *arg)
+{
+    te_errno rc;
+
+    rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, arg),
+                              TE_CFG_TA_PS "/arg:%d", ta, ps_name, order);
+    if (rc != 0)
+    {
+        ERROR("Cannot add argument '%s' (process '%s', TA '%s'): %r", arg,
+              ps_name, ta, rc);
+        return rc;
+    }
+
+    return rc;
+}
