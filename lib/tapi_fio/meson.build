@@ -8,5 +8,6 @@ sources += files(
 )
 deps += [
     dep_lib_tapi,
+    dep_lib_tapi_rpc,
     dependency('jansson'),
 ]
