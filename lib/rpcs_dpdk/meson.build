@@ -1,7 +1,5 @@
 # Copyright (C) 2018-2019 OKTET Labs. All rights reserved.
 
-prj_args = get_option('cflags').split()
-
 c_args += [ '-DALLOW_EXPERIMENTAL_API' ]
 
 # Check if rte_ring_enqueue_bulk() has free space argument
@@ -14,7 +12,7 @@ int main(void) {
     return 0;
 }
 '''
-if cc.compiles(code_ring_enqueue_bulk, args: prj_args,
+if cc.compiles(code_ring_enqueue_bulk, args: te_cflags,
                name: 'rte_ring_enqueue_bulk() free_space argument')
     c_args += [ '-DHAVE_RTE_RING_ENQUEUE_BULK_ARG_FREE_SPACE' ]
 endif
@@ -29,7 +27,7 @@ int main(void) {
     return 0;
 }
 '''
-if cc.compiles(code_ring_dequeue_bulk, args: prj_args,
+if cc.compiles(code_ring_dequeue_bulk, args: te_cflags,
                name: 'rte_ring_dequeue_bulk() available argument')
     c_args += [ '-DHAVE_RTE_RING_DEQUEUE_BULK_ARG_AVAILABLE' ]
 endif
@@ -46,7 +44,7 @@ int main(void) {
     return 0;
 }
 '''
-if cc.compiles(code_promiscuous, args: prj_args + ['-Werror'],
+if cc.compiles(code_promiscuous, args: te_cflags + ['-Werror'],
                name: 'rte_eth_promiscuous_enable() returns value ')
     c_args += [ '-DHAVE_RTE_PROMISCUOUS_RETURN_VOID' ]
 endif
@@ -63,13 +61,13 @@ int main(void) {
     return 0;
 }
 '''
-if cc.compiles(code_promiscuous, args: prj_args + ['-Werror'],
+if cc.compiles(code_promiscuous, args: te_cflags + ['-Werror'],
                name: 'rte_eth_allmulticast_enable() returns value ')
     c_args += [ '-DHAVE_RTE_ALLMULTICAST_RETURN_VOID' ]
 endif
 
 t = 'struct rte_ether_addr'
-if cc.has_type(t, args: prj_args,
+if cc.has_type(t, args: te_cflags,
                prefix: '#include "rte_ethdev.h"')
     c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
 endif
@@ -79,13 +77,13 @@ code_prefix_flow_api_driver = '''
 #include "rte_flow.h"
 #include "rte_flow_driver.h"
 '''
-if cc.has_member('struct rte_flow_ops', 'isolate', args: prj_args,
+if cc.has_member('struct rte_flow_ops', 'isolate', args: te_cflags,
                  prefix: code_prefix_flow_api_driver)
     c_args += [ '-DHAVE_STRUCT_RTE_FLOW_OPS_ISOLATE' ]
 endif
 
 if cc.has_header_symbol('rte_flow.h', 'RTE_FLOW_ITEM_TYPE_GENEVE',
-                        args: prj_args, prefix: '# include "rte_config.h"')
+                        args: te_cflags, prefix: '# include "rte_config.h"')
     c_args += [ '-DHAVE_RTE_FLOW_GENEVE' ]
 endif
 
@@ -94,15 +92,15 @@ code_prefix_ethdev = '''
 #include "rte_ethdev.h"
 '''
 if cc.has_member('struct rte_eth_dev_info', 'rx_queue_offload_capa',
-                 args: prj_args, prefix: code_prefix_ethdev)
+                 args: te_cflags, prefix: code_prefix_ethdev)
     c_args += [ '-DHAVE_STRUCT_RTE_ETH_DEV_INFO_RX_QUEUE_OFFLOAD_CAPA' ]
 endif
 if cc.has_member('struct rte_eth_dev_info', 'tx_queue_offload_capa',
-                 args: prj_args, prefix: code_prefix_ethdev)
+                 args: te_cflags, prefix: code_prefix_ethdev)
     c_args += [ '-DHAVE_STRUCT_RTE_ETH_DEV_INFO_TX_QUEUE_OFFLOAD_CAPA' ]
 endif
 if cc.has_member('struct rte_eth_dev_info', 'dev_capa',
-                 args: prj_args, prefix: code_prefix_ethdev)
+                 args: te_cflags, prefix: code_prefix_ethdev)
     c_args += [ '-DHAVE_STRUCT_RTE_ETH_DEV_INFO_DEV_CAPA' ]
 endif
 t = 'struct rte_eth_dev_portconf'
@@ -114,26 +112,26 @@ code_prefix_flow_api = '''
 #include "rte_config.h"
 #include "rte_flow.h"
 '''
-if cc.has_member('struct rte_flow_action_rss', 'rss_conf', args: prj_args,
+if cc.has_member('struct rte_flow_action_rss', 'rss_conf', args: te_cflags,
                  prefix: code_prefix_flow_api)
     c_args += [ '-DHAVE_STRUCT_RTE_FLOW_ACTION_RSS_RSS_CONF' ]
 endif
-if cc.has_member('struct rte_flow_action_rss', 'num', args: prj_args,
+if cc.has_member('struct rte_flow_action_rss', 'num', args: te_cflags,
                  prefix: code_prefix_flow_api)
     c_args += [ '-DHAVE_STRUCT_RTE_FLOW_ACTION_RSS_NUM' ]
 endif
-if cc.has_member('struct rte_flow_item_vlan', 'tpid', args: prj_args,
+if cc.has_member('struct rte_flow_item_vlan', 'tpid', args: te_cflags,
                  prefix: code_prefix_flow_api)
     c_args += [ '-DHAVE_STRUCT_RTE_FLOW_ITEM_VLAN_TPID' ]
 endif
 
 f = 'rte_pktmbuf_pool_create_by_ops'
-if cc.has_function(f, args: prj_args)
+if cc.has_function(f, args: te_cflags)
     c_args += [ '-DHAVE_' + f.to_upper() ]
 endif
 
 f = 'rte_is_zero_ether_addr'
-if cc.has_function(f, args: prj_args,
+if cc.has_function(f, args: te_cflags,
                    prefix: '#include "rte_ether.h"')
     c_args += [ '-DHAVE_' + f.to_upper() ]
 endif

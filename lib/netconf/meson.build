@@ -1,7 +1,5 @@
 # Copyright (C) 2018-2019 OKTET Labs. All rights reserved.
 
-prj_args = get_option('cflags').split()
-
 # Check if Geneve is supported
 code_geneve = '''
 #include <linux/if_link.h>
@@ -10,7 +8,7 @@ int main(void) {
     return IFLA_GENEVE_ID;
 }
 '''
-if cc.compiles(code_geneve, args: prj_args,
+if cc.compiles(code_geneve, args: te_cflags,
                name: 'IFLA_GENEVE_ID available')
     c_args += ['-DHAVE_DECL_IFLA_GENEVE_ID']
 endif
@@ -23,7 +21,7 @@ int main(void) {
     return IFLA_VXLAN_LOCAL6;
 }
 '''
-if cc.compiles(code_vxlan_local6, args: prj_args,
+if cc.compiles(code_vxlan_local6, args: te_cflags,
                name: 'IFLA_VXLAN_LOCAL6 available')
     c_args += ['-DHAVE_DECL_IFLA_VXLAN_LOCAL6']
 endif
@@ -35,7 +33,7 @@ int main(void) {
     return IFLA_VXLAN_GROUP6;
 }
 '''
-if cc.compiles(code_vxlan_group6, args: prj_args,
+if cc.compiles(code_vxlan_group6, args: te_cflags,
                name: 'IFLA_VXLAN_GROUP6 available')
     c_args += ['-DHAVE_DECL_IFLA_VXLAN_GROUP6']
 endif
@@ -48,7 +46,7 @@ int main(void) {
     return IFLA_GENEVE_REMOTE6;
 }
 '''
-if cc.compiles(code_geneve_remote6, args: prj_args,
+if cc.compiles(code_geneve_remote6, args: te_cflags,
                name: 'IFLA_GENEVE_REMOTE6 available')
     c_args += ['-DHAVE_DECL_IFLA_GENEVE_REMOTE6']
 endif
