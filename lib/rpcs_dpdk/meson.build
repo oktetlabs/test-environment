@@ -69,7 +69,8 @@ if cc.compiles(code_promiscuous, args: prj_args + ['-Werror'],
 endif
 
 t = 'struct rte_ether_addr'
-if cc.has_type(t, prefix: '#include "rte_ethdev.h"')
+if cc.has_type(t, args: prj_args,
+               prefix: '#include "rte_ethdev.h"')
     c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
 endif
 
@@ -132,7 +133,8 @@ if cc.has_function(f, args: prj_args)
 endif
 
 f = 'rte_is_zero_ether_addr'
-if cc.has_function(f, args: prj_args)
+if cc.has_function(f, args: prj_args,
+                   prefix: '#include "rte_ether.h"')
     c_args += [ '-DHAVE_' + f.to_upper() ]
 endif
 
