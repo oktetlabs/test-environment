@@ -256,10 +256,6 @@ process_platform() {
         meson_args="${meson_args} -Dldflags=\"${te_ldflags}\""
     fi
 
-    local exts_var="TE_BS_EXT_${p}"
-    test -z "${!exts_var}" ||
-        error "External components are not supported in meson build: ${!exts_var}"
-
     local libs="${p}_LIBS"
     if test -n "${!libs}" ; then
         meson_args="${meson_args} -Dlibs=\"${!libs}\""
@@ -463,18 +459,7 @@ read_processed_builder_conf() {
 }
 
 process_platforms() {
-    local builder_conf_processed="$1"
     local p
-
-    # Dummy loop to avoid breaking in the case of error
-    while test 1 ; do
-        . "${builder_conf_processed}"
-        break
-    done
-    if test -n "$TE_BS_CONF_ERR" ; then
-        echo $TE_BS_CONF_ERR >&2
-        exit 1
-    fi
 
     for p in ${TE_BS_PLATFORMS} ; do
         local build=${p}_BUILD
@@ -539,6 +524,49 @@ make_workspace() {
     fi
 }
 
+build_ext() {
+    local p="$1"; shift
+
+    local pexts="TE_BS_EXT_${p}"
+    local pext
+
+    local ext_inst="${ws}/destdir${TE_INSTALL}"
+    for pext in ${!pexts}; do
+        local ws_ext_src="${ws}/ext/${pext}/src"
+        local ws_ext_builddir="${ws}/ext/${pext}/build"
+
+        local pextsrc="TE_BS_EXT_${p}_${pext}_SOURCES"
+        local pextprep="TE_BS_EXT_${p}_${pext}_PREPARE"
+        local pextbuilddir="TE_BS_EXT_${p}_${pext}_BUILDDIR"
+        local pextbuild="TE_BS_EXT_${p}_${pext}_BUILD"
+        local pextinsth="TE_BS_EXT_${p}_${pext}_INSTALL_HEADERS"
+        local pextinstl="TE_BS_EXT_${p}_${pext}_INSTALL_LIBS"
+        local pextenv="TE_BS_EXT_${p}_${pext}_ENV_VARS"
+        local enable_tce=""
+
+        te_eval_or_ssh "$p" "mkdir -p $ws_ext_src $ws_ext_builddir"
+        rsync_to "$p" "${!pextsrc}" "$ws_ext_src"
+
+        local local_ext_builddir="ext/${pext}/build"
+        if test -d "${local_ext_builddir}"; then
+            rsync_to "$p" "${local_ext_builddir}/" "${ws_ext_builddir}"
+        else
+            mkdir -p "${local_ext_builddir}"
+        fi
+
+        ${SCRIPT_DIR}/te_build_ext --prefix="${ext_inst}" \
+            --platform="$p" --srcdir="${ws_ext_src}/${pext}" \
+            --prepare="${!pextprep}" \
+            --builddir="${ws_ext_builddir}" \
+            --build="${!pextbuild}" \
+            --expheaders="${!pextinsth}" \
+            --explibs="${!pextinstl}" \
+            --envvars="${!pextenv}" $enable_tce || exit 1
+
+        rsync_from "$p" "${ws_ext_builddir}/" "${local_ext_builddir}"
+    done
+}
+
 build_platform() {
     local p="$1"
     local meson_nv_args="TE_BS_MESON_${p}_NV_ARGS"
@@ -561,10 +589,12 @@ build_platform() {
 
     test "${ws}" = . || remote_build=true
 
+    build_ext "${p}"
+
     if test ! -d build ; then
         te_eval_or_ssh "${p}" \
             "cd \"${ws}\" &&
-             meson ${!meson_nv_args} ${!meson_args} src build"
+             meson ${!meson_nv_args} ${!meson_args} -Dworkspace=${ws} src build"
         echo "${!meson_nv_args}" >meson.nv_args
         echo "${!meson_args}" >meson.args
     elif ! diff -q meson.args meson.args.new 2>/dev/null ; then
@@ -650,7 +680,17 @@ build_all () {
 
     process_builder_conf "${with_config}" >builder.conf.processed
 
-    process_platforms builder.conf.processed
+    # builder.conf.processed variables are required in both process_platforms() and do_build()
+    while test 1 ; do
+        . builder.conf.processed
+        break
+    done
+    if test -n "$TE_BS_CONF_ERR" ; then
+        echo $TE_BS_CONF_ERR >&2
+        exit 1
+    fi
+
+    process_platforms
 
     do_build
 }

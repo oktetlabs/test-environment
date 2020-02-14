@@ -89,3 +89,6 @@ option('trc-ext-scripts', type: 'array', value: [],
 
 option('cs-conf-yaml', type: 'boolean', value: true,
        description: 'Enable support for YAML configuration file processing')
+
+option('workspace', type: 'string', value: '',
+       description: 'Build workspace')

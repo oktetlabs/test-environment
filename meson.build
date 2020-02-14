@@ -5,8 +5,13 @@ project('test-environment', 'c',
     meson_version: '>= 0.44.1'
 )
 
-te_cflags = get_option('cflags').split()
-te_ldflags = get_option('ldflags').split()
+# join_paths() drops all segments before absolute one and prefix given as absolute
+platform_install_dir = get_option('workspace') + '/destdir' + get_option('prefix')
+platform_include_dir = join_paths(platform_install_dir, 'include')
+platform_lib_dir = join_paths(platform_install_dir, 'lib')
+
+te_cflags = [ '-I' + platform_include_dir ] + get_option('cflags').split()
+te_ldflags = [ '-L' + platform_lib_dir ] + get_option('ldflags').split()
 
 add_project_arguments(te_cflags, language: 'c')
 
