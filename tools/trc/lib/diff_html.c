@@ -1390,7 +1390,7 @@ trc_diff_graph_stats_to_html(FILE                  *f,
                            [TRC_DIFF_MATCH].counter);
     }
 
-    fprintf(f, trc_diff_graph_js_end);
+    fprintf(f, "%s", trc_diff_graph_js_end);
 }
 
 static void
@@ -2551,7 +2551,7 @@ trc_diff_include_external_libs(FILE *f)
     {
         fprintf(stderr, "Failed to run \"jquery_include.sh\", "
                 "use external jquery script \"jquery_flot.js\"\n");
-        fprintf(f, trc_diff_graph_js_include);
+        fprintf(f, "%s", trc_diff_graph_js_include);
         return;
     }
 
@@ -2593,9 +2593,9 @@ trc_diff_report_to_html(trc_diff_ctx *ctx, const char *filename,
     if (header != NULL)
         trc_diff_include_header(f, header);
 
-    fprintf(f, trc_diff_js_include_start);
+    fprintf(f, "%s", trc_diff_js_include_start);
     trc_diff_include_external_libs(f);
-    fprintf(f, trc_diff_js_include_end);
+    fprintf(f, "%s", trc_diff_js_include_end);
 
     if (!TAILQ_EMPTY(&ctx->sets))
     {

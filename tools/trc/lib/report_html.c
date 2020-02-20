@@ -2481,13 +2481,13 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
                test_status_to_label(result->status, is_expected));
     if (result == NULL)
     {
-        WRITE_FILE(te_test_status_to_str(TE_TEST_UNSPEC));
+        WRITE_FILE("%s", te_test_status_to_str(TE_TEST_UNSPEC));
         WRITE_FILE("</span>\n");
         return 0;
     }
     else
     {
-        WRITE_FILE(te_test_status_to_str(result->status));
+        WRITE_FILE("%s", te_test_status_to_str(result->status));
         WRITE_FILE("</span>\n");
     }
 
