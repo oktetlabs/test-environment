@@ -46,11 +46,11 @@ typedef struct {
  * search a certain children.
  */
 typedef struct {
-    rcf_rpc_server              *rpcs;      /**< RPC server handle. */
-    tapi_upnp_service_info      *service;   /**< UPnP service context. */
-    char                        *path;      /**< Path to search in. */
-    tapi_upnp_cd_container_node *root_cont; /**< New root container. */
-    te_errno                     error;     /**< Error code. */
+    rcf_rpc_server               *rpcs;         /**< RPC server handle. */
+    const tapi_upnp_service_info *service;      /**< UPnP service context. */
+    char                         *path;         /**< Path to search in. */
+    tapi_upnp_cd_container_node  *root_cont;    /**< New root container. */
+    te_errno                      error;        /**< Error code. */
 } search_children_opaque_t;
 
 /**
@@ -1283,7 +1283,8 @@ tapi_upnp_print_content_directory(
     }
 
     te_string_append(&dump, "Content Directory:\n");
-    tapi_upnp_cd_tree_dfs(container, pre_print_cd, post_print_cd, &opaque);
+    tapi_upnp_cd_tree_dfs((tapi_upnp_cd_container_node *)container,
+                          pre_print_cd, post_print_cd, &opaque);
 
     RING(dump.ptr);
     te_string_free(&dump);
@@ -1303,7 +1304,8 @@ tapi_upnp_cd_get_objects_count(
     if (container == NULL)
         return 0;
 
-    tapi_upnp_cd_tree_dfs(container, count_objects, NULL, &opaque);
+    tapi_upnp_cd_tree_dfs((tapi_upnp_cd_container_node *)container,
+                          count_objects, NULL, &opaque);
 
     return opaque.num;
 }

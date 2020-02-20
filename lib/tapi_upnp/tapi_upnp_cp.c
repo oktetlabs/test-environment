@@ -134,7 +134,7 @@ rpc_upnp_cp_action(rcf_rpc_server *rpcs,
     }
 
     in.buf.buf_len = request_len;
-    in.buf.buf_val = request;
+    in.buf.buf_val = (void *)request;
     out.retval = -1;
     rcf_rpc_call(rpcs, "upnp_cp_action", &in, &out);
     /*
