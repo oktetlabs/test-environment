@@ -480,7 +480,7 @@ cfg_process_msg_register(cfg_register_msg *msg)
 
     if (father->vol && !msg->vol)
     {
-        WARN("Volatile attribute of %s it inherited from the father",
+        INFO("Volatile attribute of %s it inherited from the father",
              msg->oid);
         msg->vol = TRUE;
     }
