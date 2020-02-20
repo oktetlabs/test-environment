@@ -304,7 +304,8 @@ tapi_eal_get_vdev_slave_pci_addr(cfg_handle   slave_handle,
         return rc;
 
     val_type = CVT_STRING;
-    rc = cfg_get_instance_fmt(&val_type, &slave_pci_inst_val, slave_inst_val);
+    rc = cfg_get_instance_fmt(&val_type, &slave_pci_inst_val,
+                              "%s", slave_inst_val);
     if (rc != 0)
         goto out;
 
