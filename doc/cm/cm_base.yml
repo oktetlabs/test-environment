@@ -57,6 +57,8 @@
           scope: object
         - oid: "/agent/bridge"
         - oid: "/agent/ovs/bridge"
+        - oid: "/agent/tunnel/geneve"
+        - oid: "/agent/tunnel/vxlan"
       d: |
          Network interface
          Name: "eth0"-like
