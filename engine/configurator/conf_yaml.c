@@ -29,7 +29,7 @@
     (_n)->start_mark.line + 1, (_n)->start_mark.column + 1
 
 #define YAML_TARGET_CONTEXT_INIT \
-    { NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRUE };
+    { NULL, NULL, NULL, NULL, NULL, SLIST_HEAD_INITIALIZER(deps), TRUE };
 
 typedef struct parse_config_yaml_ctx {
     char            *file_path;
@@ -221,21 +221,28 @@ parse_config_yaml_node_get_attribute_type(yaml_node_t *k)
     return CS_YAML_NODE_ATTRIBUTE_UNKNOWN;
 }
 
+typedef struct cytc_dep_entry {
+    SLIST_ENTRY(cytc_dep_entry)  links;
+    const xmlChar               *scope;
+    const xmlChar               *oid;
+} cytc_dep_entry;
+
+typedef SLIST_HEAD(cytc_dep_list_t, cytc_dep_entry) cytc_dep_list_t;
+
 typedef struct cs_yaml_target_context_s {
-    const xmlChar *oid;
-    const xmlChar *value;
-    const xmlChar *access;
-    const xmlChar *type;
-    const xmlChar *xmlvolatile;
-    const xmlChar *dependency_oid;
-    const xmlChar *scope;
-    te_bool        cond;
+    const xmlChar   *oid;
+    const xmlChar   *value;
+    const xmlChar   *access;
+    const xmlChar   *type;
+    const xmlChar   *xmlvolatile;
+    cytc_dep_list_t  deps;
+    te_bool          cond;
 } cs_yaml_target_context_t;
 
 static te_errno
-parse_config_yaml_cmd_add_dependency_attribute(yaml_node_t                *k,
-                                               yaml_node_t                *v,
-                                               cs_yaml_target_context_t   *c)
+parse_config_yaml_cmd_add_dependency_attribute(yaml_node_t    *k,
+                                               yaml_node_t    *v,
+                                               cytc_dep_entry *dep_ctx)
 {
     cs_yaml_node_attribute_type_t attribute_type;
 
@@ -251,25 +258,25 @@ parse_config_yaml_cmd_add_dependency_attribute(yaml_node_t                *k,
     switch (attribute_type)
     {
         case CS_YAML_NODE_ATTRIBUTE_OID:
-            if (c->dependency_oid != NULL)
+            if (dep_ctx->oid != NULL)
             {
                 ERROR(CS_YAML_ERR_PREFIX "detected multiple OID specifiers "
                       "of the dependce node: only one can be present");
                 return TE_EINVAL;
             }
 
-            c->dependency_oid  = (const xmlChar *)v->data.scalar.value;
+            dep_ctx->oid  = (const xmlChar *)v->data.scalar.value;
             break;
 
         case CS_YAML_NODE_ATTRIBUTE_SCOPE:
-            if (c->scope != NULL)
+            if (dep_ctx->scope != NULL)
             {
                 ERROR(CS_YAML_ERR_PREFIX "detected multiple scope specifiers "
                       "of the dependce node: only one can be present");
                 return TE_EINVAL;
             }
 
-            c->scope = (const xmlChar *)v->data.scalar.value;
+            dep_ctx->scope = (const xmlChar *)v->data.scalar.value;
             break;
 
         case CS_YAML_NODE_ATTRIBUTE_DESCRIPTION:
@@ -279,7 +286,7 @@ parse_config_yaml_cmd_add_dependency_attribute(yaml_node_t                *k,
         default:
             if (v->type == YAML_SCALAR_NODE && v->data.scalar.length == 0)
             {
-                c->dependency_oid = (const xmlChar *)k->data.scalar.value;
+                dep_ctx->oid = (const xmlChar *)k->data.scalar.value;
             }
             else
             {
@@ -289,6 +296,50 @@ parse_config_yaml_cmd_add_dependency_attribute(yaml_node_t                *k,
                 return TE_EINVAL;
             }
             break;
+    }
+
+    return 0;
+}
+
+/**
+ * Process an entry of the given dependency node
+ *
+ * @param  d       YAML document handle
+ * @param  n       Handle of the parent node in the given document
+ * @param  dep_ctx Entry context to store parsed properties
+ *
+ * @return         Status code
+ */
+static te_errno
+parse_config_yaml_dependency_entry(yaml_document_t *d,
+                                   yaml_node_t     *n,
+                                   cytc_dep_entry  *dep_ctx)
+{
+    te_errno rc;
+
+    if (n->type == YAML_MAPPING_NODE)
+    {
+        yaml_node_pair_t *pair = n->data.mapping.pairs.start;
+
+        do {
+            yaml_node_t *k = yaml_document_get_node(d, pair->key);
+            yaml_node_t *v = yaml_document_get_node(d, pair->value);
+
+            rc = parse_config_yaml_cmd_add_dependency_attribute(k, v, dep_ctx);
+            if (rc != 0)
+            {
+                ERROR(CS_YAML_ERR_PREFIX "failed to process "
+                      "attribute at " YAML_NODE_LINE_COLUMN_FMT "",
+                      YAML_NODE_LINE_COLUMN(k));
+                return TE_EINVAL;
+            }
+        } while (++pair < n->data.mapping.pairs.top);
+    }
+    else
+    {
+        ERROR(CS_YAML_ERR_PREFIX "found the dependency node to be "
+              "badly formatted");
+        return TE_EINVAL;
     }
 
     return 0;
@@ -308,7 +359,8 @@ parse_config_yaml_dependency(yaml_document_t            *d,
                              yaml_node_t                *n,
                              cs_yaml_target_context_t   *c)
 {
-    te_errno rc;
+    cytc_dep_entry *dep_entry;
+    te_errno        rc;
 
     if (n->type == YAML_SCALAR_NODE)
     {
@@ -319,37 +371,40 @@ parse_config_yaml_dependency(yaml_document_t            *d,
             return TE_EINVAL;
         }
 
-        c->dependency_oid = (const xmlChar *)n->data.scalar.value;
+        dep_entry = TE_ALLOC(sizeof(*dep_entry));
+        if (dep_entry == NULL) {
+            ERROR(CS_YAML_ERR_PREFIX "failed to allocate memory");
+            return TE_ENOMEM;
+        }
+
+        dep_entry->oid = (const xmlChar *)n->data.scalar.value;
+
+        /* Error path resides in parse_config_yaml_cmd_process_target(). */
+        SLIST_INSERT_HEAD(&c->deps, dep_entry, links);
     }
     else if (n->type == YAML_SEQUENCE_NODE)
     {
         yaml_node_item_t *item = n->data.sequence.items.start;
-        yaml_node_t *in = yaml_document_get_node(d, *item);
 
-        if (in->type == YAML_MAPPING_NODE)
-        {
-            yaml_node_pair_t *pair = in->data.mapping.pairs.start;
+        do {
+            yaml_node_t *in = yaml_document_get_node(d, *item);
 
-            do {
-                yaml_node_t *k = yaml_document_get_node(d, pair->key);
-                yaml_node_t *v = yaml_document_get_node(d, pair->value);
+            dep_entry = TE_ALLOC(sizeof(*dep_entry));
+            if (dep_entry == NULL) {
+                ERROR(CS_YAML_ERR_PREFIX "failed to allocate memory");
+                return TE_ENOMEM;
+            }
 
-                rc = parse_config_yaml_cmd_add_dependency_attribute(k, v, c);
-                if (rc != 0)
-                {
-                    ERROR(CS_YAML_ERR_PREFIX "failed to process "
-                          "attribute at " YAML_NODE_LINE_COLUMN_FMT "",
-                          YAML_NODE_LINE_COLUMN(k));
-                    return TE_EINVAL;
-                }
-            } while (++pair < in->data.mapping.pairs.top);
-        }
-        else
-        {
-            ERROR(CS_YAML_ERR_PREFIX "found the dependency node to be "
-                  "badly formatted");
-            return TE_EINVAL;
-        }
+            rc = parse_config_yaml_dependency_entry(d, in, dep_entry);
+            if (rc != 0)
+            {
+                free(dep_entry);
+                return rc;
+            }
+
+            /* Error path resides in parse_config_yaml_cmd_process_target(). */
+            SLIST_INSERT_HEAD(&c->deps, dep_entry, links);
+        } while (++item < n->data.sequence.items.top);
     }
     else
     {
@@ -483,13 +538,14 @@ static te_errno
 embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
                          cs_yaml_target_context_t *c)
 {
-    const xmlChar *prop_name_oid = (const xmlChar *)"oid";
-    const xmlChar *prop_name_value = (const xmlChar *)"value";
-    const xmlChar *prop_name_access = (const xmlChar *)"access";
-    const xmlChar *prop_name_type = (const xmlChar *)"type";
-    const xmlChar *prop_name_scope = (const xmlChar *)"scope";
-    const xmlChar *prop_name_volatile = (const xmlChar *)"volatile";
-    xmlNodePtr     dependency_node;
+    const xmlChar  *prop_name_oid = (const xmlChar *)"oid";
+    const xmlChar  *prop_name_value = (const xmlChar *)"value";
+    const xmlChar  *prop_name_access = (const xmlChar *)"access";
+    const xmlChar  *prop_name_type = (const xmlChar *)"type";
+    const xmlChar  *prop_name_scope = (const xmlChar *)"scope";
+    const xmlChar  *prop_name_volatile = (const xmlChar *)"volatile";
+    xmlNodePtr      dependency_node;
+    cytc_dep_entry *dep_entry;
 
     if (c->oid == NULL)
     {
@@ -539,7 +595,7 @@ embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
         return TE_ENOMEM;
     }
 
-    if (c->dependency_oid != NULL)
+    SLIST_FOREACH(dep_entry, &c->deps, links)
     {
         dependency_node = xmlNewNode(NULL, BAD_CAST "depends");
         if (dependency_node == NULL)
@@ -549,7 +605,7 @@ embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
             return TE_ENOMEM;
         }
 
-        if (xmlNewProp(dependency_node, prop_name_oid, c->dependency_oid) ==
+        if (xmlNewProp(dependency_node, prop_name_oid, dep_entry->oid) ==
             NULL)
         {
             ERROR(CS_YAML_ERR_PREFIX "failed to set OID for the dependency "
@@ -557,8 +613,9 @@ embed_yaml_target_in_xml(xmlNodePtr xn_cmd, xmlNodePtr xn_target,
             return TE_ENOMEM;
         }
 
-        if (c->scope != NULL &&
-            xmlNewProp(dependency_node, prop_name_scope, c->scope) == NULL)
+        if (dep_entry->scope != NULL &&
+            xmlNewProp(dependency_node, prop_name_scope,
+                       dep_entry->scope) == NULL)
         {
             ERROR(CS_YAML_ERR_PREFIX "failed to embed the target scope "
                   "attribute in XML output");
@@ -662,6 +719,24 @@ out:
 }
 
 /**
+ * Free memory allocated for the needs of the given YAML target context
+ *
+ * @param c The context
+ */
+static void
+cytc_cleanup(cs_yaml_target_context_t *c)
+{
+    cytc_dep_entry *dep_entry_tmp;
+    cytc_dep_entry *dep_entry;
+
+    SLIST_FOREACH_SAFE(dep_entry, &c->deps, links, dep_entry_tmp)
+    {
+        SLIST_REMOVE(&c->deps, dep_entry, cytc_dep_entry, links);
+        free(dep_entry);
+    }
+}
+
+/**
  * Process the given target node in the given YAML document.
  *
  * @param ctx               Current doc context
@@ -750,10 +825,14 @@ parse_config_yaml_cmd_process_target(parse_config_yaml_ctx *ctx, yaml_node_t *n,
     rc = embed_yaml_target_in_xml(xn_cmd, xn_target, &c);
     if (rc != 0)
         goto out;
+
+    cytc_cleanup(&c);
+
     return 0;
 
 out:
     xmlFreeNode(xn_target);
+    cytc_cleanup(&c);
 
     return rc;
 }
