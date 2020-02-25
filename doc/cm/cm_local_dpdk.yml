@@ -188,3 +188,13 @@
         Name: Subordinate device numeric ID, like 0 or 1
         Value: An object ID of the subordinate device instance,
                /agent/hardware/pci/vendor/device/instance
+
+    - oid: "/local/dpdk/extra_tx_descs_per_packet"
+      access: read_write
+      type: integer
+      d: |
+        Number of extra Tx descriptors required per packet
+        (e.g. for virtio network header).
+
+        Name: none
+        Value: Number, 0 by default
