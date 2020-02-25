@@ -16,34 +16,12 @@
 #include "tapi_cfg_qdisc.h"
 #include "tapi_cfg_netem.h"
 
-#define VALUE_SIZE      (64)
-#define NETEM_PARAM_FMT \
-    "/agent:%s/interface:%s/tc:/qdisc:/param:%s"
-
-static te_bool
-is_exist(const char *oid)
-{
-    return cfg_find_str(oid, NULL) == 0;
-}
-
-static te_errno
-add_param(const char *oid, const char *value)
-{
-    return cfg_add_instance_str(oid, NULL, CFG_VAL(STRING, value));
-}
-
 /* See description in the tapi_cfg_qdisc.h */
 te_errno
 tapi_cfg_netem_get_param(const char *ta, const char *if_name,
                          const char *param, char **value)
 {
-    cfg_val_type type = CVT_STRING;
-
-    if (ta == NULL || if_name == NULL || param == NULL || value == NULL)
-        return TE_EINVAL;
-
-    return cfg_get_instance_fmt(&type, value, NETEM_PARAM_FMT,
-                                ta, if_name, param);
+    return tapi_cfg_qdisc_get_param(ta, if_name, param, value);
 }
 
 /* See description in the tapi_cfg_qdisc.h */
@@ -51,26 +29,13 @@ te_errno
 tapi_cfg_netem_set_param(const char *ta, const char *if_name,
                          const char *param, const char *value)
 {
-    te_errno rc;
-    char oid[CFG_OID_MAX];
-
-    if (ta == NULL || if_name == NULL || param == NULL || value == NULL)
-        return TE_EINVAL;
-
-    snprintf(oid, CFG_OID_MAX, NETEM_PARAM_FMT, ta, if_name, param);
-
-    if (!is_exist(oid) && (rc = add_param(oid, value)) != 0)
-        return rc;
-    else if ((rc = cfg_set_instance_str(CFG_VAL(STRING, value), oid)) != 0)
-        return rc;
-
-    return 0;
+    return tapi_cfg_qdisc_set_param(ta, if_name, param, value);
 }
 
 static te_errno
 from_integer(uint32_t integer, char *string_value)
 {
-    snprintf(string_value, VALUE_SIZE, "%u", integer);
+    snprintf(string_value, RCF_MAX_VAL, "%u", integer);
     return 0;
 }
 
@@ -93,7 +58,7 @@ from_percent(double value, char *string_value)
     if (value < 0.0 || value > 100.0)
         return TE_EINVAL;
 
-    snprintf(string_value, VALUE_SIZE, "%.2f%%", value);
+    snprintf(string_value, RCF_MAX_VAL, "%.2f%%", value);
     return 0;
 }
 
@@ -141,7 +106,7 @@ to_percent(const char *string_value, double *value)
                                          _type value)                       \
     {                                                                       \
         te_errno rc;                                                        \
-        char value_str[VALUE_SIZE];                                         \
+        char value_str[RCF_MAX_VAL];                                        \
                                                                             \
         if ((rc = _val2str(value, value_str)) != 0)                         \
             return rc;                                                      \

@@ -12,6 +12,7 @@
 #include "conf_api.h"
 #include "logger_api.h"
 #include "tapi_cfg.h"
+#include "te_str.h"
 
 #include "tapi_cfg_qdisc.h"
 
@@ -54,6 +55,7 @@ tapi_cfg_qdisc_set_enabled(const char *ta, const char *if_name,
 
 static const char *kinds[] = {
     [TAPI_CFG_QDISC_KIND_NETEM] = "netem",
+    [TAPI_CFG_QDISC_KIND_TBF] = "tbf",
 };
 
 /* See description in the tapi_cfg_qdisc.h */
@@ -128,5 +130,40 @@ tapi_cfg_qdisc_get_kind(const char *ta, const char *if_name,
         *kind = k;
 
     free(kind_str);
+    return rc;
+}
+
+/* See description in the tapi_cfg_qdisc.h */
+te_errno
+tapi_cfg_qdisc_get_param(const char *ta, const char *if_name,
+                         const char *param, char **value)
+{
+    cfg_val_type type = CVT_STRING;
+
+    if (ta == NULL || if_name == NULL || param == NULL || value == NULL)
+        return TE_EINVAL;
+
+    return cfg_get_instance_fmt(&type, value, TAPI_CFG_QDISC_PARAM_FMT,
+                                ta, if_name, param);
+}
+
+/* See description in the tapi_cfg_qdisc.h */
+te_errno
+tapi_cfg_qdisc_set_param(const char *ta, const char *if_name,
+                         const char *param, const char *value)
+{
+    te_errno rc;
+    char oid[CFG_OID_MAX];
+
+    if (ta == NULL || if_name == NULL || param == NULL || value == NULL)
+        return TE_EINVAL;
+
+    TE_SNPRINTF(oid, CFG_OID_MAX, TAPI_CFG_QDISC_PARAM_FMT, ta, if_name, param);
+
+    if (cfg_find_str(oid, NULL) != 0)
+        rc = cfg_add_instance_str(oid, NULL, CFG_VAL(STRING, value));
+    else
+        rc = cfg_set_instance_str(CFG_VAL(STRING, value), oid);
+
     return rc;
 }

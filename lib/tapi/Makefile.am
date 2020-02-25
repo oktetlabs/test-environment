@@ -51,6 +51,7 @@ include_HEADERS = \
 	tapi_cfg_modules.h \
 	tapi_cfg_qdisc.h \
 	tapi_cfg_netem.h \
+	tapi_cfg_tbf.h \
 	tapi_cfg_cpu.h \
 	tapi_cfg_nginx.h
 
@@ -98,6 +99,7 @@ libtapi_la_SOURCES = \
 	tapi_cfg_modules.c \
 	tapi_cfg_qdisc.c \
 	tapi_cfg_netem.c \
+	tapi_cfg_tbf.c \
 	tapi_cfg_cpu.c \
 	tapi_cfg_nginx.c
 

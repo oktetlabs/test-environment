@@ -61,7 +61,11 @@ extern "C" {
 typedef enum tapi_cfg_qdisc_kind_t {
     TAPI_CFG_QDISC_KIND_UNKNOWN,    /**< Unknown qdisc kind */
     TAPI_CFG_QDISC_KIND_NETEM,      /**< NetEm qdisc kind */
+    TAPI_CFG_QDISC_KIND_TBF,        /**< TBF qdisc kind */
 } tapi_cfg_qdisc_kind_t;
+
+#define TAPI_CFG_QDISC_PARAM_FMT \
+    "/agent:%s/interface:%s/tc:/qdisc:/param:%s"
 
 /**
  * Get status of qdisc
@@ -160,6 +164,34 @@ extern const char *tapi_cfg_qdisc_kind2str(tapi_cfg_qdisc_kind_t kind);
  * @return kind enum
  */
 extern tapi_cfg_qdisc_kind_t tapi_cfg_qdisc_str2kind(const char *string);
+
+/**
+ * Get value of qdisc parameter as string
+ * @note value should be free() after use
+ *
+ * @param[in]  ta       Test Agent
+ * @param[in]  if_name  Interface name
+ * @param[in]  param    qdisc parameter name
+ * @param[out] value    Parameter value
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_qdisc_get_param(
+    const char *ta, const char *if_name, const char *param, char **value);
+
+/**
+ * Set value of qdisc parameter as string
+ *
+ * @param ta        Test Agent
+ * @param if_name   Interface name
+ * @param param     qdisc parameter name
+ * @param value     Parameter value
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_qdisc_set_param(
+    const char *ta, const char *if_name, const char *param,
+    const char *value);
 
 #ifdef __cplusplus
 } /* extern "C" */
