@@ -370,7 +370,7 @@ release_shadow_build_directory() {
 build_platform_and_agent() {
     local p=$1
     local mode=$2
-    local plocalbuild="TE_BS_TA_${p}_LOCAL_BUILD"
+    local plocalbuild="${p}_LOCAL_BUILD"
     local res
 
     need_build_platform "$p" "$mode" || return 0
