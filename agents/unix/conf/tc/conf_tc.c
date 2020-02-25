@@ -25,11 +25,11 @@
 #include "conf_tc_internal.h"
 
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_qdisc_param, "param", NULL, NULL,
-                               conf_netem_param_get,
-                               conf_netem_param_set,
-                               conf_netem_param_add,
-                               conf_netem_param_del,
-                               conf_netem_param_list, NULL);
+                               conf_qdisc_param_get,
+                               conf_qdisc_param_set,
+                               conf_qdisc_param_add,
+                               conf_qdisc_param_del,
+                               conf_qdisc_param_list, NULL);
 
 /* TODO: add handle support */
 RCF_PCH_CFG_NODE_RW(node_qdisc_handle, "handle", NULL,

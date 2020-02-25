@@ -14,7 +14,7 @@
 #include "te_errno.h"
 
 /**
- * 'set' method implementation for TC qdisc netem
+ * 'set' method implementation for TC qdisc netem/tbf
  *
  * @param gid       group identifier
  * @param oid       full object instance identifier
@@ -26,13 +26,13 @@
  *
  * @return Status code
  */
-extern te_errno conf_netem_param_set(unsigned int gid, const char *oid,
+extern te_errno conf_qdisc_param_set(unsigned int gid, const char *oid,
                                      const char *value, const char *if_name,
-                                     const char *tc, const char *qdisc,
+                                     const char *tc, const char *qdisc_str,
                                      const char *param);
 
 /**
- * 'get' method implementation for TC qdisc netem
+ * 'get' method implementation for TC qdisc netem/tbf
  *
  * @param gid       group identifier
  * @param oid       full object instance identifier
@@ -44,25 +44,31 @@ extern te_errno conf_netem_param_set(unsigned int gid, const char *oid,
  *
  * @return Status code
  */
-extern te_errno conf_netem_param_get(unsigned int gid, const char *oid,
+extern te_errno conf_qdisc_param_get(unsigned int gid, const char *oid,
                                      char *value, const char *if_name,
                                      const char *tc, const char *qdisc,
                                      const char *param);
 
 /**
- * 'add' method implementation for TC qdisc netem
+ * 'add' method implementation for TC qdisc netem/tbf
  *
  * @param gid       group identifier
  * @param oid       full object instance identifier
  * @param value     parameter for add
+ * @param if_name   interface name
+ * @param tc        Trafic Control value (empty string)
+ * @param qdisc     QDisc value (empty string)
+ * @param param     parameter name
  *
  * @return Status code
  */
-extern te_errno conf_netem_param_add(unsigned int gid, const char *oid,
-                                     const char *value);
+extern te_errno conf_qdisc_param_add(unsigned int gid, const char *oid,
+                                     const char *value, const char *if_name,
+                                     const char *tc, const char *qdisc,
+                                     const char *param);
 
 /**
- * 'del' method implementation for TC qdisc netem
+ * 'del' method implementation for TC qdisc netem/tbf
  *
  * @param gid       group identifier
  * @param oid       full object instance identifier
@@ -70,11 +76,11 @@ extern te_errno conf_netem_param_add(unsigned int gid, const char *oid,
  *
  * @return Status codehg
  */
-extern te_errno conf_netem_param_del(unsigned int gid, const char *oid,
+extern te_errno conf_qdisc_param_del(unsigned int gid, const char *oid,
                                      const char *value);
 
 /**
- * 'list' method implementation for TC qdisc netem
+ * 'list' method implementation for TC qdisc netem/tbf
  *
  * @param gid       group identifier
  * @param oid       full object instance identifier
@@ -84,7 +90,7 @@ extern te_errno conf_netem_param_del(unsigned int gid, const char *oid,
  *
  * @return Status code
  */
-extern te_errno conf_netem_param_list(unsigned int gid, const char *oid,
+extern te_errno conf_qdisc_param_list(unsigned int gid, const char *oid,
                                       const char *sub_id, char **list,
                                       const char *if_name);
 

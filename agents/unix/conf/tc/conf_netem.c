@@ -23,6 +23,38 @@ typedef void (*netem_setter)(struct rtnl_qdisc *, int);
 typedef te_errno (*value_to_string_converter)(int, char *);
 typedef te_errno (*string_to_value_converter)(const char *, int *);
 
+/* Kind of tc qdisc discipline */
+typedef enum conf_qdisc_kind {
+    CONF_QDISC_NETEM,
+    CONF_QDISC_UNKNOWN,
+} conf_qdisc_kind;
+
+static conf_qdisc_kind
+conf_qdisc_get_kind(struct rtnl_qdisc *qdisc)
+{
+    const char *kind;
+    size_t i;
+    static const char *qdisc_kind_names[] = {
+        [CONF_QDISC_NETEM] = "netem",
+        [CONF_QDISC_UNKNOWN] = NULL
+    };
+
+    kind = rtnl_tc_get_kind(TC_CAST(qdisc));
+    if (kind == NULL)
+        return CONF_QDISC_UNKNOWN;
+
+    for (i = 0; i < TE_ARRAY_LEN(qdisc_kind_names); i++)
+    {
+        if (qdisc_kind_names[i] != NULL &&
+            strcmp(qdisc_kind_names[i], kind) == 0)
+        {
+            return i;
+        }
+    }
+
+    return CONF_QDISC_UNKNOWN;
+}
+
 static te_errno
 default_val2str(int value, char *string)
 {
@@ -74,7 +106,7 @@ struct netem_param {
     string_to_value_converter str2val;
 };
 
-static struct netem_param params[] = {
+static struct netem_param netem_params[] = {
     /* Packet Delay */
     {
         .name = "delay",
@@ -175,14 +207,10 @@ static struct netem_param params[] = {
 };
 
 static te_errno
-get_value_with_qdisc(const char *if_name, struct netem_param *param,
-                     char *value)
+get_netem_value_with_qdisc(struct rtnl_qdisc *qdisc, struct netem_param *param,
+                           char *value)
 {
     int rc;
-    struct rtnl_qdisc *qdisc = NULL;
-
-    if ((qdisc = conf_tc_internal_get_qdisc(if_name)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if ((rc = param->val2str(param->get(qdisc), value)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -191,15 +219,11 @@ get_value_with_qdisc(const char *if_name, struct netem_param *param,
 }
 
 static te_errno
-set_value_with_qdisc(const char *if_name, struct netem_param *param,
-                     const char *value)
+set_netem_value_with_qdisc(struct rtnl_qdisc *qdisc, struct netem_param *param,
+                           const char *value)
 {
     te_errno rc;
     int val = 0;
-    struct rtnl_qdisc *qdisc = NULL;
-
-    if ((qdisc = conf_tc_internal_get_qdisc(if_name)) == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if ((rc = param->str2val(value, &val)) != 0)
         return TE_RC(TE_TA_UNIX, rc);
@@ -210,22 +234,33 @@ set_value_with_qdisc(const char *if_name, struct netem_param *param,
 
 /* See the description in conf_netem.h */
 te_errno
-conf_netem_param_set(unsigned int gid, const char *oid,
+conf_qdisc_param_set(unsigned int gid, const char *oid,
                      const char *value, const char *if_name,
-                     const char *tc, const char *qdisc,
+                     const char *tc, const char *qdisc_str,
                      const char *param)
 {
     size_t i;
+    struct rtnl_qdisc *qdisc = NULL;
+    conf_qdisc_kind qdisc_kind;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(tc);
-    UNUSED(qdisc);
+    UNUSED(qdisc_str);
 
-    for (i = 0; i < TE_ARRAY_LEN(params); i++) {
-        if (strcmp(params[i].name, param) != 0)
-            continue;
-        return set_value_with_qdisc(if_name, params + i, value);
+    if ((qdisc = conf_tc_internal_get_qdisc(if_name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    qdisc_kind = conf_qdisc_get_kind(qdisc);
+
+    if (qdisc_kind == CONF_QDISC_NETEM)
+    {
+        for (i = 0; i < TE_ARRAY_LEN(netem_params); i++)
+        {
+            if (strcmp(netem_params[i].name, param) != 0)
+                continue;
+            return set_netem_value_with_qdisc(qdisc, netem_params + i, value);
+        }
     }
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -233,39 +268,65 @@ conf_netem_param_set(unsigned int gid, const char *oid,
 
 /* See the description in conf_netem.h */
 te_errno
-conf_netem_param_add(unsigned int gid, const char *oid,
-                     const char *value)
+conf_qdisc_param_add(unsigned int gid, const char *oid,
+                     const char *value, const char *if_name,
+                     const char *tc, const char *qdisc_str,
+                     const char *param)
 {
     size_t i;
+    struct rtnl_qdisc *qdisc = NULL;
+    conf_qdisc_kind qdisc_kind;
 
     UNUSED(gid);
     UNUSED(oid);
+    UNUSED(tc);
+    UNUSED(qdisc_str);
 
-    for (i = 0; i < TE_ARRAY_LEN(params); i++) {
-        if (strcmp(params[i].name, value) != 0)
-            return 0;
+    if ((qdisc = conf_tc_internal_get_qdisc(if_name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    qdisc_kind = conf_qdisc_get_kind(qdisc);
+    if (qdisc_kind == CONF_QDISC_NETEM)
+    {
+        for (i = 0; i < TE_ARRAY_LEN(netem_params); i++)
+        {
+            if (strcmp(netem_params[i].name, param) != 0)
+                continue;
+            return set_netem_value_with_qdisc(qdisc, netem_params + i, value);
+        }
     }
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
 te_errno
-conf_netem_param_get(unsigned int gid, const char *oid,
+conf_qdisc_param_get(unsigned int gid, const char *oid,
                      char *value, const char *if_name,
-                     const char *tc, const char *qdisc,
+                     const char *tc, const char *qdisc_str,
                      const char *param)
 {
     size_t i;
+    struct rtnl_qdisc *qdisc = NULL;
+    conf_qdisc_kind qdisc_kind;
 
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(tc);
-    UNUSED(qdisc);
+    UNUSED(qdisc_str);
 
-    for (i = 0; i < TE_ARRAY_LEN(params); i++) {
-        if (strcmp(params[i].name, param) != 0)
-            continue;
-        return get_value_with_qdisc(if_name, params + i, value);;
+    if ((qdisc = conf_tc_internal_get_qdisc(if_name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    qdisc_kind = conf_qdisc_get_kind(qdisc);
+
+    if (qdisc_kind == CONF_QDISC_NETEM)
+    {
+        for (i = 0; i < TE_ARRAY_LEN(netem_params); i++)
+        {
+            if (strcmp(netem_params[i].name, param) != 0)
+                continue;
+            return get_netem_value_with_qdisc(qdisc, netem_params + i, value);
+        }
     }
 
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
@@ -273,7 +334,7 @@ conf_netem_param_get(unsigned int gid, const char *oid,
 
 /* See the description in conf_netem.h */
 te_errno
-conf_netem_param_del(unsigned int gid, const char *oid,
+conf_qdisc_param_del(unsigned int gid, const char *oid,
                      const char *value)
 {
     UNUSED(gid);
@@ -283,18 +344,9 @@ conf_netem_param_del(unsigned int gid, const char *oid,
     return 0;
 }
 
-static te_bool
-is_netem(struct rtnl_qdisc *qdisc)
-{
-    const char *kind;
-
-    kind = rtnl_tc_get_kind(TC_CAST(qdisc));
-    return kind != NULL && strcmp(kind, "netem") == 0;
-}
-
 /* See the description in conf_netem.h */
 te_errno
-conf_netem_param_list(unsigned int gid, const char *oid,
+conf_qdisc_param_list(unsigned int gid, const char *oid,
                       const char *sub_id, char **list,
                       const char *if_name)
 {
@@ -302,6 +354,7 @@ conf_netem_param_list(unsigned int gid, const char *oid,
     size_t i;
     te_string list_out = TE_STRING_INIT;
     struct rtnl_qdisc *qdisc = conf_tc_internal_get_qdisc(if_name);
+    conf_qdisc_kind qdisc_kind;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -310,19 +363,24 @@ conf_netem_param_list(unsigned int gid, const char *oid,
     if ((rc = te_string_append(&list_out, " ")) != 0)
         return TE_RC(TE_TA_UNIX, rc);
 
-    if (qdisc == NULL || !is_netem(qdisc))
+    if (qdisc == NULL)
     {
         *list = list_out.ptr;
         return 0;
     }
 
-    for (i = 0; i < TE_ARRAY_LEN(params); i++)
-    {
-        int value = params[i].get(qdisc);
-        if (value == -NLE_NOATTR || value == 0)
-            continue;
+    qdisc_kind = conf_qdisc_get_kind(qdisc);
 
-        te_string_append(&list_out, "%s ", params[i].name);
+    if (qdisc_kind == CONF_QDISC_NETEM)
+    {
+        for (i = 0; i < TE_ARRAY_LEN(netem_params); i++)
+        {
+            int value = netem_params[i].get(qdisc);
+            if (value == -NLE_NOATTR || value == 0)
+                continue;
+
+            te_string_append(&list_out, "%s ", netem_params[i].name);
+        }
     }
 
     *list = list_out.ptr;
