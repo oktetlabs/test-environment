@@ -94,4 +94,9 @@ extern te_errno conf_qdisc_param_list(unsigned int gid, const char *oid,
                                       const char *sub_id, char **list,
                                       const char *if_name);
 
+/**
+ * Free TC qdisc tbf parameters objects
+ */
+extern void conf_qdisc_tbf_params_free(void);
+
 #endif /* __TE_AGENTS_UNIX_CONF_CONF_NETEM_H_ */

@@ -77,9 +77,10 @@
       type: string
       volatate: true
       d: |
-         Queuing Disciplines kind: "netem"
+         Queuing Disciplines kind: "netem", "tbf"
          Name: empty
-         Value: netem - Network Emulation functionality
+         Value: netem - Network Emulation functionality,
+                tbf - Token Bucket Filter functionality
 
     - oid: "/agent/interface/tc/qdisc/parent"
       access: read_only
@@ -131,3 +132,9 @@
                                           [0.00 - 100.00]%
                 corruption_correlation  - Corruption correlation probability
                                           [0.00 - 100.00]%
+                Available parameters if kind is "tbf":
+                rate                    - Rate of TBF qdisc in bytes per second
+                bucket                  - Size of the bucket in bytes
+                cell                    - Size of a rate cell
+                limit                   - Limit in bytes
+                latency                 - Limit by latency in micro seconds

@@ -17,6 +17,7 @@
 
 #include "conf_tc_internal.h"
 #include "conf_net_if_wrapper.h"
+#include "conf_netem.h"
 
 #include <netlink/errno.h>
 #include <netlink/route/link.h>
@@ -102,6 +103,8 @@ conf_tc_internal_fini(void)
         rtnl_qdisc_put(qdisc_cxt->qdisc);
         free(qdisc_cxt);
     }
+
+    conf_qdisc_tbf_params_free();
 }
 
 /* See the description in conf_tc_internal.h */
