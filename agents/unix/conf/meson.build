@@ -116,7 +116,7 @@ if conf.contains('tc')
     sources += files(
         'tc/conf_tc.c',
         'tc/conf_qdisc.c',
-        'tc/conf_netem.c',
+        'tc/conf_qdisc_params.c',
         'tc/conf_tc_internal.c',
         'tc/conf_net_if_wrapper.c',
     )

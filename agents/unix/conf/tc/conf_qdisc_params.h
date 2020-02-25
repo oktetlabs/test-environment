@@ -8,8 +8,8 @@
  * @author Nikita Somenkov <Nikita.Somenkov@oktetlabs.ru>
  */
 
-#ifndef __TE_AGENTS_UNIX_CONF_CONF_NETEM_H_
-#define __TE_AGENTS_UNIX_CONF_CONF_NETEM_H_
+#ifndef __TE_AGENTS_UNIX_CONF_CONF_QDISC_PARAMS_H_
+#define __TE_AGENTS_UNIX_CONF_CONF_QDISC_PARAMS_H_
 
 #include "te_errno.h"
 
@@ -99,4 +99,4 @@ extern te_errno conf_qdisc_param_list(unsigned int gid, const char *oid,
  */
 extern void conf_qdisc_tbf_params_free(void);
 
-#endif /* __TE_AGENTS_UNIX_CONF_CONF_NETEM_H_ */
+#endif /* __TE_AGENTS_UNIX_CONF_CONF_QDISC_PARAMS_H_ */

@@ -17,7 +17,7 @@
 
 #include "conf_tc_internal.h"
 #include "conf_net_if_wrapper.h"
-#include "conf_netem.h"
+#include "conf_qdisc_params.h"
 
 #include <netlink/errno.h>
 #include <netlink/route/link.h>

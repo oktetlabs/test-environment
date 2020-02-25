@@ -21,7 +21,7 @@
 
 #include "conf_tc.h"
 #include "conf_qdisc.h"
-#include "conf_netem.h"
+#include "conf_qdisc_params.h"
 #include "conf_tc_internal.h"
 
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_qdisc_param, "param", NULL, NULL,

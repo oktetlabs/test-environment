@@ -203,12 +203,12 @@ endif
 if CFG_UNIX_TC
 libconf_a_SOURCES += tc/conf_tc.c
 libconf_a_SOURCES += tc/conf_qdisc.c
-libconf_a_SOURCES += tc/conf_netem.c
+libconf_a_SOURCES += tc/conf_qdisc_params.c
 libconf_a_SOURCES += tc/conf_tc_internal.c
 libconf_a_SOURCES += tc/conf_net_if_wrapper.c
 noinst_HEADERS += tc/conf_tc.h
 noinst_HEADERS += tc/conf_qdisc.h
-noinst_HEADERS += tc/conf_netem.h
+noinst_HEADERS += tc/conf_qdisc_params.h
 noinst_HEADERS += tc/conf_tc_internal.h
 libconf_a_SOURCES += tc/conf_net_if_wrapper.h
 endif

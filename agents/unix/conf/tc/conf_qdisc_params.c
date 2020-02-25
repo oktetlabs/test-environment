@@ -16,7 +16,7 @@
 #include "te_queue.h"
 #include "logger_api.h"
 
-#include "conf_netem.h"
+#include "conf_qdisc_params.h"
 #include "conf_tc_internal.h"
 
 #include <netlink/route/qdisc/netem.h>
@@ -484,7 +484,7 @@ static struct tbf_param tbf_params_list[] = {
     },
 };
 
-/* See the description in conf_netem.h */
+/* See the description in conf_qdisc_params.h */
 te_errno
 conf_qdisc_param_set(unsigned int gid, const char *oid,
                      const char *value, const char *if_name,
@@ -548,7 +548,7 @@ conf_qdisc_param_set(unsigned int gid, const char *oid,
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
-/* See the description in conf_netem.h */
+/* See the description in conf_qdisc_params.h */
 te_errno
 conf_qdisc_param_add(unsigned int gid, const char *oid,
                      const char *value, const char *if_name,
@@ -671,7 +671,7 @@ conf_qdisc_param_get(unsigned int gid, const char *oid,
     return TE_RC(TE_TA_UNIX, TE_ENOENT);
 }
 
-/* See the description in conf_netem.h */
+/* See the description in conf_qdisc_params.h */
 te_errno
 conf_qdisc_param_del(unsigned int gid, const char *oid,
                      const char *value)
@@ -683,7 +683,7 @@ conf_qdisc_param_del(unsigned int gid, const char *oid,
     return 0;
 }
 
-/* See the description in conf_netem.h */
+/* See the description in conf_qdisc_params.h */
 te_errno
 conf_qdisc_param_list(unsigned int gid, const char *oid,
                       const char *sub_id, char **list,
@@ -748,7 +748,7 @@ conf_qdisc_param_list(unsigned int gid, const char *oid,
     return 0;
 }
 
-/* See the description in conf_netem.h */
+/* See the description in conf_qdisc_params.h */
 void
 conf_qdisc_tbf_params_free(void)
 {
