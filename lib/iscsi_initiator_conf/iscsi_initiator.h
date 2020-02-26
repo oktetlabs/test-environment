@@ -281,8 +281,8 @@ typedef struct iscsi_target_param_descr_t
     uint32_t offer; /**< OFFER_XXX mask */
     char    *name;  /**< Parameter name */
     te_bool  is_string; /**< TRUE if the corresponding field
-                         *  is `char *', 
-                         *  FALSE if it is `int'
+                         *  is `char *`,
+                         *  FALSE if it is `int`
                          */
     enum iscsi_target_param_kind_t kind; 
                          /**< Parameter type.
