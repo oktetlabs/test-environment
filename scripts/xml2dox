@@ -120,6 +120,13 @@ in_enum && /req=/ {
   next;
 }
 
+in_enum && /<value[ ]+ref="/ {
+  sub(/.*<value[ ]+ref="/, "-# ");
+  sub(/".*\/>/, "");
+  print $0;
+  next;
+}
+
 in_enum && /<value/ {
   sub(/.*>/, "-# ");
   print $0;
