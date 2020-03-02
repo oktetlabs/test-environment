@@ -23,7 +23,7 @@ TE_LIB_SET
 dnl
 dnl Check for Geneve support
 dnl
-AC_CHECK_DECL([IFLA_GENEVE_ID], [], [], [
+AC_CHECK_DECLS([IFLA_GENEVE_ID], [], [], [
 #include <linux/if_link.h>
 ])
 
@@ -37,7 +37,7 @@ AC_CHECK_DECLS([IFLA_VXLAN_GROUP6, IFLA_VXLAN_LOCAL6], [], [], [
 dnl
 dnl Check for Geneve IPv6 address attribute support
 dnl
-AC_CHECK_DECL([IFLA_GENEVE_REMOTE6], [], [], [
+AC_CHECK_DECLS([IFLA_GENEVE_REMOTE6], [], [], [
 #include <linux/if_link.h>
 ])
 
