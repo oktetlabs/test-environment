@@ -5,7 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  * @author Renata Sayakhova <Renata.Sayakhova@oktetlabs.ru>
  * @author Elena Vengerova  <Elena.Vengerova@oktetlabs.ru>
@@ -102,11 +102,11 @@ static te_bool none_equal(cfg_inst_val first, cfg_inst_val second);
 
 /* Primary types' convertion functions */
 cfg_primary_type cfg_types[CFG_PRIMARY_TYPES_NUM] = {
-    { str2int, int2str, int_def_val, 
+    { str2int, int2str, int_def_val,
       int_free, int_copy, int_get, int_put, int_equal },
-    { str2char, char2str, str_def_val, 
+    { str2char, char2str, str_def_val,
       str_free, str_copy, str_get, str_put, str_equal },
-    { str2addr, addr2str, addr_def_val, 
+    { str2addr, addr2str, addr_def_val,
       addr_free, addr_copy, addr_get, addr_put, addr_equal },
     { str2none, none2str, none_def_val,
       none_free, none_copy, none_get, none_put, none_equal }
@@ -114,12 +114,12 @@ cfg_primary_type cfg_types[CFG_PRIMARY_TYPES_NUM] = {
 
 /*----------------------- Integer type handlers -------------------------*/
 
-static int 
+static int
 str2int(char *val_str, cfg_inst_val *val)
 {
     char *invalid;
     int ret_val = 0;
-    
+
     ret_val = strtol(val_str, &invalid, 0);
     if (*invalid != '\0')
     {
@@ -134,7 +134,7 @@ int2str(cfg_inst_val val, char **val_str)
 {
     char str[CFG_TP_MAX_BUF];
     int ret_val;
-    
+
     ret_val = snprintf(str, CFG_TP_MAX_BUF, "%d", val.val_int);
     if (ret_val < 1)
     {
@@ -150,7 +150,7 @@ int2str(cfg_inst_val val, char **val_str)
     return 0;
 }
 
-static int 
+static int
 int_def_val(cfg_inst_val *val)
 {
     val->val_int = 0;
@@ -184,15 +184,15 @@ static void
 int_put(cfg_inst_val val, cfg_msg *msg)
 {
     int *msg_val;
-    
+
     if (msg == NULL)
         return;
-        
+
     msg_val = (msg->type == CFG_ADD) ? &(((cfg_add_msg *)msg)->val.val_int) :
               (msg->type == CFG_SET) ? &(((cfg_set_msg *)msg)->val.val_int) :
               &(((cfg_get_msg *)msg)->val.val_int);
     *msg_val = val.val_int;
-    
+
     SET_MSG_LEN(msg);
 }
 
@@ -204,7 +204,7 @@ int_equal(cfg_inst_val first, cfg_inst_val second)
 
 /*----------------------- String type handlers --------------------------*/
 
-static int 
+static int
 str2char(char *val_str, cfg_inst_val *val)
 {
     if (val_str == NULL)
@@ -213,16 +213,16 @@ str2char(char *val_str, cfg_inst_val *val)
     return (*(char **)val = strdup(val_str)) == NULL ? TE_ENOMEM : 0;
 }
 
-static int 
+static int
 char2str(cfg_inst_val val, char **val_str)
 {
     if (val.val_str == NULL)
         return TE_EINVAL;
-        
+
     return (*val_str = strdup(val.val_str)) == NULL ? TE_ENOMEM : 0;
 }
 
-static int 
+static int
 str_def_val(cfg_inst_val *val)
 {
     return (*(char **)val = strdup("")) == NULL ? TE_ENOMEM : 0;
@@ -232,10 +232,10 @@ static void
 str_free(cfg_inst_val val)
 {
     char *str = val.val_str;
-    
+
     if (str != NULL)
         free(str);
-    return;     
+    return;
 }
 
 static int
@@ -243,7 +243,7 @@ str_copy(cfg_inst_val src, cfg_inst_val *dst)
 {
     if (src.val_str == NULL)
         return TE_EINVAL;
-        
+
     return (*(char **)dst = strdup(src.val_str)) == NULL ? TE_ENOMEM : 0;
 }
 
@@ -266,14 +266,14 @@ static void
 str_put(cfg_inst_val val, cfg_msg *msg)
 {
     char *msg_str;
-    
+
     if (msg == NULL)
         return;
 
     msg_str = (msg->type == CFG_ADD) ? ((cfg_add_msg *)msg)->val.val_str :
               (msg->type == CFG_SET) ? ((cfg_set_msg *)msg)->val.val_str :
               ((cfg_get_msg *)msg)->val.val_str;
-              
+
     SET_MSG_LEN(msg);
 
     if (val.val_str == NULL)
@@ -282,7 +282,7 @@ str_put(cfg_inst_val val, cfg_msg *msg)
         msg->len++;
         return;
     }
-           
+
     msg->len += strlen(val.val_str) + 1;
     strcpy(msg_str, val.val_str);
 
@@ -299,7 +299,7 @@ str_equal(cfg_inst_val first, cfg_inst_val second)
 /*----------------------- Address type handlers --------------------------*/
 
 
-static int 
+static int
 str2addr(char *val_str, cfg_inst_val *val)
 {
     if (val_str == NULL)
@@ -319,12 +319,12 @@ str2addr(char *val_str, cfg_inst_val *val)
         uint32_t mac_addr_bytes[MAC_ADDR_LEN];
         int      i;
         char     c;
-       
+
         /* Probably IPv6 address */
         addr6 = (struct sockaddr_in6 *)calloc(1, sizeof(*addr6));
         if (addr6 == NULL)
             return TE_ENOMEM;
-        
+
         if (inet_pton(AF_INET6, val_str, &(addr6->sin6_addr)) > 0)
         {
             addr6->sin6_family = AF_INET6;
@@ -332,8 +332,8 @@ str2addr(char *val_str, cfg_inst_val *val)
             return 0;
         }
         free(addr6);
-            
-        /* 
+
+        /*
          * We can be sure that each element of this array fits into
          * uint8_t as we explicitly specify maximum field width "02"
          * between the '%'  and  'x' symbols.
@@ -350,11 +350,11 @@ str2addr(char *val_str, cfg_inst_val *val)
         for (i = 0; i < MAC_ADDR_LEN; i++)
         {
             mac_addr[i] = mac_addr_bytes[i];
-        }    
+        }
 
         if ((addr = (struct sockaddr *)calloc(1, sizeof(*addr))) == NULL)
             return TE_ENOMEM;
-            
+
         memcpy((void *)(addr->sa_data), (void *)(mac_addr), MAC_ADDR_LEN);
 
         addr->sa_family = AF_LOCAL;
@@ -403,9 +403,9 @@ addr2str(cfg_inst_val val, char **val_str)
     char val_buf[CFG_TP_MAX_BUF];
     const char *ret_val;
     int len;
-    
+
     struct sockaddr *val_addr = val.val_addr;
-    
+
     switch (val_addr->sa_family)
     {
 #define CVT_ADDR(af, add) \
@@ -417,7 +417,7 @@ addr2str(cfg_inst_val val, char **val_str)
         if (ret_val == NULL) {                                    \
             return TE_EINVAL;                                        \
         }                                                         \
-    } while (0)    
+    } while (0)
         case AF_INET:
         {
             CVT_ADDR(AF_INET,);
@@ -430,24 +430,24 @@ addr2str(cfg_inst_val val, char **val_str)
         }
         case AF_LOCAL:
         {
-#define MAC_ADDR_STR_LEN          17        
+#define MAC_ADDR_STR_LEN          17
             int size;
             unsigned char *mac = (unsigned char *)(val_addr->sa_data);
-            
+
             size = snprintf(val_buf, CFG_TP_MAX_BUF,
-                            "%02x:%02x:%02x:%02x:%02x:%02x", 
-                            (unsigned int)mac[0], 
+                            "%02x:%02x:%02x:%02x:%02x:%02x",
+                            (unsigned int)mac[0],
                             (unsigned int)mac[1],
-                            (unsigned int)mac[2], 
+                            (unsigned int)mac[2],
                             (unsigned int)mac[3],
-                            (unsigned int)mac[4], 
-                            (unsigned int)mac[5]); 
+                            (unsigned int)mac[4],
+                            (unsigned int)mac[5]);
             if (size != MAC_ADDR_STR_LEN)
             {
                 return TE_EINVAL;
-            }               
-            break;                           
-        }    
+            }
+            break;
+        }
         case AF_UNSPEC:
         {
             val_buf[0] = '\0';
@@ -466,10 +466,10 @@ addr2str(cfg_inst_val val, char **val_str)
     }
     memcpy((void *)(*val_str), val_buf, len);
     return 0;
-#undef CVT_ADDR    
+#undef CVT_ADDR
 }
 
-static int 
+static int
 addr_def_val(cfg_inst_val *val)
 {
     return str2addr("", val);
@@ -482,20 +482,20 @@ addr_free(cfg_inst_val val)
     free(addr);
     val.val_addr = NULL;
     return;
-}    
+}
 
 static int
 addr_copy(cfg_inst_val src, cfg_inst_val *dst)
 {
     struct sockaddr *src_addr = src.val_addr;
     struct sockaddr *dst_addr;
-    
+
     if (src_addr == NULL)
     {
         dst->val_addr = NULL;
         return 0;
     }
-    
+
     switch (src_addr->sa_family)
     {
 #define CP_ADDR(in, version) \
@@ -533,14 +533,14 @@ addr_copy(cfg_inst_val src, cfg_inst_val *dst)
     dst->val_addr = dst_addr;
 
     return 0;
-#undef CP_ADDR    
+#undef CP_ADDR
 }
 
 static int
 addr_get(cfg_msg *msg, cfg_inst_val *val)
 {
     struct sockaddr *msg_addr;
-    
+
     if (msg == NULL)
     {
         return TE_EINVAL;
@@ -548,7 +548,7 @@ addr_get(cfg_msg *msg, cfg_inst_val *val)
     msg_addr = (msg->type == CFG_ADD) ? ((cfg_add_msg *)msg)->val.val_addr :
                (msg->type == CFG_SET) ? ((cfg_set_msg *)msg)->val.val_addr :
                                         ((cfg_get_msg *)msg)->val.val_addr;
-    
+
     switch (msg_addr->sa_family)
     {
 #define CP_ADDR(in, version) \
@@ -586,7 +586,7 @@ addr_get(cfg_msg *msg, cfg_inst_val *val)
         }
     }
     return 0;
-#undef CP_ADDR    
+#undef CP_ADDR
 }
 
 static void
@@ -594,13 +594,13 @@ addr_put(cfg_inst_val val, cfg_msg *msg)
 {
     struct sockaddr *msg_addr;
     struct sockaddr *addr = val.val_addr;
-    
+
     if (msg == NULL)
     {
         return;
     }
     SET_MSG_LEN(msg);
-                                        
+
     msg_addr = (msg->type == CFG_ADD) ? ((cfg_add_msg *)msg)->val.val_addr :
                (msg->type == CFG_SET) ? ((cfg_set_msg *)msg)->val.val_addr :
                                         ((cfg_get_msg *)msg)->val.val_addr;
@@ -634,7 +634,7 @@ addr_put(cfg_inst_val val, cfg_msg *msg)
             break;
         }
     }
-    return;    
+    return;
 }
 
 static te_bool
@@ -643,7 +643,7 @@ addr_equal(cfg_inst_val first, cfg_inst_val second)
     struct sockaddr *first_addr = first.val_addr;
     struct sockaddr *second_addr = second.val_addr;
     int ret_val;
-    
+
     if (first_addr->sa_family != second_addr->sa_family)
     {
         return FALSE;
@@ -654,7 +654,7 @@ addr_equal(cfg_inst_val first, cfg_inst_val second)
     do {                                                          \
         ret_val = memcmp((void *)first_addr, (void *)second_addr, \
                          sizeof(struct sockaddr##in##version));   \
-    } while (0)                                  
+    } while (0)
         case AF_INET:
         {
             CMP_ADDR(_in,);
@@ -677,12 +677,12 @@ addr_equal(cfg_inst_val first, cfg_inst_val second)
         }
     }
     return (ret_val == 0) ? TRUE : FALSE;
-#undef CMP_ADDR    
+#undef CMP_ADDR
 }
 
 /*----------------------- None type handlers -------------------------*/
 
-static int 
+static int
 str2none(char *val_str, cfg_inst_val *val)
 {
     UNUSED(val_str);
@@ -690,7 +690,7 @@ str2none(char *val_str, cfg_inst_val *val)
     return 0;
 }
 
-static int 
+static int
 none2str(cfg_inst_val val, char **val_str)
 {
     UNUSED(val);
@@ -698,21 +698,21 @@ none2str(cfg_inst_val val, char **val_str)
     return 0;
 }
 
-static int 
+static int
 none_def_val(cfg_inst_val *val)
 {
     UNUSED(val);
     return TE_EINVAL;
 }
 
-static void 
+static void
 none_free(cfg_inst_val val)
 {
     UNUSED(val);
     return;
 }
 
-static int 
+static int
 none_copy(cfg_inst_val src, cfg_inst_val *dst)
 {
     UNUSED(src);
@@ -720,7 +720,7 @@ none_copy(cfg_inst_val src, cfg_inst_val *dst)
     return 0;
 }
 
-static int 
+static int
 none_get(cfg_msg *msg, cfg_inst_val *val)
 {
     UNUSED(msg);
@@ -728,7 +728,7 @@ none_get(cfg_msg *msg, cfg_inst_val *val)
     return 0;
 }
 
-static void 
+static void
 none_put(cfg_inst_val val, cfg_msg *msg)
 {
     UNUSED(val);
@@ -736,7 +736,7 @@ none_put(cfg_inst_val val, cfg_msg *msg)
     return;
 }
 
-static te_bool 
+static te_bool
 none_equal(cfg_inst_val first, cfg_inst_val second)
 {
     UNUSED(first);
