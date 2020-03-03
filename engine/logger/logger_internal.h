@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
@@ -70,7 +70,7 @@ extern "C" {
 /** Default TA polling timeout in milliseconds */
 #define LGR_TA_POLL_DEF         1000     /* 1 second */
 
-/** 
+/**
  * Maximum number of messages to be get during flush.
  * It is required to cope with permanent logging on TA
  * with broken time synchronization.
@@ -154,7 +154,7 @@ extern void lgr_register_message(const void *buf_mess, size_t buf_len);
 
 /**
  * Check the logger shutdown flag.
- * 
+ *
  * @return TRUE if sthe flag is active else FALSE.
  */
 extern te_bool te_log_check_shutdown(void);

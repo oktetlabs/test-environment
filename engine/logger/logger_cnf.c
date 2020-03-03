@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Igor B. Vasiliev <Igor.Vasiiev@oktetlabs.ru>
@@ -237,7 +237,7 @@ startElementLGR(void           *ctx,
             ERROR("Failed to expand '%s'", atts[name_id + 1]);
             return;
         }
-            
+
         if (strlen(result) == 0)
         {
             free(result);

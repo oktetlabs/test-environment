@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -100,7 +100,7 @@ static inline te_log_nfl
 te_log_raw_get_nfl(const void *buf)
 {
     te_log_nfl  nfl;
-    
+
     memcpy(&nfl, buf, sizeof(nfl));
 #if HAVE_ASSERT_H
     assert(sizeof(nfl) == 2);
@@ -243,7 +243,7 @@ te_handler(void)
                 ERROR("Message receiving failure: %r", rc);
                 break;
             }
-            
+
             received = buf_len;
             total = buf_len + len;
             /* Increase buffer length until message does not fit in it */
@@ -251,7 +251,7 @@ te_handler(void)
                 /* Double size of the buffer */
                 buf_len = buf_len << 1;
             } while (buf_len < total);
-            
+
             /* Reallocate the buffer */
             buf = realloc(buf, buf_len);
             if (buf == NULL)
@@ -483,7 +483,7 @@ ta_handler(void *ta)
     gettimeofday(&poll_ts, NULL);
 
     /* Create separate thread for sniffers log message processing */
-    rc = pthread_create(&sniffer_thread, NULL, (void *)&sniffers_handler, 
+    rc = pthread_create(&sniffer_thread, NULL, (void *)&sniffers_handler,
                         inst->agent);
     if (rc != 0)
     {
@@ -501,7 +501,7 @@ ta_handler(void *ta)
                 break;
         }
 
-        /* 
+        /*
          * If we are not flushing, wait for polling timeout or
          * flush request
          */
@@ -786,7 +786,7 @@ ta_handler(void *ta)
 
 /**
  * Process command line options and parameters specified in argv.
- * The procedure contains "Option table" that should be updated 
+ * The procedure contains "Option table" that should be updated
  * if some new options are going to be added.
  *
  * @param argc  Number of elements in array "argv".
@@ -822,10 +822,10 @@ process_cmd_line_opts(int argc, const char **argv)
         POPT_AUTOHELP
         POPT_TABLEEND
     };
-    
+
     /* Process command line options */
     optCon = poptGetContext(NULL, argc, argv, options_table, 0);
-  
+
     poptSetOtherOptionHelp(optCon, "[OPTIONS] <cfg-file>");
 
     while ((rc = poptGetNextOpt(optCon)) >= 0)
@@ -1017,7 +1017,7 @@ main(int argc, const char *argv[])
               pid_fn, res);
         goto exit;
     }
-    
+
     if (pid_f != NULL && (sigemptyset(&sigs) != 0 ||
                           sigaddset(&sigs, SIGUSR1) != 0 ||
                           sigprocmask(SIG_BLOCK, &sigs, NULL) != 0))
@@ -1026,7 +1026,7 @@ main(int argc, const char *argv[])
         goto exit;
     }
 
-    /* 
+    /*
      * Go to background, if foreground mode is not requested.
      * No threads should be created before become a daemon.
      */
@@ -1132,10 +1132,10 @@ main(int argc, const char *argv[])
 
     sniffer_polling_sets_start_init();
 
-    /* 
+    /*
      * FIXME:
      * Log file must be processed before start of messages
-     * processing 
+     * processing
      */
     /* Parse log file when list of TAs is known */
     INFO("Logger configuration file parsing\n");

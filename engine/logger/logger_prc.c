@@ -1,12 +1,12 @@
 /** @file
  * @brief Logger subsystem
- * 
- * TEN side Logger library. 
  *
- *  
+ * TEN side Logger library.
+ *
+ *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
@@ -22,7 +22,7 @@
 #include <stdarg.h>
 #endif
 #if HAVE_FCNTL_H
-#include <fcntl.h> 
+#include <fcntl.h>
 #endif
 #if HAVE_PTHREAD_H
 #include <pthread.h>
@@ -52,7 +52,7 @@ static te_log_msg_raw_data lgr_out;
 void
 lgr_log_message(const char *file, unsigned int line,
                 te_log_ts_sec sec, te_log_ts_usec usec,
-                unsigned int level, const char *entity, 
+                unsigned int level, const char *entity,
                 const char *user, const char *fmt, va_list ap)
 {
     pthread_mutex_lock(&lgr_lock);
