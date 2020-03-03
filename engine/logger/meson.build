@@ -49,5 +49,9 @@ executable('te_log_get_path', 'te_log_get_path.c', install: true,
            c_args: c_args,
            dependencies: dep_libxml2)
 
-scripts = [ 'te_log_archive', 'te_log_init', 'te_log_message' ]
+scripts = [
+    'te_log_archive',
+    'te_log_init',
+    'te_log_message',
+]
 install_data(scripts, install_dir: 'bin')
