@@ -358,32 +358,6 @@ cfg_dh_process_get(xmlNodePtr node, te_kvpair_h *expand_vars)
 }
 
 /**
- * Find instance by oid and check that this is an instance.
- *
- * @param oid       Instance OID
- * @param handle    Handle for found instance
- *
- * @return Status code
- */
-static te_errno
-cfg_dh_find_instance(const char *oid, cfg_handle *handle)
-{
-    if (cfg_db_find(oid, handle) != 0)
-    {
-        ERROR("Cannot find instance %s", oid);
-        return TE_ENOENT;
-    }
-
-    if (!CFG_IS_INST(*handle))
-    {
-        ERROR("OID %s is not instance", oid);
-        return TE_EINVAL;
-    }
-
-    return 0;
-}
-
-/**
  * Process 'copy' command.
  *
  * @param node          XML node with get command children
@@ -400,6 +374,7 @@ cfg_dh_process_copy(xmlNodePtr node, te_kvpair_h *expand_vars)
     size_t        len;
     size_t        oid_len;
     char         *oid = NULL;
+    te_bool       is_obj;
     char         *val_s = NULL;
     cfg_copy_msg *msg = NULL;
     cfg_handle    src_handle;
@@ -433,6 +408,8 @@ cfg_dh_process_copy(xmlNodePtr node, te_kvpair_h *expand_vars)
         }
 
         memcpy(msg->dst_oid, oid, oid_len + 1);
+        msg->is_obj = (strchr(oid, ':') == NULL) ? TRUE : FALSE;
+
         msg->type = CFG_COPY;
         msg->len = sizeof(cfg_copy_msg) + oid_len + 1;
 
@@ -445,7 +422,7 @@ cfg_dh_process_copy(xmlNodePtr node, te_kvpair_h *expand_vars)
             goto cleanup;
         }
 
-        if ((rc = cfg_dh_find_instance(val_s, &src_handle)) != 0)
+        if ((rc = cfg_db_find(val_s, &src_handle)) != 0)
             goto cleanup;
 
         msg->src_handle = src_handle;

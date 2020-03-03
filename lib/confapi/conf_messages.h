@@ -217,6 +217,7 @@ typedef struct cfg_get_msg {
 typedef struct cfg_copy_msg {
     CFG_MSG_FIELDS
     cfg_handle src_handle;   /**< Source handle */
+    te_bool    is_obj;       /**< Destination is an object */
     char       dst_oid[0];   /**< Destination OID */
 } cfg_copy_msg;
 

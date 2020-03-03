@@ -684,7 +684,63 @@ copy_subtree_instance(const char *dst_oid, const cfg_instance *src_inst,
 }
 
 /**
- * Copy recursively source subtree to destination subtree
+ * Copy object from source tree to destination tree
+ *
+ * @param dst_oid               Destination object OID
+ * @param src_inst              Source tree object
+ * @param dst_child_handle      Handle of the added object
+ *
+ * @return  Status code
+ */
+static te_errno
+copy_subtree_object(const char *dst_oid, const cfg_object *src_obj,
+                    cfg_handle *dst_child_handle)
+{
+    cfg_register_msg  *msg = NULL;
+    int                rc = 0;
+    size_t             msg_len;
+    size_t             dst_oid_len;
+    size_t             def_val_len;
+
+    dst_oid_len = strlen(dst_oid) + 1;
+    def_val_len = (src_obj->def_val == NULL) ? 0 : strlen(src_obj->def_val) + 1;
+
+    msg_len = sizeof(cfg_register_msg) + dst_oid_len + def_val_len;
+    if ((msg = TE_ALLOC(msg_len)) == NULL)
+    {
+        ERROR("Failed to allocate memory for conf message");
+        return TE_ENOMEM;
+    }
+
+    msg->type = CFG_REGISTER;
+    msg->val_type = src_obj->type;
+    msg->access = src_obj->access;
+
+    memcpy(msg->oid, dst_oid, dst_oid_len);
+
+    if (src_obj->def_val != NULL)
+    {
+        msg->def_val = dst_oid_len;
+        memcpy(msg->oid + dst_oid_len, src_obj->def_val, def_val_len);
+    }
+    else
+    {
+        msg->def_val = 0;
+    }
+    msg->len = msg_len;
+
+    cfg_process_msg((cfg_msg **)&msg, TRUE);
+
+    rc = msg->rc;
+    if (rc == 0)
+        *dst_child_handle = msg->handle;
+
+    free(msg);
+    return rc;
+}
+
+/**
+ * Copy recursively instance source subtree to destination subtree
  *
  * @param top_dst_oid       Destination subtree OID
  * @param top_src_handle    Source subtree handle
@@ -692,7 +748,8 @@ copy_subtree_instance(const char *dst_oid, const cfg_instance *src_inst,
  * @return Status code
  */
 static te_errno
-copy_subtree_recursively(const char *top_dst_oid, cfg_handle top_src_handle)
+copy_inst_subtree_recursively(const char *top_dst_oid,
+                              cfg_handle top_src_handle)
 {
     int rc = 0;
     cfg_handle dst_handle;
@@ -735,7 +792,64 @@ copy_subtree_recursively(const char *top_dst_oid, cfg_handle top_src_handle)
         memcpy(child_oid + dst_oid_len, inst->oid + src_oid_len,
                src_child_oid_len - src_oid_len + 1);
 
-        rc = copy_subtree_recursively(child_oid, inst->handle);
+        rc = copy_inst_subtree_recursively(child_oid, inst->handle);
+        free(child_oid);
+
+        if (rc != 0)
+            return rc;
+    }
+    return rc;
+}
+
+/**
+ * Copy recursively object source subtree to destination subtree
+ *
+ * @param top_dst_oid       Destination subtree OID
+ * @param top_src_handle    Source subtree handle
+ *
+ * @return Status code
+ */
+static te_errno
+copy_obj_subtree_recursively(const char *top_dst_oid, cfg_handle top_src_handle)
+{
+    int               rc = 0;
+    cfg_handle        dst_handle;
+    const cfg_object *src_obj;
+    cfg_object       *obj;
+    char             *child_oid;
+    size_t            dst_oid_len;
+    size_t            src_oid_len;
+    size_t            src_child_oid_len;
+
+    src_obj = CFG_GET_OBJ(top_src_handle);
+    if (src_obj == NULL)
+    {
+        ERROR("Failed to get source object");
+        return TE_ENOENT;
+    }
+
+    rc = copy_subtree_object(top_dst_oid, src_obj, &dst_handle);
+    if (rc != 0)
+        return rc;
+
+    dst_oid_len = strlen(top_dst_oid);
+    src_oid_len = strlen(src_obj->oid);
+    for (obj = src_obj->son; obj != NULL; obj = obj->brother)
+    {
+        src_child_oid_len = strlen(obj->oid);
+
+        child_oid = TE_ALLOC(dst_oid_len + src_child_oid_len -
+                             src_oid_len + 1);
+        if (child_oid == NULL)
+        {
+            ERROR("Failed to allocate memory");
+            return TE_ENOMEM;
+        }
+        memcpy(child_oid, top_dst_oid, dst_oid_len);
+        memcpy(child_oid + dst_oid_len, obj->oid + src_oid_len,
+               src_child_oid_len - src_oid_len + 1);
+
+        rc = copy_obj_subtree_recursively(child_oid, obj->handle);
         free(child_oid);
 
         if (rc != 0)
@@ -760,7 +874,11 @@ process_copy(cfg_copy_msg *msg)
         return;
     }
 
-    msg->rc = copy_subtree_recursively(msg->dst_oid, msg->src_handle);
+    if (msg->is_obj)
+        copy_obj_subtree_recursively(msg->dst_oid, msg->src_handle);
+    else
+        copy_inst_subtree_recursively(msg->dst_oid, msg->src_handle);
+
     if (msg->rc != 0)
     {
         /*
