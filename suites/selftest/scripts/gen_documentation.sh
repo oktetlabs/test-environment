@@ -9,8 +9,7 @@ export TS_TOPDIR="$(cd "$(dirname "$(which "$0")")/.."; pwd -P)"
 [ -n "$TE_BASE" ] || exit 1
 
 if [ -z "$DOXYREST_PREFIX" ]; then
-    echo "Please set DOXYREST_PREFIX before:"
-    echo "Last release: https://github.com/vovkos/doxyrest/releases"
+    $TE_BASE/scripts/doxyrest_deploy.sh --how
     exit -1
 fi
 [ -z "$DOXYREST_BIN" ] && DOXYREST_BIN="$DOXYREST_PREFIX/bin/doxyrest"
