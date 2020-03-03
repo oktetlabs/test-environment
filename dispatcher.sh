@@ -1052,10 +1052,12 @@ if test -n "$BUILD_TA" -o -n "$BUILD_TA_FOR" ; then
     fi
 fi
 
-if test -n "${QUIET}" ; then
-    $PROFILE_BUILD te_builder_opts --quiet="${TE_BUILD_LOG}" $BUILDER_OPTS || exit_with_log
-else
-    $PROFILE_BUILD te_builder_opts $BUILDER_OPTS || exit_with_log
+if test -n "${BUILDER_OPTS}" ; then
+    if test -n "${QUIET}" ; then
+        $PROFILE_BUILD te_builder_opts --quiet="${TE_BUILD_LOG}" $BUILDER_OPTS || exit_with_log
+    else
+        $PROFILE_BUILD te_builder_opts $BUILDER_OPTS || exit_with_log
+    fi
 fi
 ;;
 
