@@ -7,12 +7,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- *
- *
- *
  * @author Igor B. Vasiliev <Igor.Vasiiev@oktetlabs.ru>
- *
- * $Id$
  */
 
 #include "logger_internal.h"

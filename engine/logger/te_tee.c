@@ -4,15 +4,9 @@
  * Redirection of stdout/stderr in two files: stdout merged with stderr,
  * stderr only.
  *
- *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
- *
- *
  * @author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
- *
- * $Id$
  */
 
 #include "te_config.h"

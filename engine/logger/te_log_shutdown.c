@@ -5,12 +5,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
- *
- *
  * @author Igor B. Vasiliev <Igor.Vasiliev@oktetlabs.ru>
- *
- * $Id$
  */
 
 #include "te_config.h"
