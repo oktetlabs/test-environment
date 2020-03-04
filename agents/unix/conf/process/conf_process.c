@@ -221,6 +221,14 @@ ps_add(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
+static void
+ps_free(struct ps_entry *ps)
+{
+    free(ps->name);
+    free(ps->exe);
+    free(ps);
+}
+
 static te_errno
 ps_del(unsigned int gid, const char *oid,
        const char *ps_name)
@@ -241,9 +249,7 @@ ps_del(unsigned int gid, const char *oid,
 
     SLIST_REMOVE(&processes, ps, ps_entry, links);
 
-    free(ps->name);
-    free(ps->exe);
-    free(ps);
+    ps_free(ps);
 
     return 0;
 }
