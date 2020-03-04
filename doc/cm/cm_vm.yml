@@ -151,6 +151,32 @@
          Default is false.
          Name: None
 
+    - oid: "/agent/vm/kernel"
+      access: read_write
+      type: string
+      d: |
+        Virtual machine kernel image. No kernel image by default.
+        Either a Linux kernel or in multiboot format.
+          Name: None
+
+    - oid: "/agent/vm/kernel/cmdline"
+      access: read_write
+      type: string
+      d: |
+        Kernel command line.
+
+    - oid: "/agent/vm/kernel/initrd"
+      access: read_write
+      type: string
+      d: |
+        Initial RAM disk.
+
+    - oid: "/agent/vm/kernel/dtb"
+      access: read_write
+      type: string
+      d: |
+        Device tree binary (dtb) image to be passed to the kernel on boot.
+
     - oid: "/agent/vm/net"
       access: read_create
       type: none
