@@ -139,6 +139,23 @@ if conf.contains('ovs')
     sources += files('ovs/conf_ovs.c')
 endif
 
+if conf.contains('bpf')
+    c_args += [ '-DWITH_BPF -DCFG_BPF_SUPPORT' ]
+    deps += dependency('libelf')
+    # The libbpf.so library is build by TE_PLATFORM_EXT
+    deps += [ cc.find_library('bpf', dirs: platform_lib_dir) ]
+    sources += files('util/conf_bpf.c')
+
+    code_prefix_bpf_h = '''
+        #include <linux/bpf.h>
+    '''
+    t = 'struct bpf_prog_info'
+    m = 'jited_func_lens'
+    if cc.has_member(t, m, prefix: code_prefix_bpf_h)
+        c_args += [ '-DHAVE_' + (t + '_' + m).to_upper().underscorify() ]
+    endif
+endif
+
 unix_daemons = get_option('agent-unix-daemons').split()
 if unix_daemons.length() != 0
     c_args += [ '-DCFG_UNIX_DAEMONS' ]

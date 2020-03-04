@@ -139,6 +139,8 @@ process_agent_unix_parms() {
                 ;;
             --with-aggr)
                 conf="${conf} aggr" ;;
+            --with-bpf)
+                conf="${conf} bpf" ;;
             --with-iptables)
                 conf="${conf} iptables" ;;
             --with-libnetconf)
