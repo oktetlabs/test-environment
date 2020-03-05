@@ -69,3 +69,11 @@
          supported by a test agent library is defined in it.
          Name: parameter name
          Value: parameter value
+
+    - oid: "/rcf/agent/vm"
+      access: read_write
+      type: string
+      d: |
+         Virtual machine this agent runs on.
+         Name: none
+         Value: empty or OID of the VM

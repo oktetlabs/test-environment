@@ -27,6 +27,7 @@ te_cs_deps = [
     dep_lib_conf_types,
     dep_lib_conf_oid,
     dep_lib_confapi,
+    dep_lib_static_conf_ipc,
     dep_lib_logger_ten,
     dep_lib_ipc,
     dep_lib_logic_expr,

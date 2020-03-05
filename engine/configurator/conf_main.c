@@ -20,10 +20,12 @@
 #include "conf_yaml.h"
 #endif /* WITH_CONF_YAML */
 #include "conf_rcf.h"
+#include "conf_ipc.h"
 
 #include <libxml/xinclude.h>
 #include "te_kvpair.h"
 #include "te_alloc.h"
+#include "te_str.h"
 
 #if HAVE_SIGNAL_H
 #include <signal.h>
@@ -1785,6 +1787,213 @@ verify_backup(const char *backup, te_bool log, const char *msg)
 }
 
 /**
+ * Check if the agent was running in a currently dead VM,
+ * restart both if possible.
+ */
+static te_errno
+reanimate_vm_agent(const char *ta_name)
+{
+    te_errno        rc = 0;
+    char           *vm_oid = NULL;
+    int             vm_status = 0;
+    cfg_handle      agent_status_handle;
+    cfg_handle      vm_status_handle;
+    cfg_handle      vm_oid_handle;
+    const size_t    msg_size = sizeof(cfg_get_msg) + CFG_OID_MAX;
+    cfg_msg        *msg_buf;
+
+#define COMPOSE(FUNC, ...) \
+    rc = FUNC(__VA_ARGS__);             \
+    if (rc != 0)                        \
+    {                                   \
+        ERROR(#FUNC " failed: %r", rc); \
+        goto finish;                    \
+    }                                   \
+
+    msg_buf = TE_ALLOC(msg_size);
+    if (msg_buf == NULL)
+        return TE_RC(TE_CS, TE_ENOMEM);
+
+    RING("TA %s is dead, checking if it was running in a VM", ta_name);
+
+    /* Get VM oid */
+    COMPOSE(cfg_ipc_mk_find_fmt, (cfg_find_msg *)msg_buf, msg_size,
+                                 "/rcf:/agent:%s/vm:", ta_name);
+    cfg_process_msg(&msg_buf, TRUE);
+    if (msg_buf->rc != 0)
+    {
+        ERROR("Failed to find VM instance for TA %s: %r", ta_name, msg_buf->rc);
+        rc = msg_buf->rc;
+        goto finish;
+    }
+    vm_oid_handle = ((cfg_find_msg *)msg_buf)->handle;
+
+    COMPOSE(cfg_ipc_mk_get, (cfg_get_msg *)msg_buf, msg_size,
+                            vm_oid_handle, FALSE);
+    cfg_process_msg(&msg_buf, TRUE);
+    if (msg_buf->rc != 0)
+    {
+        ERROR("Failed to get TA %s VM OID: %r", ta_name, msg_buf->rc);
+        rc = msg_buf->rc;
+        goto finish;
+    }
+    vm_oid = ((cfg_get_msg *)msg_buf)->val.val_str;
+
+    if (vm_oid[0] == '\0')
+    {
+        RING("TA %s was not running in a VM, skipping", ta_name);
+        vm_oid = NULL;
+        rc = msg_buf->rc;
+        goto finish;
+    }
+    vm_oid = strdup(vm_oid);
+
+    /* Get the rest of the handles */
+    COMPOSE(cfg_ipc_mk_find_fmt, (cfg_find_msg *)msg_buf, msg_size,
+                                 "/rcf:/agent:%s/status:", ta_name);
+    cfg_process_msg(&msg_buf, TRUE);
+    if (msg_buf->rc != 0)
+    {
+        ERROR("Failed to find status instance for TA %s: %r",
+              ta_name, msg_buf->rc);
+        rc = msg_buf->rc;
+        goto finish;
+    }
+    agent_status_handle = ((cfg_find_msg *)msg_buf)->handle;
+
+    COMPOSE(cfg_ipc_mk_find_fmt, (cfg_find_msg *)msg_buf, msg_size,
+                                 "%s/status:", vm_oid);
+    cfg_process_msg(&msg_buf, TRUE);
+    if (msg_buf->rc != 0)
+    {
+        ERROR("Failed to find status instance for VM %s: %r",
+              vm_oid, msg_buf->rc);
+        rc = msg_buf->rc;
+        goto finish;
+    }
+    vm_status_handle = ((cfg_find_msg *)msg_buf)->handle;
+
+    /* Remove the agent from RCF */
+    RING("Removing TA %s from RCF", ta_name);
+    COMPOSE(cfg_ipc_mk_set_int, (cfg_set_msg *)msg_buf, msg_size,
+                                agent_status_handle, FALSE, 0);
+    cfg_process_msg(&msg_buf, TRUE);
+    if (msg_buf->rc != 0)
+    {
+        ERROR("Failed to delete TA %s: %r", ta_name, msg_buf->rc);
+        rc = msg_buf->rc;
+        goto finish;
+    }
+
+    /* TODO?: Check if the parent agent is running */
+
+    /* Check if the VM is running */
+    COMPOSE(cfg_ipc_mk_get, (cfg_get_msg *)msg_buf, msg_size,
+                            vm_status_handle, TRUE);
+    cfg_process_msg(&msg_buf, TRUE);
+    if (msg_buf->rc != 0)
+    {
+        ERROR("Failed to check status of VM %s: %r", vm_oid, msg_buf->rc);
+        rc = msg_buf->rc;
+        goto finish;
+    }
+    vm_status = ((cfg_get_msg *)msg_buf)->val.val_int;
+    RING("VM %s status: %d", vm_oid, vm_status);
+
+    /*
+     * If so and we couldn't reanimate the agent before,
+     * then there is nothing we can do
+     */
+    if (vm_status != 0)
+    {
+        rc = TE_RC(TE_CS, TE_EFAIL);
+        goto finish;
+    }
+
+    /* Restart the VM if it was not running */
+    RING("Restarting VM %s", vm_oid);
+    COMPOSE(cfg_ipc_mk_set_int, (cfg_set_msg *)msg_buf, msg_size,
+                                vm_status_handle, FALSE, 1);
+    cfg_process_msg(&msg_buf, TRUE);
+    if (msg_buf->rc != 0)
+    {
+        ERROR("Failed to restart VM %s: %r", vm_oid, msg_buf->rc);
+        rc = msg_buf->rc;
+        goto finish;
+    }
+
+    /* Add the agent back */
+    RING("Restarting TA %s", ta_name);
+    COMPOSE(cfg_ipc_mk_set_int, (cfg_set_msg *)msg_buf, msg_size,
+                                agent_status_handle, FALSE, 1);
+    cfg_process_msg(&msg_buf, TRUE);
+    if (msg_buf->rc != 0)
+    {
+        ERROR("Failed to add TA %s back: %r", ta_name, msg_buf->rc);
+        rc = msg_buf->rc;
+        goto finish;
+    }
+
+    RING("TA %s has been successfully reanimated", ta_name);
+
+finish:
+    free(msg_buf);
+    free(vm_oid);
+    return rc;
+#undef COMPOSE
+}
+
+/**
+ * Check the running agents and try to reanimate the ones that were running
+ * in currently dead VMs.
+ *
+ * @return 0 if all agents are running normally; status code otherwise
+ */
+static te_errno
+check_agents(void)
+{
+    te_errno rc = 0;
+    char     agents[RCF_MAX_VAL];
+    char     oid[CFG_OID_MAX];
+    size_t   len = sizeof(agents);
+    int      offset;
+    int      i;
+
+    te_strlcpy(oid, CFG_TA_PREFIX, sizeof(oid));
+    offset = strlen(CFG_TA_PREFIX);
+
+    /* Check agents */
+    rc = rcf_get_ta_list(agents, &len);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; i < len; i += strlen(&agents[i]) + 1)
+    {
+        rc = rcf_check_agent(&agents[i]);
+
+        if (rc == 0)
+            continue;
+
+        if (TE_RC_GET_ERROR(rc) == TE_ETADEAD)
+        {
+            rc = reanimate_vm_agent(&agents[i]);
+            if (rc != 0)
+                break;
+        }
+
+        te_strlcpy(oid + offset, &agents[i], sizeof(oid) - offset);
+        rc = cfg_ta_sync(oid, TRUE);
+        if (rc != 0)
+        {
+            ERROR("Failed to sync subtree for TA %s: %r", &agents[i], rc);
+            break;
+        }
+    }
+
+    return rc;
+}
+
+/**
  * Process backup user request.
  *
  * @param msg           message pointer
@@ -1861,11 +2070,14 @@ process_backup(cfg_backup_msg *msg)
 
         case CFG_BACKUP_VERIFY:
         {
-            /* Check agents */
-            int rc = rcf_check_agents();
+            te_errno rc;
 
-            if (TE_RC_GET_ERROR(rc) == TE_ETAREBOOTED)
-                cfg_ta_sync("/:", TRUE);
+            rc = check_agents();
+            if (rc != 0){
+                ERROR("Backup verification failed: %r", rc);
+                msg->rc = rc;
+                break;
+            }
 
             if ((msg->rc = verify_backup(msg->filename, TRUE, NULL)) == 0)
                 cfg_dh_release_after(msg->filename);
