@@ -350,7 +350,7 @@ rcf_ipc_receive_answer(struct ipc_client *ipcc, rcf_msg *recv_msg,
     if (*p_answer == NULL)
         return TE_RC(TE_RCF_API, TE_ENOMEM);
 
-    memcpy(*p_answer, (char *)recv_msg, buflen);
+    memcpy(*p_answer, recv_msg, buflen);
     len = *recv_size - buflen;
     if ((rc = ipc_receive_rest_answer(ipcc, RCF_SERVER,
                                       ((uint8_t *)*p_answer) + buflen,
@@ -1004,7 +1004,7 @@ rcf_ta_name2type(const char *ta_name, char *ta_type)
     if (ta_type == NULL || BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TATYPE;
     strcpy(msg.ta, ta_name);
 
@@ -1048,7 +1048,7 @@ rcf_ta_create_session(const char *ta_name, int *session)
     if (session == NULL || BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_SESSION;
     strcpy(msg.ta, ta_name);
 
@@ -1249,7 +1249,7 @@ rcf_ta_cfg_get(const char *ta_name, int session, const char *oid,
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     strcpy(msg.id, oid);
     strcpy(msg.ta, ta_name);
     msg.opcode = RCFOP_CONFGET;
@@ -1332,7 +1332,7 @@ conf_add_set(const char *ta_name, int session, const char *oid,
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     strcpy(msg.id, oid);
     strcpy(msg.value, val);
     strcpy(msg.ta, ta_name);
@@ -1456,7 +1456,7 @@ rcf_ta_cfg_del(const char *ta_name, int session, const char *oid)
     if (oid == NULL || strlen(oid) >= RCF_MAX_ID || BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     strcpy(msg.id, oid);
     strcpy(msg.ta, ta_name);
     msg.opcode = RCFOP_CONFDEL;
@@ -1485,7 +1485,7 @@ rcf_ta_cfg_group(const char *ta_name, int session, te_bool is_start)
 
     RCF_API_INIT;
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     strcpy(msg.ta, ta_name);
     msg.sid = session;
     msg.opcode = (is_start) ? RCFOP_CONFGRP_START : RCFOP_CONFGRP_END;
@@ -1512,7 +1512,7 @@ rcf_get_sniffer_dump(const char *ta_name, const char *snif_id,
         snif_id == NULL || strlen(snif_id) >= RCF_MAX_VAL)
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
 
     strcpy(msg.ta, ta_name);
     strcpy(msg.id, snif_id);
@@ -1550,7 +1550,7 @@ rcf_ta_get_sniffers(const char *ta_name, const char *snif_id, char **buf,
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
     rep_msg = malloc(anslen);
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     rep_msg->data_len = 0;
     rep_msg->error    = 0;
 
@@ -1619,7 +1619,7 @@ rcf_ta_get_log(const char *ta_name, char *log_file)
     if (log_file == NULL || strlen(log_file) >= RCF_MAX_PATH || BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     strcpy(msg.file, log_file);
     strcpy(msg.ta, ta_name);
     msg.opcode = RCFOP_GET_LOG;
@@ -1678,7 +1678,7 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     strcpy(msg.ta, ta_name);
     strcpy(msg.id, var_name);
     msg.intparm = var_type;
@@ -1784,7 +1784,7 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     strcpy(msg.ta, ta_name);
     strcpy(msg.id, var_name);
     msg.opcode = RCFOP_VWRITE;
@@ -2171,7 +2171,7 @@ rcf_ta_csap_destroy(const char *ta_name, int session,
     if (BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_CSAP_DESTROY;
     strcpy(msg.ta, ta_name);
     msg.sid = session;
@@ -2226,7 +2226,7 @@ rcf_ta_csap_param(const char *ta_name, int session, csap_handle_t csap_id,
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     strcpy(msg.ta, ta_name);
     strcpy(msg.id, var_name);
     msg.opcode = RCFOP_CSAP_PARAM;
@@ -2296,7 +2296,7 @@ rcf_ta_trsend_start(const char *ta_name, int session,
             "template:\n%Tf", rcf_call_mode2str(blk_mode), csap_id,
             ta_name, session, templ);
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TRSEND_START;
     msg.flags |= BINARY_ATTACHMENT;
     strcpy(msg.ta, ta_name);
@@ -2356,7 +2356,7 @@ rcf_ta_trsend_stop(const char *ta_name, int session,
     if (BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
 
     msg.sid = session;
     msg.opcode = RCFOP_TRSEND_STOP;
@@ -2397,7 +2397,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     }
     close(fd);
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TRRECV_START;
     msg.flags |= BINARY_ATTACHMENT;
     strcpy(msg.ta, ta_name);
@@ -2458,7 +2458,7 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
     if (BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
 
     msg.sid = session;
     msg.opcode = opcode;
@@ -2650,7 +2650,7 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     (void)close(fd);
 
     /* Fourth, compose the message */
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     msg.sid = session;
     msg.num = 1; /* receive only one packet */
     msg.timeout = timeout;
@@ -2735,7 +2735,7 @@ rcf_ta_trpoll_start(const char *ta_name, int session,
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TRPOLL;
     strcpy(msg.ta, ta_name);
     msg.sid = session;
@@ -2790,7 +2790,7 @@ rcf_ta_trpoll_cancel(const char *ta_name, int session,
         return TE_RC(TE_RCF_API, TE_EINVAL);
     }
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TRPOLL_CANCEL;
     strcpy(msg.ta, ta_name);
     msg.sid = session;
@@ -3068,7 +3068,7 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
                 case RCF_UINT8:
                 {
                     int8_t val = va_arg(ap, int);
-                    memcpy(data, (char *)&val, rcf_type_len[type]);
+                    memcpy(data, &val, rcf_type_len[type]);
                     data += rcf_type_len[type];
                     break;
                 }
@@ -3078,7 +3078,7 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
                 {
                     uint16_t val = va_arg(ap, int);
 
-                    memcpy(data, (char *)&val, rcf_type_len[type]);
+                    memcpy(data, &val, rcf_type_len[type]);
                     data += rcf_type_len[type];
                     break;
                 }
@@ -3088,7 +3088,7 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
                 {
                     uint32_t val = va_arg(ap, int32_t);
 
-                    memcpy(data, (char *)&val, rcf_type_len[type]);
+                    memcpy(data, &val, rcf_type_len[type]);
                     data += rcf_type_len[type];
                     break;
                 }
@@ -3098,7 +3098,7 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
                 {
                     uint64_t val = va_arg(ap, int64_t);
 
-                    memcpy(data, (char *)&val, rcf_type_len[type]);
+                    memcpy(data, &val, rcf_type_len[type]);
                     data += rcf_type_len[type];
                     break;
                 }
@@ -3267,7 +3267,7 @@ rcf_ta_kill_task(const char *ta_name, int session, pid_t pid)
     if (BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_KILL;
     strcpy(msg.ta, ta_name);
     msg.handle = pid;
@@ -3302,7 +3302,7 @@ rcf_ta_kill_thread(const char *ta_name, int session, int tid)
     if (BAD_TA)
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_KILL;
     strcpy(msg.ta, ta_name);
     msg.handle = tid;
@@ -3335,7 +3335,7 @@ rcf_check_agents(void)
 
     RCF_API_INIT;
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TACHECK;
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
@@ -3357,7 +3357,7 @@ rcf_shutdown_call(void)
 
     RCF_API_INIT;
 
-    memset((char *)&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_SHUTDOWN;
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
