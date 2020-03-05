@@ -1094,6 +1094,20 @@ extern te_errno rcf_ta_call_rpc(const char *ta_name, int session,
                                 const char *rpc_name, void *in, void *out);
 
 /**
+ * Check that given agent is still working.
+ *
+ * @param ta_name       Test Agent name
+ *
+ * @return error code
+ *
+ * @retval 0            success
+ * @retval TE_ETAREBOOTED  if the test agent has been normally rebooted
+ * @retval TE_ETADEAD   if the agent was dead
+ * @retval TE_EIPC      cannot interact with RCF
+ */
+extern te_errno rcf_check_agent(const char *ta_name);
+
+/**
  * Check that all running agents are still working.
  *
  * @return error code

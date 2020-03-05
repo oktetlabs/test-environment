@@ -2515,9 +2515,17 @@ rcf_ta_check_all_done(void)
         te_bool     rebooted = FALSE;
         te_bool     remain_dead = FALSE;
         ta         *agent;
+        const char *target = NULL;
+
+        assert(ta_checker.req != NULL);
+        assert(ta_checker.req->message != NULL);
+        target = ta_checker.req->message->ta;
 
         for (agent = agents; agent != NULL; agent = agent->next)
         {
+            if (target[0] != '\0' && strcmp(agent->name, target) != 0)
+                continue;
+
             VERB("%s(): '%s' [%c %c %c]", __FUNCTION__, agent->name,
                  (agent->flags & TA_DEAD) ? 'D' : '-',
                  (agent->flags & TA_UNRECOVER) ? 'U' : '-',
@@ -2601,11 +2609,19 @@ rcf_ta_check_start(void)
     ta             *agent;
     usrreq         *req;
     int             rc = 0;
+    const char     *target = NULL;
+
+    assert(ta_checker.req != NULL);
+    assert(ta_checker.req->message != NULL);
+    target = ta_checker.req->message->ta;
 
     assert(ta_checker.active == 0);
     VERB("%s()", __FUNCTION__);
     for (agent = agents; agent != NULL; agent = agent->next)
     {
+        if (target[0] != '\0' && strcmp(agent->name, target) != 0)
+            continue;
+
         VERB("%s('%s') [%c]", __FUNCTION__, agent->name,
              (agent->flags & TA_DEAD) ? 'D' : '-');
         if (agent->flags & TA_DEAD)

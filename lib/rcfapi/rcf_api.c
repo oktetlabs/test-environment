@@ -3317,6 +3317,36 @@ rcf_ta_kill_thread(const char *ta_name, int session, int tid)
 }
 
 /**
+ * Check that given agent is still working.
+ *
+ * @param ta_name       Test Agent name
+ *
+ * @return error code
+ *
+ * @retval 0            success
+ * @retval TE_ETAREBOOTED  if the test agent has been normally rebooted
+ * @retval TE_ETADEAD   if the agent was dead
+ * @retval TE_EIPC      cannot interact with RCF
+ */
+te_errno
+rcf_check_agent(const char *ta_name)
+{
+    rcf_msg     msg;
+    size_t      anslen = sizeof(msg);
+    te_errno    rc;
+
+    RCF_API_INIT;
+
+    memset(&msg, 0, sizeof(msg));
+    msg.opcode = RCFOP_TACHECK;
+    te_strlcpy(msg.ta, ta_name, RCF_MAX_NAME);
+
+    rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
+                                   &msg, &anslen, NULL);
+    return rc == 0 ? msg.error : rc;
+}
+
+/**
  * Check that all running agents are still working.
  *
  * @return error code
