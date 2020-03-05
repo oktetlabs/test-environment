@@ -61,6 +61,22 @@
 
 /* Locals */
 
+/* Check if given address family value is valid */
+static te_bool
+addr_valid_family(unsigned short af)
+{
+    switch (af)
+    {
+        case AF_INET:
+        case AF_INET6:
+        case AF_LOCAL:
+        case AF_UNSPEC:
+            return TRUE;
+        default:
+            return FALSE;
+    }
+}
+
 /* Get size of sockaddr struct that corresponds to given address family */
 static size_t
 addr_size(unsigned short af)
@@ -532,50 +548,24 @@ addr_copy(cfg_inst_val src, cfg_inst_val *dst)
         return 0;
     }
 
-    switch (src_addr->sa_family)
-    {
-#define CP_ADDR(in, version) \
-    do {                                                     \
-        dst_addr = (struct sockaddr *)                       \
-            calloc(1, sizeof(struct sockaddr##in##version)); \
-        if (dst_addr == NULL) {                              \
-            return TE_ENOMEM;                                   \
-        }                                                    \
-        memcpy((void *)(dst_addr), (void *)src_addr,         \
-               sizeof(struct sockaddr##in##version));        \
-    } while (0)
+    if (!addr_valid_family(src_addr->sa_family))
+        return TE_EINVAL;
 
-        case AF_INET:
-        {
-            CP_ADDR(_in,);
-            break;
-        }
-        case AF_INET6:
-        {
-            CP_ADDR(_in, 6);
-            break;
-        }
-        case AF_LOCAL:
-        case AF_UNSPEC:
-        {
-            CP_ADDR(,);
-            break;
-        }
-        default:
-        {
-            return TE_EINVAL;
-        }
-    }
+    dst_addr = (struct sockaddr *)calloc(1, addr_value_size(src));
+    if (dst_addr == NULL)
+        return TE_ENOMEM;
+
+    memcpy(dst_addr, src_addr, addr_value_size(src));
     dst->val_addr = dst_addr;
 
     return 0;
-#undef CP_ADDR
 }
 
 static int
 addr_get(cfg_msg *msg, cfg_inst_val *val)
 {
     struct sockaddr *msg_addr;
+    struct sockaddr *addr;
 
     if (msg == NULL)
     {
@@ -585,44 +575,17 @@ addr_get(cfg_msg *msg, cfg_inst_val *val)
                (msg->type == CFG_SET) ? ((cfg_set_msg *)msg)->val.val_addr :
                                         ((cfg_get_msg *)msg)->val.val_addr;
 
-    switch (msg_addr->sa_family)
-    {
-#define CP_ADDR(in, version) \
-    do {                                                     \
-        struct sockaddr##in##version *addr;                  \
-        addr = (struct sockaddr##in##version *)              \
-            calloc(1, sizeof(struct sockaddr##in##version)); \
-        if (addr == NULL) {                                  \
-            return TE_ENOMEM;                                   \
-        }                                                    \
-        memcpy((void *)(addr), (void *)msg_addr,             \
-               sizeof(struct sockaddr##in##version));        \
-        val->val_addr = (struct sockaddr *)addr;             \
-    } while (0)
+    if (!addr_valid_family(msg_addr->sa_family))
+        return TE_EINVAL;
 
-        case AF_INET:
-        {
-            CP_ADDR(_in,);
-            break;
-        }
-        case AF_INET6:
-        {
-            CP_ADDR(_in, 6);
-            break;
-        }
-        case AF_LOCAL:
-        case AF_UNSPEC:
-        {
-            CP_ADDR(,);
-            break;
-        }
-        default:
-        {
-            return TE_EINVAL;
-        }
-    }
+    addr = (struct sockaddr *)calloc(1, addr_size(msg_addr->sa_family));
+    if (addr == NULL)
+        return TE_ENOMEM;
+
+    memcpy(addr, msg_addr, addr_size(msg_addr->sa_family));
+    val->val_addr = addr;
+
     return 0;
-#undef CP_ADDR
 }
 
 static void
@@ -641,35 +604,12 @@ addr_put(cfg_inst_val val, cfg_msg *msg)
                (msg->type == CFG_SET) ? ((cfg_set_msg *)msg)->val.val_addr :
                                         ((cfg_get_msg *)msg)->val.val_addr;
 
-    switch (addr->sa_family)
+    if (addr_valid_family(addr->sa_family))
     {
-#define CP_ADDR(in, version) \
-    do {                                                     \
-        memcpy((void *)(msg_addr), (void *)addr,             \
-               sizeof(struct sockaddr##in##version));        \
-        msg->len += sizeof(struct sockaddr##in##version);    \
-    } while (0)
-        case AF_INET:
-        {
-            CP_ADDR(_in,);
-            break;
-        }
-        case AF_INET6:
-        {
-            CP_ADDR(_in, 6);
-            break;
-        }
-        case AF_LOCAL:
-        case AF_UNSPEC:
-        {
-            CP_ADDR(,);
-            break;
-        }
-        default:
-        {
-            break;
-        }
+        memcpy(msg_addr, addr, addr_size(addr->sa_family));
+        msg->len += addr_size(addr->sa_family);
     }
+
     return;
 }
 
@@ -681,39 +621,13 @@ addr_equal(cfg_inst_val first, cfg_inst_val second)
     int ret_val;
 
     if (first_addr->sa_family != second_addr->sa_family)
-    {
         return FALSE;
-    }
-    switch (first_addr->sa_family)
-    {
-#define CMP_ADDR(in, version) \
-    do {                                                          \
-        ret_val = memcmp((void *)first_addr, (void *)second_addr, \
-                         sizeof(struct sockaddr##in##version));   \
-    } while (0)
-        case AF_INET:
-        {
-            CMP_ADDR(_in,);
-            break;
-        }
-        case AF_INET6:
-        {
-            CMP_ADDR(_in, 6);
-            break;
-        }
-        case AF_LOCAL:
-        case AF_UNSPEC:
-        {
-            CMP_ADDR(,);
-            break;
-        }
-        default:
-        {
-            return FALSE;
-        }
-    }
+
+    if (!addr_valid_family(first_addr->sa_family))
+        return FALSE;
+
+    ret_val = memcmp(first_addr, second_addr, addr_value_size(first));
     return (ret_val == 0) ? TRUE : FALSE;
-#undef CMP_ADDR
 }
 
 static size_t
