@@ -75,6 +75,9 @@ typedef struct cfg_primary_type {
 
     /** Compare two values */
     te_bool (* is_equal)(cfg_inst_val val1, cfg_inst_val val2);
+
+    /** Get the size of given value */
+    size_t (* value_size)(cfg_inst_val val);
 } cfg_primary_type;
 
 /** Primary types array */

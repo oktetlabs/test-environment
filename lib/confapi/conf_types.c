@@ -60,6 +60,25 @@
                                           sizeof(cfg_get_msg)
 
 /* Locals */
+
+/* Get size of sockaddr struct that corresponds to given address family */
+static size_t
+addr_size(unsigned short af)
+{
+    switch (af)
+    {
+        case AF_INET:
+            return sizeof(struct sockaddr_in);
+        case AF_INET6:
+            return sizeof(struct sockaddr_in6);
+        case AF_LOCAL:
+        case AF_UNSPEC:
+            return sizeof(struct sockaddr);
+        default:
+            return 0;
+    }
+}
+
 /* Convertion functions for type 'int' */
 static int str2int(char *val_str, cfg_inst_val *val);
 static int int2str(cfg_inst_val val, char **val_str);
@@ -69,6 +88,7 @@ static int int_copy(cfg_inst_val src, cfg_inst_val *dst);
 static int int_get(cfg_msg *msg, cfg_inst_val *val);
 static void int_put(cfg_inst_val val, cfg_msg *msg);
 static te_bool int_equal(cfg_inst_val first, cfg_inst_val second);
+static size_t int_value_size(cfg_inst_val val);
 
 /* Convertion functions for type 'char *' */
 static int str2char(char *val_str, cfg_inst_val *val);
@@ -79,6 +99,7 @@ static int str_copy(cfg_inst_val src, cfg_inst_val *dst);
 static int str_get(cfg_msg *msg, cfg_inst_val *val);
 static void str_put(cfg_inst_val val, cfg_msg *msg);
 static te_bool str_equal(cfg_inst_val first, cfg_inst_val second);
+static size_t str_value_size(cfg_inst_val val);
 
 /* Convertion functions for type 'sockaddr *' */
 static int str2addr(char *val_str, cfg_inst_val *val);
@@ -89,6 +110,7 @@ static int addr_copy(cfg_inst_val src, cfg_inst_val *dst);
 static int addr_get(cfg_msg *msg, cfg_inst_val *val);
 static void addr_put(cfg_inst_val val, cfg_msg *msg);
 static te_bool addr_equal(cfg_inst_val first, cfg_inst_val second);
+static size_t addr_value_size(cfg_inst_val val);
 
 /* Convertion dummy functions for type 'none' */
 static int str2none(char *val_str, cfg_inst_val *val);
@@ -99,17 +121,18 @@ static int none_copy(cfg_inst_val src, cfg_inst_val *dst);
 static int none_get(cfg_msg *msg, cfg_inst_val *val);
 static void none_put(cfg_inst_val val, cfg_msg *msg);
 static te_bool none_equal(cfg_inst_val first, cfg_inst_val second);
+static size_t none_value_size(cfg_inst_val val);
 
 /* Primary types' convertion functions */
 cfg_primary_type cfg_types[CFG_PRIMARY_TYPES_NUM] = {
     { str2int, int2str, int_def_val,
-      int_free, int_copy, int_get, int_put, int_equal },
+      int_free, int_copy, int_get, int_put, int_equal, int_value_size },
     { str2char, char2str, str_def_val,
-      str_free, str_copy, str_get, str_put, str_equal },
+      str_free, str_copy, str_get, str_put, str_equal, str_value_size },
     { str2addr, addr2str, addr_def_val,
-      addr_free, addr_copy, addr_get, addr_put, addr_equal },
+      addr_free, addr_copy, addr_get, addr_put, addr_equal, addr_value_size },
     { str2none, none2str, none_def_val,
-      none_free, none_copy, none_get, none_put, none_equal }
+      none_free, none_copy, none_get, none_put, none_equal, none_value_size }
  };
 
 /*----------------------- Integer type handlers -------------------------*/
@@ -200,6 +223,13 @@ static te_bool
 int_equal(cfg_inst_val first, cfg_inst_val second)
 {
     return ((first.val_int - second.val_int) == 0) ? TRUE : FALSE;
+}
+
+static size_t
+int_value_size(cfg_inst_val val)
+{
+    UNUSED(val);
+    return sizeof(int);
 }
 
 /*----------------------- String type handlers --------------------------*/
@@ -294,6 +324,12 @@ static te_bool
 str_equal(cfg_inst_val first, cfg_inst_val second)
 {
     return (strcmp(first.val_str, second.val_str) == 0) ? TRUE : FALSE;
+}
+
+static size_t
+str_value_size(cfg_inst_val val)
+{
+    return strlen(val.val_str) + 1;
 }
 
 /*----------------------- Address type handlers --------------------------*/
@@ -680,6 +716,12 @@ addr_equal(cfg_inst_val first, cfg_inst_val second)
 #undef CMP_ADDR
 }
 
+static size_t
+addr_value_size(cfg_inst_val val)
+{
+    return addr_size(val.val_addr->sa_family);
+}
+
 /*----------------------- None type handlers -------------------------*/
 
 static int
@@ -742,4 +784,11 @@ none_equal(cfg_inst_val first, cfg_inst_val second)
     UNUSED(first);
     UNUSED(second);
     return TRUE;
+}
+
+static size_t
+none_value_size(cfg_inst_val val)
+{
+    UNUSED(val);
+    return 0;
 }
