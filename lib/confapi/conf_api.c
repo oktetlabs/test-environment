@@ -52,6 +52,7 @@
 #include "logger_api.h"
 #include "te_log_stack.h"
 #include "conf_api.h"
+#include "conf_ipc.h"
 #include "conf_messages.h"
 #include "conf_types.h"
 #include "rcf_api.h"
@@ -1641,10 +1642,10 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_get_msg *)cfgl_msg_buf;
-    msg->type = CFG_GET;
-    msg->sync = FALSE;
-    msg->handle = handle;
-    msg->len = sizeof(cfg_get_msg);
+    rc = cfg_ipc_mk_get(msg, CFG_MSG_MAX, handle, FALSE);
+    if (rc != 0)
+        return rc;
+
     len = CFG_MSG_MAX;
 
     rc = ipc_send_message_with_answer(cfgl_ipc_client,
@@ -1772,10 +1773,10 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
     msg = (cfg_get_msg *)cfgl_msg_buf;
-    msg->type = CFG_GET;
-    msg->sync = TRUE;
-    msg->handle = handle;
-    msg->len = sizeof(cfg_get_msg);
+    ret_val = cfg_ipc_mk_get(msg, CFG_MSG_MAX, handle, TRUE);
+    if (ret_val != 0)
+        return ret_val;
+
     len = CFG_MSG_MAX;
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
