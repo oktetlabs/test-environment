@@ -67,3 +67,29 @@ cfg_ipc_mk_find_fmt(cfg_find_msg *msg, size_t msg_buf_size,
 
     return cfg_ipc_mk_find_str(msg, msg_buf_size, oid);
 }
+
+/* See description in conf_ipc.h */
+te_errno
+cfg_ipc_mk_set(cfg_set_msg *msg, size_t msg_buf_size,
+               cfg_handle handle, te_bool local,
+               cfg_val_type type, cfg_inst_val value)
+{
+    size_t value_size = 0;
+
+    /* Check if type requires additional space in the message body */
+    if (type == CVT_STRING || type == CVT_ADDRESS)
+        value_size = cfg_types[type].value_size(value);
+
+    if (msg_buf_size < sizeof(cfg_set_msg) + value_size)
+        return TE_RC(TE_CONF_API, TE_ESMALLBUF);
+
+    memset(msg, 0, sizeof(cfg_set_msg) + value_size);
+    msg->type = CFG_SET;
+    msg->len = sizeof(cfg_set_msg) + value_size;
+    msg->local = local;
+    msg->handle = handle;
+    msg->val_type = type;
+    cfg_types[type].put_to_msg(value, (cfg_msg *)msg);
+
+    return 0;
+}

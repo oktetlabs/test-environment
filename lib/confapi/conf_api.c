@@ -1446,11 +1446,6 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
-    msg = (cfg_set_msg *)cfgl_msg_buf;
-    msg->type = CFG_SET;
-    msg->local = local;
-    msg->handle = handle;
-    msg->val_type = type;
 
     switch (type)
     {
@@ -1472,7 +1467,11 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
         case CVT_UNSPECIFIED:
              assert(0);
     }
-    cfg_types[type].put_to_msg(value, (cfg_msg *)msg);
+
+    msg = (cfg_set_msg *)cfgl_msg_buf;
+    ret_val = cfg_ipc_mk_set(msg, CFG_MSG_MAX, handle, local, type, value);
+    if (ret_val != 0)
+        return ret_val;
 
     len = CFG_MSG_MAX;
 

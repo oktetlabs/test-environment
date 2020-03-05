@@ -58,6 +58,22 @@ extern te_errno cfg_ipc_mk_find_fmt(cfg_find_msg *msg, size_t msg_buf_size,
                                     const char *oid_fmt, ...)
                                     __attribute__((format(printf, 3, 4)));
 
+/**
+ * Prepare a cfg_set_instance message.
+ *
+ * @param msg           message buffer
+ * @param msg_buf_size  length of the message buffer
+ * @param handle        object instance handle
+ * @param local         whether the set is local
+ * @param type          value type (necessary for fast processing)
+ * @param value         new value to be assigned to the instance
+ *
+ * @return Status code (see te_errno.h)
+ */
+extern te_errno cfg_ipc_mk_set(cfg_set_msg *msg, size_t msg_buf_size,
+                               cfg_handle handle, te_bool local,
+                               cfg_val_type type, cfg_inst_val value);
+
 #ifdef __cplusplus
 }
 #endif
