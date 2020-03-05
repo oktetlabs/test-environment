@@ -121,7 +121,26 @@ vm_alloc_tcp_port(void)
 static te_bool
 vm_is_running(struct vm_entry *vm)
 {
-    return (vm->pid == -1) ? FALSE : (ta_waitpid(vm->pid, NULL, WNOHANG) == 0);
+    pid_t ret;
+
+    if (vm->pid == -1)
+        return FALSE;
+
+    do {
+        ret = ta_waitpid(vm->pid, NULL, WNOHANG);
+    } while (ret == -1 && errno == EINTR);
+
+    if (ret != 0)
+    {
+        /*
+         * Either an error occurred or the process terminated.
+         * In both cases we can forget about the child process.
+         */
+        vm->pid = -1;
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 static te_errno
