@@ -1094,8 +1094,7 @@ extern te_errno rcf_ta_call_rpc(const char *ta_name, int session,
                                 const char *rpc_name, void *in, void *out);
 
 /**
- * This function is used to check that all running are still
- * working.
+ * Check that all running agents are still working.
  *
  * @return error code
  *
@@ -1104,7 +1103,6 @@ extern te_errno rcf_ta_call_rpc(const char *ta_name, int session,
  *                         rebooted
  * @retval TE_ETADEAD      if at least one agent was dead
  * @retval TE_EIPC         cannot interact with RCF
- *
  */
 extern te_errno rcf_check_agents(void);
 

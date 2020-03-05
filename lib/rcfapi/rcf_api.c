@@ -3316,8 +3316,7 @@ rcf_ta_kill_thread(const char *ta_name, int session, int tid)
 }
 
 /**
- * This function is used to check that all running are still
- * working.
+ * Check that all running agents are still working.
  *
  * @return error code
  *
@@ -3326,7 +3325,6 @@ rcf_ta_kill_thread(const char *ta_name, int session, int tid)
  *                      rebooted
  * @retval TE_ETADEAD   if at least one agent was dead
  * @retval TE_EIPC      cannot interact with RCF
- *
  */
 te_errno
 rcf_check_agents(void)
