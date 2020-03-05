@@ -595,9 +595,10 @@ cfg_find_str(const char *oid, cfg_handle *handle)
     msg = (cfg_find_msg *)cfgl_msg_buf;
     len = strlen(oid) + 1;
 
-    msg->type = CFG_FIND;
-    memcpy(msg->oid, oid, len);
-    msg->len = sizeof(cfg_find_msg) + len;
+    ret_val = cfg_ipc_mk_find_str(msg, CFG_MSG_MAX, oid);
+    if (ret_val != 0)
+        return ret_val;
+
     len = CFG_MSG_MAX;
 
     ret_val = ipc_send_message_with_answer(cfgl_ipc_client,
