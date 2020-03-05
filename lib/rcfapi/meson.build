@@ -7,4 +7,5 @@ deps += [
     dep_threads,
     dep_lib_logger_ten,
     dep_lib_conf_oid,
+    dep_lib_tools,
 ]

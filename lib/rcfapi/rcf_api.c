@@ -52,6 +52,7 @@
 #include "te_errno.h"
 #include "te_printf.h"
 #include "te_queue.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "logger_ten.h"
 #include "rcf_api.h"
@@ -483,7 +484,7 @@ send_recv_rcf_ipc_message(thread_ctx_t *ctx,
         return TE_RC(TE_RCF_API, TE_EWRONGPTR);
 
     /* The same memory may be used for send_buf and recv_buf */
-    strcpy(ta, send_buf->ta);
+    te_strlcpy(ta, send_buf->ta, sizeof(ta));
     match_data.ta_name = ta;
     match_data.sid = send_buf->sid;
     match_data.opcode = send_buf->opcode;
@@ -708,7 +709,7 @@ del_ta_executive(const char *name)
 
     memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_DEL_TA;
-    strcpy(msg.ta, name);
+    te_strlcpy(msg.ta, name, sizeof(msg.ta));
 
     return (rc = send_recv_rcf_ipc_message(ctx_handle, &msg,
                                            sizeof(msg), &msg, &anslen,
@@ -772,10 +773,10 @@ extern te_errno rcf_add_ta(const char *name, const char *type,
 
     memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_ADD_TA;
-    strcpy(msg.ta, name);
-    strcpy(msg.id, type);
-    strcpy(msg.file, rcflib);
-    strcpy(msg.value, confstr);
+    te_strlcpy(msg.ta, name, sizeof(msg.ta));
+    te_strlcpy(msg.id, type, sizeof(msg.id));
+    te_strlcpy(msg.file, rcflib, sizeof(msg.file));
+    te_strlcpy(msg.value, confstr, sizeof(msg.value));
 
     if (flags & RCF_TA_REBOOTABLE)
         msg.flags |= TA_REBOOTABLE;
@@ -1006,13 +1007,13 @@ rcf_ta_name2type(const char *ta_name, char *ta_type)
 
     memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TATYPE;
-    strcpy(msg.ta, ta_name);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
 
     if (rc == 0 && (rc = msg.error) == 0)
-        strcpy(ta_type, msg.id);
+        te_strlcpy(ta_type, msg.id, RCF_MAX_ID);
 
     return rc;
 }
@@ -1050,7 +1051,7 @@ rcf_ta_create_session(const char *ta_name, int *session)
 
     memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_SESSION;
-    strcpy(msg.ta, ta_name);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
@@ -1124,10 +1125,10 @@ rcf_ta_reboot(const char *ta_name,
 
     if (boot_params != NULL)
     {
-        strcpy(msg->data, boot_params);
+        te_strlcpy(msg->data, boot_params, len);
         msg->data_len = len;
     }
-    strcpy(msg->ta, ta_name);
+    te_strlcpy(msg->ta, ta_name, sizeof(msg->ta));
 
     if (image != NULL)
     {
@@ -1250,8 +1251,8 @@ rcf_ta_cfg_get(const char *ta_name, int session, const char *oid,
     }
 
     memset(&msg, 0, sizeof(msg));
-    strcpy(msg.id, oid);
-    strcpy(msg.ta, ta_name);
+    te_strlcpy(msg.id, oid, sizeof(msg.id));
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
     msg.opcode = RCFOP_CONFGET;
     msg.sid = session;
 
@@ -1298,7 +1299,7 @@ rcf_ta_cfg_get(const char *ta_name, int session, const char *oid,
     {
         if (len <= strlen(msg.value))
             return TE_RC(TE_RCF_API, TE_ESMALLBUF);
-        strcpy(val_buf, msg.value);
+        te_strlcpy(val_buf, msg.value, len);
     }
 
     return 0;
@@ -1333,9 +1334,9 @@ conf_add_set(const char *ta_name, int session, const char *oid,
     }
 
     memset(&msg, 0, sizeof(msg));
-    strcpy(msg.id, oid);
-    strcpy(msg.value, val);
-    strcpy(msg.ta, ta_name);
+    te_strlcpy(msg.id, oid, sizeof(msg.id));
+    te_strlcpy(msg.value, val, sizeof(msg.value));
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
     msg.opcode = opcode;
     msg.sid = session;
 
@@ -1457,8 +1458,8 @@ rcf_ta_cfg_del(const char *ta_name, int session, const char *oid)
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
     memset(&msg, 0, sizeof(msg));
-    strcpy(msg.id, oid);
-    strcpy(msg.ta, ta_name);
+    te_strlcpy(msg.id, oid, sizeof(msg.id));
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
     msg.opcode = RCFOP_CONFDEL;
     msg.sid = session;
 
@@ -1486,7 +1487,7 @@ rcf_ta_cfg_group(const char *ta_name, int session, te_bool is_start)
     RCF_API_INIT;
 
     memset(&msg, 0, sizeof(msg));
-    strcpy(msg.ta, ta_name);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
     msg.sid = session;
     msg.opcode = (is_start) ? RCFOP_CONFGRP_START : RCFOP_CONFGRP_END;
 
@@ -1514,19 +1515,19 @@ rcf_get_sniffer_dump(const char *ta_name, const char *snif_id,
 
     memset(&msg, 0, sizeof(msg));
 
-    strcpy(msg.ta, ta_name);
-    strcpy(msg.id, snif_id);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
+    te_strlcpy(msg.id, snif_id, sizeof(msg.id));
 
     msg.opcode = RCFOP_GET_SNIF_DUMP;
     msg.sid = RCF_TA_GET_LOG_SID;
-    strcpy(msg.file, fname);
+    te_strlcpy(msg.file, fname, sizeof(msg.file));
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    &msg, &anslen, NULL);
 
     if (rc == 0 && (rc = msg.error) == 0)
     {
-        strcpy(fname, msg.file);
+        te_strlcpy(fname, msg.file, RCF_MAX_PATH);
         if (strlen(msg.value) == 0)
             return TE_RC(TE_RCF_API, TE_ENODATA);
         *offset = strtoll(msg.value, NULL, 10);
@@ -1554,14 +1555,14 @@ rcf_ta_get_sniffers(const char *ta_name, const char *snif_id, char **buf,
     rep_msg->data_len = 0;
     rep_msg->error    = 0;
 
-    strcpy(msg.ta, ta_name);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
 
     msg.opcode = RCFOP_GET_SNIFFERS;
     msg.sid = RCF_TA_GET_LOG_SID;
     if (snif_id == NULL)
         msg.intparm = sync;
     else
-        strcpy(msg.id, snif_id);
+        te_strlcpy(msg.id, snif_id, sizeof(msg.id));
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
                                    rep_msg, &anslen, NULL);
@@ -1620,8 +1621,8 @@ rcf_ta_get_log(const char *ta_name, char *log_file)
         return TE_RC(TE_RCF_API, TE_EINVAL);
 
     memset(&msg, 0, sizeof(msg));
-    strcpy(msg.file, log_file);
-    strcpy(msg.ta, ta_name);
+    te_strlcpy(msg.file, log_file, sizeof(msg.file));
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
     msg.opcode = RCFOP_GET_LOG;
     msg.sid = RCF_TA_GET_LOG_SID;
 
@@ -1629,7 +1630,7 @@ rcf_ta_get_log(const char *ta_name, char *log_file)
                                    &msg, &anslen, NULL);
 
     if (rc == 0 && (rc = msg.error) == 0)
-        strcpy(log_file, msg.file);
+        te_strlcpy(log_file, msg.file, RCF_MAX_PATH);
 
     return rc;
 }
@@ -1679,8 +1680,8 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
     }
 
     memset(&msg, 0, sizeof(msg));
-    strcpy(msg.ta, ta_name);
-    strcpy(msg.id, var_name);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
+    te_strlcpy(msg.id, var_name, sizeof(msg.id));
     msg.intparm = var_type;
     msg.opcode = RCFOP_VREAD;
     msg.sid = session;
@@ -1695,7 +1696,7 @@ rcf_ta_get_var(const char *ta_name, int session, const char *var_name,
     {
         if (var_len <= strlen(msg.value))
             return TE_RC(TE_RCF_API, TE_ESMALLBUF);
-        strcpy(val, msg.value);
+        te_strlcpy(val, msg.value, var_len);
         return 0;
     }
 
@@ -1785,8 +1786,8 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
     }
 
     memset(&msg, 0, sizeof(msg));
-    strcpy(msg.ta, ta_name);
-    strcpy(msg.id, var_name);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
+    te_strlcpy(msg.id, var_name, sizeof(msg.id));
     msg.opcode = RCFOP_VWRITE;
     msg.intparm = var_type;
     msg.sid = session;
@@ -1827,7 +1828,7 @@ rcf_ta_set_var(const char *ta_name, int session, const char *var_name,
         case RCF_STRING:
             if (strlen(val) >= RCF_MAX_VAL)
                 return TE_RC(TE_RCF_API, TE_EINVAL);
-            strcpy(msg.value, val);
+            te_strlcpy(msg.value, val, sizeof(msg.value));
             break;
 
         default:
@@ -1903,9 +1904,9 @@ handle_file(const char *ta_name, int session,
         return TE_RC(TE_RCF_API, TE_ENOMEM);
 
     msg->opcode = opcode;
-    strcpy(msg->ta, ta_name);
-    strcpy(msg->file, lfile);
-    strcpy(msg->data, rfile);
+    te_strlcpy(msg->ta, ta_name, sizeof(msg->ta));
+    te_strlcpy(msg->file, lfile, sizeof(msg->file));
+    te_strlcpy(msg->data, rfile, RCF_MAX_PATH);
     msg->data_len = strlen(rfile) + 1;
     msg->sid = session;
     if (opcode == RCFOP_FPUT)
@@ -2100,10 +2101,10 @@ rcf_ta_csap_create(const char *ta_name, int session,
     msg->opcode = RCFOP_CSAP_CREATE;
     msg->flags = flags;
     msg->sid = session;
-    strcpy(msg->ta, ta_name);
-    strcpy(msg->id, stack_id);
+    te_strlcpy(msg->ta, ta_name, sizeof(msg->ta));
+    te_strlcpy(msg->id, stack_id, sizeof(msg->id));
     if (flags & BINARY_ATTACHMENT)
-        strcpy(msg->file, params);
+        te_strlcpy(msg->file, params, sizeof(msg->file));
     else if (params != NULL)
     {
         msg->data_len = len;
@@ -2173,7 +2174,7 @@ rcf_ta_csap_destroy(const char *ta_name, int session,
 
     memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_CSAP_DESTROY;
-    strcpy(msg.ta, ta_name);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
     msg.sid = session;
     msg.handle = csap_id;
 
@@ -2227,8 +2228,8 @@ rcf_ta_csap_param(const char *ta_name, int session, csap_handle_t csap_id,
     }
 
     memset(&msg, 0, sizeof(msg));
-    strcpy(msg.ta, ta_name);
-    strcpy(msg.id, var_name);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
+    te_strlcpy(msg.id, var_name, sizeof(msg.id));
     msg.opcode = RCFOP_CSAP_PARAM;
     msg.sid = session;
     msg.handle = csap_id;
@@ -2242,7 +2243,7 @@ rcf_ta_csap_param(const char *ta_name, int session, csap_handle_t csap_id,
     if (var_len <= strlen(msg.value))
         return TE_RC(TE_RCF_API, TE_ESMALLBUF);
 
-    strcpy(val, msg.value);
+    te_strlcpy(val, msg.value, var_len);
 
     return 0;
 }
@@ -2299,8 +2300,8 @@ rcf_ta_trsend_start(const char *ta_name, int session,
     memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TRSEND_START;
     msg.flags |= BINARY_ATTACHMENT;
-    strcpy(msg.ta, ta_name);
-    strcpy(msg.file, templ);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
+    te_strlcpy(msg.file, templ, sizeof(msg.file));
     msg.handle = csap_id;
     msg.intparm = (blk_mode == RCF_MODE_BLOCKING) ? TR_POSTPONED : 0;
     msg.sid = session;
@@ -2360,7 +2361,7 @@ rcf_ta_trsend_stop(const char *ta_name, int session,
 
     msg.sid = session;
     msg.opcode = RCFOP_TRSEND_STOP;
-    strcpy(msg.ta, ta_name);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
     msg.handle = csap_id;
 
     rc = send_recv_rcf_ipc_message(ctx_handle, &msg, sizeof(msg),
@@ -2400,8 +2401,8 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
     memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TRRECV_START;
     msg.flags |= BINARY_ATTACHMENT;
-    strcpy(msg.ta, ta_name);
-    strcpy(msg.file, pattern);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
+    te_strlcpy(msg.file, pattern, sizeof(msg.file));
     msg.handle = csap_id;
     report_flag = mode & RCF_TRRECV_REPORT_MASK;
     msg.intparm = (report_flag == RCF_TRRECV_COUNT ? 0 : (TR_RESULTS |
@@ -2462,7 +2463,7 @@ csap_tr_recv_get(const char *ta_name, int session, csap_handle_t csap_id,
 
     msg.sid = session;
     msg.opcode = opcode;
-    strcpy(msg.ta, ta_name);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
     msg.handle = csap_id;
 
     anslen = sizeof(msg);
@@ -2656,8 +2657,8 @@ rcf_ta_trsend_recv(const char *ta_name, int session, csap_handle_t csap_id,
     msg.timeout = timeout;
     msg.opcode = RCFOP_TRSEND_RECV;
     msg.flags |= BINARY_ATTACHMENT;
-    strcpy(msg.ta, ta_name);
-    strcpy(msg.file, templ);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
+    te_strlcpy(msg.file, templ, sizeof(msg.file));
     msg.handle = csap_id;
     msg.intparm = handler == NULL ? 0 : TR_RESULTS;
 
@@ -2737,7 +2738,7 @@ rcf_ta_trpoll_start(const char *ta_name, int session,
 
     memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TRPOLL;
-    strcpy(msg.ta, ta_name);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
     msg.sid = session;
     msg.handle = csap_id;
     msg.timeout = timeout;
@@ -2792,7 +2793,7 @@ rcf_ta_trpoll_cancel(const char *ta_name, int session,
 
     memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_TRPOLL_CANCEL;
-    strcpy(msg.ta, ta_name);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
     msg.sid = session;
     msg.handle = csap_id;
     msg.intparm = poll_id;
@@ -3022,7 +3023,7 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
             maxlen -= n + 1;
             CHECK_LENS;
 
-            strcpy(data, s);
+            te_strlcpy(data, s, maxlen);
             data += strlen(s) + 1;
         }
         *data_len = len;
@@ -3053,7 +3054,7 @@ make_params(int argc,  int argv, char *data, size_t *data_len, va_list ap)
             len += strlen(s) + 1;
             CHECK_LENS;
 
-            strcpy(data, s);
+            te_strlcpy(data, s, maxlen);
             data += strlen(s) + 1;
         }
         else
@@ -3151,8 +3152,8 @@ call_start(const char *ta_name, int session, int priority, const char *rtn,
 
     msg->opcode = RCFOP_EXECUTE;
     msg->sid = session;
-    strcpy(msg->ta, ta_name);
-    strcpy(msg->id, rtn);
+    te_strlcpy(msg->ta, ta_name, sizeof(msg->ta));
+    te_strlcpy(msg->id, rtn, sizeof(msg->id));
 
     msg->intparm = mode;
     msg->num = priority;
@@ -3269,7 +3270,7 @@ rcf_ta_kill_task(const char *ta_name, int session, pid_t pid)
 
     memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_KILL;
-    strcpy(msg.ta, ta_name);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
     msg.handle = pid;
     msg.intparm = RCF_PROCESS;
     msg.sid = session;
@@ -3304,7 +3305,7 @@ rcf_ta_kill_thread(const char *ta_name, int session, int tid)
 
     memset(&msg, 0, sizeof(msg));
     msg.opcode = RCFOP_KILL;
-    strcpy(msg.ta, ta_name);
+    te_strlcpy(msg.ta, ta_name, sizeof(msg.ta));
     msg.handle = tid;
     msg.intparm = RCF_PROCESS;
     msg.sid = session;
