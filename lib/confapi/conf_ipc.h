@@ -74,6 +74,28 @@ extern te_errno cfg_ipc_mk_set(cfg_set_msg *msg, size_t msg_buf_size,
                                cfg_handle handle, te_bool local,
                                cfg_val_type type, cfg_inst_val value);
 
+/** Same function as cfg_ipc_mk_set, but type is fixed as CVT_INTEGER */
+static inline te_errno
+cfg_ipc_mk_set_int(cfg_set_msg *msg, size_t msg_buf_size,
+               cfg_handle handle, te_bool local, int value)
+{
+    cfg_inst_val val;
+
+    val.val_int = value;
+    return cfg_ipc_mk_set(msg, msg_buf_size, handle, local, CVT_INTEGER, val);
+}
+
+/** Same function as cfg_ipc_mk_set, but type is fixed as CVT_STRING */
+static inline te_errno
+cfg_ipc_mk_set_str(cfg_set_msg *msg, size_t msg_buf_size,
+               cfg_handle handle, te_bool local, char *value)
+{
+    cfg_inst_val val;
+
+    val.val_str = value;
+    return cfg_ipc_mk_set(msg, msg_buf_size, handle, local, CVT_STRING, val);
+}
+
 #ifdef __cplusplus
 }
 #endif
