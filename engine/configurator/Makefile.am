@@ -44,7 +44,7 @@ te_cs_SOURCES = conf_backup.c  \
 
 te_cs_shutdown_SOURCES = conf_shutdown.c
 
-te_cs_LDADD = @TE_LDADD@ -lrcfapi -lconf_types -lconf_oid \
+te_cs_LDADD = @TE_LDADD@ -lrcfapi -lconf_ipc -lconf_types -lconf_oid \
               -llogger_ten -lipcserver -lipc $(CONF_YAML_LIBS) -ltools \
               -llogger_core @XML2_LIBS@ -lpthread -lpopt -lexpat
 
@@ -54,6 +54,7 @@ te_cs_DEPENDENCIES = @TE_DEPENDENCIES@ \
                      $(DESTDIR)/$(libdir)/librcfapi.a \
                      $(DESTDIR)/$(libdir)/libconf_types.a \
                      $(DESTDIR)/$(libdir)/libconf_oid.a \
+                     $(DESTDIR)/$(libdir)/libconf_ipc.a \
                      $(DESTDIR)/$(libdir)/liblogger_core.a \
                      $(DESTDIR)/$(libdir)/liblogger_ten.a \
                      $(DESTDIR)/$(libdir)/libipcserver.a \
