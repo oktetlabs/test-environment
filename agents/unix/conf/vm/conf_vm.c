@@ -102,6 +102,10 @@ struct vm_entry {
     vm_drive_list_t         drives;
     vm_pci_pt_list_t        pci_pts;
     vm_device_list_t        devices;
+    char                   *kernel;
+    char                   *ker_cmd;
+    char                   *ker_initrd;
+    char                   *ker_dtb;
 };
 
 
@@ -254,6 +258,61 @@ exit:
     te_string_free(&interface_args);
 
     return TE_RC(TE_TA_UNIX, rc);
+}
+
+static te_errno
+vm_append_kernel_cmd(te_string *cmd, struct vm_entry *vm)
+{
+    te_errno rc;
+
+    if (vm->kernel[0] != '\0')
+    {
+        rc = te_string_append_shell_args_as_is(cmd, "-kernel", vm->kernel, NULL);
+        if (rc != 0)
+        {
+            ERROR("Cannot compose kernel command line (line %u): %r",
+                  __LINE__, rc);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+
+        if (vm->ker_cmd[0] != '\0')
+        {
+            rc = te_string_append_shell_args_as_is(cmd, "-append",
+                            vm->ker_cmd, NULL);
+            if (rc != 0)
+            {
+                ERROR("Cannot compose kernel command line (line %u): %r",
+                      __LINE__, rc);
+                return TE_RC(TE_TA_UNIX, rc);
+            }
+        }
+
+        if (vm->ker_initrd[0] != '\0')
+        {
+            rc = te_string_append_shell_args_as_is(cmd, "-initrd",
+                            vm->ker_initrd, NULL);
+            if (rc != 0)
+            {
+                ERROR("Cannot compose kernel command line (line %u): %r",
+                      __LINE__, rc);
+                return TE_RC(TE_TA_UNIX, rc);
+            }
+        }
+
+        if (vm->ker_dtb[0] != '\0')
+        {
+            rc = te_string_append_shell_args_as_is(cmd, "-dtb",
+                            vm->ker_dtb, NULL);
+            if (rc != 0)
+            {
+                ERROR("Cannot compose kernel command line (line %u): %r",
+                      __LINE__, rc);
+                return TE_RC(TE_TA_UNIX, rc);
+            }
+        }
+    }
+
+    return 0;
 }
 
 static te_errno
@@ -506,6 +565,10 @@ vm_start(struct vm_entry *vm)
     if (rc != 0)
         goto exit;
 
+    rc = vm_append_kernel_cmd(&vm->cmd, vm);
+    if (rc != 0)
+        goto exit;
+
     rc = te_string_append_shell_args_as_is(&vm->cmd, "-serial", "stdio", NULL);
     if (rc != 0)
     {
@@ -640,6 +703,10 @@ vm_free(struct vm_entry *vm)
     free(vm->machine);
     free(vm->qemu);
     free(vm->name);
+    free(vm->kernel);
+    free(vm->ker_cmd);
+    free(vm->ker_initrd);
+    free(vm->ker_dtb);
     free(vm);
 }
 
@@ -804,6 +871,34 @@ vm_add(unsigned int gid, const char *oid, const char *value,
     vm->host_ssh_port = vm_alloc_tcp_port();
     vm->guest_ssh_port = guest_ssh_port;
     vm->rcf_port = vm_alloc_tcp_port();
+
+    vm->kernel = strdup("");
+    if (vm->kernel == NULL)
+    {
+        vm_free(vm);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    vm->ker_cmd = strdup("");
+    if (vm->ker_cmd == NULL)
+    {
+        vm_free(vm);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    vm->ker_initrd = strdup("");
+    if (vm->ker_initrd == NULL)
+    {
+        vm_free(vm);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    vm->ker_dtb = strdup("");
+    if (vm->ker_dtb == NULL)
+    {
+        vm_free(vm);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
 
     vm->pid = -1;
 
@@ -1310,6 +1405,170 @@ vm_net_property_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     return string_replace(property, value);
+}
+
+static te_errno
+vm_kernel_get(unsigned int gid, const char *oid, char *value,
+              const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", vm_name);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", vm->kernel);
+
+    return 0;
+}
+
+static te_errno
+vm_kernel_set(unsigned int gid, const char *oid, const char *value,
+              const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", vm_name);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    return string_replace(&vm->kernel, value);
+}
+
+static te_errno
+vm_ker_cmd_get(unsigned int gid, const char *oid, char *value,
+               const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", vm_name);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", vm->ker_cmd);
+
+    return 0;
+}
+
+static te_errno
+vm_ker_cmd_set(unsigned int gid, const char *oid, const char *value,
+               const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", vm_name);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    return string_replace(&vm->ker_cmd, value);
+}
+
+static te_errno
+vm_ker_initrd_get(unsigned int gid, const char *oid, char *value,
+                  const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", vm_name);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", vm->ker_initrd);
+
+    return 0;
+}
+
+static te_errno
+vm_ker_initrd_set(unsigned int gid, const char *oid, const char *value,
+                  const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", vm_name);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    return string_replace(&vm->ker_initrd, value);
+}
+
+static te_errno
+vm_ker_dtb_get(unsigned int gid, const char *oid, char *value,
+               const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", vm_name);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", vm->ker_dtb);
+
+    return 0;
+}
+
+static te_errno
+vm_ker_dtb_set(unsigned int gid, const char *oid, const char *value,
+              const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", vm_name);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    return string_replace(&vm->ker_dtb, value);
 }
 
 static te_errno
@@ -1879,6 +2138,19 @@ RCF_PCH_CFG_NODE_COLLECTION(node_vm_drive, "drive", &node_vm_file,
                             &node_vm_cpu, vm_drive_add, vm_drive_del,
                             vm_drive_list, NULL);
 
+RCF_PCH_CFG_NODE_RW(node_vm_kernel_cmdline, "cmdline", NULL, NULL,
+                    vm_ker_cmd_get, vm_ker_cmd_set);
+
+RCF_PCH_CFG_NODE_RW(node_vm_kernel_initrd, "initrd", NULL,
+                    &node_vm_kernel_cmdline, vm_ker_initrd_get,
+                    vm_ker_initrd_set);
+
+RCF_PCH_CFG_NODE_RW(node_vm_kernel_dtb, "dtb", NULL, &node_vm_kernel_initrd,
+                    vm_ker_dtb_get, vm_ker_dtb_set);
+
+RCF_PCH_CFG_NODE_RW(node_vm_kernel, "kernel", &node_vm_kernel_dtb,
+                    &node_vm_drive, vm_kernel_get, vm_kernel_set);
+
 RCF_PCH_CFG_NODE_RW(node_vm_net_mac_addr, "mac_addr", NULL, NULL,
                     vm_net_property_get, vm_net_property_set);
 
@@ -1890,7 +2162,7 @@ RCF_PCH_CFG_NODE_RW(node_vm_net_type, "type", NULL, &node_vm_net_type_spec,
                     vm_net_property_get, vm_net_property_set);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_vm_net, "net", &node_vm_net_type,
-                            &node_vm_drive, vm_net_add, vm_net_del,
+                            &node_vm_kernel, vm_net_add, vm_net_del,
                             vm_net_list, NULL);
 
 RCF_PCH_CFG_NODE_RW(node_vm_mem_size, "size", NULL, NULL,
