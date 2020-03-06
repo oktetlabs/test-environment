@@ -7,6 +7,9 @@ option('install-dev', type: 'boolean', value: false,
 
 option('engine', type: 'boolean', value: false,
        description: 'Build TE engine')
+option('engine-apps', type: 'string',
+       value: 'builder rcf logger tester configurator',
+       description: 'List of TE engine applications to build')
 
 option('libs', type: 'string', value: '',
        description: 'Libraries to build')

@@ -435,6 +435,9 @@ process_builder_conf() {
     echo TE_INSTALL_NUT=$TE_INSTALL_NUT
     echo TE_INSTALL_SUITE=$TE_INSTALL_SUITE
 
+    # Defaults
+    echo TE_BS_APPS=\"builder rcf logger tester configurator\"
+
     if test -n "${config}" ; then
         if test ! -e "${config}" ; then
             error "Cannot find ${config}"
@@ -479,10 +482,8 @@ process_platforms() {
         if test ${p} = "${TE_HOST}" ; then
             meson_args="${meson_args} -Dengine=true"
             process_host_exec
-            test -z "${TE_BS_APPS}" || {
-                meson_args="${meson_args} -Dengine-apps=\"${TE_BS_APPS}\""
-                process_engine_apps
-            }
+            meson_args="${meson_args} -Dengine-apps=\"${TE_BS_APPS}\""
+            process_engine_apps
             test -z "${TE_BS_TOOLS}" || {
                 meson_args="${meson_args} -Dtools=\"${TE_BS_TOOLS}\""
                 process_engine_tools
