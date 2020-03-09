@@ -333,40 +333,44 @@ Configuration
 Configurator
 ------------
 
-Two configuration subtrees provided to manage the serial parser framework. The first subtree is **/local/tester**, it is used to declare **Tester events**. There is also performed binding of some **handlers** to the events. ====================================  =======  ====================================================================
+Two configuration subtrees provided to manage the serial parser framework.
+The first subtree is **/local/tester**, it is used to declare **Tester events**.
+There is also performed binding of some **handlers** to the events.
+
+====================================  =======  ====================================================================
 OID                                   Type     Description
 ====================================  =======  ====================================================================
-
 /local/tester                         RW none  Tester subtree.
-/local/tester/enable                  RW int   Enable the Tester thread to listen for events. By default disabled.
-/local/tester/period                  RW int   Period for polling of events status. By default is 100 milliseconds.
-/local/tester/location                RW str   Directory with handlers for short named handlers. By default
-/local/tester/event                   RC none  Subtree of a
-/local/tester/event/handler           RC str   Event handler. Use a path to the executable as value.
-/local/tester/event/handler/priority  RW int   Handler priority.By default is
-/local/tester/event/handler/signal    RW int   Signal number.
-/local/tester/event/handler/internal  RW int   Indicates that it is internal handler. By default, it is external.
+/local/tester/enable                  RW int   Enable the Tester thread to listen for events. By default: disabled.
+/local/tester/period                  RW int   Period for polling of events status. By default: 100 milliseconds.
+/local/tester/location                RW str   Directory with handlers for short named handlers.
+                                               By default: **RUN_DIR/handlers**.
+/local/tester/event                   RC none  Subtree of a **Tester event**.
+/local/tester/event/handler           RC str   Event handler. Use a path to the executable as a value.
+/local/tester/event/handler/priority  RW int   Handler priority. By default: **0**.
+/local/tester/event/handler/signal    RW int   Signal number. By default: **SIGINT**.
+/local/tester/event/handler/internal  RW int   Indicates that it is an internal handler. By default: external.
 ====================================  =======  ====================================================================
 
-A new subtree of the agent is **/agent/parser**. It is used to configure and launch a **parser** thread for a serial consoles on the agent.
+A new subtree of the agent is **/agent/parser**.
+It is used to configure and launch a **parser** thread for a serial consoles on the agent.
 
 ===========================  ======  ===============================================================================
 OID                          Type    Description
 ===========================  ======  ===============================================================================
-
-/agent/parser                RC str  The
-/agent/parser/port           RW int  Conserver port corresponds to the parameters of conserver launch. By default is
-/agent/parser/user           RW str  Conserver user name. By default is
-/agent/parser/enable         RW int  Start/stop the
+/agent/parser                RC str  The **parser** subtree. Use a name of serial console as value.
+/agent/parser/port           RW int  Conserver port corresponds to the parameters of conserver launch.
+                                     By default: **3109**.
+/agent/parser/user           RW str  Conserver user name. By default: **tester**.
+/agent/parser/enable         RW int  Start/stop the **parser** thread.
 /agent/parser/interval       RW int  Intreval of polling messages from the console.
 /agent/parser/reset          RW int  Reset status for all events.
-/agent/parser/event          RC str
-                                     declared in the Tester subtree as value.
+/agent/parser/event          RC str  Declared in the Tester subtree as a value.
 /agent/parser/event/pattern  RC str  Pattern string.
 /agent/parser/event/counter  RW int  Counter of the happened event.
 /agent/parser/event/status   RW int  Status of the event.
-/agent/parser/logging        RW int  Enable logging of the console messages in the main log. By defaul enabled.
-/agent/parser/logging/level  RW str  Level of the message for logging. By default is
+/agent/parser/logging        RW int  Enable logging of the console messages in the main log. By default: enabled.
+/agent/parser/logging/level  RW str  Level of the message for logging. By default: **WARN**.
 ===========================  ======  ===============================================================================
 
 Configuration exmaple:

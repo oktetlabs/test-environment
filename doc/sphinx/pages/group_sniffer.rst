@@ -163,43 +163,60 @@ Configurations of sniffer framework divided on two main parts. A first part is w
 Command line options for Dispatcher
 -----------------------------------
 
-Additional command line options for dispatcher.sh are supported. It is possible to add sniffers and set their settings by command line options. The same settings of the **Logger** can be changed here. ==============================================  =====================================================================================
+Additional command line options for dispatcher.sh are supported. It is possible to add sniffers and set their settings by command line options. The same settings of the **Logger** can be changed here.
 
-==============================================  =====================================================================================
+=============================================  =====================================================================================
 
-–sniff-not-feed-conf                          Do not feed the sniffer configuration file to Configurator.
-–sniff=<TA/iface>                             Run sniffer on
-–sniff-filter=<filter>                        Add for the sniffer filter(tcpdump-like syntax). See &#039;man 7 pcap-filter&#039;.
-–sniff-name=<name>                            Add for the sniffer a human-readable name.
-–sniff-snaplen=<val>                          Add for the sniffer restriction on maximum number of bytes to capture for one packet.
-By default: unlimited.
-–sniff-space=<val>                            Add for the sniffer restriction on maximum overall size of temporary files in Mb.
-By default: 64Mb.
-–sniff-fsize=<val>                            Add for the sniffer restriction on maximum size of the one temporary file in Mb.
-By default: 16Mb.
-–sniff-rotation=<x>                           Add for the sniffer restriction on number of temporary files. This option excluded by
-the
-–sniff-ofill-drop                             Change overfill handle method of temporary files for the sniffer to tail drop.
-By default overfill handle method is rotation.
-–sniff-log-dir=<path>                         Path to the
-By default used: TE_LOG_DIR/caps.
-–sniff-log-name <pattern>
-- %a : agent name
-- %u : user name
-- %i : interface name
-- %s : sniffer name
-- %n : sniffer session sequence number
-By default
-–sniff-log-size=<val>                         Maximum
-By default: 256 Mb.
-–sniff-log-fsize=<val>                        Maximum
-By default: 64 Mb.
-–sniff-log-ofill-drop                         Change overfill handle method to tail drop.
-By default overfill handle method is rotation.
-–sniff-log-period=<val>                       Period of taken logs from agents in milliseconds.
-By default: 200 msec.
-–sniff-log-conv-disable                       Disable capture logs conversion and merge with the main log.
-==============================================  =====================================================================================
+–sniff-not-feed-conf                           Do not feed the sniffer configuration file to Configurator.
+
+–sniff=<TA/iface>                              Run sniffer on iface of the TA.
+
+–sniff-filter=<filter>                         Add the filter for the sniffer (tcpdump-like syntax). See ``man 7 pcap-filter``.
+
+–sniff-name=<name>                             Add a human-readable name for the sniffer.
+
+–sniff-snaplen=<val>                           Add a restriction on maximum number of bytes to capture for one packet for the sniffer.
+                                               By default: unlimited.
+
+–sniff-space=<val>                             Add a restriction on maximum overall size of temporary files in Mb for the sniffer.
+                                               By default: 64Mb.
+
+–sniff-fsize=<val>                             Add a restriction on maximum size of one temporary file in Mb for the sniffer.
+                                               By default: 16Mb.
+
+–sniff-rotation=<x>                            Add a restriction on number of temporary files for the sniffer. This option is excluded by
+                                               the ``–sniff-ta-log-ofill-drop`` option. By default: 4.
+
+–sniff-ofill-drop                              Change overfill handle method of temporary files for the sniffer to tail drop.
+                                               By default overfill handle method is rotation.
+
+–sniff-log-dir=<path>                          Path to the TEN side capture files.
+                                               By default: TE_LOG_DIR/caps.
+
+–sniff-log-name <pattern>                      TEN side log file naming pattern, the following format specifiers are supported:
+
+                                               - %a : agent name
+                                               - %u : user name
+                                               - %i : interface name
+                                               - %s : sniffer name
+                                               - %n : sniffer session sequence number
+
+                                               By default: ``%a_%i_%s_%n``.
+
+–sniff-log-size=<val>                          Maximum TEN side logs cumulative size for one sniffer in MB.
+                                               By default: 256 Mb.
+
+–sniff-log-fsize=<val>                         Maximum TEN side capture file size for each sniffer in MB.
+                                               By default: 64 Mb.
+
+–sniff-log-ofill-drop                          Change overfill handle method to tail drop.
+                                               By default overfill handle method is rotation.
+
+–sniff-log-period=<val>                        Period of taking logs from agents in milliseconds.
+                                               By default: 200 msec.
+
+–sniff-log-conv-disable                        Disable capture logs conversion and merge with the main log.
+=============================================  =====================================================================================
 
 Example how to add and configure a sniffer:
 
