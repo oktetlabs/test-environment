@@ -68,6 +68,10 @@ function generate_sphinx_doc()
 
     ${DOXYREST_BIN} "${DOXYREST_OPTS[@]}" > /dev/null || exit 1
 
+    [ -z "$SCRIPT_DIR" ] && SCRIPT_DIR="${TE_BASE}/scripts/docs"
+
+    ${SCRIPT_DIR}/add_orphan_tag.sh || echo "Failed to add orphan tag" 1>&2
+
     SPHINX_BUILD_OPTS=(
       -j auto             # use cpu count
       -q                  # be quite: warn and error only
