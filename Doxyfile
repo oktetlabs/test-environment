@@ -794,7 +794,6 @@ WARN_LOGFILE           = doxygen.warn
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = mainpage.dox \
-                         doc/dox_resources/pages \
                          lib/tools \
                          engine \
                          include \
