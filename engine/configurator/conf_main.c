@@ -1978,7 +1978,7 @@ check_agents(void)
         {
             rc = reanimate_vm_agent(&agents[i]);
             if (rc != 0)
-                break;
+                return TE_RC(TE_CS, TE_ETADEAD);
         }
 
         te_strlcpy(oid + offset, &agents[i], sizeof(oid) - offset);
