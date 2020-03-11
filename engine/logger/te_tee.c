@@ -123,7 +123,7 @@ main (int argc, char *argv[])
     fence   = buffer + TE_LOG_FIELD_MAX;
     *fence  = '\0';
     fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK | fcntl(STDIN_FILENO, F_GETFL));
-    
+
     for (;;)
     {
         int rc;

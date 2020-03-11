@@ -123,10 +123,10 @@ static int polling_period;
 
 /**
  * Check the sniffer exist.
- * 
+ *
  * @param snif              Location of sniffer parameters.
  * @param sniflist_head     Head of the sniffers list.
- * 
+ *
  * @return TRUE if sniffer exists.
  */
 static te_bool
@@ -193,10 +193,10 @@ check_snif_exist(snifidl_h_t *sniflist_head, snif_id_l *new_snif)
 
 /**
  * Parse sniffer id string.
- * 
+ *
  * @param buf   Sntring with sniffer id.
  * @param id    Sniffer id (OUT).
- * 
+ *
  * @return Number of parsed symbols or -1 if errors.
  */
 static int
@@ -245,10 +245,10 @@ sniffer_parse_id_str(char *buf, sniffer_id *id)
 
 /**
  * Make a name for capture file of the sniffer
- * 
+ *
  * @param agent     Agent name
  * @param sniff     The sniffer location
- * 
+ *
  * @return Status code
  * @retval 0        success
  */
@@ -321,7 +321,7 @@ sniffer_make_file_name(const char *agent, snif_id_l *snif)
         if ((unsigned)len > RCF_MAX_PATH - offt_buf)
             return TE_RC(TE_LOGGER, TE_EINVAL);
         offt_buf += len;
-        
+
         offt_templ++;
         if (offt_templ >= strlen(templ))
             break;
@@ -353,12 +353,12 @@ sniffer_make_file_name(const char *agent, snif_id_l *snif)
  * Parse the buffer of binary attachment with the list of sniffers.
  * Buffer format for each sniffer:
  *     <Sniffer name> <Interface name> <SSN> <offset>\0
- * 
+ *
  * @param buf               Pointer to the buffer with the list of sniffers.
  * @param len               Buffer length.
  * @param sniflist_head     Head of the sniffers list.
  * @param agent             Agent name.
- * 
+ *
  * @return Status code.
  */
 static te_errno
@@ -419,7 +419,7 @@ sniffer_parse_list_buf(char *buf, size_t len, snifidl_h_t *sniflist_head,
             snif->cap_file_ind = 0;
             if (sniffer_make_file_name(agent, snif) != 0)
                 WRONG_SNIF_ID("Couldn't make capture file name.");
-            
+
             SLIST_INIT(&snif->flist_h);
             SNIFFER_MALLOC(lfile, sizeof(file_list_s));
             strcpy(lfile->name, snif->res_fname);
@@ -450,11 +450,11 @@ sniffer_parse_list_buf(char *buf, size_t len, snifidl_h_t *sniflist_head,
 
 /**
  * Check to mark consists in the capture block.
- * 
+ *
  * @param size          Size of the received file.
  * @param snif      Location of sniffer parameters.
  * @param ta_name   Test agent name.
- * 
+ *
  * @return TRUE if marker should be inserted.
  */
 static snif_mark_l *
@@ -469,7 +469,7 @@ sniffer_check_markers(size_t size, snif_id_l *snif, const char *agent)
         if (strcmp(agent, mark->agent) == 0 &&
             mark->id.ssn == snif->id.ssn)
         {
-            if (mark->id.abs_offset >= snif->id.abs_offset  && 
+            if (mark->id.abs_offset >= snif->id.abs_offset  &&
                 mark->id.abs_offset < snif->id.abs_offset + size)
             {
                 if ((retmark == NULL) ||
@@ -492,10 +492,10 @@ sniffer_check_markers(size_t size, snif_id_l *snif, const char *agent)
 
 /**
  * Inser the marker packet into the capture file.
- * 
+ *
  * @param fd_o  A descriptor of the opened file.
  * @param mark  Location of the marker parameters.
- * 
+ *
  */
 static te_errno
 sniffer_insert_marker(int fd_o, snif_mark_l *mark)
@@ -523,7 +523,7 @@ insert_marker_error:
 
 /**
  * Save information about sniffer to the capture file.
- * 
+ *
  * @param agent     Agent name
  * @param snif      The sniffer location
  * @param fd_o      Opened file descriptor
@@ -541,7 +541,7 @@ sniffer_save_info(const char *agent, snif_id_l *snif, int fd_o)
     SNIFFER_MALLOC(mark.message, len);
     res = snprintf(mark.message, len, "%s;%s;%s", agent, snif->id.ifname,
                    snif->id.snifname);
-    
+
     gettimeofday(&ts, 0);
     SNIFFER_TS_CPY(mark.h.ts, ts);
     mark.h.caplen = res + SNIF_MARK_PSIZE;
@@ -553,11 +553,11 @@ sniffer_save_info(const char *agent, snif_id_l *snif, int fd_o)
 
 /**
  * Capture files processing.
- * 
+ *
  * @param fname     Name of the received file as it is saved.
  * @param snif      Location of sniffer parameters.
  * @param ta_name   Test agent name.
- * 
+ *
  * @return Status code.
  */
 static te_errno
@@ -683,7 +683,7 @@ cleanup_snif_fproc:
 
 /**
  * Check overall capture files size for all sniffers.
- * 
+ *
  * @return TRUE if space is overflowed.
  */
 static te_bool
@@ -715,11 +715,11 @@ sniffer_check_overall_space(unsigned fsize)
 
 /**
  * Check and free the space occupied by capture log files.
- * 
+ *
  * @param snif      Location of sniffer parameters.
  * @param fname     Name of the received file as it is saved.
  * @param agent     Test agent name.
- * 
+ *
  * @return Status code. TRUE is a free space, else FALSE.
  */
 static te_bool
@@ -813,10 +813,10 @@ sniffer_check_capture_space(snif_id_l *snif, const char *fname,
 
 /**
  * Get sniffer dump function performed *rcf_get_sniffer_dump* call.
- * 
+ *
  * @param ta_name   Test agent name.
  * @param snif      Location of sniffer parameters.
- * 
+ *
  * @return Status code.
  */
 static te_errno
@@ -870,7 +870,7 @@ ten_get_sniffer_dump(const char *ta_name, snif_id_l *snif)
 
 /**
  * Recursively cleanup directory from .pcap files
- * 
+ *
  * @param dirname   Directory name
  */
 static void
@@ -904,14 +904,14 @@ sniffer_cleanup_dir(const char *dirname)
 
 /**
  * Make folder for capture logs or cleanup existing folder.
- * 
+ *
  * @param agt_fldr  Full path to the folder.
  */
 void
 sniffers_logs_cleanup(char *agt_fldr)
 {
     errno = 0;
-    if (mkdir(agt_fldr, S_IRWXU | S_IRWXG | S_IRWXO) != 0 && 
+    if (mkdir(agt_fldr, S_IRWXU | S_IRWXG | S_IRWXO) != 0 &&
         errno != EEXIST)
     {
         ERROR("Couldn't create directory, %d\n", errno);
@@ -924,9 +924,9 @@ sniffers_logs_cleanup(char *agt_fldr)
 
 /**
  * Search TA unit in the list by name
- * 
+ *
  * @param ta_name   Agent name
- * 
+ *
  * @return Pointer to TA unit location or NULL
  */
 static snif_ta_l *
@@ -944,10 +944,10 @@ sniffer_get_ta_by_name(char *ta_name)
 
 /**
  * Search the same sniffer in the any sniffer list by ssn
- * 
+ *
  * @param sniff         Required sniffer
  * @param sniflist_h    Head of a sniffer list
- * 
+ *
  * @return The sniffer unit location or NULL in case of failure
  */
 static snif_id_l *
@@ -965,12 +965,12 @@ sniffer_search_same_sniff(snif_id_l *sniff, snifidl_h_t *sniflist_h)
 
 /**
  * Add new marker in the list for sniffer
- * 
+ *
  * @param ta_name   Agent name
  * @param sniff     The sniffer location
  * @param message   The mark message
  * @param ts        Timestamp of mark packet
- * 
+ *
  * @param Status code
  * @retval 0 success
  */
@@ -1004,7 +1004,7 @@ sniffer_add_new_mark(char *ta_name, snif_id_l *sniff, char *message,
 
 /**
  * Cleanup sniffers list
- * 
+ *
  * @param sniflist_h    Head of the list
  */
 static void
@@ -1087,7 +1087,7 @@ sniffer_ins_mark_all(char *mark_data)
  * This is an entry point of sniffers mark message server.
  * This server should be run as separate thread.
  * Mark messages to all sniffers tranmitted by this routine.
- * 
+ *
  * @param mark_data     Data for the marker packet.
  */
 void
@@ -1187,7 +1187,7 @@ sniffers_init(void)
  * This server should be run as separate thread.
  * All log messages from all sniffers entities on the agent
  * will be processed by this routine.
- * 
+ *
  * @param agent     Agent name.
  */
 void
