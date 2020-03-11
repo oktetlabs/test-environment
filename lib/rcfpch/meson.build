@@ -6,6 +6,11 @@ rcf_sniffers_dummy = library('rcf_sniffers_dummy',
 dep_lib_rcf_sniffers_dummy = declare_dependency(link_with: rcf_sniffers_dummy,
                                                 dependencies: dep_lib_conf_oid)
 
+if get_option('libs').split().contains('netconf')
+    c_args += [ '-DWITH_NETCONF' ]
+    deps += [ dep_lib_static_netconf ]
+endif
+
 f = 'pthread_atfork'
 if dep_threads.found() and cc.has_function(f, dependencies: dep_threads)
     c_args += [ '-DHAVE_' + f.to_upper() ]
