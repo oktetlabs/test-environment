@@ -672,6 +672,40 @@ send_response(const rpcserver *rpcs, struct rcf_comm_connection *conn,
 }
 
 /**
+ * Get some properties of common out argument.
+ *
+ * @param rpc_buf       Buffer with RPC answer.
+ * @param len           Buffer length.
+ * @param jobid         Where to save jobid property.
+ * @param unsolicited   Where to save unsolicited property.
+ *
+ * @return Status code.
+ */
+static te_errno
+get_out_arg_props(void *rpc_buf, size_t len,
+                  uint64_t *jobid, te_bool *unsolicited)
+{
+    XDR           xdr;
+    tarpc_out_arg out_arg;
+    te_errno      rc;
+
+    memset(&out_arg, 0, sizeof(out_arg));
+    memset(&xdr, 0, sizeof(xdr));
+
+    rc = rpc_xdr_inspect_result(rpc_buf, len, &out_arg);
+    if (rc == 0)
+    {
+        *jobid = out_arg.jobid;
+        *unsolicited = out_arg.unsolicited;
+    }
+
+    xdr.x_op = XDR_FREE;
+    xdr_tarpc_out_arg(&xdr, &out_arg);
+
+    return rc;
+}
+
+/**
  * Entry point for the thread forwarding answers from RPC servers
  * to RCF. The thread should not release memory allocated for
  * RPC server.
@@ -688,7 +722,6 @@ dispatch(void *arg)
         size_t     len;
         te_errno   rc;
         uint32_t   pass_time = 0;
-        tarpc_out_arg common_arg;
 
         rpc_transport_read_set_init();
 
@@ -711,6 +744,9 @@ dispatch(void *arg)
         now = time(NULL);
         for (rpcs = list; rpcs != NULL; rpcs = rpcs->next)
         {
+            uint64_t jobid;
+            te_bool  unsolicited;
+
             if (rpcs->dead || (rpcs->sent == 0 && !rpcs->async_call))
                 continue;
 
@@ -751,10 +787,10 @@ dispatch(void *arg)
                 continue;
             }
 
-            rc = rpc_xdr_inspect_result(rpc_buf, len, &common_arg);
+            rc = get_out_arg_props(rpc_buf, len, &jobid, &unsolicited);
             if (rc != 0)
             {
-                ERROR("Cannot inspect RPC result: %r");
+                ERROR("Cannot get out argument properties: %r", rc);
                 rpc_error(rpcs, TE_RC_GET_ERROR(rc));
                 continue;
             }
@@ -762,13 +798,13 @@ dispatch(void *arg)
             if (rpcs->async_call)
             {
                 if (rpcs->last_jobid != 0 &&
-                    common_arg.jobid == rpcs->last_jobid)
+                    jobid == rpcs->last_jobid)
                     rpcs->async_call = FALSE;
                 else
-                    rpcs->last_jobid = common_arg.jobid;
+                    rpcs->last_jobid = jobid;
             }
 
-            if (common_arg.unsolicited)
+            if (unsolicited)
             {
                 continue;
             }
