@@ -57,6 +57,7 @@ struct vm_drive_entry {
     char                           *name;
     te_string                       file;
     te_bool                         snapshot;
+    te_bool                         cdrom;
 };
 
 struct vm_net_entry {
@@ -324,8 +325,9 @@ vm_append_drive_cmd(te_string *cmd, vm_drive_list_t *drives)
 
     SLIST_FOREACH(drive, drives, links)
     {
-        rc = te_string_append(&drive_args, "file=%s,snapshot=%s",
+        rc = te_string_append(&drive_args, "file=%s,media=%s,snapshot=%s",
                               drive->file.ptr,
+                              drive->cdrom ? "cdrom" : "disk",
                               drive->snapshot ? "on" : "off");
         if (rc != 0)
         {
@@ -1759,6 +1761,50 @@ vm_snapshot_set(unsigned int gid, const char *oid, char *value,
 }
 
 static te_errno
+vm_drive_cdrom_get(unsigned int gid, const char *oid, char *value,
+                   const char *vm_name, const char *drive_name)
+{
+    struct vm_drive_entry *drive;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    drive = vm_drive_find(vm_find(vm_name), drive_name);
+    if (drive == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%d", drive->cdrom);
+
+    return 0;
+}
+
+static te_errno
+vm_drive_cdrom_set(unsigned int gid, const char *oid, char *value,
+                   const char *vm_name, const char *drive_name)
+{
+    struct vm_entry *vm;
+    struct vm_drive_entry *drive;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    drive = vm_drive_find(vm, drive_name);
+    if (drive == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    drive->cdrom = (atoi(value) != 0);
+
+    return 0;
+}
+
+static te_errno
 vm_pci_pt_get(unsigned int gid, const char *oid, char *value,
               const char *vm_name, const char *pci_pt_name)
 {
@@ -2128,7 +2174,10 @@ RCF_PCH_CFG_NODE_RW(node_vm_cpu_model, "model", NULL, &node_vm_cpu_num,
 
 RCF_PCH_CFG_NODE_NA(node_vm_cpu, "cpu", &node_vm_cpu_model, &node_vm_pci_pt);
 
-RCF_PCH_CFG_NODE_RW(node_vm_snapshot, "snapshot", NULL, NULL,
+RCF_PCH_CFG_NODE_RW(node_vm_drive_cdrom, "cdrom", NULL, NULL,
+                    vm_drive_cdrom_get, vm_drive_cdrom_set);
+
+RCF_PCH_CFG_NODE_RW(node_vm_snapshot, "snapshot", NULL, &node_vm_drive_cdrom,
                     vm_snapshot_get, vm_snapshot_set);
 
 RCF_PCH_CFG_NODE_RW(node_vm_file, "file", NULL, &node_vm_snapshot,

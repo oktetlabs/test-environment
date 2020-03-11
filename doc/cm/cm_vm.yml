@@ -151,6 +151,12 @@
          Default is false.
          Name: None
 
+    - oid: "/agent/vm/drive/cdrom"
+      access: read_write
+      type: integer
+      d: |
+        Is drive a disk (0, default) or cdrom (1)?
+
     - oid: "/agent/vm/kernel"
       access: read_write
       type: string
