@@ -2609,7 +2609,7 @@ parse_config(const char *fname, te_kvpair_h *expand_vars)
         if (error_code_set != 0)
                 return TE_OS_RC(TE_CS, errno);
         else
-                return TE_OS_RC(TE_CS, TE_ENODATA);
+                return TE_RC(TE_CS, TE_ENODATA);
     }
 
     fclose(f);

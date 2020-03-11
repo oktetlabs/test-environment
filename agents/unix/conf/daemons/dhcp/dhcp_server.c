@@ -1773,7 +1773,7 @@ ds_subnet_get(unsigned int gid, const char *oid, char *value,
     DHCP_SERVER_INIT_CHECK;
 
     if ((s = find_subnet(subnet)) == NULL)
-        return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     sprintf(value, "%d", s->prefix_len);
 
@@ -1973,7 +1973,7 @@ ds_lease_list(unsigned int gid, const char *oid,
             {
                 free(*list);
                 fclose(f);
-                return TE_OS_RC(TE_TA_UNIX, TE_ENOMEM);
+                return TE_RC(TE_TA_UNIX, TE_ENOMEM);
             }
             *list = tmp;
         }

@@ -351,7 +351,7 @@ sun_ioctl(char *drv, char *param, int cmd, char *value)
         {
             ERROR("Failed to get shell command execution result '%s'",
                   shell_cmd);
-            rc = TE_OS_RC(TE_TA_UNIX, TE_EFAULT);
+            rc = TE_RC(TE_TA_UNIX, TE_EFAULT);
         }
         else
         {

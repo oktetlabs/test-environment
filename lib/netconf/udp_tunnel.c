@@ -63,7 +63,7 @@ netconf_udp_tunnel_list(netconf_handle nh,
         nlist = netconf_dump_request(nh, RTM_GETLINK, AF_UNSPEC,
                                      vxlan_list_cb, NULL);
     else
-        return TE_OS_RC(TE_TA_UNIX, TE_EINVAL);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     if (nlist == NULL)
     {

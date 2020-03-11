@@ -178,7 +178,7 @@ rcf_comm_agent_init(const char *config_str,
         {
             ERROR("Failed to convert TE_TA_RCF_LISTENER='%s' into "
                   "correct socket descriptor", env_val);
-            return TE_OS_RC(TE_COMM, TE_EINVAL);
+            return TE_RC(TE_COMM, TE_EINVAL);
         }
         s = env_num;
     }

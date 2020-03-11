@@ -152,7 +152,7 @@ sap_fd_open(dlpi_data *dlpi, const char *ifname, int *fd)
     if (ifname - cp >= sizeof(dev_name))
     {
         ERROR("Interface name is too long");
-        return TE_OS_RC(TE_TAD_DLPI, TE_E2BIG);
+        return TE_RC(TE_TAD_DLPI, TE_E2BIG);
     }
     dlpi->unit = strtol(cp, &eos, 10);
     if (eos == NULL || eos == cp || *eos != '\0')
@@ -596,7 +596,7 @@ dlpi_sap_open(tad_eth_sap *sap, uint8_t *local_addr, size_t *local_addr_len)
         if (bind_ack->dl_addr_length < *local_addr_len)
         {
             ERROR("Address length is too big %d", bind_ack->dl_addr_length);
-            return TE_OS_RC(TE_TAD_DLPI, TE_E2BIG);
+            return TE_RC(TE_TAD_DLPI, TE_E2BIG);
         }
         memcpy(local_addr, ((uint8_t *)bind_ack) + bind_ack->dl_addr_offset,
                bind_ack->dl_addr_length);

@@ -204,7 +204,7 @@ iscsi_win32_write_to_device(iscsi_connection_data_t *conn)
             if (!CloseHandle(dev_handle))
             {
                 ISCSI_WIN32_REPORT_ERROR();
-                rc = TE_OS_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
+                rc = TE_RC(ISCSI_AGENT_TYPE, TE_EFAIL);
                 ERROR("Error syncing data to %s",
                       conn->device_name);
             }

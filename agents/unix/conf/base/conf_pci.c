@@ -1624,7 +1624,7 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
 	{
             ERROR("Cannot find virtio dir");
 	    if (n == 0)
-                return TE_OS_RC(TE_TA_UNIX, TE_EOK);
+                return TE_RC(TE_TA_UNIX, TE_EOK);
 
 	    return TE_OS_RC(TE_TA_UNIX, errno);
         }

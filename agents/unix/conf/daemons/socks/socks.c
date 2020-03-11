@@ -58,7 +58,7 @@
 #define SOCKS_CHECK(instance)                           \
     do {                                                \
         if (instance == NULL)                           \
-            return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);     \
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);     \
     } while (0)
 
 /* Macro used to simplify error propagation in config writing functions */

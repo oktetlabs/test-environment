@@ -603,7 +603,7 @@ sniffer_capture_file_proc(const char *fname, snif_id_l *snif,
             }
             else if (res != SNIF_PCAP_HSIZE)
             {
-                rc = TE_OS_RC(TE_LOGGER, TE_ENODATA);
+                rc = TE_RC(TE_LOGGER, TE_ENODATA);
                 ERROR("%s(): %d bytes instead of %d were read for "
                       "PCAP header", __FUNCTION__, res, SNIF_PCAP_HSIZE);
                 goto cleanup_snif_fproc;

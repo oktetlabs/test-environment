@@ -56,7 +56,7 @@
 #define OPENVPN_CHECK(instance) \
     do {                                                \
         if (instance == NULL)                           \
-            return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);     \
+            return TE_RC(TE_TA_UNIX, TE_ENOENT);     \
     } while (0)
 
 /** Format string of path to configuration file on TA */

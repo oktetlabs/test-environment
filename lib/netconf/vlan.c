@@ -262,7 +262,7 @@ netconf_vlan_get_ifname(netconf_handle nh, const char *link, unsigned int vid,
             {
                 ERROR("Interface name '%s' is too long to fit "
                       "into prodived buffer", node->data.vlan.ifname);
-                rc = TE_OS_RC(TE_TA_UNIX, TE_ESMALLBUF);
+                rc = TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
             }
             break;
         }
@@ -273,7 +273,7 @@ netconf_vlan_get_ifname(netconf_handle nh, const char *link, unsigned int vid,
     if (rc == 0 && node == NULL)
     {
         ERROR("Failed to find VLAN ID %u on %s", vid, link);
-        return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
     return rc;

@@ -82,7 +82,7 @@ rlimit_get(char *value, int resource, rlimit_val_sel val_sel)
     else if (ret >= RCF_MAX_VAL)
     {
         ERROR("%s(): not enough space to store value", __FUNCTION__);
-        return TE_OS_RC(TE_TA_UNIX, TE_ESMALLBUF);
+        return TE_RC(TE_TA_UNIX, TE_ESMALLBUF);
     }
 
     return 0;

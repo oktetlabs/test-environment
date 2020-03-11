@@ -1471,7 +1471,7 @@ write_sys_value(const char *value, const char *format, ...)
     {
         ERROR("%s: wrong length was returned by fprintf()",
               __FUNCTION__);
-        result = TE_OS_RC(TE_TA_UNIX, TE_EFAIL);
+        result = TE_RC(TE_TA_UNIX, TE_EFAIL);
     }
 
     if (fclose(f) < 0)
@@ -1535,7 +1535,7 @@ read_sys_value(char *value, size_t len, te_bool ignore_eaccess,
     {
         ERROR("%s: too much data was read from %s",
               __FUNCTION__, path);
-        result = TE_OS_RC(TE_TA_UNIX, TE_EFAIL);
+        result = TE_RC(TE_TA_UNIX, TE_EFAIL);
     }
     else
     {
@@ -2288,7 +2288,7 @@ sun_iterate_vlans(const char *ifname,
         {
             ERROR("%s() Unexpected format 'dladm' output: '%s'",
                   __FUNCTION__, f_buf);
-            rc = TE_OS_RC(TE_TA_UNIX, TE_EINVAL);
+            rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
             break;
         }
         *s++ = '\0';
@@ -2300,7 +2300,7 @@ sun_iterate_vlans(const char *ifname,
         {   
             ERROR("%s() Unexpected format 'dladm' output: '%s'", 
                   __FUNCTION__, f_buf);
-            rc = TE_OS_RC(TE_TA_UNIX, TE_EINVAL);
+            rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
             break;
         }
         *s++ = '\0';
@@ -2363,7 +2363,7 @@ sun_vlan_list(const char *ifname,
     if (vlan_info->vlans_size <= vlan_info->vlans_num)
     {
         ERROR("Too many VLANs for %s interface", ifname);
-        vlan_info->rc = TE_OS_RC(TE_TA_UNIX, TE_ENOSPC);
+        vlan_info->rc = TE_RC(TE_TA_UNIX, TE_ENOSPC);
         return 0; /* Interrupt VLAN traversal */
     }
 
@@ -2473,7 +2473,7 @@ ta_vlan_get_children(const char *devname, size_t *n_vlans, int *vlans)
             if (n_vlans_size <= *n_vlans)
             {
                 ERROR("Too many VLANs for %s interface", devname);
-                rc = TE_OS_RC(TE_TA_UNIX, TE_ENOSPC);
+                rc = TE_RC(TE_TA_UNIX, TE_ENOSPC);
                 break;
             }
 
@@ -3202,7 +3202,7 @@ iface_get_property_netconf(const char *ifname,
     {
         ERROR("%s(): Cannot get list of interfaces",
               __FUNCTION__);
-        return TE_OS_RC(TE_TA_UNIX, TE_ENOENT);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
     }
 
     for (node = list->head; node != NULL; node = node->next)
@@ -7266,7 +7266,7 @@ uname_get(unsigned int gid, const char *oid, char *value)
     }
 #else
 #warning "uname access method is not implemented"
-    return TE_OS_RC(TE_TA_UNIX, TE_EINVAL);
+    return TE_RC(TE_TA_UNIX, TE_EINVAL);
 #endif
 }
 
@@ -8443,7 +8443,7 @@ xen_path_get(unsigned int gid, char const *oid, char *value)
 #else
 #warning '/agent/xen' 'get' access method is not implemented
     ERROR("'/agent/xen' 'get' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -8523,7 +8523,7 @@ xen_path_set(unsigned int gid, char const *oid, char const *value)
     UNUSED(value);
 
     ERROR("'/agent/xen' 'set' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -8550,7 +8550,7 @@ xen_subpath_get(unsigned int gid, char const *oid, char *value)
 #else
 #warning '/agent/xen/subpath' 'get' access method is not implemented
     ERROR("'/agent/xen/subpath' 'get' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -8589,7 +8589,7 @@ xen_subpath_set(unsigned int gid, char const *oid, char const *value)
     UNUSED(value);
 
     ERROR("'/agent/xen/subpath' 'set' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -8615,7 +8615,7 @@ xen_kernel_get(unsigned int gid, char const *oid, char *value)
 #else
 #warning '/agent/xen/kernel' 'get' access method is not implemented
     ERROR("'/agent/xen/kernel' 'get' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -8698,7 +8698,7 @@ xen_kernel_set(unsigned int gid, char const *oid, char const *value)
 #warning '/agent/xen/kernel' 'set' access method is not implemented
     UNUSED(value);
     ERROR("'/agent/xen/kernel' 'set' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -8724,7 +8724,7 @@ xen_initrd_get(unsigned int gid, char const *oid, char *value)
 #else
 #warning '/agent/xen/initrd' 'get' access method is not implemented
     ERROR("'/agent/xen/initrd' 'get' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -8807,7 +8807,7 @@ xen_initrd_set(unsigned int gid, char const *oid, char const *value)
 #warning '/agent/xen/initrd' 'set' access method is not implemented
     UNUSED(value);
     ERROR("'/agent/xen/initrd' 'set' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -8833,7 +8833,7 @@ xen_dsktpl_get(unsigned int gid, char const *oid, char *value)
 #else
 #warning '/agent/xen/dsktpl' 'get' access method is not implemented
     ERROR("'/agent/xen/dsktpl' 'get' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -8916,7 +8916,7 @@ xen_dsktpl_set(unsigned int gid, char const *oid, char const *value)
 #warning '/agent/xen/dsktpl' 'set' access method is not implemented
     UNUSED(value);
     ERROR("'/agent/xen/dsktpl' 'set' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -8942,7 +8942,7 @@ xen_rcf_port_get(unsigned int gid, char const *oid, char *value)
 #else
 #warning '/agent/xen/rcf_port' 'get' access method is not implemented
     ERROR("'/agent/xen/rcf_port' 'get' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -8997,7 +8997,7 @@ xen_rcf_port_set(unsigned int gid, char const *oid, char const *value)
 #warning '/agent/xen/rcf_port' 'set' access method is not implemented
     UNUSED(value);
     ERROR("'/agent/xen/rcf_port' 'set' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -9023,7 +9023,7 @@ xen_rpc_br_get(unsigned int gid, char const *oid, char *value)
 #else
 #warning '/agent/xen/rpc_br' 'get' access method is not implemented
     ERROR("'/agent/xen/rpc_br' 'get' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -9078,7 +9078,7 @@ xen_rpc_br_set(unsigned int gid, char const *oid, char const *value)
 #warning '/agent/xen/rpc_br' 'set' access method is not implemented
     UNUSED(value);
     ERROR("'/agent/xen/rpc_br' 'set' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -9104,7 +9104,7 @@ xen_rpc_if_get(unsigned int gid, char const *oid, char *value)
 #else
 #warning '/agent/xen/rpc_if' 'get' access method is not implemented
     ERROR("'/agent/xen/rpc_if' 'get' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -9159,7 +9159,7 @@ xen_rpc_if_set(unsigned int gid, char const *oid, char const *value)
 #warning '/agent/xen/rpc_if' 'set' access method is not implemented
     UNUSED(value);
     ERROR("'/agent/xen/rpc_if' 'set' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -9187,7 +9187,7 @@ xen_base_mac_addr_get(unsigned int gid, char const *oid, char *value)
 access method is not implemented
     ERROR("'/agent/xen/base_mac_addr' 'get' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -9244,7 +9244,7 @@ access method is not implemented
     UNUSED(value);
     ERROR("'/agent/xen/base_mac_addr' 'set' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -9327,7 +9327,7 @@ xen_accel_get(unsigned int gid, char const *oid, char *value)
 access method is not implemented
     ERROR("'/agent/xen/accel' 'get' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -9400,7 +9400,7 @@ access method is not implemented
     UNUSED(value);
     ERROR("'/agent/xen/accel' 'set' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -9505,7 +9505,7 @@ init method is not implemented
     UNUSED(value);
     ERROR("'/agent/xen/init' 'set' "
           "init method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -9542,7 +9542,7 @@ xen_interface_get(unsigned int gid, char const *oid, char *value,
 access method is not implemented
     ERROR("'/agent/xen/interface' 'get' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -9594,7 +9594,7 @@ xen_interface_set(unsigned int gid, char const *oid, char const *value,
 access method is not implemented
     ERROR("'/agent/xen/interface' 'set' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -9679,7 +9679,7 @@ xen_interface_add(unsigned int gid, char const *oid, char const *value,
 access method is not implemented
     ERROR("'/agent/xen/interface' 'add' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -9728,7 +9728,7 @@ xen_interface_del(unsigned int gid, char const *oid, char const *xen,
 access method is not implemented
     ERROR("'/agent/xen/interface' 'del' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -9802,7 +9802,7 @@ xen_interface_list(unsigned int gid, char const *oid,
 access method is not implemented
     ERROR("'/agent/xen/interface' 'list' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -9840,7 +9840,7 @@ xen_interface_bridge_get(unsigned int gid, char const *oid, char *value,
 access method is not implemented
     ERROR("'/agent/xen/interface/bridge' 'get' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -9895,7 +9895,7 @@ access method is not implemented
     UNUSED(interface);
     ERROR("'/agent/xen/interface/bridge' 'set' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -9931,7 +9931,7 @@ dom_u_get(unsigned int gid, char const *oid, char *value,
 #else
 #warning '/agent/xen/dom_u' 'get' access method is not implemented
     ERROR("'/agent/xen/dom_u' 'get' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -10061,7 +10061,7 @@ cleanup0:
 #else
 #warning '/agent/xen/dom_u' 'set' access method is not implemented
     ERROR("'/agent/xen/dom_u' 'set' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -10155,7 +10155,7 @@ dom_u_add(unsigned int gid, char const *oid, char const *value,
 #else
 #warning '/agent/xen/dom_u' 'add' access method is not implemented
     ERROR("'/agent/xen/dom_u' 'add' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -10201,7 +10201,7 @@ dom_u_del(unsigned int gid, char const *oid, char const *xen,
 #else
 #warning '/agent/xen/dom_u' 'del' access method is not implemented
     ERROR("'/agent/xen/dom_u' 'del' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -10273,7 +10273,7 @@ dom_u_list(unsigned int gid, char const *oid,
 #else
 #warning '/agent/xen/dom_u' 'list' access method is not implemented
     ERROR("'/agent/xen/dom_u' 'list' access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -10313,7 +10313,7 @@ dom_u_status_get(unsigned int gid, char const *oid, char *value,
 #warning '/agent/xen/dom_u/status' 'get' access method is not implemented
      ERROR("'/agent/xen/dom_u/status' 'get' access method is not " \
            "implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -10596,7 +10596,7 @@ cleanup0: /** This label is used in case of an error */
 #warning '/agent/xen/dom_u_status' 'set' access method is not implemented
     ERROR("'/agent/xen/dom_u_status' 'set' access method is not " \
           "implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -10632,7 +10632,7 @@ dom_u_memory_get(unsigned int gid, char const *oid, char *value,
 #warning '/agent/xen/dom_u/memory' 'get' access method is not implemented
      ERROR("'/agent/xen/dom_u/memory' 'get' access method is not " \
            "implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -10675,7 +10675,7 @@ dom_u_memory_set(unsigned int gid, char const *oid, char const *value,
 #warning '/agent/xen/dom_u/memory' 'get' access method is not implemented
      ERROR("'/agent/xen/dom_u/memory' 'get' access method is not " \
            "implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -10711,7 +10711,7 @@ dom_u_ip_addr_get(unsigned int gid, char const *oid, char *value,
 #warning '/agent/xen/dom_u/ip_addr' 'get' access method is not implemented
     ERROR("'/agent/xen/dom_u/ip_addr' 'get' access method is not " \
           "implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -10758,7 +10758,7 @@ dom_u_ip_addr_set(unsigned int gid, char const *oid, char const *value,
 #warning '/agent/xen/dom_u/ip_addr' 'set' access method is not implemented
     ERROR("'/agent/xen/dom_u/ip_addr' 'set' access method is not " \
           "implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -10794,7 +10794,7 @@ dom_u_mac_addr_get(unsigned int gid, char const *oid, char *value,
 #warning '/agent/xen/dom_u/mac_addr' 'get' access method is not implemented
     ERROR("'/agent/xen/dom_u/mac_addr' 'get' access method is not " \
           "implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -10843,7 +10843,7 @@ dom_u_mac_addr_set(unsigned int gid, char const *oid, char const *value,
 #warning '/agent/xen/dom_u/mac_addr' 'set' access method is not implemented
     ERROR("'/agent/xen/dom_u/mac_addr' 'set' access method is not " \
           "implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -10882,7 +10882,7 @@ dom_u_bridge_get(unsigned int gid, char const *oid,
 #warning '/agent/xen/dom_u/bridge' 'get' access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge' 'get' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -10926,7 +10926,7 @@ dom_u_bridge_set(unsigned int gid, char const *oid,
 #warning '/agent/xen/dom_u/bridge' 'set' access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge' 'set' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -10996,7 +10996,7 @@ dom_u_bridge_add(unsigned int gid, char const *oid,
 #warning '/agent/xen/dom_u/bridge' 'add' access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge' 'add' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -11036,7 +11036,7 @@ dom_u_bridge_del(unsigned int gid, char const *oid,
 #warning '/agent/xen/dom_u/bridge' 'del' access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge' 'del' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -11114,7 +11114,7 @@ dom_u_bridge_list(unsigned int gid, char const *oid,
 #warning '/agent/xen/dom_u/bridge' 'list' access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge' 'list' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -11154,7 +11154,7 @@ dom_u_bridge_ip_addr_get(unsigned int gid, char const *oid,
 access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge/ip_addr' 'get' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -11205,7 +11205,7 @@ dom_u_bridge_ip_addr_set(unsigned int gid, char const *oid,
 access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge/ip_addr' 'set' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -11245,7 +11245,7 @@ dom_u_bridge_mac_addr_get(unsigned int gid, char const *oid,
 access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge/mac_addr' 'get' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -11296,7 +11296,7 @@ dom_u_bridge_mac_addr_set(unsigned int gid, char const *oid,
 access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge/mac_addr' 'set' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -11336,7 +11336,7 @@ dom_u_bridge_accel_get(unsigned int gid, char const *oid,
 access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge/accel' 'get' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -11376,7 +11376,7 @@ dom_u_bridge_accel_set(unsigned int gid, char const *oid,
 access method is not implemented
     ERROR("'/agent/xen/dom_u/bridge/accel' 'set' "
           "access method is not implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -11420,7 +11420,7 @@ dom_u_migrate_set(unsigned int gid, char const *oid, char const *value,
 #warning '/agent/xen/dom_u/migrate' 'set' access method is not implemented
     ERROR("'/agent/xen/dom_u/migrate' 'set' access method is not " \
           "implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -11457,7 +11457,7 @@ dom_u_migrate_kind_get(unsigned int gid, char const *oid, char *value,
          implemented
     ERROR("'/agent/xen/dom_u/migrate/kind' 'get' access method is not " \
           "implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }
 
@@ -11495,6 +11495,6 @@ dom_u_migrate_kind_set(unsigned int gid, char const *oid,
          implemented
     ERROR("'/agent/xen/dom_u/migrate/kind' 'set' access method is not " \
           "implemented");
-    return TE_OS_RC(TE_TA_UNIX, TE_ENOSYS);
+    return TE_RC(TE_TA_UNIX, TE_ENOSYS);
 #endif
 }

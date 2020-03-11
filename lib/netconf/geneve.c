@@ -136,7 +136,7 @@ netconf_geneve_add(netconf_handle nh, const netconf_geneve *geneve)
 #else
     UNUSED(nh);
     UNUSED(geneve);
-    return TE_OS_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
+    return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 #endif
 }
 
@@ -156,7 +156,7 @@ netconf_geneve_list(netconf_handle nh,
 
     *list = TE_ALLOC(sizeof(char));
     if (*list == NULL)
-        return TE_OS_RC(TE_TA_UNIX, TE_ENOMEM);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     **list = '\0';
 
     return 0;

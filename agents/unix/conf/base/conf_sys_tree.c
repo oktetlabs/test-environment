@@ -746,7 +746,7 @@ register_sys_opts(const char *father, const char *path)
         if (obj == NULL)
         {
             ERROR("%s: out of memory", __FUNCTION__);
-            rc = TE_OS_RC(TE_TA_UNIX, TE_ENOMEM);
+            rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
             goto cleanup;
         }
 
