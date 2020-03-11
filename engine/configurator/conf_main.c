@@ -1953,6 +1953,7 @@ static te_errno
 check_agents(void)
 {
     te_errno rc = 0;
+    te_errno check_rc = 0;
     char     agents[RCF_MAX_VAL];
     char     oid[CFG_OID_MAX];
     size_t   len = sizeof(agents);
@@ -1969,16 +1970,22 @@ check_agents(void)
 
     for (i = 0; i < len; i += strlen(&agents[i]) + 1)
     {
-        rc = rcf_check_agent(&agents[i]);
+        check_rc = rcf_check_agent(&agents[i]);
 
-        if (rc == 0)
+        if (check_rc == 0)
             continue;
 
-        if (TE_RC_GET_ERROR(rc) == TE_ETADEAD)
+        if (TE_RC_GET_ERROR(check_rc) == TE_EIPC)
+            return check_rc;
+
+        if (TE_RC_GET_ERROR(check_rc) == TE_ETADEAD)
         {
             rc = reanimate_vm_agent(&agents[i]);
             if (rc != 0)
+            {
+                ERROR("Failed to reanimate TA %s: %r", &agents[i], rc);
                 return TE_RC(TE_CS, TE_ETADEAD);
+            }
         }
 
         te_strlcpy(oid + offset, &agents[i], sizeof(oid) - offset);
@@ -1986,11 +1993,12 @@ check_agents(void)
         if (rc != 0)
         {
             ERROR("Failed to sync subtree for TA %s: %r", &agents[i], rc);
-            break;
+            /* Can be either TE_ETAREBOOTED or TE_ETADEAD */
+            return TE_RC(TE_CS, TE_RC_GET_ERROR(check_rc));
         }
     }
 
-    return rc;
+    return 0;
 }
 
 /**
