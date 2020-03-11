@@ -124,7 +124,7 @@ main(int argc, char *argv[])
     CHECK_RPC_ERRNO(pco_tst, RPC_ECONNREFUSED, "connect() returns -1, but");
 
     SLEEP(3);
-    CHECK_READABILITY(pco_iut, iut_s6, FALSE);
+    RPC_CHECK_READABILITY(pco_iut, iut_s6, FALSE);
 
     /* 
      * Check that it is still possible to open 
@@ -133,7 +133,7 @@ main(int argc, char *argv[])
     rpc_connect(pco_tst, tst_s6, iut_addr6);
 
     /* Open a new connection */
-    CHECK_READABILITY(pco_iut, iut_s6, TRUE);
+    RPC_CHECK_READABILITY(pco_iut, iut_s6, TRUE);
     conn_s = rpc_accept(pco_iut, iut_s6, NULL, NULL);
     RPC_CLOSE(pco_iut, conn_s);
 
@@ -179,7 +179,7 @@ main(int argc, char *argv[])
     rpc_connect(pco_tst, tst_s4, iut_addr4);
 
     /* Open a new connection */
-    CHECK_READABILITY(pco_iut, iut_s6, TRUE);
+    RPC_CHECK_READABILITY(pco_iut, iut_s6, TRUE);
     conn_s = rpc_accept(pco_iut, iut_s6, NULL, NULL);
     RPC_CLOSE(pco_iut, conn_s);
 
@@ -190,7 +190,7 @@ main(int argc, char *argv[])
     rpc_connect(pco_tst, tst_s6, iut_addr6);
 
     /* Open a new connection */
-    CHECK_READABILITY(pco_iut, iut_s6, TRUE);
+    RPC_CHECK_READABILITY(pco_iut, iut_s6, TRUE);
     conn_s = rpc_accept(pco_iut, iut_s6, NULL, NULL);
     RPC_CLOSE(pco_iut, conn_s);
 

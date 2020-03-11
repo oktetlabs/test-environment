@@ -334,7 +334,7 @@
  * @note In case of failure it calls TEST_FAIL macro, otherwise it
  * gets back just after the checking
  */
-#define GET_READABILITY(answer_, rpcs_, sockd_, timeout_) \
+#define RPC_GET_READABILITY(answer_, rpcs_, sockd_, timeout_) \
     do {                                                            \
         if (rpc_get_rw_ability(&(answer_), rpcs_, sockd_, timeout_, \
                                "READ") != 0)                        \
@@ -353,7 +353,7 @@
  * @note In case of failure it calls TEST_FAIL macro, otherwise it
  * gets back just after the checking
  */
-#define GET_WRITABILITY(answer_, rpcs_, sockd_, timeout_) \
+#define RPC_GET_WRITABILITY(answer_, rpcs_, sockd_, timeout_) \
     do {                                                             \
         if (rpc_get_rw_ability(&(answer_), rpcs_, sockd_, timeout_,  \
                                "WRITE") != 0)                        \
@@ -371,11 +371,11 @@
  * @note In case of failure it calls TEST_FAIL macro, otherwise it
  * gets back just after the checking
  */
-#define CHECK_READABILITY(rpcs_, sockd_, should_be_readable_) \
+#define RPC_CHECK_READABILITY(rpcs_, sockd_, should_be_readable_) \
     do {                                                                \
         te_bool         answer_ = !(should_be_readable_);               \
                                                                         \
-        GET_READABILITY(answer_, rpcs_, sockd_, 1);                     \
+        RPC_GET_READABILITY(answer_, rpcs_, sockd_, 1);                 \
         if (should_be_readable_ == TRUE && answer_ == FALSE)            \
         {                                                               \
             TEST_VERDICT("Socket '" #sockd_ "' is expected to be "         \
@@ -399,11 +399,11 @@
  * @note In case of failure it calls TEST_FAIL macro, otherwise it
  * gets back just after the checking
  */
-#define CHECK_WRITABILITY(rpcs_, sockd_, should_be_writable_) \
+#define RPC_CHECK_WRITABILITY(rpcs_, sockd_, should_be_writable_) \
     do {                                                                \
         te_bool         answer_;                                        \
                                                                         \
-        GET_WRITABILITY(answer_, rpcs_, sockd_, 1);                     \
+        RPC_GET_WRITABILITY(answer_, rpcs_, sockd_, 1);                 \
         if (should_be_writable_ == TRUE && answer_ == FALSE)            \
         {                                                               \
             TEST_FAIL("Socket '" #sockd_ "' is expected to be "         \

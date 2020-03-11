@@ -176,7 +176,7 @@ main(int argc, char *argv[])
 
     /* Receive data. */
     te_bool sock_ready_for_read;
-    GET_READABILITY(sock_ready_for_read, iut_pco, iut_tcp_sock, 1);
+    RPC_GET_READABILITY(sock_ready_for_read, iut_pco, iut_tcp_sock, 1);
 
     if (checksum_correct)
     {
