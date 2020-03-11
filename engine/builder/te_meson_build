@@ -137,6 +137,8 @@ process_agent_unix_parms() {
             --with-cfg-unix-daemons=*)
                 daemons="${p#--with-cfg-unix-daemons=}"
                 ;;
+            --with-8021x)
+                conf="${conf} 8021x" ;;
             --with-aggr)
                 conf="${conf} aggr" ;;
             --with-bpf)
@@ -150,6 +152,8 @@ process_agent_unix_parms() {
                 conf="${conf} ntpd" ;;
             --with-ovs)
                 conf="${conf} ovs" ;;
+            --with-pam)
+                conf="${conf} pam" ;;
             --enable-pci)
                 conf="${conf} pci" ;;
             --with-pcre)
@@ -172,6 +176,12 @@ process_agent_unix_parms() {
             --with-tirpc)
                 # added automatically
                 ;;
+            --with-tr069)
+                conf="${conf} tr069" ;;
+            --with-upnp_cp)
+                conf="${conf} upnp_cp" ;;
+            --with-vcm)
+                conf="${conf} vcm" ;;
             --without-static-libc)
                 # default, in fact --with-static-libc is not supported yet
                 ;;
