@@ -180,6 +180,17 @@ process_agent_unix_parms() {
     done
 }
 
+make_meson_opt_array() {
+    local option="$1"; shift
+    local o
+    local vals=""
+
+    for o in ${option} ; do
+        test -z "${vals}" && vals=${o} || vals+=",${o}"
+    done
+    echo ${vals}
+}
+
 process_agent_unix() {
     local ta="$1"; shift
     local pfx="$1"; shift
@@ -198,12 +209,12 @@ process_agent_unix() {
     eval ${parms_var}=\"\${parms}\"
 
     test -z "${conf}" ||
-        meson_args="${meson_args} -Dagent-unix-conf=\"${conf}\""
+        meson_args="${meson_args} -Dagent-unix-conf=\"$(make_meson_opt_array "${conf}")\""
     test -z "${daemons}" ||
-        meson_args="${meson_args} -Dagent-unix-daemons=\"${daemons}\""
+        meson_args="${meson_args} -Dagent-unix-daemons=\"$(make_meson_opt_array "${daemons}")\""
 
     test -z "${!libs_var}" || {
-        meson_args="${meson_args} -Dagent-unix-libs=\"${!libs_var}\""
+        meson_args="${meson_args} -Dagent-unix-libs=\"$(make_meson_opt_array "${!libs_var}")\""
         eval ${libs_var}=
     }
 }

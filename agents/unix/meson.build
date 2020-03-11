@@ -36,7 +36,7 @@ te_libs = [
     'logger_core',
 ]
 
-foreach extra_lib : get_option('agent-unix-libs').split()
+foreach extra_lib : get_option('agent-unix-libs')
     if not te_libs.contains(extra_lib)
         te_libs += [ extra_lib ]
     endif

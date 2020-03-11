@@ -67,13 +67,18 @@ option('agentsdir', type: 'string', value: '',
 
 option('agent-unix-name', type: 'string', value: '',
        description: 'Unix Test Agent name')
-option('agent-unix-conf', type: 'string', value: '',
+option('agent-unix-conf', type: 'array', value: [],
+       choices: ['8021x', 'aggr', 'bpf', 'iptables', 'ntpd', 'ovs', 'pam', 'pci', 'serial',
+                 'serial-parser', 'sfptpd', 'sniffers', 'tc', 'tr069', 'upnp_cp', 'vcm'],
        description: 'Unix Test Agent configuration support')
-option('agent-unix-daemons', type: 'string', value: '',
+option('agent-unix-daemons', type: 'array', value: [],
+       choices: ['dhcp', 'dns', 'echo', 'ftp', 'isc-dhcp-server', 'l2tp', 'named', 'nginx', 'openvpn',
+                 'pppoe-client', 'pppoe-server', 'radius', 'radvd', 'rsh', 'smtp', 'socks', 'telnet',
+                 'tftp', 'todudp', 'vncserver', 'vtund', 'Xvfb'],
        description: 'Unix Test Agent daemons configuration support')
 option('agent-unix-symtbl', type: 'boolean', value: true,
        description: 'Generate and include symbol table in Unix agent')
-option('agent-unix-libs', type: 'string', value: '',
+option('agent-unix-libs', type: 'array', value: [],
        description: 'Extra libraries to be linked to Unix agent')
 
 option('rgt-log-filter', type: 'boolean', value: true,

@@ -156,7 +156,7 @@ if conf.contains('bpf')
     endif
 endif
 
-unix_daemons = get_option('agent-unix-daemons').split()
+unix_daemons = get_option('agent-unix-daemons')
 if unix_daemons.length() != 0
     c_args += [ '-DCFG_UNIX_DAEMONS' ]
     includes += include_directories('daemons')
