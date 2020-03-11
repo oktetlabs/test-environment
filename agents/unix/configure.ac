@@ -250,9 +250,9 @@ AC_ARG_WITH([tc],
 AM_CONDITIONAL([CFG_UNIX_TC], test x"$ac_cv_with_tc" != xno)
 
 if test x"$ac_cv_with_tc" != xno; then
-    NL_LIBS="-lnl-3 -lnl-route-3"
-    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_TC"
-    EXTRA_LDADD="$EXTRA_LDADD -Wl,-whole-archive ${NL_LIBS} -Wl,-no-whole-archive"
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DWITH_TC -I/usr/include/libnl3/"
+    LIBS="$LIBS -lnl-3 -lnl-route-3"
+    DYNAMIC_LIBS="${DYNAMIC_LIBS} -lnl-3 -lnl-route-3"
 fi
 
 AC_ARG_WITH([ovs],
