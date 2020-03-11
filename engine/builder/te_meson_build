@@ -161,6 +161,8 @@ process_agent_unix_parms() {
                 ;;
             --with-serialparse)
                 conf="${conf} serial-parser" ;;
+            --with-serial)
+                conf="${conf} serial" ;;
             --with-sfptpd)
                 conf="${conf} sfptpd" ;;
             --with-sniffers=yes|--with-sniffers)
