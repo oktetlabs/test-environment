@@ -368,8 +368,10 @@ get_node(const char *cpu_name, unsigned long *node_id)
     n_nodes = scandir(buf.ptr, &names, filter_node, NULL);
     if (n_nodes < 0)
     {
-        ERROR("Could not get CPU NUMA node, rc=%d", n_nodes);
-        rc = TE_OS_RC(TE_TA_UNIX, n_nodes);
+        int error = errno;
+
+        ERROR("Could not get CPU NUMA node, rc=%d", error);
+        rc = TE_OS_RC(TE_TA_UNIX, error);
         goto out;
     }
 

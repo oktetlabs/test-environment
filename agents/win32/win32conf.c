@@ -4205,7 +4205,7 @@ phy_autoneg_get(unsigned int gid, const char *oid, char *value,
         else 
         {
             ERROR("failed to get autoneg state");
-            return TE_OS_RC(TE_TA_WIN32, rc);
+            return TE_RC(TE_TA_WIN32, rc);
         } 
     }
     snprintf(value, RCF_MAX_VAL, "%d", state);
@@ -4334,7 +4334,7 @@ phy_duplex_get(unsigned int gid, const char *oid, char *value,
         else
         {
             ERROR("failed to get duplex state");
-            return TE_OS_RC(TE_TA_WIN32, rc);
+            return TE_RC(TE_TA_WIN32, rc);
         }
     }
     sprintf(value, "not supported");
@@ -4460,7 +4460,7 @@ phy_commit(unsigned int gid, const cfg_oid *p_oid)
         if ((rc = phy_parameters_set(ifname)) != 0)
         {
             ERROR("failed to set phy parameters");
-            return TE_OS_RC(TE_TA_WIN32, rc);
+            return TE_RC(TE_TA_WIN32, rc);
         }
     }
     else

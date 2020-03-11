@@ -722,7 +722,7 @@ register_sys_opts(const char *father, const char *path)
 
         ERROR("%s: failed to scan %s directory, errno %r",
               __FUNCTION__, path, rc);
-        return TE_OS_RC(TE_TA_UNIX, rc);
+        return TE_RC(TE_TA_UNIX, rc);
     }
 
     for (i = 0; i < n; i++)

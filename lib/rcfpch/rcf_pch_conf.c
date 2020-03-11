@@ -1422,7 +1422,7 @@ ta_rsrc_delete_lock(const char *name)
 
     if ((rc = unlink(fname)) != 0)
         ERROR("Failed to delete lock %s: %r", fname,
-              TE_OS_RC(TE_RCF_PCH, rc));
+              TE_OS_RC(TE_RCF_PCH, errno));
 }
 #endif /* !__CYGWIN__ */
 

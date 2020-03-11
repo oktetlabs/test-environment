@@ -235,7 +235,7 @@ stop_acse(void)
     if ((r = pthread_join(acse_thread, &retval)) != 0)
     {
         ERROR("Join to ACSE thread fails: %s", strerror(r));
-        return TE_OS_RC(TE_ACSE, te_rc_os2te(r));
+        return TE_OS_RC(TE_ACSE, r);
     }
     RING("STOP ACSE: thread finished, clear EPC user, close pipes.");
     acse_epc_user_init(NULL);

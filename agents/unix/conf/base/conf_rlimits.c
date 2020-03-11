@@ -64,7 +64,7 @@ rlimit_get(char *value, int resource, rlimit_val_sel val_sel)
     {
         rc = te_rc_os2te(errno);
         ERROR("%s(): getrlimit() failed with errno %r", __FUNCTION__, rc);
-        return TE_OS_RC(TE_TA_UNIX, rc);
+        return TE_RC(TE_TA_UNIX, rc);
     }
 
     if (val_sel == RLIMIT_VAL_CUR)
@@ -77,7 +77,7 @@ rlimit_get(char *value, int resource, rlimit_val_sel val_sel)
     {
         rc = te_rc_os2te(errno);
         ERROR("%s(): snprintf() failed with errno %r", __FUNCTION__, rc);
-        return TE_OS_RC(TE_TA_UNIX, rc);
+        return TE_RC(TE_TA_UNIX, rc);
     }
     else if (ret >= RCF_MAX_VAL)
     {
@@ -108,14 +108,14 @@ rlimit_set(const char *value, int resource, rlimit_val_sel val_sel)
     if (rc != 0)
     {
         ERROR("%s(): failed to parse value '%s'", __FUNCTION__, value);
-        return TE_OS_RC(TE_TA_UNIX, rc);
+        return TE_RC(TE_TA_UNIX, rc);
     }
 
     if (getrlimit(resource, &rlim) < 0)
     {
         rc = te_rc_os2te(errno);
         ERROR("%s(): getrlimit() failed with errno %r", __FUNCTION__, rc);
-        return TE_OS_RC(TE_TA_UNIX, rc);
+        return TE_RC(TE_TA_UNIX, rc);
     }
 
     if (val_sel == RLIMIT_VAL_CUR)
@@ -138,7 +138,7 @@ rlimit_set(const char *value, int resource, rlimit_val_sel val_sel)
     {
         rc = te_rc_os2te(errno);
         ERROR("%s(): setrlimit() failed with errno %r", __FUNCTION__, rc);
-        return TE_OS_RC(TE_TA_UNIX, rc);
+        return TE_RC(TE_TA_UNIX, rc);
     }
 
     return 0;
