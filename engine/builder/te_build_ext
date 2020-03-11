@@ -20,13 +20,14 @@ install_extension_parts () {
 
     if test -n "$objlist"; then
         (
-            mkdir -p "$destdir"
             te_eval_or_ssh "$platform" \
-                           "cd '$srcdir';
+                           "mkdir -p '$destdir';
+                            cd '$srcdir';
                             export EXT_SOURCES=\"\$PWD\";
                             test -n '$builddir' && cd '$builddir';
-                            cp -a $objlist '$destdir'"
-            find -H "$destdir" -type l | xargs ${SCRIPT_DIR}/te_fixlink "$PWD" "$destdir"
+                            cp -a $objlist '$destdir';
+                            find -H \"$destdir\" -type l | \
+                            xargs ${SCRIPT_DIR}/te_fixlink \"$PWD\" \"$destdir\";"
         )
     fi
 }
@@ -45,6 +46,7 @@ declare expbin=
 declare tatype=
 declare envvars=
 declare tce=
+declare build_meson=false
 
 for arg; do
     case "$arg" in
@@ -90,6 +92,9 @@ for arg; do
         --tce)
             tce=1
             ;;
+        --build-meson)
+            build_meson=true
+            ;;
         *)
             echo "Invalid option '$arg'" >&2
             exit 1
@@ -119,7 +124,14 @@ for v in $envvars; do
 done
 
 (
-    cd "$srcdir"; eval "export EXT_BUILDDIR=\"${builddir:-.}\"; $prepare"
+    if test -n "${prepare}" ; then
+        if "${build_meson}" ; then
+                echo "ERROR: source preparation scripts are not supported with meson build" >&2
+                exit 1
+        else
+            cd "$srcdir"; eval "export EXT_BUILDDIR=\"${builddir:-.}\"; $prepare"
+        fi
+    fi
 ) || exit 1
 
 (
