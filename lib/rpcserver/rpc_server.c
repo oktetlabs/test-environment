@@ -204,7 +204,7 @@ te_rpc_error_set(te_errno err, const char *msg, ...)
         {
             free(out_common->err_str.err_str_val);
             out_common->err_str.err_str_val = s;
-            out_common->err_str.err_str_len = strlen(s);
+            out_common->err_str.err_str_len = strlen(s) + 1;
         }
         else
         {
