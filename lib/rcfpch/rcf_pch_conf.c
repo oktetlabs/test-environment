@@ -70,7 +70,7 @@
 /** Structure for temporary storing of instances/objects identifiers */
 typedef struct olist {
     struct olist *next;             /**< Pointer to the next element */
-    char          oid[RCF_MAX_ID];  /**< Element OID */
+    char          oid[CFG_OID_MAX]; /**< Element OID */
 } olist;
 
 /** Postponed configuration commit operation */
@@ -556,7 +556,7 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
                  size_t buflen, size_t answer_plen, const char *oid)
 {
     int    rc;
-    char   copy[RCF_MAX_ID];
+    char   copy[CFG_OID_MAX];
     char  *tmp;
     olist *list = NULL;
 
