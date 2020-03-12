@@ -370,6 +370,7 @@ static upnp_state_variable_property_t variable_property[] = {
     [VPROPERTY_STEP] = { "Step", tapi_upnp_get_state_variable_step,
                                  tapi_upnp_set_state_variable_step },
     [VPROPERTY_ALLOWED_VALUES] = { "Allowed Values",
+                        (const char *(*)(const tapi_upnp_state_variable *))
                         tapi_upnp_get_state_variable_allowed_to_string,
                         tapi_upnp_set_state_variable_allowed }
 };
