@@ -11,6 +11,10 @@ if get_option('libs').split().contains('netconf')
     deps += [ dep_lib_static_netconf ]
 endif
 
+if get_option('sniffers')
+    c_args += [ '-DWITH_SNIFFERS' ]
+endif
+
 f = 'pthread_atfork'
 if dep_threads.found() and cc.has_function(f, dependencies: dep_threads)
     c_args += [ '-DHAVE_' + f.to_upper() ]

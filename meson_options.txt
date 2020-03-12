@@ -25,6 +25,9 @@ option('trc', type: 'boolean', value: true,
 option('tr069', type: 'boolean', value: false,
        description: 'TR-069 support')
 
+option('sniffers', type: 'boolean', value: true,
+       description: 'Enable the sniffer framework on agent (and rcfpch library)')
+
 option('rpcdefs', type: 'string', value: '',
        description: 'List of extra RPC definitions')
 
@@ -69,7 +72,7 @@ option('agent-unix-name', type: 'string', value: '',
        description: 'Unix Test Agent name')
 option('agent-unix-conf', type: 'array', value: [],
        choices: ['8021x', 'aggr', 'bpf', 'iptables', 'ntpd', 'ovs', 'pam', 'pci', 'serial',
-                 'serial-parser', 'sfptpd', 'sniffers', 'tc', 'tr069', 'upnp_cp', 'vcm'],
+                 'serial-parser', 'sfptpd', 'tc', 'tr069', 'upnp_cp', 'vcm'],
        description: 'Unix Test Agent configuration support')
 option('agent-unix-daemons', type: 'array', value: [],
        choices: ['dhcp', 'dns', 'echo', 'ftp', 'isc-dhcp-server', 'l2tp', 'named', 'nginx', 'openvpn',

@@ -49,6 +49,37 @@ process_parameters() {
         warning "${msg} LIBS not supported: ${!libs_var}"
 }
 
+set_sniffers() {
+    local val="${1}"; shift
+
+    if test -n "${use_sniffers}" -a "${use_sniffers}" != "${val}" ; then
+        error "The passed parameters --with/without-sniffers are inconsistent"
+    else
+        use_sniffers="${val}"
+    fi
+}
+
+process_library_rcfpch() {
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local parms=
+    local p
+
+    for p in ${!parms_var} ; do
+        case ${p} in
+            --with-sniffers=yes|--with-sniffers)
+                set_sniffers true
+                ;;
+            --with-sniffers=no|--without-sniffers)
+                set_sniffers false
+                ;;
+            *)
+                parms="${parms}${parms:+ }${p}" ;;
+        esac
+    done
+    eval ${parms_var}=\"${parms}\"
+}
+
 process_library_rpcxdr() {
     local pfx="$1"; shift
     local parms_var="${pfx}PARMS"
@@ -119,6 +150,7 @@ process_library() {
     local msg="Platform library ${p}/${l}"
 
     case "${l}" in
+        rcfpch)     process_library_rcfpch "${pfx}" ;;
         rpcxdr)     process_library_rpcxdr "${pfx}" ;;
         tad)        process_library_tad "${pfx}" ;;
         tapi_tad)   process_library_tapi_tad "${pfx}" ;;
@@ -170,7 +202,11 @@ process_agent_unix_parms() {
             --with-sfptpd)
                 conf="${conf} sfptpd" ;;
             --with-sniffers=yes|--with-sniffers)
-                conf="${conf} sniffers" ;;
+                set_sniffers true
+                ;;
+            --with-sniffers=no|--without-sniffers)
+                set_sniffers false
+                ;;
             --with-tc)
                 conf="${conf} tc" ;;
             --with-tirpc)
@@ -259,6 +295,7 @@ process_platform() {
     local tad_protocols="arp atm bridge cli dhcp eth flow forw geneve gre igmp ipstack iscsi pcap ppp rte_mbuf snmp socket vxlan"
     local tad_with_protocols=
     local tad_without_protocols=
+    local use_sniffers=
 
     local parms_var="${p}_PARMS"
     if test -n "${!parms_var}" ; then
@@ -310,6 +347,8 @@ process_platform() {
         local platform="TE_BS_TA_${ta}_PLATFORM"
         test "${!platform}" != "${p}" || process_agent "${p}" "${ta}"
     done
+    test -z "${use_sniffers}" ||
+        meson_args="${meson_args} -Dsniffers=\"${use_sniffers}\""
     test -z "${build_agents}" ||
         meson_args="${meson_args} -Dagents=\"${build_agents}\""
 }
