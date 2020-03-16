@@ -28,6 +28,15 @@ tapi_job_opt_create_uint(const void *value, te_vec *args)
 }
 
 te_errno
+tapi_job_opt_create_uint_omittable(const void *value, te_vec *args)
+{
+    if (*(const unsigned int *)value == TAPI_JOB_OPT_OMIT_UINT)
+        return TE_ENOENT;
+
+    return tapi_job_opt_create_uint(value, args);
+}
+
+te_errno
 tapi_job_opt_create_string(const void *value, te_vec *args)
 {
     const char *str = *(const char *const *)value;

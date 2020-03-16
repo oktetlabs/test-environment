@@ -107,6 +107,9 @@ extern te_errno tapi_job_opt_build_args(const char *path,
 /** value type: `unsigned int` */
 te_errno tapi_job_opt_create_uint(const void *value, te_vec *args);
 
+/** value type: `unsigned int`, may be omitted */
+te_errno tapi_job_opt_create_uint_omittable(const void *value, te_vec *args);
+
 /** value type: `char *` */
 te_errno tapi_job_opt_create_string(const void *value, te_vec *args);
 
@@ -142,6 +145,29 @@ te_errno tapi_job_opt_create_sockaddr_ptr(const void *value, te_vec *args);
 #define TAPI_JOB_OPT_UINT(_prefix, _concat_prefix, _suffix, _struct, _field) \
     { tapi_job_opt_create_uint, _prefix, _concat_prefix, _suffix, \
       offsetof(_struct, _field) }
+
+/**
+ * Similar to @ref TAPI_JOB_OPT_UINT, but the argument will not be included in
+ * command line options if argument's value is equal to
+ * @ref TAPI_JOB_OPT_OMIT_UINT. This implies that the real argument's value
+ * cannot be equal to the value of @ref TAPI_JOB_OPT_OMIT_UINT.
+ *
+ * @param[in]     _prefix           Argument prefix.
+ * @param[in]     _concat_prefix    Concatenate prefix with argument if @c TRUE
+ * @param[in]     _suffix           Argument suffix.
+ * @param[in]     _struct           Option struct.
+ * @param[in]     _field            Field name of the uint in option struct.
+ */
+#define TAPI_JOB_OPT_UINT_OMITTABLE(_prefix, _concat_prefix, _suffix, \
+                                    _struct, _field) \
+    { tapi_job_opt_create_uint_omittable, _prefix, _concat_prefix, _suffix, \
+      offsetof(_struct, _field) }
+
+/**
+ * The value is used to omit uint argument when it is bound
+ * with @ref TAPI_JOB_OPT_UINT_OMITTABLE.
+ */
+#define TAPI_JOB_OPT_OMIT_UINT 0xdeadbeef
 
 /**
  * Bind `te_bool` argument.
