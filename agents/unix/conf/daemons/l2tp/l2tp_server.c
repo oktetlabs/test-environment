@@ -2298,7 +2298,7 @@ l2tp_lns_range_add_routine(const char *lns_name, const char *option_name,
     }
     else
     {
-        memcpy(buf_ip, range, strlen(range) - strlen(hyphen));
+        memcpy(buf_ip, range, strlen(range));
         if (inet_aton(buf_ip, NULL) == 0)
         {
             free(l2tp_range);
