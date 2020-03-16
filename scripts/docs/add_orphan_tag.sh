@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd ${TE_BASE}/doc/sphinx/generated
+cd ${TE_BASE}/doc/sphinx/generated || exit -1;
 
 for F in `ls`
 do
