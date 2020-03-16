@@ -7,11 +7,11 @@ Test Environment
 .. toctree::
 	:hidden:
 
-	group_te_tools.rst
+	/generated/group_te_tools.rst
 	group_te_user.rst
 	group_terminology.rst
-	group_te_agents.rst
-	group_te_engine.rst
+	/generated/group_te_agents.rst
+	/generated/group_te_engine.rst
 	group_te_ts.rst
 
 

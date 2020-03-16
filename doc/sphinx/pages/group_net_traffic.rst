@@ -9,7 +9,7 @@ Network Traffic TAPI
 
 	group_csap.rst
 	group_route_gw.rst
-	group_tapi_tcp_states.rst
+	/generated/group_tapi_tcp_states.rst
 	group_tcp_sock_emulation.rst
 
 This page contains overview of TAPI for network traffic manipulation.

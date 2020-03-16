@@ -54,11 +54,11 @@ create a new continue with :ref:`Test Suite <doxid-group__te__ts>`.
 .. toctree::
     :hidden:
 
-    generated/group_terminology
-    generated/group_te_user
-    generated/group_te_agents
+    pages/group_terminology
+    pages/group_te_ts
+    pages/group_te_user
     generated/group_te_engine
-    generated/group_te_ts
+    generated/group_te_agents
     generated/group_te_tools
     pages/selftest
     pages/add_doc
