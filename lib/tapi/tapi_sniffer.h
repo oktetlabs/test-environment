@@ -46,6 +46,17 @@ SLIST_HEAD(sniffl_h_t, tapi_sniff_list_s);
 typedef struct sniffl_h_t sniffl_h_t;
 
 /**
+ * Set common sniffer snapshot length value for the agent @p ta.
+ *
+ * @param ta        Agent name
+ * @param snaplen   Snapshot length value
+ *
+ * @return Status code
+ * @retval 0 success
+ */
+extern te_errno tapi_sniffer_common_snaplen_set(const char *ta, int snaplen);
+
+/**
  * Create and start new sniffer.
  *
  * @param ta            Agent name

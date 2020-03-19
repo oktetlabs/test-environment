@@ -424,3 +424,21 @@ exit_tapi_sniffer_mark:
 
     return rc;
 }
+
+/* See description in tapi_sniffer.h */
+te_errno
+tapi_sniffer_common_snaplen_set(const char *ta, int snaplen)
+{
+    te_errno rc;
+
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, snaplen),
+                              "/agent:%s/sniffer_settings:/snaplen:", ta);
+    if (rc != 0)
+    {
+        ERROR("Failed to change common snaplen value for sniffer on "
+              "agent %s", ta);
+        return rc;
+    }
+
+    return 0;
+}

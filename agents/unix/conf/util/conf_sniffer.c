@@ -1543,7 +1543,7 @@ sniffer_add(unsigned int gid, const char *oid, char *ssn,
 
     sniff->id.abs_offset    = 0;
     sniff->enable           = 0;
-    sniff->snaplen          = 0;
+    sniff->snaplen          = snif_sets.snaplen;
     sniff->pid              = 0;
     sniff->filter_exp_file  = strdup(snif_sets.filter_exp_file);
     sniff->filter_exp_str   = strdup(snif_sets.filter_exp_str);
