@@ -74,7 +74,22 @@ static SLIST_HEAD(, ps_entry) processes = SLIST_HEAD_INITIALIZER(processes);
 static te_bool
 ps_is_running(struct ps_entry *ps)
 {
-    return ps->id < 0 ? FALSE : (ta_waitpid(ps->id, NULL, WNOHANG) == 0);
+    pid_t ret;
+
+    if (ps->id == -1)
+        return FALSE;
+
+    do {
+        ret = ta_waitpid(ps->id, NULL, WNOHANG);
+    } while (ret == -1 && errno == EINTR);
+
+    if (ret != 0)
+    {
+        ps->id = -1;
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 static int
