@@ -32,13 +32,22 @@
 #include "conf_common.h"
 #include "conf_process.h"
 
+extern char **environ;
+
 struct ps_arg_entry {
     SLIST_ENTRY(ps_arg_entry)     links;
     char                         *value;
     unsigned int                  order;
 };
 
+struct ps_env_entry {
+    SLIST_ENTRY(ps_env_entry)     links;
+    char                         *name;
+    char                         *value;
+};
+
 typedef SLIST_HEAD(ps_arg_list_t, ps_arg_entry) ps_arg_list_t;
+typedef SLIST_HEAD(ps_env_list_t, ps_env_entry) ps_env_list_t;
 
 struct ps_entry {
     SLIST_ENTRY(ps_entry)   links;
@@ -46,6 +55,7 @@ struct ps_entry {
     char                   *exe;
     ps_arg_list_t           args;
     unsigned int            argc;
+    ps_env_list_t           envs;
     pid_t                   id;
 };
 
@@ -106,20 +116,108 @@ ps_get_argv(struct ps_entry *ps, char ***argv)
     return 0;
 }
 
+static void
+ps_free_envp(char **envp)
+{
+    char **env;
+
+    for (env = envp; *env != NULL; env++)
+        free(*env);
+
+    free(envp);
+}
+
+static te_errno
+ps_get_envp(struct ps_entry *ps, char ***envp)
+{
+    char **tmp;
+    struct ps_env_entry *env;
+    unsigned int len = 0;
+    unsigned int env_len;
+    unsigned int name_len;
+    unsigned int i;
+    te_bool found;
+    char *sub;
+
+    for (env_len = 0; environ[env_len] != NULL; env_len++)
+        ;
+
+    SLIST_FOREACH(env, &ps->envs, links)
+        len++;
+
+    tmp = TE_ALLOC((env_len + len + 1) * sizeof(char *));
+    if (tmp == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    for (len = 0; len < env_len; len++)
+    {
+        /*
+         * When envp must be freed it is impossible to know if envp[i]
+         * is environ pointer or a product of te_asprintf().
+         * So do copy for safe free().
+        */
+        tmp[len] = strdup(environ[len]);
+        if (tmp[len] == NULL)
+        {
+            ps_free_envp(tmp);
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        }
+    }
+
+    SLIST_FOREACH(env, &ps->envs, links)
+    {
+        name_len = strlen(env->name);
+        found = FALSE;
+        for (i = 0; i < env_len; i++)
+        {
+            sub = strchr(tmp[i], "=");
+            if (((sub - tmp[i]) == name_len) &&
+                (memcmp(tmp[i], env->name, name_len) == 0))
+            {
+                free(tmp[i]);
+                tmp[i] = NULL;
+                found = TRUE;
+                break;
+            }
+        }
+
+        if (te_asprintf(&tmp[found ? i : len], "%s=%s",
+            env->name, env->value) < 0)
+        {
+            ps_free_envp(tmp);
+            return TE_RC(TE_TA_UNIX, TE_EFAIL);
+        }
+
+        len = found ? len : len + 1;
+    }
+
+    tmp[len] = NULL;
+
+    *envp = tmp;
+
+    return 0;
+}
+
 static te_errno
 ps_start(struct ps_entry *ps)
 {
     char **argv;
+    char **envp;
     te_errno rc;
 
     rc = ps_get_argv(ps, &argv);
     if (rc != 0)
         return rc;
 
-    ps->id = te_exec_child(ps->exe, argv, NULL,
+    rc = ps_get_envp(ps, &envp);
+    if (rc != 0)
+        return rc;
+
+    ps->id = te_exec_child(ps->exe, argv, envp,
                              (uid_t)-1, NULL, NULL, NULL);
 
     free(argv);
+    ps_free_envp(envp);
 
     return (ps->id < 0) ? TE_RC(TE_TA_UNIX, TE_ECHILD) : 0;
 }
@@ -215,6 +313,7 @@ ps_add(unsigned int gid, const char *oid, const char *value,
     ps->argc = 0;
 
     SLIST_INIT(&ps->args);
+    SLIST_INIT(&ps->envs);
 
     SLIST_INSERT_HEAD(&processes, ps, links);
 
@@ -222,8 +321,40 @@ ps_add(unsigned int gid, const char *oid, const char *value,
 }
 
 static void
+ps_arg_free(struct ps_arg_entry *arg)
+{
+    free(arg->value);
+    free(arg);
+}
+
+static void
+ps_env_free(struct ps_env_entry *env)
+{
+    free(env->name);
+    free(env->value);
+    free(env);
+}
+
+static void
 ps_free(struct ps_entry *ps)
 {
+    struct ps_arg_entry *arg;
+    struct ps_arg_entry *arg_tmp;
+    struct ps_env_entry *env;
+    struct ps_env_entry *env_tmp;
+
+    SLIST_FOREACH_SAFE(arg, &ps->args, links, arg_tmp)
+    {
+        SLIST_REMOVE(&ps->args, arg, ps_arg_entry, links);
+        ps_arg_free(arg);
+    }
+
+    SLIST_FOREACH_SAFE(env, &ps->envs, links, env_tmp)
+    {
+        SLIST_REMOVE(&ps->envs, env, ps_env_entry, links);
+        ps_env_free(env);
+    }
+
     free(ps->name);
     free(ps->exe);
     free(ps);
@@ -338,13 +469,6 @@ ps_status_set(unsigned int gid, const char *oid, const char *value,
     rc = enable ? ps_start(ps) : ps_stop(ps);
 
     return rc;
-}
-
-static void
-ps_arg_free(struct ps_arg_entry *arg)
-{
-    free(arg->value);
-    free(arg);
 }
 
 static struct ps_arg_entry *
@@ -502,12 +626,156 @@ ps_arg_del(unsigned int gid, const char *oid,
     return 0;
 }
 
+static struct ps_env_entry *
+ps_env_find(const struct ps_entry *ps, const char *env_name)
+{
+    struct ps_env_entry *p;
+
+    if (ps == NULL)
+        return NULL;
+
+    SLIST_FOREACH(p, &ps->envs, links)
+    {
+        if (strcmp(env_name, p->name) == 0)
+            return p;
+    }
+
+    return NULL;
+}
+
+static te_errno
+ps_env_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
+            const char *ps_name)
+{
+    te_string result = TE_STRING_INIT;
+    struct ps_entry *ps;
+    struct ps_env_entry *env;
+    te_bool first = TRUE;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+    if ((ps = ps_find(ps_name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    SLIST_FOREACH(env, &ps->envs, links)
+    {
+        rc = te_string_append(&result, "%s%s", first ? "" : " ", env->name);
+        first = FALSE;
+        if (rc != 0)
+        {
+            te_string_free(&result);
+            return rc;
+        }
+    }
+
+    *list = result.ptr;
+    return 0;
+}
+
+static te_errno
+ps_env_get(unsigned int gid, const char *oid, char *value,
+           const char *ps_name, const char *env_name)
+{
+    struct ps_entry *ps;
+    struct ps_env_entry *env = NULL;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((ps = ps_find(ps_name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    env = ps_env_find(ps, env_name);
+    if (env == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", env->value);
+
+    return 0;
+}
+
+static te_errno
+ps_env_add(unsigned int gid, const char *oid, const char *value,
+           const char *ps_name, const char *env_name)
+{
+    struct ps_entry *ps;
+    struct ps_env_entry *env;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((ps = ps_find(ps_name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (ps_env_find(ps, env_name) != NULL)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+
+    if (ps_is_running(ps))
+        return TE_RC(TE_TA_UNIX, TE_ETXTBSY);
+
+    env = TE_ALLOC(sizeof(*env));
+    if (env == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    env->name = strdup(env_name);
+    if (env->name == NULL)
+    {
+        ps_env_free(env);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    env->value = strdup(value);
+    if (env->value == NULL)
+    {
+        ps_env_free(env);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    SLIST_INSERT_HEAD(&ps->envs, env, links);
+
+    return 0;
+}
+
+static te_errno
+ps_env_del(unsigned int gid, const char *oid,
+           const char *ps_name, const char *env_name)
+{
+    struct ps_entry *ps;
+    struct ps_env_entry *env;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((ps = ps_find(ps_name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (ps_is_running(ps))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    env = ps_env_find(ps, env_name);
+    if (env == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    SLIST_REMOVE(&ps->envs, env, ps_env_entry, links);
+
+    ps_env_free(env);
+
+    return 0;
+}
+
 
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_ps_arg, "arg", NULL, NULL,
                                ps_arg_get, NULL, ps_arg_add,
                                ps_arg_del, ps_arg_list, NULL);
 
-RCF_PCH_CFG_NODE_RW(node_ps_exe, "exe", NULL, &node_ps_arg,
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_ps_env, "env", NULL, &node_ps_arg,
+                               ps_env_get, NULL, ps_env_add,
+                               ps_env_del, ps_env_list, NULL);
+
+RCF_PCH_CFG_NODE_RW(node_ps_exe, "exe", NULL, &node_ps_env,
                     ps_exe_get, ps_exe_set);
 
 RCF_PCH_CFG_NODE_RW(node_ps_status, "status", NULL, &node_ps_exe,

@@ -79,6 +79,19 @@ extern te_errno tapi_cfg_ps_add_arg(const char *ta, const char *ps_name,
                                     unsigned int order,
                                     const char *arg);
 
+/**
+ * Add environment variable.
+ *
+ * @param ta            Test Agent.
+ * @param ps_name       Process.
+ * @param env_name      Variable name.
+ * @param value         Variable value.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_ps_add_env(const char *ta, const char *ps_name,
+                                    const char *env_name,
+                                    const char *value);
 
 #ifdef __cplusplus
 } /* extern "C" */

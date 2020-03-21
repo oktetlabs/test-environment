@@ -108,3 +108,21 @@ tapi_cfg_ps_add_arg(const char *ta, const char *ps_name,
 
     return rc;
 }
+
+te_errno
+tapi_cfg_ps_add_env(const char *ta, const char *ps_name,
+                    const char *env_name, const char *value)
+{
+    te_errno rc;
+
+    rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, value),
+                              TE_CFG_TA_PS "/env:%s", ta, ps_name, env_name);
+    if (rc != 0)
+    {
+        ERROR("Cannot add env variable '%s' (process '%s', TA '%s'): %r",
+              env_name, ps_name, ta, rc);
+        return rc;
+    }
+
+    return rc;
+}
