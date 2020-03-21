@@ -93,6 +93,33 @@ extern te_errno tapi_cfg_ps_add_env(const char *ta, const char *ps_name,
                                     const char *env_name,
                                     const char *value);
 
+/**
+ * Add option.
+ *
+ * @param ta            Test Agent.
+ * @param ps_name       Process.
+ * @param opt_name      Option name.
+ * @param value         Option value.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_ps_add_opt(const char *ta, const char *ps_name,
+                                    const char *opt_name,
+                                    const char *value);
+
+/**
+ * Set long option value separator.
+ *
+ * @param ta            Test Agent.
+ * @param ps_name       Process.
+ * @param value         Value to set.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_ps_set_long_opt_sep(const char *ta,
+                                             const char *ps_name,
+                                             const char *value);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

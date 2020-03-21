@@ -126,3 +126,45 @@ tapi_cfg_ps_add_env(const char *ta, const char *ps_name,
 
     return rc;
 }
+
+te_errno
+tapi_cfg_ps_add_opt(const char *ta, const char *ps_name,
+                    const char *opt_name, const char *value)
+{
+    te_errno rc;
+
+    if (value == NULL)
+        value = "";
+
+    rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, value),
+                              TE_CFG_TA_PS "/option:%s", ta,
+                              ps_name, opt_name);
+    if (rc != 0)
+    {
+        ERROR("Cannot add option '%s' (process '%s', TA '%s'): %r",
+              opt_name, ps_name, ta, rc);
+    }
+
+    return rc;
+}
+
+te_errno
+tapi_cfg_ps_set_long_opt_sep(const char *ta, const char *ps_name,
+                             const char *value)
+{
+    te_errno rc;
+
+    if (value == NULL)
+        value = "";
+
+    rc  = cfg_set_instance_fmt(CFG_VAL(STRING, value),
+                               TE_CFG_TA_PS "/long_option_value_separator:",
+                               ta, ps_name);
+    if (rc != 0)
+    {
+        ERROR("Cannot set separator (process '%s', TA '%s'): %r",
+              ps_name, ta, rc);
+    }
+
+    return rc;
+}
