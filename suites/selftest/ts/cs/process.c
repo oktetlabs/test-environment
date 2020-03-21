@@ -30,51 +30,81 @@ int
 main(int argc, char *argv[])
 {
     const char     *ta = "Agt_A";
-    char           *ps_name = "testps";
+    char           *ps1_name = "testps1";
+    char           *ps2_name = "testps2";
 
     TEST_START;
 
-    TEST_STEP("Add a process");
-    CHECK_RC(tapi_cfg_ps_add(ta, ps_name, "echo", FALSE));
+    TEST_STEP("Add processes");
+    CHECK_RC(tapi_cfg_ps_add(ta, ps1_name, "echo", FALSE));
 
     CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/process:%s",
-                                      ta, ps_name));
+                                      ta, ps1_name));
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/process:%s",
-                                 ta, ps_name));
+                                 ta, ps1_name));
 
-    TEST_STEP("Add arguments");
-    CHECK_RC(tapi_cfg_ps_add_arg(ta, ps_name, 3, "TESTARG1"));
-    CHECK_RC(tapi_cfg_ps_add_arg(ta, ps_name, 1, "TESTARG2"));
+    CHECK_RC(tapi_cfg_ps_add(ta, ps2_name, "printenv", FALSE));
 
     CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/process:%s",
-                                      ta, ps_name));
+                                      ta, ps2_name));
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/process:%s",
-                                 ta, ps_name));
+                                 ta, ps2_name));
 
-    TEST_STEP("Start the process");
-    CHECK_RC(tapi_cfg_ps_start(ta, ps_name));
+    TEST_STEP("Add arguments for the first process");
+    CHECK_RC(tapi_cfg_ps_add_arg(ta, ps1_name, 3, "TESTARG1"));
+    CHECK_RC(tapi_cfg_ps_add_arg(ta, ps1_name, 1, "TESTARG2"));
+
+    CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/process:%s",
+                                      ta, ps1_name));
+    CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/process:%s",
+                                 ta, ps1_name));
+
+    TEST_STEP("Start the first process");
+    CHECK_RC(tapi_cfg_ps_start(ta, ps1_name));
 
     SLEEP(1);
 
-    TEST_STEP("Stop the process");
-    CHECK_RC(tapi_cfg_ps_stop(ta, ps_name));
+    TEST_STEP("Stop the first process");
+    CHECK_RC(tapi_cfg_ps_stop(ta, ps1_name));
 
-    TEST_STEP("Add arguments");
-    CHECK_RC(tapi_cfg_ps_add_arg(ta, ps_name, 2, "TESTARG3"));
-    CHECK_RC(tapi_cfg_ps_add_arg(ta, ps_name, 4, "TESTARG4"));
+    TEST_STEP("Add more arguments for the first process");
+    CHECK_RC(tapi_cfg_ps_add_arg(ta, ps1_name, 2, "TESTARG3"));
+    CHECK_RC(tapi_cfg_ps_add_arg(ta, ps1_name, 4, "TESTARG4"));
 
     CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/process:%s",
-                                      ta, ps_name));
+                                      ta, ps1_name));
     CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/process:%s",
-                                 ta, ps_name));
+                                 ta, ps1_name));
 
-    TEST_STEP("Start the process again");
-    CHECK_RC(tapi_cfg_ps_start(ta, ps_name));
+    TEST_STEP("Start the first process again");
+    CHECK_RC(tapi_cfg_ps_start(ta, ps1_name));
 
     SLEEP(1);
 
-    TEST_STEP("Delete the process");
-    CHECK_RC(tapi_cfg_ps_del(ta, ps_name));
+    TEST_STEP("Stop the first process");
+    CHECK_RC(tapi_cfg_ps_stop(ta, ps1_name));
+
+    TEST_STEP("Add environment variables for the second process");
+    CHECK_RC(tapi_cfg_ps_add_env(ta, ps2_name, "TESTENVVAR1", "TESTENVVAL1"));
+    CHECK_RC(tapi_cfg_ps_add_env(ta, ps2_name, "TESTENVVAR2", "TESTENVVAL2"));
+
+    TEST_STEP("Add corresponding arguments for the second process");
+    CHECK_RC(tapi_cfg_ps_add_arg(ta, ps2_name, 1, "TESTENVVAR1"));
+    CHECK_RC(tapi_cfg_ps_add_arg(ta, ps2_name, 2, "TESTENVVAR2"));
+
+    CHECK_RC(rc = cfg_synchronize_fmt(TRUE, "/agent:%s/process:%s",
+                                      ta, ps2_name));
+    CHECK_RC(rc = cfg_tree_print(NULL, TE_LL_RING, "/agent:%s/process:%s",
+                                 ta, ps2_name));
+
+    TEST_STEP("Start the second process");
+    CHECK_RC(tapi_cfg_ps_start(ta, ps2_name));
+
+    SLEEP(1);
+
+    TEST_STEP("Delete the processes");
+    CHECK_RC(tapi_cfg_ps_del(ta, ps1_name));
+    CHECK_RC(tapi_cfg_ps_del(ta, ps2_name));
 
     TEST_SUCCESS;
 
