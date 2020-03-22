@@ -59,6 +59,8 @@ html_logo = 'static/image/te-logo.png'
 html_theme_options = {
     'logo_only': True,
     'style_nav_header_background': '#fcfcfc',
+    'titles_only': True,
+    'collapse_navigation': False,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
