@@ -105,6 +105,33 @@ process_library_rcfpch() {
     eval ${parms_var}=\"${parms}\"
 }
 
+process_library_rpcserver() {
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local parms=
+    local p
+
+    for p in ${!parms_var} ; do
+        case ${p} in
+            --enable-typesafe-rpc=no|--disable-typesafe-rpc)
+                lopts="${lopts} -Dtypesafe-rpc=false" ;;
+            --enable-static-rpc-lookup)
+                lopts="${lopts} -Dstatic-rpc-lookup=true" ;;
+            --enable-plugins=no|--disable-plugins)
+                lopts="${lopts} -Drpcserver-idle-plugins=false" ;;
+            --enable-mem=no|--disable-mem)
+                lopts="${lopts} -Drpcserver-smart-mem=false" ;;
+            --with-tr069)
+                lopts="${lopts} -Drpcserver-tr069=true" ;;
+            --with-agentlib=*)
+                lopts="${lopts} -Drpcserver-agentlib=${p#--with-agentlib=}" ;;
+            *)
+                parms="${parms}${parms:+ }${p}" ;;
+        esac
+    done
+    eval ${parms_var}=\"${parms}\"
+}
+
 process_library_rpcxdr() {
     local pfx="$1"; shift
     local parms_var="${pfx}PARMS"
@@ -177,6 +204,7 @@ process_library() {
     case "${l}" in
         agentlib)   process_library_agentlib "${pfx}" ;;
         rcfpch)     process_library_rcfpch "${pfx}" ;;
+        rpcserver)  process_library_rpcserver "${pfx}" ;;
         rpcxdr)     process_library_rpcxdr "${pfx}" ;;
         tad)        process_library_tad "${pfx}" ;;
         tapi_tad)   process_library_tapi_tad "${pfx}" ;;

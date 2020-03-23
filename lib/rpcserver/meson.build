@@ -19,6 +19,9 @@ endif
 if get_option('static-rpc-lookup')
     conf.set('DEFAULT_STATIC_RPC_LOOKUP', 1)
 endif
+
+rpcserver_agentlib = get_option('rpcserver-agentlib')
+
 if get_option('rpcserver-idle-plugins')
     conf.set('ENABLE_RPC_PLUGINS', 1)
 endif
@@ -432,9 +435,10 @@ sources += files(
     'rpcs_msghdr.c',
     'tarpc_imp.c',
 )
+
 te_libs += [
     'loggerta',
     'rpc_types',
-    'agentlib',
+    rpcserver_agentlib,
     'rpctransport',
 ]
