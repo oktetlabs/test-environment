@@ -670,6 +670,16 @@ build_platform() {
 
     ${remote_build} && destdir="DESTDIR=\"${ws}/destdir\""
 
+    if test "${p}" != "${TE_HOST}" -a -n \
+        "${TE_RCF_CONSISTENCY_CHECKS_EXT_FILES}" ; then
+        te_eval_or_ssh "${p}" \
+            "${ws}/src/engine/builder/te_rcf_consistency_checks \
+                --extfiles-del \"${ws}/build/\" ;
+            echo \"${TE_RCF_CONSISTENCY_CHECKS_EXT_FILES}\" |
+                ${ws}/src/engine/builder/te_rcf_consistency_checks \
+                    --extfiles-add \"${ws}/build/\""
+    fi
+
     te_eval_or_ssh "${p}" \
         "which ninja >/dev/null 2>&1 && NINJA=ninja || NINJA=ninja-build ;
          TE_BASE=\"${ws}\"/src ${destdir} \$NINJA -C \"${ws}\"/build install" ||
