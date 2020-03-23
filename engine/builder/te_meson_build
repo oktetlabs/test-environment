@@ -59,6 +59,31 @@ set_sniffers() {
     fi
 }
 
+process_library_agentlib() {
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local parms=
+    local p
+
+    for p in ${!parms_var} ; do
+        case ${p} in
+            --enable-dlfcn-lookup)
+                lopts="${lopts} -Dagentlib-dlfcn-lookup=true" ;;
+            --enable-ftp)
+                lopts="${lopts} -Dagentlib-ftp=true" ;;
+            --enable-power-sw)
+                lopts="${lopts} -Dagentlib-power-sw=true" ;;
+            --enable-telephony)
+                lopts="${lopts} -Dagentlib-telephony=true" ;;
+            --enable-dlfcn-upnp)
+                lopts="${lopts} -Dagentlib-upnp=true" ;;
+            *)
+                parms="${parms}${parms:+ }${p}" ;;
+        esac
+    done
+    eval ${parms_var}=\"${parms}\"
+}
+
 process_library_rcfpch() {
     local pfx="$1"; shift
     local parms_var="${pfx}PARMS"
@@ -150,6 +175,7 @@ process_library() {
     local msg="Platform library ${p}/${l}"
 
     case "${l}" in
+        agentlib)   process_library_agentlib "${pfx}" ;;
         rcfpch)     process_library_rcfpch "${pfx}" ;;
         rpcxdr)     process_library_rpcxdr "${pfx}" ;;
         tad)        process_library_tad "${pfx}" ;;
