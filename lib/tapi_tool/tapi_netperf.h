@@ -85,6 +85,10 @@ typedef struct tapi_netperf_test_opt {
  * Command line options.
  */
 typedef struct tapi_netperf_opt {
+    /** Prefix before "netperf" */
+    const char *prefix_netperf;
+    /** Prefix before "netserver" */
+    const char *prefix_netserver;
     /** Name of the test */
     tapi_netperf_test_name test_name;
     /** Netserver host */
