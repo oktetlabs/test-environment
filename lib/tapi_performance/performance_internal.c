@@ -25,7 +25,7 @@
 #include "te_units.h"
 
 /* Timeout to wait for process to stop */
-#define TAPI_PERF_STOP_TIMEOUT_S (10)
+#define TAPI_PERF_STOP_TIMEOUT_MS (10000)
 /* Time to wait till data is ready to read from filter */
 #define TAPI_PERF_READ_TIMEOUT_MS (500)
 
@@ -156,7 +156,7 @@ perf_app_stop(tapi_perf_app *app)
     if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ESRCH)
         return rc;
 
-    rc = tapi_job_wait(job, TAPI_PERF_STOP_TIMEOUT_S, &status);
+    rc = tapi_job_wait(job, TAPI_PERF_STOP_TIMEOUT_MS, &status);
     if (rc == TE_EINPROGRESS)
     {
         rc = tapi_job_kill(job, SIGKILL);
