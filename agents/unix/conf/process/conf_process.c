@@ -283,8 +283,8 @@ ps_get_envp(struct ps_entry *ps, char ***envp)
 static te_errno
 ps_start(struct ps_entry *ps)
 {
-    char **argv;
-    char **envp;
+    char **argv = NULL;
+    char **envp = NULL;
     te_errno rc;
 
     rc = ps_get_argv(ps, &argv);
