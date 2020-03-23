@@ -626,7 +626,7 @@ build_ext() {
             --build="${!pextbuild}" \
             --expheaders="${!pextinsth}" \
             --explibs="${!pextinstl}" \
-            --envvars="${!pextenv}" $enable_tce || exit 1
+            --envvars="${!pextenv}" $enable_tce --build-meson || exit 1
 
         rsync_from "$p" "${ws_ext_builddir}/" "${local_ext_builddir}"
     done
