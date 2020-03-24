@@ -151,7 +151,7 @@ function generate_sphinx_doc()
     find doc/dox_resources/images -name "*.png" -exec cp {} doc/generated/html/generated/generated \;
 }
 
-generate_sphinx_doc
+$SPHINX_ONLY && generate_sphinx_only || generate_sphinx_doc
 
 echo "" >&2
 echo "###########################################" >&2
