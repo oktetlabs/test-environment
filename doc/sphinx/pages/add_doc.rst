@@ -44,19 +44,25 @@ The documentation is generated in 3 steps:
 2. ``doxyrest`` converts the xml files to rst pages.
 3. ``sphinx-build`` generates html pages based on the rst pages.
 
-Use ``--exclude-global`` flag not to generate global namespace.
+Use ``-e`` flag not to generate global namespace.
 Otherwise, a page containing links to all functions, enums, structs,
 etc. will be created, which is very time- and resource-consuming.
 
 .. code:: shell
 
-    ./gen_docs --exclude-global
+    ./gen_docs -e
 
 
 If you don't want the rst pages to be rebuild by ``doxygen`` or ``doxyrest``,
-you can run the third step only. In this case, your rst pages will remain
-untouched unless you change them manually. You may also want to clean
-``doc/generated/html`` first.
+you can run the third step only using ``-s`` flag. In this case, your rst pages
+will remain untouched unless you change them manually. You can use the flag
+along with ``-e``.
+
+.. code:: shell
+
+    ./gen_docs -s
+
+This is equivalent to
 
 .. code:: shell
 
