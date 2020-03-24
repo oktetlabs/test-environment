@@ -89,15 +89,15 @@ process_library_agentlib() {
     for p in ${!parms_var} ; do
         case ${p} in
             --enable-dlfcn-lookup)
-                lopts="${lopts} -Dagentlib-dlfcn-lookup=true" ;;
+                meson_args="${meson_args} -Dagentlib-dlfcn-lookup=true" ;;
             --enable-ftp)
-                lopts="${lopts} -Dagentlib-ftp=true" ;;
+                meson_args="${meson_args} -Dagentlib-ftp=true" ;;
             --enable-power-sw)
-                lopts="${lopts} -Dagentlib-power-sw=true" ;;
+                meson_args="${meson_args} -Dagentlib-power-sw=true" ;;
             --enable-telephony)
-                lopts="${lopts} -Dagentlib-telephony=true" ;;
+                meson_args="${meson_args} -Dagentlib-telephony=true" ;;
             --enable-dlfcn-upnp)
-                lopts="${lopts} -Dagentlib-upnp=true" ;;
+                meson_args="${meson_args} -Dagentlib-upnp=true" ;;
             *)
                 parms="${parms}${parms:+ }${p}" ;;
         esac
@@ -135,17 +135,17 @@ process_library_rpcserver() {
     for p in ${!parms_var} ; do
         case ${p} in
             --enable-typesafe-rpc=no|--disable-typesafe-rpc)
-                lopts="${lopts} -Dtypesafe-rpc=false" ;;
+                meson_args="${meson_args} -Dtypesafe-rpc=false" ;;
             --enable-static-rpc-lookup)
-                lopts="${lopts} -Dstatic-rpc-lookup=true" ;;
+                meson_args="${meson_args} -Dstatic-rpc-lookup=true" ;;
             --enable-plugins=no|--disable-plugins)
-                lopts="${lopts} -Drpcserver-idle-plugins=false" ;;
+                meson_args="${meson_args} -Drpcserver-idle-plugins=false" ;;
             --enable-mem=no|--disable-mem)
-                lopts="${lopts} -Drpcserver-smart-mem=false" ;;
+                meson_args="${meson_args} -Drpcserver-smart-mem=false" ;;
             --with-tr069)
-                lopts="${lopts} -Drpcserver-tr069=true" ;;
+                meson_args="${meson_args} -Drpcserver-tr069=true" ;;
             --with-agentlib=*)
-                lopts="${lopts} -Drpcserver-agentlib=${p#--with-agentlib=}" ;;
+                meson_args="${meson_args} -Drpcserver-agentlib=${p#--with-agentlib=}" ;;
             *)
                 parms="${parms}${parms:+ }${p}" ;;
         esac
