@@ -420,7 +420,7 @@ So:
 
 * It executes **prologue** if exists (**prologue** is not a test it's a sequence of actions specific for a given package/suite; for instance it can assign IP addresses or start certain services);
 
-* **tests** which were passed with the --tester-run option are executed; in the above case it's **** {foobar-ts/basic/trivial} (see te_tester for more details on the tests specification);
+* **tests** which were passed with the --tester-run option are executed; in the above case it's **{foobar-ts/basic/trivial}** (see te_tester for more details on the tests specification);
 
 * **epilogue** is executed it can be used to rollback modifications done in **prologue** or perform arbitrary cleanup;
 
