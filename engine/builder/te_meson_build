@@ -15,6 +15,27 @@ with_config="$1"
 # Put initial values to control variables
 RSYNC="rsync --exclude .hg -a"
 
+# List of all available TAD protocols
+TAD_PROTOCOLS_ALL="arp"
+TAD_PROTOCOLS_ALL+=" atm"
+TAD_PROTOCOLS_ALL+=" bridge"
+TAD_PROTOCOLS_ALL+=" cli"
+TAD_PROTOCOLS_ALL+=" dhcp"
+TAD_PROTOCOLS_ALL+=" eth"
+TAD_PROTOCOLS_ALL+=" flow"
+TAD_PROTOCOLS_ALL+=" forw"
+TAD_PROTOCOLS_ALL+=" geneve"
+TAD_PROTOCOLS_ALL+=" gre"
+TAD_PROTOCOLS_ALL+=" igmp"
+TAD_PROTOCOLS_ALL+=" ipstack"
+TAD_PROTOCOLS_ALL+=" iscsi"
+TAD_PROTOCOLS_ALL+=" pcap"
+TAD_PROTOCOLS_ALL+=" ppp"
+TAD_PROTOCOLS_ALL+=" rte_mbuf"
+TAD_PROTOCOLS_ALL+=" snmp"
+TAD_PROTOCOLS_ALL+=" socket"
+TAD_PROTOCOLS_ALL+=" vxlan"
+
 error() {
     echo ERROR: $* >&2
     exit 1
@@ -346,7 +367,7 @@ process_agent() {
 
 process_platform() {
     local p="$1"; shift
-    local tad_protocols="arp atm bridge cli dhcp eth flow forw geneve gre igmp ipstack iscsi pcap ppp rte_mbuf snmp socket vxlan"
+    local tad_protocols="${TAD_PROTOCOLS_ALL}"
     local tad_with_protocols=
     local tad_without_protocols=
     local use_sniffers=
