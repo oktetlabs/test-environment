@@ -1930,6 +1930,15 @@ struct tarpc_dpdk_get_version_out {
     tarpc_int            release;
 };
 
+/** dpdk_find_representors() */
+typedef struct tarpc_void_in tarpc_dpdk_find_representors_in;
+struct tarpc_dpdk_find_representors_out {
+    struct tarpc_out_arg common;
+    tarpc_int            rep_port_ids<>;
+    tarpc_int            n_rep;
+    tarpc_int            retval;
+};
+
 program dpdk
 {
     version ver0
@@ -2070,5 +2079,6 @@ program dpdk
 
         RPC_DEF(dpdk_eth_await_link_up)
         RPC_DEF(dpdk_get_version)
+        RPC_DEF(dpdk_find_representors)
     } = 1;
 } = 2;

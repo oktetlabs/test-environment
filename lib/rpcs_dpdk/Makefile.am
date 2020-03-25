@@ -29,7 +29,8 @@ librpcs_dpdk_a_SOURCES = \
 	mempool.c \
 	rte_mbuf_ndn.c \
 	rte_flow_ndn.c \
-	eal.c
+	eal.c \
+	dpdk.c
 
 librpcs_dpdk_a_DEPENDENCIES = $(DESTDIR)/$(libdir)/librpc_dpdk.la
 
