@@ -82,6 +82,25 @@ extern te_errno tapi_cfg_pci_addr_by_oid(const cfg_oid *pci_device,
 extern te_errno tapi_cfg_pci_addr_by_oid_array(unsigned int n_devices,
                                                const cfg_oid **pci_devices,
                                                char ***pci_addrs);
+/**
+ * Allocate a string with resource name for grabbing a PCI instance.
+ *
+ * @param[in]  pci_device       PCI instance OID
+ *                              (/agent/hardware/pci/vendor/device/instance)
+ *
+ * @return Allocated resource name string or @c NULL
+ */
+extern char * tapi_cfg_pci_rsrc_name(const cfg_oid *pci_instance);
+
+/**
+ * Grab a PCI device as a resource.
+ *
+ * @param[in]  pci_device       PCI instance OID
+ *                              (/agent/hardware/pci/vendor/device/instance)
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_grab(const cfg_oid *pci_instance);
 
 /**@} <!-- END tapi_conf_pci --> */
 

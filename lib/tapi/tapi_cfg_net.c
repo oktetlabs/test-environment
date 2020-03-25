@@ -47,6 +47,7 @@
 #include "tapi_cfg.h"
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_net.h"
+#include "tapi_cfg_pci.h"
 #include "tapi_host_ns.h"
 
 /* See description in tapi_cfg_net.h */
@@ -817,10 +818,7 @@ tapi_cfg_net_mk_node_rsrc_desc_pci_fn(const cfg_oid         *oid,
         return TE_ENOMEM;
     }
 
-    te_asprintf(&d->rsrc_names[0], "pci_fn:%s:%s:%s",
-                CFG_OID_GET_INST_NAME(oid, 4),
-                CFG_OID_GET_INST_NAME(oid, 5),
-                CFG_OID_GET_INST_NAME(oid, 6));
+    d->rsrc_names[0] = tapi_cfg_pci_rsrc_name(oid);
     if (d->rsrc_names[0] == NULL)
     {
         tapi_cfg_net_node_rsrc_desc_free(d);
@@ -880,10 +878,7 @@ tapi_cfg_net_mk_node_rsrc_desc_rte_vdev(const cfg_oid         *oid,
          * However, considering other possible options is hardly useful for
          * the most applications of this code.
          */
-        te_asprintf(&d->rsrc_names[i], "pci_fn:%s:%s:%s",
-                    CFG_OID_GET_INST_NAME(pci_oid, 4),
-                    CFG_OID_GET_INST_NAME(pci_oid, 5),
-                    CFG_OID_GET_INST_NAME(pci_oid, 6));
+        d->rsrc_names[i] = tapi_cfg_pci_rsrc_name(pci_oid);
         cfg_free_oid(pci_oid);
         if (d->rsrc_names[i] == NULL)
         {

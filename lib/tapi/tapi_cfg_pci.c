@@ -235,3 +235,61 @@ out:
 
     return rc;
 }
+
+char *
+tapi_cfg_pci_rsrc_name(const cfg_oid *pci_instance)
+{
+    char *rsrc_name;
+
+    te_asprintf(&rsrc_name, "pci_fn:%s:%s:%s",
+                CFG_OID_GET_INST_NAME(pci_instance, 4),
+                CFG_OID_GET_INST_NAME(pci_instance, 5),
+                CFG_OID_GET_INST_NAME(pci_instance, 6));
+
+    if (rsrc_name == NULL)
+        ERROR("Failed to create PCI function resource string");
+
+    return rsrc_name;
+}
+
+te_errno
+tapi_cfg_pci_grab(const cfg_oid *pci_instance)
+{
+    char *rsrc_name = NULL;
+    char *oid_str = NULL;
+    te_errno rc;
+
+    rsrc_name = tapi_cfg_pci_rsrc_name(pci_instance);
+    if (rsrc_name == NULL)
+    {
+        rc = TE_RC(TE_TAPI, TE_ENOMEM);
+        goto out;
+    }
+
+    rc = cfg_get_instance_fmt(NULL, NULL, "/agent:%s/rsrc:%s",
+                              CFG_OID_GET_INST_NAME(pci_instance, 1), rsrc_name);
+    if (rc == 0)
+    {
+        rc = TE_RC(TE_TAPI, TE_EALREADY);
+        goto out;
+    }
+
+    oid_str = cfg_convert_oid(pci_instance);
+    if (oid_str == NULL)
+    {
+        rc = TE_RC(TE_TAPI, TE_ENOMEM);
+        goto out;
+    }
+
+    rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, oid_str),
+                              "/agent:%s/rsrc:%s",
+                              CFG_OID_GET_INST_NAME(pci_instance, 1), rsrc_name);
+    if (rc != 0)
+        ERROR("Failed to reserve resource '%s': %r", oid_str, rc);
+
+out:
+    free(rsrc_name);
+    free(oid_str);
+
+    return rc;
+}
