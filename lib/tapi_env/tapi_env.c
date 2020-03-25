@@ -680,6 +680,33 @@ tapi_env_get_if(tapi_env *env, const char *name)
     return NULL;
 }
 
+/* See description in tapi_env.h */
+const tapi_env_if *
+tapi_env_get_env_if(tapi_env *env, const char *name)
+{
+    tapi_env_if      *p;
+
+    if (env == NULL || name == NULL || *name == '\0')
+    {
+        ERROR("%s(): Invalid arguments", __FUNCTION__);
+        return NULL;
+    }
+
+    name = env_resolve(env, name);
+
+    for (p = env->ifs.cqh_first;
+         p != (void *)&env->ifs;
+         p = p->links.cqe_next)
+    {
+        if (p->name != NULL && strcmp(p->name, name) == 0)
+            return p;
+    }
+
+    WARN("Interface '%s' does not exist in environment", name);
+
+    return NULL;
+}
+
 
 /* See description in tapi_env.h */
 const struct if_nameindex *

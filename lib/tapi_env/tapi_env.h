@@ -231,6 +231,21 @@
     } while (0)
 
 /**
+ * Get environment interface entity. Name of the variable must match name
+ * of the interface in environment configuration string.
+ *
+ * @param env_if_     interface (const tapi_env_if *) (OUT)
+ */
+#define TEST_GET_ENV_IF(env_if_) \
+    do {                                                            \
+        (env_if_) = tapi_env_get_env_if(&env, #env_if_);            \
+        if ((env_if_) == NULL)                                      \
+        {                                                           \
+            TEST_STOP;                                              \
+        }                                                           \
+    } while (0)
+
+/**
  * Get XEN bridge. Name of the variable must match name
  * of the XEN bridge in environment configuration string.
  *
@@ -621,6 +636,19 @@ extern tapi_env_addr_type tapi_get_addr_type(tapi_env *env,
  */
 extern const struct if_nameindex * tapi_env_get_if(tapi_env *env,
                                                    const char *name);
+
+/**
+ * Get environment entity of the interface named in configuration string
+ * as 'name' argument.
+ *
+ * Pointer becomes not valid when environment is freed.
+ *
+ * @param env       Environment handle
+ * @param name      Name of the interface in environment
+ *
+ * @return Pointer to the environment interface entity.
+ */
+extern const tapi_env_if * tapi_env_get_env_if(tapi_env *env, const char *name);
 
 /**
  * Get system name of the bridge named in configuration string
