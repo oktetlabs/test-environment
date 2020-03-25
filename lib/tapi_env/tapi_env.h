@@ -749,6 +749,15 @@ extern void tapi_env_foreach_if(tapi_env *env, tapi_env_foreach_if_fn *fn,
  */
 extern unsigned tapi_env_nets_count(tapi_env *env);
 
+/**
+ * Return network node of an interface.
+ *
+ * @param iface     Network interface
+ *
+ * @return Network node configuration
+ */
+extern const cfg_net_node_t *tapi_env_get_if_net_node(const tapi_env_if *iface);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -2673,3 +2673,12 @@ prepare_sniffers(tapi_env *env)
 
     return rc;
 }
+
+const cfg_net_node_t *
+tapi_env_get_if_net_node(const tapi_env_if *iface)
+{
+    if (iface == NULL)
+        return NULL;
+
+    return &iface->net->cfg_net->nodes[iface->i_node];
+}
