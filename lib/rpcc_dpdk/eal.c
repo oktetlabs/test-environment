@@ -949,15 +949,13 @@ rpc_rte_eal_hotplug_add(rcf_rpc_server *rpcs,
 
     in.busname = tapi_strdup(busname);
     in.devname = tapi_strdup(devname);
-    if (devargs != NULL)
-        in.devargs = tapi_strdup(devargs);
+    in.devargs = tapi_strdup(devargs == NULL ? "" : devargs);
 
     rcf_rpc_call(rpcs, "rte_eal_hotplug_add", &in, &out);
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_eal_hotplug_add, out.retval);
 
     TAPI_RPC_LOG(rpcs, rte_eal_hotplug_add, "%s; %s; %s", NEG_ERRNO_FMT,
-                 in.busname, in.devname,
-                 (in.devargs == NULL) ? "N/A" : in.devargs,
+                 in.busname, in.devname, in.devargs,
                  NEG_ERRNO_ARGS(out.retval));
 
     free(in.busname);
