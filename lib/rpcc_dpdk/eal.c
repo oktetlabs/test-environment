@@ -29,6 +29,51 @@
 
 #include "rpcc_dpdk.h"
 
+static te_errno
+tapi_eal_rpcs_set_cached_eal_args(const rcf_rpc_server *rpcs,
+                                  const char *eal_args)
+{
+    return cfg_set_instance_fmt(CVT_STRING, eal_args,
+                                "/agent:%s/rpcserver:%s/config:",
+                                rpcs->ta, rpcs->name);
+}
+
+static te_errno
+tapi_eal_rpcs_get_cached_eal_args(const rcf_rpc_server *rpcs, char **eal_args)
+{
+    cfg_val_type val_type = CVT_STRING;
+
+    return cfg_get_instance_fmt(&val_type, eal_args,
+                                "/agent:%s/rpcserver:%s/config:",
+                                rpcs->ta, rpcs->name);
+}
+
+static te_errno
+tapi_eal_rpcs_reset_cached_eal_args(const rcf_rpc_server *rpcs)
+{
+    te_bool already_reset = FALSE;
+    char *old_args;
+    te_errno rc;
+
+    /*
+     * Cached EAL arguments are get before resetting to avoid resetting already
+     * empty value. This way the log and configurator dynamic history will not
+     * be polluted with the same set requests.
+     */
+    rc = tapi_eal_rpcs_get_cached_eal_args(rpcs, &old_args);
+    if (rc != 0)
+        return rc;
+
+    already_reset = (strlen(old_args) == 0);
+    free(old_args);
+
+    if (already_reset)
+        return 0;
+
+    return tapi_eal_rpcs_set_cached_eal_args(rpcs, "");
+}
+
+
 te_errno
 tapi_rte_get_dev_args(const char *ta, const char *vendor, const char *device,
                       char **arg_list)
@@ -118,6 +163,32 @@ tapi_rte_get_dev_args_by_pci_addr(const char *ta, const char *pci_addr,
     free(device);
 
     return rc;
+}
+
+te_errno
+tapi_rte_eal_hotplug_add(rcf_rpc_server *rpcs, const char *busname,
+                         const char *devname, const char *devargs)
+{
+    te_errno rc;
+
+    rc = rpc_rte_eal_hotplug_add(rpcs, busname, devname, devargs);
+    if (rc != 0)
+        return rc;
+
+    return tapi_eal_rpcs_reset_cached_eal_args(rpcs);
+}
+
+te_errno
+tapi_rte_eal_hotplug_remove(rcf_rpc_server *rpcs, const char *busname,
+                            const char *devname)
+{
+    te_errno rc;
+
+    rc = rpc_rte_eal_hotplug_remove(rpcs, busname, devname);
+    if (rc != 0)
+        return rc;
+
+    return tapi_eal_rpcs_reset_cached_eal_args(rpcs);
 }
 
 int
@@ -256,7 +327,6 @@ tapi_reuse_eal(tapi_env         *env,
     char                 *eal_args = NULL;
     char                 *eal_args_pos;
     char                 *eal_args_cfg = NULL;
-    cfg_val_type          val_type = CVT_STRING;
     const tapi_env_ps_if *ps_if;
     char                 *da_alloc = NULL;
     const char           *da_generic = NULL;
@@ -292,9 +362,7 @@ tapi_reuse_eal(tapi_env         *env,
     /* Buffer is filled in with zeros anyway, but anyway */
     eal_args_pos[0] = '\0';
 
-    rc = cfg_get_instance_fmt(&val_type, &eal_args_cfg,
-                              "/agent:%s/rpcserver:%s/config:",
-                              rpcs->ta, rpcs->name);
+    rc = tapi_eal_rpcs_get_cached_eal_args(rpcs, &eal_args_cfg);
     if (rc != 0)
         goto out;
 
@@ -928,9 +996,7 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
 
         if (eal_args_new != NULL)
         {
-            rc = cfg_set_instance_fmt(CVT_STRING, eal_args_new,
-                                      "/agent:%s/rpcserver:%s/config:",
-                                      rpcs->ta, rpcs->name);
+            rc = tapi_eal_rpcs_set_cached_eal_args(rpcs, eal_args_new);
             if (rc != 0)
                 goto cleanup;
         }

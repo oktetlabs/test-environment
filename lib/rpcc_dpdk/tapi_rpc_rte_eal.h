@@ -110,6 +110,17 @@ extern int rpc_rte_eal_hotplug_add(rcf_rpc_server *rpcs,
                                    const char     *devargs);
 
 /**
+ * Wrapper for rpc_rte_eal_hotplug_add() that also resets cached value
+ * of EAL arguments in the configurator. The reset is almost always
+ * required since hotplug changes the EAL configuration and it
+ * interferes with dpdk_reuse_rpcs().
+ */
+extern te_errno tapi_rte_eal_hotplug_add(rcf_rpc_server *rpcs,
+                                         const char *busname,
+                                         const char *devname,
+                                         const char *devargs);
+
+/**
  * rte_eal_hotplug_remove() RPC
  *
  * @param busname Bus name for the device to be removed from
@@ -120,6 +131,16 @@ extern int rpc_rte_eal_hotplug_add(rcf_rpc_server *rpcs,
 extern int rpc_rte_eal_hotplug_remove(rcf_rpc_server *rpcs,
                                       const char     *busname,
                                       const char     *devname);
+
+/**
+ * Wrapper for rpc_rte_eal_hotplug_remove() that also resets cached value
+ * of EAL arguments in the configurator. The reset is almost always
+ * required since hotplug changes the EAL configuration and it
+ * interferes with dpdk_reuse_rpcs().
+ */
+extern te_errno tapi_rte_eal_hotplug_remove(rcf_rpc_server *rpcs,
+                                            const char *busname,
+                                            const char *devname);
 
 /**
  * @b rte_epoll_wait() RPC
