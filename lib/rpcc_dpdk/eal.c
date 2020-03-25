@@ -23,11 +23,102 @@
 #include "tapi_rpc_rte_eal.h"
 #include "tapi_rpc_rte_ethdev.h"
 #include "tapi_rpc_rte_mempool.h"
+#include "tapi_cfg_pci.h"
 
 #include "tarpc.h"
 
 #include "rpcc_dpdk.h"
 
+te_errno
+tapi_rte_get_dev_args(const char *ta, const char *vendor, const char *device,
+                      char **arg_list)
+{
+    char *generic_args = NULL;
+    char *vendor_args = NULL;
+    char *device_args = NULL;
+    char **args[] = { &generic_args, &vendor_args, &device_args };
+    te_string result = TE_STRING_INIT;
+    unsigned int i;
+    te_bool first;
+    te_errno rc;
+
+    rc = cfg_get_instance_fmt(NULL, &generic_args,
+                              "/local:%s/dpdk:/dev_args:pci_fn:::", ta);
+    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
+        return rc;
+
+    if (vendor != NULL && vendor[0] != '\0')
+    {
+        rc = cfg_get_instance_fmt(NULL, &vendor_args,
+                                  "/local:%s/dpdk:/dev_args:pci_fn:%s::",
+                                  ta, vendor);
+        if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
+            return rc;
+
+
+        if (device != NULL && device[0] != '\0')
+        {
+            rc = cfg_get_instance_fmt(NULL, &device_args,
+                                      "/local:%s/dpdk:/dev_args:pci_fn:%s:%s:",
+                                      ta, vendor, device);
+            if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
+                return rc;
+        }
+    }
+
+    rc = 0;
+
+    for (first = TRUE, i = 0; i < TE_ARRAY_LEN(args) && rc == 0; i++)
+    {
+        if (*args[i] == NULL || (*args[i])[0] == '\0')
+            continue;
+
+        rc = te_string_append(&result, "%s%s", first ? "" : ",", *args[i]);
+        first = FALSE;
+    }
+
+    for (i = 0; i < TE_ARRAY_LEN(args) && rc == 0; i++)
+        free(*args[i]);
+
+    if (rc != 0)
+    {
+        ERROR("Failed to get dev args: %r", rc);
+        te_string_free(&result);
+        return rc;
+    }
+
+    if (result.len == 0)
+    {
+        te_string_free(&result);
+        *arg_list = NULL;
+    }
+    else
+    {
+        *arg_list = result.ptr;
+    }
+
+    return 0;
+}
+
+te_errno
+tapi_rte_get_dev_args_by_pci_addr(const char *ta, const char *pci_addr,
+                                  char **arg_list)
+{
+    char *vendor;
+    char *device;
+    te_errno rc;
+
+    rc = tapi_cfg_pci_get_pci_vendor_device(ta, pci_addr, &vendor, &device);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_rte_get_dev_args(ta, vendor, device, arg_list);
+
+    free(vendor);
+    free(device);
+
+    return rc;
+}
 
 int
 rpc_rte_eal_init(rcf_rpc_server *rpcs,
@@ -99,13 +190,10 @@ static te_errno tapi_eal_get_vdev_slaves(tapi_env               *env,
 static te_errno
 tapi_eal_close_bond_slave_pci_devices(tapi_env             *env,
                                       const tapi_env_ps_if *ps_if,
-                                      rcf_rpc_server       *rpcs,
-                                      const char           *dev_args)
+                                      rcf_rpc_server       *rpcs)
 {
     char         **slaves = NULL;
     unsigned int   nb_slaves;
-    const char    *da_empty = "";
-    const char    *da = (dev_args == NULL) ? da_empty : dev_args;
     te_errno       rc;
     unsigned int   i;
 
@@ -119,6 +207,7 @@ tapi_eal_close_bond_slave_pci_devices(tapi_env             *env,
 
         if (name_len > 1 && slaves[i][name_len - 1 - 1] == '.')
         {
+            char *dev_args;
             uint16_t port_id;
 
             RPC_AWAIT_ERROR(rpcs);
@@ -136,7 +225,13 @@ tapi_eal_close_bond_slave_pci_devices(tapi_env             *env,
                 rc != -TE_RC(TE_RPC, TE_EINVAL))
                 goto out;
 
-            rc = rpc_rte_eal_hotplug_add(rpcs, "pci", slaves[i], da);
+            rc = tapi_rte_get_dev_args_by_pci_addr(rpcs->ta, slaves[i],
+                                                   &dev_args);
+            if (rc != 0)
+                goto out;
+
+            rc = rpc_rte_eal_hotplug_add(rpcs, "pci", slaves[i], dev_args);
+            free(dev_args);
             if (rc != 0)
                 goto out;
         }
@@ -154,7 +249,6 @@ tapi_reuse_eal(tapi_env         *env,
                tapi_env_ps_ifs  *ifsp,
                int               argc,
                char             *argv[],
-               const char       *dev_args,
                te_bool          *need_init,
                char            **eal_args_out)
 {
@@ -164,6 +258,7 @@ tapi_reuse_eal(tapi_env         *env,
     char                 *eal_args_cfg = NULL;
     cfg_val_type          val_type = CVT_STRING;
     const tapi_env_ps_if *ps_if;
+    char                 *da_alloc = NULL;
     const char           *da_generic = NULL;
     te_errno              rc = 0;
     unsigned int          i;
@@ -222,7 +317,16 @@ tapi_reuse_eal(tapi_env         *env,
         if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_PCI_FN)
         {
             bus_name = "pci";
-            da_generic = dev_args;
+
+            free(da_alloc);
+            da_alloc = NULL;
+            rc = tapi_rte_get_dev_args_by_pci_addr(rpcs->ta, dev_name,
+                                                   &da_alloc);
+            if (rc != 0)
+                goto out;
+
+            da_generic = da_alloc;
+
         }
         else if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_RTE_VDEV)
         {
@@ -261,8 +365,7 @@ tapi_reuse_eal(tapi_env         *env,
         if (strncmp(dev_name, net_bonding_prefix,
                     strlen(net_bonding_prefix)) == 0)
         {
-            rc = tapi_eal_close_bond_slave_pci_devices(env, ps_if, rpcs,
-                                                       dev_args);
+            rc = tapi_eal_close_bond_slave_pci_devices(env, ps_if, rpcs);
             if (rc != 0)
                 goto out;
         }
@@ -281,6 +384,7 @@ tapi_reuse_eal(tapi_env         *env,
     free(eal_args);
 
 out:
+    free(da_alloc);
     free(eal_args_cfg);
 
     if (rc != 0)
@@ -434,11 +538,10 @@ tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
                                 const tapi_env_ps_if  *ps_if,
                                 te_bool                is_bonding,
                                 char                 **slave_list_strp,
-                                const char            *dev_args)
+                                const char            *ta)
 {
     const char     prefix_bonding[] = ",slave=";
     const char     prefix_failsafe[] = ",dev(";
-    const char    *dev_args_failsafe = (is_bonding) ? NULL : dev_args;
     const char     postfix_bonding[] = "";
     const char     postfix_failsafe[] = ")";
     const char    *prefix = NULL;
@@ -459,6 +562,7 @@ tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
 
     for (i = 0; i < nb_slaves; ++i)
     {
+        char *dev_args_failsafe = NULL;
         char   *slave_list_str_new;
         size_t  slave_list_str_len_new = slave_list_str_len;
         size_t  len;
@@ -466,6 +570,13 @@ tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
 
         slave_list_str_len_new += strlen(prefix);
         slave_list_str_len_new += strlen(slaves[i]);
+        if (!is_bonding)
+        {
+            rc = tapi_rte_get_dev_args_by_pci_addr(ta, slaves[i],
+                                                   &dev_args_failsafe);
+            if (rc != 0)
+                goto out;
+        }
         if (dev_args_failsafe != NULL)
         {
             ++slave_list_str_len_new;
@@ -478,6 +589,7 @@ tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
         if (slave_list_str_new == NULL)
         {
             rc = TE_ENOMEM;
+            free(dev_args_failsafe);
             goto out;
         }
         slave_list_str = slave_list_str_new;
@@ -488,6 +600,7 @@ tapi_eal_mk_vdev_slave_list_str(tapi_env              *env,
                        (dev_args_failsafe != NULL) ? "," : "",
                        (dev_args_failsafe != NULL) ? dev_args_failsafe : "",
                        postfix);
+        free(dev_args_failsafe);
         if (ret < 0 || (size_t)ret != len)
         {
             rc = TE_EINVAL;
@@ -516,7 +629,7 @@ tapi_eal_add_vdev_args(tapi_env          *env,
                        tapi_env_ps_ifs   *ifsp,
                        int               *argcp,
                        char            ***argvpp,
-                       const char        *dev_args)
+                       const char        *ta)
 {
     const tapi_env_ps_if *ps_if;
     te_errno              rc = 0;
@@ -536,7 +649,7 @@ tapi_eal_add_vdev_args(tapi_env          *env,
                 return rc;
 
             rc = tapi_eal_mk_vdev_slave_list_str(env, ps_if, is_bonding,
-                                                 &slave_list_str, dev_args);
+                                                 &slave_list_str, ta);
             if (rc != 0)
             {
                 free(mode);
@@ -562,12 +675,13 @@ tapi_eal_add_vdev_args(tapi_env          *env,
 static te_errno
 tapi_eal_whitelist_vdev_slaves(tapi_env               *env,
                                const tapi_env_ps_if   *ps_if,
-                               char                   *dev_args,
+                               char                   *ta,
                                int                    *argcp,
                                char                 ***argvpp)
 {
     char         **slaves = NULL;
     unsigned int   nb_slaves = 0;
+    char          *dev_args;
     te_errno       rc = 0;
     unsigned int   i;
 
@@ -577,10 +691,15 @@ tapi_eal_whitelist_vdev_slaves(tapi_env               *env,
 
     for (i = 0; i < nb_slaves; ++i)
     {
+        rc = tapi_rte_get_dev_args_by_pci_addr(ta, slaves[i], &dev_args);
+        if (rc != 0)
+            return rc;
+
         append_arg(argcp, argvpp, "--pci-whitelist=%s%s%s", slaves[i],
                    (dev_args == NULL) ? "" : ",",
                    (dev_args == NULL) ? "" : dev_args);
 
+        free(dev_args);
         free(slaves[i]);
     }
 
@@ -627,7 +746,6 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
     const tapi_env_ps_if   *ps_if;
     int                     i;
     cfg_val_type            val_type;
-    char                   *dev_args = NULL;
     int                     mem_channels;
     int                     mem_amount = 0;
     char                   *app_prefix = NULL;
@@ -644,27 +762,9 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
     append_arg(&my_argc, &my_argv, "%s",
                program_name == NULL ? rpcs->name : program_name);
 
-    /* Get device arguments to be specified in whitelist option */
-    val_type = CVT_STRING;
-    rc = cfg_get_instance_fmt(&val_type, &dev_args,
-                              "/local:%s/dpdk:/dev_args:", rpcs->ta);
-    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
-    {
-        dev_args = NULL;
-    }
-    else if (rc != 0)
-    {
-        goto cleanup;
-    }
-    else if (dev_args[0] == '\0')
-    {
-        free(dev_args);
-        dev_args = NULL;
-    }
-
     /* Append vdev-related arguments should the need arise */
     rc = tapi_eal_add_vdev_args(env, &pco->process->ifs, &my_argc, &my_argv,
-                                dev_args);
+                                rpcs->ta);
     if (rc != 0)
         goto cleanup;
 
@@ -673,14 +773,23 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
     {
         if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_PCI_FN)
         {
+            char *dev_args;
+
+            rc = tapi_rte_get_dev_args_by_pci_addr(rpcs->ta,
+                                                   ps_if->iface->if_info.if_name,
+                                                   &dev_args);
+            if (rc != 0)
+                goto cleanup;
+
             append_arg(&my_argc, &my_argv, "--pci-whitelist=%s%s%s",
                        ps_if->iface->if_info.if_name,
                        (dev_args == NULL) ? "" : ",",
                        (dev_args == NULL) ? "" : dev_args);
+            free(dev_args);
         }
         else if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_RTE_VDEV)
         {
-            rc = tapi_eal_whitelist_vdev_slaves(env, ps_if, dev_args,
+            rc = tapi_eal_whitelist_vdev_slaves(env, ps_if, rpcs->ta,
                                                 &my_argc, &my_argv);
             if (rc != 0)
                 goto cleanup;
@@ -773,8 +882,6 @@ cleanup:
         free(my_argv);
     }
 
-    free(dev_args);
-
     return rc;
 }
 
@@ -786,10 +893,8 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     const tapi_env_pco     *pco;
     char                  **my_argv = NULL;
     int                     my_argc = 0;
-    cfg_val_type            val_type;
     int                     ret;
     int                     i;
-    char                   *dev_args = NULL;
     te_bool                 need_init = TRUE;
     char                   *eal_args_new = NULL;
 
@@ -804,28 +909,10 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
     if (rc != 0)
         return rc;
 
-    /* Get device arguments to be specified in whitelist option */
-    val_type = CVT_STRING;
-    rc = cfg_get_instance_fmt(&val_type, &dev_args,
-                              "/local:%s/dpdk:/dev_args:", rpcs->ta);
-    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
-    {
-        dev_args = NULL;
-    }
-    else if (rc != 0)
-    {
-        goto cleanup;
-    }
-    else if (dev_args[0] == '\0')
-    {
-        free(dev_args);
-        dev_args = NULL;
-    }
-
     if (dpdk_reuse_rpcs())
     {
         rc = tapi_reuse_eal(env, rpcs, &pco->process->ifs,
-                            my_argc, my_argv, dev_args,
+                            my_argc, my_argv,
                             &need_init, &eal_args_new);
         if (rc != 0)
             goto cleanup;
@@ -857,8 +944,6 @@ cleanup:
 
     for (i = 0; i < my_argc; ++i)
         free(my_argv[i]);
-
-    free(dev_args);
 
     free(my_argv);
 

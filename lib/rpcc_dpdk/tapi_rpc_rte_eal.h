@@ -133,6 +133,36 @@ extern int rpc_rte_epoll_wait(rcf_rpc_server *rpcs,
                               int maxevents,
                               int timeout);
 
+/**
+ * Get device arguments of a PCI device.
+ *
+ * @param[in]  ta           Test Agent name
+ * @param[in]  vendor       PCI vendor identifier
+ * @param[in]  device       PCI device identifier
+ * @param[out] arg_list     Device arguments, must not be @c NULL,
+ *                          on success points to comma-separated
+ *                          string or to @c NULL.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_rte_get_dev_args(const char *ta, const char *vendor,
+                                      const char *device, char **arg_list);
+
+/**
+ * Wrapper for tapi_rte_get_dev_args() that accepts PCI address (BDF notation)
+ *
+ * @param[in]  ta           Test Agent name
+ * @param[in]  pci_addr     PCI address of a device
+ * @param[out] arg_list     Device arguments, must not be @c NULL,
+ *                          on success points to comma-separated
+ *                          string or to @c NULL.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_rte_get_dev_args_by_pci_addr(const char *ta,
+                                                  const char *pci_addr,
+                                                  char **arg_list);
+
 /**@} <!-- END te_lib_rpc_rte_eal --> */
 
 #ifdef __cplusplus
