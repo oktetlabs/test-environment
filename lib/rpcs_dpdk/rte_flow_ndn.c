@@ -2269,15 +2269,15 @@ tarpc_rte_error2tarpc(struct tarpc_rte_flow_error *tarpc_error,
 {
     enum tarpc_rte_flow_error_type  tarpc_error_type;
 
-    if (tarpc_rte_error_type2tarpc(error->type, &tarpc_error_type) != 0)
-        return -1;
-
-    tarpc_error->type = tarpc_error_type;
-
     if (error->message != NULL)
         tarpc_error->message = strdup(error->message);
     else
         tarpc_error->message = strdup("");
+
+    if (tarpc_rte_error_type2tarpc(error->type, &tarpc_error_type) != 0)
+        return -1;
+
+    tarpc_error->type = tarpc_error_type;
 
     return 0;
 }
