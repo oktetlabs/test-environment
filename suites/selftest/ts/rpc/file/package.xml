@@ -15,5 +15,14 @@
         <run>
             <script name="file_get"/>
         </run>
+        <run>
+            <script name="file_read"/>
+        </run>
+        <run>
+            <script name="file_write"/>
+        </run>
+        <run>
+            <script name="file_append"/>
+        </run>
     </session>
 </package>

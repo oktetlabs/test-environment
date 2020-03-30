@@ -1,9 +1,12 @@
 # Copyright (C) 2020 OKTET Labs. All rights reserved.
 
 tests = [
+    'file_append',
     'file_create_delete',
     'file_get',
     'file_put',
+    'file_read',
+    'file_write',
 ]
 
 foreach test : tests
