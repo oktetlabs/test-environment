@@ -201,3 +201,13 @@
 
         Name: none
         Value: Number, 0 by default
+
+    - oid: "/local/dpdk/mac"
+      access: read_create
+      type: string
+      d: |
+        Cached value of MAC address of an interface
+
+        Name: Name of the interface (net interface or DPDK port) in
+              the environment
+        Value: MAC address - six groups of hex digits separated by colons
