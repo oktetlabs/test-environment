@@ -1,6 +1,7 @@
 # Copyright (C) 2019 OKTET Labs. All rights reserved.
 
 packages = [
+    'file',
     'server',
 ]
 

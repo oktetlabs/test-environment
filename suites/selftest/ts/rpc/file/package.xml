@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    <description>Package for demonstrating TAPI/RPC file tests</description>
+    <author mailto="Eugene.Suslov@oktetlabs.ru"/>
+    <session track_conf="silent">
+        <run>
+            <script name="file_create_delete"/>
+        </run>
+    </session>
+</package>
