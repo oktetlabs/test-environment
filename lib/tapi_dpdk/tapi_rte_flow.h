@@ -146,6 +146,18 @@ extern void tapi_rte_flow_make_attr(rcf_rpc_server *rpcs, uint32_t group,
                                     te_bool egress, te_bool transfer,
                                     rpc_rte_flow_attr_p *attr);
 
+/**
+ * Isolate RTE flow
+ *
+ * @param[in]   rpcs        RPC server handle
+ * @param[in]   port_id     The port identifier of the device
+ * @param[in]   set         Nonzero to enter isolated mode, leave it otherwise
+ *
+ * @exception   TEST_FAIL
+ */
+extern void tapi_rte_flow_isolate(rcf_rpc_server *rpcs, uint16_t port_id,
+                                  int set);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

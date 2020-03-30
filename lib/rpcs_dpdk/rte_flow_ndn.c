@@ -23,6 +23,7 @@
 #include "rte_config.h"
 #include "rte_flow.h"
 #include "rte_ethdev.h"
+#include "rte_version.h"
 
 #include "asn_usr.h"
 #include "asn_impl.h"
@@ -2248,6 +2249,12 @@ tarpc_rte_error_type2tarpc(const enum rte_flow_error_type rte,
         CASE_RTE2TARPC(RTE_FLOW_ERROR_TYPE_ITEM);
         CASE_RTE2TARPC(RTE_FLOW_ERROR_TYPE_ACTION_NUM);
         CASE_RTE2TARPC(RTE_FLOW_ERROR_TYPE_ACTION);
+#if RTE_VERSION >= RTE_VERSION_NUM(18,5,0,1)
+        CASE_RTE2TARPC(RTE_FLOW_ERROR_TYPE_ITEM_SPEC);
+        CASE_RTE2TARPC(RTE_FLOW_ERROR_TYPE_ITEM_LAST);
+        CASE_RTE2TARPC(RTE_FLOW_ERROR_TYPE_ITEM_MASK);
+        CASE_RTE2TARPC(RTE_FLOW_ERROR_TYPE_ACTION_CONF);
+#endif
 #undef CASE_RTE2TARPC
 
         default:
@@ -2262,15 +2269,15 @@ tarpc_rte_error2tarpc(struct tarpc_rte_flow_error *tarpc_error,
 {
     enum tarpc_rte_flow_error_type  tarpc_error_type;
 
-    if (tarpc_rte_error_type2tarpc(error->type, &tarpc_error_type) != 0)
-        return -1;
-
-    tarpc_error->type = tarpc_error_type;
-
     if (error->message != NULL)
         tarpc_error->message = strdup(error->message);
     else
         tarpc_error->message = strdup("");
+
+    if (tarpc_rte_error_type2tarpc(error->type, &tarpc_error_type) != 0)
+        return -1;
+
+    tarpc_error->type = tarpc_error_type;
 
     return 0;
 }

@@ -137,6 +137,7 @@ if cc.has_function(f, args: te_cflags,
 endif
 
 sources += files(
+    'dpdk.c',
     'eal.c',
     'ethdev.c',
     'mbuf.c',

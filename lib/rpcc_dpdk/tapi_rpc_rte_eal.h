@@ -110,6 +110,17 @@ extern int rpc_rte_eal_hotplug_add(rcf_rpc_server *rpcs,
                                    const char     *devargs);
 
 /**
+ * Wrapper for rpc_rte_eal_hotplug_add() that also resets cached value
+ * of EAL arguments in the configurator. The reset is almost always
+ * required since hotplug changes the EAL configuration and it
+ * interferes with dpdk_reuse_rpcs().
+ */
+extern te_errno tapi_rte_eal_hotplug_add(rcf_rpc_server *rpcs,
+                                         const char *busname,
+                                         const char *devname,
+                                         const char *devargs);
+
+/**
  * rte_eal_hotplug_remove() RPC
  *
  * @param busname Bus name for the device to be removed from
@@ -122,6 +133,16 @@ extern int rpc_rte_eal_hotplug_remove(rcf_rpc_server *rpcs,
                                       const char     *devname);
 
 /**
+ * Wrapper for rpc_rte_eal_hotplug_remove() that also resets cached value
+ * of EAL arguments in the configurator. The reset is almost always
+ * required since hotplug changes the EAL configuration and it
+ * interferes with dpdk_reuse_rpcs().
+ */
+extern te_errno tapi_rte_eal_hotplug_remove(rcf_rpc_server *rpcs,
+                                            const char *busname,
+                                            const char *devname);
+
+/**
  * @b rte_epoll_wait() RPC
  *
  * If error is not expected using #RPC_AWAIT_IUT_ERROR(), the function
@@ -132,6 +153,36 @@ extern int rpc_rte_epoll_wait(rcf_rpc_server *rpcs,
                               struct tarpc_rte_epoll_event *events,
                               int maxevents,
                               int timeout);
+
+/**
+ * Get device arguments of a PCI device.
+ *
+ * @param[in]  ta           Test Agent name
+ * @param[in]  vendor       PCI vendor identifier
+ * @param[in]  device       PCI device identifier
+ * @param[out] arg_list     Device arguments, must not be @c NULL,
+ *                          on success points to comma-separated
+ *                          string or to @c NULL.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_rte_get_dev_args(const char *ta, const char *vendor,
+                                      const char *device, char **arg_list);
+
+/**
+ * Wrapper for tapi_rte_get_dev_args() that accepts PCI address (BDF notation)
+ *
+ * @param[in]  ta           Test Agent name
+ * @param[in]  pci_addr     PCI address of a device
+ * @param[out] arg_list     Device arguments, must not be @c NULL,
+ *                          on success points to comma-separated
+ *                          string or to @c NULL.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_rte_get_dev_args_by_pci_addr(const char *ta,
+                                                  const char *pci_addr,
+                                                  char **arg_list);
 
 /**@} <!-- END te_lib_rpc_rte_eal --> */
 

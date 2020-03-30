@@ -426,6 +426,20 @@ extern te_errno tapi_cfg_net_assigned_get_subnet_ip(
  */
 extern te_errno tapi_cfg_net_delete_all(void);
 
+/**
+ * Get PCI devices associated with a network node.
+ *
+ * @param[in]  node         Network node configuration
+ * @param[out] n_pci        Number of PCI devices
+ * @param[out] pci_oids     PCI device object identifiers
+ *                          (/agent/hardware/pci/device)
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_net_node_get_pci_oids(const cfg_net_node_t *node,
+                                               unsigned int *n_pci,
+                                               char ***pci_oids);
+
 /**@} <!-- END tapi_conf_net --> */
 
 #ifdef __cplusplus

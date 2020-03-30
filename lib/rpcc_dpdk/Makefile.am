@@ -19,7 +19,8 @@ include_HEADERS = \
 	tapi_rpc_rte_mbuf_ndn.h \
 	rte_flow_ndn.h \
 	tapi_rpc_rte_flow.h \
-	tapi_rpc_rte.h
+	tapi_rpc_rte.h \
+	tapi_rpc_dpdk.h
 
 lib_LTLIBRARIES = librpcc_dpdk.la
 
@@ -32,7 +33,8 @@ librpcc_dpdk_la_SOURCES = \
 	tapi_ethdev.c \
 	tapi_rpc_rte_mbuf_ndn.c \
 	rte_flow_ndn.c \
-	eal.c
+	eal.c \
+	dpdk.c
 
 librpcc_dpdk_la_LIBADD = $(TIRPC_LIBS)
 

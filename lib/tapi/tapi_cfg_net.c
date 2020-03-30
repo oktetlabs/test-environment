@@ -47,6 +47,7 @@
 #include "tapi_cfg.h"
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_net.h"
+#include "tapi_cfg_pci.h"
 #include "tapi_host_ns.h"
 
 /* See description in tapi_cfg_net.h */
@@ -817,10 +818,7 @@ tapi_cfg_net_mk_node_rsrc_desc_pci_fn(const cfg_oid         *oid,
         return TE_ENOMEM;
     }
 
-    te_asprintf(&d->rsrc_names[0], "pci_fn:%s:%s:%s",
-                CFG_OID_GET_INST_NAME(oid, 4),
-                CFG_OID_GET_INST_NAME(oid, 5),
-                CFG_OID_GET_INST_NAME(oid, 6));
+    d->rsrc_names[0] = tapi_cfg_pci_rsrc_name(oid);
     if (d->rsrc_names[0] == NULL)
     {
         tapi_cfg_net_node_rsrc_desc_free(d);
@@ -880,10 +878,7 @@ tapi_cfg_net_mk_node_rsrc_desc_rte_vdev(const cfg_oid         *oid,
          * However, considering other possible options is hardly useful for
          * the most applications of this code.
          */
-        te_asprintf(&d->rsrc_names[i], "pci_fn:%s:%s:%s",
-                    CFG_OID_GET_INST_NAME(pci_oid, 4),
-                    CFG_OID_GET_INST_NAME(pci_oid, 5),
-                    CFG_OID_GET_INST_NAME(pci_oid, 6));
+        d->rsrc_names[i] = tapi_cfg_pci_rsrc_name(pci_oid);
         cfg_free_oid(pci_oid);
         if (d->rsrc_names[i] == NULL)
         {
@@ -2459,6 +2454,72 @@ tapi_cfg_net_remove_empty(void)
     free(node_handles);
     free(net_name);
     free(node_value);
+
+    return rc;
+}
+
+static te_errno
+tapi_cfg_net_get_node_oid(const cfg_net_node_t *node, char **oid)
+{
+    cfg_val_type type = CVT_STRING;
+
+    return cfg_get_instance(node->handle, &type, oid);
+}
+
+te_errno
+tapi_cfg_net_node_get_pci_oids(const cfg_net_node_t *node, unsigned int *n_pci,
+                               char ***pci_oids)
+{
+    char *node_oid;
+    te_errno rc;
+    char **result;
+    size_t n;
+
+    rc = tapi_cfg_net_get_node_oid(node, &node_oid);
+    if (rc != 0)
+        return rc;
+
+    switch (node->rsrc_type)
+    {
+        case NET_NODE_RSRC_TYPE_INTERFACE:
+            ERROR("Failed to get PCI devices of a node bound to net interface");
+            rc = TE_RC(TE_TAPI, TE_EINVAL);
+            break;
+
+        case NET_NODE_RSRC_TYPE_PCI_FN:
+            result = TE_ALLOC(sizeof(*result));
+            if (result == NULL)
+            {
+                rc = TE_RC(TE_TAPI, TE_ENOMEM);
+                break;
+            }
+
+            rc = cfg_get_instance_str(NULL, &result[0], node_oid);
+            if (rc != 0)
+            {
+                free(result);
+                ERROR("Failed to get PCI device");
+                break;
+            }
+
+            *n_pci = 1;
+            *pci_oids = result;
+            break;
+
+        case NET_NODE_RSRC_TYPE_RTE_VDEV:
+            rc = tapi_cfg_net_pci_fn_by_dpdk_vdev_ref(node_oid, &n,
+                                                      pci_oids);
+            if (rc == 0)
+                *n_pci = (unsigned int)n;
+            break;
+
+        default:
+            ERROR("Failed to get PCI devices of an unknown node");
+            rc = TE_RC(TE_TAPI, TE_EINVAL);
+            break;
+    }
+
+    free(node_oid);
 
     return rc;
 }

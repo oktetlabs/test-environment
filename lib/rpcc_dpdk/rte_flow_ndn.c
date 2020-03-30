@@ -146,8 +146,12 @@ tarpc_rte_flow_error2str(te_log_buf *tlbp, struct tarpc_rte_flow_error *error)
         CASE_ERROR_TYPE2STR(ATTR_TRANSFER, "transfer field");
         CASE_ERROR_TYPE2STR(ATTR, "attributes structure");
         CASE_ERROR_TYPE2STR(ITEM_NUM, "pattern length");
+        CASE_ERROR_TYPE2STR(ITEM_SPEC, "item specification");
+        CASE_ERROR_TYPE2STR(ITEM_LAST, "item specification range");
+        CASE_ERROR_TYPE2STR(ITEM_MASK, "item specification mask");
         CASE_ERROR_TYPE2STR(ITEM, "specific pattern item");
         CASE_ERROR_TYPE2STR(ACTION_NUM, "number of actions");
+        CASE_ERROR_TYPE2STR(ACTION_CONF, "action configuration");
         CASE_ERROR_TYPE2STR(ACTION, "specific action");
         default:
              te_log_buf_append(tlbp, "unknown type");

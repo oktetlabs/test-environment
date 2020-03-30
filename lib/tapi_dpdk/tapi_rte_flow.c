@@ -184,3 +184,17 @@ tapi_rte_flow_make_attr(rcf_rpc_server *rpcs, uint32_t group, uint32_t priority,
 
     asn_free_value(attr_pdu);
 }
+
+void
+tapi_rte_flow_isolate(rcf_rpc_server *rpcs, uint16_t port_id, int set)
+{
+    te_errno rc;
+
+    RPC_AWAIT_IUT_ERROR(rpcs);
+
+    rc = rpc_rte_flow_isolate(rpcs, port_id, set, NULL);
+    if (rc == -TE_RC(TE_RPC, TE_EOPNOTSUPP))
+        TEST_SKIP("rte_flow_isolate() RPC is unavailable");
+
+    CHECK_RC(rc);
+}

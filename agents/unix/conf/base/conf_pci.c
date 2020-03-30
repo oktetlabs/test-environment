@@ -54,6 +54,7 @@
 #include "te_queue.h"
 #include "te_string.h"
 #include "te_str.h"
+#include "te_file.h"
 #include "logger_api.h"
 #include "comm_agent.h"
 #include "rcf_ch_api.h"
@@ -61,6 +62,9 @@
 #include "logger_api.h"
 #include "unix_internal.h"
 #include "conf_common.h"
+#include "te_alloc.h"
+
+#define PCI_VIRTFN_PREFIX "virtfn"
 
 /** PCI device address */
 typedef struct pci_address {
@@ -1221,7 +1225,8 @@ RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_vendor, "vendor",
 
 
 static te_errno
-find_device_by_addr_str(const char *addr_str, pci_device **devp)
+find_device_by_addr_str_ignore_permission(const char *addr_str,
+                                          pci_device **devp)
 {
     pci_address addr;
     te_errno rc;
@@ -1233,6 +1238,19 @@ find_device_by_addr_str(const char *addr_str, pci_device **devp)
     *devp = find_device_by_addr(&addr);
     if (*devp == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return 0;
+}
+
+static te_errno
+find_device_by_addr_str(const char *addr_str, pci_device **devp)
+{
+    te_errno rc;
+
+    rc = find_device_by_addr_str_ignore_permission(addr_str, devp);
+    if (rc != 0)
+        return rc;
+
     if (!is_device_accessible(*devp))
     {
         ERROR("%s is not ours", addr_str);
@@ -1663,8 +1681,168 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
     return rc;
 }
 
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_net, "net",
+static int
+filter_virtfn(const struct dirent *de)
+{
+    return (strcmp_start(PCI_VIRTFN_PREFIX, de->d_name) == 0);
+}
+
+static te_errno
+pci_virtfn_list(unsigned int gid, const char *oid, const char *sub_id,
+                char **list, const char *unused1, const char *unused2,
+                const char *addr_str)
+{
+    size_t result_size = RCF_MAX_VAL;
+    te_string buf = TE_STRING_INIT;
+    const pci_device *dev;
+    struct dirent **names = NULL;
+    char *result = NULL;
+    te_errno rc = 0;
+    size_t off;
+    int n = 0;
+    int i;
+
+    UNUSED(sub_id);
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+    rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);
+    if (rc != 0)
+        goto out;
+
+    rc = format_sysfs_device_name(&buf, dev, NULL);
+    if (rc != 0)
+        goto out;
+
+    n = scandir(buf.ptr, &names, filter_virtfn, alphasort);
+    if (n < 0)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("Failed to get a list of PCI virtual functions");
+        goto out;
+    }
+
+    result = TE_ALLOC(result_size);
+    if (result == NULL)
+    {
+        rc = TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        goto out;
+    }
+
+    for (off = 0, i = 0; i < n; i++)
+    {
+        int ret;
+
+        if (strlen(names[i]->d_name) <= strlen(PCI_VIRTFN_PREFIX))
+        {
+            ERROR("Malformed virtfn link");
+            rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+            goto out;
+        }
+
+        ret = snprintf(result + off, result_size - off, "%s ",
+                       names[i]->d_name + strlen(PCI_VIRTFN_PREFIX));
+        if (ret < 0 || (size_t)ret >= result_size - off)
+        {
+            rc = TE_OS_RC(TE_TA_UNIX, errno);
+            ERROR("snprintf() failed or string truncated");
+            goto out;
+        }
+
+        off += ret;
+    }
+
+    *list = result;
+
+out:
+    te_string_free(&buf);
+    for (i = 0; i < n; i++)
+        free(names[i]);
+    free(names);
+
+    if (rc != 0)
+        free(result);
+
+    return rc;
+}
+
+static te_errno
+pci_virtfn_get(unsigned int gid, const char *oid, char *value,
+               const char *unused1, const char *unused2,
+               const char *addr_str, const char *virtfn_id)
+{
+    te_string buf = TE_STRING_INIT;
+    char link[PATH_MAX] = "";
+    char *vf_addr;
+    const pci_device *dev;
+    const pci_device *vf;
+    te_errno rc;
+    char *agent;
+    int n;
+
+    UNUSED(gid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+    rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);
+    if (rc != 0)
+        return rc;
+
+    rc = format_sysfs_device_name(&buf, dev, "/");
+    if (rc != 0)
+    {
+        te_string_free(&buf);
+        return rc;
+    }
+
+    rc = te_string_append(&buf, PCI_VIRTFN_PREFIX "%s", virtfn_id);
+    if (rc != 0)
+    {
+        te_string_free(&buf);
+        return rc;
+    }
+
+    rc = readlink(buf.ptr, link, sizeof(link) - 1);
+    te_string_free(&buf);
+    if (rc < 0)
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+
+    vf_addr = te_basename(link);
+    if (vf_addr == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    /*
+     * Caller may not have a permission to access a VF (it requires grabbing
+     * it as a resource). But the information that a VF exists might be
+     * provided (it does not grant any permissions to access the VF,
+     * subsequent resource grab is required).
+     */
+    rc = find_device_by_addr_str_ignore_permission(vf_addr, (pci_device **)&vf);
+    free(vf_addr);
+    if (rc != 0)
+        return rc;
+
+    agent = cfg_oid_str_get_inst_name(oid, 1);
+    if (agent == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    n = snprintf(value, RCF_MAX_VAL,
+                 "/agent:%s/hardware:/pci:/vendor:%04x/device:%04x/instance:%u",
+                 agent, vf->vendor_id, vf->device_id, vf->devno);
+    free(agent);
+    if (n < 0 || n >= RCF_MAX_VAL)
+        return TE_RC(TE_TA_UNIX, TE_EFAIL);
+
+    return 0;
+}
+
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_virtfn, "virtfn",
                                NULL, NULL,
+                               pci_virtfn_get, pci_virtfn_list);
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_net, "net",
+                               NULL, &node_pci_virtfn,
                                NULL, pci_net_list);
 RCF_PCH_CFG_NODE_RW(node_pci_driver, "driver",
                     NULL, &node_pci_net,

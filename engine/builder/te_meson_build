@@ -15,6 +15,27 @@ with_config="$1"
 # Put initial values to control variables
 RSYNC="rsync --exclude .hg -a"
 
+# List of all available TAD protocols
+TAD_PROTOCOLS_ALL="arp"
+TAD_PROTOCOLS_ALL+=" atm"
+TAD_PROTOCOLS_ALL+=" bridge"
+TAD_PROTOCOLS_ALL+=" cli"
+TAD_PROTOCOLS_ALL+=" dhcp"
+TAD_PROTOCOLS_ALL+=" eth"
+TAD_PROTOCOLS_ALL+=" flow"
+TAD_PROTOCOLS_ALL+=" forw"
+TAD_PROTOCOLS_ALL+=" geneve"
+TAD_PROTOCOLS_ALL+=" gre"
+TAD_PROTOCOLS_ALL+=" igmp"
+TAD_PROTOCOLS_ALL+=" ipstack"
+TAD_PROTOCOLS_ALL+=" iscsi"
+TAD_PROTOCOLS_ALL+=" pcap"
+TAD_PROTOCOLS_ALL+=" ppp"
+TAD_PROTOCOLS_ALL+=" rte_mbuf"
+TAD_PROTOCOLS_ALL+=" snmp"
+TAD_PROTOCOLS_ALL+=" socket"
+TAD_PROTOCOLS_ALL+=" vxlan"
+
 error() {
     echo ERROR: $* >&2
     exit 1
@@ -59,6 +80,45 @@ set_sniffers() {
     fi
 }
 
+add_meson_lib_opt() {
+    local name="$1"; shift
+    local value="$@"
+
+    test -z "${name}" -o -n "${name//[[:alnum:]_-]/}" &&
+        error "Wrong meson option name: ${name}"
+
+    local opt_name="${name//-/_}"
+
+    meson_lib_opts+=" ${opt_name}"
+    eval meson_lib_opt_name_${opt_name}=\"\${name}\"
+    eval meson_lib_opt_val_${opt_name}=\"\${value}\"
+}
+
+process_library_agentlib() {
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local parms=
+    local p
+
+    for p in ${!parms_var} ; do
+        case ${p} in
+            --enable-dlfcn-lookup)
+                add_meson_lib_opt agentlib-dlfcn-lookup true ;;
+            --enable-ftp)
+                add_meson_lib_opt agentlib-ftp true ;;
+            --enable-power-sw)
+                add_meson_lib_opt agentlib-power-sw true ;;
+            --enable-telephony)
+                add_meson_lib_opt agentlib-telephony true ;;
+            --enable-dlfcn-upnp)
+                add_meson_lib_opt agentlib-upnp true ;;
+            *)
+                parms="${parms}${parms:+ }${p}" ;;
+        esac
+    done
+    eval ${parms_var}=\"${parms}\"
+}
+
 process_library_rcfpch() {
     local pfx="$1"; shift
     local parms_var="${pfx}PARMS"
@@ -80,6 +140,33 @@ process_library_rcfpch() {
     eval ${parms_var}=\"${parms}\"
 }
 
+process_library_rpcserver() {
+    local pfx="$1"; shift
+    local parms_var="${pfx}PARMS"
+    local parms=
+    local p
+
+    for p in ${!parms_var} ; do
+        case ${p} in
+            --enable-typesafe-rpc=no|--disable-typesafe-rpc)
+                add_meson_lib_opt typesafe-rpc false ;;
+            --enable-static-rpc-lookup)
+                add_meson_lib_opt static-rpc-lookup true ;;
+            --enable-plugins=no|--disable-plugins)
+                add_meson_lib_opt rpcserver-idle-plugins false ;;
+            --enable-mem=no|--disable-mem)
+                add_meson_lib_opt rpcserver-smart-mem false ;;
+            --with-tr069)
+                add_meson_lib_opt rpcserver-tr069 true ;;
+            --with-agentlib=*)
+                add_meson_lib_opt rpcserver-agentlib "${p#--with-agentlib=}" ;;
+            *)
+                parms="${parms}${parms:+ }${p}" ;;
+        esac
+    done
+    eval ${parms_var}=\"${parms}\"
+}
+
 process_library_rpcxdr() {
     local pfx="$1"; shift
     local parms_var="${pfx}PARMS"
@@ -89,7 +176,7 @@ process_library_rpcxdr() {
     for p in ${!parms_var} ; do
         case ${p} in
             --with-rpcdefs=*)
-                meson_args="${meson_args} -Drpcdefs=${p#--with-rpcdefs=}" ;;
+                add_meson_lib_opt rpcdefs "${p#--with-rpcdefs=}" ;;
             *)
                 parms="${parms}${parms:+ }${p}" ;;
         esac
@@ -106,9 +193,9 @@ process_library_tad() {
     for p in ${!parms_var} ; do
         case ${p} in
             --with-packet-mmap-rx-ring)
-                meson_args="${meson_args} -Dtad-packet_mmap_rx_ring=true" ;;
+                add_meson_lib_opt tad-packet_mmap_rx_ring true ;;
             --without-cs)
-                meson_args="${meson_args} -Dtad-cs=false" ;;
+                add_meson_lib_opt tad-cs false ;;
             --with-*)
                 tad_with_protocols="${tad_with_protocols} ${p#--with-}" ;;
             --without-static-libc)
@@ -119,9 +206,6 @@ process_library_tad() {
         esac
     done
     eval ${parms_var}=\"${parms}\"
-
-    test -z "${protocols}" ||
-        meson_args="${meson_args} -Dtad-protocols=\"${protocols}\""
 }
 
 process_library_tapi_tad() {
@@ -150,7 +234,9 @@ process_library() {
     local msg="Platform library ${p}/${l}"
 
     case "${l}" in
+        agentlib)   process_library_agentlib "${pfx}" ;;
         rcfpch)     process_library_rcfpch "${pfx}" ;;
+        rpcserver)  process_library_rpcserver "${pfx}" ;;
         rpcxdr)     process_library_rpcxdr "${pfx}" ;;
         tad)        process_library_tad "${pfx}" ;;
         tapi_tad)   process_library_tapi_tad "${pfx}" ;;
@@ -278,21 +364,21 @@ process_agent() {
 
     local ta_apps_var="TE_BS_TA_APPS_${ta}"
 
-    test -z "${!ta_apps_var}" ||
-        error "TA applications are not supported in meson build: ${!ta_apps_var}"
-
     build_agents="${build_agents} ${ta_src}"
 
     case "${ta_src}" in
         unix)   process_agent_unix "${ta}" "${pfx}" ;;
     esac
 
+    local papps="TE_BS_TA_APPS_${p}"
+    test -n "${!papps// /}" && meson_args="${meson_args} -Dinstall-dev=true"
+
     process_parameters "${pfx}" "${msg}"
 }
 
 process_platform() {
     local p="$1"; shift
-    local tad_protocols="arp atm bridge cli dhcp eth flow forw geneve gre igmp ipstack iscsi pcap ppp rte_mbuf snmp socket vxlan"
+    local tad_protocols="${TAD_PROTOCOLS_ALL}"
     local tad_with_protocols=
     local tad_without_protocols=
     local use_sniffers=
@@ -340,7 +426,7 @@ process_platform() {
         tad_protocols="${protocols}"
     fi
     test -z "${tad_protocols}" ||
-        meson_args="${meson_args} -Dtad-protocols=\"${tad_protocols}\""
+        add_meson_lib_opt tad-protocols "${tad_protocols}"
 
     local build_agents=
     for ta in ${TE_BS_TA} ; do
@@ -348,7 +434,7 @@ process_platform() {
         test "${!platform}" != "${p}" || process_agent "${p}" "${ta}"
     done
     test -z "${use_sniffers}" ||
-        meson_args="${meson_args} -Dsniffers=\"${use_sniffers}\""
+        add_meson_lib_opt sniffers "${use_sniffers}"
     test -z "${build_agents}" ||
         meson_args="${meson_args} -Dagents=\"${build_agents}\""
 }
@@ -539,6 +625,8 @@ process_platforms() {
         # Volatile argument which require workspace reconfigure
         local meson_args="-Dagentsdir=${TE_INSTALL}/agents"
 
+        local meson_lib_opts=
+
         process_platform "${p}"
 
         if test ${p} = "${TE_HOST}" ; then
@@ -556,6 +644,13 @@ process_platforms() {
         fi
 
         eval TE_BS_MESON_${p}_NV_ARGS=\"\${meson_nv_args}\"
+
+        local opt
+        for opt in ${meson_lib_opts} ; do
+            local opt_name="meson_lib_opt_name_${opt}"
+            local opt_val="meson_lib_opt_val_${opt}"
+            meson_args+=" -D${!opt_name}=\"${!opt_val}\""
+        done
         eval TE_BS_MESON_${p}_ARGS=\"\${meson_args}\"
     done
 }
@@ -626,9 +721,66 @@ build_ext() {
             --build="${!pextbuild}" \
             --expheaders="${!pextinsth}" \
             --explibs="${!pextinstl}" \
-            --envvars="${!pextenv}" $enable_tce || exit 1
+            --envvars="${!pextenv}" $enable_tce --build-meson || exit 1
 
         rsync_from "$p" "${ws_ext_builddir}/" "${local_ext_builddir}"
+    done
+}
+
+build_ta_apps() {
+    local p="$1"; shift
+
+    local papps="TE_BS_TA_APPS_${p}"
+    local papp
+    local app_inst="${ws}/destdir${TE_INSTALL}"
+    for papp in ${!papps}; do
+        local ws_app_src="${ws}/apps/${papp}/src"
+        local ws_app_builddir="${ws}/apps/${papp}/build"
+
+        local pappsrc="TE_BS_TA_APPS_${p}_${papp}_SOURCES"
+        local pappprep="TE_BS_TA_APPS_${p}_${papp}_PREPARE"
+        local pappbuilddir="TE_BS_TA_APPS_${p}_${papp}_BUILDDIR"
+        local papplibs="TE_BS_TA_APPS_${p}_${papp}_LIBS"
+        local pappbuild="TE_BS_TA_APPS_${p}_${papp}_BUILD"
+        local pappinstbin="TE_BS_TA_APPS_${p}_${papp}_INSTALL_BIN"
+        local pappenv="TE_BS_TA_APPS_${p}_${papp}_ENV_VARS"
+        local enable_tce=""
+
+        local teincludes=
+        local telib
+        for telib in ${!papplibs}; do
+            local plibsrc="TE_BS_LIB_${PLATFORM}_${telib}_SOURCES"
+            local libsrc="${!plibsrc}"
+            # We assume that if a library is built several times, it may have
+            # a separate include subdirectory for each 'non-default' build
+            if test -n "$libsrc" -a "$libsrc" != "${TE_BASE}/lib/${telib}"; then
+                teincludes="${teincludes} ${telib}"
+            fi
+        done
+
+        te_eval_or_ssh "$p" "mkdir -p $ws_app_src $ws_app_builddir"
+        rsync_to "$p" "${!pappsrc}/" "$ws_app_src"
+
+        local local_app_builddir="ta_apps/${papp}/build"
+        if test -d "${local_app_builddir}"; then
+            rsync_to "$p" "${local_app_builddir}/" "${ws_app_builddir}"
+        else
+            mkdir -p "${local_app_builddir}"
+        fi
+
+        ${SCRIPT_DIR}/te_build_ext --prefix="${app_inst}" \
+            --tatype="$p" \
+            --platform="$p" \
+            --srcdir="${ws_app_src}" \
+            --prepare="${!pappprep}" \
+            --builddir="${ws_app_builddir}" \
+            --telibs="${!papplibs}" \
+            --includes="${teincludes}" \
+            --build="${!pappbuild}" \
+            --expbin="${!pappinstbin}" \
+            --envvars="${!pappenv}" $enable_tce --build-meson || exit 1
+
+        rsync_from "$p" "${ws_app_builddir}/" "${local_app_builddir}"
     done
 }
 
@@ -670,10 +822,22 @@ build_platform() {
 
     ${remote_build} && destdir="DESTDIR=\"${ws}/destdir\""
 
+    if test "${p}" != "${TE_HOST}" -a -n \
+        "${TE_RCF_CONSISTENCY_CHECKS_EXT_FILES}" ; then
+        te_eval_or_ssh "${p}" \
+            "${ws}/src/engine/builder/te_rcf_consistency_checks \
+                --extfiles-del \"${ws}/build/\" ;
+            echo \"${TE_RCF_CONSISTENCY_CHECKS_EXT_FILES}\" |
+                ${ws}/src/engine/builder/te_rcf_consistency_checks \
+                    --extfiles-add \"${ws}/build/\""
+    fi
+
     te_eval_or_ssh "${p}" \
         "which ninja >/dev/null 2>&1 && NINJA=ninja || NINJA=ninja-build ;
          TE_BASE=\"${ws}\"/src ${destdir} \$NINJA -C \"${ws}\"/build install" ||
         result=$?
+
+    build_ta_apps "${p}"
 
     if ${remote_build} ; then
         rsync_from "${p}" "${ws}"/build . ||
@@ -709,9 +873,6 @@ do_build() {
 
     for p in ${TE_BS_PLATFORMS} ; do
         local build=${p}_BUILD
-
-#        "${TE_BASE}/engine/builder/te_build_ext_helper" \
-#            --prefix="${TE_INSTALL}" --platform="${p}" --mode=lib
 
         case "${!build}" in
             autotools)

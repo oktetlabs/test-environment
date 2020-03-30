@@ -48,6 +48,7 @@ pipeline {
                         def platform = p
                         builders[platform] = {
                             node(platform) {
+                                checkout scm
                                 withEnv(["TE_BASE=${env.WORKSPACE}/te",
                                          "TE_BUILD=${env.WORKSPACE}/te-build",
                                          "TE_INSTALL=${env.WORKSPACE}/te-build/inst",

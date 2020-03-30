@@ -143,6 +143,15 @@
          Name: interface name
          Value: none
 
+    - oid: "/agent/hardware/pci/device/virtfn"
+      access: read_only
+      type: string
+      d: |
+         Device's virtual functions
+
+         Name: virtual function index
+         Value: reference to /agent/hardware/pci/vendor/device/instance
+
     - oid: "/agent/hardware/pci/device/sriov"
       access: read_only
       type: integer

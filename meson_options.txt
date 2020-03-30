@@ -46,6 +46,8 @@ option('rpcserver-smart-mem', type: 'boolean', value: true,
        description: 'RPC server smart memory management (enabled by default)')
 option('rpcserver-tr069', type: 'boolean', value: false,
        description: 'RPC server supports TR-069')
+option('rpcserver-agentlib', type: 'string', value: 'agentlib',
+       description: 'RPC server build with agentlib')
 
 option('agentlib-dlfcn-lookup', type: 'boolean', value: false,
        description: 'Enable dlsym() symbol lookup in TA RPC helper library')

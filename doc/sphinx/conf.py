@@ -59,9 +59,11 @@ html_logo = 'static/image/te-logo.png'
 html_theme_options = {
     'logo_only': True,
     'style_nav_header_background': '#fcfcfc',
+    'titles_only': True,
+    'collapse_navigation': False,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['generated/_static']
+html_static_path = ['static']

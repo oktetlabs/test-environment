@@ -30,12 +30,15 @@
                a NIC board codename and relevant physical port identifier.
 
     - oid: "/local/dpdk/dev_args"
-      access: read_write
+      access: read_create
       type: string
       d: |
         A list of comma-separated key=value pairs specific to some device.
 
-        Name: none
+        Name: PCI function for which the args are applied
+              Format - pci_fn:<vendor_id>:<device_id>:
+              if an ID in brackets is omitted, the dev_args should be applied
+              to devices with any ID
         Value: A list of comma-separated key=value pairs
 
     - oid: "/local/dpdk/extra_eal_args"
@@ -198,3 +201,13 @@
 
         Name: none
         Value: Number, 0 by default
+
+    - oid: "/local/dpdk/mac"
+      access: read_create
+      type: string
+      d: |
+        Cached value of MAC address of an interface
+
+        Name: Name of the interface (net interface or DPDK port) in
+              the environment
+        Value: MAC address - six groups of hex digits separated by colons

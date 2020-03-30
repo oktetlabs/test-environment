@@ -2,6 +2,7 @@
 
 headers += files(
     'rte_flow_ndn.h',
+    'tapi_rpc_dpdk.h',
     'tapi_rpc_rte.h',
     'tapi_rpc_rte_eal.h',
     'tapi_rpc_rte_ethdev.h',
@@ -13,6 +14,7 @@ headers += files(
     'tapi_rte_mbuf.h',
 )
 sources += files(
+    'dpdk.c',
     'eal.c',
     'ethdev.c',
     'mbuf.c',
