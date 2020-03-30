@@ -15,9 +15,11 @@
 #include "tapi_test.h"
 #include "tapi_file.h"
 #include "tapi_mem.h"
+#include "tapi_rpc_dirent.h"
 #include "tapi_rpc_unistd.h"
 
 #define AGT_A    "Agt_A"
+#define AGT_B    "Agt_B"
 
 #define TMP_DIR    "/tmp"
 

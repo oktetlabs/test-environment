@@ -24,5 +24,14 @@
         <run>
             <script name="file_append"/>
         </run>
+        <run>
+            <script name="file_copy"/>
+        </run>
+        <run>
+            <script name="file_directory"/>
+            <arg name="nfiles">
+                <value>42</value>
+            </arg>
+        </run>
     </session>
 </package>

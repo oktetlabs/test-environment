@@ -2,7 +2,9 @@
 
 tests = [
     'file_append',
+    'file_copy',
     'file_create_delete',
+    'file_directory',
     'file_get',
     'file_put',
     'file_read',
