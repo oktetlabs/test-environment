@@ -2,6 +2,8 @@
 
 tests = [
     'file_create_delete',
+    'file_get',
+    'file_put',
 ]
 
 foreach test : tests

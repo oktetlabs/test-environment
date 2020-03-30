@@ -16,6 +16,8 @@
 #include "tapi_file.h"
 #include "tapi_rpc_unistd.h"
 
+#define TMP_DIR    "/tmp"
+
 #define AGT_A    "Agt_A"
 
 #endif /* __FILE_SUITE_H__ */
