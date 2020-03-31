@@ -76,6 +76,7 @@ rpc_munmap(rcf_rpc_server *rpcs, rpc_ptr addr, uint64_t length)
 
     rcf_rpc_call(rpcs, "munmap", &in, &out);
 
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(munmap, out.retval);
     TAPI_RPC_LOG(rpcs, munmap, RPC_PTR_FMT ", "
                  "%" TE_PRINTF_64 "u", "%d",
                  RPC_PTR_VAL(addr), length, out.retval);
@@ -106,6 +107,7 @@ rpc_madvise(rcf_rpc_server *rpcs,
 
     rcf_rpc_call(rpcs, "madvise", &in, &out);
 
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(madvise, out.retval);
     TAPI_RPC_LOG(rpcs, madvise, RPC_PTR_FMT ", "
                  "%" TE_PRINTF_64 "u, %s", "%d",
                  RPC_PTR_VAL(addr), length, madv_value_rpc2str(advise),
