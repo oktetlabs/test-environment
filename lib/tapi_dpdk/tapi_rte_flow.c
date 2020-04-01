@@ -193,8 +193,11 @@ tapi_rte_flow_isolate(rcf_rpc_server *rpcs, uint16_t port_id, int set)
     RPC_AWAIT_IUT_ERROR(rpcs);
 
     rc = rpc_rte_flow_isolate(rpcs, port_id, set, NULL);
-    if (rc == -TE_RC(TE_RPC, TE_EOPNOTSUPP))
+    if (rc == -TE_RC(TE_RPC, TE_EOPNOTSUPP) ||
+        rc == -TE_RC(TE_RPC, TE_ENOSYS))
+    {
         TEST_SKIP("rte_flow_isolate() RPC is unavailable");
+    }
 
     CHECK_RC(rc);
 }
