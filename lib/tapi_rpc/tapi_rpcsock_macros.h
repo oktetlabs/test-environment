@@ -217,20 +217,21 @@
 /**
  * Close a socket in cleanup part of the test
  *
+ * @note If @b cleanup_fd_leak_check test behaviour is enabled, this
+ *       macro will check closed FD with rpc_fstat().
+ *
  * @param rpcs_     RPC server handle
  * @param sockd_    Socket descriptor to be closed
  */
 #define CLEANUP_RPC_CLOSE(rpcs_, sockd_) \
     do {                                                            \
         rpc_stat     buf;                                           \
-        char        *check_fd_leak = getenv("CHECK_FD_LEAK");       \
         if ((sockd_) >= 0 && (rpcs_) != NULL)                       \
         {                                                           \
             RPC_AWAIT_IUT_ERROR(rpcs_);                             \
             if (rpc_close((rpcs_), (sockd_)) != 0)                  \
                 MACRO_TEST_ERROR;                                   \
-            if (check_fd_leak == NULL ||                            \
-                strcmp(check_fd_leak, "no") != 0)                   \
+            if (TEST_BEHAVIOUR(cleanup_fd_leak_check))              \
             {                                                       \
                 RPC_AWAIT_IUT_ERROR(rpcs_);                         \
                 if (rpc_fstat((rpcs_), (sockd_), &buf) != -1 ||     \

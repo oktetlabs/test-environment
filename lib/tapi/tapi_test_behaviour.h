@@ -30,6 +30,11 @@ typedef struct test_behaviour {
 
     te_bool log_test_fail_state;  /**< Log state/substate of the
                                        test on failure */
+
+    te_bool cleanup_fd_leak_check; /**< After closing FD in
+                                        CLEANUP_RPC_CLOSE(), check with
+                                        rpc_fstat() that FD is really
+                                        closed */
 } test_behaviour;
 
 /**
