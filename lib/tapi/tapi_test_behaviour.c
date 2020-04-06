@@ -14,6 +14,9 @@
 
 #define BEHV_FIELD
 
+/* See description in tapi_test_behaviour.h */
+test_behaviour test_behaviour_storage;
+
 void
 test_behaviour_get(test_behaviour *behaviour)
 {

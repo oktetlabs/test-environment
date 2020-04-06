@@ -157,7 +157,7 @@ extern "C" {
  * Get bool value of behavoiur switch
  */
 #define TEST_BEHAVIOUR(name_)                   \
-    (__behaviour. name_)
+    (test_behaviour_storage. name_)
 
 /**
  * Macro to add behaviour switches in code that does not call TEST_START. It
@@ -180,7 +180,6 @@ extern "C" {
 #define TEST_START \
     int         rc;                                                 \
     int         result = EXIT_FAILURE;                              \
-    test_behaviour __behaviour;                                     \
     TEST_START_VARS                                                 \
                                                                     \
     assert(tapi_test_run_status_get() == TE_TEST_RUN_STATUS_OK);    \
@@ -235,7 +234,7 @@ extern "C" {
      * Should happen before TS-specific start so that it            \
      * impacts the startup procedure                                \
      */                                                             \
-    test_behaviour_get(&__behaviour);                               \
+    test_behaviour_get(&test_behaviour_storage);                    \
     if (TEST_BEHAVIOUR(log_stack))                                  \
         te_log_stack_init();                                        \
                                                                     \

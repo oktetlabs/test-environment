@@ -33,6 +33,17 @@ typedef struct test_behaviour {
 } test_behaviour;
 
 /**
+ * Storage for test behaviour switches.
+ *
+ * This variable is introduced to make possible checking for test behaviours
+ * outside of main().
+ * It is assumed that this variable is filled once on test start
+ * and after that it can only be read, so no mutex is used to
+ * protect it.
+ */
+extern test_behaviour test_behaviour_storage;
+
+/**
  * Fill test behaviour structure based on /local/test values. Ignores
  * missing instances and sets corresponding switch to false, but
  * logs a WARN.
