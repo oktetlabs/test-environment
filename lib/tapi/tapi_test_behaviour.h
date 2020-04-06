@@ -35,6 +35,10 @@ typedef struct test_behaviour {
                                         CLEANUP_RPC_CLOSE(), check with
                                         rpc_fstat() that FD is really
                                         closed */
+
+    te_bool cleanup_fd_close_enforce_libc; /**< If enabled, use libc-version
+                                                of close() in
+                                                CLEANUP_RPC_CLOSE() */
 } test_behaviour;
 
 /**

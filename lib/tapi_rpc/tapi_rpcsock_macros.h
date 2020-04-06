@@ -219,6 +219,8 @@
  *
  * @note If @b cleanup_fd_leak_check test behaviour is enabled, this
  *       macro will check closed FD with rpc_fstat().
+ *       If @b cleanup_fd_close_enforce_libc test behaviour is enabled,
+ *       this macro will call libc version of rpc_close().
  *
  * @param rpcs_     RPC server handle
  * @param sockd_    Socket descriptor to be closed
@@ -228,6 +230,9 @@
         rpc_stat     buf;                                           \
         if ((sockd_) >= 0 && (rpcs_) != NULL)                       \
         {                                                           \
+            if (TEST_BEHAVIOUR(cleanup_fd_close_enforce_libc))      \
+                (rpcs_)->use_libc_once = TRUE;                      \
+                                                                    \
             RPC_AWAIT_IUT_ERROR(rpcs_);                             \
             if (rpc_close((rpcs_), (sockd_)) != 0)                  \
                 MACRO_TEST_ERROR;                                   \

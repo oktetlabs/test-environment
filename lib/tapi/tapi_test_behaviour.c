@@ -51,6 +51,7 @@ test_behaviour_get(test_behaviour *behaviour)
     GET_BEHV(log_stack);
     GET_BEHV(log_test_fail_state);
     GET_BEHV(cleanup_fd_leak_check);
+    GET_BEHV(cleanup_fd_close_enforce_libc);
 
 #undef GET_BEHV
 }
