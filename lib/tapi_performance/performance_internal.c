@@ -84,64 +84,97 @@ perf_app_read_output(tapi_job_channel_t *filter, te_string *str)
     return rc;
 }
 
+/*
+ * Prepare a job for running perf tool
+ *
+ * @param[in]  factory      Job factory
+ * @param[in]  args         List with command and its arguments to execute
+ *                          (start) application
+ * @param[out] job          Job handle
+ * @param[out] out_filter   Filter channel of tool stdout
+ * @param[out] err_filter   Filter channel of tool stderr
+ *
+ * @return Status code
+ */
+static te_errno
+perf_app_create_job(tapi_job_factory_t *factory, te_vec *args,
+                    tapi_job_t **job,
+                    tapi_job_channel_t **out_filter,
+                    tapi_job_channel_t **err_filter)
+{
+    tapi_job_channel_t *out_chs[2];
+    char **cmd_args = (char **)args->data.ptr;
+    te_errno rc;
+
+    rc = tapi_job_create(factory, NULL, cmd_args[0], (const char **)cmd_args,
+                         NULL, job);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_job_alloc_output_channels(*job, TE_ARRAY_LEN(out_chs), out_chs);
+    if (rc == 0)
+    {
+        rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_chs[0]),
+                                    "Perf_output_filter", TRUE, 0, out_filter);
+    }
+    if (rc == 0)
+    {
+        rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_chs[1]),
+                                    "Perf_error_filter", TRUE, 0, err_filter);
+    }
+
+    if (rc != 0)
+        tapi_job_destroy(*job, -1);
+
+    return rc;
+}
+
 /* See description in performance_internal.h */
 te_errno
 perf_app_start(tapi_job_factory_t *factory, te_vec *args, tapi_perf_app *app)
 {
-    tapi_job_t *job = NULL;
-    tapi_job_channel_t *out_chs[2];
-    char **cmd_args = (char **)args->data.ptr;
+    tapi_job_t *job;
+    tapi_job_channel_t *out_filter;
+    tapi_job_channel_t *err_filter;
     te_string cmd = TE_STRING_INIT;
     te_errno rc;
     char **arg;
 
-    TE_VEC_FOREACH(args, arg)
+    if (app->job == NULL)
     {
-        if (*arg == NULL)
-            break;  /* the last item is not an argument but terminator */
+        TE_VEC_FOREACH(args, arg)
+        {
+            if (*arg == NULL)
+                break;  /* the last item is not an argument but terminator */
 
-        rc = te_string_append(&cmd, "%s ", *arg);
+            rc = te_string_append(&cmd, "%s ", *arg);
+            if (rc != 0)
+            {
+                te_string_free(&cmd);
+                return rc;
+            }
+        }
+
+        rc = perf_app_create_job(factory, args, &job, &out_filter, &err_filter);
         if (rc != 0)
-            goto cleanup;
+        {
+            te_string_free(&cmd);
+            return rc;
+        }
+
+        app->job  = job;
+        app->cmd  = cmd.ptr;
+        app->out_filter = out_filter;
+        app->err_filter = err_filter;
     }
-    RING("Run \"%s\"", cmd);
-
-    rc = tapi_job_create(factory, NULL, cmd_args[0], (const char **)cmd_args,
-                         NULL, &job);
-    if (rc != 0)
-        goto cleanup;
-
-    rc = tapi_job_alloc_output_channels(job, TE_ARRAY_LEN(out_chs), out_chs);
-    if (rc != 0)
-        goto cleanup;
-
-    rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_chs[0]),
-                                "Perf_output_filter", TRUE, 0,
-                                &app->out_filter);
-    if (rc != 0)
-        goto cleanup;
-
-    rc = tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_chs[1]),
-                                "Perf_error_filter", TRUE, 0,
-                                &app->err_filter);
-    if (rc != 0)
-        goto cleanup;
-
-    rc = tapi_job_start(job);
-    if (rc != 0)
-        goto cleanup;
-
-    app->job  = job;
-    app->cmd  = cmd.ptr;
-
-cleanup:
-    if (rc != 0)
+    else if (tapi_job_is_running(app->job))
     {
-        te_string_free(&cmd);
-        tapi_job_destroy(job, -1);
+        return TE_RC(TE_TAPI, TE_EINPROGRESS);
     }
 
-    return rc;
+    RING("Run \"%s\"", app->cmd);
+
+    return tapi_job_start(app->job);
 }
 
 /* See description in performance_internal.h */
