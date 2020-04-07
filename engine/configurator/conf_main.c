@@ -565,11 +565,8 @@ add_inst_with_src_val(const char *dst_oid, const cfg_instance *src_inst,
 
     len = sizeof(cfg_add_msg) + CFG_MAX_INST_VALUE +
           strlen(dst_oid) + 1;
-    if ((msg = calloc(1, len)) == NULL)
-    {
-        ERROR("Failed to allocate memory for conf message");
+    if ((msg = TE_ALLOC(len)) == NULL)
         return TE_ENOMEM;
-    }
 
     msg->type = CFG_ADD;
     msg->len = sizeof(cfg_add_msg);
@@ -619,11 +616,8 @@ copy_value(cfg_handle dst_handle, const cfg_instance *src_inst)
         dst_inst->obj->access == CFG_READ_WRITE)
     {
         len = sizeof(cfg_msg) + CFG_MAX_INST_VALUE;
-        if ((msg = calloc(1, len)) == NULL)
-        {
-            ERROR("Failed to allocate memory for conf message");
+        if ((msg = TE_ALLOC(len)) == NULL)
             return TE_ENOMEM;
-        }
 
         msg->type = CFG_SET;
         msg->len = sizeof(cfg_set_msg);
@@ -709,10 +703,7 @@ copy_subtree_object(const char *dst_oid, const cfg_object *src_obj,
 
     msg_len = sizeof(cfg_register_msg) + dst_oid_len + def_val_len;
     if ((msg = TE_ALLOC(msg_len)) == NULL)
-    {
-        ERROR("Failed to allocate memory for conf message");
         return TE_ENOMEM;
-    }
 
     msg->type = CFG_REGISTER;
     msg->val_type = src_obj->type;
@@ -783,13 +774,9 @@ copy_inst_subtree_recursively(const char *top_dst_oid,
     {
         src_child_oid_len = strlen(inst->oid);
 
-        child_oid = calloc(1, dst_oid_len +
-                           src_child_oid_len - src_oid_len + 1);
+        child_oid = TE_ALLOC(dst_oid_len + src_child_oid_len - src_oid_len + 1);
         if (child_oid == NULL)
-        {
-            ERROR("Failed to allocate memory");
             return TE_ENOMEM;
-        }
         memcpy(child_oid, top_dst_oid, dst_oid_len);
         memcpy(child_oid + dst_oid_len, inst->oid + src_oid_len,
                src_child_oid_len - src_oid_len + 1);
@@ -843,10 +830,7 @@ copy_obj_subtree_recursively(const char *top_dst_oid, cfg_handle top_src_handle)
         child_oid = TE_ALLOC(dst_oid_len + src_child_oid_len -
                              src_oid_len + 1);
         if (child_oid == NULL)
-        {
-            ERROR("Failed to allocate memory");
             return TE_ENOMEM;
-        }
         memcpy(child_oid, top_dst_oid, dst_oid_len);
         memcpy(child_oid + dst_oid_len, obj->oid + src_oid_len,
                src_child_oid_len - src_oid_len + 1);
@@ -2117,8 +2101,8 @@ static te_errno
 create_backup(char **bkp_filename)
 {
     te_errno rc = 0;
-    cfg_backup_msg *bkp_msg = calloc(sizeof(cfg_backup_msg) +
-                                     sizeof(max_commit_subtree), 1);
+    cfg_backup_msg *bkp_msg = TE_ALLOC(sizeof(cfg_backup_msg) +
+                                       sizeof(max_commit_subtree));
     if (bkp_msg == NULL)
         return TE_ENOMEM;
 
