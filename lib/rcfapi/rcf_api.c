@@ -568,7 +568,7 @@ rcf_api_key_create(void)
  *
  * @return context handle or NULL if some error occured
  */
-thread_ctx_t *
+static thread_ctx_t *
 get_ctx_handle(te_bool create)
 {
 #ifdef HAVE_PTHREAD_H
@@ -714,9 +714,10 @@ del_ta_executive(const char *name)
 }
 
 /* See description in rcf_api.h */
-extern te_errno rcf_add_ta(const char *name, const char *type,
-                           const char *rcflib, const char *confstr,
-                           unsigned int flags)
+te_errno
+rcf_add_ta(const char *name, const char *type,
+           const char *rcflib, const char *confstr,
+           unsigned int flags)
 {
     rcf_msg     msg;
     size_t      anslen = sizeof(msg);
@@ -821,11 +822,12 @@ extern te_errno rcf_add_ta(const char *name, const char *type,
 }
 
 /* See description in rcf_api.h */
-extern te_errno rcf_add_ta_unix(const char *name, const char *type,
-                                const char *host, uint16_t port,
-                                unsigned int copy_timeout,
-                                unsigned int kill_timeout,
-                                unsigned int flags)
+te_errno
+rcf_add_ta_unix(const char *name, const char *type,
+                const char *host, uint16_t port,
+                unsigned int copy_timeout,
+                unsigned int kill_timeout,
+                unsigned int flags)
 {
     char confstr[RCF_MAX_VAL];
     char copy_timeout_str[RCF_MAX_ID];
@@ -864,7 +866,8 @@ extern te_errno rcf_add_ta_unix(const char *name, const char *type,
 }
 
 /* See description in rcf_api.h */
-extern te_errno rcf_del_ta(const char *name)
+te_errno
+rcf_del_ta(const char *name)
 {
     return del_ta_executive(name);
 }
