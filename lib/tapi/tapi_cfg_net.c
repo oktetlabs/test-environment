@@ -1252,9 +1252,7 @@ switch_agent_pci_fn_to_interface(cfg_net_t *net, cfg_net_node_t *node,
                                  const char *oid_str, cfg_oid *oid,
                                  void *cookie)
 {
-    cfg_handle *interface_handles = NULL;
     char interface_path[RCF_MAX_PATH];
-    unsigned int n_interfaces;
     char *interface = NULL;
     const char *agent;
     char *pci_path = NULL;
@@ -1278,30 +1276,14 @@ switch_agent_pci_fn_to_interface(cfg_net_t *net, cfg_net_node_t *node,
         goto out;
     }
 
-    rc = cfg_find_pattern_fmt(&n_interfaces, &interface_handles, "%s/net:*",
-                              pci_path);
+    rc = tapi_cfg_pci_get_net_if(pci_path, &interface);
     if (rc != 0)
     {
-        ERROR("Failed to get network interface from the PCI device: %r", rc);
-        goto out;
-    }
-    if (n_interfaces == 0)
-    {
-        ERROR("No network interfaces provided by PCI function '%s'", pci_path);
-        rc = TE_EFAIL;
-        goto out;
-    }
-    if (n_interfaces > 1)
-    {
-        ERROR("PCI devices which provide many network interfaces not supported");
-        rc = TE_EFAIL;
-        goto out;
-    }
-
-    rc = cfg_get_inst_name(interface_handles[0], &interface);
-    if (rc != 0)
-    {
-        ERROR("Failed to extract interface name from interface handle: %r", rc);
+        if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+        {
+            ERROR("No network interfaces provided by PCI function '%s'",
+                  pci_path);
+        }
         goto out;
     }
 
@@ -1328,7 +1310,6 @@ switch_agent_pci_fn_to_interface(cfg_net_t *net, cfg_net_node_t *node,
 
 out:
     free(interface);
-    free(interface_handles);
     free(pci_path);
 
     return TE_RC(TE_TAPI, rc);

@@ -170,6 +170,19 @@ extern te_errno tapi_cfg_pci_bind_ta_driver_on_device(const char *ta,
                                               enum tapi_cfg_driver_type type,
                                               const char *pci_addr);
 
+/**
+ * Get the first network interface associated with a PCI device.
+ *
+ * @note In theory, more than one interface can be associated,
+ *       in that case the function produces a warning.
+ *
+ * @param[in]  pci_oid      PCI device OID (/agent/hardware/pci/device)
+ * @param[out] interface    Network interface name (must not be @c NULL)
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_get_net_if(const char *pci_oid, char **interface);
+
 /**@} <!-- END tapi_conf_pci --> */
 
 #ifdef __cplusplus

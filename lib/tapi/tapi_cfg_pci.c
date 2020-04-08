@@ -400,6 +400,38 @@ tapi_cfg_pci_get_ta_driver(const char *ta,
 }
 
 te_errno
+tapi_cfg_pci_get_net_if(const char *pci_oid, char **interface)
+{
+    cfg_handle *interface_handles;
+    unsigned int n;
+    te_errno rc;
+
+    rc = cfg_find_pattern_fmt(&n, &interface_handles, "%s/net:*", pci_oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get network interface from the PCI device: %r", rc);
+        return rc;
+    }
+
+    if (n == 0)
+    {
+        free(interface_handles);
+        return TE_RC(TE_TAPI, TE_ENOENT);
+    }
+
+    if (n > 1)
+        WARN("PCI device %s has more than one network interfaces", pci_oid);
+
+    rc = cfg_get_inst_name(interface_handles[0], interface);
+    if (rc != 0)
+        ERROR("Failed to get interface name by handle: %r", rc);
+
+    free(interface_handles);
+
+    return rc;
+}
+
+te_errno
 tapi_cfg_pci_bind_driver(const char *pci_oid, const char *driver)
 {
     te_errno rc;
