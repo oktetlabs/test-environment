@@ -134,6 +134,23 @@ tapi_rte_flow_add_ndn_action_of_set_vlan_vid(asn_value *ndn_actions,
     CHECK_RC(asn_insert_indexed(ndn_actions, action, action_index, ""));
 }
 
+void
+tapi_rte_flow_add_ndn_action_port_id(asn_value *ndn_actions,
+                                     int action_index,
+                                     uint32_t port_id,
+                                     te_bool original)
+{
+    asn_value *action;
+
+    CHECK_NOT_NULL(action = asn_init_value(ndn_rte_flow_action));
+    CHECK_RC(asn_write_int32(action, NDN_FLOW_ACTION_TYPE_PORT_ID, "type"));
+    CHECK_RC(asn_write_value_field(action, &port_id, sizeof(port_id),
+                                   "conf.#port-id.id"));
+    CHECK_RC(asn_write_bool(action, original, "conf.#port-id.original"));
+
+    CHECK_RC(asn_insert_indexed(ndn_actions, action, action_index, ""));
+}
+
 
 rpc_rte_flow_p
 tapi_rte_flow_validate_and_create_rule(rcf_rpc_server *rpcs, uint16_t port_id,

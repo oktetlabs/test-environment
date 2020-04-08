@@ -109,6 +109,19 @@ extern void tapi_rte_flow_add_ndn_action_of_set_vlan_vid(asn_value *ndn_actions,
                                                          uint16_t vlan_vid);
 
 /**
+ * Add a PORT ID action to an action list at specified index.
+ *
+ * @param[inout]  ndn_actions       Action list
+ * @param[in]     action_index      Index at which the action is put to list
+ * @param[in]     port_id           DPDK port id
+ * @param[in]     original          Use original DPDK port ID if possible
+ */
+extern void tapi_rte_flow_add_ndn_action_port_id(asn_value *ndn_actions,
+                                                 int action_index,
+                                                 uint32_t port_id,
+                                                 te_bool original);
+
+/**
  * Convert an ASN value representing a flow rule pattern into
  * RTE flow rule pattern and a template that matches the pattern.
  *
