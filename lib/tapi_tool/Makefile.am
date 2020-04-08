@@ -9,12 +9,14 @@ AM_LDFLAGS = -L$(DESTDIR)/$(libdir)
 
 include_HEADERS= \
 	tapi_netperf.h \
+	tapi_sfnt_pingpong.h \
 	tapi_wrk.h
 
 lib_LTLIBRARIES = libtapi_tool.la
 
 libtapi_tool_la_SOURCES = \
 	tapi_netperf.c \
+	tapi_sfnt_pingpong.c \
 	tapi_wrk.c
 
 install-exec-hook:
