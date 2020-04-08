@@ -122,6 +122,17 @@ extern void tapi_rte_flow_add_ndn_action_port_id(asn_value *ndn_actions,
                                                  te_bool original);
 
 /**
+ * Add a PORT ID item to an item list at specified index.
+ *
+ * @param[inout]  ndn_items         Item list
+ * @param[in]     item_index        Index at which the item is put to list
+ * @param[in]     port_id           DPDK port id
+ */
+extern void tapi_rte_flow_add_ndn_item_port_id(asn_value *ndn_items,
+                                               int item_index,
+                                               uint32_t port_id);
+
+/**
  * Convert an ASN value representing a flow rule pattern into
  * RTE flow rule pattern and a template that matches the pattern.
  *
