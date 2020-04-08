@@ -25,6 +25,8 @@
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_pci.h"
 
+#define CFG_PCI_TA_DEVICE_FMT "/agent:%s/hardware:/pci:/device:%s"
+
 te_errno
 tapi_cfg_pci_get_pci_vendor_device(const char *ta, const char *pci_addr,
                                    char **vendor, char **device)
@@ -35,7 +37,7 @@ tapi_cfg_pci_get_pci_vendor_device(const char *ta, const char *pci_addr,
     te_errno rc;
 
     rc = cfg_get_instance_fmt(&val_type, &device_str,
-                              "/agent:%s/hardware:/pci:/device:%s/device_id:",
+                              CFG_PCI_TA_DEVICE_FMT "/device_id:",
                               ta, pci_addr);
     if (rc != 0)
     {
@@ -44,7 +46,7 @@ tapi_cfg_pci_get_pci_vendor_device(const char *ta, const char *pci_addr,
     }
 
     rc = cfg_get_instance_fmt(&val_type, &vendor_str,
-                              "/agent:%s/hardware:/pci:/device:%s/vendor_id:",
+                              CFG_PCI_TA_DEVICE_FMT "/vendor_id:",
                               ta, pci_addr);
 
     if (rc != 0)
@@ -199,6 +201,22 @@ tapi_cfg_pci_addr_by_oid(const cfg_oid *pci_device, char **pci_addr)
 }
 
 te_errno
+tapi_cfg_pci_oid_by_addr(const char *ta, const char *pci_addr,
+                         char **pci_oid)
+{
+    int rc;
+
+    rc = te_asprintf(pci_oid, CFG_PCI_TA_DEVICE_FMT, ta, pci_addr);
+    if (rc < 0)
+    {
+        ERROR("Failed to create a PCI device OID string");
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+    }
+
+    return 0;
+}
+
+te_errno
 tapi_cfg_pci_addr_by_oid_array(unsigned int n_devices, const cfg_oid **pci_devices,
                                char ***pci_addrs)
 {
@@ -292,4 +310,122 @@ out:
     free(oid_str);
 
     return rc;
+}
+
+te_errno
+tapi_cfg_pci_bind_ta_driver_on_device(const char *ta,
+                                      enum tapi_cfg_driver_type type,
+                                      const char *pci_addr)
+{
+    char *ta_driver = NULL;
+    char *pci_oid = NULL;
+    char *pci_driver = NULL;
+    te_errno rc;
+
+    rc = tapi_cfg_pci_get_ta_driver(ta, type, &ta_driver);
+    if (rc != 0)
+        goto out;
+
+    rc = tapi_cfg_pci_oid_by_addr(ta, pci_addr, &pci_oid);
+    if (rc != 0)
+        goto out;
+
+    rc = tapi_cfg_pci_get_driver(pci_oid, &pci_driver);
+    if (rc != 0)
+        goto out;
+
+    if (strcmp(ta_driver, pci_driver) != 0)
+    {
+        rc = tapi_cfg_pci_bind_driver(pci_oid, ta_driver);
+        if (rc != 0)
+            goto out;
+        /*
+         * Synchronize possible changes in PCI device configuration after
+         * driver bind.
+         */
+        rc = cfg_synchronize(pci_oid, TRUE);
+        if (rc != 0)
+            goto out;
+    }
+
+out:
+    free(ta_driver);
+    free(pci_oid);
+    free(pci_driver);
+
+    return rc;
+}
+
+te_errno
+tapi_cfg_pci_get_ta_driver(const char *ta,
+                           enum tapi_cfg_driver_type type,
+                           char **driver)
+{
+    const char *driver_prefix = "";
+    char *result = NULL;
+    te_errno rc;
+
+    switch (type)
+    {
+        case NET_DRIVER_TYPE_NET:
+            driver_prefix = "net";
+            break;
+
+        case NET_DRIVER_TYPE_DPDK:
+            driver_prefix = "dpdk";
+            break;
+
+        default:
+            ERROR("Invalid PCI driver type");
+            return TE_RC(TE_CONF_API, TE_EINVAL);
+    }
+
+    rc = cfg_get_instance_fmt(NULL, &result, "/local:%s/%s_driver:",
+                              ta, driver_prefix);
+    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
+    {
+        ERROR("Failed to get PCI driver of agent %s", ta);
+        return rc;
+    }
+
+    if (result == NULL || *result == '\0')
+    {
+        free(result);
+        result = NULL;
+    }
+
+    *driver = result;
+
+    return 0;
+}
+
+te_errno
+tapi_cfg_pci_bind_driver(const char *pci_oid, const char *driver)
+{
+    te_errno rc;
+
+    rc = cfg_set_instance_fmt(CFG_VAL(STRING, driver), "%s/driver:", pci_oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to bind driver %s on PCI device %s", driver, pci_oid);
+        return rc;
+    }
+
+    return 0;
+}
+
+te_errno
+tapi_cfg_pci_get_driver(const char *pci_oid, char **driver)
+{
+    te_errno rc;
+    cfg_val_type type = CVT_STRING;
+
+    rc = cfg_get_instance_fmt(&type, driver, "%s/driver:", pci_oid);
+    if (rc != 0)
+    {
+        ERROR("Failed to get current driver of PCI device %s", pci_oid);
+        return rc;
+    }
+
+    return 0;
 }

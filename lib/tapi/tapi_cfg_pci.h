@@ -24,6 +24,12 @@ extern "C" {
  * @{
  */
 
+/** Driver type */
+enum tapi_cfg_driver_type {
+    NET_DRIVER_TYPE_NET = 0, /**< Kernel network interface driver */
+    NET_DRIVER_TYPE_DPDK, /**< DPDK-compatible driver */
+};
+
 /**
  * Get vendor and device identifiers of a PCI device.
  *
@@ -101,6 +107,68 @@ extern char * tapi_cfg_pci_rsrc_name(const cfg_oid *pci_instance);
  * @return Status code
  */
 extern te_errno tapi_cfg_pci_grab(const cfg_oid *pci_instance);
+
+/**
+ * Get PCI device OID by the PCI address
+ *
+ * @param[in]  ta           Test Agent name
+ * @param[in]  pci_addr     PCI device address (BDF notation)
+ * @param[out] pci_oid      PCI device OID (/agent/hardware/pci/device)
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_oid_by_addr(const char *ta, const char *pci_addr,
+                                         char **pci_oid);
+
+/**
+ * Get PCI device driver assigned to a Test Agent
+ *
+ * @param[in]  ta           Test Agent name
+ * @param[in]  type         Driver type
+ * @param[out] driver       Driver name (on success, if no driver is assigned,
+ *                          the pointed data becomes @c NULL). The argument
+ *                          itself must not be @c NULL.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_get_ta_driver(const char *ta,
+                                           enum tapi_cfg_driver_type type,
+                                           char **driver);
+/**
+ * Get driver of a PCI device
+ *
+ * @param[in]  pci_oid      PCI device OID (/agent/hardware/pci/device)
+ * @param[out] driver       Driver name (must not be @c NULL)
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_get_driver(const char *pci_oid,
+                                        char **driver);
+
+/**
+ * Bind driver to a PCI device
+ *
+ * @param[in]  pci_oid      PCI device OID (/agent/hardware/pci/device)
+ * @param[in]  driver       Driver name
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_bind_driver(const char *pci_oid,
+                                         const char *driver);
+
+/**
+ * Bind driver associated with a Test Agent on a PCI device.
+ *
+ * @param[in]  ta           Test Agent name
+ * @param[in]  type         Driver type
+ * @param[in]  pci_addr     PCI address of the device to which the
+ *                          driver will be bound
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_bind_ta_driver_on_device(const char *ta,
+                                              enum tapi_cfg_driver_type type,
+                                              const char *pci_addr);
 
 /**@} <!-- END tapi_conf_pci --> */
 

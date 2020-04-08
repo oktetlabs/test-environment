@@ -47,7 +47,6 @@
 #include "tapi_cfg.h"
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_net.h"
-#include "tapi_cfg_pci.h"
 #include "tapi_host_ns.h"
 
 /* See description in tapi_cfg_net.h */
@@ -1087,28 +1086,15 @@ tapi_cfg_net_bind_driver_on_pci_fn(const char *ta,
                                    enum tapi_cfg_driver_type driver,
                                    size_t n_pci_fns, char **pci_fns)
 {
-    const char *driver_prefix = "";
     char *driver_name = NULL;
     te_errno rc = 0;
     size_t i;
 
-    switch (driver)
-    {
-        case NET_DRIVER_TYPE_NET:
-            driver_prefix = "net";
-            break;
-        case NET_DRIVER_TYPE_DPDK:
-            driver_prefix = "dpdk";
-            break;
-        default:
-            ERROR("Invalid net driver type passed to driver bind");
-            rc = TE_RC(TE_CONF_API, TE_EINVAL);
-            goto out;
-    }
+    rc = tapi_cfg_pci_get_ta_driver(ta, driver, &driver_name);
+    if (rc != 0)
+        goto out;
 
-    rc = cfg_get_instance_fmt(NULL, &driver_name, "/local:%s/%s_driver:",
-                              ta, driver_prefix);
-    if (rc != 0 || driver_name == NULL || *driver_name == '\0')
+    if (driver_name == NULL)
     {
         WARN("Driver is not set on agent %s, do not perform bind", ta);
         rc = 0;
@@ -1120,24 +1106,17 @@ tapi_cfg_net_bind_driver_on_pci_fn(const char *ta,
         char *driver_old = NULL;
         int cmp_rc;
 
-        rc = cfg_get_instance_fmt(NULL, &driver_old, "%s/driver:", pci_fns[i]);
+        rc = tapi_cfg_pci_get_driver(pci_fns[i], &driver_old);
         if (rc != 0)
-        {
-            ERROR("Failed to get current driver of agent %s", ta);
             goto out;
-        }
 
         cmp_rc = strcmp(driver_old, driver_name);
         free(driver_old);
         if (cmp_rc != 0)
         {
-            rc = cfg_set_instance_fmt(CFG_VAL(STRING, driver_name),
-                                      "%s/driver:", pci_fns[i]);
+            rc = tapi_cfg_pci_bind_driver(pci_fns[i], driver_name);
             if (rc != 0)
-            {
-                ERROR("Failed to bind driver %s on agent %s", driver_name, ta);
                 goto out;
-            }
         }
     }
 

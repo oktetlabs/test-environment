@@ -20,6 +20,7 @@
 #define __TE_TAPI_CFG_NET_H__
 
 #include "conf_api.h"
+#include "tapi_cfg_pci.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -70,11 +71,6 @@ typedef struct cfg_nets_t {
     unsigned int    n_nets;     /**< Number of nets */
     cfg_net_t      *nets;       /**< Array with nets */
 } cfg_nets_t;
-
-enum tapi_cfg_driver_type {
-    NET_DRIVER_TYPE_NET = 0,
-    NET_DRIVER_TYPE_DPDK,
-};
 
 /**
  * Get type of the network node resource.
