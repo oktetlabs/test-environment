@@ -80,6 +80,7 @@
 #define RTE_FLOW_GRE_KEY_OFFSET 13
 #define RTE_FLOW_GRE_SEQN_OFFSET 12
 #define RTE_FLOW_GRE_VER_LEN 3
+#define RTE_FLOW_PORT_ID_LEN 32
 
 
 static te_errno
@@ -1257,6 +1258,21 @@ rte_flow_item_end(struct rte_flow_item *item)
 
     item->type = RTE_FLOW_ITEM_TYPE_END;
     return 0;
+}
+
+static unsigned int
+rte_flow_pattern_size(struct rte_flow_item *pattern)
+{
+    unsigned int size;
+    unsigned int i;
+
+    if (pattern == NULL)
+        return 0;
+
+    for (size = 1, i = 0; pattern[i].type != RTE_FLOW_ITEM_TYPE_END; i++)
+        size++;
+
+    return size;
 }
 
 static void
@@ -2645,4 +2661,173 @@ TARPC_FUNC_STANDALONE(rte_flow_isolate, {},
 
     neg_errno_h2rpc(&out->retval);
     tarpc_rte_error2tarpc(&out->error, &error);
+})
+
+static te_errno
+rte_flow_item_port_id_from_asn(struct rte_flow_item *item,
+                               const asn_value *conf_port_id)
+{
+    struct rte_flow_item_port_id *spec = NULL;
+    struct rte_flow_item_port_id *last = NULL;
+    struct rte_flow_item_port_id *mask = NULL;
+    uint32_t last_id;
+    te_errno rc;
+
+    rc = rte_alloc_mem_for_flow_item((void **)&spec,
+                                     (void **)&mask,
+                                     (void **)&last,
+                                     sizeof(struct rte_flow_item_port_id));
+    if (rc != 0)
+        return rc;
+
+    rc = asn_read_int_field_with_offset(conf_port_id, "id",
+                                        RTE_FLOW_PORT_ID_LEN, 0,
+                                        &spec->id, &mask->id, &last->id);
+    if (rc != 0)
+    {
+        free(spec);
+        free(mask);
+        free(last);
+        return rc;
+    }
+
+    rc = asn_read_uint32(conf_port_id, &last_id, "id.#range.last");
+    if (rc == TE_EASNOTHERCHOICE)
+    {
+        free(last);
+        last = NULL;
+    }
+
+    item->type = RTE_FLOW_ITEM_TYPE_PORT_ID;
+    item->spec = spec;
+    item->last = last;
+    item->mask = mask;
+
+    return 0;
+}
+
+static te_errno
+insert_flow_rule_items(struct rte_flow_item **pattern_out,
+                       const asn_value *items,
+                       int index)
+{
+    struct rte_flow_item *pattern = *pattern_out;
+    struct rte_flow_item *new_pattern = NULL;
+    unsigned int pattern_size;
+    unsigned int items_count;
+    unsigned int i;
+    unsigned int max_index;
+    te_errno rc;
+
+    items_count = (unsigned int)asn_get_length(items, "");
+    pattern_size = rte_flow_pattern_size(pattern);
+    if (pattern_size == 0)
+        pattern_size = items_count + 1;
+    else
+        pattern_size += items_count;
+
+    max_index = pattern_size - items_count - 1;
+    if (index < 0)
+    {
+        index = max_index;
+    }
+    else if ((unsigned int)index > max_index)
+    {
+        rc = TE_EINVAL;
+        goto fail;
+    }
+
+    new_pattern = TE_ALLOC(pattern_size * sizeof(*new_pattern));
+    if (new_pattern == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto fail;
+    }
+
+    for (i = 0; i < items_count; i++)
+    {
+        struct rte_flow_item *new_item;
+        asn_value *conf;
+        asn_value *item;
+        uint32_t type;
+
+        new_item = &new_pattern[index + i];
+
+        rc = asn_get_indexed(items, &item, i, "");
+        if (rc != 0)
+            goto fail;
+
+        rc = asn_get_subvalue(item, &conf, "conf");
+        if (rc == TE_EASNINCOMPLVAL)
+            conf = NULL;
+        else if (rc != 0)
+            goto fail;
+
+        rc = asn_read_uint32(item, &type, "type");
+        if (rc != 0)
+            goto fail;
+
+        switch (type)
+        {
+            case NDN_FLOW_ITEM_TYPE_PORT_ID:
+                rc = rte_flow_item_port_id_from_asn(new_item, conf);
+                if (rc != 0)
+                    goto fail;
+                break;
+
+            default:
+                rc = TE_EINVAL;
+                break;
+        }
+        if (rc != 0)
+            goto fail;
+    }
+
+    if (pattern != NULL)
+    {
+        memcpy(new_pattern, pattern, index * sizeof(*pattern));
+        memcpy(new_pattern + index + items_count, pattern + index,
+               (pattern_size - index - items_count - 1) * sizeof(*pattern));
+    }
+
+    rte_flow_item_end(&new_pattern[pattern_size - 1]);
+
+    *pattern_out = new_pattern;
+    free(pattern);
+
+    return 0;
+
+fail:
+    rte_flow_free_pattern(pattern, pattern_size);
+
+    return rc;
+}
+
+TARPC_FUNC_STANDALONE(rte_insert_flow_rule_items, {},
+{
+    asn_value *items = NULL;
+    struct rte_flow_item *pattern = NULL;
+    te_errno rc;
+    int dummy;
+
+    rc = asn_parse_value_text(in->items, ndn_rte_flow_items, &items, &dummy);
+    if (rc != 0)
+        goto exit;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        pattern = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->pattern, ns);
+    });
+
+    rc = insert_flow_rule_items(&pattern, items, in->index);
+    if (rc != 0)
+        goto exit;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_FLOW, {
+        RCF_PCH_MEM_INDEX_FREE(in->pattern, ns);
+        out->pattern = RCF_PCH_MEM_INDEX_ALLOC(pattern, ns);
+    });
+
+exit:
+
+    out->retval = -TE_RC(TE_RPCS, rc);
 })

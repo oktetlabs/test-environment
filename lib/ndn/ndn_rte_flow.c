@@ -255,6 +255,53 @@ asn_type ndn_rte_flow_actions_s = {
 
 const asn_type * const ndn_rte_flow_actions = &ndn_rte_flow_actions_s;
 
+static asn_named_entry_t _ndn_rte_flow_item_conf_ne_array[] = {
+    { "id", &ndn_data_unit_uint32_s,
+        {PRIVATE, NDN_FLOW_ITEM_CONF_PORT_ID_ID} },
+};
+
+asn_type ndn_rte_flow_item_conf_s = {
+    "Item-Conf", {PRIVATE, 0}, CHOICE,
+    TE_ARRAY_LEN(_ndn_rte_flow_item_conf_ne_array),
+    {_ndn_rte_flow_item_conf_ne_array}
+};
+
+const asn_type * const ndn_rte_flow_item_conf = &ndn_rte_flow_item_conf_s;
+
+asn_enum_entry_t _ndn_rte_flow_item_type_enum_entries[] = {
+    {"port-id", NDN_FLOW_ITEM_TYPE_PORT_ID},
+};
+
+asn_type ndn_rte_flow_item_type_s = {
+    "Item-Type", {PRIVATE, NDN_FLOW_ITEM_TYPES}, ENUMERATED,
+    TE_ARRAY_LEN(_ndn_rte_flow_item_type_enum_entries),
+    {enum_entries: _ndn_rte_flow_item_type_enum_entries}
+};
+
+const asn_type * const ndn_rte_flow_item_type = &ndn_rte_flow_item_type_s;
+
+static asn_named_entry_t _ndn_rte_flow_item_ne_array[] = {
+    { "type", &ndn_rte_flow_item_type_s,
+        {PRIVATE, NDN_FLOW_ITEM_TYPE} },
+    { "conf", &ndn_rte_flow_item_conf_s,
+        {PRIVATE, NDN_FLOW_ITEM_CONF} },
+};
+
+asn_type ndn_rte_flow_item_s = {
+    "Item", {PRIVATE, NDN_FLOW_ITEM}, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_rte_flow_item_ne_array),
+    {_ndn_rte_flow_item_ne_array}
+};
+
+const asn_type * const ndn_rte_flow_item = &ndn_rte_flow_item_s;
+
+asn_type ndn_rte_flow_items_s = {
+    "Items", {PRIVATE, 0}, SEQUENCE_OF,
+    0, {subtype: &ndn_rte_flow_item_s}
+};
+
+const asn_type * const ndn_rte_flow_items = &ndn_rte_flow_items_s;
+
 static asn_named_entry_t _ndn_rte_flow_rule_ne_array[] = {
     { "attr", &ndn_rte_flow_attr_s,
         {PRIVATE, NDN_FLOW_RULE_ATTR} },

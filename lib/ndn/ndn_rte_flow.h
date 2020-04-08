@@ -27,6 +27,8 @@ typedef enum {
     NDN_FLOW_ATTR,
     NDN_FLOW_ACTION_TYPES,
     NDN_FLOW_ACTION,
+    NDN_FLOW_ITEM,
+    NDN_FLOW_ITEM_TYPES,
     NDN_FLOW_RULE,
 } ndn_rte_flow_tags_t;
 
@@ -52,6 +54,10 @@ typedef enum {
     NDN_FLOW_ACTION_TYPE_OF_SET_VLAN_VID,
     NDN_FLOW_ACTION_TYPE_PORT_ID,
 } ndn_rte_flow_action_type_t;
+
+typedef enum {
+    NDN_FLOW_ITEM_TYPE_PORT_ID,
+} ndn_rte_flow_item_type_t;
 
 typedef enum {
     NDN_FLOW_ACTION_CONF_COUNT,
@@ -103,6 +109,15 @@ typedef enum {
 } ndn_rte_flow_action_t;
 
 typedef enum {
+    NDN_FLOW_ITEM_CONF_PORT_ID_ID,
+} ndn_rte_flow_item_conf_t;
+
+typedef enum {
+    NDN_FLOW_ITEM_TYPE,
+    NDN_FLOW_ITEM_CONF,
+} ndn_rte_flow_item_t;
+
+typedef enum {
     NDN_FLOW_RULE_ATTR,
     NDN_FLOW_RULE_PATTERN,
     NDN_FLOW_RULE_ACTIONS,
@@ -117,6 +132,9 @@ extern const asn_type * const ndn_rte_flow_action_conf_rss;
 extern const asn_type * const ndn_rte_flow_action_conf_rss_queue;
 extern const asn_type * const ndn_rte_flow_action_conf_rss_opt;
 extern const asn_type * const ndn_rte_flow_action_conf_rss_opt_hf;
+extern const asn_type * const ndn_rte_flow_item;
+extern const asn_type * const ndn_rte_flow_items;
+extern const asn_type * const ndn_rte_flow_item_conf;
 
 extern asn_type ndn_rte_flow_rule_s;
 

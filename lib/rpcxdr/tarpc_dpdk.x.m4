@@ -1809,6 +1809,20 @@ struct tarpc_rte_mk_flow_rule_components_out {
     tarpc_rte_flow_action           actions;
 };
 
+/** rte_insert_flow_rule_items */
+struct tarpc_rte_insert_flow_rule_items_in {
+    struct tarpc_in_arg             common;
+    tarpc_rte_flow_item             pattern;
+    string                          items<>;
+    tarpc_int                       index;
+};
+
+struct tarpc_rte_insert_flow_rule_items_out {
+    struct tarpc_out_arg            common;
+    tarpc_rte_flow_item             pattern;
+    tarpc_int                       retval;
+};
+
 /** rte_free_flow_rule() */
 struct tarpc_rte_free_flow_rule_in {
     struct tarpc_in_arg             common;
@@ -2073,6 +2087,7 @@ program dpdk
         RPC_DEF(rte_eth_dev_tx_offload_name)
 
         RPC_DEF(rte_mk_flow_rule_components)
+        RPC_DEF(rte_insert_flow_rule_items)
         RPC_DEF(rte_free_flow_rule)
         RPC_DEF(rte_flow_validate)
         RPC_DEF(rte_flow_create)

@@ -407,3 +407,39 @@ rpc_rte_flow_isolate(rcf_rpc_server              *rpcs,
 
     RETVAL_ZERO_INT(rte_flow_isolate, out.retval);
 }
+
+int
+rpc_rte_insert_flow_rule_items(rcf_rpc_server *rpcs,
+                               rpc_rte_flow_item_p *pattern,
+                               const asn_value *items,
+                               int index)
+{
+    tarpc_rte_insert_flow_rule_items_in in;
+    tarpc_rte_insert_flow_rule_items_out out;
+    size_t len;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.pattern = (tarpc_rte_flow_item)*pattern;
+    len = asn_count_txt_len(items, 0) + 1;
+    in.items = tapi_calloc(1, len);
+    in.index = index;
+
+    if (asn_sprint_value(items, in.items, len, 0) <= 0)
+        TEST_FAIL("Failed to prepare text representation of ASN.1 flow items");
+
+    rcf_rpc_call(rpcs, "rte_insert_flow_rule_items", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_insert_flow_rule_items, out.retval);
+
+    TAPI_RPC_LOG(rpcs, rte_insert_flow_rule_items, RPC_PTR_FMT ",\n%s, %d",
+                 "{ " RPC_PTR_FMT ", " NEG_ERRNO_FMT " }",
+                 RPC_PTR_VAL(in.pattern), in.items, in.index,
+                 RPC_PTR_VAL(out.pattern), NEG_ERRNO_ARGS(out.retval));
+
+    if (out.retval == 0)
+        *pattern = out.pattern;
+
+    RETVAL_ZERO_INT(rte_insert_flow_rule_items, out.retval);
+}
