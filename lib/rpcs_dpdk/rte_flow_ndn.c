@@ -2077,6 +2077,61 @@ rte_flow_action_of_set_vlan_vid_from_pdu(const asn_value *conf_pdu,
 }
 
 static te_errno
+rte_flow_action_port_id_from_pdu(const asn_value *conf_pdu,
+                                 struct rte_flow_action *action)
+{
+    struct rte_flow_action_port_id *conf = NULL;
+    asn_value *conf_pdu_choice;
+    asn_value *original_asn;
+    asn_tag_value tag;
+    te_bool original;
+    uint32_t id;
+    size_t len;
+    int rc;
+
+    if (action == NULL || conf_pdu == NULL)
+        return TE_EINVAL;
+
+    rc = asn_get_choice_value(conf_pdu, &conf_pdu_choice, NULL, &tag);
+    if (rc != 0)
+        return rc;
+    else if (tag != NDN_FLOW_ACTION_CONF_PORT_ID)
+        return TE_EINVAL;
+
+    len = sizeof(conf->id);
+    rc = asn_read_value_field(conf_pdu, &id, &len, "#port-id.id");
+    if (rc != 0)
+        return rc;
+
+    rc = asn_get_subvalue(conf_pdu_choice, &original_asn, "original");
+    if (rc == TE_EASNINCOMPLVAL)
+    {
+        original = FALSE;
+    }
+    else if (rc != 0)
+    {
+        return rc;
+    }
+    else
+    {
+        rc = asn_read_bool(original_asn, &original, "");
+        if (rc != 0)
+            return rc;
+    }
+
+    conf = TE_ALLOC(sizeof(*conf));
+    if (conf == NULL)
+        return TE_ENOMEM;
+
+    conf->id = id;
+    conf->original = (original ? 1 : 0);
+    action->conf = conf;
+    action->type = RTE_FLOW_ACTION_TYPE_PORT_ID;
+
+    return 0;
+}
+
+static te_errno
 rte_flow_action_end(struct rte_flow_action *action)
 {
     if (action == NULL)
@@ -2120,6 +2175,7 @@ static const struct rte_flow_action_types_mapping {
       rte_flow_action_of_push_vlan_from_pdu },
     { NDN_FLOW_ACTION_TYPE_OF_SET_VLAN_VID,
       rte_flow_action_of_set_vlan_vid_from_pdu },
+    { NDN_FLOW_ACTION_TYPE_PORT_ID, rte_flow_action_port_id_from_pdu },
 };
 
 static te_errno

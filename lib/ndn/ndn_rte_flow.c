@@ -59,6 +59,7 @@ asn_enum_entry_t _ndn_rte_flow_action_type_enum_entries[] = {
     {"vxlan-decap", NDN_FLOW_ACTION_TYPE_VXLAN_DECAP},
     {"of-push-vlan", NDN_FLOW_ACTION_TYPE_OF_PUSH_VLAN},
     {"of-set-vlan-vid", NDN_FLOW_ACTION_TYPE_OF_SET_VLAN_VID},
+    {"port-id", NDN_FLOW_ACTION_TYPE_PORT_ID},
 };
 
 asn_type ndn_rte_flow_action_type_s = {
@@ -189,6 +190,22 @@ asn_type ndn_rte_flow_action_conf_count_s = {
 const asn_type * const ndn_rte_flow_action_conf_count =
     &ndn_rte_flow_action_conf_count_s;
 
+static asn_named_entry_t _ndn_rte_flow_action_conf_port_id_ne_array[] = {
+    { "id", &asn_base_uint32_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_PORT_ID_ID } },
+    { "original", &asn_base_boolean_s,
+      { PRIVATE, NDN_FLOW_ACTION_CONF_PORT_ID_ORIGINAL } },
+};
+
+asn_type ndn_rte_flow_action_conf_port_id_s = {
+    "Action-Conf-PORT-ID", { PRIVATE, NDN_FLOW_ACTION_CONF_PORT_ID }, SEQUENCE,
+    TE_ARRAY_LEN(_ndn_rte_flow_action_conf_port_id_ne_array),
+    {_ndn_rte_flow_action_conf_port_id_ne_array}
+};
+
+const asn_type * const ndn_rte_flow_action_conf_port_id =
+    &ndn_rte_flow_action_conf_port_id_s;
+
 static asn_named_entry_t _ndn_rte_flow_action_conf_ne_array[] = {
     { "index", &asn_base_int16_s,
         {PRIVATE, NDN_FLOW_ACTION_QID} },
@@ -204,6 +221,8 @@ static asn_named_entry_t _ndn_rte_flow_action_conf_ne_array[] = {
         {PRIVATE, NDN_FLOW_ACTION_OF_PUSH_VLAN_ETHERTYPE} },
     { "vlan-id", &asn_base_int16_s,
         {PRIVATE, NDN_FLOW_ACTION_OF_SET_VLAN_VID} },
+    { "port-id", &ndn_rte_flow_action_conf_port_id_s,
+        {PRIVATE, NDN_FLOW_ACTION_CONF_PORT_ID} },
 };
 
 asn_type ndn_rte_flow_action_conf_s = {
