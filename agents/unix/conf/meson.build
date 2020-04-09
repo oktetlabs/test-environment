@@ -72,7 +72,7 @@ if conf.contains('iptables')
     sources += files('base/conf_iptables.c')
 endif
 if get_option('sniffers')
-    dep_pcap = cc.find_library('pcap', args: te_cflags)
+    dep_pcap = cc.find_library('pcap', required: false)
     if dep_pcap.found() and cc.has_function('pcap_open_live', args: te_cflags,
                                             dependencies: dep_pcap)
         deps += [ dep_pcap ]
