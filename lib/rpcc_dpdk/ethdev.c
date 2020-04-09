@@ -729,7 +729,7 @@ rpc_rte_eth_dev_configure(rcf_rpc_server *rpcs,
                  NEG_ERRNO_ARGS(out.retval));
     te_log_buf_free(tlbp);
 
-    RETVAL_INT(rte_eth_dev_configure, out.retval);
+    RETVAL_ZERO_INT(rte_eth_dev_configure, out.retval);
 }
 
 void
