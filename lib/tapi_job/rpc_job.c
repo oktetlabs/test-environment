@@ -331,6 +331,35 @@ rpc_job_receive(rcf_rpc_server *rpcs, unsigned int n_filters,
     RETVAL_INT(job_receive, out.retval);
 }
 
+te_errno
+rpc_job_clear(rcf_rpc_server *rpcs, unsigned int n_filters,
+               unsigned int *filters)
+{
+    tarpc_job_clear_in  in;
+    tarpc_job_clear_out out;
+    te_log_buf *tlbp_filters;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.filters.filters_val = filters;
+    in.filters.filters_len = n_filters;
+
+    rcf_rpc_call(rpcs, "job_clear", &in, &out);
+    CHECK_RPC_ERRNO_UNCHANGED(job_clear, out.retval);
+
+    tlbp_filters = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, job_clear, "%u, {%s}", "%r",
+                 in.filters.filters_len,
+                 tarpc_uint_array2log_buf(tlbp_filters,
+                                          in.filters.filters_len,
+                                          in.filters.filters_val),
+                 out.retval);
+    te_log_buf_free(tlbp_filters);
+
+    RETVAL_INT(job_clear, out.retval);
+}
+
 int
 rpc_job_send(rcf_rpc_server *rpcs, unsigned int channel,
              const void *buf, size_t count)

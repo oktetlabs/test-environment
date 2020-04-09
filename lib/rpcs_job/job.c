@@ -1761,6 +1761,31 @@ job_receive(unsigned int n_filters, unsigned int *filters,
 }
 
 static te_errno
+job_clear(unsigned int n_filters, unsigned int *filters)
+{
+    unsigned int i;
+
+    pthread_mutex_lock(&channels_lock);
+
+    for (i = 0; i < n_filters; i++)
+    {
+        if (get_filter(filters[i]) == NULL)
+        {
+            pthread_mutex_unlock(&channels_lock);
+            ERROR("Invalid filter id passed to job clear");
+            return TE_EINVAL;
+        }
+    }
+
+    for (i = 0; i < n_filters; i++)
+        queue_destroy(&get_filter(filters[i])->queue);
+
+    pthread_mutex_unlock(&channels_lock);
+
+    return 0;
+}
+
+static te_errno
 job_send_unsafe(unsigned int channel_id, size_t count, uint8_t *buf)
 {
     channel_t *channel = get_channel(channel_id);
@@ -2020,6 +2045,13 @@ TARPC_FUNC_STATIC(job_receive, {},
     MAKE_CALL(out->retval = func(in->filters.filters_len,
                                  in->filters.filters_val,
                                  in->timeout_ms, &out->buffer));
+    out->common.errno_changed = FALSE;
+})
+
+TARPC_FUNC_STATIC(job_clear, {},
+{
+    MAKE_CALL(out->retval = func(in->filters.filters_len,
+                                 in->filters.filters_val));
     out->common.errno_changed = FALSE;
 })
 

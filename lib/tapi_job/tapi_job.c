@@ -766,6 +766,27 @@ tapi_job_simple_receive(const tapi_job_channel_set_t filters, int timeout_ms,
         TEST_FAIL("Job simple receive failed");
 }
 
+te_errno
+tapi_job_clear(const tapi_job_channel_set_t filters)
+{
+    unsigned int *channel_ids;
+    unsigned int n_channels;
+    rcf_rpc_server *rpcs;
+
+    te_errno rc;
+
+    if ((rc = validate_channel_set(filters)) != 0)
+        return rc;
+    rpcs = filters[0]->rpcs;
+
+    alloc_id_array_from_channel_set(filters, &n_channels, &channel_ids);
+
+    rc = rpc_job_clear(rpcs, n_channels, channel_ids);
+    free(channel_ids);
+
+    return rc;
+}
+
 /* See description in tapi_job.h */
 te_errno
 tapi_job_destroy(tapi_job_t *job, int term_timeout_ms)

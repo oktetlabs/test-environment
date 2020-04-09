@@ -132,6 +132,21 @@ extern int rpc_job_filter_add_regexp(rcf_rpc_server *rpcs, unsigned int filter,
 extern int rpc_job_receive(rcf_rpc_server *rpcs, unsigned int n_filters,
                            unsigned int *filters, int timeout_ms,
                            tarpc_job_buffer *buffer);
+
+/**
+ * Remove all pending messages from filters, they are lost completely.
+ *
+ * @param rpcs        RPC server
+ * @param n_filters   Count of @p filters
+ * @param filters     Set of filters to clear.
+ *
+ * @return            Status code
+ * @retval TE_EPERM   if some of the @p filters are input channels or
+ *                    primary output channels
+ */
+extern te_errno rpc_job_clear(rcf_rpc_server *rpcs, unsigned int n_filters,
+                              unsigned int *filters);
+
 /**
  * Send data to a job input channel.
  *

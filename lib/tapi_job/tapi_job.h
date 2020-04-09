@@ -466,6 +466,20 @@ extern void tapi_job_simple_receive(const tapi_job_channel_set_t filters,
                                     tapi_job_buffer_t *buffer);
 
 /**
+ * Remove all pending messages from filters, they are lost completely.
+ *
+ * @param filters     Set of filters to clear.
+ *
+ * @return            Status code
+ * @retval TE_EPERM   if some of the @p filters are input channels or
+ *                    primary output channels and the implementation does
+ *                    not support reading from them or unreadable output
+ *                    channels
+ * @retval TE_EXDEV   if @p filters are on different RPC servers
+ */
+extern te_errno tapi_job_clear(const tapi_job_channel_set_t filters);
+
+/**
  * Destroy the job instance. If the job has started, it is terminated
  * as gracefully as possible. All resources of the instance are freed;
  * all unread data on all filters are lost.
