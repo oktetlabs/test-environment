@@ -1346,11 +1346,99 @@ pci_driver_get(unsigned int gid, const char *oid, char *value,
 }
 
 static te_errno
+pci_current_num_vfs_fopen(const pci_device *dev, const char *flags, FILE **fd)
+{
+    te_errno rc;
+    te_string buf = TE_STRING_INIT;
+
+    rc = format_sysfs_device_name(&buf, dev, "/max_vfs");
+    if (rc != 0)
+    {
+        te_string_free(&buf);
+        return rc;
+    }
+    *fd = fopen(buf.ptr, flags);
+    te_string_free(&buf);
+    if (*fd != NULL)
+        return 0;
+
+    /* Error occurred, try another sysfs path for current VFs number */
+    te_string_reset(&buf);
+    rc = format_sysfs_device_name(&buf, dev, "/sriov_numvfs");
+    if (rc != 0)
+    {
+        te_string_free(&buf);
+        return rc;
+    }
+
+    *fd = fopen(buf.ptr, flags);
+    te_string_free(&buf);
+    if (*fd == NULL)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    return 0;
+}
+
+static te_errno
+pci_current_num_vfs_get(const pci_device *dev, unsigned int *num)
+{
+    te_errno rc;
+    FILE *fd;
+    int n_parsed;
+
+    rc = pci_current_num_vfs_fopen(dev, "r", &fd);
+    if (rc != 0)
+        return rc;
+
+    n_parsed = fscanf(fd, "%u", num);
+    fclose(fd);
+    if (n_parsed != 1)
+    {
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+        ERROR("Cannot parse current number of VFs for a PCI device, %r", rc);
+    }
+
+    return rc;
+}
+
+static te_errno
+pci_current_num_vfs_set(const pci_device *dev, unsigned int num)
+{
+    te_errno rc;
+    FILE *fd;
+    int n_required;
+    int n_printed;
+
+    rc = pci_current_num_vfs_fopen(dev, "w", &fd);
+    if (rc != 0)
+        return rc;
+
+    n_required = snprintf(NULL, 0, "%u", num);
+    n_printed = fprintf(fd, "%u", num);
+    fclose(fd);
+    if (n_printed < 0)
+        rc = TE_OS_RC(TE_TA_UNIX, errno);
+    else if (n_required != n_printed)
+        rc = TE_RC(TE_TA_UNIX, TE_EFAIL);
+
+    if (rc != 0)
+        ERROR("Cannot set current number of VFs for a PCI device, %r", rc);
+
+    return rc;
+}
+
+static te_errno
 unbind_pci_device(const pci_device *dev)
 {
     te_errno rc;
     te_string buf = TE_STRING_INIT;
     int fd;
+
+    /*
+     * Try to remove existing VFs since some drivers may leave
+     * existing VFs after unbind.
+     */
+    (void)pci_current_num_vfs_set(dev, 0);
 
     rc = format_sysfs_device_name(&buf, dev, "/driver/unbind");
     if (rc != 0)
@@ -1545,6 +1633,7 @@ pci_driver_set(unsigned int gid, const char *oid, const char *value,
     const pci_device *dev;
     te_errno rc;
     char driver_name[PATH_MAX];
+    unsigned int n_vfs;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1560,6 +1649,10 @@ pci_driver_set(unsigned int gid, const char *oid, const char *value,
 
     if (strcmp(driver_name, value) == 0)
         return 0;
+
+    rc = pci_current_num_vfs_get(dev, &n_vfs);
+    if (rc != 0)
+        n_vfs = 0;
 
     if (*driver_name != '\0')
     {
@@ -1590,6 +1683,13 @@ pci_driver_set(unsigned int gid, const char *oid, const char *value,
         rc = bind_pci_device(dev, value);
         if (rc != 0)
             return rc;
+
+        if (n_vfs != 0)
+        {
+            rc = pci_current_num_vfs_set(dev, n_vfs);
+            if (rc != 0)
+                return rc;
+        }
     }
 
     return 0;
