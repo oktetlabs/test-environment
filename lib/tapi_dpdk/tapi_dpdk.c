@@ -25,8 +25,7 @@
 #define TESTPMD_MAX_PARAM_LEN 64
 #define MAKE_TESTPMD_CMD(_cmd) (TAPI_DPDK_TESTPMD_COMMAND_PREFIX _cmd)
 #define MAKE_TESTPMD_ARG(_arg) (TAPI_DPDK_TESTPMD_ARG_PREFIX _arg)
-#define TESTPMD_CMD_PRE_SETUP "show port info all\nport stop all\n"
-#define TESTPMD_CMD_POST_SETUP "port start all\n"
+#define TESTPMD_CMD_POST_SETUP "port start all\nshow port info all\n"
 #define TESTPMD_TOTAL_MBUFS_MIN 2048
 #define MBUF_OVERHEAD 256
 #define TESTPMD_MIN_N_CORES 2
@@ -685,6 +684,12 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     generate_cmdline_filename(working_dir, &cmdline_file);
     append_testpmd_cmdline_from_args(test_args, port_number, &cmdline_setup,
                                      &cmdline_start);
+    /*
+     * Disable device start to execute setup commands first and then start the
+     * device.
+     */
+    append_argument("--disable-device-start", &testpmd_argc, &testpmd_argv);
+
     append_testpmd_nb_cores_arg(n_cpus_grabbed - 1, &testpmd_argc, &testpmd_argv);
     append_argument("--cmdline-file", &testpmd_argc, &testpmd_argv);
     append_argument(cmdline_file, &testpmd_argc, &testpmd_argv);
@@ -776,7 +781,7 @@ tapi_dpdk_testpmd_start(tapi_dpdk_testpmd_job_t *testpmd_job)
     if (testpmd_job->cmdline_file != NULL)
     {
         if (tapi_file_create_ta(testpmd_job->ta, testpmd_job->cmdline_file,
-                "%s%s%s%s", TESTPMD_CMD_PRE_SETUP,
+                "%s%s%s",
                 empty_string_if_null(testpmd_job->cmdline_setup.ptr),
                 TESTPMD_CMD_POST_SETUP,
                 empty_string_if_null(testpmd_job->cmdline_start.ptr)) != 0)
@@ -785,7 +790,7 @@ tapi_dpdk_testpmd_start(tapi_dpdk_testpmd_job_t *testpmd_job)
             return TE_RC(TE_TAPI, TE_EFAIL);
         }
 
-        RING("testpmd cmdline-file content:\n%s%s%s%s", TESTPMD_CMD_PRE_SETUP,
+        RING("testpmd cmdline-file content:\n%s%s%s",
              empty_string_if_null(testpmd_job->cmdline_setup.ptr),
              TESTPMD_CMD_POST_SETUP,
              empty_string_if_null(testpmd_job->cmdline_start.ptr));
