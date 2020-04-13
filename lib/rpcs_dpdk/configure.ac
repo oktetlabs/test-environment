@@ -69,6 +69,17 @@ typedef void (*func)(uint16_t);
 [[func f = rte_eth_allmulticast_enable; (void)f;]]
 )], [AC_DEFINE([HAVE_RTE_ALLMULTICAST_RETURN_VOID], 1, [ ])], [])
 
+AC_COMPILE_IFELSE([
+AC_LANG_PROGRAM(
+[[
+#include <stdint.h>
+#include "rte_ethdev.h"
+
+typedef void (*func)(uint16_t, struct rte_eth_dev_info *);
+]],
+[[func f = rte_eth_dev_info_get; (void)f;]]
+)], [AC_DEFINE([HAVE_RTE_DEV_INFO_GET_RETURN_VOID], 1, [ ])], [])
+
 AC_CHECK_MEMBERS([struct rte_flow_ops.isolate],
 [], [],
 [[
