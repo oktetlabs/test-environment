@@ -417,7 +417,13 @@ typedef struct tapi_job_buffer_t {
     tapi_job_channel_t *channel; /**< Last message channel */
     tapi_job_channel_t *filter; /**< Last message filter */
     unsigned int dropped; /**< Number of dropped messages */
-    te_bool eos; /**< @c TRUE if the stream behind the filter has been closed */
+    te_bool eos; /**<
+                  * @c TRUE if the stream behind the filter has been closed.
+                  * If #eos is received and a job is not started again,
+                  * the next tapi_job_receive() will time out.
+                  * The stream behind the filter is re-opened when a job
+                  * restarts. #eos is used as a separation between runs.
+                  */
     te_string data; /**< Data buffer */
 } tapi_job_buffer_t;
 
@@ -431,6 +437,9 @@ typedef struct tapi_job_buffer_t {
  *
  * The data being read are appended to @a data buffer.
  * At most one message is read.
+ *
+ * @note    When filters set contains more than one filter, the received
+ *          message (@p buffer) is relevant only to one of them.
  *
  * @param filters     Set of filters to read from.
  * @param timeout_ms  Timeout to wait (negative means tapi_job_get_timeout())
@@ -682,6 +691,62 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  *     CHECK_RC(tapi_job_wait(job, 0, &status));
  * }
  * ...
+ * @endcode
+ *
+ * Start a job several times and get its data
+ * ------------------------------------------
+ *
+ * @code{.c}
+ * unsigned int eos_count;
+ * tapi_job_buffer buf = TAPI_JOB_BUFFER_INIT;
+ * tapi_job_factory_t *factory = NULL;
+ * tapi_job_t *job = NULL;
+ * tapi_job_channel_t *out_channel;
+ * tapi_job_channel_t *out_filter;
+ * tapi_job_channel_t *out_filter2;
+ *
+ * CHECK_RC(tapi_job_factory_rpc_create(pco, &factory));
+ * CHECK_RC(tapi_job_create(factory, "pty_spawner", "/usr/bin/tool",
+ *                          (const char *[]){"tool", "arg1", "arg2",
+ *                          NULL}, NULL, &job));
+ * CHECK_RC(tapi_job_alloc_output_channels(job, 1, &out_channel));
+ * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channel),
+ *                                 "Readable filter", TRUE, 0, &out_filter));
+ * CHECK_RC(tapi_job_attach_filter(TAPI_JOB_CHANNEL_SET(out_channel),
+ *                                 "Readable filter2", TRUE, 0, &out_filter2));
+ *
+ * CHECK_RC(tapi_job_start(job));
+ * CHECK_RC(tapi_job_wait(job, BIG_TIMEOUT, NULL));
+ *
+ * // Get data from the first run from both filters
+ * eos_count = 0;
+ * while (eos_count < 2)
+ * {
+ *     te_string_reset(&buf.data);
+ *     CHECK_RC(tapi_job_receive(TAPI_JOB_CHANNEL_SET(out_filter, out_filter2),
+ *                               -1, &buf));
+ *     if (buf.eos)
+ *         eos_count++;
+ *     ...
+ * }
+ *
+ * CHECK_RC(tapi_job_start(job));
+ * CHECK_RC(tapi_job_wait(job, BIG_TIMEOUT, NULL));
+ *
+ * // Get data from the second run from both filters
+ * eos_count = 0;
+ * while (eos_count < 2)
+ * {
+ *     te_string_reset(&buf.data);
+ *     CHECK_RC(tapi_job_receive(TAPI_JOB_CHANNEL_SET(out_filter, out_filter2),
+ *                               -1, &buf));
+ *     if (buf.eos)
+ *         eos_count++;
+ *     ...
+ * }
+ *
+ * CHECK_RC(tapi_job_destroy(job, -1));
+ * tapi_job_factory_destroy(factory);
  * @endcode
  */
 #ifdef __cplusplus
