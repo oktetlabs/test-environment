@@ -19,7 +19,7 @@ sources = files(
 
 subdir('conf')
 
-symtbl_libs = [
+ta_symtbl_libs = [
     'tools',
     'rcfpch',
     'rpcserver',
@@ -27,7 +27,7 @@ symtbl_libs = [
     'tad',
 ]
 
-te_libs = [
+ta_non_symtbl_libs = [
     'rpcxdrta',
     'rpc_types',
     'conf_oid',
@@ -37,14 +37,14 @@ te_libs = [
 ]
 
 foreach extra_lib : get_option('agent-unix-libs')
-    if not symtbl_libs.contains(extra_lib)
-        symtbl_libs += [ extra_lib ]
+    if not ta_symtbl_libs.contains(extra_lib)
+        ta_symtbl_libs += [ extra_lib ]
     endif
 endforeach
 
 if get_option('libs').split().contains('netconf')
     c_args += [ '-DUSE_LIBNETCONF' ]
-    te_libs += [ 'netconf' ]
+    ta_non_symtbl_libs += [ 'netconf' ]
 endif
 
 check_headers = [
@@ -203,12 +203,10 @@ endif
 
 
 if get_option('tr069')
-    symtbl_libs += [ 'acse_cwmp' ]
+    ta_symtbl_libs += [ 'acse_cwmp' ]
 endif
 
-te_libs += symtbl_libs
-
-foreach l : te_libs
+foreach l : ta_non_symtbl_libs + ta_symtbl_libs
     deps += [ get_variable('dep_lib_static_' + l) ]
 endforeach
 
@@ -222,7 +220,7 @@ if get_option('agent-unix-symtbl')
                                 c_args: c_args,
                                 dependencies: deps)
     symtbl_src = [ ta_library ]
-    foreach l : symtbl_libs
+    foreach l : ta_symtbl_libs
         symtbl_src += [ get_variable('te_lib_' + l) ]
     endforeach
     c_args += [ '-DENABLE_GENERATED_SYMTBL' ]
