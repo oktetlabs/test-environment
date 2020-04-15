@@ -37,9 +37,6 @@ te_libs = [
 ]
 
 foreach extra_lib : get_option('agent-unix-libs')
-    if not te_libs.contains(extra_lib)
-        te_libs += [ extra_lib ]
-    endif
     if not symtbl_libs.contains(extra_lib)
         symtbl_libs += [ extra_lib ]
     endif
