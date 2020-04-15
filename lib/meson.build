@@ -27,7 +27,7 @@ tad_protocols = [
 #
 
 # Common libraries
-common_libs = [
+te_common_libs = [
     'logger_core',
     'tools',
     'conf_oid',
@@ -39,7 +39,7 @@ common_libs = [
 ]
 
 # Test Engine libraries
-engine_libs = [
+te_engine_libs = [
     'bsapi',
     'logic_expr',
     'ipc',
@@ -71,7 +71,7 @@ engine_libs = [
 ]
 
 # Test Agent libraries
-agent_libs = [
+te_agent_libs = [
     'comm_net_agent',
     'loggerta',
     'netconf',
@@ -86,7 +86,7 @@ agent_libs = [
     'upnp_cp',
 ]
 
-all_libs = common_libs + engine_libs + agent_libs
+all_libs = te_common_libs + te_engine_libs + te_agent_libs
 
 libs = get_option('libs').split()
 
@@ -106,13 +106,13 @@ build_agents = get_option('agents').split().length() != 0
 # Iterate over all libraries in order to follow build order
 foreach l : all_libs
     if libs.contains(l)
-        if engine_libs.contains(l)
+        if te_engine_libs.contains(l)
             build_lib_shared = true
             build_lib_static = false
-        elif common_libs.contains(l)
+        elif te_common_libs.contains(l)
             build_lib_shared = true
             build_lib_static = build_agents
-        elif agent_libs.contains(l)
+        elif te_agent_libs.contains(l)
             build_lib_shared = false
             build_lib_static = true
         else
@@ -120,7 +120,7 @@ foreach l : all_libs
             build_lib_shared = false
             build_lib_static = true
         endif
-        if common_libs.contains(l) or engine_libs.contains(l)
+        if te_common_libs.contains(l) or te_engine_libs.contains(l)
             install_lib = install_dev
         else
             install_lib = get_option('install-dev')
