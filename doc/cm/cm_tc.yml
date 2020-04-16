@@ -77,10 +77,11 @@
       type: string
       volatate: true
       d: |
-         Queuing Disciplines kind: "netem", "tbf"
+         Queuing Disciplines kind: "netem", "tbf", "clsact"
          Name: empty
          Value: netem - Network Emulation functionality,
-                tbf - Token Bucket Filter functionality
+                tbf - Token Bucket Filter functionality,
+                clsact - dummy qdisc to attach bpf programs
 
     - oid: "/agent/interface/tc/qdisc/parent"
       access: read_only
@@ -138,3 +139,8 @@
                 cell                    - Size of a rate cell
                 limit                   - Limit in bytes
                 latency                 - Limit by latency in micro seconds
+
+                Available parameters if kind is "clsact":
+                bpf_ingress      - Link to BPF program which is attached
+                                   to TC ingress hook on the interface,
+                                   such as /agent:Agt_A/bpf:0/program:foo

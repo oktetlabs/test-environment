@@ -62,6 +62,7 @@ typedef enum tapi_cfg_qdisc_kind_t {
     TAPI_CFG_QDISC_KIND_UNKNOWN,    /**< Unknown qdisc kind */
     TAPI_CFG_QDISC_KIND_NETEM,      /**< NetEm qdisc kind */
     TAPI_CFG_QDISC_KIND_TBF,        /**< TBF qdisc kind */
+    TAPI_CFG_QDISC_KIND_CLSACT,     /**< clsact qdisc */
 } tapi_cfg_qdisc_kind_t;
 
 #define TAPI_CFG_QDISC_PARAM_FMT \

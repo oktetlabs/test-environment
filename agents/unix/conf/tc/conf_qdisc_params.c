@@ -8,6 +8,8 @@
  * @author Nikita Somenkov <Nikita.Somenkov@oktetlabs.ru>
  */
 
+#include <linux/if_ether.h>
+
 #include "te_defs.h"
 #include "rcf_common.h"
 #include "te_string.h"
@@ -18,6 +20,8 @@
 
 #include "conf_qdisc_params.h"
 #include "conf_tc_internal.h"
+#include "conf_bpf_inner.h"
+#include "conf_net_if_wrapper.h"
 
 #include <netlink/route/qdisc/netem.h>
 #include <netlink/route/qdisc/tbf.h>
@@ -27,10 +31,25 @@ typedef void (*netem_setter)(struct rtnl_qdisc *, int);
 typedef te_errno (*value_to_string_converter)(int, char *);
 typedef te_errno (*string_to_value_converter)(const char *, int *);
 
+typedef struct bpf_link_info
+{
+    LIST_ENTRY(bpf_link_info) next;
+    char ifname[IFNAMSIZ];
+    char prog[RCF_MAX_VAL];
+} bpf_link_info;
+
+LIST_HEAD(bpf_link_info_list, bpf_link_info);
+
+typedef te_errno (*clsact_setter)(struct bpf_link_info_list *, const char *,
+                                  const char *);
+typedef void (*clsact_getter)(struct bpf_link_info_list *, const char *,
+                              char *);
+
 /* Kind of tc qdisc discipline */
 typedef enum conf_qdisc_kind {
     CONF_QDISC_NETEM,
     CONF_QDISC_TBF,
+    CONF_QDISC_CLSACT,
     CONF_QDISC_UNKNOWN,
 } conf_qdisc_kind;
 
@@ -90,6 +109,7 @@ conf_qdisc_get_kind(struct rtnl_qdisc *qdisc)
     static const char *qdisc_kind_names[] = {
         [CONF_QDISC_NETEM] = "netem",
         [CONF_QDISC_TBF] = "tbf",
+        [CONF_QDISC_CLSACT] = "clsact",
         [CONF_QDISC_UNKNOWN] = NULL
     };
 
@@ -484,6 +504,217 @@ static struct tbf_param tbf_params_list[] = {
     },
 };
 
+/**
+ * Link BPF program @p prog_name to TC ingress attach point on the
+ * interface @p if_name, or unlink if @p prog_name is an empty
+ * string.
+ *
+ * @param list          List of linked BPF TC ingress programs.
+ * @param if_name       The interface name.
+ * @param prog_name     Oid of the BPF program, or empty string to unlink.
+ *
+ * @return Status code.
+ */
+static te_errno
+conf_qdisc_clsact_bpf_ingress_set(struct bpf_link_info_list *list,
+                                  const char *if_name,
+                                  const char *prog_name)
+{
+    struct nl_msg *msg;
+    struct tcmsg tchdr = {0};
+    te_bool link = *prog_name != '\0';
+    int err = 0;
+    unsigned int protocol = 0;
+    int cmd = 0;
+    unsigned int flags = 0;
+    bpf_link_info *item;
+    te_bool iface_found = FALSE;
+
+    /* Check that only one TC program is linked to the interface. */
+    LIST_FOREACH(item, list, next)
+    {
+        if (strcmp(if_name, item->ifname) == 0)
+        {
+            if (link)
+            {
+                ERROR("Other BPF TC program \"%s\" is already linked "
+                      "to the interface %s", item->prog, if_name);
+                return TE_RC(TE_TA_UNIX, TE_EEXIST);
+            }
+            else
+            {
+                iface_found = TRUE;
+            }
+        }
+    }
+
+    /*
+     * If there are no linked programs, we have nothing to do.
+     * So just return success code.
+     */
+    if (!iface_found && !link)
+        return 0;
+
+    if (link)
+    {
+        protocol = htons(ETH_P_ALL);
+        cmd = RTM_NEWTFILTER;
+        flags = NLM_F_EXCL | NLM_F_CREATE;
+    }
+    else
+    {
+        cmd = RTM_DELTFILTER;
+    }
+
+    tchdr.tcm_family = AF_UNSPEC;
+    tchdr.tcm_parent = TC_H_MAKE(TC_H_CLSACT, TC_H_MIN_INGRESS);
+    tchdr.tcm_info = TC_H_MAKE(0, protocol);
+    tchdr.tcm_ifindex = conf_net_if_wrapper_if_nametoindex(if_name);
+
+    if ((msg = nlmsg_alloc_simple(cmd, flags)) == NULL)
+    {
+        ERROR("Failed to allocate netlink message");
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    err = nlmsg_append(msg, &tchdr, sizeof(tchdr), NLMSG_ALIGNTO);
+    if (err < 0)
+    {
+        ERROR("Failed to append tc header to netlink message: %s",
+              nl_geterror(err));
+        nlmsg_free(msg);
+        return conf_tc_internal_nl_error2te_errno(err);
+    }
+
+    if (link)
+    {
+        int bpf_fd = -1;
+        struct nlattr *opts;
+
+        bpf_fd = conf_bpf_fd_by_prog_oid(prog_name);
+        if (bpf_fd == -1)
+        {
+            ERROR("Failed to obtain BPF program descriptor");
+            nlmsg_free(msg);
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+        }
+
+        err = nla_put_string(msg, TCA_KIND, "bpf");
+        if (err < 0)
+        {
+            ERROR("Failed to add attribute \"bpf\" to netlink message: %s",
+                  nl_geterror(err));
+            nlmsg_free(msg);
+            return conf_tc_internal_nl_error2te_errno(err);
+        }
+
+        if ((opts = nla_nest_start(msg, TCA_OPTIONS)) == NULL)
+        {
+            ERROR("Failed to add nester TCA_OPTIONS attribute to netlink "
+                  "message");
+            nlmsg_free(msg);
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+        }
+
+        err = nla_put_u32(msg, TCA_BPF_FD, bpf_fd);
+        if (err < 0)
+        {
+            ERROR("Failed to add attribute to netlink message: %s",
+                  nl_geterror(err));
+            nlmsg_free(msg);
+            return conf_tc_internal_nl_error2te_errno(err);
+        }
+
+        err = nla_put_u32(msg, TCA_BPF_FLAGS, TCA_BPF_FLAG_ACT_DIRECT);
+        if (err < 0)
+        {
+            ERROR("Failed to add attribute to netlink message: %s",
+                  nl_geterror(err));
+            nlmsg_free(msg);
+            return conf_tc_internal_nl_error2te_errno(err);
+        }
+
+        nla_nest_end(msg, opts);
+    }
+
+    err = nl_send_sync(conf_tc_internal_get_sock(), msg);
+    if (err != 0)
+    {
+        ERROR("Failed to send netlink message %s", nl_geterror(err));
+        return conf_tc_internal_nl_error2te_errno(err);
+    }
+
+    if (link)
+    {
+        item = TE_ALLOC(sizeof(*item));
+        if (item == NULL)
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+        TE_STRLCPY(item->ifname, if_name, sizeof(item->ifname));
+        TE_STRLCPY(item->prog, prog_name, sizeof(item->prog));
+
+        LIST_INSERT_HEAD(list, item, next);
+    }
+    else
+    {
+        bpf_link_info *tmp;
+
+        LIST_FOREACH_SAFE(item, list, next, tmp)
+        {
+            if (strcmp(if_name, item->ifname) == 0)
+            {
+                LIST_REMOVE(item, next);
+                free(item);
+            }
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Get oid string of the BPF TC program linked to the
+ * interface @p ifname.
+ *
+ * @param[in]  list     List of linked BPF TC ingress programs.
+ * @param[in]  ifname   The interface name.
+ * @param[out] val      Buffer to write the string to.
+ */
+static void
+conf_qdisc_clsact_bpf_ingress_get(struct bpf_link_info_list *list,
+                                  const char *ifname, char *val)
+{
+    bpf_link_info *item;
+
+    LIST_FOREACH(item, list, next)
+    {
+        if (strcmp(ifname, item->ifname) == 0)
+        {
+            TE_STRLCPY(val, item->prog, RCF_MAX_VAL);
+            return;
+        }
+    }
+
+    TE_STRLCPY(val, "", RCF_MAX_VAL);
+}
+
+typedef struct clsact_param
+{
+    const char *name;
+    struct bpf_link_info_list bpf_prog_list;
+    clsact_setter set;
+    clsact_getter get;
+} clsact_param;
+
+static clsact_param clsact_param_list[] = {
+    {
+        .name = "bpf_ingress",
+        .bpf_prog_list = LIST_HEAD_INITIALIZER(.bpf_prog_list),
+        .set = conf_qdisc_clsact_bpf_ingress_set,
+        .get = conf_qdisc_clsact_bpf_ingress_get,
+    },
+};
+
 /* See the description in conf_qdisc_params.h */
 te_errno
 conf_qdisc_param_set(unsigned int gid, const char *oid,
@@ -540,6 +771,18 @@ conf_qdisc_param_set(unsigned int gid, const char *oid,
             }
             break;
         }
+
+        case CONF_QDISC_CLSACT:
+            for (i = 0; i < TE_ARRAY_LEN(clsact_param_list); i++)
+            {
+                if (strcmp(clsact_param_list[i].name, param) == 0)
+                {
+                    return clsact_param_list[i].set(
+                                &clsact_param_list[i].bpf_prog_list,
+                                if_name, value);
+                }
+            }
+            break;
 
         default:
             break;
@@ -605,6 +848,18 @@ conf_qdisc_param_add(unsigned int gid, const char *oid,
             }
             break;
 
+        case CONF_QDISC_CLSACT:
+            for (i = 0; i < TE_ARRAY_LEN(clsact_param_list); i++)
+            {
+                if (strcmp(clsact_param_list[i].name, param) == 0)
+                {
+                    return clsact_param_list[i].set(
+                                &clsact_param_list[i].bpf_prog_list,
+                                if_name, value);
+                }
+            }
+            break;
+
         default:
             break;
     }
@@ -664,6 +919,18 @@ conf_qdisc_param_get(unsigned int gid, const char *oid,
             break;
         }
 
+        case CONF_QDISC_CLSACT:
+            for (i = 0; i < TE_ARRAY_LEN(clsact_param_list); i++)
+            {
+                if (strcmp(clsact_param_list[i].name, param) == 0)
+                {
+                    clsact_param_list[i].get(&clsact_param_list[i].bpf_prog_list,
+                                             if_name, value);
+                    return 0;
+                }
+            }
+            break;
+
         default:
             break;
     }
@@ -674,11 +941,40 @@ conf_qdisc_param_get(unsigned int gid, const char *oid,
 /* See the description in conf_qdisc_params.h */
 te_errno
 conf_qdisc_param_del(unsigned int gid, const char *oid,
-                     const char *value)
+                     const char *if_name, const char *tc,
+                     const char *qdisc, const char *param)
 {
+    size_t i;
+    struct rtnl_qdisc *nl_qdisc = NULL;
+    conf_qdisc_kind qdisc_kind;
+
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(value);
+    UNUSED(tc);
+    UNUSED(qdisc);
+
+    if ((nl_qdisc = conf_tc_internal_get_qdisc(if_name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    qdisc_kind = conf_qdisc_get_kind(nl_qdisc);
+    switch (qdisc_kind)
+    {
+        case CONF_QDISC_CLSACT:
+            for (i = 0; i < TE_ARRAY_LEN(clsact_param_list); i++)
+            {
+                if (strcmp(clsact_param_list[i].name, param) == 0)
+                {
+
+                    return clsact_param_list[i].set(
+                                &clsact_param_list[i].bpf_prog_list,
+                                if_name, "");
+                }
+            }
+            break;
+
+        default:
+            break;
+    }
 
     return 0;
 }
@@ -740,6 +1036,18 @@ conf_qdisc_param_list(unsigned int gid, const char *oid,
             }
             break;
 
+        case CONF_QDISC_CLSACT:
+            for (i = 0; i < TE_ARRAY_LEN(clsact_param_list); i++)
+            {
+                rc = te_string_append(&list_out, "%s ", clsact_param_list[i].name);
+                if (rc != 0)
+                {
+                    te_string_free(&list_out);
+                    return rc;
+                }
+            }
+            break;
+
         default:
             break;
     }
@@ -759,5 +1067,25 @@ conf_qdisc_tbf_params_free(void)
     {
         LIST_REMOVE(params, next);
         free(params);
+    }
+}
+
+/* See the description in conf_qdisc_params.h */
+void
+conf_qdisc_clsact_params_free(void)
+{
+    bpf_link_info  *item;
+    bpf_link_info  *tmp;
+    int             i;
+
+    for (i = 0; i < TE_ARRAY_LEN(clsact_param_list); i++)
+    {
+        LIST_FOREACH_SAFE(item,
+                          &clsact_param_list[i].bpf_prog_list,
+                          next, tmp)
+        {
+            LIST_REMOVE(item, next);
+            free(item);
+        }
     }
 }

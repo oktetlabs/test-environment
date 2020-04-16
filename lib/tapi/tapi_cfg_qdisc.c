@@ -56,6 +56,7 @@ tapi_cfg_qdisc_set_enabled(const char *ta, const char *if_name,
 static const char *kinds[] = {
     [TAPI_CFG_QDISC_KIND_NETEM] = "netem",
     [TAPI_CFG_QDISC_KIND_TBF] = "tbf",
+    [TAPI_CFG_QDISC_KIND_CLSACT] = "clsact",
 };
 
 /* See description in the tapi_cfg_qdisc.h */

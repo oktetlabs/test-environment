@@ -105,6 +105,7 @@ conf_tc_internal_fini(void)
     }
 
     conf_qdisc_tbf_params_free();
+    conf_qdisc_clsact_params_free();
 }
 
 /* See the description in conf_tc_internal.h */
@@ -233,8 +234,16 @@ conf_tc_internal_qdisc_enable(const char *if_name)
     if ((qdisc = conf_tc_internal_get_qdisc(if_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    rtnl_tc_set_handle(TC_CAST(qdisc), TC_HANDLE(1, 0));
-    rtnl_tc_set_parent(TC_CAST(qdisc), TC_H_ROOT);
+    if (strcmp(rtnl_tc_get_kind(TC_CAST(qdisc)), "clsact") == 0)
+    {
+        rtnl_tc_set_handle(TC_CAST(qdisc), TC_HANDLE(TC_H_CLSACT, 0));
+        rtnl_tc_set_parent(TC_CAST(qdisc), TC_H_CLSACT);
+    }
+    else
+    {
+        rtnl_tc_set_handle(TC_CAST(qdisc), TC_HANDLE(1, 0));
+        rtnl_tc_set_parent(TC_CAST(qdisc), TC_H_ROOT);
+    }
 
     rc = rtnl_qdisc_add(conf_tc_internal_get_sock(), qdisc,
                         NLM_F_CREATE | NLM_F_REPLACE);

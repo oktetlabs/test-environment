@@ -72,12 +72,16 @@ extern te_errno conf_qdisc_param_add(unsigned int gid, const char *oid,
  *
  * @param gid       group identifier
  * @param oid       full object instance identifier
- * @param value     parameter for del
+ * @param if_name   interface name
+ * @param tc        Trafic Control value (empty string)
+ * @param qdisc     QDisc value (empty string)
+ * @param param     Parameter name to delete
  *
- * @return Status codehg
+ * @return Status code
  */
 extern te_errno conf_qdisc_param_del(unsigned int gid, const char *oid,
-                                     const char *value);
+                                     const char *if_name, const char *tc,
+                                     const char *qdisc, const char *param);
 
 /**
  * 'list' method implementation for TC qdisc netem/tbf
@@ -98,5 +102,10 @@ extern te_errno conf_qdisc_param_list(unsigned int gid, const char *oid,
  * Free TC qdisc tbf parameters objects
  */
 extern void conf_qdisc_tbf_params_free(void);
+
+/**
+ * Free TC qdisc clsact parameters objects.
+ */
+extern void conf_qdisc_clsact_params_free(void);
 
 #endif /* __TE_AGENTS_UNIX_CONF_CONF_QDISC_PARAMS_H_ */
