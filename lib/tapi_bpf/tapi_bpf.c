@@ -18,6 +18,7 @@
 #include "conf_api.h"
 #include "tapi_mem.h"
 #include "tapi_bpf.h"
+#include "tapi_cfg_qdisc.h"
 
 static const char *tapi_bpf_states[] =
 {
@@ -424,7 +425,8 @@ tapi_bpf_prog_get_list(const char *ta, unsigned int bpf_id,
 /* See description in tapi_bpf.h */
 te_errno
 tapi_bpf_prog_link(const char *ta, const char *ifname,
-                   unsigned int bpf_id, const char *prog)
+                   unsigned int bpf_id, tapi_bpf_link_point link_type,
+                   const char *prog)
 {
     te_string   str = TE_STRING_INIT_STATIC(RCF_MAX_VAL);
     te_errno    rc;
@@ -439,35 +441,110 @@ tapi_bpf_prog_link(const char *ta, const char *ifname,
         return rc;
     }
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, str.ptr),
-                                   "/agent:%s/interface:%s/xdp:",
-                                   ta, ifname)) != 0)
+    switch (link_type)
     {
-        ERROR("%s(): Failed to link program %s to "
-              "/agent:%s/interface:%s/xdp: %r",
-              __FUNCTION__, str.ptr, ta, ifname, rc);
+        case TAPI_BPF_LINK_XDP:
+            rc = cfg_set_instance_fmt(CFG_VAL(STRING, str.ptr),
+                                      "/agent:%s/interface:%s/xdp:",
+                                      ta, ifname);
+            break;
+
+        case TAPI_BPF_LINK_TC_INGRESS:
+        {
+            te_bool qdisc_is_enabled = FALSE;
+            tapi_cfg_qdisc_kind_t qdisc_kind = TAPI_CFG_QDISC_KIND_UNKNOWN;
+
+            if ((rc = tapi_cfg_qdisc_get_enabled(ta, ifname,
+                                                 &qdisc_is_enabled)) != 0)
+            {
+                ERROR("Failed to get qdisc status");
+                break;
+            }
+
+            if (!qdisc_is_enabled)
+            {
+                ERROR("qdisc is disabled");
+                rc = TE_EINVAL;
+                break;
+            }
+
+            if ((rc = tapi_cfg_qdisc_get_kind(ta, ifname, &qdisc_kind)) != 0)
+            {
+                ERROR("Failed to get qdisc kind");
+                break;
+            }
+
+            if (qdisc_kind != TAPI_CFG_QDISC_KIND_CLSACT)
+            {
+                ERROR("qdisc has invalid kind, %s instead of %s",
+                      tapi_cfg_qdisc_kind2str(qdisc_kind),
+                      tapi_cfg_qdisc_kind2str(TAPI_CFG_QDISC_KIND_CLSACT));
+                rc = TE_EINVAL;
+                break;
+            }
+
+            if ((rc = tapi_cfg_qdisc_set_param(ta, ifname, "bpf_ingress",
+                                               str.ptr)) != 0)
+            {
+                ERROR("Failed to set qdisc parameter \"bpf_ingress\"");
+                break;
+            }
+            break;
+        }
+
+        default:
+            ERROR("Link point is not supported");
+            rc = TE_EINVAL;
+            break;
     }
+
+    if (rc != 0)
+    {
+        ERROR("%s(): Failed to link program %s to agent %s interface %s"
+              ": %r", __FUNCTION__, str.ptr, ta, ifname, rc);
+    }
+
     return rc;
 }
 
 /* See description in tapi_bpf.h */
 te_errno
-tapi_bpf_prog_unlink(const char *ta, const char *ifname)
+tapi_bpf_prog_unlink(const char *ta, const char *ifname,
+                     tapi_bpf_link_point link_type)
 {
     te_errno    rc;
 
     assert(ta != NULL);
     assert(ifname != NULL);
 
-    if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, ""),
-                                   "/agent:%s/interface:%s/xdp:",
-                                   ta, ifname)) != 0)
+    switch (link_type)
     {
-        ERROR("%s(): Failed to unlink xdp program from "
-              "/agent:%s/interface:%s/xdp: %r",
-              __FUNCTION__, ta, ifname, rc);
-        return rc;
+        case TAPI_BPF_LINK_TC_INGRESS:
+            if ((rc = tapi_cfg_qdisc_set_param(ta, ifname,
+                                               "bpf_ingress", "")) != 0)
+            {
+                ERROR("%s(): Failed to unlink BPF TC program: %r",
+                      __FUNCTION__, rc);
+            }
+            break;
+
+        case TAPI_BPF_LINK_XDP:
+            if ((rc = cfg_set_instance_fmt(CFG_VAL(STRING, ""),
+                                           "/agent:%s/interface:%s/xdp:",
+                                           ta, ifname)) != 0)
+            {
+                ERROR("%s(): Failed to unlink xdp program from "
+                      "/agent:%s/interface:%s/xdp: %r",
+                      __FUNCTION__, ta, ifname, rc);
+            }
+            break;
+
+        default:
+            ERROR("%s(): link point type is not specified", __FUNCTION__);
+            rc = TE_RC(TE_TAPI, TE_EINVAL);
+            break;
     }
+
     return rc;
 }
 

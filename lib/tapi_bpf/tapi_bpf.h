@@ -71,6 +71,16 @@ typedef enum tapi_bpf_map_type {
 } tapi_bpf_map_type;
 
 /**
+ * BPF program link point types.
+ */
+typedef enum tapi_bpf_link_point
+{
+    TAPI_BPF_LINK_UNSPEC = 0,
+    TAPI_BPF_LINK_XDP,
+    TAPI_BPF_LINK_TC_INGRESS,
+} tapi_bpf_link_point;
+
+/**
  * BPF XDP actions
  */
 typedef enum tapi_bpf_xdp_action {
@@ -201,12 +211,14 @@ extern te_errno tapi_bpf_prog_get_list(const char *ta,
 
 /**
  * Link program to network interface.
- * @note (1) only XDP type of BPF program and
- *       (2) only one XDP program can be linked to interface.
+ * @note only one program can be linked to interface.
+ * @note clsact qdisc must be enabled in order to link BPF
+ *       program to TC attach point.
  *
  * @param ta        Test Agent name
  * @param ifname    Interface name
  * @param bpf_id    Bpf ID
+ * @param link_type Type of link point
  * @param prog      Program name
  *
  * @return          Status code
@@ -214,6 +226,7 @@ extern te_errno tapi_bpf_prog_get_list(const char *ta,
 extern te_errno tapi_bpf_prog_link(const char *ta,
                                    const char *ifname,
                                    unsigned int bpf_id,
+                                   tapi_bpf_link_point link_type,
                                    const char *prog);
 
 /**
@@ -221,12 +234,13 @@ extern te_errno tapi_bpf_prog_link(const char *ta,
  *
  * @param ta        Test Agent name
  * @param ifname    Interface name
- * @param bpf_id    Bpf ID
+ * @param link_type Type of link point
  *
  * @return          Status code
  */
 extern te_errno tapi_bpf_prog_unlink(const char *ta,
-                                     const char *ifname);
+                                     const char *ifname,
+                                     tapi_bpf_link_point link_type);
 
 
 /************** Functions to work with maps ****************/
