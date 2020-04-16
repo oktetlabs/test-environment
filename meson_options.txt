@@ -36,18 +36,18 @@ option('rpc-transport-local', type: 'boolean', value: true,
 option('rpc-transport-tcp', type: 'boolean', value: false,
        description: 'Enable TCP transport for RPC (disabled by default)')
 
-option('typesafe-rpc', type: 'boolean', value: true,
-       description: 'Type-safe RPC implementation (enabled by default)')
-option('static-rpc-lookup', type: 'boolean', value: false,
-       description: 'Use compile-time symbol resolution by default')
+option('rpcserver-agentlib', type: 'string', value: 'agentlib',
+       description: 'RPC server build with agentlib')
 option('rpcserver-idle-plugins', type: 'boolean', value: true,
        description: 'RPC server supports idle plugins (enabled by default)')
 option('rpcserver-smart-mem', type: 'boolean', value: true,
        description: 'RPC server smart memory management (enabled by default)')
 option('rpcserver-tr069', type: 'boolean', value: false,
        description: 'RPC server supports TR-069')
-option('rpcserver-agentlib', type: 'string', value: 'agentlib',
-       description: 'RPC server build with agentlib')
+option('static-rpc-lookup', type: 'boolean', value: false,
+       description: 'Use compile-time symbol resolution by default')
+option('typesafe-rpc', type: 'boolean', value: true,
+       description: 'Type-safe RPC implementation (enabled by default)')
 
 option('agentlib-dlfcn-lookup', type: 'boolean', value: false,
        description: 'Enable dlsym() symbol lookup in TA RPC helper library')
@@ -60,12 +60,12 @@ option('agentlib-telephony', type: 'boolean', value: false,
 option('agentlib-upnp', type: 'boolean', value: false,
        description: 'Enable UPnP support in TA RPC helper library')
 
-option('tad-protocols', type: 'string', value: '',
-       description: 'TAD protocols to support')
 option('tad-cs', type: 'boolean', value: true,
        description: 'TAD Configurator support (enabled by default)')
 option('tad-packet_mmap_rx_ring', type: 'boolean', value: false,
        description: 'TAD: use packet_mmap_rx_ring to sniff')
+option('tad-protocols', type: 'string', value: '',
+       description: 'TAD protocols to support')
 
 option('agentsdir', type: 'string', value: '',
        description: 'Directory to install agents to')

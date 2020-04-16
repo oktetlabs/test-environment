@@ -148,18 +148,18 @@ process_library_rpcserver() {
 
     for p in ${!parms_var} ; do
         case ${p} in
-            --enable-typesafe-rpc=no|--disable-typesafe-rpc)
-                add_meson_lib_opt typesafe-rpc false ;;
-            --enable-static-rpc-lookup)
-                add_meson_lib_opt static-rpc-lookup true ;;
+            --with-agentlib=*)
+                add_meson_lib_opt rpcserver-agentlib "${p#--with-agentlib=}" ;;
             --enable-plugins=no|--disable-plugins)
                 add_meson_lib_opt rpcserver-idle-plugins false ;;
             --enable-mem=no|--disable-mem)
                 add_meson_lib_opt rpcserver-smart-mem false ;;
             --with-tr069)
                 add_meson_lib_opt rpcserver-tr069 true ;;
-            --with-agentlib=*)
-                add_meson_lib_opt rpcserver-agentlib "${p#--with-agentlib=}" ;;
+            --enable-static-rpc-lookup)
+                add_meson_lib_opt static-rpc-lookup true ;;
+            --enable-typesafe-rpc=no|--disable-typesafe-rpc)
+                add_meson_lib_opt typesafe-rpc false ;;
             *)
                 parms="${parms}${parms:+ }${p}" ;;
         esac
@@ -192,10 +192,10 @@ process_library_tad() {
 
     for p in ${!parms_var} ; do
         case ${p} in
-            --with-packet-mmap-rx-ring)
-                add_meson_lib_opt tad-packet_mmap_rx_ring true ;;
             --without-cs)
                 add_meson_lib_opt tad-cs false ;;
+            --with-packet-mmap-rx-ring)
+                add_meson_lib_opt tad-packet_mmap_rx_ring true ;;
             --with-*)
                 tad_with_protocols="${tad_with_protocols} ${p#--with-}" ;;
             --without-static-libc)

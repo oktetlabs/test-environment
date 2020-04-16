@@ -2,6 +2,24 @@
 
 conf = configuration_data()
 
+rpcserver_agentlib = get_option('rpcserver-agentlib')
+
+if get_option('rpcserver-idle-plugins')
+    conf.set('ENABLE_RPC_PLUGINS', 1)
+endif
+
+if get_option('rpcserver-smart-mem')
+    conf.set('ENABLE_RPC_MEM', 1)
+endif
+
+if get_option('rpcserver-tr069')
+    conf.set('WITH_TR069_SUPPORT', 1)
+endif
+
+if get_option('static-rpc-lookup')
+    conf.set('DEFAULT_STATIC_RPC_LOOKUP', 1)
+endif
+
 if get_option('typesafe-rpc')
     code_typeof = '''
     int testfunc(void *ptr);
@@ -14,22 +32,6 @@ if get_option('typesafe-rpc')
     else
         error('__typeof is not supported')
     endif
-endif
-
-if get_option('static-rpc-lookup')
-    conf.set('DEFAULT_STATIC_RPC_LOOKUP', 1)
-endif
-
-rpcserver_agentlib = get_option('rpcserver-agentlib')
-
-if get_option('rpcserver-idle-plugins')
-    conf.set('ENABLE_RPC_PLUGINS', 1)
-endif
-if get_option('rpcserver-smart-mem')
-    conf.set('ENABLE_RPC_MEM', 1)
-endif
-if get_option('rpcserver-tr069')
-    conf.set('WITH_TR069_SUPPORT', 1)
 endif
 
 t = 'struct mmsghdr'
