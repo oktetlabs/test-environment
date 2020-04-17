@@ -307,6 +307,8 @@ process_agent_unix_parms() {
             --without-static-libc)
                 # default, in fact --with-static-libc is not supported yet
                 ;;
+            --disable-networkmanager-check)
+                conf="${conf} disable-networkmanager-check" ;;
             *)
                 parms="${parms}${parms:+ }\"${p}\"" ;;
         esac

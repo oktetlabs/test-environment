@@ -156,6 +156,10 @@ if conf.contains('bpf')
     endif
 endif
 
+if conf.contains('disable-networkmanager-check')
+    c_args += [ '-DDISABLE_NETWORKMANAGER_CHECK' ]
+endif
+
 unix_daemons = get_option('agent-unix-daemons')
 if unix_daemons.length() != 0
     c_args += [ '-DCFG_UNIX_DAEMONS' ]

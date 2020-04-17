@@ -717,6 +717,17 @@ then
     TE_CFLAGS="$TE_CFLAGS --coverage"
 fi
 
+AC_ARG_ENABLE([networkmanager-check],
+              AS_HELP_STRING([--disable-networkmanager-check],
+                             [do not check if NetworkManager controls interfaces]),
+              [ac_cv_enable_nm_check=$enableval], [ac_cv_enable_nm_check=yes])
+AC_CACHE_CHECK([whether to check if NetworkManager controls interfaces],
+               [ac_cv_enable_nm_check], [ac_cv_enable_nm_check=yes])
+if test x"$ac_cv_enable_nm_check" = xno
+then
+    EXTRA_CPPFLAGS="$EXTRA_CPPFLAGS -DDISABLE_NETWORKMANAGER_CHECK"
+fi
+
 dnl
 dnl Check for setns() function.
 dnl

@@ -1059,14 +1059,101 @@ ta_interface_is_mine(const char *ifname)
     return FALSE;
 }
 
+#ifndef DISABLE_NETWORKMANAGER_CHECK
+/**
+ * Check if NetworkManager controls this interface. If there is no
+ * NetworkManager in the system, it is considered that NetworkManager does not
+ * control the interface.
+ *
+ * @param ifname     network interface name
+ *
+ * @return           Status code.
+ * @retval TE_EBUSY  Interface is controlled by NetworkManager
+ * @retval 0         Interface is not controlled by NetworkManager
+ */
+static te_errno
+check_networkmanager_on_interface(const char *ifname)
+{
+    int result;
+
+/**
+ * Check a result of a shell command execution and terminate with error if
+ * the execution failed. This implies that error is not produced if the command
+ * returned non-zero status, it occurs only if it was impossible to execute
+ * the command.
+ */
+#define CHECK_NM_CMD_RESULT(_result)                                         \
+    do {                                                                     \
+        if (_result < 0 || !WIFEXITED(_result))                              \
+        {                                                                    \
+            ERROR("%s(): "                                                   \
+                  "Failed to execute shell command to check NetworkManager " \
+                  "presence, returned status is %d", __FUNCTION__, _result); \
+            return TE_RC(TE_TA_UNIX, TE_ESHCMD);                             \
+        }                                                                    \
+    } while(0)
+
+    /**
+     * Check if NetworkManager daemon is running on the system. If it is not,
+     * return zero since in this case the interface cannot be controlled by it.
+     * Note that the check works fine if the system does not support
+     * NetworkManager at all.
+     */
+    result = ta_system("ps aux | grep NetworkManager | grep -vq grep");
+    CHECK_NM_CMD_RESULT(result);
+    if (WEXITSTATUS(result) == 0)
+    {
+        /**
+         * At this point it is known that NetworkManager is running.
+         * Check if the particular interface is managed by it.
+         * Exit with error if it is and with zero if it is not.
+         * If nmcli was not found under the standard location, also error out
+         * since something is definitely wrong with NetworkManager installation,
+         * and it is impossible to find out whether the interface is controlled
+         * by NetworkManager.
+         */
+        result = ta_system_fmt(
+            "nmcli -g GENERAL.STATE dev show %s | grep -q unmanaged", ifname);
+        CHECK_NM_CMD_RESULT(result);
+        if (WEXITSTATUS(result) != 0)
+        {
+            ERROR("%s(): Interface %s is managed by NetworkManager which can "
+                  "cause unreliable behaviour", __FUNCTION__, ifname);
+            return TE_RC(TE_TA_UNIX, TE_EBUSY);
+        }
+    }
+
+    return 0;
+#undef CHECK_NM_CMD_RESULT
+}
+#endif
+
 /** Grab interface-specific resources */
 static te_errno
 interface_grab(const char *name)
 {
+#ifndef DISABLE_NETWORKMANAGER_CHECK
+    te_errno  rc;
+    char     *ifname;
+
+    /* Get resource instance name */
+    ifname = strrchr(name, ':');
+    if (ifname == NULL)
+    {
+        ERROR("Invalid resource instance name");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+    ifname++;
+
+    /* Check if NetworkManager controls this interface and abort if it does */
+    rc = check_networkmanager_on_interface(ifname);
+    if (rc != 0)
+        return rc;
+#endif
+
 #ifdef ENABLE_8021X
     return supplicant_grab(name);
 #else
-    UNUSED(name);
     return 0;
 #endif
 }
