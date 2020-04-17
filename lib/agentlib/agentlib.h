@@ -101,8 +101,24 @@ extern pid_t ta_waitpid(pid_t pid, int *status, int options);
 
 /**
  * system() analogue, with the same parameters/return value.
+ *
+ * @sa ta_system_fmt
  */
 extern int ta_system(const char *cmd);
+
+/**
+ * system() analogue, with the same return value. The function builds
+ * a command line with a printf-like format string.
+ *
+ * @param fmt Command format string
+ * @param ... Format string arguments
+ *
+ * @sa ta_system
+ */
+#ifdef __GNUC__
+__attribute__((format(printf, 1, 2)))
+#endif
+extern int ta_system_fmt(const char *fmt, ...);
 
 /**
  * popen('r') analogue, with slightly modified parameters.

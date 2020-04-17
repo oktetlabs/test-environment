@@ -21,7 +21,6 @@
 #include "agentlib.h"
 
 #include <stdio.h>
-#include <string.h>
 #include <ctype.h>
 #include <signal.h>
 
@@ -47,6 +46,7 @@
 #include "te_queue.h"
 #include "te_shell_cmd.h"
 #include "te_sleep.h"
+#include "te_string.h"
 #include "logger_api.h"
 #include "logger_ta.h"
 #include "logger_ta_lock.h"
@@ -415,6 +415,28 @@ ta_system(const char *cmd)
     ta_waitpid(pid, &status, 0);
 
     return status;
+}
+
+int
+ta_system_fmt(const char *fmt, ...)
+{
+    va_list  ap;
+    char    *cmd;
+    int      rc;
+
+    va_start(ap, fmt);
+    cmd = te_string_fmt_va(fmt, ap);
+    va_end(ap);
+
+    if (cmd == NULL)
+    {
+        ERROR("Failed to process format string");
+        return -1;
+    }
+    rc = ta_system(cmd);
+    free(cmd);
+
+    return rc;
 }
 
 te_errno
