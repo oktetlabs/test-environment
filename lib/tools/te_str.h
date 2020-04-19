@@ -301,6 +301,28 @@ extern te_errno te_strtol(const char *input, int base, long int *result);
 extern te_errno te_strtol_bool(const char *input, te_bool *bresult);
 
 /**
+ * Convert string to double. Following characters are allowed.
+ *
+ * @param str          String to convert
+ * @param endptr       Pointer to the end of parsed double
+ * @param [out]result  Storage for result
+ *
+ * @return Status code.
+ */
+extern te_errno te_strtod_raw(const char *str, char **endptr, double *result);
+
+/**
+ * Convert string to double. Should be used to avoid creating extra vars
+ * for 'end' parameter in the code.
+ *
+ * @param str          String to convert
+ * @param [out]result  Storage for result
+ *
+ * @return Status code.
+ */
+extern te_errno te_strtod(const char *str, double *result);
+
+/**
  * Convert raw data to hex-string representation
  *
  * @param data          Raw data to be converted

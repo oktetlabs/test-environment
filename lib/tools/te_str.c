@@ -408,6 +408,59 @@ te_strtol_bool(const char *input, te_bool *bresult)
     return 0;
 }
 
+te_errno
+te_strtod_raw(const char *str, char **endptr, double *result)
+{
+    int saved_errno = errno;
+    int new_errno = 0;
+
+    if (str == NULL || endptr == NULL || result == NULL)
+    {
+        ERROR("%s(): invalid arguments", __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    errno = 0;
+    *endptr = NULL;
+
+    *result = strtod(str, endptr);
+    new_errno = errno;
+    errno = saved_errno;
+
+    if (new_errno != 0)
+    {
+        ERROR("%s(): strtod() failed to process '%s'", __FUNCTION__, str);
+        return te_rc_os2te(new_errno);
+    }
+
+    if (*endptr == NULL || *endptr == str)
+    {
+        ERROR("%s(): failed to parse '%s'", __FUNCTION__, str);
+        return TE_EINVAL;
+    }
+
+    return 0;
+}
+
+te_errno
+te_strtod(const char *str, double *result)
+{
+    te_errno  rc;
+    char     *endptr;
+
+    rc = te_strtod_raw(str, &endptr, result);
+    if (rc != 0)
+        return rc;
+
+    if (*endptr != '\0')
+    {
+        ERROR("%s(): failed to parse '%s'", __FUNCTION__, str);
+        return TE_EINVAL;
+    }
+
+    return 0;
+}
+
 /* See description in te_str.h */
 void
 te_str_free_array(char **str)
