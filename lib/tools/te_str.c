@@ -328,8 +328,7 @@ te_strtol_raw_silent(const char *str, char **endptr,  int base,
     new_errno = errno;
     errno = saved_errno;
 
-    if ((new_errno == ERANGE && *result == LONG_MAX) ||
-        (new_errno != 0 && *result == 0))
+    if (new_errno != 0)
     {
         rc = te_rc_os2te(new_errno);
         ERROR("%s(): strtol() failed with errno %r", __FUNCTION__, rc);
