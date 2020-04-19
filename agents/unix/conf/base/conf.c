@@ -1113,7 +1113,9 @@ check_networkmanager_on_interface(const char *ifname)
          * by NetworkManager.
          */
         result = ta_system_fmt(
-            "nmcli -g GENERAL.STATE dev show %s | grep -q unmanaged", ifname);
+            "nmcli -g GENERAL.STATE dev show %s 2>&1 | "
+            "grep -Eq 'unmanaged|not found'", ifname);
+
         CHECK_NM_CMD_RESULT(result);
         if (WEXITSTATUS(result) != 0)
         {
