@@ -742,7 +742,8 @@ fail:
 }
 
 static void
-ovs_bridge_port_free(port_entry *port)
+ovs_bridge_port_free(ovs_ctx_t  *ctx,
+                     port_entry *port)
 {
     interface_entry *interface_tmp;
     interface_entry *interface;
@@ -750,7 +751,10 @@ ovs_bridge_port_free(port_entry *port)
     INFO("Freeing the port '%s' list entry", port->name);
 
     SLIST_FOREACH_SAFE(interface, &port->interfaces, port_links, interface_tmp)
+    {
         SLIST_REMOVE(&port->interfaces, interface, interface_entry, port_links);
+        ovs_interface_fini(ctx, interface);
+    }
 
     free(port->value);
     free(port->name);
@@ -917,10 +921,12 @@ fail_interface_check_error:
     ovs_bridge_port_deactivate(ctx, port);
 
 fail_bridge_port_activate:
-    ovs_bridge_port_free(port);
+    ovs_bridge_port_free(ctx, port);
+    interface = NULL;
 
 fail_bridge_port_alloc:
-    ovs_interface_fini(ctx, interface);
+    if (interface != NULL)
+        ovs_interface_fini(ctx, interface);
 
 fail_interface_init:
 
@@ -932,19 +938,13 @@ ovs_bridge_port_fini(ovs_ctx_t    *ctx,
                      bridge_entry *bridge,
                      port_entry   *port)
 {
-    interface_entry *interface;
-    interface_entry *interface_tmp;
-
     INFO("Finalising the port '%s'", port->name);
 
     assert(!port->bridge_local);
 
-    SLIST_FOREACH_SAFE(interface, &port->interfaces, port_links, interface_tmp)
-        ovs_interface_fini(ctx, interface);
-
     SLIST_REMOVE(&bridge->ports, port, port_entry, links);
     ovs_bridge_port_deactivate(ctx, port);
-    ovs_bridge_port_free(port);
+    ovs_bridge_port_free(ctx, port);
 }
 
 static void
@@ -994,7 +994,7 @@ ovs_bridge_alloc(const char      *datapath_type,
     SLIST_INIT(&bridge->ports);
 
     port = ovs_bridge_port_alloc(interface->name, interface->name,
-                                 "", TRUE, NULL, 0);
+                                 "", TRUE, &interface, 1);
     if (port == NULL)
     {
         ERROR("Failed to initialise the bridge local port list entry");
@@ -1013,7 +1013,8 @@ fail:
 }
 
 static void
-ovs_bridge_free(bridge_entry *bridge)
+ovs_bridge_free(ovs_ctx_t    *ctx,
+                bridge_entry *bridge)
 {
     port_entry *port = SLIST_FIRST(&bridge->ports);
 
@@ -1021,7 +1022,7 @@ ovs_bridge_free(bridge_entry *bridge)
 
     assert(port->bridge_local);
     SLIST_REMOVE(&bridge->ports, port, port_entry, links);
-    ovs_bridge_port_free(port);
+    ovs_bridge_port_free(ctx, port);
     free(bridge->datapath_type);
     free(bridge);
 }
@@ -1159,10 +1160,12 @@ fail_interface_check_error:
     ovs_bridge_deactivate(ctx, bridge);
 
 fail_bridge_activate:
-    ovs_bridge_free(bridge);
+    ovs_bridge_free(ctx, bridge);
+    interface = NULL;
 
 fail_bridge_alloc:
-    ovs_interface_fini(ctx, interface);
+    if (interface != NULL)
+        ovs_interface_fini(ctx, interface);
 
 fail_interface_init:
 
@@ -1180,8 +1183,7 @@ ovs_bridge_fini(ovs_ctx_t    *ctx,
     ovs_bridge_port_fini_all(ctx, bridge);
     ovs_bridge_deactivate(ctx, bridge);
     SLIST_REMOVE(&ctx->bridges, bridge, bridge_entry, links);
-    ovs_bridge_free(bridge);
-    ovs_interface_fini(ctx, interface);
+    ovs_bridge_free(ctx, bridge);
 }
 
 static void
