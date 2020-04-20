@@ -196,6 +196,7 @@
                 delay (4)
                 probe (5)
                 failed (6)
+                noarp (7)
 
     - oid: "/agent/interface/neigh_proxy"
       access: read_create

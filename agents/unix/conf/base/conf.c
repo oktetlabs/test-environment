@@ -6386,6 +6386,34 @@ promisc_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
+#if defined(USE_LIBNETCONF)
+static unsigned int
+neigh_netconf_dynamic_state2te(unsigned int state)
+{
+    switch (state)
+    {
+#define NEIGH_NETCONF_STATE2TE(_state) \
+        case NETCONF_NUD_##_state: return CS_NEIGH_##_state
+
+        NEIGH_NETCONF_STATE2TE(INCOMPLETE);
+        NEIGH_NETCONF_STATE2TE(REACHABLE);
+        NEIGH_NETCONF_STATE2TE(STALE);
+        NEIGH_NETCONF_STATE2TE(DELAY);
+        NEIGH_NETCONF_STATE2TE(PROBE);
+        NEIGH_NETCONF_STATE2TE(FAILED);
+        NEIGH_NETCONF_STATE2TE(NOARP);
+
+#undef NEIGH_NETCONF_STATE2TE
+
+        default:
+            /* 0 is incorrect value for cs_neigh_entry_state, so TAPI will
+             * interpret it as invalid state.
+             */
+            return 0;
+    }
+}
+#endif
+
 static te_errno
 neigh_find(const char *oid, const char *ifname, const char *addr,
            char *mac_p, unsigned int *state_p)
@@ -6458,7 +6486,7 @@ neigh_find(const char *oid, const char *ifname, const char *addr,
         }
 
         if (state_p != NULL)
-            *state_p = neigh->state;
+            *state_p = neigh_netconf_dynamic_state2te(neigh->state);
 
         /* Find the first one */
         break;

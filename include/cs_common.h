@@ -27,7 +27,8 @@ typedef enum {
     CS_NEIGH_DELAY = 4,      /**< Intermediate state between stale and
                                   probe */
     CS_NEIGH_PROBE = 5,      /**< Entry is validating now */
-    CS_NEIGH_FAILED = 6      /**< Neighbour is not reachable */
+    CS_NEIGH_FAILED = 6,     /**< Neighbour is not reachable */
+    CS_NEIGH_NOARP = 7       /**< Complete but without validating */
 } cs_neigh_entry_state;
 
 /**
@@ -47,6 +48,7 @@ cs_neigh_entry_state2str(cs_neigh_entry_state state)
         NEIGH_STATE2STR(DELAY);
         NEIGH_STATE2STR(PROBE);
         NEIGH_STATE2STR(FAILED);
+        NEIGH_STATE2STR(NOARP);
 
 #undef NEIGH_STATE2STR
 
