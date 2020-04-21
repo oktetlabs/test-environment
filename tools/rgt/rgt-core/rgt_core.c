@@ -129,10 +129,8 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
 
     /* Option Table */
     struct poptOption optionsTable[] = {
-#if (defined WITH_LOG_FILTER)
         { "filter", 'f', POPT_ARG_STRING, NULL, 'f',
           "XML filter file.", "FILE" },
-#endif /* WITH_LOG_FILTER */
 
         { "mode", 'm', POPT_ARG_STRING, NULL, 'm',
           "Mode of operation, can be "
@@ -172,14 +170,12 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
     {
         switch (rc)
         {
-#if (defined WITH_LOG_FILTER)
             case 'f':
                 if ((ctx->fltr_fname = poptGetOptArg(optCon)) == NULL)
                 {
                     usage(optCon, 1, "Specify XML filter file", NULL);
                 }
                 break;
-#endif /* WITH_LOG_FILTER */
 
             case 't':
                 if ((ctx->tmp_dir = poptGetOptArg(optCon)) == NULL)

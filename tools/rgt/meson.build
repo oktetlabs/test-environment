@@ -52,11 +52,6 @@ if not does_link
     error('Obstack feature is required to build RGT')
 endif
 
-# Add log filtering support if required
-if get_option('rgt-log-filter')
-    c_args += ['-DWITH_LOG_FILTER']
-endif
-
 # Add large logs support if required
 
 if get_option('large-logs')

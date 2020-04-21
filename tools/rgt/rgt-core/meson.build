@@ -26,12 +26,6 @@ rgt_core = executable(
     c_args: c_args,
 )
 
-log_filter = 'no'
-
-if get_option('rgt-log-filter')
-    log_filter = 'yes'
-endif
-
 rgt_conv = custom_target(
     'rgt-conv',
     output: 'rgt-conv',
@@ -40,7 +34,6 @@ rgt_conv = custom_target(
     command: [
         'sed',
         '-e', 's,@SHELL@,/bin/bash,g',
-        '-e', 's,@WITH_LOG_FILTER@,' + log_filter + ',g',
         '-e', 's,@PACKAGE@,' + package + ',g',
         '-e', 's,@VERSION@,' + version + ',g',
         '-e', 's,@TE_COPYRIGHT@,' + te_copyright + ',g',

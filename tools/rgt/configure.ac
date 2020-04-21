@@ -24,20 +24,6 @@ TE_APP_SET
 
 # Checks for libraries.
 
-# By default we include log filtering stuff
-AC_ARG_WITH([log_filter],
-            AS_HELP_STRING([--with-log-filter],
-                           [enable filtering support in RGT core]),
-            [ac_cv_with_log_filter=$withval], [ac_cv_with_log_filter=yes])
-
-if test "x$ac_cv_with_log_filter" = "xyes"
-then
-    AC_DEFINE([WITH_LOG_FILTER], 1, [Embed log fitering stuff in RGT core])
-fi
-
-WITH_LOG_FILTER=$ac_cv_with_log_filter
-AC_SUBST([WITH_LOG_FILTER])
-
 AC_CHECK_LIB([popt], [poptGetContext], 
              ac_cv_lib_popt=yes, ac_cv_lib_popt=no)
 if test "x$ac_cv_lib_popt" = "xno"
