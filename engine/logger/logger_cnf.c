@@ -12,6 +12,10 @@
 
 #include "logger_internal.h"
 
+#if HAVE_STDDEF_H
+#include <stddef.h>
+#endif
+
 #define TE_EXPAND_XML 1
 #include "te_expand.h"
 
