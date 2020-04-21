@@ -18,6 +18,8 @@
 #include <obstack.h>
 #include <stdio.h>
 
+#include <jansson.h>
+
 #ifdef HAVE_CTYPE_H
 #include <ctype.h>
 #endif
@@ -30,17 +32,165 @@
 #include "rgt_common.h"
 #include "memory.h"
 
+#include "te_string.h"
+
 f_process_ctrl_log_msg ctrl_msg_proc[CTRL_EVT_LAST][NT_LAST];
 f_process_reg_log_msg  reg_msg_proc;
 f_process_log_root     log_root_proc[CTRL_EVT_LAST];
 
 /* External declaration */
+static node_info_t *create_node_by_msg_json(json_t *json, uint32_t *ts,
+                                            node_type_t type);
 static node_info_t *create_node_by_msg(log_msg *msg, node_type_t type,
                                        int node_id, int parent_id);
 
-/* See the description in log_msg.h */
-int
-rgt_process_tester_control_message(log_msg *msg)
+/* Process Tester Control messages in JSON format */
+static int
+rgt_process_tester_control_message_json(log_msg *msg)
+{
+    int          node_id;
+    int          parent_id;
+    msg_arg     *arg;
+    node_info_t *node = NULL;
+    node_type_t  node_type;
+    int          err_code = ESUCCESS;
+
+    enum ctrl_event_type evt_type;
+    enum result_status   res;
+
+    const char *type   = NULL;
+    const char *status = NULL;
+    const char *error = NULL;
+
+    json_t       *msg_json;
+    json_error_t  json_error;
+
+    arg = get_next_arg(msg);
+    if (arg == NULL)
+    {
+        TRACE("Message seems to be JSON-formatted, but no argument given\n");
+        THROW_EXCEPTION;
+    }
+
+    /* Parse the message body */
+    msg_json = json_loads((const char *)arg->val, 0, &json_error);
+    if (msg_json == NULL)
+    {
+        FMT_TRACE("Error parsing JSON log message: %s (line %d, column %d)",
+                  json_error.text, json_error.line, json_error.column);
+        THROW_EXCEPTION;
+    }
+
+    /* Unpack the JSON object */
+    err_code = json_unpack_ex(msg_json, &json_error, 0, "{s:i, s:i, s?s, s?s, s?s}",
+                              "id",     &node_id,
+                              "parent", &parent_id,
+                              "type",   &type,
+                              "status", &status,
+                              "error",  &error);
+    if (err_code != 0)
+    {
+        FMT_TRACE("Error unpacking JSON log message: %s (line %d, column %d)",
+                  json_error.text, json_error.line, json_error.column);
+        THROW_EXCEPTION;
+    }
+
+    if (status == NULL)
+    {
+        evt_type = CTRL_EVT_START;
+
+        if (strcmp(type, CNTR_MSG_TEST) == 0)
+        {
+            node_type = NT_TEST;
+        }
+        else if (strcmp(type, CNTR_MSG_PACKAGE) == 0)
+        {
+            node_type = NT_PACKAGE;
+        }
+        else if (strcmp(type, CNTR_MSG_SESSION) == 0)
+        {
+            node_type = NT_SESSION;
+        }
+        else
+        {
+            FMT_TRACE("Unknown entity type: %s", type);
+            free_log_msg(msg);
+            json_decref(msg_json);
+            THROW_EXCEPTION;
+        }
+
+        if ((node = create_node_by_msg_json(msg_json, msg->timestamp, node_type)) == NULL)
+        {
+            free_log_msg(msg);
+            json_decref(msg_json);
+            THROW_EXCEPTION;
+        }
+
+        if (flow_tree_add_node(parent_id, node_id, node_type,
+                               node->descr.name, node->start_ts,
+                               node, &err_code) == NULL)
+        {
+            free_node_info(node);
+            free_log_msg(msg);
+            json_decref(msg_json);
+            if (err_code != ESUCCESS)
+                THROW_EXCEPTION;
+            return ESUCCESS;
+        }
+    }
+    else
+    {
+        evt_type = CTRL_EVT_END;
+
+#define RGT_CMP_RESULT(_result) \
+    (res = RES_STATUS_##_result, strcmp(status, #_result) != 0)
+        if (RGT_CMP_RESULT(PASSED) && RGT_CMP_RESULT(KILLED) &&
+            RGT_CMP_RESULT(CORED) && RGT_CMP_RESULT(SKIPPED) &&
+            RGT_CMP_RESULT(FAKED) && RGT_CMP_RESULT(EMPTY) &&
+            RGT_CMP_RESULT(FAILED) && RGT_CMP_RESULT(INCOMPLETE))
+        {
+            FMT_TRACE("Unexpected test status '%s'", status);
+            free_log_msg(msg);
+            json_decref(msg_json);
+            THROW_EXCEPTION;
+        }
+#undef RGT_CMP_RESULT
+
+        if ((node = flow_tree_close_node(parent_id, node_id,
+                                         msg->timestamp,
+                                         &err_code)) == NULL)
+        {
+            free_log_msg(msg);
+            json_decref(msg_json);
+            if (err_code != ESUCCESS)
+                THROW_EXCEPTION;
+
+            return ESUCCESS;
+        }
+
+        memcpy(node->end_ts, msg->timestamp, sizeof(node->end_ts));
+        node->result.status = res;
+
+        if (error != NULL)
+            node->result.err = node_info_obstack_copy0(error, strlen(error));
+    }
+
+    free_log_msg(msg);
+    json_decref(msg_json);
+
+    if (rgt_ctx.op_mode == RGT_OP_MODE_LIVE ||
+        rgt_ctx.op_mode == RGT_OP_MODE_INDEX)
+    {
+        if (ctrl_msg_proc[evt_type][node->type] != NULL)
+            ctrl_msg_proc[evt_type][node->type](node, NULL);
+    }
+
+    return ESUCCESS;
+}
+
+/* Process Tester Control messages in plain-text format */
+static int
+rgt_process_tester_control_message_text(log_msg *msg)
 {
     int          node_id;
     int          parent_id;
@@ -196,6 +346,16 @@ rgt_process_tester_control_message(log_msg *msg)
 }
 
 /* See the description in log_msg.h */
+int
+rgt_process_tester_control_message(log_msg *msg)
+{
+    if ((msg->level & TE_LL_MI) != 0)
+        return rgt_process_tester_control_message_json(msg);
+    else
+        return rgt_process_tester_control_message_text(msg);
+}
+
+/* See the description in log_msg.h */
 void
 rgt_process_regular_message(log_msg *msg)
 {
@@ -341,6 +501,132 @@ rgt_process_event(node_type_t type, enum event_type evt, node_info_t *node)
 /*************************************************************************/
 /*           Static routines                                             */
 /*************************************************************************/
+
+/**
+ * Creates node_info_t structure for an appropriate control log message.
+ *
+ * @param  json       Control log message body
+ * @param  ts         Control log message timestamp
+ * @param  type       Type of control event
+ *
+ * @return Pointer to created node_info_t structure
+ */
+static node_info_t *
+create_node_by_msg_json(json_t *msg, uint32_t *ts, node_type_t type)
+{
+    node_info_t *node;
+    param      **p_prm;
+    int          ret = 0;
+    json_error_t err;
+
+    json_t     *authors = NULL;
+    json_t     *args = NULL;
+    const char *name = NULL;
+    const char *objective = NULL;
+    const char *page = NULL;
+    const char *hash = NULL;
+    int         tin = TE_TIN_INVALID;
+
+    if ((node = alloc_node_info()) == NULL)
+    {
+        TRACE("Not enough memory");
+        return NULL;
+    }
+    memset(node, 0, sizeof(*node));
+
+    memcpy(node->start_ts, ts, sizeof(node->start_ts));
+    node->type = type;
+    node->result.err = NULL;
+
+    ret = json_unpack_ex(msg, &err, 0, "{s:i, s:i, s?s, s?s, s?s, s?s, s?i,"
+                                       " s?o, s?o}",
+                         "id", &node->node_id,
+                         "parent", &node->parent_id,
+                         "name", &name,
+                         "objective", &objective,
+                         "page", &page,
+                         "hash", &hash,
+                         "tin", &tin,
+                         "authors", &authors,
+                         "args", &args);
+    if (ret != 0)
+    {
+        FMT_TRACE("Error unpacking JSON log message: %s (line %d, column %d)",
+                  err.text, err.line, err.column);
+        free_node_info(node);
+        return NULL;
+    }
+
+    if (name != NULL)
+        node->descr.name = node_info_obstack_copy0(name, strlen(name));
+
+    if (objective != NULL)
+        node->descr.objective =
+            node_info_obstack_copy0(objective, strlen(objective));
+
+    node->descr.tin = tin;
+
+    if (page != NULL)
+        node->descr.page = node_info_obstack_copy0(page, strlen(page));
+
+    if (authors != NULL)
+    {
+        size_t       index;
+        json_t      *author;
+        const char  *name, *email;
+        te_string    authors_str = TE_STRING_INIT;
+
+        json_array_foreach(authors, index, author)
+        {
+            ret = json_unpack_ex(author, &err, 0, "{s?s, s?s !}",
+                                 "name", &name,
+                                 "email", &email);
+            if (ret != 0)
+                FMT_TRACE("Error unpacking authors: %s (line %d, column %d)",
+                          err.text, err.line, err.column);
+            else
+                te_string_append(&authors_str, "%s mailto:%s", name, email);
+        }
+
+        node->descr.authors =
+            node_info_obstack_copy0(authors_str.ptr, authors_str.len);
+
+        te_string_free(&authors_str);
+    }
+
+    if (hash != NULL)
+        node->descr.hash = node_info_obstack_copy0(hash, strlen(hash));
+
+    if (args != NULL)
+    {
+        size_t      index;
+        json_t     *pair;
+        const char *name, *value;
+
+        p_prm = &(node->params);
+        json_array_foreach(args, index, pair)
+        {
+            ret = json_unpack_ex(pair, &err, 0, "[ss!]", &name, &value);
+            if (ret != 0)
+            {
+                FMT_TRACE("Error unpacking authors: %s (line %d, column %d)",
+                          err.text, err.line, err.column);
+            }
+            else
+            {
+                *p_prm = (param *)node_info_obstack_alloc(sizeof(param));
+                (*p_prm)->name =
+                    node_info_obstack_copy0(name, sizeof(name));
+                (*p_prm)->val =
+                    node_info_obstack_copy0(value, sizeof(value));
+                p_prm = &((*p_prm)->next);
+            }
+        }
+        *p_prm = NULL;
+    }
+
+    return node;
+}
 
 /**
  * Creates node_info_t structure for an appropriate control log message.
