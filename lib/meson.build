@@ -44,6 +44,7 @@ te_engine_libs = [
     'logic_expr',
     'ipc',
     'loggerten',
+    'log_proc',
     'comm_net_engine',
     'rcfapi',
     'rcfunix',
