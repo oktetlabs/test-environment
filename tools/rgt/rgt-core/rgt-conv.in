@@ -268,6 +268,9 @@ if [ -z "$out_file" ]; then
     out_file="&1"
 fi
 
+# Add TE libraries installation path to LD_LIBRARY_PATH since rgt-core uses it
+export LD_LIBRARY_PATH="$(dirname "${bindir}")/lib:${LD_LIBRARY_PATH}"
+
 if test x"${RGT_DISABLE_QUEUE_OFFLOADING}" != x"yes" ; then
     get_tmp_dir_path
     tmpdir=$(mktemp -d "${TMP_DIR}/rgt_core_XXXXXX")
