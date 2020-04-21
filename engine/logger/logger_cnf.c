@@ -39,6 +39,99 @@ static char *argv[RCF_MAX_PARAMS];
 sem_t   args_processed;
 
 /**
+ * Set polling interval for all agents.
+ *
+ * @param interval  polling interval
+ *
+ * @return Status information
+ *
+ * @retval 0            Success.
+ * @retval Negative     Failure.
+ */
+static void
+polling_set_default(uint32_t interval)
+{
+    ta_inst *tmp_el;
+
+    tmp_el = ta_list;
+    while (tmp_el != NULL)
+    {
+        tmp_el->polling = interval;
+        tmp_el = tmp_el->next;
+    }
+}
+
+/**
+ * Set polling interval for all agents of a specific type.
+ *
+ * @param type      TA type regex
+ * @param interval  polling interval
+ *
+ * @return Status information
+ *
+ * @retval 0            Success.
+ * @retval Negative     Failure.
+ */
+static int
+polling_set_type(const char *type, uint32_t interval)
+{
+    ta_inst    *tmp_el;
+    regmatch_t  pmatch[1];
+    regex_t     cmp_buffer;
+    uint32_t    str_len;
+
+    memset(pmatch, 0, sizeof(regmatch_t));
+
+    if (regcomp(&cmp_buffer, type, REG_EXTENDED) != 0)
+    {
+        ERROR("Polling: RegExpr compilation failure\n");
+        return -1;
+    }
+
+    tmp_el = ta_list;
+    while (tmp_el != NULL)
+    {
+        if (regexec(&cmp_buffer, tmp_el->type, 1, pmatch, 0) == 0)
+        {
+            str_len = strlen(tmp_el->type);
+            if ((str_len - (pmatch->rm_eo - pmatch->rm_so) == 0))
+                tmp_el->polling = interval;
+
+        }
+        tmp_el = tmp_el->next;
+    }
+    regfree(&cmp_buffer);
+
+    return 0;
+}
+
+/**
+ * Set polling interval for a specific agent.
+ *
+ * @param agent     TA name
+ * @param interval  polling interval
+ *
+ * @return Status information
+ *
+ * @retval 0            Success.
+ * @retval Negative     Failure.
+ */
+static void
+polling_set_agent(const char *agent, uint32_t interval)
+{
+    ta_inst *tmp_el;
+
+    tmp_el = ta_list;
+    while (tmp_el != NULL)
+    {
+        if (strcmp(agent, tmp_el->agent) == 0)
+            tmp_el->polling = interval;
+
+        tmp_el = tmp_el->next;
+    }
+}
+
+/**
  * User call back called when an opening tag has been processed.
  *
  * @param ctx       XML parser context
@@ -52,7 +145,6 @@ startElementLGR(void           *ctx,
 {
     const char  *name = (const char *)xml_name;
     const char **atts = (const char **)xml_atts;
-    ta_inst     *tmp_el;
 
     UNUSED(ctx);
 
@@ -66,18 +158,7 @@ startElementLGR(void           *ctx,
     {
         /* Get default polling value and assign it to the all TA */
         if (strcmp(atts[0], "default") == 0)
-        {
-            uint32_t dft;
-
-            dft = (uint32_t)strtoul(atts[1], NULL, 0);
-
-            tmp_el = ta_list;
-            while (tmp_el != NULL)
-            {
-                tmp_el->polling = dft;
-                tmp_el = tmp_el->next;
-            }
-        }
+            polling_set_default(strtoul(atts[1], NULL, 0));
     }
     else if (!strcmp(name, "type") &&
              (atts != NULL) &&
@@ -92,38 +173,7 @@ startElementLGR(void           *ctx,
          */
         if (!strcmp(atts[0], "type") &&
             !strcmp(atts[2], "value"))
-        {
-            uint32_t    val;
-            regmatch_t  pmatch[1];
-            regex_t    *cmp_buffer;
-            uint32_t   str_len;
-
-            memset(pmatch,0, sizeof(regmatch_t));
-            cmp_buffer = (regex_t *)calloc(1, sizeof(*cmp_buffer));
-
-            val = (uint32_t)strtoul(atts[3], NULL, 0);
-            if (regcomp(cmp_buffer, atts[1], REG_EXTENDED) != 0 )
-            {
-                ERROR("RegExpr compilation failure\n");
-                return;
-            }
-
-            tmp_el = ta_list;
-            while (tmp_el != NULL)
-            {
-                regmatch_t pmatch[1];
-
-                if (regexec(cmp_buffer, tmp_el->type, 1, pmatch, 0) == 0)
-                {
-                    str_len = strlen(tmp_el->type);
-                    if ((str_len - (pmatch->rm_eo - pmatch->rm_so) == 0))
-                        tmp_el->polling = val;
-
-                }
-                tmp_el = tmp_el->next;
-            }
-            regfree(cmp_buffer);
-        }
+            polling_set_type(atts[1], strtoul(atts[3], NULL, 0));
     }
     else if (!strcmp(name, "agent") &&
              (atts != NULL) &&
@@ -135,19 +185,7 @@ startElementLGR(void           *ctx,
         /* Get polling value for separate TA and assign it */
         if (!strcmp(atts[0], "agent") &&
             !strcmp(atts[2], "value"))
-        {
-
-            uint32_t val = (uint32_t)strtoul(atts[3], NULL, 0);
-
-            tmp_el = ta_list;
-            while (tmp_el != NULL)
-            {
-                if (!strcmp(atts[1], tmp_el->agent))
-                tmp_el->polling = val;
-
-                tmp_el = tmp_el->next;
-            }
-        }
+            polling_set_agent(atts[1], strtoul(atts[3], NULL, 0));
     }
     else if (!strcmp(name, "snif_fname"))
     {
