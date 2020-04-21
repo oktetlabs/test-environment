@@ -325,7 +325,7 @@ te_handler(void)
                  * to take effect immediately.
                  */
                 INFO("Logger configuration file parsing\n");
-                if (configParser(cfg_file) != 0)
+                if (config_parser(cfg_file) != 0)
                     WARN("Logger configuration file failure\n");
 
                 if (pthread_create(&inst->thread, NULL,
@@ -1133,7 +1133,7 @@ main(int argc, const char *argv[])
      */
     /* Parse log file when list of TAs is known */
     INFO("Logger configuration file parsing\n");
-    if (configParser(cfg_file) != 0)
+    if (config_parser(cfg_file) != 0)
     {
         ERROR("Logger configuration file failure\n");
         goto join_te_srv;

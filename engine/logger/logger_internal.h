@@ -130,14 +130,14 @@ extern te_log_message_f lgr_log_message;
 /**
  * Parse logger configuration file.
  *
- * @param  fileName  XML configuration file full name.
+ * @param  file_name  configuration file full name.
  *
  * @return  Status information
  *
  * @retval   0          Success.
  * @retval   Negative   Failure.
  */
-extern int configParser(const char *file_name);
+extern int config_parser(const char *file_name);
 
 /**
  * Register the log message in the raw log file.

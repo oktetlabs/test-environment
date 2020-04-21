@@ -24,7 +24,8 @@ executable('te_logger', logger_sources, install: true,
            c_args: c_args,
            dependencies: [ dep_libxml2, dep_popt, dep_threads,
                            dep_lib_ipcserver, dep_lib_rcfapi, dep_lib_ipc,
-                           dep_lib_tools, dep_lib_logger_core ])
+                           dep_lib_tools, dep_lib_logger_core,
+                           dependency('yaml-0.1') ])
 
 executable('te_log_shutdown', 'te_log_shutdown.c', install: true,
            include_directories: te_include,

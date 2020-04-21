@@ -1,13 +1,13 @@
 /** @file
  * @brief TE project. Logger subsystem.
  *
- * Logger configuration file XML parser.
- * No grammar validity checking is carried out.
- * This code relies on external XML grammar validator.
+ * Logger configuration file parser.
+ * No schema checking is carried out.
  *
- * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
+ * Copyright (C) 2003-2020 OKTET Labs. All rights reserved.
  *
  * @author Igor B. Vasiliev <Igor.Vasiiev@oktetlabs.ru>
+ * @author Viacheslav Galaktionov <Viacheslav.Galaktionov@oktetlabs.ru>
  */
 
 #include "logger_internal.h"
@@ -20,6 +20,8 @@
 #include <semaphore.h>
 #include "te_str.h"
 #include "te_kernel_log.h"
+
+#include <yaml.h>
 
 /* TA single linked list */
 extern ta_inst *ta_list;
@@ -169,6 +171,11 @@ polling_set_agent(const char *agent, uint32_t interval)
         tmp_el = tmp_el->next;
     }
 }
+
+/*************************************************************************/
+/*           XML                                                         */
+/*************************************************************************/
+
 
 /**
  * User call back called when an opening tag has been processed.
@@ -415,18 +422,478 @@ xmlSAXHandler loggerSAXHandlerStruct = {
 
 xmlSAXHandlerPtr loggerSAXHandler = &loggerSAXHandlerStruct;
 
+/*************************************************************************/
+/*           YAML                                                        */
+/*************************************************************************/
+
+
 /**
- * Parse logger configuration file.
+ * Parse the "polling" section of the config file.
  *
- * @param file_name     - XML configuration file full name
+ * @param d         YAML document
+ * @param section   YAML node for this section
  *
  * @return Status information
  *
  * @retval 0            Success.
  * @retval Negative     Failure.
  */
-int
-configParser(const char *file_name)
+static int
+handle_polling(yaml_document_t *d, yaml_node_t *section)
+{
+    yaml_node_item_t *item;
+
+    if (section->type != YAML_SEQUENCE_NODE)
+    {
+        ERROR("Polling: Expected a sequence, got something else");
+        return -1;
+    }
+
+    item = section->data.sequence.items.start;
+    do {
+        yaml_node_t *rule = yaml_document_get_node(d, *item);
+
+        if (rule->type != YAML_MAPPING_NODE)
+        {
+            ERROR("Polling: Expected a mapping, got something else");
+            return -1;
+        }
+
+        yaml_node_pair_t *pair = rule->data.mapping.pairs.start;
+        yaml_node_t *k = yaml_document_get_node(d, pair->key);
+        yaml_node_t *v = yaml_document_get_node(d, pair->value);
+
+        const char *rule_key = (const char *)k->data.scalar.value;
+        const char *rule_value = (const char *)v->data.scalar.value;
+
+        if (strcmp(rule_key, "default") == 0)
+        {
+            /* Get default polling value and assign it to the all TA */
+            polling_set_default(strtoul(rule_value, NULL, 0));
+        }
+        else if (strcmp(rule_key, "type") == 0)
+        {
+            /*
+             * Get polling value for separate TA type
+             * and assign it to the appropriate TA
+             */
+            const char *val_str = NULL;
+
+            while (++pair < rule->data.mapping.pairs.top)
+            {
+                yaml_node_t *k = yaml_document_get_node(d, pair->key);
+                yaml_node_t *v = yaml_document_get_node(d, pair->value);
+                const char  *key = (const char *)k->data.scalar.value;
+
+                if (strcmp(key, "value") == 0)
+                    val_str = (const char *)v->data.scalar.value;
+            }
+
+            if (val_str == NULL)
+            {
+                ERROR("Polling: Missing value in rule for type %s", rule_value);
+                return -1;
+            }
+
+            polling_set_type(rule_value, strtoul(val_str, NULL, 0));
+        }
+        else if (strcmp(rule_key, "agent") == 0)
+        {
+            /* Get polling value for separate TA and assign it */
+            const char *val_str = NULL;
+
+            while (++pair < rule->data.mapping.pairs.top)
+            {
+                yaml_node_t *k = yaml_document_get_node(d, pair->key);
+                yaml_node_t *v = yaml_document_get_node(d, pair->value);
+                const char  *key = (const char *)k->data.scalar.value;
+
+                if (strcmp(key, "value") == 0)
+                    val_str = (const char *)v->data.scalar.value;
+            }
+
+            if (val_str == NULL)
+            {
+                ERROR("Polling: Missing value in rule for agent %s", rule_value);
+                return -1;
+            }
+
+            polling_set_agent(rule_value, strtoul(val_str, NULL, 0));
+        }
+    } while (++item < section->data.sequence.items.top);
+
+    return 0;
+}
+
+/**
+ * Parse the "sniffers" section of the config file.
+ *
+ * @param d         YAML document
+ * @param section   YAML node for this section
+ *
+ * @return Status information
+ *
+ * @retval 0            Success.
+ * @retval Negative     Failure.
+ */
+static int
+handle_sniffers(yaml_document_t *d, yaml_node_t *section)
+{
+    yaml_node_pair_t *pair;
+
+    if (section->type != YAML_MAPPING_NODE)
+    {
+        ERROR("Sniffers: Expected a mapping, got something else");
+        return -1;
+    }
+
+    pair = section->data.mapping.pairs.start;
+    do {
+        yaml_node_t *k = yaml_document_get_node(d, pair->key);
+        yaml_node_t *v = yaml_document_get_node(d, pair->value);
+        const char  *key   = (const char *)k->data.scalar.value;
+        const char  *value = (const char *)v->data.scalar.value;
+
+        if (v->type != YAML_SCALAR_NODE)
+        {
+            ERROR("Sniffers: Expected a scalar value for key %s", key);
+            return -1;
+        }
+
+        if (strcmp(key, "fname") == 0)
+        {
+            te_strlcpy(snifp_sets.name, value, RCF_MAX_PATH);
+        }
+        else if (strcmp(key, "path") == 0)
+        {
+            te_strlcpy(snifp_sets.dir, value, RCF_MAX_PATH);
+        }
+        else if (strcmp(key, "max_fsize") == 0)
+        {
+            snifp_sets.fsize = (unsigned)strtoul(value, NULL, 0) << 20;
+        }
+        else if (strcmp(key, "space") == 0)
+        {
+            snifp_sets.sn_space = (unsigned)strtoul(value, NULL, 0) << 20;
+        }
+        else if (strcmp(key, "rotation") == 0)
+        {
+            snifp_sets.rotation = (unsigned)strtoul(value, NULL, 0);
+        }
+        else if (strcmp(key, "overall_size") == 0)
+        {
+            snifp_sets.osize = (unsigned)strtoul(value, NULL, 0) << 20;
+        }
+        else if (strcmp(key, "ovefill_meth") == 0)
+        {
+            snifp_sets.ofill = (unsigned)strtoul(value, NULL, 0) == 0 ?
+                               ROTATION : TAIL_DROP;
+        }
+        else if (strcmp(key, "period") == 0)
+        {
+            snifp_sets.period = (unsigned)strtoul(value, NULL, 0);
+        }
+    } while (++pair < section->data.mapping.pairs.top);
+
+    return 0;
+}
+
+/**
+ * Extract thread configuration and start the thread.
+ *
+ * @param d         YAML document
+ * @param cfg       YAML node for this thread
+ *
+ * @return Status information
+ *
+ * @retval 0            Success.
+ * @retval Negative     Failure.
+ */
+static int
+run_thread(yaml_document_t *d, yaml_node_t *cfg)
+{
+    int            i;
+    pthread_t      thread_id;
+    thread_context ctx;
+    const char    *enabled_str;
+    char          *enabled_exp;
+
+    yaml_node_pair_t *pair;
+    yaml_node_item_t *item;
+    yaml_node_t      *name = NULL;
+    yaml_node_t      *enabled = NULL;
+    yaml_node_t      *args = NULL;
+
+    ptrdiff_t args_num;
+
+    if (cfg->type != YAML_MAPPING_NODE)
+    {
+        ERROR("Run thread: Expected a mapping, got something else");
+        return -1;
+    }
+
+    memset(&ctx, 0, sizeof(ctx));
+
+    pair = cfg->data.mapping.pairs.start;
+    do {
+        yaml_node_t *k = yaml_document_get_node(d, pair->key);
+        yaml_node_t *v = yaml_document_get_node(d, pair->value);
+        const char  *key   = (const char *)k->data.scalar.value;
+
+        if (strcmp(key, "name") == 0)
+            name = v;
+        else if (strcmp(key, "enabled") == 0)
+            enabled = v;
+        else if (strcmp(key, "args") == 0)
+            args = v;
+    } while (++pair < cfg->data.mapping.pairs.top);
+
+    if (name == NULL)
+    {
+        ERROR("Run thread: Encountered a thread with no name");
+        return -1;
+    }
+
+    if (name->type != YAML_SCALAR_NODE)
+    {
+        ERROR("Run thread: Name must be a scalar value");
+        return -1;
+    }
+
+    ctx.thread_name = (const char *)name->data.scalar.value;
+
+    if (enabled == NULL)
+    {
+        ERROR("Run thread: Enabled not specified for thread %s",
+              ctx.thread_name);
+        return -1;
+    }
+
+    if (enabled == NULL)
+    {
+        ERROR("Run thread: Enabled not specified for thread %s",
+              ctx.thread_name);
+        return -1;
+    }
+
+    enabled_str = (const char *)enabled->data.scalar.value;
+    if (te_expand_env_vars(enabled_str, NULL, &enabled_exp) != 0)
+    {
+        ERROR("Run thread: Failed to expand '%s'", enabled_str);
+        return -1;
+    }
+
+    if (strlen(enabled_exp) == 0 ||
+        strcasecmp(enabled_exp, "no") == 0 ||
+        strcasecmp(enabled_exp, "false") == 0)
+    {
+        free(enabled_exp);
+        return 0;
+    }
+    free(enabled_exp);
+
+    if (args != NULL)
+    {
+        if (args->type != YAML_SEQUENCE_NODE)
+        {
+            ERROR("Thread %s: args can only be a sequence", ctx.thread_name);
+            return -1;
+        }
+
+        args_num = args->data.sequence.items.top - args->data.sequence.items.start;
+        if (args_num > RCF_MAX_PARAMS)
+        {
+            ERROR("Too many arguments (%d while only %d are allowed) for thread %s",
+                  args_num, RCF_MAX_PARAMS, ctx.thread_name);
+            return -1;
+        }
+
+        item = args->data.sequence.items.start;
+        do {
+            yaml_node_t *arg   = yaml_document_get_node(d, *item);
+            const char  *value = (const char *)arg->data.scalar.value;
+
+            if (arg->type != YAML_SCALAR_NODE)
+            {
+                ERROR("Run thread: argument must be a scalar");
+                return -1;
+            }
+            if (te_expand_env_vars(value, NULL, &ctx.argv[ctx.argc]) != 0)
+            {
+                ERROR("Run thread: Failed to expand argument value '%s'", value);
+                return -1;
+            }
+            ctx.argc++;
+        } while (++item < args->data.sequence.items.top);
+    }
+
+    ctx.argv[ctx.argc] = NULL;
+    sem_init(&ctx.args_processed, 0, 0);
+    pthread_create(&thread_id, NULL, logger_thread_wrapper, &ctx);
+    pthread_detach(thread_id);
+    sem_wait(&ctx.args_processed);
+    sem_destroy(&ctx.args_processed);
+
+    for (i = 0; i < ctx.argc; i++)
+        free(ctx.argv[i]);
+
+    return 0;
+}
+
+/**
+ * Parse the "threads" section of the config file.
+ *
+ * @param d         YAML document
+ * @param section   YAML node for this section
+ *
+ * @return Status information
+ *
+ * @retval 0            Success.
+ * @retval Negative     Failure.
+ */
+static int
+handle_threads(yaml_document_t *d, yaml_node_t *section)
+{
+    int               res;
+    yaml_node_item_t *item;
+
+    if (section->type != YAML_SEQUENCE_NODE)
+    {
+        ERROR("Threads: Expected a sequence, got something else");
+        return -1;
+    }
+
+    item = section->data.sequence.items.start;
+    do {
+        yaml_node_t *v = yaml_document_get_node(d, *item);
+
+        if (v->type != YAML_MAPPING_NODE)
+        {
+            ERROR("Threads: A thread must be a mapping");
+            return -1;
+        }
+
+        res = run_thread(d, v);
+        if (res != 0)
+            return -1;
+
+    } while (++item < section->data.sequence.items.top);
+
+    return 0;
+}
+
+/**
+ * Parse a YAML-formatted config file.
+ *
+ * @param file_name path to the config file
+ *
+ * @return Status information
+ *
+ * @retval 0            Success.
+ * @retval Negative     Failure.
+ */
+static int
+config_parser_yaml(const char *file_name)
+{
+    int               res;
+    FILE             *input;
+    yaml_parser_t     parser;
+    yaml_document_t   document;
+    yaml_node_t      *root             = NULL;
+    yaml_node_t      *polling          = NULL;
+    yaml_node_t      *sniffers_default = NULL;
+    yaml_node_t      *sniffers         = NULL;
+    yaml_node_t      *threads          = NULL;
+    yaml_node_pair_t *pair;
+
+    RING("Opening config file: %s", file_name);
+
+    input = fopen(file_name, "rb");
+    if (input == NULL)
+    {
+        ERROR("Failed to open config file");
+        return -1;
+    }
+
+    yaml_parser_initialize(&parser);
+    yaml_parser_set_input_file(&parser, input);
+    if (yaml_parser_load(&parser, &document) == 0)
+    {
+        ERROR("Failed to load YAML document");
+        yaml_parser_delete(&parser);
+        fclose(input);
+        return -1;
+    }
+    yaml_parser_delete(&parser);
+    fclose(input);
+
+    root = yaml_document_get_root_node(&document);
+    if (root == NULL)
+    {
+        RING("Failed to get root YAML node, assuming empty config");
+        yaml_document_delete(&document);
+        return 0;
+    }
+
+    if (root->type == YAML_SCALAR_NODE && root->data.scalar.length == 0)
+        return 0;
+
+    if (root->type != YAML_MAPPING_NODE)
+    {
+        ERROR("Root YAML node is not a mapping");
+        yaml_document_delete(&document);
+        return -1;
+    }
+
+    pair = root->data.mapping.pairs.start;
+    do {
+        yaml_node_t *k = yaml_document_get_node(&document, pair->key);
+        yaml_node_t *v = yaml_document_get_node(&document, pair->value);
+        const char  *key = (const char *)k->data.scalar.value;
+
+        if (strcmp(key, "polling") == 0)
+            polling = v;
+        else if (strcmp(key, "sniffers_default") == 0)
+            sniffers_default = v;
+        else if (strcmp(key, "sniffers") == 0)
+            sniffers = v;
+        else if (strcmp(key, "threads") == 0)
+            threads = v;
+        else
+            WARN("Unknown config section: %s", key);
+    } while (++pair < root->data.mapping.pairs.top);
+
+    res = 0;
+
+    if (polling != NULL)
+        res = handle_polling(&document, polling);
+
+    if (res == 0 && sniffers_default != NULL)
+        res = handle_sniffers(&document, sniffers_default);
+
+    if (res == 0 && sniffers != NULL)
+        res = handle_sniffers(&document, sniffers);
+
+    if (res == 0 && threads != NULL)
+        res = handle_threads(&document, threads);
+
+    yaml_document_delete(&document);
+
+    return res;
+}
+
+/**
+ * Parse an XML-formatted config file.
+ *
+ * @param file_name path to the config file
+ *
+ * @return Status information
+ *
+ * @retval 0            Success.
+ * @retval Negative     Failure.
+ */
+static int
+config_parser_xml(const char *file_name)
 {
     int res = 0;
     thread_context ctx;
@@ -439,5 +906,72 @@ configParser(const char *file_name)
     res = xmlSAXUserParseFile(loggerSAXHandler, &ctx, file_name);
     xmlCleanupParser();
     xmlMemoryDump();
+    return res;
+}
+
+/* See description in logger_internal.h */
+int
+config_parser(const char *file_name)
+{
+    const int   PREREAD_SIZE = 8;
+    const char *XML_HEAD  = "<?xml";
+    const char *YAML_HEAD = "---";
+    int         res = 0;
+    int         len = 0;
+    char        buf[PREREAD_SIZE];
+    FILE       *fp;
+    ta_inst    *tmp_el;
+
+    fp = fopen(file_name, "rb");
+    if (fp == NULL)
+    {
+        ERROR("Couldn't open config file %s: %r", file_name, errno);
+        return -1;
+    }
+
+    res = fread(buf, 1, PREREAD_SIZE, fp);
+    if (res == 0 && feof(fp))
+    {
+        /* Config file is empty, nothing to do */
+        fclose(fp);
+        return 0;
+    }
+    fclose(fp);
+
+#define CHECK(FMT) \
+    (len = strlen(FMT ## _HEAD), \
+     res >= len && strncmp(buf, FMT ## _HEAD, len) == 0)
+    if (CHECK(YAML))
+    {
+        res = config_parser_yaml(file_name);
+    }
+    else if (CHECK(XML))
+    {
+        res = config_parser_xml(file_name);
+    }
+    else
+    {
+        ERROR("Unknown config file format");
+        res = -1;
+    }
+#undef CHECK
+
+    tmp_el = ta_list;
+    while (tmp_el != NULL)
+    {
+        VERB("Agent %s Type %s Polling %u",
+             tmp_el->agent, tmp_el->type, tmp_el->polling);
+        tmp_el = tmp_el->next;
+    }
+
+    VERB("snifp_sets.name     %s\n", snifp_sets.name);
+    VERB("snifp_sets.dir      %s\n", snifp_sets.dir);
+    VERB("snifp_sets.fsize    %u\n", snifp_sets.fsize);
+    VERB("snifp_sets.sn_space %u\n", snifp_sets.sn_space);
+    VERB("snifp_sets.rotation %u\n", snifp_sets.rotation);
+    VERB("snifp_sets.osize    %u\n", snifp_sets.osize);
+    VERB("snifp_sets.ofill    %u\n", snifp_sets.ofill);
+    VERB("snifp_sets.period   %u\n", snifp_sets.period);
+
     return res;
 }
