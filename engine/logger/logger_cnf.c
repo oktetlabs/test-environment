@@ -31,12 +31,51 @@ extern snif_polling_sets_t snifp_sets;
 extern const char *te_log_dir;
 
 static te_bool   thread_parsed = FALSE;
-static char     *thread_name = NULL;
 
-static int   argc = 0;
-static char *argv[RCF_MAX_PARAMS];
 
-sem_t   args_processed;
+/*
+ * Context that will be passed to the threads
+ * specified in the config file.
+ */
+typedef struct thread_context {
+    int         argc;
+    char       *argv[RCF_MAX_PARAMS];
+    const char *thread_name;
+    sem_t       args_processed;
+} thread_context;
+
+/**
+ * Logger thread wrapper.
+ *
+ * @param arg   thread context
+ *
+ * @return NULL
+ */
+static void *
+logger_thread_wrapper(void *arg)
+{
+    int             rc;
+    thread_context *ctx = (thread_context *)arg;
+
+    if (strcmp(ctx->thread_name, "log_serial") == 0)
+    {
+        rc = log_serial(&ctx->args_processed, ctx->argc, ctx->argv);
+    }
+    else
+    {
+        ERROR("Unknown thread %s", ctx->thread_name);
+        sem_post(&ctx->args_processed);
+        return NULL;
+    }
+
+    if (rc != 0)
+    {
+        ERROR("%s() failed", ctx->thread_name);
+        sem_post(&ctx->args_processed);
+    }
+
+    return NULL;
+}
 
 /**
  * Set polling interval for all agents.
@@ -134,19 +173,18 @@ polling_set_agent(const char *agent, uint32_t interval)
 /**
  * User call back called when an opening tag has been processed.
  *
- * @param ctx       XML parser context
- * @param xml_name  Element name
- * @param xml_atts  Array with element attributes
+ * @param thread_ctx  XML parser context (thread_context in this case)
+ * @param xml_name    Element name
+ * @param xml_atts    Array with element attributes
  */
 static void
-startElementLGR(void           *ctx,
+startElementLGR(void           *thread_ctx,
                 const xmlChar  *xml_name,
                 const xmlChar **xml_atts)
 {
-    const char  *name = (const char *)xml_name;
-    const char **atts = (const char **)xml_atts;
-
-    UNUSED(ctx);
+    const char     *name = (const char *)xml_name;
+    const char    **atts = (const char **)xml_atts;
+    thread_context *ctx = thread_ctx;
 
     if ((atts == NULL) || (atts[0] == NULL) || (atts[1] == NULL))
         return;
@@ -277,8 +315,8 @@ startElementLGR(void           *ctx,
             return;
         }
 
-        argc = 0;
-        thread_name = result;
+        ctx->argc = 0;
+        ctx->thread_name = result;
         thread_parsed = TRUE;
     }
     else if (!strcmp(name, "arg"))
@@ -288,76 +326,44 @@ startElementLGR(void           *ctx,
             ERROR("Failed to find 'value' attribute in <arg>");
             return;
         }
-        if (argc >= RCF_MAX_PARAMS - 1)
+        if (ctx->argc >= RCF_MAX_PARAMS - 1)
         {
             ERROR("Too many <arg> elements");
             return;
         }
 
-        if (te_expand_env_vars(atts[1], NULL, &argv[argc]) != 0)
+        if (te_expand_env_vars(atts[1], NULL, &ctx->argv[ctx->argc]) != 0)
         {
             ERROR("Failed to expand argument value '%s'",
                   atts[1]);
             return;
         }
-        argc++;
+        ctx->argc++;
     }
-}
-
-/**
- * Logger thread wrapper.
- *
- * @param arg   Unused
- *
- * @return NULL
- */
-void *
-logger_thread_wrapper(void *arg)
-{
-    int rc;
-
-    UNUSED(arg);
-
-    if (strcmp(thread_name, "log_serial") == 0)
-        rc = log_serial(&args_processed, argc, argv);
-    else
-    {
-        ERROR("Unknown thread %s", thread_name);
-        sem_post(&args_processed);
-        return NULL;
-    }
-
-    if (rc != 0)
-    {
-        ERROR("%s() failed", thread_name);
-        sem_post(&args_processed);
-    }
-
-    return NULL;
 }
 
 /**
  * User call back called when a closing tag has been processed.
  *
- * @param ctx       XML parser context
- * @param xml_name  Element name
+ * @param thread_ctx  XML parser context (thread_context in this case)
+ * @param xml_name    Element name
  */
 static void
-endElementLGR(void           *ctx,
+endElementLGR(void           *thread_ctx,
               const xmlChar  *xml_name)
 {
-    UNUSED(ctx);
+    thread_context *ctx = thread_ctx;
 
     if (strcmp((char *)xml_name, "thread") == 0 && thread_parsed)
     {
         pthread_t thread_id;
 
-        argv[argc] = NULL;
-        sem_init(&args_processed, 0, 0);
+        ctx->argv[ctx->argc] = NULL;
+        sem_init(&ctx->args_processed, 0, 0);
         pthread_create(&thread_id, NULL, logger_thread_wrapper,
-                       NULL);
-        sem_wait(&args_processed);
-        sem_destroy(&args_processed);
+                       ctx);
+        sem_wait(&ctx->args_processed);
+        sem_destroy(&ctx->args_processed);
         thread_parsed = FALSE;
     }
 
@@ -365,9 +371,9 @@ endElementLGR(void           *ctx,
     {
         int i;
 
-        for (i = 0; i < argc; i++)
-            free(argv[i]);
-        argc = 0;
+        for (i = 0; i < ctx->argc; i++)
+            free(ctx->argv[i]);
+        ctx->argc = 0;
     }
 }
 
@@ -423,11 +429,14 @@ int
 configParser(const char *file_name)
 {
     int res = 0;
+    thread_context ctx;
 
     if (file_name == NULL)
         return 0;
 
-    res = xmlSAXUserParseFile(loggerSAXHandler, NULL, file_name);
+    memset(&ctx, 0, sizeof(ctx));
+
+    res = xmlSAXUserParseFile(loggerSAXHandler, &ctx, file_name);
     xmlCleanupParser();
     xmlMemoryDump();
     return res;
