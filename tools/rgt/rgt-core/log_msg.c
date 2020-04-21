@@ -573,7 +573,8 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts, node_type_t type)
     {
         size_t       index;
         json_t      *author;
-        const char  *name, *email;
+        const char  *name = NULL;
+        const char  *email = NULL;
         te_string    authors_str = TE_STRING_INIT;
 
         json_array_foreach(authors, index, author)
@@ -601,7 +602,8 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts, node_type_t type)
     {
         size_t      index;
         json_t     *pair;
-        const char *name, *value;
+        const char *name = NULL;
+        const char *value = NULL;
 
         p_prm = &(node->params);
         json_array_foreach(args, index, pair)
