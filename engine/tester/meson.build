@@ -5,7 +5,7 @@ conf.set_quoted('PACKAGE_STRING',
                 meson.project_name() + ' ' + meson.project_version())
 
 c_args = []
-deps = [ dep_threads, dep_libxml2, dep_popt ]
+deps = [ dep_threads, dep_libxml2, dep_popt, dependency('jansson') ]
 
 te_libs = [
     'bsapi',

@@ -44,6 +44,8 @@
 
 #include <openssl/md5.h>
 
+#include <jansson.h>
+
 #include "te_alloc.h"
 #include "conf_api.h"
 #include "log_bufs.h"
@@ -65,23 +67,6 @@
 
 /** Format string for GDB init filename */
 #define TESTER_GDB_FILENAME_FMT "gdb.%d"
-
-/** Prefix of all messages from Tester:Flow user */
-#define TESTER_CONTROL_MSG_PREFIX  "%u %u "
-
-/**
- * Output Tester control log message (i.e. message about
- * package/session/test start/end).
- *
- * @param _parent_id  ID of parent item (package/session).
- * @param _id         ID of current item (package/session/test)
- * @param _fmt        Format string.
- * @param _args...    Arguments for the format string (it is assumed
- *                    there is always at least one argument here).
- */
-#define TESTER_CONTROL_LOG(_parent_id, _id, _fmt, _args...) \
-    LGR_MESSAGE(TE_LL_RING | TE_LL_CONTROL, TE_LOG_CMSG_USER, \
-                TESTER_CONTROL_MSG_PREFIX _fmt, _parent_id, _id, _args)
 
 /**
  * Log entry in a Tester configuration walking handler.
@@ -197,6 +182,36 @@ typedef struct tester_run_data {
 static enum interactive_mode_opts tester_run_interactive(
                                       tester_run_data *gctx);
 
+/**
+ * Output Tester control log message (i.e. message about
+ * package/session/test start/end).
+ *
+ * @param json       JSON object that describes the message
+ */
+static void
+tester_control_log(json_t *json)
+{
+    char *text;
+
+    if (json == NULL)
+    {
+        ERROR("Tester control log failed: json was null");
+        return;
+    }
+
+    text = json_dumps(json, JSON_COMPACT);
+    if (text != NULL)
+    {
+        LGR_MESSAGE(TE_LL_MI | TE_LL_CONTROL,
+                    TE_LOG_CMSG_USER,
+                    "%s", text);
+        free(text);
+    }
+    else
+    {
+        ERROR("Tester control log failed: json_dumps failure");
+    }
+}
 
 /**
  * Get unique test ID.
@@ -588,6 +603,54 @@ persons_info_to_string(const persons_info *persons)
     return res;
 }
 
+/**
+ * Convert information about group of persons to JSON representation.
+ *
+ * @param persons   Information about persons
+ *
+ * @return JSON array or NULL.
+ */
+static json_t *
+persons_info_to_json(const persons_info *persons)
+{
+    const person_info *p;
+    json_t            *result;
+    json_t            *item;
+
+    if (TAILQ_EMPTY(persons))
+        return NULL;
+
+    result = json_array();
+    if (result == NULL)
+    {
+        ERROR("%s: failed to allocate memory for array", __FUNCTION__);
+        return NULL;
+    }
+
+    TAILQ_FOREACH(p, persons, links)
+    {
+        item = json_pack("{s:s* s:s*}",
+                         "name",  p->name,
+                         "email", p->mailto);
+        if (item != NULL)
+        {
+            if (json_array_append_new(result, item) != 0)
+            {
+                ERROR("%s: failed to add item to the array", __FUNCTION__);
+                json_decref(result);
+                return NULL;
+            }
+        }
+        else
+        {
+            ERROR("%s: failed to pack into JSON array", __FUNCTION__);
+            json_decref(result);
+            return NULL;
+        }
+    }
+
+    return result;
+}
 
 /**
  * Space in the string required for test parameter.
@@ -708,6 +771,54 @@ test_params_to_string(char *str, const unsigned int n_args,
         VERB("%s(): %s", __FUNCTION__, v);
 
     return v;
+}
+
+/**
+ * Convert test parameters to JSON representation.
+ *
+ * @param n_args        Number of arguments
+ * @param args          Current arguments context
+ *
+ * @return JSON array or NULL
+ */
+static json_t *
+test_params_to_json(const unsigned int n_args, const test_iter_arg *args)
+{
+    json_t       *result;
+    json_t       *item;
+    unsigned int  i;
+
+    if (n_args == 0)
+        return NULL;
+
+    result = json_array();
+    if (result == NULL)
+    {
+        ERROR("%s: failed to allocate memory for array", __FUNCTION__);
+        return NULL;
+    }
+
+    for (i = 0; i < n_args; i++)
+    {
+        item = json_pack("[ss]", args[i].name, args[i].value);
+        if (item != NULL)
+        {
+            if (json_array_append_new(result, item) != 0)
+            {
+                ERROR("%s: failed to add item to the array", __FUNCTION__);
+                json_decref(result);
+                return NULL;
+            }
+        }
+        else
+        {
+            ERROR("%s: failed to pack into JSON array", __FUNCTION__);
+            json_decref(result);
+            return NULL;
+        }
+    }
+
+    return result;
 }
 
 /**
@@ -878,129 +989,161 @@ log_test_start(unsigned int flags,
     const char             *name =
         (ctx->flags & TESTER_LOG_IGNORE_RUN_NAME) ? test_get_name(ri)
                                                   : run_item_name(ri);
-    const char             *objective;
+    json_t                 *result;
+    json_t                 *authors;
+    json_t                 *tmp;
 
-    char   *params_str = NULL;
-    char   *authors = NULL;
-    char   *hash_str = NULL;
+    char   *params_str  = NULL;
+    char   *hash_str    = NULL;
 
-    params_str = test_params_to_string(NULL, ri->n_args, ctx->args);
+#define SET_JSON_STRING(_target, _string) \
+    do {                                                                 \
+        _target = json_string(_string);                                  \
+        if (_target == NULL)                                             \
+        {                                                                \
+            ERROR("%s: json_string failed for " #_string, __FUNCTION__); \
+            json_decref(result);                                         \
+            return;                                                      \
+        }                                                                \
+    } while(0)
 
-    if (tin != TE_TIN_INVALID)
-        hash_str = test_params_hash(ctx->args, ri->n_args);
+#define SET_JSON_INT(_target, _integer) \
+    do {                                                                   \
+        _target = json_integer(_integer);                                  \
+        if (_target == NULL)                                               \
+        {                                                                  \
+            ERROR("%s: json_integer failed for " #_integer, __FUNCTION__); \
+            json_decref(result);                                           \
+            return;                                                        \
+        }                                                                  \
+    } while(0)
+
+#define SET_NEW_JSON(_json, _key, _val) \
+    do {                                                      \
+        int rc;                                               \
+                                                              \
+        rc = json_object_set_new(_json, _key, _val);          \
+        if (rc != 0)                                          \
+        {                                                     \
+            ERROR("%s: failed to set field %s for object %s", \
+                  __FUNCTION__, _key, #_json);                \
+            json_decref(_val);                                \
+            json_decref(result);                              \
+            return;                                           \
+        }                                                     \
+    } while (0)
+
+    result = json_pack("{s:i, s:i, s:o*}",
+                       "id", test,
+                       "parent", parent,
+                       "params", test_params_to_json(ri->n_args, ctx->args));
+    if (result == NULL)
+    {
+        ERROR("JSON object creation failed in %s", __FUNCTION__);
+        return;
+    }
+
+    if (name == NULL && ri->type == RUN_ITEM_SESSION)
+        name = "session";
+    if (name != NULL)
+    {
+        SET_JSON_STRING(tmp, name);
+        SET_NEW_JSON(result, "name", tmp);
+    }
 
     switch (ri->type)
     {
         case RUN_ITEM_SCRIPT:
-            objective = ri->objective != NULL ?
+        {
+            const char *page_name =
+                ri->page != NULL ? ri->page : ri->u.script.page;
+            const char *objective = ri->objective != NULL ?
                 ri->objective : ri->u.script.objective;
+
+            SET_JSON_STRING(tmp, "TEST");
+            SET_NEW_JSON(result, "type", tmp);
+
+            if (page_name != NULL)
+            {
+                SET_JSON_STRING(tmp, page_name);
+                SET_NEW_JSON(result, "page", tmp);
+            }
+
+            if (objective != NULL)
+            {
+                SET_JSON_STRING(tmp, objective);
+                SET_NEW_JSON(result, "objective", tmp);
+            }
 
             if (tin != TE_TIN_INVALID)
             {
-                const char *page_name =
-                    ri->page != NULL ? ri->page : ri->u.script.page;
+                SET_JSON_INT(tmp, tin);
+                SET_NEW_JSON(result, "tin", tmp);
 
-                if (page_name == NULL)
+                hash_str = test_params_hash(ctx->args, ri->n_args);
+                if (hash_str != NULL)
                 {
-                    TESTER_CONTROL_LOG(
-                                parent, test,
-                                "TEST %s \"%s\" TIN %u HASH %s ARGs%s",
-                                name,
-                                PRINT_STRING(objective),
-                                tin, PRINT_STRING(hash_str),
-                                PRINT_STRING(params_str));
-                }
-                else
-                {
-                    TESTER_CONTROL_LOG(
-                                parent, test,
-                                "TEST %s \"%s\" TIN %u PAGE %s HASH %s "
-                                "ARGs%s", name,
-                                PRINT_STRING(objective),
-                                tin,
-                                page_name,
-                                PRINT_STRING(hash_str),
-                                PRINT_STRING(params_str));
-                    if (flags & TESTER_CFG_WALK_OUTPUT_PARAMS)
+                    tmp = json_string(hash_str);
+                    if (tmp == NULL)
                     {
-                        fprintf(stderr, "\n"
-                                "                       "
-                                "ARGs%s\n"
-                                "                              \n",
-                                PRINT_STRING(params_str));
+                        ERROR("%s: json_string failed for hash_str",
+                              __FUNCTION__);
+                        free(hash_str);
+                        json_decref(result);
+                        return;
                     }
+                    SET_NEW_JSON(result, "hash", tmp);
                 }
             }
-            else
-            {
-                const char *page_name =
-                    ri->page != NULL ? ri->page : ri->u.script.page;
 
-                if (page_name == NULL)
-                {
-                    TESTER_CONTROL_LOG(
-                                parent, test,
-                                "TEST %s \"%s\" HASH %s ARGs%s",
-                                name,
-                                PRINT_STRING(objective),
-                                PRINT_STRING(hash_str),
-                                PRINT_STRING(params_str));
-                }
-                else
-                {
-                    TESTER_CONTROL_LOG(
-                                parent, test,
-                                "TEST %s \"%s\" PAGE %s HASH %s ARGs%s",
-                                name,
-                                PRINT_STRING(objective),
-                                page_name,
-                                PRINT_STRING(hash_str),
-                                PRINT_STRING(params_str));
-                }
+
+            if (flags & TESTER_CFG_WALK_OUTPUT_PARAMS)
+            {
+                params_str = test_params_to_string(NULL, ri->n_args, ctx->args);
+                fprintf(stderr, "\n"
+                        "                       "
+                        "ARGs%s\n"
+                        "                              \n",
+                        PRINT_STRING(params_str));
+                free(params_str);
             }
             break;
+        }
 
         case RUN_ITEM_SESSION:
             assert(tin == TE_TIN_INVALID);
-            TESTER_CONTROL_LOG(parent, test,
-                               "SESSION %s HASH %s ARGs%s",
-                               (name == NULL ? "session" : name),
-                               PRINT_STRING(hash_str),
-                               PRINT_STRING(params_str));
+            SET_JSON_STRING(tmp, "SESSION");
+            SET_NEW_JSON(result, "type", tmp);
             break;
 
         case RUN_ITEM_PACKAGE:
             assert(tin == TE_TIN_INVALID);
-            authors = persons_info_to_string(&ri->u.package->authors);
-            if (authors == NULL)
+
+            SET_JSON_STRING(tmp, "PACKAGE");
+            SET_NEW_JSON(result, "type", tmp);
+
+            authors = persons_info_to_json(&ri->u.package->authors);
+            if (authors != NULL)
+                SET_NEW_JSON(result, "authors", authors);
+
+            if (ri->u.package->objective != NULL)
             {
-                TESTER_CONTROL_LOG(
-                            parent, test,
-                            "PACKAGE %s \"%s\" HASH %s ARGs%s",
-                            name,
-                            PRINT_STRING(ri->u.package->objective),
-                            PRINT_STRING(hash_str),
-                            PRINT_STRING(params_str));
+                SET_JSON_STRING(tmp, ri->u.package->objective);
+                SET_NEW_JSON(result, "objective", tmp);
             }
-            else
-            {
-                TESTER_CONTROL_LOG(
-                            parent, test,
-                            "PACKAGE %s \"%s\" AUTHORS%s HASH %s ARGs%s",
-                            ri->u.package->name,
-                            PRINT_STRING(ri->u.package->objective),
-                            PRINT_STRING(authors),
-                            PRINT_STRING(hash_str),
-                            PRINT_STRING(params_str));
-            }
-            free(authors);
+
             break;
 
         default:
             ERROR("Invalid run item type %d", ri->type);
     }
-    free(params_str);
-    free(hash_str);
+
+    tester_control_log(result);
+    json_decref(result);
+
+#undef SET_JSON_STRING
+#undef SET_JSON_INT
+#undef SET_NEW_JSON
 }
 
 /**
@@ -1015,9 +1158,16 @@ static void
 log_test_result(test_id parent, test_id test, te_test_status status,
                 const char *error)
 {
-    TESTER_CONTROL_LOG(parent, test, "%s %s",
-                       te_test_status_to_str(status),
-                       error == NULL ? "" : error);
+    json_t      *result;
+
+    result = json_pack("{s:i, s:i, s:s, s:s*}",
+                       "id", test,
+                       "parent", parent,
+                       "status", te_test_status_to_str(status),
+                       "error", error);
+
+    tester_control_log(result);
+    json_decref(result);
 }
 
 
