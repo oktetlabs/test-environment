@@ -11,7 +11,7 @@ SUBDIRS = .
 
 AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(top_srcdir) @EXTRA_CPPFLAGS@ \
               $(TE_CPPFLAGS_VAR)
-AM_CFLAGS = @TE_CFLAGS@ @GLIB_CFLAGS@ @TCL_CFLAGS@ $(TE_CFLAGS_VAR)
+AM_CFLAGS = @TE_CFLAGS@ @GLIB_CFLAGS@ @XML2_CFLAGS@ $(TE_CFLAGS_VAR)
 
 bin_PROGRAMS = rgt-core
 
@@ -28,7 +28,8 @@ rgt_core_SOURCES = filter.c filter.h \
                    junit_mode.c junit_mode.h \
                    rgt_core.c rgt_common.h
 
-rgt_core_LDADD = @GLIB_LIBS@ -lpopt @TCL_LIB_SPEC@ -ljansson -lm -ldl
+rgt_core_LDADD = @GLIB_LIBS@ @XML2_LIBS@ -llogger_core -ltools -llog_proc \
+                 -lpopt -ljansson -lm -ldl
 
 bin_SCRIPTS = rgt-conv
 

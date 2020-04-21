@@ -7,9 +7,7 @@
 # Author: Oleg N. Kravtsov <Oleg.Kravtsov@oktetlabs.ru>
 #
 
-SUBDIRS = lib rgt-cfg rgt-core rgt-format rgt-idx rgt-dump rgt-xml-merge \
+SUBDIRS = lib rgt-core rgt-format rgt-idx rgt-dump rgt-xml-merge \
           rgt-pdml2xml rgt-log-bundle .
 
 ACLOCAL_AMFLAGS = -I @TE_M4@
-
-EXTRA_DIST = acsite.m4

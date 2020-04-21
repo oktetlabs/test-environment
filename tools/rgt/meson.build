@@ -52,40 +52,10 @@ if not does_link
     error('Obstack feature is required to build RGT')
 endif
 
-# Add libtcl support if required
-tcl_c_args = []
-tcl_inc_dir = []
-libtcl = cc.find_library('libtcl', required: false)
-
+# Add log filtering support if required
 if get_option('rgt-log-filter')
-    if libtcl.found()
-        if not cc.has_header('tcl.h')
-            tcl_possible_include_dirs = ['/usr/include/tcl']
-
-            foreach d: tcl_possible_include_dirs
-                inc_dir = include_directories(d)
-                if cc.has_header('tcl.h', include_directories: inc_dir)
-                    tcl_inc_dir += inc_dir
-                    # There is no break statement
-                endif
-            endforeach
-
-            if tcl_inc_dir.length() == 0
-                error('Failed to find "tcl.h"')
-            endif
-        endif
-
-        tcl_c_args = ['-DWITH_LOG_FILTER']
-    else
-        error('Failed to find libtcl')
-    endif
+    c_args += ['-DWITH_LOG_FILTER']
 endif
-
-dep_tcl = declare_dependency(
-    dependencies: [libtcl],
-    compile_args: tcl_c_args,
-    include_directories: tcl_inc_dir,
-)
 
 # Add large logs support if required
 
@@ -128,5 +98,4 @@ subdir('rgt-idx')
 subdir('rgt-log-bundle')
 subdir('rgt-pdml2xml')
 subdir('rgt-xml-merge')
-subdir('rgt-cfg')
 subdir('rgt-format')

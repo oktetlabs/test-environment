@@ -111,7 +111,7 @@ usage(poptContext optCon, int exitcode, char *error, char *addl)
  *    The function can update some of the following global variables
  *    according to the command line arguments specified in argv.
  *
- *      fltr_file_name   - Name of the TCL filter file.
+ *      fltr_file_name   - Name of the XML filter file.
  *      raw_file_name    - Name of the Raw log file.
  *      output_file_name - Name of the output file.
  *      rgt_op_mode_str  - The mode of the rgt operation in string format.
@@ -131,7 +131,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
     struct poptOption optionsTable[] = {
 #if (defined WITH_LOG_FILTER)
         { "filter", 'f', POPT_ARG_STRING, NULL, 'f',
-          "TCL filter file.", "FILE" },
+          "XML filter file.", "FILE" },
 #endif /* WITH_LOG_FILTER */
 
         { "mode", 'm', POPT_ARG_STRING, NULL, 'm',
@@ -176,7 +176,7 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
             case 'f':
                 if ((ctx->fltr_fname = poptGetOptArg(optCon)) == NULL)
                 {
-                    usage(optCon, 1, "Specify TCL filter file", NULL);
+                    usage(optCon, 1, "Specify XML filter file", NULL);
                 }
                 break;
 #endif /* WITH_LOG_FILTER */
@@ -370,7 +370,7 @@ static void free_resources(int signo)
 /**
  * Processes command line options.
  * Checks if specified files really exist in file system.
- * Creates TCL interpreter and feeds TCL filter file for it.
+ * Parses XML filter file.
  * Processes all messages in order they are placed in RLF.
  *
  * @param argc  Number of arguments passed in command line

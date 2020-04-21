@@ -35,7 +35,7 @@ enum node_fltr_mode {
 /**
  * Initialize filter module.
  *
- * @param fltr_fname  Name of the TCL filter file
+ * @param fltr_fname  Name of the XML filter file
  *
  * @return  Status of operation
  *

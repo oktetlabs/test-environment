@@ -187,7 +187,7 @@ typedef struct rgt_gen_ctx {
     const char    *out_fname; /**< Output file name */
     FILE          *out_fd; /**< Output file pointer */
 
-    const char    *fltr_fname; /**< TCL filter file name */
+    const char    *fltr_fname; /**< XML filter file name */
 
     char          *tmp_dir; /**< Temporary directory used for offloading
                                  of message pointers into files */

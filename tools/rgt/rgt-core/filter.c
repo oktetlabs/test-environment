@@ -17,7 +17,8 @@
 #include "logger_defs.h"
 
 #if (defined WITH_LOG_FILTER)
-#include <tcl.h>
+#include <libxml/parser.h>
+#include "log_filters_xml.h"
 #endif
 
 #include "filter.h"
@@ -54,21 +55,28 @@ get_control_msg_flags(const char *user, te_log_level level,
 }
 
 #if (defined WITH_LOG_FILTER)
-static Tcl_Interp *tcl_interp = NULL;
-static te_bool     initialized = FALSE;
+static log_branch_filter branch_filter;
+static log_duration_filter duration_filter;
+static log_msg_filter msg_filter;
 
-/** Maximum length of TCL command */
-#define MAX_CMD_LEN 256
+static te_bool     initialized = FALSE;
 
 /* See the description in filter.h */
 int
 rgt_filter_init(const char *fltr_fname)
 {
+    xmlDocPtr     doc;
+    xmlNodePtr    cur;
+
     if (initialized)
     {
         TRACE("rgt_filter library has already been initialized");
         return -1;
     }
+
+    log_branch_filter_init(&branch_filter);
+    log_duration_filter_init(&duration_filter);
+    log_msg_filter_init(&msg_filter);
 
     if (fltr_fname == NULL)
     {
@@ -76,19 +84,38 @@ rgt_filter_init(const char *fltr_fname)
         return 0;
     }
 
-    /* Create "pure" Tcl interpreter */
-    if ((tcl_interp = Tcl_CreateInterp()) == NULL)
+    doc = xmlParseFile(fltr_fname);
+    if (doc == NULL)
     {
-        TRACE("Cannot create TCL interpreter");
-        return -1;
+        return TE_EINVAL;
     }
 
-    /* Load TCL filters */
-    if (Tcl_EvalFile(tcl_interp, (char *)fltr_fname) != TCL_OK)
+    cur = xmlDocGetRootElement(doc);
+    if (cur == NULL)
+        /* Empty file, nothing to do */
+        return 0;
+
+    if (xmlStrcmp(cur->name, (const xmlChar *)"filters") != 0)
     {
-        FMT_TRACE("%s", Tcl_GetStringResult(tcl_interp));
-        Tcl_DeleteInterp(tcl_interp);
-        return -1;
+        return TE_EINVAL;
+    }
+
+    cur = cur->xmlChildrenNode;
+    while (cur != NULL)
+    {
+        if (xmlStrcmp(cur->name, (const xmlChar *)"entity-filter") == 0)
+        {
+            log_branch_filter_load_xml(&branch_filter, cur);
+        }
+        if (xmlStrcmp(cur->name, (const xmlChar *)"duration-filter") == 0)
+        {
+            log_duration_filter_load_xml(&duration_filter, cur);
+        }
+        if (xmlStrcmp(cur->name, (const xmlChar *)"entity-filter") == 0)
+        {
+            log_msg_filter_load_xml(&msg_filter, cur);
+        }
+        cur = cur->next;
     }
 
     initialized = TRUE;
@@ -109,66 +136,9 @@ rgt_filter_destroy()
         return;
     }
 
-    if (tcl_interp == NULL)
-        return;
-
-    Tcl_DeleteInterp(tcl_interp);
-    tcl_interp = NULL;
-}
-
-/**
- * Runs specified Tcl command and returns filtering result
- *
- * @param cmd        TCL command to run
- * @param func_name  Function name (for debugging purpose)
- *
- * @return Filtering result
- */
-static enum node_fltr_mode
-run_tcl_cmd(const char *cmd, const char *func_name)
-{
-    if (initialized && tcl_interp == NULL)
-        return NFMODE_INCLUDE;
-
-    if (Tcl_Eval(tcl_interp, cmd) == TCL_OK)
-    {
-        /* There is such procedure in the Tcl environment */
-        if (strcmp(Tcl_GetStringResult(tcl_interp), "pass") == 0)
-        {
-            return NFMODE_INCLUDE;
-        }
-        else if (strcmp(Tcl_GetStringResult(tcl_interp), "fail") == 0)
-        {
-            return NFMODE_EXCLUDE;
-        }
-        else if (strcmp(Tcl_GetStringResult(tcl_interp), "default") == 0)
-        {
-            return NFMODE_DEFAULT;
-        }
-        else
-        {
-            FMT_TRACE("Tcl filter file: "
-                      "function %s has returned \"%s\", "
-                      "but it is allowed to return only strings "
-                      "\"pass\", \"fail\" or \"default\".",
-                      func_name,
-                      Tcl_GetStringResult(tcl_interp));
-            THROW_EXCEPTION;
-        }
-    }
-    else
-    {
-        /*
-         * Something awful is occured: Tcl filter file doesn't contain
-         * standard routine "rgt_branch_filter" that is used for filtering.
-         */
-        FMT_TRACE("Tcl filter file: %s.", Tcl_GetStringResult(tcl_interp));
-        THROW_EXCEPTION;
-    }
-
-    assert(0);
-
-    return NFMODE_EXCLUDE;
+    log_branch_filter_free(&branch_filter);
+    log_duration_filter_free(&duration_filter);
+    log_msg_filter_free(&msg_filter);
 }
 
 /**
@@ -193,14 +163,26 @@ rgt_filter_check_message(const char *entity, const char *user,
                          te_log_level level,
                          const uint32_t *timestamp, uint32_t *flags)
 {
-    char cmd[MAX_CMD_LEN];
+    log_msg_view message;
+
+    memset(&message, 0, sizeof(message));
+
+    message.entity = entity;
+    message.entity_len = strlen(entity);
+
+    message.user = user;
+    message.user_len = strlen(user);
+
+    message.level = level;
+
+    message.ts_sec = timestamp[0];
+    message.ts_usec = timestamp[1];
+
+    log_msg_filter_check(&msg_filter, &message);
 
     get_control_msg_flags(user, level, flags);
 
-    snprintf(cmd, sizeof(cmd), "rgt_msg_filter {%s} {%s} %u %d",
-             entity, user, level, *timestamp);
-
-    if (run_tcl_cmd(cmd, "rgt_msg_filter") == NFMODE_INCLUDE)
+    if (log_msg_filter_check(&msg_filter, &message) == LOG_FILTER_PASS)
         *flags |= RGT_MSG_FLG_NORMAL;
 
     /*
@@ -227,11 +209,16 @@ rgt_filter_check_message(const char *entity, const char *user,
 enum node_fltr_mode
 rgt_filter_check_branch(const char *path)
 {
-    char cmd[MAX_CMD_LEN];
+    log_filter_result res;
 
-    snprintf(cmd, sizeof(cmd), "rgt_branch_filter %s", path);
+    res = log_branch_filter_check(&branch_filter, path);
 
-    return run_tcl_cmd(cmd, "rgt_branch_filter");
+    if (res == LOG_FILTER_PASS)
+        return NFMODE_INCLUDE;
+    else if (res == LOG_FILTER_FAIL)
+        return NFMODE_EXCLUDE;
+    else
+        return NFMODE_DEFAULT;
 }
 
 /**
@@ -251,19 +238,17 @@ enum node_fltr_mode
 rgt_filter_check_duration(const char *node_type,
                           uint32_t *start_ts, uint32_t *end_ts)
 {
-    enum node_fltr_mode fmode;
-    uint32_t            duration[2];
-    char                cmd[MAX_CMD_LEN];
-
+    log_filter_result res;
+    uint32_t          duration[2];
 
     TIMESTAMP_SUB(duration, end_ts, start_ts);
 
-    snprintf(cmd, sizeof(cmd), "rgt_duration_filter %s %d",
-             node_type, duration[0]);
+    res = log_duration_filter_check(&duration_filter, node_type, duration[0]);
 
-    fmode = run_tcl_cmd(cmd, "rgt_duration_filter");
-
-    return (fmode == NFMODE_DEFAULT) ? NFMODE_INCLUDE : fmode;
+    if (res == LOG_FILTER_FAIL)
+        return NFMODE_EXCLUDE;
+    else
+        return NFMODE_INCLUDE;
 }
 
 #else

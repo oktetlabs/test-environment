@@ -32,38 +32,11 @@ AC_ARG_WITH([log_filter],
 
 if test "x$ac_cv_with_log_filter" = "xyes"
 then
-    AC_CHECK_LIB([tcl], [Tcl_CreateInterp],
-                 ac_cv_lib_tcl=yes, ac_cv_lib_tcl=no, -lm -ldl)
-    AC_CHECK_HEADER([tcl.h], ac_cv_header_tcl_h=yes, ac_cv_header_tcl_h=no)
-
-    if test x$ac_cv_lib_tcl = xno || test x$ac_cv_header_tcl_h = xno
-    then
-        # In Debian distributive TCL is placed under some untrivial 
-        # directories
-        # Sets TCL_BIN_DIR
-        SC2_PATH_TCLCONFIG
-        # Sources tclConfig.sh, substs TCL_{BIN,SRC,LIB}_DIR
-        SC2_LOAD_TCLCONFIG
-        if test -n "$TCL_INCLUDE_SPEC"; then 
-            TCL_CFLAGS=$TCL_INCLUDE_SPEC
-        elif test -n "$TCL_INC_DIR"; then 
-            TCL_CFLAGS="-I$TCL_INC_DIR"
-        fi    
-    else
-        TCL_LIB_SPEC=-ltcl
-        TCL_CFLAGS=
-    fi
     AC_DEFINE([WITH_LOG_FILTER], 1, [Embed log fitering stuff in RGT core])
-else
-    TCL_LIB_SPEC=
-    TCL_CFLAGS=
 fi
 
 WITH_LOG_FILTER=$ac_cv_with_log_filter
 AC_SUBST([WITH_LOG_FILTER])
-
-AC_SUBST([TCL_LIB_SPEC])
-AC_SUBST([TCL_CFLAGS])
 
 AC_CHECK_LIB([popt], [poptGetContext], 
              ac_cv_lib_popt=yes, ac_cv_lib_popt=no)
@@ -187,8 +160,6 @@ AC_CHECK_MEMBER([struct _xmlSAXHandler.serror], [], [],
 AC_CONFIG_FILES([Makefile
                  lib/Makefile
                  lib/tmpls/Makefile
-                 rgt-cfg/Makefile
-                 rgt-cfg/tmpls/Makefile
                  rgt-core/Makefile
                  rgt-core/rgt-conv
                  rgt-format/Makefile
