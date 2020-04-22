@@ -189,9 +189,10 @@ static enum interactive_mode_opts tester_run_interactive(
  * @param json       JSON object that describes the message
  */
 static void
-tester_control_log(json_t *json)
+tester_control_log(json_t *json, const char *mi_type)
 {
-    char *text;
+    char   *text;
+    json_t *mi;
 
     if (json == NULL)
     {
@@ -199,7 +200,17 @@ tester_control_log(json_t *json)
         return;
     }
 
-    text = json_dumps(json, JSON_COMPACT);
+    mi = json_pack("{s:s, s:i, s:O}",
+                   "type", mi_type,
+                   "version", 1,
+                   "msg", json);
+    if (mi == NULL)
+    {
+        ERROR("Failed to construct MI message");
+        return;
+    }
+
+    text = json_dumps(mi, JSON_COMPACT);
     if (text != NULL)
     {
         LGR_MESSAGE(TE_LL_MI | TE_LL_CONTROL,
@@ -211,6 +222,8 @@ tester_control_log(json_t *json)
     {
         ERROR("Tester control log failed: json_dumps failure");
     }
+
+    json_decref(mi);
 }
 
 /**
@@ -1074,7 +1087,7 @@ log_test_start(unsigned int flags,
                 ri->objective : ri->u.script.objective;
 
             SET_JSON_STRING(tmp, "TEST");
-            SET_NEW_JSON(result, "type", tmp);
+            SET_NEW_JSON(result, "node_type", tmp);
 
             if (page_name != NULL)
             {
@@ -1126,14 +1139,14 @@ log_test_start(unsigned int flags,
         case RUN_ITEM_SESSION:
             assert(tin == TE_TIN_INVALID);
             SET_JSON_STRING(tmp, "SESSION");
-            SET_NEW_JSON(result, "type", tmp);
+            SET_NEW_JSON(result, "node_type", tmp);
             break;
 
         case RUN_ITEM_PACKAGE:
             assert(tin == TE_TIN_INVALID);
 
             SET_JSON_STRING(tmp, "PACKAGE");
-            SET_NEW_JSON(result, "type", tmp);
+            SET_NEW_JSON(result, "node_type", tmp);
 
             authors = persons_info_to_json(&ri->u.package->authors);
             if (authors != NULL)
@@ -1151,7 +1164,7 @@ log_test_start(unsigned int flags,
             ERROR("Invalid run item type %d", ri->type);
     }
 
-    tester_control_log(result);
+    tester_control_log(result, "test_start");
     json_decref(result);
 
 #undef SET_JSON_STRING
@@ -1184,7 +1197,7 @@ log_test_result(test_id parent, test_id test, te_test_status status,
                        "status", te_test_status_to_str(status),
                        "error", error);
 
-    tester_control_log(result);
+    tester_control_log(result, "test_end");
     json_decref(result);
 }
 

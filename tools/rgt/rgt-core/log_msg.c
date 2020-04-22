@@ -124,6 +124,7 @@ rgt_process_tester_control_message_json(log_msg *msg)
     const char *status = NULL;
     const char *error = NULL;
 
+    json_t       *mi_json;
     json_t       *msg_json;
     json_error_t  json_error;
 
@@ -135,13 +136,25 @@ rgt_process_tester_control_message_json(log_msg *msg)
     }
 
     /* Parse the message body */
-    msg_json = json_loads((const char *)arg->val, 0, &json_error);
-    if (msg_json == NULL)
+    mi_json = json_loads((const char *)arg->val, 0, &json_error);
+    if (mi_json == NULL)
     {
         FMT_TRACE("Error parsing JSON log message: %s (line %d, column %d)",
                   json_error.text, json_error.line, json_error.column);
         THROW_EXCEPTION;
     }
+
+    /* Extract the msg object */
+    msg_json = json_object_get(mi_json, "msg");
+    if (msg_json == NULL)
+    {
+        TRACE("Failed to get \"msg\" out of MI message");
+        json_decref(mi_json);
+        THROW_EXCEPTION;
+    }
+
+    json_incref(msg_json);
+    json_decref(mi_json);
 
     /*
      * Unpack the JSON object.
@@ -151,11 +164,11 @@ rgt_process_tester_control_message_json(log_msg *msg)
      * values and type-checked manually.
      */
     err_code = json_unpack_ex(msg_json, &json_error, 0, "{s:i, s:i, s?o, s?o, s?o}",
-                              "id",     &node_id,
-                              "parent", &parent_id,
-                              "type",   &type_opt,
-                              "status", &status_opt,
-                              "error",  &error_opt);
+                              "id",        &node_id,
+                              "parent",    &parent_id,
+                              "node_type", &type_opt,
+                              "status",    &status_opt,
+                              "error",     &error_opt);
     if (err_code != 0)
     {
         FMT_TRACE("Error unpacking JSON log message: %s (line %d, column %d)",
@@ -166,7 +179,7 @@ rgt_process_tester_control_message_json(log_msg *msg)
     rc = extract_json_string(type_opt, &type, NULL);
     if (rc != 0)
     {
-        FMT_TRACE("Invalid type for the \"type\" value: %s",
+        FMT_TRACE("Invalid type for the \"node_type\" value: %s",
                   get_json_type(type_opt));
         free_log_msg(msg);
         json_decref(msg_json);
