@@ -685,7 +685,7 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts, node_type_t type)
     te_errno     rc;
 
     json_t     *authors = NULL;
-    json_t     *args = NULL;
+    json_t     *params = NULL;
     json_t     *name_opt = NULL;
     json_t     *objective_opt = NULL;
     json_t     *page_opt = NULL;
@@ -725,7 +725,7 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts, node_type_t type)
                          "hash", &hash_opt,
                          "tin", &tin_opt,
                          "authors", &authors,
-                         "args", &args);
+                         "params", &params);
     if (ret != 0)
     {
         FMT_TRACE("Error unpacking JSON log message: %s (line %d, column %d)",
@@ -819,17 +819,17 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts, node_type_t type)
     if (hash != NULL)
         node->descr.hash = node_info_obstack_copy0(hash, strlen(hash));
 
-    if (args != NULL && !json_is_null(args))
+    if (params != NULL && !json_is_null(params))
     {
         size_t      index;
         json_t     *pair;
         const char *name = NULL;
         const char *value = NULL;
 
-        if (json_is_array(args))
+        if (json_is_array(params))
         {
             p_prm = &(node->params);
-            json_array_foreach(args, index, pair)
+            json_array_foreach(params, index, pair)
             {
                 ret = json_unpack_ex(pair, &err, 0, "[ss!]", &name, &value);
                 if (ret != 0)
@@ -851,8 +851,8 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts, node_type_t type)
         }
         else
         {
-            FMT_TRACE("Invalid type for the \"args\" value:%s",
-                      get_json_type(args));
+            FMT_TRACE("Invalid type for the \"params\" value:%s",
+                      get_json_type(params));
         }
     }
 
