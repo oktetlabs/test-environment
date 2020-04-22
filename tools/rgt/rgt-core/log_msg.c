@@ -854,9 +854,9 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts, node_type_t type)
                 {
                     *p_prm = (param *)node_info_obstack_alloc(sizeof(param));
                     (*p_prm)->name =
-                        node_info_obstack_copy0(name, sizeof(name));
+                        node_info_obstack_copy0(name, strlen(name));
                     (*p_prm)->val =
-                        node_info_obstack_copy0(value, sizeof(value));
+                        node_info_obstack_copy0(value, strlen(value));
                     p_prm = &((*p_prm)->next);
                 }
             }
