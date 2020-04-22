@@ -11,6 +11,10 @@
 # $Id$
 #
 
+# Assume that the script is located in TE bin installation directory and
+# all used TE executables are located there
+bindir="$(cd "$(dirname "$(which "$0")")" && pwd -P)"
+
 raw_log_file=
 output_file=
 
@@ -101,14 +105,14 @@ EOF
 rgt_opts="--incomplete-log -m postponed"
 
 if test -z "$compress" ; then
-    rgt-conv $rgt_opts -c "$rgt_filter" \
+    "${bindir}"/rgt-conv $rgt_opts -c "$rgt_filter" \
         ${raw_log_file:+-f} "$raw_log_file" \
         ${output_file:+-o} "$output_file"
 elif test -z "$output_file" ; then
-    rgt-conv $rgt_opts -c "$rgt_filter" \
+    "${bindir}"/rgt-conv $rgt_opts -c "$rgt_filter" \
         ${raw_log_file:+-f} "$raw_log_file" | $compress
 else
-    rgt-conv $rgt_opts -c "$rgt_filter" \
+    "${bindir}"/rgt-conv $rgt_opts -c "$rgt_filter" \
         ${raw_log_file:+-f} "$raw_log_file" | $compress >"$output_file"
 fi
 status=$?
