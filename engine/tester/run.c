@@ -800,6 +800,9 @@ test_params_to_json(const unsigned int n_args, const test_iter_arg *args)
 
     for (i = 0; i < n_args; i++)
     {
+        if (args[i].variable)
+            continue;
+
         item = json_pack("[ss]", args[i].name, args[i].value);
         if (item != NULL)
         {
