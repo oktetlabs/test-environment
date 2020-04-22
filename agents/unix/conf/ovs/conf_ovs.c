@@ -422,13 +422,6 @@ ovs_interface_alloc(const char *name,
     }
 
     interface->mac_requested = FALSE;
-    interface->mac_request = strdup("");
-    if (interface->mac_request == NULL)
-    {
-        ERROR("Failed to allocate the interface MAC address empty request");
-        goto fail;
-    }
-
     interface->ofport_requested = FALSE;
     interface->ofport_request = strdup("0");
     if (interface->ofport_request == NULL)
@@ -452,7 +445,6 @@ ovs_interface_alloc(const char *name,
 
 fail:
     free(interface->ofport_request);
-    free(interface->mac_request);
     free(interface->type);
     free(interface->name);
     free(interface);
@@ -2085,7 +2077,8 @@ ovs_interface_mac_get(unsigned int  gid,
     }
     else
     {
-        te_strlcpy(value, interface->mac_request, RCF_MAX_VAL);
+        te_strlcpy(value, te_str_empty_if_null(interface->mac_request),
+                   RCF_MAX_VAL);
     }
 
     return 0;

@@ -43,6 +43,19 @@ te_str_is_null_or_empty(const char *str)
     return (str == NULL || *str == '\0');
 }
 
+/**
+ * Return pointer to an empty string if the string is @c NULL or
+ * pointer to the string itself.
+ *
+ * @param str           Byte string.
+ *
+ * @return @p str or static empty string if @p str is @c NULL
+ */
+static inline const char *
+te_str_empty_if_null(const char *str)
+{
+    return (str == NULL ? "" : str);
+}
 
 /**
  * Convert lowercase letters of the @p string to uppercase. The function does

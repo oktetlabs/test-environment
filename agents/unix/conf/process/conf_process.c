@@ -548,7 +548,7 @@ ps_exe_get(unsigned int gid, const char *oid, char *value,
     if (ps == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", ps->exe);
+    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(ps->exe));
 
     return 0;
 }

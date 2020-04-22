@@ -1721,11 +1721,14 @@ cleanup:
 te_errno
 string_replace(char **dst, const char *src)
 {
-    char *new_dst;
+    char *new_dst = NULL;
 
-    new_dst = strdup(src);
-    if (new_dst == NULL)
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    if (src != NULL && *src != '\0')
+    {
+        new_dst = strdup(src);
+        if (new_dst == NULL)
+            return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
 
     free(*dst);
     *dst = new_dst;

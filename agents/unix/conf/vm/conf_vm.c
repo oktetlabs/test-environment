@@ -215,7 +215,7 @@ vm_append_net_interfaces_cmd(te_string *cmd, vm_net_list_t *nets)
 
     SLIST_FOREACH(net, nets, links)
     {
-        if (net->type == NULL || *net->type == '\0')
+        if (net->type == NULL)
         {
             ERROR("Cannot append empty interface type to VM (line %u)",
                   __LINE__);
@@ -266,7 +266,7 @@ vm_append_kernel_cmd(te_string *cmd, struct vm_entry *vm)
 {
     te_errno rc;
 
-    if (vm->kernel[0] != '\0')
+    if (vm->kernel != NULL)
     {
         rc = te_string_append_shell_args_as_is(cmd, "-kernel", vm->kernel, NULL);
         if (rc != 0)
@@ -276,7 +276,7 @@ vm_append_kernel_cmd(te_string *cmd, struct vm_entry *vm)
             return TE_RC(TE_TA_UNIX, rc);
         }
 
-        if (vm->ker_cmd[0] != '\0')
+        if (vm->ker_cmd != NULL)
         {
             rc = te_string_append_shell_args_as_is(cmd, "-append",
                             vm->ker_cmd, NULL);
@@ -288,7 +288,7 @@ vm_append_kernel_cmd(te_string *cmd, struct vm_entry *vm)
             }
         }
 
-        if (vm->ker_initrd[0] != '\0')
+        if (vm->ker_initrd != NULL)
         {
             rc = te_string_append_shell_args_as_is(cmd, "-initrd",
                             vm->ker_initrd, NULL);
@@ -300,7 +300,7 @@ vm_append_kernel_cmd(te_string *cmd, struct vm_entry *vm)
             }
         }
 
-        if (vm->ker_dtb[0] != '\0')
+        if (vm->ker_dtb != NULL)
         {
             rc = te_string_append_shell_args_as_is(cmd, "-dtb",
                             vm->ker_dtb, NULL);
@@ -874,34 +874,6 @@ vm_add(unsigned int gid, const char *oid, const char *value,
     vm->guest_ssh_port = guest_ssh_port;
     vm->rcf_port = vm_alloc_tcp_port();
 
-    vm->kernel = strdup("");
-    if (vm->kernel == NULL)
-    {
-        vm_free(vm);
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-
-    vm->ker_cmd = strdup("");
-    if (vm->ker_cmd == NULL)
-    {
-        vm_free(vm);
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-
-    vm->ker_initrd = strdup("");
-    if (vm->ker_initrd == NULL)
-    {
-        vm_free(vm);
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-
-    vm->ker_dtb = strdup("");
-    if (vm->ker_dtb == NULL)
-    {
-        vm_free(vm);
-        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    }
-
     vm->pid = -1;
 
     SLIST_INSERT_HEAD(&vms, vm, links);
@@ -964,6 +936,9 @@ vm_qemu_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
 
     ENTRY("%s", vm_name);
+
+    if (te_str_is_null_or_empty(value))
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     vm = vm_find(vm_name);
     if (vm == NULL)
@@ -1184,6 +1159,9 @@ vm_machine_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
 
     ENTRY("%s", vm_name);
+
+    if (te_str_is_null_or_empty(value))
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
     vm = vm_find(vm_name);
     if (vm == NULL)

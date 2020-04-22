@@ -100,7 +100,9 @@ extern te_errno get_dir_list(const char *path, char *buffer, size_t length,
 
 /**
  * Replace the given string by another string given
- * allocated from heap.
+ * allocated from heap. Treat @p src with value @c NULL or
+ * pointing to an empty string equally and replace @p dst
+ * with @c NULL in this case.
  *
  * @param dst    String to be replaced.
  * @param src    Replacement string.
