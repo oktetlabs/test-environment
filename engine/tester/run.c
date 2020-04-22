@@ -629,7 +629,12 @@ persons_info_to_json(const persons_info *persons)
 
     TAILQ_FOREACH(p, persons, links)
     {
-        item = json_pack("{s:s* s:s*}",
+        /*
+         * "*" instead of "?" would be better here, but it's not supported in
+         * jansson-2.10, which is currently the newest version available on
+         * CentOS/RHEL-7.x
+         */
+        item = json_pack("{s:s? s:s?}",
                          "name",  p->name,
                          "email", p->mailto);
         if (item != NULL)
@@ -1036,7 +1041,12 @@ log_test_start(unsigned int flags,
         }                                                     \
     } while (0)
 
-    result = json_pack("{s:i, s:i, s:o*}",
+    /*
+     * "*" instead of "?" would be better here, but it's not supported in
+     * jansson-2.10, which is currently the newest version available on
+     * CentOS/RHEL-7.x
+     */
+    result = json_pack("{s:i, s:i, s:o?}",
                        "id", test,
                        "parent", parent,
                        "params", test_params_to_json(ri->n_args, ctx->args));
@@ -1163,7 +1173,12 @@ log_test_result(test_id parent, test_id test, te_test_status status,
 {
     json_t      *result;
 
-    result = json_pack("{s:i, s:i, s:s, s:s*}",
+    /*
+     * "*" instead of "?" would be better here, but it's not supported in
+     * jansson-2.10, which is currently the newest version available on
+     * CentOS/RHEL-7.x
+     */
+    result = json_pack("{s:i, s:i, s:s, s:s?}",
                        "id", test,
                        "parent", parent,
                        "status", te_test_status_to_str(status),
