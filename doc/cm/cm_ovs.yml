@@ -23,6 +23,16 @@
          Name:  none
          Value: none
 
+    - oid: "/agent/ovs/other_config"
+      access: read_create
+      type: string
+      d: |
+         Open vSwitch additional configuration.
+         Must be set before "/agent/ovs/status".
+
+         Name:  config name
+         Value: its value
+
     - oid: "/agent/ovs/dpdk_init"
       access: read_write
       type: integer

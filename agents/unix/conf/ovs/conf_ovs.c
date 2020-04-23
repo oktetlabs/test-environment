@@ -34,6 +34,7 @@
 #include "te_sleep.h"
 #include "te_str.h"
 #include "te_string.h"
+#include "te_kvpair.h"
 
 #include "agentlib.h"
 #include "logger_api.h"
@@ -98,6 +99,7 @@ typedef SLIST_HEAD(bridge_list_t, bridge_entry) bridge_list_t;
 
 typedef struct ovs_ctx_s {
     te_bool           dpdk_init;
+    te_kvpair_h       other_cfg;
 
     te_string         root_path;
     te_string         conf_db_lock_path;
@@ -108,7 +110,7 @@ typedef struct ovs_ctx_s {
     te_string         dbserver_cmd;
     te_string         vswitchd_cmd;
     te_string         vlog_list_cmd;
-    te_string         dpdk_init_cmd;
+    te_string         ovs_cfg_cmd;
 
     pid_t             dbserver_pid;
     pid_t             vswitchd_pid;
@@ -122,6 +124,7 @@ typedef struct ovs_ctx_s {
 
 static ovs_ctx_t ovs_ctx = {
     .dpdk_init = FALSE,
+    .other_cfg = TAILQ_HEAD_INITIALIZER(ovs_ctx.other_cfg),
 
     .root_path = TE_STRING_INIT,
     .conf_db_lock_path = TE_STRING_INIT,
@@ -132,7 +135,7 @@ static ovs_ctx_t ovs_ctx = {
     .dbserver_cmd = TE_STRING_INIT,
     .vswitchd_cmd = TE_STRING_INIT,
     .vlog_list_cmd = TE_STRING_INIT,
-    .dpdk_init_cmd = TE_STRING_INIT,
+    .ovs_cfg_cmd = TE_STRING_INIT,
 
     .dbserver_pid = -1,
     .vswitchd_pid = -1,
@@ -151,6 +154,11 @@ static const char *interface_types[] = { "system", "internal", "dpdk",
                                          "dpdkvhostuserclient", NULL };
 
 static const char *bridge_datapath_types[] = { "system", "netdev", NULL };
+
+static const char *other_config_types[] = {
+    "dpdk-alloc-mem", "dpdk-socket-mem", "dpdk-lcore-mask",
+    "dpdk-hugepage-dir", "dpdk-socket-limit", "dpdk-extra", NULL
+};
 
 static ovs_ctx_t *
 ovs_ctx_get(const char *ovs)
@@ -1376,13 +1384,61 @@ done:
 }
 
 static te_errno
-ovs_vswitchd_start(ovs_ctx_t *ctx)
+ovs_shell_cmd_wait(const char *cmd)
+{
+    pid_t pid;
+
+    pid = te_shell_cmd(cmd, -1, NULL, NULL, NULL);
+    if (pid < 0)
+    {
+        ERROR("Failed to invoke '%s'", cmd);
+        return TE_ECHILD;
+    }
+
+    if (ta_waitpid(pid, NULL, 0) < 0)
+    {
+        ERROR("Failed to wait '%s'", cmd);
+        return TE_ECHILD;
+    }
+
+    return 0;
+}
+
+static te_errno
+ovs_dpdk_configure_other_cfg(const ovs_ctx_t *ctx)
+{
+    te_kvpair *p;
+    te_errno rc;
+
+    TAILQ_FOREACH(p, &ctx->other_cfg, links)
+    {
+        te_string cfg = TE_STRING_INIT;
+
+        rc = te_string_append(&cfg, "%sother_config:%s='%s'",
+                              ctx->ovs_cfg_cmd.ptr, p->key, p->value);
+        if (rc != 0)
+        {
+            ERROR("Failed to create config command");
+            return rc;
+        }
+
+        rc = ovs_shell_cmd_wait(cfg.ptr);
+        te_string_free(&cfg);
+        if (rc != 0)
+            return rc;
+    }
+
+    return 0;
+}
+
+static te_errno
+ovs_configure(ovs_ctx_t *ctx)
 {
     te_string dpdk_init = TE_STRING_INIT;
     te_errno rc;
-    pid_t pid;
 
-    rc = te_string_append(&dpdk_init, "%s%s", ctx->dpdk_init_cmd.ptr,
+    rc = te_string_append(&dpdk_init, "%sother_config:dpdk-init=%s",
+                          ctx->ovs_cfg_cmd.ptr,
                           ctx->dpdk_init ? "true" : "false");
     if (rc != 0)
     {
@@ -1390,19 +1446,24 @@ ovs_vswitchd_start(ovs_ctx_t *ctx)
         return TE_EINVAL;
     }
 
-    pid = te_shell_cmd(dpdk_init.ptr, -1, NULL, NULL, NULL);
+    rc = ovs_shell_cmd_wait(dpdk_init.ptr);
     te_string_free(&dpdk_init);
-    if (pid < 0)
-    {
-        ERROR("Failed to invoke ovs-vsctl to set dpdk init");
-        return TE_ECHILD;
-    }
 
-    if (ta_waitpid(pid, NULL, 0) < 0)
-    {
-        ERROR("Failed to wait for set dpdk init command to finish");
-        return TE_ECHILD;
-    }
+    if (rc != 0)
+        return rc;
+
+    return ovs_dpdk_configure_other_cfg(ctx);
+}
+
+static te_errno
+ovs_vswitchd_start(ovs_ctx_t *ctx)
+{
+    te_errno rc;
+
+    /* Configure OVS before starting switch daemon */
+    rc = ovs_configure(ctx);
+    if (rc != 0)
+        return rc;
 
     INFO("Starting the switch daemon");
 
@@ -1700,6 +1761,152 @@ ovs_dpdk_init_set(unsigned int  gid,
     ctx->dpdk_init = enable;
 
     return 0;
+}
+
+static te_errno
+ovs_other_config_add(unsigned int  gid,
+                     const char   *oid,
+                     const char   *value,
+                     const char   *ovs,
+                     const char   *name)
+{
+    ovs_ctx_t       *ctx;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    INFO("Adding the OVS other_config entry '%s'", name);
+
+    ctx = ovs_ctx_get(ovs);
+    if (ctx == NULL)
+    {
+        ERROR("Failed to find the facility context");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (name[0] == '\0' || value[0] == '\0')
+    {
+        ERROR("The OVS other config name or value is empty");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    if (!ovs_value_is_valid(other_config_types, name))
+    {
+        ERROR("Invalid other config entry");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    return te_kvpair_add(&ctx->other_cfg, name, "%s", value);
+}
+
+static te_errno
+ovs_other_config_del(unsigned int  gid,
+                     const char   *oid,
+                     const char   *ovs,
+                     const char   *name)
+{
+    ovs_ctx_t       *ctx;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ovs);
+
+    INFO("Removing the other_config '%s'", name);
+
+    ctx = ovs_ctx_get(ovs);
+    if (ctx == NULL)
+    {
+        ERROR("Failed to find the facility context");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    return te_kvpairs_del(&ctx->other_cfg, name);
+}
+
+static te_errno
+ovs_other_config_get(unsigned int  gid,
+                     const char   *oid,
+                     char         *value,
+                     const char   *ovs,
+                     const char   *name)
+{
+    ovs_ctx_t       *ctx;
+    const char *cfg;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(ovs);
+
+    INFO("Querying the type of the other_config '%s'", name);
+
+    ctx = ovs_ctx_get(ovs);
+    if (ctx == NULL)
+    {
+        ERROR("Failed to find the facility context");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    cfg = te_kvpairs_get(&ctx->other_cfg, name);
+    if (cfg == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    te_strlcpy(value, cfg, RCF_MAX_VAL);
+
+    return 0;
+}
+
+static te_errno
+ovs_other_config_list(unsigned int   gid,
+                      const char    *oid_str,
+                      const char    *sub_id,
+                      char         **list)
+{
+    te_string        list_container = TE_STRING_INIT;
+    te_errno         rc = 0;
+    cfg_oid         *oid;
+    const char      *ovs;
+    ovs_ctx_t       *ctx;
+    te_kvpair *p;
+
+    UNUSED(gid);
+    UNUSED(sub_id);
+
+    INFO("Constructing the list of other_config entries");
+
+    oid = cfg_convert_oid_str(oid_str);
+    if (oid == NULL)
+    {
+        ERROR("Failed to convert the OID string to native OID handle");
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    ovs = CFG_OID_GET_INST_NAME(oid, 2);
+
+    ctx = ovs_ctx_get(ovs);
+    if (ctx == NULL)
+    {
+        ERROR("Failed to find the facility context");
+        rc = TE_ENOENT;
+        goto out;
+    }
+
+    TAILQ_FOREACH(p, &ctx->other_cfg, links)
+    {
+        rc = te_string_append(&list_container, "%s ", p->key);
+        if (rc != 0)
+        {
+            ERROR("Failed to construct the list");
+            te_string_free(&list_container);
+            goto out;
+        }
+    }
+
+    *list = list_container.ptr;
+
+out:
+    cfg_free_oid(oid);
+
+    return TE_RC(TE_TA_UNIX, rc);
 }
 
 static log_module_t *
@@ -3060,8 +3267,14 @@ static rcf_pch_cfg_object node_ovs_log = {
 RCF_PCH_CFG_NODE_RW(node_ovs_status, "status",
                     NULL, &node_ovs_log, ovs_status_get, ovs_status_set);
 
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_other_config, "other_config",
+                               NULL, &node_ovs_status,
+                               ovs_other_config_get, NULL,
+                               ovs_other_config_add, ovs_other_config_del,
+                               ovs_other_config_list, NULL);
+
 RCF_PCH_CFG_NODE_RW(node_ovs_dpdk_init, "dpdk_init",
-                    NULL, &node_ovs_status,
+                    NULL, &node_ovs_other_config,
                     ovs_dpdk_init_get, ovs_dpdk_init_set);
 
 RCF_PCH_CFG_NODE_NA(node_ovs, "ovs", &node_ovs_dpdk_init, NULL);
@@ -3071,7 +3284,8 @@ ovs_cleanup_static_ctx(void)
 {
     INFO("Clearing the facility static context");
 
-    te_string_free(&ovs_ctx.dpdk_init_cmd);
+    te_kvpair_fini(&ovs_ctx.other_cfg);
+    te_string_free(&ovs_ctx.ovs_cfg_cmd);
     te_string_free(&ovs_ctx.vlog_list_cmd);
     te_string_free(&ovs_ctx.vswitchd_cmd);
     te_string_free(&ovs_ctx.dbserver_cmd);
@@ -3129,9 +3343,9 @@ ta_unix_conf_ovs_init(void)
     if (rc != 0)
         goto fail;
 
-    rc = te_string_append(&ovs_ctx.dpdk_init_cmd,
-            "%s ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-init=",
-            ovs_ctx.env.ptr);
+    rc = te_string_append(&ovs_ctx.ovs_cfg_cmd,
+                          "%s ovs-vsctl --no-wait set Open_vSwitch . ",
+                          ovs_ctx.env.ptr);
 
     if (rc == 0)
         return rcf_pch_add_node("/agent", &node_ovs);
