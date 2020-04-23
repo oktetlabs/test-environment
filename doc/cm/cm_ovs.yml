@@ -23,6 +23,16 @@
          Name:  none
          Value: none
 
+    - oid: "/agent/ovs/dpdk_init"
+      access: read_write
+      type: integer
+      d: |
+         Open vSwitch DPDK initialization toggle.
+         Must be set before "/agent/ovs/status".
+
+         Name:  none
+         Value: 0, 1
+
     - oid: "/agent/ovs/status"
       access: read_write
       type: integer
@@ -65,12 +75,12 @@
                 bridge local interface. The instance name will match that of the
                 bridge, and none of the settings will be amenable to adjustments.
 
-         @todo  Add support for "dpdk", "tap", "geneve", "gre" and "vxlan" interface types
+         @todo  Add support for "tap", "geneve", "gre" and "vxlan" interface types
          @todo  Add DPDK-specific interface status indicators (resource limits)
          @todo  Add interface statistics subtree
 
          Name:  interface name
-         Value: "system", "internal"
+         Value: "system", "internal", "dpdk", "dpdkvhostuserclient"
 
     - oid: "/agent/ovs/interface/mac"
       access: read_write
@@ -120,6 +130,26 @@
 
          Name:  none
          Value: 0, 1
+
+    - oid: "/agent/ovs/interface/dpdk_devargs"
+      access: read_write
+      type: string
+      d: |
+         Open vSwitch interface DPDK port device arguments.
+         Applicable only to "dpdk" interface.
+
+         Name:  none
+         Value: Device arguments as specified by DPDK device driver
+
+    - oid: "/agent/ovs/interface/vhost_server_path"
+      access: read_write
+      type: string
+      d: |
+         Path to vHost server Unix socket.
+         Applicable only to "dpdkvhostuserclient" interface.
+
+         Name:  none
+         Value: Path to the server socket
 
     - oid: "/agent/ovs/bridge"
       access: read_create

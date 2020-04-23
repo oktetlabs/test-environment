@@ -69,6 +69,9 @@ typedef struct interface_entry {
 
     te_bool                       mtu_requested;
     char                         *mtu_request;
+
+    char                         *dpdk_devargs;
+    char                         *vhost_server_path;
 } interface_entry;
 
 typedef SLIST_HEAD(interface_list_t, interface_entry) interface_list_t;
@@ -94,6 +97,8 @@ typedef struct bridge_entry {
 typedef SLIST_HEAD(bridge_list_t, bridge_entry) bridge_list_t;
 
 typedef struct ovs_ctx_s {
+    te_bool           dpdk_init;
+
     te_string         root_path;
     te_string         conf_db_lock_path;
     te_string         conf_db_path;
@@ -103,6 +108,7 @@ typedef struct ovs_ctx_s {
     te_string         dbserver_cmd;
     te_string         vswitchd_cmd;
     te_string         vlog_list_cmd;
+    te_string         dpdk_init_cmd;
 
     pid_t             dbserver_pid;
     pid_t             vswitchd_pid;
@@ -115,6 +121,8 @@ typedef struct ovs_ctx_s {
 } ovs_ctx_t;
 
 static ovs_ctx_t ovs_ctx = {
+    .dpdk_init = FALSE,
+
     .root_path = TE_STRING_INIT,
     .conf_db_lock_path = TE_STRING_INIT,
     .conf_db_path = TE_STRING_INIT,
@@ -124,6 +132,7 @@ static ovs_ctx_t ovs_ctx = {
     .dbserver_cmd = TE_STRING_INIT,
     .vswitchd_cmd = TE_STRING_INIT,
     .vlog_list_cmd = TE_STRING_INIT,
+    .dpdk_init_cmd = TE_STRING_INIT,
 
     .dbserver_pid = -1,
     .vswitchd_pid = -1,
@@ -138,7 +147,8 @@ static ovs_ctx_t ovs_ctx = {
 static const char *log_levels[] = { "EMER", "ERR", "WARN",
                                     "INFO", "DBG", NULL };
 
-static const char *interface_types[] = { "system", "internal", NULL };
+static const char *interface_types[] = { "system", "internal", "dpdk",
+                                         "dpdkvhostuserclient", NULL };
 
 static const char *bridge_datapath_types[] = { "system", "netdev", NULL };
 
@@ -457,6 +467,8 @@ ovs_interface_free(interface_entry *interface)
 {
     INFO("Freeing the interface list entry for '%s'", interface->name);
 
+    free(interface->vhost_server_path);
+    free(interface->dpdk_devargs);
     free(interface->mtu_request);
     free(interface->ofport_request);
     free(interface->mac_request);
@@ -629,8 +641,63 @@ ovs_interface_check_error(ovs_ctx_t        *ctx,
 }
 
 static te_errno
+ovs_check_dpdk_init(ovs_ctx_t *ctx, const char *requestor)
+{
+    if (!ctx->dpdk_init)
+    {
+        ERROR("%s requires initialized DPDK", requestor);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    return 0;
+}
+
+static te_errno
+ovs_cmd_vsctl_append_if_dpdk(interface_entry   *interface,
+                                    te_string  *cmdp,
+                                    ovs_ctx_t  *ctx)
+{
+    te_errno rc;
+
+    rc = ovs_check_dpdk_init(ctx, "dpdk interface");
+    if (rc != 0)
+        return rc;
+
+    if (interface->dpdk_devargs == NULL)
+    {
+        ERROR("dpdk_devargs is required option for dpdk interface type");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    return te_string_append(cmdp, " options:dpdk-devargs=%s",
+                            interface->dpdk_devargs);
+}
+
+static te_errno
+ovs_cmd_vsctl_append_if_dpdkvhostuserclient(interface_entry *interface,
+                                            te_string       *cmdp,
+                                            ovs_ctx_t       *ctx)
+{
+    te_errno rc;
+
+    rc = ovs_check_dpdk_init(ctx, "dpdkvhostuserclient interface");
+    if (rc != 0)
+        return rc;
+
+    if (interface->vhost_server_path == NULL)
+    {
+        ERROR("vhost_server_path is required for dpdkvhostuserclient interface");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    return te_string_append(cmdp, " options:vhost-server-path=%s",
+                            interface->vhost_server_path);
+}
+
+static te_errno
 ovs_cmd_vsctl_append_interface_arguments(interface_entry *interface,
-                                         te_string       *cmdp)
+                                         te_string       *cmdp,
+                                         ovs_ctx_t       *ctx)
 {
     te_errno rc;
 
@@ -642,6 +709,18 @@ ovs_cmd_vsctl_append_interface_arguments(interface_entry *interface,
     if (rc != 0)
     {
         ERROR("Failed to append the type argument");
+        return rc;
+    }
+
+    rc = 0;
+    if (strcmp(interface->type, "dpdk") == 0)
+        rc = ovs_cmd_vsctl_append_if_dpdk(interface, cmdp, ctx);
+    else if (strcmp(interface->type, "dpdkvhostuserclient") == 0)
+        rc = ovs_cmd_vsctl_append_if_dpdkvhostuserclient(interface, cmdp, ctx);
+
+    if (rc != 0)
+    {
+        ERROR("Failed to append the interface type-specific arguments");
         return rc;
     }
 
@@ -774,7 +853,7 @@ ovs_bridge_port_activate(ovs_ctx_t  *ctx,
 
     SLIST_FOREACH(interface, &port->interfaces, port_links)
     {
-        rc = ovs_cmd_vsctl_append_interface_arguments(interface, &cmd);
+        rc = ovs_cmd_vsctl_append_interface_arguments(interface, &cmd, ctx);
         if (rc != 0)
         {
             ERROR("Failed to append interface-specific arguments to "
@@ -1039,7 +1118,7 @@ ovs_bridge_activate(ovs_ctx_t    *ctx,
         goto out;
     }
 
-    rc = ovs_cmd_vsctl_append_interface_arguments(bridge->interface, &cmd);
+    rc = ovs_cmd_vsctl_append_interface_arguments(bridge->interface, &cmd, ctx);
     if (rc != 0)
     {
         ERROR("Failed to append interface-specific arguments to "
@@ -1299,6 +1378,32 @@ done:
 static te_errno
 ovs_vswitchd_start(ovs_ctx_t *ctx)
 {
+    te_string dpdk_init = TE_STRING_INIT;
+    te_errno rc;
+    pid_t pid;
+
+    rc = te_string_append(&dpdk_init, "%s%s", ctx->dpdk_init_cmd.ptr,
+                          ctx->dpdk_init ? "true" : "false");
+    if (rc != 0)
+    {
+        ERROR("Failed to create dpdk_init command");
+        return TE_EINVAL;
+    }
+
+    pid = te_shell_cmd(dpdk_init.ptr, -1, NULL, NULL, NULL);
+    te_string_free(&dpdk_init);
+    if (pid < 0)
+    {
+        ERROR("Failed to invoke ovs-vsctl to set dpdk init");
+        return TE_ECHILD;
+    }
+
+    if (ta_waitpid(pid, NULL, 0) < 0)
+    {
+        ERROR("Failed to wait for set dpdk init command to finish");
+        return TE_ECHILD;
+    }
+
     INFO("Starting the switch daemon");
 
     ctx->vswitchd_pid = te_shell_cmd(ctx->vswitchd_cmd.ptr,
@@ -1397,6 +1502,14 @@ ovs_start(ovs_ctx_t *ctx)
     if (rc != 0)
     {
         ERROR("Failed to check the database server responsiveness");
+        ovs_dbserver_stop(ctx);
+        return rc;
+    }
+
+    rc = ovs_await_resource(ctx, "db.sock");
+    if (rc != 0)
+    {
+        ERROR("Failed to check the database socket presence");
         ovs_dbserver_stop(ctx);
         return rc;
     }
@@ -1531,6 +1644,62 @@ ovs_status_set(unsigned int  gid,
 
 out:
     return TE_RC(TE_TA_UNIX, rc);
+}
+
+static te_errno
+ovs_dpdk_init_get(unsigned int  gid,
+                  const char   *oid,
+                  char         *value,
+                  const char   *ovs)
+{
+    ovs_ctx_t *ctx;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ctx = ovs_ctx_get(ovs);
+    if (ctx == NULL)
+    {
+        ERROR("Failed to find the facility context");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    snprintf(value, RCF_MAX_VAL, "%d", ctx->dpdk_init);
+
+    return 0;
+}
+
+static te_errno
+ovs_dpdk_init_set(unsigned int  gid,
+                  const char   *oid,
+                  const char   *value,
+                  const char   *ovs)
+{
+    te_bool    enable = !!atoi(value);
+    ovs_ctx_t *ctx;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ctx = ovs_ctx_get(ovs);
+    if (ctx == NULL)
+    {
+        ERROR("Failed to find the facility context");
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    if (enable == ctx->dpdk_init)
+        return 0;
+
+    if (ovs_is_running(ctx))
+    {
+        ERROR("The facility is in use, cannot change dpdk_init");
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
+    }
+
+    ctx->dpdk_init = enable;
+
+    return 0;
 }
 
 static log_module_t *
@@ -1823,6 +1992,106 @@ ovs_interface_link_state_get(unsigned int  gid,
     value[1] = '\0';
 
     return 0;
+}
+
+static te_errno
+ovs_interface_dpdk_devargs_get(unsigned int  gid,
+                               const char   *oid,
+                               char         *value,
+                               const char   *ovs,
+                               const char   *interface_name)
+{
+    interface_entry *interface;
+    ovs_ctx_t       *ctx;
+    te_errno         rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the interface entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    te_strlcpy(value, te_str_empty_if_null(interface->dpdk_devargs),
+               RCF_MAX_VAL);
+
+    return 0;
+}
+
+static te_errno
+ovs_interface_dpdk_devargs_set(unsigned int  gid,
+                               const char   *oid,
+                               const char   *value,
+                               const char   *ovs,
+                               const char   *interface_name)
+{
+    interface_entry *interface;
+    te_errno         rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ovs_interface_pick(ovs, interface_name, TRUE, NULL, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the interface entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    return string_replace(&interface->dpdk_devargs, value);
+}
+
+static te_errno
+ovs_interface_vhost_server_path_get(unsigned int  gid,
+                                    const char   *oid,
+                                    char         *value,
+                                    const char   *ovs,
+                                    const char   *interface_name)
+{
+    interface_entry *interface;
+    ovs_ctx_t       *ctx;
+    te_errno         rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the interface entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    te_strlcpy(value, te_str_empty_if_null(interface->vhost_server_path),
+               RCF_MAX_VAL);
+
+    return 0;
+}
+
+static te_errno
+ovs_interface_vhost_server_path_set(unsigned int  gid,
+                                    const char   *oid,
+                                    const char   *value,
+                                    const char   *ovs,
+                                    const char   *interface_name)
+{
+    interface_entry *interface;
+    te_errno         rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ovs_interface_pick(ovs, interface_name, TRUE, NULL, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the interface entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    return string_replace(&interface->vhost_server_path, value);
 }
 
 static te_errno
@@ -2750,8 +3019,18 @@ RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_bridge, "bridge",
                                ovs_bridge_add, ovs_bridge_del,
                                ovs_bridge_list, NULL);
 
-RCF_PCH_CFG_NODE_RW(node_ovs_interface_link_state, "link_state",
+RCF_PCH_CFG_NODE_RW(node_ovs_interface_dpdk_devargs, "dpdk_devargs",
                     NULL, NULL,
+                    ovs_interface_dpdk_devargs_get,
+                    ovs_interface_dpdk_devargs_set);
+
+RCF_PCH_CFG_NODE_RW(node_ovs_interface_vhost_server_path, "vhost_server_path",
+                    NULL, &node_ovs_interface_dpdk_devargs,
+                    ovs_interface_vhost_server_path_get,
+                    ovs_interface_vhost_server_path_set);
+
+RCF_PCH_CFG_NODE_RW(node_ovs_interface_link_state, "link_state",
+                    NULL, &node_ovs_interface_vhost_server_path,
                     ovs_interface_link_state_get, NULL);
 
 RCF_PCH_CFG_NODE_RW(node_ovs_interface_mtu, "mtu",
@@ -2781,13 +3060,18 @@ static rcf_pch_cfg_object node_ovs_log = {
 RCF_PCH_CFG_NODE_RW(node_ovs_status, "status",
                     NULL, &node_ovs_log, ovs_status_get, ovs_status_set);
 
-RCF_PCH_CFG_NODE_NA(node_ovs, "ovs", &node_ovs_status, NULL);
+RCF_PCH_CFG_NODE_RW(node_ovs_dpdk_init, "dpdk_init",
+                    NULL, &node_ovs_status,
+                    ovs_dpdk_init_get, ovs_dpdk_init_set);
+
+RCF_PCH_CFG_NODE_NA(node_ovs, "ovs", &node_ovs_dpdk_init, NULL);
 
 static void
 ovs_cleanup_static_ctx(void)
 {
     INFO("Clearing the facility static context");
 
+    te_string_free(&ovs_ctx.dpdk_init_cmd);
     te_string_free(&ovs_ctx.vlog_list_cmd);
     te_string_free(&ovs_ctx.vswitchd_cmd);
     te_string_free(&ovs_ctx.dbserver_cmd);
@@ -2819,8 +3103,8 @@ ta_unix_conf_ovs_init(void)
         goto fail;
 
     rc = te_string_append(&ovs_ctx.env,
-                          "OVS_RUNDIR=%s OVS_DBDIR=%s OVS_PKGDATADIR=%s",
-                          ta_dir, ta_dir, ta_dir);
+            "PATH=\"%s:${PATH}\" OVS_RUNDIR=%s OVS_DBDIR=%s OVS_PKGDATADIR=%s",
+            ta_dir, ta_dir, ta_dir, ta_dir);
     if (rc != 0)
         goto fail;
 
@@ -2842,6 +3126,12 @@ ta_unix_conf_ovs_init(void)
     rc = te_string_append(&ovs_ctx.vlog_list_cmd,
                           "%s ovs-appctl -t ovs-vswitchd "
                           "vlog/list | tail -n +3", ovs_ctx.env.ptr);
+    if (rc != 0)
+        goto fail;
+
+    rc = te_string_append(&ovs_ctx.dpdk_init_cmd,
+            "%s ovs-vsctl --no-wait set Open_vSwitch . other_config:dpdk-init=",
+            ovs_ctx.env.ptr);
 
     if (rc == 0)
         return rcf_pch_add_node("/agent", &node_ovs);
