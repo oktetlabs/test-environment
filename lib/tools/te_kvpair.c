@@ -37,6 +37,15 @@ te_kvpair_init(te_kvpair_h *head)
     TAILQ_INIT(head);
 }
 
+static void
+te_kvpair_remove(te_kvpair_h *head, te_kvpair *pair)
+{
+    TAILQ_REMOVE(head, pair, links);
+    free(pair->key);
+    free(pair->value);
+    free(pair);
+}
+
 /* See the description in te_kvpair.h */
 void
 te_kvpair_fini(te_kvpair_h *head)
@@ -47,12 +56,7 @@ te_kvpair_fini(te_kvpair_h *head)
         return;
 
     while ((p = TAILQ_FIRST(head)) != NULL)
-    {
-        TAILQ_REMOVE(head, p, links);
-        free(p->key);
-        free(p->value);
-        free(p);
-    }
+        te_kvpair_remove(head, p);
 }
 
 /* See the description in te_kvpair.h */
@@ -72,6 +76,28 @@ te_kvpairs_get(const te_kvpair_h *head, const char *key)
 
     return NULL;
 }
+
+/* See the description in te_kvpair.h */
+te_errno
+te_kvpairs_del(te_kvpair_h *head, const char *key)
+{
+    te_kvpair *p;
+
+    assert(head != NULL);
+    assert(key != NULL);
+
+    TAILQ_FOREACH(p, head, links)
+    {
+        if (strcmp(key, p->key) == 0)
+        {
+            te_kvpair_remove(head, p);
+            return 0;
+        }
+    }
+
+    return TE_ENOENT;
+}
+
 
 /* See the description in te_kvpair.h */
 te_errno

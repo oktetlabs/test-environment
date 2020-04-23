@@ -83,6 +83,17 @@ extern te_errno te_kvpair_add_va(te_kvpair_h *head, const char *key,
                                  const char *value_fmt, va_list ap);
 
 /**
+ * Remove key-value pair by key
+ *
+ * @param head          Head of the list
+ * @param key           Key of value
+ *
+ * @retval TE_ENOENT    No entry with such key
+ * @retval 0            Pair removed successfully
+ */
+extern te_errno te_kvpairs_del(te_kvpair_h *head, const char *key);
+
+/**
  * Get value associated with the @p key
  *
  * @param key    Key of required value
