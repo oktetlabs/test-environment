@@ -114,6 +114,13 @@
          RAM size in megabytes. Default is 256M.
          Name: None
 
+    - oid: "/agent/vm/mem/path"
+      access: read_write
+      type: string
+      d: |
+         Path to memory backend filesystem, e.g. "/dev/hugepages"
+         Name: None
+
     - oid: "/agent/vm/device"
       access: read_create
       type: string
@@ -183,6 +190,28 @@
       d: |
         Device tree binary (dtb) image to be passed to the kernel on boot.
 
+    - oid: "/agent/vm/chardev"
+      access: read_create
+      type: none
+      d: |
+         Virtual machine character devices configuration.
+         Only Unix socket backend is supported yet.
+         Name: character device name
+
+    - oid: "/agent/vm/chardev/path"
+      access: read_write
+      type: string
+      d: |
+         Path to Unix socket
+         Name: None
+
+    - oid: "/agent/vm/chardev/server"
+      access: read_write
+      type: integer
+      d: |
+         true - server mode, false - client mode, default is false
+         Name: None
+
     - oid: "/agent/vm/net"
       access: read_create
       type: none
@@ -205,7 +234,7 @@
          Type specific configuration.
           - nic: model
           - tap: file descriptor (if a number) or TAP interface name
-          - vhost-user: unix domain socket
+          - vhost-user: name of character device with Unix domain socket backend
          Name: None
 
     - oid: "/agent/vm/net/bus_addr"

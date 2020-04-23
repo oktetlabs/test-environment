@@ -60,6 +60,13 @@ struct vm_drive_entry {
     te_bool                         cdrom;
 };
 
+struct vm_chardev_entry {
+    SLIST_ENTRY(vm_chardev_entry)   links;
+    char                           *name;
+    char                           *path;
+    te_bool                         server;
+};
+
 struct vm_net_entry {
     SLIST_ENTRY(vm_net_entry)   links;
     char                       *name;
@@ -81,6 +88,7 @@ struct vm_device_entry {
 };
 
 
+typedef SLIST_HEAD(vm_chardev_list_t, vm_chardev_entry) vm_chardev_list_t;
 typedef SLIST_HEAD(vm_net_list_t, vm_net_entry) vm_net_list_t;
 typedef SLIST_HEAD(vm_drive_list_t, vm_drive_entry) vm_drive_list_t;
 typedef SLIST_HEAD(vm_pci_pt_list_t, vm_pci_pt_entry) vm_pci_pt_list_t;
@@ -97,8 +105,10 @@ struct vm_entry {
     uint16_t                rcf_port;
     vm_cpu                  cpu;
     unsigned int            mem_size;
+    char                   *mem_path;
     te_string               cmd;
     pid_t                   pid;
+    vm_chardev_list_t       chardevs;
     vm_net_list_t           nets;
     vm_drive_list_t         drives;
     vm_pci_pt_list_t        pci_pts;
@@ -109,6 +119,8 @@ struct vm_entry {
     char                   *ker_dtb;
 };
 
+static struct vm_chardev_entry * vm_chardev_find(const struct vm_entry *vm,
+                                                 const char *name);
 
 static SLIST_HEAD(, vm_entry) vms = SLIST_HEAD_INITIALIZER(vms);
 
@@ -206,7 +218,119 @@ exit:
 }
 
 static te_errno
-vm_append_net_interfaces_cmd(te_string *cmd, vm_net_list_t *nets)
+vm_append_vhost_user_interface_cmd(te_string *cmd, struct vm_net_entry *net,
+                                   unsigned int interface_id,
+                                   const struct vm_entry *vm)
+{
+    te_string netdev = TE_STRING_INIT;
+    te_string device = TE_STRING_INIT;
+    struct vm_chardev_entry *chardev;
+    te_errno rc = 0;
+
+    if (net->type_spec == NULL)
+    {
+        ERROR("Attribute type_spec is required for vhost-user net interface");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    chardev = vm_chardev_find(vm, net->type_spec);
+    if (chardev == NULL)
+    {
+        ERROR("Failed to find chardev pointed to by vhost-user net interface");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    if (!chardev->server)
+        WARN("Probably vhost-user net interface expects server chardev");
+
+    if (vm->mem_path == NULL)
+    {
+        ERROR("Huge pages filesystem is required for vhost-user net interface");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    rc = te_string_append(&netdev,
+                          "type=vhost-user,id=netdev%u,chardev=%s,vhostforce",
+                          interface_id, net->type_spec);
+    if (rc != 0)
+    {
+        ERROR("Cannot compose VM netdev argument: %r", rc);
+        goto exit;
+    }
+
+    rc = vm_append_virtio_dev_cmd(&device, net->mac_addr, interface_id);
+    if (rc != 0)
+        goto exit;
+
+    rc = te_string_append_shell_args_as_is(cmd, "-netdev", netdev.ptr,
+                                           "-device", device.ptr, NULL);
+    if (rc != 0)
+    {
+        ERROR("Cannot compose VM net interface command line: %r", rc);
+        goto exit;
+    }
+
+exit:
+    te_string_free(&netdev);
+    te_string_free(&device);
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+static te_errno
+vm_append_chardevs_cmd(te_string *cmd, vm_chardev_list_t *chardevs)
+{
+    te_string chardev_args = TE_STRING_INIT;
+    struct vm_chardev_entry *chardev;
+    te_errno rc = 0;
+
+    SLIST_FOREACH(chardev, chardevs, links)
+    {
+        te_string chardev_arg = TE_STRING_INIT;
+
+        /* Only Unix socket backend for character devices is supported yet */
+        if (chardev->path == NULL)
+        {
+            ERROR("Unix socket character device must have path attribute");
+            rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+            goto exit;
+        }
+
+        rc = te_string_append(&chardev_arg, "socket,id=%s,path=%s%s",
+                              chardev->name, chardev->path,
+                              chardev->server ? ",server" : "");
+        if (rc != 0)
+        {
+            ERROR("Cannot compose VM chardev argument: %r", rc);
+            goto exit;
+        }
+
+        rc = te_string_append_shell_args_as_is(&chardev_args, "-chardev",
+                                               chardev_arg.ptr, NULL);
+        te_string_free(&chardev_arg);
+        if (rc != 0)
+        {
+            ERROR("Cannot compose VM character device list: %r", rc);
+            goto exit;
+        }
+    }
+
+    if (chardev_args.ptr != NULL)
+    {
+        rc = te_string_append(cmd, " %s", chardev_args.ptr);
+        if (rc != 0)
+            ERROR("Cannot append character device list to VM cmdline: %r", rc);
+    }
+
+exit:
+    te_string_free(&chardev_args);
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+static te_errno
+vm_append_net_interfaces_cmd(te_string *cmd, vm_net_list_t *nets,
+                             const struct vm_entry *vm)
 {
     te_string interface_args = TE_STRING_INIT;
     unsigned int interface_id = 0;
@@ -230,6 +354,11 @@ vm_append_net_interfaces_cmd(te_string *cmd, vm_net_list_t *nets)
         {
             rc = vm_append_tap_interface_cmd(&interface_args, net,
                                              interface_id, TRUE);
+        }
+        else if (strcmp(net->type, "vhost-user") == 0)
+        {
+            rc = vm_append_vhost_user_interface_cmd(&interface_args, net,
+                                                    interface_id, vm);
         }
         else
         {
@@ -443,6 +572,35 @@ exit:
 }
 
 static te_errno
+vm_append_mem_file_cmd(te_string *cmd, struct vm_entry *vm)
+{
+    te_string mem_file = TE_STRING_INIT;
+    te_errno rc;
+
+    if (vm->mem_size == 0)
+    {
+        ERROR("Memory size must be set to use memory file");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    /* Attribute 'share' is non configurable yet */
+    rc = te_string_append(&mem_file,
+                          "memory-backend-file,id=mem,size=%uM,"
+                          "mem-path=%s,share=on",
+                          vm->mem_size, vm->mem_path);
+    if (rc != 0)
+        ERROR("Failed to append memory file argument: %r", rc);
+
+    rc = te_string_append_shell_args_as_is(cmd, "-object", mem_file.ptr, NULL);
+    te_string_free(&mem_file);
+
+    if (rc != 0)
+        ERROR("Failed to append memory object argument: %r", rc);
+
+    return rc;
+}
+
+static te_errno
 vm_start(struct vm_entry *vm)
 {
     in_addr_t local_ip = htonl(INADDR_LOOPBACK);
@@ -551,7 +709,11 @@ vm_start(struct vm_entry *vm)
         goto exit;
     }
 
-    rc = vm_append_net_interfaces_cmd(&vm->cmd, &vm->nets);
+    rc = vm_append_chardevs_cmd(&vm->cmd, &vm->chardevs);
+    if (rc != 0)
+        goto exit;
+
+    rc = vm_append_net_interfaces_cmd(&vm->cmd, &vm->nets, vm);
     if (rc != 0)
         goto exit;
 
@@ -576,6 +738,22 @@ vm_start(struct vm_entry *vm)
     {
         ERROR("Cannot compose VM start command line (line %u)", __LINE__);
         goto exit;
+    }
+
+    if (vm->mem_path != NULL)
+    {
+        rc = vm_append_mem_file_cmd(&vm->cmd, vm);
+        if (rc != 0)
+            goto exit;
+
+        rc = te_string_append_shell_args_as_is(&vm->cmd, "-numa",
+                                               "node,memdev=mem",
+                                               "-mem-prealloc", NULL);
+        if (rc != 0)
+        {
+            ERROR("Failed to append additional arguments for memory object");
+            goto exit;
+        }
     }
 
     RING("VM %s command-line: %s", vm->name, vm->cmd.ptr);
@@ -615,6 +793,14 @@ vm_stop(struct vm_entry *vm)
  */
 
 static void
+vm_chardev_free(struct vm_chardev_entry *chardev)
+{
+    free(chardev->name);
+    free(chardev->path);
+    free(chardev);
+}
+
+static void
 vm_net_free(struct vm_net_entry *net)
 {
     free(net->name);
@@ -633,6 +819,23 @@ vm_net_find(const struct vm_entry *vm, const char *name)
         return NULL;
 
     SLIST_FOREACH(p, &vm->nets, links)
+    {
+        if (strcmp(name, p->name) == 0)
+            return p;
+    }
+
+    return NULL;
+}
+
+static struct vm_chardev_entry *
+vm_chardev_find(const struct vm_entry *vm, const char *name)
+{
+    struct vm_chardev_entry *p;
+
+    if (vm == NULL)
+        return NULL;
+
+    SLIST_FOREACH(p, &vm->chardevs, links)
     {
         if (strcmp(name, p->name) == 0)
             return p;
@@ -702,6 +905,7 @@ vm_free(struct vm_entry *vm)
     }
 
     te_string_free(&vm->cmd);
+    free(vm->mem_path);
     free(vm->machine);
     free(vm->qemu);
     free(vm->name);
@@ -1214,6 +1418,140 @@ vm_mem_size_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
+vm_mem_path_get(unsigned int gid, const char *oid, char *value,
+                const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    te_strlcpy(value, te_str_empty_if_null(vm->mem_path), RCF_MAX_VAL);
+
+    return 0;
+}
+
+static te_errno
+vm_mem_path_set(unsigned int gid, const char *oid, const char *value,
+                const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    return string_replace(&vm->mem_path, value);
+}
+
+static te_errno
+vm_chardev_add(unsigned int gid, const char *oid, const char *value,
+               const char *vm_name, const char *chardev_name)
+{
+    struct vm_entry *vm;
+    struct vm_chardev_entry *chardev;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+    if ((vm = vm_find(vm_name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    if (vm_chardev_find(vm, chardev_name) != NULL)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+
+    chardev = TE_ALLOC(sizeof(*chardev));
+    if (chardev == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    chardev->name = strdup(chardev_name);
+    if (chardev->name == NULL)
+    {
+        free(chardev);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    SLIST_INSERT_HEAD(&vm->chardevs, chardev, links);
+
+    return 0;
+}
+
+static te_errno
+vm_chardev_del(unsigned int gid, const char *oid,
+           const char *vm_name, const char *chardev_name)
+{
+    struct vm_entry *vm;
+    struct vm_chardev_entry *chardev;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    chardev = vm_chardev_find(vm, chardev_name);
+    if (chardev == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    SLIST_REMOVE(&vm->chardevs, chardev, vm_chardev_entry, links);
+
+    vm_chardev_free(chardev);
+
+    return 0;
+}
+
+static te_errno
+vm_chardev_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
+            const char *vm_name)
+{
+    te_string result = TE_STRING_INIT;
+    struct vm_entry *vm;
+    struct vm_chardev_entry *chardev;
+    te_bool first = TRUE;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    SLIST_FOREACH(chardev, &vm->chardevs, links)
+    {
+        rc = te_string_append(&result, "%s%s", first ? "" : " ", chardev->name);
+        first = FALSE;
+        if (rc != 0)
+        {
+            te_string_free(&result);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+    }
+
+    *list = result.ptr;
+    return 0;
+}
+
+static te_errno
 vm_net_add(unsigned int gid, const char *oid, const char *value,
            const char *vm_name, const char *net_name)
 {
@@ -1308,6 +1646,93 @@ vm_net_list(unsigned int gid, const char *oid, const char *sub_id, char **list,
 
     *list = result.ptr;
     return 0;
+}
+
+static te_errno
+vm_chardev_server_get(unsigned int gid, const char *oid, char *value,
+                      const char *vm_name, const char *chardev_name)
+{
+    struct vm_chardev_entry *chardev;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    chardev = vm_chardev_find(vm_find(vm_name), chardev_name);
+    if (chardev == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%d", chardev->server);
+
+    return 0;
+}
+
+static te_errno
+vm_chardev_server_set(unsigned int gid, const char *oid, const char *value,
+                      const char *vm_name, const char *chardev_name)
+{
+    struct vm_entry *vm;
+    struct vm_chardev_entry *chardev;
+    te_bool is_server = !!atoi(value);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    chardev = vm_chardev_find(vm, chardev_name);
+    if (chardev == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    chardev->server = is_server;
+
+    return 0;
+}
+
+static te_errno
+vm_chardev_path_get(unsigned int gid, const char *oid, char *value,
+                    const char *vm_name, const char *chardev_name)
+{
+    struct vm_chardev_entry *chardev;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    chardev = vm_chardev_find(vm_find(vm_name), chardev_name);
+    if (chardev == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    te_strlcpy(value, te_str_empty_if_null(chardev->path), RCF_MAX_VAL);
+
+    return 0;
+}
+
+static te_errno
+vm_chardev_path_set(unsigned int gid, const char *oid, const char *value,
+                    const char *vm_name, const char *chardev_name)
+{
+    struct vm_entry *vm;
+    struct vm_chardev_entry *chardev;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    chardev = vm_chardev_find(vm, chardev_name);
+    if (chardev == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return string_replace(&chardev->path, value);
 }
 
 static char **
@@ -2192,10 +2617,23 @@ RCF_PCH_CFG_NODE_COLLECTION(node_vm_net, "net", &node_vm_net_type,
                             &node_vm_kernel, vm_net_add, vm_net_del,
                             vm_net_list, NULL);
 
-RCF_PCH_CFG_NODE_RW(node_vm_mem_size, "size", NULL, NULL,
+RCF_PCH_CFG_NODE_RW(node_vm_chardev_server, "server", NULL, NULL,
+                    vm_chardev_server_get, vm_chardev_server_set);
+
+RCF_PCH_CFG_NODE_RW(node_vm_chardev_path, "path", NULL, &node_vm_chardev_server,
+                    vm_chardev_path_get, vm_chardev_path_set);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_vm_chardev, "chardev", &node_vm_chardev_path,
+                            &node_vm_net, vm_chardev_add, vm_chardev_del,
+                            vm_chardev_list, NULL);
+
+RCF_PCH_CFG_NODE_RW(node_vm_mem_path, "path", NULL, NULL,
+                    vm_mem_path_get, vm_mem_path_set);
+
+RCF_PCH_CFG_NODE_RW(node_vm_mem_size, "size", NULL, &node_vm_mem_path,
                     vm_mem_size_get, vm_mem_size_set);
 
-RCF_PCH_CFG_NODE_NA(node_vm_mem, "mem", &node_vm_mem_size, &node_vm_net);
+RCF_PCH_CFG_NODE_NA(node_vm_mem, "mem", &node_vm_mem_size, &node_vm_chardev);
 
 RCF_PCH_CFG_NODE_RW(node_vm_machine, "machine", NULL, &node_vm_mem,
                     vm_machine_get, vm_machine_set);
