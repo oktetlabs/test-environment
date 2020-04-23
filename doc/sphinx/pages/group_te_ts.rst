@@ -7,7 +7,7 @@ Test Suite
 .. toctree::
 	:hidden:
 
-	/generated/group_te_lib_tapi_conf_net.rst
+	group_te_lib_tapi_conf_net.rst
 	/generated/group_te_ts_tapi_test.rst
 	group_te_scenarios.rst
 

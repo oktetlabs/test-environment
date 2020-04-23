@@ -82,7 +82,7 @@ From the high level point of view TE consists of two main parts:
 
 The following picture shows high level decomposition of TE components:
 
-.. image:: hl-decomposition.png
+.. image:: /static/image/hl-decomposition.png
 	:alt: High Level Decomposition of Test Environment components
 
 There are several kinds of Test Agents (see the diagram below):
@@ -105,7 +105,7 @@ Apart from these three kinds of agents (or should they be called 'Test Agent usa
 
 The below diagram shows various scenarios and Test Agents locations.
 
-.. image:: te_agent_types.png
+.. image:: /static/image/te_agent_types.png
 	:alt: Stations and applications participating in the testing process
 
 TE subsystems and :ref:`Test Agents <doxid-group__te__agents>` are distributed among several applications running on different stations. Apart from other things :ref:`Test Engine <doxid-group__te__engine>` controls :ref:`Test Agents <doxid-group__te__agents>` by means of so-called :ref:`Test Protocol <doxid-group__te__engine__rcf_1te_engine_rcf_test_proto>`

@@ -1,9 +1,0 @@
-/**
-@defgroup tapi_tad_ipstack IP stack
-@ingroup tapi_tad_main
-@{
-
-Test API for IP stack CSAP.
-
-@} <!-- END tapi_tad_ipstack -->
-*/

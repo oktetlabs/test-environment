@@ -22,7 +22,7 @@ First thing that you need to take into account while writing :ref:`Remote Contro
 
 Suppose you need to test some communication API between two end-points (for example it could be Socket API) and you have the following network topology:
 
-.. image:: te_user_net_conf_rcf_sample1.png
+.. image:: /static/image/te_user_net_conf_rcf_sample1.png
 	:alt: Sample network topology
 
 You would like to test communication between end point pairs:
@@ -37,7 +37,7 @@ The API to be tested is the same on all platforms, which means we can use the sa
 
 For testing BSD vs Windows configuration we should use the following set-up:
 
-.. image:: te_user_net_conf_rcf_sample2.png
+.. image:: /static/image/te_user_net_conf_rcf_sample2.png
 	:alt: TE components location for testing BSD vs Windows configuration
 
 In this scenario :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` configuration file would look like:
@@ -62,7 +62,7 @@ Please note that we use the same :ref:`RCF UNIX Communication Library <doxid-gro
 
 For testing BSD vs Linux configuration we should use the following set-up:
 
-.. image:: te_user_net_conf_rcf_sample3.png
+.. image:: /static/image/te_user_net_conf_rcf_sample3.png
 	:alt: TE components location for testing BSD vs Linux configuration
 
 In this scenario :ref:`Remote Control Facility (RCF) <doxid-group__te__engine__rcf>` configuration file would look like:
