@@ -1253,19 +1253,21 @@ switch_agent_pci_fn_to_interface(cfg_net_t *net, cfg_net_node_t *node,
                                  void *cookie)
 {
     char interface_path[RCF_MAX_PATH];
+    enum net_node_type *type = cookie;
     char *interface = NULL;
     const char *agent;
     char *pci_path = NULL;
-    te_errno rc;
+    te_errno rc = 0;
 
-    UNUSED(cookie);
     UNUSED(net);
+
+    if (*type != NET_NODE_TYPE_INVALID && node->type != *type)
+        goto out;
 
     if (strcmp(cfg_oid_inst_subid(oid, 1), "agent") != 0 ||
         strcmp(cfg_oid_inst_subid(oid, 2), "hardware") != 0)
     {
         INFO("Network node '%s' is not a PCI function", oid_str);
-        rc = 0;
         goto out;
     }
 
@@ -1317,11 +1319,11 @@ out:
 
 /* See the description in tapi_cfg_net.h */
 te_errno
-tapi_cfg_net_nodes_update_pci_fn_to_interface(void)
+tapi_cfg_net_nodes_update_pci_fn_to_interface(enum net_node_type type)
 {
     te_errno rc;
 
-    rc = tapi_cfg_net_foreach_node(switch_agent_pci_fn_to_interface, NULL);
+    rc = tapi_cfg_net_foreach_node(switch_agent_pci_fn_to_interface, &type);
     if (rc != 0)
     {
         ERROR("Failed to configure interfaces mentioned in networks "
@@ -1333,24 +1335,27 @@ tapi_cfg_net_nodes_update_pci_fn_to_interface(void)
 
 /* See the description in tapi_cfg_net.h */
 te_errno
-tapi_cfg_net_nodes_switch_pci_fn_to_interface(void)
+tapi_cfg_net_nodes_switch_pci_fn_to_interface(enum net_node_type type)
 {
     te_errno rc;
+    enum net_node_type types[] = {NET_NODE_TYPE_AGENT, NET_NODE_TYPE_NUT};
+    unsigned int n_types = TE_ARRAY_LEN(types);
+    unsigned int i;
 
-    rc = tapi_cfg_net_bind_driver_by_node(NET_NODE_TYPE_AGENT,
-                                          NET_DRIVER_TYPE_NET);
-    if (rc != 0)
+    if (type != NET_NODE_TYPE_INVALID)
     {
-        ERROR("Failed to bind net driver on agent nodes: %r", rc);
-        return rc;
+        n_types = 1;
+        types[0] = type;
     }
 
-    rc = tapi_cfg_net_bind_driver_by_node(NET_NODE_TYPE_NUT,
-                                          NET_DRIVER_TYPE_NET);
-    if (rc != 0)
+    for (i = 0; i < n_types; i++)
     {
-        ERROR("Failed to bind net driver on NUT nodes: %r", rc);
-        return rc;
+        rc = tapi_cfg_net_bind_driver_by_node(types[i], NET_DRIVER_TYPE_NET);
+        if (rc != 0)
+        {
+            ERROR("Failed to bind net driver on network nodes: %r", rc);
+            return rc;
+        }
     }
 
     /*
@@ -1364,7 +1369,7 @@ tapi_cfg_net_nodes_switch_pci_fn_to_interface(void)
         return rc;
     }
 
-    return tapi_cfg_net_nodes_update_pci_fn_to_interface();
+    return tapi_cfg_net_nodes_update_pci_fn_to_interface(type);
 }
 
 
