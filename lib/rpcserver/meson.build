@@ -1,26 +1,28 @@
 # Copyright (C) 2018 OKTET Labs. All rights reserved.
 
+is_multi_build_library = true
+
 conf = configuration_data()
 
-rpcserver_agentlib = get_option('rpcserver-agentlib')
+rpcserver_agentlib = get_variable('opt-rpcserver-agentlib'.underscorify())
 
-if get_option('rpcserver-idle-plugins')
+if get_variable('opt-rpcserver-idle-plugins'.underscorify())
     conf.set('ENABLE_RPC_PLUGINS', 1)
 endif
 
-if get_option('rpcserver-smart-mem')
+if get_variable('opt-rpcserver-smart-mem'.underscorify())
     conf.set('ENABLE_RPC_MEM', 1)
 endif
 
-if get_option('rpcserver-tr069')
+if get_variable('opt-rpcserver-tr069'.underscorify())
     conf.set('WITH_TR069_SUPPORT', 1)
 endif
 
-if get_option('static-rpc-lookup')
+if get_variable('opt-static-rpc-lookup'.underscorify())
     conf.set('DEFAULT_STATIC_RPC_LOOKUP', 1)
 endif
 
-if get_option('typesafe-rpc')
+if get_variable('opt-typesafe-rpc'.underscorify())
     code_typeof = '''
     int testfunc(void *ptr);
     int testfunc2(void *ptr);

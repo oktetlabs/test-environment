@@ -13,6 +13,8 @@ option('engine-apps', type: 'string',
 
 option('libs', type: 'string', value: '',
        description: 'Libraries to build')
+option('custom-lib-opts', type: 'array', value: [],
+       description: 'Array of custom libraries options in format: <build-lib-name>:<real-te-lib-name>:<opt-name>:<value>')
 option('agents', type: 'string', value: '',
        description: 'Test Agents to build')
 option('tools', type: 'string', value: '',

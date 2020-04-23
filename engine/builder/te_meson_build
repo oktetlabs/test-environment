@@ -81,15 +81,19 @@ set_sniffers() {
 }
 
 add_meson_lib_opt() {
+    local l="$1"; shift
+    local lrname="$1"; shift
     local name="$1"; shift
     local value="$@"
 
     test -z "${name}" -o -n "${name//[[:alnum:]_-]/}" &&
         error "Wrong meson option name: ${name}"
 
-    local opt_name="${name//-/_}"
-
+    local opt_name="${l//-/_}_${name//-/_}"
     meson_lib_opts+=" ${opt_name}"
+
+    eval meson_lib_lname_${opt_name}=\"\${l}\"
+    eval meson_lib_lrname_${opt_name}=\"\${lrname}\"
     eval meson_lib_opt_name_${opt_name}=\"\${name}\"
     eval meson_lib_opt_val_${opt_name}=\"\${value}\"
 }
@@ -103,15 +107,15 @@ process_library_agentlib() {
     for p in ${!parms_var} ; do
         case ${p} in
             --enable-dlfcn-lookup)
-                add_meson_lib_opt agentlib-dlfcn-lookup true ;;
+                add_meson_lib_opt ${l} ${lrname} agentlib-dlfcn-lookup true ;;
             --enable-ftp)
-                add_meson_lib_opt agentlib-ftp true ;;
+                add_meson_lib_opt ${l} ${lrname} agentlib-ftp true ;;
             --enable-power-sw)
-                add_meson_lib_opt agentlib-power-sw true ;;
+                add_meson_lib_opt ${l} ${lrname} agentlib-power-sw true ;;
             --enable-telephony)
-                add_meson_lib_opt agentlib-telephony true ;;
+                add_meson_lib_opt ${l} ${lrname} agentlib-telephony true ;;
             --enable-dlfcn-upnp)
-                add_meson_lib_opt agentlib-upnp true ;;
+                add_meson_lib_opt ${l} ${lrname} agentlib-upnp true ;;
             *)
                 parms="${parms}${parms:+ }${p}" ;;
         esac
@@ -149,17 +153,17 @@ process_library_rpcserver() {
     for p in ${!parms_var} ; do
         case ${p} in
             --with-agentlib=*)
-                add_meson_lib_opt rpcserver-agentlib "${p#--with-agentlib=}" ;;
+                add_meson_lib_opt ${l} ${lrname} rpcserver-agentlib "${p#--with-agentlib=}" ;;
             --enable-plugins=no|--disable-plugins)
-                add_meson_lib_opt rpcserver-idle-plugins false ;;
+                add_meson_lib_opt ${l} ${lrname} rpcserver-idle-plugins false ;;
             --enable-mem=no|--disable-mem)
-                add_meson_lib_opt rpcserver-smart-mem false ;;
+                add_meson_lib_opt ${l} ${lrname} rpcserver-smart-mem false ;;
             --with-tr069)
-                add_meson_lib_opt rpcserver-tr069 true ;;
+                add_meson_lib_opt ${l} ${lrname} rpcserver-tr069 true ;;
             --enable-static-rpc-lookup)
-                add_meson_lib_opt static-rpc-lookup true ;;
+                add_meson_lib_opt ${l} ${lrname} static-rpc-lookup true ;;
             --enable-typesafe-rpc=no|--disable-typesafe-rpc)
-                add_meson_lib_opt typesafe-rpc false ;;
+                add_meson_lib_opt ${l} ${lrname} typesafe-rpc false ;;
             *)
                 parms="${parms}${parms:+ }${p}" ;;
         esac
@@ -176,7 +180,7 @@ process_library_rpcxdr() {
     for p in ${!parms_var} ; do
         case ${p} in
             --with-rpcdefs=*)
-                add_meson_lib_opt rpcdefs "${p#--with-rpcdefs=}" ;;
+                meson_args="${meson_args} -Drpcdefs=\"${p#--with-rpcdefs=}\"" ;;
             *)
                 parms="${parms}${parms:+ }${p}" ;;
         esac
@@ -184,20 +188,38 @@ process_library_rpcxdr() {
     eval ${parms_var}=\"${parms}\"
 }
 
+update_tad_with_protocols() {
+    local tad_protos="${1}"; shift
+    local tad_proto
+
+    for tad_proto in ${tad_protos} ; do
+        local proto_add=true
+        local tad_with_proto
+        for tad_with_proto in ${tad_with_protocols} ; do
+            if test "${tad_proto}" = "${tad_with_proto}" ; then
+                proto_add=false
+                break
+            fi
+        done
+        test ${proto_add} && tad_with_protocols="${tad_with_protocols} ${tad_proto}"
+    done
+}
+
 process_library_tad() {
     local pfx="$1"; shift
     local parms_var="${pfx}PARMS"
     local parms=
     local p
+    local lib_tad_protocols=
 
     for p in ${!parms_var} ; do
         case ${p} in
             --without-cs)
-                add_meson_lib_opt tad-cs false ;;
+                add_meson_lib_opt ${l} ${lrname} tad-cs false ;;
             --with-packet-mmap-rx-ring)
-                add_meson_lib_opt tad-packet_mmap_rx_ring true ;;
+                add_meson_lib_opt ${l} ${lrname} tad-packet_mmap_rx_ring true ;;
             --with-*)
-                tad_with_protocols="${tad_with_protocols} ${p#--with-}" ;;
+                lib_tad_protocols="${lib_tad_protocols} ${p#--with-}" ;;
             --without-static-libc)
                 # default, in fact --with-static-libc is not supported yet
                 ;;
@@ -205,6 +227,18 @@ process_library_tad() {
                 parms="${parms}${parms:+ }${p}" ;;
         esac
     done
+
+    if test -z "${lib_tad_protocols}" ; then
+        lib_tad_protocols="${TAD_PROTOCOLS_ALL}"
+    else
+        # tad protocol name may contain a hyphen (rte-mbuf)
+        lib_tad_protocols="${lib_tad_protocols//-/_}"
+    fi
+
+    add_meson_lib_opt ${l} ${lrname} tad-protocols "${lib_tad_protocols}"
+
+    update_tad_with_protocols "${lib_tad_protocols}"
+
     eval ${parms_var}=\"${parms}\"
 }
 
@@ -217,7 +251,7 @@ process_library_tapi_tad() {
     for p in ${!parms_var} ; do
         case ${p} in
             --with-*)
-                tad_with_protocols="${tad_with_protocols} ${p#--with-}" ;;
+                update_tad_with_protocols "${p#--with-}" ;;
             --without-*)
                 tad_without_protocols="${tad_without_protocols} ${p#--without-}" ;;
             *)
@@ -230,10 +264,11 @@ process_library_tapi_tad() {
 process_library() {
     local p="$1"; shift
     local l="$1"; shift
+    local lrname="$1"; shift
     local pfx="TE_BS_LIB_${p}_${l}_"
     local msg="Platform library ${p}/${l}"
 
-    case "${l}" in
+    case "${lrname}" in
         agentlib)   process_library_agentlib "${pfx}" ;;
         rcfpch)     process_library_rcfpch "${pfx}" ;;
         rpcserver)  process_library_rpcserver "${pfx}" ;;
@@ -412,7 +447,17 @@ process_platform() {
     fi
 
     for l in ${!libs} ; do
-        process_library ${p} ${l}
+        local lrname
+        local plsrc="TE_BS_LIB_${p}_${l}_SOURCES"
+        if test -n "${!plsrc}" ; then
+            # plsrc can point to sources outside of TE sources, but
+            # we are trying to get the real name of the TE's library
+            lrname=${!plsrc/${TE_BASE}\/lib\//}
+        else
+            lrname=${l}
+        fi
+
+        process_library ${p} ${l} ${lrname}
     done
 
     if test -n "${tad_with_protocols}" ; then
@@ -428,7 +473,7 @@ process_platform() {
         tad_protocols="${protocols}"
     fi
     test -z "${tad_protocols}" ||
-        add_meson_lib_opt tad-protocols "${tad_protocols}"
+        meson_args="${meson_args} -Dtad-protocols=\"${tad_protocols}\""
 
     local build_agents=
     for ta in ${TE_BS_TA} ; do
@@ -436,7 +481,7 @@ process_platform() {
         test "${!platform}" != "${p}" || process_agent "${p}" "${ta}"
     done
     test -z "${use_sniffers}" ||
-        add_meson_lib_opt sniffers "${use_sniffers}"
+        meson_args="${meson_args} -Dsniffers=\"${use_sniffers}\""
     test -z "${build_agents}" ||
         meson_args="${meson_args} -Dagents=\"${build_agents}\""
 }
@@ -645,14 +690,21 @@ process_platforms() {
             meson_nv_args="${meson_nv_args} --default-library=static"
         fi
 
-        eval TE_BS_MESON_${p}_NV_ARGS=\"\${meson_nv_args}\"
-
+        local clo=
         local opt
         for opt in ${meson_lib_opts} ; do
-            local opt_name="meson_lib_opt_name_${opt}"
-            local opt_val="meson_lib_opt_val_${opt}"
-            meson_args+=" -D${!opt_name}=\"${!opt_val}\""
+            local plname="meson_lib_lname_${opt}"
+            local plrname="meson_lib_lrname_${opt}"
+            local popt_name="meson_lib_opt_name_${opt}"
+            local popt_val="meson_lib_opt_val_${opt}"
+            test -n "${clo}" && clo+=","
+            clo+="'${!plname}:${!plrname}:${!popt_name}:${!popt_val}'"
         done
+        clo="-Dcustom-lib-opts=\"[${clo}]\""
+
+        meson_args="${meson_args} ${clo}"
+
+        eval TE_BS_MESON_${p}_NV_ARGS=\"\${meson_nv_args}\"
         eval TE_BS_MESON_${p}_ARGS=\"\${meson_args}\"
     done
 }

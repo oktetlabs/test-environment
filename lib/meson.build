@@ -104,6 +104,53 @@ endforeach
 # Static version of common libraries is required for agents only
 build_agents = get_option('agents').split().length() != 0
 
+#
+# Lists of options for libraries to be used as variables, this required to
+# support build of the same library name times with different options and name.
+#
+lib_opts_agentlib = [
+    'agentlib-dlfcn-lookup',
+    'agentlib-ftp',
+    'agentlib-power-sw',
+    'agentlib-telephony',
+    'agentlib-upnp',
+]
+
+lib_opts_rpcserver = [
+    'rpcserver-agentlib',
+    'rpcserver-idle-plugins',
+    'rpcserver-smart-mem',
+    'rpcserver-tr069',
+    'static-rpc-lookup',
+    'typesafe-rpc',
+]
+
+lib_opts_tad = [
+    'tad-cs',
+    'tad-packet_mmap_rx_ring',
+    'tad-protocols',
+]
+
+# Array of arrays of custom libraries options. Each value should look like:
+# [ 'build-lib-name', 'real-te-lib-name', 'option-name', 'value' ]
+custom_lib_opts = []
+
+opts = get_option('custom-lib-opts')
+foreach opt : opts
+    o = opt.split(':')
+    if o.length() != 4
+        error('Wrong custom option: ' + opt)
+    elif not all_libs.contains(o[0])
+        error('Wrong library name ' + o[0] + ' in ' + opt)
+    elif not is_variable('lib_opts_' + o[1])
+        error('Custom options for library ' + o[1] + ' are not supported')
+    elif (o[2]).strip() == ''
+        error('Empty option name in ' + opt)
+    else
+        custom_lib_opts += [ o ]
+    endif
+endforeach
+
 # Iterate over all libraries in order to follow build order
 foreach l : all_libs
     if libs.contains(l)
@@ -145,7 +192,50 @@ foreach l : all_libs
             te_libs += [ 'logger_core' ]
         endif
 
+        lrname=l
+        foreach clo : custom_lib_opts
+            if clo[0] == l
+                lrname = clo[1]
+            endif
+        endforeach
+
+        # Process options for library as variables
+        lib_opts_name = 'lib_opts_' + lrname
+        if is_variable(lib_opts_name)
+            foreach opt_name : get_variable(lib_opts_name)
+                custom_opt_value = get_option(opt_name)
+                # Look to value in custom-lib-opts
+                foreach clo : custom_lib_opts
+                    if clo[0] == l and clo[1] == lrname and clo[2] == opt_name
+                        if clo[3] == 'true'
+                            custom_opt_value = true
+                        elif clo[3] == 'false'
+                            custom_opt_value = false
+                        else
+                            custom_opt_value = clo[3]
+                        endif
+                    endif
+                endforeach
+                # Note: prior to v0.46.1, the value parameter could not be an array type
+                set_variable(('opt-' + opt_name).underscorify(), custom_opt_value)
+            endforeach
+        endif
+
+        # Library will set this to true in case if it works with opt-* variables
+        is_multi_build_library = false
+
         subdir(l)
+
+        if is_variable(lib_opts_name) and not is_multi_build_library
+            error('custom library options are not supported: ' + l)
+        endif
+
+        # Clenaup: meson does not allow to unset variable, so just set it to false
+        if is_variable(lib_opts_name)
+            foreach opt_name : get_variable(lib_opts_name)
+                set_variable(('opt-' + opt_name).underscorify(), false)
+            endforeach
+        endif
 
         # If there are headers to be installed, do it
         if install_lib and headers.length() != 0

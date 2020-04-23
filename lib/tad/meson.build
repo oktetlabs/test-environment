@@ -1,6 +1,8 @@
 # Copyright (C) 2018-2019 OKTET Labs. All rights reserved.
 
-req_protocols = get_option('tad-protocols').split()
+is_multi_build_library = true
+
+req_protocols = get_variable('opt-tad-protocols'.underscorify()).split()
 
 if req_protocols.length() == 0
     c_args += [ '-DTAD_DUMMY' ]
@@ -98,11 +100,11 @@ if build_subdirs.contains('eth') or build_subdirs.contains('pcap')
     deps += [ cc.find_library('pcap') ]
 endif
 
-if get_option('tad-cs')
+if get_variable('opt-tad-cs'.underscorify())
     c_args += [ '-DWITH_CS' ]
 endif
 
-if get_option('tad-packet_mmap_rx_ring')
+if get_variable('opt-tad-packet_mmap_rx_ring'.underscorify())
     if not cc.has_header('poll.h')
         error('Cannot find poll.h header')
     endif

@@ -1,26 +1,20 @@
 # Copyright (C) 2018-2019 OKTET Labs. All rights reserved.
 
+is_multi_build_library = true
+
 if not cc.has_function('pthread_atfork', dependencies: dep_threads)
     error('pthread_atfork is not supported')
 endif
 
 conf = configuration_data()
 
-opts = [
-    'dlfcn-lookup',
-    'ftp',
-    'power-sw',
-    'telephony',
-    'upnp',
-]
-
-foreach opt : opts
-    if get_option('agentlib-' + opt)
+foreach opt : lib_opts_agentlib
+    if get_variable(('opt-' + opt).underscorify())
         conf.set('ENABLE_' + opt.to_upper().underscorify(), 1)
     endif
 endforeach
 
-if get_option('agentlib-power-sw')
+if get_variable('opt-agentlib-power-sw'.underscorify())
     foreach h : [ 'termios.h', 'linux/ppdev.h' ]
         if cc.has_header(h, args: c_args)
             conf.set('HAVE_' + h.to_upper().underscorify(), 1)
