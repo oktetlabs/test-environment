@@ -236,8 +236,13 @@ conf_tc_internal_qdisc_enable(const char *if_name)
 
     if (strcmp(rtnl_tc_get_kind(TC_CAST(qdisc)), "clsact") == 0)
     {
+#ifdef WITH_BPF
         rtnl_tc_set_handle(TC_CAST(qdisc), TC_HANDLE(TC_H_CLSACT, 0));
         rtnl_tc_set_parent(TC_CAST(qdisc), TC_H_CLSACT);
+#else
+        ERROR("clsact qdisc is not supported");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+#endif /* WITH_BPF */
     }
     else
     {

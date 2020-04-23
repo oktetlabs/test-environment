@@ -520,6 +520,7 @@ conf_qdisc_clsact_bpf_ingress_set(struct bpf_link_info_list *list,
                                   const char *if_name,
                                   const char *prog_name)
 {
+#ifdef WITH_BPF
     struct nl_msg *msg;
     struct tcmsg tchdr = {0};
     te_bool link = *prog_name != '\0';
@@ -670,6 +671,10 @@ conf_qdisc_clsact_bpf_ingress_set(struct bpf_link_info_list *list,
     }
 
     return 0;
+#else
+    ERROR("BPF is not supported");
+    return TE_RC(TE_TA_UNIX, TE_EINVAL);
+#endif /* WITH_BPF */
 }
 
 /**
