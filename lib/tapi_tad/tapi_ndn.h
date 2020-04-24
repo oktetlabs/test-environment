@@ -67,6 +67,21 @@ typedef struct send_transform {
     uint16_t                        vlan_tci;
 } send_transform;
 
+#define RX_XFRM_HW_OFFL_VLAN_STRIP (1U << 0)
+#define RX_XFRM_HW_OFFL_QINQ_STRIP (1U << 1)
+
+#define RX_XFRM_EFFECT_VLAN_TCI       (1U << 0)
+#define RX_XFRM_EFFECT_OUTER_VLAN_TCI (1U << 1)
+
+typedef struct receive_transform {
+    unsigned int                    hw_flags;
+    unsigned int                    effects;
+
+    /* host byte order */
+    uint16_t                        vlan_tci;
+    uint16_t                        outer_vlan_tci;
+} receive_transform;
+
 /**
  * Check ASN.1 value pointer. If it is NULL, initialize a new value of
  * specified type. All errors are logged inside the function. There is
@@ -577,6 +592,18 @@ extern te_errno tapi_ndn_gso_pkts_udp_len_edit(asn_value        **pkts,
 extern te_errno tapi_ndn_pkts_to_ptrn(asn_value    **pkts,
                                       unsigned int   nb_pkts,
                                       asn_value    **ptrn_out);
+
+/**
+ * Transform a pattern of coming packets in accordance with receive effects
+ *
+ * @param rx_transform    A set of parameters describing some trasformations
+ *                        which are expected to affect the packets on receive
+ * @param ptrn            Location of a pattern to be transformed
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_eth_transform_ptrn_on_rx(receive_transform *rx_transform,
+                                              asn_value **ptrn);
 
 #ifdef __cplusplus
 } /* extern "C" */

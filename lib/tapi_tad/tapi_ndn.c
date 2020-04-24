@@ -2422,3 +2422,118 @@ out:
 
     return TE_RC(TE_TAPI, rc);
 }
+
+/* See the description in 'tapi_ndn.h' */
+te_errno
+tapi_eth_transform_ptrn_on_rx(receive_transform *rx_transform,
+                              asn_value **ptrn)
+{
+    asn_value *new_ptrn = NULL;
+    asn_value *pdus = NULL;
+    asn_value *eth = NULL;
+    asn_child_desc_t *eth_hdrs = NULL;
+    unsigned int n_hdrs;
+    size_t n_tags;
+    uint16_t vid[2] = {0};
+    uint16_t prio[2] = {0};
+    uint16_t cfi[2] = {0};
+    te_errno rc = 0;
+
+    new_ptrn = asn_copy_value(*ptrn);
+    if (new_ptrn == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
+    pdus = asn_find_descendant(new_ptrn, &rc, "0.pdus");
+    if (rc != 0)
+    {
+        ERROR("Failed to get PDU sequence");
+        goto out;
+    }
+
+    rc = asn_find_child_choice_values(pdus, TE_PROTO_ETH,
+                                      &eth_hdrs, &n_hdrs);
+    if (rc != 0 || n_hdrs < 1)
+    {
+        ERROR("Failed to get eth PDU");
+        goto out;
+    }
+
+    eth = eth_hdrs[n_hdrs - 1].value;
+
+    n_tags = TE_ARRAY_LEN(vid);
+    rc = tapi_ndn_eth_read_vlan_tci(eth, &n_tags, vid, prio, cfi);
+    if (rc != 0)
+    {
+        ERROR("Failed to read VLAN TCI");
+        goto out;
+    }
+
+#define PACK_VLAN_TCI(_prio, _cfi, _vid) \
+    (_prio << 13) | (_cfi << 12) | _vid
+
+    if (n_tags == 1)
+    {
+        rx_transform->effects |= RX_XFRM_EFFECT_VLAN_TCI;
+        rx_transform->vlan_tci = PACK_VLAN_TCI(prio[0], cfi[0], vid[0]);
+
+        if (rx_transform->hw_flags & RX_XFRM_HW_OFFL_VLAN_STRIP)
+        {
+            rc = asn_free_descendant(eth, "#eth.tagged");
+            if (rc != 0)
+            {
+                ERROR("Failed to free VLAN tag");
+                goto out;
+            }
+        }
+    }
+    else if (n_tags == 2)
+    {
+        rx_transform->effects |= RX_XFRM_EFFECT_VLAN_TCI;
+        rx_transform->vlan_tci = PACK_VLAN_TCI(prio[0], cfi[0], vid[0]);
+
+        rx_transform->effects |= RX_XFRM_EFFECT_OUTER_VLAN_TCI;
+        rx_transform->outer_vlan_tci = PACK_VLAN_TCI(prio[1], cfi[1], vid[1]);
+
+        if ((rx_transform->hw_flags & RX_XFRM_HW_OFFL_VLAN_STRIP) ||
+            (rx_transform->hw_flags & RX_XFRM_HW_OFFL_QINQ_STRIP))
+        {
+            rc = asn_free_descendant(eth, "#eth.tagged");
+            if (rc != 0)
+            {
+                ERROR("Failed to free VLAN tag");
+                goto out;
+            }
+
+            if ((~rx_transform->hw_flags & RX_XFRM_HW_OFFL_VLAN_STRIP) ||
+                (~rx_transform->hw_flags & RX_XFRM_HW_OFFL_QINQ_STRIP))
+            {
+                rc = tapi_ndn_pdus_inject_vlan_tags(pdus,
+                                                (rx_transform->hw_flags &
+                                                RX_XFRM_HW_OFFL_VLAN_STRIP) ?
+                                                &rx_transform->outer_vlan_tci :
+                                                &rx_transform->vlan_tci, 1);
+
+                if (rc != 0)
+                {
+                    ERROR("Failed to inject VLAN tag");
+                    goto out;
+                }
+            }
+        }
+    }
+
+#undef PACK_VLAN_TCI
+
+out:
+    if (rc == 0)
+    {
+        asn_free_value(*ptrn);
+        *ptrn = new_ptrn;
+    }
+    else
+    {
+        asn_free_value(new_ptrn);
+    }
+
+    return TE_RC(TE_TAPI, rc);
+}
