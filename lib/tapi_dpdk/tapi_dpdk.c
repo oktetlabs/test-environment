@@ -176,8 +176,8 @@ test_arg2testpmd_arg(const char *test_arg)
     return result.ptr;
 }
 
-static void
-append_argument(const char *argument, int *argc_p, char ***argv_p)
+void
+tapi_dpdk_append_argument(const char *argument, int *argc_p, char ***argv_p)
 {
     int argc = *argc_p;
     char **argv;
@@ -243,12 +243,12 @@ append_testpmd_arguments_from_test_args(te_kvpair_h *test_args, int *argc_out,
                 continue;
 
             /* Append key */
-            append_argument(NULL, argc_out, argv_out);
+            tapi_dpdk_append_argument(NULL, argc_out, argv_out);
             (*argv_out)[*argc_out - 1] = test_arg2testpmd_arg(pair->key);
 
             /* Append value, if not boolean */
             if (strcmp(pair->value, "TRUE") != 0)
-                append_argument(pair->value, argc_out, argv_out);
+                tapi_dpdk_append_argument(pair->value, argc_out, argv_out);
         }
     }
 }
@@ -266,15 +266,17 @@ append_corelist_eal_arg(size_t n_cores, tapi_cpu_index_t *cpu_ids,
                                   cpu_ids[i].thread_id));
     }
 
-    append_argument("-l", argc_out, argv_out);
-    append_argument(corelist.ptr, argc_out, argv_out);
+    tapi_dpdk_append_argument("-l", argc_out, argv_out);
+    tapi_dpdk_append_argument(corelist.ptr, argc_out, argv_out);
     te_string_free(&corelist);
 }
 
-static te_errno
-build_eal_testpmd_arguments(rcf_rpc_server *rpcs, tapi_env *env, size_t n_cpus,
-                            tapi_cpu_index_t *cpu_ids, const char *program_name,
-                            int *argc_out, char ***argv_out)
+te_errno
+tapi_dpdk_build_eal_arguments(rcf_rpc_server *rpcs,
+                              tapi_env *env, size_t n_cpus,
+                              tapi_cpu_index_t *cpu_ids,
+                              const char *program_name,
+                              int *argc_out, char ***argv_out)
 {
     int extra_argc = 0;
     char **extra_argv = NULL;
@@ -434,8 +436,8 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
         if (te_asprintf(&value, "%lu", needed_mbuf_count) < 0)
             TEST_FAIL("Failed to build total-num-mbufs testpmd parameter");
 
-        append_argument("--total-num-mbufs", argc_out, argv_out);
-        append_argument(value, argc_out, argv_out);
+        tapi_dpdk_append_argument("--total-num-mbufs", argc_out, argv_out);
+        tapi_dpdk_append_argument(value, argc_out, argv_out);
         free(value);
     }
     if (!param_is_set[TESTPMD_PARAM_MBUF_SIZE] &&
@@ -446,8 +448,8 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
         if (te_asprintf(&value, "%u", mbuf_size) < 0)
             TEST_FAIL("Failed to build mbuf-size testpmd parameter");
 
-        append_argument("--mbuf-size", argc_out, argv_out);
-        append_argument(value, argc_out, argv_out);
+        tapi_dpdk_append_argument("--mbuf-size", argc_out, argv_out);
+        tapi_dpdk_append_argument(value, argc_out, argv_out);
         free(value);
     }
     if (!param_is_set[TESTPMD_PARAM_MTU] &&
@@ -497,10 +499,11 @@ append_testpmd_cmdline_from_args(te_kvpair_h *test_args,
     }
 }
 
-static te_errno
-grab_cpus(const char *ta, size_t n_cpus_preferred, size_t n_cpus_required,
-          const tapi_cpu_prop_t *prop, size_t *n_cpus_grabbed,
-          tapi_cpu_index_t *cpu_ids)
+te_errno
+tapi_dpdk_grab_cpus(const char *ta,
+                    size_t n_cpus_preferred, size_t n_cpus_required,
+                    const tapi_cpu_prop_t *prop, size_t *n_cpus_grabbed,
+                    tapi_cpu_index_t *cpu_ids)
 {
     te_errno rc;
     size_t i;
@@ -535,29 +538,31 @@ grab_cpus(const char *ta, size_t n_cpus_preferred, size_t n_cpus_required,
     return 0;
 }
 
-static te_errno
-grab_cpus_nonstrict_prop(const char *ta, size_t n_cpus_preferred,
-                         size_t n_cpus_required, const tapi_cpu_prop_t *prop,
-                         size_t *n_cpus_grabbed, tapi_cpu_index_t *cpu_ids)
+te_errno
+tapi_dpdk_grab_cpus_nonstrict_prop(const char *ta, size_t n_cpus_preferred,
+                                   size_t n_cpus_required,
+                                   const tapi_cpu_prop_t *prop,
+                                   size_t *n_cpus_grabbed,
+                                   tapi_cpu_index_t *cpu_ids)
 {
     /*
      * When grabbing CPUs with required property, set also a strict
      * constraint on CPUs quantity (n_cpus_required is set to n_cpus_preferred)
      */
-    if (grab_cpus(ta, n_cpus_preferred, n_cpus_preferred, prop,
-                  n_cpus_grabbed, cpu_ids) == 0)
+    if (tapi_dpdk_grab_cpus(ta, n_cpus_preferred, n_cpus_preferred, prop,
+                            n_cpus_grabbed, cpu_ids) == 0)
     {
         return 0;
     }
 
     WARN("Fallback to grab any available CPUs");
 
-    return grab_cpus(ta, n_cpus_preferred, n_cpus_required, NULL,
-                     n_cpus_grabbed, cpu_ids);
+    return tapi_dpdk_grab_cpus(ta, n_cpus_preferred, n_cpus_required, NULL,
+                               n_cpus_grabbed, cpu_ids);
 }
 
 const char *
-get_vdev_eal_argument(int eal_argc, char **eal_argv)
+tapi_dpdk_get_vdev_eal_argument(int eal_argc, char **eal_argv)
 {
     int i;
 
@@ -573,7 +578,7 @@ get_vdev_eal_argument(int eal_argc, char **eal_argv)
 }
 
 te_errno
-get_vdev_port_number(const char *vdev, unsigned int *port_number)
+tapi_dpdk_get_vdev_port_number(const char *vdev, unsigned int *port_number)
 {
     unsigned int dev_count = 0;
     const char *tmp = vdev;
@@ -605,11 +610,11 @@ append_testpmd_nb_cores_arg(size_t n_fwd_cpus, int *argc_out, char ***argv_out)
 {
     te_string nb_cores = TE_STRING_INIT;
 
-    append_argument("--nb-cores", argc_out, argv_out);
+    tapi_dpdk_append_argument("--nb-cores", argc_out, argv_out);
 
     CHECK_RC(te_string_append(&nb_cores, "%lu", n_fwd_cpus));
 
-    append_argument(nb_cores.ptr, argc_out, argv_out);
+    tapi_dpdk_append_argument(nb_cores.ptr, argc_out, argv_out);
 
     te_string_free(&nb_cores);
 }
@@ -645,8 +650,9 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     }
 
     cpu_ids = tapi_calloc(n_cpus, sizeof(*cpu_ids));
-    if ((rc = grab_cpus_nonstrict_prop(rpcs->ta, n_cpus, TESTPMD_MIN_N_CORES,
-                                       prop, &n_cpus_grabbed, cpu_ids)) != 0)
+    if ((rc = tapi_dpdk_grab_cpus_nonstrict_prop(rpcs->ta, n_cpus,
+                                                 TESTPMD_MIN_N_CORES, prop,
+                                                 &n_cpus_grabbed, cpu_ids)) != 0)
     {
         goto out;
     }
@@ -660,21 +666,21 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
 
     CHECK_RC(te_string_append(&testpmd_path, "%sdpdk-testpmd", working_dir));
 
-    rc = build_eal_testpmd_arguments(rpcs, env, n_cpus_grabbed, cpu_ids,
-                                     testpmd_path.ptr, &testpmd_argc,
-                                     &testpmd_argv);
+    rc = tapi_dpdk_build_eal_arguments(rpcs, env, n_cpus_grabbed, cpu_ids,
+                                       testpmd_path.ptr, &testpmd_argc,
+                                       &testpmd_argv);
     if (rc != 0)
         goto out;
 
-    vdev_arg = get_vdev_eal_argument(testpmd_argc, testpmd_argv);
+    vdev_arg = tapi_dpdk_get_vdev_eal_argument(testpmd_argc, testpmd_argv);
     if (vdev_arg != NULL)
     {
-        if ((rc = get_vdev_port_number(vdev_arg, &port_number)) != 0)
+        if ((rc = tapi_dpdk_get_vdev_port_number(vdev_arg, &port_number)) != 0)
             goto out;
     }
 
     /* Separate EAL arguments from testpmd arguments */
-    append_argument("--", &testpmd_argc, &testpmd_argv);
+    tapi_dpdk_append_argument("--", &testpmd_argc, &testpmd_argv);
 
     rc = adjust_testpmd_defaults(test_args, port_number, &cmdline_setup,
                                  &cmdline_start, &testpmd_argc, &testpmd_argv);
@@ -688,17 +694,17 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
      * Disable device start to execute setup commands first and then start the
      * device.
      */
-    append_argument("--disable-device-start", &testpmd_argc, &testpmd_argv);
+    tapi_dpdk_append_argument("--disable-device-start", &testpmd_argc, &testpmd_argv);
 
     append_testpmd_nb_cores_arg(n_cpus_grabbed - 1, &testpmd_argc, &testpmd_argv);
-    append_argument("--cmdline-file", &testpmd_argc, &testpmd_argv);
-    append_argument(cmdline_file, &testpmd_argc, &testpmd_argv);
+    tapi_dpdk_append_argument("--cmdline-file", &testpmd_argc, &testpmd_argv);
+    tapi_dpdk_append_argument(cmdline_file, &testpmd_argc, &testpmd_argv);
 
     append_testpmd_arguments_from_test_args(test_args, &testpmd_argc,
                                             &testpmd_argv);
 
     /* Terminate argv with NULL */
-    append_argument(NULL, &testpmd_argc, &testpmd_argv);
+    tapi_dpdk_append_argument(NULL, &testpmd_argc, &testpmd_argv);
 
     rc = tapi_job_factory_rpc_create(rpcs, &factory);
     if (rc != 0)

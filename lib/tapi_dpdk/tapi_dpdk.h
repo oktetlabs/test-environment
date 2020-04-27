@@ -143,6 +143,98 @@ extern te_bool tapi_dpdk_mtu_by_pkt_size(unsigned int packet_size,
 extern te_bool tapi_dpdk_mbuf_size_by_pkt_size(unsigned int packet_size,
                                                unsigned int *mbuf_size);
 
+/**
+ * Append argument to the arguments storage
+ * Jumps out via TEST_FAIL in case of failure
+ *
+ * @param argument      Argument to add
+ * @param argc_p        Pointer to the number of arguments
+ * @param argv_out      Pointer to the arguments
+ */
+extern void tapi_dpdk_append_argument(const char *argument,
+                                      int *argc_p, char ***argv_out);
+
+/**
+ * Build EAL arguments for TAPI jobs
+ * and store it to the arguments storage
+ *
+ * @param rpcs              RPC server to run job on
+ * @param env               Test environment
+ * @param n_cpus            Number of job forwarding CPUs
+ * @param cpu_ids           CPUs indices
+ * @param program_name      Full path to the binary job
+ * @param argc_p            Pointer to the number of arguments
+ * @param argv_out          Pointer to the arguments
+ *
+ * @return          Status code
+ */
+extern te_errno tapi_dpdk_build_eal_arguments(rcf_rpc_server *rpcs,
+                                              tapi_env *env, size_t n_cpus,
+                                              tapi_cpu_index_t *cpu_ids,
+                                              const char *program_name,
+                                              int *argc_c, char ***argv_out);
+
+/*
+ * Grab CPUs with required properties
+ *
+ * @param ta                    Test Agent
+ * @param n_cpus_preferred      Prefered number of CPUs to grab
+ * @param n_cpus_required       Required number of CPUs to grab
+ * @param prop                  Required properties for CPUs
+ * @param n_cpus_grabbed        Number of grabbed CPUs
+ * @param cpu_ids               Indices of grabbed CPUs
+ *
+ * @return Status code
+ */
+extern te_errno tapi_dpdk_grab_cpus(const char *ta,
+                                    size_t n_cpus_preferred,
+                                    size_t n_cpus_required,
+                                    const tapi_cpu_prop_t *prop,
+                                    size_t *n_cpus_grabbed,
+                                    tapi_cpu_index_t *cpu_ids);
+
+/*
+ * Try to grab CPUs with required properties.
+ * If fails, grab CPUs without required properties.
+ *
+ * @param ta                    Test Agent
+ * @param n_cpus_preferred      Prefered number of CPUs to grab
+ * @param n_cpus_required       Required number of CPUs to grab
+ * @param prop                  Required properties for CPUs
+ * @param n_cpus_grabbed        Number of grabbed CPUs
+ * @param cpu_ids               Indices of grabbed CPUs
+ *
+ * @return Status code
+ */
+extern te_errno tapi_dpdk_grab_cpus_nonstrict_prop(const char *ta,
+                                                   size_t n_cpus_preferred,
+                                                   size_t n_cpus_required,
+                                                   const tapi_cpu_prop_t *prop,
+                                                   size_t *n_cpus_grabbed,
+                                                   tapi_cpu_index_t *cpu_ids);
+/*
+ * Get vdev argument value from EAL arguments if exists.
+ * Otherwise @c NULL.
+ *
+ * @param eal_argc      Number of EAL arguments
+ * @param eal_argv      EAL arguments
+ *
+ * @return vdev argument value or @c NULL
+ */
+extern const char *tapi_dpdk_get_vdev_eal_argument(int eal_argc,
+                                                   char **eal_argv);
+
+/*
+ * Get vdev port number
+ *
+ * @param vdev          Vdev name
+ * @param port_number   Pointer to store port number
+ *
+ * @return Status code
+ */
+extern te_errno tapi_dpdk_get_vdev_port_number(const char *vdev,
+                                               unsigned int *port_number);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
