@@ -27,6 +27,8 @@
 extern "C" {
 #endif
 
+/** Name of l2fwd tool */
+#define TAPI_DPDK_L2FWD_NAME "l2fwd"
 /** Name of testpmd tool */
 #define TAPI_DPDK_TESTPMD_NAME "testpmd"
 #define TAPI_DPDK_TESTPMD_ARG_PREFIX TAPI_DPDK_TESTPMD_NAME "_arg_"
@@ -161,7 +163,7 @@ extern void tapi_dpdk_append_argument(const char *argument,
  * @param rpcs              RPC server to run job on
  * @param env               Test environment
  * @param n_cpus            Number of job forwarding CPUs
- * @param cpu_ids           CPUs indices
+ * @param cpu_ids[in]       Indices of job forwarding CPUs
  * @param program_name      Full path to the binary job
  * @param argc_p            Pointer to the number of arguments
  * @param argv_out          Pointer to the arguments
