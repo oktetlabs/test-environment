@@ -40,14 +40,14 @@ typedef gint node_id_t;
  *     it into set of patential parent nodes (so called "new set").
  */
 void
-flow_tree_init();
+flow_tree_init(void);
 
 /**
  * Free all resources used by flow tree library.
  *
  * @return Nothing
  */
-extern void flow_tree_destroy();
+extern void flow_tree_destroy(void);
 
 /**
  * Try to add a new node into the execution flow tree.
@@ -121,7 +121,7 @@ void flow_tree_attach_message(log_msg *msg);
  *
  * @return  Nothing.
  */
-void flow_tree_trace();
+void flow_tree_trace(void);
 
 
 #ifdef FLOW_TREE_LIBRARY_DEBUG

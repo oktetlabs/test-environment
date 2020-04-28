@@ -2070,7 +2070,7 @@ tapi_cfg_net_all_assign_ip(unsigned int af)
 
 /* See description in tapi_cfg_net.h */
 te_errno
-tapi_cfg_net_all_check_mtu()
+tapi_cfg_net_all_check_mtu(void)
 {
     unsigned int    i, j;
     int             net_mtu, mtu;

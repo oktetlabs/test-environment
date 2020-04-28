@@ -37,7 +37,7 @@ extern te_log_message_f ten_log_message;
 
 /** Discover name of the Logger IPC server */
 static inline const char *
-logger_server_name()
+logger_server_name(void)
 {
     static const char *logger_name = NULL;
     
@@ -60,7 +60,7 @@ logger_server_name()
 
 /** Discover name of the Logger client for TA */
 static inline const char *
-logger_ta_prefix()
+logger_ta_prefix(void)
 {
     static char    prefix[64];
     static te_bool init = FALSE;
@@ -79,7 +79,7 @@ logger_ta_prefix()
 
 /** Discover name of the log flush client */
 static inline const char *
-logger_flush_name()
+logger_flush_name(void)
 {
     static char    name[64];
     static te_bool init = FALSE;

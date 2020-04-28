@@ -68,7 +68,7 @@ index_mode_init(f_process_ctrl_log_msg ctrl_proc[CTRL_EVT_LAST][NT_LAST],
 
 /** Print the length of previous message, finishing its description  */
 static void
-print_prev_length()
+print_prev_length(void)
 {
     if (first_message)
     {

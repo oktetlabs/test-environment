@@ -155,7 +155,7 @@ extern int ds_create_backup(const char *dir, const char *name, int *index);
 extern void ds_restore_backup(int index);
 
 /** Restore initial state of all services */
-extern void ds_restore_backups();
+extern void ds_restore_backups(void);
 
 /** 
  * Get configuration file name for the daemon/service.

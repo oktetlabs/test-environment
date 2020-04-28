@@ -25,7 +25,7 @@
 
 /** Discover name of the Configurator IPC server */
 static inline const char *
-cs_server_name()
+cs_server_name(void)
 {
     static const char *cs_name = NULL;
     

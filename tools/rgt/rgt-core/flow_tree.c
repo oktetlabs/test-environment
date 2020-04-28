@@ -278,7 +278,7 @@ ctrl_msg_data_destroy(ctrl_msg_data *data)
  *     it into set of patential parent nodes (so-called "new set").
  */
 void
-flow_tree_init()
+flow_tree_init(void)
 {
     obstk = obstack_initialize();
 
@@ -352,7 +352,7 @@ flow_tree_free_attachments(node_t *cur_node)
  * @return Nothing
  */
 void
-flow_tree_destroy()
+flow_tree_destroy(void)
 {
     if (root == NULL)
         return;
@@ -1604,7 +1604,7 @@ flow_tree_wander(node_t *cur_node)
  * @return  Nothing.
  */
 void
-flow_tree_trace()
+flow_tree_trace(void)
 {
 #ifdef RGT_PROF_STAT
     fprintf(stderr,

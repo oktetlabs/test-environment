@@ -49,7 +49,7 @@ extern int rgt_filter_init(const char *fltr_fname);
  *
  * @return  Nothing
  */
-extern void rgt_filter_destroy();
+extern void rgt_filter_destroy(void);
 
 /**
  * Validates if log message with a particular tuple (entity name,

@@ -39,7 +39,7 @@
 
 #if HAVE_READLINE    
 static void
-tester_interactive_print_usage()
+tester_interactive_print_usage(void)
 {
     printf("Interactive-mode usage:\n"
            "\trun paths... - to run specified test paths\n"

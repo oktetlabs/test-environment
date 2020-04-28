@@ -259,7 +259,7 @@ static void send_all_pending_commands(ta *agent);
  * Release memory allocated for Test Agents structures.
  */
 static void
-free_ta_list()
+free_ta_list(void)
 {
     ta *agent, *next;
 
@@ -1249,7 +1249,7 @@ force_reboot(ta *agent, usrreq *req)
  * appropriate actions (see algorithm above).
  */
 static void
-check_reboot()
+check_reboot(void)
 {
     ta *agent;
     time_t t = time(NULL);
@@ -3093,7 +3093,7 @@ process_user_request(usrreq *req)
  * Shut down the RCF according to algorithm described above.
  */
 static void
-rcf_shutdown()
+rcf_shutdown(void)
 {
     ta *agent;
 

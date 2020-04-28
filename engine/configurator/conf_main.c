@@ -1386,7 +1386,7 @@ process_get(cfg_get_msg *msg)
 
 /* Returns time since Epoche in milliseconds */
 static unsigned long long
-get_time_ms()
+get_time_ms(void)
 {
     struct timeval tv = {0, 0};
     gettimeofday(&tv, NULL);

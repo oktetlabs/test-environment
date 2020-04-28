@@ -2905,7 +2905,7 @@ TARPC_FUNC(call_tgkill, {},
  * @return Thread ID or -1
  */
 int
-call_gettid()
+call_gettid(void)
 {
 #ifndef SYS_gettid
     ERROR("gettid() is not defined");
@@ -10324,7 +10324,7 @@ vfork_pipe_exec(tarpc_vfork_pipe_exec_in *in)
 }
 
 int
-sleep_and_print()
+sleep_and_print(void)
 {
     sleep(1);
     return 0;

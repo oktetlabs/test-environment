@@ -50,7 +50,7 @@ typedef struct te_log_buf te_log_buf;
  *
  * @note This is thread safe function
  */
-extern te_log_buf *te_log_buf_alloc();
+extern te_log_buf *te_log_buf_alloc(void);
 
 /**
  * Appends format string to the log message, the behaviour of

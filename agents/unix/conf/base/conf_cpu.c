@@ -560,7 +560,7 @@ out:
 }
 
 static te_errno
-update_cpu_info()
+update_cpu_info(void)
 {
     cpu_item_list root = LIST_HEAD_INITIALIZER(&root);
     te_errno rc;
@@ -849,7 +849,7 @@ RCF_PCH_CFG_NODE_RO_COLLECTION(node_numa_node, "node",
                                NULL, numa_list);
 
 te_errno
-ta_unix_conf_cpu_init()
+ta_unix_conf_cpu_init(void)
 {
     te_errno rc = update_cpu_info();
     if (rc != 0)

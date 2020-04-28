@@ -360,7 +360,7 @@ typedef struct tapi_cfg_net_assigned {
  *
  * @return Status code.
  */
-extern te_errno tapi_cfg_net_all_check_mtu();
+extern te_errno tapi_cfg_net_all_check_mtu(void);
 
 
 /**

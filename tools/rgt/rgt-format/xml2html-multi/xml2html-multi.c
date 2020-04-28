@@ -106,7 +106,7 @@ char *docs_url = NULL;
 
 /* Forward declaration */
 static depth_ctx_user_t *alloc_depth_user_data(uint32_t depth);
-static void free_depth_user_data();
+static void free_depth_user_data(void);
 static void add_log_user(gen_ctx_user_t *gen_user,
                          depth_ctx_user_t *depth_user,
                          const char *entity, const char *user);

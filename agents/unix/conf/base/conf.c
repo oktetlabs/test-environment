@@ -223,55 +223,55 @@ extern char **environ;
 extern int link_addr_a2n(uint8_t *lladdr, int len, const char *str);
 
 #ifdef ENABLE_8021X
-extern te_errno ta_unix_conf_supplicant_init();
+extern te_errno ta_unix_conf_supplicant_init(void);
 extern te_errno supplicant_grab(const char *name);
 extern te_errno supplicant_release(const char *name);
 #endif
 
 #ifdef ENABLE_IFCONFIG_STATS
-extern te_errno ta_unix_conf_net_if_stats_init();
+extern te_errno ta_unix_conf_net_if_stats_init(void);
 #endif
 
 #ifdef ENABLE_NET_SNMP_STATS
-extern te_errno ta_unix_conf_net_snmp_stats_init();
+extern te_errno ta_unix_conf_net_snmp_stats_init(void);
 #endif
 
 #ifdef ENABLE_VCM_SUPPORT
-extern te_errno ta_unix_conf_vcm_init();
+extern te_errno ta_unix_conf_vcm_init(void);
 #endif
 
 #ifdef WITH_ISCSI
-extern te_errno ta_unix_iscsi_target_init();
-extern te_errno iscsi_initiator_conf_init();
+extern te_errno ta_unix_iscsi_target_init(void);
+extern te_errno iscsi_initiator_conf_init(void);
 #endif
 
 #ifdef WITH_IPTABLES
-extern te_errno ta_unix_conf_iptables_init();
+extern te_errno ta_unix_conf_iptables_init(void);
 #endif
 
 #ifdef WITH_TR069_SUPPORT
-extern te_errno ta_unix_conf_acse_init();
+extern te_errno ta_unix_conf_acse_init(void);
 #endif
 
 #ifdef WITH_SERIALPARSE
-extern te_errno ta_unix_serial_parser_init();
-extern te_errno ta_unix_serial_parser_cleanup();
+extern te_errno ta_unix_serial_parser_init(void);
+extern te_errno ta_unix_serial_parser_cleanup(void);
 #endif
 
 #ifdef WITH_SERIAL
-extern te_errno ta_unix_serial_console_init();
-extern te_errno ta_unix_serial_console_cleanup();
+extern te_errno ta_unix_serial_console_init(void);
+extern te_errno ta_unix_serial_console_cleanup(void);
 #endif
 
-extern te_errno ta_unix_conf_configfs_init();
-extern te_errno ta_unix_conf_netconsole_init();
+extern te_errno ta_unix_conf_configfs_init(void);
+extern te_errno ta_unix_conf_netconsole_init(void);
 extern te_errno ta_unix_conf_sys_init(void);
 extern te_errno ta_unix_conf_sys_tree_init(void);
 extern te_errno ta_unix_conf_sys_tree_fini(void);
-extern te_errno ta_unix_conf_phy_init();
+extern te_errno ta_unix_conf_phy_init(void);
 extern te_errno ta_unix_conf_eth_init(void);
-extern te_errno ta_unix_conf_macvlan_init();
-extern te_errno ta_unix_conf_ipvlan_init();
+extern te_errno ta_unix_conf_macvlan_init(void);
+extern te_errno ta_unix_conf_ipvlan_init(void);
 extern te_errno ta_unix_conf_module_init(void);
 extern te_errno ta_unix_conf_ns_net_init(void);
 extern te_errno ta_unix_conf_veth_init(void);
@@ -293,22 +293,22 @@ netconf_handle nh = NETCONF_HANDLE_INVALID;
 #endif
 
 #ifdef WITH_AGGREGATION
-extern te_errno ta_unix_conf_aggr_init();
+extern te_errno ta_unix_conf_aggr_init(void);
 #endif
 
 #ifdef ENABLE_PCI_SUPPORT
-extern te_errno ta_unix_conf_pci_init();
+extern te_errno ta_unix_conf_pci_init(void);
 #endif
 
-extern te_errno ta_unix_conf_cpu_init();
+extern te_errno ta_unix_conf_cpu_init(void);
 
 #ifdef WITH_SOCKS
-extern te_errno ta_unix_conf_socks_init();
+extern te_errno ta_unix_conf_socks_init(void);
 #endif
 
 #ifdef WITH_SNIFFERS
-extern te_errno ta_unix_conf_sniffer_init();
-extern te_errno ta_unix_conf_sniffer_cleanup();
+extern te_errno ta_unix_conf_sniffer_init(void);
+extern te_errno ta_unix_conf_sniffer_cleanup(void);
 #endif
 
 extern te_errno ta_unix_conf_cmd_monitor_init(void);
@@ -1185,7 +1185,7 @@ ta_unix_conf_base_init(void)
 
 /* See the description in lib/rcfpch/rcf_ch_api.h */
 int
-rcf_ch_conf_init()
+rcf_ch_conf_init(void)
 {
     static te_bool init = FALSE;
 
@@ -1479,7 +1479,7 @@ fail:
  * @return name pointer
  */
 const char *
-rcf_ch_conf_agent()
+rcf_ch_conf_agent(void)
 {
     return ta_name;
 }
@@ -1488,7 +1488,7 @@ rcf_ch_conf_agent()
  * Release resources allocated for configuration support.
  */
 void
-rcf_ch_conf_fini()
+rcf_ch_conf_fini(void)
 {
 #ifdef WITH_SERIALPARSE
     ta_unix_serial_parser_cleanup();

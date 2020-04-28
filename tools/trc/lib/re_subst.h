@@ -163,7 +163,7 @@ extern char *trc_re_key_substs_buf(const char *name, const char *key);
 
 extern te_errno trc_key_substs_read(const char *file);
 
-extern void trc_key_substs_free();
+extern void trc_key_substs_free(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -286,7 +286,7 @@ extern msg_arg *get_next_arg(log_msg *msg);
  *
  * @return An address of log_msg structure.
  */
-extern log_msg *alloc_log_msg();
+extern log_msg *alloc_log_msg(void);
 
 /**
  * Frees log message.

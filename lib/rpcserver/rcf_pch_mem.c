@@ -165,7 +165,7 @@ reallocate_memory(size_t item_size, size_t limit,
  *         @b next_free (if all elements are used)
  */
 static rpc_ptr_id_index
-search_id_index()
+search_id_index(void)
 {
     rpc_ptr_id_index i;
     for (i = next_free; i < ids_len; i++)
@@ -293,7 +293,7 @@ ns_get_index(const char *ns_string, rpc_ptr_id_namespace *ns_id)
 
 /* See description in rcf_pch_mem.h */
 void
-rcf_pch_mem_init()
+rcf_pch_mem_init(void)
 {
     char *value = getenv("TE_RPC_PTR_UNSAFE");
     te_rpc_ptr_unsafe = (value != NULL && strcmp(value, "1") == 0);
@@ -535,7 +535,7 @@ rcf_pch_mem_index_ptr_to_mem(void *mem, rpc_ptr_id_namespace ns,
 
 /* See description in rcf_pch_mem.h */
 rpc_ptr_id_namespace
-rcf_pch_mem_ns_generic()
+rcf_pch_mem_ns_generic(void)
 {
     static rpc_ptr_id_namespace ns = RPC_PTR_ID_NS_INVALID;
     if (RCF_PCH_MEM_NS_CREATE_IF_NEEDED(&ns, RPC_TYPE_NS_GENERIC) != 0)

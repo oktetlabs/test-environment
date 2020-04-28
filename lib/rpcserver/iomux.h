@@ -230,7 +230,7 @@ iomux_state_init_invalid(iomux_func iomux, iomux_state *state)
  * @return The multiplexer type.
  */
 static inline iomux_func
-get_default_iomux()
+get_default_iomux(void)
 {
     char    *default_iomux = getenv("TE_RPC_DEFAULT_IOMUX");
     return (default_iomux == NULL) ? FUNC_POLL :

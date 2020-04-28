@@ -33,7 +33,7 @@
 
 /** Discover name of the RCF IPC server */
 static inline const char *
-rcf_server_name()
+rcf_server_name(void)
 {
     static const char *rcf_name = NULL;
 

@@ -1863,7 +1863,7 @@ trc_report_key_test_path(const char *test_path,
 }
 
 trc_keys *
-trc_keys_alloc()
+trc_keys_alloc(void)
 {
     trc_keys *keys = calloc(1, sizeof(trc_keys));
 

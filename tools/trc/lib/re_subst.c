@@ -499,7 +499,7 @@ trc_key_substs_read(const char *file)
 }
 
 void
-trc_key_substs_free()
+trc_key_substs_free(void)
 {
     return trc_re_namespaces_free(&key_namespaces);
 }

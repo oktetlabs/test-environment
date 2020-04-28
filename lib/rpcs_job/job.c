@@ -316,7 +316,7 @@ abandoned_descriptors_add(size_t count, int *fds)
 }
 
 static void
-abandoned_descriptors_close()
+abandoned_descriptors_close(void)
 {
     size_t i;
 
@@ -329,7 +329,7 @@ abandoned_descriptors_close()
 #define CTRL_MESSAGE ("c\n")
 
 static te_errno
-ctrl_pipe_create()
+ctrl_pipe_create(void)
 {
     int rc;
 
@@ -349,7 +349,7 @@ ctrl_pipe_create()
 }
 
 static void
-ctrl_pipe_destroy()
+ctrl_pipe_destroy(void)
 {
     if (ctrl_pipe[0] > -1)
         close(ctrl_pipe[0]);
@@ -361,13 +361,13 @@ ctrl_pipe_destroy()
 }
 
 static int
-ctrl_pipe_get_read_fd()
+ctrl_pipe_get_read_fd(void)
 {
     return ctrl_pipe[0];
 }
 
 static te_errno
-ctrl_pipe_send()
+ctrl_pipe_send(void)
 {
     ssize_t write_rc;
 
@@ -1194,7 +1194,7 @@ thread_work_loop(void *arg)
 }
 
 static te_errno
-thread_start()
+thread_start(void)
 {
     te_errno rc;
 

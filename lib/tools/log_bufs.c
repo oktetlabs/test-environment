@@ -75,7 +75,7 @@ static pthread_mutex_t te_log_buf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* See description in log_bufs.h */
 te_log_buf *
-te_log_buf_alloc()
+te_log_buf_alloc(void)
 {
     int i;
     int id;

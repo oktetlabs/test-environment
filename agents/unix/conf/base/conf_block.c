@@ -85,7 +85,7 @@ RCF_PCH_CFG_NODE_COLLECTION(node_block_dev, "block",
                             NULL, NULL, block_dev_list, NULL);
 
 te_errno
-ta_unix_conf_block_dev_init()
+ta_unix_conf_block_dev_init(void)
 {
     te_errno rc;
 
