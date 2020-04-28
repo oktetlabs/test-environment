@@ -9,6 +9,7 @@
  */
 
 #include "conf_ipc.h"
+#include "te_str.h"
 
 /* See description in conf_ipc.h */
 te_errno
@@ -55,15 +56,15 @@ cfg_ipc_mk_find_fmt(cfg_find_msg *msg, size_t msg_buf_size,
                     const char *oid_fmt, ...)
 {
     va_list ap;
-    int ret;
+    te_errno rc;
     char oid[CFG_OID_MAX];
 
     va_start(ap, oid_fmt);
-    ret = vsnprintf(oid, sizeof(oid), oid_fmt, ap);
+    rc = te_vsnprintf(oid, sizeof(oid), oid_fmt, ap);
     va_end(ap);
 
-    if (ret >= sizeof(oid))
-        return TE_RC(TE_CONF_API, TE_EMSGSIZE);
+    if (rc != 0)
+        return TE_RC(TE_CONF_API, TE_RC_GET_ERROR(rc));
 
     return cfg_ipc_mk_find_str(msg, msg_buf_size, oid);
 }
