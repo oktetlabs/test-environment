@@ -197,6 +197,46 @@ te_string_append_va(te_string *str, const char *fmt, va_list ap)
 }
 
 te_errno
+te_string_append_shell_arg_as_is(te_string *str, const char *arg)
+{
+    te_errno rc = 0;
+    te_string arg_escaped = TE_STRING_INIT;
+
+    do {
+        const char *p;
+        int len;
+
+        p = strchr(arg, '\'');
+        if (p == NULL)
+            len = strlen(arg);
+        else
+            len = p - arg;
+
+        /* Print up to ' or end of string */
+        rc = te_string_append(&arg_escaped, "'%.*s'", len, arg);
+        if (rc != 0)
+            break;
+        arg += len;
+
+        if (*arg == '\'')
+        {
+            rc = te_string_append(&arg_escaped, "\\\'");
+            if (rc != 0)
+                break;
+            arg++;
+        }
+    } while (*arg != '\0');
+
+    if (rc != 0)
+    {
+        te_string_free(&arg_escaped);
+        return rc;
+    }
+
+    return te_string_append(str, "%s", arg_escaped.ptr);
+}
+
+te_errno
 te_string_append_shell_args_as_is(te_string *str, ...)
 {
     va_list args;
@@ -213,30 +253,9 @@ te_string_append_shell_args_as_is(te_string *str, ...)
                 break;
         }
 
-        do {
-            const char *p;
-            int len;
-
-            p = strchr(arg, '\'');
-            if (p == NULL)
-                len = strlen(arg);
-            else
-                len = p - arg;
-
-            /* Print up to ' or end of string */
-            rc = te_string_append(str, "'%.*s'", len, arg);
-            if (rc != 0)
-                break;
-            arg += len;
-
-            if (*arg == '\'')
-            {
-                rc = te_string_append(str, "\\\'");
-                if (rc != 0)
-                    break;
-                arg++;
-            }
-        } while (*arg != '\0');
+        rc = te_string_append_shell_arg_as_is(str, arg);
+        if (rc != 0)
+            break;
     }
     va_end(args);
 

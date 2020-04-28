@@ -152,6 +152,17 @@ extern te_errno te_string_append_shell_args_as_is(te_string *str, ...)
                     __attribute__((sentinel));
 
 /**
+ * Append a single argument with required shell escaping to avoid
+ * expansion and variable substitution.
+ *
+ * @param str           TE string
+ * @param arg           String argument
+ *
+ * @return Status code
+ */
+extern te_errno te_string_append_shell_arg_as_is(te_string *str,
+                                                 const char *arg);
+/**
  * Return a char * that is a result of sprintf into allocated memory.
  *
  * @param fmt       Format string

@@ -677,8 +677,11 @@ ovs_cmd_vsctl_append_if_dpdk(interface_entry   *interface,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    return te_string_append(cmdp, " options:dpdk-devargs=%s",
-                            interface->dpdk_devargs);
+    rc = te_string_append(cmdp, " options:dpdk-devargs=");
+    if (rc == 0)
+        te_string_append_shell_arg_as_is(cmdp, interface->dpdk_devargs);
+
+    return rc;
 }
 
 static te_errno
@@ -698,8 +701,14 @@ ovs_cmd_vsctl_append_if_dpdkvhostuserclient(interface_entry *interface,
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
     }
 
-    return te_string_append(cmdp, " options:vhost-server-path=%s",
-                            interface->vhost_server_path);
+    rc = te_string_append(cmdp, " options:vhost-server-path=");
+    if (rc == 0)
+    {
+        rc = te_string_append_shell_arg_as_is(cmdp,
+                                              interface->vhost_server_path);
+    }
+
+    return rc;
 }
 
 static te_errno
@@ -1414,18 +1423,20 @@ ovs_dpdk_configure_other_cfg(const ovs_ctx_t *ctx)
     {
         te_string cfg = TE_STRING_INIT;
 
-        rc = te_string_append(&cfg, "%sother_config:%s='%s'",
-                              ctx->ovs_cfg_cmd.ptr, p->key, p->value);
-        if (rc != 0)
-        {
-            ERROR("Failed to create config command");
-            return rc;
-        }
+        rc = te_string_append(&cfg, "%sother_config:%s=",
+                              ctx->ovs_cfg_cmd.ptr, p->key);
+        if (rc == 0)
+            rc = te_string_append_shell_arg_as_is(&cfg, p->value);
 
-        rc = ovs_shell_cmd_wait(cfg.ptr);
+        if (rc == 0)
+            rc = ovs_shell_cmd_wait(cfg.ptr);
+
         te_string_free(&cfg);
         if (rc != 0)
+        {
+            ERROR("Failed to create config command and execute it");
             return rc;
+        }
     }
 
     return 0;
@@ -3296,6 +3307,43 @@ ovs_cleanup_static_ctx(void)
     te_string_free(&ovs_ctx.root_path);
 }
 
+static te_errno
+ovs_create_env_shell_arguments(te_string *env, const char *ta_dir)
+{
+    const char *env_vars[] = {"OVS_RUNDIR", "OVS_DBDIR", "OVS_PKGDATADIR"};
+    te_string str = TE_STRING_INIT;
+    unsigned int i;
+    te_errno rc;
+
+    for (i = 0; i < TE_ARRAY_LEN(env_vars); i++)
+    {
+        rc = te_string_append(&str, "%s=", env_vars[i]);
+        if (rc == 0)
+            rc = te_string_append_shell_arg_as_is(&str, ta_dir);
+
+        if (rc == 0)
+            rc = te_string_append(&str, " ");
+
+        if (rc != 0)
+            goto out;
+    }
+
+    rc = te_string_append(&str, "PATH=");
+    if (rc == 0)
+        rc = te_string_append_shell_arg_as_is(&str, ta_dir);
+
+    if (rc == 0)
+        rc = te_string_append(&str, "\":${PATH}\"");
+
+    if (rc == 0)
+        rc = te_string_append(env, "%s", str.ptr);
+
+out:
+    te_string_free(&str);
+
+    return rc;
+}
+
 te_errno
 ta_unix_conf_ovs_init(void)
 {
@@ -3316,9 +3364,7 @@ ta_unix_conf_ovs_init(void)
     if (rc != 0)
         goto fail;
 
-    rc = te_string_append(&ovs_ctx.env,
-            "PATH=\"%s:${PATH}\" OVS_RUNDIR=%s OVS_DBDIR=%s OVS_PKGDATADIR=%s",
-            ta_dir, ta_dir, ta_dir, ta_dir);
+    rc = ovs_create_env_shell_arguments(&ovs_ctx.env, ta_dir);
     if (rc != 0)
         goto fail;
 

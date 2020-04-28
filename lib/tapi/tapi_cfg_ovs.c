@@ -54,7 +54,8 @@ tapi_cfg_ovs_convert_eal_args(int argc, const char *const *argv,
         {
             if (cfg_map[j].eal_arg == NULL)
             {
-                rc = te_string_append(&dpdk_extra, " \"%s\"", argv[i]);
+                rc = te_string_append_shell_args_as_is(&dpdk_extra, argv[i],
+                                                       NULL);
             }
             else if (strcmp(argv[i], cfg_map[j].eal_arg) == 0)
             {
