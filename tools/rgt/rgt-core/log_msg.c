@@ -125,6 +125,7 @@ rgt_process_tester_control_message_json(log_msg *msg)
     const char *error = NULL;
 
     json_t       *mi_json;
+    json_t       *mi_type;
     json_t       *msg_json;
     json_error_t  json_error;
 
@@ -141,6 +142,39 @@ rgt_process_tester_control_message_json(log_msg *msg)
     {
         FMT_TRACE("Error parsing JSON log message: %s (line %d, column %d)",
                   json_error.text, json_error.line, json_error.column);
+        THROW_EXCEPTION;
+    }
+
+    /* Check MI type */
+    mi_type = json_object_get(mi_json, "type");
+    if (mi_type == NULL)
+    {
+        TRACE("Tester Control message missing \"type\" field");
+        json_decref(mi_json);
+        THROW_EXCEPTION;
+    }
+
+    rc = extract_json_string(mi_type, &type, NULL);
+    if (rc != 0 || type == NULL)
+    {
+        FMT_TRACE("Invalid type for the \"MI.type\" value: %s",
+                  get_json_type(mi_type));
+        json_decref(mi_json);
+        THROW_EXCEPTION;
+    }
+
+    if (strcmp(type, "test_start") == 0)
+    {
+        evt_type = CTRL_EVT_START;
+    }
+    else if (strcmp(type, "test_end") == 0)
+    {
+        evt_type = CTRL_EVT_END;
+    }
+    else
+    {
+        FMT_TRACE("Unrecognized MI type: %s", type);
+        json_decref(mi_json);
         THROW_EXCEPTION;
     }
 
@@ -206,10 +240,8 @@ rgt_process_tester_control_message_json(log_msg *msg)
         THROW_EXCEPTION;
     }
 
-    if (status == NULL)
+    if (evt_type == CTRL_EVT_START)
     {
-        evt_type = CTRL_EVT_START;
-
         if (strcmp(type, CNTR_MSG_TEST) == 0)
         {
             node_type = NT_TEST;
@@ -251,8 +283,6 @@ rgt_process_tester_control_message_json(log_msg *msg)
     }
     else
     {
-        evt_type = CTRL_EVT_END;
-
 #define RGT_CMP_RESULT(_result) \
     (res = RES_STATUS_##_result, strcmp(status, #_result) != 0)
         if (RGT_CMP_RESULT(PASSED) && RGT_CMP_RESULT(KILLED) &&
