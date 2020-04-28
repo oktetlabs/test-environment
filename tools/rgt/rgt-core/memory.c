@@ -30,6 +30,7 @@ internal_obstack_alloc_failed()
 #define obstack_chunk_alloc malloc
 #define obstack_chunk_free  free
 
+/* See the description in memory.h */
 struct obstack *
 obstack_initialize()
 {
@@ -45,6 +46,7 @@ obstack_initialize()
     return obstk;
 }
 
+/* See the description in memory.h */
 void
 obstack_destroy(struct obstack *obstk)
 {
@@ -52,6 +54,7 @@ obstack_destroy(struct obstack *obstk)
     free(obstk);
 }
 
+/* See the description in memory.h */
 void initialize_log_msg_pool()
 {
     if (log_msg_obstk == NULL &&
@@ -61,6 +64,7 @@ void initialize_log_msg_pool()
     }
 }
 
+/* See the description in memory.h */
 void destroy_log_msg_pool()
 {
     if (log_msg_obstk != NULL)
@@ -70,6 +74,7 @@ void destroy_log_msg_pool()
     }
 }
 
+/* See the description in memory.h */
 log_msg *
 alloc_log_msg()
 {
@@ -96,6 +101,7 @@ alloc_log_msg()
     return msg;
 }
 
+/* See the description in memory.h */
 void
 free_log_msg(log_msg *msg)
 {
@@ -103,6 +109,7 @@ free_log_msg(log_msg *msg)
         obstack_free(msg->obstk, msg);
 }
 
+/* See the description in memory.h */
 void initialize_node_info_pool()
 {
     if (node_info_obstk == NULL &&
@@ -112,6 +119,7 @@ void initialize_node_info_pool()
     }
 }
 
+/* See the description in memory.h */
 void destroy_node_info_pool()
 {
     if (node_info_obstk != NULL)
@@ -121,6 +129,7 @@ void destroy_node_info_pool()
     }
 }
 
+/* See the description in memory.h */
 node_info_t *
 alloc_node_info()
 {
@@ -128,6 +137,7 @@ alloc_node_info()
                                         sizeof(node_info_t));
 }
 
+/* See the description in memory.h */
 void
 free_node_info(node_info_t *node)
 {
@@ -135,12 +145,14 @@ free_node_info(node_info_t *node)
         obstack_free(node_info_obstk, node);
 }
 
+/* See the description in memory.h */
 void *
 node_info_obstack_alloc(int size)
 {
     return obstack_alloc(node_info_obstk, size);
 }
 
+/* See the description in memory.h */
 void *
 node_info_obstack_copy0(const void *address, int size)
 {
