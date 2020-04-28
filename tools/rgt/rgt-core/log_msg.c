@@ -39,8 +39,7 @@ f_process_reg_log_msg  reg_msg_proc;
 f_process_log_root     log_root_proc[CTRL_EVT_LAST];
 
 /* External declaration */
-static node_info_t *create_node_by_msg_json(json_t *json, uint32_t *ts,
-                                            node_type_t type);
+static node_info_t *create_node_by_msg_json(json_t *json, uint32_t *ts);
 static node_info_t *create_node_by_msg(log_msg *msg, node_type_t type,
                                        int node_id, int parent_id);
 
@@ -110,14 +109,12 @@ rgt_process_tester_control_message_json(log_msg *msg)
     int          parent_id;
     msg_arg     *arg;
     node_info_t *node = NULL;
-    node_type_t  node_type;
     int          err_code = ESUCCESS;
     te_errno     rc;
 
     enum ctrl_event_type evt_type;
     enum result_status   res;
 
-    json_t     *type_opt   = NULL;
     json_t     *status_opt = NULL;
     json_t     *error_opt = NULL;
     const char *type   = NULL;
@@ -190,86 +187,16 @@ rgt_process_tester_control_message_json(log_msg *msg)
     json_incref(msg_json);
     json_decref(mi_json);
 
-    /*
-     * Unpack the JSON object.
-     *
-     * libjansson doesn't allow "null" values when it's looking for a
-     * specific type, so optional fields need to be extracted as JSON
-     * values and type-checked manually.
-     */
-    err_code = json_unpack_ex(msg_json, &json_error, 0, "{s:i, s:i, s?o, s?o, s?o}",
-                              "id",        &node_id,
-                              "parent",    &parent_id,
-                              "node_type", &type_opt,
-                              "status",    &status_opt,
-                              "error",     &error_opt);
-    if (err_code != 0)
-    {
-        FMT_TRACE("Error unpacking JSON log message: %s (line %d, column %d)",
-                  json_error.text, json_error.line, json_error.column);
-        THROW_EXCEPTION;
-    }
-
-    rc = extract_json_string(type_opt, &type, NULL);
-    if (rc != 0)
-    {
-        FMT_TRACE("Invalid type for the \"node_type\" value: %s",
-                  get_json_type(type_opt));
-        free_log_msg(msg);
-        json_decref(msg_json);
-        THROW_EXCEPTION;
-    }
-
-    rc = extract_json_string(status_opt, &status, NULL);
-    if (rc != 0)
-    {
-        FMT_TRACE("Invalid type for the \"status\" value: %s",
-                  get_json_type(status_opt));
-        free_log_msg(msg);
-        json_decref(msg_json);
-        THROW_EXCEPTION;
-    }
-
-    rc = extract_json_string(error_opt, &error, NULL);
-    if (rc != 0)
-    {
-        FMT_TRACE("Invalid type for the \"error\" value: %s",
-                  get_json_type(error_opt));
-        free_log_msg(msg);
-        json_decref(msg_json);
-        THROW_EXCEPTION;
-    }
-
     if (evt_type == CTRL_EVT_START)
     {
-        if (strcmp(type, CNTR_MSG_TEST) == 0)
-        {
-            node_type = NT_TEST;
-        }
-        else if (strcmp(type, CNTR_MSG_PACKAGE) == 0)
-        {
-            node_type = NT_PACKAGE;
-        }
-        else if (strcmp(type, CNTR_MSG_SESSION) == 0)
-        {
-            node_type = NT_SESSION;
-        }
-        else
-        {
-            FMT_TRACE("Unknown entity type: %s", type);
-            free_log_msg(msg);
-            json_decref(msg_json);
-            THROW_EXCEPTION;
-        }
-
-        if ((node = create_node_by_msg_json(msg_json, msg->timestamp, node_type)) == NULL)
+        if ((node = create_node_by_msg_json(msg_json, msg->timestamp)) == NULL)
         {
             free_log_msg(msg);
             json_decref(msg_json);
             THROW_EXCEPTION;
         }
 
-        if (flow_tree_add_node(parent_id, node_id, node_type,
+        if (flow_tree_add_node(node->parent_id, node->node_id, node->type,
                                node->descr.name, node->start_ts,
                                node, &err_code) == NULL)
         {
@@ -283,6 +210,48 @@ rgt_process_tester_control_message_json(log_msg *msg)
     }
     else
     {
+        /*
+         * Unpack the JSON object.
+         *
+         * libjansson doesn't allow "null" values when it's looking for a
+         * specific type, so optional fields need to be extracted as JSON
+         * values and type-checked manually.
+         */
+        err_code = json_unpack_ex(msg_json, &json_error, JSON_STRICT,
+                                  "{s:i, s:i, s?o, s?o}",
+                                  "id",        &node_id,
+                                  "parent",    &parent_id,
+                                  "status",    &status_opt,
+                                  "error",     &error_opt);
+        if (err_code != 0)
+        {
+            FMT_TRACE("Error unpacking JSON log message: %s (line %d, column %d)",
+                      json_error.text, json_error.line, json_error.column);
+            free_log_msg(msg);
+            json_decref(msg_json);
+            THROW_EXCEPTION;
+        }
+
+        rc = extract_json_string(status_opt, &status, NULL);
+        if (rc != 0 || status == NULL)
+        {
+            FMT_TRACE("Invalid type for the \"status\" value: %s",
+                      get_json_type(status_opt));
+            free_log_msg(msg);
+            json_decref(msg_json);
+            THROW_EXCEPTION;
+        }
+
+        rc = extract_json_string(error_opt, &error, NULL);
+        if (rc != 0)
+        {
+            FMT_TRACE("Invalid type for the \"error\" value: %s",
+                      get_json_type(error_opt));
+            free_log_msg(msg);
+            json_decref(msg_json);
+            THROW_EXCEPTION;
+        }
+
 #define RGT_CMP_RESULT(_result) \
     (res = RES_STATUS_##_result, strcmp(status, #_result) != 0)
         if (RGT_CMP_RESULT(PASSED) && RGT_CMP_RESULT(KILLED) &&
@@ -674,7 +643,8 @@ authors_from_json(json_t *authors, te_string *authors_str)
          * specific type, so optional fields need to be extracted as JSON
          * values and type-checked manually.
          */
-        ret = json_unpack_ex(author, &err, 0, "{s?o, s?o !}",
+        ret = json_unpack_ex(author, &err, JSON_STRICT,
+                             "{s?o, s?o}",
                              "name", &name_opt,
                              "email", &email_opt);
         if (ret != 0)
@@ -719,7 +689,7 @@ authors_from_json(json_t *authors, te_string *authors_str)
  * @return Pointer to created node_info_t structure
  */
 static node_info_t *
-create_node_by_msg_json(json_t *msg, uint32_t *ts, node_type_t type)
+create_node_by_msg_json(json_t *msg, uint32_t *ts)
 {
     node_info_t *node;
     param      **p_prm;
@@ -734,6 +704,7 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts, node_type_t type)
     json_t     *page_opt = NULL;
     json_t     *hash_opt = NULL;
     json_t     *tin_opt = NULL;
+    const char *type = NULL;
     const char *name = NULL;
     const char *objective = NULL;
     const char *page = NULL;
@@ -748,7 +719,6 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts, node_type_t type)
     memset(node, 0, sizeof(*node));
 
     memcpy(node->start_ts, ts, sizeof(node->start_ts));
-    node->type = type;
     node->result.err = NULL;
 
     /*
@@ -758,10 +728,11 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts, node_type_t type)
      * specific type, so optional fields need to be extracted as JSON
      * values and type-checked manually.
      */
-    ret = json_unpack_ex(msg, &err, 0, "{s:i, s:i, s?o, s?o, s?o, s?o, s?o,"
-                                       " s?o, s?o}",
+    ret = json_unpack_ex(msg, &err, JSON_STRICT,
+                         "{s:i, s:i, s:s, s?o, s?o, s?o, s?o, s?o, s?o, s?o}",
                          "id", &node->node_id,
                          "parent", &node->parent_id,
+                         "node_type", &type,
                          "name", &name_opt,
                          "objective", &objective_opt,
                          "page", &page_opt,
@@ -822,6 +793,25 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts, node_type_t type)
         return NULL;
     }
 
+    if (strcmp(type, CNTR_MSG_TEST) == 0)
+    {
+        node->type = NT_TEST;
+    }
+    else if (strcmp(type, CNTR_MSG_PACKAGE) == 0)
+    {
+        node->type = NT_PACKAGE;
+    }
+    else if (strcmp(type, CNTR_MSG_SESSION) == 0)
+    {
+        node->type = NT_SESSION;
+    }
+    else
+    {
+        FMT_TRACE("Unknown entity type: %s", type);
+        free_node_info(node);
+        return NULL;
+    }
+
     if (name != NULL)
         node->descr.name = node_info_obstack_copy0(name, strlen(name));
 
@@ -874,7 +864,8 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts, node_type_t type)
             p_prm = &(node->params);
             json_array_foreach(params, index, pair)
             {
-                ret = json_unpack_ex(pair, &err, 0, "[ss!]", &name, &value);
+                ret = json_unpack_ex(pair, &err, JSON_STRICT,
+                                     "[ss]", &name, &value);
                 if (ret != 0)
                 {
                     FMT_TRACE("Error unpacking authors: %s (line %d, column %d)",
