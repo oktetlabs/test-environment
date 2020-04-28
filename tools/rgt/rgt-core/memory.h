@@ -5,7 +5,7 @@
 #include "log_msg.h"
 
 /** Allocate and initialize a new obstack structure */
-struct obstack *obstack_initialize();
+struct obstack *obstack_initialize(void);
 /** Deallocate an obstack structure */
 void obstack_destroy(struct obstack *obstk);
 
@@ -14,12 +14,12 @@ void obstack_destroy(struct obstack *obstk);
  *
  * Throws if it's already initialized or on failure.
  */
-void initialize_log_msg_pool();
+void initialize_log_msg_pool(void);
 /** Free the log message pool */
-void destroy_log_msg_pool();
+void destroy_log_msg_pool(void);
 
 /** Allocate a log message buffer from the pool  */
-log_msg *alloc_log_msg();
+log_msg *alloc_log_msg(void);
 /** Return a log message buffer to the pool */
 void free_log_msg(log_msg *msg);
 
@@ -33,12 +33,12 @@ extern void free_log_msg_ptr(log_msg_ptr *msg_ptr);
  *
  * Throws if it's already initialized or on failure.
  */
-void initialize_node_info_pool();
+void initialize_node_info_pool(void);
 /** Free the node_info pool */
-void destroy_node_info_pool();
+void destroy_node_info_pool(void);
 
 /** Allocate a node_info structure from the pool */
-node_info_t *alloc_node_info();
+node_info_t *alloc_node_info(void);
 /** Return a node_info structure to the pool */
 void free_node_info(node_info_t *node);
 

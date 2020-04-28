@@ -17,7 +17,7 @@ static struct obstack *log_msg_obstk = NULL;
 static struct obstack *node_info_obstk = NULL;
 
 static void
-internal_obstack_alloc_failed()
+internal_obstack_alloc_failed(void)
 {
     /* Go to the main procedure */
     THROW_EXCEPTION;
@@ -32,7 +32,7 @@ internal_obstack_alloc_failed()
 
 /* See the description in memory.h */
 struct obstack *
-obstack_initialize()
+obstack_initialize(void)
 {
     struct obstack *obstk;
 
@@ -55,7 +55,7 @@ obstack_destroy(struct obstack *obstk)
 }
 
 /* See the description in memory.h */
-void initialize_log_msg_pool()
+void initialize_log_msg_pool(void)
 {
     if (log_msg_obstk == NULL &&
         ((log_msg_obstk = obstack_initialize()) == NULL))
@@ -65,7 +65,7 @@ void initialize_log_msg_pool()
 }
 
 /* See the description in memory.h */
-void destroy_log_msg_pool()
+void destroy_log_msg_pool(void)
 {
     if (log_msg_obstk != NULL)
     {
@@ -76,7 +76,7 @@ void destroy_log_msg_pool()
 
 /* See the description in memory.h */
 log_msg *
-alloc_log_msg()
+alloc_log_msg(void)
 {
     log_msg *msg;
 
@@ -110,7 +110,7 @@ free_log_msg(log_msg *msg)
 }
 
 /* See the description in memory.h */
-void initialize_node_info_pool()
+void initialize_node_info_pool(void)
 {
     if (node_info_obstk == NULL &&
         ((node_info_obstk = obstack_initialize()) == NULL))
@@ -120,7 +120,7 @@ void initialize_node_info_pool()
 }
 
 /* See the description in memory.h */
-void destroy_node_info_pool()
+void destroy_node_info_pool(void)
 {
     if (node_info_obstk != NULL)
     {
@@ -131,7 +131,7 @@ void destroy_node_info_pool()
 
 /* See the description in memory.h */
 node_info_t *
-alloc_node_info()
+alloc_node_info(void)
 {
     return (node_info_t *)obstack_alloc(node_info_obstk,
                                         sizeof(node_info_t));
