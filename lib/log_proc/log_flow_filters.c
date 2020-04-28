@@ -13,6 +13,7 @@
 #define TE_LGR_USER "Log processing"
 
 #include "te_config.h"
+#include "logger_api.h"
 #include "log_flow_filters.h"
 #include "te_alloc.h"
 
@@ -359,16 +360,21 @@ log_filter_result
 log_duration_filter_check(log_duration_filter *filter, const char *type,
                           uint32_t duration)
 {
-    log_filter_result result;
+    node_type_t node_type;
 
-    if (strcmp(type, "PACKAGE") == 0)
-        result = log_duration_filter_rules_check(&filter->package, duration);
-    else if (strcmp(type, "SESSION") == 0)
-        result = log_duration_filter_rules_check(&filter->session, duration);
-    else if (strcmp(type, "TEST") == 0)
-        result = log_duration_filter_rules_check(&filter->test, duration);
-
-    return result;
+    node_type = get_node_type(type);
+    switch (node_type)
+    {
+        case NT_PACKAGE:
+            return log_duration_filter_rules_check(&filter->package, duration);
+        case NT_SESSION:
+            return log_duration_filter_rules_check(&filter->session, duration);
+        case NT_TEST:
+            return log_duration_filter_rules_check(&filter->test, duration);
+        default:
+            ERROR("Invalid node type in %s: %s", __FUNCTION__, type);
+            return LOG_FILTER_DEFAULT;
+    }
 }
 
 /* See description in flow_filter.h */
