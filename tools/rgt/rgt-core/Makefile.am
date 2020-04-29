@@ -28,7 +28,7 @@ rgt_core_SOURCES = filter.c filter.h \
                    junit_mode.c junit_mode.h \
                    rgt_core.c rgt_common.h
 
-rgt_core_LDADD = @GLIB_LIBS@ @XML2_LIBS@ -llogger_core -ltools -llog_proc \
+rgt_core_LDADD = @GLIB_LIBS@ @XML2_LIBS@ -llog_proc -ltools -llogger_core \
                  -lpopt -ljansson -lm -ldl
 
 bin_SCRIPTS = rgt-conv
