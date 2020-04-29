@@ -1,5 +1,7 @@
 #!/bin/bash
 
+bindir="$(cd `dirname $0` && pwd)"
+
 export TMPDIR="${TMPDIR:-/tmp}"
 
 usage()
@@ -65,7 +67,12 @@ if test $? -ne 0 ; then
     err_cleanup "failed to unpack '${bundle_path}'"
 fi
 
-rgt-log-recover --split-log="${bundle_tmpdir}" --output="${raw_log_path}"
+# Add TE libraries installation path to LD_LIBRARY_PATH since
+# rgt-log-recover uses it
+export LD_LIBRARY_PATH="$(dirname "${bindir}")/lib:${LD_LIBRARY_PATH}"
+
+"${bindir}"/rgt-log-recover --split-log="${bundle_tmpdir}" \
+    --output="${raw_log_path}"
 if test $? -ne 0 ; then
     err_cleanup "Failed to recover original raw log from '${bundle_path}'"
 fi
