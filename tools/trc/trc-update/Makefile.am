@@ -11,7 +11,7 @@ bin_PROGRAMS = te-trc-update
 te_trc_update_SOURCES = main.c
 
 te_trc_update_LDADD = -ltrc_report -ltrc -llogic_expr -llogger_file \
-                      -lpthread -ltools -llogger_core -lpopt -lcrypto @XML2_LIBS@ \
+                      -ltools -llogger_core -lpopt -lcrypto -lpthread @XML2_LIBS@ \
                       @TE_LDADD@ @PERL_LDADD@
 
 te_trc_update_DEPENDENCIES = @TE_DEPENDENCIES@ \
