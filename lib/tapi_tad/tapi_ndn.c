@@ -1617,14 +1617,15 @@ out:
 }
 
 te_errno
-tapi_ndn_pdus_inject_vlan_tags(asn_value *pdus, const uint16_t *vlan_tci,
+tapi_ndn_pdus_inject_vlan_tags(asn_value *pdus, const uint16_t *vlan_vid,
+                               const uint16_t *vlan_pri, const uint16_t *vlan_cfi,
                                size_t n_tags)
 {
     te_bool has_vlan = FALSE;
     asn_value *new_vlan;
-    uint16_t old_vid[2] = {0};
-    uint16_t old_pri[2] = {0};
-    uint16_t old_cfi[2] = {0};
+    uint16_t old_vid[2];
+    uint16_t old_pri[2];
+    uint16_t old_cfi[2];
     size_t n_old_tags;
     asn_value *eth;
     te_errno rc;
@@ -1685,22 +1686,22 @@ tapi_ndn_pdus_inject_vlan_tags(asn_value *pdus, const uint16_t *vlan_tci,
             uint16_t val;
             const char *label;
         } map[] = {
-            { has_vlan ? old_vid[0] : vlan_tci[0] & NDN_ETH_VLAN_TCI_MASK_ID,
+            { has_vlan ? old_vid[0] : vlan_vid[0],
               "#double-tagged.inner.vid.#plain"},
-            { (has_vlan ? vlan_tci[0] : vlan_tci[1]) & NDN_ETH_VLAN_TCI_MASK_ID,
+            { has_vlan ? vlan_vid[0] : vlan_vid[1],
               "#double-tagged.outer.vid.#plain"},
-            { has_vlan ? old_pri[0] : vlan_tci[0] & NDN_ETH_VLAN_TCI_MASK_PRIO,
+            { has_vlan ? old_pri[0] : vlan_pri[0],
               "#double-tagged.inner.pcp.#plain"},
-            { (has_vlan ? vlan_tci[0] : vlan_tci[1]) & NDN_ETH_VLAN_TCI_MASK_PRIO,
+            { has_vlan ? vlan_pri[0] : vlan_pri[1],
               "#double-tagged.outer.pcp.#plain"},
-            { has_vlan ? old_cfi[0] : vlan_tci[0] & NDN_ETH_VLAN_TCI_MASK_CFI,
+            { has_vlan ? old_cfi[0] : vlan_cfi[0],
               "#double-tagged.inner.dei.#plain"},
-            { (has_vlan ? vlan_tci[0] : vlan_tci[1]) & NDN_ETH_VLAN_TCI_MASK_CFI,
+            { has_vlan ? vlan_cfi[0] : vlan_cfi[1],
               "#double-tagged.outer.dei.#plain"}};
 
         for (i = 0; i < TE_ARRAY_LEN(map); i++)
         {
-            if (rc == 0)
+            if (rc == 0 && map[i].val != UINT16_MAX)
                 rc = asn_write_value_field(new_vlan, &map[i].val,
                                            sizeof(map[i].val), map[i].label);
         }
@@ -1712,13 +1713,13 @@ tapi_ndn_pdus_inject_vlan_tags(asn_value *pdus, const uint16_t *vlan_tci,
             uint16_t val;
             const char *label;
         } map[] = {
-            { vlan_tci[0] & NDN_ETH_VLAN_TCI_MASK_ID, "#tagged.vlan-id.#plain"},
-            { vlan_tci[0] & NDN_ETH_VLAN_TCI_MASK_PRIO, "#tagged.priority.#plain"},
-            { vlan_tci[0] & NDN_ETH_VLAN_TCI_MASK_CFI, "#tagged.cfi.#plain"}};
+            { vlan_vid[0], "#tagged.vlan-id.#plain" },
+            { vlan_pri[0], "#tagged.priority.#plain" },
+            { vlan_cfi[0], "#tagged.cfi.#plain" }};
 
         for (i = 0; i < TE_ARRAY_LEN(map); i++)
         {
-            if (rc == 0)
+            if (rc == 0 && map[i].val != UINT16_MAX)
             {
                 rc = asn_write_value_field(new_vlan, &map[i].val,
                                            sizeof(map[i].val), map[i].label);
@@ -1744,9 +1745,9 @@ tapi_ndn_eth_read_vlan_tci(const asn_value *eth, size_t *n_tags,
                            uint16_t *vid, uint16_t *prio, uint16_t *cfi)
 {
     asn_value *vlan_header;
-    uint16_t vid_out[2] = {0};
-    uint16_t prio_out[2] = {0};
-    uint16_t cfi_out[2] = {0};
+    uint16_t vid_out[2] = {UINT16_MAX, UINT16_MAX};
+    uint16_t prio_out[2] = {UINT16_MAX, UINT16_MAX};
+    uint16_t cfi_out[2] = {UINT16_MAX, UINT16_MAX};
     size_t size = sizeof(vid_out[0]);
     size_t tags_count;
     te_errno rc;
@@ -2423,6 +2424,25 @@ out:
     return TE_RC(TE_TAPI, rc);
 }
 
+/* Fill unspecified fields with zeroes */
+static void
+tapi_tad_vlan_zero_unspecified(size_t n_tags, uint16_t *vid, uint16_t *prio,
+                               uint16_t *cfi)
+{
+    uint16_t *fields[] = {prio, cfi, vid};
+    unsigned int i;
+    unsigned int j;
+
+    for (i = 0; i < TE_ARRAY_LEN(fields); i++)
+    {
+        for (j = 0; j < n_tags; j++)
+        {
+            if (fields[i][j] == UINT16_MAX)
+                fields[i][j] = 0;
+        }
+    }
+}
+
 /* See the description in 'tapi_ndn.h' */
 te_errno
 tapi_eth_transform_ptrn_on_rx(receive_transform *rx_transform,
@@ -2468,6 +2488,8 @@ tapi_eth_transform_ptrn_on_rx(receive_transform *rx_transform,
         goto out;
     }
 
+    tapi_tad_vlan_zero_unspecified(n_tags, vid, prio, cfi);
+
 #define PACK_VLAN_TCI(_prio, _cfi, _vid) \
     (_prio << 13) | (_cfi << 12) | _vid
 
@@ -2507,11 +2529,14 @@ tapi_eth_transform_ptrn_on_rx(receive_transform *rx_transform,
             if ((~rx_transform->hw_flags & RX_XFRM_HW_OFFL_VLAN_STRIP) ||
                 (~rx_transform->hw_flags & RX_XFRM_HW_OFFL_QINQ_STRIP))
             {
+                te_bool outer = (rx_transform->hw_flags &
+                                 RX_XFRM_HW_OFFL_VLAN_STRIP);
+
                 rc = tapi_ndn_pdus_inject_vlan_tags(pdus,
-                                                (rx_transform->hw_flags &
-                                                RX_XFRM_HW_OFFL_VLAN_STRIP) ?
-                                                &rx_transform->outer_vlan_tci :
-                                                &rx_transform->vlan_tci, 1);
+                                                    outer ? &vid[1] : &vid[0],
+                                                    outer ? &prio[1] : &prio[0],
+                                                    outer ? &cfi[1] : &cfi[0],
+                                                    1);
 
                 if (rc != 0)
                 {

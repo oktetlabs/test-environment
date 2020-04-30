@@ -433,14 +433,24 @@ extern te_errno tapi_ndn_pkt_inject_vlan_tag(asn_value *pkt,
  * Inject VLAN tags to outer Ethernet PDU in a PDU sequence.
  *
  * @param[inout]  pdus          PDU sequence
- * @param[in]     vlan_tci      VLAN tci array
+ * @param[in]     vid           VLAN IDs
+ * @param[in]     prio          VLAN priority fields
+ * @param[in]     cfi           VLAN CFI fields
  * @param[in]     n_tags        Number of tags to be pushed, specifies
- *                              @p vlan_tci size
+ *                              size of @p vid, @p prio, @p cfi
+ *
+ * @note    The API works only with exactly specified or not set
+ *          vlan headers. Ranged fields are not supported.
+ *
+ * @note    @c UINT16_MAX for @p vid, @p prio or @p cfi means that this value
+ *          is not specified in the PDU
  *
  * @return Status code
  */
 extern te_errno tapi_ndn_pdus_inject_vlan_tags(asn_value *pdus,
-                                               const uint16_t *vlan_tci,
+                                               const uint16_t *vid,
+                                               const uint16_t *prio,
+                                               const uint16_t *cfi,
                                                size_t n_tags);
 
 /**
@@ -454,6 +464,12 @@ extern te_errno tapi_ndn_pdus_inject_vlan_tags(asn_value *pdus,
  * @param[out]    vid           VLAN IDs
  * @param[out]    prio          VLAN priority fields
  * @param[out]    cfi           VLAN CFI fields
+ *
+ * @note    The API works only with exactly specified or not set
+ *          vlan headers. Ranged fields are not supported.
+ *
+ * @note    @c UINT16_MAX for @p vid, @p prio or @p cfi means that this value
+ *          is not specified in the PDU
  *
  * @return Status code
  */
