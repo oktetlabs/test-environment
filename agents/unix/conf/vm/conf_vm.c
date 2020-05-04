@@ -117,6 +117,7 @@ struct vm_entry {
     char                   *ker_cmd;
     char                   *ker_initrd;
     char                   *ker_dtb;
+    char                   *serial;
 };
 
 static struct vm_chardev_entry * vm_chardev_find(const struct vm_entry *vm,
@@ -733,11 +734,16 @@ vm_start(struct vm_entry *vm)
     if (rc != 0)
         goto exit;
 
-    rc = te_string_append_shell_args_as_is(&vm->cmd, "-serial", "stdio", NULL);
-    if (rc != 0)
+    if (vm->serial != NULL)
     {
-        ERROR("Cannot compose VM start command line (line %u)", __LINE__);
-        goto exit;
+        rc = te_string_append_shell_args_as_is(&vm->cmd, "-serial",
+                                               vm->serial, NULL);
+
+        if (rc != 0)
+        {
+            ERROR("Cannot compose VM start command line (line %u)", __LINE__);
+            goto exit;
+        }
     }
 
     if (vm->mem_path != NULL)
@@ -913,6 +919,7 @@ vm_free(struct vm_entry *vm)
     free(vm->ker_cmd);
     free(vm->ker_initrd);
     free(vm->ker_dtb);
+    free(vm->serial);
     free(vm);
 }
 
@@ -1079,6 +1086,12 @@ vm_add(unsigned int gid, const char *oid, const char *value,
     vm->rcf_port = vm_alloc_tcp_port();
 
     vm->pid = -1;
+    vm->serial = strdup("stdio");
+    if (vm->serial == NULL)
+    {
+        vm_free(vm);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
 
     SLIST_INSERT_HEAD(&vms, vm, links);
 
@@ -1977,6 +1990,47 @@ vm_ker_dtb_set(unsigned int gid, const char *oid, const char *value,
 }
 
 static te_errno
+vm_serial_get(unsigned int gid, const char *oid, char *value,
+              const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", vm_name);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", vm->serial);
+
+    return 0;
+}
+
+static te_errno
+vm_serial_set(unsigned int gid, const char *oid, const char *value,
+              const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", vm_name);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    return string_replace(&vm->serial, value);
+}
+
+static te_errno
 vm_drive_add(unsigned int gid, const char *oid, const char *value,
              const char *vm_name, const char *drive_name)
 {
@@ -2561,7 +2615,10 @@ vm_cpu_num_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_vm_device, "device", NULL, NULL,
+RCF_PCH_CFG_NODE_RW(node_vm_serial, "serial", NULL, NULL,
+                    vm_serial_get, vm_serial_set);
+
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_vm_device, "device", NULL, &node_vm_serial,
                                vm_device_get, NULL, vm_device_add,
                                vm_device_del, vm_device_list, NULL);
 

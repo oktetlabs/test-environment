@@ -262,3 +262,17 @@
          Name: human-readable name
          Value: canonical instance OID of the host PCI function to pass-through, e.g.
          /agent:Agt/hardware:/pci:/device:0000:01:00.0
+
+    - oid: "/agent/vm/serial"
+      access: read_write
+      type: string
+      d: |
+         Redirect the virtual serial port to host character device dev.
+         Name: None
+         Value: Full list of supported value you can find in `man qemu`.
+                In short:
+                  stdio (by default) - standard input/output
+                  none  - disable all serial ports.
+                  pipe:<filename> - name pipe filename
+                  file:<filename> - Write output to filename. No character can be read.
+
