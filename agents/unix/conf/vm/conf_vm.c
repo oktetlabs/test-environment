@@ -116,6 +116,7 @@ struct vm_entry {
     vm_cpu                  cpu;
     unsigned int            mem_size;
     char                   *mem_path;
+    te_bool                 mem_prealloc;
     te_string               cmd;
     pid_t                   pid;
     vm_chardev_list_t       chardevs;
@@ -806,8 +807,12 @@ vm_start(struct vm_entry *vm)
             goto exit;
 
         rc = te_string_append_shell_args_as_is(&vm->cmd, "-numa",
-                                               "node,memdev=mem",
-                                               "-mem-prealloc", NULL);
+                                               "node,memdev=mem", NULL);
+        if (rc == 0 && vm->mem_prealloc)
+        {
+            rc = te_string_append_shell_args_as_is(&vm->cmd, "-mem-prealloc",
+                                                   NULL);
+        }
         if (rc != 0)
         {
             ERROR("Failed to append additional arguments for memory object");
@@ -1554,6 +1559,46 @@ vm_mem_path_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, ETXTBSY);
 
     return string_replace(&vm->mem_path, value);
+}
+
+static te_errno
+vm_mem_prealloc_get(unsigned int gid, const char *oid, char *value,
+                    const char *vm_name)
+{
+    struct vm_entry *vm;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%d", vm->mem_prealloc);
+
+    return 0;
+}
+
+static te_errno
+vm_mem_prealloc_set(unsigned int gid, const char *oid, const char *value,
+                    const char *vm_name)
+{
+    struct vm_entry *vm;
+    te_bool enable = !!atoi(value);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    vm->mem_prealloc = enable;
+
+    return 0;
 }
 
 static te_errno
@@ -3058,7 +3103,10 @@ RCF_PCH_CFG_NODE_COLLECTION(node_vm_chardev, "chardev", &node_vm_chardev_path,
                             &node_vm_net, vm_chardev_add, vm_chardev_del,
                             vm_chardev_list, NULL);
 
-RCF_PCH_CFG_NODE_RW(node_vm_mem_path, "path", NULL, NULL,
+RCF_PCH_CFG_NODE_RW(node_vm_mem_prealloc, "prealloc", NULL, NULL,
+                    vm_mem_prealloc_get, vm_mem_prealloc_set);
+
+RCF_PCH_CFG_NODE_RW(node_vm_mem_path, "path", NULL, &node_vm_mem_prealloc,
                     vm_mem_path_get, vm_mem_path_set);
 
 RCF_PCH_CFG_NODE_RW(node_vm_mem_size, "size", NULL, &node_vm_mem_path,

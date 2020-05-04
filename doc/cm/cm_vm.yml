@@ -121,6 +121,14 @@
          Path to memory backend filesystem, e.g. "/dev/hugepages"
          Name: None
 
+    - oid: "/agent/vm/mem/prealloc"
+      access: read_write
+      type: integer
+      d: |
+         Does memory need to be pre-allocated? Default is 0.
+         Only meaningful if "/agent/vm/mem/path" is set.
+         Name: None
+
     - oid: "/agent/vm/device"
       access: read_create
       type: string
