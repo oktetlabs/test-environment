@@ -60,6 +60,15 @@ struct vm_drive_entry {
     te_bool                         cdrom;
 };
 
+struct vm_virtfs_entry {
+    SLIST_ENTRY(vm_virtfs_entry)    links;
+    char                           *name;
+    char                           *fsdriver;
+    char                           *path;
+    char                           *security_model;
+    char                           *mount_tag;
+};
+
 struct vm_chardev_entry {
     SLIST_ENTRY(vm_chardev_entry)   links;
     char                           *name;
@@ -91,6 +100,7 @@ struct vm_device_entry {
 typedef SLIST_HEAD(vm_chardev_list_t, vm_chardev_entry) vm_chardev_list_t;
 typedef SLIST_HEAD(vm_net_list_t, vm_net_entry) vm_net_list_t;
 typedef SLIST_HEAD(vm_drive_list_t, vm_drive_entry) vm_drive_list_t;
+typedef SLIST_HEAD(vm_virtfs_list_t, vm_virtfs_entry) vm_virtfs_list_t;
 typedef SLIST_HEAD(vm_pci_pt_list_t, vm_pci_pt_entry) vm_pci_pt_list_t;
 typedef SLIST_HEAD(vm_device_list_t, vm_device_entry) vm_device_list_t;
 
@@ -111,6 +121,7 @@ struct vm_entry {
     vm_chardev_list_t       chardevs;
     vm_net_list_t           nets;
     vm_drive_list_t         drives;
+    vm_virtfs_list_t        virtfses;
     vm_pci_pt_list_t        pci_pts;
     vm_device_list_t        devices;
     char                   *kernel;
@@ -483,6 +494,44 @@ exit:
 }
 
 static te_errno
+vm_append_virtfs_cmd(te_string *cmd, vm_virtfs_list_t *virtfses)
+{
+    te_string virtfs_args = TE_STRING_INIT;
+    struct vm_virtfs_entry *virtfs;
+    te_errno rc = 0;
+
+    SLIST_FOREACH(virtfs, virtfses, links)
+    {
+        rc = te_string_append(&virtfs_args,
+                              "%s,path=%s,security_model=%s,mount_tag=%s",
+                              virtfs->fsdriver,
+                              virtfs->path,
+                              virtfs->security_model,
+                              virtfs->mount_tag);
+        if (rc != 0)
+        {
+            ERROR("Cannot compose VM drive command line (line %u)", __LINE__);
+            goto exit;
+        }
+
+        rc = te_string_append_shell_args_as_is(cmd, "-virtfs",
+                                               virtfs_args.ptr, NULL);
+        if (rc != 0)
+        {
+            ERROR("Cannot compose VM drive command line (line %u)", __LINE__);
+            goto exit;
+        }
+
+        te_string_reset(&virtfs_args);
+    }
+
+exit:
+    te_string_free(&virtfs_args);
+
+    return TE_RC(TE_TA_UNIX, rc);
+}
+
+static te_errno
 vm_append_pci_pt_cmd(te_string *cmd, vm_pci_pt_list_t *pt_list)
 {
     te_string args = TE_STRING_INIT;
@@ -722,6 +771,10 @@ vm_start(struct vm_entry *vm)
     if (rc != 0)
         goto exit;
 
+    rc = vm_append_virtfs_cmd(&vm->cmd, &vm->virtfses);
+    if (rc != 0)
+        goto exit;
+
     rc = vm_append_pci_pt_cmd(&vm->cmd, &vm->pci_pts);
     if (rc != 0)
         goto exit;
@@ -859,6 +912,16 @@ vm_drive_free(struct vm_drive_entry *drive)
 }
 
 static void
+vm_virtfs_free(struct vm_virtfs_entry *vfs)
+{
+    free(vfs->fsdriver);
+    free(vfs->mount_tag);
+    free(vfs->path);
+    free(vfs->security_model);
+    free(vfs->name);
+}
+
+static void
 vm_pci_pt_free(struct vm_pci_pt_entry *pt)
 {
     free(pt->name);
@@ -881,6 +944,8 @@ vm_free(struct vm_entry *vm)
     struct vm_net_entry *net_tmp;
     struct vm_drive_entry *drive;
     struct vm_drive_entry *drive_tmp;
+    struct vm_virtfs_entry *virtfs;
+    struct vm_virtfs_entry *virtfs_tmp;
     struct vm_pci_pt_entry *pci_pt;
     struct vm_pci_pt_entry *pci_pt_tmp;
     struct vm_device_entry *device;
@@ -896,6 +961,12 @@ vm_free(struct vm_entry *vm)
     {
         SLIST_REMOVE(&vm->drives, drive, vm_drive_entry, links);
         vm_drive_free(drive);
+    }
+
+    SLIST_FOREACH_SAFE(virtfs, &vm->virtfses, links, virtfs_tmp)
+    {
+        SLIST_REMOVE(&vm->virtfses, drive, vm_virtfs_entry, links);
+        vm_virtfs_free(virtfs);
     }
 
     SLIST_FOREACH_SAFE(pci_pt, &vm->pci_pts, links, pci_pt_tmp)
@@ -932,6 +1003,23 @@ vm_drive_find(const struct vm_entry *vm, const char *name)
         return NULL;
 
     SLIST_FOREACH(p, &vm->drives, links)
+    {
+        if (strcmp(name, p->name) == 0)
+            return p;
+    }
+
+    return NULL;
+}
+
+static struct vm_virtfs_entry *
+vm_virtfs_find(const struct vm_entry *vm, const char *name)
+{
+    struct vm_virtfs_entry *p;
+
+    if (vm == NULL)
+        return NULL;
+
+    SLIST_FOREACH(p, &vm->virtfses, links)
     {
         if (strcmp(name, p->name) == 0)
             return p;
@@ -1048,6 +1136,7 @@ vm_add(unsigned int gid, const char *oid, const char *value,
 
     SLIST_INIT(&vm->nets);
     SLIST_INIT(&vm->drives);
+    SLIST_INIT(&vm->virtfses);
     SLIST_INIT(&vm->pci_pts);
     SLIST_INIT(&vm->devices);
 
@@ -2262,6 +2351,272 @@ vm_drive_cdrom_set(unsigned int gid, const char *oid, char *value,
 }
 
 static te_errno
+vm_virtfs_add(unsigned int gid, const char *oid, const char *value,
+              const char *vm_name, const char *virtfs_name)
+{
+    struct vm_entry *vm;
+    struct vm_virtfs_entry *virtfs;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(value);
+
+    if ((vm = vm_find(vm_name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    if (vm_virtfs_find(vm, virtfs_name) != NULL)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+
+    virtfs = TE_ALLOC(sizeof(*virtfs));
+    if (virtfs == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    virtfs->name = strdup(virtfs_name);
+    if (virtfs->name == NULL)
+    {
+        free(virtfs);
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+    }
+
+    SLIST_INSERT_HEAD(&vm->virtfses, virtfs, links);
+
+    return 0;
+}
+
+static te_errno
+vm_virtfs_del(unsigned int gid, const char *oid,
+              const char *vm_name, const char *virtfs_name)
+{
+    struct vm_entry *vm;
+    struct vm_virtfs_entry *virtfs;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    virtfs = vm_virtfs_find(vm, virtfs_name);
+    if (virtfs == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    SLIST_REMOVE(&vm->virtfses, virtfs, vm_virtfs_entry, links);
+
+    vm_virtfs_free(virtfs);
+
+    return 0;
+}
+
+static te_errno
+vm_virtfs_list(unsigned int gid, const char *oid, const char *sub_id,
+               char **list, const char *vm_name)
+{
+    te_string result = TE_STRING_INIT;
+    struct vm_entry *vm;
+    struct vm_virtfs_entry *vfs;
+    te_bool first = TRUE;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    SLIST_FOREACH(vfs, &vm->virtfses, links)
+    {
+        rc = te_string_append(&result, "%s%s", first ? "" : " ", vfs->name);
+        first = FALSE;
+        if (rc != 0)
+        {
+            te_string_free(&result);
+            return TE_RC(TE_TA_UNIX, rc);
+        }
+    }
+
+    *list = result.ptr;
+    return 0;
+}
+
+static te_errno
+vm_virtfs_fsdriver_get(unsigned int gid, const char *oid, char *value,
+                       const char *vm_name, const char *virtfs_name)
+{
+    struct vm_virtfs_entry *virtfs;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    virtfs = vm_virtfs_find(vm_find(vm_name), virtfs_name);
+    if (virtfs == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", virtfs->fsdriver);
+
+    return 0;
+}
+
+static te_errno
+vm_virtfs_fsdriver_set(unsigned int gid, const char *oid, char *value,
+                       const char *vm_name, const char *virtfs_name)
+{
+    struct vm_entry *vm;
+    struct vm_virtfs_entry *virtfs;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    virtfs = vm_virtfs_find(vm, virtfs_name);
+    if (virtfs == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return string_replace(&virtfs->fsdriver, value);
+}
+
+static te_errno
+vm_virtfs_mount_tag_get(unsigned int gid, const char *oid, char *value,
+                        const char *vm_name, const char *virtfs_name)
+{
+    struct vm_virtfs_entry *virtfs;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    virtfs = vm_virtfs_find(vm_find(vm_name), virtfs_name);
+    if (virtfs == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", virtfs->mount_tag);
+
+    return 0;
+}
+
+static te_errno
+vm_virtfs_mount_tag_set(unsigned int gid, const char *oid, char *value,
+                        const char *vm_name, const char *virtfs_name)
+{
+    struct vm_entry *vm;
+    struct vm_virtfs_entry *virtfs;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    virtfs = vm_virtfs_find(vm, virtfs_name);
+    if (virtfs == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return string_replace(&virtfs->mount_tag, value);
+}
+
+static te_errno
+vm_virtfs_path_get(unsigned int gid, const char *oid, char *value,
+                   const char *vm_name, const char *virtfs_name)
+{
+    struct vm_virtfs_entry *virtfs;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    virtfs = vm_virtfs_find(vm_find(vm_name), virtfs_name);
+    if (virtfs == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", virtfs->path);
+
+    return 0;
+}
+
+static te_errno
+vm_virtfs_path_set(unsigned int gid, const char *oid, char *value,
+                   const char *vm_name, const char *virtfs_name)
+{
+    struct vm_entry *vm;
+    struct vm_virtfs_entry *virtfs;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    virtfs = vm_virtfs_find(vm, virtfs_name);
+    if (virtfs == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return string_replace(&virtfs->path, value);
+}
+
+static te_errno
+vm_virtfs_security_model_get(unsigned int gid, const char *oid, char *value,
+                             const char *vm_name, const char *virtfs_name)
+{
+    struct vm_virtfs_entry *virtfs;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    virtfs = vm_virtfs_find(vm_find(vm_name), virtfs_name);
+    if (virtfs == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", virtfs->security_model);
+
+    return 0;
+}
+
+static te_errno
+vm_virtfs_security_model_set(unsigned int gid, const char *oid, char *value,
+                             const char *vm_name, const char *virtfs_name)
+{
+    struct vm_entry *vm;
+    struct vm_virtfs_entry *virtfs;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    vm = vm_find(vm_name);
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
+
+    virtfs = vm_virtfs_find(vm, virtfs_name);
+    if (virtfs == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    return string_replace(&virtfs->security_model, value);
+}
+
+
+static te_errno
 vm_pci_pt_get(unsigned int gid, const char *oid, char *value,
               const char *vm_name, const char *pci_pt_name)
 {
@@ -2634,6 +2989,25 @@ RCF_PCH_CFG_NODE_RW(node_vm_cpu_model, "model", NULL, &node_vm_cpu_num,
 
 RCF_PCH_CFG_NODE_NA(node_vm_cpu, "cpu", &node_vm_cpu_model, &node_vm_pci_pt);
 
+RCF_PCH_CFG_NODE_RW(node_vm_virtfs_fsdriver, "fsdriver", NULL, NULL,
+                    vm_virtfs_fsdriver_get, vm_virtfs_fsdriver_set);
+
+RCF_PCH_CFG_NODE_RW(node_vm_virtfs_path, "path", NULL, &node_vm_virtfs_fsdriver,
+                    vm_virtfs_path_get, vm_virtfs_path_set);
+
+RCF_PCH_CFG_NODE_RW(node_vm_virtfs_mount_tag, "mount_tag",
+                    NULL, &node_vm_virtfs_path,
+                    vm_virtfs_mount_tag_get, vm_virtfs_mount_tag_set);
+
+RCF_PCH_CFG_NODE_RW(node_vm_virtfs_security_model, "security_model",
+                    NULL, &node_vm_virtfs_mount_tag,
+                    vm_virtfs_security_model_get, vm_virtfs_security_model_set);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_vm_virtfs, "virtfs",
+                            &node_vm_virtfs_security_model,
+                            &node_vm_cpu, vm_virtfs_add, vm_virtfs_del,
+                            vm_virtfs_list, NULL);
+
 RCF_PCH_CFG_NODE_RW(node_vm_drive_cdrom, "cdrom", NULL, NULL,
                     vm_drive_cdrom_get, vm_drive_cdrom_set);
 
@@ -2644,7 +3018,7 @@ RCF_PCH_CFG_NODE_RW(node_vm_file, "file", NULL, &node_vm_snapshot,
                     vm_file_get, vm_file_set);
 
 RCF_PCH_CFG_NODE_COLLECTION(node_vm_drive, "drive", &node_vm_file,
-                            &node_vm_cpu, vm_drive_add, vm_drive_del,
+                            &node_vm_virtfs, vm_drive_add, vm_drive_del,
                             vm_drive_list, NULL);
 
 RCF_PCH_CFG_NODE_RW(node_vm_kernel_cmdline, "cmdline", NULL, NULL,

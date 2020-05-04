@@ -164,6 +164,45 @@
       d: |
         Is drive a disk (0, default) or cdrom (1)?
 
+    - oid: "/agent/vm/virtfs"
+      access: read_create
+      type: none
+      d: |
+         Virtual machine virtfs configuration.
+         Name: virtfs ID
+
+    - oid: "/agent/vm/virtfs/path"
+      access: read_write
+      type: string
+      d: |
+         The path on the host that is identified by this fsdev.
+         Name: None
+
+    - oid: "/agent/vm/virtfs/fsdriver"
+      access: read_write
+      type: string
+      d: |
+         This option specifies the fs driver backend to use.
+         Currently only "local","handle" and "proxy" file system
+         drivers are supported.
+         Name: None
+
+    - oid: "/agent/vm/virtfs/security_model"
+      access: read_write
+      type: string
+      d: |
+         Valid options are mapped, passthrough & none.
+         No need to specify security_model with "proxy" file system drivers.
+         Name: None
+
+    - oid: "/agent/vm/virtfs/mount_tag"
+      access: read_write
+      type: string
+      d: |
+         A tag which acts as a hint to the guest OS and is
+         used to mount this exported path.
+         Name: None
+
     - oid: "/agent/vm/kernel"
       access: read_write
       type: string
