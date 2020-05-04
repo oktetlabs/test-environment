@@ -476,7 +476,8 @@ static const char * const env_hidden[] = {
     "TE_LOG_PORT",
     "TARPC_DL_NAME",
     "TCE_CONNECTION",
-    "LD_PRELOAD"
+    "LD_PRELOAD",
+    "LS_COLORS",
 };
 
 static te_errno uname_get(unsigned int, const char *, char *);
