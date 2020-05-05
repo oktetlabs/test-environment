@@ -80,6 +80,11 @@ typedef struct depth_ctx_user {
                                       key - entity name,
                                       value - array of user names */
     uint32_t linum; /**< Line number in HTML */
+
+    te_bool ignore_artifact; /**< If @c TRUE, the currently processed
+                                  artifact should be ignored - this
+                                  is used for filtering out MI
+                                  artifacts in summary */
 } depth_ctx_user_t;
 
 /**< Struct to keep values related to log message name JS callback */
@@ -1209,8 +1214,6 @@ DEF_FUNC_WITHOUT_ATTRS(proc_meta_verdict_start, META_VERDICT_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_verdict_end, META_VERDICT_END)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_artifacts_start, META_ARTIFACTS_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_artifacts_end, META_ARTIFACTS_END)
-DEF_FUNC_WITHOUT_ATTRS(proc_meta_artifact_start, META_ARTIFACT_START)
-DEF_FUNC_WITHOUT_ATTRS(proc_meta_artifact_end, META_ARTIFACT_END)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_params_start, META_PARAMS_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_meta_params_end, META_PARAMS_END)
 DEF_FUNC_WITHOUT_ATTRS(proc_mem_dump_start, MEM_DUMP_START)
@@ -1240,11 +1243,39 @@ RGT_DEF_FUNC(name_)                                                   \
 DEF_FUNC_WITH_ATTRS(proc_log_msg_file_start, LOG_MSG_FILE_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_log_msg_file_end, LOG_MSG_FILE_END)
 
+RGT_DEF_FUNC(proc_meta_artifact_start)
+{
+    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
+    const char *level = rgt_tmpls_xml_attrs_get(xml_attrs, "level");
+    FILE *fd = depth_user->fd;
+
+    RGT_FUNC_UNUSED_PRMS();
+
+    if (level != NULL && strcmp(level, "MI") == 0)
+        depth_user->ignore_artifact = TRUE;
+    else if (fd != NULL)
+        rgt_tmpls_output(fd, &xml2fmt_tmpls[META_ARTIFACT_START], NULL);
+}
+
+RGT_DEF_FUNC(proc_meta_artifact_end)
+{
+    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
+    FILE *fd = depth_user->fd;
+
+    RGT_FUNC_UNUSED_PRMS();
+
+    if (!(depth_user->ignore_artifact) && fd != NULL)
+        rgt_tmpls_output(fd, &xml2fmt_tmpls[META_ARTIFACT_END], NULL);
+
+    depth_user->ignore_artifact = FALSE;
+}
+
 void
 proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
            const rgt_xmlChar *ch, size_t len)
 {
-    FILE       *fd = ((depth_ctx_user_t *)depth_ctx->user_data)->fd;
+    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)depth_ctx->user_data;
+    FILE *fd = depth_user->fd;
 #if 0 && (defined WITH_LIBXML) && LIBXML_VERSION >= 20700
     const char        *entity = NULL;
     const rgt_xmlChar *p, *ch_begin, *ch_end;
@@ -1254,6 +1285,9 @@ proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     TE_COMPILE_TIME_ASSERT(sizeof(rgt_xmlChar) == 1);
 
     if (fd == NULL)
+        return;
+
+    if (depth_user->ignore_artifact)
         return;
 
 #if 0 && (defined WITH_LIBXML) && LIBXML_VERSION >= 20700
@@ -1382,6 +1416,8 @@ static GPtrArray *depth_array = NULL;
 static depth_ctx_user_t *
 alloc_depth_user_data(uint32_t depth)
 {
+    depth_ctx_user_t *depth_user;
+
     assert(depth >= 1);
 
     if (depth_array == NULL)
@@ -1403,7 +1439,9 @@ alloc_depth_user_data(uint32_t depth)
 
     assert(g_ptr_array_index(depth_array, depth - 1) != NULL);
 
-    return g_ptr_array_index(depth_array, depth - 1);
+    depth_user = g_ptr_array_index(depth_array, depth - 1);
+    depth_user->ignore_artifact = FALSE;
+    return depth_user;
 }
 
 /**

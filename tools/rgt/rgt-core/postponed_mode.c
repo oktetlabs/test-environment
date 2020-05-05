@@ -220,8 +220,8 @@ process_result_msg(gpointer data, gpointer user_data,
 
     UNUSED(user_data);
 
-    fprintf(rgt_ctx.out_fd, "<%s>", tag);
     msg = log_msg_read(msg_ptr);
+    fprintf(rgt_ctx.out_fd, "<%s level=\"%s\">", tag, msg->level_str);
     output_regular_log_msg(msg);
     free_log_msg(msg);
     fprintf(rgt_ctx.out_fd, "</%s>\n", tag);
