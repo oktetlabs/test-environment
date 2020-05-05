@@ -12,6 +12,8 @@ xml2html_multi_tmpls = files(
     'js_log_names_entity.tmpl',
     'js_log_names_start.tmpl',
     'js_log_names_user.tmpl',
+    'json_end.tmpl',
+    'json_start.tmpl',
     'lf_doc_end.tmpl',
     'lf_doc_start.tmpl',
     'lf_ref_part.tmpl',

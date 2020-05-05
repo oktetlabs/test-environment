@@ -13,6 +13,13 @@
 <!-- Latest compiled JavaScript -->
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 
+<script src="@@%s:shared_url@@renderjson.js"></script>
+<script>
+    // By default show root's children for JSON, not just single
+    // root node.
+    renderjson.set_show_to_level(1);
+</script>
+
 <style type="text/css">
     td {
       padding: 2px !important;
@@ -35,6 +42,15 @@
     .INFO { background-color: #ECEDEC !important; valign: top; }
     .VERB { background-color: #EFF2FF; valign: top; }
     .PACKET { background-color: #E5E5E5; valign: top; }
+
+    .renderjson .disclosure { color: firebrick; font-size: 150% }
+    .renderjson .string { color: crimson; }
+    .renderjson .number { color: blueviolet; }
+    .renderjson .boolean { color: darkorange; }
+    .renderjson .key { color: blue; }
+    .renderjson .keyword { color: blue; }
+    .renderjson .object.syntax { color: green; }
+    .renderjson .array.syntax  { color: brown; }
 </style>
 
 <title>

@@ -20,6 +20,8 @@ dist_pkgdata_DATA = \
     js_log_names_entity.tmpl\
     js_log_names_user.tmpl\
     js_log_names_start.tmpl\
+    json_end.tmpl\
+    json_start.tmpl\
     doc_ref_to_node.tmpl\
     doc_cntrl_node_title.tmpl\
     doc_cntrl_node_hash.tmpl\

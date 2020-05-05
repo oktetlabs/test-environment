@@ -1015,6 +1015,13 @@ RGT_DEF_FUNC(proc_log_msg_start)
                                    depth_user->linum++);
         rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOG_MSG_START],
                          attrs);
+
+        if (strcmp(level, "MI") == 0)
+        {
+            rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[JSON_START],
+                             attrs);
+        }
+
         rgt_tmpls_attrs_free(attrs);
     }
 }
@@ -1029,6 +1036,13 @@ RGT_DEF_FUNC(proc_log_msg_end)
     if (depth_user->fd != NULL)
     {
         attrs = rgt_tmpls_attrs_new(xml_attrs);
+
+        if (strcmp(depth_user->log_level, "MI") == 0)
+        {
+            rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[JSON_END],
+                             attrs);
+        }
+
         rgt_tmpls_attrs_add_fstr(attrs, "level", depth_user->log_level);
         rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOG_MSG_END],
                          attrs);
