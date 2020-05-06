@@ -374,7 +374,6 @@ cfg_dh_process_copy(xmlNodePtr node, te_kvpair_h *expand_vars)
     size_t        len;
     size_t        oid_len;
     char         *oid = NULL;
-    te_bool       is_obj;
     char         *val_s = NULL;
     cfg_copy_msg *msg = NULL;
     cfg_handle    src_handle;
