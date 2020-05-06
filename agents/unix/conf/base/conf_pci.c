@@ -1738,13 +1738,22 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
     if (strcmp_start("virtio-pci", driver_name) == 0)
     {
         n = scandir(buf.ptr, &namelist, filter_virtio, alphasort);
-        if (n <= 0)
-        {
-            ERROR("Cannot find virtio dir");
-            if (n == 0)
-                return TE_RC(TE_TA_UNIX, TE_EOK);
 
+        if (n < 0)
+        {
+            te_string_free(&buf);
+            ERROR("Failed to scan directory '%s': %s",
+                  buf.ptr, strerror(errno));
             return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+
+        if (n == 0)
+        {
+            te_string_free(&buf);
+            *list = strdup("");
+            if (*list == NULL)
+                return TE_OS_RC(TE_TA_UNIX, TE_ENOMEM);
+            return 0;
         }
 
         rc = te_string_append(&buf, "%s", namelist[0]->d_name);
