@@ -4,7 +4,7 @@ subdir('xml2html')
 subdir('xml2text')
 subdir('xml2html-multi')
 
-tool_deps = [dep_libxml2, dep_glib]
+tool_deps = [dep_libxml2, dep_glib, dep_lib_tools, dep_lib_logger_core]
 
 libcapture = static_library(
     'libcapture',

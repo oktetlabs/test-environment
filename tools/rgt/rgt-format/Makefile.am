@@ -19,7 +19,7 @@ AM_CFLAGS = @TE_CFLAGS@ @GLIB_CFLAGS@ @XML_PARSER_CFLAGS@ $(TE_CFLAGS_VAR)
 
 GEN_LDADD = -L. -L$(top_builddir)/lib/tmpls -lxml2fmt_core -lcapture \
             -lmi_msg @GLIB_LIBS@ @TE_LDFLAGS@ @XML_PARSER_LIBS@  \
-            -ltmpls -lpopt
+            -ltmpls -ltools -llogger_core -lpopt
 GEN_DEP = libxml2fmt_core.a libcapture.a libmi_msg.a \
           $(top_builddir)/lib/tmpls/libtmpls.a
 

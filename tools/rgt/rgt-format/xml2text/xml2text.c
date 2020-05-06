@@ -19,10 +19,17 @@
 
 #include <errno.h>
 
+#ifdef HAVE_LIBJANSSON
+#include <jansson.h>
+#endif
+
+#include "te_defs.h"
+#include "te_dbuf.h"
 #include "xml2gen.h"
 #include "xml2text.h"
 
 #include "capture.h"
+#include "mi_msg.h"
 
 /* Max attribute length in one line */
 int rgt_max_attribute_length = 76;
@@ -35,6 +42,10 @@ int detailed_packets = 0;
 typedef struct gen_ctx_user {
     FILE             *fd; /**< File descriptor of the document to output
                                the result */
+
+    te_bool mi_artifact;  /**< If @c TRUE, MI artifact is processed */
+    te_dbuf json_data;    /**< Buffer for collecting JSON before it can
+                               be parsed */
 } gen_ctx_user_t;
 
 /* RGT format-specific options table */
@@ -60,6 +71,9 @@ RGT_DEF_FUNC(proc_document_start)
     /* Initialize a pointer to generic user-specific data */
     ctx->user_data = gen_user = &user_ctx;
 
+    user_ctx.json_data = (te_dbuf)TE_DBUF_INIT(0);
+    user_ctx.mi_artifact = FALSE;
+
     /* In text output all XML entities should be expanded */
     ctx->expand_entities = TRUE;
 
@@ -79,12 +93,15 @@ RGT_DEF_FUNC(proc_document_start)
 
 RGT_DEF_FUNC(proc_document_end)
 {
-    FILE *fd = ((gen_ctx_user_t *)ctx->user_data)->fd;
+    gen_ctx_user_t *user_ctx = (gen_ctx_user_t *)(ctx->user_data);
+    FILE *fd = user_ctx->fd;
 
     RGT_FUNC_UNUSED_PRMS();
 
     rgt_tmpls_output(fd, &xml2fmt_tmpls[DOCUMENT_END], NULL);
     fclose(fd);
+
+    te_dbuf_free(&user_ctx->json_data);
 }
 
 RGT_DEF_DUMMY_FUNC(proc_session_start)
@@ -117,9 +134,6 @@ RGT_DEF_FUNC(name_)                                          \
                                                              \
     rgt_tmpls_output(fd, &xml2fmt_tmpls[enum_const_], NULL); \
 }
-
-DEF_FUNC_WITH_ATTRS(proc_log_msg_start, LOG_MSG_START)
-DEF_FUNC_WITHOUT_ATTRS(proc_log_msg_end, LOG_MSG_END)
 
 RGT_DEF_DUMMY_FUNC(proc_log_packet_end)
 RGT_DEF_DUMMY_FUNC(proc_log_packet_proto_end)
@@ -168,14 +182,203 @@ DEF_FUNC_WITHOUT_ATTRS(proc_log_msg_br, BR)
 DEF_FUNC_WITH_ATTRS(proc_log_msg_file_start, LOG_MSG_FILE_START)
 DEF_FUNC_WITHOUT_ATTRS(proc_log_msg_file_end, LOG_MSG_FILE_END)
 
+RGT_DEF_FUNC(proc_log_msg_start)
+{
+    const char *level = rgt_tmpls_xml_attrs_get(xml_attrs, "level");
+    gen_ctx_user_t *user_ctx = (gen_ctx_user_t *)(ctx->user_data);
+    FILE *fd = user_ctx->fd;
+    rgt_attrs_t *attrs;
+
+    RGT_FUNC_UNUSED_PRMS();
+
+    if (level != NULL && strcmp(level, "MI") == 0)
+        user_ctx->mi_artifact = TRUE;
+
+    attrs = rgt_tmpls_attrs_new(xml_attrs);
+    rgt_tmpls_output(fd, &xml2fmt_tmpls[LOG_MSG_START], attrs);
+    rgt_tmpls_attrs_free(attrs);
+}
+
+/**
+ * Print a measurement value.
+ *
+ * @param fd      File where to print.
+ * @param value   Value to print.
+ * @param prefix  Prefix string (may be @c NULL).
+ */
+static void
+print_mi_meas_value(FILE *fd, te_rgt_mi_meas_value *value, const char *prefix)
+{
+    if (!(value->defined))
+        return;
+
+    if (prefix != NULL)
+        fprintf(fd, "%15s: ", prefix);
+
+    if (value->specified)
+        fprintf(fd, "%f", value->value);
+    else
+        fprintf(fd, "[failed to obtain]");
+
+    if (value->multiplier != NULL && *(value->multiplier) != '\0' &&
+        strcmp(value->multiplier, "1") != 0)
+        fprintf(fd, " * %s", value->multiplier);
+    if (value->base_units != NULL && *(value->base_units) != '\0')
+        fprintf(fd, " %s", value->base_units);
+
+    fprintf(fd, "\n");
+}
+
+/**
+ * Log MI artifact.
+ *
+ * @param fd      Where to print a log.
+ * @param mi      Structure with data from parsed MI artifact.
+ * @param buf     Buffer with not parsed data (used when parsing failed).
+ * @param len     Length of the buffer.
+ */
+static void
+log_mi_artifact(FILE *fd, te_rgt_mi *mi, void *buf, size_t len)
+{
+    int res = -1;
+
+    if (mi->parse_failed)
+    {
+        fprintf(fd, "Failed to parse JSON: %s\n", mi->parse_err);
+        fwrite(buf, len, 1, fd);
+        return;
+    }
+
+    if (mi->type != TE_RGT_MI_TYPE_MEASUREMENT || mi->rc != 0)
+    {
+        if (mi->rc != 0)
+        {
+            if (mi->rc == TE_EOPNOTSUPP)
+            {
+                fprintf(fd, "Cannot parse MI artifact without "
+                        "libjansson\n");
+            }
+            else
+            {
+                fprintf(fd, "Failed to process MI artifact, error = %s\n",
+                        te_rc_err2str(mi->rc));
+            }
+        }
+
+#ifdef HAVE_LIBJANSSON
+        res = json_dumpf((json_t *)(mi->json_obj), fd, JSON_INDENT(2));
+#endif
+
+        if (res < 0)
+            fwrite(buf, len, 1, fd);
+    }
+    else
+    {
+        te_rgt_mi_meas *meas = &mi->data.measurement;
+        size_t i;
+        size_t j;
+
+        fprintf(fd, "Measurements from tool %s\n", meas->tool);
+        for (i = 0; i < meas->params_num; i++)
+        {
+            te_rgt_mi_meas_param *param;
+
+            param = &meas->params[i];
+
+            fprintf(fd, "\nMeasured parameter: \"%s\"\n",
+                    (param->name == NULL ? "[unnamed]" : param->name));
+
+            if (param->stats_present)
+            {
+                fprintf(fd, "Statistics:\n");
+                print_mi_meas_value(fd, &param->min, "min");
+                print_mi_meas_value(fd, &param->max, "max");
+                print_mi_meas_value(fd, &param->mean, "mean");
+                print_mi_meas_value(fd, &param->median, "median");
+                print_mi_meas_value(fd, &param->stdev, "stdev");
+                print_mi_meas_value(fd, &param->cv, "cv");
+            }
+
+            if (param->values_num > 0)
+            {
+                fprintf(fd, "Values:\n");
+                for (j = 0; j < param->values_num; j++)
+                {
+                    print_mi_meas_value(fd, &param->values[j], NULL);
+                }
+            }
+        }
+
+        if (meas->keys_num > 0)
+        {
+            fprintf(fd, "\nKeys:\n");
+            for (i = 0; i < meas->keys_num; i++)
+            {
+                fprintf(fd, "\"%s\" : \"%s\"\n", meas->keys[i].key,
+                        meas->keys[i].value);
+            }
+        }
+
+        if (meas->comments_num > 0)
+        {
+            fprintf(fd, "\nComments:\n");
+            for (i = 0; i < meas->comments_num; i++)
+            {
+                fprintf(fd, "\"%s\" : \"%s\"\n", meas->comments[i].key,
+                        meas->comments[i].value);
+            }
+        }
+    }
+}
+
+RGT_DEF_FUNC(proc_log_msg_end)
+{
+    gen_ctx_user_t *user_ctx = (gen_ctx_user_t *)(ctx->user_data);
+    FILE *fd = user_ctx->fd;
+    rgt_attrs_t *attrs;
+
+    RGT_FUNC_UNUSED_PRMS();
+
+    if (user_ctx->mi_artifact)
+    {
+        if (user_ctx->json_data.ptr != NULL)
+        {
+            te_rgt_mi mi;
+
+            te_rgt_parse_mi_message((char *)(user_ctx->json_data.ptr),
+                                    user_ctx->json_data.len, &mi);
+
+            log_mi_artifact(fd, &mi,
+                            (char *)(user_ctx->json_data.ptr),
+                            user_ctx->json_data.len);
+
+            te_rgt_mi_clean(&mi);
+        }
+
+        user_ctx->mi_artifact = FALSE;
+        te_dbuf_reset(&user_ctx->json_data);
+    }
+
+    attrs = rgt_tmpls_attrs_new(xml_attrs);
+    rgt_tmpls_output(fd, &xml2fmt_tmpls[LOG_MSG_END], attrs);
+    rgt_tmpls_attrs_free(attrs);
+}
+
 void
 proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
            const rgt_xmlChar *ch, size_t len)
 {
-    FILE *fd = ((gen_ctx_user_t *)ctx->user_data)->fd;
+    gen_ctx_user_t *user_ctx = (gen_ctx_user_t *)(ctx->user_data);
+    FILE *fd = user_ctx->fd;
 
     UNUSED(ctx);
     UNUSED(depth_ctx);
+
+    if (user_ctx->mi_artifact)
+    {
+        te_dbuf_append(&user_ctx->json_data, ch, len);
+        return;
+    }
 
     fwrite(ch, len, 1, fd);
 }
