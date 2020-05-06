@@ -1739,20 +1739,20 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
     {
         n = scandir(buf.ptr, &namelist, filter_virtio, alphasort);
         if (n <= 0)
-	{
+        {
             ERROR("Cannot find virtio dir");
-	    if (n == 0)
+            if (n == 0)
                 return TE_RC(TE_TA_UNIX, TE_EOK);
 
-	    return TE_OS_RC(TE_TA_UNIX, errno);
+            return TE_OS_RC(TE_TA_UNIX, errno);
         }
 
-	rc = te_string_append(&buf, "%s", namelist[0]->d_name);
-	if (rc != 0)
+        rc = te_string_append(&buf, "%s", namelist[0]->d_name);
+        if (rc != 0)
             return rc;
 
-	while (n--)
-	    free(namelist[n]);
+        while (n--)
+            free(namelist[n]);
 
         free(namelist);
     }
