@@ -126,6 +126,9 @@ fi
 AC_SUBST(XML_PARSER_CFLAGS)
 AC_SUBST(XML_PARSER_LIBS)
 
+AS_MESSAGE([checking jansson library...])
+AC_CHECK_LIB([jansson], [json_loadb])
+
 TE_HEADERS_PATH=""
 AC_ARG_WITH([te-headers-path],
             AS_HELP_STRING([--with-te-headers-path=[PATH]],

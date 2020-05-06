@@ -4,6 +4,8 @@ subdir('xml2html')
 subdir('xml2text')
 subdir('xml2html-multi')
 
+tool_deps = [dep_libxml2, dep_glib]
+
 libcapture = static_library(
     'libcapture',
     ['capture.c', 'capture.h'],
@@ -21,6 +23,21 @@ libxml2fmt_core = static_library(
     dependencies: [dep_libxml2, dep_glib, dep_popt],
 )
 
+dep_jansson = dependency('jansson', required: false)
+if dep_jansson.found() and cc.has_function('json_loadb',
+                                           c_args: c_args,
+                                           dependencies: dep_jansson)
+    tool_deps += [ dep_jansson ]
+    c_args += [ '-DHAVE_LIBJANSSON=1' ]
+endif
+
+libmi_msg = static_library(
+    'libmi_msg',
+    ['mi_msg.c'],
+    include_directories: inc,
+    c_args: c_args,
+    dependencies: [dep_jansson],
+)
 
 common_util_path = join_paths('..', get_option('datadir'), 'rgt-format')
 
@@ -46,9 +63,9 @@ foreach tool: rgt_xml2_tools
         files(join_paths(tool.get(0), tool.get(0) + '.c'), 'capture.h'),
         header,
         include_directories: inc,
-        dependencies: [dep_libxml2, dep_glib],
+        dependencies: tool_deps,
         c_args: c_args,
-        link_with: [libtmpls, libcapture, libxml2fmt_core],
+        link_with: [libtmpls, libcapture, libxml2fmt_core, libmi_msg],
         install: true,
     )
 endforeach

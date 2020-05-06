@@ -17,13 +17,16 @@ AM_CPPFLAGS = -I$(top_srcdir) @TE_CPPFLAGS@ \
               -I$(top_srcdir)/lib/tmpls @EXTRA_CPPFLAGS@ $(TE_CPPFLAGS_VAR)
 AM_CFLAGS = @TE_CFLAGS@ @GLIB_CFLAGS@ @XML_PARSER_CFLAGS@ $(TE_CFLAGS_VAR)
 
-GEN_LDADD = -L. -L$(top_builddir)/lib/tmpls -lxml2fmt_core -lcapture @GLIB_LIBS@ \
-            @TE_LDFLAGS@ @XML_PARSER_LIBS@  -ltmpls -lpopt
-GEN_DEP = libxml2fmt_core.a libcapture.a $(top_builddir)/lib/tmpls/libtmpls.a
+GEN_LDADD = -L. -L$(top_builddir)/lib/tmpls -lxml2fmt_core -lcapture \
+            -lmi_msg @GLIB_LIBS@ @TE_LDFLAGS@ @XML_PARSER_LIBS@  \
+            -ltmpls -lpopt
+GEN_DEP = libxml2fmt_core.a libcapture.a libmi_msg.a \
+          $(top_builddir)/lib/tmpls/libtmpls.a
 
-noinst_LIBRARIES = libxml2fmt_core.a libcapture.a
+noinst_LIBRARIES = libxml2fmt_core.a libcapture.a libmi_msg.a
 libxml2fmt_core_a_SOURCES = xml2fmt_core.c
 libcapture_a_SOURCES = capture.c capture.h
+libmi_msg_a_SOURCES = mi_msg.c mi_msg.h
 
 noinst_HEADERS = xml2gen.h
 
