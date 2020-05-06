@@ -23,11 +23,13 @@
 
 #include "logger_defs.h"
 #include "te_raw_log.h"
+#include "te_dbuf.h"
 
 #include "capture.h"
 
 #include "xml2gen.h"
 #include "xml2html-multi.h"
+#include "mi_msg.h"
 
 /*
  * Name all files by depth and sequence numbers in tree,
@@ -85,6 +87,9 @@ typedef struct depth_ctx_user {
                                   artifact should be ignored - this
                                   is used for filtering out MI
                                   artifacts in summary */
+
+    te_dbuf json_data;    /**< Buffer for collecting JSON before it can
+                               be parsed */
 } depth_ctx_user_t;
 
 /**< Struct to keep values related to log message name JS callback */
@@ -1021,14 +1026,183 @@ RGT_DEF_FUNC(proc_log_msg_start)
         rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOG_MSG_START],
                          attrs);
 
-        if (strcmp(level, "MI") == 0)
-        {
-            rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[JSON_START],
-                             attrs);
-        }
-
         rgt_tmpls_attrs_free(attrs);
     }
+}
+
+/**
+ * Print a measurement value.
+ *
+ * @param fd      File where to print.
+ * @param value   Value to print.
+ * @param prefix  Prefix string (may be @c NULL).
+ */
+static void
+print_mi_meas_value(FILE *fd, te_rgt_mi_meas_value *value, const char *prefix)
+{
+    if (!(value->defined))
+        return;
+
+    fprintf(fd, "<li>");
+    if (prefix != NULL)
+        fprintf(fd, "%s: ", prefix);
+
+    if (value->specified)
+        fprintf(fd, "%f", value->value);
+    else
+        fprintf(fd, "[failed to obtain]");
+
+    if (value->multiplier != NULL && *(value->multiplier) != '\0' &&
+        strcmp(value->multiplier, "1") != 0)
+        fprintf(fd, " * %s", value->multiplier);
+    if (value->base_units != NULL && *(value->base_units) != '\0')
+        fprintf(fd, " %s", value->base_units);
+
+    fprintf(fd, "</li>\n");
+}
+
+/**
+ * Print a header inside log message.
+ *
+ * @param _hlevel     Header level. CSS class log_hN should be
+ *                    defined for it, see misc/log_style.css.
+ * @param _fd         File where to print.
+ * @param _format...  Format string and arguments.
+ */
+#define FPRINTF_HEADER(_hlevel, _fd, _format...) \
+    do {                                                      \
+        fprintf(_fd, "<span class=\"log_h%d\">", _hlevel);    \
+        fprintf(_fd, _format);                                \
+        fprintf(_fd, "</span>\n");                            \
+    } while (0)
+
+/**
+ * Log parsed MI artifact.
+ *
+ * @param fd        File where to print log.
+ * @param mi        Structure with parsed MI artifact.
+ * @param buf       Buffer with not parsed MI artifact data.
+ * @param len       Size of the buffer.
+ * @param attrs     Attributes for HTML templates.
+ */
+static void
+log_mi_artifact(FILE *fd, te_rgt_mi *mi, void *buf, size_t len,
+                rgt_attrs_t *attrs)
+{
+    int json_show_level = 1;
+
+    if (mi->parse_failed)
+    {
+        fprintf(fd, "Failed to parse JSON: %s<br>\n", mi->parse_err);
+        fwrite(buf, len, 1, fd);
+        return;
+    }
+    else if (mi->rc != 0)
+    {
+        if (mi->rc == TE_EOPNOTSUPP)
+        {
+            fprintf(fd, "Cannot process MI artifact without "
+                    "libjansson<br>\n");
+        }
+        else
+        {
+            fprintf(fd, "Failed to process MI artifact, error = %s<br>\n",
+                    te_rc_err2str(mi->rc));
+        }
+    }
+    else if (mi->type == TE_RGT_MI_TYPE_MEASUREMENT)
+    {
+        te_rgt_mi_meas *meas = &mi->data.measurement;
+        size_t i;
+        size_t j;
+
+        FPRINTF_HEADER(1, fd, "Measurements from tool %s", meas->tool);
+        for (i = 0; i < meas->params_num; i++)
+        {
+            te_rgt_mi_meas_param *param;
+
+            param = &meas->params[i];
+
+            FPRINTF_HEADER(
+                    2, fd, "Measured parameter: \"%s\"",
+                    (param->name == NULL ? "[unnamed]" : param->name));
+
+            fprintf(fd, "<ul style=\"list-style-type:none;\">\n");
+
+            if (param->stats_present)
+            {
+                fprintf(fd, "<li>\n");
+                FPRINTF_HEADER(3, fd, "Statistics:");
+                fprintf(fd, "<ul style=\"list-style-type:none;\">\n");
+                print_mi_meas_value(fd, &param->min, "min");
+                print_mi_meas_value(fd, &param->max, "max");
+                print_mi_meas_value(fd, &param->mean, "mean");
+                print_mi_meas_value(fd, &param->median, "median");
+                print_mi_meas_value(fd, &param->stdev, "stdev");
+                print_mi_meas_value(fd, &param->cv, "cv");
+                fprintf(fd, "</ul>\n");
+                fprintf(fd, "</li>\n");
+            }
+
+            if (param->values_num > 0)
+            {
+                fprintf(fd, "<li>\n");
+                FPRINTF_HEADER(3, fd, "Values:");
+                fprintf(fd, "<ul style=\"list-style-type:none;\">\n");
+                for (j = 0; j < param->values_num; j++)
+                {
+                    print_mi_meas_value(fd, &param->values[j], NULL);
+                }
+                fprintf(fd, "</ul>\n");
+                fprintf(fd, "</li>\n");
+            }
+
+            fprintf(fd, "</ul>\n");
+        }
+
+        if (meas->keys_num > 0)
+        {
+            FPRINTF_HEADER(2, fd, "Keys:");
+            fprintf(fd, "<ul style=\"list-style-type:none;\">\n");
+            for (i = 0; i < meas->keys_num; i++)
+            {
+                fprintf(fd, "<li>\"%s\" : \"%s\"\n</li>", meas->keys[i].key,
+                        meas->keys[i].value);
+            }
+            fprintf(fd, "</ul>\n");
+        }
+
+        if (meas->comments_num > 0)
+        {
+            FPRINTF_HEADER(2, fd, "Comments:");
+            fprintf(fd, "<ul style=\"list-style-type:none;\">\n");
+            for (i = 0; i < meas->comments_num; i++)
+            {
+                fprintf(fd, "<li>\"%s\" : \"%s\"</li>\n", meas->comments[i].key,
+                        meas->comments[i].value);
+            }
+            fprintf(fd, "</ul>\n");
+        }
+
+        /*
+         * If textual representation was printed successfully, JSON object
+         * view should be presented as a single-line link.
+         */
+        json_show_level = 0;
+    }
+
+    rgt_tmpls_attrs_add_uint32(attrs, "json_show_level",
+                               json_show_level);
+
+    rgt_tmpls_output(fd,
+                     &xml2fmt_tmpls[JSON_START],
+                     attrs);
+
+    fwrite(buf, len, 1, fd);
+
+    rgt_tmpls_output(fd,
+                     &xml2fmt_tmpls[JSON_END],
+                     attrs);
 }
 
 RGT_DEF_FUNC(proc_log_msg_end)
@@ -1044,8 +1218,24 @@ RGT_DEF_FUNC(proc_log_msg_end)
 
         if (strcmp(depth_user->log_level, "MI") == 0)
         {
-            rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[JSON_END],
-                             attrs);
+            if (depth_user->json_data.ptr != NULL)
+            {
+                te_rgt_mi mi;
+
+                te_rgt_parse_mi_message(
+                                (char *)(depth_user->json_data.ptr),
+                                depth_user->json_data.len, &mi);
+
+                rgt_tmpls_attrs_add_uint32(attrs, "linum",
+                                           depth_user->linum);
+                log_mi_artifact(depth_user->fd, &mi,
+                                (char *)(depth_user->json_data.ptr),
+                                depth_user->json_data.len,
+                                attrs);
+
+                te_rgt_mi_clean(&mi);
+                te_dbuf_reset(&depth_user->json_data);
+            }
         }
 
         rgt_tmpls_attrs_add_fstr(attrs, "level", depth_user->log_level);
@@ -1055,6 +1245,7 @@ RGT_DEF_FUNC(proc_log_msg_end)
     }
 
     free(depth_user->log_level);
+    depth_user->log_level = NULL;
 }
 
 RGT_DEF_DUMMY_FUNC(proc_branch_start)
@@ -1290,6 +1481,13 @@ proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
     if (depth_user->ignore_artifact)
         return;
 
+    if (depth_user->log_level != NULL &&
+        strcmp(depth_user->log_level, "MI") == 0)
+    {
+        te_dbuf_append(&depth_user->json_data, ch, len);
+        return;
+    }
+
 #if 0 && (defined WITH_LIBXML) && LIBXML_VERSION >= 20700
     /* Additional conversion currently not needed
        as XML_PARSE_OLDSAX option passed to parser */
@@ -1441,6 +1639,9 @@ alloc_depth_user_data(uint32_t depth)
 
     depth_user = g_ptr_array_index(depth_array, depth - 1);
     depth_user->ignore_artifact = FALSE;
+    depth_user->log_level = NULL;
+    depth_user->json_data = (te_dbuf)TE_DBUF_INIT(0);
+
     return depth_user;
 }
 
@@ -1454,7 +1655,12 @@ alloc_depth_user_data(uint32_t depth)
 static void
 free_depth_user_data_part(gpointer data, gpointer user_data)
 {
+    depth_ctx_user_t *depth_user = (depth_ctx_user_t *)data;
+
     UNUSED(user_data);
+
+    if (depth_user != NULL)
+        te_dbuf_free(&depth_user->json_data);
 
     g_free(data);
 }
