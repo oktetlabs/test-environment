@@ -1,5 +1,7 @@
 #!/bin/bash
 
+bindir="$(cd `dirname $0` && pwd)"
+
 export TMPDIR="${TMPDIR:-/tmp}"
 
 bundle_path=
@@ -66,9 +68,13 @@ if test $? -ne 0 ; then
     err_cleanup "Failed to create subdir in ${bundle_tmpdir}"
 fi
 
+# Add TE libraries installation path to LD_LIBRARY_PATH since
+# RGT tools use it
+export LD_LIBRARY_PATH="$(dirname "${bindir}")/lib:${LD_LIBRARY_PATH}"
+
 if [[ "${req_path}" =~ log.raw.bz2$ ]] ; then
 
-    rgt-log-bundle-get-original --bundle="${bundle_path}" \
+    "${bindir}"/rgt-log-bundle-get-original --bundle="${bundle_path}" \
         --output="${bundle_tmpdir}/log.raw"
     if test $? -ne 0 ; then
         err_cleanup "Failed to recover original raw log"
@@ -82,7 +88,7 @@ if [[ "${req_path}" =~ log.raw.bz2$ ]] ; then
 
 elif [[ "${req_path}" =~ log[.]raw$ ]] ; then
 
-    rgt-log-bundle-get-original --bundle="${bundle_path}" \
+    "${bindir}"/rgt-log-bundle-get-original --bundle="${bundle_path}" \
         --output="${req_path}"
     if test $? -ne 0 ; then
         err_cleanup "Failed to recover original raw log"
@@ -96,20 +102,20 @@ elif [[ "${req_path}" =~ log_gist[.]raw$ ]] ; then
 
 elif [[ "${req_path}" =~ log[.]txt$ ]] ; then
 
-    rgt-log-bundle-get-original --bundle="${bundle_path}" \
+    "${bindir}"/rgt-log-bundle-get-original --bundle="${bundle_path}" \
         --output="${bundle_tmpdir}/recovered_log.raw"
     if test $? -ne 0 ; then
         err_cleanup "Failed to recover original raw log"
     fi
 
-    rgt-conv --no-cntrl-msg --incomplete-log \
+    "${bindir}"/rgt-conv --no-cntrl-msg --incomplete-log \
         -f "${bundle_tmpdir}/recovered_log.raw" \
         -o "${bundle_tmpdir}/recovered_log.xml"
     if test $? -ne 0 ; then
         err_cleanup "Failed to obtain XML log"
     fi
 
-    rgt-xml2text -f "${bundle_tmpdir}/recovered_log.xml" \
+    "${bindir}"/rgt-xml2text -f "${bundle_tmpdir}/recovered_log.xml" \
         -o "${req_path}"
     if test $? -ne 0 ; then
         err_cleanup "Failed to obtain TXT log"
@@ -124,13 +130,14 @@ elif [[ "${req_path}" =~ /html[/]?$ ||
         err_cleanup "Failed to extract log_gist.raw"
     fi
 
-    rgt-conv --incomplete-log "${bundle_tmpdir}/fragments/log_gist.raw" \
+    "${bindir}"/rgt-conv --incomplete-log \
+        "${bundle_tmpdir}/fragments/log_gist.raw" \
         "${bundle_tmpdir}/log_gist.xml"
     if test $? -ne 0 ; then
         err_cleanup "Failed to obtain log_gist.xml"
     fi
 
-    rgt-xml2html-multi --index-only --shared-url="${shared_url}" \
+    "${bindir}"/rgt-xml2html-multi --index-only --shared-url="${shared_url}" \
         --docs-url="${docs_url}" \
         "${bundle_tmpdir}/log_gist.xml" "${req_path}"
     if test $? -ne 0 ; then
@@ -233,14 +240,14 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
         merge_frag_num=$((cur_page - 1))
     fi
 
-    rgt-log-merge --split-log="${bundle_tmpdir}/fragments/" \
+    "${bindir}"/rgt-log-merge --split-log="${bundle_tmpdir}/fragments/" \
         --filter="${node}" --page="${merge_frag_num}" \
         --output="${bundle_tmpdir}/log_merge.raw"
     if test $? -ne 0 ; then
         err_cleanup "Failed to merge log fragments"
     fi
 
-    rgt-conv --incomplete-log "${bundle_tmpdir}/log_merge.raw" \
+    "${bindir}"/rgt-conv --incomplete-log "${bundle_tmpdir}/log_merge.raw" \
         "${bundle_tmpdir}/log_merge.xml"
     if test $? -ne 0 ; then
         err_cleanup "Failed to obtain merged XML log"
@@ -254,7 +261,7 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
     fi
     dir_path=$(dirname "${req_path}")
 
-    rgt-xml2html-multi --single-node="${node}" \
+    "${bindir}"/rgt-xml2html-multi --single-node="${node}" \
         --shared-url="${shared_url}" \
         --docs-url="${docs_url}" ${page_selector} \
         "${bundle_tmpdir}/log_merge.xml" "${dir_path}"
