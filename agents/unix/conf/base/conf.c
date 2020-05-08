@@ -1737,6 +1737,19 @@ string_replace(char **dst, const char *src)
     return 0;
 }
 
+/* See the description in conf_common.h */
+te_errno
+string_empty_list(char **list)
+{
+    char *l = strdup("");
+
+    if (l == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOMEM);
+
+    *list = l;
+    return 0;
+}
+
 #if SOLARIS_IP_FW
 /**
  * Set or obtain the value of IP forwarding variable on Solaris.

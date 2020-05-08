@@ -111,6 +111,15 @@ extern te_errno get_dir_list(const char *path, char *buffer, size_t length,
  */
 extern te_errno string_replace(char **dst, const char *src);
 
+/**
+ * Initializes the list of instances to be empty.
+ *
+ * @param list  The list of instances.
+ *
+ * @return Status code.
+ */
+extern te_errno string_empty_list(char **list);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
