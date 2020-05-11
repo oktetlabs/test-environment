@@ -2113,7 +2113,7 @@ trc_report_keys_collect(trc_keys *keys,
 }
 
 #define TRC_REPORT_OL_KEY_PREFIX        "OL "
-#define TRC_KEYTOOL_CMD_BUF_SIZE        1024
+#define TRC_KEYTOOL_CMD_BUF_SIZE        4096
 
 /**
  * Output key entry to HTML report.
@@ -2140,17 +2140,20 @@ trc_report_keys_to_html(FILE           *f,
     pid_t                 pid;
     trc_report_key_entry *key;
     tqe_string           *tag;
-    char                  cmd_buf[TRC_KEYTOOL_CMD_BUF_SIZE];
-    int                   cmd_buf_len = 0;
 
+    te_string cmd_str = TE_STRING_INIT_STATIC(TRC_KEYTOOL_CMD_BUF_SIZE);
+    te_errno rc;
 
-    cmd_buf_len = snprintf(cmd_buf, TRC_KEYTOOL_CMD_BUF_SIZE,
-                           "%s", keytool_fn);
+    rc = te_string_append(&cmd_str, "%s", keytool_fn);
+    if (rc != 0)
+        return rc;
+
     if (title != NULL)
     {
-        cmd_buf_len += snprintf(cmd_buf + cmd_buf_len,
-                                TRC_KEYTOOL_CMD_BUF_SIZE - cmd_buf_len,
-                                " --title=\"%s\"", title);
+        rc = te_string_append(&cmd_str,
+                              " --title=\"%s\"", title);
+        if (rc != 0)
+            return rc;
     }
 
     TAILQ_FOREACH(tag, &ctx->tags, links)
@@ -2161,14 +2164,15 @@ trc_report_keys_to_html(FILE           *f,
         if (keyw == NULL)
             return ENOMEM;
 
-        cmd_buf_len += snprintf(cmd_buf + cmd_buf_len,
-                                TRC_KEYTOOL_CMD_BUF_SIZE - cmd_buf_len,
-                                " --keyword=%s", keyw);
+        rc = te_string_append(&cmd_str,
+                              " --keyword=%s", keyw);
         free(keyw);
+        if (rc != 0)
+            return rc;
     }
 
-    VERB("Run: %s", cmd_buf);
-    if ((pid = te_shell_cmd(cmd_buf, -1, &fd_in, &fd_out, NULL)) < 0)
+    VERB("Run: %s", cmd_str.ptr);
+    if ((pid = te_shell_cmd(cmd_str.ptr, -1, &fd_in, &fd_out, NULL)) < 0)
     {
         return pid;
     }
