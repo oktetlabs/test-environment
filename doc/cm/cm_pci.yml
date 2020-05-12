@@ -137,6 +137,8 @@
     - oid: "/agent/hardware/pci/device/net"
       access: read_only
       type: none
+      depends:
+        - oid: "/agent/hardware/pci/device/driver"
       d: |
          Device's network interfaces
 
