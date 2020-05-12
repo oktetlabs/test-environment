@@ -1953,6 +1953,62 @@ pci_driver_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
+static te_errno
+append_list_callback(const pci_device *pci_dev, const char *subdir,
+                        const char *device, void *user)
+{
+    te_string *list = (te_string*)user;
+
+    UNUSED(pci_dev);
+    UNUSED(subdir);
+
+    return te_string_append(list, "%s ", device);
+}
+
+static te_errno
+pci_dev_list(unsigned int gid, const char *oid, const char *sub_id,
+             char **list, const char *unused1, const char *unused2,
+             const char *addr_str)
+{
+    te_errno rc;
+    const pci_driver_dev_list_helper *dlh;
+    const pci_device *dev;
+    char driver_name[PATH_MAX];
+    te_string result = TE_STRING_INIT;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+    rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);
+    if (rc != 0)
+        return rc;
+
+    rc = get_driver_name(dev, driver_name, sizeof(driver_name));
+    if (rc != 0)
+        return rc;
+
+    dlh = pci_driver_dev_list_get(dev_list_helper,
+                                  TE_ARRAY_LEN(dev_list_helper), driver_name);
+
+    if (dlh == NULL)
+        return string_empty_list(list);
+
+    rc = pci_driver_dev_list_for_each(dlh, dev, append_list_callback, &result);
+    if (rc != 0)
+        return rc;
+
+    if (result.ptr == NULL)
+        return string_empty_list(list);
+
+    te_string_cut(&result, 1);
+    *list = result.ptr;
+
+    return 0;
+}
+
 static int
 filter_virtio(const struct dirent *de)
 {
@@ -2205,8 +2261,11 @@ pci_virtfn_get(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
-RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_virtfn, "virtfn",
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_dev, "dev",
                                NULL, NULL,
+                               NULL, pci_dev_list);
+RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_virtfn, "virtfn",
+                               NULL, &node_pci_dev,
                                pci_virtfn_get, pci_virtfn_list);
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_net, "net",
                                NULL, &node_pci_virtfn,

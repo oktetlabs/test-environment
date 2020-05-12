@@ -143,6 +143,16 @@
          Name: interface name
          Value: none
 
+    - oid: "/agent/hardware/pci/device/dev"
+      access: read_only
+      type: none
+      depends:
+        - oid: "/agent/hardware/pci/device/driver"
+      d: |
+         Block/char device's
+         Name: device name
+         Value: none
+
     - oid: "/agent/hardware/pci/device/virtfn"
       access: read_only
       type: string
