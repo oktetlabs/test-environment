@@ -36,6 +36,10 @@
 #include <fcntl.h>
 #endif
 
+#if HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
 #if HAVE_DIRENT_H
 #include <dirent.h>
 #endif
@@ -1624,6 +1628,256 @@ bind_pci_device(const pci_device *dev, const char *drvname)
     return rc;
 }
 
+static te_errno
+sysfs_read_dev_major_minor(const char *name, const char *attr,
+                           int *major, int *minor)
+{
+    FILE *f;
+    te_errno rc = open_pci_attr(name, attr, &f);
+
+    if (rc != 0)
+        return rc;
+
+    if (fscanf(f, "%d:%d", major, minor) != 2)
+    {
+        ERROR("Cannot parse PCI '%s' major:minor attribute '%s' value: %s",
+              name, attr, strerror(errno));
+    }
+    fclose(f);
+    return 0;
+}
+
+static te_errno
+sysfs_read_dev_type(const char *name, int major, int minor, mode_t *type)
+{
+    te_errno rc;
+    te_string buf = TE_STRING_INIT_STATIC(PATH_MAX);
+    struct stat statbuf;
+    struct stat dev_statbuf;
+
+    rc = te_string_append(&buf, SYSFS_PCI_DEVICES_TREE "/%s", name);
+    if (rc != 0)
+        return rc;
+
+    if (stat(buf.ptr, &dev_statbuf) != 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    te_string_reset(&buf);
+    rc = te_string_append(&buf, "/sys/dev/char/%d:%d", major, minor);
+    if (rc != 0)
+        return rc;
+
+    if (stat(buf.ptr, &statbuf) == 0 && statbuf.st_ino == dev_statbuf.st_ino)
+    {
+        *type = S_IFCHR;
+        return 0;
+    }
+
+    te_string_reset(&buf);
+    rc = te_string_append(&buf, "/sys/dev/block/%d:%d", major, minor);
+    if (rc != 0)
+        return rc;
+
+    if (stat(buf.ptr, &statbuf) == 0 && statbuf.st_ino == dev_statbuf.st_ino)
+    {
+        *type = S_IFBLK;
+        return 0;
+    }
+
+    ERROR("%s: Failed to get device type for '%d:%d'",
+          __FUNCTION__, major, minor);
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+}
+
+typedef int (*filter_func)(const struct dirent *de);
+
+typedef struct pci_driver_dev_list_helper {
+    const char *driver;
+    filter_func filter;
+    const char *subdir;
+} pci_driver_dev_list_helper;
+
+static int
+filter_uio(const struct dirent *de)
+{
+    return (strcmp_start("uio", de->d_name) == 0);
+}
+
+static const pci_driver_dev_list_helper dev_list_helper[] = {
+    {
+        .driver = "igb_uio",
+        .filter = filter_uio,
+        .subdir = NULL,
+    },
+        {
+        .driver = "uio_pci_generic",
+        .filter = filter_uio,
+        .subdir = NULL,
+    },
+};
+
+static const struct pci_driver_dev_list_helper *
+pci_driver_dev_list_get(const struct pci_driver_dev_list_helper *dlhs,
+                        size_t count, const char *driver_name)
+{
+    size_t i;
+
+    for (i = 0; i < count; i++)
+    {
+        if (strcmp(dlhs[i].driver, driver_name) == 0)
+            return dlhs + i;
+    }
+
+    return NULL;
+}
+
+typedef te_errno (*for_each_dev_callback)(const pci_device *dev,
+                                          const char *subdir,
+                                          const char *device, void *user);
+
+static te_errno
+pci_driver_dev_list_for_each(const pci_driver_dev_list_helper *dhl,
+                             const pci_device *dev,
+                             for_each_dev_callback callback, void *user)
+{
+    te_errno rc;
+    int i, dirs;
+    struct dirent **namelist = NULL;
+    te_string buf = TE_STRING_INIT_STATIC(PATH_MAX);
+
+    rc = format_sysfs_device_name(&buf, dev, "/");
+    if (rc != 0)
+        return rc;
+
+    dirs = scandir(buf.ptr, &namelist, dhl->filter, alphasort);
+    if (dirs < 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    for (i = 0; i < dirs && rc == 0; i++)
+    {
+        int j, devdirs;
+        struct dirent **devlist = NULL;
+        te_string subdir = TE_STRING_INIT_STATIC(PATH_MAX);
+        te_string devdir = TE_STRING_INIT_STATIC(PATH_MAX);
+
+        rc = te_string_append(&subdir, "%s", namelist[i]->d_name);
+        if (rc == 0 && dhl->subdir != NULL)
+            rc = te_string_append(&subdir, "/%s", dhl->subdir);
+
+        if (rc != 0)
+            break;
+
+        rc = te_string_append(&devdir, "%s/%s", buf.ptr, subdir.ptr);
+        if (rc != 0)
+            break;
+
+        devdirs = scandir(devdir.ptr, &devlist, NULL, alphasort);
+        if (devdirs < 0)
+        {
+            if (errno == ENOENT)
+            {
+                /* It is normal, requested subdir is not device, continue */
+                continue;
+            }
+            rc = TE_OS_RC(TE_TA_UNIX, errno);
+            break;
+        }
+
+        for (j = 0; j < devdirs && rc == 0; j++)
+        {
+            if (devlist[j]->d_name[0] == '.')
+                continue;
+
+            rc = callback(dev, subdir.ptr, devlist[j]->d_name, user);
+        }
+
+        for (j = 0; j < devdirs; j++)
+            free(devlist[j]);
+        free(devlist);
+    }
+
+    for (i = 0; i < dirs; i++)
+        free(namelist[i]);
+    free(namelist);
+
+    return rc;
+}
+
+static te_errno
+create_device_callback(const pci_device *pci_dev, const char *subdir,
+                       const char *device, void *user)
+{
+    dev_t dev;
+    mode_t dev_type;
+    int maj, min;
+    te_errno rc;
+    struct stat statbuf;
+    te_string buf = TE_STRING_INIT_STATIC(PATH_MAX);
+    te_string device_path = TE_STRING_INIT_STATIC(PATH_MAX);
+
+    UNUSED(user);
+
+    rc = format_device_address(&buf, &pci_dev->address);
+    if (rc != 0)
+        return rc;
+
+    rc = te_string_append(&buf, "/%s/%s", subdir, device);
+    if (rc != 0)
+        return rc;
+
+    rc = sysfs_read_dev_major_minor(buf.ptr, "dev", &maj, &min);
+
+    if (TE_RC_GET_ERROR(rc) == TE_ENOENT)
+        return 0;
+
+    if (rc != 0)
+        return rc;
+
+    dev = makedev(maj, min);
+
+    rc = te_string_append(&device_path, "/dev/%s", device);
+    if (rc != 0)
+        return rc;
+
+    if (stat(device_path.ptr, &statbuf) == 0)
+    {
+        if (statbuf.st_dev == dev)
+            return 0;
+
+        if (unlink(device_path.ptr) != 0)
+        {
+            ERROR("%s: Could not remove old device '%s': %s",
+                  __FUNCTION__, device_path.ptr, strerror(errno));
+            return TE_OS_RC(TE_TA_UNIX, errno);
+        }
+    }
+
+    rc = sysfs_read_dev_type(buf.ptr, maj, min, &dev_type);
+    if (rc != 0)
+        return rc;
+
+    RING("Creating '%s' with '%d:%d' as %s dev", device_path.ptr, maj, min,
+         dev_type == S_IFBLK ? "block": "char");
+
+    if (mknod(device_path.ptr, dev_type, dev) != 0)
+        return TE_OS_RC(TE_TA_UNIX, errno);
+
+    return 0;
+}
+
+static te_errno
+maybe_create_device(const pci_device *dev, const char *drvname)
+{
+    const pci_driver_dev_list_helper *dlh;
+
+    dlh = pci_driver_dev_list_get(dev_list_helper,
+                                  TE_ARRAY_LEN(dev_list_helper), drvname);
+
+    if (dlh == NULL)
+        return 0;
+
+    return pci_driver_dev_list_for_each(dlh, dev, create_device_callback, NULL);
+}
 
 static te_errno
 pci_driver_set(unsigned int gid, const char *oid, const char *value,
@@ -1690,6 +1944,10 @@ pci_driver_set(unsigned int gid, const char *oid, const char *value,
             if (rc != 0)
                 return rc;
         }
+
+        rc = maybe_create_device(dev, value);
+        if (rc != 0)
+            return rc;
     }
 
     return 0;
