@@ -40,6 +40,10 @@
 #include <sys/stat.h>
 #endif
 
+#if HAVE_SYS_SYSMACROS_H
+#include <sys/sysmacros.h>
+#endif
+
 #if HAVE_DIRENT_H
 #include <dirent.h>
 #endif

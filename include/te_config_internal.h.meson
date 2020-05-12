@@ -260,6 +260,9 @@
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #mesondefine HAVE_SYS_STAT_H
 
+/* Define to 1 if you have the <sys/sysmacros.h> header file. */
+#mesondefine HAVE_SYS_SYSMACROS_H
+
 /* Define to 1 if you have the <sys/syscall.h> header file. */
 #mesondefine HAVE_SYS_SYSCALL_H
 

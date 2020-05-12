@@ -97,6 +97,7 @@ check_headers = [
     'sys/utsname.h',
     'sys/wait.h',
     'sys/syscall.h',
+    'sys/sysmacros.h',
     'termio.h',
     'time.h',
     'ucd-snmp/snmp_impl.h',
