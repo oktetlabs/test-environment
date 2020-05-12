@@ -1703,6 +1703,12 @@ filter_uio(const struct dirent *de)
     return (strcmp_start("uio", de->d_name) == 0);
 }
 
+static int
+filter_virtio(const struct dirent *de)
+{
+    return (strcmp_start("virtio", de->d_name) == 0);
+}
+
 static const pci_driver_dev_list_helper dev_list_helper[] = {
     {
         .driver = "igb_uio",
@@ -1713,6 +1719,11 @@ static const pci_driver_dev_list_helper dev_list_helper[] = {
         .driver = "uio_pci_generic",
         .filter = filter_uio,
         .subdir = NULL,
+    },
+    {
+        .driver = "virtio-pci",
+        .filter = filter_virtio,
+        .subdir = "block",
     },
 };
 
@@ -1918,7 +1929,7 @@ pci_driver_set(unsigned int gid, const char *oid, const char *value,
     if (*value != '\0')
     {
         const char *generic_drivers[] = {"uio_pci_generic", "igb_uio",
-                                         "vfio-pci"};
+                                         "vfio-pci", "virtio-pci"};
         te_bool is_gen_driver = FALSE;
         unsigned int i;
 
@@ -2007,12 +2018,6 @@ pci_dev_list(unsigned int gid, const char *oid, const char *sub_id,
     *list = result.ptr;
 
     return 0;
-}
-
-static int
-filter_virtio(const struct dirent *de)
-{
-    return (strcmp_start("virtio", de->d_name) == 0);
 }
 
 static te_errno
