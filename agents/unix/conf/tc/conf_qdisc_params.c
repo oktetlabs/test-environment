@@ -520,7 +520,12 @@ conf_qdisc_clsact_bpf_ingress_set(struct bpf_link_info_list *list,
                                   const char *if_name,
                                   const char *prog_name)
 {
-#ifdef WITH_BPF
+/*
+ * Linux < 4.4 doesn't support tc BPF classifier (TCA_BPF_FLAG_ACT_DIRECT).
+ * Linus < 4.5 doesn't support CLSACT qdisc (TC_H_CLSACT), but some old RHEL
+ * kernels have it. So we need to check both defines to get a working function.
+ */
+#if defined(WITH_BPF) && defined(TCA_BPF_FLAG_ACT_DIRECT) && defined(TC_H_CLSACT)
     struct nl_msg *msg;
     struct tcmsg tchdr = {0};
     te_bool link = *prog_name != '\0';
@@ -672,9 +677,13 @@ conf_qdisc_clsact_bpf_ingress_set(struct bpf_link_info_list *list,
 
     return 0;
 #else
+    UNUSED(list);
+    UNUSED(if_name);
+    UNUSED(prog_name);
+
     ERROR("BPF is not supported");
     return TE_RC(TE_TA_UNIX, TE_EINVAL);
-#endif /* WITH_BPF */
+#endif /* WITH_BPF && TCA_BPF_FLAG_ACT_DIRECT && TC_H_CLSACT */
 }
 
 /**
