@@ -187,6 +187,7 @@ sys/sendfile.h \
 sys/sockio.h \
 sys/stat.h \
 sys/sysctl.h \
+sys/sysmacros.h \
 sys/tihdr.h \
 sys/time.h \
 sys/uio.h \
