@@ -7,6 +7,7 @@
 # Copyright (C) 2018 OKTET Labs. All rights reserved.
 
 set -e
+set -E
 
 SCRIPT_DIR="$(dirname "$0")"
 
@@ -44,6 +45,12 @@ error() {
 warning() {
     echo WARNING: $* >&2
 }
+
+on_error() {
+    error "Unhandled error at ${BASH_SOURCE[0]}:${BASH_LINENO[0]}"
+}
+
+trap on_error ERR
 
 process_parameters() {
     local pfx="$1"; shift
