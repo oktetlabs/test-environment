@@ -414,7 +414,7 @@ process_agent() {
         unix)   process_agent_unix "${ta}" "${pfx}" ;;
     esac
 
-    local papps="TE_BS_TA_APPS_${p}"
+    local papps="TE_BS_TA_APPS_${ta}"
     test -n "${!papps// /}" && meson_args="${meson_args} -Dinstall-dev=true"
 
     process_parameters "${pfx}" "${msg}"
@@ -790,21 +790,22 @@ build_ext() {
 
 build_ta_apps() {
     local p="$1"; shift
+    local ta="$1"; shift
 
-    local papps="TE_BS_TA_APPS_${p}"
-    local papp
+    local papps="TE_BS_TA_APPS_${ta}"
+    local app
     local app_inst="${ws}/destdir${TE_INSTALL}"
-    for papp in ${!papps}; do
-        local ws_app_src="${ws}/apps/${papp}/src"
-        local ws_app_builddir="${ws}/apps/${papp}/build"
+    for app in ${!papps}; do
+        local ws_app_src="${ws}/apps/${app}/src"
+        local ws_app_builddir="${ws}/apps/${app}/build"
 
-        local pappsrc="TE_BS_TA_APPS_${p}_${papp}_SOURCES"
-        local pappprep="TE_BS_TA_APPS_${p}_${papp}_PREPARE"
-        local pappbuilddir="TE_BS_TA_APPS_${p}_${papp}_BUILDDIR"
-        local papplibs="TE_BS_TA_APPS_${p}_${papp}_LIBS"
-        local pappbuild="TE_BS_TA_APPS_${p}_${papp}_BUILD"
-        local pappinstbin="TE_BS_TA_APPS_${p}_${papp}_INSTALL_BIN"
-        local pappenv="TE_BS_TA_APPS_${p}_${papp}_ENV_VARS"
+        local pappsrc="TE_BS_TA_APPS_${ta}_${app}_SOURCES"
+        local pappprep="TE_BS_TA_APPS_${ta}_${app}_PREPARE"
+        local pappbuilddir="TE_BS_TA_APPS_${ta}_${app}_BUILDDIR"
+        local papplibs="TE_BS_TA_APPS_${ta}_${app}_LIBS"
+        local pappbuild="TE_BS_TA_APPS_${ta}_${app}_BUILD"
+        local pappinstbin="TE_BS_TA_APPS_${ta}_${app}_INSTALL_BIN"
+        local pappenv="TE_BS_TA_APPS_${ta}_${app}_ENV_VARS"
         local enable_tce=""
 
         local teincludes=
@@ -822,7 +823,7 @@ build_ta_apps() {
         te_eval_or_ssh "$p" "mkdir -p $ws_app_src $ws_app_builddir"
         rsync_to "$p" "${!pappsrc}/" "$ws_app_src"
 
-        local local_app_builddir="ta_apps/${papp}/build"
+        local local_app_builddir="ta_apps/${app}/build"
         if test -d "${local_app_builddir}"; then
             rsync_to "$p" "${local_app_builddir}/" "${ws_app_builddir}"
         else
@@ -830,7 +831,7 @@ build_ta_apps() {
         fi
 
         ${SCRIPT_DIR}/te_build_ext --prefix="${app_inst}" \
-            --tatype="$p" \
+            --tatype="${ta}" \
             --platform="$p" \
             --srcdir="${ws_app_src}" \
             --prepare="${!pappprep}" \
@@ -842,6 +843,16 @@ build_ta_apps() {
             --envvars="${!pappenv}" $enable_tce --build-meson || exit 1
 
         rsync_from "$p" "${ws_app_builddir}/" "${local_app_builddir}"
+    done
+}
+
+build_platform_apps() {
+    local p="$1"; shift
+    local ta
+
+    for ta in ${TE_BS_TA} ; do
+        local ta_platform="TE_BS_TA_${ta}_PLATFORM"
+        test "${!ta_platform}" != "${p}" || build_ta_apps "${p}" "${ta}"
     done
 }
 
@@ -898,7 +909,7 @@ build_platform() {
          TE_BASE=\"${ws}\"/src ${destdir} \$NINJA -C \"${ws}\"/build install" ||
         result=$?
 
-    build_ta_apps "${p}"
+    build_platform_apps "${p}"
 
     if ${remote_build} ; then
         rsync_from "${p}" "${ws}"/build . ||
