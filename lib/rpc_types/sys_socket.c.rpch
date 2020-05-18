@@ -788,6 +788,34 @@ send_recv_flags_h2rpc(unsigned int flags)
            (!!(flags & ~MSG_ALL) * RPC_MSG_UNKNOWN);
 }
 
+/* See description in te_rpc_sys_socket.h */
+const char *
+send_function_tarpc2str(tarpc_send_function func)
+{
+    switch (func)
+    {
+        case TARPC_SEND_FUNC_WRITE:
+            return "write";
+
+        case TARPC_SEND_FUNC_WRITEV:
+            return "writev";
+
+        case TARPC_SEND_FUNC_SEND:
+            return "send";
+
+        case TARPC_SEND_FUNC_SENDTO:
+            return "sendto";
+
+        case TARPC_SEND_FUNC_SENDMSG:
+            return "sendmsg";
+
+        case TARPC_SEND_FUNC_SENDMMSG:
+            return "sendmmsg";
+
+        default:
+            return "<UNKNOWN>";
+    }
+}
 
 /* See description in te_rpc_sys_socket.h */
 extern const char *

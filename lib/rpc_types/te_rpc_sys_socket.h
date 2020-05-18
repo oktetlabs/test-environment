@@ -453,6 +453,15 @@ extern unsigned int send_recv_flags_rpc2h(unsigned int flags);
 extern unsigned int send_recv_flags_h2rpc(unsigned int flags);
 
 /**
+ * Convert tarpc_send_function enum value to string name.
+ *
+ * @param func      Enum value.
+ *
+ * @return String name.
+ */
+extern const char *send_function_tarpc2str(tarpc_send_function func);
+
+/**
  * TA-independent names of path MTU discovery arguments.
  */
 typedef enum rpc_mtu_discover_arg {
