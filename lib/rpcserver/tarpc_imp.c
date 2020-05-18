@@ -2244,27 +2244,206 @@ TARPC_FUNC(sendbuf, {},
 )
 
 /*------------ send_msg_more() --------------------------*/
+
+/**
+ * Find pointer to a send function.
+ *
+ * @param lib_flags     How to resolve function name.
+ * @param send_func     Send function type.
+ * @param func          Pointer to the function.
+ *
+ * @return Status code.
+ */
+static te_errno
+tarpc_get_send_function(tarpc_lib_flags lib_flags, tarpc_send_function send_func,
+                        api_func *func)
+{
+    int rc;
+
+    switch (send_func)
+    {
+        case TARPC_SEND_FUNC_WRITE:
+            rc = tarpc_find_func(lib_flags, "write",
+                                 (api_func *)func);
+            break;
+
+        case TARPC_SEND_FUNC_WRITEV:
+            rc = tarpc_find_func(lib_flags, "writev", (api_func *)func);
+            break;
+
+        case TARPC_SEND_FUNC_SEND:
+            rc = tarpc_find_func(lib_flags, "send", (api_func *)func);
+            break;
+
+        case TARPC_SEND_FUNC_SENDTO:
+            rc = tarpc_find_func(lib_flags, "sendto", (api_func *)func);
+            break;
+
+        case TARPC_SEND_FUNC_SENDMSG:
+            rc = tarpc_find_func(lib_flags, "sendmsg", (api_func *)func);
+            break;
+
+        case TARPC_SEND_FUNC_SENDMMSG:
+            rc = tarpc_find_func(lib_flags, "sendmmsg", (api_func *)func);
+            break;
+
+        default:
+            ERROR("Invalid send function index: %d", send_func);
+            return  TE_RC(TE_TA_UNIX, EINVAL);
+    }
+
+    return rc;
+}
+
+/**
+ * Call a sending function which accepts flags.
+ *
+ * @param s         Socket FD.
+ * @param buf       Buffer with data to send.
+ * @param len       How many bytes to send.
+ * @param flags     Flags to pass to the function.
+ * @param func      Which function to use.
+ * @param func_ptr  Pointer to the sending function.
+ *
+ * @return Value returned by the called function on success,
+ *         @c -1 on failure.
+ */
+ssize_t
+send_buf_with_flags(int s, uint8_t *buf, size_t len, int flags,
+                    tarpc_send_function func, api_func func_ptr)
+{
+    struct mmsghdr mmsg;
+    struct iovec iov;
+    ssize_t rc;
+
+    switch (func)
+    {
+        case TARPC_SEND_FUNC_SEND:
+            return func_ptr(s, buf, len, flags);
+
+        case TARPC_SEND_FUNC_SENDTO:
+            return func_ptr(s, buf, len, flags, NULL, 0);
+
+        case TARPC_SEND_FUNC_SENDMSG:
+        case TARPC_SEND_FUNC_SENDMMSG:
+
+            memset(&mmsg, 0, sizeof(mmsg));
+            mmsg.msg_hdr.msg_iov = &iov;
+            mmsg.msg_hdr.msg_iovlen = 1;
+            iov.iov_base = buf;
+            iov.iov_len = len;
+
+            if (func == TARPC_SEND_FUNC_SENDMSG)
+            {
+                return func_ptr(s, &mmsg.msg_hdr, flags);
+            }
+            else
+            {
+                rc = func_ptr(s, &mmsg, 1, flags);
+                if (rc > 1)
+                {
+                    te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EFAIL),
+                                     "sendmmsg() returned too big number");
+                    return -1;
+                }
+                else if (rc > 0)
+                {
+                    rc = mmsg.msg_len;
+                }
+
+                return rc;
+            }
+
+            break;
+
+        default:
+
+            te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EINVAL),
+                             "function %d is not supported", func);
+            return -1;
+    }
+
+    /* It should never get to here */
+    assert(0);
+    return -1;
+}
+
 ssize_t
 send_msg_more(tarpc_send_msg_more_in *in)
 {
-    int res1, res2;
+    ssize_t res1, res2;
+    te_errno rc;
+    int res;
+    uint8_t *buf;
 
-    api_func send_func;
+    api_func send_func1;
+    api_func send_func2;
+    api_func setsockopt_func;
 
-    if (tarpc_find_func(in->common.lib_flags, "send", &send_func) != 0)
+    rc = tarpc_get_send_function(in->common.lib_flags, in->first_func,
+                                 &send_func1);
+    if (rc != 0)
     {
-        ERROR("Failed to find function \"send\"");
+        te_rpc_error_set(TE_RC(TE_TA_UNIX, rc),
+                         "failed to resolve the first function");
         return -1;
     }
 
-    if (-1 == (res1 = send_func(in->fd, rcf_pch_mem_get(in->buf),
-                                in->first_len, MSG_MORE)))
+    rc = tarpc_get_send_function(in->common.lib_flags, in->second_func,
+                                 &send_func2);
+    if (rc != 0)
+    {
+        te_rpc_error_set(TE_RC(TE_TA_UNIX, rc),
+                         "failed to resolve the second function");
         return -1;
+    }
 
-    if (-1 == (res2 = send_func(in->fd, rcf_pch_mem_get(in->buf) +
-                                        in->first_len,
-                                in->second_len, 0)))
+    if (in->set_nodelay)
+    {
+        rc = tarpc_find_func(in->common.lib_flags, "setsockopt",
+                             &setsockopt_func);
+        if (rc != 0)
+        {
+            te_rpc_error_set(TE_RC(TE_TA_UNIX, rc),
+                             "failed to resolve setsockopt()");
+            return -1;
+        }
+    }
+
+    buf = rcf_pch_mem_get(in->buf);
+    if (buf == NULL)
+    {
+        te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EINVAL),
+                         "passed buffer is NULL");
         return -1;
+    }
+
+    res1 = send_buf_with_flags(in->fd, buf, in->first_len, MSG_MORE,
+                               in->first_func, send_func1);
+    if (res1 < 0)
+        return res1;
+
+    if (in->set_nodelay)
+    {
+        int optval = 1;
+        socklen_t optlen = sizeof(optval);
+
+        res = setsockopt_func(in->fd, IPPROTO_TCP, TCP_NODELAY, &optval,
+                              optlen);
+        if (res < 0)
+        {
+            te_rpc_error_set(TE_OS_RC(TE_TA_UNIX, errno),
+                             "setsockopt() failed to enable TCP_NODELAY "
+                             "option");
+            return -1;
+        }
+    }
+
+    res2 = send_buf_with_flags(in->fd, buf + in->first_len, in->second_len,
+                               0, in->second_func, send_func2);
+    if (res2 < 0)
+        return res2;
+
     return res1 + res2;
 }
 
@@ -10441,56 +10620,6 @@ TARPC_FUNC(rpcserver_plugin_disable, {},
 
 /* Multiplexer timeout to get a socket writable, milliseconds. */
 #define TARPC_SEND_IOMUX_FLOODER_TIMEOUT 500
-
-/**
- * Find pointer to a send function.
- *
- * @param lib_flags     How to resolve function name.
- * @param send_func     Send function type.
- * @param func          Pointer to the function.
- *
- * @return Status code.
- */
-static te_errno
-tarpc_get_send_function(tarpc_lib_flags lib_flags, tarpc_send_function send_func,
-                        api_func *func)
-{
-    int rc;
-
-    switch (send_func)
-    {
-        case TARPC_SEND_FUNC_WRITE:
-            rc = tarpc_find_func(lib_flags, "write",
-                                 (api_func *)func);
-            break;
-
-        case TARPC_SEND_FUNC_WRITEV:
-            rc = tarpc_find_func(lib_flags, "writev", (api_func *)func);
-            break;
-
-        case TARPC_SEND_FUNC_SEND:
-            rc = tarpc_find_func(lib_flags, "send", (api_func *)func);
-            break;
-
-        case TARPC_SEND_FUNC_SENDTO:
-            rc = tarpc_find_func(lib_flags, "sendto", (api_func *)func);
-            break;
-
-        case TARPC_SEND_FUNC_SENDMSG:
-            rc = tarpc_find_func(lib_flags, "sendmsg", (api_func *)func);
-            break;
-
-        case TARPC_SEND_FUNC_SENDMMSG:
-            rc = tarpc_find_func(lib_flags, "sendmmsg", (api_func *)func);
-            break;
-
-        default:
-            ERROR("Invalid send function index: %d", send_func);
-            return  TE_RC(TE_TA_UNIX, EINVAL);
-    }
-
-    return rc;
-}
 
 /**
  * Send packets during a period of time, call an iomux to check OUT

@@ -1112,6 +1112,10 @@ struct tarpc_send_msg_more_in {
     tarpc_ptr       buf;
     tarpc_size_t    first_len;
     tarpc_size_t    second_len;
+
+    tarpc_send_function first_func;
+    tarpc_send_function second_func;
+    tarpc_bool          set_nodelay;
 };
 
 typedef struct tarpc_ssize_t_retval_out tarpc_send_msg_more_out;

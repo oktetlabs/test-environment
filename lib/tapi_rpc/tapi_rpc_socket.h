@@ -560,23 +560,48 @@ rpc_sendbuf_off(rcf_rpc_server *rpcs, int s, rpc_ptr_off *buf, size_t len,
 }
 
 /**
- * Transmit 2 messages to socket descriptor @b s on RPC server side by 
- * using 2 send calls. The first send call transmit first @b first_len
- * bytes of @b buf with MSG_MORE flag, the second send call transmit
- * next @b second_len bytes of @b buf with zero flag. This operation 
- * takes place on RPC serverside and buffer is stored on the same side.
+ * Call send() two times to send two data portions, first time - with
+ * @c MSG_MORE flag, the second time - without it.
  *
  * @param rpcs       RPC server handle
- * @param s          socket descriptor
- * @param buf        RPC pointer to buffer containing the message to be sent
- * @param first_len  length of the first message in bytes
- * @param second_len length of the second message in bytes
+ * @param s          Socket descriptor
+ * @param buf        RPC pointer to buffer containing data to be sent
+ * @param first_len  Length of the first portion of data (to be sent
+ *                   with @c MSG_MORE)
+ * @param second_len Length of the second portion of data (to be sent
+ *                   without @c MSG_MORE)
  *
- * @return On succes, number of bytes actually sent, otherwise -1.
+ * @return On success, number of bytes actually sent, otherwise @c -1.
  * @note See @b send() manual page for more information
  */
-extern ssize_t rpc_send_msg_more(rcf_rpc_server *rpcs, int s, rpc_ptr buf, 
-                                size_t first_len, size_t second_len);
+extern ssize_t rpc_send_msg_more(rcf_rpc_server *rpcs, int s, rpc_ptr buf,
+                                 size_t first_len, size_t second_len);
+
+/**
+ * Call a sending function two times to send two data portions, the first
+ * time - with @c MSG_MORE flag, the second time - without it.
+ *
+ * @param rpcs          RPC server handle.
+ * @param s             Socket descriptor.
+ * @param buf           RPC pointer to buffer containing data to be sent.
+ * @param first_len     Length of the first portion of data (to be sent
+ *                      with @c MSG_MORE).
+ * @param second_len    Length of the second portion of data (to be sent
+ *                      without @c MSG_MORE).
+ * @param first_func    Sending function for the first data portion.
+ * @param second_func   Sending function for the second data portion.
+ * @param set_nodelay   If @c TRUE, set @c TCP_NODELAY socket option after
+ *                      sending the first data portion.
+ *
+ * @return On success, number of bytes actually sent, otherwise @c -1.
+ */
+extern ssize_t rpc_send_msg_more_ext(rcf_rpc_server *rpcs, int s,
+                                     rpc_ptr buf, size_t first_len,
+                                     size_t second_len,
+                                     tarpc_send_function first_func,
+                                     tarpc_send_function second_func,
+                                     te_bool set_nodelay);
+
 
 /**
  * Transmit many 1-byte messages to socket descriptor @b s on RPC server

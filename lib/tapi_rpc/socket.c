@@ -861,9 +861,12 @@ rpc_sendbuf_gen(rcf_rpc_server *rpcs, int s, rpc_ptr buf, size_t buf_off,
     RETVAL_INT(sendbuf, out.retval);
 }
 
+/* See description in the tapi_rpc_socket.h */
 ssize_t
-rpc_send_msg_more(rcf_rpc_server *rpcs, int s, rpc_ptr buf,
-                size_t first_len, size_t second_len)
+rpc_send_msg_more_ext(rcf_rpc_server *rpcs, int s, rpc_ptr buf,
+                      size_t first_len, size_t second_len,
+                      tarpc_send_function first_func,
+                      tarpc_send_function second_func, te_bool set_nodelay)
 {
     tarpc_send_msg_more_in  in;
     tarpc_send_msg_more_out out;
@@ -880,14 +883,33 @@ rpc_send_msg_more(rcf_rpc_server *rpcs, int s, rpc_ptr buf,
     in.fd = s;
     in.first_len = first_len;
     in.second_len = second_len;
+    in.first_func = first_func;
+    in.second_func = second_func;
+    in.set_nodelay = set_nodelay;
     in.buf = buf;
 
     rcf_rpc_call(rpcs, "send_msg_more", &in, &out);
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(send_msg_more, out.retval);
-    TAPI_RPC_LOG(rpcs, send_msg_more, "%d, %u , %u, %u", "%d",
-                 s, buf, first_len, second_len, out.retval);
+    TAPI_RPC_LOG(rpcs, send_msg_more, "%d, " RPC_PTR_FMT ", first_len=%"
+                 TE_PRINTF_SIZE_T "u, second_len=%" TE_PRINTF_SIZE_T "u, "
+                 "first_func=%s, second_func=%s, set_nodelay=%s", "%d",
+                 s, RPC_PTR_VAL(buf), first_len, second_len,
+                 send_function_tarpc2str(first_func),
+                 send_function_tarpc2str(second_func),
+                 (set_nodelay ? "TRUE" : "FALSE"),
+                 out.retval);
     RETVAL_INT(send_msg_more, out.retval);
+}
+
+/* See description in the tapi_rpc_socket.h */
+ssize_t
+rpc_send_msg_more(rcf_rpc_server *rpcs, int s, rpc_ptr buf,
+                  size_t first_len, size_t second_len)
+{
+    return rpc_send_msg_more_ext(rpcs, s, buf, first_len, second_len,
+                                 TARPC_SEND_FUNC_SEND,
+                                 TARPC_SEND_FUNC_SEND, FALSE);
 }
 
 ssize_t
