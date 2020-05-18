@@ -47,7 +47,8 @@ extern "C" {
     { "writev", TARPC_SEND_FUNC_WRITEV },    \
     { "send", TARPC_SEND_FUNC_SEND },        \
     { "sendto", TARPC_SEND_FUNC_SENDTO },    \
-    { "sendmsg", TARPC_SEND_FUNC_SENDMSG }
+    { "sendmsg", TARPC_SEND_FUNC_SENDMSG },  \
+    { "sendmmsg", TARPC_SEND_FUNC_SENDMMSG }
 
 #define TEST_GET_SOCK_SEND_FUNC(_var_name) \
     TEST_GET_ENUM_PARAM(_var_name, TAPI_SOCK_SEND_FUNC_LIST)

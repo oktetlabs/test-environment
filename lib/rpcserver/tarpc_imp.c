@@ -10480,6 +10480,10 @@ tarpc_get_send_function(tarpc_lib_flags lib_flags, tarpc_send_function send_func
             rc = tarpc_find_func(lib_flags, "sendmsg", (api_func *)func);
             break;
 
+        case TARPC_SEND_FUNC_SENDMMSG:
+            rc = tarpc_find_func(lib_flags, "sendmmsg", (api_func *)func);
+            break;
+
         default:
             ERROR("Invalid send function index: %d", send_func);
             return  TE_RC(TE_TA_UNIX, EINVAL);
