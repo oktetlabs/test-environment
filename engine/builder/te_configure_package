@@ -53,16 +53,15 @@ sync_and_recursive_update_makefiles() {
         find -mindepth 1 -delete
 
         # copy current files from agent to TE host
-        te_eval_or_ssh "${PLATFORM}" "
-            cd '$PWD' || exit 1; tar -czf - .
+        te_eval_or_ssh_pwd "${PLATFORM}" "
+            tar -czf - .
         " | tar -xzf -
 
         recursive_update_makefiles "$1"
 
         # copy new files from TE host to agent
         tar -czf - . |
-        te_eval_or_ssh "${PLATFORM}" "
-            cd '$PWD' || exit 1
+        te_eval_or_ssh_pwd "${PLATFORM}" "
             find -mindepth 1 -delete
             tar -xzf -
         "
@@ -82,7 +81,7 @@ configure_package()
     local enable_tce=""
     te_check_tce "${PLATFORM}" "${PACKAGE}" && enable_tce="--enable-tce"
 
-    te_eval_or_ssh "${PLATFORM}" "
+    te_eval_or_ssh_pwd "${PLATFORM}" "
         export TE_EXT_LIBS_FILE=\"$TE_EXT_LIBS_FILE\"
         TE_DEPENDENCIES='$DEPENDENCIES' \\
         TE_BUILD='$TE_BUILD' \\
@@ -132,7 +131,7 @@ if test "$KIND" = TOOL ; then
 fi
 
 if test -f "$TE_BUILD/$PLATFORM.sbd"; then
-    te_eval_or_ssh "${PLATFORM}" "mkdir -p $PKGBUILDDIR" || exit 1
+    te_eval_or_ssh_pwd "${PLATFORM}" "mkdir -p $PKGBUILDDIR" || exit 1
 fi
 mkdir -p $PKGBUILDDIR || exit 1
 cd $PKGBUILDDIR || exit 1
@@ -142,7 +141,7 @@ cd $PKGBUILDDIR || exit 1
 if test -e Makefile && sync_and_recursive_update_makefiles '.' ; then
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
 # See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
-    te_eval_or_ssh "${PLATFORM}" "
+    te_eval_or_ssh_pwd "${PLATFORM}" "
         echo=echo \\
         make install-data || exit 1
     "
@@ -223,7 +222,7 @@ fi
 
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
 # See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
-te_eval_or_ssh "${PLATFORM}" "
+te_eval_or_ssh_pwd "${PLATFORM}" "
     echo=echo \\
     make install-data || exit 1
 "
