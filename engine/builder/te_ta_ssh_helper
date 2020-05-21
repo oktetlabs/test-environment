@@ -53,6 +53,10 @@ fail() {
 #   TE_SSH_PORT
 #   ${ta}_SSH_USER
 #   TE_SSH_USER
+#   ${ta}_BUILD_HOST
+#   ${ta}_BUILD_SSH_KEY
+#   ${ta}_BUILD_SSH_PORT
+#   ${ta}_BUILD_SSH_USER
 #
 # Arguments:
 #   Test agent alias name (e.g. TE_IUT)
@@ -64,19 +68,24 @@ te_ta_ssh_args() {
 
     test "${!build}" != local || return 1
 
+    local build_host="${ta}_BUILD_HOST"
+    local pfx="${ta}"
+
+    test -z "${!build_host}" || pfx+="_BUILD"
+
     local -a ssh_args=("${TE_SSH_ARGS_DEF[@]}")
-    local ssh_key_var="${ta}_SSH_KEY"
+    local ssh_key_var="${pfx}_SSH_KEY"
     local ssh_key="${!ssh_key_var:-${TE_SSH_KEY}}"
-    local ssh_port_var="${ta}_SSH_PORT"
+    local ssh_port_var="${pfx}_SSH_PORT"
     local ssh_port="${!ssh_port_var:-${TE_SSH_PORT}}"
-    local ssh_user_var="${ta}_SSH_USER"
+    local ssh_user_var="${pfx}_SSH_USER"
     local ssh_user="${!ssh_user_var:-${TE_SSH_USER}}"
 
     test -z "${ssh_key}" || ssh_args+=(-i "${ssh_key}")
     test -z "${ssh_port}" || ssh_args+=(-p "${ssh_port}")
     test -z "${ssh_user}" || ssh_args+=(-l "${ssh_user}")
 
-    TE_SSH_HOST="${!ta}"
+    TE_SSH_HOST="${!build_host:-${!ta}}"
     TE_SSH_ARGS=("${ssh_args[@]}" "${TE_SSH_HOST}")
 }
 
@@ -92,9 +101,11 @@ te_ta_ssh_args() {
 #######################################
 te_ta_list_get_used() {
     local ta
+    local build_host
 
     for ta ; do
-        test -z "${!ta}" || echo "${ta}"
+        build_host="${ta}_BUILD_HOST"
+        test -z "${!ta}" -a -z "${!build_host}" || echo "${ta}"
     done
 }
 
