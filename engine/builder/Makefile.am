@@ -25,6 +25,7 @@ dist_mybin_SCRIPTS = \
     te_build_win_platform \
     te_build_win_lib \
     te_build_win_app \
+    te_ta_ssh_helper \
     te_tests_info.sh \
     te_tests_info.awk \
     te_struct_layout \
