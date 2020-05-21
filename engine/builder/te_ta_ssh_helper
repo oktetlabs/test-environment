@@ -46,6 +46,7 @@ fail() {
 #   TE_SSH_ARGS
 #   TE_SSH_HOST
 #   ${ta}
+#   ${ta}_BUILD
 #   ${ta}_SSH_KEY
 #   TE_SSH_KEY
 #   ${ta}_SSH_PORT
@@ -58,6 +59,10 @@ fail() {
 #######################################
 te_ta_ssh_args() {
     local ta="$1"; shift
+
+    local build="${ta}_BUILD"
+
+    test "${!build}" != local || return 1
 
     local -a ssh_args=("${TE_SSH_ARGS_DEF[@]}")
     local ssh_key_var="${ta}_SSH_KEY"
@@ -114,7 +119,8 @@ te_ta_detect_type() {
     local ta_type
 
     # Get TE_SSH_ARGS and TE_SSH_HOST for the TA
-    te_ta_ssh_args "${ta}"
+    te_ta_ssh_args "${ta}" \
+        || fail "Cannot detect type because ${ta} is built locally"
 
     kname="$(ssh "${TE_SSH_ARGS[@]}" uname -s)" \
         || fail "Failed to get ${ta} (${TE_SSH_HOST}) kernel name"
@@ -175,7 +181,8 @@ te_ta_type_add_signature() {
         || fail "Base TA type ${ta_type_var} is unspecified"
 
     # Get TE_SSH_ARGS for the TA
-    te_ta_ssh_args "${ta}"
+    te_ta_ssh_args "${ta}" \
+        || fail "Cannot get signature because ${ta} is built locally"
 
     # Get signature for the TA host
     ta_signature="${!ta_signature_var}"
@@ -304,10 +311,8 @@ te_ta_to_platform() {
     maybe_export "${platform}_CPPFLAGS_VAR" "${ta}_CPPFLAGS_VAR"
 
     local platform_ssh="${platform}_SSH"
-    if test -z "${!platform_ssh}" ; then
-        # Get TE_SSH_ARGS and TE_SSH_HOST for the TA
-        te_ta_ssh_args "${ta}"
-
+    # Get TE_SSH_ARGS and TE_SSH_HOST for the TA
+    if test -z "${!platform_ssh}" && te_ta_ssh_args "${ta}" ; then
         export "${platform}_HOST"="${TE_SSH_HOST}"
         export "${platform_ssh}"="ssh ${TE_SSH_ARGS[*]}"
     fi
