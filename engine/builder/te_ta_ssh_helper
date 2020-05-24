@@ -51,11 +51,14 @@ fail() {
 #   TE_SSH_KEY
 #   ${ta}_SSH_PORT
 #   TE_SSH_PORT
+#   ${ta}_SSH_PROXY
+#   TE_SSH_PROXY
 #   ${ta}_SSH_USER
 #   TE_SSH_USER
 #   ${ta}_BUILD_HOST
 #   ${ta}_BUILD_SSH_KEY
 #   ${ta}_BUILD_SSH_PORT
+#   ${ta}_BUILD_SSH_PROXY
 #   ${ta}_BUILD_SSH_USER
 #
 # Arguments:
@@ -80,6 +83,13 @@ te_ta_ssh_args() {
     local ssh_port="${!ssh_port_var:-${TE_SSH_PORT}}"
     local ssh_user_var="${pfx}_SSH_USER"
     local ssh_user="${!ssh_user_var:-${TE_SSH_USER}}"
+    local ssh_proxy_var="${pfx}_SSH_PROXY"
+    local ssh_proxy="${!ssh_proxy_var:-${TE_SSH_PROXY}}"
+
+    if test -n "${ssh_proxy}" ; then
+        local proxy_cmd=(ssh "${TE_SSH_ARGS_DEF[@]}" -W %h:%p "${ssh_proxy}")
+        ssh_args+=(-o ProxyCommand=\"${proxy_cmd[*]}\")
+    fi
 
     test -z "${ssh_key}" || ssh_args+=(-i "${ssh_key}")
     test -z "${ssh_port}" || ssh_args+=(-p "${ssh_port}")

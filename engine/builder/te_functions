@@ -131,10 +131,8 @@ te_eval_or_ssh() {
     if test -z "${!SSHVAR}" ; then
         ( cd /tmp && eval "${@}" )
     else
-        ${!SSHVAR} "
-            cd /tmp || exit 1
-            ${@}
-        "
+        # SSH command may have arguments in double-quotes with spaces
+        eval "${!SSHVAR} \"cd /tmp || exit 1 ; \${@}\""
     fi
 }
 
@@ -151,10 +149,8 @@ te_eval_or_ssh_pwd() {
     if test -z "${!SSHVAR}" ; then
         ( eval "${@}" )
     else
-        ${!SSHVAR} "
-            cd '$PWD' || exit 1
-            ${@}
-        "
+        # SSH command may have arguments in double-quotes with spaces
+        eval "${!SSHVAR} \"cd '\$PWD' || exit 1; \${@}\""
     fi
 }
 
