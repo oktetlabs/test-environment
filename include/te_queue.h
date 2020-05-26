@@ -255,7 +255,7 @@ struct name {                                \
 }
 
 #define    STAILQ_HEAD_INITIALIZER(head)                    \
-    { NULL, &(head)->stqh_first }
+    { NULL, &(head).stqh_first }
 
 #define    STAILQ_ENTRY(type)                        \
 struct {                                \
