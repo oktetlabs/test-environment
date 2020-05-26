@@ -75,6 +75,8 @@ static te_mi_meas_base_unit_type meas_base_unit_by_type_map[] = {
     [TE_MI_MEAS_BANDWIDTH_USAGE] = TE_MI_MEAS_BASE_UNITLESS,
     [TE_MI_MEAS_TEMP] = TE_MI_MEAS_BASE_UNIT_CELSIUS,
     [TE_MI_MEAS_RPS] = TE_MI_MEAS_BASE_UNIT_RPS,
+    [TE_MI_MEAS_RTT] = TE_MI_MEAS_BASE_UNIT_SECOND,
+    [TE_MI_MEAS_RETRANS] = TE_MI_MEAS_BASE_UNITLESS,
 };
 
 static const char *meas_base_unit_names[] = {
@@ -98,6 +100,7 @@ static const char *meas_aggr_names[] = {
     [TE_MI_MEAS_AGGR_MEDIAN] = "median",
     [TE_MI_MEAS_AGGR_CV] = "cv",
     [TE_MI_MEAS_AGGR_STDEV] = "stdev",
+    [TE_MI_MEAS_AGGR_OUT_OF_RANGE] = "out of range",
 };
 
 static const char *meas_type_names[] = {
@@ -107,6 +110,8 @@ static const char *meas_type_names[] = {
     [TE_MI_MEAS_BANDWIDTH_USAGE] = "bandwidth-usage",
     [TE_MI_MEAS_TEMP] = "temperature",
     [TE_MI_MEAS_RPS] = "rps",
+    [TE_MI_MEAS_RTT] = "rtt",
+    [TE_MI_MEAS_RETRANS] = "TCP retransmissions",
 };
 
 static const char *meas_multiplier_names[] = {
@@ -127,7 +132,11 @@ te_mi_meas_get_base_unit_str(te_mi_meas_type type, te_mi_meas_aggr aggr)
 {
     te_mi_meas_base_unit_type base;
 
-    if (aggr == TE_MI_MEAS_AGGR_CV)
+    /*
+     * Some of aggregation types are unit-independend. They override the unit
+     * type of the measurement and make any measurement unitless.
+     */
+    if (aggr == TE_MI_MEAS_AGGR_CV || aggr == TE_MI_MEAS_AGGR_OUT_OF_RANGE)
         base = TE_MI_MEAS_BASE_UNITLESS;
     else
         base = meas_base_unit_by_type_map[type];

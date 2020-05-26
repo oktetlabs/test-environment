@@ -201,6 +201,11 @@ typedef enum te_mi_meas_aggr {
     TE_MI_MEAS_AGGR_CV,
     /** Standard deviation of measurements */
     TE_MI_MEAS_AGGR_STDEV,
+    /**
+     * Number of measurements that are out of range. The aggregation is
+     * unit-independend.
+     */
+    TE_MI_MEAS_AGGR_OUT_OF_RANGE,
 
     /** One past last valid measurement aggregation type */
     TE_MI_MEAS_AGGR_END,
@@ -214,6 +219,8 @@ typedef enum te_mi_meas_type {
     TE_MI_MEAS_BANDWIDTH_USAGE, /**< Bandwidth usage ratio */
     TE_MI_MEAS_TEMP, /**< Temperature in degrees Celsius */
     TE_MI_MEAS_RPS, /**< Requests per second */
+    TE_MI_MEAS_RTT, /**< Rount trip time in seconds */
+    TE_MI_MEAS_RETRANS, /**< TCP retransmissons */
 
     TE_MI_MEAS_END, /**< End marker for a measurement vector.
                          Also is one past last valid type */

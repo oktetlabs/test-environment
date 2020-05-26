@@ -53,7 +53,9 @@
             "throughput",
             "bandwidth-usage",
             "temperature",
-            "rps"
+            "rps",
+            "rtt",
+            "TCP retransmissons"
           ]
         },
         "name": {
@@ -83,7 +85,8 @@
             "max",
             "mean",
             "cv",
-            "stdev"
+            "stdev",
+            "out of range"
           ]
         },
         "value": {
