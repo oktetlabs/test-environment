@@ -1125,7 +1125,7 @@ log_mi_artifact(FILE *fd, te_rgt_mi *mi, void *buf, size_t len,
 
             FPRINTF_HEADER(
                     2, fd, "Measured parameter: \"%s\"",
-                    (param->name == NULL ? "[unnamed]" : param->name));
+                    te_rgt_mi_meas_param_name(param));
 
             fprintf(fd, "<ul style=\"list-style-type:none;\">\n");
 

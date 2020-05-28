@@ -286,7 +286,7 @@ log_mi_artifact(FILE *fd, te_rgt_mi *mi, void *buf, size_t len)
             param = &meas->params[i];
 
             fprintf(fd, "\nMeasured parameter: \"%s\"\n",
-                    (param->name == NULL ? "[unnamed]" : param->name));
+                    te_rgt_mi_meas_param_name(param));
 
             if (param->stats_present)
             {

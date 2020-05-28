@@ -49,6 +49,7 @@ typedef struct te_rgt_mi_meas_value {
 /** Description of measured parameter */
 typedef struct te_rgt_mi_meas_param {
     const char *name;               /**< Parameter name */
+    const char *type;               /**< Parameter type */
 
     te_bool stats_present;          /**< @c TRUE if some of the
                                          statistics are set */
@@ -133,6 +134,16 @@ extern void te_rgt_parse_mi_message(const char *json_buf,
  * @param mi      Pointer to te_rgt_mi structure.
  */
 extern void te_rgt_mi_clean(te_rgt_mi *mi);
+
+/**
+ * Get measurement parameter name (possibly derived from its type if
+ * name property was left empty).
+ *
+ * @param param       Parameter.
+ *
+ * @return Pointer to constant string.
+ */
+extern const char *te_rgt_mi_meas_param_name(te_rgt_mi_meas_param *param);
 
 #ifdef __cplusplus
 } /* extern "C" */

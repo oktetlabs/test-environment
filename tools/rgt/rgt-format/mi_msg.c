@@ -205,6 +205,7 @@ te_rgt_parse_mi_meas_message(te_rgt_mi *mi)
                 continue;
 
             param->name = json_object_get_string(result, "name");
+            param->type = json_object_get_string(result, "type");
             param_id++;
 
             entries = json_object_get(result, "entries");
@@ -350,4 +351,32 @@ te_rgt_parse_mi_message(const char *json_buf, size_t buf_len,
         /* Unknown type - handle as generic JSON */
     }
 #endif /* HAVE_LIBJANSSON */
+}
+
+/* See description in mi_msg.h */
+const char *
+te_rgt_mi_meas_param_name(te_rgt_mi_meas_param *param)
+{
+    if (param->name != NULL && *(param->name) != '\0')
+        return param->name;
+
+    if (param->type == NULL || *(param->type) == '\0')
+        return "[unknown]";
+
+    if (strcmp(param->type, "pps") == 0)
+        return "Packets per second";
+    else if (strcmp(param->type, "latency") == 0)
+        return "Latency in seconds";
+    else if (strcmp(param->type, "throughput") == 0)
+        return "Throughput in bits per second";
+    else if (strcmp(param->type, "bandwidth-usage") == 0)
+        return "Bandwidth usage ratio";
+    else if (strcmp(param->type, "temperature") == 0)
+        return "Temperature in degrees Celsius";
+    else if (strcmp(param->type, "rps") == 0)
+        return "Requests per second";
+    else if (strcmp(param->type, "rtt") == 0)
+        return "Round trip time in seconds";
+
+    return param->type;
 }
