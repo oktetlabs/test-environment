@@ -76,8 +76,6 @@ if get_option('engine')
 endif
 subdir('include')
 subdir('lib')
-if get_option('engine')
-    subdir('engine')
-endif
+subdir('engine')
 subdir('agents')
 subdir('tools')

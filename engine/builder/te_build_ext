@@ -47,6 +47,7 @@ declare tatype=
 declare envvars=
 declare tce=
 declare build_meson=false
+declare bin=
 
 for arg; do
     case "$arg" in
@@ -94,6 +95,9 @@ for arg; do
             ;;
         --build-meson)
             build_meson=true
+            ;;
+        --bin=*)
+            bin="${arg#--bin=}"
             ;;
         *)
             echo "Invalid option '$arg'" >&2
@@ -143,6 +147,9 @@ done
                       export TE_CPPFLAGS=\"$tecppflags\" ;
                       export TE_LDFLAGS=\"$telibflags\" ;
                       export EXT_SOURCES=\"$srcdir\" ;
+                      if test -n \"$bin\" ; then
+                          export PATH=\"\$PATH:$bin\" ;
+                      fi
                       if test -n \"$tatype\" ; then
                           export TE_AGENT_PREFIX=\"$prefix/agents/$tatype\" ;
                       fi ;

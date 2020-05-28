@@ -10,6 +10,7 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 # Test Suites are build on distcheck, therefore 'te_build_suite' and
 # 'te_tests_info.sh' should be installed by 'install-data'.
 mybindir=$(prefix)/bin
+if ENGINE
 dist_mybin_SCRIPTS = \
     te_builder_log \
     te_builder_opts \
@@ -21,6 +22,7 @@ dist_mybin_SCRIPTS = \
     te_build_ext \
     te_fixlink \
     te_generate_symtbl \
+    te_generate_symtbl.sh \
     te_build_suite \
     te_build_win_platform \
     te_build_win_lib \
@@ -32,6 +34,11 @@ dist_mybin_SCRIPTS = \
     te_functions \
     te_rcf_consistency_checks \
     static_libs_check.pl
+else
+dist_mybin_SCRIPTS = \
+    te_generate_symtbl \
+    te_generate_symtbl.sh
+endif
 
 # Scripts to be installed by 'install'
 dist_bin_SCRIPTS = \

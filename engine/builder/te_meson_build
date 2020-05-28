@@ -807,6 +807,7 @@ build_ta_apps() {
     for app in ${!papps}; do
         local ws_app_src="${ws}/apps/${app}/src"
         local ws_app_builddir="${ws}/apps/${app}/build"
+        local ws_app_bin="${app_inst}/${p}/bin"
 
         local pappsrc="TE_BS_TA_APPS_${ta}_${app}_SOURCES"
         local pappprep="TE_BS_TA_APPS_${ta}_${app}_PREPARE"
@@ -858,7 +859,8 @@ build_ta_apps() {
             --includes="${teincludes}" \
             --build="${appbuild}" \
             --expbin="${!pappinstbin}" \
-            --envvars="${!pappenv}" $enable_tce --build-meson || exit 1
+            --envvars="${!pappenv}" \
+            --bin="${ws_app_bin}" $enable_tce --build-meson || exit 1
 
         rsync_from "$p" "${ws_app_builddir}/" "${local_app_builddir}"
     done

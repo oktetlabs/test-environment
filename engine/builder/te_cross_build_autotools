@@ -131,6 +131,17 @@ build_platform() {
             "$p" "${TE_BASE}/include" "$PREFIX" || exit 1
     fi
 
+    # The builder package from TEN applications should be built
+    # now for each platform to enable TA type applications for TE_TA_APPS.
+    package=builder
+    PKGSRC=${TE_BASE}/engine/$package
+    if test "$mode" = "all" -o \
+        ! -f ${sbd}/platforms/${p}/${package}/Makefile ; then
+        ${TE_BASE}/engine/builder/te_configure_package APP "$package" \
+            "${p}_$package" "${sbd}/platforms/${p}/$package" \
+            "$p" "$PKGSRC" "$PREFIX" || exit 1
+    fi
+
     local libs=
     local plibs="${p}_LIBS"
     LIBS="${!plibs}"
@@ -252,7 +263,8 @@ build_agent() {
                       --includes="${teincludes}" \
                       --expbin="${!pextinstb}" \
                       --tatype="${package}" \
-                      --envvars="${!pextenv}" ${enable_tce} || exit 1
+                      --envvars="${!pextenv}" \
+                      --bin="${TE_INSTALL}/${p}/bin" $enable_tce || exit 1
     done
 }
 

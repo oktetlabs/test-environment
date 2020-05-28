@@ -1,9 +1,19 @@
 # Copyright (C) 2018 OKTET Labs. All rights reserved.
 
-scripts = [
+engine_scripts = [
     'te_build_suite',
     'te_ta_ssh_helper',
     'te_tce_process',
     'te_tests_info.sh',
 ]
-install_data(scripts, install_dir: 'bin')
+
+platform_scripts = [
+    'te_generate_symtbl',
+    'te_generate_symtbl.sh',
+]
+
+if get_option('engine')
+    install_data(engine_scripts, platform_scripts, install_dir: 'bin')
+else
+    install_data(platform_scripts, install_dir: 'bin')
+endif
