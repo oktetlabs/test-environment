@@ -6,6 +6,7 @@
 <!-- Latest compiled and minified CSS -->
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 <link rel="stylesheet" href="@@%s:shared_url@@log_style.css">
+<link rel="stylesheet" href="@@%s:shared_url@@Chart.min.css">
 
 <!-- jQuery library -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
@@ -14,10 +15,94 @@
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 
 <script src="@@%s:shared_url@@renderjson.js"></script>
+<script src="@@%s:shared_url@@Chart.bundle.min.js"></script>
+<script src="@@%s:shared_url@@hammer.min.js"></script>
+<script src="@@%s:shared_url@@chartjs-plugin-zoom.js"></script>
 <script>
     // By default show root's children for JSON, not just single
     // root node.
     renderjson.set_show_to_level(1);
+
+    //
+    // Create a graph in which array of numbers is shown as
+    // a line. Each element of array is represented as a point
+    // with X = index of the element in the array and Y = value
+    // of the element. Line connects these points.
+    //
+    // @param canvasID    ID of canvas element where to display the
+    //                    graph.
+    // @param title       Title of the graph (may be empty).
+    // @param param_name  Name of the displayed parameter.
+    // @param values      Array of numeric values.
+    // @param color       Which color to use for the line.
+    //
+    // @return Pointer to Chart object.
+    function add_graph(canvasID, title, param_name, values, color)
+    {
+        var points = [];
+        var ctx;
+        var c;
+        var i;
+
+        for (i = 0; i < values.length; i++)
+        {
+            points.push({x: i, y: values[i]});
+        }
+
+        ctx = document.getElementById(canvasID);
+        c = new Chart(ctx,
+                {
+                    type: "scatter",
+                    data: {
+                      datasets: [{
+                          label: param_name,
+                          data: points,
+                          borderColor: color,
+                          fill: false,
+                          lineTension: 0,
+                          showLine: true }]
+                    },
+                    options: {
+                        title: {
+                            fontSize: 17,
+                            text: title,
+                            display: (title.length > 0)
+                        },
+                        legend: {
+                            labels: {
+                                fontSize: 15
+                            }
+                        },
+                        scales: {
+                            xAxes: [{
+                                ticks: {
+                                    fontSize: 15
+                                }
+                            }],
+                            yAxes: [{
+                                ticks: {
+                                    fontSize: 15
+                                }
+                            }],
+                        },
+                        maintainAspectRatio: false,
+                        plugins: {
+                            zoom: {
+                                pan: {
+                                    enabled: true,
+                                    mode: 'xy'
+                                },
+                                zoom: {
+                                    enabled: true,
+                                    mode: 'xy'
+                                }
+                            }
+                        },
+                    }
+                });
+
+        return c;
+    }
 </script>
 
 <style type="text/css">

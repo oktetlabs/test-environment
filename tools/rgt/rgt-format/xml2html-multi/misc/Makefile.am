@@ -16,4 +16,8 @@ dist_miscdata_DATA = right_frame.html \
                      log_style.css \
                      ftiens4.js \
                      ua.js \
-                     renderjson.js
+                     renderjson.js \
+                     Chart.bundle.min.js \
+                     Chart.min.css \
+                     chartjs-plugin-zoom.js \
+                     hammer.min.js

@@ -1062,6 +1062,68 @@ print_mi_meas_value(FILE *fd, te_rgt_mi_meas_value *value, const char *prefix)
 }
 
 /**
+ * Print graph of values of a parameter from measurement MI artifact.
+ *
+ * @param fd      File where to print.
+ * @param title   Graph title (may be empty or @c NULL).
+ * @param param   Parameter to print.
+ * @param linum   Line number (used for creating unique ID in HTML file).
+ * @param index   Index of the parameter in the list of all parameters.
+ */
+static void
+print_mi_meas_param_graph(FILE *fd, const char *title,
+                          te_rgt_mi_meas_param *param,
+                          unsigned int linum, unsigned int index)
+{
+    const char *graph_width = "90%";
+    const char *graph_height = "25em";
+    size_t j;
+
+    const char *colors[] = { "crimson", "blue", "darkgreen",
+                             "chocolate", "blueviolet",
+                             "darkred", "deeppink",
+                             "orange" };
+    const char *color;
+
+    if (param->values == 0)
+        return;
+
+    if (title == NULL)
+        title = "";
+
+    fprintf(fd, "<div style=\"width: %s; height: %s;\">\n",
+            graph_width, graph_height);
+    fprintf(fd,
+            "<canvas id=\"mi_graph_%u_%u\"></canvas>\n",
+            linum, index);
+    fprintf(fd, "</div>\n");
+
+    fprintf(fd, "<script>\nvar vals = [ ");
+
+    for (j = 0; j < param->values_num; j++)
+    {
+        te_rgt_mi_meas_value *value = &param->values[j];
+
+        if (j > 0)
+            fprintf(fd, ", ");
+        if (value->defined && value->specified)
+        {
+            fprintf(fd, "%f * %s", value->value,
+                    (value->multiplier != NULL &&
+                     *(value->multiplier) != '\0' ?
+                     value->multiplier : "1"));
+        }
+    }
+
+    color = colors[index % TE_ARRAY_LEN(colors)];
+    fprintf(fd, " ];\n add_graph(\"mi_graph_%u_%u\", "
+            "\"%s\", \"%s\", vals, \"%s\");\n</script>\n",
+            linum, index, title,
+            (param->name == NULL ? "unnamed" : param->name),
+            color);
+}
+
+/**
  * Print a header inside log message.
  *
  * @param _hlevel     Header level. CSS class log_hN should be
@@ -1077,17 +1139,129 @@ print_mi_meas_value(FILE *fd, te_rgt_mi_meas_value *value, const char *prefix)
     } while (0)
 
 /**
+ * Log parsed MI artifact of type "measurement".
+ *
+ * @param fd        File where to print log.
+ * @param mi        Structure with parsed MI artifact.
+ * @param linum     Line number (used for unique IDs).
+ */
+static void
+log_mi_measurement(FILE *fd, te_rgt_mi *mi, unsigned int linum)
+{
+    te_rgt_mi_meas *meas = &mi->data.measurement;
+    size_t i;
+    size_t j;
+    te_bool show_graph = FALSE;
+    const char *graph_name = NULL;
+    te_rgt_mi_meas_view *view;
+
+    for (i = 0; i < meas->views_num; i++)
+    {
+        /*
+         * TODO: after graph views are fully implemented,
+         * parse them here and display graphs accordingly.
+         */
+        view = &meas->views[i];
+        if (strcmp(view->type, "line-graph") == 0)
+        {
+            show_graph = TRUE;
+            graph_name = view->name;
+            break;
+        }
+    }
+
+    FPRINTF_HEADER(1, fd, "Measurements from tool %s", meas->tool);
+    for (i = 0; i < meas->params_num; i++)
+    {
+        te_rgt_mi_meas_param *param;
+
+        param = &meas->params[i];
+
+        FPRINTF_HEADER(
+                2, fd, "Measured parameter: \"%s\"",
+                te_rgt_mi_meas_param_name(param));
+
+        fprintf(fd, "<ul style=\"list-style-type:none;\">\n");
+
+        if (param->stats_present)
+        {
+            fprintf(fd, "<li>\n");
+            FPRINTF_HEADER(3, fd, "Statistics:");
+            fprintf(fd, "<ul style=\"list-style-type:none;\">\n");
+            print_mi_meas_value(fd, &param->min, "min");
+            print_mi_meas_value(fd, &param->max, "max");
+            print_mi_meas_value(fd, &param->mean, "mean");
+            print_mi_meas_value(fd, &param->median, "median");
+            print_mi_meas_value(fd, &param->stdev, "stdev");
+            print_mi_meas_value(fd, &param->cv, "cv");
+            fprintf(fd, "</ul>\n");
+            fprintf(fd, "</li>\n");
+        }
+
+        if (param->values_num > 0)
+        {
+            fprintf(fd, "<li>\n");
+            FPRINTF_HEADER(3, fd, "Values:");
+
+            if (show_graph)
+            {
+                print_mi_meas_param_graph(fd, graph_name, param,
+                                          linum, i);
+            }
+            else
+            {
+                fprintf(fd, "<ul style=\"list-style-type:none;\">\n");
+                for (j = 0; j < param->values_num; j++)
+                {
+                    print_mi_meas_value(fd, &param->values[j], NULL);
+                }
+                fprintf(fd, "</ul>\n");
+            }
+
+            fprintf(fd, "</li>\n");
+        }
+
+        fprintf(fd, "</ul>\n");
+    }
+
+    if (meas->keys_num > 0)
+    {
+        FPRINTF_HEADER(2, fd, "Keys:");
+        fprintf(fd, "<ul style=\"list-style-type:none;\">\n");
+        for (i = 0; i < meas->keys_num; i++)
+        {
+            fprintf(fd, "<li>\"%s\" : \"%s\"\n</li>", meas->keys[i].key,
+                    meas->keys[i].value);
+        }
+        fprintf(fd, "</ul>\n");
+    }
+
+    if (meas->comments_num > 0)
+    {
+        FPRINTF_HEADER(2, fd, "Comments:");
+        fprintf(fd, "<ul style=\"list-style-type:none;\">\n");
+        for (i = 0; i < meas->comments_num; i++)
+        {
+            fprintf(fd, "<li>\"%s\" : \"%s\"</li>\n", meas->comments[i].key,
+                    meas->comments[i].value);
+        }
+        fprintf(fd, "</ul>\n");
+    }
+}
+
+/**
  * Log parsed MI artifact.
  *
  * @param fd        File where to print log.
  * @param mi        Structure with parsed MI artifact.
  * @param buf       Buffer with not parsed MI artifact data.
  * @param len       Size of the buffer.
+ * @param linum     Line number (used for unique IDs).
  * @param attrs     Attributes for HTML templates.
  */
 static void
 log_mi_artifact(FILE *fd, te_rgt_mi *mi, void *buf, size_t len,
-                rgt_attrs_t *attrs)
+                unsigned int linum, rgt_attrs_t *attrs)
 {
     int json_show_level = 1;
 
@@ -1112,77 +1286,7 @@ log_mi_artifact(FILE *fd, te_rgt_mi *mi, void *buf, size_t len,
     }
     else if (mi->type == TE_RGT_MI_TYPE_MEASUREMENT)
     {
-        te_rgt_mi_meas *meas = &mi->data.measurement;
-        size_t i;
-        size_t j;
-
-        FPRINTF_HEADER(1, fd, "Measurements from tool %s", meas->tool);
-        for (i = 0; i < meas->params_num; i++)
-        {
-            te_rgt_mi_meas_param *param;
-
-            param = &meas->params[i];
-
-            FPRINTF_HEADER(
-                    2, fd, "Measured parameter: \"%s\"",
-                    te_rgt_mi_meas_param_name(param));
-
-            fprintf(fd, "<ul style=\"list-style-type:none;\">\n");
-
-            if (param->stats_present)
-            {
-                fprintf(fd, "<li>\n");
-                FPRINTF_HEADER(3, fd, "Statistics:");
-                fprintf(fd, "<ul style=\"list-style-type:none;\">\n");
-                print_mi_meas_value(fd, &param->min, "min");
-                print_mi_meas_value(fd, &param->max, "max");
-                print_mi_meas_value(fd, &param->mean, "mean");
-                print_mi_meas_value(fd, &param->median, "median");
-                print_mi_meas_value(fd, &param->stdev, "stdev");
-                print_mi_meas_value(fd, &param->cv, "cv");
-                fprintf(fd, "</ul>\n");
-                fprintf(fd, "</li>\n");
-            }
-
-            if (param->values_num > 0)
-            {
-                fprintf(fd, "<li>\n");
-                FPRINTF_HEADER(3, fd, "Values:");
-                fprintf(fd, "<ul style=\"list-style-type:none;\">\n");
-                for (j = 0; j < param->values_num; j++)
-                {
-                    print_mi_meas_value(fd, &param->values[j], NULL);
-                }
-                fprintf(fd, "</ul>\n");
-                fprintf(fd, "</li>\n");
-            }
-
-            fprintf(fd, "</ul>\n");
-        }
-
-        if (meas->keys_num > 0)
-        {
-            FPRINTF_HEADER(2, fd, "Keys:");
-            fprintf(fd, "<ul style=\"list-style-type:none;\">\n");
-            for (i = 0; i < meas->keys_num; i++)
-            {
-                fprintf(fd, "<li>\"%s\" : \"%s\"\n</li>", meas->keys[i].key,
-                        meas->keys[i].value);
-            }
-            fprintf(fd, "</ul>\n");
-        }
-
-        if (meas->comments_num > 0)
-        {
-            FPRINTF_HEADER(2, fd, "Comments:");
-            fprintf(fd, "<ul style=\"list-style-type:none;\">\n");
-            for (i = 0; i < meas->comments_num; i++)
-            {
-                fprintf(fd, "<li>\"%s\" : \"%s\"</li>\n", meas->comments[i].key,
-                        meas->comments[i].value);
-            }
-            fprintf(fd, "</ul>\n");
-        }
+        log_mi_measurement(fd, mi, linum);
 
         /*
          * If textual representation was printed successfully, JSON object
@@ -1231,7 +1335,7 @@ RGT_DEF_FUNC(proc_log_msg_end)
                 log_mi_artifact(depth_user->fd, &mi,
                                 (char *)(depth_user->json_data.ptr),
                                 depth_user->json_data.len,
-                                attrs);
+                                depth_user->linum, attrs);
 
                 te_rgt_mi_clean(&mi);
                 te_dbuf_reset(&depth_user->json_data);
