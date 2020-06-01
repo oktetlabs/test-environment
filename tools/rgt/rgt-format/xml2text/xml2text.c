@@ -230,6 +230,77 @@ print_mi_meas_value(FILE *fd, te_rgt_mi_meas_value *value, const char *prefix)
 }
 
 /**
+ * Log MI test start message.
+ *
+ * @param fd      Where to print a log.
+ * @param mi      Structure with data from parsed MI artifact.
+ */
+static void
+log_mi_test_start(FILE *fd, te_rgt_mi *mi)
+{
+    te_rgt_mi_test_start *data = &mi->data.test_start;
+
+    size_t i;
+
+    fprintf(fd, "%s \"%s\" started\n", data->node_type, data->name);
+    fprintf(fd, "Node ID %d, Parent ID %d", data->node_id, data->parent_id);
+
+    if (data->authors != NULL)
+    {
+        fprintf(fd, "\nAuthors:");
+        for(i = 0; i < data->authors_num; i++)
+        {
+            const char *name  = data->authors[i].name;
+            const char *email = data->authors[i].email;
+
+            if (name == NULL)
+                name = "";
+            if (email == NULL)
+                email = "";
+
+            fprintf(fd, "\n *  %s <%s>", name, email);
+        }
+    }
+
+    if (data->objective != NULL)
+        fprintf(fd, "\nObjective: %s", data->objective);
+    if (data->tin != -1)
+        fprintf(fd, "\nTIN: %d", data->tin);
+    if (data->hash != NULL)
+        fprintf(fd, "\nHash: %s", data->hash);
+
+    if (data->params != NULL)
+    {
+        fprintf(fd, "\nParameters:");
+        for(i = 0; i < data->params_num; i++)
+        {
+            fprintf(fd, "\n *  %s = %s",
+                    data->params[i].key,
+                    data->params[i].value);
+        }
+    }
+}
+
+/**
+ * Log MI test end message.
+ *
+ * @param fd      Where to print a log.
+ * @param mi      Structure with data from parsed MI artifact.
+ */
+static void
+log_mi_test_end(FILE *fd, te_rgt_mi *mi)
+{
+    te_rgt_mi_test_end *data = &mi->data.test_end;
+
+    fprintf(fd, "(%d, %d) finished with status \"%s\"", data->node_id,
+            data->parent_id, data->obtained.status);
+    if (data->error != NULL)
+    {
+        fprintf(fd, "\nERROR: %s", data->error);
+    }
+}
+
+/**
  * Log MI artifact.
  *
  * @param fd      Where to print a log.
@@ -249,7 +320,7 @@ log_mi_artifact(FILE *fd, te_rgt_mi *mi, void *buf, size_t len)
         return;
     }
 
-    if (mi->type != TE_RGT_MI_TYPE_MEASUREMENT || mi->rc != 0)
+    if (mi->type == TE_RGT_MI_TYPE_UNKNOWN || mi->rc != 0)
     {
         if (mi->rc != 0)
         {
@@ -272,7 +343,7 @@ log_mi_artifact(FILE *fd, te_rgt_mi *mi, void *buf, size_t len)
         if (res < 0)
             fwrite(buf, len, 1, fd);
     }
-    else
+    else if (mi->type == TE_RGT_MI_TYPE_MEASUREMENT)
     {
         te_rgt_mi_meas *meas = &mi->data.measurement;
         size_t i;
@@ -328,6 +399,14 @@ log_mi_artifact(FILE *fd, te_rgt_mi *mi, void *buf, size_t len)
                         meas->comments[i].value);
             }
         }
+    }
+    else if (mi->type == TE_RGT_MI_TYPE_TEST_START)
+    {
+        log_mi_test_start(fd, mi);
+    }
+    else if (mi->type == TE_RGT_MI_TYPE_TEST_END)
+    {
+        log_mi_test_end(fd, mi);
     }
 }
 
