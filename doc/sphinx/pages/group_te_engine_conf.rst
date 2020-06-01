@@ -150,7 +150,7 @@ File Syntax
 
 You can find samples of :ref:`Configurator <doxid-group__te__engine__conf>` configuration files under ${TE_BASE}/conf directory.
 
-Normally the structure of :ref:`Configurator <doxid-group__te__engine__conf>` configuration files organized as following:
+Normally the structure of :ref:`Configurator <doxid-group__te__engine__conf>` configuration files is organized as following:
 
 .. ref-code-block:: xml
 

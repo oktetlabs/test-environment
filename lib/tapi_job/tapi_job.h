@@ -277,7 +277,7 @@ extern te_errno tapi_job_alloc_input_channels(tapi_job_t *job,
 
 /**
  * Allocate @p n_channels output channels.
- * The first channel and the second output channels are expected to be
+ * The first and the second output channels are expected to be
  * connected to stdout and stderr resp., the wiring of others is
  * spawner-dependant.
  *
@@ -573,7 +573,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  * @code{.c}
  * tapi_job_factory_t *factory = NULL;
  * tapi_job_t *job = NULL;
- * tapi_job_buffer buf = TAPI_JOB_BUFFER_INIT;
+ * tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
  * tapi_job_channel_t *out_channels[2];
  * tapi_job_channel_t *out_filter;
  *
@@ -669,7 +669,7 @@ extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
  *
  * while (tapi_job_wait(job, 0, &status) == TE_EINPROGRESS)
  * {
- *     CHECK_RC(tapi_job_receive(TAPI_JOB_CHANNEL_SET(prompt_filter), - 1, NULL));
+ *     CHECK_RC(tapi_job_receive(TAPI_JOB_CHANNEL_SET(prompt_filter), -1, NULL));
  *     CHECK_RC(tapi_job_send(job, in_channel, &command_string));
  * }
  *

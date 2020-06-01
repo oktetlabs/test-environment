@@ -23,7 +23,7 @@ extern "C" {
 #define TAPI_RPC_JOB_BIG_TIMEOUT_MS 600000
 
 /**
- * Create a job controlled by the RPC server @p rcps.
+ * Create a job controlled by the RPC server @p rpcs.
  * The job will be managed by @p spawner plugin.
  *
  * @param rpcs          RPC server
@@ -54,7 +54,7 @@ extern int rpc_job_start(rcf_rpc_server *rpcs, unsigned int job_id);
  * If the @p input_channels is @c TRUE,
  * the first channel is expected to be connected to the job's stdin;
  * If the @p input_channels is @c FALSE,
- * The first channel and the second output channels are expected to be
+ * The first and the second output channels are expected to be
  * connected to stdout and stderr respectively;
  * The wiring of not mentioned channels is spawner-dependant.
  *

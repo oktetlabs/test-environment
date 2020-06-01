@@ -500,7 +500,7 @@ Important points:
 
 * number of values for all arguments in the same list should be equal;
 
-* multiplication and lists can be compbined;
+* multiplication and lists can be combined;
 
 * multiplication significantly increases number of test iterations, so one should be sure that he wants to check all combinations.
 

@@ -200,7 +200,7 @@ Same for Debian derivatives in one line:
 .. code-block:: none
 
 
-	apt-get install bison file flex gawk libpcap0.8-dev libpopt-dev openssh_server wget
+	apt-get install bison file flex gawk libpcap0.8-dev libpopt-dev openssh-server wget
 
 Optional libraries and packages:
 
@@ -228,7 +228,7 @@ Same for Debian derivatives in one line:
 .. code-block:: none
 
 
-	apt-get install file gawk openssh_server
+	apt-get install file gawk openssh-server
 
 Optional libraries and packages:
 
@@ -282,7 +282,7 @@ For example builder.conf file for a sample test suite located under ${TE_BASE}/s
 Building
 --------
 
-When you prepared a :ref:`Builder <doxid-group__te__engine__builder>` configuration file, you are ready to start builing process.
+When you prepared a :ref:`Builder <doxid-group__te__engine__builder>` configuration file, you are ready to start building process.
 
 You should have two folders: Test Environment sources folder; test suite sources folder.
 
@@ -340,11 +340,11 @@ If you do not specify TE_BUILD environment variable, :ref:`Builder <doxid-group_
 TE Exectuion
 ~~~~~~~~~~~~
 
-To run TE one need to have configuration files for all the TE subsystems.
+To run TE one needs to have configuration files for all the TE subsystems.
 
 See :ref:`TE Config Files Basics <doxid-group__te__user__run__details>` or :ref:`Test Environment <doxid-group__te>` for more information about config files creation and syntax.
 
-Below we describe what's happens upon dispatcher.sh execution and what artifacts are left after it.
+Below we describe what happens upon dispatcher.sh execution and what artifacts are left after it.
 
 As it was mentioned above the TE can be started by run.sh script located in you test suite directory or by direct dispatcher.sh invocation.
 
