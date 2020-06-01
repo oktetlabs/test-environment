@@ -1,44 +1,51 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "description": "A representation of a measurement",
+  "description": "A representation of an MI message",
   "type": "object",
-  "properties": {
-    "type": {
-      "type": "string",
-      "enum": [
-        "measurement"
-      ]
+  "oneOf": [
+    { "$ref": "#/definitions/measurement" },
+    { "$ref": "#/definitions/testStart" },
+    { "$ref": "#/definitions/testEnd" }
+  ],
+  "definitions": {
+    "dictionary": {
+      "description": "A dictionary - key-value pair set of strings",
+      "type": "object",
+      "additionalProperties": { "type": "string" }
     },
     "version": {
       "description": "Log format version",
       "type": "integer",
       "enum": [1]
     },
-    "tool": {
-      "description": "Tool used for statistics gathering",
-      "type": "string"
-    },
-    "results": {
-      "description": "Measurement results",
-      "type": "array",
-      "items": { "$ref": "#/definitions/measurements" }
-    },
-    "keys": {
-      "description": "Measurement keys",
-      "$ref": "#/definitions/dictionary"
-    },
-    "comments": {
-      "description": "Measurement comments",
-      "$ref": "#/definitions/dictionary"
-    }
-  },
-  "required": ["type", "version", "tool", "results"],
-  "additionalProperties": false,
-  "definitions": {
-    "dictionary": {
-      "description": "A dictionary - key-value pair set of strings",
+    "measurement": {
+      "description": "A representation of a measurement",
       "type": "object",
-      "additionalProperties": { "type": "string" }
+      "properties": {
+        "type": {
+          "enum": [ "measurement" ]
+        },
+        "version": { "$ref": "#/definitions/version" },
+        "tool": {
+          "description": "Tool used for statistics gathering",
+          "type": "string"
+        },
+        "results": {
+          "description": "Measurement results",
+          "type": "array",
+          "items": { "$ref": "#/definitions/measurements" }
+        },
+        "keys": {
+          "description": "Measurement keys",
+          "$ref": "#/definitions/dictionary"
+        },
+        "comments": {
+          "description": "Measurement comments",
+          "$ref": "#/definitions/dictionary"
+        }
+      },
+      "required": ["type", "version", "tool", "results"],
+      "additionalProperties": false
     },
     "measurements": {
       "description": "Measurements that have the same type and name",
@@ -123,6 +130,207 @@
         }
       },
       "required": ["aggr", "value", "base_units", "multiplier"],
+      "additionalProperties": false
+    },
+    "testStart": {
+      "description": "Root object of a test_start message",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [ "test_start" ]
+        },
+        "version": { "$ref": "#/definitions/version" },
+        "msg": {
+          "oneOf": [
+            { "$ref": "#/definitions/testStartMsgPackage" },
+            { "$ref": "#/definitions/testStartMsgSession" },
+            { "$ref": "#/definitions/testStartMsgTest" }
+          ]
+        }
+      },
+      "required": ["type", "version", "msg"],
+      "additionalProperties": false
+    },
+    "personInfo": {
+      "description": "Personal information",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Full name",
+          "type": ["string", "null"]
+        },
+        "email": {
+          "description": "Email address",
+          "type": ["string", "null"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "testParams": {
+      "description": "Parameters of test, session or package",
+      "type": ["array", "null"],
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/dictionary" }
+    },
+    "nodeID": {
+      "description": "Node ID of an execution unit",
+      "type": "number",
+      "minimum": 0
+    },
+    "testStartMsgPackage": {
+      "description": "Package information",
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/definitions/nodeID" },
+        "parent": { "$ref": "#/definitions/nodeID" },
+        "params": { "$ref": "#/definitions/testParams" },
+        "node_type": {
+          "enum": ["PACKAGE"]
+        },
+        "objective": {
+          "description": "Package objective",
+          "type": ["string", "null"]
+        },
+        "name": {
+          "description": "Package name",
+          "type": ["string", "null"]
+        },
+        "authors": {
+          "description": "Package authors",
+          "type": ["array", "null"],
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/personInfo" }
+        }
+      },
+      "required": ["id", "parent", "node_type"],
+      "additionalProperties": false
+    },
+    "testStartMsgSession": {
+      "description": "Session information",
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/definitions/nodeID" },
+        "parent": { "$ref": "#/definitions/nodeID" },
+        "params": { "$ref": "#/definitions/testParams" },
+        "node_type": {
+          "enum": ["SESSION"]
+        },
+        "name": {
+          "description": "Session name",
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["id", "parent", "node_type"],
+      "additionalProperties": false
+    },
+    "testStartMsgTest": {
+      "description": "Test information",
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/definitions/nodeID" },
+        "parent": { "$ref": "#/definitions/nodeID" },
+        "params": { "$ref": "#/definitions/testParams" },
+        "node_type": {
+          "enum": ["TEST"]
+        },
+        "name": {
+          "description": "Test name",
+          "type": ["string", "null"]
+        },
+        "objective": {
+          "description": "Test objective",
+          "type": ["string", "null"]
+        },
+        "page": {
+          "description": "Test page",
+          "type": "string"
+        },
+        "tin": {
+          "description": "Test identification number",
+          "type": "number",
+          "minimum": 1
+        },
+        "hash": {
+          "description": "Test hash string",
+          "type": "string"
+        }
+      },
+      "required": ["id", "parent", "node_type"],
+      "additionalProperties": false
+    },
+    "testEnd": {
+      "description": "Root object of a test_end message",
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": ["test_end"]
+        },
+        "version": { "$ref": "#/definitions/version" },
+        "msg": { "$ref": "#/definitions/testEndMsg" }
+      },
+      "required": ["type", "version", "msg"],
+      "additionalProperties": false
+    },
+    "testResult": {
+      "description": "Execution result",
+      "type": "object",
+      "properties": {
+        "status": {
+          "description": "Execution status",
+          "enum": [
+            "INCOMPLETE",
+            "UNSPEC",
+            "EMPTY",
+            "SKIPPED",
+            "FAKED",
+            "PASSED",
+            "FAILED"
+          ]
+        },
+        "verdicts": {
+          "description": "Verdicts produced during execution",
+          "type": ["array", "null"],
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "notes": {
+          "description": "Notes",
+          "type": "string"
+        },
+        "key": {
+          "description": "Key",
+          "type": "string"
+        }
+      },
+      "required": ["status"],
+      "additionalProperties": false
+    },
+    "testEndMsg": {
+      "description": "Execution information",
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/definitions/nodeID" },
+        "parent": { "$ref": "#/definitions/nodeID" },
+        "error": {
+          "description": "Execution error",
+          "type": ["string", "null"]
+        },
+        "tags_expr": {
+          "description": "Tag expression that was matched",
+          "type": ["string", "null"]
+        },
+        "obtained": {
+          "description": "Actual result",
+          "$ref": "#/definitions/testResult"
+        },
+        "expected": {
+          "description": "Expected results",
+          "type": ["array", "null"],
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/testResult" }
+        }
+      },
+      "required": ["id", "parent", "obtained"],
       "additionalProperties": false
     }
   }
