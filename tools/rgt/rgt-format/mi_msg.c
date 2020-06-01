@@ -19,6 +19,55 @@
 
 #include "te_defs.h"
 #include "mi_msg.h"
+#include "te_alloc.h"
+
+/**
+ * Get JSON value's type as a string.
+ *
+ * @param type      JSON value type
+ *
+ * @returns Statically allocated string with type name
+ */
+static const char *
+json_type_string(json_type type)
+{
+#define JSONCASE(_type) case _type: return #_type;
+    switch (type)
+    {
+        JSONCASE(JSON_OBJECT)
+        JSONCASE(JSON_ARRAY)
+        JSONCASE(JSON_STRING)
+        JSONCASE(JSON_INTEGER)
+        JSONCASE(JSON_REAL)
+        JSONCASE(JSON_TRUE)
+        JSONCASE(JSON_FALSE)
+        JSONCASE(JSON_NULL)
+        default: return "UNKNOWN";
+    }
+#undef JSONCASE
+}
+
+/**
+ * Signal message parsing error.
+ *
+ * @param mi        MI message
+ * @param fmt       Format string
+ * @param ...       Values for the format string
+ */
+static void
+te_rgt_mi_parse_error(te_rgt_mi *mi, te_errno rc, const char *fmt, ...)
+{
+    va_list va;
+
+    va_start(va, fmt);
+
+    mi->parse_failed = TRUE;
+    vsnprintf(mi->parse_err, sizeof(mi->parse_err), fmt, va);
+    mi->rc = rc;
+
+    va_end(va);
+    return;
+}
 
 /**
  * Release memory allocated for storing data for MI message
@@ -56,12 +105,73 @@ te_rgt_mi_meas_clean(te_rgt_mi_meas *meas)
     meas->views_num = 0;
 }
 
+/**
+ * Release memory allocated for storing data for MI message
+ * of type "test_start".
+ *
+ * @param meas      Pointer to te_rgt_mi_test_start structure.
+ */
+static void
+te_rgt_mi_test_start_clean(te_rgt_mi_test_start *data)
+{
+    if (data->params != NULL)
+    {
+        free(data->params);
+        data->params = NULL;
+    }
+    data->params_num = 0;
+
+    if (data->authors != NULL)
+    {
+        free(data->authors);
+        data->authors = NULL;
+    }
+    data->authors_num = 0;
+}
+
+/**
+ * Release memory allocated for storing data for MI message
+ * of type "test_end".
+ *
+ * @param meas      Pointer to te_rgt_mi_test_end structure.
+ */
+static void
+te_rgt_mi_test_end_clean(te_rgt_mi_test_end *data)
+{
+    size_t i;
+
+    free(data->obtained.verdicts);
+    data->obtained.verdicts = NULL;
+    data->obtained.verdicts_num = 0;
+
+    if (data->expected != NULL)
+    {
+        for (i = 0; i < data->expected_num; i++)
+            free(data->expected[i].verdicts);
+
+        free(data->expected);
+        data->expected = NULL;
+        data->expected_num = 0;
+    }
+}
+
 /* See description in mi_msg.h */
 void
 te_rgt_mi_clean(te_rgt_mi *mi)
 {
-    if (mi->type == TE_RGT_MI_TYPE_MEASUREMENT)
-        te_rgt_mi_meas_clean(&mi->data.measurement);
+    switch (mi->type)
+    {
+        case TE_RGT_MI_TYPE_MEASUREMENT:
+            te_rgt_mi_meas_clean(&mi->data.measurement);
+            break;
+        case TE_RGT_MI_TYPE_TEST_START:
+            te_rgt_mi_test_start_clean(&mi->data.test_start);
+            break;
+        case TE_RGT_MI_TYPE_TEST_END:
+            te_rgt_mi_test_end_clean(&mi->data.test_end);
+            break;
+        default:;
+    }
 
 #ifdef HAVE_LIBJANSSON
     if (mi->json_obj != NULL)
@@ -377,6 +487,251 @@ cleanup:
     return;
 }
 
+/**
+ * Check if JSON object has expected type.
+ *
+ * The lack of value (null pointer or null json object) always passes
+ * the check.
+ *
+ * In case of mismatch, an error will be signaled in the MI object.
+ *
+ * @param mi                MI object.
+ * @param json              JSON object.
+ * @param expected_type     The type the JSON object is expected to have.
+ * @param field_name        Field name, can be used in the error message.
+ *
+ * @returns Boolean flag that signals successful type check.
+ */
+static te_bool
+check_json_type(te_rgt_mi *mi, json_t **json, json_type expected_type,
+                const char *field_name)
+{
+    json_type actual_type;
+
+    if (*json != NULL && json_typeof(*json) == JSON_NULL)
+        *json = NULL;
+
+    if (*json == NULL)
+        return TRUE;
+
+    actual_type = json_typeof(*json);
+    if (actual_type != expected_type)
+    {
+        te_rgt_mi_parse_error(mi, TE_EINVAL, "Unexpected type for field \"%s\":"
+                              " expected %s, got %s", field_name,
+                              json_type_string(expected_type),
+                              json_type_string(actual_type));
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+/** Parse "test_start" MI message */
+static void
+te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
+{
+    int     ret;
+    size_t  i;
+
+    json_t *root;
+    json_t *name = NULL;
+    json_t *params = NULL;
+    json_t *authors = NULL;
+    json_t *objective = NULL;
+    json_t *tin = NULL;
+    json_t *hash = NULL;
+    json_t *item;
+
+    json_error_t err;
+
+    te_rgt_mi_test_start *data;
+
+    mi->type = TE_RGT_MI_TYPE_TEST_START;
+    data = &mi->data.test_start;
+
+    root = (json_t *)(mi->json_obj);
+    root = json_object_get(root, "msg");
+    if (root == NULL)
+    {
+        te_rgt_mi_parse_error(mi, TE_EINVAL,
+                              "Failed to get the \"msg\" field from the "
+                              "test_start message");
+        goto cleanup;
+    }
+
+    ret = json_unpack_ex(root, &err, JSON_STRICT,
+                         "{s:i, s:i, s:s, s?o, s?o, s?o, s?o, s?o, s?o}",
+                         "id", &data->node_id,
+                         "parent", &data->parent_id,
+                         "node_type", &data->node_type,
+                         "name", &name,
+                         "params", &params,
+                         "authors", &authors,
+                         "objective", &objective,
+                         "tin", &tin,
+                         "hash", &hash);
+    if (ret != 0)
+    {
+        te_rgt_mi_parse_error(mi, TE_EINVAL,
+                              "Error unpacking test_start JSON log message: %s"
+                              " (line %d, column %d)", err.text, err.line,
+                              err.column);
+        goto cleanup;
+    }
+
+    if (!check_json_type(mi, &name, JSON_STRING, "name") ||
+        !check_json_type(mi, &params, JSON_ARRAY, "params") ||
+        !check_json_type(mi, &authors, JSON_ARRAY, "authors") ||
+        !check_json_type(mi, &objective, JSON_STRING, "objective") ||
+        !check_json_type(mi, &tin, JSON_INTEGER, "tin") ||
+        !check_json_type(mi, &hash, JSON_STRING, "hash"))
+        goto cleanup;
+
+    if (name != NULL)
+        data->name = json_string_value(name);
+    if (objective != NULL)
+        data->objective = json_string_value(objective);
+    if (tin != NULL)
+        data->tin = json_integer_value(tin);
+    else
+        data->tin = -1;
+    if (hash != NULL)
+        data->hash = json_string_value(hash);
+
+    if (params != NULL)
+    {
+        data->params_num = json_array_size(params);
+        if (data->params_num == 0)
+        {
+            te_rgt_mi_parse_error(mi, TE_EINVAL,
+                                  "test_start parameter list cannot be an "
+                                  "empty array. If there are no arguments,"
+                                  "this field must be omitted");
+            goto cleanup;
+        }
+        data->params = TE_ALLOC(sizeof(te_rgt_mi_kv) * data->params_num);
+        if (data->params == NULL)
+        {
+            te_rgt_mi_parse_error(mi, TE_ENOMEM,
+                                  "Failed to allocate memory for test_start params");
+            goto cleanup;
+        }
+
+        json_array_foreach(params, i, item)
+        {
+            ret = json_unpack_ex(item, &err, JSON_STRICT,
+                                 "[ss]",
+                                 &data->params[i].key,
+                                 &data->params[i].value);
+            if (ret != 0)
+            {
+                te_rgt_mi_parse_error(mi, TE_EINVAL,
+                                      "Error unpacking JSON param object: %s"
+                                      " (line %d, column %d)", err.text,
+                                      err.line, err.column);
+                goto cleanup;
+            }
+        }
+    }
+
+    if (authors != NULL)
+    {
+        data->authors_num = json_array_size(authors);
+        data->authors = TE_ALLOC(sizeof(te_rgt_mi_person) * data->authors_num);
+        if (data->authors == NULL)
+        {
+            te_rgt_mi_parse_error(mi, TE_ENOMEM,
+                                  "Failed to allocate memory for authors");
+            goto cleanup;
+        }
+
+        json_array_foreach(authors, i, item)
+        {
+            json_t *name  = NULL;
+            json_t *email = NULL;
+
+            ret = json_unpack_ex(item, &err, JSON_STRICT,
+                                 "{s?o, s?o}",
+                                 "name",  &name,
+                                 "email", &email);
+            if (ret != 0)
+            {
+                te_rgt_mi_parse_error(mi, TE_EINVAL,
+                                      "Error unpacking JSON param object: %s"
+                                      " (line %d, column %d)", err.text,
+                                      err.line, err.column);
+                goto cleanup;
+            }
+
+            if (!check_json_type(mi, &name, JSON_STRING, "authors.name") ||
+                !check_json_type(mi, &email, JSON_STRING, "authors.email"))
+                goto cleanup;
+
+            if (name != NULL)
+                data->authors[i].name = json_string_value(name);
+            if (email != NULL)
+                data->authors[i].email = json_string_value(email);
+        }
+    }
+
+cleanup:
+    if (mi->rc != 0)
+        te_rgt_mi_clean(mi);
+}
+
+/** Parse "test_end" MI message */
+static void
+te_rgt_parse_mi_test_end_message(te_rgt_mi *mi)
+{
+    int     ret;
+
+    json_t *root;
+    json_t *error = NULL;
+
+    json_error_t err;
+
+    te_rgt_mi_test_end *data;
+
+    mi->type = TE_RGT_MI_TYPE_TEST_END;
+    data = &mi->data.test_end;
+
+    root = (json_t *)(mi->json_obj);
+    root = json_object_get(root, "msg");
+    if (root == NULL)
+    {
+        te_rgt_mi_parse_error(mi, TE_EINVAL,
+                              "Failed to get the \"msg\" field from the "
+                              "test_end message");
+        goto cleanup;
+    }
+
+    ret = json_unpack_ex(root, &err, JSON_STRICT,
+                         "{s:i, s:i, s:s, s?o}",
+                         "id", &data->node_id,
+                         "parent", &data->parent_id,
+                         "status", &data->obtained.status,
+                         "error", &error);
+    if (ret != 0)
+    {
+        te_rgt_mi_parse_error(mi, TE_EINVAL,
+                              "Error unpacking test_end JSON log message: %s"
+                              " (line %d, column %d)", err.text, err.line,
+                              err.column);
+        goto cleanup;
+    }
+
+    if (!check_json_type(mi, &error, JSON_STRING, "error"))
+        goto cleanup;
+
+    if (error != NULL)
+        data->error = json_string_value(error);
+
+cleanup:
+    if (mi->rc != 0)
+        te_rgt_mi_clean(mi);
+}
+
 #endif /* HAVE_LIBJANSSON */
 
 /* See description in mi_msg.h */
@@ -417,6 +772,14 @@ te_rgt_parse_mi_message(const char *json_buf, size_t buf_len,
     else if (strcmp(type, "measurement") == 0)
     {
         te_rgt_parse_mi_meas_message(mi);
+    }
+    else if (strcmp(type, "test_start") == 0)
+    {
+        te_rgt_parse_mi_test_start_message(mi);
+    }
+    else if (strcmp(type, "test_end") == 0)
+    {
+        te_rgt_parse_mi_test_end_message(mi);
     }
     else
     {

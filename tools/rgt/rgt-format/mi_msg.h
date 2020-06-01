@@ -96,9 +96,52 @@ typedef struct te_rgt_mi_meas {
     size_t views_num;               /**< Number of views */
 } te_rgt_mi_meas;
 
+/** Personal information */
+typedef struct te_rgt_mi_person {
+    const char *name;  /**< Full name */
+    const char *email; /**< Email address */
+} te_rgt_mi_person;
+
+/** Description of MI message of type "test_start" */
+typedef struct te_rgt_mi_test_start {
+    int               node_id;    /**< Node ID */
+    int               parent_id;  /**< Parent ID */
+    const char       *node_type;  /**< PACKAGE, SESSION or TEST */
+    const char       *name;       /**< Name */
+    te_rgt_mi_kv     *params;     /**< Array of parameters */
+    size_t            params_num; /**< Number of parameters */
+    te_rgt_mi_person *authors;    /**< Array of authors */
+    size_t            authors_num;/**< Number of authors */
+    const char       *objective;  /**< Objective */
+    int               tin;        /**< Test Iteration Number */
+    const char       *hash;       /**< Hash */
+} te_rgt_mi_test_start;
+
+/** Description of a test result */
+typedef struct te_rgt_mi_test_result {
+    const char  *status;       /**< Status code */
+    const char **verdicts;     /**< Array of verdicts */
+    size_t       verdicts_num; /**< Number of verdicts */
+    const char  *notes;        /**< Additional notes */
+    const char  *key;          /**< Result key, e.g. bug reference */
+} te_rgt_mi_test_result;
+
+/** Description of MI message of type "test_end" */
+typedef struct te_rgt_mi_test_end {
+    int                    node_id;      /**< Node ID */
+    int                    parent_id;    /**< Parent ID */
+    const char            *error;        /**< TRC error message */
+    const char            *tags_expr;    /**< Matched tag expression */
+    te_rgt_mi_test_result  obtained;     /**< Obtained result */
+    te_rgt_mi_test_result *expected;     /**< Array of expected results */
+    size_t                 expected_num; /**< Number of expected results */
+} te_rgt_mi_test_end;
+
 /** Types of MI message */
 typedef enum {
     TE_RGT_MI_TYPE_MEASUREMENT = 0,   /**< Measurement */
+    TE_RGT_MI_TYPE_TEST_START,        /**< Package/Session/Test start */
+    TE_RGT_MI_TYPE_TEST_END,          /**< Package/Session/Test end */
     TE_RGT_MI_TYPE_UNKNOWN            /**< Unknown type */
 } te_rgt_mi_type;
 
@@ -119,6 +162,8 @@ typedef struct te_rgt_mi {
     union {
         te_rgt_mi_meas measurement; /**< Data for measurement MI
                                          message */
+        te_rgt_mi_test_start test_start; /**< Data for test_start MI message */
+        te_rgt_mi_test_end   test_end;   /**< Data for test_end MI message */
     } data; /**< Data obtained from JSON object */
 } te_rgt_mi;
 
