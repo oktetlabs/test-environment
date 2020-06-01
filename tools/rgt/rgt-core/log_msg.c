@@ -115,7 +115,6 @@ rgt_process_tester_control_message_json(log_msg *msg)
     enum ctrl_event_type evt_type;
     enum result_status   res;
 
-    json_t     *status_opt = NULL;
     json_t     *error_opt = NULL;
     const char *type   = NULL;
     const char *status = NULL;
@@ -218,25 +217,15 @@ rgt_process_tester_control_message_json(log_msg *msg)
          * values and type-checked manually.
          */
         err_code = json_unpack_ex(msg_json, &json_error, JSON_STRICT,
-                                  "{s:i, s:i, s?o, s?o}",
+                                  "{s:i, s:i, s:s, s?o}",
                                   "id",        &node_id,
                                   "parent",    &parent_id,
-                                  "status",    &status_opt,
+                                  "status",    &status,
                                   "error",     &error_opt);
         if (err_code != 0)
         {
             FMT_TRACE("Error unpacking JSON log message: %s (line %d, column %d)",
                       json_error.text, json_error.line, json_error.column);
-            free_log_msg(msg);
-            json_decref(msg_json);
-            THROW_EXCEPTION;
-        }
-
-        rc = extract_json_string(status_opt, &status, NULL);
-        if (rc != 0 || status == NULL)
-        {
-            FMT_TRACE("Invalid type for the \"status\" value: %s",
-                      get_json_type(status_opt));
             free_log_msg(msg);
             json_decref(msg_json);
             THROW_EXCEPTION;
