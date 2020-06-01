@@ -19,6 +19,15 @@
          Name: Name of the system module
          Value: 1 means loadded
 
+    - oid: "/agent/module/unload_holders"
+      access: read_write
+      type: integer
+      d: |
+         Toggle indicating whether an attempt to unload module holders
+         is made before the module itself is unloaded
+         Name:  none
+         Value: 1 - try to unload holders, 0 - do not unload (default)
+
     - oid: "/agent/module/filename"
       access: read_write
       type: string

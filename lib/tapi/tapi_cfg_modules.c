@@ -150,8 +150,10 @@ tapi_cfg_module_add_from_ta_dir(const char *ta_name,
     te_string     module_path = TE_STRING_INIT;
     char         *module_name_underscorified;
     cfg_val_type  cvt = CVT_STRING;
+    cfg_val_type  cvt_int = CVT_INTEGER;
     cfg_handle    module_handle;
     char         *ta_dir;
+    int           loaded;
     te_errno      rc;
     char         *cp;
 
@@ -186,6 +188,33 @@ tapi_cfg_module_add_from_ta_dir(const char *ta_name,
     {
         ERROR("Failed to add the module instance");
         goto out;
+    }
+
+    rc = cfg_get_instance_fmt(&cvt_int, &loaded, "/agent:%s/module:%s",
+                              ta_name, module_name_underscorified);
+    if (rc != 0)
+    {
+        ERROR("Failed to get the module 'loaded' property");
+        goto out;
+    }
+
+    if (loaded)
+    {
+        rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+                                  "/agent:%s/module:%s/unload_holders:",
+                                  ta_name, module_name_underscorified);
+        if (rc != 0)
+        {
+            ERROR("Failed to set unload holders for the module instance");
+            goto out;
+        }
+
+        rc = tapi_cfg_module_unload(ta_name, module_name_underscorified);
+        if (rc != 0)
+        {
+            ERROR("Failed to unload the module instance");
+            goto out;
+        }
     }
 
     rc = cfg_set_instance_fmt(CFG_VAL(STRING, module_path.ptr),

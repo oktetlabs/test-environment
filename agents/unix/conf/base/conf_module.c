@@ -39,6 +39,10 @@
 #include <unistd.h>
 #endif
 
+#if HAVE_DIRENT_H
+#include <dirent.h>
+#endif
+
 #include "rcf_pch.h"
 #include "rcf_ch_api.h"
 #include "conf_common.h"
@@ -75,6 +79,9 @@ typedef struct te_kernel_module {
                                          *   loaded prior loading the module
                                          *   by its filename
                                          */
+    te_bool unload_holders; /**< Demands that module holders be
+                             *   unloaded prior unloading the module
+                             */
     te_bool loaded; /*< Is the module loaded into the system */
 
     LIST_HEAD(te_kernel_module_params, te_kernel_module_param) params;
@@ -100,6 +107,13 @@ static te_errno module_filename_set(unsigned int gid, const char *oid,
                                     const char *mod_name,...);
 static te_errno module_filename_get(unsigned int gid, const char *oid,
                                     char *value, const char *mod_name,...);
+
+static te_errno module_unload_holders_get(unsigned int gid, const char *oid,
+                                          char *value, const char *mod_name,
+                                          ...);
+static te_errno module_unload_holders_set(unsigned int gid, const char *oid,
+                                          const char *value,
+                                          const char *mod_name, ...);
 
 static te_errno module_filename_load_dependencies_get(unsigned int  gid,
                                                       const char   *oid,
@@ -135,8 +149,12 @@ RCF_PCH_CFG_NODE_RW(node_filename, "filename",
                     &node_filename_load_dependencies, NULL,
                     module_filename_get, module_filename_set);
 
+RCF_PCH_CFG_NODE_RW(node_module_unload_holders, "unload_holders",
+                    NULL, &node_filename,
+                    module_unload_holders_get, module_unload_holders_set);
+
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_module_param, "parameter",
-                               NULL, &node_filename,
+                               NULL, &node_module_unload_holders,
                                module_param_get, module_param_set,
                                module_param_add, module_param_del,
                                module_param_list, NULL);
@@ -194,6 +212,134 @@ mod_filename_modprobe_try_load_dependencies(te_kernel_module *module)
     return rc;
 }
 
+static te_errno
+mod_insert_or_move_holder_uniq_tail(tqh_strings *holders, char *mod_name)
+{
+    tqe_string *p;
+
+    for (p = TAILQ_FIRST(holders);
+         p != NULL && strcmp(mod_name, p->v) != 0;
+         p = TAILQ_NEXT(p, links));
+
+    if (p != NULL)
+    {
+        TAILQ_REMOVE(holders, p, links);
+        TAILQ_INSERT_TAIL(holders, p, links);
+
+        return 0;
+    }
+    else
+    {
+        return tq_strings_add_uniq_dup(holders, mod_name);
+    }
+}
+
+/**
+ * Insert holders of a module @p mod_name into a strings tailq.
+ * Move holders to the tail if they are already present in tailq.
+ * Insert them into the end (tail) of the queue so that modules
+ * to unload first will be at the end of the queue.
+ *
+ * @note The function may fail yet insert some holders to the tailq
+ * when creating a list of modules with help of get_dir_list().
+ *
+ * @param holders           Module holders queue
+ * @param mod_name          Name of the module which holders should be
+ *                          inserted
+ *
+ * @return Status code.
+ */
+static te_errno
+mod_insert_or_move_holders_tail(tqh_strings *holders, const char *mod_name)
+{
+    struct dirent **names;
+    te_errno rc = 0;
+    char *dir;
+    int n = 0;
+    int i;
+
+    dir = te_string_fmt(SYS_MODULE "/%s/holders", mod_name);
+    if (dir == NULL)
+        return TE_ENOMEM;
+
+    n = scandir(dir, &names, NULL, alphasort);
+    free(dir);
+    if (n < 0)
+    {
+        ERROR("Cannot get a list of module holders, rc=%d", rc);
+        return TE_EFAIL;
+    }
+    if (n == 0)
+        return 0;
+
+    for (i = 0; i < n; i++)
+    {
+        if (strcmp(names[i]->d_name, ".") == 0 ||
+            strcmp(names[i]->d_name, "..") == 0)
+        {
+            continue;
+        }
+
+        rc = mod_insert_or_move_holder_uniq_tail(holders, names[i]->d_name);
+        if (rc != 0)
+            goto out;
+    }
+
+out:
+    for (i = 0; i < n; i++)
+        free(names[i]);
+
+    free(names);
+
+    return rc;
+}
+
+static int
+mod_rmmod(const char *mod_name)
+{
+    TE_SPRINTF(buf, "rmmod %s", mod_name);
+
+    return ta_system(buf);
+}
+
+static void
+mod_try_unload_holders(const char *mod_name)
+{
+    tqh_strings holders = TAILQ_HEAD_INITIALIZER(holders);
+    tqe_string *name;
+    te_errno rc;
+
+    if (tq_strings_add_uniq_dup(&holders, mod_name) != 0)
+    {
+        ERROR("Failed to insert name to holders list");
+        return;
+    }
+
+    TAILQ_FOREACH(name, &holders, links)
+    {
+        if (mod_insert_or_move_holders_tail(&holders, name->v) != 0)
+        {
+            ERROR("Failed to populate holders list");
+            goto out;
+        }
+    }
+
+    name = TAILQ_FIRST(&holders);
+    TAILQ_REMOVE(&holders, name, links);
+    free(name->v);
+    free(name);
+
+    TAILQ_FOREACH_REVERSE(name, &holders, tqh_strings, links)
+    {
+        rc = mod_rmmod(name->v);
+        if (rc != 0)
+            WARN("rmmod '%s' failed", name->v);
+    }
+
+out:
+    tq_strings_free(&holders, free);
+}
+
 static int
 mod_modprobe(te_kernel_module *module)
 {
@@ -210,14 +356,6 @@ mod_modprobe(te_kernel_module *module)
         te_string_append(&modprobe_cmd,
                          " %s=%s", param->name, param->value);
     }
-
-    return ta_system(buf);
-}
-
-static int
-mod_rmmod(const char *mod_name)
-{
-    TE_SPRINTF(buf, "rmmod %s", mod_name);
 
     return ta_system(buf);
 }
@@ -624,6 +762,38 @@ module_filename_get(unsigned int gid, const char *oid,
 }
 
 static te_errno
+module_unload_holders_set(unsigned int gid, const char *oid,
+                          const char *value, const char *mod_name, ...)
+{
+    te_kernel_module *module = mod_find(mod_name);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (module == NULL)
+        return 0;
+
+    module->unload_holders = (value[0] == '1');
+
+    return 0;
+}
+
+static te_errno
+module_unload_holders_get(unsigned int gid, const char *oid,
+                          char *value, const char *mod_name, ...)
+{
+    te_kernel_module *module = mod_find(mod_name);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    value[0] = (module != NULL && module->unload_holders) ? '1' : '0';
+    value[1] = '\0';
+
+    return 0;
+}
+
+static te_errno
 module_add(unsigned int gid, const char *oid,
            const char *mod_value, const char *mod_name)
 {
@@ -722,6 +892,9 @@ module_set(unsigned int gid, const char *oid, char *value,
     }
     else
     {
+        if (module->unload_holders)
+            mod_try_unload_holders(mod_name);
+
         rc = mod_rmmod(mod_name);
     }
 
