@@ -26,7 +26,6 @@ Table of levels
 ======  ============  ================================
 Number  Name          Description
 ======  ============  ================================
-
 0       KERN_EMERG    System is unuseable
 1       KERN_ALERT    Action must be taken immediately
 2       KERN_CRIT     Critical conditions

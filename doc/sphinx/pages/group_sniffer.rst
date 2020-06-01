@@ -166,7 +166,8 @@ Command line options for Dispatcher
 Additional command line options for dispatcher.sh are supported. It is possible to add sniffers and set their settings by command line options. The same settings of the **Logger** can be changed here.
 
 =============================================  =====================================================================================
-
+Option                                         Description
+=============================================  =====================================================================================
 –sniff-not-feed-conf                           Do not feed the sniffer configuration file to Configurator.
 
 –sniff=<TA/iface>                              Run sniffer on iface of the TA.
@@ -268,32 +269,43 @@ For example, the following option can be used to print absolute TCP sequence and
 Logger settings
 ---------------
 
-Polling process and result capture logs location is configured by XML file. By default used **logger.conf** from the **conf/** directory, but config file path may be changed by **Dispatcher** command line option **conf-logger=<filename>**. The same from command line may be changed other settings of **Logger**. The command line options have a higher priority. Settings described in the table below. ======================================  ===================================================================
+Polling process and result capture logs location is configured by XML file. By default used **logger.conf** from the **conf/** directory, but config file path may be changed by **Dispatcher** command line option **conf-logger=<filename>**. The same from command line may be changed other settings of **Logger**. The command line options have a higher priority. Settings described in the table below.
 
-======================================  ===================================================================
+=====================  ===================================================================================
+Setting name           Description
+=====================  ===================================================================================
+snif_fname             **TEN** side log file naming pattern, the following format specifies are supported:
 
-snif_fname
-- %a : agent name
-- %u : user name
-- %i : interface name
-- %s : sniffer name
-- %n : sniffer session sequence number
-By default
-snif_path                               Path to the
-By default: TE_LOG_DIR/caps
-snif_max_fsize                          Max file size for one sniffer in Mb.
-By default: 64 Mb.
-snif_space                              Max total capture files size for one sniffer in Mb.
-By default: 256 Mb.
-snif_rotation                           Rotate logger side temporary logs across
-snif_overall_size                       Max total files size for all sniffers in Mb (Is not supported now).
-By default: unlimited.
-snif_ovefill_meth                       Overfill handle method:
-0 - rotation(default)
-1 - tail drop.
-snif_period                             Period of taken logs from agents in milliseconds.
-By default: 200 msec.
-======================================  ===================================================================
+                       - %a : agent name
+                       - %u : user name
+                       - %i : interface name
+                       - %s : sniffer name
+                       - %n : sniffer session sequence number
+
+                       By default: ``%a_%i_%s_%n``.
+
+snif_path              Path to the **TEN** side capture file.
+                       By default: **TE_LOG_DIR/caps**.
+
+snif_max_fsize         Max file size for one sniffer in Mb.
+                       By default: 64 Mb.
+
+snif_space             Max total capture files size for one sniffer in Mb.
+                       By default: 256 Mb.
+
+snif_rotation          Rotate logger side temporary logs across **x** files for each sniffer.
+
+snif_overall_size      Max total files size for all sniffers in Mb (Is not supported now).
+                       By default: unlimited.
+
+snif_ovefill_meth      Overfill handle method:
+
+                       - 0 - rotation(default)
+                       - 1 - tail drop.
+
+snif_period            Period of taken logs from agents in milliseconds.
+                       By default: 200 msec.
+=====================  ===================================================================================
 
 Configuration file contains the set of default settings and set of user setting. Example of user settings setup is below.
 
@@ -319,26 +331,28 @@ Configuration file contains the set of default settings and set of user setting.
 Configurator trees
 ------------------
 
-Two configuration subtrees are added to the agent configuration model. Generic configuration subtree /agent/sniffer_settings/ which represents agent-wide sniffer configuration. Sniffers uses some of these fields by default if the value to them is not defined personally. ==============================================  ===========================================================
+Two configuration subtrees are added to the agent configuration model. Generic configuration subtree /agent/sniffer_settings/ which represents agent-wide sniffer configuration. Sniffers uses some of these fields by default if the value to them is not defined personally.
 
 ==============================================  ===========================================================
-
+OID                                             Description
+==============================================  ===========================================================
 /agent/sniffer_settings                         Sniffer object.
 /agent/sniffer_settings/enable                  Enable the sniffer settings lock.
 /agent/sniffer_settings/filter_exp_str          Filter expression string, by default: empty.
 /agent/sniffer_settings/filter_exp_file         Filter file contains expression tcpdump-like filter syntax.
 /agent/sniffer_settings/snaplen                 Maximum packet capture size for all sniffers.
-By default unlimited.
+                                                By default: unlimited.
 /agent/sniffer_settings/tmp_logs                Dump files settings.
 /agent/sniffer_settings/tmp_logs/path           Path to temporary capture files.
-/agent/sniffer_settings/tmp_logs/total_size     Max total capture files size for all agent sniffers, Mb.
-By defualt 256 Mb.
+/agent/sniffer_settings/tmp_logs/total_size     Max total capture files size for all agent sniffers in Mb.
+                                                By default 256 Mb.
 /agent/sniffer_settings/tmp_logs/file_size      Max capture file size in Mb, by default 16 Mb.
 /agent/sniffer_settings/tmp_logs/rotation       Rotate agent side temporary logs across
-By defaul
+                                                By default: **x** = 4.
 /agent/sniffer_settings/tmp_logs/overfill_meth  Overfill handle method:
-0 - rotation(default)
-1 - tail drop.
+
+                                                - 0 - rotation(default)
+                                                - 1 - tail drop.
 ==============================================  ===========================================================
 
 Example of subtree:
@@ -355,24 +369,27 @@ Example of subtree:
 	  <instance oid="/agent:Agt_A/sniffer_settings:/tmp_logs:/overfill_meth:" value="0"/>
 	</set>
 
-Plus a per-interface /agent/interface/sniffer/ subtree which is responsible for configuration of a specific sniffer instances is added. Each sniffer instance in the configurato subtree has a **sniffer name** which is by design (cause it's a name of the object instance) uniq across the interface. ===============================================  ===========================================================
+Plus a per-interface /agent/interface/sniffer/ subtree which is responsible for configuration of a specific sniffer instances is added. Each sniffer instance in the configurato subtree has a **sniffer name** which is by design (cause it's a name of the object instance) uniq across the interface.
 
 ===============================================  ===========================================================
-
-/agent/interface/sniffer                         Sniffer name contains read only value of
+OID                                              Description
+===============================================  ===========================================================
+/agent/interface/sniffer                         Sniffer name contains read only value of **ssn**.
 /agent/interface/sniffer/enable                  Enable the sniffer.
 /agent/interface/sniffer/filter_exp_str          Filter expression string, by default: empty.
 /agent/interface/sniffer/filter_exp_file         Filter file contains expression tcpdump-like filter syntax.
 /agent/interface/sniffer/snaplen                 Maximum packet capture size in bytes, by default unlimited.
 /agent/interface/sniffer/tmp_logs                Dump files settings subtree.
 /agent/interface/sniffer/tmp_logs/sniffer_space  Max total dump files size for the sniffer in Mb.
-By defualt 64 Mb.
-/agent/interface/sniffer/tmp_logs/file_size      Max capture file size (Mb), by default is 16 Mb.
-/agent/interface/sniffer/tmp_logs/rotation       Rotate agent side temporary logs across
-By defaul
+                                                 By default: 64 Mb.
+/agent/interface/sniffer/tmp_logs/file_size      Max capture file size in Mb
+                                                 By default: 16 Mb.
+/agent/interface/sniffer/tmp_logs/rotation       Rotate agent side temporary logs across **x** files.
+                                                 By default: **x** = 4.
 /agent/interface/sniffer/tmp_logs/overfill_meth  Overfill handle method:
-0 - rotation(default)
-1 - tail drop.
+
+                                                 - 0 - rotation(default)
+                                                 - 1 - tail drop.
 ===============================================  ===========================================================
 
 Example of subtree:

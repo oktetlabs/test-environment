@@ -47,10 +47,11 @@ The most important features which are supported:
 Configurator tree
 ~~~~~~~~~~~~~~~~~
 
-The following configurator subtree can be used to create and destroy network namespaces, move network interfaces between namespaces. =============================  =======  ======================================================================================================
+The following configurator subtree can be used to create and destroy network namespaces, move network interfaces between namespaces.
 
 =============================  =======  ======================================================================================================
-
+Object ID                      Type     Description
+=============================  =======  ======================================================================================================
 /agent/namespace               RO none  Generic linux namespaces management subtree.
 /agent/namespace/net           RC none  Network namespaces list. This node can be used to create new network namespaces or grab existing ones.
 /agent/namespace/net/inteface  RC none  Interfaces which are moved from the current agent namespace to the specified.
@@ -186,10 +187,11 @@ Interfaces relations through namespaces
 
 It can be very tricky (if possible at all) to track network interfaces relations through namespaces using system tools due to the isolation. On the other hand test agents have completely independent subtrees in TE.
 
-So the following configurator subtree was added to describe relations between agents, namespaces and network interfaces on a host. ==================================  =========  ==========================================================================================================
+So the following configurator subtree was added to describe relations between agents, namespaces and network interfaces on a host.
 
 ==================================  =========  ==========================================================================================================
-
+Object ID                           Type       Description
+==================================  =========  ==========================================================================================================
 /local/host                         RO none    This configurator subtree describes relations between agents, namespaces and network interfaces on a host.
 /local/host/agent                   RC none    Test Agent subtree.
 /local/host/agent/netns             RW string  Network namespace where the agent is run.

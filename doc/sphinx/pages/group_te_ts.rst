@@ -18,14 +18,14 @@ Test Suite
 Terminology
 ~~~~~~~~~~~
 
-============  =============================================================================================================================================================================================================================================================================================================
-
-============  =============================================================================================================================================================================================================================================================================================================
-
-Test Package  Group of tightly related tests or test packages, which may share internal libraries and usually run together (one-by-one or simultaneously). Test Package may consist of one test. It may have a prologue (performing some initialization) and epilogue (releasing resources and restoring TE configuration).
+============  ================================================================================================================================================================================
+Term          Definition
+============  ================================================================================================================================================================================
+Test Package  Group of tightly related tests or test packages, which may share internal libraries and usually run together (one-by-one or simultaneously).
+              Test Package may consist of one test. It may have a prologue (performing some initialization) and epilogue (releasing resources and restoring TE configuration).
 Test Script   A test which is a minimal structural unit of a test harness.
-Test Suite    Test Package which may be considered as standalone entity from organisational point of view and build issues. @tdt_tend
-============  =============================================================================================================================================================================================================================================================================================================
+Test Suite    Test Package which may be considered as standalone entity from organisational point of view and build issues.
+============  ================================================================================================================================================================================
 
 
 
