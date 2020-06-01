@@ -155,6 +155,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
     int      sid = 0;
     char    *val0 = NULL;
     int      rc, rc1;
+    int      default_timeout;
 
     rcf_rpc_server *rpcs = NULL;
     cfg_handle      handle = CFG_HANDLE_INVALID;
@@ -182,6 +183,17 @@ rcf_rpc_server_get(const char *ta, const char *name,
         RING("RPC servers as local threads of Test Agent "
              "are not supported any more: they are dangerous");
     }
+
+    rc = cfg_get_instance_fmt(NULL, &default_timeout,
+                              "/agent:%s/rpc_default_timeout:", ta);
+    if (rc != 0)
+    {
+        ERROR("Cannot get default RPC timeout");
+        return TE_RC(TE_RCF_API, rc);
+    }
+
+    if (default_timeout <= 0)
+        default_timeout = RCF_RPC_DEFAULT_TIMEOUT;
 
     if (!(flags & RCF_RPC_SERVER_GET_REGISTER))
         str_register[0] = '\0';
@@ -274,7 +286,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
         in.common.op = RCF_RPC_CALL_WAIT;
         in.common.lib_flags = TARPC_LIB_DEFAULT;
 
-        if ((rc = rcf_ta_call_rpc(ta, sid, name, RCF_RPC_DEFAULT_TIMEOUT,
+        if ((rc = rcf_ta_call_rpc(ta, sid, name, default_timeout,
                                   "getpid", &in, &out)) != 0)
         {
             flags &= ~RCF_RPC_SERVER_GET_REUSE;
@@ -353,7 +365,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
     rpcs->iut_err_jump = TRUE;
     rpcs->err_jump = TRUE;
     rpcs->op = RCF_RPC_CALL_WAIT;
-    rpcs->def_timeout = RCF_RPC_DEFAULT_TIMEOUT;
+    rpcs->def_timeout = default_timeout;
     rpcs->timeout = RCF_RPC_UNSPEC_TIMEOUT;
     rpcs->sid = sid;
 

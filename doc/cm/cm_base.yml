@@ -1082,6 +1082,14 @@
          Name: empty
          Value: RPC provider application
 
+    - oid: "/agent/rpc_default_timeout"
+      access: read_write
+      type: integer
+      d: |
+         Default RPC timeout for all RPC servers on a TA.
+         Name: empty
+         Value: Timeout in milliseconds
+
     - oid: "/agent/rpcserver"
       access: read_create
       type: string

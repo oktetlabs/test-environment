@@ -140,10 +140,21 @@ static uint8_t   *rpc_buf;     /**< Buffer for receiving of RPC answers;
  */
 static char rpc_server_provider[RCF_MAX_PATH];
 
+/**
+ * Default timeout for all RPC servers of TA.
+ * 0 means unspecified.
+ */
+static unsigned int rpc_server_default_timeout = 0;
+
 static te_errno rpcprovider_get(unsigned int, const char *, char *,
                                 const char *);
 static te_errno rpcprovider_set(unsigned int, const char *, const char *,
                                 const char *);
+
+static te_errno rpc_default_timeout_get(unsigned int, const char *, char *,
+                                        const char *);
+static te_errno rpc_default_timeout_set(unsigned int, const char *,
+                                        const char *, const char *);
 
 static te_errno rpcserver_get(unsigned int, const char *, char *,
                               const char *);
@@ -179,6 +190,12 @@ static rcf_pch_cfg_object node_rpcprovider =
       (rcf_ch_cfg_set)rpcprovider_set,
       NULL, NULL, NULL, NULL, NULL};
 
+static rcf_pch_cfg_object node_rpc_default_timeout =
+    { "rpc_default_timeout", 0, NULL, &node_rpcprovider,
+      (rcf_ch_cfg_get)rpc_default_timeout_get,
+      (rcf_ch_cfg_set)rpc_default_timeout_set,
+      NULL, NULL, NULL, NULL, NULL};
+
 static rcf_pch_cfg_object node_rpcserver_sid =
     { "sid", 0, NULL, NULL,
       (rcf_ch_cfg_get)rpcserver_sid_get,
@@ -204,7 +221,7 @@ static rcf_pch_cfg_object node_rpcserver_dead =
       NULL, NULL, NULL, NULL, NULL};
 
 static rcf_pch_cfg_object node_rpcserver =
-    { "rpcserver", 0, &node_rpcserver_dead, &node_rpcprovider,
+    { "rpcserver", 0, &node_rpcserver_dead, &node_rpc_default_timeout,
       (rcf_ch_cfg_get)rpcserver_get, (rcf_ch_cfg_set)rpcserver_set,
       (rcf_ch_cfg_add)rpcserver_add, (rcf_ch_cfg_del)rpcserver_del,
       (rcf_ch_cfg_list)rpcserver_list, NULL, NULL};
@@ -1025,6 +1042,58 @@ rpcprovider_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
+/**
+ * Get default RPC timeout for all RPC servers
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         value location
+ * @param name          unused
+ *
+ * @return Status code (always 0)
+ */
+static te_errno
+rpc_default_timeout_get(unsigned int gid, const char *oid, char *value,
+                        const char *name)
+{
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(name);
+
+    te_snprintf(value, RCF_MAX_VAL, "%u", rpc_server_default_timeout);
+
+    return 0;
+}
+
+/**
+ * Set default RPC timeout for all RPC servers
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         Timeout to set in milliseconds, zero means unspecified
+ * @param name          unused
+ *
+ * @return Status code
+ */
+static te_errno
+rpc_default_timeout_set(unsigned int gid, const char *oid, const char *value,
+                        const char *name)
+{
+    unsigned int timeout;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(name);
+
+    rc = te_strtoui(value, 0, &timeout);
+    if (rc != 0)
+        return rc;
+
+    rpc_server_default_timeout = timeout;
+
+    return 0;
+}
 
 /**
  * Get RPC server state.
