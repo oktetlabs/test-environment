@@ -642,7 +642,6 @@ module_add(unsigned int gid, const char *oid,
     TE_SPRINTF(module->name, "%s", mod_name);
     module->filename = NULL;
     module->filename_load_dependencies = FALSE;
-    module->loaded = FALSE;
     LIST_INIT(&module->params);
 
     LIST_INSERT_HEAD(&modules, module, list);
@@ -656,8 +655,9 @@ module_add(unsigned int gid, const char *oid,
             free(module);
             return TE_RC(TE_TA_UNIX, TE_EFAULT);
         }
-        module->loaded = TRUE;
     }
+
+    module->loaded = mod_loaded(mod_name);
 
     return 0;
 }
