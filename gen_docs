@@ -147,8 +147,6 @@ function generate_sphinx_doc()
     ${SCRIPT_DIR}/add_orphan_tag.sh || echo "Failed to add orphan tag" 1>&2
 
     generate_sphinx_only
-    mkdir -p doc/generated/html/generated/generated
-    find doc/dox_resources/images -name "*.png" -exec cp {} doc/generated/html/generated/generated \;
 }
 
 $SPHINX_ONLY && generate_sphinx_only || generate_sphinx_doc
