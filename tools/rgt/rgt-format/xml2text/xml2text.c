@@ -350,6 +350,32 @@ print_mi_meas_value(FILE *fd, te_rgt_mi_meas_value *value, const char *prefix)
 }
 
 /**
+ * Log MI result.
+ *
+ * @param fd      Where to print a log.
+ * @param result  Result that should be printed.
+ */
+static void
+log_mi_result(FILE *fd, te_rgt_mi_test_result *result)
+{
+    size_t i;
+
+    fprintf(fd, "Status: %s", result->status);
+
+    if (result->verdicts != NULL)
+    {
+        fprintf(fd, "\nVerdicts:");
+        for (i = 0; i < result->verdicts_num; i++)
+            fprintf(fd, "\n *  %s", result->verdicts[i]);
+    }
+
+    if (result->notes != NULL)
+        fprintf(fd, "\nNotes: %s", result->notes);
+    if (result->key != NULL)
+        fprintf(fd, "\nKey: %s", result->key);
+}
+
+/**
  * Log MI test start message.
  *
  * @param fd      Where to print a log.
@@ -423,12 +449,12 @@ log_mi_test_end(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
 {
     te_rgt_mi_test_end *data = &mi->data.test_end;
     flow_item_t        *item;
+    size_t              i;
 
     item = flow_stack_pop(&ctx->flow_stack, data->node_id);
     if (item != NULL)
     {
-        fprintf(fd, "%s \"%s\" finished with status \"%s\"\n", item->type,
-                item->name, data->obtained.status);
+        fprintf(fd, "%s \"%s\" finished\n", item->type, item->name);
         fprintf(fd, "Node ID %d, Parent ID %d", data->node_id,
                 data->parent_id);
     }
@@ -438,9 +464,23 @@ log_mi_test_end(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
                 data->parent_id, data->obtained.status);
     }
 
+    if (data->tags_expr != NULL)
+        fprintf(fd, "\nMatched tags expression: %s", data->tags_expr);
+
+    fprintf(fd, "\n\nObtained result:\n");
+    log_mi_result(fd, &data->obtained);
+
     if (data->error != NULL)
+        fprintf(fd, "\n\nERROR: %s", data->error);
+
+    if (data->expected != NULL)
     {
-        fprintf(fd, "\nERROR: %s", data->error);
+        fprintf(fd, "\n\nExpected results:");
+        for (i = 0; i < data->expected_num; i++)
+        {
+            fprintf(fd, "\n\n");
+            log_mi_result(fd, &data->expected[i]);
+        }
     }
 }
 

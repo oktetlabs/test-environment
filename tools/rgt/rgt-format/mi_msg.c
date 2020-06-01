@@ -680,13 +680,99 @@ cleanup:
         te_rgt_mi_clean(mi);
 }
 
+/**
+ * Parse test result object.
+ *
+ * @param mi            MI object.
+ * @param json          JSON result object.
+ * @param result        Where to put the parsing result.
+ */
+static te_errno
+te_rgt_parse_mi_test_result(te_rgt_mi *mi, json_t *json,
+                            te_rgt_mi_test_result *result)
+{
+    int           ret;
+    json_t       *verdicts = NULL;
+    json_t       *verdict = NULL;
+    json_t       *notes = NULL;
+    json_t       *key = NULL;
+    json_error_t  err;
+
+    if (!check_json_type(mi, &json, JSON_OBJECT, "result") ||
+        result == NULL)
+        return TE_EINVAL;
+
+
+    ret = json_unpack_ex(json, &err, JSON_STRICT,
+                         "{s:s, s?o, s?o, s?o}",
+                         "status", &result->status,
+                         "verdicts", &verdicts,
+                         "notes", &notes,
+                         "key", &key);
+    if (ret != 0)
+    {
+        te_rgt_mi_parse_error(mi, TE_EINVAL,
+                              "Error unpacking JSON result object: %s"
+                              " (line %d, column %d)", err.text, err.line,
+                              err.column);
+        return TE_EINVAL;
+    }
+
+    if (!check_json_type(mi, &verdicts, JSON_ARRAY, "result.verdicts") ||
+        !check_json_type(mi, &notes, JSON_STRING, "result.notes") ||
+        !check_json_type(mi, &key, JSON_STRING, "result.key"))
+        return TE_EINVAL;
+
+    if (notes != NULL)
+        result->notes = json_string_value(notes);
+    if (key != NULL)
+        result->key = json_string_value(key);
+
+    if (verdicts != NULL)
+    {
+        size_t i;
+
+        result->verdicts_num = json_array_size(verdicts);
+        result->verdicts = TE_ALLOC(sizeof(const char *) * result->verdicts_num);
+        if (result->verdicts == NULL)
+        {
+            te_rgt_mi_parse_error(mi, TE_ENOMEM,
+                                  "Failed to allocate memory for verdicts");
+            return TE_ENOMEM;
+        }
+
+        json_array_foreach(verdicts, i, verdict)
+        {
+            if (!check_json_type(mi, &verdict, JSON_STRING, "verdict") ||
+                verdict == NULL)
+                return TE_EINVAL;
+
+            result->verdicts[i] = json_string_value(verdict);
+            if (result->verdicts[i] == NULL)
+            {
+                te_rgt_mi_parse_error(mi, TE_EINVAL,
+                                      "Failed to extract verdict string");
+                return TE_EINVAL;
+            }
+        }
+    }
+
+    return 0;
+}
+
 /** Parse "test_end" MI message */
 static void
 te_rgt_parse_mi_test_end_message(te_rgt_mi *mi)
 {
-    int     ret;
+    int      ret;
+    te_errno rc;
+    size_t   i;
 
     json_t *root;
+    json_t *obtained = NULL;
+    json_t *expected = NULL;
+    json_t *result = NULL;
+    json_t *tags_expr = NULL;
     json_t *error = NULL;
 
     json_error_t err;
@@ -707,10 +793,13 @@ te_rgt_parse_mi_test_end_message(te_rgt_mi *mi)
     }
 
     ret = json_unpack_ex(root, &err, JSON_STRICT,
-                         "{s:i, s:i, s:s, s?o}",
+                         "{s:i, s:i, s?s, s?o, s?o, s?o, s?o}",
                          "id", &data->node_id,
                          "parent", &data->parent_id,
                          "status", &data->obtained.status,
+                         "obtained", &obtained,
+                         "expected", &expected,
+                         "tags_expr", &tags_expr,
                          "error", &error);
     if (ret != 0)
     {
@@ -721,9 +810,41 @@ te_rgt_parse_mi_test_end_message(te_rgt_mi *mi)
         goto cleanup;
     }
 
-    if (!check_json_type(mi, &error, JSON_STRING, "error"))
+    if (!check_json_type(mi, &obtained, JSON_OBJECT, "obtained") ||
+        !check_json_type(mi, &expected, JSON_ARRAY, "expected") ||
+        !check_json_type(mi, &tags_expr, JSON_STRING, "tags_expr") ||
+        !check_json_type(mi, &error, JSON_STRING, "error"))
         goto cleanup;
 
+    if (obtained != NULL)
+    {
+        rc = te_rgt_parse_mi_test_result(mi, obtained, &data->obtained);
+        if (rc != 0)
+            goto cleanup;
+    }
+
+    if (expected != NULL)
+    {
+        data->expected_num = json_array_size(expected);
+        data->expected = TE_ALLOC(sizeof(te_rgt_mi_test_result) *
+                                  data->expected_num);
+        if (data->expected == NULL)
+        {
+            te_rgt_mi_parse_error(mi, TE_ENOMEM,
+                                  "Failed to allocate memory for expected results");
+            goto cleanup;
+        }
+
+        json_array_foreach(expected, i, result)
+        {
+            rc = te_rgt_parse_mi_test_result(mi, result, &data->expected[i]);
+            if (rc != 0)
+                goto cleanup;
+        }
+    }
+
+    if (tags_expr != NULL)
+        data->tags_expr = json_string_value(tags_expr);
     if (error != NULL)
         data->error = json_string_value(error);
 
