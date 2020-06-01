@@ -1172,6 +1172,127 @@ log_test_start(unsigned int flags,
 #undef SET_NEW_JSON
 }
 
+#ifdef WITH_TRC
+/* See description near definition */
+static json_t *pack_test_result(const te_test_result *result);
+
+/**
+ * Pack an expected test result into a JSON object.
+ *
+ * @param result        test result
+ *
+ * @returns Pointer to json object or NULL
+ */
+static json_t *
+pack_test_exp_result(const trc_exp_result_entry *result)
+{
+    json_t *json;
+    json_t *tmp;
+
+    json = pack_test_result(&result->result);
+    if (json == NULL)
+        return NULL;
+
+    if (result->key != NULL)
+    {
+        tmp = json_string(result->key);
+        if (tmp == NULL)
+        {
+            ERROR("Failed to convert key to JSON");
+            json_decref(json);
+            return NULL;
+        }
+        if (json_object_set_new(json, "key", tmp) != 0)
+        {
+            ERROR("Failed to set the \"key\" field");
+            json_decref(json);
+            json_decref(tmp);
+            return NULL;
+        }
+    }
+
+    if (result->notes != NULL)
+    {
+        tmp = json_string(result->notes);
+        if (tmp == NULL)
+        {
+            ERROR("Failed to convert notes to JSON");
+            json_decref(json);
+            return NULL;
+        }
+        if (json_object_set_new(json, "notes", tmp) != 0)
+        {
+            ERROR("Failed to set the \"notes\" field");
+            json_decref(json);
+            json_decref(tmp);
+            return NULL;
+        }
+    }
+
+    return json;
+}
+#endif
+
+/**
+ * Pack a test result into a JSON object.
+ *
+ * @param result        test result
+ *
+ * @returns Pointer to json object or NULL
+ */
+static json_t *
+pack_test_result(const te_test_result *result)
+{
+    json_t *json;
+    json_t *verdicts = NULL;
+
+    /* Verdicts */
+    if (!TAILQ_EMPTY(&result->verdicts))
+    {
+        json_t          *tmp;
+        te_test_verdict *verdict;
+
+        verdicts = json_array();
+        if (verdicts == NULL)
+        {
+            ERROR("Failed to create \"verdicts\" array");
+            return NULL;
+        }
+
+        TAILQ_FOREACH(verdict, &result->verdicts, links)
+        {
+            tmp = json_string(verdict->str);
+            if (tmp == NULL)
+            {
+                ERROR("Failed to create JSON string for verdict \"%s\"", verdict->str);
+                json_decref(verdicts);
+                return NULL;
+            }
+            if (json_array_append_new(verdicts, tmp) != 0)
+            {
+                ERROR("Failed to append verdict to array");
+                json_decref(tmp);
+                json_decref(verdicts);
+                return NULL;
+            }
+        }
+    }
+
+    /*
+     * "*" instead of "?" would be better here, but it's not supported in
+     * jansson-2.10, which is currently the newest version available on
+     * CentOS/RHEL-7.x
+     */
+    json = json_pack("{s:s, s:o?}",
+                     "status", te_test_status_to_str(result->status),
+                     "verdicts", verdicts);
+
+    if (json == NULL)
+        ERROR("Failed to pack the result object");
+
+    return json;
+}
+
 /**
  * Log test (script, package, session) result.
  *
@@ -1181,24 +1302,98 @@ log_test_start(unsigned int flags,
  * @param error         Reason of failure
  */
 static void
-log_test_result(test_id parent, test_id test, te_test_status status,
-                const char *error)
+log_test_result(test_id parent, tester_test_result *result)
 {
-    json_t      *result;
+    json_t      *json;
+    json_t      *obtained = NULL;
+    json_t      *expected = NULL;
+    const char  *tags = NULL;
+
+#if WITH_TRC
+    const trc_exp_result       *exp_result = NULL;
+    const trc_exp_result_entry *exp_entry = NULL;
+
+    if (result->exp_result != NULL)
+    {
+        exp_result = result->exp_result;
+        exp_entry = trc_is_result_expected(exp_result, &result->result);
+        tags = exp_result->tags_str;
+    }
+
+    /* If the result was unexpected, pack the expected results */
+    if (exp_result != NULL && exp_entry == NULL)
+    {
+        trc_exp_result_entry *e;
+
+        expected = json_array();
+        if (expected == NULL)
+        {
+            ERROR("Failed to create \"expected\" object");
+            return;
+        }
+
+        TAILQ_FOREACH(e, &exp_result->results, links)
+        {
+            json_t *item;
+
+            item = pack_test_exp_result(e);
+            if (item == NULL)
+            {
+                ERROR("Failed to pack expected result");
+                json_decref(expected);
+                return;
+            }
+
+            if (json_array_append_new(expected, item) != 0)
+            {
+                ERROR("Failed to add expected result to array");
+                json_decref(expected);
+                json_decref(item);
+                return;
+            }
+        }
+    }
+
+    /*
+     * If the obtained result matches one of the expected results,
+     * just use this expected result with it's notes and key.
+     * Otherwise, pack all available information.
+     */
+    if (exp_result != NULL && exp_entry != NULL)
+        obtained = pack_test_exp_result(exp_entry);
+    else
+        obtained = pack_test_result(&result->result);
+#else
+    obtained = pack_test_result(result->result);
+#endif
+    if (obtained == NULL)
+    {
+        ERROR("Failed to pack the obtained result");
+        json_decref(expected);
+        return;
+    }
 
     /*
      * "*" instead of "?" would be better here, but it's not supported in
      * jansson-2.10, which is currently the newest version available on
      * CentOS/RHEL-7.x
      */
-    result = json_pack("{s:i, s:i, s:s, s:s?}",
-                       "id", test,
-                       "parent", parent,
-                       "status", te_test_status_to_str(status),
-                       "error", error);
+    json = json_pack("{s:i, s:i, s:s?, s:o?, s:s?, s:o?}",
+                     "id", result->id,
+                     "parent", parent,
+                     "error", result->error,
+                     "obtained", obtained,
+                     "tags_expr", tags,
+                     "expected", expected);
 
-    tester_control_log(result, "test_end");
-    json_decref(result);
+    if (json == NULL)
+    {
+        ERROR("Failed to pack test_end object");
+        return;
+    }
+
+    tester_control_log(json, "test_end");
+    json_decref(json);
 }
 
 
@@ -3244,9 +3439,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
         tin = (ctx->flags & TESTER_INLOGUE || ri->type != RUN_ITEM_SCRIPT) ?
                   TE_TIN_INVALID : cfg_id_off;
-        log_test_result(ctx->group_result.id, ctx->current_result.id,
-                        ctx->current_result.result.status,
-                        ctx->current_result.error);
+        log_test_result(ctx->group_result.id, &ctx->current_result);
 
         tester_term_out_done(ctx->flags, ri->type, run_item_name(ri), tin,
                              ctx->group_result.id,

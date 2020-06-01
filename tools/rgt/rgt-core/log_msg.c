@@ -115,7 +115,10 @@ rgt_process_tester_control_message_json(log_msg *msg)
     enum ctrl_event_type evt_type;
     enum result_status   res;
 
+    json_t     *obtained = NULL;
+    json_t     *status_json = NULL;
     json_t     *error_opt = NULL;
+    json_t     *ignored = NULL;
     const char *type   = NULL;
     const char *status = NULL;
     const char *error = NULL;
@@ -217,11 +220,19 @@ rgt_process_tester_control_message_json(log_msg *msg)
          * values and type-checked manually.
          */
         err_code = json_unpack_ex(msg_json, &json_error, JSON_STRICT,
-                                  "{s:i, s:i, s:s, s?o}",
+                                  "{s:i, s:i, s?s, s?o, s?o, s?o, s?o}",
                                   "id",        &node_id,
                                   "parent",    &parent_id,
                                   "status",    &status,
-                                  "error",     &error_opt);
+                                  "obtained",  &obtained,
+                                  "error",     &error_opt,
+                                  /*
+                                   * These fields are not needed in this
+                                   * function, they are only mentioned here
+                                   * for schema validation.
+                                   */
+                                  "expected",  &ignored,
+                                  "tags_expr", &ignored);
         if (err_code != 0)
         {
             FMT_TRACE("Error unpacking JSON log message: %s (line %d, column %d)",
@@ -229,6 +240,38 @@ rgt_process_tester_control_message_json(log_msg *msg)
             free_log_msg(msg);
             json_decref(msg_json);
             THROW_EXCEPTION;
+        }
+
+        /* Is there a status field in the root object (old logs)? */
+        if (status == NULL)
+        {
+            /* If not, is there an "obtained results" object (new logs)? */
+            if (obtained == NULL)
+            {
+                TRACE("The \"obtained\" field is required in new logs");
+                free_log_msg(msg);
+                json_decref(msg_json);
+                THROW_EXCEPTION;
+            }
+
+            /* And if so, does it have a status field? */
+            status_json = json_object_get(obtained, "status");
+            if (status_json == NULL)
+            {
+                TRACE("Obtained result object must have a status field");
+                free_log_msg(msg);
+                json_decref(msg_json);
+                THROW_EXCEPTION;
+            }
+
+            status = json_string_value(status_json);
+            if (status == NULL)
+            {
+                TRACE("Failed to extract the status value");
+                free_log_msg(msg);
+                json_decref(msg_json);
+                THROW_EXCEPTION;
+            }
         }
 
         rc = extract_json_string(error_opt, &error, NULL);
