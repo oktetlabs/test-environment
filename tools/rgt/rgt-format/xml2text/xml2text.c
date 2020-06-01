@@ -28,6 +28,9 @@
 #include "xml2gen.h"
 #include "xml2text.h"
 
+#include "te_queue.h"
+#include "te_alloc.h"
+
 #include "capture.h"
 #include "mi_msg.h"
 
@@ -38,6 +41,121 @@ const char *rgt_line_separator = "\n";
 /* Flag turning on detailed packet dumps in log. */
 int detailed_packets = 0;
 
+/** Description of a flow tree node */
+typedef struct flow_item {
+    SLIST_ENTRY(flow_item) links; /**< Link to the description of the
+                                       parent node */
+
+    int   id;   /**< Node ID */
+    int   pid;  /**< Parent node ID */
+    char *type; /**< Node type: PACKAGE, SESSION, TEST */
+    char *name; /**< Node name */
+} flow_item_t;
+
+/** Stack of flow tree nodes that allows simple flow tree traversal */
+typedef SLIST_HEAD(flow_stack, flow_item) flow_stack_t;
+
+/**
+ * Push a flow tree node description into the stack.
+ *
+ * If the current top item of the stack has the same parent ID,
+ * it is automatically removed.
+ *
+ * @param stack         Flow tree node stack.
+ * @param id            Node ID.
+ * @param pid           Parent node ID.
+ * @param type          Node type.
+ * @param name          Node name.
+ *
+ * @returns Status code.
+ */
+static te_errno
+flow_stack_push(flow_stack_t *stack, int id, int pid, const char *type, const char *name)
+{
+    flow_item_t *item;
+    char        *ntype;
+    char        *nname;
+
+    ntype = strdup(type);
+    nname = strdup(name);
+    if (ntype == NULL || nname == NULL)
+    {
+        free(ntype);
+        free(nname);
+        return TE_ENOMEM;
+    }
+
+    item = SLIST_FIRST(stack);
+    if (item == NULL || item->pid != pid)
+    {
+        item = TE_ALLOC(sizeof(*item));
+        if (item == NULL)
+        {
+            free(ntype);
+            free(nname);
+            return TE_ENOMEM;
+        }
+
+        SLIST_INSERT_HEAD(stack, item, links);
+    }
+    else
+    {
+        free(item->type);
+        free(item->name);
+    }
+
+    item->id = id;
+    item->pid = pid;
+    item->type = ntype;
+    item->name = nname;
+
+    return 0;
+}
+
+/**
+ * Get an item from the stack with the given node ID.
+ *
+ * This function does not look deeper than the second item of the stack.
+ * This is because the node with the given ID can be either:
+ *   a) a test, in which case it will be at the top of the stack;
+ *   b) an empty session or package, then it will be at the top too;
+ *   c) a non-empty session or package, then its child will be at the top,
+ *      and the session or package itself will be the second item.
+ *
+ * @param stack         Flow tree node stack.
+ * @param id            Node ID.
+ *
+ * @returns Pointer to item or NULL.
+ */
+static flow_item_t *
+flow_stack_pop(flow_stack_t *stack, int id)
+{
+    flow_item_t *top;
+    flow_item_t *next;
+
+    top = SLIST_FIRST(stack);
+    if (top == NULL)
+        return NULL;
+
+    if (top->id == id)
+        return top;
+
+    next = SLIST_NEXT(top, links);
+    if (next == NULL)
+        return NULL;
+
+    if (next->id == id)
+    {
+        free(top->type);
+        free(top->name);
+        SLIST_REMOVE_HEAD(stack, links);
+        free(top);
+        return next;
+    }
+
+    return NULL;
+}
+
 /** Structure to keep basic user data in general parsing context */
 typedef struct gen_ctx_user {
     FILE             *fd; /**< File descriptor of the document to output
@@ -46,6 +164,8 @@ typedef struct gen_ctx_user {
     te_bool mi_artifact;  /**< If @c TRUE, MI artifact is processed */
     te_dbuf json_data;    /**< Buffer for collecting JSON before it can
                                be parsed */
+
+    flow_stack_t flow_stack; /**< Flow tree traversal stack */
 } gen_ctx_user_t;
 
 /* RGT format-specific options table */
@@ -234,16 +354,26 @@ print_mi_meas_value(FILE *fd, te_rgt_mi_meas_value *value, const char *prefix)
  *
  * @param fd      Where to print a log.
  * @param mi      Structure with data from parsed MI artifact.
+ * @param ctx     Logging context.
  */
 static void
-log_mi_test_start(FILE *fd, te_rgt_mi *mi)
+log_mi_test_start(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
 {
     te_rgt_mi_test_start *data = &mi->data.test_start;
 
-    size_t i;
+    size_t   i;
+    te_errno rc;
 
     fprintf(fd, "%s \"%s\" started\n", data->node_type, data->name);
     fprintf(fd, "Node ID %d, Parent ID %d", data->node_id, data->parent_id);
+
+    rc = flow_stack_push(&ctx->flow_stack, data->node_id, data->parent_id,
+                         data->node_type, data->name);
+    if (rc != 0)
+    {
+        fprintf(fd, "\nRGT ERROR: Failed to push the flow item: %s",
+                te_rc_err2str(mi->rc));
+    }
 
     if (data->authors != NULL)
     {
@@ -286,14 +416,28 @@ log_mi_test_start(FILE *fd, te_rgt_mi *mi)
  *
  * @param fd      Where to print a log.
  * @param mi      Structure with data from parsed MI artifact.
+ * @param ctx     Logging context.
  */
 static void
-log_mi_test_end(FILE *fd, te_rgt_mi *mi)
+log_mi_test_end(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
 {
     te_rgt_mi_test_end *data = &mi->data.test_end;
+    flow_item_t        *item;
 
-    fprintf(fd, "(%d, %d) finished with status \"%s\"", data->node_id,
-            data->parent_id, data->obtained.status);
+    item = flow_stack_pop(&ctx->flow_stack, data->node_id);
+    if (item != NULL)
+    {
+        fprintf(fd, "%s \"%s\" finished with status \"%s\"\n", item->type,
+                item->name, data->obtained.status);
+        fprintf(fd, "Node ID %d, Parent ID %d", data->node_id,
+                data->parent_id);
+    }
+    else
+    {
+        fprintf(fd, "(%d, %d) finished with status \"%s\"", data->node_id,
+                data->parent_id, data->obtained.status);
+    }
+
     if (data->error != NULL)
     {
         fprintf(fd, "\nERROR: %s", data->error);
@@ -305,18 +449,17 @@ log_mi_test_end(FILE *fd, te_rgt_mi *mi)
  *
  * @param fd      Where to print a log.
  * @param mi      Structure with data from parsed MI artifact.
- * @param buf     Buffer with not parsed data (used when parsing failed).
- * @param len     Length of the buffer.
+ * @param ctx     Logging context.
  */
 static void
-log_mi_artifact(FILE *fd, te_rgt_mi *mi, void *buf, size_t len)
+log_mi_artifact(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
 {
     int res = -1;
 
     if (mi->parse_failed)
     {
         fprintf(fd, "Failed to parse JSON: %s\n", mi->parse_err);
-        fwrite(buf, len, 1, fd);
+        fwrite(ctx->json_data.ptr, ctx->json_data.len, 1, fd);
         return;
     }
 
@@ -341,7 +484,7 @@ log_mi_artifact(FILE *fd, te_rgt_mi *mi, void *buf, size_t len)
 #endif
 
         if (res < 0)
-            fwrite(buf, len, 1, fd);
+            fwrite(ctx->json_data.ptr, ctx->json_data.len, 1, fd);
     }
     else if (mi->type == TE_RGT_MI_TYPE_MEASUREMENT)
     {
@@ -402,11 +545,11 @@ log_mi_artifact(FILE *fd, te_rgt_mi *mi, void *buf, size_t len)
     }
     else if (mi->type == TE_RGT_MI_TYPE_TEST_START)
     {
-        log_mi_test_start(fd, mi);
+        log_mi_test_start(fd, mi, ctx);
     }
     else if (mi->type == TE_RGT_MI_TYPE_TEST_END)
     {
-        log_mi_test_end(fd, mi);
+        log_mi_test_end(fd, mi, ctx);
     }
 }
 
@@ -427,9 +570,7 @@ RGT_DEF_FUNC(proc_log_msg_end)
             te_rgt_parse_mi_message((char *)(user_ctx->json_data.ptr),
                                     user_ctx->json_data.len, &mi);
 
-            log_mi_artifact(fd, &mi,
-                            (char *)(user_ctx->json_data.ptr),
-                            user_ctx->json_data.len);
+            log_mi_artifact(fd, &mi, user_ctx);
 
             te_rgt_mi_clean(&mi);
         }
