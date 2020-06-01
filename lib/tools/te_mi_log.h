@@ -386,9 +386,9 @@ extern void te_mi_logger_add_meas_vec(te_mi_logger *logger, te_errno *retval,
  * Add a measurement key to a MI logger. Measurement key is a key-value pair
  * that represents extra measurement information.
  *
- * @param           logger      MI logger
+ * @param           logger      MI logger.
  * @param           retval      Return code. If @c NULL is passed, @p logger
- *                              is not @c NULL and error occures, error flag
+ *                              is not @c NULL and error occurs, error flag
  *                              is stored in @p logger, which will fail the
  *                              next te_mi_logger_flush().
  * @param[in]       key         Measurement key
@@ -400,6 +400,29 @@ extern void te_mi_logger_add_meas_key(te_mi_logger *logger, te_errno *retval,
                                       const char *key,
                                       const char *value_fmt, ...)
                                       __attribute__((format(printf, 4, 5)));
+
+/** Types of MI measurement views */
+typedef enum te_mi_meas_view_type {
+    TE_MI_MEAS_VIEW_LINE_GRAPH = 0,    /**< 2D graph with lines */
+    TE_MI_MEAS_VIEW_MAX,               /**< One past last valid type */
+} te_mi_meas_view_type;
+
+/**
+ * Add a view for MI measurement.
+ *
+ * @param logger      MI logger
+ * @param retval      Return code. If @c NULL is passed, @p logger
+ *                    is not @c NULL and error occures, error flag
+ *                    is stored in @p logger, which will fail the
+ *                    next te_mi_logger_flush().
+ * @param type        View type.
+ * @param name        View name (must be unique for a given type).
+ */
+extern void te_mi_logger_add_meas_view(te_mi_logger *logger,
+                                       te_errno *retval,
+                                       te_mi_meas_view_type type,
+                                       const char *name);
+
 /**
  * @page te_tools_te_mi_log_scenarios Usage scenarios
  *

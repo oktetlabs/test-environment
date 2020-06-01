@@ -49,6 +49,17 @@ typedef struct te_mi_meas_impl {
 
 typedef TAILQ_HEAD(te_mi_meas_impl_h, te_mi_meas_impl) te_mi_meas_impl_h;
 
+/** Structure describing a view (such as graph). */
+typedef struct te_mi_meas_view {
+    TAILQ_ENTRY(te_mi_meas_view) next;  /**< Links for TAILQ */
+
+    te_mi_meas_view_type type;          /**< View type */
+    char *name;                         /**< View name */
+} te_mi_meas_view;
+
+/** Type of a head of a queue of views */
+typedef TAILQ_HEAD(te_mi_meas_view_h, te_mi_meas_view) te_mi_meas_view_h;
+
 struct te_mi_logger {
     char *tool;
     te_mi_type type;
@@ -56,6 +67,7 @@ struct te_mi_logger {
     te_mi_meas_impl_h meas_q;
     te_kvpair_h meas_keys;
     te_kvpair_h comments;
+    te_mi_meas_view_h views;
     te_bool error_ignored;
 };
 
@@ -114,6 +126,11 @@ static const char *meas_type_names[] = {
     [TE_MI_MEAS_RETRANS] = "TCP retransmissions",
 };
 
+/** Array for storing string representations of view types */
+static const char *meas_view_type_names[] = {
+    [TE_MI_MEAS_VIEW_LINE_GRAPH] = "line-graph",
+};
+
 static const char *meas_multiplier_names[] = {
     [TE_MI_MEAS_MULTIPLIER_NANO] = "1e-9",
     [TE_MI_MEAS_MULTIPLIER_MICRO] = "1e-6",
@@ -162,6 +179,12 @@ te_mi_meas_multiplier_valid(te_mi_meas_multiplier multiplier)
     return multiplier >= 0 && multiplier < TE_MI_MEAS_MULTIPLIER_END;
 }
 
+static te_bool
+te_mi_meas_view_type_valid(te_mi_meas_view_type type)
+{
+    return type >= 0 && type < TE_MI_MEAS_VIEW_MAX;
+}
+
 static const char *
 te_mi_type2str(te_mi_type type)
 {
@@ -184,6 +207,12 @@ static const char *
 te_mi_meas_multiplier2str(te_mi_meas_multiplier multiplier)
 {
     return meas_multiplier_names[multiplier];
+}
+
+static const char *
+te_mi_meas_view_type2str(te_mi_meas_view_type type)
+{
+    return meas_view_type_names[type];
 }
 
 static void
@@ -324,6 +353,53 @@ te_mi_kvpairs_str_append(const te_kvpair_h *pairs, const char *dict_name,
     return rc;
 }
 
+static te_errno
+te_mi_view_str_append(const te_mi_meas_view *view, te_string *str)
+{
+    const char *type_str = te_mi_meas_view_type2str(view->type);
+    te_errno rc;
+
+    rc = te_string_append(str, "{\"name\":"TE_MI_STR_FMT
+                          ",\"type\":"TE_MI_STR_FMT"},",
+                          view->name, type_str);
+    if (rc != 0)
+    {
+        ERROR("Failed to append view '%s' of type '%s'", view->name,
+              type_str);
+    }
+
+    return rc;
+}
+
+static te_errno
+te_mi_views_str_append(const te_mi_meas_view_h *views, te_string *str)
+{
+    const te_mi_meas_view *view;
+    te_errno rc;
+
+    if (TAILQ_EMPTY(views))
+        return 0;
+
+    rc = te_string_append(str, "\"views\":[");
+
+    TAILQ_FOREACH(view, views, next)
+    {
+        if (rc == 0)
+            rc = te_mi_view_str_append(view, str);
+    }
+
+    if (rc == 0)
+    {
+        te_string_cut(str, 1);
+        rc = te_string_append(str, "],");
+    }
+
+    if (rc != 0)
+        ERROR("Failed to append views");
+
+    return rc;
+}
+
 static char *
 te_mi_logger_data2str(const te_mi_logger *logger)
 {
@@ -347,6 +423,9 @@ te_mi_logger_data2str(const te_mi_logger *logger)
 
     if (rc == 0)
         rc = te_mi_kvpairs_str_append(&logger->comments, "comments", &str);
+
+    if (rc == 0)
+        rc = te_mi_views_str_append(&logger->views, &str);
 
     if (rc == 0)
     {
@@ -449,7 +528,8 @@ te_mi_logger_is_empty(const te_mi_logger *logger)
 {
     return TAILQ_EMPTY(&logger->comments) &&
            TAILQ_EMPTY(&logger->meas_q) &&
-           TAILQ_EMPTY(&logger->meas_keys);
+           TAILQ_EMPTY(&logger->meas_keys) &&
+           TAILQ_EMPTY(&logger->views);
 }
 
 void
@@ -477,11 +557,93 @@ out:
     te_mi_set_logger_error(logger, retval, rc);
 }
 
+static te_mi_meas_view *
+te_mi_meas_view_find(te_mi_meas_view_h *views, te_mi_meas_view_type type,
+                     const char *name)
+{
+    te_mi_meas_view *view;
+
+    TAILQ_FOREACH(view, views, next)
+    {
+        if (view->type == type &&
+            view->name != NULL &&
+            strcmp(view->name, name) == 0)
+        {
+            return view;
+        }
+    }
+
+    return NULL;
+}
+
+void
+te_mi_logger_add_meas_view(te_mi_logger *logger, te_errno *retval,
+                           te_mi_meas_view_type type, const char *name)
+{
+    te_mi_meas_view *view = NULL;
+    te_errno rc = 0;
+
+    if (name == NULL)
+    {
+        ERROR("Name of the view must not be NULL");
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    if (!te_mi_meas_view_type_valid(type))
+    {
+        ERROR("Invalid view type %d", type);
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    view = te_mi_meas_view_find(&logger->views, type, name);
+    if (view != NULL)
+    {
+        ERROR("A view with type '%s' and name '%s' is already present",
+              te_mi_meas_view_type2str(type), name);
+        rc = TE_EEXIST;
+        goto out;
+    }
+
+    view = TE_ALLOC(sizeof(*view));
+    if (view == NULL)
+    {
+        ERROR("Failed to allocate memory for a view");
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    view->type = type;
+    view->name = strdup(name);
+    if (view->name == NULL)
+    {
+        ERROR("strdup() failed to copy view name");
+        free(view);
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    TAILQ_INSERT_TAIL(&logger->views, view, next);
+
+out:
+    te_mi_set_logger_error(logger, retval, rc);
+}
+
+void
+te_mi_meas_view_destroy(te_mi_meas_view *view)
+{
+    free(view->name);
+    free(view);
+}
+
 void
 te_mi_logger_reset(te_mi_logger *logger)
 {
     te_mi_meas_impl *meas;
     te_mi_meas_value *meas_value;
+    te_mi_meas_view *view;
+    te_mi_meas_view *view_aux;
 
     if (logger == NULL)
         return;
@@ -489,6 +651,12 @@ te_mi_logger_reset(te_mi_logger *logger)
     te_kvpair_fini(&logger->comments);
     te_kvpair_fini(&logger->meas_keys);
     logger->error_ignored = FALSE;
+
+    TAILQ_FOREACH_SAFE(view, &logger->views, next, view_aux)
+    {
+        TAILQ_REMOVE(&logger->views, view, next);
+        te_mi_meas_view_destroy(view);
+    }
 
     while ((meas = TAILQ_FIRST(&logger->meas_q)) != NULL)
     {
@@ -584,6 +752,7 @@ te_mi_logger_meas_create(const char *tool, te_mi_logger **logger)
     TAILQ_INIT(&result->meas_q);
     te_kvpair_init(&result->meas_keys);
     te_kvpair_init(&result->comments);
+    TAILQ_INIT(&result->views);
     result->version = TE_MI_LOG_VERSION;
     result->type = TE_MI_TYPE_MEASUREMENT;
     result->error_ignored = FALSE;
