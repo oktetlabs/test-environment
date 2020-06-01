@@ -2,6 +2,8 @@
 
 tests = [
     'helloworld',
+    'artifact',
+    'verdict',
 ]
 
 foreach test : tests

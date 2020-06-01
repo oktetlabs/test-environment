@@ -7,5 +7,11 @@
         <run>
             <script name="helloworld"/>
         </run>
+        <run>
+            <script name="artifact"/>
+        </run>
+        <run>
+            <script name="verdict"/>
+        </run>
     </session>
 </package>

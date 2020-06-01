@@ -8,5 +8,33 @@
                 <notes/>
             </iter>
         </test>
+        <test name="artifact" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
+        <test name="verdict" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+                <results tags="tag1">
+                    <result key="key 1" notes="Expected result with tag1" value="PASSED">
+                        <verdict>Test verdict 1</verdict>
+                        <verdict>Test verdict 2</verdict>
+                    </result>
+                    <result notes="FAILED is also accepted when tag1 is enabled"
+                            key="key 2" value="FAILED"/>
+                </results>
+                <results tags="!somenonexistenttag">
+                    <result key="key 3" notes="Expected result" value="PASSED">
+                        <verdict>Test verdict 1</verdict>
+                        <verdict>Test verdict 2</verdict>
+                    </result>
+                </results>
+            </iter>
+        </test>
     </iter>
 </test>
