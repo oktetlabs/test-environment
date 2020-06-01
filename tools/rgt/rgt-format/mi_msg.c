@@ -50,6 +50,10 @@ te_rgt_mi_meas_clean(te_rgt_mi_meas *meas)
     free(meas->comments);
     meas->comments = NULL;
     meas->comments_num = 0;
+
+    free(meas->views);
+    meas->views = NULL;
+    meas->views_num = 0;
 }
 
 /* See description in mi_msg.h */
@@ -153,6 +157,70 @@ get_child_keys(json_t *obj, const char *field,
         (*kvs)[i].value = str_val;
         i++;
     }
+
+    return 0;
+}
+
+/**
+ * Get MI measurement views (specifying things like graphs).
+ *
+ * @param obj         JSON object with MI measurement.
+ * @param views       Where to save pointer to array of parsed
+ *                    views.
+ * @param num         Where to save number of parsed views.
+ *
+ * @return Status code.
+ */
+static te_errno
+get_views(json_t *obj, te_rgt_mi_meas_view **views, size_t *num)
+{
+    json_t *views_json;
+    json_t *view_json;
+    te_rgt_mi_meas_view *views_aux;
+    size_t num_aux;
+    size_t i;
+
+    views_json = json_object_get(obj, "views");
+    if (views_json == NULL)
+        return 0;
+
+    if (!json_is_array(views_json))
+        return TE_EINVAL;
+
+    num_aux = json_array_size(views_json);
+    if (num_aux == 0)
+    {
+        *num = 0;
+        *views = NULL;
+        return 0;
+    }
+
+    views_aux = calloc(num_aux, sizeof(*views_aux));
+    if (views_aux == NULL)
+        return TE_ENOMEM;
+
+    for (i = 0; i < num_aux; i++)
+    {
+        view_json = json_array_get(views_json, i);
+        if (view_json == NULL)
+        {
+            /* This should not happen */
+            free(views_aux);
+            return TE_EFAIL;
+        }
+
+        if (!json_is_object(view_json))
+        {
+            free(views_aux);
+            return TE_EINVAL;
+        }
+
+        views_aux[i].type = json_object_get_string(view_json, "type");
+        views_aux[i].name = json_object_get_string(view_json, "name");
+    }
+
+    *views = views_aux;
+    *num = num_aux;
 
     return 0;
 }
@@ -297,6 +365,10 @@ te_rgt_parse_mi_meas_message(te_rgt_mi *mi)
 
     mi->rc = get_child_keys(root, "comments", &meas->comments,
                             &meas->comments_num);
+    if (mi->rc != 0)
+        goto cleanup;
+
+    mi->rc = get_views(root, &meas->views, &meas->views_num);
 
 cleanup:
     if (mi->rc != 0)

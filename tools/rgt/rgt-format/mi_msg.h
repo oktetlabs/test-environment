@@ -71,6 +71,12 @@ typedef struct te_rgt_mi_kv {
     const char *value;    /**< Value */
 } te_rgt_mi_kv;
 
+/** View (graph, etc) */
+typedef struct te_rgt_mi_meas_view {
+    const char *name;   /**< Name of the view */
+    const char *type;   /**< Type of the view */
+} te_rgt_mi_meas_view;
+
 /** Description of MI message of type "measurement" */
 typedef struct te_rgt_mi_meas {
     const char *tool;               /**< Tool name */
@@ -85,6 +91,9 @@ typedef struct te_rgt_mi_meas {
 
     te_rgt_mi_kv *comments;         /**< Array of comments */
     size_t comments_num;            /**< Number of comments */
+
+    te_rgt_mi_meas_view *views;     /**< Array of views */
+    size_t views_num;               /**< Number of views */
 } te_rgt_mi_meas;
 
 /** Types of MI message */
