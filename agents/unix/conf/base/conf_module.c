@@ -675,7 +675,7 @@ module_del(unsigned int gid, const char *oid, const char *mod_name)
     module = mod_find(mod_name);
     mod_consistentcy_check(module, loaded);
 
-    if (loaded && (rc = mod_rmmod(buf)) != 0)
+    if (loaded && (rc = mod_rmmod(mod_name)) != 0)
             ERROR("Failed to unload module '%s' from the system", mod_name);
 
     /* We keep module in the list if unload fail. This way we can at least
