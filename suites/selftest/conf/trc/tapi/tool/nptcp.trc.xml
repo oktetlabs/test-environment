@@ -1,0 +1,40 @@
+<test name="nptcp" type="package">
+    <objective>TAPI nptcp implementation</objective>
+    <notes/>
+    <iter result="PASSED">
+        <test name="prologue">
+            <objective/>
+            <notes/>
+            <iter result="PASSED"/>
+        </test>
+
+        <test name="np">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+            </iter>
+        </test>
+        <test name="np_with_destroy">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+            </iter>
+        </test>
+        <test name="np_with_kill">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+            </iter>
+        </test>
+        <test name="np_with_stop">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+            </iter>
+        </test>
+    </iter>
+</test>

@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package version="1.0">
+    <description>Check TAPI tool implementation</description>
+    <author mailto="Andrey.Izrailev@oktetlabs.ru"/>
+
+    <session>
+        <run>
+            <package name="nptcp"/>
+        </run>
+    </session>
+</package>

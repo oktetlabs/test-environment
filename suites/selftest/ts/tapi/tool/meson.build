@@ -1,9 +1,7 @@
 # Copyright (C) 2020 OKTET Labs. All rights reserved.
 
 packages = [
-    'cache',
-    'tool',
-    'upnp',
+    'nptcp',
 ]
 
 install_data([ 'package.xml' ], install_dir: package_dir)

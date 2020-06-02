@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<package version="1.0">
+
+    <description>Test Suite to test TAPI nptcp implementation</description>
+
+    <author mailto="Andrey.Izrailev@oktetlabs.ru"/>
+
+    <session track_conf="silent">
+        <prologue>
+            <script name="prologue"/>
+        </prologue>
+
+        <run>
+            <script name="np"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast},{{'pco_tst':tester}}}</value>
+            </arg>
+        </run>
+        <run>
+            <script name="np_with_destroy"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast},{{'pco_tst':tester}}}</value>
+            </arg>
+        </run>
+        <run>
+            <script name="np_with_kill"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast},{{'pco_tst':tester}}}</value>
+            </arg>
+        </run>
+        <run>
+            <script name="np_with_stop"/>
+            <arg name="env">
+                <value>{{{'pco_iut':IUT},addr:'iut_addr':inet:unicast},{{'pco_tst':tester}}}</value>
+            </arg>
+        </run>
+    </session>
+</package>

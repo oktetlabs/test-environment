@@ -9,6 +9,10 @@
         </run>
 
         <run>
+            <package name="tool"/>
+        </run>
+
+        <run>
             <package name="upnp"/>
         </run>
     </session>
