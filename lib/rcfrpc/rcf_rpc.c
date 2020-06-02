@@ -187,10 +187,7 @@ rcf_rpc_server_get(const char *ta, const char *name,
     rc = cfg_get_instance_fmt(NULL, &default_timeout,
                               "/agent:%s/rpc_default_timeout:", ta);
     if (rc != 0)
-    {
-        ERROR("Cannot get default RPC timeout");
-        return TE_RC(TE_RCF_API, rc);
-    }
+        default_timeout = -1;
 
     if (default_timeout <= 0)
         default_timeout = RCF_RPC_DEFAULT_TIMEOUT;
