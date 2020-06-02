@@ -719,11 +719,17 @@ process_platforms() {
 make_workspace() {
     local p="$1"
     local ws_file="${p}.ws"
+    local ws_base_dir="/tmp"
+
+    if [ -n "$TE_WORKSPACE_DIR" ]; then
+        te_eval_or_ssh "${p}" "test -d '${TE_WORKSPACE_DIR}'" &&
+            ws_base_dir="${TE_WORKSPACE_DIR}"
+    fi
 
     # Workspace directory
     if test ! -f "${ws_file}" ; then
         local hash=$(pwd | md5sum | awk --posix '{ print $1 }')
-        local ws_dir="${TE_WORKSPACE_DIR:-/tmp}/te_ws_${hash}"
+        local ws_dir="${ws_base_dir}/te_ws_${hash}"
         te_eval_or_ssh "${p}" "mkdir -p ${ws_dir}"
         echo "$ws_dir" > "$ws_file"
     fi
