@@ -36,7 +36,7 @@ libmi_msg = static_library(
     ['mi_msg.c'],
     include_directories: inc,
     c_args: c_args,
-    dependencies: [dep_jansson],
+    dependencies: [dep_lib_tools, dep_jansson],
 )
 
 common_util_path = join_paths('..', get_option('datadir'), 'rgt-format')
