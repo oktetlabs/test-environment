@@ -1823,7 +1823,7 @@ create_device_callback(const pci_device *pci_dev, const char *subdir,
                        const char *device, void *user)
 {
     dev_t dev;
-    mode_t dev_type;
+    mode_t dev_type = 0;
     int maj, min;
     te_errno rc;
     struct stat statbuf;
