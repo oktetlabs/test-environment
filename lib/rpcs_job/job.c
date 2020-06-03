@@ -46,7 +46,7 @@
 #define MAX_MESSAGE_DATA_SIZE 8192
 
 typedef struct message_t {
-    STAILQ_ENTRY(message_t) next;
+    TAILQ_ENTRY(message_t) entry;
 
     char *data;
     size_t size;
@@ -56,7 +56,7 @@ typedef struct message_t {
     size_t dropped;
 } message_t;
 
-typedef STAILQ_HEAD(message_list, message_t) message_list;
+typedef TAILQ_HEAD(message_list, message_t) message_list;
 
 typedef struct message_queue_t {
     message_list messages;
@@ -445,7 +445,7 @@ init_message_queue(message_queue_t *queue)
 {
     queue->size = 0;
     queue->dropped = 0;
-    STAILQ_INIT(&queue->messages);
+    TAILQ_INIT(&queue->messages);
 
     return 0;
 }
@@ -453,11 +453,11 @@ init_message_queue(message_queue_t *queue)
 static te_bool
 queue_drop_oldest(message_queue_t *queue)
 {
-    message_t *msg = STAILQ_FIRST(&queue->messages);
+    message_t *msg = TAILQ_FIRST(&queue->messages);
 
     if (msg != NULL)
     {
-        STAILQ_REMOVE_HEAD(&queue->messages, next);
+        TAILQ_REMOVE(&queue->messages, msg, entry);
 
         queue->size -= (msg->size + sizeof(*msg));
         free(msg->data);
@@ -520,7 +520,7 @@ queue_put(const char *buf, size_t size, te_bool eos, unsigned int channel_id,
     msg->filter_id = filter_id;
     msg->eos = eos;
 
-    STAILQ_INSERT_TAIL(&queue->messages, msg, next);
+    TAILQ_INSERT_TAIL(&queue->messages, msg, entry);
 
     queue->size += needed_space;
 
@@ -530,19 +530,19 @@ queue_put(const char *buf, size_t size, te_bool eos, unsigned int channel_id,
 static te_bool
 queue_has_data(message_queue_t *queue)
 {
-    return !STAILQ_EMPTY(&queue->messages);
+    return !TAILQ_EMPTY(&queue->messages);
 }
 
 static message_t *
 queue_extract(message_queue_t *queue)
 {
-    message_t *msg = STAILQ_FIRST(&queue->messages);
+    message_t *msg = TAILQ_FIRST(&queue->messages);
 
     if (msg != NULL)
     {
         msg->dropped = queue->dropped;
         queue->dropped = 0;
-        STAILQ_REMOVE_HEAD(&queue->messages, next);
+        TAILQ_REMOVE(&queue->messages, msg, entry);
     }
 
     return msg;
