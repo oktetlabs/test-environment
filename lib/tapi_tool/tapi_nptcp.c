@@ -235,8 +235,7 @@ wait_job(tapi_job_t *job, int timeout_ms)
     if (rc != 0)
         return rc;
 
-    if (status.type != TAPI_JOB_STATUS_EXITED || status.value != 0)
-        return TE_RC(TE_TAPI, TE_EFAIL);
+    TAPI_JOB_CHECK_STATUS(status);
 
     return 0;
 }
@@ -282,27 +281,12 @@ tapi_nptcp_stop(tapi_nptcp_app *app)
 {
     te_errno rc;
 
-    rc = tapi_job_kill(app->job_receiver, SIGTERM);
-    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ESRCH)
+    rc = tapi_job_stop(app->job_receiver, SIGTERM, TAPI_NPTCP_TERM_TIMEOUT_MS);
+    if (rc != 0)
         return rc;
 
-    rc = tapi_job_wait(app->job_receiver, TAPI_NPTCP_TERM_TIMEOUT_MS, NULL);
-    if (TE_RC_GET_ERROR(rc) == TE_EINPROGRESS)
-    {
-        rc = tapi_job_kill(app->job_receiver, SIGKILL);
-        if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ESRCH)
-            return rc;
-
-        rc = tapi_job_wait(app->job_receiver, 0, NULL);
-        if (rc != 0)
-            return rc;
-    }
-    else if (rc != 0)
-        return rc;
-
-    rc = tapi_job_wait(app->job_transmitter, 0, NULL);
-
-    return rc;
+    return tapi_job_stop(app->job_transmitter, SIGTERM,
+                         TAPI_NPTCP_TERM_TIMEOUT_MS);
 }
 
 te_errno
