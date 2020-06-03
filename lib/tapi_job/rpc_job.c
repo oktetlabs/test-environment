@@ -482,6 +482,30 @@ rpc_job_wait(rcf_rpc_server *rpcs, unsigned int job_id, int timeout_ms,
 }
 
 int
+rpc_job_stop(rcf_rpc_server *rpcs, unsigned int job_id, rpc_signum signo,
+             int term_timeout_ms)
+{
+    tarpc_job_stop_in   in;
+    tarpc_job_stop_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.job_id = job_id;
+    in.signo = signo;
+    in.term_timeout_ms = term_timeout_ms;
+
+    rpc_job_set_rpcs_timeout(rpcs, term_timeout_ms, RCF_RPC_UNSPEC_TIMEOUT);
+    rcf_rpc_call(rpcs, "job_stop", &in, &out);
+    CHECK_RPC_ERRNO_UNCHANGED(job_stop, out.retval);
+
+    TAPI_RPC_LOG(rpcs, job_stop, "%u, %s", "%r", in.job_id,
+                 signum_rpc2str(signo), out.retval);
+
+    RETVAL_INT(job_stop, out.retval);
+}
+
+int
 rpc_job_destroy(rcf_rpc_server *rpcs, unsigned int job_id, int term_timeout_ms)
 {
     tarpc_job_destroy_in  in;

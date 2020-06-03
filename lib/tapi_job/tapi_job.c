@@ -787,6 +787,13 @@ tapi_job_clear(const tapi_job_channel_set_t filters)
     return rc;
 }
 
+te_errno
+tapi_job_stop(tapi_job_t *job, int signo, int term_timeout_ms)
+{
+    return rpc_job_stop(job->rpcs, job->id, signum_h2rpc(signo),
+                        term_timeout_ms);
+}
+
 /* See description in tapi_job.h */
 te_errno
 tapi_job_destroy(tapi_job_t *job, int term_timeout_ms)

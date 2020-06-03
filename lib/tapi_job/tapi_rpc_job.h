@@ -218,6 +218,25 @@ extern int rpc_job_wait(rcf_rpc_server *rpcs, unsigned int job_id,
                         int timeout_ms, tarpc_job_status *status);
 
 /**
+ * Stop a job. It can be started over with tapi_job_start().
+ * The function tries to terminate the job with the specified signal.
+ * If the signal fails to terminate the job, the function will send @c SIGKILL.
+ *
+ * @param rpcs              RPC server
+ * @param job_id            Job instance handle
+ * @param signo             Signal to be sent at first. If signo is @c SIGKILL,
+ *                          it will be sent only once.
+ * @param term_timeout_ms   The timeout of graceful termination of a job,
+ *                          if it has been running. After the timeout expiration
+ *                          the job will be killed with @c SIGKILL.
+ *                          (negative means default timeout)
+ *
+ * @return              Status code
+ */
+extern int rpc_job_stop(rcf_rpc_server *rpcs, unsigned int job_id,
+                        rpc_signum signo, int term_timeout_ms);
+
+/**
  * Destroy the job instance. If the job has started, it is terminated
  * as gracefully as possible. All resources of the instance are freed;
  * all unread data on all filters are lost.

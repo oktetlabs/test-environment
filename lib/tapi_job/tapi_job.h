@@ -250,6 +250,17 @@ extern te_errno tapi_job_wait(tapi_job_t *job, int timeout_ms,
                               tapi_job_status_t *status);
 
 /**
+ * Check if the status is a success status (i.e. the job exited successfully)
+ *
+ * @param _status   Job exit status
+ */
+#define TAPI_JOB_CHECK_STATUS(_status)                                        \
+    do {                                                                      \
+        if ((_status).type != TAPI_JOB_STATUS_EXITED || (_status).value != 0) \
+            return TE_RC(TE_TAPI, TE_ESHCMD);                                 \
+    } while (0)
+
+/**
  * Check whether a job is running
  *
  * @param      job        Job instace handle
@@ -487,6 +498,23 @@ extern void tapi_job_simple_receive(const tapi_job_channel_set_t filters,
  * @retval TE_EXDEV   if @p filters are on different RPC servers
  */
 extern te_errno tapi_job_clear(const tapi_job_channel_set_t filters);
+
+/**
+ * Stop a job. It can be started over with tapi_job_start().
+ * The function tries to terminate the job with the specified signal.
+ * If the signal fails to terminate the job, the function will send @c SIGKILL.
+ *
+ * @param job               Job instance handle
+ * @param signo             Signal to be sent at first. If signo is @c SIGKILL,
+ *                          it will be sent only once.
+ * @param term_timeout_ms   The timeout of graceful termination of a job,
+ *                          if it has been running. After the timeout expiration
+ *                          the job will be killed with @c SIGKILL.
+ *                          (negative means default timeout)
+ *
+ * @return Status code
+ */
+extern te_errno tapi_job_stop(tapi_job_t *job, int signo, int term_timeout_ms);
 
 /**
  * Destroy the job instance. If the job has started, it is terminated

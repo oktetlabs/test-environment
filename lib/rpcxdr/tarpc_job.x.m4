@@ -209,6 +209,21 @@ struct tarpc_job_wait_out {
     tarpc_int retval;
 };
 
+/* job_stop */
+struct tarpc_job_stop_in {
+    struct tarpc_in_arg common;
+
+    tarpc_uint job_id;
+    tarpc_signum signo;
+    tarpc_int term_timeout_ms;
+};
+
+struct tarpc_job_stop_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+};
+
 /* job_destroy */
 struct tarpc_job_destroy_in {
     struct tarpc_in_arg common;
@@ -239,6 +254,7 @@ program job
         RPC_DEF(job_kill)
         RPC_DEF(job_killpg)
         RPC_DEF(job_wait)
+        RPC_DEF(job_stop)
         RPC_DEF(job_destroy)
     } = 1;
 } = 2;

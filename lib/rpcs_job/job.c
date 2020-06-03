@@ -824,34 +824,48 @@ proc_wait(pid_t pid, int timeout_ms, tarpc_job_status *status)
     return 0;
 }
 
-static void
-proc_kill(pid_t pid, int term_timeout_ms)
+static te_errno
+proc_kill(pid_t pid, int signo, int term_timeout_ms)
 {
+    te_errno rc;
     tarpc_job_status dummy;
     int timeout = term_timeout_ms >= 0 ? term_timeout_ms : KILL_TIMEOUT_MS;
 
     /* Don't consider kill() failure if the call failed with ESRCH */
-    if (kill(pid, SIGTERM) < 0 && errno != ESRCH)
-        WARN("Process kill(%d, SIGTERM) failed: %s", pid, strerror(errno));
+    if (kill(pid, signo) < 0 && errno != ESRCH)
+    {
+        ERROR("Process kill(%d, %s) failed: %s", pid,
+              signum_rpc2str(signum_h2rpc(signo)), strerror(errno));
+
+        return te_rc_os2te(errno);
+    }
 
     /*
      * Wait for process for requested amount of time (or default)
      * before killing the process with SIGKILL
      */
-    if (proc_wait(pid, timeout, &dummy) != 0)
+    if ((rc = proc_wait(pid, timeout, &dummy)) != 0 && signo != SIGKILL)
     {
         WARN("Failed to wait for killed process");
 
         if (kill(pid, SIGKILL) < 0 && errno != ESRCH)
-            WARN("Process kill(%d, SIGKILL) failed: %s", pid, strerror(errno));
+        {
+            ERROR("Process kill(%d, SIGKILL) failed: %s", pid, strerror(errno));
+            return te_rc_os2te(errno);
+        }
 
         /*
          * Since SIGKILL cannot be intercepted, wait for process for
          * default amout of time
          */
         if (proc_wait(pid, KILL_TIMEOUT_MS, &dummy) != 0)
+        {
             ERROR("Failed to wait for killed process");
+            return te_rc_os2te(errno);
+        }
     }
+
+    return rc;
 }
 
 static te_errno
@@ -1283,7 +1297,7 @@ job_start(unsigned int id)
         close_valid(stdout_fd);
         close_valid(stderr_fd);
         close_valid(stdin_fd);
-        proc_kill(pid, -1);
+        proc_kill(pid, SIGTERM, -1);
         return TE_EMFILE;
     }
 
@@ -1295,7 +1309,7 @@ job_start(unsigned int id)
         close_valid(stdout_fd);
         close_valid(stderr_fd);
         close_valid(stdin_fd);
-        proc_kill(pid, -1);
+        proc_kill(pid, SIGTERM, -1);
         return rc;
     }
 
@@ -1319,7 +1333,7 @@ job_start(unsigned int id)
             close_valid(stdout_fd);
             close_valid(stderr_fd);
             close_valid(stdin_fd);
-            proc_kill(pid, -1);
+            proc_kill(pid, SIGTERM, -1);
             return rc;
         }
     }
@@ -1930,6 +1944,23 @@ job_wait(unsigned int job_id, int timeout_ms, tarpc_job_status *status)
 }
 
 static te_errno
+job_stop(unsigned int job_id, int signo, int term_timeout_ms)
+{
+    te_errno rc;
+    job_t *job;
+
+    job = get_job(job_id);
+    if (job == NULL)
+        return TE_EINVAL;
+
+    rc = proc_kill(job->pid, signo, term_timeout_ms);
+    if (rc == 0)
+        job->pid = -1;
+
+    return rc;
+}
+
+static te_errno
 job_destroy(unsigned int job_id, int term_timeout_ms)
 {
     unsigned int i;
@@ -1939,8 +1970,12 @@ job_destroy(unsigned int job_id, int term_timeout_ms)
     if (job == NULL)
         return TE_EINVAL;
 
+    /*
+     * Try to kill the job before destroying,
+     * destroy it regardless of the result
+     */
     if (job->pid != (pid_t)-1)
-        proc_kill(job->pid, term_timeout_ms);
+        proc_kill(job->pid, SIGTERM, term_timeout_ms);
 
     LIST_REMOVE(job, next);
 
@@ -2085,6 +2120,14 @@ TARPC_FUNC_STATIC(job_killpg, {},
 TARPC_FUNC_STATIC(job_wait, {},
 {
     MAKE_CALL(out->retval = func(in->job_id, in->timeout_ms, &out->status));
+    out->common.errno_changed = FALSE;
+})
+
+TARPC_FUNC_STATIC(job_stop, {},
+{
+    MAKE_CALL(out->retval = func(in->job_id,
+                                 signum_rpc2h(in->signo),
+                                 in->term_timeout_ms));
     out->common.errno_changed = FALSE;
 })
 
