@@ -3,6 +3,7 @@
 headers += files(
     'tapi_netperf.h',
     'tapi_nptcp.h',
+    'tapi_ping.h',
     'tapi_sfnt_pingpong.h',
     'tapi_stress.h',
     'tapi_wrk.h',
@@ -10,6 +11,7 @@ headers += files(
 sources += files(
     'tapi_netperf.c',
     'tapi_nptcp.c',
+    'tapi_ping.c',
     'tapi_sfnt_pingpong.c',
     'tapi_stress.c',
     'tapi_wrk.c',

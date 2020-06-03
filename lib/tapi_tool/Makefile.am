@@ -11,6 +11,7 @@ include_HEADERS= \
 	tapi_stress.h \
 	tapi_netperf.h \
 	tapi_nptcp.h \
+	tapi_ping.h \
 	tapi_sfnt_pingpong.h \
 	tapi_wrk.h
 
@@ -20,6 +21,7 @@ libtapi_tool_la_SOURCES = \
 	tapi_stress.c \
 	tapi_netperf.c \
 	tapi_nptcp.c \
+	tapi_ping.c \
 	tapi_sfnt_pingpong.c \
 	tapi_wrk.c
 
