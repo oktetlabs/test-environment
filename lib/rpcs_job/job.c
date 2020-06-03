@@ -64,6 +64,11 @@ typedef struct message_queue_t {
     size_t size;
 } message_queue_t;
 
+typedef enum queue_action_t {
+    EXTRACT_FIRST,
+    GET_LAST
+} queue_action_t;
+
 #define OVECCOUNT 30 /* should be a multiple of 3 */
 
 typedef struct regexp_data_t {
@@ -534,7 +539,7 @@ queue_has_data(message_queue_t *queue)
 }
 
 static message_t *
-queue_extract(message_queue_t *queue)
+queue_extract_first_msg(message_queue_t *queue)
 {
     message_t *msg = TAILQ_FIRST(&queue->messages);
 
@@ -543,6 +548,23 @@ queue_extract(message_queue_t *queue)
         msg->dropped = queue->dropped;
         queue->dropped = 0;
         TAILQ_REMOVE(&queue->messages, msg, entry);
+    }
+
+    return msg;
+}
+
+static message_t *
+queue_get_last_msg(message_queue_t *queue)
+{
+    message_t *msg = TAILQ_LAST(&queue->messages, message_list);
+    message_t *msg_prev;
+
+    if (msg != NULL)
+    {
+        msg_prev = TAILQ_PREV(msg, message_list, entry);
+        /* If the last msg indicates eos, try to get the second-to-last one */
+        if (msg->eos && msg_prev != NULL)
+            msg = msg_prev;
     }
 
     return msg;
@@ -1759,19 +1781,37 @@ job_filter_add_regexp(unsigned int filter_id, char *re, unsigned int extract)
     return rc;
 }
 
-static void
-move_message_to_buffer(const message_t *msg,  tarpc_job_buffer *buffer)
+static te_errno
+move_or_copy_message_to_buffer(const message_t *msg, tarpc_job_buffer *buffer,
+                               te_bool move)
 {
     buffer->channel = msg->channel_id;
     buffer->filter = msg->filter_id;
-    buffer->data.data_val = msg->data;
+
+    if (move)
+    {
+        buffer->data.data_val = msg->data;
+    }
+    else
+    {
+        if ((buffer->data.data_val = malloc(msg->size)) == NULL)
+        {
+            ERROR("Failed to copy message to buffer");
+            return TE_ENOMEM;
+        }
+        memcpy(buffer->data.data_val, msg->data, msg->size);
+    }
+
     buffer->data.data_len = msg->size;
     buffer->dropped = msg->dropped;
     buffer->eos = msg->eos;
+
+    return 0;
 }
 
 static te_errno
-filter_receive(unsigned int filter_id, tarpc_job_buffer *buffer)
+filter_receive_common(unsigned int filter_id, tarpc_job_buffer *buffer,
+                      queue_action_t action)
 {
     message_t *msg;
     filter_t *filter;
@@ -1786,10 +1826,31 @@ filter_receive(unsigned int filter_id, tarpc_job_buffer *buffer)
         return TE_EINVAL;
     }
 
-    if ((msg = queue_extract(&filter->queue)) != NULL)
+    switch (action)
     {
-        move_message_to_buffer(msg, buffer);
-        free(msg);
+        case EXTRACT_FIRST:
+            msg = queue_extract_first_msg(&filter->queue);
+            break;
+        case GET_LAST:
+            msg = queue_get_last_msg(&filter->queue);
+            break;
+        default:
+            pthread_mutex_unlock(&channels_lock);
+            assert(0);
+    }
+
+    if (msg != NULL)
+    {
+        rc = move_or_copy_message_to_buffer(msg, buffer,
+                                            action == EXTRACT_FIRST);
+        if (rc != 0)
+        {
+            pthread_mutex_unlock(&channels_lock);
+            return rc;
+        }
+
+        if (action == EXTRACT_FIRST)
+            free(msg);
     }
     else
     {
@@ -1931,8 +1992,9 @@ job_poll(unsigned int n_channels, unsigned int *channel_ids, int timeout_ms,
 }
 
 static te_errno
-job_receive(unsigned int n_filters, unsigned int *filters,
-            int timeout_ms, tarpc_job_buffer *buffer)
+job_receive_common(unsigned int n_filters, unsigned int *filters,
+                   int timeout_ms, tarpc_job_buffer *buffer,
+                   queue_action_t action)
 {
     unsigned int i;
     te_errno rc;
@@ -1942,7 +2004,7 @@ job_receive(unsigned int n_filters, unsigned int *filters,
 
     for (i = 0; i < n_filters; i++)
     {
-        rc = filter_receive(filters[i], buffer);
+        rc = filter_receive_common(filters[i], buffer, action);
         switch (rc)
         {
             case 0:
@@ -1957,6 +2019,27 @@ job_receive(unsigned int n_filters, unsigned int *filters,
 
     ERROR("Critical job receive error");
     return TE_EIO;
+}
+
+/* Receive first message from filter queue and remove it from there. */
+static te_errno
+job_receive(unsigned int n_filters, unsigned int *filters, int timeout_ms,
+            tarpc_job_buffer *buffer)
+{
+    return job_receive_common(n_filters, filters, timeout_ms, buffer,
+                              EXTRACT_FIRST);
+}
+
+/*
+ * Receive last (or second-to-last) message from filter queue,
+ * do not remove it from there.
+ */
+static te_errno
+job_receive_last(unsigned int n_filters, unsigned int *filters, int timeout_ms,
+                 tarpc_job_buffer *buffer)
+{
+    return job_receive_common(n_filters, filters, timeout_ms, buffer,
+                              GET_LAST);
 }
 
 static te_errno
@@ -2434,6 +2517,14 @@ TARPC_FUNC_STATIC(job_start, {},
 })
 
 TARPC_FUNC_STATIC(job_receive, {},
+{
+    MAKE_CALL(out->retval = func(in->filters.filters_len,
+                                 in->filters.filters_val,
+                                 in->timeout_ms, &out->buffer));
+    out->common.errno_changed = FALSE;
+})
+
+TARPC_FUNC_STATIC(job_receive_last, {},
 {
     MAKE_CALL(out->retval = func(in->filters.filters_len,
                                  in->filters.filters_val,

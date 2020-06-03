@@ -431,6 +431,7 @@ extern void tapi_job_simple_poll(const tapi_job_channel_set_t wait_set,
 
 /**
  * A structure to store messages read by tapi_job_receive()
+ * or tapi_job_receive_last().
  */
 typedef struct tapi_job_buffer_t {
     tapi_job_channel_t *channel; /**< Last message channel */
@@ -476,6 +477,31 @@ typedef struct tapi_job_buffer_t {
 extern te_errno tapi_job_receive(const tapi_job_channel_set_t filters,
                                  int timeout_ms,
                                  tapi_job_buffer_t *buffer);
+
+/**
+ * Read the last non-eos message from one of the available filters.
+ * The message is not removed from the queue, it can still be read with
+ * tapi_job_receive().
+ *
+ * The data being read are appended to @a data buffer.
+ * At most one message is read.
+ *
+ * @param filters     Set of filters to read from.
+ * @param timeout_ms  Timeout to wait (negative means tapi_job_get_timeout())
+ * @param buffer      Data buffer pointer. If @c NULL, the message is
+ *                    silently discarded.
+ *
+ * @return            Status code
+ * @retval TE_ETIMEDOUT     if there's no data available within @p timeout
+ * @retval TE_EPERM   if some of the @p filters are input channels or
+ *                    primary output channels and the implementation does
+ *                    not support reading from them or unreadable output
+ *                    channels
+ * @retval TE_EXDEV   if @p filters are on different RPC servers
+ */
+extern te_errno tapi_job_receive_last(const tapi_job_channel_set_t filters,
+                                      int timeout_ms,
+                                      tapi_job_buffer_t *buffer);
 
 /**
  * The same as tapi_job_receive() but fails the test if an error

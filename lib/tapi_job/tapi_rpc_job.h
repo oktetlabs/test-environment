@@ -132,6 +132,28 @@ extern int rpc_job_filter_add_regexp(rcf_rpc_server *rpcs, unsigned int filter,
 extern int rpc_job_receive(rcf_rpc_server *rpcs, unsigned int n_filters,
                            unsigned int *filters, int timeout_ms,
                            tarpc_job_buffer *buffer);
+/**
+ * Read the last non-eos message from one of the available filters.
+ * The message is not removed from the queue, it can still be read with
+ * rpc_job_receive().
+ *
+ * @param rpcs        RPC server
+ * @param n_filters   Count of @p filters
+ * @param filters     Set of filters to read from.
+ * @param timeout_ms  Timeout to wait (negative means
+ *                    #TAPI_RPC_JOB_BIG_TIMEOUT_MS)
+ * @param buffer      Data buffer pointer. If @c NULL, the message is
+ *                    silently discarded.
+ *
+ * @return            Status code
+ * @retval TE_ETIMEDOUT     if there's no data available within @p timeout
+ * @retval TE_EPERM   if some of the @p filters are input channels or
+ *                    primary output channels
+ * @retval TE_EXDEV   if @p filters are on different RPC servers
+ */
+extern int rpc_job_receive_last(rcf_rpc_server *rpcs, unsigned int n_filters,
+                                unsigned int *filters, int timeout_ms,
+                                tarpc_job_buffer *buffer);
 
 /**
  * Remove all pending messages from filters, they are lost completely.

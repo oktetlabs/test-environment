@@ -732,10 +732,14 @@ tarpc_job_buffer2tapi_job_buffer(const rcf_rpc_server *rpcs,
         TEST_FAIL("TE string append failed");
 }
 
-/* See description in tapi_job.h */
-te_errno
-tapi_job_receive(const tapi_job_channel_set_t filters, int timeout_ms,
-                 tapi_job_buffer_t *buffer)
+static te_errno
+receive_common(const tapi_job_channel_set_t filters, int timeout_ms,
+               tapi_job_buffer_t *buffer,
+               te_errno (*rpc_job_receive_cb)(rcf_rpc_server *rpcs,
+                                              unsigned int n_filters,
+                                              unsigned int *filters,
+                                              int timeout_ms,
+                                              tarpc_job_buffer *buffer))
 {
     unsigned int *channel_ids;
     unsigned int n_channels;
@@ -750,7 +754,7 @@ tapi_job_receive(const tapi_job_channel_set_t filters, int timeout_ms,
 
     alloc_id_array_from_channel_set(filters, &n_channels, &channel_ids);
 
-    rc = rpc_job_receive(rpcs, n_channels, channel_ids, timeout_ms, &buf);
+    rc = rpc_job_receive_cb(rpcs, n_channels, channel_ids, timeout_ms, &buf);
     free(channel_ids);
     if (rc != 0)
         return rc;
@@ -760,6 +764,22 @@ tapi_job_receive(const tapi_job_channel_set_t filters, int timeout_ms,
 
     return 0;
 }
+
+/* See description in tapi_job.h */
+te_errno
+tapi_job_receive(const tapi_job_channel_set_t filters, int timeout_ms,
+                 tapi_job_buffer_t *buffer)
+{
+    return receive_common(filters, timeout_ms, buffer, rpc_job_receive);
+}
+
+te_errno
+tapi_job_receive_last(const tapi_job_channel_set_t filters, int timeout_ms,
+                      tapi_job_buffer_t *buffer)
+{
+    return receive_common(filters, timeout_ms, buffer, rpc_job_receive_last);
+}
+
 
 void
 tapi_job_simple_receive(const tapi_job_channel_set_t filters, int timeout_ms,
