@@ -390,8 +390,7 @@ build_platform_and_agent() {
     (
         build_platform "$p" "$mode" || mode=all
         build_platform_agents "$p" "$mode"
-    )
-    res=$?
+    ) && res=0 || res=$?
     release_shadow_build_directory
     return $res
 }
