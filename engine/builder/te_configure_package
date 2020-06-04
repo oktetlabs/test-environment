@@ -115,19 +115,10 @@ process_libs()
 
 
 if test "$KIND" = TA ; then
-    cd agents
     PREFIX=$PREFIX/agents
     mkdir -p $TE_INSTALL/agents
 else
     PREFIX=$PREFIX/$PLATFORM
-fi
-
-if test "$KIND" = APP ; then
-    cd engine
-fi
-
-if test "$KIND" = TOOL ; then
-    cd tools
 fi
 
 if test -f "$TE_BUILD/$PLATFORM.sbd"; then

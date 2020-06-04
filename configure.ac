@@ -233,7 +233,7 @@ AC_SUBST([LIB_DIST_SUBDIRS])
 if test -z "$no_create" ; then
     for package in $DUMMY $TE_BS_APPS ; do
         "${TE_BASE}/engine/builder/te_configure_package" APP $package \
-            $package $package ${TE_HOST} "${TE_BASE}/engine/$package" \
+            $package engine/$package ${TE_HOST} "${TE_BASE}/engine/$package" \
             "$prefix" || exit 1
     done
 fi    
@@ -244,7 +244,7 @@ AC_SUBST([APP_SUBDIRS])
 if test -z "$no_create" ; then
     for package in $DUMMY ${TE_BS_TOOLS} ; do
         "${TE_BASE}/engine/builder/te_configure_package" TOOL $package \
-            $package $package ${TE_HOST} "${TE_BASE}/tools/$package" \
+            $package tools/$package ${TE_HOST} "${TE_BASE}/tools/$package" \
             "$prefix" || exit 1
     done
 fi    
@@ -276,7 +276,7 @@ for package in $DUMMY $TE_BS_TA ; do
     
     if test -z "$no_create" ; then
         "${TE_BASE}/engine/builder/te_configure_package" TA $package \
-            $package $package ${TE_HOST} "$PKGSRC" "$prefix" || exit 1
+            $package agents/$package ${TE_HOST} "$PKGSRC" "$prefix" || exit 1
     fi
     TA_SUBDIRS="$TA_SUBDIRS $package"
 done
