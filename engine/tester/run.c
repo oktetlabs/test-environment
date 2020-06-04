@@ -1110,11 +1110,11 @@ log_test_start(unsigned int flags,
                 if (hash_str != NULL)
                 {
                     tmp = json_string(hash_str);
+                    free(hash_str);
                     if (tmp == NULL)
                     {
                         ERROR("%s: json_string failed for hash_str",
                               __FUNCTION__);
-                        free(hash_str);
                         json_decref(result);
                         return;
                     }
