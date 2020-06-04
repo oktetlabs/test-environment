@@ -95,6 +95,7 @@ sources += files(
     'tapi_reqs.c',
     'tapi_route_gw.c',
     'tapi_serial_parse.c',
+    'tapi_sh_env.c',
     'tapi_sniffer.c',
     'tapi_test_behaviour.c',
     'tapi_test_run_status.c',

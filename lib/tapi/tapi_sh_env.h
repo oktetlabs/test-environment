@@ -393,6 +393,17 @@ tapi_sh_env_ta_path_append(const char *ta, const char *dir)
     return rc;
 }
 
+/**
+ * Add directories to every test agent's PATH environment variable.
+ *
+ * @param dirs      Array of pointers to directory names terminated by @c NULL.
+ *                  If @p dirs itself is @c NULL, add most commonly required
+ *                  directories (e.g. 'sbin' directories).
+ *
+ * @return Status code.
+ */
+extern int tapi_expand_path_all_ta(const char **dirs);
+
 #ifdef __cplusplus
 }
 #endif

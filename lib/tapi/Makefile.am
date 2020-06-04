@@ -88,6 +88,7 @@ libtapi_la_SOURCES = \
 	tapi_test_fail_state.c \
 	tapi_reqs.c \
 	tapi_cfg_acse.c \
+	tapi_sh_env.c \
 	tapi_sniffer.c \
 	tapi_serial_parse.c \
 	tapi_cfg_aggr.c \
