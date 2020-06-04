@@ -300,8 +300,7 @@ acquire_shadow_build_directory() {
 
     # make sure that the SBD on TE host and on agent host are different directories
     local temp_file="$(mktemp "${sbd}/XXXXXXXX")"
-    te_eval_or_ssh "${p}" "test -f '$temp_file'"
-    if test "$?" -eq "0"; then
+    if te_eval_or_ssh "${p}" "test -f '$temp_file'" ; then
         rm -f "${p}.sbd"
         rm -rf "${sbd}"
         return # this is normal situation, build without SBD
