@@ -39,11 +39,7 @@ fs_sanity_check() {
         fname=\"\$(mktemp \"$2/XXXXXX\")\"
         test -f \"\$fname\"
         rm \"\$fname\"
-    "
-    if test "$?" -ne "0" ; then
-        echo "nfs sanity check fail ($2)" >&2
-        exit 1
-    fi
+    " || { echo "NFS sanity check failed ($2)" >&2; exit 1; }
 }
 
 need_build_agent() {
