@@ -104,8 +104,20 @@ rcf_rpc_server_finalize(void)
     return 0;
 }
 
+/** Default SIGINT action */
+static struct sigaction sigaction_int;
 /** Default SIGPIPE action */
 static struct sigaction sigaction_pipe;
+
+/**
+ * Signal handler to be registered for SIGINT signal.
+ */
+static void
+sigint_handler(void)
+{
+    fprintf(stderr, MSG_PFX "killed by SIGINT\n");
+    exit(EXIT_FAILURE);
+}
 
 /**
  * Signal handler to be registered for SIGPIPE signal.
@@ -154,6 +166,20 @@ main(int argc, char **argv)
 
     memset(&sigact, 0, sizeof(sigact));
     sigemptyset(&sigact.sa_mask);
+
+    if (getenv("TE_LEAVE_SIGINT_HANDLER") == NULL)
+    { /* some libinit tests need SIGINT handler untouched */
+        sigact.sa_handler = (void *)sigint_handler;
+        if (sigaction(SIGINT, &sigact, &sigaction_int) != 0)
+        {
+            rc = te_rc_os2te(errno);
+            LOG_PRINT(MSG_PFX "Cannot set SIGINT action: %s", strerror(errno));
+        }
+    }
+#if defined (__QNX__)
+    /* 'getenv' may set errno to ESRCH even when successful */
+    errno = 0;
+#endif
 
     sigact.sa_handler = (void *)sigpipe_handler;
     if (sigaction(SIGPIPE, &sigact, &sigaction_pipe) != 0)
