@@ -42,7 +42,7 @@ for p in ${2:-${TE_BS_PLATFORMS}} ; do
         # Skip download if agent platform directory exists at install path
         # and at build path.
         [ -d \"$PREFIX/$p/lib\" -a \
-          -d \"${sbd}/platforms/$p/lib\" ] && continue
+          -d \"${sbd}/platforms/$p/lib\" ] && exit 0
 
         if [ \"${TE_EXT_LIBS}\" ] ; then
             mkdir -p \"${sbd}/platforms/$p/lib\"
