@@ -13,6 +13,7 @@ cc = meson.get_compiler('c')
 # Get project options
 #
 c_args = get_option('te_cppflags')
+ld_args = get_option('te_ldflags')
 te_libdir = get_option('te_libdir')
 te_libs = get_option('te_libs')
 
@@ -21,7 +22,7 @@ te_libs = get_option('te_libs')
 #
 
 # Use static implementation of TE libraries
-ld_args = [ '-L' + te_libdir, '-Wl,-Bstatic' ]
+ld_args += [ '-L' + te_libdir, '-Wl,-Bstatic' ]
 foreach l : te_libs
     ld_args += [ '-l' + l ]
 endforeach

@@ -1,5 +1,7 @@
 option('te_cppflags', type: 'array', value: [],
        description: 'Extra TE project CFLAGS')
+option('te_ldflags', type: 'array', value: [],
+       description: 'Extra TE project LDFLAGS')
 option('te_libdir', type: 'string', value: '',
        description: 'Absolute path to TE libraries')
 option('te_libs', type: 'array', value: [],

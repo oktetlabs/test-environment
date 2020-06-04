@@ -104,6 +104,11 @@ rcf_rpc_server_finalize(void)
     return 0;
 }
 
+#if __linux__
+/** ta_rpcprovider vsyscall page entrance */
+const void *vsyscall_enter = NULL;
+#endif
+
 /** Default SIGINT action */
 static struct sigaction sigaction_int;
 /** Default SIGPIPE action */

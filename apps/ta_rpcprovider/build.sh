@@ -12,11 +12,32 @@ set -e
 
 declare -a meson_args
 te_cppflags=
+te_ldflags=
+
+# There is way to use meson cross files to build m32, but the 'pkg_config_libdir'
+# property is supported on meson starting from 0.54.0
+if test "${TE_IUT_CFLAGS_VAR/-m32/}" != "${TE_IUT_CFLAGS_VAR}" ; then
+    te_cppflags+="-m32"
+    te_ldflags+="-m32"
+    pkg_cfg_path="$(pkg-config --variable pc_path pkg-config)"
+    if test "${pkg_cfg_path/x86_64/}" != "${pkg_cfg_path}" ; then
+        # Debian/Ubuntu
+        export PKG_CONFIG_PATH="${pkg_cfg_path//x86_64/i386}"
+    elif test "${pkg_cfg_path/lib64/}" != "${pkg_cfg_path}" ; then
+        # RHEL7, RHEL8, Fedora
+        export PKG_CONFIG_PATH="${pkg_cfg_path//lib64/lib}"
+    else
+        echo "ERROR: unknown PKG_CONFIG_PATH: $pkg_cfg_path" >&2
+        exit 1
+    fi
+fi
+
 for f in ${TE_CPPFLAGS} ; do
     test -z "${te_cppflags}" || te_cppflags+=","
     te_cppflags+="${f}"
 done
 meson_args+=(-Dte_cppflags="${te_cppflags}")
+meson_args+=(-Dte_ldflags="${te_ldflags}")
 
 te_libdir=
 te_libs=
