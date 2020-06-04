@@ -1009,6 +1009,8 @@ if test -z "$BUILD" ; then
 fi
 
 export TE_EXT_LIBS_FILE="${TE_BUILD}/te_ext_libs_files"
+touch "${TE_EXT_LIBS_FILE}"
+
 TE_BUILD_LOG="${TE_RUN_DIR}/build.log"
 case "${BUILD}" in
 autotools)
