@@ -11,6 +11,8 @@
 
 . ${TE_BUILD}/builder.conf.processed
 
+set -e
+
 SCRIPT_DIR=`dirname $0`
 . ${SCRIPT_DIR}/te_functions
 
@@ -119,12 +121,12 @@ build_platform() {
                           --build="${!pextbuild}" \
                           --expheaders="${!pextinsth}" \
                           --explibs="${!pextinstl}" \
-                          --envvars="${!pextenv}" $enable_tce || exit 1
+                          --envvars="${!pextenv}" $enable_tce
         done
 
         ${TE_BASE}/engine/builder/te_configure_package INCLUDE include \
             "${p}_include" "${sbd}/platforms/${p}/include" \
-            "$p" "${TE_BASE}/include" "$PREFIX" || exit 1
+            "$p" "${TE_BASE}/include" "$PREFIX"
     fi
 
     # The builder package from TEN applications should be built
@@ -135,7 +137,7 @@ build_platform() {
         ! -f ${sbd}/platforms/${p}/${package}/Makefile ; then
         ${TE_BASE}/engine/builder/te_configure_package APP "$package" \
             "${p}_$package" "${sbd}/platforms/${p}/$package" \
-            "$p" "$PKGSRC" "$PREFIX" || exit 1
+            "$p" "$PKGSRC" "$PREFIX"
     fi
 
     local libs=
@@ -152,7 +154,7 @@ build_platform() {
             ! -f ${sbd}/platforms/${p}/lib/$package/Makefile ; then
             ${TE_BASE}/engine/builder/te_configure_package LIB "$package" \
                 "${p}_$package" "${sbd}/platforms/${p}/lib/$package" \
-                "$p" "$PKGSRC" "$PREFIX" || exit 1
+                "$p" "$PKGSRC" "$PREFIX"
             libs="$libs $package"
         fi
     done
@@ -170,7 +172,6 @@ build_platform() {
             make ${BUILD_MAKEFLAGS} install || exit 1
             popd >/dev/null
         "
-        res=$?; if test "$res" -ne "0" ; then exit $res; fi
     done
     test -z "$libs"
 }
@@ -210,7 +211,7 @@ build_agent() {
     "
 
     ${TE_BASE}/engine/builder/te_configure_package TA "$package" "$package" \
-        "${sbd}/agents/$package" "$PLATFORM" "$PKGSRC" "$PREFIX" || exit 1
+        "${sbd}/agents/$package" "$PLATFORM" "$PKGSRC" "$PREFIX"
 
     local TE_CFLAGS_NAME="${package}_CFLAGS_VAR"
     local TE_CPPFLAGS_NAME="${package}_CPPFLAGS_VAR"
@@ -223,7 +224,6 @@ build_agent() {
         TE_CPPFLAGS_VAR='${!TE_CPPFLAGS_NAME}' \\
         make ${BUILD_MAKEFLAGS} install || exit 1
     "
-    res=$?; if test "$res" -ne "0" ; then exit $res; fi
 
     local pexts="TE_BS_TA_APPS_${package}"
     local pext
@@ -260,7 +260,7 @@ build_agent() {
                       --expbin="${!pextinstb}" \
                       --tatype="${package}" \
                       --envvars="${!pextenv}" \
-                      --bin="${TE_INSTALL}/${p}/bin" $enable_tce || exit 1
+                      --bin="${TE_INSTALL}/${p}/bin" $enable_tce
     done
 }
 
@@ -274,7 +274,7 @@ build_platform_agents() {
 
         test "${!ta_platform}" = "$p" || continue
 
-        build_agent "$ta" "$mode" || return $?
+        build_agent "$ta" "$mode"
     done
 
     return 0
@@ -292,7 +292,7 @@ acquire_shadow_build_directory() {
 
     # recreate SBD on TE host
     test -d "${sbd}" && rm -rf "${sbd}"
-    mkdir -p "${sbd}" || exit 1
+    mkdir -p "${sbd}"
 
     # make sure that the SBD on TE host and on agent host are different directories
     local temp_file="$(mktemp "${sbd}/XXXXXXXX")"
@@ -309,22 +309,20 @@ acquire_shadow_build_directory() {
         mkdir -p '${sbd}/platforms/${p}' || exit 1
         mkdir -p '${sbd}/agents/${p}' || exit 1
     "
-    res=$?; if test "$res" -ne "0" ; then exit $res; fi
     for type in platforms agents; do
-        mkdir -p "${sbd}/${type}/${p}" || exit 1
+        mkdir -p "${sbd}/${type}/${p}"
         test -d "${type}/${p}" || continue
         cp -rp "${type}/${p}" "${sbd}/${type}"
         tar -C "${type}/${p}" -czf - . |
             te_eval_or_ssh "${p}" "
                 tar -C '${sbd}/${type}/${p}' -xzf -
             "
-        res=$?; if test "$res" -ne "0" ; then exit $res; fi
     done
 
     local applist="TE_BS_TA_APPS_${p}"
     local app
     for app in ${!applist}; do
-        mkdir -p "${sbd}/apps/${app}/${p}" || exit 1
+        mkdir -p "${sbd}/apps/${app}/${p}"
         te_eval_or_ssh "${p}" "mkdir -p '${sbd}/apps/${app}/${p}'"
         test -d "apps/${app}/${p}" || continue
         cp -rp "apps/${app}/${p}" "${sbd}/apps/${app}"
@@ -332,7 +330,6 @@ acquire_shadow_build_directory() {
             te_eval_or_ssh "${p}" "
                 tar -C '${sbd}/apps/${app}/${p}' -xzf -
             "
-        res=$?; if test "$res" -ne "0" ; then exit $res; fi
     done
 }
 
@@ -349,7 +346,7 @@ release_shadow_build_directory() {
     local sbd=$(cat "${p}.sbd")
 
     # remove files from the SBD on TE host
-    rm -rf "${sbd}" || exit 1
+    rm -rf "${sbd}"
 
     local applist="TE_BS_TA_APPS_${p}"
     local app
@@ -364,13 +361,11 @@ release_shadow_build_directory() {
         te_eval_or_ssh "${p}" "
             tar -C '${sbd}' -czf - apps/${app}/${p}
         " | tar -xzf -
-        res=$?; if test "$res" -ne "0" ; then exit $res; fi
     done
     te_eval_or_ssh "${p}" "
         tar -C '${sbd}' -czf - platforms/${p} agents/${p}
         rm -rf '${sbd}' >/dev/null
     " | tar -xzf -
-    res=$?; if test "$res" -ne "0" ; then exit $res; fi
     find . -type l | xargs ${TE_BASE}/engine/builder/te_fixlink "${sbd}" .
 }
 
