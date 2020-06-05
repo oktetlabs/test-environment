@@ -416,12 +416,109 @@ typedef enum te_mi_meas_view_type {
  *                    is stored in @p logger, which will fail the
  *                    next te_mi_logger_flush().
  * @param type        View type.
- * @param name        View name (must be unique for a given type).
+ * @param name        View name (must be unique for a given type;
+ *                    used for identifying a view when calling other
+ *                    functions of this API).
+ * @param title       View title (may be an empty string; used as a title
+ *                    when displaying a graph).
  */
 extern void te_mi_logger_add_meas_view(te_mi_logger *logger,
                                        te_errno *retval,
                                        te_mi_meas_view_type type,
-                                       const char *name);
+                                       const char *name,
+                                       const char *title);
+
+/** Types of MI measurement view axis */
+typedef enum te_mi_graph_axis {
+    TE_MI_GRAPH_AXIS_X = 0,     /**< X-axis */
+    TE_MI_GRAPH_AXIS_Y,         /**< Y-axis */
+    TE_MI_GRAPH_AXIS_MAX,       /**< One past last valid value */
+} te_mi_graph_axis;
+
+/**
+ * Special name meaning that sequence number should be used instead of
+ * values of some measurement on a given graph axis.
+ */
+#define TE_MI_GRAPH_AUTO_SEQNO "auto-seqno"
+
+/**
+ * Add a measurement to a graph axis.
+ *
+ * @param logger      MI logger.
+ * @param retval      Return code. If @c NULL is passed, @p logger
+ *                    is not @c NULL and error occurs, error flag
+ *                    is stored in @p logger, which will fail the
+ *                    next te_mi_logger_flush().
+ * @param view_type   View type.
+ * @param view_name   Name of the graph view.
+ * @param axis        Graph axis. For X axis only a single measurement
+ *                    may (and must) be specified - or a special
+ *                    @c TE_MI_GRAPH_AUTO_SEQNO keyword must be used as
+ *                    described below.
+ *                    Measurements specified for Y axis will each be
+ *                    drawn as a separate line. All measurements must
+ *                    have the same number of values as the measurement
+ *                    specified for X axis.
+ *                    If no measurement is specified for Y axis,
+ *                    it behaves as if all measurements are assigned to
+ *                    it except the one assigned to X axis.
+ * @param meas_type   Measurement type. Using @c TE_MI_MEAS_END means
+ *                    that no type is specified; in that case measurement
+ *                    name must be unique (i.e. used only for a single
+ *                    type). Also @c TE_MI_MEAS_END can be used for
+ *                    @c TE_MI_GRAPH_AUTO_SEQNO (see @p meas_name).
+ * @param meas_name   Name of the measurement. May be empty or @c NULL
+ *                    if @p meas_type is specified, in which case
+ *                    there should be the single parameter of a given
+ *                    type.
+ *                    For X axis @c TE_MI_GRAPH_AUTO_SEQNO can be used
+ *                    instead of a measurement name. In that case
+ *                    sequence number in array of values will be used
+ *                    as X-coordinate on a graph.
+ */
+extern void te_mi_logger_meas_graph_axis_add(te_mi_logger *logger,
+                                             te_errno *retval,
+                                             te_mi_meas_view_type view_type,
+                                             const char *view_name,
+                                             te_mi_graph_axis axis,
+                                             te_mi_meas_type meas_type,
+                                             const char *meas_name);
+
+/**
+ * Wrapper for te_mi_logger_meas_graph_axis_add() which accepts only
+ * measurement name (which must be unique among all measurements of
+ * different types).
+ */
+static inline void te_mi_logger_meas_graph_axis_add_name(
+                                             te_mi_logger *logger,
+                                             te_errno *retval,
+                                             te_mi_meas_view_type view_type,
+                                             const char *view_name,
+                                             te_mi_graph_axis axis,
+                                             const char *meas_name)
+{
+    te_mi_logger_meas_graph_axis_add(logger, retval, view_type,
+                                     view_name, axis,
+                                     TE_MI_MEAS_END, meas_name);
+}
+
+/**
+ * Wrapper for te_mi_logger_meas_graph_axis_add() which accepts only
+ * measurement type (there must be a single parameter with NULL name
+ * for a given type in such case).
+ */
+static inline void te_mi_logger_meas_graph_axis_add_type(
+                                             te_mi_logger *logger,
+                                             te_errno *retval,
+                                             te_mi_meas_view_type view_type,
+                                             const char *view_name,
+                                             te_mi_graph_axis axis,
+                                             te_mi_meas_type meas_type)
+{
+    te_mi_logger_meas_graph_axis_add(logger, retval, view_type,
+                                     view_name, axis,
+                                     meas_type, NULL);
+}
 
 /**
  * @page te_tools_te_mi_log_scenarios Usage scenarios

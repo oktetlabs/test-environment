@@ -25,7 +25,9 @@
 #include "te_alloc.h"
 #include "te_queue.h"
 #include "te_kvpair.h"
+#include "tq_string.h"
 #include "te_mi_log.h"
+#include "te_vector.h"
 
 #define TE_MI_LOG_VERSION 1
 
@@ -44,10 +46,30 @@ typedef struct te_mi_meas_impl {
     TAILQ_ENTRY(te_mi_meas_impl) next;
     te_mi_meas_type type;
     char *name;
+    char *descr;
     te_mi_meas_value_h values;
 } te_mi_meas_impl;
 
 typedef TAILQ_HEAD(te_mi_meas_impl_h, te_mi_meas_impl) te_mi_meas_impl_h;
+
+/** Reference to measurement. */
+typedef struct te_mi_meas_ref {
+    te_mi_meas_impl *meas;  /**< Pointer to referenced measurement */
+    /*
+     * TODO: here reference to specific aggregation within
+     * measurement may be added.
+     */
+} te_mi_meas_ref;
+
+/** Data specific for line-graph view */
+typedef struct te_mi_meas_view_line_graph {
+    te_mi_meas_ref axis_x; /**< Measurement used as X-coordinate */
+    te_bool axis_x_auto_seqno; /**< If @c TRUE, on axis X sequence numbers
+                                    are used instead of a measurement */
+    te_vec axis_y;        /**< Measurement(s) used as Y-coordinate
+                               (each measurement will be drawn as a
+                               separate line on the graph) */
+} te_mi_meas_view_line_graph;
 
 /** Structure describing a view (such as graph). */
 typedef struct te_mi_meas_view {
@@ -55,6 +77,11 @@ typedef struct te_mi_meas_view {
 
     te_mi_meas_view_type type;          /**< View type */
     char *name;                         /**< View name */
+    char *title;                        /**< View title */
+
+    union {
+        te_mi_meas_view_line_graph line_graph; /**< Line graph */
+    } data; /**< Data specific to a view type */
 } te_mi_meas_view;
 
 /** Type of a head of a queue of views */
@@ -185,6 +212,12 @@ te_mi_meas_view_type_valid(te_mi_meas_view_type type)
     return type >= 0 && type < TE_MI_MEAS_VIEW_MAX;
 }
 
+static te_bool
+te_mi_graph_axis_valid(te_mi_graph_axis axis)
+{
+    return axis >= 0 && axis < TE_MI_GRAPH_AXIS_MAX;
+}
+
 static const char *
 te_mi_type2str(te_mi_type type)
 {
@@ -285,6 +318,11 @@ te_mi_meas_str_append(const te_mi_meas_impl *meas, te_string *str)
                           te_mi_meas_type2str(meas->type));
     if (rc == 0 && meas->name != NULL)
         rc = te_string_append(str, "\"name\":"TE_MI_STR_FMT",", meas->name);
+    if (rc == 0 && meas->descr != NULL)
+    {
+        rc = te_string_append(str, "\"description\":"TE_MI_STR_FMT",",
+                              meas->descr);
+    }
 
     if (rc == 0)
         rc = te_mi_meas_values_str_append(&meas->values, meas->type, str);
@@ -354,25 +392,124 @@ te_mi_kvpairs_str_append(const te_kvpair_h *pairs, const char *dict_name,
 }
 
 static te_errno
-te_mi_view_str_append(const te_mi_meas_view *view, te_string *str)
+te_mi_meas_ref_str_append(const te_mi_meas_ref *ref,
+                          te_string *str)
 {
-    const char *type_str = te_mi_meas_view_type2str(view->type);
     te_errno rc;
 
-    rc = te_string_append(str, "{\"name\":"TE_MI_STR_FMT
-                          ",\"type\":"TE_MI_STR_FMT"},",
-                          view->name, type_str);
+    if (ref->meas == NULL)
+    {
+        ERROR("%s(): measurement pointer is NULL in a reference",
+              __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    rc = te_string_append(str, "{\"type\":"TE_MI_STR_FMT,
+                          te_mi_meas_type2str(ref->meas->type));
+    if (rc == 0 && ref->meas->name != NULL)
+    {
+        rc = te_string_append(str, ",\"name\":"TE_MI_STR_FMT,
+                              ref->meas->name);
+    }
+
+    if (rc == 0)
+        rc = te_string_append(str, "},");
+
+    return rc;
+}
+
+static te_errno
+te_mi_meas_view_line_graph_str_append(const te_mi_meas_view *view,
+                                      te_string *str)
+{
+    const te_mi_meas_view_line_graph *line_graph = NULL;
+    te_errno rc = 0;
+    te_mi_meas_ref *ref;
+
+    line_graph = &view->data.line_graph;
+
+    rc = te_string_append(str, "\"axis_x\":");
+    if (rc != 0)
+        return rc;
+
+    if (line_graph->axis_x_auto_seqno)
+    {
+        rc = te_string_append(str,
+                              "{\"name\":\"auto-seqno\"},");
+    }
+    else
+    {
+        rc = te_mi_meas_ref_str_append(&line_graph->axis_x, str);
+    }
+
+    if (rc == 0 && te_vec_size(&line_graph->axis_y) > 0)
+    {
+        rc = te_string_append(str, "\"axis_y\":[");
+        TE_VEC_FOREACH((te_vec *)&line_graph->axis_y, ref)
+        {
+            if (rc == 0)
+                rc = te_mi_meas_ref_str_append(ref, str);
+        }
+        if (rc == 0)
+        {
+            te_string_cut(str, 1);
+            rc = te_string_append(str, "],");
+        }
+    }
+
     if (rc != 0)
     {
-        ERROR("Failed to append view '%s' of type '%s'", view->name,
-              type_str);
+        ERROR("%s(): failed to append fields specific to line-graph view",
+              __FUNCTION__);
     }
 
     return rc;
 }
 
 static te_errno
-te_mi_views_str_append(const te_mi_meas_view_h *views, te_string *str)
+te_mi_meas_view_str_append(const te_mi_meas_view *view, te_string *str)
+{
+    const char *type_str = te_mi_meas_view_type2str(view->type);
+    te_errno rc;
+
+    rc = te_string_append(str, "{\"name\":"TE_MI_STR_FMT
+                          ",\"type\":"TE_MI_STR_FMT
+                          ",\"title\":"TE_MI_STR_FMT",",
+                          view->name, type_str, view->title);
+
+    if (rc == 0)
+    {
+        switch (view->type)
+        {
+            case TE_MI_MEAS_VIEW_LINE_GRAPH:
+                rc = te_mi_meas_view_line_graph_str_append(view, str);
+                break;
+
+            default:
+                ERROR("%s(): not supported view type %d",
+                      __FUNCTION__, view->type);
+                rc = TE_EINVAL;
+                break;
+        }
+    }
+
+    if (rc == 0)
+    {
+        te_string_cut(str, 1);
+        rc = te_string_append(str, "},");
+    }
+
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to append view '%s' of type '%s'",
+              __FUNCTION__, view->name, type_str);
+    }
+
+    return rc;
+}
+
+static te_errno
+te_mi_meas_views_str_append(const te_mi_meas_view_h *views, te_string *str)
 {
     const te_mi_meas_view *view;
     te_errno rc;
@@ -385,7 +522,7 @@ te_mi_views_str_append(const te_mi_meas_view_h *views, te_string *str)
     TAILQ_FOREACH(view, views, next)
     {
         if (rc == 0)
-            rc = te_mi_view_str_append(view, str);
+            rc = te_mi_meas_view_str_append(view, str);
     }
 
     if (rc == 0)
@@ -425,7 +562,7 @@ te_mi_logger_data2str(const te_mi_logger *logger)
         rc = te_mi_kvpairs_str_append(&logger->comments, "comments", &str);
 
     if (rc == 0)
-        rc = te_mi_views_str_append(&logger->views, &str);
+        rc = te_mi_meas_views_str_append(&logger->views, &str);
 
     if (rc == 0)
     {
@@ -476,6 +613,40 @@ te_mi_meas_impl_find(te_mi_meas_impl_h *meas_q, te_mi_meas_type type,
     return NULL;
 }
 
+const char *
+te_mi_meas_type2descr(te_mi_meas_type type)
+{
+    switch (type)
+    {
+        case TE_MI_MEAS_PPS:
+            return "Packets per second";
+
+        case TE_MI_MEAS_LATENCY:
+            return "Latency in seconds";
+
+        case TE_MI_MEAS_THROUGHPUT:
+            return "Throughput in bits per second";
+
+        case TE_MI_MEAS_BANDWIDTH_USAGE:
+            return "Bandwidth usage ratio";
+
+        case TE_MI_MEAS_TEMP:
+            return "Temperature in degrees Celsius";
+
+        case TE_MI_MEAS_RPS:
+            return "Requests per second";
+
+        case TE_MI_MEAS_RTT:
+            return "Round trip time in seconds";
+
+        case TE_MI_MEAS_RETRANS:
+            return "TCP retransmissions";
+
+        default:
+            return "Unknown type";
+    }
+}
+
 static te_mi_meas_impl *
 te_mi_meas_impl_add(te_mi_meas_impl_h *meas_q, te_mi_meas_type type,
                     const char *name)
@@ -489,9 +660,22 @@ te_mi_meas_impl_add(te_mi_meas_impl_h *meas_q, te_mi_meas_type type,
     if (name != NULL)
     {
         result->name = strdup(name);
-        if (result->name == NULL)
+        result->descr = strdup(name);
+        if (result->name == NULL || result->descr == NULL)
         {
             ERROR("Failed to duplicate measurement name");
+            free(result->name);
+            free(result->descr);
+            free(result);
+            return NULL;
+        }
+    }
+    else
+    {
+        result->descr = strdup(te_mi_meas_type2descr(type));
+        if (result->descr == NULL)
+        {
+            ERROR("Failed to duplicate measurement description");
             free(result);
             return NULL;
         }
@@ -511,6 +695,7 @@ te_mi_meas_impl_destroy(te_mi_meas_impl *meas)
         return;
 
     free(meas->name);
+    free(meas->descr);
     free(meas);
 }
 
@@ -558,16 +743,18 @@ out:
 }
 
 static te_mi_meas_view *
-te_mi_meas_view_find(te_mi_meas_view_h *views, te_mi_meas_view_type type,
+te_mi_meas_view_find(te_mi_meas_view_h *views,
+                     te_mi_meas_view_type type,
                      const char *name)
 {
     te_mi_meas_view *view;
 
+    if (name == NULL)
+        return NULL;
+
     TAILQ_FOREACH(view, views, next)
     {
-        if (view->type == type &&
-            view->name != NULL &&
-            strcmp(view->name, name) == 0)
+        if (view->type == type && strcmp(view->name, name) == 0)
         {
             return view;
         }
@@ -576,16 +763,33 @@ te_mi_meas_view_find(te_mi_meas_view_h *views, te_mi_meas_view_type type,
     return NULL;
 }
 
+static void
+te_mi_meas_view_init(te_mi_meas_view *view)
+{
+    switch (view->type)
+    {
+        case TE_MI_MEAS_VIEW_LINE_GRAPH:
+            view->data.line_graph.axis_y = TE_VEC_INIT(te_mi_meas_ref);
+            break;
+
+        default:
+            /* Do nothing */
+            break;
+    }
+}
+
 void
 te_mi_logger_add_meas_view(te_mi_logger *logger, te_errno *retval,
-                           te_mi_meas_view_type type, const char *name)
+                           te_mi_meas_view_type type, const char *name,
+                           const char *title)
 {
     te_mi_meas_view *view = NULL;
     te_errno rc = 0;
 
-    if (name == NULL)
+    if (name == NULL || title == NULL)
     {
-        ERROR("Name of the view must not be NULL");
+        ERROR("Name and title of the view must not be NULL "
+              "(they may be empty strings)");
         rc = TE_EINVAL;
         goto out;
     }
@@ -614,11 +818,16 @@ te_mi_logger_add_meas_view(te_mi_logger *logger, te_errno *retval,
         goto out;
     }
 
+    te_mi_meas_view_init(view);
     view->type = type;
+
     view->name = strdup(name);
-    if (view->name == NULL)
+    view->title = strdup(title);
+    if (view->name == NULL || view->title == NULL)
     {
-        ERROR("strdup() failed to copy view name");
+        ERROR("strdup() failed to copy view name or title");
+        free(view->name);
+        free(view->title);
         free(view);
         rc = TE_ENOMEM;
         goto out;
@@ -630,10 +839,200 @@ out:
     te_mi_set_logger_error(logger, retval, rc);
 }
 
+static te_errno
+meas_view_add_meas_to_axis(te_mi_meas_view *view,
+                           te_mi_graph_axis axis,
+                           te_mi_meas_impl *impl)
+{
+    te_mi_meas_view_line_graph *line_graph = NULL;
+    te_mi_meas_ref ref;
+    te_errno rc;
+
+    if (view->type != TE_MI_MEAS_VIEW_LINE_GRAPH)
+    {
+        ERROR("%s(): only line-graph views are currently supported",
+              __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    line_graph = &view->data.line_graph;
+
+    switch (axis)
+    {
+        case TE_MI_GRAPH_AXIS_X:
+            if (line_graph->axis_x.meas != NULL)
+            {
+                ERROR("%s(): only one measurement name can be specified "
+                      "for X axis for a line-graph", __FUNCTION__);
+                return TE_EINVAL;
+            }
+
+            line_graph->axis_x.meas = impl;
+
+            break;
+
+        case TE_MI_GRAPH_AXIS_Y:
+
+            memset(&ref, 0, sizeof(ref));
+            ref.meas = impl;
+
+            rc = TE_VEC_APPEND(&line_graph->axis_y, ref);
+            if (rc != 0)
+            {
+                ERROR("%s(): TE_VEC_APPEND() failed to add a "
+                      "measurement for axis Y", __FUNCTION__);
+                return rc;
+            }
+
+            break;
+
+        default:
+            ERROR("%s(): unsupported axis type %d", __FUNCTION__, axis);
+            return TE_EINVAL;
+    }
+
+    return 0;
+}
+
+void
+te_mi_logger_meas_graph_axis_add(te_mi_logger *logger,
+                                 te_errno *retval,
+                                 te_mi_meas_view_type view_type,
+                                 const char *view_name,
+                                 te_mi_graph_axis axis,
+                                 te_mi_meas_type meas_type,
+                                 const char *meas_name)
+{
+    te_mi_meas_view *view = NULL;
+    te_mi_meas_impl *meas = NULL;
+    te_errno rc;
+
+    if (!te_mi_meas_view_type_valid(view_type))
+    {
+        ERROR("%s(): invalid view type %d", __FUNCTION__, view_type);
+        te_mi_set_logger_error(logger, retval, TE_EINVAL);
+        return;
+    }
+
+    if (!te_mi_graph_axis_valid(axis))
+    {
+        ERROR("%s(): invalid axis type %d", __FUNCTION__, axis);
+        te_mi_set_logger_error(logger, retval, TE_EINVAL);
+        return;
+    }
+
+    view = te_mi_meas_view_find(&logger->views, view_type, view_name);
+    if (view == NULL)
+    {
+        ERROR("%s(): failed to find measurement view with type '%s' and "
+              "name '%s'", __FUNCTION__,
+              te_mi_meas_view_type2str(view_type),
+              (view_name == NULL ? "(null)" : view_name));
+        te_mi_set_logger_error(logger, retval, TE_ENOENT);
+        return;
+    }
+
+    if (meas_type == TE_MI_MEAS_END && meas_name == NULL)
+    {
+        ERROR("%s(): either measurement name or measurement type must be "
+              "specified", __FUNCTION__);
+        te_mi_set_logger_error(logger, retval, TE_EINVAL);
+        return;
+    }
+
+    if (meas_type != TE_MI_MEAS_END && !te_mi_meas_type_valid(meas_type))
+    {
+        ERROR("%s(): invalid measurement type %d", __FUNCTION__, meas_type);
+        te_mi_set_logger_error(logger, retval, TE_EINVAL);
+        return;
+    }
+
+    if (meas_name != NULL && strcmp(meas_name, "auto-seqno") == 0)
+    {
+        if (axis == TE_MI_GRAPH_AXIS_X)
+        {
+            view->data.line_graph.axis_x_auto_seqno = TRUE;
+        }
+        else
+        {
+            ERROR("%s(): auto-seqno can be specified only for axis X",
+                  __FUNCTION__);
+            te_mi_set_logger_error(logger, retval, TE_EINVAL);
+        }
+
+        return;
+    }
+
+    if (meas_type == TE_MI_MEAS_END)
+    {
+        unsigned int found_count = 0;
+        te_mi_meas_impl *p;
+
+        TAILQ_FOREACH(p, &logger->meas_q, next)
+        {
+            if (strcmp_null(p->name, meas_name) == 0)
+            {
+                meas = p;
+                found_count++;
+            }
+        }
+
+        if (found_count > 1)
+        {
+            ERROR("%s(): measurement name '%s' is not unique and cannot "
+                  "be used without a type", __FUNCTION__, meas_name);
+            te_mi_set_logger_error(logger, retval, TE_EINVAL);
+            return;
+        }
+        else if (found_count == 0)
+        {
+            ERROR("%s(): measurement with name '%s' cannot be found",
+                  __FUNCTION__, meas_name);
+            te_mi_set_logger_error(logger, retval, TE_ENOENT);
+            return;
+        }
+    }
+    else
+    {
+        meas = te_mi_meas_impl_find(&logger->meas_q, meas_type, meas_name);
+
+        if (meas == NULL)
+        {
+            ERROR("%s(): failed to find a measurement with type '%s' and "
+                  "name '%s'", __FUNCTION__, te_mi_meas_type2str(meas_type),
+                  (meas_name == NULL ? "(null)" : meas_name));
+            te_mi_set_logger_error(logger, retval, TE_ENOENT);
+            return;
+        }
+    }
+
+    rc = meas_view_add_meas_to_axis(view, axis, meas);
+    if (rc != 0)
+        te_mi_set_logger_error(logger, retval, rc);
+}
+
+void
+te_mi_meas_view_line_graph_destroy(te_mi_meas_view *view)
+{
+    te_vec_free(&view->data.line_graph.axis_y);
+}
+
 void
 te_mi_meas_view_destroy(te_mi_meas_view *view)
 {
+    switch (view->type)
+    {
+        case TE_MI_MEAS_VIEW_LINE_GRAPH:
+            te_mi_meas_view_line_graph_destroy(view);
+            break;
+
+        default:
+            /* Do nothing */
+            break;
+    }
+
     free(view->name);
+    free(view->title);
     free(view);
 }
 
@@ -827,6 +1226,14 @@ te_mi_logger_add_meas(te_mi_logger *logger, te_errno *retval,
     if (logger == NULL)
     {
         ERROR("Failed to add measurement with invalid args");
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    if (name != NULL && strcmp(name, TE_MI_GRAPH_AUTO_SEQNO) == 0)
+    {
+        ERROR("Name '%s' is reserved for MI graphs",
+              TE_MI_GRAPH_AUTO_SEQNO);
         rc = TE_EINVAL;
         goto out;
     }
