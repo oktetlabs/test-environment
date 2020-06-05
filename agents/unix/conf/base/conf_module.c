@@ -387,6 +387,13 @@ mod_modprobe(te_kernel_module *module)
     const char *cmd = module->filename != NULL ? "insmod" : "modprobe";
     te_string modprobe_cmd = TE_STRING_BUF_INIT(buf);
 
+    /*
+     * Do not load module without explicit filename since
+     * modprobe is unreliable on systems with pre-loaded modules.
+     */
+    if (module->filename == NULL && mod_loaded(module->name))
+        return 0;
+
     te_string_reset(&modprobe_cmd);
     te_string_append(&modprobe_cmd, "%s %s",
                      cmd, module->filename != NULL ?
