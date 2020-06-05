@@ -120,6 +120,18 @@ extern te_errno te_dbuf_append(te_dbuf    *dbuf,
 extern te_errno te_dbuf_expand(te_dbuf *dbuf, size_t n);
 
 /**
+ * Cut a region of a dynamic buffer starting from @p start_index
+ * of length @p count
+ *
+ * @note Function does not reallocate memory
+ *
+ * @param dbuf          Dynamic buffer
+ * @param start_index   Starting index of a region
+ * @param count         Length of a region
+ */
+extern void te_dbuf_cut(te_dbuf *dbuf, size_t start_index, size_t count);
+
+/**
  * Free dynamic buffer that was allocated with @p te_dbuf_append or
  * @p te_dbuf_expand.
  *

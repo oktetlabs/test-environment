@@ -83,6 +83,29 @@ te_dbuf_expand(te_dbuf *dbuf, size_t n)
 
 /* See description in te_dbuf.h. */
 void
+te_dbuf_cut(te_dbuf *dbuf, size_t start_index, size_t count)
+{
+    size_t end_index = start_index + count;
+
+    assert(dbuf != NULL);
+
+    if (start_index >= dbuf->len)
+        return;
+
+    if (end_index >= dbuf->len)
+    {
+        dbuf->len = start_index;
+        return;
+    }
+
+    memmove(dbuf->ptr + start_index, dbuf->ptr + end_index,
+            dbuf->len - end_index);
+
+    dbuf->len -= count;
+}
+
+/* See description in te_dbuf.h. */
+void
 te_dbuf_free(te_dbuf *dbuf)
 {
     dbuf->len = dbuf->size = 0;
