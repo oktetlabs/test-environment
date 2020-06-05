@@ -23,6 +23,9 @@
 extern "C" {
 #endif
 
+#include "tapi_test.h"
+#include "rcf_rpc.h"
+
 /**
  * Set shell environment for the given agent and may be restart
  * a PCO so it's aware.
