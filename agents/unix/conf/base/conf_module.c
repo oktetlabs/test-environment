@@ -165,15 +165,47 @@ RCF_PCH_CFG_NODE_RW_COLLECTION(node_module, "module",
                                module_add, module_del,
                                module_list, NULL);
 
+static te_errno
+mod_name_underscorify(const char *mod_name, char *buf, size_t size)
+{
+    te_errno rc;
+    char *p;
+
+    rc = te_strlcpy_safe(buf, mod_name, size);
+    if (rc != 0)
+    {
+        ERROR("Could not copy module name '%s' into buffer", mod_name);
+        return rc;
+    }
+
+    p = buf;
+    while ((p = strchr(p, '-')) != NULL)
+        *p = '_';
+
+    return 0;
+}
 
 static te_kernel_module *
 mod_find(const char *mod_name)
 {
+    char name[TE_MODULE_NAME_LEN];
     te_kernel_module *module;
+    te_errno rc;
+
+    rc = mod_name_underscorify(mod_name, name, sizeof(name));
+    if (rc != 0)
+        return NULL;
 
     LIST_FOREACH(module, &modules, list)
     {
-        if (strcmp(module->name, mod_name) == 0)
+        char compare_name[TE_MODULE_NAME_LEN];
+
+        rc = mod_name_underscorify(module->name, compare_name,
+                                   sizeof(compare_name));
+        if (rc != 0)
+            return NULL;
+
+        if (strcmp(name, compare_name) == 0)
             break;
     }
 
@@ -184,8 +216,11 @@ static te_bool
 mod_loaded(const char *mod_name)
 {
     struct stat st;
+    char name[TE_MODULE_NAME_LEN];
 
-    TE_SPRINTF(buf, SYS_MODULE "/%s", mod_name);
+    mod_name_underscorify(mod_name, name, sizeof(name));
+
+    TE_SPRINTF(buf, SYS_MODULE "/%s", name);
 
     return stat(buf, &st) == 0;
 }
@@ -257,8 +292,13 @@ mod_insert_or_move_holders_tail(tqh_strings *holders, const char *mod_name)
     char *dir;
     int n = 0;
     int i;
+    char name[TE_MODULE_NAME_LEN];
 
-    dir = te_string_fmt(SYS_MODULE "/%s/holders", mod_name);
+    rc = mod_name_underscorify(mod_name, name, sizeof(name));
+    if (rc != 0)
+        return rc;
+
+    dir = te_string_fmt(SYS_MODULE "/%s/holders", name);
     if (dir == NULL)
         return TE_ENOMEM;
 
@@ -462,8 +502,14 @@ module_param_list(unsigned int gid, const char *oid,
 
         if (mod_loaded(module_name))
         {
+            char name[TE_MODULE_NAME_LEN];
+
+            rc = mod_name_underscorify(module_name, name, sizeof(name));
+            if (rc != 0)
+                return rc;
+
             rc = te_snprintf(path, PATH_MAX, SYS_MODULE "/%s/parameters/",
-                             module_name);
+                             name);
             if (rc != 0)
             {
                 ERROR("%s(): te_snprintf() failed: %r", __FUNCTION__, rc);
@@ -522,9 +568,18 @@ module_param_get(unsigned int gid, const char *oid, char *value,
     te_kernel_module *module = mod_find(module_name);
 
     if (module == NULL || mod_loaded(module_name))
+    {
+        char name[TE_MODULE_NAME_LEN];
+        te_errno rc;
+
+        rc = mod_name_underscorify(module_name, name, sizeof(name));
+        if (rc != 0)
+            return rc;
+
         return read_sys_value(value, RCF_MAX_VAL, TRUE,
                               SYS_MODULE "/%s/parameters/%s",
-                              module_name, param_name);
+                              name, param_name);
+    }
     else
     {
         te_kernel_module_param *param;
@@ -570,7 +625,12 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
     UNUSED(oid);
 
 #if __linux__
+    char name[TE_MODULE_NAME_LEN];
     int rc;
+
+    rc = mod_name_underscorify(module_name, name, sizeof(name));
+    if (rc != 0)
+        return rc;
 
     rc = write_sys_value(value,
                          SYS_MODULE "/%s/parameters/%s",
@@ -805,6 +865,9 @@ module_add(unsigned int gid, const char *oid,
 
     if (te_strtol_bool(mod_value, &mod_enable) != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    if (mod_find(mod_name) != NULL)
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     module = calloc(1, sizeof(te_kernel_module));
     if (module == NULL)
