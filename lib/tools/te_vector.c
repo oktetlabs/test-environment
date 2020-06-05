@@ -61,6 +61,16 @@ te_vec_append_str_fmt(te_vec *vec, const char *fmt, ...)
 
 /* See the description in te_vector.h */
 void
+te_vec_remove(te_vec *vec, size_t start_index, size_t count)
+{
+    assert(vec != NULL);
+
+    te_dbuf_cut(&vec->data, vec->element_size * start_index,
+                vec->element_size * count);
+}
+
+/* See the description in te_vector.h */
+void
 te_vec_reset(te_vec *vec)
 {
     assert(vec != NULL);

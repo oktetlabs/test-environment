@@ -231,6 +231,19 @@ extern te_errno te_vec_append_str_fmt(te_vec *vec, const char *fmt, ...)
                                       __attribute__((format(printf, 2, 3)));
 
 /**
+ * Remove elements from a vector
+ *
+ * @note If the elements of the vector are themselves pointers,
+ *       they won't be automatically freed.
+ *
+ * @param vec           Dynamic vector
+ * @param start_index   Starting index of elements to remove
+ * @param count         Number of elements to remove
+ */
+extern void
+te_vec_remove(te_vec *vec, size_t start_index, size_t count);
+
+/**
  * Safe version of @ref te_vec_append_array
  *
  * @param vec               Dymanic vector
