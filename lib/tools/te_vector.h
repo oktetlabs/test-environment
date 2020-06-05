@@ -244,6 +244,18 @@ extern void
 te_vec_remove(te_vec *vec, size_t start_index, size_t count);
 
 /**
+ * Remove an element from a vector
+ *
+ * @param vec           Dynamic vector
+ * @param index         Index of a element to remove
+ */
+static inline void
+te_vec_remove_index(te_vec *vec, size_t index)
+{
+    return te_vec_remove(vec, index, 1);
+}
+
+/**
  * Safe version of @ref te_vec_append_array
  *
  * @param vec               Dymanic vector
