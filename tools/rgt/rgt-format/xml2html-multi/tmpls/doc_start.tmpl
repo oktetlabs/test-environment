@@ -103,6 +103,35 @@
 
         return c;
     }
+
+    //
+    // Show a list if it is hidden, hide a list if it is displayed.
+    // Change a text and color of the element clicked to show/hide accodingly.
+    //
+    // @param link_el       HTML element clicked to show/hide the list.
+    // @param list_id       ID of the list.
+    // @param hide_text     Text to display when list is displayed.
+    // @param show_text     Text to display when list is hidden.
+    function show_hide_list(link_el, list_id, hide_text, show_text)
+    {
+        var list_el = document.getElementById(list_id);
+
+        if (list_el.style.display == "none")
+        {
+            list_el.style.display = "block";
+            link_el.innerText = hide_text;
+            link_el.className = link_el.className.replace(/\bshow_link\b/g,
+                                                          "hide_link");
+        }
+        else
+        {
+            list_el.style.display = "none";
+            link_el.innerText = show_text;
+            link_el.className = link_el.className.replace(/\bhide_link\b/g,
+                                                          "show_link");
+        }
+    }
+
 </script>
 
 <style type="text/css">
@@ -136,6 +165,9 @@
     .renderjson .keyword { color: blue; }
     .renderjson .object.syntax { color: green; }
     .renderjson .array.syntax  { color: brown; }
+
+    .show_link { cursor: pointer; color: blue; }
+    .hide_link { cursor: pointer; color: crimson; }
 </style>
 
 <title>

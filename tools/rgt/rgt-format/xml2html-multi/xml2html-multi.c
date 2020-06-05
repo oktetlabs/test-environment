@@ -1155,6 +1155,12 @@ log_mi_measurement(FILE *fd, te_rgt_mi *mi, unsigned int linum)
     const char *graph_name = NULL;
     te_rgt_mi_meas_view *view;
 
+    /*
+     * If list of single values is longer than that, it is hidden
+     * by default.
+     */
+    const unsigned int max_showed_vals = 15;
+
     for (i = 0; i < meas->views_num; i++)
     {
         /*
@@ -1210,7 +1216,23 @@ log_mi_measurement(FILE *fd, te_rgt_mi *mi, unsigned int linum)
             }
             else
             {
-                fprintf(fd, "<ul style=\"list-style-type:none;\">\n");
+                fprintf(fd, "<span class=\"%s_link\" "
+                        "onclick=\"show_hide_list(this, "
+                        "'meas_param_list_%u_%zu', 'Hide %zu values', "
+                        "'Show %zu values');\">%s %zu values"
+                        "</span>\n",
+                        (param->values_num > max_showed_vals ?
+                            "show" : "hide"),
+                        linum, i, param->values_num, param->values_num,
+                        (param->values_num > max_showed_vals ?
+                            "Show" : "Hide"),
+                        param->values_num);
+
+                fprintf(fd, "<ul id=\"meas_param_list_%u_%zu\" "
+                        "style=\"display:%s; list-style-type:none;\">\n",
+                        linum, i,
+                        (param->values_num > max_showed_vals ?
+                                                "none" : "block"));
                 for (j = 0; j < param->values_num; j++)
                 {
                     print_mi_meas_value(fd, &param->values[j], NULL);
