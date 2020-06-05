@@ -467,7 +467,7 @@ module_list(unsigned int gid, const char *oid,
 
         te_string_set_buf(&buf_te_str, buf, sizeof(buf), strlen(buf));
         LIST_FOREACH(module, &modules, list)
-            te_string_append(&buf_te_str, " %s", module->name);
+            te_string_append(&buf_te_str, "%s ", module->name);
     }
 #else
     ERROR("%s(): getting list of system modules "
