@@ -805,10 +805,7 @@ module_filename_set(unsigned int gid, const char *oid,
     if (module == NULL)
         return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
 
-    free(module->filename);
-    module->filename = strdup(value);
-
-    return 0;
+    return string_replace(&module->filename, value);
 }
 static te_errno
 module_filename_get(unsigned int gid, const char *oid,
@@ -823,7 +820,7 @@ module_filename_get(unsigned int gid, const char *oid,
     if (module != NULL && module->filename != NULL)
         rc = te_snprintf(value, RCF_MAX_VAL, "%s", module->filename);
     else
-        rc = te_snprintf(value, RCF_MAX_VAL, "unknown");
+        rc = te_strlcpy(value, "", RCF_MAX_VAL);
 
     return rc;
 }
