@@ -50,6 +50,7 @@ typedef struct te_rgt_mi_meas_value {
 typedef struct te_rgt_mi_meas_param {
     const char *name;               /**< Parameter name */
     const char *type;               /**< Parameter type */
+    const char *descr;              /**< Parameter description */
 
     te_bool stats_present;          /**< @c TRUE if some of the
                                          statistics are set */
@@ -63,6 +64,10 @@ typedef struct te_rgt_mi_meas_param {
     te_rgt_mi_meas_value *values;   /**< Array of parameter values */
     size_t values_num;              /**< Number of elements in the
                                          array of values */
+
+    te_bool in_graph;               /**< @c TRUE if this measured
+                                         parameter is part of some
+                                         graph view */
 } te_rgt_mi_meas_param;
 
 /** Key-value pair */
@@ -71,10 +76,27 @@ typedef struct te_rgt_mi_kv {
     const char *value;    /**< Value */
 } te_rgt_mi_kv;
 
+/** Sequence number is specified on a graph axis */
+#define TE_RGT_MI_GRAPH_AXIS_AUTO_SEQNO -1
+
+/** Line-graph view */
+typedef struct te_rgt_mi_meas_view_line_graph {
+    ssize_t axis_x;     /**< Measured parameter on axis X */
+    ssize_t *axis_y;    /**< Measured parameters on axis Y */
+    size_t axis_y_num;  /**< Number of measured parameters on
+                             axis Y */
+} te_rgt_mi_meas_view_line_graph;
+
 /** View (graph, etc) */
 typedef struct te_rgt_mi_meas_view {
     const char *name;   /**< Name of the view */
     const char *type;   /**< Type of the view */
+    const char *title;  /**< Title of the view */
+
+    union {
+        te_rgt_mi_meas_view_line_graph line_graph; /**< Line-graph related
+                                                        data */
+    } data;
 } te_rgt_mi_meas_view;
 
 /** Description of MI message of type "measurement" */

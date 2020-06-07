@@ -70,6 +70,44 @@ te_rgt_mi_parse_error(te_rgt_mi *mi, te_errno rc, const char *fmt, ...)
 }
 
 /**
+ * Release memory allocated for storing data for MI measurement view.
+ *
+ * @param view    Structure describing measurement view.
+ */
+static void
+te_rgt_mi_meas_view_clean(te_rgt_mi_meas_view *view)
+{
+    te_rgt_mi_meas_view_line_graph *line_graph;
+
+    if (view->type != NULL &&
+        strcmp(view->type, "line-graph") == 0)
+    {
+        line_graph = &view->data.line_graph;
+        free(line_graph->axis_y);
+        line_graph->axis_y = NULL;
+        line_graph->axis_y_num = 0;
+    }
+}
+
+/**
+ * Release memory allocated for storing data for MI measurement views.
+ *
+ * @param views    Array of measurement views.
+ * @param num      Number of elements in the array.
+ */
+static void
+te_rgt_mi_meas_views_clean(te_rgt_mi_meas_view *views,
+                           size_t num)
+{
+    size_t i;
+
+    for (i = 0; i < num; i++)
+    {
+        te_rgt_mi_meas_view_clean(&views[i]);
+    }
+}
+
+/**
  * Release memory allocated for storing data for MI message
  * of type "measurement".
  *
@@ -99,6 +137,11 @@ te_rgt_mi_meas_clean(te_rgt_mi_meas *meas)
     free(meas->comments);
     meas->comments = NULL;
     meas->comments_num = 0;
+
+    for (i = 0; i < meas->views_num; i++)
+    {
+        te_rgt_mi_meas_view_clean(&meas->views[i]);
+    }
 
     free(meas->views);
     meas->views = NULL;
@@ -272,36 +315,181 @@ get_child_keys(json_t *obj, const char *field,
 }
 
 /**
- * Get MI measurement views (specifying things like graphs).
+ * Parse measurement reference used in graph specification.
  *
- * @param obj         JSON object with MI measurement.
- * @param views       Where to save pointer to array of parsed
- *                    views.
- * @param num         Where to save number of parsed views.
+ * @param ref_obj       Object containing reference.
+ * @param meas          Pointer to structure describing parsed
+ *                      MI measurement attribute.
+ * @param idx           Will be set to index of measured parameter
+ *                      on success.
  *
  * @return Status code.
  */
 static te_errno
-get_views(json_t *obj, te_rgt_mi_meas_view **views, size_t *num)
+parse_meas_ref(json_t *ref_obj, te_rgt_mi_meas *meas,
+               ssize_t *idx)
+{
+    const char *type;
+    const char *name;
+    size_t i;
+
+    if (!json_is_object(ref_obj))
+        return TE_EINVAL;
+
+    name = json_object_get_string(ref_obj, "name");
+    type = json_object_get_string(ref_obj, "type");
+
+    if (name != NULL && strcmp(name, "auto-seqno") == 0)
+    {
+        *idx = TE_RGT_MI_GRAPH_AXIS_AUTO_SEQNO;
+        return 0;
+    }
+
+    for (i = 0; i < meas->params_num; i++)
+    {
+        if (strcmp_null(meas->params[i].type, type) == 0 &&
+            strcmp_null(meas->params[i].name, name) == 0)
+        {
+            *idx = i;
+            return 0;
+        }
+    }
+
+    return TE_ENOENT;
+}
+
+/**
+ * Parse line-graph view specification.
+ *
+ * @param view_obj      Description of the graph view in JSON.
+ * @param mi            Structure describing MI artifact.
+ * @param line_graph    Where to store data about the line-graph.
+ *
+ * @return Status code.
+ */
+static te_errno
+get_line_graph(json_t *view_obj, te_rgt_mi *mi,
+               te_rgt_mi_meas_view_line_graph *line_graph)
+{
+    json_t *axis_x;
+    json_t *axis_y;
+    json_t *axis_y_el;
+    size_t axis_y_num = 0;
+    ssize_t *axis_y_list = NULL;
+    size_t i;
+    ssize_t j;
+    te_errno rc;
+
+    te_rgt_mi_meas *meas = &mi->data.measurement;
+
+    axis_x = json_object_get(view_obj, "axis_x");
+    if (axis_x == NULL)
+    {
+        te_rgt_mi_parse_error(mi, TE_EINVAL,
+                              "Failed to obtain 'axis_x' property "
+                              "of a line-graph");
+        return TE_EINVAL;
+    }
+
+    rc = parse_meas_ref(axis_x, meas, &line_graph->axis_x);
+    if (rc != 0)
+    {
+        te_rgt_mi_parse_error(mi, rc,
+                              "Failed to parse 'axis_x' property "
+                              "of a line-graph");
+        return rc;
+    }
+    else if (line_graph->axis_x >= 0)
+    {
+        meas->params[line_graph->axis_x].in_graph = TRUE;
+    }
+
+    axis_y = json_object_get(view_obj, "axis_y");
+    if (axis_y != NULL)
+    {
+        if (!json_is_array(axis_y))
+        {
+            te_rgt_mi_parse_error(mi, TE_EINVAL,
+                                  "'axis_y' field is not an array");
+            return TE_EINVAL;
+        }
+
+        axis_y_num = json_array_size(axis_y);
+        if (axis_y_num > 0)
+        {
+            axis_y_list = TE_ALLOC(axis_y_num * sizeof(*axis_y_list));
+            if (axis_y_list == NULL)
+                return TE_ENOMEM;
+
+            for (i = 0; i < axis_y_num; i++)
+            {
+                axis_y_el = json_array_get(axis_y, i);
+                if (axis_y_el == NULL)
+                {
+                    te_rgt_mi_parse_error(mi, TE_EFAIL,
+                                          "Failed to obtain element %zu in "
+                                          "'axis_y' array", i);
+                    free(axis_y_list);
+                    return TE_EFAIL;
+                }
+
+                rc = parse_meas_ref(axis_y_el, meas, &j);
+                if (rc != 0)
+                {
+                    te_rgt_mi_parse_error(mi, rc,
+                                          "Failed to parse element %zu in "
+                                          "'axis_y' property of a "
+                                          "line-graph", i);
+                    return rc;
+                }
+
+                axis_y_list[i] = j;
+                meas->params[j].in_graph = TRUE;
+            }
+        }
+    }
+
+    line_graph->axis_y = axis_y_list;
+    line_graph->axis_y_num = axis_y_num;
+
+    return 0;
+}
+
+/**
+ * Get MI measurement views (specifying things like graphs).
+ *
+ * @param obj         JSON object with MI measurement.
+ * @param mi          Structure describing MI artifact.
+ *
+ * @return Status code.
+ */
+static te_errno
+get_views(json_t *obj, te_rgt_mi *mi)
 {
     json_t *views_json;
     json_t *view_json;
+    te_rgt_mi_meas *meas = &mi->data.measurement;
     te_rgt_mi_meas_view *views_aux;
     size_t num_aux;
     size_t i;
+    te_errno rc;
 
     views_json = json_object_get(obj, "views");
     if (views_json == NULL)
         return 0;
 
     if (!json_is_array(views_json))
+    {
+        te_rgt_mi_parse_error(mi, TE_EINVAL,
+                              "'views' field is not an array");
         return TE_EINVAL;
+    }
 
     num_aux = json_array_size(views_json);
     if (num_aux == 0)
     {
-        *num = 0;
-        *views = NULL;
+        meas->views_num = 0;
+        meas->views = NULL;
         return 0;
     }
 
@@ -312,25 +500,42 @@ get_views(json_t *obj, te_rgt_mi_meas_view **views, size_t *num)
     for (i = 0; i < num_aux; i++)
     {
         view_json = json_array_get(views_json, i);
-        if (view_json == NULL)
+        if (view_json == NULL || !json_is_object(view_json))
         {
-            /* This should not happen */
-            free(views_aux);
-            return TE_EFAIL;
-        }
-
-        if (!json_is_object(view_json))
-        {
+            te_rgt_mi_parse_error(mi, TE_EINVAL, "Cannot obtain view %d or "
+                                  "it is not an object", i);
+            te_rgt_mi_meas_views_clean(views_aux, i);
             free(views_aux);
             return TE_EINVAL;
         }
 
         views_aux[i].type = json_object_get_string(view_json, "type");
         views_aux[i].name = json_object_get_string(view_json, "name");
+        views_aux[i].title = json_object_get_string(view_json, "title");
+
+        if (views_aux[i].type == NULL)
+        {
+            te_rgt_mi_parse_error(mi, TE_EINVAL, "Cannot obtain view type");
+            te_rgt_mi_meas_views_clean(views_aux, i);
+            free(views_aux);
+            return TE_EINVAL;
+        }
+
+        if (strcmp(views_aux[i].type, "line-graph") == 0)
+        {
+            rc = get_line_graph(view_json, mi,
+                                &views_aux[i].data.line_graph);
+            if (rc != 0)
+            {
+                te_rgt_mi_meas_views_clean(views_aux, i);
+                free(views_aux);
+                return TE_EINVAL;
+            }
+        }
     }
 
-    *views = views_aux;
-    *num = num_aux;
+    meas->views = views_aux;
+    meas->views_num = num_aux;
 
     return 0;
 }
@@ -384,6 +589,7 @@ te_rgt_parse_mi_meas_message(te_rgt_mi *mi)
 
             param->name = json_object_get_string(result, "name");
             param->type = json_object_get_string(result, "type");
+            param->descr = json_object_get_string(result, "description");
             param_id++;
 
             entries = json_object_get(result, "entries");
@@ -478,7 +684,7 @@ te_rgt_parse_mi_meas_message(te_rgt_mi *mi)
     if (mi->rc != 0)
         goto cleanup;
 
-    mi->rc = get_views(root, &meas->views, &meas->views_num);
+    mi->rc = get_views(root, mi);
 
 cleanup:
     if (mi->rc != 0)
@@ -918,26 +1124,11 @@ te_rgt_parse_mi_message(const char *json_buf, size_t buf_len,
 const char *
 te_rgt_mi_meas_param_name(te_rgt_mi_meas_param *param)
 {
+    if (param->descr != NULL && *(param->descr) != '\0')
+        return param->descr;
+
     if (param->name != NULL && *(param->name) != '\0')
         return param->name;
-
-    if (param->type == NULL || *(param->type) == '\0')
-        return "[unknown]";
-
-    if (strcmp(param->type, "pps") == 0)
-        return "Packets per second";
-    else if (strcmp(param->type, "latency") == 0)
-        return "Latency in seconds";
-    else if (strcmp(param->type, "throughput") == 0)
-        return "Throughput in bits per second";
-    else if (strcmp(param->type, "bandwidth-usage") == 0)
-        return "Bandwidth usage ratio";
-    else if (strcmp(param->type, "temperature") == 0)
-        return "Temperature in degrees Celsius";
-    else if (strcmp(param->type, "rps") == 0)
-        return "Requests per second";
-    else if (strcmp(param->type, "rtt") == 0)
-        return "Round trip time in seconds";
 
     return param->type;
 }
