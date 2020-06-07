@@ -32,21 +32,50 @@
     // @param canvasID    ID of canvas element where to display the
     //                    graph.
     // @param title       Title of the graph (may be empty).
-    // @param param_name  Name of the displayed parameter.
-    // @param values      Array of numeric values.
-    // @param color       Which color to use for the line.
+    // @param axis_x      What should be on axis X.
+    // @param axis_y      What should be on axis Y.
     //
     // @return Pointer to Chart object.
-    function add_graph(canvasID, title, param_name, values, color)
+    function add_graph(canvasID, title, axis_x, axis_y)
     {
-        var points = [];
-        var ctx;
         var c;
         var i;
+        var j;
+        var datasets = [];
 
-        for (i = 0; i < values.length; i++)
+        for (i = 0; i < axis_y.length; i++)
         {
-            points.push({x: i, y: values[i]});
+            var dataset = {};
+
+            dataset.label = axis_y[i].label;
+            dataset.fill = false;
+            dataset.lineTension = 0;
+            dataset.showLine = true;
+            dataset.borderColor = axis_y[i].color;
+
+            dataset.data = [];
+
+            for (j = 0; j < axis_y[i].values.length; j++)
+            {
+                if (axis_x.auto_seqno)
+                {
+                    dataset.data.push({x: j, y: axis_y[i].values[j]});
+                }
+                else
+                {
+                    if (j >= axis_x.values.length)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        dataset.data.push({x: axis_x.values[j],
+                                           y: axis_y[i].values[j]});
+                    }
+                }
+            }
+
+            datasets.push(dataset);
         }
 
         ctx = document.getElementById(canvasID);
@@ -54,13 +83,7 @@
                 {
                     type: "scatter",
                     data: {
-                      datasets: [{
-                          label: param_name,
-                          data: points,
-                          borderColor: color,
-                          fill: false,
-                          lineTension: 0,
-                          showLine: true }]
+                      datasets: datasets
                     },
                     options: {
                         title: {
@@ -70,13 +93,20 @@
                         },
                         legend: {
                             labels: {
-                                fontSize: 15
+                                fontSize: 15,
+                                fontStyle: "bold"
                             }
                         },
                         scales: {
                             xAxes: [{
                                 ticks: {
                                     fontSize: 15
+                                },
+                                scaleLabel: {
+                                    display: (axis_x.label.length > 0),
+                                    fontSize: 17,
+                                    fontStyle: "bold",
+                                    labelString: axis_x.label
                                 }
                             }],
                             yAxes: [{
@@ -168,6 +198,8 @@
 
     .show_link { cursor: pointer; color: blue; }
     .hide_link { cursor: pointer; color: crimson; }
+
+    .graph_warn { color: crimson; }
 </style>
 
 <title>

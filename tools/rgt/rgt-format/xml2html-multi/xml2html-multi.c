@@ -24,6 +24,7 @@
 #include "logger_defs.h"
 #include "te_raw_log.h"
 #include "te_dbuf.h"
+#include "te_string.h"
 
 #include "capture.h"
 
@@ -1062,22 +1063,60 @@ print_mi_meas_value(FILE *fd, te_rgt_mi_meas_value *value, const char *prefix)
 }
 
 /**
+ * Print out comma-separated list of measured parameter values
+ * used for Javascript array initialization.
+ *
+ * @param fd      File where to print the list.
+ * @param param   Measured parameter.
+ */
+static void
+print_mi_meas_param_vals_array(FILE *fd, te_rgt_mi_meas_param *param)
+{
+    size_t j;
+    te_bool first_val = TRUE;
+
+    for (j = 0; j < param->values_num; j++)
+    {
+        te_rgt_mi_meas_value *value = &param->values[j];
+
+        if (value->defined && value->specified)
+        {
+            if (!first_val)
+                fprintf(fd, ", ");
+
+            fprintf(fd, "%f * %s", value->value,
+                    (value->multiplier != NULL &&
+                     *(value->multiplier) != '\0' ?
+                     value->multiplier : "1"));
+            first_val = FALSE;
+        }
+    }
+}
+
+/**
  * Print graph of values of a parameter from measurement MI artifact.
  *
  * @param fd      File where to print.
- * @param title   Graph title (may be empty or @c NULL).
- * @param param   Parameter to print.
+ * @param meas    Data from parsed MI measurement artifact.
+ * @param view    Graph description.
  * @param linum   Line number (used for creating unique ID in HTML file).
  * @param index   Index of the parameter in the list of all parameters.
  */
 static void
-print_mi_meas_param_graph(FILE *fd, const char *title,
-                          te_rgt_mi_meas_param *param,
-                          unsigned int linum, unsigned int index)
+print_mi_meas_line_graph(FILE *fd, te_rgt_mi_meas *meas,
+                         te_rgt_mi_meas_view *view,
+                         unsigned int linum, unsigned int index)
 {
     const char *graph_width = "90%";
     const char *graph_height = "25em";
-    size_t j;
+    const char *graph_padding_top = "2em";
+    size_t i;
+    ssize_t j;
+    size_t axis_y_num;
+    te_bool first_y = TRUE;
+
+    ssize_t check_len;
+    te_string warns = TE_STRING_INIT;
 
     const char *colors[] = { "crimson", "blue", "darkgreen",
                              "chocolate", "blueviolet",
@@ -1085,42 +1124,96 @@ print_mi_meas_param_graph(FILE *fd, const char *title,
                              "orange" };
     const char *color;
 
-    if (param->values == 0)
+    te_rgt_mi_meas_view_line_graph *line_graph = &view->data.line_graph;
+    te_rgt_mi_meas_param *param;
+
+    if (meas->params_num == 0)
         return;
 
-    if (title == NULL)
-        title = "";
-
-    fprintf(fd, "<div style=\"width: %s; height: %s;\">\n",
-            graph_width, graph_height);
+    fprintf(fd, "<div style=\"width: %s; height: %s; padding-top: %s;\">\n",
+            graph_width, graph_height, graph_padding_top);
     fprintf(fd,
-            "<canvas id=\"mi_graph_%u_%u\"></canvas>\n",
+            "<canvas id=\"mi_line_graph_%u_%u\" "
+            "style=\"border-style: solid;\"></canvas>\n",
             linum, index);
     fprintf(fd, "</div>\n");
 
-    fprintf(fd, "<script>\nvar vals = [ ");
-
-    for (j = 0; j < param->values_num; j++)
+    fprintf(fd, "<script>\nvar axis_x = {};\n");
+    if (line_graph->axis_x == TE_RGT_MI_GRAPH_AXIS_AUTO_SEQNO)
     {
-        te_rgt_mi_meas_value *value = &param->values[j];
+        fprintf(fd, "axis_x.auto_seqno = true;\n");
+        fprintf(fd, "axis_x.label = \"Sequence number\";\n");
+        check_len = -1;
+    }
+    else
+    {
+        param = &meas->params[line_graph->axis_x];
 
-        if (j > 0)
-            fprintf(fd, ", ");
-        if (value->defined && value->specified)
-        {
-            fprintf(fd, "%f * %s", value->value,
-                    (value->multiplier != NULL &&
-                     *(value->multiplier) != '\0' ?
-                     value->multiplier : "1"));
-        }
+        fprintf(fd, "axis_x.auto_seqno = false;\n");
+        fprintf(fd, "axis_x.label = \"%s\";\n",
+                te_rgt_mi_meas_param_name(param));
+        fprintf(fd, "axis_x.values = param_%u_%zd;\n",
+                linum, line_graph->axis_x);
+        check_len = param->values_num;
     }
 
-    color = colors[index % TE_ARRAY_LEN(colors)];
-    fprintf(fd, " ];\n add_graph(\"mi_graph_%u_%u\", "
-            "\"%s\", \"%s\", vals, \"%s\");\n</script>\n",
-            linum, index, title,
-            (param->name == NULL ? "unnamed" : param->name),
-            color);
+    axis_y_num = line_graph->axis_y_num;
+    /*
+     * If "axis_y" is omitted, display all parameters
+     * except that which is assigned for axis X
+     */
+    if (axis_y_num == 0)
+        axis_y_num = meas->params_num;
+
+    fprintf(fd, "var axis_y = [\n");
+    for (i = 0; i < axis_y_num; i++)
+    {
+        if (line_graph->axis_y_num == 0)
+        {
+            if (i == (size_t)(line_graph->axis_x))
+                continue;
+
+            j = i;
+        }
+        else
+        {
+            j = line_graph->axis_y[i];
+        }
+
+        param = &meas->params[j];
+
+        if (check_len > 0 && param->values_num != (size_t)check_len)
+        {
+            te_string_append(&warns,
+                             "Parameter '%s' on axis Y has %zu values "
+                             "while on axis X there is "
+                             "%zd values.\n<br>",
+                             te_rgt_mi_meas_param_name(param),
+                             param->values_num, check_len);
+        }
+
+        color = colors[j % TE_ARRAY_LEN(colors)];
+
+        if (!first_y)
+            fprintf(fd, ",\n");
+
+        first_y = FALSE;
+
+        fprintf(fd, "{ label: \"%s\", color: \"%s\", "
+                "values: param_%u_%zd }",
+                te_rgt_mi_meas_param_name(param), color, linum, j);
+    }
+    fprintf(fd, "];\n");
+
+    fprintf(fd, "add_graph(\"mi_line_graph_%u_%u\", \"%s\", "
+            "axis_x, axis_y);\n", linum, index, view->title);
+
+    fprintf(fd, "</script>\n");
+
+    if (warns.len > 0)
+        fprintf(fd, "<span class=\"graph_warn\">%s</span>\n", warns.ptr);
+
+    te_string_free(&warns);
 }
 
 /**
@@ -1151,8 +1244,6 @@ log_mi_measurement(FILE *fd, te_rgt_mi *mi, unsigned int linum)
     te_rgt_mi_meas *meas = &mi->data.measurement;
     size_t i;
     size_t j;
-    te_bool show_graph = FALSE;
-    const char *graph_name = NULL;
     te_rgt_mi_meas_view *view;
 
     /*
@@ -1160,21 +1251,6 @@ log_mi_measurement(FILE *fd, te_rgt_mi *mi, unsigned int linum)
      * by default.
      */
     const unsigned int max_showed_vals = 15;
-
-    for (i = 0; i < meas->views_num; i++)
-    {
-        /*
-         * TODO: after graph views are fully implemented,
-         * parse them here and display graphs accordingly.
-         */
-        view = &meas->views[i];
-        if (strcmp(view->type, "line-graph") == 0)
-        {
-            show_graph = TRUE;
-            graph_name = view->name;
-            break;
-        }
-    }
 
     FPRINTF_HEADER(1, fd, "Measurements from tool %s", meas->tool);
     for (i = 0; i < meas->params_num; i++)
@@ -1206,44 +1282,56 @@ log_mi_measurement(FILE *fd, te_rgt_mi *mi, unsigned int linum)
 
         if (param->values_num > 0)
         {
+            if (param->in_graph)
+            {
+                fprintf(fd, "<script>var param_%u_%zu = [",
+                        linum, i);
+                print_mi_meas_param_vals_array(fd, param);
+                fprintf(fd, "];</script>");
+            }
+
             fprintf(fd, "<li>\n");
+
             FPRINTF_HEADER(3, fd, "Values:");
 
-            if (show_graph)
-            {
-                print_mi_meas_param_graph(fd, graph_name, param,
-                                          linum, i);
-            }
-            else
-            {
-                fprintf(fd, "<span class=\"%s_link\" "
-                        "onclick=\"show_hide_list(this, "
-                        "'meas_param_list_%u_%zu', 'Hide %zu values', "
-                        "'Show %zu values');\">%s %zu values"
-                        "</span>\n",
-                        (param->values_num > max_showed_vals ?
-                            "show" : "hide"),
-                        linum, i, param->values_num, param->values_num,
-                        (param->values_num > max_showed_vals ?
-                            "Show" : "Hide"),
-                        param->values_num);
+            fprintf(fd, "<span class=\"%s_link\" "
+                    "onclick=\"show_hide_list(this, "
+                    "'meas_param_list_%u_%zu', 'Hide %zu values', "
+                    "'Show %zu values');\">%s %zu values"
+                    "</span>\n",
+                    (param->values_num > max_showed_vals ?
+                        "show" : "hide"),
+                    linum, i, param->values_num, param->values_num,
+                    (param->values_num > max_showed_vals ?
+                        "Show" : "Hide"),
+                    param->values_num);
 
-                fprintf(fd, "<ul id=\"meas_param_list_%u_%zu\" "
-                        "style=\"display:%s; list-style-type:none;\">\n",
-                        linum, i,
-                        (param->values_num > max_showed_vals ?
-                                                "none" : "block"));
-                for (j = 0; j < param->values_num; j++)
-                {
-                    print_mi_meas_value(fd, &param->values[j], NULL);
-                }
-                fprintf(fd, "</ul>\n");
+            fprintf(fd, "<ul id=\"meas_param_list_%u_%zu\" "
+                    "style=\"display:%s; list-style-type:none;\">\n",
+                    linum, i,
+                    (param->values_num > max_showed_vals ?
+                                            "none" : "block"));
+            for (j = 0; j < param->values_num; j++)
+            {
+                print_mi_meas_value(fd, &param->values[j], NULL);
             }
 
+            fprintf(fd, "</ul>\n");
             fprintf(fd, "</li>\n");
         }
 
         fprintf(fd, "</ul>\n");
+    }
+
+    for (i = 0; i < meas->views_num; i++)
+    {
+        view = &meas->views[i];
+
+        if (view->type != NULL &&
+            strcmp(view->type, "line-graph") == 0)
+        {
+            print_mi_meas_line_graph(fd, meas, view, linum, i);
+        }
     }
 
     if (meas->keys_num > 0)
