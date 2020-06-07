@@ -36,8 +36,8 @@ for f in ${TE_CPPFLAGS} ; do
     test -z "${te_cppflags}" || te_cppflags+=","
     te_cppflags+="${f}"
 done
-meson_args+=(-Dte_cppflags="${te_cppflags}")
-meson_args+=(-Dte_ldflags="${te_ldflags}")
+test -z "${te_cppflags}" || meson_args+=(-Dte_cppflags="${te_cppflags}")
+test -z "${te_ldflags}" || meson_args+=(-Dte_ldflags="${te_ldflags}")
 
 te_libdir=
 te_libs=
@@ -56,8 +56,8 @@ for l in ${TE_LDFLAGS} ; do
         exit 1
     fi
 done
-meson_args+=(-Dte_libdir="${te_libdir}")
-meson_args+=(-Dte_libs="${te_libs}")
+test -z "${te_libdir}" || meson_args+=(-Dte_libdir="${te_libdir}")
+test -z "${te_libs}" || meson_args+=(-Dte_libs="${te_libs}")
 
 echo "${meson_args[@]}" >meson.args.new
 
