@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
@@ -106,12 +106,12 @@ static inline void
 free_list(olist *list)
 {
     olist *tmp;
-    
+
     for (; list != NULL; list = tmp)
     {
         tmp = list->next;
         free(list);
-    } 
+    }
 }
 
 /**
@@ -144,7 +144,7 @@ parse_one_level(char *oid, char **next_level, char **sub_id,
         {
             if ((*sub_id = strdup(oid)) == NULL)
                 return TE_ENOMEM;
-                
+
             *next_level = oid;
             return 0;
         }
@@ -174,7 +174,7 @@ parse_one_level(char *oid, char **next_level, char **sub_id,
     {
         if ((*sub_id = strdup(oid)) == NULL)
             return TE_ENOMEM;
-            
+
         if ((*inst_name = strdup(oid)) == NULL)
         {
             free(sub_id);
@@ -260,9 +260,9 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
     char *sub_id = NULL;
     char *inst_name = NULL;
     char *next_level;
-    
+
     te_bool all;
-    
+
 /**
  * Return from function with resources deallocation.
  *
@@ -279,12 +279,12 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
 
     if (*oid == 0 || obj == NULL)
         return 0;
-        
+
     if (parse_one_level(oid, &next_level, &sub_id, &inst_name) != 0)
         RET(TE_EINVAL);
-        
+
     all = strcmp(full_oid, "*:*") == 0 || strcmp(sub_id, OID_ETC) == 0;
-    
+
     for ( ; obj != NULL; obj = obj->brother)
     {
         char *tmp_list = NULL;
@@ -293,7 +293,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
 
         if (!all && *sub_id != '*' && strcmp(obj->sub_id, sub_id) != 0)
             continue;
-            
+
         if (obj->list == NULL)
         {
             if ((tmp_list = strdup(" ")) == NULL)
@@ -338,7 +338,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
         {
             int   rc = 0;
             char  tmp_parsed[CFG_OID_MAX];
-            
+
             if ((tmp = strchr(tmp_inst_name, ' ')) == NULL)
             {
                 tmp = tmp_inst_name + strlen(tmp_inst_name);
@@ -346,13 +346,13 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
             else
                 *tmp++ = 0;
 
-            if (!all && *inst_name != '*' && 
+            if (!all && *inst_name != '*' &&
                 strcmp(inst_name, tmp_inst_name) != 0)
             {
                 continue;
             }
 
-            snprintf(tmp_parsed, CFG_OID_MAX, "%s/%s:%s", 
+            snprintf(tmp_parsed, CFG_OID_MAX, "%s/%s:%s",
                      parsed == NULL ? "" : parsed,
                      obj->sub_id, tmp_inst_name);
             tmp_parsed[CFG_OID_MAX - 1] = '\0';
@@ -393,7 +393,7 @@ create_wildcard_inst_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
 
     free(sub_id);
     free(inst_name);
-    
+
     return 0;
 
 #undef RET
@@ -421,7 +421,7 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
 {
     char *next_level;
     char *sub_id = NULL;
-    
+
     te_bool all;
 
 /**
@@ -443,7 +443,7 @@ create_wildcard_obj_list(rcf_pch_cfg_object *obj, char *parsed, char *oid,
 
     if (parse_one_level(oid, &next_level, &sub_id, NULL) != 0)
         RET(TE_EINVAL);
-      
+
     all = *full_oid =='*' || strcmp(sub_id, OID_ETC) == 0;
 
     for ( ; obj != NULL; obj = obj->brother)
@@ -524,7 +524,7 @@ convert_to_answer(olist *list, char **answer)
         free_list(list);
         return TE_ENOMEM;
     }
-    
+
     ptr = *answer;
     while (list != NULL)
     {
@@ -562,7 +562,7 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
 
     ENTRY("OID='%s'", oid);
     VERB("Process wildcard request");
-    
+
     strcpy(copy, oid);
     if (strchr(oid, ':') == NULL)
     {
@@ -573,7 +573,7 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
     else
     {
         VERB("Create list of instances by wildcard");
-        
+
         rc = create_wildcard_inst_list(rcf_pch_conf_root(),
                                        NULL, copy, oid, &list);
     }
@@ -582,9 +582,9 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
 
     if ((rc != 0 )|| ((rc = convert_to_answer(list, &tmp)) != 0))
         SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, rc));
-        
+
     if ((size_t)snprintf(cbuf + answer_plen, buflen - answer_plen,
-                         "0 attach %u", 
+                         "0 attach %u",
                          (unsigned int)(strlen(tmp) + 1)) >=
             (buflen - answer_plen))
     {
@@ -603,7 +603,7 @@ process_wildcard(struct rcf_comm_connection *conn, char *cbuf,
         VERB("Sent binary attachment len=%u rc=%d", strlen(tmp) + 1, rc);
     }
     RCF_CH_UNLOCK;
-    
+
     free(tmp);
 
     return rc;
@@ -630,7 +630,7 @@ find_commit_op(rcf_ch_cfg_commit f_commit, const cfg_oid *p_oid)
 
     return p;
 }
-        
+
 /**
  * Immediate or postponed commit of changes.
  *
@@ -644,7 +644,7 @@ commit(const rcf_pch_cfg_object *commit_obj, cfg_oid **pp_oid)
 {
     /* Modify length of OID to length of commit object OID */
     (*pp_oid)->len = commit_obj->oid_len;
-        
+
     if (is_group)
     {
         if (find_commit_op(commit_obj->commit, *pp_oid) == NULL)
@@ -657,13 +657,13 @@ commit(const rcf_pch_cfg_object *commit_obj, cfg_oid **pp_oid)
             {
                 return TE_ENOMEM;
             }
-            
+
             p->func = commit_obj->commit;
             p->oid  = *pp_oid;
-            
+
             /* OID is owned by function */
             *pp_oid = NULL;
-            
+
             TAILQ_INSERT_TAIL(&commits, p, links);
             VERB("Postponed commit added to the list");
         }
@@ -790,7 +790,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
 
     UNUSED(ba);
     UNUSED(cmdlen);
-    
+
     ENTRY("op=%d id='%s' val='%s'", op, (oid == NULL) ? "NULL" : oid,
                                         (val == NULL) ? "NULL" : val);
     VERB("Default configuration hanlder is executed");
@@ -854,7 +854,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
                         break;
                     }
                 }
-                else if ((i - 2) < (sizeof(inst_names) / 
+                else if ((i - 2) < (sizeof(inst_names) /
                                     sizeof(inst_names[0])))
                 {
                     inst_names[i - 2] = p_ids[i].name;
@@ -898,7 +898,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
             is_group = FALSE;
             SEND_ANSWER("%d", commit_all_postponed());
             break;
-            
+
         case RCF_CH_CFG_GET:
         {
             char value[RCF_MAX_VAL] = "";
@@ -960,7 +960,7 @@ rcf_pch_configure(struct rcf_comm_connection *conn,
             break;
 
         default:
-            ERROR("Unknown congfigure operation: op=%d id='%s' val='%s'", 
+            ERROR("Unknown congfigure operation: op=%d id='%s' val='%s'",
                   op, oid, val);
             SEND_ANSWER("%d", TE_RC(TE_RCF_PCH, TE_EINVAL));
     }
@@ -1041,13 +1041,13 @@ rcf_pch_add_node(const char *father, rcf_pch_cfg_object *node)
 
 /** Find family of the node */
 static rcf_pch_cfg_object *
-find_father(rcf_pch_cfg_object *node, rcf_pch_cfg_object *ancestor, 
+find_father(rcf_pch_cfg_object *node, rcf_pch_cfg_object *ancestor,
             rcf_pch_cfg_object **brother)
 {
     rcf_pch_cfg_object *tmp1, *tmp2;
-    
-    for (tmp1 = ancestor->son, tmp2 = NULL; 
-         tmp1 != NULL; 
+
+    for (tmp1 = ancestor->son, tmp2 = NULL;
+         tmp1 != NULL;
          tmp2 = tmp1, tmp1= tmp1->brother)
     {
         if (tmp1 == node)
@@ -1055,11 +1055,11 @@ find_father(rcf_pch_cfg_object *node, rcf_pch_cfg_object *ancestor,
             *brother = tmp2;
             return ancestor;
         }
-        
+
         if ((tmp2 = find_father(node, tmp1, brother)) != NULL)
             return tmp2;
     }
-    
+
     return NULL;
 }
 
@@ -1070,13 +1070,13 @@ find_father(rcf_pch_cfg_object *node, rcf_pch_cfg_object *ancestor,
  *
  * @return Status code
  */
-te_errno 
+te_errno
 rcf_pch_del_node(rcf_pch_cfg_object *node)
 {
     rcf_pch_cfg_object *brother;
-    rcf_pch_cfg_object *father = find_father(node, rcf_pch_conf_root(), 
+    rcf_pch_cfg_object *father = find_father(node, rcf_pch_conf_root(),
                                              &brother);
-    
+
     if (father == NULL)
     {
         VERB("Failed to find node family");
@@ -1110,19 +1110,19 @@ rcf_pch_del_node(rcf_pch_cfg_object *node)
      *                              function because we did not register
      *                              'pppoeserver'.
      */
-    node->brother = NULL; 
+    node->brother = NULL;
 
     return 0;
 }
 
 /** Information about dynamically grabbed resource - see rcf_pch.h */
 typedef struct rsrc_info {
-    struct rsrc_info *next;     
-    
+    struct rsrc_info *next;
+
     const char                   *name; /**< Generic resource name */
     rcf_pch_rsrc_grab_callback    grab; /**< Grab callback */
     rcf_pch_rsrc_release_callback release; /**< Release callback */
-} rsrc_info;    
+} rsrc_info;
 
 /** Information about all dynamically grabbed resources */
 static rsrc_info *rsrc_info_list;
@@ -1132,12 +1132,12 @@ static rsrc_info *
 rsrc_lookup(const char *name)
 {
     rsrc_info *tmp;
-    
+
     for (tmp = rsrc_info_list; tmp != NULL && name != NULL; tmp = tmp->next)
         if (strcmp(name, tmp->name) == 0)
             return tmp;
-            
-    return NULL;            
+
+    return NULL;
 }
 
 /**
@@ -1149,44 +1149,44 @@ rsrc_lookup(const char *name)
  *
  * @return Status code
  */
-te_errno 
-rcf_pch_rsrc_info(const char *name, 
+te_errno
+rcf_pch_rsrc_info(const char *name,
                   rcf_pch_rsrc_grab_callback grab,
                   rcf_pch_rsrc_release_callback release)
 {
     rsrc_info *tmp;
-    
+
     if (name == NULL || grab == NULL)
         return TE_RC(TE_RCF_PCH, TE_EINVAL);
-        
+
     if (rsrc_lookup(name) != NULL)
         return TE_RC(TE_RCF_PCH, TE_EEXIST);
-        
+
     if ((tmp = malloc(sizeof(*tmp))) == NULL)
         return TE_RC(TE_RCF_PCH, TE_ENOMEM);
-      
+
     if ((tmp->name = strdup(name)) == NULL)
     {
         free(tmp);
         return TE_RC(TE_RCF_PCH, TE_ENOMEM);
     }
-    
+
     tmp->grab = grab;
     tmp->release = release;
     tmp->next = rsrc_info_list;
     rsrc_info_list = tmp;
-    
-    return 0;
-}           
 
-te_errno 
+    return 0;
+}
+
+te_errno
 rcf_pch_rsrc_grab_dummy(const char *name)
 {
     UNUSED(name);
     return 0;
 }
 
-te_errno 
+te_errno
 rcf_pch_rsrc_release_dummy(const char *name)
 {
     UNUSED(name);
@@ -1230,14 +1230,14 @@ rsrc_lock_path(const char *name, char *path, size_t pathlen)
     const char     *lock_name = rsrc_lock_name(name);
     unsigned int    i;
 
-    if (snprintf(path, pathlen, "%s/te_ta_lock_%s", 
+    if (snprintf(path, pathlen, "%s/te_ta_lock_%s",
                  te_lockdir, lock_name) >= (int)pathlen)
     {
-        ERROR("Too long pathname for lock: %s/te_ta_lock_%s", 
+        ERROR("Too long pathname for lock: %s/te_ta_lock_%s",
               te_lockdir, lock_name);
         return NULL;
     }
-    
+
     for (i = strlen(te_lockdir) + 1; path[i] != '\0'; i++)
         if (path[i] == '/')
             path[i] = '%';
@@ -1279,7 +1279,7 @@ check_lock(const char *fname, te_bool error)
             return TE_RC(TE_RCF_PCH, rc);
         }
     }
-        
+
     rc = fread(buf, 1, sizeof(buf) - 1, f);
     fclose(f);
     if (rc <= 0 || (pid = atoi(buf)) == 0)
@@ -1301,7 +1301,7 @@ check_lock(const char *fname, te_bool error)
         if (unlink(fname) != 0)
         {
             rc = TE_OS_RC(TE_RCF_PCH, errno);
-        
+
             ERROR("Failed to delete lock %s of dead TA: %r", fname, rc);
             return TE_RC(TE_RCF_PCH, TE_EPERM);
         }
@@ -1380,7 +1380,7 @@ ta_rsrc_create_lock(const char *name)
             ERROR("Cannot grab resource %s", name);
             return rc;
     }
-    
+
     if ((f = fopen(fname, "w")) == NULL)
     {
         rc = TE_OS_RC(TE_RCF_PCH, errno);
@@ -1396,15 +1396,15 @@ ta_rsrc_create_lock(const char *name)
         rc = TE_OS_RC(TE_RCF_PCH, errno);
         unlink(fname);
     }
-    
+
     if (rc != 0)
     {
         ERROR("Failed to create resource lock %s: %r", fname, rc);
         return rc;
     }
-    
+
     return 0;
-} 
+}
 
 /*
  * Delete a lock for the resource with specified name.
@@ -1416,7 +1416,7 @@ ta_rsrc_delete_lock(const char *name)
 {
     char    fname[RCF_MAX_PATH];
     int     rc;
-    
+
     if (rsrc_lock_path(name, fname, sizeof(fname)) == NULL)
         return;
 
@@ -1431,7 +1431,7 @@ typedef struct rsrc {
     struct rsrc *next;  /**< Next element in the list */
     char        *id;    /**< Name of the instance in the OID */
     char        *name;  /**< Resource name (instance value) */
-} rsrc;    
+} rsrc;
 
 /** List of registered resources */
 static rsrc *rsrc_lst;
@@ -1457,20 +1457,20 @@ rsrc_list(unsigned int gid, const char *oid,
     char *buf = calloc(1, len);
     int   offset = 0;
     rsrc *tmp;
-    
+
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(sub_id);
-    
+
     if (buf == NULL)
         return TE_RC(TE_RCF_PCH, TE_ENOMEM);
-        
+
     for (tmp = rsrc_lst; tmp != NULL; tmp = tmp->next)
     {
         if (len - offset <= (int)strlen(tmp->id) + 2)
         {
             char *new_buf;
-            
+
             len += MEM_BULK;
             if ((new_buf = realloc(buf, len)) == NULL)
             {
@@ -1480,11 +1480,11 @@ rsrc_list(unsigned int gid, const char *oid,
         }
         offset += sprintf(buf + offset, "%s ", tmp->id);
     }
-    
+
     *list = buf;
 
     return 0;
-#undef MEM_BULK    
+#undef MEM_BULK
 }
 
 /**
@@ -1492,7 +1492,7 @@ rsrc_list(unsigned int gid, const char *oid,
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
- * @param value         name location 
+ * @param value         name location
  * @param id            resource instance name
  *
  * @return Status code
@@ -1504,22 +1504,22 @@ rsrc_get(unsigned int gid, const char *oid, char *value, const char *id)
 
     UNUSED(gid);
     UNUSED(oid);
-    
+
     for (tmp = rsrc_lst; tmp != NULL; tmp = tmp->next)
         if (strcmp(tmp->id, id) == 0)
         {
             snprintf(value, RCF_MAX_VAL, "%s", tmp->name);
             return 0;
         }
-            
+
     return TE_RC(TE_RCF_PCH, TE_ENOENT);
 }
 
-/** 
+/**
  * Convert resource name to generic resource name.
  *
  * @param name  resource name
- * 
+ *
  * @return Generic name or NULL in the case of incorrect name
  *
  * @note non-reenterable
@@ -1528,19 +1528,19 @@ static char *
 rsrc_gen_name(const char *name)
 {
     static char buf[CFG_OID_MAX];
-    
+
     *buf = 0;
-    
+
     if (name == NULL)
         return NULL;
-    
+
     if (strchr(name, '/') == NULL || strchr(name, ':') == NULL)
         return (char *)name;
-        
+
     cfg_oid_inst2obj(name, buf);
     if (*buf == 0)
         return NULL;
-        
+
     return buf;
 }
 
@@ -1561,12 +1561,12 @@ rsrc_add(unsigned int gid, const char *oid, const char *value,
     rsrc *tmp = NULL;
     char  s[RCF_MAX_NAME];
     int   rc;
-    
+
     rsrc_info *info;
-    
+
     UNUSED(gid);
     UNUSED(oid);
-    
+
 #define RETERR(rc) \
     do {                                \
         if (tmp != NULL)                \
@@ -1577,16 +1577,16 @@ rsrc_add(unsigned int gid, const char *oid, const char *value,
         }                               \
         return TE_RC(TE_RCF_PCH, rc);        \
     } while (0)
-    
+
     if ((info = rsrc_lookup(rsrc_gen_name(value))) == NULL)
     {
         ERROR("Unknown resource %s", value);
         RETERR(TE_EINVAL);
     }
-    
+
     if (rcf_pch_rsrc_accessible(value) || rsrc_get(0, NULL, s, id) == 0)
         RETERR(TE_EEXIST);
-    
+
     if ((tmp = calloc(sizeof(*tmp), 1)) == NULL ||
         (tmp->id = strdup(id)) == NULL ||
         (tmp->name = strdup(value)) == NULL)
@@ -1597,22 +1597,22 @@ rsrc_add(unsigned int gid, const char *oid, const char *value,
 #ifndef __CYGWIN__
     if ((rc = ta_rsrc_create_lock(tmp->name)) != 0)
         RETERR(rc);
-#endif        
-        
+#endif
+
     if ((rc = info->grab(tmp->name)) != 0)
     {
 #ifndef __CYGWIN__
         ta_rsrc_delete_lock(tmp->name);
-#endif        
+#endif
         RETERR(rc);
     }
-    
+
     tmp->next = rsrc_lst;
     rsrc_lst = tmp;
-    
+
     return 0;
-    
-#undef RETERR    
+
+#undef RETERR
 }
 
 /**
@@ -1632,8 +1632,8 @@ rsrc_del(unsigned int gid, const char *oid, const char *id)
     UNUSED(gid);
     UNUSED(oid);
 
-    for (cur = rsrc_lst, prev = NULL; 
-         cur != NULL; 
+    for (cur = rsrc_lst, prev = NULL;
+         cur != NULL;
          prev = cur, cur = cur->next)
     {
         if (strcmp(id, cur->id) == 0)
@@ -1646,33 +1646,33 @@ rsrc_del(unsigned int gid, const char *oid, const char *id)
                 ERROR("Resource structures of RCFPCH are corrupted");
                 return TE_RC(TE_RCF_PCH, TE_EFAIL);
             }
-            
+
             if (info->release == NULL)
             {
                 ERROR("Cannot release the resource %s: release callback "
                       "is not provided", cur->name);
                 return TE_RC(TE_RCF_PCH, TE_EPERM);
             }
-            
+
             if ((rc = info->release(cur->name)) != 0)
                 return rc;
-                
+
 #ifndef __CYGWIN__
             ta_rsrc_delete_lock(cur->name);
 #endif
-                
+
             if (prev != NULL)
                 prev->next = cur->next;
             else
                 rsrc_lst = cur->next;
-            
+
             free(cur->name);
             free(cur->id);
             free(cur);
             return 0;
         }
     }
-    
+
     return TE_RC(TE_RCF_PCH, TE_ENOENT);
 }
 
@@ -1685,13 +1685,13 @@ rsrc_del(unsigned int gid, const char *oid, const char *id)
  *
  * @note The function should be called from TA main thread only.
  */
-te_bool 
+te_bool
 rcf_pch_rsrc_accessible(const char *fmt, ...)
 {
     va_list ap;
     rsrc   *tmp;
     char    buf[RCF_MAX_VAL];
-    
+
     if (fmt == NULL)
         return FALSE;
 
@@ -1702,7 +1702,7 @@ rcf_pch_rsrc_accessible(const char *fmt, ...)
         return FALSE;
     }
     va_end(ap);
-    
+
     for (tmp = rsrc_lst; tmp != NULL; tmp = tmp->next)
     {
         VERB("%s(): check '%s' vs '%s'", __FUNCTION__, tmp->name, buf);
@@ -1713,7 +1713,7 @@ rcf_pch_rsrc_accessible(const char *fmt, ...)
         }
     }
     VERB("%s(): no match", __FUNCTION__);
-            
+
     return FALSE;
 }
 
@@ -1724,10 +1724,10 @@ static rcf_pch_cfg_object node_rsrc =
       (rcf_ch_cfg_add)rsrc_add, (rcf_ch_cfg_del)rsrc_del,
       (rcf_ch_cfg_list)rsrc_list, NULL, NULL };
 
-/** 
+/**
  * Link resource configuration tree.
  */
-void 
+void
 rcf_pch_rsrc_init(void)
 {
     rcf_pch_add_node("/agent", &node_rsrc);
