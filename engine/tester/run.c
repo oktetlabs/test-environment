@@ -839,6 +839,13 @@ test_params_to_json(const unsigned int n_args, const test_iter_arg *args)
         }
     }
 
+    /* Can happen if all params are variables */
+    if (json_array_size(result) == 0)
+    {
+        json_decref(result);
+        return NULL;
+    }
+
     return result;
 }
 
