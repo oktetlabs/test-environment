@@ -420,6 +420,8 @@ log_mi_test_start(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
 
     if (data->objective != NULL)
         fprintf(fd, "\nObjective: %s", data->objective);
+    if (data->page != NULL)
+        fprintf(fd, "\nPage: %s", data->page);
     if (data->tin != -1)
         fprintf(fd, "\nTIN: %d", data->tin);
     if (data->hash != NULL)

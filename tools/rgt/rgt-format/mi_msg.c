@@ -539,6 +539,7 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
     json_t *params = NULL;
     json_t *authors = NULL;
     json_t *objective = NULL;
+    json_t *page = NULL;
     json_t *tin = NULL;
     json_t *hash = NULL;
     json_t *item;
@@ -561,7 +562,7 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
     }
 
     ret = json_unpack_ex(root, &err, JSON_STRICT,
-                         "{s:i, s:i, s:s, s?o, s?o, s?o, s?o, s?o, s?o}",
+                         "{s:i, s:i, s:s, s?o, s?o, s?o, s?o, s?o, s?o, s?o}",
                          "id", &data->node_id,
                          "parent", &data->parent_id,
                          "node_type", &data->node_type,
@@ -569,6 +570,7 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
                          "params", &params,
                          "authors", &authors,
                          "objective", &objective,
+                         "page", &page,
                          "tin", &tin,
                          "hash", &hash);
     if (ret != 0)
@@ -584,6 +586,7 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
         !check_json_type(mi, &params, JSON_ARRAY, "params") ||
         !check_json_type(mi, &authors, JSON_ARRAY, "authors") ||
         !check_json_type(mi, &objective, JSON_STRING, "objective") ||
+        !check_json_type(mi, &page, JSON_STRING, "page") ||
         !check_json_type(mi, &tin, JSON_INTEGER, "tin") ||
         !check_json_type(mi, &hash, JSON_STRING, "hash"))
         goto cleanup;
@@ -592,6 +595,8 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
         data->name = json_string_value(name);
     if (objective != NULL)
         data->objective = json_string_value(objective);
+    if (page != NULL)
+        data->page = json_string_value(page);
     if (tin != NULL)
         data->tin = json_integer_value(tin);
     else

@@ -113,6 +113,7 @@ typedef struct te_rgt_mi_test_start {
     te_rgt_mi_person *authors;    /**< Array of authors */
     size_t            authors_num;/**< Number of authors */
     const char       *objective;  /**< Objective */
+    const char       *page;       /**< Page */
     int               tin;        /**< Test Iteration Number */
     const char       *hash;       /**< Hash */
 } te_rgt_mi_test_start;
