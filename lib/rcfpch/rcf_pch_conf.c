@@ -52,6 +52,7 @@
 #include "rcf_common.h"
 #include "rcf_pch.h"
 #include "rcf_ch_api.h"
+#include "te_str.h"
 
 #define OID_ETC "/..."
 
@@ -1436,6 +1437,25 @@ typedef struct rsrc {
 /** List of registered resources */
 static rsrc *rsrc_lst;
 
+static te_errno
+rsrc_find_by_id(const char *id, rsrc **resource)
+{
+    rsrc *tmp;
+
+    for (tmp = rsrc_lst; tmp != NULL; tmp = tmp->next)
+    {
+        if (strcmp(tmp->id, id) == 0)
+        {
+            if (resource != NULL)
+                *resource = tmp;
+
+            return 0;
+        }
+    }
+
+    return TE_RC(TE_RCF_PCH, TE_ENOENT);
+}
+
 /**
  * Get instance list for object "/agent/rsrc".
  *
@@ -1501,18 +1521,17 @@ static te_errno
 rsrc_get(unsigned int gid, const char *oid, char *value, const char *id)
 {
     rsrc *tmp;
+    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
 
-    for (tmp = rsrc_lst; tmp != NULL; tmp = tmp->next)
-        if (strcmp(tmp->id, id) == 0)
-        {
-            snprintf(value, RCF_MAX_VAL, "%s", tmp->name);
-            return 0;
-        }
+    rc = rsrc_find_by_id(id, &tmp);
+    if (rc != 0)
+        return rc;
 
-    return TE_RC(TE_RCF_PCH, TE_ENOENT);
+    te_strlcpy(value, tmp->name == NULL ? "" : tmp->name, RCF_MAX_VAL);
+    return 0;
 }
 
 /**
@@ -1545,7 +1564,7 @@ rsrc_gen_name(const char *name)
 }
 
 /**
- * Add a resource.
+ * Lock/unlock resource.
  *
  * @param gid           group identifier (unused)
  * @param oid           full object instence identifier (unused)
@@ -1555,64 +1574,80 @@ rsrc_gen_name(const char *name)
  * @return Status code
  */
 static te_errno
-rsrc_add(unsigned int gid, const char *oid, const char *value,
+rsrc_set(unsigned int gid, const char *oid, const char *value,
          const char *id)
 {
-    rsrc *tmp = NULL;
-    char  s[RCF_MAX_NAME];
-    int   rc;
-
+    char *name_to_set = NULL;
+    const char *rsrc_name;
     rsrc_info *info;
+    te_errno rc;
+    rsrc *tmp;
 
     UNUSED(gid);
     UNUSED(oid);
 
-#define RETERR(rc) \
-    do {                                \
-        if (tmp != NULL)                \
-        {                               \
-            free(tmp->id);              \
-            free(tmp->name);            \
-            free(tmp);                  \
-        }                               \
-        return TE_RC(TE_RCF_PCH, rc);        \
-    } while (0)
+    rc = rsrc_find_by_id(id, &tmp);
+    if (rc != 0)
+        return rc;
 
-    if ((info = rsrc_lookup(rsrc_gen_name(value))) == NULL)
+    if (tmp->name == NULL && *value == '\0')
+        return 0;
+
+    if (tmp->name != NULL && *value != '\0')
     {
-        ERROR("Unknown resource %s", value);
-        RETERR(TE_EINVAL);
+        ERROR("Cannot change resource '%s' value from '%s' to '%s'",
+              tmp->id, tmp->name, value);
+        return TE_RC(TE_RCF_PCH, TE_EINVAL);
     }
 
-    if (rcf_pch_rsrc_accessible(value) || rsrc_get(0, NULL, s, id) == 0)
-        RETERR(TE_EEXIST);
+    rsrc_name = tmp->name != NULL ? tmp->name : value;
 
-    if ((tmp = calloc(sizeof(*tmp), 1)) == NULL ||
-        (tmp->id = strdup(id)) == NULL ||
-        (tmp->name = strdup(value)) == NULL)
+    if ((info = rsrc_lookup(rsrc_gen_name(rsrc_name))) == NULL)
     {
-        RETERR(TE_ENOMEM);
+        ERROR("Unknown resource '%s'", rsrc_name);
+        return TE_RC(TE_RCF_PCH, TE_ENOENT);
     }
+
+    if (*value != '\0')
+    {
+        if (rcf_pch_rsrc_accessible("%s", value))
+            return TE_RC(TE_RCF_PCH, TE_EEXIST);
+
+        name_to_set = strdup(value);
+        if (name_to_set == NULL)
+            return TE_RC(TE_RCF_PCH, TE_ENOMEM);
 
 #ifndef __CYGWIN__
-    if ((rc = ta_rsrc_create_lock(tmp->name)) != 0)
-        RETERR(rc);
+        if ((rc = ta_rsrc_create_lock(value)) != 0)
+        {
+            free(name_to_set);
+            return rc;
+        }
 #endif
 
-    if ((rc = info->grab(tmp->name)) != 0)
+        if ((rc = info->grab(value)) != 0)
+        {
+#ifndef __CYGWIN__
+            ta_rsrc_delete_lock(value);
+#endif
+            free(name_to_set);
+            return rc;
+        }
+    }
+    else
     {
 #ifndef __CYGWIN__
         ta_rsrc_delete_lock(tmp->name);
 #endif
-        RETERR(rc);
+        rc = info->release(tmp->name);
+        if (rc != 0)
+            return rc;
     }
 
-    tmp->next = rsrc_lst;
-    rsrc_lst = tmp;
+    free(tmp->name);
+    tmp->name = name_to_set;
 
     return 0;
-
-#undef RETERR
 }
 
 /**
@@ -1641,25 +1676,28 @@ rsrc_del(unsigned int gid, const char *oid, const char *id)
             rsrc_info *info;
             int        rc;
 
-            if ((info = rsrc_lookup(rsrc_gen_name(cur->name))) == NULL)
+            if (cur->name != NULL)
             {
-                ERROR("Resource structures of RCFPCH are corrupted");
-                return TE_RC(TE_RCF_PCH, TE_EFAIL);
-            }
+                if ((info = rsrc_lookup(rsrc_gen_name(cur->name))) == NULL)
+                {
+                    ERROR("Resource structures of RCFPCH are corrupted");
+                    return TE_RC(TE_RCF_PCH, TE_EFAIL);
+                }
 
-            if (info->release == NULL)
-            {
-                ERROR("Cannot release the resource %s: release callback "
-                      "is not provided", cur->name);
-                return TE_RC(TE_RCF_PCH, TE_EPERM);
-            }
+                if (info->release == NULL)
+                {
+                    ERROR("Cannot release the resource %s: release callback "
+                          "is not provided", cur->name);
+                    return TE_RC(TE_RCF_PCH, TE_EPERM);
+                }
 
-            if ((rc = info->release(cur->name)) != 0)
-                return rc;
+                if ((rc = info->release(cur->name)) != 0)
+                    return rc;
 
 #ifndef __CYGWIN__
-            ta_rsrc_delete_lock(cur->name);
+                ta_rsrc_delete_lock(cur->name);
 #endif
+            }
 
             if (prev != NULL)
                 prev->next = cur->next;
@@ -1674,6 +1712,56 @@ rsrc_del(unsigned int gid, const char *oid, const char *id)
     }
 
     return TE_RC(TE_RCF_PCH, TE_ENOENT);
+}
+
+/**
+ * Add a resource.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         resource name
+ * @param id            instance name
+ *
+ * @return Status code
+ */
+static te_errno
+rsrc_add(unsigned int gid, const char *oid, const char *value,
+         const char *id)
+{
+    rsrc *tmp = NULL;
+
+    if (rsrc_find_by_id(id, NULL) == 0)
+        return TE_RC(TE_RCF_PCH, TE_EEXIST);
+
+    if ((tmp = calloc(sizeof(*tmp), 1)) == NULL ||
+        (tmp->id = strdup(id)) == NULL)
+    {
+        if (tmp != NULL)
+        {
+            free(tmp->id);
+            free(tmp);
+        }
+
+        return TE_RC(TE_RCF_PCH, TE_ENOMEM);
+    }
+
+    tmp->next = rsrc_lst;
+    rsrc_lst = tmp;
+
+    /* Resource is locked only if the resource name is set */
+    if (*value != '\0')
+    {
+        te_errno rc;
+
+        rc = rsrc_set(gid, oid, value, id);
+        if (rc != 0)
+        {
+            rsrc_del(gid, oid, id);
+            return rc;
+        }
+    }
+
+    return 0;
 }
 
 /**
@@ -1706,7 +1794,7 @@ rcf_pch_rsrc_accessible(const char *fmt, ...)
     for (tmp = rsrc_lst; tmp != NULL; tmp = tmp->next)
     {
         VERB("%s(): check '%s' vs '%s'", __FUNCTION__, tmp->name, buf);
-        if (strcmp(tmp->name, buf) == 0)
+        if (tmp->name != NULL && strcmp(tmp->name, buf) == 0)
         {
             VERB("%s(): match", __FUNCTION__);
             return TRUE;
