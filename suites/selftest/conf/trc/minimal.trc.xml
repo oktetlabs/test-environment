@@ -15,6 +15,13 @@
                 <notes/>
             </iter>
         </test>
+        <test name="mi_meas_line_graph" type="script">
+            <objective>Demo of using line-graph views with MI measurement artifacts</objective>
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
         <test name="verdict" type="script">
             <objective/>
             <notes/>

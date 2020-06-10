@@ -39,6 +39,8 @@ foreach lib : te_libs
     test_deps += cc.find_library(lib, dirs: te_libdir)
 endforeach
 
+test_deps += cc.find_library('m')
+
 tests = [
     'prologue',
 ]

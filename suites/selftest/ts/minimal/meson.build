@@ -4,6 +4,7 @@ tests = [
     'helloworld',
     'artifact',
     'verdict',
+    'mi_meas_line_graph'
 ]
 
 foreach test : tests

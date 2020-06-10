@@ -13,5 +13,8 @@
         <run>
             <script name="verdict"/>
         </run>
+        <run>
+            <script name="mi_meas_line_graph"/>
+        </run>
     </session>
 </package>
