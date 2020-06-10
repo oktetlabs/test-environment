@@ -31,6 +31,12 @@
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
 #if HAVE_STDARG_H
 #include <stdarg.h>
 #endif
@@ -53,6 +59,8 @@
 #include "rcf_pch.h"
 #include "rcf_ch_api.h"
 #include "te_str.h"
+#include "te_vector.h"
+#include "te_alloc.h"
 
 #define OID_ETC "/..."
 
@@ -1246,26 +1254,352 @@ rsrc_lock_path(const char *name, char *path, size_t pathlen)
     return path;
 }
 
-/**
- * Check if lock with specified path exists.
+typedef enum rsrc_lock_type {
+    RSRC_LOCK_SHARED,
+    RSRC_LOCK_EXCLUSIVE,
+    RSRC_LOCK_UNDEFINED,
+} rsrc_lock_type;
+
+static const char *rsrc_lock_type_names[] = {
+    [RSRC_LOCK_SHARED] = "shared",
+    [RSRC_LOCK_EXCLUSIVE] = "exclusive",
+    [RSRC_LOCK_UNDEFINED] = "undefined",
+};
+
+typedef struct rsrc_lock {
+    rsrc_lock_type type; /**< Lock type */
+    te_vec pids; /**< Vector of PIDs of processes that hold the lock. */
+} rsrc_lock;
+
+static te_errno
+delete_rsrc_lock_file(const char *fname)
+{
+    te_errno rc;
+
+    if (unlink(fname) != 0)
+    {
+        rc = TE_OS_RC(TE_RCF_PCH, errno);
+
+        ERROR("Failed to delete lock %s: %r", fname, rc);
+        return rc;
+    }
+
+    return 0;
+}
+
+static te_errno
+update_rsrc_lock_file(rsrc_lock *lock, const char *fname, int fd)
+{
+    te_string str = TE_STRING_INIT;
+    te_bool empty = TRUE;
+    te_errno rc;
+    pid_t *pid;
+
+    TE_VEC_FOREACH(&lock->pids, pid)
+    {
+        if (*pid >= 0)
+        {
+            empty = FALSE;
+            break;
+        }
+    }
+
+    if (empty || lock->type == RSRC_LOCK_UNDEFINED)
+        return delete_rsrc_lock_file(fname);
+
+    rc = te_string_append(&str, "%s", rsrc_lock_type_names[lock->type]);
+    if (rc != 0)
+        return rc;
+
+    TE_VEC_FOREACH(&lock->pids, pid)
+    {
+        rc = te_string_append(&str, " %u", (unsigned int)*pid);
+        if (rc != 0)
+        {
+            te_string_free(&str);
+            return rc;
+        }
+    }
+
+    if (ftruncate(fd, 0) != 0 ||
+        pwrite(fd, str.ptr, str.len, 0) != (ssize_t)str.len)
+    {
+        te_string_free(&str);
+        return TE_RC(TE_RCF_PCH, TE_EFAIL);
+    }
+
+    return 0;
+}
+
+static rsrc_lock *
+alloc_rsrc_lock(rsrc_lock_type type)
+{
+    rsrc_lock *result;
+
+    result = TE_ALLOC(sizeof(*result));
+    if (result == NULL)
+        return NULL;
+
+    result->pids = TE_VEC_INIT(pid_t);
+    result->type = type;
+
+    return result;
+}
+
+static void
+free_rsrc_lock(rsrc_lock *lock)
+{
+    if (lock == NULL)
+        return;
+
+    te_vec_free(&lock->pids);
+    free(lock);
+}
+
+/*
+ * Add a process with @p my_pid to a lock in the mode specified
+ * by @p may_share.
  *
- * @param fname         Path to lock file
- * @param error         Generate error if lock is found or not
+ * @param lock          Existing lock
+ * @param may_share     Process wants to lock resource as shared (@c TRUE),
+ *                      or exclusive (@c FALSE)
+ * @param my_pid        PID of a process that needs a lock
+ *
+ * @return              Status code
+ */
+static te_errno
+add_rsrc_lock(rsrc_lock *lock, te_bool may_share, pid_t my_pid)
+{
+    te_bool has_my_pid = FALSE;
+    te_errno rc;
+    pid_t *pid;
+
+    if (te_vec_size(&lock->pids) > 0)
+    {
+        te_bool first_pid_mine = TE_VEC_GET(pid_t, &lock->pids, 0) == my_pid;
+
+        if (lock->type == RSRC_LOCK_UNDEFINED)
+        {
+            ERROR("Undefined state of a lock with PIDs");
+            return TE_RC(TE_RCF_PCH, TE_EINVAL);
+        }
+
+        if (may_share && lock->type == RSRC_LOCK_EXCLUSIVE && !first_pid_mine)
+            return TE_RC(TE_RCF_PCH, TE_EPERM);
+        else if (!may_share && (te_vec_size(&lock->pids) > 1 || !first_pid_mine))
+            return TE_RC(TE_RCF_PCH, TE_EPERM);
+    }
+
+    lock->type = may_share ? RSRC_LOCK_SHARED : RSRC_LOCK_EXCLUSIVE;
+
+    TE_VEC_FOREACH(&lock->pids, pid)
+    {
+        if (*pid == my_pid)
+            has_my_pid = TRUE;
+    }
+
+    if (!has_my_pid)
+    {
+        rc = TE_VEC_APPEND(&lock->pids, my_pid);
+        if (rc != 0)
+            return rc;
+    }
+
+    return 0;
+}
+
+/*
+ * Remove a provess with @p my_pid from a lock
+ *
+ * @param lock          Existing lock
+ * @param my_pid        PID
+ *
+ * @return              Status code
+ */
+static te_errno
+remove_rsrc_lock(rsrc_lock *lock, pid_t my_pid)
+{
+    te_bool my_pid_removed = FALSE;
+    size_t i;
+
+    for (i = 0; i < te_vec_size(&lock->pids); i++)
+    {
+        if (TE_VEC_GET(pid_t, &lock->pids, i) == my_pid)
+        {
+            te_vec_remove_index(&lock->pids, i);
+            my_pid_removed = TRUE;
+            break;
+        }
+    }
+
+    if (!my_pid_removed)
+    {
+        ERROR("Failed to remove lock, PID of the running TA is not found");
+        return TE_RC(TE_RCF_PCH, TE_EFAIL);
+    }
+
+    return 0;
+}
+
+static te_errno
+lock_rsrc_lock_file(int fd)
+{
+    struct flock lock;
+    te_errno rc;
+
+    lock.l_type = F_WRLCK;
+    lock.l_whence = SEEK_SET;
+    lock.l_start = 0;
+    lock.l_len = 0;
+
+    rc = fcntl(fd, F_SETLKW, &lock);
+    if (rc != 0)
+    {
+        WARN("Failed to lock resource lock file");
+        return TE_RC(TE_RCF_PCH, TE_EFAIL);
+    }
+
+    return 0;
+}
+
+/*
+ * Read resource lock file. PIDs of dead processes are excluded.
+ *
+ * @param fd        File descriptor of a lock file
+ * @param lock      Location for lock information
+ * @param my_pid    PID of a process that reads the file
  *
  * @return Status code.
- * @retval 0            Lock does not exist.
+ */
+static te_errno
+read_rsrc_lock_file(int fd, rsrc_lock **lock, pid_t my_pid)
+{
+    rsrc_lock *result = NULL;
+    char *data = NULL;
+    te_errno rc = 0;
+    off_t size;
+    char *p;
+
+    if ((size = lseek(fd, 0, SEEK_END)) < 0)
+    {
+        ERROR("Failed to seek in lock file");
+        rc = TE_RC(TE_RCF_PCH, TE_EFAIL);
+        goto out;
+    }
+
+    result = alloc_rsrc_lock(RSRC_LOCK_UNDEFINED);
+    if (result == NULL)
+    {
+        rc = TE_RC(TE_RCF_PCH, TE_ENOMEM);
+        goto out;
+    }
+
+    if (size == 0)
+    {
+        *lock = result;
+        rc = 0;
+        goto out;
+    }
+
+    /* Allocate with null terminator */
+    data = TE_ALLOC(size + 1);
+    if (data == NULL)
+    {
+        rc = TE_RC(TE_RCF_PCH, TE_ENOMEM);
+        goto out;
+    }
+
+    if (pread(fd, data, size, 0) != size)
+    {
+        ERROR("Failed to read lock file");
+        rc = TE_RC(TE_RCF_PCH, TE_EFAIL);
+        goto out;
+    }
+
+    if (strcmp_start(rsrc_lock_type_names[RSRC_LOCK_SHARED], data) == 0)
+    {
+        result->type = RSRC_LOCK_SHARED;
+    }
+    else if (strcmp_start(rsrc_lock_type_names[RSRC_LOCK_EXCLUSIVE], data) == 0)
+    {
+        result->type = RSRC_LOCK_EXCLUSIVE;
+    }
+    else
+    {
+        ERROR("Invalid lock file prefix format");
+        rc = TE_RC(TE_RCF_PCH, TE_EFAIL);
+        goto out;
+    }
+
+    p = data;
+    while ((p = strchr(p, ' ')) != NULL && *(++p) != '\0')
+    {
+        pid_t pid;
+
+        if ((pid = atoi(p)) == 0)
+        {
+            ERROR("Format of the lock file is not recognized");
+            rc = TE_RC(TE_RCF_PCH, TE_EPERM);
+            goto out;
+        }
+
+        /*
+         * Zero signal just check a possibility to send signal.
+         * Add pid to vector only if a process is running.
+         */
+        if (pid == my_pid || kill(pid, 0) == 0)
+        {
+            rc = TE_VEC_APPEND(&result->pids, pid);
+            if (rc != 0)
+            {
+                ERROR("Failed to append a PID to vector");
+                rc = TE_RC(TE_RCF_PCH, TE_EFAIL);
+                goto out;
+            }
+        }
+        else
+        {
+            WARN("Lock of a dead process %d is ignored", (int)pid);
+        }
+    }
+
+    *lock = result;
+
+out:
+    free(data);
+    if (rc != 0)
+    {
+        if (result != 0)
+            te_vec_free(&result->pids);
+
+        free(result);
+    }
+
+    return rc;
+}
+
+/**
+ * Check if lock with specified path exists and is owned by other agent
+ * processes. Other processes are the ones that have a PID other than @p my_pid.
+ *
+ * @param fname         Path to lock file
+ * @param my_pid        PID of a process to check lock for
+ *
+ * @return Status code.
+ * @retval 0            Lock does not exist or is owned only by the specified
+ *                      process (shared or exclusive).
  * @retval TE_EPERM     Lock of other process found.
  * @retval other        Unexpected failure.
  */
 te_errno
-check_lock(const char *fname, te_bool error)
+check_lock(const char *fname, pid_t my_pid)
 {
-    FILE   *f;
-    int     rc;
-    char    buf[16] = { 0, };
-    int     pid = 0;
+    rsrc_lock *lock = NULL;
+    te_errno rc = 0;
+    pid_t *pid;
+    int fd;
 
-    if ((f = fopen(fname, "r")) == NULL)
+    if ((fd = open(fname, O_RDWR)) < 0)
     {
         if (errno == ENOENT)
         {
@@ -1273,42 +1607,46 @@ check_lock(const char *fname, te_bool error)
         }
         else
         {
-            te_errno rc = te_rc_os2te(errno);
+            rc = te_rc_os2te(errno);
 
-            ERROR("%s(): fopen(%s, r) failed unexpectedly: %r",
+            ERROR("%s(): open(%s) failed unexpectedly: %r",
                   __FUNCTION__, fname, rc);
-            return TE_RC(TE_RCF_PCH, rc);
+            /*
+             * TE_EFAIL is used so that TE_EPERM is not returned here
+             * which means that lock of other process is found.
+             */
+            return TE_RC(TE_RCF_PCH, TE_EFAIL);
         }
     }
 
-    rc = fread(buf, 1, sizeof(buf) - 1, f);
-    fclose(f);
-    if (rc <= 0 || (pid = atoi(buf)) == 0)
-    {
-        ERROR("Format of the lock file %s is not recognized", fname);
-        return TE_RC(TE_RCF_PCH, TE_EPERM);
-    }
-    /* Zero signal just check a possibility to send signal */
-    if (pid != getpid())
-    {
-        if (kill(pid, 0) == 0)
-        {
-            if (error)
-               ERROR("Lock of the PID %d is found for %s",
-                     (int)pid, fname);
-            return TE_RC(TE_RCF_PCH, TE_EPERM);
-        }
-        /* Lock of dead process */
-        if (unlink(fname) != 0)
-        {
-            rc = TE_OS_RC(TE_RCF_PCH, errno);
+    rc = lock_rsrc_lock_file(fd);
+    if (rc != 0)
+        goto out;
 
-            ERROR("Failed to delete lock %s of dead TA: %r", fname, rc);
-            return TE_RC(TE_RCF_PCH, TE_EPERM);
-        }
-        WARN("Lock '%s' of dead TA with PID=%d is deleted", fname, pid);
+    rc = read_rsrc_lock_file(fd, &lock, my_pid);
+    if (rc != 0)
+    {
+        ERROR("Failed to read lock '%s'", fname);
+        goto out;
     }
-    return 0;
+
+    TE_VEC_FOREACH(&lock->pids, pid)
+    {
+        if (*pid != my_pid)
+        {
+            ERROR("Lock of the PID %d is found for %s", (int)*pid, fname);
+            rc = TE_RC(TE_RCF_PCH, TE_EPERM);
+            goto out;
+        }
+    }
+
+    rc = update_rsrc_lock_file(lock, fname, fd);
+
+out:
+    close(fd);
+    free_rsrc_lock(lock);
+
+    return rc;
 }
 
 /* See the description in rcf_pch.h */
@@ -1331,7 +1669,7 @@ rcf_pch_rsrc_check_locks(const char *rsrc_ptrn)
 
         for (i = 0; i < (int)gb.gl_pathc; ++i)
         {
-            rc = check_lock(gb.gl_pathv[i], TRUE);
+            rc = check_lock(gb.gl_pathv[i], getpid());
             if (rc != 0)
                 break;
         }
@@ -1353,58 +1691,69 @@ rcf_pch_rsrc_check_locks(const char *rsrc_ptrn)
 }
 
 /*
- * Create a lock for the resource with specified name.
+ * Update lock file for a resource.
+ * The lock is first found, then dead TA PIDs are removed from lock,
+ * then PID of current process is added/deleted (@p add_lock),
+ * then updated lock file is written (or removed if no PIDs are left).
  *
- * @param name     resource name
+ * @param name          Resource name
+ * @param shared     @c TRUE if resource is shared
+ * @param add_lock      @c TRUE - add lock @c FALSE - remove lock
+ * @param my_pid        PID of a process to update lock for
  *
- * @return Status code
+ * @return Status code.
  */
-te_errno
-ta_rsrc_create_lock(const char *name)
+static te_errno
+ta_rsrc_update_lock(const char *name, te_bool shared, te_bool add_lock,
+                    pid_t my_pid)
 {
     char        fname[RCF_MAX_PATH];
-    FILE       *f;
+    rsrc_lock  *lock = NULL;
+    int         fd;
     te_errno    rc = 0;
 
     if (rsrc_lock_path(name, fname, sizeof(fname)) == NULL)
         return TE_RC(TE_RCF_PCH, TE_ENAMETOOLONG);
 
-    rc = check_lock(fname, FALSE);
-    switch (TE_RC_GET_ERROR(rc))
+    if ((fd = open(fname, O_CREAT | O_RDWR, 0666)) < 0)
+        return TE_OS_RC(TE_RCF_PCH, errno);
+
+    rc = lock_rsrc_lock_file(fd);
+    if (rc != 0)
+        goto out;
+
+    rc = read_rsrc_lock_file(fd, &lock, my_pid);
+    if (rc != 0)
     {
-        case 0:
-            break;
-        case TE_EPERM:
-            WARN("Lock of other process is found for resource %s", name);
-            return TE_RC(TE_RCF_PCH, TE_EPERM);
-        default:
-            ERROR("Cannot grab resource %s", name);
-            return rc;
+        ERROR("Failed to read lock '%s'", fname);
+        goto out;
     }
 
-    if ((f = fopen(fname, "w")) == NULL)
-    {
-        rc = TE_OS_RC(TE_RCF_PCH, errno);
-    }
-    else if (fprintf(f, "%ld", (long)getpid()) < 0)
-    {
-        rc = TE_OS_RC(TE_RCF_PCH, errno);
-        fclose(f);
-        unlink(fname);
-    }
-    else if (fclose(f) < 0)
-    {
-        rc = TE_OS_RC(TE_RCF_PCH, errno);
-        unlink(fname);
-    }
+    if (add_lock)
+        rc = add_rsrc_lock(lock, shared, my_pid);
+    else
+        rc = remove_rsrc_lock(lock, my_pid);
 
     if (rc != 0)
     {
-        ERROR("Failed to create resource lock %s: %r", fname, rc);
-        return rc;
+        ERROR("Failed to %s %s lock", add_lock ? "acquire" : "release",
+              shared ? "shared" : "exclusive");
+        goto out;
     }
 
-    return 0;
+    rc = update_rsrc_lock_file(lock, fname, fd);
+
+out:
+    close(fd);
+    free_rsrc_lock(lock);
+
+    return rc;
+}
+
+te_errno
+ta_rsrc_create_lock(const char *name, te_bool shared)
+{
+    return ta_rsrc_update_lock(name, shared, TRUE, getpid());
 }
 
 /*
@@ -1413,17 +1762,9 @@ ta_rsrc_create_lock(const char *name)
  * @param name     resource name
  */
 void
-ta_rsrc_delete_lock(const char *name)
+ta_rsrc_delete_lock(const char *name, te_bool shared)
 {
-    char    fname[RCF_MAX_PATH];
-    int     rc;
-
-    if (rsrc_lock_path(name, fname, sizeof(fname)) == NULL)
-        return;
-
-    if ((rc = unlink(fname)) != 0)
-        ERROR("Failed to delete lock %s: %r", fname,
-              TE_OS_RC(TE_RCF_PCH, errno));
+    ta_rsrc_update_lock(name, shared, FALSE, getpid());
 }
 #endif /* !__CYGWIN__ */
 
@@ -1432,6 +1773,7 @@ typedef struct rsrc {
     struct rsrc *next;  /**< Next element in the list */
     char        *id;    /**< Name of the instance in the OID */
     char        *name;  /**< Resource name (instance value) */
+    te_bool      shared; /**< Resource is shared if @c TRUE */
 } rsrc;
 
 /** List of registered resources */
@@ -1610,7 +1952,7 @@ rsrc_set(unsigned int gid, const char *oid, const char *value,
 
     if (*value != '\0')
     {
-        if (rcf_pch_rsrc_accessible("%s", value))
+        if (rcf_pch_rsrc_accessible_may_share("%s", value))
             return TE_RC(TE_RCF_PCH, TE_EEXIST);
 
         name_to_set = strdup(value);
@@ -1618,7 +1960,7 @@ rsrc_set(unsigned int gid, const char *oid, const char *value,
             return TE_RC(TE_RCF_PCH, TE_ENOMEM);
 
 #ifndef __CYGWIN__
-        if ((rc = ta_rsrc_create_lock(value)) != 0)
+        if ((rc = ta_rsrc_create_lock(value, tmp->shared)) != 0)
         {
             free(name_to_set);
             return rc;
@@ -1628,7 +1970,7 @@ rsrc_set(unsigned int gid, const char *oid, const char *value,
         if ((rc = info->grab(value)) != 0)
         {
 #ifndef __CYGWIN__
-            ta_rsrc_delete_lock(value);
+            ta_rsrc_delete_lock(value, tmp->shared);
 #endif
             free(name_to_set);
             return rc;
@@ -1637,7 +1979,7 @@ rsrc_set(unsigned int gid, const char *oid, const char *value,
     else
     {
 #ifndef __CYGWIN__
-        ta_rsrc_delete_lock(tmp->name);
+        ta_rsrc_delete_lock(tmp->name, tmp->shared);
 #endif
         rc = info->release(tmp->name);
         if (rc != 0)
@@ -1695,7 +2037,7 @@ rsrc_del(unsigned int gid, const char *oid, const char *id)
                     return rc;
 
 #ifndef __CYGWIN__
-                ta_rsrc_delete_lock(cur->name);
+                ta_rsrc_delete_lock(cur->name, cur->shared);
 #endif
             }
 
@@ -1765,36 +2107,39 @@ rsrc_add(unsigned int gid, const char *oid, const char *value,
 }
 
 /**
- * Check if the resource is accessible.
+ * Check if the resource is accessible with given shared/exclusive access right.
  *
- * @param fmt   format string for resource name
+ * @param fmt           format string for resource name
+ * @param shared     check for accessibility
+ *                      in shared/exclusive (@c TRUE)
+ *                      or only exclusive (@c FALSE) mode.
  *
- * @return TRUE is the resource is accessible
+ * @return  TRUE is the resource is accessible with given shared/exclusive
+ *          access right
  *
  * @note The function should be called from TA main thread only.
  */
-te_bool
-rcf_pch_rsrc_accessible(const char *fmt, ...)
+static te_bool
+rsrc_accessible_generic(te_bool shared, const char *fmt, va_list ap)
 {
-    va_list ap;
     rsrc   *tmp;
     char    buf[RCF_MAX_VAL];
 
     if (fmt == NULL)
         return FALSE;
 
-    va_start(ap, fmt);
     if (vsnprintf(buf, sizeof(buf), fmt, ap) >= (int)sizeof(buf))
     {
         ERROR("Too long resource name");
         return FALSE;
     }
-    va_end(ap);
 
     for (tmp = rsrc_lst; tmp != NULL; tmp = tmp->next)
     {
-        VERB("%s(): check '%s' vs '%s'", __FUNCTION__, tmp->name, buf);
-        if (tmp->name != NULL && strcmp(tmp->name, buf) == 0)
+        VERB("%s(): check '%s'(%d) vs '%s'(%d)", __FUNCTION__,
+             tmp->name, tmp->shared, buf, shared);
+        if (tmp->name != NULL && strcmp(tmp->name, buf) == 0 &&
+            !(tmp->shared && !shared))
         {
             VERB("%s(): match", __FUNCTION__);
             return TRUE;
@@ -1805,10 +2150,111 @@ rcf_pch_rsrc_accessible(const char *fmt, ...)
     return FALSE;
 }
 
+te_bool
+rcf_pch_rsrc_accessible(const char *fmt, ...)
+{
+    va_list ap;
+    te_bool result;
+
+    va_start(ap, fmt);
+    result = rsrc_accessible_generic(FALSE, fmt, ap);
+    va_end(ap);
+
+    return result;
+}
+
+te_bool
+rcf_pch_rsrc_accessible_may_share(const char *fmt, ...)
+{
+    va_list ap;
+    te_bool result;
+
+    va_start(ap, fmt);
+    result = rsrc_accessible_generic(TRUE, fmt, ap);
+    va_end(ap);
+
+    return result;
+}
+
+/*
+ * Get shared property of a resource.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         property location
+ * @param id            resource instance name
+ *
+ * @return Status code
+ */
+static te_errno
+rsrc_shared_get(unsigned int gid, const char *oid, char *value,
+                   const char *id)
+{
+    te_errno rc;
+    rsrc *tmp;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = rsrc_find_by_id(id, &tmp);
+    if (rc != 0)
+        return rc;
+
+    te_strlcpy(value, tmp->shared ? "1" : "0", RCF_MAX_VAL);
+    return 0;
+}
+
+/*
+ * Set shared property of a resource.
+ *
+ * @param gid           group identifier (unused)
+ * @param oid           full object instence identifier (unused)
+ * @param value         property value
+ * @param id            instance name
+ *
+ * @return Status code
+ */
+static te_errno
+rsrc_shared_set(unsigned int gid, const char *oid, const char *value,
+                   const char *id)
+{
+    te_bool shared;
+    te_errno rc;
+    rsrc *tmp;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = te_strtol_bool(value, &shared);
+    if (rc != 0)
+        return rc;
+
+    rc = rsrc_find_by_id(id, &tmp);
+    if (rc != 0)
+        return rc;
+
+    if (tmp->name != NULL)
+    {
+        rc = ta_rsrc_create_lock(tmp->name, shared);
+        if (rc != 0)
+            return rc;
+    }
+
+    tmp->shared = shared;
+
+    return 0;
+}
+
+/** Resource's shared property node */
+static rcf_pch_cfg_object node_rsrc_shared =
+    { "shared", 0, NULL, NULL,
+      (rcf_ch_cfg_get)rsrc_shared_get, (rcf_ch_cfg_set)rsrc_shared_set,
+      NULL, NULL, NULL, NULL, NULL };
+
 /** Resource node */
 static rcf_pch_cfg_object node_rsrc =
-    { "rsrc", 0, NULL, NULL,
-      (rcf_ch_cfg_get)rsrc_get, NULL,
+    { "rsrc", 0, &node_rsrc_shared, NULL,
+      (rcf_ch_cfg_get)rsrc_get, (rcf_ch_cfg_set)rsrc_set,
       (rcf_ch_cfg_add)rsrc_add, (rcf_ch_cfg_del)rsrc_del,
       (rcf_ch_cfg_list)rsrc_list, NULL, NULL };
 

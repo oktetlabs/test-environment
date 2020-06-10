@@ -1,0 +1,33 @@
+---
+
+- comment: |
+    Internal Configurator information.
+
+    *WARNING* Must never be included. Used only for documentation purposes.
+
+    Copyright (C) 2003-2020 OKTET Labs.
+
+    Author: Igor Romanov  E-mail: Igor.Romanov@oktetlabs.ru
+
+- register:
+
+    - oid: "/agent/rsrc"
+      access: read_create
+      type: string
+      d: |
+         Dynamically grabbed Test Agent resource
+         Name: any
+         Value: name of the resource, e.g. "/agent:Agt_A/interface:eth0"
+                or "my_peripheral"; if value is not OID it
+                should not contain '/'
+
+    - oid: "/agent/rsrc/shared"
+      access: read_write
+      type: integer
+      d: |
+         Resource grabbing mode
+         Name: None
+         Value: 1 - set resource to shared, 0 - set to exclusive (default)
+                Shared property can be changed after a resource is grabbed
+                in different mode (e.g. promote shared to exclusive and vice
+                versa)

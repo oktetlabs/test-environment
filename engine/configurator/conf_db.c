@@ -25,6 +25,7 @@ enum cfg_obj_reserved_handles {
     CFG_OBJ_HANDLE_ROOT = 0,
     CFG_OBJ_HANDLE_AGENT,
     CFG_OBJ_HANDLE_RSRC,
+    CFG_OBJ_HANDLE_RSRC_SHARED,
     CFG_OBJ_HANDLE_CONF_DELAY,
     CFG_OBJ_HANDLE_CONF_DELAY_TA,
 
@@ -34,6 +35,7 @@ enum cfg_obj_reserved_handles {
 /* Forwards */
 static cfg_object cfg_obj_agent;
 static cfg_object cfg_obj_agent_rsrc;
+static cfg_object cfg_obj_agent_rsrc_shared;
 static cfg_object cfg_obj_conf_delay;
 static cfg_object cfg_obj_conf_delay_ta;
 
@@ -52,6 +54,12 @@ static cfg_object cfg_obj_agent =
 static cfg_object cfg_obj_agent_rsrc =
     { CFG_OBJ_HANDLE_RSRC, "/agent/rsrc", "rsrc",
       CVT_STRING, CFG_READ_CREATE, NULL, FALSE, &cfg_obj_agent,
+      &cfg_obj_agent_rsrc_shared, NULL, CFG_DEP_INITIALIZER };
+
+/** "/agent/rsrc/shared" object */
+static cfg_object cfg_obj_agent_rsrc_shared =
+    { CFG_OBJ_HANDLE_RSRC_SHARED, "/agent/rsrc/shared", "shared",
+      CVT_INTEGER, CFG_READ_WRITE, NULL, FALSE, &cfg_obj_agent_rsrc,
       NULL, NULL, CFG_DEP_INITIALIZER };
 
 /** "/conf_delay" object */
@@ -283,6 +291,7 @@ cfg_db_init(void)
     cfg_all_obj[CFG_OBJ_HANDLE_ROOT] = &cfg_obj_root;
     cfg_all_obj[CFG_OBJ_HANDLE_AGENT] = &cfg_obj_agent;
     cfg_all_obj[CFG_OBJ_HANDLE_RSRC] = &cfg_obj_agent_rsrc;
+    cfg_all_obj[CFG_OBJ_HANDLE_RSRC_SHARED] = &cfg_obj_agent_rsrc_shared;
     cfg_all_obj[CFG_OBJ_HANDLE_CONF_DELAY] = &cfg_obj_conf_delay;
     cfg_all_obj[CFG_OBJ_HANDLE_CONF_DELAY_TA] = &cfg_obj_conf_delay_ta;
     cfg_obj_root.son = &cfg_obj_agent;

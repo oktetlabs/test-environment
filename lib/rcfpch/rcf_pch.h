@@ -425,18 +425,30 @@ extern te_errno rcf_pch_rsrc_grab_dummy(const char *name);
 extern te_errno rcf_pch_rsrc_release_dummy(const char *name);
 
 /**
- * Check if the resource is accessible.
+ * Check if the resource is accessible in exclusive mode.
  *
  * @param fmt   format string for resource name
  *
- * @return TRUE is the resource is accessible
+ * @return TRUE is the resource is accessible in exclusive mode
  *
  * @note The function should be called from TA main thread only.
  */
 extern te_bool rcf_pch_rsrc_accessible(const char *fmt, ...);
 
 /**
- * Check if one of resources specified by glob pattern is locked.
+ * Check if the resource is accessible in shared or exclusive mode.
+ *
+ * @param fmt   format string for resource name
+ *
+ * @return TRUE is the resource is accessible in shared or exclusive mode
+ *
+ * @note The function should be called from TA main thread only.
+ */
+extern te_bool rcf_pch_rsrc_accessible_may_share(const char *fmt, ...);
+
+/**
+ * Check if one of resources specified by glob pattern is locked by other
+ * agents.
  *
  * @param rsrc_ptrn     Glob-style pattern of resourse name
  * 
