@@ -35,6 +35,113 @@
 #endif
 #include <netinet/if_ether.h>
 #endif
+#if HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+
+/**
+ * The minimum available port number
+ * Ports below may be used by standard services
+ */
+#define MIN_AVAILABLE_PORT  20000
+
+/**
+ * The maximum available port number
+ * Ports above can be used when the linux allocates a dynamic port
+ */
+#define MAX_AVAILABLE_PORT  (30000 - 1)
+
+#define AVAILABLE_PORT_COUNT (MAX_AVAILABLE_PORT - MIN_AVAILABLE_PORT + 1)
+
+/* Number of port in each bucket */
+#define PORTS_PER_BUCKET_COUNT 100
+
+/* Number of buckets */
+#define BUCKETS_COUNT (AVAILABLE_PORT_COUNT / PORTS_PER_BUCKET_COUNT)
+
+/* Used to initialize state only once for the TA */
+static te_bool initialization_needed = TRUE;
+/* Number of allocated ports for the TA */
+static unsigned int allocated_ports = 0;
+/* Current offset of the next port to allocate for the TA */
+static uint16_t port_offset;
+/* Mutex used to make port allocation thread-safe for the TA */
+static pthread_mutex_t alloc_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static te_errno
+agent_port_alloc_init(void)
+{
+    struct random_data buf = {0};
+    char statebuf[8];
+    int32_t rnd;
+
+    if (initstate_r(getpid(), statebuf, sizeof(statebuf), &buf) != 0 ||
+        random_r(&buf, &rnd) != 0)
+    {
+        te_errno rc = TE_OS_RC(TE_TA_UNIX, errno);
+
+        ERROR("Failed to initialize random number");
+        return rc;
+    }
+
+    port_offset = (rnd % BUCKETS_COUNT) * PORTS_PER_BUCKET_COUNT;
+    initialization_needed = FALSE;
+
+    return 0;
+}
+
+te_errno
+agent_alloc_l4_port(int socket_family, int socket_type, uint16_t *port)
+{
+    unsigned int n_ports_tried = 0;
+    uint16_t result;
+    te_errno rc;
+
+    pthread_mutex_lock(&alloc_lock);
+
+    if (initialization_needed)
+    {
+        rc = agent_port_alloc_init();
+        if (rc != 0)
+        {
+            pthread_mutex_unlock(&alloc_lock);
+            return rc;
+        }
+    }
+
+    do {
+        if (n_ports_tried++ > AVAILABLE_PORT_COUNT)
+        {
+            ERROR("Failed to allocate port from all available");
+            return TE_ENOBUFS;
+        }
+
+        result = MIN_AVAILABLE_PORT + port_offset;
+        port_offset = (port_offset + 1) % AVAILABLE_PORT_COUNT;
+    } while (!agent_check_l4_port_is_free(socket_family, socket_type, result));
+
+    allocated_ports++;
+    *port = result;
+
+    pthread_mutex_unlock(&alloc_lock);
+
+    return 0;
+}
+
+void
+agent_free_l4_port(uint16_t port)
+{
+    UNUSED(port);
+
+    pthread_mutex_lock(&alloc_lock);
+
+    if (allocated_ports > 0)
+        allocated_ports--;
+    else
+        ERROR("Failed to free a port, number of frees is greater than allocs");
+
+    pthread_mutex_unlock(&alloc_lock);
+}
 
 te_bool
 agent_check_l4_port_is_free(int socket_family, int socket_type, uint16_t port)

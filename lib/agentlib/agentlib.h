@@ -302,4 +302,26 @@ extern void run_vfork_hooks(enum vfork_hook_phase phase);
 extern te_bool agent_check_l4_port_is_free(int socket_family, int socket_type,
                                            uint16_t port);
 
+/**
+ * Allocate a TCP/UDP port for the TA.
+ *
+ * @param socket_family     Socket family to use for checking, @c AF_INET
+ *                          for IPv4 or @c AF_INET6 for IPv6
+ * @param socket_type       Socket type to use, @c SOCK_STREAM, @c SOCK_DGRAM,
+ *                          or @c 0 to check both.
+ * @param port[out]         Port number in host endian
+ *
+ * @return                  Status code
+ */
+extern te_errno agent_alloc_l4_port(int socket_family, int socket_type,
+                                    uint16_t *port);
+
+/**
+ * Free a TCP/UDP port for the TA.
+ * The API is used to free the ports allocated by agent_alloc_l4_port().
+ *
+ * @param port              Port number in host endian
+ */
+extern void agent_free_l4_port(uint16_t port);
+
 #endif /* __TE_AGENTLIB_H__ */
