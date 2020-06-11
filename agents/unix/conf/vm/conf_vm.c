@@ -140,14 +140,6 @@ static SLIST_HEAD(, vm_entry) vms = SLIST_HEAD_INITIALIZER(vms);
 static uint16_t guest_ssh_port; /* SSH port in host byte order */
 static te_bool kvm_supported;
 
-static uint16_t
-vm_alloc_tcp_port(void)
-{
-    static uint16_t tcp_port_next = 9320;
-
-    return tcp_port_next++;
-}
-
 static te_bool
 vm_is_running(struct vm_entry *vm)
 {
@@ -986,6 +978,9 @@ vm_free(struct vm_entry *vm)
         vm_device_free(device);
     }
 
+    agent_free_l4_port(vm->rcf_port);
+    agent_free_l4_port(vm->host_ssh_port);
+
     te_string_free(&vm->cmd);
     free(vm->mem_path);
     free(vm->machine);
@@ -1172,12 +1167,25 @@ vm_add(unsigned int gid, const char *oid, const char *value,
         vm_free(vm);
         return TE_RC(TE_TA_UNIX, rc);
     }
+
+    rc = agent_alloc_l4_port(AF_INET, SOCK_STREAM, &vm->host_ssh_port);
+    if (rc != 0)
+    {
+        vm_free(vm);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    rc = agent_alloc_l4_port(AF_INET, SOCK_STREAM, &vm->rcf_port);
+    if (rc != 0)
+    {
+        vm_free(vm);
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
     vm->cpu.num = 1;
 
     vm->kvm = kvm_supported;
-    vm->host_ssh_port = vm_alloc_tcp_port();
     vm->guest_ssh_port = guest_ssh_port;
-    vm->rcf_port = vm_alloc_tcp_port();
 
     vm->pid = -1;
     vm->serial = strdup("stdio");
