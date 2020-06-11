@@ -14,6 +14,7 @@ lib_LIBRARIES=lib@with_name@.a
 lib@with_name@_a_SOURCES=\
     process.c \
     ftp.c net.c \
+    l4_port.c \
     telephony.c \
     power_sw.c \
     symbols.c \

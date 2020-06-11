@@ -37,6 +37,7 @@ headers += files(
 sources += files(
     'ftp.c',
     'net.c',
+    'l4_port.c',
     'power_sw.c',
     'process.c',
     'symbols.c',

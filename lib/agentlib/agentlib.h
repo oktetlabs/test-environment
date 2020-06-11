@@ -288,5 +288,13 @@ enum vfork_hook_phase {
  */
 extern void run_vfork_hooks(enum vfork_hook_phase phase);
 
+/**
+ * Check that a given TCP or UDP port is not bound.
+ *
+ * @param port      Port number in host endian
+ *
+ * @return @c TRUE - Port is free
+ */
+extern te_bool agent_check_l4_port_is_free(uint16_t port);
 
 #endif /* __TE_AGENTLIB_H__ */

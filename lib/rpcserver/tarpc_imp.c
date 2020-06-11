@@ -1224,67 +1224,10 @@ TARPC_FUNC(bind, {},
 
 /*------------- rpc_check_port_is_free() ----------------*/
 
-/* Simple socket() and bind() are used instead of tarpc_find_func() to
- * resolve them from the current library.  It is done by purpose: all that
- * things happen at early stage of test, and we do not want to affect the
- * library under test. */
 te_bool
 check_port_is_free(uint16_t port)
 {
-    int pf = PF_INET6;
-    int fd;
-    int rc;
-    struct sockaddr_storage addr;
-    socklen_t addr_len;
-
-    fd = socket(pf, SOCK_STREAM, 0);
-    if (fd < 0 && errno == EAFNOSUPPORT) {
-        pf = PF_INET;
-        fd = socket(pf, SOCK_STREAM, 0);
-    }
-    if (fd < 0)
-    {
-        ERROR("Failed to create TCP socket");
-        return FALSE;
-    }
-
-    memset(&addr, 0, sizeof(addr));
-    if (pf == PF_INET6)
-    {
-        addr_len = sizeof(struct sockaddr_in6);
-        SIN6(&addr)->sin6_family = AF_INET6;
-        SIN6(&addr)->sin6_port = htons(port);
-    }
-    else
-    {
-        addr_len = sizeof(struct sockaddr_in);
-        SIN(&addr)->sin_family = AF_INET;
-        SIN(&addr)->sin_port = htons(port);
-    }
-    rc = bind(fd, SA(&addr), addr_len);
-    if (rc != 0)
-    {
-        close(fd);
-        return FALSE;
-    }
-
-    close(fd);
-    fd = socket(pf, SOCK_DGRAM, 0);
-    if (fd < 0)
-    {
-        ERROR("Failed to create UDP socket");
-        return FALSE;
-    }
-
-    rc = bind(fd, SA(&addr), addr_len);
-    if (rc != 0)
-    {
-        close(fd);
-        return FALSE;
-    }
-    close(fd);
-
-    return TRUE;
+    return agent_check_l4_port_is_free(port);
 }
 
 TARPC_FUNC(check_port_is_free, {},
