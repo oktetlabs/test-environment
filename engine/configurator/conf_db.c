@@ -20,6 +20,17 @@
 #define CFG_OBJ_NUM     64      /**< Number of objects */
 #define CFG_INST_NUM    128     /**< Number of object instances */
 
+/** Internal Configurator object handles */
+enum cfg_obj_reserved_handles {
+    CFG_OBJ_HANDLE_ROOT = 0,
+    CFG_OBJ_HANDLE_AGENT,
+    CFG_OBJ_HANDLE_RSRC,
+    CFG_OBJ_HANDLE_CONF_DELAY,
+    CFG_OBJ_HANDLE_CONF_DELAY_TA,
+
+    CFG_OBJ_HANDLE_NUM_RSRVD, /**< Number of internal configurator objects */
+};
+
 /* Forwards */
 static cfg_object cfg_obj_agent;
 static cfg_object cfg_obj_agent_rsrc;
@@ -28,31 +39,31 @@ static cfg_object cfg_obj_conf_delay_ta;
 
 /** Root of configuration objects */
 cfg_object cfg_obj_root =
-    { 0, "/", { 0 }, CVT_NONE, CFG_READ_ONLY, NULL, FALSE, NULL,
-      &cfg_obj_agent, NULL, CFG_DEP_INITIALIZER };
+    { CFG_OBJ_HANDLE_ROOT, "/", { 0 }, CVT_NONE, CFG_READ_ONLY, NULL, FALSE,
+      NULL, &cfg_obj_agent, NULL, CFG_DEP_INITIALIZER };
 
 /** "/agent" object */
 static cfg_object cfg_obj_agent =
-    { 1, "/agent", { 'a', 'g', 'e', 'n', 't', 0 },
+    { CFG_OBJ_HANDLE_AGENT, "/agent", { 'a', 'g', 'e', 'n', 't', 0 },
       CVT_NONE, CFG_READ_ONLY, NULL, FALSE, &cfg_obj_root,
       &cfg_obj_agent_rsrc, &cfg_obj_conf_delay, CFG_DEP_INITIALIZER };
 
 /** "/agent/rsrc" object */
 static cfg_object cfg_obj_agent_rsrc =
-    { 2, "/agent/rsrc", { 'r', 's', 'r', 'c', 0 },
+    { CFG_OBJ_HANDLE_RSRC, "/agent/rsrc", { 'r', 's', 'r', 'c', 0 },
       CVT_STRING, CFG_READ_CREATE, NULL, FALSE, &cfg_obj_agent,
       NULL, NULL, CFG_DEP_INITIALIZER };
 
 /** "/conf_delay" object */
 static cfg_object cfg_obj_conf_delay =
-    { 3, "/conf_delay",
+    { CFG_OBJ_HANDLE_CONF_DELAY, "/conf_delay",
       { 'c', 'o', 'n', 'f', '_', 'd', 'e', 'l', 'a', 'y', 0 },
       CVT_STRING, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_root,
       &cfg_obj_conf_delay_ta, NULL, CFG_DEP_INITIALIZER };
 
 /** "/conf_delay/ta" object */
 static cfg_object cfg_obj_conf_delay_ta =
-    { 4, "/conf_delay/ta", { 't', 'a', 0 },
+    { CFG_OBJ_HANDLE_CONF_DELAY_TA, "/conf_delay/ta", { 't', 'a', 0 },
       CVT_INTEGER, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_conf_delay,
       NULL, NULL, CFG_DEP_INITIALIZER };
 
@@ -270,11 +281,11 @@ cfg_db_init(void)
         return TE_ENOMEM;
     }
     cfg_all_obj_size = CFG_OBJ_NUM;
-    cfg_all_obj[0] = &cfg_obj_root;
-    cfg_all_obj[1] = &cfg_obj_agent;
-    cfg_all_obj[2] = &cfg_obj_agent_rsrc;
-    cfg_all_obj[3] = &cfg_obj_conf_delay;
-    cfg_all_obj[4] = &cfg_obj_conf_delay_ta;
+    cfg_all_obj[CFG_OBJ_HANDLE_ROOT] = &cfg_obj_root;
+    cfg_all_obj[CFG_OBJ_HANDLE_AGENT] = &cfg_obj_agent;
+    cfg_all_obj[CFG_OBJ_HANDLE_RSRC] = &cfg_obj_agent_rsrc;
+    cfg_all_obj[CFG_OBJ_HANDLE_CONF_DELAY] = &cfg_obj_conf_delay;
+    cfg_all_obj[CFG_OBJ_HANDLE_CONF_DELAY_TA] = &cfg_obj_conf_delay_ta;
     cfg_obj_root.son = &cfg_obj_agent;
     cfg_obj_agent.son = &cfg_obj_agent_rsrc;
     cfg_obj_agent_rsrc.brother = NULL;
@@ -321,7 +332,7 @@ cfg_db_destroy(void)
     cfg_all_inst = NULL;
 
     INFO("Destroy objects");
-    for (i = 5; i < cfg_all_obj_size; i++)
+    for (i = CFG_OBJ_HANDLE_NUM_RSRVD; i < cfg_all_obj_size; i++)
     {
         if (cfg_all_obj[i] != NULL)
         {
