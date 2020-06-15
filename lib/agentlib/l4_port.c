@@ -37,60 +37,80 @@
 #endif
 
 te_bool
-agent_check_l4_port_is_free(uint16_t port)
+agent_check_l4_port_is_free(int socket_family, int socket_type, uint16_t port)
 {
-    int pf = PF_INET6;
-    int fd;
-    int rc;
-    struct sockaddr_storage addr;
-    socklen_t addr_len;
+    static const int type[] = { SOCK_STREAM, SOCK_DGRAM };
+    static const int pf[] = { PF_INET, PF_INET6 };
+    static const int af[] = { AF_INET, AF_INET6 };
+    unsigned int family_id;
+    unsigned int type_id;
 
-    fd = socket(pf, SOCK_STREAM, 0);
-    if (fd < 0 && errno == EAFNOSUPPORT) {
-        pf = PF_INET;
-        fd = socket(pf, SOCK_STREAM, 0);
-    }
-    if (fd < 0)
+    switch (socket_family)
     {
-        ERROR("Failed to create TCP socket");
-        return FALSE;
-    }
+        case AF_INET:
+        case AF_INET6:
+            break;
 
-    memset(&addr, 0, sizeof(addr));
-    if (pf == PF_INET6)
-    {
-        addr_len = sizeof(struct sockaddr_in6);
-        SIN6(&addr)->sin6_family = AF_INET6;
-        SIN6(&addr)->sin6_port = htons(port);
-    }
-    else
-    {
-        addr_len = sizeof(struct sockaddr_in);
-        SIN(&addr)->sin_family = AF_INET;
-        SIN(&addr)->sin_port = htons(port);
-    }
-    rc = bind(fd, SA(&addr), addr_len);
-    if (rc != 0)
-    {
-        close(fd);
-        return FALSE;
+        default:
+            ERROR("Invalid soket family");
+            return FALSE;
     }
 
-    close(fd);
-    fd = socket(pf, SOCK_DGRAM, 0);
-    if (fd < 0)
+    switch (socket_type)
     {
-        ERROR("Failed to create UDP socket");
-        return FALSE;
+        case SOCK_STREAM:
+        case SOCK_DGRAM:
+        case 0:
+            break;
+
+        default:
+            ERROR("Invalid soket type");
+            return FALSE;
     }
 
-    rc = bind(fd, SA(&addr), addr_len);
-    if (rc != 0)
+
+    for (family_id = 0; family_id < TE_ARRAY_LEN(af); family_id++)
     {
-        close(fd);
-        return FALSE;
+        if (socket_family != af[family_id])
+            continue;
+
+        for (type_id = 0; type_id < TE_ARRAY_LEN(type); type_id++)
+        {
+            struct sockaddr_storage addr;
+            socklen_t addr_len;
+            int fd;
+            int rc;
+
+            if (socket_type != 0 && socket_type != type[type_id])
+                continue;
+
+            fd = socket(pf[family_id], type[type_id], 0);
+            if (fd < 0)
+            {
+                ERROR("Failed to create socket");
+                return FALSE;
+            }
+
+            memset(&addr, 0, sizeof(addr));
+            if (pf[family_id] == PF_INET6)
+            {
+                addr_len = sizeof(struct sockaddr_in6);
+                SIN6(&addr)->sin6_family = AF_INET6;
+                SIN6(&addr)->sin6_port = htons(port);
+            }
+            else
+            {
+                addr_len = sizeof(struct sockaddr_in);
+                SIN(&addr)->sin_family = AF_INET;
+                SIN(&addr)->sin_port = htons(port);
+            }
+
+            rc = bind(fd, SA(&addr), addr_len);
+            close(fd);
+            if (rc != 0)
+                return FALSE;
+        }
     }
-    close(fd);
 
     return TRUE;
 }

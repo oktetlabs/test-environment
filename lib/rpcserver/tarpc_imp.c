@@ -1227,7 +1227,7 @@ TARPC_FUNC(bind, {},
 te_bool
 check_port_is_free(uint16_t port)
 {
-    return agent_check_l4_port_is_free(port);
+    return agent_check_l4_port_is_free(AF_INET6, 0, port);
 }
 
 TARPC_FUNC(check_port_is_free, {},

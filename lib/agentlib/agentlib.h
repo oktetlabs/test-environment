@@ -291,10 +291,15 @@ extern void run_vfork_hooks(enum vfork_hook_phase phase);
 /**
  * Check that a given TCP or UDP port is not bound.
  *
- * @param port      Port number in host endian
+ * @param socket_family     Socket family to use for checking, @c AF_INET
+ *                          for IPv4 or @c AF_INET6 for IPv6
+ * @param socket_type       Socket type to use, @c SOCK_STREAM, @c SOCK_DGRAM,
+ *                          or @c 0 to check both.
+ * @param port              Port number in host endian
  *
  * @return @c TRUE - Port is free
  */
-extern te_bool agent_check_l4_port_is_free(uint16_t port);
+extern te_bool agent_check_l4_port_is_free(int socket_family, int socket_type,
+                                           uint16_t port);
 
 #endif /* __TE_AGENTLIB_H__ */
