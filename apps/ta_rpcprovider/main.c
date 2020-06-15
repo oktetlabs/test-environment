@@ -14,7 +14,7 @@
 #include "agentlib.h"
 #include "logger_ta.h"
 
-#define MSG_PFX "ta_rpcprovider: "
+#define MSG_PFX "ta_rpcs: "
 
 static char ta_execname_storage[RCF_MAX_PATH];
 const char *ta_execname = ta_execname_storage;

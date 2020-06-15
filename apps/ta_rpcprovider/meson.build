@@ -73,7 +73,7 @@ symtbl = custom_target('gen-symtbl', output: 'symtbl.c', capture: true,
 #
 # Build rpc provider
 #
-executable('ta_rpcprovider',
+executable('ta_rpcs',
            sources: [ 'main.c', symtbl ],
            c_args: c_args,
            link_args: ld_args,
