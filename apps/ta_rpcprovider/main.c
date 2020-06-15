@@ -200,8 +200,24 @@ main(int argc, char **argv)
         return rc;
     }
 
-    if (argc == 1)
-        WARN(MSG_PFX "RPC server name must be supplied\n");
+    if (argc < 2 || (strcmp(argv[1], "exec") == 0 && argc < 3))
+    {
+        ERROR(MSG_PFX "Invalid number of arguments: %d", argc);
+        return -1;
+    }
+
+    if (strcmp(argv[1], "exec") == 0)
+    {
+        void (* func)(int, char **) = rcf_ch_symbol_addr(argv[2], 1);
+
+        if (func == NULL)
+        {
+            ERROR(MSG_PFX "Cannot resolve address of the function %s", argv[2]);
+            return 1;
+        }
+        func(argc - 3, argv + 3);
+        return 0;
+    }
 
     rcf_pch_rpc_server(argv[1]);
     return 0;
