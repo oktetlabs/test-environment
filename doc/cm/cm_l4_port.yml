@@ -1,0 +1,68 @@
+---
+
+- comment: |
+    Configuration model for managing ports of transport protocols (TCP/UDP)
+    in the system.
+
+    Copyright (C) 2020 OKTET Labs.
+
+    Author: Igor Romanov E-mail: Igor.Romanov@oktetlabs.ru
+
+- register:
+
+    - oid: "/agent/l4_port"
+      access: read_only
+      type: none
+      d: |
+         Root of l4 port configuration model
+
+         Name: None
+
+    - oid: "/agent/l4_port/alloc"
+      access: read_only
+      type: none
+      d: |
+         Allocation of l4 ports on a test agent.
+
+         Name: None
+
+    - oid: "/agent/l4_port/alloc/next"
+      access: read_only
+      type: integer
+      volatile: true
+      d: |
+         The next available port. A new port is allocated when the
+         previous one is added to "/agent/l4_port/alloc/allocated",
+         otherwise returns the last allocated port.
+
+         Name: None
+         Value: Value of the allocated port in host endian
+
+    - oid: "/agent/l4_port/alloc/next/family"
+      access: read_write
+      type: integer
+      d: |
+         Socket family of the next allocated port. Setting this field might
+         change "/agent/l4_port/alloc/next".
+
+         Name: None
+         Value: AF_INET (IPv4), AF_INET6 (both IPv4 and IPv6)
+
+    - oid: "/agent/l4_port/alloc/next/type"
+      access: read_write
+      type: integer
+      d: |
+         Socket type of the next allocated port. Setting this field might
+         change "/agent/l4_port/alloc/next".
+
+         Name: None
+         Value: SOCK_STREAM, SOCK_DGRAM, 0 (for both TCP and UDP)
+
+    - oid: "/agent/l4_port/alloc/allocated"
+      access: read_create
+      type: none
+      d: |
+         A collection of allocated ports
+
+         Name: port value in host endian
+         Value: None

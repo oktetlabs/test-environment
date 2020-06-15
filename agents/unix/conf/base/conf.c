@@ -278,6 +278,7 @@ extern te_errno ta_unix_conf_veth_init(void);
 extern te_errno ta_unix_conf_udp_tunnel_init(void);
 extern te_errno ta_unix_conf_bridge_init(void);
 extern te_errno ta_unix_conf_block_dev_init(void);
+extern te_errno ta_unix_conf_l4_port_init(void);
 
 #ifdef WITH_OPENVPN
 extern te_errno ta_unix_conf_openvpn_init(void);
@@ -1454,6 +1455,9 @@ rcf_ch_conf_init(void)
         if (ta_unix_conf_nginx_init() != 0)
             goto fail;
 #endif
+
+        if (ta_unix_conf_l4_port_init() != 0)
+            goto fail;
 
         init = TRUE;
 
