@@ -1523,7 +1523,8 @@ main(int argc, char **argv)
     pthread_t   logfork_tid;
 
     struct sigaction    sigact;
-    
+
+    char  ta_tmp_dir[RCF_MAX_PATH];
     char  buf[16];
     char *tmp;
 
@@ -1577,16 +1578,6 @@ main(int argc, char **argv)
     errno = 0;
 #endif
 
-    /* 
-     * Change working directory to /tmp in order to create all
-     * temporary files there.
-     */
-    if (chdir("/tmp") != 0)
-    {
-        fprintf(stderr, "Failed to change current directory to /tmp\n");
-        /* Continue */
-    }
-    
     if (argc < 3)
     {
         fprintf(stderr, "Invalid number of arguments\n");
@@ -1600,6 +1591,27 @@ main(int argc, char **argv)
         ta_dir[0] = 0;
     else
         *(tmp + 1) = 0;
+
+    /*
+     * Create 'tmp' directory inside TA directory and change current
+     * working directory to it in order to create all temporary files there
+     * by default. It will be removed together with TA directory on TA shutdown.
+     */
+    TE_SPRINTF(ta_tmp_dir, "%s/tmp", ta_dir);
+    if (mkdir(ta_tmp_dir, S_IRWXU | S_IRWXG | S_IRWXO | S_ISVTX) != 0 &&
+        errno != EEXIST)
+    {
+        fprintf(stderr,
+                "Failed to create tmp directory inside TA directory, fallback to /tmp");
+        TE_SPRINTF(ta_tmp_dir, "/tmp");
+    }
+
+    if (chdir(ta_tmp_dir) != 0)
+    {
+        fprintf(stderr, "Failed to change current directory to '%s'\n",
+                ta_tmp_dir);
+        /* Continue */
+    }
 
 #ifdef WITH_UPNP_CP
     ta_unix_conf_upnp_cp_set_socket_name(ta_dir);
