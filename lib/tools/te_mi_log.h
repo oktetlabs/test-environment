@@ -206,6 +206,11 @@ typedef enum te_mi_meas_aggr {
      * unit-independend.
      */
     TE_MI_MEAS_AGGR_OUT_OF_RANGE,
+    /**
+     * N-th percentile of a measurements.
+     * N must be specified in the measurement name.
+     */
+    TE_MI_MEAS_AGGR_PERCENTILE,
 
     /** One past last valid measurement aggregation type */
     TE_MI_MEAS_AGGR_END,

@@ -61,6 +61,7 @@ typedef struct te_rgt_mi_meas_param {
     te_rgt_mi_meas_value stdev;         /**< Standard deviation */
     te_rgt_mi_meas_value cv;            /**< Coefficient of variation */
     te_rgt_mi_meas_value out_of_range;  /**< Number of out of range values */
+    te_rgt_mi_meas_value percentile;    /**< N-th percentile */
 
     te_rgt_mi_meas_value *values;       /**< Array of parameter values */
     size_t values_num;                  /**< Number of elements in the

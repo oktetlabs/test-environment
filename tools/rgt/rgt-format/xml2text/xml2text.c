@@ -554,6 +554,7 @@ log_mi_artifact(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
                 print_mi_meas_value(fd, &param->stdev, "stdev");
                 print_mi_meas_value(fd, &param->cv, "cv");
                 print_mi_meas_value(fd, &param->out_of_range, "out of range");
+                print_mi_meas_value(fd, &param->percentile, "percentile");
             }
 
             if (param->values_num > 0)

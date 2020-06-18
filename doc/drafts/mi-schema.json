@@ -101,7 +101,8 @@
             "mean",
             "cv",
             "stdev",
-            "out of range"
+            "out of range",
+            "percentile"
           ]
         },
         "value": {

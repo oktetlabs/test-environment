@@ -670,6 +670,10 @@ te_rgt_parse_mi_meas_message(te_rgt_mi *mi)
                 {
                     param->out_of_range = value;
                 }
+                else if (strcmp(aggr, "percentile") == 0)
+                {
+                    param->percentile = value;
+                }
                 else
                 {
                     if (strcmp(aggr, "single") == 0)

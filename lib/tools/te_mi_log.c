@@ -140,6 +140,7 @@ static const char *meas_aggr_names[] = {
     [TE_MI_MEAS_AGGR_CV] = "cv",
     [TE_MI_MEAS_AGGR_STDEV] = "stdev",
     [TE_MI_MEAS_AGGR_OUT_OF_RANGE] = "out of range",
+    [TE_MI_MEAS_AGGR_PERCENTILE] = "percentile",
 };
 
 static const char *meas_type_names[] = {
