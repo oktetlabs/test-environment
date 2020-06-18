@@ -27,7 +27,7 @@
  * [:@attr_name{ssh_proxy}=@attr_val{<ssh-proxy>}]
  * [:@attr_name{copy_timeout}=@attr_val{<timeout>}]
  * [:@attr_name{copy_tries}=@attr_val{<number_of_tries>}]
- * [:@attr_name{kill_timeout}=@attr_val{<timeout>}][:@attr_val{notcopy}]
+ * [:@attr_name{kill_timeout}=@attr_val{<timeout>}]
  * [:@attr_val{sudo|su}][:@attr_val{<shell>}][:@attr_val{<parameters>}]
  * </pre>
  *
@@ -60,8 +60,6 @@
  *   start-up procedure fails;
  * - @attr_name{kill_timeout} - specifies the maximum time duration
  *   (in seconds) that is allowed for Test Agent termination procedure;
- * - @attr_val{notcopy} may be used to create symbolic link instead copying
- *   of the image;
  * - @attr_val{sudo|su} - specify this option when we need to run agent under
  *   @prog{sudo|su} (with root privileges). This can be necessary if Test Agent
  *   access resources that require privileged permissions (for example
@@ -206,14 +204,12 @@
  * [[user@]<IP address or hostname>]:<port>
  *     [:key=<ssh private key file>][:ssh_port=<port>][:ssh_proxy=<hostname>]
  *     [:copy_timeout=<timeout>][:kill_timeout=<timeout>]
- *     [:notcopy][:sudo|su][:<shell>][:parameters]
+ *     [:sudo|su][:<shell>][:parameters]
  *
  * If host is not specified, the Test Agent is started on the local
  * host.  It is assumed that user starting Dispatcher may use ssh/scp
  * with specified host using ssh without password.  If sudo is specified
  * it is assumed that user is sudoer without password.
- *
- * notcopy may be used to create symbolic link instead copying of the image.
  *
  * Note that shell part of configuration string CANNOT contain collons.
  * Implementation should be extended to allow collons inside parameter.
@@ -267,7 +263,6 @@ typedef struct unix_ta {
 
     te_bool sudo;       /**< Manipulate process using sudo */
     te_bool su;         /**< Run process using "su -c" */
-    te_bool notcopy;    /**< Do not copy TA image to remote host */
     te_bool is_local;   /**< TA is started on the local PC */
 
     te_bool ext_rcf_listener;  /**< Listener socket used to accept RCF
@@ -625,9 +620,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     }
 
     if ((val = te_kvpairs_get(conf, "notcopy")) != NULL)
-        ta->notcopy = TRUE;
-    else
-        ta->notcopy = FALSE;
+        WARN("The deprecated RCF parameter 'notcopy' is skipped");
 
     if ((val = te_kvpairs_get(conf, "sudo")) != NULL)
     {
@@ -723,13 +716,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
      * DO NOT redirect output to te_tee to see it in logs, since
      * pipeline breaks coping return status.
      */
-    if (ta->notcopy)
-    {
-        rc = te_string_append(&cmd,
-                "%sln -s %s %s%s", ta->cmd_prefix.ptr,
-                ta_type_dir, ta->run_dir, ta->cmd_suffix);
-    }
-    else if (ta->is_local)
+    if (ta->is_local)
     {
         /*
          * Do mkdir without -p to be sure that the directory does not
