@@ -1376,8 +1376,12 @@ process_get(cfg_get_msg *msg)
     }
     obj = inst->obj;
 
-    if (msg->sync && (msg->rc = cfg_ta_sync(inst->oid, FALSE)) != 0)
+    if ((obj->vol || msg->sync) &&
+        strcmp_start("/agent", inst->oid) == 0 &&
+        (msg->rc = cfg_ta_sync(inst->oid, FALSE)) != 0)
+    {
         return;
+    }
 
     msg->val_type = obj->type;
     msg->len = sizeof(*msg);
