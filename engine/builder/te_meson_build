@@ -935,7 +935,9 @@ build_platform() {
          TE_BASE=\"${ws}\"/src ${destdir} \$NINJA -C \"${ws}\"/build install" ||
         result=$?
 
-    build_platform_apps "${p}"
+    if test ${result} -eq 0 ; then
+        build_platform_apps "${p}" || result=$?
+    fi
 
     if ${remote_build} ; then
         rsync_from "${p}" "${ws}"/build . ||
