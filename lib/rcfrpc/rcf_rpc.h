@@ -199,36 +199,7 @@ typedef struct rcf_rpc_server {
 
 
 /** Default RPC timeout in milliseconds */
-#define RCF_RPC_DEFAULT_TIMEOUT     rcf_rpc_default_timeout()
-
-/**
- * Function to get default RPC timeout in milliseconds from Environment.
- *
- * @return Timeout in milliseconds.
- */
-static inline unsigned int
-rcf_rpc_default_timeout(void)
-{
-    const char         *var_name = "TE_RCFRPC_TIMEO_MS";
-    const unsigned int  def_val = 10000;
-    const char         *value;
-    const char         *end;
-    unsigned long       timeo;
-
-    value = getenv(var_name);
-    if (value == NULL || *value == '\0')
-        return def_val;
-
-    timeo = strtoul(value, (char **)&end, 10);
-    if (*end != '\0' || timeo >= UINT_MAX)
-    {
-        ERROR("Invalid value '%s' in Environment variable '%s'",
-              value, var_name);
-        return def_val;
-    }
-
-    return timeo;
-}
+#define RCF_RPC_DEFAULT_TIMEOUT     10000
 
 /**
  * Obtain server handle. RPC server is created/restarted, if necessary.
