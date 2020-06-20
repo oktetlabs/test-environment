@@ -173,6 +173,11 @@ typedef struct tapi_pat_receiver {
                                               wait until @b duration_sec
                                               expires) */
 
+    tarpc_bool          ignore_pollerr;   /**< If @c TRUE, ignore @c POLLERR
+                                               if it arrives instead of
+                                               @c POLLIN, and continue
+                                               polling */
+
     /* out */
     uint64_t            exp_received;   /**< Number of bytes expected to
                                              be received (ignored if @c 0;

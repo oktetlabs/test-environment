@@ -7753,8 +7753,9 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
             }
             else if (rc > 1)
             {
-                ERROR("%s(): %s wait returned more then one fd", __FUNCTION__,
-                      iomux2str(iomux));
+                te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EINVAL),
+                                 "%s(): iomux function returned more then "
+                                 "one fd", __FUNCTION__);
                 PTRN_RECV_ERROR;
             }
             else if (rc == 0)
@@ -7767,13 +7768,34 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
             {
                 ERROR("%s(): %s wait returned incorrect fd %d instead of %d",
                       __FUNCTION__, iomux2str(iomux), fd, in->s);
+
+                te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EINVAL),
+                                 "%s(): iomux function returned incorrect "
+                                 "fd", __FUNCTION__);
                 PTRN_RECV_ERROR;
             }
 
             if (!(events & POLLIN))
             {
+                if ((events & POLLERR) && in->ignore_pollerr)
+                {
+                    /*
+                     * Sleep for 10ms to avoid loading CPU with
+                     * an infinite loop with iomux reporting POLLERR
+                     * again and again.
+                     */
+                    usleep(10000);
+                    continue;
+                }
+
                 ERROR("%s(): %s wait successeed but the socket is "
-                      "not writable", __FUNCTION__, iomux2str(iomux));
+                      "not readable, reported events 0x%x", __FUNCTION__,
+                      iomux2str(iomux), events);
+
+                te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EINVAL),
+                                 "%s(): iomux function returned unexpected "
+                                 "events instead of POLLIN", __FUNCTION__);
+
                 PTRN_RECV_ERROR;
             }
         }
@@ -7800,13 +7822,18 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
             if ((rc = pattern_gen_func(check_buf, len, &in->gen_arg)) != 0)
             {
                 ERROR("%s(): failed to generate a pattern", __FUNCTION__);
+
+                te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EINVAL),
+                                 "%s(): failed to generate data according "
+                                 "to the pattern", __FUNCTION__);
                 PTRN_RECV_ERROR;
             }
 
             if (memcmp(buf, check_buf + offset, len) != 0)
             {
-                ERROR("%s(): received data doesn't match a pattern",
-                      __FUNCTION__);
+                te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EINVAL),
+                                 "%s(): received data does not match the "
+                                 "pattern", __FUNCTION__);
                 iomux_close(iomux, &iomux_f, &iomux_st);
                 free(buf);
                 free(check_buf);

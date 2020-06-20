@@ -893,6 +893,8 @@ rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
         rpcs->timeout = TE_SEC2MS(args->duration_sec +
                                   TAPI_RPC_TIMEOUT_EXTRA_SEC);
 
+    in.ignore_pollerr = args->ignore_pollerr;
+
     rcf_rpc_call(rpcs, "pattern_receiver", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
@@ -914,11 +916,12 @@ rpc_pattern_receiver(rcf_rpc_server *rpcs, int s,
 
     TAPI_RPC_LOG(rpcs, pattern_receiver, "fd=%d, gen_func='%s', "
                  "gen_arg=[" TARPC_PAT_GEN_ARG_FMT "], iomux='%s', "
-                 "time2wait=%u, duration_sec=%d", "%d received=%"
-                 TE_PRINTF_64 "u",
+                 "time2wait=%u, duration_sec=%d, ignore_pollerr=%s",
+                 "%d received=%" TE_PRINTF_64 "u",
                  s, args->gen_func, TARPC_PAT_GEN_ARG_VAL(in.gen_arg),
                  iomux2str(args->iomux), args->time2wait,
                  args->duration_sec,
+                 (args->ignore_pollerr ? "TRUE" : "FALSE"),
                  out.retval, out.bytes);
     RETVAL_INT(pattern_receiver, out.retval);
 }

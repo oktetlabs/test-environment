@@ -4368,6 +4368,9 @@ struct tarpc_pattern_receiver_in {
                                      milliseconds; if @c 0, the
                                      function will wait until @b time2run
                                      expires) */
+    tarpc_bool  ignore_pollerr; /**< If @c TRUE, @c POLLERR event should be
+                                     ignored if it arrives instead of
+                                     @c POLLIN */
 
     tarpc_pat_gen_arg gen_arg;  /**< Pattern generator function
                                      arguments */
