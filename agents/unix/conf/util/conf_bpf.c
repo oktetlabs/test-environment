@@ -1427,8 +1427,7 @@ perf_event_process(struct perf_event_header *e, void *ctx)
  * Return number of pending perf events.
  * The function polls perf events via epoll_wait() and calls
  * @ref perf_event_process function using libbpf API.
- * @note Before calling epoll_wait() the function resets
- * event data array @ref events and sets to zero the number of events.
+ * @note New events data is appended to the events vector @ref events.
  *
  * @param map   Pointer to map
  *
@@ -1439,15 +1438,9 @@ bpf_perf_events_num(bpf_perf_map_entry *map)
 {
     int                 cnt = -1;
     int                 i = 0;
-    bpf_perf_map_event *event;
 
     if (!map->events_enabled)
         return 0;
-
-    map->num_events = 0;
-    TE_VEC_FOREACH(&map->events, event)
-        free(event->data);
-    te_vec_reset(&map->events);
 
     cnt = epoll_wait(map->epoll_fd,
                      map->epoll_evts,
