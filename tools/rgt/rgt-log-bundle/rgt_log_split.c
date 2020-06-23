@@ -66,8 +66,8 @@ typedef struct node_info {
     te_bool                opened;            /**< TRUE if we have not yet
                                                    encountered terminating
                                                    fragment */
-    te_bool                is_test;           /**< Whether this node
-                                                   represents test */
+    int                    opened_children;   /**< Number of opened child
+                                                   nodes */
     uint64_t               inner_frags_cnt;   /**< Number of inner
                                                    fragments related to
                                                    this node */
@@ -124,7 +124,7 @@ get_node_info(int node_id)
         {
             nodes_info[i].parent = -1;
             nodes_info[i].opened = FALSE;
-            nodes_info[i].is_test = FALSE;
+            nodes_info[i].opened_children = 0;
             nodes_info[i].inner_frags_cnt = 0;
             nodes_info[i].cur_file_num = 0;
             nodes_info[i].cur_file_size = 0;
@@ -133,6 +133,36 @@ get_node_info(int node_id)
     }
 
     return &nodes_info[node_id];
+}
+
+/**
+ * Update count of opened children for a parent node.
+ *
+ * @param node_id         Parent node ID.
+ * @param child_opened    @c TRUE if a child is opened,
+ *                        @c FALSE if it is closed.
+ */
+static void
+update_opened_children(int node_id, te_bool child_opened)
+{
+    node_info *parent_descr;
+
+    if (node_id < 0)
+        return;
+
+    parent_descr = get_node_info(node_id);
+
+    if (child_opened)
+        parent_descr->opened_children++;
+    else
+        parent_descr->opened_children--;
+
+    if (parent_descr->opened_children < 0)
+    {
+        fprintf(stderr, "More children of node %d were closed than were "
+                "opened\n", node_id);
+        exit(1);
+    }
 }
 
 /**
@@ -358,8 +388,6 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
     char  node_type[DEF_STR_LEN];
     int   rc;
 
-    unsigned int last_ended_test_id = 0;
-
     while (!feof(f_index))
     {
         if (fgets(str, sizeof(str), f_index) == NULL)
@@ -400,9 +428,7 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
 
             node_descr = get_node_info(node_id);
             node_descr->opened = FALSE;
-
-            if (node_descr->is_test)
-                last_ended_test_id = node_id;
+            update_opened_children(parent_id, FALSE);
         }
         else
         {
@@ -412,14 +438,12 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
 
             node_descr = get_node_info(node_id);
             node_descr->opened = TRUE;
+            update_opened_children(parent_id, TRUE);
 
             node_descr->tin = tin_or_start_frag;
             node_descr->start_len = length;
 
             node_descr->parent = parent_id;
-
-            if (strcmp(node_type, "TEST") == 0)
-                node_descr->is_test = TRUE;
         }
 
         if (frag_type == FRAG_INNER)
@@ -433,35 +457,38 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
             else
             {
                 long unsigned int j;
-                te_bool           non_root_opened_found = FALSE;
                 te_bool           matching_frag_found = FALSE;
 
+                /*
+                 * Logs from TE components (such as Configurator) do not
+                 * have ID of any specific test and should be attached to
+                 * all currently opened nodes (tests, sessions, packages)
+                 * not having opened children (to avoid attaching log both
+                 * to a test and to a session including it). Multiple such
+                 * nodes may be opened simultaneously if multiple tests are
+                 * run in parallel.
+                 */
                 for (j = 0; j < nodes_count; j++)
                 {
-                    if (nodes_info[j].opened)
+                    if (nodes_info[j].opened &&
+                        nodes_info[j].opened_children == 0)
                     {
-                        if (j > 0)
-                            non_root_opened_found = TRUE;
-                        if (nodes_info[j].is_test)
-                        {
-                            append_to_frag(j, frag_type, f_raw_log,
-                                           offset, length,
-                                           f_recover, output_path);
-                            matching_frag_found = TRUE;
-                        }
+                        append_to_frag(j, frag_type, f_raw_log,
+                                       offset, length,
+                                       f_recover, output_path);
+                        matching_frag_found = TRUE;
                     }
                 }
 
                 if (!matching_frag_found)
                 {
-                    if (non_root_opened_found)
-                        append_to_frag(last_ended_test_id, frag_type,
-                                       f_raw_log, offset, length,
-                                       f_recover, output_path);
-                    else
-                        append_to_frag(/* log root node */ 0, frag_type,
-                                       f_raw_log, offset, length,
-                                       f_recover, output_path);
+                    /*
+                     * No opened node found - attach message to the root
+                     * node.
+                     */
+                    append_to_frag(/* log root node */ 0, frag_type,
+                                   f_raw_log, offset, length,
+                                   f_recover, output_path);
                 }
             }
 
