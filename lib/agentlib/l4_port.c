@@ -113,6 +113,7 @@ agent_alloc_l4_port(int socket_family, int socket_type, uint16_t *port)
         if (n_ports_tried++ > AVAILABLE_PORT_COUNT)
         {
             ERROR("Failed to allocate port from all available");
+            pthread_mutex_unlock(&alloc_lock);
             return TE_ENOBUFS;
         }
 
