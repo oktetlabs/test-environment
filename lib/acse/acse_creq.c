@@ -178,6 +178,8 @@ acse_init_connection_request(cpe_t *cpe_item)
     struct soap *soap;
     channel_t   *channel;
 
+    cpe_item->cr_state = CR_NONE;
+
     if (cpe_item->url == NULL)
     {
         ERROR("%s() for %s/%s: NULL Conn.Req. URL",

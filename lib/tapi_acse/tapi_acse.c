@@ -1280,7 +1280,8 @@ tapi_acse_cpe_connect(tapi_acse_context_t *ctx)
         T_CHECK_RC(tapi_acse_manage_cpe(ctx, ACSE_OP_OBTAIN,
                   "cwmp_state", &cur_sess_state,
                   "cr_state", &cur_cr_state, VA_END_LIST));
-        if (CWMP_NOP == cur_sess_state && CR_NONE == cur_cr_state)
+        if (CWMP_NOP == cur_sess_state &&
+           (CR_NONE == cur_cr_state || CR_ERROR == cur_cr_state))
         {
             T_CHECK_RC(tapi_acse_cpe_conn_request(ctx));
             T_CHECK_RC(tapi_acse_wait_cr_state(ctx, CR_DONE));

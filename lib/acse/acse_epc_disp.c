@@ -321,9 +321,6 @@ cpe_cr_state(cpe_t *cpe, acse_epc_config_data_t *params)
         return TE_EACCES;
     sprintf(params->value, "%i", cpe->cr_state);
 
-    if (cpe->cr_state == CR_ERROR || cpe->cr_state == CR_DONE)
-        cpe->cr_state = CR_NONE;
-
     return 0;
 }
 
@@ -1125,8 +1122,6 @@ acse_epc_cwmp(acse_epc_cwmp_data_t *cwmp_pars)
         break;
         case EPC_CONN_REQ_CHECK:
             cwmp_pars->from_cpe.cr_state = cpe->cr_state;
-            if (cpe->cr_state == CR_ERROR || cpe->cr_state == CR_DONE)
-                cpe->cr_state = CR_NONE;
         break;
 
         case EPC_HTTP_RESP:
