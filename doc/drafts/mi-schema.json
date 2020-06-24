@@ -42,6 +42,10 @@
         "comments": {
           "description": "Measurement comments",
           "$ref": "#/definitions/dictionary"
+        },
+        "views": {
+        "description": "Measurement views",
+        "$ref": "#/definitions/views"
         }
       },
       "required": ["type", "version", "tool", "results"],
@@ -67,6 +71,10 @@
         },
         "name": {
           "description": "Extra measurement identification - measurement name",
+          "type": "string"
+        },
+        "description": {
+          "description": "Human-readable description of measurement",
           "type": "string"
         },
         "entries": {
@@ -331,6 +339,45 @@
         }
       },
       "required": ["id", "parent", "obtained"],
+      "additionalProperties": false
+    },
+    "views": {
+      "description": "Measurement views",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/measurementView" }
+    },
+    "measurementView": {
+      "description": "Measurement view",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "Measurement view type",
+          "type": "string",
+          "enum": [
+            "line-graph"
+          ]
+        },
+        "name": {
+          "description": "Name of the view",
+          "type": "string"
+        },
+        "title": {
+          "description": "Title of the view",
+          "type": "string"
+        },
+        "axis_x": {
+          "description": "X axis specification",
+          "type": "string"
+        },
+        "axis_y": {
+          "description": "Y axis specification",
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["type", "name", "axis_x"],
       "additionalProperties": false
     }
   }
