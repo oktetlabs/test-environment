@@ -23,7 +23,7 @@
 #include "agentlib.h"
 #include "te_vector.h"
 
-static int socket_family = AF_INET6;
+static int socket_family = 0;
 static int socket_type = 0;
 static te_vec allocated_ports = TE_VEC_INIT(uint16_t);
 static te_bool allocate_on_get = TRUE;

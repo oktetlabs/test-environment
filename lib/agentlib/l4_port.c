@@ -148,13 +148,16 @@ te_bool
 agent_check_l4_port_is_free(int socket_family, int socket_type, uint16_t port)
 {
     static const int type[] = { SOCK_STREAM, SOCK_DGRAM };
-    static const int pf[] = { PF_INET, PF_INET6 };
-    static const int af[] = { AF_INET, AF_INET6 };
+    static const int pf[] = { PF_INET6, PF_INET };
+    static const int af[] = { AF_INET6, AF_INET };
+    /* Whether fallback to IPv4 is required (when using 0 socket family) */
+    te_bool all_families_fallback_inet4 = FALSE;
     unsigned int family_id;
     unsigned int type_id;
 
     switch (socket_family)
     {
+        case 0:
         case AF_INET:
         case AF_INET6:
             break;
@@ -179,7 +182,7 @@ agent_check_l4_port_is_free(int socket_family, int socket_type, uint16_t port)
 
     for (family_id = 0; family_id < TE_ARRAY_LEN(af); family_id++)
     {
-        if (socket_family != af[family_id])
+        if (socket_family != 0 && socket_family != af[family_id])
             continue;
 
         for (type_id = 0; type_id < TE_ARRAY_LEN(type); type_id++)
@@ -195,6 +198,17 @@ agent_check_l4_port_is_free(int socket_family, int socket_type, uint16_t port)
             fd = socket(pf[family_id], type[type_id], 0);
             if (fd < 0)
             {
+                if (errno == EAFNOSUPPORT && socket_family == 0 &&
+                    af[family_id] == AF_INET6)
+                {
+                    /*
+                     * Fallback to IPv4 since IPv6 is not supported
+                     * and requested family is 0 (all supported families).
+                     */
+                    all_families_fallback_inet4 = TRUE;
+                    break;
+                }
+
                 ERROR("Failed to create socket");
                 return FALSE;
             }
@@ -218,6 +232,13 @@ agent_check_l4_port_is_free(int socket_family, int socket_type, uint16_t port)
             if (rc != 0)
                 return FALSE;
         }
+
+        /*
+         * Checking for IPv6 is enough when socket family 0 is specified,
+         * but if fallback to IPv4 is requested, continue checking with IPv4.
+         */
+        if (socket_family == 0 && !all_families_fallback_inet4)
+            return TRUE;
     }
 
     return TRUE;

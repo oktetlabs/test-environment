@@ -46,7 +46,7 @@
          change "/agent/l4_port/alloc/next".
 
          Name: None
-         Value: AF_INET (IPv4), AF_INET6 (both IPv4 and IPv6)
+         Value: AF_INET (IPv4), AF_INET6 (IPv6), 0 (IPv6 with fallback to IPv4)
 
     - oid: "/agent/l4_port/alloc/next/type"
       access: read_write
