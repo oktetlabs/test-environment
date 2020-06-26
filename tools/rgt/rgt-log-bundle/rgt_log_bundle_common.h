@@ -72,6 +72,25 @@ usage(poptContext optCon, int exitcode, char *error, char *addl)
     exit(exitcode);
 }
 
+/**
+ * Check value of an expression evaluating to te_errno; if
+ * it is not zero, print error and terminate the tool.
+ *
+ * @param _expr     Expression to check.
+ */
+#define CHECK_TE_RC(_expr) \
+    do {                                                  \
+        te_errno _rc;                                     \
+                                                          \
+        _rc = (_expr);                                    \
+        if (_rc != 0)                                     \
+        {                                                 \
+            ERROR("%s failed, rc=%r", #_expr, _rc);       \
+            exit(EXIT_FAILURE);                           \
+        }                                                 \
+    } while (0)
+
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
