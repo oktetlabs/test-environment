@@ -33,6 +33,9 @@ typedef enum fragment_type {
     FRAG_START,   /**< Starting fragment of log/package/session/test */
     FRAG_INNER,   /**< Inner fragment consisting regular log messages */
     FRAG_END,     /**< Terminating fragment of log/package/session/test */
+    FRAG_AFTER,   /**< Fragment for regular log messages which came
+                       after the end of the current node but before
+                       beginning of the next one */
 } fragment_type;
 
 /**
@@ -68,9 +71,14 @@ typedef struct node_info {
                                                    fragment */
     int                    opened_children;   /**< Number of opened child
                                                    nodes */
+    int                    last_closed_child; /**< ID of the last closed
+                                                   child */
     uint64_t               inner_frags_cnt;   /**< Number of inner
                                                    fragments related to
                                                    this node */
+    te_bool                after_frag;        /**< If @c TRUE, a fragment
+                                                   for messages after end
+                                                   is present */
     uint64_t               cur_file_num;      /**< Current inner fragment
                                                    file number */
     off_t                  cur_file_size;     /**< Current inner fragment
@@ -123,9 +131,12 @@ get_node_info(int node_id)
         for ( ; i < nodes_count; i++)
         {
             nodes_info[i].parent = -1;
-            nodes_info[i].opened = FALSE;
+            /* Root node with ID=0 is opened by default */
+            nodes_info[i].opened = (i == 0 ? TRUE : FALSE);
             nodes_info[i].opened_children = 0;
+            nodes_info[i].last_closed_child = -1;
             nodes_info[i].inner_frags_cnt = 0;
+            nodes_info[i].after_frag = FALSE;
             nodes_info[i].cur_file_num = 0;
             nodes_info[i].cur_file_size = 0;
             nodes_info[i].verdicts_num = 0;
@@ -138,30 +149,41 @@ get_node_info(int node_id)
 /**
  * Update count of opened children for a parent node.
  *
- * @param node_id         Parent node ID.
+ * @param parent_id       Parent node ID.
+ * @param child_id        Child node ID.
  * @param child_opened    @c TRUE if a child is opened,
  *                        @c FALSE if it is closed.
  */
 static void
-update_opened_children(int node_id, te_bool child_opened)
+update_children_state(int parent_id, int child_id,
+                      te_bool child_opened)
 {
     node_info *parent_descr;
 
-    if (node_id < 0)
+    if (parent_id < 0)
         return;
 
-    parent_descr = get_node_info(node_id);
+    /* This may happen for root node */
+    if (parent_id == child_id)
+        return;
+
+    parent_descr = get_node_info(parent_id);
 
     if (child_opened)
+    {
         parent_descr->opened_children++;
+    }
     else
+    {
         parent_descr->opened_children--;
+        parent_descr->last_closed_child = child_id;
+    }
 
     if (parent_descr->opened_children < 0)
     {
         fprintf(stderr, "More children of node %d were closed than were "
-                "opened\n", node_id);
-        exit(1);
+                "opened\n", parent_id);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -262,6 +284,7 @@ append_to_frag(int node_id, fragment_type frag_type,
                const char *output_path)
 {
     FILE *f_frag;
+    node_info *node_descr;
 
     te_string frag_name = TE_STRING_INIT;
     te_string frag_path = TE_STRING_INIT;
@@ -276,7 +299,6 @@ append_to_frag(int node_id, fragment_type frag_type,
 
         case FRAG_INNER:
         {
-            node_info *node_descr;
             node_descr = get_node_info(node_id);
             if (node_descr->inner_frags_cnt == 0)
                 node_descr->inner_frags_cnt = 1;
@@ -296,6 +318,13 @@ append_to_frag(int node_id, fragment_type frag_type,
 
         case FRAG_END:
             te_string_append(&frag_name, "%s", "end");
+            break;
+
+        case FRAG_AFTER:
+            node_descr = get_node_info(node_id);
+            node_descr->after_frag = TRUE;
+
+            te_string_append(&frag_name, "%s", "after");
             break;
     }
 
@@ -388,6 +417,9 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
     char  node_type[DEF_STR_LEN];
     int   rc;
 
+    /* Make sure root node is opened */
+    get_node_info(0);
+
     while (!feof(f_index))
     {
         if (fgets(str, sizeof(str), f_index) == NULL)
@@ -428,7 +460,7 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
 
             node_descr = get_node_info(node_id);
             node_descr->opened = FALSE;
-            update_opened_children(parent_id, FALSE);
+            update_children_state(parent_id, node_id, FALSE);
         }
         else
         {
@@ -438,7 +470,7 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
 
             node_descr = get_node_info(node_id);
             node_descr->opened = TRUE;
-            update_opened_children(parent_id, TRUE);
+            update_children_state(parent_id, node_id, TRUE);
 
             node_descr->tin = tin_or_start_frag;
             node_descr->start_len = length;
@@ -473,22 +505,28 @@ split_raw_log(FILE *f_raw_log, FILE *f_index, FILE *f_recover,
                     if (nodes_info[j].opened &&
                         nodes_info[j].opened_children == 0)
                     {
-                        append_to_frag(j, frag_type, f_raw_log,
-                                       offset, length,
-                                       f_recover, output_path);
+                        if (nodes_info[j].last_closed_child >= 0)
+                        {
+                            append_to_frag(nodes_info[j].last_closed_child,
+                                           FRAG_AFTER, f_raw_log,
+                                           offset, length,
+                                           f_recover, output_path);
+                        }
+                        else
+                        {
+                            append_to_frag(j, frag_type, f_raw_log,
+                                           offset, length,
+                                           f_recover, output_path);
+                        }
                         matching_frag_found = TRUE;
                     }
                 }
 
                 if (!matching_frag_found)
                 {
-                    /*
-                     * No opened node found - attach message to the root
-                     * node.
-                     */
-                    append_to_frag(/* log root node */ 0, frag_type,
-                                   f_raw_log, offset, length,
-                                   f_recover, output_path);
+                    fprintf(stderr, "Failed to find fragment for a message "
+                            "with offset %" PRIu64 "\n", offset);
+                    exit(EXIT_FAILURE);
                 }
             }
 
@@ -591,11 +629,12 @@ print_frags_list(const char *output_path, FILE *f_raw_gist,
     fclose(f_frag);
 
     if (fprintf(f_frags_list,
-                "%d_frag_start %u %u %u %llu %llu %" PRIu64 "\n",
+                "%d_frag_start %u %u %u %llu %llu %" PRIu64 " %d\n",
                 node_id, nodes_info[node_id].tin, depth, seq,
                 (long long unsigned int)frag_len,
                 (long long unsigned int)nodes_info[node_id].start_len,
-                nodes_info[node_id].inner_frags_cnt) < 0)
+                nodes_info[node_id].inner_frags_cnt,
+                nodes_info[node_id].parent) < 0)
     {
         ERROR("%s\n", "fprintf() failed");
         exit(1);
@@ -625,9 +664,11 @@ print_frags_list(const char *output_path, FILE *f_raw_gist,
         file2file(f_raw_gist, f_frag, -1, -1, frag_len);
         fclose(f_frag);
 
-        if (fprintf(f_frags_list, "%d_frag_end %u %u %u %llu\n",
+        if (fprintf(f_frags_list, "%d_frag_end %u %u %u %llu %d %d\n",
                     node_id, nodes_info[node_id].tin, depth, seq,
-                    (long long unsigned int)frag_len) < 0)
+                    (long long unsigned int)frag_len,
+                    (nodes_info[node_id].after_frag ? 1 : 0),
+                    nodes_info[node_id].parent) < 0)
         {
             ERROR("%s\n", "fprintf() failed");
             exit(1);
