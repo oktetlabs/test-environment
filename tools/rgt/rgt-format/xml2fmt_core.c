@@ -30,6 +30,9 @@
 
 #define UTILITY_NAME "xml-processor"
 
+#include "logger_api.h"
+#include "logger_file.h"
+
 /* Max attribute length in one line */
 extern int rgt_max_attribute_length;
 /* A tag to separate lines */
@@ -1063,6 +1066,8 @@ main(int argc, char **argv)
     char          argv0_copy[PATH_MAX];
     const char   *prog_name;
     const char   *prog_prefix = "rgt-";
+
+    te_log_init("RGT-FORMAT", te_log_message_file);
 
     n = snprintf(argv0_copy, sizeof(argv0_copy), "%s", argv[0]);
 
