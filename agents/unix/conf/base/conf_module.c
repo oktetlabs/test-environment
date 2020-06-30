@@ -337,6 +337,16 @@ out:
 static int
 mod_rmmod(const char *mod_name)
 {
+    /*
+     * Hack: do not unload igb_uio until shareable resources are supported:
+     * Bug 11092.
+     */
+    if (strcmp(mod_name, "igb_uio") == 0)
+    {
+        WARN("Module igb_uio is not unloaded");
+        return 0;
+    }
+
     TE_SPRINTF(buf, "rmmod %s", mod_name);
 
     return ta_system(buf);

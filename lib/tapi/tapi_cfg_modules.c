@@ -200,6 +200,17 @@ tapi_cfg_module_add_from_ta_dir(const char *ta_name,
 
     if (loaded)
     {
+        /*
+         * Hack: do not unload igb_uio until shareable resources are supported:
+         * Bug 11092.
+         */
+        if (strcmp(module_name_underscorified, "igb_uio") == 0)
+        {
+            WARN("Module igb_uio is not reloaded");
+            rc = 0;
+            goto out;
+        }
+
         rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
                                   "/agent:%s/module:%s/unload_holders:",
                                   ta_name, module_name_underscorified);
