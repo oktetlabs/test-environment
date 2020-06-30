@@ -143,7 +143,9 @@ find_cpu_generic(const char *pattern, const char *err_msg, size_t *n_indices,
     }
 
     *n_indices = number_of_cpus;
-    *indices = result;
+
+    if (indices != NULL)
+        *indices = result;
 
 out:
     cfg_free_oid(oid);
@@ -241,8 +243,9 @@ tapi_cfg_cpu_release_by_id(const char *ta, const tapi_cpu_index_t *cpu_id)
     return cfg_del_instance_fmt(FALSE, "%s", cpu_rsrc_oid);
 }
 
-static te_errno
-get_all_threads(const char *ta,  size_t *size, tapi_cpu_index_t **indices)
+te_errno
+tapi_cfg_get_all_threads(const char *ta,  size_t *size,
+                         tapi_cpu_index_t **indices)
 {
     char pattern[CFG_OID_MAX] = {0};
     int rc;
@@ -275,7 +278,7 @@ tapi_cfg_cpu_grab_by_prop(const char *ta, const tapi_cpu_prop_t *prop,
     te_errno rc = 0;
     size_t i;
 
-    if ((rc = get_all_threads(ta, &thread_count, &indices)) != 0)
+    if ((rc = tapi_cfg_get_all_threads(ta, &thread_count, &indices)) != 0)
         goto out;
 
     for (i = 0; i < thread_count; i++)

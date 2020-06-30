@@ -74,6 +74,16 @@ te_errno tapi_cfg_cpu_release_by_id(const char *ta,
 te_errno tapi_cfg_cpu_grab_by_prop(const char *ta, const tapi_cpu_prop_t *prop,
                                    tapi_cpu_index_t *cpu_id);
 
+/**
+ * Get all available CPU threads indices on a test agents.
+ *
+ * @param[in]  ta               Test Agent
+ * @param[out] size             Number of CPU threads (size of @p indices)
+ * @param[out] indices          CPU thread indices (might be @c NULL)
+ */
+extern te_errno tapi_cfg_get_all_threads(const char *ta,  size_t *size,
+                                         tapi_cpu_index_t **indices);
+
 /**@} <!-- END tapi_conf_cpu --> */
 
 #ifdef __cplusplus
