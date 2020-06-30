@@ -906,15 +906,30 @@ build_platform() {
 
     build_ext "${p}"
 
+    # handle m32 option
+    local build_m32=false
+    local suffix
+    for suffix in CPPFLAGS_VAR CFLAGS_VAR CPPFLAGS CFLAGS ; do
+        local var=${p}_${suffix}
+        local value=${!var}
+
+        test "${value/-m32/}" = "${value}" && continue
+        build_m32=true
+        break
+    done
+
     if test ! -d build ; then
         te_eval_or_ssh "${p}" \
-            "cd \"${ws}\" &&
+            "cd \"${ws}\" || exit $? ;
+             ${build_m32} && source ${ws}/src/engine/builder/te_meson_m32_exports ;
              meson ${!meson_nv_args} ${!meson_args} -Dworkspace=${ws} src build"
         echo "${!meson_nv_args}" >meson.nv_args
         echo "${!meson_args}" >meson.args
     elif ! diff -q meson.args meson.args.new 2>/dev/null ; then
         te_eval_or_ssh "${p}" \
-            "cd \"${ws}\"/build && meson configure ${!meson_args}"
+            "cd \"${ws}\"/build || exit $? ;
+             ${build_m32} && source ${ws}/src/engine/builder/te_meson_m32_exports ;
+             meson configure ${!meson_args}"
         echo "${!meson_args}" >meson.args
     fi
 
