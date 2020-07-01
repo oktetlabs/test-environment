@@ -550,9 +550,26 @@ process_engine_tool() {
     local parms=
     for p in ${!parms_var} ; do
         # Just ignore --with-large-logs since it is the default in meson build
-        test "${a}" = rgt -a "${p}" = "--with-large-logs" &&
+        test "${t}" = rgt -a "${p}" = "--with-large-logs" &&
             continue
-        parms="${parms}${parms:+ }${p}"
+        if test "${t}" = trc ; then
+            case ${p} in
+                --with-spoilers)
+                    meson_args="${meson_args} -Dtrc-spoilers=true" ;;
+                --with-popups)
+                    meson_args="${meson_args} -Dtrc-popups=true" ;;
+                --with-log-urls)
+                    meson_args="${meson_args} -Dtrc-log-urls=true" ;;
+                --with-hidden-stats)
+                    meson_args="${meson_args} -Dtrc-hidden-stats=true" ;;
+                --with-ext-scripts=*)
+                    meson_args="${meson_args} -Dtrc-ext-scripts=\"${p#--with-ext-scripts=}\"" ;;
+                *)
+                    parms="${parms}${parms:+ }${p}" ;;
+            esac
+        else
+            parms="${parms}${parms:+ }${p}"
+        fi
     done
     eval ${parms_var}=\"${parms}\"
 
@@ -563,7 +580,7 @@ process_engine_tools() {
     local t
 
     for t in ${TE_BS_TOOLS} ; do
-        process_engine_tool "${a}"
+        process_engine_tool "${t}"
     done
 }
 
