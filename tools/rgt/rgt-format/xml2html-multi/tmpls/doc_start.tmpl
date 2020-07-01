@@ -178,6 +178,10 @@
     .te_fold {
       font-family: monospace;
     }
+    .te_filter_button {
+      margin-top: 0.5em;
+      font-family: monospace;
+    }
     .te_params {
       width: 50% !important;
     }
@@ -209,6 +213,7 @@
 </head>
 <body>
 
+<script src="@@%s:shared_url@@log_filter.js"></script>
 <script type="text/javascript">
 
 function activate_link(name, doc_name, par_name)
@@ -226,101 +231,8 @@ function toggle_node(node)
     node.style.display = (node.style.display != 'none') ? 'none' : 'block';
 }
 
-function hide_table_row(table_row) {
-  table_row.style.display='none';
-}
-
-function show_table_row(table_row) {
-  table_row.style.display='';
-}
-
-function get_row_entity(row) {
-  return row.getAttribute('data-entity');
-}
-
-function is_same_entity(row1, row2) {
-  return (get_row_entity(row1) == get_row_entity(row2));
-}
-
-function is_user_visible(row) {
-  return ((row.getAttribute('data-user') == "Verdict") ||
-          (row.getAttribute('data-user') == "Artifact"));
-}
-
-function get_row_nest_lvl(row) {
-  return parseInt(row.getAttribute('data-nest-lvl'));
-}
-
-function is_nested(row1, row2) {
-  return (get_row_nest_lvl(row1) < get_row_nest_lvl(row2));
-}
-
-function get_nested_rows(row_id) {
-  var table = document.getElementById('log_table');
-  var row = table.rows[row_id];
-  console.assert(row.id == ('log_row' + row_id));
-
-  var nested_rows = new Array();
-  for (var nested_row_id = row_id + 1; nested_row_id < table.rows.length ; nested_row_id++) {
-    if (is_user_visible(table.rows[nested_row_id])) {
-      continue;
-    }
-    if (!is_same_entity(row, table.rows[nested_row_id])) {
-      continue;
-    }
-    if (!is_nested(row, table.rows[nested_row_id])) {
-      break;
-    }
-    nested_rows.push(table.rows[nested_row_id]);
-  }
-  return nested_rows;
-}
-
-function collapse_nested_rows(row_id) {
-  var nested_rows = get_nested_rows(row_id);
-  for (var idx = 0 ; idx < nested_rows.length ; idx++) {
-    hide_table_row(nested_rows[idx]);
-  }
-  show_expand_button(row_id);
-}
-
-function expand_nested_rows(row_id) {
-  var nested_rows = get_nested_rows(row_id);
-  for (var idx = 0 ; idx < nested_rows.length ; idx++) {
-    show_table_row(nested_rows[idx]);
-  }
-  show_collapse_button(row_id);
-}
-
-function show_collapse_button(row_id) {
-  var holder = document.getElementById('log_toggle' + row_id);
-  holder.innerHTML = '<input type="button" class="btn btn-default btn-sm te_fold" value="-" onclick="collapse_nested_rows(' + row_id + ');">';
-}
-
-function show_expand_button(row_id) {
-  var holder = document.getElementById('log_toggle' + row_id);
-  holder.innerHTML = '<input type="button" class="btn btn-primary btn-sm te_fold" value="+" onclick="expand_nested_rows(' + row_id + ');">';
-}
-
-function process_nested_rows(nest_lvl) {
-  var table = document.getElementById('log_table');
-  for (var row_id = 1; row_id < table.rows.length ; row_id++) {
-    show_table_row(table.rows[row_id]);
-  }
-
-  for (var row_id = 1; row_id < table.rows.length - 1 ; row_id++) {
-    var nested_rows = get_nested_rows(row_id);
-    if (nested_rows.length > 0) {
-      show_collapse_button(row_id);
-      if ((nest_lvl >= 0) && (nest_lvl == get_row_nest_lvl(table.rows[row_id]))) {
-        collapse_nested_rows(row_id);
-      }
-    }
-  }
-}
-
 document.addEventListener("DOMContentLoaded", function(event) {
-  process_nested_rows(-1);
+  init_log_filter();
 });
 
 </script>

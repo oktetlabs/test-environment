@@ -8,6 +8,7 @@ data = files(
     'ftiens4.js',
     'lframe_style.css',
     'hammer.min.js',
+    'log_filter.js',
     'log_style.css',
     'renderjson.js',
     'right_frame.html',
