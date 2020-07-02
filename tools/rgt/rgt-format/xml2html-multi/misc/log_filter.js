@@ -148,6 +148,10 @@ var test_entity = null;
 // Shortcut for test entity name used in text on buttons.
 var test_entity_short = '[#T]';
 
+// If enabled, do not hide ERROR messages even if they should be filtered
+// out by entity/user filter.
+var eu_no_hide_errors = true;
+
 // Array of entity/user pairs which are related to test scenario
 // (filled by init_entity_user_filter()).
 var eu_scenario_def;
@@ -182,12 +186,14 @@ function set_eu_visibility(eu_map) {
     var row = table.rows[row_id];
     var row_entity = row.getAttribute('data-entity');
     var row_user = row.getAttribute('data-user');
+    var row_level = row.getAttribute('data-level');
 
     if (eu_map.has(row_entity)) {
       var users_map = eu_map.get(row_entity);
 
       if (users_map.has(row_user)) {
-          if (users_map.get(row_user))
+          if (users_map.get(row_user) ||
+              (eu_no_hide_errors && row_level == "ERROR"))
             show_eu_row(row);
           else
             hide_eu_row(row);
@@ -198,11 +204,13 @@ function set_eu_visibility(eu_map) {
   update_eu_buttons();
 }
 
-function eu_button_update_style(el, visible) {
-  if (visible)
-    el.className = el.className.replace(/\bbtn-default\b/g, 'btn-primary');
-  else
-    el.className = el.className.replace(/\bbtn-primary\b/g, 'btn-default');
+function eu_button_update_style(el, visible, enabled_style) {
+  if (visible) {
+    el.className = el.className.replace(/\bbtn-default\b/g, enabled_style);
+  } else {
+    var re = RegExp("\\b" + enabled_style + "\\b", "g");
+    el.className = el.className.replace(re, 'btn-default');
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -259,7 +267,7 @@ function eu_all_button_update() {
     var el = document.getElementById('eu_all_button');
     var visible = eu_all_state();
 
-    eu_button_update_style(el, visible);
+    eu_button_update_style(el, visible, "btn-primary");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -318,7 +326,7 @@ function eu_scenario_button_update() {
   var el = document.getElementById('eu_scenario_button');
   var visible = eu_scenario_state();
 
-  eu_button_update_style(el, visible);
+  eu_button_update_style(el, visible, "btn-primary");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -375,9 +383,32 @@ function eu_test_button_update() {
     var el = document.getElementById('eu_test_button');
     var visible = eu_test_state();
 
-    eu_button_update_style(el, visible);
+    eu_button_update_style(el, visible, "btn-primary");
 }
 
+
+//////////////////////////////////////////////////////////////////////////
+// Functions related to "ERROR" button of entity/user filter
+//////////////////////////////////////////////////////////////////////////
+
+// Get HTML code for "ERROR" button of entity/user filter.
+function eu_error_button() {
+  var btn_class;
+
+  btn_class = (eu_no_hide_errors ? 'btn-danger' : 'btn-default');
+
+  return '<input type="button" class="btn ' + btn_class +' btn-sm ' +
+         'te_filter_button" id="eu_error_button" value="ERROR" ' +
+         'onclick="eu_error_button_onclick(this);">';
+}
+
+// Process OnClick event for "ERROR" button of entity/user filter.
+function eu_error_button_onclick(el) {
+    eu_no_hide_errors = !eu_no_hide_errors;
+
+    set_eu_visibility(eu_visibility);
+    eu_button_update_style(el, eu_no_hide_errors, "btn-danger");
+}
 
 //////////////////////////////////////////////////////////////////////////
 // Functions related to regular buttons of entity/user filter
@@ -399,7 +430,7 @@ function eu_button_updater(entity, user, btn_id) {
         var users = eu_visibility.get(entity);
         if (users.has(user)) {
           visible = users.get(user);
-          eu_button_update_style(el, visible);
+          eu_button_update_style(el, visible, "btn-primary");
         }
       }
   }
@@ -516,12 +547,13 @@ function init_entity_user_filter() {
       }
   }
 
-  // Add SCENARIO, TEST and ALL buttons.
-  // Make sure that all three are on the same line.
+  // Add SCENARIO, TEST, ALL and ERROR buttons.
+  // Make sure that they all are on the same line.
   btns_list.innerHTML +=
             '&nbsp;&nbsp;&nbsp; <span style="white-space: nowrap;">' +
             eu_scenario_button() + '&nbsp;' + eu_test_button() + '&nbsp;' +
-            eu_all_button() + '</span>';
+            eu_all_button() + '&nbsp;&nbsp;&nbsp;' + eu_error_button() +
+            '</span>';
 
   eu_buttons_updaters.push(eu_scenario_button_update);
   eu_buttons_updaters.push(eu_test_button_update);
