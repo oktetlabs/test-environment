@@ -1704,7 +1704,7 @@ job_poll(unsigned int n_channels, unsigned int *channel_ids, int timeout_ms,
         gettimeofday(&now, NULL);
 
         nanoseconds = TE_SEC2NS(now.tv_sec);
-        nanoseconds += TE_US2MS(now.tv_usec);
+        nanoseconds += TE_US2NS(now.tv_usec);
         nanoseconds += TE_MS2NS(timeout_ms);
 
         TE_NS2TS(nanoseconds, &timeout);
