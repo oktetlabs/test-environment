@@ -166,6 +166,7 @@ build_client_argv(const char *path, const char *pd_script_path,
                   const tapi_packetdrill_opts *opts, te_vec *argv)
 {
     const tapi_job_opt_bind opt_binds[] = TAPI_JOB_OPT_SET(
+        TAPI_JOB_OPT_DUMMY((opts->prefix != NULL) ? path : NULL),
         TAPI_JOB_OPT_DUMMY("-v"),
         TAPI_JOB_OPT_DUMMY("--wire_client"),
         TAPI_JOB_OPT_DUMMY(pd_script_path),
@@ -181,7 +182,8 @@ build_client_argv(const char *path, const char *pd_script_path,
         TAPI_PACKETDRILL_OPT_SOCKADDR("--wire_server_ip=", wire_server_ip)
     );
 
-    return tapi_job_opt_build_args(path, opt_binds, opts, argv);
+    return tapi_job_opt_build_args(opts->prefix != NULL ? opts->prefix : path,
+                                   opt_binds, opts, argv);
 }
 
 /**
@@ -198,6 +200,7 @@ build_server_argv(const char *path, const tapi_packetdrill_opts *opts,
                   te_vec *argv)
 {
     const tapi_job_opt_bind opt_binds[] = TAPI_JOB_OPT_SET(
+        TAPI_JOB_OPT_DUMMY((opts->prefix != NULL) ? path : NULL),
         TAPI_JOB_OPT_DUMMY("-v"),
         TAPI_JOB_OPT_DUMMY("--wire_server"),
         TAPI_PACKETDRILL_OPT_STRING("--ip_version=", ip_version_str),
@@ -205,7 +208,8 @@ build_server_argv(const char *path, const tapi_packetdrill_opts *opts,
         TAPI_PACKETDRILL_OPT_STRING("--wire_server_dev=", wire_device)
     );
 
-    return tapi_job_opt_build_args(path, opt_binds, opts, argv);
+    return tapi_job_opt_build_args(opts->prefix != NULL ? opts->prefix : path,
+                                   opt_binds, opts, argv);
 }
 
 /**
@@ -330,7 +334,7 @@ tapi_packetdrill_app_init(tapi_job_factory_t *factory,
     }
 
     job_descr.spawner = NULL;
-    job_descr.program = "packetdrill";
+    job_descr.program = TE_VEC_GET(char *, &argv, 0);
     job_descr.argv = (const char **)argv.data.ptr;
     job_descr.env = NULL;
     job_descr.job_loc = &handle->job;

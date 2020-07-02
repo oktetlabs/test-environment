@@ -91,6 +91,9 @@ typedef struct tapi_packetdrill_opts {
     /* TE test specific options */
     char     src_test_dir[PATH_MAX];    /**< Path to packetdrill script */
     char     short_test_name[PATH_MAX]; /**< Short packetdrill script name */
+
+    const char     *prefix;     /**< String to pass as a prefix
+                                     before 'packetdrill' */
 } tapi_packetdrill_opts;
 
 /** Packetdrill test tool context */
