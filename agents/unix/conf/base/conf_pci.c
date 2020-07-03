@@ -1917,7 +1917,7 @@ pci_driver_set(unsigned int gid, const char *oid, const char *value,
         return rc;
 
     if (strcmp(driver_name, value) == 0)
-        return 0;
+        return maybe_create_device(dev, value);
 
     rc = pci_current_num_vfs_get(dev, &n_vfs);
     if (rc != 0)
