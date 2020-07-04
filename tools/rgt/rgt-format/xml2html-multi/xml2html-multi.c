@@ -91,6 +91,8 @@ typedef struct depth_ctx_user {
 
     te_dbuf json_data;    /**< Buffer for collecting JSON before it can
                                be parsed */
+
+    te_bool no_logs;      /**< No logs were added yet */
 } depth_ctx_user_t;
 
 /**< Struct to keep values related to log message name JS callback */
@@ -1505,6 +1507,21 @@ RGT_DEF_FUNC(proc_logs_start)
             rgt_tmpls_output(depth_user->fd,
                              &xml2fmt_tmpls[PAGE_SELECTOR], attrs);
         }
+
+        if (depth_user->no_logs)
+        {
+            /*
+             * Add buttons for filtering logs only before the first log
+             * messages table. Multiple tables may be present in case of
+             * a session or package, for example one table for messages
+             * which came before tests and another table for messages which
+             * came after tests.
+             */
+
+            rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOGS_FILTER],
+                             attrs);
+            depth_user->no_logs = FALSE;
+        }
         rgt_tmpls_output(depth_user->fd, &xml2fmt_tmpls[LOGS_START], attrs);
         rgt_tmpls_attrs_free(attrs);
     }
@@ -1855,6 +1872,7 @@ alloc_depth_user_data(uint32_t depth)
     depth_user->ignore_artifact = FALSE;
     depth_user->log_level = NULL;
     depth_user->json_data = (te_dbuf)TE_DBUF_INIT(0);
+    depth_user->no_logs = TRUE;
 
     return depth_user;
 }

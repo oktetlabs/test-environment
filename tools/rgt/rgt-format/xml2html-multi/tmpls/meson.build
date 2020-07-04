@@ -31,6 +31,7 @@ xml2html_multi_tmpls = files(
     'log_packet_proto_end.tmpl',
     'log_packet_proto_start.tmpl',
     'log_packet_start.tmpl',
+    'logs_filter.tmpl',
     'logs_start.tmpl',
     'logs_end.tmpl',
     'mem_dump_end.tmpl',

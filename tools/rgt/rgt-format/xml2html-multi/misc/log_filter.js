@@ -14,6 +14,12 @@
 // clang-format --style=LLVM -i <filename>
 // was used.
 
+// Session can have multiple log tables (one for messages before
+// tests, another for messages after tests, for instance), this
+// array includes rows from all such tables, allowing to filter
+// them all at once.
+var log_tables_rows = [];
+
 // Update visibility of a row in table of log messages.
 function update_row_visibility(table_row) {
   var nested_visible = table_row.getAttribute('data-nest-visible');
@@ -68,23 +74,21 @@ function is_nested(row1, row2) {
 }
 
 function get_nested_rows(row_id) {
-  var table = document.getElementById('log_table');
-  var row = table.rows[row_id];
-  console.assert(row.id == ('log_row' + row_id));
+  var row = log_tables_rows[row_id];
 
   var nested_rows = new Array();
-  for (var nested_row_id = row_id + 1; nested_row_id < table.rows.length;
+  for (var nested_row_id = row_id + 1; nested_row_id < log_tables_rows.length;
        nested_row_id++) {
-    if (nested_user_ignored(table.rows[nested_row_id])) {
+    if (nested_user_ignored(log_tables_rows[nested_row_id])) {
       continue;
     }
-    if (!is_same_entity(row, table.rows[nested_row_id])) {
+    if (!is_same_entity(row, log_tables_rows[nested_row_id])) {
       continue;
     }
-    if (!is_nested(row, table.rows[nested_row_id])) {
+    if (!is_nested(row, log_tables_rows[nested_row_id])) {
       break;
     }
-    nested_rows.push(table.rows[nested_row_id]);
+    nested_rows.push(log_tables_rows[nested_row_id]);
   }
   return nested_rows;
 }
@@ -105,32 +109,40 @@ function expand_nested_rows(row_id) {
   show_collapse_button(row_id);
 }
 
+// Get HTML element in which to place a toggle button for a given row.
+function get_log_toggle(row_id) {
+  var row = log_tables_rows[row_id];
+  var id = row.id;
+
+  id = id.replace(/^line/, "");
+  return document.getElementById("log_toggle" + id);
+}
+
 function show_collapse_button(row_id) {
-  var holder = document.getElementById('log_toggle' + row_id);
+  var holder = get_log_toggle(row_id);
   holder.innerHTML =
       '<input type="button" class="btn btn-default btn-sm te_fold" value="-" onclick="collapse_nested_rows(' +
       row_id + ');">';
 }
 
 function show_expand_button(row_id) {
-  var holder = document.getElementById('log_toggle' + row_id);
+  var holder = get_log_toggle(row_id);
   holder.innerHTML =
       '<input type="button" class="btn btn-success btn-sm te_fold" value="+" onclick="expand_nested_rows(' +
       row_id + ');">';
 }
 
 function process_nested_rows(nest_lvl) {
-  var table = document.getElementById('log_table');
-  for (var row_id = 1; row_id < table.rows.length; row_id++) {
-    show_nested_row(table.rows[row_id]);
+  for (var row_id = 0; row_id < log_tables_rows.length; row_id++) {
+    show_nested_row(log_tables_rows[row_id]);
   }
 
-  for (var row_id = 1; row_id < table.rows.length - 1; row_id++) {
+  for (var row_id = 0; row_id < log_tables_rows.length - 1; row_id++) {
     var nested_rows = get_nested_rows(row_id);
     if (nested_rows.length > 0) {
       show_collapse_button(row_id);
       if ((nest_lvl >= 0) &&
-          (nest_lvl == get_row_nest_lvl(table.rows[row_id]))) {
+          (nest_lvl == get_row_nest_lvl(log_tables_rows[row_id]))) {
         collapse_nested_rows(row_id);
       }
     }
@@ -185,11 +197,11 @@ function update_eu_buttons() {
 // Update visibility of all log messages whose entity and user
 // are in a given map.
 function set_eu_visibility(eu_map) {
-  var table = document.getElementById('log_table');
+  if (eu_map.size == 0)
+    return;
 
-  // 0th row is table header, so start with index 1.
-  for (var row_id = 1; row_id < table.rows.length; row_id++) {
-    var row = table.rows[row_id];
+  for (var row_id = 0; row_id < log_tables_rows.length; row_id++) {
+    var row = log_tables_rows[row_id];
     var row_entity = row.getAttribute('data-entity');
     var row_user = row.getAttribute('data-user');
     var row_level = row.getAttribute('data-level');
@@ -211,12 +223,28 @@ function set_eu_visibility(eu_map) {
 }
 
 function eu_button_update_style(el, visible, enabled_style) {
+  // Disabled button
+  if (visible === null)
+    return;
+
   if (visible) {
     el.className = el.className.replace(/\bbtn-default\b/g, enabled_style);
   } else {
     var re = RegExp("\\b" + enabled_style + "\\b", "g");
     el.className = el.className.replace(re, 'btn-default');
   }
+}
+
+function eu_gen_button_class(state) {
+  // state is visibility state of log messages configured
+  // by this button. null means there is no such messages
+  // and button should be disabled.
+  if (state === null)
+    return 'disabled';
+  else if (state)
+    return 'btn-primary';
+  else
+    return 'btn-default';
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -226,15 +254,22 @@ function eu_button_update_style(el, visible, enabled_style) {
 // Get visibility state for "ALL" button of entity/user filter.
 // That button is displayed in "on" state only if all entity/user
 // combinations are visible.
+// Returns null if the button is disabled because there is no
+// messages in the log.
 function eu_all_state() {
+  var count = 0;
+
   for (var [entity, users] of eu_visibility) {
     for (var [user, val] of users) {
+      count++;
       if (!val) {
         return false;
       }
     }
   }
 
+  if (count == 0)
+    return null;
   return true;
 }
 
@@ -242,7 +277,7 @@ function eu_all_state() {
 function eu_all_button() {
   var btn_class;
 
-  btn_class = (eu_all_state() ? 'btn-primary' : 'btn-default');
+  btn_class = eu_gen_button_class(eu_all_state());
 
   return '<input type="button" class="btn ' + btn_class + ' btn-sm ' +
          'te_filter_button" id="eu_all_button" value="#ALL" ' +
@@ -252,7 +287,12 @@ function eu_all_button() {
 // Process OnClick event for "ALL" button of entity/user filter.
 function eu_all_button_onclick() {
   var m = new Map();
-  var new_visibility = !eu_all_state();
+  var new_visibility = eu_all_state();
+
+  if (new_visibility === null)
+    return;
+  else
+    new_visibility = !new_visibility;
 
   for (var [entity, users] of eu_visibility) {
     for (var [user, val] of users) {
@@ -283,15 +323,23 @@ function eu_all_button_update() {
 // Get visibility state for "SCENARIO" button of entity/user filter.
 // That button is displayed in "on" state only if all entity/user
 // combinations related to test scenario are visible.
+// Returns null if the button is disabled because there is no
+// messages related to scenario in the log.
 function eu_scenario_state() {
+  var count = 0;
+
   for (var spec of eu_scenario_def) {
     if (eu_visibility.has(spec.entity)) {
       var users = eu_visibility.get(spec.entity);
       if (users.has(spec.user) && !users.get(spec.user))
         return false;
+
+      count++;
     }
   }
 
+  if (count == 0)
+    return null;
   return true;
 }
 
@@ -299,7 +347,7 @@ function eu_scenario_state() {
 function eu_scenario_button() {
   var btn_class;
 
-  btn_class = (eu_scenario_state() ? 'btn-primary' : 'btn-default');
+  btn_class = eu_gen_button_class(eu_scenario_state());
 
   return '<input type="button" class="btn ' + btn_class + ' btn-sm ' +
          'te_filter_button" id="eu_scenario_button" value="#SCENARIO" ' +
@@ -309,7 +357,12 @@ function eu_scenario_button() {
 // Process OnClick event for "SCENARIO" button of entity/user filter.
 function eu_scenario_button_onclick() {
   var m = new Map();
-  var new_visibility = !eu_scenario_state();
+  var new_visibility = eu_scenario_state();
+
+  if (new_visibility === null)
+    return;
+  else
+    new_visibility = !new_visibility;
 
   for (var spec of eu_scenario_def) {
     if (eu_visibility.has(spec.entity)) {
@@ -342,15 +395,23 @@ function eu_scenario_button_update() {
 // Get visibility state for "TEST" button of entity/user filter.
 // That button is displayed in "on" state only if all entity/user
 // combinations with test entity are visible.
+// Returns null if the button is disabled because there is no
+// messages with the test entity in the log.
 function eu_test_state() {
+  var count = 0;
+
   if (eu_visibility.has(test_entity)) {
     var users = eu_visibility.get(test_entity);
     for (var [user, val] of users) {
       if (!val)
         return false;
+
+      count++;
     }
   }
 
+  if (count == 0)
+    return null;
   return true;
 }
 
@@ -358,7 +419,7 @@ function eu_test_state() {
 function eu_test_button() {
   var btn_class;
 
-  btn_class = (eu_test_state() ? 'btn-primary' : 'btn-default');
+  btn_class = eu_gen_button_class(eu_test_state());
 
   return '<input type="button" class="btn ' + btn_class + ' btn-sm ' +
          'te_filter_button" id="eu_test_button" value="#TEST" ' +
@@ -369,7 +430,12 @@ function eu_test_button() {
 function eu_test_button_onclick() {
   var m_users = new Map();
   var m = new Map([ [ test_entity, m_users ] ]);
-  var new_visibility = !eu_test_state();
+  var new_visibility = eu_test_state();
+
+  if (new_visibility === null)
+    return;
+  else
+    new_visibility = !new_visibility;
 
   if (eu_visibility.has(test_entity)) {
     var users = eu_visibility.get(test_entity);
@@ -486,13 +552,21 @@ function init_entity_user_filter() {
   var fixed_entities = new Map();
 
   var table_btns = document.getElementById('filter_buttons');
-  var table = document.getElementById('log_table');
+  var tables = document.getElementsByClassName('te_log_table');
+
+  for (var table_id = 0; table_id < tables.length; table_id++) {
+    var table = tables[table_id];
+
+    // 0th row is table header, so start with index 1.
+    for (var row_id = 1; row_id < table.rows.length; row_id++) {
+      log_tables_rows.push(table.rows[row_id]);
+    }
+  }
 
   // Get all pairs of entity/user, set them all visible by
   // default.
-  // 0th row is table header, so start with index 1.
-  for (var row_id = 1; row_id < table.rows.length; row_id++) {
-    var row = table.rows[row_id];
+  for (var row_id = 0; row_id < log_tables_rows.length; row_id++) {
+    var row = log_tables_rows[row_id];
     var entity = row.getAttribute('data-entity');
     var user = row.getAttribute('data-user');
     var users_map;
@@ -552,10 +626,10 @@ function init_entity_user_filter() {
 
   // Add SCENARIO, TEST, ALL and ERROR buttons.
   // Make sure that they all are on the same line.
-  btns_list.innerHTML +=
-      '&nbsp;&nbsp;&nbsp; <span style="white-space: nowrap;">' +
-      eu_scenario_button() + '&nbsp;' + eu_test_button() + '&nbsp;' +
-      eu_all_button() + '&nbsp;&nbsp;&nbsp;' + eu_error_button() + '</span>';
+  btns_list.innerHTML += '<br><span style="white-space: nowrap;">' +
+                         eu_scenario_button() + '&nbsp;' + eu_test_button() +
+                         '&nbsp;' + eu_all_button() + '&nbsp;&nbsp;&nbsp;' +
+                         eu_error_button() + '</span>';
 
   eu_buttons_updaters.push(eu_scenario_button_update);
   eu_buttons_updaters.push(eu_test_button_update);
