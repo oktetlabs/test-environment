@@ -132,6 +132,22 @@ function show_expand_button(row_id) {
       row_id + ');">';
 }
 
+// Update style of buttons of the nested filter, showing in "on" state those
+// which are currently enabled.
+function update_nested_filter_buttons(nest_lvl) {
+  var buttons = document.getElementsByClassName("te_nf_button");
+
+  for (var i = 0; i < buttons.length; i++) {
+    if (i <= nest_lvl || nest_lvl < 0) {
+      buttons[i].className =
+          buttons[i].className.replace(/\bbtn-default\b/, "btn-success");
+    } else {
+      buttons[i].className =
+          buttons[i].className.replace(/\bbtn-success\b/, "btn-default");
+    }
+  }
+}
+
 function process_nested_rows(nest_lvl) {
   for (var row_id = 0; row_id < log_tables_rows.length; row_id++) {
     show_nested_row(log_tables_rows[row_id]);
@@ -147,6 +163,8 @@ function process_nested_rows(nest_lvl) {
       }
     }
   }
+
+  update_nested_filter_buttons(nest_lvl);
 }
 
 //////////////////////////////////////////////////////////////////////////
