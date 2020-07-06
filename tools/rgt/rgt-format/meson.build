@@ -20,7 +20,8 @@ libxml2fmt_core = static_library(
     'xml2fmt_core.c',
     include_directories: inc,
     c_args: c_args,
-    dependencies: [dep_libxml2, dep_glib, dep_popt],
+    dependencies: [dep_libxml2, dep_glib, dep_popt, dep_lib_tools,
+                   dep_lib_logger_file, dep_lib_logger_core],
 )
 
 dep_jansson = dependency('jansson', required: false)
