@@ -15,7 +15,10 @@ with_config="$1"
 
 # Put initial values to control variables
 RSYNC="rsync --exclude .git -a"
-RSYNC_TO_ARGS="--delete-during"
+
+declare -a RSYNC_TO_ARGS
+RSYNC_TO_ARGS+=(--delete-during)
+RSYNC_TO_ARGS+=("--temp-dir=${TE_TMP}")
 
 # List of all available TAD protocols
 TAD_PROTOCOLS_ALL="arp"
@@ -609,9 +612,9 @@ rsync_to() {
     done
 
     if test -n "${ssh}" ; then
-        ${RSYNC} ${RSYNC_TO_ARGS} -e "${ssh% *}" ${src} "${ssh##* }:${dst}"
+        ${RSYNC} "${RSYNC_TO_ARGS[@]}" -e "${ssh% *}" ${src} "${ssh##* }:${dst}"
     else
-        ${RSYNC} ${RSYNC_TO_ARGS} ${src} "${dst}"
+        ${RSYNC} "${RSYNC_TO_ARGS[@]}" ${src} "${dst}"
     fi
 }
 
