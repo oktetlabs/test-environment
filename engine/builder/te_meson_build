@@ -14,7 +14,10 @@ SCRIPT_DIR="$(dirname "$0")"
 with_config="$1"
 
 # Put initial values to control variables
-RSYNC="rsync --exclude .git -a"
+declare -a RSYNC
+RSYNC+=(rsync)
+RSYNC+=("--exclude=.git")
+RSYNC+=(-a)
 
 declare -a RSYNC_TO_ARGS
 RSYNC_TO_ARGS+=(--delete-during)
@@ -612,9 +615,9 @@ rsync_to() {
     done
 
     if test -n "${ssh}" ; then
-        ${RSYNC} "${RSYNC_TO_ARGS[@]}" -e "${ssh% *}" ${src} "${ssh##* }:${dst}"
+        "${RSYNC[@]}" "${RSYNC_TO_ARGS[@]}" -e "${ssh% *}" ${src} "${ssh##* }:${dst}"
     else
-        ${RSYNC} "${RSYNC_TO_ARGS[@]}" ${src} "${dst}"
+        "${RSYNC[@]}" "${RSYNC_TO_ARGS[@]}" ${src} "${dst}"
     fi
 }
 
@@ -626,9 +629,9 @@ rsync_from() {
     local ssh="${!sshvar}"
 
     if test -n "${ssh}" ; then
-        ${RSYNC} -e "${ssh% *}" "${ssh##* }:${src}" "${dst}"
+        "${RSYNC[@]}" -e "${ssh% *}" "${ssh##* }:${src}" "${dst}"
     else
-        ${RSYNC} "${src}" "${dst}"
+        "${RSYNC[@]}" "${src}" "${dst}"
     fi
 }
 
