@@ -448,6 +448,18 @@ get_line_graph(json_t *view_obj, te_rgt_mi *mi,
             }
         }
     }
+    else
+    {
+        /*
+         * Axis Y is not specified, it means that all parameters
+         * except the one assigned to axis X are displayed on graph,
+         * and therefore all parameters are used by graph on some axis.
+         */
+        for (i = 0; i < meas->params_num; i++)
+        {
+            meas->params[i].in_graph = TRUE;
+        }
+    }
 
     line_graph->axis_y = axis_y_list;
     line_graph->axis_y_num = axis_y_num;
