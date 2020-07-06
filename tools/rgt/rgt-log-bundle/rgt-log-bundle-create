@@ -2,6 +2,11 @@
 
 export TMPDIR="${TMPDIR:-/tmp}"
 
+# Add TE libraries installation path to LD_LIBRARY_PATH since
+# RGT tools may be linked dynamically to some TE libraries
+bindir="$(cd `dirname $0` && pwd)"
+export LD_LIBRARY_PATH="$(dirname "${bindir}")/lib:${LD_LIBRARY_PATH}"
+
 raw_log_path="${PWD}/log.raw"
 bundle_path="${PWD}/raw_log_bundle.tpxz"
 
@@ -76,7 +81,8 @@ if [[ "${raw_log_path}" =~ [.]xz$ ]] ; then
 fi
 
 echo "Indexing raw log..."
-rgt-conv --mode=index "${raw_log_path}" "${bundle_tmpdir}/log_idx"
+"${bindir}"/rgt-conv --mode=index "${raw_log_path}" \
+                                    "${bundle_tmpdir}/log_idx"
 if test $? -ne 0 ; then
     err_cleanup "Failed to index raw log file"
 fi
@@ -94,7 +100,7 @@ if test $? -ne 0 ; then
     err_cleanup "Failed to create subdir in ${bundle_tmpdir}"
 fi
 
-rgt-log-split --raw-log="${raw_log_path}" \
+"${bindir}"/rgt-log-split --raw-log="${raw_log_path}" \
     --log-index="${bundle_tmpdir}/sorted_log_idx" \
     --output-dir="${bundle_tmpdir}/fragments/"
 if test $? -ne 0 ; then
@@ -119,7 +125,7 @@ if test $? -ne 0 ; then
 fi
 
 echo "Checking whether original log can be recovered..."
-rgt-log-bundle-get-original --bundle="${bundle_path}" \
+"${bindir}"/rgt-log-bundle-get-original --bundle="${bundle_path}" \
     --output="${bundle_tmpdir}/recovered_raw_log"
 if test $? -ne 0 ; then
     err_cleanup "Failed to recover original raw log"
