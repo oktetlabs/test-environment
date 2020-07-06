@@ -149,6 +149,7 @@
     - oid: "/agent/hardware/pci/device/dev"
       access: read_only
       type: none
+      volatile: true
       depends:
         - oid: "/agent/hardware/pci/device/driver"
       d: |
