@@ -7099,7 +7099,7 @@ agent_dir_get(unsigned int gid, const char *oid, char *result,
     UNUSED(gid);
     UNUSED(oid);
     UNUSED(instance);
-    memcpy(result, ta_dir, strlen(ta_dir) + 1);
+    te_strlcpy(result, ta_dir, RCF_MAX_VAL);
     return 0;
 }
 
