@@ -26,6 +26,7 @@
 #include "tapi_cfg_pci.h"
 
 #define CFG_PCI_TA_DEVICE_FMT "/agent:%s/hardware:/pci:/device:%s"
+#define CFG_PCI_TA_VEND_DEVICE_FMT "/agent:%s/hardware:/pci:/vendor:%s/device:%s"
 
 te_errno
 tapi_cfg_pci_get_pci_vendor_device(const char *ta, const char *pci_addr,
@@ -460,4 +461,55 @@ tapi_cfg_pci_get_driver(const char *pci_oid, char **driver)
     }
 
     return 0;
+}
+
+te_errno
+tapi_cfg_pci_devices_by_vendor_device(const char *ta, const char *vendor,
+                                      const char *device, unsigned int *size,
+                                      char ***pci_oids)
+{
+    cfg_handle *instances = NULL;
+    unsigned int n_instances = 0;
+    char **result = NULL;
+    unsigned int i;
+    te_errno rc;
+
+    rc = cfg_find_pattern_fmt(&n_instances, &instances,
+                              CFG_PCI_TA_VEND_DEVICE_FMT "/instance:*",
+                              ta, vendor, device);
+    if (rc != 0)
+        goto out;
+
+    result = TE_ALLOC(n_instances * sizeof(*result));
+    if (result == NULL)
+    {
+        rc = TE_RC(TE_TAPI, TE_ENOMEM);
+        goto out;
+    }
+
+    for (i = 0; i < n_instances; i++)
+    {
+        rc = cfg_get_instance(instances[i], NULL, &result[i]);
+        if (rc != 0)
+        {
+            ERROR("Failed to get PCI device");
+            goto out;
+        }
+    }
+
+    *size = n_instances;
+    if (pci_oids != NULL)
+        *pci_oids = result;
+
+out:
+    free(instances);
+    if (rc != 0 || pci_oids == NULL)
+    {
+        for (i = 0; result != NULL && i < n_instances; i++)
+            free(result[i]);
+
+        free(result);
+    }
+
+    return rc;
 }

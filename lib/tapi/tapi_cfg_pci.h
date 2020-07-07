@@ -46,6 +46,25 @@ extern te_errno tapi_cfg_pci_get_pci_vendor_device(const char *ta,
                                                    char **device);
 
 /**
+ * Get PCI addresses of PCI functions with specified vendor and device
+ * identifiers.
+ *
+ * @param[in]  ta           Test Agent name
+ * @param[in]  vendor       Vendor identifier
+ * @param[in]  device       Device identifier
+ * @param[out] size         Count of @p pci_addrs
+ * @param[out] pci_oids     OIDs of found devices (/agent/hardware/pci/device).
+ *                          Might be @c NULL to only get the count.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_devices_by_vendor_device(const char *ta,
+                                                      const char *vendor,
+                                                      const char *device,
+                                                      unsigned int *size,
+                                                      char ***pci_oids);
+
+/**
  * Get VFs by a PCI PF object identifier.
  *
  * @param[in]  pf_oid        PF OID in string representation
