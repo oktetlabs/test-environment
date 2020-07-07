@@ -464,6 +464,52 @@ tapi_cfg_pci_get_driver(const char *pci_oid, char **driver)
 }
 
 te_errno
+tapi_cfg_pci_get_devices(const char *pci_oid, unsigned int *count,
+                         char ***device_names)
+{
+    unsigned int n_devices = 0;
+    cfg_handle *devices = NULL;
+    char **result = NULL;
+    unsigned int i;
+    te_errno rc;
+
+    rc = cfg_find_pattern_fmt(&n_devices, &devices,
+                              "%s/dev:*", pci_oid);
+    if (rc != 0)
+        goto out;
+
+    result = TE_ALLOC(n_devices * sizeof(*result));
+    if (result == NULL)
+    {
+        rc = TE_RC(TE_TAPI, TE_ENOMEM);
+        goto out;
+    }
+
+    for (i = 0; i < n_devices; i++)
+    {
+        rc = cfg_get_inst_name(devices[i], &result[i]);
+        if (rc != 0)
+            goto out;
+    }
+
+    *count = n_devices;
+    if (device_names != NULL)
+        *device_names = result;
+
+out:
+    free(devices);
+    if (rc != 0 || device_names == NULL)
+    {
+        for (i = 0; result != NULL && i < n_devices; i++)
+            free(result[i]);
+
+        free(result);
+    }
+
+    return rc;
+}
+
+te_errno
 tapi_cfg_pci_devices_by_vendor_device(const char *ta, const char *vendor,
                                       const char *device, unsigned int *size,
                                       char ***pci_oids)

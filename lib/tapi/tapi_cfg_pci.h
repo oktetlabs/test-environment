@@ -154,6 +154,19 @@ extern te_errno tapi_cfg_pci_get_ta_driver(const char *ta,
                                            enum tapi_cfg_driver_type type,
                                            char **driver);
 /**
+ * Get character or block devices names list of a PCI device
+ *
+ * @param[in]  pci_oid      PCI device OID (/agent/hardware/pci/device)
+ * @param[out] size         Count of @p device_names
+ * @param[out] device_names Character or block devices names
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_get_devices(const char *pci_oid,
+                                         unsigned int *count,
+                                         char ***device_names);
+
+/**
  * Get driver of a PCI device
  *
  * @param[in]  pci_oid      PCI device OID (/agent/hardware/pci/device)
