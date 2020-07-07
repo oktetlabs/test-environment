@@ -153,7 +153,7 @@ clean_need=
 # Store all interesting status information before cleaning. 
 #
 if test -n "$LOG_FILE"; then 
-    TEMP_FILE=`TMPDIR=. tempfile`
+    TEMP_FILE=`tempfile`
     echo "">$TEMP_FILE
     for h in $TE_HOST $TA_HOSTS; do
         if test $h = "localhost"; then 
