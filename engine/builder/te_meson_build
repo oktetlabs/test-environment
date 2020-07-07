@@ -21,7 +21,6 @@ RSYNC+=(-a)
 
 declare -a RSYNC_TO_ARGS
 RSYNC_TO_ARGS+=(--delete-during)
-RSYNC_TO_ARGS+=("--temp-dir=${TE_TMP}")
 
 # List of all available TAD protocols
 TAD_PROTOCOLS_ALL="arp"
