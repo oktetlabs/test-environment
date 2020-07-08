@@ -112,7 +112,7 @@
 #if TRC_USE_STATS_POPUP
 
 /** Maximum number of nested test packages */
-#define TRC_DB_NEST_LEVEL_MAX       8
+#define TRC_DB_NEST_LEVEL_MAX       32
 
 #define TRC_STATS_SHOW_HREF_START \
     "        <a href=\"javascript:showStats('StatsTip','"
@@ -3234,6 +3234,12 @@ trc_report_javascript_table(FILE         *f, trc_report_ctx *ctx,
         {
             case TRC_DB_WALKER_SON:
                 subtests[level++] = init_string;
+                if (level >= TE_ARRAY_LEN(subtests))
+                {
+                    ERROR("TRC DB nesting level is too big");
+                    rc = TE_ENOSPC;
+                    goto cleanup;
+                }
                 /*@fallthrough@*/
 
             case TRC_DB_WALKER_BROTHER:
