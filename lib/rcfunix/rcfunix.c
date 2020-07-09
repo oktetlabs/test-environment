@@ -912,7 +912,6 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
 {
     unix_ta    *ta = (unix_ta *)handle;
     te_string   cmd = TE_STRING_INIT;
-    te_bool     with_sudo;
     te_errno    rc;
 
     (void)parms;
@@ -967,39 +966,24 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
             return rc;
     }
 
-    /*
-     * In theory, if caller has no sudo, it could create files in TA directory
-     * but removal will fail. If sudo is used to remove and fails,
-     * try without it.
-     */
-    for (with_sudo = ta->sudo; ; with_sudo = FALSE)
+    rc = te_string_append(&cmd, "%srm -rf %s%s",
+                       ta->cmd_prefix.ptr, ta->run_dir, ta->cmd_suffix);
+    if (rc != 0)
     {
-        te_string_reset(&cmd);
-        rc = te_string_append(&cmd, "%s%srm -rf %s%s",
-                              ta->cmd_prefix.ptr,
-                              with_sudo ? rcfunix_ta_sudo(ta) : "",
-                              ta->run_dir, ta->cmd_suffix);
-        if (rc != 0)
-        {
-            ERROR("Failed to make rm command: %r", rc);
-            goto done;
-        }
-        /* we want to be careful with what we remove */
-        if (cmd.len < strlen("rm -rf /tmp/"))
-        {
-            rc = TE_RC(TE_RCF_UNIX, TE_ENOMEM);
-            goto done;
-        }
-
-        RING("CMD to remove: %s", cmd.ptr);
-        rc = system_with_timeout(ta->kill_timeout, "%s", cmd.ptr);
-        if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
-            goto done;
-        else if (rc == 0)
-            break;
-        else if (!with_sudo)
-            break;
+        ERROR("Failed to make rm command: %r", rc);
+        goto done;
     }
+    /* we want to be careful with what we remove */
+    if (cmd.len < strlen("rm -rf /tmp/"))
+    {
+        rc = TE_RC(TE_RCF_UNIX, TE_ENOMEM);
+        goto done;
+    }
+
+    RING("CMD to remove: %s", cmd.ptr);
+    rc = system_with_timeout(ta->kill_timeout, "%s", cmd.ptr);
+    if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
+        goto done;
 
     if (ta->start_pid > 0)
     {
