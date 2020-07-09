@@ -633,6 +633,7 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     te_string cmdline_setup = TE_STRING_INIT;
     te_string cmdline_start = TE_STRING_INIT;
     char *working_dir = NULL;
+    char *tmp_dir = NULL;
     const char *vdev_arg = NULL;
     unsigned int port_number = 0;
     te_errno rc = 0;
@@ -664,6 +665,14 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
         goto out;
     }
 
+    rc = cfg_get_instance_fmt(NULL, &tmp_dir,
+                              "/agent:%s/tmp_dir:", rpcs->ta);
+    if (rc != 0)
+    {
+        ERROR("Failed to get temporary directory");
+        goto out;
+    }
+
     CHECK_RC(te_string_append(&testpmd_path, "%sdpdk-testpmd", working_dir));
 
     rc = tapi_dpdk_build_eal_arguments(rpcs, env, n_cpus_grabbed, cpu_ids,
@@ -687,7 +696,7 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     if (rc != 0)
         goto out;
 
-    generate_cmdline_filename(working_dir, &cmdline_file);
+    generate_cmdline_filename(tmp_dir, &cmdline_file);
     append_testpmd_cmdline_from_args(test_args, port_number, &cmdline_setup,
                                      &cmdline_start);
     /*
