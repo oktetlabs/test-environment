@@ -14,6 +14,7 @@
 #include "logger_api.h"
 #include "te_log_stack.h"
 #include "conf_api.h"
+#include "tapi_cfg_modules.h"
 
 #define CFG_MODULE_OID_FMT "/agent:%s/module:%s"
 #define CFG_MODULE_PARAM_OID_FMT CFG_MODULE_OID_FMT"/parameter:%s"

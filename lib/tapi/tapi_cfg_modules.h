@@ -93,7 +93,7 @@ te_errno tapi_cfg_module_param_add(const char *ta_name, const char *mod_name,
 te_errno tapi_cfg_module_int_param_add(const char *ta_name,
                                        const char *mod_name,
                                        const char *param,
-                                       const char *param_value);
+                                       int param_value);
 
 /**
  * Add a number of string params that go in pairs terminated by NULL.
