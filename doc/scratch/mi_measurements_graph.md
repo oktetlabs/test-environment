@@ -131,14 +131,16 @@ should generate a clear warnings displayed next to the graph.
 
 Nothing will be drawn. System makes no guesses.
 
-#### 1 diagram with 3 graphics with 'time' as base axis ####
+#### 1 diagram with 3 graphics with 'timestamp' as base axis ####
 
 ```json
 views {
     [
        {
-           "type" : "line-graph",
-           "axis-x" : "time"
+           "name": "graph",
+           "type": "line-graph",
+           "title": "How other measurements depend on timestamp",
+           "axis-x": { "type": "time", "name": "timestamp" }
        }
     ]
 }
@@ -154,57 +156,64 @@ simply assume that there is equal interval between the measurements:
 views {
     [
         {
-            "type" : "line-graph",
-            "axis-x" : "auto",
-            "axis-y" : [ "latency", "pps" ],
+            "name": "graph",
+            "type": "line-graph",
+            "title": "How app_latency and foops change with sequence number",
+            "axis-x": { "name": "auto-seqno" },
+            "axis-y": [ { "type": "latency", "name": "app_latency" },
+                        { "type": "pps", "name": "foops" } ],
         }
     ]
 }
 ```
 
-will draw two lines:
+will draw two lines on the same graph:
 
- * `latency(measurement_number)`
- * `pps(measurement_number)`.
+ * `app_latency(measurement_number)`
+ * `foops(measurement_number)`.
 
 which is why it's called 'auto'.
 
 #### Full line specification ####
 
-Let's say one wants two line graphs: `pps(time)`:
+Fully specified graph of `foops(timestamp)`:
 
 ```json
 views {
     [
        {
-           "type" : "line-graph",
-           "axis-x" : "time",
-           "axis-y" : "pps"
+           "name": "graph",
+           "type": "line-graph",
+           "title": "How foops depends on timestamp",
+           "axis-x": { "type": "time", "name": "timestamp" },
+           "axis-y": [ { "type": "pps", "name": "foops" } ]
        }
     ]
 }
 ```
 
-and if I'd like to have two **separate** line-graphs:
+Two **separate** line-graphs:
 
 ```json
 views {
     [
        {
-           "type" : "line-graph",
-           "axis-x" : "time",
-           "axis-y" : "latency"
+           "name": "graph1",
+           "type": "line-graph",
+           "title": "How app_latency depends on timestamp",
+           "axis-x": { "type": "time", "name": "timestamp" },
+           "axis-y": [ { "type": "latency", "name": "app_latency" } ]
        },
        {
-           "type" : "line-graph",
-           "axis-x" : "time",
-           "axis-y" : "pps"
+           "name": "graph2",
+           "type": "line-graph",
+           "title": "How foops depends on timestamp",
+           "axis-x": { "type": "time", "name": "timestamp" },
+           "axis-y": [ { "type": "pps", "name": "foops" } ]
        }
     ]
 }
 ```
 
-Asking to combine `pps(time)` and `latency(pps)` on the same graph MUST be an
-error and SHOULD FAIL the test.
-
-MI users MUST NOT display any graphs and MUST display a clear error instead.
+By design you cannot combine `foops(timestamp)` and `app_latency(foops)` on
+the same graph.
