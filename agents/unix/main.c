@@ -114,6 +114,8 @@ const char *ta_execname = ta_execname_storage;
 const char *ta_name = "(unix)";
 /** Test Agent data and binaries location */
 char ta_dir[RCF_MAX_PATH];
+/** Directory for temporary files */
+char ta_tmp_dir[RCF_MAX_PATH];
 
 #if __linux__
 const char *ta_tmp_path = "/tmp/";
@@ -1524,7 +1526,6 @@ main(int argc, char **argv)
 
     struct sigaction    sigact;
 
-    char  ta_tmp_dir[RCF_MAX_PATH];
     char  buf[16];
     char *tmp;
 

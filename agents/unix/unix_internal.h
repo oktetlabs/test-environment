@@ -169,7 +169,8 @@ extern const char *ta_name;
 extern const char *ta_execname;
 /** Test Agent data and binaries location */
 extern char ta_dir[RCF_MAX_PATH];
-
+/** Directory for temporary files */
+extern char ta_tmp_dir[RCF_MAX_PATH];
 
 /**
  * Get status of the interface (FALSE - down or TRUE - up).

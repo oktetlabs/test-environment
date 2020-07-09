@@ -39,6 +39,15 @@
          not result in configuration restore failure.
           Name: None
 
+    - oid: "/agent/tmp_dir"
+      access: read_only
+      type: string
+      volatile: true
+      d: |
+         Directory for temporary files.
+         It is volatile since it changes on agent restart and should
+         not result in configuration restore failure.
+          Name: None
 
     - oid: "/agent/ip4_fw"
       access: read_write
