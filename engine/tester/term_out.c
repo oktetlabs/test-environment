@@ -92,6 +92,7 @@ static size_t  prev_len = 0;
  */
 typedef struct colored_verdict_data {
     int         color;
+    int         attrs;
     const char *text;
     const char *no_color_text;
 } colored_verdict_data;
@@ -108,110 +109,115 @@ typedef enum colored_verdict_type {
     COLORED_VERDICT_MAX
 } colored_verdict_type;
 
-/** Colored verdict when TRC is not used? */
+/**
+ * Colored verdict (testing status) in different situations.
+ *
+ * See colored_verdict(); note that currently only A_BOLD text attribute
+ * is supported there.
+ */
 static const colored_verdict_data colored_verdicts[TESTER_TEST_STATUS_MAX]
                                                   [COLORED_VERDICT_MAX] = {
 
-    { { COLOR_CYAN,             "INCOMPLETE",   "INCOMPLETE" },
-      { COLOR_CYAN,             "INCOMPLETE?",  "INCOMPLETE?" },
-      { COLOR_CYAN,             "INCOMPLETE",   "INCOMPLETE" },
-      { COLOR_CYAN,             "INCOMPLETE",   "INCOMPLETE" },
-      { COLOR_CYAN,             "INCOMPLETE",   "INCOMPLETE" } },
+    { { COLOR_CYAN,      0,         "INCOMPLETE",   "INCOMPLETE" },
+      { COLOR_CYAN,      0,         "INCOMPLETE?",  "INCOMPLETE?" },
+      { COLOR_CYAN,      0,         "INCOMPLETE",   "INCOMPLETE" },
+      { COLOR_CYAN,      0,         "INCOMPLETE",   "INCOMPLETE" },
+      { COLOR_CYAN,      0,         "INCOMPLETE",   "INCOMPLETE" } },
 
-    { { COLOR_CYAN,             "EMPTY",        "empty" },
-      { COLOR_CYAN,             "EMPTY?",       "empty?" },
-      { COLOR_CYAN,             "EMPTY",        "empty" },
-      { COLOR_CYAN,             "EMPTY",        "empty" },
-      { COLOR_CYAN,             "EMPTY",        "empty" } },
+    { { COLOR_CYAN,      0,         "EMPTY",        "empty" },
+      { COLOR_CYAN,      0,         "EMPTY?",       "empty?" },
+      { COLOR_CYAN,      0,         "EMPTY",        "empty" },
+      { COLOR_CYAN,      0,         "EMPTY",        "empty" },
+      { COLOR_CYAN,      0,         "EMPTY",        "empty" } },
 
-    { { A_STANDOUT,             "SKIPPED",      "SKIPPED" },
-      { A_STANDOUT,             "SKIPPED?",     "SKIPPED?" },
-      { A_STANDOUT,             "SKIPPED",      "SKIPPED" },
-      { A_STANDOUT,             "skip",         "skip" },
-      { A_STANDOUT,             "skip",         "skip" } },
+    { { A_STANDOUT,      0,         "SKIPPED",      "SKIPPED" },
+      { A_STANDOUT,      0,         "SKIPPED?",     "SKIPPED?" },
+      { A_STANDOUT,      0,         "SKIPPED",      "SKIPPED" },
+      { A_STANDOUT,      0,         "skip",         "skip" },
+      { A_STANDOUT,      0,         "skip",         "skip" } },
 
-    { { COLOR_CYAN,             "FAKED",        "faked" },
-      { COLOR_CYAN,             "FAKED?",       "faked?" },
-      { COLOR_CYAN,             "FAKED",        "faked" },
-      { COLOR_CYAN,             "FAKED",        "faked" },
-      { COLOR_CYAN,             "FAKED",        "faked" } },
+    { { COLOR_CYAN,      0,         "FAKED",        "faked" },
+      { COLOR_CYAN,      0,         "FAKED?",       "faked?" },
+      { COLOR_CYAN,      0,         "FAKED",        "faked" },
+      { COLOR_CYAN,      0,         "FAKED",        "faked" },
+      { COLOR_CYAN,      0,         "FAKED",        "faked" } },
 
-    { { COLOR_GREEN,            "PASSED",       "PASSED" },
-      { COLOR_RED,              "PASSED?",      "PASSED?" },
-      { COLOR_RED,              "PASSED",       "PASSED" },
-      { COLOR_GREEN,            "pass",         "pass" },
-      { COLOR_GREEN,            "pass",         "pass" } },
+    { { COLOR_GREEN,     0,         "PASSED",       "PASSED" },
+      { COLOR_RED,       0,         "PASSED?",      "PASSED?" },
+      { COLOR_RED,       0,         "PASSED",       "PASSED" },
+      { COLOR_GREEN,     0,         "pass",         "pass" },
+      { COLOR_GREEN,     0,         "pass",         "pass" } },
 
-    { { COLOR_RED,              "FAILED",       "FAILED" },
-      { COLOR_RED,              "FAILED?",      "FAILED?" },
-      { COLOR_RED,              "FAILED",       "FAILED" },
-      { COLOR_GREEN,            "fail",         "fail" },
-      { COLOR_GREEN,            "fail",         "fail" } },
+    { { COLOR_RED,       0,         "FAILED",       "FAILED" },
+      { COLOR_RED,       0,         "FAILED?",      "FAILED?" },
+      { COLOR_RED,       0,         "FAILED",       "FAILED" },
+      { COLOR_GREEN,     0,         "fail",         "fail" },
+      { COLOR_GREEN,     0,         "fail",         "fail" } },
 
-    { { COLOR_YELLOW,           "NOT FOUND",    "NOT FOUND" },
-      { COLOR_YELLOW,           "NOT FOUND?",   "NOT FOUND?" },
-      { COLOR_YELLOW,           "NOT FOUND",    "NOT FOUND" },
-      { COLOR_YELLOW,           "NOT FOUND",    "NOT FOUND" },
-      { COLOR_YELLOW,           "NOT FOUND",    "NOT FOUND" } },
+    { { COLOR_YELLOW,    0,         "NOT FOUND",    "NOT FOUND" },
+      { COLOR_YELLOW,    0,         "NOT FOUND?",   "NOT FOUND?" },
+      { COLOR_YELLOW,    0,         "NOT FOUND",    "NOT FOUND" },
+      { COLOR_YELLOW,    0,         "NOT FOUND",    "NOT FOUND" },
+      { COLOR_YELLOW,    0,         "NOT FOUND",    "NOT FOUND" } },
 
     /* Unexpected configuration changes */
-    { { COLOR_YELLOW,           "DIRTY",        "DIRTY" },
-      { COLOR_YELLOW,           "DIRTY?",       "DIRTY?" },
-      { COLOR_YELLOW,           "DIRTY",        "DIRTY" },
-      { COLOR_YELLOW,           "DIRTY",        "DIRTY" },
-      { COLOR_YELLOW,           "DIRTY",        "DIRTY" } },
+    { { COLOR_YELLOW,    0,         "DIRTY",        "DIRTY" },
+      { COLOR_YELLOW,    0,         "DIRTY?",       "DIRTY?" },
+      { COLOR_YELLOW,    0,         "DIRTY",        "DIRTY" },
+      { COLOR_YELLOW,    0,         "DIRTY",        "DIRTY" },
+      { COLOR_YELLOW,    0,         "DIRTY",        "DIRTY" } },
 
-    { { COLOR_MAGENTA,          "KILLED",       "KILLED" },
-      { COLOR_MAGENTA,          "KILLED?",      "KILLED?" },
-      { COLOR_MAGENTA,          "KILLED",       "KILLED" },
-      { COLOR_MAGENTA,          "KILLED",       "KILLED" },
-      { COLOR_MAGENTA,          "KILLED",       "KILLED" } },
+    { { COLOR_MAGENTA,   0,         "KILLED",       "KILLED" },
+      { COLOR_MAGENTA,   0,         "KILLED?",      "KILLED?" },
+      { COLOR_MAGENTA,   0,         "KILLED",       "KILLED" },
+      { COLOR_MAGENTA,   0,         "KILLED",       "KILLED" },
+      { COLOR_MAGENTA,   0,         "KILLED",       "KILLED" } },
 
-    { { COLOR_MAGENTA,          "CORED",        "CORED" },
-      { COLOR_MAGENTA,          "CORED?",       "CORED?" },
-      { COLOR_MAGENTA,          "CORED",        "CORED" },
-      { COLOR_MAGENTA,          "CORED",        "CORED" },
-      { COLOR_MAGENTA,          "CORED",        "CORED" } },
+    { { COLOR_MAGENTA,   0,         "CORED",        "CORED" },
+      { COLOR_MAGENTA,   0,         "CORED?",       "CORED?" },
+      { COLOR_MAGENTA,   0,         "CORED",        "CORED" },
+      { COLOR_MAGENTA,   0,         "CORED",        "CORED" },
+      { COLOR_MAGENTA,   0,         "CORED",        "CORED" } },
 
     /* Prologue failed */
-    { { COLOR_YELLOW,           "FAILED",       "FAILED" },
-      { COLOR_YELLOW,           "FAILED?",      "FAILED?" },
-      { COLOR_YELLOW,           "FAILED",       "FAILED" },
-      { COLOR_YELLOW,           "FAILED",       "FAILED" },
-      { COLOR_YELLOW,           "FAILED",       "FAILED" } },
+    { { COLOR_YELLOW,    0,         "FAILED",       "FAILED" },
+      { COLOR_YELLOW,    0,         "FAILED?",      "FAILED?" },
+      { COLOR_YELLOW,    0,         "FAILED",       "FAILED" },
+      { COLOR_YELLOW,    0,         "FAILED",       "FAILED" },
+      { COLOR_YELLOW,    0,         "FAILED",       "FAILED" } },
 
     /* Epilogue failed */
-    { { COLOR_BLUE,             "FAILED",       "FAILED" },
-      { COLOR_BLUE,             "FAILED?",      "FAILED?" },
-      { COLOR_BLUE,             "FAILED",       "FAILED" },
-      { COLOR_BLUE,             "FAILED",       "FAILED" },
-      { COLOR_BLUE,             "FAILED",       "FAILED" } },
+    { { COLOR_BLUE,      0,         "FAILED",       "FAILED" },
+      { COLOR_BLUE,      0,         "FAILED?",      "FAILED?" },
+      { COLOR_BLUE,      0,         "FAILED",       "FAILED" },
+      { COLOR_BLUE,      0,         "FAILED",       "FAILED" },
+      { COLOR_BLUE,      0,         "FAILED",       "FAILED" } },
 
     /* Keep-alive validation handler failed */
-    { { COLOR_BLUE,             "FAILED",       "FAILED" },
-      { COLOR_BLUE,             "FAILED?",      "FAILED?" },
-      { COLOR_BLUE,             "FAILED",       "FAILED" },
-      { COLOR_BLUE,             "FAILED",       "FAILED" },
-      { COLOR_BLUE,             "FAILED",       "FAILED" } },
+    { { COLOR_BLUE,      0,         "FAILED",       "FAILED" },
+      { COLOR_BLUE,      0,         "FAILED?",      "FAILED?" },
+      { COLOR_BLUE,      0,         "FAILED",       "FAILED" },
+      { COLOR_BLUE,      0,         "FAILED",       "FAILED" },
+      { COLOR_BLUE,      0,         "FAILED",       "FAILED" } },
 
     /* Exception handler failed */
-    { { COLOR_BLUE,             "FAILED",       "FAILED" },
-      { COLOR_BLUE,             "FAILED?",      "FAILED?" },
-      { COLOR_BLUE,             "FAILED",       "FAILED" },
-      { COLOR_BLUE,             "FAILED",       "FAILED" },
-      { COLOR_BLUE,             "FAILED",       "FAILED" } },
+    { { COLOR_BLUE,      0,         "FAILED",       "FAILED" },
+      { COLOR_BLUE,      0,         "FAILED?",      "FAILED?" },
+      { COLOR_BLUE,      0,         "FAILED",       "FAILED" },
+      { COLOR_BLUE,      0,         "FAILED",       "FAILED" },
+      { COLOR_BLUE,      0,         "FAILED",       "FAILED" } },
 
-    { { COLOR_BLUE,             "STOPPED",       "STOPPED" },
-      { COLOR_BLUE,             "STOPPED?",      "STOPPED?" },
-      { COLOR_BLUE,             "STOPPED",       "STOPPED" },
-      { COLOR_BLUE,             "STOPPED",       "STOPPED" },
-      { COLOR_BLUE,             "STOPPED",       "STOPPED" } },
+    { { COLOR_BLUE,      0,         "STOPPED",       "STOPPED" },
+      { COLOR_BLUE,      0,         "STOPPED?",      "STOPPED?" },
+      { COLOR_BLUE,      0,         "STOPPED",       "STOPPED" },
+      { COLOR_BLUE,      0,         "STOPPED",       "STOPPED" },
+      { COLOR_BLUE,      0,         "STOPPED",       "STOPPED" } },
 
-    { { COLOR_RED | A_BLINK,    "ERROR",        "ERROR" },
-      { COLOR_RED | A_BLINK,    "ERROR?",       "ERROR?" },
-      { COLOR_RED | A_BLINK,    "ERROR",        "ERROR" },
-      { COLOR_RED | A_BLINK,    "ERROR",        "ERROR" },
-      { COLOR_RED | A_BLINK,    "ERROR",        "ERROR" } }
+    { { COLOR_RED,       A_BOLD,    "ERROR",        "ERROR" },
+      { COLOR_RED,       A_BOLD,    "ERROR?",       "ERROR?" },
+      { COLOR_RED,       A_BOLD,    "ERROR",        "ERROR" },
+      { COLOR_RED,       A_BOLD,    "ERROR",        "ERROR" },
+      { COLOR_RED,       A_BOLD,    "ERROR",        "ERROR" } }
 };
 
 /**
@@ -247,6 +253,9 @@ colored_verdict(const colored_verdict_data *what)
     }
     else
     {
+        if (what->attrs & A_BOLD)
+            putp(tparm(tigetstr("bold")));
+
         putp(tparm(tigetstr("setaf"), what->color));
         fputs(what->text, stdout);
         putp(tparm(tigetstr("sgr0")));
