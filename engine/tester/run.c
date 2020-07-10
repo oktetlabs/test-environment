@@ -3374,7 +3374,6 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                  * we don't want to scream that result is unexpected.
                  */
                 ctx->current_result.exp_status = TRC_VERDICT_EXPECTED;
-                ctx->current_result.error = "";
             }
             else if (ctx->current_result.exp_result == NULL &&
                 (/* Any test with specified name w/o record in TRC DB */
@@ -3391,7 +3390,8 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
                 assert(ctx->current_result.exp_status ==
                            TRC_VERDICT_UNKNOWN);
-                ctx->current_result.error = "Unknown test/iteration";
+                if (ctx->current_result.error == NULL)
+                    ctx->current_result.error = "Unknown test/iteration";
             }
             else if (ri->type != RUN_ITEM_SCRIPT &&
                      ((test_get_name(ri) == NULL) ||
@@ -3403,15 +3403,13 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                  * everything is skipped inside or only unknown
                  * tests are run, or known otherwise.
                  */
-                /* 
-                 * Do not override expectations status derived from
-                 * session members results.
-                 */
-                if (ctx->current_result.exp_status !=
-                        TRC_VERDICT_UNEXPECTED)
-                    ctx->current_result.error = NULL;
-                else
+
+                if (ctx->current_result.exp_status ==
+                        TRC_VERDICT_UNEXPECTED &&
+                    ctx->current_result.error == NULL)
+                {
                     ctx->current_result.error = "Unexpected test result(s)";
+                }
             }
             /* assert(ctx->current_result.exp_result != NULL) */
             else
@@ -3433,12 +3431,12 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                          &ctx->current_result.result) != NULL)
                 {
                     ctx->current_result.exp_status = TRC_VERDICT_EXPECTED;
-                    ctx->current_result.error = NULL;
                 }
                 else
                 {
                     ctx->current_result.exp_status = TRC_VERDICT_UNEXPECTED;
-                    ctx->current_result.error = "Unexpected test result";
+                    if (ctx->current_result.error == NULL)
+                        ctx->current_result.error = "Unexpected test result";
                 }
             }
         }
