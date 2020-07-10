@@ -357,23 +357,11 @@ tapi_cfg_module_add_from_ta_dir(const char *ta_name,
                                 te_bool     load_dependencies)
 {
     te_string     module_path = TE_STRING_INIT;
-    char         *module_name_underscorified;
     cfg_val_type  cvt = CVT_STRING;
     cfg_val_type  cvt_int = CVT_INTEGER;
     char         *ta_dir;
     int           loaded;
     te_errno      rc;
-    char         *cp;
-
-    module_name_underscorified = strdup(module_name);
-    if (module_name_underscorified == NULL)
-    {
-        ERROR("Failed to copy the module name");
-        return TE_RC(TE_TAPI, TE_ENOMEM);
-    }
-
-    for (cp = module_name_underscorified; *cp != '\0'; ++cp)
-        *cp = (*cp == '-') ? '_' : *cp;
 
     rc = cfg_get_instance_fmt(&cvt, &ta_dir, "/agent:%s/dir:", ta_name);
     if (rc != 0)
@@ -402,7 +390,7 @@ tapi_cfg_module_add_from_ta_dir(const char *ta_name,
         goto out;
 
     rc = cfg_get_instance_fmt(&cvt_int, &loaded, "/agent:%s/module:%s",
-                              ta_name, module_name_underscorified);
+                              ta_name, module_name);
     if (rc != 0)
     {
         ERROR("Failed to get the module 'loaded' property");
@@ -430,14 +418,14 @@ tapi_cfg_module_add_from_ta_dir(const char *ta_name,
     {
         rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
                                   "/agent:%s/module:%s/unload_holders:",
-                                  ta_name, module_name_underscorified);
+                                  ta_name, module_name);
         if (rc != 0)
         {
             ERROR("Failed to set unload holders for the module instance");
             goto out;
         }
 
-        rc = tapi_cfg_module_unload(ta_name, module_name_underscorified);
+        rc = tapi_cfg_module_unload(ta_name, module_name);
         if (rc != 0)
         {
             ERROR("Failed to unload the module instance");
@@ -454,7 +442,7 @@ tapi_cfg_module_add_from_ta_dir(const char *ta_name,
 
     rc = cfg_set_instance_fmt(CFG_VAL(STRING, module_path.ptr),
                               "/agent:%s/module:%s/filename:",
-                              ta_name, module_name_underscorified);
+                              ta_name, module_name);
     if (rc != 0)
     {
         ERROR("Failed to set the module path");
@@ -466,7 +454,7 @@ tapi_cfg_module_add_from_ta_dir(const char *ta_name,
         rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
                                   "/agent:%s/module:%s/filename:"
                                   "/load_dependencies:", ta_name,
-                                  module_name_underscorified);
+                                  module_name);
         if (rc != 0)
         {
             ERROR("Failed to arrange loading the module dependencies");
@@ -474,14 +462,13 @@ tapi_cfg_module_add_from_ta_dir(const char *ta_name,
         }
     }
 
-    rc = tapi_cfg_module_load(ta_name, module_name_underscorified);
+    rc = tapi_cfg_module_load(ta_name, module_name);
     if (rc != 0)
         ERROR("Failed to request the module insertion");
 
 out:
     te_string_free(&module_path);
     free(ta_dir);
-    free(module_name_underscorified);
 
     return TE_RC(TE_TAPI, rc);
 }
