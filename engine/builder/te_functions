@@ -131,8 +131,12 @@ te_eval_or_ssh() {
     if test -z "${!SSHVAR}" ; then
         ( cd /tmp && eval "${@}" )
     else
+        # Replace single quotes by '"'"' since /bin/bash already uses
+        # it in the command parameters
+        local cmd="$(echo "${@}" | sed "s/'/\'\"\'\"\'/g")"
+
         # SSH command may have arguments in double-quotes with spaces
-        eval "${!SSHVAR} \"cd /tmp || exit 1 ; \${@}\""
+        eval "${!SSHVAR} \"/bin/bash -c 'cd /tmp || exit 1 ; \${cmd}'\""
     fi
 }
 
