@@ -9560,26 +9560,66 @@ TARPC_FUNC(set_buf_pattern, {},
 
 /*-------------- setrlimit() ------------------------------*/
 
-TARPC_FUNC(setrlimit, {},
+bool_t
+_setrlimit_1_svc(tarpc_setrlimit_in *in,
+                 tarpc_setrlimit_out *out,
+                 struct svc_req *rqstp)
 {
-    struct rlimit rlim;
+    struct rlimit   rlim;
+    api_func        func;
+    int             rc;
+
+/*
+ * Checking for __USE_FILE_OFFSET64 seems enough in both i386 and x86_64
+ * cases: the setrlimit64 function does exist.
+ */
+#ifdef __USE_FILE_OFFSET64
+    static const char *func_name = "setrlimit64";
+#else
+    static const char *func_name = "setrlimit";
+#endif
+
+    UNUSED(rqstp);
 
     rlim.rlim_cur = in->rlim.rlim_val->rlim_cur;
     rlim.rlim_max = in->rlim.rlim_val->rlim_max;
 
-    MAKE_CALL(out->retval = func(rlimit_resource_rpc2h(in->resource),
-                                 &rlim));
+    VERB("%s() looking for %s() function", __FUNCTION__, func_name);
+    if ((rc = tarpc_find_func(in->common.lib_flags, func_name, &func)) != 0)
+    {
+        ERROR("Failed to resolve \"%s\" function address", func_name);
+        out->common._errno = rc;
+        return TRUE;
+    }
+
+    out->retval = func(rlimit_resource_rpc2h(in->resource), &rlim);
+
+    return TRUE;
 }
-)
 
 /*-------------- getrlimit() ------------------------------*/
 
-TARPC_FUNC(getrlimit,
+bool_t
+_getrlimit_1_svc(tarpc_getrlimit_in *in,
+                 tarpc_getrlimit_out *out,
+                 struct svc_req *rqstp)
 {
+    struct rlimit   rlim;
+    api_func        func;
+    int             rc;
+
+/*
+ * Checking for __USE_FILE_OFFSET64 seems enough in both i386 and x86_64
+ * cases: the getrlimit64 function does exist.
+ */
+#ifdef __USE_FILE_OFFSET64
+    static const char *func_name = "getrlimit64";
+#else
+    static const char *func_name = "getrlimit";
+#endif
+
+    UNUSED(rqstp);
     COPY_ARG(rlim);
-},
-{
-    struct rlimit rlim;
 
     if (out->rlim.rlim_len > 0)
     {
@@ -9587,16 +9627,25 @@ TARPC_FUNC(getrlimit,
         rlim.rlim_max = out->rlim.rlim_val->rlim_max;
     }
 
-    MAKE_CALL(out->retval = func(rlimit_resource_rpc2h(in->resource),
-                                 &rlim));
+    VERB("%s() looking for %s() function", __FUNCTION__, func_name);
+    rc = tarpc_find_func(in->common.lib_flags, func_name, &func);
+    if (rc != 0)
+    {
+        ERROR("Failed to resolve \"%s\" function address", func_name);
+        out->common._errno = rc;
+        return TRUE;
+    }
+
+    out->retval = func(rlimit_resource_rpc2h(in->resource), &rlim);
 
     if (out->rlim.rlim_len > 0)
     {
         out->rlim.rlim_val->rlim_cur = rlim.rlim_cur;
         out->rlim.rlim_val->rlim_max = rlim.rlim_max;
     }
+
+    return TRUE;
 }
-)
 
 /*-------------- sysconf() ------------------------------*/
 
