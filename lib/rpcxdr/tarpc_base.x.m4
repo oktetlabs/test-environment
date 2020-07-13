@@ -43,7 +43,7 @@ typedef tarpc_ptr    tarpc_fd_set;
 /** RPC off_t analog */
 typedef int64_t     tarpc_off_t;
 /** RPC rlim_t analog */
-typedef int32_t     tarpc_rlim_t;
+typedef int64_t     tarpc_rlim_t;
 /** RPC clock_t analogue */
 typedef int64_t     tarpc_clock_t;
 /** RPC time_t analogue */
