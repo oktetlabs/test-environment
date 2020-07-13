@@ -61,6 +61,7 @@
 #include "te_str.h"
 #include "te_vector.h"
 #include "te_alloc.h"
+#include "te_sleep.h"
 
 #define OID_ETC "/..."
 
@@ -1442,12 +1443,12 @@ remove_rsrc_lock(rsrc_lock *lock, pid_t my_pid)
 }
 
 static te_errno
-lock_rsrc_lock_file(int fd)
+set_lock_rsrc_lock_file(int fd, short l_type)
 {
     struct flock lock;
     te_errno rc;
 
-    lock.l_type = F_WRLCK;
+    lock.l_type = l_type;
     lock.l_whence = SEEK_SET;
     lock.l_start = 0;
     lock.l_len = 0;
@@ -1455,11 +1456,23 @@ lock_rsrc_lock_file(int fd)
     rc = fcntl(fd, F_SETLKW, &lock);
     if (rc != 0)
     {
-        WARN("Failed to lock resource lock file");
+        WARN("Failed to set lock for resource lock file");
         return TE_RC(TE_RCF_PCH, TE_EFAIL);
     }
 
     return 0;
+}
+
+static te_errno
+lock_rsrc_lock_file(int fd)
+{
+    return set_lock_rsrc_lock_file(fd, F_WRLCK);
+}
+
+static te_errno
+unlock_rsrc_lock_file(int fd)
+{
+    return set_lock_rsrc_lock_file(fd, F_UNLCK);
 }
 
 /*
@@ -1696,21 +1709,27 @@ rcf_pch_rsrc_check_locks(const char *rsrc_ptrn)
  * then PID of current process is added/deleted (@p add_lock),
  * then updated lock file is written (or removed if no PIDs are left).
  *
- * @param name          Resource name
- * @param shared     @c TRUE if resource is shared
- * @param add_lock      @c TRUE - add lock @c FALSE - remove lock
- * @param my_pid        PID of a process to update lock for
+ * @param name                  Resource name
+ * @param shared             @c TRUE if resource is shared
+ * @param add_lock              @c TRUE - add lock @c FALSE - remove lock
+ * @param my_pid                PID of a process to update lock for
+ * @param fallback_shared    @c TRUE - try to lock as shared if
+ *                              exclusive locking failed
+ * @param attempts_timeout_ms   Retry attempts to lock until the timeout
+ *                              passes (in milliseconds)
  *
  * @return Status code.
  */
 static te_errno
-ta_rsrc_update_lock(const char *name, te_bool shared, te_bool add_lock,
-                    pid_t my_pid)
+ta_rsrc_update_lock(const char *name, te_bool *shared, te_bool add_lock,
+                    pid_t my_pid, te_bool fallback_shared,
+                    unsigned int attempts_timeout_ms)
 {
     char        fname[RCF_MAX_PATH];
     rsrc_lock  *lock = NULL;
     int         fd;
     te_errno    rc = 0;
+    te_bool     result_shared = *shared;
 
     if (rsrc_lock_path(name, fname, sizeof(fname)) == NULL)
         return TE_RC(TE_RCF_PCH, TE_ENAMETOOLONG);
@@ -1718,30 +1737,60 @@ ta_rsrc_update_lock(const char *name, te_bool shared, te_bool add_lock,
     if ((fd = open(fname, O_CREAT | O_RDWR, 0666)) < 0)
         return TE_OS_RC(TE_RCF_PCH, errno);
 
-    rc = lock_rsrc_lock_file(fd);
-    if (rc != 0)
-        goto out;
-
-    rc = read_rsrc_lock_file(fd, &lock, my_pid);
-    if (rc != 0)
+    while (1)
     {
-        ERROR("Failed to read lock '%s'", fname);
-        goto out;
-    }
+        unsigned int sleep_ms;
 
-    if (add_lock)
-        rc = add_rsrc_lock(lock, shared, my_pid);
-    else
-        rc = remove_rsrc_lock(lock, my_pid);
+        rc = lock_rsrc_lock_file(fd);
+        if (rc != 0)
+            goto out;
 
-    if (rc != 0)
-    {
-        ERROR("Failed to %s %s lock", add_lock ? "acquire" : "release",
-              shared ? "shared" : "exclusive");
-        goto out;
+        rc = read_rsrc_lock_file(fd, &lock, my_pid);
+        if (rc != 0)
+        {
+            ERROR("Failed to read lock '%s'", fname);
+            goto out;
+        }
+
+        if (add_lock)
+            rc = add_rsrc_lock(lock, result_shared, my_pid);
+        else
+            rc = remove_rsrc_lock(lock, my_pid);
+
+        if (rc == 0)
+            break;
+
+        sleep_ms = attempts_timeout_ms > 1000 ? 1000 : attempts_timeout_ms;
+        attempts_timeout_ms -= sleep_ms;
+
+        if (sleep_ms > 0)
+        {
+            rc = unlock_rsrc_lock_file(fd);
+            if (rc != 0)
+                goto out;
+
+            RING("Retrying updating lock file");
+            te_msleep(sleep_ms);
+        }
+        else if (!result_shared && fallback_shared)
+        {
+            rc = unlock_rsrc_lock_file(fd);
+            if (rc != 0)
+                goto out;
+
+            result_shared = TRUE;
+        }
+        else
+        {
+            ERROR("Failed to %s %s lock", add_lock ? "acquire" : "release",
+                  result_shared ? "shared" : "exclusive");
+            goto out;
+        }
     }
 
     rc = update_rsrc_lock_file(lock, fname, fd);
+    if (rc == 0)
+        *shared = result_shared;
 
 out:
     close(fd);
@@ -1751,9 +1800,12 @@ out:
 }
 
 te_errno
-ta_rsrc_create_lock(const char *name, te_bool shared)
+ta_rsrc_create_lock(const char *name, te_bool *shared,
+                    te_bool fallback_shared,
+                    unsigned int attempts_timeout_ms)
 {
-    return ta_rsrc_update_lock(name, shared, TRUE, getpid());
+    return ta_rsrc_update_lock(name, shared, TRUE, getpid(),
+                               fallback_shared, attempts_timeout_ms);
 }
 
 /*
@@ -1764,7 +1816,7 @@ ta_rsrc_create_lock(const char *name, te_bool shared)
 void
 ta_rsrc_delete_lock(const char *name, te_bool shared)
 {
-    ta_rsrc_update_lock(name, shared, FALSE, getpid());
+    ta_rsrc_update_lock(name, &shared, FALSE, getpid(), FALSE, 0);
 }
 #endif /* !__CYGWIN__ */
 
@@ -1774,6 +1826,11 @@ typedef struct rsrc {
     char        *id;    /**< Name of the instance in the OID */
     char        *name;  /**< Resource name (instance value) */
     te_bool      shared; /**< Resource is shared if @c TRUE */
+    unsigned int fallback_shared; /**<
+                                      * Try to grab as shared if exclusive
+                                      * grab failed.
+                                      */
+    unsigned int attempts_timeout_ms; /**< Grab retry timeout */
 } rsrc;
 
 /** List of registered resources */
@@ -1960,7 +2017,9 @@ rsrc_set(unsigned int gid, const char *oid, const char *value,
             return TE_RC(TE_RCF_PCH, TE_ENOMEM);
 
 #ifndef __CYGWIN__
-        if ((rc = ta_rsrc_create_lock(value, tmp->shared)) != 0)
+        if ((rc = ta_rsrc_create_lock(value, &tmp->shared,
+                                      tmp->fallback_shared,
+                                      tmp->attempts_timeout_ms)) != 0)
         {
             free(name_to_set);
             return rc;
@@ -2235,7 +2294,8 @@ rsrc_shared_set(unsigned int gid, const char *oid, const char *value,
 
     if (tmp->name != NULL)
     {
-        rc = ta_rsrc_create_lock(tmp->name, shared);
+        rc = ta_rsrc_create_lock(tmp->name, &shared, tmp->fallback_shared,
+                                 tmp->attempts_timeout_ms);
         if (rc != 0)
             return rc;
     }
@@ -2245,9 +2305,91 @@ rsrc_shared_set(unsigned int gid, const char *oid, const char *value,
     return 0;
 }
 
+static unsigned int *
+rsrc_property_ptr_by_oid(const char *oid, const char *id)
+{
+    cfg_oid *coid = cfg_convert_oid_str(oid);
+    unsigned int *result = NULL;
+    char *prop_subid;
+    rsrc *tmp;
+
+    if (coid == NULL)
+        goto exit;
+
+    if (rsrc_find_by_id(id, &tmp) != 0)
+        goto exit;
+
+    prop_subid = cfg_oid_inst_subid(coid, 3);
+    if (prop_subid == NULL)
+        goto exit;
+
+    if (strcmp(prop_subid, "acquire_attempts_timeout") == 0)
+        result = &tmp->attempts_timeout_ms;
+    else if (strcmp(prop_subid, "fallback_shared") == 0)
+        result = &tmp->fallback_shared;
+
+exit:
+    cfg_free_oid(coid);
+
+    if (result == NULL)
+        ERROR("Failed to get property by oid '%s'", oid);
+
+    return result;
+}
+
+static te_errno
+rsrc_property_set(unsigned int gid, const char *oid, const char *value,
+                  const char *resource)
+{
+    unsigned int *property;
+    unsigned int property_value;
+
+    UNUSED(gid);
+
+    property = rsrc_property_ptr_by_oid(oid, resource);
+    if (property == NULL)
+        return TE_RC(TE_RCF_PCH, TE_ENOENT);
+
+    if (te_strtoui(value, 0, &property_value) != 0)
+        return TE_RC(TE_RCF_PCH, TE_EINVAL);
+
+    *property = property_value;
+
+    return 0;
+}
+
+static te_errno
+rsrc_property_get(unsigned int gid, const char *oid, char *value,
+                  const char *resource)
+{
+    unsigned int *property;
+
+    UNUSED(gid);
+
+    property = rsrc_property_ptr_by_oid(oid, resource);
+    if (property == NULL)
+        return TE_RC(TE_RCF_PCH, TE_ENOENT);
+
+    te_snprintf(value, RCF_MAX_VAL, "%u", *property);
+
+    return 0;
+}
+
+static rcf_pch_cfg_object node_rsrc_acquire_timeout =
+    { "acquire_attempts_timeout", 0, NULL, NULL,
+      (rcf_ch_cfg_get)rsrc_property_get,
+      (rcf_ch_cfg_set)rsrc_property_set,
+      NULL, NULL, NULL, NULL, NULL };
+
+static rcf_pch_cfg_object node_rsrc_fallback_shared =
+    { "fallback_shared", 0, NULL, &node_rsrc_acquire_timeout,
+      (rcf_ch_cfg_get)rsrc_property_get,
+      (rcf_ch_cfg_set)rsrc_property_set,
+      NULL, NULL, NULL, NULL, NULL };
+
 /** Resource's shared property node */
 static rcf_pch_cfg_object node_rsrc_shared =
-    { "shared", 0, NULL, NULL,
+    { "shared", 0, NULL, &node_rsrc_fallback_shared,
       (rcf_ch_cfg_get)rsrc_shared_get, (rcf_ch_cfg_set)rsrc_shared_set,
       NULL, NULL, NULL, NULL, NULL };
 

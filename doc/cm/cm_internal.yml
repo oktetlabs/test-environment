@@ -31,3 +31,21 @@
                 Shared property can be changed after a resource is grabbed
                 in different mode (e.g. promote shared to exclusive and vice
                 versa)
+
+    - oid: "/agent/rsrc/fallback_shared"
+      access: read_write
+      type: integer
+      d: |
+         Fallback to shared resource if grabbing in exclusive mode is not
+         possible
+         Name: None
+         Value: 1 - enable fallback, 0 - disable fallback (default)
+
+    - oid: "/agent/rsrc/acquire_attempts_timeout"
+      access: read_write
+      type: integer
+      d: |
+         Timeout for attempts to acquire a resource
+         Name: None
+         Value: Count of milliseconds to wait before failing after unsuccessful
+                attempt (0 - try only one time without waiting, default)

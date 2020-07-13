@@ -441,8 +441,8 @@ module_list_include_callback(const char *module_name, void *data)
 {
     UNUSED(data);
 
-    return rcf_pch_rsrc_accessible("/agent:%s/module:%s",
-                                   ta_name, module_name);
+    return rcf_pch_rsrc_accessible_may_share("/agent:%s/module:%s",
+                                             ta_name, module_name);
 }
 
 /**

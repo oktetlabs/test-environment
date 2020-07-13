@@ -26,6 +26,8 @@ enum cfg_obj_reserved_handles {
     CFG_OBJ_HANDLE_AGENT,
     CFG_OBJ_HANDLE_RSRC,
     CFG_OBJ_HANDLE_RSRC_SHARED,
+    CFG_OBJ_HANDLE_RSRC_ACQUIRE_TIMEOUT,
+    CFG_OBJ_HANDLE_RSRC_FALLBACK_SHARED,
     CFG_OBJ_HANDLE_CONF_DELAY,
     CFG_OBJ_HANDLE_CONF_DELAY_TA,
 
@@ -36,6 +38,8 @@ enum cfg_obj_reserved_handles {
 static cfg_object cfg_obj_agent;
 static cfg_object cfg_obj_agent_rsrc;
 static cfg_object cfg_obj_agent_rsrc_shared;
+static cfg_object cfg_obj_agent_rsrc_timeout;
+static cfg_object cfg_obj_agent_rsrc_fallback_shared;
 static cfg_object cfg_obj_conf_delay;
 static cfg_object cfg_obj_conf_delay_ta;
 
@@ -59,6 +63,20 @@ static cfg_object cfg_obj_agent_rsrc =
 /** "/agent/rsrc/shared" object */
 static cfg_object cfg_obj_agent_rsrc_shared =
     { CFG_OBJ_HANDLE_RSRC_SHARED, "/agent/rsrc/shared", "shared",
+      CVT_INTEGER, CFG_READ_WRITE, NULL, TRUE, &cfg_obj_agent_rsrc,
+      NULL, &cfg_obj_agent_rsrc_timeout, CFG_DEP_INITIALIZER };
+
+/** "/agent/rsrc/acquire_timeout" object */
+static cfg_object cfg_obj_agent_rsrc_timeout =
+    { CFG_OBJ_HANDLE_RSRC_ACQUIRE_TIMEOUT,
+      "/agent/rsrc/acquire_attempts_timeout", "acquire_attempts_timeout",
+      CVT_INTEGER, CFG_READ_WRITE, NULL, FALSE, &cfg_obj_agent_rsrc,
+      NULL, &cfg_obj_agent_rsrc_fallback_shared, CFG_DEP_INITIALIZER };
+
+/** "/agent/rsrc/fallback_shared" object */
+static cfg_object cfg_obj_agent_rsrc_fallback_shared =
+    { CFG_OBJ_HANDLE_RSRC_FALLBACK_SHARED, "/agent/rsrc/fallback_shared",
+      "fallback_shared",
       CVT_INTEGER, CFG_READ_WRITE, NULL, FALSE, &cfg_obj_agent_rsrc,
       NULL, NULL, CFG_DEP_INITIALIZER };
 
@@ -292,6 +310,10 @@ cfg_db_init(void)
     cfg_all_obj[CFG_OBJ_HANDLE_AGENT] = &cfg_obj_agent;
     cfg_all_obj[CFG_OBJ_HANDLE_RSRC] = &cfg_obj_agent_rsrc;
     cfg_all_obj[CFG_OBJ_HANDLE_RSRC_SHARED] = &cfg_obj_agent_rsrc_shared;
+    cfg_all_obj[CFG_OBJ_HANDLE_RSRC_ACQUIRE_TIMEOUT] =
+        &cfg_obj_agent_rsrc_timeout;
+    cfg_all_obj[CFG_OBJ_HANDLE_RSRC_FALLBACK_SHARED] =
+        &cfg_obj_agent_rsrc_fallback_shared;
     cfg_all_obj[CFG_OBJ_HANDLE_CONF_DELAY] = &cfg_obj_conf_delay;
     cfg_all_obj[CFG_OBJ_HANDLE_CONF_DELAY_TA] = &cfg_obj_conf_delay_ta;
     cfg_obj_root.son = &cfg_obj_agent;
