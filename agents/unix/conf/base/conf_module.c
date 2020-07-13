@@ -337,16 +337,6 @@ out:
 static int
 mod_rmmod(const char *mod_name)
 {
-    /*
-     * Hack: do not unload igb_uio until shareable resources are supported:
-     * Bug 11092.
-     */
-    if (strcmp(mod_name, "igb_uio") == 0)
-    {
-        WARN("Module igb_uio is not unloaded");
-        return 0;
-    }
-
     TE_SPRINTF(buf, "rmmod %s", mod_name);
 
     return ta_system(buf);
@@ -428,24 +418,6 @@ mod_consistentcy_check(te_kernel_module *module, te_bool loaded)
 
 
 /**
- * Callback used to check whether a given module is grabbed by TA
- * when creating a list of modules with help of get_dir_list().
- *
- * @param module_name       Module name.
- * @param data              Unused.
- *
- * @return @c TRUE if the module is grabbed, @c FALSE otherwise.
- */
-static te_bool
-module_list_include_callback(const char *module_name, void *data)
-{
-    UNUSED(data);
-
-    return rcf_pch_rsrc_accessible_may_share("/agent:%s/module:%s",
-                                             ta_name, module_name);
-}
-
-/**
  * Get list of module names.
  *
  * @param gid           Group identifier (unused).
@@ -465,15 +437,9 @@ module_list(unsigned int gid, const char *oid,
 
 #ifdef __linux__
     {
-        te_errno  rc;
         te_kernel_module *module;
 
         te_string_reset(&buf_te_str);
-
-        rc = get_dir_list(SYS_MODULE, buf, sizeof(buf), FALSE,
-                          &module_list_include_callback, NULL);
-        if (rc != 0)
-            return rc;
 
         te_string_set_buf(&buf_te_str, buf, sizeof(buf), strlen(buf));
         LIST_FOREACH(module, &modules, list)
@@ -922,8 +888,12 @@ module_del(unsigned int gid, const char *oid, const char *mod_name)
     module = mod_find(mod_name);
     mod_consistentcy_check(module, loaded);
 
-    if (loaded && (rc = mod_rmmod(mod_name)) != 0)
-            ERROR("Failed to unload module '%s' from the system", mod_name);
+    if (loaded &&
+        rcf_pch_rsrc_accessible("/agent:%s/module:%s", ta_name, mod_name) &&
+        (rc = mod_rmmod(mod_name)) != 0)
+    {
+        ERROR("Failed to unload module '%s' from the system", mod_name);
+    }
 
     /* We keep module in the list if unload fail. This way we can at least
      * try to unload it once again. But overall system is probably in a bad
@@ -950,26 +920,34 @@ module_set(unsigned int gid, const char *oid, char *value,
     UNUSED(gid);
     UNUSED(oid);
 
-    if (module == NULL)
-    {
-        ERROR("Sorry, but you're not allowed to unload pre-loaded modules "
-              "and '%s' was not loaded by TE", mod_name);
-        return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
-    }
-
-    mod_consistentcy_check(module, loaded);
+    if (module != NULL)
+        mod_consistentcy_check(module, loaded);
 
     if (te_strtol_bool(value, &load))
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
 
+    if (!rcf_pch_rsrc_accessible("/agent:%s/module:%s", ta_name, mod_name))
+    {
+        ERROR("Cannot (un)load module when exclusive rsrc is not accessible");
+        return TE_RC(TE_TA_UNIX, TE_EPERM);
+    }
+
     if (load)
     {
-        rc = mod_filename_modprobe_try_load_dependencies(module);
-        rc = (rc == 0) ? mod_modprobe(module) : rc;
+        if (module != NULL)
+        {
+            rc = mod_filename_modprobe_try_load_dependencies(module);
+            rc = (rc == 0) ? mod_modprobe(module) : rc;
+        }
+        else
+        {
+            ERROR("Failed to load a pre-loaded module");
+            rc = TE_EFAULT;
+        }
     }
     else
     {
-        if (module->unload_holders)
+        if (module != NULL && module->unload_holders)
             mod_try_unload_holders(mod_name);
 
         rc = mod_rmmod(mod_name);

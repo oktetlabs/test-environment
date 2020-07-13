@@ -19,37 +19,241 @@
 #define CFG_MODULE_OID_FMT "/agent:%s/module:%s"
 #define CFG_MODULE_PARAM_OID_FMT CFG_MODULE_OID_FMT"/parameter:%s"
 
-te_errno
-tapi_cfg_module_add(const char *ta_name, const char *mod_name, te_bool load)
+static char *
+tapi_cfg_module_rsrc_name(const char *mod_name)
 {
-    int         rc;
+    return te_string_fmt("module:%s", mod_name);
+}
 
-    ENTRY("ta_name=%s mod_name=%s load=%s", ta_name, mod_name,
-          load ? "true" : "false");
+te_errno
+tapi_cfg_module_change_finish(const char *ta_name, const char *mod_name)
+{
+    char *rsrc_name = tapi_cfg_module_rsrc_name(mod_name);
+    te_errno rc;
 
-    rc = cfg_add_instance_fmt(NULL, CFG_VAL(INTEGER, load ? 1 : 0),
-                              CFG_MODULE_OID_FMT, ta_name, mod_name);
+    if (rsrc_name == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+                              "/agent:%s/rsrc:%s/shared:",
+                              ta_name, rsrc_name);
+    free(rsrc_name);
+
     if (rc != 0)
-        te_log_stack_push("Addition of module '%s' on TA %s failed",
-                          mod_name, ta_name);
+        ERROR("Failed to set shared property of a resource");
 
-    EXIT("%r", rc);
+    return rc;
+}
+
+static te_errno
+tapi_cfg_module_get_shared(const char *ta_name, const char *mod_name,
+                              te_bool *shared)
+{
+    cfg_val_type val_type = CVT_INTEGER;
+    int result_shared;
+    char *rsrc_name = tapi_cfg_module_rsrc_name(mod_name);
+    te_errno rc;
+
+    if (rsrc_name == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
+    rc = cfg_get_instance_fmt(&val_type, &result_shared,
+                              "/agent:%s/rsrc:%s/shared:",
+                              ta_name, rsrc_name);
+    free(rsrc_name);
+
+    if (rc == 0)
+        *shared = !!result_shared;
+    else
+        ERROR("Failed to get shared property of a resource");
+
+    return rc;
+}
+
+static te_errno
+tapi_cfg_module_check_exclusive_rsrc(const char *ta_name, const char *mod_name)
+{
+    te_bool shared;
+    te_errno rc;
+
+    rc = tapi_cfg_module_get_shared(ta_name, mod_name, &shared);
+    if (rc != 0)
+        return rc;
+
+    if (shared)
+    {
+        ERROR("Module must be grabbed as an exclusive resource");
+        return TE_RC(TE_TAPI, TE_EPERM);
+    }
+
+    return 0;
+}
+
+static te_errno
+tapi_cfg_module_grab(const char *ta_name, const char *mod_name,
+                     te_bool *shared)
+{
+    static const unsigned int grab_timeout_ms = 3000;
+    char *rsrc_name = NULL;
+    char *module_oid = NULL;
+    te_bool set_oid = TRUE;
+    cfg_val_type val_type = CVT_STRING;
+    char *old_oid;
+    int result_shared;
+    te_errno rc;
+
+    rsrc_name = tapi_cfg_module_rsrc_name(mod_name);
+    if (rsrc_name == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
+    module_oid = te_string_fmt(CFG_MODULE_OID_FMT, ta_name, mod_name);
+    if (module_oid == NULL)
+    {
+        rc = TE_RC(TE_TAPI, TE_ENOMEM);
+        goto out;
+    }
+
+    rc = cfg_get_instance_fmt(&val_type, &old_oid, "/agent:%s/rsrc:%s",
+                              ta_name, rsrc_name);
+    if (rc == 0)
+    {
+        if (*old_oid != '\0' && strcmp(old_oid, module_oid))
+        {
+            ERROR("Failed to grab a module '%s': invalid existing resource",
+                  mod_name);
+            rc = TE_RC(TE_TAPI, TE_EINVAL);
+            goto out;
+        }
+
+        set_oid = *old_oid == '\0';
+    }
+    else
+    {
+        rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, ""),
+                                  "/agent:%s/rsrc:%s", ta_name, rsrc_name);
+        if (rc != 0)
+            goto out;
+    }
+
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
+                              "/agent:%s/rsrc:%s/fallback_shared:",
+                              ta_name, rsrc_name);
+    if (rc != 0)
+        goto out;
+
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, grab_timeout_ms),
+                              "/agent:%s/rsrc:%s/acquire_attempts_timeout:",
+                              ta_name, rsrc_name);
+    if (rc != 0)
+        goto out;
+
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, *shared),
+                              "/agent:%s/rsrc:%s/shared:",
+                              ta_name, rsrc_name);
+    if (rc != 0)
+        goto out;
+
+    if (set_oid)
+    {
+        rc = cfg_set_instance_fmt(CFG_VAL(STRING, module_oid),
+                                  "/agent:%s/rsrc:%s", ta_name, rsrc_name);
+        if (rc != 0)
+            goto out;
+    }
+
+    val_type = CVT_INTEGER;
+    rc = cfg_get_instance_fmt(&val_type, &result_shared,
+                              "/agent:%s/rsrc:%s/shared:",
+                              ta_name, rsrc_name);
+    if (rc != 0)
+        goto out;
+
+    *shared = !!result_shared;
+
+out:
+    free(rsrc_name);
+    free(module_oid);
 
     return rc;
 }
 
 te_errno
+tapi_cfg_module_add(const char *ta_name, const char *mod_name, te_bool load)
+{
+    int         rc;
+    te_bool shared = FALSE;
+    cfg_val_type  cvt = CVT_INTEGER;
+    int loaded;
+
+    ENTRY("ta_name=%s mod_name=%s load=%s", ta_name, mod_name,
+          load ? "true" : "false");
+
+    rc = tapi_cfg_module_grab(ta_name, mod_name, &shared);
+    if (rc != 0)
+    {
+        ERROR("Failed to grab module '%s' as a resource");
+        goto out;
+    }
+
+    rc = cfg_get_instance_fmt(&cvt, &loaded, CFG_MODULE_OID_FMT, ta_name,
+                              mod_name);
+    if (rc != 0)
+    {
+        rc = cfg_add_instance_fmt(NULL, CFG_VAL(INTEGER, 0),
+                                  CFG_MODULE_OID_FMT, ta_name, mod_name);
+        if (rc != 0)
+        {
+            te_log_stack_push("Addition of module '%s' on TA %s failed",
+                              mod_name, ta_name);
+            goto out;
+        }
+
+        rc = cfg_get_instance_fmt(&cvt, &loaded, CFG_MODULE_OID_FMT, ta_name,
+                                  mod_name);
+        if (rc != 0)
+        {
+            ERROR("Cannot get module after addition");
+            goto out;
+        }
+    }
+
+    if (!loaded && load)
+    {
+        rc = tapi_cfg_module_load(ta_name, mod_name);
+        if (rc != 0)
+            goto out;
+    }
+
+out:
+    EXIT("%r", rc);
+
+    return rc;
+}
+
+static te_errno
+tapi_cfg_module_loaded_set(const char *ta_name, const char *mod_name,
+                           te_bool loaded)
+{
+    te_errno rc;
+
+    rc = tapi_cfg_module_check_exclusive_rsrc(ta_name, mod_name);
+    if (rc != 0)
+        return rc;
+
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, loaded ? 1 : 0),
+                                CFG_MODULE_OID_FMT, ta_name, mod_name);
+}
+
+te_errno
 tapi_cfg_module_load(const char *ta_name, const char *mod_name)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
-                                CFG_MODULE_OID_FMT, ta_name, mod_name);
+    return tapi_cfg_module_loaded_set(ta_name, mod_name, TRUE);
 }
 
 te_errno
 tapi_cfg_module_unload(const char *ta_name, const char *mod_name)
 {
-    return cfg_set_instance_fmt(CFG_VAL(INTEGER, 0),
-                                CFG_MODULE_OID_FMT, ta_name, mod_name);
+    return tapi_cfg_module_loaded_set(ta_name, mod_name, FALSE);
 }
 
 te_errno
@@ -69,6 +273,10 @@ tapi_cfg_module_param_add(const char *ta_name, const char *mod_name,
 
     ENTRY("ta_name=%s mod_name=%s param=%s value=%s",
           ta_name, mod_name, param, param_value);
+
+    rc = tapi_cfg_module_check_exclusive_rsrc(ta_name, mod_name);
+    if (rc != 0)
+        return rc;
 
     rc = cfg_add_instance_fmt(NULL, CFG_VAL(STRING, param_value),
                               CFG_MODULE_PARAM_OID_FMT,
@@ -152,7 +360,6 @@ tapi_cfg_module_add_from_ta_dir(const char *ta_name,
     char         *module_name_underscorified;
     cfg_val_type  cvt = CVT_STRING;
     cfg_val_type  cvt_int = CVT_INTEGER;
-    cfg_handle    module_handle;
     char         *ta_dir;
     int           loaded;
     te_errno      rc;
@@ -182,14 +389,17 @@ tapi_cfg_module_add_from_ta_dir(const char *ta_name,
         goto out;
     }
 
-    rc = cfg_add_instance_fmt(&module_handle, CVT_INTEGER, 0,
-                              "/agent:%s/module:%s", ta_name,
-                              module_name_underscorified);
+    rc = tapi_cfg_module_add(ta_name, module_name, 0);
     if (rc != 0)
     {
         ERROR("Failed to add the module instance");
         goto out;
     }
+
+    te_bool shared;
+    rc = tapi_cfg_module_get_shared(ta_name, module_name, &shared);
+    if (rc != 0)
+        goto out;
 
     rc = cfg_get_instance_fmt(&cvt_int, &loaded, "/agent:%s/module:%s",
                               ta_name, module_name_underscorified);
@@ -199,19 +409,25 @@ tapi_cfg_module_add_from_ta_dir(const char *ta_name,
         goto out;
     }
 
-    if (loaded)
+    if (shared)
     {
-        /*
-         * Hack: do not unload igb_uio until shareable resources are supported:
-         * Bug 11092.
-         */
-        if (strcmp(module_name_underscorified, "igb_uio") == 0)
+        if (!loaded)
         {
-            WARN("Module igb_uio is not reloaded");
-            rc = 0;
+            ERROR("Resource was grabbed as shared and module was not loaded");
+            rc = TE_RC(TE_TAPI, TE_EPERM);
             goto out;
         }
 
+        /*
+         * Module was grabbed as a shared resource and it is loaded,
+         * modification is not allowed.
+         */
+        rc = 0;
+        goto out;
+    }
+
+    if (loaded)
+    {
         rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
                                   "/agent:%s/module:%s/unload_holders:",
                                   ta_name, module_name_underscorified);
@@ -225,6 +441,13 @@ tapi_cfg_module_add_from_ta_dir(const char *ta_name,
         if (rc != 0)
         {
             ERROR("Failed to unload the module instance");
+            goto out;
+        }
+
+        rc = tapi_cfg_module_add(ta_name, module_name, 0);
+        if (rc != 0)
+        {
+            ERROR("Failed to add the module instance after unloading");
             goto out;
         }
     }

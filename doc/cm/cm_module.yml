@@ -12,6 +12,7 @@
     - oid: "/agent/module"
       access: read_create
       type: integer
+      volatile: true
       depends:
         - oid: "/agent/rsrc"
       d: |

@@ -133,6 +133,17 @@ extern te_errno tapi_cfg_module_add_from_ta_dir(const char *ta_name,
                                                 const char *module_name,
                                                 te_bool     load_dependencies);
 
+/**
+ * Finish changing a module. The resource is set to shared and other
+ * agents can access the module in shared mode. After this, module
+ * load/unload, parameters manipulation are prohibited.
+ *
+ * @param ta_name        Name of the agent
+ * @param mod_name       Name of the module
+ */
+extern te_errno tapi_cfg_module_change_finish(const char *ta_name,
+                                              const char *mod_name);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
