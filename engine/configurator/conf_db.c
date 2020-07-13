@@ -44,26 +44,25 @@ cfg_object cfg_obj_root =
 
 /** "/agent" object */
 static cfg_object cfg_obj_agent =
-    { CFG_OBJ_HANDLE_AGENT, "/agent", { 'a', 'g', 'e', 'n', 't', 0 },
+    { CFG_OBJ_HANDLE_AGENT, "/agent", "agent",
       CVT_NONE, CFG_READ_ONLY, NULL, FALSE, &cfg_obj_root,
       &cfg_obj_agent_rsrc, &cfg_obj_conf_delay, CFG_DEP_INITIALIZER };
 
 /** "/agent/rsrc" object */
 static cfg_object cfg_obj_agent_rsrc =
-    { CFG_OBJ_HANDLE_RSRC, "/agent/rsrc", { 'r', 's', 'r', 'c', 0 },
+    { CFG_OBJ_HANDLE_RSRC, "/agent/rsrc", "rsrc",
       CVT_STRING, CFG_READ_CREATE, NULL, FALSE, &cfg_obj_agent,
       NULL, NULL, CFG_DEP_INITIALIZER };
 
 /** "/conf_delay" object */
 static cfg_object cfg_obj_conf_delay =
-    { CFG_OBJ_HANDLE_CONF_DELAY, "/conf_delay",
-      { 'c', 'o', 'n', 'f', '_', 'd', 'e', 'l', 'a', 'y', 0 },
+    { CFG_OBJ_HANDLE_CONF_DELAY, "/conf_delay", "conf_delay",
       CVT_STRING, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_root,
       &cfg_obj_conf_delay_ta, NULL, CFG_DEP_INITIALIZER };
 
 /** "/conf_delay/ta" object */
 static cfg_object cfg_obj_conf_delay_ta =
-    { CFG_OBJ_HANDLE_CONF_DELAY_TA, "/conf_delay/ta", { 't', 'a', 0 },
+    { CFG_OBJ_HANDLE_CONF_DELAY_TA, "/conf_delay/ta", "ta",
       CVT_INTEGER, CFG_READ_CREATE, NULL, TRUE, &cfg_obj_conf_delay,
       NULL, NULL, CFG_DEP_INITIALIZER };
 
