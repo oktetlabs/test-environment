@@ -1,14 +1,14 @@
-#! /bin/sh
+#! /bin/bash
 #
 # RPC support
 # Common constructions to be used in meson.build's related to RPCs
 #
-# Copyright (C) 2003-2018 OKTET Labs.
+# Copyright (C) 2003-2020 OKTET Labs.
 #
 # Author: Artem Andreev <Artem.Andreev@oktetlabs.ru>
 #
 
-set -e
+set -eo pipefail
 
 te_rpcgen_help() {
 	cat >&2 <<- END_OF_HELP
