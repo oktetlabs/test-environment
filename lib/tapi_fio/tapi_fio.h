@@ -19,7 +19,8 @@
 #include "te_defs.h"
 #include "te_string.h"
 #include "te_queue.h"
-#include "rcf_rpc.h"
+#include "tapi_job.h"
+#include "te_vector.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -180,7 +181,7 @@ typedef struct tapi_fio_opts {
 
 /** Macro to initialize default value. */
 #define TAPI_FIO_OPTS_DEFAULTS ((struct tapi_fio_opts) { \
-    .name = NULL,                                       \
+    .name = "default.fio",                              \
     .filename = NULL,                                   \
     .blocksize = 512,                                   \
     .numjobs = {                                        \
@@ -196,20 +197,18 @@ typedef struct tapi_fio_opts {
     .direct = TRUE,                                     \
     .exit_on_error = TRUE,                              \
     .rand_gen = NULL,                                   \
-    .user = "",                                         \
+    .user = NULL,                                       \
     .prefix = NULL,                                     \
 })
 
 /** FIO tool context. Based on tapi_perf_app */
 typedef struct tapi_fio_app {
-    tapi_fio_opts opts;     /**< Tool's options */
-    rcf_rpc_server *rpcs;   /**< RPC handle */
-    tarpc_pid_t pid;        /**< PID */
-    int fd_stdout;          /**< File descriptor to read from stdout stream */
-    int fd_stderr;          /**< File descriptor to read from stderr stream */
-    char *cmd;              /**< Command line string to run the application */
-    te_string stdout;       /**< Buffer to save tool's stdout message */
-    te_string stderr;       /**< Buffer to save tool's stderr message */
+    tapi_job_factory_t *factory; /**< Factory to create the job */
+    te_bool running; /**< Is the app running */
+    tapi_job_t *job; /**< TAPI job handle */
+    tapi_job_channel_t *out_chs[2]; /**< Output channel handles */
+    tapi_fio_opts opts; /**< Tool's options */
+    te_vec args; /**< Arguments that are used when running the tool */
 } tapi_fio_app;
 
 typedef struct tapi_fio tapi_fio;
@@ -306,14 +305,14 @@ extern tapi_fio_numjobs_t test_get_fio_numjobs_param(int argc, char **argv,
  * @note Never return NULL, test failed if error.
  *
  * @param options       FIO options
- * @param rpcs          RPC handle
+ * @param factory       Job factory
  *
  * @return Initialization created fio.
  *
  * @sa tapi_fio_destroy
  */
 extern tapi_fio * tapi_fio_create(const tapi_fio_opts *options,
-                                  rcf_rpc_server *rpcs);
+                                  tapi_job_factory_t *factory);
 
 /**
  * Destroy FIO context.

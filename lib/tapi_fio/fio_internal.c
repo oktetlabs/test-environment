@@ -11,13 +11,12 @@
 #define TE_LGR_USER "TAPI FIO"
 
 #include <math.h>
+#include <stddef.h>
+#include <signal.h>
 #include "te_string.h"
-#include "rcf_rpc.h"
-#include "tapi_rpc_stdio.h"
-#include "tapi_rpc_signal.h"
-#include "tapi_rpc_unistd.h"
-#include "tapi_rpcsock_macros.h"
 #include "tapi_fio.h"
+#include "tapi_job_opt.h"
+#include "te_vector.h"
 
 static inline int16_t
 get_default_timeout(const tapi_fio_opts *opts)
@@ -30,40 +29,192 @@ get_default_timeout(const tapi_fio_opts *opts)
     return opts->runtime_sec + round(five_minutes * numjobs_coef) + error;
 }
 
-static void
-fio_app_close_descriptors(tapi_fio_app *app)
+static te_errno
+runtime_argument(const void *value, te_vec *args)
 {
-    if (app->rpcs == NULL)
-        return;
+    int seconds = *(const unsigned int *)value;
+    te_errno rc;
 
-    if (app->fd_stdout >= 0)
-        RPC_CLOSE(app->rpcs, app->fd_stdout);
-    if (app->fd_stderr >= 0)
-        RPC_CLOSE(app->rpcs, app->fd_stderr);
+    if (seconds < 0)
+        return TE_ENOENT;
+
+    rc = te_vec_append_str_fmt(args, "%ds", seconds);
+    if (rc == 0)
+        rc = te_vec_append_str_fmt(args, "--time_based");
+
+    return rc;
 }
+
+static te_errno
+enum_argument(unsigned int value, const char **map, size_t size, te_vec *args)
+{
+    if (value > size)
+        return TE_EINVAL;
+
+    return te_vec_append_str_fmt(args, "%s", map[value]);
+}
+
+static te_errno
+rwtype_argument(const void *value, te_vec *args)
+{
+    static const char *rwtypes[] = {
+        [TAPI_FIO_RWTYPE_SEQ] = "rw",
+        [TAPI_FIO_RWTYPE_RAND] = "randrw"
+    };
+    tapi_fio_rwtype enum_value = *(const tapi_fio_rwtype *)value;
+    return enum_argument(enum_value, rwtypes, TE_ARRAY_LEN(rwtypes), args);
+}
+
+static te_errno
+ioengine_argument(const void *value, te_vec *args)
+{
+    static const char *ioengines[] = {
+        [TAPI_FIO_IOENGINE_LIBAIO] = "libaio",
+        [TAPI_FIO_IOENGINE_PSYNC] = "psync",
+        [TAPI_FIO_IOENGINE_SYNC] = "sync",
+        [TAPI_FIO_IOENGINE_POSIXAIO] = "posixaio"
+    };
+    tapi_fio_ioengine enum_value = *(const tapi_fio_ioengine *)value;
+    return enum_argument(enum_value, ioengines, TE_ARRAY_LEN(ioengines), args);
+}
+
+static te_errno
+user_argument(const void *value, te_vec *args)
+{
+    const char *str = *(const char **)value;
+    char *saveptr;
+    te_errno rc;
+    char *arg;
+    char *dup;
+
+    if (str == NULL)
+        return TE_ENOENT;
+
+    dup = strdup(str);
+    if (dup == NULL)
+        return TE_ENOMEM;
+
+    for (arg = strtok_r(dup, " ", &saveptr);
+         arg != NULL;
+         arg = strtok_r(NULL, " ", &saveptr))
+    {
+        rc = te_vec_append_str_fmt(args, "%s", arg);
+        if (rc != 0)
+        {
+            free(dup);
+            return rc;
+        }
+    }
+
+    free(dup);
+    return 0;
+}
+
+static te_errno
+rand_generator_argument(const void *value, te_vec *args)
+{
+    static const char *generators[] = {
+        "lfsr",
+        "tausworthe",
+        "tausworthe64",
+    };
+    const char *str = *(const char **)value;
+    size_t i;
+
+    if (str == NULL)
+        return TE_ENOENT;
+
+    for (i = 0; i < TE_ARRAY_LEN(generators); i++)
+    {
+        if (strcmp(str, generators[i]) == 0)
+            return te_vec_append_str_fmt(args, "%s", str);
+    }
+
+    ERROR("Random generator '%s' is not supported", str);
+    return TE_EINVAL;
+}
+
+static const tapi_job_opt_bind fio_binds[] = TAPI_JOB_OPT_SET(
+    TAPI_JOB_OPT_STRING("--name=", TRUE, tapi_fio_opts, name),
+    TAPI_JOB_OPT_STRING("--filename=", TRUE, tapi_fio_opts, filename),
+    TAPI_JOB_OPT_UINT("--blocksize=", TRUE, NULL, tapi_fio_opts, blocksize),
+    TAPI_JOB_OPT_UINT("--iodepth=", TRUE, NULL, tapi_fio_opts, iodepth),
+    { runtime_argument, "--runtime=", TRUE, NULL,
+      offsetof(tapi_fio_opts, runtime_sec) },
+    TAPI_JOB_OPT_UINT("--rwmixread=", TRUE, NULL, tapi_fio_opts, rwmixread),
+    TAPI_JOB_OPT_DUMMY("--output-format=json"),
+    TAPI_JOB_OPT_DUMMY("--group_reporting"),
+    TAPI_JOB_OPT_STRING("--output=", TRUE, tapi_fio_opts, output_path.ptr),
+    TAPI_JOB_OPT_BOOL("--direct=1", tapi_fio_opts, direct),
+    TAPI_JOB_OPT_BOOL("--exitall_on_error=1", tapi_fio_opts, exit_on_error),
+    { rand_generator_argument, "--random_generator=", TRUE, NULL,
+      offsetof(tapi_fio_opts, rand_gen) },
+    { rwtype_argument, "--readwrite=", TRUE, NULL,
+      offsetof(tapi_fio_opts, rwtype) },
+    { ioengine_argument, "--ioengine=", TRUE, NULL,
+      offsetof(tapi_fio_opts, ioengine) },
+    TAPI_JOB_OPT_UINT("--numjobs=", TRUE, NULL, tapi_fio_opts, numjobs.value),
+    TAPI_JOB_OPT_DUMMY("--thread"),
+    { user_argument, NULL, FALSE, NULL, offsetof(tapi_fio_opts, user) }
+);
 
 /* See description in tapi_internal.h */
 te_errno
-fio_app_start(char *cmd, tapi_fio_app *app)
+fio_app_start(tapi_fio_app *app)
 {
-    tarpc_pid_t pid;
-    int fd_stdout = -1;
-    int fd_stderr = -1;
+    static const char *path = "fio";
+    te_errno rc;
 
-    RING("Run \"%s\"", cmd);
-    pid = rpc_te_shell_cmd(app->rpcs, cmd, -1, NULL,
-                           &fd_stdout, &fd_stderr);
+    if (app->running)
+        return TE_EALREADY;
 
-    fio_app_close_descriptors(app);
-    app->pid = pid;
-    app->fd_stdout = fd_stdout;
-    app->fd_stderr = fd_stderr;
-    free(app->cmd);
-    app->cmd = cmd;
+    tapi_job_destroy(app->job, -1);
+    app->job = NULL;
+    app->out_chs[0] = NULL;
+    app->out_chs[1] = NULL;
+    te_vec_deep_free(&app->args);
 
-    rpc_fcntl(app->rpcs,
-              app->fd_stdout, RPC_F_SETPIPE_SZ,
-              TAPI_FIO_MAX_REPORT);
+    rc = tapi_job_opt_build_args(path, fio_binds, &app->opts,
+                                 &app->args);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_job_simple_create(app->factory,
+                          &(tapi_job_simple_desc_t){
+                                .program = path,
+                                .argv = (const char **)app->args.data.ptr,
+                                .job_loc = &app->job,
+                                .stdout_loc = &app->out_chs[0],
+                                .stderr_loc = &app->out_chs[1],
+                                .filters = TAPI_JOB_SIMPLE_FILTERS(
+                                    {.use_stderr = TRUE,
+                                     .log_level = TE_LL_ERROR,
+                                     .readable = TRUE,
+                                     .filter_name = "fio_stderr",
+                                    },
+                                    {.use_stdout = TRUE,
+                                     .log_level = TE_LL_RING,
+                                     .readable = FALSE,
+                                     .filter_name = "fio_stdout",
+                                    }
+                                 )
+                          });
+
+    if (rc != 0)
+    {
+        te_vec_deep_free(&app->args);
+        return rc;
+    }
+
+    rc = tapi_job_start(app->job);
+    if (rc != 0)
+    {
+        te_vec_deep_free(&app->args);
+        tapi_job_destroy(app->job, -1);
+        return rc;
+    }
+
+    app->running = TRUE;
 
     return 0;
 }
@@ -72,11 +223,16 @@ fio_app_start(char *cmd, tapi_fio_app *app)
 te_errno
 fio_app_stop(tapi_fio_app *app)
 {
-    if (app->pid >= 0)
-    {
-        rpc_ta_kill_death(app->rpcs, app->pid);
-        app->pid = -1;
-    }
+    te_errno rc;
+
+    if (!app->running)
+        return 0;
+
+    rc = tapi_job_stop(app->job, SIGTERM, -1);
+    if (rc != 0)
+        return rc;
+
+    app->running = FALSE;
 
     return 0;
 }
@@ -85,21 +241,17 @@ fio_app_stop(tapi_fio_app *app)
 te_errno
 fio_app_wait(tapi_fio_app *app, int16_t timeout_sec)
 {
-    rpc_wait_status stat;
-    tarpc_pid_t pid;
+    tapi_job_status_t status;
+    te_errno rc;
 
     if (timeout_sec == TAPI_FIO_TIMEOUT_DEFAULT)
         timeout_sec = get_default_timeout(&app->opts);
-    RING("Waiting fio %d second(s)...", timeout_sec);
-    app->rpcs->timeout = TE_SEC2MS(timeout_sec);
-    RPC_AWAIT_IUT_ERROR(app->rpcs);
-    pid = rpc_waitpid(app->rpcs, app->pid, &stat, 0);
-    if (pid != app->pid)
-    {
-        ERROR("waitpid() failed with errno %r", RPC_ERRNO(app->rpcs));
-        return TE_RC(TE_TAPI, TE_EFAIL);
-    }
-    app->pid = -1;
+
+    rc = tapi_job_wait(app->job, TE_SEC2MS(timeout_sec), &status);
+    if (rc != 0)
+        return rc;
+
+    app->running = FALSE;
 
     return 0;
 }

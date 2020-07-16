@@ -16,29 +16,32 @@
 #include "te_alloc.h"
 #include "te_units.h"
 #include "tapi_test.h"
-#include "tapi_rpc_unistd.h"
+#include "tapi_cfg_cpu.h"
 #include "fio.h"
 
 static void
-numjobs_transform(rcf_rpc_server *rpcs, tapi_fio_numjobs_t *numjobs)
+numjobs_transform(tapi_job_factory_t *factory, tapi_fio_numjobs_t *numjobs)
 {
+    const char *ta;
+    size_t n_cpus;
+
     if (numjobs->factor != TAPI_FIO_NUMJOBS_NPROC_FACTOR)
         return;
 
-    numjobs->value *= rpc_sysconf(rpcs, RPC_SC_NPROCESSORS_ONLN);
+    CHECK_NOT_NULL(ta = tapi_job_factory_ta(factory));
+    CHECK_RC(tapi_cfg_get_all_threads(ta, &n_cpus, NULL));
+
+    numjobs->value *= n_cpus;
     numjobs->factor = TAPI_FIO_NUMJOBS_WITHOUT_FACTOR;
 }
 
 static void
-app_init(tapi_fio_app *app, const tapi_fio_opts *opts, rcf_rpc_server *rpcs)
+app_init(tapi_fio_app *app, const tapi_fio_opts *opts,
+         tapi_job_factory_t *factory)
 {
-    app->rpcs = rpcs;
-    app->pid = -1;
-    app->fd_stdout = -1;
-    app->fd_stderr = -1;
-    app->cmd = NULL;
-    app->stdout = (te_string)TE_STRING_INIT;
-    app->stderr = (te_string)TE_STRING_INIT;
+    app->factory = factory;
+    app->running = FALSE;
+    app->args = TE_VEC_INIT(char *);
 
     if (opts == NULL)
         tapi_fio_opts_init(&app->opts);
@@ -51,15 +54,14 @@ app_init(tapi_fio_app *app, const tapi_fio_opts *opts, rcf_rpc_server *rpcs)
                          tapi_file_generate_name());
     }
 
-    numjobs_transform(app->rpcs, &app->opts.numjobs);
+    numjobs_transform(app->factory, &app->opts.numjobs);
 }
 
 static void
 app_fini(tapi_fio_app *app)
 {
-    free(app->cmd);
-    te_string_free(&app->stdout);
-    te_string_free(&app->stderr);
+    te_vec_deep_free(&app->args);
+    tapi_job_destroy(app->job, -1);
 }
 
 /* See description in tapi_fio.h */
@@ -71,14 +73,14 @@ tapi_fio_opts_init(tapi_fio_opts *opts)
 
 /* See description in tapi_fio.h */
 tapi_fio *
-tapi_fio_create(const tapi_fio_opts *options, rcf_rpc_server *rpcs)
+tapi_fio_create(const tapi_fio_opts *options, tapi_job_factory_t *factory)
 {
     tapi_fio *fio;
 
     fio = TE_ALLOC(sizeof(*fio));
     CHECK_NOT_NULL(fio);
 
-    app_init(&fio->app, options, rpcs);
+    app_init(&fio->app, options, factory);
     fio->methods = &methods;
 
     return fio;

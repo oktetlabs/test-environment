@@ -12,213 +12,24 @@
 
 #include "tapi_test_log.h"
 #include "tapi_test.h"
-#include "tapi_rpc_misc.h"
 #include "tapi_file.h"
 #include "fio_internal.h"
 #include "fio.h"
 
 #include <jansson.h>
 
-typedef void (*set_opt_t)(te_string *, const tapi_fio_opts *);
-
-static const char *
-fio_ioengine_str(tapi_fio_ioengine ioengine)
-{
-    static const char *ioengines[] = {
-        [TAPI_FIO_IOENGINE_LIBAIO] = "libaio",
-        [TAPI_FIO_IOENGINE_PSYNC] = "psync",
-        [TAPI_FIO_IOENGINE_SYNC] = "sync",
-        [TAPI_FIO_IOENGINE_POSIXAIO] = "posixaio"
-    };
-    if (ioengine < 0 || ioengine > TE_ARRAY_LEN(ioengines))
-        return NULL;
-    return ioengines[ioengine];
-}
-
-static const char*
-fio_rwtype_str(tapi_fio_rwtype rwtype)
-{
-    static const char *rwtypes[] = {
-        [TAPI_FIO_RWTYPE_SEQ] = "rw",
-        [TAPI_FIO_RWTYPE_RAND] = "randrw"
-    };
-    if (rwtype < 0 || rwtype > TE_ARRAY_LEN(rwtypes))
-        return NULL;
-    return rwtypes[rwtype];
-}
-
-static void
-set_opt_name(te_string *cmd, const tapi_fio_opts *opts)
-{
-    const char *name = opts->name ? opts->name: FIO_DEFAULT_NAME;
-    CHECK_RC(te_string_append(cmd, " --name=%s", name));
-}
-
-static void
-set_opt_filename(te_string *cmd, const tapi_fio_opts *opts)
-{
-    if (opts->filename == NULL)
-        TEST_FAIL("Filename must be specify");
-    CHECK_RC(te_string_append(cmd, " --filename=%s", opts->filename));
-}
-
-static void
-set_opt_iodepth(te_string *cmd, const tapi_fio_opts *opts)
-{
-    CHECK_RC(te_string_append(cmd, " --iodepth=%d", opts->iodepth));
-}
-
-static void
-set_opt_runtime(te_string *cmd, const tapi_fio_opts *opts)
-{
-    if (opts->runtime_sec < 0)
-        return;
-    CHECK_RC(te_string_append(cmd, " --runtime=%ds --time_based",
-                              opts->runtime_sec));
-}
-
-static void
-set_opt_rwmixread(te_string *cmd, const tapi_fio_opts *opts)
-{
-    CHECK_RC(te_string_append(cmd, " --rwmixread=%d", opts->rwmixread));
-}
-
-static void
-set_opt_rwtype(te_string *cmd, const tapi_fio_opts *opts)
-{
-    const char *str_rwtype = fio_rwtype_str(opts->rwtype);
-    if (str_rwtype == NULL)
-        return;
-    CHECK_RC(te_string_append(cmd, " --readwrite=%s", str_rwtype));
-}
-
-static void
-set_opt_ioengine(te_string *cmd, const tapi_fio_opts *opts)
-{
-    const char *ioengine = fio_ioengine_str(opts->ioengine);
-    if (ioengine == NULL)
-        TEST_FAIL("I/O Engine not supported");
-    CHECK_RC(te_string_append(cmd, " --ioengine=%s", ioengine));
-}
-
-static void
-set_opt_blocksize(te_string *cmd, const tapi_fio_opts *opts)
-{
-    CHECK_RC(te_string_append(cmd, " --blocksize=%d", opts->blocksize));
-}
-
-static void
-set_opt_numjobs(te_string *cmd, const tapi_fio_opts *opts)
-{
-    CHECK_RC(te_string_append(
-        cmd, " --numjobs=%d --thread", opts->numjobs.value));
-}
-
-static void
-set_opt_output(te_string *cmd, const tapi_fio_opts *opts)
-{
-    CHECK_RC(te_string_append(cmd, " --output-format=json --group_reporting"
-                                   " --output=%s", opts->output_path.ptr));
-}
-
-static void
-set_opt_user(te_string *cmd, const tapi_fio_opts *opts)
-{
-    if (opts->user == NULL)
-        return;
-    CHECK_RC(te_string_append(cmd, " %s", opts->user));
-}
-
-static void
-set_opt_random_generator(te_string *cmd, const tapi_fio_opts *opts)
-{
-    size_t i;
-    static const char *generators[] = {
-        "lfsr",
-        "tausworthe",
-        "tausworthe64",
-    };
-
-    if (opts->rand_gen == NULL)
-        return;
-
-    for (i = 0; i < TE_ARRAY_LEN(generators); i++)
-    {
-        if (strcmp(opts->rand_gen, generators[i]) == 0)
-        {
-            CHECK_RC(te_string_append(cmd, " --random_generator=%s",
-                                      opts->rand_gen));
-            return;
-        }
-    }
-
-    TEST_FAIL("Random generator '%s' is not supported", opts->rand_gen);
-}
-
-static void
-set_opt_generic(te_string *cmd, const tapi_fio_opts *opts)
-{
-    UNUSED(opts);
-
-    CHECK_RC(te_string_append(cmd, " --direct=%d", opts->direct ? 1: 0));
-    CHECK_RC(te_string_append(cmd, " --exitall_on_error=%d",
-                              opts->exit_on_error ? 1: 0));
-}
-
-static void
-build_command(te_string *cmd, const tapi_fio_opts *opts)
-{
-    size_t i;
-    set_opt_t set_opt[] = {
-        set_opt_name,
-        set_opt_filename,
-        set_opt_ioengine,
-        set_opt_blocksize,
-        set_opt_numjobs,
-        set_opt_iodepth,
-        set_opt_runtime,
-        set_opt_rwmixread,
-        set_opt_rwtype,
-        set_opt_output,
-        set_opt_random_generator,
-        set_opt_generic,
-        set_opt_user,
-    };
-
-    if (opts->prefix != NULL)
-        CHECK_RC(te_string_append(cmd, "%s ", opts->prefix));
-
-    CHECK_RC(te_string_append(cmd, "fio"));
-    for (i = 0; i < TE_ARRAY_LEN(set_opt); i++)
-        set_opt[i](cmd, opts);
-}
-
 static te_errno
 fio_start(tapi_fio *fio)
 {
     te_errno errno;
-    te_string cmd = TE_STRING_INIT;
 
-    ENTRY("FIO starting on %s", RPC_NAME(fio->app.rpcs));
-
-    build_command(&cmd, &fio->app.opts);
-    errno = fio_app_start(cmd.ptr, &fio->app);
-
-    EXIT();
-    return errno;
+    return fio_app_start(&fio->app);
 }
 
 static te_errno
 fio_stop(tapi_fio *fio)
 {
-    te_errno errno;
-
-    ENTRY("FIO stopping on %s", RPC_NAME(fio->app.rpcs));
-
-    errno = fio_app_stop(&fio->app);
-
-    EXIT();
-    return errno;
+    return fio_app_stop(&fio->app);
 }
 
 static te_errno
@@ -337,26 +148,19 @@ fio_get_report(tapi_fio *fio, tapi_fio_report *report)
     json_t *jrpt;
     te_errno rc;
     char *json_output = NULL;
+    const char *ta;
 
     ENTRY("FIO get reporting");
 
-    rpc_read_fd2te_string(fio->app.rpcs, fio->app.fd_stdout,
-                          TAPI_FIO_MAX_REPORT, 0,
-                          &fio->app.stdout);
+    ta = tapi_job_factory_ta(fio->app.factory);
+    if (ta == NULL)
+        return TE_RC(TE_TAPI, TE_EINVAL);
 
-    rpc_read_fd2te_string(fio->app.rpcs, fio->app.fd_stderr,
-                          TAPI_FIO_MAX_REPORT, 0,
-                          &fio->app.stderr);
-
-    RING("FIO stdout:\n%s", fio->app.stdout.ptr);
-    RING("FIO stderr:\n%s", fio->app.stderr.ptr);
-
-    rc = tapi_file_read_ta(fio->app.rpcs->ta,
-                           fio->app.opts.output_path.ptr,
+    rc = tapi_file_read_ta(ta, fio->app.opts.output_path.ptr,
                            &json_output);
-
     if (rc != 0)
-        return TE_EFAIL;
+        return rc;
+
 
     RING("FIO result.json:\n%s", json_output);
     jrpt = json_loads(json_output, 0, 0);

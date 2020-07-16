@@ -22,13 +22,11 @@ extern "C" {
 /**
  * Starting fio tool.
  *
- * @param cmd           FIO command.
  * @param app           App context.
  *
  * @return Status code
  */
-extern te_errno fio_app_start(char *cmd,
-                              tapi_fio_app *app);
+extern te_errno fio_app_start(tapi_fio_app *app);
 
 /**
  * Stopping fio tool.
@@ -48,6 +46,16 @@ extern te_errno fio_app_stop(tapi_fio_app *app);
  * @return Status code
  */
 extern te_errno fio_app_wait(tapi_fio_app *app, int16_t timeout_sec);
+
+/**
+ * Receive fio report in JSON format.
+ *
+ * @param      app          App context.
+ * @param[out] reoirt       Fio report
+ *
+ * @return Status code
+ */
+extern te_errno fio_app_receive_report(tapi_fio_app *app, char **report);
 
 #ifdef __cplusplus
 } /* extern "C" */
