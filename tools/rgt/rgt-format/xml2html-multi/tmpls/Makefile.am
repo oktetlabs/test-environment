@@ -28,6 +28,7 @@ dist_pkgdata_DATA = \
     log_msg_start.tmpl\
     log_msg_end.tmpl\
     param_start.tmpl\
+    logs_filter.tmpl\
     logs_start.tmpl\
     logs_end.tmpl\
     meta_start_ts_start.tmpl\
