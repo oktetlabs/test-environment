@@ -1946,16 +1946,19 @@ job_wait(unsigned int job_id, int timeout_ms, tarpc_job_status *status)
 static te_errno
 job_stop(unsigned int job_id, int signo, int term_timeout_ms)
 {
-    te_errno rc;
+    te_errno rc = 0;
     job_t *job;
 
     job = get_job(job_id);
     if (job == NULL)
         return TE_EINVAL;
 
-    rc = proc_kill(job->pid, signo, term_timeout_ms);
-    if (rc == 0)
-        job->pid = -1;
+    if (job->pid != -1)
+    {
+        rc = proc_kill(job->pid, signo, term_timeout_ms);
+        if (rc == 0)
+            job->pid = -1;
+    }
 
     return rc;
 }
