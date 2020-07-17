@@ -74,6 +74,8 @@ option('agentsdir', type: 'string', value: '',
 
 option('agent-unix-name', type: 'string', value: '',
        description: 'Unix Test Agent name')
+option('agent-unix-platform', type: 'string', value: '',
+       description: 'Unix Test Agent platform')
 option('agent-unix-conf', type: 'array', value: [],
        choices: ['8021x', 'aggr', 'bpf', 'iptables', 'ntpd', 'ovs', 'pam',
                  'pci', 'serial', 'serial-parser', 'sfptpd', 'tc', 'tr069',

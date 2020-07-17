@@ -380,11 +380,13 @@ process_agent_unix() {
     local pfx="$1"; shift
     local parms_var="${pfx}PARMS"
     local libs_var="${pfx}LIBS"
+    local ta_platform="${pfx}PLATFORM"
     local parms=
     local conf=
     local daemons=
 
     meson_args="${meson_args} -Dagent-unix-name=${ta}"
+    meson_args="${meson_args} -Dagent-unix-platform=${!ta_platform}"
 
     # eval is required interpret correctly parameter values with
     # whitespaces in quotes

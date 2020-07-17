@@ -1,12 +1,14 @@
 # Copyright (C) 2018 OKTET Labs. All rights reserved.
 
 name = get_option('agent-unix-name')
+ta_platform = get_option('agent-unix-platform')
 tadir = join_paths(get_option('agentsdir'), name)
 
 includes = []
 
 c_args = [ '-fno-strict-aliasing' ]
 c_args += [ '-DRCF_RPC' ]
+c_args += [ '-DTE_AGT_PLATFORM="' + ta_platform + '"' ]
 
 link_args = []
 
