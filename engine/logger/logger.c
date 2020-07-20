@@ -993,6 +993,9 @@ main(int argc, const char *argv[])
         return EXIT_FAILURE;
     }
 
+    /* Ignore SIGPIPE (may be generated when TA handlers try to contact RCF) */
+    signal(SIGPIPE, SIG_IGN);
+
     /* Get environment variable value for logs. */
     te_log_dir = getenv("TE_LOG_DIR");
     if (te_log_dir == NULL)
