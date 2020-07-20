@@ -498,7 +498,15 @@ send_recv_rcf_ipc_message(thread_ctx_t *ctx,
     if ((rc = ipc_send_message(ctx->ipc_handle, RCF_SERVER,
                                send_buf, send_size)) != 0)
     {
-        ERROR("%s() failed with rc %r", __FUNCTION__, rc);
+        /*
+         * Encountering EPIPE is the only way to know that RCF is down,
+         * so it is a part of normal operation. However, a message should
+         * still be printed for debugging purposes.
+         */
+        if (TE_RC_GET_ERROR(rc) == TE_EPIPE)
+            INFO("%s() failed with rc %r", __FUNCTION__, rc);
+        else
+            ERROR("%s() failed with rc %r", __FUNCTION__, rc);
         return TE_RC(TE_RCF_API, TE_EIPC);
     }
 

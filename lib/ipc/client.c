@@ -552,7 +552,12 @@ write_socket(int socket, const char *buffer, size_t len)
 
         if (r < 0)
         {
-            perror("write_socket(): send() error");
+            /*
+             * Encountering EPIPE is part of normal operation
+             * for some TE components
+             */
+            if (errno != EPIPE)
+                perror("write_socket(): send() error");
             return TE_OS_RC(TE_IPC, errno);
         }
 
@@ -1366,7 +1371,12 @@ ipc_stream_send_message(struct ipc_client *ipcc, const char *server_name,
         if (write_socket(server->stream.socket,
                          (char *)&len, sizeof(len)) != 0)
         {
-            perror("ipc_send_message(): write_socket()");
+            /*
+             * Encountering EPIPE is part of normal operation
+             * for some TE components
+             */
+            if (errno != EPIPE)
+                perror("ipc_send_message(): write_socket()");
             return TE_OS_RC(TE_IPC, errno);
         }
 
