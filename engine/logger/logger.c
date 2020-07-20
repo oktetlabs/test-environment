@@ -74,6 +74,9 @@ static int      raw_file_check_cnt = 0;
 /** Logger PID */
 static pid_t    pid;
 
+/** PID that should be notified on exit */
+static pid_t    shutdown_pid = -1;
+
 static unsigned int         lgr_flags = 0;
 
 /** @name Logger global context flags */
@@ -315,15 +318,16 @@ te_handler(void)
         {
             char const *msg = (void *)((char *)buf + sizeof(te_log_nfl));
 
-            unsigned int const ml = te_log_raw_get_nfl(buf);
+            unsigned int const ml = te_log_raw_get_nfl(buf) - sizeof(uint32_t);
             unsigned int const pl = strlen(LGR_SRV_FOR_TA_PREFIX);
             unsigned int       data_len;
 
-            if (ml + sizeof(te_log_nfl) == len &&
+            if (ml + sizeof(te_log_nfl) + sizeof(uint32_t) == len &&
                 strncmp(msg, LGR_SHUTDOWN, ml) == 0)
             {
                 RING("Logger shutdown ...\n");
                 lgr_flags |= LOGGER_SHUTDOWN;
+                shutdown_pid = ntohl(*(uint32_t *)(msg + ml));
                 (void)kill(pid, SIGUSR1);
                 break;
             }
@@ -1258,6 +1262,16 @@ exit:
     {
         perror("fclose() failed");
         result = EXIT_FAILURE;
+    }
+
+    if (shutdown_pid != -1)
+    {
+        res = kill(shutdown_pid, SIGUSR1);
+        if (res != 0)
+        {
+            perror("Failed to notify te_log_shutdown");
+            result = EXIT_FAILURE;
+        }
     }
 
     return result;
