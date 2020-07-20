@@ -50,7 +50,7 @@
 #define RAW_FILE_CHECK_PERIOD 100
 
 /* TA single linked list */
-ta_inst *ta_list = NULL;
+ta_inst_list ta_list = SLIST_HEAD_INITIALIZER(ta_list);
 
 snif_polling_sets_t snifp_sets;
 
@@ -170,25 +170,15 @@ static void
 add_inst(ta_inst *inst)
 {
     pthread_mutex_lock(&add_remove_mutex);
-    inst->next = ta_list;
-    ta_list = inst;
+    SLIST_INSERT_HEAD(&ta_list, inst, links);
     pthread_mutex_unlock(&add_remove_mutex);
 }
 
 static void
 remove_inst(ta_inst *inst)
 {
-    ta_inst **a;
-
     pthread_mutex_lock(&add_remove_mutex);
-    for (a = &ta_list; *a != NULL; a = &(*a)->next)
-    {
-        if (*a == inst)
-        {
-            *a = inst->next;
-            break;
-        }
-    }
+    SLIST_REMOVE(&ta_list, inst, ta_inst, links);
     pthread_mutex_unlock(&add_remove_mutex);
 }
 
@@ -304,7 +294,6 @@ te_handler(void)
                     continue;
                 }
 
-                inst->next = ta_list;
                 inst->thread_run = FALSE;
                 memcpy(inst->agent, msg + pl, ml - pl);
 
@@ -1118,8 +1107,7 @@ main(int argc, const char *argv[])
                 goto join_te_srv;
             }
 
-            ta_el->next = ta_list;
-            ta_list = ta_el;
+            add_inst(ta_el);
         }
         free(ta_names);
     }
@@ -1129,8 +1117,7 @@ main(int argc, const char *argv[])
 
     INFO("TA handlers creation\n");
     /* Create threads according to active TA list */
-    ta_el = ta_list;
-    while (ta_el != NULL)
+    SLIST_FOREACH(ta_el, &ta_list, links)
     {
         config_ta(ta_el);
         res = pthread_create(&ta_el->thread, NULL,
@@ -1142,7 +1129,6 @@ main(int argc, const char *argv[])
             goto join_te_srv;
         }
         ta_el->thread_run = TRUE;
-        ta_el = ta_el->next;
     }
 
     result = EXIT_SUCCESS;
@@ -1160,19 +1146,19 @@ exit:
     /* Release all memory on shutdown */
     pthread_mutex_lock(&add_remove_mutex);
     {
-        ta_inst **a = &ta_list;
+        ta_inst **a = &SLIST_FIRST(&ta_list);
 
         while ((ta_el = *a) != NULL)
         {
             if (ta_el->thread_run)
             {
                 /* Keep current 'ta_el' intact */
-                a = &ta_el->next;
+                a = &SLIST_NEXT(ta_el, links);
             }
             else
             {
                 /* Remove 'ta_el' from the list and free it */
-                *a = ta_el->next;
+                *a = SLIST_NEXT(ta_el, links);
                 free(ta_el);
             }
         }

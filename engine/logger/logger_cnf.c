@@ -29,7 +29,7 @@
 #include <yaml.h>
 
 /* TA single linked list */
-extern ta_inst *ta_list;
+extern ta_inst_list ta_list;
 
 /* Cpature logs polling settings */
 extern snif_polling_sets_t snifp_sets;
@@ -1014,12 +1014,10 @@ config_parser(const char *file_name)
     }
 #undef CHECK
 
-    tmp_el = ta_list;
-    while (tmp_el != NULL)
+    SLIST_FOREACH(tmp_el, &ta_list, links)
     {
         VERB("Agent %s Type %s Polling %u",
              tmp_el->agent, tmp_el->type, tmp_el->polling);
-        tmp_el = tmp_el->next;
     }
 
     VERB("snifp_sets.name     %s\n", snifp_sets.name);

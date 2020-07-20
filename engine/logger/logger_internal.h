@@ -107,7 +107,7 @@ typedef struct snif_polling_sets_t {
 
 /** Node of the TA single linked list */
 typedef struct ta_inst {
-    struct ta_inst *next;                /**< Pointer to the next
+    SLIST_ENTRY(ta_inst) links;          /**< Pointer to the next
                                               structure */
     char            agent[RCF_MAX_NAME]; /**< TA name */
     char            type[RCF_MAX_NAME];  /**< Type assigned for TA or
@@ -121,6 +121,9 @@ typedef struct ta_inst {
     int             flush_log;           /**< 0 - normal processing;
                                               1 - flush TA local log */
 } ta_inst;
+
+/** List of TAs */
+typedef SLIST_HEAD(, ta_inst) ta_inst_list;
 
 
 /** Create message and register it in the raw log file. */
