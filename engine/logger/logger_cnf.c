@@ -22,6 +22,7 @@
 #include "rcf_common.h"
 #include <pthread.h>
 #include <semaphore.h>
+#include "te_alloc.h"
 #include "te_str.h"
 #include "te_kernel_log.h"
 
@@ -38,6 +39,19 @@ extern const char *te_log_dir;
 
 static te_bool   thread_parsed = FALSE;
 
+/** TA configuration rule */
+typedef struct ta_rule {
+    char    *name;    /**< Agent name, type regex check is used */
+    regex_t  type;    /**< Regex for agent type */
+    int      polling; /**< Polling setting for this agent */
+} ta_rule;
+
+/** A set of TA configuration rules */
+struct ta_cfg {
+    ta_rule *rules;           /**< Array of rules */
+    int      rules_num;       /**< Size of the rules array */
+    int      polling_default; /**< Default polling setting */
+} ta_cfg;
 
 /*
  * Context that will be passed to the threads
@@ -49,6 +63,74 @@ typedef struct thread_context {
     const char *thread_name;
     sem_t       args_processed;
 } thread_context;
+
+/** Remove the currently accumulated config rules */
+static void
+config_clear()
+{
+    ta_rule *rule;
+
+    for (rule = ta_cfg.rules; rule != ta_cfg.rules + ta_cfg.rules_num; rule++)
+    {
+        if (rule->name != NULL)
+            free(rule->name);
+        else
+            regfree(&rule->type);
+    }
+    ta_cfg.rules_num = 0;
+}
+
+/**
+ * Initialize the rule for a specific agent.
+ *
+ * @param rule      configuration rule
+ * @param name      agent name
+ * @param polling   polling setting for this agent
+ *
+ * @return  Status information
+ *
+ * @retval   0          Success.
+ * @retval   Negative   Failure.
+ */
+static int
+rule_init_agent(ta_rule *rule, const char *name, int polling)
+{
+    rule->name = strdup(name);
+    if (rule->name == NULL)
+    {
+        ERROR("Failed to allocate memory for TA name");
+        return -1;
+    }
+    rule->polling = polling;
+
+    return 0;
+}
+
+/**
+ * Initialize the rule for agents of specific type.
+ *
+ * @param rule      configuration rule
+ * @param type      agent type regex
+ * @param polling   polling setting for this agent
+ *
+ * @return  Status information
+ *
+ * @retval   0          Success.
+ * @retval   Negative   Failure.
+ */
+static int
+rule_init_type(ta_rule *rule, const char *type, int polling)
+{
+    rule->name = NULL;
+    if (regcomp(&rule->type, type, REG_EXTENDED) != 0)
+    {
+        ERROR("Polling: RegExpr compilation failure\n");
+        return -1;
+    }
+    rule->polling = polling;
+
+    return 0;
+}
 
 /**
  * Logger thread wrapper.
@@ -83,103 +165,26 @@ logger_thread_wrapper(void *arg)
     return NULL;
 }
 
-/**
- * Set polling interval for all agents.
- *
- * @param interval  polling interval
- *
- * @return Status information
- *
- * @retval 0            Success.
- * @retval Negative     Failure.
- */
-static void
-polling_set_default(uint32_t interval)
-{
-    ta_inst *tmp_el;
-
-    tmp_el = ta_list;
-    while (tmp_el != NULL)
-    {
-        tmp_el->polling = interval;
-        tmp_el = tmp_el->next;
-    }
-}
-
-/**
- * Set polling interval for all agents of a specific type.
- *
- * @param type      TA type regex
- * @param interval  polling interval
- *
- * @return Status information
- *
- * @retval 0            Success.
- * @retval Negative     Failure.
- */
-static int
-polling_set_type(const char *type, uint32_t interval)
-{
-    ta_inst    *tmp_el;
-    regmatch_t  pmatch[1];
-    regex_t     cmp_buffer;
-    uint32_t    str_len;
-
-    memset(pmatch, 0, sizeof(regmatch_t));
-
-    if (regcomp(&cmp_buffer, type, REG_EXTENDED) != 0)
-    {
-        ERROR("Polling: RegExpr compilation failure\n");
-        return -1;
-    }
-
-    tmp_el = ta_list;
-    while (tmp_el != NULL)
-    {
-        if (regexec(&cmp_buffer, tmp_el->type, 1, pmatch, 0) == 0)
-        {
-            str_len = strlen(tmp_el->type);
-            if ((str_len - (pmatch->rm_eo - pmatch->rm_so) == 0))
-                tmp_el->polling = interval;
-
-        }
-        tmp_el = tmp_el->next;
-    }
-    regfree(&cmp_buffer);
-
-    return 0;
-}
-
-/**
- * Set polling interval for a specific agent.
- *
- * @param agent     TA name
- * @param interval  polling interval
- *
- * @return Status information
- *
- * @retval 0            Success.
- * @retval Negative     Failure.
- */
-static void
-polling_set_agent(const char *agent, uint32_t interval)
-{
-    ta_inst *tmp_el;
-
-    tmp_el = ta_list;
-    while (tmp_el != NULL)
-    {
-        if (strcmp(agent, tmp_el->agent) == 0)
-            tmp_el->polling = interval;
-
-        tmp_el = tmp_el->next;
-    }
-}
-
 /*************************************************************************/
 /*           XML                                                         */
 /*************************************************************************/
 
+static ta_rule *
+allocate_rule()
+{
+    ta_rule *old = ta_cfg.rules;
+
+    ta_cfg.rules = realloc(ta_cfg.rules,
+                           (ta_cfg.rules_num + 1) * sizeof(ta_rule));
+    if (ta_cfg.rules == NULL)
+    {
+        ta_cfg.rules = old;
+        ERROR("Failed to allocate memory for a new TA configuration rule");
+        return NULL;
+    }
+
+    return &ta_cfg.rules[ta_cfg.rules_num];
+}
 
 /**
  * User call back called when an opening tag has been processed.
@@ -193,9 +198,12 @@ startElementLGR(void           *thread_ctx,
                 const xmlChar  *xml_name,
                 const xmlChar **xml_atts)
 {
+    int             ret;
     const char     *name = (const char *)xml_name;
     const char    **atts = (const char **)xml_atts;
     thread_context *ctx = thread_ctx;
+    ta_rule        *new;
+
 
     if ((atts == NULL) || (atts[0] == NULL) || (atts[1] == NULL))
         return;
@@ -207,7 +215,10 @@ startElementLGR(void           *thread_ctx,
     {
         /* Get default polling value and assign it to the all TA */
         if (strcmp(atts[0], "default") == 0)
-            polling_set_default(strtoul(atts[1], NULL, 0));
+        {
+            ta_cfg.polling_default = strtoul(atts[1], NULL, 0);
+            config_clear();
+        }
     }
     else if (!strcmp(name, "type") &&
              (atts != NULL) &&
@@ -222,7 +233,15 @@ startElementLGR(void           *thread_ctx,
          */
         if (!strcmp(atts[0], "type") &&
             !strcmp(atts[2], "value"))
-            polling_set_type(atts[1], strtoul(atts[3], NULL, 0));
+        {
+            new = allocate_rule();
+            if (new == NULL)
+                return;
+            ret = rule_init_type(new, atts[1],
+                                 strtoul(atts[3], NULL, 0));
+            if (ret == 0)
+                ta_cfg.rules_num++;
+        }
     }
     else if (!strcmp(name, "agent") &&
              (atts != NULL) &&
@@ -234,7 +253,15 @@ startElementLGR(void           *thread_ctx,
         /* Get polling value for separate TA and assign it */
         if (!strcmp(atts[0], "agent") &&
             !strcmp(atts[2], "value"))
-            polling_set_agent(atts[1], strtoul(atts[3], NULL, 0));
+        {
+            new = allocate_rule();
+            if (new == NULL)
+                return;
+            ret = rule_init_agent(new, atts[1],
+                                  strtoul(atts[3], NULL, 0));
+            if (ret == 0)
+                ta_cfg.rules_num++;
+        }
     }
     else if (!strcmp(name, "snif_fname"))
     {
@@ -445,13 +472,27 @@ xmlSAXHandlerPtr loggerSAXHandler = &loggerSAXHandlerStruct;
 static int
 handle_polling(yaml_document_t *d, yaml_node_t *section)
 {
+    int               ret;
     yaml_node_item_t *item;
+    size_t            items;
+    int               rule_index;
 
     if (section->type != YAML_SEQUENCE_NODE)
     {
         ERROR("Polling: Expected a sequence, got something else");
         return -1;
     }
+
+    items = section->data.sequence.items.top -
+            section->data.sequence.items.start;
+
+    if (ta_cfg.rules != NULL)
+        free(ta_cfg.rules);
+
+    ta_cfg.rules = TE_ALLOC(items * sizeof(ta_rule));
+    ta_cfg.rules_num = 0;
+    ta_cfg.polling_default = 0;
+    rule_index = 0;
 
     item = section->data.sequence.items.start;
     do {
@@ -473,7 +514,9 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
         if (strcmp(rule_key, "default") == 0)
         {
             /* Get default polling value and assign it to the all TA */
-            polling_set_default(strtoul(rule_value, NULL, 0));
+            ta_cfg.polling_default = strtoul(rule_value, NULL, 0);
+            config_clear();
+            rule_index = 0;
         }
         else if (strcmp(rule_key, "type") == 0)
         {
@@ -499,7 +542,12 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
                 return -1;
             }
 
-            polling_set_type(rule_value, strtoul(val_str, NULL, 0));
+
+            ret = rule_init_type(&ta_cfg.rules[rule_index], rule_value,
+                                 strtoul(val_str, NULL, 0));
+            if (ret != 0)
+                return ret;
+            rule_index++;
         }
         else if (strcmp(rule_key, "agent") == 0)
         {
@@ -522,9 +570,15 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
                 return -1;
             }
 
-            polling_set_agent(rule_value, strtoul(val_str, NULL, 0));
+            ret = rule_init_agent(&ta_cfg.rules[rule_index], rule_value,
+                                  strtoul(val_str, NULL, 0));
+            if (ret != 0)
+                return ret;
+            rule_index++;
         }
     } while (++item < section->data.sequence.items.top);
+
+    ta_cfg.rules_num = rule_index;
 
     return 0;
 }
@@ -978,4 +1032,30 @@ config_parser(const char *file_name)
     VERB("snifp_sets.period   %u\n", snifp_sets.period);
 
     return res;
+}
+
+/* See description in logger_internal.h */
+void
+config_ta(ta_inst *ta)
+{
+    const ta_rule *rule = ta_cfg.rules;
+    const ta_rule *last = ta_cfg.rules + ta_cfg.rules_num;
+    regmatch_t     pmatch[1];
+
+    ta->polling = ta_cfg.polling_default;
+    for (; rule < last; rule++)
+    {
+        if (rule->name)
+        {
+            if (strcmp(ta->agent, rule->name) == 0)
+                ta->polling = rule->polling;
+        }
+        else
+        {
+            memset(pmatch, 0, sizeof(*pmatch));
+            if (regexec(&rule->type, ta->type, 1, pmatch, 0) == 0 &&
+                (size_t)(pmatch->rm_eo - pmatch->rm_so) == strlen(ta->type))
+                ta->polling = rule->polling;
+        }
+    }
 }

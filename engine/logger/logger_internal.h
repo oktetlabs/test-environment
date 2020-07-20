@@ -140,6 +140,13 @@ extern te_log_message_f lgr_log_message;
 extern int config_parser(const char *file_name);
 
 /**
+ * Configure TA according to the configuration file.
+ *
+ * @param ta            TA instance
+ */
+extern void config_ta(ta_inst *ta);
+
+/**
  * Register the log message in the raw log file.
  *
  * @param buf_mess  Log message location.

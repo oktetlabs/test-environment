@@ -317,16 +317,8 @@ te_handler(void)
                     continue;
                 }
 
+                config_ta(inst);
                 add_inst(inst);
-
-                /*
-                 * This should be done before starting the thread,
-                 * for values from configuration file (like polling)
-                 * to take effect immediately.
-                 */
-                INFO("Logger configuration file parsing\n");
-                if (config_parser(cfg_file) != 0)
-                    WARN("Logger configuration file failure\n");
 
                 if (pthread_create(&inst->thread, NULL,
                                    (void *)&ta_handler,
@@ -1033,6 +1025,14 @@ main(int argc, const char *argv[])
     /* Store my PID in global variable */
     pid = getpid();
 
+    /* Parse configuration file */
+    INFO("Logger configuration file parsing\n");
+    if (config_parser(cfg_file) != 0)
+    {
+        ERROR("Logger configuration file failure\n");
+        goto exit;
+    }
+
     /* ASAP create separate thread for log message server */
     res = pthread_create(&te_thread, NULL, (void *)&te_handler, NULL);
     if (res != 0)
@@ -1125,20 +1125,6 @@ main(int argc, const char *argv[])
     }
 
     sniffer_polling_sets_start_init();
-
-    /*
-     * FIXME:
-     * Log file must be processed before start of messages
-     * processing
-     */
-    /* Parse log file when list of TAs is known */
-    INFO("Logger configuration file parsing\n");
-    if (config_parser(cfg_file) != 0)
-    {
-        ERROR("Logger configuration file failure\n");
-        goto join_te_srv;
-    }
-
     sniffer_polling_sets_cli_init();
 
     INFO("TA handlers creation\n");
@@ -1146,6 +1132,7 @@ main(int argc, const char *argv[])
     ta_el = ta_list;
     while (ta_el != NULL)
     {
+        config_ta(ta_el);
         res = pthread_create(&ta_el->thread, NULL,
                              (void *)&ta_handler, (void *)ta_el);
         if (res != 0)
