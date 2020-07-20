@@ -49,8 +49,13 @@
 /* Raw log file length checking period */
 #define RAW_FILE_CHECK_PERIOD 100
 
+/* Finished TA checking period */
+#define TA_FINISH_CHECK_PERIOD 50
+
 /* TA single linked list */
-ta_inst_list ta_list = SLIST_HEAD_INITIALIZER(ta_list);
+ta_inst_list   ta_list = SLIST_HEAD_INITIALIZER(ta_list);
+ta_inst_list   ta_finished = SLIST_HEAD_INITIALIZER(ta_list);
+pthread_cond_t ta_finished_cond = PTHREAD_COND_INITIALIZER;
 
 snif_polling_sets_t snifp_sets;
 
@@ -182,6 +187,40 @@ remove_inst(ta_inst *inst)
     pthread_mutex_unlock(&add_remove_mutex);
 }
 
+static void
+finish_inst(ta_inst *inst)
+{
+    pthread_mutex_lock(&add_remove_mutex);
+    SLIST_REMOVE(&ta_list, inst, ta_inst, links);
+    SLIST_INSERT_HEAD(&ta_finished, inst, links);
+    pthread_cond_signal(&ta_finished_cond);
+    pthread_mutex_unlock(&add_remove_mutex);
+}
+
+static void
+wait_for_finished_insts(void)
+{
+    ta_inst      *ta_el;
+    ta_inst      *ta_tmp;
+    ta_inst_list  finished;
+    char          err_buf[BUFSIZ];
+
+    pthread_mutex_lock(&add_remove_mutex);
+    finished = ta_finished;
+    SLIST_INIT(&ta_finished);
+    pthread_mutex_unlock(&add_remove_mutex);
+
+    SLIST_FOREACH_SAFE(ta_el, &finished, links, ta_tmp)
+    {
+        if (pthread_join(ta_el->thread, NULL) != 0)
+        {
+            te_strerror_r(errno, err_buf, sizeof(err_buf));
+            ERROR("pthread_join() failed: %s", err_buf);
+        }
+        free(ta_el);
+    }
+}
+
 /** Forward declaration */
 static void * ta_handler(void *ta);
 
@@ -203,6 +242,7 @@ te_handler(void)
     pthread_t                   sniffer_mark_thread;
     char                        err_buf[BUFSIZ];
     char                       *arg_str;
+    int                         finished_timeout = TA_FINISH_CHECK_PERIOD;
 
     buf_len = LGR_MSG_BUF_MIN;
     buf = malloc(buf_len);
@@ -214,6 +254,12 @@ te_handler(void)
 
     while (TRUE) /* Forever loop */
     {
+        if (finished_timeout-- <= 0)
+        {
+            finished_timeout = TA_FINISH_CHECK_PERIOD;
+            wait_for_finished_insts();
+        }
+
         len = buf_len;
         ipcsc_p = NULL;
         rc = ipc_receive_message(srv, buf, &len, &ipcsc_p);
@@ -442,6 +488,7 @@ ta_handler(void *ta)
     if (rc != 0)
     {
         ERROR("Failed to register IPC server '%s': %r", srv_name, rc);
+        finish_inst(inst);
         return NULL;
     }
     assert(srv != NULL);
@@ -738,8 +785,11 @@ ta_handler(void *ta)
 
     } /* end of forever loop */
 
-    remove_inst(inst);
-    free(inst);
+    if (pthread_join(sniffer_thread, NULL) != 0)
+    {
+        te_strerror_r(errno, err_buf, sizeof(err_buf));
+        ERROR("pthread_join() failed: %s\n", err_buf);
+    }
 
     if (do_flush || flush_done)
     {
@@ -756,6 +806,7 @@ ta_handler(void *ta)
         RING("IPC Server '%s' closed", srv_name);
     }
 
+    finish_inst(inst);
     return NULL;
 }
 
@@ -1163,27 +1214,12 @@ exit:
             }
         }
     }
+
+    while (!SLIST_EMPTY(&ta_list))
+        pthread_cond_wait(&ta_finished_cond, &add_remove_mutex);
     pthread_mutex_unlock(&add_remove_mutex);
 
-#if 0
-    while (ta_list != NULL)
-    {
-        ta_el = ta_list;
-        ta_list = ta_el->next;
-
-#if 0
-        if (ta_el->thread_run &&
-            pthread_join(ta_el->thread, NULL) != 0)
-        {
-            te_strerror_r(errno, err_buf, sizeof(err_buf));
-            ERROR("pthread_join() failed: %s\n", err_buf);
-            result = EXIT_FAILURE;
-        }
-#endif
-
-        free(ta_el);
-    }
-#endif
+    wait_for_finished_insts();
 
     if ((pid_f != NULL) && (fclose(pid_f) != 0))
     {
