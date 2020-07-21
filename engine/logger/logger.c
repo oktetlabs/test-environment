@@ -318,16 +318,17 @@ te_handler(void)
         {
             char const *msg = (void *)((char *)buf + sizeof(te_log_nfl));
 
-            unsigned int const ml = te_log_raw_get_nfl(buf) - sizeof(uint32_t);
+            unsigned int const ml = te_log_raw_get_nfl(buf);
+            unsigned int const sl = strlen(LGR_SHUTDOWN);
             unsigned int const pl = strlen(LGR_SRV_FOR_TA_PREFIX);
             unsigned int       data_len;
 
-            if (ml + sizeof(te_log_nfl) + sizeof(uint32_t) == len &&
-                strncmp(msg, LGR_SHUTDOWN, ml) == 0)
+            if (ml + sizeof(te_log_nfl) == len &&
+                strncmp(msg, LGR_SHUTDOWN, sl) == 0)
             {
                 RING("Logger shutdown ...\n");
                 lgr_flags |= LOGGER_SHUTDOWN;
-                shutdown_pid = ntohl(*(uint32_t *)(msg + ml));
+                shutdown_pid = ntohl(*(uint32_t *)(msg + sl));
                 (void)kill(pid, SIGUSR1);
                 break;
             }
