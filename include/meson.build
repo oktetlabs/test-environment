@@ -29,6 +29,7 @@ check_headers = [
     'errno.h',
     'fcntl.h',
     'fnmatch.h',
+    'ftw.h',
     'glob.h',
     'inet/mib2.h',
     'inet/nd.h',

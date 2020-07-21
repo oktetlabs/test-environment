@@ -29,6 +29,9 @@
 /* Define to 1 if you have the <fnmatch.h> header file. */
 #mesondefine HAVE_FNMATCH_H
 
+/* Define to 1 if you have the <ftw.h> header file. */
+#mesondefine HAVE_FTW_H
+
 /* Define to 1 if you have the <glob.h> header file. */
 #mesondefine HAVE_GLOB_H
 

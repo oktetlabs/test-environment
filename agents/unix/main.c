@@ -33,6 +33,9 @@
 #include <sys/socket.h>
 #include <poll.h>
 #include <fcntl.h>
+#if HAVE_FTW_H
+#include <ftw.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -172,6 +175,26 @@ static pthread_mutex_t ta_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct sigaction sigaction_int;
 /** Default SIGPIPE action */
 static struct sigaction sigaction_pipe;
+
+#if HAVE_FTW_H
+/** Callback function to delete files in directory */
+static int
+unlink_cb(const char *fpath, const struct stat *sb,
+          int typeflag, struct FTW *ftwbuf)
+{
+    int retval;
+
+    UNUSED(sb);
+    UNUSED(typeflag);
+    UNUSED(ftwbuf);
+
+    retval = remove(fpath);
+    if (retval != 0)
+        fprintf(stderr, "Failed to remove '%s': %s\n", fpath, strerror(errno));
+
+    return retval;
+}
+#endif
 
 /** Add the task pid into the list */
 static void
@@ -1721,6 +1744,13 @@ main(int argc, char **argv)
                     rc);
         }
     }
+
+#ifdef HAVE_FTW_H
+    if (nftw(ta_tmp_dir, unlink_cb, 64, FTW_DEPTH | FTW_PHYS | FTW_MOUNT) != 0)
+        fprintf(stderr, "Failed to remove files from tmp directory\n");
+#else
+    fprintf(stderr, "Failed to remove tmp directory: ftw header is missing\n");
+#endif
 
     /* FIXME Correct retval to return */
     return retval;
