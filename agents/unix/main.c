@@ -1621,7 +1621,7 @@ main(int argc, char **argv)
      * working directory to it in order to create all temporary files there
      * by default. It will be removed together with TA directory on TA shutdown.
      */
-    TE_SPRINTF(ta_tmp_dir, "%s/tmp", ta_dir);
+    TE_SPRINTF(ta_tmp_dir, "%stmp/", ta_dir);
     if (mkdir(ta_tmp_dir, S_IRWXU | S_IRWXG | S_IRWXO | S_ISVTX) != 0 &&
         errno != EEXIST)
     {
