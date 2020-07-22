@@ -1073,6 +1073,8 @@ main(int argc, const char *argv[])
     /* Store my PID in global variable */
     pid = getpid();
 
+    /* Apply default sniffer settings */
+    sniffer_polling_sets_start_init();
     /* Parse configuration file */
     INFO("Logger configuration file parsing\n");
     if (config_parser(cfg_file) != 0)
@@ -1080,6 +1082,8 @@ main(int argc, const char *argv[])
         ERROR("Logger configuration file failure\n");
         goto exit;
     }
+    /* Apply sniffer settings from environment variables */
+    sniffer_polling_sets_cli_init();
 
     /* ASAP create separate thread for log message server */
     res = pthread_create(&te_thread, NULL, (void *)&te_handler, NULL);
@@ -1170,9 +1174,6 @@ main(int argc, const char *argv[])
         }
         free(ta_names);
     }
-
-    sniffer_polling_sets_start_init();
-    sniffer_polling_sets_cli_init();
 
     INFO("TA handlers creation\n");
     /* Create threads according to active TA list */
