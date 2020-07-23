@@ -18,6 +18,7 @@
 #include "te_vector.h"
 #include "tapi_test.h"
 #include "tapi_mem.h"
+#include "te_mi_log.h"
 
 /** Number of tapi_job output channels (one for stdout, one for stderr) */
 #define TAPI_SFNT_PP_CHANNELS_STD_NUM 2
@@ -615,4 +616,37 @@ tapi_sfnt_pp_destroy_server(tapi_sfnt_pp_app_server_t *app)
     free(app);
 
     return rc;
+}
+
+te_errno
+tapi_sfnt_pp_mi_report(const tapi_sfnt_pp_report *report)
+{
+    te_mi_logger *logger;
+    te_errno      rc;
+
+    rc = te_mi_logger_meas_create("sfnt-pingpong", &logger);
+    if (rc != 0)
+        return rc;
+
+    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY, "1/2 RTT latency",
+                          TE_MI_MEAS_AGGR_MEAN, report->mean,
+                          TE_MI_MEAS_MULTIPLIER_NANO);
+    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY, "1/2 RTT latency",
+                          TE_MI_MEAS_AGGR_MIN, report->min,
+                          TE_MI_MEAS_MULTIPLIER_NANO);
+    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY, "1/2 RTT latency",
+                          TE_MI_MEAS_AGGR_MEDIAN, report->median,
+                          TE_MI_MEAS_MULTIPLIER_NANO);
+    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY, "1/2 RTT latency",
+                          TE_MI_MEAS_AGGR_MAX, report->max,
+                          TE_MI_MEAS_MULTIPLIER_NANO);
+     te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY, "1/2 RTT latency (99)",
+                          TE_MI_MEAS_AGGR_PERCENTILE, report->percentile,
+                          TE_MI_MEAS_MULTIPLIER_NANO);
+    te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY, "1/2 RTT latency",
+                          TE_MI_MEAS_AGGR_STDEV, report->stddev,
+                          TE_MI_MEAS_MULTIPLIER_NANO);
+    te_mi_logger_add_meas_key(logger, NULL, "Size", "%d", report->size);
+    te_mi_logger_destroy(logger);
+    return 0;
 }

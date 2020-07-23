@@ -309,6 +309,15 @@ extern te_errno tapi_sfnt_pp_destroy_client(tapi_sfnt_pp_app_client_t *app);
  */
 extern te_errno tapi_sfnt_pp_destroy_server(tapi_sfnt_pp_app_server_t *app);
 
+/**
+ * Output sfnt-pingpong report via MI logger.
+ *
+ * @param[in] report sfnt-pingpong report
+ *
+ * @return Status code
+ */
+extern te_errno tapi_sfnt_pp_mi_report(const tapi_sfnt_pp_report *report);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
