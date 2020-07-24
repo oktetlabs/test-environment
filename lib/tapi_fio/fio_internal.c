@@ -211,6 +211,7 @@ fio_app_start(tapi_fio_app *app)
     {
         te_vec_deep_free(&app->args);
         tapi_job_destroy(app->job, -1);
+        app->job = NULL;
         return rc;
     }
 
