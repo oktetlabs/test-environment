@@ -48,26 +48,27 @@ typedef struct te_rgt_mi_meas_value {
 
 /** Description of measured parameter */
 typedef struct te_rgt_mi_meas_param {
-    const char *name;               /**< Parameter name */
-    const char *type;               /**< Parameter type */
-    const char *descr;              /**< Parameter description */
+    const char *name;                   /**< Parameter name */
+    const char *type;                   /**< Parameter type */
+    const char *descr;                  /**< Parameter description */
 
-    te_bool stats_present;          /**< @c TRUE if some of the
-                                         statistics are set */
-    te_rgt_mi_meas_value min;       /**< Minimum value */
-    te_rgt_mi_meas_value max;       /**< Maximum value */
-    te_rgt_mi_meas_value mean;      /**< Mean */
-    te_rgt_mi_meas_value median;    /**< Median */
-    te_rgt_mi_meas_value stdev;     /**< Standard deviation */
-    te_rgt_mi_meas_value cv;        /**< Coefficient of variation */
+    te_bool stats_present;              /**< @c TRUE if some of the
+                                             statistics are set */
+    te_rgt_mi_meas_value min;           /**< Minimum value */
+    te_rgt_mi_meas_value max;           /**< Maximum value */
+    te_rgt_mi_meas_value mean;          /**< Mean */
+    te_rgt_mi_meas_value median;        /**< Median */
+    te_rgt_mi_meas_value stdev;         /**< Standard deviation */
+    te_rgt_mi_meas_value cv;            /**< Coefficient of variation */
+    te_rgt_mi_meas_value out_of_range;  /**< Number of out of range values */
 
-    te_rgt_mi_meas_value *values;   /**< Array of parameter values */
-    size_t values_num;              /**< Number of elements in the
-                                         array of values */
+    te_rgt_mi_meas_value *values;       /**< Array of parameter values */
+    size_t values_num;                  /**< Number of elements in the
+                                             array of values */
 
-    te_bool in_graph;               /**< @c TRUE if this measured
-                                         parameter is part of some
-                                         graph view */
+    te_bool in_graph;                   /**< @c TRUE if this measured
+                                             parameter is part of some
+                                             graph view */
 } te_rgt_mi_meas_param;
 
 /** Key-value pair */

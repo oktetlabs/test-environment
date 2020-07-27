@@ -1278,6 +1278,7 @@ log_mi_measurement(FILE *fd, te_rgt_mi *mi, unsigned int linum)
             print_mi_meas_value(fd, &param->median, "median");
             print_mi_meas_value(fd, &param->stdev, "stdev");
             print_mi_meas_value(fd, &param->cv, "cv");
+            print_mi_meas_value(fd, &param->out_of_range, "out of range");
             fprintf(fd, "</ul>\n");
             fprintf(fd, "</li>\n");
         }

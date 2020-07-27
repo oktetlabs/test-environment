@@ -666,6 +666,10 @@ te_rgt_parse_mi_meas_message(te_rgt_mi *mi)
                 {
                     param->cv = value;
                 }
+                else if (strcmp(aggr, "out of range") == 0)
+                {
+                    param->out_of_range = value;
+                }
                 else
                 {
                     if (strcmp(aggr, "single") == 0)
