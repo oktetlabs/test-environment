@@ -637,6 +637,18 @@ append_routes(netconf_list *nlist, te_string *const str)
            continue;
 
         /*
+         * On some configurations (ARM64 with Ubuntu-20.04) IPv6 routes with
+         * type=local may be in the main routing table and Configurator should
+         * not manipulate them (see Bug 11178).
+         */
+        if (family == AF_INET6 &&
+            route->table == NETCONF_RT_TABLE_MAIN &&
+            route->type == NETCONF_RTN_LOCAL)
+        {
+            continue;
+        }
+
+        /*
          * If expire time is defined for the route, then drop it.
          * Configurator doesn't have any good way to restore such routes.
          */
