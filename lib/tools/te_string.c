@@ -287,6 +287,21 @@ te_string_fmt(const char *fmt, ...)
     return result;
 }
 
+void
+te_string_cut_beginning(te_string *str, size_t len)
+{
+    assert(str != NULL);
+    if (len > str->len)
+        len = str->len;
+
+    str->len -= len;
+
+    if (str->ptr != NULL)
+    {
+        memmove(str->ptr, str->ptr + len, str->len);
+        str->ptr[str->len] = '\0';
+    }
+}
 
 void
 te_string_cut(te_string *str, size_t len)

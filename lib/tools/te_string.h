@@ -192,6 +192,14 @@ extern char *te_string_fmt(const char *fmt,
 extern void te_string_cut(te_string *str, size_t len);
 
 /**
+ * Cut specified number of characters from the beginning of the string.
+ *
+ * @param str           TE string
+ * @param len           Number of characters to cut from the beginning
+ */
+extern void te_string_cut_beginning(te_string *str, size_t len);
+
+/**
  * Free TE string.
  *
  * @note It will not release buffer supplied by user with
