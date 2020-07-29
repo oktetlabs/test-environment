@@ -95,6 +95,8 @@ append_frag_to_file(FILE *f, const char *frag_path)
  *                            fragments (in the same order they appear in
  *                            "raw gist" log)
  * @param f_result            Where to store merged raw log
+ * @param f_frags_count       If not @c NULL, save number of fragments
+ *                            in the target node there
  * @param get_needed_frags    If @c TRUE, do not create merged log, only
  *                            get list of all the fragment files which
  *                            should be extracted from the RAW log bundle
@@ -110,7 +112,8 @@ append_frag_to_file(FILE *f, const char *frag_path)
 static int
 merge(const char *split_log_path,
       FILE *f_raw_gist, FILE *f_frags_list, FILE *f_result,
-      te_bool get_needed_frags, te_string *needed_frags)
+      FILE *f_frags_count, te_bool get_needed_frags,
+      te_string *needed_frags)
 {
     char s[DEF_STR_LEN];
     char frag_name[DEF_STR_LEN];
@@ -258,6 +261,18 @@ merge(const char *split_log_path,
                 raw_fp += (length - start_len);
                 fseeko(f_raw_gist, raw_fp, SEEK_SET);
                 cum_length = 0;
+
+                if (f_frags_count != NULL)
+                {
+                    fprintf(f_frags_count, "%llu",
+                            (long long unsigned)frags_cnt);
+                    /*
+                     * This should never happen, however if multiple
+                     * records matched, save number of fragments for
+                     * the first of them.
+                     */
+                    f_frags_count = NULL;
+                }
             }
 
             for (i = 0; i < frags_cnt; i++)
@@ -304,6 +319,8 @@ merge(const char *split_log_path,
 static char *bundle_path = NULL;
 /** Where to find raw log fragments and "raw gist" log  */
 static char *split_log_path = NULL;
+/** Where to save number of log fragments in the requested node */
+static char *frags_count_path = NULL;
 /** Where to store merged raw log */
 static char *output_path = NULL;
 
@@ -327,6 +344,10 @@ process_cmd_line_opts(int argc, char **argv)
 
         { "split-log", 's', POPT_ARG_STRING, NULL, 's',
           "Path to split raw log.", NULL },
+
+        { "frags-count", 'c', POPT_ARG_STRING, NULL, 'c',
+          "Where to save number of fragments in the requested node.",
+          NULL },
 
         { "filter", 'f', POPT_ARG_STRING, NULL, 'f',
           "Either 'TIN' or 'depth_seq'", NULL },
@@ -354,6 +375,10 @@ process_cmd_line_opts(int argc, char **argv)
         else if (rc == 's')
         {
             split_log_path = poptGetOptArg(optCon);
+        }
+        else if (rc == 'c')
+        {
+            frags_count_path = poptGetOptArg(optCon);
         }
         else if (rc == 'f')
         {
@@ -418,14 +443,51 @@ process_cmd_line_opts(int argc, char **argv)
     poptFreeContext(optCon);
 }
 
+/**
+ * Call fopen() with a path specified by a format string and arguments.
+ *
+ * @param mode      Opening mode string.
+ * @param path_fmt  File path format string.
+ * @param ...       Format string arguments.
+ *
+ * @return FILE pointer.
+ */
+static FILE *
+fopen_fmt(const char *mode, const char *path_fmt, ...)
+{
+    te_string path = TE_STRING_INIT;
+    te_errno rc;
+    va_list ap;
+    FILE *f;
+
+    va_start(ap, path_fmt);
+    rc = te_string_append_va(&path, path_fmt, ap);
+    va_end(ap);
+    if (rc != 0)
+    {
+        fprintf(stderr, "te_string_append_va() failed to fill file path\n");
+        exit(1);
+    }
+
+    f = fopen(path.ptr, mode);
+    if (f == NULL)
+    {
+        fprintf(stderr, "Failed to open '%s' for reading\n", path.ptr);
+        exit(1);
+    }
+    te_string_free(&path);
+
+    return f;
+}
+
 int
 main(int argc, char **argv)
 {
-    FILE *f_raw_gist;
-    FILE *f_frags_list;
-    FILE *f_result;
+    FILE *f_raw_gist = NULL;
+    FILE *f_frags_list = NULL;
+    FILE *f_frags_count = NULL;
+    FILE *f_result = NULL;
 
-    te_string path = TE_STRING_INIT;
     te_string cmd = TE_STRING_INIT;
     int res;
 
@@ -455,23 +517,10 @@ main(int argc, char **argv)
         }
     }
 
-    te_string_append(&path, "%s/log_gist.raw", split_log_path);
-    f_raw_gist = fopen(path.ptr, "r");
-    if (f_raw_gist == NULL)
-    {
-        fprintf(stderr, "Failed to open '%s' for reading\n", path.ptr);
-        exit(1);
-    }
-    te_string_free(&path);
-
-    te_string_append(&path, "%s/frags_list", split_log_path);
-    f_frags_list = fopen(path.ptr, "r");
-    if (f_frags_list == NULL)
-    {
-        fprintf(stderr, "Failed to open '%s' for reading\n", path.ptr);
-        exit(1);
-    }
-    te_string_free(&path);
+    f_raw_gist = fopen_fmt("r", "%s/log_gist.raw", split_log_path);
+    f_frags_list = fopen_fmt("r", "%s/frags_list", split_log_path);
+    if (frags_count_path != NULL)
+        f_frags_count = fopen_fmt("w", "%s", frags_count_path);
 
     f_result = fopen(output_path, "w");
     if (f_result == NULL)
@@ -490,7 +539,7 @@ main(int argc, char **argv)
         te_string_reset(&cmd);
         CHECK_TE_RC(te_string_append(&cmd, "pixz -x "));
         if (merge(split_log_path, f_raw_gist, f_frags_list, f_result,
-                  TRUE, &cmd) > 0)
+                  NULL, TRUE, &cmd) > 0)
         {
             CHECK_TE_RC(te_string_append(
                              &cmd, " <\"%s\" | "
@@ -506,15 +555,18 @@ main(int argc, char **argv)
         }
     }
 
-    merge(split_log_path, f_raw_gist, f_frags_list, f_result, FALSE, NULL);
+    merge(split_log_path, f_raw_gist, f_frags_list, f_result,
+          f_frags_count, FALSE, NULL);
 
     fclose(f_result);
     fclose(f_frags_list);
+    fclose(f_frags_count);
     fclose(f_raw_gist);
 
     free(split_log_path);
     free(output_path);
     free(bundle_path);
+    free(frags_count_path);
 
     te_string_free(&cmd);
 

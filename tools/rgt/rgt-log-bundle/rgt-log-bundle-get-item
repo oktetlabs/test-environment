@@ -148,7 +148,6 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
 
     cur_page=1
     all_pages=0
-    pages_count=0
     merge_frag_num=0
     frags_str=
 
@@ -186,10 +185,17 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
 
     "${bindir}"/rgt-log-merge --bundle="${bundle_path}" \
         --split-log="${bundle_tmpdir}/fragments/" \
+        --frags-count="${bundle_tmpdir}/fragments/frags_count" \
         --filter="${node}" --page="${merge_frag_num}" \
         --output="${bundle_tmpdir}/log_merge.raw"
     if test $? -ne 0 ; then
         err_cleanup "Failed to merge log fragments"
+    fi
+
+    pages_count=$(cat "${bundle_tmpdir}/fragments/frags_count")
+
+    if test -z "$pages_count" ; then
+        pages_count=0
     fi
 
     "${bindir}"/rgt-conv --incomplete-log "${bundle_tmpdir}/log_merge.raw" \
