@@ -16,6 +16,7 @@
 
 #define TAPI_NPTCP_TERM_TIMEOUT_MS 1000
 #define TAPI_NPTCP_RECEIVE_TIMEOUT_MS 1000
+#define TAPI_NPTCP_WAIT_RECEIVER_TIMEOUT_MS 1000
 
 static const char *path_to_nptcp_binary = "NPtcp";
 
@@ -99,14 +100,24 @@ create_jobs(tapi_job_factory_t *factory_receiver,
         .program = path_to_nptcp_binary,
         .argv = (const char **)nptcp_args_receiver->data.ptr,
         .job_loc = &result->job_receiver,
+        .stderr_loc = &result->out_chs[0],
+        .filters = TAPI_JOB_SIMPLE_FILTERS(
+            {
+                .use_stderr = TRUE,
+                .readable = TRUE,
+                .re = "Send and receive buffers are",
+                .extract = 0,
+                .filter_var = &result->receiver_listens_filter,
+            }
+        )
     };
 
     tapi_job_simple_desc_t job_desc_transmitter = {
         .program = path_to_nptcp_binary,
         .argv = (const char **)nptcp_args_transmitter->data.ptr,
         .job_loc = &result->job_transmitter,
-        .stdout_loc = &result->out_chs[0],
-        .stderr_loc = &result->out_chs[1],
+        .stdout_loc = &result->out_chs[1],
+        .stderr_loc = &result->out_chs[2],
         .filters = TAPI_JOB_SIMPLE_FILTERS(
             {
                 .use_stderr = TRUE,
@@ -210,17 +221,28 @@ tapi_nptcp_start(tapi_nptcp_app *app)
 {
     te_errno rc;
 
-    rc = tapi_job_clear(TAPI_JOB_CHANNEL_SET(app->num_filter,
-                                             app->bytes_filter,
-                                             app->times_filter,
-                                             app->throughput_filter,
-                                             app->rtt_filter));
+    rc = tapi_job_clear(TAPI_JOB_CHANNEL_SET(app->receiver_listens_filter));
+    if (rc == 0)
+        rc = tapi_job_clear(TAPI_JOB_CHANNEL_SET(app->num_filter,
+                                                 app->bytes_filter,
+                                                 app->times_filter,
+                                                 app->throughput_filter,
+                                                 app->rtt_filter));
     if (rc != 0)
         return rc;
 
     rc = tapi_job_start(app->job_receiver);
     if (rc != 0)
         return rc;
+
+    /* Wait for receiver to start listening */
+    rc = tapi_job_poll(TAPI_JOB_CHANNEL_SET(app->receiver_listens_filter),
+                       TAPI_NPTCP_WAIT_RECEIVER_TIMEOUT_MS);
+    if (rc != 0)
+    {
+        ERROR("Failed to wait for NPtcp on receiver's side to start listening");
+        return rc;
+    }
 
     return tapi_job_start(app->job_transmitter);
 }

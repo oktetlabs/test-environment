@@ -82,7 +82,9 @@ typedef struct tapi_nptcp_app {
     /** Transmitter's job handle */
     tapi_job_t *job_transmitter;
     /** Output channel handles */
-    tapi_job_channel_t *out_chs[2];
+    tapi_job_channel_t *out_chs[3];
+    /** Whether the receiver started listening filter*/
+    tapi_job_channel_t *receiver_listens_filter;
     /** Entry number filter */
     tapi_job_channel_t *num_filter;
     /** Sent bytes filter */
