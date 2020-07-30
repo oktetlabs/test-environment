@@ -219,7 +219,7 @@ regexp_data_create(char *pattern, unsigned int extract,
                    regexp_data_t **regexp_data)
 {
     regexp_data_t *result = NULL;
-    unsigned int option_bits;
+    unsigned long int option_bits;
     const char *error;
     te_errno rc = 0;
     int erroffset;
