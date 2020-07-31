@@ -112,7 +112,25 @@ rcf_net_engine_connect(const char *addr, const char *port,
     if (hs == NULL || hs->h_addr_list == NULL ||
         hs->h_addr_list[0] == NULL)
     {
-        return TE_OS_RC(TE_COMM, errno);
+        herror("gethostbyname");
+
+        switch (h_errno)
+        {
+            case HOST_NOT_FOUND:
+                return TE_RC(TE_COMM, TE_EHOSTUNREACH);
+
+            case NO_DATA:
+                return TE_RC(TE_COMM, TE_ENODATA);
+
+            case NO_RECOVERY:
+                return TE_RC(TE_COMM, TE_EPROTO);
+
+            case TRY_AGAIN:
+                return TE_RC(TE_COMM, TE_EAGAIN);
+
+            default:
+                return TE_RC(TE_COMM, TE_EFAIL);
+        }
     }
 
     s = socket(AF_INET, SOCK_STREAM, 0);
