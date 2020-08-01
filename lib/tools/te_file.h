@@ -105,6 +105,18 @@ extern char *te_file_create_unique(const char *prefix_format,
                                         __attribute__((format(printf, 1, 3)));
 
 /**
+ * Call fopen() with a path specified by a format string and arguments.
+ *
+ * @param mode      Opening mode string.
+ * @param path_fmt  File path format string.
+ * @param ...       Format string arguments.
+ *
+ * @return FILE pointer on success, @c NULL on failure.
+ */
+extern FILE *te_fopen_fmt(const char *mode, const char *path_fmt, ...)
+                                      __attribute__((format(printf, 2, 3)));
+
+/**
  * Read process identifier from PID file
  *
  * @param pid_path Path to PID file

@@ -22,6 +22,7 @@
 #include "logger_file.h"
 #include "te_string.h"
 #include "te_str.h"
+#include "te_file.h"
 #include "rgt_log_bundle_common.h"
 
 /** If @c TRUE, find log messages to be merged by TIN */
@@ -444,41 +445,18 @@ process_cmd_line_opts(int argc, char **argv)
 }
 
 /**
- * Call fopen() with a path specified by a format string and arguments.
+ * Call te_fopen_fmt(), terminate the program if it failed.
  *
- * @param mode      Opening mode string.
- * @param path_fmt  File path format string.
- * @param ...       Format string arguments.
- *
- * @return FILE pointer.
+ * @param _f          Where to save FILE pointer on success.
+ * @param _mode       File opening mode.
+ * @param _path_fmt   File path format string.
  */
-static FILE *
-fopen_fmt(const char *mode, const char *path_fmt, ...)
-{
-    te_string path = TE_STRING_INIT;
-    te_errno rc;
-    va_list ap;
-    FILE *f;
-
-    va_start(ap, path_fmt);
-    rc = te_string_append_va(&path, path_fmt, ap);
-    va_end(ap);
-    if (rc != 0)
-    {
-        fprintf(stderr, "te_string_append_va() failed to fill file path\n");
-        exit(1);
-    }
-
-    f = fopen(path.ptr, mode);
-    if (f == NULL)
-    {
-        fprintf(stderr, "Failed to open '%s' for reading\n", path.ptr);
-        exit(1);
-    }
-    te_string_free(&path);
-
-    return f;
-}
+#define FOPEN_FMT(_f, _mode, _path_fmt...) \
+    do {                                                \
+        _f = te_fopen_fmt(_mode, _path_fmt);            \
+        if (_f == NULL)                                 \
+            exit(EXIT_FAILURE);                         \
+    } while (0)
 
 int
 main(int argc, char **argv)
@@ -517,10 +495,10 @@ main(int argc, char **argv)
         }
     }
 
-    f_raw_gist = fopen_fmt("r", "%s/log_gist.raw", split_log_path);
-    f_frags_list = fopen_fmt("r", "%s/frags_list", split_log_path);
+    FOPEN_FMT(f_raw_gist, "r", "%s/log_gist.raw", split_log_path);
+    FOPEN_FMT(f_frags_list, "r", "%s/frags_list", split_log_path);
     if (frags_count_path != NULL)
-        f_frags_count = fopen_fmt("w", "%s", frags_count_path);
+        FOPEN_FMT(f_frags_count, "w", "%s", frags_count_path);
 
     f_result = fopen(output_path, "w");
     if (f_result == NULL)

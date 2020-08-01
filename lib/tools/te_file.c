@@ -16,6 +16,16 @@
 #include "te_string.h"
 #include "logger_api.h"
 
+#ifdef STDC_HEADERS
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#endif
+
+#if HAVE_STDARG_H
+#include <stdarg.h>
+#endif
+
 /* See description in te_file.h */
 char *
 te_basename(const char *pathname)
@@ -150,3 +160,34 @@ te_file_read_pid(const char *pid_path)
     return pid;
 }
 
+/* See description in te_file.h */
+FILE *
+te_fopen_fmt(const char *mode, const char *path_fmt, ...)
+{
+    te_string path = TE_STRING_INIT;
+    te_errno rc;
+    va_list ap;
+    FILE *f;
+
+    va_start(ap, path_fmt);
+    rc = te_string_append_va(&path, path_fmt, ap);
+    va_end(ap);
+    if (rc != 0)
+    {
+        ERROR("%s(): te_string_append_va() failed to fill file path, rc=%r",
+              __FUNCTION__, rc);
+        te_string_free(&path);
+        return NULL;
+    }
+
+    f = fopen(path.ptr, mode);
+    if (f == NULL)
+    {
+        ERROR("%s(): failed to open '%s' with mode '%s', errno=%d ('%s')",
+              __FUNCTION__, path.ptr, mode, errno, strerror(errno));
+    }
+
+    te_string_free(&path);
+
+    return f;
+}
