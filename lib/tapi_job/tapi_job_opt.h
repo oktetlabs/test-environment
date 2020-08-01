@@ -84,16 +84,18 @@ typedef struct tapi_job_opt_array {
  * Create a vector with command line arguments by processing option binds.
  *
  * @param[in]  path         Tool path (program location).
- * @param[in]  binds        Binds between @p opt and produced arguments.
+ * @param[in]  binds        Binds between @p opt and produced arguments,
+ *                          or @c NULL.
  * @param[in]  opt          Tool's custom option struct which is forwarded
- *                          to argument formatting callback.
+ *                          to argument formatting callback, or @c NULL
+ *                          if the previous argument is @c NULL.
  * @param[out] tool_args    Vector with command line arguments.
  *
  * @return Status code.
  */
 extern te_errno tapi_job_opt_build_args(const char *path,
-                                         const tapi_job_opt_bind *binds,
-                                         const void *opt, te_vec *tool_args);
+                                        const tapi_job_opt_bind *binds,
+                                        const void *opt, te_vec *tool_args);
 
 /**
  * @defgroup tapi_job_opt_formatting functions for argument formatting

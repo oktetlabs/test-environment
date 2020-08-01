@@ -166,11 +166,14 @@ tapi_job_opt_build_args(const char *path, const tapi_job_opt_bind *binds,
     if (rc != 0)
         goto out;
 
-    for (bind = binds; bind->fmt_func != NULL; bind++)
+    if (binds != NULL)
     {
-        rc = tapi_job_opt_bind2str(bind, opt, &args);
-        if (rc != 0)
-            goto out;
+        for (bind = binds; bind->fmt_func != NULL; bind++)
+        {
+            rc = tapi_job_opt_bind2str(bind, opt, &args);
+            if (rc != 0)
+                goto out;
+        }
     }
 
     rc = TE_VEC_APPEND(&args, end_arg);
