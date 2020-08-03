@@ -77,6 +77,14 @@ typedef struct interface_entry {
 
 typedef SLIST_HEAD(interface_list_t, interface_entry) interface_list_t;
 
+#define PORT_MAX_TRUNKS 4096
+
+typedef struct port_vlan {
+    char *type;
+    te_bool trunks[PORT_MAX_TRUNKS];
+    int tag;
+} port_vlan;
+
 typedef struct port_entry {
     SLIST_ENTRY(port_entry)  links;
     char                    *name;
@@ -84,6 +92,7 @@ typedef struct port_entry {
     interface_list_t         interfaces;
     te_bool                  bridge_local;
     const char              *parent_bridge_name;
+    port_vlan                vlan;
 } port_entry;
 
 typedef SLIST_HEAD(port_list_t, port_entry) port_list_t;
@@ -158,6 +167,10 @@ static const char *bridge_datapath_types[] = { "system", "netdev", NULL };
 static const char *other_config_types[] = {
     "dpdk-alloc-mem", "dpdk-socket-mem", "dpdk-lcore-mask",
     "dpdk-hugepage-dir", "dpdk-socket-limit", "dpdk-extra", NULL
+};
+
+static const char *vlan_types[] = { "trunk", "access", "dot1q-tunnel",
+    "native-tagged", "native-untagged", NULL
 };
 
 static ovs_ctx_t *
@@ -819,6 +832,7 @@ ovs_bridge_port_alloc(const char       *parent_bridge_name,
 
     port->bridge_local = bridge_local;
     port->parent_bridge_name = parent_bridge_name;
+    port->vlan.tag = -1;
 
     return port;
 
@@ -3225,8 +3239,415 @@ out:
     return TE_RC(TE_TA_UNIX, rc);
 }
 
+static te_errno
+ovs_bridge_port_vlan_get(unsigned int  gid,
+                         const char   *oid,
+                         char         *value,
+                         const char   *ovs,
+                         const char   *bridge_name,
+                         const char   *port_name)
+{
+    port_entry      *port;
+    bridge_entry    *bridge;
+    ovs_ctx_t       *ctx;
+    te_errno         rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ovs_bridge_port_pick(ovs, bridge_name, port_name,
+                              &ctx, &bridge, &port);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the port entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    te_strlcpy(value, te_str_empty_if_null(port->vlan.type), RCF_MAX_VAL);
+
+    return 0;
+}
+
+typedef enum ovs_cfg_action {
+    OVS_CFG_SET,
+    OVS_CFG_REMOVE,
+    OVS_CFG_ADD,
+} ovs_cfg_action;
+
+static te_errno
+ovs_configure_value_va(ovs_ctx_t *ctx, const char *entity, const char *name,
+                      const char *cfg, ovs_cfg_action action, const char *fmt,
+                      va_list ap)
+{
+    te_string cmd = TE_STRING_INIT;
+    te_errno rc;
+    int ret;
+    const char *action_str;
+
+    switch (action)
+    {
+        case OVS_CFG_SET:
+            action_str = "set";
+            break;
+        case OVS_CFG_REMOVE:
+            action_str = "remove";
+            break;
+        case OVS_CFG_ADD:
+            action_str = "add";
+            break;
+        default:
+            ERROR("Invalid configure action");
+            return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    rc = te_string_append(&cmd, "%s ovs-vsctl %s %s %s %s%s",
+                          ctx->env.ptr, action_str, entity, name, cfg,
+                          (action == OVS_CFG_SET) ? "=" : " ");
+    if (rc == 0)
+        rc = te_string_append_va(&cmd, fmt, ap);
+
+    if (rc != 0)
+    {
+        ERROR("Failed to create configuration command");
+        te_string_free(&cmd);
+        return rc;
+    }
+
+    ret = te_shell_cmd(cmd.ptr, -1, NULL, NULL, NULL);
+    te_string_free(&cmd);
+    if (ret == -1)
+    {
+        ERROR("Failed to invoke ovs-vsctl");
+        return TE_RC(TE_TA_UNIX, TE_ECHILD);
+    }
+    else
+    {
+        ta_waitpid(ret, NULL, 0);
+    }
+
+    return 0;
+}
+
+static te_errno
+ovs_configure_value(ovs_ctx_t *ctx, const char *entity, const char *name,
+                    const char *cfg, ovs_cfg_action action, const char *fmt, ...)
+{
+    va_list ap;
+    te_errno rc;
+
+    va_start(ap, fmt);
+    rc = ovs_configure_value_va(ctx, entity, name, cfg, action, fmt, ap);
+    va_end(ap);
+
+    return rc;
+}
+
+static te_errno
+ovs_bridge_port_vlan_set(unsigned int  gid,
+                         const char   *oid,
+                         const char   *value,
+                         const char   *ovs,
+                         const char   *bridge_name,
+                         const char   *port_name)
+{
+    port_entry      *port;
+    bridge_entry    *bridge;
+    ovs_ctx_t       *ctx;
+    te_errno         rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (*value != '\0' && !ovs_value_is_valid(vlan_types, value))
+    {
+        ERROR("Invalid vlan type");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    rc = ovs_bridge_port_pick(ovs, bridge_name, port_name,
+                              &ctx, &bridge, &port);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the port entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if ((*value == '\0' && port->vlan.type == NULL) ||
+        strcmp_null(value, port->vlan.type) == 0)
+    {
+        return 0;
+    }
+
+    rc = ovs_configure_value(ctx, "port", port->name, "vlan_mode",
+                             *value == '\0' ? OVS_CFG_REMOVE : OVS_CFG_SET,
+                             "%s", *value == '\0' ? port->vlan.type : value);
+    if (rc != 0)
+    {
+        ERROR("Failed to configure port's vlan mode");
+        return rc;
+    }
+
+    return string_replace(&port->vlan.type, value);
+}
+
+static te_errno
+ovs_bridge_port_vlan_tag_get(unsigned int  gid,
+                             const char   *oid,
+                             char         *value,
+                             const char   *ovs,
+                             const char   *bridge_name,
+                             const char   *port_name)
+{
+    port_entry      *port;
+    bridge_entry    *bridge;
+    ovs_ctx_t       *ctx;
+    te_errno         rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ovs_bridge_port_pick(ovs, bridge_name, port_name,
+                              &ctx, &bridge, &port);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the port entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    te_snprintf(value, RCF_MAX_VAL, "%d", port->vlan.tag);
+
+    return 0;
+}
+
+static te_errno
+ovs_bridge_port_vlan_tag_set(unsigned int  gid,
+                             const char   *oid,
+                             const char   *value,
+                             const char   *ovs,
+                             const char   *bridge_name,
+                             const char   *port_name)
+{
+    port_entry      *port;
+    bridge_entry    *bridge;
+    ovs_ctx_t       *ctx;
+    te_errno         rc;
+    int              tag;
+    te_bool          set;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = te_strtoi(value, 0, &tag);
+    if (rc != 0)
+        return rc;
+
+    if (tag < -1 || tag >= PORT_MAX_TRUNKS)
+    {
+        ERROR("Invalid VLAN tag: %d", tag);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    set = tag >= 0;
+
+    rc = ovs_bridge_port_pick(ovs, bridge_name, port_name,
+                              &ctx, &bridge, &port);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the port entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if (set && strcmp_null(port->vlan.type, "trunk") == 0)
+    {
+        ERROR("Cannot set vlan tag in trunk mode");
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    if (port->vlan.tag == tag)
+        return 0;
+
+    rc = ovs_configure_value(ctx, "port", port->name, "tag",
+                             set ? OVS_CFG_SET : OVS_CFG_REMOVE, "%d",
+                             set ? tag : port->vlan.tag);
+    if (rc != 0)
+        return rc;
+
+    port->vlan.tag = tag;
+
+    return 0;
+}
+
+static te_errno
+ovs_bridge_port_vlan_trunks_list(unsigned int   gid,
+                                 const char    *oid,
+                                 const char    *sub_id,
+                                 char         **list,
+                                 const char    *ovs,
+                                 const char    *bridge_name,
+                                 const char    *port_name)
+{
+    te_string     list_container = TE_STRING_INIT;
+    port_entry   *port;
+    bridge_entry *bridge;
+    ovs_ctx_t    *ctx;
+    te_errno      rc;
+    size_t        i;
+
+    UNUSED(gid);
+    UNUSED(sub_id);
+    UNUSED(oid);
+
+    rc = ovs_bridge_port_pick(ovs, bridge_name, port_name,
+                              &ctx, &bridge, &port);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the port entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    for (i = 0; i < TE_ARRAY_LEN(port->vlan.trunks); i++)
+    {
+        if (!port->vlan.trunks[i])
+            continue;
+
+        rc = te_string_append(&list_container, "%d ", i);
+        if (rc != 0)
+        {
+            ERROR("Failed to construct the port trunks list");
+            te_string_free(&list_container);
+            return rc;
+        }
+    }
+
+    *list = list_container.ptr;
+
+    return 0;
+}
+
+static te_errno
+ovs_bridge_port_vlan_trunks_add(unsigned int  gid,
+                                const char   *oid,
+                                const char   *value,
+                                const char   *ovs,
+                                const char   *bridge_name,
+                                const char   *port_name,
+                                const char   *unused,
+                                const char   *tag_str)
+{
+    port_entry      *port;
+    bridge_entry    *bridge;
+    ovs_ctx_t       *ctx;
+    te_errno         rc;
+    int              tag;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused);
+    UNUSED(value);
+
+    rc = te_strtoi(tag_str, 0, &tag);
+    if (rc != 0)
+        return rc;
+
+    if (tag < 0 || tag >= PORT_MAX_TRUNKS)
+    {
+        ERROR("Invalid VLAN trunk: %d", tag);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    rc = ovs_bridge_port_pick(ovs, bridge_name, port_name,
+                              &ctx, &bridge, &port);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the port entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if (port->vlan.trunks[tag])
+    {
+        ERROR("VLAN trunk with tag %d is already added", tag);
+        return TE_RC(TE_TA_UNIX, TE_EEXIST);
+    }
+
+    rc = ovs_configure_value(ctx, "port", port->name, "trunks",
+                             OVS_CFG_ADD, "%d", tag);
+    if (rc != 0)
+        return rc;
+
+    port->vlan.trunks[tag] = TRUE;
+
+    return 0;
+}
+
+static te_errno
+ovs_bridge_port_vlan_trunks_del(unsigned int  gid,
+                                const char   *oid,
+                                const char   *ovs,
+                                const char   *bridge_name,
+                                const char   *port_name,
+                                const char   *unused,
+                                const char   *tag_str)
+{
+    port_entry      *port;
+    bridge_entry    *bridge;
+    ovs_ctx_t       *ctx;
+    te_errno         rc;
+    int              tag;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused);
+
+    rc = te_strtoi(tag_str, 0, &tag);
+    if (rc != 0)
+        return rc;
+
+    if (tag < 0 || tag >= PORT_MAX_TRUNKS)
+    {
+        ERROR("Invalid VLAN trunk: %d", tag);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    rc = ovs_bridge_port_pick(ovs, bridge_name, port_name,
+                              &ctx, &bridge, &port);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the port entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    if (!port->vlan.trunks[tag])
+    {
+        ERROR("VLAN trunk with tag %d is not present", tag);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    rc = ovs_configure_value(ctx, "port", port->name, "trunks",
+                             OVS_CFG_REMOVE, "%d", tag);
+    if (rc != 0)
+        return rc;
+
+    port->vlan.trunks[tag] = FALSE;
+
+    return 0;
+}
+
+RCF_PCH_CFG_NODE_COLLECTION(node_ovs_bridge_port_vlan_trunks, "trunk",
+                            NULL, NULL,
+                            ovs_bridge_port_vlan_trunks_add,
+                            ovs_bridge_port_vlan_trunks_del,
+                            ovs_bridge_port_vlan_trunks_list, NULL);
+
+RCF_PCH_CFG_NODE_RW(node_ovs_bridge_port_vlan_tag, "tag",
+                    NULL, &node_ovs_bridge_port_vlan_trunks,
+                    ovs_bridge_port_vlan_tag_get, ovs_bridge_port_vlan_tag_set);
+
+RCF_PCH_CFG_NODE_RW(node_ovs_bridge_port_vlan, "vlan",
+                    &node_ovs_bridge_port_vlan_tag, NULL,
+                    ovs_bridge_port_vlan_get, ovs_bridge_port_vlan_set);
+
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_bridge_port, "port",
-                               NULL, NULL,
+                               &node_ovs_bridge_port_vlan, NULL,
                                ovs_bridge_port_get, NULL,
                                ovs_bridge_port_add, ovs_bridge_port_del,
                                ovs_bridge_port_list, NULL);
