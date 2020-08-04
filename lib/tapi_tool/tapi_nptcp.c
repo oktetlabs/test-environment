@@ -428,7 +428,7 @@ read_all_filters(tapi_nptcp_app *app, te_vec *stats)
  * Get number of complete report entries. It is a minimum of vector sizes
  * in 'stats' array.
  */
-static int
+static size_t
 get_num_of_complete_entries(te_vec *stats, te_bool *incomplete)
 {
     size_t min_size;
