@@ -366,7 +366,10 @@ extern te_errno tapi_job_attach_simple_filter(const tapi_job_simple_desc_t *desc
  * @param extract  A substring to extract as an output of the filter
  *                 (0 meaning the whole match)
  *
- * @return          Status code
+ * @note           Multi-segment matching is performed. Thus, PCRE_MULTILINE
+ *                 option is set.
+ *
+ * @return         Status code
  */
 extern te_errno tapi_job_filter_add_regexp(tapi_job_channel_t *filter,
                                            const char *re,

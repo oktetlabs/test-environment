@@ -24,6 +24,7 @@
 
 #include "rpc_server.h"
 #include "te_errno.h"
+#include "te_string.h"
 
 #include "agentlib.h"
 
@@ -71,6 +72,7 @@ typedef struct regexp_data_t {
     unsigned int extract;
     te_bool utf8;
     te_bool crlf_is_newline;
+    int max_lookbehind;
 } regexp_data_t;
 
 typedef LIST_HEAD(filter_list, filter_t) filter_list;
@@ -79,6 +81,11 @@ typedef struct filter_t {
     LIST_ENTRY(filter_t) next;
 
     unsigned int id;
+
+    /* String to which the next read segment should be appended  */
+    te_string saved_string;
+    int start_offset;
+    te_bool line_begin;
 
     int ref_count;
     te_bool signal_on_data;
@@ -256,6 +263,7 @@ regexp_data_create(char *pattern, unsigned int extract,
 {
     regexp_data_t *result = NULL;
     unsigned long int option_bits;
+    int max_lookbehind;
     const char *error;
     te_errno rc = 0;
     int erroffset;
@@ -268,7 +276,7 @@ regexp_data_create(char *pattern, unsigned int extract,
         goto out;
     }
 
-    result->re = pcre_compile(pattern, 0, &error, &erroffset, NULL);
+    result->re = pcre_compile(pattern, PCRE_MULTILINE, &error, &erroffset, NULL);
     if (result->re == NULL)
     {
         ERROR("PCRE compilation of pattern %s, failed at offset %d: %s",
@@ -281,6 +289,14 @@ regexp_data_create(char *pattern, unsigned int extract,
     if (error != NULL)
     {
         ERROR("PCRE study failed, %s", error);
+        rc = TE_EPERM;
+        goto out;
+    }
+
+    if (pcre_fullinfo(result->re, result->sd, PCRE_INFO_MAXLOOKBEHIND,
+                      &max_lookbehind) != 0)
+    {
+        ERROR("PCRE fullinfo for max lookbehind failed");
         rc = TE_EPERM;
         goto out;
     }
@@ -324,6 +340,7 @@ regexp_data_create(char *pattern, unsigned int extract,
                               option_bits == PCRE_NEWLINE_ANYCRLF;
     result->utf8 = utf8;
     result->extract = extract;
+    result->max_lookbehind = max_lookbehind;
 
     *regexp_data = result;
 
@@ -644,6 +661,9 @@ filter_alloc(const char *filter_name, te_bool readable, te_log_level log_level,
             ERROR("Filter name duplication failed");
         }
     }
+    result->saved_string = (te_string)TE_STRING_INIT;
+    result->start_offset = 0;
+    result->line_begin = TRUE;
     result->ref_count = 0;
     result->signal_on_data = FALSE;
     result->readable = readable;
@@ -673,6 +693,7 @@ filter_destroy(filter_t *filter)
 
     LIST_REMOVE(filter, next);
 
+    te_string_free(&filter->saved_string);
     queue_destroy(&filter->queue);
     regexp_data_destroy(filter->regexp_data);
 
@@ -942,27 +963,51 @@ match_callback(filter_t *filter, unsigned int channel_id, pid_t pid,
 
 static te_errno
 filter_regexp_exec(filter_t *filter, unsigned int channel_id, pid_t pid,
-                   int subject_length, char *subject,
-                   te_errno (*fun_ptr)(filter_t *, unsigned int, pid_t, size_t, char *, te_bool))
+                   int segment_length, char *segment, te_bool eos,
+                   te_errno (*fun_ptr)(filter_t *, unsigned int, pid_t,
+                                       size_t, char *, te_bool))
 {
     int start_offset;
-    int first_exec;
+    te_bool first_exec;
     int ovector[OVECCOUNT];
     int rc;
     te_errno te_rc;
     regexp_data_t *regexp = filter->regexp_data;
+    char *subject;
+    int subject_length;
+    int cut;
+    /*
+     * Position in the current subject from which to start matching
+     * in the next iteration
+     */
+    int future_start_offset;
 
-    for (start_offset = 0, first_exec = 1;; start_offset = ovector[1], first_exec = 0)
+    te_rc = te_string_append(&filter->saved_string, "%.*s",
+                             segment_length, segment);
+    if (te_rc != 0)
+    {
+        ERROR("Failed to append segment to filter's saved string");
+        goto out;
+    }
+    subject = filter->saved_string.ptr;
+    subject_length = filter->saved_string.len;
+    future_start_offset = subject_length;
+
+    for (start_offset = filter->start_offset, first_exec = TRUE; ;
+         start_offset = ovector[1], first_exec = FALSE)
     {
         char *substring_start;
         size_t substring_length;
-        int options = 0; /* Used to prevent infinite zero-length matches */
+        int options = eos ? 0 : PCRE_PARTIAL_HARD; /* Enable partial matching */
+
+        if (!filter->line_begin)
+            options |= PCRE_NOTBOL;
 
         if (!first_exec && ovector[0] == ovector[1])
         {
             if (ovector[0] == subject_length)
                 break;
-            options = PCRE_NOTEMPTY_ATSTART | PCRE_ANCHORED;
+            options |= PCRE_NOTEMPTY_ATSTART | PCRE_ANCHORED;
         }
 
         rc = pcre_exec(regexp->re, regexp->sd, subject, subject_length,
@@ -972,16 +1017,24 @@ filter_regexp_exec(filter_t *filter, unsigned int channel_id, pid_t pid,
             switch (rc)
             {
             case PCRE_ERROR_NOMATCH:
+
                 if (first_exec)
                 {
                     /* No match at all */
-                    return 0;
+                    te_rc = 0;
+                    goto out;
                 }
                 else
                 {
-                    /* All matches found */
-                    if (options == 0)
-                        return 0;
+                    /*
+                     * All matches found. Options are checked to prevent
+                     * infinite zero-length matches
+                     */
+                    if ((options & PCRE_NOTEMPTY_ATSTART) == 0)
+                    {
+                        te_rc = 0;
+                        goto out;
+                    }
 
                     /* Advance one byte */
                     ovector[1] = start_offset + 1;
@@ -1009,9 +1062,16 @@ filter_regexp_exec(filter_t *filter, unsigned int channel_id, pid_t pid,
                     }
                     continue;
                 }
+
+            case PCRE_ERROR_PARTIAL:
+                future_start_offset = ovector[2];
+                te_rc = 0;
+                goto out;
+
             default:
                 ERROR("Matching error %d", rc);
-                return TE_EFAULT;
+                te_rc = TE_EFAULT;
+                goto out;
             }
         }
 
@@ -1025,7 +1085,8 @@ filter_regexp_exec(filter_t *filter, unsigned int channel_id, pid_t pid,
         if (regexp->extract >= (unsigned int)rc)
         {
             ERROR("There is no match with number %u", regexp->extract);
-            return TE_EPERM;
+            te_rc = TE_EPERM;
+            goto out;
         }
 
         substring_start = subject + ovector[2 * regexp->extract];
@@ -1035,8 +1096,26 @@ filter_regexp_exec(filter_t *filter, unsigned int channel_id, pid_t pid,
         if ((te_rc = fun_ptr(filter, channel_id, pid, substring_length,
                              substring_start, FALSE)) != 0)
         {
-            return te_rc;
+            goto out;
         }
+    }
+
+out:
+    if (te_rc != 0 || eos)
+    {
+        te_string_free(&filter->saved_string);
+        filter->start_offset = 0;
+        filter->line_begin = TRUE;
+
+        return te_rc;
+    }
+
+    cut = MAX(future_start_offset - regexp->max_lookbehind, 0);
+    filter->start_offset = future_start_offset - cut;
+    if (cut != 0)
+    {
+        filter->line_begin = (subject[cut - 1] == '\n');
+        te_string_cut_beginning(&filter->saved_string, cut);
     }
 
     return 0;
@@ -1047,15 +1126,18 @@ filter_exec(filter_t *filter, unsigned int channel_id, pid_t pid,
             size_t size, char *buf)
 {
     te_bool eos = (size == 0);
+    te_errno rc;
 
-    /*
-     * Regexp can generate 0-length matches so it does not mark messages as
-     * end of stream.
-     */
-    if (filter->regexp_data != NULL && !eos)
+    if (filter->regexp_data != NULL)
     {
-        return filter_regexp_exec(filter, channel_id, pid, size,
-                                  buf, match_callback);
+        rc = filter_regexp_exec(filter, channel_id, pid, size,
+                                buf, eos, match_callback);
+        /*
+         * Call match_callback() separately for eos-message since
+         * filter_regexp_exec() does not do that.
+         */
+        if (rc != 0 || !eos)
+            return rc;
     }
 
     return match_callback(filter, channel_id, pid, size, buf, eos);
