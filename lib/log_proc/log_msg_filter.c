@@ -200,8 +200,6 @@ log_msg_filter_get_entity(log_msg_filter *filter,
 
     SLIST_FOREACH(entity, &filter->entities, links)
     {
-        if (entity == NULL)
-            break;
         if (strcmp(entity->name, name) == 0)
             return entity;
     }
