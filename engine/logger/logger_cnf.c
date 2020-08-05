@@ -921,7 +921,8 @@ config_parser_yaml(const char *filename)
     input = fopen(filename, "rb");
     if (input == NULL)
     {
-        ERROR("Failed to open config file");
+        ERROR("Failed to open YAML config file %s: %s",
+              filename, strerror(errno));
         return -1;
     }
 
@@ -1045,7 +1046,7 @@ config_parser(const char *filename)
     fp = fopen(filename, "rb");
     if (fp == NULL)
     {
-        ERROR("Couldn't open config file %s: %r", filename, errno);
+        ERROR("Couldn't open config file %s: %s", filename, strerror(errno));
         return -1;
     }
 
