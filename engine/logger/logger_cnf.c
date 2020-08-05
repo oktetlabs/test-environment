@@ -493,8 +493,9 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
     ta_cfg.polling_default = 0;
     rule_index = 0;
 
-    item = section->data.sequence.items.start;
-    do {
+    for (item = section->data.sequence.items.start;
+         item < section->data.sequence.items.top; item++)
+    {
         yaml_node_t *rule = yaml_document_get_node(d, *item);
 
         if (rule->type != YAML_MAPPING_NODE)
@@ -574,7 +575,7 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
                 return ret;
             rule_index++;
         }
-    } while (++item < section->data.sequence.items.top);
+    }
 
     ta_cfg.rules_num = rule_index;
 
@@ -603,8 +604,9 @@ handle_sniffers(yaml_document_t *d, yaml_node_t *section)
         return -1;
     }
 
-    pair = section->data.mapping.pairs.start;
-    do {
+    for (pair = section->data.mapping.pairs.start;
+         pair < section->data.mapping.pairs.top; pair++)
+    {
         yaml_node_t *k = yaml_document_get_node(d, pair->key);
         yaml_node_t *v = yaml_document_get_node(d, pair->value);
         const char  *key   = (const char *)k->data.scalar.value;
@@ -649,7 +651,7 @@ handle_sniffers(yaml_document_t *d, yaml_node_t *section)
         {
             snifp_sets.period = (unsigned)strtoul(value, NULL, 0);
         }
-    } while (++pair < section->data.mapping.pairs.top);
+    }
 
     return 0;
 }
@@ -690,8 +692,9 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
 
     memset(&ctx, 0, sizeof(ctx));
 
-    pair = cfg->data.mapping.pairs.start;
-    do {
+    for (pair = cfg->data.mapping.pairs.start;
+         pair < cfg->data.mapping.pairs.top; pair++)
+    {
         yaml_node_t *k = yaml_document_get_node(d, pair->key);
         yaml_node_t *v = yaml_document_get_node(d, pair->value);
         const char  *key   = (const char *)k->data.scalar.value;
@@ -702,7 +705,7 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
             enabled = v;
         else if (strcmp(key, "args") == 0)
             args = v;
-    } while (++pair < cfg->data.mapping.pairs.top);
+    }
 
     if (name == NULL)
     {
@@ -764,8 +767,9 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
             return -1;
         }
 
-        item = args->data.sequence.items.start;
-        do {
+        for (item = args->data.sequence.items.start;
+             item < args->data.sequence.items.top; item++)
+        {
             yaml_node_t *arg   = yaml_document_get_node(d, *item);
             const char  *value = (const char *)arg->data.scalar.value;
 
@@ -780,7 +784,7 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
                 return -1;
             }
             ctx.argc++;
-        } while (++item < args->data.sequence.items.top);
+        }
     }
 
     ctx.argv[ctx.argc] = NULL;
@@ -819,8 +823,9 @@ handle_threads(yaml_document_t *d, yaml_node_t *section)
         return -1;
     }
 
-    item = section->data.sequence.items.start;
-    do {
+    for (item = section->data.sequence.items.start;
+         item < section->data.sequence.items.top; item++)
+    {
         yaml_node_t *v = yaml_document_get_node(d, *item);
 
         if (v->type != YAML_MAPPING_NODE)
@@ -832,7 +837,7 @@ handle_threads(yaml_document_t *d, yaml_node_t *section)
         res = run_thread(d, v);
         if (res != 0)
             return -1;
-    } while (++item < section->data.sequence.items.top);
+    }
 
     return 0;
 }
@@ -900,8 +905,9 @@ config_parser_yaml(const char *file_name)
         return -1;
     }
 
-    pair = root->data.mapping.pairs.start;
-    do {
+    for (pair = root->data.mapping.pairs.start;
+         pair < root->data.mapping.pairs.top; pair++)
+    {
         yaml_node_t *k = yaml_document_get_node(&document, pair->key);
         yaml_node_t *v = yaml_document_get_node(&document, pair->value);
         const char  *key = (const char *)k->data.scalar.value;
@@ -916,7 +922,7 @@ config_parser_yaml(const char *file_name)
             threads = v;
         else
             WARN("Unknown config section: %s", key);
-    } while (++pair < root->data.mapping.pairs.top);
+    }
 
     res = 0;
 
