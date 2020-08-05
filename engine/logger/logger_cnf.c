@@ -27,6 +27,7 @@
 #include "te_alloc.h"
 #include "te_str.h"
 #include "te_kernel_log.h"
+#include "logger_cnf.h"
 
 #include <yaml.h>
 
@@ -493,15 +494,6 @@ xmlSAXHandlerPtr loggerSAXHandler = &loggerSAXHandlerStruct;
 /*           YAML                                                        */
 /*************************************************************************/
 
-
-/** Extract the value if it's a scalar node */
-static const char *
-get_scalar_value(const yaml_node_t *node)
-{
-    if (node != NULL && node->type == YAML_SCALAR_NODE)
-        return (const char *)node->data.scalar.value;
-    return NULL;
-}
 
 /**
  * Parse the "polling" section of the config file.
@@ -1132,48 +1124,36 @@ config_parser_xml(const char *filename)
 int
 config_parser(const char *filename)
 {
-#define PREREAD_SIZE 8
-    static const char xml_head[]  = "<?xml";
-    static const char yaml_head[] = "---";
-
-    int      res = 0;
-    char     buf[PREREAD_SIZE + 1];
-    FILE    *fp;
+    int      res;
     ta_inst *tmp_el;
 
     if (filename == NULL)
         return 0;
 
-    fp = fopen(filename, "r");
-    if (fp == NULL)
+    switch(get_cfg_file_type(filename))
     {
-        ERROR("Couldn't open config file %s: %s", filename, strerror(errno));
-        return -1;
-    }
-
-    res = fread(buf, 1, PREREAD_SIZE, fp);
-    if (res == 0 && feof(fp))
-    {
-        /* Config file is empty, nothing to do */
-        fclose(fp);
-        return 0;
-    }
-    fclose(fp);
-#undef PREREAD_SIZE
-
-    buf[res] = '\0';
-    if (strncmp(buf, yaml_head, sizeof(yaml_head) - 1) == 0)
-    {
-        res = config_parser_yaml(filename);
-    }
-    else if (strncmp(buf, xml_head, sizeof(xml_head) - 1) == 0)
-    {
-        res = config_parser_xml(filename);
-    }
-    else
-    {
-        ERROR("Unknown config file format");
-        res = -1;
+        case CFG_TYPE_ERROR:
+            ERROR("Failed to determine config file format: %s",
+                  strerror(errno));
+            res = -1;
+            break;
+        case CFG_TYPE_EMPTY:
+            res = 0;
+            break;
+        case CFG_TYPE_YAML:
+            res = config_parser_yaml(filename);
+            break;
+        case CFG_TYPE_XML:
+            res = config_parser_xml(filename);
+            break;
+        case CFG_TYPE_OTHER:
+            ERROR("Unknown config file format");
+            res = -1;
+            break;
+        default:
+            ERROR("Unexpected return value from get_cfg_file_type");
+            res = -1;
+            break;
     }
 
     SLIST_FOREACH(tmp_el, &ta_list, links)
