@@ -980,6 +980,9 @@ config_parser(const char *file_name)
     FILE       *fp;
     ta_inst    *tmp_el;
 
+    if (file_name == NULL)
+        return 0;
+
     fp = fopen(file_name, "rb");
     if (fp == NULL)
     {
