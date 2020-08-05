@@ -457,6 +457,15 @@ xmlSAXHandlerPtr loggerSAXHandler = &loggerSAXHandlerStruct;
 /*************************************************************************/
 
 
+/** Extract the value if it's a scalar node */
+static const char *
+get_scalar_value(const yaml_node_t *node)
+{
+    if (node != NULL && node->type == YAML_SCALAR_NODE)
+        return (const char *)node->data.scalar.value;
+    return NULL;
+}
+
 /**
  * Parse the "polling" section of the config file.
  *
@@ -508,8 +517,8 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
         yaml_node_t *k = yaml_document_get_node(d, pair->key);
         yaml_node_t *v = yaml_document_get_node(d, pair->value);
 
-        const char *rule_key = (const char *)k->data.scalar.value;
-        const char *rule_value = (const char *)v->data.scalar.value;
+        const char *rule_key = get_scalar_value(k);
+        const char *rule_value = get_scalar_value(v);
 
         if (strcmp(rule_key, "default") == 0)
         {
@@ -530,10 +539,10 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
             {
                 yaml_node_t *k = yaml_document_get_node(d, pair->key);
                 yaml_node_t *v = yaml_document_get_node(d, pair->value);
-                const char  *key = (const char *)k->data.scalar.value;
+                const char  *key = get_scalar_value(k);
 
                 if (strcmp(key, "value") == 0)
-                    val_str = (const char *)v->data.scalar.value;
+                    val_str = get_scalar_value(v);
             }
 
             if (val_str == NULL)
@@ -557,10 +566,10 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
             {
                 yaml_node_t *k = yaml_document_get_node(d, pair->key);
                 yaml_node_t *v = yaml_document_get_node(d, pair->value);
-                const char  *key = (const char *)k->data.scalar.value;
+                const char  *key = get_scalar_value(k);
 
                 if (strcmp(key, "value") == 0)
-                    val_str = (const char *)v->data.scalar.value;
+                    val_str = get_scalar_value(v);
             }
 
             if (val_str == NULL)
@@ -609,10 +618,10 @@ handle_sniffers(yaml_document_t *d, yaml_node_t *section)
     {
         yaml_node_t *k = yaml_document_get_node(d, pair->key);
         yaml_node_t *v = yaml_document_get_node(d, pair->value);
-        const char  *key   = (const char *)k->data.scalar.value;
-        const char  *value = (const char *)v->data.scalar.value;
+        const char  *key   = get_scalar_value(k);
+        const char  *value = get_scalar_value(v);
 
-        if (v->type != YAML_SCALAR_NODE)
+        if (value == NULL)
         {
             ERROR("Sniffers: Expected a scalar value for key %s", key);
             return -1;
@@ -697,7 +706,7 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
     {
         yaml_node_t *k = yaml_document_get_node(d, pair->key);
         yaml_node_t *v = yaml_document_get_node(d, pair->value);
-        const char  *key   = (const char *)k->data.scalar.value;
+        const char  *key   = get_scalar_value(k);
 
         if (strcmp(key, "name") == 0)
             name = v;
@@ -719,7 +728,7 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
         return -1;
     }
 
-    ctx.thread_name = (const char *)name->data.scalar.value;
+    ctx.thread_name = get_scalar_value(name);
 
     if (enabled == NULL)
     {
@@ -735,7 +744,7 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
         return -1;
     }
 
-    enabled_str = (const char *)enabled->data.scalar.value;
+    enabled_str = get_scalar_value(enabled);
     if (te_expand_env_vars(enabled_str, NULL, &enabled_exp) != 0)
     {
         ERROR("Run thread: Failed to expand '%s'", enabled_str);
@@ -771,9 +780,9 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
              item < args->data.sequence.items.top; item++)
         {
             yaml_node_t *arg   = yaml_document_get_node(d, *item);
-            const char  *value = (const char *)arg->data.scalar.value;
+            const char  *value = get_scalar_value(arg);
 
-            if (arg->type != YAML_SCALAR_NODE)
+            if (value == NULL)
             {
                 ERROR("Run thread: argument must be a scalar");
                 return -1;
@@ -910,7 +919,7 @@ config_parser_yaml(const char *file_name)
     {
         yaml_node_t *k = yaml_document_get_node(&document, pair->key);
         yaml_node_t *v = yaml_document_get_node(&document, pair->value);
-        const char  *key = (const char *)k->data.scalar.value;
+        const char  *key = get_scalar_value(k);
 
         if (strcmp(key, "polling") == 0)
             polling = v;
