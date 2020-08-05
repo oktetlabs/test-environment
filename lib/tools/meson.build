@@ -47,6 +47,7 @@ headers += files(
     'te_tools.h',
     'te_units.h',
     'te_vector.h',
+    'te_yaml.h',
     'tq_string.h',
 )
 sources += files(

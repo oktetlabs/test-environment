@@ -37,7 +37,8 @@ include_HEADERS = \
 	te_log_stack.h \
 	te_vector.h \
 	te_meas_stats.h \
-	te_mi_log.h
+	te_mi_log.h \
+	te_yaml.h
 
 if WINDOWS
 
