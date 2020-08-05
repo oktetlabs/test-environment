@@ -18,7 +18,7 @@
 #include "te_defs.h"
 
 /* Path to capture files */
-const char *path = NULL;
+char *path = NULL;
 
 /**
  * User call back called when an opening tag has been processed.
@@ -42,7 +42,10 @@ te_log_start_element(void *in_ctx, const xmlChar  *xml_tag,
         {
             if ((strcmp(atts[i], "default") == 0 ||
                 strcmp(atts[i], "value") == 0) && atts[i + 1] != NULL)
+            {
+                free(path);
                 path = strdup(atts[i + 1]);
+            }
         }
     }
 }
@@ -96,8 +99,8 @@ main(int argc, char **argv)
 {
     if (argc != 2)
     {
-        fprintf(stderr, "Usage: get_capture_path logger.conf\n");
-        exit(1);
+        fputs("Usage: te_log_get_path logger.conf\n", stderr);
+        return EXIT_FAILURE;
     }
 
     xmlSAXUserParseFile(&sax_handler, NULL, argv[1]);
@@ -105,8 +108,8 @@ main(int argc, char **argv)
     xmlMemoryDump();
     if (path != NULL)
     {
-        printf("%s", path);
-        free((void *)path);
+        puts(path);
+        free(path);
     }
-    return 0;
+    return EXIT_SUCCESS;
 }
