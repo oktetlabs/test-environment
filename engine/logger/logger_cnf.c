@@ -204,7 +204,6 @@ startElementLGR(void           *thread_ctx,
     thread_context *ctx = thread_ctx;
     ta_rule        *new;
 
-
     if ((atts == NULL) || (atts[0] == NULL) || (atts[1] == NULL))
         return;
 
@@ -542,7 +541,6 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
                 return -1;
             }
 
-
             ret = rule_init_type(&ta_cfg.rules[rule_index], rule_value,
                                  strtoul(val_str, NULL, 0));
             if (ret != 0)
@@ -834,7 +832,6 @@ handle_threads(yaml_document_t *d, yaml_node_t *section)
         res = run_thread(d, v);
         if (res != 0)
             return -1;
-
     } while (++item < section->data.sequence.items.top);
 
     return 0;
