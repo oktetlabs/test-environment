@@ -124,6 +124,7 @@ log_entity_filter_init(log_entity_filter *filter,
 {
     te_errno rc;
 
+    SLIST_INIT(&filter->users);
     filter->level = LOG_LEVEL_ALL;
     filter->name = NULL;
     filter->regex = NULL;
