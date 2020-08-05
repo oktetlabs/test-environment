@@ -50,7 +50,7 @@ executable('te_log_get_path', ['te_log_get_path.c', 'logger_cnf_int.c'],
            install: true,
            include_directories: te_include,
            c_args: c_args,
-           dependencies: [dep_libxml2, dependency('yaml-0.1')])
+           dependencies: [dep_lib_tools, dep_libxml2, dependency('yaml-0.1')])
 
 scripts = [
     'te_log_archive',

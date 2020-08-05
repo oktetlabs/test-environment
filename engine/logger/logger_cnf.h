@@ -17,15 +17,6 @@
 extern "C" {
 #endif
 
-/** Extract the value if it's a scalar node */
-static inline const char *
-get_scalar_value(const yaml_node_t *node)
-{
-    if (node != NULL && node->type == YAML_SCALAR_NODE)
-        return (const char *)node->data.scalar.value;
-    return NULL;
-}
-
 /** Configuration file format */
 typedef enum cfg_file_type {
     CFG_TYPE_ERROR,

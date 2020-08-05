@@ -17,6 +17,7 @@
 
 #include <libxml/parserInternals.h>
 #include "te_defs.h"
+#include "te_yaml.h"
 #include "logger_cnf.h"
 
 /* Path to capture files */
@@ -112,8 +113,8 @@ te_log_extract_section(yaml_document_t *d, yaml_node_t *node)
     {
         yaml_node_t *k = yaml_document_get_node(d, pair->key);
         yaml_node_t *v = yaml_document_get_node(d, pair->value);
-        const char  *key = get_scalar_value(k);
-        const char  *val = get_scalar_value(v);
+        const char  *key = te_yaml_scalar_value(k);
+        const char  *val = te_yaml_scalar_value(v);
 
         if (key != NULL && val != NULL && strcmp(key, "path") == 0)
         {
@@ -181,7 +182,7 @@ te_log_extract_yaml(const char *filename)
     {
         yaml_node_t *k = yaml_document_get_node(&document, pair->key);
         yaml_node_t *v = yaml_document_get_node(&document, pair->value);
-        const char  *key = get_scalar_value(k);
+        const char  *key = te_yaml_scalar_value(k);
 
         if (key == NULL)
             continue;

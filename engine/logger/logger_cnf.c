@@ -27,6 +27,7 @@
 #include "te_alloc.h"
 #include "te_str.h"
 #include "te_kernel_log.h"
+#include "te_yaml.h"
 #include "logger_cnf.h"
 
 #include <yaml.h>
@@ -548,8 +549,8 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
         yaml_node_t *k = yaml_document_get_node(d, pair->key);
         yaml_node_t *v = yaml_document_get_node(d, pair->value);
 
-        const char *rule_key = get_scalar_value(k);
-        const char *rule_value = get_scalar_value(v);
+        const char *rule_key = te_yaml_scalar_value(k);
+        const char *rule_value = te_yaml_scalar_value(v);
 
         if (rule_key == NULL)
         {
@@ -582,7 +583,7 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
             {
                 yaml_node_t *k = yaml_document_get_node(d, pair->key);
                 yaml_node_t *v = yaml_document_get_node(d, pair->value);
-                const char  *key = get_scalar_value(k);
+                const char  *key = te_yaml_scalar_value(k);
 
                 if (key == NULL)
                 {
@@ -591,7 +592,7 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
                 }
 
                 if (strcmp(key, "value") == 0)
-                    val_str = get_scalar_value(v);
+                    val_str = te_yaml_scalar_value(v);
             }
 
             if (val_str == NULL)
@@ -623,7 +624,7 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
             {
                 yaml_node_t *k = yaml_document_get_node(d, pair->key);
                 yaml_node_t *v = yaml_document_get_node(d, pair->value);
-                const char  *key = get_scalar_value(k);
+                const char  *key = te_yaml_scalar_value(k);
 
                 if (key == NULL)
                 {
@@ -632,7 +633,7 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
                 }
 
                 if (strcmp(key, "value") == 0)
-                    val_str = get_scalar_value(v);
+                    val_str = te_yaml_scalar_value(v);
             }
 
             if (val_str == NULL)
@@ -691,8 +692,8 @@ handle_sniffers(yaml_document_t *d, yaml_node_t *section)
     {
         yaml_node_t *k = yaml_document_get_node(d, pair->key);
         yaml_node_t *v = yaml_document_get_node(d, pair->value);
-        const char  *key   = get_scalar_value(k);
-        const char  *value = get_scalar_value(v);
+        const char  *key   = te_yaml_scalar_value(k);
+        const char  *value = te_yaml_scalar_value(v);
 
         if (key == NULL)
         {
@@ -827,7 +828,7 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
     {
         yaml_node_t *k = yaml_document_get_node(d, pair->key);
         yaml_node_t *v = yaml_document_get_node(d, pair->value);
-        const char  *key   = get_scalar_value(k);
+        const char  *key   = te_yaml_scalar_value(k);
 
         if (key == NULL)
         {
@@ -855,7 +856,7 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
         return -1;
     }
 
-    ctx.thread_name = get_scalar_value(name);
+    ctx.thread_name = te_yaml_scalar_value(name);
 
     if (enabled == NULL)
     {
@@ -871,7 +872,7 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
         return -1;
     }
 
-    enabled_str = get_scalar_value(enabled);
+    enabled_str = te_yaml_scalar_value(enabled);
     if (te_expand_env_vars(enabled_str, NULL, &enabled_exp) != 0)
     {
         ERROR("%s(%s): Failed to expand '%s'",
@@ -909,7 +910,7 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
              item < args->data.sequence.items.top; item++)
         {
             yaml_node_t *arg   = yaml_document_get_node(d, *item);
-            const char  *value = get_scalar_value(arg);
+            const char  *value = te_yaml_scalar_value(arg);
 
             if (value == NULL)
             {
@@ -1055,7 +1056,7 @@ config_parser_yaml(const char *filename)
     {
         yaml_node_t *k = yaml_document_get_node(&document, pair->key);
         yaml_node_t *v = yaml_document_get_node(&document, pair->value);
-        const char  *key = get_scalar_value(k);
+        const char  *key = te_yaml_scalar_value(k);
 
         if (key == NULL)
         {
