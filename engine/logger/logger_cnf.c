@@ -983,14 +983,14 @@ config_parser_xml(const char *filename)
 int
 config_parser(const char *filename)
 {
-    const int   PREREAD_SIZE = 8;
-    const char *XML_HEAD  = "<?xml";
-    const char *YAML_HEAD = "---";
-    int         res = 0;
-    int         len = 0;
-    char        buf[PREREAD_SIZE];
-    FILE       *fp;
-    ta_inst    *tmp_el;
+#define PREREAD_SIZE 8
+    static const char xml_head[]  = "<?xml";
+    static const char yaml_head[] = "---";
+
+    int      res = 0;
+    char     buf[PREREAD_SIZE + 1];
+    FILE    *fp;
+    ta_inst *tmp_el;
 
     if (filename == NULL)
         return 0;
@@ -1010,15 +1010,14 @@ config_parser(const char *filename)
         return 0;
     }
     fclose(fp);
+#undef PREREAD_SIZE
 
-#define CHECK(FMT) \
-    (len = strlen(FMT ## _HEAD), \
-     res >= len && strncmp(buf, FMT ## _HEAD, len) == 0)
-    if (CHECK(YAML))
+    buf[res] = '\0';
+    if (strncmp(buf, yaml_head, sizeof(yaml_head) - 1) == 0)
     {
         res = config_parser_yaml(filename);
     }
-    else if (CHECK(XML))
+    else if (strncmp(buf, xml_head, sizeof(xml_head) - 1) == 0)
     {
         res = config_parser_xml(filename);
     }
@@ -1027,7 +1026,6 @@ config_parser(const char *filename)
         ERROR("Unknown config file format");
         res = -1;
     }
-#undef CHECK
 
     SLIST_FOREACH(tmp_el, &ta_list, links)
     {
