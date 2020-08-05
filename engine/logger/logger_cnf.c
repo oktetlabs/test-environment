@@ -854,7 +854,7 @@ handle_threads(yaml_document_t *d, yaml_node_t *section)
 /**
  * Parse a YAML-formatted config file.
  *
- * @param file_name path to the config file
+ * @param filename      path to the config file
  *
  * @return Status information
  *
@@ -862,7 +862,7 @@ handle_threads(yaml_document_t *d, yaml_node_t *section)
  * @retval Negative     Failure.
  */
 static int
-config_parser_yaml(const char *file_name)
+config_parser_yaml(const char *filename)
 {
     int               res;
     FILE             *input;
@@ -875,9 +875,9 @@ config_parser_yaml(const char *file_name)
     yaml_node_t      *threads          = NULL;
     yaml_node_pair_t *pair;
 
-    RING("Opening config file: %s", file_name);
+    RING("Opening config file: %s", filename);
 
-    input = fopen(file_name, "rb");
+    input = fopen(filename, "rb");
     if (input == NULL)
     {
         ERROR("Failed to open config file");
@@ -955,7 +955,7 @@ config_parser_yaml(const char *file_name)
 /**
  * Parse an XML-formatted config file.
  *
- * @param file_name path to the config file
+ * @param filename      path to the config file
  *
  * @return Status information
  *
@@ -963,17 +963,17 @@ config_parser_yaml(const char *file_name)
  * @retval Negative     Failure.
  */
 static int
-config_parser_xml(const char *file_name)
+config_parser_xml(const char *filename)
 {
     int res = 0;
     thread_context ctx;
 
-    if (file_name == NULL)
+    if (filename == NULL)
         return 0;
 
     memset(&ctx, 0, sizeof(ctx));
 
-    res = xmlSAXUserParseFile(loggerSAXHandler, &ctx, file_name);
+    res = xmlSAXUserParseFile(loggerSAXHandler, &ctx, filename);
     xmlCleanupParser();
     xmlMemoryDump();
     return res;
@@ -981,7 +981,7 @@ config_parser_xml(const char *file_name)
 
 /* See description in logger_internal.h */
 int
-config_parser(const char *file_name)
+config_parser(const char *filename)
 {
     const int   PREREAD_SIZE = 8;
     const char *XML_HEAD  = "<?xml";
@@ -992,13 +992,13 @@ config_parser(const char *file_name)
     FILE       *fp;
     ta_inst    *tmp_el;
 
-    if (file_name == NULL)
+    if (filename == NULL)
         return 0;
 
-    fp = fopen(file_name, "rb");
+    fp = fopen(filename, "rb");
     if (fp == NULL)
     {
-        ERROR("Couldn't open config file %s: %r", file_name, errno);
+        ERROR("Couldn't open config file %s: %r", filename, errno);
         return -1;
     }
 
@@ -1016,11 +1016,11 @@ config_parser(const char *file_name)
      res >= len && strncmp(buf, FMT ## _HEAD, len) == 0)
     if (CHECK(YAML))
     {
-        res = config_parser_yaml(file_name);
+        res = config_parser_yaml(filename);
     }
     else if (CHECK(XML))
     {
-        res = config_parser_xml(file_name);
+        res = config_parser_xml(filename);
     }
     else
     {
