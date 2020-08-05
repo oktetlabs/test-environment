@@ -193,15 +193,21 @@ static log_entity_filter *
 log_msg_filter_get_entity(log_msg_filter *filter,
                           const char *name, te_bool regex)
 {
+    int                cmp;
     log_entity_filter *entity = NULL;
+    log_entity_filter *last_lesser = NULL;
 
     if (name == NULL || strcmp(name, "") == 0)
         return &filter->def_entity;
 
     SLIST_FOREACH(entity, &filter->entities, links)
     {
-        if (strcmp(entity->name, name) == 0)
+        cmp = strcmp(entity->name, name);
+        if (cmp == 0)
             return entity;
+        if (cmp > 0)
+            break;
+        last_lesser = entity;
     }
 
     /* Create if does not exist */
@@ -217,7 +223,10 @@ log_msg_filter_get_entity(log_msg_filter *filter,
      * original implementation.
      */
 
-    SLIST_INSERT_HEAD(&filter->entities, entity, links);
+    if (last_lesser != NULL)
+        SLIST_INSERT_AFTER(last_lesser, entity, links);
+    else
+        SLIST_INSERT_HEAD(&filter->entities, entity, links);
 
     return entity;
 }
@@ -275,15 +284,20 @@ log_entity_filter_add_user(log_entity_filter *entity, te_bool include,
                            const char *name, te_bool regex,
                            te_log_level level_mask)
 {
+    int              cmp;
     log_user_filter *user;
+    log_user_filter *last_lesser = NULL;
 
     SLIST_FOREACH(user, &entity->users, links)
     {
-        if (strcmp(user->name, name) == 0)
+        cmp = strcmp(user->name, name);
+        if (cmp >= 0)
             break;
+        last_lesser = user;
     }
 
-    if (user == NULL)
+    /* Add a new user if we haven't found an exact match */
+    if (user == NULL || cmp != 0)
     {
         user = TE_ALLOC(sizeof(log_user_filter));
         if (user == NULL)
@@ -292,7 +306,10 @@ log_entity_filter_add_user(log_entity_filter *entity, te_bool include,
         log_user_filter_init(user, name, regex);
         user->level = entity->level;
 
-        SLIST_INSERT_HEAD(&entity->users, user, links);
+        if (last_lesser != NULL)
+            SLIST_INSERT_AFTER(last_lesser, user, links);
+        else
+            SLIST_INSERT_HEAD(&entity->users, user, links);
     }
 
     if (level_mask != 0)
