@@ -522,6 +522,12 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
         const char *rule_key = get_scalar_value(k);
         const char *rule_value = get_scalar_value(v);
 
+        if (rule_key == NULL)
+        {
+            ERROR("%s: Non-scalar key in mapping", __FUNCTION__);
+            return -1;
+        }
+
         if (strcmp(rule_key, "default") == 0)
         {
             /* Get default polling value and assign it to the all TA */
@@ -542,6 +548,12 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
                 yaml_node_t *k = yaml_document_get_node(d, pair->key);
                 yaml_node_t *v = yaml_document_get_node(d, pair->value);
                 const char  *key = get_scalar_value(k);
+
+                if (key == NULL)
+                {
+                    ERROR("%s: Non-scalar key in mapping", __FUNCTION__);
+                    return -1;
+                }
 
                 if (strcmp(key, "value") == 0)
                     val_str = get_scalar_value(v);
@@ -570,6 +582,12 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
                 yaml_node_t *k = yaml_document_get_node(d, pair->key);
                 yaml_node_t *v = yaml_document_get_node(d, pair->value);
                 const char  *key = get_scalar_value(k);
+
+                if (key == NULL)
+                {
+                    ERROR("%s: Non-scalar key in mapping", __FUNCTION__);
+                    return -1;
+                }
 
                 if (strcmp(key, "value") == 0)
                     val_str = get_scalar_value(v);
@@ -625,9 +643,15 @@ handle_sniffers(yaml_document_t *d, yaml_node_t *section)
         const char  *key   = get_scalar_value(k);
         const char  *value = get_scalar_value(v);
 
+        if (key == NULL)
+        {
+            ERROR("%s: Non-scalar key in mapping", __FUNCTION__);
+            return -1;
+        }
+
         if (value == NULL)
         {
-            ERROR("%s: Expected a scalar value for key %s", __FUNCTION__, key);
+            ERROR("%s: Non-scalar value for key %s", __FUNCTION__, key);
             return -1;
         }
 
@@ -711,6 +735,12 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
         yaml_node_t *k = yaml_document_get_node(d, pair->key);
         yaml_node_t *v = yaml_document_get_node(d, pair->value);
         const char  *key   = get_scalar_value(k);
+
+        if (key == NULL)
+        {
+            ERROR("%s: Non-scalar key in mapping", __FUNCTION__);
+            return -1;
+        }
 
         if (strcmp(key, "name") == 0)
             name = v;
@@ -925,12 +955,20 @@ config_parser_yaml(const char *filename)
         return -1;
     }
 
+    res = 0;
     for (pair = root->data.mapping.pairs.start;
          pair < root->data.mapping.pairs.top; pair++)
     {
         yaml_node_t *k = yaml_document_get_node(&document, pair->key);
         yaml_node_t *v = yaml_document_get_node(&document, pair->value);
         const char  *key = get_scalar_value(k);
+
+        if (key == NULL)
+        {
+            ERROR("%s: Non-scalar key in mapping", __FUNCTION__);
+            res = -1;
+            break;
+        }
 
         if (strcmp(key, "polling") == 0)
             polling = v;
@@ -944,9 +982,7 @@ config_parser_yaml(const char *filename)
             WARN("Unknown config section: %s", key);
     }
 
-    res = 0;
-
-    if (polling != NULL)
+    if (res == 0 && polling != NULL)
         res = handle_polling(&document, polling);
 
     if (res == 0 && sniffers_default != NULL)
