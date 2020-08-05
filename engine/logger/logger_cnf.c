@@ -487,7 +487,7 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
 
     if (section->type != YAML_SEQUENCE_NODE)
     {
-        ERROR("Polling: Expected a sequence, got something else");
+        ERROR("%s: Expected a sequence, got something else", __FUNCTION__);
         return -1;
     }
 
@@ -509,7 +509,7 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
 
         if (rule->type != YAML_MAPPING_NODE)
         {
-            ERROR("Polling: Expected a mapping, got something else");
+            ERROR("%s: Expected a mapping, got something else", __FUNCTION__);
             return -1;
         }
 
@@ -547,7 +547,8 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
 
             if (val_str == NULL)
             {
-                ERROR("Polling: Missing value in rule for type %s", rule_value);
+                ERROR("%s: Missing value in rule for type %s",
+                      __FUNCTION__, rule_value);
                 return -1;
             }
 
@@ -574,7 +575,8 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
 
             if (val_str == NULL)
             {
-                ERROR("Polling: Missing value in rule for agent %s", rule_value);
+                ERROR("%s: Missing value in rule for agent %s",
+                      __FUNCTION__, rule_value);
                 return -1;
             }
 
@@ -609,7 +611,7 @@ handle_sniffers(yaml_document_t *d, yaml_node_t *section)
 
     if (section->type != YAML_MAPPING_NODE)
     {
-        ERROR("Sniffers: Expected a mapping, got something else");
+        ERROR("%s: Expected a mapping, got something else", __FUNCTION__);
         return -1;
     }
 
@@ -623,7 +625,7 @@ handle_sniffers(yaml_document_t *d, yaml_node_t *section)
 
         if (value == NULL)
         {
-            ERROR("Sniffers: Expected a scalar value for key %s", key);
+            ERROR("%s: Expected a scalar value for key %s", __FUNCTION__, key);
             return -1;
         }
 
@@ -695,7 +697,7 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
 
     if (cfg->type != YAML_MAPPING_NODE)
     {
-        ERROR("Run thread: Expected a mapping, got something else");
+        ERROR("%s: Expected a mapping, got something else", __FUNCTION__);
         return -1;
     }
 
@@ -718,13 +720,13 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
 
     if (name == NULL)
     {
-        ERROR("Run thread: Encountered a thread with no name");
+        ERROR("%s: Encountered a thread with no name", __FUNCTION__);
         return -1;
     }
 
     if (name->type != YAML_SCALAR_NODE)
     {
-        ERROR("Run thread: Name must be a scalar value");
+        ERROR("%s: Name must be a scalar value", __FUNCTION__);
         return -1;
     }
 
@@ -732,22 +734,23 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
 
     if (enabled == NULL)
     {
-        ERROR("Run thread: Enabled not specified for thread %s",
-              ctx.thread_name);
+        ERROR("%s(%s): Enabled not specified",
+              __FUNCTION__, ctx.thread_name);
         return -1;
     }
 
     if (enabled->type != YAML_SCALAR_NODE)
     {
-        ERROR("Run thread: Enabled must be a scalar for thread %s",
-              ctx.thread_name);
+        ERROR("%s(%s): Enabled must be a scalar",
+              __FUNCTION__, ctx.thread_name);
         return -1;
     }
 
     enabled_str = get_scalar_value(enabled);
     if (te_expand_env_vars(enabled_str, NULL, &enabled_exp) != 0)
     {
-        ERROR("Run thread: Failed to expand '%s'", enabled_str);
+        ERROR("%s(%s): Failed to expand '%s'",
+              __FUNCTION__, ctx.thread_name, enabled_str);
         return -1;
     }
 
@@ -764,15 +767,16 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
     {
         if (args->type != YAML_SEQUENCE_NODE)
         {
-            ERROR("Thread %s: args can only be a sequence", ctx.thread_name);
+            ERROR("%s(%s): args can only be a sequence",
+                  __FUNCTION__, ctx.thread_name);
             return -1;
         }
 
         args_num = args->data.sequence.items.top - args->data.sequence.items.start;
         if (args_num > RCF_MAX_PARAMS)
         {
-            ERROR("Too many arguments (%d while only %d are allowed) for thread %s",
-                  args_num, RCF_MAX_PARAMS, ctx.thread_name);
+            ERROR("%s(%s): Too many arguments (%d while only %d are allowed)",
+                  __FUNCTION__, ctx.thread_name, args_num, RCF_MAX_PARAMS);
             return -1;
         }
 
@@ -784,12 +788,14 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
 
             if (value == NULL)
             {
-                ERROR("Run thread: argument must be a scalar");
+                ERROR("%s(%s): argument must be a scalar",
+                      __FUNCTION__, ctx.thread_name);
                 break;
             }
             if (te_expand_env_vars(value, NULL, &ctx.argv[ctx.argc]) != 0)
             {
-                ERROR("Run thread: Failed to expand argument value '%s'", value);
+                ERROR("%s(%s): Failed to expand argument value '%s'",
+                      __FUNCTION__, ctx.thread_name, value);
                 break;
             }
             ctx.argc++;
@@ -831,7 +837,7 @@ handle_threads(yaml_document_t *d, yaml_node_t *section)
 
     if (section->type != YAML_SEQUENCE_NODE)
     {
-        ERROR("Threads: Expected a sequence, got something else");
+        ERROR("%s: Expected a sequence, got something else", __FUNCTION__);
         return -1;
     }
 
@@ -842,7 +848,7 @@ handle_threads(yaml_document_t *d, yaml_node_t *section)
 
         if (v->type != YAML_MAPPING_NODE)
         {
-            ERROR("Threads: A thread must be a mapping");
+            ERROR("%s: A thread must be a mapping", __FUNCTION__);
             return -1;
         }
 
