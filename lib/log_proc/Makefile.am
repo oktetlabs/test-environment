@@ -12,7 +12,7 @@ lib_LTLIBRARIES=liblog_proc.la
 liblog_proc_la_SOURCES=log_msg_view.c log_msg_filter.c log_flow_filters.c \
                        log_filters_xml.c
 
-liblog_proc_la_LIBADD=-ltools @XML2_LIBS@
+liblog_proc_la_LIBADD=-ltools @XML2_LIBS@ -lyaml
 
 install-exec-hook:
 	touch -c -r liblog_proc.la $(DESTDIR)/$(libdir)/liblog_proc.*
