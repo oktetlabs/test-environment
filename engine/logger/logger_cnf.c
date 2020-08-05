@@ -201,6 +201,8 @@ startElementLGR(void           *thread_ctx,
                 const xmlChar **xml_atts)
 {
     int             ret;
+    int             value;
+    te_errno        rc;
     const char     *name = (const char *)xml_name;
     const char    **atts = (const char **)xml_atts;
     thread_context *ctx = thread_ctx;
@@ -217,7 +219,9 @@ startElementLGR(void           *thread_ctx,
         /* Get default polling value and assign it to the all TA */
         if (strcmp(atts[0], "default") == 0)
         {
-            ta_cfg.polling_default = strtoul(atts[1], NULL, 0);
+            rc = te_strtoi(atts[1], 0, &ta_cfg.polling_default);
+            if (rc != 0)
+                ERROR("Invalid polling value %s: %r", atts[1], rc);
             config_clear();
         }
     }
@@ -235,11 +239,17 @@ startElementLGR(void           *thread_ctx,
         if (!strcmp(atts[0], "type") &&
             !strcmp(atts[2], "value"))
         {
+            rc = te_strtoi(atts[3], 0, &value);
+            if (rc != 0)
+            {
+                ERROR("Invalid polling value %s: %r", atts[3], rc);
+                return;
+            }
+
             new = allocate_rule();
             if (new == NULL)
                 return;
-            ret = rule_init_type(new, atts[1],
-                                 strtoul(atts[3], NULL, 0));
+            ret = rule_init_type(new, atts[1], value);
             if (ret == 0)
                 ta_cfg.rules_num++;
         }
@@ -255,11 +265,17 @@ startElementLGR(void           *thread_ctx,
         if (!strcmp(atts[0], "agent") &&
             !strcmp(atts[2], "value"))
         {
+            rc = te_strtoi(atts[3], 0, &value);
+            if (rc != 0)
+            {
+                ERROR("Invalid polling value %s: %r", atts[3], rc);
+                return;
+            }
+
             new = allocate_rule();
             if (new == NULL)
                 return;
-            ret = rule_init_agent(new, atts[1],
-                                  strtoul(atts[3], NULL, 0));
+            ret = rule_init_agent(new, atts[1], value);
             if (ret == 0)
                 ta_cfg.rules_num++;
         }
@@ -274,28 +290,47 @@ startElementLGR(void           *thread_ctx,
     }
     else if (!strcmp(name, "snif_max_fsize"))
     {
-        snifp_sets.fsize = (unsigned)strtoul(atts[1], NULL, 0) << 20;
+        rc = te_strtoui(atts[1], 0, &snifp_sets.fsize);
+        if (rc != 0)
+            ERROR("Invalid value for \"snif_max_fsize\": %s", atts[1]);
+        /* The value is in megabytes, convert to bytes */
+        snifp_sets.fsize <<= 20;
     }
     else if (!strcmp(name, "snif_space"))
     {
-        snifp_sets.sn_space = (unsigned)strtoul(atts[1], NULL, 0) << 20;
+        rc = te_strtoui(atts[1], 0, &snifp_sets.sn_space);
+        if (rc != 0)
+            ERROR("Invalid value for \"snif_space\": %s", atts[1]);
+        /* The value is in megabytes, convert to bytes */
+        snifp_sets.sn_space <<= 20;
     }
     else if (!strcmp(name, "snif_rotation"))
     {
-        snifp_sets.rotation = (unsigned)strtoul(atts[1], NULL, 0);
+        rc = te_strtoui(atts[1], 0, &snifp_sets.rotation);
+        if (rc != 0)
+            ERROR("Invalid value for \"snif_rotation\": %s", atts[1]);
     }
     else if (!strcmp(name, "snif_overall_size"))
     {
-        snifp_sets.osize = (unsigned)strtoul(atts[1], NULL, 0) << 20;
+        rc = te_strtoui(atts[1], 0, &snifp_sets.osize);
+        if (rc != 0)
+            ERROR("Invalid value for \"snif_overall_size\": %s", atts[1]);
+        /* The value is in megabytes, convert to bytes */
+        snifp_sets.osize <<= 20;
     }
     else if (!strcmp(name, "snif_ovefill_meth"))
     {
-        snifp_sets.ofill = (unsigned)strtoul(atts[1], NULL, 0) == 0 ?
+        rc = te_strtoi(atts[1], 0, &value);
+        if (rc != 0)
+            ERROR("Invalid value for \"snif_overfill_meth\": %s", atts[1]);
+        snifp_sets.ofill = value == 0 ?
                            ROTATION : TAIL_DROP;
     }
     else if (!strcmp(name, "snif_period"))
     {
-        snifp_sets.period = (unsigned)strtoul(atts[1], NULL, 0);
+        rc = te_strtoui(atts[1], 0, &snifp_sets.period);
+        if (rc != 0)
+            ERROR("Invalid value for \"snif_period\": %s", atts[1]);
     }
     else if (!strcmp(name, "thread"))
     {
@@ -483,9 +518,11 @@ static int
 handle_polling(yaml_document_t *d, yaml_node_t *section)
 {
     int               ret;
+    te_errno          rc;
     yaml_node_item_t *item;
     size_t            items;
     int               rule_index;
+    int               value;
 
     if (section->type != YAML_SEQUENCE_NODE)
     {
@@ -531,7 +568,13 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
         if (strcmp(rule_key, "default") == 0)
         {
             /* Get default polling value and assign it to the all TA */
-            ta_cfg.polling_default = strtoul(rule_value, NULL, 0);
+            rc = te_strtoi(rule_value, 0, &ta_cfg.polling_default);
+            if (rc != 0)
+            {
+                ERROR("%s: Invalid polling value %s: %r",
+                      __FUNCTION__, rule_value, rc);
+                return -1;
+            }
             config_clear();
             rule_index = 0;
         }
@@ -566,8 +609,15 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
                 return -1;
             }
 
-            ret = rule_init_type(&ta_cfg.rules[rule_index], rule_value,
-                                 strtoul(val_str, NULL, 0));
+            rc = te_strtoi(val_str, 0, &value);
+            if (rc != 0)
+            {
+                ERROR("%s: Invalid polling value %s: %r",
+                      __FUNCTION__, rule_value, rc);
+                return -1;
+            }
+
+            ret = rule_init_type(&ta_cfg.rules[rule_index], rule_value, value);
             if (ret != 0)
                 return ret;
             rule_index++;
@@ -600,8 +650,15 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
                 return -1;
             }
 
-            ret = rule_init_agent(&ta_cfg.rules[rule_index], rule_value,
-                                  strtoul(val_str, NULL, 0));
+            rc = te_strtoi(val_str, 0, &value);
+            if (rc != 0)
+            {
+                ERROR("%s: Invalid polling value %s: %r",
+                      __FUNCTION__, rule_value, rc);
+                return -1;
+            }
+
+            ret = rule_init_agent(&ta_cfg.rules[rule_index], rule_value, value);
             if (ret != 0)
                 return ret;
             rule_index++;
@@ -627,6 +684,8 @@ handle_polling(yaml_document_t *d, yaml_node_t *section)
 static int
 handle_sniffers(yaml_document_t *d, yaml_node_t *section)
 {
+    te_errno          rc;
+    unsigned int      tmp;
     yaml_node_pair_t *pair;
 
     if (section->type != YAML_MAPPING_NODE)
@@ -665,28 +724,70 @@ handle_sniffers(yaml_document_t *d, yaml_node_t *section)
         }
         else if (strcmp(key, "max_fsize") == 0)
         {
-            snifp_sets.fsize = (unsigned)strtoul(value, NULL, 0) << 20;
+            rc = te_strtoui(value, 0, &snifp_sets.fsize);
+            if (rc != 0)
+            {
+                ERROR("%s: Invalid value for \"max_fsize\": %s",
+                      __FUNCTION__, value);
+                return -1;
+            }
+            /* The value is in megabytes, convert to bytes */
+            snifp_sets.fsize <<= 20;
         }
         else if (strcmp(key, "space") == 0)
         {
-            snifp_sets.sn_space = (unsigned)strtoul(value, NULL, 0) << 20;
+            rc = te_strtoui(value, 0, &snifp_sets.sn_space);
+            if (rc != 0)
+            {
+                ERROR("%s: Invalid value for \"space\": %s",
+                      __FUNCTION__, value);
+                return -1;
+            }
+            /* The value is in megabytes, convert to bytes */
+            snifp_sets.sn_space <<= 20;
         }
         else if (strcmp(key, "rotation") == 0)
         {
-            snifp_sets.rotation = (unsigned)strtoul(value, NULL, 0);
+            rc = te_strtoui(value, 0, &snifp_sets.rotation);
+            if (rc != 0)
+            {
+                ERROR("%s: Invalid value for \"rotation\": %s",
+                      __FUNCTION__, value);
+                return -1;
+            }
         }
         else if (strcmp(key, "overall_size") == 0)
         {
-            snifp_sets.osize = (unsigned)strtoul(value, NULL, 0) << 20;
+            rc = te_strtoui(value, 0, &snifp_sets.osize);
+            if (rc != 0)
+            {
+                ERROR("%s: Invalid value for \"overall_size\": %s",
+                      __FUNCTION__, value);
+                return -1;
+            }
+            /* The value is in megabytes, convert to bytes */
+            snifp_sets.osize <<= 20;
         }
         else if (strcmp(key, "ovefill_meth") == 0)
         {
-            snifp_sets.ofill = (unsigned)strtoul(value, NULL, 0) == 0 ?
-                               ROTATION : TAIL_DROP;
+            rc = te_strtoui(value, 0, &tmp);
+            if (rc != 0)
+            {
+                ERROR("%s: Invalid value for \"overfill_meth\": %s",
+                      __FUNCTION__, value);
+                return -1;
+            }
+            snifp_sets.ofill = tmp == 0 ? ROTATION : TAIL_DROP;
         }
         else if (strcmp(key, "period") == 0)
         {
-            snifp_sets.period = (unsigned)strtoul(value, NULL, 0);
+            rc = te_strtoui(value, 0, &snifp_sets.period);
+            if (rc != 0)
+            {
+                ERROR("%s: Invalid value for \"period\": %s",
+                      __FUNCTION__, value);
+                return -1;
+            }
         }
     }
 
