@@ -918,7 +918,7 @@ config_parser_yaml(const char *filename)
 
     RING("Opening config file: %s", filename);
 
-    input = fopen(filename, "rb");
+    input = fopen(filename, "r");
     if (input == NULL)
     {
         ERROR("Failed to open YAML config file %s: %s",
@@ -1043,7 +1043,7 @@ config_parser(const char *filename)
     if (filename == NULL)
         return 0;
 
-    fp = fopen(filename, "rb");
+    fp = fopen(filename, "r");
     if (fp == NULL)
     {
         ERROR("Couldn't open config file %s: %s", filename, strerror(errno));
