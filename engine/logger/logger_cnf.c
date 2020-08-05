@@ -691,7 +691,7 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
     yaml_node_t      *enabled = NULL;
     yaml_node_t      *args = NULL;
 
-    ptrdiff_t args_num;
+    ptrdiff_t args_num = 0;
 
     if (cfg->type != YAML_MAPPING_NODE)
     {
@@ -769,10 +769,10 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
         }
 
         args_num = args->data.sequence.items.top - args->data.sequence.items.start;
-        if (args_num > RCF_MAX_PARAMS)
+        if (args_num >= RCF_MAX_PARAMS)
         {
             ERROR("Too many arguments (%d while only %d are allowed) for thread %s",
-                  args_num, RCF_MAX_PARAMS, ctx.thread_name);
+                  args_num, RCF_MAX_PARAMS - 1, ctx.thread_name);
             return -1;
         }
 
@@ -785,28 +785,31 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
             if (value == NULL)
             {
                 ERROR("Run thread: argument must be a scalar");
-                return -1;
+                break;
             }
             if (te_expand_env_vars(value, NULL, &ctx.argv[ctx.argc]) != 0)
             {
                 ERROR("Run thread: Failed to expand argument value '%s'", value);
-                return -1;
+                break;
             }
             ctx.argc++;
         }
     }
 
-    ctx.argv[ctx.argc] = NULL;
-    sem_init(&ctx.args_processed, 0, 0);
-    pthread_create(&thread_id, NULL, logger_thread_wrapper, &ctx);
-    pthread_detach(thread_id);
-    sem_wait(&ctx.args_processed);
-    sem_destroy(&ctx.args_processed);
+    if (ctx.argc == args_num)
+    {
+        ctx.argv[ctx.argc] = NULL;
+        sem_init(&ctx.args_processed, 0, 0);
+        pthread_create(&thread_id, NULL, logger_thread_wrapper, &ctx);
+        pthread_detach(thread_id);
+        sem_wait(&ctx.args_processed);
+        sem_destroy(&ctx.args_processed);
+    }
 
     for (i = 0; i < ctx.argc; i++)
         free(ctx.argv[i]);
 
-    return 0;
+    return ctx.argc == args_num ? 0 : -1;
 }
 
 /**
