@@ -10,6 +10,8 @@
  * @author Viacheslav Galaktionov <Viacheslav.Galaktionov@oktetlabs.ru>
  */
 
+#define TE_LGR_USER "Cfg file"
+
 #include "logger_internal.h"
 
 #if HAVE_STDDEF_H
