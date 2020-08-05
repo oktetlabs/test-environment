@@ -46,10 +46,11 @@ executable('te_tee', 'te_tee.c', install: true,
            dependencies: [ dep_lib_logger_ten, dep_lib_ipc, dep_lib_tools,
                            dep_lib_logger_core ])
 
-executable('te_log_get_path', 'te_log_get_path.c', install: true,
+executable('te_log_get_path', ['te_log_get_path.c', 'logger_cnf_int.c'],
+           install: true,
            include_directories: te_include,
            c_args: c_args,
-           dependencies: dep_libxml2)
+           dependencies: [dep_libxml2, dependency('yaml-0.1')])
 
 scripts = [
     'te_log_archive',

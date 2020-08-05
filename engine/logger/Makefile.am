@@ -10,8 +10,8 @@ bin_PROGRAMS = te_logger te_log_shutdown te_log_flush te_tee te_log_get_path
 
 noinst_HEADERS = logger_internal.h te_log_sniffers.h
 
-te_log_get_path_SOURCE = te_log_get_path.c
-te_log_get_path_LDADD = @XML2_LIBS@
+te_log_get_path_SOURCES = te_log_get_path.c logger_cnf_int.c
+te_log_get_path_LDADD = @XML2_LIBS@ -lyaml
 
 te_logger_SOURCES = logger.c logger_cnf.c logger_cnf_int.c logger_prc.c \
                     te_log_sniffers.c
