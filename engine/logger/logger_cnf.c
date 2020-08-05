@@ -725,9 +725,9 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
         return -1;
     }
 
-    if (enabled == NULL)
+    if (enabled->type != YAML_SCALAR_NODE)
     {
-        ERROR("Run thread: Enabled not specified for thread %s",
+        ERROR("Run thread: Enabled must be a scalar for thread %s",
               ctx.thread_name);
         return -1;
     }
