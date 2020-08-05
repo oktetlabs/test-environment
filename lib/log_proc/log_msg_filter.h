@@ -139,6 +139,15 @@ extern log_filter_result log_msg_filter_check(const log_msg_filter *filter,
                                               const log_msg_view *view);
 
 /**
+ * Compare two filters and check if they're equal.
+ *
+ * @param a             message filter 1
+ * @param b             message filter 2
+ */
+extern te_bool log_msg_filter_equal(const log_msg_filter *a,
+                                    const log_msg_filter *b);
+
+/**
  * Free the memory allocated by the message filter.
  *
  * @param filter        message filter

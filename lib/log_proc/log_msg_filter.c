@@ -403,6 +403,57 @@ log_msg_filter_check(const log_msg_filter *filter, const log_msg_view *view)
     return ((view->level & level_mask) != 0) ? LOG_FILTER_PASS : LOG_FILTER_FAIL;
 }
 
+/* Check entity filters for equality */
+static te_bool
+entity_filter_equal(const log_entity_filter *a, const log_entity_filter *b)
+{
+    log_user_filter *usera;
+    log_user_filter *userb;
+
+    if (a == b)
+        return TRUE;
+
+    if (a->level != b->level ||
+        (a->name != b->name && strcmp(a->name, b->name) != 0))
+        return FALSE;
+
+    for (usera = SLIST_FIRST(&a->users), userb = SLIST_FIRST(&b->users);
+         usera != NULL && userb != NULL;
+         usera = SLIST_NEXT(usera, links), userb = SLIST_NEXT(userb, links))
+    {
+        if (usera->level != userb->level ||
+            (usera->name != userb->name &&
+             strcmp(usera->name, userb->name) != 0))
+            return FALSE;
+    }
+
+    return usera == userb;
+}
+
+/* See description in raw_log_filter.h */
+te_bool
+log_msg_filter_equal(const log_msg_filter *a, const log_msg_filter *b)
+{
+    log_entity_filter *enta;
+    log_entity_filter *entb;
+
+    if (a == b)
+        return TRUE;
+
+    if (!entity_filter_equal(&a->def_entity, &b->def_entity))
+        return FALSE;
+
+    for (enta = SLIST_FIRST(&a->entities), entb = SLIST_FIRST(&b->entities);
+         enta != NULL && entb != NULL;
+         enta = SLIST_NEXT(enta, links), entb = SLIST_NEXT(entb, links))
+    {
+        if (!entity_filter_equal(enta, entb))
+            return FALSE;
+    }
+
+    return enta == entb;
+}
+
 /* See description in raw_log_filter.h */
 void
 log_msg_filter_free(log_msg_filter *filter)
