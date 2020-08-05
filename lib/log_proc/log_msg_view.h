@@ -14,6 +14,7 @@
 
 #include "te_defs.h"
 #include "te_raw_log.h"
+#include "te_string.h"
 #include "te_errno.h"
 
 #ifdef _cplusplus
@@ -49,6 +50,19 @@ typedef struct log_msg_view {
  */
 extern te_errno te_raw_log_parse(const void *buf, size_t buf_len,
                                  log_msg_view *view);
+
+/**
+ * Expand the message's format string.
+ *
+ * The result will be appended to the given te_string.
+ *
+ * @param view      message view
+ * @param target    where the result should be placed
+ *
+ * @returns Status code
+ */
+extern te_errno te_raw_log_expand(const log_msg_view *view,
+                                  te_string *target);
 
 #ifdef __cplusplus
 } /* extern "C" */
