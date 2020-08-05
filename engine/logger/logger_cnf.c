@@ -59,7 +59,7 @@ struct ta_cfg {
  */
 typedef struct thread_context {
     int         argc;
-    char       *argv[RCF_MAX_PARAMS];
+    char       *argv[RCF_MAX_PARAMS + 1];
     const char *thread_name;
     sem_t       args_processed;
 } thread_context;
@@ -363,7 +363,7 @@ startElementLGR(void           *thread_ctx,
             ERROR("Failed to find 'value' attribute in <arg>");
             return;
         }
-        if (ctx->argc >= RCF_MAX_PARAMS - 1)
+        if (ctx->argc >= RCF_MAX_PARAMS)
         {
             ERROR("Too many <arg> elements");
             return;
@@ -769,10 +769,10 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
         }
 
         args_num = args->data.sequence.items.top - args->data.sequence.items.start;
-        if (args_num >= RCF_MAX_PARAMS)
+        if (args_num > RCF_MAX_PARAMS)
         {
             ERROR("Too many arguments (%d while only %d are allowed) for thread %s",
-                  args_num, RCF_MAX_PARAMS - 1, ctx.thread_name);
+                  args_num, RCF_MAX_PARAMS, ctx.thread_name);
             return -1;
         }
 
