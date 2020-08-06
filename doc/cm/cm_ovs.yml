@@ -161,6 +161,20 @@
          Name:  none
          Value: Path to the server socket
 
+    - oid: "/agent/ovs/interface/tunnel_option"
+      access: read_create
+      type: string
+      d: |
+         Tunnel options.
+         Applicable only to tunnel interface types ("vxlan", "geneve", "gre").
+         remote_ip - remote tunnel endpoint;
+         local_ip - the tunnel destination IP that received  packets  must match;
+         in_key - the key that received packets must contain;
+         out_key - the key to be set on outgoing packets;
+
+         Name: one of tunnel options
+         Value: value of corresponding to option format
+
     - oid: "/agent/ovs/bridge"
       access: read_create
       type: string

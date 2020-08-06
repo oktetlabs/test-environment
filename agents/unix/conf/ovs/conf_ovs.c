@@ -52,6 +52,24 @@ typedef struct log_module_s {
     char *level;
 } log_module_t;
 
+typedef enum interface_tunnel_option {
+    INTERFACE_TUNNEL_REMOTE_IP = 0,
+    INTERFACE_TUNNEL_LOCAL_IP,
+    INTERFACE_TUNNEL_IN_KEY,
+    INTERFACE_TUNNEL_OUT_KEY,
+    INTERFACE_TUNNEL_DST_PORT,
+
+    INTERFACE_TUNNEL_END,
+} interface_tunnel_option;
+
+static const char * interface_tunnel_option_names[] = {
+    [INTERFACE_TUNNEL_REMOTE_IP] = "remote_ip",
+    [INTERFACE_TUNNEL_LOCAL_IP] = "local_ip",
+    [INTERFACE_TUNNEL_IN_KEY] = "in_key",
+    [INTERFACE_TUNNEL_OUT_KEY] = "out_key",
+    [INTERFACE_TUNNEL_DST_PORT] = "dst_port",
+};
+
 typedef struct interface_entry {
     /* Links in ovs interfaces list */
     SLIST_ENTRY(interface_entry)  links;
@@ -73,6 +91,7 @@ typedef struct interface_entry {
 
     char                         *dpdk_devargs;
     char                         *vhost_server_path;
+    char                         *tunnel_options[INTERFACE_TUNNEL_END];
 } interface_entry;
 
 typedef SLIST_HEAD(interface_list_t, interface_entry) interface_list_t;
@@ -162,6 +181,8 @@ static const char *log_levels[] = { "EMER", "ERR", "WARN",
 static const char *interface_types[] = { "system", "internal", "dpdk",
                                          "dpdkvhostuserclient", NULL };
 
+static const char *interface_tunnel_types[] = {"gre", "vxlan", "geneve", NULL};
+
 static const char *bridge_datapath_types[] = { "system", "netdev", NULL };
 
 static const char *other_config_types[] = {
@@ -172,6 +193,25 @@ static const char *other_config_types[] = {
 static const char *vlan_types[] = { "trunk", "access", "dot1q-tunnel",
     "native-tagged", "native-untagged", NULL
 };
+
+static te_errno
+ovs_interface_tunnel_option_by_name(const char *name,
+                                    interface_tunnel_option *option)
+{
+    interface_tunnel_option result;
+
+    for (result = 0; result < INTERFACE_TUNNEL_END; result++)
+    {
+        if (strcmp(interface_tunnel_option_names[result], name) == 0)
+        {
+            *option = result;
+            return 0;
+        }
+    }
+
+    ERROR("Failed to find tunnel option with name '%s'", name);
+    return TE_RC(TE_TA_UNIX, TE_ENOENT);
+}
 
 static ovs_ctx_t *
 ovs_ctx_get(const char *ovs)
@@ -486,7 +526,12 @@ fail:
 static void
 ovs_interface_free(interface_entry *interface)
 {
+    unsigned int i;
+
     INFO("Freeing the interface list entry for '%s'", interface->name);
+
+    for (i = 0; i < INTERFACE_TUNNEL_END; i++)
+        free(interface->tunnel_options[i]);
 
     free(interface->vhost_server_path);
     free(interface->dpdk_devargs);
@@ -725,6 +770,38 @@ ovs_cmd_vsctl_append_if_dpdkvhostuserclient(interface_entry *interface,
 }
 
 static te_errno
+ovs_cmd_vsctl_append_if_tunnel(interface_entry *interface,
+                               te_string       *cmdp)
+{
+    unsigned int i;
+    te_errno rc;
+
+    if (interface->tunnel_options[INTERFACE_TUNNEL_REMOTE_IP] == NULL)
+    {
+        ERROR("remote IP is required for tunnel '%s' interface",
+              interface->type);
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    }
+
+    for (i = 0; i < INTERFACE_TUNNEL_END; i++)
+    {
+        if (interface->tunnel_options[i] == NULL)
+            continue;
+
+        rc = te_string_append(cmdp, " options:%s=%s",
+                              interface_tunnel_option_names[i],
+                              interface->tunnel_options[i]);
+        if (rc != 0)
+        {
+            ERROR("Failed to append option '%s'", interface->tunnel_options[i]);
+            return rc;
+        }
+    }
+
+    return 0;
+}
+
+static te_errno
 ovs_cmd_vsctl_append_interface_arguments(interface_entry *interface,
                                          te_string       *cmdp,
                                          ovs_ctx_t       *ctx)
@@ -747,6 +824,8 @@ ovs_cmd_vsctl_append_interface_arguments(interface_entry *interface,
         rc = ovs_cmd_vsctl_append_if_dpdk(interface, cmdp, ctx);
     else if (strcmp(interface->type, "dpdkvhostuserclient") == 0)
         rc = ovs_cmd_vsctl_append_if_dpdkvhostuserclient(interface, cmdp, ctx);
+    else if (ovs_value_is_valid(interface_tunnel_types, interface->type))
+        rc = ovs_cmd_vsctl_append_if_tunnel(interface, cmdp);
 
     if (rc != 0)
     {
@@ -2277,6 +2356,143 @@ ovs_interface_dpdk_devargs_set(unsigned int  gid,
 }
 
 static te_errno
+ovs_interface_tunnel_option_get(unsigned int  gid,
+                                const char   *oid,
+                                char         *value,
+                                const char   *ovs,
+                                const char   *interface_name,
+                                const char   *option_name)
+{
+    interface_tunnel_option option;
+    interface_entry *interface;
+    ovs_ctx_t *ctx;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ovs_interface_tunnel_option_by_name(option_name, &option);
+    if (rc != 0)
+        return rc;
+
+    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the interface entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    te_strlcpy(value, te_str_empty_if_null(interface->tunnel_options[option]),
+               RCF_MAX_VAL);
+
+    return 0;
+}
+
+static te_errno
+ovs_interface_tunnel_option_add(unsigned int  gid,
+                                const char   *oid,
+                                char         *value,
+                                const char   *ovs,
+                                const char   *interface_name,
+                                const char   *option_name)
+{
+    interface_tunnel_option option;
+    interface_entry *interface;
+    ovs_ctx_t *ctx;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ovs_interface_tunnel_option_by_name(option_name, &option);
+    if (rc != 0)
+        return rc;
+
+    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the interface entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    return string_replace(&interface->tunnel_options[option], value);
+}
+
+static te_errno
+ovs_interface_tunnel_option_del(unsigned int  gid,
+                                const char   *oid,
+                                const char   *ovs,
+                                const char   *interface_name,
+                                const char   *option_name)
+{
+    interface_tunnel_option option;
+    interface_entry *interface;
+    ovs_ctx_t *ctx;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    rc = ovs_interface_tunnel_option_by_name(option_name, &option);
+    if (rc != 0)
+        return rc;
+
+    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the interface entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    return string_replace(&interface->tunnel_options[option], NULL);
+}
+
+static te_errno
+ovs_interface_tunnel_option_list(unsigned int  gid,
+                                 const char   *oid,
+                                 const char   *sub_id,
+                                 char        **list,
+                                 const char   *ovs,
+                                 const char   *interface_name)
+{
+    te_string        list_container = TE_STRING_INIT;
+    interface_entry *interface;
+    ovs_ctx_t       *ctx;
+    te_errno         rc;
+    unsigned int     i;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(sub_id);
+
+    rc = ovs_interface_pick(ovs, interface_name, FALSE, &ctx, &interface);
+    if (rc != 0)
+    {
+        ERROR("Failed to pick the interface entry");
+        return TE_RC(TE_TA_UNIX, rc);
+    }
+
+    for (i = 0; i < INTERFACE_TUNNEL_END; i++)
+    {
+        if (interface->tunnel_options[i] == NULL)
+            continue;
+
+        rc = te_string_append(&list_container, "%s ",
+                              interface_tunnel_option_names[i]);
+        if (rc != 0)
+        {
+            ERROR("Failed to construct the list");
+            te_string_free(&list_container);
+            return rc;
+        }
+    }
+
+    *list = list_container.ptr;
+
+    return 0;
+}
+
+static te_errno
 ovs_interface_vhost_server_path_get(unsigned int  gid,
                                     const char   *oid,
                                     char         *value,
@@ -2675,7 +2891,8 @@ ovs_interface_add(unsigned int  gid,
 
     if (value[0] != '\0')
     {
-        if (!ovs_value_is_valid(interface_types, value))
+        if (!ovs_value_is_valid(interface_types, value) &&
+            !ovs_value_is_valid(interface_tunnel_types, value))
         {
             ERROR("The interface type is unsupported");
             return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
@@ -2768,7 +2985,8 @@ ovs_interface_set(unsigned int  gid,
         return TE_RC(TE_TA_UNIX, rc);
     }
 
-    if (!ovs_value_is_valid(interface_types, value))
+    if (!ovs_value_is_valid(interface_types, value) &&
+        !ovs_value_is_valid(interface_tunnel_types, value))
     {
         ERROR("The interface type is unsupported");
         return TE_RC(TE_TA_UNIX, TE_EOPNOTSUPP);
@@ -3658,8 +3876,15 @@ RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_bridge, "bridge",
                                ovs_bridge_add, ovs_bridge_del,
                                ovs_bridge_list, NULL);
 
-RCF_PCH_CFG_NODE_RW(node_ovs_interface_dpdk_devargs, "dpdk_devargs",
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_ovs_interface_tunnel_options, "tunnel_option",
                     NULL, NULL,
+                    ovs_interface_tunnel_option_get, NULL,
+                    ovs_interface_tunnel_option_add,
+                    ovs_interface_tunnel_option_del,
+                    ovs_interface_tunnel_option_list, NULL);
+
+RCF_PCH_CFG_NODE_RW(node_ovs_interface_dpdk_devargs, "dpdk_devargs",
+                    NULL, &node_ovs_interface_tunnel_options,
                     ovs_interface_dpdk_devargs_get,
                     ovs_interface_dpdk_devargs_set);
 
