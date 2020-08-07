@@ -19,6 +19,8 @@
 #include "te_exec_child.h"
 #include "te_sleep.h"
 #include "te_string.h"
+#include "te_vector.h"
+#include "te_file.h"
 
 #include "rpc_server.h"
 #include "te_errno.h"
@@ -116,6 +118,38 @@ typedef struct channel_t {
 
 typedef LIST_HEAD(job_list, job_t) job_list;
 
+/**
+ * note: New priority values must be added between
+ * WRAPPER_PRIORITY_MIN and WRAPPER_PRIORITY_MAX.
+ */
+typedef enum  {
+    /**
+     * This is a service item. Indicates the minimum
+     * value in this enum.
+     */
+    WRAPPER_PRIORITY_MIN,
+
+    WRAPPER_PRIORITY_LOW,
+    WRAPPER_PRIORITY_DEFAULT,
+    WRAPPER_PRIORITY_HIGH,
+
+    /**
+     * This is a service item. Indicates the maxixmum
+     * value in this enum.
+     */
+    WRAPPER_PRIORITY_MAX
+} wrapper_priority;
+
+typedef struct wrapper_t {
+    LIST_ENTRY(wrapper_t) next;
+
+    unsigned int id;
+
+    char *tool;
+    char **argv;
+    wrapper_priority priority;
+} wrapper_t;
+
 typedef struct job_t {
     LIST_ENTRY(job_t) next;
 
@@ -134,6 +168,8 @@ typedef struct job_t {
     char *tool;
     char **argv;
     char **env;
+
+    LIST_HEAD(wrapper_list, wrapper_t) wrappers;
 } job_t;
 
 #define CTRL_PIPE_INITIALIZER {-1, -1}
@@ -725,6 +761,7 @@ job_alloc(const char *spawner, const char *tool, char **argv,
     result->env = env;
     result->n_out_channels = 0;
     result->n_in_channels = 0;
+    LIST_INIT(&result->wrappers);
 
     *job = result;
 
@@ -1241,6 +1278,60 @@ close_valid(int fd)
 }
 
 static te_errno
+job_build_tool_and_args(char **tool, te_vec *args, job_t *job)
+{
+    char *end_arg = NULL;
+    te_errno rc;
+    size_t j;
+    wrapper_t *wrap;
+    wrapper_priority i;
+
+    if (!LIST_EMPTY(&job->wrappers))
+    {
+        for (i = WRAPPER_PRIORITY_MAX - 1; i > WRAPPER_PRIORITY_MIN; i--)
+        {
+            LIST_FOREACH(wrap, &job->wrappers, next)
+            {
+                if (wrap->priority != i)
+                    continue;
+                if (*tool == NULL)
+                {
+                    *tool = wrap->tool;
+                }
+
+                rc = te_vec_append_str_fmt(args, "%s", wrap->tool);
+                if (rc != 0)
+                    return rc;
+
+                for (j = 1; wrap->argv != NULL && wrap->argv[j] != NULL; j++)
+                {
+                    rc = te_vec_append_str_fmt(args, "%s", wrap->argv[j]);
+                    if (rc != 0)
+                        return rc;
+                }
+            }
+        }
+    }
+    else
+    {
+        *tool = job->tool;
+    }
+
+    rc = te_vec_append_str_fmt(args, "%s", job->tool);
+    if (rc != 0)
+        return rc;
+
+    for (j = 1; job->argv != NULL && job->argv[j] != NULL; j++)
+    {
+        rc = te_vec_append_str_fmt(args, "%s", job->argv[j]);
+        if (rc != 0)
+            return rc;
+    }
+
+    return TE_VEC_APPEND_RVALUE(args, char *, end_arg);
+}
+
+static te_errno
 job_start(unsigned int id)
 {
     te_errno rc;
@@ -1256,6 +1347,8 @@ job_start(unsigned int id)
                           MAX_INPUT_CHANNELS_PER_JOB];
     size_t n_descrs_to_abandon = 0;
     size_t i;
+    char *tool = NULL;
+    te_vec args = TE_VEC_INIT(char *);
 
     job = get_job(id);
     if (job == NULL)
@@ -1282,9 +1375,19 @@ job_start(unsigned int id)
     if (job->n_in_channels < 1)
         stdin_fd_p = TE_EXEC_CHILD_DEV_NULL_FD;
 
+    rc = job_build_tool_and_args(&tool, &args, job);
+    if (rc != 0)
+    {
+        ERROR("Failed to build command line, rc = %r", rc);
+        te_vec_deep_free(&args);
+        return rc;
+    }
+
     // TODO: use spawner method
-    if ((pid = te_exec_child(job->tool, job->argv, job->env, -1, stdin_fd_p,
-                             stdout_fd_p, stderr_fd_p)) < 0)
+    pid = te_exec_child(tool, (char **)args.data.ptr, job->env,
+                        -1, stdin_fd_p, stdout_fd_p, stderr_fd_p);
+    te_vec_deep_free(&args);
+    if (pid < 0)
     {
         ERROR("Exec child failure\n");
         return te_rc_os2te(errno);
@@ -1963,11 +2066,26 @@ job_stop(unsigned int job_id, int signo, int term_timeout_ms)
     return rc;
 }
 
+static void
+job_wrapper_dealloc(wrapper_t *wrap)
+{
+    unsigned int i;
+
+    for (i = 0; wrap->argv != NULL && wrap->argv[i] != NULL; i++)
+        free(wrap->argv[i]);
+    free(wrap->argv);
+
+    free(wrap->tool);
+    free(wrap);
+
+}
+
 static te_errno
 job_destroy(unsigned int job_id, int term_timeout_ms)
 {
     unsigned int i;
     job_t *job;
+    wrapper_t *wrapper;
 
     job = get_job(job_id);
     if (job == NULL)
@@ -1991,8 +2109,163 @@ job_destroy(unsigned int job_id, int term_timeout_ms)
 
     pthread_mutex_unlock(&channels_lock);
 
+    while (wrapper = LIST_FIRST(&job->wrappers))
+    {
+        LIST_REMOVE(wrapper, next);
+        job_wrapper_dealloc(wrapper);
+    }
+
     job_dealloc(job);
 
+    return 0;
+}
+
+static te_errno
+tarpc_job_wrapper_priority2wrapper_priority(
+                             const tarpc_job_wrapper_priority *from,
+                             wrapper_priority *to)
+{
+    switch(*from)
+    {
+        case TARPC_JOB_WRAPPER_PRIORITY_LOW:
+            *to = WRAPPER_PRIORITY_LOW;
+            break;
+
+        case TARPC_JOB_WRAPPER_PRIORITY_DEFAULT:
+            *to = WRAPPER_PRIORITY_DEFAULT;
+            break;
+
+        case TARPC_JOB_WRAPPER_PRIORITY_HIGH:
+            *to = WRAPPER_PRIORITY_HIGH;
+            break;
+
+        default:
+            ERROR("Priority value is not supported");
+            return TE_EFAIL;
+    }
+
+    return 0;
+}
+
+static te_errno
+job_wrapper_alloc(const char *tool, char **argv,
+                  tarpc_job_wrapper_priority priority, wrapper_t **wrap)
+{
+    te_errno rc;
+    wrapper_t *wrapper;
+
+    if (tool == NULL)
+    {
+        ERROR("Failed to allocate a wrapper: path to a tool is not specified");
+        return TE_ENOENT;
+    }
+
+    wrapper = calloc(1, sizeof(*wrapper));
+
+    if (wrapper == NULL)
+    {
+        ERROR("Wrapper allocation failed");
+        return TE_ENOMEM;
+    }
+
+    wrapper->tool = strdup(tool);
+    if (wrapper->tool == NULL)
+    {
+        ERROR("Wrapper tool allocation failed");
+        free(wrapper);
+        return TE_ENOMEM;
+    }
+
+    wrapper->argv = argv;
+    rc = tarpc_job_wrapper_priority2wrapper_priority(&priority,
+                                                     &wrapper->priority);
+    if (rc != 0)
+    {
+        free(wrapper);
+        return rc;
+    }
+
+    *wrap = wrapper;
+
+    return 0;
+}
+
+static te_errno
+job_wrapper_append(wrapper_t *wrap, job_t *job)
+{
+    unsigned int created_wrap_id;
+
+    if (LIST_EMPTY(&job->wrappers))
+        created_wrap_id = 0;
+    else
+        created_wrap_id = LIST_FIRST(&job->wrappers)->id + 1;
+
+    wrap->id = created_wrap_id;
+
+    LIST_INSERT_HEAD(&job->wrappers, wrap, next);
+    return 0;
+}
+
+static te_errno
+job_wrapper_add(const char *tool, char **argv, unsigned int job_id,
+                tarpc_job_wrapper_priority priority,
+                unsigned int *wrap_id)
+{
+    te_errno rc;
+    wrapper_t *wrap;
+    job_t *job;
+
+    rc = te_file_check_executable(tool);
+    if (rc != 0)
+        return rc;
+
+    job = get_job(job_id);
+    if (job == NULL)
+        return TE_EINVAL;
+
+    if (job->pid != (pid_t)-1)
+    {
+        ERROR("Failed to allocate a wrapper: Job has been started.");
+        return TE_EPERM;
+    }
+
+    rc = job_wrapper_alloc(tool, argv, priority, &wrap);
+    if (rc != 0)
+        return rc;
+
+    rc = job_wrapper_append(wrap, job);
+    if (rc != 0)
+    {
+        job_wrapper_dealloc(wrap);
+        return rc;
+    }
+
+    if (wrap_id != NULL)
+        *wrap_id = wrap->id;
+
+    return 0;
+}
+
+static te_errno
+job_wrapper_delete(unsigned int job_id, unsigned int wrapper_id)
+{
+    wrapper_t *wrapper;
+    job_t *job;
+
+    job = get_job(job_id);
+    if (job == NULL)
+        return TE_EINVAL;
+
+    for (wrapper = LIST_FIRST(&job->wrappers);
+         wrapper != NULL; wrapper = LIST_NEXT(wrapper, next))
+    {
+        if (wrapper->id == wrapper_id)
+        {
+            LIST_REMOVE(wrapper, next);
+            job_wrapper_dealloc(wrapper);
+            break;
+        }
+    }
     return 0;
 }
 
@@ -2138,4 +2411,43 @@ TARPC_FUNC_STATIC(job_destroy, {},
 {
     MAKE_CALL(out->retval = func(in->job_id, in->term_timeout_ms));
     out->common.errno_changed = FALSE;
+})
+
+TARPC_FUNC_STATIC(job_wrapper_add, {},
+{
+    char **argv = NULL;
+    unsigned int i;
+
+    if (in->argv.argv_len != 0)
+    {
+        argv = calloc(in->argv.argv_len, sizeof(*argv));
+        if (argv == NULL)
+            goto err;
+
+        for (i = 0; i < in->argv.argv_len - 1; ++i)
+        {
+            argv[i] = strdup(in->argv.argv_val[i].str.str_val);
+            if (argv[i] == NULL)
+                goto err;
+        }
+    }
+
+    MAKE_CALL(out->retval = func(in->tool, argv, in->job_id,
+                                 in->priority, &out->wrapper_id));
+    out->common.errno_changed = FALSE;
+    goto done;
+
+err:
+    out->common._errno = TE_RC(TE_RPCS, TE_ENOMEM);
+    out->retval = -out->common._errno;
+    for (i = 0; argv != NULL && argv[i] != NULL; i++)
+        free(argv[i]);
+    free(argv);
+done:
+    ;
+})
+
+TARPC_FUNC_STATIC(job_wrapper_delete, {},
+{
+    MAKE_CALL(out->retval = func(in->job_id, in->wrapper_id));
 })

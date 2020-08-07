@@ -253,6 +253,36 @@ extern int rpc_job_stop(rcf_rpc_server *rpcs, unsigned int job_id,
 extern int rpc_job_destroy(rcf_rpc_server *rpcs, unsigned int job_id,
                            int term_timeout_ms);
 
+/**
+ * Add a wrapper for the specified job.
+ *
+ * @param[in] rpcs        RPC server
+ * @param[in] job_id      Job instance handle
+ * @param[in] tool        Path to the wrapper tool
+ * @param[in] argv        Wrapper arguments (last item is @c NULL)
+ * @param[in] priority    Wrapper priority
+ * @param[out] wrapper_id Wrapper handle
+ *
+ * @return                Status code
+ */
+extern int rpc_job_wrapper_add(rcf_rpc_server *rpcs,
+                               unsigned int job_id,
+                               const char *tool, const char **argv,
+                               tarpc_job_wrapper_priority priority,
+                               unsigned int *wrapper_id);
+
+/**
+ * Delete the wrapper instance handle.
+ *
+ * @param rpcs       RPC server
+ * @param wrapper_id Wrapper instance handle
+ *
+ * @return           Status code
+ */
+extern int rpc_job_wrapper_delete(rcf_rpc_server *rpcs,
+                                  unsigned int job_id,
+                                  unsigned int wrapper_id);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

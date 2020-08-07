@@ -48,6 +48,11 @@ struct tapi_job_t {
     channel_entry_list channel_entries;
 };
 
+struct tapi_job_wrapper_t {
+    tapi_job_t *job;
+    unsigned int id;
+};
+
 /* List of all jobs */
 typedef SLIST_HEAD(job_list, tapi_job_t) job_list;
 
@@ -818,6 +823,82 @@ tapi_job_destroy(tapi_job_t *job, int term_timeout_ms)
 
     SLIST_REMOVE(&all_jobs, job, tapi_job_t, next);
     free(job);
+
+    return 0;
+}
+
+static te_errno
+tapi_job_wrapper_priority2tarpc_job_wrapper_priority(
+                                const tapi_job_wrapper_priority_t *from,
+                                tarpc_job_wrapper_priority *to)
+{
+    switch(*from)
+    {
+        case TAPI_JOB_WRAPPER_PRIORITY_LOW:
+            *to = TARPC_JOB_WRAPPER_PRIORITY_LOW;
+            break;
+
+        case TAPI_JOB_WRAPPER_PRIORITY_DEFAULT:
+            *to = TARPC_JOB_WRAPPER_PRIORITY_DEFAULT;
+            break;
+
+        case TAPI_JOB_WRAPPER_PRIORITY_HIGH:
+            *to = TARPC_JOB_WRAPPER_PRIORITY_HIGH;
+            break;
+
+        default:
+            ERROR("Priority value is not supported");
+            return TE_EFAIL;
+    }
+
+    return 0;
+}
+
+/* See description in tapi_job.h */
+te_errno
+tapi_job_wrapper_add(tapi_job_t *job, const char *tool, char **argv,
+                     tapi_job_wrapper_priority_t priority,
+                     tapi_job_wrapper_t **wrap)
+{
+    te_errno rc;
+    tapi_job_wrapper_t *wrapper;
+    tarpc_job_wrapper_priority p;
+
+    rc = tapi_job_wrapper_priority2tarpc_job_wrapper_priority(&priority,
+                                                              &p);
+    if (rc != 0)
+        return rc;
+
+    wrapper = tapi_calloc(1, sizeof(*wrapper));
+    rc = rpc_job_wrapper_add(job->rpcs, job->id, tool,
+                             argv, priority, &wrapper->id);
+    if (rc != 0)
+    {
+        free(wrapper);
+        return rc;
+    }
+
+    wrapper->job = job;
+
+    *wrap = wrapper;
+    return 0;
+}
+
+/* See description in tapi_job.h */
+te_errno
+tapi_job_wrapper_delete(tapi_job_wrapper_t *wrapper)
+{
+    te_errno rc;
+
+    if (wrapper == NULL)
+        return 0;
+
+    rc = rpc_job_wrapper_delete(wrapper->job->rpcs, wrapper->job->id,
+                                wrapper->id);
+    if (rc != 0)
+        return rc;
+
+    free(wrapper);
 
     return 0;
 }

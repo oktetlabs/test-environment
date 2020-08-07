@@ -238,6 +238,43 @@ struct tarpc_job_destroy_out {
     tarpc_int retval;
 };
 
+enum tarpc_job_wrapper_priority {
+    TARPC_JOB_WRAPPER_PRIORITY_LOW,
+    TARPC_JOB_WRAPPER_PRIORITY_DEFAULT,
+    TARPC_JOB_WRAPPER_PRIORITY_HIGH
+};
+
+/* job_wrapper_add() */
+struct tarpc_job_wrapper_add_in {
+    struct tarpc_in_arg common;
+
+    tarpc_uint job_id;
+    string tool<>;
+    tarpc_char_array argv<>;
+    tarpc_job_wrapper_priority priority;
+};
+
+struct tarpc_job_wrapper_add_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+    tarpc_uint wrapper_id;
+};
+
+/* job_wrapper_delete() */
+struct tarpc_job_wrapper_delete_in {
+    struct tarpc_in_arg common;
+
+    tarpc_uint job_id;
+    tarpc_uint wrapper_id;
+};
+
+struct tarpc_job_wrapper_delete_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+};
+
 program job
 {
     version ver0
@@ -256,5 +293,7 @@ program job
         RPC_DEF(job_wait)
         RPC_DEF(job_stop)
         RPC_DEF(job_destroy)
+        RPC_DEF(job_wrapper_add)
+        RPC_DEF(job_wrapper_delete)
     } = 1;
 } = 2;

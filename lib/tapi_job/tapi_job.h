@@ -34,6 +34,11 @@ typedef struct tapi_job_factory_t tapi_job_factory_t;
 typedef struct tapi_job_t tapi_job_t;
 
 /**
+ * An opaque type to represent wrapper instances
+ */
+typedef struct tapi_job_wrapper_t tapi_job_wrapper_t;
+
+/**
  * Job channel handle
  */
 typedef struct tapi_job_channel_t tapi_job_channel_t;
@@ -530,6 +535,56 @@ extern te_errno tapi_job_stop(tapi_job_t *job, int signo, int term_timeout_ms);
  * @return        Status code
  */
 extern te_errno tapi_job_destroy(tapi_job_t *job, int term_timeout_ms);
+
+/**
+ * Wrappers priority level
+ */
+typedef enum {
+    TAPI_JOB_WRAPPER_PRIORITY_LOW = 0, /**< The wrapper will be added to the
+                                            rigth of default level according to
+                                            the priority level. */
+    TAPI_JOB_WRAPPER_PRIORITY_DEFAULT, /**< The Wrappers will be
+                                            added to the main tool from right
+                                            to left according to the priority level. */
+    TAPI_JOB_WRAPPER_PRIORITY_HIGH     /**< The wrapper will be added to the
+                                            rigth of default level according to
+                                            the priority level. */
+} tapi_job_wrapper_priority_t;
+
+/**
+ * Add a wrapper for the specified job. We can only add a wrapper
+ * to a job that hasn't started yet.
+ *
+ * @note The wrapper must be added after the job is created.
+ *
+ * @note We can call this function several times. Wrappers will be
+ *       added to the main tool from right to left according to the
+ *       priority level.
+ *
+ * @param[in]  job      Job instance handle
+ * @param[in]  tool     Path to the wrapper tool.
+ * @param[in]  argv     Wrapper arguments (last item is @c NULL)
+ * @param[in]  priority Wrapper priority.
+ * @param[out] wrap     Wrapper instance handle
+ *
+ * @return         Status code
+ */
+extern te_errno tapi_job_wrapper_add(tapi_job_t *job, const char *tool,
+                                     char **argv,
+                                     tapi_job_wrapper_priority_t priority,
+                                     tapi_job_wrapper_t **wrap);
+
+/**
+ * Delete the wrapper instance handle.
+ *
+ * @note There is no necessity to delete wrappers before job destruction.
+ *       All wrappers are removed automatically together with the job.
+ *
+ * @param wrapper Wrapper instance handle
+ *
+ * @return        Status code
+ */
+extern te_errno tapi_job_wrapper_delete(tapi_job_wrapper_t *wrapper);
 
 /**
  * @page tapi-job-factory Creating tapi_job_t instances

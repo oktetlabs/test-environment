@@ -525,3 +525,85 @@ rpc_job_destroy(rcf_rpc_server *rpcs, unsigned int job_id, int term_timeout_ms)
 
     RETVAL_INT(job_destroy, out.retval);
 }
+
+int
+rpc_job_wrapper_add(rcf_rpc_server *rpcs, unsigned int job_id,
+                    const char *tool, const char **argv,
+                    tarpc_job_wrapper_priority priority,
+                    unsigned int *wrapper_id)
+{
+    tarpc_job_wrapper_add_in  in;
+    tarpc_job_wrapper_add_out out;
+    te_log_buf *tlbp_argv;
+    size_t len;
+    size_t i;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (argv != NULL)
+    {
+        len = 1;
+        for (i = 0; argv[i] != NULL; i++)
+            len++;
+
+        in.argv.argv_len = len;
+        in.argv.argv_val = tapi_calloc(len, sizeof(*in.argv.argv_val));
+
+        for (i = 0; i < len - 1; i++)
+        {
+            in.argv.argv_val[i].str.str_val = tapi_strdup(argv[i]);
+            in.argv.argv_val[i].str.str_len = strlen(argv[i]) + 1;
+        }
+    }
+
+    if (tool != NULL)
+        in.tool = tapi_strdup(tool);
+
+    in.job_id = job_id;
+    in.priority = priority;
+
+    rcf_rpc_call(rpcs, "job_wrapper_add", &in, &out);
+    CHECK_RPC_ERRNO_UNCHANGED(job_wrapper_add, out.retval);
+
+    tlbp_argv = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, job_wrapper_add, "%s, {%s}", "%r",
+                 in.tool,
+                 te_args2log_buf(tlbp_argv, in.argv.argv_len - 1,
+                                 (const char **)argv),
+                 out.retval);
+    te_log_buf_free(tlbp_argv);
+
+    if (in.argv.argv_val != NULL)
+    {
+        for (i = 0; i < in.argv.argv_len; i++)
+            free(in.argv.argv_val[i].str.str_val);
+        free(in.argv.argv_val);
+    }
+    free(in.tool);
+
+    if (out.retval == 0)
+        *wrapper_id = out.wrapper_id;
+
+    RETVAL_INT(job_wrapper_add, out.retval);
+}
+
+int
+rpc_job_wrapper_delete(rcf_rpc_server *rpcs, unsigned int job_id,
+                       unsigned int wrapper_id)
+{
+    tarpc_job_wrapper_delete_in  in;
+    tarpc_job_wrapper_delete_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.wrapper_id = wrapper_id;
+    in.job_id = job_id;
+
+    rcf_rpc_call(rpcs, "job_wrapper_delete", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, job_wrapper_delete, "%u", "%r",
+                 in.wrapper_id, out.retval);
+    RETVAL_INT(job_wrapper_delete, out.retval);
+}
