@@ -2362,7 +2362,7 @@ ovs_interface_mtu_get(unsigned int  gid,
             return TE_RC(TE_TA_UNIX, rc);
         }
 
-        te_strlcpy(value, resp, RCF_MAX_VAL);
+        te_strlcpy(value, (strcmp(resp, "[]") == 0) ? "0" : resp, RCF_MAX_VAL);
         free(resp);
     }
     else
