@@ -125,6 +125,19 @@ extern FILE *te_fopen_fmt(const char *mode, const char *path_fmt, ...)
  */
 extern pid_t te_file_read_pid(const char *pid_path);
 
+/**
+ * Check that the file is executable
+ *
+ * @note If @p path does't contains '/' then @p path is concatenated with
+ *       the environment variable PATH. Otherwise, we are looking for a
+ *       file from the current location
+ *
+ * @param path Path to the file
+ *
+ * @return Status code
+ */
+extern te_errno te_file_check_executable(const char *path);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
