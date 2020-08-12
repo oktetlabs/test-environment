@@ -110,6 +110,7 @@ static char rsrc[RCF_MAX_VAL];
 static te_errno
 aggr_interface_get_free(const char *format, char ifname[IFNAMSIZ])
 {
+    te_bool shared = FALSE;
     int  i;
 
     for (i = 0; i < INT_MAX ; i++)
@@ -117,8 +118,11 @@ aggr_interface_get_free(const char *format, char ifname[IFNAMSIZ])
         snprintf(ifname, IFNAMSIZ, format, i);
         snprintf(rsrc, RCF_MAX_VAL, "/agent:%s/interface:%s",
                  ta_name, ifname);
-        if (if_nametoindex(ifname) == 0 && ta_rsrc_create_lock(rsrc) == 0)
+        if (if_nametoindex(ifname) == 0 &&
+            ta_rsrc_create_lock(rsrc, &shared, FALSE, 0) == 0)
+        {
             break;
+        }
     }
     if (i == INT_MAX)
     {

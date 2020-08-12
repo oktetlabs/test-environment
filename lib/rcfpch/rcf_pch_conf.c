@@ -1814,8 +1814,10 @@ ta_rsrc_create_lock(const char *name, te_bool *shared,
  * @param name     resource name
  */
 void
-ta_rsrc_delete_lock(const char *name, te_bool shared)
+ta_rsrc_delete_lock(const char *name)
 {
+    te_bool shared = FALSE;
+
     ta_rsrc_update_lock(name, &shared, FALSE, getpid(), FALSE, 0);
 }
 #endif /* !__CYGWIN__ */
@@ -2029,7 +2031,7 @@ rsrc_set(unsigned int gid, const char *oid, const char *value,
         if ((rc = info->grab(value)) != 0)
         {
 #ifndef __CYGWIN__
-            ta_rsrc_delete_lock(value, tmp->shared);
+            ta_rsrc_delete_lock(value);
 #endif
             free(name_to_set);
             return rc;
@@ -2038,7 +2040,7 @@ rsrc_set(unsigned int gid, const char *oid, const char *value,
     else
     {
 #ifndef __CYGWIN__
-        ta_rsrc_delete_lock(tmp->name, tmp->shared);
+        ta_rsrc_delete_lock(tmp->name);
 #endif
         rc = info->release(tmp->name);
         if (rc != 0)
@@ -2096,7 +2098,7 @@ rsrc_del(unsigned int gid, const char *oid, const char *id)
                     return rc;
 
 #ifndef __CYGWIN__
-                ta_rsrc_delete_lock(cur->name, cur->shared);
+                ta_rsrc_delete_lock(cur->name);
 #endif
             }
 

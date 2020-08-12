@@ -437,11 +437,21 @@ extern int ta_rt_parse_obj(ta_cfg_obj_t *obj, ta_rt_info_t *rt_info);
 /*
  * Create a lock for the resource with specified name.
  *
- * @param name     resource name
+ * @param name                  resource name
+ * @param shared[inout]         create lock in shared (@c TRUE) or exclusive
+ *                              (@c FALSE) mode. On success contains actual
+ *                              mode of the acquired lock.
+ * @param fallback_shared       Should the attempt to acquire lock in shared
+ *                              mode be taken after unsuccessful attempts
+ *                              to acquire the lock in exclusive mode time out.
+ * @param attempts_timeout_ms   Timeout of attempts to acquire the lock in
+ *                              milliseconds.
  *
  * @return Status code
  */
-extern te_errno ta_rsrc_create_lock(const char *name);
+extern te_errno ta_rsrc_create_lock(const char *name, te_bool *shared,
+                                    te_bool fallback_shared,
+                                    unsigned int attempts_timeout_ms);
 
 /*
  * Delete a lock for the resource with specified name.
