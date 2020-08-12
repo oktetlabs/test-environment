@@ -109,6 +109,15 @@ typedef uint64_t tester_flags;
  */
 #define TESTER_PRERUN                 (1LLU << 32)
 
+/**
+ * If any of these flags are set, tester stops at
+ * the first test producing result not matching them
+ */
+#define TESTER_RUN_WHILE_PASSED       (1LLU << 33)
+#define TESTER_RUN_WHILE_FAILED       (1LLU << 34)
+#define TESTER_RUN_WHILE_EXPECTED     (1LLU << 35)
+#define TESTER_RUN_WHILE_UNEXPECTED   (1LLU << 36)
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

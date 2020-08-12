@@ -193,6 +193,8 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         TESTER_OPT_VALGRIND,
         TESTER_OPT_GDB,
 
+        TESTER_OPT_RUN_WHILE,
+
         TESTER_OPT_MIX,
         TESTER_OPT_MIX_VALUES,
         TESTER_OPT_MIX_ARGS,
@@ -302,6 +304,10 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         { "gdb", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_GDB,
           "Run test scripts under specified path using gdb.",
           "<testpath>" },
+
+        { "run-while", '\0', POPT_ARG_STRING, NULL, TESTER_OPT_RUN_WHILE,
+          "Run tests while they produce a given result.",
+          "passed|failed|expected|unexpected"},
 
 #if 0
         { "mix", '\0', POPT_ARG_STRING, NULL,
@@ -551,7 +557,49 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
                 }
                 break;
             }
+            case TESTER_OPT_RUN_WHILE:
+            {
+                const char *s = poptGetOptArg(optCon);
 
+                if (strcmp(s, "passed") == 0)
+                {
+                    global->flags |= TESTER_RUN_WHILE_PASSED;
+                }
+                else if (strcmp(s, "failed") == 0)
+                {
+                    global->flags |= TESTER_RUN_WHILE_FAILED;
+                }
+                else if (strcmp(s, "expected") == 0)
+                {
+#if WITH_TRC
+                    global->flags |= TESTER_RUN_WHILE_EXPECTED;
+#else
+                    ERROR("Using --run-while=expected "
+                          "without enabled TRC");
+                    poptFreeContext(optCon);
+                    return TE_RC(TE_TESTER, TE_EINVAL);
+#endif
+                }
+                else if (strcmp(s, "unexpected") == 0)
+                {
+#if WITH_TRC
+                    global->flags |= TESTER_RUN_WHILE_UNEXPECTED;
+#else
+                    ERROR("Using --run-while=unexpected "
+                          "without enabled TRC");
+                    poptFreeContext(optCon);
+                    return TE_RC(TE_TESTER, TE_EINVAL);
+#endif
+                }
+                else
+                {
+                    ERROR("--run-while=%s is unknown", s);
+                    poptFreeContext(optCon);
+                    return TE_RC(TE_TESTER, TE_EINVAL);
+                }
+
+                break;
+            }
             case TESTER_OPT_REQ:
                 rc = tester_new_target_reqs(&global->targets,
                                             poptGetOptArg(optCon));

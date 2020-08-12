@@ -181,6 +181,15 @@ Generic options:
   --tester-out-expected         If result is expected (in accordance with TRC),
                                 output the result together with OK
   --tester-interactive          Interactive ask user for tests to run.
+  --tester-run-while=<result>   Continue testing as long as tests produce results matching a given value
+                                - passed (stop test if obtained result
+                                  is not PASSED)
+                                - failed (stop test if obtained result
+                                  is not FAILED)
+                                - expected (stop test if obtained result
+                                  is not the one that declared in TRC)
+                                - unexpected (stop test if obtained
+                                  result is the one that declared in TRC)
 
   --test-sigusr2-verdict        Handle the SIGUSR2 signal in test and stop it by TEST_VERDICT.
                                 By default the SIGUSR2 handled like SIGINT, it stops testing.
