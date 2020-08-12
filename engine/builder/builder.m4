@@ -391,7 +391,7 @@ dnl
 define([TE_TA_APP],
 [[
 APPNAME="$1"
-case "$APPAME" in
+case "$APPNAME" in
      [^a-zA-Z]*)
         TS_BS_CONF_ERR="application name does not start with a letter" ;
         break ;
