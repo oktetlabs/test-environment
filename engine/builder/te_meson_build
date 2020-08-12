@@ -963,7 +963,7 @@ build_platform() {
         te_eval_or_ssh "${p}" \
             "${ws}/src/engine/builder/te_rcf_consistency_checks \
                 --extfiles-del \"${ws}/build/\" ;
-            echo \"${TE_RCF_CONSISTENCY_CHECKS_EXT_FILES}\" |
+            echo \"${TE_RCF_CONSISTENCY_CHECKS_EXT_FILES}\" | sed \"s/ /\n/g\" |
                 ${ws}/src/engine/builder/te_rcf_consistency_checks \
                     --extfiles-add \"${ws}/build/\""
     fi

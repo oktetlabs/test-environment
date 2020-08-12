@@ -131,9 +131,14 @@ te_eval_or_ssh() {
     if test -z "${!SSHVAR}" ; then
         ( cd /tmp && eval "${@}" )
     else
+        # Replace new lines by spaces since remote ssh command may be executed
+        # under /bin/tcsh, which fails to handle multiline command arguments.
+        # See: https://github.com/tcsh-org/tcsh/blob/master/BUGS#L52
+        local cmd="${@//$'\n'/ }"
+
         # Replace single quotes by '"'"' since /bin/bash already uses
         # it in the command parameters
-        local cmd="$(echo "${@}" | sed "s/'/\'\"\'\"\'/g")"
+        local cmd="$(echo "${cmd}" | sed "s/'/\'\"\'\"\'/g")"
 
         # SSH command may have arguments in double-quotes with spaces
         eval "${!SSHVAR} \"/bin/bash -c 'cd /tmp || exit 1 ; \${cmd}'\""

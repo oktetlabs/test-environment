@@ -38,27 +38,26 @@ for p in ${2:-${TE_BS_PLATFORMS}} ; do
     else
         sbd=$(cat "${TE_BUILD}/${p}.sbd")
     fi
+    # Skip download if agent platform directory exists at install path
+    # and at build path.
     te_eval_or_ssh "${p}" "
-        # Skip download if agent platform directory exists at install path
-        # and at build path.
-        [ -d \"$PREFIX/$p/lib\" -a \
-          -d \"${sbd}/platforms/$p/lib\" ] && exit 0
+        [ -d \"$PREFIX/$p/lib\" -a -d \"${sbd}/platforms/$p/lib\" ] && exit 0 ;
 
         if [ \"${TE_EXT_LIBS}\" ] ; then
-            mkdir -p \"${sbd}/platforms/$p/lib\"
-            mkdir -p \"${sbd}/platforms/$p/include\"
-            pushd \"${sbd}/platforms/$p/\" >/dev/null
+            mkdir -p \"${sbd}/platforms/$p/lib\" ;
+            mkdir -p \"${sbd}/platforms/$p/include\" ;
+            pushd \"${sbd}/platforms/$p/\" >/dev/null ;
             for i in ${!libs} ; do
-                rm -rf \$i.tgz
-                wget --no-verbose ${TE_EXT_LIBS}/${!dir}/\$i.tgz
+                rm -rf \$i.tgz ;
+                wget --no-verbose ${TE_EXT_LIBS}/${!dir}/\$i.tgz ;
                 if [ \$? -eq 0 ] ; then
-                    echo \"./$p/\$i.tgz \\\\\" >>${TE_EXT_LIBS_FILE}
+                    echo \"./$p/\$i.tgz \\\\\" >>${TE_EXT_LIBS_FILE} ;
                     tar -tzf \$i.tgz |
-                        sed 's:\(.*\):./$p/\1 \\\\:' >>${TE_EXT_LIBS_FILE}
-                    tar xzf \$i.tgz
-                fi
-            done
-            popd >/dev/null
+                        sed 's:\(.*\):./$p/\1 \\\\:' >>${TE_EXT_LIBS_FILE} ;
+                    tar xzf \$i.tgz ;
+                fi ;
+            done ;
+            popd >/dev/null ;
         fi
     "
 done

@@ -143,7 +143,7 @@ done
                       test -n \"$builddir\" && mkdir -p \"$builddir\" ;
                       cd ${builddir:-.} ;
                       export TE_PREFIX=\"$prefix/$platform\" ;
-                      export TE_DO_TCE=\"$tce\"
+                      export TE_DO_TCE=\"$tce\" ;
                       export TE_CPPFLAGS=\"$tecppflags\" ;
                       export TE_LDFLAGS=\"$telibflags\" ;
                       export TE_LIBS=\"$telibs\" ;
@@ -156,7 +156,7 @@ done
                           export TE_TA_TYPES=\"$tatypes\" ;
                           export TE_AGENTS_INST=\"$prefix/agents\" ;
                       fi ;
-                      $exports
+                      eval \"$exports\" ;
                       $build"
 ) || exit 1
 install_extension_parts "$expheaders" "$prefix/$platform/include" || exit 1

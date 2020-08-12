@@ -166,11 +166,11 @@ build_platform() {
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
 # See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
         te_eval_or_ssh "${p}" "
-            pushd ${sbd}/platforms/${p}/lib/$package >/dev/null
-            echo=echo \\
-            TE_CFLAGS_VAR='${!TE_CFLAGS_NAME}' \\
-            TE_CPPFLAGS_VAR='${!TE_CPPFLAGS_NAME}' \\
-            make ${BUILD_MAKEFLAGS} install || exit 1
+            pushd ${sbd}/platforms/${p}/lib/$package >/dev/null ;
+            echo=echo
+            TE_CFLAGS_VAR='${!TE_CFLAGS_NAME}'
+            TE_CPPFLAGS_VAR='${!TE_CPPFLAGS_NAME}'
+            make ${BUILD_MAKEFLAGS} install || exit 1 ;
             popd >/dev/null
         "
     done
@@ -203,12 +203,12 @@ build_agent() {
     fs_sanity_check "${PLATFORM}" "agents/$package"
 
     te_eval_or_ssh "${PLATFORM}" "
-        mkdir -p \"${sbd}/agents/$package\"
-        ${TE_BASE}/engine/builder/te_rcf_consistency_checks \
-            --extfiles-del \"${sbd}/agents/$package/\"
-        echo \"$TE_RCF_CONSISTENCY_CHECKS_EXT_FILES\" |
-            ${TE_BASE}/engine/builder/te_rcf_consistency_checks \
-                --extfiles-add \"${sbd}/agents/$package/\"
+        mkdir -p \"${sbd}/agents/$package\" ;
+        ${TE_BASE}/engine/builder/te_rcf_consistency_checks
+            --extfiles-del \"${sbd}/agents/$package/\" ;
+        echo \"$TE_RCF_CONSISTENCY_CHECKS_EXT_FILES\" | sed \"s/ /\n/g\" |
+            ${TE_BASE}/engine/builder/te_rcf_consistency_checks
+            --extfiles-add \"${sbd}/agents/$package/\"
     "
 
     ${TE_BASE}/engine/builder/te_configure_package TA "$package" "$package" \
@@ -219,10 +219,10 @@ build_agent() {
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
 # See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
     te_eval_or_ssh "${PLATFORM}" "
-        cd ${sbd}/agents/$package || exit 1
-        echo=echo \\
-        TE_CFLAGS_VAR='${!TE_CFLAGS_NAME}' \\
-        TE_CPPFLAGS_VAR='${!TE_CPPFLAGS_NAME}' \\
+        cd ${sbd}/agents/$package || exit 1 ;
+        echo=echo
+        TE_CFLAGS_VAR='${!TE_CFLAGS_NAME}'
+        TE_CPPFLAGS_VAR='${!TE_CPPFLAGS_NAME}'
         make ${BUILD_MAKEFLAGS} install || exit 1
     "
 }
@@ -319,8 +319,8 @@ acquire_shadow_build_directory() {
 
     # distribute files from TE_BUILD to the SBD on both hosts
     te_eval_or_ssh "${p}" "
-        test -d '${sbd}' && rm -rf '${sbd}'
-        mkdir -p '${sbd}/platforms/${p}' || exit 1
+        test -d '${sbd}' && rm -rf '${sbd}' ;
+        mkdir -p '${sbd}/platforms/${p}' || exit 1 ;
         mkdir -p '${sbd}/agents/${p}' || exit 1
     "
     for type in platforms agents; do
@@ -377,7 +377,7 @@ release_shadow_build_directory() {
         " | tar -xzf -
     done
     te_eval_or_ssh "${p}" "
-        tar -C '${sbd}' -czf - platforms/${p} agents/${p}
+        tar -C '${sbd}' -czf - platforms/${p} agents/${p} ;
         rm -rf '${sbd}' >/dev/null
     " | tar -xzf -
     find . -type l | xargs ${TE_BASE}/engine/builder/te_fixlink "${sbd}" .

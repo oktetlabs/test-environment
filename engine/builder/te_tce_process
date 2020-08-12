@@ -32,7 +32,7 @@ for platform in $TE_BS_PLATFORMS; do
         sbd="$(cat "${TE_BUILD}/${platform}.sbd")"
         if test "${sbd}" != "${TE_BUILD}"; then
             te_eval_or_ssh "${platform}" "
-               sudo tar -C '${sbd}' -czf - .
+               sudo tar -C '${sbd}' -czf - . ;
                sudo rm -rf '${sbd}' >/dev/null
             " | tar -C "${TE_BUILD}" -xzf -
             # The build directory may contain files with profilable code,
