@@ -70,6 +70,8 @@ RCF_PCH_CFG_NODE_NA(node_ipv4, "ipv4", &node_conf, &node_ipv6);
 RCF_PCH_CFG_NODE_NA(node_core, "core", NULL, &node_ipv4);
 RCF_PCH_CFG_NODE_NA(node_net, "net", &node_core, NULL);
 
+RCF_PCH_CFG_NODE_NA(node_vm, "vm", NULL, NULL);
+
 static te_errno register_sys_opts(const char *father, const char *path);
 static te_errno unregister_sys_opts(const char *father);
 
@@ -108,6 +110,11 @@ ta_unix_conf_sys_tree_init(void)
                                       "/proc/sys/net/ipv6/route/"));
     CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/ipv6/icmp",
                                       "/proc/sys/net/ipv6/icmp/"));
+
+    CHECK_NZ_RETURN(rcf_pch_add_node("/agent/sys/", &node_vm));
+    CHECK_NZ_RETURN(register_sys_opts(
+                              "/agent/sys/vm",
+                              "/proc/sys/vm/"));
 
     CHECK_NZ_RETURN(rcf_pch_rsrc_info("/agent/sys/net/ipv4/conf",
                                       rcf_pch_rsrc_grab_dummy,
