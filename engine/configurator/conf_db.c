@@ -333,6 +333,11 @@ cfg_db_init(void)
     cfg_all_inst[0] = &cfg_inst_root;
     cfg_inst_root.son = NULL;
 
+    cfg_create_dep(&cfg_obj_agent_rsrc, &cfg_obj_agent_rsrc_shared, TRUE);
+    cfg_create_dep(&cfg_obj_agent_rsrc, &cfg_obj_agent_rsrc_timeout, TRUE);
+    cfg_create_dep(&cfg_obj_agent_rsrc, &cfg_obj_agent_rsrc_fallback_shared,
+                   TRUE);
+
     return cfg_ta_add_agent_instances();
 }
 
