@@ -16,6 +16,7 @@ logger_sources = [
     'logger.c',
     'logger_cnf.c',
     'logger_cnf_int.c',
+    'logger_bufs.c',
     'logger_prc.c',
     'te_log_sniffers.c'
 ]

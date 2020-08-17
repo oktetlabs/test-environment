@@ -13,8 +13,8 @@ noinst_HEADERS = logger_internal.h te_log_sniffers.h
 te_log_get_path_SOURCES = te_log_get_path.c logger_cnf_int.c
 te_log_get_path_LDADD = @XML2_LIBS@ -lyaml
 
-te_logger_SOURCES = logger.c logger_cnf.c logger_cnf_int.c logger_prc.c \
-                    te_log_sniffers.c
+te_logger_SOURCES = logger.c logger_cnf.c logger_cnf_int.c logger_bufs.c \
+                    logger_prc.c te_log_sniffers.c
 te_logger_LDADD = @TE_LDADD@ -lipcserver -lrcfapi -lipc -ltools -llogger_core \
                   @XML2_LIBS@ -lpopt -lexpat -lyaml -lpthread
 te_logger_DEPENDENCIES = @TE_DEPENDENCIES@ \
