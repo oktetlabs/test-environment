@@ -11,13 +11,129 @@
 
 #define TE_LGR_USER "Log streaming rules"
 
+#include <jansson.h>
+
 #include "logger_stream_rules.h"
 #include "logger_api.h"
 
 streaming_filter streaming_filters[LOG_MAX_FILTERS];
 size_t           streaming_filters_num;
 
-static const streaming_rule rules[] = {};
+/*************************************************************************/
+/*       Streaming handlers                                              */
+/*************************************************************************/
+
+/**
+ * Convert a message into JSON.
+ *
+ * The resulting JSON object will contain the following fields:
+ *   a) "entity": entity that sent the message
+ *   b) "user":   user that sent the message
+ *   c) "ts":     timestamp of the message
+ *   d) "body":   expanded format string
+ *
+ * @param view              log message view
+ * @param buf               where the result should be placed
+ *
+ * @returns Status code
+ */
+static te_errno
+handler_raw(const log_msg_view *view, refcnt_buffer *buf)
+{
+    te_errno   rc;
+    char      *dump;
+    te_string  body = TE_STRING_INIT;
+    json_t    *obj;
+
+    rc = te_raw_log_expand(view, &body);
+    if (rc != 0)
+        return rc;
+
+    obj = json_pack("{s:s, s:s#, s:s#, s:f, s:s}",
+                    "type", "log",
+                    "entity", view->entity, (int)view->entity_len,
+                    "user", view->user, (int)view->user_len,
+                    "ts", (double)(view->ts_sec + view->ts_usec * 0.000001),
+                    "body", body.ptr);
+    te_string_free(&body);
+    if (obj == NULL)
+        return TE_EFAULT;
+
+    dump = json_dumps(obj, JSON_COMPACT);
+    json_decref(obj);
+    if (dump == NULL)
+        return TE_EFAULT;
+
+    return refcnt_buffer_init(buf, dump, strlen(dump));
+}
+
+/**
+ * Extract test progress information from the message.
+ *
+ * The resulting JSON object will have the same structure as
+ * Tester Control messages, but slightly simplified.
+ *
+ * @param view              log message view
+ * @param buf               where the result should be placed
+ *
+ * @returns Status code
+ */
+static te_errno
+handler_test_progress(const log_msg_view *view, refcnt_buffer *str)
+{
+    te_errno      rc;
+    te_string     body = TE_STRING_INIT;
+    json_t       *json;
+    json_t       *msg;
+    json_t       *type;
+    json_error_t  err;
+    char         *dump;
+
+    rc = te_raw_log_expand(view, &body);
+    if (rc != 0)
+        return rc;
+
+    json = json_loads(body.ptr, JSON_REJECT_DUPLICATES, &err);
+    te_string_free(&body);
+    if (json == NULL)
+    {
+        ERROR("Failed to unpack JSON log message: %s (line %d, column %d)",
+                  err.text, err.line, err.column);
+        return TE_EINVAL;
+    }
+
+    msg = json_object_get(json, "msg");
+    if (msg == NULL)
+    {
+        ERROR("Tester:Control message does not have a \"msg\" property");
+        return TE_EINVAL;
+    }
+    type = json_object_get(json, "type");
+    if (type == NULL)
+    {
+        ERROR("Tester:Control message does not have a \"type\" property");
+        return TE_EINVAL;
+    }
+    if (json_object_set(msg, "type", type) == -1)
+    {
+        ERROR("Failed to add \"type\" property to a Tester:Control message");
+        return TE_EFAULT;
+    }
+    dump = json_dumps(msg, JSON_COMPACT);
+    if (dump == NULL)
+    {
+        ERROR("Failed to dump JSON");
+        return TE_EFAULT;
+    }
+    json_decref(json);
+
+    return refcnt_buffer_init(str, dump, strlen(dump));
+}
+
+static const streaming_rule rules[] = {
+    {"raw", handler_raw},
+    {"test_progress", handler_test_progress},
+};
 static const size_t         rules_num = sizeof(rules) / sizeof(rules[0]);
 
 /** Get handler function by name */
@@ -32,6 +148,10 @@ get_handler(const char *name)
     }
     return NULL;
 }
+
+/*************************************************************************/
+/*       Streaming filter implementation                                 */
+/*************************************************************************/
 
 /**
  * Process message according to the specified rule and push the result
