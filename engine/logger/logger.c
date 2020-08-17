@@ -143,8 +143,18 @@ lgr_register_message(const void *buf, size_t len)
     struct stat            raw_file_stat;
     te_errno               rc;
 
-    if (((lgr_flags & LOGGER_CHECK) && !lgr_message_valid(buf, len)) ||
-        raw_log_too_big)
+    if (((lgr_flags & LOGGER_CHECK) && !lgr_message_valid(buf, len)))
+        return;
+
+    if (listeners_enabled)
+    {
+        rc = msg_queue_post(&listener_queue, buf, len);
+        if (rc == TE_ENOMEM)
+            fputs("Failed to post message to the listener queue: No memory",
+                  stderr);
+    }
+
+    if (raw_log_too_big)
         return;
 
     if (raw_file_check_cnt-- <= 0)
@@ -978,6 +988,7 @@ sniffer_polling_sets_cli_init(void)
 int
 main(int argc, const char *argv[])
 {
+    te_errno    rc;
     int         result = EXIT_FAILURE;
     char        err_buf[BUFSIZ];
     const char *pid_fn = getenv("TE_LOGGER_PID_FILE");
@@ -989,9 +1000,16 @@ main(int argc, const char *argv[])
     int         res = 0;
     int         scale = 0;
     pthread_t   te_thread;
+    pthread_t   listener_thread;
     ta_inst    *ta_el;
 
     te_log_init("Logger", lgr_log_message);
+    rc = msg_queue_init(&listener_queue);
+    if (rc != 0)
+    {
+        ERROR("Failed to initialize the listeners queue: %r", rc);
+        goto exit;
+    }
 
     if (process_cmd_line_opts(argc, argv) != EXIT_SUCCESS)
     {
@@ -1087,7 +1105,19 @@ main(int argc, const char *argv[])
     sniffer_polling_sets_cli_init();
 
     if (listeners_enabled)
+    {
         listeners_conf_dump();
+        /* Create separate thread for Listeners */
+        res = pthread_create(&listener_thread, NULL,
+                             (void *)&listeners_thread, NULL);
+        if (res != 0)
+        {
+            te_strerror_r(errno, err_buf, sizeof(err_buf));
+            ERROR("Listeners: pthread_create() failed: %s\n", err_buf);
+            goto exit;
+        }
+    }
+    /* Further we must goto 'join_listener_srv' in the case of failure */
 
     /* ASAP create separate thread for log message server */
     res = pthread_create(&te_thread, NULL, (void *)&te_handler, NULL);
@@ -1095,7 +1125,7 @@ main(int argc, const char *argv[])
     {
         te_strerror_r(errno, err_buf, sizeof(err_buf));
         ERROR("Server: pthread_create() failed: %s\n", err_buf);
-        goto exit;
+        goto join_listener_srv;
     }
     /* Further we must goto 'join_te_srv' in the case of failure */
 
@@ -1206,6 +1236,16 @@ join_te_srv:
         result = EXIT_FAILURE;
     }
 
+join_listener_srv:
+    INFO("Joining listeners thread\n");
+    msg_queue_shutdown(&listener_queue);
+    if (pthread_join(listener_thread, NULL) != 0)
+    {
+        te_strerror_r(errno, err_buf, sizeof(err_buf));
+        ERROR("pthread_join() failed: %s", err_buf);
+        result = EXIT_FAILURE;
+    }
+
 exit:
     /* Release all memory on shutdown */
     pthread_mutex_lock(&add_remove_mutex);
@@ -1233,6 +1273,7 @@ exit:
     pthread_mutex_unlock(&add_remove_mutex);
 
     wait_for_finished_insts();
+    msg_queue_fini(&listener_queue);
 
     if ((pid_f != NULL) && (fclose(pid_f) != 0))
     {
