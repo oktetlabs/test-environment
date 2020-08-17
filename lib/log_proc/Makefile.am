@@ -5,12 +5,12 @@ AM_CPPFLAGS = @TE_CPPFLAGS@ -I$(DESTDIR)/$(includedir) $(TE_CPPFLAGS_VAR)
 AM_CFLAGS = @TE_CFLAGS@ @XML2_CFLAGS@ $(TE_CFLAGS_VAR)
 
 include_HEADERS=log_msg_view.h log_msg_filter.h log_flow_filters.h \
-                log_filters_xml.h
+                log_filters_xml.h log_filters_yaml.h
 
 lib_LTLIBRARIES=liblog_proc.la
 
 liblog_proc_la_SOURCES=log_msg_view.c log_msg_filter.c log_flow_filters.c \
-                       log_filters_xml.c
+                       log_filters_xml.c log_filters_yaml.c
 
 liblog_proc_la_LIBADD=-ltools @XML2_LIBS@ -lyaml
 
