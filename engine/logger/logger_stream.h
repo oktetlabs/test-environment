@@ -82,6 +82,14 @@ extern void msg_queue_shutdown(msg_queue *queue);
  */
 extern te_errno msg_queue_fini(msg_queue *queue);
 
+/** Main routine for the listener server thread */
+extern void *listeners_thread(void *);
+
+/** Message queue instance to be used by Logger threads */
+extern msg_queue       listener_queue;
+/** Whether there are active listeners */
+extern te_bool         listeners_enabled;
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
