@@ -166,7 +166,7 @@ te_raw_log_expand(const log_msg_view *view, te_string *target)
     fmt = view->fmt;
     arg = view->args;
     fmt_end = fmt + view->fmt_len;
-    view_end = view + view->length;
+    view_end = view->start + view->length;
 
     while (fmt < fmt_end)
     {
