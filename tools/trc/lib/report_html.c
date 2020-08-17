@@ -2449,6 +2449,7 @@ trc_report_test_result_to_html(FILE *f, const te_test_result *result,
 
     UNUSED(stats);
     UNUSED(test_path);
+    UNUSED(iter_id);
     UNUSED(flags);
 
     assert(f != NULL);
