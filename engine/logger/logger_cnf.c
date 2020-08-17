@@ -1327,8 +1327,15 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
         }                                                                 \
     } while (0)
 
-    /* Limit protocols to HTTP(S), use HTTPS as the default URL scheme */
+    /*
+     * Limit protocols to HTTP(S), use HTTPS as the default URL scheme.
+     *
+     * CURLOPT_DEFAULT_PROTOCOL is available since libcurl 7.45, but CentOS 7
+     * provides an older version.
+     */
+#ifdef CURLOPT_DEFAULT_PROTOCOL
     SET_CURL_OPT(CURLOPT_DEFAULT_PROTOCOL, "https");
+#endif
     SET_CURL_OPT(CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
     /* Disallow HTTP redirects */
     SET_CURL_OPT(CURLOPT_REDIR_PROTOCOLS, 0L);
