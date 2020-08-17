@@ -397,6 +397,15 @@ run_item_name(const run_item *ri)
 }
 
 /**
+ * Is run item a container (session or package)?
+ */
+static inline te_bool
+run_item_container(const run_item *ri)
+{
+    return ri->type == RUN_ITEM_SESSION || ri->type == RUN_ITEM_PACKAGE;
+}
+
+/**
  * Get pointer to variable/argument values.
  *
  * @param va            Variable/argument

@@ -3365,8 +3365,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         {
             if (ctx->current_result.result.status == TE_TEST_EMPTY)
             {
-                assert(ri->type == RUN_ITEM_SESSION ||
-                       ri->type == RUN_ITEM_PACKAGE);
+                assert(run_item_container(ri));
                 assert(ctx->current_result.exp_status ==
                        TRC_VERDICT_UNKNOWN);
                 /* 
