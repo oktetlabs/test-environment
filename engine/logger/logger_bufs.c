@@ -84,3 +84,67 @@ refcnt_buffer_free(refcnt_buffer *rbuf)
     rbuf->len = 0;
     rbuf->refcount = NULL;
 }
+
+/* See description in logger_bufs.h */
+void
+msg_buffer_init(msg_buffer *buf)
+{
+    TAILQ_INIT(&buf->items);
+    buf->n_items = 0;
+    buf->total_length = 0;
+}
+
+/* See description in logger_bufs.h */
+te_errno
+msg_buffer_add(msg_buffer *buf, const refcnt_buffer *msg)
+{
+    refcnt_buffer *item;
+
+    item = TE_ALLOC(sizeof(*item));
+    if (item == NULL)
+        return TE_ENOMEM;
+
+    refcnt_buffer_copy(item, msg);
+    TAILQ_INSERT_TAIL(&buf->items, item, links);
+
+    buf->n_items += 1;
+    buf->total_length += msg->len;
+    return 0;
+}
+
+/* See description in logger_bufs.h */
+void
+msg_buffer_remove_first(msg_buffer *buf)
+{
+    refcnt_buffer *item;
+
+    item = TAILQ_FIRST(&buf->items);
+    if (item != NULL)
+    {
+        TAILQ_REMOVE(&buf->items, item, links);
+        buf->n_items -= 1;
+        buf->total_length -= item->len;
+        refcnt_buffer_free(item);
+        free(item);
+    }
+}
+
+/* See description in logger_bufs.h */
+void
+msg_buffer_free(msg_buffer *buf)
+{
+    refcnt_buffer *item;
+    refcnt_buffer *tmp;
+
+    if (!TAILQ_EMPTY(&buf->items))
+    {
+        WARN("Not all messages have been processed");
+        TAILQ_FOREACH_SAFE(item, &buf->items, links, tmp)
+        {
+            refcnt_buffer_free(item);
+            free(item);
+        }
+    }
+
+    msg_buffer_init(buf);
+}

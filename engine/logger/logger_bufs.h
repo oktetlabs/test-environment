@@ -76,6 +76,47 @@ extern void refcnt_buffer_copy(refcnt_buffer *dest,
  */
 extern void refcnt_buffer_free(refcnt_buffer *rbuf);
 
+/** Buffer structure for log messages */
+typedef struct msg_buffer {
+    TAILQ_HEAD(, refcnt_buffer) items; /**< List of messages */
+
+    size_t n_items;      /**< Number of messages in the buffer */
+    size_t total_length; /**< Total length of all messages, in bytes */
+} msg_buffer;
+
+/**
+ * Initialize a message buffer.
+ *
+ * @param buf           message buffer
+ */
+extern void msg_buffer_init(msg_buffer *buf);
+
+/**
+ * Add a message to a message buffer.
+ *
+ * @param buf           message buffer
+ * @param msg           message
+ *
+ * @param Status code
+ */
+extern te_errno msg_buffer_add(msg_buffer *buf, const refcnt_buffer *msg);
+
+/**
+ * Remove the first message in the buffer.
+ *
+ * @param buf           message buffer
+ */
+extern void msg_buffer_remove_first(msg_buffer *buf);
+
+/**
+ * Deinitialize the buffer.
+ *
+ * All messages in the buffer will be freed.
+ *
+ * @param buf           message buffer
+ */
+extern void msg_buffer_free(msg_buffer *buf);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
