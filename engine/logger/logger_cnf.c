@@ -29,6 +29,10 @@
 #include "te_kernel_log.h"
 #include "te_yaml.h"
 #include "logger_cnf.h"
+#include "logger_listener.h"
+#include "logger_stream.h"
+#include "logger_stream_rules.h"
+#include "log_filters_yaml.h"
 
 #include <yaml.h>
 
@@ -987,6 +991,379 @@ handle_threads(yaml_document_t *d, yaml_node_t *section)
 }
 
 /**
+ * Extract the rule name from the filter YAML entry
+ *
+ * @param d             YAML document
+ * @param filter        YAML node for a filter
+ * @param name          where the name should be stored
+ *
+ * @returns Status code
+ */
+static te_errno
+extract_filter_rule(yaml_document_t *d, yaml_node_t *node,
+                    log_msg_filter *filter, const char **name)
+{
+    te_errno          rc;
+    yaml_node_pair_t *pair;
+
+    if (node->type != YAML_MAPPING_NODE)
+    {
+        ERROR("The rule item must be a mapping");
+        return TE_EINVAL;
+    }
+
+    pair = node->data.mapping.pairs.start;
+    do {
+        yaml_node_t *k = yaml_document_get_node(d, pair->key);
+        yaml_node_t *v = yaml_document_get_node(d, pair->value);
+        const char  *key = te_yaml_scalar_value(k);
+
+        if (strcmp(key, "rule") == 0 && name != NULL)
+        {
+            if (v->type != YAML_SCALAR_NODE)
+            {
+                ERROR("Rule name must be a scalar");
+                return TE_EINVAL;
+            }
+            *name = te_yaml_scalar_value(v);
+        }
+        else if (strcmp(key, "filter") == 0 && filter != NULL)
+        {
+            rc = log_msg_filter_load_yaml(filter, d, v);
+            if (rc != 0)
+                return rc;
+        }
+    } while (++pair < node->data.mapping.pairs.top);
+
+    return 0;
+}
+
+/**
+ * Add rules from the YAML node to the current listener.
+ *
+ * @param d             YAML document
+ * @param filters       YAML node for the filter sequence
+
+ * @return Status information
+ *
+ * @retval 0            Success.
+ * @retval Negative     Failure.
+ */
+static int
+add_rules(yaml_document_t *d, yaml_node_t *rules)
+{
+    size_t            i;
+    te_errno          rc;
+    yaml_node_item_t *item;
+    yaml_node_t      *node;
+    log_msg_filter    filter;
+    const char       *rulename = NULL;
+
+    if (rules->type != YAML_SEQUENCE_NODE)
+    {
+        ERROR("Filters node must be a sequence");
+        return -1;
+    }
+
+    for (item = rules->data.sequence.items.start;
+         item < rules->data.sequence.items.top; item++)
+    {
+        node = yaml_document_get_node(d, *item);
+
+        rc = log_msg_filter_init(&filter);
+        if (rc == 0)
+            /* Filters should not allow any message by default */
+            rc = log_msg_filter_set_default(&filter, FALSE, (te_log_level)-1);
+        if (rc == 0)
+            rc = extract_filter_rule(d, node, &filter, &rulename);
+        if (rc != 0)
+            return -1;
+
+        for (i = 0; i < streaming_filters_num; i++)
+        {
+            if (log_msg_filter_equal(&streaming_filters[i].filter, &filter))
+            {
+                log_msg_filter_free(&filter);
+                break;
+            }
+        }
+        if (i == streaming_filters_num)
+        {
+            if (streaming_filters_num >= LOG_MAX_FILTERS)
+            {
+                ERROR("Reached the filter limit");
+                log_msg_filter_free(&filter);
+                return -1;
+            }
+            memcpy(&streaming_filters[streaming_filters_num].filter,
+                   &filter, sizeof(filter));
+            streaming_filters_num += 1;
+        }
+
+        rc = streaming_filter_add_action(&streaming_filters[i],
+                                         rulename, listeners_num);
+        if (rc != 0)
+        {
+            ERROR("Failed to add rule");
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Extract listener configuration and add it to the list.
+ *
+ * @param d             YAML document
+ * @param listener      YAML node for this thread
+ *
+ * @return Status information
+ *
+ * @retval 0            Success.
+ * @retval Negative     Failure.
+ */
+static int
+add_listener(yaml_document_t *d, yaml_node_t *listener)
+{
+    te_errno          rc;
+    size_t            res;
+    yaml_node_pair_t *pair;
+    yaml_node_t      *name        = NULL;
+    yaml_node_t      *url         = NULL;
+    yaml_node_t      *enabled     = NULL;
+    yaml_node_t      *interval    = NULL;
+    yaml_node_t      *rules       = NULL;
+    yaml_node_t      *buffer_size = NULL;
+    yaml_node_t      *buffers_num = NULL;
+    const char       *name_str    = NULL;
+    const char       *url_str     = NULL;
+    const char       *enabled_str = NULL;
+    const char       *interval_str = NULL;
+    const char       *buffer_size_str = NULL;
+    const char       *buffers_num_str = NULL;
+    unsigned long     tmp;
+
+    log_listener     *current;
+
+    for (pair = listener->data.mapping.pairs.start;
+         pair < listener->data.mapping.pairs.top; pair++)
+    {
+        yaml_node_t *k = yaml_document_get_node(d, pair->key);
+        yaml_node_t *v = yaml_document_get_node(d, pair->value);
+        const char  *key = te_yaml_scalar_value(k);
+
+        if (key == NULL)
+        {
+            ERROR("%s: Non-scalar key in mapping", __FUNCTION__);
+            return -1;
+        }
+
+        if (strcmp(key, "name") == 0)
+            name = v;
+        else if (strcmp(key, "url") == 0)
+            url = v;
+        else if (strcmp(key, "enabled") == 0)
+            enabled = v;
+        else if (strcmp(key, "interval") == 0)
+            interval = v;
+        else if (strcmp(key, "rules") == 0)
+            rules = v;
+        else if (strcmp(key, "buffer_size") == 0)
+            buffer_size = v;
+        else if (strcmp(key, "buffers_num") == 0)
+            buffers_num = v;
+    }
+
+    current = &listeners[listeners_num];
+    memset(current, 0, sizeof(log_listener));
+
+    name_str = te_yaml_scalar_value(name);
+    if (name_str == NULL)
+    {
+        ERROR("%s: Name is not specified or not a scalar", __FUNCTION__);
+        return -1;
+    }
+    res = te_strlcpy(current->name, name_str, LOG_MAX_LISTENER_NAME);
+    if (res == LOG_MAX_LISTENER_NAME)
+    {
+        ERROR("%s(%s): Name is too long", __FUNCTION__, name_str);
+        return -1;
+    }
+
+    enabled_str = te_yaml_scalar_value(enabled);
+    if (enabled_str == NULL)
+    {
+        ERROR("%s(%s): Enabled is not specified or not a scalar",
+              __FUNCTION__, name_str);
+        return -1;
+    }
+    if (strcasecmp(enabled_str, "false") == 0 ||
+        strcasecmp(enabled_str, "no") == 0 ||
+        strcasecmp(enabled_str, "0") == 0 ||
+        strcasecmp(enabled_str, "") == 0)
+    {
+        VERB("%s(%s): Not enabled, skipping", __FUNCTION__, name_str);
+        return 0;
+    }
+
+    url_str = te_yaml_scalar_value(url);
+    if (url_str == NULL)
+    {
+        ERROR("%s(%s): URL not specified or not a scalar",
+              __FUNCTION__, name_str);
+        return -1;
+    }
+    res = te_strlcpy(current->url, url_str,
+                     LOG_MAX_LISTENER_URL);
+    if (res == LOG_MAX_LISTENER_URL)
+    {
+         ERROR("%s(%s): URL is too long", __FUNCTION__, name_str);
+         return -1;
+    }
+
+    current->interval = 1;
+    interval_str = te_yaml_scalar_value(interval);
+    if (interval != NULL && interval_str == NULL)
+    {
+        ERROR("%s(%s): Interval is not a scalar", __FUNCTION__, name_str);
+        return -1;
+    }
+    if (interval_str != NULL)
+    {
+        rc = te_strtoul(interval_str, 0, &tmp);
+        if (rc != 0)
+        {
+            ERROR("%s(%s): Incorrect value of 'interval' attribute: %s (%r)",
+                  __FUNCTION__, name_str, interval_str, rc);
+            return -1;
+        }
+        current->interval = tmp;
+    }
+
+    if (rules != NULL)
+    {
+        if (add_rules(d, rules) == -1)
+        {
+            ERROR("%s(%s): Failed to process rules", __FUNCTION__, name_str);
+            return -1;
+        }
+    }
+    else
+    {
+        ERROR("%s(%s): No rules specified", __FUNCTION__, name_str);
+        return -1;
+    }
+
+    current->buffer_size = 4096;
+    buffer_size_str = te_yaml_scalar_value(buffer_size);
+    if (buffer_size != NULL && buffer_size_str == NULL)
+    {
+        ERROR("%s(%s): Buffer size is not a scalar", __FUNCTION__, name_str);
+        return -1;
+    }
+    if (buffer_size_str != NULL)
+    {
+        rc = te_strtoul(buffer_size_str, 0, &tmp);
+        if (rc != 0)
+        {
+            ERROR("%s(%s): Incorrect value of 'buffer_size' attribute: %s (%r)",
+                  __FUNCTION__, name_str, buffer_size_str, rc);
+            return -1;
+        }
+        current->buffer_size = tmp;
+    }
+
+    current->buffers_num = 2;
+    buffers_num_str = te_yaml_scalar_value(buffers_num);
+    if (buffers_num != NULL && buffers_num_str == NULL)
+    {
+        ERROR("%s(%s): Number of buffers is not scalar",
+              __FUNCTION__, name_str);
+        return -1;
+    }
+    if (buffers_num_str != NULL)
+    {
+        rc = te_strtoul(buffers_num_str, 0, &tmp);
+        if (rc != 0)
+        {
+            ERROR("%s(%s): Incorrect value of 'buffers_num' attribute: %s (%r)",
+                  __FUNCTION__, name_str, buffers_num_str, rc);
+            return -1;
+        }
+        current->buffers_num = tmp;
+    }
+
+    msg_buffer_init(&current->buffer);
+    current->state = LISTENER_INIT;
+    current->file = fopen(current->url, "w");
+    if (current->file == NULL)
+    {
+        ERROR("%s(%s): Failed to open file %s: %s",
+              __FUNCTION__, name_str, url_str, strerror(errno));
+        msg_buffer_free(&current->buffer);
+        return -1;
+    }
+
+    listeners_num++;
+    return 0;
+}
+
+/**
+ * Parse the "listeners" section of the config file.
+ *
+ * @param d         YAML document
+ * @param section   YAML node for this section
+ *
+ * @return Status information
+ *
+ * @retval 0            Success.
+ * @retval Negative     Failure.
+ */
+static int
+handle_listeners(yaml_document_t *d, yaml_node_t *section)
+{
+    int               res;
+    int               num;
+    yaml_node_item_t *item;
+
+    if (section->type != YAML_SEQUENCE_NODE)
+    {
+        ERROR("Listeners: Expected a sequence, got something else");
+        return -1;
+    }
+
+    num = section->data.sequence.items.top - section->data.sequence.items.start;
+    if (num > LOG_MAX_LISTENERS)
+    {
+        ERROR("Too many listeners (%d while only %d are allowed)",
+              num, LOG_MAX_LISTENERS);
+        return -1;
+    }
+
+    listeners_enabled = TRUE;
+
+    for (item = section->data.sequence.items.start;
+         item < section->data.sequence.items.top; item++)
+    {
+        yaml_node_t *v = yaml_document_get_node(d, *item);
+
+        if (v->type != YAML_MAPPING_NODE)
+        {
+            ERROR("Listeners: A listener must be a mapping");
+            return -1;
+        }
+
+        res = add_listener(d, v);
+        if (res != 0)
+            return -1;
+
+    }
+
+    return 0;
+}
+
+/**
  * Parse a YAML-formatted config file.
  *
  * @param filename      path to the config file
@@ -1008,6 +1385,7 @@ config_parser_yaml(const char *filename)
     yaml_node_t      *sniffers_default = NULL;
     yaml_node_t      *sniffers         = NULL;
     yaml_node_t      *threads          = NULL;
+    yaml_node_t      *listeners        = NULL;
     yaml_node_pair_t *pair;
 
     RING("Opening config file: %s", filename);
@@ -1073,6 +1451,8 @@ config_parser_yaml(const char *filename)
             sniffers = v;
         else if (strcmp(key, "threads") == 0)
             threads = v;
+        else if (strcmp(key, "listeners") == 0)
+            listeners = v;
         else
             WARN("Unknown config section: %s", key);
     }
@@ -1088,6 +1468,9 @@ config_parser_yaml(const char *filename)
 
     if (res == 0 && threads != NULL)
         res = handle_threads(&document, threads);
+
+    if (res == 0 && listeners != NULL)
+        res = handle_listeners(&document, listeners);
 
     yaml_document_delete(&document);
 
