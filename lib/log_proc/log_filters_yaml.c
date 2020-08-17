@@ -60,7 +60,7 @@ get_level_mask(const char *level_str)
 
         for (i = 0; i < levels_num; i++)
         {
-            if (len == strlen(levels[i].name) &&
+            if ((size_t)len == strlen(levels[i].name) &&
                 strncmp(ptr, levels[i].name, len) == 0)
             {
                 val |= levels[i].mask;
