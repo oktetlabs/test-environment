@@ -27,6 +27,9 @@ typedef struct refcnt_buffer {
     int    *refcount;  /**< Reference counter */
 } refcnt_buffer;
 
+/** List of reference-counted buffers */
+typedef TAILQ_HEAD(, refcnt_buffer) refcnt_buffer_list;
+
 /**
  * Initialize a reference-counting buffer using the given data.
  *
