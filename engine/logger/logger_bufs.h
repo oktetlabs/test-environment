@@ -82,6 +82,7 @@ typedef struct msg_buffer {
 
     size_t n_items;      /**< Number of messages in the buffer */
     size_t total_length; /**< Total length of all messages, in bytes */
+    int    first_id;     /**< Sequence number of the first message in buffer */
 } msg_buffer;
 
 /**
