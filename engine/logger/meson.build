@@ -19,6 +19,7 @@ logger_sources = [
     'logger_bufs.c',
     'logger_listener.c',
     'logger_stream.c',
+    'logger_stream_rules.c',
     'logger_prc.c',
     'te_log_sniffers.c'
 ]
@@ -29,7 +30,7 @@ executable('te_logger', logger_sources, install: true,
            dependencies: [ dep_libxml2, dep_popt, dep_threads,
                            dep_lib_ipcserver, dep_lib_rcfapi, dep_lib_ipc,
                            dep_lib_tools, dep_lib_logger_core,
-                           dependency('yaml-0.1') ])
+                           dep_lib_log_proc, dependency('yaml-0.1') ])
 
 executable('te_log_shutdown', 'te_log_shutdown.c', install: true,
            include_directories: te_include,
