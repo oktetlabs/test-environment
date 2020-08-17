@@ -113,6 +113,8 @@ Test Environment Engine depends on a set of 3-rd party libraries and packages:
 
 * gawk;
 
+* libcurl4-openssl-dev;
+
 * libexpat1;
 
 * libexpat1-dev;
@@ -160,7 +162,7 @@ Same for Debian derivatives in one line:
 .. code-block:: none
 
 
-	apt-get install autoconf automake bison curl file flex gawk libexpat1 libexpat1-dev libglib2.0-dev libncurses5 libncurses5-dev libpam0g libpam0g-dev libpcap0.8-dev libpopt-dev libreadline5 libreadline-dev libssl-dev libusb-1.0-0 libusb-1.0-0-dev libxml2 libxml2-dev libxslt1.1 libxslt1-dev ssh tcl-dev wget
+	apt-get install autoconf automake bison curl file flex gawk libcurl4-openssl-dev libexpat1 libexpat1-dev libglib2.0-dev libncurses5 libncurses5-dev libpam0g libpam0g-dev libpcap0.8-dev libpopt-dev libreadline5 libreadline-dev libssl-dev libusb-1.0-0 libusb-1.0-0-dev libxml2 libxml2-dev libxslt1.1 libxslt1-dev ssh tcl-dev wget
 
 Or easy way, you can install meta package **oktetlabs-te-dev** from OKTET Labs repository.
 
