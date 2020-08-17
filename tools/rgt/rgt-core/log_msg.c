@@ -220,7 +220,7 @@ rgt_process_tester_control_message_json(log_msg *msg)
          * values and type-checked manually.
          */
         err_code = json_unpack_ex(msg_json, &json_error, JSON_STRICT,
-                                  "{s:i, s:i, s?s, s?o, s?o, s?o, s?o}",
+                                  "{s:i, s:i, s?s, s?o, s?o, s?o, s?o, s?o}",
                                   "id",        &node_id,
                                   "parent",    &parent_id,
                                   "status",    &status,
@@ -231,6 +231,7 @@ rgt_process_tester_control_message_json(log_msg *msg)
                                    * function, they are only mentioned here
                                    * for schema validation.
                                    */
+                                  "plan_id",   &ignored,
                                   "expected",  &ignored,
                                   "tags_expr", &ignored);
         if (err_code != 0)
@@ -736,6 +737,7 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
     json_t     *page_opt = NULL;
     json_t     *hash_opt = NULL;
     json_t     *tin_opt = NULL;
+    json_t     *ignored = NULL;
     const char *type = NULL;
     const char *name = NULL;
     const char *objective = NULL;
@@ -761,7 +763,7 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
      * values and type-checked manually.
      */
     ret = json_unpack_ex(msg, &err, JSON_STRICT,
-                         "{s:i, s:i, s:s, s?o, s?o, s?o, s?o, s?o, s?o, s?o}",
+                         "{s:i, s:i, s:s, s?o, s?o, s?o, s?o, s?o, s?o, s?o, s?o}",
                          "id", &node->node_id,
                          "parent", &node->parent_id,
                          "node_type", &type,
@@ -771,7 +773,8 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
                          "hash", &hash_opt,
                          "tin", &tin_opt,
                          "authors", &authors,
-                         "params", &params);
+                         "params", &params,
+                         "plan_id", &ignored);
     if (ret != 0)
     {
         FMT_TRACE("Error unpacking JSON log message: %s (line %d, column %d)",

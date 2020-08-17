@@ -787,10 +787,12 @@ te_rgt_parse_mi_test_start_message(te_rgt_mi *mi)
         goto cleanup;
     }
 
+    data->plan_id = -1;
     ret = json_unpack_ex(root, &err, JSON_STRICT,
-                         "{s:i, s:i, s:s, s?o, s?o, s?o, s?o, s?o, s?o, s?o}",
+                         "{s:i, s:i, s?i, s:s, s?o, s?o, s?o, s?o, s?o, s?o, s?o}",
                          "id", &data->node_id,
                          "parent", &data->parent_id,
+                         "plan_id", &data->plan_id,
                          "node_type", &data->node_type,
                          "name", &name,
                          "params", &params,
@@ -1023,10 +1025,12 @@ te_rgt_parse_mi_test_end_message(te_rgt_mi *mi)
         goto cleanup;
     }
 
+    data->plan_id = -1;
     ret = json_unpack_ex(root, &err, JSON_STRICT,
-                         "{s:i, s:i, s?s, s?o, s?o, s?o, s?o}",
+                         "{s:i, s:i, s?i, s?s, s?o, s?o, s?o, s?o}",
                          "id", &data->node_id,
                          "parent", &data->parent_id,
+                         "plan_id", &data->plan_id,
                          "status", &data->obtained.status,
                          "obtained", &obtained,
                          "expected", &expected,

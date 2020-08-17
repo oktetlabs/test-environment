@@ -130,6 +130,7 @@ typedef struct te_rgt_mi_person {
 typedef struct te_rgt_mi_test_start {
     int               node_id;    /**< Node ID */
     int               parent_id;  /**< Parent ID */
+    int               plan_id;    /**< Plan ID */
     const char       *node_type;  /**< PACKAGE, SESSION or TEST */
     const char       *name;       /**< Name */
     te_rgt_mi_kv     *params;     /**< Array of parameters */
@@ -155,6 +156,7 @@ typedef struct te_rgt_mi_test_result {
 typedef struct te_rgt_mi_test_end {
     int                    node_id;      /**< Node ID */
     int                    parent_id;    /**< Parent ID */
+    int                    plan_id;      /**< Plan ID */
     const char            *error;        /**< TRC error message */
     const char            *tags_expr;    /**< Matched tag expression */
     te_rgt_mi_test_result  obtained;     /**< Obtained result */

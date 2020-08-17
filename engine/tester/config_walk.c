@@ -208,6 +208,8 @@ walk_test_session(const tester_cfg_walk *walk, const void *opaque,
 {
     tester_cfg_walk_ctl ctl;
     tester_cfg_walk_ctl ctl_tmp;
+    te_bool             skip_items = FALSE;
+    te_bool             have_skip_cb;
 
     ENTRY("run=%s id_off=%u flags=%#x", run_item_name(ri), id_off, flags);
 
@@ -225,13 +227,20 @@ walk_test_session(const tester_cfg_walk *walk, const void *opaque,
                                walk->prologue_start, walk->prologue_end);
         }
 
-        if (ctl == TESTER_CFG_WALK_CONT)
-        {
+        skip_items = ctl != TESTER_CFG_WALK_CONT;
+        have_skip_cb = walk->skip_start != NULL && walk->skip_end != NULL;
+
+        if (skip_items && have_skip_cb)
+            walk->skip_start((void *)opaque);
+
+        if (!skip_items || have_skip_cb)
             ctl = walk_run_items(walk, (void *)opaque, id_off, flags,
                                  &session->run_items,
                                  session->keepalive,
                                  session->exception);
-        }
+
+        if (skip_items && have_skip_cb)
+            walk->skip_end((void *)opaque);
 
         /*
          * Global context flag TESTER_BREAK_SESION is 0 on default.
@@ -289,6 +298,8 @@ walk_test_package(const tester_cfg_walk *walk, const void *opaque,
 {
     tester_cfg_walk_ctl  ctl;
     tester_cfg_walk_ctl  ctl_tmp;
+    te_bool              skip_items;
+    te_bool              have_skip_cb;
 
     ENTRY("run=%s id_off=%u flags=%#x", run_item_name(ri), id_off, flags);
 
@@ -298,11 +309,18 @@ walk_test_package(const tester_cfg_walk *walk, const void *opaque,
     else
         ctl = TESTER_CFG_WALK_CONT;
 
-    if (ctl == TESTER_CFG_WALK_CONT)
-    {
+    skip_items = ctl != TESTER_CFG_WALK_CONT;
+    have_skip_cb = walk->skip_start != NULL && walk->skip_end != NULL;
+
+    if (skip_items && have_skip_cb)
+        walk->skip_start((void *)opaque);
+
+    if (!skip_items || have_skip_cb)
         ctl = walk_test_session(walk, opaque, id_off, flags, ri,
                                 &pkg->session);
-    }
+
+    if (skip_items && have_skip_cb)
+        walk->skip_end((void *)opaque);
 
     if (walk->pkg_end != NULL)
     {

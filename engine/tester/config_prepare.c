@@ -604,6 +604,8 @@ tester_prepare_configs(tester_cfgs *cfgs)
         NULL, /* repeat_start */
         NULL, /* repeat_end */
         prepare_script,
+        NULL, /* skip_start */
+        NULL, /* skip_end */
     };
 
     ENTRY();

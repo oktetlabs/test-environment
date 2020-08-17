@@ -803,6 +803,8 @@ process_test_path(const tester_cfgs *cfgs, test_path *path)
         NULL, /* repeat_start */
         NULL, /* repeat_end */
         NULL, /* script */
+        NULL, /* skip_start */
+        NULL, /* skip_end */
     };
 
     ENTRY("path=%s type=%d", path->str, path->type);

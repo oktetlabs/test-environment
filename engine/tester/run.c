@@ -191,6 +191,12 @@ typedef struct tester_run_data {
                                                  control data */
 
     tester_plan                 plan;       /**< Execution plan */
+    int                         force_skip; /**< Current skip nesting level
+                                                 due to prologue failure */
+    int                         exception;  /**< Current exception handling
+                                                 nesting level */
+    int                         plan_id;    /**< ID of the next run item in
+                                                 the plan */
 
 #if WITH_TRC
     const te_trc_db            *trc_db;     /**< TRC database handle */
@@ -1477,9 +1483,10 @@ log_test_start(unsigned int flags,
      * jansson-2.10, which is currently the newest version available on
      * CentOS/RHEL-7.x
      */
-    result = json_pack("{s:i, s:i, s:o?}",
+    result = json_pack("{s:i, s:i, s:i, s:o?}",
                        "id", test,
                        "parent", parent,
+                       "plan_id", ri->plan_id,
                        "params", test_params_to_json(ri->n_args, ctx->args));
     if (result == NULL)
     {
@@ -1720,7 +1727,7 @@ pack_test_result(const te_test_result *result)
  * @param error         Reason of failure
  */
 static void
-log_test_result(test_id parent, tester_test_result *result)
+log_test_result(test_id parent, tester_test_result *result, int plan_id)
 {
     json_t      *json;
     json_t      *obtained = NULL;
@@ -1796,9 +1803,10 @@ log_test_result(test_id parent, tester_test_result *result)
      * jansson-2.10, which is currently the newest version available on
      * CentOS/RHEL-7.x
      */
-    json = json_pack("{s:i, s:i, s:s?, s:o?, s:s?, s:o?}",
+    json = json_pack("{s:i, s:i, s:i, s:s?, s:o?, s:s?, s:o?}",
                      "id", result->id,
                      "parent", parent,
+                     "plan_id", plan_id,
                      "error", result->error,
                      "obtained", obtained,
                      "tags_expr", tags,
@@ -3112,6 +3120,7 @@ run_exception_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     }
 
     VERB("Running test session exception handler...");
+    gctx->exception++;
 
     EXIT("CONT");
     return TESTER_CFG_WALK_CONT;
@@ -3134,6 +3143,8 @@ run_exception_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
         EXIT("CONT");
         return TESTER_CFG_WALK_CONT;
     }
+
+    gctx->exception--;
 
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
@@ -3609,6 +3620,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         required = tester_is_run_required(ctx->targets, &ctx->reqs,
                                           ri, ctx->args, ctx->flags,
                                           TRUE);
+        ri->plan_id = -1;
         if (required || !quiet_skip)
         {
             rc = tester_plan_register_run_item(&gctx->plan, ri, ctx);
@@ -3669,12 +3681,37 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
         }
     }
 
+    /*
+     * Increment current plan reference ID if not handling any exceptions
+     * and current item is mentioned in the plan
+     */
+    if (gctx->exception == 0 &&
+        ((ctx->flags & TESTER_VERB_SKIP) ||
+         (~ctx->flags & TESTER_QUIET_SKIP) ||
+         tester_is_run_required(ctx->targets, &ctx->reqs,
+                                ri, ctx->args, ctx->flags,
+                                TRUE)))
+        gctx->plan_id++;
+
+    /* Go inside skipped packages and sessions */
+    if (gctx->force_skip > 0 && run_item_container(ri) &&
+        tester_is_run_required(ctx->targets, &ctx->reqs,
+                                    ri, ctx->args, ctx->flags,
+                                    TRUE))
+    {
+        ctx->current_result.status = TESTER_TEST_INCOMPLETE;
+        ctx->group_step = TRUE;
+        EXIT("CONT");
+        return TESTER_CFG_WALK_CONT;
+    }
+
     /* FIXME: Optimize */
     /* verb overwrites quiet */
-    if ((~ctx->flags & TESTER_VERB_SKIP) &&
-        (ctx->flags & TESTER_QUIET_SKIP) &&
-        !tester_is_run_required(ctx->targets, &ctx->reqs,
-                                ri, ctx->args, ctx->flags, TRUE))
+    if ((gctx->force_skip > 0) ||
+        ((~ctx->flags & TESTER_VERB_SKIP) &&
+         (ctx->flags & TESTER_QUIET_SKIP) &&
+         !tester_is_run_required(ctx->targets, &ctx->reqs,
+                                 ri, ctx->args, ctx->flags, TRUE)))
     {
         /* Silently skip without any logs */
         ctx->current_result.status = TESTER_TEST_INCOMPLETE;
@@ -3684,6 +3721,8 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     }
 
     ctx->current_result.id = tester_get_id();
+
+    ri->plan_id = gctx->exception == 0 ? gctx->plan_id - 1 : -1;
 
     tin = (ctx->flags & TESTER_INLOGUE || ri->type != RUN_ITEM_SCRIPT) ?
               TE_TIN_INVALID : cfg_id_off;
@@ -3788,7 +3827,8 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     assert(ctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
-    if (ctx->current_result.status == TESTER_TEST_INCOMPLETE)
+    if (gctx->force_skip > 0 ||
+        ctx->current_result.status == TESTER_TEST_INCOMPLETE)
     {
         ctx->current_result.status = TESTER_TEST_EMPTY;
     }
@@ -3901,7 +3941,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
         tin = (ctx->flags & TESTER_INLOGUE || ri->type != RUN_ITEM_SCRIPT) ?
                   TE_TIN_INVALID : cfg_id_off;
-        log_test_result(ctx->group_result.id, &ctx->current_result);
+        log_test_result(ctx->group_result.id, &ctx->current_result, ri->plan_id);
 
         tester_term_out_done(ctx->flags, ri->type, run_item_name(ri), tin,
                              ctx->group_result.id,
@@ -4073,6 +4113,22 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     }
 }
 
+static void
+run_skip_start(void *opaque)
+{
+    tester_run_data *gctx = opaque;
+
+    gctx->force_skip++;
+}
+
+static void
+run_skip_end(void *opaque)
+{
+    tester_run_data *gctx = opaque;
+
+    gctx->force_skip--;
+}
+
 /**
  * Check whether preparatory walk over testing configuration
  * tree can help to improve scenario.
@@ -4145,6 +4201,8 @@ tester_run(testing_scenario   *scenario,
         run_repeat_start,
         run_repeat_end,
         run_script,
+        run_skip_start,
+        run_skip_end,
     };
 
     testing_act   *act;

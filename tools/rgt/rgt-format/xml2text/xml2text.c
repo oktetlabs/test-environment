@@ -392,6 +392,8 @@ log_mi_test_start(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
 
     fprintf(fd, "%s \"%s\" started\n", data->node_type, data->name);
     fprintf(fd, "Node ID %d, Parent ID %d", data->node_id, data->parent_id);
+    if (data->plan_id != -1)
+        fprintf(fd, ", Plan ID %d", data->plan_id);
 
     rc = flow_stack_push(&ctx->flow_stack, data->node_id, data->parent_id,
                          data->node_type, data->name);
@@ -459,6 +461,8 @@ log_mi_test_end(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
         fprintf(fd, "%s \"%s\" finished\n", item->type, item->name);
         fprintf(fd, "Node ID %d, Parent ID %d", data->node_id,
                 data->parent_id);
+        if (data->plan_id != -1)
+            fprintf(fd, ", Plan ID %d", data->plan_id);
     }
     else
     {

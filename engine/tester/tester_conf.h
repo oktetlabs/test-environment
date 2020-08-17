@@ -266,6 +266,7 @@ struct run_item {
 
     const test_session *context;    /**< Parent session */
 
+    int                 plan_id;    /**< Plan ID */
     char               *name;       /**< Name or NULL */
     char               *objective;  /**< Objective, if NULL - taken from script */
     char               *page;       /**< Page, if NULL - taken from script */
@@ -692,6 +693,8 @@ typedef struct tester_cfg_walk {
                                        unsigned int, void *);
     tester_cfg_walk_ctl (* script)(run_item *, test_script *,
                                    unsigned int, void *);
+    void                (* skip_start)(void *);
+    void                (* skip_end)(void *);
 } tester_cfg_walk;
 
 /**
