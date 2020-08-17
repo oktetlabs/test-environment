@@ -118,6 +118,9 @@ typedef uint64_t tester_flags;
 #define TESTER_RUN_WHILE_EXPECTED     (1LLU << 35)
 #define TESTER_RUN_WHILE_UNEXPECTED   (1LLU << 36)
 
+/** Gather the execution plan */
+#define TESTER_ASSEMBLE_PLAN          (1LLU << 37)
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

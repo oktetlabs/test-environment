@@ -100,6 +100,26 @@ extern unsigned int te_test_id;
                       TE_LL_VERB | TE_LL_ENTRY_EXIT | TE_LL_RING)
 #endif
 
+/** A wrapper around json_t for SLIST */
+typedef struct json_stack_entry {
+    SLIST_ENTRY(json_stack_entry) links; /**< List links */
+
+    json_t *json; /**< Pointer to JSON object */
+} json_stack_entry;
+
+/** A stack of JSON objects to track currently running packages and sessions */
+typedef SLIST_HEAD(json_stack, json_stack_entry) json_stack;
+
+/** Data structure to represent and assemble the execution plan */
+typedef struct tester_plan {
+    json_t     *root;   /**< Root plan object */
+    json_stack  stack;  /**< Current package/session path */
+    const char *test;   /**< Pending test name */
+    int         iters;  /**< Pending test iterations */
+    int         ignore; /**< How deep we are in the subtree
+                             that must be ignored */
+} tester_plan;
+
 /** Tester context */
 typedef struct tester_ctx {
     SLIST_ENTRY(tester_ctx) links;  /**< List links */
@@ -169,6 +189,9 @@ typedef struct tester_run_data {
                                                  which are in progress */
     tester_test_msg_listener   *vl;         /**< Test messages listener
                                                  control data */
+
+    tester_plan                 plan;       /**< Execution plan */
+
 #if WITH_TRC
     const te_trc_db            *trc_db;     /**< TRC database handle */
     const tqh_strings          *trc_tags;   /**< TRC tags */
@@ -181,6 +204,9 @@ typedef struct tester_run_data {
 
 static enum interactive_mode_opts tester_run_interactive(
                                       tester_run_data *gctx);
+
+/* Forward declarations */
+static json_t *persons_info_to_json(const persons_info *persons);
 
 /**
  * Output Tester control log message (i.e. message about
@@ -224,6 +250,329 @@ tester_control_log(json_t *json, const char *mi_type)
     }
 
     json_decref(mi);
+}
+
+/**
+ * Add a new JSON object to the execution plan.
+ *
+ * @param plan      execution plan
+ * @param ri        run item in JSON format
+ *
+ * @returns Status code
+ */
+static te_errno
+tester_plan_add_child(tester_plan *plan, json_t *ri)
+{
+    json_stack_entry *e;
+    json_t           *parent = NULL;
+
+    if (plan == NULL || ri == NULL)
+        return TE_EINVAL;
+
+    if (plan->root == NULL)
+    {
+        plan->root = ri;
+        parent = NULL;
+    }
+    else
+    {
+        e = SLIST_FIRST(&plan->stack);
+        assert(e != NULL);
+        parent = e->json;
+    }
+
+    if (parent != NULL)
+    {
+        json_t *children;
+
+        children = json_object_get(parent, "children");
+        if (children == NULL)
+        {
+            children = json_array();
+            if (children == NULL)
+                return TE_ENOMEM;
+            if (json_object_set_new(parent, "children", children) != 0)
+            {
+                json_decref(children);
+                return TE_EFAIL;
+            }
+        }
+
+        if (json_array_append_new(children, ri) != 0)
+            return TE_EFAIL;
+    }
+
+    return 0;
+}
+
+/**
+ * Add a pending test to the execution plan.
+ *
+ * @param plan      execution plan
+ *
+ * @returns Status code
+ */
+static te_errno
+tester_plan_add_pending_test(tester_plan *plan)
+{
+    json_t   *json;
+    te_errno  rc;
+
+    if (plan == NULL)
+        return TE_EINVAL;
+
+    if (plan->iters > 1)
+        json = json_pack("{s:s, s:s, s:i}",
+                         "type", "test",
+                         "name", plan->test,
+                         "iterations", plan->iters);
+    else
+        json = json_pack("{s:s, s:s}",
+                         "type", "test",
+                         "name", plan->test);
+    if (json == NULL)
+    {
+        ERROR("Failed to pack test object for execution plan");
+        return TE_EFAIL;
+    }
+    rc = tester_plan_add_child(plan, json);
+    if (rc != 0)
+    {
+        json_decref(json);
+        return rc;
+    }
+
+    plan->test = NULL;
+    plan->iters = 0;
+
+    return 0;
+}
+
+/**
+ * Add an "ignored" package.
+ *
+ * This package and its children will not be present in the final plan.
+ *
+ * @param plan      execution plan
+ *
+ * @returns Status code
+ */
+static te_errno
+tester_plan_add_ignore(tester_plan *plan)
+{
+    if (plan == NULL)
+        return TE_EINVAL;
+
+    plan->ignore++;
+    return 0;
+}
+
+/**
+ * Add a test iteration to the execution plan.
+ *
+ * @param plan              execution plan
+ * @param test_name         run item in JSON format
+ *
+ * @returns Status code
+ */
+static te_errno
+tester_plan_register_test(tester_plan *plan, const char *test_name)
+{
+    te_errno          rc;
+
+    if (plan->ignore > 0)
+        return 0;
+
+    if (test_name != NULL && plan->test != NULL &&
+        strcmp(test_name, plan->test) == 0)
+    {
+        plan->iters++;
+        return 0;
+    }
+
+    if (plan->test != NULL)
+    {
+        rc = tester_plan_add_pending_test(plan);
+        if (rc != 0)
+            return rc;
+    }
+
+    plan->test = test_name;
+    plan->iters = 1;
+
+    return 0;
+}
+
+/**
+ * Add a run item in JSON format to the execution plan.
+ *
+ * This function changes the current active path in the execution tree.
+ *
+ * @param plan      execution plan
+ * @param ri        run item in JSON format
+ *
+ * @returns Status code
+ */
+static te_errno
+tester_plan_register(tester_plan *plan, json_t *ri)
+{
+    te_errno          rc;
+    json_stack_entry *e;
+
+    if (plan == NULL || ri == NULL)
+        return TE_EINVAL;
+
+    e = TE_ALLOC(sizeof(*e));
+    if (e == NULL)
+        return TE_ENOMEM;
+
+    if (plan->test != NULL)
+    {
+        rc = tester_plan_add_pending_test(plan);
+        if (rc != 0)
+            return rc;
+    }
+
+    rc = tester_plan_add_child(plan, ri);
+    if (rc != 0)
+        return rc;
+
+    e->json = ri;
+    SLIST_INSERT_HEAD(&plan->stack, e, links);
+
+    plan->test = NULL;
+    plan->iters = 0;
+
+    return 0;
+}
+
+/**
+ * Add a run item to the execution plan.
+ *
+ * @param plan      execution plan
+ * @param ri        run item in JSON format
+ * @param ctx       Tester context
+ *
+ * @returns Status code
+ */
+static te_errno
+tester_plan_register_run_item(tester_plan *plan, run_item *ri, tester_ctx *ctx)
+{
+    te_errno  rc;
+    json_t   *obj;
+    json_t   *authors;
+
+    const char *name =
+        (ctx->flags & TESTER_LOG_IGNORE_RUN_NAME) ? test_get_name(ri)
+                                                  : run_item_name(ri);
+
+    if (plan == NULL || ri == NULL)
+        return TE_EINVAL;
+
+    switch (ri->type)
+    {
+        case RUN_ITEM_SCRIPT:
+            tester_plan_register_test(plan, name);
+            return 0;
+        case RUN_ITEM_SESSION:
+            /*
+             * "*" instead of "?" would be better here, but it's not supported in
+             * jansson-2.10, which is currently the newest version available on
+             * CentOS/RHEL-7.x
+             */
+            obj = json_pack("{s:s, s:s?}",
+                            "type", "session",
+                            "name", name);
+            if (obj == NULL)
+            {
+                ERROR("Failed to pack session info into JSON");
+                return TE_EFAIL;
+            }
+
+            rc = tester_plan_register(plan, obj);
+            if (rc != 0)
+            {
+                ERROR("Failed to register session \"%s\": %r",
+                      test_get_name(ri), rc);
+                json_decref(obj);
+                return TE_EFAIL;
+            }
+            break;
+        case RUN_ITEM_PACKAGE:
+            authors = persons_info_to_json(&ri->u.package->authors);
+            if (authors == NULL)
+            {
+                ERROR("Failed to transform package authors into JSON");
+                return TE_EFAIL;
+            }
+
+            /*
+             * "*" instead of "?" would be better here, but it's not supported in
+             * jansson-2.10, which is currently the newest version available on
+             * CentOS/RHEL-7.x
+             */
+            obj = json_pack("{s:s, s:s, s:s?, s:o}",
+                            "type", "pkg",
+                            "name", name,
+                            "objective", ri->u.package->objective,
+                            "authors", authors);
+            if (obj == NULL)
+            {
+                ERROR("Failed to pack package info into JSON");
+                json_decref(authors);
+                return TE_EFAIL;
+            }
+
+            rc = tester_plan_register(plan, obj);
+            if (rc != 0)
+            {
+                ERROR("Failed to register package \"%s\": %r",
+                      name, rc);
+                json_decref(obj);
+                return TE_EFAIL;
+            }
+            break;
+        default:
+            return 0;
+    }
+    return 0;
+}
+
+/**
+ * Move up one level in the execution tree.
+ *
+ * @param plan              execution plan
+ *
+ * @returns Status code
+ */
+static te_errno
+tester_plan_pop(tester_plan *plan)
+{
+    json_stack_entry *e;
+
+    if (plan == NULL)
+        return TE_EINVAL;
+
+    if (plan->ignore > 0)
+    {
+        plan->ignore--;
+        return 0;
+    }
+
+    e = SLIST_FIRST(&plan->stack);
+    if (e == NULL)
+    {
+        ERROR("Popping an empty path stack");
+        return TE_EINVAL;
+    }
+
+    tester_plan_register_test(plan, NULL);
+    plan->test = NULL;
+    plan->iters = 0;
+
+    SLIST_REMOVE_HEAD(&plan->stack, links);
+    free(e);
+    return 0;
 }
 
 /**
@@ -432,7 +781,7 @@ tester_run_first_ctx(tester_run_data *data)
     if (new_ctx == NULL)
         return NULL;
 
-    if (~data->flags & TESTER_PRERUN)
+    if (!(data->flags & (TESTER_PRERUN | TESTER_ASSEMBLE_PLAN)))
         new_ctx->group_result.id = tester_get_id();
 
 #if WITH_TRC
@@ -490,6 +839,68 @@ tester_run_more_ctx(tester_run_data *data, te_bool new_group)
 
     return new_ctx;
 }
+
+/**
+ * Assemble and log the test execution plan.
+ *
+ * @param data          Tester run data
+ * @param cbs           configuration walk callbacks
+ * @param cfgs          Tester configurations
+ *
+ * @returns Status code
+ */
+static te_errno
+tester_assemble_plan(tester_run_data *data, const tester_cfg_walk *cbs, const tester_cfgs *cfgs)
+{
+    char                *plan_text;
+    tester_flags         orig_flags;
+    const testing_act   *orig_act;
+    unsigned int         orig_act_id;
+    tester_cfg_walk_ctl  ctl;
+
+    orig_flags  = data->flags;
+    data->flags |= TESTER_ASSEMBLE_PLAN | TESTER_NO_TRC | TESTER_NO_CS |
+                   TESTER_NO_CFG_TRACK;
+    orig_act    = data->act;
+    orig_act_id = data->act_id;
+    if (tester_run_first_ctx(data) == NULL)
+        return TE_RC(TE_TESTER, TE_ENOMEM);
+
+    ctl = tester_configs_walk(cfgs, cbs, 0, data);
+
+    data->flags = orig_flags;
+    data->act = orig_act;
+    data->act_id = orig_act_id;
+    data->direction = TESTING_FORWARD;
+    tester_run_destroy_ctx(data);
+
+    if (ctl != TESTER_CFG_WALK_FIN)
+    {
+        ERROR("Plan-gathering tree walk returned unexpected result %u",
+              ctl);
+        LGR_MESSAGE(TE_LL_ERROR, "Execution Plan",
+                    "Failed to assemble the execution plan");
+        json_decref(data->plan.root);
+        data->plan.root = NULL;
+        return TE_RC(TE_TESTER, TE_EFAULT);
+    }
+
+    plan_text = json_dumps(data->plan.root, JSON_COMPACT);
+    json_decref(data->plan.root);
+    data->plan.root = NULL;
+    if (plan_text == NULL)
+    {
+        LGR_MESSAGE(TE_LL_ERROR, "Execution Plan",
+                    "Failed to dump the execution plan to string");
+        return TE_RC(TE_TESTER, TE_EFAULT);
+    }
+    LGR_MESSAGE(TE_LL_MI | TE_LL_CONTROL, "Execution Plan",
+                "%s", plan_text);
+    free(plan_text);
+
+    return 0;
+}
+
 
 /**
  * Update test group status.
@@ -1871,7 +2282,7 @@ run_script(run_item *ri, test_script *script,
           gctx->act != NULL ? (gctx->act->flags | def_flags) : def_flags,
           gctx->act_id, script->name);
 
-    if (ctx->flags & TESTER_PRERUN)
+    if (ctx->flags & (TESTER_PRERUN | TESTER_ASSEMBLE_PLAN))
     {
         EXIT("CONT");
         ctx->current_result.status = TESTER_TEST_PASSED;
@@ -2062,7 +2473,7 @@ run_cfg_start(tester_cfg *cfg, unsigned int cfg_id_off, void *opaque)
         return TESTER_CFG_WALK_SKIP;
     }
 
-    if (~ctx->flags & TESTER_PRERUN)
+    if (!(ctx->flags & (TESTER_PRERUN | TESTER_ASSEMBLE_PLAN)))
     {
         maintainers = persons_info_to_string(&cfg->maintainers);
         RING("Running configuration:\n"
@@ -2208,7 +2619,7 @@ run_item_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
 
     }
 
-    if (!(gctx->flags & (TESTER_FAKE | TESTER_PRERUN)))
+    if (!(gctx->flags & (TESTER_FAKE | TESTER_PRERUN | TESTER_ASSEMBLE_PLAN)))
         start_cmd_monitors(&ri->cmd_monitors);
 
     if (~flags & TESTER_CFG_WALK_SERVICE)
@@ -2260,7 +2671,7 @@ run_item_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     assert(ctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
-    if (!(gctx->flags & (TESTER_FAKE | TESTER_PRERUN)))
+    if (!(gctx->flags & (TESTER_FAKE | TESTER_PRERUN | TESTER_ASSEMBLE_PLAN)))
         stop_cmd_monitors(&ri->cmd_monitors);
 
 #if WITH_TRC
@@ -2435,7 +2846,7 @@ run_prologue_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
 
     if (status == TESTER_TEST_PASSED)
     {
-        if (~ctx->flags & TESTER_PRERUN)
+        if (!(ctx->flags & (TESTER_PRERUN | TESTER_ASSEMBLE_PLAN)))
         {
             cfg_val_type    type = CVT_STRING; 
             char           *reqs = NULL;
@@ -2590,7 +3001,7 @@ run_keepalive_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(ctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
-    if (ctx->flags & TESTER_PRERUN)
+    if (ctx->flags & (TESTER_PRERUN | TESTER_ASSEMBLE_PLAN))
     {
         EXIT("CONT");
         return TESTER_CFG_WALK_CONT;
@@ -2635,7 +3046,7 @@ run_keepalive_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(ctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
-    if (ctx->flags & TESTER_PRERUN)
+    if (ctx->flags & (TESTER_PRERUN | TESTER_ASSEMBLE_PLAN))
     {
         EXIT("CONT");
         return TESTER_CFG_WALK_CONT;
@@ -2682,7 +3093,7 @@ run_exception_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(gctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
-    if (gctx->flags & TESTER_PRERUN)
+    if (gctx->flags & (TESTER_PRERUN | TESTER_ASSEMBLE_PLAN))
     {
         EXIT("CONT");
         return TESTER_CFG_WALK_CONT;
@@ -2718,7 +3129,7 @@ run_exception_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(gctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
-    if (gctx->flags & TESTER_PRERUN)
+    if (gctx->flags & (TESTER_PRERUN | TESTER_ASSEMBLE_PLAN))
     {
         EXIT("CONT");
         return TESTER_CFG_WALK_CONT;
@@ -3162,6 +3573,7 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     tester_ctx         *ctx;
     unsigned int        tin;
     char               *hash_str;
+    te_errno            rc;
 
     UNUSED(flags);
 
@@ -3184,6 +3596,51 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
             return TESTER_CFG_WALK_SKIP;
         }
         free(hash_str);
+    }
+
+    if (ctx->flags & TESTER_ASSEMBLE_PLAN)
+    {
+        te_bool             quiet_skip;
+        te_bool             required;
+
+        /* verb overwrites quiet */
+        quiet_skip = (~ctx->flags & TESTER_VERB_SKIP) &&
+                     (ctx->flags & TESTER_QUIET_SKIP);
+        required = tester_is_run_required(ctx->targets, &ctx->reqs,
+                                          ri, ctx->args, ctx->flags,
+                                          TRUE);
+        if (required || !quiet_skip)
+        {
+            rc = tester_plan_register_run_item(&gctx->plan, ri, ctx);
+            if (rc != 0)
+            {
+                ERROR("Failed to register run item");
+                EXIT("FAULT");
+                return TESTER_CFG_WALK_FAULT;
+            }
+        }
+        else if (!required && run_item_container(ri))
+        {
+            rc = tester_plan_add_ignore(&gctx->plan);
+            if (rc != 0)
+            {
+                ERROR("Failed to add \"ignore\" package");
+                EXIT("FAULT");
+                return TESTER_CFG_WALK_FAULT;
+            }
+        }
+        if (required)
+        {
+            EXIT("CONT");
+            return TESTER_CFG_WALK_CONT;
+        }
+        else
+        {
+            ctx->current_result.status = TESTER_TEST_INCOMPLETE;
+            ctx->group_step = TRUE;
+            EXIT("SKIP");
+            return TESTER_CFG_WALK_SKIP;
+        }
     }
 
     if (ctx->flags & TESTER_PRERUN)
@@ -3324,6 +3781,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     tester_run_data    *gctx = opaque;
     tester_ctx         *ctx;
     unsigned int        step;
+    te_errno            rc;
 
     assert(gctx != NULL);
     ctx = SLIST_FIRST(&gctx->ctxs);
@@ -3334,7 +3792,7 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
     {
         ctx->current_result.status = TESTER_TEST_EMPTY;
     }
-    else if (~ctx->flags & TESTER_PRERUN)
+    else if (!(ctx->flags & (TESTER_PRERUN | TESTER_ASSEMBLE_PLAN)))
     {
         unsigned int    tin;
 
@@ -3457,6 +3915,17 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                              );
 
         te_test_result_clean(&ctx->current_result.result);
+    }
+
+    if ((ctx->flags & TESTER_ASSEMBLE_PLAN) && run_item_container(ri))
+    {
+        rc = tester_plan_pop(&gctx->plan);
+        if (rc != 0)
+        {
+            ERROR("Failed to pop path stack: %r", rc);
+            EXIT("FAULT");
+            return TESTER_CFG_WALK_FAULT;
+        }
     }
 
     /* Update result of the group */
@@ -3780,6 +4249,10 @@ tester_run(testing_scenario   *scenario,
             return TE_RC(TE_TESTER, TE_ENOENT);
         }
     }
+
+    rc = tester_assemble_plan(&data, &cbs, cfgs);
+    if (rc != 0)
+        return rc;
 
     if (tester_run_first_ctx(&data) == NULL)
         return TE_RC(TE_TESTER, TE_ENOMEM);
