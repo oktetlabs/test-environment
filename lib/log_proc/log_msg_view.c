@@ -56,6 +56,7 @@ te_raw_log_parse(const void *buf, size_t buf_len, log_msg_view *view)
     } while (0)
 
     view->length = buf_len;
+    view->start = buf;
 
     READINT(8, view->version);
     assert(view->version == 1);

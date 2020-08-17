@@ -24,6 +24,7 @@ extern "C" {
 /** View structure for log messages. */
 typedef struct log_msg_view {
     size_t          length;
+    const void     *start;
     te_log_version  version;
     te_log_ts_sec   ts_sec;
     te_log_ts_usec  ts_usec;
