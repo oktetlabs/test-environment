@@ -35,6 +35,7 @@
 #include "logger_int.h"
 #include "logger_internal.h"
 #include "logger_ten.h"
+#include "logger_stream.h"
 
 #define LGR_TA_MAX_BUF      0x4000 /* FIXME */
 
@@ -1084,6 +1085,9 @@ main(int argc, const char *argv[])
     }
     /* Apply sniffer settings from environment variables */
     sniffer_polling_sets_cli_init();
+
+    if (listeners_enabled)
+        listeners_conf_dump();
 
     /* ASAP create separate thread for log message server */
     res = pthread_create(&te_thread, NULL, (void *)&te_handler, NULL);

@@ -82,6 +82,9 @@ extern void msg_queue_shutdown(msg_queue *queue);
  */
 extern te_errno msg_queue_fini(msg_queue *queue);
 
+/** Log current listener configuration */
+extern void listeners_conf_dump(void);
+
 /** Main routine for the listener server thread */
 extern void *listeners_thread(void *);
 

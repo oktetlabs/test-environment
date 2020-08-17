@@ -13,6 +13,7 @@
 #include <poll.h>
 
 #include "te_defs.h"
+#include "log_bufs.h"
 #include "logger_api.h"
 #include "logger_stream.h"
 #include "logger_stream_rules.h"
@@ -118,6 +119,78 @@ msg_queue_fini(msg_queue *queue)
     pthread_mutex_destroy(&queue->mutex);
     close(queue->eventfd);
     return 0;
+}
+
+/** Log entity filter */
+static void
+entity_dump(log_entity_filter *entity, te_log_buf *buffer)
+{
+    log_user_filter *user;
+
+    te_log_buf_append(buffer, "    entity %s, level %d\n",
+                      entity->name, entity->level);
+
+    SLIST_FOREACH(user, &entity->users, links)
+    {
+        te_log_buf_append(buffer, "      user %s, level %d\n",
+                          user->name, user->level);
+    }
+}
+
+/** Log streaming filter */
+static void
+filter_dump(streaming_filter *filter, te_log_buf *buffer)
+{
+    log_msg_filter    *flt = &filter->filter;
+    log_entity_filter *entity;
+    size_t             i;
+    size_t             j;
+
+    te_log_buf_append(buffer, "  filter:\n");
+    SLIST_FOREACH(entity, &flt->entities, links)
+        entity_dump(entity, buffer);
+    entity_dump(&flt->def_entity, buffer);
+
+    for (i = 0; i < filter->actions_num; i++)
+    {
+        streaming_action *action = &filter->actions[i];
+        te_log_buf_append(buffer, "  rule %s:\n", action->rule->name);
+        for (j = 0; j < action->listeners_num; j++)
+            te_log_buf_append(buffer, "    listener %s\n",
+                              listeners[action->listeners[j]].name);
+    }
+}
+
+/* See description in logger_stream.h */
+void
+listeners_conf_dump(void)
+{
+    size_t      i;
+    te_log_buf *buffer;
+
+    buffer = te_log_buf_alloc();
+
+    te_log_buf_append(buffer, "Listeners:\n");
+    for (i = 0; i < listeners_num; i++)
+    {
+        log_listener *listener = &listeners[i];
+        te_log_buf_append(buffer, "  name: %s\n", listener->name);
+        te_log_buf_append(buffer, "  url: %s\n", listener->url);
+        te_log_buf_append(buffer, "  interval: %d\n", listener->interval);
+        te_log_buf_append(buffer, "  buffer_size: %lu\n", listener->buffer_size);
+        te_log_buf_append(buffer, "  buffers_num: %lu\n", listener->buffers_num);
+        te_log_buf_append(buffer, "\n");
+    }
+
+    te_log_buf_append(buffer, "Filters:\n");
+    for (i = 0; i < streaming_filters_num; i++)
+    {
+        filter_dump(&streaming_filters[i], buffer);
+        te_log_buf_append(buffer, "\n");
+    }
+
+    RING("Current listeners configuration:\n%s", te_log_buf_get(buffer));
+    te_log_buf_free(buffer);
 }
 
 /** Process the log message with the test execution plan */

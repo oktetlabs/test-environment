@@ -17,15 +17,16 @@ te_logger_SOURCES = logger.c logger_cnf.c logger_cnf_int.c logger_bufs.c \
                     logger_stream.c logger_stream_rules.c logger_listener.c \
                     logger_prc.c te_log_sniffers.c
 te_logger_LDADD = @TE_LDADD@ -lipcserver -lrcfapi -lipc -ltools -llogger_core \
-                  -llog_proc -lpcre @XML2_LIBS@ -lpopt -lexpat -lyaml -ljansson \
-                  -lpthread
+                  -llog_proc -llog_bufs -lpcre @XML2_LIBS@ -lpopt -lexpat -lyaml \
+                  -ljansson -lpthread
 te_logger_DEPENDENCIES = @TE_DEPENDENCIES@ \
                          $(DESTDIR)/$(libdir)/liblogger_core.a \
                          $(DESTDIR)/$(libdir)/libipc.a \
                          $(DESTDIR)/$(libdir)/libipcserver.a \
                          $(DESTDIR)/$(libdir)/librcfapi.a \
                          $(DESTDIR)/$(libdir)/libtools.a \
-                         $(DESTDIR)/$(libdir)/liblog_proc.a
+                         $(DESTDIR)/$(libdir)/liblog_proc.a \
+                         $(DESTDIR)/$(libdir)/liblog_bufs.a
                        
 te_log_shutdown_SOURCES = te_log_shutdown.c
 te_log_shutdown_LDADD = @TE_LDADD@ -lipc -lpthread
