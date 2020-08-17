@@ -287,24 +287,143 @@ process_queue(void)
     return evt;
 }
 
+/** CURL socket callback */
+static int
+socket_cb(CURL *handle, curl_socket_t sock, int what, void *userp,
+          void *socketp)
+{
+    size_t         i;
+    struct pollfd *fds = userp;
+
+    UNUSED(handle);
+    UNUSED(socketp);
+    if (what == CURL_POLL_REMOVE)
+    {
+        /* Remove this socket from poll fds */
+        for (i = 1; i < listeners_num + 1; i++)
+        {
+            if (fds[i].fd == sock)
+            {
+                fds[i].fd = -1;
+                return 0;
+            }
+        }
+        /* Unreachable */
+        ERROR("CURL requested removal of a nonexistent socket");
+        assert(0);
+    }
+    else
+    {
+        /* Find this socket in the array */
+        for (i = 1; i < listeners_num + 1; i++)
+        {
+            if (fds[i].fd == sock)
+                break;
+        }
+        /* Find a spot in the fd array for this new socket */
+        if (i == listeners_num + 1)
+        {
+            for (i = 1; i < listeners_num + 1; i++)
+            {
+                if (fds[i].fd == -1)
+                    break;
+            }
+        }
+        if (i < listeners_num + 1)
+        {
+            fds[i].fd = sock;
+            if (what == CURL_POLL_IN)
+                fds[i].events = POLLIN;
+            else if (what == CURL_POLL_OUT)
+                fds[i].events = POLLOUT;
+            else
+                fds[i].events = POLLIN | POLLOUT;
+        }
+        else
+        {
+            ERROR("curl requested addition of too many sockets");
+            assert(0);
+        }
+    }
+    return 0;
+}
+
+/** CURL timer callback */
+static int
+timer_cb(CURLM *handle, long timeout_ms, void *userp)
+{
+    struct timeval *timeout = userp;
+
+    UNUSED(handle);
+    if (timeout_ms == -1)
+    {
+        timeout->tv_sec = 0;
+    }
+    else
+    {
+        gettimeofday(timeout, NULL);
+        timeout->tv_sec += timeout_ms / 1000;
+        timeout->tv_usec += (timeout_ms % 1000) * 1000;
+        if (timeout->tv_usec >= 1000000)
+        {
+            timeout->tv_sec += 1;
+            timeout->tv_usec -= 1000000;
+        }
+    }
+
+    return 0;
+}
+
 /* See description in logger_stream.h */
 void *
 listeners_thread(void *arg)
 {
-    size_t         i;
-    int            ret;
-    te_errno       rc;
-    struct pollfd  fds[1];
-    struct timeval now;
-    struct timeval next;
-    queue_event    events_happened = QEVENT_NONE;
-    int            listeners_running;
-    int            poll_timeout;
+    size_t          i;
+    int             ret;
+    te_errno        rc;
+    te_bool         added_handles;
+    struct pollfd   fds[1 + LOG_MAX_LISTENERS];
+    struct timeval  now;
+    struct timeval  next;
+    struct timeval  curl_timeout;
+    CURLM          *curl_mhandle;
+    int             curl_running;
+    CURLMsg        *curl_msg;
+    int             in_queue;
+    queue_event     events_happened = QEVENT_NONE;
+    int             listeners_running;
+    int             poll_timeout;
 
     UNUSED(arg);
 
     if (listeners_num == 0)
         return NULL;
+
+    curl_mhandle = curl_multi_init();
+    if (curl_mhandle == NULL)
+    {
+        ERROR("curl_multi_init failed");
+        return NULL;
+    }
+    curl_timeout.tv_sec = 0;
+#define SET_CURLM_OPT(OPT, ARG) \
+    do {                                                 \
+        CURLMcode ret;                                   \
+                                                         \
+        ret = curl_multi_setopt(curl_mhandle, OPT, ARG); \
+        if (ret != CURLM_OK)                             \
+        {                                                \
+            ERROR("Failed to set CURLM option %s: %s",   \
+                  #OPT, curl_multi_strerror(ret));       \
+            return NULL;                                 \
+        }                                                \
+    } while (0)
+
+    SET_CURLM_OPT(CURLMOPT_SOCKETDATA, fds);
+    SET_CURLM_OPT(CURLMOPT_SOCKETFUNCTION, socket_cb);
+    SET_CURLM_OPT(CURLMOPT_TIMERDATA, &curl_timeout);
+    SET_CURLM_OPT(CURLMOPT_TIMERFUNCTION, timer_cb);
+#undef SET_CURLM_OPT
 
     gettimeofday(&now, NULL);
 
@@ -317,17 +436,29 @@ listeners_thread(void *arg)
     for (i = 0; i < listeners_num; i++)
         listeners[i].next_tv.tv_sec = 0;
 
+    for (i = 1; i < listeners_num + 1; i++)
+    {
+        fds[i].fd = -1;
+        fds[i].events = 0;
+        fds[i].revents = 0;
+    }
+
     next.tv_sec = 0;
+    curl_multi_socket_action(curl_mhandle, CURL_SOCKET_TIMEOUT, 0, &curl_running);
     do {
+        added_handles = FALSE;
+
         gettimeofday(&now, NULL);
         if (next.tv_sec != 0 && timercmp(&next, &now, <))
             next = now;
+        if (curl_timeout.tv_sec != 0 && timercmp(&next, &curl_timeout, <))
+            next = curl_timeout;
 
         poll_timeout = next.tv_sec == 0 ? -1 :
                        (next.tv_sec - now.tv_sec) * 1000 +
                        (next.tv_usec - now.tv_usec) / 1000;
 
-        ret = poll(fds, 1, poll_timeout);
+        ret = poll(fds, listeners_num + 1, poll_timeout);
         if (ret == -1)
         {
             ERROR("Poll error: %s", strerror(errno));
@@ -337,7 +468,19 @@ listeners_thread(void *arg)
         gettimeofday(&now, NULL);
 
         if (fds[0].revents & POLLIN)
-            events_happened |= process_queue();
+        {
+            queue_event evt;
+
+            evt = process_queue();
+            events_happened |= evt;
+            if (evt & QEVENT_PLAN)
+            {
+                for (i = 0; i < listeners_num; i++)
+                    curl_multi_add_handle(curl_mhandle, listeners[i].curl_handle);
+                curl_multi_socket_action(curl_mhandle,
+                                         CURL_SOCKET_TIMEOUT, 0, &curl_running);
+            }
+        }
 
         if (events_happened & QEVENT_FAILURE)
         {
@@ -346,6 +489,48 @@ listeners_thread(void *arg)
             break;
         }
 
+        if (curl_timeout.tv_sec != 0 && timercmp(&curl_timeout, &now, <))
+        {
+            curl_timeout.tv_sec = 0;
+            curl_multi_socket_action(curl_mhandle, CURL_SOCKET_TIMEOUT, 0, &curl_running);
+        }
+
+        /* Handle socket events and timeouts */
+        for (i = 1; i < listeners_num + 1; i++)
+        {
+            if (fds[i].revents != 0)
+            {
+                int ev_bitmask = 0;
+
+                if (fds[i].revents & POLLIN)
+                    ev_bitmask |= CURL_CSELECT_IN;
+                if (fds[i].revents & POLLOUT)
+                    ev_bitmask |= CURL_CSELECT_OUT;
+                if (fds[i].revents & POLLERR)
+                    ev_bitmask |= CURL_CSELECT_ERR;
+                fds[i].revents = 0;
+                curl_multi_socket_action(curl_mhandle, fds[i].fd, ev_bitmask, &curl_running);
+            }
+        }
+
+        /* Process finished curl transfers */
+        do {
+            curl_msg = curl_multi_info_read(curl_mhandle, &in_queue);
+            if (curl_msg && curl_msg->msg == CURLMSG_DONE)
+            {
+                log_listener *listener;
+
+                /* Remove the handle */
+                curl_multi_remove_handle(curl_mhandle, curl_msg->easy_handle);
+                /* Fetch the listener */
+                curl_easy_getinfo(curl_msg->easy_handle, CURLINFO_PRIVATE,
+                                  (char **)&listener);
+                /* Handle request result */
+                listener_finish_request(listener);
+            }
+        } while (in_queue > 0);
+
+        /* Listener logic */
         listeners_running = 0;
         next.tv_sec = 0;
         for (i = 0; i < listeners_num; i++)
@@ -381,6 +566,8 @@ listeners_thread(void *arg)
                 rc = listener_dump(listener);
                 if (rc != 0)
                     ERROR("Listener %s: failed to dump messages");
+                curl_multi_add_handle(curl_mhandle, listener->curl_handle);
+                added_handles = TRUE;
             }
 
             /* Finish once all messages have been sent */
@@ -389,8 +576,8 @@ listeners_thread(void *arg)
                 listener->buffer.total_length == 0)
             {
                 listener_finish(listener);
-                listeners_running -= 1;
-                continue;
+                curl_multi_add_handle(curl_mhandle, listener->curl_handle);
+                added_handles = TRUE;
             }
 
             if (next.tv_sec == 0 ||
@@ -398,8 +585,11 @@ listeners_thread(void *arg)
                  timercmp(&listener->next_tv, &next, <)))
                 next = listener->next_tv;
         }
+        if (added_handles)
+            curl_multi_socket_action(curl_mhandle, CURL_SOCKET_TIMEOUT, 0, &curl_running);
     } while (listeners_running > 0);
 
+    curl_multi_cleanup(curl_mhandle);
     RING("Listener thread finished");
     return NULL;
 }

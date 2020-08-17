@@ -1112,6 +1112,15 @@ add_rules(yaml_document_t *d, yaml_node_t *rules)
     return 0;
 }
 
+/** Curl callback that ignores the data it receives */
+static size_t
+ignore_write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
+{
+    UNUSED(ptr);
+    UNUSED(userdata);
+    return size * nmemb;
+}
+
 /**
  * Extract listener configuration and add it to the list.
  *
@@ -1296,14 +1305,64 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
 
     msg_buffer_init(&current->buffer);
     current->state = LISTENER_INIT;
-    current->file = fopen(current->url, "w");
-    if (current->file == NULL)
+    current->last_message_id = -1;
+    current->curl_handle = curl_easy_init();
+    if (current->curl_handle == NULL)
     {
-        ERROR("%s(%s): Failed to open file %s: %s",
-              __FUNCTION__, name_str, url_str, strerror(errno));
-        msg_buffer_free(&current->buffer);
+        ERROR("%s(%s): Failed to create curl handle",
+              __FUNCTION__, current->name);
         return -1;
     }
+
+#define SET_CURL_OPT(OPT, ARG) \
+    do {                                                                  \
+        CURLcode ret;                                                     \
+                                                                          \
+        ret = curl_easy_setopt(current->curl_handle, OPT, ARG);           \
+        if (ret != CURLE_OK)                                              \
+        {                                                                 \
+            ERROR("%s(%s): Failed to set CURL option %s: %s",             \
+                  __FUNCTION__, name_str, #OPT, curl_easy_strerror(ret)); \
+            return -1;                                                    \
+        }                                                                 \
+    } while (0)
+
+    /* Limit protocols to HTTP(S), use HTTPS as the default URL scheme */
+    SET_CURL_OPT(CURLOPT_DEFAULT_PROTOCOL, "https");
+    SET_CURL_OPT(CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+    /* Disallow HTTP redirects */
+    SET_CURL_OPT(CURLOPT_REDIR_PROTOCOLS, 0L);
+    SET_CURL_OPT(CURLOPT_FOLLOWLOCATION, 0L);
+    /* Disallow redirects for POST requests */
+    SET_CURL_OPT(CURLOPT_POSTREDIR, 0L);
+    /* Keep a pointer to listener for easy reference */
+    SET_CURL_OPT(CURLOPT_PRIVATE, current);
+    /*
+     * Have curl
+     *   a) automatically handle HTTP cookies,
+     *   b) do so with an in-memory cookie jar.
+     */
+    SET_CURL_OPT(CURLOPT_COOKIEFILE, "");
+    /*
+     * Currently we don't need the server response's body, so it should be
+     * ignored. By default curl writes the body to stdout, so we need to
+     * specify our own callback.
+     */
+    SET_CURL_OPT(CURLOPT_WRITEFUNCTION, ignore_write_cb);
+
+    /* All requests will be POSTs, prepare headers here */
+    /* TE will only send JSON */
+    current->headers = curl_slist_append(NULL, "Content-Type: application/json");
+    /* Don't wait for server's confirmation before sending request body */
+    if (current->headers != NULL)
+        current->headers = curl_slist_append(current->headers, "Expect:");
+    if (current->headers == NULL)
+    {
+        ERROR("%s(%s): curl_slist_append failed", __FUNCTION__, name_str);
+        return -1;
+    }
+    SET_CURL_OPT(CURLOPT_HTTPHEADER, current->headers);
+#undef SET_CURL_OPT
 
     listeners_num++;
     return 0;

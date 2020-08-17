@@ -12,9 +12,11 @@
 #define __TE_LOGGER_LISTENER_H__
 
 #include <stdio.h>
+#include <curl/curl.h>
 
 #include "te_defs.h"
 #include "te_errno.h"
+#include "te_string.h"
 #include "te_queue.h"
 #include "logger_bufs.h"
 
@@ -28,23 +30,35 @@ extern "C" {
 
 /** Listener operation state */
 typedef enum listener_state {
-    LISTENER_INIT,      /**< Initial state, waiting for execution
-                             plan to be posted */
-    LISTENER_GATHERING, /**< Gathering messages to be sent */
-    LISTENER_FINISHED   /**< Listener has finished its operation */
+    LISTENER_INIT,         /**< Initial state, waiting for execution
+                                plan to be posted */
+    LISTENER_INIT_WAITING, /**< Waiting for listener's response after test
+                                execution plan has been sent */
+    LISTENER_GATHERING,    /**< Gathering messages to be sent */
+    LISTENER_TRANSFERRING, /**< Transferring messages to the listener */
+    LISTENER_FINISHING,    /**< Waiting for listener's response before
+                                terminating the connection */
+    LISTENER_FINISHED      /**< Listener has finished its operation */
 } listener_state;
 
 /** Log message listener */
 typedef struct log_listener {
-    char            name[LOG_MAX_LISTENER_NAME]; /**< Name */
-    char            url[LOG_MAX_LISTENER_URL];   /**< URL */
-    listener_state  state;       /**< Current state */
-    struct timeval  next_tv;     /**< Timestamp of the next dump */
-    int             interval;    /**< Time interval between dumps, in seconds */
-    FILE           *file;        /**< File to dump to */
-    msg_buffer      buffer;      /**< Message buffer */
-    size_t          buffer_size; /**< Virtual buffer size */
-    size_t          buffers_num; /**< Number of virtual message buffers */
+    char               name[LOG_MAX_LISTENER_NAME]; /**< Name */
+    char               url[LOG_MAX_LISTENER_URL];   /**< URL */
+    listener_state     state;       /**< Current state */
+    struct timeval     next_tv;     /**< Timestamp of the next dump */
+    int                interval;    /**< Time interval between dumps, seconds */
+    CURL              *curl_handle; /**< File to dump to */
+    msg_buffer         buffer;      /**< Message buffer */
+    size_t             buffer_size; /**< Virtual buffer size */
+    size_t             buffers_num; /**< Number of virtual message buffers */
+    struct curl_slist *headers;     /**< HTTP headers for CURL requests */
+
+    refcnt_buffer      plan;        /**< Test execution plan */
+
+    te_string          buffer_out;  /**< Buffer for outgoing data */
+    int                last_message_id; /**< Sequence number of the last
+                                             sent message */
 } log_listener;
 
 /**
@@ -77,6 +91,15 @@ extern te_errno listener_add_msg(log_listener *listener,
  * @returns Status code
  */
 extern te_errno listener_dump(log_listener *listener);
+
+/**
+ * Handler listener's reponse.
+ *
+ * @param listener          listener description
+ *
+ * @returns Status code
+ */
+extern te_errno listener_finish_request(log_listener *listener);
 
 /**
  * Finish listener's operation.
