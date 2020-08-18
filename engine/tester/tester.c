@@ -154,9 +154,10 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
      * Tester application command line options. Values must be started
      * from one, since zero has special meaning for popt.
      *
-     * @attention Order of TESTER_OPT_RUN..TESTER_OPT_MIX_SESSIONS
+     * @attention Order of TESTER_OPT_RUN..TESTER_OPT_FAKE
      *            should be exactly the same as items of
-     *            test_path_type enumeration.
+     *            test_path_type enumeration. Do not insert
+     *            unrelated values in this range!
      */
     enum {
         TESTER_OPT_VERSION = 1,
@@ -184,6 +185,12 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         TESTER_OPT_QUIET_SKIP,
         TESTER_OPT_VERB_SKIP,
 
+        /*
+         * Values from here to TESTER_OPT_FAKE must correspond
+         * to test_path_type, do not change order or add/remove
+         * items here without updating test_path_type.
+         */
+
         TESTER_OPT_RUN,
         TESTER_OPT_RUN_FORCE,
         TESTER_OPT_RUN_FROM,
@@ -192,8 +199,6 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
 
         TESTER_OPT_VALGRIND,
         TESTER_OPT_GDB,
-
-        TESTER_OPT_RUN_WHILE,
 
         TESTER_OPT_MIX,
         TESTER_OPT_MIX_VALUES,
@@ -204,6 +209,12 @@ process_cmd_line_opts(tester_global *global, int argc, char **argv)
         TESTER_OPT_NO_MIX,
 
         TESTER_OPT_FAKE,
+
+        /*
+         * End of list corresponding to test_path_type.
+         */
+
+        TESTER_OPT_RUN_WHILE,
 
         TESTER_OPT_SUITE_PATH,
 
