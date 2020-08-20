@@ -11,6 +11,7 @@
   <req id="TAD_TCP"/>
   <req id="TAD_SNMP"/> 
   <req id="TAD_IPSTACK"/> 
+  <req id="BROKEN"/>
 
   <session track_conf="silent">
 

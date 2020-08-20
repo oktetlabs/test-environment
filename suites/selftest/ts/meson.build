@@ -33,6 +33,9 @@ te_libs = [
     'logger_core',
     'logger_ten',
     'rcfrpc',
+    'rpc_types',
+    'asn',
+    'ndn',
     'tapi_tool',
     'tapi_upnp',
     'tapi_job',
@@ -67,6 +70,7 @@ packages = [
     'tapi',
     'rpc',
     'apps',
+    'tad',
 ]
 
 mydir = package_dir

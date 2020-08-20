@@ -27,6 +27,10 @@
         <run>
             <package name="apps"/>
         </run>
+
+        <run>
+            <package name="tad"/>
+        </run>
     </session>
 
 </package>
