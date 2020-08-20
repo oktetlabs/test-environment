@@ -76,6 +76,8 @@ const tapi_netperf_opt tapi_netperf_default_opt = {
         .type = TAPI_NETPERF_TYPE_STREAM,
         .stream.buffer_send = -1,
         .stream.buffer_recv = -1,
+        .stream.local_sock_buf = -1,
+        .stream.remote_sock_buf = -1,
     },
 };
 
@@ -117,33 +119,37 @@ test_name2test_type(tapi_netperf_test_name name)
 }
 
 static te_errno
-set_test_stream_opt(te_vec *args, int32_t buffer_send,
-                    int32_t buffer_recv)
+set_test_stream_opt(te_vec *args, tapi_netperf_test_opt *tst_opt)
 {
     te_errno rc;
 
-    if (buffer_send == -1 && buffer_recv == -1)
+    if (tst_opt->stream.buffer_send == -1 &&
+        tst_opt->stream.buffer_recv == -1 &&
+        tst_opt->stream.local_sock_buf == -1 &&
+        tst_opt->stream.remote_sock_buf == -1)
+    {
         return TE_ENOENT;
-
-    if (buffer_send != -1)
-    {
-        rc = te_vec_append_str_fmt(args, "-m");
-        if (rc != 0)
-            return rc;
-        rc = te_vec_append_str_fmt(args, "%d", buffer_send);
-        if (rc != 0)
-            return rc;
     }
 
-    if (buffer_recv != -1)
-    {
-        rc = te_vec_append_str_fmt(args, "-M");
-        if (rc != 0)
-            return rc;
-        rc = te_vec_append_str_fmt(args, "%d", buffer_recv);
-        if (rc != 0)
-            return rc;
-    }
+#define ADD_INT_VALUE_TO_ARGS(_args, _flag, _specifier, _value) \
+    do {                                                           \
+        if (_value != -1)                                          \
+        {                                                          \
+            rc = te_vec_append_str_fmt(_args, _flag);              \
+            if (rc != 0)                                           \
+                return rc;                                         \
+            rc = te_vec_append_str_fmt(_args, _specifier, _value); \
+            if (rc != 0)                                           \
+                return rc;                                         \
+        }                                                          \
+    } while(0)
+
+    ADD_INT_VALUE_TO_ARGS(args, "-m", "%d", tst_opt->stream.buffer_send);
+    ADD_INT_VALUE_TO_ARGS(args, "-M", "%d", tst_opt->stream.buffer_recv);
+    ADD_INT_VALUE_TO_ARGS(args, "-s", "%d", tst_opt->stream.local_sock_buf);
+    ADD_INT_VALUE_TO_ARGS(args, "-S", "%d", tst_opt->stream.remote_sock_buf);
+#undef ADD_INT_VALUE_TO_ARGS
+
     return 0;
 }
 
@@ -220,8 +226,7 @@ create_optional_test_spec(const void *value, te_vec *args)
     switch (tst_opt->type)
     {
         case TAPI_NETPERF_TYPE_STREAM:
-            rc = set_test_stream_opt(args, tst_opt->stream.buffer_send,
-                                     tst_opt->stream.buffer_recv);
+            rc = set_test_stream_opt(args, tst_opt);
             break;
 
         case TAPI_NETPERF_TYPE_RR:

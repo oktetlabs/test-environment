@@ -77,6 +77,20 @@ typedef struct tapi_netperf_test_opt {
              * buffer sizes).
              */
             int32_t buffer_recv;
+            /**
+             * This option sets the local (netperf) send and receive
+             * socket buffer size for the data connection to the value(s)
+             * specified. May be @c -1 (use the system's default socket
+             * buffer sizes)
+             */
+            int32_t local_sock_buf;
+            /**
+             * This option sets the remote (netserver) send and receive
+             * socket buffer size for the data connection to the value(s)
+             * specified. May be @c -1 (use the system's default socket
+             * buffer sizes)
+             */
+            int32_t remote_sock_buf;
         } stream;
     };
 } tapi_netperf_test_opt;
