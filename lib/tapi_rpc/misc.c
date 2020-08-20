@@ -777,6 +777,23 @@ rpc_pattern_sender(rcf_rpc_server *rpcs, int s,
         in.swrapper_data = args->snd_wrapper_ctx;
     }
 
+    if (!te_str_is_null_or_empty(args->pollerr_handler))
+    {
+        in.pollerr_handler.pollerr_handler_val =
+                                strdup(args->pollerr_handler);
+        if (in.pollerr_handler.pollerr_handler_val == NULL)
+        {
+            ERROR("%s(): out of memory", __FUNCTION__);
+            free(in.fname.fname_val);
+            free(in.swrapper.swrapper_val);
+            rpcs->_errno = TE_RC(TE_TAPI, TE_ENOMEM);
+            RETVAL_INT(pattern_sender, -1);
+        }
+        in.pollerr_handler.pollerr_handler_len =
+                                strlen(args->pollerr_handler) + 1;
+        in.pollerr_handler_data = args->pollerr_handler_data;
+    }
+
     if (args->gen_arg_ptr != NULL)
         memcpy(&in.gen_arg, args->gen_arg_ptr, sizeof(in.gen_arg));
     in.iomux = args->iomux;
@@ -805,6 +822,7 @@ rpc_pattern_sender(rcf_rpc_server *rpcs, int s,
 
     free(in.fname.fname_val);
     free(in.swrapper.swrapper_val);
+    free(in.pollerr_handler.pollerr_handler_val);
 
     if (args->sent_ptr != NULL)
         *(args->sent_ptr) = out.bytes;
@@ -819,7 +837,8 @@ rpc_pattern_sender(rcf_rpc_server *rpcs, int s,
                  "iomux='%s', size_min=%d, size_max=%d, size_once=%d, "
                  "delay_min=%d, delay_max=%d, delay_once=%d, "
                  "time2wait=%u, duration_sec=%d, "
-                 "total_size=%" TE_PRINTF_64 "u, ignore_err=%d",
+                 "total_size=%" TE_PRINTF_64 "u, ignore_err=%d "
+                 "pollerr_handler=%s pollerr_handler_data=" RPC_PTR_FMT,
                  "%d sent=%" TE_PRINTF_64 "u",
                  s, args->gen_func, TARPC_PAT_GEN_ARG_VAL(in.gen_arg),
                  args->snd_wrapper, RPC_PTR_VAL(args->snd_wrapper_ctx),
@@ -827,8 +846,12 @@ rpc_pattern_sender(rcf_rpc_server *rpcs, int s,
                  args->size.min, args->size.max, args->size.once,
                  args->delay.min, args->delay.max, args->delay.once,
                  args->time2wait, args->duration_sec, args->total_size,
-                 args->ignore_err, out.retval,
-                 out.bytes);
+                 args->ignore_err,
+                 (args->pollerr_handler == NULL ?
+                    "(none)" :
+                    args->pollerr_handler),
+                 RPC_PTR_VAL(args->pollerr_handler_data),
+                 out.retval, out.bytes);
     RETVAL_INT(pattern_sender, out.retval);
 }
 

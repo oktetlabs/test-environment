@@ -7259,6 +7259,9 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
     size_t          send_size;
     iomux_func      iomux = in->iomux;
 
+    api_func_ptr    pollerr_handler = NULL;
+    void           *pollerr_handler_data = NULL;
+
     int size = rand_range(in->size_min, in->size_max);
     int delay = rand_range(in->delay_min, in->delay_max);
 
@@ -7328,6 +7331,32 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
             te_rpc_error_set(TE_RC(TE_TA_UNIX, rc),
                              "failed to resolve 'send'");
             return -1;
+        }
+    }
+
+    if (in->pollerr_handler.pollerr_handler_len > 1)
+    {
+        pollerr_handler = (api_func_ptr)
+                          rcf_ch_symbol_addr(
+                              in->pollerr_handler.pollerr_handler_val,
+                              TRUE);
+        if (pollerr_handler == NULL)
+        {
+            te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOENT),
+                             "failed to find function '%s'",
+                             in->pollerr_handler.pollerr_handler_val);
+            return -1;
+        }
+
+        if (in->pollerr_handler_data != RPC_NULL)
+        {
+            pollerr_handler_data = rcf_pch_mem_get(in->pollerr_handler_data);
+            if (pollerr_handler_data == NULL)
+            {
+                te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOENT),
+                                 "failed to resolve pollerr_handler_data");
+                return -1;
+            }
         }
     }
 
@@ -7482,11 +7511,23 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
             PTRN_SEND_ERROR;
         }
 
+        if ((events & POLLERR) && pollerr_handler != NULL)
+        {
+            rc = pollerr_handler(pollerr_handler_data,
+                                 in->s);
+            if (rc < 0)
+                PTRN_SEND_ERROR;
+
+            if (!(events & POLLOUT))
+                continue;
+        }
+
         if (!(events & POLLOUT) && iomux != FUNC_NO_IOMUX)
         {
             te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_EFAIL),
-                             "%s wait successeed but the socket is "
-                             "not writable", iomux2str(iomux));
+                             "%s wait succeeded but returned events "
+                             "%s instead of POLLOUT", iomux2str(iomux),
+                             poll_event_rpc2str(poll_event_h2rpc(events)));
             PTRN_SEND_ERROR;
         }
 

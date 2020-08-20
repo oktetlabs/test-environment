@@ -4333,6 +4333,14 @@ struct tarpc_pattern_sender_in {
 
     tarpc_bool  ignore_err;     /**< Ignore errors while run */
 
+    char        pollerr_handler<>;      /**< Handler to call if @c POLLERR
+                                             event is got (optional; if not
+                                             set, receiving @c POLLERR
+                                             instead of @c POLLOUT will
+                                             result in error) */
+    tarpc_ptr   pollerr_handler_data;   /**< Data to pass to @c POLLERR
+                                             handler */
+
     tarpc_pat_gen_arg gen_arg;  /**< Pattern generator function
                                      arguments */
 };

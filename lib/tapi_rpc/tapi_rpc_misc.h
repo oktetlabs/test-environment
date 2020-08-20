@@ -126,6 +126,20 @@ typedef struct tapi_pat_sender {
                                                was sent. */
     tarpc_bool          ignore_err;       /**< Ignore errors while run */
 
+    const char         *pollerr_handler;        /**< Handler to call if
+                                                     @c POLLERR event is
+                                                     got. If not set,
+                                                     receiving @c POLLERR
+                                                     instead of @c POLLOUT
+                                                     will result in
+                                                     error */
+    rpc_ptr             pollerr_handler_data;   /**< Data to pass to
+                                                     @c POLLERR handler
+                                                     as the first
+                                                     argument (as the
+                                                     second argument
+                                                     socket FD is passed) */
+
     /* out */
     uint64_t            sent;             /**< Number of sent bytes */
     te_bool             send_failed;      /**< @c TRUE if @b send() call
