@@ -1789,7 +1789,7 @@ log_test_result(test_id parent, tester_test_result *result, int plan_id)
     else
         obtained = pack_test_result(&result->result);
 #else
-    obtained = pack_test_result(result->result);
+    obtained = pack_test_result(&result->result);
 #endif
     if (obtained == NULL)
     {
