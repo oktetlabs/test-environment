@@ -2,7 +2,7 @@
     <objective>TAPI nptcp implementation</objective>
     <notes/>
     <iter result="PASSED">
-        <test name="prologue">
+        <test name="np_prologue">
             <objective/>
             <notes/>
             <iter result="PASSED"/>

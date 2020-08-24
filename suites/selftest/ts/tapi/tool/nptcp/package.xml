@@ -7,7 +7,7 @@
 
     <session track_conf="silent">
         <prologue>
-            <script name="prologue"/>
+            <script name="np_prologue"/>
         </prologue>
 
         <run>

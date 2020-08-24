@@ -2,7 +2,7 @@
     <objective>Tests on RCF server functionality</objective>
     <notes/>
     <iter result="PASSED">
-        <test name="prologue" type="script">
+        <test name="rpc_server_prologue" type="script">
             <objective/>
             <notes/>
             <iter result="PASSED">

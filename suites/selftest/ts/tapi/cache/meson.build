@@ -1,7 +1,7 @@
 # Copyright (C) 2019 OKTET Labs. All rights reserved.
 
 tests = [
-    'prologue',
+    'tc_prologue',
     'tc_actualize_indirect',
     'tc_actualize_root',
     'tc_actualize_star',

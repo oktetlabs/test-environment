@@ -1,8 +1,8 @@
 # Copyright (C) 2019 OKTET Labs. All rights reserved.
 
 tests = [
-    'prologue',
-    'epilogue',
+    'upnp_cp_prologue',
+    'upnp_cp_epilogue',
     'get_content',
     'get_devices',
     'get_services',

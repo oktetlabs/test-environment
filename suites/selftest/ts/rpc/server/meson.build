@@ -1,7 +1,7 @@
 # Copyright (C) 2019 OKTET Labs. All rights reserved.
 
 tests = [
-    'prologue',
+    'rpc_server_prologue',
     'rpctest',
     'rs_threads_sr',
 ]

@@ -6,7 +6,7 @@
  * @author Ivan Melnikov <Ivan.Melnikov@oktetlabs.ru>
  */
 
-#define TE_TEST_NAME  "prologue"
+#define TE_TEST_NAME  "tc_prologue"
 
 #include "te_defs.h"
 #include "logger_api.h"

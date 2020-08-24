@@ -60,7 +60,7 @@
                 <arg name="method"/>
             </iter>
         </test>
-        <test name="prologue">
+        <test name="tc_prologue">
             <objective/>
             <notes/>
             <iter result="PASSED">

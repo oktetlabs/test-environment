@@ -11,7 +11,7 @@
  */
 
 /** Logging subsystem entity name */
-#define TE_TEST_NAME    "prologue"
+#define TE_TEST_NAME    "rpc_server_prologue"
 
 #include <stdlib.h>
 #include <signal.h>

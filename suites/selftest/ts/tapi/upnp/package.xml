@@ -13,7 +13,7 @@
         </arg>
 
         <prologue>
-            <script name="prologue"/>
+            <script name="upnp_cp_prologue"/>
             <arg name="env"/>
             <arg name="target">
                 <value>ssdp:all</value>
@@ -21,7 +21,7 @@
         </prologue>
 
         <epilogue>
-            <script name="epilogue"/>
+            <script name="upnp_cp_epilogue"/>
             <arg name="env"/>
         </epilogue>
 

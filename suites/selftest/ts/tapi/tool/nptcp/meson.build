@@ -4,10 +4,10 @@ install_headers('netpipe.h')
 
 tests = [
     'np',
+    'np_prologue',
     'np_with_destroy',
     'np_with_kill',
     'np_with_stop',
-    'prologue',
 ]
 
 foreach test : tests

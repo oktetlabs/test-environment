@@ -139,7 +139,7 @@
         <run name="actualization">
             <session track_conf="silent">
                 <epilogue>
-                    <script name="prologue"/>
+                    <script name="tc_prologue"/>
                 </epilogue>
                 <run name="tc_actualize_unregistered">
                     <script name="tc_actualize_unregistered"/>
@@ -153,7 +153,7 @@
                 <run name="actualization_root">
                     <session>
                         <prologue>
-                            <script name="prologue"/>
+                            <script name="tc_prologue"/>
                         </prologue>
                         <run name="tc_actualize_root">
                             <script name="tc_actualize_root"/>
@@ -176,7 +176,7 @@
                 <run name="actualization_sub">
                     <session>
                         <prologue>
-                            <script name="prologue"/>
+                            <script name="tc_prologue"/>
                         </prologue>
                         <run name="tc_actualize_sub">
                             <script name="tc_actualize_sub"/>
@@ -200,7 +200,7 @@
                 <run name="actualization_star">
                     <session>
                         <prologue>
-                            <script name="prologue"/>
+                            <script name="tc_prologue"/>
                         </prologue>
                         <run name="tc_actualize_star">
                             <script name="tc_actualize_star"/>
@@ -297,7 +297,7 @@
                     </arg>
                 </prologue>
                 <epilogue>
-                    <script name="prologue"/>
+                    <script name="tc_prologue"/>
                 </epilogue>
                 <run name="tc_operation_get">
                     <script name="tc_operation_get"/>

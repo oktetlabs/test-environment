@@ -19,7 +19,7 @@
         </var>
 
         <prologue>
-            <script name="prologue"/>
+            <script name="rpc_server_prologue"/>
         </prologue>
 
         <run>
