@@ -2109,7 +2109,7 @@ job_destroy(unsigned int job_id, int term_timeout_ms)
 
     pthread_mutex_unlock(&channels_lock);
 
-    while (wrapper = LIST_FIRST(&job->wrappers))
+    while ((wrapper = LIST_FIRST(&job->wrappers)) != NULL)
     {
         LIST_REMOVE(wrapper, next);
         job_wrapper_dealloc(wrapper);
