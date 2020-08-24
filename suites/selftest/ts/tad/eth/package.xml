@@ -6,6 +6,7 @@
   <author mailto="Andrew.Rybchenko@oktetlabs.ru"/>
 
   <req id="TAD_ETH" sticky="true"/> 
+  <req id="BROKEN"/>
 
   <session>
     <enum name="boolean3">

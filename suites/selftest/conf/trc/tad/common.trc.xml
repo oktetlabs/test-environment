@@ -1,0 +1,36 @@
+<test name="common" type="package">
+    <objective>Tests on generic TAD functionality.</objective>
+    <notes/>
+    <iter result="PASSED">
+        <test name="poll_zero_csaps" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="csaps_null"/>
+            </iter>
+        </test>
+        <test name="poll_null_csaps" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED"/>
+        </test>
+        <test name="poll_invalid_only" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="n_csaps"/>
+                <arg name="ta_null"/>
+                <arg name="zero_timeout"/>
+                <arg name="zero_status"/>
+            </iter>
+        </test>
+        <test name="poll_one" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="zero_timeout"/>
+            </iter>
+        </test>
+    </iter>
+</test>

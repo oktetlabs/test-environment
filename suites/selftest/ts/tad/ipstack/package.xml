@@ -6,6 +6,7 @@
   <author mailto="Andrew.Rybchenko@oktetlabs.ru"/>
 
   <req id="TAD_IPSTACK" sticky="true"/> 
+  <req id="BROKEN"/>
 
   <session>
   
