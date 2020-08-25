@@ -26,7 +26,7 @@ libxml2fmt_core = static_library(
 
 dep_jansson = dependency('jansson', required: false)
 if dep_jansson.found() and cc.has_function('json_loadb',
-                                           c_args: c_args,
+                                           args: c_args,
                                            dependencies: dep_jansson)
     tool_deps += [ dep_jansson ]
     c_args += [ '-DHAVE_LIBJANSSON=1' ]
