@@ -305,6 +305,20 @@ extern int rpc_job_wrapper_delete(rcf_rpc_server *rpcs,
                                   unsigned int job_id,
                                   unsigned int wrapper_id);
 
+/**
+ * Add a scheduling parameters for the specified job.
+ *
+ * @param rpcs            RPC server
+ * @param job             Job instance handle
+ * @param sched_param     Array of scheduling parameters.
+ * @param sched_param_len Size of array of scheduling parameters.
+ *
+ * @return Status code
+ */
+extern int rpc_job_add_sched_param(rcf_rpc_server *rpcs,
+                                   unsigned int job_id,
+                                   struct tarpc_job_sched_param *sched_param,
+                                   size_t sched_param_len);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

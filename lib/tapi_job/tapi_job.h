@@ -612,6 +612,48 @@ extern te_errno tapi_job_wrapper_add(tapi_job_t *job, const char *tool,
  */
 extern te_errno tapi_job_wrapper_delete(tapi_job_wrapper_t *wrapper);
 
+/** Scheduling type */
+typedef enum tapi_job_sched_param_type {
+    TAPI_JOB_SCHED_AFFINITY,
+    TAPI_JOB_SCHED_PRIORITY,
+    TAPI_JOB_SCHED_END
+} tapi_job_sched_param_type;
+
+/** Scheduling parameters */
+typedef struct tapi_job_sched_param {
+    /** Type of scheduling */
+    tapi_job_sched_param_type type;
+    /** Data specific to the specified type */
+    void *data;
+} tapi_job_sched_param;
+
+/** Data specific for CPU affinity scheduling type */
+typedef struct tapi_job_sched_affinity_param {
+    /** Array of CPU IDs */
+    int *cpu_ids;
+     /** Array size */
+    int cpu_ids_len;
+} tapi_job_sched_affinity_param;
+
+/** Data specific for priority scheduling type */
+typedef struct tapi_job_sched_priority_param {
+     /** Process priority. */
+    int priority;
+} tapi_job_sched_priority_param;
+
+/**
+ * Add a scheduling parameters for the specified job.
+ *
+ * @param job          Job instance handle
+ * @param sched_param  Array of scheduling parameters. The last element must
+ *                     have the type @c TAPI_JOB_SCHED_END and data pointer to
+ *                     @c NULL.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_job_add_sched_param(tapi_job_t *job,
+                                         tapi_job_sched_param *sched_param);
+
 /**
  * @page tapi-job-factory Creating tapi_job_t instances
  *

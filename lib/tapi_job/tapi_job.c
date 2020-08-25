@@ -18,6 +18,7 @@
 #include "tapi_rpc_stdio.h"
 #include "tapi_rpc_job.h"
 #include "tapi_test.h"
+#include "te_alloc.h"
 
 typedef struct channel_entry {
     SLIST_ENTRY(channel_entry) next;
@@ -921,4 +922,119 @@ tapi_job_wrapper_delete(tapi_job_wrapper_t *wrapper)
     free(wrapper);
 
     return 0;
+}
+
+static te_errno
+sched_affinity_param_alloc(tapi_job_sched_param *sched_param,
+                           tarpc_job_sched_param *sched,
+                           tarpc_job_sched_affinity **affinity)
+{
+    tarpc_job_sched_affinity *result;
+    tapi_job_sched_affinity_param *af = sched_param->data;
+
+    result = TE_ALLOC(sizeof(tarpc_job_sched_affinity));
+    if (result == NULL)
+    {
+        ERROR("Failed to allocate sched affinity");
+        return TE_ENOMEM;
+    }
+
+    result->cpu_ids.cpu_ids_val = af->cpu_ids;
+    result->cpu_ids.cpu_ids_len = af->cpu_ids_len;
+
+    sched->data.type = TARPC_JOB_SCHED_AFFINITY;
+
+    memcpy(&sched->data.tarpc_job_sched_param_data_u,
+           result, sizeof(tarpc_job_sched_affinity));
+    *affinity = result;
+    return 0;
+}
+
+static te_errno
+sched_priority_param_alloc(tapi_job_sched_param *sched_param,
+                           tarpc_job_sched_param *sched,
+                           tarpc_job_sched_priority **priority)
+{
+    tarpc_job_sched_priority *result;
+    tapi_job_sched_priority_param *p = sched_param->data;
+
+    result = TE_ALLOC(sizeof(tarpc_job_sched_priority));
+    if (result == NULL)
+    {
+        ERROR("Failed to allocate sched priority");
+        return TE_ENOMEM;
+    }
+
+    result->priority = p->priority;
+
+    sched->data.type = TARPC_JOB_SCHED_PRIORITY;
+
+    memcpy(&sched->data.tarpc_job_sched_param_data_u,
+           result, sizeof(tarpc_job_sched_priority));
+    return 0;
+}
+
+te_errno
+tapi_job_add_sched_param(tapi_job_t *job,
+                         tapi_job_sched_param *sched_param)
+{
+    tarpc_job_sched_param *sched = NULL;
+    tarpc_job_sched_affinity *affinity = NULL;
+    tarpc_job_sched_priority *prio = NULL;
+    size_t count = 0;
+    int i;
+    te_errno rc;
+
+    tapi_job_sched_param *item;
+
+    for (item = sched_param; item->type != TAPI_JOB_SCHED_END; item++)
+        count++;
+
+    sched = TE_ALLOC(count * sizeof(tarpc_job_sched_param_data));
+    if (sched == NULL)
+    {
+        ERROR("Failed to allocate sched parameters");
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    memset(sched, 0, sizeof(tarpc_job_sched_param));
+
+    for (i = 0; i < count; i++)
+    {
+        switch (sched_param[i].type)
+        {
+            case TAPI_JOB_SCHED_AFFINITY:
+            {
+                rc = sched_affinity_param_alloc(&sched_param[i], &sched[i],
+                                                &affinity);
+                if (rc != 0)
+                    goto out;
+
+                break;
+            }
+
+            case TAPI_JOB_SCHED_PRIORITY:
+            {
+                rc = sched_priority_param_alloc(&sched_param[i], &sched[i],
+                                                &prio);
+                if (rc != 0)
+                    goto out;
+
+                break;
+            }
+
+            default:
+                ERROR("Unsupported scheduling parameter");
+                rc = TE_EINVAL;
+                goto out;
+        }
+    }
+    rc = rpc_job_add_sched_param(job->rpcs, job->id, sched, count);
+
+out:
+    free(sched);
+    free(affinity);
+    free(prio);
+    return rc;
 }

@@ -290,6 +290,50 @@ struct tarpc_job_wrapper_delete_out {
     tarpc_int retval;
 };
 
+struct tarpc_job_process_setting {
+    uint16_t cpu_ids<>;
+    int8_t process_priority;
+};
+
+struct tarpc_job_sched_affinity {
+    int cpu_ids<>;
+};
+
+struct tarpc_job_sched_priority {
+    int priority;
+};
+
+enum tarpc_job_sched_param_type {
+    TARPC_JOB_SCHED_AFFINITY = 0,
+    TARPC_JOB_SCHED_PRIORITY = 1
+};
+
+union tarpc_job_sched_param_data
+    switch (tarpc_job_sched_param_type type)
+{
+    case TARPC_JOB_SCHED_AFFINITY: struct tarpc_job_sched_affinity affinity;
+    case TARPC_JOB_SCHED_PRIORITY: struct tarpc_job_sched_priority prio;
+
+    default: void;
+};
+
+struct tarpc_job_sched_param {
+    tarpc_job_sched_param_data data;
+};
+
+struct tarpc_job_add_sched_param_in {
+    struct tarpc_in_arg common;
+
+    tarpc_uint job_id;
+    struct tarpc_job_sched_param param<>;
+};
+
+struct tarpc_job_add_sched_param_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+};
+
 program job
 {
     version ver0
@@ -311,5 +355,6 @@ program job
         RPC_DEF(job_destroy)
         RPC_DEF(job_wrapper_add)
         RPC_DEF(job_wrapper_delete)
+        RPC_DEF(job_add_sched_param)
     } = 1;
 } = 2;

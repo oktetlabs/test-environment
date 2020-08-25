@@ -642,3 +642,25 @@ rpc_job_wrapper_delete(rcf_rpc_server *rpcs, unsigned int job_id,
                  in.wrapper_id, out.retval);
     RETVAL_INT(job_wrapper_delete, out.retval);
 }
+
+int
+rpc_job_add_sched_param(rcf_rpc_server *rpcs, unsigned int job_id,
+                        struct tarpc_job_sched_param *sched_param,
+                        size_t sched_param_len)
+{
+    tarpc_job_add_sched_param_in in;
+    tarpc_job_add_sched_param_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.job_id = job_id;
+    in.param.param_len = sched_param_len;
+    in.param.param_val = sched_param;
+
+    rcf_rpc_call(rpcs, "job_add_sched_param", &in, &out);
+    CHECK_RPC_ERRNO_UNCHANGED(job_add_sched_param, out.retval);
+
+    TAPI_RPC_LOG(rpcs, job_add_sched_param, "%u", "%r", in.job_id, out.retval);
+    RETVAL_ZERO_INT(job_add_sched_param, out.retval);
+}

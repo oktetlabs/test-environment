@@ -21,6 +21,7 @@
 #include "te_string.h"
 #include "te_vector.h"
 #include "te_file.h"
+#include "te_alloc.h"
 
 #include "rpc_server.h"
 #include "te_errno.h"
@@ -182,6 +183,8 @@ typedef struct job_t {
     char **env;
 
     LIST_HEAD(wrapper_list, wrapper_t) wrappers;
+
+    te_sched_param *sched_params;
 } job_t;
 
 #define CTRL_PIPE_INITIALIZER {-1, -1}
@@ -805,6 +808,7 @@ job_alloc(const char *spawner, const char *tool, char **argv,
     result->n_out_channels = 0;
     result->n_in_channels = 0;
     LIST_INIT(&result->wrappers);
+    result->sched_params = NULL;
 
     *job = result;
 
@@ -826,6 +830,14 @@ job_dealloc(job_t *job)
 
     free(job->spawner);
     free(job->tool);
+    if (job->sched_params != NULL)
+    {
+        te_sched_param *item;
+
+        for (item = job->sched_params; item->type != TE_SCHED_END; item++)
+            free(item->data);
+        free(job->sched_params);
+    }
     free(job);
 }
 
@@ -1489,7 +1501,8 @@ job_start(unsigned int id)
 
     // TODO: use spawner method
     pid = te_exec_child(tool, (char **)args.data.ptr, job->env,
-                        -1, stdin_fd_p, stdout_fd_p, stderr_fd_p, NULL);
+                        -1, stdin_fd_p, stdout_fd_p, stderr_fd_p,
+                        job->sched_params);
     te_vec_deep_free(&args);
     if (pid < 0)
     {
@@ -2434,6 +2447,59 @@ job_wrapper_delete(unsigned int job_id, unsigned int wrapper_id)
     return 0;
 }
 
+static te_errno
+job_add_sched_param(unsigned int job_id,
+                    te_sched_param *sched_params)
+{
+    job_t *job;
+
+    job = get_job(job_id);
+    if (job == NULL)
+        return TE_EINVAL;
+
+    job->sched_params = sched_params;
+    return 0;
+}
+
+static te_errno
+sched_affinity_param_alloc(te_sched_affinity_param **af,
+                           tarpc_job_sched_param_data *data)
+{
+    int cpu_ids_len;
+    te_sched_affinity_param *affinity;
+    affinity = TE_ALLOC(sizeof(te_sched_affinity_param));
+    if (affinity == NULL)
+        return TE_ENOMEM;
+
+    cpu_ids_len = data->tarpc_job_sched_param_data_u.
+                    affinity.cpu_ids.cpu_ids_len;
+
+    affinity->cpu_ids_len = cpu_ids_len;
+    affinity->cpu_ids = TE_ALLOC(cpu_ids_len * sizeof(int));
+    if (affinity->cpu_ids == NULL)
+        return TE_ENOMEM;
+
+    memcpy(affinity->cpu_ids,
+           data->tarpc_job_sched_param_data_u.affinity.cpu_ids.cpu_ids_val,
+           cpu_ids_len * sizeof(int));
+    *af = affinity;
+    return 0;
+}
+
+static te_errno
+sched_priority_param_alloc(te_sched_priority_param **prio,
+                           tarpc_job_sched_param_data *data)
+{
+    te_sched_priority_param *priority;
+    priority = TE_ALLOC(sizeof(te_sched_priority_param));
+    if (priority == NULL)
+        return TE_ENOMEM;
+
+    priority->priority = data->tarpc_job_sched_param_data_u.prio.priority;
+    *prio = priority;
+    return 0;
+}
+
 TARPC_FUNC_STATIC(job_create, {},
 {
     char **argv = NULL;
@@ -2623,4 +2689,76 @@ done:
 TARPC_FUNC_STATIC(job_wrapper_delete, {},
 {
     MAKE_CALL(out->retval = func(in->job_id, in->wrapper_id));
+})
+
+TARPC_FUNC_STATIC(job_add_sched_param, {},
+{
+    te_sched_param *sched_param = NULL;
+    te_sched_affinity_param *affinity = NULL;
+    te_sched_priority_param *prio = NULL;
+    int i;
+    int len = in->param.param_len;
+    te_errno rc;
+
+    sched_param = TE_ALLOC((len + 1) * sizeof(te_sched_param));
+    if (sched_param == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto err;
+    }
+
+    for (i = 0; i < len; i++)
+    {
+        switch (in->param.param_val[i].data.type)
+        {
+            case TARPC_JOB_SCHED_AFFINITY:
+            {
+                sched_param[i].type = TE_SCHED_AFFINITY;
+                rc = sched_affinity_param_alloc(&affinity,
+                                                &in->param.param_val[i].data);
+                if (rc != 0)
+                    goto err;
+
+                sched_param[i].data = (void *)affinity;
+                break;
+            }
+
+            case TARPC_JOB_SCHED_PRIORITY:
+            {
+                sched_param[i].type = TE_SCHED_PRIORITY;
+
+                rc = sched_priority_param_alloc(&prio,
+                                                &in->param.param_val[i].data);
+                if (rc != 0)
+                    goto err;
+
+                sched_param[i].data = (void *)prio;
+                break;
+            }
+            default:
+                ERROR("Unsupported scheduling parameter");
+                rc = TE_EINVAL;
+                goto err;
+        }
+    }
+
+    sched_param[len].type = TE_SCHED_END;
+    sched_param[len].data = NULL;
+
+    MAKE_CALL(out->retval = func(in->job_id, sched_param));
+    out->common.errno_changed = FALSE;
+    goto done;
+err:
+    free(sched_param);
+    if (affinity != NULL)
+    {
+        free(affinity->cpu_ids);
+        free(affinity);
+    }
+    free(prio);
+
+    out->common._errno = TE_RC(TE_RPCS, rc);
+    out->retval = -out->common._errno;
+done:
+    ;
 })
