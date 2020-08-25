@@ -43,7 +43,7 @@ declare teincludes=
 declare expheaders=
 declare explibs=
 declare expbin=
-declare tatype=
+declare tatypes=
 declare envvars=
 declare tce=
 declare build_meson=false
@@ -84,8 +84,8 @@ for arg; do
         --expbin=*)
             expbin="${expbin}${expbin:+ }${arg#--expbin=}"
             ;;
-        --tatype=*)
-            tatype="${arg#--tatype=}"
+        --tatypes=*)
+            tatypes="${arg#--tatypes=}"
             ;;
         --envvars=*)
             envvars="${envvars}${envvars:+ }${arg#--envvars=}"
@@ -149,14 +149,17 @@ done
                       export EXT_SOURCES=\"$srcdir\" ;
                       if test -n \"$bin\" ; then
                           export PATH=\"\$PATH:$bin\" ;
-                      fi
-                      if test -n \"$tatype\" ; then
-                          export TE_AGENT_PREFIX=\"$prefix/agents/$tatype\" ;
+                      fi ;
+                      if test -n \"$tatypes\" ; then
+                          export TA_TYPES=\"$tatypes\" ;
+                          export TE_AGENTS_INST=(\"$prefix/agents\") ;
                       fi ;
                       $exports
                       $build"
 ) || exit 1
 install_extension_parts "$expheaders" "$prefix/$platform/include" || exit 1
 install_extension_parts "$explibs" "$prefix/$platform/lib" || exit 1
-install_extension_parts "$expbin" "$prefix/agents/$tatype" || exit 1
+for tatype in ${tatypes} ; do
+    install_extension_parts "$expbin" "$prefix/agents/$tatype" || exit 1
+done
 

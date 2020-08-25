@@ -101,8 +101,9 @@ foreach l : libs
     endif
 endforeach
 
-# Static version of common libraries is required for agents only
+# Static version of common libraries is required for agents and agent apps
 build_agents = get_option('agents').split().length() != 0
+build_agent_apps = get_option('agent-apps').split().length() != 0
 
 #
 # Lists of options for libraries to be used as variables, this required to
@@ -159,7 +160,7 @@ foreach l : all_libs
             build_lib_static = false
         elif te_common_libs.contains(l)
             build_lib_shared = true
-            build_lib_static = build_agents
+            build_lib_static = build_agents or build_agent_apps
         elif te_agent_libs.contains(l)
             build_lib_shared = false
             build_lib_static = true

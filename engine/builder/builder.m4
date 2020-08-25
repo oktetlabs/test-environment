@@ -358,7 +358,8 @@ dnl An external component is built after the agent itself.
 dnl
 dnl Parameters:
 dnl       extension name
-dnl       TA type (as defined by TE_TA_TYPE macro)
+dnl       platform (should be empty for host platform)
+dnl       list of TA types (as defined by TE_TA_TYPE macro)
 dnl       extension sources (absolute pathname or relative to TE_BASE/apps)
 dnl       source preparation script (always run on the engine side)
 dnl           The script is run in the sources directory as specified above.
@@ -380,10 +381,9 @@ dnl                        for the current platform
 dnl           - TE_CPPFLAGS: gcc preprocess flags to use TE-provided headers
 dnl           - TE_LDFLAGS: linker flags to use TE libraries
 dnl           - EXT_SOURCES: absolute path to the sources
-dnl           - TE_AGENT_PREFIX: agent's installation prefix for the current
-dnl                              platform - the directory that will be
-dnl                              exported as agent's working directory at TE
-dnl                              runtime
+dnl           - TA_TYPES: list of TA types
+dnl           - TE_AGENTS_INST: agents installation directory - this directory
+dnl                             contains all the agents specified in TA_TYPES
 dnl       list of executables to copy to TA agent directory
 dnl       list of environment variables to export to the build script
 dnl       (this only matters for remote builds)
@@ -401,8 +401,12 @@ case "$APPNAME" in
         break ;
         ;;
 esac
-TATYPE="$2"
-SOURCES="$3"
+PLATFORM=$2
+if test -z "$PLATFORM" ; then
+    PLATFORM=${TE_HOST}
+fi
+TATYPES="$3"
+SOURCES="$4"
 if test -z "$SOURCES" ; then
     SOURCES=${TE_BASE}/apps/${APPNAME} ;
 elif test "${SOURCES:0:1}" != "/" ; then
@@ -412,19 +416,20 @@ if ! test -d "$SOURCES" ; then
     TE_BS_CONF_ERR="source path for agent extension ${APPNAME} does not exist or is not a directory" ;
     break ;
 fi
-BUILDDIR="$5"
+BUILDDIR="$6"
 if test -z "$BUILDDIR"; then
-   BUILDDIR="${TE_BUILD}/apps/${APPNAME}/${TATYPE}"
+    BUILDDIR="${TE_BUILD}/${PLATFORM}/apps/${APPNAME}"
 fi
-TA_TYPE_APPS="TE_BS_TA_APPS_${TATYPE}"
-declare "$TA_TYPE_APPS"="${!TA_TYPE_APPS} ${APPNAME}"
-declare "${TA_TYPE_APPS}_${APPNAME}_SOURCES"="$SOURCES"
-declare "${TA_TYPE_APPS}_${APPNAME}_PREPARE"="$4"
-declare "${TA_TYPE_APPS}_${APPNAME}_BUILDDIR"="$BUILDDIR"
-declare "${TA_TYPE_APPS}_${APPNAME}_LIBS"="$6"
-declare "${TA_TYPE_APPS}_${APPNAME}_BUILD"="$7"
-declare "${TA_TYPE_APPS}_${APPNAME}_INSTALL_BIN"="$8"
-declare "${TA_TYPE_APPS}_${APPNAME}_ENV_VARS"="$9"
+TA_APPS="TE_BS_TA_APPS_${PLATFORM}"
+declare "$TA_APPS"="${!TA_APPS} ${APPNAME}"
+declare "${TA_APPS}_${APPNAME}_TATYPES"="$TATYPES"
+declare "${TA_APPS}_${APPNAME}_SOURCES"="$SOURCES"
+declare "${TA_APPS}_${APPNAME}_PREPARE"="$5"
+declare "${TA_APPS}_${APPNAME}_BUILDDIR"="$BUILDDIR"
+declare "${TA_APPS}_${APPNAME}_LIBS"="$7"
+declare "${TA_APPS}_${APPNAME}_BUILD"="$8"
+declare "${TA_APPS}_${APPNAME}_INSTALL_BIN"="$9"
+declare "${TA_APPS}_${APPNAME}_ENV_VARS"="$10"
 ]])
 
 dnl Specifies TCE-enabled components

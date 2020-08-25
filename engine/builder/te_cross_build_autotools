@@ -224,44 +224,6 @@ build_agent() {
         TE_CPPFLAGS_VAR='${!TE_CPPFLAGS_NAME}' \\
         make ${BUILD_MAKEFLAGS} install || exit 1
     "
-
-    local pexts="TE_BS_TA_APPS_${package}"
-    local pext
-
-    for pext in ${!pexts}; do
-         local pextsrc="TE_BS_TA_APPS_${package}_${pext}_SOURCES"
-         local pextprep="TE_BS_TA_APPS_${package}_${pext}_PREPARE"
-         local pextbuilddir="TE_BS_TA_APPS_${package}_${pext}_BUILDDIR"
-         local pextbuild="TE_BS_TA_APPS_${package}_${pext}_BUILD"
-         local pextlibs="TE_BS_TA_APPS_${package}_${pext}_LIBS"
-         local pextinstb="TE_BS_TA_APPS_${package}_${pext}_INSTALL_BIN"
-         local pextenv="TE_BS_TA_APPS_${package}_${pext}_ENV_VARS"
-         local enable_tce=""
-
-         local teincludes=""
-         local telib
-         for telib in ${!pextlibs}; do
-             local plibsrc="TE_BS_LIB_${PLATFORM}_${telib}_SOURCES"
-             local libsrc="${!plibsrc}"
-             # We assume that if a library is built several times, it may have
-             # a separate include subdirectory for each 'non-default' build
-             if test -n "$libsrc" -a "$libsrc" != "${TE_BASE}/lib/${telib}"; then
-                 teincludes="${teincludes} ${telib}"
-             fi
-         done
-         te_check_tce "${PLATFORM}" "${pext}" && enable_tce="--tce"
-
-         ${SCRIPT_DIR}/te_build_ext --prefix="$PREFIX" \
-                      --platform="$PLATFORM" --srcdir="${!pextsrc}" \
-                      --prepare="${!pextprep}" \
-                      --builddir="${!pextbuilddir/#${TE_BUILD}/${sbd}}" \
-                      --build="${!pextbuild}" --telibs="${!pextlibs}" \
-                      --includes="${teincludes}" \
-                      --expbin="${!pextinstb}" \
-                      --tatype="${package}" \
-                      --envvars="${!pextenv}" \
-                      --bin="${TE_INSTALL}/${p}/bin" $enable_tce
-    done
 }
 
 build_platform_agents() {
@@ -278,6 +240,55 @@ build_platform_agents() {
     done
 
     return 0
+}
+
+build_agent_apps() {
+    local p="$1"; shift
+    local papps="TE_BS_TA_APPS_$p"
+    local app
+
+    local sbd=${TE_BUILD}
+    if test -f "${PLATFORM}.sbd"; then
+        sbd=$(cat "${PLATFORM}.sbd")
+    fi
+
+    for app in ${!papps}; do
+        local ptatypes="TE_BS_TA_APPS_${p}_${app}_TATYPES"
+        local pappsrc="TE_BS_TA_APPS_${p}_${app}_SOURCES"
+        local pappprep="TE_BS_TA_APPS_${p}_${app}_PREPARE"
+        local pappbuilddir="TE_BS_TA_APPS_${p}_${app}_BUILDDIR"
+        local papplibs="TE_BS_TA_APPS_${p}_${app}_LIBS"
+        local pappbuild="TE_BS_TA_APPS_${p}_${app}_BUILD"
+        local pappinstbin="TE_BS_TA_APPS_${p}_${app}_INSTALL_BIN"
+        local pappenv="TE_BS_TA_APPS_${p}_${app}_ENV_VARS"
+        local enable_tce=""
+
+        local teincludes=
+        local telib
+        for telib in ${!papplibs}; do
+            local plibsrc="TE_BS_LIB_${PLATFORM}_${telib}_SOURCES"
+            local libsrc="${!plibsrc}"
+            # We assume that if a library is built several times, it may have
+            # a separate include subdirectory for each 'non-default' build
+            if test -n "$libsrc" -a "$libsrc" != "${TE_BASE}/lib/${telib}"; then
+                teincludes="${teincludes} ${telib}"
+            fi
+        done
+        te_check_tce "${PLATFORM}" "${app}" && enable_tce="--tce"
+
+        ${SCRIPT_DIR}/te_build_ext --prefix="${PREFIX}" \
+            --platform="$p" \
+            --tatypes="${!ptatypes}" \
+            --srcdir="${!pappsrc}" \
+            --prepare="${!pappprep}" \
+            --builddir="${!pappbuilddir/#${TE_BUILD}/${sbd}}" \
+            --telibs="${!papplibs}" \
+            --includes="${teincludes}" \
+            --build="${!pappbuild}" \
+            --expbin="${!pappinstbin}" \
+            --envvars="${!pappenv}" \
+            --bin="${TE_INSTALL}/${p}/bin" $enable_tce
+    done
 }
 
 # Acquire shadow build directory on agent and TE host.
@@ -385,6 +396,7 @@ build_platform_and_agent() {
     (
         build_platform "$p" "$mode" || mode=all
         build_platform_agents "$p" "$mode"
+        build_agent_apps "$p"
     ) && res=0 || res=$?
     release_shadow_build_directory
     return $res
