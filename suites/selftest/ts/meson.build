@@ -17,6 +17,9 @@ cc = meson.get_compiler('c')
 
 test_deps = [
     dependency('threads'),
+    # If libtirpc is present, TE uses it. Otherwise, assume that libc is
+    # used and tests need nothing special to find RPC support headers.
+    dependency('libtirpc', required: false),
 ]
 
 te_libs = [
