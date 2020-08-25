@@ -16,8 +16,11 @@ te_ldflags=
 
 # There is way to use meson cross files to build m32, but the 'pkg_config_libdir'
 # property is supported on meson starting from 0.54.0
-if test "${TE_IUT_CFLAGS_VAR/-m32/}" != "${TE_IUT_CFLAGS_VAR}" ; then
+if test "${TE_IUT_RPCS_I386_CFLAGS/-m32/}" != "${TE_IUT_RPCS_I386_CFLAGS}" ; then
     source te_meson_m32_exports
+    app_name="ta_rpcs_i386"
+else
+    app_name="ta_rpcs"
 fi
 
 for f in ${TE_CPPFLAGS} ; do
@@ -29,6 +32,7 @@ test -z "${te_ldflags}" || meson_args+=(-Dte_ldflags="${te_ldflags}")
 
 test -z "${TE_PREFIX}" || meson_args+=(-Dte_libdir="${TE_PREFIX}/lib")
 test -z "${TE_LIBS}" || meson_args+=(-Dte_libs="$(echo ${TE_LIBS} | tr ' ' ,)")
+meson_args+=(-Dapp-name="${app_name}")
 
 echo "${meson_args[@]}" >meson.args.new
 
