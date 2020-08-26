@@ -856,7 +856,7 @@ tapi_job_wrapper_priority2tarpc_job_wrapper_priority(
 
 /* See description in tapi_job.h */
 te_errno
-tapi_job_wrapper_add(tapi_job_t *job, const char *tool, char **argv,
+tapi_job_wrapper_add(tapi_job_t *job, const char *tool, const char **argv,
                      tapi_job_wrapper_priority_t priority,
                      tapi_job_wrapper_t **wrap)
 {

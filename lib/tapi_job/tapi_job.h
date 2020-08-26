@@ -570,7 +570,7 @@ typedef enum {
  * @return         Status code
  */
 extern te_errno tapi_job_wrapper_add(tapi_job_t *job, const char *tool,
-                                     char **argv,
+                                     const char **argv,
                                      tapi_job_wrapper_priority_t priority,
                                      tapi_job_wrapper_t **wrap);
 
