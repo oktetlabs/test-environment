@@ -119,7 +119,7 @@ test_name2test_type(tapi_netperf_test_name name)
 }
 
 static te_errno
-set_test_stream_opt(te_vec *args, tapi_netperf_test_opt *tst_opt)
+set_test_stream_opt(te_vec *args, const tapi_netperf_test_opt *tst_opt)
 {
     te_errno rc;
 
