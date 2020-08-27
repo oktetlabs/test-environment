@@ -378,9 +378,47 @@ tapi_reuse_eal(tapi_env         *env,
     {
         const char *bus_name = NULL;
         const char *dev_name = ps_if->iface->if_info.if_name;
-        const char *da_empty = "";
         uint16_t    port_id;
         const char *net_bonding_prefix = "net_bonding";
+
+        if (ps_if->iface->rsrc_type != NET_NODE_RSRC_TYPE_PCI_FN)
+            bus_name = "pci";
+        else if (ps_if->iface->rsrc_type != NET_NODE_RSRC_TYPE_RTE_VDEV)
+            bus_name = "vdev";
+        else
+            continue;
+
+        RPC_AWAIT_ERROR(rpcs);
+        rc = rpc_rte_eth_dev_get_port_by_name(rpcs, dev_name, &port_id);
+        if (rc == 0)
+            rpc_rte_eth_dev_close(rpcs, port_id);
+        else if (rc != -TE_RC(TE_RPC, TE_ENODEV))
+            goto out;
+
+        /* If ethdev is removed, its PCI device can still be plugged in. */
+        RPC_AWAIT_ERROR(rpcs);
+        rc = rpc_rte_eal_hotplug_remove(rpcs, bus_name, dev_name);
+        if (rc != 0 && rc != -TE_RC(TE_RPC, TE_ENODEV) &&
+            /* -EINVAL is returned in the case of no PCI device */
+            rc != -TE_RC(TE_RPC, TE_EINVAL))
+            goto out;
+
+        if (strncmp(dev_name, net_bonding_prefix,
+                    strlen(net_bonding_prefix)) == 0)
+        {
+            rc = tapi_eal_close_bond_slave_pci_devices(env, ps_if, rpcs);
+            if (rc != 0)
+                goto out;
+        }
+    }
+
+    rpc_rte_mempool_free_all(rpcs);
+
+    STAILQ_FOREACH(ps_if, ifsp, links)
+    {
+        const char *bus_name = NULL;
+        const char *dev_name = ps_if->iface->if_info.if_name;
+        const char *da_empty = "";
 
         if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_PCI_FN)
         {
@@ -415,36 +453,11 @@ tapi_reuse_eal(tapi_env         *env,
             continue;
         }
 
-        RPC_AWAIT_ERROR(rpcs);
-        rc = rpc_rte_eth_dev_get_port_by_name(rpcs, dev_name, &port_id);
-        if (rc == 0)
-            rpc_rte_eth_dev_close(rpcs, port_id);
-        else if (rc != -TE_RC(TE_RPC, TE_ENODEV))
-            goto out;
-
-        /* If ethdev is removed, its PCI device can still be plugged in. */
-        RPC_AWAIT_ERROR(rpcs);
-        rc = rpc_rte_eal_hotplug_remove(rpcs, bus_name, dev_name);
-        if (rc != 0 && rc != -TE_RC(TE_RPC, TE_ENODEV) &&
-            /* -EINVAL is returned in the case of no PCI device */
-            rc != -TE_RC(TE_RPC, TE_EINVAL))
-            goto out;
-
-        if (strncmp(dev_name, net_bonding_prefix,
-                    strlen(net_bonding_prefix)) == 0)
-        {
-            rc = tapi_eal_close_bond_slave_pci_devices(env, ps_if, rpcs);
-            if (rc != 0)
-                goto out;
-        }
-
         da_generic = (da_generic == NULL) ? da_empty : da_generic;
         rc = rpc_rte_eal_hotplug_add(rpcs, bus_name, dev_name, da_generic);
         if (rc != 0)
             goto out;
     }
-
-    rpc_rte_mempool_free_all(rpcs);
 
     *need_init = FALSE;
     *eal_args_out = NULL;
