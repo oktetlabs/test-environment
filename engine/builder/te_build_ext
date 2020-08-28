@@ -152,7 +152,7 @@ done
                       fi ;
                       if test -n \"$tatypes\" ; then
                           export TE_TA_TYPES=\"$tatypes\" ;
-                          export TE_AGENTS_INST=(\"$prefix/agents\") ;
+                          export TE_AGENTS_INST=\"$prefix/agents\" ;
                       fi ;
                       $exports
                       $build"
