@@ -381,9 +381,9 @@ dnl                        for the current platform
 dnl           - TE_CPPFLAGS: gcc preprocess flags to use TE-provided headers
 dnl           - TE_LDFLAGS: linker flags to use TE libraries
 dnl           - EXT_SOURCES: absolute path to the sources
-dnl           - TA_TYPES: list of TA types
+dnl           - TE_TA_TYPES: list of TA types
 dnl           - TE_AGENTS_INST: agents installation directory - this directory
-dnl                             contains all the agents specified in TA_TYPES
+dnl                             contains all the agents specified in TE_TA_TYPES
 dnl       list of executables to copy to TA agent directory
 dnl       list of environment variables to export to the build script
 dnl       (this only matters for remote builds)
