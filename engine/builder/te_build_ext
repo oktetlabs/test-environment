@@ -146,6 +146,7 @@ done
                       export TE_DO_TCE=\"$tce\"
                       export TE_CPPFLAGS=\"$tecppflags\" ;
                       export TE_LDFLAGS=\"$telibflags\" ;
+                      export TE_LIBS=\"$telibs\" ;
                       export EXT_SOURCES=\"$srcdir\" ;
                       if test -n \"$bin\" ; then
                           export PATH=\"\$PATH:$bin\" ;

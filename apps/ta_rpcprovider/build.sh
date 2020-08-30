@@ -27,25 +27,8 @@ done
 test -z "${te_cppflags}" || meson_args+=(-Dte_cppflags="${te_cppflags}")
 test -z "${te_ldflags}" || meson_args+=(-Dte_ldflags="${te_ldflags}")
 
-te_libdir=
-te_libs=
-for l in ${TE_LDFLAGS} ; do
-    if test "${l:0:2}" = "-L" ; then
-        if test -n "${te_libdir}" ; then
-            echo "ERROR: only one -L flag is supported" >&2
-            exit 1
-        fi
-        te_libdir="${l:2}"
-    elif test "${l:0:2}" = "-l" ; then
-        test -z "${te_libs}" || te_libs+=","
-        te_libs+="${l:2}"
-    else
-        echo "ERROR: unsupported item '${l}' in TE_LDFLAGS" >&2
-        exit 1
-    fi
-done
-test -z "${te_libdir}" || meson_args+=(-Dte_libdir="${te_libdir}")
-test -z "${te_libs}" || meson_args+=(-Dte_libs="${te_libs}")
+test -z "${TE_PREFIX}" || meson_args+=(-Dte_libdir="${TE_PREFIX}/lib")
+test -z "${TE_LIBS}" || meson_args+=(-Dte_libs="$(echo ${TE_LIBS} | tr ' ' ,)")
 
 echo "${meson_args[@]}" >meson.args.new
 
