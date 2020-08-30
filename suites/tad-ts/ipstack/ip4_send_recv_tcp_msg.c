@@ -77,8 +77,8 @@ main(int argc, char *argv[])
     const struct sockaddr     *tst_addr = NULL;
     struct sockaddr           *fake_tst_addr = NULL;
 
-    const uint8_t             *iut_mac = NULL;
-    const uint8_t             *tst_mac = NULL;
+    const struct sockaddr     *iut_mac = NULL;
+    const struct sockaddr     *tst_mac = NULL;
     uint8_t                   *fake_tst_mac = NULL;
     
     const struct if_nameindex *iut_if = NULL;
@@ -116,10 +116,11 @@ main(int argc, char *argv[])
     
     /* Prepare fake mac address. */
     fake_tst_mac = malloc(sizeof(uint8_t) * 6);
-    memcpy(fake_tst_mac, tst_mac, sizeof(uint8_t) * 6);
+    memcpy(fake_tst_mac, te_sockaddr_get_netaddr(tst_mac), sizeof(uint8_t) * 6);
     do {
         *(fake_tst_mac + rand_range(3,5)) = rand_range(1, 255);
-    } while (!memcmp(fake_tst_mac, tst_mac, sizeof(uint8_t) * 6));
+    } while (!memcmp(fake_tst_mac, te_sockaddr_get_netaddr(tst_mac),
+                     sizeof(uint8_t) * 6));
 
     /* Open sock for listen. */
     iut_tcp_sock = rpc_socket(iut_pco, RPC_PF_INET,
@@ -132,7 +133,8 @@ main(int argc, char *argv[])
     /* Establish TCP connection. */
     CHECK_RC(tapi_tcp_init_connection(tst_pco->ta, TAPI_TCP_CLIENT,
                              SA(fake_tst_addr), SA(iut_addr), tst_if->if_name,
-                             fake_tst_mac, iut_mac, 0, &tcp_conn));
+                             fake_tst_mac, te_sockaddr_get_netaddr(iut_mac),
+                             0, &tcp_conn));
 
     CHECK_RC(tapi_tcp_wait_open(tcp_conn, 3000));
     tmp_sock = rpc_accept(iut_pco, iut_tcp_sock, NULL, NULL);
