@@ -50,7 +50,6 @@ main(int argc, char *argv[])
     tapi_env_host      *iut_host = NULL;
     rcf_rpc_server     *pco_iut = NULL;
     te_bool             zero_timeout;
-    uint16_t            port;
     csap_handle_t       tcp_srv_csap = CSAP_INVALID_HANDLE;
     rcf_trpoll_csap     csapd;
     struct sockaddr_in  addr;
