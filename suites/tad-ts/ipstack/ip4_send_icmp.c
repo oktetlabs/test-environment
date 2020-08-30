@@ -79,6 +79,7 @@
 #include "tapi_rpcsock_macros.h"
 #include "tapi_test.h"
 #include "tapi_rpc_params.h"
+#include "tapi_sockaddr.h"
 
 int
 main(int argc, char *argv[])

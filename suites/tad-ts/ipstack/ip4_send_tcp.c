@@ -62,6 +62,7 @@
 #include "tapi_test.h"
 #include "tapi_rpc_params.h"
 #include "tapi_tcp.h"
+#include "tapi_sockaddr.h"
 
 #define TCP_FLAG_ACK 0x10
 
