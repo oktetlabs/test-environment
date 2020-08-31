@@ -1,9 +1,10 @@
-# Copyright (C) 2018 OKTET Labs. All rights reserved.
+# Copyright (C) 2020 OKTET Labs. All rights reserved.
 
 engine_scripts = [
     'te_build_suite',
     'te_ta_ssh_helper',
     'te_tce_process',
+    'te_tests_info.awk',
     'te_tests_info.sh',
 ]
 
