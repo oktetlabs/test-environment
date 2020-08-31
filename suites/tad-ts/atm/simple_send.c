@@ -142,6 +142,8 @@ main(int argc, char *argv[])
                                    RCF_MODE_BLOCKING));
 
     r = rpc_read(pco_tst, tst_s, cell, sizeof(cell));
+    if (r != sizeof(cell))
+        TEST_FAIL("Failed to read ATM cell bytes");
 
     if (memcmp(payload, cell + ATM_HEADER_LEN, payload_len) != 0)
     {
