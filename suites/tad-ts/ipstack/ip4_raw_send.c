@@ -140,8 +140,8 @@ main(int argc, char *argv[])
     
     CHECK_RC(tapi_ip4_eth_csap_create(host_csap->ta, 0, csap_if->if_name,
                                   TAD_ETH_RECV_NO,
-                                  csap_hwaddr->sa_data,
-                                  sock_hwaddr->sa_data,
+                                  (const uint8_t *)csap_hwaddr->sa_data,
+                                  (const uint8_t *)sock_hwaddr->sa_data,
                                   SIN(csap_addr)->sin_addr.s_addr,
                                   SIN(sock_addr)->sin_addr.s_addr,
                                   proto_rpc2h(proto),

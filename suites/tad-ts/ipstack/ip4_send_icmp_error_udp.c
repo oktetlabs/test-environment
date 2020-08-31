@@ -171,8 +171,8 @@ main(int argc, char *argv[])
                  host_csap->ta, 0,
                  csap_if->if_name,
                  TAD_ETH_RECV_NO,
-                 sock_hwaddr->sa_data,
-                 csap_hwaddr->sa_data,
+                 (const uint8_t *)sock_hwaddr->sa_data,
+                 (const uint8_t *)csap_hwaddr->sa_data,
                  SIN(csap_addr)->sin_addr.s_addr,
                  SIN(sock_addr)->sin_addr.s_addr,
                  SIN(sock_addr)->sin_addr.s_addr,
@@ -215,8 +215,8 @@ main(int argc, char *argv[])
     /* Prepare ICMP error message's ETH header */
     CHECK_RC(tapi_eth_add_pdu(&template, NULL,
                               FALSE,
-                              sock_hwaddr->sa_data,
-                              csap_hwaddr->sa_data,
+                              (const uint8_t *)sock_hwaddr->sa_data,
+                              (const uint8_t *)csap_hwaddr->sa_data,
                               &ip_eth,
                               TE_BOOL3_ANY,
                               TE_BOOL3_ANY));

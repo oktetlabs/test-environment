@@ -144,7 +144,7 @@ main(int argc, char *argv[])
     recv_buf = malloc(payload_len);
 
     /* Send data via socket. */
-    int recv_bytes = payload_len;
+    size_t recv_bytes = payload_len;
     if (payload_len != rpc_send(iut_pco, iut_tcp_sock,
                                 send_buf, payload_len, 0))
         TEST_FAIL("Sending data by socket failed");
@@ -155,7 +155,7 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_tcp_recv_msg(tcp_conn, 100, TAPI_TCP_AUTO, recv_buf, 
                                &recv_bytes, NULL, NULL, &flags));
 
-    if (recv_bytes == payload_len)
+    if (recv_bytes == (size_t)payload_len)
     {
         if (memcmp(send_buf, recv_buf, payload_len))
             TEST_FAIL("Data, received by tapi_tcp_recv_msg, corrupted");

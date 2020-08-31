@@ -62,8 +62,8 @@ main(int argc, char *argv[])
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     CHECK_RC(tapi_allocate_port_htons(pco_iut, &addr.sin_port));
-    CHECK_RC(tapi_tcp_server_csap_create(iut_host->ta, 0, &addr,
-                                         &tcp_srv_csap));
+    CHECK_RC(tapi_tcp_server_csap_create(iut_host->ta, 0,
+                                         SA(&addr), &tcp_srv_csap));
 
     CHECK_RC(tapi_tad_trrecv_start(iut_host->ta, 0, tcp_srv_csap,
                                    NULL, 2000, 1, RCF_TRRECV_PACKETS));

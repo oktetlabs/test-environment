@@ -150,8 +150,8 @@ main(int argc, char *argv[])
     CHECK_RC(tapi_eth_add_csap_layer(&csap_spec,
                                      csap_if->if_name,
                                      TAD_ETH_RECV_NO,
-                                     sock_hwaddr->sa_data,
-                                     csap_hwaddr->sa_data,
+                                     (const uint8_t *)sock_hwaddr->sa_data,
+                                     (const uint8_t *)csap_hwaddr->sa_data,
                                      &ip_eth,
                                      TE_BOOL3_ANY,
                                      TE_BOOL3_ANY));
@@ -173,8 +173,8 @@ main(int argc, char *argv[])
                               -1));
     CHECK_RC(tapi_eth_add_pdu(&template, NULL,
                               FALSE,
-                              sock_hwaddr->sa_data,
-                              csap_hwaddr->sa_data,
+                              (const uint8_t *)sock_hwaddr->sa_data,
+                              (const uint8_t *)csap_hwaddr->sa_data,
                               &ip_eth,
                               TE_BOOL3_ANY,
                               TE_BOOL3_ANY));
