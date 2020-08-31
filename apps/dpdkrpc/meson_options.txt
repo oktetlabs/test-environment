@@ -1,0 +1,8 @@
+# Copyright (C) 2020 OKTET Labs. All rights reserved.
+
+option('te_prefix', type: 'string', value: '',
+    description: 'TE platform installation prefix')
+option('te_libs', type: 'string', value: '',
+    description: 'Comma-separated list of TE libraries')
+option('rte_libs', type: 'string', value: '',
+    description: 'Comma-separated list of DPDK libraries to link with')
