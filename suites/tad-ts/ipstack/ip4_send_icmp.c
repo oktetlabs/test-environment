@@ -263,7 +263,7 @@ main(int argc, char *argv[])
     r = rpc_recv(pco, recv_socket, recv_buf, recv_buf_len,
                  RPC_MSG_DONTWAIT);
 
-    if (r < sizeof(struct icmphdr) + sizeof(struct iphdr))
+    if (r < (ssize_t)(sizeof(struct icmphdr) + sizeof(struct iphdr)))
         TEST_FAIL("Number of received bytes is less than "
                   "minimal expected %d", 
                   sizeof(struct icmphdr) + sizeof(struct iphdr));
