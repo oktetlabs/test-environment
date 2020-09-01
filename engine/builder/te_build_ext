@@ -148,6 +148,7 @@ done
                       export TE_LDFLAGS=\"$telibflags\" ;
                       export TE_LIBS=\"$telibs\" ;
                       export EXT_SOURCES=\"$srcdir\" ;
+                      export PKG_CONFIG_PATH=\"$prefix/$platform/lib/pkgconfig\" ;
                       if test -n \"$bin\" ; then
                           export PATH=\"\$PATH:$bin\" ;
                       fi ;
