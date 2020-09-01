@@ -121,7 +121,8 @@ build_platform() {
                           --build="${!pextbuild}" \
                           --expheaders="${!pextinsth}" \
                           --explibs="${!pextinstl}" \
-                          --envvars="${!pextenv}" $enable_tce
+                          --envvars="${!pextenv}" $enable_tce \
+                || { echo "Extension ${pext} for ${p} build failed" >&2; return 1; }
         done
 
         ${TE_BASE}/engine/builder/te_configure_package INCLUDE include \
@@ -236,7 +237,8 @@ build_platform_agents() {
 
         test "${!ta_platform}" = "$p" || continue
 
-        build_agent "$ta" "$mode"
+        build_agent "$ta" "$mode" \
+            || { echo "TA ${ta} build failed" >&2; return 1; }
     done
 
     return 0
@@ -287,7 +289,8 @@ build_agent_apps() {
             --build="${!pappbuild}" \
             --expbin="${!pappinstbin}" \
             --envvars="${!pappenv}" \
-            --bin="${TE_INSTALL}/${p}/bin" $enable_tce
+            --bin="${TE_INSTALL}/${p}/bin" $enable_tce \
+            || { echo "TA app ${app} for ${p} build failed" >&2; return 1; }
     done
 }
 
