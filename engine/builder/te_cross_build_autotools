@@ -296,6 +296,7 @@ build_agent_apps() {
 
 # Acquire shadow build directory on agent and TE host.
 acquire_shadow_build_directory() {
+    local p=$1
     local res
 
     # get or create new name of shadow build directory
@@ -352,6 +353,7 @@ acquire_shadow_build_directory() {
 # the end of tests, because TCE processing may depend on its
 # contents, see te_tce_process script
 release_shadow_build_directory() {
+    local p=$1
     local res
 
     if test ! -f "${p}.sbd"; then
@@ -395,14 +397,14 @@ build_platform_and_agent() {
         local pplatform="TE_BS_TA_${p}_PLATFORM"
         declare "${!pplatform}_SSH"=""
     fi
-    acquire_shadow_build_directory
+    acquire_shadow_build_directory "${p}"
     (
         build_platform "$p" "$mode" || mode=all
         build_platform_agents "$p" "$mode"
         build_agent_apps "$p"
     )
     res=$?
-    release_shadow_build_directory
+    release_shadow_build_directory "${p}"
     return $res
 }
 
