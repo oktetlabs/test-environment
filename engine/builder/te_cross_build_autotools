@@ -249,8 +249,8 @@ build_agent_apps() {
     local app
 
     local sbd=${TE_BUILD}
-    if test -f "${PLATFORM}.sbd"; then
-        sbd=$(cat "${PLATFORM}.sbd")
+    if test -f "${p}.sbd"; then
+        sbd=$(cat "${p}.sbd")
     fi
 
     for app in ${!papps}; do
@@ -267,7 +267,7 @@ build_agent_apps() {
         local teincludes=
         local telib
         for telib in ${!papplibs}; do
-            local plibsrc="TE_BS_LIB_${PLATFORM}_${telib}_SOURCES"
+            local plibsrc="TE_BS_LIB_${p}_${telib}_SOURCES"
             local libsrc="${!plibsrc}"
             # We assume that if a library is built several times, it may have
             # a separate include subdirectory for each 'non-default' build
@@ -275,7 +275,7 @@ build_agent_apps() {
                 teincludes="${teincludes} ${telib}"
             fi
         done
-        te_check_tce "${PLATFORM}" "${app}" && enable_tce="--tce"
+        te_check_tce "${p}" "${app}" && enable_tce="--tce"
 
         ${SCRIPT_DIR}/te_build_ext --prefix="${PREFIX}" \
             --platform="$p" \
