@@ -45,12 +45,12 @@ fs_sanity_check() {
 }
 
 need_build_agent() {
-    local package=$1
-    local mode=$2
+    local p=$1
+    local package=$2
+    local mode=$3
 
-    local pplatform="TE_BS_TA_${package}_PLATFORM"
-    PLATFORM="${!pplatform}"
-    if test "$PLATFORM" = "${TE_HOST}" ; then return 1 ; fi ;
+    if test "${p}" = "${TE_HOST}" ; then return 1 ; fi ;
+
     if test "$mode" != "all" -a -f agents/$package/ta ; then
         return 1
     fi
@@ -80,7 +80,7 @@ need_build_platform() {
 
         test "${!ta_platform}" = "$p" || continue
 
-        need_build_agent "$package" "$mode" && return 0
+        need_build_agent "${p}" "$package" "$mode" && return 0
     done
 
     return 1
@@ -179,16 +179,15 @@ build_platform() {
 
 build_agent() {
     local res
-    local package=$1
+    local p=$1
+    local package=$2
     local mode=$2
 
-    local pplatform="TE_BS_TA_${package}_PLATFORM"
-    PLATFORM="${!pplatform}"
-    if test "$PLATFORM" = "${TE_HOST}" ; then return 0 ; fi ;
+    if test "${p}" = "${TE_HOST}" ; then return 0 ; fi ;
 
     local sbd=${TE_BUILD}
-    if test -f "${PLATFORM}.sbd"; then
-        sbd=$(cat "${PLATFORM}.sbd")
+    if test -f "${p}.sbd"; then
+        sbd=$(cat "${p}.sbd")
     fi
 
     local ppkgsrc="TE_BS_TA_${package}_SOURCES"
@@ -200,9 +199,9 @@ build_agent() {
         return 0
     fi
     mkdir -p "agents/$package"
-    fs_sanity_check "${PLATFORM}" "agents/$package"
+    fs_sanity_check "${p}" "agents/$package"
 
-    te_eval_or_ssh "${PLATFORM}" "
+    te_eval_or_ssh "${p}" "
         mkdir -p \"${sbd}/agents/$package\" ;
         ${TE_BASE}/engine/builder/te_rcf_consistency_checks
             --extfiles-del \"${sbd}/agents/$package/\" ;
@@ -212,13 +211,13 @@ build_agent() {
     "
 
     ${TE_BASE}/engine/builder/te_configure_package TA "$package" "$package" \
-        "${sbd}/agents/$package" "$PLATFORM" "$PKGSRC" "$PREFIX"
+        "${sbd}/agents/$package" "${p}" "$PKGSRC" "$PREFIX"
 
     local TE_CFLAGS_NAME="${package}_CFLAGS_VAR"
     local TE_CPPFLAGS_NAME="${package}_CPPFLAGS_VAR"
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
 # See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
-    te_eval_or_ssh "${PLATFORM}" "
+    te_eval_or_ssh "${p}" "
         cd ${sbd}/agents/$package ;
         echo=echo
         TE_CFLAGS_VAR='${!TE_CFLAGS_NAME}'
@@ -237,7 +236,7 @@ build_platform_agents() {
 
         test "${!ta_platform}" = "$p" || continue
 
-        build_agent "$ta" "$mode" \
+        build_agent "${p}" "$ta" "$mode" \
             || { echo "TA ${ta} build failed" >&2; return 1; }
     done
 
