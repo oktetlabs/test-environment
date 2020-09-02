@@ -51,7 +51,7 @@ need_build_agent() {
 
     if test "${p}" = "${TE_HOST}" ; then return 1 ; fi ;
 
-    if test "$mode" != "all" -a -f agents/$package/ta ; then
+    if test "$mode" != "all" -a -f platforms/${p}/agents/$package/ta ; then
         return 1
     fi
     return 0
@@ -185,6 +185,8 @@ build_agent() {
 
     if test "${p}" = "${TE_HOST}" ; then return 0 ; fi ;
 
+    local builddir="platforms/${p}/agents/${package}"
+
     local sbd=${TE_BUILD}
     if test -f "${p}.sbd"; then
         sbd=$(cat "${p}.sbd")
@@ -195,30 +197,30 @@ build_agent() {
     if test -z "$PKGSRC" ; then
         PKGSRC=${TE_BASE}/agents/$package ;
     fi
-    if test "$mode" != "all" -a -f agents/$package/ta ; then
+    if test "$mode" != "all" -a -f "${builddir}" ; then
         return 0
     fi
-    mkdir -p "agents/$package"
-    fs_sanity_check "${p}" "agents/$package"
+    mkdir -p "${builddir}"
+    fs_sanity_check "${p}" "${builddir}"
 
     te_eval_or_ssh "${p}" "
-        mkdir -p \"${sbd}/agents/$package\" ;
+        mkdir -p \"${sbd}/${builddir}\" ;
         ${TE_BASE}/engine/builder/te_rcf_consistency_checks
-            --extfiles-del \"${sbd}/agents/$package/\" ;
-        echo \"$TE_RCF_CONSISTENCY_CHECKS_EXT_FILES\" | sed \"s/ /\n/g\" |
+            --extfiles-del \"${sbd}/${builddir}/\" ;
+        echo \"$TE_RCF_CONSISTENCY_CHECKS_EXT_FILES\" |
             ${TE_BASE}/engine/builder/te_rcf_consistency_checks
-            --extfiles-add \"${sbd}/agents/$package/\"
+                --extfiles-add \"${sbd}/${builddir}/\"
     "
 
     ${TE_BASE}/engine/builder/te_configure_package TA "$package" "$package" \
-        "${sbd}/agents/$package" "${p}" "$PKGSRC" "$PREFIX"
+        "${sbd}/${builddir}" "${p}" "$PKGSRC" "$PREFIX"
 
     local TE_CFLAGS_NAME="${package}_CFLAGS_VAR"
     local TE_CPPFLAGS_NAME="${package}_CPPFLAGS_VAR"
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
 # See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
     te_eval_or_ssh "${p}" "
-        cd ${sbd}/agents/$package ;
+        cd ${sbd}/${builddir} ;
         echo=echo
         TE_CFLAGS_VAR='${!TE_CFLAGS_NAME}'
         TE_CPPFLAGS_VAR='${!TE_CPPFLAGS_NAME}'
@@ -321,17 +323,15 @@ acquire_shadow_build_directory() {
     te_eval_or_ssh "${p}" "
         test -d '${sbd}' && rm -rf '${sbd}' ;
         mkdir -p '${sbd}/platforms/${p}' ;
-        mkdir -p '${sbd}/agents/${p}'
     "
-    for type in platforms agents; do
-        mkdir -p "${sbd}/${type}/${p}"
-        test -d "${type}/${p}" || continue
-        cp -rp "${type}/${p}" "${sbd}/${type}"
-        tar -C "${type}/${p}" -czf - . |
+    mkdir -p "${sbd}/platforms/${p}"
+    if test -d "platforms/${p}" ; then
+        cp -rp "platforms/${p}" "${sbd}/platforms"
+        tar -C "platforms/${p}" -czf - . |
             te_eval_or_ssh "${p}" "
-                tar -C '${sbd}/${type}/${p}' -xzf -
-            "
-    done
+                tar -C '${sbd}/platforms/${p}' -xzf -
+        "
+    fi
 
     local applist="TE_BS_TA_APPS_${p}"
     local app
@@ -368,7 +368,6 @@ release_shadow_build_directory() {
 
     # cleanup TE_BUILD
     rm -rf "platforms/${p}"
-    rm -rf "agents/${p}"
     for app in ${!applist}; do rm -rf apps/${app}/${p}; done
 
     # return files from the SBD on agent host
@@ -378,7 +377,7 @@ release_shadow_build_directory() {
         " | tar -xzf -
     done
     te_eval_or_ssh "${p}" "
-        tar -C '${sbd}' -czf - platforms/${p} agents/${p} ;
+        tar -C '${sbd}' -czf - platforms/${p}
         rm -rf '${sbd}' >/dev/null
     " | tar -xzf -
     find . -type l | xargs ${TE_BASE}/engine/builder/te_fixlink "${sbd}" .

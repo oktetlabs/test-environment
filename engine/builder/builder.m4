@@ -448,7 +448,8 @@ dnl        - app
 dnl        Target platform (for libraries) or agent type (for agents and apps)
 dnl        Source directory (absolute or relative to TE_BASE/lib, TE_BASE/agents, TE_BASE/apps,
 dnl            depending on the kind of the entity). Default is the name of the component.
-dnl        Build directory (absolute or relative to TE_BUILD/platforms/PLATFORM/lib, TE_BUILD/agents/AGTYPE
+dnl        Build directory (absolute or relative to
+dnl            TE_BUILD/platforms/PLATFORM/{agents,lib} or
 dnl            TE_BUILD/apps/AGTYPE depending on the kind of the entity).
 dnl            Default is the name of the component.
 dnl        Source pattern to exclude (a regexp)
@@ -524,7 +525,7 @@ if test "${BUILDDIR:0:1}" != "/" ; then
          BUILDDIR=${TE_BUILD}/platforms/${PLATFORM}/lib/${BUILDDIR} ;
          ;;
        agent)
-         BUILDDIR=${TE_BUILD}/agents/${BUILDDIR} ;
+         BUILDDIR=${TE_BUILD}/platforms/${PLATFORM}/agents/${BUILDDIR} ;
          ;;
        app)
          BUILDDIR=${TE_BUILD}/apps/${BUILDDIR}/${AGTYPE} ;

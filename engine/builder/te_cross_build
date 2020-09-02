@@ -18,31 +18,31 @@ SCRIPT_DIR=`dirname $0`
 
 PREFIX=$1
 
-take_agent_lock() {
-    mkdir agents/$1/in_progress/ 2>/dev/null
+take_platform_lock() {
+    mkdir platforms/$1/in_progress/ 2>/dev/null
 }
 
-put_agent_lock() {
-    rmdir agents/$1/in_progress/
+put_platform_lock() {
+    rmdir platforms/$1/in_progress/
 }
 
 wait_progress () {
-    local package=$1
+    local p=$1
     local in_prog_msg=
 
-    mkdir -p agents/$package
+    mkdir -p platforms/$p
     while true ; do
-        take_agent_lock $package
+        take_platform_lock $p
         if [ $? -eq 0 ] ; then
             break
         fi
         if test "x$BUILD_TA_RM" == "xyes" ; then
-            echo "WARNING: Removing build lock for agent: $package"
-            put_agent_lock $package
+            echo "WARNING: Removing build lock for platform: $p"
+            put_platform_lock $p
             continue
         fi
         if test "x$in_prog_msg" == "x" ; then
-            echo -n "$(date +%T) Agent $package building is already " >&2
+            echo -n "$(date +%T) Platform $p build is already " >&2
             echo -n "in progress, waiting" >&2
             in_prog_msg="yes"
         fi
@@ -135,7 +135,7 @@ build() {
             echo "Build agent $(print_platform $p) - fail ($res)" >&2
             ERRORS[$p]=$res
         fi
-        put_agent_lock $p
+        put_platform_lock $p
     done
 
     if test "${#ERRORS[@]}" -ne "0" ; then

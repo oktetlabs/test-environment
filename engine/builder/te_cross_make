@@ -58,7 +58,7 @@ DUMMY=
 for package in $DUMMY $TE_BS_TA ; do
     PLATFORM=`eval echo '$TE_BS_TA_'${package}'_PLATFORM'` ;
     if test "$PLATFORM" = ${TE_HOST} ; then continue ; fi ;
-    cd agents/$package
+    cd platforms/${PLATFORM}/agents/$package
     if test -e Makefile ; then make $TARGET || exit 1 ; fi
     cd ../..
 done
