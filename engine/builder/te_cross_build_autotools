@@ -170,7 +170,7 @@ build_platform() {
             echo=echo
             TE_CFLAGS_VAR='${!TE_CFLAGS_NAME}'
             TE_CPPFLAGS_VAR='${!TE_CPPFLAGS_NAME}'
-            make ${BUILD_MAKEFLAGS} install || exit 1 ;
+            make ${BUILD_MAKEFLAGS} install ;
             popd >/dev/null
         "
     done
@@ -219,11 +219,11 @@ build_agent() {
 # Code "echo=echo" was added, for bug fixing of a look "X--tag=CC: command not found"
 # See https://lists.gnu.org/archive/html/bug-libtool/2008-04/msg00011.html
     te_eval_or_ssh "${PLATFORM}" "
-        cd ${sbd}/agents/$package || exit 1 ;
+        cd ${sbd}/agents/$package ;
         echo=echo
         TE_CFLAGS_VAR='${!TE_CFLAGS_NAME}'
         TE_CPPFLAGS_VAR='${!TE_CPPFLAGS_NAME}'
-        make ${BUILD_MAKEFLAGS} install || exit 1
+        make ${BUILD_MAKEFLAGS} install
     "
 }
 
@@ -320,8 +320,8 @@ acquire_shadow_build_directory() {
     # distribute files from TE_BUILD to the SBD on both hosts
     te_eval_or_ssh "${p}" "
         test -d '${sbd}' && rm -rf '${sbd}' ;
-        mkdir -p '${sbd}/platforms/${p}' || exit 1 ;
-        mkdir -p '${sbd}/agents/${p}' || exit 1
+        mkdir -p '${sbd}/platforms/${p}' ;
+        mkdir -p '${sbd}/agents/${p}'
     "
     for type in platforms agents; do
         mkdir -p "${sbd}/${type}/${p}"

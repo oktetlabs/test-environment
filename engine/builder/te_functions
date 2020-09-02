@@ -141,7 +141,7 @@ te_eval_or_ssh() {
         local cmd="$(echo "${cmd}" | sed "s/'/\'\"\'\"\'/g")"
 
         # SSH command may have arguments in double-quotes with spaces
-        eval "${!SSHVAR} \"/bin/bash -c 'cd /tmp || exit 1 ; \${cmd}'\""
+        eval "${!SSHVAR} \"/bin/bash -c 'set -e; cd /tmp; \${cmd}'\""
     fi
 }
 
@@ -159,7 +159,7 @@ te_eval_or_ssh_pwd() {
         ( eval "${@}" )
     else
         # SSH command may have arguments in double-quotes with spaces
-        eval "${!SSHVAR} \"cd '\$PWD' || exit 1; \${@}\""
+        eval "${!SSHVAR} \"set -e; cd '\$PWD'; \${@}\""
     fi
 }
 
