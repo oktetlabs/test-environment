@@ -18,7 +18,7 @@ te_ldflags=
 # property is supported on meson starting from 0.54.0
 if test "${TE_IUT_RPCS_I386_CFLAGS/-m32/}" != "${TE_IUT_RPCS_I386_CFLAGS}" ; then
     source te_meson_m32_exports
-    app_name="ta_rpcs_i386"
+    app_name="ta_rpcs_32"
 else
     app_name="ta_rpcs"
 fi
