@@ -136,7 +136,7 @@ done
             cd "$srcdir"; eval "export EXT_BUILDDIR=\"${builddir:-.}\"; $prepare"
         fi
     fi
-) || exit 1
+)
 
 (
         te_eval_or_ssh "$platform" "cd $srcdir ;
@@ -158,10 +158,9 @@ done
                       fi ;
                       eval \"$exports\" ;
                       $build"
-) || exit 1
-install_extension_parts "$expheaders" "$prefix/$platform/include" || exit 1
-install_extension_parts "$explibs" "$prefix/$platform/lib" || exit 1
+)
+install_extension_parts "$expheaders" "$prefix/$platform/include"
+install_extension_parts "$explibs" "$prefix/$platform/lib"
 for tatype in ${tatypes} ; do
-    install_extension_parts "$expbin" "$prefix/agents/$tatype" || exit 1
+    install_extension_parts "$expbin" "$prefix/agents/$tatype"
 done
-
