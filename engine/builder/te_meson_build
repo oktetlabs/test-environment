@@ -873,7 +873,7 @@ build_agent_apps() {
         te_eval_or_ssh "$p" "mkdir -p $ws_app_src $ws_app_builddir"
         rsync_to "$p" "${!pappsrc}/" "$ws_app_src"
 
-        local local_app_builddir="ta_apps/${app}/build"
+        local local_app_builddir="apps/${app}/build"
         if test -d "${local_app_builddir}"; then
             rsync_to "$p" "${local_app_builddir}/" "${ws_app_builddir}"
         else
