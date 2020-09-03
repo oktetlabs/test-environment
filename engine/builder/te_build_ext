@@ -156,7 +156,7 @@ done
                           export TE_TA_TYPES=\"$tatypes\" ;
                           export TE_AGENTS_INST=\"$prefix/agents\" ;
                       fi ;
-                      eval \"$exports\" ;
+                      ${exports}
                       $build"
 )
 install_extension_parts "$expheaders" "$prefix/$platform/include"
