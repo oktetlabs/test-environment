@@ -418,7 +418,7 @@ if ! test -d "$SOURCES" ; then
 fi
 BUILDDIR="$6"
 if test -z "$BUILDDIR"; then
-    BUILDDIR="${TE_BUILD}/${PLATFORM}/apps/${APPNAME}"
+    BUILDDIR="${TE_BUILD}/platforms/${PLATFORM}/apps/${APPNAME}"
 fi
 TA_APPS="TE_BS_TA_APPS_${PLATFORM}"
 declare "$TA_APPS"="${!TA_APPS} ${APPNAME}"
@@ -449,8 +449,8 @@ dnl        Target platform (for libraries) or agent type (for agents and apps)
 dnl        Source directory (absolute or relative to TE_BASE/lib, TE_BASE/agents, TE_BASE/apps,
 dnl            depending on the kind of the entity). Default is the name of the component.
 dnl        Build directory (absolute or relative to
-dnl            TE_BUILD/platforms/PLATFORM/{agents,lib} or
-dnl            TE_BUILD/apps/AGTYPE depending on the kind of the entity).
+dnl            TE_BUILD/platforms/PLATFORM/{agents,apps,lib} depending on
+dnl            the kind of the entity).
 dnl            Default is the name of the component.
 dnl        Source pattern to exclude (a regexp)
 
@@ -528,7 +528,7 @@ if test "${BUILDDIR:0:1}" != "/" ; then
          BUILDDIR=${TE_BUILD}/platforms/${PLATFORM}/agents/${BUILDDIR} ;
          ;;
        app)
-         BUILDDIR=${TE_BUILD}/apps/${BUILDDIR}/${AGTYPE} ;
+         BUILDDIR=${TE_BUILD}/platforms/${PLATFORM}/apps/${BUILDDIR} ;
          ;;
   esac
 fi
