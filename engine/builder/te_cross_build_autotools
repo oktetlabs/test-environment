@@ -322,7 +322,7 @@ acquire_shadow_build_directory() {
     # distribute files from TE_BUILD to the SBD on both hosts
     te_eval_or_ssh "${p}" "
         test -d '${sbd}' && rm -rf '${sbd}' ;
-        mkdir -p '${sbd}/platforms/${p}' ;
+        mkdir -p '${sbd}/platforms/${p}'
     "
     mkdir -p "${sbd}/platforms/${p}"
 
@@ -365,7 +365,7 @@ release_shadow_build_directory() {
 
     # return files from the SBD on agent host
     te_eval_or_ssh "${p}" "
-        tar -C '${sbd}' -czf - platforms/${p}
+        tar -C '${sbd}' -czf - platforms/${p} ;
         rm -rf '${sbd}' >/dev/null
     " | tar -xzf -
     find . -type l | xargs ${TE_BASE}/engine/builder/te_fixlink "${sbd}" .
