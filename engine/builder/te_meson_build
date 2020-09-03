@@ -1015,13 +1015,15 @@ do_build() {
         case "${!build}" in
             autotools)
                 ${SCRIPT_DIR}/te_cross_build_autotools \
-                    "${TE_INSTALL}" "${p}" "${BUILD_TA}"
+                    "${TE_INSTALL}" "${p}" "${BUILD_TA}" \
+                    || error "Platform ${p} cross build using autotools failed"
                 ;;
             ""|meson)
                 mkdir -p platforms/"${p}" "${TE_INSTALL}/${p}"
                 pushd platforms/"${p}"
 
-                build_platform "${p}"
+                build_platform "${p}" \
+                    || error "Platform ${p} build failed"
                 popd
                 ;;
             *)
