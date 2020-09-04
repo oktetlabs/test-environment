@@ -182,21 +182,21 @@ rcf_ch_unlock(void)
 int
 main(int argc, char **argv)
 {
-	char *sep;
+    char *sep;
 
-	te_log_init("DPDK/RPC", logfork_log_message);
+    te_log_init("DPDK/RPC", logfork_log_message);
 
-	strcpy(ta_execname_storage, argv[0]);
-	strcpy(ta_dir, ta_execname_storage);
-	sep = strrchr(ta_dir, '/');
-	if (sep == NULL)
-		*ta_dir = '\0';
-	else
-		*sep = '\0';
+    strcpy(ta_execname_storage, argv[0]);
+    strcpy(ta_dir, ta_execname_storage);
+    sep = strrchr(ta_dir, '/');
+    if (sep == NULL)
+        *ta_dir = '\0';
+    else
+        *sep = '\0';
 
-	if (argc == 1)
-		rte_panic("RPC server name must be supplied\n");
+    if (argc == 1)
+        rte_panic("RPC server name must be supplied\n");
 
-	rcf_pch_rpc_server(argv[1]);
-	return 0;
+    rcf_pch_rpc_server(argv[1]);
+    return 0;
 }
