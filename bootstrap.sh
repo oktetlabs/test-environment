@@ -63,6 +63,11 @@ for dname, _, _ in os.walk('.'):
         except:
             pass
 EOF
+elif test -d .git; then
+    # Remove files ignored by Git
+    for i in $(git ls-files --others --ignored --exclude-standard) ; do
+        rm --force $i
+    done
 else
     echo "Unknown type of repository"
     exit 1
