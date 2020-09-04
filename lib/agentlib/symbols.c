@@ -5,9 +5,6 @@
  *
  * Copyright (C) 2003-2018 OKTET Labs. All rights reserved.
  *
- * 
- *
- *
  * @author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
  * @author Alexandra N. Kossovsky <Alexandra.Kossovsky@oktetlabs.ru>
  *
@@ -35,7 +32,7 @@ typedef struct symbol_table_list {
     const rcf_symbol_entry *entries;
 } symbol_table_list;
 
-static LIST_HEAD(, symbol_table_list) symbol_tables = 
+static LIST_HEAD(, symbol_table_list) symbol_tables =
     LIST_HEAD_INITIALIZER(symbol_tables);
 
 /* See description in agentlib.h */
@@ -46,7 +43,7 @@ rcf_ch_register_symbol_table(const rcf_symbol_entry *entries)
 
     if (table == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
-    
+
     table->entries = entries;
     LIST_INSERT_HEAD(&symbol_tables, table, next);
 
@@ -61,7 +58,7 @@ dl_lookup_sym(const char *name)
 
     dlerror();
     addr = dlsym(RTLD_DEFAULT, name);
-    
+
     if (addr == NULL)
     {
         const char *err = dlerror();
@@ -80,7 +77,7 @@ dl_lookup_addr(const void *addr)
 {
 #if defined(ENABLE_DLFCN_LOOKUP) && defined(HAVE_DLADDR)
     Dl_info info;
-    
+
     dlerror();
     if (!dladdr(addr, &info))
     {
@@ -99,14 +96,14 @@ void *
 rcf_ch_symbol_addr(const char *name, te_bool is_func)
 {
     const symbol_table_list *table_iter;
-    
+
     LIST_FOREACH(table_iter, &symbol_tables, next)
-    { 
+    {
         const rcf_symbol_entry *iter;
 
         for (iter = table_iter->entries; iter->name != NULL; iter++)
         {
-            if (is_func == iter->is_func && 
+            if (is_func == iter->is_func &&
                 strcmp(name, iter->name) == 0)
             {
                 return iter->addr;
@@ -122,9 +119,9 @@ const char *
 rcf_ch_symbol_name(const void *addr)
 {
     const symbol_table_list *table_iter;
-    
+
     LIST_FOREACH(table_iter, &symbol_tables, next)
-    { 
+    {
         const rcf_symbol_entry *iter;
 
         for (iter = table_iter->entries; iter->name != NULL; iter++)
