@@ -44,6 +44,7 @@ deps += [ dependency('threads') ]
 deps += [ cc.find_library('m') ]
 deps += [ cc.find_library('rt') ]
 deps += [ cc.find_library('numa') ]
+deps += [ cc.find_library('jansson') ]
 
 dep_bsd = dependency('libbsd', required: false)
 if dep_bsd.found()
