@@ -119,14 +119,19 @@ process_library_agentlib() {
 
     for p in ${!parms_var} ; do
         case ${p} in
+            --disable-dlfcn-lookup) ;;
             --enable-dlfcn-lookup)
                 add_meson_lib_opt ${l} ${lrname} agentlib-dlfcn-lookup true ;;
+            --disable-ftp) ;;
             --enable-ftp)
                 add_meson_lib_opt ${l} ${lrname} agentlib-ftp true ;;
+            --disable-power-sw) ;;
             --enable-power-sw)
                 add_meson_lib_opt ${l} ${lrname} agentlib-power-sw true ;;
+            --disable-telephony) ;;
             --enable-telephony)
                 add_meson_lib_opt ${l} ${lrname} agentlib-telephony true ;;
+            --disable-dlfcn-upnp) ;;
             --enable-dlfcn-upnp)
                 add_meson_lib_opt ${l} ${lrname} agentlib-upnp true ;;
             *)

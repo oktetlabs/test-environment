@@ -24,9 +24,9 @@ AC_ARG_ENABLE([ftp],
               AS_HELP_STRING([--disable-ftp],
                              [disable FTP support (enabled by default)]),
               [ac_cv_enable_ftp=$enableval],
-              [ac_cv_enable_ftp=yes])
+              [ac_cv_enable_ftp=no])
 AC_CACHE_CHECK([whether to enable FTP support],
-               [ac_cv_enable_ftp], [ac_cv_enable_ftp=yes])
+               [ac_cv_enable_ftp], [ac_cv_enable_ftp=no])
 if test x"$ac_cv_enable_ftp" != xno
 then
     AC_DEFINE([ENABLE_FTP], [], [Whether to enable FTP support])
@@ -48,9 +48,9 @@ AC_ARG_ENABLE([power-sw],
               AS_HELP_STRING([--disable-power-sw],
                              [disable power switch management support (enabled by default)]),
               [ac_cv_enable_power_sw=$enableval],
-              [ac_cv_enable_power_sw=yes])
+              [ac_cv_enable_power_sw=no])
 AC_CACHE_CHECK([whether to enable power switch management support],
-               [ac_cv_enable_power_sw], [ac_cv_enable_power_sw=yes])
+               [ac_cv_enable_power_sw], [ac_cv_enable_power_sw=no])
 if test x"$ac_cv_enable_power_sw" != xno
 then
     AC_DEFINE([ENABLE_POWER_SW], [], [Whether to enable power switch management support])
