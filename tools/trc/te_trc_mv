@@ -20,7 +20,7 @@ foreach my $arg (@ARGV)
     }
     else
     {
-        $trc_to_move = $ARGV[0];
+        $trc_to_move = $arg;
     }
 }
 

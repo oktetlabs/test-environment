@@ -131,7 +131,11 @@ my $rc = system("te_trc_update ".$opts);
 
 if ($rc == 0 && $trc_mv == 1)
 {
-    $rc = system($script_dir."/trc_mv $trc_result");
+    my $trc_dir = dirname($def_trc_db);
+    my $trc_root = basename($def_trc_db);
+
+    $rc = system("te_trc_mv --conf-dir=$trc_dir ".
+                 "--conf-root=$trc_root $trc_result");
 }
 
 exit ($rc >> 8);
