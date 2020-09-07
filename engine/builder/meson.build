@@ -2,6 +2,7 @@
 
 engine_scripts = [
     'te_build_suite',
+    'te_functions',
     'te_ta_ssh_helper',
     'te_tce_process',
     'te_tests_info.awk',
