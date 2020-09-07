@@ -125,20 +125,23 @@ te_ta_signature()
 # @param platform signature
 # @param instructions
 #
+# Note: The function converts the @b instructions to a one-line representation,
+# replacing newlines with spaces, as a remote ssh command can run in /bin/tcsh,
+# which cannot handle multi-line command arguments.
+# See: https://github.com/tcsh-org/tcsh/blob/master/BUGS#L52
+#
 te_eval_or_ssh() {
     local SSHVAR=${1}_SSH
     shift
-    if test -z "${!SSHVAR}" ; then
-        ( cd /tmp && eval "${@}" )
-    else
-        # Replace new lines by spaces since remote ssh command may be executed
-        # under /bin/tcsh, which fails to handle multiline command arguments.
-        # See: https://github.com/tcsh-org/tcsh/blob/master/BUGS#L52
-        local cmd="${@//$'\n'/ }"
 
+    local cmd="${@//$'\n'/ }"
+
+    if test -z "${!SSHVAR}" ; then
+        ( cd /tmp && eval "${cmd}" )
+    else
         # Replace single quotes by '"'"' since /bin/bash already uses
         # it in the command parameters
-        local cmd="$(echo "${cmd}" | sed "s/'/\'\"\'\"\'/g")"
+        cmd="$(echo "${cmd}" | sed "s/'/\'\"\'\"\'/g")"
 
         # SSH command may have arguments in double-quotes with spaces
         eval "${!SSHVAR} \"/bin/bash -c 'set -e; cd /tmp; \${cmd}'\""
