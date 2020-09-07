@@ -264,6 +264,19 @@ extern te_errno tapi_cfg_phy_state_get(const char *ta, const char *if_name,
                                        int *state);
 
 /**
+ * Wait until an interface is UP.
+ *
+ * @param ta            Test Agent name
+ * @param if_name       Interface name
+ * @param timeout       Timeout (in milliseconds)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_phy_state_wait_up(const char *ta,
+                                           const char *if_name,
+                                           int timeout);
+
+/**
  * Check that PHY mode is advertised.
  *
  * @param ta            Test Agent name

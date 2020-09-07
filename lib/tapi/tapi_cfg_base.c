@@ -54,6 +54,7 @@
 
 #include "tapi_cfg_base.h"
 #include "tapi_cfg_sys.h"
+#include "tapi_cfg_phy.h"
 #include "tapi_host_ns.h"
 #include "tapi_mem.h"
 
@@ -966,9 +967,37 @@ do { \
             MTU_ERR("%s(): Failed to put up interface %s on %s: %r",
                     __FUNCTION__, interface, agent, rc);
         if (fast)
+        {
             usleep(100000);
+        }
         else
+        {
             CFG_WAIT_CHANGES;
+
+            /*
+             * For some types of interfaces (bonding, teaming) it may take
+             * more than 10 seconds before they are really UP, and
+             * CFG_WAIT_CHANGES may be not enough in such case.
+             */
+            rc = tapi_cfg_phy_state_wait_up(agent, interface, 60000);
+            if (rc != 0)
+            {
+                if (rc == TE_RC(TE_TAPI, TE_EOPNOTSUPP) ||
+                    rc == TE_RC(TE_CS, TE_ENOENT))
+                {
+                    WARN("interface:/phy:/state: is not registered or not "
+                         "supported, cannot check whether the interface %s "
+                         "on the agent %s is UP", interface, agent);
+                    rc = 0;
+                }
+                else
+                {
+                    MTU_ERR("%s(): failed to wait until the interface %s on "
+                            "the agent %s becomes UP", __FUNCTION__,
+                            interface, agent);
+                }
+            }
+        }
     }
 
     if (tapi_cfg_base_if_get_mtu_u(agent, interface, &assigned_mtu) != 0)

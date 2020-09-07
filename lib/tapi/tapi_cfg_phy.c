@@ -17,8 +17,11 @@
 
 #define TE_LGR_USER     "Configuration PHY"
 
+#include "te_defs.h"
 #include "tapi_cfg_phy.h"
 #include "te_ethernet_phy.h"
+#include "te_time.h"
+#include "te_sleep.h"
 
 /**
  * Get PHY autonegotiation oper state.
@@ -512,6 +515,39 @@ tapi_cfg_phy_state_get(const char *ta, const char *if_name, int *state)
         return TE_RC(TE_TAPI, TE_EOPNOTSUPP);
 
     return rc;
+}
+
+/* See tapi_cfg_phy.h */
+te_errno
+tapi_cfg_phy_state_wait_up(const char *ta,
+                           const char *if_name,
+                           int timeout)
+{
+    struct timeval tv_start;
+    struct timeval tv_cur;
+    te_errno rc;
+    int state;
+
+    rc = te_gettimeofday(&tv_start, NULL);
+    if (rc != 0)
+        return rc;
+
+    while (TRUE)
+    {
+        rc = tapi_cfg_phy_state_get(ta, if_name, &state);
+        if (rc != 0)
+            return rc;
+        if (state == TE_PHY_STATE_UP)
+            return 0;
+
+        rc = te_gettimeofday(&tv_cur, NULL);
+        if (rc != 0)
+            return rc;
+        if (TIMEVAL_SUB(tv_cur, tv_start) >= TE_MS2US(timeout))
+            return TE_RC(TE_TAPI, TE_ETIMEDOUT);
+
+        (void)usleep(500000);
+    }
 }
 
 /**
