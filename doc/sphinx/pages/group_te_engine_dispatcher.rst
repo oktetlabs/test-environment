@@ -255,7 +255,7 @@ The Dispatcher script accepts a lot of command-line options. Some of them are it
 
 	The following :ref:`Tester <doxid-group__te__engine__tester>` options get test path as a value:
 	    <testpath>      :=  / | <path-item> | <testpath>/<path-item>
-	    <path-item>     := <test-name>[:<args>][%%<iter-select>][*<repeat>]
+	    <path-item>     := <test-name>[:<args>][%<iter-select>][*<repeat>]
 	    <args>          := <arg>[,<args>]
 	    <arg>           := <param-name>=<values> | <param-name>~=<values>
 	    <values>        := <value> | { <values-list> }
@@ -265,7 +265,7 @@ The Dispatcher script accepts a lot of command-line options. Some of them are it
 	    tester-run=mysuite/mypkg/mytest:p1={a1,a2}
 	requests to run all iterations of the test 'mytest' when its parameter
 	'p1' is equal to 'a1' or 'a2';
-	    tester-run=mysuite/mypkg/mytest%%3*10
+	    tester-run=mysuite/mypkg/mytest%3*10
 	requests to run 10 times third iteration of the same test.
 
 .. code-block:: none
