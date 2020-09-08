@@ -62,6 +62,11 @@ if dep_tirpc.found()
     deps += [ dep_tirpc ]
 endif
 
+dep_libelf = dependency('libelf', required: false)
+if dep_libelf.found()
+    deps += [ dep_libelf ]
+endif
+
 # Applications are installed to TA root directory
 executable('dpdkrpc',
     sources: [ 'main.c' ],
