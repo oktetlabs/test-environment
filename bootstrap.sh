@@ -64,9 +64,9 @@ for dname, _, _ in os.walk('.'):
             pass
 EOF
 elif test -d .git; then
-    # Remove files ignored by Git
+    # Remove files ignored by Git, excluding user's config files
     for i in $(git ls-files --others --ignored --exclude-standard) ; do
-        rm --force $i
+        test "$i" = ".reviewboardrc" || rm --force $i
     done
 else
     echo "Unknown type of repository"
