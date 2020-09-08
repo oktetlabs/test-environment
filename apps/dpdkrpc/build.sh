@@ -54,7 +54,11 @@ build_using_meson() {
     else
         meson setup "${meson_opts[@]}" "${EXT_SOURCES}" "$(pwd -P)"
     fi
-    ninja -v
+    if which ninja >/dev/null 2>&1 ; then
+        ninja -v
+    else
+        ninja-build -v
+    fi
     for ta_type in ${TE_TA_TYPES} ; do
         DESTDIR="${TE_AGENTS_INST}/${ta_type}" meson install
     done
