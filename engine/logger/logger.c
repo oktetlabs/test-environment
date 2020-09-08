@@ -1237,13 +1237,16 @@ join_te_srv:
     }
 
 join_listener_srv:
-    INFO("Joining listeners thread\n");
-    msg_queue_shutdown(&listener_queue);
-    if (pthread_join(listener_thread, NULL) != 0)
+    if (listeners_enabled)
     {
-        te_strerror_r(errno, err_buf, sizeof(err_buf));
-        ERROR("pthread_join() failed: %s", err_buf);
-        result = EXIT_FAILURE;
+        INFO("Joining listeners thread\n");
+        msg_queue_shutdown(&listener_queue);
+        if (pthread_join(listener_thread, NULL) != 0)
+        {
+            te_strerror_r(errno, err_buf, sizeof(err_buf));
+            ERROR("pthread_join() failed: %s", err_buf);
+            result = EXIT_FAILURE;
+        }
     }
 
 exit:
