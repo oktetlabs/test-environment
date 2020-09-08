@@ -21,8 +21,8 @@ AC_PROG_INSTALL
 TE_LIB_SET
 
 AC_ARG_ENABLE([ftp],
-              AS_HELP_STRING([--disable-ftp],
-                             [disable FTP support (enabled by default)]),
+              AS_HELP_STRING([--enable-ftp],
+                             [enable FTP support (disabled by default)]),
               [ac_cv_enable_ftp=$enableval],
               [ac_cv_enable_ftp=no])
 AC_CACHE_CHECK([whether to enable FTP support],
@@ -45,8 +45,8 @@ then
 fi
 
 AC_ARG_ENABLE([power-sw],
-              AS_HELP_STRING([--disable-power-sw],
-                             [disable power switch management support (enabled by default)]),
+              AS_HELP_STRING([--enable-power-sw],
+                             [enable power switch management support (disabled by default)]),
               [ac_cv_enable_power_sw=$enableval],
               [ac_cv_enable_power_sw=no])
 AC_CACHE_CHECK([whether to enable power switch management support],
