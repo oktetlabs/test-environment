@@ -6,25 +6,20 @@
 
 set -e
 
-# Meson does not handle -Wl,-whole-archive flags gracefully and reoders
-# it. Extract the information here, pass via meson argument and enforce
-# whole linkage using linker arguments directly.
-dpdk_whole_libs() {
+# pkg-config does not handle -Wl,-whole-archive flags gracefully and
+# reoders t. Extract the information here, pass via meson argument and
+# enforce whole linkage using linker arguments directly.
+dpdk_static_libs() {
     local arg
-    local start_whole_libs=false
     local whole_libs=""
     local name
 
     for arg in $(pkg-config --static --libs libdpdk); do
         case "${arg}" in
-            -Wl,--whole-archive)    start_whole_libs=true ;;
-            -Wl,--no-whole-archive) start_whole_libs=false ;;
             -l:lib*.a)
-                if ${start_whole_libs} ; then
-                    name=${arg#-l:lib}
-                    name=${name%.a}
-                    whole_libs+="${whole_libs:+,}${name}"
-                fi
+                name=${arg#-l:lib}
+                name=${name%.a}
+                whole_libs+="${whole_libs:+,}${name}"
                 ;;
         esac
     done
@@ -48,7 +43,7 @@ build_using_meson() {
     meson_opts+=("-Dc_args=${TE_CPPFLAGS}")
     meson_opts+=("-Dte_prefix=${TE_PREFIX}")
     meson_opts+=("-Dte_libs=$(echo ${TE_LIBS} | tr ' ' ,)")
-    meson_opts+=("-Drte_libs=$(dpdk_whole_libs)")
+    meson_opts+=("-Drte_libs=$(dpdk_static_libs)")
 
     if test "${TE_DO_TCE}" = 1 ; then
         meson_opts+=(-Db_coverage=true)
