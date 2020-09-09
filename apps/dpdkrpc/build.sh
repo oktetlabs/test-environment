@@ -36,7 +36,7 @@ build_using_make() {
 }
 
 build_using_meson() {
-    meson_opts=()
+    local meson_opts=()
 
     # Applications are installed to TA root directory
     meson_opts+=("--prefix" "/")
