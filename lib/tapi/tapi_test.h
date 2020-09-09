@@ -322,6 +322,48 @@ cleanup_specific:                                                   \
         }                                                               \
     } while (0)
 
+/**
+ * Same as CHECK_RC, but verdict in case RC expression result is not ZERO.
+ * The macro will terminate(fail) the test after logging the verdict.
+ *
+ * @param expr_    Expression to be checked
+ * @param verdict_ Verdict to be logged (supports format string)
+ */
+#define CHECK_RC_VERDICT(expr_, verdict_...)                            \
+    do {                                                                \
+        int rc_;                                                        \
+                                                                        \
+        te_log_stack_reset();                                           \
+        if ((rc_ = (expr_)) != 0)                                       \
+        {                                                               \
+            ERROR_VERDICT(verdict_);                                    \
+            TEST_FAIL("line %d: %s returns 0x%X (%r), but expected 0",  \
+                      __LINE__, # expr_, rc_, rc_);                     \
+        }                                                               \
+        te_log_stack_reset();                                           \
+    } while (0)
+
+/**
+ * Same as CHECK_RC_VERDICT, but log an artifact instead of verdict
+ * The macro will terminate(fail) the test after logging the artifact.
+ *
+ * @param expr_     Expression to be checked
+ * @param artifact_ Artifact to be logged (supports format string)
+ */
+#define CHECK_RC_ARTIFACT(expr_, artifact_...)                         \
+    do {                                                               \
+        int rc_;                                                       \
+                                                                       \
+        te_log_stack_reset();                                          \
+        if ((rc_ = (expr_)) != 0)                                      \
+        {                                                              \
+            TEST_ARTIFACT(artifact_);                                  \
+            TEST_FAIL("line %d: %s returns 0x%X (%r), but expected 0", \
+                      __LINE__, # expr_, rc_, rc_);                    \
+        }                                                              \
+        te_log_stack_reset();                                          \
+    } while (0)
+
 /** Free variable and set its value to NULL */
 #define FREE_AND_CLEAN(ptr_) \
     do {                     \
