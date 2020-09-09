@@ -34,6 +34,9 @@ install_extension_parts () {
 
 declare prefix=
 declare platform=
+declare cppflags=
+declare cflags=
+declare ldflags=
 declare srcdir=
 declare prepare=
 declare builddir=
@@ -56,6 +59,15 @@ for arg; do
             ;;
         --platform=*)
             platform="${arg#--platform=}"
+            ;;
+        --cppflags=*)
+            cppflags="${arg#--cppflags=}"
+            ;;
+        --cflags=*)
+            cflags="${arg#--cflags=}"
+            ;;
+        --ldflags=*)
+            ldflags="${arg#--ldflags=}"
             ;;
         --srcdir=*)
             srcdir="${arg#--srcdir=}"
@@ -144,6 +156,9 @@ done
                       cd ${builddir:-.} ;
                       export TE_PREFIX=\"$prefix/$platform\" ;
                       export TE_DO_TCE=\"$tce\" ;
+                      export TE_PLATFORM_CPPFLAGS=\"$cppflags\" ;
+                      export TE_PLATFORM_CFLAGS=\"$cflags\" ;
+                      export TE_PLATFORM_LDFLAGS=\"$ldflags\" ;
                       export TE_CPPFLAGS=\"$tecppflags\" ;
                       export TE_LDFLAGS=\"$telibflags\" ;
                       export TE_LIBS=\"$telibs\" ;

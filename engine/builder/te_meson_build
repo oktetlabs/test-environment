@@ -792,6 +792,9 @@ make_workspace() {
 build_ext() {
     local p="$1"; shift
 
+    local pcppflags="${p}_CPPFLAGS"
+    local pcflags="${p}_CFLAGS"
+    local pldflags="${p}_LDFLAGS"
     local pexts="TE_BS_EXT_${p}"
     local pext
 
@@ -829,7 +832,11 @@ build_ext() {
         fi
 
         ${SCRIPT_DIR}/te_build_ext --prefix="${ext_inst}" \
-            --platform="$p" --srcdir="${ws_ext_src}" \
+            --platform="$p" \
+            --cppflags="${!pcppflags}" \
+            --cflags="${!pcflags}" \
+            --ldflags="${!pldflags}" \
+            --srcdir="${ws_ext_src}" \
             --prepare="${!pextprep}" \
             --builddir="${ws_ext_builddir}" \
             --build="${extbuild}" \
@@ -843,6 +850,9 @@ build_ext() {
 
 build_agent_apps() {
     local p="$1"; shift
+    local pcppflags="${p}_CPPFLAGS"
+    local pcflags="${p}_CFLAGS"
+    local pldflags="${p}_LDFLAGS"
     local papps="TE_BS_TA_APPS_$p"
     local app
 
@@ -896,6 +906,9 @@ build_agent_apps() {
         ${SCRIPT_DIR}/te_build_ext --prefix="${app_inst}" \
             --tatypes="${!ptatypes}" \
             --platform="$p" \
+            --cppflags="${!pcppflags}" \
+            --cflags="${!pcflags}" \
+            --ldflags="${!pldflags}" \
             --srcdir="${ws_app_src}" \
             --prepare="${!pappprep}" \
             --builddir="${ws_app_builddir}" \

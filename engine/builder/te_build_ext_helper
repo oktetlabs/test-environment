@@ -68,6 +68,9 @@ case "$MODE" in
         ;;
 esac
 
+pcppflags="${PLATFORM}_CPPFLAGS"
+pcflags="${PLATFORM}_CFLAGS"
+pldflags="${PLATFORM}_LDFLAGS"
 pexts="TE_BS_${PFX}_${PACKAGE}"
 
 function construct_include_subdirs()
@@ -105,7 +108,11 @@ for pext in ${!pexts}; do
         enable_tce=""
     fi
     "${SCRIPT_DIR}"/te_build_ext --prefix="${PREFIX}" \
-                 --platform="${PLATFORM}" --srcdir="${!pextsrc}" \
+                 --platform="${PLATFORM}" \
+                 --cppflags="${!pcppflags}" \
+                 --cflags="${!pcflags}" \
+                 --ldflags="${!pldflags}" \
+                 --srcdir="${!pextsrc}" \
                  --prepare="${!pextprep}" \
                  --builddir="${!pextbuilddir}" \
                  --build="${!pextbuild}" \
