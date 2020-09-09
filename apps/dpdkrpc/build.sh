@@ -40,7 +40,7 @@ build_using_meson() {
 
     # Applications are installed to TA root directory
     meson_opts+=("--prefix" "/")
-    meson_opts+=("-Dc_args=${TE_CPPFLAGS}")
+    meson_opts+=("-Dc_args=${TE_CPPFLAGS} ${TE_CFLAGS}")
     meson_opts+=("-Dte_prefix=${TE_PREFIX}")
     meson_opts+=("-Dte_libs=$(echo ${TE_LIBS} | tr ' ' ,)")
     meson_opts+=("-Drte_libs=$(dpdk_static_libs)")
