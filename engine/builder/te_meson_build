@@ -811,7 +811,7 @@ build_ext() {
         local extbuild
 
         te_eval_or_ssh "$p" "mkdir -p $ws_ext_src $ws_ext_builddir"
-        rsync_to "$p" "${!pextsrc}" "$ws_ext_src"
+        rsync_to "$p" "${!pextsrc}/" "$ws_ext_src"
 
         local local_ext_builddir="ext/${pext}/build"
         if test -d "${local_ext_builddir}"; then
@@ -829,7 +829,7 @@ build_ext() {
         fi
 
         ${SCRIPT_DIR}/te_build_ext --prefix="${ext_inst}" \
-            --platform="$p" --srcdir="${ws_ext_src}/${pext}" \
+            --platform="$p" --srcdir="${ws_ext_src}" \
             --prepare="${!pextprep}" \
             --builddir="${ws_ext_builddir}" \
             --build="${extbuild}" \
