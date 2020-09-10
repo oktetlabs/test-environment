@@ -43,28 +43,15 @@ link_args += [ '-Wl,--no-whole-archive' ]
 deps += [ dependency('threads') ]
 deps += [ cc.find_library('m') ]
 deps += [ cc.find_library('rt') ]
-deps += [ cc.find_library('numa') ]
-deps += [ cc.find_library('jansson') ]
 
 dep_bsd = dependency('libbsd', required: false)
 if dep_bsd.found()
     deps += [ dep_bsd ]
 endif
 
-# there is no pkg-config for pcap
-dep_pcap = cc.find_library('pcap', required: false)
-if dep_pcap.found()
-    deps += [ dep_pcap ]
-endif
-
 dep_tirpc = dependency('libtirpc', required: false)
 if dep_tirpc.found()
     deps += [ dep_tirpc ]
-endif
-
-dep_libelf = dependency('libelf', required: false)
-if dep_libelf.found()
-    deps += [ dep_libelf ]
 endif
 
 # Applications are installed to TA root directory

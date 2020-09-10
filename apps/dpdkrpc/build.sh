@@ -9,9 +9,10 @@ set -e
 # pkg-config does not handle -Wl,-whole-archive flags gracefully and
 # reoders t. Extract the information here, pass via meson argument and
 # enforce whole linkage using linker arguments directly.
-dpdk_static_libs() {
+dpdk_get_libs() {
     local arg
     local whole_libs=""
+    local extra_args=""
     local name
 
     for arg in $(pkg-config --static --libs libdpdk); do
@@ -21,9 +22,16 @@ dpdk_static_libs() {
                 name=${name%.a}
                 whole_libs+="${whole_libs:+,}${name}"
                 ;;
+            -lrte_*)
+                # Ignore DPDK libs since already listed in static
+                ;;
+            -l*)
+                extra_args+=" ${arg}"
+                ;;
         esac
     done
-    echo "${whole_libs}"
+    DPDK_STATIC_LIBS="${whole_libs}"
+    DPDK_EXTRA_ARGS="${extra_args}"
 }
 
 build_using_make() {
@@ -41,13 +49,15 @@ build_using_meson() {
     # Do not pass TE_LDFLAGS since we do it via TE_PREFIX and TE_LIBS
     local c_link_args="${TE_PLATFORM_LDFLAGS}"
 
+    dpdk_get_libs
+
     # Applications are installed to TA root directory
     meson_opts+=("--prefix" "/")
     meson_opts+=("-Dc_args=${c_args}")
-    meson_opts+=("-Dc_link_args=${c_link_args}")
+    meson_opts+=("-Dc_link_args=${c_link_args}${DPDK_EXTRA_ARGS}")
     meson_opts+=("-Dte_prefix=${TE_PREFIX}")
     meson_opts+=("-Dte_libs=$(echo ${TE_LIBS} | tr ' ' ,)")
-    meson_opts+=("-Drte_libs=$(dpdk_static_libs)")
+    meson_opts+=("-Drte_libs=${DPDK_STATIC_LIBS}")
 
     if test "${TE_DO_TCE}" = 1 ; then
         meson_opts+=(-Db_coverage=true)
