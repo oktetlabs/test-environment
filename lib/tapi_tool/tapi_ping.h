@@ -29,6 +29,11 @@ typedef struct tapi_ping_opt {
      * the option is omitted and ping sends packets until explicitly stopped
      */
     unsigned int packet_count;
+    /**
+     * Number of data bytes to send (default is 56). Note that the real
+     * size of the packet will be 8 bytes more because of an ICMP header.
+     */
+    unsigned int packet_size;
     /** Address or interface name to send packets from */
     const char *interface;
     /** Ping destination address */
