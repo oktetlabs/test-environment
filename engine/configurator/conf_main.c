@@ -612,8 +612,9 @@ copy_value(cfg_handle dst_handle, const cfg_instance *src_inst)
         return TE_ENOENT;
     }
 
-    if (dst_inst->obj->access == CFG_READ_CREATE ||
-        dst_inst->obj->access == CFG_READ_WRITE)
+    if ((src_inst->obj->type != CVT_NONE) &&
+        (dst_inst->obj->access == CFG_READ_CREATE ||
+         dst_inst->obj->access == CFG_READ_WRITE))
     {
         len = sizeof(cfg_msg) + CFG_MAX_INST_VALUE;
         if ((msg = TE_ALLOC(len)) == NULL)
