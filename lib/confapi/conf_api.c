@@ -2724,6 +2724,7 @@ cfg_copy_subtree_fmt(const char *dst_oid,
     msg = (cfg_copy_msg *)cfgl_msg_buf;
     msg->type = CFG_COPY;
     msg->src_handle = src_handle;
+    msg->is_obj = (strchr(dst_oid, ':') == NULL) ? TRUE : FALSE;
     msg->len = sizeof(cfg_copy_msg);
 
     dst_oid_len = strlen(dst_oid);
