@@ -2745,6 +2745,8 @@ cfg_copy_subtree_fmt(const char *dst_oid,
     rc = ipc_send_message_with_answer(cfgl_ipc_client,
                                       CONFIGURATOR_SERVER,
                                       msg, msg->len, msg, &len);
+    if (rc == 0)
+        rc = msg->rc;
 
 #ifdef HAVE_PTHREAD_H
     pthread_mutex_unlock(&cfgl_lock);
