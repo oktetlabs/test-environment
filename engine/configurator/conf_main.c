@@ -853,6 +853,7 @@ static void
 process_copy(cfg_copy_msg *msg)
 {
     char *backup_name = NULL;
+    te_errno rc;
 
     if ((msg->rc = create_backup(&backup_name)) != 0)
     {
@@ -861,9 +862,9 @@ process_copy(cfg_copy_msg *msg)
     }
 
     if (msg->is_obj)
-        copy_obj_subtree_recursively(msg->dst_oid, msg->src_handle);
+        msg->rc = copy_obj_subtree_recursively(msg->dst_oid, msg->src_handle);
     else
-        copy_inst_subtree_recursively(msg->dst_oid, msg->src_handle);
+        msg->rc = copy_inst_subtree_recursively(msg->dst_oid, msg->src_handle);
 
     if (msg->rc != 0)
     {
@@ -874,7 +875,17 @@ process_copy(cfg_copy_msg *msg)
         restore_backup(backup_name);
     }
 
-    msg->rc = release_backup(backup_name);
+    rc = release_backup(backup_name);
+    if (rc != 0)
+    {
+        /* We can do nothing helpful here except logging */
+        ERROR("Release of backup '%s' failed: %r", backup_name, rc);
+        /*
+         * Do not change copy status code, since it is either already
+         * done successfully or failed and have appropriate status set.
+         */
+    }
+
     free(backup_name);
 }
 
