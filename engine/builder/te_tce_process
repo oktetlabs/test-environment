@@ -4,9 +4,10 @@
 # Process TCE for all NUT images
 #
 #
-# Copyright (C) 2003-2018 OKTET Labs.
+# Copyright (C) 2003-2020 OKTET Labs.
 #
 # Author: Elena Vengerova <Elena.Vengerova@oktetlabs.ru>
+# Author: Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
 #
 # $Id$
 #
@@ -15,6 +16,22 @@
 
 SCRIPT_DIR=`dirname $0`
 . ${SCRIPT_DIR}/te_functions
+
+# Adapted from te_meson_build
+rsync_gcda_from() {
+    local p="$1"; shift
+    local src="$1"; shift
+    local dst="$1"; shift
+    local sshvar="${p}_SSH"
+    local ssh="${!sshvar}"
+    local rsync="rsync -a --include=*.gcda --include=*/ --exclude=*"
+
+    if test -n "${ssh}" ; then
+        $rsync -e "${ssh% *}" "${ssh##* }:${src}/" "${dst}/"
+    else
+        $rsync "${src}/" "${dst}/"
+    fi
+}
 
 for platform in $TE_BS_PLATFORMS; do
     tce_list="$*"
@@ -49,21 +66,34 @@ for platform in $TE_BS_PLATFORMS; do
             echo "warning: TCE component $tce not defined for platform $platform" >&2
             continue
         fi
-        buildvar="TE_BS_TCE_${platform}_${tce}_BUILDDIR"
+        buildvar="TE_BS_TCE_${platform}_${tce}_MESON_BUILDDIR"
         if ! test -d "${!buildvar}" ; then
-            echo "warning: TCE component $tce not built for platform $platform @ ${!buildvar}" >&2
-            continue
+            buildvar="TE_BS_TCE_${platform}_${tce}_BUILDDIR"
+            if ! test -d "${!buildvar}" ; then
+                echo "warning: TCE component $tce not built for platform $platform @ ${!buildvar}" >&2
+                continue
+            fi
+        else
+            test -d "${!buildvar}/../src" || ln -s "${!srcvar}" "${!buildvar}/../src"
+        fi
+        if test -f "${!buildvar}/build.ninja"; then
+            ws="${TE_BUILD}/platforms/$platform/$platform.ws"
+            wsdir="$(cat "$ws")"
+            remotedir="${!buildvar}"
+            remotedir="$wsdir/${remotedir#${TE_BUILD}/platforms/$platform/}"
+            rsync_gcda_from "$platform" "$remotedir" "${!buildvar}"
         fi
         find "${!buildvar}" -name '*.da' -o -name '.*.da' -o -name '*.gcda' -o -name '.*.gcda' | \
-            xargs -n1 tce_gcov || exit 1
+            xargs -r -n1 tce_gcov "${!buildvar}" || exit 1
         find "${!buildvar}" -name '*.gcov' -o -name '.*.gcov' | sort | \
-            xargs -n1 tce_report >${TE_LOG_DIR}/tce_log_${platform}_${tce}.tce || exit 1
+            xargs -r -n1 tce_report >${TE_LOG_DIR}/tce_log_${platform}_${tce}.tce || exit 1
         mkdir -p ${TE_LOG_DIR}/tce_log_${platform}_${tce}_files
         excludevar="TE_BS_TCE_${platform}_${tce}_EXCLUDESRC"
-        tce_summary -vEXCLUDE="${!excludevar}" -vSORTMODE=coverage \
-                    -vDATADIR=${TE_LOG_DIR}/tce_log_${platform}_${tce}_files \
-                    ${TE_LOG_DIR}/tce_log_${platform}_${tce}.tce > \
-                    ${TE_LOG_DIR}/tce_log_${platform}_${tce}.html
+        (cd "${!buildvar}";
+         tce_summary -vEXCLUDE="${!excludevar}" -vSORTMODE=coverage \
+                     -vDATADIR=${TE_LOG_DIR}/tce_log_${platform}_${tce}_files \
+                     ${TE_LOG_DIR}/tce_log_${platform}_${tce}.tce > \
+                     ${TE_LOG_DIR}/tce_log_${platform}_${tce}.html)
     done
     test -n "$fake_sbd" && rm -f "$sbd"
 done

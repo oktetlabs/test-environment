@@ -831,6 +831,7 @@ build_ext() {
             extbuild="${remote_extbuild}"
         fi
 
+        te_check_tce "${p}" "${pext}" && enable_tce="--tce"
         ${SCRIPT_DIR}/te_build_ext --prefix="${ext_inst}" \
             --platform="$p" \
             --cppflags="${!pcppflags}" \
@@ -903,6 +904,7 @@ build_agent_apps() {
             appbuild="${remote_appbuild}"
         fi
 
+        te_check_tce "${p}" "${app}" && enable_tce="--tce"
         ${SCRIPT_DIR}/te_build_ext --prefix="${app_inst}" \
             --tatypes="${!ptatypes}" \
             --platform="$p" \

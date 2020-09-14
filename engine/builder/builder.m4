@@ -2,9 +2,10 @@ dnl Test Environment
 dnl
 dnl Builder configuration macros definitions
 dnl
-dnl Copyright (C) 2003-2018 OKTET Labs.
+dnl Copyright (C) 2003-2020 OKTET Labs.
 dnl
 dnl Author Elena A. Vengerova <Elena.Vengerova@oktetlabs.ru>
+dnl Author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
 dnl
 dnl $Id$
 
@@ -442,6 +443,7 @@ dnl Parameters
 dnl        Component name
 dnl        Component kind:
 dnl        - library
+dnl        - external (external library)
 dnl        - agent (TCE-ing agents is necessary when a TCE-ed library is statically
 dnl                 linked into it)
 dnl        - app
@@ -481,7 +483,7 @@ case "$KIND" in
            PLATFORM="${!AGENT_PLATFORM_VAR}"
         fi
         ;;
-     library)
+     library|external)
         AGTYPE=""
         if test -z "$PLATFORM"; then
            PLATFORM="${TE_HOST}"
@@ -501,6 +503,10 @@ if test -z "$SOURCES" ; then
 fi
 if test "${SOURCES:0:1}" != "/" ; then
    case "$KIND" in
+       external)
+         TE_BS_CONF_ERR="${SOURCES} is not an absolute source path for an external component ${COMPONENT}" ;
+         break
+         ;;
        library)
          SOURCES=${TE_BASE}/lib/$SOURCES ;
          ;;
@@ -521,16 +527,29 @@ if test -z "$BUILDDIR"; then
 fi
 if test "${BUILDDIR:0:1}" != "/" ; then
    case "$KIND" in
+       external)
+         MESON_BUILDDIR=${TE_BUILD}/platforms/${PLATFORM}/ext/${BUILDDIR}/build ;
+         BUILDDIR=${TE_BUILD}/platforms/${PLATFORM}/lib/${BUILDDIR} ;
+         ;;
        library)
+         # For Meson builds we actually specify the top platform build directory,
+         # because otherwise locating the sources turns out to be a pretty non-trivial
+         # task. Let te_tce_process sort out the rest.
+         MESON_BUILDDIR=${TE_BUILD}/platforms/${PLATFORM}/build ;
          BUILDDIR=${TE_BUILD}/platforms/${PLATFORM}/lib/${BUILDDIR} ;
          ;;
        agent)
+         # Same thing as with library case above
+         MESON_BUILDDIR=${TE_BUILD}/platforms/${PLATFORM}/build ;
          BUILDDIR=${TE_BUILD}/platforms/${PLATFORM}/agents/${BUILDDIR} ;
          ;;
        app)
+         MESON_BUILDDIR=${TE_BUILD}/platforms/${PLATFORM}/apps/${BUILDDIR}/build ;
          BUILDDIR=${TE_BUILD}/platforms/${PLATFORM}/apps/${BUILDDIR} ;
          ;;
   esac
+else
+    MESON_BUILDDIR="${BUILDDIR}"
 fi
 
 TCELIST="TE_BS_TCE_${PLATFORM}"
@@ -539,6 +558,7 @@ declare "${TCELIST}_${COMPONENT}_KIND"="$KIND"
 declare "${TCELIST}_${COMPONENT}_AGTYPE"="$AGTYPE"
 declare "${TCELIST}_${COMPONENT}_SOURCES"="$SOURCES"
 declare "${TCELIST}_${COMPONENT}_BUILDDIR"="$BUILDDIR"
+declare "${TCELIST}_${COMPONENT}_MESON_BUILDDIR"="$MESON_BUILDDIR"
 declare "${TCELIST}_${COMPONENT}_EXCLUDESRC"="$EXCLUDESRC"
 ]])
 

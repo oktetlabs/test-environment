@@ -3,23 +3,26 @@
 # Test Coverage Estimation
 #
 #
-# Copyright (C) 2003-2018 OKTET Labs.
+# Copyright (C) 2003-2020 OKTET Labs.
 #
 # Author Artem V. Andreev <Artem.Andreev@oktetlabs.ru>
 #
 # $Id$
 #
 
-cd `dirname $1`
-case "$1" in
-    *.gcda) version=`od -tc $1 | awk '{ print $9 "." $7; exit 0}'`
+TOPDIR="$1"
+DATAFILE="$2"
+
+case "$DATAFILE" in
+    *.gcda) version=`od -tc $DATAFILE | awk '{ print $9 "." $7; exit 0}'`
     gcov=`eval echo \$\{TE_GCOV_${version/./_}\}`
     test -z "$gcov" && gcov=gcov-$version
     ;;
     *.da)     gcov=${TE_GCOV_OLD:-gcov-3.3} ;;
-    *) echo "Strange data file $1" >&2; exit 1 ;;
+    *) echo "Strange data file $DATAFILE" >&2; exit 1 ;;
 esac
 if ! which $gcov >/dev/null 2>&1 ; then
     gcov=gcov
 fi
-exec $gcov -l -c -b `basename $1` >/dev/null
+cd "$TOPDIR"
+exec $gcov -l -c -b "${DATAFILE#$PWD/}" >/dev/null
