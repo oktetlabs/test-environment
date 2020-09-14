@@ -52,10 +52,14 @@ fi
 
 AC_SEARCH_LIBS([pow], [m])
 
+AC_CHECK_HEADERS([sched.h])
+
 dnl
 dnl Obtaining network info about host name (and/or service)
 dnl
 AC_CHECK_FUNCS([getaddrinfo])
+AC_CHECK_FUNCS([sched_setaffinity])
+AC_CHECK_FUNCS([sched_getaffinity])
 
 AC_CONFIG_FILES([Makefile])
 

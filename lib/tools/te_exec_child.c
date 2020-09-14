@@ -22,6 +22,8 @@
 #include "logger_api.h"
 
 #include "te_exec_child.h"
+#include "te_string.h"
+#include "te_errno.h"
 
 #define VALID_FD_PTR(ptr) ((ptr) != NULL && (ptr) != TE_EXEC_CHILD_DEV_NULL_FD)
 
@@ -66,10 +68,138 @@ pipe_cloexec_parent_end(int pipe_fd[2], te_bool input)
     return 0;
 }
 
+static te_errno
+printf_affinity(pid_t pid)
+{
+    cpu_set_t mask;
+    te_string cpu_list = TE_STRING_INIT;
+    long nproc;
+    te_errno te_rc = 0;
+    int i;
+
+    if (sched_getaffinity(pid, sizeof(mask), &mask) < 0)
+    {
+        WARN("Failed to get pid %d's affinity: %s", getpid(), strerror(errno));
+        te_rc = TE_EFAIL;
+        goto out;
+    }
+
+    nproc = sysconf(_SC_NPROCESSORS_ONLN);
+    for (i = 0; i < nproc; i++)
+    {
+        if(CPU_ISSET(i, &mask) != 0)
+        {
+            if (te_string_append(&cpu_list, "%d ", i) != 0)
+            {
+                WARN("Failed to generate cpu list");
+                te_rc = TE_EFAIL;
+                goto out;
+            }
+        }
+    }
+
+    RING("pid %d's new affinity mask: %s", pid, cpu_list.ptr);
+
+out:
+    te_string_free(&cpu_list);
+
+    return te_rc;
+}
+
+static te_errno
+set_affinity(pid_t pid, const te_sched_affinity_param *affinity)
+{
+    int rc;
+    cpu_set_t mask;
+    size_t i;
+
+    CPU_ZERO(&mask);
+
+    for (i = 0; i < affinity->cpu_ids_len; i++)
+        CPU_SET(affinity->cpu_ids[i], &mask);
+
+    rc = sched_setaffinity(pid, sizeof(mask), &mask);
+    if (rc < 0)
+    {
+        int tmp_err = errno;
+        WARN("Failed to set pid %d's affinity: %s", getpid(),
+             strerror(tmp_err));
+        return te_rc_os2te(tmp_err);
+    }
+
+    printf_affinity(pid);
+    return 0;
+}
+
+static te_errno
+set_priority(const te_sched_priority_param *prio)
+{
+    int rc;
+    errno = 0;
+
+    rc = nice(prio->priority);
+    if (rc == -1 && errno != 0)
+    {
+        int tmp_err = errno;
+        WARN("Cannot set niceness to %d: %s", prio->priority,
+             strerror(tmp_err));
+        return te_rc_os2te(tmp_err);
+    }
+    else
+    {
+        RING("pid %d's new niceness: %d", getpid(), rc);
+    }
+    return 0;
+}
+
+static te_errno
+add_sched_param(pid_t pid, const te_sched_param *sched_param)
+{
+    te_errno rc_nice = 0;
+    te_errno rc_affinity = 0;
+    const te_sched_param *iter;
+
+    for (iter = sched_param; iter->type != TE_SCHED_END; iter++)
+    {
+        switch (iter->type)
+        {
+            case TE_SCHED_AFFINITY:
+            {
+#if defined(HAVE_SCHED_SETAFFINITY) && defined(HAVE_SCHED_GETAFFINITY)
+                const te_sched_affinity_param *affinity = iter->data;
+
+                rc_affinity = set_affinity(pid, affinity);
+#else
+                WARN("It's impossible to set CPU affinity for this platform");
+                rc_affinity = TE_ENOSYS;
+#endif
+                break;
+            }
+
+            case TE_SCHED_PRIORITY:
+            {
+                const te_sched_priority_param *prio = iter->data;
+
+                rc_nice = set_priority(prio);
+                break;
+            }
+
+            default:
+                ERROR("Unsupported scheduling parameter. type = %d", iter->type);
+                return TE_EINVAL;
+        }
+    }
+
+    if (rc_affinity != 0)
+        return rc_affinity;
+    return rc_nice;
+}
+
 pid_t
 te_exec_child(const char *file, char *const argv[],
               char *const envp[], uid_t uid, int *in_fd,
-              int *out_fd, int *err_fd)
+              int *out_fd, int *err_fd,
+              const te_sched_param *sched_param)
 {
     int   pid;
     int   in_pipe[2], out_pipe[2], err_pipe[2];
@@ -112,6 +242,7 @@ te_exec_child(const char *file, char *const argv[],
         int busy_fd[6] = { -1, -1, -1, -1, -1, -1};
         int dev_null_fd[3] = { -1, -1, -1};
         int i;
+        int rc;
 
         /* Set us to be the process leader */
         setpgid(getpid(), getpid());
@@ -216,6 +347,13 @@ te_exec_child(const char *file, char *const argv[],
                     close(pipe_fd[i]);
                 }
             }
+        }
+
+        if (sched_param != NULL)
+        {
+            rc = add_sched_param(0, sched_param);
+            if (rc != 0)
+                WARN("Failed to set process settings");
         }
 
         if (envp == NULL)

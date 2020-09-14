@@ -296,7 +296,7 @@ ps_start(struct ps_entry *ps)
         return rc;
 
     ps->id = te_exec_child(ps->exe, argv, envp,
-                             (uid_t)-1, NULL, NULL, NULL);
+                             (uid_t)-1, NULL, NULL, NULL, NULL);
 
     ps_free_argv(ps, argv);
     ps_free_envp(envp);

@@ -28,5 +28,5 @@ te_shell_cmd(const char *cmd, uid_t uid,
 {
     return te_exec_child("/bin/sh",
             (char *const[]){"sh", "-c", (char *)cmd, (char *)NULL},
-            NULL, uid, in_fd, out_fd, err_fd);
+            NULL, uid, in_fd, out_fd, err_fd, NULL);
 }

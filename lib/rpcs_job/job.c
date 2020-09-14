@@ -1489,7 +1489,7 @@ job_start(unsigned int id)
 
     // TODO: use spawner method
     pid = te_exec_child(tool, (char **)args.data.ptr, job->env,
-                        -1, stdin_fd_p, stdout_fd_p, stderr_fd_p);
+                        -1, stdin_fd_p, stdout_fd_p, stderr_fd_p, NULL);
     te_vec_deep_free(&args);
     if (pid < 0)
     {
