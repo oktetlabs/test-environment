@@ -120,7 +120,7 @@ static pthread_mutex_t cfgl_lock = PTHREAD_MUTEX_INITIALIZER;
 static ipc_client *cfgl_ipc_client = NULL;
 
 /** Message buffer */
-static char cfgl_msg_buf[CFG_MSG_MAX] = {0,};
+static char cfgl_msg_buf[CFG_MSG_MAX];
 
 
 static te_errno cfg_get_family_member(cfg_handle handle,
@@ -164,6 +164,8 @@ cfg_register_object_str(const char *oid, cfg_obj_descr *descr,
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_register_msg *)cfgl_msg_buf;
     msg->type = CFG_REGISTER;
     msg->val_type = descr->type;
@@ -287,6 +289,8 @@ cfg_get_object_descr(cfg_handle handle, cfg_obj_descr *descr)
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_get_descr_msg *)cfgl_msg_buf;
 
     msg->type = CFG_GET_DESCR;
@@ -337,6 +341,8 @@ cfg_get_oid_str(cfg_handle handle, char **oid)
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_get_oid_msg *)cfgl_msg_buf;
 
     msg->type = CFG_GET_OID;
@@ -425,6 +431,8 @@ cfg_get_subid(cfg_handle handle, char **subid)
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_get_id_msg *)cfgl_msg_buf;
 
     msg->type = CFG_GET_ID;
@@ -484,6 +492,8 @@ cfg_get_inst_name(cfg_handle handle, char **name)
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_get_id_msg *)cfgl_msg_buf;
 
     msg->type = CFG_GET_ID;
@@ -592,6 +602,8 @@ cfg_find_str(const char *oid, cfg_handle *handle)
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_find_msg *)cfgl_msg_buf;
     len = strlen(oid) + 1;
 
@@ -737,6 +749,8 @@ cfg_find_pattern(const char *pattern, unsigned int *num, cfg_handle **set)
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_pattern_msg *)cfgl_msg_buf;
     len = strlen(pattern) + 1;
 
@@ -888,6 +902,8 @@ cfg_get_family_member(cfg_handle handle, uint8_t who, cfg_handle *member)
 #endif
         return TE_EIPC;
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_family_msg *)cfgl_msg_buf;
 
     msg->type = CFG_FAMILY;
@@ -996,6 +1012,8 @@ cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_add_msg *)cfgl_msg_buf;
     msg->type = CFG_ADD;
     msg->local = local;
@@ -1311,6 +1329,8 @@ kill(cfg_handle handle, te_bool local)
         free(oidstr);
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_del_msg *)cfgl_msg_buf;
 
     msg->type = CFG_DEL;
@@ -1468,6 +1488,7 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
              assert(0);
     }
 
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_set_msg *)cfgl_msg_buf;
     ret_val = cfg_ipc_mk_set(msg, CFG_MSG_MAX, handle, local, type, value);
     if (ret_val != 0)
@@ -1575,6 +1596,7 @@ cfg_commit(const char *oid)
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
 
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_commit_msg *)cfgl_msg_buf;
     msg->type = CFG_COMMIT;
 
@@ -1641,6 +1663,8 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_get_msg *)cfgl_msg_buf;
     rc = cfg_ipc_mk_get(msg, CFG_MSG_MAX, handle, FALSE);
     if (rc != 0)
@@ -1772,6 +1796,8 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_get_msg *)cfgl_msg_buf;
     ret_val = cfg_ipc_mk_get(msg, CFG_MSG_MAX, handle, TRUE);
     if (ret_val != 0)
@@ -1878,6 +1904,8 @@ cfg_synchronize(const char *oid, te_bool subtree)
 #endif
         return TE_EIPC;
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_sync_msg *)cfgl_msg_buf;
     msg->type = CFG_SYNC;
     msg->subtree = subtree;
@@ -2033,6 +2061,8 @@ cfg_reboot_ta(const char *ta_name, te_bool restore)
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_reboot_msg *)cfgl_msg_buf;
     msg->type = CFG_REBOOT;
     msg->restore = restore;
@@ -2079,6 +2109,8 @@ cfg_create_backup(char **name)
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_backup_msg *)cfgl_msg_buf;
     msg->type = CFG_BACKUP;
     msg->op = CFG_BACKUP_CREATE;
@@ -2138,6 +2170,7 @@ cfg_backup(const char *name, uint8_t op)
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
 
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_backup_msg *)cfgl_msg_buf;
     msg->type = CFG_BACKUP;
     msg->op = op;
@@ -2227,6 +2260,8 @@ cfg_create_config(const char *name, te_bool history)
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_config_msg *)cfgl_msg_buf;
     msg->type = CFG_CONFIG;
     msg->history = history;
@@ -2275,6 +2310,7 @@ cfg_process_history(const char *filename, const te_kvpair_h *expand_vars)
         goto done;
     }
 
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_process_history_msg *)cfgl_msg_buf;
     msg->type = CFG_PROCESS_HISTORY;
 
@@ -2352,6 +2388,8 @@ cfg_wait_changes(void)
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_msg *)cfgl_msg_buf;
     msg->type = CFG_CONF_DELAY;
     msg->len = sizeof(*msg);
@@ -2391,6 +2429,8 @@ cfg_touch_instance(const char *oid_tmpl, ...)
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_conf_touch_msg *)cfgl_msg_buf;
     msg->type = CFG_CONF_TOUCH;
 
@@ -2457,6 +2497,8 @@ cfg_tree_print(const char *filename,
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_tree_print_msg *)cfgl_msg_buf;
     msg->type = CFG_TREE_PRINT;
     msg->log_lvl = log_lvl;
@@ -2519,6 +2561,8 @@ cfg_unregister_object_str(const char *id_fmt, ...)
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_unregister_msg *)cfgl_msg_buf;
     msg->type = CFG_UNREGISTER;
     
@@ -2675,6 +2719,8 @@ cfg_copy_subtree_fmt(const char *dst_oid,
 #endif
         return TE_RC(TE_CONF_API, TE_EIPC);
     }
+
+    memset(cfgl_msg_buf, 0, sizeof(cfgl_msg_buf));
     msg = (cfg_copy_msg *)cfgl_msg_buf;
     msg->type = CFG_COPY;
     msg->src_handle = src_handle;
