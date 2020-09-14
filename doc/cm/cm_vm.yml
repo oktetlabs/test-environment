@@ -158,14 +158,6 @@
          Default is true which means that no changes are stored.
          Name: None
 
-    - oid: "/agent/vm/drive/readonly"
-      access: read_write
-      type: integer
-      d: |
-         Enable/disable read-only mode.
-         Default is false.
-         Name: None
-
     - oid: "/agent/vm/drive/cdrom"
       access: read_write
       type: integer
