@@ -852,7 +852,7 @@ copy_obj_subtree_recursively(const char *top_dst_oid, cfg_handle top_src_handle)
 static void
 process_copy(cfg_copy_msg *msg)
 {
-    char *backup_name;
+    char *backup_name = NULL;
 
     if ((msg->rc = create_backup(&backup_name)) != 0)
     {
