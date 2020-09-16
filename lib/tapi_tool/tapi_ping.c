@@ -11,11 +11,14 @@
 #define TE_LGR_USER "TAPI PING"
 
 #include <signal.h>
+#include <sys/socket.h>
 
 #include "tapi_ping.h"
 #include "tapi_job_opt.h"
 #include "te_alloc.h"
 #include "te_str.h"
+#include "te_sockaddr.h"
+
 
 #define TAPI_PING_TERM_TIMEOUT_MS     1000
 #define TAPI_PING_RECEIVE_TIMEOUT_MS  1000
@@ -59,14 +62,16 @@ static const tapi_job_opt_bind ping_binds[] = TAPI_JOB_OPT_SET(
     TAPI_JOB_OPT_STRING(NULL, FALSE, tapi_ping_opt, destination)
 );
 
-te_errno
-tapi_ping_create(tapi_job_factory_t *factory, const tapi_ping_opt *opt,
-                 tapi_ping_app **app)
+static te_errno
+tapi_ping_create_with_v(tapi_job_factory_t *factory, const tapi_ping_opt *opt,
+                 tapi_ping_app **app, te_bool use_ping6)
 {
     te_errno        rc;
     tapi_ping_app  *result;
-    const char     *path = "ping";
+    const char     *path;
     te_vec          ping_args = TE_VEC_INIT(char *);
+
+    path = use_ping6 ? "ping6" : "ping";
 
     result = TE_ALLOC(sizeof(*result));
     if (result == NULL)
@@ -141,6 +146,46 @@ out:
     if (rc != 0)
         free(result);
 
+    return rc;
+}
+
+te_errno
+tapi_ping_create(tapi_job_factory_t *factory, const tapi_ping_opt *opt,
+                 tapi_ping_app **app)
+{
+    tapi_ping_opt                           ping_opts_v = tapi_ping_default_opt;
+    tapi_ping_app                          *ping_app_v = NULL;
+    struct sockaddr                         dest_addr;
+    te_bool                                 use_ping6 = FALSE;
+    te_errno                                rc;
+
+    rc = te_sockaddr_netaddr_from_string(opt->destination, &dest_addr);
+    if (rc != 0)
+        goto out;
+
+    /* Check if ping supports IPv6, switch to ping6 if it does not. */
+    if (dest_addr.sa_family == AF_INET6)
+    {
+        ping_opts_v.destination = "::1";
+        ping_opts_v.packet_count = 1;
+
+        rc = tapi_ping_create_with_v(factory, &ping_opts_v, &ping_app_v, FALSE);
+        if (rc != 0)
+            goto out;
+        rc = tapi_ping_start(ping_app_v);
+        if (rc != 0)
+            goto out;
+        rc = tapi_ping_wait(ping_app_v, 1000);
+        if (rc == TE_RC(TE_TAPI, TE_ESHCMD))
+            use_ping6 = TRUE;
+        else if (rc != 0)
+            goto out;
+    }
+
+    rc = tapi_ping_create_with_v(factory, opt, app, use_ping6);
+
+out:
+    tapi_ping_destroy(ping_app_v);
     return rc;
 }
 
