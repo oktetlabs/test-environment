@@ -149,6 +149,7 @@ main(int argc, char *argv[])
     rx_msghdr.msg_iovlen = rx_msghdr.msg_riovlen = TST_VEC;
     rx_msghdr.msg_iov = &rx_vector;
     rx_msghdr.msg_control = cmsg_buf;
+    rx_msghdr.real_msg_controllen = TST_CMSG_LEN;
     rx_msghdr.msg_controllen = TST_CMSG_LEN;
     rx_msghdr.msg_cmsghdr_num = 1;
     rx_msghdr.msg_name = &msg_name;

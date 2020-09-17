@@ -6,7 +6,6 @@
   <author mailto="Andrew.Rybchenko@oktetlabs.ru"/>
 
   <req id="TAD_IPSTACK" sticky="true"/> 
-  <req id="BROKEN"/>
 
   <session>
   
@@ -174,6 +173,7 @@
         <run>
           <script name="ip4_send_icmp_error_udp">
             <req id="TAD_IP4"/>
+            <req id="BROKEN"/>
           </script>
           <arg name="env">
               <value>{'host_csap'{{'pco_a':tester}, addr:'csap_addr':inet:unicast,addr:'csap_hwaddr':ether:unicast,if:'csap_if'},{{'pco':tester},addr:'sock_addr':inet:unicast,addr:'sock_hwaddr':ether:unicast,if:'sock_if'}}</value>
@@ -244,6 +244,7 @@
         <run>
           <script name="ip4_send_tcp">
             <req id="TAD_IP4"/>
+            <req id="BROKEN"/>
           </script>
           <arg name="env">
             <value>{{{'iut_pco':IUT},addr:'iut_addr':inet:unicast,addr:'iut_mac':ether:unicast,if:'iut_if'},{{'tst_pco':tester},addr:'tst_addr':inet:unicast,addr:'tst_mac':ether:unicast,if:'tst_if'}}</value>
@@ -264,6 +265,7 @@
         <run>
           <script name="ip4_send_recv_tcp_msg">
             <req id="TAD_IP4"/>
+            <req id="BROKEN"/>
           </script>
           <arg name="env">
             <value>{{{'iut_pco':IUT},addr:'iut_addr':inet:unicast,addr:'iut_mac':ether:unicast,if:'iut_if'},{{'tst_pco':tester},addr:'tst_addr':inet:unicast,addr:'tst_mac':ether:unicast,if:'tst_if'}}</value>

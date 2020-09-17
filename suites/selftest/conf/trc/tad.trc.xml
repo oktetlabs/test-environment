@@ -16,5 +16,8 @@
 
         <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
                     href="tad/atm.trc.xml" parse="xml"/>
+
+        <xi:include xmlns:xi="http://www.w3.org/2003/XInclude"
+                    href="tad/ipstack.trc.xml" parse="xml"/>
     </iter>
 </test>
