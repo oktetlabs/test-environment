@@ -63,6 +63,13 @@ typedef struct tapi_ping_report {
     unsigned int received;
     /** Packet loss (percentage) */
     unsigned int lost_percentage;
+    /**
+     * @c TRUE if rtt stats were produced by ping tool.
+     * @c FALSE if they were not (because the packet_size was too small),
+     * in this case the rtt field contains irrelevant data
+     * and should not be addressed.
+     */
+    te_bool with_rtt;
     /** RTT statistics */
     tapi_ping_rtt_stats rtt;
 } tapi_ping_report;
@@ -81,6 +88,11 @@ typedef struct tapi_ping_app {
     tapi_job_channel_t *lost_filter;
     /** RTT filter*/
     tapi_job_channel_t *rtt_filter;
+    /**
+     * Number of data to send
+     * (required here to check if rtt stats will be produced)
+     */
+    unsigned int packet_size;
 } tapi_ping_app;
 
 /**

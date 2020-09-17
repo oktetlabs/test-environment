@@ -19,6 +19,11 @@
 
 #define TAPI_PING_TERM_TIMEOUT_MS     1000
 #define TAPI_PING_RECEIVE_TIMEOUT_MS  1000
+/*
+ * Minimum value for packet_size ping option with which
+ * rtt statistics will be produced
+ */
+#define TAPI_PING_MIN_PACKET_SIZE_FOR_RTT_STATS  16
 
 const tapi_ping_opt tapi_ping_default_opt = {
     .packet_count     = TAPI_JOB_OPT_OMIT_UINT,
@@ -106,6 +111,8 @@ tapi_ping_create(tapi_job_factory_t *factory, const tapi_ping_opt *opt,
         ERROR("Failed to create job instance for ping tool");
         goto out;
     }
+
+    result->packet_size = opt->packet_size;
 
     *app = result;
 
@@ -298,13 +305,28 @@ tapi_ping_get_report(tapi_ping_app *app, tapi_ping_report *report)
     if (rc != 0)
         return rc;
 
-    return process_filter_rtt_data(app->rtt_filter, &report->rtt);
+    if (app->packet_size >= TAPI_PING_MIN_PACKET_SIZE_FOR_RTT_STATS)
+    {
+        report->with_rtt = TRUE;
 
+        return process_filter_rtt_data(app->rtt_filter, &report->rtt);
+    }
+    else
+    {
+        WARN("Ping did not produce RTT statistics since payload size "
+             "(packet_size option) is too small");
+        report->with_rtt = FALSE;
+
+        return 0;
+    }
 }
 
 void tapi_ping_report_mi_log(te_mi_logger *logger, tapi_ping_report *report)
 {
     tapi_ping_rtt_stats *rtt = &report->rtt;
+
+    if (!report->with_rtt)
+        return;
 
     te_mi_logger_add_meas_vec(logger, NULL, TE_MI_MEAS_V(
             TE_MI_MEAS(RTT, NULL, MIN, rtt->min, MILLI),
