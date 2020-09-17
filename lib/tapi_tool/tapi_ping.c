@@ -341,7 +341,8 @@ tapi_ping_get_report(tapi_ping_app *app, tapi_ping_report *report)
     }
 }
 
-void tapi_ping_report_mi_log(te_mi_logger *logger, tapi_ping_report *report)
+void
+tapi_ping_report_mi_log(te_mi_logger *logger, tapi_ping_report *report)
 {
     tapi_ping_rtt_stats *rtt = &report->rtt;
 
