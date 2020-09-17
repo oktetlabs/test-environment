@@ -458,9 +458,6 @@ typedef struct tapi_job_buffer_t {
  * The data being read are appended to @a data buffer.
  * At most one message is read.
  *
- * @note    When filters set contains more than one filter, the received
- *          message (@p buffer) is relevant only to one of them.
- *
  * @param filters     Set of filters to read from.
  * @param timeout_ms  Timeout to wait (negative means tapi_job_get_timeout())
  * @param buffer      Data buffer pointer. If @c NULL, the message is
