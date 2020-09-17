@@ -75,25 +75,7 @@ typedef struct tapi_ping_report {
 } tapi_ping_report;
 
 /** Information of a ping tool */
-typedef struct tapi_ping_app {
-    /** TAPI job handle */
-    tapi_job_t *job;
-    /** Output channel handles */
-    tapi_job_channel_t *out_chs[2];
-    /* Number of packets transmitted filter */
-    tapi_job_channel_t *trans_filter;
-    /* Number of packets received filter */
-    tapi_job_channel_t *recv_filter;
-    /** Percentage of packets lost filter */
-    tapi_job_channel_t *lost_filter;
-    /** RTT filter*/
-    tapi_job_channel_t *rtt_filter;
-    /**
-     * Number of data to send
-     * (required here to check if rtt stats will be produced)
-     */
-    unsigned int packet_size;
-} tapi_ping_app;
+typedef struct tapi_ping_app tapi_ping_app;
 
 /**
  * Create ping app.

@@ -25,6 +25,26 @@
  */
 #define TAPI_PING_MIN_PACKET_SIZE_FOR_RTT_STATS  16
 
+struct tapi_ping_app {
+    /* TAPI job handle */
+    tapi_job_t *job;
+    /* Output channel handles */
+    tapi_job_channel_t *out_chs[2];
+    /* Number of packets transmitted filter */
+    tapi_job_channel_t *trans_filter;
+    /* Number of packets received filter */
+    tapi_job_channel_t *recv_filter;
+    /* Percentage of packets lost filter */
+    tapi_job_channel_t *lost_filter;
+    /* RTT filter */
+    tapi_job_channel_t *rtt_filter;
+    /*
+     * Number of data to send
+     * (required here to check if rtt stats will be produced)
+     */
+    unsigned int packet_size;
+};
+
 const tapi_ping_opt tapi_ping_default_opt = {
     .packet_count     = TAPI_JOB_OPT_OMIT_UINT,
     .packet_size      = TAPI_JOB_OPT_OMIT_UINT,
