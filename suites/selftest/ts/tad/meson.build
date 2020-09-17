@@ -1,7 +1,7 @@
 # Copyright (C) 2020 OKTET Labs. All rights reserved
 
 tests = [
-    'prologue',
+    'tad_prologue',
 ]
 
 package_tests_c = [ ]

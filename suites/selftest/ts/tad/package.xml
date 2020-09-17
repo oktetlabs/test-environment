@@ -16,7 +16,7 @@
   <session track_conf="silent">
 
     <prologue>
-      <script name="prologue">
+      <script name="tad_prologue">
         <objective>Push UP all interfaces of all testing networks.</objective>
       </script>
     </prologue>
