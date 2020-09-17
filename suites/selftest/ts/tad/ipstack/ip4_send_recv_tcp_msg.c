@@ -65,6 +65,7 @@
 #include "tapi_rpc_params.h"
 #include "tapi_tcp.h"
 #include "tapi_sockaddr.h"
+#include "tapi_route_gw.h"
 
 #define TCP_FLAG_ACK 0x10
 
@@ -130,7 +131,11 @@ main(int argc, char *argv[])
     rpc_setsockopt(iut_pco, iut_tcp_sock, RPC_SO_REUSEADDR, &optval);
     rpc_bind(iut_pco, iut_tcp_sock, iut_addr);
     rpc_listen(iut_pco, iut_tcp_sock, 1);
-    
+
+    CHECK_RC(tapi_update_arp(iut_pco->ta, iut_if->if_name, NULL, NULL,
+                             fake_tst_addr, fake_tst_mac, FALSE));
+    CFG_WAIT_CHANGES;
+
     /* Establish TCP connection. */
     CHECK_RC(tapi_tcp_init_connection(tst_pco->ta, TAPI_TCP_CLIENT,
                              SA(fake_tst_addr), SA(iut_addr), tst_if->if_name,

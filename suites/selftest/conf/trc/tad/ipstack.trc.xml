@@ -31,5 +31,14 @@
                 <arg name="chksum"/>
             </iter>
         </test>
+        <test name="ip4_send_tcp" type="script">
+            <objective/>
+            <notes/>
+            <iter result="PASSED">
+                <arg name="env"/>
+                <arg name="payload_len"/>
+                <arg name="check_sum"/>
+            </iter>
+        </test>
     </iter>
 </test>
