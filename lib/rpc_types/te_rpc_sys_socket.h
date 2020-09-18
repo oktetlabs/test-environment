@@ -409,7 +409,9 @@ typedef enum rpc_send_recv_flags {
                                       avail */
     RPC_MSG_WARM       = 0x10000, /**< Do 'fake' sends to keep the send
                                        path warm (onload specific) */
-    RPC_MSG_UNKNOWN    = 0x20000  /**< Incorrect flag */
+    RPC_MSG_ONEPKT     = 0x20000, /**< Receive data only up to the next
+                                       packet boundary (onload specific) */
+    RPC_MSG_UNKNOWN    = 0x40000  /**< Incorrect flag */
 } rpc_send_recv_flags;
 
 /** Bitmask of all possible receive flags  */
@@ -419,7 +421,7 @@ typedef enum rpc_send_recv_flags {
                          RPC_MSG_CTRUNC | RPC_MSG_ERRQUEUE |               \
                          RPC_MSG_MORE | RPC_MSG_CONFIRM | RPC_MSG_EOR |    \
                          RPC_MSG_PARTIAL | RPC_MSG_MCAST | RPC_MSG_BCAST | \
-                         RPC_MSG_WAITFORONE | RPC_MSG_WARM)
+                         RPC_MSG_WAITFORONE | RPC_MSG_WARM | RPC_MSG_ONEPKT)
 
 #define SEND_RECV_FLAGS_MAPPING_LIST \
             RPC_BIT_MAP_ENTRY(MSG_OOB),        \
@@ -438,7 +440,8 @@ typedef enum rpc_send_recv_flags {
             RPC_BIT_MAP_ENTRY(MSG_EOR),        \
             RPC_BIT_MAP_ENTRY(MSG_PARTIAL),    \
             RPC_BIT_MAP_ENTRY(MSG_WAITFORONE), \
-            RPC_BIT_MAP_ENTRY(MSG_WARM), \
+            RPC_BIT_MAP_ENTRY(MSG_WARM),       \
+            RPC_BIT_MAP_ENTRY(MSG_ONEPKT),     \
             RPC_BIT_MAP_ENTRY(MSG_UNKNOWN)
 
 /**
