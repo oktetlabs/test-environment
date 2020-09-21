@@ -51,12 +51,12 @@ sources = files(
     'mman.c',
     'wsa.c',
 )
-deps += [
-    dep_lib_log_bufs,
-    dep_lib_conf_oid,
-    dep_lib_asn,
-    dep_lib_rpcxdr,
-    dep_lib_rcfrpc,
-    dep_lib_tapi,
-    dep_lib_tools,
+te_libs += [
+    'log_bufs',
+    'conf_oid',
+    'asn',
+    'rpcxdr',
+    'rcfrpc',
+    'tapi',
+    'tools',
 ]

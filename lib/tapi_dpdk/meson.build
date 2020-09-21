@@ -12,8 +12,8 @@ sources += files(
     'tapi_l2fwd.c',
     'tapi_rte_flow.c',
 )
-deps += [
-    dep_lib_rpcc_dpdk,
-    dep_lib_tapi,
-    dep_lib_tapi_job,
+te_libs += [
+    'rpcc_dpdk',
+    'tapi',
+    'tapi_job',
 ]

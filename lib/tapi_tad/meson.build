@@ -64,13 +64,13 @@ includes += include_directories('eth')
 includes += include_directories('arp')
 includes += include_directories('ipstack')
 
-deps += [
-    dep_lib_tools,
-    dep_lib_asn,
-    dep_lib_ndn,
-    dep_lib_tapi,
+te_libs += [
+    'tools',
+    'asn',
+    'ndn',
+    'tapi',
 ]
 
 # FIXME It should be possible to build without tapi_env
 c_args += [ '-DHAVE_TAPI_ENV_H' ]
-deps += [ dep_lib_tapi_env ]
+te_libs += [ 'tapi_env' ]

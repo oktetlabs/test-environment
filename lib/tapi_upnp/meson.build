@@ -17,9 +17,12 @@ sources += files(
     'tapi_upnp_service_info.c',
 )
 
+te_libs += [
+    'rcfrpc',
+    'tapi_rpc',
+]
+
 deps += [
-    dep_lib_rcfrpc,
-    dep_lib_tapi_rpc,
     dep_libxml2,
     dependency('glib-2.0'),
     dependency('gssdp-1.0'),

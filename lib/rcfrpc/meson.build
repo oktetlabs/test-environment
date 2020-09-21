@@ -2,8 +2,8 @@
 
 headers += files('rcf_rpc.h')
 sources += files('rcf_rpc.c')
-deps += [
-    dep_lib_rcfapi,
-    dep_lib_rpc_types,
-    dep_lib_confapi,
+te_libs += [
+    'rcfapi',
+    'rpc_types',
+    'confapi',
 ]

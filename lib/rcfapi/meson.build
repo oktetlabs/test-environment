@@ -3,9 +3,11 @@
 headers += files('rcf_api.h')
 sources += files('rcf_api.c')
 includes += include_directories('../confapi')
+te_libs += [
+    'logger_ten',
+    'conf_oid',
+    'tools',
+]
 deps += [
     dep_threads,
-    dep_lib_logger_ten,
-    dep_lib_conf_oid,
-    dep_lib_tools,
 ]

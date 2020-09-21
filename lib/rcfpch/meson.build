@@ -8,7 +8,7 @@ dep_lib_rcf_sniffers_dummy = declare_dependency(link_with: rcf_sniffers_dummy,
 
 if get_option('libs').split().contains('netconf')
     c_args += [ '-DWITH_NETCONF' ]
-    deps += [ dep_lib_static_netconf ]
+    te_libs += [ 'netconf' ]
 endif
 
 if get_option('sniffers')

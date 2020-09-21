@@ -8,6 +8,6 @@ sources += files(
     'tce_generic.c',
 )
 
-deps += [
-    dep_lib_tapi_rpc,
+te_libs += [
+    'tapi_rpc',
 ]

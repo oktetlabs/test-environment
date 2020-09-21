@@ -3,8 +3,10 @@
 libname = 'logger_ten'
 headers += files('logger_ten.h', 'logger_ten_int.h')
 sources += files('logger_ten.c')
+te_libs += [
+    'tools',
+    'ipc',
+]
 deps += [
-    dep_lib_tools,
-    dep_lib_ipc,
     dep_threads,
 ]

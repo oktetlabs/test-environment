@@ -15,7 +15,7 @@ sources += files(
     'db_io.c',
     'db_walker.c'
 )
-deps += [ dep_lib_tools ]
-deps += [ dep_lib_logic_expr ]
+te_libs += [ 'tools' ]
+te_libs += [ 'logic_expr' ]
 deps += [ dep_libxml2 ]
 deps += [ dependency('libcrypto') ]

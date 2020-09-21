@@ -17,8 +17,10 @@ dep_lib_static_conf_ipc = declare_dependency(link_with: te_lib_conf_ipc,
 
 headers += files('conf_api.h', 'conf_types.h', 'conf_messages.h')
 sources += files('conf_api.c', 'conf_types.c')
+te_libs += [
+    'ipc',
+    'rcfapi',
+]
 deps += [
-    dep_lib_ipc,
-    dep_lib_rcfapi,
     dep_lib_static_conf_ipc,
 ]

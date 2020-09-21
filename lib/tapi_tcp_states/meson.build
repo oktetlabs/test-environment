@@ -8,9 +8,9 @@ sources += files(
     'tapi_tcp_states_sock.c',
 )
 
-deps += [
-    dep_lib_tools,
-    dep_lib_tapi,
-    dep_lib_tapi_rpc,
-    dep_lib_tapi_tad,
+te_libs += [
+    'tools',
+    'tapi',
+    'tapi_rpc',
+    'tapi_tad',
 ]

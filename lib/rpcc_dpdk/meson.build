@@ -25,12 +25,12 @@ sources += files(
     'tapi_rpc_rte_mbuf_ndn.c',
     'tapi_rte_mbuf.c',
 )
-deps += [
-    dep_lib_tools,
-    dep_lib_log_bufs,
-    dep_lib_rpcxdr,
-    dep_lib_tapi,
-    dep_lib_tapi_env,
-    dep_lib_tapi_tad,
-    dep_lib_rpc_dpdk,
+te_libs += [
+    'tools',
+    'log_bufs',
+    'rpcxdr',
+    'tapi',
+    'tapi_env',
+    'tapi_tad',
+    'rpc_dpdk',
 ]

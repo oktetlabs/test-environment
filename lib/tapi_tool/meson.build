@@ -17,7 +17,7 @@ sources += files(
     'tapi_wrk.c',
 )
 
-deps += [
-    dep_lib_tapi,
-    dep_lib_tapi_job,
+te_libs += [
+    'tapi',
+    'tapi_job',
 ]

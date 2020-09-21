@@ -103,11 +103,11 @@ sources += files(
     'tapi_tester_msg.c',
     'tapi_test_fail_state.c',
 )
-deps += [
-    dep_lib_asn,
-    dep_lib_confapi,
-    dep_lib_ndn,
-    dep_lib_rcfapi,
-    dep_lib_rcfrpc,
-    dep_lib_tools,
+te_libs += [
+    'asn',
+    'confapi',
+    'ndn',
+    'rcfapi',
+    'rcfrpc',
+    'tools',
 ]

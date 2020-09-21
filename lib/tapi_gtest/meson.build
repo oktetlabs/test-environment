@@ -6,8 +6,8 @@ headers += files(
 sources += files(
     'tapi_gtest.c',
 )
-deps += [
-    dep_lib_rpcxdr,
-    dep_lib_tapi_rpc,
-    dep_lib_tapi_job,
+te_libs += [
+    'rpcxdr',
+    'tapi_rpc',
+    'tapi_job',
 ]
