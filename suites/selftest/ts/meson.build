@@ -42,7 +42,7 @@ te_libs = [
 ]
 
 foreach lib : te_libs
-    test_deps += cc.find_library(lib, dirs: te_libdir)
+    test_deps += dependency('te-' + lib)
 endforeach
 
 test_deps += cc.find_library('m')
