@@ -97,11 +97,11 @@ static te_errno module_del(unsigned int gid, const char *oid,
                            const char *mod_name);
 static te_errno module_add(unsigned int gid, const char *oid,
                            const char *mod_value, const char *mod_name);
-static te_errno module_set(unsigned int gid, const char *oid, char *value,
-                           char *mod_name);
-static te_errno module_get(unsigned int gid, const char *oid, char *value,
-                           char *mod_name);
 
+static te_errno module_loaded_set(unsigned int gid, const char *oid,
+                                  char *value, char *mod_name);
+static te_errno module_loaded_get(unsigned int gid, const char *oid,
+                                  char *value, char *mod_name);
 static te_errno module_filename_set(unsigned int gid, const char *oid,
                                     const char *value,
                                     const char *mod_name,...);
@@ -159,11 +159,14 @@ RCF_PCH_CFG_NODE_RW_COLLECTION(node_module_param, "parameter",
                                module_param_add, module_param_del,
                                module_param_list, NULL);
 
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_module, "module",
-                               &node_module_param, NULL,
-                               module_get, module_set,
-                               module_add, module_del,
-                               module_list, NULL);
+RCF_PCH_CFG_NODE_RW(node_module_loaded, "loaded",
+                    NULL, &node_module_param,
+                    module_loaded_get, module_loaded_set);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_module, "module",
+                            &node_module_loaded, NULL,
+                            module_add, module_del,
+                            module_list, NULL);
 
 static te_errno
 mod_name_underscorify(const char *mod_name, char *buf, size_t size)
@@ -835,16 +838,13 @@ module_unload_holders_get(unsigned int gid, const char *oid,
 
 static te_errno
 module_add(unsigned int gid, const char *oid,
-           const char *mod_value, const char *mod_name)
+           const char *unused, const char *mod_name)
 {
-    te_bool mod_enable;
     te_kernel_module *module;
 
     UNUSED(gid);
     UNUSED(oid);
-
-    if (te_strtol_bool(mod_value, &mod_enable) != 0)
-        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+    UNUSED(unused);
 
     if (mod_find(mod_name) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
@@ -859,17 +859,6 @@ module_add(unsigned int gid, const char *oid,
 
     LIST_INSERT_HEAD(&modules, module, list);
 
-    if (mod_enable)
-    {
-        if (mod_modprobe(module) != 0)
-        {
-            ERROR("Failed to load '%s' module", mod_name);
-            LIST_REMOVE(module, list);
-            free(module);
-            return TE_RC(TE_TA_UNIX, TE_EFAULT);
-        }
-    }
-
     module->loaded = mod_loaded(mod_name);
 
     return 0;
@@ -878,7 +867,6 @@ module_add(unsigned int gid, const char *oid,
 static te_errno
 module_del(unsigned int gid, const char *oid, const char *mod_name)
 {
-    int rc = 0;
     te_bool loaded = mod_loaded(mod_name);
     te_kernel_module *module;
 
@@ -888,29 +876,19 @@ module_del(unsigned int gid, const char *oid, const char *mod_name)
     module = mod_find(mod_name);
     mod_consistentcy_check(module, loaded);
 
-    if (loaded &&
-        rcf_pch_rsrc_accessible("/agent:%s/module:%s", ta_name, mod_name) &&
-        (rc = mod_rmmod(mod_name)) != 0)
-    {
-        ERROR("Failed to unload module '%s' from the system", mod_name);
-    }
-
-    /* We keep module in the list if unload fail. This way we can at least
-     * try to unload it once again. But overall system is probably in a bad
-     * shape. */
-    if (rc == 0 && module != NULL)
+    if (module != NULL)
     {
         LIST_REMOVE(module, list);
         free(module->filename);
         free(module);
     }
 
-    return rc == 0 ? 0 : TE_RC(TE_TA_UNIX, TE_EFAULT);
+    return 0;
 }
 
 static te_errno
-module_set(unsigned int gid, const char *oid, char *value,
-           char *mod_name)
+module_loaded_set(unsigned int gid, const char *oid, char *value,
+                  char *mod_name)
 {
     te_kernel_module *module = mod_find(mod_name);
     te_bool loaded = mod_loaded(mod_name);
@@ -960,8 +938,8 @@ module_set(unsigned int gid, const char *oid, char *value,
 }
 
 static te_errno
-module_get(unsigned int gid, const char *oid, char *value,
-           char *mod_name)
+module_loaded_get(unsigned int gid, const char *oid, char *value,
+                  char *mod_name)
 {
     te_kernel_module *module = mod_find(mod_name);
     te_bool loaded = mod_loaded(mod_name);

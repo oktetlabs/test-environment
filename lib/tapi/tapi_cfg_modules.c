@@ -195,11 +195,11 @@ tapi_cfg_module_add(const char *ta_name, const char *mod_name, te_bool load)
         goto out;
     }
 
-    rc = cfg_get_instance_fmt(&cvt, &loaded, CFG_MODULE_OID_FMT, ta_name,
+    rc = cfg_get_instance_fmt(NULL, NULL, CFG_MODULE_OID_FMT, ta_name,
                               mod_name);
     if (rc != 0)
     {
-        rc = cfg_add_instance_fmt(NULL, CFG_VAL(INTEGER, 0),
+        rc = cfg_add_instance_fmt(NULL, CFG_VAL(NONE, NULL),
                                   CFG_MODULE_OID_FMT, ta_name, mod_name);
         if (rc != 0)
         {
@@ -208,8 +208,8 @@ tapi_cfg_module_add(const char *ta_name, const char *mod_name, te_bool load)
             goto out;
         }
 
-        rc = cfg_get_instance_fmt(&cvt, &loaded, CFG_MODULE_OID_FMT, ta_name,
-                                  mod_name);
+        rc = cfg_get_instance_fmt(&cvt, &loaded, CFG_MODULE_OID_FMT "/loaded:",
+                                  ta_name, mod_name);
         if (rc != 0)
         {
             ERROR("Cannot get module after addition");
@@ -241,7 +241,8 @@ tapi_cfg_module_loaded_set(const char *ta_name, const char *mod_name,
         return rc;
 
     return cfg_set_instance_fmt(CFG_VAL(INTEGER, loaded ? 1 : 0),
-                                CFG_MODULE_OID_FMT, ta_name, mod_name);
+                                CFG_MODULE_OID_FMT "/loaded:", ta_name,
+                                mod_name);
 }
 
 te_errno
@@ -389,7 +390,7 @@ tapi_cfg_module_add_from_ta_dir(const char *ta_name,
     if (rc != 0)
         goto out;
 
-    rc = cfg_get_instance_fmt(&cvt_int, &loaded, "/agent:%s/module:%s",
+    rc = cfg_get_instance_fmt(&cvt_int, &loaded, "/agent:%s/module:%s/loaded:",
                               ta_name, module_name);
     if (rc != 0)
     {

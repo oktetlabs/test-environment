@@ -11,14 +11,20 @@
 
     - oid: "/agent/module"
       access: read_create
-      type: integer
-      volatile: true
+      type: none
       depends:
         - oid: "/agent/rsrc"
       d: |
          System module.
          Name: Name of the system module
-         Value: 1 means loadded
+
+    - oid: "/agent/module/loaded"
+      access: read_write
+      type: integer
+      volatile: true
+      d: |
+         Is module loaded in the system
+         Value: 1 means loaded
 
     - oid: "/agent/module/unload_holders"
       access: read_write
@@ -32,6 +38,7 @@
     - oid: "/agent/module/filename"
       access: read_write
       type: string
+      volatile: true
       d: |
          Name of the file containing the module or 'unknown'.
          modinfo integration is not yet there.
@@ -45,7 +52,7 @@
          resolved for the given module prior calling insmod.
 
          @note The internal implementation calls modinfo on
-               the module file after changing /agent/module
+               the module file after changing /agent/module/loaded
                value to 1 and then calls modprobe for every
                dependency discovered. Then insmod is called.
 
@@ -55,6 +62,8 @@
     - oid: "/agent/module/parameter"
       access: read_create
       type: string
+      depends:
+        - oid: "/agent/module/loaded"
       d: |
          Parameter of a system module.
          Name: Name of the parameter
