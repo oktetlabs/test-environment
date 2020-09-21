@@ -2,7 +2,7 @@
 
 project('test-environment', 'c',
     default_options: ['default_library=shared'],
-    meson_version: '>= 0.44.1'
+    meson_version: '>= 0.45.1'
 )
 
 # join_paths() drops all segments before absolute one and prefix given as absolute

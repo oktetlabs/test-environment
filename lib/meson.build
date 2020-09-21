@@ -1,5 +1,7 @@
 # Copyright (C) 2018 OKTET Labs. All rights reserved.
 
+pkg = import('pkgconfig')
+
 tad_protocols = [
     'arp',
     'atm',
@@ -258,6 +260,7 @@ foreach l : all_libs
                                      c_args: c_args, dependencies: deps_static)
                 # Libraries are used by agents build to generate symbol table
                 set_variable('te_lib_' + libname, lib)
+                lib_static = lib
 
                 dep = declare_dependency(link_with: lib,
                                          include_directories: includes,
@@ -277,6 +280,52 @@ foreach l : all_libs
                                          include_directories: includes,
                                          dependencies: deps_shared)
                 set_variable('dep_lib_' + libname, dep)
+                lib_shared = lib
+            endif
+            if build_lib_static
+                if build_lib_shared
+                    if meson.version() >= '0.46.0'
+                        # Bless the lib_static object with a reference to the pkg-config
+                        # file so it could be used in "Requires" instead of "Libs".
+                        # Doesn't seem to be needed with older meson versions.
+                        pkg.generate(lib_static,
+                                     filebase: 'te-' + libname)
+                        pkg.generate(lib_shared,
+                                     filebase: 'te-' + libname,
+                                     libraries_private: deps_static)
+                    else
+                        # When given a static library, old versions of meson generate
+                        # pkg-config files that are good for both static and dynamic
+                        # linking
+                        pkg.generate(name: libname,
+                                     description: meson.project_name() + ': ' + libname,
+                                     filebase: 'te-' + libname,
+                                     version: meson.project_version(),
+                                     libraries: lib_static)
+                    endif
+                else
+                    if meson.version() >= '0.46.0'
+                        pkg.generate(lib_static,
+                                     filebase: 'te-' + libname)
+                    else
+                        pkg.generate(name: libname,
+                                     description: meson.project_name() + ': ' + libname,
+                                     filebase: 'te-' + libname,
+                                     version: meson.project_version(),
+                                     libraries: lib_static)
+                    endif
+                endif
+            else
+                if meson.version() >= '0.46.0'
+                    pkg.generate(lib_shared,
+                                 filebase: 'te-' + libname)
+                else
+                    pkg.generate(name: libname,
+                                 description: meson.project_name() + ': ' + libname,
+                                 filebase: 'te-' + libname,
+                                 version: meson.project_version(),
+                                 libraries: lib_shared)
+                endif
             endif
         endif
     endif
