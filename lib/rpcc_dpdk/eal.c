@@ -369,8 +369,11 @@ tapi_reuse_eal(tapi_env         *env,
     if (strlen(eal_args_cfg) == 0 || strcmp(eal_args, eal_args_cfg) != 0)
     {
         rc = rcf_rpc_server_restart(rpcs);
-        *need_init = TRUE;
-        *eal_args_out = eal_args;
+        if (rc == 0)
+        {
+            *need_init = TRUE;
+            *eal_args_out = eal_args;
+        }
         goto out;
     }
 
