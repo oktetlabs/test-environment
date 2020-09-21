@@ -617,7 +617,7 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
 
     rc = write_sys_value(value,
                          SYS_MODULE "/%s/parameters/%s",
-                         module_name, param_name);
+                         name, param_name);
     if (rc == 0)
     {
         te_kernel_module *module = mod_find(module_name);
