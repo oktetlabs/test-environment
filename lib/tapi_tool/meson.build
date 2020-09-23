@@ -1,6 +1,7 @@
 # Copyright (C) 2019 OKTET Labs. All rights reserved.
 
 headers += files(
+    'tapi_mke2fs.h',
     'tapi_netperf.h',
     'tapi_nptcp.h',
     'tapi_ping.h',
@@ -9,6 +10,7 @@ headers += files(
     'tapi_wrk.h',
 )
 sources += files(
+    'tapi_mke2fs.c',
     'tapi_netperf.c',
     'tapi_nptcp.c',
     'tapi_ping.c',

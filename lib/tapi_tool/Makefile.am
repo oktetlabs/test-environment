@@ -8,21 +8,23 @@ AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 AM_LDFLAGS = -L$(DESTDIR)/$(libdir)
 
 include_HEADERS= \
-	tapi_stress.h \
+	tapi_mke2fs.h \
 	tapi_netperf.h \
 	tapi_nptcp.h \
 	tapi_ping.h \
 	tapi_sfnt_pingpong.h \
+	tapi_stress.h \
 	tapi_wrk.h
 
 lib_LTLIBRARIES = libtapi_tool.la
 
 libtapi_tool_la_SOURCES = \
-	tapi_stress.c \
+	tapi_mke2fs.c \
 	tapi_netperf.c \
 	tapi_nptcp.c \
 	tapi_ping.c \
 	tapi_sfnt_pingpong.c \
+	tapi_stress.c \
 	tapi_wrk.c
 
 install-exec-hook:
