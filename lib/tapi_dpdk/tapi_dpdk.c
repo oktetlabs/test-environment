@@ -745,7 +745,7 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
                                     },
                                     {.use_stdout = TRUE,
                                      .readable = TRUE,
-                                     .re = "(?m)^Link speed: ([0-9]+) Mbps$",
+                                     .re = "(?m)^Link speed: ([0-9]+ [MG])bps$",
                                      .extract = 1,
                                      .filter_var = &testpmd_job->link_speed_filter,
                                     },
@@ -839,6 +839,7 @@ tapi_dpdk_testpmd_get_link_speed(tapi_dpdk_testpmd_job_t *testpmd_job,
                                  unsigned int *link_speed)
 {
     tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
+    unsigned int multiplier;
     te_errno rc = 0;
 
     rc = tapi_job_receive(TAPI_JOB_CHANNEL_SET(testpmd_job->link_speed_filter),
@@ -860,12 +861,33 @@ tapi_dpdk_testpmd_get_link_speed(tapi_dpdk_testpmd_job_t *testpmd_job,
     if (buf.dropped > 0)
         WARN("Dropped messages count: %lu", buf.dropped);
 
+    switch (buf.data.ptr[buf.data.len - 1])
+    {
+        case 'G':
+            multiplier = 1000;
+            break;
+
+        case 'M':
+            multiplier = 1;
+            break;
+
+        default:
+            ERROR("Invalid bps prefix in the link speed");
+            te_string_free(&buf.data);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    /* Remove bps prefix and a space after the link speed value */
+    te_string_cut(&buf.data, 2);
+
     if ((rc = te_strtoui(buf.data.ptr, 0, link_speed)) != 0)
     {
         ERROR("Failed to parse link speed");
         te_string_free(&buf.data);
         return TE_RC(TE_TAPI, TE_EFAIL);
     }
+
+    *link_speed *= multiplier;
 
     return 0;
 }
