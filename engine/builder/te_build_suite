@@ -134,7 +134,9 @@ if ${MESON_BUILD} ; then
 
     meson_nv_args="--prefix=\"${TE_INSTALL_SUITE}\""
     meson_args=
-    meson_args="${meson_args} -Dpkg_config_path=\"${PKG_CONFIG_PATH}\""
+    if [[ "$(meson -v)" > "0.50.1" ]]; then
+        meson_args="${meson_args} -Dpkg_config_path=\"${PKG_CONFIG_PATH}\""
+    fi
     meson_args="${meson_args} -Dte_path=\"${TE_PATH}\""
     meson_args="${meson_args} -Dte_cflags=\"${cflags}\""
     meson_args="${meson_args} -Dte_ldflags=\"${ldflags}\""
