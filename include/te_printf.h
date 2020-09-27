@@ -100,6 +100,22 @@
 #define TE_PRINTF_MAC_VAL(_mac) \
       (_mac)[0], (_mac)[1], (_mac)[2], (_mac)[3], (_mac)[4], (_mac)[5]
 
+/**
+ * Format string for printing out struct timespec or tarpc_timespec value.
+ *
+ * @note It should be used with @b TE_PRINTF_TS_VAL().
+ */
+#define TE_PRINTF_TS_FMT "{%llu s %.9llu ns}"
+
+/**
+ * Arguments for @b TE_PRINTF_TS_FMT.
+ *
+ * @param _ts       tarpc_timespec or struct timespec value.
+ */
+#define TE_PRINTF_TS_VAL(_ts) \
+  (long long unsigned int)((_ts).tv_sec), \
+  (long long unsigned int)((_ts).tv_nsec)
+
 #if defined (__QNX__) || !defined(_GNU_SOURCE)
 #define TE_USE_SPECIFIC_ASPRINTF 1
 #endif /* __QNX__ */
