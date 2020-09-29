@@ -470,7 +470,10 @@ out:
     if ((err != 0) && (mbufs != NULL))
     {
         for (i = 0; i < n_mbufs; ++i)
-            rpc_rte_pktmbuf_free(rpcs, mbufs[i]);
+        {
+            if (mbufs[i] != RPC_NULL)
+                rpc_rte_pktmbuf_free(rpcs, mbufs[i]);
+        }
 
         free(mbufs);
     }
