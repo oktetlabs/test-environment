@@ -873,6 +873,8 @@ tad_eth_sap_pkt_rx_ring_recv(tad_eth_sap        *sap,
     te_bool                 vlan_tag_valid;
     size_t                  seg_len;
     uint8_t                *seg_data = NULL;
+    size_t                  copy_len;
+    size_t                  remaining_len;
     size_t                  data_off;
     tad_pkt_seg            *seg;
 
@@ -916,8 +918,12 @@ tad_eth_sap_pkt_rx_ring_recv(tad_eth_sap        *sap,
     if (seg_data == NULL)
         return TE_RC(TE_TAD_CSAP, TE_ENOMEM);
 
-    memcpy(seg_data, (uint8_t *)ph + ph->tp_mac, 2 * ETHER_ADDR_LEN);
-    data_off = 2 * ETHER_ADDR_LEN;
+    remaining_len = seg_len;
+
+    copy_len = MIN(remaining_len, 2 * ETHER_ADDR_LEN);
+    memcpy(seg_data, (uint8_t *)ph + ph->tp_mac, copy_len);
+    data_off = copy_len;
+    remaining_len -= copy_len;
 
     if (vlan_tag_valid)
     {
@@ -937,7 +943,7 @@ tad_eth_sap_pkt_rx_ring_recv(tad_eth_sap        *sap,
     }
 
     memcpy(seg_data + data_off, (uint8_t *)ph + ph->tp_mac + (2 * ETHER_ADDR_LEN),
-           ph->tp_len - (2 * ETHER_ADDR_LEN));
+           remaining_len);
 
     /*
      * It is not guaranteed that the TAD packet consists of exactly one
