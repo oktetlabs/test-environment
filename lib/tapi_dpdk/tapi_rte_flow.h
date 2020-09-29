@@ -116,10 +116,11 @@ extern void tapi_rte_flow_add_ndn_action_of_set_vlan_vid(asn_value *ndn_actions,
  * @param[in]     port_id           DPDK port id
  * @param[in]     original          Use original DPDK port ID if possible
  */
-extern void tapi_rte_flow_add_ndn_action_port_id(asn_value *ndn_actions,
-                                                 int action_index,
-                                                 uint32_t port_id,
-                                                 te_bool original);
+extern void tapi_rte_flow_add_ndn_action_port(asn_value *ndn_actions,
+                                              ndn_rte_flow_action_type_t type,
+                                              int action_index,
+                                              uint32_t id,
+                                              te_bool original);
 
 /**
  * Add a PORT ID item to an item list at specified index.

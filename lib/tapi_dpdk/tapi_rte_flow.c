@@ -135,18 +135,39 @@ tapi_rte_flow_add_ndn_action_of_set_vlan_vid(asn_value *ndn_actions,
 }
 
 void
-tapi_rte_flow_add_ndn_action_port_id(asn_value *ndn_actions,
-                                     int action_index,
-                                     uint32_t port_id,
-                                     te_bool original)
+tapi_rte_flow_add_ndn_action_port(asn_value *ndn_actions,
+                                  ndn_rte_flow_action_type_t type,
+                                  int action_index,
+                                  uint32_t id,
+                                  te_bool original)
 {
     asn_value *action;
+    const char *label;
+
+    switch (type)
+    {
+        case NDN_FLOW_ACTION_TYPE_PORT_ID:
+            label = "conf.#port-id";
+            break;
+
+        case NDN_FLOW_ACTION_TYPE_VF:
+            label = "conf.#vf";
+            break;
+
+        case NDN_FLOW_ACTION_TYPE_PHY_PORT:
+            label = "conf.#phy-port";
+            break;
+
+        default:
+            CHECK_RC(TE_EINVAL);
+    }
 
     CHECK_NOT_NULL(action = asn_init_value(ndn_rte_flow_action));
-    CHECK_RC(asn_write_int32(action, NDN_FLOW_ACTION_TYPE_PORT_ID, "type"));
-    CHECK_RC(asn_write_value_field(action, &port_id, sizeof(port_id),
-                                   "conf.#port-id.id"));
-    CHECK_RC(asn_write_bool(action, original, "conf.#port-id.original"));
+    CHECK_RC(asn_write_int32(action, type, "type"));
+    CHECK_RC(asn_write_value_field_fmt(action, &id, sizeof(id),
+                                       "%s.id", label));
+    CHECK_RC(asn_write_value_field_fmt(action, &original, sizeof(original),
+                                       "%s.original", label));
 
     CHECK_RC(asn_insert_indexed(ndn_actions, action, action_index, ""));
 }
