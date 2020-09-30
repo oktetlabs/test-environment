@@ -20,6 +20,12 @@
 #ifndef __TE_SLEEP_H__
 #define __TE_SLEEP_H__
 
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#include "logger_api.h"
+
 /**
  * Sleep specified number of seconds.
  *
