@@ -219,6 +219,25 @@ te_mi_graph_axis_valid(te_mi_graph_axis axis)
     return axis >= 0 && axis < TE_MI_GRAPH_AXIS_MAX;
 }
 
+static te_bool
+te_mi_check_meas_type_name(te_mi_meas_type type, const char *name)
+{
+    if (type == TE_MI_MEAS_END && name == NULL)
+    {
+        ERROR("%s(): either measurement name or measurement type must be "
+              "specified", __FUNCTION__);
+        return FALSE;
+    }
+
+    if (type != TE_MI_MEAS_END && !te_mi_meas_type_valid(type))
+    {
+        ERROR("%s(): invalid measurement type %d", __FUNCTION__, type);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 static const char *
 te_mi_type2str(te_mi_type type)
 {
@@ -933,17 +952,8 @@ te_mi_logger_meas_graph_axis_add(te_mi_logger *logger,
         return;
     }
 
-    if (meas_type == TE_MI_MEAS_END && meas_name == NULL)
+    if (!te_mi_check_meas_type_name(meas_type, meas_name))
     {
-        ERROR("%s(): either measurement name or measurement type must be "
-              "specified", __FUNCTION__);
-        te_mi_set_logger_error(logger, retval, TE_EINVAL);
-        return;
-    }
-
-    if (meas_type != TE_MI_MEAS_END && !te_mi_meas_type_valid(meas_type))
-    {
-        ERROR("%s(): invalid measurement type %d", __FUNCTION__, meas_type);
         te_mi_set_logger_error(logger, retval, TE_EINVAL);
         return;
     }
