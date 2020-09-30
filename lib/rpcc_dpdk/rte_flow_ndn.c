@@ -76,6 +76,7 @@ rpc_rte_mk_flow_rule_components(rcf_rpc_server *rpcs,
     tarpc_rte_mk_flow_rule_components_in    in;
     tarpc_rte_mk_flow_rule_components_out   out;
     size_t                                  flow_len;
+    const asn_type                         *flow_rule_components_type;
     uint8_t                                 component_flags;
 
     memset(&in, 0, sizeof(in));
@@ -84,8 +85,8 @@ rpc_rte_mk_flow_rule_components(rcf_rpc_server *rpcs,
     flow_len = asn_count_txt_len(flow_rule_components, 0) + 1;
     in.flow_rule_components = tapi_calloc(1, flow_len);
 
-    component_flags =
-        tarpc_rte_flow_type2rpc_flags(asn_get_type(flow_rule_components));
+    flow_rule_components_type = asn_get_type(flow_rule_components);
+    component_flags = tarpc_rte_flow_type2rpc_flags(flow_rule_components_type);
     if (component_flags == 0)
     {
         ERROR("%s(): invalid flow rule components ASN.1 type", __FUNCTION__);
@@ -108,9 +109,10 @@ rpc_rte_mk_flow_rule_components(rcf_rpc_server *rpcs,
     rcf_rpc_call(rpcs, "rte_mk_flow_rule_components", &in, &out);
     CHECK_RETVAL_VAR_IS_ZERO_OR_NEG_ERRNO(rte_mk_flow_rule_components, out.retval);
 
-    TAPI_RPC_LOG(rpcs, rte_mk_flow_rule_components, "\n%s,\n",
+    TAPI_RPC_LOG(rpcs, rte_mk_flow_rule_components, "type=%s,\n%s\n",
                  "{"RPC_PTR_FMT", "RPC_PTR_FMT", "RPC_PTR_FMT"}, "
-                 NEG_ERRNO_FMT, in.flow_rule_components, RPC_PTR_VAL(out.attr),
+                 NEG_ERRNO_FMT, asn_get_type_name(flow_rule_components_type),
+                 in.flow_rule_components, RPC_PTR_VAL(out.attr),
                  RPC_PTR_VAL(out.pattern), RPC_PTR_VAL(out.actions),
                  NEG_ERRNO_ARGS(out.retval));
 
