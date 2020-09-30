@@ -83,6 +83,12 @@ do {                                                                    \
             /* Log error regardless RPC error expectations */           \
             rpcs->err_log = TRUE;                                       \
         }                                                               \
+        if (!rpcs->err_log && rpcs->silent_pass)                        \
+        {                                                               \
+            rpcs->silent = rpcs->silent_default;                        \
+            rpcs->silent_pass = rpcs->silent_pass_default;              \
+            break;                                                      \
+        }                                                               \
         LOG_MSG(rpcs->err_log ? TE_LL_ERROR : TE_LL_RING,               \
                 "RPC (%s,%s)%s%s: " #func "(" in_format ") -> "         \
                 out_format " (" RPC_ERROR_FMT ")",                      \

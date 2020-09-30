@@ -191,6 +191,11 @@ typedef struct rcf_rpc_server {
     te_bool         silent_default; /**< Turn on/off RPC calls logging, can
                                          be used to change the behavior for
                                          a few calls. */
+    te_bool         silent_pass;        /**< The same as @ref silent, but
+                                             error log still will be logged. */
+    te_bool         silent_pass_default;/**< The same as @ref silent_default,
+                                             applicable for @ref silent_pass.
+                                             */
 
     char          **namespaces;     /**< Array of namespaces for memory
                                      * pointers (rpc_ptr). */
