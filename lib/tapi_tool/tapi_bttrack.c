@@ -3,7 +3,7 @@
  *
  * TAPI to manage bttrack torrent tracker.
  *
- * Copyright (C) 2020 OKTET Labs. All rights reserved.
+ * Copyright (C) 2021 OKTET Labs. All rights reserved.
  *
  * @author Andrey Izrailev <Andrey.Izrailev@oktetlabs.ru>
  */

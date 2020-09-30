@@ -7,5 +7,9 @@
         <run>
             <package name="nptcp"/>
         </run>
+
+        <run>
+            <package name="torrent"/>
+        </run>
     </session>
 </package>

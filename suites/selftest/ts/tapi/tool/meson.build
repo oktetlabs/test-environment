@@ -2,6 +2,7 @@
 
 packages = [
     'nptcp',
+    'torrent',
 ]
 
 install_data([ 'package.xml' ], install_dir: package_dir)

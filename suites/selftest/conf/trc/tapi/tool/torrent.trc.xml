@@ -1,0 +1,18 @@
+<test name="torrent" type="package">
+    <objective>TAPI torrent implementation</objective>
+    <iter result="PASSED">
+
+        <test name="ctorrent_prologue">
+            <objective/>
+            <iter result="PASSED"/>
+        </test>
+
+        <test name="ctorrent">
+            <objective/>
+            <iter result="PASSED">
+                <arg name="env"/>
+            </iter>
+        </test>
+
+    </iter>
+</test>

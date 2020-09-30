@@ -3,7 +3,7 @@
  *
  * TAPI to manage ctorrent – a BitTorrent client.
  *
- * Copyright (C) 2020 OKTET Labs. All rights reserved.
+ * Copyright (C) 2021 OKTET Labs. All rights reserved.
  *
  * @author Andrey Izrailev <Andrey.Izrailev@oktetlabs.ru>
  */
