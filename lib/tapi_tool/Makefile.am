@@ -8,6 +8,8 @@ AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 AM_LDFLAGS = -L$(DESTDIR)/$(libdir)
 
 include_HEADERS= \
+	tapi_bttrack.h \
+	tapi_ctorrent.h \
 	tapi_mke2fs.h \
 	tapi_netperf.h \
 	tapi_nptcp.h \
@@ -19,6 +21,8 @@ include_HEADERS= \
 lib_LTLIBRARIES = libtapi_tool.la
 
 libtapi_tool_la_SOURCES = \
+	tapi_bttrack.c \
+	tapi_ctorrent.c \
 	tapi_mke2fs.c \
 	tapi_netperf.c \
 	tapi_nptcp.c \

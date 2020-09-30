@@ -1,6 +1,8 @@
 # Copyright (C) 2019 OKTET Labs. All rights reserved.
 
 headers += files(
+    'tapi_bttrack.h',
+    'tapi_ctorrent.h',
     'tapi_mke2fs.h',
     'tapi_netperf.h',
     'tapi_nptcp.h',
@@ -10,6 +12,8 @@ headers += files(
     'tapi_wrk.h',
 )
 sources += files(
+    'tapi_bttrack.c',
+    'tapi_ctorrent.c',
     'tapi_mke2fs.c',
     'tapi_netperf.c',
     'tapi_nptcp.c',
