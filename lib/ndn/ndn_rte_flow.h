@@ -59,6 +59,7 @@ typedef enum {
 
 typedef enum {
     NDN_FLOW_ITEM_TYPE_PORT_ID,
+    NDN_FLOW_ITEM_TYPE_PHY_PORT,
 } ndn_rte_flow_item_type_t;
 
 typedef enum {
@@ -117,6 +118,7 @@ typedef enum {
 
 typedef enum {
     NDN_FLOW_ITEM_CONF_PORT_ID_ID,
+    NDN_FLOW_ITEM_CONF_PHY_PORT_INDEX,
 } ndn_rte_flow_item_conf_t;
 
 typedef enum {

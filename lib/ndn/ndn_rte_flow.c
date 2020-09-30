@@ -265,6 +265,8 @@ const asn_type * const ndn_rte_flow_actions = &ndn_rte_flow_actions_s;
 static asn_named_entry_t _ndn_rte_flow_item_conf_ne_array[] = {
     { "id", &ndn_data_unit_uint32_s,
         {PRIVATE, NDN_FLOW_ITEM_CONF_PORT_ID_ID} },
+    { "index", &ndn_data_unit_uint32_s,
+        {PRIVATE, NDN_FLOW_ITEM_CONF_PHY_PORT_INDEX} },
 };
 
 asn_type ndn_rte_flow_item_conf_s = {
@@ -277,6 +279,7 @@ const asn_type * const ndn_rte_flow_item_conf = &ndn_rte_flow_item_conf_s;
 
 asn_enum_entry_t _ndn_rte_flow_item_type_enum_entries[] = {
     {"port-id", NDN_FLOW_ITEM_TYPE_PORT_ID},
+    {"phy-port", NDN_FLOW_ITEM_TYPE_PHY_PORT},
 };
 
 asn_type ndn_rte_flow_item_type_s = {

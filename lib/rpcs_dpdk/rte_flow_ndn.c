@@ -81,6 +81,7 @@
 #define RTE_FLOW_GRE_SEQN_OFFSET 12
 #define RTE_FLOW_GRE_VER_LEN 3
 #define RTE_FLOW_PORT_ID_LEN 32
+#define RTE_FLOW_PHY_PORT_LEN 32
 
 
 static te_errno
@@ -2786,6 +2787,50 @@ rte_flow_item_port_id_from_asn(struct rte_flow_item *item,
 }
 
 static te_errno
+rte_flow_item_phy_port_from_asn(struct rte_flow_item *item,
+                                const asn_value *conf_phy_port)
+{
+    struct rte_flow_item_phy_port *spec = NULL;
+    struct rte_flow_item_phy_port *last = NULL;
+    struct rte_flow_item_phy_port *mask = NULL;
+    uint32_t last_id;
+    te_errno rc;
+
+    rc = rte_alloc_mem_for_flow_item((void **)&spec,
+                                     (void **)&mask,
+                                     (void **)&last,
+                                     sizeof(struct rte_flow_item_phy_port));
+    if (rc != 0)
+        return rc;
+
+    rc = asn_read_int_field_with_offset(conf_phy_port, "index",
+                                        RTE_FLOW_PHY_PORT_LEN, 0,
+                                        &spec->index, &mask->index,
+                                        &last->index);
+    if (rc != 0)
+    {
+        free(spec);
+        free(mask);
+        free(last);
+        return rc;
+    }
+
+    rc = asn_read_uint32(conf_phy_port, &last_id, "index.#range.last");
+    if (rc == TE_EASNOTHERCHOICE)
+    {
+        free(last);
+        last = NULL;
+    }
+
+    item->type = RTE_FLOW_ITEM_TYPE_PHY_PORT;
+    item->spec = spec;
+    item->last = last;
+    item->mask = mask;
+
+    return 0;
+}
+
+static te_errno
 insert_flow_rule_items(struct rte_flow_item **pattern_out,
                        const asn_value *items,
                        int index)
@@ -2850,6 +2895,12 @@ insert_flow_rule_items(struct rte_flow_item **pattern_out,
         {
             case NDN_FLOW_ITEM_TYPE_PORT_ID:
                 rc = rte_flow_item_port_id_from_asn(new_item, conf);
+                if (rc != 0)
+                    goto fail;
+                break;
+
+            case NDN_FLOW_ITEM_TYPE_PHY_PORT:
+                rc = rte_flow_item_phy_port_from_asn(new_item, conf);
                 if (rc != 0)
                     goto fail;
                 break;

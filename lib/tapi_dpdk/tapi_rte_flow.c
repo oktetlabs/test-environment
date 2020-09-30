@@ -187,6 +187,21 @@ tapi_rte_flow_add_ndn_item_port_id(asn_value *ndn_items,
     CHECK_RC(asn_insert_indexed(ndn_items, item, item_index, ""));
 }
 
+void
+tapi_rte_flow_add_ndn_item_phy_port(asn_value *ndn_items,
+                                    int item_index,
+                                    uint32_t phy_port)
+{
+    asn_value *item;
+
+    CHECK_NOT_NULL(item = asn_init_value(ndn_rte_flow_item));
+    CHECK_RC(asn_write_int32(item, NDN_FLOW_ITEM_TYPE_PHY_PORT, "type"));
+    CHECK_RC(asn_write_value_field(item, &phy_port, sizeof(phy_port),
+                                   "conf.#index.#plain"));
+
+    CHECK_RC(asn_insert_indexed(ndn_items, item, item_index, ""));
+}
+
 rpc_rte_flow_p
 tapi_rte_flow_validate_and_create_rule(rcf_rpc_server *rpcs, uint16_t port_id,
                                        rpc_rte_flow_attr_p attr,

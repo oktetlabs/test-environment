@@ -134,6 +134,17 @@ extern void tapi_rte_flow_add_ndn_item_port_id(asn_value *ndn_items,
                                                uint32_t port_id);
 
 /**
+ * Add a PHY_PORT item to an item list at specified index.
+ *
+ * @param[inout]  ndn_items         Item list
+ * @param[in]     item_index        Index at which the item is put to list
+ * @param[in]     phy_port          Physical port number
+ */
+extern void tapi_rte_flow_add_ndn_item_phy_port(asn_value *ndn_items,
+                                                int item_index,
+                                                uint32_t phy_port);
+
+/**
  * Convert an ASN value representing a flow rule pattern into
  * RTE flow rule pattern and a template that matches the pattern.
  *
