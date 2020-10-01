@@ -925,7 +925,7 @@ tad_eth_sap_pkt_rx_ring_recv(tad_eth_sap        *sap,
     data_off = copy_len;
     remaining_len -= copy_len;
 
-    if (vlan_tag_valid)
+    if (vlan_tag_valid && remaining_len >= TAD_VLAN_TAG_LEN)
     {
         struct tad_vlan_tag *tag;
 
@@ -940,6 +940,7 @@ tad_eth_sap_pkt_rx_ring_recv(tad_eth_sap        *sap,
         tag->vlan_tci = htons(ph->tp_vlan_tci);
 
         data_off += TAD_VLAN_TAG_LEN;
+        remaining_len -= TAD_VLAN_TAG_LEN;
     }
 
     memcpy(seg_data + data_off, (uint8_t *)ph + ph->tp_mac + (2 * ETHER_ADDR_LEN),
