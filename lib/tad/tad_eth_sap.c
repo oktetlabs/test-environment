@@ -929,7 +929,7 @@ tad_eth_sap_pkt_rx_ring_recv(tad_eth_sap        *sap,
     {
         struct tad_vlan_tag *tag;
 
-        tag = (struct tad_vlan_tag *)(seg_data + (2 * ETHER_ADDR_LEN));
+        tag = (struct tad_vlan_tag *)(seg_data + data_off);
 
 #ifdef TP_STATUS_VLAN_TPID_VALID
         tag->vlan_tpid = htons((ph->tp_status & TP_STATUS_VLAN_TPID_VALID) ?
