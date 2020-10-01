@@ -3989,24 +3989,24 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
             if ((ctx->flags & TESTER_RUN_WHILE_PASSED) &&
                 (ctx->current_result.status != TESTER_TEST_PASSED))
             {
-                return TESTER_CFG_WALK_STOP;
+                return TESTER_CFG_WALK_FIN;
             }
             if ((ctx->flags & TESTER_RUN_WHILE_FAILED) &&
                 (ctx->current_result.status != TESTER_TEST_FAILED))
             {
-                return TESTER_CFG_WALK_STOP;
+                return TESTER_CFG_WALK_FIN;
             }
 #if WITH_TRC
             if ((ctx->flags & TESTER_RUN_WHILE_EXPECTED) &&
                 (ctx->current_result.exp_status != TRC_VERDICT_EXPECTED))
             {
-                return TESTER_CFG_WALK_STOP;
+                return TESTER_CFG_WALK_FIN;
             }
             if ((ctx->flags & TESTER_RUN_WHILE_UNEXPECTED) &&
                 (ctx->current_result.exp_status != TRC_VERDICT_UNEXPECTED &&
                  ctx->current_result.exp_status != TRC_VERDICT_UNKNOWN))
             {
-                return TESTER_CFG_WALK_STOP;
+                return TESTER_CFG_WALK_FIN;
             }
 #endif
         }
