@@ -633,6 +633,60 @@ te_mi_meas_impl_find(te_mi_meas_impl_h *meas_q, te_mi_meas_type type,
     return NULL;
 }
 
+/* Search for measurement by name. Only one measurement can be found by name */
+static te_mi_meas_impl *
+te_mi_meas_impl_find_uniq_by_name(te_mi_meas_impl_h *meas_q, const char *name)
+{
+    te_mi_meas_impl *result;
+    unsigned int found_count = 0;
+    te_mi_meas_impl *p;
+
+    TAILQ_FOREACH(p, meas_q, next)
+    {
+        if (strcmp_null(p->name, name) == 0)
+        {
+            result = p;
+            found_count++;
+        }
+    }
+
+    if (found_count == 1)
+        return result;
+    else
+        return NULL;
+}
+
+/* Search for measurements by name or by tuple name + type. */
+static te_mi_meas_impl *
+te_mi_meas_impl_find_ext(te_mi_meas_impl_h *meas_q, te_mi_meas_type type,
+                         const char *name)
+{
+    te_mi_meas_impl *result;
+
+    if (type == TE_MI_MEAS_END)
+    {
+        result = te_mi_meas_impl_find_uniq_by_name(meas_q, name);
+        if (result == NULL)
+        {
+            ERROR("%s(): Failed to found an unique measurement "
+                  "with name '%s'", __FUNCTION__, name);
+            return NULL;
+        }
+    }
+    else
+    {
+       result = te_mi_meas_impl_find(meas_q, type, name);
+       if (result == NULL)
+       {
+            ERROR("%s(): Failed to found a measurement with name '%s' and "
+                  "type '%s'", __FUNCTION__, name, te_mi_meas_type2str(type));
+            return NULL;
+       }
+    }
+
+    return result;
+}
+
 const char *
 te_mi_meas_type2descr(te_mi_meas_type type)
 {
@@ -974,47 +1028,11 @@ te_mi_logger_meas_graph_axis_add(te_mi_logger *logger,
         return;
     }
 
-    if (meas_type == TE_MI_MEAS_END)
+    meas = te_mi_meas_impl_find_ext(&logger->meas_q, meas_type, meas_name);
+    if (meas == NULL)
     {
-        unsigned int found_count = 0;
-        te_mi_meas_impl *p;
-
-        TAILQ_FOREACH(p, &logger->meas_q, next)
-        {
-            if (strcmp_null(p->name, meas_name) == 0)
-            {
-                meas = p;
-                found_count++;
-            }
-        }
-
-        if (found_count > 1)
-        {
-            ERROR("%s(): measurement name '%s' is not unique and cannot "
-                  "be used without a type", __FUNCTION__, meas_name);
-            te_mi_set_logger_error(logger, retval, TE_EINVAL);
-            return;
-        }
-        else if (found_count == 0)
-        {
-            ERROR("%s(): measurement with name '%s' cannot be found",
-                  __FUNCTION__, meas_name);
-            te_mi_set_logger_error(logger, retval, TE_ENOENT);
-            return;
-        }
-    }
-    else
-    {
-        meas = te_mi_meas_impl_find(&logger->meas_q, meas_type, meas_name);
-
-        if (meas == NULL)
-        {
-            ERROR("%s(): failed to find a measurement with type '%s' and "
-                  "name '%s'", __FUNCTION__, te_mi_meas_type2str(meas_type),
-                  (meas_name == NULL ? "(null)" : meas_name));
-            te_mi_set_logger_error(logger, retval, TE_ENOENT);
-            return;
-        }
+        te_mi_set_logger_error(logger, retval, TE_ENOENT);
+        return;
     }
 
     rc = meas_view_add_meas_to_axis(view, axis, meas);
