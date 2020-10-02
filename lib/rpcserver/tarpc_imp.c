@@ -1021,6 +1021,7 @@ TARPC_FUNC(execve_gen, {},
 
 /*-------------- exit() --------------------------------*/
 TARPC_FUNC(exit, {}, { MAKE_CALL(func(in->status)); })
+TARPC_FUNC(_exit, {}, { MAKE_CALL(func(in->status)); })
 
 /*-------------- getpid() --------------------------------*/
 TARPC_FUNC(getpid, {}, { MAKE_CALL(out->retval = func_void()); })

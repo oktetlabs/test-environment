@@ -1702,6 +1702,36 @@ rpc_exit(rcf_rpc_server *rpcs, int status)
         RETVAL_VOID(exit);
 }
 
+void
+rpc__exit(rcf_rpc_server *rpcs, int status)
+{
+    tarpc__exit_in  in;
+    tarpc__exit_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_VOID(_exit);
+    }
+
+    in.status = status;
+
+    rcf_rpc_call(rpcs, "_exit", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, _exit, "%d", "(void)", status);
+
+    if (TE_RC_GET_ERROR(RPC_ERRNO(rpcs)) == TE_ERPCDEAD)
+    {
+        RING("RPC server %s is dead as a result of exit() call",
+             rpcs->name);
+    }
+    else
+        RETVAL_VOID(_exit);
+}
+
 pid_t
 rpc_getpid(rcf_rpc_server *rpcs)
 {
