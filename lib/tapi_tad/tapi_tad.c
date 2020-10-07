@@ -45,6 +45,7 @@
 #include "tapi_tad.h"
 #include "tapi_ndn.h"
 
+#include "asn_usr.h"
 
 #define SEC_USEC_SEPARATOR  '.'
 
@@ -745,4 +746,39 @@ tapi_tad_csap_destroy_all(int session)
     free(ta_cfg_handles);
 
     return rc;
+}
+
+/* See description in tap_tad.h */
+te_errno
+tapi_tad_get_pkt_rx_ts(asn_value *pkt, struct timeval *tv)
+{
+    uint32_t secs = 0;
+    uint32_t usecs = 0;
+    int rc = 0;
+
+    if (pkt == NULL || tv == NULL)
+    {
+        ERROR("%s(): NULL arguments were passed", __FUNCTION__);
+        return TE_EINVAL;
+    }
+
+    rc = asn_read_uint32(pkt, &secs, "received.seconds");
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to get seconds from CSAP packet: %r",
+              __FUNCTION__, rc);
+        return rc;
+    }
+    tv->tv_sec = secs;
+
+    rc = asn_read_uint32(pkt, &usecs, "received.micro-seconds");
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to get microseconds from CSAP packet: %r",
+              __FUNCTION__, rc);
+        return rc;
+    }
+    tv->tv_usec = usecs;
+
+    return 0;
 }

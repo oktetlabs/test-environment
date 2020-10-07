@@ -382,6 +382,16 @@ extern te_errno tapi_tad_csap_get_no_match_pkts(const char *ta_name,
  */
 extern te_errno tapi_tad_csap_destroy_all(int session);
 
+/**
+ * Get timestamp from a packet captured by CSAP.
+ *
+ * @param pkt     Packet captured by CSAP (described in ASN).
+ * @param tv      Where to save obtained timestamp.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tad_get_pkt_rx_ts(asn_value *pkt, struct timeval *tv);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
