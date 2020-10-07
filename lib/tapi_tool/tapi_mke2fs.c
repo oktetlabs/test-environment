@@ -179,3 +179,33 @@ tapi_mke2fs_check_journal(tapi_mke2fs_app *app)
 
     return 0;
 }
+
+te_errno
+tapi_mke2fs_do(tapi_job_factory_t *factory, const tapi_mke2fs_opt *opt,
+               tapi_mke2fs_app *app, int timeout_ms)
+{
+    te_errno rc;
+
+    rc = tapi_mke2fs_create(factory, opt, &app);
+    if (rc != 0)
+    {
+        ERROR("Failed to create tapi_mke2fs_app");
+        return rc;
+    }
+
+    rc = tapi_mke2fs_start(app);
+    if (rc != 0)
+    {
+        ERROR("Failed to start mke2fs");
+        return rc;
+    }
+
+    rc = tapi_mke2fs_wait(app, timeout_ms);
+    if (rc != 0)
+    {
+        ERROR("Failed to wait for mke2fs");
+        return rc;
+    }
+
+    return 0;
+}
