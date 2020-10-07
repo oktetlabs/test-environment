@@ -15,6 +15,7 @@
 #include "te_config.h"
 #include "te_ethernet.h"
 #include "te_alloc.h"
+#include "te_vector.h"
 
 #include "log_bufs.h"
 #include "tapi_mem.h"
@@ -73,63 +74,133 @@ tapi_eal_rpcs_reset_cached_eal_args(const rcf_rpc_server *rpcs)
     return tapi_eal_rpcs_set_cached_eal_args(rpcs, "");
 }
 
+static te_errno
+tapi_rte_get_pci_fn_specifiers(const char *property, const char *ta,
+                               const char *vendor, const char *device,
+                               te_vec **instance_list)
+{
+    char empty = '\0';
+    char *gen = &empty;
+    char *ven = &empty;
+    char *dev = &empty;
+    char *gen_ta = &empty;
+    char *ven_ta = &empty;
+    char *dev_ta = &empty;
+    char **instances[] = {
+        &gen, &ven, &dev, &gen_ta, &ven_ta, &dev_ta
+    };
+    te_errno rc = 0;
+    unsigned int i;
+    te_vec *result;
+
+    result = TE_ALLOC(sizeof(*result));
+    if (result == NULL)
+        return TE_ENOMEM;
+
+    *result = TE_VEC_INIT(char *);
+
+    gen = te_string_fmt("/local:/dpdk:/%s:pci_fn:::", property);
+    if (ta != NULL)
+        gen_ta = te_string_fmt("/local:%s/dpdk:/%s:pci_fn:::", ta, property);
+
+    if (vendor != NULL && vendor[0] != '\0')
+    {
+        ven = te_string_fmt("/local:/dpdk:/%s:pci_fn:%s::", property, vendor);
+        if (ta != NULL)
+        {
+            ven_ta = te_string_fmt("/local:%s/dpdk:/%s:pci_fn:%s::",
+                                   ta, property, vendor);
+        }
+
+        if (device != NULL && device[0] != '\0')
+        {
+            dev = te_string_fmt("/local:/dpdk:/%s:pci_fn:%s:%s:",
+                                property, vendor, device);
+            if (ta != NULL)
+            {
+                dev_ta = te_string_fmt("/local:%s/dpdk:/%s:pci_fn:%s:%s:",
+                                       ta, property, vendor, device);
+            }
+        }
+    }
+
+    if (gen == NULL || gen_ta == NULL || ven == NULL || ven_ta == NULL ||
+        dev == NULL || dev_ta == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    for (i = 0; i < TE_ARRAY_LEN(instances); i++)
+    {
+        if (*instances[i] == &empty)
+            continue;
+
+        rc = cfg_get_instance_fmt(NULL, NULL, *instances[i]);
+        if (rc == 0)
+        {
+            rc = TE_VEC_APPEND(result, *instances[i]);
+            if (rc != 0)
+                goto out;
+        }
+        else if (TE_RC_GET_ERROR(rc) != TE_ENOENT)
+        {
+            goto out;
+        }
+        else
+        {
+            rc = 0;
+        }
+    }
+
+    *instance_list = result;
+
+out:
+    for (i = 0; rc != 0 && i < TE_ARRAY_LEN(instances); i++)
+    {
+        if (*instances[i] == &empty)
+            free(*instances[i]);
+    }
+
+    return rc;
+}
 
 te_errno
 tapi_rte_get_dev_args(const char *ta, const char *vendor, const char *device,
                       char **arg_list)
 {
-    char *generic_args = NULL;
-    char *vendor_args = NULL;
-    char *device_args = NULL;
-    char **args[] = { &generic_args, &vendor_args, &device_args };
     te_string result = TE_STRING_INIT;
-    unsigned int i;
+    te_vec *specifiers;
     te_bool first;
     te_errno rc;
+    char **spec;
 
-    rc = cfg_get_instance_fmt(NULL, &generic_args,
-                              "/local:%s/dpdk:/dev_args:pci_fn:::", ta);
-    if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
-        return rc;
-
-    if (vendor != NULL && vendor[0] != '\0')
-    {
-        rc = cfg_get_instance_fmt(NULL, &vendor_args,
-                                  "/local:%s/dpdk:/dev_args:pci_fn:%s::",
-                                  ta, vendor);
-        if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
-            return rc;
-
-
-        if (device != NULL && device[0] != '\0')
-        {
-            rc = cfg_get_instance_fmt(NULL, &device_args,
-                                      "/local:%s/dpdk:/dev_args:pci_fn:%s:%s:",
-                                      ta, vendor, device);
-            if (rc != 0 && TE_RC_GET_ERROR(rc) != TE_ENOENT)
-                return rc;
-        }
-    }
-
-    rc = 0;
-
-    for (first = TRUE, i = 0; i < TE_ARRAY_LEN(args) && rc == 0; i++)
-    {
-        if (*args[i] == NULL || (*args[i])[0] == '\0')
-            continue;
-
-        rc = te_string_append(&result, "%s%s", first ? "" : ",", *args[i]);
-        first = FALSE;
-    }
-
-    for (i = 0; i < TE_ARRAY_LEN(args) && rc == 0; i++)
-        free(*args[i]);
-
+    rc = tapi_rte_get_pci_fn_specifiers("dev_args", ta, vendor, device,
+                                        &specifiers);
     if (rc != 0)
-    {
-        ERROR("Failed to get dev args: %r", rc);
-        te_string_free(&result);
         return rc;
+
+    first = TRUE;
+    TE_VEC_FOREACH(specifiers, spec)
+    {
+        char *args;
+
+        rc = cfg_get_instance_str(NULL, &args, *spec);
+        if (rc != 0)
+        {
+            te_vec_deep_free(specifiers);
+            free(specifiers);
+            te_string_free(&result);
+            return rc;
+        }
+
+        if (args != NULL && args[0] != '\0')
+        {
+            rc = te_string_append(&result, "%s%s", first ? "" : ",", args);
+            first = FALSE;
+        }
+
+        free(args);
     }
 
     if (result.len == 0)
@@ -141,6 +212,9 @@ tapi_rte_get_dev_args(const char *ta, const char *vendor, const char *device,
     {
         *arg_list = result.ptr;
     }
+
+    te_vec_deep_free(specifiers);
+    free(specifiers);
 
     return 0;
 }
