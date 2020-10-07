@@ -799,6 +799,14 @@ extern int rpc_socketpair(rcf_rpc_server *rpcs,
 extern void rpc_exit(rcf_rpc_server *rpcs, int status);
 
 /**
+ * Terminate RPC server process via _exit() call.
+ *
+ * @param rpcs      RPC server handle
+ * @param status    Status code
+ */
+extern void rpc__exit(rcf_rpc_server *rpcs, int status);
+
+/**
  * Get RPC server process identification.
  *
  * @param rpcs  RPC server handle
