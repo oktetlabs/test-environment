@@ -55,10 +55,7 @@ typedef TAILQ_HEAD(te_mi_meas_impl_h, te_mi_meas_impl) te_mi_meas_impl_h;
 /** Reference to measurement. */
 typedef struct te_mi_meas_ref {
     te_mi_meas_impl *meas;  /**< Pointer to referenced measurement */
-    /*
-     * TODO: here reference to specific aggregation within
-     * measurement may be added.
-     */
+    te_mi_meas_aggr aggr;   /**< Type of a measurement aggregation */
 } te_mi_meas_ref;
 
 /** Data specific for line-graph view */
@@ -71,6 +68,11 @@ typedef struct te_mi_meas_view_line_graph {
                                separate line on the graph) */
 } te_mi_meas_view_line_graph;
 
+/** Data specific for point view */
+typedef struct te_mi_meas_view_point {
+    te_mi_meas_ref value; /**< Reference to a measurement value */
+} te_mi_meas_view_point;
+
 /** Structure describing a view (such as graph). */
 typedef struct te_mi_meas_view {
     TAILQ_ENTRY(te_mi_meas_view) next;  /**< Links for TAILQ */
@@ -81,6 +83,7 @@ typedef struct te_mi_meas_view {
 
     union {
         te_mi_meas_view_line_graph line_graph; /**< Line graph */
+        te_mi_meas_view_point point; /**< Point */
     } data; /**< Data specific to a view type */
 } te_mi_meas_view;
 
@@ -141,6 +144,9 @@ static const char *meas_aggr_names[] = {
     [TE_MI_MEAS_AGGR_STDEV] = "stdev",
     [TE_MI_MEAS_AGGR_OUT_OF_RANGE] = "out of range",
     [TE_MI_MEAS_AGGR_PERCENTILE] = "percentile",
+    [TE_MI_MEAS_AGGR_END] = NULL,
+    [TE_MI_MEAS_AGGR_SV_START] = NULL,
+    [TE_MI_MEAS_AGGR_SV_UNSPECIFIED] = "unspecified",
 };
 
 static const char *meas_type_names[] = {
@@ -157,6 +163,7 @@ static const char *meas_type_names[] = {
 /** Array for storing string representations of view types */
 static const char *meas_view_type_names[] = {
     [TE_MI_MEAS_VIEW_LINE_GRAPH] = "line-graph",
+    [TE_MI_MEAS_VIEW_POINT] = "point",
 };
 
 static const char *meas_multiplier_names[] = {
@@ -190,9 +197,22 @@ te_mi_meas_get_base_unit_str(te_mi_meas_type type, te_mi_meas_aggr aggr)
 }
 
 static te_bool
+te_mi_meas_aggr_is_specified(te_mi_meas_aggr aggr)
+{
+    return aggr > TE_MI_MEAS_AGGR_START && aggr < TE_MI_MEAS_AGGR_END;
+}
+
+static te_bool
+te_mi_meas_aggr_is_special_value(te_mi_meas_aggr aggr)
+{
+    return aggr > TE_MI_MEAS_AGGR_SV_START && aggr < TE_MI_MEAS_AGGR_SV_END;
+}
+
+static te_bool
 te_mi_meas_aggr_valid(te_mi_meas_aggr aggr)
 {
-    return aggr >= 0 && aggr < TE_MI_MEAS_AGGR_END;
+    return te_mi_meas_aggr_is_specified(aggr)
+           || te_mi_meas_aggr_is_special_value(aggr);
 }
 
 static te_bool
@@ -432,6 +452,12 @@ te_mi_meas_ref_str_append(const te_mi_meas_ref *ref,
                               ref->meas->name);
     }
 
+    if (rc == 0 && te_mi_meas_aggr_is_specified(ref->aggr))
+    {
+        rc = te_string_append(str, ",\"aggr\":"TE_MI_STR_FMT,
+                              te_mi_meas_aggr2str(ref->aggr));
+    }
+
     if (rc == 0)
         rc = te_string_append(str, "},");
 
@@ -487,6 +513,26 @@ te_mi_meas_view_line_graph_str_append(const te_mi_meas_view *view,
 }
 
 static te_errno
+te_mi_meas_view_point_str_append(const te_mi_meas_view *view,
+                                 te_string *str)
+{
+    te_errno rc;
+
+    rc = te_string_append(str, "\"value\":");
+    if (rc != 0)
+        return rc;
+
+    rc = te_mi_meas_ref_str_append(&view->data.point.value, str);
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to append fields specific to point view: %s",
+              __FUNCTION__, te_rc_err2str(rc));
+    }
+
+    return rc;
+}
+
+static te_errno
 te_mi_meas_view_str_append(const te_mi_meas_view *view, te_string *str)
 {
     const char *type_str = te_mi_meas_view_type2str(view->type);
@@ -503,6 +549,10 @@ te_mi_meas_view_str_append(const te_mi_meas_view *view, te_string *str)
         {
             case TE_MI_MEAS_VIEW_LINE_GRAPH:
                 rc = te_mi_meas_view_line_graph_str_append(view, str);
+                break;
+
+            case TE_MI_MEAS_VIEW_POINT:
+                rc = te_mi_meas_view_point_str_append(view, str);
                 break;
 
             default:
@@ -682,6 +732,95 @@ te_mi_meas_impl_find_ext(te_mi_meas_impl_h *meas_q, te_mi_meas_type type,
                   "type '%s'", __FUNCTION__, name, te_mi_meas_type2str(type));
             return NULL;
        }
+    }
+
+    return result;
+}
+
+static te_mi_meas_value *
+te_mi_meas_value_find_aggr_spec(te_mi_meas_value_h *values,
+                                te_mi_meas_aggr aggr, unsigned int *count)
+{
+    te_mi_meas_value *v;
+    te_mi_meas_value *result;
+
+    TAILQ_FOREACH(v, values, next)
+    {
+        if (v->aggr == aggr)
+        {
+            result = v;
+            (*count)++;
+        }
+    }
+
+    return result;
+}
+
+static te_mi_meas_value *
+te_mi_meas_value_find_aggr_unspec(te_mi_meas_value_h *values,
+                                  unsigned int *count)
+{
+    te_mi_meas_value *v;
+    te_mi_meas_value *result;
+
+    TAILQ_FOREACH(v, values, next)
+    {
+        (*count)++;
+    }
+
+    result = TAILQ_LAST(values, te_mi_meas_impl_h);
+    return result;
+}
+
+/* Find te_mi_meas_value. If the quantity is not equal to 1 - print an error */
+static te_mi_meas_value *
+te_mi_meas_value_find_uniq(te_mi_meas_value_h *values, te_mi_meas_type type,
+                           const char *name, te_mi_meas_aggr aggr)
+{
+    unsigned int count = 0;
+    te_mi_meas_value *result;
+
+    if (!te_mi_meas_aggr_valid(aggr))
+    {
+        ERROR("%s(): invalid aggregation type: aggr = %d",
+              __FUNCTION__, aggr);
+        return NULL;
+    }
+
+    if (aggr == TE_MI_MEAS_AGGR_SV_UNSPECIFIED)
+    {
+        result = te_mi_meas_value_find_aggr_unspec(values, &count);
+    }
+    else if (te_mi_meas_aggr_is_specified(aggr))
+    {
+        result = te_mi_meas_value_find_aggr_spec(values, aggr, &count);
+    }
+    else
+    {
+        ERROR("%s():  can't search for value by aggregation: "
+              "aggr = %s", __FUNCTION__, te_mi_meas_aggr2str(aggr));
+        return NULL;
+    }
+
+    if (count == 0)
+    {
+        ERROR("%s(): failed to find an aggregation '%s' for a measurement "
+              "with type %s and name '%s'", __FUNCTION__,
+              te_mi_meas_aggr2str(aggr),
+              (type == TE_MI_MEAS_END ? "(null)" :
+                                      te_mi_meas_type2str(type)),
+              (name == NULL ? "(null)" : name));
+        return NULL;
+    }
+    else if (count > 1)
+    {
+        ERROR("%s(): value found by aggregation '%s' for a measurement "
+              " with type %s and name %s is not unique", __FUNCTION__,
+              te_mi_meas_aggr2str(aggr),
+              (type == TE_MI_MEAS_END ? "(null)" :
+              te_mi_meas_type2str(type)),
+              (name == NULL ? "(null)" : name));
+        return NULL;
     }
 
     return result;
@@ -942,6 +1081,7 @@ meas_view_add_meas_to_axis(te_mi_meas_view *view,
             }
 
             line_graph->axis_x.meas = impl;
+            line_graph->axis_x.aggr = TE_MI_MEAS_AGGR_SV_UNSPECIFIED;
 
             break;
 
@@ -949,6 +1089,7 @@ meas_view_add_meas_to_axis(te_mi_meas_view *view,
 
             memset(&ref, 0, sizeof(ref));
             ref.meas = impl;
+            ref.aggr = TE_MI_MEAS_AGGR_SV_UNSPECIFIED;
 
             rc = TE_VEC_APPEND(&line_graph->axis_y, ref);
             if (rc != 0)
@@ -1064,6 +1205,64 @@ te_mi_meas_view_destroy(te_mi_meas_view *view)
     free(view->title);
     free(view);
 }
+
+void
+te_mi_logger_meas_point_add(te_mi_logger *logger,
+                            te_errno *retval,
+                            const char *view_name,
+                            te_mi_meas_type meas_type,
+                            const char *meas_name,
+                            te_mi_meas_aggr meas_aggr)
+{
+    te_mi_meas_view *view = NULL;
+    te_mi_meas_impl *meas = NULL;
+    te_mi_meas_value *value = NULL;
+
+    if (!te_mi_meas_aggr_valid(meas_aggr))
+    {
+        ERROR("%s(): invalid aggregation type: aggr = %d",
+              __FUNCTION__, meas_aggr);
+        te_mi_set_logger_error(logger, retval, TE_EINVAL);
+        return;
+    }
+
+    view = te_mi_meas_view_find(&logger->views, TE_MI_MEAS_VIEW_POINT,
+                                view_name);
+    if (view == NULL)
+    {
+        ERROR("%s(): failed to find measurement view with type '%s' and "
+              "name '%s'", __FUNCTION__,
+              te_mi_meas_view_type2str(TE_MI_MEAS_VIEW_POINT),
+              (view_name == NULL ? "(null)" : view_name));
+        te_mi_set_logger_error(logger, retval, TE_ENOENT);
+        return;
+    }
+
+    if (!te_mi_check_meas_type_name(meas_type, meas_name))
+    {
+        te_mi_set_logger_error(logger, retval, TE_EINVAL);
+        return;
+    }
+
+    meas = te_mi_meas_impl_find_ext(&logger->meas_q, meas_type, meas_name);
+    if (meas == NULL)
+    {
+        te_mi_set_logger_error(logger, retval, TE_EINVAL);
+        return;
+    }
+
+    value = te_mi_meas_value_find_uniq(&meas->values, meas_type,
+                                       meas_name, meas_aggr);
+    if (value == NULL)
+    {
+        te_mi_set_logger_error(logger, retval, TE_ENOENT);
+        return;
+    }
+
+    view->data.point.value.meas = meas;
+    view->data.point.value.aggr = value->aggr;
+}
+
 
 void
 te_mi_logger_reset(te_mi_logger *logger)
@@ -1274,7 +1473,7 @@ te_mi_logger_add_meas(te_mi_logger *logger, te_errno *retval,
         goto out;
     }
 
-    if (!te_mi_meas_aggr_valid(aggr))
+    if (!te_mi_meas_aggr_is_specified(aggr))
     {
         ERROR("Invalid measurement aggregation");
         rc = TE_EINVAL;

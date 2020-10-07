@@ -183,8 +183,10 @@ extern void te_mi_logger_destroy(te_mi_logger *logger);
  * First enum element must have value @c 0.
  */
 typedef enum te_mi_meas_aggr {
+    /** Start of the specified values */
+    TE_MI_MEAS_AGGR_START = 0,
     /** Single measurement */
-    TE_MI_MEAS_AGGR_SINGLE = 0,
+    TE_MI_MEAS_AGGR_SINGLE,
     /** Measurement with the minimal value */
     TE_MI_MEAS_AGGR_MIN,
     /** Measurement with the maximum value */
@@ -214,6 +216,15 @@ typedef enum te_mi_meas_aggr {
 
     /** One past last valid measurement aggregation type */
     TE_MI_MEAS_AGGR_END,
+
+    /* Special values for aggregation enumeration. */
+
+    /** The start of the special values */
+    TE_MI_MEAS_AGGR_SV_START,
+    /** Unspecified value. */
+    TE_MI_MEAS_AGGR_SV_UNSPECIFIED,
+    /** The end of the special values */
+    TE_MI_MEAS_AGGR_SV_END ,
 } te_mi_meas_aggr;
 
 /** Type of a measurement. First enum element must have value @c 0. */
@@ -409,6 +420,9 @@ extern void te_mi_logger_add_meas_key(te_mi_logger *logger, te_errno *retval,
 /** Types of MI measurement views */
 typedef enum te_mi_meas_view_type {
     TE_MI_MEAS_VIEW_LINE_GRAPH = 0,    /**< 2D graph with lines */
+    TE_MI_MEAS_VIEW_POINT,             /**< A single "point" representing
+                                            a given MI artifact (like mean
+                                            value) */
     TE_MI_MEAS_VIEW_MAX,               /**< One past last valid type */
 } te_mi_meas_view_type;
 
@@ -524,6 +538,58 @@ static inline void te_mi_logger_meas_graph_axis_add_type(
                                      view_name, axis,
                                      meas_type, NULL);
 }
+
+/**
+ * Add a point view representing MI measurement by a single point
+ * (mean, maximum value, etc). This view can be used for performance
+ * history graphs showing such 'points' taken from multiple logs
+ * on a single graph.
+ *
+ * Example:
+ * @code
+ *
+ * te_mi_logger *logger;
+ *
+ * CHECK_RC(te_mi_logger_meas_create("mytool", &logger));
+ * te_mi_logger_add_meas(logger, NULL, TE_MI_MEAS_LATENCY, "MeasName",
+ *                       TE_MI_MEAS_AGGR_MEAN, 10,
+ *                       TE_MI_MEAS_MULTIPLIER_NANO);
+ *
+ * te_mi_logger_add_meas_view(logger, NULL, TE_MI_MEAS_VIEW_POINT, "ViewName",
+ *                            "ViewTitile");
+ * te_mi_logger_meas_point_add(logger, NULL, "ViewName", TE_MI_MEAS_LATENCY,
+ *                              "MeasName", TE_MI_MEAS_AGGR_MEAN);
+ *
+ * te_mi_logger_destroy(logger);
+ *
+ * @endcode
+ *
+ * @param logger[in]    MI logger.
+ * @param retval[out]   Return code. If @c NULL is passed, @p logger
+ *                      is not @c NULL and error occurs, error flag
+ *                      is stored in @p logger, which will fail the
+ *                      next te_mi_logger_flush().
+ * @param view_name[in] Name of the point view.
+ * @param meas_type[in] Measurement type. Using @c TE_MI_MEAS_END means
+ *                      that no type is specified; in that case measurement
+ *                      name must be unique (i.e. used only for a single
+ *                      type).
+ * @param meas_name[in] Name of the measurement. May be empty or @c NULL
+ *                      if @p meas_type is specified, in which case
+ *                      there should be the single parameter of a given
+ *                      type.
+ * @param meas_aggr[in] Type of a measurement aggregation. Using @c
+ *                      TE_MI_MEAS_AGGR_SF_UNPECIFIED means that aggr is not
+ *                      specified, in that case the measurement that is
+ *                      descibed by @p meas_name and @p meas_type must contain
+ *                      only one value.
+ */
+extern void te_mi_logger_meas_point_add(te_mi_logger *logger,
+                                        te_errno *retval,
+                                        const char *view_name,
+                                        te_mi_meas_type meas_type,
+                                        const char *meas_name,
+                                        te_mi_meas_aggr meas_aggr);
 
 /**
  * @page te_tools_te_mi_log_scenarios Usage scenarios
