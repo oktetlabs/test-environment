@@ -1865,3 +1865,64 @@ tapi_tcp_ip_eth_csap_create(const char        *ta_name,
     return TE_RC(TE_TAPI, TE_EINVAL);
 
 }
+
+/* See description in tapi_tcp.h */
+te_errno tapi_tcp_get_hdrs_payload_len(asn_value *pkt,
+                                       unsigned int *hdrs_len,
+                                       unsigned int *pld_len)
+{
+    uint32_t ip_total_len = 0;
+    uint32_t ip_hdr_len = 0;
+    uint32_t tcp_hdr_len = 0;
+    te_errno rc = 0;
+
+    rc = asn_read_uint32(pkt, &ip_total_len,
+                         "pdus.1.#ip4.total-length");
+    if (rc == 0)
+    {
+        rc = asn_read_uint32(pkt, &ip_hdr_len,
+                             "pdus.1.#ip4.h-length");
+        if (rc != 0)
+        {
+            ERROR("%s(): failed to get IP4 h-length from CSAP packet: %r",
+                  __FUNCTION__, rc);
+            return rc;
+        }
+        ip_hdr_len = ip_hdr_len * 4;
+    }
+    else
+    {
+        rc = asn_read_uint32(pkt, &ip_total_len,
+                             "pdus.1.#ip6.payload-length");
+        if (rc != 0)
+        {
+            ERROR("%s(): neither IP4 total-length nor IPv6 payload-length "
+                  "can be obtained from CSAP packet: %r", __FUNCTION__, rc);
+            return rc;
+        }
+
+        ip_hdr_len = 40;
+        ip_total_len += ip_hdr_len;
+
+        /*
+         * TODO: IPv6 extension headers are not processed here.
+         */
+    }
+
+    rc = asn_read_uint32(pkt, &tcp_hdr_len,
+                         "pdus.0.#tcp.hlen");
+    if (rc != 0)
+    {
+        ERROR("%s(): failed to get TCP hlen from CSAP packet: %r",
+              __FUNCTION__, rc);
+        return rc;
+    }
+    tcp_hdr_len = tcp_hdr_len * 4;
+
+    if (pld_len != NULL)
+        *pld_len = ip_total_len - ip_hdr_len - tcp_hdr_len;
+    if (hdrs_len != NULL)
+        *hdrs_len = ip_hdr_len + tcp_hdr_len;
+
+    return 0;
+}

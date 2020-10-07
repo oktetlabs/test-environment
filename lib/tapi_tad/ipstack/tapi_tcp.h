@@ -1356,6 +1356,28 @@ extern te_errno tapi_tcp_ip_eth_csap_create(const char        *ta_name,
                                             int                rem_port,
                                             csap_handle_t     *tcp_csap);
 
+/**
+ * Get length of TCP/IP headers and length of TCP payload from a
+ * packet captured by TCP/IP/Eth CSAP.
+ *
+ * @note This function is used because CSAP sometimes reports
+ *       extra zero bytes in payload, so payload.len may be
+ *       not reliable.
+ *
+ * @note This function does not take into account IPv6 extension
+ *       headers and will probably work incorrectly in their
+ *       presence.
+ *
+ * @param pkt       Packet captured by CSAP.
+ * @param hrds_len  Where to save headers length (may be @c NULL).
+ * @param pld_len   Where to save payload length (may be @c NULL).
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_tcp_get_hdrs_payload_len(asn_value *pkt,
+                                              unsigned int *hdrs_len,
+                                              unsigned int *pld_len);
+
 #endif /* !__TE_TAPI_TCP_H__ */
 
 /**@} <!-- END tapi_tad_tcp --> */
