@@ -50,6 +50,7 @@
 
 /* Alien link address location in the configurator tree. */
 #define CFG_ALIEN_LINK_ADDR "/volatile:/alien_link_addr:"
+#define CFG_FAKE_LINK_ADDR "/volatile:/fake_link_addr:"
 
 /**
  * Function provided by FLEX.
@@ -1184,6 +1185,50 @@ tapi_env_get_alien_link_addr(struct sockaddr *addr)
 }
 
 /**
+ * Read fake link address value from the configurator. If it is not allocated,
+ * get alien link address and save it in the configurator.
+ *
+ * @param [out] addr  Pointer to the obtained address.
+ *
+ * @return Status code.
+ */
+static te_errno
+tapi_env_get_fake_link_addr(struct sockaddr *addr)
+{
+    uint8_t unset_link_addr[ETHER_ADDR_LEN] = {0};
+    cfg_val_type type = CVT_ADDRESS;
+    struct sockaddr *tmp;
+    te_errno rc;
+
+    rc = cfg_get_instance_fmt(&type, &tmp, CFG_FAKE_LINK_ADDR);
+    if (rc != 0)
+    {
+        ERROR("Failed to get fake link address: %r", rc);
+        return rc;
+    }
+
+    if (memcmp(unset_link_addr, tmp->sa_data, ETHER_ADDR_LEN) == 0)
+    {
+        free(tmp);
+        rc = cfg_get_instance_fmt(&type, &tmp, CFG_ALIEN_LINK_ADDR);
+        if (rc != 0)
+            return rc;
+
+        rc = cfg_set_instance_fmt(CFG_VAL(ADDRESS, tmp), CFG_FAKE_LINK_ADDR);
+        if (rc != 0)
+        {
+            free(tmp);
+            return rc;
+        }
+    }
+
+    memcpy(addr, tmp, sizeof(*addr));
+    free(tmp);
+
+    return 0;
+}
+
+/**
  * Prepare required addresses in accordance with bound network
  * configuration.
  *
@@ -1248,6 +1293,12 @@ prepare_addresses(tapi_env_addrs *addrs, cfg_nets_t *cfg_nets)
                     return rc;
                 }
                 free(str);
+            }
+            else if (env_addr->type == TAPI_ENV_ADDR_FAKE_UNICAST)
+            {
+                rc = tapi_env_get_fake_link_addr(env_addr->addr);
+                if (rc != 0)
+                    return rc;
             }
             else if (env_addr->type == TAPI_ENV_ADDR_MULTICAST)
             {

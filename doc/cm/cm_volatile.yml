@@ -28,6 +28,16 @@
           Name: empty
           Value: Link layer address
 
+    - oid: "/volatile/fake_link_addr"
+      access: read_write
+      type: address
+      volatile: true
+      d: |
+        Link layer address (IEEE 802.3 MAC address) which does not belong to any
+        testing network node. It is allocated once.
+          Name: empty
+          Value: Link layer address
+
     - oid: "/volatile/sockaddr_port"
       access: read_write
       type: integer
