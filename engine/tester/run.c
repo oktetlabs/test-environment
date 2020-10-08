@@ -3984,7 +3984,8 @@ run_repeat_end(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
             return TESTER_CFG_WALK_STOP;
         }
 
-        if ((~ctx->flags & TESTER_INLOGUE) && (~ctx->flags & TESTER_PRERUN))
+        if (!(ctx->flags &
+            (TESTER_INLOGUE | TESTER_PRERUN | TESTER_ASSEMBLE_PLAN)))
         {
             if ((ctx->flags & TESTER_RUN_WHILE_PASSED) &&
                 (ctx->current_result.status != TESTER_TEST_PASSED))
