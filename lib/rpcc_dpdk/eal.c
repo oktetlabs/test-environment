@@ -166,6 +166,45 @@ out:
 }
 
 te_errno
+tapi_rte_get_nb_required_service_cores(const char *ta, const char *vendor,
+                                       const char *device,
+                                       unsigned int *nb_cores)
+{
+    unsigned int result = 0;
+    te_vec *specifiers;
+    te_errno rc;
+    char **spec;
+
+    rc = tapi_rte_get_pci_fn_specifiers("required_service_cores", ta, vendor,
+                                        device, &specifiers);
+    if (rc != 0)
+        return rc;
+
+    TE_VEC_FOREACH(specifiers, spec)
+    {
+        cfg_val_type type = CVT_INTEGER;
+        unsigned int count;
+
+        rc = cfg_get_instance_str(&type, &count, *spec);
+        if (rc != 0)
+        {
+            te_vec_deep_free(specifiers);
+            free(specifiers);
+            return rc;
+        }
+
+        result = MAX(result, count);
+    }
+
+    te_vec_deep_free(specifiers);
+    free(specifiers);
+
+    *nb_cores = result;
+
+    return 0;
+}
+
+te_errno
 tapi_rte_get_dev_args(const char *ta, const char *vendor, const char *device,
                       char **arg_list)
 {
@@ -217,6 +256,26 @@ tapi_rte_get_dev_args(const char *ta, const char *vendor, const char *device,
     free(specifiers);
 
     return 0;
+}
+
+static te_errno
+get_service_cores_by_pci_addr(const char *ta, const char *pci_addr,
+                              unsigned int *nb_cores)
+{
+    char *vendor;
+    char *device;
+    te_errno rc;
+
+    rc = tapi_cfg_pci_get_pci_vendor_device(ta, pci_addr, &vendor, &device);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_rte_get_nb_required_service_cores(ta, vendor, device, nb_cores);
+
+    free(vendor);
+    free(device);
+
+    return rc;
 }
 
 te_errno
@@ -831,6 +890,44 @@ tapi_eal_add_vdev_args(tapi_env          *env,
 }
 
 static te_errno
+tapi_eal_vdev_slaves_service_cores(tapi_env               *env,
+                                   const tapi_env_ps_if   *ps_if,
+                                   char                   *ta,
+                                   unsigned int           *nb_cores)
+{
+    char         **slaves = NULL;
+    unsigned int   nb_slaves = 0;
+    unsigned int   result = 0;
+    te_errno       rc = 0;
+    unsigned int   i;
+
+    rc = tapi_eal_get_vdev_slaves(env, ps_if, &slaves, &nb_slaves);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; i < nb_slaves; i++)
+    {
+        unsigned int cores;
+
+        rc = get_service_cores_by_pci_addr(ta, slaves[i], &cores);
+        if (rc != 0)
+            goto out;
+
+        result = MAX(result, cores);
+    }
+
+    *nb_cores = result;
+
+out:
+    for (i = 0; i < nb_slaves; i++)
+        free(slaves[i]);
+
+    free(slaves);
+
+    return rc;
+}
+
+static te_errno
 tapi_eal_whitelist_vdev_slaves(tapi_env               *env,
                                const tapi_env_ps_if   *ps_if,
                                char                   *ta,
@@ -892,6 +989,48 @@ tapi_eal_get_vdev_port_ids(rcf_rpc_server  *rpcs,
 }
 
 te_errno
+tapi_eal_get_nb_required_service_cores_rpcs(tapi_env *env, rcf_rpc_server *rpcs,
+                                            unsigned int *nb_cores)
+{
+    unsigned int service_core_count = 0;
+    const tapi_env_ps_if *ps_if;
+    const tapi_env_pco *pco;
+    te_errno rc;
+
+    pco = tapi_env_rpcs2pco(env, rpcs);
+    if (pco == NULL)
+        return TE_EINVAL;
+
+    STAILQ_FOREACH(ps_if, &pco->process->ifs, links)
+    {
+        unsigned int count;
+
+        if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_PCI_FN)
+        {
+            rc = get_service_cores_by_pci_addr(rpcs->ta,
+                                               ps_if->iface->if_info.if_name,
+                                               &count);
+            if (rc != 0)
+                return rc;
+
+        }
+        else if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_RTE_VDEV)
+        {
+            rc = tapi_eal_vdev_slaves_service_cores(env, ps_if, rpcs->ta,
+                                                    &count);
+            if (rc != 0)
+                return rc;
+        }
+
+        service_core_count = MAX(service_core_count, count);
+    }
+
+    *nb_cores = service_core_count;
+
+    return 0;
+}
+
+te_errno
 tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
                        const char *program_name,
                        int argc, const char **argv,
@@ -908,6 +1047,9 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
     int                     mem_amount = 0;
     char                   *app_prefix = NULL;
     char                   *extra_eal_args = NULL;
+    unsigned int            service_core_count = 0;
+    unsigned int            service_core_mask = 0;
+    unsigned int            bit;
 
     if (env == NULL || rpcs == NULL)
         return TE_EINVAL;
@@ -1028,6 +1170,17 @@ tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
             append_arg(&my_argc, &my_argv, "%s", argv[i]);
         }
     }
+
+    rc = tapi_eal_get_nb_required_service_cores_rpcs(env, rpcs,
+                                                     &service_core_count);
+    if (rc != 0)
+        goto cleanup;
+
+    for (bit = 0; bit < service_core_count; bit++)
+        service_core_mask |= 1U << bit;
+
+    if (service_core_mask != 0)
+        append_arg(&my_argc, &my_argv, "-s0x%x", service_core_mask);
 
     *out_argc = my_argc;
     *out_argv = my_argv;

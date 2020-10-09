@@ -41,6 +41,19 @@
               to devices with any ID
         Value: A list of comma-separated key=value pairs
 
+    - oid: "/local/dpdk/required_service_cores"
+      access: read_create
+      type: integer
+      d: |
+        A number of required service cores specific to some to some PCI device.
+
+        Name: PCI function that requires that number of service cores.
+              Format - pci_fn:<vendor_id>:<device_id>:
+              if an ID in brackets is omitted, the number is relevant
+              to devices with any ID. When the specifier overlaps, the
+              greatest number is chosen.
+        Value: number of required service cores
+
     - oid: "/local/dpdk/extra_eal_args"
       access: read_write
       type: string

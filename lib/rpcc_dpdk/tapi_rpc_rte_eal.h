@@ -170,6 +170,35 @@ extern te_errno tapi_rte_get_dev_args(const char *ta, const char *vendor,
                                       const char *device, char **arg_list);
 
 /**
+ * Get required number of service cores for a PCI device.
+ *
+ * @param[in]  ta           Test Agent name
+ * @param[in]  vendor       PCI vendor identifier
+ * @param[in]  device       PCI device identifier
+ * @param[out] nb_cores     Required number of service cores
+ *
+ * @return Status code
+ */
+extern te_errno tapi_rte_get_nb_required_service_cores(const char *ta,
+                                                       const char *vendor,
+                                                       const char *device,
+                                                       unsigned int *nb_cores);
+
+/**
+ * Get required number of service cores for PCI devices specified in an
+ * environment for an RPC server.
+ *
+ * @param[in]  env          Test environment
+ * @param[in]  rpcs         RPC server
+ * @param[out] nb_cores     Required number of service cores
+ *
+ * @return Status code
+ */
+extern te_errno tapi_eal_get_nb_required_service_cores_rpcs(tapi_env *env,
+                                                       rcf_rpc_server *rpcs,
+                                                       unsigned int *nb_cores);
+
+/**
  * Wrapper for tapi_rte_get_dev_args() that accepts PCI address (BDF notation)
  *
  * @param[in]  ta           Test Agent name
