@@ -98,7 +98,7 @@ extern te_errno tapi_mke2fs_kill(tapi_mke2fs_app *app, int signum);
 extern te_errno tapi_mke2fs_stop(tapi_mke2fs_app *app);
 
 /**
- * Destroy ping app. The app cannot be used after calling this function.
+ * Destroy mke2fs app. The app cannot be used after calling this function.
  *
  * @param      app             mke2fs app handle.
  *
