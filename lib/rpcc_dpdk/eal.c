@@ -384,9 +384,9 @@ tapi_reuse_eal(tapi_env         *env,
         uint16_t    port_id;
         const char *net_bonding_prefix = "net_bonding";
 
-        if (ps_if->iface->rsrc_type != NET_NODE_RSRC_TYPE_PCI_FN)
+        if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_PCI_FN)
             bus_name = "pci";
-        else if (ps_if->iface->rsrc_type != NET_NODE_RSRC_TYPE_RTE_VDEV)
+        else if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_RTE_VDEV)
             bus_name = "vdev";
         else
             continue;
