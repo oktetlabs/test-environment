@@ -641,6 +641,7 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     size_t n_cpus = n_fwd_cpus + 1;
     size_t n_cpus_grabbed;
     tapi_job_factory_t *factory = NULL;
+    unsigned int service_cores_count;
     int i;
 
     if (n_fwd_cpus == 0)
@@ -649,6 +650,17 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
         rc = TE_RC(TE_TAPI, TE_EINVAL);
         goto out;
     }
+
+    rc = tapi_eal_get_nb_required_service_cores_rpcs(env, rpcs,
+                                                     &service_cores_count);
+    if (rc != 0)
+        goto out;
+
+    /*
+     * Adjust the preferred count of CPUs to grab, include required service
+     * cores count.
+     */
+    n_cpus += service_cores_count;
 
     cpu_ids = tapi_calloc(n_cpus, sizeof(*cpu_ids));
     if ((rc = tapi_dpdk_grab_cpus_nonstrict_prop(rpcs->ta, n_cpus,
