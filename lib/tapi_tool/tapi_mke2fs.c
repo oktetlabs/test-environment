@@ -16,13 +16,18 @@
 #include "tapi_job_opt.h"
 #include "te_alloc.h"
 
-#define TAPI_MKE2FS_TERM_TIMEOUT_MS 1000
+#define TAPI_MKE2FS_TERM_TIMEOUT_MS     1000
+#define TAPI_MKE2FS_RECEIVE_TIMEOUT_MS  1000
 
 struct tapi_mke2fs_app {
     /* TAPI job handle */
     tapi_job_t *job;
     /* Output channels handles */
     tapi_job_channel_t *out_chs[2];
+    /* Whether it was requested to use journal in tapi_mke2fs_opt */
+    te_bool use_journal;
+    /* Filter to check journal creation */
+    tapi_job_channel_t *journal_filter;
 };
 
 const tapi_mke2fs_opt tapi_mke2fs_default_opt = {
@@ -52,6 +57,8 @@ tapi_mke2fs_create(tapi_job_factory_t *factory, const tapi_mke2fs_opt *opt,
     if (result == NULL)
         return TE_RC(TE_TAPI, TE_ENOMEM);
 
+    result->use_journal = opt->use_journal;
+
     rc = tapi_job_opt_build_args(path, mke2fs_binds, opt, &mke2fs_args);
     if (rc != 0)
     {
@@ -67,6 +74,13 @@ tapi_mke2fs_create(tapi_job_factory_t *factory, const tapi_mke2fs_opt *opt,
                             .stdout_loc = &result->out_chs[0],
                             .stderr_loc = &result->out_chs[1],
                             .filters    = TAPI_JOB_SIMPLE_FILTERS(
+                                {
+                                    .use_stdout  = TRUE,
+                                    .readable    = TRUE,
+                                    .re          = "Creating journal .*: done",
+                                    .extract     = 0,
+                                    .filter_var  = &result->journal_filter,
+                                },
                                 {
                                     .use_stdout  = TRUE,
                                     .readable    = FALSE,
@@ -146,4 +160,22 @@ tapi_mke2fs_destroy(tapi_mke2fs_app *app)
     free(app);
 
     return rc;
+}
+
+te_errno
+tapi_mke2fs_check_journal(tapi_mke2fs_app *app)
+{
+    /* It was not requested to create FS with journal so we do not care */
+    if (!app->use_journal)
+        return 0;
+
+    if (!tapi_job_filters_have_data(TAPI_JOB_CHANNEL_SET(app->journal_filter),
+                                    TAPI_MKE2FS_RECEIVE_TIMEOUT_MS))
+    {
+        ERROR("The filesystem was created without journal even though "
+              "it was requested");
+        return TE_RC(TE_TAPI, TE_EPROTO);
+    }
+
+    return 0;
 }

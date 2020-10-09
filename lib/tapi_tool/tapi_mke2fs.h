@@ -106,6 +106,21 @@ extern te_errno tapi_mke2fs_stop(tapi_mke2fs_app *app);
  */
 extern te_errno tapi_mke2fs_destroy(tapi_mke2fs_app *app);
 
+/**
+ * Check if the filesystem was created with ext3 journal.
+ * The function should be called after tapi_mke2fs_wait().
+ *
+ * @param      app             mke2fs app handle.
+ *
+ * @return     Status code.
+ * @retval     0               tapi_mke2fs_opt::use_journal was not specified
+ *                             or it was specified and the filesystem was
+ *                             created with the journal
+ * @retval     TE_EPROTO       tapi_mke2fs_opt::use_journal was specified
+ *                             but the journal was not created.
+ */
+extern te_errno tapi_mke2fs_check_journal(tapi_mke2fs_app *app);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
