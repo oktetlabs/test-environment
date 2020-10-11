@@ -789,6 +789,19 @@ make_workspace() {
     fi
 }
 
+build_ext_process_cmd() {
+    local p="$1" ; shift
+    local ws="$1" ; shift
+    local pext="$1" ; shift
+    local exec="$1" ; shift
+
+    test "${exec:0:1}" = / -a -x "${exec}" || return 0
+
+    local remote_extbuild="${ws}/ext/${pext}/build.sh"
+    rsync_to "${p}" "${exec}" "${remote_extbuild}"
+    extbuild="${remote_extbuild} $@"
+}
+
 build_ext() {
     local p="$1"; shift
 
@@ -825,11 +838,7 @@ build_ext() {
 
         # Extention build command is a script, make remote copy and use it
         extbuild="${!pextbuild}"
-        if test -x "${extbuild}" ; then
-            local remote_extbuild="${ws}/ext/${pext}/build.sh"
-            rsync_to "$p" "${extbuild}" "${remote_extbuild}"
-            extbuild="${remote_extbuild}"
-        fi
+        build_ext_process_cmd "${p}" "${ws}" "${pext}" ${extbuild}
 
         te_check_tce "${p}" "${pext}" && enable_tce="--tce"
         ${SCRIPT_DIR}/te_build_ext --prefix="${ext_inst}" \
