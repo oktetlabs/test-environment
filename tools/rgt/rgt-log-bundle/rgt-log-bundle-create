@@ -113,7 +113,7 @@ if test $? -ne 0 ; then
     err_cleanup "pushd to /fragments/ subdir failed"
 fi
 
-tar -Ite_pixz_wrapper -cf "${bundle_path}" *
+tar -I"${bindir}/te_pixz_wrapper" -cf "${bundle_path}" *
 if test $? -ne 0 ; then
     popd >/dev/null
     err_cleanup "Failed to create raw log bundle"
