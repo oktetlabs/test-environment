@@ -345,6 +345,20 @@ extern te_errno tapi_netperf_client_wrapper_add(tapi_netperf_app_client_t *app,
                                                 tapi_job_wrapper_priority_t priority,
                                                 tapi_job_wrapper_t **wrap);
 
+/**
+ * Add a scheduling parameters to netperf
+ *
+ * @param app          netperf app handle.
+ * @param sched_param  Array of scheduling parameters. The last element must
+ *                     have the type @c TAPI_JOB_SCHED_END and data pointer to
+ *                     @c NULL.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_netperf_client_add_sched_param(
+                                 tapi_netperf_app_client_t *app,
+                                 tapi_job_sched_param *sched_param);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
