@@ -99,10 +99,6 @@ typedef struct tapi_netperf_test_opt {
  * Command line options.
  */
 typedef struct tapi_netperf_opt {
-    /** Prefix before "netperf" */
-    const char *prefix_netperf;
-    /** Prefix before "netserver" */
-    const char *prefix_netserver;
     /** Name of the test */
     tapi_netperf_test_name test_name;
     /** Netserver host */
@@ -331,6 +327,23 @@ extern te_errno tapi_netperf_destroy_server(tapi_netperf_app_server_t *app);
  * @return Status code.
  */
 extern te_errno tapi_netperf_mi_report(const tapi_netperf_report *report);
+
+/**
+ * Add a wrapper tool/script to netperf
+ *
+ * @param[in]  app      netperf app handle.
+ * @param[in]  tool     Path to the wrapper tool.
+ * @param[in]  argv     Wrapper arguments (last item should be @c NULL)
+ * @param[in]  priority Wrapper priority.
+ * @param[out] wrap     Wrapper instance handle
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_netperf_client_wrapper_add(tapi_netperf_app_client_t *app,
+                                                const char *tool,
+                                                const char **argv,
+                                                tapi_job_wrapper_priority_t priority,
+                                                tapi_job_wrapper_t **wrap);
 
 #ifdef __cplusplus
 } /* extern "C" */

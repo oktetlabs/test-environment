@@ -64,8 +64,6 @@ struct tapi_netperf_app_client_t {
 };
 
 const tapi_netperf_opt tapi_netperf_default_opt = {
-    .prefix_netperf = NULL,
-    .prefix_netserver = NULL,
     .test_name = TAPI_NETPERF_TEST_TCP_STREAM,
     .dst_host = NULL,
     .src_host = NULL,
@@ -374,12 +372,7 @@ tapi_netperf_create_client(tapi_job_factory_t *factory,
     tapi_netperf_app_client_t *app;
     te_vec                     args = TE_VEC_INIT(char *);
     te_errno                   rc = 0;
-    const char                *path = NULL;
-
-    if (opt->prefix_netperf != NULL)
-        path = opt->prefix_netperf;
-    else
-        path = TAPI_NETPERF_PATH_NETPERF;
+    const char                *path = TAPI_NETPERF_PATH_NETPERF;
 
     app = tapi_calloc(1, sizeof(*app));
 
@@ -388,8 +381,6 @@ tapi_netperf_create_client(tapi_job_factory_t *factory,
         goto out;
 
     const tapi_job_opt_bind netperf_binds[] = TAPI_JOB_OPT_SET(
-        TAPI_JOB_OPT_DUMMY((opt->prefix_netperf != NULL)
-                                              ? TAPI_NETPERF_PATH_NETPERF : ""),
         CREATE_OPT_TEST_NAME("-t", tapi_netperf_opt, test_name),
         TAPI_JOB_OPT_SOCKADDR_PTR("-H", FALSE, tapi_netperf_opt, dst_host),
         CREATE_OPT_IPVERSION(tapi_netperf_opt, ipversion),
@@ -494,13 +485,7 @@ tapi_netperf_create_server(tapi_job_factory_t *factory,
     tapi_netperf_app_server_t *app;
     te_vec                    args = TE_VEC_INIT(char *);
     te_errno                  rc = 0;
-    const char               *path = NULL;
-
-
-    if (opt->prefix_netserver != NULL)
-        path = opt->prefix_netserver;
-    else
-        path = TAPI_NETPERF_PATH_NETSERVER;
+    const char               *path = TAPI_NETPERF_PATH_NETSERVER;
 
     app = tapi_calloc(1, sizeof(*app));
 
@@ -509,8 +494,6 @@ tapi_netperf_create_server(tapi_job_factory_t *factory,
         goto out;
 
     const tapi_job_opt_bind netserver_binds[] = TAPI_JOB_OPT_SET(
-        TAPI_JOB_OPT_DUMMY((opt->prefix_netserver != NULL)
-                                            ? TAPI_NETPERF_PATH_NETSERVER : ""),
         TAPI_JOB_OPT_SOCKADDR_PTR("-L", FALSE, tapi_netperf_opt, dst_host),
         CREATE_OPT_PORT("-p", tapi_netperf_opt, port),
         CREATE_OPT_IPVERSION(tapi_netperf_opt, ipversion),
@@ -832,4 +815,13 @@ tapi_netperf_mi_report(const tapi_netperf_report *report)
     }
     te_mi_logger_destroy(logger);
     return 0;
+}
+
+te_errno
+tapi_netperf_client_wrapper_add(tapi_netperf_app_client_t *app,
+                                const char *tool, const char **argv,
+                                tapi_job_wrapper_priority_t priority,
+                                tapi_job_wrapper_t **wrap)
+{
+    return tapi_job_wrapper_add(app->job, tool, argv, priority, wrap);
 }
