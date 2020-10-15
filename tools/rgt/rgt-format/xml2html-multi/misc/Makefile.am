@@ -14,6 +14,7 @@ dist_miscdata_DATA = right_frame.html \
                      lframe_style.css \
                      style.css \
                      log_style.css \
+                     log_filter.js \
                      ftiens4.js \
                      ua.js \
                      renderjson.js \
