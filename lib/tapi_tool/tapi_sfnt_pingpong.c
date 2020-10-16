@@ -642,3 +642,10 @@ tapi_sfnt_pp_client_wrapper_add(tapi_sfnt_pp_app_client_t *app,
 {
     return tapi_job_wrapper_add(app->job, tool, argv, priority, wrap);
 }
+
+te_errno
+tapi_sfnt_pp_client_add_sched_param(tapi_sfnt_pp_app_client_t *app,
+                                    tapi_job_sched_param *sched_param)
+{
+    return tapi_job_add_sched_param(app->job, sched_param);
+}

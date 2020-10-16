@@ -331,6 +331,20 @@ extern te_errno tapi_sfnt_pp_client_wrapper_add(
                                         tapi_job_wrapper_priority_t priority,
                                         tapi_job_wrapper_t **wrap);
 
+/**
+ * Add a scheduling parameters to sfnt-pingping client
+ *
+ * @param app          Client app handle.
+ * @param sched_param  Array of scheduling parameters. The last element must
+ *                     have the type @c TAPI_JOB_SCHED_END and data pointer to
+ *                     @c NULL.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_sfnt_pp_client_add_sched_param(
+                                tapi_sfnt_pp_app_client_t *app,
+                                tapi_job_sched_param *sched_param);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
