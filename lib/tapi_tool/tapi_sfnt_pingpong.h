@@ -52,10 +52,6 @@ typedef enum {
 typedef struct tapi_sfnt_pp_opt {
     /** Server host */
     const struct sockaddr *server;
-    /** Prefix before sfnt-pingpong client side*/
-    const char *prefix_client;
-    /** Prefix before sfnt-pingpong server side*/
-    const char *prefix_server;
     /** Transport protocol. IPPROTO_TCP or IPPROTO_UDP only. */
     uint8_t proto;
     /** IPv4 or IPv6 */
@@ -317,6 +313,23 @@ extern te_errno tapi_sfnt_pp_destroy_server(tapi_sfnt_pp_app_server_t *app);
  * @return Status code
  */
 extern te_errno tapi_sfnt_pp_mi_report(const tapi_sfnt_pp_report *report);
+
+/**
+ * Add a wrapper tool/script to sfnt-pinping client
+ *
+ * @param[in]  app      Client app handle
+ * @param[in]  tool     Path to the wrapper tool
+ * @param[in]  argv     Wrapper arguments (last item should be @c NULL)
+ * @param[in]  priority Wrapper priority
+ * @param[out] wrap     Wrapper instance handle
+ *
+ * @return Status code
+ */
+extern te_errno tapi_sfnt_pp_client_wrapper_add(
+                                        tapi_sfnt_pp_app_client_t *app,
+                                        const char *tool, const char **argv,
+                                        tapi_job_wrapper_priority_t priority,
+                                        tapi_job_wrapper_t **wrap);
 
 #ifdef __cplusplus
 } /* extern "C" */

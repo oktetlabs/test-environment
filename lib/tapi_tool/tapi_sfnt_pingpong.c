@@ -205,8 +205,6 @@ create_optional_prefix(const void *value, te_vec *args)
 
 const tapi_sfnt_pp_opt tapi_sfnt_pp_opt_default_opt = {
     .server = NULL,
-    .prefix_client = NULL,
-    .prefix_server = NULL,
     .proto = IPPROTO_UDP,
     .ipversion = AF_INET,
     .min_msg = -1,
@@ -230,10 +228,9 @@ tapi_sfnt_pp_create_client(tapi_job_factory_t *factory,
     tapi_sfnt_pp_app_client_t *client;
     te_vec                     args = TE_VEC_INIT(char *);
     te_errno                   rc = 0;
-    const char                *path = NULL;
+    const char                *path = TAPI_SFNT_PATH_SFNT_PINGPONG;
 
     const tapi_job_opt_bind client_binds[] = TAPI_JOB_OPT_SET(
-        CREATE_OPT_PREFIX(tapi_sfnt_pp_opt, prefix_client),
         CREATE_OPT_SIZES("--sizes=", tapi_sfnt_pp_opt, sizes),
         CREATE_OPT_INT("--minmsg=", TRUE, tapi_sfnt_pp_opt, min_msg),
         CREATE_OPT_INT("--maxmsg=", TRUE, tapi_sfnt_pp_opt, max_msg),
@@ -248,11 +245,6 @@ tapi_sfnt_pp_create_client(tapi_job_factory_t *factory,
         CREATE_OPT_PROTO(tapi_sfnt_pp_opt, proto),
         TAPI_JOB_OPT_SOCKADDR_PTR(NULL, FALSE, tapi_sfnt_pp_opt, server)
     );
-
-    if (opt->prefix_client != NULL)
-        path = opt->prefix_client;
-    else
-        path = TAPI_SFNT_PATH_SFNT_PINGPONG;
 
     if (opt->server == NULL)
     {
@@ -318,20 +310,11 @@ tapi_sfnt_pp_create_server(tapi_job_factory_t *factory,
     tapi_sfnt_pp_app_server_t *server;
     te_vec                     args = TE_VEC_INIT(char *);
     te_errno                   rc = 0;
-    const char                *path = NULL;
-
-    const tapi_job_opt_bind server_binds[] = TAPI_JOB_OPT_SET(
-        CREATE_OPT_PREFIX(tapi_sfnt_pp_opt, prefix_server)
-    );
-
-    if (opt->prefix_server != NULL)
-        path = opt->prefix_server;
-    else
-        path = TAPI_SFNT_PATH_SFNT_PINGPONG;
+    const char                *path = TAPI_SFNT_PATH_SFNT_PINGPONG;
 
     server = tapi_calloc(1, sizeof(*server));
 
-    rc = tapi_job_opt_build_args(path, server_binds, opt, &args);
+    rc = tapi_job_opt_build_args(path, NULL, NULL, &args);
     if (rc != 0)
         goto out;
 
@@ -649,4 +632,13 @@ tapi_sfnt_pp_mi_report(const tapi_sfnt_pp_report *report)
     te_mi_logger_add_meas_key(logger, NULL, "Size", "%d", report->size);
     te_mi_logger_destroy(logger);
     return 0;
+}
+
+te_errno
+tapi_sfnt_pp_client_wrapper_add(tapi_sfnt_pp_app_client_t *app,
+                                const char *tool, const char **argv,
+                                tapi_job_wrapper_priority_t priority,
+                                tapi_job_wrapper_t **wrap)
+{
+    return tapi_job_wrapper_add(app->job, tool, argv, priority, wrap);
 }
