@@ -935,16 +935,16 @@ build_agent_apps() {
 }
 
 build_platform() {
-    local p="$1"
-    local meson_nv_args="TE_BS_MESON_${p}_NV_ARGS"
-    local meson_args="TE_BS_MESON_${p}_ARGS"
+    local p="$1" ; shift
+    local meson_nv_args="$1" ; shift
+    local meson_args="$1" ; shift
     local result=0
     local ws
     local remote_build=false
     local destdir
 
-    echo "${!meson_nv_args}" >meson.nv_args.new
-    echo "${!meson_args}" >meson.args.new
+    echo "${meson_nv_args}" >meson.nv_args.new
+    echo "${meson_args}" >meson.args.new
 
     if diff -q meson.nv_args meson.nv_args.new 2>/dev/null ; then
         rm meson.nv_args.new
@@ -974,15 +974,15 @@ build_platform() {
         te_eval_or_ssh "${p}" \
             "cd \"${ws}\" || exit $? ;
              ${build_m32} && source ${ws}/src/engine/builder/te_meson_m32_exports ;
-             meson ${!meson_nv_args} ${!meson_args} -Dworkspace=${ws} src build"
-        echo "${!meson_nv_args}" >meson.nv_args
-        echo "${!meson_args}" >meson.args
+             meson ${meson_nv_args} ${meson_args} -Dworkspace=${ws} src build"
+        echo "${meson_nv_args}" >meson.nv_args
+        echo "${meson_args}" >meson.args
     elif ! diff -q meson.args meson.args.new 2>/dev/null ; then
         te_eval_or_ssh "${p}" \
             "cd \"${ws}\"/build || exit $? ;
              ${build_m32} && source ${ws}/src/engine/builder/te_meson_m32_exports ;
-             meson configure ${!meson_args}"
-        echo "${!meson_args}" >meson.args
+             meson configure ${meson_args}"
+        echo "${meson_args}" >meson.args
     fi
 
     ${remote_build} && destdir="DESTDIR=\"${ws}/destdir\""
@@ -1048,10 +1048,14 @@ do_build() {
                     || error "Platform ${p} cross build using autotools failed"
                 ;;
             ""|meson)
+                local pmeson_nv_args="TE_BS_MESON_${p}_NV_ARGS"
+                local pmeson_args="TE_BS_MESON_${p}_ARGS"
+
                 mkdir -p platforms/"${p}" "${TE_INSTALL}/${p}"
                 pushd platforms/"${p}"
 
                 build_platform "${p}" \
+                    "${!pmeson_nv_args}" "${!pmeson_args}" \
                     || error "Platform ${p} build failed"
                 popd
                 ;;
