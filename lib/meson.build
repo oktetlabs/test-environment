@@ -72,6 +72,7 @@ te_engine_libs = [
     'tapi_dpdk',
     'tapi_gtest',
     'tapi_upnp',
+    'tapi_media',
 ]
 
 # Test Agent libraries
