@@ -18,5 +18,8 @@ te_libs += [
     'rpcserver',
 ]
 deps += [
+    dependency('gobject-2.0'),
+    dependency('gssdp-1.0'),
     dependency('gupnp-1.0'),
+    dependency('jansson'),
 ]
