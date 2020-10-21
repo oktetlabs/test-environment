@@ -87,6 +87,15 @@ extern void tapi_rte_flow_add_ndn_action_decap(asn_value *ndn_actions,
                                                tarpc_rte_eth_tunnel_type type);
 
 /**
+ * Add a pop VLAN action to an action list at specified index.
+ *
+ * @param[inout]  ndn_actions       Action list
+ * @param[in]     action_index      Index at which the action is put to list
+ */
+extern void tapi_rte_flow_add_ndn_action_of_pop_vlan(asn_value *ndn_actions,
+                                                     int action_index);
+
+/**
  * Add a push vlan action to an action list at specified index.
  *
  * @param[inout]  ndn_actions       Action list

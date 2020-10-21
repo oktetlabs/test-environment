@@ -57,6 +57,7 @@ asn_enum_entry_t _ndn_rte_flow_action_type_enum_entries[] = {
     {"count", NDN_FLOW_ACTION_TYPE_COUNT},
     {"vxlan-encap", NDN_FLOW_ACTION_TYPE_VXLAN_ENCAP},
     {"vxlan-decap", NDN_FLOW_ACTION_TYPE_VXLAN_DECAP},
+    {"of-pop-vlan", NDN_FLOW_ACTION_TYPE_OF_POP_VLAN},
     {"of-push-vlan", NDN_FLOW_ACTION_TYPE_OF_PUSH_VLAN},
     {"of-set-vlan-vid", NDN_FLOW_ACTION_TYPE_OF_SET_VLAN_VID},
     {"port-id", NDN_FLOW_ACTION_TYPE_PORT_ID},

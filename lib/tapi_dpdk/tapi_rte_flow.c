@@ -104,6 +104,18 @@ tapi_rte_flow_add_ndn_action_decap(asn_value *ndn_actions,
 }
 
 void
+tapi_rte_flow_add_ndn_action_of_pop_vlan(asn_value *ndn_actions,
+                                         int action_index)
+{
+    asn_value *action;
+
+    CHECK_NOT_NULL(action = asn_init_value(ndn_rte_flow_action));
+    CHECK_RC(asn_write_int32(action, NDN_FLOW_ACTION_TYPE_OF_POP_VLAN, "type"));
+
+    CHECK_RC(asn_insert_indexed(ndn_actions, action, action_index, ""));
+}
+
+void
 tapi_rte_flow_add_ndn_action_of_push_vlan(asn_value *ndn_actions,
                                           int action_index, uint16_t ethertype)
 {
