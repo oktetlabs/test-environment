@@ -212,6 +212,7 @@ if unix_daemons.length() != 0
         sources += files('daemons/radvd/radvd.c')
     endif
     if unix_daemons.contains('openvpn')
+        deps += dependency('openssl')
         c_args += [ '-DWITH_OPENVPN' ]
         sources += files('daemons/openvpn/openvpn.c')
     endif
