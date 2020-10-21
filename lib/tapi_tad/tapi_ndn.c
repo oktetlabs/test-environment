@@ -1741,6 +1741,98 @@ tapi_ndn_pdus_inject_vlan_tags(asn_value *pdus, const uint16_t *vlan_vid,
 }
 
 te_errno
+tapi_ndn_pdus_remove_vlan_tags(asn_value *pdus, size_t n_tags)
+{
+    asn_value *new_vlan;
+    uint16_t old_vid[2];
+    uint16_t old_pri[2];
+    uint16_t old_cfi[2];
+    size_t n_old_tags;
+    asn_value *eth;
+    te_errno rc;
+    int n_pdus;
+
+    if (n_tags > 2)
+    {
+        ERROR("Failed to remove more than 2 VLAN tags");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (n_tags == 0)
+        return 0;
+
+    n_pdus = asn_get_length(pdus, "");
+    if (n_pdus < 1)
+    {
+        ERROR("Failed to get PDU sequence length");
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = asn_get_indexed(pdus, &eth, n_pdus - 1, "");
+    if (rc != 0)
+    {
+        ERROR("Failed to get eth PDU");
+        return rc;
+    }
+
+    n_old_tags = TE_ARRAY_LEN(old_vid);
+    rc = tapi_ndn_eth_read_vlan_tci(eth, &n_old_tags, old_vid, old_pri, old_cfi);
+    if (rc == 0)
+    {
+        if (n_tags > n_old_tags)
+        {
+            ERROR("Failed to remove %lu VLAN tags from %lu-tagged PDU sequence",
+                  n_tags, n_old_tags);
+            return TE_RC(TE_TAPI, TE_EINVAL);
+        }
+    }
+    else if (rc != 0)
+        return rc;
+
+    new_vlan = asn_init_value(ndn_vlan_tagged);
+    if (new_vlan == NULL)
+        return TE_RC(TE_TAPI, TE_ENOMEM);
+
+    rc = 0;
+    if (n_old_tags - n_tags == 1)
+    {
+        unsigned int i;
+        struct val_label {
+            uint16_t val;
+            const char *label;
+        } map[] = {
+            { old_vid[0], "#tagged.vlan-id.#plain" },
+            { old_pri[0], "#tagged.priority.#plain" },
+            { old_cfi[0], "#tagged.cfi.#plain" }};
+
+        for (i = 0; i < TE_ARRAY_LEN(map); i++)
+        {
+            if (rc == 0 && map[i].val != UINT16_MAX)
+            {
+                rc = asn_write_value_field(new_vlan, &map[i].val,
+                                           sizeof(map[i].val), map[i].label);
+            }
+        }
+
+        if (rc == 0)
+            rc = asn_put_descendent(eth, new_vlan, "#eth.tagged");
+    }
+    else
+    {
+        rc = asn_free_subvalue(eth, "#eth.tagged");
+    }
+
+    if (rc != 0)
+    {
+        ERROR("Failed to modify PDU sequence");
+        asn_free_value(new_vlan);
+        return rc;
+    }
+
+    return 0;
+}
+
+te_errno
 tapi_ndn_eth_read_vlan_tci(const asn_value *eth, size_t *n_tags,
                            uint16_t *vid, uint16_t *prio, uint16_t *cfi)
 {

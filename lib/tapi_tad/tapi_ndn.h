@@ -454,6 +454,20 @@ extern te_errno tapi_ndn_pdus_inject_vlan_tags(asn_value *pdus,
                                                size_t n_tags);
 
 /**
+ * Remove VLAN tags from outer Ethernet PDU in a PDU sequence.
+ *
+ * @param[inout]  pdus          PDU sequence
+ * @param[in]     n_tags        Number of tags to remove
+ *
+ * @note    The API works only with exactly specified or not set
+ *          VLAN headers. Ranged fields are not supported.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_ndn_pdus_remove_vlan_tags(asn_value *pdus,
+                                               size_t n_tags);
+
+/**
  * Read TCI value of VLAN tags of a Ethernet PDU.
  *
  * @param[in]     eth           ASN.1 value of ethernet PDU
