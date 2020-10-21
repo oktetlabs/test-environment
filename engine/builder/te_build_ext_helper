@@ -121,6 +121,6 @@ for pext in ${!pexts}; do
                  --expheaders="${!pextinsth}" \
                  --explibs="${!pextinstl}" \
                  --expbin="${!pextinstb}" \
-                 --tatype="${PACKAGE}" \
+                 --tatypes="${PACKAGE}" \
                  --envvars="${!pextenv}" $enable_tce || exit 1
 done
