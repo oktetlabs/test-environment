@@ -13,16 +13,25 @@ dpdk_get_libs() {
     local arg
     local whole_libs=""
     local extra_args=""
+    local whole_archive=false
     local name
 
     for arg in $(pkg-config --static --libs libdpdk); do
         case "${arg}" in
+            -Wl,--whole-archive)
+                whole_archive=true
+                ;;
+            -Wl,--no-whole-archive)
+                whole_archive=false
+                ;;
             -l:lib*.a)
                 name=${arg#-l:lib}
                 name=${name%.a}
                 whole_libs+="${whole_libs:+,}${name}"
                 ;;
             -lrte_*)
+                # DPDK before 20.x use simple form of libs specification
+                ${whole_archive} && whole_libs+="${whole_libs:+,}${arg#-l}"
                 # Ignore DPDK libs since already listed in static
                 ;;
             -l*)
