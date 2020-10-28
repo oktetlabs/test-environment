@@ -9,9 +9,13 @@
 
 # Helper function to split ninja output into stdout and stderr
 function ninja_status_filter () {
-    local l n
+    local l n msg_install
     while read -r l; do
         n=${l#\[ninja\]}
-        test "$l" != "$n" && printf "%s\n" "$n" || printf "%s\n" "$l" >&2
+        # For unknown reason ninja does not apply NINJA_STATUS variable
+        # when installing files.
+        msg_install=${l#Installing }
+        test "$l" != "$n" -o "$l" != "$msg_install" \
+            && printf "%s\n" "$n" || printf "%s\n" "$l" >&2
     done
 }
