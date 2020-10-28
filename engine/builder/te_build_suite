@@ -65,14 +65,7 @@ fi
 
 mkdir -p ${TE_INSTALL_SUITE}
 
-# Helper function to split ninja output into stdout and stderr
-function ninja_status_filter () {
-    local l n
-    while read -r l; do
-        n=${l#\[ninja\]}
-        test "$l" != "$n" && printf "%s\n" "$n" || printf "%s\n" "$l" >&2
-    done
-}
+. ${TE_BASE}/engine/builder/te_meson_functions
 
 # Helper function to run ninja taking ninja-build vs ninja difference
 # on various distos into account and split stdout and stderr streams

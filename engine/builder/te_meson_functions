@@ -1,0 +1,17 @@
+#! /bin/bash
+#
+# Test Environment Builder
+#
+# Collection of meson-specific functions.
+#
+# Copyright (C) 2003-2020 OKTET Labs.
+#
+
+# Helper function to split ninja output into stdout and stderr
+function ninja_status_filter () {
+    local l n
+    while read -r l; do
+        n=${l#\[ninja\]}
+        test "$l" != "$n" && printf "%s\n" "$n" || printf "%s\n" "$l" >&2
+    done
+}
