@@ -768,7 +768,7 @@ te_mi_meas_value_find_aggr_unspec(te_mi_meas_value_h *values,
         (*count)++;
     }
 
-    result = TAILQ_LAST(values, te_mi_meas_impl_h);
+    result = TAILQ_LAST(values, te_mi_meas_value_h);
     return result;
 }
 
