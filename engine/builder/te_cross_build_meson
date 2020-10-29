@@ -1,0 +1,380 @@
+#!/bin/bash
+#
+# Test Environment
+#
+# Build TE using meson/ninja.
+#
+# Copyright (C) 2018 OKTET Labs. All rights reserved.
+
+set -e
+set -E
+
+SCRIPT_DIR="$(dirname "$0")"
+
+# Put initial values to control variables
+declare -a RSYNC
+RSYNC+=(rsync)
+RSYNC+=("--exclude=.git")
+RSYNC+=(-a)
+
+declare -a RSYNC_TO_ARGS
+RSYNC_TO_ARGS+=(--delete-during)
+
+error() {
+    echo ERROR: $* >&2
+    exit 1
+}
+
+# rsync_to PLATFORM SRC.. DST
+rsync_to() {
+    local p="$1"; shift
+    local src="$1"; shift
+    local dst="$1"; shift
+    local sshvar="${p}_SSH"
+    local ssh="${!sshvar}"
+
+    while test -n "$1" ; do
+        src="${src} \"${dst}\""
+        dst="$1"
+        shift
+    done
+
+    if test -n "${ssh}" ; then
+        "${RSYNC[@]}" "${RSYNC_TO_ARGS[@]}" -e "${ssh% *}" ${src} "${ssh##* }:${dst}"
+    else
+        "${RSYNC[@]}" "${RSYNC_TO_ARGS[@]}" ${src} "${dst}"
+    fi
+}
+
+rsync_from() {
+    local p="$1"; shift
+    local src="$1"; shift
+    local dst="$1"; shift
+    local sshvar="${p}_SSH"
+    local ssh="${!sshvar}"
+
+    if test -n "${ssh}" ; then
+        "${RSYNC[@]}" -e "${ssh% *}" "${ssh##* }:${src}" "${dst}"
+    else
+        "${RSYNC[@]}" "${src}" "${dst}"
+    fi
+}
+
+mk_platform_src() {
+    local p="$1"; shift
+    local src_ws="$1"; shift
+    local l
+
+    rsync_to "${p}" "${TE_BASE}"/ "${src_ws}"
+
+    local libs="${p}_LIBS"
+    for l in ${!libs} ; do
+        local src_var="TE_BS_LIB_${p}_${l}_SOURCES"
+        local src="${!src_var}"
+        test -z "${src}" -o "${src}" = "${TE_BASE}/lib/${l}" ||
+            rsync_to "${p}" "${src}"/ "${src_ws}/lib/${l}"
+    done
+}
+
+make_workspace() {
+    local p="$1"
+    local ws_file="${p}.ws"
+    local ws_base_dir="/tmp"
+
+    if [ -n "$TE_WORKSPACE_DIR" ]; then
+        te_eval_or_ssh "${p}" "test -d '${TE_WORKSPACE_DIR}'" &&
+            ws_base_dir="${TE_WORKSPACE_DIR}"
+    fi
+
+    # Workspace directory
+    if test ! -f "${ws_file}" ; then
+        local hash=$(pwd | md5sum | awk --posix '{ print $1 }')
+        local ws_dir="${ws_base_dir}/te_ws_${hash}"
+        te_eval_or_ssh "${p}" "mkdir -p ${ws_dir}"
+        echo "$ws_dir" > "$ws_file"
+    fi
+    ws="$(cat "${ws_file}")"
+    echo Platform $p workspace is $ws
+
+    te_eval_or_ssh "${p}" "mkdir -p \"${ws}\""
+
+    # Make source workspace
+    mk_platform_src "${p}" "${ws}"/src "${rsync}"
+
+    # If non-local build, sync build directory
+    if test "${ws}" != . ; then
+        if test -d build ; then
+            rsync_to "${p}" build "${ws}"
+        else
+            te_eval_or_ssh "${p}" "rm -rf \"${ws}\"/build"
+        fi
+    fi
+}
+
+build_ext_process_cmd() {
+    local p="$1" ; shift
+    local ws="$1" ; shift
+    local pext="$1" ; shift
+    local exec="$1" ; shift
+
+    test "${exec:0:1}" = / -a -x "${exec}" || return 0
+
+    local remote_extbuild="${ws}/ext/${pext}/build.sh"
+    rsync_to "${p}" "${exec}" "${remote_extbuild}"
+    extbuild="${remote_extbuild} $@"
+}
+
+build_ext() {
+    local p="$1"; shift
+
+    local pcppflags="${p}_CPPFLAGS"
+    local pcflags="${p}_CFLAGS"
+    local pldflags="${p}_LDFLAGS"
+    local pexts="TE_BS_EXT_${p}"
+    local pext
+
+    local ext_inst="${ws}/destdir${TE_INSTALL}"
+    for pext in ${!pexts}; do
+        local ws_ext_src="${ws}/ext/${pext}/src"
+        local ws_ext_builddir="${ws}/ext/${pext}/build"
+
+        local pextsrc="TE_BS_EXT_${p}_${pext}_SOURCES"
+        local pextprep="TE_BS_EXT_${p}_${pext}_PREPARE"
+        local pextbuilddir="TE_BS_EXT_${p}_${pext}_BUILDDIR"
+        local pextbuild="TE_BS_EXT_${p}_${pext}_BUILD"
+        local pextinsth="TE_BS_EXT_${p}_${pext}_INSTALL_HEADERS"
+        local pextinstl="TE_BS_EXT_${p}_${pext}_INSTALL_LIBS"
+        local pextenv="TE_BS_EXT_${p}_${pext}_ENV_VARS"
+        local enable_tce=""
+        local extbuild
+
+        te_eval_or_ssh "$p" "mkdir -p $ws_ext_src $ws_ext_builddir"
+        rsync_to "$p" "${!pextsrc}/" "$ws_ext_src"
+
+        local local_ext_builddir="ext/${pext}/build"
+        if test -d "${local_ext_builddir}"; then
+            rsync_to "$p" "${local_ext_builddir}/" "${ws_ext_builddir}"
+        else
+            mkdir -p "${local_ext_builddir}"
+        fi
+
+        # Extention build command is a script, make remote copy and use it
+        extbuild="${!pextbuild}"
+        build_ext_process_cmd "${p}" "${ws}" "${pext}" ${extbuild}
+
+        te_check_tce "${p}" "${pext}" && enable_tce="--tce"
+        ${SCRIPT_DIR}/te_build_ext --prefix="${ext_inst}" \
+            --platform="$p" \
+            --cppflags="${!pcppflags}" \
+            --cflags="${!pcflags}" \
+            --ldflags="${!pldflags}" \
+            --srcdir="${ws_ext_src}" \
+            --prepare="${!pextprep}" \
+            --builddir="${ws_ext_builddir}" \
+            --build="${extbuild}" \
+            --expheaders="${!pextinsth}" \
+            --explibs="${!pextinstl}" \
+            --envvars="${!pextenv}" $enable_tce --build-meson || exit 1
+
+        rsync_from "$p" "${ws_ext_builddir}/" "${local_ext_builddir}"
+    done
+}
+
+build_agent_apps() {
+    local p="$1"; shift
+    local pcppflags="${p}_CPPFLAGS"
+    local pcflags="${p}_CFLAGS"
+    local pldflags="${p}_LDFLAGS"
+    local papps="TE_BS_TA_APPS_$p"
+    local app
+
+    local app_inst="${ws}/destdir${TE_INSTALL}"
+    for app in ${!papps}; do
+        local ws_app_src="${ws}/apps/${app}/src"
+        local ws_app_builddir="${ws}/apps/${app}/build"
+        local ws_platform_bin="${app_inst}/${p}/bin"
+
+        local ptatypes="TE_BS_TA_APPS_${p}_${app}_TATYPES"
+        local pappsrc="TE_BS_TA_APPS_${p}_${app}_SOURCES"
+        local pappprep="TE_BS_TA_APPS_${p}_${app}_PREPARE"
+        local pappbuilddir="TE_BS_TA_APPS_${p}_${app}_BUILDDIR"
+        local papplibs="TE_BS_TA_APPS_${p}_${app}_LIBS"
+        local pappbuild="TE_BS_TA_APPS_${p}_${app}_BUILD"
+        local pappinstbin="TE_BS_TA_APPS_${p}_${app}_INSTALL_BIN"
+        local pappenv="TE_BS_TA_APPS_${p}_${app}_ENV_VARS"
+        local enable_tce=""
+        local appbuild
+
+        local teincludes=
+        local telib
+        for telib in ${!papplibs}; do
+            local plibsrc="TE_BS_LIB_${PLATFORM}_${telib}_SOURCES"
+            local libsrc="${!plibsrc}"
+            # We assume that if a library is built several times, it may have
+            # a separate include subdirectory for each 'non-default' build
+            if test -n "$libsrc" -a "$libsrc" != "${TE_BASE}/lib/${telib}"; then
+                teincludes="${teincludes} ${telib}"
+            fi
+        done
+
+        te_eval_or_ssh "$p" "mkdir -p $ws_app_src $ws_app_builddir"
+        rsync_to "$p" "${!pappsrc}/" "$ws_app_src"
+
+        local local_app_builddir="apps/${app}/build"
+        if test -d "${local_app_builddir}"; then
+            rsync_to "$p" "${local_app_builddir}/" "${ws_app_builddir}"
+        else
+            mkdir -p "${local_app_builddir}"
+        fi
+
+        # Extention build command is a script, make remote copy and use it
+        appbuild="${!pappbuild}"
+        if test -x "${appbuild}" ; then
+            local remote_appbuild="${ws}/apps/${app}/build.sh"
+            rsync_to "$p" "${appbuild}" "${remote_appbuild}"
+            appbuild="${remote_appbuild}"
+        fi
+
+        te_check_tce "${p}" "${app}" && enable_tce="--tce"
+        ${SCRIPT_DIR}/te_build_ext --prefix="${app_inst}" \
+            --tatypes="${!ptatypes}" \
+            --platform="$p" \
+            --cppflags="${!pcppflags}" \
+            --cflags="${!pcflags}" \
+            --ldflags="${!pldflags}" \
+            --srcdir="${ws_app_src}" \
+            --prepare="${!pappprep}" \
+            --builddir="${ws_app_builddir}" \
+            --telibs="${!papplibs}" \
+            --includes="${teincludes}" \
+            --build="${appbuild}" \
+            --expbin="${!pappinstbin}" \
+            --envvars="${!pappenv}" \
+            --bin="${ws_platform_bin}" $enable_tce --build-meson || exit 1
+
+        rsync_from "$p" "${ws_app_builddir}/" "${local_app_builddir}"
+    done
+}
+
+build_platform() {
+    local p="$1" ; shift
+    local meson_nv_args="$1" ; shift
+    local meson_args="$1" ; shift
+    local result=0
+    local ws
+    local remote_build=false
+    local destdir
+    local te_agents="${TE_INSTALL}"/agents
+
+    echo "${meson_nv_args}" >meson.nv_args.new
+    echo "${meson_args}" >meson.args.new
+
+    if diff -q meson.nv_args meson.nv_args.new 2>/dev/null ; then
+        rm meson.nv_args.new
+    else
+        rm -rf build meson.nv_args meson.args
+    fi
+
+    make_workspace "${p}"
+
+    test "${ws}" = . || remote_build=true
+
+    build_ext "${p}"
+
+    # handle m32 option
+    local build_m32=false
+    local suffix
+    for suffix in CPPFLAGS_VAR CFLAGS_VAR CPPFLAGS CFLAGS ; do
+        local var=${p}_${suffix}
+        local value=${!var}
+
+        test "${value/-m32/}" = "${value}" && continue
+        build_m32=true
+        break
+    done
+
+    if test ! -d build ; then
+        te_eval_or_ssh "${p}" \
+            "cd \"${ws}\" || exit $? ;
+             ${build_m32} && source ${ws}/src/engine/builder/te_meson_m32_exports ;
+             meson ${meson_nv_args} ${meson_args} -Dworkspace=${ws} src build"
+        echo "${meson_nv_args}" >meson.nv_args
+        echo "${meson_args}" >meson.args
+    elif ! diff -q meson.args meson.args.new 2>/dev/null ; then
+        te_eval_or_ssh "${p}" \
+            "cd \"${ws}\"/build || exit $? ;
+             ${build_m32} && source ${ws}/src/engine/builder/te_meson_m32_exports ;
+             meson configure ${meson_args}"
+        echo "${meson_args}" >meson.args
+    fi
+
+    ${remote_build} && destdir="DESTDIR=\"${ws}/destdir\""
+
+    if test "${p}" != "${TE_HOST}" -a -n \
+        "${TE_RCF_CONSISTENCY_CHECKS_EXT_FILES}" ; then
+        te_eval_or_ssh "${p}" \
+            "${ws}/src/engine/builder/te_rcf_consistency_checks \
+                --extfiles-del \"${ws}/build/\" ;
+            echo \"${TE_RCF_CONSISTENCY_CHECKS_EXT_FILES}\" | sed \"s/ /\n/g\" |
+                ${ws}/src/engine/builder/te_rcf_consistency_checks \
+                    --extfiles-add \"${ws}/build/\""
+    fi
+
+    te_eval_or_ssh "${p}" \
+        "which ninja >/dev/null 2>&1 && NINJA=ninja || NINJA=ninja-build ;
+         TE_BASE=\"${ws}\"/src ${destdir} \$NINJA -C \"${ws}\"/build install" ||
+        result=$?
+
+    if test ${result} -eq 0 ; then
+        build_agent_apps "${p}" || result=$?
+    fi
+
+    if ${remote_build} ; then
+        rsync_from "${p}" "${ws}"/build . ||
+            error "Sync build from remote failed"
+
+        if test "${result}" -eq 0 ; then
+            # Get installed platform data
+            te_eval_or_ssh "${p}" \
+                "test ! -d \"${ws}/destdir/${TE_INSTALL}/${p}\"" ||
+            rsync_from "${p}" "${ws}"/destdir/"${TE_INSTALL}/${p}"/ \
+                "${TE_INSTALL}/${p}" ||
+                error "Sync install from remote failed"
+
+            # Get installed agents
+            te_eval_or_ssh "${p}" \
+                "test ! -d \"${ws}/destdir/${te_agents}\"" ||
+            rsync_from "${p}" "${ws}/destdir/${te_agents}"/ \
+                "${te_agents}" ||
+                error "Sync agents from remote failed"
+        fi
+    fi
+
+    return ${result}
+}
+
+do_build() {
+    local p="$1" ; shift
+    local meson_nv_args="$1" ; shift
+    local meson_args="$1" ; shift
+
+    . "${SCRIPT_DIR}"/te_functions
+
+    while test 1 ; do
+        . builder.conf.processed
+        break
+    done
+    if test -n "$TE_BS_CONF_ERR" ; then
+        echo $TE_BS_CONF_ERR >&2
+        exit 1
+    fi
+
+    mkdir -p platforms/"${p}" "${TE_INSTALL}/${p}"
+    pushd platforms/"${p}"
+
+    build_platform "${p}" "${meson_nv_args}" "${meson_args}" \
+        || error "Platform ${p} build failed"
+    popd
+}
+
+do_build "$@"
