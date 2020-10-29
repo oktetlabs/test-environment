@@ -694,34 +694,86 @@ process_platforms() {
     done
 }
 
+build_platform() {
+    local p="$1" ; shift
+    local build=${p}_BUILD
+
+    case "${!build}" in
+        autotools)
+            ${SCRIPT_DIR}/te_cross_build_autotools \
+                "${TE_INSTALL}" "${p}" "${BUILD_TA}" \
+                || error "Platform ${p} cross build using autotools failed"
+            ;;
+        ""|meson)
+            local pmeson_nv_args="TE_BS_MESON_${p}_NV_ARGS"
+            local pmeson_args="TE_BS_MESON_${p}_ARGS"
+
+            ${SCRIPT_DIR}/te_cross_build_meson "${p}" \
+                "${!pmeson_nv_args}" "${!pmeson_args}" \
+                || error "Platform ${p} cross build using meson failed"
+            ;;
+        *)
+            error "Unknown build system '${!build}' for platform '$p'"
+    esac
+}
+
 do_build() {
     local p
+    local pid
+    local tail_pid
+    local log_pfx="${TE_RUN_DIR}/builder.log"
+    declare -A PIDS
+    declare -A ERRORS
+
     local te_agents="${TE_INSTALL}"/agents
 
     mkdir -p "${te_agents}"
 
+    # Start building in background
     for p in ${TE_BS_PLATFORMS} ; do
-        local build=${p}_BUILD
+        local phost="${p}_HOST"
+        local host="${!phost}"
 
-        case "${!build}" in
-            autotools)
-                ${SCRIPT_DIR}/te_cross_build_autotools \
-                    "${TE_INSTALL}" "${p}" "${BUILD_TA}" \
-                    || error "Platform ${p} cross build using autotools failed"
-                ;;
-            ""|meson)
-                local pmeson_nv_args="TE_BS_MESON_${p}_NV_ARGS"
-                local pmeson_args="TE_BS_MESON_${p}_ARGS"
+        echo "Build platform ${p}${host:+ on }${host} - start" >&2
+        echo "  location of log files: ${log_pfx}.${p}.{1,2}" >&2
+        build_platform "${p}" 2>"${log_pfx}.${p}.2" 1>"${log_pfx}.${p}.1" &
 
-                ${SCRIPT_DIR}/te_cross_build_meson "${p}" \
-                    "${!pmeson_nv_args}" "${!pmeson_args}" \
-                    || error "Platform ${p} cross build using meson failed"
-                ;;
-            *)
-                error "Unknown build system '${!build}' for platform '$p'"
-        esac
-
+        PIDS[$!]="$p"
     done
+
+    # Wait for all jobs to be finished and check results
+    for pid in ${!PIDS[@]} ; do
+        p="${PIDS[$pid]}"
+
+        tail -f -c +1 --pid=${pid} "${log_pfx}.${p}.1" &
+        local pid_t1=$!
+        tail -f -c +1 --pid=${pid} "${log_pfx}.${p}.2" >&2 &
+        local pid_t2=$!
+
+        local rc=0
+        wait "$pid" || rc=$?
+
+        local rc_t1=0
+        wait "$pid_t1" || rc_t1=$?
+        local rc_t2=0
+        wait "$pid_t2" || rc_t2=$?
+
+        if test $rc -eq 0 -a $rc_t1 -eq 0 -a $rc_t2 -eq 0; then
+            echo "Platform ${p} build - pass" >&2
+        else
+            echo "Platform ${p} build - fail (${rc}, ${rc_t1}, ${rc_t2})" >&2
+            ERRORS[$p]=$rc
+        fi
+    done
+
+    if test ${#ERRORS[@]} -ne 0 ; then
+        echo "Build failed, for more details see files:"
+        for p in ${!ERRORS[@]} ; do
+            echo "  ${log_pfx}.{1,2}"
+        done
+
+        exit 1
+    fi
 }
 
 

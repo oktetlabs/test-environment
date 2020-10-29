@@ -359,6 +359,7 @@ do_build() {
     local meson_args="$1" ; shift
 
     . "${SCRIPT_DIR}"/te_functions
+    . "${SCRIPT_DIR}"/te_meson_functions
 
     while test 1 ; do
         . builder.conf.processed

@@ -918,6 +918,7 @@ export TE_BUILD
 export TE_DO_TCE
 cd "${TE_BUILD}"
 
+export TE_RUN_DIR="${TE_RUN_DIR}"
 export TE_LOG_DIR="${TE_LOG_DIR}"
 mkdir -p "${TE_LOG_DIR}"
 export TE_LOG_RAW="${TE_LOG_RAW:-${TE_LOG_DIR}/tmp_raw_log}"
