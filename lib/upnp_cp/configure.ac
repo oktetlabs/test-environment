@@ -43,7 +43,7 @@ PKG_CHECK_MODULES([GSSDP], [gssdp-1.0],
     [AC_MSG_ERROR([gssdp-1.0 not found])]
 )
 PKG_CHECK_MODULES([LIBSOUP], [libsoup-2.4],
-    [UPNP_STATIC_LIBS="${UPNP_STATIC_LIBS} -lsoup-2.4"],
+    [UPNP_DYNAMIC_LIBS="${UPNP_DYNAMIC_LIBS} -lsoup-2.4"],
     [AC_MSG_ERROR([libsoup-2.4 not found])]
 )
 
