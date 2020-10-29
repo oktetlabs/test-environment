@@ -254,21 +254,16 @@ append_testpmd_arguments_from_test_args(te_kvpair_h *test_args, int *argc_out,
 }
 
 static void
-append_corelist_eal_arg(size_t n_cores, tapi_cpu_index_t *cpu_ids,
-                        int *argc_out, char ***argv_out)
+build_coremask_eal_arg(size_t n_cores, tapi_cpu_index_t *cpu_ids,
+                       lcore_mask_t *lcore_mask)
 {
-    te_string corelist = TE_STRING_INIT;
+    lcore_mask_t result = {{0}};
     size_t i;
 
     for (i = 0; i < n_cores; i++)
-    {
-        CHECK_RC(te_string_append(&corelist, i == 0 ? "%lu" : ",%lu",
-                                  cpu_ids[i].thread_id));
-    }
+        CHECK_RC(tapi_rte_lcore_mask_set_bit(&result, cpu_ids[i].thread_id));
 
-    tapi_dpdk_append_argument("-l", argc_out, argv_out);
-    tapi_dpdk_append_argument(corelist.ptr, argc_out, argv_out);
-    te_string_free(&corelist);
+    *lcore_mask = result;
 }
 
 te_errno
@@ -280,13 +275,14 @@ tapi_dpdk_build_eal_arguments(rcf_rpc_server *rpcs,
 {
     int extra_argc = 0;
     char **extra_argv = NULL;
+    lcore_mask_t lcore_mask;
     te_errno rc;
     int i;
 
-    append_corelist_eal_arg(n_cpus, cpu_ids, &extra_argc, &extra_argv);
+    build_coremask_eal_arg(n_cpus, cpu_ids, &lcore_mask);
 
-    rc = tapi_rte_make_eal_args(env, rpcs, program_name, extra_argc,
-                                (const char **)extra_argv,
+    rc = tapi_rte_make_eal_args(env, rpcs, program_name, &lcore_mask,
+                                extra_argc, (const char **)extra_argv,
                                 argc_out, argv_out);
     if (rc != 0)
         ERROR("Failed to initialize EAL arguments for testpmd");

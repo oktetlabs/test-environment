@@ -32,6 +32,27 @@ extern "C" {
  * @{
  */
 
+/* DPDK lcore mask */
+typedef struct lcore_mask_t {
+    /* The lcore mask, with enabled cores bits set.
+     * The first element is the least signigicat byte (cores from 0 to 7).
+     * Each element specifies 8 cores, least signigicant bit specifies
+     * the core with the smallest index.
+     */
+    uint8_t bytes[32];
+} lcore_mask_t;
+
+/**
+ * Set bit in a lcore mask
+ *
+ * @param[out] mask     lcore mask
+ * @param[in]  bit      Bit number (0 is lsb)
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_rte_lcore_mask_set_bit(lcore_mask_t *mask,
+                                            unsigned int bit);
+
 /**
  * @b rte_eal_init() RPC.
  *
@@ -47,6 +68,8 @@ extern int rpc_rte_eal_init(rcf_rpc_server *rpcs,
  * @param env       Environment binding
  * @param rpcs      RPC server handle
  * @param program_name  Name of a program (@c NULL means use RPC server name)
+ * @param lcore_mask_override   Lcore mask to use (@c NULL means use the mask from
+ *                              local DPDK configurator tree)
  * @param argc      Number of additional EAL arguments
  * @param argv      Additional EAL arguments
  *
@@ -54,6 +77,7 @@ extern int rpc_rte_eal_init(rcf_rpc_server *rpcs,
  */
 extern te_errno tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
                                        const char *program_name,
+                                       const lcore_mask_t *lcore_mask_override,
                                        int argc, const char **argv,
                                        int *out_argc, char ***out_argv);
 
