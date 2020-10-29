@@ -664,7 +664,9 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
 
     cpu_ids = tapi_calloc(n_cpus, sizeof(*cpu_ids));
     if ((rc = tapi_dpdk_grab_cpus_nonstrict_prop(rpcs->ta, n_cpus,
-                                                 TESTPMD_MIN_N_CORES, prop,
+                                                 TESTPMD_MIN_N_CORES +
+                                                 service_cores_count,
+                                                 prop,
                                                  &n_cpus_grabbed, cpu_ids)) != 0)
     {
         goto out;
@@ -717,7 +719,8 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
      */
     tapi_dpdk_append_argument("--disable-device-start", &testpmd_argc, &testpmd_argv);
 
-    append_testpmd_nb_cores_arg(n_cpus_grabbed - 1, &testpmd_argc, &testpmd_argv);
+    append_testpmd_nb_cores_arg(n_cpus_grabbed - 1 - service_cores_count,
+                                &testpmd_argc, &testpmd_argv);
     tapi_dpdk_append_argument("--cmdline-file", &testpmd_argc, &testpmd_argv);
     tapi_dpdk_append_argument(cmdline_file, &testpmd_argc, &testpmd_argv);
 
