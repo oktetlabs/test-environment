@@ -19,6 +19,10 @@
 #ifndef __TE_RPC_SIGNAL_H__
 #define __TE_RPC_SIGNAL_H__
 
+#if HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+
 #include "te_rpc_defs.h"
 #include "tarpc.h"
 
@@ -26,6 +30,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* GNU libs defines a libc-protected signal via SIGRTMIN */
+#define SIG_LIBC_PROTECTED (SIGRTMIN - 1)
 
 /** TA-independent signal constants */
 typedef enum rpc_signum {
@@ -52,6 +59,7 @@ typedef enum rpc_signum {
     RPC_SIGBUS,
     RPC_SIGTRAP,
     RPC_SIGUNKNOWN,
+    RPC_SIG_LIBC_PROTECTED,
     RPC_SIG_ZERO = 0,
 } rpc_signum;
 

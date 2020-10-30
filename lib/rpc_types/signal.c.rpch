@@ -55,6 +55,7 @@ signum_rpc2str(rpc_signum s)
         RPC2STR(SIGIO);
         RPC2STR(SIGBUS);
         RPC2STR(SIGTRAP);
+        RPC2STR(SIG_LIBC_PROTECTED);
         default: return "<SIG_FATAL_ERROR>";
     }
 }
@@ -131,6 +132,9 @@ signum_rpc2h(rpc_signum s)
 #endif
 #ifdef SIGTRAP
         RPC2H(SIGTRAP);
+#endif
+#ifdef SIG_LIBC_PROTECTED
+        RPC2H(SIG_LIBC_PROTECTED);
 #endif
 #if defined(SIGUNUSED)
         default: return SIGUNUSED;
