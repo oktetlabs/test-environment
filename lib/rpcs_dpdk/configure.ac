@@ -29,6 +29,13 @@ TE_LIB_SET
 TA=unix
 AC_SUBST(TA)
 
+AC_CHECK_MEMBERS([struct rte_mbuf.seqn],
+[], [],
+[[
+#include "rte_config.h"
+#include "rte_mbuf.h"
+]])
+
 AC_COMPILE_IFELSE([
 AC_LANG_PROGRAM(
 [[

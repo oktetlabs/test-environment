@@ -2,6 +2,21 @@
 
 c_args += [ '-DALLOW_EXPERIMENTAL_API' ]
 
+# Check if specified rte_mbuf fields present
+code_prefix_mbuf = '''
+#include "rte_config.h"
+#include "rte_mbuf.h"
+'''
+mbuf_fields = [
+    'seqn',
+]
+foreach f : mbuf_fields
+    if cc.has_member('struct rte_mbuf', f, args: te_cflags,
+                     prefix: code_prefix_mbuf)
+        c_args += [ '-DHAVE_STRUCT_RTE_MBUF_' + f.to_upper().underscorify() ]
+    endif
+endforeach
+
 # Check if rte_ring_enqueue_bulk() has free space argument
 code_ring_enqueue_bulk = '''
 #include "rte_config.h"

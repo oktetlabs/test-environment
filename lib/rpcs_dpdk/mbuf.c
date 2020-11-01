@@ -1360,7 +1360,9 @@ pattern_done:
     RTE_PKTMBUF_COPY_FIELD(ol_flags);
     RTE_PKTMBUF_COPY_FIELD(vlan_tci);
     RTE_PKTMBUF_COPY_FIELD(hash);
+#ifdef HAVE_STRUCT_RTE_MBUF_SEQN
     RTE_PKTMBUF_COPY_FIELD(seqn);
+#endif
     RTE_PKTMBUF_COPY_FIELD(vlan_tci_outer);
     RTE_PKTMBUF_COPY_FIELD(timesync);
     RTE_PKTMBUF_COPY_FIELD(packet_type);
