@@ -320,10 +320,14 @@ build_platform() {
                     --extfiles-add \"${ws}/build/\""
     fi
 
-    te_eval_or_ssh "${p}" \
-        "which ninja >/dev/null 2>&1 && NINJA=ninja || NINJA=ninja-build ;
-         TE_BASE=\"${ws}\"/src ${destdir} \$NINJA -C \"${ws}\"/build install" ||
-        result=$?
+    # Run ninja in subshell to avoid pipefail option setting inheritance
+    (
+        set -o pipefail
+        te_eval_or_ssh "${p}" \
+            "which ninja >/dev/null 2>&1 && NINJA=ninja || NINJA=ninja-build ;
+            TE_BASE=\"${ws}\"/src ${destdir} NINJA_STATUS=\"[ninja][%f/%t] \"
+            \$NINJA -C \"${ws}\"/build install" | ninja_status_filter
+    ) || result=$?
 
     if test ${result} -eq 0 ; then
         build_agent_apps "${p}" || result=$?
