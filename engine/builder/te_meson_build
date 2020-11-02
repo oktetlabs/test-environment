@@ -717,6 +717,23 @@ build_platform() {
     esac
 }
 
+wait_for_log_files() {
+    local log_pfx="$1" ; shift
+    local p="$1" ; shift
+    # Maximum number of attempts to wait
+    local wait_attempts=10
+
+    while test $wait_attempts -gt 0 ; do
+        test -f "${log_pfx}.${p}.2" -a -f "${log_pfx}.${p}.1" && break
+        sleep .3
+        wait_attempts=$((wait_attempts-1))
+    done
+
+    # Return zero code anyway: if some file will not created,
+    # the command "tail ..." will throw errors about this
+    return 0
+}
+
 do_build() {
     local p
     local pid
@@ -744,6 +761,9 @@ do_build() {
     # Wait for all jobs to be finished and check results
     for pid in ${!PIDS[@]} ; do
         p="${PIDS[$pid]}"
+
+        # Make sure that log files have been created by the job
+        wait_for_log_files "$log_pfx" "$p"
 
         tail -f -c +1 --pid=${pid} "${log_pfx}.${p}.1" &
         local pid_t1=$!
