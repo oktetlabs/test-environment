@@ -72,7 +72,7 @@ static const testpmd_param default_testpmd_params[] = {
         .key = MAKE_TESTPMD_ARG("total_num_mbufs"),
         .type = TESTPMD_PARAM_TYPE_UINT64, .val = 0},
     [TESTPMD_PARAM_TXPKTS] = {
-        .key = MAKE_TESTPMD_ARG("txpkts"),
+        .key = MAKE_TESTPMD_CMD("txpkts"),
         .type = TESTPMD_PARAM_TYPE_STRING, .str_val = "64"},
     [TESTPMD_PARAM_TXQ] = { .key = MAKE_TESTPMD_ARG("txq"),
         .type = TESTPMD_PARAM_TYPE_UINT64, .val = 1},
@@ -326,6 +326,11 @@ append_testpmd_command(unsigned int port_number, te_string *setup_cmd,
 
         case TESTPMD_PARAM_START:
             CHECK_RC(te_string_append(start_cmd, "start\n"));
+            break;
+
+        case TESTPMD_PARAM_TXPKTS:
+            CHECK_RC(te_string_append(start_cmd, "set txpkts "));
+            start = TRUE;
             break;
 
         default:
