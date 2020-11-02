@@ -233,6 +233,7 @@ tapi_dpdk_stats_stab_artifact(te_mi_logger *logger,
     {
         TEST_ARTIFACT("%s%s%s %s", empty_string_if_null(prefix),
                       prefix == NULL ? "" : ": ", stab, not_reached);
+        WARN_VERDICT("Stabilization not reached");
 
         if (logger != NULL)
             te_mi_logger_add_comment(logger, NULL, stab, "%s", not_reached);
