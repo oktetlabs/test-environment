@@ -18,6 +18,10 @@
 #include "te_vector.h"
 #include "te_str.h"
 
+#if HAVE_CTYPE_H
+#include <ctype.h>
+#endif
+
 #include "log_bufs.h"
 #include "tapi_mem.h"
 #include "tapi_env.h"
@@ -262,6 +266,45 @@ tapi_rte_lcore_mask_set_bit(lcore_mask_t *mask, unsigned int bit)
     index = bit / CHAR_BIT;
 
     mask->bytes[index] |= (1U << (bit % CHAR_BIT));
+
+    return 0;
+}
+
+static uint8_t
+xdigit2val(unsigned char c)
+{
+    uint8_t val;
+
+    if (isdigit(c))
+        val = c - '0';
+    else if (isupper(c))
+        val = c - 'A' + 10;
+    else
+        val = c - 'a' + 10;
+
+    return val;
+}
+
+static te_errno
+lcore_mask_by_hex(const char *hex, lcore_mask_t *mask)
+{
+    lcore_mask_t result = {{0}};
+    int i;
+
+    for (i = 0; i < strlen(hex); i++)
+    {
+        uint8_t val = xdigit2val(hex[strlen(hex) - 1 - i]);
+
+        if (val > 0xf)
+        {
+            ERROR("Invalid lcore mask '%s'", hex);
+            return TE_EINVAL;
+        }
+
+        result.bytes[i / 2] |= val * ((i % 2) ? 0x10 : 1);
+    }
+
+    *mask = result;
 
     return 0;
 }
@@ -674,29 +717,12 @@ out:
 }
 
 static te_errno
-tapi_reuse_eal(tapi_env         *env,
-               rcf_rpc_server   *rpcs,
-               tapi_env_ps_ifs  *ifsp,
-               int               argc,
-               char             *argv[],
-               te_bool          *need_init,
-               char            **eal_args_out)
+eal_args_to_str(int argc, char *argv[], char **eal_args_out)
 {
     size_t                eal_args_len;
     char                 *eal_args = NULL;
     char                 *eal_args_pos;
-    char                 *eal_args_cfg = NULL;
-    const tapi_env_ps_if *ps_if;
-    char                 *da_alloc = NULL;
-    const char           *da_generic = NULL;
-    te_errno              rc = 0;
     unsigned int          i;
-
-    if ((argc <= 0) || (argv == NULL))
-    {
-        rc = TE_EINVAL;
-        goto out;
-    }
 
     for (i = 0, eal_args_len = 1;
          i < (unsigned int)argc;
@@ -704,10 +730,7 @@ tapi_reuse_eal(tapi_env         *env,
 
     eal_args = TE_ALLOC(eal_args_len);
     if (eal_args == NULL)
-    {
-        rc = TE_ENOMEM;
-        goto out;
-    }
+        return TE_ENOMEM;
 
     eal_args_pos = eal_args;
     for (i = 0; i < (unsigned int)argc; ++i)
@@ -721,13 +744,45 @@ tapi_reuse_eal(tapi_env         *env,
     /* Buffer is filled in with zeros anyway, but anyway */
     eal_args_pos[0] = '\0';
 
+    *eal_args_out = eal_args;
+
+    return 0;
+}
+
+static te_errno
+tapi_reuse_eal(tapi_env         *env,
+               rcf_rpc_server   *rpcs,
+               tapi_env_ps_ifs  *ifsp,
+               int               argc,
+               char             *argv[],
+               te_bool          *need_init,
+               char            **eal_args_out)
+{
+    char                 *eal_args = NULL;
+    char                 *eal_args_cfg = NULL;
+    const tapi_env_ps_if *ps_if;
+    char                 *da_alloc = NULL;
+    const char           *da_generic = NULL;
+    te_errno              rc = 0;
+    unsigned int          i;
+
+    if ((argc <= 0) || (argv == NULL))
+    {
+        rc = TE_EINVAL;
+        goto out;
+    }
+
+    rc = eal_args_to_str(argc, argv, &eal_args);
+    if (rc != 0)
+        goto out;
+
     rc = tapi_eal_rpcs_get_cached_eal_args(rpcs, &eal_args_cfg);
     if (rc != 0)
         goto out;
 
     if (strlen(eal_args_cfg) == 0 || strcmp(eal_args, eal_args_cfg) != 0)
     {
-        rc = rcf_rpc_server_restart(rpcs);
+        rc = tapi_rte_eal_fini(env, rpcs);
         if (rc == 0)
         {
             *need_init = TRUE;
@@ -1587,6 +1642,12 @@ tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
         if (rc != 0)
             goto cleanup;
     }
+    else
+    {
+        rc = eal_args_to_str(my_argc, my_argv, &eal_args_new);
+        if (rc != 0)
+            goto cleanup;
+    }
 
     if (need_init)
     {
@@ -1616,6 +1677,93 @@ cleanup:
     free(my_argv);
 
     return rc;
+}
+
+te_errno
+tapi_rte_eal_fini(tapi_env *env, rcf_rpc_server *rpcs)
+{
+    tapi_cpu_index_t *indices = NULL;
+    const char *prefix = " -c0x";
+    lcore_mask_t lcore_mask;
+    unsigned int bit;
+    char *eal_args;
+    char *coremask;
+    char *coremask_end;
+    size_t n_cpus;
+    te_errno rc;
+
+    /* For the symmetry with tapi_rte_eal_init() */
+    UNUSED(env);
+
+    rc = tapi_eal_rpcs_get_cached_eal_args(rpcs, &eal_args);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_eal_rpcs_reset_cached_eal_args(rpcs);
+    if (rc != 0)
+    {
+        free(eal_args);
+        return rc;
+    }
+
+    if (eal_args == NULL || *eal_args == '\0')
+    {
+        free(eal_args);
+        return 0;
+    }
+
+    coremask = strstr(eal_args, prefix);
+    if (coremask == NULL || strstr(coremask + 1, prefix) != NULL)
+    {
+        ERROR("Failed to parse coremask in cached EAL arguments");
+        return TE_EINVAL;
+    }
+    coremask += strlen(prefix);
+    coremask_end = strchr(coremask, ' ');
+    if (coremask_end != NULL)
+        *coremask_end = '\0';
+
+    rc = lcore_mask_by_hex(coremask, &lcore_mask);
+    free(eal_args);
+    coremask = NULL;
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_get_all_threads(rpcs->ta, &n_cpus, &indices);
+    if (rc != 0)
+        return rc;
+
+    for (bit = 0; bit < TE_ARRAY_LEN(lcore_mask.bytes) * CHAR_BIT; bit++)
+    {
+        unsigned int i;
+
+        if (!lcore_mask_bit_is_set(&lcore_mask, bit))
+            continue;
+
+        for (i = 0; i < n_cpus; i++)
+        {
+            if (indices[i].thread_id != bit)
+                continue;
+
+            rc = tapi_cfg_cpu_release_by_id(rpcs->ta, &indices[i]);
+            if (rc != 0)
+            {
+                free(indices);
+                return rc;
+            }
+            break;
+        }
+        if (i == n_cpus)
+        {
+            ERROR("Failed to get CPU from cached EAL argument coremask");
+            free(indices);
+            return rc;
+        }
+    }
+
+    free(indices);
+
+    return rcf_rpc_server_restart(rpcs);
 }
 
 static te_bool

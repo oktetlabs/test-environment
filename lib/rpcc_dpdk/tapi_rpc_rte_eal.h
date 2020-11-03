@@ -94,6 +94,19 @@ extern te_errno tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
 extern te_errno tapi_rte_eal_init(tapi_env *env, rcf_rpc_server *rpcs,
                                   int argc, const char **argv);
 
+/**
+ * Deinitialize resources allocated on tapi_rte_eal_init().
+ *
+ * @note WARNING: In order to deinitialize EAL completely, RPC
+ *                server is restarted by the function (if it is required).
+ *
+ * @param env       Environment binding
+ * @param rpcs      RPC server handle
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_rte_eal_fini(tapi_env *env, rcf_rpc_server *rpcs);
+
 
 /** Map RTE EAL process type to string. */
 extern const char *tarpc_rte_proc_type_t2str(enum tarpc_rte_proc_type_t val);
