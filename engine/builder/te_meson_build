@@ -787,9 +787,9 @@ do_build() {
     done
 
     if test ${#ERRORS[@]} -ne 0 ; then
-        echo "Build failed, for more details see files:"
+        echo "Build failed, for more details see files:" >&2
         for p in ${!ERRORS[@]} ; do
-            echo "  ${log_pfx}.{1,2}"
+            echo "  ${log_pfx}.${p}.{1,2}" >&2
         done
 
         exit 1
