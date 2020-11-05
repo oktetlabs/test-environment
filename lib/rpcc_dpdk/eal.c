@@ -16,6 +16,7 @@
 #include "te_ethernet.h"
 #include "te_alloc.h"
 #include "te_vector.h"
+#include "te_str.h"
 
 #include "log_bufs.h"
 #include "tapi_mem.h"
@@ -402,26 +403,151 @@ te_errno
 tapi_rte_eal_hotplug_add(rcf_rpc_server *rpcs, const char *busname,
                          const char *devname, const char *devargs)
 {
+    char *eal_args_old = NULL;
+    char *eal_args_new = NULL;
     te_errno rc;
+
+    if (strcmp(busname, "pci") == 0)
+    {
+        const char *old_dev;
+        char *arg;
+
+        rc = tapi_eal_rpcs_get_cached_eal_args(rpcs, &eal_args_old);
+        if (rc != 0)
+            return rc;
+
+        arg = te_string_fmt("--pci-whitelist=%s", devname);
+        if (arg == NULL)
+        {
+            free(eal_args_old);
+            return TE_ENOMEM;
+        }
+
+        old_dev = strstr(eal_args_old, arg);
+        if (old_dev != NULL)
+        {
+            const char *next_arg = strchr(old_dev, ' ');
+            int start_offset = old_dev - eal_args_old;
+            int old_dev_len = (next_arg == NULL) ? strlen(old_dev) :
+                next_arg - old_dev;
+
+            eal_args_new = te_string_fmt("%.*s%.*s%s%s%.*s",
+                         start_offset, eal_args_old,
+                         old_dev_len, old_dev,
+                         devargs == NULL ? "" : ",",
+                         te_str_empty_if_null(devargs),
+                         (int)strlen(eal_args_old) - start_offset - old_dev_len,
+                         eal_args_old + start_offset + old_dev_len);
+        }
+        else
+        {
+            eal_args_new = te_string_fmt("%s %s%s%s", eal_args_old, arg,
+                                         devargs == NULL ? "" : ",",
+                                         te_str_empty_if_null(devargs));
+        }
+        free(arg);
+        if (eal_args_new == NULL)
+        {
+            free(eal_args_old);
+            return TE_ENOMEM;
+        }
+
+        rc = tapi_eal_rpcs_set_cached_eal_args(rpcs, eal_args_new);
+        free(eal_args_new);
+        if (rc != 0)
+        {
+            free(eal_args_old);
+            return rc;
+        }
+    }
 
     rc = rpc_rte_eal_hotplug_add(rpcs, busname, devname, devargs);
     if (rc != 0)
+    {
+        if (eal_args_old != NULL)
+        {
+            (void)tapi_eal_rpcs_set_cached_eal_args(rpcs, eal_args_old);
+            free(eal_args_old);
+        }
         return rc;
+    }
 
-    return tapi_eal_rpcs_reset_cached_eal_args(rpcs);
+    free(eal_args_old);
+    return 0;
 }
 
 te_errno
 tapi_rte_eal_hotplug_remove(rcf_rpc_server *rpcs, const char *busname,
                             const char *devname)
 {
+    char *eal_args_old = NULL;
+    char *eal_args_new = NULL;
     te_errno rc;
+
+    if (strcmp(busname, "pci") == 0)
+    {
+        const char *old_dev;
+        char *arg;
+
+        rc = tapi_eal_rpcs_get_cached_eal_args(rpcs, &eal_args_old);
+        if (rc != 0)
+            return rc;
+
+        arg = te_string_fmt("--pci-whitelist=%s", devname);
+        if (arg == NULL)
+        {
+            free(eal_args_old);
+            return TE_ENOMEM;
+        }
+
+        old_dev = strstr(eal_args_old, arg);
+        if (old_dev == NULL)
+        {
+            free(eal_args_old);
+            ERROR("Failed to find device to hotplug remove in cached EAL args");
+            return TE_EINVAL;
+        }
+
+        {
+            const char *next_arg = strchr(old_dev, ' ');
+            int start_offset = old_dev - eal_args_old;
+            int old_dev_len = (next_arg == NULL) ? strlen(old_dev) :
+                next_arg - old_dev;
+
+            eal_args_new = te_string_fmt("%.*s%.*s",
+                         start_offset, eal_args_old,
+                         (int)strlen(eal_args_old) - start_offset - old_dev_len,
+                         eal_args_old + start_offset + old_dev_len);
+        }
+        free(arg);
+        if (eal_args_new == NULL)
+        {
+            free(eal_args_old);
+            return TE_ENOMEM;
+        }
+
+        rc = tapi_eal_rpcs_set_cached_eal_args(rpcs, eal_args_new);
+        free(eal_args_new);
+        if (rc != 0)
+        {
+            free(eal_args_old);
+            return rc;
+        }
+    }
 
     rc = rpc_rte_eal_hotplug_remove(rpcs, busname, devname);
     if (rc != 0)
+    {
+        if (eal_args_old != NULL)
+        {
+            (void)tapi_eal_rpcs_set_cached_eal_args(rpcs, eal_args_old);
+            free(eal_args_old);
+        }
         return rc;
+    }
 
-    return tapi_eal_rpcs_reset_cached_eal_args(rpcs);
+    free(eal_args_old);
+    return 0;
 }
 
 int
