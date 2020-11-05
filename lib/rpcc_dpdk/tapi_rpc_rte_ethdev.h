@@ -337,16 +337,6 @@ extern int rpc_rte_eth_dev_set_vlan_pvid(rcf_rpc_server *rpcs,
                                          uint16_t pvid, int on);
 
 /**
- * @b rte_eth_rx_descriptor_done() RPC
- *
- * If failure is not expected, the function jumps out in the case of
- * return value is not equal to 0 or 1.
- */
-extern int rpc_rte_eth_rx_descriptor_done(rcf_rpc_server *rpcs,
-                                          uint16_t port_id, uint16_t queue_id,
-                                          uint16_t offset);
-
-/**
  * @b rte_eth_rx_queue_count() RPC
  *
  * If failure is not expected, the function jumps out in the case of

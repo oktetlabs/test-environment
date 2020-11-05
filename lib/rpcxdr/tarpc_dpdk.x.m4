@@ -1302,10 +1302,6 @@ struct tarpc_descriptor_status_in {
     uint16_t            offset;
 };
 
-/** rte_eth_rx_descriptor_done() */
-typedef struct tarpc_descriptor_status_in tarpc_rte_eth_rx_descriptor_done_in;
-typedef struct tarpc_int_retval_out tarpc_rte_eth_rx_descriptor_done_out;
-
 /** rte_eth_rx_queue_count() */
 struct tarpc_rte_eth_rx_queue_count_in {
     struct tarpc_in_arg     common;
@@ -2058,7 +2054,6 @@ program dpdk
         RPC_DEF(rte_eth_dev_set_vlan_offload)
         RPC_DEF(rte_eth_dev_get_vlan_offload)
         RPC_DEF(rte_eth_dev_set_vlan_pvid)
-        RPC_DEF(rte_eth_rx_descriptor_done)
         RPC_DEF(rte_eth_rx_queue_count)
         RPC_DEF(rte_eth_rx_descriptor_status)
         RPC_DEF(rte_eth_tx_descriptor_status)

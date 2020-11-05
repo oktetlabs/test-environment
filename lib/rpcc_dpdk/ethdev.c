@@ -1585,34 +1585,6 @@ rpc_rte_eth_dev_set_vlan_pvid(rcf_rpc_server *rpcs, uint16_t port_id,
 }
 
 int
-rpc_rte_eth_rx_descriptor_done(rcf_rpc_server *rpcs, uint16_t port_id,
-                               uint16_t queue_id, uint16_t offset)
-{
-    tarpc_rte_eth_rx_descriptor_done_in   in;
-    tarpc_rte_eth_rx_descriptor_done_out  out;
-
-    memset(&in, 0, sizeof(in));
-    memset(&out, 0, sizeof(out));
-
-    in.port_id = port_id;
-    in.queue_id = queue_id;
-    in.offset = offset;
-
-    rcf_rpc_call(rpcs, "rte_eth_rx_descriptor_done", &in, &out);
-
-    CHECK_RETVAL_VAR_ERR_COND(rte_eth_rx_descriptor_done, out.retval,
-                              (out.retval > 1), RETVAL_ECORRUPTED,
-                              (out.retval < 0));
-
-    TAPI_RPC_LOG(rpcs, rte_eth_rx_descriptor_done,
-                 "%hu, %hu, %hu", NEG_ERRNO_FMT,
-                 in.port_id, in.queue_id, in.offset,
-                 NEG_ERRNO_ARGS(out.retval));
-
-    RETVAL_INT(rte_eth_rx_descriptor_done, out.retval);
-}
-
-int
 rpc_rte_eth_rx_queue_count(rcf_rpc_server *rpcs, uint16_t port_id,
                            uint16_t queue_id)
 {
