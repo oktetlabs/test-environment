@@ -4751,6 +4751,8 @@ struct tarpc_overfill_buffers_in {
     tarpc_int       sock;
     tarpc_bool      is_nonblocking;
     iomux_func      iomux;
+    tarpc_bool      return_data;    /**< If @c TRUE, return data sent
+                                         when overfilling buffers */
 };
 
 struct tarpc_overfill_buffers_out {
@@ -4759,6 +4761,7 @@ struct tarpc_overfill_buffers_out {
     tarpc_int   retval;     /**< 0 (success) or -1 (failure) */
 
     uint64_t    bytes;      /**< Number of sent bytes */
+    uint8_t     data<>;     /**< Sent data */
 };
 
 struct tarpc_drain_fd_in {

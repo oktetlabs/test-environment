@@ -1551,8 +1551,9 @@ rpc_ftp_close(rcf_rpc_server *rpcs, int sock)
 }
 
 int
-rpc_overfill_buffers_gen(rcf_rpc_server *rpcs, int sock, uint64_t *sent,
-                         iomux_func iomux)
+rpc_overfill_buffers_data(rcf_rpc_server *rpcs, int sock,
+                          uint64_t *sent, iomux_func iomux,
+                          uint8_t **sent_data)
 {
     tarpc_overfill_buffers_in  in;
     tarpc_overfill_buffers_out out;
@@ -1569,6 +1570,8 @@ rpc_overfill_buffers_gen(rcf_rpc_server *rpcs, int sock, uint64_t *sent,
     in.sock = sock;
     in.is_nonblocking = FALSE;
     in.iomux = iomux;
+    if (sent_data != NULL)
+        in.return_data = TRUE;
 
     if (rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
         rpcs->timeout = RCF_RPC_DEFAULT_TIMEOUT * 4;
@@ -1577,6 +1580,13 @@ rpc_overfill_buffers_gen(rcf_rpc_server *rpcs, int sock, uint64_t *sent,
 
     if ((out.retval == 0) && (sent != NULL))
         *sent = out.bytes;
+
+    if (in.return_data)
+    {
+        *sent_data = out.data.data_val;
+        out.data.data_val = NULL;
+        out.data.data_len = 0;
+    }
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(overfill_buffers, out.retval);
     TAPI_RPC_LOG(rpcs, overfill_buffers, "%d, %s", "%d sent=%lld",

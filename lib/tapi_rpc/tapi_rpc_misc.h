@@ -726,11 +726,25 @@ extern int rpc_ftp_close(rcf_rpc_server *handle, int sock);
  * @param sent          total bytes written to sending socket
  *                      while both sending and receiving side buffers
  *                      are overfilled.
+ * @param iomux         IOMUX function to use when checking for socket
+ *                      writeability.
+ * @param sent_data     If not @c NULL, pointer to sent data will be
+ *                      retrieved here (it should be freed by the caller).
  *
  * @return -1 in the case of failure or 0 on success
  */
-extern int rpc_overfill_buffers_gen(rcf_rpc_server *rpcs, int sock,
-                                    uint64_t *sent, iomux_func iomux);
+extern int rpc_overfill_buffers_data(rcf_rpc_server *rpcs, int sock,
+                                     uint64_t *sent, iomux_func iomux,
+                                     uint8_t **sent_data);
+
+static inline int
+rpc_overfill_buffers_gen(rcf_rpc_server *rpcs, int sock,
+                         uint64_t *sent, iomux_func iomux)
+{
+    return rpc_overfill_buffers_data(rpcs, sock, sent, iomux,
+                                     NULL);
+}
+
 static inline int
 rpc_overfill_buffers(rcf_rpc_server *rpcs, int sock, uint64_t *sent)
 {

@@ -8382,6 +8382,9 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
     int             unchanged = 0;
     iomux_state     iomux_st;
 
+    te_dbuf sent_data = TE_DBUF_INIT(0);
+    te_errno rc;
+
     out->bytes = 0;
 
     buf = calloc(1, max_len);
@@ -8463,6 +8466,19 @@ overfill_buffers(tarpc_overfill_buffers_in *in,
         sent = 0;
         do {
             out->bytes += sent;
+            if (in->return_data && sent > 0)
+            {
+                rc = te_dbuf_append(&sent_data, buf, sent);
+                if (rc != 0)
+                {
+                    te_rpc_error_set(TE_RC(TE_TA_UNIX, rc),
+                                     "te_dbuf_append() failed");
+                    ret = -1;
+                    goto overfill_buffers_exit;
+                }
+            }
+
+            te_fill_buf(buf, max_len);
             sent = send_func(in->sock, buf, max_len, MSG_DONTWAIT);
             if ((ret > 0) && (sent <= 0))
             {
@@ -8518,6 +8534,20 @@ overfill_buffers_exit:
     free(buf);
     if (ret == 0)
         errno = errno_save;
+
+    if (in->return_data)
+    {
+        if (ret == 0)
+        {
+            out->data.data_val = sent_data.ptr;
+            out->data.data_len = sent_data.len;
+        }
+        else
+        {
+            te_dbuf_free(&sent_data);
+        }
+    }
+
     return ret;
 }
 
