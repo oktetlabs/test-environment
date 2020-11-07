@@ -141,6 +141,11 @@ typedef struct tapi_tcp_connection_t {
     tapi_tcp_pos_t our_isn;
     size_t         last_len_sent;
 
+    te_bool got_exp_seqn; /**< Set to @c TRUE if a packet with
+                               expected SEQN was got; used by
+                               conn_wait_msg() and can be reset to
+                               @c FALSE by it */
+
     te_bool        enabled_ts;        /**< Whether TCP timestamp is
                                            enabled. */
     te_bool        dst_enabled_ts;    /**< Whether peer enabled TCP
@@ -442,8 +447,8 @@ conn_wait_packet(tapi_tcp_connection_t *conn_descr, unsigned int timeout,
 }
 
 /**
- * Wait for new message in this connection ignoring retransmits until
- * timeout is expired.
+ * Wait for new message in this connection ignoring retransmits and
+ * out-of-order packets until timeout is expired.
  *
  * @param conn_descr    pointer to TAPI connection descriptor
  * @param timeout       timeout in milliseconds
@@ -454,12 +459,9 @@ static te_errno
 conn_wait_msg(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
 {
     te_errno        rc;
-    tapi_tcp_pos_t  seq;
-    tapi_tcp_pos_t  last_len;
     unsigned int    duration;
 
-    seq = conn_descr->seq_got;
-    last_len = conn_descr->last_len_got;
+    conn_descr->got_exp_seqn = FALSE;
 
     /* Poll for packets in the loop during the @p timeout, ignore
      * retransmits. */
@@ -472,8 +474,7 @@ conn_wait_msg(tapi_tcp_connection_t *conn_descr, unsigned int timeout)
             return rc;
         }
 
-        if (conn_descr->seq_got > seq ||
-            seq + last_len == conn_descr->seq_got)
+        if (conn_descr->got_exp_seqn)
             break;
 
         if (timeout <= duration)
@@ -873,6 +874,7 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
             conn_descr->last_len_got = data_len;
 
         pkt->unexp_seqn = FALSE;
+        conn_descr->got_exp_seqn = TRUE;
     }
     else
     {
