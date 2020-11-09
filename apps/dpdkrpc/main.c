@@ -120,6 +120,8 @@ rcf_rpc_server_finalize(void)
     {
         RING("rte_eth_dev_stop(%u)", port_id);
         rte_eth_dev_stop(port_id);
+        RING("rte_eth_dev_close(%u)", port_id);
+        rte_eth_dev_close(port_id);
     }
 
     return 0;
