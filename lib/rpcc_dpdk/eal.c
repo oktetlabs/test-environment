@@ -1368,7 +1368,8 @@ build_lcore_mask_arg(int *argc, char ***argv, const lcore_mask_t *lcore_mask)
     if (hex == NULL)
         return TE_ENOMEM;
 
-    append_arg(argc, argv, "-c%s", hex);
+    append_arg(argc, argv, "-c");
+    append_arg(argc, argv, "%s", hex);
     free(hex);
 
     return 0;
@@ -1683,7 +1684,7 @@ te_errno
 tapi_rte_eal_fini(tapi_env *env, rcf_rpc_server *rpcs)
 {
     tapi_cpu_index_t *indices = NULL;
-    const char *prefix = " -c0x";
+    const char *prefix = " -c 0x";
     lcore_mask_t lcore_mask;
     unsigned int bit;
     char *eal_args;
