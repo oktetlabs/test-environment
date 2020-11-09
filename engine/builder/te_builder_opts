@@ -64,39 +64,17 @@ while test -n "$1" ; do
         --quiet=*)
             TE_BUILD_LOG=${1#--quiet=*} ; QUIET=yes ;;
 
-        --log-* )
-            OPT=${1#--log-} ; CFLAGS=-DTE_LOG_LEVEL=0xFFFF ;;
-
-        --nolog-* )
-            OPT=${1#--nolog-} ; CFLAGS=-UTE_LOG_LEVEL ;;
-
-        --path=*)
-            OPT=${1#--path=} ;;
-
         --pathlog=* )
             OPT="${1#--pathlog=}" ; CFLAGS=-DTE_LOG_LEVEL=0xFFFF ;;
 
         --pathnolog=* )
             OPT="${1#--pathnolog=}" ; CFLAGS=-UTE_LOG_LEVEL ;;
 
-        --* )
-            OPT="${1#--}" ;;
-
         *)
            echo Invalid option build option ; exit 1 ;;
     esac
 
-    case $OPT in
-        include ) build include ;;
-        builder ) build engine/builder ;;
-        rcf )     build engine/rcf ;;
-        cs )      build engine/configurator ;;
-        tester )  build engine/tester ;;
-        logger )  build engine/logger ;;
-        lib-* )   LIBNAME="${OPT#lib-}" ; build lib/${LIBNAME} ;;
-        ta-* )    TANAME="${OPT#ta-}" ; build agents/${TANAME} ;;
-        * )       build ${OPT} ;;
-    esac
+    test -z "${OPT}" || build ${OPT}
 
     shift 1
 done

@@ -102,16 +102,8 @@ Generic options:
   --build-only                  Build TE, do not run RCF and Configurator,
                                 build but do not run Test Suites
 
-  --build=path                  Build package specified in the path.
   --build-log=path              Build package with log level 0xFFFF.
   --build-nolog=path            Build package with undefined log level.
-  --build-cs                    Build Configurator.
-  --build-logger                Build Logger.
-  --build-rcf                   Build RCF.
-  --build-tester                Build Tester.
-  --build-lib-xxx               Build host library xxx.
-  --build-log-xxx               Build package with log level 0xFFFF.
-  --build-nolog-xxx             Build package with undefined log level.
   --build-parallel[=num]        Enable parallel build using num threads.
 
   --build-ta-none               Don't build Test Agents.
@@ -655,16 +647,6 @@ process_opts()
             --build-ta-all)     BUILD_TA=all ;;
             --build-ta-rm-lock) BUILD_TA_RM=yes ;;
             --build-ta-for=*)   BUILD_TA_FOR="${BUILD_TA_FOR} ${1#--build-ta-for=}" ;;
-
-            --build-*)
-                BUILDER_OPTS="${BUILDER_OPTS} --${1#--build-}"
-                BUILDER=
-                ;;
-
-            --build=*)
-                BUILDER_OPTS="${BUILDER_OPTS} --path=${1#--build=}"
-                BUILDER=
-                ;;
 
             --profile-build=*)
                 PROFILE_BUILD=te_profile_build
