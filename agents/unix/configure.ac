@@ -313,7 +313,11 @@ if test -n "$with_cfg_unix_daemons" ; then
             ;;
 
         openvpn)
-            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_OPENVPN" ;
+            DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_OPENVPN"
+            PKG_CHECK_MODULES([SSL], [openssl],
+                [LIBS="${LIBS} ${SSL_LIBS}"],
+                [AC_MSG_ERROR([openssl not found])]
+            )
             ;;
 
         pppoe)
