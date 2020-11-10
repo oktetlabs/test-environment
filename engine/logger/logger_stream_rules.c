@@ -86,6 +86,7 @@ handler_test_progress(const log_msg_view *view, refcnt_buffer *str)
     json_t       *json;
     json_t       *msg;
     json_t       *type;
+    json_t       *ts;
     json_error_t  err;
     char         *dump;
 
@@ -122,6 +123,23 @@ handler_test_progress(const log_msg_view *view, refcnt_buffer *str)
         json_decref(json);
         return TE_EFAULT;
     }
+
+    ts = json_real(view->ts_sec + view->ts_usec * 0.000001);
+    if (ts == NULL)
+    {
+        ERROR("Failed to create JSON representation for Tester:Control "
+              "message timestamp");
+        json_decref(json);
+        return TE_ENOMEM;
+    }
+    if (json_object_set_new(msg, "ts", ts) == -1)
+    {
+        ERROR("Failed to add \"ts\" property to a Tester:Control message");
+        json_decref(ts);
+        json_decref(json);
+        return TE_EFAULT;
+    }
+
     dump = json_dumps(msg, JSON_COMPACT);
     json_decref(json);
     if (dump == NULL)
