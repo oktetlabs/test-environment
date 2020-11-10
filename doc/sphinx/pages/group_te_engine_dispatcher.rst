@@ -311,6 +311,8 @@ The Dispatcher script accepts a lot of command-line options. Some of them are it
 	                            properly formatted before storing them in the raw log file.
 	logger-listener=<confstr>   Enable streaming live results to the specified listener.
 	                            Config string has the following format: <name>[:<runid>].
+	logger-meta-file=<path>     Send meta information to listeners. This option may only be
+	                            specified once.
 
 .. code-block:: none
 

@@ -11,6 +11,8 @@
 #define TE_LGR_USER "Log streaming"
 
 #include <poll.h>
+#include <limits.h>
+#include <jansson.h>
 
 #include "te_defs.h"
 #include "log_bufs.h"
@@ -21,6 +23,7 @@
 
 msg_queue  listener_queue;
 te_bool    listeners_enabled = FALSE;
+char      *metafile_path = NULL;
 
 /* See description in logger_stream.h */
 te_errno
@@ -207,12 +210,13 @@ listeners_conf_dump(void)
 static te_errno
 process_plan(log_msg_view *plan)
 {
-    size_t        i;
-    te_errno      rc;
-    te_string     plan_str = TE_STRING_INIT;
-    json_t       *metadata;
-    json_t       *plan_obj;
-    json_error_t  err;
+    size_t         i;
+    te_errno       rc;
+    te_string      plan_str = TE_STRING_INIT;
+    json_t        *metadata;
+    json_t        *meta = NULL;
+    json_t        *plan_obj;
+    json_error_t   err;
 
     rc = te_raw_log_expand(plan, &plan_str);
     if (rc != 0)
@@ -230,7 +234,33 @@ process_plan(log_msg_view *plan)
         return TE_EFAIL;
     }
 
-    metadata = json_pack("{s:o}",
+    if (metafile_path != NULL)
+    {
+        meta = json_load_file(metafile_path, 0, &err);
+        free(metafile_path);
+        metafile_path = NULL;
+        if (meta == NULL)
+        {
+            ERROR("Error parsing JSON metadata: %s (line %d, column %d)",
+                  err.text, err.line, err.column);
+            return TE_EFAIL;
+        }
+        if (!json_is_object(meta))
+        {
+            ERROR("JSON metadata must be an object");
+            json_decref(meta);
+            json_decref(plan_obj);
+            return TE_EINVAL;
+        }
+    }
+
+    /*
+     * "*" instead of "?" would be better here, but it's not supported in
+     * jansson-2.10, which is currently the newest version available on
+     * CentOS/RHEL-7.x
+     */
+    metadata = json_pack("{s:o?, s:o}",
+                         "meta_data", meta,
                          "plan", plan_obj);
     if (metadata == NULL)
     {
@@ -617,6 +647,9 @@ listeners_thread(void *arg)
         if (added_handles)
             curl_multi_socket_action(curl_mhandle, CURL_SOCKET_TIMEOUT, 0, &curl_running);
     } while (listeners_running > 0);
+
+    /* Free listener config data in case the execution plan has not been received */
+    free(metafile_path);
 
     curl_multi_cleanup(curl_mhandle);
     RING("Listener thread finished");

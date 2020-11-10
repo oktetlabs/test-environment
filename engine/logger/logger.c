@@ -92,10 +92,14 @@ static unsigned int         lgr_flags = 0;
 
 /** @name Logger command-line option flags */
 #define LOGGER_OPT_LISTENER    1    /**< Force a listener to be enabled */
+#define LOGGER_OPT_METAFILE    2    /**< Path to the meta.json file */
 /*@}*/
 
 static const char          *cfg_file = NULL;
 static struct ipc_server   *logger_ten_srv = NULL;
+
+/* Path to the metadata file for live results */
+extern char *metafile_path;
 
 /**
  * Get NFL from buffer in TE raw log format.
@@ -846,6 +850,7 @@ process_cmd_line_opts(int argc, const char **argv)
 {
     poptContext  optCon;
     int          rc;
+    char        *meta_path;
     char        *listener_conf;
 
     /* Option Table */
@@ -870,6 +875,12 @@ process_cmd_line_opts(int argc, const char **argv)
         { "listener", '\0',
           POPT_ARG_STRING, &listener_conf, LOGGER_OPT_LISTENER,
           "Enable a listener.", "confstr" },
+
+        { "meta-file", '\0',
+          POPT_ARG_STRING, &meta_path, LOGGER_OPT_METAFILE,
+          "Metadata file for live results. This option may only be specified "
+          "once.",
+          "path" },
 
         POPT_AUTOHELP
         POPT_TABLEEND
@@ -899,6 +910,16 @@ process_cmd_line_opts(int argc, const char **argv)
                 }
                 break;
             }
+            case LOGGER_OPT_METAFILE:
+                if (metafile_path != NULL)
+                {
+                    fputs("Path to metadata file has already been set", stderr);
+                    free(meta_path);
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
+                metafile_path = meta_path;
+                break;
             default:
                 fprintf(stderr, "Unexpected option number %d", rc);
                 poptFreeContext(optCon);
