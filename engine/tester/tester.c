@@ -39,6 +39,8 @@
 #error popt library (development version) is required for Tester
 #endif
 
+#include <jansson.h>
+
 #include "te_defs.h"
 #include "te_str.h"
 #include "tq_string.h"
@@ -882,6 +884,80 @@ tester_log_reqs(void)
     free(reqs_string);
 }
 
+#ifdef WITH_TRC
+/**
+ * Log TRC tags as an MI message.
+ *
+ * Tag names and values are split at the first colon, no additional checks
+ * are performed.
+ *
+ * @param trc_tags          TRC tags
+ *
+ * @returns Status code
+ */
+static te_errno
+tester_log_trc_tags(const tqh_strings *trc_tags)
+{
+    char         *text;
+    char         *delim;
+    tqe_string   *tag;
+    json_t       *tags;
+    json_t       *tmp;
+    json_error_t  err;
+
+    if (trc_tags == NULL)
+        return 0;
+
+    tags = json_array();
+    if (tags == NULL)
+    {
+        ERROR("Failed to allocate JSON array for TRC tags");
+        return TE_ENOMEM;
+    }
+    TAILQ_FOREACH(tag, trc_tags, links)
+    {
+        delim = strchr(tag->v, ':');
+        if (delim == NULL)
+        {
+            tmp = json_pack_ex(&err, 0, "{s:s}",
+                               "name", tag->v);
+        }
+        else
+        {
+            tmp = json_pack_ex(&err, 0, "{s:s#, s:s}",
+                               "name", tag->v, (int)(delim - tag->v),
+                               "value", delim + 1);
+        }
+        if (tmp == NULL)
+        {
+            ERROR("Failed to convert TRC tag into JSON object: %s", err.text);
+            json_decref(tags);
+            return TE_ENOMEM;
+        }
+        if (json_array_append_new(tags, tmp) != 0)
+        {
+            ERROR("Failed to append TRC tag to JSON array");
+            json_decref(tmp);
+            json_decref(tags);
+            return TE_ENOMEM;
+        }
+    }
+
+    text = json_dumps(tags, JSON_COMPACT);
+    json_decref(tags);
+    if (text == NULL)
+    {
+        ERROR("Failed to dump TRC tags array into a string");
+        return TE_ENOMEM;
+    }
+    LGR_MESSAGE(TE_LL_MI | TE_LL_CONTROL, TE_LOG_TRC_TAGS_USER,
+                "%s", text);
+    free(text);
+    return 0;
+}
+#endif
+
+
 /**
  * Application entry point.
  *
@@ -926,6 +1002,15 @@ main(int argc, char *argv[])
         TE_LOG_RING("Target Requirements", "%s",
                 tester_reqs_expr_to_string(tester_global_context.targets));
     }
+
+#ifdef WITH_TRC
+    if (!TAILQ_EMPTY(&tester_global_context.trc_tags))
+    {
+        rc = tester_log_trc_tags(&tester_global_context.trc_tags);
+        if (rc != 0)
+            goto exit;
+    }
+#endif
 
     /* 
      *  Start the Tester thread to handle events of the serial consoles
