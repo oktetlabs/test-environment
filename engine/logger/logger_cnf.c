@@ -1112,13 +1112,15 @@ add_rules(yaml_document_t *d, yaml_node_t *rules)
     return 0;
 }
 
-/** Curl callback that ignores the data it receives */
+/** Curl callback that saves the data it receives into the listener's buffer */
 static size_t
-ignore_write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
+handle_http_response(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
-    UNUSED(ptr);
-    UNUSED(userdata);
-    return size * nmemb;
+    te_errno      rc;
+    log_listener *listener = userdata;
+
+    rc = te_dbuf_append(&listener->buffer_in, ptr, size * nmemb);
+    return rc == 0 ? size * nmemb : 0;
 }
 
 /**
@@ -1327,6 +1329,7 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
               __FUNCTION__, current->name);
         return -1;
     }
+    current->buffer_in = (te_dbuf)TE_DBUF_INIT(100);
 
 #define SET_CURL_OPT(OPT, ARG) \
     do {                                                                  \
@@ -1369,7 +1372,8 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
      * ignored. By default curl writes the body to stdout, so we need to
      * specify our own callback.
      */
-    SET_CURL_OPT(CURLOPT_WRITEFUNCTION, ignore_write_cb);
+    SET_CURL_OPT(CURLOPT_WRITEFUNCTION, handle_http_response);
+    SET_CURL_OPT(CURLOPT_WRITEDATA, current);
 
     /* All requests will be POSTs, prepare headers here */
     /* TE will only send JSON */

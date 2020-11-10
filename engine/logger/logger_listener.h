@@ -16,6 +16,7 @@
 #include <jansson.h>
 
 #include "te_defs.h"
+#include "te_dbuf.h"
 #include "te_errno.h"
 #include "te_string.h"
 #include "te_queue.h"
@@ -68,6 +69,7 @@ typedef struct log_listener {
     size_t             buffers_num; /**< Number of virtual message buffers */
     struct curl_slist *headers;     /**< HTTP headers for CURL requests */
 
+    te_dbuf            buffer_in;   /**< Buffer for HTTP responses */
     te_string          buffer_out;  /**< Buffer for outgoing data */
     int                last_message_id; /**< Sequence number of the last
                                              sent message */

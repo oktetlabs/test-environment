@@ -29,6 +29,7 @@ listener_prepare_request(log_listener *listener, const char *url_suffix,
 {
     char *url;
 
+    te_dbuf_reset(&listener->buffer_in);
     url = te_string_fmt("%s%s", listener->url, url_suffix);
     if (url == NULL)
         return TE_ENOMEM;
@@ -249,6 +250,8 @@ listener_finish_request(log_listener *listener)
         listener_free(listener);
         return TE_EINVAL;
     }
+    INFO("HTTP response: %d\n\n%.*s", response_code, listener->buffer_in.len,
+         listener->buffer_in.ptr);
     switch (listener->state)
     {
         case LISTENER_INIT_WAITING:
@@ -330,6 +333,7 @@ listener_free(log_listener *listener)
     listener->curl_handle = NULL;
     curl_slist_free_all(listener->headers);
     listener->headers = NULL;
+    te_dbuf_free(&listener->buffer_in);
     te_string_free(&listener->buffer_out);
     msg_buffer_free(&listener->buffer);
     listener->state = LISTENER_FINISHED;
