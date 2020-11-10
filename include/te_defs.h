@@ -109,6 +109,8 @@ typedef enum te_bool3 {
 #define TE_LOG_EXEC_PLAN_USER     "Execution Plan"
 /* User name for the message with the TRC tags */
 #define TE_LOG_TRC_TAGS_USER      "TRC tags"
+/* User name for the message with proocess info, e.g. PID */
+#define TE_LOG_PROC_INFO_USER     "Process Info"
 
 #ifndef __CONCAT
 #define __CONCAT(_a, _b) _a##_b

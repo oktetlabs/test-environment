@@ -958,6 +958,35 @@ tester_log_trc_tags(const tqh_strings *trc_tags)
 #endif
 
 
+/** Log process information */
+static te_errno
+tester_log_proc_info(void)
+{
+    json_t *msg;
+    char   *txt;
+
+    msg = json_pack("{s:i}",
+                    "pid", getpid());
+    if (msg == NULL)
+    {
+        ERROR("Failed to prepare a process info message");
+        return TE_ENOMEM;
+    }
+
+    txt = json_dumps(msg, JSON_COMPACT);
+    json_decref(msg);
+    if (txt == NULL)
+    {
+        ERROR("Failed to dump a process info message");
+        return TE_ENOMEM;
+    }
+
+    LGR_MESSAGE(TE_LL_MI | TE_LL_CONTROL, TE_LOG_PROC_INFO_USER,
+                "%s", txt);
+    free(txt);
+    return 0;
+}
+
 /**
  * Application entry point.
  *
@@ -996,6 +1025,10 @@ main(int argc, char *argv[])
         ERROR("Command line options processing failure");
         goto exit;
     }
+
+    rc = tester_log_proc_info();
+    if (rc != 0)
+        goto exit;
 
     if (tester_global_context.targets != NULL)
     {
