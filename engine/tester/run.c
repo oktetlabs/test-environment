@@ -618,7 +618,7 @@ tester_plan_register_run_item(tester_plan *plan, run_item *ri, tester_ctx *ctx)
              */
             obj = json_pack("{s:s, s:s?}",
                             "type", "session",
-                            "name", name);
+                            "name", name != NULL ? name : "session");
             if (obj == NULL)
             {
                 ERROR("Failed to pack session info into JSON");
