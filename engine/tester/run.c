@@ -1642,7 +1642,7 @@ log_test_start(unsigned int flags,
             const char *objective = ri->objective != NULL ?
                 ri->objective : ri->u.script.objective;
 
-            SET_JSON_STRING(tmp, "TEST");
+            SET_JSON_STRING(tmp, "test");
             SET_NEW_JSON(result, "node_type", tmp);
 
             if (page_name != NULL)
@@ -1694,14 +1694,14 @@ log_test_start(unsigned int flags,
 
         case RUN_ITEM_SESSION:
             assert(tin == TE_TIN_INVALID);
-            SET_JSON_STRING(tmp, "SESSION");
+            SET_JSON_STRING(tmp, "session");
             SET_NEW_JSON(result, "node_type", tmp);
             break;
 
         case RUN_ITEM_PACKAGE:
             assert(tin == TE_TIN_INVALID);
 
-            SET_JSON_STRING(tmp, "PACKAGE");
+            SET_JSON_STRING(tmp, "pkg");
             SET_NEW_JSON(result, "node_type", tmp);
 
             authors = persons_info_to_json(&ri->u.package->authors);

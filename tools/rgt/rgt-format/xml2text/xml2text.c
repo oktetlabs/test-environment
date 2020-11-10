@@ -375,6 +375,20 @@ log_mi_result(FILE *fd, te_rgt_mi_test_result *result)
         fprintf(fd, "\nKey: %s", result->key);
 }
 
+/** Transform node type from MI message to human-readable form */
+static const char *
+node_type2str(const char *node_type)
+{
+    if (strcmp(node_type, "pkg") == 0)
+        return "PACKAGE";
+    else if (strcmp(node_type, "session") == 0)
+        return "SESSION";
+    else if (strcmp(node_type, "test") == 0)
+        return "TEST";
+
+    return node_type;
+}
+
 /**
  * Log MI test start message.
  *
@@ -390,7 +404,8 @@ log_mi_test_start(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
     size_t   i;
     te_errno rc;
 
-    fprintf(fd, "%s \"%s\" started\n", data->node_type, data->name);
+    fprintf(fd, "%s \"%s\" started\n", node_type2str(data->node_type),
+            data->name);
     fprintf(fd, "Node ID %d, Parent ID %d", data->node_id, data->parent_id);
     if (data->plan_id != -1)
         fprintf(fd, ", Plan ID %d", data->plan_id);
@@ -458,7 +473,8 @@ log_mi_test_end(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
     item = flow_stack_pop(&ctx->flow_stack, data->node_id);
     if (item != NULL)
     {
-        fprintf(fd, "%s \"%s\" finished\n", item->type, item->name);
+        fprintf(fd, "%s \"%s\" finished\n", node_type2str(item->type),
+                item->name);
         fprintf(fd, "Node ID %d, Parent ID %d", data->node_id,
                 data->parent_id);
         if (data->plan_id != -1)

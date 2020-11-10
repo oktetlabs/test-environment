@@ -828,15 +828,18 @@ create_node_by_msg_json(json_t *msg, uint32_t *ts)
         return NULL;
     }
 
-    if (strcmp(type, CNTR_MSG_TEST) == 0)
+    if (strcmp(type, CNTR_MSG_TEST_JSON) == 0 ||
+        strcmp(type, CNTR_MSG_TEST) == 0)
     {
         node->type = NT_TEST;
     }
-    else if (strcmp(type, CNTR_MSG_PACKAGE) == 0)
+    else if (strcmp(type, CNTR_MSG_PACKAGE_JSON) == 0 ||
+             strcmp(type, CNTR_MSG_PACKAGE) == 0)
     {
         node->type = NT_PACKAGE;
     }
-    else if (strcmp(type, CNTR_MSG_SESSION) == 0)
+    else if (strcmp(type, CNTR_MSG_SESSION_JSON) == 0 ||
+             strcmp(type, CNTR_MSG_SESSION) == 0)
     {
         node->type = NT_SESSION;
     }

@@ -32,6 +32,10 @@
 #define CNTR_MSG_PACKAGE "PACKAGE"
 #define CNTR_MSG_SESSION "SESSION"
 
+#define CNTR_MSG_TEST_JSON    "test"
+#define CNTR_MSG_PACKAGE_JSON "pkg"
+#define CNTR_MSG_SESSION_JSON "session"
+
 #define CNTR_BIN2STR(val_) \
     (val_ == NT_TEST ? CNTR_MSG_TEST :            \
      val_ == NT_PACKAGE ? CNTR_MSG_PACKAGE :      \
