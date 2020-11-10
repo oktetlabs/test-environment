@@ -884,9 +884,7 @@ run_thread(yaml_document_t *d, yaml_node_t *cfg)
         return -1;
     }
 
-    if (strlen(enabled_exp) == 0 ||
-        strcasecmp(enabled_exp, "no") == 0 ||
-        strcasecmp(enabled_exp, "false") == 0)
+    if (!te_yaml_value_is_true(enabled_exp))
     {
         free(enabled_exp);
         return 0;
@@ -1211,11 +1209,7 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
         return -1;
     }
     current_conf = listener_conf_get(name_str);
-    if (current_conf == NULL &&
-        (strcasecmp(enabled_str, "false") == 0 ||
-         strcasecmp(enabled_str, "no") == 0 ||
-         strcasecmp(enabled_str, "0") == 0 ||
-         strcasecmp(enabled_str, "") == 0))
+    if (current_conf == NULL && !te_yaml_value_is_true(enabled_str))
     {
         VERB("%s(%s): Not enabled, skipping", __FUNCTION__, name_str);
         return 0;
