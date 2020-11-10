@@ -290,7 +290,7 @@ check_dump_response_body(log_listener *listener)
 
 /* See description in logger_listener.h */
 te_errno
-listener_finish_request(log_listener *listener)
+listener_finish_request(log_listener *listener, CURLcode result)
 {
     long           response_code;
     refcnt_buffer *item;
@@ -303,6 +303,22 @@ listener_finish_request(log_listener *listener)
         ERROR("Request finished while in an unexpected state");
         listener_free(listener);
         return TE_EINVAL;
+    }
+    if (result != CURLE_OK)
+    {
+        ERROR("Listener %s: request failed: %s", listener->name,
+              curl_easy_strerror(result));
+        /*
+         * Technically, this causes an infinite loop of retries if the
+         * listener fails permanently.
+         * However, these retries will happen on each heartbeat, so they
+         * should not occupy our computational resources. They will also
+         * not get in the way of Logger exiting once it's told to shutdown.
+         */
+        listener->need_retry = TRUE;
+        gettimeofday(&listener->next_tv, NULL);
+        listener->next_tv.tv_sec += listener->interval;
+        return 0;
     }
     if (curl_easy_getinfo(listener->curl_handle, CURLINFO_RESPONSE_CODE,
                           &response_code) != CURLE_OK)

@@ -714,7 +714,7 @@ listeners_thread(void *arg)
                 curl_easy_getinfo(curl_msg->easy_handle, CURLINFO_PRIVATE,
                                   (char **)&listener);
                 /* Handle request result */
-                listener_finish_request(listener);
+                listener_finish_request(listener, curl_msg->data.result);
             }
         } while (in_queue > 0);
 
@@ -736,7 +736,23 @@ listeners_thread(void *arg)
             /* Skip listener if it has already finished its operation */
             if (listener->state == LISTENER_FINISHED)
                 continue;
+
+            /* Let Logger finish if the listener is unavailable */
+            if (listener->need_retry && (events_happened & QEVENT_FINISH))
+            {
+                listener_free(listener);
+                continue;
+            }
             listeners_running += 1;
+
+            if (listener->need_retry &&
+                timercmp(&listener->next_tv, &now, <))
+            {
+                listener->need_retry = FALSE;
+                curl_multi_add_handle(curl_mhandle, listener->curl_handle);
+                added_handles = TRUE;
+                continue;
+            }
 
             /*
              * Dump if:

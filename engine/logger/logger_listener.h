@@ -61,6 +61,7 @@ typedef struct log_listener {
     char               url[LOG_MAX_LISTENER_URL];   /**< URL */
     char               runid[LOG_MAX_LISTENER_URL]; /**< Run ID */
     listener_state     state;       /**< Current state */
+    te_bool            need_retry;  /**< The last HTTP request failed */
     struct timeval     next_tv;     /**< Timestamp of the next dump */
     int                interval;    /**< Time interval between dumps, seconds */
     te_bool            allow_stop;  /**< The listener is allowed to stop TE */
@@ -111,10 +112,12 @@ extern te_errno listener_dump(log_listener *listener);
  * Handler listener's reponse.
  *
  * @param listener          listener description
+ * @param result            CURL status code
  *
  * @returns Status code
  */
-extern te_errno listener_finish_request(log_listener *listener);
+extern te_errno listener_finish_request(log_listener *listener,
+                                        CURLcode result);
 
 /**
  * Finish listener's operation.
