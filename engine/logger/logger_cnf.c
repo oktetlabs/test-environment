@@ -1512,7 +1512,10 @@ config_parser_yaml(const char *filename)
     }
 
     if (root->type == YAML_SCALAR_NODE && root->data.scalar.length == 0)
+    {
+        yaml_document_delete(&document);
         return 0;
+    }
 
     if (root->type != YAML_MAPPING_NODE)
     {
