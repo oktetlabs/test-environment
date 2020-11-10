@@ -846,19 +846,19 @@ process_cmd_line_opts(int argc, const char **argv)
     struct poptOption options_table[] = {
         { "foreground", 'f',
           POPT_ARG_NONE | POPT_BIT_SET, &lgr_flags, LOGGER_FOREGROUND,
-          "Run Logger in foreground (usefull for Logger debugging).",
+          "Run Logger in the foreground (useful for Logger debugging).",
           NULL },
 
         { "no-rcf", '\0',
           POPT_ARG_NONE | POPT_BIT_SET, &lgr_flags, LOGGER_NO_RCF,
           "Run Logger without interaction with RCF, "
-          "i.e. polling of Test Agents (usefull for Logger debugging).",
+          "i.e. without polling any Test Agents (useful for Logger debugging).",
           NULL },
 
         { "check", 'c',
           POPT_ARG_NONE | POPT_BIT_SET, &lgr_flags, LOGGER_CHECK,
-          "Check log messages received from users before store in raw "
-          "log file.",
+          "Check that log messages received from other TE components are "
+          "properly formatted before storing them in the raw log file.",
           NULL },
 
         POPT_AUTOHELP
