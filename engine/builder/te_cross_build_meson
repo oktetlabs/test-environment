@@ -231,11 +231,7 @@ build_agent_apps() {
 
         # Extention build command is a script, make remote copy and use it
         appbuild="${!pappbuild}"
-        if test -x "${appbuild}" ; then
-            local remote_appbuild="${ws}/apps/${app}/build.sh"
-            rsync_to "$p" "${appbuild}" "${remote_appbuild}"
-            appbuild="${remote_appbuild}"
-        fi
+        build_process_cmd "${p}" "${ws}" apps "${app}" appbuild ${appbuild}
 
         te_check_tce "${p}" "${app}" && enable_tce="--tce"
         ${SCRIPT_DIR}/te_build_ext --prefix="${app_inst}" \
