@@ -25,6 +25,8 @@ msg_queue  listener_queue;
 te_bool    listeners_enabled = FALSE;
 char      *metafile_path = NULL;
 
+static json_t *trc_tags = NULL;
+
 /* See description in logger_stream.h */
 te_errno
 msg_queue_init(msg_queue *queue)
@@ -196,6 +198,33 @@ listeners_conf_dump(void)
     te_log_buf_free(buffer);
 }
 
+/** Process the log message with the test execution plan */
+static te_errno
+process_trc_tags(const log_msg_view *msg)
+{
+    te_errno     rc;
+    te_string    str = TE_STRING_INIT;
+    json_error_t err;
+
+    rc = te_raw_log_expand(msg, &str);
+    if (rc != 0)
+    {
+        ERROR("Failed to expand the TRC tags message: %r", rc);
+        return rc;
+    }
+
+    trc_tags = json_loads(str.ptr, 0, &err);
+    te_string_free(&str);
+    if (trc_tags == NULL)
+    {
+        ERROR("Error parsing TRC tags: %s (line %d, column %d)",
+              err.text, err.line, err.column);
+        return TE_EFAIL;
+    }
+
+    return 0;
+}
+
 /**
  * Process the log message with the test execution plan.
  *
@@ -259,8 +288,9 @@ process_plan(const log_msg_view *plan)
      * jansson-2.10, which is currently the newest version available on
      * CentOS/RHEL-7.x
      */
-    metadata = json_pack("{s:o?, s:o}",
+    metadata = json_pack("{s:o?, s:o?, s:o}",
                          "meta_data", meta,
+                         "tags", trc_tags,
                          "plan", plan_obj);
     if (metadata == NULL)
     {
@@ -268,6 +298,7 @@ process_plan(const log_msg_view *plan)
         json_decref(plan_obj);
         return TE_EFAIL;
     }
+    trc_tags = NULL;
 
     for (i = 0; i < listeners_num; i++)
         listener_init(&listeners[i], metadata);
@@ -318,6 +349,10 @@ process_special_messages(const log_msg_view *msg)
         { FALSE, QEVENT_PLAN, process_plan,
           STRING_WITH_LEN(TE_LOG_CMSG_ENTITY_TESTER),
           STRING_WITH_LEN(TE_LOG_EXEC_PLAN_USER) },
+        /* TRC tags */
+        { FALSE, QEVENT_NONE, process_trc_tags,
+          STRING_WITH_LEN(TE_LOG_CMSG_ENTITY_TESTER),
+          STRING_WITH_LEN(TE_LOG_TRC_TAGS_USER) },
     };
 #undef STRING_WITH_LEN
     static const size_t special_num = TE_ARRAY_LEN(special);
@@ -697,6 +732,7 @@ listeners_thread(void *arg)
 
     /* Free listener config data in case the execution plan has not been received */
     free(metafile_path);
+    json_decref(trc_tags);
 
     curl_multi_cleanup(curl_mhandle);
     RING("Listener thread finished");
