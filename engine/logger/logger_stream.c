@@ -274,7 +274,7 @@ process_queue(void)
                 }
                 /* Run through filters */
                 if (!failure)
-                    for (i = 0; i < LOG_MAX_FILTERS; i++)
+                    for (i = 0; i < streaming_filters_num; i++)
                         streaming_filter_process(&streaming_filters[i], &view);
             }
         }
