@@ -3077,7 +3077,8 @@ run_keepalive_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     ctx = SLIST_FIRST(&gctx->ctxs);
     assert(ctx != NULL);
 
-    if (((int)status != TESTER_TEST_PASSED) &&
+    if ((gctx->force_skip == 0) &&
+        ((int)status != TESTER_TEST_PASSED) &&
         ((int)status != TESTER_TEST_FAKED))
     {
         ERROR("Keep-alive validation failed: %u", status);
