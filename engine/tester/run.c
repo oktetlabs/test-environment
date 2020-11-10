@@ -884,7 +884,7 @@ tester_assemble_plan(tester_run_data *data, const tester_cfg_walk *cbs, const te
     {
         ERROR("Plan-gathering tree walk returned unexpected result %u",
               ctl);
-        LGR_MESSAGE(TE_LL_ERROR, "Execution Plan",
+        LGR_MESSAGE(TE_LL_ERROR, TE_LOG_EXEC_PLAN_USER,
                     "Failed to assemble the execution plan");
         json_decref(data->plan.root);
         data->plan.root = NULL;
@@ -896,11 +896,11 @@ tester_assemble_plan(tester_run_data *data, const tester_cfg_walk *cbs, const te
     data->plan.root = NULL;
     if (plan_text == NULL)
     {
-        LGR_MESSAGE(TE_LL_ERROR, "Execution Plan",
+        LGR_MESSAGE(TE_LL_ERROR, TE_LOG_EXEC_PLAN_USER,
                     "Failed to dump the execution plan to string");
         return TE_RC(TE_TESTER, TE_EFAULT);
     }
-    LGR_MESSAGE(TE_LL_MI | TE_LL_CONTROL, "Execution Plan",
+    LGR_MESSAGE(TE_LL_MI | TE_LL_CONTROL, TE_LOG_EXEC_PLAN_USER,
                 "%s", plan_text);
     free(plan_text);
 
