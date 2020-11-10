@@ -104,7 +104,9 @@ extern unsigned int te_test_id;
 typedef struct json_stack_entry {
     SLIST_ENTRY(json_stack_entry) links; /**< List links */
 
-    json_t *json; /**< Pointer to JSON object */
+    json_t  *json;           /**< Pointer to JSON object */
+    te_bool  ka_encountered; /**< Whether the keepalive item was already
+                                  encountered within this item */
 } json_stack_entry;
 
 /** A stack of JSON objects to track currently running packages and sessions */
@@ -112,12 +114,13 @@ typedef SLIST_HEAD(json_stack, json_stack_entry) json_stack;
 
 /** Data structure to represent and assemble the execution plan */
 typedef struct tester_plan {
-    json_t     *root;   /**< Root plan object */
-    json_stack  stack;  /**< Current package/session path */
-    const char *test;   /**< Pending test name */
-    int         iters;  /**< Pending test iterations */
-    int         ignore; /**< How deep we are in the subtree
-                             that must be ignored */
+    json_t        *root;   /**< Root plan object */
+    json_stack     stack;  /**< Current package/session path */
+    run_item_role  role;   /**< Role of run items to be added */
+    const char    *test;   /**< Pending test name */
+    int            iters;  /**< Pending test iterations */
+    int            ignore; /**< How deep we are in the subtree
+                                that must be ignored */
 } tester_plan;
 
 /** Tester context */
@@ -154,6 +157,8 @@ typedef struct tester_ctx {
     unsigned int        n_args;         /**< Number of arguments */
 
     struct tester_ctx  *keepalive_ctx;  /**< Keep-alive context */
+
+    run_item_role       ri_role;        /**< Current run item's role */
 
 #if WITH_TRC
     te_trc_db_walker   *trc_walker;     /**< Current position in TRC
@@ -267,7 +272,7 @@ tester_control_log(json_t *json, const char *mi_type)
  * @returns Status code
  */
 static te_errno
-tester_plan_add_child(tester_plan *plan, json_t *ri)
+tester_plan_add_child(tester_plan *plan, json_t *ri, run_item_role role)
 {
     json_stack_entry *e;
     json_t           *parent = NULL;
@@ -289,23 +294,30 @@ tester_plan_add_child(tester_plan *plan, json_t *ri)
 
     if (parent != NULL)
     {
-        json_t *children;
-
-        children = json_object_get(parent, "children");
-        if (children == NULL)
+        if (role == RI_ROLE_NORMAL)
         {
-            children = json_array();
-            if (children == NULL)
-                return TE_ENOMEM;
-            if (json_object_set_new(parent, "children", children) != 0)
-            {
-                json_decref(children);
-                return TE_EFAIL;
-            }
-        }
+            json_t     *children;
 
-        if (json_array_append_new(children, ri) != 0)
-            return TE_EFAIL;
+            children = json_object_get(parent, "children");
+            if (children == NULL)
+            {
+                children = json_array();
+                if (children == NULL)
+                    return TE_ENOMEM;
+                if (json_object_set_new(parent, "children", children) != 0)
+                {
+                    json_decref(children);
+                    return TE_EFAIL;
+                }
+            }
+            if (json_array_append_new(children, ri) != 0)
+                return TE_EFAIL;
+        }
+        else
+        {
+            if (json_object_set_new(parent, ri_role2str(role), ri) != 0)
+                return TE_EFAIL;
+        }
     }
 
     return 0;
@@ -341,7 +353,7 @@ tester_plan_add_pending_test(tester_plan *plan)
         ERROR("Failed to pack test object for execution plan");
         return TE_EFAIL;
     }
-    rc = tester_plan_add_child(plan, json);
+    rc = tester_plan_add_child(plan, json, plan->role);
     if (rc != 0)
     {
         json_decref(json);
@@ -349,6 +361,7 @@ tester_plan_add_pending_test(tester_plan *plan)
     }
 
     plan->test = NULL;
+    plan->role = RI_ROLE_NORMAL;
     plan->iters = 0;
 
     return 0;
@@ -382,15 +395,28 @@ tester_plan_add_ignore(tester_plan *plan)
  * @returns Status code
  */
 static te_errno
-tester_plan_register_test(tester_plan *plan, const char *test_name)
+tester_plan_register_test(tester_plan *plan, const char *test_name,
+                          run_item_role role)
 {
     te_errno          rc;
+    json_stack_entry *e;
 
     if (plan->ignore > 0)
         return 0;
 
+    /* Only process the first keepalive item occurrence */
+    if (role == RI_ROLE_KEEPALIVE)
+    {
+        e = SLIST_FIRST(&plan->stack);
+        assert(e != NULL);
+        if (e->ka_encountered)
+            return 0;
+        e->ka_encountered = TRUE;
+    }
+
     if (test_name != NULL && plan->test != NULL &&
-        strcmp(test_name, plan->test) == 0)
+        strcmp(test_name, plan->test) == 0 &&
+        plan->role == role && role == RI_ROLE_NORMAL)
     {
         plan->iters++;
         return 0;
@@ -404,6 +430,7 @@ tester_plan_register_test(tester_plan *plan, const char *test_name)
     }
 
     plan->test = test_name;
+    plan->role = role;
     plan->iters = 1;
 
     return 0;
@@ -420,7 +447,7 @@ tester_plan_register_test(tester_plan *plan, const char *test_name)
  * @returns Status code
  */
 static te_errno
-tester_plan_register(tester_plan *plan, json_t *ri)
+tester_plan_register(tester_plan *plan, json_t *ri, run_item_role role)
 {
     te_errno          rc;
     json_stack_entry *e;
@@ -439,7 +466,7 @@ tester_plan_register(tester_plan *plan, json_t *ri)
             return rc;
     }
 
-    rc = tester_plan_add_child(plan, ri);
+    rc = tester_plan_add_child(plan, ri, role);
     if (rc != 0)
         return rc;
 
@@ -447,6 +474,7 @@ tester_plan_register(tester_plan *plan, json_t *ri)
     SLIST_INSERT_HEAD(&plan->stack, e, links);
 
     plan->test = NULL;
+    plan->role = RI_ROLE_NORMAL;
     plan->iters = 0;
 
     return 0;
@@ -478,7 +506,7 @@ tester_plan_register_run_item(tester_plan *plan, run_item *ri, tester_ctx *ctx)
     switch (ri->type)
     {
         case RUN_ITEM_SCRIPT:
-            tester_plan_register_test(plan, name);
+            tester_plan_register_test(plan, name, ctx->ri_role);
             return 0;
         case RUN_ITEM_SESSION:
             /*
@@ -495,7 +523,7 @@ tester_plan_register_run_item(tester_plan *plan, run_item *ri, tester_ctx *ctx)
                 return TE_EFAIL;
             }
 
-            rc = tester_plan_register(plan, obj);
+            rc = tester_plan_register(plan, obj, ctx->ri_role);
             if (rc != 0)
             {
                 ERROR("Failed to register session \"%s\": %r",
@@ -529,7 +557,7 @@ tester_plan_register_run_item(tester_plan *plan, run_item *ri, tester_ctx *ctx)
                 return TE_EFAIL;
             }
 
-            rc = tester_plan_register(plan, obj);
+            rc = tester_plan_register(plan, obj, ctx->ri_role);
             if (rc != 0)
             {
                 ERROR("Failed to register package \"%s\": %r",
@@ -572,8 +600,9 @@ tester_plan_pop(tester_plan *plan)
         return TE_EINVAL;
     }
 
-    tester_plan_register_test(plan, NULL);
+    tester_plan_register_test(plan, NULL, RI_ROLE_NORMAL);
     plan->test = NULL;
+    plan->role = RI_ROLE_NORMAL;
     plan->iters = 0;
 
     SLIST_REMOVE_HEAD(&plan->stack, links);
@@ -2823,6 +2852,7 @@ run_prologue_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
 
     VERB("Running test session prologue...");
     ctx->flags |= TESTER_INLOGUE;
+    ctx->ri_role = RI_ROLE_PROLOGUE;
 
     EXIT("CONT");
     return TESTER_CFG_WALK_CONT;
@@ -2952,6 +2982,7 @@ run_epilogue_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
 
     VERB("Running test session epilogue...");
     ctx->flags |= TESTER_INLOGUE;
+    ctx->ri_role = RI_ROLE_EPILOGUE;
 
     EXIT("CONT");
     return TESTER_CFG_WALK_CONT;
@@ -3009,7 +3040,7 @@ run_keepalive_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(ctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
-    if (ctx->flags & (TESTER_PRERUN | TESTER_ASSEMBLE_PLAN))
+    if (ctx->flags & TESTER_PRERUN)
     {
         EXIT("CONT");
         return TESTER_CFG_WALK_CONT;
@@ -3023,10 +3054,12 @@ run_keepalive_start(run_item *ri, unsigned int cfg_id_off, void *opaque)
             ctx->current_result.status = TESTER_TEST_ERROR;
             return TESTER_CFG_WALK_FAULT;
         }
+        ctx->keepalive_ctx->ri_role = RI_ROLE_KEEPALIVE;
     }
     ctx = ctx->keepalive_ctx;
 
-    if (run_create_cfg_backup(ctx, test_get_attrs(ri)->track_conf) != 0)
+    if ((~ctx->flags & TESTER_ASSEMBLE_PLAN) &&
+        run_create_cfg_backup(ctx, test_get_attrs(ri)->track_conf) != 0)
     {
         EXIT("FAULT");
         return TESTER_CFG_WALK_FAULT;
@@ -3054,14 +3087,15 @@ run_keepalive_end(run_item *ri, unsigned int cfg_id_off, void *opaque)
     assert(ctx != NULL);
     LOG_WALK_ENTRY(cfg_id_off, gctx);
 
-    if (ctx->flags & (TESTER_PRERUN | TESTER_ASSEMBLE_PLAN))
+    if (ctx->flags & TESTER_PRERUN)
     {
         EXIT("CONT");
         return TESTER_CFG_WALK_CONT;
     }
 
     /* Release configuration backup, since it may differ the next time */
-    if (run_release_cfg_backup(ctx) != 0)
+    if ((~ctx->flags & TESTER_ASSEMBLE_PLAN) &&
+        run_release_cfg_backup(ctx) != 0)
     {
         EXIT("FAULT");
         return TESTER_CFG_WALK_FAULT;

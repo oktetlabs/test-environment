@@ -40,6 +40,28 @@ typedef enum run_item_type {
     RUN_ITEM_PACKAGE
 } run_item_type;
 
+/** Run item role values */
+typedef enum run_item_role {
+    RI_ROLE_NORMAL,
+    RI_ROLE_PROLOGUE,
+    RI_ROLE_EPILOGUE,
+    RI_ROLE_KEEPALIVE,
+} run_item_role;
+
+/** Convert role value to string */
+static inline const char *
+ri_role2str(run_item_role role)
+{
+    static const char * const role_names[] = {
+        [RI_ROLE_NORMAL] = NULL,
+        [RI_ROLE_PROLOGUE] = "prologue",
+        [RI_ROLE_EPILOGUE] = "epilogue",
+        [RI_ROLE_KEEPALIVE] = "keepalive",
+    };
+
+    return role_names[role];
+}
+
 /** Test ID */
 typedef int test_id;
 
