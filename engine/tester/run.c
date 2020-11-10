@@ -114,13 +114,15 @@ typedef SLIST_HEAD(json_stack, json_stack_entry) json_stack;
 
 /** Data structure to represent and assemble the execution plan */
 typedef struct tester_plan {
-    json_t        *root;   /**< Root plan object */
-    json_stack     stack;  /**< Current package/session path */
-    run_item_role  role;   /**< Role of run items to be added */
-    const char    *test;   /**< Pending test name */
-    int            iters;  /**< Pending test iterations */
-    int            ignore; /**< How deep we are in the subtree
-                                that must be ignored */
+    json_t        *root;    /**< Root plan object */
+    json_stack     stack;   /**< Current package/session path */
+    te_bool        pending; /**< Whether some run item is pending */
+    run_item_role  role;    /**< Role of run items to be added */
+    const char    *test;    /**< Pending test name */
+    int            iters;   /**< Pending test iterations */
+    int            skipped; /**< Pending number of skipped items */
+    int            ignore;  /**< How deep we are in the subtree
+                                 that must be ignored */
 } tester_plan;
 
 /** Tester context */
@@ -360,9 +362,105 @@ tester_plan_add_pending_test(tester_plan *plan)
         return rc;
     }
 
+    plan->pending = FALSE;
     plan->test = NULL;
     plan->role = RI_ROLE_NORMAL;
     plan->iters = 0;
+
+    return 0;
+}
+
+/**
+ * Add pending skipped items to the execution plan.
+ *
+ * @param plan      execution plan
+ *
+ * @returns Status code
+ */
+static te_errno
+tester_plan_add_pending_skipped(tester_plan *plan)
+{
+    json_t   *json;
+    te_errno  rc;
+
+    if (plan == NULL)
+        return TE_EINVAL;
+
+    if (plan->skipped == 0)
+        return 0;
+
+    if (plan->skipped > 1)
+        json = json_pack("{s:s, s:i}",
+                         "type", "skipped",
+                         "iterations", plan->skipped);
+    else
+        json = json_pack("{s:s}",
+                         "type", "skipped");
+    if (json == NULL)
+    {
+        ERROR("Failed to pack JSON object for skipped run items");
+        return TE_EFAIL;
+    }
+
+    rc = tester_plan_add_child(plan, json, plan->role);
+    if (rc != 0)
+    {
+        json_decref(json);
+        return rc;
+    }
+
+    plan->pending = FALSE;
+    plan->skipped = 0;
+
+    return 0;
+}
+
+/**
+ * Add a "skipped" plan item.
+ *
+ * This item is silently skipped during execution. Its purpose in the plan is
+ * to allow correct prediction of keepalive execution.
+ *
+ * @param plan          execution plan
+ *
+ * @returns Status code
+ */
+static te_errno
+tester_plan_add_skipped(tester_plan *plan)
+{
+    json_stack_entry *e;
+
+    e = SLIST_FIRST(&plan->stack);
+    if (e == NULL)
+        return 0;
+
+    /* If current item doesn't have a keepalive section, do nothing */
+    if (!e->ka_encountered)
+        return 0;
+
+    if (plan->test != NULL)
+        tester_plan_add_pending_test(plan);
+
+    plan->pending = TRUE;
+    plan->skipped++;
+    return 0;
+}
+
+/**
+ * Add pending item to the plan.
+ *
+ * @param plan          execution plan
+ *
+ * @returns Status code
+ */
+static te_errno
+tester_plan_add_pending(tester_plan *plan)
+{
+    if (plan->test != NULL)
+        return tester_plan_add_pending_test(plan);
+
+    if (plan->skipped > 0)
+        return tester_plan_add_pending_skipped(plan);
 
     return 0;
 }
@@ -422,16 +520,20 @@ tester_plan_register_test(tester_plan *plan, const char *test_name,
         return 0;
     }
 
-    if (plan->test != NULL)
+    if (plan->pending)
     {
-        rc = tester_plan_add_pending_test(plan);
+        rc = tester_plan_add_pending(plan);
         if (rc != 0)
             return rc;
     }
 
-    plan->test = test_name;
-    plan->role = role;
-    plan->iters = 1;
+    if (test_name != NULL)
+    {
+        plan->pending = TRUE;
+        plan->test = test_name;
+        plan->role = role;
+        plan->iters = 1;
+    }
 
     return 0;
 }
@@ -455,9 +557,9 @@ tester_plan_register(tester_plan *plan, json_t *ri, run_item_role role)
     if (plan == NULL || ri == NULL)
         return TE_EINVAL;
 
-    if (plan->test != NULL)
+    if (plan->pending)
     {
-        rc = tester_plan_add_pending_test(plan);
+        rc = tester_plan_add_pending(plan);
         if (rc != 0)
             return rc;
     }
@@ -3666,14 +3768,27 @@ run_repeat_start(run_item *ri, unsigned int cfg_id_off, unsigned int flags,
                 return TESTER_CFG_WALK_FAULT;
             }
         }
-        else if (!required && run_item_container(ri))
+        else if (!required)
         {
-            rc = tester_plan_add_ignore(&gctx->plan);
-            if (rc != 0)
+            if (quiet_skip)
             {
-                ERROR("Failed to add \"ignore\" package");
-                EXIT("FAULT");
-                return TESTER_CFG_WALK_FAULT;
+                rc = tester_plan_add_skipped(&gctx->plan);
+                if (rc != 0)
+                {
+                    ERROR("Failed to add \"skipped\" package");
+                    EXIT("FAULT");
+                    return TESTER_CFG_WALK_FAULT;
+                }
+            }
+            if (run_item_container(ri))
+            {
+                rc = tester_plan_add_ignore(&gctx->plan);
+                if (rc != 0)
+                {
+                    ERROR("Failed to add \"ignore\" package");
+                    EXIT("FAULT");
+                    return TESTER_CFG_WALK_FAULT;
+                }
             }
         }
         if (required)
