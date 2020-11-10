@@ -125,6 +125,7 @@ listener_init(log_listener *listener, json_t *data)
     te_errno  rc;
     size_t    size;
     json_t   *runid;
+    char     *json;
 
     data = json_copy(data);
     if (data == NULL)
@@ -152,12 +153,14 @@ listener_init(log_listener *listener, json_t *data)
         }
     }
 
-    size = json_dumpb(data, NULL, 0, JSON_COMPACT);
-    te_string_reserve(&listener->buffer_out, size + 1);
-
-    json_dumpb(data, listener->buffer_out.ptr, size, JSON_COMPACT);
-    listener->buffer_out.ptr[size] = '\0';
-    listener->buffer_out.len = size;
+    json = json_dumps(data, JSON_COMPACT);
+    if (json == NULL)
+    {
+        ERROR("Failed to dump session initialization message");
+        return TE_ENOMEM;
+    }
+    te_string_append(&listener->buffer_out, "%s", json);
+    free(json);
     json_decref(data);
 
     rc = listener_prepare_request(listener, "init", listener->buffer_out.ptr,
