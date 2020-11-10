@@ -1219,6 +1219,17 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
         return 0;
     }
 
+    if (current_conf != NULL && current_conf->runid[0] != '\0')
+    {
+        res = te_strlcpy(current->runid, current_conf->runid,
+                         sizeof(current->runid));
+        if (res == sizeof(current->runid))
+        {
+            ERROR("Failed to copy listener run ID");
+            return -1;
+        }
+    }
+
     url_str = te_yaml_scalar_value(url);
     if (url_str == NULL)
     {

@@ -27,6 +27,7 @@ extern "C" {
 
 #define LOG_MAX_LISTENERS      10
 #define LOG_MAX_LISTENER_NAME  64
+#define LOG_MAX_LISTENER_RUNID 32
 #define LOG_MAX_LISTENER_URL   256
 
 /** Listener operation state */
@@ -44,7 +45,8 @@ typedef enum listener_state {
 
 /** Listener configuration supplied through command-line options */
 typedef struct log_listener_conf {
-    char name[LOG_MAX_LISTENER_NAME]; /**< Name */
+    char name[LOG_MAX_LISTENER_NAME];   /**< Name */
+    char runid[LOG_MAX_LISTENER_RUNID]; /**< Run ID */
 } log_listener_conf;
 
 /** Add user-supplied listener configuration */
@@ -56,6 +58,7 @@ extern log_listener_conf *listener_conf_get(const char *name);
 typedef struct log_listener {
     char               name[LOG_MAX_LISTENER_NAME]; /**< Name */
     char               url[LOG_MAX_LISTENER_URL];   /**< URL */
+    char               runid[LOG_MAX_LISTENER_URL]; /**< Run ID */
     listener_state     state;       /**< Current state */
     struct timeval     next_tv;     /**< Timestamp of the next dump */
     int                interval;    /**< Time interval between dumps, seconds */

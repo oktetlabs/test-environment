@@ -310,7 +310,7 @@ The Dispatcher script accepts a lot of command-line options. Some of them are it
 	logger-check                Check that log messages received from other TE components are
 	                            properly formatted before storing them in the raw log file.
 	logger-listener=<confstr>   Enable streaming live results to the specified listener.
-	                            Config string has the following format: <name>.
+	                            Config string has the following format: <name>[:<runid>].
 
 .. code-block:: none
 

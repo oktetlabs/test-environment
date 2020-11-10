@@ -64,21 +64,37 @@ listener_conf_add(const char *confstr)
 {
     size_t             i;
     size_t             ret;
+    size_t             len;
+    char              *delim;
+    char              *runid;
     log_listener_conf *conf;
 
     if (listener_confs_num >= LOG_MAX_LISTENERS)
         return TE_ENOMEM;
 
+    delim = strchr(confstr, ':');
+    len = delim == NULL ? strlen(confstr) : (delim - confstr);
+    if (len >= LOG_MAX_LISTENER_NAME)
+        return TE_EINVAL;
+
     for (i = 0; i < listener_confs_num; i++)
     {
-        if (strcmp(listener_confs[i].name, confstr) == 0)
+        if (strncmp(listener_confs[i].name, confstr, len) == 0)
             return TE_EEXIST;
     }
 
     conf = &listener_confs[listener_confs_num];
-    ret = te_strlcpy(conf->name, confstr, LOG_MAX_LISTENER_NAME);
-    if (ret == LOG_MAX_LISTENER_NAME)
-        return TE_EINVAL;
+    strncpy(conf->name, confstr, len);
+
+    if (delim != NULL)
+    {
+        runid = delim + 1;
+        if (*runid == '\0')
+            return TE_EINVAL;
+        ret = te_strlcpy(conf->runid, runid, LOG_MAX_LISTENER_RUNID);
+        if (ret == LOG_MAX_LISTENER_RUNID)
+            return TE_EINVAL;
+    }
 
     listener_confs_num++;
     return 0;
@@ -103,8 +119,35 @@ listener_conf_get(const char *name)
 te_errno
 listener_init(log_listener *listener, json_t *data)
 {
-    te_errno rc;
-    size_t   size;
+    te_errno  rc;
+    size_t    size;
+    json_t   *runid;
+
+    data = json_copy(data);
+    if (data == NULL)
+    {
+        ERROR("Failed to copy init message");
+        return TE_EFAIL;
+    }
+
+    if (listener->runid[0] != '\0')
+    {
+        runid = json_string(listener->runid);
+        if (runid == NULL)
+        {
+            ERROR("Failed to prepare a JSON string for run ID");
+            json_decref(data);
+            return TE_EFAIL;
+        }
+
+        if (json_object_set_new(data, "runid", runid) == -1)
+        {
+            ERROR("Failed to prepare a JSON string for run ID");
+            json_decref(data);
+            json_decref(runid);
+            return TE_EFAIL;
+        }
+    }
 
     size = json_dumpb(data, NULL, 0, JSON_COMPACT);
     te_string_reserve(&listener->buffer_out, size + 1);
