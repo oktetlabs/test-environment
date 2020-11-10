@@ -129,6 +129,9 @@ typedef SLIST_HEAD(, ta_inst) ta_inst_list;
 /** Create message and register it in the raw log file. */
 extern te_log_message_f lgr_log_message;
 
+/** Tester PID, needed to allow listeners to stop TE execution */
+extern pid_t tester_pid;
+
 
 /**
  * Parse logger configuration file.

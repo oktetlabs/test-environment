@@ -11,11 +11,13 @@
 #define TE_LGR_USER "Log streaming"
 
 #include <stddef.h>
+#include <signal.h>
 #include <sys/time.h>
 
 #include "te_defs.h"
 #include "te_str.h"
 #include "logger_api.h"
+#include "logger_internal.h"
 #include "logger_listener.h"
 
 log_listener_conf listener_confs[LOG_MAX_LISTENERS];
@@ -227,6 +229,65 @@ listener_dump(log_listener *listener)
     return 0;
 }
 
+/**
+ * Process listener response after a /feed request.
+ *
+ * The listener is expected to return a JSON object with the following fields:
+ * 1. "stop": (optional) stop the test execution.
+ *            If the listener's "allow_stop" value is true and the Tester's
+ *            PID is known, Tester will be sent a SIGINT. Otherwise, a
+ *            corresponding error message will be logged and the execution will
+ *            proceed as usual.
+ */
+static void
+check_dump_response_body(log_listener *listener)
+{
+    int           ret;
+    int           stop = 0;
+    json_t       *body;
+    json_error_t  err;
+
+    body = json_loadb((const char *)listener->buffer_in.ptr,
+                      listener->buffer_in.len, 0, &err);
+    if (body == NULL)
+    {
+        ERROR("Error parsing HTTP body: %s (line %d, column %d)",
+              err.text, err.line, err.column);
+        return;
+    }
+
+    ret = json_unpack_ex(body, &err, JSON_STRICT, "{s?b}",
+                         "stop", &stop);
+    if (ret == -1)
+    {
+        ERROR("Error unpacking JSON log message: %s (line %d, column %d)",
+                  err.text, err.line, err.column);
+        json_decref(body);
+        return;
+    }
+
+    if (stop)
+    {
+        if (!listener->allow_stop)
+        {
+            ERROR("Listener %s is not allowed to stop test execution",
+                  listener->name);
+        }
+        else if (tester_pid <= 0)
+        {
+            ERROR("Failed to kill Tester: PID is unknown");
+        }
+        else
+        {
+            ret = kill(tester_pid, SIGINT);
+            if (ret == -1)
+                ERROR("Failed to kill Tester: %s", strerror(errno));
+        }
+    }
+
+    json_decref(body);
+}
+
 /* See description in logger_listener.h */
 te_errno
 listener_finish_request(log_listener *listener)
@@ -279,6 +340,7 @@ listener_finish_request(log_listener *listener)
                 listener_free(listener);
                 return TE_EINVAL;
             }
+            check_dump_response_body(listener);
             /* Remove the messages that have been transferred */
             TAILQ_FOREACH_SAFE(item, &listener->buffer.items, links, tmp)
             {

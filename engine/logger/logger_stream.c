@@ -15,8 +15,10 @@
 #include <jansson.h>
 
 #include "te_defs.h"
+#include "te_str.h"
 #include "log_bufs.h"
 #include "logger_api.h"
+#include "logger_internal.h"
 #include "logger_stream.h"
 #include "logger_stream_rules.h"
 #include "te_alloc.h"
@@ -26,6 +28,8 @@ te_bool    listeners_enabled = FALSE;
 char      *metafile_path = NULL;
 
 static json_t *trc_tags = NULL;
+
+pid_t tester_pid = -1;
 
 /* See description in logger_stream.h */
 te_errno
@@ -198,6 +202,45 @@ listeners_conf_dump(void)
     te_log_buf_free(buffer);
 }
 
+/** Process the log message with Tester process info */
+static te_errno
+process_tester_proc_info(const log_msg_view *msg)
+{
+    int           ret;
+    te_errno      rc;
+    te_string     body = TE_STRING_INIT;
+    json_t       *json;
+    json_error_t  err;
+
+    rc = te_raw_log_expand(msg, &body);
+    if (rc != 0)
+    {
+        ERROR("Failed to expand Tester process info message: %r", rc);
+        return rc;
+    }
+
+    json = json_loads(body.ptr, 0, &err);
+    te_string_free(&body);
+    if (json == NULL)
+    {
+        ERROR("Error parsing Tester process info: %s (line %d, column %d)",
+              err.text, err.line, err.column);
+        return TE_EFAIL;
+    }
+
+    ret = json_unpack_ex(json, &err, JSON_STRICT, "{s:i}",
+                         "pid", &tester_pid);
+    json_decref(json);
+    if (ret == -1)
+    {
+        ERROR("Error extracting Tester PID: %s (line %d, column %d)",
+              err.text, err.line, err.column);
+        return TE_EFAIL;
+    }
+
+    return 0;
+}
+
 /** Process the log message with the test execution plan */
 static te_errno
 process_trc_tags(const log_msg_view *msg)
@@ -353,6 +396,10 @@ process_special_messages(const log_msg_view *msg)
         { FALSE, QEVENT_NONE, process_trc_tags,
           STRING_WITH_LEN(TE_LOG_CMSG_ENTITY_TESTER),
           STRING_WITH_LEN(TE_LOG_TRC_TAGS_USER) },
+        /* Tester PID */
+        { FALSE, QEVENT_NONE, process_tester_proc_info,
+          STRING_WITH_LEN(TE_LOG_CMSG_ENTITY_TESTER),
+          STRING_WITH_LEN(TE_LOG_PROC_INFO_USER) },
     };
 #undef STRING_WITH_LEN
     static const size_t special_num = TE_ARRAY_LEN(special);

@@ -1142,6 +1142,7 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
     yaml_node_t      *url         = NULL;
     yaml_node_t      *enabled     = NULL;
     yaml_node_t      *interval    = NULL;
+    yaml_node_t      *allow_stop  = NULL;
     yaml_node_t      *rules       = NULL;
     yaml_node_t      *buffer_size = NULL;
     yaml_node_t      *buffers_num = NULL;
@@ -1149,6 +1150,7 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
     const char       *url_str     = NULL;
     const char       *enabled_str = NULL;
     const char       *interval_str = NULL;
+    const char       *allow_stop_str  = NULL;
     const char       *buffer_size_str = NULL;
     const char       *buffers_num_str = NULL;
     unsigned long     tmp;
@@ -1177,6 +1179,8 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
             enabled = v;
         else if (strcmp(key, "interval") == 0)
             interval = v;
+        else if (strcmp(key, "allow_stop") == 0)
+            allow_stop = v;
         else if (strcmp(key, "rules") == 0)
             rules = v;
         else if (strcmp(key, "buffer_size") == 0)
@@ -1273,6 +1277,17 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
         ERROR("%s(%s): No rules specified", __FUNCTION__, name_str);
         return -1;
     }
+
+    current->allow_stop = FALSE;
+    allow_stop_str = te_yaml_scalar_value(allow_stop);
+    if (allow_stop != NULL && allow_stop_str == NULL)
+    {
+        ERROR("%s(%s): Allow_stop is not a scalar",
+              __FUNCTION__, name_str);
+        return -1;
+    }
+    if (te_yaml_value_is_true(allow_stop_str))
+        current->allow_stop = TRUE;
 
     current->buffer_size = 4096;
     buffer_size_str = te_yaml_scalar_value(buffer_size);

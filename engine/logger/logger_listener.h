@@ -63,6 +63,7 @@ typedef struct log_listener {
     listener_state     state;       /**< Current state */
     struct timeval     next_tv;     /**< Timestamp of the next dump */
     int                interval;    /**< Time interval between dumps, seconds */
+    te_bool            allow_stop;  /**< The listener is allowed to stop TE */
     CURL              *curl_handle; /**< File to dump to */
     msg_buffer         buffer;      /**< Message buffer */
     size_t             buffer_size; /**< Virtual buffer size */
