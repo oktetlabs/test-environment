@@ -106,26 +106,29 @@ handler_test_progress(const log_msg_view *view, refcnt_buffer *str)
     if (msg == NULL)
     {
         ERROR("Tester:Control message does not have a \"msg\" property");
+        json_decref(json);
         return TE_EINVAL;
     }
     type = json_object_get(json, "type");
     if (type == NULL)
     {
         ERROR("Tester:Control message does not have a \"type\" property");
+        json_decref(json);
         return TE_EINVAL;
     }
     if (json_object_set(msg, "type", type) == -1)
     {
         ERROR("Failed to add \"type\" property to a Tester:Control message");
+        json_decref(json);
         return TE_EFAULT;
     }
     dump = json_dumps(msg, JSON_COMPACT);
+    json_decref(json);
     if (dump == NULL)
     {
         ERROR("Failed to dump JSON");
         return TE_EFAULT;
     }
-    json_decref(json);
 
     return refcnt_buffer_init(str, dump, strlen(dump));
 }
