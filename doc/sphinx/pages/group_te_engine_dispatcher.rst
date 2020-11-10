@@ -304,6 +304,14 @@ The Dispatcher script accepts a lot of command-line options. Some of them are it
 
 .. code-block:: none
 
+	logger-foreground           Run Logger in the foreground (useful for Logger debugging).
+	logger-no-rcf               Run Logger without interaction with RCF, i.e. without polling any
+	                            Test Agents (useful for Logger debugging).
+	logger-check                Check that log messages received from other TE components are
+	                            properly formatted before storing them in the raw log file.
+
+.. code-block:: none
+
 	  trc-log=<filename>          Generate bzip2-ed TRC log
 	  trc-db=<filename>           TRC database to be used
 	  trc-tag=<TAG>               Tag to get specific expected results

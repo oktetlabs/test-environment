@@ -190,6 +190,12 @@ Generic options:
                                 nodes in the /local:/test: tree.
   --test-woc                    Wait before jump to cleanup regardless of test result.
 
+  --logger-foreground           Run Logger in the foreground (useful for Logger debugging).
+  --logger-no-rcf               Run Logger without interaction with RCF, i.e. without polling any
+                                Test Agents (useful for Logger debugging).
+  --logger-check                Check that log messages received from other TE components are
+                                properly formatted before storing them in the raw log file.
+
   --trc-log=<filename>          Generate bzip2-ed TRC log
   --trc-db=<filename>           TRC database to be used
   --trc-tag=<TAG>               Tag to get specific expected results
@@ -313,6 +319,8 @@ TRC_OPTS=
 TRC_TAGS=
 # No additional option for rgt-xml2html-multi tool
 RGT_X2HM_OPTS=
+# Logger options
+LOGGER_OPTS=
 # Configurator options
 CS_OPTS=
 # Building options
@@ -592,6 +600,12 @@ process_opts()
             --test-woc)
                 export TE_TEST_BEHAVIOUR_WAIT_ON_CLEANUP=1
                 ;;
+
+            --logger-*=[^\"]*)
+                opt_name="${1%%=*}"
+                opt_str="--${opt_name#--logger-}=\"${1#${opt_name}=}\""
+                LOGGER_OPTS="${LOGGER_OPTS} ${opt_str}" ;;
+            --logger-*) LOGGER_OPTS="${LOGGER_OPTS} --${1#--logger-}" ;;
 
             --trc-log=*) TRC_LOG="${1#--trc-log=}" ;;
             --trc-db=*)
