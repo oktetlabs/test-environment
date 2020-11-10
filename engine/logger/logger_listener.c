@@ -246,7 +246,8 @@ listener_finish_request(log_listener *listener)
     if (curl_easy_getinfo(listener->curl_handle, CURLINFO_RESPONSE_CODE,
                           &response_code) != CURLE_OK)
     {
-        ERROR("Listener %s: failed to extract request response code");
+        ERROR("Listener %s: failed to extract request response code",
+              listener->name);
         listener_free(listener);
         return TE_EINVAL;
     }
@@ -258,7 +259,8 @@ listener_finish_request(log_listener *listener)
             /* Check status */
             if (response_code != 200)
             {
-                ERROR("Listener %s: /init returned %d", response_code);
+                ERROR("Listener %s: /init returned %d", listener->name,
+                      response_code);
                 listener_free(listener);
                 return TE_EINVAL;
             }
@@ -272,7 +274,8 @@ listener_finish_request(log_listener *listener)
             /* Check response code */
             if (response_code != 200)
             {
-                ERROR("Listener %s: /feed returned %d", response_code);
+                ERROR("Listener %s: /feed returned %d", listener->name,
+                      response_code);
                 listener_free(listener);
                 return TE_EINVAL;
             }
