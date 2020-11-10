@@ -455,10 +455,6 @@ tester_plan_register(tester_plan *plan, json_t *ri, run_item_role role)
     if (plan == NULL || ri == NULL)
         return TE_EINVAL;
 
-    e = TE_ALLOC(sizeof(*e));
-    if (e == NULL)
-        return TE_ENOMEM;
-
     if (plan->test != NULL)
     {
         rc = tester_plan_add_pending_test(plan);
@@ -469,6 +465,10 @@ tester_plan_register(tester_plan *plan, json_t *ri, run_item_role role)
     rc = tester_plan_add_child(plan, ri, role);
     if (rc != 0)
         return rc;
+
+    e = TE_ALLOC(sizeof(*e));
+    if (e == NULL)
+        return TE_ENOMEM;
 
     e->json = ri;
     SLIST_INSERT_HEAD(&plan->stack, e, links);
