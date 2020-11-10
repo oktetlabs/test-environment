@@ -123,7 +123,6 @@ te_errno
 listener_init(log_listener *listener, json_t *data)
 {
     te_errno  rc;
-    size_t    size;
     json_t   *runid;
     char     *json;
 
