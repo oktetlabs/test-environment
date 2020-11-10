@@ -193,14 +193,26 @@ listeners_conf_dump(void)
     te_log_buf_free(buffer);
 }
 
-/** Process the log message with the test execution plan */
+/**
+ * Process the log message with the test execution plan.
+ *
+ * It is assumed that this message is the last piece of data needed for
+ * live resuts, so this is where the connections to listeners will be
+ * initialized.
+ *
+ * @param plan          log message with execution plan
+ *
+ * @returns Status code
+ */
 static te_errno
 process_plan(log_msg_view *plan)
 {
     size_t        i;
     te_errno      rc;
     te_string     plan_str = TE_STRING_INIT;
-    refcnt_buffer plan_buf;
+    json_t       *metadata;
+    json_t       *plan_obj;
+    json_error_t  err;
 
     rc = te_raw_log_expand(plan, &plan_str);
     if (rc != 0)
@@ -209,11 +221,28 @@ process_plan(log_msg_view *plan)
         return TE_EFAIL;
     }
 
-    refcnt_buffer_init(&plan_buf, plan_str.ptr, plan_str.len);
-    for (i = 0; i < listeners_num; i++)
-        listener_process_plan(&listeners[i], &plan_buf);
-    refcnt_buffer_free(&plan_buf);
+    plan_obj = json_loads(plan_str.ptr, 0, &err);
+    te_string_free(&plan_str);
+    if (plan_obj == NULL)
+    {
+        ERROR("Error parsing execution plan: %s (line %d, column %d)",
+              err.text, err.line, err.column);
+        return TE_EFAIL;
+    }
 
+    metadata = json_pack("{s:o}",
+                         "plan", plan_obj);
+    if (metadata == NULL)
+    {
+        ERROR("Failed to pack live results init message");
+        json_decref(plan_obj);
+        return TE_EFAIL;
+    }
+
+    for (i = 0; i < listeners_num; i++)
+        listener_init(&listeners[i], metadata);
+
+    json_decref(metadata);
     return 0;
 }
 

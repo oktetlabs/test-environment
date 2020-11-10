@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <curl/curl.h>
+#include <jansson.h>
 
 #include "te_defs.h"
 #include "te_errno.h"
@@ -64,23 +65,21 @@ typedef struct log_listener {
     size_t             buffers_num; /**< Number of virtual message buffers */
     struct curl_slist *headers;     /**< HTTP headers for CURL requests */
 
-    refcnt_buffer      plan;        /**< Test execution plan */
-
     te_string          buffer_out;  /**< Buffer for outgoing data */
     int                last_message_id; /**< Sequence number of the last
                                              sent message */
 } log_listener;
 
 /**
- * Send execution plan to the listener.
+ * Initialize the connection with the listener.
  *
  * @param listener          listener description
- * @param plan              execution plan
+ * @param data              metadata in JSON format
  *
  * @returns Status code
  */
-extern te_errno listener_process_plan(log_listener *listener,
-                                      const refcnt_buffer *plan);
+extern te_errno listener_init(log_listener *listener,
+                              json_t *data);
 
 /**
  * Add message to listener's buffer.

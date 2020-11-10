@@ -101,19 +101,26 @@ listener_conf_get(const char *name)
 
 /* See description in logger_listener.h */
 te_errno
-listener_process_plan(log_listener *listener, const refcnt_buffer *plan)
+listener_init(log_listener *listener, json_t *data)
 {
     te_errno rc;
+    size_t   size;
 
-    refcnt_buffer_copy(&listener->plan, plan);
+    size = json_dumpb(data, NULL, 0, JSON_COMPACT);
+    te_string_reserve(&listener->buffer_out, size + 1);
 
-    rc = listener_prepare_request(listener, "init", plan->buf, plan->len);
+    json_dumpb(data, listener->buffer_out.ptr, size, JSON_COMPACT);
+    listener->buffer_out.ptr[size] = '\0';
+    listener->buffer_out.len = size;
+    json_decref(data);
+
+    rc = listener_prepare_request(listener, "init", listener->buffer_out.ptr,
+                                  listener->buffer_out.len);
     if (rc != 0)
     {
         ERROR("Listener %s: Failed to prepare /init request: %r",
               listener->name, rc);
         listener_free(listener);
-        refcnt_buffer_free(&listener->plan);
         return rc;
     }
 
@@ -211,7 +218,6 @@ listener_finish_request(log_listener *listener)
             }
             else
             {
-                refcnt_buffer_free(&listener->plan);
                 RING("Listener %s: session initialized", listener->name);
                 listener->state = LISTENER_GATHERING;
             }
@@ -282,14 +288,6 @@ listener_free(log_listener *listener)
     curl_slist_free_all(listener->headers);
     listener->headers = NULL;
     te_string_free(&listener->buffer_out);
-    /* Free state-specific data */
-    switch (listener->state)
-    {
-        case LISTENER_INIT_WAITING:
-            refcnt_buffer_free(&listener->plan);
-            break;
-        default:;
-    }
     msg_buffer_free(&listener->buffer);
     listener->state = LISTENER_FINISHED;
 }
