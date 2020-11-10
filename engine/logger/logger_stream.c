@@ -208,7 +208,7 @@ listeners_conf_dump(void)
  * @returns Status code
  */
 static te_errno
-process_plan(log_msg_view *plan)
+process_plan(const log_msg_view *plan)
 {
     size_t         i;
     te_errno       rc;
@@ -286,20 +286,78 @@ typedef enum queue_event {
                                   All listeners should be freed. */
 } queue_event;
 
+/**
+ * Special message description.
+ *
+ * Special messages are recognized based on their Entity and User fields.
+ *
+ * These messages are special in the following ways:
+ * 1. They provide some information that is important for log streaming and
+ *    need to be handled in a special way.
+ * 2. They are unique: it is assumed that each special message appears only
+ *    once in the log. If another message with the same Entity and User values
+ *    is found, it is ignored silently (for the purposes of optimization).
+ */
+typedef struct special_message {
+    te_bool             found;
+    const queue_event   event;
+    te_errno          (*handler)(const log_msg_view *msg);
+    const char         *entity;
+    const size_t        entity_len;
+    const char         *user;
+    const size_t        user_len;
+} special_message;
+
+/** Check if a message is "special" and process it accordingly */
+queue_event
+process_special_messages(const log_msg_view *msg)
+{
+#define STRING_WITH_LEN(str) (str), (sizeof(str) - 1)
+    static special_message special[] = {
+        /* Execution plan */
+        { FALSE, QEVENT_PLAN, process_plan,
+          STRING_WITH_LEN(TE_LOG_CMSG_ENTITY_TESTER),
+          STRING_WITH_LEN(TE_LOG_EXEC_PLAN_USER) },
+    };
+#undef STRING_WITH_LEN
+    static const size_t special_num = TE_ARRAY_LEN(special);
+
+    size_t      i;
+    te_errno    rc;
+    queue_event evt = QEVENT_NONE;
+
+    for (i = 0; i < special_num; i++)
+    {
+        if (!special[i].found &&
+            msg->entity_len == special[i].entity_len &&
+            msg->user_len == special[i].user_len &&
+            strncmp(msg->entity, special[i].entity, msg->entity_len) == 0 &&
+            strncmp(msg->user, special[i].user, msg->user_len) == 0)
+        {
+            special[i].found = TRUE;
+            evt = special[i].event;
+            rc = special[i].handler(msg);
+            if (rc != 0)
+                evt |= QEVENT_FAILURE;
+            break;
+        }
+    }
+
+    return evt;
+}
+
 /** Process the messages from Logger threads */
 static queue_event
 process_queue(void)
 {
-    int                 i;
+
+    size_t              i;
     refcnt_buffer_list  messages;
     refcnt_buffer      *item;
     refcnt_buffer      *tmp;
     queue_event         evt = QEVENT_NONE;
     te_bool             queue_shutdown;
     te_bool             failure = FALSE;
-    static te_bool      found_plan = FALSE;
-    static const char   plan_entity[] = TE_LOG_CMSG_ENTITY_TESTER;
-    static const char   plan_user[] = TE_LOG_EXEC_PLAN_USER;
 
     msg_queue_extract(&listener_queue, &messages, &queue_shutdown);
     if (queue_shutdown)
@@ -316,21 +374,10 @@ process_queue(void)
             rc = te_raw_log_parse(item->buf, item->len, &view);
             if (rc == 0)
             {
-                if (!found_plan &&
-                    view.entity_len == sizeof(plan_entity) - 1 &&
-                    strncmp(view.entity, plan_entity, view.entity_len) == 0 &&
-                    view.user_len == sizeof(plan_user) - 1 &&
-                    strncmp(view.user, plan_user, view.user_len) == 0)
-                {
-                    found_plan = TRUE;
-                    evt |= QEVENT_PLAN;
-                    rc = process_plan(&view);
-                    if (rc != 0)
-                    {
-                        evt |= QEVENT_FAILURE;
-                        failure = TRUE;
-                    }
-                }
+                /* Check if the message is special */
+                evt |= process_special_messages(&view);
+                if (evt & QEVENT_FAILURE)
+                    failure = TRUE;
                 /* Run through filters */
                 if (!failure)
                     for (i = 0; i < streaming_filters_num; i++)
