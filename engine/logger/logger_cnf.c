@@ -1153,7 +1153,8 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
     const char       *buffers_num_str = NULL;
     unsigned long     tmp;
 
-    log_listener     *current;
+    log_listener_conf *current_conf;
+    log_listener      *current;
 
     for (pair = listener->data.mapping.pairs.start;
          pair < listener->data.mapping.pairs.top; pair++)
@@ -1207,10 +1208,12 @@ add_listener(yaml_document_t *d, yaml_node_t *listener)
               __FUNCTION__, name_str);
         return -1;
     }
-    if (strcasecmp(enabled_str, "false") == 0 ||
-        strcasecmp(enabled_str, "no") == 0 ||
-        strcasecmp(enabled_str, "0") == 0 ||
-        strcasecmp(enabled_str, "") == 0)
+    current_conf = listener_conf_get(name_str);
+    if (current_conf == NULL &&
+        (strcasecmp(enabled_str, "false") == 0 ||
+         strcasecmp(enabled_str, "no") == 0 ||
+         strcasecmp(enabled_str, "0") == 0 ||
+         strcasecmp(enabled_str, "") == 0))
     {
         VERB("%s(%s): Not enabled, skipping", __FUNCTION__, name_str);
         return 0;
@@ -1574,6 +1577,8 @@ config_parser_xml(const char *filename)
 int
 config_parser(const char *filename)
 {
+    size_t   i;
+    size_t   j;
     int      res;
     ta_inst *tmp_el;
 
@@ -1620,6 +1625,28 @@ config_parser(const char *filename)
     VERB("snifp_sets.osize    %u\n", snifp_sets.osize);
     VERB("snifp_sets.ofill    %u\n", snifp_sets.ofill);
     VERB("snifp_sets.period   %u\n", snifp_sets.period);
+
+    for (i = 0; i < listener_confs_num; i++)
+    {
+        for (j = 0; j < listeners_num; j++)
+        {
+            if (strcmp(listener_confs[i].name, listeners[j].name) == 0)
+                break;
+        }
+        if (j == listeners_num)
+        {
+            ERROR("User tried to enable a listener that doesn't exist: %s",
+                  listener_confs[i].name);
+            /**
+             * This is technically a problem with a cmdline option, so let's
+             * notify the user in the same manner as we notify them about other
+             * problems with cmdline options.
+             */
+            fprintf(stderr, "Listener not defined in the config file: %s\n",
+                    listener_confs[i].name);
+            res = -1;
+        }
+    }
 
     return res;
 }

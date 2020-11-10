@@ -41,6 +41,16 @@ typedef enum listener_state {
     LISTENER_FINISHED      /**< Listener has finished its operation */
 } listener_state;
 
+/** Listener configuration supplied through command-line options */
+typedef struct log_listener_conf {
+    char name[LOG_MAX_LISTENER_NAME]; /**< Name */
+} log_listener_conf;
+
+/** Add user-supplied listener configuration */
+extern te_errno listener_conf_add(const char *confstr);
+/** Find the user-supplied configuration for a given listener */
+extern log_listener_conf *listener_conf_get(const char *name);
+
 /** Log message listener */
 typedef struct log_listener {
     char               name[LOG_MAX_LISTENER_NAME]; /**< Name */
@@ -118,9 +128,12 @@ extern te_errno listener_finish(log_listener *listener);
 extern void listener_free(log_listener *listener);
 
 
+/** Array of listener configurations */
+extern log_listener_conf listener_confs[LOG_MAX_LISTENERS];
+extern size_t            listener_confs_num;
 /** Array of listeners */
-extern log_listener    listeners[LOG_MAX_LISTENERS];
-extern size_t          listeners_num;
+extern log_listener      listeners[LOG_MAX_LISTENERS];
+extern size_t            listeners_num;
 
 #ifdef __cplusplus
 } /* extern "C" */

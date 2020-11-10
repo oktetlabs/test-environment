@@ -10,14 +10,18 @@
 
 #define TE_LGR_USER "Log streaming"
 
+#include <stddef.h>
 #include <sys/time.h>
 
 #include "te_defs.h"
+#include "te_str.h"
 #include "logger_api.h"
 #include "logger_listener.h"
 
-log_listener    listeners[LOG_MAX_LISTENERS];
-size_t          listeners_num;
+log_listener_conf listener_confs[LOG_MAX_LISTENERS];
+size_t            listener_confs_num;
+log_listener      listeners[LOG_MAX_LISTENERS];
+size_t            listeners_num;
 
 static te_errno
 listener_prepare_request(log_listener *listener, const char *url_suffix,
@@ -52,6 +56,47 @@ listener_prepare_request(log_listener *listener, const char *url_suffix,
 
     free(url);
     return 0;
+}
+
+/* See description in logger_listener.h */
+te_errno
+listener_conf_add(const char *confstr)
+{
+    size_t             i;
+    size_t             ret;
+    log_listener_conf *conf;
+
+    if (listener_confs_num >= LOG_MAX_LISTENERS)
+        return TE_ENOMEM;
+
+    for (i = 0; i < listener_confs_num; i++)
+    {
+        if (strcmp(listener_confs[i].name, confstr) == 0)
+            return TE_EEXIST;
+    }
+
+    conf = &listener_confs[listener_confs_num];
+    ret = te_strlcpy(conf->name, confstr, LOG_MAX_LISTENER_NAME);
+    if (ret == LOG_MAX_LISTENER_NAME)
+        return TE_EINVAL;
+
+    listener_confs_num++;
+    return 0;
+}
+
+/* See description in logger_listener.h */
+log_listener_conf *
+listener_conf_get(const char *name)
+{
+    size_t i;
+
+    for (i = 0; i < listener_confs_num; i++)
+    {
+        if (strcmp(listener_confs[i].name, name) == 0)
+            return &listener_confs[i];
+    }
+
+    return NULL;
 }
 
 /* See description in logger_listener.h */

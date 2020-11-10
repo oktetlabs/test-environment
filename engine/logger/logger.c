@@ -35,6 +35,7 @@
 #include "logger_int.h"
 #include "logger_internal.h"
 #include "logger_ten.h"
+#include "logger_listener.h"
 #include "logger_stream.h"
 
 #define LGR_TA_MAX_BUF      0x4000 /* FIXME */
@@ -87,6 +88,10 @@ static unsigned int         lgr_flags = 0;
 #define LOGGER_CHECK        0x04    /**< Check messages before store in
                                          raw log file */
 #define LOGGER_SHUTDOWN     0x10    /**< Logger is shuting down */
+/*@}*/
+
+/** @name Logger command-line option flags */
+#define LOGGER_OPT_LISTENER    1    /**< Force a listener to be enabled */
 /*@}*/
 
 static const char          *cfg_file = NULL;
@@ -841,6 +846,7 @@ process_cmd_line_opts(int argc, const char **argv)
 {
     poptContext  optCon;
     int          rc;
+    char        *listener_conf;
 
     /* Option Table */
     struct poptOption options_table[] = {
@@ -861,6 +867,10 @@ process_cmd_line_opts(int argc, const char **argv)
           "properly formatted before storing them in the raw log file.",
           NULL },
 
+        { "listener", '\0',
+          POPT_ARG_STRING, &listener_conf, LOGGER_OPT_LISTENER,
+          "Enable a listener.", "confstr" },
+
         POPT_AUTOHELP
         POPT_TABLEEND
     };
@@ -874,6 +884,21 @@ process_cmd_line_opts(int argc, const char **argv)
     {
         switch (rc)
         {
+            case LOGGER_OPT_LISTENER:
+            {
+                te_errno rc;
+
+                rc = listener_conf_add(listener_conf);
+                free(listener_conf);
+                if (rc != 0)
+                {
+                    fprintf(stderr, "Failed to add listener configuration: %s\n",
+                            te_rc_err2str(rc));
+                    poptFreeContext(optCon);
+                    return EXIT_FAILURE;
+                }
+                break;
+            }
             default:
                 fprintf(stderr, "Unexpected option number %d", rc);
                 poptFreeContext(optCon);

@@ -195,6 +195,8 @@ Generic options:
                                 Test Agents (useful for Logger debugging).
   --logger-check                Check that log messages received from other TE components are
                                 properly formatted before storing them in the raw log file.
+  --logger-listener=<confstr>   Enable streaming live results to the specified listener.
+                                Config string has the following format: <name>.
 
   --trc-log=<filename>          Generate bzip2-ed TRC log
   --trc-db=<filename>           TRC database to be used
