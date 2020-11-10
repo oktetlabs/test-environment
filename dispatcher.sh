@@ -1196,10 +1196,10 @@ start_daemon() {
         myecho -n "--->>> Starting ${DAEMON_NAME}... "
         if test -n "$(eval echo '${VG_'$DAEMON'}')" ; then
             # Run in foreground under valgrind
-            valgrind ${VG_OPTIONS} ${DAEMON_EXEC} ${DAEMON_OPTS} \
-                "${DAEMON_CONF}" 2>valgrind.${DAEMON_EXEC}
+            eval "valgrind ${VG_OPTIONS} ${DAEMON_EXEC} ${DAEMON_OPTS} \
+                      \"${DAEMON_CONF}\" 2>valgrind.${DAEMON_EXEC}"
         else
-            ${DAEMON_EXEC} ${DAEMON_OPTS} "${DAEMON_CONF}"
+            eval "${DAEMON_EXEC} ${DAEMON_OPTS} \"${DAEMON_CONF}\""
         fi
         START_OK=$?
         if test ${START_OK} -eq 0 ; then
