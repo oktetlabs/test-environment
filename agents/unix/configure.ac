@@ -357,6 +357,27 @@ if test -n "$with_cfg_unix_daemons" ; then
 fi
 AC_SUBST([DAEMONS_CFLAGS])
 
+AC_ARG_WITH([extra_libs],
+            AS_HELP_STRING([--with-extra-libs=<libs separated by space>],
+                           [Extra dynamic libraries to link with]))
+
+if test -n "$with_extra_libs" ; then
+  for i in $with_extra_libs ; do
+    LIBS="$LIBS -l${i}"
+    DYNAMIC_LIBS="${DYNAMIC_LIBS} -l${i}"
+  done
+fi
+
+AC_ARG_WITH([extra_static_libs],
+            AS_HELP_STRING([--with-extra-static-libs=<libs separated by space>],
+                           [Extra static libraries to link with]))
+
+if test -n "$with_extra_static_libs" ; then
+  for i in $with_extra_static_libs ; do
+    LIBS="$LIBS -l${i}"
+  done
+fi
+
 AM_CONDITIONAL(CFG_UNIX_DAEMONS, test -n "$with_cfg_unix_daemons")
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_NAMED, 
     [expr "$with_cfg_unix_daemons" : ".*dns" >/dev/null])
