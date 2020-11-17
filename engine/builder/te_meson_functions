@@ -7,15 +7,31 @@
 # Copyright (C) 2003-2020 OKTET Labs.
 #
 
+#
+# For unknown reason ninja does not apply NINJA_STATUS variable
+# when installing/preserving files.
+#
+declare -a NINJA_STDOUT_LIST
+NINJA_STDOUT_LIST+=("Installing ")
+NINJA_STDOUT_LIST+=("Preserving existing file ")
+
 # Helper function to split ninja output into stdout and stderr
 function ninja_status_filter () {
-    local l n msg_install
+    local l n
+
     while read -r l; do
         n=${l#\[ninja\]}
-        # For unknown reason ninja does not apply NINJA_STATUS variable
-        # when installing files.
-        msg_install=${l#Installing }
-        test "$l" != "$n" -o "$l" != "$msg_install" \
-            && printf "%s\n" "$n" || printf "%s\n" "$l" >&2
+        if test "$l" != "$n" ; then
+            printf "%s\n" "$n"
+        else
+            local found=false
+            for i in "${NINJA_STDOUT_LIST[@]}" ; do
+                if test "$l" != "${l#${i}}" ; then
+                    found=true
+                    break
+                fi
+            done
+            ${found} && printf "%s\n" "$l" || printf "%s\n" "$l" >&2
+        fi
     done
 }
