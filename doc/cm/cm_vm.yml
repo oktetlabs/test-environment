@@ -302,6 +302,14 @@
          Value: canonical instance OID of the host PCI function to pass-through, e.g.
          /agent:Agt/hardware:/pci:/device:0000:01:00.0
 
+    - oid: "/agent/vm/pci_pt/vf_token"
+      access: read_write
+      type: string
+      d: |
+         VF token for the PCI passthrough function
+         Name: None
+         Value: alphanumerical VF token separated by hyphens
+
     - oid: "/agent/vm/serial"
       access: read_write
       type: string

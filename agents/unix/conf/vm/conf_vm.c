@@ -87,6 +87,7 @@ struct vm_net_entry {
 struct vm_pci_pt_entry {
     SLIST_ENTRY(vm_pci_pt_entry)    links;
     char                           *name;
+    char                           *vf_token;
     te_string                       pci_addr;
 };
 
@@ -533,7 +534,9 @@ vm_append_pci_pt_cmd(te_string *cmd, vm_pci_pt_list_t *pt_list)
 
     SLIST_FOREACH(pt, pt_list, links)
     {
-        rc = te_string_append(&args, "vfio-pci,host=%s", pt->pci_addr.ptr);
+        rc = te_string_append(&args, "vfio-pci,host=%s%s%s", pt->pci_addr.ptr,
+                              pt->vf_token == NULL ? "" : ",vf_token=",
+                              te_str_empty_if_null(pt->vf_token));
         if (rc != 0)
         {
             ERROR("Cannot compose PCI function pass-through command line (line %u): %r", __LINE__, rc);
@@ -923,6 +926,7 @@ vm_pci_pt_free(struct vm_pci_pt_entry *pt)
 {
     free(pt->name);
     te_string_free(&pt->pci_addr);
+    free(pt->vf_token);
     free(pt);
 }
 
@@ -2670,8 +2674,8 @@ vm_virtfs_security_model_set(unsigned int gid, const char *oid, char *value,
 
 
 static te_errno
-vm_pci_pt_get(unsigned int gid, const char *oid, char *value,
-              const char *vm_name, const char *pci_pt_name)
+vm_pci_pt_token_get(unsigned int gid, const char *oid, char *value,
+                    const char *vm_name, const char *pci_pt_name)
 {
     struct vm_entry *vm;
     struct vm_pci_pt_entry *pt = NULL;
@@ -2682,21 +2686,44 @@ vm_pci_pt_get(unsigned int gid, const char *oid, char *value,
     if ((vm = vm_find(vm_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (vm == NULL)
+    SLIST_FOREACH(pt, &vm->pci_pts, links)
+    {
+        if (strcmp(pci_pt_name, pt->name) == 0)
+            break;
+    }
+    if (pt == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", te_str_empty_if_null(pt->vf_token));
+
+    return 0;
+}
+
+static te_errno
+vm_pci_pt_token_set(unsigned int gid, const char *oid, const char *value,
+                    const char *vm_name, const char *pci_pt_name)
+{
+    struct vm_entry *vm;
+    struct vm_pci_pt_entry *pt = NULL;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((vm = vm_find(vm_name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm_is_running(vm))
+        return TE_RC(TE_TA_UNIX, ETXTBSY);
 
     SLIST_FOREACH(pt, &vm->pci_pts, links)
     {
         if (strcmp(pci_pt_name, pt->name) == 0)
             break;
     }
-
     if (pt == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%s", pt->pci_addr.ptr);
-
-    return 0;
+    return string_replace(&pt->vf_token, value);
 }
 
 static te_errno
@@ -2799,6 +2826,37 @@ vm_pci_pt_list(unsigned int gid, const char *oid, const char *sub_id,
     *list = result.ptr;
     return 0;
 }
+
+static te_errno
+vm_pci_pt_get(unsigned int gid, const char *oid, char *value,
+              const char *vm_name, const char *pci_pt_name)
+{
+    struct vm_entry *vm;
+    struct vm_pci_pt_entry *pt = NULL;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if ((vm = vm_find(vm_name)) == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (vm == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    SLIST_FOREACH(pt, &vm->pci_pts, links)
+    {
+        if (strcmp(pci_pt_name, pt->name) == 0)
+            break;
+    }
+
+    if (pt == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%s", pt->pci_addr.ptr);
+
+    return 0;
+}
+
 
 
 static te_errno
@@ -3030,7 +3088,11 @@ RCF_PCH_CFG_NODE_RW_COLLECTION(node_vm_device, "device", NULL, &node_vm_serial,
                                vm_device_get, NULL, vm_device_add,
                                vm_device_del, vm_device_list, NULL);
 
-RCF_PCH_CFG_NODE_RW_COLLECTION(node_vm_pci_pt, "pci_pt", NULL, &node_vm_device,
+RCF_PCH_CFG_NODE_RW(node_vm_pci_pt_token, "vf_token", NULL, NULL,
+                    vm_pci_pt_token_get, vm_pci_pt_token_set);
+
+RCF_PCH_CFG_NODE_RW_COLLECTION(node_vm_pci_pt, "pci_pt",
+                               &node_vm_pci_pt_token, &node_vm_device,
                                vm_pci_pt_get, NULL, vm_pci_pt_add,
                                vm_pci_pt_del, vm_pci_pt_list, NULL);
 
