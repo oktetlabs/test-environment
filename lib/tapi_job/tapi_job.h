@@ -502,6 +502,21 @@ extern te_errno tapi_job_receive_last(const tapi_job_channel_set_t filters,
                                       tapi_job_buffer_t *buffer);
 
 /**
+ * Check if there is at least one non-eos message on one of the available
+ * filters. The message is not removed from the queue, it can still be read with
+ * tapi_job_receive().
+ *
+ * The function is useful to check if a job produced some particular output.
+ *
+ * @param filters     Set of filters to read from.
+ * @param timeout_ms  Timeout to wait (negative means tapi_job_get_timeout())
+ *
+ * @return            @c TRUE if there is a non-eos message
+ */
+extern te_bool tapi_job_filters_have_data(const tapi_job_channel_set_t filters,
+                                          int timeout_ms);
+
+/**
  * The same as tapi_job_receive() but fails the test if an error
  * happens. Also, unlike tapi_job_receive(), the function resets the
  * @p buffer contents.

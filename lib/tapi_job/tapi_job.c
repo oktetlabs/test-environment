@@ -781,6 +781,22 @@ tapi_job_receive_last(const tapi_job_channel_set_t filters, int timeout_ms,
     return receive_common(filters, timeout_ms, buffer, rpc_job_receive_last);
 }
 
+te_bool
+tapi_job_filters_have_data(const tapi_job_channel_set_t filters, int timeout_ms)
+{
+    te_errno rc;
+    te_bool have_data = FALSE;
+    tapi_job_buffer_t buf = TAPI_JOB_BUFFER_INIT;
+
+    rc = tapi_job_receive_last(filters, timeout_ms, &buf);
+    if (rc == 0 && !buf.eos)
+        have_data = TRUE;
+
+    te_string_free(&buf.data);
+
+    return have_data;
+}
+
 
 void
 tapi_job_simple_receive(const tapi_job_channel_set_t filters, int timeout_ms,
