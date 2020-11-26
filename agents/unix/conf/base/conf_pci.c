@@ -95,6 +95,8 @@ typedef struct pci_device {
     uint16_t subsystem_device;    /**< Subsystem device ID */
     uint32_t device_class;        /**< PCI device class */
     unsigned lock;                /**< TE resource lock counter */
+    char *net_list;               /**< Space separated list of network
+                                       interfaces */
     TAILQ_ENTRY(pci_device) next; /**< Next device with the same
                                    *   vendor/device ID
                                    */
@@ -536,6 +538,7 @@ update_device_list(void)
     size_t n_devs;
     pci_device *devs = scan_pci_bus(&n_devs);
     pci_vendors vendors;
+    unsigned int i;
 
     if (devs == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENODEV);
@@ -548,6 +551,9 @@ update_device_list(void)
     }
 
     transfer_locking(vendors, vendor_list);
+
+    for (i = 0; i < n_all_devices; i++)
+        free(all_devices[i].net_list);
 
     free(all_devices);
     all_devices = devs;
@@ -2030,11 +2036,12 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
              const char *addr_str)
 {
     te_string buf = TE_STRING_INIT;
-    const pci_device *dev;
-    char *result = NULL;
+    pci_device *dev;
+    char *net_list = NULL;
     te_errno rc;
     char driver_name[PATH_MAX];
     struct dirent **namelist;
+    unsigned int i;
     int n;
 
     UNUSED(sub_id);
@@ -2043,7 +2050,7 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
     UNUSED(unused1);
     UNUSED(unused2);
 
-    rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);
+    rc = find_device_by_addr_str(addr_str, &dev);
     if (rc != 0)
         return rc;
 
@@ -2076,6 +2083,9 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
             *list = strdup("");
             if (*list == NULL)
                 return TE_OS_RC(TE_TA_UNIX, TE_ENOMEM);
+
+            free(dev->net_list);
+            dev->net_list = NULL;
             return 0;
         }
 
@@ -2093,24 +2103,124 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
     if (rc != 0)
         return rc;
 
-    result = calloc(1, RCF_MAX_VAL);
-    if (result == NULL)
+    net_list = calloc(1, RCF_MAX_VAL);
+    if (net_list == NULL)
     {
         te_string_free(&buf);
         ERROR("Out of memory");
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
-    rc = get_dir_list(buf.ptr, result, RCF_MAX_VAL, TRUE, NULL, NULL);
-    te_string_free(&buf);
+    rc = get_dir_list(buf.ptr, net_list, RCF_MAX_VAL, TRUE, NULL, NULL);
+    te_string_reset(&buf);
     if (rc != 0)
     {
-        free(result);
+        te_string_free(&buf);
+        free(net_list);
         return rc;
     }
 
-    *list = result;
-    return rc;
+    if (*net_list == '\0')
+    {
+        free(net_list);
+        net_list = NULL;
+    }
+
+    rc = string_replace(&dev->net_list, net_list);
+    if (rc != 0)
+    {
+        te_string_free(&buf);
+        free(net_list);
+        return rc;
+    }
+
+    if (net_list == NULL)
+    {
+        te_string_free(&buf);
+        *list = NULL;
+        return 0;
+    }
+
+    for (n = 0, i = 0; i < strlen(net_list); i++)
+    {
+        if (net_list[i] != ' ')
+            continue;
+
+        rc = te_string_append(&buf, "%u ", n++);
+        if (rc != 0)
+        {
+            te_string_free(&buf);
+            free(net_list);
+            return rc;
+        }
+    }
+
+    if (n == 1)
+    {
+        te_string_reset(&buf);
+        /* The string must contain at least 2 chars */
+        (void)te_string_append(&buf, " ");
+    }
+
+    *list = buf.ptr;
+
+    return 0;
+}
+
+static te_errno
+pci_net_get(unsigned int gid, const char *oid, char *value,
+            const char *unused1, const char *unused2,
+            const char *addr_str, const char *net_id_str)
+{
+    const pci_device *dev;
+    unsigned int net_id;
+    const char *next;
+    unsigned int n;
+    unsigned int i;
+    te_errno rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+    if (*net_id_str == '\0')
+    {
+        net_id = 0;
+    }
+    else
+    {
+        rc = te_strtoui(net_id_str, 0, &net_id);
+        if (rc != 0)
+            return rc;
+    }
+
+    rc = find_device_by_addr_str(addr_str, (pci_device **)&dev);
+    if (rc != 0)
+        return rc;
+
+    if (dev->net_list == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    for (n = 0, i = 0; n < net_id && i < strlen(dev->net_list); i++)
+    {
+        if (dev->net_list[i] == ' ')
+            n++;
+    }
+    if (n != net_id)
+    {
+        ERROR("Failed to find %u network in list '%s'", net_id, dev->net_list);
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+    }
+
+    next = strchr(&dev->net_list[i], ' ');
+    if (next == NULL)
+        next = &dev->net_list[strlen(dev->net_list)];
+
+    snprintf(value, RCF_MAX_VAL, "%.*s", (int)(next - &dev->net_list[i]),
+             &dev->net_list[i]);
+
+    return 0;
 }
 
 static int
@@ -2278,7 +2388,7 @@ RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_virtfn, "virtfn",
                                pci_virtfn_get, pci_virtfn_list);
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_net, "net",
                                NULL, &node_pci_virtfn,
-                               NULL, pci_net_list);
+                               pci_net_get, pci_net_list);
 RCF_PCH_CFG_NODE_RW(node_pci_driver, "driver",
                     NULL, &node_pci_net,
                     pci_driver_get, pci_driver_set);

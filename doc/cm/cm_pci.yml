@@ -137,14 +137,16 @@
 
     - oid: "/agent/hardware/pci/device/net"
       access: read_only
-      type: none
+      type: string
       depends:
         - oid: "/agent/hardware/pci/device/driver"
       d: |
          Device's network interfaces
 
-         Name: interface name
-         Value: none
+         Name: If a PCI device has only one network interface, name is empty,
+               if it has more than one interface, name is a sequence number
+               of the interface
+         Value: Name of the network interface
 
     - oid: "/agent/hardware/pci/device/dev"
       access: read_only
