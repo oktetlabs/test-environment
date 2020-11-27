@@ -320,8 +320,11 @@ if test -n "$with_cfg_unix_daemons" ; then
             )
             ;;
 
-        pppoe)
+        pppoe-server)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_PPPOE_SERVER"
+            ;;
+
+        pppoe-client)
             DAEMONS_CFLAGS="$DAEMONS_CFLAGS -DWITH_PPPOE_CLIENT"
             ;;
 
@@ -388,9 +391,9 @@ AM_CONDITIONAL(CFG_UNIX_DAEMONS_ISC_DHCP_SERVER,
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_OPENVPN,
     [expr "$with_cfg_unix_daemons" : ".*openvpn" >/dev/null])
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_PPPOE_SERVER,
-    [expr "$with_cfg_unix_daemons" : ".*pppoe" >/dev/null])
+    [expr "$with_cfg_unix_daemons" : ".*pppoe-server" >/dev/null])
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_PPPOE_CLIENT,
-    [expr "$with_cfg_unix_daemons" : ".*pppoe" >/dev/null])
+    [expr "$with_cfg_unix_daemons" : ".*pppoe-client" >/dev/null])
 AM_CONDITIONAL(CFG_UNIX_DAEMONS_VTUND, 
     [expr "$with_cfg_unix_daemons" : ".*vtund" >/dev/null])
 AM_CONDITIONAL([CFG_UNIX_DAEMONS_RADIUS],
