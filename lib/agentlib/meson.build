@@ -10,7 +10,9 @@ conf = configuration_data()
 
 foreach opt : lib_opts_agentlib
     if get_variable(('opt-' + opt).underscorify())
-        conf.set('ENABLE_' + opt.to_upper().underscorify(), 1)
+        # substring() is not supported on meson versions < 0.56
+        enable_opt = 'ENABLE_'.join(opt.split('agentlib-'))
+        conf.set(enable_opt.to_upper().underscorify(), 1)
     endif
 endforeach
 
