@@ -476,7 +476,8 @@ extern te_errno tapi_job_receive(const tapi_job_channel_set_t filters,
                                  tapi_job_buffer_t *buffer);
 
 /**
- * Read the last non-eos message from one of the available filters.
+ * Read the last non-eos message (if there is one) from one of the
+ * available filters. If the only message contains eos, read it.
  * The message is not removed from the queue, it can still be read with
  * tapi_job_receive().
  *
