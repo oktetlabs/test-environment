@@ -80,6 +80,17 @@
       access: read_write
       type: integer
 
+    - oid: "/agent/sys/net/netfilter"
+      access: read_only
+      type: none
+      d: |
+         System settings from /proc/sys/net/netfilter/.
+         Name: empty
+
+    - oid: "/agent/sys/net/netfilter/nf_conntrack_max"
+      access: read_write
+      type: integer
+
     - oid: "/agent/sys/net/ipv4"
       access: read_only
       type: none

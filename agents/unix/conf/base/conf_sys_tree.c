@@ -67,7 +67,8 @@ RCF_PCH_CFG_NODE_RO_COLLECTION(node_neigh, "neigh", NULL, &node_route,
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_conf, "conf", NULL, &node_neigh,
                                NULL, sys_if_dir_list_ipv4);
 RCF_PCH_CFG_NODE_NA(node_ipv4, "ipv4", &node_conf, &node_ipv6);
-RCF_PCH_CFG_NODE_NA(node_core, "core", NULL, &node_ipv4);
+RCF_PCH_CFG_NODE_NA(node_netfilter, "netfilter", NULL, &node_ipv4);
+RCF_PCH_CFG_NODE_NA(node_core, "core", NULL, &node_netfilter);
 RCF_PCH_CFG_NODE_NA(node_net, "net", &node_core, NULL);
 
 RCF_PCH_CFG_NODE_NA(node_vm, "vm", NULL, NULL);
@@ -89,6 +90,8 @@ ta_unix_conf_sys_tree_init(void)
 
     CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/core",
                                       "/proc/sys/net/core/"));
+    CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/netfilter",
+                                      "/proc/sys/net/netfilter/"));
     CHECK_NZ_RETURN(register_sys_opts("/agent/sys/net/ipv4",
                                       "/proc/sys/net/ipv4/"));
     CHECK_NZ_RETURN(register_sys_opts(
@@ -143,6 +146,7 @@ ta_unix_conf_sys_tree_fini(void)
 {
 #if __linux__
     CHECK_NZ_RETURN(unregister_sys_opts("/agent/sys/net/core"));
+    CHECK_NZ_RETURN(unregister_sys_opts("/agent/sys/net/netfilter"));
     CHECK_NZ_RETURN(unregister_sys_opts("/agent/sys/net/ipv4"));
     CHECK_NZ_RETURN(unregister_sys_opts("/agent/sys/net/ipv4/conf"));
     CHECK_NZ_RETURN(unregister_sys_opts("/agent/sys/net/ipv4/neigh"));
