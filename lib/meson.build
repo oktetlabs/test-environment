@@ -286,7 +286,7 @@ foreach l : all_libs
             endif
             if build_lib_static
                 if build_lib_shared
-                    if meson.version() >= '0.46.0'
+                    if meson.version().version_compare('>=0.46.0')
                         # Bless the lib_static object with a reference to the pkg-config
                         # file so it could be used in "Requires" instead of "Libs".
                         # Doesn't seem to be needed with older meson versions.
@@ -306,7 +306,7 @@ foreach l : all_libs
                                      libraries: lib_static)
                     endif
                 else
-                    if meson.version() >= '0.46.0'
+                    if meson.version().version_compare('>=0.46.0')
                         pkg.generate(lib_static,
                                      filebase: 'te-' + libname)
                     else
@@ -318,7 +318,7 @@ foreach l : all_libs
                     endif
                 endif
             else
-                if meson.version() >= '0.46.0'
+                if meson.version().version_compare('>=0.46.0')
                     pkg.generate(lib_shared,
                                  filebase: 'te-' + libname)
                 else
