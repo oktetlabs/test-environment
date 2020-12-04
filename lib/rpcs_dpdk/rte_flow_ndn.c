@@ -2226,6 +2226,45 @@ rte_flow_action_phy_port_from_pdu(const asn_value *conf_pdu,
 }
 
 static te_errno
+rte_flow_action_jump_from_pdu(const asn_value *conf_pdu,
+                              struct rte_flow_action *action)
+{
+    struct rte_flow_action_jump    *conf = NULL;
+    asn_tag_value                   tag;
+    size_t                          len;
+    int                             rc;
+    uint32_t                        val;
+
+    if (action == NULL || conf_pdu == NULL)
+        return TE_EINVAL;
+
+    rc = asn_get_choice_value(conf_pdu, NULL, NULL, &tag);
+    if (rc != 0)
+        return rc;
+    else if (tag != NDN_FLOW_ACTION_GROUP)
+        return TE_EINVAL;
+
+    conf = calloc(1, sizeof(*conf));
+    if (conf == NULL)
+        return TE_ENOMEM;
+
+    len = sizeof(conf->group);
+    rc = asn_read_value_field(conf_pdu, &val, &len, "#group");
+    if (rc != 0)
+    {
+        free(conf);
+        return rc;
+    }
+
+    conf->group = val;
+
+    action->type = RTE_FLOW_ACTION_TYPE_JUMP;
+    action->conf = conf;
+
+    return 0;
+}
+
+static te_errno
 rte_flow_action_end(struct rte_flow_action *action)
 {
     if (action == NULL)
@@ -2272,6 +2311,7 @@ static const struct rte_flow_action_types_mapping {
     { NDN_FLOW_ACTION_TYPE_PORT_ID, rte_flow_action_port_id_from_pdu },
     { NDN_FLOW_ACTION_TYPE_VF, rte_flow_action_vf_from_pdu },
     { NDN_FLOW_ACTION_TYPE_PHY_PORT, rte_flow_action_phy_port_from_pdu },
+    { NDN_FLOW_ACTION_TYPE_JUMP, rte_flow_action_jump_from_pdu },
 };
 
 static te_errno

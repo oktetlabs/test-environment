@@ -173,6 +173,21 @@ tapi_rte_flow_add_ndn_action_port(asn_value *ndn_actions,
 }
 
 void
+tapi_rte_flow_add_ndn_action_jump(asn_value *ndn_actions,
+                                  int action_index,
+                                  uint32_t group)
+{
+    asn_value *action;
+
+    CHECK_NOT_NULL(action = asn_init_value(ndn_rte_flow_action));
+    CHECK_RC(asn_write_int32(action, NDN_FLOW_ACTION_TYPE_JUMP, "type"));
+    CHECK_RC(asn_write_value_field_fmt(action, &group, sizeof(group),
+                                       "conf.#group"));
+
+    CHECK_RC(asn_insert_indexed(ndn_actions, action, action_index, ""));
+}
+
+void
 tapi_rte_flow_add_ndn_item_port_id(asn_value *ndn_items,
                                    int item_index,
                                    uint32_t port_id)

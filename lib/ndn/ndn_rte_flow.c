@@ -62,6 +62,7 @@ asn_enum_entry_t _ndn_rte_flow_action_type_enum_entries[] = {
     {"port-id", NDN_FLOW_ACTION_TYPE_PORT_ID},
     {"vf", NDN_FLOW_ACTION_TYPE_VF},
     {"phy-port", NDN_FLOW_ACTION_TYPE_PHY_PORT},
+    {"jump", NDN_FLOW_ACTION_TYPE_JUMP},
 };
 
 asn_type ndn_rte_flow_action_type_s = {
@@ -230,6 +231,8 @@ static asn_named_entry_t _ndn_rte_flow_action_conf_ne_array[] = {
         {PRIVATE, NDN_FLOW_ACTION_CONF_VF} },
     { "phy-port", &ndn_rte_flow_action_conf_id_original_s,
         {PRIVATE, NDN_FLOW_ACTION_CONF_PHY_PORT} },
+    { "group", &asn_base_int32_s,
+        {PRIVATE, NDN_FLOW_ACTION_GROUP} },
 };
 
 asn_type ndn_rte_flow_action_conf_s = {

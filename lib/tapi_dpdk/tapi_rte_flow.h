@@ -123,6 +123,17 @@ extern void tapi_rte_flow_add_ndn_action_port(asn_value *ndn_actions,
                                               te_bool original);
 
 /**
+ * Add a JUMP action to an action list at specified index.
+ *
+ * @param[inout]  ndn_actions       Action list
+ * @param[in]     action_index      Index at which the action is put to list
+ * @param[in]     group             Group to redirect packets to
+ */
+extern void tapi_rte_flow_add_ndn_action_jump(asn_value *ndn_actions,
+                                              int action_index,
+                                              uint32_t group);
+
+/**
  * Add a PORT ID item to an item list at specified index.
  *
  * @param[inout]  ndn_items         Item list
