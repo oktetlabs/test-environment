@@ -509,11 +509,12 @@ tapi_sfnt_pp_get_report(tapi_sfnt_pp_app_client_t *app,
 
     new_report = tapi_calloc(count_line, sizeof(*new_report));
 
+    /* output may or may not contain the character '\n' */
+    if (buf.ptr[offset] == '\n')
+        offset++;
+
     for (i = 0; i < count_line ; i++)
     {
-        while(buf.ptr[offset] != '\n')
-            ++offset;
-
         rc = sscanf(buf.ptr + offset, "%d %d %d %d %d %d %d %*d",
                     &new_report[i].size, &new_report[i].mean, &new_report[i].min,
                     &new_report[i].median, &new_report[i].max, &new_report[i].percentile,
@@ -522,6 +523,8 @@ tapi_sfnt_pp_get_report(tapi_sfnt_pp_app_client_t *app,
         if (rc != TAPI_SFNT_PP_NUM_MEAS)
             return TE_RC(TE_TAPI, TE_EPROTO);
 
+        while(buf.ptr[offset] != '\n')
+            ++offset;
         ++offset;
     }
 
