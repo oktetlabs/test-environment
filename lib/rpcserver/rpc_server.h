@@ -534,6 +534,25 @@ extern void te_rpc_error_set(te_errno err, const char *msg, ...);
 extern te_errno te_rpc_error_get_num(void);
 
 /**
+ * This macro can be used for functions which on failure return
+ * -errno instead of setting errno and returning @c -1. It converts
+ * errno and passes it to RPC caller as usual, replacing original
+ * return value with @c -1. It allows to check such RPC calls in
+ * tests like normal ones.
+ *
+ * @param _retval         Return value of the RPC call. Changed to @c -1
+ *                        if negative.
+ */
+#define TE_RPC_CONVERT_NEGATIVE_ERR(_retval) \
+    do {                                                                  \
+        if ((_retval) < 0)                                                \
+        {                                                                 \
+            te_rpc_error_set(TE_OS_RC(TE_RPC, -_retval), "");             \
+            _retval = -1;                                                 \
+        }                                                                 \
+    } while (0)
+
+/**
  * Call pthread_mutex_lock(), report error with
  * te_rpc_error_set() if it failed.
  *
