@@ -32,6 +32,13 @@ if test -z "${TE_LOG_RAW}" ; then
         export TE_LOG_RAW="${MYDIR}/tmp_raw_log"
     fi
 fi
+
+# We have two situations when we need to guess TE_INSTALL:
+#
+#   1, when we run dispatcher.sh - it will do the right thing
+#   2, we're running some external scripts that need it - in
+#      this case inst should have everything ready/built so it's
+#      safe to assume that TE_INSTALL can be guessed.
 if test -z "${TE_INSTALL}" ; then
     if test -d "inst" ; then
         export TE_INSTALL="$(pwd -P)/inst"
@@ -41,6 +48,8 @@ if test -z "${TE_INSTALL}" ; then
         export TE_INSTALL="${MYDIR}/inst"
     elif test -d "${MYDIR}/build/inst" ; then
         export TE_INSTALL="${MYDIR}/build/inst"
+    elif test -n "${TE_BUILD}" -a -d "${TE_BUILD}/inst" ; then
+        export TE_INSTALL="${TE_BUILD}/inst"
     else
         echo "Failed to guess TE_INSTALL" >&2
         exit 1
