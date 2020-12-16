@@ -324,6 +324,32 @@ extern uint8_t *rpc_iovec_to_array(size_t len, const struct rpc_iovec *v,
                                    size_t cnt);
 
 /**
+ * Fill array of tarpc_iovec structures with data from array of
+ * rpc_iovec structures before passing it to an RPC call.
+ *
+ * @param rpc_iovs        Array of rpc_iovec structures.
+ * @param tarpc_iovs      Array of tarpc_iovec structures.
+ * @param count           Number of elements in the arrays.
+ */
+extern void te_iovec_rpc2tarpc(const rpc_iovec *rpc_iovs,
+                               tarpc_iovec *tarpc_iovs,
+                               size_t count);
+
+/**
+ * Append string representation of a given array of rpc_iovec structures
+ * to TE string.
+ *
+ * @param str       Pointer to TE string.
+ * @param iovs      Array of rpc_iovec structures.
+ * @param count     Number of elements in the array.
+ *
+ * @return Status code.
+ */
+extern te_errno te_iovec_rpc2str_append(te_string *str,
+                                        const rpc_iovec *iovs,
+                                        size_t count);
+
+/**
  * Compare RPC alalog of 'struct iovec'.
  *
  * @param v1len     total length of the first vector

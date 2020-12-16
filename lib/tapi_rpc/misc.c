@@ -440,6 +440,55 @@ rpc_iovec_to_array(size_t len, const struct rpc_iovec *v, size_t cnt)
     return array;
 }
 
+/* See description in tapi_rpc_unistd.h */
+void
+te_iovec_rpc2tarpc(const rpc_iovec *rpc_iovs, tarpc_iovec *tarpc_iovs,
+                   size_t count)
+{
+    size_t i;
+
+    for (i = 0; i < count; i++)
+    {
+        tarpc_iovs[i].iov_base.iov_base_val = rpc_iovs[i].iov_base;
+        tarpc_iovs[i].iov_base.iov_base_len = rpc_iovs[i].iov_rlen;
+        tarpc_iovs[i].iov_len = rpc_iovs[i].iov_len;
+    }
+}
+
+/* See description in tapi_rpc_unistd.h */
+te_errno
+te_iovec_rpc2str_append(te_string *str, const rpc_iovec *iovs,
+                        size_t count)
+{
+    te_errno rc = 0;
+    size_t i;
+
+#define STR_APPEND(fmt_...) \
+    do {                                      \
+        rc = te_string_append(str, fmt_);     \
+        if (rc != 0)                          \
+            return rc;                        \
+    } while (0)
+
+    if (iovs == NULL)
+    {
+        STR_APPEND("(nil)");
+        return 0;
+    }
+
+    STR_APPEND("{");
+    for (i = 0; i < count; i++)
+    {
+        STR_APPEND("%s{%" TE_PRINTF_SIZE_T "u, %p[%" TE_PRINTF_SIZE_T "u]}",
+                   (i == 0 ? " " : ", "), iovs[i].iov_len, iovs[i].iov_base,
+                   iovs[i].iov_rlen);
+    }
+    STR_APPEND(" }");
+
+    return 0;
+#undef STR_APPEND
+}
+
 /* See description in tapi_rpcsock.h */
 int
 rpc_iovec_cmp(size_t v1len, const struct rpc_iovec *v1, size_t v1cnt,
