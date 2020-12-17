@@ -81,6 +81,7 @@
 #include "agentlib.h"
 #include "iomux.h"
 #include "rpcs_msghdr.h"
+#include "rpcs_conv.h"
 
 #ifndef MSG_MORE
 #define MSG_MORE 0
@@ -2453,19 +2454,10 @@ TARPC_FUNC(readv,
 },
 {
     struct iovec    iovec_arr[RCF_RPC_MAX_IOVEC];
-    unsigned int    i;
 
-    memset(iovec_arr, 0, sizeof(iovec_arr));
-    for (i = 0; i < out->vector.vector_len; i++)
-    {
-        INIT_CHECKED_ARG(out->vector.vector_val[i].iov_base.iov_base_val,
-                         out->vector.vector_val[i].iov_base.iov_base_len,
-                         out->vector.vector_val[i].iov_len);
-        iovec_arr[i].iov_base =
-            out->vector.vector_val[i].iov_base.iov_base_val;
-        iovec_arr[i].iov_len = out->vector.vector_val[i].iov_len;
-    }
-    INIT_CHECKED_ARG((char *)iovec_arr, sizeof(iovec_arr), 0);
+    rpcs_iovec_tarpc2h(out->vector.vector_val, iovec_arr,
+                       out->vector.vector_len, TRUE,
+                       arglist);
 
     MAKE_CALL(out->retval = func(in->fd, iovec_arr, in->count));
 }
@@ -2484,18 +2476,10 @@ TARPC_FUNC(writev,
 },
 {
     struct iovec    iovec_arr[RCF_RPC_MAX_IOVEC];
-    unsigned int    i;
 
-    memset(iovec_arr, 0, sizeof(iovec_arr));
-    for (i = 0; i < in->vector.vector_len; i++)
-    {
-        INIT_CHECKED_ARG(in->vector.vector_val[i].iov_base.iov_base_val,
-                         in->vector.vector_val[i].iov_base.iov_base_len, 0);
-        iovec_arr[i].iov_base =
-            in->vector.vector_val[i].iov_base.iov_base_val;
-        iovec_arr[i].iov_len = in->vector.vector_val[i].iov_len;
-    }
-    INIT_CHECKED_ARG((char *)iovec_arr, sizeof(iovec_arr), 0);
+    rpcs_iovec_tarpc2h(in->vector.vector_val, iovec_arr,
+                       in->vector.vector_len, FALSE,
+                       arglist);
 
     MAKE_CALL(out->retval = func(in->fd, iovec_arr, in->count));
 }

@@ -436,6 +436,7 @@ sources += files(
     'iomux.c',
     'rcf_pch_mem.c',
     'rpc_server.c',
+    'rpcs_conv.c',
     'rpcs_msghdr.c',
     'tarpc_imp.c',
 )
