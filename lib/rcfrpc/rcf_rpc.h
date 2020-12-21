@@ -651,7 +651,7 @@ typedef struct rcf_rpc_server_hook {
     void (*hook)(rcf_rpc_server *rpcs);     /**< function to execute */
 } rcf_rpc_server_hook;
 
-SLIST_HEAD(, rcf_rpc_server_hook) rcf_rpc_server_hooks_list;
+typedef SLIST_HEAD(, rcf_rpc_server_hook) rcf_rpc_server_hooks;
 
 /**
  * Add new hook to rcf_rpc_server_hook_list, that will be executed after

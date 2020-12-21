@@ -72,6 +72,9 @@
 #include "te_rpc_errno.h"
 
 
+static rcf_rpc_server_hooks rcf_rpc_server_hooks_list;
+
+
 /** Initialize mutex and forwarding semaphore for RPC server */
 static int
 rpc_server_sem_init(rcf_rpc_server *rpcs)
