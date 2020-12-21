@@ -341,7 +341,7 @@ extern void cfg_db_destroy(void);
 extern te_bool cfg_oid_match_volatile(const char *oid_s, char **oid_out);
 
 /** Delay for configuration changes accomodation */
-uint32_t cfg_conf_delay;
+extern uint32_t cfg_conf_delay;
 
 /**
  * Update the current configuration delay after adding/deleting/changing
