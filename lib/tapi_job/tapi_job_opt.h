@@ -213,6 +213,7 @@ te_errno tapi_job_opt_create_sockaddr_ptr(const void *value, te_vec *args);
 
 /**
  * Bind `struct sockaddr *` argument.
+ * The argument won't be included to command line if the field is @c NULL.
  *
  * @param[in]     _prefix           Argument prefix.
  * @param[in]     _concat_prefix    Concatenate prefix with argument if @c TRUE

@@ -72,7 +72,7 @@ tapi_job_opt_create_sockaddr_ptr(const void *value, te_vec *args)
 {
     const struct sockaddr **sa = (const struct sockaddr **)value;
 
-    if (sa == NULL)
+    if (sa == NULL || *sa == NULL)
         return TE_ENOENT;
 
     return te_vec_append_str_fmt(args, "%s", te_sockaddr_get_ipstr(*sa));
