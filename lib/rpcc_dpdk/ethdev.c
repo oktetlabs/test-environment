@@ -333,11 +333,13 @@ tarpc_rte_eth_dev_info2str(te_log_buf *tlbp,
     te_log_buf_append(tlbp, "{ ");
 
     te_log_buf_append(tlbp, "driver_name=%s, if_index=%u, "
+                      "min_mtu=%u, max_mtu=%u, "
                       "min_rx_bufsize=%u, max_rx_pktlen=%u, "
                       "max_rx_queues=%u, max_tx_queues=%u, "
                       "max_mac_addrs=%u, max_hash_mac_addrs=%u, "
                       "max_vfs=%u, max_vmdq_pools=%u",
                       dev_info->driver_name, dev_info->if_index,
+                      dev_info->min_mtu, dev_info->max_mtu,
                       dev_info->min_rx_bufsize, dev_info->max_rx_pktlen,
                       dev_info->max_rx_queues, dev_info->max_tx_queues,
                       dev_info->max_mac_addrs, dev_info->max_hash_mac_addrs,

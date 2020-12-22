@@ -922,6 +922,8 @@ struct tarpc_rte_eth_dev_portconf {
 struct tarpc_rte_eth_dev_info {
     string                          driver_name<>;
     unsigned int                    if_index;
+    uint16_t                        min_mtu;
+    uint16_t                        max_mtu;
     uint32_t                        min_rx_bufsize;
     uint32_t                        max_rx_pktlen;
     uint16_t                        max_rx_queues;
