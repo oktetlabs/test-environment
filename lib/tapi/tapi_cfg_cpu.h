@@ -25,6 +25,9 @@ extern "C" {
  * @{
  */
 
+/** Unspecified CPU index used in tapi_cpu_index_t */
+#define TAPI_CPU_ID_UNSPEC ((unsigned long)ULONG_MAX)
+
 /** Identifier of a logical CPU (CPU thread) */
 typedef struct tapi_cpu_index_t {
     unsigned long node_id;
@@ -83,6 +86,44 @@ te_errno tapi_cfg_cpu_grab_by_prop(const char *ta, const tapi_cpu_prop_t *prop,
  */
 extern te_errno tapi_cfg_get_all_threads(const char *ta,  size_t *size,
                                          tapi_cpu_index_t **indices);
+
+/**
+ * Get all available CPU NUMA nodes indices on a test agent.
+ *
+ * @param[in]  ta               Test Agent
+ * @param[out] n_nodes          Number of NUMA nodes (size of @p nodes)
+ * @param[out] nodes            CPU NUMA indices (may be @c NULL)
+ */
+extern te_errno tapi_cfg_cpu_get_nodes(const char *ta, size_t *n_nodes,
+                                       tapi_cpu_index_t **nodes);
+
+/**
+ * Grab multiple CPUs on a test agent with requested properties (if specified)
+ * and requested CPU topology (if specified) as a resource and retrieve
+ * their indices.
+ *
+ * @param[in]  ta               Test Agent
+ * @param[in]  prop             CPU properties. May be @c NULL to ignore CPU
+ *                              properties
+ * @param[in]  topology         CPU topology. Only CPUs with specified
+ *                              node/package/core/thread ID will be grabbed.
+ *                              May be @c NULL to ignore the restriction
+ * @param[in]  n_cpus           Number of CPUs to grab
+ * @param[out] cpu_ids          Indices of grabbed CPUs
+ */
+extern te_errno tapi_cfg_cpu_grab_multiple_with_id(const char *ta,
+                                           const tapi_cpu_prop_t *prop,
+                                           const tapi_cpu_index_t *topology,
+                                           unsigned int n_cpus,
+                                           tapi_cpu_index_t *cpu_ids);
+/**
+ * Wrapper of tapi_cfg_cpu_grab_multiple_with_id() which grabs CPUs on a single
+ * NUMA node.
+ */
+extern te_errno tapi_cfg_cpu_grab_multiple_on_single_node(const char *ta,
+                                           const tapi_cpu_prop_t *prop,
+                                           unsigned int n_cpus,
+                                           tapi_cpu_index_t *cpu_ids);
 
 /**@} <!-- END tapi_conf_cpu --> */
 

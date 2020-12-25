@@ -182,6 +182,8 @@ extern te_errno tapi_dpdk_build_eal_arguments(rcf_rpc_server *rpcs,
  * @param ta                    Test Agent
  * @param n_cpus_preferred      Prefered number of CPUs to grab
  * @param n_cpus_required       Required number of CPUs to grab
+ * @param numa_node             NUMA node at which cores should be grabbed or
+ *                              @c -1 for any node
  * @param prop                  Required properties for CPUs
  * @param n_cpus_grabbed        Number of grabbed CPUs
  * @param cpu_ids               Indices of grabbed CPUs
@@ -191,6 +193,7 @@ extern te_errno tapi_dpdk_build_eal_arguments(rcf_rpc_server *rpcs,
 extern te_errno tapi_dpdk_grab_cpus(const char *ta,
                                     size_t n_cpus_preferred,
                                     size_t n_cpus_required,
+                                    int numa_node,
                                     const tapi_cpu_prop_t *prop,
                                     size_t *n_cpus_grabbed,
                                     tapi_cpu_index_t *cpu_ids);
@@ -202,6 +205,8 @@ extern te_errno tapi_dpdk_grab_cpus(const char *ta,
  * @param ta                    Test Agent
  * @param n_cpus_preferred      Prefered number of CPUs to grab
  * @param n_cpus_required       Required number of CPUs to grab
+ * @param numa_node             NUMA node at which cores should be grabbed or
+ *                              @c -1 for any node
  * @param prop                  Required properties for CPUs
  * @param n_cpus_grabbed        Number of grabbed CPUs
  * @param cpu_ids               Indices of grabbed CPUs
@@ -211,6 +216,7 @@ extern te_errno tapi_dpdk_grab_cpus(const char *ta,
 extern te_errno tapi_dpdk_grab_cpus_nonstrict_prop(const char *ta,
                                                    size_t n_cpus_preferred,
                                                    size_t n_cpus_required,
+                                                   int numa_node,
                                                    const tapi_cpu_prop_t *prop,
                                                    size_t *n_cpus_grabbed,
                                                    tapi_cpu_index_t *cpu_ids);

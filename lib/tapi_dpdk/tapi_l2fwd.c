@@ -161,6 +161,7 @@ tapi_dpdk_create_l2fwd_job(rcf_rpc_server *rpcs, tapi_env *env,
     size_t n_cpus_grabbed;
     tapi_job_factory_t *factory = NULL;
     unsigned int service_cores_count;
+    int numa_node;
     int i;
 
     if (n_fwd_cpus == 0)
@@ -169,6 +170,10 @@ tapi_dpdk_create_l2fwd_job(rcf_rpc_server *rpcs, tapi_env *env,
         rc = TE_RC(TE_TAPI, TE_EINVAL);
         goto out;
     }
+
+    rc = tapi_rte_get_numa_node(env, rpcs, &numa_node);
+    if (rc != 0)
+        goto out;
 
     rc = tapi_eal_get_nb_required_service_cores_rpcs(env, rpcs,
                                                      &service_cores_count);
@@ -184,6 +189,7 @@ tapi_dpdk_create_l2fwd_job(rcf_rpc_server *rpcs, tapi_env *env,
     cpu_ids = tapi_calloc(n_cpus, sizeof(*cpu_ids));
     rc = tapi_dpdk_grab_cpus_nonstrict_prop(rpcs->ta, n_cpus,
                                             1 + service_cores_count,
+                                            numa_node,
                                             prop, &n_cpus_grabbed,
                                             cpu_ids);
     if (rc != 0)

@@ -503,63 +503,79 @@ append_testpmd_cmdline_from_args(te_kvpair_h *test_args,
 te_errno
 tapi_dpdk_grab_cpus(const char *ta,
                     size_t n_cpus_preferred, size_t n_cpus_required,
+                    int numa_node,
                     const tapi_cpu_prop_t *prop, size_t *n_cpus_grabbed,
                     tapi_cpu_index_t *cpu_ids)
 {
+    tapi_cpu_index_t topology = {
+        .node_id = numa_node < 0 ? TAPI_CPU_ID_UNSPEC : numa_node,
+        .package_id = TAPI_CPU_ID_UNSPEC,
+        .core_id = TAPI_CPU_ID_UNSPEC,
+        .thread_id = TAPI_CPU_ID_UNSPEC,
+    };
     te_errno rc;
-    size_t i;
 
-    for (i = 0; i < n_cpus_preferred; i++)
+    rc = tapi_cfg_cpu_grab_multiple_with_id(ta, prop, &topology,
+                                            n_cpus_preferred, cpu_ids);
+    if (rc == 0)
     {
-        rc = tapi_cfg_cpu_grab_by_prop(ta, prop, &cpu_ids[i]);
-        if (rc != 0)
-        {
-            size_t j;
-
-            WARN("Could not grab preferred quantity of CPUs, error: %s",
-                 te_rc_err2str(rc));
-            if (TE_RC_GET_ERROR(rc) == TE_ENOENT && i >= n_cpus_required)
-            {
-                WARN_ARTIFACT("Only %lu CPUs were grabbed", i);
-                *n_cpus_grabbed = i;
-                return 0;
-            }
-
-            for (j = 0; j < i; j++)
-            {
-                if (tapi_cfg_cpu_release_by_id(ta, &cpu_ids[j]) != 0)
-                    WARN("Failed to release grabbed CPUs");
-            }
-
-            return rc;
-        }
+        *n_cpus_grabbed = n_cpus_preferred;
+        return 0;
     }
 
-    *n_cpus_grabbed = n_cpus_preferred;
-    return 0;
+    if (n_cpus_preferred == n_cpus_required)
+        return rc;
+
+    rc = tapi_cfg_cpu_grab_multiple_with_id(ta, prop, &topology,
+                                            n_cpus_required, cpu_ids);
+    if (rc == 0)
+    {
+        *n_cpus_grabbed = n_cpus_required;
+        return 0;
+    }
+
+    return rc;
 }
 
 te_errno
 tapi_dpdk_grab_cpus_nonstrict_prop(const char *ta, size_t n_cpus_preferred,
                                    size_t n_cpus_required,
+                                   int numa_node,
                                    const tapi_cpu_prop_t *prop,
                                    size_t *n_cpus_grabbed,
                                    tapi_cpu_index_t *cpu_ids)
 {
-    /*
-     * When grabbing CPUs with required property, set also a strict
-     * constraint on CPUs quantity (n_cpus_required is set to n_cpus_preferred)
-     */
-    if (tapi_dpdk_grab_cpus(ta, n_cpus_preferred, n_cpus_preferred, prop,
-                            n_cpus_grabbed, cpu_ids) == 0)
+    te_errno rc;
+
+    if (numa_node >= 0)
     {
+        /*
+         * When grabbing CPUs with required property, set also a strict
+         * constraint on CPUs quantity (n_cpus_required is set to
+         * n_cpus_preferred)
+         */
+        if (tapi_dpdk_grab_cpus(ta, n_cpus_preferred, n_cpus_preferred,
+                                numa_node, prop, n_cpus_grabbed, cpu_ids) == 0)
+        {
+            return 0;
+        }
+
+        WARN("Fallback to grab any available CPUs on a single NUMA node");
+    }
+
+    rc = tapi_cfg_cpu_grab_multiple_on_single_node(ta, prop,
+                                                   n_cpus_required,
+                                                   cpu_ids);
+    if (rc == 0)
+    {
+        *n_cpus_grabbed = n_cpus_required;
         return 0;
     }
 
-    WARN("Fallback to grab any available CPUs");
+    WARN("Fallback to grab any available CPUs on any NUMA node");
 
-    return tapi_dpdk_grab_cpus(ta, n_cpus_preferred, n_cpus_required, NULL,
-                               n_cpus_grabbed, cpu_ids);
+    return tapi_dpdk_grab_cpus(ta, n_cpus_preferred, n_cpus_required, -1,
+                               NULL, n_cpus_grabbed, cpu_ids);
 }
 
 const char *
@@ -643,6 +659,7 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     size_t n_cpus_grabbed;
     tapi_job_factory_t *factory = NULL;
     unsigned int service_cores_count;
+    int numa_node;
     int i;
 
     if (n_fwd_cpus == 0)
@@ -651,6 +668,10 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
         rc = TE_RC(TE_TAPI, TE_EINVAL);
         goto out;
     }
+
+    rc = tapi_rte_get_numa_node(env, rpcs, &numa_node);
+    if (rc != 0)
+        goto out;
 
     rc = tapi_eal_get_nb_required_service_cores_rpcs(env, rpcs,
                                                      &service_cores_count);
@@ -667,6 +688,7 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     if ((rc = tapi_dpdk_grab_cpus_nonstrict_prop(rpcs->ta, n_cpus,
                                                  TESTPMD_MIN_N_CORES +
                                                  service_cores_count,
+                                                 numa_node,
                                                  prop,
                                                  &n_cpus_grabbed, cpu_ids)) != 0)
     {

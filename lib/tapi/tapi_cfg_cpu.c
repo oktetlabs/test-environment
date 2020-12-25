@@ -93,6 +93,10 @@ get_cpu_id_generic(const cfg_oid *oid, int depth, unsigned long *id)
             return rc;
         }
     }
+    else
+    {
+        *id = TAPI_CPU_ID_UNSPEC;
+    }
 
     return 0;
 }
@@ -269,6 +273,29 @@ tapi_cfg_get_all_threads(const char *ta,  size_t *size,
 }
 
 te_errno
+tapi_cfg_cpu_get_nodes(const char *ta, size_t *n_nodes,
+                       tapi_cpu_index_t **nodes)
+{
+    char pattern[CFG_OID_MAX] = {0};
+    int rc;
+
+    rc = snprintf(pattern, sizeof(pattern), "/agent:%s/hardware:/node:*", ta);
+    if (rc < 0)
+    {
+        ERROR("Failed to format CPU configuration path query");
+        return TE_OS_RC(TE_TAPI, errno);
+    }
+
+    if ((size_t)rc >= sizeof(pattern))
+    {
+        ERROR("Too long CPU configuration path query");
+        return TE_RC(TE_TAPI, TE_ENAMETOOLONG);
+    }
+
+    return find_cpu_generic(pattern, "NUMA node", n_nodes, nodes);
+}
+
+te_errno
 tapi_cfg_cpu_grab_by_prop(const char *ta, const tapi_cpu_prop_t *prop,
                           tapi_cpu_index_t *cpu_id)
 {
@@ -313,6 +340,178 @@ tapi_cfg_cpu_grab_by_prop(const char *ta, const tapi_cpu_prop_t *prop,
     rc = TE_RC(TE_TAPI, TE_ENOENT);
 
 out:
+    free(indices);
+
+    return rc;
+}
+
+static te_bool
+cpu_id_matches(unsigned long id, unsigned long required)
+{
+    return required == TAPI_CPU_ID_UNSPEC || id == required;
+}
+
+static te_bool
+cpu_index_matches(const tapi_cpu_index_t *id, const tapi_cpu_index_t *required)
+{
+    return cpu_id_matches(id->node_id, required->node_id) &&
+        cpu_id_matches(id->package_id, required->package_id) &&
+        cpu_id_matches(id->core_id, required->core_id) &&
+        cpu_id_matches(id->thread_id, required->thread_id);
+}
+
+static unsigned int
+get_cpu_count_by_topology(unsigned int n_cpus, const tapi_cpu_index_t *cpu_ids,
+                          const tapi_cpu_index_t *topology)
+{
+    unsigned int count = 0;
+    unsigned int i;
+
+    if (topology == NULL)
+        return n_cpus;
+
+    for (i = 0; i < n_cpus; i++)
+    {
+        if (cpu_index_matches(&cpu_ids[i], topology))
+            count++;
+    }
+
+    return count;
+}
+
+te_errno
+tapi_cfg_cpu_grab_multiple_with_id(const char *ta,
+                                   const tapi_cpu_prop_t *prop,
+                                   const tapi_cpu_index_t *topology,
+                                   unsigned int n_cpus,
+                                   tapi_cpu_index_t *cpu_ids)
+{
+    tapi_cpu_index_t *indices = NULL;
+    tapi_cpu_index_t *grabbed = NULL;
+    unsigned int n_grabbed = 0;
+    size_t thread_count = 0;
+    te_errno rc = 0;
+    size_t i;
+
+    if (n_cpus == 0)
+        return 0;
+
+    if ((rc = tapi_cfg_get_all_threads(ta, &thread_count, &indices)) != 0)
+        goto out;
+
+    if (get_cpu_count_by_topology(thread_count, indices, topology) < n_cpus)
+    {
+        rc = TE_RC(TE_TAPI, TE_ENOENT);
+        goto out;
+    }
+
+    grabbed = TE_ALLOC(sizeof(*grabbed) * thread_count);
+    if (grabbed == NULL)
+    {
+        rc = TE_RC(TE_TAPI, TE_ENOMEM);
+        goto out;
+    }
+
+    for (i = 0; i < thread_count && n_grabbed < n_cpus; i++)
+    {
+        te_bool suitable;
+
+        if (topology != NULL && !cpu_index_matches(&indices[i], topology))
+            continue;
+
+        /* Don't check thread suitability if prop is not specified */
+        if (prop != NULL)
+        {
+            if ((rc = check_thread(ta, &indices[i], prop, &suitable)) != 0)
+                goto out;
+
+            if (!suitable)
+                continue;
+        }
+
+        rc = tapi_cfg_cpu_grab_by_id(ta, &indices[i]);
+        if (rc == 0) /* Approptiate CPU is grabbed */
+        {
+            memcpy(&grabbed[n_grabbed], &indices[i], sizeof(*grabbed));
+            n_grabbed++;
+        }
+        else if (TE_RC_GET_ERROR(rc) == TE_EBUSY ||
+                 TE_RC_GET_ERROR(rc) == TE_EEXIST) /* CPU is unavailable */
+        {
+            continue;
+        }
+        else /* An error occured */
+        {
+            goto out;
+        }
+    }
+
+    if (n_grabbed < n_cpus)
+    {
+        rc = TE_RC(TE_TAPI, TE_ENOENT);
+        goto out;
+    }
+
+    memcpy(cpu_ids, grabbed, sizeof(*cpu_ids) * n_cpus);
+
+out:
+    if (rc != 0)
+    {
+        for (i = 0; i < n_grabbed; i++)
+            (void)tapi_cfg_cpu_release_by_id(ta, &grabbed[i]);
+    }
+
+    free(indices);
+    free(grabbed);
+
+    return rc;
+}
+
+te_errno
+tapi_cfg_cpu_grab_multiple_on_single_node(const char *ta,
+                                          const tapi_cpu_prop_t *prop,
+                                          unsigned int n_cpus,
+                                          tapi_cpu_index_t *cpu_ids)
+{
+    tapi_cpu_index_t *indices = NULL;
+    tapi_cpu_index_t *nodes = NULL;
+    size_t thread_count;
+    size_t n_nodes;
+    te_errno rc;
+    size_t i;
+
+    rc = tapi_cfg_cpu_get_nodes(ta, &n_nodes, &nodes);
+    if (rc != 0)
+        goto out;
+
+    if ((rc = tapi_cfg_get_all_threads(ta, &thread_count, &indices)) != 0)
+        goto out;
+
+    for (i = 0; i < n_nodes; i++)
+    {
+        tapi_cpu_index_t topology = {
+            .node_id = nodes[i].node_id,
+            .package_id = TAPI_CPU_ID_UNSPEC,
+            .core_id = TAPI_CPU_ID_UNSPEC,
+            .thread_id = TAPI_CPU_ID_UNSPEC,
+        };
+
+        if (get_cpu_count_by_topology(thread_count, indices, &topology) <
+            n_cpus)
+        {
+            continue;
+        }
+
+        rc = tapi_cfg_cpu_grab_multiple_with_id(ta, prop, &topology,
+                                                n_cpus, cpu_ids);
+        if (rc == 0)
+            goto out;
+    }
+
+    rc = TE_RC(TE_TAPI, TE_ENOENT);
+
+out:
+    free(nodes);
     free(indices);
 
     return rc;
