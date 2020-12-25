@@ -152,8 +152,7 @@ extern int tapi_jmp_pop(const char *file, unsigned int lineno);
  *
  * @sa tapi_jmp_push
  */
-extern int tapi_jmp_do(int val, const char *file, unsigned int lineno)
-    __attribute__((noreturn));
+extern int tapi_jmp_do(int val, const char *file, unsigned int lineno);
 
 /**
  * Is stack of jumps empty?
