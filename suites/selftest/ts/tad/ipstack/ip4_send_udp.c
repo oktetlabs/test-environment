@@ -84,8 +84,8 @@ main(int argc, char *argv[])
 
     asn_value                  *template = NULL;
     
-    void                       *send_buf;
-    void                       *recv_buf;
+    void                       *send_buf = NULL;
+    void                       *recv_buf = NULL;
 
     te_bool                     sum_ok;
 
