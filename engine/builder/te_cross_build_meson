@@ -154,11 +154,8 @@ build_ext() {
         rsync_to "$p" "${!pextsrc}/" "$ws_ext_src"
 
         local local_ext_builddir="ext/${pext}/build"
-        if test -d "${local_ext_builddir}"; then
-            rsync_to "$p" "${local_ext_builddir}/" "${ws_ext_builddir}"
-        else
-            mkdir -p "${local_ext_builddir}"
-        fi
+        mkdir -p "${local_ext_builddir}"
+        rsync_to "$p" "${local_ext_builddir}/" "${ws_ext_builddir}"
 
         # Extention build command is a script, make remote copy and use it
         extbuild="${!pextbuild}"
@@ -223,11 +220,8 @@ build_agent_apps() {
         rsync_to "$p" "${!pappsrc}/" "$ws_app_src"
 
         local local_app_builddir="apps/${app}/build"
-        if test -d "${local_app_builddir}"; then
-            rsync_to "$p" "${local_app_builddir}/" "${ws_app_builddir}"
-        else
-            mkdir -p "${local_app_builddir}"
-        fi
+        mkdir -p "${local_app_builddir}"
+        rsync_to "$p" "${local_app_builddir}/" "${ws_app_builddir}"
 
         # Extention build command is a script, make remote copy and use it
         appbuild="${!pappbuild}"
