@@ -1429,6 +1429,119 @@ build_service_core_mask_arg(int *argc, char ***argv,
     return 0;
 }
 
+static te_errno
+get_numa_node_by_pci_addr(const char *ta, const char *pci_addr, int *numa_node)
+{
+    char *pci_oid;
+    te_errno rc;
+
+    rc = tapi_cfg_pci_oid_by_addr(ta, pci_addr, &pci_oid);
+    if (rc != 0)
+        return rc;
+
+    rc = tapi_cfg_pci_get_numa_node_id(pci_oid, numa_node);
+    free(pci_oid);
+    return rc;
+}
+
+static te_errno
+tapi_eal_vdev_slaves_numa_node(tapi_env               *env,
+                               const tapi_env_ps_if   *ps_if,
+                               char                   *ta,
+                               int                    *numa_node)
+{
+    char         **slaves = NULL;
+    unsigned int   nb_slaves = 0;
+    int            result = -1;
+    te_errno       rc = 0;
+    unsigned int   i;
+
+    rc = tapi_eal_get_vdev_slaves(env, ps_if, &slaves, &nb_slaves);
+    if (rc != 0)
+        return rc;
+
+    for (i = 0; i < nb_slaves; i++)
+    {
+        int node;
+
+        rc = get_numa_node_by_pci_addr(ta, slaves[i], &node);
+        if (rc != 0)
+            goto out;
+
+        if (result < 0)
+        {
+            result = node;
+        }
+        else if (node >= 0 && node != result)
+        {
+            result = -1;
+            break;
+        }
+    }
+
+    *numa_node = result;
+
+out:
+    for (i = 0; i < nb_slaves; i++)
+        free(slaves[i]);
+
+    free(slaves);
+
+    return rc;
+}
+
+te_errno
+tapi_rte_get_numa_node(tapi_env *env, rcf_rpc_server *rpcs, int *numa_node)
+{
+    const tapi_env_ps_if *ps_if;
+    const tapi_env_pco *pco;
+    int result = -1;
+    te_errno rc;
+
+    pco = tapi_env_rpcs2pco(env, rpcs);
+    if (pco == NULL)
+        return TE_EINVAL;
+
+    STAILQ_FOREACH(ps_if, &pco->process->ifs, links)
+    {
+        int node;
+
+        if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_PCI_FN)
+        {
+            rc = get_numa_node_by_pci_addr(rpcs->ta,
+                                           ps_if->iface->if_info.if_name,
+                                           &node);
+            if (rc != 0)
+                return rc;
+        }
+        else if (ps_if->iface->rsrc_type == NET_NODE_RSRC_TYPE_RTE_VDEV)
+        {
+            rc = tapi_eal_vdev_slaves_numa_node(env, ps_if, rpcs->ta,
+                                                &node);
+            if (rc != 0)
+                return rc;
+        }
+        else
+        {
+            return TE_EINVAL;
+        }
+
+        if (result < 0)
+        {
+            result = node;
+        }
+        else if (node >= 0 && node != result)
+        {
+            result = -1;
+            break;
+        }
+    }
+
+    *numa_node = result;
+
+    return 0;
+}
+
 te_errno
 tapi_rte_make_eal_args(tapi_env *env, rcf_rpc_server *rpcs,
                        const char *program_name,

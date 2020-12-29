@@ -215,6 +215,30 @@ extern te_errno tapi_cfg_pci_bind_ta_driver_on_device(const char *ta,
  */
 extern te_errno tapi_cfg_pci_get_net_if(const char *pci_oid, char **interface);
 
+/**
+ * Get assigned NUMA node of a PCI device.
+ *
+ * @param[in]  pci_oid      PCI device OID (/agent/hardware/pci/device)
+ * @param[out] numa_node    OID (/agent/hardware/node) of a NUMA node
+ *                          where the device is local.
+ *                          Returns empty value if NUMA node is not assigned.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_get_numa_node(const char *pci_oid, char **numa_node);
+
+/**
+ * Get assigned NUMA node of a PCI device.
+ *
+ * @param[in]  pci_oid      PCI device OID (/agent/hardware/pci/device)
+ * @param[out] numa_node    Index of a NUMA node assigned to a PCI device.
+ *                          Returns @c -1 if NUMA node is not assigned.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_get_numa_node_id(const char *pci_oid,
+                                              int *numa_node);
+
 /**@} <!-- END tapi_conf_pci --> */
 
 #ifdef __cplusplus

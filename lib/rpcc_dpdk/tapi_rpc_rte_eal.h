@@ -250,6 +250,20 @@ extern te_errno tapi_rte_get_dev_args_by_pci_addr(const char *ta,
                                                   const char *pci_addr,
                                                   char **arg_list);
 
+/**
+ * Get NUMA node assigned to the PCI devices specified in the environment
+ * for an RPC server. If there is multiple devices, the common to all devices
+ * NUMA node is returned or @c -1.
+ *
+ * @param[in]  env          Test environment
+ * @param[in]  rpcs         RPC server
+ * @param[out] nb_cores     Assigned NUMA node
+ *
+ * @return Status code
+ */
+extern te_errno tapi_rte_get_numa_node(tapi_env *env, rcf_rpc_server *rpcs,
+                                       int *numa_node);
+
 /**@} <!-- END te_lib_rpc_rte_eal --> */
 
 #ifdef __cplusplus

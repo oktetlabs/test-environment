@@ -209,6 +209,28 @@ read_pci_hex_attr(const char *name, const char *attr)
     return result;
 }
 
+static te_errno
+read_pci_int_attr(const char *name, const char *attr, int *result)
+{
+    FILE *f;
+    te_errno rc = open_pci_attr(name, attr, &f);
+
+    if (rc != 0)
+        return rc;
+
+    if (fscanf(f, "%d", result) != 1)
+    {
+        WARN("Cannot parse PCI '%s' decimal attribute '%s' value: %s",
+              name, attr, strerror(errno));
+        fclose(f);
+        return TE_EIO;
+    }
+
+    fclose(f);
+
+    return 0;
+}
+
 static te_bool
 populate_pci_device(pci_device *dst, const char *name)
 {
@@ -2380,6 +2402,32 @@ pci_virtfn_get(unsigned int gid, const char *oid, char *value,
     return 0;
 }
 
+static te_errno
+pci_numa_node_get(unsigned int gid, const char *oid, char *value,
+               const char *unused1, const char *unused2,
+               const char *addr_str)
+{
+    te_errno rc;
+    int result;
+
+    UNUSED(gid);
+    UNUSED(oid);
+    UNUSED(unused1);
+    UNUSED(unused2);
+
+    rc = read_pci_int_attr(addr_str, "numa_node", &result);
+    if (rc != 0 || result < 0)
+    {
+        /* Default to empty value (no defined NUMA node) on failure */
+        value[0] = '\0';
+        return 0;
+    }
+
+    snprintf(value, RCF_MAX_VAL, "/agent:%s/hardware:/node:%d", ta_name,
+             result);
+    return 0;
+}
+
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_dev, "dev",
                                NULL, NULL,
                                NULL, pci_dev_list);
@@ -2389,8 +2437,11 @@ RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_virtfn, "virtfn",
 RCF_PCH_CFG_NODE_RO_COLLECTION(node_pci_net, "net",
                                NULL, &node_pci_virtfn,
                                pci_net_get, pci_net_list);
-RCF_PCH_CFG_NODE_RW(node_pci_driver, "driver",
+RCF_PCH_CFG_NODE_RO(node_pci_numa_node, "node",
                     NULL, &node_pci_net,
+                    pci_numa_node_get);
+RCF_PCH_CFG_NODE_RW(node_pci_driver, "driver",
+                    NULL, &node_pci_numa_node,
                     pci_driver_get, pci_driver_set);
 
 

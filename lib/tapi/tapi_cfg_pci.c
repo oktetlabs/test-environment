@@ -414,6 +414,48 @@ tapi_cfg_pci_get_net_if(const char *pci_oid, char **interface)
 }
 
 te_errno
+tapi_cfg_pci_get_numa_node(const char *pci_oid, char **numa_node)
+{
+    cfg_val_type type = CVT_STRING;
+    te_errno rc;
+
+    rc = cfg_get_instance_fmt(&type, numa_node, "%s/node:", pci_oid);
+    if (rc != 0)
+        ERROR("Failed to get the NUMA node of a PCI device: %r", rc);
+
+    return rc;
+}
+
+te_errno
+tapi_cfg_pci_get_numa_node_id(const char *pci_oid, int *numa_node)
+{
+    char *node_oid;
+    char *node_str;
+    te_errno rc;
+
+    rc = tapi_cfg_pci_get_numa_node(pci_oid, &node_oid);
+    if (rc != 0)
+        return rc;
+
+    if (node_oid[0] == '\0')
+    {
+        *numa_node = -1;
+        free(node_oid);
+        return 0;
+    }
+
+    node_str = cfg_oid_str_get_inst_name(node_oid, 3);
+    free(node_oid);
+    if (node_str == NULL)
+    {
+        ERROR("Failed to get NUMA node index from OID '%s'", node_oid);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    return te_strtoi(node_str, 0, numa_node);
+}
+
+te_errno
 tapi_cfg_pci_bind_driver(const char *pci_oid, const char *driver)
 {
     te_errno rc;
