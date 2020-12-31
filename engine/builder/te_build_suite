@@ -118,7 +118,7 @@ if ${MESON_BUILD} ; then
     cflags="-I${TE_INSTALL}/${TE_HOST}/include ${ADD_CPPFLAGS} -O0 -ggdb -Wall -W ${ADD_CFLAGS}"
     ldflags="${ADD_LDFLAGS}"
 
-    pkg_config_path="${TE_INSTALL}/${PLATFORM}/lib/pkgconfig/"
+    pkg_config_path="${TE_INSTALL}/${TE_HOST}/lib/pkgconfig/"
     if test ! -z "${PKG_CONFIG_PATH}" ; then
         export PKG_CONFIG_PATH="${pkg_config_path}:${PKG_CONFIG_PATH}"
     else
