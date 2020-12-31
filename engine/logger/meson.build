@@ -30,9 +30,8 @@ executable('te_logger', logger_sources, install: true,
            dependencies: [ dep_libxml2, dep_popt, dep_threads,
                            dep_lib_ipcserver, dep_lib_rcfapi, dep_lib_ipc,
                            dep_lib_tools, dep_lib_logger_core,
-                           dep_lib_log_proc, dep_lib_log_bufs,
-                           dependency('yaml-0.1'), dependency('jansson'),
-                           dependency('libcurl') ])
+                           dep_lib_log_proc, dependency('yaml-0.1'),
+                           dependency('jansson'), dependency('libcurl') ])
 
 executable('te_log_shutdown', 'te_log_shutdown.c', install: true,
            include_directories: te_include,

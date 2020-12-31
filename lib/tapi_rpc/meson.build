@@ -52,7 +52,6 @@ sources = files(
     'wsa.c',
 )
 te_libs += [
-    'log_bufs',
     'conf_oid',
     'asn',
     'rpcxdr',

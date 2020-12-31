@@ -27,7 +27,6 @@ sources += files(
 )
 te_libs += [
     'tools',
-    'log_bufs',
     'rpcxdr',
     'tapi',
     'tapi_env',

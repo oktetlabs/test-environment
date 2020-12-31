@@ -64,9 +64,10 @@ EXTRA_DIST = te_shell_cmd.c te_log_fmt.c te_log_file.c log_bufs.c \
 
 else
 
-lib_LTLIBRARIES = libtools.la liblog_bufs.la liblogger_file.la
+lib_LTLIBRARIES = libtools.la liblogger_file.la
 
 libtools_la_SOURCES = \
+	log_bufs.c \
 	te_bufs.c \
 	te_alloc.c \
 	te_sockaddr.c \
@@ -91,8 +92,6 @@ libtools_la_SOURCES = \
 	te_vector.c \
 	te_meas_stats.c \
 	te_mi_log.c
-
-liblog_bufs_la_SOURCES = log_bufs.c
 
 liblogger_file_la_SOURCES = te_log_file.c
 
