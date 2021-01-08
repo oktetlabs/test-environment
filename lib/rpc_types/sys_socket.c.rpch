@@ -4591,7 +4591,9 @@ eth_proto_rpc2str(rpc_eth_proto proto)
 {
     switch (proto)
     {
+        RPC2STR(ETH_P_ALL);
         RPC2STR(ETH_P_IP);
+        RPC2STR(ETH_P_IPV6);
         RPC2STR(ETH_P_ARP);
         RPC2STR(ETH_P_UNKNOWN);
 
@@ -4610,7 +4612,9 @@ eth_proto_rpc2h(rpc_eth_proto proto)
     switch (proto)
     {
 #ifdef AF_PACKET
+        RPC2H_CHECK(ETH_P_ALL);
         RPC2H_CHECK(ETH_P_IP);
+        RPC2H_CHECK(ETH_P_IPV6);
         RPC2H_CHECK(ETH_P_ARP);
 #endif
         default:
@@ -4627,7 +4631,9 @@ eth_proto_h2rpc(unsigned int proto)
     switch (proto)
     {
 #ifdef AF_PACKET
+        H2RPC_CHECK(ETH_P_ALL);
         H2RPC_CHECK(ETH_P_IP);
+        H2RPC_CHECK(ETH_P_IPV6);
         H2RPC_CHECK(ETH_P_ARP);
 #endif
         default: return RPC_ETH_P_UNKNOWN;

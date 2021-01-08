@@ -1405,7 +1405,9 @@ extern void hwtstamp_config_data_h2rpc(tarpc_hwtstamp_config *rpc_hwdata,
  */
 typedef enum rpc_eth_proto {
    RPC_ETH_P_UNKNOWN,
+   RPC_ETH_P_ALL,
    RPC_ETH_P_IP,
+   RPC_ETH_P_IPV6,
    RPC_ETH_P_ARP,
 } rpc_eth_proto;
 
