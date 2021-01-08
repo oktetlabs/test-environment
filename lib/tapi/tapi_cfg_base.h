@@ -603,6 +603,55 @@ tapi_cfg_base_if_arp_disable(const char *ta, const char * iface)
 }
 
 /**
+ * Set promiscuous mode for an interface.
+ *
+ * @param ta          Test Agent name.
+ * @param ifname      Interface name.
+ * @param enable      Whether to enable or to disable promiscuous mode.
+ *
+ * @return Status code.
+ */
+static inline te_errno
+tapi_cfg_base_if_set_promisc(const char *ta,
+                             const char *ifname,
+                             te_bool enable)
+{
+    int val = (enable ? 1 : 0);
+
+    return cfg_set_instance_fmt(CFG_VAL(INTEGER, val),
+                                "/agent:%s/interface:%s/promisc:",
+                                ta, ifname);
+}
+
+/**
+ * Get promiscuous mode for an interface.
+ *
+ * @param ta          Test Agent name.
+ * @param ifname      Interface name.
+ * @param enabled     Will be set to @c TRUE if promiscuous mode is enabled
+ *                    and to @c FALSE otherwise.
+ *
+ * @return Status code.
+ */
+static inline te_errno
+tapi_cfg_base_if_get_promisc(const char *ta,
+                             const char *ifname,
+                             te_bool *enabled)
+{
+    cfg_val_type type = CVT_INTEGER;
+    te_errno rc;
+    int val;
+
+    rc = cfg_get_instance_fmt(&type, &val,
+                              "/agent:%s/interface:%s/promisc:",
+                              ta, ifname);
+    if (rc == 0)
+        *enabled = (val != 0);
+
+    return rc;
+}
+
+/**
  * Delete VLAN interface.
  *
  * @param ta            Test Agent name
