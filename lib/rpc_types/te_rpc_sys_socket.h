@@ -1443,6 +1443,7 @@ extern rpc_arp_hardware arp_hardware_h2rpc(unsigned int hardware);
  */
 typedef enum rpc_packet_type {
    RPC_PACKET_UNKNOWN,
+   RPC_PACKET_HOST,
    RPC_PACKET_BROADCAST,
    RPC_PACKET_MULTICAST,
    RPC_PACKET_OTHERHOST,

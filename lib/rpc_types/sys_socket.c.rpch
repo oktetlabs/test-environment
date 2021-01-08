@@ -4699,6 +4699,7 @@ packet_type_rpc2str(rpc_packet_type type)
 {
     switch (type)
     {
+        RPC2STR(PACKET_HOST);
         RPC2STR(PACKET_BROADCAST);
         RPC2STR(PACKET_MULTICAST);
         RPC2STR(PACKET_OTHERHOST);
@@ -4722,6 +4723,7 @@ packet_type_rpc2h(rpc_packet_type type)
     switch (type)
     {
 #ifdef AF_PACKET
+        RPC2H_CHECK(PACKET_HOST);
         RPC2H_CHECK(PACKET_BROADCAST);
         RPC2H_CHECK(PACKET_MULTICAST);
         RPC2H_CHECK(PACKET_OTHERHOST);
@@ -4744,6 +4746,7 @@ packet_type_h2rpc(unsigned int type)
     switch (type)
     {
 #ifdef AF_PACKET
+        H2RPC_CHECK(PACKET_HOST);
         H2RPC_CHECK(PACKET_BROADCAST);
         H2RPC_CHECK(PACKET_MULTICAST);
         H2RPC_CHECK(PACKET_OTHERHOST);
