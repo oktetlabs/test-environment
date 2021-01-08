@@ -701,6 +701,104 @@ eth_drivername_get(unsigned int gid, const char *oid, char *value,
     return eth_drvinfo_get(ifname, ETH_DRVINFO_DRIVER, value, RCF_MAX_VAL);
 }
 
+static te_errno
+eth_ring_rx_max_get(unsigned int  gid,
+                    const char   *oid,
+                    char         *value,
+                    const char   *ifname)
+{
+    struct eth_if_context    *if_context;
+    struct ethtool_ringparam  ethtool_ringparam = { .cmd = ETHTOOL_GRINGPARAM };
+    te_errno                  rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if_context = eth_feature_iface_context(ifname);
+    if (if_context == NULL || !if_context->valid)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    rc = eth_feature_ioctl_send(ifname, &ethtool_ringparam);
+    if (rc == TE_EOPNOTSUPP)
+        snprintf(value, RCF_MAX_VAL, "%d", -1);
+    else if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+    else
+        snprintf(value, RCF_MAX_VAL, "%u", ethtool_ringparam.rx_max_pending);
+
+    return 0;
+}
+
+static te_errno
+eth_ring_rx_current_get(unsigned int  gid,
+                        const char   *oid,
+                        char         *value,
+                        const char   *ifname)
+{
+    struct eth_if_context    *if_context;
+    struct ethtool_ringparam  ethtool_ringparam = { .cmd = ETHTOOL_GRINGPARAM };
+    te_errno                  rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if_context = eth_feature_iface_context(ifname);
+    if (if_context == NULL || !if_context->valid)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    rc = eth_feature_ioctl_send(ifname, &ethtool_ringparam);
+    if (rc == TE_EOPNOTSUPP)
+        snprintf(value, RCF_MAX_VAL, "%d", -1);
+    else if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+    else
+        snprintf(value, RCF_MAX_VAL, "%u", ethtool_ringparam.rx_pending);
+
+    return 0;
+}
+
+static te_errno
+eth_ring_rx_current_set(unsigned int  gid,
+                        const char   *oid,
+                        char         *value,
+                        const char   *ifname)
+{
+    struct eth_if_context    *if_context;
+    struct ethtool_ringparam  ethtool_ringparam = { .cmd = ETHTOOL_GRINGPARAM };
+    unsigned long int         value_ul;
+    te_errno                  rc;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if_context = eth_feature_iface_context(ifname);
+    if (if_context == NULL || !if_context->valid)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    rc = te_strtoul(value, 10, &value_ul);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    if (value_ul > ULONG_MAX)
+        return TE_RC(TE_TA_UNIX, TE_EOVERFLOW);
+
+    rc = eth_feature_ioctl_send(ifname, &ethtool_ringparam);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    if (value_ul > ethtool_ringparam.rx_max_pending)
+        return TE_RC(TE_TA_UNIX, TE_ERANGE);
+
+    ethtool_ringparam.cmd = ETHTOOL_SRINGPARAM;
+    ethtool_ringparam.rx_pending = value_ul;
+
+    rc = eth_feature_ioctl_send(ifname, &ethtool_ringparam);
+    if (rc != 0)
+        return TE_RC(TE_TA_UNIX, rc);
+
+    return 0;
+}
+
 RCF_PCH_CFG_NODE_RO(firmwareversion, "firmwareversion", NULL, NULL,
                     eth_firmwareversion_get);
 
@@ -719,7 +817,17 @@ static rcf_pch_cfg_object eth_feature = {
     (rcf_ch_cfg_commit)eth_feature_commit, NULL
 };
 
-RCF_PCH_CFG_NODE_RW(eth_reset, "reset", NULL, &eth_feature,
+RCF_PCH_CFG_NODE_RO(eth_ring_rx_max, "max", NULL, NULL,
+                    eth_ring_rx_max_get);
+
+RCF_PCH_CFG_NODE_RW(eth_ring_rx_current, "current", NULL, &eth_ring_rx_max,
+                    eth_ring_rx_current_get, eth_ring_rx_current_set);
+
+RCF_PCH_CFG_NODE_NA(eth_ring_rx, "rx", &eth_ring_rx_current, NULL);
+
+RCF_PCH_CFG_NODE_NA(eth_ring, "ring", &eth_ring_rx, &eth_feature);
+
+RCF_PCH_CFG_NODE_RW(eth_reset, "reset", NULL, &eth_ring,
                     eth_reset_get, eth_reset_set);
 
 /**

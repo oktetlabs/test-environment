@@ -525,6 +525,42 @@
          Value: 0 - disabled
                 1 - enabled
 
+    - oid: "/agent/interface/ring"
+      access: read_only
+      type: none
+      d: |
+         NIC ring size configuration.
+
+         Name:  none
+         Value: none
+
+    - oid: "/agent/interface/ring/rx"
+      access: read_only
+      type: none
+      d: |
+         NIC Rx ring size configuration.
+
+         Name:  none
+         Value: none
+
+    - oid: "/agent/interface/ring/rx/max"
+      access: read_only
+      type: integer
+      d: |
+         Advertised maximum for Rx ring size.
+
+         Name:  none
+         Value: Descriptor count, or -1 if the feature is unsupported
+
+    - oid: "/agent/interface/ring/rx/current"
+      access: read_write
+      type: integer
+      d: |
+         Effective Rx ring size.
+
+         Name:  none
+         Value: Descriptor count, or -1 if the feature is unsupported
+
     - oid: "/agent/interface/deviceinfo"
       access: read_only
       type: none
