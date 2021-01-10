@@ -79,6 +79,7 @@ Generic options:
   --log-txt=<filename>          Name of the file with logs in text format
                                 to be generated (log.txt by default)
   --log-txt-detailed-packets    Include detailed packet dumps in text log.
+  --log-txt-line-prefix         Add a prefix before every message line in text log
   --log-junit=<filename>        Name of the file with logs in JUnit format
                                 to be generated.
 
@@ -511,6 +512,7 @@ process_opts()
             --log-html=*)       RGT_LOG_HTML="${1#--log-html=}" ;;
             --log-plain-html=*) RGT_LOG_HTML_PLAIN="${1#--log-plain-html=}" ;;
             --log-txt-detailed-packets) RGT_LOG_TXT_DETAILED_PACKETS=true ;;
+            --log-txt-line-prefix) RGT_LOG_TXT_LINE_PREFIX=true ;;
             --log-junit=*)      RGT_LOG_JUNIT="${1#--log-junit=}" ;;
 
             --gdb-tester)   GDB_TESTER=yes ;;
@@ -1369,11 +1371,18 @@ if test -n "${RGT_LOG_TXT}" -o -n "${RGT_LOG_HTML_PLAIN}" ; then
         fi
 
         if test -n "${RGT_LOG_TXT}" ; then
+            if test -n "${RGT_LOG_TXT_LINE_PREFIX}" ; then
+                LINE_PREFIX="-L"
+            else
+                LINE_PREFIX=
+            fi
+
             if test -z ${RGT_LOG_TXT_DETAILED_PACKETS} ; then
-                rgt-xml2text -f "${LOG_XML_MERGED}" -o "${RGT_LOG_TXT}"
+                rgt-xml2text -f "${LOG_XML_MERGED}" -o "${RGT_LOG_TXT}" \
+                             ${LINE_PREFIX}
             else
                 rgt-xml2text -f "${LOG_XML_MERGED}" -o "${RGT_LOG_TXT}" \
-                             --detailed-packets
+                             --detailed-packets ${LINE_PREFIX}
             fi
         fi
         if test -n "${RGT_LOG_HTML_PLAIN}" ; then
