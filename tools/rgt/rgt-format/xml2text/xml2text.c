@@ -30,6 +30,7 @@
 
 #include "te_queue.h"
 #include "te_alloc.h"
+#include "te_string.h"
 
 #include "capture.h"
 #include "mi_msg.h"
@@ -40,6 +41,12 @@ int rgt_max_attribute_length = 76;
 const char *rgt_line_separator = "\n";
 /* Flag turning on detailed packet dumps in log. */
 int detailed_packets = 0;
+
+/**
+ * Flag turning on printing a prefix before each line of the message
+ * in log.
+ */
+static int line_prefix = 0;
 
 /** Description of a flow tree node */
 typedef struct flow_item {
@@ -166,14 +173,136 @@ typedef struct gen_ctx_user {
                                be parsed */
 
     flow_stack_t flow_stack; /**< Flow tree traversal stack */
+
+    char msg_prefix[1024];   /**< Prefix to be printed before every line
+                                  of the message */
+    int msg_prefix_len;      /**< Length of the message prefix */
 } gen_ctx_user_t;
 
 /* RGT format-specific options table */
 struct poptOption rgt_options_table[] = {
     { "detailed-packets", 'P', POPT_ARG_NONE, &detailed_packets, 0,
       "Print more detailed packet dumps", NULL },
+    { "line-prefix", 'L', POPT_ARG_NONE, &line_prefix, 0,
+      "Print prefix before every message line", NULL },
     POPT_TABLEEND
 };
+
+/**
+ * Output a string to text log (either null-terminated or
+ * of specified number of bytes), inserting line prefix
+ * after every new line if requested.
+ *
+ * @param ctx           Logging context.
+ * @param p             Pointer to the string.
+ * @param size          if not negative, specifies the number
+ *                      of bytes to output (otherwise string
+ *                      is considered to be null-terminated).
+ */
+static void
+fputs_log(gen_ctx_user_t *ctx, const char *p, ssize_t size)
+{
+    size_t i;
+    size_t prev_pos = 0;
+
+    if (p == NULL)
+        return;
+
+    if (ctx->msg_prefix_len == 0)
+    {
+        if (size >= 0)
+            fwrite(p, 1, size, ctx->fd);
+        else
+            fputs(p, ctx->fd);
+
+        return;
+    }
+
+    for (i = 0; (size < 0 && p[i] != '\0') ||
+                (size > 0 && i < (size_t)size); i++)
+    {
+        if (p[i] == '\n')
+        {
+            fwrite(p + prev_pos, i - prev_pos + 1, 1, ctx->fd);
+            fwrite(ctx->msg_prefix, 1, ctx->msg_prefix_len,
+                   ctx->fd);
+            prev_pos = i + 1;
+        }
+    }
+
+    if (i > prev_pos)
+    {
+        fwrite(p + prev_pos, i - prev_pos, 1, ctx->fd);
+    }
+}
+
+/**
+ * Output a sequence of values in text log, inserting line prefix
+ * after every new line if requested.
+ *
+ * @param ctx           Logging context.
+ * @param data          Pointer to the sequence.
+ * @param size          Size of a sequence element in bytes.
+ * @param nmemb         Number of elements in a sequence.
+ */
+static void
+fwrite_log(gen_ctx_user_t *ctx, const void *data, size_t size,
+           size_t nmemb)
+{
+    fputs_log(ctx, (char *)data, size * nmemb);
+}
+
+/**
+ * Output a formatted string in text log, inserting line
+ * prefix after every new line if requested.
+ *
+ * @param ctx           Logging context.
+ * @param fmt           Format string.
+ * @param ...           Format arguments.
+ */
+static void
+fprintf_log(gen_ctx_user_t *ctx, const char *fmt, ...)
+{
+    te_string str = TE_STRING_INIT;
+    va_list ap;
+    te_errno rc;
+
+    va_start(ap, fmt);
+    rc = te_string_append_va(&str, fmt, ap);
+    va_end(ap);
+
+    if (rc != 0)
+    {
+        va_start(ap, fmt);
+        vfprintf(ctx->fd, fmt, ap);
+        va_end(ap);
+    }
+    else
+    {
+        fwrite_log(ctx, str.ptr, str.len, 1);
+    }
+
+    te_string_free(&str);
+}
+
+/**
+ * Wrapper over rgt_tmpls_output() inserting line
+ * prefix after every new line if requested.
+ *
+ * @param ctx           Logging context.
+ * @param tmpl          Template to output.
+ * @param attr          Template's attributes.
+ */
+static void
+rgt_tmpls_output_log(gen_ctx_user_t *ctx, rgt_tmpl_t *tmpl,
+                     const rgt_attrs_t *attrs)
+{
+    te_string str = TE_STRING_INIT;
+
+    rgt_tmpls_output_str(&str, tmpl, attrs);
+    fwrite_log(ctx, str.ptr, str.len, 1);
+    te_string_free(&str);
+}
 
 void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val) {
     UNUSED(ctx);
@@ -193,6 +322,8 @@ RGT_DEF_FUNC(proc_document_start)
 
     user_ctx.json_data = (te_dbuf)TE_DBUF_INIT(0);
     user_ctx.mi_artifact = FALSE;
+
+    user_ctx.msg_prefix_len = 0;
 
     /* In text output all XML entities should be expanded */
     ctx->expand_entities = TRUE;
@@ -232,27 +363,31 @@ RGT_DEF_DUMMY_FUNC(proc_test_start)
 RGT_DEF_DUMMY_FUNC(proc_test_end)
 
 #define DEF_FUNC_WITH_ATTRS(name_, enum_const_) \
-RGT_DEF_FUNC(name_)                                           \
-{                                                             \
-    FILE *fd = ((gen_ctx_user_t *)ctx->user_data)->fd;        \
-    rgt_attrs_t    *attrs;                                    \
-                                                              \
-    RGT_FUNC_UNUSED_PRMS();                                   \
-                                                              \
-    attrs = rgt_tmpls_attrs_new(xml_attrs);                   \
-    rgt_tmpls_output(fd, &xml2fmt_tmpls[enum_const_], attrs); \
-    rgt_tmpls_attrs_free(attrs);                              \
+RGT_DEF_FUNC(name_)                                                 \
+{                                                                   \
+    rgt_attrs_t    *attrs;                                          \
+    gen_ctx_user_t *user_ctx = (gen_ctx_user_t *)(ctx->user_data);  \
+                                                                    \
+    RGT_FUNC_UNUSED_PRMS();                                         \
+                                                                    \
+    attrs = rgt_tmpls_attrs_new(xml_attrs);                         \
+    rgt_tmpls_output_log(user_ctx,                                  \
+                         &xml2fmt_tmpls[enum_const_],               \
+                         attrs);                                    \
+    rgt_tmpls_attrs_free(attrs);                                    \
 }
 
 
 #define DEF_FUNC_WITHOUT_ATTRS(name_, enum_const_) \
 RGT_DEF_FUNC(name_)                                          \
 {                                                            \
-    FILE *fd = ((gen_ctx_user_t *)ctx->user_data)->fd;       \
-                                                             \
+    gen_ctx_user_t *user_ctx =                               \
+                      (gen_ctx_user_t *)(ctx->user_data);    \
     RGT_FUNC_UNUSED_PRMS();                                  \
                                                              \
-    rgt_tmpls_output(fd, &xml2fmt_tmpls[enum_const_], NULL); \
+    rgt_tmpls_output_log(user_ctx,                           \
+                         &xml2fmt_tmpls[enum_const_],        \
+                         NULL);                              \
 }
 
 RGT_DEF_DUMMY_FUNC(proc_log_packet_end)
@@ -309,70 +444,88 @@ RGT_DEF_FUNC(proc_log_msg_start)
     FILE *fd = user_ctx->fd;
     rgt_attrs_t *attrs;
 
+    te_string str = TE_STRING_BUF_INIT(user_ctx->msg_prefix);
+
     RGT_FUNC_UNUSED_PRMS();
 
     if (level != NULL && strcmp(level, "MI") == 0)
         user_ctx->mi_artifact = TRUE;
 
     attrs = rgt_tmpls_attrs_new(xml_attrs);
-    rgt_tmpls_output(fd, &xml2fmt_tmpls[LOG_MSG_START], attrs);
+
+    if (line_prefix)
+    {
+        te_string_append(&str, "[");
+        rgt_tmpls_output_str(&str, &xml2fmt_tmpls[LOG_MSG_START], attrs);
+        /* Remove \n from the end */
+        te_string_cut(&str, 1);
+        te_string_append(&str, "]: ");
+        user_ctx->msg_prefix_len = str.len;
+        fwrite(user_ctx->msg_prefix, 1, user_ctx->msg_prefix_len, fd);
+    }
+    else
+    {
+        rgt_tmpls_output(fd, &xml2fmt_tmpls[LOG_MSG_START], attrs);
+    }
+
     rgt_tmpls_attrs_free(attrs);
 }
 
 /**
  * Print a measurement value.
  *
- * @param fd      File where to print.
+ * @param ctx     Logging context.
  * @param value   Value to print.
  * @param prefix  Prefix string (may be @c NULL).
  */
 static void
-print_mi_meas_value(FILE *fd, te_rgt_mi_meas_value *value, const char *prefix)
+print_mi_meas_value(gen_ctx_user_t *ctx, te_rgt_mi_meas_value *value,
+                    const char *prefix)
 {
     if (!(value->defined))
         return;
 
     if (prefix != NULL)
-        fprintf(fd, "%15s: ", prefix);
+        fprintf_log(ctx, "%15s: ", prefix);
 
     if (value->specified)
-        fprintf(fd, "%f", value->value);
+        fprintf_log(ctx, "%f", value->value);
     else
-        fprintf(fd, "[failed to obtain]");
+        fprintf_log(ctx, "[failed to obtain]");
 
     if (value->multiplier != NULL && *(value->multiplier) != '\0' &&
         strcmp(value->multiplier, "1") != 0)
-        fprintf(fd, " * %s", value->multiplier);
+        fprintf_log(ctx, " * %s", value->multiplier);
     if (value->base_units != NULL && *(value->base_units) != '\0')
-        fprintf(fd, " %s", value->base_units);
+        fprintf_log(ctx, " %s", value->base_units);
 
-    fprintf(fd, "\n");
+    fprintf_log(ctx, "\n");
 }
 
 /**
  * Log MI result.
  *
- * @param fd      Where to print a log.
+ * @param ctx     Logging context.
  * @param result  Result that should be printed.
  */
 static void
-log_mi_result(FILE *fd, te_rgt_mi_test_result *result)
+log_mi_result(gen_ctx_user_t *ctx, te_rgt_mi_test_result *result)
 {
     size_t i;
 
-    fprintf(fd, "Status: %s", result->status);
+    fprintf_log(ctx, "Status: %s", result->status);
 
     if (result->verdicts != NULL)
     {
-        fprintf(fd, "\nVerdicts:");
+        fprintf_log(ctx, "\nVerdicts:");
         for (i = 0; i < result->verdicts_num; i++)
-            fprintf(fd, "\n *  %s", result->verdicts[i]);
+            fprintf_log(ctx, "\n *  %s", result->verdicts[i]);
     }
 
     if (result->notes != NULL)
-        fprintf(fd, "\nNotes: %s", result->notes);
+        fprintf_log(ctx, "\nNotes: %s", result->notes);
     if (result->key != NULL)
-        fprintf(fd, "\nKey: %s", result->key);
+        fprintf_log(ctx, "\nKey: %s", result->key);
 }
 
 /** Transform node type from MI message to human-readable form */
@@ -392,35 +545,36 @@ node_type2str(const char *node_type)
 /**
  * Log MI test start message.
  *
- * @param fd      Where to print a log.
- * @param mi      Structure with data from parsed MI artifact.
  * @param ctx     Logging context.
+ * @param mi      Structure with data from parsed MI artifact.
  */
 static void
-log_mi_test_start(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
+log_mi_test_start(gen_ctx_user_t *ctx, te_rgt_mi *mi)
 {
     te_rgt_mi_test_start *data = &mi->data.test_start;
 
     size_t   i;
     te_errno rc;
 
-    fprintf(fd, "%s \"%s\" started\n", node_type2str(data->node_type),
-            data->name);
-    fprintf(fd, "Node ID %d, Parent ID %d", data->node_id, data->parent_id);
+    fprintf_log(ctx, "%s \"%s\" started\n",
+                node_type2str(data->node_type),
+                data->name);
+    fprintf_log(ctx, "Node ID %d, Parent ID %d", data->node_id,
+                data->parent_id);
     if (data->plan_id != -1)
-        fprintf(fd, ", Plan ID %d", data->plan_id);
+        fprintf_log(ctx, ", Plan ID %d", data->plan_id);
 
     rc = flow_stack_push(&ctx->flow_stack, data->node_id, data->parent_id,
                          data->node_type, data->name);
     if (rc != 0)
     {
-        fprintf(fd, "\nRGT ERROR: Failed to push the flow item: %s",
-                te_rc_err2str(mi->rc));
+        fprintf_log(ctx, "\nRGT ERROR: Failed to push the flow item: %s",
+                    te_rc_err2str(mi->rc));
     }
 
     if (data->authors != NULL)
     {
-        fprintf(fd, "\nAuthors:");
+        fprintf_log(ctx, "\nAuthors:");
         for(i = 0; i < data->authors_num; i++)
         {
             const char *name  = data->authors[i].name;
@@ -431,27 +585,27 @@ log_mi_test_start(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
             if (email == NULL)
                 email = "";
 
-            fprintf(fd, "\n *  %s <%s>", name, email);
+            fprintf_log(ctx, "\n *  %s <%s>", name, email);
         }
     }
 
     if (data->objective != NULL)
-        fprintf(fd, "\nObjective: %s", data->objective);
+        fprintf_log(ctx, "\nObjective: %s", data->objective);
     if (data->page != NULL)
-        fprintf(fd, "\nPage: %s", data->page);
+        fprintf_log(ctx, "\nPage: %s", data->page);
     if (data->tin != -1)
-        fprintf(fd, "\nTIN: %d", data->tin);
+        fprintf_log(ctx, "\nTIN: %d", data->tin);
     if (data->hash != NULL)
-        fprintf(fd, "\nHash: %s", data->hash);
+        fprintf_log(ctx, "\nHash: %s", data->hash);
 
     if (data->params != NULL)
     {
-        fprintf(fd, "\nParameters:");
+        fprintf_log(ctx, "\nParameters:");
         for(i = 0; i < data->params_num; i++)
         {
-            fprintf(fd, "\n *  %s = %s",
-                    data->params[i].key,
-                    data->params[i].value);
+            fprintf_log(ctx, "\n *  %s = %s",
+                        data->params[i].key,
+                        data->params[i].value);
         }
     }
 }
@@ -459,12 +613,11 @@ log_mi_test_start(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
 /**
  * Log MI test end message.
  *
- * @param fd      Where to print a log.
- * @param mi      Structure with data from parsed MI artifact.
  * @param ctx     Logging context.
+ * @param mi      Structure with data from parsed MI artifact.
  */
 static void
-log_mi_test_end(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
+log_mi_test_end(gen_ctx_user_t *ctx, te_rgt_mi *mi)
 {
     te_rgt_mi_test_end *data = &mi->data.test_end;
     flow_item_t        *item;
@@ -473,35 +626,40 @@ log_mi_test_end(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
     item = flow_stack_pop(&ctx->flow_stack, data->node_id);
     if (item != NULL)
     {
-        fprintf(fd, "%s \"%s\" finished\n", node_type2str(item->type),
-                item->name);
-        fprintf(fd, "Node ID %d, Parent ID %d", data->node_id,
-                data->parent_id);
+        fprintf_log(ctx, "%s \"%s\" finished\n",
+                    node_type2str(item->type),
+                    item->name);
+        fprintf_log(ctx, "Node ID %d, Parent ID %d", data->node_id,
+                    data->parent_id);
         if (data->plan_id != -1)
-            fprintf(fd, ", Plan ID %d", data->plan_id);
+            fprintf_log(ctx, ", Plan ID %d", data->plan_id);
     }
     else
     {
-        fprintf(fd, "(%d, %d) finished with status \"%s\"", data->node_id,
-                data->parent_id, data->obtained.status);
+        fprintf_log(ctx, "(%d, %d) finished with status \"%s\"",
+                    data->node_id, data->parent_id,
+                    data->obtained.status);
     }
 
     if (data->tags_expr != NULL)
-        fprintf(fd, "\nMatched tags expression: %s", data->tags_expr);
+    {
+        fprintf_log(ctx, "\nMatched tags expression: %s",
+                    data->tags_expr);
+    }
 
-    fprintf(fd, "\n\nObtained result:\n");
-    log_mi_result(fd, &data->obtained);
+    fprintf_log(ctx, "\n\nObtained result:\n");
+    log_mi_result(ctx, &data->obtained);
 
     if (data->error != NULL)
-        fprintf(fd, "\n\nERROR: %s", data->error);
+        fprintf_log(ctx, "\n\nERROR: %s", data->error);
 
     if (data->expected != NULL)
     {
-        fprintf(fd, "\n\nExpected results:");
+        fprintf_log(ctx, "\n\nExpected results:");
         for (i = 0; i < data->expected_num; i++)
         {
-            fprintf(fd, "\n\n");
-            log_mi_result(fd, &data->expected[i]);
+            fprintf_log(ctx, "\n\n");
+            log_mi_result(ctx, &data->expected[i]);
         }
     }
 }
@@ -509,19 +667,18 @@ log_mi_test_end(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
 /**
  * Log MI artifact.
  *
- * @param fd      Where to print a log.
- * @param mi      Structure with data from parsed MI artifact.
  * @param ctx     Logging context.
+ * @param mi      Structure with data from parsed MI artifact.
  */
 static void
-log_mi_artifact(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
+log_mi_artifact(gen_ctx_user_t *ctx, te_rgt_mi *mi)
 {
-    int res = -1;
+    char *s = NULL;
 
     if (mi->parse_failed)
     {
-        fprintf(fd, "Failed to parse JSON: %s\n", mi->parse_err);
-        fwrite(ctx->json_data.ptr, ctx->json_data.len, 1, fd);
+        fprintf_log(ctx, "Failed to parse JSON: %s\n", mi->parse_err);
+        fwrite_log(ctx, ctx->json_data.ptr, ctx->json_data.len, 1);
         return;
     }
 
@@ -531,22 +688,27 @@ log_mi_artifact(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
         {
             if (mi->rc == TE_EOPNOTSUPP)
             {
-                fprintf(fd, "Cannot parse MI artifact without "
-                        "libjansson\n");
+                fprintf_log(ctx, "Cannot parse MI artifact without "
+                            "libjansson\n");
             }
             else
             {
-                fprintf(fd, "Failed to process MI artifact, error = %s\n",
-                        te_rc_err2str(mi->rc));
+                fprintf_log(ctx, "Failed to process MI artifact, "
+                            "error = %s\n", te_rc_err2str(mi->rc));
             }
         }
 
 #ifdef HAVE_LIBJANSSON
-        res = json_dumpf((json_t *)(mi->json_obj), fd, JSON_INDENT(2));
+        s = json_dumps((json_t *)(mi->json_obj), JSON_INDENT(2));
+        if (s != NULL)
+        {
+            fputs_log(ctx, s, -1);
+            free(s);
+        }
 #endif
 
-        if (res < 0)
-            fwrite(ctx->json_data.ptr, ctx->json_data.len, 1, fd);
+        if (s == NULL)
+            fwrite_log(ctx, ctx->json_data.ptr, ctx->json_data.len, 1);
     }
     else if (mi->type == TE_RGT_MI_TYPE_MEASUREMENT)
     {
@@ -554,66 +716,68 @@ log_mi_artifact(FILE *fd, te_rgt_mi *mi, gen_ctx_user_t *ctx)
         size_t i;
         size_t j;
 
-        fprintf(fd, "Measurements from tool %s\n", meas->tool);
+        fprintf_log(ctx, "Measurements from tool %s\n", meas->tool);
         for (i = 0; i < meas->params_num; i++)
         {
             te_rgt_mi_meas_param *param;
 
             param = &meas->params[i];
 
-            fprintf(fd, "\nMeasured parameter: \"%s\"\n",
-                    te_rgt_mi_meas_param_name(param));
+            fprintf_log(ctx, "\nMeasured parameter: \"%s\"\n",
+                        te_rgt_mi_meas_param_name(param));
 
             if (param->stats_present)
             {
-                fprintf(fd, "Statistics:\n");
-                print_mi_meas_value(fd, &param->min, "min");
-                print_mi_meas_value(fd, &param->max, "max");
-                print_mi_meas_value(fd, &param->mean, "mean");
-                print_mi_meas_value(fd, &param->median, "median");
-                print_mi_meas_value(fd, &param->stdev, "stdev");
-                print_mi_meas_value(fd, &param->cv, "cv");
-                print_mi_meas_value(fd, &param->out_of_range, "out of range");
-                print_mi_meas_value(fd, &param->percentile, "percentile");
+                fprintf_log(ctx, "Statistics:\n");
+                print_mi_meas_value(ctx, &param->min, "min");
+                print_mi_meas_value(ctx, &param->max, "max");
+                print_mi_meas_value(ctx, &param->mean, "mean");
+                print_mi_meas_value(ctx, &param->median, "median");
+                print_mi_meas_value(ctx, &param->stdev, "stdev");
+                print_mi_meas_value(ctx, &param->cv, "cv");
+                print_mi_meas_value(ctx, &param->out_of_range,
+                                    "out of range");
+                print_mi_meas_value(ctx, &param->percentile, "percentile");
             }
 
             if (param->values_num > 0)
             {
-                fprintf(fd, "Values:\n");
+                fprintf_log(ctx, "Values:\n");
                 for (j = 0; j < param->values_num; j++)
                 {
-                    print_mi_meas_value(fd, &param->values[j], NULL);
+                    print_mi_meas_value(ctx, &param->values[j], NULL);
                 }
             }
         }
 
         if (meas->keys_num > 0)
         {
-            fprintf(fd, "\nKeys:\n");
+            fprintf_log(ctx, "\nKeys:\n");
             for (i = 0; i < meas->keys_num; i++)
             {
-                fprintf(fd, "\"%s\" : \"%s\"\n", meas->keys[i].key,
-                        meas->keys[i].value);
+                fprintf_log(ctx, "\"%s\" : \"%s\"\n", meas->keys[i].key,
+                            meas->keys[i].value);
             }
         }
 
         if (meas->comments_num > 0)
         {
-            fprintf(fd, "\nComments:\n");
+            fprintf_log(ctx, "\nComments:\n");
             for (i = 0; i < meas->comments_num; i++)
             {
-                fprintf(fd, "\"%s\" : \"%s\"\n", meas->comments[i].key,
-                        meas->comments[i].value);
+                fprintf_log(ctx, "\"%s\" : \"%s\"\n",
+                            meas->comments[i].key,
+                            meas->comments[i].value);
             }
         }
     }
     else if (mi->type == TE_RGT_MI_TYPE_TEST_START)
     {
-        log_mi_test_start(fd, mi, ctx);
+        log_mi_test_start(ctx, mi);
     }
     else if (mi->type == TE_RGT_MI_TYPE_TEST_END)
     {
-        log_mi_test_end(fd, mi, ctx);
+        log_mi_test_end(ctx, mi);
     }
 }
 
@@ -634,7 +798,7 @@ RGT_DEF_FUNC(proc_log_msg_end)
             te_rgt_parse_mi_message((char *)(user_ctx->json_data.ptr),
                                     user_ctx->json_data.len, &mi);
 
-            log_mi_artifact(fd, &mi, user_ctx);
+            log_mi_artifact(user_ctx, &mi);
 
             te_rgt_mi_clean(&mi);
         }
@@ -646,6 +810,8 @@ RGT_DEF_FUNC(proc_log_msg_end)
     attrs = rgt_tmpls_attrs_new(xml_attrs);
     rgt_tmpls_output(fd, &xml2fmt_tmpls[LOG_MSG_END], attrs);
     rgt_tmpls_attrs_free(attrs);
+
+    user_ctx->msg_prefix_len = 0;
 }
 
 void
@@ -653,7 +819,6 @@ proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
            const rgt_xmlChar *ch, size_t len)
 {
     gen_ctx_user_t *user_ctx = (gen_ctx_user_t *)(ctx->user_data);
-    FILE *fd = user_ctx->fd;
 
     UNUSED(ctx);
     UNUSED(depth_ctx);
@@ -664,7 +829,7 @@ proc_chars(rgt_gen_ctx_t *ctx, rgt_depth_ctx_t *depth_ctx,
         return;
     }
 
-    fwrite(ch, len, 1, fd);
+    fwrite_log(user_ctx, ch, len, 1);
 }
 
 te_bool

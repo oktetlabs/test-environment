@@ -26,6 +26,7 @@
 #include <libgen.h>
 #include <unistd.h>
 #include "te_errno.h"
+#include "te_string.h"
 
 #include "rgt_tmpls_lib.h"
 #include "rgt_which.h"
@@ -54,6 +55,9 @@ static te_bool      attr_locked = FALSE;
 static char bufs[N_BUFS][BUF_LEN];
 /** Currently used buffer */
 static unsigned int cur_buf = 0;
+
+/** Type of an output function (like fprintf()) */
+typedef int (*write_func)(void *arg, ...);
 
 /* The description see in rgt_tmpls_lib.h */
 rgt_attrs_t *
@@ -263,21 +267,31 @@ rgt_check_string_len(const char *str)
     return buf;
 }
 
-/* The description see in rgt_tmpls_lib.h */
-int
-rgt_tmpls_output(FILE *out_fd, rgt_tmpl_t *tmpl, const rgt_attrs_t *attrs)
+/**
+ * Output a template block by block with a specified output function.
+ *
+ * @param func        Output function (like fprintf()).
+ * @param dest        Destination (FILE, etc).
+ * @param tmpl        Pointer to a template to be output.
+ * @param attrs       Pointer to an array of attributes for that template.
+ *
+ * @return @c 0 on success, @c 1 on failure.
+ */
+static int
+rgt_tmpls_output_gen(write_func func, void *dest, rgt_tmpl_t *tmpl,
+                     const rgt_attrs_t *attrs)
 {
     int   i;
     char *buf;
 
-    if (out_fd == NULL)
+    if (dest == NULL)
         return 0;
 
     for (i = 0; i < tmpl->n_blocks; i++)
     {
         if (tmpl->blocks[i].type == RGT_BLK_TYPE_CSTR)
         {
-            fprintf(out_fd, "%s", tmpl->blocks[i].start_data);
+            func(dest, "%s", tmpl->blocks[i].start_data);
         }
         else
         {
@@ -292,19 +306,21 @@ rgt_tmpls_output(FILE *out_fd, rgt_tmpl_t *tmpl, const rgt_attrs_t *attrs)
                         case RGT_ATTR_TYPE_STR:
                             buf = rgt_check_string_len(attrs[j].str_val);
                             if (buf == NULL)
-                                fprintf(out_fd, tmpl->blocks[i].var.fmt_str,
-                                        attrs[j].str_val);
+                            {
+                                func(dest, tmpl->blocks[i].var.fmt_str,
+                                     attrs[j].str_val);
+                            }
                             else
                             {
-                                fprintf(out_fd, tmpl->blocks[i].var.fmt_str,
-                                        buf);
+                                func(dest, tmpl->blocks[i].var.fmt_str,
+                                     buf);
                                 free(buf);
                             }
                             break;
 
                         case RGT_ATTR_TYPE_UINT32:
-                            fprintf(out_fd, tmpl->blocks[i].var.fmt_str,
-                                    attrs[j].uint32_val);
+                            func(dest, tmpl->blocks[i].var.fmt_str,
+                                 attrs[j].uint32_val);
                             break;
 
                         default:
@@ -334,6 +350,22 @@ rgt_tmpls_output(FILE *out_fd, rgt_tmpl_t *tmpl, const rgt_attrs_t *attrs)
     }
 
     return 0;
+}
+
+/* The description see in rgt_tmpls_lib.h */
+int
+rgt_tmpls_output(FILE *out_fd, rgt_tmpl_t *tmpl, const rgt_attrs_t *attrs)
+{
+    return rgt_tmpls_output_gen((write_func)&fprintf, out_fd, tmpl, attrs);
+}
+
+/* The description see in rgt_tmpls_lib.h */
+int
+rgt_tmpls_output_str(te_string *str, rgt_tmpl_t *tmpl,
+                     const rgt_attrs_t *attrs)
+{
+    return rgt_tmpls_output_gen((write_func)&te_string_append, str, tmpl,
+                                attrs);
 }
 
 /* The description see in rgt_tmpls_lib.h */

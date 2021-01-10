@@ -41,6 +41,7 @@
 
 #include "te_defs.h"
 #include "te_stdint.h"
+#include "te_string.h"
 
 /** Delimiter to be used for determination variables in templates */
 #define RGT_TMPLS_VAR_DELIMETER "@@"
@@ -259,6 +260,23 @@ extern void rgt_tmpls_free(rgt_tmpl_t *tmpls, size_t tmpl_num);
  */
 extern int rgt_tmpls_output(FILE *out_fd, rgt_tmpl_t *tmpl,
                             const rgt_attrs_t *attrs);
+
+/**
+ * Outputs a template block by block into specified TE string.
+ *
+ * @param str       TE string to which to append data
+ * @param tmpl      Pointer to a template to be output
+ * @param attrs     Pointer to an array of attributes for that template
+ *
+ * @return  Status of the operation
+ *
+ * @retval 0  On success
+ * @retval 1  On failure
+ *
+ * @se If an error occures the function outputs error message into stderr
+ */
+extern int rgt_tmpls_output_str(te_string *str, rgt_tmpl_t *tmpl,
+                                const rgt_attrs_t *attrs);
 
 extern void rgt_attr_settings_init(const char *sep, int length);
 
