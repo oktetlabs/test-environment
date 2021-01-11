@@ -17,6 +17,21 @@
 /* See description in tapi_test_behaviour.h */
 test_behaviour test_behaviour_storage;
 
+/**
+ * Wrapper function to call te_strtoui().
+ * It helps to get boolean and unsigned integer values from the GET_BEHV macro.
+ *
+ * @param str   String to convert
+ * @param value Location for the resulting value
+ *
+ * @return Status code
+ */
+static te_errno
+test_behaviour_strtoul(const char *str, unsigned int *value)
+{
+    return te_strtoui(str, 0, value);
+}
+
 void
 test_behaviour_get(test_behaviour *behaviour)
 {
@@ -25,13 +40,13 @@ test_behaviour_get(test_behaviour *behaviour)
 
     memset(behaviour, 0, sizeof(*behaviour));
 
-#define GET_BEHV(name_)                                                  \
+#define GET_BEHV(name_, func_)                                           \
     do {                                                                 \
         rc = cfg_get_instance_fmt(NULL, &s,                              \
                                   "/local:/test:/behaviour:%s", #name_); \
         if (rc == 0)                                                     \
         {                                                                \
-            CHECK_RC(te_strtol_bool(s, &(behaviour-> name_)));           \
+            CHECK_RC(func_(s, &(behaviour-> name_)));                    \
             free(s);                                                     \
         }                                                                \
         else if (TE_RC_GET_ERROR(rc) == TE_ENOENT)                       \
@@ -46,12 +61,13 @@ test_behaviour_get(test_behaviour *behaviour)
         }                                                                \
     } while (0)                                                          \
 
-    GET_BEHV(wait_on_fail);
-    GET_BEHV(wait_on_cleanup);
-    GET_BEHV(log_stack);
-    GET_BEHV(log_test_fail_state);
-    GET_BEHV(cleanup_fd_leak_check);
-    GET_BEHV(cleanup_fd_close_enforce_libc);
+    GET_BEHV(wait_on_fail, te_strtol_bool);
+    GET_BEHV(wait_on_cleanup, te_strtol_bool);
+    GET_BEHV(log_stack, te_strtol_bool);
+    GET_BEHV(log_test_fail_state, te_strtol_bool);
+    GET_BEHV(cleanup_fd_leak_check, te_strtol_bool);
+    GET_BEHV(cleanup_fd_close_enforce_libc, te_strtol_bool);
+    GET_BEHV(prologue_sleep, test_behaviour_strtoul);
 
 #undef GET_BEHV
 }

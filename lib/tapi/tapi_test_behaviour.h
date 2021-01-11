@@ -39,6 +39,7 @@ typedef struct test_behaviour {
     te_bool cleanup_fd_close_enforce_libc; /**< If enabled, use libc-version
                                                 of close() in
                                                 CLEANUP_RPC_CLOSE() */
+    unsigned int prologue_sleep; /**< How many sencond to sleep in prologue */
 } test_behaviour;
 
 /**
