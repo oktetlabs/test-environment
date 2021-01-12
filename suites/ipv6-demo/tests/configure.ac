@@ -40,7 +40,7 @@ AC_ARG_VAR([TE_PLATFORM])
 
 TS_TE_LIBS="-ltapi_env -ltapi_rpc -lrcfrpc -ltapi \
 -lconfapi -lconf_oid -lrcfapi -lrpcxdr -lrpc_types -llogger_ten -lipc \
--llog_bufs -lpthread -ltools -lasn -lndn -llogger_core"
+-lpthread -ltools -lasn -lndn -llogger_core"
 
 TS_TE_DEPS="\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libipc.a \
 \$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/librcfapi.a \
@@ -50,7 +50,6 @@ TS_TE_DEPS="\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libipc.a \
 \$(DESTDIR)/\$(prefix)/..//${TE_PLATFORM}/lib/librpcxdr.a \
 \$(DESTDIR)/\$(prefix)/..//${TE_PLATFORM}/lib/librpc_types.a \
 \$(DESTDIR)/\$(prefix)/..//${TE_PLATFORM}/lib/liblogger_ten.a \
-\$(DESTDIR)/\$(prefix)/..//${TE_PLATFORM}/lib/liblog_bufs.a \
 \$(DESTDIR)/\$(prefix)/..//${TE_PLATFORM}/lib/libtapi.a \
 \$(DESTDIR)/\$(prefix)/..//${TE_PLATFORM}/lib/libtapi_env.a \
 \$(DESTDIR)/\$(prefix)/..//${TE_PLATFORM}/lib/libtapi_rpc.a"

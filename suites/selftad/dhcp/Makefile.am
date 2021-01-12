@@ -13,4 +13,4 @@ tetest_PROGRAMS = wait_discover
 
 LDADD= -ltapi -ltapi_tad -lndn -lasn -ltapi_rpc -lrpc_types -lrcfrpc \
        -lconfapi -lrcfapi -lrpcxdr -lconf_oid -llogger_ten -lipc \
-       -llog_bufs -ltools -llogger_core -lpthread @NET_SNMP_LIBS@
+       -ltools -llogger_core -lpthread @NET_SNMP_LIBS@

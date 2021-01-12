@@ -19,7 +19,7 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 MY_LDADD=-ltapi_rpc -ltapi_env -ltapi -ltapi_rpc -lrpc_types -lasn -lndn -lrcfrpc  \
          -lconfapi -lconf_oid -lrcfapi -lrpcxdr -llogger_ten -lipc \
-         -llog_bufs -ltools -llogger_core -lexpat -lpthread
+         -ltools -llogger_core -lexpat -lpthread
 
 tetest_PROGRAMS = example
 example_SOURCES = example.c

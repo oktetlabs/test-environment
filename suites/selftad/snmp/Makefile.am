@@ -15,6 +15,6 @@ tetest_PROGRAMS = snmp_gets snmp_get_if_table walk trap_any
 
 MYLDADD = -ltapi_tad -lndn -lasn -ltapi -ltapi_rpc -lrpc_types -lrcfrpc \
           -lrcfapi -lrpcxdr -lconfapi -lconf_oid -llogger_ten -lipc \
-          -llog_bufs -ltools -llogger_core -lpthread
+          -ltools -llogger_core -lpthread
 
 LDADD=$(MYLDADD) @NET_SNMP_LIBS@

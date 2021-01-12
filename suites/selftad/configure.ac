@@ -90,7 +90,6 @@ SELFTAD_TE_DEPS="\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libipc.a \
 \$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/liblogger_ten.a \
 \$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libtapi.a \
 \$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libndn.a \
-\$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/liblog_bufs.a \
 \$(DESTDIR)/\$(prefix)/../${TE_PLATFORM}/lib/libtapi_rpc.a"
 
 AC_SUBST([NET_SNMP_CFLAGS])

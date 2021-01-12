@@ -19,7 +19,7 @@ AM_LDFLAGS = @TE_LDFLAGS@ -L$(DESTDIR)/$(libdir)
 
 MY_LDADD=-ltapi -ltapi_rpc -lrpc_types -ltapi_env -ltapi -lasn -lndn -lrcfrpc \
          -lconfapi -lconf_oid -lrcfapi -lrpcxdr -llogger_ten -lipc \
-         -llog_bufs -ltools -llogger_core -lexpat -lpthread -lm
+         -ltools -llogger_core -lexpat -lpthread -lm
 
 tetest_PROGRAMS = clientserver
        

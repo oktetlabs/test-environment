@@ -18,5 +18,5 @@ tetest_PROGRAMS = tcp_simple ip4_simple ip4_recv_send ip4_udp_dgm \
 
 LDADD = -ltapi_rpc -lrpc_types -ltapi_env -ltapi_tad -lndn -lasn -ltapi \
 	-lrcfrpc -lrcfapi -lrpcxdr -lconfapi -lconf_oid -llogger_ten -lipc \
-	-llog_bufs -ltools -llogger_core -lpthread @NET_SNMP_LIBS@
+	-ltools -llogger_core -lpthread @NET_SNMP_LIBS@
 
