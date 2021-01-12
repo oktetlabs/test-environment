@@ -1398,13 +1398,13 @@ tapi_tcp_wait_open(tapi_tcp_handler_t handler, int timeout)
     if (conn_descr->peer_isn == 0)
     {
         rc = conn_wait_msg(conn_descr, timeout);
-        if (rc == TE_ETIMEDOUT && !is_server)
+        if (TE_RC_GET_ERROR(rc) == TE_ETIMEDOUT && !is_server)
         {
             INFO("%s(): re-send SYN", __FUNCTION__);
             conn_send_syn(conn_descr);
             rc = conn_wait_msg(conn_descr, timeout);
 
-            if (rc == TE_ETIMEDOUT)
+            if (TE_RC_GET_ERROR(rc) == TE_ETIMEDOUT)
             {
                 INFO("%s(): re-send SYN again", __FUNCTION__);
                 conn_send_syn(conn_descr);
