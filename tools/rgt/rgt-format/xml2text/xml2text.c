@@ -808,7 +808,11 @@ RGT_DEF_FUNC(proc_log_msg_end)
     }
 
     attrs = rgt_tmpls_attrs_new(xml_attrs);
-    rgt_tmpls_output(fd, &xml2fmt_tmpls[LOG_MSG_END], attrs);
+    rgt_tmpls_output(fd,
+                     &xml2fmt_tmpls[line_prefix ?
+                                          LOG_MSG_END_LINE_PREFIX :
+                                          LOG_MSG_END],
+                     attrs);
     rgt_tmpls_attrs_free(attrs);
 
     user_ctx->msg_prefix_len = 0;

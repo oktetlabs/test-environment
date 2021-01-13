@@ -5,6 +5,7 @@ xml2text_tmpls = files(
     'document_end.tmpl',
     'document_start.tmpl',
     'log_msg_end.tmpl',
+    'log_msg_end_line_prefix.tmpl',
     'log_msg_file_end.tmpl',
     'log_msg_file_start.tmpl',
     'log_msg_start.tmpl',
