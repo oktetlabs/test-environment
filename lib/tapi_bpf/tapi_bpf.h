@@ -78,6 +78,7 @@ typedef enum tapi_bpf_link_point
     TAPI_BPF_LINK_UNSPEC = 0,
     TAPI_BPF_LINK_XDP,
     TAPI_BPF_LINK_TC_INGRESS,
+    TAPI_BPF_LINK_TC_EGRESS,
 } tapi_bpf_link_point;
 
 /**

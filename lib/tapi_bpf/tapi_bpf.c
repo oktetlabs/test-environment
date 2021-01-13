@@ -479,9 +479,12 @@ tapi_bpf_prog_link(const char *ta, const char *ifname,
             break;
 
         case TAPI_BPF_LINK_TC_INGRESS:
+        case TAPI_BPF_LINK_TC_EGRESS:
         {
             te_bool qdisc_is_enabled = FALSE;
             tapi_cfg_qdisc_kind_t qdisc_kind = TAPI_CFG_QDISC_KIND_UNKNOWN;
+            const char *param = link_type == TAPI_BPF_LINK_TC_INGRESS ?
+                                "bpf_ingress" : "bpf_egress";
 
             if ((rc = tapi_cfg_qdisc_get_enabled(ta, ifname,
                                                  &qdisc_is_enabled)) != 0)
@@ -512,10 +515,10 @@ tapi_bpf_prog_link(const char *ta, const char *ifname,
                 break;
             }
 
-            if ((rc = tapi_cfg_qdisc_set_param(ta, ifname, "bpf_ingress",
+            if ((rc = tapi_cfg_qdisc_set_param(ta, ifname, param,
                                                str.ptr)) != 0)
             {
-                ERROR("Failed to set qdisc parameter \"bpf_ingress\"");
+                ERROR("Failed to set qdisc parameter \"%s\"", param);
                 break;
             }
             break;
@@ -551,6 +554,15 @@ tapi_bpf_prog_unlink(const char *ta, const char *ifname,
         case TAPI_BPF_LINK_TC_INGRESS:
             if ((rc = tapi_cfg_qdisc_set_param(ta, ifname,
                                                "bpf_ingress", "")) != 0)
+            {
+                ERROR("%s(): Failed to unlink BPF TC program: %r",
+                      __FUNCTION__, rc);
+            }
+            break;
+
+        case TAPI_BPF_LINK_TC_EGRESS:
+            if ((rc = tapi_cfg_qdisc_set_param(ta, ifname,
+                                               "bpf_egress", "")) != 0)
             {
                 ERROR("%s(): Failed to unlink BPF TC program: %r",
                       __FUNCTION__, rc);
