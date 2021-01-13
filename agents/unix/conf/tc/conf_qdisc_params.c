@@ -45,6 +45,11 @@ typedef te_errno (*clsact_setter)(struct bpf_link_info_list *, const char *,
 typedef void (*clsact_getter)(struct bpf_link_info_list *, const char *,
                               char *);
 
+typedef enum clsact_dir {
+    CONF_CLSACT_INGRESS = TC_H_MIN_INGRESS,
+    CONF_CLSACT_EGRESS = TC_H_MIN_EGRESS,
+} clsact_dir;
+
 /* Kind of tc qdisc discipline */
 typedef enum conf_qdisc_kind {
     CONF_QDISC_NETEM,
@@ -505,20 +510,22 @@ static struct tbf_param tbf_params_list[] = {
 };
 
 /**
- * Link BPF program @p prog_name to TC ingress attach point on the
+ * Link BPF program @p prog_name to TC attach point on the
  * interface @p if_name, or unlink if @p prog_name is an empty
  * string.
  *
- * @param list          List of linked BPF TC ingress programs.
+ * @param list          List of linked BPF TC programs.
  * @param if_name       The interface name.
  * @param prog_name     Oid of the BPF program, or empty string to unlink.
+ * @param dir           Data path direction (ingress or egress).
  *
  * @return Status code.
  */
 static te_errno
-conf_qdisc_clsact_bpf_ingress_set(struct bpf_link_info_list *list,
-                                  const char *if_name,
-                                  const char *prog_name)
+conf_qdisc_clsact_bpf_set(struct bpf_link_info_list *list,
+                          const char *if_name,
+                          const char *prog_name,
+                          clsact_dir dir)
 {
 /*
  * Linux < 4.4 doesn't support tc BPF classifier (TCA_BPF_FLAG_ACT_DIRECT).
@@ -573,7 +580,7 @@ conf_qdisc_clsact_bpf_ingress_set(struct bpf_link_info_list *list,
     }
 
     tchdr.tcm_family = AF_UNSPEC;
-    tchdr.tcm_parent = TC_H_MAKE(TC_H_CLSACT, TC_H_MIN_INGRESS);
+    tchdr.tcm_parent = TC_H_MAKE(TC_H_CLSACT, dir);
     tchdr.tcm_info = TC_H_MAKE(0, protocol);
     tchdr.tcm_ifindex = conf_net_if_wrapper_if_nametoindex(if_name);
 
@@ -695,8 +702,8 @@ conf_qdisc_clsact_bpf_ingress_set(struct bpf_link_info_list *list,
  * @param[out] val      Buffer to write the string to.
  */
 static void
-conf_qdisc_clsact_bpf_ingress_get(struct bpf_link_info_list *list,
-                                  const char *ifname, char *val)
+conf_qdisc_clsact_bpf_get(struct bpf_link_info_list *list, const char *ifname,
+                          char *val)
 {
     bpf_link_info *item;
 
@@ -712,6 +719,24 @@ conf_qdisc_clsact_bpf_ingress_get(struct bpf_link_info_list *list,
     TE_STRLCPY(val, "", RCF_MAX_VAL);
 }
 
+static te_errno
+conf_qdisc_clsact_bpf_ingress_set(struct bpf_link_info_list *list,
+                                  const char *if_name,
+                                  const char *prog_name)
+{
+    return conf_qdisc_clsact_bpf_set(list, if_name, prog_name,
+                                     CONF_CLSACT_INGRESS);
+}
+
+static te_errno
+conf_qdisc_clsact_bpf_egress_set(struct bpf_link_info_list *list,
+                                 const char *if_name,
+                                 const char *prog_name)
+{
+    return conf_qdisc_clsact_bpf_set(list, if_name, prog_name,
+                                     CONF_CLSACT_EGRESS);
+}
+
 typedef struct clsact_param
 {
     const char *name;
@@ -725,7 +750,13 @@ static clsact_param clsact_param_list[] = {
         .name = "bpf_ingress",
         .bpf_prog_list = LIST_HEAD_INITIALIZER(.bpf_prog_list),
         .set = conf_qdisc_clsact_bpf_ingress_set,
-        .get = conf_qdisc_clsact_bpf_ingress_get,
+        .get = conf_qdisc_clsact_bpf_get,
+    },
+    {
+        .name = "bpf_egress",
+        .bpf_prog_list = LIST_HEAD_INITIALIZER(.bpf_prog_list),
+        .set = conf_qdisc_clsact_bpf_egress_set,
+        .get = conf_qdisc_clsact_bpf_get,
     },
 };
 

@@ -144,3 +144,8 @@
                 bpf_ingress      - Link to BPF program which is attached
                                    to TC ingress hook on the interface,
                                    such as /agent:Agt_A/bpf:0/program:foo
+                bpf_egress       - Link to BPF program in Configurator tree
+                                   (e.g. /agent:Agt_A/bpf:0/program:foo),
+                                   which needs to be attached to TC egress hook
+                                   on the interface.
+
