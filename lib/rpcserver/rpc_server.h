@@ -349,6 +349,29 @@ extern te_bool tarpc_dynamic_library_loaded(void);
 extern int tarpc_find_func(tarpc_lib_flags lib_flags, const char *name,
                            api_func *func);
 
+/**
+ * Try to find a function with tarpc_find_func(); in case of failure
+ * set RPC error with te_rpc_error_set() and return @c -1.
+ *
+ * @param _libflags   Value of type tarpc_lib_flags telling how
+ *                    to resolve function name.
+ * @param _fname      Function name.
+ * @param _fp         Where to save function pointer.
+ */
+#define TARPC_FIND_FUNC_RETURN(_libflags, _fname, _fp) \
+    do {                                                        \
+        te_errno _err;                                          \
+                                                                \
+        _err = tarpc_find_func(_libflags, _fname,               \
+                               (api_func *)_fp);                \
+        if (_err != 0)                                          \
+        {                                                       \
+            te_rpc_error_set(_err, "Failed to find function "   \
+                             "\"%s\"", _fname);                 \
+            return -1;                                          \
+        }                                                       \
+    } while (0)
+
 /** Structure for checking of variable-length arguments safety */
 typedef struct checked_arg {
     STAILQ_ENTRY(checked_arg) next; /**< Next checked argument in the list */
