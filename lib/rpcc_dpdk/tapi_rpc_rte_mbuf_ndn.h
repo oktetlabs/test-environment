@@ -106,6 +106,46 @@ extern int tapi_rte_mbuf_match_pattern_seq(rcf_rpc_server    *rpcs,
 extern int rpc_rte_mbuf_match_tx_rx_pre(rcf_rpc_server *rpcs,
                                         rpc_rte_mbuf_p  m);
 
+/**
+ * Ensure that the given Tx mbuf and Rx burst match. If
+ * they do, provide status of HW offloads in the report.
+ *
+ * @param[in]  m_tx     Tx mbuf
+ * @param[in]  rx_burst Rx burst
+ * @param[in]  nb_rx    Rx burst size
+ * @param[out] reportp  Report location; can be @c NULL
+ *
+ * @note Usage instructions for future test maintainers:
+ *       1) Construct the mbuf by means of rte_mbuf SAP
+ *          in the assumption that payload size is zero;
+ *       2) Remove any padding at the end of the packet
+ *          and append the actual payload to the packet;
+ *       3) Adjust the mbuf to enable hardware offloads;
+ *       4) Invoke rpc_rte_mbuf_match_tx_rx_pre() on it;
+ *       5) If the packet is supposed to be received on
+ *          a different test agent than the one used to
+ *          transmit it, clone the mbuf between the two;
+ *       6) If required, make @p m_tx a multi-seg chain;
+ *       7) Carry out transmit and receive transactions;
+ *       8) Invoke rpc_rte_mbuf_match_tx_rx() on the Rx
+ *          burst and pass the mbuf from step (5) to it.
+ *
+ * @note @p m tx must abide by prerequisites imposed by
+ *       @c rpc_rte_mbuf_match_tx_rx_pre().
+ *
+ * @note For correct Tx VLAN insertion status discovery,
+ *       Rx VLAN stripping must be enabled on Rx device.
+ *
+ * @note The mbufs will be modified and can't be reused.
+ *
+ * @return @c 0 on success; jumps out on failure
+ */
+extern int rpc_rte_mbuf_match_tx_rx(rcf_rpc_server               *rpcs,
+                                    rpc_rte_mbuf_p                m_tx,
+                                    rpc_rte_mbuf_p               *rx_burst,
+                                    unsigned int                  nb_rx,
+                                    struct tarpc_rte_mbuf_report *reportp);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf_ndn --> */
 
 #ifdef __cplusplus

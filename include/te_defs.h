@@ -507,6 +507,8 @@ te_round_to_zero(unsigned int n, unsigned int m)
     return (n / m) * m;
 }
 
+#define TE_DIV_ROUND_UP(_n, _d) (((_n) + (_d) - 1) / (_d))
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

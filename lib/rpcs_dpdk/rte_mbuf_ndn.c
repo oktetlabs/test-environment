@@ -834,6 +834,9 @@ struct rte_mbuf_parse_ctx {
     uint32_t outer_layers;
     size_t   header_size;
     size_t   pld_size;
+
+    /* Information obtained by rte_mbuf_match_tx_rx_learn() */
+    uint8_t  tcp_flags;
 };
 
 /*
@@ -1184,5 +1187,616 @@ TARPC_FUNC_STATIC(rte_mbuf_match_tx_rx_pre, {},
     });
 
     MAKE_CALL(out->retval = func(m));
+}
+)
+
+struct rte_mbuf_cmp_ctx {
+    /* This figure corresponds to rx_burst[rx_idx] payload size. */
+    size_t           m_rx_pld_size;
+    /* These 4 fields hold recomputed checksums in the Rx frame. */
+    uint16_t         innermost_ip_cksum;
+    uint16_t         innermost_l4_cksum;
+    uint16_t         outer_udp_cksum;
+    uint16_t         outer_ip_cksum;
+    /* These 2 fields help to keep track of the comparison loop. */
+    unsigned int     rx_idx;
+    unsigned int     nb_rx;
+    /* This refers to the only Tx mbuf; no const qualifier here. */
+    struct rte_mbuf *m_tx;
+    /* This refers to rx_burst[rx_idx]; no const qualifier here. */
+    struct rte_mbuf *m_rx;
+};
+
+/* Fill in cmp_ctx->m_tx and cmp_ctx->m_rx (rx_burst[0]) before invocation. */
+static te_errno
+rte_mbuf_match_tx_rx_learn(struct rte_mbuf_parse_ctx     *parse_ctx,
+                           const struct rte_mbuf_cmp_ctx *cmp_ctx,
+                           struct tarpc_rte_mbuf_report  *report)
+{
+    struct rte_mbuf       *m_tx = cmp_ctx->m_tx;
+    const struct rte_mbuf *m_rx = cmp_ctx->m_rx;
+    struct rte_tcp_hdr    *tcph_tx;
+    struct rte_tcp_hdr    *tcph_rx;
+    struct rte_ipv4_hdr   *ipv4h;
+    struct rte_udp_hdr    *udph;
+
+    if (m_rx->nb_segs != 1)
+    {
+        ERROR("rx_burst[0]: multi-seg (unsupported)");
+        return TE_EOPNOTSUPP;
+    }
+
+    if (m_rx->pkt_len < parse_ctx->header_size)
+    {
+        ERROR("rx_burst[0]: insufficient data count");
+        return TE_ETADLESSDATA;
+    }
+
+    if (m_tx->ol_flags & PKT_TX_VLAN_PKT)
+    {
+        uint64_t rx_vlan_strip = PKT_RX_VLAN | PKT_RX_VLAN_STRIPPED;
+
+        /*
+         * Tx VLAN insertion was requested. Assume that Rx VLAN stripping is
+         * always on and get the offload status from the Rx meta information.
+         */
+        if ((m_rx->ol_flags & rx_vlan_strip) == rx_vlan_strip)
+                report->ol_vlan = TARPC_RTE_MBUF_OL_DONE;
+        else
+                report->ol_vlan = TARPC_RTE_MBUF_OL_NOT_DONE;
+    }
+
+    switch (parse_ctx->outer_layers & RTE_PTYPE_L3_MASK)
+    {
+        case RTE_PTYPE_L3_IPV4:
+        case RTE_PTYPE_L3_IPV4_EXT:
+        case RTE_PTYPE_L3_IPV4_EXT_UNKNOWN:
+            ipv4h = rte_pktmbuf_mtod_offset(m_rx, struct rte_ipv4_hdr *,
+                                            parse_ctx->outer_l3_ofst);
+            if (ipv4h->hdr_checksum == RTE_BE16(0xffff))
+            {
+                report->ol_outer_ip_cksum = TARPC_RTE_MBUF_OL_NOT_DONE;
+            }
+            else
+            {
+                report->ol_outer_ip_cksum = TARPC_RTE_MBUF_OL_DONE;
+                ipv4h = rte_pktmbuf_mtod_offset(m_tx, struct rte_ipv4_hdr *,
+                                                parse_ctx->outer_l3_ofst);
+                ipv4h->hdr_checksum = RTE_BE16(0);
+            }
+            break;
+        default:
+            break;
+    }
+
+    switch (parse_ctx->outer_layers & RTE_PTYPE_L4_MASK)
+    {
+        case RTE_PTYPE_L4_UDP:
+            udph = rte_pktmbuf_mtod_offset(m_rx, struct rte_udp_hdr *,
+                                           parse_ctx->outer_l4_ofst);
+            if (udph->dgram_cksum == RTE_BE16(0))
+            {
+                report->ol_outer_udp_cksum = TARPC_RTE_MBUF_OL_NOT_DONE;
+            }
+            else
+            {
+                report->ol_outer_udp_cksum = TARPC_RTE_MBUF_OL_DONE;
+                udph = rte_pktmbuf_mtod_offset(m_tx, struct rte_udp_hdr *,
+                                               parse_ctx->outer_l4_ofst);
+                udph->dgram_cksum = RTE_BE16(0xffff);
+            }
+            break;
+        default:
+            break;
+    }
+
+    switch (parse_ctx->innermost_layers & RTE_PTYPE_L3_MASK)
+    {
+        case RTE_PTYPE_L3_IPV4:
+        case RTE_PTYPE_L3_IPV4_EXT:
+        case RTE_PTYPE_L3_IPV4_EXT_UNKNOWN:
+            ipv4h = rte_pktmbuf_mtod_offset(m_rx, struct rte_ipv4_hdr *,
+                                            parse_ctx->innermost_l3_ofst);
+            if (ipv4h->hdr_checksum == RTE_BE16(0xffff))
+            {
+                report->ol_innermost_ip_cksum = TARPC_RTE_MBUF_OL_NOT_DONE;
+            }
+            else
+            {
+                report->ol_innermost_ip_cksum = TARPC_RTE_MBUF_OL_DONE;
+                ipv4h = rte_pktmbuf_mtod_offset(m_tx, struct rte_ipv4_hdr *,
+                                                parse_ctx->innermost_l3_ofst);
+                ipv4h->hdr_checksum = RTE_BE16(0);
+            }
+            break;
+        default:
+            break;
+    }
+
+    switch (parse_ctx->innermost_layers & RTE_PTYPE_L4_MASK)
+    {
+        case RTE_PTYPE_L4_TCP:
+            tcph_tx = rte_pktmbuf_mtod_offset(m_tx, struct rte_tcp_hdr *,
+                                              parse_ctx->innermost_l4_ofst);
+            tcph_rx = rte_pktmbuf_mtod_offset(m_rx, struct rte_tcp_hdr *,
+                                              parse_ctx->innermost_l4_ofst);
+            if (tcph_rx->cksum == tcph_tx->cksum)
+            {
+                report->ol_innermost_l4_cksum = TARPC_RTE_MBUF_OL_NOT_DONE;
+            }
+            else
+            {
+                report->ol_innermost_l4_cksum = TARPC_RTE_MBUF_OL_DONE;
+                tcph_tx->cksum = RTE_BE16(0);
+            }
+            parse_ctx->tcp_flags = tcph_tx->tcp_flags;
+            break;
+        case RTE_PTYPE_L4_UDP:
+            udph = rte_pktmbuf_mtod_offset(m_rx, struct rte_udp_hdr *,
+                                           parse_ctx->innermost_l4_ofst);
+            if (udph->dgram_cksum == RTE_BE16(0))
+            {
+                report->ol_innermost_l4_cksum = TARPC_RTE_MBUF_OL_NOT_DONE;
+            }
+            else
+            {
+                report->ol_innermost_l4_cksum = TARPC_RTE_MBUF_OL_DONE;
+                udph = rte_pktmbuf_mtod_offset(m_tx, struct rte_udp_hdr *,
+                                               parse_ctx->innermost_l4_ofst);
+                udph->dgram_cksum = RTE_BE16(0xffff);
+            }
+            break;
+        default:
+            break;
+    }
+
+    return 0;
+}
+
+static int
+rte_mbuf_match_tx_rx_cmp_vlan(const struct rte_mbuf_cmp_ctx      *cmp_ctx,
+                              const struct tarpc_rte_mbuf_report *report)
+{
+    uint64_t rx_vlan_strip = PKT_RX_VLAN | PKT_RX_VLAN_STRIPPED;
+
+    if (report->ol_vlan == TARPC_RTE_MBUF_OL_DONE)
+    {
+        if ((cmp_ctx->m_rx->ol_flags & rx_vlan_strip) != rx_vlan_strip)
+        {
+            ERROR("rx_burst[%u]: VLAN offload flags mismatch", cmp_ctx->rx_idx);
+            return TE_ETADNOTMATCH;
+        }
+        else if (cmp_ctx->m_rx->vlan_tci != cmp_ctx->m_tx->vlan_tci)
+        {
+            ERROR("rx_burst[%u]: VLAN TCI mismatch", cmp_ctx->rx_idx);
+            return TE_ETADNOTMATCH;
+        }
+    }
+    else
+    {
+        if ((cmp_ctx->m_rx->ol_flags & rx_vlan_strip) != 0)
+        {
+            ERROR("rx_burst[%u]: VLAN offload flags mismatch", cmp_ctx->rx_idx);
+            return TE_ETADNOTMATCH;
+        }
+    }
+
+    return 0;
+}
+
+/*
+ * The caller must make sure that cmp_ctx->m_rx is not multi-seg.
+ * At the same time, cmp_ctx->m_tx can be multi-seg.
+ */
+static te_errno
+rte_mbuf_match_tx_rx_cmp_pld(const struct rte_mbuf_parse_ctx *parse_ctx,
+                             const struct rte_mbuf_cmp_ctx   *cmp_ctx)
+{
+    const struct rte_mbuf *m_tx = cmp_ctx->m_tx;
+    const struct rte_mbuf *m_rx = cmp_ctx->m_rx;
+    size_t                 cmp_ofst_tx = parse_ctx->header_size +
+                                         cmp_ctx->rx_idx * m_tx->tso_segsz;
+    size_t                 cmp_ofst_rx = parse_ctx->header_size;
+    size_t                 cmp_size_rem = cmp_ctx->m_rx_pld_size;
+
+    while (cmp_size_rem > 0)
+    {
+        size_t      cmp_size_part;
+        uint64_t    bounce_buf_tx;
+        const void *m_tx_pld_part;
+        const void *m_rx_pld_part;
+
+        cmp_size_part = MIN(cmp_size_rem, sizeof(bounce_buf_tx));
+
+        m_tx_pld_part = rte_pktmbuf_read(m_tx, cmp_ofst_tx, cmp_size_part,
+                                         &bounce_buf_tx);
+        m_rx_pld_part = rte_pktmbuf_mtod_offset(m_rx, const void *,
+                                                cmp_ofst_rx);
+
+        if (memcmp(m_tx_pld_part, m_rx_pld_part, cmp_size_part) != 0)
+        {
+            ERROR("rx_burst[%u]: payload mismatch", cmp_ctx->rx_idx);
+            return TE_ETADNOTMATCH;
+        }
+
+        cmp_size_rem -= cmp_size_part;
+        cmp_ofst_tx += cmp_size_part;
+        cmp_ofst_rx += cmp_size_part;
+    }
+
+    return 0;
+}
+
+static void
+rte_mbuf_recompute_cksums(const struct rte_mbuf_parse_ctx    *parse_ctx,
+                          struct rte_mbuf_cmp_ctx            *cmp_ctx,
+                          const struct tarpc_rte_mbuf_report *report)
+{
+    const struct rte_mbuf     *m_rx = cmp_ctx->m_rx;
+    const struct rte_ipv4_hdr *ipv4h;
+    const struct rte_ipv6_hdr *ipv6h;
+    const void                *l4h;
+
+    ipv4h = rte_pktmbuf_mtod_offset(m_rx, const struct rte_ipv4_hdr *,
+                                    parse_ctx->outer_l3_ofst);
+    ipv6h = rte_pktmbuf_mtod_offset(m_rx, const struct rte_ipv6_hdr *,
+                                    parse_ctx->outer_l3_ofst);
+
+    if (report->ol_outer_ip_cksum == TARPC_RTE_MBUF_OL_DONE)
+        cmp_ctx->outer_ip_cksum = rte_ipv4_cksum(ipv4h);
+
+    l4h = rte_pktmbuf_mtod_offset(m_rx, const void *, parse_ctx->outer_l4_ofst);
+
+    if (report->ol_outer_udp_cksum == TARPC_RTE_MBUF_OL_DONE)
+    {
+        if (report->ol_outer_ip_cksum != TARPC_RTE_MBUF_OL_NA)
+            cmp_ctx->outer_udp_cksum = rte_ipv4_udptcp_cksum(ipv4h, l4h);
+        else
+            cmp_ctx->outer_udp_cksum = rte_ipv6_udptcp_cksum(ipv6h, l4h);
+    }
+
+    ipv4h = rte_pktmbuf_mtod_offset(m_rx, const struct rte_ipv4_hdr *,
+                                    parse_ctx->innermost_l3_ofst);
+    ipv6h = rte_pktmbuf_mtod_offset(m_rx, const struct rte_ipv6_hdr *,
+                                    parse_ctx->innermost_l3_ofst);
+
+    if (report->ol_innermost_ip_cksum == TARPC_RTE_MBUF_OL_DONE)
+        cmp_ctx->innermost_ip_cksum = rte_ipv4_cksum(ipv4h);
+
+    l4h = rte_pktmbuf_mtod_offset(m_rx, const void *,
+                                  parse_ctx->innermost_l4_ofst);
+
+    if (report->ol_innermost_l4_cksum == TARPC_RTE_MBUF_OL_DONE)
+    {
+        if (report->ol_innermost_ip_cksum != TARPC_RTE_MBUF_OL_NA)
+            cmp_ctx->innermost_l4_cksum = rte_ipv4_udptcp_cksum(ipv4h, l4h);
+        else
+            cmp_ctx->innermost_l4_cksum = rte_ipv6_udptcp_cksum(ipv6h, l4h);
+    }
+}
+
+static void
+rte_mbuf_apply_edits(const struct rte_mbuf_parse_ctx    *parse_ctx,
+                     const struct rte_mbuf_cmp_ctx      *cmp_ctx,
+                     const struct tarpc_rte_mbuf_report *report)
+{
+    struct rte_mbuf     *m_tx = cmp_ctx->m_tx;
+    struct rte_mbuf     *m_rx = cmp_ctx->m_rx;
+    uint16_t             ipv4h_packet_id;
+    uint32_t             tcph_sent_seq;
+    struct rte_ipv4_hdr *ipv4h;
+    struct rte_ipv6_hdr *ipv6h;
+    struct rte_udp_hdr  *udph;
+    struct rte_tcp_hdr  *tcph;
+
+    switch (parse_ctx->outer_layers & RTE_PTYPE_L3_MASK)
+    {
+        case RTE_PTYPE_L3_IPV4:
+        case RTE_PTYPE_L3_IPV4_EXT:
+        case RTE_PTYPE_L3_IPV4_EXT_UNKNOWN:
+            ipv4h = rte_pktmbuf_mtod_offset(m_rx, struct rte_ipv4_hdr *,
+                                            parse_ctx->outer_l3_ofst);
+
+            if (report->ol_outer_ip_cksum == TARPC_RTE_MBUF_OL_DONE)
+                ipv4h->hdr_checksum = cmp_ctx->outer_ip_cksum;
+
+            ipv4h = rte_pktmbuf_mtod_offset(m_tx, struct rte_ipv4_hdr *,
+                                            parse_ctx->outer_l3_ofst);
+            ipv4h_packet_id = rte_be_to_cpu_16(ipv4h->packet_id);
+            ipv4h_packet_id += (cmp_ctx->rx_idx != 0) ? 1 : 0;
+            ipv4h->packet_id = rte_cpu_to_be_16(ipv4h_packet_id);
+            ipv4h->total_length = rte_cpu_to_be_16(parse_ctx->header_size -
+                                                   parse_ctx->outer_l3_ofst +
+                                                   cmp_ctx->m_rx_pld_size);
+            break;
+        case RTE_PTYPE_L3_IPV6:
+        case RTE_PTYPE_L3_IPV6_EXT:
+        case RTE_PTYPE_L3_IPV6_EXT_UNKNOWN:
+            ipv6h = rte_pktmbuf_mtod_offset(m_tx, struct rte_ipv6_hdr *,
+                                            parse_ctx->outer_l3_ofst);
+            ipv6h->payload_len = rte_cpu_to_be_16(parse_ctx->header_size -
+                                                  parse_ctx->outer_l3_ofst -
+                                                  sizeof(*ipv6h) +
+                                                  cmp_ctx->m_rx_pld_size);
+            break;
+        default:
+            break;
+    }
+
+    switch (parse_ctx->outer_layers & RTE_PTYPE_L4_MASK)
+    {
+        case RTE_PTYPE_L4_UDP:
+            udph = rte_pktmbuf_mtod_offset(m_rx, struct rte_udp_hdr *,
+                                           parse_ctx->outer_l4_ofst);
+            if (report->ol_outer_udp_cksum == TARPC_RTE_MBUF_OL_DONE)
+                udph->dgram_cksum = cmp_ctx->outer_udp_cksum;
+
+            udph = rte_pktmbuf_mtod_offset(m_tx, struct rte_udp_hdr *,
+                                           parse_ctx->outer_l4_ofst);
+            udph->dgram_len = rte_cpu_to_be_16(parse_ctx->header_size -
+                                               parse_ctx->outer_l4_ofst +
+                                               cmp_ctx->m_rx_pld_size);
+            break;
+        default:
+            break;
+    }
+
+    switch (parse_ctx->innermost_layers & RTE_PTYPE_L3_MASK)
+    {
+        case RTE_PTYPE_L3_IPV4:
+        case RTE_PTYPE_L3_IPV4_EXT:
+        case RTE_PTYPE_L3_IPV4_EXT_UNKNOWN:
+            ipv4h = rte_pktmbuf_mtod_offset(m_rx, struct rte_ipv4_hdr *,
+                                            parse_ctx->innermost_l3_ofst);
+
+            if (report->ol_innermost_ip_cksum == TARPC_RTE_MBUF_OL_DONE)
+                ipv4h->hdr_checksum = cmp_ctx->innermost_ip_cksum;
+
+            ipv4h = rte_pktmbuf_mtod_offset(m_tx, struct rte_ipv4_hdr *,
+                                            parse_ctx->innermost_l3_ofst);
+            ipv4h_packet_id = rte_be_to_cpu_16(ipv4h->packet_id);
+            ipv4h_packet_id += (cmp_ctx->rx_idx != 0) ? 1 : 0;
+            ipv4h->packet_id = rte_cpu_to_be_16(ipv4h_packet_id);
+            ipv4h->total_length =
+                rte_cpu_to_be_16(parse_ctx->header_size -
+                                 parse_ctx->innermost_l3_ofst +
+                                 cmp_ctx->m_rx_pld_size);
+            break;
+        case RTE_PTYPE_L3_IPV6:
+        case RTE_PTYPE_L3_IPV6_EXT:
+        case RTE_PTYPE_L3_IPV6_EXT_UNKNOWN:
+            ipv6h = rte_pktmbuf_mtod_offset(m_tx, struct rte_ipv6_hdr *,
+                                            parse_ctx->innermost_l3_ofst);
+            ipv6h->payload_len = rte_cpu_to_be_16(parse_ctx->header_size -
+                                                  parse_ctx->innermost_l3_ofst -
+                                                  sizeof(*ipv6h) +
+                                                  cmp_ctx->m_rx_pld_size);
+            break;
+        default:
+            break;
+    }
+
+    switch (parse_ctx->innermost_layers & RTE_PTYPE_L4_MASK)
+    {
+        case RTE_PTYPE_L4_TCP:
+            tcph = rte_pktmbuf_mtod_offset(m_rx, struct rte_tcp_hdr *,
+                                           parse_ctx->innermost_l4_ofst);
+            if (report->ol_innermost_l4_cksum == TARPC_RTE_MBUF_OL_DONE)
+                tcph->cksum = cmp_ctx->innermost_l4_cksum;
+
+            tcph = rte_pktmbuf_mtod_offset(m_tx, struct rte_tcp_hdr *,
+                                           parse_ctx->innermost_l4_ofst);
+            tcph_sent_seq = rte_be_to_cpu_32(tcph->sent_seq);
+            tcph_sent_seq += (cmp_ctx->rx_idx != 0) ? m_tx->tso_segsz : 0;
+            tcph->sent_seq = rte_cpu_to_be_32(tcph_sent_seq);
+
+            tcph->tcp_flags = parse_ctx->tcp_flags;
+
+            if (cmp_ctx->rx_idx != 0)
+                tcph->tcp_flags &= ~RTE_TCP_CWR_FLAG;
+
+            if (cmp_ctx->rx_idx + 1 != cmp_ctx->nb_rx)
+                tcph->tcp_flags &= ~(RTE_TCP_FIN_FLAG | RTE_TCP_PSH_FLAG);
+            break;
+        case RTE_PTYPE_L4_UDP:
+            udph = rte_pktmbuf_mtod_offset(m_rx, struct rte_udp_hdr *,
+                                           parse_ctx->innermost_l4_ofst);
+            if (report->ol_innermost_l4_cksum == TARPC_RTE_MBUF_OL_DONE)
+                udph->dgram_cksum = cmp_ctx->innermost_l4_cksum;
+
+            udph = rte_pktmbuf_mtod_offset(m_tx, struct rte_udp_hdr *,
+                                           parse_ctx->innermost_l4_ofst);
+            udph->dgram_len = rte_cpu_to_be_16(parse_ctx->header_size -
+                                               parse_ctx->innermost_l4_ofst +
+                                               cmp_ctx->m_rx_pld_size);
+            break;
+        default:
+            break;
+    }
+}
+
+/*
+ * The caller must make sure that cmp_ctx->m_tx
+ * and cmp_ctx->m_rx have contiguous headers.
+ */
+static te_errno
+rte_mbuf_match_tx_rx_cmp_headers(const struct rte_mbuf_parse_ctx *parse_ctx,
+                                 const struct rte_mbuf_cmp_ctx   *cmp_ctx)
+{
+    const struct rte_mbuf *m_tx = cmp_ctx->m_tx;
+    const struct rte_mbuf *m_rx = cmp_ctx->m_rx;
+
+    if (memcmp(rte_pktmbuf_mtod(m_tx, const void *),
+               rte_pktmbuf_mtod(m_rx, const void *),
+               parse_ctx->header_size) != 0)
+    {
+        unsigned int i;
+
+        for (i = 0; i < parse_ctx->header_size; ++i)
+        {
+            uint8_t *m_byte_txp = rte_pktmbuf_mtod_offset(m_tx, uint8_t *, i);
+            uint8_t *m_byte_rxp = rte_pktmbuf_mtod_offset(m_rx, uint8_t *, i);
+
+            if (*m_byte_txp != *m_byte_rxp)
+            {
+                ERROR("rx_burst[%u]: header mismatch on byte %u",
+                      cmp_ctx->rx_idx, i);
+            }
+        }
+
+        return TE_ETADNOTMATCH;
+    }
+
+    return 0;
+}
+
+static te_errno
+rte_mbuf_match_tx_rx_cmp(const struct rte_mbuf_parse_ctx    *parse_ctx,
+                         struct rte_mbuf_cmp_ctx            *cmp_ctx,
+                         const struct tarpc_rte_mbuf_report *report)
+{
+    const struct rte_mbuf *m_tx = cmp_ctx->m_tx;
+    const struct rte_mbuf *m_rx = cmp_ctx->m_rx;
+    te_errno               rc;
+
+    rc = rte_mbuf_match_tx_rx_cmp_vlan(cmp_ctx, report);
+    if (rc != 0)
+        return rc;
+
+    if (m_tx->tso_segsz != 0)
+    {
+        cmp_ctx->m_rx_pld_size = MIN(parse_ctx->pld_size -
+                                     cmp_ctx->rx_idx * m_tx->tso_segsz,
+                                     m_tx->tso_segsz);
+    }
+    else
+    {
+        cmp_ctx->m_rx_pld_size = parse_ctx->pld_size;
+    }
+
+    if (m_rx->nb_segs != 1)
+    {
+        ERROR("rx_burst[%u]: multi-seg (unsupported)", cmp_ctx->rx_idx);
+        return TE_EOPNOTSUPP;
+    }
+
+    if (m_rx->pkt_len < parse_ctx->header_size + cmp_ctx->m_rx_pld_size)
+    {
+        ERROR("rx_burst[%u]: insufficient data count", cmp_ctx->rx_idx);
+        return TE_ETADLESSDATA;
+    }
+
+    /* Compare the two payloads. */
+    rc = rte_mbuf_match_tx_rx_cmp_pld(parse_ctx, cmp_ctx);
+    if (rc != 0)
+        return rc;
+
+    /*
+     * Recompute checksums (if need be) in the received frame.
+     * If a checksum is correct, the new value will be either
+     * 0xffff or 0x0, depending on the particular header type.
+     */
+    rte_mbuf_recompute_cksums(parse_ctx, cmp_ctx, report);
+
+    /*
+     * Insert new checksum values (if need be) to the Rx mbuf.
+     * Apply required TSO edits to the comparison (Tx) header.
+     */
+    rte_mbuf_apply_edits(parse_ctx, cmp_ctx, report);
+
+    /* Compare the two headers. */
+    rc = rte_mbuf_match_tx_rx_cmp_headers(parse_ctx, cmp_ctx);
+    if (rc != 0)
+        return rc;
+
+    return 0;
+}
+
+static int
+rte_mbuf_match_tx_rx(struct tarpc_rte_mbuf_match_tx_rx_in  *in,
+                     struct tarpc_rte_mbuf_match_tx_rx_out *out)
+
+{
+    struct rte_mbuf_parse_ctx     parse_ctx = { 0 };
+    struct rte_mbuf_cmp_ctx       cmp_ctx = { 0 };
+    struct tarpc_rte_mbuf_report  report = { 0 };
+    unsigned int                  nb_rx;
+    struct rte_mbuf              *m_tx;
+    struct rte_mbuf              *m_rx;
+    te_errno                      rc;
+    unsigned int                  i;
+
+    if (in->rx_burst.rx_burst_len == 0)
+    {
+        ERROR("rx_burst: empty");
+        return -TE_RC(TE_RPCS, TE_EINVAL);
+    }
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        m_rx = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->rx_burst.rx_burst_val[0], ns);
+        m_tx = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m_tx, ns);
+    });
+
+    /* This also makes sure the mbuf is not multi-seg. */
+    rc = rte_mbuf_detect_layers(&parse_ctx, m_tx);
+    if (rc != 0)
+        return -TE_RC(TE_RPCS, rc);
+
+    if (m_tx->tso_segsz != 0)
+        nb_rx = TE_DIV_ROUND_UP(parse_ctx.pld_size, m_tx->tso_segsz);
+    else
+        nb_rx = 1;
+
+    cmp_ctx.nb_rx = MAX(nb_rx, 1);
+
+    if (in->rx_burst.rx_burst_len != cmp_ctx.nb_rx)
+    {
+        ERROR("rx_burst: wrong packet count (%u); must be %u",
+              in->rx_burst.rx_burst_len, cmp_ctx.nb_rx);
+        return -TE_RC(TE_RPCS, TE_ETADNOTMATCH);
+    }
+
+    cmp_ctx.m_tx = m_tx;
+    cmp_ctx.m_rx = m_rx;
+
+    /*
+     * Find out whether Tx VLAN and checksum offloads have happened. To do this,
+     * consider the first mbuf in the Rx burst. A checksum offload is deemed to
+     * have been done if the checksum value is different from the "spoiled" one.
+     * If this is the case, rewrite the corresponding field in the Tx header so
+     * that it will match its counterpart in the Rx header after the latter has
+     * been recomputed over a buffer containing correct checksum value in place.
+     */
+    rc = rte_mbuf_match_tx_rx_learn(&parse_ctx, &cmp_ctx, &report);
+    if (rc != 0)
+        return -TE_RC(TE_RPCS, rc);
+
+    /* Let this report hit the log even in the case of comparison failure. */
+    memcpy(&out->report, &report, sizeof(report));
+
+    /* Conduct the comparison. TSO edits are taken care of internally. */
+    for (i = 0; i < cmp_ctx.nb_rx; ++i)
+    {
+        struct rte_mbuf *m;
+
+        RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+            m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->rx_burst.rx_burst_val[i], ns);
+        });
+
+        cmp_ctx.rx_idx = i;
+        cmp_ctx.m_rx = m;
+
+        /* This also conducts necessary checks on the Rx mbuf internally. */
+        rc = rte_mbuf_match_tx_rx_cmp(&parse_ctx, &cmp_ctx, &report);
+        if (rc != 0)
+            return -TE_RC(TE_RPCS, rc);
+    }
+
+    return 0;
+}
+
+TARPC_FUNC_STATIC(rte_mbuf_match_tx_rx, {},
+{
+    MAKE_CALL(out->retval = func(in, out));
 }
 )

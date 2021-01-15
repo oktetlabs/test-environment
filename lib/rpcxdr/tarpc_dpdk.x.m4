@@ -719,6 +719,35 @@ struct tarpc_rte_mbuf_match_pattern_out {
 typedef struct tarpc_mbuf_in tarpc_rte_mbuf_match_tx_rx_pre_in;
 typedef struct tarpc_int_retval_out tarpc_rte_mbuf_match_tx_rx_pre_out;
 
+/** rte_mbuf_match_tx_rx() */
+struct tarpc_rte_mbuf_match_tx_rx_in {
+    struct tarpc_in_arg common;
+    tarpc_rte_mbuf      m_tx;
+    tarpc_rte_mbuf      rx_burst<>;
+};
+
+enum tarpc_rte_mbuf_ol_status {
+    TARPC_RTE_MBUF_OL_NA = 0,
+    TARPC_RTE_MBUF_OL_DONE,
+    TARPC_RTE_MBUF_OL_NOT_DONE,
+
+    TARPC_RTE_MBUF_OL__UNKNOWN
+};
+
+struct tarpc_rte_mbuf_report {
+    enum tarpc_rte_mbuf_ol_status ol_vlan;
+    enum tarpc_rte_mbuf_ol_status ol_outer_ip_cksum;
+    enum tarpc_rte_mbuf_ol_status ol_outer_udp_cksum;
+    enum tarpc_rte_mbuf_ol_status ol_innermost_ip_cksum;
+    enum tarpc_rte_mbuf_ol_status ol_innermost_l4_cksum;
+};
+
+struct tarpc_rte_mbuf_match_tx_rx_out {
+    struct tarpc_out_arg         common;
+    struct tarpc_rte_mbuf_report report;
+    tarpc_int                    retval;
+};
+
 /*
  * rte_eth_dev API
  */
@@ -2024,6 +2053,7 @@ program dpdk
         RPC_DEF(rte_mk_mbuf_from_template)
         RPC_DEF(rte_mbuf_match_pattern)
         RPC_DEF(rte_mbuf_match_tx_rx_pre)
+        RPC_DEF(rte_mbuf_match_tx_rx)
 
         RPC_DEF(rte_eth_stats_get)
         RPC_DEF(rte_eth_xstats_get)

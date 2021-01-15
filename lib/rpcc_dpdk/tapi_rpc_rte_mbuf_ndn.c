@@ -193,3 +193,65 @@ rpc_rte_mbuf_match_tx_rx_pre(rcf_rpc_server *rpcs,
 
     RETVAL_ZERO_INT(rte_mbuf_match_tx_rx_pre, out.retval);
 }
+
+static const char *
+tarpc_rte_mbuf_ol_status2str(enum tarpc_rte_mbuf_ol_status ol_status)
+{
+    switch (ol_status)
+    {
+        case TARPC_RTE_MBUF_OL_NA:
+            return "NA";
+            break;
+        case TARPC_RTE_MBUF_OL_DONE:
+            return "DONE";
+            break;
+        case TARPC_RTE_MBUF_OL_NOT_DONE:
+            return "NOT_DONE";
+            break;
+        default:
+            return "__CORRUPTED";
+            break;
+    }
+}
+
+int
+rpc_rte_mbuf_match_tx_rx(rcf_rpc_server               *rpcs,
+                         rpc_rte_mbuf_p                m_tx,
+                         rpc_rte_mbuf_p               *rx_burst,
+                         unsigned int                  nb_rx,
+                         struct tarpc_rte_mbuf_report *reportp)
+{
+    tarpc_rte_mbuf_match_tx_rx_in in;
+    tarpc_rte_mbuf_match_tx_rx_out out;
+    te_log_buf *tlbp;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.m_tx = (tarpc_rte_mbuf)m_tx;
+    in.rx_burst.rx_burst_val = tapi_memdup(rx_burst, nb_rx * sizeof(*rx_burst));
+    in.rx_burst.rx_burst_len = nb_rx;
+
+    rcf_rpc_call(rpcs, "rte_mbuf_match_tx_rx", &in, &out);
+
+    tlbp = te_log_buf_alloc();
+    TAPI_RPC_LOG(rpcs, rte_mbuf_match_tx_rx,
+                 "m_tx = " RPC_PTR_FMT "; rx_burst = %s", "offloads = { "
+                 "vlan = %s; outer_ip_cksum = %s; outer_udp_cksum = %s; "
+                 "innermost_ip_cksum = %s; innermost_l4_cksum = %s }; "
+                 NEG_ERRNO_FMT, RPC_PTR_VAL(in.m_tx),
+                 rpc_rte_mbufs2str(tlbp, in.rx_burst.rx_burst_val,
+                                   in.rx_burst.rx_burst_len, rpcs),
+                 tarpc_rte_mbuf_ol_status2str(out.report.ol_vlan),
+                 tarpc_rte_mbuf_ol_status2str(out.report.ol_outer_ip_cksum),
+                 tarpc_rte_mbuf_ol_status2str(out.report.ol_outer_udp_cksum),
+                 tarpc_rte_mbuf_ol_status2str(out.report.ol_innermost_ip_cksum),
+                 tarpc_rte_mbuf_ol_status2str(out.report.ol_innermost_l4_cksum),
+                 NEG_ERRNO_ARGS(out.retval));
+    te_log_buf_free(tlbp);
+
+    if (reportp != NULL)
+        memcpy(reportp, &out.report, sizeof(*reportp));
+
+    RETVAL_ZERO_INT(rte_mbuf_match_tx_rx, out.retval);
+}
