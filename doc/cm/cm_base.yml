@@ -94,6 +94,7 @@
     - oid: "/agent/interface/mcast_link_addr"
       access: read_create
       type: none
+      volatile: true
       depends:
         - oid: "/agent/interface/net_addr"
       d: |
