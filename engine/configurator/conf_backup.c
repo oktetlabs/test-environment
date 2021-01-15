@@ -697,6 +697,7 @@ restore_entries(cfg_instance *list)
                         need_retry = TRUE;
                         break;
                     default:
+                        ERROR("Failed to add/set instance %s (%r)", iter->oid, rc);
                         free_instances(list);
                         return rc;
                 }
