@@ -500,6 +500,7 @@
     - oid: "/agent/interface/phy/state"
       access: read_only
       type: integer
+      volatile: true
       d: |
          Link state control
          Name: none
