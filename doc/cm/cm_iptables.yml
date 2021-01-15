@@ -31,7 +31,7 @@
 
     - oid: "/agent/interface/iptables/table/chain"
       access: read_create
-      type: boolean
+      type: integer
       d: |
          Per-interface chain, may have name of built-in chain
          If TRUE, then jump rule is added to the common chain (without prefix)
@@ -50,7 +50,7 @@
                 the per-interface chain
 
     - oid: "/agent/interface/iptables/table/chain/cmd"
-      access: write_only
+      access: read_write
       type: string
       volatile: true
       d: |

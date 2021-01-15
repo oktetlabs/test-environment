@@ -25,7 +25,7 @@
          Network namespaces.
          Name: Name of the namespace.
 
-    - oid: "/agent/namespace/net/inteface"
+    - oid: "/agent/namespace/net/interface"
       access: read_create
       type: none
       d: |

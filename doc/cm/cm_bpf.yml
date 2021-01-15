@@ -172,9 +172,9 @@
       access: read_only
       type: string
       volatile: true
-      d: |
       depends:
         - oid: "/agent/bpf/perf_map/num_events"
+      d: |
          Collection of entries with ready to read user data.
          Name:  Event ID
          Value: hex-string
