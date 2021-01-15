@@ -17,8 +17,13 @@
 #include "te_config.h"
 
 #include "rte_config.h"
+#include "rte_ether.h"
+#include "rte_ip.h"
 #include "rte_mbuf.h"
+#include "rte_net.h"
 #include "rte_ring.h"
+#include "rte_tcp.h"
+#include "rte_udp.h"
 
 #include "asn_usr.h"
 #include "asn_impl.h"
@@ -31,6 +36,7 @@
 
 #include "rpc_server.h"
 #include "rpcs_dpdk.h"
+#include "te_alloc.h"
 #include "te_errno.h"
 #include "te_defs.h"
 
@@ -818,3 +824,365 @@ TARPC_FUNC_STATIC(rte_mbuf_match_pattern, {},
 }
 )
 
+struct rte_mbuf_parse_ctx {
+    /* Information obtained by rte_mbuf_detect_layers() */
+    size_t   innermost_l3_ofst;
+    size_t   innermost_l4_ofst;
+    uint32_t innermost_layers;
+    size_t   outer_l3_ofst;
+    size_t   outer_l4_ofst;
+    uint32_t outer_layers;
+    size_t   header_size;
+    size_t   pld_size;
+};
+
+/*
+ * Detect L2/L3/L4 in the outermost header and, if encapsulation is used, do it
+ * for the inner header, too. Make two sets of ptype flags, correspondingly. In
+ * both, the masks are: RTE_PTYPE_L2_MASK, RTE_PTYPE_L3_MASK, RTE_PTYPE_L4_MASK.
+ *
+ * The reason behind having this function is that there are no flags PKT_TX_TCP
+ * and PKT_TX_UDP in DPDK for 'lib/tad/tad_rte_mbuf_sap.c' to set automatically.
+ */
+static te_errno
+rte_mbuf_detect_layers(struct rte_mbuf_parse_ctx *parse_ctx,
+                       struct rte_mbuf           *m)
+{
+    uint32_t layers;
+    uint32_t mask;
+
+    parse_ctx->outer_l3_ofst = m->outer_l2_len;
+    parse_ctx->outer_l4_ofst = parse_ctx->outer_l3_ofst + m->outer_l3_len;
+    parse_ctx->innermost_l3_ofst = parse_ctx->outer_l4_ofst + m->l2_len;
+    parse_ctx->innermost_l4_ofst = parse_ctx->innermost_l3_ofst + m->l3_len;
+    parse_ctx->header_size = parse_ctx->innermost_l4_ofst + m->l4_len;
+    parse_ctx->pld_size = m->pkt_len - parse_ctx->header_size;
+
+    /*
+     * In fact, rte_net_get_ptype() accepts multi-seg mbufs.
+     *
+     * This check protects "tampering" part (see below) and
+     * may also be useful to other callers of this function.
+     */
+    if (m->data_len < parse_ctx->header_size)
+    {
+        ERROR("m: non-contiguous header (unsupported)");
+        return TE_EINVAL;
+    }
+
+    mask = RTE_PTYPE_L2_MASK | RTE_PTYPE_L3_MASK | RTE_PTYPE_L4_MASK;
+
+    /*
+     * rte_net_get_ptype() is VXLAN-unaware, so 'mask' intentionally doesn't
+     * request tunnel and inner packet type discovery. Invoke it to discover
+     * L2 (unused here), L3 and L4 in the outermost header. If encapsulation
+     * is used, tamper with the mbuf to "decapsulate" the packet temporarily
+     * and invoke rte_net_get_ptype() for the second time to parse the inner
+     * header. Roll back results of the prior tampering with the mbuf fields.
+     */
+    layers = rte_net_get_ptype(m, NULL, mask);
+
+    if (m->outer_l2_len != 0)
+    {
+        uint16_t data_off_orig = m->data_off;
+        size_t   shift;
+
+        parse_ctx->outer_layers = layers;
+
+	/* Tamper with the mbuf to "decapsulate" the packet. */
+        assert(m->l2_len >= RTE_ETHER_HDR_LEN);
+
+        m->data_off += parse_ctx->innermost_l3_ofst;
+        m->data_off -= RTE_ETHER_HDR_LEN; /* API contract: no VLAN tags here. */
+        shift = m->data_off - data_off_orig;
+        m->data_len -= shift;
+        m->pkt_len -= shift;
+
+        /*
+	 * Fields m->[...]lX_len are ignored by rte_net_get_ptype(),
+	 * so no discrepancies will be encountered during parsing.
+         */
+        layers = rte_net_get_ptype(m, NULL, mask);
+
+	/* Restore the original mbuf meta fields. */
+        m->data_off = data_off_orig;
+        m->data_len += shift;
+        m->pkt_len += shift;
+    }
+    else
+    {
+        parse_ctx->outer_layers = 0;
+    }
+
+    parse_ctx->innermost_layers = layers;
+
+    return 0;
+}
+
+struct rte_mbuf_cksum_ctx {
+    te_bool                is_ipv4;
+    uint16_t               cksum;
+    const struct rte_mbuf *m;
+};
+
+/* Fill in cksum_ctx->m before invocation. */
+static te_errno
+rte_mbuf_tcp_first_pkt_get_cksum(const struct rte_mbuf_parse_ctx *parse_ctx,
+                                 struct rte_mbuf_cksum_ctx       *cksum_ctx)
+{
+    size_t      first_pkt_pld_size = (cksum_ctx->m->tso_segsz != 0) ?
+                                     MIN(cksum_ctx->m->tso_segsz,
+                                         parse_ctx->pld_size) :
+                                     parse_ctx->pld_size;
+    uint8_t    *bounce_buf_pld = NULL;
+    uint8_t    *bounce_buf_pkt = NULL;
+    const void *buf_pld;
+    te_errno    rc = 0;
+
+    bounce_buf_pld = TE_ALLOC(first_pkt_pld_size);
+    if (bounce_buf_pld == NULL)
+        return TE_ENOMEM;
+
+    bounce_buf_pkt = TE_ALLOC(parse_ctx->header_size + first_pkt_pld_size);
+    if (bounce_buf_pkt == NULL)
+    {
+        rc = TE_ENOMEM;
+        goto out;
+    }
+
+    rte_memcpy(bounce_buf_pkt, rte_pktmbuf_mtod(cksum_ctx->m, const void *),
+               parse_ctx->header_size);
+
+    buf_pld = rte_pktmbuf_read(cksum_ctx->m, parse_ctx->header_size,
+                               first_pkt_pld_size, &bounce_buf_pld);
+    if (buf_pld == NULL)
+    {
+        rc = TE_EFAULT;
+        goto out;
+    }
+
+    rte_memcpy(bounce_buf_pkt + parse_ctx->header_size, buf_pld,
+               first_pkt_pld_size);
+
+    if (cksum_ctx->m->tso_segsz != 0 && parse_ctx->pld_size > cksum_ctx->m->tso_segsz)
+    {
+        struct rte_tcp_hdr *tcph;
+
+        tcph = (struct rte_tcp_hdr *)(bounce_buf_pkt +
+                                      parse_ctx->innermost_l4_ofst);
+
+        tcph->tcp_flags &= ~(RTE_TCP_FIN_FLAG | RTE_TCP_PSH_FLAG);
+    }
+
+    if (cksum_ctx->is_ipv4)
+    {
+        struct rte_ipv4_hdr *ipv4h;
+
+        ipv4h = (struct rte_ipv4_hdr *)(bounce_buf_pkt +
+                                        parse_ctx->innermost_l3_ofst);
+
+        if (cksum_ctx->m->tso_segsz != 0)
+        {
+            uint16_t total_length = rte_be_to_cpu_16(ipv4h->total_length);
+            /* API contract: the original header counts for "zero payload". */
+            total_length += first_pkt_pld_size;
+            ipv4h->total_length = rte_cpu_to_be_16(total_length);
+        }
+
+        cksum_ctx->cksum = rte_ipv4_udptcp_cksum(ipv4h,
+                                                 bounce_buf_pkt +
+                                                 parse_ctx->innermost_l4_ofst);
+    }
+    else
+    {
+        struct rte_ipv6_hdr *ipv6h;
+
+        ipv6h = (struct rte_ipv6_hdr *)(bounce_buf_pkt +
+                                        parse_ctx->innermost_l3_ofst);
+
+        if (cksum_ctx->m->tso_segsz != 0)
+        {
+            uint16_t payload_len = rte_be_to_cpu_16(ipv6h->payload_len);
+            /* API contract: the original header counts for "zero payload". */
+            payload_len += first_pkt_pld_size;
+            ipv6h->payload_len = rte_cpu_to_be_16(payload_len);
+        }
+
+        cksum_ctx->cksum = rte_ipv6_udptcp_cksum(ipv6h,
+                                                 bounce_buf_pkt +
+                                                 parse_ctx->innermost_l4_ofst);
+    }
+
+out:
+    free(bounce_buf_pkt);
+    free(bounce_buf_pld);
+
+    return rc;
+}
+
+static int
+rte_mbuf_match_tx_rx_pre(struct rte_mbuf *m)
+{
+    struct rte_mbuf_cksum_ctx  cksum_ctx = { .m = m };
+    struct rte_mbuf_parse_ctx  parse_ctx = { 0 };
+    struct rte_ipv4_hdr       *ipv4h;
+    struct rte_ipv6_hdr       *ipv6h;
+    struct rte_udp_hdr        *udph;
+    struct rte_tcp_hdr        *tcph;
+    te_errno                   rc;
+
+    rc = rte_mbuf_detect_layers(&parse_ctx, m);
+    if (rc != 0)
+        return -TE_RC(TE_RPCS, rc);
+
+    /*
+     * Spoil the checksums. For IPv4, the "bad" value is 0xffff. For UDP, use
+     * 0x0; this means "no checksum" and can be perceived as a "bad" checksum.
+     * In the case of TCP, no constant "bad" value exists. Simply take a look
+     * at the first packet in the projected Rx burst to calculate the correct
+     * value first and after that make it incorrect by incrementing it by one.
+     *
+     * When the real Rx burst has been received, the comparison API will look
+     * at the "bad" values to compare them with the checksums in the first Rx
+     * packet to discern effective offloads and proceed with their validation.
+     *
+     * The API contract demands that the length fields in the header be based
+     * on zero L4 payload size. This is needed in the case of TSO. But in the
+     * case when TSO is not needed, this is incorrect, so fix the fields here.
+     */
+
+    switch (parse_ctx.outer_layers & RTE_PTYPE_L3_MASK)
+    {
+        case RTE_PTYPE_L3_IPV6:
+        case RTE_PTYPE_L3_IPV6_EXT:
+        case RTE_PTYPE_L3_IPV6_EXT_UNKNOWN:
+        case RTE_PTYPE_UNKNOWN:
+            if (m->tso_segsz == 0)
+            {
+                ipv6h = rte_pktmbuf_mtod_offset(m, struct rte_ipv6_hdr *,
+                                               parse_ctx.outer_l3_ofst);
+
+                ipv6h->payload_len =
+                    rte_cpu_to_be_16(parse_ctx.header_size -
+                                     parse_ctx.outer_l3_ofst -
+                                     sizeof(*ipv6h) + parse_ctx.pld_size);
+            }
+            break;
+        case RTE_PTYPE_L3_IPV4:
+        case RTE_PTYPE_L3_IPV4_EXT:
+        case RTE_PTYPE_L3_IPV4_EXT_UNKNOWN:
+            ipv4h = rte_pktmbuf_mtod_offset(m, struct rte_ipv4_hdr *,
+                                            parse_ctx.outer_l3_ofst);
+            ipv4h->hdr_checksum = RTE_BE16(0xffff);
+            if (m->tso_segsz == 0)
+            {
+                ipv4h->total_length =
+                    rte_cpu_to_be_16(parse_ctx.header_size -
+                                     parse_ctx.outer_l3_ofst +
+                                     parse_ctx.pld_size);
+            }
+            break;
+        default:
+            ERROR("m: unsupported outer L3");
+            return -TE_RC(TE_RPCS, TE_EINVAL);
+    }
+
+    switch (parse_ctx.outer_layers & RTE_PTYPE_L4_MASK)
+    {
+        case RTE_PTYPE_UNKNOWN:
+            break;
+        case RTE_PTYPE_L4_UDP:
+            udph = rte_pktmbuf_mtod_offset(m, struct rte_udp_hdr *,
+                                           parse_ctx.outer_l4_ofst);
+            udph->dgram_cksum = RTE_BE16(0);
+            if (m->tso_segsz == 0)
+            {
+                udph->dgram_len =
+                    rte_cpu_to_be_16(parse_ctx.header_size -
+                                     parse_ctx.outer_l4_ofst +
+                                     parse_ctx.pld_size);
+            }
+            break;
+        default:
+            ERROR("m: unsupported outer L4");
+            return -TE_RC(TE_RPCS, TE_EINVAL);
+    }
+
+    switch (parse_ctx.innermost_layers & RTE_PTYPE_L3_MASK)
+    {
+        case RTE_PTYPE_L3_IPV6:
+        case RTE_PTYPE_L3_IPV6_EXT:
+        case RTE_PTYPE_L3_IPV6_EXT_UNKNOWN:
+        case RTE_PTYPE_UNKNOWN:
+            if (m->tso_segsz == 0)
+            {
+                ipv6h = rte_pktmbuf_mtod_offset(m, struct rte_ipv6_hdr *,
+                                                parse_ctx.innermost_l3_ofst);
+
+                ipv6h->payload_len =
+                    rte_cpu_to_be_16(parse_ctx.header_size -
+                                     parse_ctx.innermost_l3_ofst -
+                                     sizeof(*ipv6h) + parse_ctx.pld_size);
+            }
+            cksum_ctx.is_ipv4 = FALSE;
+            break;
+        case RTE_PTYPE_L3_IPV4:
+        case RTE_PTYPE_L3_IPV4_EXT:
+        case RTE_PTYPE_L3_IPV4_EXT_UNKNOWN:
+            ipv4h = rte_pktmbuf_mtod_offset(m, struct rte_ipv4_hdr *,
+                                            parse_ctx.innermost_l3_ofst);
+            ipv4h->hdr_checksum = RTE_BE16(0xffff);
+            if (m->tso_segsz == 0)
+            {
+                ipv4h->total_length =
+                    rte_cpu_to_be_16(parse_ctx.header_size -
+                                     parse_ctx.innermost_l3_ofst +
+                                     parse_ctx.pld_size);
+            }
+            cksum_ctx.is_ipv4 = TRUE;
+            break;
+        default:
+            ERROR("m: unsupported innermost L3");
+            return -TE_RC(TE_RPCS, TE_EINVAL);
+    }
+
+    switch (parse_ctx.innermost_layers & RTE_PTYPE_L4_MASK)
+    {
+        case RTE_PTYPE_UNKNOWN:
+            break;
+        case RTE_PTYPE_L4_TCP:
+            rc = rte_mbuf_tcp_first_pkt_get_cksum(&parse_ctx, &cksum_ctx);
+            if (rc != 0)
+                return -TE_RC(TE_RPCS, rc);
+
+            tcph = rte_pktmbuf_mtod_offset(m, struct rte_tcp_hdr *,
+                                           parse_ctx.innermost_l4_ofst);
+            tcph->cksum = cksum_ctx.cksum + 1;
+            break;
+        case RTE_PTYPE_L4_UDP:
+            udph = rte_pktmbuf_mtod_offset(m, struct rte_udp_hdr *,
+                                           parse_ctx.innermost_l4_ofst);
+            udph->dgram_cksum = RTE_BE16(0);
+            udph->dgram_len = rte_cpu_to_be_16(parse_ctx.header_size -
+                                               parse_ctx.innermost_l4_ofst +
+                                               parse_ctx.pld_size);
+            break;
+        default:
+            ERROR("m: unsupported innermost L4");
+            return -TE_RC(TE_RPCS, TE_EINVAL);
+    }
+
+    return 0;
+}
+
+TARPC_FUNC_STATIC(rte_mbuf_match_tx_rx_pre, {},
+{
+    struct rte_mbuf *m = NULL;
+
+    RPC_PCH_MEM_WITH_NAMESPACE(ns, RPC_TYPE_NS_RTE_MBUF, {
+        m = RCF_PCH_MEM_INDEX_MEM_TO_PTR(in->m, ns);
+    });
+
+    MAKE_CALL(out->retval = func(m));
+}
+)

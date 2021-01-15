@@ -715,6 +715,10 @@ struct tarpc_rte_mbuf_match_pattern_out {
     tarpc_int               retval;
 };
 
+/** rte_mbuf_match_tx_rx_pre() */
+typedef struct tarpc_mbuf_in tarpc_rte_mbuf_match_tx_rx_pre_in;
+typedef struct tarpc_int_retval_out tarpc_rte_mbuf_match_tx_rx_pre_out;
+
 /*
  * rte_eth_dev API
  */
@@ -2019,6 +2023,7 @@ program dpdk
 
         RPC_DEF(rte_mk_mbuf_from_template)
         RPC_DEF(rte_mbuf_match_pattern)
+        RPC_DEF(rte_mbuf_match_tx_rx_pre)
 
         RPC_DEF(rte_eth_stats_get)
         RPC_DEF(rte_eth_xstats_get)

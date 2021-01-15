@@ -79,6 +79,33 @@ extern int tapi_rte_mbuf_match_pattern_seq(rcf_rpc_server    *rpcs,
                                            asn_value       ***packets,
                                            unsigned int      *matched);
 
+/**
+ * Prepare Tx mbuf for comparison with Rx burst.
+ *
+ * @param[in] m Packet mbuf
+ *
+ * @note Length fields in the header must assume
+ *       zero L4 payload length, but the payload
+ *       itself must be present in the mbuf.
+ *
+ * @note VLAN tags in the outermost header must
+ *       use standard QinQ and VLAN TPID values.
+ *
+ * @note If encapsulation is used, no VLAN tags
+ *       are allowed in the inner header.
+ *
+ * @note IPv6 extension headers are disallowed.
+ *
+ * @note @p m MUST have m->[...]lX_len values
+ *       originally set by TAD rte_mbuf layer.
+ *
+ * @note The packet header must be contiguous.
+ *
+ * @return @c 0 on success; jumps out on failure
+ */
+extern int rpc_rte_mbuf_match_tx_rx_pre(rcf_rpc_server *rpcs,
+                                        rpc_rte_mbuf_p  m);
+
 /**@} <!-- END te_lib_rpc_rte_mbuf_ndn --> */
 
 #ifdef __cplusplus

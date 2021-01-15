@@ -174,3 +174,22 @@ tapi_rte_mbuf_match_pattern_seq(rcf_rpc_server    *rpcs,
                                        count, packets, matched);
 }
 
+int
+rpc_rte_mbuf_match_tx_rx_pre(rcf_rpc_server *rpcs,
+                             rpc_rte_mbuf_p  m)
+{
+    tarpc_rte_mbuf_match_tx_rx_pre_in  in;
+    tarpc_rte_mbuf_match_tx_rx_pre_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    in.m = (tarpc_rte_mbuf)m;
+
+    rcf_rpc_call(rpcs, "rte_mbuf_match_tx_rx_pre", &in, &out);
+
+    TAPI_RPC_LOG(rpcs, rte_mbuf_match_tx_rx_pre, RPC_PTR_FMT, NEG_ERRNO_FMT,
+                 RPC_PTR_VAL(in.m), NEG_ERRNO_ARGS(out.retval));
+
+    RETVAL_ZERO_INT(rte_mbuf_match_tx_rx_pre, out.retval);
+}
