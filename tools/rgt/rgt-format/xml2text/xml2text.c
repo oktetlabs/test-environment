@@ -304,6 +304,25 @@ rgt_tmpls_output_log(gen_ctx_user_t *ctx, rgt_tmpl_t *tmpl,
     te_string_free(&str);
 }
 
+/**
+ * Callback for processing RGT templates of captured packets.
+ *
+ * @param gen_ctx     Pointer to rgt_gen_ctx_t.
+ * @param depth_ctx   Unused.
+ * @param tmpl        RGT template to output.
+ * @param attrs       Template attrs.
+ */
+static void
+tmpls_output_cb(rgt_gen_ctx_t *gen_ctx, rgt_depth_ctx_t *depth_ctx,
+                rgt_tmpl_t *tmpl, const rgt_attrs_t *attrs)
+{
+    gen_ctx_user_t *ctx = (gen_ctx_user_t *)(gen_ctx->user_data);
+
+    UNUSED(depth_ctx);
+
+    rgt_tmpls_output_log(ctx, tmpl, attrs);
+}
+
 void rgt_process_cmdline(rgt_gen_ctx_t *ctx, poptContext con, int val) {
     UNUSED(ctx);
     UNUSED(con);
@@ -340,6 +359,9 @@ RGT_DEF_FUNC(proc_document_start)
     }
 
     rgt_tmpls_output(gen_user->fd, &xml2fmt_tmpls[DOCUMENT_START], NULL);
+
+    if (line_prefix)
+        capture_tmpls_out_cb = &tmpls_output_cb;
 }
 
 RGT_DEF_FUNC(proc_document_end)
