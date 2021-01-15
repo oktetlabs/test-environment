@@ -9,6 +9,7 @@ xml2text_tmpls = files(
     'log_msg_file_end.tmpl',
     'log_msg_file_start.tmpl',
     'log_msg_start.tmpl',
+    'log_msg_start_line_prefix.tmpl',
     'log_packet_field_data.tmpl',
     'log_packet_field_start.tmpl',
     'log_packet_proto_start.tmpl',

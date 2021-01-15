@@ -456,9 +456,9 @@ RGT_DEF_FUNC(proc_log_msg_start)
     if (line_prefix)
     {
         te_string_append(&str, "[");
-        rgt_tmpls_output_str(&str, &xml2fmt_tmpls[LOG_MSG_START], attrs);
-        /* Remove \n from the end */
-        te_string_cut(&str, 1);
+        rgt_tmpls_output_str(&str,
+                             &xml2fmt_tmpls[LOG_MSG_START_LINE_PREFIX],
+                             attrs);
         te_string_append(&str, "]: ");
         user_ctx->msg_prefix_len = str.len;
         fwrite(user_ctx->msg_prefix, 1, user_ctx->msg_prefix_len, fd);
