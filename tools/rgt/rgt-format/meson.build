@@ -11,7 +11,7 @@ libcapture = static_library(
     ['capture.c', 'capture.h'],
     include_directories: inc,
     c_args: c_args,
-    dependencies: [dep_libxml2, dep_glib],
+    dependencies: [dep_libxml2, dep_glib, dep_lib_tools],
     link_with: libtmpls,
 )
 
