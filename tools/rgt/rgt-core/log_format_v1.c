@@ -90,13 +90,17 @@ static struct debug_msg {
  * @se It may never return control.
  */
 #define READ(_fd, _buf, _len) \
-    do {                                                                   \
-        if (universal_read((_fd), (_buf), (_len), ctx->io_mode) != (_len)) \
-        {                                                                  \
-            /* Error: File is truncated */                                 \
-            PRINT_ERROR;                                                   \
-            THROW_EXCEPTION;                                               \
-        }                                                                  \
+    do {                                                                        \
+        size_t ur_res = universal_read((_fd), (_buf), (_len),                   \
+                                       ctx->io_mode, ctx->rawlog_fname);        \
+        if (ur_res != (_len))                                                   \
+        {                                                                       \
+            /* Error: File is truncated */                                      \
+            PRINT_ERROR;                                                        \
+            free_log_msg(*msg);                                                 \
+                                                                                \
+            return 0;                                                           \
+        }                                                                       \
     } while (0)
 
 /*
@@ -166,7 +170,7 @@ fetch_log_msg_v1(log_msg **msg, rgt_gen_ctx_t *ctx)
      * Read version of log message.
      * Just ignore (TODO: more useful processing below)
      */
-    if (universal_read(fd, &log_ver, sizeof(log_ver), ctx->io_mode) == 0)
+    if (universal_read(fd, &log_ver, sizeof(log_ver), ctx->io_mode, ctx->rawlog_fname) == 0)
     {
         /*
          * There are no messages left (rgt operation mode is postponed)

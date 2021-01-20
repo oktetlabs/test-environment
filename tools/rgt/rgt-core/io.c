@@ -27,17 +27,32 @@
 #include <ctype.h>
 #endif
 
+#include <sys/stat.h>
+
 #include "io.h"
 #include "rgt_common.h"
 #include "log_msg.h"
 
 /* See the description in io.h */
 size_t
-universal_read(FILE *fd, void *buf, size_t count, rgt_io_mode_t io_mode)
+universal_read(FILE *fd, void *buf, size_t count, rgt_io_mode_t io_mode, const char *rawlog_fname)
 {
     size_t r_count;
+    off_t off;
+    struct stat statbuf;
+    ino_t old_inode;
+
+    if (fstat(fileno(fd), &statbuf) < 0)
+        return 0;
+    old_inode = statbuf.st_ino;
 
     do {
+        /* Clear inner EOF flag */
+        if ((off = ftello(fd)) < 0)
+            return 0;
+        if (fseeko(fd, off, SEEK_SET) < 0)
+            return 0;
+
         r_count = fread(buf, 1, count, fd);
 
         if ((r_count == count) || (io_mode == RGT_IO_MODE_NBLK))
@@ -53,6 +68,20 @@ universal_read(FILE *fd, void *buf, size_t count, rgt_io_mode_t io_mode)
         }
 
         count -= r_count;
+
+        /*
+         * In case of live mode (when io_mode set to RGT_IO_MODE_BLK)
+         * it is needed to inform main logging loop
+         * when log file changed
+         */
+        if ((io_mode == RGT_IO_MODE_BLK))
+        {
+            if (stat(rawlog_fname, &statbuf) == 0)
+            {
+                if (statbuf.st_ino != old_inode)
+                    return 0;
+            }
+        }
 
         /* Wait for a while may be some data comes */
         sleep(1);

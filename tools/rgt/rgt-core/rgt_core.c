@@ -431,7 +431,32 @@ main(int argc, char **argv)
             rgt_update_progress_bar(&rgt_ctx);
 
             if (rgt_ctx.fetch_log_msg(&msg, &rgt_ctx) == 0)
-                break;
+            {
+                if (rgt_ctx.op_mode != RGT_OP_MODE_LIVE)
+                    break;
+
+                fclose(rgt_ctx.rawlog_fd);
+                rgt_ctx.rawlog_fd = NULL;
+
+                rgt_ctx.rawlog_fd = fopen(rgt_ctx.rawlog_fname, "r");
+                if (rgt_ctx.rawlog_fd == NULL)
+                {
+                    fprintf(stderr, "Can not open new tmp_raw_log file");
+                    free_resources(0);
+                }
+                else
+                {
+                    rgt_ctx.fetch_log_msg = rgt_define_rlf_format(&rgt_ctx, &err_msg);
+                    if (rgt_ctx.fetch_log_msg == NULL)
+                    {
+                        fprintf(stderr, "%s", err_msg);
+                        free_resources(0);
+                    }
+
+                    continue;
+                }
+            }
+
 
             if (!rgt_ctx.proc_cntrl_msg)
             {

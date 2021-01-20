@@ -46,19 +46,20 @@ typedef enum rgt_io_mode {
  * in file it blocks until count bytes available for read.
  * If read_mode equals to RMODE_NONBLOCKING it doesn't block in any cases.
  *
- * @param  fd       File descriptor used for reading.
- * @param  buf      Pointer to the user specified buffer.
- * @param  count    Number of bytes user wants to be read.
- * @param  io_mode  Blocking or non-blocking mode of reading should be used.
+ * @param  fd            File descriptor used for reading.
+ * @param  buf           Pointer to the user specified buffer.
+ * @param  count         Number of bytes user wants to be read.
+ * @param  io_mode       Blocking or non-blocking mode of reading should be used.
+ * @param  rawlog_fname  Name of file which is used for reading.
  *
  * @return  Number of bytes read is returned.
  *
  * @retval n > 0 operation successfully complited.
- * @retval 0     An error occurs, or the end-of-file is reached.
+ * @retval 0     An error occurs, or the end-of-file is reached, or inode of file changed.
  *               User has to check it with feof() or ferror().
  */
 extern size_t universal_read(FILE *fd, void *buf, size_t count,
-                             rgt_io_mode_t io_mode);
+                             rgt_io_mode_t io_mode, const char *rawlog_fname);
 
 /**
  * Output a string, encoding XML special characters.

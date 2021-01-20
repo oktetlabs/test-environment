@@ -24,7 +24,7 @@ rgt_define_rlf_format(rgt_gen_ctx_t *ctx, char **err)
     uint8_t version;
 
     /* The first byte of Raw log file contains raw log file version */
-    if (universal_read(ctx->rawlog_fd, &version, 1, ctx->io_mode) != 1)
+    if (universal_read(ctx->rawlog_fd, &version, 1, ctx->io_mode, ctx->rawlog_fname) != 1)
     {
         /* Postponed mode: File has zero size */
         if (err != NULL)

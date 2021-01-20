@@ -37,6 +37,7 @@ if ($@)
 
 my $te_log_raw  = $ENV{TE_LOG_RAW};
 
+unlink($te_log_raw);
 open(OUTFILE, ">" . $te_log_raw) or 
     die("Can't create raw log file: " . $te_log_raw . ": $!");
 
