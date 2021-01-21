@@ -33,6 +33,21 @@
          Value: the pattern to be used by system when creating a core file
                 in case of segmenation fault and similar.
 
+    - oid: "/agent/sys/vm"
+      access: read_only
+      type: none
+      d: |
+         System settings from /proc/sys/vm.
+         Name: empty
+
+    - oid: "/agent/sys/vm/nr_hugepages"
+      access: read_write
+      type: integer
+      d: |
+         Indicates the current number of persistent hugepages
+         in the kernel's huge page pool.
+         Name: empty
+         Value: the current number of pre-allocated huge pages
 
     - oid: "/agent/sys/net"
       access: read_only
