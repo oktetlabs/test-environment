@@ -1,0 +1,25 @@
+---
+
+- comment: |
+    ntpd configuration model.
+
+    Copyright (C) 2014-2021 OKTET Labs.
+
+    Author: Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
+
+- register:
+
+    - oid: "/agent/ntpd"
+      access: read_only
+      type: none
+      d: |
+         Root object for ntpd settings
+         Name: empty
+
+    - oid: "/agent/ntpd/enable"
+      access: read_write
+      type: integer
+      d: |
+         Enable state for ntpd
+         Name: empty
+         Value: 0 (disabled) or 1 (enabled)
