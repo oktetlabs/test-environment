@@ -1,0 +1,32 @@
+---
+
+- comment: |
+    Configuration information related to link aggregation.
+
+    Copyright (C) 2012-2021 OKTET Labs.
+
+    Author: Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
+
+- register:
+    - oid: "/agent/aggregation"
+      access: read_create
+      type: string
+      d: |
+        Root object for link aggregation
+        Name: aggregation interface name
+        Value: type of aggregation: bond, team
+
+    - oid: "/agent/aggregation/interface"
+      access: read_only
+      type: string
+      d: |
+        Name of aggregation interface
+        Name: empty
+        Value: aggregation inteface name
+
+    - oid: "/agent/aggregation/member"
+      access: read_create
+      type: none
+      d: |
+        The name of member interface
+        Name: Name of member inteface
