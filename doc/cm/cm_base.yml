@@ -19,6 +19,13 @@
          the Test Agent
          Name: CSAP ID
 
+    - oid: "/agent/platform"
+      access: read_only
+      type: string
+      d: |
+         Agent's platform (may have value 'default').
+         Name: None
+
     - oid: "/agent/dir"
       access: read_only
       type: string
