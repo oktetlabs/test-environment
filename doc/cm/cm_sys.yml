@@ -177,6 +177,20 @@
       access: read_write
       type: integer
 
+    - oid: "/agent/sys/net/ipv4/tcp_sack"
+      access: read_write
+      type: integer
+      d: |
+         Enable select acknowledgments (SACKS).
+         Name: empty
+
+    - oid: "/agent/sys/net/ipv4/tcp_dsack"
+      access: read_write
+      type: integer
+      d: |
+         Allows TCP to send duplicate SACKs.
+         Name: empty
+
     - oid: "/agent/sys/net/ipv4/igmp_max_memberships"
       access: read_write
       type: integer
@@ -192,6 +206,15 @@
     - oid: "/agent/sys/net/ipv4/ip_default_ttl"
       access: read_write
       type: integer
+
+    - oid: "/agent/sys/net/ipv4/tcp_congestion_control"
+      access: read_write
+      type: string
+      d: |
+         Set the congestion control algorithm to be used for new
+         connections. The algorithm 'reno' is always available, but
+         additional choices may be available based on kernel configuration.
+         Name: empty
 
     - oid: "/agent/sys/net/ipv4/conf"
       access: read_only
