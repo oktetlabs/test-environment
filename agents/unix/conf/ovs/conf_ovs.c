@@ -131,6 +131,7 @@ typedef struct ovs_ctx_s {
 
     te_string         root_path;
     te_string         conf_db_lock_path;
+    te_string         conf_db_schema;
     te_string         conf_db_path;
     te_string         env;
 
@@ -156,6 +157,7 @@ static ovs_ctx_t ovs_ctx = {
 
     .root_path = TE_STRING_INIT,
     .conf_db_lock_path = TE_STRING_INIT,
+    .conf_db_schema = TE_STRING_INIT,
     .conf_db_path = TE_STRING_INIT,
     .env =TE_STRING_INIT,
 
@@ -3949,6 +3951,7 @@ ovs_cleanup_static_ctx(void)
     te_string_free(&ovs_ctx.dbtool_cmd);
     te_string_free(&ovs_ctx.env);
     te_string_free(&ovs_ctx.conf_db_path);
+    te_string_free(&ovs_ctx.conf_db_schema);
     te_string_free(&ovs_ctx.conf_db_lock_path);
     te_string_free(&ovs_ctx.root_path);
 }
@@ -4006,6 +4009,27 @@ ta_unix_conf_ovs_init(void)
     if (rc != 0)
         goto fail;
 
+    rc = te_string_append(&ovs_ctx.conf_db_schema, "%s/vswitch.ovsschema",
+                          ta_dir);
+    if (rc != 0)
+        goto fail;
+    if (access(ovs_ctx.conf_db_schema.ptr, R_OK) != 0)
+    {
+        const char *def_schema = "/usr/share/openvswitch/vswitch.ovsschema";
+
+        if (access(def_schema, R_OK) != 0)
+        {
+            ERROR("No DB schema available: neither %s nor %s",
+                  ovs_ctx.conf_db_schema.ptr, def_schema);
+            goto fail;
+        }
+
+        te_string_reset(&ovs_ctx.conf_db_schema);
+        rc = te_string_append(&ovs_ctx.conf_db_schema, def_schema);
+        if (rc != 0)
+            goto fail;
+    }
+
     rc = te_string_append(&ovs_ctx.conf_db_path, "%s/conf.db", ta_dir);
     if (rc != 0)
         goto fail;
@@ -4015,7 +4039,9 @@ ta_unix_conf_ovs_init(void)
         goto fail;
 
     rc = te_string_append(&ovs_ctx.dbtool_cmd,
-                          "%s ovsdb-tool create", ovs_ctx.env.ptr);
+                          "%s ovsdb-tool create %s %s", ovs_ctx.env.ptr,
+                          ovs_ctx.conf_db_path.ptr,
+                          ovs_ctx.conf_db_schema.ptr);
     if (rc != 0)
         goto fail;
 
