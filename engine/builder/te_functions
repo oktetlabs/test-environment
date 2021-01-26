@@ -85,7 +85,7 @@ te_ta_signature_local()
             rm -f $TEMP_IN
 
             local LIBC_VERSION=`$LIBC |
-                sed -n "s/.*version \([0-9\.]*\).*/\1/p;q"`
+                sed -n "s/.*version \(\(\.\?[0-9]\+\)*\).*/\1/p;q"`
             local KERN_HEADERS=`$LIBC |
                 sed -n "s/.*Linux \([0-9\.]*\).*/\1/p"`
 
