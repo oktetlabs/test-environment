@@ -112,6 +112,11 @@ te_ta_signature_local()
             header-version)
                 echo -n "${SEPARATOR}header${LINUX_VERSION_CODE}"
                 ;;
+            kernel-version)
+                local KERNEL_VERSION=`uname -r |
+                    sed -n "s/\(\([.-]\?[0-9]\+\)*\).*/\1/p;q"`
+                echo -n "${SEPARATOR}kernel${KERNEL_VERSION}"
+                ;;
             *)
                 echo "Unknown TA signature field: '${FIELD}'" >&2
                 exit 1
