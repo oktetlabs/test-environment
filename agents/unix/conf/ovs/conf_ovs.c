@@ -4019,8 +4019,8 @@ ta_unix_conf_ovs_init(void)
 
         if (access(def_schema, R_OK) != 0)
         {
-            ERROR("No DB schema available: neither %s nor %s",
-                  ovs_ctx.conf_db_schema.ptr, def_schema);
+            WARN("No DB schema available: neither %s nor %s - drop OvS support",
+                 ovs_ctx.conf_db_schema.ptr, def_schema);
             goto fail;
         }
 
@@ -4069,7 +4069,8 @@ ta_unix_conf_ovs_init(void)
         return rcf_pch_add_node("/agent", &node_ovs);
 
 fail:
-    ERROR("Failed to initialise the facility");
+    if (rc != 0)
+        ERROR("Failed to initialise the facility");
     ovs_cleanup_static_ctx();
 
     return TE_RC(TE_TA_UNIX, rc);
