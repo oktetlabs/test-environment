@@ -270,45 +270,6 @@ tapi_rte_lcore_mask_set_bit(lcore_mask_t *mask, unsigned int bit)
     return 0;
 }
 
-static uint8_t
-xdigit2val(unsigned char c)
-{
-    uint8_t val;
-
-    if (isdigit(c))
-        val = c - '0';
-    else if (isupper(c))
-        val = c - 'A' + 10;
-    else
-        val = c - 'a' + 10;
-
-    return val;
-}
-
-static te_errno
-lcore_mask_by_hex(const char *hex, lcore_mask_t *mask)
-{
-    lcore_mask_t result = {{0}};
-    int i;
-
-    for (i = 0; i < strlen(hex); i++)
-    {
-        uint8_t val = xdigit2val(hex[strlen(hex) - 1 - i]);
-
-        if (val > 0xf)
-        {
-            ERROR("Invalid lcore mask '%s'", hex);
-            return TE_EINVAL;
-        }
-
-        result.bytes[i / 2] |= val * ((i % 2) ? 0x10 : 1);
-    }
-
-    *mask = result;
-
-    return 0;
-}
-
 te_errno
 tapi_rte_get_nb_required_service_cores(const char *ta, const char *vendor,
                                        const char *device,
@@ -1320,19 +1281,26 @@ grab_lcores_by_service_core_count(const char *ta,
     unsigned int lcore_count = service_core_count + 1;
     tapi_cpu_index_t *indices = NULL;
     lcore_mask_t mask = {{0}};
-    size_t n_grabbed = 0;
+    size_t nb_cpus;
     te_errno rc;
     size_t i;
 
-    indices = TE_ALLOC(sizeof(*indices) * lcore_count);
-    if (indices == NULL)
-        return TE_ENOMEM;
+    /*
+     * It is assumed that 'ts/prologue' has already reserved cores
+     * as per tapi_eal_get_nb_required_service_cores_rpcs() advice.
+     * Below code simply queries reserved cores and makes the mask.
+     *
+     * TODO: reconsider this approach once new regressions show up.
+     */
+    rc = tapi_cfg_get_all_threads(ta, &nb_cpus, &indices);
+    if (rc != 0)
+        return rc;
 
-    for (i = 0; i < lcore_count; i++, n_grabbed++)
+    if (nb_cpus < lcore_count)
     {
-        rc = tapi_cfg_cpu_grab_by_prop(ta, NULL, &indices[i]);
-        if (rc != 0)
-            goto out;
+        ERROR("%zu CPUs are reserved; required: %u", nb_cpus, lcore_count);
+        rc = TE_ENOENT;
+        goto out;
     }
 
     for (i = 0; i < lcore_count; i++)
@@ -1345,9 +1313,6 @@ grab_lcores_by_service_core_count(const char *ta,
     *lcore_mask = mask;
 
 out:
-    for (i = 0; rc != 0 && i < n_grabbed; i++)
-        tapi_cfg_cpu_release_by_id(ta, &indices[i]);
-
     free(indices);
 
     return rc;
@@ -1796,86 +1761,22 @@ cleanup:
 te_errno
 tapi_rte_eal_fini(tapi_env *env, rcf_rpc_server *rpcs)
 {
-    tapi_cpu_index_t *indices = NULL;
-    const char *prefix = " -c 0x";
-    lcore_mask_t lcore_mask;
-    unsigned int bit;
-    char *eal_args;
-    char *coremask;
-    char *coremask_end;
-    size_t n_cpus;
     te_errno rc;
 
     /* For the symmetry with tapi_rte_eal_init() */
     UNUSED(env);
 
-    rc = tapi_eal_rpcs_get_cached_eal_args(rpcs, &eal_args);
-    if (rc != 0)
-        return rc;
-
     rc = tapi_eal_rpcs_reset_cached_eal_args(rpcs);
     if (rc != 0)
-    {
-        free(eal_args);
-        return rc;
-    }
-
-    if (eal_args == NULL || *eal_args == '\0')
-    {
-        free(eal_args);
-        return 0;
-    }
-
-    coremask = strstr(eal_args, prefix);
-    if (coremask == NULL || strstr(coremask + 1, prefix) != NULL)
-    {
-        ERROR("Failed to parse coremask in cached EAL arguments");
-        return TE_EINVAL;
-    }
-    coremask += strlen(prefix);
-    coremask_end = strchr(coremask, ' ');
-    if (coremask_end != NULL)
-        *coremask_end = '\0';
-
-    rc = lcore_mask_by_hex(coremask, &lcore_mask);
-    free(eal_args);
-    coremask = NULL;
-    if (rc != 0)
         return rc;
 
-    rc = tapi_cfg_get_all_threads(rpcs->ta, &n_cpus, &indices);
-    if (rc != 0)
-        return rc;
-
-    for (bit = 0; bit < TE_ARRAY_LEN(lcore_mask.bytes) * CHAR_BIT; bit++)
-    {
-        unsigned int i;
-
-        if (!lcore_mask_bit_is_set(&lcore_mask, bit))
-            continue;
-
-        for (i = 0; i < n_cpus; i++)
-        {
-            if (indices[i].thread_id != bit)
-                continue;
-
-            rc = tapi_cfg_cpu_release_by_id(rpcs->ta, &indices[i]);
-            if (rc != 0)
-            {
-                free(indices);
-                return rc;
-            }
-            break;
-        }
-        if (i == n_cpus)
-        {
-            ERROR("Failed to get CPU from cached EAL argument coremask");
-            free(indices);
-            return rc;
-        }
-    }
-
-    free(indices);
+    /*
+     * No work is done here to release CPU reservations.
+     * It is assumed that the number of those that have
+     * been reserved by 'ts/prologue' is sufficient for
+     * any test iteration in the whole session. Release
+     * will be done in the end, when all tests have run.
+     */
 
     return rcf_rpc_server_restart(rpcs);
 }
