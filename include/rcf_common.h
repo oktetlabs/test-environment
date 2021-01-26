@@ -23,7 +23,7 @@
  * Maximum length of the name of the Test Agent, TA type, variable, etc.
  * (including '\0').
  */
-#define RCF_MAX_NAME        64
+#define RCF_MAX_NAME        128
 
 #define RCF_MAX_ID          256 /**< Maximum object or stack
                                      identifier length */
