@@ -28,6 +28,10 @@ te_ta_signature_local()
 {
     local CC=$1
 
+    if test -z "$TE_TA_SIGNATURE_FIELDS"; then
+        local TE_TA_SIGNATURE_FIELDS="gcc-target libc-version libc-kernel header-version"
+    fi
+
     # Use option '-print-multiarch' with different gcc versions
     # gives different results:
     #  - exit code @c 1 with message on stderr (for old gcc version in
@@ -88,15 +92,32 @@ te_ta_signature_local()
                 sed -n "s/.*version \(\(\.\?[0-9]\+\)*\).*/\1/p;q"`
             local KERN_HEADERS=`$LIBC |
                 sed -n "s/.*Linux \([0-9\.]*\).*/\1/p"`
-
-            echo -n "${GCC_TARGET}"
-            echo -n "_glibc${LIBC_VERSION}"
-            echo -n "_with${KERN_HEADERS}"
-            echo "_header${LINUX_VERSION_CODE}"
             ;;
 
         * ) echo "$GCC_TARGET" ;;
-    esac | te_ta_sanitize
+    esac
+
+    local SEPARATOR=""
+    for FIELD in $TE_TA_SIGNATURE_FIELDS; do
+        case "$FIELD" in
+            gcc-target)
+                echo -n "${SEPARATOR}${GCC_TARGET}"
+                ;;
+            libc-version)
+                echo -n "${SEPARATOR}glibc${LIBC_VERSION}"
+                ;;
+            libc-kernel)
+                echo -n "${SEPARATOR}glibckernel${KERN_HEADERS}"
+                ;;
+            header-version)
+                echo -n "${SEPARATOR}header${LINUX_VERSION_CODE}"
+                ;;
+            *)
+                echo "Unknown TA signature field: '${FIELD}'" >&2
+                exit 1
+        esac
+        SEPARATOR="__"
+    done | te_ta_sanitize
 }
 
 
@@ -110,7 +131,8 @@ te_ta_signature()
 {
     local HOST=$1
     local CC=$2
-    { cat ${TE_BASE}/engine/builder/te_functions;  \
+    { echo "export TE_TA_SIGNATURE_FIELDS=\"${TE_TA_SIGNATURE_FIELDS}\""; \
+        cat ${TE_BASE}/engine/builder/te_functions;  \
         echo -e "\nte_ta_signature_local '$CC'"; } | \
         ssh $HOST /bin/bash -
     local RES=$?
