@@ -8,11 +8,11 @@ AM_CFLAGS = -fno-strict-aliasing $(TE_CFLAGS) $(TE_CFLAGS_VAR)
 
 myincludedir = $(includedir)/@include_subdir@
 
-myinclude_HEADERS = rpc_server.h rcf_pch_mem.h rpc_server_config.h iomux.h rpcs_msghdr.h
+myinclude_HEADERS = rpc_server.h rcf_pch_mem.h rpc_server_config.h iomux.h rpcs_msghdr.h rpcs_conv.h
 
 lib_LTLIBRARIES=lib@with_name@.la
 
-lib@with_name@_la_SOURCES=rpc_server.c rcf_pch_mem.c tarpc_imp.c iomux.c rpcs_msghdr.c
+lib@with_name@_la_SOURCES=rpc_server.c rcf_pch_mem.c tarpc_imp.c iomux.c rpcs_msghdr.c rpcs_conv.c
 
 install-exec-hook:
 	touch -c -r lib@with_name@.la $(DESTDIR)/$(libdir)/lib@with_name@.*
