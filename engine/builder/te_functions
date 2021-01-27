@@ -29,7 +29,7 @@ te_ta_signature_local()
     local CC=$1
 
     if test -z "$TE_TA_SIGNATURE_FIELDS"; then
-        local TE_TA_SIGNATURE_FIELDS="gcc-target libc-version libc-kernel header-version"
+        local TE_TA_SIGNATURE_FIELDS="gcc-target libc-version"
     fi
 
     # Use option '-print-multiarch' with different gcc versions
