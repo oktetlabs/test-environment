@@ -166,17 +166,6 @@ create_optional_ipversion(const void *value, te_vec *args)
     }
 }
 
-/** value type: `char *` */
-static te_errno
-create_optional_prefix(const void *value, te_vec *args)
-{
-    const char *prefix = *(const char *const *)value;
-
-    if (prefix == NULL)
-        return TE_ENOENT;
-
-    return te_vec_append_str_fmt(args, "%s", TAPI_SFNT_PATH_SFNT_PINGPONG);
-}
 /**@} <!-- END custom tapi_job_opt_formatting --> */
 
 #define CREATE_OPT_INT(_prefix, _concat_prefix, _struct, _filed) \
@@ -197,10 +186,6 @@ create_optional_prefix(const void *value, te_vec *args)
 
 #define CREATE_OPT_IPVERSION(_struct, _field) \
     {create_optional_ipversion, NULL, FALSE, NULL, \
-     offsetof(_struct, _field) }
-
-#define CREATE_OPT_PREFIX(_struct, _field) \
-    {create_optional_prefix, NULL, FALSE, NULL, \
      offsetof(_struct, _field) }
 
 const tapi_sfnt_pp_opt tapi_sfnt_pp_opt_default_opt = {
