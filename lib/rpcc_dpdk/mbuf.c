@@ -424,7 +424,7 @@ rpc_rte_pktmbuf_free(rcf_rpc_server *rpcs,
 
 int
 rpc_rte_pktmbuf_append_data(rcf_rpc_server *rpcs,
-                            rpc_rte_mbuf_p m, uint8_t *buf, size_t len)
+                            rpc_rte_mbuf_p m, const uint8_t *buf, size_t len)
 {
     tarpc_rte_pktmbuf_append_data_in    in;
     tarpc_rte_pktmbuf_append_data_out   out;
