@@ -48,6 +48,7 @@
 #include "te_bufs.h"
 #include "te_dbuf.h"
 #include "te_str.h"
+#include "te_rpc_pthread.h"
 
 
 /** @name String buffers for snprintf() operations */
@@ -1748,6 +1749,128 @@ rpc_pthread_self(rcf_rpc_server *rpcs)
     TAPI_RPC_LOG(rpcs, pthread_self, "", "%llu",
                  (unsigned long long int) out.retval);
     return out.retval;
+}
+
+/* See description in the tapi_rpc_unistd.h */
+int
+rpc_pthread_cancel(rcf_rpc_server *rpcs, tarpc_pthread_t tid)
+{
+    tarpc_pthread_cancel_in  in;
+    tarpc_pthread_cancel_out out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(pthread_cancel, -1);
+    }
+
+    in.tid = tid;
+
+    rcf_rpc_call(rpcs, "pthread_cancel", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(pthread_cancel, out.retval);
+    TAPI_RPC_LOG(rpcs, pthread_cancel, "%llu", "%d",
+                 (unsigned long long int)tid, out.retval);
+    RETVAL_INT(pthread_cancel, out.retval);
+}
+
+/* See description in the tapi_rpc_unistd.h */
+int
+rpc_pthread_setcancelstate(rcf_rpc_server *rpcs,
+                           rpc_pthread_cancelstate state,
+                           rpc_pthread_cancelstate *oldstate)
+{
+    tarpc_pthread_setcancelstate_in   in;
+    tarpc_pthread_setcancelstate_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(pthread_setcancelstate, -1);
+    }
+
+    in.state = state;
+
+    rcf_rpc_call(rpcs, "pthread_setcancelstate", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(pthread_setcancelstate, out.retval);
+
+    if (out.retval == 0 && oldstate != NULL)
+        *oldstate = out.oldstate;
+
+    TAPI_RPC_LOG(rpcs, pthread_setcancelstate, "new: %s, old: %s", "%d",
+                 pthread_cancelstate_rpc2str(state),
+                 pthread_cancelstate_rpc2str(out.oldstate), out.retval);
+    RETVAL_INT(pthread_setcancelstate, out.retval);
+}
+
+/* See description in the tapi_rpc_unistd.h */
+int
+rpc_pthread_setcanceltype(rcf_rpc_server *rpcs,
+                          rpc_pthread_canceltype type,
+                          rpc_pthread_canceltype *oldtype)
+{
+    tarpc_pthread_setcanceltype_in   in;
+    tarpc_pthread_setcanceltype_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(pthread_setcanceltype, -1);
+    }
+
+    in.type = type;
+
+    rcf_rpc_call(rpcs, "pthread_setcanceltype", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(pthread_setcanceltype, out.retval);
+
+    if (out.retval == 0 && oldtype != NULL)
+        *oldtype = out.oldtype;
+
+    TAPI_RPC_LOG(rpcs, pthread_setcanceltype, "new: %s, old: %s", "%d",
+                 pthread_canceltype_rpc2str(type),
+                 pthread_canceltype_rpc2str(out.oldtype), out.retval);
+    RETVAL_INT(pthread_setcanceltype, out.retval);
+}
+
+/* See description in the tapi_rpc_unistd.h */
+int
+rpc_pthread_join(rcf_rpc_server *rpcs, tarpc_pthread_t tid, uint64_t *retval)
+{
+    tarpc_pthread_join_in   in;
+    tarpc_pthread_join_out  out;
+
+    memset(&in, 0, sizeof(in));
+    memset(&out, 0, sizeof(out));
+
+    if (rpcs == NULL)
+    {
+        ERROR("%s(): Invalid RPC server handle", __FUNCTION__);
+        RETVAL_INT(pthread_join, -1);
+    }
+
+    in.tid = tid;
+
+    rcf_rpc_call(rpcs, "pthread_join", &in, &out);
+
+    CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(pthread_join, out.retval);
+
+    if ((out.retval == 0) && (retval != NULL))
+        *retval = out.ret;
+
+    TAPI_RPC_LOG(rpcs, pthread_join, "%llu, %" TE_PRINTF_64 "u", "%d",
+                 (unsigned long long int)tid, out.ret, out.retval);
+    RETVAL_INT(pthread_join, out.retval);
 }
 
 tarpc_pid_t

@@ -29,7 +29,8 @@ include_HEADERS = \
 	te_rpc_wsa.h \
 	te_rpc_sysconf.h \
 	te_rpc_dlfcn.h \
-	te_rpc_dirent.h
+	te_rpc_dirent.h \
+	te_rpc_pthread.h
 
 if WINDOWS
 
@@ -87,7 +88,8 @@ librpc_types_la_SOURCES = defs.c \
 	wsa.c.rpch \
 	sysconf_name.c.rpch \
 	dlfcn.c.rpch \
-	dirent.c.rpch
+	dirent.c.rpch \
+	pthread.c.rpch
 
 librpc_types_la_LIBADD = $(TIRPC_LIBS)
 

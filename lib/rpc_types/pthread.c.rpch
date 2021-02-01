@@ -1,0 +1,86 @@
+/** @file
+ * @brief RPC types definitions
+ *
+ * RPC analogues of definitions from pthread.h.
+ *
+ * Copyright (C) 2003-2021 OKTET Labs. All rights reserved.
+ *
+ * @author Vasilij Ivanov <Vasilij.Ivanov@oktetlabs.ru>
+ */
+
+#include "te_config.h"
+#include "te_rpc_pthread.h"
+
+#include <pthread.h>
+
+/* See description in te_rpc_pthread.h */
+const char *
+pthread_cancelstate_rpc2str(rpc_pthread_cancelstate state)
+{
+    switch (state)
+    {
+        RPC2STR(PTHREAD_CANCEL_ENABLE);
+        RPC2STR(PTHREAD_CANCEL_DISABLE);
+        default: return "<PTHREAD_CANCEL_STATE_UNKNOWN>";
+    }
+}
+
+/* See description in te_rpc_pthread.h */
+int
+pthread_cancelstate_rpc2h(rpc_pthread_cancelstate state)
+{
+    switch (state)
+    {
+        RPC2H_CHECK(PTHREAD_CANCEL_ENABLE);
+        RPC2H_CHECK(PTHREAD_CANCEL_DISABLE);
+        default : return -1;
+    }
+}
+
+/* See description in te_rpc_pthread.h */
+rpc_pthread_cancelstate
+pthread_cancelstate_h2rpc(int state)
+{
+    switch (state)
+    {
+        H2RPC_CHECK(PTHREAD_CANCEL_ENABLE);
+        H2RPC_CHECK(PTHREAD_CANCEL_DISABLE);
+        default: return RPC_PTHREAD_CANCEL_STATE_UNKNOWN;
+    }
+}
+
+/* See description in te_rpc_pthread.h */
+const char *
+pthread_canceltype_rpc2str(rpc_pthread_canceltype type)
+{
+    switch (type)
+    {
+        RPC2STR(PTHREAD_CANCEL_DEFERRED);
+        RPC2STR(PTHREAD_CANCEL_ASYNCHRONOUS);
+        default: return "<PTHREAD_CANCEL_TYPE_UNKNOWN>";
+    }
+}
+
+/* See description in te_rpc_pthread.h */
+int
+pthread_canceltype_rpc2h(rpc_pthread_canceltype type)
+{
+    switch (type)
+    {
+        RPC2H_CHECK(PTHREAD_CANCEL_DEFERRED);
+        RPC2H_CHECK(PTHREAD_CANCEL_ASYNCHRONOUS);
+        default : return -1;
+    }
+}
+
+/* See description in te_rpc_pthread.h */
+rpc_pthread_canceltype
+pthread_canceltype_h2rpc(int type)
+{
+    switch (type)
+    {
+        H2RPC_CHECK(PTHREAD_CANCEL_DEFERRED);
+        H2RPC_CHECK(PTHREAD_CANCEL_ASYNCHRONOUS);
+        default: return RPC_PTHREAD_CANCEL_TYPE_UNKNOWN;
+    }
+}

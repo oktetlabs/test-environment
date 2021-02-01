@@ -4003,6 +4003,57 @@ struct tarpc_pthread_self_out {
 typedef struct tarpc_pthread_self_in tarpc_pthread_self_in;
 typedef struct tarpc_pthread_self_out tarpc_pthread_self_out;
 
+/* pthread_cancel */
+struct tarpc_pthread_cancel_in {
+    struct tarpc_in_arg common;
+
+    tarpc_pthread_t tid;
+};
+
+typedef struct tarpc_int_retval_out tarpc_pthread_cancel_out;
+
+/* pthread_setcancelstate */
+struct tarpc_pthread_setcancelstate_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int state;
+};
+
+struct tarpc_pthread_setcancelstate_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+    tarpc_int oldstate;
+};
+
+/* pthread_setcanceltype */
+struct tarpc_pthread_setcanceltype_in {
+    struct tarpc_in_arg common;
+
+    tarpc_int type;
+};
+
+struct tarpc_pthread_setcanceltype_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+    tarpc_int oldtype;
+};
+
+/* pthread_join */
+struct tarpc_pthread_join_in {
+    struct tarpc_in_arg common;
+
+    tarpc_pthread_t tid;
+};
+
+struct tarpc_pthread_join_out {
+    struct tarpc_out_arg common;
+
+    tarpc_int retval;
+    uint64_t  ret;
+};
+
 /* access */
 struct tarpc_access_in {
     struct tarpc_in_arg common;
@@ -5608,6 +5659,10 @@ program tarpc
         RPC_DEF(execve_gen)
         RPC_DEF(getpid)
         RPC_DEF(pthread_self)
+        RPC_DEF(pthread_cancel)
+        RPC_DEF(pthread_setcancelstate)
+        RPC_DEF(pthread_setcanceltype)
+        RPC_DEF(pthread_join)
         RPC_DEF(gettimeofday)
         RPC_DEF(gethostname)
         

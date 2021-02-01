@@ -64,6 +64,7 @@ typedef struct rpc_ptr_off {
 #include "te_rpc_errno.h"
 #include "te_rpc_dlfcn.h"
 #include "te_rpc_dirent.h"
+#include "te_rpc_pthread.h"
 
 #else
 

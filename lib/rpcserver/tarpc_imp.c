@@ -1034,6 +1034,66 @@ TARPC_FUNC(pthread_self, {},
 }
 )
 
+/*-------------- pthread_cancel() --------------------------*/
+TARPC_FUNC(pthread_cancel, {},
+{
+    MAKE_CALL(out->retval = func(in->tid));
+    if (out->retval != 0)
+    {
+        te_rpc_error_set(TE_OS_RC(TE_RPC, out->retval), "");
+        out->retval = -1;
+    }
+}
+)
+
+/*-------------- pthread_setcancelstate() --------------------------*/
+TARPC_FUNC(pthread_setcancelstate, {},
+{
+    int oldstate;
+
+    MAKE_CALL(out->retval = func(pthread_cancelstate_rpc2h(in->state),
+                                 &oldstate));
+
+    out->oldstate = pthread_cancelstate_h2rpc(oldstate);
+    if (out->retval != 0)
+    {
+        te_rpc_error_set(TE_OS_RC(TE_RPC, out->retval), "");
+        out->retval = -1;
+    }
+}
+)
+
+/*-------------- pthread_setcanceltype() --------------------------*/
+TARPC_FUNC(pthread_setcanceltype, {},
+{
+    int oldtype;
+
+    MAKE_CALL(out->retval = func(pthread_canceltype_rpc2h(in->type),
+                                 &oldtype));
+
+    out->oldtype = pthread_cancelstate_h2rpc(oldtype);
+    if (out->retval != 0)
+    {
+        te_rpc_error_set(TE_OS_RC(TE_RPC, out->retval), "");
+        out->retval = -1;
+    }
+}
+)
+
+/*-------------- pthread_join() --------------------------*/
+TARPC_FUNC(pthread_join, {},
+{
+    void *p;
+    MAKE_CALL(out->retval = func(in->tid, &p));
+    out->ret = (uintptr_t)p;
+    if (out->retval != 0)
+    {
+        te_rpc_error_set(TE_OS_RC(TE_RPC, out->retval), "");
+        out->retval = -1;
+    }
+}
+)
+
 /*-------------- access() --------------------------------*/
 TARPC_FUNC(access, {},
 {

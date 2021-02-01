@@ -26,6 +26,7 @@
 
 #include "rcf_rpc.h"
 #include "te_rpc_fcntl.h"
+#include "te_rpc_pthread.h"
 
 #include "te_rpc_types.h"
 
@@ -849,6 +850,62 @@ extern pid_t rpc_getpid(rcf_rpc_server *rpcs);
  * @return The thread ID of the RPC server thread
  */
 extern tarpc_pthread_t rpc_pthread_self(rcf_rpc_server *rpcs);
+
+/**
+ * Send a cancellation request to a RPC thread.
+ *
+ * @param rpcs  RPC server handle
+ * @param tid   The thread ID
+ *
+ * @return 0 is returned upon successful completion, otherwise
+ *         -1 is returned.
+ */
+extern int rpc_pthread_cancel(rcf_rpc_server *rpcs,
+                              tarpc_pthread_t tid);
+
+/**
+ * Set cancelability state to a RPC thread.
+ *
+ * @param rpcs           RPC server handle
+ * @param state          State to set
+ * @param oldstate[out]  Old state of the thread cancelability,
+ *                       can be NULL if does not matter
+ *
+ * @return 0 is returned upon successful completion, otherwise
+ *         -1 is returned.
+ */
+extern int rpc_pthread_setcancelstate(rcf_rpc_server *rpcs,
+                                      rpc_pthread_cancelstate state,
+                                      rpc_pthread_cancelstate *oldstate);
+
+/**
+ * Set cancelability type to a RPC thread.
+ *
+ * @param rpcs          RPC server handle
+ * @param type          Type to set
+ * @param oldtype[out]  Old type of the thread cancelability,
+ *                      can be NULL if does not matter
+ *
+ * @return 0 is returned upon successful completion, otherwise
+ *         -1 is returned.
+ */
+extern int rpc_pthread_setcanceltype(rcf_rpc_server *rpcs,
+                                     rpc_pthread_canceltype type,
+                                     rpc_pthread_canceltype *oldtype);
+
+/**
+ * Join with a terminated thread
+ *
+ * @param rpcs          RPC server handle
+ * @param tid           The thread ID
+ * @param retval[out]   Exit status of the target thread,
+ *                      can be NULL if does not matter
+ *
+ * @return 0 is returned upon successful completion, otherwise
+ *         -1 is returned.
+ */
+extern int rpc_pthread_join(rcf_rpc_server *rpcs,
+                            tarpc_pthread_t tid, uint64_t *retval);
 
 /**
  * Get thread ID. This is linux-specific system call.
