@@ -105,8 +105,6 @@ in_dox_comment && /-->/ {
     next;
 }
 
-in_dox_comment { print $0; next }
-
 /<enum name/ {
   sub(/.*<enum/, "\nName: ");
   sub(/ name="/, "");
@@ -152,16 +150,33 @@ in_enum && /<value/ {
 
 /<run name/ {
     if (in_page && ! run_logged) {
+        code_line = $0
         run_name = $0
         gsub(" .*<run name=\"", "", run_name);
         gsub("\".*>", "", run_name);
         run_found = 1;
+        in_run = 1
+
+        print "@code"
+        print code_line
+        next
     }
 }
 
 in_run && /<\/run>/ {
+    print $0
+    print "@endcode"
+    run_found = 0
     in_run = 0;
+    next
 }
+
+in_run {
+    print $0
+    next
+}
+
+in_dox_comment { print $0; next }
 
 END {
     if (in_page) {
