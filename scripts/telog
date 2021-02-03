@@ -148,12 +148,12 @@ but allows you to change the theme w/o rewriting half of the config.
 EOF
 }
 
-if ! hash fzf >/dev/null 2>&1 ; then
+if ! hash $TE_FZF >/dev/null 2>&1 ; then
     echo -e "---> Install FZF\n"
     help_setup
     exit 1
 fi
-if ! hash bat >/dev/null 2>&1 ; then
+if ! hash $TE_BAT >/dev/null 2>&1 ; then
     echo -e "---> Install BAT\n"
     help_setup
     exit 1
