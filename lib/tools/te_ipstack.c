@@ -106,10 +106,18 @@ te_ipstack_calc_l4_cksum(const struct sockaddr  *ip_dst_addr,
      * calculate_checksum() behaviour which should keep an eye on it
      */
     cksum = calculate_checksum((void *)pseudo_packet, pseudo_packet_len);
+    cksum = ~cksum;
 
     free(pseudo_packet);
 
-    *cksum_out = (cksum == 0) ? 0xffff : cksum;
+    /*
+     * For UDP checksum=0 means no checksum, and zero checksum value
+     * should be instead represented as 0xffff (see RFC 768).
+     */
+    if (next_hdr == IPPROTO_UDP)
+        cksum = (cksum == 0) ? 0xffff : cksum;
+
+    *cksum_out = cksum;
 
 out:
 
@@ -194,8 +202,6 @@ te_ipstack_prepare_raw_tcpv4_packet(uint8_t *raw_packet, ssize_t *total_size,
                                       &tcph->check);
         if (rc != 0)
             return rc;
-
-        tcph->check = ~tcph->check;
     }
 
     if (sadr_ll != NULL)
