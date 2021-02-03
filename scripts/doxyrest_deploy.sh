@@ -23,9 +23,9 @@ doxyrest_put() {
     action=$1
 
     ${action} pushd ${TE_BASE}/..
-    ${action} wget https://github.com/vovkos/doxyrest/releases/download/doxyrest-2.0.0/doxyrest-2.0.0-linux-amd64.tar.xz
-    ${action} tar -xf doxyrest-2.0.0-linux-amd64.tar.xz
-    ${action} export DOXYREST_PREFIX=${TE_BASE}/../doxyrest-2.0.0-linux-amd64
+    ${action} wget https://github.com/vovkos/doxyrest/releases/download/doxyrest-2.1.2/doxyrest-2.1.2-linux-amd64.tar.xz
+    ${action} tar -xf doxyrest-2.1.2-linux-amd64.tar.xz
+    ${action} export DOXYREST_PREFIX=${TE_BASE}/../doxyrest-2.1.2-linux-amd64
     ${action} popd
 }
 
