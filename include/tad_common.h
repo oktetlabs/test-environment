@@ -111,9 +111,11 @@ typedef enum {
 } te_tad_protocols_t;
 
 /**
- * Calculate 16-bit checksum: 16-bit one's complement of the one's
- * complement sum of all 16 bit words.
+ * Calculate 16-bit checksum: one's complement sum of all 16 bit words.
  * Function works correctly with length less then 64k.
+ *
+ * @note One's complement of the computed value should be written
+ *       to checksum field in IP/TCP/UDP headers.
  *
  * @param checksum  start checksum calculating from this value
  * @param data      pointer to the data which checksum should be calculated
@@ -142,9 +144,11 @@ ip_csum_part(uint32_t checksum, const void *data, size_t length)
 }
 
 /**
- * Calculate 16-bit checksum: 16-bit one's complement of the one's
- * complement sum of all 16 bit words.
+ * Calculate 16-bit checksum: 16-bit one's complement sum of all 16 bit words.
  * Function works correctly with length less then 64k.
+ *
+ * @note One's complement of the computed value should be written
+ *       to checksum field in IP/TCP/UDP headers.
  *
  * @param data      pointer to the data which checksum should be calculated
  * @param length    length of the data
