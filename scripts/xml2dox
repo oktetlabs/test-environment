@@ -59,6 +59,7 @@ function process(str)
 
     if (sub(/@endpage/, str) || sub(/@}/, str)) {
         if (in_page) {
+            sub(/[ \t]+/, "", str);
             print str
             print "*/";
         }
@@ -85,6 +86,12 @@ in_dox_comment && /^[[:space:]]*\*/ { sub(/^[[:space:]]*\*/, ""); }
     process($line);
 
     next;
+}
+
+/@{/ {
+    sub(/[ \t]+/, "");
+    print $0
+    next
 }
 
 in_dox_comment {
