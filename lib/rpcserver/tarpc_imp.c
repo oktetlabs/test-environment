@@ -2454,12 +2454,18 @@ TARPC_FUNC(readv,
 },
 {
     struct iovec    iovec_arr[RCF_RPC_MAX_IOVEC];
+    struct iovec    *res = NULL;
 
-    rpcs_iovec_tarpc2h(out->vector.vector_val, iovec_arr,
-                       out->vector.vector_len, TRUE,
-                       arglist);
+    if (out->vector.vector_val != NULL)
+    {
+        rpcs_iovec_tarpc2h(out->vector.vector_val, iovec_arr,
+                           out->vector.vector_len, TRUE,
+                           arglist);
+        res = iovec_arr;
+    }
 
-    MAKE_CALL(out->retval = func(in->fd, iovec_arr, in->count));
+    MAKE_CALL(out->retval = func(in->fd, res, in->count));
+
 }
 )
 
@@ -2476,12 +2482,17 @@ TARPC_FUNC(writev,
 },
 {
     struct iovec    iovec_arr[RCF_RPC_MAX_IOVEC];
+    struct iovec    *res = NULL;
 
-    rpcs_iovec_tarpc2h(in->vector.vector_val, iovec_arr,
-                       in->vector.vector_len, FALSE,
-                       arglist);
+    if (in->vector.vector_val != NULL)
+    {
+        rpcs_iovec_tarpc2h(in->vector.vector_val, iovec_arr,
+                           in->vector.vector_len, FALSE,
+                           arglist);
+        res = iovec_arr;
+    }
 
-    MAKE_CALL(out->retval = func(in->fd, iovec_arr, in->count));
+    MAKE_CALL(out->retval = func(in->fd, res, in->count));
 }
 )
 
