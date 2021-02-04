@@ -159,7 +159,10 @@ if cc.has_function(f, args: te_cflags,
 endif
 
 f = 'rte_flow_isolate'
-if cc.has_function(f, args: te_cflags,
+if cc.has_function(f, args: te_cflags + te_ldflags +
+                   [ '-lrte_ethdev', '-lrte_telemetry', '-lrte_meter',
+                     '-lrte_net', '-lrte_mbuf', '-lrte_mempool',
+                     '-lrte_ring', '-lrte_kvargs', '-lrte_eal' ],
                    prefix: '#include "rte_flow.h"')
     c_args += [ '-DHAVE_' + f.to_upper() ]
 endif
