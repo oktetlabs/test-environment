@@ -87,14 +87,6 @@ typedef void (*func)(uint16_t, struct rte_eth_dev_info *);
 [[func f = rte_eth_dev_info_get; (void)f;]]
 )], [AC_DEFINE([HAVE_RTE_DEV_INFO_GET_RETURN_VOID], 1, [ ])], [])
 
-AC_CHECK_MEMBERS([struct rte_flow_ops.isolate],
-[], [],
-[[
-#include "rte_config.h"
-#include "rte_flow.h"
-#include "rte_flow_driver.h"
-]])
-
 AC_COMPILE_IFELSE([
 AC_LANG_PROGRAM(
 [[
@@ -172,6 +164,9 @@ AC_CHECK_MEMBERS([struct rte_flow_item_vlan.tpid],
 LIBS="-lnuma -lpthread -ldl $LIBS"
 LIBS="-lrte_mbuf -lrte_net -lrte_mempool -lrte_ring -lrte_eal -lrte_kvargs $LIBS"
 AC_CHECK_FUNCS([rte_pktmbuf_pool_create_by_ops])
+
+LIBS="-lrte_ethdev $LIBS"
+AC_CHECK_FUNCS([rte_flow_isolate])
 
 dnl Used here tarpc.h includes rpc/rpc.h which requires extra -I option
 dnl in the case of libtirpc. There is no easy way to inherit it from

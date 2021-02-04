@@ -104,16 +104,6 @@ if cc.has_type(t, args: te_cflags,
     c_args += [ '-DHAVE_' + t.to_upper().underscorify() ]
 endif
 
-code_prefix_flow_api_driver = '''
-#include "rte_config.h"
-#include "rte_flow.h"
-#include "rte_flow_driver.h"
-'''
-if cc.has_member('struct rte_flow_ops', 'isolate', args: te_cflags,
-                 prefix: code_prefix_flow_api_driver)
-    c_args += [ '-DHAVE_STRUCT_RTE_FLOW_OPS_ISOLATE' ]
-endif
-
 if cc.has_header_symbol('rte_flow.h', 'RTE_FLOW_ITEM_TYPE_GENEVE',
                         args: te_cflags, prefix: '# include "rte_config.h"')
     c_args += [ '-DHAVE_RTE_FLOW_GENEVE' ]
@@ -165,6 +155,12 @@ endif
 f = 'rte_is_zero_ether_addr'
 if cc.has_function(f, args: te_cflags,
                    prefix: '#include "rte_ether.h"')
+    c_args += [ '-DHAVE_' + f.to_upper() ]
+endif
+
+f = 'rte_flow_isolate'
+if cc.has_function(f, args: te_cflags,
+                   prefix: '#include "rte_flow.h"')
     c_args += [ '-DHAVE_' + f.to_upper() ]
 endif
 

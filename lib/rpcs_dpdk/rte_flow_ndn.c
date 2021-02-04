@@ -2786,11 +2786,11 @@ TARPC_FUNC_STANDALONE(rte_flow_isolate, {},
 
     memset(&error, 0, sizeof(error));
 
-#ifdef HAVE_STRUCT_RTE_FLOW_OPS_ISOLATE
+#ifdef HAVE_RTE_FLOW_ISOLATE
     MAKE_CALL(out->retval = rte_flow_isolate(in->port_id, in->set, &error));
-#else /* !HAVE_STRUCT_RTE_FLOW_OPS_ISOLATE */
+#else /* !HAVE_RTE_FLOW_ISOLATE */
     out->retval = -ENOTSUP;
-#endif /* HAVE_STRUCT_RTE_FLOW_OPS_ISOLATE */
+#endif /* HAVE_RTE_FLOW_ISOLATE */
 
     neg_errno_h2rpc(&out->retval);
     tarpc_rte_error2tarpc(&out->error, &error);
