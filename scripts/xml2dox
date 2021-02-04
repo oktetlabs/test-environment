@@ -43,7 +43,7 @@ function process(str)
     else
         in_dox_comment = 1;
 
-    if (sub(/@page/, str) || sub(/@defgroup/, str)) {
+    if (sub(/@page/, str) || sub(/@defgroup/, str) || sub(/@ingroup/, str) || sub(/@addtogroup/, str)) {
         if (in_page) {
             if (run_found) {
                 printf("\n@run_name %s\n", run_name);
