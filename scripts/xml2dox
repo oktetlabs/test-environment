@@ -43,7 +43,7 @@ function process(str)
     else
         in_dox_comment = 1;
 
-    if (sub(/@page/, str)) {
+    if (sub(/@page/, str) || sub(/@defgroup/, str)) {
         if (in_page) {
             if (run_found) {
                 printf("\n@run_name %s\n", run_name);
@@ -57,8 +57,9 @@ function process(str)
         run_found = 0;
     }
 
-    if (sub(/@endpage/, str)) {
+    if (sub(/@endpage/, str) || sub(/@}/, str)) {
         if (in_page) {
+            print str
             print "*/";
         }
         in_page = 0;
@@ -69,7 +70,9 @@ function process(str)
         objective_handle(str, 1)
     }
 
-    print str;
+    if (in_page) {
+        print str;
+    }
 
     return;
 }
