@@ -89,6 +89,14 @@ in_dox_comment && /^[[:space:]]*\*/ { sub(/^[[:space:]]*\*/, ""); }
 }
 
 /@{/ {
+    in_group = 1;
+    sub(/[ \t]+/, "");
+    print $0
+    next
+}
+
+/@}/ {
+    in_group = 0;
     sub(/[ \t]+/, "");
     print $0
     next
@@ -179,6 +187,11 @@ in_run && /<\/run>/ {
 }
 
 in_run {
+    print $0
+    next
+}
+
+in_group {
     print $0
     next
 }
