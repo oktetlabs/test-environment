@@ -1183,6 +1183,59 @@
          Name: empty
          Value: integer, RCF session ID
 
+    - oid: "/agent/rpcserver_plugin"
+      access: read_create
+      type: string
+      d: |
+         Root object for RPC idle plugin.
+         In some cases, it is useful to do something and call a non-blocking
+         receive in the main loop of the RPC server instead of being blocked
+         for a while waiting for the next command to be received.
+         RPC server supports plugins by default.
+         Name: RPC server name
+         Value: none
+
+    - oid: "/agent/rpcserver_plugin/install"
+      access: read_write
+      type: string
+      d: |
+         The name of the function that will create the plugin context.
+         Executed when the plugin is enabled, if the function name is empty,
+         nothing will be done.
+         Name: empty
+         Value: function name or empty string
+
+    - oid: "/agent/rpcserver_plugin/action"
+      access: read_write
+      type: string
+      d: |
+         Function name for plugin action. Executed in the main loop of the RPC
+         server each time after checking to receive the next command, this check
+         is processed in non-blocking mode so that the plugin action is also
+         executed.
+         The plugin context will be passed to the action and the plugin context
+         must be initialized by the function /agent/rpcserver_plugin/install.
+         Name: empty
+         Value: function name or empty string
+
+    - oid: "/agent/rpcserver_plugin/uninstall"
+      access: read_write
+      type: string
+      d: |
+         The name of the function that will deinitialize the plugin context.
+         Executed when the plugin is disabled, if the function name is empty,
+         nothing will be done.
+         Name: empty
+         Value: function name or empty string
+
+    - oid: "/agent/rpcserver_plugin/enable"
+      access: read_write
+      type: integer
+      d: |
+         Switch RPC server plug-in
+         Name: empty
+         Value: 0 - enable, 1 - disable
+
     - oid: "/agent/dns"
       access: read_create
       type: address
