@@ -421,6 +421,93 @@ process_agent() {
     process_parameters "${pfx}" "${msg}"
 }
 
+generate_config_file() {
+    local p="$1"; shift
+    local parms_var="$1"; shift
+    local conffile="${TE_BUILD}/${p}"
+    local host=
+    local cc=
+    local cpp=
+    local ld=
+    local ar=
+    local as=
+    local strip=
+    local pkgconfig=
+    local others=
+    for parm in ${parms_var} ; do
+        case ${parm} in
+            --host=*)
+                host="${parm#--host=}" ;;
+            CC=*)
+                cc="${parm#CC=}" ;;
+            CPP=*)
+                cpp="${parm#CPP=}" ;;
+            LD=*)
+                ld="${parm#LD=}" ;;
+            AR=*)
+                ar="${parm#AR=}" ;;
+            AS=*)
+                as="${parm#AS=}" ;;
+            STRIP=*)
+                strip="${parm#STRIP=}" ;;
+            PKG_CONFIG=*)
+                pkgconfig="${parm#PKG_CONFIG=}" ;;
+            *)
+                others="${others} ${parm}" ;;
+        esac
+    done
+    if test -n "${others}" ; then
+        warning "Unsupported platform parameters:${others}"
+    fi
+
+    if test -z "${host}${cc}${cpp}${ld}${ar}${as}${strip}${pkg_config}" ; then
+        return
+    fi
+
+    if test -z "$host" -o "$host" = $(gcc -dumpmachine); then
+        echo "[binaries]" > $conffile
+        test -n "$cc" && echo "c = '${cc}'" >> $conffile
+        test -n "$cpp" && echo "cpp = '${cpp}'" >> $conffile
+        test -n "$ld" && echo "ld = '${ld}'" >> $conffile
+        test -n "$ar" && echo "ar = '${ar}'" >> $conffile
+        test -n "$as" && echo "as = '${as}'" >> $conffile
+        test -n "$strip" && echo "strip = '${strip}'" >> $conffile
+        test -n "$pkgconfig" && echo "pkgconfig = '${pkgconfig}'" >> $conffile
+        meson_args="${meson_args} --native-file=${conffile}"
+        return
+    fi
+
+    test -z "$cc" && cc="${host}-gcc"
+    local dumpmachine=$($cc -dumpmachine)
+    local cpu_family="$(cut -d'-' -f1 <<<"$dumpmachine")"
+    local system="$(echo $dumpmachine | rev | cut -d'-' -f2 | rev)"
+
+    test -z "$cpp" && cpp="${host}-cpp"
+    test -z "$ld" && ld="${host}-ld"
+    test -z "$ar" && ar="${host}-ar"
+    test -z "$as" && as="${host}-as"
+    test -z "$strip" && strip="${host}-strip"
+    test -z "$pkgconfig" && pkgconfig="${host}-pkg-config"
+
+    cat >$conffile <<-EOF
+	[binaries]
+	c = '${cc}'
+	cpp = '${cpp}'
+	ld = '${ld}'
+	ar = '${ar}'
+	as = '${as}'
+	strip = '${strip}'
+	pkgconfig = '${pkgconfig}'
+
+	[host_machine]
+	system = '${system}'
+	cpu_family = '${cpu_family}'
+	cpu = ''
+	endian = ''
+	EOF
+    meson_args="${meson_args} --cross-file=${conffile}"
+}
+
 process_platform() {
     local p="$1"; shift
     local tad_protocols="${TAD_PROTOCOLS_ALL}"
@@ -430,8 +517,7 @@ process_platform() {
 
     local parms_var="${p}_PARMS"
     if test -n "${!parms_var}" ; then
-        warning "Platform parameters are not supported"
-        warning "Requested platform parameters: ${!parms_var}"
+        generate_config_file "${p}" "${!parms_var}"
     fi
 
     local te_cflags=
