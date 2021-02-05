@@ -663,17 +663,26 @@ phy_autoneg_oper_get(unsigned int gid, const char *oid, char *value,
 
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
-        /*
-         * Check for option support: if option is not
-         * supported the leaf value should be set to -1
-         */
-        if (rc == EOPNOTSUPP)
+        switch (rc)
         {
-            snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_AUTONEG_UNKNOWN);
-            return 0;
+            case EOPNOTSUPP:
+                /*
+                 * Check for option support: if option is not
+                 * supported the leaf value should be set to -1
+                 */
+            case ENODEV:
+                /*
+                 * It can return ENODEV for some interfaces if the last ones
+                 * are not active, and this case should not prevent
+                 * agent/interface initialization
+                 */
+                snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_AUTONEG_UNKNOWN);
+                return 0;
+
+            default:
+                ERROR("failed to get autonegatiation state");
+                return TE_OS_RC(TE_TA_UNIX, rc);
         }
-        ERROR("failed to get autonegatiation state");
-        return TE_OS_RC(TE_TA_UNIX, rc);
     }
 
     state = (ecmd.autoneg == AUTONEG_ENABLE) ?
@@ -876,19 +885,28 @@ phy_duplex_oper_get(unsigned int gid, const char *oid, char *value,
 
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
-        /* Check that option does not supported */
-        if (rc == EOPNOTSUPP)
+        switch (rc)
         {
-            /* If this option is not supported we should not
-             * return negative result code because configurator
-             * never starts */
-            snprintf(value, RCF_MAX_VAL, "%s",
-                     TE_PHY_DUPLEX_STRING_UNKNOWN);
-            return 0;
-        }
+            case EOPNOTSUPP:
+                /*
+                 * If this option is not supported we should not
+                 * return negative result code because configurator
+                 * never starts
+                 */
+            case ENODEV:
+                /*
+                 * It can return ENODEV for some interfaces if the last ones
+                 * are not active, and this case should not prevent
+                 * agent/interface initialization
+                 */
+                snprintf(value, RCF_MAX_VAL, "%s",
+                         TE_PHY_DUPLEX_STRING_UNKNOWN);
+                return 0;
 
-        ERROR("failed to get duplex state");
-        return TE_OS_RC(TE_TA_UNIX, rc);
+            default:
+                ERROR("failed to get duplex state");
+                return TE_OS_RC(TE_TA_UNIX, rc);
+        }
     }
 
     duplex = phy_get_duplex_by_id(ecmd.duplex);
@@ -1089,18 +1107,27 @@ phy_modes_speed_duplex_get(unsigned int gid, const char *oid, char *value,
 
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
-        /*
-         * Check for option support: if option is not
-         * supported the leaf value should be set to -1
-         */
-        if (rc == EOPNOTSUPP)
+        switch (rc)
         {
-            snprintf(value, RCF_MAX_VAL, "%d", -1);
-            return 0;
-        }
+            case EOPNOTSUPP:
+                /*
+                 * Check for option support: if option is not
+                 * supported the leaf value should be set to -1
+                 */
+            case ENODEV:
+                /*
+                 * It can return ENODEV for some interfaces if the last ones
+                 * are not active, and this case should not prevent
+                 * agent/interface initialization
+                 */
+                snprintf(value, RCF_MAX_VAL, "%d", -1);
+                return 0;
 
-        ERROR("failed to get interface properties: %s", strerror(errno));
-        return TE_OS_RC(TE_TA_UNIX, rc);
+            default:
+                ERROR("failed to get interface properties: %s",
+                      strerror(errno));
+                return TE_OS_RC(TE_TA_UNIX, rc);
+        }
     }
 
     mode = phy_get_mode(atoi(speed), duplex);
@@ -1392,20 +1419,26 @@ phy_speed_oper_get(unsigned int gid, const char *oid, char *value,
 
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
-        /*
-         * Check for option support: if option is not
-         * supported the leaf value should be set to -1
-         */
-
-        if (rc == EOPNOTSUPP)
+        switch (rc)
         {
-            snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_SPEED_UNKNOWN);
-            return 0;
+            case EOPNOTSUPP:
+                /*
+                 * Check for option support: if option is not
+                 * supported the leaf value should be set to -1
+                 */
+            case ENODEV:
+                /*
+                 * It can return ENODEV for some interfaces if the last ones
+                 * are not active, and this case should not prevent
+                 * agent/interface initialization
+                 */
+                snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_SPEED_UNKNOWN);
+                return 0;
+
+            default:
+                ERROR("failed to get PHY properties while getting speed value");
+                return TE_OS_RC(TE_TA_UNIX, rc);
         }
-
-        ERROR("failed to get PHY properties while getting speed value");
-
-        return TE_OS_RC(TE_TA_UNIX, rc);
     }
 
     /* Store value */
@@ -1563,18 +1596,26 @@ phy_state_get(unsigned int gid, const char *oid, char *value,
     /* Get link state */
     if (ioctl(cfg_socket, SIOCETHTOOL, &ifr) != 0)
     {
-        /*
-         * Check for option support: if option is not
-         * supported the leaf value should be set to -1
-         */
-        if (errno == EOPNOTSUPP)
+        switch (errno)
         {
-            snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_STATE_UNKNOWN);
-            return 0;
-        }
+            case EOPNOTSUPP:
+                /*
+                 * Check for option support: if option is not
+                 * supported the leaf value should be set to -1
+                 */
+            case ENODEV:
+                /*
+                 * It can return ENODEV for some interfaces if the last ones
+                 * are not active, and this case should not prevent
+                 * agent/interface initialization
+                 */
+                snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_STATE_UNKNOWN);
+                return 0;
 
-        ERROR("failed to get interface state value");
-        return TE_RC(TE_TA_UNIX, errno);
+            default:
+                ERROR("failed to get interface state value");
+                return TE_RC(TE_TA_UNIX, errno);
+        }
     }
 
     state = edata.data ? TE_PHY_STATE_UP : TE_PHY_STATE_DOWN;
@@ -1840,17 +1881,26 @@ phy_autoneg_lp_adv_get(unsigned int gid, const char *oid, char *value,
 
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
-        /*
-         * Check for option support
-         */
-        if (rc == EOPNOTSUPP)
+        switch (rc)
         {
-            snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_AUTONEG_UNKNOWN);
-            return 0;
+            case EOPNOTSUPP:
+                /*
+                 * Check for option support
+                 */
+            case ENODEV:
+                /*
+                 * It can return ENODEV for some interfaces if the last ones
+                 * are not active, and this case should not prevent
+                 * agent/interface initialization
+                 */
+                snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_AUTONEG_UNKNOWN);
+                return 0;
+
+            default:
+                ERROR("failed to get link partner advertised autonegatiation "
+                      "state");
+                return TE_OS_RC(TE_TA_UNIX, rc);
         }
-        ERROR("failed to get link partner advertised autonegatiation "
-              "state");
-        return TE_OS_RC(TE_TA_UNIX, rc);
     }
 
     state = (ecmd.lp_advertising & ADVERTISED_Autoneg) ?
@@ -1892,16 +1942,25 @@ phy_pause_lp_adv_get(unsigned int gid, const char *oid, char *value,
 
     if ((rc = PHY_GET_PROPERTY(ifname, &ecmd)) != 0)
     {
-        /*
-         * Check for option support
-         */
-        if (rc == EOPNOTSUPP)
+        switch (rc)
         {
-            snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_PAUSE_UNKNOWN);
-            return 0;
+            case EOPNOTSUPP:
+                /*
+                 * Check for option support
+                 */
+            case ENODEV:
+                /*
+                 * It can return ENODEV for some interfaces if the last ones
+                 * are not active, and this case should not prevent
+                 * agent/interface initialization
+                 */
+                snprintf(value, RCF_MAX_VAL, "%d", TE_PHY_PAUSE_UNKNOWN);
+                return 0;
+
+            default:
+                ERROR("failed to get link partner advertised pause frame use");
+                return TE_OS_RC(TE_TA_UNIX, rc);
         }
-        ERROR("failed to get link partner advertised pause frame use");
-        return TE_OS_RC(TE_TA_UNIX, rc);
     }
 
     if (ecmd.lp_advertising & ADVERTISED_Pause)
