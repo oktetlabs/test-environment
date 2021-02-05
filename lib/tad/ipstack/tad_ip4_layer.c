@@ -1015,6 +1015,7 @@ tad_ip4_match_do_cb(csap_p           csap,
 
         h_cksum = calculate_checksum((void *)ip4_header_bin,
                                      WORD_4BYTE * pkt_data->hdr.dus[1].val_i32);
+        h_cksum = ~h_cksum;
 
         free(ip4_header_bin);
 

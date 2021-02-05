@@ -99,7 +99,7 @@ tad_l4_match_cksum_advanced(csap_p              csap,
     {
         size_t cksum_off = 6;
 
-        if (l4_proto != 17)
+        if (l4_proto != IPPROTO_UDP)
             return TE_RC(TE_TAD_CSAP, TE_EOPNOTSUPP);
 
         tad_pkt_read_bits(pdu, BITS_PER_BYTE * cksum_off,

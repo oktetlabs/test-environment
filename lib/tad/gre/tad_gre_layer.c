@@ -713,7 +713,7 @@ tad_gre_match_do_cb(csap_p           csap,
                  * We don't care about 16-bit word padding here and rely on
                  * calculate_checksum() behaviour which should keep an eye on it
                  */
-                cksum = calculate_checksum((void *)pdu_binary, pdu_len);
+                cksum = ~calculate_checksum((void *)pdu_binary, pdu_len);
                 free(pdu_binary);
                 if ((cksum_str_code == TAD_CKSUM_STR_CODE_CORRECT) !=
                     (cksum == CKSUM_CMP_CORRECT))

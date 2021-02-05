@@ -48,8 +48,28 @@ extern "C" {
 /** Zero timeval */
 #define tad_tv_zero             ((struct timeval){ 0, 0 })
 
-/** The value used to verify checksum correctness */
-#define CKSUM_CMP_CORRECT 0xffff
+/**
+ * The value used to verify checksum correctness.
+ *
+ * When checksum is originally computed, checksum field value
+ * is set to zero. If we recompute it with checksum field value
+ * set to one's complement of the original sum, we get
+ *
+ * sum + ~sum = 0xffff
+ *
+ * and the final checksum value is one's complement of this sum,
+ * i.e. 0x0.
+ *
+ * This also works for the special case of UDP where 0 value
+ * (one's complement of 0xffff sum) is replaced with 0xffff
+ * (see RFC 768):
+ *
+ * 0xffff + 0xffff = 0x1fffe -> 0xffff
+ *
+ * Here a carry to 17th bit occurs and 1 is added to 16bit 0xfffe in one's
+ * complement sum computation.
+ */
+#define CKSUM_CMP_CORRECT 0x0
 
 /** 'string' choice value to denote that correct checksums will match only */
 #define TAD_CKSUM_STR_VAL_CORRECT   "correct"
