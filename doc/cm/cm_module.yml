@@ -59,6 +59,16 @@
          Name:  none
          Value: 0, 1
 
+    - oid: "/agent/module/filename/fallback"
+      access: read_write
+      type: integer
+      d: |
+         Boolean node indicating whether to load module shipped with the
+         currently running kernel if path specified in /agent/filename doesn't
+         exist.
+         Name:  none
+         Value: 0, 1
+
     - oid: "/agent/module/parameter"
       access: read_create
       type: string
