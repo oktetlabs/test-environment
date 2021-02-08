@@ -187,6 +187,6 @@
     - oid: "/local:/test:/behaviour:cleanup_fd_leak_check"
       value: "${TE_TEST_BEHAVIOUR_CLEANUP_FD_LEAK_CHECK:-1}"
     - oid: "/local:/test:/behaviour:cleanup_fd_close_enforce_libc"
-      value: "${TE_TEST_BEHAVIOUR_CLEANUP_FD_CLOSE_ENFORCE_LIBC:-1}"
+      value: "${TE_TEST_BEHAVIOUR_CLEANUP_FD_CLOSE_ENFORCE_LIBC:-0}"
     - oid: "/local:/test:/behaviour:prologue_sleep"
       value: "${TE_TEST_BEHAVIOUR_PROLOGUE_SLEEP:-0}"
