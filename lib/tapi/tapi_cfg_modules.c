@@ -351,11 +351,11 @@ tapi_cfg_module_int_params_add(const char *ta_name, const char *mod_name,
     return rc;
 }
 
-/* See description in 'tapi_cfg_modules.h' */
 te_errno
-tapi_cfg_module_add_from_ta_dir(const char *ta_name,
-                                const char *module_name,
-                                te_bool     load_dependencies)
+tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
+                                   const char *module_name,
+                                   te_bool     load_dependencies,
+                                   te_bool     fallback)
 {
     te_string     module_path = TE_STRING_INIT;
     cfg_val_type  cvt = CVT_STRING;
@@ -463,6 +463,15 @@ tapi_cfg_module_add_from_ta_dir(const char *ta_name,
         }
     }
 
+    rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, fallback ? 1 : 0),
+                              "/agent:%s/module:%s/filename:/fallback:",
+                              ta_name, module_name);
+    if (rc != 0)
+    {
+        ERROR("Failed to set fallback node for the module instance");
+        goto out;
+    }
+
     rc = tapi_cfg_module_load(ta_name, module_name);
     if (rc != 0)
         ERROR("Failed to request the module insertion");
@@ -472,4 +481,24 @@ out:
     free(ta_dir);
 
     return TE_RC(TE_TAPI, rc);
+}
+
+/* See description in 'tapi_cfg_modules.h' */
+te_errno
+tapi_cfg_module_add_from_ta_dir(const char *ta_name,
+                                const char *module_name,
+                                te_bool     load_dependencies)
+{
+    return tapi_cfg_module_add_from_ta_dir_fb(ta_name, module_name,
+                                              load_dependencies, FALSE);
+}
+
+/* See description in 'tapi_cfg_modules.h' */
+te_errno
+tapi_cfg_module_add_from_ta_dir_or_fallback(const char *ta_name,
+                                            const char *module_name,
+                                            te_bool     load_dependencies)
+{
+    return tapi_cfg_module_add_from_ta_dir_fb(ta_name, module_name,
+                                              load_dependencies, TRUE);
 }

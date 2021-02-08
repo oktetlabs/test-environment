@@ -134,6 +134,22 @@ extern te_errno tapi_cfg_module_add_from_ta_dir(const char *ta_name,
                                                 te_bool     load_dependencies);
 
 /**
+ *
+ * Same as tapi_cfg_module_add_from_ta_dir(), but in case of a module file
+ * absence in a TA directory, module addition falls back on loading module
+ * shipped with the currently running kernel.
+ *
+ * @param  ta_name           The TA name
+ * @param  module_name       The filename without ".ko" extension
+ * @param  load_dependencies Take care of dependencies
+ *
+ * @retval Status code.
+ */
+extern te_errno tapi_cfg_module_add_from_ta_dir_or_fallback(const char *ta_name,
+                                                     const char *module_name,
+                                                     te_bool load_dependencies);
+
+/**
  * Finish changing a module. The resource is set to shared and other
  * agents can access the module in shared mode. After this, module
  * load/unload, parameters manipulation are prohibited.
