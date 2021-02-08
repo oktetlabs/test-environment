@@ -83,6 +83,8 @@ typedef struct te_kernel_module {
                              *   unloaded prior unloading the module
                              */
     te_bool loaded; /*< Is the module loaded into the system */
+    te_bool fallback; /*< Load module shipped with the kernel if file
+                          pointed by filename does not exist */
 
     LIST_HEAD(te_kernel_module_params, te_kernel_module_param) params;
 } te_kernel_module;
@@ -139,9 +141,20 @@ static te_errno module_param_add(unsigned int gid, const char *oid,
 static te_errno module_param_del(unsigned int gid, const char *oid,
                                  const char *param_name,
                                  const char *mod_name,...);
+static te_errno module_filename_fallback_get(unsigned int gid, const char *oid,
+                                             char *value,
+                                             const char *mod_name, ...);
+static te_errno module_filename_fallback_set(unsigned int gid, const char *oid,
+                                             const char *value,
+                                             const char *mod_name, ...);
+
+RCF_PCH_CFG_NODE_RW(node_filename_fallback,
+                    "fallback", NULL, NULL,
+                    module_filename_fallback_get,
+                    module_filename_fallback_set);
 
 RCF_PCH_CFG_NODE_RW(node_filename_load_dependencies,
-                    "load_dependencies", NULL, NULL,
+                    "load_dependencies", NULL, &node_filename_fallback,
                     module_filename_load_dependencies_get,
                     module_filename_load_dependencies_set);
 
@@ -228,11 +241,25 @@ mod_loaded(const char *mod_name)
     return stat(buf, &st) == 0;
 }
 
+static te_bool
+mod_filename_exist(te_kernel_module *module)
+{
+    struct stat st;
+
+    if (module->filename == NULL)
+        return FALSE;
+
+    return stat(module->filename, &st) == 0;
+}
+
 static te_errno
 mod_filename_modprobe_try_load_dependencies(te_kernel_module *module)
 {
     te_string cmd = TE_STRING_INIT;
     te_errno  rc;
+
+    if (!mod_filename_exist(module) && module->fallback)
+        return 0;
 
     if (!module->filename_load_dependencies)
         return 0;
@@ -383,11 +410,37 @@ out:
     tq_strings_free(&holders, free);
 }
 
+static const char *
+mod_get_module_run_name(te_kernel_module *module)
+{
+    if (module->filename == NULL)
+        return module->name;
+
+    if (mod_filename_exist(module))
+       return module->filename;
+    else if (module->fallback)
+        return module->name;
+
+    return module->filename;
+}
+
+static const char *
+mod_get_add_cmd_name(te_kernel_module *module)
+{
+    if (module->filename != NULL && !mod_filename_exist(module) &&
+        module->fallback)
+    {
+            return "modprobe";
+    }
+
+    return module->filename != NULL ? "insmod" : "modprobe";
+}
+
 static int
 mod_modprobe(te_kernel_module *module)
 {
     te_kernel_module_param *param;
-    const char *cmd = module->filename != NULL ? "insmod" : "modprobe";
+    const char *cmd = mod_get_add_cmd_name(module);
     te_string modprobe_cmd = TE_STRING_BUF_INIT(buf);
 
     /*
@@ -399,8 +452,7 @@ mod_modprobe(te_kernel_module *module)
 
     te_string_reset(&modprobe_cmd);
     te_string_append(&modprobe_cmd, "%s %s",
-                     cmd, module->filename != NULL ?
-                     module->filename : module->name);
+                     cmd, mod_get_module_run_name(module));
     LIST_FOREACH(param, &module->params, list)
     {
         te_string_append(&modprobe_cmd,
@@ -719,6 +771,41 @@ module_param_del(unsigned int gid, const char *oid,
 }
 
 static te_errno
+module_filename_fallback_get(unsigned int gid, const char *oid,
+                             char *value, const char *mod_name, ...)
+{
+    te_kernel_module *module = mod_find(mod_name);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    value[0] = (module != NULL && module->fallback) ? '1' : '0';
+    value[1] = '\0';
+
+    return 0;
+}
+
+static te_errno
+module_filename_fallback_set(unsigned int gid, const char *oid,
+                             const char *value, const char *mod_name, ...)
+{
+    te_kernel_module *module = mod_find(mod_name);
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    if (module == NULL)
+        return 0;
+
+    if (value[0] != '0' && value[0] != '1')
+        return TE_RC(TE_TA_UNIX, TE_EINVAL);
+
+    module->fallback = (value[0] == '1');
+
+    return 0;
+}
+
+static te_errno
 module_filename_load_dependencies_get(unsigned int  gid,
                                       const char   *oid,
                                       char         *value,
@@ -855,6 +942,7 @@ module_add(unsigned int gid, const char *oid,
     TE_SPRINTF(module->name, "%s", mod_name);
     module->filename = NULL;
     module->filename_load_dependencies = FALSE;
+    module->fallback = FALSE;
     LIST_INIT(&module->params);
 
     LIST_INSERT_HEAD(&modules, module, list);
