@@ -311,7 +311,8 @@ append_testpmd_command(unsigned int port_number, te_string *setup_cmd,
             break;
 
         case TESTPMD_PARAM_MTU:
-            CHECK_RC(te_string_append(setup_cmd, "port config mtu %u ", port_number));
+            CHECK_RC(te_string_append(setup_cmd, "port config mtu %u ",
+                                      port_number));
             setup = TRUE;
             break;
 
@@ -740,7 +741,8 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
      * Disable device start to execute setup commands first and then start the
      * device.
      */
-    tapi_dpdk_append_argument("--disable-device-start", &testpmd_argc, &testpmd_argv);
+    tapi_dpdk_append_argument("--disable-device-start",
+                              &testpmd_argc, &testpmd_argv);
 
     append_testpmd_nb_cores_arg(n_cpus_grabbed - 1 - service_cores_count,
                                 &testpmd_argc, &testpmd_argv);
