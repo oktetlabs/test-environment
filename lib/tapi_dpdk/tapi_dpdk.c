@@ -441,10 +441,8 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
                               params[i].type);
                         return TE_RC(TE_TAPI, TE_EINVAL);
                 }
-            }
-
-            if (param_is_set[i])
                 break;
+            }
         }
     }
 
