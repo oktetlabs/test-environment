@@ -382,36 +382,39 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
         {
             if (strcmp(pair->key, params[i].key) == 0)
             {
-                if (params[i].type == TESTPMD_PARAM_TYPE_STRING)
+                switch (params[i].type)
                 {
-                    if (strlen(pair->value) + 1 > TESTPMD_MAX_PARAM_LEN)
-                    {
-                        free(params);
-                        free(param_is_set);
-                        return rc;
-                    }
-                    strcpy(params[i].str_val, pair->value);
-                    param_is_set[i] = TRUE;
-                    break;
-                }
-                else if (params[i].type == TESTPMD_PARAM_TYPE_UINT64)
-                {
-                    if ((rc = te_strtoul(pair->value, 0, &params[i].val)) != 0)
-                    {
-                        free(params);
-                        free(param_is_set);
-                        return rc;
-                    }
-                    param_is_set[i] = TRUE;
+                    case TESTPMD_PARAM_TYPE_STRING:
+                        if (strlen(pair->value) + 1 > TESTPMD_MAX_PARAM_LEN)
+                        {
+                            free(params);
+                            free(param_is_set);
+                            return rc;
+                        }
+                        strcpy(params[i].str_val, pair->value);
+                        param_is_set[i] = TRUE;
+                        break;
 
-                    break;
-                }
-                else
-                {
-                    ERROR("Unknown testpmd parameter type %d", params[i].type);
-                    return TE_RC(TE_TAPI, TE_EINVAL);
+                    case TESTPMD_PARAM_TYPE_UINT64:
+                        rc = te_strtoul(pair->value, 0, &params[i].val);
+                        if (rc != 0)
+                        {
+                            free(params);
+                            free(param_is_set);
+                            return rc;
+                        }
+                        param_is_set[i] = TRUE;
+                        break;
+
+                    default:
+                        ERROR("Unknown testpmd parameter type %d",
+                              params[i].type);
+                        return TE_RC(TE_TAPI, TE_EINVAL);
                 }
             }
+
+            if (param_is_set[i])
+                break;
         }
     }
 
