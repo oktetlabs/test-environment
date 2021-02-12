@@ -299,21 +299,18 @@ append_testpmd_command(unsigned int port_number, te_string *setup_cmd,
                        te_string *start_cmd, testpmd_param_enum param,
                        const char *cmd_val_fmt, ...)
 {
-    va_list  ap;
     te_bool start = FALSE;
-    te_bool setup = FALSE;
+    te_bool add_val = TRUE;
 
     switch (param)
     {
         case TESTPMD_PARAM_LPBK_MODE:
             CHECK_RC(te_string_append(setup_cmd, "port config all loopback "));
-            setup = TRUE;
             break;
 
         case TESTPMD_PARAM_MTU:
             CHECK_RC(te_string_append(setup_cmd, "port config mtu %u ",
                                       port_number));
-            setup = TRUE;
             break;
 
         case TESTPMD_PARAM_START_TX_FIRST:
@@ -322,7 +319,9 @@ append_testpmd_command(unsigned int port_number, te_string *setup_cmd,
             break;
 
         case TESTPMD_PARAM_START:
-            CHECK_RC(te_string_append(start_cmd, "start\n"));
+            CHECK_RC(te_string_append(start_cmd, "start"));
+            start = TRUE;
+            add_val = FALSE;
             break;
 
         case TESTPMD_PARAM_TXPKTS:
@@ -334,18 +333,17 @@ append_testpmd_command(unsigned int port_number, te_string *setup_cmd,
             return;
     }
 
-    va_start(ap, cmd_val_fmt);
-    if (setup)
+    if (add_val)
     {
-        CHECK_RC(te_string_append_va(setup_cmd, cmd_val_fmt, ap));
-        CHECK_RC(te_string_append(setup_cmd, "\n"));
+        va_list  ap;
+
+        va_start(ap, cmd_val_fmt);
+        CHECK_RC(te_string_append_va(start ? start_cmd : setup_cmd,
+                                     cmd_val_fmt, ap));
+        va_end(ap);
     }
-    else if (start)
-    {
-        CHECK_RC(te_string_append_va(start_cmd, cmd_val_fmt, ap));
-        CHECK_RC(te_string_append(start_cmd, "\n"));
-    }
-    va_end(ap);
+
+    CHECK_RC(te_string_append(start ? start_cmd : setup_cmd, "\n"));
 }
 
 /*
