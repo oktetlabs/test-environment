@@ -56,6 +56,9 @@ typedef enum testpmd_param_enum {
     TESTPMD_PARAM_LPBK_MODE,
     TESTPMD_PARAM_START_TX_FIRST,
     TESTPMD_PARAM_START,
+    TESTPMD_PARAM_FLOW_CTRL_AUTONEG,
+    TESTPMD_PARAM_FLOW_CTRL_RX,
+    TESTPMD_PARAM_FLOW_CTRL_TX,
 } testpmd_param_enum;
 
 /*
@@ -93,6 +96,15 @@ static const testpmd_param default_testpmd_params[] = {
     [TESTPMD_PARAM_START] = {
         .key = MAKE_TESTPMD_CMD("start"),
         .type = TESTPMD_PARAM_TYPE_STRING, .str_val = "FALSE"},
+    [TESTPMD_PARAM_FLOW_CTRL_AUTONEG] = {
+        .key = MAKE_TESTPMD_CMD("flow_ctrl_autoneg"),
+        .type = TESTPMD_PARAM_TYPE_STRING, .str_val = "on"},
+    [TESTPMD_PARAM_FLOW_CTRL_RX] = {
+        .key = MAKE_TESTPMD_CMD("flow_ctrl_rx"),
+        .type = TESTPMD_PARAM_TYPE_STRING, .str_val = "on"},
+    [TESTPMD_PARAM_FLOW_CTRL_TX] = {
+        .key = MAKE_TESTPMD_CMD("flow_ctrl_tx"),
+        .type = TESTPMD_PARAM_TYPE_STRING, .str_val = "on"},
 };
 
 static size_t
@@ -301,9 +313,25 @@ append_testpmd_command(unsigned int port_number, te_string *setup_cmd,
 {
     te_bool start = FALSE;
     te_bool add_val = TRUE;
+    te_bool add_port = FALSE;
 
     switch (param)
     {
+        case TESTPMD_PARAM_FLOW_CTRL_AUTONEG:
+            CHECK_RC(te_string_append(setup_cmd, "set flow_ctrl autoneg "));
+            add_port = TRUE;
+            break;
+
+        case TESTPMD_PARAM_FLOW_CTRL_RX:
+            CHECK_RC(te_string_append(setup_cmd, "set flow_ctrl rx "));
+            add_port = TRUE;
+            break;
+
+        case TESTPMD_PARAM_FLOW_CTRL_TX:
+            CHECK_RC(te_string_append(setup_cmd, "set flow_ctrl tx "));
+            add_port = TRUE;
+            break;
+
         case TESTPMD_PARAM_LPBK_MODE:
             CHECK_RC(te_string_append(setup_cmd, "port config all loopback "));
             break;
@@ -342,6 +370,10 @@ append_testpmd_command(unsigned int port_number, te_string *setup_cmd,
                                      cmd_val_fmt, ap));
         va_end(ap);
     }
+
+    if (add_port)
+        CHECK_RC(te_string_append(start ? start_cmd : setup_cmd,
+                                  " %u", port_number));
 
     CHECK_RC(te_string_append(start ? start_cmd : setup_cmd, "\n"));
 }
