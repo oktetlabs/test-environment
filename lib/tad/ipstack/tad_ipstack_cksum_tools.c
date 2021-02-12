@@ -58,11 +58,21 @@ tad_does_cksum_match(csap_p              csap,
                      uint16_t            cksum,
                      unsigned int        layer)
 {
+    uint16_t cksum_cmp;
     te_errno rc;
+
+    switch (csap->layers[layer].proto_tag) {
+        case TE_PROTO_UDP:
+            cksum_cmp = 0xffff;
+            break;
+        default:
+            cksum_cmp = 0;
+            break;
+    }
 
     rc = ((cksum_str_code == TAD_CKSUM_STR_CODE_CORRECT ||
            cksum_str_code == TAD_CKSUM_STR_CODE_CORRECT_OR_ZERO) ==
-          (cksum == CKSUM_CMP_CORRECT)) ?
+          (cksum == cksum_cmp)) ?
          0 : TE_RC(TE_TAD_CSAP, TE_ETADNOTMATCH);
     if (rc != 0)
         F_VERB(CSAP_LOG_FMT "Match PDU vs layer %u checksum failed: %r\n"
