@@ -48,6 +48,7 @@ typedef enum testpmd_param_enum {
     TESTPMD_PARAM_MBUF_SIZE,
     TESTPMD_PARAM_MBUF_COUNT,
     TESTPMD_PARAM_TXPKTS,
+    TESTPMD_PARAM_BURST,
     TESTPMD_PARAM_TXQ,
     TESTPMD_PARAM_RXQ,
     TESTPMD_PARAM_TXD,
@@ -77,6 +78,8 @@ static const testpmd_param default_testpmd_params[] = {
     [TESTPMD_PARAM_TXPKTS] = {
         .key = MAKE_TESTPMD_CMD("txpkts"),
         .type = TESTPMD_PARAM_TYPE_STRING, .str_val = "64"},
+    [TESTPMD_PARAM_BURST] = { .key = MAKE_TESTPMD_ARG("burst"),
+        .type = TESTPMD_PARAM_TYPE_UINT64, .val = 32},
     [TESTPMD_PARAM_TXQ] = { .key = MAKE_TESTPMD_ARG("txq"),
         .type = TESTPMD_PARAM_TYPE_UINT64, .val = 1},
     [TESTPMD_PARAM_RXQ] = { .key = MAKE_TESTPMD_ARG("rxq"),
@@ -457,7 +460,8 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
     if (!param_is_set[TESTPMD_PARAM_MBUF_COUNT])
     {
         uint64_t needed_mbuf_count = (params[TESTPMD_PARAM_TXQ].val *
-                                      params[TESTPMD_PARAM_TXD].val) +
+                                      (params[TESTPMD_PARAM_TXD].val +
+                                       params[TESTPMD_PARAM_BURST].val) +
                                      (params[TESTPMD_PARAM_RXQ].val *
                                       params[TESTPMD_PARAM_RXD].val);
 
