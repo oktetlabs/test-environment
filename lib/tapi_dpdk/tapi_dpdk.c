@@ -47,6 +47,7 @@ typedef struct testpmd_param {
 typedef enum testpmd_param_enum {
     TESTPMD_PARAM_MBUF_SIZE,
     TESTPMD_PARAM_MBUF_COUNT,
+    TESTPMD_PARAM_MBCACHE,
     TESTPMD_PARAM_TXPKTS,
     TESTPMD_PARAM_BURST,
     TESTPMD_PARAM_TXQ,
@@ -75,6 +76,9 @@ static const testpmd_param default_testpmd_params[] = {
     [TESTPMD_PARAM_MBUF_COUNT] = {
         .key = MAKE_TESTPMD_ARG("total_num_mbufs"),
         .type = TESTPMD_PARAM_TYPE_UINT64, .val = 0},
+    [TESTPMD_PARAM_MBCACHE] = {
+        .key = MAKE_TESTPMD_ARG("mbcache"),
+        .type = TESTPMD_PARAM_TYPE_UINT64, .val = 250},
     [TESTPMD_PARAM_TXPKTS] = {
         .key = MAKE_TESTPMD_CMD("txpkts"),
         .type = TESTPMD_PARAM_TYPE_STRING, .str_val = "64"},
@@ -393,6 +397,7 @@ append_testpmd_command(unsigned int port_number, te_string *setup_cmd,
  */
 static te_errno
 adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
+                        unsigned int n_fwd_cpus,
                         te_string *cmdline_setup, te_string *cmdline_start,
                         int *argc_out, char ***argv_out)
 {
@@ -461,9 +466,11 @@ adjust_testpmd_defaults(te_kvpair_h *test_args, unsigned int port_number,
     {
         uint64_t needed_mbuf_count = (params[TESTPMD_PARAM_TXQ].val *
                                       (params[TESTPMD_PARAM_TXD].val +
-                                       params[TESTPMD_PARAM_BURST].val) +
+                                       params[TESTPMD_PARAM_BURST].val)) +
                                      (params[TESTPMD_PARAM_RXQ].val *
-                                      params[TESTPMD_PARAM_RXD].val);
+                                      params[TESTPMD_PARAM_RXD].val) +
+                                     params[TESTPMD_PARAM_MBCACHE].val *
+                                     n_fwd_cpus;
 
         char *value;
 
@@ -731,6 +738,8 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
         goto out;
     }
 
+    n_fwd_cpus = n_cpus_grabbed - 1 - service_cores_count;
+
     rc = cfg_get_instance_fmt(NULL, &working_dir, "/agent:%s/dir:", rpcs->ta);
     if (rc != 0)
     {
@@ -763,9 +772,9 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
 
     /* Separate EAL arguments from testpmd arguments */
     tapi_dpdk_append_argument("--", &testpmd_argc, &testpmd_argv);
-
-    rc = adjust_testpmd_defaults(test_args, port_number, &cmdline_setup,
-                                 &cmdline_start, &testpmd_argc, &testpmd_argv);
+    rc = adjust_testpmd_defaults(test_args, port_number, n_fwd_cpus,
+                                 &cmdline_setup, &cmdline_start,
+                                 &testpmd_argc, &testpmd_argv);
     if (rc != 0)
         goto out;
 
@@ -779,8 +788,7 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     tapi_dpdk_append_argument("--disable-device-start",
                               &testpmd_argc, &testpmd_argv);
 
-    append_testpmd_nb_cores_arg(n_cpus_grabbed - 1 - service_cores_count,
-                                &testpmd_argc, &testpmd_argv);
+    append_testpmd_nb_cores_arg(n_fwd_cpus, &testpmd_argc, &testpmd_argv);
     tapi_dpdk_append_argument("--cmdline-file", &testpmd_argc, &testpmd_argv);
     tapi_dpdk_append_argument(cmdline_file, &testpmd_argc, &testpmd_argv);
 
