@@ -149,7 +149,14 @@ find_cpu_generic(const char *pattern, const char *err_msg, size_t *n_indices,
     *n_indices = number_of_cpus;
 
     if (indices != NULL)
+    {
         *indices = result;
+    }
+    else
+    {
+        free(result);
+        result = NULL;
+    }
 
 out:
     cfg_free_oid(oid);
