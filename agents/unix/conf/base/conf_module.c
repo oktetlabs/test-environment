@@ -267,7 +267,8 @@ mod_filename_modprobe_try_load_dependencies(te_kernel_module *module)
     rc = te_string_append(&cmd,
                           "modinfo --field=depends %s | "
                           "xargs -d ',' -n1 | sed '$d' | "
-                          "xargs -n1 modprobe",
+"/bin/bash -c 'while read m; do lsmod | awk '\\''{print $1}'\\'' |  grep -qw $m || echo $m ; done' | "
+                          "xargs --no-run-if-empty -n1 modprobe",
                           module->filename);
     if (rc != 0)
         return rc;
