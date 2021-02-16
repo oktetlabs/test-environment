@@ -94,7 +94,7 @@ extern te_errno tapi_dpdk_l2fwd_get_stats(tapi_dpdk_l2fwd_job_t *l2fwd_job,
  * @return  Status code
  */
 extern te_errno tapi_dpdk_create_l2fwd_job(rcf_rpc_server *rpcs, tapi_env *env,
-                                           size_t n_fwd_cpus,
+                                           unsigned int n_fwd_cpus,
                                            const tapi_cpu_prop_t *prop,
                                            te_kvpair_h *test_args,
                                            tapi_dpdk_l2fwd_job_t *l2fwd_job);

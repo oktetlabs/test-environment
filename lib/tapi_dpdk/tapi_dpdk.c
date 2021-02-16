@@ -273,11 +273,11 @@ append_testpmd_arguments_from_test_args(te_kvpair_h *test_args, int *argc_out,
 }
 
 static void
-build_coremask_eal_arg(size_t n_cores, tapi_cpu_index_t *cpu_ids,
+build_coremask_eal_arg(unsigned int n_cores, tapi_cpu_index_t *cpu_ids,
                        lcore_mask_t *lcore_mask)
 {
     lcore_mask_t result = {{0}};
-    size_t i;
+    unsigned int i;
 
     for (i = 0; i < n_cores; i++)
         CHECK_RC(tapi_rte_lcore_mask_set_bit(&result, cpu_ids[i].thread_id));
@@ -287,7 +287,7 @@ build_coremask_eal_arg(size_t n_cores, tapi_cpu_index_t *cpu_ids,
 
 te_errno
 tapi_dpdk_build_eal_arguments(rcf_rpc_server *rpcs,
-                              tapi_env *env, size_t n_cpus,
+                              tapi_env *env, unsigned int n_cpus,
                               tapi_cpu_index_t *cpu_ids,
                               const char *program_name,
                               int *argc_out, char ***argv_out)
@@ -545,9 +545,11 @@ append_testpmd_cmdline_from_args(te_kvpair_h *test_args,
 
 te_errno
 tapi_dpdk_grab_cpus(const char *ta,
-                    size_t n_cpus_preferred, size_t n_cpus_required,
+                    unsigned int n_cpus_preferred,
+                    unsigned int n_cpus_required,
                     int numa_node,
-                    const tapi_cpu_prop_t *prop, size_t *n_cpus_grabbed,
+                    const tapi_cpu_prop_t *prop,
+                    unsigned int *n_cpus_grabbed,
                     tapi_cpu_index_t *cpu_ids)
 {
     tapi_cpu_index_t topology = {
@@ -581,11 +583,12 @@ tapi_dpdk_grab_cpus(const char *ta,
 }
 
 te_errno
-tapi_dpdk_grab_cpus_nonstrict_prop(const char *ta, size_t n_cpus_preferred,
-                                   size_t n_cpus_required,
+tapi_dpdk_grab_cpus_nonstrict_prop(const char *ta,
+                                   unsigned int n_cpus_preferred,
+                                   unsigned int n_cpus_required,
                                    int numa_node,
                                    const tapi_cpu_prop_t *prop,
-                                   size_t *n_cpus_grabbed,
+                                   unsigned int *n_cpus_grabbed,
                                    tapi_cpu_index_t *cpu_ids)
 {
     te_errno rc;
@@ -666,7 +669,8 @@ tapi_dpdk_get_vdev_port_number(const char *vdev, unsigned int *port_number)
 }
 
 void
-append_testpmd_nb_cores_arg(size_t n_fwd_cpus, int *argc_out, char ***argv_out)
+append_testpmd_nb_cores_arg(unsigned int n_fwd_cpus,
+                            int *argc_out, char ***argv_out)
 {
     te_string nb_cores = TE_STRING_INIT;
 
@@ -681,7 +685,8 @@ append_testpmd_nb_cores_arg(size_t n_fwd_cpus, int *argc_out, char ***argv_out)
 
 te_errno
 tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
-                             size_t n_fwd_cpus, const tapi_cpu_prop_t *prop,
+                             unsigned int n_fwd_cpus,
+                             const tapi_cpu_prop_t *prop,
                              te_kvpair_h *test_args,
                              tapi_dpdk_testpmd_job_t *testpmd_job)
 {
@@ -698,8 +703,8 @@ tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs, tapi_env *env,
     unsigned int port_number = 0;
     te_errno rc = 0;
     /* The first CPU is reserved by testpmd for command-line processing */
-    size_t n_cpus = n_fwd_cpus + 1;
-    size_t n_cpus_grabbed;
+    unsigned int n_cpus = n_fwd_cpus + 1;
+    unsigned int n_cpus_grabbed;
     tapi_job_factory_t *factory = NULL;
     unsigned int service_cores_count;
     int numa_node;

@@ -70,7 +70,7 @@ typedef struct tapi_dpdk_testpmd_job_t {
  */
 extern te_errno tapi_dpdk_create_testpmd_job(rcf_rpc_server *rpcs,
                                          tapi_env *env,
-                                         size_t n_fwd_cpus,
+                                         unsigned int n_fwd_cpus,
                                          const tapi_cpu_prop_t *prop,
                                          te_kvpair_h *test_args,
                                          tapi_dpdk_testpmd_job_t *testpmd_job);
@@ -171,7 +171,8 @@ extern void tapi_dpdk_append_argument(const char *argument,
  * @return          Status code
  */
 extern te_errno tapi_dpdk_build_eal_arguments(rcf_rpc_server *rpcs,
-                                              tapi_env *env, size_t n_cpus,
+                                              tapi_env *env,
+                                              unsigned int n_cpus,
                                               tapi_cpu_index_t *cpu_ids,
                                               const char *program_name,
                                               int *argc_c, char ***argv_out);
@@ -191,11 +192,11 @@ extern te_errno tapi_dpdk_build_eal_arguments(rcf_rpc_server *rpcs,
  * @return Status code
  */
 extern te_errno tapi_dpdk_grab_cpus(const char *ta,
-                                    size_t n_cpus_preferred,
-                                    size_t n_cpus_required,
+                                    unsigned int n_cpus_preferred,
+                                    unsigned int n_cpus_required,
                                     int numa_node,
                                     const tapi_cpu_prop_t *prop,
-                                    size_t *n_cpus_grabbed,
+                                    unsigned int *n_cpus_grabbed,
                                     tapi_cpu_index_t *cpu_ids);
 
 /*
@@ -214,11 +215,11 @@ extern te_errno tapi_dpdk_grab_cpus(const char *ta,
  * @return Status code
  */
 extern te_errno tapi_dpdk_grab_cpus_nonstrict_prop(const char *ta,
-                                                   size_t n_cpus_preferred,
-                                                   size_t n_cpus_required,
+                                                   unsigned int n_cpus_preferred,
+                                                   unsigned int n_cpus_required,
                                                    int numa_node,
                                                    const tapi_cpu_prop_t *prop,
-                                                   size_t *n_cpus_grabbed,
+                                                   unsigned int *n_cpus_grabbed,
                                                    tapi_cpu_index_t *cpu_ids);
 /*
  * Get vdev argument value from EAL arguments if exists.

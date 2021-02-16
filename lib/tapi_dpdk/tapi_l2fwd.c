@@ -145,7 +145,7 @@ append_default_l2fwd_args(int *l2fwd_argc, char ***l2fwd_argv)
 
 te_errno
 tapi_dpdk_create_l2fwd_job(rcf_rpc_server *rpcs, tapi_env *env,
-                           size_t n_fwd_cpus, const tapi_cpu_prop_t *prop,
+                           unsigned int n_fwd_cpus, const tapi_cpu_prop_t *prop,
                            te_kvpair_h *test_args,
                            tapi_dpdk_l2fwd_job_t *l2fwd_job)
 {
@@ -157,8 +157,8 @@ tapi_dpdk_create_l2fwd_job(rcf_rpc_server *rpcs, tapi_env *env,
     const char *vdev_arg = NULL;
     unsigned int port_number = 0;
     te_errno rc = 0;
-    size_t n_cpus = n_fwd_cpus;
-    size_t n_cpus_grabbed;
+    unsigned int n_cpus = n_fwd_cpus;
+    unsigned int n_cpus_grabbed;
     tapi_job_factory_t *factory = NULL;
     unsigned int service_cores_count;
     int numa_node;
