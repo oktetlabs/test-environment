@@ -558,17 +558,25 @@ tapi_dpdk_grab_cpus(const char *ta,
         .core_id = TAPI_CPU_ID_UNSPEC,
         .thread_id = TAPI_CPU_ID_UNSPEC,
     };
+    size_t n_threads;
+    unsigned int to_grab;
     te_errno rc;
 
+    rc = tapi_cfg_get_all_threads(ta, &n_threads, NULL);
+    if (rc != 0)
+        return rc;
+
+    to_grab = MIN(n_cpus_preferred, n_threads);
+
     rc = tapi_cfg_cpu_grab_multiple_with_id(ta, prop, &topology,
-                                            n_cpus_preferred, cpu_ids);
+                                            to_grab, cpu_ids);
     if (rc == 0)
     {
-        *n_cpus_grabbed = n_cpus_preferred;
+        *n_cpus_grabbed = to_grab;
         return 0;
     }
 
-    if (n_cpus_preferred == n_cpus_required)
+    if (to_grab == n_cpus_required)
         return rc;
 
     rc = tapi_cfg_cpu_grab_multiple_with_id(ta, prop, &topology,
