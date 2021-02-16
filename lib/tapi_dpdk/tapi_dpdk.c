@@ -607,11 +607,11 @@ tapi_dpdk_grab_cpus_nonstrict_prop(const char *ta, size_t n_cpus_preferred,
     }
 
     rc = tapi_cfg_cpu_grab_multiple_on_single_node(ta, prop,
-                                                   n_cpus_required,
+                                                   n_cpus_preferred,
                                                    cpu_ids);
     if (rc == 0)
     {
-        *n_cpus_grabbed = n_cpus_required;
+        *n_cpus_grabbed = n_cpus_preferred;
         return 0;
     }
 
