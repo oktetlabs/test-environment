@@ -289,6 +289,7 @@ free_ta_list(void)
             free(task);
         }
 
+        free(agent->cold_reboot_ta);
         free(agent);
     }
     agents = NULL;
