@@ -286,6 +286,16 @@ typedef struct unix_ta {
     struct rcf_net_connection  *conn;   /**< Connection handle */
 } unix_ta;
 
+/** Free resources allocated for TA control structure */
+static void
+rcfunix_ta_free(unix_ta *ta)
+{
+    te_string_free(&ta->ssh_opts);
+    te_string_free(&ta->cmd_prefix);
+    te_string_free(&ta->start_prefix);
+    free(ta);
+}
+
 /**
  * Execute the command without forever blocking.
  *
@@ -475,7 +485,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
     static unsigned int seqno = 0;
 
     te_errno    rc;
-    unix_ta    *ta;
+    unix_ta    *ta = NULL;
     char        ta_type_dir[RCF_MAX_PATH];
     te_string   cmd = TE_STRING_INIT;
     te_string   cfg_str = TE_STRING_INIT;
@@ -552,6 +562,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
               "provided buffer too small",
               ta_type, logname, (unsigned int)getpid(), timestamp, seqno);
         te_string_free(&cfg_str);
+        rcfunix_ta_free(ta);
         return TE_ESMALLBUF;
     }
 
@@ -707,6 +718,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         ERROR("Failed to compose TA command prefix: %r", rc);
         te_string_free(&cfg_str);
         te_string_free(&cmd);
+        rcfunix_ta_free(ta);
         return rc;
     }
 
@@ -753,6 +765,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         ERROR("Failed to compose TA copy command: %r\n%s", rc, cmd.ptr);
         te_string_free(&cfg_str);
         te_string_free(&cmd);
+        rcfunix_ta_free(ta);
         return rc;
     }
 
@@ -778,6 +791,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
             ERROR("Failed cmd: %s", cmd.ptr);
             te_string_free(&cfg_str);
             te_string_free(&cmd);
+            rcfunix_ta_free(ta);
             return rc;
         }
     }
@@ -854,6 +868,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         ERROR("Failed to compose TA start command: %r\n%s", rc, cmd.ptr);
         te_string_free(&cfg_str);
         te_string_free(&cmd);
+        rcfunix_ta_free(ta);
         return rc;
     }
 
@@ -867,6 +882,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
         ERROR("Failed cmd: %s", cmd.ptr);
         te_string_free(&cfg_str);
         te_string_free(&cmd);
+        rcfunix_ta_free(ta);
         return rc;
     }
 
@@ -893,6 +909,7 @@ rcfunix_start(const char *ta_name, const char *ta_type,
 bad_conf:
     RING("Bad configuration for TA '%s'", ta_name);
     te_string_free(&cfg_str);
+    rcfunix_ta_free(ta);
     return TE_RC(TE_RCF_UNIX, TE_EINVAL);
 }
 
@@ -922,7 +939,10 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
     RING("Finish method is called for TA %s", ta->ta_name);
 
     if (*(ta->flags) & TA_FAKE)
-        return 0;
+    {
+        rc = 0;
+        goto done;
+    }
 
     if ((ta->pid > 0) &&
         ((*(ta->flags) & TA_DEAD) ||
@@ -941,14 +961,14 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
                      ta->cmd_prefix.ptr, rcfunix_ta_sudo(ta), ta->pid,
                      ta->cmd_suffix);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
-                return rc;
+                goto done;
 
             rc = system_with_timeout(ta->kill_timeout,
                      "%s%skill -9 %d%s " RCFUNIX_REDIRECT,
                      ta->cmd_prefix.ptr, rcfunix_ta_sudo(ta), ta->pid,
                      ta->cmd_suffix);
             if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
-                return rc;
+                goto done;
         }
 
         rc = system_with_timeout(ta->kill_timeout,
@@ -956,14 +976,14 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
                  ta->cmd_prefix.ptr, rcfunix_ta_sudo(ta), ta->run_dir,
                  ta->cmd_suffix);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
-            return rc;
+            goto done;
 
         rc = system_with_timeout(ta->kill_timeout,
                  "%s%skillall -9 %s/ta%s " RCFUNIX_REDIRECT,
                  ta->cmd_prefix.ptr, rcfunix_ta_sudo(ta),
                  ta->run_dir, ta->cmd_suffix);
         if (rc == TE_RC(TE_RCF_UNIX, TE_ETIMEDOUT))
-            return rc;
+            goto done;
     }
 
     rc = te_string_append(&cmd, "%srm -rf %s%s",
@@ -993,6 +1013,7 @@ rcfunix_finish(rcf_talib_handle handle, const char *parms)
 
 done:
     te_string_free(&cmd);
+    rcfunix_ta_free(ta);
     return rc;
 }
 
