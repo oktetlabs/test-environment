@@ -43,6 +43,8 @@
 #include <dirent.h>
 #endif
 
+#include <limits.h>
+
 #include "rcf_pch.h"
 #include "rcf_ch_api.h"
 #include "conf_common.h"
@@ -253,29 +255,114 @@ mod_filename_exist(te_kernel_module *module)
 }
 
 static te_errno
-mod_filename_modprobe_try_load_dependencies(te_kernel_module *module)
+mod_get_module_res_name(const char *modname, const char *filename,
+                        te_string *res_name)
+{
+    struct stat st;
+    te_errno rc;
+
+    if (filename != NULL)
+        return te_string_append(res_name, "%s", filename);
+
+    rc = te_string_append(res_name, "%s/%s.ko", ta_dir, modname);
+    if (rc != 0)
+        return rc;
+
+    if (stat(res_name->ptr, &st) == 0)
+        return 0;
+
+    te_string_free(res_name);
+    return te_string_append(res_name, "%s", modname);
+}
+
+static te_errno
+mod_make_cmd_printing_dependencies(const char *modname,
+                                   const char *filename,
+                                   te_string *cmd)
+{
+    te_string res_name = TE_STRING_INIT;
+    te_errno rc;
+
+    rc = mod_get_module_res_name(modname, filename, &res_name);
+    if (rc != 0)
+        return rc;
+
+    rc = te_string_append(cmd,
+                          "modinfo --field=depends %s | "
+                          "xargs -d ',' -n1 | sed '$d'",
+                          res_name.ptr);
+
+    te_string_free(&res_name);
+    return rc;
+}
+
+static te_errno
+mod_load_with_dependencies(const char *modname, const char *filename,
+                           te_bool load_itself)
 {
     te_string cmd = TE_STRING_INIT;
-    te_errno  rc;
+    te_errno rc;
+    FILE *fp;
+    pid_t cmd_pid;
+    char dep_name[NAME_MAX + 1];
+    char *c;
 
+    if (mod_loaded(modname))
+        return 0;
+
+    rc = mod_make_cmd_printing_dependencies(modname, filename, &cmd);
+    if (rc != 0)
+        goto out;
+
+    rc = ta_popen_r(cmd.ptr, &cmd_pid, &fp);
+    if (rc != 0)
+        goto out;
+
+    while ((c = fgets(dep_name, sizeof(dep_name), fp)) != NULL)
+    {
+        while (c != (dep_name + sizeof(dep_name)) && *c++ != '\n');
+        if (*(--c) != '\n')
+            goto close;
+        *c = '\0';
+        rc = mod_load_with_dependencies(dep_name, NULL, TRUE);
+        if (rc != 0)
+            goto close;
+    }
+    if (ferror(fp))
+    {
+        rc = te_rc_os2te(errno);
+        goto close;
+    }
+
+    if (load_itself)
+    {
+        te_string_free(&cmd);
+        rc = te_string_append(&cmd,
+                "path=%s/%s.ko ; test -f $path && insmod $path || modprobe %s",
+                ta_dir, modname, modname);
+        if (rc != 0)
+            goto close;
+
+        rc = ta_system(cmd.ptr);
+    }
+
+close:
+    ta_pclose_r(cmd_pid, fp);
+out:
+    te_string_free(&cmd);
+    return rc;
+}
+
+static te_errno
+mod_filename_modprobe_try_load_dependencies(te_kernel_module *module)
+{
     if (!mod_filename_exist(module) && module->fallback)
         return 0;
 
     if (!module->filename_load_dependencies)
         return 0;
 
-    rc = te_string_append(&cmd,
-                          "modinfo --field=depends %s | "
-                          "xargs -d ',' -n1 | sed '$d' | "
-"/bin/bash -c 'while read m; do lsmod | awk '\\''{print $1}'\\'' |  grep -qw $m || echo $m ; done' | "
-                          "xargs --no-run-if-empty -n1 modprobe",
-                          module->filename);
-    if (rc != 0)
-        return rc;
-
-    rc = ta_system(cmd.ptr);
-    te_string_free(&cmd);
-    return rc;
+    return mod_load_with_dependencies(module->name, module->filename, FALSE);
 }
 
 static te_errno
