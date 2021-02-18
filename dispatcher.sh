@@ -99,6 +99,7 @@ Generic options:
 
   --build-autotools             Build using autotools (autoconf, automake, make)
   --build-meson                 Build using meson/ninja
+  --builder-debug               Be more verbose when build
 
   --build-only                  Build TE, do not run RCF and Configurator,
                                 build but do not run Test Suites
@@ -330,6 +331,7 @@ LOGGER_OPTS=
 CS_OPTS=
 # Building options
 BUILD=autotools
+BUILDER_DEBUG=
 BUILDER_OPTS=
 BUILD_MAKEFLAGS=
 PROFILE_BUILD=
@@ -642,6 +644,7 @@ process_opts()
 
             --build-autotools)  BUILD=autotools ;;
             --build-meson)      BUILD=meson ;;
+            --builder-debug)    BUILDER_DEBUG=yes ;;
 
             --build-only) RCF= ; CS=
                           TESTER_OPTS="${TESTER_OPTS} --no-run --no-cs" ;;
@@ -1023,6 +1026,7 @@ fi
 export TE_EXT_LIBS_FILE="${TE_BUILD}/te_ext_libs_files"
 touch "${TE_EXT_LIBS_FILE}"
 
+export BUILDER_DEBUG
 TE_BUILD_LOG="${TE_RUN_DIR}/build.log"
 case "${BUILD}" in
 autotools)

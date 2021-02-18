@@ -16,6 +16,10 @@ declare -a RSYNC
 RSYNC+=(rsync)
 RSYNC+=("--exclude=.git")
 RSYNC+=(-a)
+if test -n "$BUILDER_DEBUG" ; then
+     RSYNC+=("-vv")
+     RSYNC+=("-stat")
+fi
 
 declare -a RSYNC_TO_ARGS
 RSYNC_TO_ARGS+=(--delete-during)
