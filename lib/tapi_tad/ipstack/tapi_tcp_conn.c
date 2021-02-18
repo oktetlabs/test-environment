@@ -933,10 +933,28 @@ tcp_conn_pkt_handler(const char *pkt_file, void *user_param)
     {
         pkt->len = data_len;
 
-        pkt->data = malloc(pld_len = data_len);
-        rc = asn_read_value_field(tcp_message, pkt->data, &pld_len,
-                                  "payload.#bytes");
-        CHECK_ERROR("read TCP payload error");
+        /*
+         * payload.#bytes may contain more bytes than data_len when
+         * TCP packet is so short that it does not occupy minimum
+         * Ethernet frame size (64 bytes) and padding is added at the end.
+         */
+        rc = asn_get_length(tcp_message, "payload.#bytes");
+        if (rc < 0)
+        {
+            ERROR("%s(id %d): failed to get length of payload.#bytes",
+                  __FUNCTION__, conn_descr->id);
+            asn_free_value(tcp_message);
+            return;
+        }
+        else if (rc > 0)
+        {
+            pld_len = rc;
+            pkt->data = malloc(pld_len);
+            rc = asn_read_value_field(tcp_message, pkt->data, &pld_len,
+                                      "payload.#bytes");
+            CHECK_ERROR("read TCP payload error");
+        }
+
         if ((int)pld_len < data_len)
         {
             WARN("Truncated TCP/IPv4 packet is received");
