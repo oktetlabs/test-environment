@@ -285,7 +285,7 @@ build_platform() {
         break
     done
 
-    if test ! -d build ; then
+    if test ! -f build/build.ninja ; then
         te_eval_or_ssh "${p}" \
             "cd \"${ws}\" || exit $? ;
              ${build_m32} && source ${ws}/src/engine/builder/te_meson_m32_exports ;
