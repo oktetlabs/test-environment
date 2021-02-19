@@ -349,6 +349,12 @@ build_platform() {
     return ${result}
 }
 
+trap_sigint() {
+    local ret=$?
+    echo "WARN: Platform ${1}: SIGINT signal is received, exiting." >&2
+    exit $ret
+}
+
 do_build() {
     local p="$1" ; shift
     local meson_nv_args="$1" ; shift
@@ -368,6 +374,8 @@ do_build() {
 
     mkdir -p platforms/"${p}" "${TE_INSTALL}/${p}"
     pushd platforms/"${p}"
+
+    trap "trap_sigint $p" SIGINT
 
     build_platform "${p}" "${meson_nv_args}" "${meson_args}" \
         || error "Platform ${p} build failed"

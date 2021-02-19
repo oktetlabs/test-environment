@@ -820,6 +820,12 @@ wait_for_log_files() {
     return 0
 }
 
+trap_sigint() {
+    local ret=$?
+    echo "ERROR: $(basename $0): SIGINT signal is received, build stopped." >&2
+    exit $ret
+}
+
 do_build() {
     local p
     local pid
@@ -831,6 +837,8 @@ do_build() {
     local te_agents="${TE_INSTALL}"/agents
 
     mkdir -p "${te_agents}"
+
+    trap trap_sigint INT
 
     # Start building in background
     for p in ${TE_BS_PLATFORMS} ; do
