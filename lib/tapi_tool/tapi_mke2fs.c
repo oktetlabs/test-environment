@@ -62,7 +62,7 @@ tapi_mke2fs_create(tapi_job_factory_t *factory, const tapi_mke2fs_opt *opt,
     rc = tapi_job_opt_build_args(path, mke2fs_binds, opt, &mke2fs_args);
     if (rc != 0)
     {
-        ERROR("Failed to build mke2fs options");
+        ERROR("Failed to build mke2fs options, error: %r", rc);
         goto out;
     }
 
@@ -98,7 +98,7 @@ tapi_mke2fs_create(tapi_job_factory_t *factory, const tapi_mke2fs_opt *opt,
                         });
     if (rc != 0)
     {
-        ERROR("Failed to create job instance for mke2fs tool");
+        ERROR("Failed to create job instance for mke2fs tool, error: %r", rc);
         goto out;
     }
 
@@ -155,7 +155,7 @@ tapi_mke2fs_destroy(tapi_mke2fs_app *app)
 
     rc = tapi_job_destroy(app->job, TAPI_MKE2FS_TERM_TIMEOUT_MS);
     if (rc != 0)
-        ERROR("Failed to destroy mke2fs job");
+        ERROR("Failed to destroy mke2fs job, error: %r", rc);
 
     free(app);
 
@@ -189,21 +189,21 @@ tapi_mke2fs_do(tapi_job_factory_t *factory, const tapi_mke2fs_opt *opt,
     rc = tapi_mke2fs_create(factory, opt, &app);
     if (rc != 0)
     {
-        ERROR("Failed to create tapi_mke2fs_app");
+        ERROR("Failed to create tapi_mke2fs_app, error: %r", rc);
         return rc;
     }
 
     rc = tapi_mke2fs_start(app);
     if (rc != 0)
     {
-        ERROR("Failed to start mke2fs");
+        ERROR("Failed to start mke2fs, error: %r", rc);
         return rc;
     }
 
     rc = tapi_mke2fs_wait(app, timeout_ms);
     if (rc != 0)
     {
-        ERROR("Failed to wait for mke2fs");
+        ERROR("Failed to wait for mke2fs, error: %r", rc);
         return rc;
     }
 
