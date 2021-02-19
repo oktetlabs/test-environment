@@ -8,7 +8,11 @@ TAGS
 tags
 doc/generated
 doxygen.warn
-*.in
+Makefile.in
+config.h.in
+include/te_config_internal.h.in
+lib/agentlib/agentlib_config.h.in
+package.h.in
 *~
 .idea
 CMakeLists.txt
