@@ -1687,8 +1687,12 @@ main(int argc, char **argv)
     
     if (strcmp(argv[1], "exec") == 0)
     {
-        void (* func)(int, char **) = rcf_ch_symbol_addr(argv[2], 1);
-        
+        void (* func)(int, char **);
+
+        /* TA fork/exec to call specified function */
+        te_log_init(NULL, logfork_log_message);
+
+        func = rcf_ch_symbol_addr(argv[2], 1);
         if (func == NULL)
         {
             LOG_PRINT("Cannot resolve address of the function %s", argv[2]);
