@@ -32,6 +32,50 @@
 #include "tapi_rpc_internal.h"
 #include "tapi_rpc_unistd.h"
 
+/**
+ * Obtain pointer namespace name from RPC server.
+ *
+ * @param rpcs          RPC server.
+ * @param id            Namespace ID.
+ * @param name          Pointer to the obtained name (it should not
+ *                      be freed by the caller).
+ *
+ * @return Status code.
+ */
+static te_errno
+rpcs_get_namespace(rcf_rpc_server *rpcs, const rpc_ptr_id_namespace id,
+                   char **name)
+{
+    te_errno rc;
+    char *remote_ns;
+
+    rc = rcf_rpc_namespace_id2str(rpcs, id, &remote_ns);
+    if (rc != 0)
+        return rc;
+
+    if (id >= rpcs->namespaces_len)
+    {
+        const size_t n = id + 1;
+        char **tmp = (char **)realloc(rpcs->namespaces, n * sizeof(char *));
+
+        if (tmp == NULL)
+        {
+            ERROR("%s(): out of memory!", __FUNCTION__);
+            free(remote_ns);
+            return TE_RC(TE_TAPI, TE_ENOMEM);
+        }
+        memset(tmp + rpcs->namespaces_len, 0,
+               (n - rpcs->namespaces_len) * sizeof(char*));
+
+        rpcs->namespaces = tmp;
+        rpcs->namespaces_len = n;
+    }
+
+    rpcs->namespaces[id] = remote_ns;
+    *name = remote_ns;
+    return 0;
+}
+
 /* See description in tapi_rpc_internal.h */
 te_errno
 tapi_rpc_namespace_check(rcf_rpc_server *rpcs, rpc_ptr ptr, const char* ns,
@@ -57,9 +101,11 @@ tapi_rpc_namespace_check(rcf_rpc_server *rpcs, rpc_ptr ptr, const char* ns,
         }
     }
 
-    rc = rcf_rpc_namespace_id2str(rpcs, id, &remote_ns);
+    rc = rpcs_get_namespace(rpcs, id, &remote_ns);
     if (rc)
     {
+        ERROR("%s:%d: failed to obtain namespace %d from RPC server",
+              function, line, id);
         rpcs->_errno = rc;
         return rpcs->_errno;
     }
@@ -73,26 +119,6 @@ tapi_rpc_namespace_check(rcf_rpc_server *rpcs, rpc_ptr ptr, const char* ns,
         return rpcs->_errno;
     }
 
-    if (id >= rpcs->namespaces_len)
-    {
-        const size_t n = id + 1;
-        char **tmp = (char**)realloc(rpcs->namespaces, n * sizeof(char*));
-
-        if (tmp == NULL)
-        {
-            ERROR("%s:%d: Out of memory!", function, line);
-            free(remote_ns);
-            rpcs->_errno = TE_RC(TE_TAPI, TE_ENOMEM);
-            return rpcs->_errno;
-        }
-        memset(tmp + rpcs->namespaces_len, 0,
-               (n - rpcs->namespaces_len) * sizeof(char*));
-
-        rpcs->namespaces = tmp;
-        rpcs->namespaces_len = n;
-    }
-
-    rpcs->namespaces[id] = remote_ns;
     return 0;
 }
 
@@ -101,8 +127,21 @@ const char*
 tapi_rpc_namespace_get(rcf_rpc_server *rpcs, rpc_ptr ptr)
 {
     const rpc_ptr_id_namespace id = RPC_PTR_ID_GET_NS(ptr);
-    if (ptr && id < rpcs->namespaces_len && rpcs->namespaces[id] != NULL)
-        return rpcs->namespaces[id];
+
+    if (ptr != RPC_NULL)
+    {
+        if (id < rpcs->namespaces_len && rpcs->namespaces[id] != NULL)
+            return rpcs->namespaces[id];
+
+        if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
+        {
+            char *ns = NULL;
+
+            if (rpcs_get_namespace(rpcs, id, &ns) == 0)
+                return ns;
+        }
+    }
+
     return NULL;
 }
 

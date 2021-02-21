@@ -1203,22 +1203,29 @@ rcf_rpc_namespace_id2str(rcf_rpc_server *rpcs, rpc_ptr_id_namespace id,
     rc = rcf_ta_call_rpc(rpcs->ta, rpcs->sid, rpcs->name,
                          rpcs->timeout, "namespace_id2str", &in, &out);
 
-    RING("RPC (%s, %s): namespace_id2str(%d) -> %s[%d], %r, rc %r",
-         rpcs->ta, rpcs->name, id,
-         out.str.str_val, out.str.str_len, out.retval, rc);
+    if (rc != 0 || out.retval != 0)
+    {
+        ERROR("RPC (%s, %s): namespace_id2str(%d) -> %s[%d], %r, rc %r",
+              rpcs->ta, rpcs->name, id,
+              out.str.str_val, out.str.str_len, out.retval, rc);
+    }
 
     if (rc != 0)
         return rc;
     if (out.retval != 0)
         return out.retval;
 
+    /* Name of the default pointer namespace is empty string. */
     if (out.str.str_val == NULL || out.str.str_len == 0)
-    {
-        ERROR("Empty string is returned as RPC pointer namespace");
-        return TE_RC(TE_RCF_API, TE_EINVAL);
-    }
+        *str = strdup("");
+    else
+        *str = strndup(out.str.str_val, out.str.str_len);
 
-    *str = strndup(out.str.str_val, out.str.str_len);
+    if (*str == NULL)
+    {
+        ERROR("%s(): out of memory", __FUNCTION__);
+        return TE_RC(TE_RCF_API, TE_ENOMEM);
+    }
 
     return 0;
 }
