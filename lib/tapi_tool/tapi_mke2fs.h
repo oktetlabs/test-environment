@@ -133,7 +133,7 @@ extern te_errno tapi_mke2fs_check_journal(tapi_mke2fs_app *app);
  */
 extern te_errno tapi_mke2fs_do(tapi_job_factory_t *factory,
                                const tapi_mke2fs_opt *opt,
-                               tapi_mke2fs_app *app,
+                               tapi_mke2fs_app **app,
                                int timeout_ms);
 
 #ifdef __cplusplus
