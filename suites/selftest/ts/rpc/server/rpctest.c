@@ -46,11 +46,11 @@ main(int argc, char **argv)
     if ((rc = rcf_rpc_server_thread_create(srv2, "Thread", &srv3)) != 0)
         TEST_FAIL("Cannot create threadserver %r", rc);
 
-    s1 = rpc_socket(srv1, RPC_AF_INET, RPC_SOCK_DGRAM, RPC_IPPROTO_UDP);
+    s1 = rpc_socket(srv1, RPC_PF_INET, RPC_SOCK_DGRAM, RPC_IPPROTO_UDP);
 
-    s2 = rpc_socket(srv2, RPC_AF_INET, RPC_SOCK_DGRAM, RPC_IPPROTO_UDP);
+    s2 = rpc_socket(srv2, RPC_PF_INET, RPC_SOCK_DGRAM, RPC_IPPROTO_UDP);
 
-    s3 = rpc_socket(srv3, RPC_AF_INET, RPC_SOCK_DGRAM, RPC_IPPROTO_UDP);
+    s3 = rpc_socket(srv3, RPC_PF_INET, RPC_SOCK_DGRAM, RPC_IPPROTO_UDP);
 
     rpc_close(srv1, s1);
     rpc_close(srv2, s2);
