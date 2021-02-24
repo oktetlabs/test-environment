@@ -89,17 +89,19 @@
 #define LINUX_VLAN_SUPPORT 0
 #endif
 
-/* { required for sysctl on netbsd */
-#if HAVE_SYS_PARAM_H
-#include <sys/param.h>
-#endif
-/* } required for sysctl on netbsd */
-#if HAVE_SYS_SYSCTL_H
-#include <sys/sysctl.h>
-#endif
 #if defined(HAVE_SYS_SYSCTL_H) && defined(HAVE_SYS_TYPES_H) && \
     !defined(__linux__) && !defined(BSD_IP_FW)
 #define BSD_IP_FW 1
+#endif
+
+#if defined(HAVE_SYS_PARAM_H) && defined(BSD_IP_FW)
+/* { required for sysctl on netbsd */
+#include <sys/param.h>
+/* } required for sysctl on netbsd */
+#endif
+
+#if defined(HAVE_SYS_SYSCTL_H) && defined(BSD_IP_FW)
+#include <sys/sysctl.h>
 #endif
 
 /* IP forwarding on Solaris: */
