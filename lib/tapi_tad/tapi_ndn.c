@@ -2592,7 +2592,7 @@ tapi_eth_transform_ptrn_on_rx(receive_transform *rx_transform,
 
         if (rx_transform->hw_flags & RX_XFRM_HW_OFFL_VLAN_STRIP)
         {
-            rc = asn_free_descendant(eth, "#eth.tagged");
+            rc = asn_free_child(eth, PRIVATE, NDN_TAG_VLAN_TAGGED);
             if (rc != 0)
             {
                 ERROR("Failed to free VLAN tag");
@@ -2611,7 +2611,7 @@ tapi_eth_transform_ptrn_on_rx(receive_transform *rx_transform,
         if ((rx_transform->hw_flags & RX_XFRM_HW_OFFL_VLAN_STRIP) ||
             (rx_transform->hw_flags & RX_XFRM_HW_OFFL_QINQ_STRIP))
         {
-            rc = asn_free_descendant(eth, "#eth.tagged");
+            rc = asn_free_child(eth, PRIVATE, NDN_TAG_VLAN_TAGGED);
             if (rc != 0)
             {
                 ERROR("Failed to free VLAN tag");
