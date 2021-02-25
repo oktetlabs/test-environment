@@ -24,12 +24,16 @@ fi
 declare -a RSYNC_TO_ARGS
 RSYNC_TO_ARGS+=(--delete-during)
 
+# This is used when copying sources
+declare -a RSYNC_SRC_IGNORES
+RSYNC_SRC_IGNORES+=("--filter=:- .gitignore")
+
 error() {
     echo ERROR: $* >&2
     exit 1
 }
 
-# rsync_to PLATFORM SRC.. DST
+# rsync_to PLATFORM SRC DST <optional EXTRA RSYNC ARGS>
 rsync_to() {
     local p="$1"; shift
     local src="$1"; shift
@@ -37,16 +41,12 @@ rsync_to() {
     local sshvar="${p}_SSH"
     local ssh="${!sshvar}"
 
-    while test -n "$1" ; do
-        src="${src} \"${dst}\""
-        dst="$1"
-        shift
-    done
-
+    # Extra rsync arguments will be processed as "$@"
     if test -n "${ssh}" ; then
-        "${RSYNC[@]}" "${RSYNC_TO_ARGS[@]}" -e "${ssh% *}" ${src} "${ssh##* }:${dst}"
+        "${RSYNC[@]}" "${RSYNC_TO_ARGS[@]}" "$@" -e "${ssh% *}" \
+             ${src} "${ssh##* }:${dst}"
     else
-        "${RSYNC[@]}" "${RSYNC_TO_ARGS[@]}" ${src} "${dst}"
+        "${RSYNC[@]}" "${RSYNC_TO_ARGS[@]}" "$@" ${src} "${dst}"
     fi
 }
 
@@ -69,14 +69,15 @@ mk_platform_src() {
     local src_ws="$1"; shift
     local l
 
-    rsync_to "${p}" "${TE_BASE}"/ "${src_ws}"
+    rsync_to "${p}" "${TE_BASE}"/ "${src_ws}" "${RSYNC_SRC_IGNORES[@]}"
 
     local libs="${p}_LIBS"
     for l in ${!libs} ; do
         local src_var="TE_BS_LIB_${p}_${l}_SOURCES"
         local src="${!src_var}"
         test -z "${src}" -o "${src}" = "${TE_BASE}/lib/${l}" ||
-            rsync_to "${p}" "${src}"/ "${src_ws}/lib/${l}"
+            rsync_to "${p}" "${src}"/ "${src_ws}/lib/${l}" \
+                "${RSYNC_SRC_IGNORES[@]}"
     done
 }
 
