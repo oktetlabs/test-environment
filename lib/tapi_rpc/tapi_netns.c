@@ -6,7 +6,7 @@
  *
  * Copyright (C) 2003-2019 OKTET Labs. All rights reserved.
  *
- * 
+ *
  *
  *
  * @author Andrey Dmitrov <Andrey.Dmitrov@oktetlabs.ru>
@@ -99,7 +99,7 @@ configure_netns_base_network(const char *ta, const char *ns_name,
     EXEC_SH_CMD(rpcs, IP_NETNS_EXEC_IP_FMT" route add default "
                 "dev %s via %s", ns_name, ctl_if, gw_addr_str);
 
-#undef CALL_SH_CMD
+#undef EXEC_SH_CMD
 
     return rcf_rpc_server_destroy(rpcs);
 }
