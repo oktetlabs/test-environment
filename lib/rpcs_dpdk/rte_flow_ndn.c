@@ -1501,7 +1501,7 @@ rte_flow_pattern_from_ndn(const asn_value *ndn_flow,
                 goto out;
         }
 
-        rc = rte_flow_check_test_items(item_tag, pattern, item_nb);
+        rc = rte_flow_check_test_items(item_tag, pattern, item_nb + 1);
         if (rc != 0)
             goto out;
     }
