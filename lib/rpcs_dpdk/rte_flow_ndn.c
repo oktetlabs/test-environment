@@ -1252,6 +1252,25 @@ rte_flow_item_gre_and_nvgre_from_pdu(const asn_value *gre_pdu,
 }
 
 static te_errno
+rte_flow_item_pppoe_from_pdu(const asn_value *pppoe_pdu,
+                             struct rte_flow_item *item)
+{
+    if (item == NULL)
+        return TE_EINVAL;
+
+    /* This value should be speculatively set when an ETH item is encountered */
+    if (item->type != RTE_FLOW_ITEM_TYPE_PPPOED &&
+        item->type != RTE_FLOW_ITEM_TYPE_PPPOES)
+    {
+        ERROR("Expected flow item to already have a PPPoE type, "
+              "instead the type is %d", item->type);
+        return TE_EINVAL;
+    }
+
+    return 0;
+}
+
+static te_errno
 rte_flow_item_end(struct rte_flow_item *item)
 {
     if (item == NULL)
@@ -1441,9 +1460,9 @@ static const struct rte_flow_item_tags_mapping {
     { TE_PROTO_VXLAN,   rte_flow_item_vxlan_from_pdu },
     { TE_PROTO_GENEVE,  rte_flow_item_geneve_from_pdu },
     { TE_PROTO_GRE,     rte_flow_item_gre_and_nvgre_from_pdu },
+    { TE_PROTO_PPPOE,   rte_flow_item_pppoe_from_pdu },
     { TE_PROTO_ICMP4,   rte_flow_item_void },
     { TE_PROTO_ARP,     rte_flow_item_void },
-    { TE_PROTO_PPPOE,   rte_flow_item_void },
     { 0,                rte_flow_item_void },
 };
 
@@ -1495,10 +1514,38 @@ rte_flow_pattern_from_ndn(const asn_value *ndn_flow,
 
         if (item_tag == TE_PROTO_ETH)
         {
+            const unsigned int        eth_nb = item_nb;
+            struct rte_flow_item_eth *eth_spec;
+
             rc = rte_flow_item_vlan_from_eth_pdu(item_pdu, &pattern,
                                                  pattern_len, &item_nb);
             if (rc != 0)
                 goto out;
+
+            /*
+             * Make some initial preparations of a PPPoE item while we have
+             * easy access to EtherType.
+             * It's possible that the next PDU is not PPPoE, in this case the
+             * value we set here should be overwritten by the corresponding
+             * callback.
+             */
+            eth_spec = (struct rte_flow_item_eth *)pattern[eth_nb].spec;
+            if (eth_spec != NULL && i < ndn_len - 1)
+            {
+                switch (rte_be_to_cpu_16(eth_spec->type))
+                {
+                    case ETH_P_PPP_DISC:
+                        pattern[item_nb + 1].type = RTE_FLOW_ITEM_TYPE_PPPOED;
+                        break;
+
+                    case ETH_P_PPP_SES:
+                        pattern[item_nb + 1].type = RTE_FLOW_ITEM_TYPE_PPPOES;
+                        break;
+
+                    default:
+                        break;
+                }
+            }
         }
 
         rc = rte_flow_check_test_items(item_tag, pattern, item_nb + 1);
