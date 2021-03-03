@@ -482,13 +482,16 @@ process_opts()
             --opts=* )
                 EXT_OPTS_PROCESSED=yes
                 OPTS="${1#--opts=}"
-                OPTS="$(resolve_conf_file_path "${OPTS}")"
-                if test -f "${OPTS}" ; then
-                    process_opts $(cat "${OPTS}" | grep -v '^#')
+                local opts_path="$(resolve_conf_file_path "${OPTS}")"
+                if test -z "${opts_path}" ; then
+                    echo "File with options '${OPTS}' not found" >&2
+                    exit 1
+                elif test -f "${opts_path}" ; then
+                    process_opts $(cat "${opts_path}" | grep -v '^#')
                     # Don't want to see the option after expansion
                     opt=
                 else
-                    echo "File with options '${OPTS}' not found" >&2
+                    echo "File with options '${opts_path}' not found" >&2
                     exit 1
                 fi
                 ;;
