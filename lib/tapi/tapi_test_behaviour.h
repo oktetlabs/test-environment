@@ -54,6 +54,12 @@ typedef struct test_behaviour {
 extern test_behaviour test_behaviour_storage;
 
 /**
+ * Get behavoiur switch
+ */
+#define TEST_BEHAVIOUR(name_)                   \
+    (test_behaviour_storage. name_)
+
+/**
  * Fill test behaviour structure based on /local/test values. Ignores
  * missing instances and sets corresponding switch to false, but
  * logs a WARN.

@@ -154,12 +154,6 @@ extern "C" {
     } while (0)
 
 /**
- * Get bool value of behavoiur switch
- */
-#define TEST_BEHAVIOUR(name_)                   \
-    (test_behaviour_storage. name_)
-
-/**
  * Macro to add behaviour switches in code that does not call TEST_START. It
  * should not exist yet it does
  */
