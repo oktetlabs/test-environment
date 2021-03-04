@@ -26,6 +26,7 @@
 #include "logger_api.h"
 #include "te_log_stack.h"
 #include "tapi_jmp.h"
+#include "tapi_test_behaviour.h"
 #include "tester_msg.h"
 
 
@@ -153,7 +154,10 @@ extern "C" {
         ERROR("Test Failed in %s, line %d, %s()",                   \
               __FILE__, __LINE__, __FUNCTION__);                    \
         te_log_stack_dump(TE_LL_ERROR);                             \
-        ERROR(fmt);                                                 \
+        if (TEST_BEHAVIOUR(fail_verdict))                           \
+            ERROR_VERDICT(fmt);                                     \
+        else                                                        \
+            ERROR(fmt);                                             \
         TEST_STOP;                                                  \
     } while (0)
 
@@ -167,7 +171,10 @@ extern "C" {
     do {                                                            \
         ERROR("Test Failed in %s, line %d, %s()",                   \
               __FILE__, __LINE__, __FUNCTION__);                    \
-        ERROR(fmt);                                                 \
+        if (TEST_BEHAVIOUR(fail_verdict))                           \
+            ERROR_VERDICT(fmt);                                     \
+        else                                                        \
+            ERROR(fmt);                                             \
         result = EXIT_FAILURE;                                      \
     } while (0)
 

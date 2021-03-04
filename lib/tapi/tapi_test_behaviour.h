@@ -40,6 +40,10 @@ typedef struct test_behaviour {
                                                 of close() in
                                                 CLEANUP_RPC_CLOSE() */
     unsigned int prologue_sleep; /**< How many sencond to sleep in prologue */
+
+    te_bool fail_verdict;   /**< If enabled, log error verdict from
+                                 TEST_FAIL() and CLEANUP_TEST_FAIL(),
+                                 otherwise just an error */
 } test_behaviour;
 
 /**

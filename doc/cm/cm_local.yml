@@ -190,3 +190,5 @@
       value: "${TE_TEST_BEHAVIOUR_CLEANUP_FD_CLOSE_ENFORCE_LIBC:-0}"
     - oid: "/local:/test:/behaviour:prologue_sleep"
       value: "${TE_TEST_BEHAVIOUR_PROLOGUE_SLEEP:-0}"
+    - oid: "/local:/test:/behaviour:fail_verdict"
+      value: "${TE_TEST_BEHAVIOUR_FAIL_VERDICT:-0}"
