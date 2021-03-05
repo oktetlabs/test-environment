@@ -51,6 +51,9 @@ help() {
   cat <<EOF
 telog is a TE log viewer that can handle TE log in a single-line mode.
 
+NOTE: you need to invoke run.sh/dispatcher.sh with --log-txt-line-prefix for it 
+to work, cause it expects single-line text log.
+
 It allows you do fuzzy-search across the log as well as open the log at
 the exact location. It uses BAT and FZF. See --help-setup for installation
 details.
