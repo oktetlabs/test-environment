@@ -37,10 +37,11 @@ tapi_cfg_module_change_finish(const char *ta_name, const char *mod_name)
     rc = cfg_set_instance_fmt(CFG_VAL(INTEGER, 1),
                               "/agent:%s/rsrc:%s/shared:",
                               ta_name, rsrc_name);
-    free(rsrc_name);
-
     if (rc != 0)
-        ERROR("Failed to set shared property of a resource");
+        ERROR("Failed to set shared property of the resource '%s' on %s: %r",
+              rsrc_name, ta_name, rc);
+
+    free(rsrc_name);
 
     return rc;
 }
@@ -60,12 +61,13 @@ tapi_cfg_module_get_shared(const char *ta_name, const char *mod_name,
     rc = cfg_get_instance_fmt(&val_type, &result_shared,
                               "/agent:%s/rsrc:%s/shared:",
                               ta_name, rsrc_name);
-    free(rsrc_name);
-
     if (rc == 0)
         *shared = !!result_shared;
     else
-        ERROR("Failed to get shared property of a resource");
+        ERROR("Failed to get shared property of the resource '%s' on %s: %r",
+              rsrc_name, ta_name, rc);
+
+    free(rsrc_name);
 
     return rc;
 }
@@ -82,7 +84,8 @@ tapi_cfg_module_check_exclusive_rsrc(const char *ta_name, const char *mod_name)
 
     if (shared)
     {
-        ERROR("Module must be grabbed as an exclusive resource");
+        ERROR("Module '%s' on %s must be grabbed as an exclusive resource",
+              mod_name, ta_name);
         return TE_RC(TE_TAPI, TE_EPERM);
     }
 
@@ -191,7 +194,8 @@ tapi_cfg_module_add(const char *ta_name, const char *mod_name, te_bool load)
     rc = tapi_cfg_module_grab(ta_name, mod_name, &shared);
     if (rc != 0)
     {
-        ERROR("Failed to grab module '%s' as a resource");
+        ERROR("Failed to grab module '%s' as a resource on %s: %r",
+              mod_name, ta_name, rc);
         goto out;
     }
 
@@ -212,7 +216,8 @@ tapi_cfg_module_add(const char *ta_name, const char *mod_name, te_bool load)
                                   ta_name, mod_name);
         if (rc != 0)
         {
-            ERROR("Cannot get module after addition");
+            ERROR("Cannot get module '%s' after addition on %s: %r",
+                  mod_name, ta_name, rc);
             goto out;
         }
     }
@@ -367,21 +372,23 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
     rc = cfg_get_instance_fmt(&cvt, &ta_dir, "/agent:%s/dir:", ta_name);
     if (rc != 0)
     {
-        ERROR("Failed to get TA directory path");
+        ERROR("Failed to get TA %s directory path: %r", ta_name, rc);
         goto out;
     }
 
     rc = te_string_append(&module_path, "%s/%s.ko", ta_dir, module_name);
     if (rc != 0)
     {
-        ERROR("Failed to construct the module path");
+        ERROR("Failed to construct the module '%s' path: %r",
+              module_name, rc);
         goto out;
     }
 
     rc = tapi_cfg_module_add(ta_name, module_name, 0);
     if (rc != 0)
     {
-        ERROR("Failed to add the module instance");
+        ERROR("Failed to add the module '%s' on %s: %r",
+              module_name, ta_name, rc);
         goto out;
     }
 
@@ -394,7 +401,8 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
                               ta_name, module_name);
     if (rc != 0)
     {
-        ERROR("Failed to get the module 'loaded' property");
+        ERROR("Failed to get the module '%s' 'loaded' property on %s: %r",
+              module_name, ta_name, rc);
         goto out;
     }
 
@@ -402,7 +410,8 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
     {
         if (!loaded)
         {
-            ERROR("Resource was grabbed as shared and module was not loaded");
+            ERROR("Module '%s' resource was grabbed as shared on %s and "
+                  "module was not loaded", module_name, ta_name);
             rc = TE_RC(TE_TAPI, TE_EPERM);
             goto out;
         }
@@ -422,21 +431,24 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
                                   ta_name, module_name);
         if (rc != 0)
         {
-            ERROR("Failed to set unload holders for the module instance");
+            ERROR("Failed to set unload holders for the module '%s' on %s: %r",
+                  module_name, ta_name, rc);
             goto out;
         }
 
         rc = tapi_cfg_module_unload(ta_name, module_name);
         if (rc != 0)
         {
-            ERROR("Failed to unload the module instance");
+            ERROR("Failed to unload the module '%s' on %s: %r",
+                  module_name, ta_name, rc);
             goto out;
         }
 
         rc = tapi_cfg_module_add(ta_name, module_name, 0);
         if (rc != 0)
         {
-            ERROR("Failed to add the module instance after unloading");
+            ERROR("Failed to add the module '%s' after unloading on %s: %r",
+                  module_name, ta_name, rc);
             goto out;
         }
     }
@@ -446,7 +458,8 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
                               ta_name, module_name);
     if (rc != 0)
     {
-        ERROR("Failed to set the module path");
+        ERROR("Failed to set the module '%s' path on %s: %r",
+              module_name, ta_name, rc);
         goto out;
     }
 
@@ -458,7 +471,8 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
                                   module_name);
         if (rc != 0)
         {
-            ERROR("Failed to arrange loading the module dependencies");
+            ERROR("Failed to arrange loading the module '%s' dependencies on %s: %r",
+                  module_name, ta_name, rc);
             goto out;
         }
     }
@@ -468,13 +482,15 @@ tapi_cfg_module_add_from_ta_dir_fb(const char *ta_name,
                               ta_name, module_name);
     if (rc != 0)
     {
-        ERROR("Failed to set fallback node for the module instance");
+        ERROR("Failed to set fallback node for the module '%s' on %s: %r",
+              module_name, ta_name, rc);
         goto out;
     }
 
     rc = tapi_cfg_module_load(ta_name, module_name);
     if (rc != 0)
-        ERROR("Failed to request the module insertion");
+        ERROR("Failed to request the module '%s' insertion on %s: %r",
+              module_name, ta_name, rc);
 
 out:
     te_string_free(&module_path);
