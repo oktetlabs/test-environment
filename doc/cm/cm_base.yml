@@ -72,8 +72,10 @@
     - oid: "/agent/interface/index"
       access: read_only
       type: integer
+      volatile: true
       d: |
-         Network interface index
+         Network interface index.
+         Volatile since it changes on module reload.
          Name: "eth0"-like
 
     - oid: "/agent/interface/net_addr"
