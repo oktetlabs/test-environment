@@ -393,20 +393,6 @@ rte_flow_item_eth_from_pdu(const asn_value *eth_pdu,
     if (item == NULL)
         return TE_EINVAL;
 
-/*
- * If spec/mask/last is zero then the appropriate
- * item's field remains NULL
- */
-#define FILL_FLOW_ITEM_ETH(_field) \
-    do {                                             \
-        if (!rte_is_zero_ether_addr(&_field->dst) || \
-            !rte_is_zero_ether_addr(&_field->src) || \
-            _field->type != 0)                       \
-            item->_field = _field;                   \
-        else                                         \
-            free(_field);                            \
-    } while(0)
-
     rc = rte_alloc_mem_for_flow_item((void **)&spec,
                                      (void **)&mask,
                                      (void **)&last,
@@ -421,10 +407,10 @@ rte_flow_item_eth_from_pdu(const asn_value *eth_pdu,
     ASN_READ_INT_RANGE_FIELD(eth_pdu, length-type, type, sizeof(spec->type));
 
     item->type = RTE_FLOW_ITEM_TYPE_ETH;
-    FILL_FLOW_ITEM_ETH(spec);
-    FILL_FLOW_ITEM_ETH(mask);
-    FILL_FLOW_ITEM_ETH(last);
-#undef FILL_FLOW_ITEM_ETH
+
+    item->spec = spec;
+    item->last = last;
+    item->mask = mask;
 
     return 0;
 out:
@@ -470,7 +456,7 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     uint32_t spec_tci = 0;
     uint32_t mask_tci = 0;
     uint32_t last_tci = 0;
-    te_bool is_empty_outer = FALSE;
+    te_bool is_empty = FALSE;
     te_bool is_double_tagged = FALSE;
     int rc;
 
@@ -480,20 +466,9 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
 
         rc = asn_get_subvalue(tagged_pdu, &vlan_pdu, label);
         if (rc == TE_EASNINCOMPLVAL)
-        {
-            /*
-             * If outer or inner are not set, only for
-             * outer will be created VLAN item
-             */
-            if (strcmp(label, "inner") == 0)
-                return 0;
-            else
-                is_empty_outer = TRUE;
-        }
+            is_empty = TRUE;
         else if (rc != 0)
-        {
             goto out;
-        }
     }
 
     rc = rte_flow_add_item_to_pattern(pattern_out, pattern_len_out);
@@ -503,10 +478,6 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     item_nb++;
     pattern = *pattern_out;
 
-    pattern[item_nb].type = RTE_FLOW_ITEM_TYPE_VLAN;
-    if (is_empty_outer)
-        return 0;
-
     rc = rte_alloc_mem_for_flow_item((void **)&spec,
                                      (void **)&mask,
                                      (void **)&last,
@@ -514,7 +485,7 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     if (rc != 0)
         return rc;
 
-    if (is_double_tagged)
+    if (is_double_tagged && !is_empty)
     {
         rc = asn_read_int_field_with_offset(vlan_pdu, "vid",
                                             RTE_FLOW_VLAN_VID_FILED_LEN, 0,
@@ -532,8 +503,11 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
                                                 &spec_tci, &mask_tci, &last_tci);
         if (rc != 0)
             goto out;
+
+        ASN_READ_INT_RANGE_FIELD(vlan_pdu, tpid,
+                                 inner_type, sizeof(spec->inner_type));
     }
-    else
+    else if (!is_double_tagged)
     {
         rc = asn_read_int_field_with_offset(vlan_pdu, "vlan-id",
                                             RTE_FLOW_VLAN_VID_FILED_LEN, 0,
@@ -557,83 +531,23 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     mask->tci = rte_cpu_to_be_16(mask_tci);
     last->tci = rte_cpu_to_be_16(last_tci);
 
-#ifdef HAVE_STRUCT_RTE_FLOW_ITEM_VLAN_TPID
+    pattern[item_nb].type = RTE_FLOW_ITEM_TYPE_VLAN;
 
-    if (is_double_tagged)
-        ASN_READ_INT_RANGE_FIELD(vlan_pdu, tpid, tpid, sizeof(spec->tpid));
-
-#define FILL_FLOW_ITEM_VLAN(_field) \
-    do {                                            \
-        if (_field->tpid != 0 ||                    \
-            _field->tci != 0)                       \
-            pattern[item_nb]._field = _field;       \
-        else                                        \
-            free(_field);                           \
-    } while(0)
-
-    FILL_FLOW_ITEM_VLAN(spec);
-    FILL_FLOW_ITEM_VLAN(mask);
-    FILL_FLOW_ITEM_VLAN(last);
-#undef FILL_FLOW_ITEM_VLAN
-
-#else /* !HAVE_STRUCT_RTE_FLOW_ITEM_VLAN_TPID */
-
-    /*
-     * Since the NDN representation of VLAN does not have field for
-     * 'inner_type', then in the flow rule pattern move the EtherType
-     * from ETH to the last VLAN item
-     */
-    if (pattern[item_nb - 1].type == RTE_FLOW_ITEM_TYPE_VLAN)
-    {
-        struct rte_flow_item_vlan *prev_mask =
-            (struct rte_flow_item_vlan *)pattern[item_nb - 1].mask;
-        struct rte_flow_item_vlan *prev_spec =
-            (struct rte_flow_item_vlan *)pattern[item_nb - 1].spec;
-
-        if (prev_mask != NULL && prev_mask->inner_type != 0)
-        {
-            mask->inner_type = prev_mask->inner_type;
-            spec->inner_type = prev_spec->inner_type;
-            prev_mask->inner_type = 0;
-            prev_spec->inner_type = 0;
-        }
+#if 0
+    if (strcmp(label, "tagged") == 0) {
+        /*
+         * NDN "tagged" means single-tagging only.
+         * Double-tagging packets do not match.
+         */
+        spec->has_more_vlan = 0;
+        mask->has_more_vlan = 1;
+        last->has_more_vlan = 0;
     }
-    else if (pattern[item_nb - 1].type == RTE_FLOW_ITEM_TYPE_ETH)
-    {
-        struct rte_flow_item_eth *prev_mask =
-            (struct rte_flow_item_eth *)pattern[item_nb - 1].mask;
-        struct rte_flow_item_eth *prev_spec =
-            (struct rte_flow_item_eth *)pattern[item_nb - 1].spec;
+#endif
 
-        if (prev_mask != NULL && prev_mask->type != 0)
-        {
-            mask->inner_type = prev_mask->type;
-            spec->inner_type = prev_spec->type;
-            prev_mask->type = 0;
-            prev_spec->type = 0;
-        }
-    }
-    else
-    {
-        rc = TE_EINVAL;
-        goto out;
-    }
-
-#define FILL_FLOW_ITEM_VLAN(_field) \
-    do {                                            \
-        if (_field->inner_type != 0 ||              \
-            _field->tci != 0)                       \
-            pattern[item_nb]._field = _field;       \
-        else                                        \
-            free(_field);                           \
-    } while(0)
-
-    FILL_FLOW_ITEM_VLAN(spec);
-    FILL_FLOW_ITEM_VLAN(mask);
-    FILL_FLOW_ITEM_VLAN(last);
-#undef FILL_FLOW_ITEM_VLAN
-
-#endif /* HAVE_STRUCT_RTE_FLOW_ITEM_VLAN_TPID */
+    pattern[item_nb].spec = spec;
+    pattern[item_nb].last = last;
+    pattern[item_nb].mask = mask;
 
     *item_nb_out = item_nb;
     *pattern_out = pattern;
@@ -644,6 +558,50 @@ out:
     free(mask);
     free(last);
     return rc;
+}
+
+static void
+rte_flow_pattern_swap_words(uint16_t *word_ap,
+                            uint16_t *word_bp)
+{
+    uint16_t word_a;
+    uint16_t word_b;
+
+    assert(word_ap != NULL);
+    assert(word_bp != NULL);
+
+    word_a = *word_ap;
+    word_b = *word_bp;
+
+    *word_ap = word_b;
+    *word_bp = word_a;
+}
+
+/*
+ * Given the offset of the 16-bit word in the previous item and its
+ * offset in the current one (found at index item_idx), swap the two
+ * words. The user guarantees that item [index item_idx - 1] exists.
+ */
+static void
+rte_flow_pattern_item_swap_words_prev(struct rte_flow_item *pattern,
+                                      unsigned int          item_idx,
+                                      size_t                item_prev_w_ofst,
+                                      size_t                item_w_ofst)
+{
+    struct rte_flow_item *item_prev = &pattern[item_idx - 1];
+    struct rte_flow_item *item = &pattern[item_idx];
+
+    rte_flow_pattern_swap_words(
+        (uint16_t *)((uint8_t *)item_prev->spec + item_prev_w_ofst),
+        (uint16_t *)((uint8_t *)item->spec + item_w_ofst));
+
+    rte_flow_pattern_swap_words(
+        (uint16_t *)((uint8_t *)item_prev->mask + item_prev_w_ofst),
+        (uint16_t *)((uint8_t *)item->mask + item_w_ofst));
+
+    rte_flow_pattern_swap_words(
+        (uint16_t *)((uint8_t *)item_prev->last + item_prev_w_ofst),
+        (uint16_t *)((uint8_t *)item->last + item_w_ofst));
 }
 
 static te_errno
@@ -669,12 +627,32 @@ rte_flow_item_vlan_from_eth_pdu(const asn_value *eth_pdu,
     if (rc != 0)
         goto out;
 
+    /*
+     * Invocations of rte_flow_pattern_item_swap_words_prev() below are needed
+     * to reorder the EtherType and TPIDs to comply with RTE convention.
+     *
+     * What has been ETH NDN's 'length-type' will become
+     * the innermost RTE VLAN item's 'inner_type'.
+     *
+     * What has been ETH NDN's outer 'tpid' will become
+     * the RTE ETH item's 'type'.
+     *
+     * What has been ETH NDN's inner 'tpid' will become
+     * the outermost RTE VLAN item's 'inner_type'.
+     *
+     * TODO: replace references to deprecated fields 'type' and 'inner_type'.
+     */
+
     if (strcmp(asn_get_name(vlan_pdu), "tagged") == 0)
     {
         rc = rte_flow_item_vlan_from_tagged_pdu(vlan_pdu, "tagged",
                                                 pattern_out, pattern_len, item_nb);
         if (rc != 0)
             goto out;
+
+        rte_flow_pattern_item_swap_words_prev(*pattern_out, *item_nb,
+            offsetof(struct rte_flow_item_eth, type),
+            offsetof(struct rte_flow_item_vlan, inner_type));
     }
     else if (strcmp(asn_get_name(vlan_pdu), "double-tagged") == 0)
     {
@@ -682,21 +660,41 @@ rte_flow_item_vlan_from_eth_pdu(const asn_value *eth_pdu,
          * In flow API there is no difference between outer and inner VLANs,
          * to match the flow rule: the first VLAN is outer and the second is
          * inner.
-         * If only the inner is set, the empty outer will be created anyway.
          */
         rc = rte_flow_item_vlan_from_tagged_pdu(vlan_pdu, "outer",
                                                 pattern_out, pattern_len, item_nb);
         if (rc != 0)
             goto out;
 
+        rte_flow_pattern_item_swap_words_prev(*pattern_out, *item_nb,
+            offsetof(struct rte_flow_item_eth, type),
+            offsetof(struct rte_flow_item_vlan, inner_type));
+
         rc = rte_flow_item_vlan_from_tagged_pdu(vlan_pdu, "inner",
                                                 pattern_out, pattern_len, item_nb);
         if (rc != 0)
             goto out;
+
+        rte_flow_pattern_item_swap_words_prev(*pattern_out, *item_nb,
+            offsetof(struct rte_flow_item_vlan, inner_type),
+            offsetof(struct rte_flow_item_vlan, inner_type));
     }
     else if (strcmp(asn_get_name(vlan_pdu), "untagged") != 0)
     {
-        rc = TE_EINVAL;
+        struct rte_flow_item_eth *item_eth_spec;
+        struct rte_flow_item_eth *item_eth_mask;
+        struct rte_flow_item_eth *item_eth_last;
+
+        item_eth_spec = (void *)(*pattern_out)[*item_nb].spec;
+        item_eth_mask = (void *)(*pattern_out)[*item_nb].mask;
+        item_eth_last = (void *)(*pattern_out)[*item_nb].last;
+
+        /* NDN "untagged" explicitly asks to match untagged packets only. */
+        item_eth_spec->has_vlan = 0;
+        item_eth_mask->has_vlan = 1;
+        item_eth_last->has_vlan = 0;
+
+        return 0;
     }
 
 out:
