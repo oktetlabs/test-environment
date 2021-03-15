@@ -343,7 +343,7 @@ mod_load_with_dependencies(const char *modname, const char *filename,
         if (rc != 0)
             goto close;
 
-        rc = ta_system(cmd.ptr);
+        rc = ta_system(cmd.ptr) == 0 ? 0 : TE_RC(TE_TA_UNIX, TE_EFAIL);
     }
 
 close:
@@ -452,12 +452,12 @@ out:
     return rc;
 }
 
-static int
+static te_errno
 mod_rmmod(const char *mod_name)
 {
     TE_SPRINTF(buf, "rmmod %s", mod_name);
 
-    return ta_system(buf);
+    return ta_system(buf) == 0 ? 0 : TE_RC(TE_TA_UNIX, TE_EFAIL);
 }
 
 static void
@@ -524,7 +524,7 @@ mod_get_add_cmd_name(te_kernel_module *module)
     return module->filename != NULL ? "insmod" : "modprobe";
 }
 
-static int
+static te_errno
 mod_modprobe(te_kernel_module *module)
 {
     te_kernel_module_param *param;
@@ -547,7 +547,7 @@ mod_modprobe(te_kernel_module *module)
                          " %s=%s", param->name, param->value);
     }
 
-    return ta_system(buf);
+    return ta_system(buf) == 0 ? 0 : TE_RC(TE_TA_UNIX, TE_EFAIL);
 }
 
 static void
@@ -752,7 +752,7 @@ module_param_set(unsigned int gid, const char *oid, const char *value,
 
 #if __linux__
     char name[TE_MODULE_NAME_LEN];
-    int rc;
+    te_errno rc;
 
     rc = mod_name_underscorify(module_name, name, sizeof(name));
     if (rc != 0)
@@ -1069,7 +1069,7 @@ module_loaded_set(unsigned int gid, const char *oid, char *value,
     te_kernel_module *module = mod_find(mod_name);
     te_bool loaded = mod_loaded(mod_name);
     te_bool load;
-    int rc;
+    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -1110,7 +1110,7 @@ module_loaded_set(unsigned int gid, const char *oid, char *value,
     if (rc == 0 && module != NULL)
         module->loaded = load;
 
-    return rc == 0 ? 0 : TE_RC(TE_TA_UNIX, TE_EFAULT);
+    return rc;
 }
 
 static te_errno
