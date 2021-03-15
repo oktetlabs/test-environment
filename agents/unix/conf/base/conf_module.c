@@ -344,6 +344,8 @@ mod_load_with_dependencies(const char *modname, const char *filename,
             goto close;
 
         rc = ta_system(cmd.ptr) == 0 ? 0 : TE_RC(TE_TA_UNIX, TE_EFAIL);
+
+        RING("Do '%s': %r", cmd.ptr, rc);
     }
 
 close:
@@ -455,9 +457,15 @@ out:
 static te_errno
 mod_rmmod(const char *mod_name)
 {
+    te_errno rc;
+
     TE_SPRINTF(buf, "rmmod %s", mod_name);
 
-    return ta_system(buf) == 0 ? 0 : TE_RC(TE_TA_UNIX, TE_EFAIL);
+    rc = ta_system(buf) == 0 ? 0 : TE_RC(TE_TA_UNIX, TE_EFAIL);
+
+    RING("Do '%s': %r", buf, rc);
+
+    return rc;
 }
 
 static void
@@ -530,6 +538,7 @@ mod_modprobe(te_kernel_module *module)
     te_kernel_module_param *param;
     const char *cmd = mod_get_add_cmd_name(module);
     te_string modprobe_cmd = TE_STRING_BUF_INIT(buf);
+    te_errno rc;
 
     /*
      * Do not load module without explicit filename since
@@ -547,7 +556,11 @@ mod_modprobe(te_kernel_module *module)
                          " %s=%s", param->name, param->value);
     }
 
-    return ta_system(buf) == 0 ? 0 : TE_RC(TE_TA_UNIX, TE_EFAIL);
+    rc = ta_system(buf) == 0 ? 0 : TE_RC(TE_TA_UNIX, TE_EFAIL);
+
+    RING("Do '%s': %r", buf, rc);
+
+    return rc;
 }
 
 static void
