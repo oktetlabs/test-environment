@@ -1083,6 +1083,13 @@ rcf_pch_run(const char *confstr, const char *info)
                     SKIP_SPACES(ptr);
                 }
 
+                if (strncmp(ptr, "mismatch", strlen("mismatch")) == 0)
+                {
+                    mode |= RCF_CH_TRRECV_MISMATCH;
+                    ptr += strlen("mismatch");
+                    SKIP_SPACES(ptr);
+                }
+
                 if (*ptr != 0)
                     goto bad_protocol;
 

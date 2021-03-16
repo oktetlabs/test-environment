@@ -97,6 +97,8 @@ tad_recv_pkt_alloc(csap_p csap)
     if (recv_pkt == NULL)
         return NULL;
 
+    recv_pkt->match_unit = -1;
+
     tad_pkt_init(&recv_pkt->payload, NULL, NULL, NULL);
 
     tad_pkts_init(&recv_pkt->raw);

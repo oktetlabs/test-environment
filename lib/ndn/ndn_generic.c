@@ -416,17 +416,19 @@ const asn_type * const  ndn_time_stamp = &ndn_time_stamp_s;
 /*
 Raw-Packet ::= SEQUENCE -- values of this type are passed from CSAP to test
 {
-    received    NDN-TimeStamp,
-    pdus        SEQUENCE (SIZE (1..max-pdus)) OF Generic-PDU,
-    payload     Payload OPTIONAL
+    received        NDN-TimeStamp,
+    pdus            SEQUENCE (SIZE (1..max-pdus)) OF Generic-PDU,
+    payload         Payload OPTIONAL
+    match-unit      Index of matched pattern unit, -1 for mismatch packets
 }
 */
 
 
 static asn_named_entry_t _ndn_raw_packet_ne_array[] = {
-    { "received",  &ndn_time_stamp_s, {PRIVATE, NDN_PKT_TIMESTAMP} },
-    { "pdus",      &ndn_generic_pdu_sequence_s, {PRIVATE, NDN_PKT_PDUS} },
-    { "payload",   &ndn_payload_s,    {PRIVATE, NDN_PKT_PAYLOAD} },
+    { "received",      &ndn_time_stamp_s, {PRIVATE, NDN_PKT_TIMESTAMP} },
+    { "pdus",          &ndn_generic_pdu_sequence_s, {PRIVATE, NDN_PKT_PDUS} },
+    { "payload",       &ndn_payload_s,    {PRIVATE, NDN_PKT_PAYLOAD} },
+    { "match-unit",    &asn_base_integer_s, {PRIVATE, NDN_PKT_MATCH_UNIT} }
 };
 
 asn_type ndn_raw_packet_s = {

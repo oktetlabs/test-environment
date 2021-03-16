@@ -123,27 +123,30 @@ typedef struct csap_layer_t {
 
 /** @name CSAP processing flags */
 enum {
-    CSAP_STATE_IDLE       = 0x0001, /**< CSAP is idle */
-    CSAP_STATE_SEND       = 0x0002, /**< CSAP is sending or idle after
+    CSAP_STATE_IDLE       = 0x00001, /**< CSAP is idle */
+    CSAP_STATE_SEND       = 0x00002, /**< CSAP is sending or idle after
                                          the send operation */
-    CSAP_STATE_RECV       = 0x0004, /**< CSAP is receiving or idle after
+    CSAP_STATE_RECV       = 0x00004, /**< CSAP is receiving or idle after
                                          the receive operation */
-    CSAP_STATE_DONE       = 0x0010, /**< Processing has been finished */
-    CSAP_STATE_SEND_DONE  = 0x0020, /**< Send has been finished */
-    CSAP_STATE_RECV_DONE  = 0x0040, /**< Receive has been finished */
-    CSAP_STATE_COMPLETE   = 0x0100, /**< Receive operation complete */
+    CSAP_STATE_DONE       = 0x00010, /**< Processing has been finished */
+    CSAP_STATE_SEND_DONE  = 0x00020, /**< Send has been finished */
+    CSAP_STATE_RECV_DONE  = 0x00040, /**< Receive has been finished */
+    CSAP_STATE_COMPLETE   = 0x00100, /**< Receive operation complete */
 
-    CSAP_STATE_RECV_SEQ_MATCH =     0x0200, /**< Pattern sequence matching */
+    CSAP_STATE_RECV_SEQ_MATCH =     0x00200, /**< Pattern sequence matching */
 
-    CSAP_STATE_PACKETS_NO_PAYLOAD = 0x0400, /**< Do not report payload of
+    CSAP_STATE_RECV_MISMATCH =      0x00400, /**< Store mismatch packets
+                                                  to get from test later */
+
+    CSAP_STATE_PACKETS_NO_PAYLOAD = 0x00800, /**< Do not report payload of
                                                  received packets */
-    CSAP_STATE_RESULTS    = 0x0800, /**< Receive results are required */
+    CSAP_STATE_RESULTS    = 0x01000, /**< Receive results are required */
 
-    CSAP_STATE_FOREGROUND = 0x1000, /**< RCF answer is pending */
-    CSAP_STATE_WAIT       = 0x2000, /**< User request to wait for
+    CSAP_STATE_FOREGROUND = 0x02000, /**< RCF answer is pending */
+    CSAP_STATE_WAIT       = 0x04000, /**< User request to wait for
                                          end of processing */
-    CSAP_STATE_STOP       = 0x4000, /**< User request to stop */
-    CSAP_STATE_DESTROY    = 0x8000, /**< CSAP is being destroyed */
+    CSAP_STATE_STOP       = 0x08000, /**< User request to stop */
+    CSAP_STATE_DESTROY    = 0x10000, /**< CSAP is being destroyed */
 };
 /*@}*/
 

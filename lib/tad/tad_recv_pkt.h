@@ -55,6 +55,9 @@ typedef struct tad_recv_pkt {
     struct timeval      ts;         /**< Timestamp of the whole packet
                                          (timestamp of the last fragment
                                          in the case of reassembly) */
+
+    int                 match_unit;    /**< Index of matched pattern unit,
+                                            -1 if packet mismatched */
 } tad_recv_pkt;
 
 

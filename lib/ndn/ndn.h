@@ -171,6 +171,7 @@ typedef enum {
     NDN_PKT_TIMESTAMP,
     NDN_PKT_PDUS,
     NDN_PKT_PAYLOAD,
+    NDN_PKT_MATCH_UNIT,
 } ndn_raw_packet_tags_t;
 
 typedef enum {

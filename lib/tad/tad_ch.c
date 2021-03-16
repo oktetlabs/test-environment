@@ -974,6 +974,9 @@ rcf_ch_trsend_recv(struct rcf_comm_connection *rcfc,
             csap->state |= CSAP_STATE_PACKETS_NO_PAYLOAD;
     }
 
+    if (flags & RCF_CH_TRRECV_MISMATCH)
+        csap->state |= CSAP_STATE_RECV_MISMATCH;
+
     csap->first_pkt = tad_tv_zero;
     csap->last_pkt  = tad_tv_zero;
 

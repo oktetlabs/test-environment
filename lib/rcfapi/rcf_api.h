@@ -65,9 +65,11 @@ typedef enum rcf_call_mode {
 typedef enum rcf_trrecv_mode {
     RCF_TRRECV_COUNT,              /**< Count received packets only */
     RCF_TRRECV_NO_PAYLOAD,         /**< Get packet headers only, do not get
-                                        payload */
+                                       payload */
     RCF_TRRECV_PACKETS,            /**< Store packets to get from test later */
     RCF_TRRECV_SEQ_MATCH = 0x04,   /**< Pattern sequence matching */
+    RCF_TRRECV_MISMATCH = 0x08,    /**< Store mismatch packets
+                                        to get from test later */
 } rcf_trrecv_mode;
 
 /**

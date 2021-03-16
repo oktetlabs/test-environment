@@ -632,6 +632,9 @@ tad_recv_start_prepare(csap_p csap, const char *ptrn_str,
     if (flags & RCF_CH_TRRECV_PACKETS_SEQ_MATCH)
         csap->state |= CSAP_STATE_RECV_SEQ_MATCH;
 
+    if (flags & RCF_CH_TRRECV_MISMATCH)
+        csap->state |= CSAP_STATE_RECV_MISMATCH;
+
     csap->first_pkt = csap->last_pkt = tad_tv_zero;
 
     CSAP_UNLOCK(csap);
@@ -1261,11 +1264,20 @@ tad_recv_do(csap_p csap)
         if (TE_RC_GET_ERROR(rc) == TE_ETADNOTMATCH)
         {
             context->no_match_pkts++;
+            if (csap->state & CSAP_STATE_RECV_MISMATCH)
+            {
+                meta_pkt->match_unit = -1;
+                tad_recv_pkt_enqueue(csap, &context->packets, meta_pkt);
+                meta_pkt = NULL;
+            }
+            else
+            {
+                /* Nothing is owned by match routine */
+                tad_recv_pkt_cleanup(csap, meta_pkt);
+            }
 
             VERB(CSAP_LOG_FMT "received packet does not match",
                  CSAP_LOG_ARGS(csap));
-            /* Nothing is owned by match routine */
-            tad_recv_pkt_cleanup(csap, meta_pkt);
             continue;
         }
         if (TE_RC_GET_ERROR(rc) == TE_ETADLESSDATA)
@@ -1300,6 +1312,8 @@ tad_recv_do(csap_p csap)
 
         if ((csap->state & CSAP_STATE_RESULTS) && !no_report)
         {
+            meta_pkt->match_unit = context->ptrn_data.cur_unit;
+
             F_VERB(CSAP_LOG_FMT "put packet into the queue",
                    CSAP_LOG_ARGS(csap));
             tad_recv_pkt_enqueue(csap, &context->packets, meta_pkt);
@@ -1435,11 +1449,22 @@ tad_recv_get_packets(csap_p csap, tad_reply_context *reply_ctx, te_bool wait,
 
     while ((rc = tad_recv_get_packet(csap, wait, &pkt)) == 0)
     {
-        (*got)++;
 
         /* Process packet */
         pkt->nds = asn_init_value(ndn_raw_packet);
         /* FIXME: Check pkt->nds */
+
+        asn_write_int32(pkt->nds, pkt->match_unit, "match-unit");
+
+        /*
+         * Number of match packets must be reported here for backward
+         * compatibility. If caller wants to know number of got mismatch
+         * packets, it should be calculated on test side in packet
+         * handling callback
+         */
+        if (pkt->match_unit != -1)
+            (*got)++;
+
         asn_write_int32(pkt->nds, pkt->ts.tv_sec,
                         "received.seconds");
         asn_write_int32(pkt->nds, pkt->ts.tv_usec,
