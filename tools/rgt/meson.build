@@ -84,6 +84,13 @@ endforeach
 
 header_gen_script = find_program('gen_tmpls_h.sh', required: true)
 
+install_data(
+    [
+        'rgt-proc-raw-log',
+    ],
+    install_dir: get_option('bindir'),
+)
+
 # Process subdirectories
 
 subdir('lib')

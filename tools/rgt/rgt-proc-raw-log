@@ -1,0 +1,290 @@
+#!/bin/bash
+#
+# Script to generate various kinds of logs from TE RAW log.
+#
+# Copyright (C) 2021 OKTET Labs, St.-Petersburg, Russia
+#
+# Author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
+#
+
+export TMPDIR="${TE_TMP}"
+
+readonly RUN_DIR="${PWD}"
+readonly BINDIR="$(cd `dirname $0` && pwd)"
+
+sniff_logs_included=false
+sniff_log_dir=
+sniff_detailed_packets=
+raw_path=
+bundle_path=
+html_path=
+plain_html_path=
+txt_path=
+junit_path=
+line_prefix=
+
+declare -a rgt_conv_opts
+declare -a rgt_x2hm_opts
+
+#############################
+# Print usage information.
+# Arguments:
+#   None
+# Outputs:
+#   To stdout.
+#############################
+function usage() {
+cat <<EOF
+Usage: te_proc_raw_log.sh [<options>]
+  --raw-log=<filepath>          Path to the RAW log (input, required).
+  --sniff-log                   Include sniffer dumps.
+                                WARNING: if you changed sniffer log directory
+                                in the way it could not be guessed easily
+                                (e.g. via one of run.sh options --logger-conf,
+                                --conf-dir, --cfg, --opts), you'd better
+                                pass --sniff-log-dir to this script.
+  --sniff-log-dir=<dirpath>     Path to the *TEN* side capture files.
+  --txt-detailed-packets        Print more detailed packet dumps in text log.
+  --txt-line-prefix             Add a prefix before every message line in text log.
+  --bundle=<filepath>           Where to save RAW log bundle (if needed).
+  --html=<dirpath>              Where to save HTML logs (if needed).
+  --plain-html=<filepath>       Where to save plain HTML log (if needed).
+  --txt=<filepath>              Where to save text log (if needed).
+  --junit=<filepath>            Where to save JUnit log (if needed).
+  --rgt-conv-*                  Pass an option to rgt-conv.
+  --rgt-x2hm-*                  Pass an option to rgt-xml2html-multi.
+EOF
+}
+
+#######################################################################
+# Print error message.
+# Arguments:
+#   All arguments are passed to "echo" after an introductory string.
+# Outputs:
+#   To stderr.
+#######################################################################
+function print_error() {
+    echo "ERROR:" "$@" >&2
+}
+
+#######################################################################
+# Print warning message.
+# Arguments:
+#   All arguments are passed to "echo" after an introductory string.
+# Outputs:
+#   To stderr.
+#######################################################################
+function print_warn() {
+    echo "WARNING:" "$@" >&2
+}
+
+#######################################################################
+# Process command-line options.
+# Globals:
+#   raw_path
+#   sniff_logs_included
+#   sniff_log_dir
+#   bundle_path
+#   html_path
+#   plain_html_path
+#   txt_path
+#   junit_path
+#   line_prefix
+#   sniff_detailed_packets
+#   rgt_conv_opts
+#   rgt_x2hm_opts
+# Arguments:
+#   All arguments passed to this script.
+# Outputs:
+#   May output error messages to stderr or usage info to stdout.
+#######################################################################
+function process_opts() {
+    while [[ -n "$1" ]] ; do
+        case "$1" in
+            -h | --help) usage ; exit 0 ;;
+
+            --raw-log=*) raw_path=${1#--raw-log=} ;;
+
+            --sniff-log) sniff_logs_included=true ;;
+            --sniff-log-dir=*) sniff_log_dir="${1#--sniff-log-dir=}" ;;
+
+            --bundle=*) bundle_path=${1#--bundle=} ;;
+            --html=*) html_path=${1#--html=} ;;
+            --plain-html=*) plain_html_path=${1#--plain-html=} ;;
+            --txt=*) txt_path=${1#--txt=} ;;
+            --junit=*) junit_path=${1#--junit=} ;;
+
+            --txt-line-prefix) line_prefix="-L" ;;
+
+            --txt-detailed-packets)
+                sniff_detailed_packets="--detailed-packets"
+                ;;
+
+            --rgt-conv-*)
+                rgt_conv_opts+=("--${1#--rgt-conv-}")
+                ;;
+
+            --rgt-x2hm-*)
+                rgt_x2hm_opts+=("--${1#--rgt-x2hm-}")
+                ;;
+
+            *) print_warn "Unknown option $1 will be passed to rgt-conv";
+                rgt_conv_opts+=("$1")
+                ;;
+        esac
+        shift 1
+    done
+}
+
+#######################################################################
+# Main function.
+# Arguments:
+#   All arguments passed to this script.
+# Outputs:
+#   May output error messages to stderr or usage info to stdout.
+#######################################################################
+function main() {
+    process_opts "$@"
+
+    if [[ -z "${raw_path}" ]] ; then
+        print_error "--raw-log is not specified"
+        exit 1
+    fi
+
+    # Check sniffer-related arguments for consistency
+    if [[ -n "${sniff_log_dir}" \
+          && "${sniff_logs_included}" == "false" ]] ; then
+        print_warn "--sniff-log-dir is supplied, whereas --sniff-log is not"
+    fi
+    if [[ -n "${sniff_detailed_packets}" \
+          && "${sniff_logs_included}" == "false" ]] ; then
+        print_warn "--detailed-packets is supplied, whereas --sniff-log is not"
+    fi
+
+    #
+    # Construct all the required logs from RAW log.
+    #
+
+    if [[ -n "${bundle_path}" ]] ; then
+        "${BINDIR}"/rgt-log-bundle-create --raw-log="${raw_path}" \
+            --bundle="${bundle_path}"
+    fi
+
+    if [[ "${sniff_logs_included}" == "true" ]] \
+       && ! type tshark >/dev/null 2> /dev/null ; then
+        print_warn \
+          "tshark is missed, so sniffer logs won't be merged into the log"
+        sniff_logs_included=false
+    fi
+
+    if [[ "${sniff_logs_included}" == "true" ]] ; then
+        if [[ -z "${sniff_log_dir}" ]] ; then
+            # Try to guess capture logs path
+            if [[ -d caps ]] ; then
+                sniff_log_dir="$(pwd -P)/caps"
+            fi
+        fi
+
+        [[ "${sniff_log_dir}" == /* ]] \
+          || [[ "${sniff_log_dir}" == \~/* ]] \
+          || sniff_log_dir="${RUN_DIR}/${sniff_log_dir}"
+    fi
+
+    # Search for pcap files in potential sniffer logs directory,
+    # convert them to XML and store names of converted files in sniff_logs
+    local -a sniff_logs
+    if [[ ! -d "${sniff_log_dir}" ]] ; then
+        sniff_logs_included=false
+    fi
+
+    if [[ "${sniff_logs_included}" == "true" ]] ; then
+        local plog
+        local xlog
+        local -a pcap_files
+
+        readarray -t pcap_files < <(ls "${sniff_log_dir}"/ | grep \.pcap$)
+        for plog in "${pcap_files[@]}" ; do
+            plog="${sniff_log_dir}/${plog}"
+            xlog="${plog/%.pcap/.xml}"
+            # Actual conversion from pcap to TE XML
+            rm -f "${xlog}"
+            tshark -r "${plog}" -T pdml ${TE_SNIFF_TSHARK_OPTS} \
+              | "${BINDIR}"/rgt-pdml2xml - "${xlog}"
+            if [[ -e "${xlog}" ]] ; then
+                sniff_logs+=("${xlog}")
+            else
+                print_error "Failed to convert ${plog} to xml"
+            fi
+        done
+        if [[ "${#sniff_logs[@]}" -eq 0 ]] ; then
+            sniff_logs_included=false
+        fi
+    fi
+
+    if [[ -n "${txt_path}" || -n "${plain_html_path}" ]] ; then
+        # Generate XML log not taking into account control messages
+        local log_xml_plain="log_plain.xml"
+        local log_xml_merged="log_plain_ext.xml"
+        "${BINDIR}"/rgt-conv --no-cntrl-msg -m postponed \
+            "${rgt_conv_opts[@]}" -f "${raw_path}" -o "${log_xml_plain}"
+        if [[ $? -eq 0 && -e "${log_xml_plain}" ]] ; then
+            if [[ "${#sniff_logs[@]}" -gt 0 ]] ; then
+                # Merge main TE log with capture logs
+                "${BINDIR}"/rgt-xml-merge "${log_xml_merged}" \
+                    "${log_xml_plain}" "${sniff_logs[@]}"
+            else
+                log_xml_merged="${log_xml_plain}"
+            fi
+
+            if [[ -n "${txt_path}" ]] ; then
+                "${BINDIR}"/rgt-xml2text -f "${log_xml_merged}" \
+                    -o "${txt_path}" \
+                    ${line_prefix} ${sniff_detailed_packets}
+            fi
+
+            if [[ -n "${plain_html_path}" ]] ; then
+                "${BINDIR}"/rgt-xml2html -f "${log_xml_merged}" \
+                    -o "${plain_html_path}"
+            fi
+        fi
+
+        rm -f "${log_xml_plain}"
+        rm -f "${log_xml_merged}"
+    fi
+
+    if [[ -n "${html_path}" ]] ; then
+        # Generate XML log taking into account control messages
+        local log_xml_struct="log_struct.xml"
+        local log_xml_merged="log_struct_ext.xml"
+        "${BINDIR}"/rgt-conv -m postponed "${rgt_conv_opts[@]}" \
+            -f "${raw_path}" -o "${log_xml_struct}"
+        if [[ $? -eq 0 && -e "${log_xml_struct}" ]] ; then
+            if [[ "${#sniff_logs[@]}" -gt 0 ]] ; then
+                # Merge main TE log with capture logs
+                "${BINDIR}"/rgt-xml-merge "${log_xml_merged}" \
+                    "${log_xml_struct}" "${sniff_logs[@]}"
+            else
+                log_xml_merged="${log_xml_struct}"
+            fi
+
+            "${BINDIR}"/rgt-xml2html-multi "${rgt_x2hm_opts[@]}" \
+                "${log_xml_merged}" "${html_path}"
+        fi
+
+        rm -f "${log_xml_struct}"
+        rm -f "${log_xml_merged}"
+    fi
+
+    if [[ -n "${junit_path}" ]] ; then
+        "${BINDIR}"/rgt-conv -m junit -f "${raw_path}" -o "${junit_path}"
+    fi
+
+    if [[ "${sniff_logs_included}" == "true" ]] ; then
+        local rmlog
+        for rmlog in "${sniff_logs[@]}" ; do
+            rm -f "${rmlog}"
+        done
+    fi
+}
+
+main "$@"

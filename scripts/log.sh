@@ -2,11 +2,10 @@
 #
 # Script to generate test log.
 #
-# Copyright (C) 2012 OKTET Labs, St.-Petersburg, Russia
+# Copyright (C) 2012-2021 OKTET Labs, St.-Petersburg, Russia
 #
 # Author Roman Kolobov <Roman.Kolobov@oktetlabs.ru>
 #
-# $Id: $
 
 TS_GUESS_SH="$(dirname "$(which "$0")")"/guess.sh
 if test -f "${TS_GUESS_SH}" ; then
@@ -20,37 +19,18 @@ RUN_DIR="${PWD}"
 : ${HTML_OPTION:=true}
 : ${EXEC_NAME:=$0}
 
-rgt_conv_opts=
+declare -a UNKNOWN_OPTS
 
 CONF_LOGGER="${CONFDIR}"/logger.conf
-SNIFF_GUESSED_LOG_DIR=`dirname "${TE_LOG_RAW}"`/caps
+SNIFF_LOG_DIR=
 SNIFF_LOGS_INCLUDED=false
-SNIFF_DETAILED_PACKETS=
 OUTPUT_LOCATION=
-
-pushd "$(dirname "$(which "$0")")" >/dev/null
-SCRIPT_DEF_LOC="$(pwd -P)"
-popd >/dev/null
-
-# Try to guess capture logs path
-if test -f "${CONF_LOGGER}" ; then
-    tmp=`te_log_get_path "${CONF_LOGGER}"`
-    if test -n "${tmp}" ; then
-        SNIFF_GUESSED_LOG_DIR="${tmp}"
-    fi
-elif test -e caps ; then
-    SNIFF_GUESSED_LOG_DIR="$(pwd -P)/caps"
-elif test -e "${SCRIPT_DEF_LOC}/caps" ; then
-    SNIFF_GUESSED_LOG_DIR="${SCRIPT_DEF_LOC}/caps"
-fi
-
 
 usage()
 {
 cat <<EOF
 Usage: `basename "${EXEC_NAME}"` [<options>]
   --sniff-log-dir=<path>        Path to the *TEN* side capture files.
-                                Guessed: ${SNIFF_GUESSED_LOG_DIR}.
   --output-to=<path>            Location where you want the log to be stored.
 EOF
 if $HTML_OPTION ; then
@@ -79,6 +59,8 @@ cat <<EOF
 EOF
 }
 
+PROC_OPTS=("--raw-log=${TE_LOG_RAW}")
+
 process_opts()
 {
     while test -n "$1" ; do
@@ -87,17 +69,27 @@ process_opts()
             --help) usage ; exit 0 ;;
 
             -p) ;&
-            --sniff-log) SNIFF_LOGS_INCLUDED=true ;;
+            --sniff-log)
+                SNIFF_LOGS_INCLUDED=true
+                PROC_OPTS+=("$1")
+                ;;
+
             -P) ;&
-            --detailed-packets) SNIFF_DETAILED_PACKETS="--detailed-packets" ;;
-            --sniff-log-dir=*) SNIFF_LOG_DIR="${1#--sniff-log-dir=}" ;;
+            --detailed-packets)
+                PROC_OPTS+=("$1")
+                ;;
+
+            --sniff-log-dir=*)
+                SNIFF_LOG_DIR="${1#--sniff-log-dir=}"
+                PROC_OPTS+=("$1")
+                ;;
 
             --output-to=*) OUTPUT_LOCATION="${1#--output-to=}" ;;
 
             --html) OUTPUT_HTML=true ;;
 
-            *) echo "WARNING: unknown option $1 will be passed to rgt-conv" >&2;
-                rgt_conv_opts="${rgt_conv_opts} $1"
+            *) echo "WARNING: unknown option $1 will be passed to rgt-proc-raw-log" >&2;
+                UNKNOWN_OPTS+=("$1")
                 ;;
         esac
         shift 1
@@ -136,100 +128,29 @@ else
     fi
 fi
 
-# Check arguments for consistency
-if [ "${SNIFF_LOG_DIR}" != "" ] && ! $SNIFF_LOGS_INCLUDED ; then
-    echo "ERROR: --sniff-log-dir is supplied, whereas --sniff-log is not" >&2
-    exit 1
-fi
-if [ "${SNIFF_DETAILED_PACKETS}" != "" ] && ! $SNIFF_LOGS_INCLUDED ; then
-    echo "ERROR: --detailed-packets is supplied, whereas --sniff-log is not" >&2
-    exit 1
-fi
 if $SNIFF_LOGS_INCLUDED && $OUTPUT_HTML ; then
     echo "WARNING: html log includes detailed packet dumps by default" >&2
 fi
 
-# Form full path to sniffer logs
-if $OUTPUT_HTML ; then
+if ! $SNIFF_LOGS_INCLUDED && $OUTPUT_HTML ; then
+    PROC_OPTS+=("--sniff-log")
     SNIFF_LOGS_INCLUDED=true
 fi
-if $SNIFF_LOGS_INCLUDED ; then
-    if test -z "${SNIFF_LOG_DIR}" ; then
-        SNIFF_LOG_DIR="${SNIFF_GUESSED_LOG_DIR}"
-    fi
-    [[ ${SNIFF_LOG_DIR} == /* ]] || [[ ${SNIFF_LOG_DIR} == \~/* ]] ||
-        SNIFF_LOG_DIR="${RUN_DIR}/${SNIFF_LOG_DIR}"
-    echo "Sniffer logs will be searched for in ${SNIFF_LOG_DIR}" >&2
-fi
 
-# Search for pcap files in potential sniffer logs directory,
-#  convert them to XML and store names of converted files in sniff_logs
-sniff_logs=""
-if test ! -d "${SNIFF_LOG_DIR}" ; then
-    SNIFF_LOGS_INCLUDED=false;
-fi
-if $SNIFF_LOGS_INCLUDED ; then
-    for plog in `ls "${SNIFF_LOG_DIR}"/ | grep \.pcap$`; do
-        plog="${SNIFF_LOG_DIR}/${plog}"
-        xlog=${plog/%.pcap/.xml}
-        # Actual conversion from pcap to TE XML
-        rm -f "${xlog}"
-        tshark -r "${plog}" -T pdml $TE_SNIFF_TSHARK_OPTS | rgt-pdml2xml - "${xlog}"
-        if test -e "${xlog}" ; then
-            sniff_logs="${sniff_logs} ${xlog}"
-        else
-            echo "Failed to convert ${plog} to xml" >&2
+if $SNIFF_LOGS_INCLUDED && test -z "${SNIFF_LOG_DIR}" ; then
+    if test -f "${CONF_LOGGER}" ; then
+        tmp=`te_log_get_path "${CONF_LOGGER}"`
+        if test -n "${tmp}" ; then
+            SNIFF_LOG_DIR="${tmp}"
+            PROC_OPTS+=("--sniff-log-dir=${SNIFF_LOG_DIR}")
         fi
-    done
-    if test -z "${sniff_logs}" ; then
-        SNIFF_LOGS_INCLUDED=false
     fi
 fi
 
-# Convert raw log to xml, merge it with converted pcap logs (if any)
-#  and convert result to desired format (html or text)
-LOG_XML=tmp_converted_log.xml
-if ! $OUTPUT_HTML ; then
-    rgt_conv_opts="${rgt_conv_opts} --no-cntrl-msg"
-fi
-rgt-conv -f "${TE_LOG_RAW}" -o "${LOG_XML}" ${rgt_conv_opts} || exit 1
-if test -e "${LOG_XML}" ; then
-    LOG_XML_MERGED=tmp_converted_log_merged.xml
-
-    if $SNIFF_LOGS_INCLUDED ; then
-        rgt-xml-merge "${LOG_XML_MERGED}" "${LOG_XML}" \
-                      ${sniff_logs}
-        if test -e "${LOG_XML_MERGED}" ; then
-            rm "${LOG_XML}"
-        else
-            LOG_XML_MERGED="${LOG_XML}"
-            echo "Failed to merge sniffer logs with main log;" \
-                 " main log would still be available" >&2
-        fi
-        rm ${sniff_logs}
-    else
-        LOG_XML_MERGED="${LOG_XML}"
-    fi
-
-    if $OUTPUT_HTML ; then
-        rgt-xml2html-multi -f "${LOG_XML_MERGED}" -o "${OUTPUT_LOCATION}"
-        if test $? -eq 0 ; then
-            rm "${LOG_XML_MERGED}"
-            echo "Logs delivered to ${OUTPUT_LOCATION} directory" >&2
-        else
-            echo "Failed to generate log in multidocumented HTML format" >&2
-        fi
-    else
-        rgt-xml2text -f "${LOG_XML_MERGED}" -o "${OUTPUT_LOCATION}" \
-                     ${SNIFF_DETAILED_PACKETS} || exit 1
-        if test -e "${OUTPUT_LOCATION}" ; then
-            rm "${LOG_XML_MERGED}"
-            ${PAGER:-less} "${OUTPUT_LOCATION}"
-            echo "Log saved in ${OUTPUT_LOCATION}" >&2
-        else
-            echo "Failed to generate log in text format" >&2
-        fi
-    fi
+if $OUTPUT_HTML ; then
+    PROC_OPTS+=("--html=${OUTPUT_LOCATION}")
 else
-    echo "Failed to parse raw log" >&2
+    PROC_OPTS+=("--txt=${OUTPUT_LOCATION}")
 fi
+
+rgt-proc-raw-log "${PROC_OPTS[@]}" "${UNKNOWN_OPTS[@]}"

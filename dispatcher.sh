@@ -324,7 +324,7 @@ TESTER_OPTS=
 TRC_OPTS=
 TRC_TAGS=
 # No additional option for rgt-xml2html-multi tool
-RGT_X2HM_OPTS=
+declare -a RGT_X2HM_OPTS
 # Logger options
 LOGGER_OPTS=
 # Configurator options
@@ -641,7 +641,7 @@ process_opts()
             --trc-*) TRC_OPTS="${TRC_OPTS} --${1#--trc-}" ;;
 
             --rgt-xml2html-multi-*)
-                RGT_X2HM_OPTS="${RGT_X2HM_OPTS} --${1#--rgt-xml2html-multi-}" ;;
+                RGT_X2HM_OPTS+=("--rgt-x2hm-${1#--rgt-xml2html-multi-}") ;;
 
             --cs-*) CS_OPTS="${CS_OPTS} --${1#--cs-}" ;;
 
@@ -1319,113 +1319,42 @@ fi
 #
 myecho -n "--->>> Logs conversion..."
 
-merge_comm=""
-if test ! -d ${TE_SNIFF_LOG_DIR} ; then
-    TE_SNIFF_LOG_CONV_DISABLE=true;
-fi
-if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
-    idx=0
-    for plog in `ls ${TE_SNIFF_LOG_DIR}/ | grep \.pcap$`; do
-        plog="${TE_SNIFF_LOG_DIR}/${plog}"
-        xlogs[${idx}]=${plog/%.pcap/.xml}
-        # Conversion from pcap to TE XML
-        if type tshark >/dev/null 2> /dev/null ; then
-            tshark -r ${plog} -T pdml $TE_SNIFF_TSHARK_OPTS 2> /dev/null | rgt-pdml2xml - ${xlogs[idx]}
-        else
-            myecho ""
-            myecho "--->>> NOTE: tshark is missing, so sniffer logs won't be merged with the report"
-            if test -z "$LIVE_LOG" ; then
-                echo   "--->>>       find them in ${TE_SNIFF_LOG_DIR} directory"
-            fi
-            myecho -n "--->>> Continue logs conversion without sniffer logs..."
-            break
-        fi
-
-        # Construct command to merge all capture logs
-        merge_comm="${merge_comm} ${xlogs[${idx}]}"
-        let "idx += 1"
-    done
-    if test ${idx} -eq 0 ; then
-        TE_SNIFF_LOG_CONV_DISABLE=true
-    fi
-fi
-
 #
 # RGT processing of the raw log
 #
+
 if test -n "${CONF_RGT}" ; then
-    CONF_RGT="-c ${CONF_RGT}"
+    CONF_RGT="--rgt-conv-cfg-filter=${CONF_RGT}"
 fi
 
+RAW_PROC_OPTS=("--raw-log=${TE_LOG_RAW}")
 if test -n "${TE_LOG_BUNDLE}" ; then
-    export TMPDIR="${TE_TMP}"
-    rgt-log-bundle-create --raw-log="${TE_LOG_RAW}" \
-        --bundle="${TE_LOG_BUNDLE}" >/dev/null
+    RAW_PROC_OPTS+=("--bundle=${TE_LOG_BUNDLE}")
 fi
-if test -n "${RGT_LOG_TXT}" -o -n "${RGT_LOG_HTML_PLAIN}" ; then
-    # Generate XML log do not taking into account control messages
-    LOG_XML_PLAIN="log_plain.xml"
-    LOG_XML_MERGED="log_plain_ext.xml"
-    rgt-conv --no-cntrl-msg  -m postponed ${CONF_RGT} \
-        -f "${TE_LOG_RAW}" -o "${LOG_XML_PLAIN}"
-    if test $? -eq 0 -a -e "${LOG_XML_PLAIN}" ; then
-        if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
-            # Merge main TE log with capture logs
-            rgt-xml-merge "${LOG_XML_MERGED}" "${LOG_XML_PLAIN}" \
-                          ${merge_comm}
-        else
-            LOG_XML_MERGED="${LOG_XML_PLAIN}"
-        fi
-
-        if test -n "${RGT_LOG_TXT}" ; then
-            if test -n "${RGT_LOG_TXT_LINE_PREFIX}" ; then
-                LINE_PREFIX="-L"
-            else
-                LINE_PREFIX=
-            fi
-
-            if test -z ${RGT_LOG_TXT_DETAILED_PACKETS} ; then
-                rgt-xml2text -f "${LOG_XML_MERGED}" -o "${RGT_LOG_TXT}" \
-                             ${LINE_PREFIX}
-            else
-                rgt-xml2text -f "${LOG_XML_MERGED}" -o "${RGT_LOG_TXT}" \
-                             --detailed-packets ${LINE_PREFIX}
-            fi
-        fi
-        if test -n "${RGT_LOG_HTML_PLAIN}" ; then
-            rgt-xml2html -f "${LOG_XML_MERGED}" -o "${RGT_LOG_HTML_PLAIN}"
-        fi
-    fi
+if test -n "${RGT_LOG_TXT}" ; then
+    RAW_PROC_OPTS+=("--txt=${RGT_LOG_TXT}")
+fi
+if test -n "${RGT_LOG_HTML_PLAIN}" ; then
+    RAW_PROC_OPTS+=("--plain-html=${RGT_LOG_HTML_PLAIN}")
 fi
 if test -n "${RGT_LOG_HTML}" ; then
-    # Generate XML log taking into account control messages
-    LOG_XML_STRUCT="log_struct.xml"
-    LOG_XML_MERGED="log_struct_ext.xml"
-    rgt-conv -m postponed ${CONF_RGT} \
-        -f "${TE_LOG_RAW}" -o "${LOG_XML_STRUCT}"
-    if test $? -eq 0 -a -e "${LOG_XML_STRUCT}" ; then
-        if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
-            # Merge main TE log with capture logs
-            rgt-xml-merge "${LOG_XML_MERGED}" "${LOG_XML_STRUCT}" \
-                          ${merge_comm}
-        else
-            LOG_XML_MERGED="${LOG_XML_STRUCT}"
-        fi
-
-        rgt-xml2html-multi ${RGT_X2HM_OPTS} "${LOG_XML_MERGED}" \
-                           "${RGT_LOG_HTML}"
-    fi
+    RAW_PROC_OPTS+=("--html=${RGT_LOG_HTML}")
 fi
-if test -n "${RGT_LOG_JUNIT}" ; then
-    rgt-conv -m junit \
-        -f "${TE_LOG_RAW}" -o "${RGT_LOG_JUNIT}"
+if test -n "${RGT_LOG_TXT_LINE_PREFIX}" ; then
+    RAW_PROC_OPTS+=("--txt-line-prefix")
+fi
+if test -n "${RGT_LOG_TXT_DETAILED_PACKETS}" ; then
+    RAW_PROC_OPTS+=("--txt-detailed-packets")
+fi
+if test -z "${TE_SNIFF_LOG_CONV_DISABLE}" -a -d "${TE_SNIFF_LOG_DIR}" ; then
+    RAW_PROC_OPTS+=("--sniff-log")
+    RAW_PROC_OPTS+=("--sniff-log-dir=${TE_SNIFF_LOG_DIR}")
 fi
 
-if test -z ${TE_SNIFF_LOG_CONV_DISABLE} ; then
-    for rmlog in ${xlogs[@]} ; do
-        rm "${rmlog}"
-    done
-fi
+# CONF_RGT should not expand to empty word here
+rgt-proc-raw-log "${RAW_PROC_OPTS[@]}" ${CONF_RGT:+"${CONF_RGT}"} \
+    "${RGT_X2HM_OPTS[@]}"
+
 myecho "done"
 
 if test ${START_OK} -ne 1 -a -n "${TE_DO_TCE}" ; then
