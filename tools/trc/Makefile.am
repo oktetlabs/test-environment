@@ -1,8 +1,0 @@
-
-SUBDIRS = lib trc-log trc-report trc-diff trc-key trc-update .
-
-ACLOCAL_AMFLAGS = -I @TE_M4@
-
-dist_bin_SCRIPTS = te_trc.sh te_trc_update te_trc_update_wrapper \
-		   te_trc_night_update \
-		   te_trc_mv te_trc_search

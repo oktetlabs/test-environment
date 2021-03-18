@@ -97,15 +97,11 @@ Generic options:
   --cs-print-trees              Print configurator trees.
   --cs-log-diff                 Log backup diff unconditionally.
 
-  --build-autotools             Build using autotools (autoconf, automake, make)
-  --build-meson                 Build using meson/ninja
   --builder-debug               Be more verbose when build
 
   --build-only                  Build TE, do not run RCF and Configurator,
                                 build but do not run Test Suites
 
-  --build-log=path              Build package with log level 0xFFFF.
-  --build-nolog=path            Build package with undefined log level.
   --build-parallel[=num]        Enable parallel build using num threads.
 
   --build-ta-none               Don't build Test Agents.
@@ -333,9 +329,7 @@ LOGGER_OPTS=
 # Configurator options
 CS_OPTS=
 # Building options
-BUILD=autotools
 BUILDER_DEBUG=
-BUILDER_OPTS=
 BUILD_MAKEFLAGS=
 PROFILE_BUILD=
 
@@ -648,8 +642,10 @@ process_opts()
 
             --cs-*) CS_OPTS="${CS_OPTS} --${1#--cs-}" ;;
 
-            --build-autotools)  BUILD=autotools ;;
-            --build-meson)      BUILD=meson ;;
+            --build-autotools)
+                echo "autotools build is not supported any more" >&2
+                exit 1 ;;
+            --build-meson)      ;;
             --builder-debug)    BUILDER_DEBUG=yes ;;
 
             --build-only) RCF= ; CS=
@@ -659,16 +655,6 @@ process_opts()
                 num=${1##--build-parallel=}
                 [ "${num}" = "$1" ] && num=
                 BUILD_MAKEFLAGS="-j${num}"
-                ;;
-
-            --build-log=*)
-                BUILDER_OPTS="${BUILDER_OPTS} --pathlog=${1#--build-log=}"
-                BUILDER=
-                ;;
-
-            --build-nolog=*)
-                BUILDER_OPTS="${BUILDER_OPTS} --pathnolog=${1#--build-nolog=}"
-                BUILDER=
                 ;;
 
             --build-ta-none)    BUILD_TA= ;;
@@ -830,7 +816,7 @@ sniffer_make_conf()
 
 # Export TE_BASE
 if test -z "${TE_BASE}" ; then
-    if test -e "${DISPATCHER_DIR}/configure.ac" ; then
+    if test -e "${DISPATCHER_DIR}/meson.build" ; then
         echo "TE source directory is ${DISPATCHER_DIR} - exporting TE_BASE."
         export TE_BASE="${DISPATCHER_DIR}"
     fi
@@ -902,7 +888,7 @@ export TE_LOGGER_PID_FILE="${TE_TMP}/te_logger.pid"
 if test -z "$TE_BUILD" ; then
     if test -n "$BUILDER" ; then
         # Verifying build directory
-        if test -e dispatcher.sh -a -e configure.ac ; then
+        if test -e dispatcher.sh -a -e meson.build ; then
             mkdir -p build
             TE_BUILD="${PWD}"/build
         else
@@ -936,7 +922,7 @@ export TE_LOG_RAW="${TE_LOG_RAW:-${TE_LOG_DIR}/tmp_raw_log}"
 
 # Export TE_INSTALL
 if test -z "$TE_INSTALL" ; then
-    if test -e "$DISPATCHER_DIR/configure.ac" ; then
+    if test -e "$DISPATCHER_DIR/meson.build" ; then
         if test -n "${TE_BUILD}" ; then
             TE_INSTALL="${TE_BUILD}/inst"
         else
@@ -1025,89 +1011,23 @@ function te_profile_build ()
 }
 fi
 
-if test -z "$BUILD" ; then
-    which meson &>/dev/null && BUILD=meson || BUILD=autotools
-fi
-
 export TE_EXT_LIBS_FILE="${TE_BUILD}/te_ext_libs_files"
 touch "${TE_EXT_LIBS_FILE}"
 
 export BUILDER_DEBUG
 TE_BUILD_LOG="${TE_RUN_DIR}/build.log"
-case "${BUILD}" in
-autotools)
-if test -n "$BUILDER" ; then
-    pushd "${TE_BASE}" >/dev/null
-    if test ! -e configure -o \
-       0`stat --format=%Y configure 2>/dev/null` -lt \
-       0`stat --format=%Y configure.ac 2>/dev/null` ; then
-        if test -n "${QUIET}" ; then
-            echo "Calling aclocal/autoconf/automake in ${PWD}" \
-                >>"${TE_BUILD_LOG}"
-        else
-            echo "Calling aclocal/autoconf/automake in ${PWD}"
-        fi
-        $PROFILE_BUILD aclocal -I "${TE_BASE}/auxdir" || exit_with_log
-        $PROFILE_BUILD autoconf || exit_with_log
-        $PROFILE_BUILD automake --add-missing || exit_with_log
-    fi
-    popd >/dev/null
-    # FINAL ${TE_BASE}/configure --prefix=${TE_INSTALL} --with-config=${CONF_BUILDER} 2>&1 | te_builder_log
-    if test -n "${QUIET}" ; then
-        $PROFILE_BUILD "${TE_BASE}/configure" -q --prefix="${TE_INSTALL}" \
-            --with-config="${CONF_BUILDER}" >"${TE_BUILD_LOG}" || \
-            exit_with_log
-        $PROFILE_BUILD make install >>"${TE_BUILD_LOG}" || exit_with_log
-    else
-        $PROFILE_BUILD "${TE_BASE}/configure" -q --prefix="${TE_INSTALL}" \
-            --with-config="${CONF_BUILDER}" || exit_with_log
-        $PROFILE_BUILD make install || exit_with_log
-    fi
-fi
-
-if test -n "$BUILD_TA" -o -n "$BUILD_TA_FOR" ; then
+if test -n "$BUILDER" -o -n "$BUILD_TA" -o -n "$BUILD_TA_FOR" ; then
     export BUILD_TA=$BUILD_TA
     export BUILD_TA_FOR=$BUILD_TA_FOR
     export BUILD_TA_RM=$BUILD_TA_RM
     if test -n "${QUIET}" ; then
-        $PROFILE_BUILD te_cross_build "${TE_INSTALL}" >>"${TE_BUILD_LOG}" || exit_with_log
+        $PROFILE_BUILD "${TE_BASE}"/engine/builder/te_meson_build \
+            "${CONF_BUILDER}" >"${TE_BUILD_LOG}" || exit_with_log
     else
-        $PROFILE_BUILD te_cross_build "${TE_INSTALL}" || exit_with_log
+        $PROFILE_BUILD "${TE_BASE}"/engine/builder/te_meson_build \
+            "${CONF_BUILDER}" || exit_with_log
     fi
 fi
-
-if test -n "${BUILDER_OPTS}" ; then
-    if test -n "${QUIET}" ; then
-        $PROFILE_BUILD te_builder_opts --quiet="${TE_BUILD_LOG}" $BUILDER_OPTS || exit_with_log
-    else
-        $PROFILE_BUILD te_builder_opts $BUILDER_OPTS || exit_with_log
-    fi
-fi
-;;
-
-meson)
-    if test -n "$BUILDER_OPTS" ; then
-        echo "Builder options are not supported for meson build." >&2
-        exit_with_log
-    fi
-    if test -n "$BUILDER" -o -n "$BUILD_TA" -o -n "$BUILD_TA_FOR" ; then
-        export BUILD_TA=$BUILD_TA
-        export BUILD_TA_FOR=$BUILD_TA_FOR
-        export BUILD_TA_RM=$BUILD_TA_RM
-        if test -n "${QUIET}" ; then
-            $PROFILE_BUILD "${TE_BASE}"/engine/builder/te_meson_build \
-                "${CONF_BUILDER}" >"${TE_BUILD_LOG}" || exit_with_log
-        else
-            $PROFILE_BUILD "${TE_BASE}"/engine/builder/te_meson_build \
-                "${CONF_BUILDER}" || exit_with_log
-        fi
-    fi
-    ;;
-*)
-    echo "Unknown build: ${BUILD}" >&2
-    exit_with_log
-;;
-esac
 
 if test "$RCF_CONSISTENCY_CHECKS_SIMPLE" = "yes" ; then
     if $PROFILE_BUILD "$TE_BASE/engine/builder/te_rcf_consistency_checks" --check ; then

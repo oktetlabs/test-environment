@@ -24,7 +24,7 @@ EXT_FILES=te_rcf_consistency_checks_files
 rpc_files() {
     echo "$TE_BASE/lib/rpcxdr/tarpc_base.x.m4"
     echo "$TE_BASE/agents/unix/Makefile.am"
-    echo "$TE_BASE/engine/rcf/Makefile.am"
+    echo "$TE_BASE/engine/rcf/meson.build"
 
     find $TE_BASE/agents \
         $TE_BASE/lib/rcfpch \
