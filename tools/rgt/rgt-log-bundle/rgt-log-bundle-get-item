@@ -8,15 +8,22 @@ bundle_path=
 req_path=
 shared_url=
 docs_url=
+sniff_log=false
+sniff_log_dir=
 
 usage()
 {
 cat <<EOF
 Usage: rgt-log-bundle-get-item [<options>]
-  --bundle=PATH        Raw log bundle path
-  --req-path=PATH      Path to HTML log to be obtained
-  --shared-url=URL     URL of directory for shared files (images etc.)
-  --docs-url=URL       URL of directory for test descriptions
+  --bundle=PATH         Raw log bundle path
+  --req-path=PATH       Path to the log to be obtained
+  --shared-url=URL      URL of directory for shared files (images etc.)
+  --docs-url=URL        URL of directory for test descriptions
+  --sniff-log           Include sniffer capture logs (currently works
+                        only for log.txt)
+  --sniff-log-dir=PATH  Where to find sniffer capture files (by default
+                        it looks for "caps" subfolder in the same folder
+                        in which RAW log bundle is stored)
 
 EOF
 }
@@ -30,6 +37,9 @@ while test -n "$1" ; do
         --shared-url=* )   shared_url="${opt#--shared-url=}" ;;
         --docs-url=*   )   docs_url="${opt#--docs-url=}" ;;
 
+        --sniff-log         )   sniff_log=true ;;
+        --sniff-log-dir=*   )   sniff_log_dir=${opt#--sniff-log-dir=} ;;
+
                       *)   echo "Unknown option: ${opt}" >&2;
                            usage ;
                            exit 1 ;;
@@ -42,6 +52,8 @@ if test -z "${bundle_path}" -o -z "${req_path}" ; then
     echo "Not all the required arguments were specified" >&2
     exit 1
 fi
+
+bundle_dir="$(dirname "${req_path}")"
 
 bundle_tmpdir=$(mktemp -d "${TMPDIR}/raw_log_bundle_XXXXXX")
 if test $? -ne 0 ; then
@@ -108,15 +120,21 @@ elif [[ "${req_path}" =~ log[.]txt$ ]] ; then
         err_cleanup "Failed to recover original raw log"
     fi
 
-    "${bindir}"/rgt-conv --no-cntrl-msg --incomplete-log \
-        -f "${bundle_tmpdir}/recovered_log.raw" \
-        -o "${bundle_tmpdir}/recovered_log.xml"
-    if test $? -ne 0 ; then
-        err_cleanup "Failed to obtain XML log"
+    sniff_opts=()
+    if $sniff_log ; then
+        if test ! -d "${sniff_log_dir}" ; then
+            sniff_log_dir="${bundle_dir}/caps"
+        fi
+        if test -d "${sniff_log_dir}" ; then
+            sniff_opts+=("--sniff-log")
+            sniff_opts+=("--sniff-log-dir=${sniff_log_dir}")
+        fi
     fi
 
-    "${bindir}"/rgt-xml2text -f "${bundle_tmpdir}/recovered_log.xml" \
-        -o "${req_path}"
+    "${bindir}"/rgt-proc-raw-log "${sniff_opts[@]}" \
+        --raw-log="${bundle_tmpdir}/recovered_log.raw" \
+        --txt="${req_path}" --rgt-conv-incomplete-log
+
     if test $? -ne 0 ; then
         err_cleanup "Failed to obtain TXT log"
     fi
