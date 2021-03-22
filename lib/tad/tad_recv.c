@@ -627,9 +627,10 @@ tad_recv_start_prepare(csap_p csap, const char *ptrn_str,
         csap->state |= CSAP_STATE_RESULTS;
         if (flags & RCF_CH_TRRECV_PACKETS_NO_PAYLOAD)
             csap->state |= CSAP_STATE_PACKETS_NO_PAYLOAD;
-        if (flags & RCF_CH_TRRECV_PACKETS_SEQ_MATCH)
-            csap->state |= CSAP_STATE_RECV_SEQ_MATCH;
     }
+
+    if (flags & RCF_CH_TRRECV_PACKETS_SEQ_MATCH)
+        csap->state |= CSAP_STATE_RECV_SEQ_MATCH;
 
     csap->first_pkt = csap->last_pkt = tad_tv_zero;
 
