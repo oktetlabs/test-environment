@@ -16,8 +16,16 @@ cat <<EOF
 Usage: rgt-log-bundle-create [<options>]
   --raw-log=PATH        Path to raw log
   --bundle=PATH         Path to raw log bundle to be created
+  -v, --verbose         Print logs about what is done
 
 EOF
+}
+
+verbose=false
+
+print_log()
+{
+    $verbose && echo "$@"
 }
 
 while test -n "$1" ; do
@@ -26,6 +34,8 @@ while test -n "$1" ; do
         --help      )   usage ; exit 0 ;;
         --raw-log=* )   raw_log_path=$(readlink -f "${opt#--raw-log=}") ;;
         --bundle=*  )   bundle_path=$(readlink -f "${opt#--bundle=}") ;;
+        -v) ;&
+        --verbose)      verbose=true ;;
                    *)   echo "Unknown option: ${opt}" >&2;
                         usage ;
                         exit 1 ;;
@@ -62,7 +72,7 @@ if test \! \( -r "${raw_log_path}" \) ; then
 fi
 
 if [[ "${raw_log_path}" =~ [.]bz2$ ]] ; then
-    echo "Extracting raw log..."
+    print_log "Extracting raw log..."
     bunzip2 --keep "${raw_log_path}" -c >"${bundle_tmpdir}/raw_log"
     if test $? -ne 0 ; then
         err_cleanup "Failed to extract raw log file"
@@ -71,7 +81,7 @@ if [[ "${raw_log_path}" =~ [.]bz2$ ]] ; then
 fi
 
 if [[ "${raw_log_path}" =~ [.]xz$ ]] ; then
-    echo "Extracting raw log..."
+    print_log "Extracting raw log..."
     xz --decompress --keep --stdout "${raw_log_path}" \
           >"${bundle_tmpdir}/raw_log"
     if test $? -ne 0 ; then
@@ -80,21 +90,21 @@ if [[ "${raw_log_path}" =~ [.]xz$ ]] ; then
     raw_log_path="${bundle_tmpdir}/raw_log"
 fi
 
-echo "Indexing raw log..."
+print_log "Indexing raw log..."
 "${bindir}"/rgt-conv --mode=index "${raw_log_path}" \
                                     "${bundle_tmpdir}/log_idx"
 if test $? -ne 0 ; then
     err_cleanup "Failed to index raw log file"
 fi
 
-echo "Sorting raw log index according to record time..."
+print_log "Sorting raw log index according to record time..."
 export LC_NUMERIC=POSIX
 sort -n "${bundle_tmpdir}/log_idx" >"${bundle_tmpdir}/sorted_log_idx"
 if test $? -ne 0 ; then
     err_cleanup "Failed to sort raw log index"
 fi
 
-echo "Fragmenting raw log..."
+print_log "Fragmenting raw log..."
 mkdir -p "${bundle_tmpdir}/fragments"
 if test $? -ne 0 ; then
     err_cleanup "Failed to create subdir in ${bundle_tmpdir}"
@@ -107,7 +117,7 @@ if test $? -ne 0 ; then
     err_cleanup "rgt-log-split failed"
 fi
 
-echo "Archiving fragmented raw log..."
+print_log "Archiving fragmented raw log..."
 pushd "${bundle_tmpdir}/fragments/" >/dev/null
 if test $? -ne 0 ; then
     err_cleanup "pushd to /fragments/ subdir failed"
@@ -124,7 +134,7 @@ if test $? -ne 0 ; then
     err_cleanup "popd failed"
 fi
 
-echo "Checking whether original log can be recovered..."
+print_log "Checking whether original log can be recovered..."
 "${bindir}"/rgt-log-bundle-get-original --bundle="${bundle_path}" \
     --output="${bundle_tmpdir}/recovered_raw_log"
 if test $? -ne 0 ; then
