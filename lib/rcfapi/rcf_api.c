@@ -1993,6 +1993,7 @@ rcf_ta_trrecv_start(const char *ta_name, int session,
                           TR_NO_PAYLOAD : 0)));
 
     msg.intparm |= (mode & RCF_TRRECV_SEQ_MATCH) ? TR_SEQ_MATCH : 0;
+    msg.intparm |= (mode & RCF_TRRECV_MISMATCH) ? TR_MISMATCH : 0;
     msg.sid = session;
     msg.num = num;
     msg.timeout = timeout;

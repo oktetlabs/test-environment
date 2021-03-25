@@ -2338,11 +2338,12 @@ send_cmd(ta *agent, usrreq *req)
             break;
 
         case RCFOP_TRRECV_START:
-            PUT(TE_PROTO_TRRECV_START " %u %u %u%s%s%s", msg->handle,
+            PUT(TE_PROTO_TRRECV_START " %u %u %u%s%s%s%s", msg->handle,
                 msg->num, msg->timeout,
                 (msg->intparm & TR_RESULTS) ? " results" : "",
                 (msg->intparm & TR_NO_PAYLOAD) ? " no-payload" : "",
-                (msg->intparm & TR_SEQ_MATCH) ? " seq-match" : "");
+                (msg->intparm & TR_SEQ_MATCH) ? " seq-match" : "",
+                (msg->intparm & TR_MISMATCH) ? " mismatch" : "");
             req->timeout = RCF_CMD_TIMEOUT_HUGE;
             break;
 

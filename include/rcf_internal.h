@@ -55,6 +55,7 @@ extern "C" {
 #define TR_RESULTS              2
 #define TR_NO_PAYLOAD           4
 #define TR_SEQ_MATCH            8
+#define TR_MISMATCH             0x10
 /*@}*/
 
 
