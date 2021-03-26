@@ -1605,6 +1605,12 @@ te_fstat(tarpc_lib_flags lib_flags, int fd, rpc_stat *rpcbuf)
     struct stat buf;
 
     memset(&buf, 0, sizeof(buf));
+
+#ifdef _STAT_VER
+    /*
+     * In libc before version 2.33 fstat() cannot be resolved
+     * dynamically, so this hack is needed.
+     */
     if (tarpc_find_func(lib_flags, "__fxstat", &stat_func) != 0)
     {
         ERROR("Failed to find __fxstat function");
@@ -1614,6 +1620,18 @@ te_fstat(tarpc_lib_flags lib_flags, int fd, rpc_stat *rpcbuf)
     rc = stat_func(_STAT_VER, fd, &buf);
     if (rc < 0)
         return rc;
+#else
+    /* Since libc 2.33 fstat() can be resolved dynamically. */
+    if (tarpc_find_func(lib_flags, "fstat", &stat_func) != 0)
+    {
+        ERROR("Failed to find fstat() function");
+        return -1;
+    }
+
+    rc = stat_func(fd, &buf);
+    if (rc < 0)
+        return rc;
+#endif
 
     FSTAT_COPY(rpcbuf, buf);
     return 0;
@@ -1643,6 +1661,12 @@ te_fstat64(tarpc_lib_flags lib_flags, int fd, rpc_stat *rpcbuf)
     struct stat64 buf;
 
     memset(&buf, 0, sizeof(buf));
+
+#ifdef _STAT_VER
+    /*
+     * In libc before version 2.33 fstat64() cannot be resolved
+     * dynamically, so this hack is needed.
+     */
     if (tarpc_find_func(lib_flags, "__fxstat64", &stat_func) != 0)
     {
         ERROR("Failed to find __fxstat64 function");
@@ -1652,6 +1676,18 @@ te_fstat64(tarpc_lib_flags lib_flags, int fd, rpc_stat *rpcbuf)
     rc = stat_func(_STAT_VER, fd, &buf);
     if (rc < 0)
         return rc;
+#else
+    /* Since libc 2.33 fstat64() can be resolved dynamically. */
+    if (tarpc_find_func(lib_flags, "fstat64", &stat_func) != 0)
+    {
+        ERROR("Failed to find fstat64() function");
+        return -1;
+    }
+
+    rc = stat_func(fd, &buf);
+    if (rc < 0)
+        return rc;
+#endif
 
     FSTAT_COPY(rpcbuf, buf);
     return 0;
