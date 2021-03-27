@@ -156,7 +156,7 @@ in_enum && /<value/ {
 }
 
 /<\/enum>/ {
-  sub(/<\/enum>/, "");
+  sub(/ *<\/enum>/, "@}");
 
   in_enum = 0;
   print $0;
