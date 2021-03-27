@@ -196,7 +196,10 @@ in_group {
     next
 }
 
-in_dox_comment { print $0; next }
+in_dox_comment {
+    print $0
+    next
+}
 
 END {
     if (in_page) {
