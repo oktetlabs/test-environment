@@ -181,6 +181,54 @@ in_enum && /<value/ {
   next;
 }
 
+/<var / {
+    in_var = 1;
+    if (has_default_group)
+        printf("@ingroup %s\n", default_group);
+
+    if (match($0, /description=/)) {
+        printf("@defgroup %s %s\n@{\n\n%s\n",
+               gensub(/\./, "-", "g", gensub(/.* name="([a-zA-Z0-9._]+)".*/, "\\1", 1, $0)),
+               gensub(/.* name="([a-zA-Z0-9._]+)".*/, "\\1", 1, $0),
+               gensub(/.* description="(.*)".*/, "\\1", 1, $0))
+    }
+    else {
+        printf("@defgroup %s %s\n@{\n",
+               gensub(/\./, "-", "g", gensub(/.* name="([a-zA-Z0-9._]+)".*/, "\\1", 1, $0)),
+               gensub(/.* name="([a-zA-Z0-9._]+)".*/, "\\1", 1, $0))
+    }
+    next;
+}
+
+in_var && /<value/ {
+    rc = sub(/<\/value>/, "");
+    sub(/<value.*>/, "");
+    print "@code"
+    print $0
+    if (rc)
+        print "@endcode"
+    next;
+}
+
+in_var && /<\/value>/ {
+    sub(/<\/value>/, "\n@endcode");
+    print $0;
+    next;
+}
+
+/<\/var>/ {
+    sub(/ *<\/var>/, "@}");
+
+    in_var = 0;
+    print $0;
+    next;
+}
+
+in_var {
+    print $0
+    next
+}
+
 /<run name/ {
     if (in_page && ! run_logged) {
         code_line = $0
