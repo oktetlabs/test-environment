@@ -244,6 +244,12 @@ in_var {
     next
 }
 
+in_page && /<run>/ {
+    sub(/<run>/, "");
+    run_prefix = $0
+    in_run = 1;
+}
+
 /<run name/ {
     if (in_page && ! run_logged) {
         code_line = $0
@@ -260,6 +266,27 @@ in_var {
         print "@code"
         print code_line
         next
+    }
+}
+
+/<script name/ {
+    if (!run_found) {
+        if (in_page && ! run_logged) {
+            code_line = $0
+            run_name = $0
+            gsub(" .*<script name=\"", "", run_name);
+            gsub("\".*>", "", run_name);
+
+            if (auto_group) {
+                printf("@addtogroup %s%s\n", default_group_prefix, run_name);
+                printf("@{\n");
+            }
+            print "@code"
+            # Log <run> that we skipped when it was handled
+            printf("%s<run>\n", run_prefix);
+            print code_line
+            next
+        }
     }
 }
 
