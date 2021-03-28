@@ -68,9 +68,9 @@ function process(str)
         run_found = 0;
     }
 
-    if (sub(/@autogroup/, str)) {
+    if (sub(/@autogroupall/, str)) {
         sub("[ \t]+", "", str)
-        sub("@autogroup", "", str)
+        sub("@autogroupall", "", str)
         default_group = str;
         has_default_group = 1
         # we should start the comment!
