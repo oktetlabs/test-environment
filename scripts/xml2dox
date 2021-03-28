@@ -245,48 +245,52 @@ in_var {
 }
 
 in_page && /<run>/ {
-    sub(/<run>/, "");
-    run_prefix = $0
+    run_code_line = $0
     in_run = 1;
+    next;
 }
 
 /<run name/ {
     if (in_page) {
-        code_line = $0
+        run_code_line = $0
         run_name = $0
         gsub(" .*<run name=\"", "", run_name);
         gsub("\".*>", "", run_name);
         run_found = 1;
         in_run = 1
 
-        if (auto_group) {
-            printf("@addtogroup %s%s\n", default_group_prefix, run_name);
-            printf("@{\n");
-        }
-        print "@code"
-        print code_line
         next
     }
 }
 
 /<script name/ {
-    if (!run_found) {
-        if (in_page) {
-            code_line = $0
-            run_name = $0
-            gsub(" .*<script name=\"", "", run_name);
-            gsub("\".*>", "", run_name);
+    if (in_page) {
+        code_line = $0
+        script_name = $0
+        gsub(" .*<script name=\"", "", script_name);
+        gsub("\".*>", "", script_name);
 
-            if (auto_group) {
-                printf("@addtogroup %s%s\n", default_group_prefix, run_name);
-                printf("@{\n");
+        if (auto_group) {
+            if (run_found) {
+                printf("@defgroup %s%s-run %s\n",
+                       default_group_prefix, run_name, run_name)
+                printf("@ingroup %s%s %s%s\n",
+                       default_group_prefix, run_name,
+                       default_group_prefix, script_name);
             }
-            print "@code"
-            # Log <run> that we skipped when it was handled
-            printf("%s<run>\n", run_prefix);
-            print code_line
-            next
+            else {
+                printf("@defgroup %s%s-run %s\n",
+                       default_group_prefix, script_name, script_name)
+                printf("@ingroup %s%s\n",
+                       default_group_prefix, script_name);
+            }
+            printf("@{\n");
         }
+        print "@code"
+        # Log <run> that we skipped when it was handled
+        print run_code_line
+        print code_line
+        next
     }
 }
 
