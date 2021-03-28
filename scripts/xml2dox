@@ -251,7 +251,7 @@ in_page && /<run>/ {
 }
 
 /<run name/ {
-    if (in_page && ! run_logged) {
+    if (in_page) {
         code_line = $0
         run_name = $0
         gsub(" .*<run name=\"", "", run_name);
@@ -271,7 +271,7 @@ in_page && /<run>/ {
 
 /<script name/ {
     if (!run_found) {
-        if (in_page && ! run_logged) {
+        if (in_page) {
             code_line = $0
             run_name = $0
             gsub(" .*<script name=\"", "", run_name);
