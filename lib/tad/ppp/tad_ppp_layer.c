@@ -372,7 +372,7 @@ tad_ppp_match_do_cb(csap_p           csap,
                           TAD_PKT_GET_FRAG_ERROR);
     if (rc != 0)
     {
-        ERROR(CSAP_LOG_FMT "Failed to prepare IPv4 SDU: %r",
+        ERROR(CSAP_LOG_FMT "Failed to prepare PPP SDU: %r",
               CSAP_LOG_ARGS(csap), rc);
         return rc;
     }

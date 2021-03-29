@@ -111,7 +111,7 @@ extern te_errno tad_dhcp_init_cb(csap_p csap, unsigned int layer);
 extern te_errno tad_dhcp_destroy_cb(csap_p csap, unsigned int layer);
 
 /**
- * Callback for confirm template PDU with IPv4 CSAP
+ * Callback for confirm template PDU with DHCP CSAP
  * parameters and possibilities.
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.
@@ -122,7 +122,7 @@ extern te_errno tad_dhcp_confirm_tmpl_cb(csap_p         csap,
                                          void         **p_opaque);
 
 /**
- * Callback for confirm pattern PDU with IPv4 CSAP
+ * Callback for confirm pattern PDU with DHCP CSAP
  * arameters and possibilities.
  *
  * The function complies with csap_layer_confirm_pdu_cb_t prototype.

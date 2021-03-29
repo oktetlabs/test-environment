@@ -40,7 +40,7 @@ typedef struct tad_udp_proto_data {
 } tad_udp_proto_data;
 
 /**
- * IPv4 layer specific data for PDU processing (both send and
+ * UDP layer specific data for PDU processing (both send and
  * receive).
  */
 typedef struct tad_udp_proto_pdu_data {
@@ -393,7 +393,7 @@ tad_udp_match_do_cb(csap_p           csap,
                                    &pkt_data->hdr, pdu, &bitoff);
     if (rc != 0)
     {
-        F_VERB(CSAP_LOG_FMT "Match PDU vs IPv4 header failed on bit "
+        F_VERB(CSAP_LOG_FMT "Match PDU vs UDP header failed on bit "
                "offset %u: %r", CSAP_LOG_ARGS(csap), (unsigned)bitoff, rc);
         return rc;
     }
@@ -411,7 +411,7 @@ tad_udp_match_do_cb(csap_p           csap,
                           TAD_PKT_GET_FRAG_ERROR);
     if (rc != 0)
     {
-        ERROR(CSAP_LOG_FMT "Failed to prepare IPv4 SDU: %r",
+        ERROR(CSAP_LOG_FMT "Failed to prepare UDP SDU: %r",
               CSAP_LOG_ARGS(csap), rc);
         return rc;
     }
