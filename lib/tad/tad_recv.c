@@ -1473,6 +1473,13 @@ tad_recv_get_packets(csap_p csap, tad_reply_context *reply_ctx, te_bool wait,
             ERROR("ERROR: %s:%u", __FILE__, __LINE__);
         for (layer = 0; layer < csap->depth; ++layer)
         {
+            /*
+             * Handle mismatch packet: silently skip layer if match packet
+             * is empty.
+             */
+            if (tad_pkt_len(tad_pkts_first_pkt(&pkt->layers[layer].pkts)) == 0)
+                continue;
+
             if (csap_get_proto_support(csap, layer)->match_post_cb != NULL)
             {
                 rc = csap_get_proto_support(csap, layer)->match_post_cb(
