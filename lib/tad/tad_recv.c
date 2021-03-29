@@ -1019,13 +1019,14 @@ tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
     {
         F_VERB(CSAP_LOG_FMT "The matching of pattern sequence is finished",
                CSAP_LOG_ARGS(csap), unit, rc);
-        tad_recv_pkt_cleanup_upper(csap, meta_pkt);
-
         return TE_ETADNOTMATCH;
     }
 
     assert(ptrn_data->n_units > 0);
     do {
+        /* Cleanup artifacts of the previous pattern unit match attempt */
+        tad_recv_pkt_cleanup_upper(csap, meta_pkt);
+
         rc = tad_recv_match_with_unit(csap, ptrn_data->units + unit,
                                       meta_pkt);
         switch (TE_RC_GET_ERROR(rc))
@@ -1047,8 +1048,6 @@ tad_recv_match(csap_p csap, tad_recv_pattern_data *ptrn_data,
             case TE_ETADNOTMATCH:
                 F_VERB(CSAP_LOG_FMT "Match packet with unit #%u - %r",
                        CSAP_LOG_ARGS(csap), unit, rc);
-                /* Nothing is owned by match routine */
-                tad_recv_pkt_cleanup_upper(csap, meta_pkt);
 
                 if (csap->state & CSAP_STATE_RECV_SEQ_MATCH)
                     return rc;
