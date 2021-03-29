@@ -952,8 +952,22 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
         VERB("match cb 0x%x for layer %u sdu_len=%u returned %r",
              csap_spt_descr->match_do_cb, layer,
              (unsigned)tad_pkt_len(sdu), rc);
-        if (rc != 0)
-            return rc;
+        switch (rc)
+        {
+            case 0:
+                break;
+            case TE_ETADNOTMATCH:
+                /* Move everything starting from mismatch layer to payload */
+                if (csap->state & CSAP_STATE_RECV_MISMATCH)
+                {
+                    (void)tad_pkt_get_frag(&meta_pkt->payload, pdu, 0,
+                                           tad_pkt_len(pdu),
+                                           TAD_PKT_GET_FRAG_ERROR);
+                }
+                /* FALLTHROUGH */
+            default:
+                return rc;
+        }
     } while (layer-- > 0);
 
     /* Match payload */
