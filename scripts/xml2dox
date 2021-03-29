@@ -143,7 +143,7 @@ in_dox_comment && /-->/ {
     next;
 }
 
-/<enum / {
+!in_run && /<enum / {
   if (has_default_group)
       printf("@ingroup %s\n", default_group);
   else if (! in_page)
