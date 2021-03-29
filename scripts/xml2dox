@@ -47,8 +47,11 @@ function process(str)
         || sub(/@ingroup/, str) || sub(/@addtogroup/, str) \
         || sub(/@autogroup/, str)) {
         if (in_page) {
-            if (run_found) {
+            if (run_found && auto_group) {
                 printf("\n@run_name %s\n", run_name);
+            }
+            if (in_run) {
+                print "@endcode"
             }
             print "*/";
         }
@@ -250,6 +253,27 @@ in_page && /<run>/ {
     next;
 }
 
+function group_start(str)
+{
+    if (auto_group) {
+        if (run_found) {
+            printf("@defgroup %s%s-run %s\n",
+                   default_group_prefix, run_name, run_name)
+            printf("@ingroup %s%s %s%s\n",
+                   default_group_prefix, run_name,
+                   default_group_prefix, script_name);
+        }
+        else {
+            printf("@defgroup %s%s-run %s\n",
+                   default_group_prefix, script_name, script_name)
+            printf("@ingroup %s%s\n",
+                   default_group_prefix, script_name);
+        }
+        printf("@{\n");
+        print "@code"
+    }
+}
+
 /<run name/ {
     if (in_page) {
         run_code_line = $0
@@ -270,31 +294,25 @@ in_page && /<run>/ {
         gsub(" .*<script name=\"", "", script_name);
         gsub("\".*>", "", script_name);
 
-        if (auto_group) {
-            if (run_found) {
-                printf("@defgroup %s%s-run %s\n",
-                       default_group_prefix, run_name, run_name)
-                printf("@ingroup %s%s %s%s\n",
-                       default_group_prefix, run_name,
-                       default_group_prefix, script_name);
-            }
-            else {
-                printf("@defgroup %s%s-run %s\n",
-                       default_group_prefix, script_name, script_name)
-                printf("@ingroup %s%s\n",
-                       default_group_prefix, script_name);
-            }
-            printf("@{\n");
-        }
-        print "@code"
+        group_start()
         # Log <run> that we skipped when it was handled
         print run_code_line
         print code_line
+        in_run = 1
         next
     }
 }
 
-in_run && /<\/run>/ {
+/<session/ {
+    if (in_page) {
+        group_start()
+        print run_code_line
+        print $0
+        next
+    }
+}
+
+auto_group && in_run && /<\/run>/ {
     print $0
     print "@endcode"
     print "@}"
