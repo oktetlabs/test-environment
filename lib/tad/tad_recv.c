@@ -623,17 +623,22 @@ tad_recv_start_prepare(csap_p csap, const char *ptrn_str,
     CSAP_LOCK(csap);
 
     if (flags & RCF_CH_TRRECV_PACKETS)
-    {
         csap->state |= CSAP_STATE_RESULTS;
-        if (flags & RCF_CH_TRRECV_PACKETS_NO_PAYLOAD)
-            csap->state |= CSAP_STATE_PACKETS_NO_PAYLOAD;
-    }
 
     if (flags & RCF_CH_TRRECV_PACKETS_SEQ_MATCH)
         csap->state |= CSAP_STATE_RECV_SEQ_MATCH;
 
+    /*
+     * Set results flag in the case of mismatch receive to enable
+     * processing in post match callbacks which fill in packet NDS.
+     * Also the flag enables purge of packets queue on stop.
+     */
     if (flags & RCF_CH_TRRECV_MISMATCH)
-        csap->state |= CSAP_STATE_RECV_MISMATCH;
+        csap->state |= CSAP_STATE_RESULTS | CSAP_STATE_RECV_MISMATCH;
+
+    if ((csap->state & CSAP_STATE_RESULTS) &&
+        (flags & RCF_CH_TRRECV_PACKETS_NO_PAYLOAD))
+        csap->state |= CSAP_STATE_PACKETS_NO_PAYLOAD;
 
     csap->first_pkt = csap->last_pkt = tad_tv_zero;
 
