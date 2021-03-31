@@ -26,6 +26,24 @@ line_prefix=
 declare -a rgt_conv_opts
 declare -a rgt_x2hm_opts
 
+caps_tmp_dir=
+declare -a tmp_files
+
+##############################################
+# Remove temporary files and directories.
+# Arguments:
+#     None
+##############################################
+function cleanup() {
+    if [[ -n "${caps_tmp_dir}" ]] ; then
+        rm -r "${caps_tmp_dir}"
+    fi
+
+    if [[ "${#tmp_files[@]}" -gt 0 ]] ; then
+        rm -f "${tmp_files[@]}"
+    fi
+}
+
 #############################
 # Print usage information.
 # Arguments:
@@ -144,9 +162,7 @@ function process_opts() {
 #   May output error messages to stderr or usage info to stdout.
 #######################################################################
 function main() {
-    local caps_tmp_dir
-
-    local -a tmp_files
+    trap cleanup SIGINT
 
     process_opts "$@"
 
@@ -293,11 +309,7 @@ function main() {
         "${BINDIR}"/rgt-conv -m junit -f "${raw_path}" -o "${junit_path}"
     fi
 
-    if [[ -n "${caps_tmp_dir}" ]] ; then
-        rm -r "${caps_tmp_dir}"
-    fi
-
-    rm -f "${tmp_files[@]}"
+    cleanup
 }
 
 main "$@"
