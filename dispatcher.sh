@@ -1346,6 +1346,9 @@ fi
 if test -n "${RGT_LOG_TXT_DETAILED_PACKETS}" ; then
     RAW_PROC_OPTS+=("--txt-detailed-packets")
 fi
+if test -n "${RGT_LOG_JUNIT}" ; then
+    RAW_PROC_OPTS+=("--junit=${RGT_LOG_JUNIT}")
+fi
 if test -z "${TE_SNIFF_LOG_CONV_DISABLE}" -a -d "${TE_SNIFF_LOG_DIR}" ; then
     RAW_PROC_OPTS+=("--sniff-log")
     RAW_PROC_OPTS+=("--sniff-log-dir=${TE_SNIFF_LOG_DIR}")
