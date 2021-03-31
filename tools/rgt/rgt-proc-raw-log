@@ -7,7 +7,7 @@
 # Author Dmitry Izbitsky <Dmitry.Izbitsky@oktetlabs.ru>
 #
 
-export TMPDIR="${TE_TMP}"
+export TMPDIR="${TMPDIR:-${TE_TMP:-/tmp/}}"
 
 readonly RUN_DIR="${PWD}"
 readonly BINDIR="$(cd `dirname $0` && pwd)"
@@ -144,6 +144,10 @@ function process_opts() {
 #   May output error messages to stderr or usage info to stdout.
 #######################################################################
 function main() {
+    local caps_tmp_dir
+
+    local -a tmp_files
+
     process_opts "$@"
 
     if [[ -z "${raw_path}" ]] ; then
@@ -202,12 +206,15 @@ function main() {
         local xlog
         local -a pcap_files
 
+        caps_tmp_dir="$(mktemp -d "${TMPDIR}/caps_XXXXXX")"
+
         readarray -t pcap_files < <(ls "${sniff_log_dir}"/ | grep \.pcap$)
         for plog in "${pcap_files[@]}" ; do
             plog="${sniff_log_dir}/${plog}"
-            xlog="${plog/%.pcap/.xml}"
+            xlog="$(basename -s .pcap "${plog}")"
+            xlog="${caps_tmp_dir}/${xlog}.xml"
+
             # Actual conversion from pcap to TE XML
-            rm -f "${xlog}"
             tshark -r "${plog}" -T pdml ${TE_SNIFF_TSHARK_OPTS} \
               | "${BINDIR}"/rgt-pdml2xml - "${xlog}"
             if [[ -e "${xlog}" ]] ; then
@@ -223,8 +230,14 @@ function main() {
 
     if [[ -n "${txt_path}" || -n "${plain_html_path}" ]] ; then
         # Generate XML log not taking into account control messages
-        local log_xml_plain="log_plain.xml"
-        local log_xml_merged="log_plain_ext.xml"
+        local log_xml_plain
+        local log_xml_merged
+
+        log_xml_plain="$(mktemp "${TMPDIR}/log_plain_XXXXXX.xml")"
+        log_xml_merged="$(mktemp "${TMPDIR}/log_plain_ext_XXXXXX.xml")"
+        tmp_files+=("${log_xml_plain}")
+        tmp_files+=("${log_xml_merged}")
+
         "${BINDIR}"/rgt-conv --no-cntrl-msg -m postponed \
             "${rgt_conv_opts[@]}" -f "${raw_path}" -o "${log_xml_plain}"
         if [[ $? -eq 0 && -e "${log_xml_plain}" ]] ; then
@@ -248,14 +261,18 @@ function main() {
             fi
         fi
 
-        rm -f "${log_xml_plain}"
-        rm -f "${log_xml_merged}"
     fi
 
     if [[ -n "${html_path}" ]] ; then
         # Generate XML log taking into account control messages
-        local log_xml_struct="log_struct.xml"
-        local log_xml_merged="log_struct_ext.xml"
+        local log_xml_struct
+        local log_xml_merged
+
+        log_xml_struct="$(mktemp "${TMPDIR}/log_struct_XXXXXX.xml")"
+        log_xml_merged="$(mktemp "${TMPDIR}/log_struct_ext_XXXXXX.xml")"
+        tmp_files+=("${log_xml_struct}")
+        tmp_files+=("${log_xml_merged}")
+
         "${BINDIR}"/rgt-conv -m postponed "${rgt_conv_opts[@]}" \
             -f "${raw_path}" -o "${log_xml_struct}"
         if [[ $? -eq 0 && -e "${log_xml_struct}" ]] ; then
@@ -270,21 +287,17 @@ function main() {
             "${BINDIR}"/rgt-xml2html-multi "${rgt_x2hm_opts[@]}" \
                 "${log_xml_merged}" "${html_path}"
         fi
-
-        rm -f "${log_xml_struct}"
-        rm -f "${log_xml_merged}"
     fi
 
     if [[ -n "${junit_path}" ]] ; then
         "${BINDIR}"/rgt-conv -m junit -f "${raw_path}" -o "${junit_path}"
     fi
 
-    if [[ "${sniff_logs_included}" == "true" ]] ; then
-        local rmlog
-        for rmlog in "${sniff_logs[@]}" ; do
-            rm -f "${rmlog}"
-        done
+    if [[ -n "${caps_tmp_dir}" ]] ; then
+        rm -r "${caps_tmp_dir}"
     fi
+
+    rm -f "${tmp_files[@]}"
 }
 
 main "$@"
