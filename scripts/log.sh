@@ -154,3 +154,13 @@ else
 fi
 
 rgt-proc-raw-log "${PROC_OPTS[@]}" "${UNKNOWN_OPTS[@]}"
+
+if [[ "${OUTPUT_HTML}" == "false" ]] ;  then
+    # If text log was generated, show it to the user
+    if [[ -e "${OUTPUT_LOCATION}" ]] ; then
+        ${PAGER:-less} "${OUTPUT_LOCATION}"
+        echo "Log was saved in ${OUTPUT_LOCATION}"
+    else
+        echo "Failed to generate log in text format" >&2
+    fi
+fi
