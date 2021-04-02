@@ -4427,6 +4427,7 @@ net_addr_list(unsigned int gid, const char *oid,
 
     if (len == 0)
     {
+        netconf_list_free(nlist);
         *list = NULL;
         return 0;
     }
