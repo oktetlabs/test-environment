@@ -1328,6 +1328,7 @@ update_rsrc_lock_file(rsrc_lock *lock, const char *fname, int fd)
         te_string_free(&str);
         return TE_RC(TE_RCF_PCH, TE_EFAIL);
     }
+    te_string_free(&str);
 
     return 0;
 }
