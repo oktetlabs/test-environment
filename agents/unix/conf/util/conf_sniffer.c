@@ -1519,7 +1519,7 @@ sniffer_check_exst_backup(sniffer_t *sniff)
  *
  * @param gid       Request's group identifier (unused).
  * @param oid       Full object instance identifier (unused).
- * @param ssn       Sniffer session sequence number (unused).
+ * @param ssn       Sniffer session sequence number.
  * @param ifname    Interface name.
  * @param snifname  Sniffer name.
  *
@@ -1531,7 +1531,6 @@ sniffer_add(unsigned int gid, const char *oid, char *ssn,
 {
     UNUSED(gid);
     UNUSED(oid);
-    UNUSED(ssn);
 
     sniffer_t *sniff;
     te_bool    backup = FALSE;
@@ -1557,17 +1556,32 @@ sniffer_add(unsigned int gid, const char *oid, char *ssn,
 
     memset(sniff->path, 0, RCF_MAX_PATH);
 
-    backup = sniffer_check_exst_backup(sniff);
-    if (backup)
+    /*
+     * Sniffer ID may match ID of the previously existed sniffer
+     * if Configurator restores configuration from history.
+     * Directory assigned to that sniffer may still exist because
+     * sniffer is actually removed only after it has sent all the
+     * logs to Logger.
+     *
+     * Attempt to restore sniffer corresponding to that directory
+     * with sniffer_add_clone() makes sense only if it is not already
+     * present in the list of sniffers (perhaps this can happen when
+     * TA itself is restarted).
+     */
+    if (sniffer_find_by_id(&sniff->id) == NULL)
     {
-        sniffer_add_clone(sniff);
-        sniff->state = SNIF_ST_START;
-        sniff->id.abs_offset = 0;
-        sniff->curr_offset = 0;
-        if (sniff->curr_file_name != NULL)
+        backup = sniffer_check_exst_backup(sniff);
+        if (backup)
         {
-            free(sniff->curr_file_name);
-            sniff->curr_file_name = NULL;
+            sniffer_add_clone(sniff);
+            sniff->state = SNIF_ST_START;
+            sniff->id.abs_offset = 0;
+            sniff->curr_offset = 0;
+            if (sniff->curr_file_name != NULL)
+            {
+                free(sniff->curr_file_name);
+                sniff->curr_file_name = NULL;
+            }
         }
     }
 
