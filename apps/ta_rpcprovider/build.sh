@@ -13,6 +13,23 @@ set -e
 declare -a meson_args
 te_cppflags=
 te_ldflags=
+CROSS_FILE=
+
+process_opts()
+{
+    while test -n "$1" ; do
+        case "$1" in
+            --cross-file=*)
+                CROSS_FILE="${1#--cross-file=}" ;;
+
+            *)  echo "Unknown option: $1" >&2;
+                exit 1 ;;
+        esac
+        shift 1
+    done
+}
+
+process_opts "$@"
 
 # There is way to use meson cross files to build m32, but the 'pkg_config_libdir'
 # property is supported on meson starting from 0.54.0
@@ -37,6 +54,7 @@ meson_args+=(-Dapp-name="${app_name}")
 echo "${meson_args[@]}" >meson.args.new
 
 if test ! -f meson.args ; then
+    test -z "${CROSS_FILE}" || meson_args+=(--cross-file="${CROSS_FILE}")
     meson setup ${PWD} ${EXT_SOURCES} "${meson_args[@]}"
     echo "${meson_args[@]}" >meson.args
 elif diff -q meson.args meson.args.new 2>/dev/null ; then
