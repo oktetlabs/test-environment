@@ -117,8 +117,13 @@ tad_tcp_init_cb(csap_p csap, unsigned int layer)
 te_errno
 tad_tcp_destroy_cb(csap_p csap, unsigned int layer)
 {
-    UNUSED(csap);
-    UNUSED(layer);
+    tcp_csap_specific_data_t *proto_data;
+
+    proto_data = csap_get_proto_spec_data(csap, layer);
+    csap_set_proto_spec_data(csap, layer, NULL);
+
+    free(proto_data);
+
     return 0;
 }
 
