@@ -968,6 +968,7 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
                     (void)tad_pkt_get_frag(&meta_pkt->payload, pdu, 0,
                                            tad_pkt_len(pdu),
                                            TAD_PKT_GET_FRAG_ERROR);
+                    tad_pkt_cleanup(pdu);
                 }
                 /* FALLTHROUGH */
             default:
