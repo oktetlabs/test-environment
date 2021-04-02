@@ -203,10 +203,13 @@ tad_tcp_option_len(const asn_value *opt_tmpl)
 void
 tad_tcp_release_opaque_cb(csap_p csap, unsigned int layer, void *opaque)
 {
+    tad_data_unit_t    *tad_du_checksum = opaque;
+
     UNUSED(csap);
     UNUSED(layer);
 
-    free(opaque);
+    tad_data_unit_clear(tad_du_checksum);
+    free(tad_du_checksum);
 }
 
 /* See description in tad_ipstack_impl.h */
