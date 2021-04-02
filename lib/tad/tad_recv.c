@@ -1512,7 +1512,7 @@ tad_recv_get_packets(csap_p csap, tad_reply_context *reply_ctx, te_bool wait,
             if (asn_put_child_value(pdu, pkt->layers[layer].nds, PRIVATE,
                                     csap->layers[layer].proto_tag) != 0)
                 ERROR("ERROR: %s:%u", __FILE__, __LINE__);
-            if (asn_insert_indexed(pdus, pdu, layer, "") != 0)
+            if (asn_insert_indexed(pdus, pdu, -1, "") != 0)
                 ERROR("ERROR: %s:%u", __FILE__, __LINE__);
         }
 
