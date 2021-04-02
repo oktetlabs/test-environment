@@ -862,6 +862,7 @@ static size_t
 sniffer_get_list_buf(char **buf, te_bool sync)
 {
     sniffer_t           *sniff;
+    sniffer_t           *sniff_aux;
     size_t               str_len;
     size_t               clen;
     size_t               mem_size   = 1024;
@@ -871,7 +872,7 @@ sniffer_get_list_buf(char **buf, te_bool sync)
     memset(*buf, 0, mem_size);
 
     clen = 0;
-    SLIST_FOREACH(sniff, &snifferl_h, ent_l)
+    SLIST_FOREACH_SAFE(sniff, &snifferl_h, ent_l, sniff_aux)
     {
         if (sniff->id.snifname == NULL || sniff->id.ifname == NULL ||
             (sniff->state & SNIF_ST_START) != SNIF_ST_START)
@@ -899,6 +900,16 @@ sniffer_get_list_buf(char **buf, te_bool sync)
             }
             clen += str_len + 1;
         }
+        else if (sync && (sniff->state & SNIF_ST_DEL) &&
+                 !(sniff->state & SNIF_ST_HAS_L))
+        {
+            /*
+             * Sniffer queued for removal was discovered when reporting
+             * synchronized list of sniffers; no new packets are present
+             * for this sniffer, so it is save to remove it now.
+             */
+            sniffer_cleanup(sniff);
+        }
     }
     return clen;
 }
@@ -920,6 +931,7 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
                     size_t buflen, size_t answer_plen, const char *buf)
 {
     int              rc;
+    te_errno         te_rc;
     int              res;
     sniffer_id       id;
     sniffer_t       *snif;
@@ -997,6 +1009,37 @@ sniffer_get_dump(struct rcf_comm_connection *handle, char *cbuf,
     {
         close(fd);
         snif->state &= ~SNIF_ST_HAS_L;
+        if (fnum > 1)
+        {
+            /*
+             * There are no new packets in the current capture file,
+             * however there is a newer capture file.
+             *
+             * Note: if we do not remove current capture file
+             * here, sniffer can be stuck forever at it.
+             */
+            rc = remove(snif->curr_file_name);
+            if (rc != 0)
+            {
+                te_rc = TE_OS_RC(TE_TA_UNIX, errno);
+                WARN("Failed to remove the capture log file: %s; error=%r",
+                     fname, te_rc);
+                return te_rc;
+            }
+
+            return sniffer_get_dump(handle, cbuf, buflen,
+                                    answer_plen, buf);
+        }
+
+        if (snif->state & SNIF_ST_DEL)
+        {
+            /*
+             * Sniffer is queued for removal and there is no
+             * new packets in the last capture file.
+             */
+            sniffer_cleanup(snif);
+        }
+
         return TE_RC(TE_TA_UNIX, TE_ENODATA);
     }
     if (size > SNIFFER_MAX_LOG_SIZE)
@@ -1633,6 +1676,14 @@ sniffer_del(unsigned int gid, const char *oid, const char *ifname,
 
     sniffer_get_curr_offset(NULL, sniff, &offset);
     sniff->state |= SNIF_ST_DEL;
+    if (!(sniff->state & SNIF_ST_START))
+    {
+        /*
+         * Sniffer which was never started can be removed
+         * immediately.
+         */
+        sniffer_cleanup(sniff);
+    }
 
     return 0;
 }
