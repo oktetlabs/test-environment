@@ -8,3 +8,5 @@ option('te_libs', type: 'array', value: [],
        description: 'List of TE libraries to use')
 option('app-name', type: 'string', value: '',
        description: 'The name of ta_rpcprovider binary')
+option('extra_deps', type: 'array', value: [],
+       description: 'List of external dependencies')

@@ -22,6 +22,9 @@ process_opts()
             --cross-file=*)
                 CROSS_FILE="${1#--cross-file=}" ;;
 
+            --extra-deps=*)
+                meson_args+=(-Dextra_deps="${1#--extra-deps=}") ;;
+
             *)  echo "Unknown option: $1" >&2;
                 exit 1 ;;
         esac

@@ -31,8 +31,13 @@ endforeach
 ld_args += [ '-Wl,-Bdynamic', '-Wl,--as-needed' ]
 
 # External dependencies
-deps = [ dependency('threads', required: false) ]
-deps += [ dependency('libpcre', required: false) ]
+deps = []
+extra_deps = get_option('extra_deps')
+foreach d : extra_deps
+    deps += [ dependency(d) ]
+endforeach
+
+deps += [ dependency('threads', required: false) ]
 deps += [ dependency('libbsd', required: false) ]
 
 dep_rpc = dependency('libtirpc', required: false)
