@@ -2176,6 +2176,7 @@ pci_net_list(unsigned int gid, const char *oid, const char *sub_id,
             return rc;
         }
     }
+    free(net_list);
 
     if (n == 1)
     {
