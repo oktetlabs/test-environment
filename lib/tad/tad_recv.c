@@ -957,7 +957,7 @@ tad_recv_match_with_unit(csap_p csap, tad_recv_ptrn_unit_data *unit_data,
         VERB("match cb 0x%x for layer %u sdu_len=%u returned %r",
              csap_spt_descr->match_do_cb, layer,
              (unsigned)tad_pkt_len(sdu), rc);
-        switch (rc)
+        switch (TE_RC_GET_ERROR(rc))
         {
             case 0:
                 break;
