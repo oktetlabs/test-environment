@@ -733,6 +733,7 @@ pci_device_instance_get(unsigned int gid, const char *oid, char *value,
         return rc;
     }
     strcpy(value, result.ptr);
+    te_string_free(&result);
     return 0;
 }
 
