@@ -1350,6 +1350,8 @@ get_driver_name(const pci_device *dev, char *name, size_t namesize)
         te_string_free(&buf);
         return TE_OS_RC(TE_TA_UNIX, rc);
     }
+    te_string_free(&buf);
+
     base = strrchr(link, '/');
     if (base == NULL)
         base = link;
