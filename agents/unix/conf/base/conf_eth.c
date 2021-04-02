@@ -327,12 +327,12 @@ eth_feature_list(unsigned int    gid,
 
     *list_out = list_container.ptr;
 
-    free(oid);
+    cfg_free_oid(oid);
 
     return 0;
 
 fail:
-    free(oid);
+    cfg_free_oid(oid);
     te_string_free(&list_container);
 
     return TE_RC(TE_TA_UNIX, rc);
