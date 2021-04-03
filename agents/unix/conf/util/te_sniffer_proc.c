@@ -550,6 +550,8 @@ te_sniffer_process(int argc, char *argv[])
     te_bool              pflag          = 0;  /* Promiscuous mode flag */
     int                  op;
 
+    struct sigaction act;
+
     global_init();
     SIMPLEQ_INIT(&head_file_list);
 
@@ -694,8 +696,18 @@ te_sniffer_process(int argc, char *argv[])
     if ((dumpinfo.fd = open(dumpinfo.file_name, O_RDWR)) == -1)
         fprintf(stderr, "Couldn't get file descriptor of the dump file\n");
 
-    signal(SIGTERM, sign_cleanup);
-    signal(SIGINT, sign_cleanup);
+    /*
+     * Do not use signal() here, since in glibc it can provide
+     * "BSD semantics", enabling SA_RESTART flag. And in
+     * pcap_breakloop() man it is said that system calls should
+     * not be restartable if that function is called from signal
+     * handler, or PCAP loop may continue to hang in a restarted
+     * system call waiting for more packets.
+     */
+    memset(&act, 0, sizeof(act));
+    act.sa_handler = &sign_cleanup;
+    sigaction(SIGTERM, &act, NULL);
+    sigaction(SIGINT, &act, NULL);
 
     insert_marker((FILE *)dumpinfo.dumper,
                   "The sniffer process has been started.", &ts);
