@@ -41,6 +41,26 @@
               to devices with any ID
         Value: A list of comma-separated key=value pairs
 
+    - oid: "/local/dpdk/max_rx_queues"
+      access: read_create
+      type: integer
+      d: |
+        Maximum number of Rx queues supported by PCI function
+
+        Name: PCI function for which Rx queues used.
+              Format - pci_fn:<vendor_id>:<device_id>:
+        Value: Maximum number of Rx queues
+
+    - oid: "/local/dpdk/max_tx_queues"
+      access: read_create
+      type: integer
+      d: |
+        Maximum number of Tx queues supported by PCI function
+
+        Name: PCI function for which Tx queues used.
+              Format - pci_fn:<vendor_id>:<device_id>:
+        Value: Maximum number of Tx queues
+
     - oid: "/local/dpdk/required_service_cores"
       access: read_create
       type: integer
