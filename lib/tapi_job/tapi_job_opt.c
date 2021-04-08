@@ -78,6 +78,19 @@ tapi_job_opt_create_sockaddr_ptr(const void *value, te_vec *args)
     return te_vec_append_str_fmt(args, "%s", te_sockaddr_get_ipstr(*sa));
 }
 
+te_errno
+tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args)
+{
+    const struct sockaddr **sa = (const struct sockaddr **)value;
+
+    if (sa == NULL || *sa == NULL)
+        return TE_ENOENT;
+
+    return te_vec_append_str_fmt(args, "%s:%u",
+                                 te_sockaddr_get_ipstr(*sa),
+                                 (unsigned int)te_sockaddr_get_port(*sa));
+}
+
 /**
  * Append an argument @p arg that was processed by a formatting function
  * to arguments array @p args, with suffix/prefix if present.
