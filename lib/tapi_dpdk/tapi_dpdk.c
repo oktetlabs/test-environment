@@ -543,6 +543,27 @@ append_testpmd_cmdline_from_args(te_kvpair_h *test_args,
     }
 }
 
+static te_errno
+tapi_dpdk_attach_filters(tapi_job_simple_desc_t *desc)
+{
+    te_errno rc;
+    tapi_job_simple_filter_t *filter;
+
+    for (filter = desc->filters;
+         filter->use_stdout || filter->use_stderr;
+         filter++)
+    {
+        if ((rc = tapi_job_attach_simple_filter(desc, filter)) != 0)
+        {
+            tapi_job_destroy(*desc->job_loc, -1);
+            *desc->job_loc = NULL;
+            return rc;
+        }
+    }
+
+    return 0;
+}
+
 te_errno
 tapi_dpdk_grab_cpus(const char *ta,
                     unsigned int n_cpus_preferred,
@@ -1248,4 +1269,54 @@ tapi_dpdk_mbuf_size_by_pkt_size(unsigned int packet_size,
     *mbuf_size = minimal_mbuf_size;
 
     return TRUE;
+}
+
+te_errno
+tapi_dpdk_attach_dbells_filter_rx(tapi_dpdk_testpmd_job_t *testpmd_job)
+{
+    tapi_job_simple_desc_t desc = {
+        .job_loc = &testpmd_job->job,
+        .stdout_loc = &testpmd_job->out_channels[0],
+        .filters = TAPI_JOB_SIMPLE_FILTERS(
+            {.use_stdout = TRUE,
+             .readable = TRUE,
+             .re = "(?m)rx_dbells\\s*([0-9]+)\\s*([0-9]+)",
+             .extract = 2,
+             .filter_var = &testpmd_job->rx_dbells_filter,
+            },
+            {.use_stdout = TRUE,
+             .readable = TRUE,
+             .re = "(?m)No\\sxstat\\s'rx_dbells'",
+             .extract = 0,
+             .filter_var = &testpmd_job->rx_dbells_skip_filter,
+            }
+        )
+    };
+
+    return tapi_dpdk_attach_filters(&desc);
+}
+
+te_errno
+tapi_dpdk_attach_dbells_filter_tx(tapi_dpdk_testpmd_job_t *testpmd_job)
+{
+    tapi_job_simple_desc_t desc = {
+        .job_loc = &testpmd_job->job,
+        .stdout_loc = &testpmd_job->out_channels[0],
+        .filters = TAPI_JOB_SIMPLE_FILTERS(
+            {.use_stdout = TRUE,
+             .readable = TRUE,
+             .re = "(?m)tx_dbells\\s*([0-9]+)\\s*([0-9]+)",
+             .extract = 2,
+             .filter_var = &testpmd_job->tx_dbells_filter,
+            },
+            {.use_stdout = TRUE,
+             .readable = TRUE,
+             .re = "(?m)No\\sxstat\\s'tx_dbells'",
+             .extract = 0,
+             .filter_var = &testpmd_job->tx_dbells_skip_filter,
+            }
+        )
+    };
+
+    return tapi_dpdk_attach_filters(&desc);
 }

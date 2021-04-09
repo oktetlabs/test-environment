@@ -49,6 +49,10 @@ typedef struct tapi_dpdk_testpmd_job_t {
     tapi_job_channel_t *tx_pps_filter;
     tapi_job_channel_t *rx_pps_filter;
     tapi_job_channel_t *link_speed_filter;
+    tapi_job_channel_t *tx_dbells_filter;
+    tapi_job_channel_t *tx_dbells_skip_filter;
+    tapi_job_channel_t *rx_dbells_filter;
+    tapi_job_channel_t *rx_dbells_skip_filter;
 } tapi_dpdk_testpmd_job_t;
 
 
@@ -258,6 +262,27 @@ extern const char *tapi_dpdk_get_vdev_eal_argument(int eal_argc,
  */
 extern te_errno tapi_dpdk_get_vdev_port_number(const char *vdev,
                                                unsigned int *port_number);
+
+/**
+ * Attach filters to catch Rx doorbells rate and if they are supported.
+ *
+ * @param testpmd_job           Handle of running test-pmd job
+ *
+ * @return Status code
+ */
+extern te_errno tapi_dpdk_attach_dbells_filter_rx(
+                                        tapi_dpdk_testpmd_job_t *testpmd_job);
+
+/**
+ * Attach filters to catch Tx doorbells rate and if they are supported.
+ *
+ * @param testpmd_job           Handle of running test-pmd job
+ *
+ * @return Status code
+ */
+extern te_errno tapi_dpdk_attach_dbells_filter_tx(
+                                        tapi_dpdk_testpmd_job_t *testpmd_job);
+
 
 #ifdef __cplusplus
 } /* extern "C" */
