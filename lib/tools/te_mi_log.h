@@ -237,6 +237,8 @@ typedef enum te_mi_meas_type {
     TE_MI_MEAS_RPS, /**< Requests per second */
     TE_MI_MEAS_RTT, /**< Rount trip time in seconds */
     TE_MI_MEAS_RETRANS, /**< TCP retransmissons */
+    TE_MI_MEAS_FREQ, /**< Events per seconds (Hz) */
+    TE_MI_MEAS_EPE, /**< Events per another event */
 
     TE_MI_MEAS_END, /**< End marker for a measurement vector.
                          Also is one past last valid type */

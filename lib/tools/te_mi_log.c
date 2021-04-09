@@ -108,6 +108,7 @@ typedef enum te_mi_meas_base_unit_type {
     TE_MI_MEAS_BASE_UNIT_BPS, /**< Bits per second */
     TE_MI_MEAS_BASE_UNIT_CELSIUS, /**< Degrees of celsius */
     TE_MI_MEAS_BASE_UNIT_RPS, /**< Requests per second */
+    TE_MI_MEAS_BASE_UNIT_HZ, /**< Events per seconds (Hz) */
 } te_mi_meas_base_unit_type;
 
 static te_mi_meas_base_unit_type meas_base_unit_by_type_map[] = {
@@ -119,6 +120,8 @@ static te_mi_meas_base_unit_type meas_base_unit_by_type_map[] = {
     [TE_MI_MEAS_RPS] = TE_MI_MEAS_BASE_UNIT_RPS,
     [TE_MI_MEAS_RTT] = TE_MI_MEAS_BASE_UNIT_SECOND,
     [TE_MI_MEAS_RETRANS] = TE_MI_MEAS_BASE_UNITLESS,
+    [TE_MI_MEAS_FREQ] = TE_MI_MEAS_BASE_UNIT_HZ,
+    [TE_MI_MEAS_EPE] = TE_MI_MEAS_BASE_UNITLESS,
 };
 
 static const char *meas_base_unit_names[] = {
@@ -128,6 +131,7 @@ static const char *meas_base_unit_names[] = {
     [TE_MI_MEAS_BASE_UNIT_BPS] =  "bps",
     [TE_MI_MEAS_BASE_UNIT_CELSIUS] = "degrees celsius",
     [TE_MI_MEAS_BASE_UNIT_RPS] = "rps",
+    [TE_MI_MEAS_BASE_UNIT_HZ] = "Hz",
 };
 
 static const char *mi_type_names[] = {
