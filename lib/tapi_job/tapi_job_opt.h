@@ -97,6 +97,24 @@ extern te_errno tapi_job_opt_build_args(const char *path,
                                         const tapi_job_opt_bind *binds,
                                         const void *opt, te_vec *tool_args);
 
+/** Unsigned integer which can be left undefined */
+typedef struct tapi_job_opt_uint_t {
+    unsigned int value; /**< Value */
+    te_bool defined;    /**< If @c TRUE, value is defined */
+} tapi_job_opt_uint_t;
+
+/**
+ * Defined value for tapi_job_opt_uint_t.
+ *
+ * @param _x        Value to set.
+ */
+#define TAPI_JOB_OPT_UINT_VAL(_x) \
+    (tapi_job_opt_uint_t){ .value = (_x), .defined = TRUE }
+
+/** Undefined value for tapi_job_opt_uint_t. */
+#define TAPI_JOB_OPT_UINT_UNDEF \
+    (tapi_job_opt_uint_t){ .defined = FALSE }
+
 /**
  * @defgroup tapi_job_opt_formatting functions for argument formatting
  * @{
@@ -105,6 +123,9 @@ extern te_errno tapi_job_opt_build_args(const char *path,
  * @param[inout]  args      Argument vector to which formatted argument
  *                          is appended.
  */
+
+/** value type: `tapi_job_opt_uint_t` */
+te_errno tapi_job_opt_create_uint_t(const void *value, te_vec *args);
 
 /** value type: `unsigned int` */
 te_errno tapi_job_opt_create_uint(const void *value, te_vec *args);
@@ -139,6 +160,20 @@ te_errno tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args);
  */
 
 /**
+ * Bind `tapi_job_opt_uint_t` argument.
+ *
+ * @param[in] _prefix         Argument prefix.
+ * @param[in] _concat_prefix  Concatenate prefix with argument if @c TRUE.
+ * @param[in] _suffix         Argument suffix.
+ * @param[in] _struct         Option struct.
+ * @param[in] _field          Field name in option struct.
+ */
+#define TAPI_JOB_OPT_UINT_T(_prefix, _concat_prefix, _suffix, \
+                            _struct, _field) \
+    { tapi_job_opt_create_uint_t, _prefix, _concat_prefix, _suffix, \
+      offsetof(_struct, _field) }
+
+/**
  * Bind `unsigned int` argument.
  *
  * @param[in]     _prefix           Argument prefix.
@@ -156,6 +191,9 @@ te_errno tapi_job_opt_create_addr_port_ptr(const void *value, te_vec *args);
  * command line options if argument's value is equal to
  * @ref TAPI_JOB_OPT_OMIT_UINT. This implies that the real argument's value
  * cannot be equal to the value of @ref TAPI_JOB_OPT_OMIT_UINT.
+ *
+ * @note This macro is deprecated, use tapi_job_uint_t with
+ *       TAPI_JOB_OPT_UINT_T() instead.
  *
  * @param[in]     _prefix           Argument prefix.
  * @param[in]     _concat_prefix    Concatenate prefix with argument if @c TRUE
