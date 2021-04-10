@@ -100,6 +100,20 @@ typedef struct tapi_bpf_lpm_trie_key {
     unsigned char   data[16];   /**< Buffer for address */
 } tapi_bpf_lpm_trie_key;
 
+
+/**
+ * Get full path to BPF object on Test Agent.
+ *
+ * @note Return value should be freed when it is no longer needed.
+ *
+ * @param ta            Test Agent name
+ * @param bpf_prog_name BPF object name
+ *
+ * @return Path to BPF object or @c NULL in case of error.
+ */
+extern char *tapi_bpf_build_bpf_obj_path(const char *ta,
+                                         const char *bpf_prog_name);
+
 /**
  * Add BPF object
  *

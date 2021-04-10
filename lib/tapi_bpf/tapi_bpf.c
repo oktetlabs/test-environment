@@ -65,6 +65,36 @@ static const char *tapi_bpf_map_types[] =
     [TAPI_BPF_MAP_TYPE_UNKNOWN] =             "<UNKNOWN>"
 };
 
+/* See description in tapi_bpf.h */
+char *
+tapi_bpf_build_bpf_obj_path(const char *ta, const char *bpf_prog_name)
+{
+    char *ta_dir = NULL;
+    cfg_val_type val_type = CVT_STRING;
+    te_string buf = TE_STRING_INIT;
+    te_errno rc;
+
+    rc = cfg_get_instance_fmt(&val_type, &ta_dir, "/agent:%s/dir:", ta);
+    if (rc != 0)
+    {
+        ERROR("%s(): Failed to get /agent:%s/dir : %r",
+               __FUNCTION__, ta, rc);
+        free(ta_dir);
+        return NULL;
+    }
+
+    rc = te_string_append(&buf, "%s/%s.o", ta_dir, bpf_prog_name);
+    if (rc != 0)
+    {
+        ERROR("%s(): Failed to build path to BPF object: %r",
+              __FUNCTION__, rc);
+        free(ta_dir);
+        return NULL;
+    }
+    free(ta_dir);
+    return buf.ptr;
+}
+
 /**
  * Get list of instances names for given pattern
  *
