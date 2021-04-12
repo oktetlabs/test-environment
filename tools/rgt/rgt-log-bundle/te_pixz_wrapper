@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # This is a simple wrapper over pixz making possible to use
-# it with tar while setting maximum compression level
+# it with tar while setting higher compression level.
+# Note: increasing compression level results in slower
+# extraction of individual files.
 
-pixz -9 $@
+pixz -6 $@
