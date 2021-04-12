@@ -7,11 +7,17 @@ AM_CFLAGS = @TE_CFLAGS@ $(TE_CFLAGS_VAR)
 
 AM_LDFLAGS = @TE_LDFLAGS@
 
-include_HEADERS=tapi_bpf.h
+include_HEADERS= \
+	tapi_bpf.h \
+	tapi_bpf_stim.h
 
 lib_LTLIBRARIES=libtapi_bpf.la
 
-libtapi_bpf_la_SOURCES=tapi_bpf.c
+libtapi_bpf_la_SOURCES= \
+	tapi_bpf.c \
+	tapi_bpf_stim.h
+
+libtapi_bpf_la_LIBADD = $(TIRPC_LIBS)
 
 install-exec-hook:
 	for i in ${lib_LTLIBRARIES} ; do \
