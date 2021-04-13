@@ -424,7 +424,7 @@ process_agent() {
 generate_config_file() {
     local p="$1"; shift
     local parms_var="$1"; shift
-    local conffile="${TE_BUILD}/${p}"
+    local conffile="${TE_BUILD}/${p}.meson_conf"
     local host=
     local cc=
     local cpp=
