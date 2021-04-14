@@ -5034,7 +5034,40 @@ TARPC_FUNC(poll,
 
 /*-------------- ppoll() --------------------------------*/
 
-TARPC_FUNC(ppoll,
+/**
+ * Dynamically resolve and call ppoll() or __ppoll_chk().
+ *
+ * @param fds         Array of poll event structures.
+ * @param nfds        Number of elements in the array.
+ * @param ts          Poll timeout.
+ * @param sigmask     If not @c NULL, this signal mask is set
+ *                    for ppoll() call.
+ * @param chk_func    If @c TRUE, use __ppoll_chk() instead of ppoll().
+ * @param fdslen      Size of memory occupied by @p fds (makes sense only
+ *                    for __ppoll_chk()).
+ * @param lib_flags   Flags for dynamic function resolution.
+ *
+ * @return Value returned by the target function or
+ *         @c -1 in case of failure.
+ */
+static int
+ppoll_rpc_handler(struct pollfd *fds, unsigned int nfds,
+                  const struct timespec *ts, const sigset_t *sigmask,
+                  te_bool chk_func, size_t fdslen,
+                  tarpc_lib_flags lib_flags)
+{
+    api_func_ptr ppoll_func;
+    const char *func_name = (chk_func ? "__ppoll_chk" : "ppoll");
+
+    TARPC_FIND_FUNC_RETURN(lib_flags, func_name, (api_func *)&ppoll_func);
+
+    if (chk_func)
+        return ppoll_func(fds, nfds, ts, sigmask, fdslen);
+    else
+        return ppoll_func(fds, nfds, ts, sigmask);
+}
+
+TARPC_FUNC_STANDALONE(ppoll,
 {
     if (in->ufds.ufds_len > RPC_POLL_NFDS_MAX)
     {
@@ -5077,10 +5110,14 @@ TARPC_FUNC(ppoll,
     VERB("ppoll(): call with ufds=0x%lx, nfds=%u, timeout=%p",
          (unsigned long int)ufds, in->nfds,
          out->timeout.timeout_len > 0 ? out->timeout.timeout_val : NULL);
-    MAKE_CALL(out->retval = func_ptr(ufds, in->nfds,
-                                     out->timeout.timeout_len == 0 ? NULL :
-                                                                     &tv,
-                                     rcf_pch_mem_get(in->sigmask)));
+    MAKE_CALL(out->retval = ppoll_rpc_handler(
+                               ufds, in->nfds,
+                               out->timeout.timeout_len == 0 ? NULL :
+                                                               &tv,
+                               rcf_pch_mem_get(in->sigmask),
+                               in->chk_func,
+                               out->ufds.ufds_len * sizeof(struct pollfd),
+                               in->common.lib_flags));
     VERB("ppoll(): retval=%d", out->retval);
 
     if (out->timeout.timeout_len > 0)

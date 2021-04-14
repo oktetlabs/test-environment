@@ -2766,6 +2766,8 @@ struct tarpc_ppoll_in {
     tarpc_uint            nfds;
     struct tarpc_timespec timeout<>;
     tarpc_sigset_t        sigmask;
+
+    tarpc_bool chk_func;
 };
 
 struct tarpc_ppoll_out {
