@@ -2746,6 +2746,8 @@ struct tarpc_poll_in {
     struct tarpc_pollfd ufds<>;
     tarpc_uint          nfds;
     tarpc_int           timeout;
+
+    tarpc_bool chk_func;
 };
 
 struct tarpc_poll_out {

@@ -4987,7 +4987,37 @@ finish:
 
 /*-------------- poll() --------------------------------*/
 
-TARPC_FUNC(poll,
+/**
+ * Dynamically resolve and call poll() or __poll_chk().
+ *
+ * @param fds         Array of poll event structures.
+ * @param nfds        Number of elements in the array.
+ * @param timeout     Poll timeout in ms.
+ * @param chk_func    If @c TRUE, use __poll_chk() instead of poll().
+ * @param fdslen      Size of memory occupied by @p fds (makes sense only
+ *                    for __poll_chk()).
+ * @param lib_flags   Flags for dynamic function resolution.
+ *
+ * @return Value returned by the target function or
+ *         @c -1 in case of failure.
+ */
+static int
+poll_rpc_handler(struct pollfd *fds, unsigned int nfds,
+                 int timeout, te_bool chk_func, size_t fdslen,
+                 tarpc_lib_flags lib_flags)
+{
+    api_func_ptr poll_func;
+    const char *func_name = (chk_func ? "__poll_chk" : "poll");
+
+    TARPC_FIND_FUNC_RETURN(lib_flags, func_name, (api_func *)&poll_func);
+
+    if (chk_func)
+        return poll_func(fds, nfds, timeout, fdslen);
+    else
+        return poll_func(fds, nfds, timeout);
+}
+
+TARPC_FUNC_STANDALONE(poll,
 {
     if (in->ufds.ufds_len > RPC_POLL_NFDS_MAX)
     {
@@ -5020,7 +5050,10 @@ TARPC_FUNC(poll,
 
     VERB("poll(): call with ufds=0x%lx, nfds=%u, timeout=%d",
          (unsigned long int)ufds, in->nfds, in->timeout);
-    MAKE_CALL(out->retval = func_ptr(ufds, in->nfds, in->timeout));
+    MAKE_CALL(out->retval = poll_rpc_handler(
+                                ufds, in->nfds, in->timeout, in->chk_func,
+                                out->ufds.ufds_len * sizeof(struct pollfd),
+                                in->common.lib_flags));
     VERB("poll(): retval=%d", out->retval);
 
     for (i = 0; i < out->ufds.ufds_len; i++)
