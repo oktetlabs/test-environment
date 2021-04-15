@@ -44,6 +44,10 @@ typedef struct test_behaviour {
     te_bool fail_verdict;   /**< If enabled, log error verdict from
                                  TEST_FAIL() and CLEANUP_TEST_FAIL(),
                                  otherwise just an error */
+
+    te_bool use_chk_funcs; /**< If @c TRUE, in RPC calls for read(), recv(),
+                                recvfrom(), poll(), ppoll() call their
+                                __[function]_chk() variants on TA */
 } test_behaviour;
 
 /**
