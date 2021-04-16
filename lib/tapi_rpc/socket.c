@@ -61,6 +61,7 @@
 #include "tapi_rpc_socket.h"
 #include "tapi_rpcsock_macros.h"
 #include "te_alloc.h"
+#include "tapi_test.h"
 #include "tapi_test_log.h"
 #include "tad_common.h"
 
@@ -588,6 +589,8 @@ rpc_recvfrom_gen(rcf_rpc_server *rpcs,
     }
     in.flags = flags;
 
+    in.chk_func = TEST_BEHAVIOUR(use_chk_funcs);
+
     rcf_rpc_call(rpcs, "recvfrom", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs) && rpcs->op != RCF_RPC_WAIT)
@@ -603,10 +606,11 @@ rpc_recvfrom_gen(rcf_rpc_server *rpcs,
     }
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(recvfrom, out.retval);
-    TAPI_RPC_LOG(rpcs, recvfrom, "%d, %p[%u], %u, %s, %p[%u], %d",
-                 "%d from=%s fromlen=%d",
+    TAPI_RPC_LOG(rpcs, recvfrom, "%d, %p[%u], %u, %s, %p[%u], %d, "
+                 "chk_func=%s", "%d from=%s fromlen=%d",
                  s, buf, rbuflen, len, send_recv_flags_rpc2str(flags),
                  from, rfrombuflen, (int)save_fromlen,
+                 (in.chk_func ? "TRUE" : "FALSE"),
                  out.retval, sockaddr_h2str(from),
                  (fromlen == NULL) ? -1 : (int)*fromlen);
     RETVAL_INT(recvfrom, out.retval);

@@ -1214,6 +1214,8 @@ struct tarpc_recvfrom_in {
                                          for data source address */
     tarpc_socklen_t     fromlen<>;  /**< Maximum expected length of the
                                          address */
+
+    tarpc_bool chk_func; /**< If @c TRUE, call __recvfrom_chk() */
 };
 
 struct tarpc_recvfrom_out {

@@ -1468,8 +1468,41 @@ TARPC_FUNC(socket_listen_close, {},
 
 /*-------------- recvfrom() ------------------------------*/
 
+/**
+ * Dynamically resolve and call recvfrom() or __recvfrom_chk().
+ *
+ * @param fd          Socket FD.
+ * @param buf         Where to save received data.
+ * @param len         Buffer length passed to recvfrom().
+ * @param rlen        Actual buffer length (makes sense only for
+ *                    __recvfrom_chk()).
+ * @param flags       Receive flags (@c MSG_DONTWAIT, etc).
+ * @param addr        Where to save source address.
+ * @param addrlen     On input, number of bytes available for source
+ *                    address; on output, its actual length.
+ * @param chk_func    If @c TRUE, use __recvfrom_chk() instead of recvfrom().
+ * @param lib_flags   Flags for dynamic function resolution.
+ *
+ * @return Value returned by the target function or
+ *         @c -1 in case of failure.
+ */
+static int
+recvfrom_rpc_handler(int fd, void *buf, size_t len, size_t rlen,
+                     int flags, struct sockaddr *addr, socklen_t *addrlen,
+                     te_bool chk_func, tarpc_lib_flags lib_flags)
+{
+    api_func recvfrom_func;
+    const char *func_name = (chk_func ? "__recvfrom_chk" : "recvfrom");
 
-TARPC_FUNC(recvfrom,
+    TARPC_FIND_FUNC_RETURN(lib_flags, func_name, &recvfrom_func);
+
+    if (chk_func)
+        return recvfrom_func(fd, buf, len, rlen, flags, addr, addrlen);
+    else
+        return recvfrom_func(fd, buf, len, flags, addr, addrlen);
+}
+
+TARPC_FUNC_STANDALONE(recvfrom,
 {
     COPY_ARG(buf);
     COPY_ARG(fromlen);
@@ -1515,10 +1548,16 @@ TARPC_FUNC(recvfrom,
 
     INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->len);
 
-    MAKE_CALL(out->retval = func(in->fd, out->buf.buf_val, in->len,
-                                 send_recv_flags_rpc2h(in->flags), addr_ptr,
-                                 out->fromlen.fromlen_len == 0 ? NULL :
-                                    out->fromlen.fromlen_val));
+    MAKE_CALL(out->retval =
+                recvfrom_rpc_handler(
+                            in->fd, out->buf.buf_val, in->len,
+                            out->buf.buf_len,
+                            send_recv_flags_rpc2h(in->flags), addr_ptr,
+                            (out->fromlen.fromlen_len == 0 ?
+                                NULL :
+                                out->fromlen.fromlen_val),
+                            in->chk_func,
+                            in->common.lib_flags));
 
     sockaddr_output_h2rpc(addr_ptr, addr_len,
                           out->fromlen.fromlen_len == 0 ? 0 :
