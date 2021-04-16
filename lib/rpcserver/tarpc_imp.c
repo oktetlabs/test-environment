@@ -2026,14 +2026,47 @@ TARPC_FUNC(send, {},
 
 /*-------------- read() ------------------------------*/
 
-TARPC_FUNC(read,
+/**
+ * Dynamically resolve and call read() or __read_chk().
+ *
+ * @param fd          File descriptor.
+ * @param buf         Where to save read data.
+ * @param len         Buffer length passed to read().
+ * @param rlen        Actual buffer length (makes sense only for
+ *                    __read_chk()).
+ * @param chk_func    If @c TRUE, use __read_chk() instead of read().
+ * @param lib_flags   Flags for dynamic function resolution.
+ *
+ * @return Value returned by the target function or
+ *         @c -1 in case of failure.
+ */
+static int
+read_rpc_handler(int fd, void *buf, size_t len, size_t rlen,
+                 te_bool chk_func, tarpc_lib_flags lib_flags)
+{
+    api_func read_func;
+    const char *func_name = (chk_func ? "__read_chk" : "read");
+
+    TARPC_FIND_FUNC_RETURN(lib_flags, func_name, &read_func);
+
+    if (chk_func)
+        return read_func(fd, buf, len, rlen);
+    else
+        return read_func(fd, buf, len);
+}
+
+TARPC_FUNC_STANDALONE(read,
 {
     COPY_ARG(buf);
 },
 {
     INIT_CHECKED_ARG(out->buf.buf_val, out->buf.buf_len, in->len);
 
-    MAKE_CALL(out->retval = func(in->fd, out->buf.buf_val, in->len));
+    MAKE_CALL(out->retval = read_rpc_handler(
+                                     in->fd, out->buf.buf_val, in->len,
+                                     out->buf.buf_len,
+                                     in->chk_func,
+                                     in->common.lib_flags));
 }
 )
 
