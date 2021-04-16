@@ -648,6 +648,8 @@ rpc_recv_gen(rcf_rpc_server *rpcs,
     }
     in.flags = flags;
 
+    in.chk_func = TEST_BEHAVIOUR(use_chk_funcs);
+
     rcf_rpc_call(rpcs, "recv", &in, &out);
 
     if (RPC_IS_CALL_OK(rpcs))
@@ -657,9 +659,9 @@ rpc_recv_gen(rcf_rpc_server *rpcs,
     }
 
     CHECK_RETVAL_VAR_IS_GTE_MINUS_ONE(recv, out.retval);
-    TAPI_RPC_LOG(rpcs, recv, "%d, %p[%u], %u, %s", "%d",
+    TAPI_RPC_LOG(rpcs, recv, "%d, %p[%u], %u, %s, chk_func=%s", "%d",
                  s, buf, rbuflen, len, send_recv_flags_rpc2str(flags),
-                 out.retval);
+                 (in.chk_func ? "TRUE" : "FALSE"), out.retval);
     RETVAL_INT(recv, out.retval);
 }
 

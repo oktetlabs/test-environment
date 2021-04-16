@@ -1140,6 +1140,8 @@ struct tarpc_recv_in {
     uint8_t         buf<>;
     tarpc_size_t    len;
     tarpc_int       flags;
+
+    tarpc_bool chk_func;
 };
 
 struct tarpc_recv_out {
