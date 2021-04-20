@@ -910,6 +910,14 @@ tad_eth_sap_pkt_rx_ring_recv(tad_eth_sap        *sap,
             return TE_OS_RC(TE_TAD_CSAP, errno);
     }
 
+    VERB("%s: tpacket_req tp_frame_nr=%u tp_frame_size=%u",
+         __func__, tp->tp_frame_nr, tp->tp_frame_size);
+    VERB("%s: tpacket2_hdr tp_status=%u tp_len=%u tp_snaplen=%u tp_mac=%u "
+         "tp_net=%u tp_sec=%u tp_nsec=%u tp_vlan_tci=0x%x tp_vlan_tpid=0x%x",
+         __func__, ph->tp_status, ph->tp_len, ph->tp_snaplen, ph->tp_mac,
+         ph->tp_net, ph->tp_sec, ph->tp_nsec, ph->tp_vlan_tci,
+         ph->tp_vlan_tpid);
+
     vlan_tag_valid = tad_eth_sap_pkt_vlan_tag_valid(ph->tp_vlan_tci,
                                                     ph->tp_status);
 
