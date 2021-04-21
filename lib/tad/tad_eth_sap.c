@@ -916,7 +916,12 @@ tad_eth_sap_pkt_rx_ring_recv(tad_eth_sap        *sap,
          "tp_net=%u tp_sec=%u tp_nsec=%u tp_vlan_tci=0x%x tp_vlan_tpid=0x%x",
          __func__, ph->tp_status, ph->tp_len, ph->tp_snaplen, ph->tp_mac,
          ph->tp_net, ph->tp_sec, ph->tp_nsec, ph->tp_vlan_tci,
-         ph->tp_vlan_tpid);
+#ifdef TP_STATUS_VLAN_TPID_VALID
+         ph->tp_vlan_tpid
+#else
+         UINT16_MAX
+#endif
+         );
 
     vlan_tag_valid = tad_eth_sap_pkt_vlan_tag_valid(ph->tp_vlan_tci,
                                                     ph->tp_status);
