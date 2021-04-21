@@ -388,6 +388,7 @@ rte_flow_item_eth_from_pdu(const asn_value *eth_pdu,
     struct rte_flow_item_eth *spec = NULL;
     struct rte_flow_item_eth *mask = NULL;
     struct rte_flow_item_eth *last = NULL;
+    struct rte_flow_item_eth zero = {{0}};
     int rc;
 
     if (item == NULL)
@@ -409,8 +410,17 @@ rte_flow_item_eth_from_pdu(const asn_value *eth_pdu,
     item->type = RTE_FLOW_ITEM_TYPE_ETH;
 
     item->spec = spec;
-    item->last = last;
     item->mask = mask;
+
+    if (memcmp(last, &zero, sizeof(zero)) != 0)
+    {
+        item->last = last;
+    }
+    else
+    {
+        item->last = NULL;
+        free(last);
+    }
 
     return 0;
 out:
@@ -450,6 +460,7 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     struct rte_flow_item_vlan *spec = NULL;
     struct rte_flow_item_vlan *mask = NULL;
     struct rte_flow_item_vlan *last = NULL;
+    struct rte_flow_item_vlan zero = {{0}};
     struct rte_flow_item *pattern;
     unsigned int item_nb = *item_nb_out;
     asn_value *vlan_pdu = tagged_pdu;
@@ -546,8 +557,17 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
 #endif
 
     pattern[item_nb].spec = spec;
-    pattern[item_nb].last = last;
     pattern[item_nb].mask = mask;
+
+    if (memcmp(last, &zero, sizeof(zero)) != 0)
+    {
+        pattern[item_nb].last = last;
+    }
+    else
+    {
+        pattern[item_nb].last = NULL;
+        free(last);
+    }
 
     *item_nb_out = item_nb;
     *pattern_out = pattern;
@@ -590,6 +610,9 @@ rte_flow_pattern_item_swap_words_prev(struct rte_flow_item *pattern,
 {
     struct rte_flow_item *item_prev = &pattern[item_idx - 1];
     struct rte_flow_item *item = &pattern[item_idx];
+    uint16_t *item_prev_wordp;
+    uint16_t *item_wordp;
+    uint16_t zero = 0;
 
     rte_flow_pattern_swap_words(
         (uint16_t *)((uint8_t *)item_prev->spec + item_prev_w_ofst),
@@ -599,9 +622,13 @@ rte_flow_pattern_item_swap_words_prev(struct rte_flow_item *pattern,
         (uint16_t *)((uint8_t *)item_prev->mask + item_prev_w_ofst),
         (uint16_t *)((uint8_t *)item->mask + item_w_ofst));
 
-    rte_flow_pattern_swap_words(
-        (uint16_t *)((uint8_t *)item_prev->last + item_prev_w_ofst),
-        (uint16_t *)((uint8_t *)item->last + item_w_ofst));
+    item_prev_wordp = (item_prev->last != NULL) ?
+        (uint16_t *)((uint8_t *)item_prev->last + item_prev_w_ofst) : &zero;
+
+    item_wordp = (item->last != NULL) ?
+        (uint16_t *)((uint8_t *)item->last + item_w_ofst) : &zero;
+
+    rte_flow_pattern_swap_words(item_prev_wordp, item_wordp);
 }
 
 static te_errno
