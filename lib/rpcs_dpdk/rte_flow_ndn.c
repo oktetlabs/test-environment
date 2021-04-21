@@ -388,7 +388,7 @@ rte_flow_item_eth_from_pdu(const asn_value *eth_pdu,
     struct rte_flow_item_eth *spec = NULL;
     struct rte_flow_item_eth *mask = NULL;
     struct rte_flow_item_eth *last = NULL;
-    struct rte_flow_item_eth zero = {{0}};
+    struct rte_flow_item_eth zero = {};
     int rc;
 
     if (item == NULL)
@@ -460,7 +460,7 @@ rte_flow_item_vlan_from_tagged_pdu(asn_value *tagged_pdu,
     struct rte_flow_item_vlan *spec = NULL;
     struct rte_flow_item_vlan *mask = NULL;
     struct rte_flow_item_vlan *last = NULL;
-    struct rte_flow_item_vlan zero = {{0}};
+    struct rte_flow_item_vlan zero = {};
     struct rte_flow_item *pattern;
     unsigned int item_nb = *item_nb_out;
     asn_value *vlan_pdu = tagged_pdu;
