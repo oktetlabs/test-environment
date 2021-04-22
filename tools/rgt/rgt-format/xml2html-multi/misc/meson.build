@@ -1,6 +1,9 @@
 # Copyright (C) 2018 OKTET Labs. All rights reserved.
 
 data = files(
+    'bootstrap.min.css',
+    'bootstrap.min.js',
+    'jquery.min.js',
     'Chart.bundle.min.js',
     'Chart.min.css',
     'chartjs-plugin-zoom.js',

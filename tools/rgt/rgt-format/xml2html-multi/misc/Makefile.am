@@ -21,4 +21,7 @@ dist_miscdata_DATA = right_frame.html \
                      Chart.bundle.min.js \
                      Chart.min.css \
                      chartjs-plugin-zoom.js \
-                     hammer.min.js
+                     hammer.min.js \
+                     bootstrap.min.css \
+                     bootstrap.min.js \
+                     jquery.min.js
