@@ -94,6 +94,17 @@ extern te_errno trc_report_iter_args_to_html(FILE                  *f,
                                              unsigned int           args_n,
                                              unsigned int           max_len,
                                              unsigned int           flags);
+
+/**
+ * Include code from a file to the generated HTML.
+ *
+ * @param f       File in which to append included code.
+ * @param src     From were to include the code.
+ *
+ * @return Status code.
+ */
+extern te_errno trc_include_external_html(FILE *f, const char *src);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

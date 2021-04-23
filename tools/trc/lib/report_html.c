@@ -130,14 +130,21 @@
 static const char * const trc_html_title_def =
     "Testing Results Comparison Report";
 
-static const char * const trc_html_doc_start =
+static const char * const trc_html_css_include_start =
+    "<style type=\"text/css\">\n";
+
+static const char * const trc_html_css_include_end =
+    "</style>\n";
+
+static const char * const trc_html_doc_start_part1 =
 "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n"
 "<html>\n"
 "<head>\n"
 "  <meta http-equiv=\"content-type\" content=\"text/html; "
 "charset=utf-8\">\n"
-"  <title>%s</title>\n"
-"  <link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css\">\n"
+"  <title>%s</title>\n";
+
+static const char * const trc_html_doc_start_part2 =
 "  <style type=\"text/css\">\n"
 "    a { color: #23527c }\n"
 "    a:focus { color: #0000ff }\n"
@@ -3500,12 +3507,20 @@ trc_report_to_html(trc_report_ctx *gctx, const char *filename,
                              ":" : ",", tag->v);
         }
     }
-    fprintf(f, trc_html_doc_start,
-            ((title != NULL) ? title : title_string.ptr)
+
+    fprintf(f, trc_html_doc_start_part1,
+            ((title != NULL) ? title : title_string.ptr));
+
+    fprintf(f, trc_html_css_include_start);
+    trc_include_external_html(f, "bootstrap.min.css");
+    fprintf(f, trc_html_css_include_end);
+
+    fprintf(f, trc_html_doc_start_part2
 #if TRC_USE_LOG_URLS
             , night_logs_history
 #endif
             );
+
     if (title != NULL)
         fprintf(f, "<h1 align=center>%s</h1>\n", title);
     if (gctx->db->version != NULL)

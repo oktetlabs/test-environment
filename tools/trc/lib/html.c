@@ -27,6 +27,7 @@
 
 #include "trc_html.h"
 #include "re_subst.h"
+#include "trc_tools.h"
 
 
 #define WRITE_STR(str) \
@@ -307,5 +308,28 @@ trc_report_iter_args_to_html(FILE *f, const trc_report_argument *args,
                     args[i].value);
     }
 
+    return 0;
+}
+
+/* See the description in trc_html.h */
+te_errno
+trc_include_external_html(FILE *f, const char *src)
+{
+    te_string cmd = TE_STRING_INIT_STATIC(4096);
+    FILE *finclude;
+    te_errno rc;
+
+    rc = te_string_append(&cmd, "trc_include_html.sh %s", src);
+    if (rc != 0)
+        return rc;
+
+    finclude = popen(cmd.ptr, "r");
+
+    if (finclude == NULL)
+        return TE_ENOENT;
+
+    trc_tools_file_to_file(f, finclude);
+
+    fclose(finclude);
     return 0;
 }

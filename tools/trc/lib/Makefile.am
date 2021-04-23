@@ -6,7 +6,7 @@ AM_CFLAGS = @TE_CFLAGS@ @XML2_CFLAGS@ $(TE_CFLAGS_VAR)
 
 #pkgdatadir = $(datadir)/$(subdir)
 #dist_pkgdata_DATA = jquery_flot.js
-dist_bin_SCRIPTS = jquery_include.sh jquery_flot.js
+dist_bin_SCRIPTS = trc_include_html.sh jquery_flot.js bootstrap.min.css
 
 noinst_HEADERS = \
 	trc_tags.h \

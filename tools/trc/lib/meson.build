@@ -32,6 +32,6 @@ libtrc_diff = static_library(
 )
 
 install_data(
-    ['jquery_include.sh', 'jquery_flot.js'],
+    ['trc_include_html.sh', 'jquery_flot.js', 'bootstrap.min.css'],
     install_dir: get_option('bindir'),
 )

@@ -2545,19 +2545,12 @@ trc_diff_include_header(FILE *f, const char *header)
 void
 trc_diff_include_external_libs(FILE *f)
 {
-    FILE *finclude = popen("jquery_include.sh", "r");
-
-    if (finclude == NULL)
+    if (trc_include_external_html(f, "jquery_flot.js") != 0)
     {
-        fprintf(stderr, "Failed to run \"jquery_include.sh\", "
-                "use external jquery script \"jquery_flot.js\"\n");
+        fprintf(stderr, "Failed to include \"jquery_flot.js\" "
+                "directly; including as external script.\n");
         fprintf(f, "%s", trc_diff_graph_js_include);
-        return;
     }
-
-    trc_tools_file_to_file(f, finclude);
-
-    fclose(finclude);
 }
 
 /** See descriptino in trc_db.h */
