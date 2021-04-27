@@ -34,8 +34,11 @@ rpc_files() {
         $TE_BASE/engine/rcf \
         -type f -name "*.c" -o -name "*.h"
 
-    test -f "${EXT_FILES}" && cat "${EXT_FILES}"
-    echo "$TE_RCF_CONSISTENCY_CHECKS_EXT_FILES"
+    # The meson build system uses EXT_FILE both for engine and agents.
+    # The autotools build system uses EXT_FILES for agents but TE_RCF_
+    # variable for the engine.
+    test -f "${EXT_FILES}" && cat "${EXT_FILES}" \
+        || echo "$TE_RCF_CONSISTENCY_CHECKS_EXT_FILES"
 }
 
 ##

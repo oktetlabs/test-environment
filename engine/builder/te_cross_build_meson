@@ -118,6 +118,12 @@ make_workspace() {
             te_eval_or_ssh "${p}" "rm -rf \"${ws}\"/build"
         fi
     fi
+
+    if test -n "${TE_RCF_CONSISTENCY_CHECKS_EXT_FILES}" ; then
+        # Copy extra files to the local workspace directory
+        rsync_to "${p}" "${TE_RCF_CONSISTENCY_CHECKS_EXT_FILES}" \
+            "${ws}/rcf_consistency_ext_files_dir" --relative
+    fi
 }
 
 build_process_cmd() {
@@ -313,12 +319,15 @@ build_platform() {
 
     ${remote_build} && destdir="DESTDIR=\"${ws}/destdir\""
 
-    if test "${p}" != "${TE_HOST}" -a -n \
-        "${TE_RCF_CONSISTENCY_CHECKS_EXT_FILES}" ; then
+    if test -n "${TE_RCF_CONSISTENCY_CHECKS_EXT_FILES}" ; then
+        local ws_rcf="${ws}/rcf_consistency_ext_files_dir"
+        # Extra files are located in the local workspace directory
+        local flist="${ws_rcf}${TE_RCF_CONSISTENCY_CHECKS_EXT_FILES//$'\n'/$'\n'${ws_rcf}}"
+
         te_eval_or_ssh "${p}" \
             "${ws}/src/engine/builder/te_rcf_consistency_checks \
                 --extfiles-del \"${ws}/build/\" ;
-            echo \"${TE_RCF_CONSISTENCY_CHECKS_EXT_FILES}\" | sed \"s/ /\n/g\" |
+            echo \"${flist}\" | sed \"s/ /\n/g\" |
                 ${ws}/src/engine/builder/te_rcf_consistency_checks \
                     --extfiles-add \"${ws}/build/\""
     fi
