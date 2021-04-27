@@ -23,6 +23,10 @@ fi
 
 declare -a RSYNC_TO_ARGS
 RSYNC_TO_ARGS+=(--delete-during)
+# External libraries may contain symlinks outside of build
+# root and may be unavailable on the target build host.
+# With --copy-unsafe-links, rsync takes care of this.
+RSYNC_TO_ARGS+=(--copy-unsafe-links)
 
 # This is used when copying sources
 declare -a RSYNC_SRC_IGNORES
