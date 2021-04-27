@@ -172,6 +172,7 @@ build_ext() {
             --cppflags="${!pcppflags}" \
             --cflags="${!pcflags}" \
             --ldflags="${!pldflags}" \
+            --te_builder_dir="${ws}/src/engine/builder" \
             --srcdir="${ws_ext_src}" \
             --prepare="${!pextprep}" \
             --builddir="${ws_ext_builddir}" \
@@ -239,6 +240,7 @@ build_agent_apps() {
             --cppflags="${!pcppflags}" \
             --cflags="${!pcflags}" \
             --ldflags="${!pldflags}" \
+            --te_builder_dir="${ws}/src/engine/builder" \
             --srcdir="${ws_app_src}" \
             --prepare="${!pappprep}" \
             --builddir="${ws_app_builddir}" \

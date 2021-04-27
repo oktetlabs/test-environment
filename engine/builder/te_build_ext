@@ -27,7 +27,7 @@ install_extension_parts () {
                             test -n '$builddir' && cd '$builddir';
                             cp -a $objlist '$destdir';
                             find -H \"$destdir\" -type l | \
-                            xargs ${SCRIPT_DIR}/te_fixlink \"$PWD\" \"$destdir\";"
+                            xargs \"${te_builder_dir}/te_fixlink\" \"$PWD\" \"$destdir\";"
         )
     fi
 }
@@ -37,6 +37,7 @@ declare platform=
 declare cppflags=
 declare cflags=
 declare ldflags=
+declare te_builder_dir=
 declare srcdir=
 declare prepare=
 declare builddir=
@@ -68,6 +69,9 @@ for arg; do
             ;;
         --ldflags=*)
             ldflags="${arg#--ldflags=}"
+            ;;
+        --te_builder_dir=*)
+            te_builder_dir="${arg#--te_builder_dir=}"
             ;;
         --srcdir=*)
             srcdir="${arg#--srcdir=}"
@@ -174,6 +178,9 @@ done
                       ${exports}
                       $build"
 )
+# If te_builder_dir is empty, use SCRIPT_DIR: this is an autotools build.
+test -z "$te_builder_dir" && te_builder_dir="${SCRIPT_DIR}"
+
 install_extension_parts "$expheaders" "$prefix/$platform/include"
 install_extension_parts "$explibs" "$prefix/$platform/lib"
 for tatype in ${tatypes} ; do
