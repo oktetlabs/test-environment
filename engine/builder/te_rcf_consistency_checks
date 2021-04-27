@@ -14,6 +14,8 @@
 # $Id$
 #
 
+set -eo pipefail
+
 EXT_FILES=te_rcf_consistency_checks_files
 
 ##
