@@ -10,6 +10,9 @@ export LD_LIBRARY_PATH="$(dirname "${bindir}")/lib:${LD_LIBRARY_PATH}"
 raw_log_path="${PWD}/log.raw"
 bundle_path="${PWD}/raw_log_bundle.tpxz"
 
+sniff_logs=false
+sniff_log_dir=
+
 usage()
 {
 cat <<EOF
@@ -17,7 +20,10 @@ Usage: rgt-log-bundle-create [<options>]
   --raw-log=PATH        Path to raw log
   --bundle=PATH         Path to raw log bundle to be created
   -v, --verbose         Print logs about what is done
-
+  --sniff-log           Include sniffer capture files
+  --sniff-log-dir=PATH  Where to find sniffer capture files (by default
+                        it looks for "caps" subfolder in the same folder
+                        in which RAW log bundle is stored)
 EOF
 }
 
@@ -37,6 +43,10 @@ while [[ "$#" -gt 0 ]] ; do
         --bundle=*  )   bundle_path=$(readlink -f "${opt#--bundle=}") ;;
         -v) ;&
         --verbose)      verbose=true ;;
+
+        --sniff-log) sniff_logs=true ;;
+        --sniff-log-dir=*) sniff_log_dir="${1#--sniff-log-dir=}" ;;
+
                    *)   echo "Unknown option: ${opt}" >&2;
                         usage ;
                         exit 1 ;;
@@ -49,6 +59,20 @@ bundle_tmpdir=$(mktemp -d "${TMPDIR}/raw_log_bundle_XXXXXX")
 if test $? -ne 0 ; then
     echo "Failed to create temporary directory" >&2
     exit 1
+fi
+
+declare -a sniff_args
+declare -a sniff_rec_args
+sniff_rec_dir=
+if [[ "${sniff_logs}" == "true" ]] ; then
+    if [[ -z "${sniff_log_dir}" ]] ; then
+        sniff_log_dir="$(dirname "${raw_log_path}")/caps"
+    fi
+
+    sniff_args=("--sniff-log-dir=${sniff_log_dir}")
+
+    sniff_rec_dir="${bundle_tmpdir}/recovered_caps/"
+    sniff_rec_args=("--caps=${sniff_rec_dir}")
 fi
 
 cleanup()
@@ -113,7 +137,7 @@ fi
 
 "${bindir}"/rgt-log-split --raw-log="${raw_log_path}" \
     --log-index="${bundle_tmpdir}/sorted_log_idx" \
-    --output-dir="${bundle_tmpdir}/fragments/"
+    --output-dir="${bundle_tmpdir}/fragments/" "${sniff_args[@]}"
 if test $? -ne 0 ; then
     err_cleanup "rgt-log-split failed"
 fi
@@ -137,7 +161,7 @@ fi
 
 print_log "Checking whether original log can be recovered..."
 "${bindir}"/rgt-log-bundle-get-original --bundle="${bundle_path}" \
-    --raw-log="${bundle_tmpdir}/recovered_raw_log"
+    --raw-log="${bundle_tmpdir}/recovered_raw_log" "${sniff_rec_args[@]}"
 if test $? -ne 0 ; then
     err_cleanup "Failed to recover original raw log"
 fi
@@ -145,6 +169,15 @@ fi
 diff "${raw_log_path}" "${bundle_tmpdir}/recovered_raw_log"
 if test $? -ne 0 ; then
     err_cleanup "Recovered raw log differ from the original one"
+fi
+
+if [[ "${sniff_logs}" == "true" ]] ; then
+    print_log "Checking whether original capture files can be recovered..."
+
+    diff -rq "${sniff_log_dir}" "${sniff_rec_dir}"
+    if test $? -ne 0 ; then
+        err_cleanup "Recovered capture files differ from the original ones"
+    fi
 fi
 
 cleanup
