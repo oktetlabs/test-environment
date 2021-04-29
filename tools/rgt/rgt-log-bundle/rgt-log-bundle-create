@@ -28,9 +28,10 @@ print_log()
     $verbose && echo "$@"
 }
 
-while test -n "$1" ; do
+while [[ "$#" -gt 0 ]] ; do
     opt="$1"
     case "${opt}" in
+        ""          ) ;; # Ignore empty arguments
         --help      )   usage ; exit 0 ;;
         --raw-log=* )   raw_log_path=$(readlink -f "${opt#--raw-log=}") ;;
         --bundle=*  )   bundle_path=$(readlink -f "${opt#--bundle=}") ;;

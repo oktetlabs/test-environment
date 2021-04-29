@@ -28,8 +28,9 @@ EOF
 repack_existing=yes
 remove_original=no
 
-while test -n "$1" ; do
+while [[ "$#" -gt 0 ]] ; do
     case "$1" in
+        "" ) ;; # Ignore empty arguments
         --help ) usage ; exit 0 ;;
         -h )     usage ; exit 0 ;;
         --log-name=* ) raw_log_name="${1#--log-name=}" ;;

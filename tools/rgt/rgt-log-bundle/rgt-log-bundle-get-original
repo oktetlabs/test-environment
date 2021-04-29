@@ -17,9 +17,10 @@ EOF
 raw_log_path=
 bundle_path=
 
-while test -n "$1" ; do
+while [[ "$#" -gt 0 ]] ; do
     opt="$1"
     case "${opt}" in
+        ""          ) ;; # Ignore empty arguments
         --help      )   usage ; exit 0 ;;
         --output=*  )   raw_log_path="${opt#--output=}" ;;
         --bundle=*  )   bundle_path="${opt#--bundle=}" ;;

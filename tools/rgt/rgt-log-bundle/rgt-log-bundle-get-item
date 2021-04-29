@@ -28,9 +28,10 @@ Usage: rgt-log-bundle-get-item [<options>]
 EOF
 }
 
-while test -n "$1" ; do
+while [[ "$#" -gt 0 ]] ; do
     opt="$1"
     case "${opt}" in
+        ""             ) ;; # Ignore empty arguments
         --help         )   usage ; exit 0 ;;
         --bundle=*     )   bundle_path="${opt#--bundle=}" ;;
         --req-path=*   )   req_path="${opt#--req-path=}" ;;

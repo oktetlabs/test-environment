@@ -130,8 +130,10 @@ function print_warn() {
 #   May output error messages to stderr or usage info to stdout.
 #######################################################################
 function process_opts() {
-    while [[ -n "$1" ]] ; do
+    while [[ "$#" -gt 0 ]] ; do
         case "$1" in
+            "") ;; # Ignore empty arguments
+
             -h | --help) usage ; exit 0 ;;
 
             --raw-log=*) raw_path=${1#--raw-log=} ;;
