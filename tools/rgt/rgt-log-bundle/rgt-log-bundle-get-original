@@ -9,11 +9,15 @@ usage()
 cat <<EOF
 Usage: rgt-log-bundle-get-original [<options>]
   --bundle=PATH         Path to raw log bundle
-  --output=PATH         Where to save restored raw log
+  --raw-log=PATH        Where to save restored raw log
+  --output=PATH         The same as --raw-log (for backward
+                        compatibility)
+  --caps=PATH           Where to save restored capture files
 
 EOF
 }
 
+caps_path=
 raw_log_path=
 bundle_path=
 
@@ -22,7 +26,11 @@ while [[ "$#" -gt 0 ]] ; do
     case "${opt}" in
         ""          ) ;; # Ignore empty arguments
         --help      )   usage ; exit 0 ;;
-        --output=*  )   raw_log_path="${opt#--output=}" ;;
+        --raw-log=* )   raw_log_path="${opt#--raw-log=}" ;;
+        --output=*  )   raw_log_path="${opt#--output=}" ;
+                        echo "Usage of --output is deprecated," \
+                             "use --raw-log instead" >&2 ;;
+        --caps=*    )   caps_path="${opt#--caps=}" ;;
         --bundle=*  )   bundle_path="${opt#--bundle=}" ;;
                    *)   echo "Unknown option: ${opt}" >&2;
                         usage ;
@@ -59,8 +67,8 @@ if test \! \( -r "${bundle_path}" \) ; then
     err_cleanup "Cannot read raw log bundle from ${bundle_path}"
 fi
 
-if test -z "${raw_log_path}" ; then
-    err_cleanup "Raw log path is not specified"
+if [[ -z "${raw_log_path}" ]] && [[ -z "${caps_path}" ]] ; then
+    err_cleanup "Neither raw log nor capture files output path is specified"
 fi
 
 pixz -x <"${bundle_path}" | tar x -C "${bundle_tmpdir}"
@@ -72,10 +80,22 @@ fi
 # rgt-log-recover uses it
 export LD_LIBRARY_PATH="$(dirname "${bindir}")/lib:${LD_LIBRARY_PATH}"
 
-"${bindir}"/rgt-log-recover --split-log="${bundle_tmpdir}" \
-    --output="${raw_log_path}"
-if test $? -ne 0 ; then
-    err_cleanup "Failed to recover original raw log from '${bundle_path}'"
+if [[ -n "${raw_log_path}" ]] ; then
+    "${bindir}"/rgt-log-recover --split-log="${bundle_tmpdir}" \
+        --output="${raw_log_path}"
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to recover original raw log from '${bundle_path}'"
+    fi
+fi
+
+if [[ -n "${caps_path}" ]] ; then
+    mkdir -p "${caps_path}" \
+        && "${bindir}"/rgt-caps-recover --split-log="${bundle_tmpdir}" \
+                                        --caps="${caps_path}"
+
+    if test $? -ne 0 ; then
+        err_cleanup "Failed to recover original capture files from '${bundle_path}'"
+    fi
 fi
 
 cleanup

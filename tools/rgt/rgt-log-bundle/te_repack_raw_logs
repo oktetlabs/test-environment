@@ -115,7 +115,7 @@ check_bundle()
     fi
 
     rgt-log-bundle-get-original --bundle="${log_dir}/raw_log_bundle.tpxz" \
-        --output="${raw_from_bundle}" && rc=0 || rc=1
+        --raw-log="${raw_from_bundle}" && rc=0 || rc=1
     if test $rc -ne 0 ; then
         echo "Failed to recover original raw log from bundle" 2>&1
         check_bundle_cleanup

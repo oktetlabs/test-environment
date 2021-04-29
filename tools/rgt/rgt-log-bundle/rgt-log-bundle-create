@@ -137,7 +137,7 @@ fi
 
 print_log "Checking whether original log can be recovered..."
 "${bindir}"/rgt-log-bundle-get-original --bundle="${bundle_path}" \
-    --output="${bundle_tmpdir}/recovered_raw_log"
+    --raw-log="${bundle_tmpdir}/recovered_raw_log"
 if test $? -ne 0 ; then
     err_cleanup "Failed to recover original raw log"
 fi
