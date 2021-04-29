@@ -78,7 +78,13 @@ err_cleanup()
 
 mkdir -p "${bundle_tmpdir}/fragments"
 if test $? -ne 0 ; then
-    err_cleanup "Failed to create subdir in ${bundle_tmpdir}"
+    err_cleanup "Failed to create fragments subdir in ${bundle_tmpdir}"
+fi
+
+tmp_caps_dir="${bundle_tmpdir}/caps"
+mkdir -p "${tmp_caps_dir}"
+if test $? -ne 0 ; then
+    err_cleanup "Failed to create caps subdir in ${bundle_tmpdir}"
 fi
 
 # Add TE libraries installation path to LD_LIBRARY_PATH since
@@ -115,18 +121,30 @@ elif [[ "${req_path}" =~ log_gist[.]raw$ ]] ; then
 
 elif [[ "${req_path}" =~ log[.]txt$ ]] ; then
 
+    declare -a sniff_opts
+    if [[ "${sniff_log}" == "true" ]] ; then
+        if [[ -z "${sniff_log_dir}" ]] ; then
+            sniff_opts=("--caps=${tmp_caps_dir}")
+        fi
+    fi
+
     "${bindir}"/rgt-log-bundle-get-original --bundle="${bundle_path}" \
-        --raw-log="${bundle_tmpdir}/recovered_log.raw"
+        --raw-log="${bundle_tmpdir}/recovered_log.raw" "${sniff_opts[@]}"
     if test $? -ne 0 ; then
         err_cleanup "Failed to recover original raw log"
     fi
 
-    sniff_opts=()
-    if $sniff_log ; then
-        if test ! -d "${sniff_log_dir}" ; then
-            sniff_log_dir="${bundle_dir}/caps"
+    unset sniff_opts
+    declare -a sniff_opts
+    if [[ "${sniff_log}" == "true" ]] ; then
+        if [[ -z "${sniff_log_dir}" ]] ; then
+            if [[ "$(ls -1qA "${tmp_caps_dir}" | wc -l)" -gt 0 ]] ; then
+                sniff_log_dir="${tmp_caps_dir}"
+            else
+                sniff_log_dir="${bundle_dir}/caps"
+            fi
         fi
-        if test -d "${sniff_log_dir}" ; then
+        if [[ -d "${sniff_log_dir}" ]] ; then
             sniff_opts+=("--sniff-log")
             sniff_opts+=("--sniff-log-dir=${sniff_log_dir}")
         fi
@@ -164,6 +182,17 @@ elif [[ "${req_path}" =~ /html[/]?$ ||
     fi
 
 elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
+
+    declare -a sniff_opts
+    if [[ "${sniff_log}" == "true" ]] ; then
+        sniff_log_dir="${bundle_tmpdir}/fragments/caps"
+        mkdir -p "${sniff_log_dir}"
+        if test $? -ne 0 ; then
+            err_cleanup "Failed to create ${sniff_log_dir}"
+        fi
+
+        sniff_opts=("--sniff-log-dir=${sniff_log_dir}")
+    fi
 
     cur_page=1
     all_pages=0
@@ -206,7 +235,7 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
         --split-log="${bundle_tmpdir}/fragments/" \
         --frags-count="${bundle_tmpdir}/fragments/frags_count" \
         --filter="${node}" --page="${merge_frag_num}" \
-        --output="${bundle_tmpdir}/log_merge.raw"
+        --output="${bundle_tmpdir}/log_merge.raw" "${sniff_opts[@]}"
     if test $? -ne 0 ; then
         err_cleanup "Failed to merge log fragments"
     fi
@@ -217,27 +246,24 @@ elif [[ "${req_path}" =~ node_[^/]*[.]html$ ]] ; then
         pages_count=0
     fi
 
-    "${bindir}"/rgt-conv --incomplete-log "${bundle_tmpdir}/log_merge.raw" \
-        "${bundle_tmpdir}/log_merge.xml"
-    if test $? -ne 0 ; then
-        err_cleanup "Failed to obtain merged XML log"
+    if [[ "${sniff_log}" == "true" ]] ; then
+        sniff_opts=("--sniff-log" "--sniff-log-dir=${sniff_log_dir}")
     fi
 
     page_selector=
     if test ${all_pages} -gt 0 ; then
-        page_selector="--page-selector=all"
+        page_selector="--rgt-x2hm-page-selector=all"
     elif test ${pages_count} -gt 1 ; then
-        page_selector="--page-selector=${cur_page}/${pages_count}"
+        page_selector="--rgt-x2hm-page-selector=${cur_page}/${pages_count}"
     fi
     dir_path=$(dirname "${req_path}")
 
-    "${bindir}"/rgt-xml2html-multi --single-node="${node}" \
-        --shared-url="${shared_url}" \
-        --docs-url="${docs_url}" ${page_selector} \
-        "${bundle_tmpdir}/log_merge.xml" "${dir_path}"
-    if test $? -ne 0 ; then
-        err_cleanup "Failed to obtain HTML log"
-    fi
+    rgt-proc-raw-log --raw-log="${bundle_tmpdir}/log_merge.raw" \
+        --html="${dir_path}" "${page_selector}" \
+        --rgt-x2hm-single-node="${node}" \
+        --rgt-x2hm-shared-url="${shared_url}" \
+        --rgt-x2hm-docs-url="${docs_url}" \
+        --rgt-conv-incomplete-log "${sniff_opts[@]}"
 
 else
     err_cleanup "Unknown target type in \"${req_path}\""
