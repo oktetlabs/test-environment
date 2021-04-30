@@ -218,6 +218,9 @@ typedef struct rgt_gen_ctx {
                                           incomplete log reports as normal
                                           or give error message */
 
+    te_bool         ignore_unknown_id;  /**< Ignore messages with unknown
+                                             log node ID */
+
     te_bool         verb; /**< Whether to use verbose output or not */
     int             current_nest_lvl;  /**< Current nesting level */
 } rgt_gen_ctx_t;

@@ -146,6 +146,10 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
           "Do not shout on truncated log report, but complete it "
           "automatically.", NULL },
 
+        { "ignore-unknown-id", '\0', POPT_ARG_NONE, NULL, 'u',
+          "Do not stop log construction on encountering a message with "
+          "ID not matching any opened log node.", NULL },
+
         { "tmpdir", 't', POPT_ARG_STRING, NULL, 't',
           "Temporary directory for message queues offloading.", "PATH" },
 
@@ -231,6 +235,15 @@ process_cmd_line_opts(int argc, char **argv, rgt_gen_ctx_t *ctx)
             case 'i':
                 /* User ask us to complete log report automatically */
                 ctx->proc_incomplete = TRUE;
+                break;
+
+            case 'u':
+                /*
+                 * Log should be constructed even if some messages cannot
+                 * be included because their ID does not match ID of any
+                 * opened log node.
+                 */
+                ctx->ignore_unknown_id = TRUE;
                 break;
 
             case 'V':

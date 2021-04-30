@@ -1398,6 +1398,13 @@ flow_tree_attach_message(log_msg *msg)
                 g_hash_table_lookup(close_set, &(msg->id))) == NULL)
     {
         fprintf(stderr, "Cannot find test with ID equals to %d\n", msg->id);
+
+        if (rgt_ctx.ignore_unknown_id)
+        {
+            free_log_msg(msg);
+            return;
+        }
+
         THROW_EXCEPTION;
     }
     cur_node = *p_cur_node;

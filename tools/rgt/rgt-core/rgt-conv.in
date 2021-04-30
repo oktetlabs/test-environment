@@ -50,6 +50,9 @@ Usage: $prog_name [OPTION...] [<Raw Log file> [<Output file>]]
   --incomplete-log         Do not shout on truncated log report, but complete
                            it automatically.
 
+  --ignore-unknown-id      Do not stop log construction on encountering a
+                           message with ID not matching any opened log node.
+
   -c FILE,                 Specify XML filter configuration file. If no file
   --cfg-filter=FILE        specified no filtering is applied.
 
@@ -176,6 +179,9 @@ do
         extra_flags="$extra_flags $1"
         ;;
     --incomplete-log)
+        extra_flags="$extra_flags $1"
+        ;;
+    --ignore-unknown-id)
         extra_flags="$extra_flags $1"
         ;;
     -c)
