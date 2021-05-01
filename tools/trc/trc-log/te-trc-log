@@ -28,16 +28,18 @@ If <raw-log-file> is unspecified, raw log is read from stdin.
 '--' may be used to terminate <options>.
 
 OPTIONS:
-  -o <output-file>  Specify output file name
-  -z                Compress output using gzip
-  -j                Compress output using bzip2
+  -o <output-file>          Specify output file name
+  -z                        Compress output using gzip
+  -j                        Compress output using bzip2
+  --ignore-unknown-id       Ignore log messages with unknown ID
 
-  --help            Show this help message
+  --help                    Show this help message
 
 EOF
     exit 1
 }
 
+rgt_opts=("--incomplete-log" "-m" "postponed")
 compress=
 end_of_options=
 while test -z "$end_of_options" -a -n "$1" ; do
@@ -57,6 +59,9 @@ while test -z "$end_of_options" -a -n "$1" ; do
         -o)     shift 1
                 output_file="$1"
                 ;;
+
+        --ignore-unknown-id) rgt_opts+=("--ignore-unknown-id") ;;
+
         --)     end_of_options=yes
                 ;;
         -*)     usage "Unknown option: $1"
@@ -102,17 +107,15 @@ cat <<EOF >"$rgt_filter"
 </filters>
 EOF
 
-rgt_opts="--incomplete-log -m postponed"
-
 if test -z "$compress" ; then
-    "${bindir}"/rgt-conv $rgt_opts -c "$rgt_filter" \
+    "${bindir}"/rgt-conv "${rgt_opts[@]}" -c "$rgt_filter" \
         ${raw_log_file:+-f} "$raw_log_file" \
         ${output_file:+-o} "$output_file"
 elif test -z "$output_file" ; then
-    "${bindir}"/rgt-conv $rgt_opts -c "$rgt_filter" \
+    "${bindir}"/rgt-conv "${rgt_opts[@]}" -c "$rgt_filter" \
         ${raw_log_file:+-f} "$raw_log_file" | $compress
 else
-    "${bindir}"/rgt-conv $rgt_opts -c "$rgt_filter" \
+    "${bindir}"/rgt-conv "${rgt_opts[@]}" -c "$rgt_filter" \
         ${raw_log_file:+-f} "$raw_log_file" | $compress >"$output_file"
 fi
 status=$?

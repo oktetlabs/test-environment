@@ -13,6 +13,7 @@
 
 tmp_files=
 
+declare -a trc_log_opts
 opts=""
 while test "${1#-}" != "$1" ; do
     case $1 in
@@ -32,6 +33,9 @@ while test "${1#-}" != "$1" ; do
             echo "$1"
             opts="$opts $1"
             ;;
+
+        --ignore-unknown-id) trc_log_opts+=("--ignore-unknown-id") ;;
+
         *)
             opts="$opts $1"
             ;;
@@ -121,7 +125,7 @@ log_format=${raw_log_file##*.}
 if [ "x$log_format" == "xxml" ]; then
     cat $raw_log_file | te-trc-report ${opts}
 else
-    te-trc-log "$raw_log_file" | te-trc-report ${opts}
+    te-trc-log "${trc_log_opts[@]}" "$raw_log_file" | te-trc-report ${opts}
 fi
 
 if [ $? -eq 0 ]; then
