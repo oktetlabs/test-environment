@@ -3355,6 +3355,9 @@ rpc_read_fd2te_dbuf_append(rcf_rpc_server *rpcs, int fd, int time2wait,
     in.time2wait = time2wait;
     in.amount = amount;
 
+    if (time2wait >= 0 && rpcs->timeout == RCF_RPC_UNSPEC_TIMEOUT)
+        rpcs->timeout = rpcs->def_timeout + time2wait;
+
     rcf_rpc_call(rpcs, "read_fd", &in, &out);
 
     CHECK_RETVAL_VAR_IS_ZERO_OR_MINUS_ONE(read_fd, out.retval);

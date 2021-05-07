@@ -811,7 +811,8 @@ extern int rpc_overfill_fd(rcf_rpc_server *rpcs, int write_end,
  * @param rpcs      RPC server handle.
  * @param fd        File descriptor or socket.
  * @param time2wait Time to wait for data, milliseconds. Negative value means
-                    an infinite timeout.
+                    an infinite timeout and it is a user responsibility to
+                    care about RPC timeout in this case.
  * @param amount    Number of bytes to read, if @c 0 then only @p time2wait
  *                  limits it.
  * @param dbuf      Buffer to append read data to.
@@ -830,7 +831,8 @@ extern int rpc_read_fd2te_dbuf_append(rcf_rpc_server *rpcs, int fd,
  * @param rpcs      RPC server handle.
  * @param fd        File descriptor or socket.
  * @param time2wait Time to wait for data, milliseconds. Negative value means
-                    an infinite timeout.
+                    an infinite timeout and it is a user responsibility to
+                    care about RPC timeout in this case.
  * @param amount    Number of bytes to read, if @c 0 then only @p time2wait
  *                  limits it.
  * @param dbuf      Buffer to put read data to.
@@ -850,7 +852,8 @@ extern int rpc_read_fd2te_dbuf(rcf_rpc_server *rpcs, int fd, int time2wait,
  * @param rpcs      RPC server handle.
  * @param fd        File descriptor or socket.
  * @param time2wait Time to wait for data, milliseconds. Negative value means
-                    an infinite timeout.
+                    an infinite timeout and it is a user responsibility to
+                    care about RPC timeout in this case.
  * @param amount    Number of bytes to read, if @c 0 then only @p time2wait
  *                  limits it.
  * @param buf       Pointer to buffer (it is allocated by the function).
@@ -868,7 +871,8 @@ extern int rpc_read_fd(rcf_rpc_server *rpcs, int fd, int time2wait,
  * @param rpcs      RPC server handle.
  * @param fd        File descriptor or socket.
  * @param time2wait Time to wait for data, milliseconds. Negative value means
-                    an infinite timeout.
+                    an infinite timeout and it is a user responsibility to
+                    care about RPC timeout in this case.
  * @param amount    Number of bytes to read, if @c 0 then only @p time2wait
  *                  limits it.
  * @param testr     Buffer to append read data to.
@@ -887,7 +891,8 @@ extern int rpc_read_fd2te_string_append(rcf_rpc_server *rpcs, int fd,
  * @param rpcs      RPC server handle.
  * @param fd        File descriptor or socket.
  * @param time2wait Time to wait for data, milliseconds. Negative value means
-                    an infinite timeout.
+                    an infinite timeout and it is a user responsibility to
+                    care about RPC timeout in this case.
  * @param amount    Number of bytes to read, if @c 0 then only @p time2wait
  *                  limits it.
  * @param testr     Buffer to put read data to.
