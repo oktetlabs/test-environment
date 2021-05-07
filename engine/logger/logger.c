@@ -707,6 +707,9 @@ ta_handler(void *ta)
             else
             {
                 /* The rest of errors are considered as fatal */
+                ERROR("rcf_ta_get_log(ta_name='%s') returned fatal error "
+                      "%r, stop gathering logs from this TA",
+                      inst->agent, rc);
                 break;
             }
         }
