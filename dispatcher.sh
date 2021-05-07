@@ -201,6 +201,9 @@ Generic options:
                                 Config string has the following format: <name>[:<runid>].
   --logger-meta-file=<path>     Send meta information to listeners. This option may only be specified
                                 once.
+  --logger-max-size=<size>      Maximum size of RAW log (4Gb by default;
+                                negative for unlimited; may be specified in
+                                units of G[igabytes]).
 
   --trc-log=<filename>          Generate bzip2-ed TRC log
   --trc-db=<filename>           TRC database to be used

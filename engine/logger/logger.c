@@ -32,6 +32,7 @@
 
 #include "te_str.h"
 #include "te_raw_log.h"
+#include "te_log_fmt.h"
 #include "logger_int.h"
 #include "logger_internal.h"
 #include "logger_ten.h"
@@ -66,10 +67,20 @@ const char *te_log_dir = NULL;
 
 /* Raw log file */
 static FILE    *raw_file = NULL;
+/* Mutex protecting raw log file */
+static pthread_mutex_t raw_file_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* Raw log file location */
 static char    *te_log_raw = NULL;
-/* Is the raw log file length bigger than 4Gb */
+
+/*
+ * By default RAW log size limit is 4Gb. After reaching that limit
+ * new messages are ignored and not stored in the log.
+ * Negative value means unlimited size.
+ */
+static int64_t raw_log_max_size = (1LLU << 32);
+/* Is the raw log file length bigger than raw_log_max_size */
 static te_bool  raw_log_too_big = FALSE;
+
 /* raw log file check counter */
 static int      raw_file_check_cnt = 0;
 
@@ -93,6 +104,7 @@ static unsigned int         lgr_flags = 0;
 /** @name Logger command-line option flags */
 #define LOGGER_OPT_LISTENER    1    /**< Force a listener to be enabled */
 #define LOGGER_OPT_METAFILE    2    /**< Path to the meta.json file */
+#define LOGGER_OPT_MAXSIZE     3    /**< Maximum length of the RAW log */
 /*@}*/
 
 static const char          *cfg_file = NULL;
@@ -140,6 +152,54 @@ lgr_message_valid(const void *msg, size_t len)
 }
 
 /**
+ * Append error message from Logger to the raw log file.
+ *
+ * @param fmt         Format string.
+ * @param ...         Format arguments.
+ */
+static void
+append_err_message(const char *fmt, ...)
+{
+    va_list ap;
+    struct timeval tv;
+    te_errno rc;
+
+    te_log_msg_raw_data data;
+
+    (void)gettimeofday(&tv, NULL);
+
+    memset(&data, 0, sizeof(data));
+    data.common = te_log_msg_out_raw;
+
+    va_start(ap, fmt);
+    rc = te_log_message_raw_va(&data, tv.tv_sec, tv.tv_usec,
+                               TE_LL_ERROR, TE_LOG_ID_UNDEFINED,
+                               te_lgr_entity, TE_LGR_USER,
+                               fmt, ap);
+    va_end(ap);
+
+    if (rc != 0)
+    {
+        fprintf(stderr, "%s(): failed to construct log message\n",
+                __FUNCTION__);
+    }
+    else
+    {
+        pthread_mutex_lock(&raw_file_mutex);
+
+        if (fwrite(data.buf, data.ptr - data.buf, 1, raw_file) != 1)
+            perror("fwrite() failure");
+        if (fflush(raw_file) != 0)
+            perror("fflush(raw_file) failed");
+
+        pthread_mutex_unlock(&raw_file_mutex);
+    }
+
+    free(data.buf);
+    free(data.args);
+}
+
+/**
  * Register the log message in the raw log file.
  *
  * @param buf       Log message location
@@ -148,7 +208,6 @@ lgr_message_valid(const void *msg, size_t len)
 void
 lgr_register_message(const void *buf, size_t len)
 {
-    static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
     struct stat            raw_file_stat;
     te_errno               rc;
 
@@ -166,7 +225,7 @@ lgr_register_message(const void *buf, size_t len)
     if (raw_log_too_big)
         return;
 
-    if (raw_file_check_cnt-- <= 0)
+    if (raw_log_max_size >= 0 && raw_file_check_cnt-- <= 0)
     {
         raw_file_check_cnt = RAW_FILE_CHECK_PERIOD;
         rc = stat(te_log_raw, &raw_file_stat);
@@ -176,20 +235,26 @@ lgr_register_message(const void *buf, size_t len)
                   "errno=%d", te_log_raw, errno);
             return;
         }
-        /* Set that raw file is too big when it's bigger then 4Gb */
-        if (raw_file_stat.st_size > ((off64_t)1 << 32))
+        /* RAW log is too big now, ignore new messages */
+        if (raw_file_stat.st_size > (off64_t)raw_log_max_size)
         {
             raw_log_too_big = TRUE;
+
+            fprintf(stderr, "\nRAW LOG HAS REACHED SIZE LIMIT, ALL THE "
+                    "NEXT MESSAGES WILL BE LOST\n");
+            append_err_message("Raw log has reached limit of %llu bytes, "
+                               "new log messages are ignored and lost now",
+                               (long long unsigned)raw_log_max_size);
             return;
         }
     }
 
-    pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(&raw_file_mutex);
     if (fwrite(buf, len, 1, raw_file) != 1)
         perror("fwrite() failure");
     if (fflush(raw_file) != 0)
         perror("fflush(raw_file) failed");
-    pthread_mutex_unlock(&mutex);
+    pthread_mutex_unlock(&raw_file_mutex);
 }
 
 static pthread_mutex_t add_remove_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -852,6 +917,7 @@ process_cmd_line_opts(int argc, const char **argv)
     int          rc;
     char        *meta_path;
     char        *listener_conf;
+    char        *max_size;
 
     /* Option Table */
     struct poptOption options_table[] = {
@@ -881,6 +947,12 @@ process_cmd_line_opts(int argc, const char **argv)
           "Metadata file for live results. This option may only be specified "
           "once.",
           "path" },
+
+        { "max-size", '\0',
+          POPT_ARG_STRING, &max_size, LOGGER_OPT_MAXSIZE,
+          "Maximum size of the raw log (4Gb by default; set negative for "
+          "unlimited; may be specified in units of G[igabytes])",
+          "size" },
 
         POPT_AUTOHELP
         POPT_TABLEEND
@@ -920,6 +992,31 @@ process_cmd_line_opts(int argc, const char **argv)
                 }
                 metafile_path = meta_path;
                 break;
+
+            case LOGGER_OPT_MAXSIZE:
+            {
+                double val = 0;
+                double multiplier = 1.0;
+                char *endptr = NULL;
+
+                val = strtod(max_size, &endptr);
+                if (*endptr == 'G')
+                {
+                    multiplier = (double)(1 << 30);
+                }
+                else if (*endptr != '\0')
+                {
+                    fprintf(stderr, "Failed to parse --max-size=%s\n",
+                            max_size);
+                    exit(EXIT_FAILURE);
+                }
+
+                raw_log_max_size = val * multiplier;
+
+                free(max_size);
+                break;
+            }
+
             default:
                 fprintf(stderr, "Unexpected option number %d", rc);
                 poptFreeContext(optCon);
