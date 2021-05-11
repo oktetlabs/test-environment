@@ -1300,7 +1300,9 @@ shutdown_daemon CS
 if test -n "${LOGGER_OK}" -a -n "${RCF_OK}" ; then
     te_log_message Dispatcher Start "Flush log"
     myecho "--->>> Flush Logs"
-    te_log_flush
+    # bug9930 results into indefinite hang of te_log_flush, so we'll work
+    # around it for now. May be worth keeping external timeout in any case
+    timeout 10s te_log_flush || echo "--->>> Flush Logs - terminated by timeout" >&2
 fi
 
 shutdown_daemon RCF
