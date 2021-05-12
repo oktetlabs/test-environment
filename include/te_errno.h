@@ -38,7 +38,18 @@
 typedef int32_t te_errno;
 
 
-/** Type to store TE error numbers */
+/**
+ * Type to store TE error numbers
+ *
+ * @note Add a new error to the end of the related errors
+ *       group only: in RAW log errors are saved as numeric
+ *       values, so changing the existing values by inserting
+ *       some new value in the middle of the group will break
+ *       conversion of the old RAW logs to HTML/TXT.
+ *
+ *       Every group is started like TE_MIN_ERRNO + N to
+ *       allow editing these groups independently.
+ */
 typedef enum {
     /* OS error codes */
     TE_EPERM = TE_MIN_ERRNO + 1,
@@ -222,12 +233,12 @@ typedef enum {
                           cannot be rebooted */
     TE_ETADEAD,      /**< Test Agent is dead */
     TE_ETAREBOOTED,  /**< Test Agent is rebooted */
-    TE_ETAFATAL,     /**< Test Agent is dead and cannot be recovered */
     TE_ESUNRPC,      /**< SUN RPC failed */
     TE_ECORRUPTED,   /**< Data are corrupted by the software under test */
     TE_ERPCTIMEOUT,  /**< Timeout ocurred during RPC call */
     TE_ERPCDEAD,     /**< RPC server is dead */
     TE_ERPCKILLED,   /**< RPC server is killed */
+    TE_ETAFATAL,     /**< Test Agent is dead and cannot be recovered */
 /*@}*/
 
 /** @name ASN.1 text parse errors */
@@ -303,6 +314,12 @@ typedef enum {
 
 /**
  * @name Identifiers of TE modules (error sources) used in errors
+ *
+ * @note Add new modules to the end of the enum: in RAW logs
+ *       errors are saved as numeric values, so changing the
+ *       existing values by inserting some new value in the
+ *       middle of the enum will break conversion of the old
+ *       RAW logs to HTML/TXT.
  *
  * @todo Make it 'enum' when %r specified will be supported.
  */
