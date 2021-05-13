@@ -36,6 +36,10 @@ if not cc.has_function('xdr_bytes', args: te_cflags, dependencies: deps)
            cc.has_function('xdr_bytes', dependencies: dep_nsl)
             deps += [ dep_nsl ]
         else
+            warning('Modern linux distros do not support RPC in glibc,')
+            warning('libtirpc can be used instead. Install package:')
+            warning('- libtirpc-devel in case of RHEL/Fedora,')
+            warning('- libtirpc-dev in case of Debian/Ubuntu.')
             error('No RPC library found')
         endif
     endif
