@@ -459,6 +459,59 @@ is_thread_isolated(const char *isolated_str, unsigned long thread_id,
 }
 
 static te_errno
+is_cpu_online(const char *name, te_bool *is_online)
+{
+    FILE *f = NULL;
+    te_errno rc = 0;
+    unsigned int result;
+    unsigned long thread_id;
+
+    te_string buf = TE_STRING_INIT;
+
+    if ((rc = get_suffix_index(name, &thread_id)) != 0)
+        return rc;
+
+    /* cpu0 is always online */
+    if (thread_id == 0)
+        return rc;
+
+    if ((rc = te_string_append(&buf, "cpu/%s/online", name)) != 0)
+    {
+        ERROR("Failed to create online cpu path");
+        goto out;
+    }
+
+    rc = open_system_file(buf.ptr, &f);
+    switch (TE_RC_GET_ERROR(rc))
+    {
+        case 0:
+            break;
+        case TE_ENOENT:
+            INFO("Could not open sysfs CPUs online file, fallback to empty");
+            *is_online = TRUE;
+            rc = 0;
+            goto out;
+        default:
+            goto out;
+    }
+
+    if (fscanf(f, "%u", &result) == EOF)
+    {
+        rc = TE_RC(TE_TA_UNIX, TE_EINVAL);
+        ERROR("Failed to read online attribute for CPU '%s'", name);
+        goto out;
+    }
+
+    *is_online = (result == 1) ? TRUE : FALSE;
+
+out:
+    if (f != NULL)
+        fclose(f);
+    te_string_free(&buf);
+    return rc;
+}
+
+static te_errno
 populate_cpu(cpu_item_list *root, const char *name, const char *isolated_str)
 {
     unsigned long thread_id;
@@ -521,6 +574,7 @@ scan_system(cpu_item_list *root)
     int n_cpus = 0;
     te_errno rc = 0;
     int i;
+    te_bool is_online = TRUE;
 
     if ((rc = read_isolated(&isolated_str)) != 0)
         goto out;
@@ -535,6 +589,16 @@ scan_system(cpu_item_list *root)
 
     for (i = 0; i < n_cpus; i++)
     {
+        if ((rc = is_cpu_online(names[i]->d_name, &is_online)) != 0)
+        {
+            ERROR("Could not get info about online/offline status of '%s'",
+                  names[i]->d_name);
+            goto out;
+        }
+
+        if (!is_online)
+            continue;
+
         if ((rc = populate_cpu(&result, names[i]->d_name, isolated_str)) != 0)
         {
             ERROR("Only %d CPUs populated, could not get info about '%s'",
