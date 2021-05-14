@@ -502,7 +502,7 @@ extern int rpc_pattern_sender(rcf_rpc_server *rpcs, int s,
  * @endcode
  */
 #define TARPC_PAT_GEN_ARG_VAL(_gen_arg) \
-  _gen_arg.offset, _gen_arg.coef1, _gen_arg.coef2, _gen_arg.coef3
+  (_gen_arg).offset, (_gen_arg).coef1, (_gen_arg).coef2, (_gen_arg).coef3
 
 /**
  * Patterned data receiver. Data may be received using IO multiplexing or not,
