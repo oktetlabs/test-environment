@@ -1247,4 +1247,57 @@ extern int tarpc_close_fd_hook_unregister(tarpc_close_fd_hook *hook,
  */
 extern int tarpc_call_close_with_hooks(api_func close_func, int fd);
 
+/**
+ * Fill a buffer with values provided by @b get_nth_elm().
+ *
+ * @param buf            Buffer
+ * @param size           Buffer size
+ * @param arg            Pointer to @ref tarpc_pat_gen_arg structure, where
+ *                       - coef1 is a starting number in a sequence
+ *
+ * @return Status code.
+ */
+extern te_errno tarpc_fill_buff_with_sequence(char *buf, int size,
+                                              tarpc_pat_gen_arg *arg);
+
+/**
+ * Maximum offset within a buffer filled with
+ * tarpc_fill_buff_with_sequence_lcg(). Buffer should be at least this
+ * number of bytes larger than the requested size.
+ *
+ * This number is due to the fact that algorithm works with
+ * 4-byte words internally.
+ */
+#define TARPC_LCG_MAX_OFFSET 3
+
+/**
+ * Fills the buffer with a linear congruential sequence
+ * and updates @b arg parameter for the next call.
+ *
+ * Each element is calculated using the formula:
+ * X[n] = a * X[n-1] + c, where @a a and @a c are taken from @b arg parameter:
+ * - @a a is @b arg->coef2,
+ * - @a c is @b arg->coef3
+ *
+ * Before calling this function you should remember offset field from @p arg
+ * - it will be start position of the requested data in the buffer.
+ * The call of this function sets it for the next call.
+ *
+ * @param buf            Buffer
+ * @param size           How many bytes to fill (buffer should be larger by
+ *                       at least @c TARPC_LCG_MAX_OFFSET bytes)
+ * @param arg            Pointer to @ref tarpc_pat_gen_arg structure, where:
+ *                       - coef1 is @a x0 - starting number in a sequence;
+ *                       - coef2 is @a a - multiplying constant;
+ *                       - coef3 is @a c - additive constant;
+ *                       - offset - position at which requested data will
+ *                         start in the buffer (algorithm uses 4-byte words
+ *                         internally, so it is possible that some bytes at
+ *                         the beginning should be omitted)
+ *
+ * @return Status code.
+ */
+extern te_errno tarpc_fill_buff_with_sequence_lcg(char *buf, int size,
+                                                  tarpc_pat_gen_arg *arg);
+
 #endif /* __TARPC_SERVER_H__ */

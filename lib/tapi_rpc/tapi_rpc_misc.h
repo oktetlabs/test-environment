@@ -454,6 +454,12 @@ extern int rpc_pattern_sender(rcf_rpc_server *rpcs, int s,
                               tapi_pat_sender *args);
 
 /**
+ * Fill buffer with a sequence of concatenated numbers
+ * 1, 2, 3, ... using get_nth_elm() function.
+ */
+#define RPC_PATTERN_GEN "tarpc_fill_buff_with_sequence"
+
+/**
  * Fills the buffer with a linear congruential sequence
  * and updates @b arg parameter for the next call.
  *
@@ -473,7 +479,7 @@ extern int rpc_pattern_sender(rcf_rpc_server *rpcs, int s,
  *
  * @return 0 on success
  */
-#define RPC_PATTERN_GEN_LCG "fill_buff_with_sequence_lcg"
+#define RPC_PATTERN_GEN_LCG "tarpc_fill_buff_with_sequence_lcg"
 
 /**
  * @def TARPC_PAT_GEN_ARG_FMT

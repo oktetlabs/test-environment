@@ -7437,18 +7437,9 @@ get_nth_elm(int n)
     }
 }
 
-/**
- * Fill a buffer with values provided by @b get_nth_elm().
- *
- * @param buf            Buffer
- * @param size           Buffer size
- * @param arg            Pointer to @ref tarpc_pat_gen_arg structure, where
- *                       - coef1 is a starting number in a sequence
- *
- * @return 0 on success
- */
+/* See description in rpc_server.h */
 te_errno
-fill_buff_with_sequence(char *buf, int size, tarpc_pat_gen_arg *arg)
+tarpc_fill_buff_with_sequence(char *buf, int size, tarpc_pat_gen_arg *arg)
 {
     int i;
     int start_n = arg->coef1 % SEQUENCE_PERIOD_NUM;
@@ -7462,26 +7453,10 @@ fill_buff_with_sequence(char *buf, int size, tarpc_pat_gen_arg *arg)
     return 0;
 }
 
-/**
- * Fills the buffer with a linear congruential sequence
- * and updates @b arg parameter for the next call.
- *
- * Each element is calculated using the formula:
- * X[n] = a * X[n-1] + c, where @a a and @a c are taken from @b arg parameter:
- * - @a a is @b arg->coef2,
- * - @a c is @b arg->coef3
- *
- * @param buf            Buffer
- * @param size           Buffer size in bytes
- * @param arg            Pointer to @ref tarpc_pat_gen_arg structure, where
- *                       - coef1 is @a x0 - starting number in a sequence,
- *                       - coef2 is @a a - multiplying constant,
- *                       - coef3 is @a c - additive constant
- *
- * @return 0 on success
- */
+/* See description in rpc_server.h */
 te_errno
-fill_buff_with_sequence_lcg(char *buf, int size, tarpc_pat_gen_arg *arg)
+tarpc_fill_buff_with_sequence_lcg(char *buf, int size,
+                                  tarpc_pat_gen_arg *arg)
 {
     int i;
     uint32_t x0 = arg->coef1;
@@ -7519,7 +7494,9 @@ int
 pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
 {
 #define MAX_OFFSET \
-    ((void*)pattern_gen_func == (void*)fill_buff_with_sequence_lcg ? 3 : 0)
+    ((void*)pattern_gen_func == \
+          (void*)tarpc_fill_buff_with_sequence_lcg ? \
+                                  TARPC_LCG_MAX_OFFSET : 0)
 
     int             errno_save = errno;
     api_func_ptr    pattern_gen_func;
