@@ -5130,7 +5130,8 @@ poll_rpc_handler(struct pollfd *fds, unsigned int nfds,
 
 TARPC_FUNC_STANDALONE(poll,
 {
-    if (in->ufds.ufds_len > RPC_POLL_NFDS_MAX)
+    if (in->ufds.ufds_len > RPC_POLL_NFDS_MAX ||
+        in->nfds > RPC_POLL_NFDS_MAX)
     {
         ERROR("Too big nfds is passed to the poll()");
         out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);
@@ -5213,7 +5214,8 @@ ppoll_rpc_handler(struct pollfd *fds, unsigned int nfds,
 
 TARPC_FUNC_STANDALONE(ppoll,
 {
-    if (in->ufds.ufds_len > RPC_POLL_NFDS_MAX)
+    if (in->ufds.ufds_len > RPC_POLL_NFDS_MAX ||
+        in->nfds > RPC_POLL_NFDS_MAX)
     {
         ERROR("Too big nfds is passed to the ppoll()");
         out->common._errno = TE_RC(TE_TA_UNIX, TE_ENOMEM);

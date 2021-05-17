@@ -323,8 +323,12 @@ rpc_read_gen(rcf_rpc_server *rpcs,
         return -1;
     }
 
-    if (buf != NULL && count > rbuflen)
+    in.chk_func = TEST_BEHAVIOUR(use_chk_funcs);
+
+    if (buf != NULL && count > rbuflen && !(in.chk_func))
     {
+        ERROR("%s(): count > rbuflen and __read_chk() is not tested",
+              __FUNCTION__);
         rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(read, -1);
     }
@@ -336,8 +340,6 @@ rpc_read_gen(rcf_rpc_server *rpcs,
         in.buf.buf_len = rbuflen;
         in.buf.buf_val = buf;
     }
-
-    in.chk_func = TEST_BEHAVIOUR(use_chk_funcs);
 
     rcf_rpc_call(rpcs, "read", &in, &out);
 

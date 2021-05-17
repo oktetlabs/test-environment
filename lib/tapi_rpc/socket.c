@@ -564,9 +564,18 @@ rpc_recvfrom_gen(rcf_rpc_server *rpcs,
         RETVAL_INT(recvfrom, -1);
     }
 
-    if ((from != NULL && fromlen != NULL && *fromlen > rfrombuflen) ||
-        (buf != NULL && len > rbuflen))
+    if (from != NULL && fromlen != NULL && *fromlen > rfrombuflen)
     {
+        rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
+        RETVAL_INT(recvfrom, -1);
+    }
+
+    in.chk_func = TEST_BEHAVIOUR(use_chk_funcs);
+
+    if (buf != NULL && len > rbuflen && !(in.chk_func))
+    {
+        ERROR("%s(): len > rbuflen and __recvfrom_chk() is not tested",
+              __FUNCTION__);
         rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(recvfrom, -1);
     }
@@ -588,8 +597,6 @@ rpc_recvfrom_gen(rcf_rpc_server *rpcs,
         in.buf.buf_val = buf;
     }
     in.flags = flags;
-
-    in.chk_func = TEST_BEHAVIOUR(use_chk_funcs);
 
     rcf_rpc_call(rpcs, "recvfrom", &in, &out);
 
@@ -633,8 +640,12 @@ rpc_recv_gen(rcf_rpc_server *rpcs,
         RETVAL_INT(recv, -1);
     }
 
-    if (buf != NULL && len > rbuflen)
+    in.chk_func = TEST_BEHAVIOUR(use_chk_funcs);
+
+    if (buf != NULL && len > rbuflen && !(in.chk_func))
     {
+        ERROR("%s(): len > rbuflen and __recv_chk() is not tested",
+              __FUNCTION__);
         rpcs->_errno = TE_RC(TE_RCF, TE_EINVAL);
         RETVAL_INT(recv, -1);
     }
@@ -647,8 +658,6 @@ rpc_recv_gen(rcf_rpc_server *rpcs,
         in.buf.buf_val = buf;
     }
     in.flags = flags;
-
-    in.chk_func = TEST_BEHAVIOUR(use_chk_funcs);
 
     rcf_rpc_call(rpcs, "recv", &in, &out);
 
