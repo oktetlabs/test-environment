@@ -65,6 +65,37 @@ extern te_errno tapi_cfg_sys_set_int(const char *ta, int val, int *old_val,
                                   __attribute__((format(printf, 4, 5)));
 
 /**
+ * Get value of uint64_t parameter in /sys: subtree.
+ *
+ * @param ta        Test agent name.
+ * @param val       Where to save value.
+ * @param fmt       Format string of the path.
+ * @param ...       Format arguments.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_sys_get_uint64(const char *ta, uint64_t *val,
+                                        const char *fmt, ...)
+                                  __attribute__((format(printf, 3, 4)));
+
+
+/**
+ * Set value of uint64_t parameter in /sys: subtree.
+ *
+ * @param ta        Test agent name.
+ * @param val       Value to set.
+ * @param old_val   Where to save previous value (may be @c NULL).
+ * @param fmt       Format string of the path.
+ * @param ...       Format arguments.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_sys_set_uint64(const char *ta, uint64_t val,
+                                        uint64_t *old_val,
+                                        const char *fmt, ...)
+                                  __attribute__((format(printf, 4, 5)));
+
+/**
  * Get value of string parameter in /sys: subtree.
  *
  * @param ta        Test agent name.
@@ -134,6 +165,39 @@ extern te_errno tapi_cfg_sys_ns_get_int(const char *ta, int *val,
  */
 extern te_errno tapi_cfg_sys_ns_set_int(const char *ta, int val, int *old_val,
                                         const char *fmt, ...)
+                                        __attribute__((format(printf, 4, 5)));
+
+/**
+ * The same as tapi_cfg_sys_get_uint64() but try to get the option value in
+ * default net namespace if it does not exist in current namespace.
+ *
+ * @param ta        Test agent name.
+ * @param val       Where to save value.
+ * @param fmt       Format string of the path.
+ * @param ...       Format arguments.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_sys_ns_get_uint64(const char *ta, uint64_t *val,
+                                           const char *fmt, ...)
+                                        __attribute__((format(printf, 3, 4)));
+
+
+/**
+ * The same as tapi_cfg_sys_set_uint64() but try to set the option value in
+ * default net namespace if it does not exist in current namespace.
+ *
+ * @param ta        Test agent name.
+ * @param val       Value to set.
+ * @param old_val   Where to save previous value (may be @c NULL).
+ * @param fmt       Format string of the path.
+ * @param ...       Format arguments.
+ *
+ * @return Status code.
+ */
+extern te_errno tapi_cfg_sys_ns_set_uint64(const char *ta, uint64_t val,
+                                           uint64_t *old_val,
+                                           const char *fmt, ...)
                                         __attribute__((format(printf, 4, 5)));
 
 /**

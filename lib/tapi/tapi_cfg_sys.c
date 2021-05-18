@@ -251,6 +251,35 @@ tapi_cfg_sys_set_int(const char *ta, int val, int *old_val,
 
 /* See description in tapi_cfg_sys.h */
 te_errno
+tapi_cfg_sys_get_uint64(const char *ta, uint64_t *val, const char *fmt, ...)
+{
+    va_list ap;
+    te_errno rc;
+
+    va_start(ap, fmt);
+    rc = tapi_cfg_sys_get_va(ta, CVT_UINT64, val, fmt, ap);
+    va_end(ap);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_sys.h */
+te_errno
+tapi_cfg_sys_set_uint64(const char *ta, uint64_t val, uint64_t *old_val,
+                        const char *fmt, ...)
+{
+    va_list ap;
+    te_errno rc;
+
+    va_start(ap, fmt);
+    rc = tapi_cfg_sys_set_va(ta, CFG_VAL(UINT64, val), old_val, fmt, ap);
+    va_end(ap);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_sys.h */
+te_errno
 tapi_cfg_sys_get_str(const char *ta, char **val, const char *fmt, ...)
 {
     va_list  ap;
@@ -373,6 +402,36 @@ tapi_cfg_sys_ns_set_int(const char *ta, int val, int *old_val,
 
     va_start(ap, fmt);
     rc = tapi_cfg_sys_ns_set_va(ta, CFG_VAL(INTEGER, val), old_val, fmt, ap);
+    va_end(ap);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_sys.h */
+te_errno
+tapi_cfg_sys_ns_get_uint64(const char *ta, uint64_t *val,
+                           const char *fmt, ...)
+{
+    va_list ap;
+    te_errno rc;
+
+    va_start(ap, fmt);
+    rc = tapi_cfg_sys_ns_get_va(ta, CVT_UINT64, val, fmt, ap);
+    va_end(ap);
+
+    return rc;
+}
+
+/* See description in tapi_cfg_sys.h */
+te_errno
+tapi_cfg_sys_ns_set_uint64(const char *ta, uint64_t val, uint64_t *old_val,
+                           const char *fmt, ...)
+{
+    va_list ap;
+    te_errno rc;
+
+    va_start(ap, fmt);
+    rc = tapi_cfg_sys_ns_set_va(ta, CFG_VAL(UINT64, val), old_val, fmt, ap);
     va_end(ap);
 
     return rc;
