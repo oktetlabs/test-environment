@@ -1112,9 +1112,14 @@ TARPC_FUNC(gettimeofday,
     struct timeval  tv;
     struct timezone tz;
 
-    TARPC_CHECK_RC(timeval_rpc2h(out->tv.tv_val, &tv));
+    /*
+     * Ignore conversion errors here - they may happen when TA host
+     * is 32 bit and caller does not initialize the structure, so
+     * values are too big to fit.
+     */
+    timeval_rpc2h(out->tv.tv_val, &tv);
     if (out->tz.tz_len != 0)
-        TARPC_CHECK_RC(timezone_rpc2h(out->tz.tz_val, &tz));
+        timezone_rpc2h(out->tz.tz_val, &tz);
 
     if (out->common._errno != 0)
     {
