@@ -49,6 +49,33 @@
          Name: empty
          Value: the current number of pre-allocated huge pages
 
+    - oid: "/agent/sys/fs"
+      access: read_only
+      type: none
+      d: |
+         System settings from /proc/sys/fs.
+         Name: empty
+
+    - oid: "/agent/sys/fs/file-max"
+      access: read_write
+      type: uint64
+      d: |
+         The maximum number of file handles that the Linux kernel will
+         allocate.
+         Name: empty
+         Value: the current maximum number of file handles
+
+    - oid: "/agent/sys/fs/file-nr"
+      access: read_only
+      type: uint64
+      volatile: true
+      d: |
+         Current status of file handles allocation.
+         Name: empty
+         Value: Three numbers - the number of allocated file handles,
+                the number of allocated but unused file handles, and
+                the maximum number of file handles
+
     - oid: "/agent/sys/net"
       access: read_only
       type: none

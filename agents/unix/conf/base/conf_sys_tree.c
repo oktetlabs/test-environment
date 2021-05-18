@@ -73,6 +73,8 @@ RCF_PCH_CFG_NODE_NA(node_net, "net", &node_core, NULL);
 
 RCF_PCH_CFG_NODE_NA(node_vm, "vm", NULL, NULL);
 
+RCF_PCH_CFG_NODE_NA(node_fs, "fs", NULL, NULL);
+
 static te_errno register_sys_opts(const char *father, const char *path);
 static te_errno unregister_sys_opts(const char *father);
 
@@ -118,6 +120,11 @@ ta_unix_conf_sys_tree_init(void)
     CHECK_NZ_RETURN(register_sys_opts(
                               "/agent/sys/vm",
                               "/proc/sys/vm/"));
+
+    CHECK_NZ_RETURN(rcf_pch_add_node("/agent/sys/", &node_fs));
+    CHECK_NZ_RETURN(register_sys_opts(
+                              "/agent/sys/fs",
+                              "/proc/sys/fs/"));
 
     CHECK_NZ_RETURN(rcf_pch_rsrc_info("/agent/sys/net/ipv4/conf",
                                       rcf_pch_rsrc_grab_dummy,
