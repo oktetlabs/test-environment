@@ -1466,8 +1466,8 @@ cfg_db_add(const char *oid_s, cfg_handle *handle,
     {
         ERROR("cfg_db_add: type (%d) expected - bad type (%d)"
               "of object (%s)", type, obj->type, obj->oid);
-        ERROR("types: Integer (%d), string (%d), address (%d)", CVT_INTEGER,
-              CVT_STRING, CVT_ADDRESS);
+        ERROR("types: Integer (%d), uint64 (%d), string (%d), address (%d)",
+              CVT_INTEGER, CVT_UINT64, CVT_STRING, CVT_ADDRESS);
         RET(TE_EBADTYPE);
     }
 

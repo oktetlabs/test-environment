@@ -1505,6 +1505,7 @@ log_msg(cfg_msg *msg, te_bool before)
                     m->val_type == CVT_NONE ? "void" :
                     m->val_type == CVT_STRING ? "string" :
                     m->val_type == CVT_INTEGER ? "integer" :
+                    m->val_type == CVT_UINT64 ? "uint64" :
                     m->val_type == CVT_ADDRESS ? "address" :
                     "unknown type",
                     m->access == CFG_READ_WRITE ? "read/write" :
