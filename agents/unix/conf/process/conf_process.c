@@ -67,10 +67,20 @@ struct ps_entry {
     ps_env_list_t           envs;
     ps_opt_list_t           opts;
     te_bool                 long_opt_sep;
+    unsigned int            autorestart;
+    unsigned int            time_until_check;
+    te_bool                 autorestart_failed;
     pid_t                   id;
 };
 
 static SLIST_HEAD(, ps_entry) processes = SLIST_HEAD_INITIALIZER(processes);
+
+static pthread_t autorestart_thread;
+/**
+ * Mutex required for correct work of autorestart subsystem.
+ * It protects a status of each process and the processes list.
+ */
+static pthread_mutex_t autorestart_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static te_bool
 ps_is_running(struct ps_entry *ps)
@@ -396,12 +406,17 @@ ps_add(unsigned int gid, const char *oid, const char *value,
     ps->id = -1;
     ps->argc = 0;
     ps->long_opt_sep = FALSE;
+    ps->autorestart = 0;
+    ps->time_until_check = 0;
+    ps->autorestart_failed = FALSE;
 
     SLIST_INIT(&ps->args);
     SLIST_INIT(&ps->envs);
     SLIST_INIT(&ps->opts);
 
+    pthread_mutex_lock(&autorestart_lock);
     SLIST_INSERT_HEAD(&processes, ps, links);
+    pthread_mutex_unlock(&autorestart_lock);
 
     return 0;
 }
@@ -526,6 +541,8 @@ ps_del(unsigned int gid, const char *oid,
     if (ps == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
+    pthread_mutex_lock(&autorestart_lock);
+
     if (ps_is_running(ps))
     {
         rc = ps_stop(ps);
@@ -534,6 +551,8 @@ ps_del(unsigned int gid, const char *oid,
     }
 
     SLIST_REMOVE(&processes, ps, ps_entry, links);
+
+    pthread_mutex_unlock(&autorestart_lock);
 
     ps_free(ps);
 
@@ -596,8 +615,14 @@ ps_status_get(unsigned int gid, const char *oid, char *value,
     if (ps == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (ps->enabled)
+    pthread_mutex_lock(&autorestart_lock);
+
+    if (ps->autorestart == 0 && ps->enabled)
         ps->enabled = ps_is_running(ps);
+    else if (ps->autorestart_failed)
+        ps->enabled = FALSE;
+
+    pthread_mutex_unlock(&autorestart_lock);
 
     snprintf(value, RCF_MAX_VAL, "%d", ps->enabled);
 
@@ -627,15 +652,74 @@ ps_status_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EALREADY);
     }
 
-    if (enable)
-        rc = ps_start(ps);
-    else if (ps_is_running(ps))
-        rc = ps_stop(ps);
+    pthread_mutex_lock(&autorestart_lock);
 
-    if (rc == 0)
+    if (enable)
+    {
+        rc = ps_start(ps);
+        if (rc == 0 && ps->autorestart != 0)
+        {
+            ps->autorestart_failed = FALSE;
+            ps->time_until_check = ps->autorestart;
+        }
+    }
+    else if (ps_is_running(ps))
+    {
+        rc = ps_stop(ps);
+    }
+
+    /*
+     * If we failed to stop an autorestart process, we should
+     * set ps->enable to false anyway for autorestart subsystem
+     * not to try restarting the process over and over.
+     */
+    if (rc == 0 || (!enable && ps->autorestart != 0))
         ps->enabled = enable;
 
+    pthread_mutex_unlock(&autorestart_lock);
+
     return rc;
+}
+
+static te_errno
+ps_autorestart_get(unsigned int gid, const char *oid, char *value,
+                   const char *ps_name)
+{
+    struct ps_entry *ps;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", ps_name);
+
+    ps = ps_find(ps_name);
+    if (ps == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    snprintf(value, RCF_MAX_VAL, "%d", ps->autorestart);
+
+    return 0;
+}
+
+static te_errno
+ps_autorestart_set(unsigned int gid, const char *oid, const char *value,
+                   const char *ps_name)
+{
+    struct ps_entry *ps;
+
+    UNUSED(gid);
+    UNUSED(oid);
+
+    ENTRY("%s", ps_name);
+
+    ps = ps_find(ps_name);
+    if (ps == NULL)
+        return TE_RC(TE_TA_UNIX, TE_ENOENT);
+
+    if (ps->enabled)
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
+
+    return te_strtoui(value, 10, &ps->autorestart);
 }
 
 static struct ps_arg_entry *
@@ -1075,6 +1159,85 @@ ps_opt_del(unsigned int gid, const char *oid,
     return 0;
 }
 
+/**
+ * Sleep for (approximately) the specified number of seconds ignoring signals.
+ *
+ * If sleep is interrupted by signal, it returns the number of seconds left
+ * to sleep. This way the precision is lost. nanosleep, however, returns
+ * the time left to sleep in case of receiving a signal with higher precision,
+ * so it can be called again with that time.
+ */
+static te_errno
+signal_protected_sleep(unsigned int seconds)
+{
+    struct timespec req = { .tv_sec = seconds };
+    int ret;
+
+    do {
+        ret = nanosleep(&req, &req);
+    } while (ret == -1 && errno == EINTR);
+
+    return ret == 0 ? 0 : TE_OS_RC(TE_TA_UNIX, errno);
+}
+
+/**
+ * Wake up once per second, check for each process if it has to be (re)started,
+ * and (re)start it if needed.
+ */
+static void *
+autorestart_loop(void *arg)
+{
+    struct ps_entry *ps;
+    te_errno rc;
+
+    UNUSED(arg);
+
+    while (1)
+    {
+        /*
+         * Simple sleep should not be used here since a restarted process may
+         * terminate and send SIGCHLD during the sleep and intrrupt it.
+         */
+        rc = signal_protected_sleep(1);
+        if (rc != 0)
+        {
+            WARN("nanosleep failed (%r), autorestart timings may be shifted",
+                 rc);
+        }
+
+        pthread_mutex_lock(&autorestart_lock);
+
+        SLIST_FOREACH(ps, &processes, links)
+        {
+            /* It's time to check whether we should restart the process */
+            if (ps->enabled && ps->autorestart != 0 &&
+                !ps->autorestart_failed && --ps->time_until_check == 0)
+            {
+                if (!ps_is_running(ps))
+                {
+                    rc = ps_start(ps);
+                    if (rc != 0)
+                    {
+                        ps->autorestart_failed = TRUE;
+                        ERROR("Failed to (re)start process '%s', error: %r",
+                              ps->name, rc);
+                    }
+                    else
+                    {
+                        INFO("Process '%s' has been (re)started", ps->name);
+                    }
+                }
+
+                ps->time_until_check = ps->autorestart;
+            }
+        }
+
+        pthread_mutex_unlock(&autorestart_lock);
+    }
+
+    return NULL;
+}
+
 RCF_PCH_CFG_NODE_RW_COLLECTION(node_ps_arg, "arg", NULL, NULL,
                                ps_arg_get, NULL, ps_arg_add,
                                ps_arg_del, ps_arg_list, NULL);
@@ -1096,11 +1259,21 @@ RCF_PCH_CFG_NODE_RW(node_ps_status, "status", NULL, &node_ps_exe,
 RCF_PCH_CFG_NODE_RW(node_ps_long_opt_sep, "long_option_value_separator", NULL,
                     &node_ps_status, ps_long_opt_sep_get, ps_long_opt_sep_set);
 
-RCF_PCH_CFG_NODE_COLLECTION(node_ps, "process", &node_ps_long_opt_sep, NULL,
+RCF_PCH_CFG_NODE_RW(node_ps_autorestart, "autorestart", NULL,
+                    &node_ps_long_opt_sep, ps_autorestart_get,
+                    ps_autorestart_set);
+
+RCF_PCH_CFG_NODE_COLLECTION(node_ps, "process", &node_ps_autorestart, NULL,
                             ps_add, ps_del, ps_list, NULL);
 
 te_errno
 ta_unix_conf_ps_init(void)
 {
+    int ret;
+
+    ret = pthread_create(&autorestart_thread, NULL, autorestart_loop, NULL);
+    if (ret != 0)
+        return TE_OS_RC(TE_TA_UNIX, ret);
+
     return rcf_pch_add_node("/agent", &node_ps);
 }

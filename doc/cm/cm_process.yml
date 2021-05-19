@@ -29,8 +29,21 @@
       access: read_write
       type: integer
       d: |
-        Either 1 (start/running) or 0 (stop/stopped/crashed).
-        If process is running, it is not allowed to reconfigure it.
+        Either 1 (start/running) or 0 (stop/stopped/crashed) for
+        non-autorestart processes.
+        For processes with non-zero autorestart value 1 means start or
+        that the process should be restarted when it stopped running;
+        0 means stop, restart failure, or that the process should not be
+        restarted.
+        If the status is 0, it is not allowed to reconfigure the process.
+
+    - oid: "/agent/process/autorestart"
+      access: read_write
+      type: integer
+      d: |
+        Time period in seconds to check if the process stopped working and
+        restart it if this is the case. 0 means that the process should not be
+        restarted.
 
     - oid: "/agent/process/long_option_value_separator"
       access: read_write
