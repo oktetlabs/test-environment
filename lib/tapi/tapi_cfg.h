@@ -1176,6 +1176,53 @@ extern te_errno tapi_cfg_set_int_fmt(int value, int *old_value,
                                      const char *format, ...);
 
 /**
+ * Get uint64_t value from configuration tree.
+ *
+ * @param value     Where to save value.
+ * @param oid       OID string.
+ *
+ * @return 0 on success or error code
+ */
+extern te_errno tapi_cfg_get_uint64_str(uint64_t *value, const char *oid);
+
+/**
+ * Get uint64_t value from configuration tree.
+ *
+ * @param value     Where to save value.
+ * @param format    Format string for configuration path.
+ * @param ...       Configuration path parameters.
+ *
+ * @return 0 on success or error code
+ */
+extern te_errno tapi_cfg_get_uint64_fmt(uint64_t *value,
+                                        const char *format, ...);
+
+/**
+ * Set uint64_t value in configuration tree.
+ *
+ * @param value       Value to set.
+ * @param old_value   If not NULL, here will be saved previous value.
+ * @param oid         OID string.
+ *
+ * @return 0 on success or error code
+ */
+extern te_errno tapi_cfg_set_uint64_str(uint64_t value, uint64_t *old_value,
+                                        const char *oid);
+
+/**
+ * Set uint64_t value in configuration tree.
+ *
+ * @param value       Value to set.
+ * @param old_value   If not NULL, here will be saved previous value.
+ * @param format      Format string for configuration path.
+ * @param ...         Configuration path parameters.
+ *
+ * @return 0 on success or error code
+ */
+extern te_errno tapi_cfg_set_uint64_fmt(uint64_t value, uint64_t *old_value,
+                                        const char *format, ...);
+
+/**
  * Allocate two IP addresses from a free net_pool.
  *
  * @param addr1     The first IP address pointer location
