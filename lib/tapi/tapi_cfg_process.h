@@ -47,16 +47,23 @@ extern te_errno tapi_cfg_ps_del(const char *ta, const char *ps_name);
 
 /**
  * Start process.
+ * For autorestart processes this function should be called only once.
+ * The following process executions will be done by the autorestart subsystem.
  *
  * @param ta            Test Agent.
  * @param ps_name       Process name.
  *
  * @return Status code
+ *
+ * @sa tapi_cfg_ps_set_autorestart
  */
 extern te_errno tapi_cfg_ps_start(const char *ta, const char *ps_name);
 
 /**
  * Stop process.
+ * For autorestart processes this function will stop the process and prevent
+ * the autorestart subsystem from starting the process over until
+ * tapi_cfg_ps_start() is called.
  *
  * @param ta            Test Agent.
  * @param ps_name       Process name.
@@ -66,6 +73,7 @@ extern te_errno tapi_cfg_ps_start(const char *ta, const char *ps_name);
  * @note This function must be called to allow changing the process parameters
  *       using tapi_cfg_ps_add_arg(), etc.
  *
+ * @sa tapi_cfg_ps_set_autorestart
  */
 extern te_errno tapi_cfg_ps_stop(const char *ta, const char *ps_name);
 
@@ -123,6 +131,23 @@ extern te_errno tapi_cfg_ps_add_opt(const char *ta, const char *ps_name,
 extern te_errno tapi_cfg_ps_set_long_opt_sep(const char *ta,
                                              const char *ps_name,
                                              const char *value);
+
+/**
+ * Set autorestart timeout.
+ * The value represents a frequency with which the autorestart subsystem
+ * will check whether the process stopped running (regardless of the reason)
+ * and restart it if it did.
+ *
+ * @param ta            Test Agent.
+ * @param ps_name       Process.
+ * @param value         Autorestart timeout in seconds or @c 0 to disable
+ *                      autorestart for the process.
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_ps_set_autorestart(const char *ta,
+                                            const char *ps_name,
+                                            unsigned int value);
 
 #ifdef __cplusplus
 } /* extern "C" */
