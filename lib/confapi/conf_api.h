@@ -70,6 +70,7 @@ extern "C" {
 /** Constants for primary types */
 typedef enum {
     CVT_INTEGER,     /**< Value of the type 'int' */
+    CVT_UINT64,      /**< Value of the type 'uint64_t' */
     CVT_STRING,      /**< Value of the type 'char *' */
     CVT_ADDRESS,     /**< Value of the type 'sockaddr *' */
     CVT_NONE,        /**< The object instance has no value */
@@ -226,6 +227,7 @@ extern te_errno cfg_get_inst_name(cfg_handle handle, char **name);
  * @param handle    Handle of object instance
  * @param type      Type instance name
  * @param val       type == CVT_INTEGER -> (int *)
+ *                  type == CVT_UINT64 -> (uint64_t *)
  *                  type == CVT_ADDRESS -> (struct sockaddr **)
  *
  * @return 0 or TE_EINVAL if invalid handle is provided

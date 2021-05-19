@@ -26,16 +26,17 @@ extern "C" {
 #define CFG_MAX_INST_VALUE      RCF_MAX_VAL
 
 /** Number of configurator primary types */
-#define CFG_PRIMARY_TYPES_NUM   4
+#define CFG_PRIMARY_TYPES_NUM   5
 
 /* Forward */
 struct cfg_msg;
 
 /** Object instance value */
 typedef union cfg_inst_val {
-        struct sockaddr *val_addr;  /**< sockaddr value */
-        int              val_int;   /**< int value */
-        char            *val_str;   /**< string value */
+        struct sockaddr *val_addr;    /**< sockaddr value */
+        int              val_int;     /**< int value */
+        uint64_t         val_uint64;  /**< uint64_t value */
+        char            *val_str;     /**< string value */
 } cfg_inst_val;
 
 /** Primary type structure */

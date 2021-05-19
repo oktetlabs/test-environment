@@ -1025,6 +1025,10 @@ cfg_add_instance_gen(const char *oid, cfg_handle *handle, te_bool local,
             value.val_int = va_arg(list, int);
             break;
 
+        case CVT_UINT64:
+            value.val_uint64 = va_arg(list, uint64_t);
+            break;
+
         case CVT_STRING:
             value.val_str = va_arg(list, char *);
             break;
@@ -1473,6 +1477,10 @@ cfg_set_instance_gen(cfg_handle handle, te_bool local, cfg_val_type type,
             value.val_int = va_arg(list, int);
             break;
 
+        case CVT_UINT64:
+            value.val_uint64 = va_arg(list, uint64_t);
+            break;
+
         case CVT_STRING:
             value.val_str = va_arg(list, char *);
             break;
@@ -1704,6 +1712,14 @@ cfg_get_instance(cfg_handle handle, cfg_val_type *type, ...)
                  *val_int = value.val_int;
              break;
          }
+         case CVT_UINT64:
+         {
+             uint64_t *val_uint64 = va_arg(list, uint64_t *);
+
+             if (val_uint64 != NULL)
+                 *val_uint64 = value.val_uint64;
+             break;
+         }
          case CVT_STRING:
          {
              char **val_str  = va_arg(list, char **);
@@ -1835,6 +1851,13 @@ cfg_get_instance_sync(cfg_handle handle, cfg_val_type *type, ...)
              int *val_int = va_arg(list, int *);
 
              *val_int = value.val_int;
+             break;
+         }
+         case CVT_UINT64:
+         {
+             uint64_t *val_uint64 = va_arg(list, uint64_t *);
+
+             *val_uint64 = value.val_uint64;
              break;
          }
          case CVT_STRING:

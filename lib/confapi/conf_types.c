@@ -106,6 +106,17 @@ static void int_put(cfg_inst_val val, cfg_msg *msg);
 static te_bool int_equal(cfg_inst_val first, cfg_inst_val second);
 static size_t int_value_size(cfg_inst_val val);
 
+/* Conversion functions for type 'uint64_t' */
+static int str_to_uint64(char *val_str, cfg_inst_val *val);
+static int uint64_to_str(cfg_inst_val val, char **val_str);
+static int uint64_def_val(cfg_inst_val *val);
+static void uint64_free(cfg_inst_val val);
+static int uint64_copy(cfg_inst_val src, cfg_inst_val *dst);
+static int uint64_get(cfg_msg *msg, cfg_inst_val *val);
+static void uint64_put(cfg_inst_val val, cfg_msg *msg);
+static te_bool uint64_equal(cfg_inst_val first, cfg_inst_val second);
+static size_t uint64_value_size(cfg_inst_val val);
+
 /* Convertion functions for type 'char *' */
 static int str2char(char *val_str, cfg_inst_val *val);
 static int char2str(cfg_inst_val val, char **val_str);
@@ -143,6 +154,9 @@ static size_t none_value_size(cfg_inst_val val);
 cfg_primary_type cfg_types[CFG_PRIMARY_TYPES_NUM] = {
     { str2int, int2str, int_def_val,
       int_free, int_copy, int_get, int_put, int_equal, int_value_size },
+    { str_to_uint64, uint64_to_str, uint64_def_val,
+      uint64_free, uint64_copy, uint64_get, uint64_put, uint64_equal,
+      uint64_value_size },
     { str2char, char2str, str_def_val,
       str_free, str_copy, str_get, str_put, str_equal, str_value_size },
     { str2addr, addr2str, addr_def_val,
@@ -246,6 +260,118 @@ int_value_size(cfg_inst_val val)
 {
     UNUSED(val);
     return sizeof(int);
+}
+
+/*----------------------- uint64_t type handlers -------------------------*/
+
+static int
+str_to_uint64(char *val_str, cfg_inst_val *val)
+{
+    char *invalid;
+    uint64_t ret_val = 0;
+    int saved_errno;
+
+    saved_errno = errno;
+    errno = 0;
+
+    ret_val = strtoull(val_str, &invalid, 0);
+    if (*invalid != '\0')
+        return TE_EINVAL;
+
+    if (ret_val == ULLONG_MAX && errno == ERANGE)
+        return TE_ERANGE;
+
+    errno = saved_errno;
+
+    val->val_uint64 = ret_val;
+    return 0;
+}
+
+static int
+uint64_to_str(cfg_inst_val val, char **val_str)
+{
+    char str[CFG_TP_MAX_BUF];
+    int ret_val;
+
+    ret_val = snprintf(str, CFG_TP_MAX_BUF, "%llu",
+                       (long long unsigned int)(val.val_uint64));
+    if (ret_val < 1)
+        return TE_EINVAL;
+    else if (ret_val >= CFG_TP_MAX_BUF)
+        return TE_ERANGE;
+
+    *val_str = strdup(str);
+    if (*val_str == NULL)
+        return TE_ENOMEM;
+
+    return 0;
+}
+
+static int
+uint64_def_val(cfg_inst_val *val)
+{
+    val->val_uint64 = 0;
+    return 0;
+}
+
+static void
+uint64_free(cfg_inst_val val)
+{
+    UNUSED(val);
+    return;
+}
+
+static int
+uint64_copy(cfg_inst_val src, cfg_inst_val *dst)
+{
+    dst->val_uint64 = src.val_uint64;
+    return 0;
+}
+
+static int
+uint64_get(cfg_msg *msg, cfg_inst_val *val)
+{
+    if (msg->type == CFG_GET)
+        val->val_uint64 = ((cfg_get_msg *)msg)->val.val_uint64;
+    else if (msg->type == CFG_SET)
+        val->val_uint64 = ((cfg_set_msg *)msg)->val.val_uint64;
+    else
+        val->val_uint64 = ((cfg_add_msg *)msg)->val.val_uint64;
+
+    return 0;
+}
+
+static void
+uint64_put(cfg_inst_val val, cfg_msg *msg)
+{
+    uint64_t *msg_val;
+
+    if (msg == NULL)
+        return;
+
+    if (msg->type == CFG_GET)
+        msg_val = &((cfg_get_msg *)msg)->val.val_uint64;
+    else if (msg->type == CFG_SET)
+        msg_val = &((cfg_set_msg *)msg)->val.val_uint64;
+    else
+        msg_val = &((cfg_add_msg *)msg)->val.val_uint64;
+
+    *msg_val = val.val_uint64;
+
+    SET_MSG_LEN(msg);
+}
+
+static te_bool
+uint64_equal(cfg_inst_val first, cfg_inst_val second)
+{
+    return (first.val_uint64 == second.val_uint64) ? TRUE : FALSE;
+}
+
+static size_t
+uint64_value_size(cfg_inst_val val)
+{
+    UNUSED(val);
+    return sizeof(uint64_t);
 }
 
 /*----------------------- String type handlers --------------------------*/
