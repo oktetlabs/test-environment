@@ -17,6 +17,9 @@
 /* See description in tapi_test_behaviour.h */
 test_behaviour test_behaviour_storage;
 
+/* See description in tapi_test_behaviour.h */
+te_bool fd_not_closed_verdict = FALSE;
+
 /**
  * Wrapper function to call te_strtoui().
  * It helps to get boolean and unsigned integer values from the GET_BEHV macro.

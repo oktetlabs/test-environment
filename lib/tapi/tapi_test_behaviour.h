@@ -76,6 +76,16 @@ extern test_behaviour test_behaviour_storage;
  */
 extern void test_behaviour_get(test_behaviour *behaviour);
 
+/**
+ * This variable is set to @c TRUE when the verdict about FD not
+ * being properly closed is printed the first time from
+ * CLEANUP_RPC_CLOSE(), to avoid printing it multiple times when
+ * closing many FDs.
+ *
+ * It is used to implement "cleanup_fd_leak_check" behaviour.
+ */
+extern te_bool fd_not_closed_verdict;
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

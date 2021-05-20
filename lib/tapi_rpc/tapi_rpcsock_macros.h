@@ -243,7 +243,14 @@
                     RPC_ERRNO(rpcs_) != RPC_EBADF)                  \
                 {                                                   \
                     if ((rpcs_)->timed_out == FALSE)                \
-                        ERROR_VERDICT("FD is not closed.");         \
+                    {                                               \
+                        if (!fd_not_closed_verdict)                 \
+                            ERROR_VERDICT("FD is not closed.");     \
+                        else                                        \
+                            ERROR("FD is not closed");              \
+                                                                    \
+                        fd_not_closed_verdict = TRUE;               \
+                    }                                               \
                     MACRO_TEST_ERROR;                               \
                 }                                                   \
             }                                                       \
