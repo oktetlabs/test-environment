@@ -15,5 +15,13 @@
                 <notes/>
             </iter>
         </test>
+        <test name="process_autorestart" type="script">
+            <objective>Check processes autorestart support in Configurator</objective>
+
+            <notes/>
+            <iter result="PASSED">
+                <notes/>
+            </iter>
+        </test>
     </iter>
 </test>

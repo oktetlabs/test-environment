@@ -3,6 +3,7 @@
 tests = [
     'phy',
     'process',
+    'process_autorestart',
     'vlans',
     'vm',
 ]

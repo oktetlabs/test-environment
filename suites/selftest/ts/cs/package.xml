@@ -47,5 +47,9 @@
             </script>
         </run>
 
+        <run>
+            <script name="process_autorestart"/>
+        </run>
+
     </session>
 </package>
