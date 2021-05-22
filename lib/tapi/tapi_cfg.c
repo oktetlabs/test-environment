@@ -2845,3 +2845,19 @@ tapi_cfg_alloc_net_addr_pair(struct sockaddr **addr1, struct sockaddr **addr2,
 
     return 0;
 }
+
+/* See description in tapi_cfg.h */
+te_errno
+tapi_cfg_add_new_user(const char *agent, int uid)
+{
+    te_string user_name = TE_STRING_INIT_STATIC(1024);
+    te_errno rc;
+
+    rc = te_string_append(&user_name, "%s%d", TE_USER_PREFIX, uid);
+    if (rc != 0)
+        return rc;
+
+    return cfg_add_instance_fmt(NULL, CVT_NONE, NULL,
+                                "/agent:%s/user:%s", agent,
+                                user_name.ptr);
+}

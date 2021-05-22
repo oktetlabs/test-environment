@@ -1235,6 +1235,18 @@ extern te_errno tapi_cfg_alloc_net_addr_pair(struct sockaddr **addr1,
                                              struct sockaddr **addr2,
                                              int *prefix);
 
+/**
+ * Add a new user on TA.
+ *
+ * @note User name will be TE_USER_PREFIX + uid, TA requires this format.
+ *       User will be created in a new group named after the user and having
+ *       gid = uid.
+ *
+ * @param agent       Agent on which to create a new user.
+ * @param uid         User ID.
+ */
+extern te_errno tapi_cfg_add_new_user(const char *agent, int uid);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
