@@ -62,6 +62,10 @@ extern te_errno tapi_cfg_ps_start(const char *ta, const char *ps_name);
  * @param ps_name       Process name.
  *
  * @return Status code
+ *
+ * @note This function must be called to allow changing the process parameters
+ *       using tapi_cfg_ps_add_arg(), etc.
+ *
  */
 extern te_errno tapi_cfg_ps_stop(const char *ta, const char *ps_name);
 

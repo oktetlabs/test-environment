@@ -59,6 +59,7 @@ typedef SLIST_HEAD(ps_opt_list_t, ps_opt_entry) ps_opt_list_t;
 
 struct ps_entry {
     SLIST_ENTRY(ps_entry)   links;
+    te_bool                 enabled;
     char                   *name;
     char                   *exe;
     ps_arg_list_t           args;
@@ -391,6 +392,7 @@ ps_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOMEM);
     }
 
+    ps->enabled = FALSE;
     ps->id = -1;
     ps->argc = 0;
     ps->long_opt_sep = FALSE;
@@ -439,7 +441,7 @@ ps_long_opt_sep_set(unsigned int gid, const char *oid, const char *value,
     if (ps == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (ps_is_running(ps))
+    if (ps->enabled)
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     if (strcmp(value, "=") == 0)
@@ -513,6 +515,7 @@ ps_del(unsigned int gid, const char *oid,
        const char *ps_name)
 {
     struct ps_entry *ps;
+    te_errno rc;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -524,7 +527,11 @@ ps_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (ps_is_running(ps))
-        ps_stop(ps);
+    {
+        rc = ps_stop(ps);
+        if (rc != 0)
+            WARN("Failed to stop process '%s', error: %r", ps->name, rc);
+    }
 
     SLIST_REMOVE(&processes, ps, ps_entry, links);
 
@@ -568,7 +575,7 @@ ps_exe_set(unsigned int gid, const char *oid, const char *value,
     if (ps == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (ps_is_running(ps))
+    if (ps->enabled)
         return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     return string_replace(&ps->exe, value);
@@ -589,7 +596,10 @@ ps_status_get(unsigned int gid, const char *oid, char *value,
     if (ps == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    snprintf(value, RCF_MAX_VAL, "%d", ps_is_running(ps));
+    if (ps->enabled)
+        ps->enabled = ps_is_running(ps);
+
+    snprintf(value, RCF_MAX_VAL, "%d", ps->enabled);
 
     return 0;
 }
@@ -600,7 +610,7 @@ ps_status_set(unsigned int gid, const char *oid, const char *value,
 {
     struct ps_entry *ps;
     te_bool enable = !!atoi(value);
-    te_errno rc;
+    te_errno rc = 0;
 
     UNUSED(gid);
     UNUSED(oid);
@@ -611,10 +621,19 @@ ps_status_set(unsigned int gid, const char *oid, const char *value,
     if (ps == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (enable == ps_is_running(ps))
-        return 0;
+    if (enable == ps->enabled)
+    {
+        ERROR("Trying to set status value which is already set");
+        return TE_RC(TE_TA_UNIX, TE_EALREADY);
+    }
 
-    rc = enable ? ps_start(ps) : ps_stop(ps);
+    if (enable)
+        rc = ps_start(ps);
+    else if (ps_is_running(ps))
+        rc = ps_stop(ps);
+
+    if (rc == 0)
+        ps->enabled = enable;
 
     return rc;
 }
@@ -711,7 +730,7 @@ ps_arg_add(unsigned int gid, const char *oid, const char *value,
     if ((ps = ps_find(ps_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (ps_is_running(ps))
+    if (ps->enabled)
         return TE_RC(TE_TA_UNIX, ETXTBSY);
 
     rc = te_strtoui(arg_name, 10, &order);
@@ -755,7 +774,7 @@ ps_arg_del(unsigned int gid, const char *oid,
     if((ps = ps_find(ps_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (ps_is_running(ps))
+    if (ps->enabled)
         return TE_RC(TE_TA_UNIX, ETXTBSY);
 
     rc = te_strtoui(arg_name, 10, &order);
@@ -861,7 +880,7 @@ ps_env_add(unsigned int gid, const char *oid, const char *value,
     if (ps_env_find(ps, env_name) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    if (ps_is_running(ps))
+    if (ps->enabled)
         return TE_RC(TE_TA_UNIX, TE_ETXTBSY);
 
     env = TE_ALLOC(sizeof(*env));
@@ -900,7 +919,7 @@ ps_env_del(unsigned int gid, const char *oid,
     if ((ps = ps_find(ps_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (ps_is_running(ps))
+    if (ps->enabled)
         return TE_RC(TE_TA_UNIX, ETXTBSY);
 
     env = ps_env_find(ps, env_name);
@@ -1001,7 +1020,7 @@ ps_opt_add(unsigned int gid, const char *oid, const char *value,
     if (ps_opt_find(ps, opt_name) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
-    if (ps_is_running(ps))
+    if (ps->enabled)
         return TE_RC(TE_TA_UNIX, TE_ETXTBSY);
 
     opt = TE_ALLOC(sizeof(*opt));
@@ -1042,7 +1061,7 @@ ps_opt_del(unsigned int gid, const char *oid,
     if ((ps = ps_find(ps_name)) == NULL)
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
-    if (ps_is_running(ps))
+    if (ps->enabled)
         return TE_RC(TE_TA_UNIX, ETXTBSY);
 
     opt = ps_opt_find(ps, opt_name);
