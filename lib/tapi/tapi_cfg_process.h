@@ -70,12 +70,37 @@ extern te_errno tapi_cfg_ps_start(const char *ta, const char *ps_name);
  *
  * @return Status code
  *
- * @note This function must be called to allow changing the process parameters
- *       using tapi_cfg_ps_add_arg(), etc.
+ * @note Successfull call of this function guarantees that
+ *       tapi_cfg_ps_get_status() will return @c FALSE, thus the process
+ *       parameters are allowed to be changed
+ *       (using tapi_cfg_ps_add_arg(), etc.).
  *
  * @sa tapi_cfg_ps_set_autorestart
  */
 extern te_errno tapi_cfg_ps_stop(const char *ta, const char *ps_name);
+
+/**
+ * Get current process status.
+ *
+ * @param[in]  ta       Test Agent.
+ * @param[in]  ps_name  Process name.
+ * @param[out] status   Process current status. For autorestart processes
+ *                      @c TRUE means that the autorestart subsystem is working
+ *                      with the process and it will be restarted when needed;
+ *                      @c FALSE means that the process is most likely not
+ *                      running and will not be started by the autorestart
+ *                      subsystem. For other processes @c TRUE means that
+ *                      the process is running, @c FALSE that it is not.
+ *
+ * @return Status code
+ *
+ * @note If @p status is @c FALSE, the process parameters are allowed
+ *       to be changed.
+ *
+ * @sa tapi_cfg_ps_set_autorestart
+ */
+extern te_errno tapi_cfg_ps_get_status(const char *ta, const char *ps_name,
+                                       te_bool *status);
 
 /**
  * Add process argument.

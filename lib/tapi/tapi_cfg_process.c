@@ -91,6 +91,21 @@ tapi_cfg_ps_stop(const char *ta, const char *ps_name)
     return rc;
 }
 
+/* See descriptions in tapi_cfg_process.h */
+te_errno
+tapi_cfg_ps_get_status(const char *ta, const char *ps_name, te_bool *status)
+{
+    te_errno rc;
+    cfg_val_type type = CVT_INTEGER;
+
+    rc = cfg_get_instance_fmt(&type, status, TE_CFG_TA_PS "/status:",
+                              ta, ps_name);
+    if (rc != 0)
+        ERROR("Cannot get status (process '%s', TA '%s'): %r", ps_name, ta, rc);
+
+    return rc;
+}
+
 te_errno
 tapi_cfg_ps_add_arg(const char *ta, const char *ps_name,
                     unsigned int order, const char *arg)
