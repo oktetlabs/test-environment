@@ -104,6 +104,14 @@
                                              after cold reboot,
                                              in seconds */
 
+/**
+ * Timeout for CONFSET operation, in seconds.
+ *
+ * RCF_CMD_TIMEOUT is not big enough to allow performing time consuming
+ * set operations (for example, to generate DH parameters and start
+ * openvpn deamon) via Configurator.
+ */
+#define RCF_CONFSET_TIMEOUT (RCF_CMD_TIMEOUT * 3)
 
 /** Special session identifiers */
 enum {
@@ -2239,7 +2247,7 @@ send_cmd(ta *agent, usrreq *req)
         case RCFOP_CONFSET:
             PUT(TE_PROTO_CONFSET " %s", msg->id);
             write_str(msg->value, RCF_MAX_VAL);
-            req->timeout = RCF_CMD_TIMEOUT_HUGE;
+            req->timeout = RCF_CONFSET_TIMEOUT;
             break;
 
         case RCFOP_CONFGRP_START:
