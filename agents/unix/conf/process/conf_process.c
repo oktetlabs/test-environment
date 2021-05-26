@@ -815,7 +815,7 @@ ps_arg_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (ps->enabled)
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     rc = te_strtoui(arg_name, 10, &order);
     if (rc != 0)
@@ -859,7 +859,7 @@ ps_arg_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (ps->enabled)
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     rc = te_strtoui(arg_name, 10, &order);
     if (rc != 0)
@@ -965,7 +965,7 @@ ps_env_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     if (ps->enabled)
-        return TE_RC(TE_TA_UNIX, TE_ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     env = TE_ALLOC(sizeof(*env));
     if (env == NULL)
@@ -1004,7 +1004,7 @@ ps_env_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (ps->enabled)
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     env = ps_env_find(ps, env_name);
     if (env == NULL)
@@ -1105,7 +1105,7 @@ ps_opt_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
 
     if (ps->enabled)
-        return TE_RC(TE_TA_UNIX, TE_ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     opt = TE_ALLOC(sizeof(*opt));
     if (opt == NULL)
@@ -1146,7 +1146,7 @@ ps_opt_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (ps->enabled)
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     opt = ps_opt_find(ps, opt_name);
     if (opt == NULL)

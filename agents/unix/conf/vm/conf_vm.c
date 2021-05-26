@@ -1268,7 +1268,7 @@ vm_qemu_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     return string_replace(&vm->qemu, value);
 }
@@ -1391,7 +1391,7 @@ vm_port_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     val = atoi(value);
     if (val < 0 || val > UINT16_MAX)
@@ -1440,7 +1440,7 @@ vm_kvm_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     val = !!atoi(value);
 
@@ -1491,7 +1491,7 @@ vm_machine_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     return string_replace(&vm->machine, value);
 }
@@ -1528,7 +1528,7 @@ vm_mem_size_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     if (te_strtoui(value, 0, &vm->mem_size) != 0)
         return TE_RC(TE_TA_UNIX, TE_EINVAL);
@@ -1568,7 +1568,7 @@ vm_mem_path_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     return string_replace(&vm->mem_path, value);
 }
@@ -1606,7 +1606,7 @@ vm_mem_prealloc_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     vm->mem_prealloc = enable;
 
@@ -1628,7 +1628,7 @@ vm_chardev_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     if (vm_chardev_find(vm, chardev_name) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
@@ -1664,7 +1664,7 @@ vm_chardev_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     chardev = vm_chardev_find(vm, chardev_name);
     if (chardev == NULL)
@@ -1725,7 +1725,7 @@ vm_net_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     if (vm_net_find(vm, net_name) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
@@ -1761,7 +1761,7 @@ vm_net_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     net = vm_net_find(vm, net_name);
     if (net == NULL)
@@ -1841,7 +1841,7 @@ vm_chardev_server_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     chardev = vm_chardev_find(vm, chardev_name);
     if (chardev == NULL)
@@ -1885,7 +1885,7 @@ vm_chardev_path_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     chardev = vm_chardev_find(vm, chardev_name);
     if (chardev == NULL)
@@ -1958,7 +1958,7 @@ vm_net_property_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     net = vm_net_find(vm, net_name);
     if (net == NULL)
@@ -2007,7 +2007,7 @@ vm_kernel_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     return string_replace(&vm->kernel, value);
 }
@@ -2048,7 +2048,7 @@ vm_ker_cmd_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     return string_replace(&vm->ker_cmd, value);
 }
@@ -2089,7 +2089,7 @@ vm_ker_initrd_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     return string_replace(&vm->ker_initrd, value);
 }
@@ -2130,7 +2130,7 @@ vm_ker_dtb_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     return string_replace(&vm->ker_dtb, value);
 }
@@ -2171,7 +2171,7 @@ vm_serial_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     return string_replace(&vm->serial, value);
 }
@@ -2191,7 +2191,7 @@ vm_drive_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     if (vm_drive_find(vm, drive_name) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
@@ -2227,7 +2227,7 @@ vm_drive_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     drive = vm_drive_find(vm, drive_name);
     if (drive == NULL)
@@ -2307,7 +2307,7 @@ vm_file_set(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     drive = vm_drive_find(vm, drive_name);
     if (drive == NULL)
@@ -2352,7 +2352,7 @@ vm_snapshot_set(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     drive = vm_drive_find(vm, drive_name);
     if (drive == NULL)
@@ -2396,7 +2396,7 @@ vm_drive_cdrom_set(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     drive = vm_drive_find(vm, drive_name);
     if (drive == NULL)
@@ -2422,7 +2422,7 @@ vm_virtfs_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     if (vm_virtfs_find(vm, virtfs_name) != NULL)
         return TE_RC(TE_TA_UNIX, TE_EEXIST);
@@ -2458,7 +2458,7 @@ vm_virtfs_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     virtfs = vm_virtfs_find(vm, virtfs_name);
     if (virtfs == NULL)
@@ -2537,7 +2537,7 @@ vm_virtfs_fsdriver_set(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     virtfs = vm_virtfs_find(vm, virtfs_name);
     if (virtfs == NULL)
@@ -2579,7 +2579,7 @@ vm_virtfs_mount_tag_set(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     virtfs = vm_virtfs_find(vm, virtfs_name);
     if (virtfs == NULL)
@@ -2621,7 +2621,7 @@ vm_virtfs_path_set(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     virtfs = vm_virtfs_find(vm, virtfs_name);
     if (virtfs == NULL)
@@ -2663,7 +2663,7 @@ vm_virtfs_security_model_set(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     virtfs = vm_virtfs_find(vm, virtfs_name);
     if (virtfs == NULL)
@@ -2713,7 +2713,7 @@ vm_pci_pt_token_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     SLIST_FOREACH(pt, &vm->pci_pts, links)
     {
@@ -2745,7 +2745,7 @@ vm_pci_pt_add(unsigned int gid, const char *oid, char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     pt = TE_ALLOC(sizeof(*pt));
     if (pt == NULL)
@@ -2781,7 +2781,7 @@ vm_pci_pt_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     pt = vm_pci_pt_find(vm, pci_pt_name);
     if (pt == NULL)
@@ -2901,7 +2901,7 @@ vm_device_add(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     dev = TE_ALLOC(sizeof(*dev));
     if (dev == NULL)
@@ -2940,7 +2940,7 @@ vm_device_del(unsigned int gid, const char *oid,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     dev = vm_device_find(vm, device_name);
     if (dev == NULL)
@@ -3020,7 +3020,7 @@ vm_cpu_model_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     rc = te_string_append(&save, "%s", vm->cpu.model.ptr);
     if (rc != 0)
@@ -3069,7 +3069,7 @@ vm_cpu_num_set(unsigned int gid, const char *oid, const char *value,
         return TE_RC(TE_TA_UNIX, TE_ENOENT);
 
     if (vm_is_running(vm))
-        return TE_RC(TE_TA_UNIX, ETXTBSY);
+        return TE_RC(TE_TA_UNIX, TE_EBUSY);
 
     save = vm->cpu.num;
     if (te_strtoui(value, 0, &vm->cpu.num) != 0)
