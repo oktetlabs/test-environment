@@ -32,6 +32,7 @@ main(int argc, char *argv[])
     const char     *ta = "Agt_A";
     char           *ps1_name = "testps1";
     char           *ps2_name = "testps2";
+    te_bool         is_running;
 
     TEST_START;
 
@@ -66,6 +67,13 @@ main(int argc, char *argv[])
 
     TEST_STEP("Stop the first process");
     CHECK_RC(tapi_cfg_ps_stop(ta, ps1_name));
+
+    TEST_STEP("Check that the first process is not running");
+    CHECK_RC(tapi_cfg_ps_get_status(ta, ps1_name, &is_running));
+    if (is_running)
+        TEST_FAIL("The first process is running, but it has been stopped");
+    else
+        RING("The first process is expectedly not running");
 
     TEST_STEP("Add more arguments for the first process");
     CHECK_RC(tapi_cfg_ps_add_arg(ta, ps1_name, 2, "TESTARG3"));
