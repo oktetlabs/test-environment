@@ -7644,7 +7644,7 @@ pattern_sender(tarpc_pattern_sender_in *in, tarpc_pattern_sender_out *out)
         return rc;
     }
 
-    if ((buf = malloc(in->size_max + MAX_OFFSET)) == NULL)
+    if ((buf = malloc(TARPC_LCG_LEN(in->size_max))) == NULL)
     {
         te_rpc_error_set(TE_RC(TE_TA_UNIX, TE_ENOMEM),
                          "out of memory");
@@ -7969,7 +7969,7 @@ pattern_receiver(tarpc_pattern_receiver_in *in,
         return -1;
 
     if ((buf = malloc(MAX_PKT)) == NULL ||
-        (check_buf = malloc(MAX_PKT + MAX_OFFSET)) == NULL)
+        (check_buf = malloc(TARPC_LCG_LEN(MAX_PKT))) == NULL)
     {
         ERROR("Out of memory");
         free(buf);

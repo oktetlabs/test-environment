@@ -1271,6 +1271,19 @@ extern te_errno tarpc_fill_buff_with_sequence(char *buf, int size,
 #define TARPC_LCG_MAX_OFFSET 3
 
 /**
+ * Sufficient length for a buffer filled with
+ * tarpc_fill_buff_with_sequence_lcg(). It takes into account that
+ * sequence is generated in 4-byte units and there may be offset
+ * of up to 3 bytes from the start of the buffer.
+ *
+ * @note Computed value may be a few bytes bigger than necessary but
+ *       it seems better than to use more complex expression here.
+ *
+ * @param _len      Length of sequence of bytes to generate.
+ */
+#define TARPC_LCG_LEN(_len) ((_len) + TARPC_LCG_MAX_OFFSET + 4)
+
+/**
  * Fills the buffer with a linear congruential sequence
  * and updates @b arg parameter for the next call.
  *
