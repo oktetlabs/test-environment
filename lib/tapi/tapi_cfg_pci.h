@@ -239,6 +239,58 @@ extern te_errno tapi_cfg_pci_get_numa_node(const char *pci_oid, char **numa_node
 extern te_errno tapi_cfg_pci_get_numa_node_id(const char *pci_oid,
                                               int *numa_node);
 
+/**
+ * Wrapper for @b tapi_cfg_pci_bind_driver to binding a driver
+ * by vendor, device and instance.
+ *
+ * @param[in] ta       Test Agent name
+ * @param[in] vendor   Vendor identifier
+ * @param[in] device   Device identifier
+ * @param[in] instance Index of a PCI device with specified vendir/device IDs
+ * @param[in] driver   Driver to bind
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_bind_driver_by_vend_dev_inst(const char *ta,
+                                                          const char *vendor,
+                                                          const char *device,
+                                                          unsigned int instance,
+                                                          const char *driver);
+
+
+/**
+ * Wrapper for @b  tapi_cfg_pci_bind_driver to unbinding a driver
+ * by vendor, device and instance.
+ *
+ * @param[in] ta       Test Agent name
+ * @param[in] vendor   Vendor identifier
+ * @param[in] device   Device identifier
+ * @param[in] instance Index of a PCI device with specified vendir/device IDs
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_unbind_driver_by_vend_dev_inst(const char *ta,
+                                                        const char *vendor,
+                                                        const char *device,
+                                                        unsigned int instance);
+
+/**
+ * Wrapper for @b tapi_cfg_pci_get_driver to getiing a driver
+ * by vendor, device and instance.
+ *
+ * @param[in]  ta       Test Agent name
+ * @param[in]  vendor   Vendor identifier
+ * @param[in]  device   Device identifier
+ * @param[in]  instance Index of a PCI device with specified vendir/device IDs
+ * @param[out] driver   Driver
+ *
+ * @return Status code
+ */
+extern te_errno tapi_cfg_pci_get_driver_by_vend_dev_inst(const char *ta,
+                                                         const char *vendor,
+                                                         const char *device,
+                                                         unsigned int instance,
+                                                         char **driver);
 /**@} <!-- END tapi_conf_pci --> */
 
 #ifdef __cplusplus

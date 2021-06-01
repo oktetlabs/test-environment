@@ -582,3 +582,108 @@ out:
 
     return rc;
 }
+
+static te_errno
+tapi_cfg_pci_get_pcioid_by_vend_dev_inst(const char *ta, const char *vendor,
+                                         const char *device,
+                                         unsigned int instance,
+                                         char **pci_oid)
+{
+    char *pci_oidstr;
+    cfg_val_type type = CVT_STRING;
+    te_errno rc;
+
+    if (ta == NULL)
+    {
+        ERROR("%s: test agent name must not be NULL", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (vendor == NULL)
+    {
+        ERROR("%s: vendor parameter must not be NULL", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    if (device == NULL)
+    {
+        ERROR("%s: device parameter must not be NULL", __FUNCTION__);
+        return TE_RC(TE_TAPI, TE_EINVAL);
+    }
+
+    rc = cfg_get_instance_fmt(&type, &pci_oidstr,
+                              CFG_PCI_TA_VEND_DEVICE_FMT "/instance:%d",
+                              ta, vendor, device, instance);
+    if (rc != 0)
+    {
+        ERROR("Failed to get PCI oid by %s:%s:%d, %r", vendor, device,
+              instance, rc);
+        pci_oidstr = NULL;
+    }
+
+    *pci_oid = pci_oidstr;
+
+    return rc;
+}
+
+te_errno
+tapi_cfg_pci_bind_driver_by_vend_dev_inst(const char *ta, const char *vendor,
+                                          const char *device,
+                                          unsigned int instance,
+                                          const char *driver)
+{
+    te_errno rc;
+    char *pci_oidstr = NULL;
+
+    rc = tapi_cfg_pci_get_pcioid_by_vend_dev_inst(ta, vendor, device,
+                                                  instance, &pci_oidstr);
+    if (rc != 0)
+        goto out;
+
+    rc = tapi_cfg_pci_bind_driver(pci_oidstr, driver);
+
+out:
+    free(pci_oidstr);
+    return rc;
+}
+
+te_errno
+tapi_cfg_pci_unbind_driver_by_vend_dev_inst(const char *ta, const char *vendor,
+                                            const char *device,
+                                            unsigned int instance)
+{
+    te_errno rc;
+    char *pci_oidstr = NULL;
+
+    rc = tapi_cfg_pci_get_pcioid_by_vend_dev_inst(ta, vendor, device,
+                                                  instance, &pci_oidstr);
+    if (rc != 0)
+        goto out;
+
+    rc = tapi_cfg_pci_bind_driver(pci_oidstr, "");
+
+out:
+    free(pci_oidstr);
+    return rc;
+}
+
+te_errno
+tapi_cfg_pci_get_driver_by_vend_dev_inst(const char *ta, const char *vendor,
+                                         const char *device,
+                                         unsigned int instance,
+                                         char **driver)
+{
+    te_errno rc;
+    char *pci_oidstr = NULL;
+
+    rc = tapi_cfg_pci_get_pcioid_by_vend_dev_inst(ta, vendor, device,
+                                                  instance, &pci_oidstr);
+    if (rc != 0)
+        goto out;
+
+    rc = tapi_cfg_pci_get_driver(pci_oidstr, driver);
+
+out:
+    free(pci_oidstr);
+    return rc;
+}
