@@ -29,7 +29,8 @@ char      *metafile_path = NULL;
 
 static json_t *trc_tags = NULL;
 
-pid_t tester_pid = -1;
+pid_t  tester_pid = -1;
+double start_ts = 0.0;
 
 /* See description in logger_stream.h */
 te_errno
@@ -212,6 +213,8 @@ process_tester_proc_info(const log_msg_view *msg)
     json_t       *json;
     json_error_t  err;
 
+    start_ts = msg->ts_sec + msg->ts_usec / 1000000;
+
     rc = te_raw_log_expand(msg, &body);
     if (rc != 0)
     {
@@ -331,7 +334,8 @@ process_plan(const log_msg_view *plan)
      * jansson-2.10, which is currently the newest version available on
      * CentOS/RHEL-7.x
      */
-    metadata = json_pack("{s:o?, s:o?, s:o}",
+    metadata = json_pack("{s:f, s:o?, s:o?, s:o}",
+                         "ts", start_ts,
                          "meta_data", meta,
                          "tags", trc_tags,
                          "plan", plan_obj);

@@ -385,7 +385,11 @@ listener_finish_request(log_listener *listener, CURLcode result)
 te_errno
 listener_finish(log_listener *listener)
 {
-    te_errno rc;
+    te_errno        rc;
+    double          ts;
+    struct timeval  tv;
+    json_t         *json;
+    char           *data;
 
     if (listener->state == LISTENER_INIT)
     {
@@ -393,8 +397,32 @@ listener_finish(log_listener *listener)
         return 0;
     }
 
+    gettimeofday(&tv, NULL);
+    ts = tv.tv_sec + tv.tv_usec / 1000000;
+    json = json_pack("{s:f}",
+                     "ts", ts);
+    if (json == NULL)
+    {
+        ERROR("Failed to pack finish data into a JSON object");
+        listener_free(listener);
+        return TE_ENOMEM;
+    }
+    data = json_dumps(json, JSON_COMPACT);
+    json_decref(json);
+    if (data == NULL)
+    {
+        ERROR("Failed to encode finish data");
+        listener_free(listener);
+        return TE_ENOMEM;
+    }
+    te_string_reset(&listener->buffer_out);
+    te_string_append(&listener->buffer_out, data);
+    free(data);
+
     RING("Listener %s: finishing", listener->name);
-    rc = listener_prepare_request(listener, "finish", NULL, 0);
+    rc = listener_prepare_request(listener, "finish",
+                                  listener->buffer_out.ptr,
+                                  listener->buffer_out.len);
     if (rc != 0)
     {
         ERROR("Listener %s: Failed to prepare /finish request: %r",
