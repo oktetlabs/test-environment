@@ -153,6 +153,7 @@ listener_init(log_listener *listener, json_t *data)
     }
 
     json = json_dumps(data, JSON_COMPACT);
+    json_decref(data);
     if (json == NULL)
     {
         ERROR("Failed to dump session initialization message");
@@ -160,7 +161,6 @@ listener_init(log_listener *listener, json_t *data)
     }
     te_string_append(&listener->buffer_out, "%s", json);
     free(json);
-    json_decref(data);
 
     rc = listener_prepare_request(listener, "init", listener->buffer_out.ptr,
                                   listener->buffer_out.len);
