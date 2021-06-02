@@ -124,6 +124,7 @@ listener_init(log_listener *listener, json_t *data)
 {
     te_errno  rc;
     json_t   *runid;
+    json_t   *interval;
     char     *json;
 
     data = json_copy(data);
@@ -150,6 +151,17 @@ listener_init(log_listener *listener, json_t *data)
             json_decref(runid);
             return TE_EFAIL;
         }
+    }
+
+    interval = json_integer(listener->interval);
+    if (interval == NULL ||
+        json_object_set_new(data, "interval", interval) == -1)
+    {
+        ERROR("Failed to pack listener heartbeat interval into init message");
+        json_decref(data);
+        if (interval != NULL)
+            json_decref(interval);
+        return TE_ENOMEM;
     }
 
     json = json_dumps(data, JSON_COMPACT);
