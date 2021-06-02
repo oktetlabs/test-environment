@@ -95,7 +95,7 @@ extract_json_integer(json_t *json, int *result, int def)
     if (!json_is_integer(json) && !json_is_null(json))
         return TE_EINVAL;
 
-    if (json_is_string(json))
+    if (json_is_integer(json))
         *result = json_integer_value(json);
 
     return 0;
